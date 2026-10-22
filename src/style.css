@@ -121,7 +121,9 @@ h2 {
   min-height: 0;
   min-width: 0;
   width: 100%;
-  overflow: hidden;
+  /* Com zoom o tabuleiro passa do quadro: aqui ele ganha rolagem em vez de
+     ser cortado. Sem zoom não há o que rolar. */
+  overflow: auto;
 }
 .board {
   image-rendering: pixelated;

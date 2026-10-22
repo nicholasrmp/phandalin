@@ -293,7 +293,7 @@ export class Encounter {
     actor.movementLeftFt = Math.max(0, actor.movementLeftFt - node.cost);
     // `from` deixa a camada de desenho calcular para onde a figura está virada,
     // sem o motor precisar conhecer o conceito de "frente" (o 5e não tem).
-    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos } });
+    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: path.map((p) => ({ ...p })) });
     return true;
   }
 
@@ -382,8 +382,13 @@ export class Encounter {
   canAttack(actor, target, weaponId) {
     const p = this.weaponAttackProfile(actor, weaponId);
     const dist = distanceFt(actor.pos, target.pos);
-    if (dist > p.longRangeFt) return { ok: false, why: 'fora de alcance' };
-    if (p.ranged && !this.field.hasLineOfSight(actor.pos, target.pos)) return { ok: false, why: 'sem linha de visão' };
+    if (dist > p.longRangeFt) {
+      const limite = p.ranged ? p.longRangeFt : p.reachFt;
+      return { ok: false, why: `fora de alcance — ${dist} pés, ${p.name} alcança ${limite}` };
+    }
+    if (p.ranged && !this.field.hasLineOfSight(actor.pos, target.pos)) {
+      return { ok: false, why: 'sem linha de visão até o alvo' };
+    }
     return { ok: true, profile: p, longRange: p.ranged && dist > p.rangeFt };
   }
 
@@ -477,9 +482,21 @@ export class Encounter {
     return { hit: true, critical, damage: total };
   }
 
-  /** Ação de Ataque completa (trata Ataque Múltiplo dos monstros). */
+  /**
+   * Ação de Ataque completa (trata Ataque Múltiplo dos monstros).
+   *
+   * VALIDA ANTES DE GASTAR. Antes, a ação era marcada como usada e só depois
+   * `resolveAttack` descobria que o alvo estava fora de alcance ou sem linha de
+   * visão — o jogador perdia o turno por um clique que nunca poderia acertar.
+   *
+   * @returns {{ok: boolean, why?: string}}
+   */
   attackAction(attacker, target, weaponId = null) {
-    if (attacker.actionUsed) return false;
+    if (attacker.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
+
+    const check = this.canAttack(attacker, target, weaponId);
+    if (!check.ok) return { ok: false, why: check.why };
+
     attacker.actionUsed = true;
     const ma = attacker.multiattack;
     this.resolveAttack(attacker, target, { weaponId });
@@ -489,7 +506,7 @@ export class Encounter {
       }
     }
     this.afterAction(attacker);
-    return true;
+    return { ok: true };
   }
 
   afterAction(actor) {
@@ -600,24 +617,39 @@ export class Encounter {
 
   // ---- magias --------------------------------------------------------------
 
-  canCast(actor, spellId) {
+  /**
+   * Checa TUDO antes de a magia sair: espaço, ação, alvo, alcance e visão.
+   * Nenhum recurso é gasto aqui — é só a pergunta "dá para conjurar?".
+   */
+  canCast(actor, spellId, { target = null, point = null } = {}) {
     const spell = getSpell(spellId);
-    if (!actor.spellcasting) return { ok: false, why: 'não conjura' };
-    if (spell.level > 0) {
-      const slots = actor.spellcasting.slots;
-      if (!slots[spell.level]) return { ok: false, why: 'sem espaço de magia' };
+    if (!actor.spellcasting) return { ok: false, why: 'não conjura magias' };
+    if (spell.level > 0 && !actor.spellcasting.slots[spell.level]) {
+      return { ok: false, why: `sem espaço de magia de ${spell.level}º círculo` };
     }
-    if (spell.castTime === 'action' && actor.actionUsed) return { ok: false, why: 'ação já usada' };
-    if (spell.castTime === 'bonus' && actor.bonusUsed) return { ok: false, why: 'ação bônus já usada' };
+    if (spell.castTime === 'action' && actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
+    if (spell.castTime === 'bonus' && actor.bonusUsed) return { ok: false, why: 'a ação bônus deste turno já foi usada' };
+
+    const precisaAlvo = spell.kind === 'attack' || spell.kind === 'auto' || spell.kind === 'heal';
+    if (precisaAlvo && !target) return { ok: false, why: 'escolha um alvo' };
+
+    const dest = target?.pos ?? point;
+    // Cone sai do próprio conjurador (alcance 0): não há distância a checar.
+    if (dest && spell.rangeFt > 0) {
+      const d = distanceFt(actor.pos, dest);
+      if (d > spell.rangeFt) {
+        return { ok: false, why: `fora de alcance — ${d} pés, a magia chega a ${spell.rangeFt}` };
+      }
+      if (!this.field.hasLineOfSight(actor.pos, dest)) {
+        return { ok: false, why: 'sem linha de visão até o alvo' };
+      }
+    }
     return { ok: true, spell };
   }
 
   castSpell(actor, spellId, { target = null, point = null } = {}) {
-    const check = this.canCast(actor, spellId);
-    if (!check.ok) {
-      this.say('aviso', `${actor.name} não pode conjurar: ${check.why}.`);
-      return false;
-    }
+    const check = this.canCast(actor, spellId, { target, point });
+    if (!check.ok) return { ok: false, why: check.why };
     const spell = check.spell;
     if (spell.castTime === 'action') actor.actionUsed = true;
     if (spell.castTime === 'bonus') actor.bonusUsed = true;
@@ -760,7 +792,7 @@ export class Encounter {
 
     this.afterAction(actor);
     this.checkEnd();
-    return true;
+    return { ok: true };
   }
 
   // ---- outras ações --------------------------------------------------------

@@ -184,6 +184,8 @@ export async function runMonsterSide(enc, { delayMs = 520, onStep = () => {} } =
     onStep(monster);
     takeMonsterTurn(enc, monster);
     if (enc.over) break;
-    await new Promise((r) => setTimeout(r, delayMs));
+    // delayMs pode ser função: o jogo passa uma que soma a animação em curso.
+    const espera = typeof delayMs === 'function' ? delayMs() : delayMs;
+    await new Promise((r) => setTimeout(r, espera));
   }
 }

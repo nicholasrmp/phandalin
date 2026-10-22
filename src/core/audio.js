@@ -225,6 +225,11 @@ const SOUNDS = {
   click: (a) => {
     a.tone({ dur: 0.05, type: 'square', from: vary(1200), gain: 0.06 });
   },
+  // Recusa: duas notas descendo. Avisa que nada foi gasto.
+  deny: (a) => {
+    a.tone({ dur: 0.09, type: 'square', from: 330, gain: 0.1 });
+    a.tone({ delay: 0.08, dur: 0.16, type: 'square', from: 247, gain: 0.1 });
+  },
   turn: (a) => {
     a.tone({ dur: 0.3, type: 'triangle', from: vary(392), to: 523, gain: 0.1 });
   },

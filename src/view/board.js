@@ -78,7 +78,11 @@ export class Board {
 
     this.rebuildOrder();
 
+    this.zoom = 1;
+    this.drag = null;
+
     canvas.addEventListener('mousemove', (e) => {
+      if (this.drag) return;   // arrastando a câmera: não realça quadrado
       const t = this.tileFromEvent(e);
       const changed = !this.hover || !t || this.hover.x !== t.x || this.hover.y !== t.y;
       this.hover = t;
@@ -86,9 +90,84 @@ export class Board {
     });
     canvas.addEventListener('mouseleave', () => { this.hover = null; this.onTileHover?.(null); });
     canvas.addEventListener('click', (e) => {
+      if (this.dragMoved) { this.dragMoved = false; return; }  // fim de arrasto não é clique
       const t = this.tileFromEvent(e);
       if (t) this.onTileClick?.(t);
     });
+
+    // ---- girar com o botão direito ----
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 2) return;
+      this.drag = { x: e.clientX, acc: 0 };
+      this.dragMoved = false;
+      this.hover = null;
+      canvas.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    this._onDragMove = (e) => {
+      if (!this.drag) return;
+      const dx = e.clientX - this.drag.x;
+      this.drag.x = e.clientX;
+      this.drag.acc += dx;
+      if (Math.abs(dx) > 1) this.dragMoved = true;
+      // Arrastar ~110 px vira a câmera um quarto de volta.
+      const STEP = 110;
+      while (this.drag.acc >= STEP) { this.drag.acc -= STEP; this.rotate(1); this.onCameraChange?.(); }
+      while (this.drag.acc <= -STEP) { this.drag.acc += STEP; this.rotate(-1); this.onCameraChange?.(); }
+    };
+    this._onDragEnd = () => {
+      if (!this.drag) return;
+      this.drag = null;
+      canvas.style.cursor = '';
+    };
+    addEventListener('mousemove', this._onDragMove);
+    addEventListener('mouseup', this._onDragEnd);
+
+    // ---- zoom com a roda ----
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      this.setZoom(this.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
+      this.onCameraChange?.();
+    }, { passive: false });
+  }
+
+  /**
+   * Zoom por CSS: o canvas continua com a mesma resolução interna e só muda de
+   * tamanho na tela. Como `tileFromEvent` converte pelo retângulo medido, o
+   * clique continua caindo no quadrado certo em qualquer zoom.
+   */
+  setZoom(z) {
+    this.zoom = Math.max(0.55, Math.min(3, z));
+    const el = this.canvas;
+    if (Math.abs(this.zoom - 1) < 0.02) {
+      this.zoom = 1;
+      el.style.width = '';
+      el.style.height = '';
+      el.style.maxWidth = '';
+      el.style.maxHeight = '';
+      return;
+    }
+    // Mede uma vez o tamanho "encaixado" para usar de base.
+    this.fitWidth ??= el.getBoundingClientRect().width || el.width;
+    el.style.maxWidth = 'none';
+    el.style.maxHeight = 'none';
+    el.style.width = `${Math.round(this.fitWidth * this.zoom)}px`;
+    el.style.height = 'auto';
+  }
+
+  zoomBy(factor) {
+    this.setZoom(this.zoom * factor);
+  }
+
+  resetCamera() {
+    this.setZoom(1);
+    this.setRotation(0);
+  }
+
+  disposeCamera() {
+    removeEventListener('mousemove', this._onDragMove);
+    removeEventListener('mouseup', this._onDragEnd);
   }
 
   get tileHalf() {
@@ -310,9 +389,14 @@ export class Board {
     const byTile = new Map();
     for (const c of this.enc.combatants) {
       if (c.dead && c.kind === 'npc') continue;
-      const v = this.toView(c.pos.x, c.pos.y);
+      // Quem está andando é ordenado pelo quadrado em que ESTÁ, não pelo
+      // destino: senão a figura passa por cima de paredes que já deixou.
+      const w = this.fx.positionFor(c.id);
+      const tx = w ? Math.round(w.x) : c.pos.x;
+      const ty = w ? Math.round(w.y) : c.pos.y;
+      const v = this.toView(tx, ty);
       byView.set(vkey(v.vx, v.vy), c);
-      byTile.set(`${c.pos.x},${c.pos.y}`, c);
+      byTile.set(`${tx},${ty}`, c);
     }
 
     const reach = this.overlay.reachable;
@@ -370,7 +454,10 @@ export class Board {
   }
 
   drawCombatant(ctx, c) {
-    const { sx: baseX, sy: baseY } = this.center(c.pos.x, c.pos.y);
+    const walking = this.fx.positionFor(c.id);
+    const here = walking ?? c.pos;
+    const { sx: baseX, sy: baseY0 } = this.centerF(here.x, here.y);
+    const baseY = baseY0 - (walking?.lift ?? 0);
     const down = c.dead || hasCondition(c, 'inconsciente');
     const ally = c.side === 'party';
 
@@ -417,7 +504,9 @@ export class Board {
     const frame = c.anim?.frame ?? frameAt(anim, this.time + (c.pos.x + c.pos.y) * 0.17);
 
     // A direção do mundo gira junto com a câmera.
-    const world = c.facingVec ?? { dx: 1, dy: 1 };
+    const world = walking && (walking.dx || walking.dy)
+      ? { dx: walking.dx, dy: walking.dy }
+      : c.facingVec ?? { dx: 1, dy: 1 };
     const face = this.rotateVec(world.dx, world.dy);
     const toward = face.dx + face.dy;
     const row = down ? 0 : toward >= 0 ? 0 : 2;

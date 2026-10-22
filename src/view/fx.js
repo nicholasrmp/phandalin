@@ -21,11 +21,27 @@ export class Fx {
   constructor() {
     this.items = [];
     this.offsets = new Map();
+    this.positions = new Map();   // id → posição CONTÍNUA em quadrados
   }
 
   clear() {
     this.items.length = 0;
     this.offsets.clear();
+    this.positions.clear();
+  }
+
+  /** Posição interpolada de quem está andando, ou null. */
+  positionFor(id) {
+    return this.positions.get(id) ?? null;
+  }
+
+  /** Quanto falta, em segundos, para as caminhadas em curso terminarem. */
+  get walkTimeLeft() {
+    let left = 0;
+    for (const it of this.items) {
+      if (it.kind === 'walk') left = Math.max(left, it.dur - it.t);
+    }
+    return left;
   }
 
   add(item) {
@@ -35,10 +51,32 @@ export class Fx {
 
   update(dt) {
     this.offsets.clear();
+    this.positions.clear();
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];
       it.t += dt;
       const k = Math.min(1, it.t / it.dur);
+
+      if (it.kind === 'walk') {
+        const segs = it.path.length - 1;
+        const f = Math.min(segs, k * segs);
+        const idx = Math.min(segs - 1, Math.floor(f));
+        const frac = f - idx;
+        const a = it.path[idx];
+        const b = it.path[idx + 1];
+        this.positions.set(it.id, {
+          x: a.x + (b.x - a.x) * frac,
+          y: a.y + (b.y - a.y) * frac,
+          // Balancinho por quadrado: é o que faz ler como passo, e não deslize.
+          lift: Math.abs(Math.sin(f * Math.PI)) * 3,
+          dx: b.x - a.x,
+          dy: b.y - a.y,
+        });
+        if (idx !== it.lastStep) {
+          it.lastStep = idx;
+          it.onStep?.(idx);
+        }
+      }
 
       if (it.kind === 'lunge') {
         const push = Math.sin(k * Math.PI) * (it.reach ?? 0.38);
@@ -80,6 +118,21 @@ export class Fx {
   /** Salto curto, para golpes de cima para baixo. */
   hop(actor, { dur = 0.3, height = 18 } = {}) {
     return this.add({ kind: 'hop', id: actor.id, dur, height });
+  }
+
+  /**
+   * Caminhada: a figura percorre o caminho quadrado a quadrado.
+   *
+   * O motor já moveu a peça — isto só conta a viagem. Enquanto dura, o
+   * tabuleiro desenha a figura na posição interpolada em vez do destino.
+   */
+  walk(actor, path, { tilesPerSecond = 6.5, onStep = null, onDone = null } = {}) {
+    if (!path || path.length < 2) return this;
+    const dur = Math.max(0.14, (path.length - 1) / tilesPerSecond);
+    return this.add({
+      kind: 'walk', id: actor.id, path: path.map((p) => ({ ...p })),
+      dur, lastStep: -1, onStep, onDone,
+    });
   }
 
   // ---- projéteis ----------------------------------------------------------

@@ -22,9 +22,9 @@ const WEAPON_VISUALS = {
   // Corte largo: espada, cimitarra, machado.
   sword: (board, { attacker, target, critical }) => {
     const ang = screenAngle(board, attacker.pos, target.pos);
-    board.fx.lunge(attacker, target.pos, 0.26);
     return {
       delay: 0.15,
+      start: () => board.fx.lunge(attacker, target.pos, 0.26),
       onHit: () => {
         board.fx.slash(target.pos, { color: critical ? '#ffe14d' : '#ffffff', sweep: 1.1, radius: 26, width: critical ? 6 : 4 });
         board.fx.slash(target.pos, { color: '#ffffff', sweep: 0.8, radius: 18, width: 2, angle: ang + 0.4, dur: 0.18 });
@@ -35,9 +35,9 @@ const WEAPON_VISUALS = {
   // Estocada: dois toques rápidos, curtos. Adaga e espada curta.
   dagger: (board, { attacker, target }) => {
     const ang = screenAngle(board, attacker.pos, target.pos);
-    board.fx.lunge(attacker, target.pos, 0.2, 0.5);
     return {
       delay: 0.12,
+      start: () => board.fx.lunge(attacker, target.pos, 0.2, 0.5),
       onHit: () => {
         board.fx.stab(target.pos, { angle: ang, length: 28 });
         setTimeout(() => board.fx.stab(target.pos, { angle: ang + 0.3, length: 22, color: '#ffe9b0' }), 90);
@@ -47,10 +47,12 @@ const WEAPON_VISUALS = {
 
   // Pancada de cima para baixo: maça, bordão, coice. Sacode mais.
   mace: (board, { attacker, target, critical }) => {
-    board.fx.hop(attacker, { dur: 0.3, height: 18 });
-    board.fx.lunge(attacker, target.pos, 0.3, 0.3);
     return {
       delay: 0.22,
+      start: () => {
+        board.fx.hop(attacker, { dur: 0.3, height: 18 });
+        board.fx.lunge(attacker, target.pos, 0.3, 0.3);
+      },
       onHit: () => {
         board.fx.smash(target.pos, { color: '#e8d6a8' });
         board.fx.slash(target.pos, { color: '#fff3d0', sweep: 0.5, radius: 20, width: 6, angle: -1.3 });
@@ -61,27 +63,27 @@ const WEAPON_VISUALS = {
 
   // Flecha com rastro.
   bow: (board, { attacker, target }) => {
-    board.fx.projectile(attacker.pos, target.pos, { style: 'arrow', color: '#ffe9b0', dur: 0.3, arc: 0.7, trail: true });
     return {
       delay: 0.3,
+      start: () => board.fx.projectile(attacker.pos, target.pos, { style: 'arrow', color: '#ffe9b0', dur: 0.3, arc: 0.7, trail: true }),
       onHit: () => board.fx.impact(target.pos, { color: '#ffd9a0', count: 7, spread: 34 }),
     };
   },
 
   // Azagaia girando.
   javelin: (board, { attacker, target }) => {
-    board.fx.projectile(attacker.pos, target.pos, { style: 'javelin', color: '#cfd6de', dur: 0.36, arc: 1, spin: true });
     return {
       delay: 0.36,
+      start: () => board.fx.projectile(attacker.pos, target.pos, { style: 'javelin', color: '#cfd6de', dur: 0.36, arc: 1, spin: true }),
       onHit: () => board.fx.impact(target.pos, { color: '#d8c7a8', count: 8, spread: 40 }),
     };
   },
 
   // Mordida: presas fechando.
   bite: (board, { attacker, target, critical }) => {
-    board.fx.lunge(attacker, target.pos, 0.24, 0.55);
     return {
       delay: 0.16,
+      start: () => board.fx.lunge(attacker, target.pos, 0.24, 0.55),
       onHit: () => {
         board.fx.fangs(target.pos, { color: critical ? '#ffd24a' : '#ffffff' });
         board.fx.impact(target.pos, { color: '#b03a3a', count: 8, spread: 36 });
@@ -92,9 +94,9 @@ const WEAPON_VISUALS = {
   // Três riscos paralelos.
   claw: (board, { attacker, target }) => {
     const ang = screenAngle(board, attacker.pos, target.pos);
-    board.fx.lunge(attacker, target.pos, 0.22, 0.45);
     return {
       delay: 0.14,
+      start: () => board.fx.lunge(attacker, target.pos, 0.22, 0.45),
       onHit: () => board.fx.claw(target.pos, { angle: ang - 0.4 }),
     };
   },
@@ -116,12 +118,17 @@ function guessArt(name = '') {
  * Toca som e animação de um ataque com arma.
  * @returns {number} atraso até o impacto, em segundos
  */
-export function playWeaponVisual(board, ev) {
+export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {
   const art = ev.art ?? guessArt(ev.weaponName);
   const recipe = WEAPON_VISUALS[art] ?? WEAPON_VISUALS.sword;
-  audio.play(art === 'bow' || art === 'javelin' ? 'swing' : 'swing');
+  const { delay, start, onHit } = recipe(board, ev);
 
-  const { delay, onHit } = recipe(board, ev);
+  // `startDelay` espera a caminhada terminar: sem isso, quem anda e ataca no
+  // mesmo turno desfere o golpe enquanto ainda está no meio do caminho.
+  setTimeout(() => {
+    audio.play('swing');
+    start?.();
+  }, startDelay * 1000);
 
   setTimeout(() => {
     if (!ev.hit) {
@@ -139,9 +146,9 @@ export function playWeaponVisual(board, ev) {
     audio.play(ev.critical ? 'critical' : hitSoundFor(ev.damageType));
     if (ev.sneak) board.floatText(ev.target.pos, 'furtivo!', '#c7b4ff');
     if (ev.martial) board.floatText(ev.target.pos, 'marcial!', '#ff9a4a');
-  }, delay * 1000);
+  }, (startDelay + delay) * 1000);
 
-  return delay;
+  return startDelay + delay;
 }
 
 // ---------------------------------------------------------------- magias

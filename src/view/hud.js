@@ -128,8 +128,12 @@ export class Hud {
     });
 
     this.viewBar.replaceChildren(
-      el('button', { class: 'icon-btn', title: 'Girar a câmera (Q)', onclick: () => this.handlers.onRotate?.(-1) }, '↺'),
-      el('button', { class: 'icon-btn', title: 'Girar a câmera (E)', onclick: () => this.handlers.onRotate?.(1) }, '↻'),
+      el('button', { class: 'icon-btn', title: 'Girar a câmera (Q · ou botão direito arrastando)', onclick: () => this.handlers.onRotate?.(-1) }, '↺'),
+      el('button', { class: 'icon-btn', title: 'Girar a câmera (E · ou botão direito arrastando)', onclick: () => this.handlers.onRotate?.(1) }, '↻'),
+      el('span', { class: 'divider' }),
+      el('button', { class: 'icon-btn', title: 'Afastar (roda do mouse)', onclick: () => this.handlers.onZoom?.(1 / 1.2) }, '－'),
+      el('button', { class: 'icon-btn', title: 'Enquadrar de novo', onclick: () => this.handlers.onResetCamera?.() }, '⌖'),
+      el('button', { class: 'icon-btn', title: 'Aproximar (roda do mouse)', onclick: () => this.handlers.onZoom?.(1.2) }, '＋'),
       el('span', { class: 'divider' }),
       this.muteBtn,
       this.volume,

@@ -25,6 +25,8 @@ class App {
       onEndTurn: () => this.endTurn(),
       onRestart: () => this.newEncounter(),
       onRotate: (d) => this.rotateView(d),
+      onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
+      onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
     });
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'board';
@@ -88,6 +90,7 @@ class App {
       onTileClick: (t) => this.onTileClick(t),
       onTileHover: (t) => this.onTileHover(t),
     });
+    this.board.onCameraChange = () => this.refresh();
 
     this.enc.start();
     if (this.enc.side === 'party') this.select(this.firstActive());
@@ -118,7 +121,8 @@ class App {
     switch (ev.type) {
       case 'moved': {
         ev.actor.facingVec = { dx: ev.to.x - ev.from.x, dy: ev.to.y - ev.from.y };
-        audio.play('step');
+        // O motor já moveu a peça; isto conta a viagem quadrado a quadrado.
+        board?.fx.walk(ev.actor, ev.path, { onStep: () => audio.play('step') });
         break;
       }
 
@@ -129,7 +133,9 @@ class App {
         a.anim = { name: 'attack', frame: 1 };
         setTimeout(() => { a.anim = null; }, 280);
         // A receita da arma toca som, anima e devolve quando o golpe chega.
-        this.setImpactDelay(playWeaponVisual(board, ev));
+        // Se quem ataca ainda está andando, o golpe espera a chegada.
+        const espera = (board?.fx.walkTimeLeft ?? 0);
+        this.setImpactDelay(playWeaponVisual(board, ev, { startDelay: espera }));
         break;
       }
 
@@ -235,7 +241,7 @@ class App {
     // A pausa entre monstros tem que ser maior que a animação do golpe, senão
     // um começa a agir enquanto o anterior ainda está no ar: flecha viajando
     // (0,3 s) + estilhaços (0,42 s) ≈ 0,7 s.
-    await runMonsterSide(this.enc, { delayMs: 780, onStep: () => this.refresh() });
+    await runMonsterSide(this.enc, { delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() });
     this.refresh();
   }
 
@@ -303,34 +309,112 @@ class App {
     this.refresh();
   }
 
+  /** Recusa visível: diz o porquê e NÃO gasta nada. */
+  refuse(actor, why) {
+    this.hud.setHint(`✖ ${why}`);
+    this.board?.floatText(actor.pos, '✖', '#ffb04a');
+    audio.play('deny');
+    this.refresh();
+  }
+
+  /** Quanto tempo a animação de caminhada ainda vai levar, em ms. */
+  get walkWaitMs() {
+    return Math.ceil((this.board?.fx.walkTimeLeft ?? 0) * 1000);
+  }
+
+  /** Espera a caminhada terminar antes de resolver o golpe, para ler na ordem. */
+  afterWalk(fn) {
+    const wait = this.walkWaitMs;
+    if (wait <= 0) { fn(); return; }
+    this.busy = true;
+    this.refresh();
+    setTimeout(() => { this.busy = false; fn(); }, wait + 40);
+  }
+
+  /**
+   * Ataque com um clique. Se for corpo a corpo e o alvo estiver longe, o
+   * personagem ANDA até ele gastando movimento e então ataca. Se o movimento
+   * não der para chegar, avança o máximo possível e não ataca — mas a ação
+   * continua disponível.
+   */
+  tryAttack(c, target, weaponId) {
+    const enc = this.enc;
+    const check = enc.canAttack(c, target, weaponId);
+
+    if (check.ok) {
+      const r = enc.attackAction(c, target, weaponId);
+      this.mode = null;
+      if (!r.ok) { this.refuse(c, r.why); return; }
+      this.afterAct();
+      return;
+    }
+
+    const prof = enc.weaponAttackProfile(c, weaponId);
+    // Arma à distância não resolve andando: o problema é visão ou alcance.
+    if (prof.ranged) { this.refuse(c, check.why); return; }
+    if (c.actionUsed) { this.refuse(c, 'a ação deste turno já foi usada'); return; }
+    if (c.movementLeftFt <= 0) { this.refuse(c, `sem movimento para chegar até ${target.name}`); return; }
+
+    const reached = enc.reachableFor(c);
+    let encosta = null;
+    let maisPerto = null;
+    for (const node of reached.values()) {
+      if (enc.occupied(node.x, node.y, c)) continue;
+      const d = distanceFt({ x: node.x, y: node.y }, target.pos);
+      if (d <= prof.reachFt && (!encosta || node.cost < encosta.node.cost)) encosta = { node, d };
+      if (!maisPerto || d < maisPerto.d || (d === maisPerto.d && node.cost < maisPerto.node.cost)) maisPerto = { node, d };
+    }
+
+    if (encosta) {
+      enc.moveAlong(c, Battlefield.pathFrom(reached, encosta.node));
+      this.mode = null;
+      this.afterWalk(() => {
+        const r = enc.attackAction(c, target, weaponId);
+        if (!r.ok) this.refuse(c, r.why);
+        else this.afterAct();
+      });
+      return;
+    }
+
+    // Não chega neste turno: avança o que der e guarda a ação.
+    if (maisPerto && maisPerto.node.cost > 0) {
+      enc.moveAlong(c, Battlefield.pathFrom(reached, maisPerto.node));
+      this.mode = null;
+      this.afterWalk(() => this.refuse(c, `movimento insuficiente para alcançar ${target.name} — avançou o máximo possível, a ação continua sua`));
+      return;
+    }
+    this.refuse(c, check.why);
+  }
+
+  /** Conjuração com um clique, recusando sem gastar quando não dá. */
+  tryCast(c, spellId, { target = null, point = null } = {}) {
+    const r = this.enc.castSpell(c, spellId, { target, point });
+    this.mode = null;
+    if (!r.ok) { this.refuse(c, r.why); return; }
+    this.afterAct();
+  }
+
   onTileClick(tile) {
-    if (this.enc.over || this.enc.side !== 'party') return;
+    if (this.enc.over || this.enc.side !== 'party' || this.busy) return;
     const occupant = this.enc.at(tile.x, tile.y);
     const c = this.selected;
 
     // Modo de alvo
     if (this.mode && c) {
       if (!occupant) {
-        // Magia de área pode mirar no chão.
         const spell = this.mode.kind === 'spell' ? getSpell(this.mode.spellId) : null;
         if (spell && (spell.shape === 'cone' || spell.shape === 'sphere')) {
-          this.enc.castSpell(c, this.mode.spellId, { point: tile });
-          this.mode = null;
-          this.afterAct();
+          this.tryCast(c, this.mode.spellId, { point: tile });
         }
         return;
       }
       if (this.mode.kind === 'attack') {
         if (occupant.side === c.side) { this.select(occupant); return; }
-        this.enc.attackAction(c, occupant, this.mode.weaponId);
-        this.mode = null;
-        this.afterAct();
+        this.tryAttack(c, occupant, this.mode.weaponId);
         return;
       }
       if (this.mode.kind === 'spell') {
-        this.enc.castSpell(c, this.mode.spellId, { target: occupant, point: occupant.pos });
-        this.mode = null;
-        this.afterAct();
+        this.tryCast(c, this.mode.spellId, { target: occupant, point: occupant.pos });
         return;
       }
     }
