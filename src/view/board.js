@@ -515,7 +515,9 @@ export class Board {
     drawSprite(ctx, sheet, animName, frame, {
       x: sx,
       y: sy + 6,
-      scale: c.kind === 'npc' ? 1.12 : 1.22,
+      // 1:1. Escala quebrada borra a grade de pixels; é melhor desenhar
+      // com mais resolução e não reescalar.
+      scale: 1,
       flip,
       row,
       alpha: c.acted && ally && !down ? 0.62 : 1,

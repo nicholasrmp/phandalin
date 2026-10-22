@@ -4,13 +4,17 @@
 // permite um goblin ter cabeça maior que os ombros enquanto o hobgoblin tem
 // ombros enormes e cabeça pequena — sem escrever dois pintores.
 //
-// A escala é relativa ao humano médio, que mede 46 px do pé ao alto do cabelo.
-// O mais alto (bugbear) chega a 57, o mais baixo (goblin) a 32. A célula tem
-// 60 px úteis, então cimeira de elmo e chifre ainda cabem.
+// A escala é relativa ao humano médio, que mede 58 px do pé ao alto do cabelo.
+// O mais alto (bugbear) chega a 69, o mais baixo (goblin) a 41. A célula tem
+// 75 px úteis, então cimeira de elmo e chifre ainda cabem.
+//
+// A figura é exibida no tabuleiro em escala 1:1. Ter mais pixel por figura e
+// não reescalar vale mais que desenhar pequeno e esticar: escala quebrada
+// borra a grade e é metade do motivo de a arte parecer barata.
 
 const BASE = {
-  feetH: 3, legH: 13, torsoH: 15, neckH: 2, headH: 10, hairH: 3,
-  shoulderW: 14, chestW: 12, legW: 4, armW: 3, headW: 11,
+  feetH: 4, legH: 17, torsoH: 19, neckH: 2, headH: 13, hairH: 3,
+  shoulderW: 18, chestW: 15, legW: 5, armW: 4, headW: 14,
 };
 
 /**
@@ -31,10 +35,10 @@ export const SPECIES = {
   humano: { h: 1.00, legs: 1.00, head: 1.00, bulk: 1.00, arms: 1.00, neck: 0, ear: 'round' },
   elfo: { h: 1.05, legs: 1.06, head: 0.94, bulk: 0.90, arms: 1.02, neck: 1, ear: 'long', jaw: -1 },
   anao: { h: 0.82, legs: 0.72, head: 1.06, bulk: 1.14, arms: 0.92, neck: -1, ear: 'round', beardAlways: true, wideNose: true },
-  halfling: { h: 0.74, legs: 0.88, head: 1.08, bulk: 0.96, arms: 0.94, neck: -1, ear: 'round', bigFeet: true },
+  halfling: { h: 0.74, legs: 0.88, head: 1.04, bulk: 0.96, arms: 0.94, neck: -1, ear: 'round', bigFeet: true },
 
   // Goblinoides: seco e corcunda, soldado ereto, bruto peludo de braço longo.
-  goblin: { h: 0.72, legs: 0.86, head: 1.12, bulk: 0.86, arms: 1.04, neck: -1, ear: 'swept', flatNose: true, hunch: 2, darkEyes: true, fangs: true },
+  goblin: { h: 0.72, legs: 0.86, head: 1.06, bulk: 0.90, arms: 1.04, neck: -1, ear: 'swept', flatNose: true, hunch: 2, darkEyes: true, fangs: true },
   hobgoblin: { h: 1.10, legs: 1.04, head: 0.98, bulk: 1.18, arms: 1.00, neck: 1, ear: 'swept', brow: true, flatNose: true, jaw: 1 },
   bugbear: { h: 1.20, legs: 0.92, head: 1.00, bulk: 1.24, arms: 1.22, neck: 0, ear: 'wide', snout: true, fur: true, hunch: 1, fangs: true },
   orc: { h: 1.12, legs: 1.00, head: 1.00, bulk: 1.20, arms: 1.06, neck: 1, ear: 'swept', tusks: true, brow: true, flatNose: true, jaw: 1 },

@@ -5,8 +5,8 @@
 import { paint, DIRECTIONS } from './draw.js';
 import { resolveLook } from './looks.js';
 
-export const CELL_W = 44;
-export const CELL_H = 64;
+export const CELL_W = 52;
+export const CELL_H = 80;
 export const OUTLINE = [13, 11, 17];
 
 export const ANIMS = [
