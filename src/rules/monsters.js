@@ -51,6 +51,27 @@ export const MONSTERS = {
     blurb: 'Dois ataques por turno e desvia golpes para um capanga ao lado.',
   },
 
+  hobgoblin: {
+    id: 'hobgoblin',
+    name: 'Hobgoblin',
+    look: 'hobgoblin',
+    size: 'médio',
+    level: 2,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 13, dex: 12, con: 12, int: 10, wis: 10, cha: 9 },
+    ac: 18,
+    acNote: 'cota de malha, escudo',
+    maxHp: 11,
+    speedFt: 30,
+    attacks: [
+      { name: 'Espada longa', bonus: 3, damage: '1d8+1', type: 'cortante', reachFt: 5, art: 'sword' },
+      { name: 'Arco longo', bonus: 3, damage: '1d8+1', type: 'perfurante', ranged: true, rangeFt: 150, longRangeFt: 600, art: 'bow' },
+    ],
+    traits: ['martialAdvantage'],
+    blurb: 'CA 18 e Vantagem Marcial: +2d6 se um aliado dele estiver colado no seu alvo. Pune quem se amontoa.',
+  },
+
   lobo: {
     id: 'lobo',
     name: 'Lobo',
@@ -79,7 +100,8 @@ export const MONSTERS = {
 export const TRAIT_INFO = {
   nimbleEscape: { name: 'Escapada Ágil', desc: 'Desengajar ou Esconder-se como ação bônus.' },
   packTactics: { name: 'Táticas de Matilha', desc: 'Vantagem no ataque se um aliado estiver a até 1,5 m do alvo.' },
-  redirectAttack: { name: 'Redirecionar Ataque', desc: 'Reação: troca de lugar com um goblin adjacente ao ser atingido.' },
+  redirectAttack: { name: 'Redirecionar Ataque', desc: 'Reação: troca de lugar com um goblin adjacente e o ataque passa a mirá-lo.' },
+  martialAdvantage: { name: 'Vantagem Marcial', desc: 'Uma vez por turno, +2d6 de dano se um aliado não incapacitado estiver a até 1,5 m do alvo.' },
 };
 
 let serial = 0;

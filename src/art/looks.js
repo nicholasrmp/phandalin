@@ -52,6 +52,14 @@ export const LOOKS = {
     armorStyle: 'scale', helm: true, shield: true, weapon: 'sword',
     small: true, ears: true, cloak: '#5a2222',
   },
+  hobgoblin: {
+    skin: '#c08a4a', hair: '#2a1a12', hairStyle: 'spiky',
+    outfit: '#5a2a2a', outfitDark: '#3a1a1a', trim: '#c8a84a',
+    metal: '#aeb6c2', leather: '#5a4630', eyes: '#ff8a2a',
+    armorStyle: 'plate', helm: true, shield: true, weapon: 'sword',
+    ears: true,
+  },
+
   wolf: {
     quadruped: true, snout: true,
     skin: '#7a7068', hair: '#58504a', outfit: '#6a6058', outfitDark: '#413a35',

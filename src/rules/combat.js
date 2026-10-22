@@ -11,7 +11,7 @@
 
 import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier } from '../core/dice.js';
 import { Battlefield, distanceFt, isAdjacent, key } from '../core/grid.js';
-import { abilityMod, saveBonus, spellSaveDc, spellAttackBonus } from './abilities.js';
+import { abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus } from './abilities.js';
 import { WEAPONS, weaponAbility } from './equipment.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
 
@@ -31,11 +31,14 @@ import { getSpell } from './spells.js';
 import { spellMod } from './party.js';
 
 export class Encounter {
-  constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {} }) {
+  constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {}, reinforcements = null }) {
     this.field = battlefield;
     this.rng = rng;
     this.onLog = onLog;
     this.onEvent = onEvent;
+    // Função (round) → { aviso, units } ou null. O motor não sabe QUEM chega;
+    // isso é dado do encontro.
+    this.reinforcements = reinforcements;
 
     this.combatants = [...party, ...foes];
     for (const c of this.combatants) {
@@ -106,6 +109,9 @@ export class Encounter {
   }
 
   beginSide(side) {
+    // Rodada nova começa quando a vez volta para quem abriu.
+    if (side === this.firstSide) this.spawnReinforcements();
+
     this.side = side;
     for (const c of this.allOf(side)) {
       c.movementLeftFt = this.speedOf(c);
@@ -114,6 +120,7 @@ export class Encounter {
       c.reactionUsed = false;
       c.acted = false;
       c.sneakUsedThisTurn = false;
+      c.martialUsedThisTurn = false;
       c.extraActions = 0;
       this.tickConditions(c);
       this.burnTick(c);
@@ -132,6 +139,67 @@ export class Encounter {
       cond.rounds -= 1;
       return cond.rounds > 0;
     });
+  }
+
+  /**
+   * Reforços do encontro. Existem por causa da iniciativa por lado: quem vence
+   * a iniciativa despacha metade do inimigo antes de qualquer um deles agir.
+   * Um bando que chega no meio impede o combate de ser decidido na abertura.
+   */
+  spawnReinforcements() {
+    if (!this.reinforcements || this.over) return;
+    const wave = this.reinforcements(this.round);
+    if (!wave?.units?.length) return;
+    for (const unit of wave.units) this.addCombatant(unit);
+    this.say('turno', wave.aviso ?? 'Reforços chegam!');
+    this.onEvent({ type: 'reinforcements', units: wave.units, aviso: wave.aviso });
+  }
+
+  /** Entra em combate já começado. Só age no próximo turno do lado dele. */
+  addCombatant(c) {
+    c.movementLeftFt = 0;
+    c.actionUsed = true;
+    c.bonusUsed = true;
+    c.reactionUsed = true;
+    c.acted = true;
+    c.sneakUsedThisTurn = false;
+    c.martialUsedThisTurn = false;
+    c.extraActions = 0;
+    c.concentrating = null;
+    this.combatants.push(c);
+    return c;
+  }
+
+  /**
+   * Redirecionar Ataque (Chefe Goblin, SRD): ao ser alvo de um ataque, troca de
+   * lugar com um goblin adjacente, que vira o alvo. Gasta a reação dele.
+   */
+  tryRedirect(target) {
+    if (!target.traits?.includes('redirectAttack') || target.reactionUsed) return target;
+    const buddy = this.alliesOf(target).find(
+      (a) => a.defId === 'goblin' && isAdjacent(a.pos, target.pos) && !hasCondition(a, 'inconsciente'),
+    );
+    if (!buddy) return target;
+
+    target.reactionUsed = true;
+    const swap = { ...target.pos };
+    target.pos = { ...buddy.pos };
+    buddy.pos = swap;
+    this.say('reacao', `${target.name} empurra ${buddy.name} na frente — o golpe vai nele.`);
+    this.onEvent({ type: 'redirect', from: target, to: buddy });
+    return buddy;
+  }
+
+  /**
+   * Vantagem Marcial (Hobgoblin, SRD): uma vez por turno, +2d6 se um aliado não
+   * incapacitado estiver a até 1,5 m do alvo. É o que faz o grupo pagar caro
+   * por ficar amontoado.
+   */
+  martialApplies(attacker, target) {
+    if (!attacker.traits?.includes('martialAdvantage') || attacker.martialUsedThisTurn) return false;
+    return this.alliesOf(attacker).some(
+      (a) => isAdjacent(a.pos, target.pos) && !conditionEffects(a).incapacitated && !a.dead,
+    );
   }
 
   /** Regra da casa: magia de fogo pode incendiar o alvo. */
@@ -320,6 +388,8 @@ export class Encounter {
   }
 
   resolveAttack(attacker, target, { weaponId = null, opportunity = false, disadvantage = false } = {}) {
+    // O chefe pode jogar um capanga na frente antes de a rolagem acontecer.
+    target = this.tryRedirect(target);
     const check = this.canAttack(attacker, target, weaponId);
     if (!check.ok) {
       this.say('aviso', `${attacker.name} não consegue atacar: ${check.why}.`);
@@ -370,12 +440,18 @@ export class Encounter {
       attacker.sneakUsedThisTurn = true;
       sneak = damageRoll(this.rng, attacker.sneakAttack, { critical });
     }
+    let martial = null;
+    if (this.martialApplies(attacker, target)) {
+      attacker.martialUsedThisTurn = true;
+      martial = damageRoll(this.rng, '2d6', { critical });
+    }
 
     const dmg = damageRoll(this.rng, damageNotation, { critical });
-    const total = dmg.total + (sneak?.total ?? 0);
+    const total = dmg.total + (sneak?.total ?? 0) + (martial?.total ?? 0);
 
     const parts = [`${dmg.notation}[${dmg.rolls.join('+')}] = ${dmg.total}`];
     if (sneak) parts.push(`furtivo ${attacker.sneakAttack}[${sneak.rolls.join('+')}] = ${sneak.total}`);
+    if (martial) parts.push(`vantagem marcial 2d6[${martial.rolls.join('+')}] = ${martial.total}`);
 
     this.say(
       'ataque',
@@ -384,7 +460,7 @@ export class Encounter {
     );
     this.onEvent({
       type: 'attack', attacker, target, hit: true, critical, damage: total,
-      ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art, sneak: !!sneak,
+      ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art, sneak: !!sneak, martial: !!martial,
     });
     this.applyDamage(target, total, p.type, attacker);
 
@@ -694,6 +770,30 @@ export class Encounter {
     actor.actionUsed = true;
     actor.movementLeftFt += this.speedOf(actor);
     this.say('acao', `${actor.name} corre (Disparada).`);
+    this.afterAction(actor);
+    return true;
+  }
+
+  /**
+   * Primeiros socorros (SRD): ação para estabilizar quem está em 0 PV, com um
+   * teste de Sabedoria (Medicina) CD 10. Não cura — impede de morrer.
+   *
+   * É a válvula de segurança do 5e e estava faltando: sem ela, quem cai sem
+   * haver espaço de magia sobrando morre, e o grupo não tem o que fazer.
+   */
+  stabilize(actor, target) {
+    if (actor.actionUsed || !isAdjacent(actor.pos, target.pos)) return false;
+    if (!hasCondition(target, 'inconsciente') || target.stable || target.dead) return false;
+    actor.actionUsed = true;
+
+    const check = d20(this.rng, skillBonus(actor, 'medicina'));
+    if (check.total >= 10) {
+      target.stable = true;
+      this.say('cura', `${actor.name} estabiliza ${target.name}.`, `Medicina ${check.total} vs CD 10`);
+      this.onEvent({ type: 'stabilized', target, by: actor });
+    } else {
+      this.say('aviso', `${actor.name} não consegue estancar o sangramento de ${target.name}.`, `Medicina ${check.total} vs CD 10`);
+    }
     this.afterAction(actor);
     return true;
   }

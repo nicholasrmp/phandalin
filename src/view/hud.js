@@ -263,6 +263,20 @@ export class Hud {
       this.actionBar.append(btn(entry[0], { disabled: !entry[1]() }, () => this.handlers.onAction?.({ kind: 'feature', featureId: f })));
     }
 
+    // Primeiros socorros: só aparece quando há alguém caído ao lado.
+    const caido = enc.alliesOf(c).find(
+      (a) => !a.dead && !a.stable && hasCondition(a, 'inconsciente')
+        && Math.max(Math.abs(a.pos.x - c.pos.x), Math.abs(a.pos.y - c.pos.y)) === 1,
+    );
+    if (caido) {
+      this.actionBar.append(btn(
+        `✚ Estabilizar ${caido.name}`,
+        { disabled: c.actionUsed },
+        () => this.handlers.onAction?.({ kind: 'stabilize', targetId: caido.id }),
+        'Ação: teste de Medicina CD 10. Impede a morte, não cura.',
+      ));
+    }
+
     this.actionBar.append(el('span', { class: 'sep' }));
     this.actionBar.append(btn('🏃 Disparada', { disabled: c.actionUsed }, () => this.handlers.onAction?.({ kind: 'dash' })));
     this.actionBar.append(btn('🛡 Esquivar', { disabled: c.actionUsed }, () => this.handlers.onAction?.({ kind: 'dodge' })));

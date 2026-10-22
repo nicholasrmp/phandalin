@@ -9,38 +9,12 @@ import { runMonsterSide } from './rules/ai.js';
 import { hasCondition } from './rules/conditions.js';
 import { getSpell } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
+import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { audio } from './core/audio.js';
 import { playWeaponVisual, playSpellVisual } from './view/visuals.js';
 
-// Mapa do encontro.
-//   '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura
-//   '1'..'9' elevação (cada nível = 1,5 m)
-//
-// Duas decisões de desenho aqui:
-//
-// O paredão central (x7–9, y4–6) existe porque, sem ele, os dois lados se veem
-// do primeiro quadrado e o combate vira troca de tiros de 24 m.
-//
-// O platô do canto superior direito é onde os goblins se posicionam. Subir
-// custa o dobro (escalada, pelo SRD), quem está em cima tem cobertura contra
-// quem está embaixo, e o platô corta a linha de visão de quem está atrás dele.
-// É o terreno que dita o plano — a razão de ser da vista isométrica.
-const MAP = [
-  '################',
-  '#......o...111.#',
-  '#..~~..o...111.#',
-  '#..~~......111.#',
-  '#......###.....#',
-  '#......###.....#',
-  '#......###.....#',
-  '#..oo..........#',
-  '#..oo..1...~~..#',
-  '#......1...~~..#',
-  '#..............#',
-  '################',
-];
 
 class App {
   constructor(root) {
@@ -89,28 +63,18 @@ class App {
     const field = new Battlefield(MAP[0].length, MAP.length, MAP);
 
     const party = makeParty();
-    // Guerreira na frente, mago atrás — o posicionamento inicial já ensina.
-    const spots = [{ x: 3, y: 9 }, { x: 2, y: 10 }, { x: 2, y: 9 }, { x: 1, y: 10 }];
     party.forEach((c, i) => {
-      c.pos = { ...spots[i] };
-      c.facingVec = { dx: 1, dy: -1 }; // olhando para o alto do mapa
+      c.pos = { ...PARTY_SPOTS[i] };
+      c.facingVec = { dx: 1, dy: -1 };
     });
-
-    // O chefe e dois goblins ocupam o platô: cobertura e visão de cima.
-    const foes = [
-      makeMonster('goblinChefe', { x: 12, y: 2 }),
-      makeMonster('goblin', { x: 13, y: 3 }, { nameSuffix: 'A' }),
-      makeMonster('goblin', { x: 12, y: 1 }, { nameSuffix: 'B' }),
-      makeMonster('goblin', { x: 10, y: 2 }, { nameSuffix: 'C' }),
-      makeMonster('lobo', { x: 11, y: 6 }, { nameSuffix: 'cinzento' }),
-    ];
-    for (const f of foes) f.facingVec = { dx: -1, dy: 1 };
+    const foes = buildFoes();
 
     this.enc = new Encounter({
       battlefield: field,
       party,
       foes,
       rng,
+      reinforcements: (round) => reinforcementsFor(round),
       onLog: (entry) => this.hud.pushLog(entry),
       onEvent: (ev) => this.onEvent(ev),
     });
@@ -176,6 +140,22 @@ class App {
         caster.anim = { name: 'attack', frame: 1 };
         setTimeout(() => { caster.anim = null; }, 340);
         this.setImpactDelay(playSpellVisual(board, ev));
+        break;
+      }
+
+      case 'reinforcements': {
+        audio.play('down');
+        for (const u of ev.units) {
+          board?.fx.ring(u.pos, { color: '#ff6a4b', radius: 44, dur: 0.7 });
+          board?.floatText(u.pos, '!', '#ff6a4b', true);
+        }
+        break;
+      }
+
+      case 'redirect': {
+        board?.floatText(ev.from.pos, 'empurrado!', '#ffc83a');
+        board?.fx.ring(ev.to.pos, { color: '#ffc83a', radius: 26, dur: 0.4, width: 2 });
+        audio.play('step');
         break;
       }
 
@@ -291,6 +271,12 @@ class App {
     const c = this.selected;
     if (!c || this.enc.side !== 'party') return;
 
+    if (action.kind === 'stabilize') {
+      const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
+      if (alvo) this.enc.stabilize(c, alvo);
+      this.afterAct();
+      return;
+    }
     if (action.kind === 'dash') { this.enc.dash(c); this.afterAct(); return; }
     if (action.kind === 'dodge') { this.enc.dodge(c); this.afterAct(); return; }
     if (action.kind === 'disengage') { this.enc.disengage(c); this.afterAct(); return; }
@@ -442,69 +428,12 @@ const app = new App(document.getElementById('app'));
 //   __app.autoPlay()     joga o grupo sozinho até o fim (teste de fumaça)
 if (import.meta.env?.DEV) {
   window.__app = app;
-  // Política simples para o grupo: cura quem está caindo, senão bate no mais
-  // perto. Não é para jogar bem — é para exercitar todos os caminhos de regra
-  // (ataque, magia, cura, recursos de classe) sem clicar turno a turno.
-  const playCharacter = (enc, c) => {
-    const foes = enc.enemiesOf(c);
-    if (foes.length === 0) { enc.endTurn(c); return; }
-
-    // Clérigo levanta aliado caído.
-    if (c.spellcasting?.prepared.includes('palavraCurativa') && !c.bonusUsed) {
-      const down = enc.alliesOf(c).find((a) => !a.dead && a.hp <= 0 && distanceFt(c.pos, a.pos) <= 60);
-      if (down && c.spellcasting.slots[1] > 0) enc.castSpell(c, 'palavraCurativa', { target: down });
-    }
-
-    const nearest = foes.slice().sort((a, b) => distanceFt(c.pos, a.pos) - distanceFt(c.pos, b.pos))[0];
-
-    // Conjurador usa truque ou magia de ataque se tiver linha e alcance.
-    if (!c.actionUsed && c.spellcasting) {
-      const options = [...c.spellcasting.prepared, ...c.spellcasting.cantrips];
-      for (const sid of options) {
-        const s = getSpell(sid);
-        if (s.kind !== 'attack' && s.kind !== 'auto' && s.kind !== 'save') continue;
-        if (s.level > 0 && !c.spellcasting.slots[s.level]) continue;
-        if (s.rangeFt > 0 && distanceFt(c.pos, nearest.pos) > s.rangeFt) continue;
-        if (!enc.field.hasLineOfSight(c.pos, nearest.pos)) continue;
-        enc.castSpell(c, sid, { target: nearest, point: nearest.pos });
-        enc.endTurn(c);
-        return;
-      }
-    }
-
-    // Guerreiro: cura a si mesmo quando está mal.
-    if (c.features?.includes('secondWind') && c.hp < c.maxHp * 0.4 && !c.bonusUsed) {
-      enc.useFeature(c, 'secondWind');
-    }
-
-    const melee = c.weapons?.find((w) => !WEAPONS[w].ranged);
-    const ranged = c.weapons?.find((w) => WEAPONS[w].ranged);
-
-    if (!c.actionUsed && melee && distanceFt(c.pos, nearest.pos) <= 5) {
-      enc.attackAction(c, nearest, melee);
-      enc.endTurn(c);
-      return;
-    }
-
-    // Fecha a distância.
-    const reached = enc.reachableFor(c);
-    let best = null;
-    for (const node of reached.values()) {
-      if (enc.occupied(node.x, node.y, c)) continue;
-      const d = distanceFt({ x: node.x, y: node.y }, nearest.pos);
-      if (!best || d < best.d) best = { d, node };
-    }
-    if (best && best.node.cost > 0) enc.moveAlong(c, Battlefield.pathFrom(reached, best.node));
-
-    if (!c.actionUsed && !c.dead && !hasCondition(c, 'inconsciente')) {
-      const d = distanceFt(c.pos, nearest.pos);
-      if (melee && d <= 5) enc.attackAction(c, nearest, melee);
-      else if (ranged && enc.canAttack(c, nearest, ranged).ok) enc.attackAction(c, nearest, ranged);
-    }
-    if (!c.acted) enc.endTurn(c);
-  };
+  // A política do grupo mora em dev/balance.js, junto do simulador de
+  // equilíbrio — uma cópia só, para as duas não saírem do lugar.
+  let playCharacter = null;
 
   app.autoPlay = async (maxRounds = 25) => {
+    playCharacter ??= (await import('./dev/balance.js')).playCharacter;
     while (!app.enc.over && app.enc.round <= maxRounds) {
       if (app.enc.side !== 'party') { await new Promise((r) => setTimeout(r, 60)); continue; }
       const pending = app.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente'));

@@ -233,6 +233,51 @@ Workers pelo painel da Cloudflare apontando para este repositório
 
 ---
 
+## Balanceamento, medido
+
+`src/dev/balance.js` é um simulador headless: roda o motor de regras sozinho,
+sem tabuleiro nem espera, e devolve números. No console, em modo dev:
+
+```js
+const { simulate } = await import('/src/dev/balance.js');
+simulate(120).resumo
+```
+
+A política do grupo no simulador é **competente, não ótima**: levanta quem cai,
+estabiliza quando não há espaço de magia, cura antes de alguém cair se houver
+folga, senão fecha distância e bate. Serve de linha de base — um grupo humano
+coordenando deve se sair melhor que isso.
+
+Curva atual, em 120 combates:
+
+| | |
+|---|---|
+| vitórias | **73%** |
+| combates com alguém caído | 52% |
+| combates com morte definitiva | 10% |
+| vida do grupo ao fim | 49% |
+| rodadas | 6,7 em média, pico entre 5 e 8 |
+| monstros mortos antes de agir | **0 de 6** |
+
+Aquele último número era o problema. Antes, com iniciativa por lado, o grupo
+despachava metade dos inimigos antes de qualquer um deles agir: goblins de 7 PV
+morrem com um golpe. O conserto não foi "mais monstros" — foi monstro que
+aguenta o primeiro turno (Hobgoblin, CA 18) e reforços que chegam na rodada 3.
+
+### O que o simulador pegou que eu não teria visto
+
+- **Exagerei na primeira tentativa**: de 100% para 8% de vitórias, com morte em
+  38% dos combates. Sem medir, isso teria ido para o ar.
+- **Curar melhor aumentou as mortes** (28% → 37%): o clérigo gastava os espaços
+  curando antes e ficava sem nada para levantar quem caía. Isso expôs uma regra
+  do SRD que faltava — **estabilizar** (ação, Medicina CD 10). Com ela, mortes
+  caíram para 10%.
+- **Mover um goblin dois quadrados mudou as vitórias de 64% para 90%.** O que
+  parecia ajuste de posição era a IA jogando o platô fora: ela preferia corpo a
+  corpo e fazia todo mundo descer, perdendo cobertura e gastando o dobro de
+  movimento. Virou uma regra nova: quem está em terreno alto com arma à
+  distância e linha de visão **fica e atira**.
+
 ## O que vem a seguir
 
 1. **Equilíbrio.** O encontro atual está fácil demais: 6 testes automáticos, 6

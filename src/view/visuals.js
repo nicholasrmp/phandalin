@@ -138,6 +138,7 @@ export function playWeaponVisual(board, ev) {
     board.bump(ev.critical ? 0.65 : 0.3);
     audio.play(ev.critical ? 'critical' : hitSoundFor(ev.damageType));
     if (ev.sneak) board.floatText(ev.target.pos, 'furtivo!', '#c7b4ff');
+    if (ev.martial) board.floatText(ev.target.pos, 'marcial!', '#ff9a4a');
   }, delay * 1000);
 
   return delay;

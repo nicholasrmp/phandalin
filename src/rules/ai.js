@@ -54,6 +54,26 @@ export function takeMonsterTurn(enc, monster) {
 
   const ordered = enemies.slice().sort((a, b) => scoreTarget(enc, monster, a) - scoreTarget(enc, monster, b));
 
+  // 0: terreno alto com arma à distância — fica e atira.
+  //
+  // Esta regra vem antes da preferência por corpo a corpo porque, sem ela, quem
+  // está no platô desce para brigar: perde a cobertura, dá cobertura ao inimigo
+  // e gasta o dobro de movimento para voltar. Medido: sem esta regra o grupo
+  // ganhava 90% dos combates; o platô virava armadilha para quem o ocupava.
+  const rangedAtk = monster.attacks?.find((at) => at.ranged);
+  if (rangedAtk && !adjacentFoes.length) {
+    const myHeight = enc.field.heightAt(monster.pos.x, monster.pos.y);
+    const lowerTarget = ordered.find(
+      (t) => enc.field.heightAt(t.pos.x, t.pos.y) < myHeight
+        && enc.canAttack(monster, t, rangedAtk.name).ok,
+    );
+    if (lowerTarget) {
+      enc.attackAction(monster, lowerTarget, rangedAtk.name);
+      enc.endTurn(monster);
+      return;
+    }
+  }
+
   // 1: corpo a corpo daqui mesmo.
   const meleeNow = pickReachableTarget(enc, monster, ordered, { meleeOnly: true });
   if (meleeNow) {
