@@ -321,7 +321,10 @@ export class Encounter {
 
     if (!atk.hit) {
       this.say('ataque', `${attacker.name} erra ${target.name} com ${p.name}.`, detail);
-      this.onEvent({ type: 'attack', attacker, target, hit: false });
+      this.onEvent({
+        type: 'attack', attacker, target, hit: false,
+        ranged: p.ranged, damageType: p.type, weaponName: p.name,
+      });
       return { hit: false };
     }
 
@@ -343,7 +346,10 @@ export class Encounter {
       `${attacker.name} acerta ${target.name}${critical ? ' — CRÍTICO!' : ''} com ${p.name}: ${total} de dano ${p.type}.`,
       `${detail} · ${parts.join(' + ')}`,
     );
-    this.onEvent({ type: 'attack', attacker, target, hit: true, critical, damage: total });
+    this.onEvent({
+      type: 'attack', attacker, target, hit: true, critical, damage: total,
+      ranged: p.ranged, damageType: p.type, weaponName: p.name, sneak: !!sneak,
+    });
     this.applyDamage(target, total, p.type, attacker);
 
     // Efeito extra do ataque (mordida do lobo derruba).
@@ -510,6 +516,18 @@ export class Encounter {
     const mod = spellMod(actor);
     this.say('magia', `${actor.name} conjura ${spell.name}.`);
 
+    // Área afetada, para a camada de desenho marcar os quadrados.
+    const areaTiles = spell.shape === 'cone'
+      ? this.field.cone(actor.pos, {
+        x: Math.sign((point?.x ?? actor.pos.x) - actor.pos.x),
+        y: Math.sign((point?.y ?? actor.pos.y) - actor.pos.y),
+      }, spell.areaFt)
+      : spell.shape === 'sphere' && (point ?? target?.pos)
+        ? this.field.within(point ?? target.pos, spell.areaFt)
+        : null;
+
+    this.onEvent({ type: 'spell', caster: actor, spell, target, point, areaTiles });
+
     switch (spell.kind) {
       case 'attack': {
         if (!target) break;
@@ -528,11 +546,8 @@ export class Encounter {
       }
 
       case 'save': {
-        const squares = spell.shape === 'cone'
-          ? this.field.cone(actor.pos, { x: Math.sign((point?.x ?? actor.pos.x) - actor.pos.x), y: Math.sign((point?.y ?? actor.pos.y) - actor.pos.y) }, spell.areaFt)
-          : null;
-        const targets = squares
-          ? squares.map((s) => this.at(s.x, s.y)).filter(Boolean)
+        const targets = areaTiles
+          ? areaTiles.map((s) => this.at(s.x, s.y)).filter(Boolean)
           : target ? [target] : [];
 
         // Esculpir Magias: o evocador protege 1 + nível da magia de aliados.

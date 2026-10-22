@@ -7,6 +7,7 @@ import { WEAPONS } from '../rules/equipment.js';
 import { getSpell } from '../rules/spells.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
 import { formatModifier } from '../core/dice.js';
+import { audio } from '../core/audio.js';
 
 export const el = (tag, attrs = {}, ...children) => {
   const node = document.createElement(tag);
@@ -48,7 +49,7 @@ export class Hud {
         el('h2', {}, 'Inimigos'),
         this.foePanel),
       el('div', { class: 'center-col' },
-        this.banner,
+        el('div', { class: 'top-row' }, this.banner, this.viewBar = el('div', { class: 'viewbar' })),
         el('div', { class: 'board-wrap', id: 'board-wrap' }),
         this.hint,
         this.actionBar),
@@ -100,6 +101,39 @@ export class Hud {
     this.renderParty(enc, selected);
     this.renderFoes(enc);
     this.renderActions(enc, selected, mode);
+    this.renderViewBar();
+  }
+
+  /** Controles de câmera e som. Ficam fora do fluxo de turno de propósito. */
+  renderViewBar() {
+    if (this.viewBar.childElementCount > 0) {
+      // Só o que muda de estado é reescrito; o resto fica estável.
+      this.muteBtn.textContent = audio.muted ? '🔇' : '🔊';
+      this.muteBtn.title = audio.muted ? 'Som desligado (M)' : 'Som ligado (M)';
+      this.volume.value = String(audio.muted ? 0 : Math.round(audio.volume * 100));
+      return;
+    }
+
+    this.muteBtn = el('button', {
+      class: 'icon-btn',
+      title: 'Ligar/desligar som (M)',
+      onclick: () => { audio.unlock(); audio.toggleMute(); this.renderViewBar(); },
+    }, audio.muted ? '🔇' : '🔊');
+
+    this.volume = el('input', {
+      type: 'range', min: '0', max: '100', class: 'volume',
+      value: String(Math.round(audio.volume * 100)),
+      title: 'Volume',
+      oninput: (e) => { audio.unlock(); audio.setVolume(Number(e.target.value) / 100); this.renderViewBar(); },
+    });
+
+    this.viewBar.replaceChildren(
+      el('button', { class: 'icon-btn', title: 'Girar a câmera (Q)', onclick: () => this.handlers.onRotate?.(-1) }, '↺'),
+      el('button', { class: 'icon-btn', title: 'Girar a câmera (E)', onclick: () => this.handlers.onRotate?.(1) }, '↻'),
+      el('span', { class: 'divider' }),
+      this.muteBtn,
+      this.volume,
+    );
   }
 
   renderParty(enc, selected) {

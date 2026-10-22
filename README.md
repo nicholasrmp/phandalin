@@ -38,6 +38,25 @@ O que já funciona:
 - **IA de monstro** que fecha distância antes de atirar, foca em quem está
   machucado e usa Escapada Ágil quando se vê cercada.
 - **Arte gerada por código**: nenhum arquivo de imagem no repositório.
+- **Câmera que gira** em quatro orientações (`Q` / `E`), para enxergar atrás do
+  platô e do paredão.
+- **Som gerado por código**: nenhum arquivo de áudio, tudo saindo de
+  osciladores e ruído. Cada golpe tem altura levemente diferente, então repetir
+  quarenta ataques não vira metralhadora de um som só. `M` liga e desliga.
+- **Animações de combate**: investida no corpo a corpo, projétil com arco à
+  distância, dardos em sequência, feixe, estilhaços no impacto, corte,
+  marcação de área e tremor de tela proporcional ao golpe.
+
+### Como a animação conversa com o motor
+
+O motor resolve tudo de uma vez: quando o evento de dano chega, os PV já
+caíram. A camada de desenho guarda um `impactDelay` e **segura o número e o
+clarão** até o instante em que a animação chega no alvo — a flecha pousar, o
+dardo estourar. A barra de vida acompanha com transição suave e deixa um rastro
+vermelho do dano recém-tomado.
+
+Nada disso altera estado de jogo: se todos os efeitos forem descartados, a
+partida continua idêntica. É o que mantém o motor pronto para ir ao servidor.
 
 Teste de fumaça, pelo console do navegador em modo dev:
 
