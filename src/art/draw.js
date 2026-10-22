@@ -504,50 +504,85 @@ function paintDown(px, look, m) {
   px(x - 2, -6, 3, 2, look.leather);
 }
 
-/** Quadrúpedes: lobo e afins. */
+/**
+ * Quadrúpedes: lobo e afins.
+ *
+ * Não passa por `body.js` — a anatomia de quatro patas não é a mesma conta.
+ * O que importa aqui é a proporção contra os bípedes: o lobo é mais baixo que
+ * um goblin na cernelha e bem mais comprido, que é como um animal ocupa o
+ * quadrado sem parecer um humanoide agachado.
+ */
 function paintBeast(px, look, dir, pose) {
   const down = pose.kind === 'down';
-  const step = pose.kind === 'attack' ? 2 : pose.frame === 1 ? 1 : 0;
+  const step = pose.kind === 'attack' ? 3 : pose.frame === 1 ? 1 : 0;
+  const crouch = pose.kind === 'attack' ? 2 : 0;    // agacha para dar o bote
   const body = look.outfit;
   const dark = look.outfitDark;
+  const fur = look.hair ?? dark;
 
   if (down) {
-    px(-11, -5, 22, 5, dark);
-    px(-11, -2, 22, 2, shade(dark, 0.7));
-    px(8, -9, 6, 4, look.skin);
+    px(-13, -6, 26, 6, dark);
+    px(-13, -6, 26, 1, lit(dark));
+    px(-13, -2, 26, 2, shade(dark, 0.68));
+    px(9, -10, 7, 4, body);
+    px(14, -9, 3, 2, look.skin);
+    px(-16, -8, 4, 3, body);
     return;
   }
 
   if (dir === 'side') {
-    px(-10, -13, 20, 8, body);            // tronco
-    px(-10, -13, 20, 1, lit(body));
-    px(-10, -6, 20, 1, dark);
-    px(-11, -8, 3, 8, dark);              // traseira
-    px(-8 - step, -5, 3, 5, dark);        // patas
-    px(-3 + step, -5, 3, 5, dark);
-    px(3 - step, -5, 3, 5, dark);
-    px(7 + step, -5, 3, 5, dark);
-    px(7, -18, 7, 6, body);               // cabeça
-    px(7, -18, 7, 1, lit(body));
-    px(13, -15, 4, 3, look.skin);         // focinho
-    px(16, -15, 1, 2, '#2a2420');
-    px(12, -16, 2, 2, look.eyes);
-    px(7, -21, 2, 3, dark);               // orelhas
-    px(10, -21, 2, 3, dark);
-    px(-14, -15, 4, 6, body);             // cauda
-    px(-14, -15, 4, 1, lit(body));
+    // patas de trás, atrás do corpo
+    px(-9 - step, -7, 3, 7, shade(dark, 0.82));
+    px(2 - step, -7, 3, 7, shade(dark, 0.82));
+
+    px(-12, -17 + crouch, 24, 10, body);               // tronco
+    px(-12, -17 + crouch, 24, 2, lit(body));
+    px(-12, -8 + crouch, 24, 1, dark);
+    px(-13, -16 + crouch, 4, 9, dark);                 // quarto traseiro
+    px(6, -18 + crouch, 7, 9, fur);                    // cupim / pelagem do ombro
+    px(6, -18 + crouch, 7, 1, lit(fur));
+
+    px(-6 + step, -7, 3, 7, dark);                     // patas da frente
+    px(5 + step, -7, 3, 7, dark);
+    px(-7 + step, -2, 5, 2, shade(dark, 0.7));         // pés
+    px(4 + step, -2, 5, 2, shade(dark, 0.7));
+    px(-10 - step, -2, 5, 2, shade(dark, 0.7));
+    px(1 - step, -2, 5, 2, shade(dark, 0.7));
+
+    px(9, -24 + crouch, 9, 8, body);                   // cabeça
+    px(9, -24 + crouch, 9, 1, lit(body));
+    px(9, -17 + crouch, 9, 1, dark);
+    px(16, -21 + crouch, 5, 4, shade(body, 0.9));      // focinho
+    px(20, -21 + crouch, 2, 2, '#241e1a');             // tromba
+    px(16, -18 + crouch, 5, 1, '#efe8d4');             // dentes
+    px(14, -22 + crouch, 2, 2, look.eyes);
+    px(9, -28 + crouch, 3, 4, dark);                   // orelhas
+    px(13, -28 + crouch, 3, 4, dark);
+    px(10, -27 + crouch, 1, 2, shade(look.skin, 0.8));
+
+    px(-17, -20 + crouch, 5, 7, body);                 // cauda
+    px(-17, -20 + crouch, 5, 1, lit(body));
+    px(-18, -21 + crouch, 3, 4, fur);
   } else {
-    px(-6, -14, 12, 9, body);
-    px(-6, -14, 12, 1, lit(body));
-    px(-6, -6, 12, 1, dark);
-    px(-6 - step, -5, 4, 5, dark);
-    px(2 + step, -5, 4, 5, dark);
-    px(-5, -21, 10, 7, body);
-    px(-5, -21, 10, 1, lit(body));
-    px(-2, -16, 4, 3, look.skin);
-    px(-4, -19, 2, 2, look.eyes);
-    px(2, -19, 2, 2, look.eyes);
-    px(-6, -24, 3, 4, dark);
-    px(3, -24, 3, 4, dark);
+    px(-8, -16, 16, 11, body);
+    px(-8, -16, 16, 2, lit(body));
+    px(-8, -6, 16, 1, dark);
+    px(-9 - step, -7, 4, 7, dark);
+    px(5 + step, -7, 4, 7, dark);
+    px(-10 - step, -2, 6, 2, shade(dark, 0.7));
+    px(4 + step, -2, 6, 2, shade(dark, 0.7));
+
+    px(-7, -19, 14, 5, fur);                           // peitoral
+    px(-6, -26, 12, 9, body);                          // cabeça
+    px(-6, -26, 12, 1, lit(body));
+    px(-3, -20, 6, 4, shade(body, 0.9));               // focinho
+    px(-2, -17, 4, 1, '#efe8d4');
+    px(-1, -19, 2, 2, '#241e1a');
+    px(-5, -23, 3, 2, look.eyes);
+    px(2, -23, 3, 2, look.eyes);
+    px(-7, -30, 4, 5, dark);                           // orelhas
+    px(3, -30, 4, 5, dark);
+    px(-6, -29, 2, 3, shade(look.skin, 0.8));
+    px(4, -29, 2, 3, shade(look.skin, 0.8));
   }
 }

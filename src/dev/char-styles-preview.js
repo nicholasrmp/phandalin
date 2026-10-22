@@ -93,7 +93,12 @@ const raiz = document.getElementById('opcoes');
   };
   for (const [key, look] of Object.entries(LOOKS)) {
     const [nome, papel] = nomes[key] ?? [key, ''];
-    f.appendChild(cel(look, nome, papel, { inimigo: papel === 'inimigo', semAltura: !!look.quadruped }));
+    // Quadrúpede se lê de perfil: de frente é um vulto.
+    f.appendChild(cel(look, nome, papel, {
+      inimigo: papel === 'inimigo',
+      semAltura: !!look.quadruped,
+      dir: look.quadruped ? 'side' : 'front',
+    }));
   }
   raiz.appendChild(s);
 }
