@@ -3,3 +3,8 @@ dist/
 .vite/
 *.local
 .DS_Store
+
+# Material da engenharia reversa de OUTRO jogo, que veio junto quando a sessão
+# mudou de pasta. Não pertence a este projeto e, em parte, é código de terceiros
+# que não pode ser redistribuído. Fica fora do versionamento de propósito.
+_analise-narubonk/

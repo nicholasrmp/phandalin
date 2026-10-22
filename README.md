@@ -159,6 +159,29 @@ entende (`attack`, `save`, `auto`, `heal`, `buff`). Sem código novo.
 
 ---
 
+## Deploy (Cloudflare Pages)
+
+O build é estático: basta publicar `dist/`. A integração com Git do Cloudflare
+Pages lê este repositório e republica a cada push, sem segredo nenhum guardado.
+
+Configuração no painel:
+
+| Campo | Valor |
+|---|---|
+| Framework preset | `Vite` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Root directory | *(vazio)* |
+
+A versão do Node vem de `.node-version` (20). O arquivo `public/_headers` vai
+para a raiz do build e define o cache: os assets do Vite têm hash no nome e são
+imutáveis, então ficam em cache para sempre; o HTML revalida sempre.
+
+Cada branch ganha uma URL de pré-visualização própria, o que dá para testar uma
+mudança antes de ir para a `main`.
+
+---
+
 ## O que vem a seguir
 
 1. **Equilíbrio.** O encontro atual está fácil demais: 6 testes automáticos, 6
