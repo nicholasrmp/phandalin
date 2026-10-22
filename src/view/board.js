@@ -515,7 +515,7 @@ export class Board {
     drawSprite(ctx, sheet, animName, frame, {
       x: sx,
       y: sy + 6,
-      scale: c.kind === 'npc' ? 1.55 : 1.7,
+      scale: c.kind === 'npc' ? 1.12 : 1.22,
       flip,
       row,
       alpha: c.acted && ally && !down ? 0.62 : 1,

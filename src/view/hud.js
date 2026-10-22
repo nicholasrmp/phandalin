@@ -147,7 +147,7 @@ export class Hud {
   characterCard(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
     const pct = Math.max(0, c.hp / c.maxHp);
-    const portrait = makePortrait(c.look, 1.6);
+    const portrait = makePortrait(c.look, 1.1);
     portrait.className = 'pixel';
 
     const slots = c.spellcasting

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Phandalin — 4 direções de design de personagem</title>
+<title>Phandalin — oficina de personagens</title>
 <style>
   :root {
     --fundo: #15121a;
@@ -61,7 +61,7 @@
   .cel {
     margin: 0; background: var(--chao);
     border: 1px solid var(--borda); border-radius: 9px;
-    padding: 8px 8px 6px; text-align: center; min-width: 108px;
+    padding: 8px 8px 6px; text-align: center; min-width: 140px; display: flex; flex-direction: column; justify-content: flex-end;
   }
   .cel.inimigo { border-color: #6b2a2a; }
   .cel.heroi { border-color: #2a4a6b; }
@@ -70,7 +70,8 @@
   .fig { display: block; margin: 0 auto 6px; image-rendering: pixelated; }
   figcaption { font-size: 11px; line-height: 1.3; }
   figcaption b { display: block; }
-  figcaption span { color: var(--fraco); }
+  figcaption span { color: var(--fraco); display: block; }
+  figcaption .alt { color: var(--ouro); font-variant-numeric: tabular-nums; }
 
   .fila-real { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
   .grupo-real {
@@ -92,12 +93,11 @@
 </head>
 <body>
   <div class="topo">
-    <h1>Quatro direções de design — personagens e inimigos</h1>
+    <h1>Oficina de personagens</h1>
     <p>
-      As quatro pintam exatamente a mesma ficha de dados: trocar de direção não muda o
-      sistema, só o traço. Cada bloco mostra o elenco todo, a mesma guerreira com cinco
-      equipamentos diferentes, e as figuras no tamanho em que realmente aparecem no
-      tabuleiro, com a câmera em três distâncias.
+      Esta página desenha com o mesmo pintor do jogo. A anatomia é paramétrica: espécie e
+      compleição viram medidas em pixels, então goblin não é humano verde e hobgoblin não é
+      humano de armadura. Equipamento é um campo do look, não arte nova.
     </p>
     <button id="tema">Fundo claro</button>
   </div>
