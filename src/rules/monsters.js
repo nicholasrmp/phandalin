@@ -1,108 +1,35 @@
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
-// Blocos de estatística do SRD. Nada de monstro fora do SRD aqui
-// (beholder, mind flayer e afins são IP exclusiva e estão fora).
+// Bestiário: o registro de todas as criaturas, montado a partir das famílias.
+//
+// Está dividido por família para que o elenco cresça sem um arquivo gigante, e
+// para que dê para mexer nos mortos-vivos sem encostar nos goblinoides.
+// Cada família traz suas criaturas e, se precisar, seus traços novos.
+//
+// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md e ELENCO.md.
 
 import { proficiencyBonus } from './abilities.js';
+import { GOBLINOIDES, TRAITS as T_GOB } from './monsters/goblinoides.js';
+import { HUMANOIDES, TRAITS as T_HUM } from './monsters/humanoides.js';
+import { FERAS, TRAITS as T_FER } from './monsters/feras.js';
+import { MORTOS_VIVOS, TRAITS as T_MOR } from './monsters/mortosvivos.js';
+import { ABERRACOES, TRAITS as T_ABE } from './monsters/aberracoes.js';
 
 export const MONSTERS = {
-  goblin: {
-    id: 'goblin',
-    name: 'Goblin',
-    look: 'goblin',
-    size: 'pequeno',
-    level: 1,
-    cr: '1/4',
-    xp: 50,
-    abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
-    ac: 15,
-    acNote: 'armadura de couro, escudo',
-    maxHp: 7,
-    speedFt: 30,
-    skills: ['furtividade'],
-    attacks: [
-      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
-      { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
-    ],
-    traits: ['nimbleEscape'],
-    blurb: 'Fraco sozinho, cruel em bando. Escapa com ação bônus.',
-  },
-
-  goblinChefe: {
-    id: 'goblinChefe',
-    name: 'Chefe Goblin',
-    look: 'goblinBoss',
-    size: 'pequeno',
-    level: 3,
-    cr: '1',
-    xp: 200,
-    abilities: { str: 10, dex: 14, con: 10, int: 10, wis: 8, cha: 10 },
-    ac: 17,
-    acNote: 'camisão de malha, escudo',
-    maxHp: 21,
-    speedFt: 30,
-    skills: ['furtividade'],
-    attacks: [
-      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
-      { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
-    ],
-    // Dois ataques; o segundo com desvantagem.
-    multiattack: { count: 2, secondAtDisadvantage: true },
-    traits: ['nimbleEscape', 'redirectAttack'],
-    blurb: 'Dois ataques por turno e desvia golpes para um capanga ao lado.',
-  },
-
-  hobgoblin: {
-    id: 'hobgoblin',
-    name: 'Hobgoblin',
-    look: 'hobgoblin',
-    size: 'médio',
-    level: 2,
-    cr: '1/2',
-    xp: 100,
-    abilities: { str: 13, dex: 12, con: 12, int: 10, wis: 10, cha: 9 },
-    ac: 18,
-    acNote: 'cota de malha, escudo',
-    maxHp: 11,
-    speedFt: 30,
-    attacks: [
-      { name: 'Espada longa', bonus: 3, damage: '1d8+1', type: 'cortante', reachFt: 5, art: 'sword' },
-      { name: 'Arco longo', bonus: 3, damage: '1d8+1', type: 'perfurante', ranged: true, rangeFt: 150, longRangeFt: 600, art: 'bow' },
-    ],
-    traits: ['martialAdvantage'],
-    blurb: 'CA 18 e Vantagem Marcial: +2d6 se um aliado dele estiver colado no seu alvo. Pune quem se amontoa.',
-  },
-
-  lobo: {
-    id: 'lobo',
-    name: 'Lobo',
-    look: 'wolf',
-    size: 'médio',
-    level: 1,
-    cr: '1/4',
-    xp: 50,
-    abilities: { str: 12, dex: 15, con: 12, int: 3, wis: 12, cha: 6 },
-    ac: 13,
-    acNote: 'pelo natural',
-    maxHp: 11,
-    speedFt: 40,
-    skills: ['percepcao', 'furtividade'],
-    attacks: [
-      {
-        name: 'Mordida', bonus: 4, damage: '2d4+2', type: 'perfurante', reachFt: 5, art: 'bite',
-        onHit: { save: 'str', dc: 11, condition: 'caido', note: 'derruba se falhar' },
-      },
-    ],
-    traits: ['packTactics'],
-    blurb: 'Táticas de Matilha: vantagem quando um aliado está colado no alvo. Rápido.',
-  },
+  ...GOBLINOIDES,
+  ...HUMANOIDES,
+  ...FERAS,
+  ...MORTOS_VIVOS,
+  ...ABERRACOES,
 };
 
-export const TRAIT_INFO = {
+
+const TRACOS_BASE = {
   nimbleEscape: { name: 'Escapada Ágil', desc: 'Desengajar ou Esconder-se como ação bônus.' },
   packTactics: { name: 'Táticas de Matilha', desc: 'Vantagem no ataque se um aliado estiver a até 1,5 m do alvo.' },
   redirectAttack: { name: 'Redirecionar Ataque', desc: 'Reação: troca de lugar com um goblin adjacente e o ataque passa a mirá-lo.' },
   martialAdvantage: { name: 'Vantagem Marcial', desc: 'Uma vez por turno, +2d6 de dano se um aliado não incapacitado estiver a até 1,5 m do alvo.' },
 };
+
+export const TRAIT_INFO = { ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE };
 
 let serial = 0;
 

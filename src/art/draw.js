@@ -23,6 +23,8 @@
 //   O contorno preto é posto depois, em sheet.js, varrendo o alfa.
 
 import { metrics } from './body.js';
+import { makeKit } from './kit.js';
+import { planFor } from './plans/index.js';
 import { ramp, shade as tom, lit as claro, dim as escuro, deep, lum } from './palette.js';
 
 export const GROUND = 5;
@@ -53,77 +55,13 @@ function apart(color, from, min = 0.14) {
 }
 
 export function paint(ctx, ox, oy, w, h, look, dir, pose) {
-  const cx = Math.floor(w / 2);
-  const gy = h - GROUND;
-  const px = (x, y, pw, ph, color) => {
-    if (pw <= 0 || ph <= 0) return;
-    ctx.fillStyle = color;
-    ctx.fillRect(ox + cx + x, oy + gy + y, pw, ph);
-  };
-  const cut = (x, y, cw = 1, ch = 1) => ctx.clearRect(ox + cx + x, oy + gy + y, cw, ch);
+  const kit = makeKit(ctx, ox, oy, w, h, GROUND);
+  const { px, cut, volume, contato, coluna } = kit;
 
-  /**
-   * Volume cilíndrico. A última coluna volta a clarear um degrau: é a luz
-   * refletida do ambiente na aresta, e sem ela a peça lê como caixa.
-   */
-  const volume = (x, y, vw, vh, cor, { topo = 1, base = 0 } = {}) => {
-    if (vw <= 0 || vh <= 0) return;
-    px(x, y, vw, vh, cor);
-    if (vw >= 5) {
-      px(x + vw - 3, y, 2, vh, ramp(cor, -2));
-      px(x + vw - 1, y, 1, vh, ramp(cor, -1));
-    } else if (vw === 4) {
-      px(x + 2, y, 1, vh, ramp(cor, -2));
-      px(x + 3, y, 1, vh, ramp(cor, -1));
-    } else if (vw === 3) {
-      px(x + 2, y, 1, vh, ramp(cor, -2));
-    } else if (vw === 2) {
-      px(x + 1, y, 1, vh, ramp(cor, -1));
-    }
-    if (vw >= 3) px(x, y, 1, vh, ramp(cor, 2));
-    if (topo) px(x, y, vw, topo, ramp(cor, 3));
-    if (base) px(x, y + vh - base, vw, base, ramp(cor, -3));
-  };
+  // Criatura que não é humanoide tem plano corporal próprio, no seu arquivo.
+  const plano = planFor(look);
+  if (plano) return plano(kit, look, dir, pose);
 
-  /** Sombra de contato: a linha escura onde uma peça pousa sobre a outra. */
-  const contato = (x, y, cw, cor) => px(x, y, cw, 1, ramp(cor, -4));
-
-  /**
-   * Coluna de largura variável — a ferramenta que tira o corpo da caixa.
-   *
-   * `forma(t)` devolve, para cada altura t em [0,1], o centro e a largura
-   * daquela linha. Com ela o tronco vira trapézio do ombro à cintura, o braço
-   * afina até o punho e a perna abre do quadril ao pé. Retângulo empilhado é
-   * exatamente o que faz um boneco parecer recortado em papel.
-   */
-  const coluna = (y, ch, forma, cor, { topo = 1, base = 0 } = {}) => {
-    if (ch <= 0) return;
-    const luz = ramp(cor, 2);
-    const som = ramp(cor, -2);
-    const ref = ramp(cor, -1);
-    for (let i = 0; i < ch; i++) {
-      const { c, w: cw } = forma(ch === 1 ? 0 : i / (ch - 1));
-      const lw = Math.max(1, Math.round(cw));
-      const x = Math.round(c) - Math.floor(lw / 2);
-      let cor0 = cor;
-      if (topo && i < topo) cor0 = ramp(cor, 3);
-      else if (base && i >= ch - base) cor0 = ramp(cor, -3);
-      px(x, y + i, lw, 1, cor0);
-      if (lw >= 4) {
-        px(x, y + i, 1, 1, i < topo && topo ? ramp(cor, 3) : luz);
-        px(x + lw - 2, y + i, 1, 1, som);
-        px(x + lw - 1, y + i, 1, 1, ref);
-      } else if (lw === 3) {
-        px(x + 2, y + i, 1, 1, som);
-      } else if (lw === 2) {
-        px(x + 1, y + i, 1, 1, ref);
-      }
-    }
-  };
-
-  const kit = { px, cut, volume, contato, coluna };
-
-  if (look.quadruped) return paintBeast(kit, look, dir, pose);
 
   const m = metrics(look);
   const side = dir === 'side';
@@ -794,85 +732,4 @@ function paintDown({ px, volume, contato }, look, m) {
   contato(x, -1, w, body);
   volume(x + w - r(w * 0.32), -10, Math.max(4, r(m.headW * 0.7)), 5, look.skin, { topo: 1 });
   volume(x - 2, -8, 4, 3, look.leather, { topo: 1 });
-}
-
-/**
- * Quadrúpedes: lobo e afins.
- *
- * Não passa por `body.js` — a anatomia de quatro patas não é a mesma conta.
- * O que importa aqui é a proporção contra os bípedes: o lobo é mais baixo que
- * um goblin na cernelha e bem mais comprido, que é como um animal ocupa o
- * quadrado sem parecer um humanoide agachado.
- */
-function paintBeast({ px, volume, contato }, look, dir, pose) {
-  const down = pose.kind === 'down';
-  const step = pose.kind === 'attack' ? 3 : pose.frame === 1 ? 1 : 0;
-  const crouch = pose.kind === 'attack' ? 2 : 0;
-  const body = look.outfit;
-  const dark = look.outfitDark;
-  const fur = look.hair ?? dark;
-
-  if (down) {
-    volume(-16, -7, 32, 7, dark, { topo: 1, base: 1 });
-    contato(-16, -1, 32, dark);
-    volume(11, -12, 8, 5, body, { topo: 1 });
-    px(17, -11, 3, 2, ramp(look.skin, -1));
-    volume(-20, -10, 5, 4, body, { topo: 1 });
-    return;
-  }
-
-  if (dir === 'side') {
-    volume(-11 - step, -9, 4, 9, ramp(dark, -2), { topo: 0 });   // patas de trás
-    volume(3 - step, -9, 4, 9, ramp(dark, -2), { topo: 0 });
-
-    volume(-15, -21 + crouch, 30, 12, body, { topo: 1 });        // tronco
-    contato(-15, -10 + crouch, 30, body);
-    volume(-16, -20 + crouch, 5, 11, dark, { topo: 1 });         // quarto traseiro
-    volume(8, -23 + crouch, 9, 11, fur, { topo: 1 });            // cupim
-    for (let c = 0; c < 9; c += 2) px(8 + c, -20 + crouch, 1, 6, ramp(fur, -2));
-
-    volume(-8 + step, -9, 4, 9, dark, { topo: 0 });              // patas da frente
-    volume(6 + step, -9, 4, 9, dark, { topo: 0 });
-    for (const fx of [-9 - step, 1 - step, -8 + step, 6 + step]) {
-      volume(fx, -3, 6, 3, ramp(dark, -1), { topo: 1 });
-      px(fx, -1, 6, 1, ramp(dark, -4));
-    }
-
-    volume(11, -30 + crouch, 11, 10, body, { topo: 1 });         // cabeça
-    volume(20, -26 + crouch, 6, 5, ramp(body, -1), { topo: 1 }); // focinho
-    px(25, -26 + crouch, 2, 2, '#201a16');                       // tromba
-    px(20, -22 + crouch, 6, 1, '#ebe3cf');                       // dentes
-    px(21, -21 + crouch, 1, 1, '#ffffff');
-    px(24, -21 + crouch, 1, 1, '#ffffff');
-    px(17, -27 + crouch, 3, 2, ramp(look.eyes, -2));
-    px(17, -27 + crouch, 2, 1, look.eyes);
-    volume(11, -35 + crouch, 4, 5, dark, { topo: 1 });           // orelhas
-    volume(16, -35 + crouch, 4, 5, ramp(dark, -1), { topo: 1 });
-    px(12, -34 + crouch, 2, 3, ramp(look.skin, -2));
-    px(17, -34 + crouch, 2, 3, ramp(look.skin, -3));
-    volume(-21, -25 + crouch, 6, 9, body, { topo: 1 });          // cauda
-    volume(-23, -27 + crouch, 4, 6, fur, { topo: 1 });
-  } else {
-    volume(-10, -20, 20, 14, body, { topo: 1 });
-    contato(-10, -7, 20, body);
-    volume(-11 - step, -9, 5, 9, dark, { topo: 0 });
-    volume(6 + step, -9, 5, 9, dark, { topo: 0 });
-    volume(-12 - step, -3, 7, 3, ramp(dark, -1), { topo: 1 });
-    volume(5 + step, -3, 7, 3, ramp(dark, -1), { topo: 1 });
-
-    volume(-9, -24, 18, 6, fur, { topo: 1 });                    // peitoral
-    volume(-8, -33, 16, 11, body, { topo: 1 });                  // cabeça
-    volume(-4, -26, 8, 5, ramp(body, -1), { topo: 1 });          // focinho
-    px(-2, -23, 4, 1, '#ebe3cf');
-    px(-2, -25, 4, 2, '#201a16');
-    for (const ex of [-6, 2]) {
-      px(ex, -30, 4, 3, ramp(look.eyes, -2));
-      px(ex, -30, 3, 2, look.eyes);
-      px(ex + 1, -30, 1, 1, '#ffffff');
-    }
-    volume(-10, -38, 5, 6, dark, { topo: 1 });
-    volume(5, -38, 5, 6, ramp(dark, -1), { topo: 1 });
-    px(-9, -37, 3, 4, ramp(look.skin, -2));
-    px(6, -37, 3, 4, ramp(look.skin, -3));
-  }
 }
