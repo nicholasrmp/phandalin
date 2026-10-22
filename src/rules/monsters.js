@@ -20,8 +20,8 @@ export const MONSTERS = {
     speedFt: 30,
     skills: ['furtividade'],
     attacks: [
-      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5 },
-      { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320 },
+      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
+      { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
     ],
     traits: ['nimbleEscape'],
     blurb: 'Fraco sozinho, cruel em bando. Escapa com ação bônus.',
@@ -42,8 +42,8 @@ export const MONSTERS = {
     speedFt: 30,
     skills: ['furtividade'],
     attacks: [
-      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5 },
-      { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120 },
+      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
+      { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
     // Dois ataques; o segundo com desvantagem.
     multiattack: { count: 2, secondAtDisadvantage: true },
@@ -67,7 +67,7 @@ export const MONSTERS = {
     skills: ['percepcao', 'furtividade'],
     attacks: [
       {
-        name: 'Mordida', bonus: 4, damage: '2d4+2', type: 'perfurante', reachFt: 5,
+        name: 'Mordida', bonus: 4, damage: '2d4+2', type: 'perfurante', reachFt: 5, art: 'bite',
         onHit: { save: 'str', dc: 11, condition: 'caido', note: 'derruba se falhar' },
       },
     ],

@@ -43,9 +43,16 @@ O que já funciona:
 - **Som gerado por código**: nenhum arquivo de áudio, tudo saindo de
   osciladores e ruído. Cada golpe tem altura levemente diferente, então repetir
   quarenta ataques não vira metralhadora de um som só. `M` liga e desliga.
-- **Animações de combate**: investida no corpo a corpo, projétil com arco à
-  distância, dardos em sequência, feixe, estilhaços no impacto, corte,
-  marcação de área e tremor de tela proporcional ao golpe.
+- **Animação própria por arma**: corte largo de espada, duas estocadas rápidas
+  de adaga, pancada de maça com salto e rachadura no chão, flecha com rastro,
+  azagaia girando, presas fechando na mordida, três riscos de garra.
+- **Animação própria por magia**: coluna de luz da Chama Sagrada, bola de fogo
+  com rastro que vira labareda, lasca de gelo que estilhaça, os três dardos do
+  Míssil Mágico em sequência, cone de fogo acendendo de perto para longe, "z"
+  subindo de cada alvo do Sono, pontos de luz na cura.
+- **Condições com efeito contínuo**: quem queima tem chamas lambendo a figura e
+  brasas subindo; atordoado tem estrelas girando; caído fica deitado com poeira;
+  abençoado ganha argola dourada; lento arrasta setas; esquivando tem brilho.
 
 ### Como a animação conversa com o motor
 
@@ -57,6 +64,23 @@ vermelho do dano recém-tomado.
 
 Nada disso altera estado de jogo: se todos os efeitos forem descartados, a
 partida continua idêntica. É o que mantém o motor pronto para ir ao servidor.
+
+`view/fx.js` tem o **vocabulário** (arco, estocada, pilar, chamas, lascas…) e
+`view/visuals.js` tem as **frases** — o que cada arma e cada magia mostram.
+Separar os dois significa que dar visual a uma magia nova é escrever uma receita
+de cinco linhas, sem tocar no motor de desenho.
+
+### Regras da casa
+
+Uma só, e está marcada no código (`HOUSE_RULES` em `rules/combat.js`):
+
+> **Incêndio.** No SRD, dano de fogo não incendeia ninguém. Aqui uma magia de
+> fogo tem 35% de chance de pegar, e a criatura sofre 1d4 no início do turno
+> dela, por 2 rodadas.
+
+Existe porque dá leitura visual ao combate — a criatura pega fogo na tela — e
+porque recompensa escolher a natureza certa. `HOUSE_RULES.ignite.enabled = false`
+devolve o jogo às regras do livro.
 
 Teste de fumaça, pelo console do navegador em modo dev:
 

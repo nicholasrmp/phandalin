@@ -382,6 +382,7 @@ export class Board {
       const v = this.rotateVec(off.dx, off.dy);
       sx += (v.dx - v.dy) * (TW / 2);
       sy += (v.dx + v.dy) * (TH / 2);
+      sy -= off.lift ?? 0;   // salto do golpe de cima para baixo
     }
 
     ctx.fillStyle = 'rgba(0,0,0,.42)';
@@ -407,8 +408,11 @@ export class Board {
       ctx.lineWidth = 1;
     }
 
+    // Caído usa a mesma pose de quem está no chão, mas sem o esmaecido:
+    // continua consciente, só derrubado.
+    const prone = !down && hasCondition(c, 'caido');
     const sheet = getSheet(c.look);
-    const animName = down ? 'down' : c.anim?.name ?? 'idle';
+    const animName = down || prone ? 'down' : c.anim?.name ?? 'idle';
     const anim = sheet.anims[animName];
     const frame = c.anim?.frame ?? frameAt(anim, this.time + (c.pos.x + c.pos.y) * 0.17);
 
@@ -429,6 +433,8 @@ export class Board {
       tint: c.flash > 0 ? { color: '#ffffff', strength: Math.min(1, c.flash) } : null,
     });
     if (c.flash > 0) c.flash -= 0.08;
+
+    this.drawConditionFx(ctx, c, baseX, baseY, prone);
 
     if (down) return;
 
@@ -456,6 +462,119 @@ export class Board {
       ctx.font = '12px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(conds.slice(0, 3).map((x) => CONDITIONS[x.id].icon).join(''), baseX, by - 4);
+    }
+  }
+
+  /**
+   * Efeitos CONTÍNUOS das condições — desenhados todo quadro enquanto a
+   * condição dura, diferente dos efeitos de `fx.js`, que são disparos únicos.
+   * É o que faz "queimando" ser uma coisa que se vê, não só um ícone.
+   */
+  drawConditionFx(ctx, c, sx, sy, prone) {
+    const conds = c.conditions ?? [];
+    if (conds.length === 0 && !prone) return;
+    const t = this.time;
+    const has = (id) => conds.some((x) => x.id === id);
+
+    // Queimando: línguas de fogo lambendo a figura.
+    if (has('queimando')) {
+      ctx.save();
+      for (let i = 0; i < 5; i++) {
+        const ph = t * 10 + i * 1.6;
+        const h = 14 + Math.sin(ph) * 7;
+        const x = sx + (i - 2) * 6 + Math.sin(ph * 0.6) * 2.5;
+        const y = sy - 4 - (prone ? 0 : 6);
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#ff5a1a';
+        ctx.beginPath();
+        ctx.moveTo(x, y - h);
+        ctx.lineTo(x + 4, y);
+        ctx.lineTo(x - 4, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffd24a';
+        ctx.beginPath();
+        ctx.moveTo(x, y - h * 0.5);
+        ctx.lineTo(x + 2, y);
+        ctx.lineTo(x - 2, y);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Brasas subindo.
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#ffb04a';
+      for (let i = 0; i < 3; i++) {
+        const ph = (t * 0.9 + i * 0.33) % 1;
+        ctx.fillRect(sx + Math.sin(t * 4 + i * 2) * 9, sy - 10 - ph * 42, 2, 2);
+      }
+      ctx.restore();
+    }
+
+    // Atordoado: estrelas girando acima da cabeça.
+    if (has('atordoado')) {
+      ctx.save();
+      ctx.fillStyle = '#ffe14d';
+      ctx.font = '700 13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < 3; i++) {
+        const a = t * 3.4 + (i / 3) * Math.PI * 2;
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(a);
+        ctx.fillText('✦', sx + Math.cos(a) * 17, sy - 58 + Math.sin(a) * 6);
+      }
+      ctx.restore();
+    }
+
+    // Caído: poeira rente ao chão.
+    if (prone) {
+      ctx.save();
+      ctx.globalAlpha = 0.25 + 0.1 * Math.sin(t * 3);
+      ctx.strokeStyle = '#c8b68a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy + 2, 20, 6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Abençoado: argola dourada pulsando.
+    if (has('abencoado')) {
+      ctx.save();
+      ctx.globalAlpha = 0.4 + 0.25 * Math.sin(t * 2.6);
+      ctx.strokeStyle = '#ffe9a8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy - 56, 15, 5.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Lento: setas azuis arrastando para trás.
+    if (has('lento')) {
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = '#8fd8ff';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 2; i++) {
+        const o = ((t * 0.8 + i * 0.5) % 1) * 14;
+        ctx.beginPath();
+        ctx.moveTo(sx - 14 - o, sy - 14);
+        ctx.lineTo(sx - 20 - o, sy - 9);
+        ctx.lineTo(sx - 14 - o, sy - 4);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Esquivando: brilho de escudo em volta.
+    if (has('esquivando')) {
+      ctx.save();
+      ctx.globalAlpha = 0.25 + 0.15 * Math.sin(t * 5);
+      ctx.strokeStyle = '#cfe4ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy - 24, 20, 28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 

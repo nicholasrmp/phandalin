@@ -13,7 +13,20 @@ import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier } from '
 import { Battlefield, distanceFt, isAdjacent, key } from '../core/grid.js';
 import { abilityMod, saveBonus, spellSaveDc, spellAttackBonus } from './abilities.js';
 import { WEAPONS, weaponAbility } from './equipment.js';
-import { addCondition, removeCondition, hasCondition, conditionEffects, CONDITIONS } from './conditions.js';
+import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
+
+/**
+ * REGRAS DA CASA — nada aqui é SRD.
+ *
+ * `ignite`: no 5e dano de fogo não incendeia ninguém. Aqui uma magia de fogo
+ * tem chance de pegar: a criatura passa a sofrer 1d4 no início do turno dela.
+ * Existe porque dá leitura visual ao combate (a criatura pega fogo na tela) e
+ * porque recompensa quem escolhe a natureza certa. Ponha `enabled: false` para
+ * jogar só com as regras do livro.
+ */
+export const HOUSE_RULES = {
+  ignite: { enabled: true, chance: 0.35, rounds: 2, damage: '1d4' },
+};
 import { getSpell } from './spells.js';
 import { spellMod } from './party.js';
 
@@ -103,6 +116,7 @@ export class Encounter {
       c.sneakUsedThisTurn = false;
       c.extraActions = 0;
       this.tickConditions(c);
+      this.burnTick(c);
       if (hasCondition(c, 'inconsciente') && c.kind === 'pc' && !c.stable) this.deathSave(c);
     }
     this.say('turno', side === 'party' ? `— Turno do grupo (rodada ${this.round}) —` : `— Turno dos inimigos (rodada ${this.round}) —`);
@@ -118,6 +132,27 @@ export class Encounter {
       cond.rounds -= 1;
       return cond.rounds > 0;
     });
+  }
+
+  /** Regra da casa: magia de fogo pode incendiar o alvo. */
+  maybeIgnite(target, damageType) {
+    const rule = HOUSE_RULES.ignite;
+    if (!rule.enabled || damageType !== 'fogo') return;
+    if (target.dead || hasCondition(target, 'queimando')) return;
+    if (!this.rng.chance(rule.chance)) return;
+    addCondition(target, 'queimando', { rounds: rule.rounds, data: { damage: rule.damage } });
+    this.say('condicao', `${target.name} pega fogo!`);
+    this.onEvent({ type: 'ignite', target });
+  }
+
+  /** Regra da casa: quem está queimando sofre dano no início do próprio turno. */
+  burnTick(c) {
+    const burning = getCondition(c, 'queimando');
+    if (!burning || c.dead) return;
+    const r = roll(this.rng, burning.data?.damage ?? HOUSE_RULES.ignite.damage);
+    this.say('condicao', `${c.name} queima: ${r.total} de fogo.`, `${r.notation}[${r.rolls.join('+')}]`);
+    this.onEvent({ type: 'burn', target: c, amount: r.total });
+    this.applyDamage(c, r.total, 'fogo', null);
   }
 
   /** Marca o combatente como tendo terminado e, se o lado acabou, passa a vez. */
@@ -255,7 +290,7 @@ export class Encounter {
         name: atk.name, bonus: atk.bonus, damage: atk.damage, type: atk.type,
         ranged: !!atk.ranged, reachFt: atk.reachFt ?? 5,
         rangeFt: atk.rangeFt ?? 5, longRangeFt: atk.longRangeFt ?? atk.rangeFt ?? 5,
-        onHit: atk.onHit ?? null, weapon: null,
+        onHit: atk.onHit ?? null, weapon: null, art: atk.art ?? null,
       };
     }
     const w = WEAPONS[weaponId ?? actor.equippedWeapon];
@@ -272,6 +307,7 @@ export class Encounter {
       longRangeFt: w.ranged ? w.longRangeFt : (w.reachFt ?? 5),
       onHit: null,
       weapon: w,
+      art: w.art ?? null,
     };
   }
 
@@ -323,7 +359,7 @@ export class Encounter {
       this.say('ataque', `${attacker.name} erra ${target.name} com ${p.name}.`, detail);
       this.onEvent({
         type: 'attack', attacker, target, hit: false,
-        ranged: p.ranged, damageType: p.type, weaponName: p.name,
+        ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art,
       });
       return { hit: false };
     }
@@ -348,7 +384,7 @@ export class Encounter {
     );
     this.onEvent({
       type: 'attack', attacker, target, hit: true, critical, damage: total,
-      ranged: p.ranged, damageType: p.type, weaponName: p.name, sneak: !!sneak,
+      ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art, sneak: !!sneak,
     });
     this.applyDamage(target, total, p.type, attacker);
 
@@ -526,7 +562,16 @@ export class Encounter {
         ? this.field.within(point ?? target.pos, spell.areaFt)
         : null;
 
-    this.onEvent({ type: 'spell', caster: actor, spell, target, point, areaTiles });
+    // Alvos de magia de bônus são escolhidos aqui, antes do evento, para a
+    // camada de desenho poder marcar cada um sem recalcular a regra.
+    const buffTargets = spell.kind === 'buff'
+      ? this.alliesOf(actor)
+        .concat([actor])
+        .filter((a) => distanceFt(actor.pos, a.pos) <= spell.rangeFt && !hasCondition(a, 'inconsciente'))
+        .slice(0, spell.targets)
+      : null;
+
+    this.onEvent({ type: 'spell', caster: actor, spell, target, point, areaTiles, buffTargets });
 
     switch (spell.kind) {
       case 'attack': {
@@ -541,6 +586,7 @@ export class Encounter {
         const dmg = damageRoll(this.rng, spell.damage, { critical: atk.critical });
         this.say('magia', `${spell.name} acerta ${target.name}: ${dmg.total} de ${spell.damageType}.`, `${spell.damage}[${dmg.rolls.join('+')}]`);
         this.applyDamage(target, dmg.total, spell.damageType, actor);
+        this.maybeIgnite(target, spell.damageType);
         if (spell.applies && !target.dead) addCondition(target, spell.applies.condition, { rounds: spell.applies.rounds });
         break;
       }
@@ -570,7 +616,10 @@ export class Encounter {
             `${t.name} ${save.success ? 'resiste' : 'falha'} (CD ${dc}) e sofre ${amount}.`,
             `${spell.damage}[${dmg.rolls.join('+')}] · resistência ${save.total}`,
           );
-          if (amount > 0) this.applyDamage(t, amount, spell.damageType, actor);
+          if (amount > 0) {
+            this.applyDamage(t, amount, spell.damageType, actor);
+            this.maybeIgnite(t, spell.damageType);
+          }
         }
         break;
       }
@@ -601,10 +650,7 @@ export class Encounter {
       }
 
       case 'buff': {
-        const picks = this.alliesOf(actor)
-          .concat([actor])
-          .filter((a) => distanceFt(actor.pos, a.pos) <= spell.rangeFt && !hasCondition(a, 'inconsciente'))
-          .slice(0, spell.targets);
+        const picks = buffTargets ?? [];
         if (spell.concentration) {
           this.dropConcentration(actor);
           actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: picks };

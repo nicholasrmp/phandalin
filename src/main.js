@@ -11,18 +11,8 @@ import { getSpell } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
-import { audio, hitSoundFor, spellSoundFor } from './core/audio.js';
-
-// Cor do efeito conforme o tipo de dano da magia.
-const SPELL_COLOR = {
-  fogo: '#ff7a3a',
-  frio: '#8fd8ff',
-  radiante: '#ffe9a8',
-  'energético': '#b98cff',
-  raio: '#bfe6ff',
-  ácido: '#9ae05a',
-};
-const spellColor = (spell) => SPELL_COLOR[spell.damageType] ?? '#c7b4ff';
+import { audio } from './core/audio.js';
+import { playWeaponVisual, playSpellVisual } from './view/visuals.js';
 
 // Mapa do encontro.
 //   '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura
@@ -174,77 +164,31 @@ class App {
         a.facingVec = { dx: t.pos.x - a.pos.x, dy: t.pos.y - a.pos.y };
         a.anim = { name: 'attack', frame: 1 };
         setTimeout(() => { a.anim = null; }, 280);
-        audio.play('swing');
-
-        if (ev.ranged) {
-          board?.fx.projectile(a.pos, t.pos, { style: 'arrow', color: '#ffe9b0', dur: 0.3, arc: 0.7 });
-          this.setImpactDelay(0.3);
-        } else {
-          board?.fx.lunge(a, t.pos, 0.26);
-          this.setImpactDelay(0.15);
-        }
-
-        const { hit, critical, damageType, sneak } = ev;
-        this.atImpact(() => {
-          if (!hit) {
-            board?.floatText(t.pos, 'errou', '#9aa3b2');
-            audio.play('miss');
-            return;
-          }
-          board?.fx.slash(t.pos, { color: critical ? '#ffe14d' : '#ffffff' });
-          board?.fx.impact(t.pos, {
-            color: critical ? '#ffd24a' : '#ff9a6a',
-            count: critical ? 18 : 9,
-            spread: critical ? 70 : 46,
-          });
-          board?.bump(critical ? 0.65 : 0.3);
-          audio.play(critical ? 'critical' : hitSoundFor(damageType));
-          if (sneak) board?.floatText(t.pos, 'furtivo!', '#c7b4ff');
-        });
+        // A receita da arma toca som, anima e devolve quando o golpe chega.
+        this.setImpactDelay(playWeaponVisual(board, ev));
         break;
       }
 
       case 'spell': {
-        const { caster, spell, target, point, areaTiles } = ev;
+        const { caster, spell, target, point } = ev;
         const dest = target?.pos ?? point ?? caster.pos;
         caster.facingVec = { dx: dest.x - caster.pos.x, dy: dest.y - caster.pos.y };
         caster.anim = { name: 'attack', frame: 1 };
         setTimeout(() => { caster.anim = null; }, 340);
+        this.setImpactDelay(playSpellVisual(board, ev));
+        break;
+      }
 
-        const color = spellColor(spell);
-        audio.play(spellSoundFor(spell.damageType));
+      case 'ignite': {
+        board?.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 6, dur: 0.7, scale: 1.2 });
+        board?.floatText(ev.target.pos, 'pegou fogo!', '#ff8a3a');
+        audio.play('castFire');
+        break;
+      }
 
-        if (spell.kind === 'attack') {
-          board?.fx.projectile(caster.pos, dest, {
-            style: spell.damageType === 'frio' ? 'bolt' : 'orb', color, dur: 0.3, arc: 0.3,
-          });
-          this.setImpactDelay(0.3);
-        } else if (spell.kind === 'auto') {
-          // Os dardos do Míssil Mágico saem em sequência, não todos de uma vez.
-          const darts = spell.darts ?? 1;
-          for (let i = 0; i < darts; i++) {
-            setTimeout(
-              () => board?.fx.projectile(caster.pos, dest, { style: 'orb', color, dur: 0.26, arc: 0.9 }),
-              i * 90,
-            );
-          }
-          this.setImpactDelay(0.26 + (darts - 1) * 0.09);
-        } else if (spell.kind === 'save') {
-          if (areaTiles?.length) board?.fx.area(areaTiles, { color });
-          else board?.fx.ring(dest, { color, radius: 40 });
-          board?.fx.beam(caster.pos, dest, { color, dur: 0.2 });
-          this.setImpactDelay(0.22);
-        } else if (spell.kind === 'sleep') {
-          if (areaTiles?.length) board?.fx.area(areaTiles, { color: '#8f7ad8', dur: 0.7 });
-          this.setImpactDelay(0.25);
-        } else if (spell.kind === 'heal') {
-          board?.fx.ring(dest, { color: '#6ee89a', radius: 36, dur: 0.6 });
-          audio.play('heal');
-          this.setImpactDelay(0.12);
-        } else if (spell.kind === 'buff') {
-          board?.fx.ring(caster.pos, { color: '#ffe9a8', radius: 70, dur: 0.7 });
-          this.setImpactDelay(0);
-        }
+      case 'burn': {
+        board?.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 4, dur: 0.45 });
+        audio.play('castFire');
         break;
       }
 

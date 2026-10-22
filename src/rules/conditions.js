@@ -60,22 +60,36 @@ export const CONDITIONS = {
     speedPenaltyFt: 10,
     expiresAtTurnStart: true,
   },
+
+  // REGRA DA CASA — não é SRD. No 5e, dano de fogo não incendeia ninguém.
+  // Aqui magias de fogo podem pegar: a criatura sofre 1d4 no início do turno
+  // dela. Controlado por HOUSE_RULES.ignite em combat.js.
+  queimando: {
+    name: 'Queimando', icon: '🔥',
+    desc: 'Sofre 1d4 de fogo no início de cada turno seu.',
+    houseRule: true,
+  },
 };
 
 export function hasCondition(actor, id) {
   return actor.conditions?.some((c) => c.id === id) ?? false;
 }
 
-export function addCondition(actor, id, { rounds = Infinity, source = null } = {}) {
+export function addCondition(actor, id, { rounds = Infinity, source = null, data = null } = {}) {
   actor.conditions ??= [];
   const existing = actor.conditions.find((c) => c.id === id);
   if (existing) {
     existing.rounds = Math.max(existing.rounds, rounds);
+    if (data) existing.data = data;
     return existing;
   }
-  const c = { id, rounds, source };
+  const c = { id, rounds, source, data };
   actor.conditions.push(c);
   return c;
+}
+
+export function getCondition(actor, id) {
+  return actor.conditions?.find((c) => c.id === id) ?? null;
 }
 
 export function removeCondition(actor, id) {
