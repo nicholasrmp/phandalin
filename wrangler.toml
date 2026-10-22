@@ -1,0 +1,21 @@
+# Deploy na Cloudflare, como Worker com assets estáticos.
+#
+# Por que Worker e não Pages: o próprio wrangler já recomenda Workers para
+# projetos novos, e aqui a razão é concreta — quando entrar o multiplayer, o
+# Durable Object de cada grupo vai viver NESTE MESMO Worker. Site e servidor de
+# salas no mesmo domínio: um só deploy, sem CORS, sem dois lugares para manter.
+#
+# Hoje não existe `main`: é um Worker só de assets, que serve o build do Vite.
+# Quando o servidor de salas entrar, basta adicionar `main` e o bloco
+# [[durable_objects.bindings]] aqui embaixo.
+
+name = "phandalin"
+compatibility_date = "2026-10-22"
+
+[assets]
+directory = "./dist"
+# Sem rotas de SPA: o site tem arquivos reais (index.html, estilos.html).
+not_found_handling = "404-page"
+
+[observability]
+enabled = true

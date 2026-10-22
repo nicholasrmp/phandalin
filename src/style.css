@@ -214,10 +214,19 @@ h2 {
   .card-id strong { font-size: 13px; }
   .act { padding: 6px 9px; font-size: 12px; }
 }
+/* Em coluna única a página passa a rolar: sem isso o log de rolagens fica
+   embaixo da barra de ações e é cortado pelo overflow do body. */
 @media (max-width: 900px) {
-  #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  html, body { overflow: auto; }
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
+    min-height: 100%;
+  }
   .left-col { flex-direction: row; gap: 10px; align-items: flex-start; overflow-x: auto; }
   .left-col .party { flex-direction: row; }
   .left-col .card { min-width: 180px; }
-  .right-col { max-height: 180px; }
+  .center-col .board-wrap { min-height: 46vh; }
+  .right-col { max-height: 260px; }
 }

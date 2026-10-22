@@ -159,26 +159,34 @@ entende (`attack`, `save`, `auto`, `heal`, `buff`). Sem código novo.
 
 ---
 
-## Deploy (Cloudflare Pages)
+## Deploy
 
-O build é estático: basta publicar `dist/`. A integração com Git do Cloudflare
-Pages lê este repositório e republica a cada push, sem segredo nenhum guardado.
+**No ar:** <https://phandalin.nicholas-rmpimentel.workers.dev>
 
-Configuração no painel:
+```bash
+npm run build
+npx wrangler deploy
+```
 
-| Campo | Valor |
-|---|---|
-| Framework preset | `Vite` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | *(vazio)* |
+Publicado como **Worker com assets estáticos**, não como Cloudflare Pages. A
+configuração está em `wrangler.toml`.
 
-A versão do Node vem de `.node-version` (20). O arquivo `public/_headers` vai
-para a raiz do build e define o cache: os assets do Vite têm hash no nome e são
-imutáveis, então ficam em cache para sempre; o HTML revalida sempre.
+O motivo é concreto, não preferência: quando o multiplayer entrar, o Durable
+Object de cada grupo vai viver **neste mesmo Worker**. Site e servidor de salas
+no mesmo domínio significa um só deploy, sem CORS e sem dois lugares para
+manter. O próprio wrangler já recomenda Workers para projetos novos.
 
-Cada branch ganha uma URL de pré-visualização própria, o que dá para testar uma
-mudança antes de ir para a `main`.
+Hoje `wrangler.toml` não tem `main`: é um Worker só de assets, servindo o build
+do Vite. Para somar o servidor de salas, basta acrescentar `main` e o bloco
+`[[durable_objects.bindings]]`.
+
+`public/_headers` vai para a raiz do build e define o cache: os assets do Vite
+têm hash no nome e são imutáveis, então ficam em cache para sempre; o HTML
+revalida sempre. `.node-version` fixa o Node 20.
+
+Para republicar a cada push sem rodar nada à mão, dá para ligar o build do
+Workers pelo painel da Cloudflare apontando para este repositório
+(build `npm run build`, deploy `npx wrangler deploy`).
 
 ---
 
