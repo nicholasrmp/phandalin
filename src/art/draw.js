@@ -106,56 +106,76 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
     if (back) px(cxo + Math.floor(cw / 2), torsoTop + 1, 1, ch, dim(look.cloak));
   }
 
-  // ---- arma ----------------------------------------------------------------
-  // De costas a arma fica atrás do corpo; de frente e de perfil ela vem na
-  // FRENTE do braço, senão some atrás da manga e a figura perde a leitura.
-  const arma = () => drawWeapon(px, look, m, { side, back, lean, attack, frame: pose.frame, upper });
-  if (back && !look.cloak) arma();
+  // ---- onde a mão fecha ----------------------------------------------------
+  // A arma é desenhada A PARTIR da mão, não ao lado do braço. A empunhadura
+  // ocupa exatamente os pixels onde a mão está, e a mão é repintada por cima
+  // do cabo. Sem isso a figura não segura nada: carrega a espada flutuando.
+  const sleeve = look.armorStyle === 'plate' ? look.metal : look.outfit;
+  const armY = torsoTop + 2 + (attack ? -2 : 0);
+  const armH = Math.max(4, r(m.torsoH * 0.6 * (m.sp.arms ?? 1)));
+  // Os braços pendem FORA da linha do ombro, sobrepondo-a em 1 px só. Encostados
+  // no tronco, a lâmina que sobe da mão passa por cima do peito e da cabeça.
+  const farX = side ? lead - Math.floor(chest / 2) - m.armW : shoulderX - m.armW;
+  const nearX = side ? lead + Math.floor(chest / 2) : shoulderX + shoulder;
+  const nearY = armY - lean;
+  const gripX = nearX;
+  const gripY = nearY + armH;
+
+  const braco = (x, y, cor) => {
+    px(x, y, m.armW, armH, cor);
+    px(x, y, m.armW, 1, lit(cor));
+    px(x + m.armW - 1, y + 1, 1, armH - 1, dim(cor));
+  };
+  const mao = (x, y) => {
+    px(x, y, m.armW, 3, look.skin);
+    px(x, y, m.armW, 1, lit(look.skin));
+    px(x, y + 2, m.armW, 1, shade(look.skin, 0.62));
+  };
+  const arma = () => drawWeapon(px, look, m, {
+    gripX, gripY, armW: m.armW, back, attack, frame: pose.frame,
+  });
 
   // ---- pernas --------------------------------------------------------------
   const robe = look.armorStyle === 'robe';
   if (!robe) drawLegs(px, look, m, { side, attack, lean });
 
+  // De costas a arma fica atrás do corpo.
+  if (back && !look.cloak) arma();
+
   // ---- tronco --------------------------------------------------------------
   drawTorso(px, look, m, { chestX, chest, torsoTop, side, back, robe });
 
-  // ---- braços --------------------------------------------------------------
-  const sleeve = look.armorStyle === 'plate' ? look.metal : look.outfit;
-  const armY = torsoTop + 2 + (attack ? -2 : 0);
-  const armH = Math.max(4, r(m.torsoH * 0.62));
-  if (side) {
-    px(lead, armY, m.armW, armH, sleeve);
-    px(lead, armY, m.armW, 1, lit(sleeve));
-    px(lead, armY + armH, m.armW, 2, look.skin);
-  } else {
-    const leftX = shoulderX - 1;
-    const rightX = shoulderX + shoulder - m.armW + 1;
-    px(leftX, armY, m.armW, armH, sleeve);
-    px(rightX, armY - lean, m.armW, armH, sleeve);
-    px(leftX, armY, m.armW, 1, lit(sleeve));
-    px(rightX, armY - lean, m.armW, 1, lit(sleeve));
-    px(leftX, armY + armH, m.armW, 2, look.skin);
-    px(rightX, armY + armH - lean, m.armW, 2, look.skin);
-  }
-
+  // ---- braços e arma -------------------------------------------------------
+  if (!side) { braco(farX, armY, sleeve); mao(farX, armY + armH); }
+  braco(nearX, nearY, sleeve);
   if (!back) arma();
+  mao(gripX, gripY);
 
   // ---- escudo --------------------------------------------------------------
   // Mais alto que largo e com os cantos cortados: um retângulo cheio lê como
   // bandeja, não como escudo.
+  // O campo do escudo é pintado com a cor de destaque e só o aro e o umbo são
+  // de metal. Escudo inteiro da cor do peitoral vira uma caixa cinza colada no
+  // corpo — é a mesma armadilha da lâmina que some dentro da armadura.
   if (look.shield) {
-    const sw = Math.max(5, r(m.shoulderW * 0.36));
-    const sh = Math.max(9, r(m.torsoH * 1.05));
-    const sy = torsoTop + 1;
-    const sx = side ? shoulderX - 2 : back ? shoulderX + shoulder - 1 : shoulderX - sw + 2;
-    px(sx, sy + 1, sw, sh - 2, look.metal);
-    px(sx + 1, sy, sw - 2, sh, look.metal);
-    px(sx + 1, sy, sw - 2, 1, lit(look.metal));
-    px(sx, sy + 1, 1, sh - 2, lit(look.metal));
-    px(sx + sw - 1, sy + 1, 1, sh - 2, dim(look.metal));
-    px(sx + 1, sy + sh - 1, sw - 2, 1, dim(look.metal));
-    const bw = Math.max(2, sw - 4);
-    px(sx + Math.floor((sw - bw) / 2), sy + r(sh * 0.36), bw, Math.max(2, r(sh * 0.28)), look.trim ?? dim(look.metal));
+    const campo = look.trim ?? dim(look.metal);
+    const aro = look.metal;
+    const sw = Math.max(5, r(m.shoulderW * 0.34));
+    const sh = Math.max(9, r(m.torsoH * 1.0));
+    const sy = torsoTop + 2;
+    const sx = side ? shoulderX - 2 : back ? shoulderX + shoulder - 1 : shoulderX - sw + 1;
+    px(sx, sy + 1, sw, sh - 2, campo);
+    px(sx + 1, sy, sw - 2, sh, campo);
+    px(sx + 1, sy, sw - 2, 1, aro);                       // aro
+    px(sx, sy + 1, 1, sh - 2, aro);
+    px(sx + sw - 1, sy + 1, 1, sh - 2, dim(aro));
+    px(sx + 1, sy + sh - 1, sw - 2, 1, dim(aro));
+    px(sx + 1, sy + 1, 1, sh - 3, lit(campo));
+    const bw = Math.max(2, sw - 4);                       // umbo
+    const by = sy + r(sh * 0.38);
+    px(sx + Math.floor((sw - bw) / 2), by, bw, bw, aro);
+    px(sx + Math.floor((sw - bw) / 2), by, bw, 1, lit(aro));
+    px(sx + Math.floor((sw - bw) / 2), by + bw - 1, bw, 1, dim(aro));
   }
 
   // ---- pescoço -------------------------------------------------------------
@@ -261,7 +281,27 @@ function drawTorso(px, look, m, { chestX, chest, torsoTop, side, back, robe }) {
       break;
   }
 
-  if (look.trim) px(chestX, torsoTop + r(h * 0.45), chest, 1, look.trim);
+  // Pelagem: o bugbear do bestiário é um goblinoide peludo. `fur` estava
+  // declarado na espécie e o pintor ignorava — ele saía liso como um humano
+  // de túnica marrom.
+  if (m.sp.fur) {
+    const pelo = look.hair ?? dim(look.outfit);
+    px(chestX - 1, torsoTop, chest + 2, 3, pelo);          // gola
+    px(chestX - 1, torsoTop, chest + 2, 1, lit(pelo));
+    px(chestX - 1, torsoTop + 3, chest + 2, 1, dim(pelo));
+    for (let c = 1; c < chest - 1; c += 3) {               // tufos no peito
+      px(chestX + c, torsoTop + 4, 1, Math.max(2, r(h * 0.3)), dim(pelo));
+    }
+    px(chestX - 1, m.waist - 4, 2, 4, pelo);
+    px(chestX + chest - 1, m.waist - 4, 2, 4, pelo);
+  }
+
+  // A faixa de destaque cairia na mesma altura da guarda da espada e as duas
+  // leriam como uma barra só atravessando o peito. Nas placas, as ombreiras e
+  // a costura central já dão detalhe suficiente.
+  if (look.trim && look.armorStyle !== 'plate') {
+    px(chestX, torsoTop + r(h * 0.3), chest, 1, look.trim);
+  }
   if (!robe && !back) {
     const belt = look.trim ?? dim(look.leather);
     px(chestX, m.waist - 2, chest, 2, look.leather);
@@ -292,14 +332,24 @@ function drawHead(px, cut, look, m, { headX, headW, headTop, chin, front, side, 
 
   // ---- orelhas -------------------------------------------------------------
   const earY = headTop + r(headH * 0.35);
-  if (sp.ear === 'wide') {
-    // goblin / hobgoblin / bugbear: abanando para os lados, pontudas
-    const len = Math.max(2, r(headW * 0.42));
+  if (sp.ear === 'swept') {
+    // goblinoides: pontuda, colada ao crânio e inclinada para trás e para
+    // cima. Orelha-pá abanando para o lado é gremlin de desenho, não goblin.
+    for (const s of [-1, 1]) {
+      const x = s < 0 ? headX - 2 : headX + headW;
+      px(x, earY, 2, 3, look.skin);
+      px(x + (s < 0 ? -1 : 1), earY - 2, 2, 3, look.skin);
+      px(x + (s < 0 ? -1 : 2), earY - 3, 1, 1, look.skin);
+      px(x + (s < 0 ? 0 : 1), earY + 1, 1, 1, skinDark);
+    }
+  } else if (sp.ear === 'wide') {
+    // bugbear: orelha grande e arredondada, de bicho
+    const len = Math.max(3, r(headW * 0.38));
     for (const s of [-1, 1]) {
       const x = s < 0 ? headX - len : headX + headW;
-      px(x, earY, len, 3, look.skin);
-      px(x, earY - 1, len - 1, 1, look.skin);
-      px(x, earY + 3, len - 1, 1, skinDark);
+      px(x, earY - 2, len, 5, look.skin);
+      px(x, earY - 2, len, 1, lit(look.skin));
+      px(x + (s < 0 ? 0 : len - 1), earY - 1, 1, 3, skinDark);
     }
   } else if (sp.ear === 'long') {
     // elfo: coladas e apontando para cima
@@ -322,22 +372,27 @@ function drawHead(px, cut, look, m, { headX, headW, headTop, chin, front, side, 
   }
 
   // ---- rosto ---------------------------------------------------------------
-  const eyeY = headTop + r(headH * 0.38);
-  const eyeW = sp.bigEyes ? 3 : 2;
-  const eyeH = sp.bigEyes ? 3 : 2;
+  const eyeY = headTop + r(headH * 0.4);
+  const eyeW = 2;
+  const eyeH = 2;
+  // Goblinoide tem olho escuro de bicho: nada de branco em volta, só a íris
+  // acesa num buraco preto. É isso que dá o olhar do bestiário.
+  const branco = sp.darkEyes ? '#15110e' : '#f4efe4';
 
   if (sp.brow) {
-    px(headX + 1, eyeY - 2, headW - 2, 2, shade(look.skin, 0.62));
+    px(headX + 1, eyeY - 2, headW - 2, 2, shade(look.skin, 0.58));
+    px(headX + 1, eyeY - 3, headW - 2, 1, shade(look.skin, 0.72));
   }
 
   if (front) {
-    const off = Math.max(1, r(headW * 0.16));
-    px(-off - eyeW + lead, eyeY, eyeW, eyeH, '#f4efe4');
-    px(off + lead, eyeY, eyeW, eyeH, '#f4efe4');
-    px(-off - eyeW + 1 + lead, eyeY, eyeW - 1, eyeH, look.eyes);
-    px(off + lead, eyeY, eyeW - 1, eyeH, look.eyes);
+    const off = Math.max(1, r(headW * 0.18));
+    px(-off - eyeW + lead, eyeY, eyeW, eyeH, branco);
+    px(off + lead, eyeY, eyeW, eyeH, branco);
+    px(-off - eyeW + 1 + lead, eyeY + (sp.darkEyes ? 1 : 0), 1, sp.darkEyes ? 1 : eyeH, look.eyes);
+    px(off + lead, eyeY + (sp.darkEyes ? 1 : 0), 1, sp.darkEyes ? 1 : eyeH, look.eyes);
   } else {
-    px(r(headW * 0.15) + lead, eyeY, eyeW, eyeH, look.eyes);
+    px(r(headW * 0.15) + lead, eyeY, eyeW, eyeH, branco);
+    px(r(headW * 0.15) + lead, eyeY + (sp.darkEyes ? 1 : 0), 1, sp.darkEyes ? 1 : eyeH, look.eyes);
   }
 
   // ---- nariz / focinho -----------------------------------------------------
@@ -349,8 +404,12 @@ function drawHead(px, cut, look, m, { headX, headW, headTop, chin, front, side, 
     px(side ? headX + headW : -Math.floor(nw / 2) + lead, noseY, side ? 2 : nw, 1, look.skin);
     if (side) px(headX + headW, noseY, 3, 2, look.skin);
   } else if (sp.flatNose || sp.wideNose) {
-    const nw = Math.max(3, r(headW * 0.3));
-    px(-Math.floor(nw / 2) + lead, noseY, nw, 2, skinDark);
+    // O hobgoblin do bestiário tem o nariz grande e puxado para o azul; é um
+    // detalhe pequeno que separa a cara dele da de um humano bronzeado.
+    const nw = Math.max(3, r(headW * 0.32));
+    const cor = look.noseTint ?? skinDark;
+    px(-Math.floor(nw / 2) + lead, noseY, nw, 2, cor);
+    px(-Math.floor(nw / 2) + lead, noseY - 1, nw - 2, 1, shade(cor, 1.1));
   } else {
     px(lead - 1, noseY, 2, 2, skinDark);
   }
@@ -432,60 +491,118 @@ function drawCrown(px, look, m, { headX, headW, headTop, crown, front, side, lea
   if (side) px(headX + headW - 1, crown, 2, hairH + 1, hair);
 }
 
-function drawWeapon(px, look, m, { side, back, lean, attack, frame, upper }) {
+/**
+ * A arma, desenhada A PARTIR da empunhadura.
+ *
+ * `gripX/gripY` são os pixels onde a mão fecha — vêm do braço, não de uma
+ * posição inventada. O cabo atravessa esse ponto e a mão é repintada por cima
+ * depois, então a figura segura a arma em vez de carregá-la ao lado.
+ */
+function drawWeapon(px, look, m, { gripX, gripY, armW, attack, frame }) {
   const metal = look.metal;
   const wood = look.leather;
-  const swing = attack ? (frame === 1 ? -6 : -3) : 0;
-  const x = (side ? m.handX - 2 + lean : back ? -m.handX - 1 : m.handX + 1);
-  const y = m.handY + upper + swing;
-  // Arma escala com o dono: a espada do bugbear é maior que a do halfling, e
-  // a lâmina engrossa junto — 2 px de largura somem numa figura de 46 px.
+  const trim = look.trim ?? wood;
+
+  // Arma escala com o dono: a espada do bugbear é maior que a do halfling.
   const s = Math.max(0.75, Math.min(1.5, m.h));
   const L = (v) => Math.max(2, r(v * s));
-  const T = Math.max(2, r(2 * s));          // espessura de lâmina / haste
-  const H = T + 2;                          // largura de guarda e cabeça
+  const T = Math.max(2, r(2 * s));
+  const x = gripX + Math.floor((armW - T) / 2);
+  // O golpe inclina a lâmina; o braço já subiu, então o movimento se soma.
+  const tilt = attack ? (frame === 1 ? T + 2 : T) : 0;
+
+  /**
+   * Haste ou lâmina subindo a partir de `baseY`, inclinando se houver golpe.
+   *
+   * A borda escura dos dois lados não é enfeite: a lâmina é `look.metal`, a
+   * mesma cor da armadura de placas, e sem ela a espada simplesmente some
+   * dentro do peitoral de quem a segura.
+   */
+  const haste = (bx, baseY, len, t, cor, inclina = 0) => {
+    const borda = shade(cor, 0.42);
+    const segs = inclina ? 3 : 1;
+    const segH = Math.ceil(len / segs);
+    for (let i = 0; i < segs; i++) {
+      const off = inclina ? r((inclina * (i + 1)) / segs) : 0;
+      const y = baseY - segH * (i + 1);
+      px(bx + off - 1, y, t + 2, segH, borda);
+      px(bx + off, y, t, segH, cor);
+      px(bx + off, y, 1, segH, lit(cor));
+    }
+    return r(inclina);
+  };
+
+  const cabo = (len = 6, cor = wood) => {
+    px(x, gripY - 1, T, len, cor);
+    px(x, gripY - 1, 1, len, lit(cor));
+  };
 
   switch (look.weapon) {
-    case 'sword':
-      px(x, y - L(15), T, L(17), metal);
-      px(x, y - L(15), 1, L(17), lit(metal));
-      px(x + T - 1, y - L(15), 1, L(17), dim(metal));
-      px(x - 1, y + 2, H, 1, look.trim ?? wood);
-      px(x, y + 3, T, L(4), wood);
-      break;
-    case 'dagger':
-      px(x, y - L(7), T, L(9), metal);
-      px(x, y - L(7), 1, L(9), lit(metal));
-      px(x - 1, y + 2, H, 1, wood);
-      px(x, y + 3, T, L(3), wood);
-      break;
-    case 'axe':
-      px(x, y - L(13), T, L(17), wood);
-      px(x - 2, y - L(14), T + 3, L(7), metal);
-      px(x - 2, y - L(14), T + 3, 1, lit(metal));
-      px(x - 2, y - L(14) + L(7) - 1, T + 3, 1, dim(metal));
-      break;
-    case 'mace':
-      px(x, y - L(11), T, L(15), wood);
-      px(x - 2, y - L(15), T + 3, L(6), metal);
-      px(x - 2, y - L(15), T + 3, 1, lit(metal));
-      px(x - 2, y - L(15) + L(6) - 1, T + 3, 1, dim(metal));
-      break;
-    case 'staff': {
-      const orb = look.glow ?? metal;
-      px(x, y - L(24), T, L(30), wood);
-      px(x - 2, y - L(29), T + 4, L(6), orb);
-      px(x - 1, y - L(30), T + 2, 1, orb);
-      px(x - 1, y - L(28), T, 2, '#ffffff');
-      px(x - 2, y - L(29) + L(6), T + 4, 1, dim(orb));
+    case 'sword': {
+      cabo(6);
+      px(x, gripY + 5, T, 1, trim);                       // pomo
+      px(x - 1, gripY - 3, T + 2, 1, trim);               // guarda, estreita:
+      px(x - 1, gripY - 2, T + 2, 1, dim(trim));          // larga vira barra atravessada
+      haste(x, gripY - 3, L(16), T, metal, tilt);
       break;
     }
-    case 'bow':
-      px(x, y - L(15), T, L(21), wood);
-      px(x - 1, y - L(16), T, 2, wood);
-      px(x - 1, y + L(5), T, 2, wood);
-      px(x + T, y - L(14), 1, L(19), '#e8e2d0');
+    case 'dagger': {
+      cabo(5);
+      px(x - 1, gripY - 2, T + 2, 1, trim);
+      haste(x, gripY - 2, L(7), T, metal, tilt);
       break;
+    }
+    case 'axe': {
+      cabo(L(14) + 4);
+      px(x, gripY - 2 - L(14), T, L(14), wood);
+      px(x, gripY - 2 - L(14), 1, L(14), lit(wood));
+      const hy = gripY - 2 - L(14) + r(tilt * 0.4);
+      px(x + T, hy, T + 2, L(6), metal);                  // lâmina de um gume
+      px(x + T, hy, T + 2, 1, lit(metal));
+      px(x + T, hy + L(6) - 1, T + 2, 1, dim(metal));
+      px(x - 1, hy + 1, 1, L(4), dim(metal));
+      break;
+    }
+    case 'mace': {
+      cabo(L(12) + 4);
+      px(x, gripY - 2 - L(12), T, L(12), wood);
+      px(x, gripY - 2 - L(12), 1, L(12), lit(wood));
+      const hy = gripY - 2 - L(12) - L(5) + r(tilt * 0.4);
+      px(x - 2, hy, T + 4, L(5), metal);
+      px(x - 2, hy, T + 4, 1, lit(metal));
+      px(x - 2, hy + L(5) - 1, T + 4, 1, dim(metal));
+      px(x - 3, hy + 1, 1, L(3), metal);
+      px(x + T + 2, hy + 1, 1, L(3), metal);
+      break;
+    }
+    case 'staff': {
+      const orb = look.glow ?? metal;
+      const alto = gripY + 4 - L(30);
+      px(x, alto, T, L(30), wood);
+      px(x, alto, 1, L(30), lit(wood));
+      // segunda mão mais acima: é o que mostra que o cajado é de duas mãos
+      px(x - 1, gripY - L(9), armW + 1, 3, look.skin);
+      px(x - 1, gripY - L(9), armW + 1, 1, lit(look.skin));
+      px(x - 1, gripY - L(9) + 2, armW + 1, 1, shade(look.skin, 0.68));
+      px(x - 2, alto - L(4), T + 4, L(5), orb);
+      px(x - 1, alto - L(5), T + 2, 1, orb);
+      px(x - 1, alto - L(3), T, 2, '#ffffff');
+      px(x - 2, alto, T + 4, 1, dim(orb));
+      break;
+    }
+    case 'bow': {
+      const meia = L(13);
+      px(x, gripY - 1, T, 5, wood);                       // empunhadura
+      px(x, gripY - 1, 1, 5, lit(wood));
+      px(x, gripY - 1 - meia, T, meia, wood);             // braço de cima
+      px(x, gripY + 4, T, meia, wood);                    // braço de baixo
+      px(x - 1, gripY - 1 - meia, T, 2, wood);            // pontas
+      px(x - 1, gripY + 3 + meia, T, 2, wood);
+      px(x + T, gripY - meia, 1, meia * 2 + 4, '#e8e2d0'); // corda
+      // mão de cima na corda
+      px(x + T - 1, gripY - r(meia * 0.5), 3, 3, look.skin);
+      break;
+    }
     default:
       break;
   }

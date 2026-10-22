@@ -16,29 +16,36 @@ const BASE = {
 /**
  * h      altura geral (1 = humano)
  * legs   quanto da altura vai para as pernas (anão tem perna curta e tronco longo)
- * head   tamanho da cabeça em relação ao corpo (goblin: cabeçudo)
+ * head   tamanho da cabeça em relação ao corpo
  * bulk   largura de ombro, peito, braço e perna
- * neck   pixels de pescoço a mais ou a menos (hobgoblin tem pescoço de touro)
- * ear    round | long | wide
+ * arms   comprimento do braço (bugbear alcança abaixo do quadril)
+ * neck   pixels de pescoço a mais ou a menos
+ * ear    round | long | swept | wide
+ *
+ * Os valores são deliberadamente contidos. A primeira versão exagerava — o
+ * goblin saía cabeçudo de olho enorme, mais gremlin de desenho animado que a
+ * criatura do Manual dos Monstros, que é um humanoide pequeno e seco de cara
+ * achatada. Diferença de espécie se lê com 15% a 25%, não com o dobro.
  */
 export const SPECIES = {
-  humano: { h: 1.00, legs: 1.00, head: 1.00, bulk: 1.00, neck: 0, ear: 'round' },
-  elfo: { h: 1.06, legs: 1.08, head: 0.92, bulk: 0.88, neck: 1, ear: 'long', jaw: -1 },
-  anao: { h: 0.84, legs: 0.68, head: 1.10, bulk: 1.34, neck: -1, ear: 'round', beardAlways: true, wideNose: true },
-  halfling: { h: 0.72, legs: 0.86, head: 1.18, bulk: 0.94, neck: -1, ear: 'round', bigFeet: true },
+  humano: { h: 1.00, legs: 1.00, head: 1.00, bulk: 1.00, arms: 1.00, neck: 0, ear: 'round' },
+  elfo: { h: 1.05, legs: 1.06, head: 0.94, bulk: 0.90, arms: 1.02, neck: 1, ear: 'long', jaw: -1 },
+  anao: { h: 0.82, legs: 0.72, head: 1.06, bulk: 1.14, arms: 0.92, neck: -1, ear: 'round', beardAlways: true, wideNose: true },
+  halfling: { h: 0.74, legs: 0.88, head: 1.08, bulk: 0.96, arms: 0.94, neck: -1, ear: 'round', bigFeet: true },
 
-  goblin: { h: 0.70, legs: 0.80, head: 1.30, bulk: 0.80, neck: -1, ear: 'wide', snout: true, hunch: 2, bigEyes: true, fangs: true },
-  hobgoblin: { h: 1.12, legs: 1.02, head: 0.94, bulk: 1.26, neck: 2, ear: 'wide', brow: true, flatNose: true, jaw: 1 },
-  bugbear: { h: 1.24, legs: 0.94, head: 1.00, bulk: 1.36, neck: 1, ear: 'wide', snout: true, fur: true, hunch: 1, fangs: true },
-  orc: { h: 1.14, legs: 0.98, head: 1.00, bulk: 1.30, neck: 2, ear: 'wide', tusks: true, brow: true, jaw: 1 },
+  // Goblinoides: seco e corcunda, soldado ereto, bruto peludo de braço longo.
+  goblin: { h: 0.72, legs: 0.86, head: 1.12, bulk: 0.86, arms: 1.04, neck: -1, ear: 'swept', flatNose: true, hunch: 2, darkEyes: true, fangs: true },
+  hobgoblin: { h: 1.10, legs: 1.04, head: 0.98, bulk: 1.18, arms: 1.00, neck: 1, ear: 'swept', brow: true, flatNose: true, jaw: 1 },
+  bugbear: { h: 1.20, legs: 0.92, head: 1.00, bulk: 1.24, arms: 1.22, neck: 0, ear: 'wide', snout: true, fur: true, hunch: 1, fangs: true },
+  orc: { h: 1.12, legs: 1.00, head: 1.00, bulk: 1.20, arms: 1.06, neck: 1, ear: 'swept', tusks: true, brow: true, flatNose: true, jaw: 1 },
 };
 
 /** Compleição: é ortogonal à espécie — existe goblin gordo e hobgoblin magro. */
 export const BUILDS = {
-  magro: { bulk: 0.84, belly: 0, shoulder: -1 },
+  magro: { bulk: 0.88, belly: 0, shoulder: -1 },
   normal: { bulk: 1.00, belly: 0, shoulder: 0 },
-  forte: { bulk: 1.20, belly: 0, shoulder: 2 },
-  gordo: { bulk: 1.14, belly: 4, shoulder: 0 },
+  forte: { bulk: 1.12, belly: 0, shoulder: 1 },
+  gordo: { bulk: 1.08, belly: 3, shoulder: 0 },
 };
 
 const r = Math.round;
