@@ -9,3 +9,6 @@ dist/
 # mudou de pasta. Não pertence a este projeto e, em parte, é código de terceiros
 # que não pode ser redistribuído. Fica fora do versionamento de propósito.
 _analise-narubonk/
+
+# Arte de referência de terceiros: consulta de trabalho, não entra no repositório.
+_referencias/
