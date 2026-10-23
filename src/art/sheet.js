@@ -73,14 +73,62 @@ function outline(ctx, width, height) {
 }
 
 /** Retrato estático para as fichas da UI. */
-export function makePortrait(lookKey, scale = 2) {
+const caixas = new Map();
+
+/** Onde a figura começa e termina dentro da célula, no quadro parado. */
+function caixaDo(lookKey) {
+  const pronta = caixas.get(lookKey);
+  if (pronta) return pronta;
   const sheet = getSheet(lookKey);
+  const ctx = sheet.image.getContext('2d', { willReadFrequently: true });
+  const d = ctx.getImageData(0, sheet.anims.idle.y, CELL_W, CELL_H).data;
+  let x0 = CELL_W; let y0 = CELL_H; let x1 = -1; let y1 = -1;
+  for (let y = 0; y < CELL_H; y++) {
+    for (let x = 0; x < CELL_W; x++) {
+      if (d[(y * CELL_W + x) * 4 + 3] === 0) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  const caixa = x1 < 0
+    ? { x0: 0, y0: 0, x1: CELL_W - 1, y1: CELL_H - 1, cx: CELL_W / 2 }
+    : { x0, y0, x1, y1, cx: (x0 + x1) / 2 };
+  caixas.set(lookKey, caixa);
+  return caixa;
+}
+
+/**
+ * Retrato quadrado, mirando na CABEÇA.
+ *
+ * Antes isto devolvia a célula inteira de 52x80 e o corte ficava a cargo de um
+ * `margin-top` fixo no CSS. Não funciona: a célula tem o chão na base, e a
+ * cabeça de um goblin de 41 px fica trinta pixels abaixo da de um bugbear de
+ * 73 px. Com um corte só, metade do elenco aparecia decapitado.
+ *
+ * Aqui a caixa real da figura é medida do alfa e a janela desce a partir do
+ * alto dela. Sem reescalar: o pixel continua pixel, e uma criatura pequena
+ * aparecer menor dentro do quadro é informação, não defeito.
+ */
+export function makePortrait(lookKey, lado = 40) {
+  const sheet = getSheet(lookKey);
+  const b = caixaDo(lookKey);
+  const w = Math.min(lado, CELL_W);
+  const h = Math.min(lado, CELL_H);
+  const sx = Math.max(0, Math.min(Math.round(b.cx - w / 2), CELL_W - w));
+  const sy = Math.max(0, Math.min(b.y0 - 1, CELL_H - h));
+
   const canvas = document.createElement('canvas');
-  canvas.width = CELL_W * scale;
-  canvas.height = CELL_H * scale;
+  canvas.width = lado;
+  canvas.height = lado;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(sheet.image, 0, sheet.anims.idle.y, CELL_W, CELL_H, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(
+    sheet.image,
+    sx, sheet.anims.idle.y + sy, w, h,
+    Math.floor((lado - w) / 2), Math.floor((lado - h) / 2), w, h,
+  );
   return canvas;
 }
 

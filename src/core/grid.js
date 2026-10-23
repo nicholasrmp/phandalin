@@ -12,13 +12,49 @@ export const parseKey = (k) => {
   return { x: Number(x), y: Number(y) };
 };
 
-/** Distância em pés entre dois quadrados (diagonal = 5 pés). */
+/**
+ * Quantos quadrados de lado a criatura ocupa, pela categoria de tamanho.
+ *
+ * Miúdo, Pequeno e Médio dividem o mesmo quadrado de 1,5 m; é de Grande para
+ * cima que o espaço ocupado cresce, e é isso que faz um ogro ser um problema
+ * de posicionamento e não só um saco de pontos de vida.
+ */
+export function footprintOf(size) {
+  switch (`${size}`.normalize('NFD').replace(/[̀-ͯ]/g, '')) {
+    case 'grande': return 2;
+    case 'enorme': return 3;
+    case 'imenso': case 'colossal': return 4;
+    default: return 1;
+  }
+}
+
+/**
+ * Distância em pés entre duas CAIXAS (diagonal = 5 pés).
+ *
+ * A posição de um combatente carrega a própria pegada em `pos.f`, então um
+ * ponto solto — `{x, y}` de um nó de caminho — é só uma caixa 1x1. É esse
+ * detalhe que faz os quarenta e tantos lugares que já chamavam `distanceFt`
+ * passarem a medir certo contra criatura Grande sem serem tocados: medir do
+ * canto de um ogro de 2x2 daria 1,5 m a mais de alcance do que ele tem.
+ */
 export function distanceFt(a, b) {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) * FEET_PER_SQUARE;
+  const fa = a.f ?? 1;
+  const fb = b.f ?? 1;
+  const dx = Math.max(0, a.x - (b.x + fb - 1), b.x - (a.x + fa - 1));
+  const dy = Math.max(0, a.y - (b.y + fb - 1), b.y - (a.y + fa - 1));
+  return Math.max(dx, dy) * FEET_PER_SQUARE;
 }
 
 export function isAdjacent(a, b) {
-  return a !== b && Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) === 1;
+  return a !== b && distanceFt(a, b) === FEET_PER_SQUARE;
+}
+
+/** Todos os quadrados cobertos por uma posição com pegada. */
+export function squaresOf(pos) {
+  const f = pos.f ?? 1;
+  const out = [];
+  for (let dy = 0; dy < f; dy++) for (let dx = 0; dx < f; dx++) out.push({ x: pos.x + dx, y: pos.y + dy });
+  return out;
 }
 
 const NEIGHBORS = [
@@ -101,7 +137,15 @@ export class Battlefield {
    * @param {(x:number,y:number)=>boolean} occupied quadrado ocupado por outra criatura
    * @returns {Map<string,{x:number,y:number,cost:number,from:string|null}>}
    */
-  reachable(from, budgetFt, occupied = () => false) {
+  /**
+   * @param {function} occupied  o quadrado está tomado? (atravessa, não para)
+   * @param {function} cabe      a criatura CABE com esse quadrado de âncora?
+   *   Para quem ocupa 1x1 é sempre verdade. Para um ogro de 2x2 é o que impede
+   *   ele de atravessar uma porta de um quadrado e de parar meio dentro da
+   *   parede — e, diferente de `occupied`, vale também para passar, porque
+   *   quem não cabe não passa.
+   */
+  reachable(from, budgetFt, occupied = () => false, cabe = () => true) {
     const seen = new Map();
     seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null });
     // Fila simples ordenada por custo: a grade é pequena, não precisa de heap.
@@ -117,6 +161,7 @@ export class Battlefield {
         const nx = cur.x + dx;
         const ny = cur.y + dy;
         if (!this.inside(nx, ny) || this.blocksMove(nx, ny)) continue;
+        if (!cabe(nx, ny)) continue;
         // Não corta quina entre duas paredes.
         if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
         if (this.stepBlocked(cur.x, cur.y, nx, ny)) continue;

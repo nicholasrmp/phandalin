@@ -456,7 +456,13 @@ export class Board {
   drawCombatant(ctx, c) {
     const walking = this.fx.positionFor(c.id);
     const here = walking ?? c.pos;
-    const { sx: baseX, sy: baseY0 } = this.centerF(here.x, here.y);
+    // Criatura Grande ocupa 2x2 e Enorme 3x3. A âncora continua sendo o canto,
+    // porque é com ele que o motor conta quadrados — mas ela é DESENHADA no
+    // centro da própria pegada, senão o ogro fica pendurado num canto do
+    // espaço que ocupa.
+    const pegada = c.pos.f ?? 1;
+    const meio = (pegada - 1) / 2;
+    const { sx: baseX, sy: baseY0 } = this.centerF(here.x + meio, here.y + meio);
     const baseY = baseY0 - (walking?.lift ?? 0);
     const down = c.dead || hasCondition(c, 'inconsciente');
     const ally = c.side === 'party';
@@ -481,7 +487,7 @@ export class Board {
       ctx.strokeStyle = ally ? 'rgba(110,200,255,.85)' : 'rgba(255,120,96,.8)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(baseX, baseY, 19, 9.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(baseX, baseY, 19 * pegada, 9.5 * pegada, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.lineWidth = 1;
     }
@@ -490,7 +496,7 @@ export class Board {
       ctx.strokeStyle = '#ffd24a';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.ellipse(baseX, baseY, 23, 11.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(baseX, baseY, 23 * pegada, 11.5 * pegada, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.lineWidth = 1;
     }
@@ -515,9 +521,12 @@ export class Board {
     drawSprite(ctx, sheet, animName, frame, {
       x: sx,
       y: sy + 6,
-      // 1:1. Escala quebrada borra a grade de pixels; é melhor desenhar
-      // com mais resolução e não reescalar.
-      scale: 1,
+      // 1:1 para quem ocupa um quadrado — escala quebrada borra a grade de
+      // pixels. Para Grande e Enorme a regra cede: um ogro desenhado 1:1 em
+      // cima de uma base do dobro da largura lê como anão num tablado. A conta
+      // vai atrás da proporção real (ogro ~1,7x a altura de um humano), que a
+      // célula de 80 px sozinha não alcança.
+      scale: 1 + (pegada - 1) * 0.4,
       flip,
       row,
       alpha: c.acted && ally && !down ? 0.62 : 1,

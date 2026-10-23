@@ -69,8 +69,19 @@ export class Encounter {
     return this.combatants.filter((c) => c.side === side && !c.dead);
   }
 
+  /**
+   * Quem está NESTE quadrado — inclusive quando a âncora dele é outra.
+   *
+   * Um ogro ancorado em (4,4) também está em (5,4), (4,5) e (5,5). Enquanto
+   * isto comparava só a âncora, dava para andar e atacar por dentro do corpo
+   * de uma criatura Grande.
+   */
   at(x, y) {
-    return this.combatants.find((c) => !c.dead && c.pos.x === x && c.pos.y === y);
+    return this.combatants.find((c) => {
+      if (c.dead) return false;
+      const f = c.pos.f ?? 1;
+      return x >= c.pos.x && x < c.pos.x + f && y >= c.pos.y && y < c.pos.y + f;
+    });
   }
 
   occupied(x, y, except = null) {
@@ -261,10 +272,23 @@ export class Encounter {
 
   reachableFor(actor) {
     if (hasCondition(actor, 'inconsciente') || conditionEffects(actor).incapacitated) return new Map();
+    const f = actor.pos.f ?? 1;
     return this.field.reachable(
       actor.pos,
       actor.movementLeftFt,
       (x, y) => this.occupied(x, y, actor),
+      // Quem ocupa 2x2 só pisa onde os quatro quadrados existem e estão livres
+      // de parede. Sem isto o ogro para com metade do corpo dentro da pedra.
+      f === 1 ? undefined : (x, y) => {
+        for (let dy = 0; dy < f; dy++) {
+          for (let dx = 0; dx < f; dx++) {
+            if (!this.field.inside(x + dx, y + dy)) return false;
+            if (this.field.blocksMove(x + dx, y + dy)) return false;
+            if (this.occupied(x + dx, y + dy, actor)) return false;
+          }
+        }
+        return true;
+      },
     );
   }
 
@@ -286,7 +310,8 @@ export class Encounter {
           && distanceFt(e.pos, from) <= this.reachOf(e)
           && distanceFt(e.pos, to) > this.reachOf(e),
       );
-      actor.pos = { x: to.x, y: to.y };
+      // `f` viaja junto: perder a pegada aqui faria o ogro virar Médio ao andar.
+      actor.pos = { x: to.x, y: to.y, f: actor.pos.f ?? 1 };
       for (const threat of threats) this.opportunityAttack(threat, actor);
       if (actor.dead || hasCondition(actor, 'inconsciente')) break;
     }

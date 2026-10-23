@@ -218,7 +218,7 @@ export class Hud {
     const ficha = (c, ativo) => {
       const down = c.dead || hasCondition(c, 'inconsciente');
       const pct = Math.max(0, c.hp / c.maxHp);
-      const retrato = makePortrait(c.look, 1);
+      const retrato = makePortrait(c.look, 32);
       retrato.className = 'pixel';
       const node = el('div', {
         class: `vez${ativo ? ' agora' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${selected === c ? ' alvo' : ''}`,
@@ -253,7 +253,7 @@ export class Hud {
   fichaGrupo(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
     const pct = Math.max(0, c.hp / c.maxHp);
-    const retrato = makePortrait(c.look, 1);
+    const retrato = makePortrait(c.look, 44);
     retrato.className = 'pixel';
 
     const node = el('button', {
@@ -329,14 +329,18 @@ export class Hud {
       return;
     }
 
-    this.barra.append(
+    // A barra muda com a classe. O mago precisa de gestão de espaços de magia
+    // e o guerreiro não tem nenhum: reservar a zona vazia para ele seria
+    // mostrar um recurso que não existe.
+    this.barra.append(...limpos(
       this.zonaAtaques(c, mode),
       this.zonaComuns(enc, c, mode),
       this.nucleo(c),
       this.zonaMovimento(c),
-      this.zonaHotbar(c, mode),
+      this.zonaRecursos(c),
+      c.spellcasting ? this.zonaHotbar(c, mode) : null,
       this.zonaReacao(c),
-    );
+    ));
   }
 
   zonaAtaques(c, mode) {
@@ -407,13 +411,20 @@ export class Hud {
    * o jogador nunca precisar conferir de quem é o turno.
    */
   nucleo(c) {
-    const retrato = makePortrait(c.look, 1.4);
+    const retrato = makePortrait(c.look, 58);
     retrato.className = 'pixel';
     const pct = Math.max(0, c.hp / c.maxHp);
 
-    const gema = (icone, gasto, nome, texto) => this.ligarDica(
-      el('div', { class: `gema${gasto ? ' gasta' : ''}` }, iconCanvas(icone, 1)),
-      { nome, texto, aviso: gasto ? 'Já usada neste turno' : 'Disponível' },
+    // Ação Surpreendente dá uma ação EXTRA. Mostrar "1" quando restam duas é
+    // esconder do guerreiro o recurso que define o turno dele.
+    const acoesExtras = c.resources?.actionSurge ?? 0;
+    const acoesRestam = (c.actionUsed ? 0 : 1) + acoesExtras;
+
+    const gema = (icone, restam, nome, texto) => this.ligarDica(
+      el('div', { class: `gema${restam ? '' : ' gasta'}` },
+        iconCanvas(icone, 1),
+        restam > 1 ? el('span', { class: 'gema-n' }, restam) : null),
+      { nome, texto, aviso: restam ? `${restam} disponível${restam > 1 ? 'is' : ''}` : 'Já usada neste turno' },
     );
 
     return el('div', { class: 'nucleo' },
@@ -422,14 +433,75 @@ export class Hud {
         el('div', { class: 'nucleo-pv' },
           el('i', { style: { width: `${pct * 100}%`, background: pct > 0.5 ? '#5fd07a' : pct > 0.25 ? '#ffc83a' : '#ff5a5a' } }))),
       el('div', { class: 'nucleo-nome' }, c.name),
+      el('div', { class: 'nucleo-vitais' },
+        el('span', {}, `${Math.max(0, Math.ceil(c.hp))}/${c.maxHp} PV`),
+        el('span', { class: 'nucleo-ca' }, `CA ${c.ac}`)),
       el('div', { class: 'gemas' },
-        gema('acao', c.actionUsed, 'Ação', 'Uma por turno: atacar, conjurar, disparada, esquivar, desengajar.'),
-        gema('bonus', c.bonusUsed, 'Ação bônus', 'Uma por turno, e só quando alguma habilidade a oferece.')),
+        gema('acao', acoesRestam, 'Ação',
+          acoesExtras
+            ? 'Uma por turno — e Ação Surpreendente dá outra.'
+            : 'Uma por turno: atacar, conjurar, disparada, esquivar, desengajar.'),
+        gema('bonus', c.bonusUsed ? 0 : 1, 'Ação bônus', 'Uma por turno, e só quando alguma habilidade a oferece.')),
       el('button', {
         class: 'btn-terminar',
         onclick: () => this.handlers.onEndTurn?.(),
         title: 'Terminar o turno (espaço)',
       }, iconCanvas('terminar', 2), 'Terminar'));
+  }
+
+  /**
+   * Os recursos que NÃO são da economia de turno: espaços de magia e cargas de
+   * classe. Mudam com a classe porque a classe é isso — o mago gerencia
+   * espaços, o guerreiro gerencia duas cargas e o ladino não gerencia nada.
+   * Quem não tem nada a gerenciar não ganha a zona.
+   */
+  zonaRecursos(c) {
+    const blocos = [];
+
+    if (c.spellcasting) {
+      const max = c.spellcasting.slotsMax ?? c.spellcasting.slots;
+      const linhas = [];
+      for (let lvl = 1; lvl < c.spellcasting.slots.length; lvl++) {
+        const total = max[lvl] ?? 0;
+        if (!total) continue;
+        const tem = c.spellcasting.slots[lvl] ?? 0;
+        linhas.push(this.ligarDica(
+          el('div', { class: 'slot-linha' },
+            el('span', { class: 'slot-lvl' }, `${lvl}º`),
+            el('div', { class: 'pips' }, Array.from({ length: total }, (_, i) => el('span', { class: `pip${i < tem ? '' : ' gasto'}` })))),
+          {
+            nome: `Espaços de ${lvl}º círculo`,
+            linhas: [['Restam', `${tem} de ${total}`]],
+            texto: 'Gastos ao conjurar. Voltam num descanso longo.',
+          },
+        ));
+      }
+      if (linhas.length) blocos.push(el('div', { class: 'recurso-grupo' }, linhas));
+    }
+
+    const nomes = {
+      secondWind: ['folego', 'Retomar o Fôlego'],
+      actionSurge: ['surto', 'Ação Surpreendente'],
+      channelDivinity: ['preservar', 'Canalizar Divindade'],
+    };
+    const linhasCarga = [];
+    for (const [id, n] of Object.entries(c.resources ?? {})) {
+      const total = c.resourcesMax?.[id] ?? n;
+      if (!total) continue;
+      const [icone, nome] = nomes[id] ?? ['acao', id];
+      linhasCarga.push(this.ligarDica(
+        el('div', { class: 'slot-linha' },
+          iconCanvas(icone, 1),
+          el('div', { class: 'pips' }, Array.from({ length: total }, (_, i) => el('span', { class: `pip${i < n ? '' : ' gasto'}` })))),
+        { nome, linhas: [['Restam', `${n} de ${total}`]], texto: 'Volta num descanso.' },
+      ));
+    }
+    if (linhasCarga.length) blocos.push(el('div', { class: 'recurso-grupo' }, linhasCarga));
+
+    if (!blocos.length) return null;
+    return el('div', { class: 'zona zona-recursos' },
+      el('div', { class: 'recursos' }, blocos),
+      el('span', { class: 'zona-rot' }, 'Recursos'));
   }
 
   zonaMovimento(c) {
@@ -455,8 +527,8 @@ export class Hud {
   }
 
   zonaHotbar(c, mode) {
-    const tiles = [];
-    if (c.spellcasting) {
+    const grupos = new Map();
+    {
       const dc = spellSaveDc(c);
       const atk = spellAttackBonus(c);
       const todas = [...c.spellcasting.cantrips, ...c.spellcasting.prepared];
@@ -466,10 +538,11 @@ export class Hud {
         const bonus = s.castTime === 'bonus';
         const gasto = bonus ? c.bonusUsed : c.actionUsed;
         const desabilitado = semSlot || gasto;
-        const n = tiles.length + 1;
+        const n = this.hotkeys.length + 1;
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
         if (n <= 9) this.hotkeys.push({ run, disabled: desabilitado });
-        tiles.push(this.tile(iconeDeMagia({ ...s, id: sid }), {
+        if (!grupos.has(s.level)) grupos.set(s.level, []);
+        grupos.get(s.level).push(this.tile(iconeDeMagia({ ...s, id: sid }), {
           tecla: n <= 9 ? String(n) : null,
           ativo: mode?.kind === 'spell' && mode.spellId === sid,
           desabilitado,
@@ -491,11 +564,20 @@ export class Hud {
         }));
       }
     }
-    if (!tiles.length) {
-      tiles.push(el('div', { class: 'tile vazio', title: 'Este personagem não conjura magias' }));
-    }
+    // Agrupado por círculo, com o truque primeiro: é assim que o jogador
+    // pensa a mão dele — o que é de graça e o que custa um espaço.
+    const colunas = [...grupos.entries()].sort((a, b) => a[0] - b[0]).map(([lvl, tiles]) => {
+      const max = c.spellcasting.slotsMax?.[lvl] ?? 0;
+      const tem = c.spellcasting.slots?.[lvl] ?? 0;
+      return el('div', { class: 'grupo-magia' },
+        el('div', { class: 'tiles' }, tiles),
+        el('span', { class: 'grupo-rot' },
+          lvl === 0 ? 'truques' : `${lvl}º`,
+          lvl > 0 && max ? el('span', { class: 'grupo-slots' }, ` ${tem}/${max}`) : null));
+    });
+
     return el('div', { class: 'zona zona-hotbar' },
-      el('div', { class: 'tiles' }, tiles),
+      el('div', { class: 'grupos-magia' }, colunas),
       el('span', { class: 'zona-rot' }, 'Magias'));
   }
 

@@ -71,7 +71,10 @@ class App {
       c.pos = { ...PARTY_SPOTS[i] };
       c.facingVec = { dx: 1, dy: -1 };
     });
-    const foes = buildFoes();
+    // `?encontro=grandes` troca o encontro por uma vitrine de tamanho. O
+    // encontro padrão não tem criatura Grande, e mexer na composição dele só
+    // para mostrar o recurso estragaria um equilíbrio que foi medido.
+    const foes = buildFoes(new URLSearchParams(location.search).get('encontro') ?? 'padrao');
 
     this.enc = new Encounter({
       battlefield: field,

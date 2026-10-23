@@ -43,7 +43,14 @@ export const PARTY_SPOTS = [
  * Orçamento pelo DMG, para 4 personagens de 2º nível:
  *   fácil 200 · médio 400 · difícil 600 · mortal 800 (XP ajustado)
  */
-export function buildFoes() {
+/**
+ * @param {string} variante  'padrão' é o encontro do jogo. 'grandes' existe
+ *   para VER as criaturas que ocupam mais de um quadrado, porque o encontro
+ *   padrão não tem nenhuma e trocar a composição dele só para exibir um
+ *   recurso estragaria um equilíbrio que foi medido. Chega por `?encontro=`.
+ */
+export function buildFoes(variante = 'padrao') {
+  if (variante === 'grandes') return foesGrandes();
   const foes = [
     makeMonster('goblinChefe', { x: 12, y: 2 }),
     // O goblin fica COLADO no chefe de propósito: Redirecionar Ataque só
@@ -67,6 +74,17 @@ export function buildFoes() {
  * chega na rodada 2 e outro na 4 impedem o combate de ser decidido na abertura
  * e dão forma ao encontro: aguentar, respirar, aguentar de novo.
  */
+/** Vitrine de tamanho: Médio, Grande e Grande de novo, lado a lado. */
+function foesGrandes() {
+  const foes = [
+    makeMonster('goblin', { x: 12, y: 1 }, { nameSuffix: 'A' }),
+    makeMonster('ogro', { x: 10, y: 2 }),
+    makeMonster('loboAtroz', { x: 11, y: 6 }, { nameSuffix: 'da matilha' }),
+  ];
+  for (const f of foes) f.facingVec = { dx: -1, dy: 1 };
+  return foes;
+}
+
 export const REINFORCEMENTS = [
   {
     round: 3,

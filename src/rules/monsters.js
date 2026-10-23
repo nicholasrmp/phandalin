@@ -7,6 +7,7 @@
 // SRD 5.1 (CC-BY-4.0) — ver NOTICE.md e ELENCO.md.
 
 import { proficiencyBonus } from './abilities.js';
+import { footprintOf } from '../core/grid.js';
 import { GOBLINOIDES, TRAITS as T_GOB } from './monsters/goblinoides.js';
 import { HUMANOIDES, TRAITS as T_HUM } from './monsters/humanoides.js';
 import { FERAS, TRAITS as T_FER } from './monsters/feras.js';
@@ -60,7 +61,9 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     multiattack: def.multiattack ?? null,
     traits: def.traits ?? [],
     conditions: [],
-    pos: { ...pos },
+    // A pegada viaja DENTRO da posição: assim `distanceFt` e `isAdjacent`
+    // medem contra a caixa da criatura sem que nenhum chamador saiba disso.
+    pos: { ...pos, f: footprintOf(def.size) },
     deathSaves: { successes: 0, failures: 0 },
     stable: false,
     dead: false,

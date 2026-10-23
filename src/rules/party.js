@@ -25,7 +25,13 @@ function finish(sheet) {
   c.ac = armorClass(c);
   c.hp = c.maxHp;
   c.equippedWeapon = c.weapons[0];
-  if (c.spellcasting) c.spellcasting.slots = slotsFor(c.level);
+  // O HUD precisa do MÁXIMO para desenhar o que já foi gasto: três losangos
+  // dos quais um está vazio dizem muito mais que o número 2.
+  if (c.spellcasting) {
+    c.spellcasting.slots = slotsFor(c.level);
+    c.spellcasting.slotsMax = slotsFor(c.level);
+  }
+  c.resourcesMax = { ...(c.resources ?? {}) };
   return c;
 }
 
