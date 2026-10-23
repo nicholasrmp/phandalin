@@ -22,6 +22,18 @@
 //
 // Antes disso tudo era uma fileira de botões de texto com emoji, e emoji é
 // desenho do sistema operacional: era metade da cara de amador.
+//
+// O QUE A SEGUNDA RODADA DE TRABALHO ACRESCENTOU
+// 1. Dica em TODO lugar clicável. A ficha do grupo é o ponto mais clicado da
+//    tela e não explicava nada; os botões de câmera e som usavam `title`, que
+//    é desenho do navegador e aparece depois de um segundo de espera.
+// 2. A CA do inimigo virou chance de acerto. `rules/odds.js` faz a conta que o
+//    jogador fazia de cabeça — e "CA 17 · 45%" é decisão, não aritmética.
+// 3. Condição aparece onde a criatura aparece, com nome e efeito na dica.
+// 4. Atalho de letra para arma e ação, impresso no canto do azulejo: sem a
+//    tecla à vista, atalho é folclore.
+// 5. Resumo do turno inimigo no centro. O log fica a 300 px do tabuleiro e
+//    rola sozinho: quando o turno volta, ninguém sabe o que acabou de doer.
 
 import { makePortrait } from '../art/sheet.js';
 import { iconCanvas, iconeDeArma, iconeDeMagia } from '../art/icons.js';
@@ -29,6 +41,7 @@ import { CONDITIONS, hasCondition } from '../rules/conditions.js';
 import { WEAPONS } from '../rules/equipment.js';
 import { getSpell } from '../rules/spells.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
+import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
 import { formatModifier } from '../core/dice.js';
 import { audio } from '../core/audio.js';
 
@@ -54,17 +67,58 @@ export const el = (tag, attrs = {}, ...children) => {
  */
 const limpos = (...filhos) => filhos.flat().filter((f) => f !== null && f !== undefined && f !== false);
 
-const LOG_ICON = {
-  inicio: '🎲', turno: '⏳', ataque: '⚔️', magia: '✨', cura: '💚', morte: '💀',
-  condicao: '🌀', recurso: '🔸', acao: '🏃', reacao: '⚡', aviso: '⚠️',
-  concentracao: '🧠', fim: '🏁',
-};
+/**
+ * O log usava emoji — treze desenhos do sistema operacional numa interface de
+ * pedra e latão. Agora cada linha leva um losango da cor do tipo, no mesmo
+ * idioma dos `pip` de espaço de magia: a cor já diz a categoria e o olho para
+ * de tropeçar em bonequinho colorido. A cor mora no CSS, por classe.
+ */
+const LOG_TIPOS = new Set([
+  'inicio', 'turno', 'ataque', 'magia', 'cura', 'morte', 'condicao',
+  'recurso', 'acao', 'reacao', 'aviso', 'concentracao', 'fim',
+]);
+
+/**
+ * O que entra no resumo do turno inimigo: o que ACONTECEU com o grupo. Ficam
+ * fora as linhas de bookkeeping (`turno`, `recurso`, `concentracao`) — elas
+ * enchem o painel e não mudam decisão nenhuma.
+ */
+const KINDS_RESUMO = new Set(['ataque', 'magia', 'cura', 'morte', 'condicao', 'reacao']);
+
+/** Condições que o jogador QUER ter: pintadas de latão, não de sangue. */
+const CONDICOES_BOAS = new Set(['abencoado', 'esquivando']);
+
+// Atalhos de letra. Fora do jogo estão as teclas que `main.js` já escuta
+// (Escape, espaço, Tab, Q, E, M) e os dígitos 1–9 da hotbar de magia. O que
+// sobrou foi agrupado para a mão esquerda: F/G/H para as armas, na ordem em
+// que elas aparecem, e R/X/C/T para as ações comuns.
+const TECLAS_ARMA = ['f', 'g', 'h'];
+const TECLAS_ACAO = { dash: 'r', dodge: 'x', disengage: 'c', stabilize: 't' };
+const TECLAS_FEATURE = ['v', 'b', 'n'];
+
+/** Sigla de três letras sem acento: chip de condição legível sem emoji. */
+const sigla = (texto) => texto.normalize('NFD').replace(/\p{M}/gu, '').slice(0, 3).toUpperCase();
+
+/** Faixa de cor da chance: verde aposta boa, latão duvidosa, vermelha ruim. */
+const faixaDeChance = (p) => (p >= 0.65 ? 'boa' : p >= 0.35 ? 'media' : 'ruim');
 
 export class Hud {
+  /**
+   * Dados de dica por nó. É WeakMap porque cada `render*` descarta os nós
+   * antigos: guardar num Map comum seria vazar a tela inteira a cada quadro.
+   */
+  static dicas = new WeakMap();
+
   constructor(root, handlers) {
     this.handlers = handlers;
     this.root = root;
     this.hotkeys = [];
+    this.teclas = new Map();
+
+    // Estado do resumo do turno inimigo (ver `acompanharLado`).
+    this.ladoAtual = null;
+    this.resumoItens = [];
+    this.pvAntes = null;
 
     this.ordem = el('div', { class: 'ordem' });
     this.viewBar = el('div', { class: 'viewbar' });
@@ -74,13 +128,18 @@ export class Hud {
     this.barra = el('div', { class: 'barra-acao' });
     this.hint = el('div', { class: 'hint' });
     this.dica = el('div', { class: 'dica', role: 'tooltip' });
+    this.resumo = el('div', { class: 'resumo' });
 
     root.append(
       el('div', { class: 'hud-topo' }, this.banner, this.ordem, this.viewBar),
       el('div', { class: 'hud-meio' },
         el('aside', { class: 'coluna-grupo' }, this.trilho),
+        // O resumo mora no palco e não no `board-wrap`: aquele é uma grade que
+        // centraliza o tabuleiro e tem rolagem própria do zoom — um filho a
+        // mais ali viraria item de grade e empurraria a peça principal.
         el('div', { class: 'palco' },
           el('div', { class: 'board-wrap', id: 'board-wrap' }),
+          this.resumo,
           this.hint),
         el('aside', { class: 'coluna-log' },
           el('h2', {}, 'Rolagens'),
@@ -94,17 +153,37 @@ export class Hud {
       this.dica,
     );
 
-    // As teclas 1–9 disparam a hotbar, como num jogo de verdade. Dígito não
-    // conflita com nada que `main.js` já escuta (Esc, espaço, Tab, Q/E, M).
+    // As teclas 1–9 disparam a hotbar e as letras de `TECLAS_ARMA`/
+    // `TECLAS_ACAO` disparam a barra, como num jogo de verdade. Nada aqui
+    // conflita com o que `main.js` já escuta (Esc, espaço, Tab, Q/E, M).
     addEventListener('keydown', (e) => {
-      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
+      // O controle de volume é um campo de formulário: as teclas são dele.
+      if (e.target instanceof HTMLInputElement) return;
+
+      // Escape já limpa o modo de alvo em `main.js`; aqui ele também fecha o
+      // resumo, que é a tecla que a mão procura para dispensar um painel.
+      if (e.key === 'Escape') { this.fecharResumo(); return; }
+
       const n = Number(e.key);
-      if (!Number.isInteger(n) || n < 1 || n > 9) return;
-      const slot = this.hotkeys[n - 1];
+      const slot = Number.isInteger(n) && n >= 1 && n <= 9
+        ? this.hotkeys[n - 1]
+        : this.teclas.get(e.key.toLowerCase());
       if (!slot || slot.disabled) return;
       e.preventDefault();
       slot.run();
     });
+  }
+
+  /**
+   * Reserva uma letra para uma ação do turno. Devolve o rótulo a imprimir no
+   * azulejo, ou `null` quando a letra já saiu para outra ação — azulejo sem
+   * rótulo é melhor que dois azulejos prometendo a mesma tecla.
+   */
+  reservarTecla(tecla, run, desabilitado) {
+    if (!tecla || this.teclas.has(tecla)) return null;
+    this.teclas.set(tecla, { run, disabled: desabilitado });
+    return tecla.toUpperCase();
   }
 
   get boardWrap() {
@@ -119,39 +198,64 @@ export class Hud {
    */
   ligarDica(node, dados) {
     if (!dados) return node;
-    const mostrar = () => {
-      this.dica.replaceChildren(...limpos(
-        el('div', { class: 'dica-topo' },
-          el('strong', {}, dados.nome),
-          dados.tipo ? el('span', { class: 'dica-tipo' }, dados.tipo) : null),
-        dados.linhas?.length
-          ? el('div', { class: 'dica-linhas' }, dados.linhas.filter(Boolean).map(
-            ([rotulo, valor]) => el('div', { class: 'dica-linha' },
-              el('span', { class: 'dica-rot' }, rotulo),
-              el('span', { class: 'dica-val' }, valor))))
-          : null,
-        dados.texto ? el('p', { class: 'dica-texto' }, dados.texto) : null,
-        dados.custo ? el('div', { class: 'dica-custo' }, dados.custo) : null,
-        dados.aviso ? el('div', { class: 'dica-aviso' }, dados.aviso) : null,
-      ));
-      const r = node.getBoundingClientRect();
-      // Medir ANTES de reposicionar dá a largura do lugar ANTERIOR: se a dica
-      // estava encostada na borda, ela tinha quebrado mais estreita, e a trava
-      // de borda calculada com esse número deixa a dica meio palmo fora da
-      // tela. Zerar a posição primeiro força a medida no espaço livre.
-      this.dica.style.left = '0px';
-      this.dica.style.top = '0px';
-      this.dica.classList.add('on');
-      const dr = this.dica.getBoundingClientRect();
-      const x = Math.min(Math.max(8, r.left + r.width / 2 - dr.width / 2), innerWidth - dr.width - 8);
-      this.dica.style.left = `${x}px`;
-      this.dica.style.top = `${Math.max(8, r.top - dr.height - 10)}px`;
-    };
-    const esconder = () => this.dica.classList.remove('on');
-    node.addEventListener('pointerenter', mostrar);
-    node.addEventListener('pointerleave', esconder);
-    node.addEventListener('click', esconder);
+    // Botão cujo conteúdo é só pixel art não tem texto para a leitura de tela
+    // nem para a busca do navegador: o nome da dica serve aos dois.
+    if (!node.getAttribute('aria-label') && !node.textContent.trim()) {
+      node.setAttribute('aria-label', dados.nome);
+    }
+    // Marca o nó como dono de dica para o aninhamento funcionar: ao sair de um
+    // chip de condição de volta para a ficha, a dica da FICHA volta em vez de
+    // a tela ficar muda com o ponteiro parado em cima dela.
+    node.dataset.dica = '1';
+    Hud.dicas.set(node, dados);
+
+    node.addEventListener('pointerenter', () => this.mostrarDica(node));
+    node.addEventListener('pointerleave', () => {
+      const pai = node.parentElement?.closest('[data-dica]');
+      if (pai) this.mostrarDica(pai);
+      else this.esconderDica();
+    });
+    node.addEventListener('click', () => this.esconderDica());
     return node;
+  }
+
+  esconderDica() {
+    this.dica.classList.remove('on');
+  }
+
+  mostrarDica(node) {
+    const dados = Hud.dicas.get(node);
+    if (!dados) { this.esconderDica(); return; }
+    this.dica.replaceChildren(...limpos(
+      el('div', { class: 'dica-topo' },
+        el('strong', {}, dados.nome),
+        dados.tipo ? el('span', { class: 'dica-tipo' }, dados.tipo) : null),
+      dados.linhas?.length
+        ? el('div', { class: 'dica-linhas' }, dados.linhas.filter(Boolean).map(
+          ([rotulo, valor, classe]) => el('div', { class: 'dica-linha' },
+            el('span', { class: 'dica-rot' }, rotulo),
+            el('span', { class: `dica-val${classe ? ` ${classe}` : ''}` }, valor))))
+        : null,
+      dados.texto ? el('p', { class: 'dica-texto' }, dados.texto) : null,
+      dados.custo ? el('div', { class: 'dica-custo' }, dados.custo) : null,
+      dados.aviso ? el('div', { class: 'dica-aviso' }, dados.aviso) : null,
+      dados.atalho ? el('div', { class: 'dica-atalho' }, `tecla ${dados.atalho}`) : null,
+    ));
+    const r = node.getBoundingClientRect();
+    // Medir ANTES de reposicionar dá a largura do lugar ANTERIOR: se a dica
+    // estava encostada na borda, ela tinha quebrado mais estreita, e a trava
+    // de borda calculada com esse número deixa a dica meio palmo fora da
+    // tela. Zerar a posição primeiro força a medida no espaço livre.
+    this.dica.style.left = '0px';
+    this.dica.style.top = '0px';
+    this.dica.classList.add('on');
+    const dr = this.dica.getBoundingClientRect();
+    const x = Math.min(Math.max(8, r.left + r.width / 2 - dr.width / 2), innerWidth - dr.width - 8);
+    this.dica.style.left = `${x}px`;
+    // Em cima do alvo é o padrão; quando não cabe (ficha no topo da coluna), a
+    // dica desce para baixo dele em vez de encostar no teto e cobrir o nome.
+    const acima = r.top - dr.height - 10;
+    this.dica.style.top = `${acima >= 8 ? acima : Math.min(r.bottom + 10, innerHeight - dr.height - 8)}px`;
   }
 
   /** Um azulejo da barra: ícone, tecla, estado e dica. */
@@ -163,20 +267,149 @@ export class Hud {
     },
       iconCanvas(icone, 2),
       tecla ? el('span', { class: 'tecla' }, tecla) : null);
-    return this.ligarDica(node, dica);
+    // A tecla impressa no canto só vale metade: na dica ela aparece escrita,
+    // que é onde o jogador procura quando quer decorar o atalho.
+    return this.ligarDica(node, dica && tecla ? { atalho: tecla, ...dica } : dica);
+  }
+
+  // ---- condições ------------------------------------------------------------
+
+  /**
+   * Chips de condição. Aparecem em todo lugar onde a criatura aparece — trilho,
+   * ordem de turno, ficha de inimigo — porque condição esquecida é regra
+   * perdida: ninguém lembra que está com desvantagem olhando o retrato.
+   *
+   * A sigla de três letras substitui o emoji de `CONDITIONS[x].icon`: emoji é
+   * desenho do sistema operacional e não existe na nossa interface.
+   */
+  condChips(c, { mini = false } = {}) {
+    const lista = c.conditions ?? [];
+    if (!lista.length) return null;
+    return el('div', { class: `conds${mini ? ' mini' : ''}` }, lista.map((x) => {
+      const def = CONDITIONS[x.id];
+      const nome = def?.name ?? x.id;
+      return this.ligarDica(
+        el('span', { class: `cond${CONDICOES_BOAS.has(x.id) ? ' boa' : ''}` }, sigla(nome)),
+        {
+          nome,
+          tipo: 'condição',
+          linhas: [Number.isFinite(x.rounds) ? ['Rodadas restantes', String(x.rounds)] : null],
+          texto: def?.desc,
+          aviso: def?.houseRule ? 'Regra da casa — não é do SRD' : null,
+        },
+      );
+    }));
+  }
+
+  /** Nomes das condições em texto corrido, para a dica de quem as carrega. */
+  nomesDeCondicao(c) {
+    const lista = c.conditions ?? [];
+    if (!lista.length) return null;
+    return lista.map((x) => CONDITIONS[x.id]?.name ?? x.id).join(', ');
+  }
+
+  // ---- previsão de acerto ---------------------------------------------------
+
+  /**
+   * A conta de `rules/odds.js` para o personagem SELECIONADO contra este alvo.
+   * Devolve `null` quando não há quem ataque — aí a ficha mostra só a CA, que é
+   * o que ela sempre mostrou.
+   *
+   * A arma é a do modo de alvo, quando o jogador está com um ataque escolhido:
+   * trocar de azulejo e ver a porcentagem mudar é como se aprende que o arco
+   * acerta mais longe e a espada acerta mais forte.
+   */
+  previsaoContra(enc, atacante, alvo, mode = null) {
+    if (!atacante || !alvo || alvo === atacante) return null;
+    if (atacante.side === alvo.side) return null;
+    if (atacante.dead || hasCondition(atacante, 'inconsciente')) return null;
+    if (alvo.dead) return null;
+    const weaponId = mode?.kind === 'attack' ? mode.weaponId : null;
+    return previsaoDeAtaque(enc, atacante, alvo, weaponId);
+  }
+
+  /**
+   * O rótulo curto que vai na ficha: "45%", "fora", "sem visão".
+   *
+   * O alcance vem ANTES da visão de propósito. `odds.js` mede linha de visão
+   * para qualquer arma, mas a regra só exige visão no ataque à distância; num
+   * corpo a corpo a 45 pés o que o jogador precisa saber é que tem de andar.
+   */
+  rotuloDeChance(p, alvo = null) {
+    if (!p) return null;
+    if (p.foraDeAlcance) {
+      // Corpo a corpo longe do alvo não é ataque impossível: clicar no inimigo
+      // anda até ele e golpeia. A chance DE QUANDO ENCOSTAR é o que permite
+      // escolher para quem atravessar a sala, então ela aparece — apagada,
+      // porque ainda não é a chance de agora.
+      if (!p.perfil.ranged && alvo) {
+        return { texto: pct(chanceD20(p.perfil.bonus, alvo.ac, p.mods)), classe: 'longe', aoChegar: true };
+      }
+      return { texto: 'fora', classe: 'ruim' };
+    }
+    if (p.semVisao) return { texto: 'sem visão', classe: 'ruim' };
+    return { texto: pct(p.chance), classe: faixaDeChance(p.chance) };
+  }
+
+  /** As linhas de dica que explicam a porcentagem. Sem elas o número é palpite. */
+  linhasDePrevisao(p, atacante, alvo = null) {
+    if (!p) return [];
+    const r = this.rotuloDeChance(p, alvo);
+    const linhas = [
+      [`Acerto de ${atacante.name}`, `${r.texto}${r.aoChegar ? ' ao encostar' : ''} · ${p.perfil.name}`, r.classe],
+      ['Distância', `${p.dist} pés · alcance ${p.alcance}`],
+    ];
+    if (!p.foraDeAlcance && !p.semVisao) {
+      linhas.push(['Dano médio', `${p.danoMedio.toFixed(1)} · esperado ${p.esperado.toFixed(1)}`]);
+      linhas.push(['Crítico', pct(p.critico)]);
+    }
+    return linhas;
+  }
+
+  /**
+   * Quantos turnos de ataque este alvo ainda aguenta, pelo dano esperado. É a
+   * leitura que decide o turno: um inimigo a um golpe de cair muda a ordem de
+   * tudo. Só aparece quando a conta faz sentido (chance e dano > 0).
+   */
+  golpesParaDerrubar(p, alvo) {
+    if (!p || p.esperado <= 0) return null;
+    const n = Math.ceil(Math.max(0, alvo.hp) / p.esperado);
+    return n <= 1 ? 'um golpe deve bastar' : `cerca de ${n} golpes`;
+  }
+
+  /** Vantagem e desvantagem em uma frase, com o motivo que a regra deu. */
+  avisoDePrevisao(p) {
+    if (!p) return null;
+    if (p.foraDeAlcance) {
+      return p.perfil.ranged
+        ? `Fora de alcance — ${p.dist} pés, a arma chega a ${p.alcance}`
+        : `A ${p.dist} pés: clicar ataca andando até lá, se o movimento der`;
+    }
+    if (p.semVisao) return 'Sem linha de visão até o alvo';
+    const motivos = p.motivos?.length ? ` (${p.motivos.join(', ')})` : '';
+    if (p.mods.advantage && !p.mods.disadvantage) return `Vantagem${motivos}`;
+    if (p.mods.disadvantage && !p.mods.advantage) return `Desvantagem${motivos}`;
+    return null;
   }
 
   // ---- log e faixa ----------------------------------------------------------
 
   pushLog(entry) {
+    const tipo = LOG_TIPOS.has(entry.kind) ? entry.kind : 'outro';
     const node = el('div', { class: `log-entry log-${entry.kind}` },
-      el('span', { class: 'log-icon' }, LOG_ICON[entry.kind] ?? '•'),
+      el('span', { class: `log-rune rune-${tipo}` }),
       el('div', {},
         el('span', { class: 'log-text' }, entry.text),
         entry.detail ? el('span', { class: 'log-detail' }, entry.detail) : null));
     this.logList.append(node);
     this.logList.scrollTop = this.logList.scrollHeight;
     while (this.logList.childElementCount > 160) this.logList.firstElementChild.remove();
+
+    // O resumo do turno inimigo se monta com o que o log diz ENQUANTO o lado
+    // inimigo age: é a única fonte que já tem a frase pronta e revisada.
+    if (this.ladoAtual === 'foes' && KINDS_RESUMO.has(entry.kind)) {
+      this.resumoItens.push(entry.text);
+    }
   }
 
   setBanner(enc) {
@@ -195,11 +428,96 @@ export class Hud {
   }
 
   update(enc, selected, mode) {
+    this.acompanharLado(enc);
     this.setBanner(enc);
-    this.renderOrdem(enc, selected);
-    this.renderTrilho(enc, selected);
+    this.renderOrdem(enc, selected, mode);
+    this.renderTrilho(enc, selected, mode);
     this.renderBarra(enc, selected, mode);
     this.renderViewBar();
+  }
+
+  // ---- resumo do turno inimigo ----------------------------------------------
+
+  /**
+   * O log fica na coluna da direita, a uns 300 px do tabuleiro, e rola sozinho:
+   * quando seis inimigos agem em sequência, o jogador vê os números subirem no
+   * tabuleiro e depois não tem como saber o que doeu nem em quem. Este resumo
+   * aparece no centro, no instante em que o turno volta, e sai com um clique.
+   *
+   * A troca de lado é detectada aqui, dentro do `update` que `main.js` já
+   * chama depois de cada evento — não precisou de gancho novo.
+   */
+  acompanharLado(enc) {
+    const lado = enc.over ? 'fim' : enc.side;
+    if (lado === this.ladoAtual) return;
+    const anterior = this.ladoAtual;
+    this.ladoAtual = lado;
+
+    if (lado === 'foes') {
+      // Os PV de ANTES são a medida honesta do estrago: contar dano somando o
+      // texto do log erraria cura, resistência e dano redirecionado.
+      this.resumoItens = [];
+      // A rodada é anotada agora: a do fim do turno inimigo pode já ser a
+      // seguinte, porque o contador vira quando o lado que abriu volta a agir.
+      this.resumoRodada = enc.round;
+      this.pvAntes = new Map(enc.allOf('party').map((c) => [c.id, { hp: c.hp, down: c.dead || hasCondition(c, 'inconsciente') }]));
+      this.fecharResumo();
+      return;
+    }
+    if (anterior === 'foes') this.montarResumo(enc);
+  }
+
+  fecharResumo() {
+    this.resumo.classList.remove('on');
+    this.resumo.replaceChildren();
+  }
+
+  montarResumo(enc) {
+    const feridos = [];
+    const curados = [];
+    const baixas = [];
+    for (const c of enc.allOf('party')) {
+      const antes = this.pvAntes?.get(c.id);
+      if (!antes) continue;
+      const delta = Math.round(antes.hp - c.hp);
+      if (delta > 0) feridos.push(`${c.name} −${delta}`);
+      if (delta < 0) curados.push(`${c.name} +${-delta}`);
+      const down = c.dead || hasCondition(c, 'inconsciente');
+      if (down && !antes.down) baixas.push(c.name);
+    }
+
+    // Lado inimigo que não encostou em ninguém e não fez nada digno de nota
+    // não merece um painel em cima do tabuleiro.
+    if (!feridos.length && !baixas.length && !this.resumoItens.length) { this.fecharResumo(); return; }
+
+    const MAX = 6;
+    const linhas = this.resumoItens.slice(0, MAX);
+    const sobra = this.resumoItens.length - linhas.length;
+
+    this.resumo.replaceChildren(...limpos(
+      el('div', { class: 'resumo-topo' },
+        el('strong', {}, 'O que os inimigos fizeram'),
+        el('span', { class: 'resumo-rodada' }, `rodada ${this.resumoRodada ?? enc.round}`),
+        el('button', {
+          class: 'resumo-x',
+          'aria-label': 'Dispensar o resumo',
+          onclick: (e) => { e.stopPropagation(); this.fecharResumo(); },
+        }, '×')),
+      feridos.length
+        ? el('div', { class: 'resumo-dano' }, feridos.join(' · '))
+        : el('div', { class: 'resumo-nada' }, 'Ninguém do grupo se feriu.'),
+      curados.length ? el('div', { class: 'resumo-cura' }, curados.join(' · ')) : null,
+      baixas.length ? el('div', { class: 'resumo-baixa' }, `${baixas.join(' e ')} ${baixas.length > 1 ? 'caíram' : 'caiu'}`) : null,
+      linhas.length
+        ? el('ul', { class: 'resumo-linhas' }, linhas.map((t) => el('li', {}, t)))
+        : null,
+      sobra > 0 ? el('div', { class: 'resumo-sobra' }, `e mais ${sobra} no log à direita`) : null,
+      el('div', { class: 'resumo-pe' }, 'clique ou Esc para dispensar'),
+    ));
+    // Clicar em qualquer lugar do painel dispensa: a mão já está no mouse e o
+    // alvo é o painel inteiro, não um × de 12 px.
+    this.resumo.onclick = () => this.fecharResumo();
+    this.resumo.classList.add('on');
   }
 
   // ---- ordem de turno -------------------------------------------------------
@@ -210,62 +528,83 @@ export class Hud {
    * que espera, separado por uma marca. Fingir uma fila individual mostraria
    * uma ordem que a regra não tem.
    */
-  renderOrdem(enc, selected) {
+  renderOrdem(enc, selected, mode) {
     if (enc.over) { this.ordem.replaceChildren(); return; }
     const agora = enc.side;
     const depois = agora === 'party' ? 'foes' : 'party';
 
     const ficha = (c, ativo) => {
       const down = c.dead || hasCondition(c, 'inconsciente');
-      const pct = Math.max(0, c.hp / c.maxHp);
+      const fracao = Math.max(0, c.hp / c.maxHp);
       const retrato = makePortrait(c.look, 32);
       retrato.className = 'pixel';
+      // A condição também aparece aqui: a ordem de turno é onde o olho está
+      // quando a vez troca, e "atordoado" muda o plano da rodada inteira.
+      const chips = this.condChips(c, { mini: true });
+      const previsao = this.previsaoContra(enc, selected, c, mode);
       const node = el('div', {
         class: `vez${ativo ? ' agora' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${selected === c ? ' alvo' : ''}`,
       },
         el('div', { class: 'vez-retrato' }, retrato),
-        el('div', { class: 'vez-pv' }, el('i', { style: { width: `${pct * 100}%` } })));
+        el('div', { class: 'vez-pv' }, el('i', { style: { width: `${fracao * 100}%` } })),
+        chips);
       return this.ligarDica(node, {
         nome: c.name,
         tipo: c.kind === 'npc' ? 'inimigo' : `${c.className} · Nv ${c.level}`,
-        linhas: [['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`], ['Classe de armadura', String(c.ac)]],
-        aviso: down ? 'Fora de combate' : c.acted ? 'Já agiu nesta rodada' : null,
+        linhas: [
+          ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
+          ['Classe de armadura', String(c.ac)],
+          ...this.linhasDePrevisao(previsao, selected, c),
+          this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
+        ],
+        aviso: down ? 'Fora de combate' : this.avisoDePrevisao(previsao) ?? (c.acted ? 'Já agiu nesta rodada' : null),
       });
     };
 
     this.ordem.replaceChildren(
       ...enc.allOf(agora).map((c) => ficha(c, true)),
-      el('span', { class: 'vez-sep', title: 'Iniciativa por lado: todo o lado age, depois passa' }, '▸'),
+      this.ligarDica(el('span', { class: 'vez-sep' }, '▸'), {
+        nome: 'Iniciativa por lado',
+        texto: 'Todo o lado age e só então passa para o outro. Quem está à esquerda da marca joga nesta vez; à direita, espera.',
+      }),
       ...enc.allOf(depois).map((c) => ficha(c, false)),
     );
   }
 
   // ---- trilho do grupo ------------------------------------------------------
 
-  renderTrilho(enc, selected) {
+  renderTrilho(enc, selected, mode) {
     this.trilho.replaceChildren(...limpos(
       enc.allOf('party').map((c) => this.fichaGrupo(enc, c, selected)),
       enc.allOf('foes').length ? el('div', { class: 'trilho-titulo' }, 'Inimigos') : null,
-      enc.allOf('foes').map((c) => this.fichaInimigo(c)),
+      enc.allOf('foes').map((c) => this.fichaInimigo(enc, c, selected, mode)),
     ));
   }
 
+  /**
+   * A ficha do grupo é o lugar mais clicado da tela e era o único sem dica
+   * nenhuma. Ela agora explica o que os números dela querem dizer e o que
+   * ainda sobrou do turno — a mesma resposta das gemas, mas sem obrigar o
+   * jogador a atravessar a tela para ver.
+   */
   fichaGrupo(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
-    const pct = Math.max(0, c.hp / c.maxHp);
+    const fracao = Math.max(0, c.hp / c.maxHp);
     const retrato = makePortrait(c.look, 44);
     retrato.className = 'pixel';
 
     const node = el('button', {
       class: `ficha${selected === c ? ' on' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}`,
       onclick: () => this.handlers.onSelect?.(c),
+      // A ficha do grupo é o ponto mais clicado da tela e só selecionava.
+      ondblclick: () => this.handlers.onAbrirFicha?.(c),
     },
       el('div', { class: 'ficha-retrato' }, retrato, el('span', { class: 'ficha-ca' }, c.ac)),
       el('div', { class: 'ficha-corpo' },
         el('strong', {}, c.name),
         el('span', { class: 'ficha-sub' }, `${c.className} ${c.ancestry}`),
         el('div', { class: 'bar' },
-          el('i', { style: { width: `${pct * 100}%`, background: pct > 0.5 ? '#5fd07a' : pct > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
+          el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
         el('span', { class: 'ficha-pv' }, `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`),
         down
           ? el('span', { class: 'ficha-morte' }, c.dead ? 'Morto' : `Morte ${c.deathSaves.successes}✓ ${c.deathSaves.failures}✗`)
@@ -274,33 +613,70 @@ export class Hud {
           ? el('div', { class: 'slots' }, c.spellcasting.slots.map((n, lvl) => (lvl === 0 || n === undefined ? null
             : el('span', { class: 'slot' }, `${lvl}º ${'◆'.repeat(n)}`))))
           : null,
-        (c.conditions ?? []).length
-          ? el('div', { class: 'conds' }, c.conditions.map((x) => this.ligarDica(
-            el('span', { class: 'cond' }, CONDITIONS[x.id]?.icon ?? '•'),
-            { nome: CONDITIONS[x.id]?.name ?? x.id, texto: CONDITIONS[x.id]?.desc },
-          )))
-          : null),
+        this.condChips(c)),
     );
-    return node;
+
+    const restos = [];
+    if (!down && enc.side === 'party') {
+      if (!c.actionUsed) restos.push('ação');
+      if (!c.bonusUsed) restos.push('bônus');
+      if ((c.movementLeftFt ?? 0) > 0) restos.push(`${c.movementLeftFt} pés`);
+      if (!c.reactionUsed) restos.push('reação');
+    }
+
+    return this.ligarDica(node, {
+      nome: c.name,
+      tipo: `${c.className} ${c.ancestry} · Nv ${c.level}`,
+      linhas: [
+        ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
+        ['Classe de armadura', String(c.ac)],
+        ['Deslocamento', `${Math.max(0, c.movementLeftFt ?? 0)} de ${c.speedFt || 30} pés`],
+        restos.length ? ['Ainda tem', restos.join(', ')] : null,
+        this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
+      ],
+      texto: down
+        ? 'Fora de combate. Um aliado adjacente pode estabilizar com uma ação.'
+        : 'Clique para assumir este personagem. Tab passa para o próximo que ainda não agiu.',
+      aviso: down
+        ? (c.dead ? 'Morto' : 'Inconsciente — rolando testes de morte')
+        : c.acted ? 'Turno encerrado nesta rodada' : null,
+    });
   }
 
-  fichaInimigo(c) {
-    const pct = Math.max(0, c.hp / c.maxHp);
+  /**
+   * "CA 17" obriga o jogador a calcular de cabeça; "CA 17 · 45%" é decisão.
+   * A conta vem de `rules/odds.js` e é do personagem SELECIONADO com a arma
+   * em mão — sem ninguém selecionado, a ficha volta a mostrar só a CA, porque
+   * uma porcentagem sem dono seria mentira.
+   */
+  fichaInimigo(enc, c, selected, mode) {
+    const fracao = Math.max(0, c.hp / c.maxHp);
     const down = hasCondition(c, 'inconsciente');
+    const previsao = this.previsaoContra(enc, selected, c, mode);
+    const chance = this.rotuloDeChance(previsao, c);
+    const golpes = this.golpesParaDerrubar(previsao, c);
+
     return this.ligarDica(
       el('div', { class: `inimigo${down ? ' down' : ''}` },
         el('div', { class: 'inimigo-topo' },
           el('strong', {}, c.name),
-          el('span', { class: 'inimigo-ca' }, c.ac)),
-        el('div', { class: 'bar small' }, el('i', { style: { width: `${pct * 100}%`, background: '#d4574a' } })),
-        (c.conditions ?? []).length
-          ? el('div', { class: 'conds' }, c.conditions.map((x) => el('span', { class: 'cond' }, CONDITIONS[x.id]?.icon ?? '•')))
-          : null),
+          el('span', { class: 'inimigo-ca' },
+            `CA ${c.ac}`,
+            chance ? el('span', { class: `inimigo-chance ${chance.classe}` }, ` · ${chance.texto}`) : null)),
+        el('div', { class: 'bar small' }, el('i', { style: { width: `${fracao * 100}%`, background: '#d4574a' } })),
+        this.condChips(c)),
       {
         nome: c.name,
-        tipo: c.blurb ? 'inimigo' : null,
-        linhas: [['Classe de armadura', String(c.ac)], ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`]],
-        texto: c.blurb,
+        tipo: 'inimigo',
+        linhas: [
+          ['Classe de armadura', String(c.ac)],
+          ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
+          ...this.linhasDePrevisao(previsao, selected, c),
+          golpes ? ['Para derrubar', golpes] : null,
+          this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
+        ],
+        texto: c.blurb ?? (previsao ? null : 'Escolha um personagem à esquerda para ver a chance de acerto contra este inimigo.'),
+        aviso: this.avisoDePrevisao(previsao) ?? (down ? 'Fora de combate' : null),
       },
     );
   }
@@ -309,6 +685,10 @@ export class Hud {
 
   renderBarra(enc, c, mode) {
     this.hotkeys = [];
+    // As letras são reservadas a cada montagem da barra: a barra muda com a
+    // classe e com o turno, e tecla apontando para um azulejo que não existe
+    // mais é pior que tecla nenhuma.
+    this.teclas = new Map();
     this.barra.replaceChildren();
 
     if (enc.over) {
@@ -333,7 +713,7 @@ export class Hud {
     // e o guerreiro não tem nenhum: reservar a zona vazia para ele seria
     // mostrar um recurso que não existe.
     this.barra.append(...limpos(
-      this.zonaAtaques(c, mode),
+      this.zonaAtaques(enc, c, mode),
       this.zonaComuns(enc, c, mode),
       this.nucleo(c),
       this.zonaMovimento(c),
@@ -343,20 +723,29 @@ export class Hud {
     ));
   }
 
-  zonaAtaques(c, mode) {
-    const tiles = (c.weapons ?? []).map((wid) => {
+  zonaAtaques(enc, c, mode) {
+    const tiles = (c.weapons ?? []).map((wid, i) => {
       const w = WEAPONS[wid];
+      const run = () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid });
+      const tecla = this.reservarTecla(TECLAS_ARMA[i], run, c.actionUsed);
+      // O perfil é a arma NAS MÃOS DESTE personagem: a dica mostrava "1d8
+      // cortante", o dado cru da tabela, sem o modificador que o guerreiro
+      // soma de verdade. O bônus de ataque é a metade que faltava da conta.
+      const p = enc.weaponAttackProfile(c, wid);
       return this.tile(iconeDeArma(w.art, w.name), {
+        tecla,
         ativo: mode?.kind === 'attack' && mode.weaponId === wid,
         desabilitado: c.actionUsed,
-        onClick: () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid }),
+        onClick: run,
         dica: {
           nome: w.name,
           tipo: w.ranged ? 'ataque à distância' : 'ataque corpo a corpo',
           linhas: [
-            ['Dano', `${w.damage} ${w.type}`],
-            [w.ranged ? 'Alcance' : 'Alcance', w.ranged ? `${w.rangeFt} pés` : `${w.reachFt ?? 5} pés`],
+            ['Ataque', formatModifier(p.bonus)],
+            ['Dano', `${p.damage} ${p.type}`],
+            ['Alcance', w.ranged ? `${w.rangeFt} pés (longo ${w.longRangeFt})` : `${w.reachFt ?? 5} pés`],
           ],
+          texto: 'Clique num inimigo para atacar. Corpo a corpo longe do alvo anda até ele primeiro, gastando movimento.',
           custo: 'Ação',
           aviso: c.actionUsed ? 'A ação deste turno já foi usada' : null,
         },
@@ -369,11 +758,24 @@ export class Hud {
 
   zonaComuns(enc, c, mode) {
     const tiles = [];
-    const comum = (icone, nome, texto, custo, acao, desabilitado) => tiles.push(this.tile(icone, {
-      desabilitado,
-      onClick: () => this.handlers.onAction?.(acao),
-      dica: { nome, texto, custo, aviso: desabilitado ? 'Indisponível agora' : null },
-    }));
+    let proximaExtra = 0;
+    const comum = (icone, nome, texto, custo, acao, desabilitado) => {
+      const run = () => this.handlers.onAction?.(acao);
+      // Ação comum tem letra fixa (R, X, C, T) e habilidade de classe pega a
+      // próxima do pote: fixar V para "Retomar o Fôlego" e V para "Ação
+      // Ardilosa" quebraria em quem tivesse as duas.
+      const tecla = this.reservarTecla(
+        TECLAS_ACAO[acao.kind] ?? TECLAS_FEATURE[proximaExtra++],
+        run,
+        desabilitado,
+      );
+      tiles.push(this.tile(icone, {
+        tecla,
+        desabilitado,
+        onClick: run,
+        dica: { nome, texto, custo, aviso: desabilitado ? 'Indisponível agora' : null },
+      }));
+    };
 
     comum('correr', 'Disparada', 'Dobra o deslocamento deste turno.', 'Ação', { kind: 'dash' }, c.actionUsed);
     comum('esquivar', 'Esquivar', 'Quem te ataca fica com desvantagem; seus testes de Destreza ganham vantagem.', 'Ação', { kind: 'dodge' }, c.actionUsed);
@@ -413,7 +815,9 @@ export class Hud {
   nucleo(c) {
     const retrato = makePortrait(c.look, 58);
     retrato.className = 'pixel';
-    const pct = Math.max(0, c.hp / c.maxHp);
+    // `fracao`, e não `pct`: `pct` agora é a formatação de porcentagem que vem
+    // de `rules/odds.js`, e um nome local igual ao importado é bug esperando.
+    const fracao = Math.max(0, c.hp / c.maxHp);
 
     // Ação Surpreendente dá uma ação EXTRA. Mostrar "1" quando restam duas é
     // esconder do guerreiro o recurso que define o turno dele.
@@ -431,7 +835,7 @@ export class Hud {
       el('div', { class: 'nucleo-retrato' },
         retrato,
         el('div', { class: 'nucleo-pv' },
-          el('i', { style: { width: `${pct * 100}%`, background: pct > 0.5 ? '#5fd07a' : pct > 0.25 ? '#ffc83a' : '#ff5a5a' } }))),
+          el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } }))),
       el('div', { class: 'nucleo-nome' }, c.name),
       el('div', { class: 'nucleo-vitais' },
         el('span', {}, `${Math.max(0, Math.ceil(c.hp))}/${c.maxHp} PV`),
@@ -442,11 +846,33 @@ export class Hud {
             ? 'Uma por turno — e Ação Surpreendente dá outra.'
             : 'Uma por turno: atacar, conjurar, disparada, esquivar, desengajar.'),
         gema('bonus', c.bonusUsed ? 0 : 1, 'Ação bônus', 'Uma por turno, e só quando alguma habilidade a oferece.')),
+      this.botaoTerminar(c));
+  }
+
+  /**
+   * Terminar o turno é irreversível e ficava com `title` do navegador. A dica
+   * agora lista o que seria JOGADO FORA: ação, bônus e os pés que sobraram.
+   * É o aviso que impede o clique de reflexo que custa um turno de guerreiro.
+   */
+  botaoTerminar(c) {
+    const perdas = [];
+    if (!c.actionUsed) perdas.push('a ação');
+    if (!c.bonusUsed) perdas.push('a ação bônus');
+    if ((c.movementLeftFt ?? 0) > 0) perdas.push(`${c.movementLeftFt} pés de movimento`);
+
+    return this.ligarDica(
       el('button', {
         class: 'btn-terminar',
         onclick: () => this.handlers.onEndTurn?.(),
-        title: 'Terminar o turno (espaço)',
-      }, iconCanvas('terminar', 2), 'Terminar'));
+      }, iconCanvas('terminar', 2), 'Terminar', el('span', { class: 'tecla-inline' }, 'espaço')),
+      {
+        nome: 'Terminar o turno',
+        tipo: 'passa a vez',
+        texto: 'Encerra o turno deste personagem e passa para o próximo do grupo que ainda não agiu.',
+        atalho: 'espaço',
+        aviso: perdas.length ? `Ainda resta ${perdas.join(', ')} — terminar agora joga fora.` : null,
+      },
+    );
   }
 
   /**
@@ -507,13 +933,13 @@ export class Hud {
   zonaMovimento(c) {
     const total = c.speedFt || 30;
     const resta = Math.max(0, c.movementLeftFt ?? 0);
-    const pct = Math.min(1, resta / total);
+    const fracao = Math.min(1, resta / total);
     // Marcas de 1,5 m (um quadrado) para o jogador contar quadrados, não pés.
     const quadrados = Math.max(1, Math.round(total / 5));
     const node = el('div', { class: 'zona zona-mov' },
       el('div', { class: 'mov' },
         el('div', { class: 'mov-trilho' },
-          el('i', { class: 'mov-cheio', style: { width: `${pct * 100}%` } }),
+          el('i', { class: 'mov-cheio', style: { width: `${fracao * 100}%` } }),
           ...Array.from({ length: quadrados - 1 }, (_, i) => el('span', {
             class: 'mov-marca', style: { left: `${((i + 1) / quadrados) * 100}%` },
           }))),
@@ -602,36 +1028,85 @@ export class Hud {
 
   // ---- câmera e som ---------------------------------------------------------
 
+  /**
+   * Câmera e som. Os botões usavam `title`, que é desenho do navegador: aparece
+   * com um segundo de atraso, em fonte do sistema, longe da nossa pedra e
+   * latão. Agora usam a mesma dica rica do resto da tela — e o botão de som
+   * perdeu o emoji: a nota musical com um corte é glifo de texto, não figura
+   * do sistema operacional.
+   */
   renderViewBar() {
     if (this.viewBar.childElementCount > 0) {
-      this.muteBtn.replaceChildren(audio.muted ? '🔇' : '🔊');
+      this.muteBtn.className = `icon-btn${audio.muted ? ' mudo' : ''}`;
+      Hud.dicas.set(this.muteBtn, this.dicaDeSom());
       this.volume.value = String(audio.muted ? 0 : Math.round(audio.volume * 100));
       return;
     }
 
-    this.muteBtn = el('button', {
-      class: 'icon-btn',
-      title: 'Ligar/desligar som (M)',
+    this.muteBtn = this.ligarDica(el('button', {
+      class: `icon-btn${audio.muted ? ' mudo' : ''}`,
+      'aria-label': 'Ligar ou desligar o som',
       onclick: () => { audio.unlock(); audio.toggleMute(); this.renderViewBar(); },
-    }, audio.muted ? '🔇' : '🔊');
+    }, '♪'), this.dicaDeSom());
 
     this.volume = el('input', {
       type: 'range', min: '0', max: '100', class: 'volume',
       value: String(Math.round(audio.volume * 100)),
-      title: 'Volume',
+      'aria-label': 'Volume',
       oninput: (e) => { audio.unlock(); audio.setVolume(Number(e.target.value) / 100); this.renderViewBar(); },
     });
+    this.ligarDica(this.volume, {
+      nome: 'Volume',
+      texto: 'Todo o som do jogo é sintetizado na hora — não há arquivo de áudio no jogo.',
+    });
+
+    const botao = (glifo, dica, onClick) => this.ligarDica(
+      el('button', { class: 'icon-btn', 'aria-label': dica.nome, onclick: onClick }, glifo),
+      dica,
+    );
 
     this.viewBar.replaceChildren(
-      el('button', { class: 'icon-btn', title: 'Girar a câmera (Q)', onclick: () => this.handlers.onRotate?.(-1) }, '↺'),
-      el('button', { class: 'icon-btn', title: 'Girar a câmera (E)', onclick: () => this.handlers.onRotate?.(1) }, '↻'),
+      botao('↺', {
+        nome: 'Girar para a esquerda',
+        tipo: 'câmera',
+        texto: 'Gira a vista em 90°. A grade do jogo não muda — só o lado de onde você a vê, para destravar a peça escondida atrás da parede.',
+        atalho: 'Q',
+      }, () => this.handlers.onRotate?.(-1)),
+      botao('↻', {
+        nome: 'Girar para a direita',
+        tipo: 'câmera',
+        texto: 'Gira a vista em 90° no outro sentido.',
+        atalho: 'E',
+      }, () => this.handlers.onRotate?.(1)),
       el('span', { class: 'divider' }),
-      el('button', { class: 'icon-btn', title: 'Afastar (roda do mouse)', onclick: () => this.handlers.onZoom?.(1 / 1.2) }, '－'),
-      el('button', { class: 'icon-btn', title: 'Enquadrar de novo', onclick: () => this.handlers.onResetCamera?.() }, '⌖'),
-      el('button', { class: 'icon-btn', title: 'Aproximar (roda do mouse)', onclick: () => this.handlers.onZoom?.(1.2) }, '＋'),
+      botao('－', {
+        nome: 'Afastar',
+        tipo: 'câmera',
+        texto: 'Mostra mais tabuleiro. A roda do mouse faz o mesmo.',
+      }, () => this.handlers.onZoom?.(1 / 1.2)),
+      botao('⌖', {
+        nome: 'Enquadrar de novo',
+        tipo: 'câmera',
+        texto: 'Volta ao enquadramento inicial, com o tabuleiro inteiro à vista.',
+      }, () => this.handlers.onResetCamera?.()),
+      botao('＋', {
+        nome: 'Aproximar',
+        tipo: 'câmera',
+        texto: 'Chega perto para ver a arte das criaturas. A roda do mouse faz o mesmo.',
+      }, () => this.handlers.onZoom?.(1.2)),
       el('span', { class: 'divider' }),
       this.muteBtn,
       this.volume,
     );
+  }
+
+  dicaDeSom() {
+    return {
+      nome: audio.muted ? 'Religar o som' : 'Silenciar',
+      tipo: 'som',
+      texto: 'Passos, aço, magia e queda. Tudo sintetizado por código.',
+      atalho: 'M',
+      aviso: audio.muted ? 'Silenciado' : null,
+    };
   }
 }

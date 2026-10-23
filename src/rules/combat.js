@@ -9,9 +9,12 @@
 // estado e chama métodos. É isso que vai permitir movê-lo para o servidor sem
 // reescrever nada.
 
-import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier } from '../core/dice.js';
+import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDice } from '../core/dice.js';
 import { Battlefield, distanceFt, isAdjacent, key } from '../core/grid.js';
-import { abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus } from './abilities.js';
+import {
+  abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
+  proficiencyBonus, ABILITY_NAME,
+} from './abilities.js';
 import { WEAPONS, weaponAbility } from './equipment.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
 
@@ -29,6 +32,151 @@ export const HOUSE_RULES = {
 };
 import { getSpell } from './spells.js';
 import { spellMod } from './party.js';
+
+// ---- rolagens que se explicam ---------------------------------------------
+//
+// POR QUE ISTO EXISTE
+// Metade da tática de 5e é fabricar vantagem. O log dizia "d20[18]+4 = 22 vs
+// CA 16" e guardava para si POR QUE a rolagem teve dois dados e de onde veio o
+// +4. Quem está aprendendo não tem como descobrir sozinho — o número já saiu, e
+// o jogador nunca aprende a procurar a vantagem que não vê acontecer.
+//
+// Nada aqui decide coisa alguma: são funções puras que põem no papel a conta
+// que o motor já fez. NENHUMA consome o gerador — se alguma rolasse um dado, o
+// equilíbrio mudaria sem uma única regra mudar.
+
+/**
+ * Fecha o modo da rolagem a partir das duas balanças.
+ *
+ * Vantagem e desvantagem se anulam em 5e, e isso precisa de nome próprio: é a
+ * regra mais contraintuitiva do sistema. Quem conquistou vantagem e viu a
+ * rolagem sair com um dado só merece saber que ela foi cancelada, em vez de
+ * achar que o jogo esqueceu.
+ */
+function fecharModo(mods) {
+  mods.anulado = mods.advantage && mods.disadvantage;
+  mods.mode = mods.anulado ? 'anulado'
+    : mods.advantage ? 'vantagem'
+      : mods.disadvantage ? 'desvantagem' : 'normal';
+  return mods;
+}
+
+/**
+ * Registra uma fonte de vantagem/desvantagem.
+ *
+ * `reasons` continua sendo a lista achatada que `odds.js` e o HUD já leem — não
+ * se renomeia nada. O acréscimo é saber para que LADO cada motivo pesou, que é
+ * justamente o que se perdia quando os dois lados caíam no mesmo array.
+ */
+function fonte(mods, lado, motivo) {
+  if (lado === 'vantagem') {
+    mods.advantage = true;
+    mods.vantagens.push(motivo);
+  } else {
+    mods.disadvantage = true;
+    mods.desvantagens.push(motivo);
+  }
+  mods.reasons.push(motivo);
+  return fecharModo(mods);
+}
+
+/** Pacote de modificadores vazio, já com as duas listas por lado. */
+const modsVazios = () => fecharModo({
+  advantage: false, disadvantage: false, reasons: [], vantagens: [], desvantagens: [],
+});
+
+const MODO_TEXTO = {
+  vantagem: 'vantagem: 2d20, vale o maior',
+  desvantagem: 'desvantagem: 2d20, vale o menor',
+  anulado: 'vantagem E desvantagem — se anulam, rolagem normal',
+  normal: null,
+};
+
+/** Frase que nomeia o modo e de onde veio cada lado da balança. */
+function explicarModo(mods) {
+  const lados = [];
+  if (mods.vantagens?.length) lados.push(`vantagem por ${mods.vantagens.join(' + ')}`);
+  if (mods.desvantagens?.length) lados.push(`desvantagem por ${mods.desvantagens.join(' + ')}`);
+  return [MODO_TEXTO[mods.mode], lados.length ? `(${lados.join('; ')})` : null]
+    .filter(Boolean).join(' ');
+}
+
+/**
+ * "+5 (Destreza +3, proficiência +2)".
+ *
+ * As partes SEMPRE somam o total; quando não somarem, é bug e aparece como tal
+ * em vez de mentir uma origem.
+ */
+function explicarBonus(total, partes) {
+  if (!partes?.length) return formatModifier(total);
+  const detalhe = partes.map((p) => `${p.rotulo} ${formatModifier(p.valor)}`).join(', ');
+  return `${formatModifier(total)} (${detalhe})`;
+}
+
+/** Notação dos dados realmente rolados — no crítico, o dobro deles. */
+function notacaoDeDados(notacao, critico) {
+  const { count, sides } = parseDice(notacao);
+  if (!count) return null;
+  return `${critico ? count * 2 : count}d${sides}`;
+}
+
+/**
+ * Uma parcela de dano aberta: dados de um lado, modificador do outro.
+ *
+ * No crítico dobram os DADOS e não o modificador — é a dúvida mais comum de
+ * quem está aprendendo 5e, e um "= 13" cru não responde nenhuma delas.
+ */
+function contaDeDano(parte) {
+  const bits = [];
+  const dados = notacaoDeDados(parte.notacao, parte.critico);
+  if (dados) bits.push(`${dados}[${parte.dados.join('+')}]`);
+  if (parte.mod) bits.push(`mod ${formatModifier(parte.mod)}`);
+  const marca = parte.critico ? ' (crítico: dados dobrados)' : '';
+  return `${parte.rotulo} ${bits.join(' + ')} = ${parte.total}${marca}`;
+}
+
+/** Monta a parcela de dano a partir do que `damageRoll` devolveu. */
+function parcelaDeDano(rotulo, dmg) {
+  return {
+    rotulo,
+    notacao: String(dmg.notation),
+    dados: [...dmg.rolls],
+    mod: dmg.mod,
+    total: dmg.total,
+    critico: !!dmg.critical,
+  };
+}
+
+/**
+ * Resistência por extenso.
+ *
+ * O log dizia "resistência 14 vs CD 13" e calava as três coisas que importam:
+ * contra O QUE era o teste, com que atributo, e o que o alvo ganha ao passar.
+ * "Resistiu" sem dizer se evitou tudo ou só metade não informa nada sobre a
+ * decisão de ter gastado a magia ali.
+ */
+function contaDeResistencia(r) {
+  // O cabeçalho diz só "resistência": o atributo já aparece como parcela do
+  // bônus, e repetir o nome duas vezes na mesma linha não explica nada.
+  if (r.automatica) {
+    // Falha automática não rola nada, então mostrar o bônus do alvo seria
+    // mentira útil para ninguém: o que importa é QUAL condição o travou.
+    return [
+      `contra ${r.contra}`,
+      `falha automática${r.motivoAutomatico ? ` — ${r.motivoAutomatico} faz este teste falhar sempre` : ''}`,
+      `CD ${r.cd} nem chega a ser rolada`,
+      `se passasse: ${r.seSucesso}`,
+    ].join(' · ');
+  }
+  return [
+    `contra ${r.contra}`,
+    `resistência ${explicarBonus(r.bonus, r.bonusPartes)}`,
+    `d20[${r.d20Rolls.join('/')}] = ${r.total} vs CD ${r.cd}`,
+    r.modo && r.modo !== 'normal' ? MODO_TEXTO[r.modo] : null,
+    r.sucesso ? 'passou' : 'falhou',
+    `se passar: ${r.seSucesso}`,
+  ].filter(Boolean).join(' · ');
+}
 
 export class Encounter {
   constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {}, reinforcements = null }) {
@@ -339,29 +487,34 @@ export class Encounter {
   attackModifiers(attacker, target, { ranged = false, opportunity = false } = {}) {
     const atkFx = conditionEffects(attacker);
     const tgtFx = conditionEffects(target);
-    const reasons = [];
-    let advantage = false;
-    let disadvantage = false;
+    // `mods` carrega as mesmas três chaves de antes (`advantage`,
+    // `disadvantage`, `reasons`, na mesma ordem) mais as listas por lado e o
+    // modo já fechado. Quem só lia as três continua lendo as três.
+    const mods = modsVazios();
 
-    if (atkFx.attackDisadvantage) { disadvantage = true; reasons.push('atacante prejudicado'); }
-    if (tgtFx.attackedAdvantage) { advantage = true; reasons.push('alvo indefeso'); }
-    if (tgtFx.attackedDisadvantage) { disadvantage = true; reasons.push('alvo esquivando'); }
+    if (atkFx.attackDisadvantage) fonte(mods, 'desvantagem', 'atacante prejudicado');
+    // O aviso de armadura sem treino prometia um preço que ninguém cobrava: o
+    // mago podia vestir cota de malha e ir de CA 12 para 16 de graça. Enquanto
+    // nada desequipava, a promessa nunca era testada — o inventário novo a
+    // testa, então o preço passa a existir.
+    if (attacker.armorUntrained) fonte(mods, 'desvantagem', 'armadura sem treino');
+    if (tgtFx.attackedAdvantage) fonte(mods, 'vantagem', 'alvo indefeso');
+    if (tgtFx.attackedDisadvantage) fonte(mods, 'desvantagem', 'alvo esquivando');
 
     const close = distanceFt(attacker.pos, target.pos) <= 5;
-    if (tgtFx.attackedAdvantageMelee && close) { advantage = true; reasons.push('alvo caído e perto'); }
-    if (tgtFx.attackedDisadvantageRanged && ranged) { disadvantage = true; reasons.push('alvo caído e longe'); }
+    if (tgtFx.attackedAdvantageMelee && close) fonte(mods, 'vantagem', 'alvo caído e perto');
+    if (tgtFx.attackedDisadvantageRanged && ranged) fonte(mods, 'desvantagem', 'alvo caído e longe');
 
     // Táticas de Matilha
     if (attacker.traits?.includes('packTactics')) {
       const helper = this.alliesOf(attacker).some((a) => isAdjacent(a.pos, target.pos));
-      if (helper) { advantage = true; reasons.push('táticas de matilha'); }
+      if (helper) fonte(mods, 'vantagem', 'táticas de matilha');
     }
     // Ataque à distância com inimigo colado
     if (ranged && !opportunity && this.enemiesOf(attacker).some((e) => isAdjacent(e.pos, attacker.pos))) {
-      disadvantage = true;
-      reasons.push('inimigo adjacente');
+      fonte(mods, 'desvantagem', 'inimigo adjacente');
     }
-    return { advantage, disadvantage, reasons };
+    return mods;
   }
 
   /** Ataque furtivo do ladino: precisa de vantagem, ou aliado colado sem desvantagem. */
@@ -384,6 +537,10 @@ export class Encounter {
         ranged: !!atk.ranged, reachFt: atk.reachFt ?? 5,
         rangeFt: atk.rangeFt ?? 5, longRangeFt: atk.longRangeFt ?? atk.rangeFt ?? 5,
         onHit: atk.onHit ?? null, weapon: null, art: atk.art ?? null,
+        // Bloco de criatura do SRD traz o bônus já somado, sem dizer quanto é
+        // atributo e quanto é proficiência. Dizer "bloco da criatura" é honesto;
+        // repartir em FOR e proficiência seria invenção nossa.
+        bonusPartes: [{ rotulo: 'bloco da criatura', valor: atk.bonus }],
       };
     }
     const w = WEAPONS[weaponId ?? actor.equippedWeapon];
@@ -401,6 +558,12 @@ export class Encounter {
       onHit: null,
       weapon: w,
       art: w.art ?? null,
+      // Arma de acuidade escolhe o melhor entre FOR e DES: nomear o atributo
+      // que ENTROU é a única forma de o jogador ver a escolha acontecendo.
+      bonusPartes: [
+        { rotulo: ABILITY_NAME[ability], valor: mod },
+        { rotulo: 'proficiência', valor: actor.proficiency },
+      ],
     };
   }
 
@@ -427,19 +590,23 @@ export class Encounter {
     }
     const p = check.profile;
     const mods = this.attackModifiers(attacker, target, { ranged: p.ranged, opportunity });
-    if (check.longRange) { mods.disadvantage = true; mods.reasons.push('alcance longo'); }
-    if (disadvantage) { mods.disadvantage = true; mods.reasons.push('segundo ataque'); }
+    if (check.longRange) fonte(mods, 'desvantagem', 'alcance longo');
+    if (disadvantage) fonte(mods, 'desvantagem', 'segundo ataque');
 
     const cover = p.ranged ? this.field.coverBetween(attacker.pos, target.pos) : 0;
     const ac = target.ac + cover;
+    const caPartes = [{ rotulo: `CA de ${target.name}`, valor: target.ac }];
+    if (cover) caPartes.push({ rotulo: 'cobertura', valor: cover });
 
     const fx = conditionEffects(attacker);
     let bonus = p.bonus;
-    const extraDice = [];
+    // As partes do bônus somam sempre o `bonus` que vai para a rolagem: o dado
+    // de bênção entra como parcela nomeada em vez de engordar um "+4" anônimo.
+    const bonusPartes = [...(p.bonusPartes ?? [])];
     for (const dice of fx.attackBonusDice) {
       const r = roll(this.rng, dice);
       bonus += r.total;
-      extraDice.push(`${dice}=${r.total}`);
+      bonusPartes.push({ rotulo: `bênção ${dice}[${r.rolls.join('+')}]`, valor: r.total });
     }
 
     const atk = attackRoll(this.rng, bonus, ac, mods);
@@ -447,21 +614,54 @@ export class Encounter {
     const autoCrit = tgtFx.critWithinReach && distanceFt(attacker.pos, target.pos) <= 5;
     const critical = atk.critical || (atk.hit && autoCrit);
 
+    // Errar por 1 ou 2 é informação tática de verdade: diz que fabricar
+    // vantagem, ou somar um único ponto de bônus, teria virado o ataque. Um
+    // 1 natural não entra nessa conta — ele erra por regra, não por margem.
+    const faltou = atk.hit || atk.fumble ? null : Math.max(0, ac - atk.total);
+    const porPouco = faltou !== null && faltou >= 1 && faltou <= 2;
+
+    const explicacao = explicarModo(mods);
     const detail = [
-      `d20[${atk.rolls.join('/')}]${formatModifier(bonus)} = ${atk.total}`,
-      `vs CA ${ac}${cover ? ` (cobertura +${cover})` : ''}`,
-      mods.mode !== 'normal' ? mods.mode : null,
-      mods.reasons.length ? `(${mods.reasons.join(', ')})` : null,
-      extraDice.length ? `bênção ${extraDice.join(',')}` : null,
+      `d20[${atk.rolls.join('/')}] ${explicarBonus(bonus, bonusPartes)} = ${atk.total}`,
+      `vs CA ${ac}${cover ? ` (${caPartes.map((c) => `${c.rotulo} ${c.valor}`).join(' + ')})` : ''}`,
+      explicacao || null,
     ].filter(Boolean).join(' · ');
 
+    // Tudo que a camada de desenho precisa para contar a rolagem de novo, sem
+    // reler o texto do log nem recalcular regra.
+    const rolagem = {
+      categoria: 'ataque',
+      rotulo: p.name,
+      d20: { rolls: [...atk.rolls], natural: atk.natural, total: atk.total, bonus },
+      bonusPartes,
+      alvoNumero: { rotulo: 'CA', valor: ac, partes: caPartes },
+      modo: mods.mode,
+      anulado: mods.anulado,
+      vantagens: [...mods.vantagens],
+      desvantagens: [...mods.desvantagens],
+      motivos: [...mods.reasons],
+      explicacao,
+      critico: critical,
+      critoAutomatico: atk.hit && autoCrit && !atk.critical,
+      faltou,
+      errouPorPouco: porPouco,
+      naturalUm: atk.fumble,
+      natural20: atk.critical,
+    };
+
     if (!atk.hit) {
-      this.say('ataque', `${attacker.name} erra ${target.name} com ${p.name}.`, detail);
+      const nota = atk.fumble
+        ? ' — 1 natural, erra por regra'
+        : porPouco ? ` — faltou ${faltou}` : '';
+      this.say('ataque', `${attacker.name} erra ${target.name} com ${p.name}${nota}.`, detail, { rolagem });
       this.onEvent({
         type: 'attack', attacker, target, hit: false,
         ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art,
+        rolagem, faltou, errouPorPouco: porPouco,
+        modo: mods.mode, anulado: mods.anulado,
+        vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
       });
-      return { hit: false };
+      return { hit: false, faltou, errouPorPouco: porPouco, modo: mods.mode };
     }
 
     let damageNotation = p.damage;
@@ -479,32 +679,55 @@ export class Encounter {
     const dmg = damageRoll(this.rng, damageNotation, { critical });
     const total = dmg.total + (sneak?.total ?? 0) + (martial?.total ?? 0);
 
-    const parts = [`${dmg.notation}[${dmg.rolls.join('+')}] = ${dmg.total}`];
-    if (sneak) parts.push(`furtivo ${attacker.sneakAttack}[${sneak.rolls.join('+')}] = ${sneak.total}`);
-    if (martial) parts.push(`vantagem marcial 2d6[${martial.rolls.join('+')}] = ${martial.total}`);
+    // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
+    // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
+    // o ladino está manobrando o turno inteiro para conseguir.
+    const danoPartes = [parcelaDeDano('dano', dmg)];
+    if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
+    if (martial) danoPartes.push(parcelaDeDano('vantagem marcial', martial));
+    rolagem.danoPartes = danoPartes;
+    rolagem.danoTotal = total;
+    rolagem.tipoDeDano = p.type;
+
+    const parts = danoPartes.map(contaDeDano);
+    // Crítico por inconsciente ao alcance não vem de um 20 natural; sem dizer
+    // isso o jogador procura o 20 na rolagem e não acha.
+    const marcaCritico = critical
+      ? (rolagem.critoAutomatico ? ' — CRÍTICO (alvo indefeso ao alcance)' : ' — CRÍTICO (20 natural)')
+      : '';
 
     this.say(
       'ataque',
-      `${attacker.name} acerta ${target.name}${critical ? ' — CRÍTICO!' : ''} com ${p.name}: ${total} de dano ${p.type}.`,
+      `${attacker.name} acerta ${target.name} com ${p.name}${marcaCritico}: ${total} de dano ${p.type}.`,
       `${detail} · ${parts.join(' + ')}`,
+      { rolagem },
     );
     this.onEvent({
       type: 'attack', attacker, target, hit: true, critical, damage: total,
       ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art, sneak: !!sneak, martial: !!martial,
+      rolagem, danoPartes, faltou: null, errouPorPouco: false,
+      modo: mods.mode, anulado: mods.anulado,
+      vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
+      critoAutomatico: rolagem.critoAutomatico,
     });
     this.applyDamage(target, total, p.type, attacker);
 
     // Efeito extra do ataque (mordida do lobo derruba).
     if (p.onHit && !target.dead && !hasCondition(target, 'inconsciente')) {
       const save = savingThrow(this.rng, saveBonus(target, p.onHit.save), p.onHit.dc);
+      const nomeCondicao = CONDITIONS[p.onHit.condition]?.name ?? p.onHit.condition;
+      const r = this.explicarResistencia(target, p.onHit.save, p.onHit.dc, save, {
+        contra: `${p.name} de ${attacker.name}`,
+        seSucesso: `não fica ${nomeCondicao}`,
+      });
       if (!save.success) {
         addCondition(target, p.onHit.condition);
-        this.say('condicao', `${target.name} ${p.onHit.note} (resistência ${save.total} vs CD ${p.onHit.dc}).`);
+        this.say('condicao', `${target.name} ${p.onHit.note} — fica ${nomeCondicao}.`, r.conta, { rolagem: r });
       } else {
-        this.say('condicao', `${target.name} se segura (resistência ${save.total} vs CD ${p.onHit.dc}).`);
+        this.say('condicao', `${target.name} se segura e escapa de ${nomeCondicao}.`, r.conta, { rolagem: r });
       }
     }
-    return { hit: true, critical, damage: total };
+    return { hit: true, critical, damage: total, modo: mods.mode, danoPartes };
   }
 
   /**
@@ -596,20 +819,39 @@ export class Encounter {
 
   deathSave(actor) {
     const r = d20(this.rng, 0);
+    // Teste de morte é d20 PURO: nenhum atributo, nenhuma proficiência. Dizer
+    // isso evita a dúvida de por que o guerreiro com +3 de CON rola sem bônus.
+    const conta = `d20[${r.rolls.join('/')}] = ${r.total} vs CD 10 · sem bônus (d20 puro) · 3 sucessos estabiliza, 3 falhas mata`;
+    const rolagem = {
+      categoria: 'morte',
+      actor,
+      contra: 'morrer em 0 PV',
+      cd: 10,
+      bonus: 0,
+      bonusPartes: [],
+      d20Rolls: [...r.rolls],
+      total: r.total,
+      modo: 'normal',
+      sucesso: r.total >= 10,
+      seSucesso: 'um sucesso a mais na contagem',
+      conta,
+    };
+    this.onEvent({ type: 'rolagem', ...rolagem });
+
     if (r.natural === 20) {
-      this.say('morte', `${actor.name}: 20 natural no teste de morte — levanta com 1 PV!`);
+      this.say('morte', `${actor.name}: 20 natural no teste de morte — levanta com 1 PV!`, conta, { rolagem });
       this.heal(actor, 1);
       return;
     }
     if (r.natural === 1) {
       actor.deathSaves.failures += 2;
-      this.say('morte', `${actor.name}: 1 natural — duas falhas (${actor.deathSaves.failures}/3).`);
+      this.say('morte', `${actor.name}: 1 natural — duas falhas (${actor.deathSaves.failures}/3).`, conta, { rolagem });
     } else if (r.total >= 10) {
       actor.deathSaves.successes += 1;
-      this.say('morte', `${actor.name}: sucesso no teste de morte (${actor.deathSaves.successes}/3).`);
+      this.say('morte', `${actor.name}: sucesso no teste de morte (${actor.deathSaves.successes}/3).`, conta, { rolagem });
     } else {
       actor.deathSaves.failures += 1;
-      this.say('morte', `${actor.name}: falha no teste de morte (${actor.deathSaves.failures}/3).`);
+      this.say('morte', `${actor.name}: falha no teste de morte (${actor.deathSaves.failures}/3).`, conta, { rolagem });
     }
     if (actor.deathSaves.successes >= 3) {
       actor.stable = true;
@@ -625,11 +867,18 @@ export class Encounter {
   concentrationCheck(actor, damage) {
     const dc = Math.max(10, Math.floor(damage / 2));
     const save = savingThrow(this.rng, saveBonus(actor, 'con'), dc);
+    const magia = actor.concentrating ? getSpell(actor.concentrating.spellId)?.name : null;
+    // A CD é metade do dano (mínimo 10): sem dizer isso, o jogador não entende
+    // por que um golpe forte derruba a concentração e um fraco não.
+    const r = this.explicarResistencia(actor, 'con', dc, save, {
+      contra: `manter ${magia ?? 'a concentração'} sob ${damage} de dano (CD = metade do dano, mínimo 10)`,
+      seSucesso: `${magia ?? 'a magia'} continua de pé`,
+    });
     if (save.success) {
-      this.say('concentracao', `${actor.name} mantém a concentração (${save.total} vs CD ${dc}).`);
+      this.say('concentracao', `${actor.name} mantém a concentração.`, r.conta, { rolagem: r });
       return;
     }
-    this.say('concentracao', `${actor.name} perde a concentração (${save.total} vs CD ${dc}).`);
+    this.say('concentracao', `${actor.name} perde a concentração.`, r.conta, { rolagem: r });
     this.dropConcentration(actor);
   }
 
@@ -649,6 +898,7 @@ export class Encounter {
   canCast(actor, spellId, { target = null, point = null } = {}) {
     const spell = getSpell(spellId);
     if (!actor.spellcasting) return { ok: false, why: 'não conjura magias' };
+    if (actor.armorUntrained) return { ok: false, why: 'armadura sem treino impede conjurar' };
     if (spell.level > 0 && !actor.spellcasting.slots[spell.level]) {
       return { ok: false, why: `sem espaço de magia de ${spell.level}º círculo` };
     }
@@ -711,13 +961,56 @@ export class Encounter {
         if (!target) break;
         const mods = this.attackModifiers(actor, target, { ranged: true });
         const cover = this.field.coverBetween(actor.pos, target.pos);
-        const atk = attackRoll(this.rng, atkBonus, target.ac + cover, mods);
+        const ca = target.ac + cover;
+        const caPartes = [{ rotulo: `CA de ${target.name}`, valor: target.ac }];
+        if (cover) caPartes.push({ rotulo: 'cobertura', valor: cover });
+        // Ataque de magia é proficiência + o atributo de conjuração — nunca
+        // Força. Nomear o atributo é o que torna visível por que o mago acerta
+        // melhor que o clérigo com a mesma magia.
+        const atkPartes = [
+          { rotulo: ABILITY_NAME[actor.spellcasting.ability], valor: abilityMod(actor.abilities[actor.spellcasting.ability]) },
+          { rotulo: 'proficiência', valor: proficiencyBonus(actor.level) },
+        ];
+        const atk = attackRoll(this.rng, atkBonus, ca, mods);
+        const explicacao = explicarModo(mods);
+        const faltou = atk.hit || atk.fumble ? null : Math.max(0, ca - atk.total);
+        const porPouco = faltou !== null && faltou >= 1 && faltou <= 2;
+        const contaAtaque = [
+          `d20[${atk.rolls.join('/')}] ${explicarBonus(atkBonus, atkPartes)} = ${atk.total}`,
+          `vs CA ${ca}${cover ? ` (${caPartes.map((c) => `${c.rotulo} ${c.valor}`).join(' + ')})` : ''}`,
+          explicacao || null,
+        ].filter(Boolean).join(' · ');
+        const rolagem = {
+          categoria: 'ataqueDeMagia',
+          rotulo: spell.name,
+          actor, target,
+          d20: { rolls: [...atk.rolls], natural: atk.natural, total: atk.total, bonus: atkBonus },
+          bonusPartes: atkPartes,
+          alvoNumero: { rotulo: 'CA', valor: ca, partes: caPartes },
+          modo: mods.mode, anulado: mods.anulado,
+          vantagens: [...mods.vantagens], desvantagens: [...mods.desvantagens], motivos: [...mods.reasons],
+          explicacao, critico: atk.critical, faltou, errouPorPouco: porPouco,
+          naturalUm: atk.fumble, natural20: atk.critical,
+          conta: contaAtaque,
+        };
+        this.onEvent({ type: 'rolagem', ...rolagem });
         if (!atk.hit) {
-          this.say('magia', `${spell.name} erra ${target.name}.`, `d20[${atk.rolls.join('/')}]${formatModifier(atkBonus)} = ${atk.total} vs CA ${target.ac + cover}`);
+          const nota = atk.fumble
+            ? ' — 1 natural, erra por regra'
+            : porPouco ? ` — faltou ${faltou}` : '';
+          this.say('magia', `${spell.name} erra ${target.name}${nota}.`, contaAtaque, { rolagem });
           break;
         }
         const dmg = damageRoll(this.rng, spell.damage, { critical: atk.critical });
-        this.say('magia', `${spell.name} acerta ${target.name}: ${dmg.total} de ${spell.damageType}.`, `${spell.damage}[${dmg.rolls.join('+')}]`);
+        const danoPartes = [parcelaDeDano('dano', dmg)];
+        rolagem.danoPartes = danoPartes;
+        rolagem.danoTotal = dmg.total;
+        this.say(
+          'magia',
+          `${spell.name} acerta ${target.name}${atk.critical ? ' — CRÍTICO (20 natural)' : ''}: ${dmg.total} de ${spell.damageType}.`,
+          `${contaAtaque} · ${contaDeDano(danoPartes[0])}`,
+          { rolagem },
+        );
         this.applyDamage(target, dmg.total, spell.damageType, actor);
         this.maybeIgnite(target, spell.damageType);
         if (spell.applies && !target.dead) addCondition(target, spell.applies.condition, { rounds: spell.applies.rounds });
@@ -744,10 +1037,27 @@ export class Encounter {
             : savingThrow(this.rng, saveBonus(t, spell.save), dc);
           const dmg = damageRoll(this.rng, spell.damage);
           const amount = save.success ? (spell.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+          // O que o sucesso compra é a decisão inteira: metade do dano ainda
+          // vale conjurar numa multidão, nenhum dano não vale contra um alvo só.
+          // Qual condição travou o teste: "falha automática" sem culpado deixa
+          // o jogador sem saber que foi ELE quem criou essa abertura.
+          const culpada = auto
+            ? (t.conditions ?? []).find((c) => CONDITIONS[c.id]?.autoFailSaves?.includes(spell.save))
+            : null;
+          const r = this.explicarResistencia(t, spell.save, dc, save, {
+            contra: `${spell.name} (CD ${dc} = 8 + proficiência + atributo de conjuração)`,
+            seSucesso: spell.halfOnSave ? 'metade do dano' : 'nenhum dano',
+            automatica: auto,
+            motivoAutomatico: culpada ? (CONDITIONS[culpada.id]?.name ?? culpada.id) : null,
+          });
+          const danoPartes = [parcelaDeDano('dano', dmg)];
+          r.danoPartes = danoPartes;
+          r.danoAplicado = amount;
           this.say(
             'magia',
-            `${t.name} ${save.success ? 'resiste' : 'falha'} (CD ${dc}) e sofre ${amount}.`,
-            `${spell.damage}[${dmg.rolls.join('+')}] · resistência ${save.total}`,
+            `${t.name} ${auto ? 'falha automaticamente' : save.success ? 'resiste' : 'falha'} contra ${spell.name} e sofre ${amount}.`,
+            `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && spell.halfOnSave ? ` → metade = ${amount}` : ''}`,
+            { rolagem: r },
           );
           if (amount > 0) {
             this.applyDamage(t, amount, spell.damageType, actor);
@@ -766,7 +1076,16 @@ export class Encounter {
           total += d.total;
           rolls.push(d.total);
         }
-        this.say('magia', `${spell.darts} dardos atingem ${target.name}: ${total} de ${spell.damageType}.`, `[${rolls.join(' + ')}]`);
+        // "Automática" é a razão de ser desta magia: não há rolagem de ataque
+        // nem resistência, então nem CA alta nem vantagem mudam nada. Sem dizer
+        // isso, o jogador não sabe que tem aqui a resposta para o alvo blindado.
+        const conta = `${spell.darts}× ${spell.damage} [${rolls.join(' + ')}] = ${total} · automática: não há rolagem de ataque nem de resistência`;
+        this.say('magia', `${spell.darts} dardos atingem ${target.name}: ${total} de ${spell.damageType}.`, conta, {
+          rolagem: {
+            categoria: 'automatica', rotulo: spell.name, actor, target,
+            danoTotal: total, parcelas: rolls, tipoDeDano: spell.damageType, conta,
+          },
+        });
         this.applyDamage(target, total, spell.damageType, actor);
         break;
       }
@@ -927,8 +1246,53 @@ export class Encounter {
 
   // ---- log -----------------------------------------------------------------
 
-  say(kind, text, detail = null) {
-    const entry = { kind, text, detail, round: this.round };
+  /**
+   * Abre a conta de um teste de resistência já rolado.
+   *
+   * Não rola nem decide nada: recebe o `save` pronto. Existe porque os quatro
+   * lugares que fazem resistência (efeito de ataque, concentração, magia de
+   * área e teste de morte) contavam a mesma coisa de quatro jeitos diferentes,
+   * e nenhum deles dizia contra o quê o teste era nem o que o sucesso compra.
+   *
+   * O bônus vem de `saveBonus`, a mesma função que a rolagem usou, e a
+   * proficiência sai por subtração — assim as parcelas somam o total por
+   * construção, sem duplicar a regra aqui.
+   */
+  explicarResistencia(actor, atributo, cd, save, { contra, seSucesso, automatica = false, motivoAutomatico = null } = {}) {
+    const bonus = saveBonus(actor, atributo);
+    const base = abilityMod(actor.abilities[atributo]);
+    const bonusPartes = [{ rotulo: ABILITY_NAME[atributo], valor: base }];
+    if (bonus !== base) bonusPartes.push({ rotulo: 'proficiência', valor: bonus - base });
+
+    const r = {
+      categoria: 'resistencia',
+      actor,
+      atributo,
+      atributoNome: `resistência de ${ABILITY_NAME[atributo]}`,
+      contra,
+      cd,
+      bonus,
+      bonusPartes,
+      d20Rolls: automatica ? [] : [...(save.rolls ?? [])],
+      total: save.total,
+      modo: save.mode ?? 'normal',
+      sucesso: !!save.success,
+      automatica,
+      motivoAutomatico,
+      seSucesso,
+    };
+    r.conta = contaDeResistencia(r);
+    this.onEvent({ type: 'rolagem', ...r });
+    return r;
+  }
+
+  /**
+   * `extra` entra no registro como campos a mais (a rolagem aberta, por
+   * exemplo). O HUD lê `kind`, `text` e `detail` e ignora o resto — é o que
+   * permite enriquecer o log sem tocar em arquivo de outro dono.
+   */
+  say(kind, text, detail = null, extra = null) {
+    const entry = { kind, text, detail, round: this.round, ...extra };
     this.log.push(entry);
     this.onLog(entry);
   }

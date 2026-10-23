@@ -12,6 +12,7 @@ import { WEAPONS } from './rules/equipment.js';
 import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
+import { criarFicha } from './view/ficha.js';
 import { audio } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
@@ -29,7 +30,33 @@ class App {
       onRotate: (d) => this.rotateView(d),
       onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
       onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
+      onAbrirFicha: (c) => this.ficha?.abrir(c, 'ficha'),
     });
+
+    // A ficha pendura o próprio véu em `root` e cuida do teclado dela enquanto
+    // está aberta. O que ela não faz é se abrir sozinha nem saber as regras do
+    // encontro — isso é daqui.
+    this.ficha = criarFicha(root, {
+      // Reaproveita a dica rica do HUD; sem isto a ficha cai no `title` do navegador.
+      dica: (node, dados) => this.hud.ligarDica(node, dados),
+      // Trocar de armadura no meio da briga não pode ser de graça. Fora do
+      // turno do grupo, nem isso.
+      podeEquipar: (p) => (this.enc?.side === 'party' && !this.enc.over
+        ? null
+        : 'dá para trocar equipamento só no turno do grupo'),
+      onEquipar: (p, troca) => {
+        this.hud.pushLog({
+          kind: 'recurso',
+          text: `${p.name} trocou ${troca.slot}: CA ${troca.acAntes} → ${troca.acDepois}`,
+          detail: troca.semTreino ? 'sem treino nessa armadura — desvantagem e nada de conjurar' : null,
+          round: this.enc?.round ?? 1,
+        });
+        audio.play('click');
+        this.refresh();
+      },
+      onFechar: () => this.refresh(),
+    });
+
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'board';
     this.hud.boardWrap.append(this.canvas);
@@ -58,10 +85,20 @@ class App {
       if (k === 'q') this.rotateView(-1);
       if (k === 'e') this.rotateView(1);
       if (k === 'm') { audio.toggleMute(); this.refresh(); }
+      // `i` e `p` abrem a ficha. `c` NÃO: o HUD reservou essa tecla para
+      // Desengajar, e as duas no mesmo atalho fariam o turno depender de qual
+      // ouvinte foi registrado primeiro.
+      if ((k === 'i' || k === 'p') && this.selected && !this.ficha?.estaAberta()) {
+        e.preventDefault();
+        this.ficha.abrir(this.selected, k === 'i' ? 'inventario' : 'ficha');
+      }
     });
   }
 
   newEncounter() {
+    // A ficha guarda o personagem numa closure: aberta, continuaria mostrando
+    // um combatente que não existe mais.
+    this.ficha?.fechar();
     const seed = seedFromString(`encontro:${Date.now()}`);
     const rng = makeRng(seed);
     const field = new Battlefield(MAP[0].length, MAP.length, MAP);
@@ -93,7 +130,7 @@ class App {
     this.board = new Board(this.canvas, {
       encounter: this.enc,
       onTileClick: (t) => this.onTileClick(t),
-      onTileHover: (t) => this.onTileHover(t),
+      onTileHover: (t) => { this.onTileHover(t); this.board?.render(0); },
     });
     this.board.onCameraChange = () => this.refresh();
 
@@ -146,6 +183,14 @@ class App {
         // Se quem ataca ainda está andando, o golpe espera a chegada.
         const espera = (board?.fx.walkTimeLeft ?? 0);
         this.setImpactDelay(playWeaponVisual(board, ev, { startDelay: espera }));
+        // Duas coisas que o jogador nunca descobre sozinho e que o motor
+        // agora calcula: de quanto foi o erro, e quando vantagem e
+        // desvantagem se anularam — que é contraintuitivo e muda a decisão
+        // seguinte.
+        if (ev.errouPorPouco) {
+          this.atImpact(() => board?.floatText(t.pos, `faltou ${ev.faltou}`, '#ffc83a'));
+        }
+        if (ev.anulado) this.hud.setHint('vantagem e desvantagem se anulam — rolagem normal');
         break;
       }
 
@@ -412,6 +457,7 @@ class App {
   }
 
   onTileClick(tile) {
+    if (this.ficha?.estaAberta()) return;
     if (this.enc.over || this.enc.side !== 'party' || this.busy) return;
     const occupant = this.enc.at(tile.x, tile.y);
     const c = this.selected;
@@ -516,8 +562,16 @@ class App {
       reachable: c && !this.mode && this.enc.side === 'party' ? this.enc.reachableFor(c) : null,
       targets,
       path: null,
+      // `mode` é a chave que acende a camada de previsão inteira do tabuleiro:
+      // chão de alcance, tracejado do alcance longo, cruz de alvo impossível e
+      // o cartão de chance de acerto. Sem ela, `modoDeAlvo()` devolve null
+      // para sempre e nada daquilo aparece.
+      mode: this.mode,
     });
     this.hud.update(this.enc, c, this.mode);
+    // A ficha fica por cima do jogo e não escuta o encontro: sem isto ela
+    // congela com PV e espaços de magia velhos enquanto o combate anda.
+    if (this.ficha?.estaAberta()) this.ficha.atualizar();
     if (!this.mode) this.hud.setHint(c ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.` : '');
   }
 }

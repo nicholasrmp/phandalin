@@ -1,0 +1,413 @@
+/* As variáveis de cor e de moldura (--gold, --pedra, --line, --bisel,
+ * --serif...) vêm de src/style.css, que main.js importa antes de tudo.
+ * Sem ele esta folha renderiza sem cor nem moldura — a dependência é
+ * real e invisível, por isso está escrita aqui. */
+/* Ficha de personagem e inventário — pele própria, registro compartilhado.
+ *
+ * POR QUE UM ARQUIVO SEPARADO
+ * `style.css` é a pele do jogo em tela: tabuleiro, trilho, barra de ação. A
+ * ficha é uma JANELA sobre o jogo, com uma densidade de número que nenhuma
+ * outra região tem, e misturar as duas coisas num arquivo só faria a próxima
+ * pessoa ler 900 linhas para mexer numa linha de perícia.
+ *
+ * As variáveis são as de `style.css` (--gold, --pedra, --line, --bisel...):
+ * uma segunda paleta aqui seria uma segunda interface.
+ *
+ * TRÊS DECISÕES
+ *   1. Número em sem-serifa e tabular; nome próprio e título em serifa. Uma
+ *      coluna de perícias com números de largura diferente não se lê de bater
+ *      o olho — e é para bater o olho que a ficha existe.
+ *   2. Atributo e encaixe são SOQUETE (fundo afundado, borda clara em cima):
+ *      é o que diz "aqui entra coisa" sem escrever isso.
+ *   3. A moldura leva bisel. Sem ele a janela lê como caixa de diálogo de
+ *      navegador por cima de um jogo de pixel art.
+ */
+
+.ficha-overlay {
+  position: fixed;
+  inset: 0;
+  /* Abaixo de .dica (z-index 50) de propósito: o tooltip rico do HUD é usado
+     aqui dentro, e se o véu ficasse por cima ele apagaria a própria dica. */
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 6, 11, .74);
+  backdrop-filter: blur(2px);
+}
+
+.ficha-janela {
+  display: flex;
+  flex-direction: column;
+  width: min(1060px, 100%);
+  max-height: 92vh;
+  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
+  border: 1px solid var(--line-forte);
+  border-radius: 12px;
+  box-shadow: var(--bisel), 0 24px 70px rgba(0, 0, 0, .8);
+  overflow: hidden;
+}
+
+/* ---- cabeça ---- */
+.ficha-cabeca {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #2a2534, #1d1a24);
+}
+
+.ficha-cabeca-retrato {
+  width: 56px; height: 56px;
+  display: grid; place-items: center;
+  background: linear-gradient(180deg, #211d29, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+  overflow: hidden;
+}
+
+.ficha-nome {
+  font-family: var(--serif);
+  font-size: 21px;
+  color: var(--gold);
+  line-height: 1.1;
+}
+.ficha-linhagem { font-size: 11.5px; color: var(--muted); }
+
+.ficha-abas { display: flex; gap: 6px; }
+.ficha-aba {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  font-family: var(--serif); font-size: 13px;
+  color: var(--muted);
+  background: linear-gradient(180deg, #221e2b, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.ficha-aba:hover { color: var(--ink); border-color: var(--line-forte); }
+.ficha-aba.on {
+  color: #21190a;
+  background: linear-gradient(180deg, var(--gold), var(--gold-escuro));
+  border-color: var(--gold);
+  font-weight: 700;
+}
+.ficha-aba .icone { image-rendering: pixelated; }
+
+.ficha-fechar {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  font-size: 17px; line-height: 1;
+  color: var(--muted);
+  background: linear-gradient(180deg, #221e2b, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ficha-fechar:hover { color: var(--ink); border-color: var(--red); }
+
+/* ---- corpo ---- */
+.ficha-rolagem { overflow: auto; padding: 12px; }
+
+.ficha-colunas {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 12px;
+  align-items: start;
+}
+.ficha-coluna { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.bloco {
+  background: rgba(0, 0, 0, .22);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: var(--bisel);
+}
+.bloco-tit {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .85;
+}
+
+/* ---- atributos ---- */
+.atributos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.atributo {
+  display: grid; place-items: center; gap: 1px;
+  padding: 7px 4px 6px;
+  background: linear-gradient(180deg, #221e2b, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+}
+.atributo-rot {
+  font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted);
+}
+.atributo-val {
+  font-size: 25px; font-weight: 700; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.atributo-mod {
+  font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  border: 1px solid var(--line-forte);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+/* ---- linhas de perícia e resistência ---- */
+.linhas { display: grid; gap: 1px; }
+.linhas.duas { grid-template-columns: 1fr 1fr; gap: 1px 12px; }
+.linha {
+  display: grid;
+  grid-template-columns: 12px 1fr auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 2px;
+  font-size: 12px;
+  border-bottom: 1px dotted rgba(222, 198, 140, .09);
+}
+.linha.prof { color: var(--ink); }
+.linha:not(.prof) { color: var(--muted); }
+.linha-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linha-atr {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); opacity: .8;
+}
+.linha-val {
+  min-width: 26px; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 700;
+}
+.linha.prof .linha-val { color: var(--gold); }
+
+/* O pip de proficiência: vazio, cheio, ou anel duplo para especialidade. */
+.pip-prof {
+  width: 9px; height: 9px;
+  border: 1px solid var(--line-forte);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .5);
+}
+.pip-prof.on { background: var(--gold); border-color: var(--gold); }
+.pip-prof.exp {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--pedra), 0 0 0 3px var(--gold);
+}
+
+/* ---- derivados ---- */
+.derivados { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.numero {
+  display: grid; place-items: center; gap: 2px;
+  padding: 7px 4px;
+  background: linear-gradient(180deg, #221e2b, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+  text-align: center;
+}
+.numero-rot {
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted);
+}
+.numero-val {
+  font-size: 19px; font-weight: 700; line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.numero-nota { font-size: 9.5px; color: var(--muted); }
+.numero.destaque { border-color: var(--line-forte); }
+.numero.destaque .numero-val { color: var(--gold); font-size: 23px; }
+
+/* Rótulo de uma subdivisão dentro de um bloco ("A conta da CA", "Truques"). */
+.sub-rot {
+  margin: 10px 0 2px;
+  font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* A conta da CA aberta: é o conteúdo que mais justifica a tela existir. */
+.conta { margin-top: 9px; display: grid; gap: 2px; }
+.conta-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.conta-rot { color: #cfc7b6; }
+.conta-nota { color: var(--muted); font-size: 10.5px; }
+.conta-val { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 28px; text-align: right; }
+.conta-linha.total {
+  margin-top: 3px;
+  padding-top: 5px;
+  border-top: 1px solid var(--line-forte);
+}
+.conta-linha.total .conta-rot { font-family: var(--serif); color: var(--gold); }
+.conta-linha.total .conta-val { color: var(--gold); font-size: 15px; }
+
+/* ---- talentos e conjuração ---- */
+.talento { padding: 5px 0; border-bottom: 1px dotted rgba(222, 198, 140, .09); }
+.talento:last-child { border-bottom: none; }
+.talento-nome { font-family: var(--serif); font-size: 13.5px; color: var(--gold); }
+.talento-texto { margin: 2px 0 0; font-size: 11.5px; line-height: 1.45; color: #cfc7b6; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 7px 3px 4px;
+  font-size: 11.5px;
+  background: linear-gradient(180deg, #241f2d, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.chip .icone { image-rendering: pixelated; }
+.chip-nivel { color: var(--muted); font-size: 9.5px; font-variant-numeric: tabular-nums; }
+.chip.truque { border-bottom-color: rgba(110, 184, 255, .35); }
+
+/* ---- inventário ---- */
+.inv { display: grid; grid-template-columns: 320px 1fr; gap: 12px; align-items: start; }
+
+.encaixes { display: grid; gap: 7px; }
+.encaixe {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px;
+  text-align: left;
+  color: var(--ink);
+  background: linear-gradient(180deg, #241f2d, #1a1721);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  box-shadow: var(--bisel);
+  font: inherit;
+}
+.encaixe:hover { border-color: var(--line-forte); }
+.encaixe.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(217, 180, 90, .45), 0 0 14px rgba(217, 180, 90, .25); }
+.encaixe.vazio { border-style: dashed; opacity: .78; }
+
+.encaixe-soquete {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: linear-gradient(180deg, #1d1926, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .65);
+}
+.encaixe-soquete .icone { image-rendering: pixelated; }
+.sigla { font-family: var(--serif); font-size: 15px; color: var(--gold); letter-spacing: .04em; }
+
+.encaixe-corpo { min-width: 0; display: grid; gap: 1px; }
+.encaixe-rot {
+  font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+}
+.encaixe-nome {
+  font-family: var(--serif); font-size: 13.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.encaixe.vazio .encaixe-nome { color: var(--muted); font-style: italic; }
+.encaixe-dado { font-size: 11px; color: #cfc7b6; font-variant-numeric: tabular-nums; }
+
+.trocador { margin-top: 8px; display: grid; gap: 4px; }
+.trocador-tit {
+  font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+}
+.opcao {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  text-align: left;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  background: linear-gradient(180deg, #241f2d, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.opcao:hover { border-color: var(--gold); }
+.opcao .icone { image-rendering: pixelated; }
+.opcao-delta { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
+.opcao-delta.sobe { color: var(--green); }
+.opcao-delta.desce { color: var(--red); }
+
+.mochila {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+.celula {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: 2px;
+  padding: 5px 3px 4px;
+  color: var(--ink);
+  font: inherit;
+  background: linear-gradient(180deg, #1f1b27, var(--soquete));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+}
+.celula:hover { border-color: var(--line-forte); background: linear-gradient(180deg, #2a2435, #1b1724); }
+.celula.equipavel:hover { border-color: var(--gold); }
+.celula .icone { image-rendering: pixelated; }
+.celula-nome {
+  width: 100%;
+  font-size: 9.5px; line-height: 1.15; text-align: center; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.celula-qtd {
+  position: absolute; right: 3px; bottom: 3px;
+  font-size: 10px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: rgba(0, 0, 0, .75);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 3px;
+}
+.mochila-vazia { font-size: 12px; color: var(--muted); padding: 8px 2px; }
+
+/* ---- pé ---- */
+.ficha-pe {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  background: rgba(0, 0, 0, .25);
+  font-size: 11px;
+  color: var(--muted);
+}
+.ficha-aviso { color: #e8a06a; }
+.ficha-carga { font-variant-numeric: tabular-nums; }
+
+/* Em telas estreitas a janela passa a rolar numa coluna só: duas colunas de
+   perícia em 380 px de largura viram duas colunas ilegíveis. */
+@media (max-width: 900px) {
+  .ficha-overlay { padding: 8px; align-items: start; }
+  .ficha-janela { max-height: 96vh; }
+  .ficha-colunas, .inv { grid-template-columns: 1fr; }
+  .linhas.duas { grid-template-columns: 1fr; }
+  .derivados { grid-template-columns: repeat(2, 1fr); }
+  .ficha-cabeca { grid-template-columns: auto 1fr auto; row-gap: 8px; }
+  .ficha-abas { grid-column: 1 / -1; }
+}

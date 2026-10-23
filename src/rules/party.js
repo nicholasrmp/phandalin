@@ -48,7 +48,7 @@ export function makeParty() {
       skills: ['atletismo', 'percepcao'],
       armor: 'cotaDeMalha',
       shield: true,
-      acBonus: 1, // Estilo de Luta: Defesa
+      acBonusArmadura: 1, // Estilo de Luta: Defesa — só vale de armadura
       maxHp: 20,
       speedFt: 30,
       weapons: ['espadaLonga', 'adaga'],

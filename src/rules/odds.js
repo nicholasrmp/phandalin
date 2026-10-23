@@ -55,6 +55,13 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
   const alcanceLongo = perfil.ranged && dist > alcance && dist <= limite;
   const semVisao = !enc.field.hasLineOfSight(attacker.pos, target.pos);
 
+  // Cobertura. `combat.js` resolve o ataque contra `ac + coverBetween(...)`, e
+  // uma parede ou um platô no caminho valem +2. Sem somar aqui, a conta
+  // OFICIAL prometeria dez pontos percentuais a mais do que o motor cobra —
+  // e justamente no tiro através de cobertura, que é onde o jogador mais
+  // precisa confiar no número.
+  const cobertura = perfil.ranged ? enc.field.coverBetween(attacker.pos, target.pos) : 0;
+  const caEfetiva = target.ac + cobertura;
   const base = enc.attackModifiers(attacker, target, { ranged: perfil.ranged });
   const mods = {
     advantage: base.advantage,
@@ -62,13 +69,15 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
     reasons: alcanceLongo ? [...base.reasons, 'alcance longo'] : base.reasons,
   };
 
-  const chance = foraDeAlcance || semVisao ? 0 : chanceD20(perfil.bonus, target.ac, mods);
+  const chance = foraDeAlcance || semVisao ? 0 : chanceD20(perfil.bonus, caEfetiva, mods);
   const critico = foraDeAlcance || semVisao ? 0 : chanceCritico(mods);
   const danoMedio = averageOf(perfil.damage);
 
   return {
     perfil,
     mods,
+    cobertura,
+    caEfetiva,
     dist,
     alcance,
     foraDeAlcance,
@@ -92,9 +101,10 @@ export function previsaoDeMagia(enc, actor, target, spell, { atkBonus = 0, dc = 
 
   if (spell.kind === 'attack') {
     const mods = enc.attackModifiers(actor, target, { ranged: true });
-    const chance = foraDeAlcance || semVisao ? 0 : chanceD20(atkBonus, target.ac, mods);
+    const cobertura = enc.field.coverBetween(actor.pos, target.pos);
+    const chance = foraDeAlcance || semVisao ? 0 : chanceD20(atkBonus, target.ac + cobertura, mods);
     return {
-      tipo: 'ataque', dist, foraDeAlcance, semVisao, chance,
+      tipo: 'ataque', dist, foraDeAlcance, semVisao, chance, cobertura,
       critico: chanceCritico(mods), danoMedio,
       esperado: chance * danoMedio, motivos: mods.reasons, dc: null,
     };
