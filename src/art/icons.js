@@ -15,6 +15,11 @@
 // diferentes lerem como um conjunto só.
 
 import { ICONES_ITENS, PALETA_ITENS } from './icones-itens.js';
+import { ICONES_CONDICOES } from './icones-condicoes.js';
+import { ICONES_MAGIAS } from './icones-magias.js';
+import { ICONES_ACOES } from './icones-acoes.js';
+import { ICONES_RACAS } from './icones-racas.js';
+import { ICONES_CLASSES } from './icones-classes.js';
 
 const P = {
   1: '#e8eef5', // metal claro — fio, brilho
@@ -574,6 +579,23 @@ const ICONES = {
 // o que este arquivo existe para guardar.
 Object.assign(P, PALETA_ITENS);
 Object.assign(ICONES, ICONES_ITENS);
+// Os de condição e os de magia usam a própria `P`, sem paleta extra.
+Object.assign(ICONES, ICONES_CONDICOES);
+Object.assign(ICONES, ICONES_MAGIAS);
+// Ações, traços de raça e recursos de classe: src/dev/icones_consolidar.py.
+Object.assign(ICONES, ICONES_ACOES, ICONES_RACAS, ICONES_CLASSES);
+
+// DOIS NOMES, UM DESENHO.
+//
+// Visão no Escuro é traço de raça e é magia, e faz a mesma coisa nos dois
+// casos; o estilo de luta Combate com Duas Armas é a ação de atacar com a mão
+// secundária. Gerar dois desenhos para a mesma ideia daria dois ícones quase
+// iguais, que é exatamente o par confundível que a revisão manda refazer.
+const ALIAS = {
+  'raca-darkvision': 'magia-visaoNoEscuro',
+  'classe-twoWeaponFighting': 'acao-duasArmas',
+};
+const resolver = (nome) => (ICONES[nome] ? nome : ALIAS[nome] ?? nome);
 
 const cache = new Map();
 
@@ -589,7 +611,7 @@ export function iconCanvas(nome, alvo = 32, tinta = null) {
   const pronto = cache.get(chave);
   if (pronto) return copiar(pronto);
 
-  const grade = ICONES[nome];
+  const grade = ICONES[resolver(nome)];
   const cv = document.createElement('canvas');
   cv.className = 'icone';
   if (!grade) { cv.width = alvo; cv.height = alvo; return cv; }
@@ -633,7 +655,34 @@ function copiar(origem) {
   return cv;
 }
 
-export const temIcone = (nome) => Boolean(ICONES[nome]);
+export const temIcone = (nome) => Boolean(ICONES[resolver(nome)]);
+
+/**
+ * Ícone de um recurso de classe ou traço de raça, pelo id que o jogo guarda
+ * em `c.features` (`secondWind`, `sneakAttack`...). `null` se não houver.
+ */
+export function iconeDeRecurso(id) {
+  return [`classe-${id}`, `raca-${id}`].find(temIcone) ?? null;
+}
+
+// Os azulejos da barra de ações nasceram com ícones de 16 px desenhados à mão,
+// com nomes próprios. Onde já existe o ícone de 32 da mesma ação, ele vence;
+// onde não existe, o antigo continua. As gemas e os contadores de recurso
+// (`nucleo`, `slot-linha`) chamam `iconCanvas` direto e ficam com os de 16.
+const ACAO_DO_HUD = {
+  correr: 'acao-disparada',
+  esquivar: 'acao-esquivar',
+  desengajar: 'acao-desengajar',
+  estabilizar: 'acao-estabilizar',
+  folego: 'classe-secondWind',
+  surto: 'classe-actionSurge',
+  ardilosa: 'classe-cunningAction',
+  preservar: 'classe-preserveLife',
+};
+export function iconeDeAcao(nome) {
+  const novo = ACAO_DO_HUD[nome] ?? `acao-${nome}`;
+  return temIcone(novo) ? novo : nome;
+}
 
 /** Ícone de uma arma, pela arte declarada no equipamento. */
 export function iconeDeArma(art = '', nome = '') {
@@ -668,15 +717,30 @@ export function iconeDeArma(art = '', nome = '') {
   return 'espada';
 }
 
-/** Ícone de uma magia, pelo tipo de dano ou pelo efeito. */
+/**
+ * Ícone de uma magia.
+ *
+ * Cada magia tem o seu (src/art/icones-magias.js, chave `magia-<id>`). O
+ * resto da função é recuo para magia nova que ainda não ganhou desenho.
+ *
+ * O RECUO DECIDE PELO TIPO DE DANO ANTES DO NOME. Antes era o contrário, e o
+ * português atrapalhava: "raio" é tanto *ray* quanto relâmpago, e "chama"
+ * aparece em magia que não é de fogo. Chama Sagrada (radiante) saía com o
+ * ícone de fogo; Raio Guiado (radiante) e Raio de Doença (veneno), com o de
+ * relâmpago. O tipo de dano é dado, o nome é palavra — o dado vem primeiro.
+ */
 export function iconeDeMagia(spell = {}) {
+  if (spell.id && ICONES[`magia-${spell.id}`]) return `magia-${spell.id}`;
   const dano = `${spell.damageType ?? ''}`.toLowerCase();
   const id = `${spell.id ?? ''} ${spell.name ?? ''}`.toLowerCase();
-  if (spell.kind === 'heal' || /cura|curar/.test(id)) return 'cura';
-  if (/fogo|chama/.test(dano) || /fogo|chama|flamejante/.test(id)) return 'fogo';
-  if (/frio|gelo/.test(dano) || /gelo|frio/.test(id)) return 'gelo';
-  if (/elétrico|eletrico|raio|trovão/.test(dano) || /raio|relâmpago/.test(id)) return 'raio';
-  if (/radiante/.test(dano) || /sagrad|luz|chama sagrada/.test(id)) return 'luz';
+  if (spell.kind === 'heal') return 'cura';
+  if (/fogo/.test(dano)) return 'fogo';
+  if (/frio/.test(dano)) return 'gelo';
+  if (/elétrico|eletrico|trov/.test(dano)) return 'raio';
+  if (/radiante/.test(dano)) return 'luz';
+  if (dano) return 'arcano';
+  // Só sem tipo de dano o nome decide.
+  if (/cura|curar/.test(id)) return 'cura';
   if (/sono|enfeitiç/.test(id)) return 'sono';
   if (/bênção|bencao|abenço/.test(id)) return 'bencao';
   return 'arcano';

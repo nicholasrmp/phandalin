@@ -31,7 +31,7 @@ import './ficha.css';
 
 import { makeFigure, makePortrait } from '../art/sheet.js';
 import { LOOKS } from '../art/looks.js';
-import { iconCanvas, iconeDeArma, iconeDeMagia, temIcone } from '../art/icons.js';
+import { iconCanvas, iconeDeArma, iconeDeMagia, iconeDeRecurso, temIcone } from '../art/icons.js';
 import {
   ABILITIES, ABILITY_NAME, SKILLS, SKILL_NAME,
   abilityMod, skillBonus, saveBonus, passivePerception,
@@ -330,9 +330,14 @@ export function criarFicha(root, handlers = {}) {
       const t = TALENTOS[f];
       if (!t) return null;
       const extra = f === 'sneakAttack' && personagem.sneakAttack ? ` Hoje são ${personagem.sneakAttack}.` : '';
-      return el('div', { class: 'talento' },
-        el('div', { class: 'talento-nome' }, t[0]),
-        el('p', { class: 'talento-texto' }, t[1] + extra));
+      // O ícone do recurso, quando existe, fica à esquerda — o mesmo que o
+      // jogador vê no azulejo da barra de ações, para ligar a frase ao botão.
+      const icone = iconeDeRecurso(f);
+      return el('div', { class: `talento${icone ? ' com-icone' : ''}` },
+        icone ? iconCanvas(icone, 32) : null,
+        el('div', { class: 'talento-corpo' },
+          el('div', { class: 'talento-nome' }, t[0]),
+          el('p', { class: 'talento-texto' }, t[1] + extra)));
     }).filter(Boolean);
     if (!lista.length) return null;
     return el('section', { class: 'bloco' },

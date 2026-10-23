@@ -3,29 +3,29 @@
 
 export const CONDITIONS = {
   caido: {
-    name: 'Caído', icon: '⬇',
+    name: 'Caído',
     desc: 'Movimento só rastejando. Desvantagem em ataques. Quem ataca de perto tem vantagem; à distância, desvantagem.',
     attackDisadvantage: true,
     attackedAdvantageMelee: true,
     attackedDisadvantageRanged: true,
   },
   agarrado: {
-    name: 'Agarrado', icon: '✊',
+    name: 'Agarrado',
     desc: 'Deslocamento 0.',
     speed: 0,
   },
   envenenado: {
-    name: 'Envenenado', icon: '🤢',
+    name: 'Envenenado',
     desc: 'Desvantagem em ataques e testes de atributo.',
     attackDisadvantage: true,
   },
   amedrontado: {
-    name: 'Amedrontado', icon: '😨',
+    name: 'Amedrontado',
     desc: 'Desvantagem em ataques enquanto enxergar a fonte do medo. Não pode se aproximar dela.',
     attackDisadvantage: true,
   },
   atordoado: {
-    name: 'Atordoado', icon: '💫',
+    name: 'Atordoado',
     desc: 'Incapacitado, sem movimento. Falha automática em FOR e DES. Ataques contra têm vantagem.',
     incapacitated: true,
     speed: 0,
@@ -33,7 +33,7 @@ export const CONDITIONS = {
     autoFailSaves: ['str', 'dex'],
   },
   inconsciente: {
-    name: 'Inconsciente', icon: '💀',
+    name: 'Inconsciente',
     desc: 'Incapacitado, caído, sem movimento. Ataques a até 1,5 m são críticos se acertarem.',
     incapacitated: true,
     speed: 0,
@@ -42,20 +42,20 @@ export const CONDITIONS = {
     critWithinReach: true,
   },
   esquivando: {
-    name: 'Esquivando', icon: '🛡',
+    name: 'Esquivando',
     desc: 'Ataques contra você têm desvantagem. Vantagem em testes de resistência de DES.',
     attackedDisadvantage: true,
     expiresAtTurnStart: true,
   },
   abencoado: {
-    name: 'Abençoado', icon: '✨',
+    name: 'Abençoado',
     desc: 'Some 1d4 às jogadas de ataque e aos testes de resistência.',
     attackBonusDice: '1d4',
     saveBonusDice: '1d4',
     concentrationEffect: true,
   },
   lento: {
-    name: 'Lento', icon: '🐌',
+    name: 'Lento',
     desc: 'Deslocamento reduzido em 3 m.',
     speedPenaltyFt: 10,
     expiresAtTurnStart: true,
@@ -64,7 +64,7 @@ export const CONDITIONS = {
   // mesmo dado, sinal trocado. Um efeito que subtrai escrito de outro jeito
   // seria a maneira mais rápida de os dois divergirem.
   amaldicoado: {
-    name: 'Amaldiçoado', icon: '🖤',
+    name: 'Amaldiçoado',
     desc: 'Subtrai 1d4 das jogadas de ataque e dos testes de resistência.',
     attackPenaltyDice: '1d4',
     savePenaltyDice: '1d4',
@@ -75,7 +75,7 @@ export const CONDITIONS = {
   // Aqui magias de fogo podem pegar: a criatura sofre 1d4 no início do turno
   // dela. Controlado por HOUSE_RULES.ignite em combat.js.
   queimando: {
-    name: 'Queimando', icon: '🔥',
+    name: 'Queimando',
     desc: 'Sofre 1d4 de fogo no início de cada turno seu.',
     houseRule: true,
   },

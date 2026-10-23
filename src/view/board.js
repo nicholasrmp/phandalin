@@ -31,6 +31,29 @@ import { previsaoDeAtaque, previsaoDeMagia, pct } from '../rules/odds.js';
 import { SPELLS } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc } from '../rules/abilities.js';
 import { Fx } from './fx.js';
+import { iconCanvas, temIcone } from '../art/icons.js';
+
+// `iconCanvas` devolve uma CÓPIA a cada chamada, porque um canvas não pode
+// estar em dois lugares do DOM. No tabuleiro ele é só fonte de `drawImage`,
+// sessenta vezes por segundo por criatura — copiar a cada quadro seria lixo
+// para o coletor. Um exemplar por nome basta.
+const iconesTab = new Map();
+function iconeTab(nome) {
+  let cv = iconesTab.get(nome);
+  if (!cv) { cv = iconCanvas(nome, 32); iconesTab.set(nome, cv); }
+  return cv;
+}
+
+// QUAL CONDIÇÃO GANHA O LUGAR NO TABULEIRO.
+//
+// Os ícones são de 32 px, e três lado a lado dariam 96 — uma vez e meia a
+// largura de um ladrilho, por cima da criatura vizinha. Então o tabuleiro
+// mostra UM, o que mais muda a próxima decisão, mais um "+N"; a lista
+// completa fica no HUD. A ordem é do que tira a criatura de jogo para o que
+// só a atrapalha, e as condições boas vêm por último.
+const PRIORIDADE = ['atordoado', 'inconsciente', 'agarrado', 'amedrontado', 'envenenado',
+  'caido', 'queimando', 'amaldicoado', 'lento', 'abencoado', 'esquivando'];
+const peso = (id) => { const i = PRIORIDADE.indexOf(id); return i < 0 ? PRIORIDADE.length : i; };
 
 export const TW = 64;
 export const TH = 32;
@@ -1338,20 +1361,14 @@ export class Board {
     // caveira aparecia sobre quem dormia e sobre quem faz teste de morte —
     // justamente quem ainda pode ser salvo —, enquanto o morto de verdade,
     // que é a bandeira `c.dead` e não uma condição, não mostrava nada.
+    //
+    // Eram emoji, e isso contrariava uma regra que já estava escrita em
+    // `hud.js`: emoji é desenho do sistema operacional e não existe na nossa
+    // interface. Agora são ícones do jogo, na paleta dele.
     if (down) {
-      const marca = c.dead ? '\u{1F480}'        // morto
-        : dormindo ? '\u{1F4A4}'                // dormindo: Sono, ainda com PV
-          : '\u{23F3}';                         // morrendo: teste de morte
-      ctx.font = '13px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'alphabetic';
-      // Um talho escuro atrás, senão o ícone some no piso claro.
-      ctx.fillStyle = 'rgba(0,0,0,.5)';
-      ctx.beginPath();
-      ctx.ellipse(baseX, baseY - 32, 11, 9, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillText(marca, baseX, baseY - 27);
-      ctx.textAlign = 'left';
+      const nome = c.dead ? 'morto' : dormindo ? 'dormindo' : 'morrendo';
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(iconeTab(nome), Math.round(baseX - 16), Math.round(baseY - 56));
       return;
     }
 
@@ -1374,11 +1391,27 @@ export class Board {
     ctx.fillStyle = ally ? (real > 0.5 ? '#5fd07a' : real > 0.25 ? '#ffc83a' : '#ff5a5a') : '#d4574a';
     ctx.fillRect(baseX - bw / 2, by, bw * real, 4);
 
-    const conds = (c.conditions ?? []).filter((x) => CONDITIONS[x.id]);
+    const conds = (c.conditions ?? [])
+      .filter((x) => CONDITIONS[x.id] && temIcone(x.id))
+      .sort((a, b) => peso(a.id) - peso(b.id));
     if (conds.length) {
-      ctx.font = '12px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(conds.slice(0, 3).map((x) => CONDITIONS[x.id].icon).join(''), baseX, by - 4);
+      ctx.imageSmoothingEnabled = false;
+      const ix = Math.round(baseX - 16);
+      const iy = Math.round(by - 34);
+      ctx.drawImage(iconeTab(conds[0].id), ix, iy);
+      if (conds.length > 1) {
+        // O "+N" diz que há mais sem ocupar o espaço de mais um ícone.
+        ctx.font = '700 10px system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,.75)';
+        ctx.strokeText(`+${conds.length - 1}`, ix + 31, iy + 8);
+        ctx.fillStyle = '#ebe2d0';
+        ctx.fillText(`+${conds.length - 1}`, ix + 31, iy + 8);
+        ctx.lineWidth = 1;
+        ctx.textBaseline = 'alphabetic';
+      }
     }
   }
 

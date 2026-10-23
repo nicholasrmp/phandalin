@@ -36,7 +36,7 @@
 //    rola sozinho: quando o turno volta, ninguém sabe o que acabou de doer.
 
 import { makePortrait } from '../art/sheet.js';
-import { iconCanvas, iconeDeArma, iconeDeMagia } from '../art/icons.js';
+import { iconCanvas, iconeDeArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
 import { CONDITIONS, hasCondition } from '../rules/conditions.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { isAdjacent } from '../core/grid.js';
@@ -291,8 +291,9 @@ export class Hud {
    * ordem de turno, ficha de inimigo — porque condição esquecida é regra
    * perdida: ninguém lembra que está com desvantagem olhando o retrato.
    *
-   * A sigla de três letras substitui o emoji de `CONDITIONS[x].icon`: emoji é
-   * desenho do sistema operacional e não existe na nossa interface.
+   * Cada condição aparece com o seu ícone de 32 px (src/art/icones-condicoes.js).
+   * Nunca emoji: emoji é desenho do sistema operacional e não existe na nossa
+   * interface. A sigla de três letras sobra para onde o ícone não cabe.
    */
   condChips(c, { mini = false } = {}) {
     const lista = c.conditions ?? [];
@@ -300,8 +301,15 @@ export class Hud {
     return el('div', { class: `conds${mini ? ' mini' : ''}` }, lista.map((x) => {
       const def = CONDITIONS[x.id];
       const nome = def?.name ?? x.id;
+      // O ícone de 32 px entra onde cabe. Na ordem de turno (`mini`) o
+      // azulejo tem 36 px de largura: ali a condição continua sendo um ponto
+      // colorido, e a sigla fica no DOM para a leitura de tela.
+      const comIcone = !mini && temIcone(x.id);
       return this.ligarDica(
-        el('span', { class: `cond${CONDICOES_BOAS.has(x.id) ? ' boa' : ''}` }, sigla(nome)),
+        el('span', {
+          class: `cond${CONDICOES_BOAS.has(x.id) ? ' boa' : ''}${comIcone ? ' com-icone' : ''}`,
+          'aria-label': nome,
+        }, comIcone ? iconCanvas(x.id, 32) : sigla(nome)),
         {
           nome,
           tipo: 'condição',
@@ -842,7 +850,7 @@ export class Hud {
         run,
         desabilitado,
       );
-      tiles.push(this.tile(icone, {
+      tiles.push(this.tile(iconeDeAcao(icone), {
         tecla,
         desabilitado,
         onClick: run,
