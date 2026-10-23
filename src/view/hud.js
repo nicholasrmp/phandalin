@@ -60,7 +60,7 @@ export class Hud {
           el('p', {}, 'Phandalin é conteúdo de fã não oficial, permitido sob a Fan Content Policy da Wizards of the Coast. '
             + 'Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. '
             + '©Wizards of the Coast LLC.'),
-          el('p', {}, 'Inclui material do SRD 5.2 por Wizards of the Coast LLC, sob licença Creative Commons Attribution 4.0.'))),
+          el('p', {}, 'Inclui material do SRD 5.1 por Wizards of the Coast LLC, sob licença Creative Commons Attribution 4.0.'))),
     );
   }
 

@@ -1,4 +1,4 @@
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 // Armas e armaduras. Só o subconjunto que os personagens iniciais usam.
 
 export const WEAPONS = {

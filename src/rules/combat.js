@@ -1,4 +1,4 @@
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 //
 // Motor de combate. Iniciativa POR LADO: rola-se uma vez para o grupo e uma
 // para os inimigos; o lado vencedor age inteiro (na ordem que o jogador quiser)

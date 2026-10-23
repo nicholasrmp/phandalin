@@ -1,4 +1,4 @@
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 // Magias. Declarativas: o motor de combate lê o `kind` e resolve.
 //
 //   attack  jogada de ataque mágico contra a CA

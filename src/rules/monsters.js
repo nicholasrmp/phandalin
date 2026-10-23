@@ -4,7 +4,7 @@
 // para que dê para mexer nos mortos-vivos sem encostar nos goblinoides.
 // Cada família traz suas criaturas e, se precisar, seus traços novos.
 //
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md e ELENCO.md.
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md e ELENCO.md.
 
 import { proficiencyBonus } from './abilities.js';
 import { GOBLINOIDES, TRAITS as T_GOB } from './monsters/goblinoides.js';
@@ -66,5 +66,16 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     dead: false,
     xp: def.xp,
     blurb: def.blurb,
+    // Estes quatro parecem decoração e não são: a view inteira depende deles.
+    // `size` escolhe o andar pesado, `voice` é a voz da criatura, `morte` o
+    // jeito de cair e `incorporeo` decide se ela se dissipa. Enquanto não eram
+    // copiados, dez vozes, seis andares e quatro mortes já escritos e
+    // comentados simplesmente não aconteciam — o esqueleto morria sangrando.
+    size: def.size ?? 'médio',
+    voice: def.voice ?? null,
+    morte: def.morte ?? null,
+    andar: def.andar ?? null,
+    incorporeo: def.incorporeo ?? false,
+    fonte: def.fonte ?? null,
   };
 }

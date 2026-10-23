@@ -13,21 +13,141 @@
 
 const EASE_OUT = (k) => 1 - (1 - k) * (1 - k);
 const EASE_IN_OUT = (k) => (k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2);
+const TAU = Math.PI * 2;
 
 /** Altura, em pixels, do "peito" de uma figura acima do centro do quadrado. */
 export const CHEST = 32;
+
+/**
+ * Jeitos de atravessar um quadrado.
+ *
+ * O caminho é o mesmo para todo mundo; o que diferencia um espectro de um
+ * zumbi e de uma aranha é o RITMO. Separar o ritmo do caminho é o que permite
+ * reaproveitar a mesma interpolação em seis criaturas sem copiar código.
+ *
+ * - `tempo(k)`    remapeia o tempo global: aceleração, parada seca.
+ * - `passoFrac(frac, idx)` remapeia DENTRO de um quadrado: arrasto, surto.
+ * - `lift(f, t)`  altura em pixels (f = posição contínua em quadrados).
+ * - `lateral(f, t)` desvio perpendicular ao avanço, em quadrados.
+ * - `squash(f, t)` escala vertical pedida ao tabuleiro (ver relatório).
+ */
+const ANDARES = {
+  // Passo normal: o balancinho por quadrado é o que faz ler como passo e não
+  // como deslize. É o andar herdado, não mexa nos números.
+  passo: { tps: 6.5, lift: (f) => Math.abs(Math.sin(f * Math.PI)) * 3 },
+
+  // Gosma: avança em surtos, achatando no empurrão e esticando ao escorrer.
+  // Sem balanço nenhum — qualquer sobe-e-desce devolveria pernas à criatura.
+  rastejar: {
+    tps: 3,
+    lift: () => 0,
+    passoFrac: (frac) => EASE_OUT(frac),
+    squash: (f) => 1 - 0.22 * Math.sin((f % 1) * Math.PI),
+  },
+
+  // Aranha: três toques de pata por quadrado e tremor lateral que nunca para.
+  // O tremor é o que dá o nojo; a velocidade sozinha só parece pressa.
+  aranha: {
+    tps: 9,
+    lift: (f) => Math.abs(Math.sin(f * Math.PI * 3)) * 2,
+    lateral: (_f, t) => Math.sin(t * 38) * 0.03,
+  },
+
+  // Stirge: voa alto e nunca em linha reta. Duas frequências somadas porque
+  // uma só lê como pêndulo, e pêndulo não é nervoso.
+  voo: {
+    tps: 7,
+    lift: (_f, t) => 16 + Math.sin(t * 17) * 5,
+    lateral: (_f, t) => Math.sin(t * 26) * 0.09 + Math.sin(t * 11) * 0.04,
+  },
+
+  // Criatura Grande: sai do zero acelerando e chega no último instante. Os
+  // 14% finais são a parada seca — é a pausa que comunica o peso, não a velocidade.
+  investida: {
+    tps: 5,
+    tempo: (k) => Math.min(1, (k / 0.86) ** 2.1),
+    lift: (f) => Math.abs(Math.sin(f * Math.PI)) * 1.5,
+  },
+
+  // Zumbi: uma perna sustenta pior que a outra, então um passo em cada dois
+  // arrasta e afunda. O desequilíbrio é sempre para o mesmo lado.
+  cambalear: {
+    tps: 3.4,
+    passoFrac: (frac, idx) => (idx % 2 === 0 ? EASE_IN_OUT(frac) : EASE_OUT(frac ** 1.7)),
+    lift: (f) => Math.abs(Math.sin(f * Math.PI)) * (Math.floor(f) % 2 === 0 ? 1.5 : 4.5),
+    lateral: (f) => Math.abs(Math.sin(f * Math.PI)) * 0.07,
+  },
+};
+
+/**
+ * Perfis de investida: como o corpo vai e volta ao longo do golpe.
+ * `arco` é o golpe de arma; `bote` é o predador — sai disparado e recolhe devagar.
+ */
+const PERFIS = {
+  arco: (k) => Math.sin(k * Math.PI),
+  bote: (k) => (k < 0.26 ? EASE_OUT(k / 0.26) : 1 - EASE_IN_OUT((k - 0.26) / 0.74)),
+};
 
 export class Fx {
   constructor() {
     this.items = [];
     this.offsets = new Map();
     this.positions = new Map();   // id → posição CONTÍNUA em quadrados
+    this.camera = { dx: 0, dy: 0 }; // tremor da tela, recalculado todo quadro
+    this.tremorSink = null;        // ver ligarTremor()
   }
 
   clear() {
     this.items.length = 0;
     this.offsets.clear();
     this.positions.clear();
+    this.camera.dx = 0;
+    this.camera.dy = 0;
+  }
+
+  /**
+   * Cancela efeitos presos a uma figura. Existe por causa dos efeitos em laço
+   * (flutuar), que por definição não terminam sozinhos: quem liga, desliga.
+   */
+  cancel(id, kind = null) {
+    for (let i = this.items.length - 1; i >= 0; i--) {
+      const it = this.items[i];
+      if (it.id === id && (kind === null || it.kind === kind)) this.items.splice(i, 1);
+    }
+    return this;
+  }
+
+  /**
+   * Liga o tremor da tela a quem sabe sacudir a câmera (`board.bump`).
+   * Sem isso o tremor fica guardado em `fx.camera` e cabe a quem desenha usá-lo.
+   */
+  ligarTremor(fn) {
+    this.tremorSink = fn;
+    return this;
+  }
+
+  /**
+   * Soma um deslocamento ao que a figura já tem neste quadro.
+   *
+   * Sobrescrever seria mais curto, mas os efeitos se acumulam de verdade: a
+   * maça dispara salto E investida no mesmo quadro, e um morto-vivo pode estar
+   * flutuando enquanto recua. Quem sobrescreve perde um dos dois sem avisar.
+   */
+  _somaOffset(id, patch) {
+    const cur = this.offsets.get(id);
+    if (!cur) {
+      this.offsets.set(id, {
+        dx: 0, dy: 0, lift: 0, tilt: 0, squash: 1, alpha: 1, flash: 0, ...patch,
+      });
+      return;
+    }
+    cur.dx += patch.dx ?? 0;
+    cur.dy += patch.dy ?? 0;
+    cur.lift += patch.lift ?? 0;
+    cur.tilt += patch.tilt ?? 0;
+    cur.squash *= patch.squash ?? 1;
+    cur.alpha *= patch.alpha ?? 1;
+    cur.flash = Math.max(cur.flash, patch.flash ?? 0);
   }
 
   /** Posição interpolada de quem está andando, ou null. */
@@ -52,25 +172,37 @@ export class Fx {
   update(dt) {
     this.offsets.clear();
     this.positions.clear();
+    this.camera.dx = 0;
+    this.camera.dy = 0;
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];
       it.t += dt;
+      // Efeito em laço (flutuar) não tem fim: o tempo volta ao começo do ciclo.
+      if (it.loop && it.t >= it.dur) it.t -= it.dur;
       const k = Math.min(1, it.t / it.dur);
 
       if (it.kind === 'walk') {
+        const modo = ANDARES[it.andar] ?? ANDARES.passo;
         const segs = it.path.length - 1;
-        const f = Math.min(segs, k * segs);
-        const idx = Math.min(segs - 1, Math.floor(f));
-        const frac = f - idx;
+        const kk = modo.tempo ? modo.tempo(k) : k;
+        const bruto = Math.min(segs, kk * segs);
+        const idx = Math.min(segs - 1, Math.floor(bruto));
+        const frac = modo.passoFrac ? modo.passoFrac(bruto - idx, idx) : bruto - idx;
+        const f = idx + frac;
         const a = it.path[idx];
         const b = it.path[idx + 1];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        // Desvio perpendicular ao avanço: é o que faz a aranha tremer e o
+        // stirge zigue-zaguear sem sair do caminho que o motor autorizou.
+        const lat = modo.lateral ? modo.lateral(f, it.t) : 0;
         this.positions.set(it.id, {
-          x: a.x + (b.x - a.x) * frac,
-          y: a.y + (b.y - a.y) * frac,
-          // Balancinho por quadrado: é o que faz ler como passo, e não deslize.
-          lift: Math.abs(Math.sin(f * Math.PI)) * 3,
-          dx: b.x - a.x,
-          dy: b.y - a.y,
+          x: a.x + dx * frac - dy * lat,
+          y: a.y + dy * frac + dx * lat,
+          lift: modo.lift(f, it.t),
+          squash: modo.squash ? modo.squash(f, it.t) : 1,
+          dx,
+          dy,
         });
         if (idx !== it.lastStep) {
           it.lastStep = idx;
@@ -79,12 +211,66 @@ export class Fx {
       }
 
       if (it.kind === 'lunge') {
-        const push = Math.sin(k * Math.PI) * (it.reach ?? 0.38);
-        this.offsets.set(it.id, { dx: it.vec.dx * push, dy: it.vec.dy * push });
+        const push = (PERFIS[it.perfil] ?? PERFIS.arco)(k) * (it.reach ?? 0.38);
+        this._somaOffset(it.id, { dx: it.vec.dx * push, dy: it.vec.dy * push });
       }
       if (it.kind === 'hop') {
         // Pulo curto para o golpe de cima para baixo: sobe e desce.
-        this.offsets.set(it.id, { dx: 0, dy: 0, lift: Math.sin(k * Math.PI) * (it.height ?? 16) });
+        this._somaOffset(it.id, { lift: Math.sin(k * Math.PI) * (it.height ?? 16) });
+      }
+
+      // Oscilação vertical contínua, sem passo: a figura não toca o chão.
+      if (it.kind === 'flutuar') {
+        this._somaOffset(it.id, { lift: it.altura + Math.sin(k * TAU) * it.amplitude });
+      }
+
+      // Stirge grudado: deixa o próprio quadrado e fica pousado na vítima.
+      if (it.kind === 'grudar') {
+        const chega = 0.18;
+        const sai = 0.85;
+        const avanco = k < chega ? EASE_OUT(k / chega) : k > sai ? 1 - EASE_IN_OUT((k - sai) / (1 - sai)) : 1;
+        this.positions.set(it.id, {
+          x: it.de.x + (it.sobre.x - it.de.x) * avanco,
+          y: it.de.y + (it.sobre.y - it.de.y) * avanco,
+          // Sobe para o peito da vítima e pulsa junto com a sucção.
+          lift: 16 * avanco + Math.sin(it.t * 14) * 2 * avanco,
+          dx: it.sobre.x - it.de.x,
+          dy: it.sobre.y - it.de.y,
+        });
+      }
+
+      // Recuo: o alvo é empurrado para longe de quem bateu e volta frouxo.
+      if (it.kind === 'recuo') {
+        const push = (k < 0.3 ? EASE_OUT(k / 0.3) : 1 - EASE_IN_OUT((k - 0.3) / 0.7)) * it.dist;
+        this._somaOffset(it.id, { dx: it.vec.dx * push, dy: it.vec.dy * push });
+      }
+
+      if (it.kind === 'piscar') {
+        // Dois clarões em vez de um: um só se confunde com o clarão de dano.
+        this._somaOffset(it.id, { flash: Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k * 0.4) });
+      }
+
+      // Derreter: a figura afunda e achata ao mesmo tempo que esmaece.
+      if (it.kind === 'derreter') {
+        this._somaOffset(it.id, { squash: 1 - 0.85 * EASE_IN_OUT(k), lift: -4 * k, alpha: 1 - k * 0.7 });
+      }
+
+      // Dissipar: nada de queda — some no ar subindo um pouco.
+      if (it.kind === 'dissipar') {
+        this._somaOffset(it.id, { lift: 14 * EASE_OUT(k), alpha: 1 - k, squash: 1 + 0.2 * k });
+      }
+
+      // Desabar: o corpo cede de uma vez, sem voltar.
+      if (it.kind === 'ossos') {
+        this._somaOffset(it.id, { squash: Math.max(0, 1 - EASE_IN_OUT(Math.min(1, k * 3))), alpha: Math.max(0, 1 - k * 3) });
+      }
+
+      if (it.kind === 'tremor') {
+        // Duas frequências primas entre si para o tremor não parecer vibração
+        // de motor; o quadrado da sobra do tempo é o que faz assentar rápido.
+        const sobra = (1 - k) ** 2;
+        this.camera.dx += Math.sin(it.t * 94) * it.forca * 9 * sobra;
+        this.camera.dy += Math.cos(it.t * 71) * it.forca * 6 * sobra;
       }
       if (it.kind === 'projectile' && it.trail) {
         it.past ??= [];
@@ -94,7 +280,7 @@ export class Fx {
         while (it.past.length && it.past[0].age > 0.22) it.past.shift();
       }
 
-      if (it.t >= it.dur) {
+      if (it.t >= it.dur && !it.loop) {
         it.onDone?.();
         this.items.splice(i, 1);
       }
@@ -126,13 +312,198 @@ export class Fx {
    * O motor já moveu a peça — isto só conta a viagem. Enquanto dura, o
    * tabuleiro desenha a figura na posição interpolada em vez do destino.
    */
-  walk(actor, path, { tilesPerSecond = 6.5, onStep = null, onDone = null } = {}) {
+  walk(actor, path, { tilesPerSecond = null, andar = 'passo', onStep = null, onDone = null } = {}) {
     if (!path || path.length < 2) return this;
-    const dur = Math.max(0.14, (path.length - 1) / tilesPerSecond);
+    const modo = ANDARES[andar] ?? ANDARES.passo;
+    const dur = Math.max(0.14, (path.length - 1) / (tilesPerSecond ?? modo.tps));
     return this.add({
-      kind: 'walk', id: actor.id, path: path.map((p) => ({ ...p })),
+      kind: 'walk', id: actor.id, andar, path: path.map((p) => ({ ...p })),
       dur, lastStep: -1, onStep, onDone,
     });
+  }
+
+  // ---- deslocamento por criatura ------------------------------------------
+  //
+  // Todos são `walk` com outro ritmo, então `walkTimeLeft` continua valendo e
+  // `main.js` segue esperando a viagem terminar sem saber qual criatura é.
+
+  /** Gosma escorrendo: comunica que a coisa não tem pernas — ela se derrama. */
+  rastejar(actor, path, opts = {}) {
+    return this.walk(actor, path, { ...opts, andar: 'rastejar' });
+  }
+
+  /** Aranha: comunica pressa de bicho — muitas patas e nenhum peso. */
+  correrAranha(actor, path, opts = {}) {
+    return this.walk(actor, path, { ...opts, andar: 'aranha' });
+  }
+
+  /** Stirge: comunica voo de inseto — alto, torto e impossível de prever. */
+  voar(actor, path, opts = {}) {
+    return this.walk(actor, path, { ...opts, andar: 'voo' });
+  }
+
+  /** Criatura Grande: comunica massa — custa para sair e custa para parar. */
+  investir(actor, path, opts = {}) {
+    return this.walk(actor, path, { ...opts, andar: 'investida' });
+  }
+
+  /** Zumbi: comunica corpo quebrado — anda, mas um lado não obedece. */
+  cambalear(actor, path, opts = {}) {
+    return this.walk(actor, path, { ...opts, andar: 'cambalear' });
+  }
+
+  /**
+   * Espectro e crânio flamejante: comunica que não há pés no chão.
+   *
+   * É um efeito em LAÇO — fica até alguém chamar `cancel(id, 'flutuar')`.
+   * Serve para o estado parado da criatura, não para uma ação.
+   */
+  flutuar(actor, { altura = 7, amplitude = 4, periodo = 2.2 } = {}) {
+    this.cancel(actor.id, 'flutuar');   // nunca dois laços somando altura
+    return this.add({ kind: 'flutuar', id: actor.id, dur: periodo, loop: true, altura, amplitude });
+  }
+
+  // ---- ataques de criatura -------------------------------------------------
+
+  /**
+   * Bote da aranha: comunica predador — o corpo sai disparado e recolhe devagar,
+   * ao contrário do golpe de arma, que vai e volta no mesmo tempo.
+   */
+  bote(actor, target, { dur = 0.34, reach = 0.6, color = '#dff0c0' } = {}) {
+    const dx = target.x - actor.pos.x;
+    const dy = target.y - actor.pos.y;
+    const len = Math.hypot(dx, dy) || 1;
+    this.add({ kind: 'lunge', id: actor.id, dur, reach, perfil: 'bote', vec: { dx: dx / len, dy: dy / len } });
+    this.fangs(target, { color, dur: 0.2 });
+    return this;
+  }
+
+  /**
+   * Sugada do stirge: comunica que o bicho não bate e vai embora — ele pousa
+   * na vítima e fica lá bebendo, que é o que torna o dano por turno plausível.
+   */
+  sugar(actor, target, { dur = 1.1, color = '#b4262a' } = {}) {
+    const sobre = {
+      // Pousa um pouco antes do centro do alvo, senão a figura do stirge
+      // desaparece dentro da figura da vítima.
+      x: target.x + (actor.pos.x - target.x) * 0.26,
+      y: target.y + (actor.pos.y - target.y) * 0.26,
+    };
+    return this.add({ kind: 'grudar', id: actor.id, de: { ...actor.pos }, sobre, tile: { ...target }, dur, color });
+  }
+
+  /**
+   * Sopro do dragão em cone: comunica que o perigo não é o alvo, é a área —
+   * quem estava no caminho se explica depois.
+   */
+  sopro(from, to, { color = '#8ed46a', dur = 0.65, spread = 0.5, tiles = null } = {}) {
+    if (tiles) this.area(tiles, { color, dur: dur * 1.2 });
+    const faiscas = [];
+    for (let i = 0; i < 26; i++) {
+      faiscas.push({ off: (Math.random() - 0.5) * 2, atraso: Math.random() * 0.45, vel: 0.7 + Math.random() * 0.6, size: 2 + Math.random() * 4 });
+    }
+    return this.add({ kind: 'sopro', from: { ...from }, to: { ...to }, color, dur, spread, faiscas });
+  }
+
+  /**
+   * Batida de cauda: comunica golpe que vem de baixo e de lado — varre as
+   * pernas em vez de descer sobre a cabeça, por isso o arco é rente ao chão.
+   */
+  cauda(tile, { color = '#cbb891', dur = 0.3, angle = 0, radius = 42 } = {}) {
+    this.ring(tile, { color, radius: radius * 0.8, dur: 0.35, width: 2 });
+    return this.add({ kind: 'cauda', tile: { ...tile }, color, dur, angle, radius });
+  }
+
+  /**
+   * Agarrão: comunica contenção, não dano — duas garras fecham e o alvo é
+   * puxado para dentro, que é o que o jogador precisa entender antes de fugir.
+   */
+  agarrao(tile, { color = '#e8d6a8', dur = 0.38 } = {}) {
+    return this.add({ kind: 'agarrao', tile: { ...tile }, color, dur });
+  }
+
+  // ---- morte ---------------------------------------------------------------
+
+  /**
+   * Desabar em ossos: comunica que aquilo nunca foi vivo — não cai, desmonta.
+   * Esqueleto e crânio flamejante.
+   */
+  ossos(actor, { color = '#ded2b4', dur = 0.95, count = 14 } = {}) {
+    const tile = actor.pos ?? actor;
+    const parts = [];
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * TAU;
+      parts.push({
+        vx: Math.cos(a) * (14 + Math.random() * 26),
+        vy: -30 - Math.random() * 40,
+        y0: 10 + Math.random() * 34,
+        len: 4 + Math.random() * 7,
+        rot: (Math.random() - 0.5) * 9,
+        ang: a,
+      });
+    }
+    this.add({ kind: 'ossos-pilha', tile: { ...tile }, color, dur, parts });
+    if (actor.id !== undefined) this.add({ kind: 'ossos', id: actor.id, dur: dur * 0.45 });
+    return this;
+  }
+
+  /**
+   * Derreter: comunica que o corpo é só matéria — perde a forma e fica a poça.
+   * Gelatina ocre e limos.
+   */
+  derreter(actor, { color = '#c8a84a', dur = 0.85 } = {}) {
+    const tile = actor.pos ?? actor;
+    this.add({ kind: 'poca', tile: { ...tile }, color, dur: dur * 1.3 });
+    if (actor.id !== undefined) this.add({ kind: 'derreter', id: actor.id, dur });
+    return this;
+  }
+
+  /**
+   * Dissipar: comunica que não havia corpo para cair — o que existia se desfaz
+   * subindo. Espectro, wraith, aparição.
+   */
+  dissipar(actor, { color = '#9fc6ff', dur = 0.8 } = {}) {
+    const tile = actor.pos ?? actor;
+    this.motes(tile, { color, count: 12, dur: dur * 1.1, rise: 62, spread: 22 });
+    if (actor.id !== undefined) {
+      this.cancel(actor.id, 'flutuar');   // quem dissipa para de flutuar
+      this.add({ kind: 'dissipar', id: actor.id, dur });
+    }
+    return this;
+  }
+
+  // ---- reação --------------------------------------------------------------
+
+  /**
+   * Tremor da tela: comunica peso de impacto. É a única primitiva que fala do
+   * jogo todo e não de uma figura, por isso sacode a câmera, não o alvo.
+   */
+  tremor(forca = 0.5, { dur = 0.34 } = {}) {
+    if (this.tremorSink) this.tremorSink(forca);
+    return this.add({ kind: 'tremor', forca, dur });
+  }
+
+  /**
+   * Recuo do alvo: comunica para onde a força foi. Sem isso o golpe acontece
+   * no atacante e o alvo só perde número.
+   */
+  recuo(target, from, { dur = 0.26, dist = 0.3 } = {}) {
+    const alvo = target.pos ?? target;
+    const dx = alvo.x - from.x;
+    const dy = alvo.y - from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return this.add({ kind: 'recuo', id: target.id, dur, dist, vec: { dx: dx / len, dy: dy / len } });
+  }
+
+  /**
+   * Piscar: comunica "foi este aqui" quando nada se move — resistiu, falhou no
+   * salvamento, recebeu condição. Dois clarões, para não virar clarão de dano.
+   */
+  piscar(target, { dur = 0.34, color = '#ffffff' } = {}) {
+    const tile = target.pos ?? target;
+    this.add({ kind: 'clarao', tile: { ...tile }, color, dur });
+    if (target.id !== undefined) this.add({ kind: 'piscar', id: target.id, dur });
+    return this;
   }
 
   // ---- projéteis ----------------------------------------------------------
@@ -264,6 +635,48 @@ export class Fx {
           const { sx, sy } = board.centerF(t.x, t.y);
           board.diamond(ctx, sx, sy - board.tileHalf);
           ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      if (it.kind === 'poca') {
+        // A poça cresce enquanto a figura afunda e só então começa a secar:
+        // é a sequência que conta "isto aqui era a criatura".
+        const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+        const r = 10 + 16 * EASE_OUT(Math.min(1, k / 0.45));
+        ctx.save();
+        ctx.globalAlpha = k < 0.55 ? 0.8 : 0.8 * (1 - (k - 0.55) / 0.45);
+        ctx.fillStyle = it.color;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, r, r * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Brilho em cima da poça: sem ele a mancha lê como buraco.
+        ctx.globalAlpha *= 0.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(sx - r * 0.3, sy - r * 0.12, r * 0.3, r * 0.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (it.kind === 'cauda') {
+        // Arco longo e achatado passando rente ao chão, com poeira atrás.
+        const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+        const varre = -0.9 + 1.8 * EASE_OUT(k);
+        ctx.save();
+        ctx.globalAlpha = Math.sin(Math.min(1, k * 1.2) * Math.PI);
+        ctx.translate(sx, sy - 6);
+        ctx.rotate(it.angle);
+        ctx.strokeStyle = it.color;
+        ctx.lineWidth = 5 * (1 - k * 0.6);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, it.radius, it.radius * 0.3, 0, varre - 0.8, varre + 0.2);
+        ctx.stroke();
+        ctx.globalAlpha *= 0.5;
+        ctx.fillStyle = '#d8c9a8';
+        for (let i = 0; i < 5; i++) {
+          const a = varre - 0.8 + (i / 5) * 0.9;
+          ctx.fillRect(Math.cos(a) * it.radius, Math.sin(a) * it.radius * 0.3 - i, 3, 3);
         }
         ctx.restore();
       }
@@ -477,6 +890,126 @@ export class Fx {
             ctx.beginPath();
             ctx.arc(i * 7, 0, 18 + k * 8, -0.7, 0.7);
             ctx.stroke();
+          }
+          ctx.restore();
+          break;
+        }
+
+        case 'sopro': {
+          // O cone abre a partir do peito de quem sopra e avança até o alvo;
+          // o jogador tem de ver a FORMA antes de ver o dano.
+          const a = at(it.from);
+          const b = at(it.to);
+          const ang = Math.atan2(b.sy - a.sy, b.sx - a.sx);
+          const dist = Math.hypot(b.sx - a.sx, b.sy - a.sy) * 1.15;
+          const abre = EASE_OUT(Math.min(1, k / 0.3));
+          const fade = k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5;
+          const alc = dist * abre;
+          ctx.save();
+          ctx.translate(a.sx, a.sy - CHEST * 0.8);
+          ctx.rotate(ang);
+          ctx.globalAlpha = fade * 0.75;
+          const grd = ctx.createLinearGradient(0, 0, alc, 0);
+          grd.addColorStop(0, '#ffffff');
+          grd.addColorStop(0.35, it.color);
+          grd.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(alc, -alc * it.spread);
+          ctx.lineTo(alc, alc * it.spread);
+          ctx.closePath();
+          ctx.fill();
+          // Faíscas dentro do cone: o gradiente sozinho lê como vidro fosco.
+          ctx.globalAlpha = fade;
+          ctx.fillStyle = '#ffffff';
+          for (const s of it.faiscas) {
+            const pk = (k - s.atraso) * s.vel * 2.4;
+            if (pk < 0 || pk > 1) continue;
+            const d = alc * pk;
+            ctx.globalAlpha = fade * (1 - pk) * 0.9;
+            ctx.fillRect(d, s.off * d * it.spread, s.size, s.size);
+          }
+          ctx.restore();
+          break;
+        }
+
+        case 'agarrao': {
+          // Duas garras fecham na altura do peito e dão um tranco para dentro.
+          const { sx, sy } = at(it.tile);
+          const fecha = EASE_OUT(Math.min(1, k / 0.55));
+          const aberto = 30 * (1 - fecha) + 7;
+          const puxa = k > 0.55 ? Math.sin(((k - 0.55) / 0.45) * Math.PI) * 4 : 0;
+          ctx.save();
+          ctx.globalAlpha = 1 - Math.max(0, (k - 0.6) / 0.4);
+          ctx.strokeStyle = it.color;
+          ctx.lineWidth = 3.5;
+          for (const lado of [-1, 1]) {
+            const x = sx + lado * (aberto - puxa);
+            ctx.beginPath();
+            ctx.moveTo(x + lado * 9, sy - 44);
+            ctx.lineTo(x, sy - 30);
+            ctx.lineTo(x + lado * 9, sy - 16);
+            ctx.stroke();
+          }
+          ctx.restore();
+          break;
+        }
+
+        case 'ossos-pilha': {
+          // Os ossos sobem pouco, caem e param no chão; o resto do tempo é só
+          // o monte esmaecendo. Parar no chão é o que separa morte de explosão.
+          const { sx, sy } = at(it.tile);
+          const g = 260;
+          ctx.save();
+          ctx.fillStyle = it.color;
+          ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+          for (const p of it.parts) {
+            const tq = it.t;
+            const x = sx + p.vx * tq;
+            let y = sy - p.y0 + p.vy * tq + g * tq * tq;
+            let rot = p.ang + tq * p.rot;
+            if (y > sy) { y = sy; rot = p.ang + p.rot; }   // assentou
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rot);
+            ctx.fillRect(-p.len / 2, -1.5, p.len, 3);
+            ctx.fillRect(-p.len / 2 - 1, -2.5, 2, 5);      // epífise
+            ctx.fillRect(p.len / 2 - 1, -2.5, 2, 5);
+            ctx.restore();
+          }
+          ctx.restore();
+          break;
+        }
+
+        case 'clarao': {
+          // Clarão branco sobre a figura: marca QUEM, quando nada se move.
+          const { sx, sy } = at(it.tile);
+          const pulso = Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k * 0.4);
+          ctx.save();
+          ctx.globalAlpha = pulso * 0.55;
+          const grd = ctx.createRadialGradient(sx, sy - 26, 2, sx, sy - 26, 30);
+          grd.addColorStop(0, it.color);
+          grd.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.ellipse(sx, sy - 26, 30, 34, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          break;
+        }
+
+        case 'grudar': {
+          // Gotas subindo da vítima para o bicho: é o que mostra que o dano
+          // continua enquanto ele está lá, e não um golpe que já passou.
+          const { sx, sy } = at(it.tile);
+          ctx.save();
+          ctx.fillStyle = it.color;
+          // Só enquanto está pousado: na aproximação e na saída não há sucção.
+          for (let i = 0; k > 0.2 && k < 0.9 && i < 4; i++) {
+            const pk = (it.t * 1.6 + i * 0.25) % 1;
+            ctx.globalAlpha = Math.sin(pk * Math.PI) * 0.9;
+            ctx.fillRect(sx - 3 + i * 2, sy - 20 - pk * 16, 2, 3);
           }
           ctx.restore();
           break;

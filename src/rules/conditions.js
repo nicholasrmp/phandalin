@@ -1,4 +1,4 @@
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 // Condições. Cada uma descreve, em dados, o que muda mecanicamente.
 
 export const CONDITIONS = {

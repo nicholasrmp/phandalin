@@ -13,7 +13,9 @@ import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from './game/encounter
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { audio } from './core/audio.js';
-import { playWeaponVisual, playSpellVisual } from './view/visuals.js';
+import {
+  playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
+} from './view/visuals.js';
 
 
 class App {
@@ -122,7 +124,12 @@ class App {
       case 'moved': {
         ev.actor.facingVec = { dx: ev.to.x - ev.from.x, dy: ev.to.y - ev.from.y };
         // O motor já moveu a peça; isto conta a viagem quadrado a quadrado.
-        board?.fx.walk(ev.actor, ev.path, { onStep: () => audio.play('step') });
+        // O andar vem da criatura: a gelatina escorre, a aranha treme, o
+        // zumbi arrasta uma perna, o ogro parte e para seco.
+        board?.fx.walk(ev.actor, ev.path, {
+          andar: andarDe(ev.actor),
+          onStep: () => audio.play('step'),
+        });
         break;
       }
 
@@ -204,8 +211,15 @@ class App {
         const { target } = ev;
         this.atImpact(() => {
           board?.floatText(target.pos, '✖', '#ff4b4b', true);
-          board?.fx.impact(target.pos, { color: '#8a2b2b', count: 14, spread: 40, dur: 0.6 });
-          audio.play('down');
+          // Esqueleto desmonta, gelatina derrete, espectro se dissipa. Um
+          // respingo de sangue para os três joga fora metade do que o
+          // bestiário conquistou — e esqueleto não sangra.
+          if (ev.type === 'died' && target.kind === 'npc') {
+            playDeathVisual(board, target);
+          } else {
+            board?.fx.impact(target.pos, { color: '#8a2b2b', count: 14, spread: 40, dur: 0.6 });
+            audio.play('down');
+          }
         });
         break;
       }

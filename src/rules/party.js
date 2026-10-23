@@ -1,4 +1,4 @@
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 // Os quatro personagens prontos do sandbox, no 2º nível.
 //
 // O 2º nível é o ponto doce para testar combate: cada classe já tem um verbo

@@ -34,6 +34,7 @@ const PLANOS = {
   aracnideo: paintAracnideo,
   mortoVivo: paintMortoVivo,
   aberracao: paintAberracao,
+  gosma: paintAberracao,            // ELENCO.md chama a gelatina ocre de plano `gosma`
   feras: paintFeras,
   dragao: paintDragao,
 };

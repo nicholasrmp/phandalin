@@ -1,6 +1,6 @@
 # Phandalin
 
-RPG tático cooperativo no navegador, com as regras do **SRD 5.2**. Até 4 pessoas
+RPG tático cooperativo no navegador, com as regras do **SRD 5.1**. Até 4 pessoas
 numa campanha, combate por turnos em grade isométrica de 1,5 m.
 
 ```bash
@@ -98,7 +98,7 @@ diferentes. O detalhamento está em [NOTICE.md](NOTICE.md); o resumo:
 
 | O quê | Instrumento | Pode? |
 |---|---|---|
-| Regras, magias, monstros do SRD | **CC-BY-4.0** (SRD 5.2) | Sim, com atribuição. Irrevogável. |
+| Regras, magias, monstros do SRD | **CC-BY-4.0** (SRD 5.1) | Sim, com atribuição. Irrevogável. |
 | Nomes de lugares e personagens dos Reinos | **Fan Content Policy** da WotC | Sim, se o jogo for **gratuito** e trouxer o aviso. Revogável. |
 | Texto, mapas e encontros de módulos publicados | — | **Não.** Nem de graça. |
 

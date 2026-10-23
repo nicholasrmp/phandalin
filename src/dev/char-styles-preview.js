@@ -93,11 +93,13 @@ const raiz = document.getElementById('opcoes');
   };
   for (const [key, look] of Object.entries(LOOKS)) {
     const [nome, papel] = nomes[key] ?? [key, ''];
-    // Quadrúpede se lê de perfil: de frente é um vulto.
+    // Bicho de quatro patas se lê de perfil: de frente é um vulto. Vale para
+    // o `plan` e também para a bandeira antiga `quadruped`.
+    const dePerfil = look.quadruped || ['quadrupede', 'feras'].includes(look.plan);
     f.appendChild(cel(look, nome, papel, {
       inimigo: papel === 'inimigo',
-      semAltura: !!look.quadruped,
-      dir: look.quadruped ? 'side' : 'front',
+      semAltura: !!look.plan || !!look.quadruped,
+      dir: dePerfil ? 'side' : 'front',
     }));
   }
   raiz.appendChild(s);

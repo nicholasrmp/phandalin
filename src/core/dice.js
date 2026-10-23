@@ -1,5 +1,5 @@
 // Dados, do jeito do 5e.
-// SRD 5.2 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 //
 // Regras implementadas aqui:
 //  · vantagem/desvantagem rolam 2d20 e pegam o maior/menor; se as duas se

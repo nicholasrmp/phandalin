@@ -16,7 +16,7 @@ of the Coast. Nada do que você escrever pode criar obrigação de pagamento.
 
 | O quê | Pode? | Como |
 |---|---|---|
-| Regras e blocos de estatística do **SRD 5.2** | Sim | CC-BY-4.0. Atribuição já está em `NOTICE.md`. |
+| Regras e blocos de estatística do **SRD 5.1** | Sim | CC-BY-4.0. Atribuição já está em `NOTICE.md`. |
 | **Nomes** de lugares e personagens do módulo | Sim | Fan Content Policy. Só o nome e o papel. |
 | **Texto, mapas, descrições de sala, diálogo** do módulo publicado | **Não** | Nunca. Nem parafraseado de perto. |
 
@@ -137,7 +137,7 @@ humanoides, `../body.js`.
 
 ## 4. Elenco da campanha
 
-Marcação: **SRD** = bloco do SRD 5.2. **própria** = criatura nossa, porque a do
+Marcação: **SRD** = bloco do SRD 5.1. **própria** = criatura nossa, porque a do
 módulo não está no SRD. **NPC** = nome do módulo (fan content) sobre bloco SRD.
 
 ### Goblinoides e humanoides hostis — plano `humanoide`

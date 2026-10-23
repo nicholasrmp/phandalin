@@ -6,13 +6,23 @@ adicionar qualquer conteúdo.
 
 ---
 
-## 1. Regras do jogo — SRD 5.2, Creative Commons Attribution 4.0
+## 1. Regras do jogo — SRD 5.1, Creative Commons Attribution 4.0
 
-> This work includes material taken from the System Reference Document 5.2
-> ("SRD 5.2") by Wizards of the Coast LLC, available at
-> <https://www.dndbeyond.com/srd>. The SRD 5.2 is licensed under the Creative
+> This work includes material taken from the System Reference Document 5.1
+> ("SRD 5.1") by Wizards of the Coast LLC, available at
+> <https://www.dndbeyond.com/srd>. The SRD 5.1 is licensed under the Creative
 > Commons Attribution 4.0 International License, available at
 > <https://creativecommons.org/licenses/by/4.0/legalcode>.
+
+**Por que 5.1 e não 5.2.** Os blocos de monstro deste repositório são os da era
+2014: o lobo com CA 13 e mordida 2d4+2, o mago de ND 6, o doppelganger com
+Ataque Surpresa +3d6. Esses números vêm do SRD 5.1. O 5.2, derivado do Monster
+Manual de 2024, renomeou famílias inteiras de blocos genéricos (Thug virou
+Tough, Veteran virou Warrior Veteran) e mudou os números. Os dois documentos são
+CC-BY-4.0, então a escolha não é de legalidade — mas a CC-BY obriga a nomear a
+obra de onde o material saiu, e o projeto afirmava 5.2 enquanto usava 5.1.
+Atribuir 5.1 era a correção barata; reescrever 46 blocos com os números de 2024
+seria a cara.
 
 Cobre: classes, espécies, antecedentes, talentos, magias, equipamento,
 condições, blocos de estatística de monstros do SRD e o motor de regras
@@ -21,7 +31,7 @@ condições, blocos de estatística de monstros do SRD e o motor de regras
 Esta licença é **irrevogável**. É a fundação sólida do projeto.
 
 Tudo que vier do SRD deve ficar em `src/rules/` e ser marcado com o comentário
-`// SRD 5.2 (CC-BY-4.0)` no topo do arquivo.
+`// SRD 5.1 (CC-BY-4.0)` no topo do arquivo.
 
 ---
 
