@@ -1,13 +1,102 @@
-// Oficina de personagens: desenha com o MESMO pintor do jogo (`art/draw.js`),
-// não com um protótipo à parte. O que aparecer aqui é o que aparece no
-// tabuleiro.
+// FOLHA DE REVISÃO DO ELENCO.
+//
+// Desenha com o MESMO pintor do jogo — o que aparecer aqui é o que aparece no
+// tabuleiro. Cada figura tem um número para ser citada por ele.
+//
+// As medidas não são declaradas: a altura e a largura saem do alfa do canvas
+// depois de pintado, antes do contorno. É assim que dá para pegar uma criatura
+// Grande que saiu do tamanho de uma Média, ou um sprite que escreve fora da
+// célula e vai sujar o quadro vizinho na folha de sprites.
 
-import { paint, DIRECTIONS } from '../art/draw.js';
+import { paint } from '../art/draw.js';
+import { metrics } from '../art/body.js';
 import { CELL_W, CELL_H, OUTLINE } from '../art/sheet.js';
-import { LOOKS } from '../art/looks.js';
-import { SPECIES, BUILDS, metrics } from '../art/body.js';
+import { PARTY_LOOKS } from '../art/looks/party.js';
+import { BESTIARIO_LOOKS } from '../art/looks/bestiario.js';
+import { HUMANOIDES_LOOKS } from '../art/looks/humanoides.js';
+import { FERAS_LOOKS } from '../art/looks/feras.js';
+import { MORTOS_VIVOS_LOOKS } from '../art/looks/mortosvivos.js';
+import { ABERRACOES_LOOKS } from '../art/looks/aberracoes.js';
+import { NPC_LOOKS } from '../art/looks/npcs.js';
+import { MONSTERS } from '../rules/monsters.js';
+import { NPCS } from '../rules/npcs.js';
 
 const ESCALA = 3;
+
+const FAMILIAS = [
+  ['Grupo jogável', PARTY_LOOKS],
+  ['Goblinoides', BESTIARIO_LOOKS],
+  ['Humanoides', HUMANOIDES_LOOKS],
+  ['Feras', FERAS_LOOKS],
+  ['Mortos-vivos', MORTOS_VIVOS_LOOKS],
+  ['Aberrações, limo e dragão', ABERRACOES_LOOKS],
+  ['NPCs da campanha', NPC_LOOKS],
+];
+
+// Nomes do grupo: eles nascem em rules/party.js já instanciados, então aqui
+// ficam à mão mesmo.
+const NOMES_GRUPO = {
+  fighter: 'Dara, guerreira',
+  rogue: 'Pip, ladino',
+  cleric: 'Brenn, clérigo',
+  wizard: 'Ilvan, mago',
+};
+
+// Faixas de ELENCO.md §3, em pixels de figura. Valem para quem tem plano
+// corporal próprio — aranha, gosma, dragão —, porque aí não há anatomia
+// paramétrica para consultar.
+const FAIXAS = {
+  miúdo: [14, 24],
+  miudo: [14, 24],
+  pequeno: [38, 45],
+  médio: [52, 66],
+  medio: [52, 66],
+  grande: [66, 75],
+};
+
+/**
+ * Quanto a figura DEVERIA medir.
+ *
+ * Para humanoide a resposta não é a categoria de tamanho do D&D: anão e
+ * halfling são Médio e Pequeno nas regras, mas quem manda no desenho é a
+ * espécie em `body.js`. Comparar contra a categoria acusaria o anão de baixo
+ * demais, que é exatamente o que ele tem de ser. O que importa medir é outra
+ * coisa: se a marca de silhueta — cimeira, chifre, capuz — foi paga com
+ * altura e empurrou a figura para além do corpo que a anatomia pediu.
+ */
+function esperado(look, size) {
+  if (!look.plan && !look.quadruped) {
+    try {
+      const alvo = metrics(look).total;
+      // A folga é assimétrica de propósito. Encolher é postura: o ladino e o
+      // goblin agacham, e agachar tira uns 4 px — é o desenho funcionando.
+      // Crescer é o defeito: quando a figura passa da anatomia, foi a cimeira,
+      // o chifre ou o capuz que comeu altura, e aí o hobgoblin Médio sai mais
+      // alto que o ogro Grande.
+      return { min: alvo - 7, max: alvo + 4, base: `anatomia pede ${alvo}` };
+    } catch {
+      /* look sem espécie válida: cai na faixa por categoria */
+    }
+  }
+  const faixa = FAIXAS[size];
+  return faixa ? { min: faixa[0], max: faixa[1], base: `${size} pede ${faixa[0]}–${faixa[1]}` } : null;
+}
+
+// --- índices: do look para quem o usa ---------------------------------------
+const porLook = new Map();
+for (const def of Object.values(MONSTERS)) {
+  if (def.look) porLook.set(def.look, { nome: def.name, size: def.size ?? 'médio', fonte: def.fonte, tipo: 'monstro' });
+}
+for (const def of Object.values(NPCS)) {
+  const bloco = MONSTERS[def.bloco] ?? MONSTERS[def.blocoSubstituto];
+  if (def.look && !porLook.has(def.look)) {
+    porLook.set(def.look, {
+      nome: def.nome, size: bloco?.size ?? 'médio', fonte: def.fonte, tipo: 'npc', papel: def.papel,
+    });
+  }
+}
+
+// --- desenho e medição -------------------------------------------------------
 
 function contornar(cv) {
   const { width: w, height: h } = cv;
@@ -25,180 +114,124 @@ function contornar(cv) {
     }
   }
   ctx.putImageData(img, 0, 0);
-  return cv;
 }
 
-function figura(look, { dir = 'front', pose = { kind: 'idle', frame: 0 }, escala = ESCALA } = {}) {
+/** Pinta uma vista e devolve o canvas ampliado mais a caixa que ela ocupa. */
+function vista(look, dir) {
   const cv = document.createElement('canvas');
   cv.width = CELL_W;
   cv.height = CELL_H;
-  paint(cv.getContext('2d', { willReadFrequently: true }), 0, 0, CELL_W, CELL_H, look, dir, pose);
-  contornar(cv);
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  try {
+    paint(ctx, 0, 0, CELL_W, CELL_H, look, dir, { kind: 'idle', frame: 0 });
+  } catch (e) {
+    return { erro: e.message, caixa: null, canvas: cv };
+  }
 
+  // Mede ANTES do contorno: o contorno soma 1 px de cada lado e falsearia tudo.
+  const d = ctx.getImageData(0, 0, CELL_W, CELL_H).data;
+  let x0 = CELL_W; let y0 = CELL_H; let x1 = -1; let y1 = -1;
+  for (let y = 0; y < CELL_H; y++) {
+    for (let x = 0; x < CELL_W; x++) {
+      if (d[(y * CELL_W + x) * 4 + 3] === 0) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  const caixa = x1 < 0 ? null : { x0, y0, x1, y1, alt: y1 - y0 + 1, larg: x1 - x0 + 1 };
+
+  contornar(cv);
   const out = document.createElement('canvas');
-  out.width = CELL_W * escala;
-  out.height = CELL_H * escala;
+  out.width = CELL_W * ESCALA;
+  out.height = CELL_H * ESCALA;
   const octx = out.getContext('2d');
   octx.imageSmoothingEnabled = false;
   octx.drawImage(cv, 0, 0, out.width, out.height);
   out.className = 'fig';
-  return out;
+  return { canvas: out, caixa, erro: null };
 }
 
-/** Uma célula com legenda. As figuras pousam todas na mesma linha de chão. */
-function cel(look, nome, detalhe, opts = {}) {
-  const f = document.createElement('figure');
-  f.className = `cel ${opts.inimigo ? 'inimigo' : 'heroi'}`;
-  f.appendChild(figura(look, opts));
-  const m = metrics(look);
-  f.insertAdjacentHTML(
-    'beforeend',
-    `<figcaption><b>${nome}</b><span>${detalhe}</span>${
-      opts.semAltura ? '' : `<span class="alt">${m.total} px</span>`
-    }</figcaption>`,
-  );
-  return f;
-}
-
-function secao(titulo, nota) {
-  const s = document.createElement('section');
-  s.className = 'card';
-  s.innerHTML = `<h2>${titulo}</h2>${nota ? `<p class="pitch">${nota}</p>` : ''}`;
-  return s;
-}
-
-function fila(parent) {
-  const d = document.createElement('div');
-  d.className = 'fila';
-  parent.appendChild(d);
-  return d;
-}
+// --- montagem ----------------------------------------------------------------
 
 const raiz = document.getElementById('opcoes');
+let n = 0;
+const problemas = [];
 
-// --- 1. o elenco do jogo ----------------------------------------------------
-{
-  const s = secao(
-    'O elenco, como está no jogo agora',
-    'Quatro alturas diferentes no grupo de propósito: anão baixo e largo, halfling leve, '
-    + 'humana média, elfo alto e magro. Dá para saber quem é quem pela silhueta, sem ler o nome. '
-    + 'O número embaixo é a altura real da figura em pixels.',
-  );
-  const f = fila(s);
-  const nomes = {
-    fighter: ['Dara', 'Guerreira'], rogue: ['Pip', 'Ladino'], cleric: ['Brenn', 'Clérigo'],
-    wizard: ['Ilvan', 'Mago'], goblin: ['Goblin', 'inimigo'], goblinBoss: ['Chefe goblin', 'inimigo'],
-    hobgoblin: ['Hobgoblin', 'inimigo'], bugbear: ['Bugbear', 'inimigo'], orc: ['Orc', 'inimigo'],
-    wolf: ['Lobo', 'inimigo'],
-  };
-  for (const [key, look] of Object.entries(LOOKS)) {
-    const [nome, papel] = nomes[key] ?? [key, ''];
-    // Bicho de quatro patas se lê de perfil: de frente é um vulto. Vale para
-    // o `plan` e também para a bandeira antiga `quadruped`.
-    const dePerfil = look.quadruped || ['quadrupede', 'feras'].includes(look.plan);
-    f.appendChild(cel(look, nome, papel, {
-      inimigo: papel === 'inimigo',
-      semAltura: !!look.plan || !!look.quadruped,
-      dir: dePerfil ? 'side' : 'front',
-    }));
-  }
-  raiz.appendChild(s);
-}
+for (const [titulo, grupo] of FAMILIAS) {
+  const chaves = Object.keys(grupo);
+  if (!chaves.length) continue;
 
-// --- 2. espécie ------------------------------------------------------------
-{
-  const s = secao(
-    'A espécie muda o corpo, não só a cor',
-    'Todos abaixo vestem exatamente a mesma coisa — couro, espada, sem elmo — e têm a mesma '
-    + 'compleição. O que muda é altura, comprimento de perna, largura de ombro, tamanho de cabeça, '
-    + 'orelha, focinho, testa e queixo.',
-  );
-  const f = fila(s);
-  const base = {
-    build: 'normal',
-    skin: '#d2a070', hair: '#4a3524', hairStyle: 'short',
-    outfit: '#6a5a46', outfitDark: '#473c2e', trim: '#8a6a3a',
-    metal: '#b4bcc6', leather: '#5a4630', eyes: '#3a4a6a',
-    armorStyle: 'leather', weapon: 'sword',
-  };
-  const peles = {
-    goblin: '#7fa05a', hobgoblin: '#c08a4a', bugbear: '#9a7a4a', orc: '#6f8a52',
-  };
-  for (const nome of Object.keys(SPECIES)) {
-    const look = { ...base, species: nome, skin: peles[nome] ?? base.skin };
-    f.appendChild(cel(look, nome, SPECIES[nome].ear === 'wide' ? 'orelha larga' : SPECIES[nome].ear === 'long' ? 'orelha longa' : '—'));
-  }
-  raiz.appendChild(s);
-}
+  const sec = document.createElement('section');
+  sec.className = 'card';
+  sec.innerHTML = `<h2>${titulo} <span class="qtd">${chaves.length}</span></h2>`;
+  const fila = document.createElement('div');
+  fila.className = 'fila';
+  sec.appendChild(fila);
 
-// --- 3. compleição ---------------------------------------------------------
-{
-  const s = secao(
-    'A compleição é independente da espécie',
-    'Mesma espécie, mesmo equipamento, quatro corpos. Existe goblin gordo e hobgoblin magro — '
-    + 'é um campo separado no look, não uma variante desenhada à mão.',
-  );
-  const base = {
-    species: 'humano',
-    skin: '#d2a070', hair: '#4a3524', hairStyle: 'short',
-    outfit: '#6a5a46', outfitDark: '#473c2e', trim: '#8a6a3a',
-    metal: '#b4bcc6', leather: '#5a4630', eyes: '#3a4a6a',
-    armorStyle: 'leather', weapon: 'sword',
-  };
-  for (const especie of ['humano', 'goblin', 'hobgoblin']) {
-    const f = fila(s);
-    for (const b of Object.keys(BUILDS)) {
-      f.appendChild(cel({ ...base, species: especie, build: b, skin: especie === 'goblin' ? '#7fa05a' : especie === 'hobgoblin' ? '#c08a4a' : base.skin }, `${especie} ${b}`, `ombro ×${BUILDS[b].bulk}`));
+  for (const chave of chaves) {
+    const look = grupo[chave];
+    const meta = porLook.get(chave) ?? {};
+    n += 1;
+
+    const frente = vista(look, 'front');
+    const lado = vista(look, 'side');
+    const alt = Math.max(frente.caixa?.alt ?? 0, lado.caixa?.alt ?? 0);
+    const size = meta.size ?? (titulo === 'Grupo jogável' ? 'médio' : '—');
+    const alvo = esperado(look, size);
+
+    const avisos = [];
+    if (frente.erro || lado.erro) avisos.push(['erro', frente.erro ?? lado.erro]);
+    if (alvo && alt && (alt < alvo.min || alt > alvo.max)) {
+      avisos.push(['faixa', `${alvo.base} px, está com ${alt}`]);
     }
-  }
-  raiz.appendChild(s);
-}
-
-// --- 4. equipamento --------------------------------------------------------
-{
-  const s = secao(
-    'O equipamento muda a figura',
-    'A mesma Dara. Trocar de armadura, de arma, pôr elmo ou escudo é mudar um campo do look — '
-    + 'nenhuma arte nova precisa ser desenhada. É isto que vai ligar o inventário ao boneco.',
-  );
-  const f = fila(s);
-  const base = LOOKS.fighter;
-  const kits = [
-    ['Roupa de viagem', 'sem armadura, adaga', { armorStyle: 'robe', helm: false, shield: false, weapon: 'dagger', cloak: null }],
-    ['Couro batido', 'couro, espada', { armorStyle: 'leather', helm: false, shield: false, weapon: 'sword' }],
-    ['Escamas e escudo', 'escamas, escudo, maça', { armorStyle: 'scale', helm: false, shield: true, weapon: 'mace' }],
-    ['Placas completas', 'placas, elmo, escudo', { armorStyle: 'plate', helm: true, shield: true, weapon: 'sword', cloak: '#6b2230' }],
-    ['Arco longo', 'couro, arco', { armorStyle: 'leather', helm: false, shield: false, weapon: 'bow' }],
-    ['Machado grande', 'placas, elmo, machado', { armorStyle: 'plate', helm: true, shield: false, weapon: 'axe' }],
-  ];
-  for (const [nome, det, mod] of kits) {
-    f.appendChild(cel({ ...base, ...mod }, nome, det, { semAltura: true }));
-  }
-  raiz.appendChild(s);
-}
-
-// --- 5. vistas e poses -----------------------------------------------------
-{
-  const s = secao(
-    'As três vistas e as quatro poses',
-    'É o que a folha de sprites guarda para cada look. As três vistas, espelhadas, cobrem as '
-    + 'oito orientações da grade — e as quatro diagonais que a câmera isométrica usa.',
-  );
-  const poses = [
-    ['parado', { kind: 'idle', frame: 0 }],
-    ['parado 2', { kind: 'idle', frame: 1 }],
-    ['ataque', { kind: 'attack', frame: 1 }],
-    ['ferido', { kind: 'hurt', frame: 0 }],
-    ['caído', { kind: 'down', frame: 0 }],
-  ];
-  for (const dir of DIRECTIONS) {
-    const f = fila(s);
-    for (const [nome, pose] of poses) {
-      f.appendChild(cel(LOOKS.fighter, `${dir} · ${nome}`, '', { dir, pose, semAltura: true }));
+    for (const [rot, v] of [['frente', frente.caixa], ['lado', lado.caixa]]) {
+      if (!v) continue;
+      if (v.x0 <= 0 || v.x1 >= CELL_W - 1 || v.y0 <= 0) {
+        avisos.push(['fora', `escreve na borda da célula na vista de ${rot}`]);
+      }
     }
+    if (avisos.length) problemas.push({ n, chave, nome: meta.nome ?? chave, avisos });
+
+    const cel = document.createElement('figure');
+    cel.className = `cel ${meta.tipo === 'npc' ? 'npc' : meta.tipo === 'monstro' ? 'inimigo' : 'heroi'}`;
+    cel.id = `fig-${n}`;
+
+    const par = document.createElement('div');
+    par.className = 'par';
+    par.appendChild(frente.canvas);
+    par.appendChild(lado.canvas);
+    cel.appendChild(par);
+
+    const nome = meta.nome ?? NOMES_GRUPO[chave] ?? chave;
+    cel.insertAdjacentHTML('beforeend', `
+      <figcaption>
+        <b><span class="num">${n}</span>${nome}</b>
+        <span class="chave">${chave}</span>
+        <span class="medida">${size !== '—' ? `${size} · ` : ''}${alt || '?'} px de altura</span>
+        ${meta.fonte && meta.fonte !== 'SRD' ? `<span class="fonte">${meta.fonte}</span>` : ''}
+        ${avisos.map(([t, m]) => `<span class="aviso ${t}">${m}</span>`).join('')}
+      </figcaption>`);
+    fila.appendChild(cel);
   }
-  raiz.appendChild(s);
+  raiz.appendChild(sec);
 }
+
+// --- resumo no topo ----------------------------------------------------------
+const resumo = document.createElement('section');
+resumo.className = 'card resumo';
+resumo.innerHTML = `
+  <h2>${n} figuras · ${problemas.length} com aviso</h2>
+  <p class="pitch">
+    Cada figura aparece de frente e de lado, porque a câmera gira e as duas vistas
+    chegam ao jogador. A altura é medida do alfa, não declarada. Para pedir mudança,
+    cite o número.
+  </p>
+  ${problemas.length ? `<ul class="lista-problemas">${problemas.map((p) => `
+    <li><a href="#fig-${p.n}"><b>${p.n}</b> ${p.nome}</a> — ${p.avisos.map(([, m]) => m).join('; ')}</li>`).join('')}</ul>` : ''}
+`;
+raiz.prepend(resumo);
 
 document.getElementById('tema').addEventListener('click', (e) => {
   document.body.classList.toggle('claro');
