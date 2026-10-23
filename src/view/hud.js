@@ -1,7 +1,30 @@
-// HUD: fichas do grupo, barra de ações, log de rolagens.
+// HUD: ordem de turno, trilho do grupo, barra de ações, log de rolagens.
 // DOM puro. Nome de jogador e texto de log sempre via textContent.
+//
+// A ARQUITETURA
+// Vem do Baldur's Gate 3, que é o mesmo jogo que este: 5e tático em turnos com
+// um grupo de quatro. Vale copiar a arquitetura de informação dele porque ela
+// já resolveu problemas que apareceriam aqui de qualquer jeito. A arte é nossa.
+//
+// A tela se divide em cinco regiões, e cada uma responde UMA pergunta:
+//
+//   ordem de turno (topo)    quem joga agora e quem vem depois
+//   trilho do grupo (esq.)   como está cada um dos meus
+//   tabuleiro (centro)       onde todo mundo está
+//   log (direita)            o que acabou de acontecer e por quê
+//   barra de ação (baixo)    o que EU posso fazer agora
+//
+// A barra de ação é dividida em zonas, e a divisão não é estética: cada zona é
+// um recurso diferente do turno. Ataques e ações comuns gastam a AÇÃO; a
+// hotbar gasta ação ou ação bônus conforme a magia; o medidor gasta MOVIMENTO;
+// a reação é de fora do turno. O núcleo, no meio, mostra as gemas de ação e de
+// bônus — é a resposta mais rápida para "o que ainda me resta".
+//
+// Antes disso tudo era uma fileira de botões de texto com emoji, e emoji é
+// desenho do sistema operacional: era metade da cara de amador.
 
 import { makePortrait } from '../art/sheet.js';
+import { iconCanvas, iconeDeArma, iconeDeMagia } from '../art/icons.js';
 import { CONDITIONS, hasCondition } from '../rules/conditions.js';
 import { WEAPONS } from '../rules/equipment.js';
 import { getSpell } from '../rules/spells.js';
@@ -24,6 +47,13 @@ export const el = (tag, attrs = {}, ...children) => {
   return node;
 };
 
+/**
+ * `replaceChildren` não é como `el()`: ele converte `null` no TEXTO "null" e
+ * imprime isso na tela. Todo lugar que monta filhos condicionais passa por
+ * aqui antes.
+ */
+const limpos = (...filhos) => filhos.flat().filter((f) => f !== null && f !== undefined && f !== false);
+
 const LOG_ICON = {
   inicio: '🎲', turno: '⏳', ataque: '⚔️', magia: '✨', cura: '💚', morte: '💀',
   condicao: '🌀', recurso: '🔸', acao: '🏃', reacao: '⚡', aviso: '⚠️',
@@ -34,39 +64,109 @@ export class Hud {
   constructor(root, handlers) {
     this.handlers = handlers;
     this.root = root;
+    this.hotkeys = [];
 
+    this.ordem = el('div', { class: 'ordem' });
+    this.viewBar = el('div', { class: 'viewbar' });
     this.banner = el('div', { class: 'turn-banner' });
-    this.partyPanel = el('div', { class: 'party' });
-    this.actionBar = el('div', { class: 'actionbar' });
+    this.trilho = el('div', { class: 'trilho' });
     this.logList = el('div', { class: 'log-list' });
-    this.foePanel = el('div', { class: 'foes' });
+    this.barra = el('div', { class: 'barra-acao' });
     this.hint = el('div', { class: 'hint' });
+    this.dica = el('div', { class: 'dica', role: 'tooltip' });
 
     root.append(
-      el('div', { class: 'left-col' },
-        el('h2', {}, 'Grupo'),
-        this.partyPanel,
-        el('h2', {}, 'Inimigos'),
-        this.foePanel),
-      el('div', { class: 'center-col' },
-        el('div', { class: 'top-row' }, this.banner, this.viewBar = el('div', { class: 'viewbar' })),
-        el('div', { class: 'board-wrap', id: 'board-wrap' }),
-        this.hint,
-        this.actionBar),
-      el('div', { class: 'right-col' },
-        el('h2', {}, 'Rolagens'),
-        this.logList,
-        el('footer', { class: 'legal' },
-          el('p', {}, 'Phandalin é conteúdo de fã não oficial, permitido sob a Fan Content Policy da Wizards of the Coast. '
-            + 'Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. '
-            + '©Wizards of the Coast LLC.'),
-          el('p', {}, 'Inclui material do SRD 5.1 por Wizards of the Coast LLC, sob licença Creative Commons Attribution 4.0.'))),
+      el('div', { class: 'hud-topo' }, this.banner, this.ordem, this.viewBar),
+      el('div', { class: 'hud-meio' },
+        el('aside', { class: 'coluna-grupo' }, this.trilho),
+        el('div', { class: 'palco' },
+          el('div', { class: 'board-wrap', id: 'board-wrap' }),
+          this.hint),
+        el('aside', { class: 'coluna-log' },
+          el('h2', {}, 'Rolagens'),
+          this.logList,
+          el('footer', { class: 'legal' },
+            el('p', {}, 'Phandalin é conteúdo de fã não oficial, permitido sob a Fan Content Policy da Wizards of the Coast. '
+              + 'Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. '
+              + '©Wizards of the Coast LLC.'),
+            el('p', {}, 'Inclui material do SRD 5.1 por Wizards of the Coast LLC, sob licença Creative Commons Attribution 4.0.')))),
+      el('div', { class: 'hud-baixo' }, this.barra),
+      this.dica,
     );
+
+    // As teclas 1–9 disparam a hotbar, como num jogo de verdade. Dígito não
+    // conflita com nada que `main.js` já escuta (Esc, espaço, Tab, Q/E, M).
+    addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const n = Number(e.key);
+      if (!Number.isInteger(n) || n < 1 || n > 9) return;
+      const slot = this.hotkeys[n - 1];
+      if (!slot || slot.disabled) return;
+      e.preventDefault();
+      slot.run();
+    });
   }
 
   get boardWrap() {
     return this.root.querySelector('#board-wrap');
   }
+
+  // ---- dica flutuante -------------------------------------------------------
+
+  /**
+   * O tooltip rico é o que transforma um ícone em informação. Sem ele o jogador
+   * tem de decorar vinte desenhos; com ele, o desenho é só o atalho.
+   */
+  ligarDica(node, dados) {
+    if (!dados) return node;
+    const mostrar = () => {
+      this.dica.replaceChildren(...limpos(
+        el('div', { class: 'dica-topo' },
+          el('strong', {}, dados.nome),
+          dados.tipo ? el('span', { class: 'dica-tipo' }, dados.tipo) : null),
+        dados.linhas?.length
+          ? el('div', { class: 'dica-linhas' }, dados.linhas.filter(Boolean).map(
+            ([rotulo, valor]) => el('div', { class: 'dica-linha' },
+              el('span', { class: 'dica-rot' }, rotulo),
+              el('span', { class: 'dica-val' }, valor))))
+          : null,
+        dados.texto ? el('p', { class: 'dica-texto' }, dados.texto) : null,
+        dados.custo ? el('div', { class: 'dica-custo' }, dados.custo) : null,
+        dados.aviso ? el('div', { class: 'dica-aviso' }, dados.aviso) : null,
+      ));
+      const r = node.getBoundingClientRect();
+      // Medir ANTES de reposicionar dá a largura do lugar ANTERIOR: se a dica
+      // estava encostada na borda, ela tinha quebrado mais estreita, e a trava
+      // de borda calculada com esse número deixa a dica meio palmo fora da
+      // tela. Zerar a posição primeiro força a medida no espaço livre.
+      this.dica.style.left = '0px';
+      this.dica.style.top = '0px';
+      this.dica.classList.add('on');
+      const dr = this.dica.getBoundingClientRect();
+      const x = Math.min(Math.max(8, r.left + r.width / 2 - dr.width / 2), innerWidth - dr.width - 8);
+      this.dica.style.left = `${x}px`;
+      this.dica.style.top = `${Math.max(8, r.top - dr.height - 10)}px`;
+    };
+    const esconder = () => this.dica.classList.remove('on');
+    node.addEventListener('pointerenter', mostrar);
+    node.addEventListener('pointerleave', esconder);
+    node.addEventListener('click', esconder);
+    return node;
+  }
+
+  /** Um azulejo da barra: ícone, tecla, estado e dica. */
+  tile(icone, { tecla = null, ativo = false, desabilitado = false, classe = '', dica = null, onClick = null }) {
+    const node = el('button', {
+      class: `tile${ativo ? ' on' : ''}${desabilitado ? ' off' : ''}${classe ? ` ${classe}` : ''}`,
+      disabled: desabilitado ? 'disabled' : null,
+      onclick: onClick ?? undefined,
+    },
+      iconCanvas(icone, 2),
+      tecla ? el('span', { class: 'tecla' }, tecla) : null);
+    return this.ligarDica(node, dica);
+  }
+
+  // ---- log e faixa ----------------------------------------------------------
 
   pushLog(entry) {
     const node = el('div', { class: `log-entry log-${entry.kind}` },
@@ -81,14 +181,12 @@ export class Hud {
 
   setBanner(enc) {
     if (enc.over) {
-      this.banner.textContent = enc.outcome === 'vitoria' ? '🏁 Vitória' : '💀 Derrota';
+      this.banner.textContent = enc.outcome === 'vitoria' ? 'Vitória' : 'Derrota';
       this.banner.className = `turn-banner ${enc.outcome}`;
       return;
     }
     const party = enc.side === 'party';
-    this.banner.textContent = party
-      ? `Rodada ${enc.round} — seu turno`
-      : `Rodada ${enc.round} — turno dos inimigos`;
+    this.banner.textContent = party ? `Rodada ${enc.round} · seu turno` : `Rodada ${enc.round} · inimigos`;
     this.banner.className = `turn-banner ${party ? 'party' : 'foes'}`;
   }
 
@@ -98,18 +196,333 @@ export class Hud {
 
   update(enc, selected, mode) {
     this.setBanner(enc);
-    this.renderParty(enc, selected);
-    this.renderFoes(enc);
-    this.renderActions(enc, selected, mode);
+    this.renderOrdem(enc, selected);
+    this.renderTrilho(enc, selected);
+    this.renderBarra(enc, selected, mode);
     this.renderViewBar();
   }
 
-  /** Controles de câmera e som. Ficam fora do fluxo de turno de propósito. */
+  // ---- ordem de turno -------------------------------------------------------
+
+  /**
+   * Este jogo usa iniciativa POR LADO: um grupo inteiro age, depois o outro.
+   * A fila mostra exatamente isso — quem ainda tem turno neste lado, e o lado
+   * que espera, separado por uma marca. Fingir uma fila individual mostraria
+   * uma ordem que a regra não tem.
+   */
+  renderOrdem(enc, selected) {
+    if (enc.over) { this.ordem.replaceChildren(); return; }
+    const agora = enc.side;
+    const depois = agora === 'party' ? 'foes' : 'party';
+
+    const ficha = (c, ativo) => {
+      const down = c.dead || hasCondition(c, 'inconsciente');
+      const pct = Math.max(0, c.hp / c.maxHp);
+      const retrato = makePortrait(c.look, 1);
+      retrato.className = 'pixel';
+      const node = el('div', {
+        class: `vez${ativo ? ' agora' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${selected === c ? ' alvo' : ''}`,
+      },
+        el('div', { class: 'vez-retrato' }, retrato),
+        el('div', { class: 'vez-pv' }, el('i', { style: { width: `${pct * 100}%` } })));
+      return this.ligarDica(node, {
+        nome: c.name,
+        tipo: c.kind === 'npc' ? 'inimigo' : `${c.className} · Nv ${c.level}`,
+        linhas: [['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`], ['Classe de armadura', String(c.ac)]],
+        aviso: down ? 'Fora de combate' : c.acted ? 'Já agiu nesta rodada' : null,
+      });
+    };
+
+    this.ordem.replaceChildren(
+      ...enc.allOf(agora).map((c) => ficha(c, true)),
+      el('span', { class: 'vez-sep', title: 'Iniciativa por lado: todo o lado age, depois passa' }, '▸'),
+      ...enc.allOf(depois).map((c) => ficha(c, false)),
+    );
+  }
+
+  // ---- trilho do grupo ------------------------------------------------------
+
+  renderTrilho(enc, selected) {
+    this.trilho.replaceChildren(...limpos(
+      enc.allOf('party').map((c) => this.fichaGrupo(enc, c, selected)),
+      enc.allOf('foes').length ? el('div', { class: 'trilho-titulo' }, 'Inimigos') : null,
+      enc.allOf('foes').map((c) => this.fichaInimigo(c)),
+    ));
+  }
+
+  fichaGrupo(enc, c, selected) {
+    const down = c.dead || hasCondition(c, 'inconsciente');
+    const pct = Math.max(0, c.hp / c.maxHp);
+    const retrato = makePortrait(c.look, 1);
+    retrato.className = 'pixel';
+
+    const node = el('button', {
+      class: `ficha${selected === c ? ' on' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}`,
+      onclick: () => this.handlers.onSelect?.(c),
+    },
+      el('div', { class: 'ficha-retrato' }, retrato, el('span', { class: 'ficha-ca' }, c.ac)),
+      el('div', { class: 'ficha-corpo' },
+        el('strong', {}, c.name),
+        el('span', { class: 'ficha-sub' }, `${c.className} ${c.ancestry}`),
+        el('div', { class: 'bar' },
+          el('i', { style: { width: `${pct * 100}%`, background: pct > 0.5 ? '#5fd07a' : pct > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
+        el('span', { class: 'ficha-pv' }, `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`),
+        down
+          ? el('span', { class: 'ficha-morte' }, c.dead ? 'Morto' : `Morte ${c.deathSaves.successes}✓ ${c.deathSaves.failures}✗`)
+          : null,
+        c.spellcasting
+          ? el('div', { class: 'slots' }, c.spellcasting.slots.map((n, lvl) => (lvl === 0 || n === undefined ? null
+            : el('span', { class: 'slot' }, `${lvl}º ${'◆'.repeat(n)}`))))
+          : null,
+        (c.conditions ?? []).length
+          ? el('div', { class: 'conds' }, c.conditions.map((x) => this.ligarDica(
+            el('span', { class: 'cond' }, CONDITIONS[x.id]?.icon ?? '•'),
+            { nome: CONDITIONS[x.id]?.name ?? x.id, texto: CONDITIONS[x.id]?.desc },
+          )))
+          : null),
+    );
+    return node;
+  }
+
+  fichaInimigo(c) {
+    const pct = Math.max(0, c.hp / c.maxHp);
+    const down = hasCondition(c, 'inconsciente');
+    return this.ligarDica(
+      el('div', { class: `inimigo${down ? ' down' : ''}` },
+        el('div', { class: 'inimigo-topo' },
+          el('strong', {}, c.name),
+          el('span', { class: 'inimigo-ca' }, c.ac)),
+        el('div', { class: 'bar small' }, el('i', { style: { width: `${pct * 100}%`, background: '#d4574a' } })),
+        (c.conditions ?? []).length
+          ? el('div', { class: 'conds' }, c.conditions.map((x) => el('span', { class: 'cond' }, CONDITIONS[x.id]?.icon ?? '•')))
+          : null),
+      {
+        nome: c.name,
+        tipo: c.blurb ? 'inimigo' : null,
+        linhas: [['Classe de armadura', String(c.ac)], ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`]],
+        texto: c.blurb,
+      },
+    );
+  }
+
+  // ---- barra de ação --------------------------------------------------------
+
+  renderBarra(enc, c, mode) {
+    this.hotkeys = [];
+    this.barra.replaceChildren();
+
+    if (enc.over) {
+      this.barra.append(el('div', { class: 'barra-aviso' },
+        el('button', { class: 'btn primary', onclick: () => this.handlers.onRestart?.() }, 'Novo encontro')));
+      return;
+    }
+    if (enc.side !== 'party') {
+      this.barra.append(el('div', { class: 'barra-aviso' }, 'Os inimigos estão agindo…'));
+      return;
+    }
+    if (!c) {
+      this.barra.append(el('div', { class: 'barra-aviso' }, 'Escolha um personagem à esquerda.'));
+      return;
+    }
+    if (c.dead || hasCondition(c, 'inconsciente')) {
+      this.barra.append(el('div', { class: 'barra-aviso' }, `${c.name} está fora de combate.`));
+      return;
+    }
+
+    this.barra.append(
+      this.zonaAtaques(c, mode),
+      this.zonaComuns(enc, c, mode),
+      this.nucleo(c),
+      this.zonaMovimento(c),
+      this.zonaHotbar(c, mode),
+      this.zonaReacao(c),
+    );
+  }
+
+  zonaAtaques(c, mode) {
+    const tiles = (c.weapons ?? []).map((wid) => {
+      const w = WEAPONS[wid];
+      return this.tile(iconeDeArma(w.art, w.name), {
+        ativo: mode?.kind === 'attack' && mode.weaponId === wid,
+        desabilitado: c.actionUsed,
+        onClick: () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid }),
+        dica: {
+          nome: w.name,
+          tipo: w.ranged ? 'ataque à distância' : 'ataque corpo a corpo',
+          linhas: [
+            ['Dano', `${w.damage} ${w.type}`],
+            [w.ranged ? 'Alcance' : 'Alcance', w.ranged ? `${w.rangeFt} pés` : `${w.reachFt ?? 5} pés`],
+          ],
+          custo: 'Ação',
+          aviso: c.actionUsed ? 'A ação deste turno já foi usada' : null,
+        },
+      });
+    });
+    return el('div', { class: 'zona zona-ataques' },
+      el('div', { class: 'tiles' }, tiles),
+      el('span', { class: 'zona-rot' }, 'Ataques'));
+  }
+
+  zonaComuns(enc, c, mode) {
+    const tiles = [];
+    const comum = (icone, nome, texto, custo, acao, desabilitado) => tiles.push(this.tile(icone, {
+      desabilitado,
+      onClick: () => this.handlers.onAction?.(acao),
+      dica: { nome, texto, custo, aviso: desabilitado ? 'Indisponível agora' : null },
+    }));
+
+    comum('correr', 'Disparada', 'Dobra o deslocamento deste turno.', 'Ação', { kind: 'dash' }, c.actionUsed);
+    comum('esquivar', 'Esquivar', 'Quem te ataca fica com desvantagem; seus testes de Destreza ganham vantagem.', 'Ação', { kind: 'dodge' }, c.actionUsed);
+    comum('desengajar', 'Desengajar', 'Sair de perto sem sofrer ataque de oportunidade.', 'Ação', { kind: 'disengage' }, c.actionUsed);
+
+    const feats = {
+      secondWind: ['folego', 'Retomar o Fôlego', 'Recupera 1d10 + nível de pontos de vida.', 'Ação bônus', () => !c.bonusUsed && c.resources?.secondWind > 0],
+      actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0],
+      cunningAction: ['ardilosa', 'Ação Ardilosa', 'Disparada, Desengajar ou Esconder-se como ação bônus.', 'Ação bônus', () => !c.bonusUsed],
+      preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0],
+    };
+    for (const f of c.features ?? []) {
+      const e = feats[f];
+      if (!e) continue;
+      comum(e[0], e[1], e[2], e[3], { kind: 'feature', featureId: f }, !e[4]());
+    }
+
+    const caido = enc.alliesOf(c).find(
+      (a) => !a.dead && !a.stable && hasCondition(a, 'inconsciente')
+        && Math.max(Math.abs(a.pos.x - c.pos.x), Math.abs(a.pos.y - c.pos.y)) === 1,
+    );
+    if (caido) {
+      comum('estabilizar', `Estabilizar ${caido.name}`, 'Teste de Medicina CD 10. Impede a morte; não cura.', 'Ação',
+        { kind: 'stabilize', targetId: caido.id }, c.actionUsed);
+    }
+
+    return el('div', { class: 'zona zona-comuns' },
+      el('div', { class: 'tiles' }, tiles),
+      el('span', { class: 'zona-rot' }, 'Ações'));
+  }
+
+  /**
+   * O núcleo. As duas gemas são a informação mais consultada da tela inteira:
+   * acesa é recurso disponível, apagada é gasto. O retrato no meio existe para
+   * o jogador nunca precisar conferir de quem é o turno.
+   */
+  nucleo(c) {
+    const retrato = makePortrait(c.look, 1.4);
+    retrato.className = 'pixel';
+    const pct = Math.max(0, c.hp / c.maxHp);
+
+    const gema = (icone, gasto, nome, texto) => this.ligarDica(
+      el('div', { class: `gema${gasto ? ' gasta' : ''}` }, iconCanvas(icone, 1)),
+      { nome, texto, aviso: gasto ? 'Já usada neste turno' : 'Disponível' },
+    );
+
+    return el('div', { class: 'nucleo' },
+      el('div', { class: 'nucleo-retrato' },
+        retrato,
+        el('div', { class: 'nucleo-pv' },
+          el('i', { style: { width: `${pct * 100}%`, background: pct > 0.5 ? '#5fd07a' : pct > 0.25 ? '#ffc83a' : '#ff5a5a' } }))),
+      el('div', { class: 'nucleo-nome' }, c.name),
+      el('div', { class: 'gemas' },
+        gema('acao', c.actionUsed, 'Ação', 'Uma por turno: atacar, conjurar, disparada, esquivar, desengajar.'),
+        gema('bonus', c.bonusUsed, 'Ação bônus', 'Uma por turno, e só quando alguma habilidade a oferece.')),
+      el('button', {
+        class: 'btn-terminar',
+        onclick: () => this.handlers.onEndTurn?.(),
+        title: 'Terminar o turno (espaço)',
+      }, iconCanvas('terminar', 2), 'Terminar'));
+  }
+
+  zonaMovimento(c) {
+    const total = c.speedFt || 30;
+    const resta = Math.max(0, c.movementLeftFt ?? 0);
+    const pct = Math.min(1, resta / total);
+    // Marcas de 1,5 m (um quadrado) para o jogador contar quadrados, não pés.
+    const quadrados = Math.max(1, Math.round(total / 5));
+    const node = el('div', { class: 'zona zona-mov' },
+      el('div', { class: 'mov' },
+        el('div', { class: 'mov-trilho' },
+          el('i', { class: 'mov-cheio', style: { width: `${pct * 100}%` } }),
+          ...Array.from({ length: quadrados - 1 }, (_, i) => el('span', {
+            class: 'mov-marca', style: { left: `${((i + 1) / quadrados) * 100}%` },
+          }))),
+        el('div', { class: 'mov-num' }, iconCanvas('movimento', 1), `${resta} pés`)),
+      el('span', { class: 'zona-rot' }, 'Movimento'));
+    return this.ligarDica(node, {
+      nome: 'Deslocamento',
+      linhas: [['Resta', `${resta} pés · ${Math.floor(resta / 5)} quadrados`], ['Total por turno', `${total} pés`]],
+      texto: 'Clique num quadrado azul para andar. Mover não gasta a ação.',
+    });
+  }
+
+  zonaHotbar(c, mode) {
+    const tiles = [];
+    if (c.spellcasting) {
+      const dc = spellSaveDc(c);
+      const atk = spellAttackBonus(c);
+      const todas = [...c.spellcasting.cantrips, ...c.spellcasting.prepared];
+      for (const sid of todas) {
+        const s = getSpell(sid);
+        const semSlot = s.level > 0 && !c.spellcasting.slots[s.level];
+        const bonus = s.castTime === 'bonus';
+        const gasto = bonus ? c.bonusUsed : c.actionUsed;
+        const desabilitado = semSlot || gasto;
+        const n = tiles.length + 1;
+        const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
+        if (n <= 9) this.hotkeys.push({ run, disabled: desabilitado });
+        tiles.push(this.tile(iconeDeMagia({ ...s, id: sid }), {
+          tecla: n <= 9 ? String(n) : null,
+          ativo: mode?.kind === 'spell' && mode.spellId === sid,
+          desabilitado,
+          classe: s.level === 0 ? 'truque' : 'magia',
+          onClick: run,
+          dica: {
+            nome: s.name,
+            tipo: s.level === 0 ? 'truque' : `magia de ${s.level}º círculo`,
+            linhas: [
+              s.damage ? ['Dano', `${s.damage}${s.damageType ? ` ${s.damageType}` : ''}`] : null,
+              s.rangeFt ? ['Alcance', `${s.rangeFt} pés`] : null,
+              s.kind === 'attack' ? ['Ataque de magia', formatModifier(atk)] : null,
+              s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
+            ],
+            texto: s.desc,
+            custo: bonus ? 'Ação bônus' : 'Ação',
+            aviso: semSlot ? `Sem espaço de ${s.level}º círculo` : gasto ? 'Recurso do turno já usado' : null,
+          },
+        }));
+      }
+    }
+    if (!tiles.length) {
+      tiles.push(el('div', { class: 'tile vazio', title: 'Este personagem não conjura magias' }));
+    }
+    return el('div', { class: 'zona zona-hotbar' },
+      el('div', { class: 'tiles' }, tiles),
+      el('span', { class: 'zona-rot' }, 'Magias'));
+  }
+
+  /**
+   * A reação é o único recurso que o jogador gasta FORA do próprio turno, e é
+   * por isso que ela fica separada no canto: o ataque de oportunidade acontece
+   * sozinho quando um inimigo sai de perto, e o jogador precisa saber se ainda
+   * tem essa carta antes de deixar o inimigo passar.
+   */
+  zonaReacao(c) {
+    const gasta = !!c.reactionUsed;
+    const node = el('div', { class: `reacao${gasta ? ' gasta' : ''}` }, iconCanvas('reacao', 2));
+    return el('div', { class: 'zona zona-reacao' },
+      this.ligarDica(node, {
+        nome: 'Reação',
+        tipo: 'fora do seu turno',
+        texto: 'Ataque de oportunidade: quando um inimigo adjacente se afasta, você ataca de graça. Uma por rodada.',
+        aviso: gasta ? 'Já usada nesta rodada' : 'Disponível',
+      }),
+      el('span', { class: 'zona-rot' }, 'Reação'));
+  }
+
+  // ---- câmera e som ---------------------------------------------------------
+
   renderViewBar() {
     if (this.viewBar.childElementCount > 0) {
-      // Só o que muda de estado é reescrito; o resto fica estável.
-      this.muteBtn.textContent = audio.muted ? '🔇' : '🔊';
-      this.muteBtn.title = audio.muted ? 'Som desligado (M)' : 'Som ligado (M)';
+      this.muteBtn.replaceChildren(audio.muted ? '🔇' : '🔊');
       this.volume.value = String(audio.muted ? 0 : Math.round(audio.volume * 100));
       return;
     }
@@ -128,8 +541,8 @@ export class Hud {
     });
 
     this.viewBar.replaceChildren(
-      el('button', { class: 'icon-btn', title: 'Girar a câmera (Q · ou botão direito arrastando)', onclick: () => this.handlers.onRotate?.(-1) }, '↺'),
-      el('button', { class: 'icon-btn', title: 'Girar a câmera (E · ou botão direito arrastando)', onclick: () => this.handlers.onRotate?.(1) }, '↻'),
+      el('button', { class: 'icon-btn', title: 'Girar a câmera (Q)', onclick: () => this.handlers.onRotate?.(-1) }, '↺'),
+      el('button', { class: 'icon-btn', title: 'Girar a câmera (E)', onclick: () => this.handlers.onRotate?.(1) }, '↻'),
       el('span', { class: 'divider' }),
       el('button', { class: 'icon-btn', title: 'Afastar (roda do mouse)', onclick: () => this.handlers.onZoom?.(1 / 1.2) }, '－'),
       el('button', { class: 'icon-btn', title: 'Enquadrar de novo', onclick: () => this.handlers.onResetCamera?.() }, '⌖'),
@@ -138,153 +551,5 @@ export class Hud {
       this.muteBtn,
       this.volume,
     );
-  }
-
-  renderParty(enc, selected) {
-    this.partyPanel.replaceChildren(...enc.allOf('party').map((c) => this.characterCard(enc, c, selected)));
-  }
-
-  characterCard(enc, c, selected) {
-    const down = c.dead || hasCondition(c, 'inconsciente');
-    const pct = Math.max(0, c.hp / c.maxHp);
-    const portrait = makePortrait(c.look, 1.1);
-    portrait.className = 'pixel';
-
-    const slots = c.spellcasting
-      ? el('div', { class: 'slots' },
-        c.spellcasting.slots.map((n, lvl) => (lvl === 0 ? null
-          : el('span', { class: 'slot' }, `${lvl}º: ${'◆'.repeat(n)}${'◇'.repeat(Math.max(0, (lvl === 1 ? 3 : 0) - n))}`))))
-      : null;
-
-    return el('button', {
-      class: `card${selected === c ? ' on' : ''}${c.acted ? ' acted' : ''}${down ? ' down' : ''}`,
-      onclick: () => this.handlers.onSelect?.(c),
-    },
-      el('div', { class: 'card-top' },
-        portrait,
-        el('div', { class: 'card-id' },
-          el('strong', {}, c.name),
-          el('span', { class: 'muted' }, `${c.className} ${c.ancestry} · Nv ${c.level}`),
-          el('span', { class: 'stats-line' }, `CA ${c.ac}`, ' · ', `PV ${Math.max(0, Math.ceil(c.hp))}/${c.maxHp}`))),
-      el('div', { class: 'bar' }, el('i', { style: { width: `${pct * 100}%`, background: pct > 0.5 ? '#5fd07a' : pct > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
-      down
-        ? el('div', { class: 'death' }, c.dead ? 'Morto' : `Testes de morte ${c.deathSaves.successes}✓ / ${c.deathSaves.failures}✗`)
-        : null,
-      slots,
-      (c.conditions ?? []).length
-        ? el('div', { class: 'conds' }, c.conditions.map((x) => el('span', { class: 'cond', title: CONDITIONS[x.id]?.desc }, `${CONDITIONS[x.id]?.icon} ${CONDITIONS[x.id]?.name}`)))
-        : null,
-    );
-  }
-
-  renderFoes(enc) {
-    const alive = enc.allOf('foes');
-    this.foePanel.replaceChildren(...alive.map((c) => {
-      const pct = Math.max(0, c.hp / c.maxHp);
-      const down = hasCondition(c, 'inconsciente');
-      return el('div', { class: `foe${down ? ' down' : ''}` },
-        el('div', { class: 'foe-top' },
-          el('strong', {}, c.name),
-          el('span', { class: 'muted' }, `CA ${c.ac}`)),
-        el('div', { class: 'bar small' }, el('i', { style: { width: `${pct * 100}%`, background: '#d4574a' } })),
-        (c.conditions ?? []).length
-          ? el('div', { class: 'conds' }, c.conditions.map((x) => el('span', { class: 'cond' }, CONDITIONS[x.id]?.icon ?? '')))
-          : null);
-    }));
-    if (alive.length === 0) this.foePanel.append(el('p', { class: 'muted' }, 'Nenhum de pé.'));
-  }
-
-  renderActions(enc, c, mode) {
-    this.actionBar.replaceChildren();
-    if (enc.over) {
-      this.actionBar.append(el('button', { class: 'btn primary', onclick: () => this.handlers.onRestart?.() }, 'Novo encontro'));
-      return;
-    }
-    if (enc.side !== 'party') {
-      this.actionBar.append(el('span', { class: 'muted' }, 'Os inimigos estão agindo…'));
-      return;
-    }
-    if (!c) {
-      this.actionBar.append(el('span', { class: 'muted' }, 'Escolha um personagem na coluna da esquerda.'));
-      return;
-    }
-    if (c.dead || hasCondition(c, 'inconsciente')) {
-      this.actionBar.append(el('span', { class: 'muted' }, `${c.name} está fora de combate.`));
-      return;
-    }
-
-    const btn = (label, opts, onClick, title) => el('button', {
-      class: `act${opts.disabled ? ' off' : ''}${opts.active ? ' on' : ''}`,
-      title: title ?? '',
-      disabled: opts.disabled ? 'disabled' : null,
-      onclick: onClick,
-    }, label);
-
-    const move = el('span', { class: 'budget' }, `🏃 ${c.movementLeftFt} pés`);
-    const actionDot = el('span', { class: `budget ${c.actionUsed ? 'used' : ''}` }, c.actionUsed ? '◻ ação' : '◼ ação');
-    const bonusDot = el('span', { class: `budget ${c.bonusUsed ? 'used' : ''}` }, c.bonusUsed ? '◻ bônus' : '◼ bônus');
-    this.actionBar.append(move, actionDot, bonusDot, el('span', { class: 'sep' }));
-
-    // Ataques
-    for (const wid of c.weapons ?? []) {
-      const w = WEAPONS[wid];
-      this.actionBar.append(btn(
-        `⚔️ ${w.name}`,
-        { disabled: c.actionUsed, active: mode?.kind === 'attack' && mode.weaponId === wid },
-        () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid }),
-        `${w.damage} ${w.type}${w.ranged ? ` · alcance ${w.rangeFt} pés` : ''}`,
-      ));
-    }
-
-    // Magias
-    if (c.spellcasting) {
-      const dc = spellSaveDc(c);
-      const atk = spellAttackBonus(c);
-      const all = [...c.spellcasting.cantrips, ...c.spellcasting.prepared];
-      for (const sid of all) {
-        const s = getSpell(sid);
-        const noSlot = s.level > 0 && !c.spellcasting.slots[s.level];
-        const used = s.castTime === 'bonus' ? c.bonusUsed : c.actionUsed;
-        this.actionBar.append(btn(
-          `${s.icon} ${s.name}${s.level === 0 ? '' : ` (${s.level}º)`}`,
-          { disabled: noSlot || used, active: mode?.kind === 'spell' && mode.spellId === sid },
-          () => this.handlers.onAction?.({ kind: 'spell', spellId: sid }),
-          `${s.desc} · CD ${dc} · ataque ${formatModifier(atk)}`,
-        ));
-      }
-    }
-
-    // Talentos de classe
-    const feats = {
-      secondWind: ['🫁 Retomar o Fôlego', () => !c.bonusUsed && c.resources?.secondWind > 0],
-      actionSurge: ['⚡ Ação Surpreendente', () => c.resources?.actionSurge > 0],
-      cunningAction: ['🌀 Ação Ardilosa', () => !c.bonusUsed],
-      preserveLife: ['✝️ Preservar a Vida', () => !c.actionUsed && c.resources?.channelDivinity > 0],
-    };
-    for (const f of c.features ?? []) {
-      const entry = feats[f];
-      if (!entry) continue;
-      this.actionBar.append(btn(entry[0], { disabled: !entry[1]() }, () => this.handlers.onAction?.({ kind: 'feature', featureId: f })));
-    }
-
-    // Primeiros socorros: só aparece quando há alguém caído ao lado.
-    const caido = enc.alliesOf(c).find(
-      (a) => !a.dead && !a.stable && hasCondition(a, 'inconsciente')
-        && Math.max(Math.abs(a.pos.x - c.pos.x), Math.abs(a.pos.y - c.pos.y)) === 1,
-    );
-    if (caido) {
-      this.actionBar.append(btn(
-        `✚ Estabilizar ${caido.name}`,
-        { disabled: c.actionUsed },
-        () => this.handlers.onAction?.({ kind: 'stabilize', targetId: caido.id }),
-        'Ação: teste de Medicina CD 10. Impede a morte, não cura.',
-      ));
-    }
-
-    this.actionBar.append(el('span', { class: 'sep' }));
-    this.actionBar.append(btn('🏃 Disparada', { disabled: c.actionUsed }, () => this.handlers.onAction?.({ kind: 'dash' })));
-    this.actionBar.append(btn('🛡 Esquivar', { disabled: c.actionUsed }, () => this.handlers.onAction?.({ kind: 'dodge' })));
-    this.actionBar.append(btn('↩ Desengajar', { disabled: c.actionUsed }, () => this.handlers.onAction?.({ kind: 'disengage' })));
-    this.actionBar.append(el('button', { class: 'act end', onclick: () => this.handlers.onEndTurn?.() }, '✔ Terminar turno'));
   }
 }
