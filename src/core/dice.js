@@ -29,6 +29,18 @@ export function parseDice(notation) {
   };
 }
 
+/**
+ * Média de uma notação, sem rolar nada.
+ *
+ * Serve para prever dano antes do clique. Um dN tem média (N+1)/2 — o jeito
+ * honesto de dizer "1d8+3 bate uns 7,5" sem gastar um número do gerador, que
+ * é semeado e cujo consumo muda o combate inteiro.
+ */
+export function averageOf(notation) {
+  const { count, sides, mod } = parseDice(notation);
+  return count * ((sides + 1) / 2) + mod;
+}
+
 export function roll(rng, notation) {
   const { count, sides, mod } = parseDice(notation);
   const rolls = count > 0 ? rollDice(rng, count, sides) : [];
