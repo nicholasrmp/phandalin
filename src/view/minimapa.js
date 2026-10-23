@@ -31,8 +31,26 @@ const CORES = {
   moldura: '#75501a',
 };
 
+// As superfícies do mapa da estrada. Sem isto o minimapa pintaria a mata de
+// cinza-parede e a estrada da mesma cor da grama — e um mapa pequeno que
+// discorda do grande é pior do que nenhum. A grama elevada clareia, como o
+// platô do mapa padrão, para o barranco aparecer também aqui.
+const CORES_SUP = {
+  estrada: '#a08a64',
+  grama: '#5e7a46',
+  gramaAlta: '#71904f',
+  arvore: '#2f4a2c',
+  carroca: '#6b4a2c',
+  cavalo: '#3d3540',
+  pedra: '#77787f',
+  arbusto: '#3d6338',
+};
+
 /** Altura vira clareamento: o platô fica mais claro que o chão à volta. */
 function corDaCelula(field, x, y) {
+  const sup = field.surfaceAt?.(x, y);
+  if (sup === 'grama' && field.heightAt(x, y) > 0) return CORES_SUP.gramaAlta;
+  if (CORES_SUP[sup]) return CORES_SUP[sup];
   const t = field.tileAt(x, y);
   if (t === 1) return CORES.parede;
   if (t === 2) return CORES.dificil;

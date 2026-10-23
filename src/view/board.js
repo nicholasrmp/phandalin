@@ -22,7 +22,9 @@
 //   losango para cima, os platôs são testados do mais alto para o mais baixo.
 
 import { getSheet, drawSprite, frameAt } from '../art/sheet.js';
-import { linhaDaDirecao } from '../art/direcoes.js';
+import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
+import { ladrilhoChao } from '../art/chao.js';
+import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt } from '../core/grid.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct } from '../rules/odds.js';
@@ -41,6 +43,45 @@ const TOP_COLORS = {
   2: ['#4a5a35', '#42512f'],
   3: ['#5e5040', '#544738'],
 };
+
+// Superfícies do mapa da estrada. Só o desenho lê isto — a regra de cada
+// quadrado mora em `tiles`, no grid.js.
+//
+// `topo` é o par do xadrez do chão; `lado`, as duas faces do degrau quando o
+// quadrado está elevado. A grama do barranco tem lado de TERRA: é o degrau
+// marrom que corre ao longo da estrada e diz, de longe, onde se sobe.
+const ESTRADA = ['#9c8460', '#937a59'];
+const GRAMA = ['#5b7a43', '#54713e'];
+const TERRA = ['#4a3824', '#634c31'];
+//
+// `chao` é a fileira do atlas desenhado (`art/chao.js`) que vai por baixo.
+// `topo` continua existindo como recuo: é o losango liso que aparece enquanto
+// o atlas não carregou, ou se ele falhar.
+const SUPERFICIE = {
+  estrada: { topo: ESTRADA, lado: TERRA, chao: 'estrada' },
+  grama: { topo: GRAMA, lado: TERRA, chao: 'grama' },
+  // Debaixo da copa o chão é grama mais escura, que é como mata fechada lê.
+  arvore: { topo: ['#3f5a32', '#3a542e'], lado: TERRA, objeto: 'copa', chao: 'grama' },
+  carroca: { topo: ESTRADA, lado: TERRA, objeto: 'carroca', chao: 'estrada' },
+  cavalo: { topo: ESTRADA, lado: TERRA, objeto: 'cavalo', chao: 'estrada' },
+  pedra: { topo: GRAMA, lado: TERRA, objeto: 'pedra', chao: 'grama' },
+  arbusto: { topo: GRAMA, lado: TERRA, objeto: 'arbusto', chao: 'grama' },
+};
+
+// Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
+// superfície formam UM objeto, desenhado uma vez só. Sem isto a carroça 2x2
+// saía como quatro caixotes e cada par de cavalo como dois cavalos: quatro
+// cavalos na tela onde o mapa tem dois. Árvore, arbusto e pedra ficam fora de
+// propósito — a mata inteira é uma mancha contínua de `T`, e agrupá-la faria
+// dela uma árvore só.
+const MULTICASA = new Set(['carroca', 'cavalo']);
+
+// Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
+// criatura ali. Ver `transparenciaDaCasa`.
+const ESMAECE = new Set(['copa', 'carroca']);
+const TRANSLUCIDO = 0.42;
+// Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
+const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
 
 const SIDE_LEFT = '#22301c';
 const SIDE_RIGHT = '#3b4e30';
@@ -110,11 +151,23 @@ export class Board {
     const { w, h } = this.field;
     const span = w + h;
     const wide = Math.max(w, h);
+    // Copa de árvore sobe acima do próprio quadrado, e o canvas só reservava
+    // altura para o relevo: as árvores do canto de cima saíam cortadas. A
+    // folga só entra em mapa que TEM árvore, para o encontro padrão continuar
+    // com exatamente o mesmo enquadramento. 112: a árvore alta mais alta tem
+    // 151 px acima do pé, que fica meia casa abaixo do centro da casa de cima,
+    // e o sorteio a sobe mais 4 — 151 + 4 - 16 - PAD dá 109.
+    let copa = 0;
+    for (let y = 0; y < h && !copa; y++) {
+      for (let x = 0; x < w; x++) {
+        if (this.field.surfaceAt?.(x, y) === 'arvore') { copa = 112; break; }
+      }
+    }
     // Dimensionado para o pior caso, para não redimensionar ao girar.
     canvas.width = span * (TW / 2) + PAD * 2;
-    canvas.height = span * (TH / 2) + this.maxHeight * LIFT + PAD * 2 + 40;
+    canvas.height = span * (TH / 2) + this.maxHeight * LIFT + PAD * 2 + 40 + copa;
     this.ox = PAD + (wide - 1) * (TW / 2) + (span - 2 * wide + 2) * (TW / 4);
-    this.oy = PAD + this.maxHeight * LIFT;
+    this.oy = PAD + this.maxHeight * LIFT + copa;
 
     this.rebuildOrder();
 
@@ -343,8 +396,55 @@ export class Board {
     ctx.closePath();
   }
 
-  drawTile(ctx, x, y, alpha = 1) {
+  /**
+   * Quanto uma casa deixa ver de quem está atrás dela — o chão e o objeto em
+   * separado.
+   *
+   * ANTES ERA UMA TRANSPARÊNCIA SÓ, e com duas falhas medidas pelos revisores:
+   *
+   * 1. Toda casa elevada contava como "alta", com `>=`. Uma casa de barranco
+   *    no nível 1 com um goblin no mesmo nível atrás dela ficava a 42% — e o
+   *    fundo escuro aparecia por baixo. Eram as manchas escuras ao lado dos
+   *    goblins. Chão elevado só esconde quem está MAIS BAIXO: a face lateral
+   *    desce, não sobe. Daí `>` para o chão.
+   * 2. O esmaecimento levava o chão junto com o objeto. Agora só o objeto alto
+   *    — copa, carroça, parede — fica translúcido; o chão debaixo dele não.
+   *
+   * E a vizinhança ganhou (-2,-2), que faltava: de lá, com o desnível de 22 px,
+   * uma copa no nível 1 cobria o quadril de uma criatura no nível 0.
+   *
+   * Arbusto, pedra e cavalo não esmaecem: cobrir as pernas de quem está atrás
+   * é exatamente a leitura certa de "tem cobertura aqui".
+   */
+  transparenciaDaCasa(x, y, vx, vy, byView) {
+    const h = this.field.heightAt(x, y);
+    const s = SUPERFICIE[this.field.surfaceAt(x, y)];
+    const objetoAlto = s ? ESMAECE.has(s.objeto) : this.field.tileAt(x, y) === 1;
+    if (!objetoAlto && h === 0) return { chao: 1, objeto: 1 };
+    let chao = 1;
+    let objeto = 1;
+    for (const [ox, oy] of ATRAS) {
+      const quem = byView.get(vkey(vx + ox, vy + oy));
+      if (!quem) continue;
+      const hq = this.field.heightAt(quem.pos.x, quem.pos.y);
+      if (h > hq) chao = TRANSLUCIDO;
+      if (objetoAlto && h >= hq) objeto = TRANSLUCIDO;
+    }
+    return { chao, objeto };
+  }
+
+  drawTile(ctx, x, y, alphaChao = 1, alphaObjeto = alphaChao) {
+    // As superfícies novas têm desenho próprio; as antigas seguem pelo código
+    // de sempre.
+    const sup = this.field.surfaceAt(x, y);
+    if (SUPERFICIE[sup]) {
+      this.drawSuperficie(ctx, x, y, alphaChao, alphaObjeto, SUPERFICIE[sup]);
+      return;
+    }
     const kind = this.field.tileAt(x, y);
+    // Na superfície antiga a parede É o objeto: esmaece pela regra do objeto.
+    // O resto (chão, platô) pela regra do chão.
+    const alpha = kind === 1 ? alphaObjeto : alphaChao;
     const hgt = this.field.heightAt(x, y);
     const { sx, sy } = this.iso(x, y, hgt);
     const wall = kind === 1;
@@ -400,6 +500,523 @@ export class Board {
       ctx.fillRect(sx - 13, sy + TH / 2 - 20, 26, 3);
     }
     ctx.restore();
+  }
+
+  /**
+   * Um quadrado de superfície nova: o chão no seu nível, a face lateral se ele
+   * estiver elevado, e o que estiver em cima — copa, carroça, cavalo, pedra.
+   *
+   * É CINZA COM COR, de propósito. Serve para julgar o traçado — largura da
+   * estrada, onde caem os degraus, por onde os goblins atiram — antes de gastar
+   * geração em arte. Errar o traçado depois da arte pronta custa a arte.
+   */
+  drawSuperficie(ctx, x, y, alphaChao, alphaObjeto, s) {
+    const hgt = this.field.heightAt(x, y);
+    const { sx, sy } = this.iso(x, y, hgt);
+    const lift = hgt * LIFT;
+    ctx.save();
+    ctx.globalAlpha = alphaChao;
+
+    if (lift > 0) {
+      // A face lateral do barranco é TERRA, não grama: é o degrau marrom que
+      // separa o alto do barranco da estrada.
+      ctx.fillStyle = s.lado[0];
+      ctx.beginPath();
+      ctx.moveTo(sx - TW / 2, sy + TH / 2);
+      ctx.lineTo(sx, sy + TH);
+      ctx.lineTo(sx, sy + TH + lift);
+      ctx.lineTo(sx - TW / 2, sy + TH / 2 + lift);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = s.lado[1];
+      ctx.beginPath();
+      ctx.moveTo(sx + TW / 2, sy + TH / 2);
+      ctx.lineTo(sx, sy + TH);
+      ctx.lineTo(sx, sy + TH + lift);
+      ctx.lineTo(sx + TW / 2, sy + TH / 2 + lift);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // O ladrilho desenhado, 1:1: o losango do atlas tem os mesmos 64 x 32 do
+    // motor, e o canto da célula fica meia largura à esquerda do vértice de
+    // cima. A grade NÃO vem da arte — o montador limpa a aresta de cada
+    // ladrilho — e sim do traço abaixo, igual em toda superfície.
+    const lad = s.chao && ladrilhoChao(s.chao, x, y);
+    if (lad) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy, lad.w, lad.h);
+    } else {
+      this.diamond(ctx, sx, sy);
+      ctx.fillStyle = (x + y) % 2 ? s.topo[0] : s.topo[1];
+      ctx.fill();
+    }
+    // Chão de mata é chão à sombra: escurece a grama debaixo da copa. É a
+    // faixa escura onde a mata encontra o gramado, e é ela que diz, de longe,
+    // onde começa a casa que não dá para atravessar.
+    if (s.objeto === 'copa') {
+      this.diamond(ctx, sx, sy);
+      ctx.fillStyle = 'rgba(8,18,10,.42)';
+      ctx.fill();
+    }
+    this.diamond(ctx, sx, sy);
+    ctx.strokeStyle = 'rgba(0,0,0,.16)';
+    ctx.stroke();
+    ctx.restore();
+
+    // O OBJETO NÃO É DESENHADO AGORA.
+    //
+    // Se fosse, a casa vizinha na mesma diagonal — desenhada logo depois —
+    // pintaria o chão dela por cima da metade de baixo da copa: uma árvore de
+    // 80 px de largura passa 16 px para cada lado da própria casa. Com o
+    // círculo provisório isso mal aparecia; com o carvalho de verdade, a borda
+    // da mata sairia com um corte reto em cada copa.
+    //
+    // Então o objeto entra numa fila, e a fila é descarregada quando a
+    // diagonal termina, ANTES das criaturas dessa diagonal. A ordem de
+    // profundidade continua a mesma — quem está atrás, quem está na frente —,
+    // só deixa de haver chão por cima de objeto.
+    if (s.objeto) (this._adiados ??= []).push([x, y, alphaObjeto, s]);
+  }
+
+  /** Desenha os objetos que esperavam o fim da diagonal. */
+  descarregarObjetos(ctx) {
+    if (!this._adiados?.length) return;
+    for (const [x, y, alpha, s] of this._adiados) this.desenharObjeto(ctx, x, y, alpha, s);
+    this._adiados.length = 0;
+  }
+
+  /** O objeto de uma casa de superfície nova, com a transparência dele. */
+  desenharObjeto(ctx, x, y, alphaObjeto, s) {
+    const hgt = this.field.heightAt(x, y);
+    const { sx, sy } = this.iso(x, y, hgt);
+    ctx.save();
+    ctx.globalAlpha = alphaObjeto;
+    let cx = sx;
+    let cy = sy + TH / 2;
+    let eixo = 0;
+    let dirigido = null;   // sprite de objeto com direção (carroça, cavalo)
+    if (MULTICASA.has(s.objeto)) {
+      // Só a casa da FRENTE da pegada desenha, e desenha no centro dela. Assim
+      // o objeto inteiro sai por cima das próprias casas de trás, que já foram
+      // desenhadas nesta passada.
+      const p = this.pegadaDe(x, y);
+      if (!p || !this.ehFrenteDaPegada(x, y, p)) { ctx.restore(); return; }
+      const centros = p.map((c) => this.center(c.x, c.y));
+      cx = centros.reduce((a, c) => a + c.sx, 0) / centros.length;
+      cy = centros.reduce((a, c) => a + c.sy, 0) / centros.length;
+      // O eixo do objeto na tela, para o comprido (cavalo) deitar certo em
+      // qualquer rotação da câmera.
+      const a = centros[0];
+      const b = centros[centros.length - 1];
+      eixo = Math.atan2(b.sy - a.sy, b.sx - a.sx);
+      dirigido = this.spriteDirecional(s.objeto, this.anotacaoDe(p));
+    }
+    if (dirigido) {
+      // A arte do PixelLab, 1:1, com a âncora no centro da pegada.
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(dirigido.img, dirigido.x, dirigido.y, dirigido.w, dirigido.h,
+        Math.round(cx - dirigido.ax), Math.round(cy - dirigido.ay), dirigido.w, dirigido.h);
+      ctx.restore();
+      return;
+    }
+    // ÁRVORE ALTA, QUANDO HOUVER. Uma a cada quatro casas de mata, num
+    // quinconce, com copa de duas casas de largura cobrindo as vizinhas. As
+    // casas sem árvore desenhada continuam sendo mata pela regra — bloqueiam
+    // passo e visão —; o que muda é só quantas árvores se desenha.
+    const alta = s.objeto === 'copa' && spriteCenario('arvore-alta', ['todas'], x, y);
+    if (alta) {
+      if (!this.temArvoreAlta(x, y)) { ctx.restore(); return; }
+      const { ox, oy } = this.posArvoreAlta(x, y, alta);
+      // Esmaece se a árvore cobre, na tela, alguém que está atrás dela — ou a
+      // casa sob o cursor, ou o destino do caminho. Com 150 px de altura a
+      // copa alcança umas oito diagonais para trás, e a vizinhança fixa de
+      // `transparenciaDaCasa` olha só duas.
+      const v = this.toView(x, y);
+      if (this.cobreFigura(ox, oy, alta.w, alta.h, v.vx + v.vy)
+        || this._esmaecer?.has(`${x},${y}`)) ctx.globalAlpha = TRANSLUCIDO;
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath();
+      ctx.ellipse(cx + 8, cy + 3, 44, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(alta.img, alta.x, alta.y, alta.w, alta.h, ox, oy, alta.w, alta.h);
+      ctx.restore();
+      return;
+    }
+    const baixo = (s.objeto === 'arbusto' || s.objeto === 'pedra')
+      && spriteCenario(s.objeto, ['todas'], x, y);
+    if (baixo) {
+      // Moita ou pedra do PixelLab, 1:1, com o centro da base no centro da
+      // casa. A sombra acompanha a largura: a pedra é mais estreita.
+      const r = s.objeto === 'pedra' ? 17 : 24;
+      ctx.fillStyle = 'rgba(0,0,0,.25)';
+      ctx.beginPath();
+      ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h,
+        Math.round(cx - baixo.ax + baixo.dx), Math.round(cy - baixo.ay + baixo.dy), baixo.w, baixo.h);
+      ctx.restore();
+      return;
+    }
+    const arvore = s.objeto === 'copa'
+      && spriteCenario('arvore', this.bordaDaMata(x, y) ? ['borda'] : ['borda', 'miolo'], x, y);
+    if (arvore) {
+      // O carvalho do PixelLab, 1:1, com o pé do tronco no centro da casa.
+      // Sombra lisa embaixo, desenhada pelo motor e não pela arte: deslocada
+      // para a direita e para baixo, porque a luz vem do alto à esquerda.
+      ctx.fillStyle = 'rgba(0,0,0,.25)';
+      ctx.beginPath();
+      ctx.ellipse(cx + 4, cy + 2, 26, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(arvore.img, arvore.x, arvore.y, arvore.w, arvore.h,
+        Math.round(cx - arvore.ax + arvore.dx), Math.round(cy - arvore.ay + arvore.dy),
+        arvore.w, arvore.h);
+    } else if (s.objeto === 'copa') {
+      // Recuo enquanto o atlas não carrega: a copa provisória em canvas.
+      // Duas elipses, sombra embaixo e luz em cima à esquerda.
+      const alto = LIFT * 1.5;
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 2, 26, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#26472a';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - alto, 30, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#356138';
+      ctx.beginPath();
+      ctx.ellipse(cx - 6, cy - alto - 5, 21, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#47784a';
+      ctx.beginPath();
+      ctx.ellipse(cx - 10, cy - alto - 10, 10, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (s.objeto === 'carroca') {
+      // Uma caixa só sobre as quatro casas, com as quatro rodas nos cantos.
+      // Provisório até a arte do PixelLab.
+      this.caixaIso(ctx, cx, cy, 46, 23, 22, ['#6b4a2c', '#82603a', '#9a7448']);
+      ctx.fillStyle = '#2a1e14';
+      for (const [ox, oy] of [[-34, 2], [34, 2], [-12, 14], [12, 14]]) {
+        ctx.beginPath();
+        ctx.ellipse(cx + ox, cy + oy, 5, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (s.objeto === 'cavalo') {
+      // Corpo caído ao longo do eixo das duas casas, com duas flechas.
+      // Provisório até a arte do PixelLab.
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 3, 34, 11, eixo, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3d3540';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - 4, 32, 11, eixo, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#524858';
+      ctx.beginPath();
+      ctx.ellipse(cx - 6, cy - 8, 18, 5, eixo, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#d8cdb0';
+      ctx.lineWidth = 1.5;
+      for (const ox of [-8, 8]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + ox, cy - 10);
+        ctx.lineTo(cx + ox + 6, cy - 22);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 1;
+    } else if (s.objeto === 'arbusto') {
+      // Mais baixo e mais largo que a copa, e em tufos: três massas em vez de
+      // uma. Precisa ler como "dá para se esconder atrás", não como árvore
+      // pequena — por isso não sobe, espalha.
+      ctx.fillStyle = 'rgba(0,0,0,.25)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 3, 24, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      for (const [ox, oy, r] of [[-11, -6, 11], [10, -5, 12], [0, -12, 12]]) {
+        ctx.fillStyle = '#2f5530';
+        ctx.beginPath();
+        ctx.ellipse(cx + ox, cy + oy, r, r * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#41703f';
+        ctx.beginPath();
+        ctx.ellipse(cx + ox - 3, cy + oy - 3, r * 0.55, r * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (s.objeto === 'pedra') {
+      this.caixaIso(ctx, cx, cy, 13, 8, 10, ['#5d5e66', '#77787f', '#93949a']);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Esta casa de mata recebe uma árvore alta desenhada?
+   *
+   * Quinconce de densidade 1/4: fileiras pares, colunas pares nas fileiras
+   * múltiplas de 4 e ímpares nas outras. Na tela isso dá uma árvore a cada
+   * 128 px numa fileira, com a fileira seguinte deslocada de meio passo — a
+   * copa de ~140 px fecha a massa sem alinhar as árvores em grade.
+   */
+  temArvoreAlta(x, y) {
+    if (y % 2 !== 0) return false;
+    return (x + (y % 4 === 2 ? 1 : 0)) % 2 === 0;
+  }
+
+  /** Canto de cima à esquerda da árvore alta da casa, na tela. */
+  posArvoreAlta(x, y, s) {
+    const { sx, sy } = this.iso(x, y, this.field.heightAt(x, y));
+    return {
+      ox: Math.round(sx - s.ax + s.dx * 3),
+      oy: Math.round(sy + TH / 2 - s.ay + s.dy * 2),
+    };
+  }
+
+  /**
+   * Que árvores altas escondem cada casa, na rotação atual.
+   *
+   * Medido em pixel: a máscara de alfa do sprite contra o losango da casa,
+   * contando só árvores desenhadas DEPOIS dela (diagonal de vista maior).
+   * Com as árvores de ~150 px, umas 130 das 381 casas andáveis da emboscada
+   * ficam mais de um quarto escondidas em cada rotação — a estrada junto à
+   * mata do sul e a ponta da trilha do norte. Devolve `Map('x,y' ->
+   * { frac, arvores: Set('x,y') })`, só com as casas que têm alguma cobertura.
+   * Calculado uma vez por rotação; vazio enquanto o atlas não carrega.
+   */
+  coberturaDasCopas() {
+    if (this._cobertura?.rot === this.rot) return this._cobertura.mapa;
+    const mapa = new Map();
+    const { w, h } = this.field;
+    const arvores = [];
+    let atlas = null;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (this.field.surfaceAt(x, y) !== 'arvore' || !this.temArvoreAlta(x, y)) continue;
+        const s = spriteCenario('arvore-alta', ['todas'], x, y);
+        if (!s) return mapa;   // atlas ainda carregando: tenta no próximo quadro
+        if (!atlas) {
+          const c = document.createElement('canvas');
+          c.width = s.img.width;
+          c.height = s.img.height;
+          const g = c.getContext('2d');
+          g.drawImage(s.img, 0, 0);
+          atlas = { w: c.width, alfa: g.getImageData(0, 0, c.width, c.height).data };
+        }
+        const v = this.toView(x, y);
+        arvores.push({ k: `${x},${y}`, s, d: v.vx + v.vy, ...this.posArvoreAlta(x, y, s) });
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (this.field.surfaceAt(x, y) === 'arvore') continue;
+        const { sx, sy } = this.center(x, y);
+        const v = this.toView(x, y);
+        const d = v.vx + v.vy;
+        const frente = arvores.filter((a) => a.d > d
+          && a.ox < sx + TW / 2 && a.ox + a.s.w > sx - TW / 2
+          && a.oy < sy + TH / 2 && a.oy + a.s.h > sy - TH / 2);
+        if (!frente.length) continue;
+        let total = 0;
+        let cobertos = 0;
+        const quem = new Set();
+        for (let py = -TH / 2; py < TH / 2; py++) {
+          for (let px = -TW / 2; px < TW / 2; px++) {
+            if (Math.abs(px + 0.5) / (TW / 2) + Math.abs(py + 0.5) / (TH / 2) > 1) continue;
+            total++;
+            const X = Math.round(sx) + px;
+            const Y = Math.round(sy) + py;
+            let coberto = false;
+            for (const a of frente) {
+              const lx = X - a.ox;
+              const ly = Y - a.oy;
+              if (lx < 0 || ly < 0 || lx >= a.s.w || ly >= a.s.h) continue;
+              if (atlas.alfa[((a.s.y + ly) * atlas.w + a.s.x + lx) * 4 + 3] > 128) {
+                coberto = true;
+                quem.add(a.k);
+              }
+            }
+            if (coberto) cobertos++;
+          }
+        }
+        if (cobertos) mapa.set(`${x},${y}`, { frac: cobertos / total, arvores: quem });
+      }
+    }
+    this._cobertura = { rot: this.rot, mapa };
+    return mapa;
+  }
+
+  /**
+   * A marcação de chão de uma casa (alcance, caminho, cursor). Se uma copa
+   * esconde mais de um quarto da casa, o contorno também vai para o RAIO-X:
+   * redesenhado por cima de tudo no fim do quadro, para o jogador ver o
+   * alcance atrás da mata sem precisar girar a câmera.
+   */
+  marcar(ctx, x, y, fill, stroke, tracejado = false) {
+    if (fill) this.fillDiamond(ctx, x, y, fill, tracejado ? null : stroke);
+    if (tracejado) this.strokeDiamondTracejado(ctx, x, y, stroke);
+    if (stroke && (this._copas?.get(`${x},${y}`)?.frac ?? 0) > 0.25) {
+      (this._raioX ??= []).push([x, y, stroke, tracejado]);
+    }
+  }
+
+  /** Os contornos guardados por `marcar`, por cima das copas. */
+  desenharRaioX(ctx) {
+    if (!this._raioX?.length) return;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    for (const [x, y, stroke, tracejado] of this._raioX) {
+      if (tracejado) this.strokeDiamondTracejado(ctx, x, y, stroke);
+      else {
+        const { sx, sy } = this.iso(x, y);
+        this.diamond(ctx, sx, sy);
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    this._raioX.length = 0;
+  }
+
+  /**
+   * Um retângulo de tela cobre alguma criatura que está ATRÁS (diagonal de
+   * vista menor que `d`)? A de diagonal maior é desenhada depois, por cima.
+   */
+  cobreFigura(x0, y0, w, h, d) {
+    for (const f of this._figuras ?? []) {
+      if (f.d >= d) continue;
+      if (f.x1 > x0 && f.x0 < x0 + w && f.y1 > y0 && f.y0 < y0 + h) return true;
+    }
+    return false;
+  }
+
+  /** O retângulo de tela de cada criatura no tabuleiro, com a diagonal dela. */
+  figurasNaTela() {
+    const out = [];
+    for (const c of this.enc.combatants) {
+      if (!c.pos) continue;
+      const v = this.toView(c.pos.x, c.pos.y);
+      const { sx, sy } = this.center(c.pos.x, c.pos.y);
+      // Uma criatura Média ocupa uns 40 x 48 px acima do centro da casa.
+      out.push({ d: v.vx + v.vy, x0: sx - 20, x1: sx + 20, y0: sy - 48, y1: sy + 4 });
+    }
+    return out;
+  }
+
+  /** A anotação do mapa (para onde olha, variante) do objeto desta pegada. */
+  anotacaoDe(pegada) {
+    return this.field.objetos?.find((o) => pegada.some((c) => c.x === o.x && c.y === o.y)) ?? null;
+  }
+
+  /**
+   * O sprite de um objeto com direção na rotação atual da câmera, ou null.
+   *
+   * O objeto aponta para um lado no MUNDO (`olha`); a câmera gira; o que muda
+   * é a direção dele na TELA. A conversão é a mesma que escolhe a direção das
+   * criaturas — `rotateVec` e depois `linhaDaDirecao` —, então um cavalo e um
+   * goblin olhando para o mesmo lado do mundo usam a mesma direção de sprite.
+   * Conferido: +x do mundo vira sudeste na rotação 0, sudoeste na 1, noroeste
+   * na 2 e nordeste na 3.
+   */
+  spriteDirecional(tipo, anotacao) {
+    const olha = anotacao?.olha ?? { dx: 1, dy: 0 };
+    const f = this.rotateVec(olha.dx, olha.dy);
+    const { row } = linhaDaDirecao(DIRECOES_8, f.dx - f.dy, f.dx + f.dy);
+    const grupo = anotacao?.variante ? `${tipo}-${anotacao.variante}` : tipo;
+    return spriteCenario(grupo, [DIRECOES_8[row]], 0, 0);
+  }
+
+  /**
+   * A árvore está na borda da mata — encosta numa casa por onde se anda?
+   * Na borda o tronco aparece; no miolo ele fica atrás da copa da frente.
+   */
+  bordaDaMata(x, y) {
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+      const nx = x + dx;
+      const ny = y + dy;
+      return this.field.inside(nx, ny) && this.field.surfaceAt(nx, ny) !== 'arvore';
+    });
+  }
+
+  /**
+   * As casas do objeto de várias casas que contém (x, y), ou null.
+   *
+   * Calculado uma vez e guardado: o mapa não muda durante o encontro. Casas
+   * vizinhas (nos quatro lados) com a mesma superfície multicasa formam um
+   * objeto. Limitação conhecida: dois objetos iguais encostados viram um só.
+   */
+  pegadaDe(x, y) {
+    if (!this._pegadas) {
+      this._pegadas = new Map();
+      const { w, h } = this.field;
+      for (let yy = 0; yy < h; yy++) {
+        for (let xx = 0; xx < w; xx++) {
+          const sup = this.field.surfaceAt(xx, yy);
+          if (!MULTICASA.has(SUPERFICIE[sup]?.objeto) || this._pegadas.has(`${xx},${yy}`)) continue;
+          const casas = [];
+          const fila = [{ x: xx, y: yy }];
+          const vistos = new Set([`${xx},${yy}`]);
+          while (fila.length) {
+            const c = fila.shift();
+            casas.push(c);
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const n = { x: c.x + dx, y: c.y + dy };
+              const k = `${n.x},${n.y}`;
+              if (!vistos.has(k) && this.field.surfaceAt(n.x, n.y) === sup) {
+                vistos.add(k);
+                fila.push(n);
+              }
+            }
+          }
+          for (const c of casas) this._pegadas.set(`${c.x},${c.y}`, casas);
+        }
+      }
+    }
+    return this._pegadas.get(`${x},${y}`) ?? null;
+  }
+
+  /**
+   * (x, y) é a casa da frente da pegada na vista atual? É a de maior
+   * diagonal de vista (vx + vy) e, no empate, a de maior vx — a mesma ordem em
+   * que `this.order` percorre as casas, então ela é a última desenhada.
+   */
+  ehFrenteDaPegada(x, y, pegada) {
+    let melhor = null;
+    for (const c of pegada) {
+      const v = this.toView(c.x, c.y);
+      const d = v.vx + v.vy;
+      if (!melhor || d > melhor.d || (d === melhor.d && v.vx > melhor.vx)) melhor = { d, vx: v.vx, c };
+    }
+    return melhor.c.x === x && melhor.c.y === y;
+  }
+
+  /** Uma caixa isométrica simples: base em losango, duas faces e o topo. */
+  caixaIso(ctx, cx, cy, rx, ry, alto, [esq, dir, topo]) {
+    ctx.fillStyle = esq;
+    ctx.beginPath();
+    ctx.moveTo(cx - rx, cy);
+    ctx.lineTo(cx, cy + ry);
+    ctx.lineTo(cx, cy + ry - alto);
+    ctx.lineTo(cx - rx, cy - alto);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = dir;
+    ctx.beginPath();
+    ctx.moveTo(cx + rx, cy);
+    ctx.lineTo(cx, cy + ry);
+    ctx.lineTo(cx, cy + ry - alto);
+    ctx.lineTo(cx + rx, cy - alto);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = topo;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ry - alto);
+    ctx.lineTo(cx + rx, cy - alto);
+    ctx.lineTo(cx, cy + ry - alto);
+    ctx.lineTo(cx - rx, cy - alto);
+    ctx.closePath();
+    ctx.fill();
   }
 
   fillDiamond(ctx, x, y, fill, stroke = null) {
@@ -476,51 +1093,56 @@ export class Board {
 
     this.fx.drawGround(ctx, this);
 
+    this._figuras = this.figurasNaTela();
+    // Árvores que esmaecem neste quadro: as que escondem a casa sob o cursor
+    // ou o destino do caminho. Sem isso o jogador mira uma casa que não vê.
+    this._copas = this.coberturaDasCopas();
+    this._esmaecer = new Set();
+    const fim = this.overlay.path?.[this.overlay.path.length - 1];
+    for (const t of [this.hover, fim]) {
+      const c = t && this._copas.get(`${t.x},${t.y}`);
+      if (c && c.frac > 0.1) for (const k of c.arvores) this._esmaecer.add(k);
+    }
     let lastD = -1;
     for (const cell of this.order) {
       // Ao mudar de diagonal, desenha quem estava na anterior.
-      if (cell.d !== lastD && lastD >= 0) this.drawOccupantsOnDiagonal(ctx, byView, lastD);
+      if (cell.d !== lastD && lastD >= 0) {
+        this.descarregarObjetos(ctx);
+        this.drawOccupantsOnDiagonal(ctx, byView, lastD);
+      }
       lastD = cell.d;
 
       const { x, y, vx, vy } = cell;
-      let alpha = 1;
-      const kind = this.field.tileAt(x, y);
-      const tall = kind === 1 || this.field.heightAt(x, y) > 0;
-      if (tall) {
-        for (const [ox, oy] of [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1]]) {
-          const behind = byView.get(vkey(vx + ox, vy + oy));
-          if (behind && this.field.heightAt(x, y) >= this.field.heightAt(behind.pos.x, behind.pos.y)) {
-            alpha = 0.42;
-            break;
-          }
-        }
-      }
-      this.drawTile(ctx, x, y, alpha);
+      const transp = this.transparenciaDaCasa(x, y, vx, vy, byView);
+      this.drawTile(ctx, x, y, transp.chao, transp.objeto);
 
       const k = `${x},${y}`;
       if (reach) {
         const node = reach.get(k);
         if (node && node.cost > 0 && !this.enc.occupied(x, y, this.overlay.selected)) {
-          this.fillDiamond(ctx, x, y, 'rgba(96,168,255,.26)', 'rgba(140,200,255,.45)');
+          this.marcar(ctx, x, y, 'rgba(96,168,255,.26)', 'rgba(140,200,255,.45)');
         }
       }
       if (this.modo && this.modo.limite > 0) {
         const d = distanceFt(this.modo.actor.pos, { x, y });
         if (d > 0 && d <= this.modo.alcance) {
-          this.fillDiamond(ctx, x, y, CHAO_ALCANCE.fill, CHAO_ALCANCE.stroke);
+          this.marcar(ctx, x, y, CHAO_ALCANCE.fill, CHAO_ALCANCE.stroke);
         } else if (d > 0 && d <= this.modo.limite) {
-          this.fillDiamond(ctx, x, y, CHAO_LONGO.fill, null);
-          this.strokeDiamondTracejado(ctx, x, y, CHAO_LONGO.stroke);
+          this.marcar(ctx, x, y, CHAO_LONGO.fill, CHAO_LONGO.stroke, true);
         }
       }
       if (this.previsoes?.impossiveis.has(k)) this.tintaImpossivel(ctx, x, y);
-      if (pathSet.has(k)) this.fillDiamond(ctx, x, y, 'rgba(170,225,255,.42)', 'rgba(200,240,255,.8)');
+      if (pathSet.has(k)) this.marcar(ctx, x, y, 'rgba(170,225,255,.42)', 'rgba(200,240,255,.8)');
       if (targetSet.has(k)) this.fillDiamond(ctx, x, y, 'rgba(255,90,70,.22)', '#ff6a4b');
       if (this.hover && this.hover.x === x && this.hover.y === y) {
-        this.fillDiamond(ctx, x, y, 'rgba(255,255,255,.08)', 'rgba(255,255,255,.5)');
+        this.marcar(ctx, x, y, 'rgba(255,255,255,.08)', 'rgba(255,255,255,.5)');
       }
     }
-    if (lastD >= 0) this.drawOccupantsOnDiagonal(ctx, byView, lastD);
+    if (lastD >= 0) {
+      this.descarregarObjetos(ctx);
+      this.drawOccupantsOnDiagonal(ctx, byView, lastD);
+    }
+    this.desenharRaioX(ctx);
 
     // A cruz vem DEPOIS das figuras, de propósito: ela precisa riscar a
     // criatura, não ficar escondida atrás das pernas dela.

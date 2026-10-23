@@ -37,6 +37,10 @@ export const GOBLINOIDES = {
     maxHp: 7,
     speedFt: 30,
     skills: ['furtividade'],
+    // Furtividade +6 no SRD. Proficiência só dá +4 (DES +2, prof +2); o +6
+    // é especialização. Com só `skills` o motor calculava +4 — e isso
+    // passou despercebido enquanto nada usava Furtividade. A emboscada usa.
+    expertise: ['furtividade'],
     attacks: [
       { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
       { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
@@ -62,6 +66,7 @@ export const GOBLINOIDES = {
     maxHp: 21,
     speedFt: 30,
     skills: ['furtividade'],
+    expertise: ['furtividade'],
     attacks: [
       { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
       { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
@@ -109,6 +114,7 @@ export const GOBLINOIDES = {
     maxHp: 27,
     speedFt: 30,
     skills: ['furtividade', 'sobrevivencia'],
+    expertise: ['furtividade'],
     attacks: [
       // O 2d8 da clava e o 2d6 da azagaia em corpo a corpo JÁ SÃO Brutamontes
       // (um dado extra de dano), como o bloco do SRD os escreve. Quem somar o
@@ -139,6 +145,7 @@ export const GOBLINOIDES = {
     maxHp: 27,
     speedFt: 30,
     skills: ['furtividade', 'sobrevivencia'],
+    expertise: ['furtividade'],
     attacks: [
       { name: 'Clava com cravos', bonus: 4, damage: '2d8+2', type: 'perfurante', reachFt: 5, art: 'mace' },
       { name: 'Azagaia', bonus: 4, damage: '2d6+2', type: 'perfurante', reachFt: 5, art: 'javelin' },
@@ -197,6 +204,7 @@ export const GOBLINOIDES = {
     maxHp: 21,
     speedFt: 30,
     skills: ['furtividade'],
+    expertise: ['furtividade'],
     attacks: [
       { name: 'Punhal', bonus: 4, damage: '1d4+2', type: 'perfurante', reachFt: 5, art: 'dagger' },
       { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
@@ -221,6 +229,7 @@ export const GOBLINOIDES = {
     maxHp: 7,
     speedFt: 30,
     skills: ['furtividade'],
+    expertise: ['furtividade'],
     attacks: [
       { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
     ],

@@ -9,7 +9,7 @@ import { runMonsterSide } from './rules/ai.js';
 import { hasCondition } from './rules/conditions.js';
 import { getSpell } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
-import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from './game/encounter.js';
+import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { criarFicha } from './view/ficha.js';
@@ -126,24 +126,29 @@ class App {
     this.ficha?.fechar();
     const seed = seedFromString(`encontro:${Date.now()}`);
     const rng = makeRng(seed);
-    const field = new Battlefield(MAP[0].length, MAP.length, MAP);
+    // `?encontro=` escolhe o encontro inteiro: mapa, posições e inimigos andam
+    // juntos. `grandes` é uma vitrine de tamanho; `emboscada` é a estrada na
+    // mata. O padrão continua sendo o que foi balanceado — mexer nele para
+    // mostrar um recurso estragaria um equilíbrio que foi medido.
+    const variante = new URLSearchParams(location.search).get('encontro') ?? 'padrao';
+    const mapa = mapaDo(variante);
+    const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
+      mapa.terreno, mapa.altura, mapa.objetos);
 
     const party = makeParty();
     party.forEach((c, i) => {
-      c.pos = { ...PARTY_SPOTS[i] };
-      c.facingVec = { dx: 1, dy: -1 };
+      c.pos = { ...mapa.grupo[i] };
+      c.facingVec = { ...mapa.olhar };
     });
-    // `?encontro=grandes` troca o encontro por uma vitrine de tamanho. O
-    // encontro padrão não tem criatura Grande, e mexer na composição dele só
-    // para mostrar o recurso estragaria um equilíbrio que foi medido.
-    const foes = buildFoes(new URLSearchParams(location.search).get('encontro') ?? 'padrao');
+    const foes = buildFoes(variante);
 
     this.enc = new Encounter({
       battlefield: field,
       party,
       foes,
       rng,
-      reinforcements: (round) => reinforcementsFor(round),
+      reinforcements: (round) => reinforcementsFor(round, variante),
+      emboscada: mapa.emboscada ?? null,
       onLog: (entry) => this.hud.pushLog(entry),
       onEvent: (ev) => this.onEvent(ev),
     });

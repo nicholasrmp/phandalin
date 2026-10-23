@@ -62,17 +62,68 @@ const NEIGHBORS = [
   { dx: 1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: -1, dy: -1 },
 ];
 
+/**
+ * REGRA E APARÊNCIA SÃO CAMADAS DIFERENTES.
+ *
+ * Até aqui cada glifo dizia as duas coisas de uma vez: `#` era parede para o
+ * movimento e cinza para o desenho. Isso funcionou enquanto havia uma
+ * aparência por regra. Um mapa de estrada na mata quebra isso dos dois lados:
+ * estrada e grama têm a MESMA regra (chão) e caras diferentes; árvore tem a
+ * regra da parede — bloqueia passo e visão — e cara de árvore.
+ *
+ * Então o glifo agora dá as duas coisas separadas: `kind` é o que as regras
+ * leem (0 chão, 1 parede, 2 difícil, 3 cobertura) e `sup` é o que o desenho
+ * lê. Nada em `rules/` olha a superfície; nada no tabuleiro decide regra por
+ * ela. Os glifos antigos continuam significando exatamente o que
+ * significavam, e o mapa do encontro padrão sai idêntico.
+ */
+export const GLIFOS = {
+  '.': { kind: 0, sup: 'chao' },
+  '#': { kind: 1, sup: 'parede' },
+  '~': { kind: 2, sup: 'mato' },
+  'o': { kind: 3, sup: 'caixote' },
+  ':': { kind: 0, sup: 'estrada' },
+  ',': { kind: 0, sup: 'grama' },
+  // Mata fechada: bloqueia passo e visão como parede. É a borda da floresta,
+  // não um bosque por onde se anda — por onde se anda é a grama do barranco.
+  'T': { kind: 1, sup: 'arvore' },
+  // Carroça, cavalo morto e pedra são COBERTURA: dá para se esconder atrás
+  // (+2 de CA, pelo `coverBetween`) e não dá para atravessar.
+  'C': { kind: 3, sup: 'carroca' },
+  'h': { kind: 3, sup: 'cavalo' },
+  'r': { kind: 3, sup: 'pedra' },
+  // Arbusto fechado também é cobertura, não terreno difícil. Terreno difícil
+  // deixaria passar — devagar —, e o arbusto existe para FECHAR: estreitar a
+  // boca de uma trilha e dar a quem se esconde atrás os mesmos +2 de CA da
+  // carroça.
+  'b': { kind: 3, sup: 'arbusto' },
+};
+
+export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
+
 export class Battlefield {
   /**
    * @param {number} w largura em quadrados
    * @param {number} h altura em quadrados
-   * @param {string[]} rows mapa em texto: '.' chão, '#' parede, '~' difícil, 'o' cobertura
+   * @param {string[]} rows mapa em texto, glifos de `GLIFOS`. Um dígito de 1 a
+   *   9 é chão naquela elevação — o formato antigo, que continua valendo.
+   * @param {string[]} [alturas] segunda grade, só de dígitos ('.' ou '0' é
+   *   nível 0). Existe porque um caractere só não diz "grama no alto do
+   *   barranco": o glifo diz a grama, esta grade diz o alto.
    */
-  constructor(w, h, rows = null) {
+  constructor(w, h, rows = null, alturas = null, objetos = null) {
     this.w = w;
     this.h = h;
+    // Anotações de desenho dos objetos de várias casas — para onde apontam e
+    // qual variante. Como `surfaces`, só o tabuleiro lê; nenhuma regra usa.
+    // Cada item: { tipo, x, y, olha: {dx, dy}, variante? }, com (x, y) em
+    // qualquer casa da pegada.
+    this.objetos = objetos ?? [];
     this.tiles = new Uint8Array(w * h);   // 0 chão, 1 parede, 2 terreno difícil, 3 cobertura
     this.heights = new Uint8Array(w * h); // nível de elevação; cada nível = 5 pés
+    this.surfaces = new Uint8Array(w * h); // índice em SUPERFICIES; só o desenho lê
+    const chao = SUPERFICIES.indexOf('chao');
+    this.surfaces.fill(chao);
     if (rows) {
       for (let y = 0; y < Math.min(h, rows.length); y++) {
         for (let x = 0; x < Math.min(w, rows[y].length); x++) {
@@ -82,11 +133,26 @@ export class Battlefield {
             this.tiles[i] = 0;
             this.heights[i] = Number(c);
           } else {
-            this.tiles[i] = c === '#' ? 1 : c === '~' ? 2 : c === 'o' ? 3 : 0;
+            const g = GLIFOS[c] ?? GLIFOS['.'];
+            this.tiles[i] = g.kind;
+            this.surfaces[i] = SUPERFICIES.indexOf(g.sup);
           }
         }
       }
     }
+    if (alturas) {
+      for (let y = 0; y < Math.min(h, alturas.length); y++) {
+        for (let x = 0; x < Math.min(w, alturas[y].length); x++) {
+          const c = alturas[y][x];
+          if (c >= '1' && c <= '9') this.heights[y * w + x] = Number(c);
+        }
+      }
+    }
+  }
+
+  /** A aparência do quadrado. Só o desenho pergunta isto. */
+  surfaceAt(x, y) {
+    return this.inside(x, y) ? SUPERFICIES[this.surfaces[y * this.w + x]] : 'parede';
   }
 
   heightAt(x, y) {

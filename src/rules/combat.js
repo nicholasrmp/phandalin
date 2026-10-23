@@ -13,7 +13,7 @@ import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDi
 import { Battlefield, distanceFt, isAdjacent, key } from '../core/grid.js';
 import {
   abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
-  proficiencyBonus, ABILITY_NAME,
+  proficiencyBonus, ABILITY_NAME, passivePerception,
 } from './abilities.js';
 import {
   WEAPONS, weaponAbility,
@@ -182,11 +182,15 @@ function contaDeResistencia(r) {
 }
 
 export class Encounter {
-  constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {}, reinforcements = null }) {
+  constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {}, reinforcements = null, emboscada = null }) {
     this.field = battlefield;
     this.rng = rng;
     this.onLog = onLog;
     this.onEvent = onEvent;
+    // `{ emboscadores: 'foes' | 'party' }` ou null. Quem se esconde é dado do
+    // encontro; a regra de surpresa é do motor (`rolarSurpresa`).
+    this.emboscada = emboscada;
+    this.surpresos = new Set();
     // Função (round) → { aviso, units } ou null. O motor não sabe QUEM chega;
     // isso é dado do encontro.
     this.reinforcements = reinforcements;
@@ -263,7 +267,49 @@ export class Encounter {
     this.round = 1;
     // Guarda quem abriu: a rodada só vira quando a vez volta para esse lado.
     this.firstSide = partyInit.total >= foeInit.total ? 'party' : 'foes';
+    this.surpresos = this.rolarSurpresa();
     this.beginSide(this.firstSide);
+  }
+
+  /**
+   * SURPRESA, pelo SRD.
+   *
+   * Sem isto não existia emboscada: o motor rolava iniciativa por lado e o
+   * grupo abria a rodada 1 em 57% dos combates — medido em mil simulações —,
+   * matando goblin antes de levar o primeiro tiro.
+   *
+   * A regra: cada emboscador rola Furtividade; cada alvo compara a sua
+   * Percepção passiva. Quem não nota NENHUMA ameaça — Percepção abaixo de
+   * todos os resultados, ou seja, abaixo do menor — está surpreso e perde o
+   * primeiro turno inteiro: não se move, não age, e não reage até esse turno
+   * acabar. É POR CRIATURA, não do lado: quem notou age normalmente.
+   *
+   * Não é o mesmo que perder a iniciativa. Se os emboscadores também vencem a
+   * iniciativa, agem duas vezes antes do surpreso agir uma — é o que a regra
+   * quer.
+   *
+   * Consequência que vale saber: quanto MAIS emboscadores, MENOS surpresa,
+   * porque basta o pior resultado de Furtividade ser notado. Com quatro
+   * goblins (+6) contra Percepção passiva 13, o personagem é surpreendido em
+   * ~18% das vezes; com passiva 11, em ~32%. Se um encontro quiser surpresa
+   * mais frequente, o SRD também permite o teste de grupo (metade do grupo
+   * passando, o grupo passa) — é uma escolha de encontro, não do motor.
+   */
+  rolarSurpresa() {
+    const surpresos = new Set();
+    if (!this.emboscada) return surpresos;
+    const lado = this.emboscada.emboscadores;
+    const alvos = lado === 'foes' ? 'party' : 'foes';
+    const furtivos = this.allOf(lado).map((c) => d20(this.rng, skillBonus(c, 'furtividade')).total);
+    if (!furtivos.length) return surpresos;
+    const menor = Math.min(...furtivos);
+    for (const c of this.allOf(alvos)) {
+      if (passivePerception(c) < menor) surpresos.add(c.id);
+    }
+    const nomes = this.allOf(alvos).filter((c) => surpresos.has(c.id)).map((c) => c.name);
+    this.say('inicio', `Furtividade dos emboscadores: ${furtivos.join(', ')} — `
+      + (nomes.length ? `surpreendidos: ${nomes.join(', ')}.` : 'ninguém foi surpreendido.'));
+    return surpresos;
   }
 
   bestDex(side) {
@@ -290,6 +336,23 @@ export class Encounter {
     }
     this.say('turno', side === 'party' ? `— Turno do grupo (rodada ${this.round}) —` : `— Turno dos inimigos (rodada ${this.round}) —`);
     this.onEvent({ type: 'sideStart', side });
+
+    // O primeiro turno de quem foi surpreendido não acontece. Marca como
+    // agido sem mover nem agir; se ninguém do lado sobrou, a vez passa.
+    if (this.surpresos.size) {
+      const perdem = this.allOf(side).filter((c) => this.surpresos.has(c.id));
+      for (const c of perdem) {
+        c.acted = true;
+        c.movementLeftFt = 0;
+        c.actionUsed = true;
+        c.bonusUsed = true;
+        this.surpresos.delete(c.id);
+      }
+      if (perdem.length) {
+        this.say('turno', `${perdem.map((c) => c.name).join(', ')} — surpreendido${perdem.length > 1 ? 's' : ''}, perde${perdem.length > 1 ? 'm' : ''} o turno.`);
+        this.maybeEndSide();
+      }
+    }
   }
 
   tickConditions(c) {
@@ -312,12 +375,36 @@ export class Encounter {
     if (!this.reinforcements || this.over) return;
     const wave = this.reinforcements(this.round);
     if (!wave?.units?.length) return;
-    for (const unit of wave.units) this.addCombatant(unit);
+    for (const unit of wave.units) {
+      // A casa de chegada pode estar ocupada — um personagem parado na boca
+      // da trilha, por exemplo. Dois na mesma casa quebram tudo que pergunta
+      // "quem está aqui" (o tabuleiro desenha só um, o clique pega o outro).
+      // Então o reforço desce para a casa livre e andável mais próxima.
+      unit.pos = this.casaLivreMaisProxima(unit.pos) ?? unit.pos;
+      this.addCombatant(unit);
+    }
     this.say('turno', wave.aviso ?? 'Reforços chegam!');
     this.onEvent({ type: 'reinforcements', units: wave.units, aviso: wave.aviso });
   }
 
   /** Entra em combate já começado. Só age no próximo turno do lado dele. */
+  /**
+   * A casa livre e andável mais próxima de `pos`, por anéis de distância.
+   * Null se não houver nenhuma a até 6 casas — aí o chamador decide.
+   */
+  casaLivreMaisProxima(pos) {
+    const livre = (x, y) => this.field.inside(x, y) && !this.field.blocksMove(x, y) && !this.occupied(x, y);
+    for (let r = 0; r <= 6; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          if (livre(pos.x + dx, pos.y + dy)) return { ...pos, x: pos.x + dx, y: pos.y + dy };
+        }
+      }
+    }
+    return null;
+  }
+
   addCombatant(c) {
     c.movementLeftFt = 0;
     c.actionUsed = true;

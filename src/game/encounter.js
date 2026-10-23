@@ -37,6 +37,114 @@ export const PARTY_SPOTS = [
   { x: 3, y: 9 }, { x: 2, y: 10 }, { x: 2, y: 9 }, { x: 1, y: 10 },
 ];
 
+// A EMBOSCADA NA ESTRADA.
+//
+// Uma estrada larga atravessando a mata, barrancos de grama dos dois lados e
+// mata fechada além deles. A carroça do grupo está na ponta oeste; dois cavalos
+// mortos, flechados, bloqueiam o meio do caminho; uma trilha estreita sobe
+// para o norte pela mata — é por ela que os goblins vieram e é por ela que os
+// reforços chegam.
+//
+// O desenho é pensado para a altura TRABALHAR: os goblins ficam no alto dos
+// barrancos (nível 1), o grupo embaixo, na estrada. Subir custa o dobro, quem
+// está em cima tem cobertura contra quem está embaixo, e a mata atrás deles
+// corta a linha de visão de quem tentar contornar. A carroça e os cavalos são
+// a única cobertura no chão da estrada — e estão longe uma da outra.
+//
+// Duas grades porque um caractere não diz as duas coisas: TERRENO diz o que é
+// (`,` grama, `:` estrada, `T` mata, `C` carroça, `h` cavalo, `r` pedra) e
+// ALTURA diz em que nível está. A grama do barranco é `,` no terreno e `1` na
+// altura; a do acostamento é `,` e `0`.
+export const MAPA_EMBOSCADA = {
+  terreno: [
+    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
+    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
+    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
+    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
+    'TT,,TTTTTTTTTTTT,,T::TTT,,TT',
+    ',,,,,TT,,TT,,TT,,TT::TT,,,,,',
+    ',,,,,,,,r,,,,,,,,TT::TT,r,,,',
+    ',,,,,,,,,,,,,,,,,bT::Tb,,,,,',
+    ',,,,,,,,,,,,,,,,,bb::b,b,,,,',
+    '::::::,,,,,,,,,,,,b::b::::::',
+    ':::::::::::::,,,,:::::::::::',
+    ':CC:::::::::::::::::::::::::',
+    ':CC:::::::::::::::hh::::::::',
+    '::::::::::::::::::::::::::::',
+    ':::::::::::::::::::hh:::::::',
+    ',,,,,,::::::::::::::::,,,,,,',
+    ',,,,r,,,,,,,,,,,,b,,,,,,,,,,',
+    ',,,,,,,,,,,r,,,,,,,,,,,,,r,,',
+    'TT,,,,,TT,,,,,,,,,,TTTT,,TTT',
+    'TTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  ],
+  altura: [
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '0000011111111111111111000000',
+    '0000000000000111100000000000',
+    '0000000000000000000000000000',
+    '0000000000000000000000000000',
+    '0000000000000000000000000000',
+    '0000000000000000000000000000',
+    '0000000000000000000000000000',
+    '1100000000000000000000100111',
+    '1111111111111000011111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+    '1111111111111111111111111111',
+  ],
+  // Para onde apontam os objetos de várias casas — a grade de glifos diz ONDE
+  // eles estão, não para onde olham. (x, y) é qualquer casa da pegada.
+  // A carroça aponta para leste, na direção da viagem. Os cavalos caíram em
+  // sentidos opostos e têm pelagens diferentes: dois sprites iguais lado a
+  // lado leriam como cópia. Os cavalos olham na DIAGONAL do mundo, que na tela
+  // cai sempre em perfil ou de frente (leste, oeste, norte, sul) em qualquer
+  // rotação: nas vistas diagonais o PixelLab encurta o corpo deitado e ele
+  // parece sentado.
+  objetos: [
+    { tipo: 'carroca', x: 1, y: 11, olha: { dx: 1, dy: 0 } },
+    { tipo: 'cavalo', x: 18, y: 12, olha: { dx: 1, dy: -1 } },
+    { tipo: 'cavalo', x: 19, y: 14, olha: { dx: -1, dy: 1 }, variante: 'tordilho' },
+  ],
+};
+
+/** O grupo escolta a carroça: logo à frente dela, na estrada, olhando para leste. */
+export const PARTY_SPOTS_EMBOSCADA = [
+  { x: 5, y: 11 }, { x: 4, y: 12 }, { x: 4, y: 11 }, { x: 3, y: 13 },
+];
+
+/**
+ * O mapa, as posições do grupo e para onde ele olha, por variante.
+ *
+ * Mapa e posições andam juntos: uma posição boa num mapa cai dentro de uma
+ * árvore no outro.
+ */
+export function mapaDo(variante = 'padrao') {
+  if (variante === 'emboscada') {
+    return {
+      terreno: MAPA_EMBOSCADA.terreno,
+      altura: MAPA_EMBOSCADA.altura,
+      objetos: MAPA_EMBOSCADA.objetos,
+      grupo: PARTY_SPOTS_EMBOSCADA,
+      olhar: { dx: 1, dy: 0 },
+      // Os goblins estão escondidos: rola-se surpresa no começo (combat.js).
+      emboscada: { emboscadores: 'foes' },
+    };
+  }
+  return { terreno: MAP, altura: null, grupo: PARTY_SPOTS, olhar: { dx: 1, dy: -1 } };
+}
+
 /**
  * Inimigos presentes desde o começo.
  *
@@ -51,6 +159,7 @@ export const PARTY_SPOTS = [
  */
 export function buildFoes(variante = 'padrao') {
   if (variante === 'grandes') return foesGrandes();
+  if (variante === 'emboscada') return foesEmboscada();
   const foes = [
     makeMonster('goblinChefe', { x: 12, y: 2 }),
     // O goblin fica COLADO no chefe de propósito: Redirecionar Ataque só
@@ -85,6 +194,46 @@ function foesGrandes() {
   return foes;
 }
 
+/**
+ * Quatro goblins no alto dos barrancos, dois de cada lado, entre a carroça e
+ * os cavalos mortos — é ali que o grupo fica entre os dois fogos.
+ *
+ * AS POSIÇÕES VIERAM DE MIL COMBATES SIMULADOS (revisor de encontro). As
+ * primeiras deixavam B e D a 90–100 pés, em alcance longo com desvantagem, e B
+ * nem enxergava a guerreira. Agora os quatro estão no nível 1, com visão dos
+ * quatro personagens e em alcance curto do arco (35 a 75 pés).
+ *
+ * A–B e C–D ficam a 4 casas um do outro de propósito: um Sono (esfera de 20
+ * pés) pega dois goblins, e essa é a jogada boa do mago no primeiro turno.
+ *
+ * ORÇAMENTO DO DMG para 4 personagens de 2º nível: 4 goblins são 200 XP
+ * crus, 400 ajustados (x2, médio); com os 2 lobos da rodada 2, 300 crus e 600
+ * ajustados — difícil.
+ *
+ * MEDIDO com o motor real, surpresa incluída, 1.000 combates: 100% de
+ * vitória em 4,8 rodadas, 77% dos PV sobrando, alguém vai ao chão em 60% dos
+ * combates, duas quedas ou mais em 31%, nenhuma morte. Sem a surpresa: 53% e
+ * 24%. A surpresa pesa pouco porque, pela regra, basta notar UM goblin para
+ * não ser surpreendido — com quatro escondidos, o mais desajeitado entrega o
+ * resto (ver `rolarSurpresa`).
+ */
+function foesEmboscada() {
+  const norte = [
+    makeMonster('goblin', { x: 12, y: 7 }, { nameSuffix: 'A' }),
+    // Colado nos arbustos da boca da trilha.
+    makeMonster('goblin', { x: 16, y: 7 }, { nameSuffix: 'B' }),
+  ];
+  const sul = [
+    makeMonster('goblin', { x: 14, y: 17 }, { nameSuffix: 'C' }),
+    // Na borda do barranco sul, ao lado do arbusto em (17,16).
+    makeMonster('goblin', { x: 18, y: 16 }, { nameSuffix: 'D' }),
+  ];
+  // Cada lado olha para a estrada.
+  for (const f of norte) f.facingVec = { dx: 0, dy: 1 };
+  for (const f of sul) f.facingVec = { dx: 0, dy: -1 };
+  return [...norte, ...sul];
+}
+
 export const REINFORCEMENTS = [
   {
     round: 3,
@@ -96,13 +245,39 @@ export const REINFORCEMENTS = [
   },
 ];
 
+/**
+ * Na emboscada os reforços descem pela trilha do norte — e são LOBOS.
+ *
+ * Dois goblins a mais repetiam o que já está em cena: mais dois arqueiros.
+ * Dois lobos (SRD, ND 1/4, 50 XP cada: o mesmo orçamento) correm 40 pés pela
+ * trilha, derrubam com a mordida e prendem o grupo na estrada enquanto os
+ * arqueiros atiram. Medido: com lobos, duas quedas ou mais em 44% dos
+ * combates; com goblins, 27%.
+ *
+ * RODADA 2, E NA BOCA DA TRILHA. Na rodada 3, em (19,4), eles nasciam num
+ * corredor sem visão de ninguém, chegavam com o combate decidido (1,2 goblin
+ * vivo, em média) e em 6% das simulações a IA travava ali.
+ */
+const REFORCOS_EMBOSCADA = [
+  {
+    round: 2,
+    aviso: 'Lobos descem pela trilha!',
+    olhar: { dx: 0, dy: 1 },
+    spawn: [
+      { id: 'lobo', at: { x: 19, y: 6 }, nameSuffix: 'da trilha' },
+      { id: 'lobo', at: { x: 20, y: 6 }, nameSuffix: 'do mato' },
+    ],
+  },
+];
+
 /** Monta os reforços de uma rodada, ou null se não houver. */
-export function reinforcementsFor(round) {
-  const wave = REINFORCEMENTS.find((w) => w.round === round);
+export function reinforcementsFor(round, variante = 'padrao') {
+  const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
+  const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;
   const units = wave.spawn.map((s) => {
     const m = makeMonster(s.id, s.at, { nameSuffix: s.nameSuffix });
-    m.facingVec = { dx: -1, dy: 1 };
+    m.facingVec = { ...(wave.olhar ?? { dx: -1, dy: 1 }) };
     return m;
   });
   return { aviso: wave.aviso, units };
