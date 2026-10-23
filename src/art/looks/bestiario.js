@@ -92,54 +92,88 @@ export const BESTIARIO_LOOKS = {
     cloak: '#6a2020',
   },
 
-  // SILHUETA: coluna vertical de ombro muito largo e pés colados, com uma
-  // crista correndo de frente para trás no alto do elmo.
+  // SILHUETA: bloco baixo e agachado em que uma placa enorme adiantada cobre
+  // metade da figura, com uma lâmina saindo baixa do outro lado e a ponta de
+  // um arco passando acima do ombro.
   //
-  // O hobgoblin é o soldado: o que o identifica é a VERTICALIDADE. Entre os
-  // goblinoides é o único cujo contorno é mais alto que largo.
+  // A versão anterior era um guarda em formatura: coluna vertical, pés
+  // colados, cimeira alta. Está errado duas vezes. Primeiro porque o
+  // hobgoblin é soldado DE LINHA e a leitura dele é "pronto para receber a
+  // carga", não "em revista". Segundo porque a cimeira comia 9 px acima da
+  // cabeça: o contorno ia a 73 px dos 75 úteis enquanto a anatomia pedia 64,
+  // e no tabuleiro ele ficava mais alto que o ogro, que é Grande.
   //
-  // Com a cimeira o contorno chega a 73 px dos 75 úteis da célula, enquanto o
-  // CORPO fica em 64 (médio, dentro da faixa). Sobram 2 px no alto, que é
-  // exatamente o que o contorno automático de `sheet.js` precisa — não acumule
-  // outra marca alta nele sem medir de novo.
+  // Tirar a cimeira e agachar resolve a escala; o ESCUDO DE TORRE assume o
+  // lugar dela como marca de silhueta, e é melhor marca, porque ocupa o lado
+  // da figura em vez do alto — nenhuma outra criatura do elenco tem metade do
+  // contorno tomada por uma placa reta.
   hobgoblin: {
     species: 'hobgoblin', build: 'normal',
-    stance: 'militar', marca: 'cimeira',
-    skin: '#c0714a', hair: '#4a1f18', hairStyle: 'spiky', noseTint: '#6a5a86',
-    outfit: '#333f52', outfitDark: '#1f2733', trim: '#c8a84a',
-    metal: '#aeb6c2', leather: '#5a4630', eyes: '#ff8a2a',
-    armorStyle: 'plate', helm: true, shield: true, weapon: 'sword',
+    // A ombreira espigada de um lado só é metade da assimetria da referência;
+    // sem ela o ramo 'plate' desenha duas ombreiras redondas e simétricas, que
+    // é exatamente a leitura de soldado em formatura que se queria evitar.
+    marca: ['ombreira', 'arcoCostas'],
+    // Laranja-avermelhado forte sobre cabelo ruivo escuro: o hobgoblin é o
+    // único quente do bando (goblin em verde frio, bugbear em fulvo, Grol em
+    // quase preto), e é isso que o acha na mesa cheia.
+    skin: '#c05c34', hair: '#52221a', hairStyle: 'short',
+    // Armadura azul-acinzentada escura: o valor mais escuro fica no corpo e o
+    // claro na pele do rosto, que é onde o olho tem de pousar.
+    outfit: '#394659', outfitDark: '#222a37', trim: '#5f6d82',
+    metal: '#9aa3b2', leather: '#4e3b28', eyes: '#ff8a2a',
+    armorStyle: 'plate', helm: false, shield: true, shieldStyle: 'torre',
+    weapon: 'gancho',
   },
 
-  // SILHUETA: pêra invertida de ombros arredondados e caídos, cabeça afundada
-  // entre eles e dois braços descendo abaixo do quadril.
+  // ---- os três bugbears ----------------------------------------------------
   //
-  // A postura `curvado` da espécie dá braço de 7 px extra: é o que separa o
-  // bugbear do ogro, que também é largo e também tem ombro caído.
+  // Os três partilham o KIT DA ESPÉCIE, porque são a mesma criatura: pelo por
+  // todo o corpo (borda rasgada de tufos, não tubo liso), orelha de lince com
+  // tufo na ponta, pé descalço com garra, e couro PRETO contra o pelo claro —
+  // ombreira num ombro, manopla no outro braço, cinto largo e saiote de tiras
+  // até o meio da coxa. O preto do couro sobre o fulvo é o contraste que a
+  // versão anterior não tinha: eram três blocos de pano verde-escuro com uma
+  // cabeça, e o pelo não existia em lugar nenhum.
+  //
+  // O que os separa é O QUE CADA UM FAZ COM OS BRAÇOS E AS PERNAS, porque é
+  // isso que sobrevive no contorno: o bugbear comum ergue a clava acima da
+  // cabeça, Klarg planta as pernas e deita a clava no ombro, Grol cristala
+  // uma bossa nas costas e dois chifres acima do crânio.
+
+  // SILHUETA: pêra peluda de pés juntos com um bloco espigado num ombro e uma
+  // clava de espigões ERGUIDA acima da cabeça.
   bugbear: {
     species: 'bugbear', build: 'normal',
-    skin: '#8a5a38', hair: '#5a2a18', hairStyle: 'spiky',
-    outfit: '#2f3a2e', outfitDark: '#1d241d', trim: '#8a6a2a',
-    metal: '#8e8678', leather: '#4a3a28', eyes: '#d8a23a',
-    armorStyle: 'leather', helm: false, shield: true, weapon: 'mace',
+    marca: ['ombreira', 'saiote'], manopla: true, armaApoio: 'erguida',
+    // Fulvo dourado, mais claro no peito (outfit) e mais escuro nos membros
+    // (outfitDark). Esse degrau é o que dá volume ao bicho peludo sem pintar
+    // um pelo de cada vez.
+    skin: '#bd8a46', hair: '#7a3c1c', hairStyle: 'spiky',
+    outfit: '#c28c46', outfitDark: '#8f5b29', sleeve: '#a4702f',
+    trim: '#8a7446',
+    // `leather` é o couro preto de TODO o equipamento: ombreira, manopla,
+    // cinto e saiote saem daqui.
+    metal: '#9a948e', leather: '#241f1e', eyes: '#e0a53a',
+    helm: false, shield: false, weapon: 'mace',
   },
 
-  // SILHUETA: a mesma pêra invertida, rompida de um lado por um bloco de
-  // espigões que passa acima da linha do ombro.
+  // SILHUETA: trapézio peludo de pernas muito abertas com um bloco espigado
+  // num ombro e uma clava deitada na diagonal do ombro.
   //
-  // Klarg é um bugbear e tem de LER como bugbear — mesma postura, mesma
-  // proporção. A ombreira assimétrica é a única coisa que o separa de longe, e
-  // basta: nenhuma outra figura do bando tem contorno quebrado de um só lado.
-  // A tinta de guerra clara sobre pelo descorado tira ele do ruivo do bugbear
-  // comum, que é o segundo jeito de reconhecê-lo.
+  // Klarg é um bugbear e tem de LER como bugbear — mesmo pelo, mesmo couro,
+  // mesma orelha. A diferença é a POSTURA: contra a pêra de pés juntos do
+  // bugbear comum, ele planta as duas pernas e ocupa o dobro da base. A tinta
+  // de guerra clara sobre pelo descorado é a leitura de perto.
   klarg: {
     species: 'bugbear', build: 'normal',
-    marca: 'ombreira', facial: 'pinturaGuerra',
+    stance: 'bruto', marca: ['ombreira', 'saiote'], manopla: true,
+    facial: 'pinturaGuerra',
     face: { mandibula: 1.05, queixo: 'largo' },
-    skin: '#8e7f6a', hair: '#6a5f4e', hairStyle: 'spiky',
-    outfit: '#3a3330', outfitDark: '#241f1d', trim: '#e4ddc8',
-    metal: '#8a8276', leather: '#4a4038', eyes: '#f0e2a0',
-    armorStyle: 'leather', helm: false, shield: true, weapon: 'mace',
+    skin: '#bfae8e', hair: '#6a5f4e', hairStyle: 'spiky',
+    outfit: '#c3b28f', outfitDark: '#8c7c5e', sleeve: '#a6976f',
+    trim: '#e4ddc8',
+    metal: '#8a8276', leather: '#2a2420', eyes: '#f0e2a0',
+    helm: false, shield: false, weapon: 'mace',
   },
 
   // SILHUETA: o maior volume de ombro do bando, com uma bossa cristando entre
@@ -156,12 +190,17 @@ export const BESTIARIO_LOOKS = {
   // o contorno em vez de quebrá-lo, e é a bossa que tem de ser vista.
   reiGrol: {
     species: 'bugbear', build: 'forte',
-    marca: 'corcunda', facial: ['tapaOlho', 'cicatriz'], horns: true,
+    marca: ['corcunda', 'saiote'], facial: ['tapaOlho', 'cicatriz'],
+    horns: true, manopla: true,
     face: { arcada: 3, olhoGap: -1, boca: 'presas' },
-    skin: '#574a52', hair: '#2e262c', hairStyle: 'spiky',
-    outfit: '#3a3340', outfitDark: '#221d26', trim: '#b0362f',
-    metal: '#6e7482', leather: '#3e3430', eyes: '#ff3a2a',
-    armorStyle: 'scale', helm: false, shield: false, weapon: 'axe',
+    // Pelo quase preto: ele é o valor mais escuro de todo o elenco, e o único
+    // bugbear em que o couro preto do equipamento quase desaparece dentro do
+    // pelo — o que sobra para ler são a bossa e os chifres, que é o plano.
+    skin: '#5a4a44', hair: '#2a211e', hairStyle: 'spiky',
+    outfit: '#584339', outfitDark: '#352823', sleeve: '#45342d',
+    trim: '#b0362f',
+    metal: '#6e7482', leather: '#1f1a1c', eyes: '#ff3a2a',
+    armorStyle: 'leather', helm: false, shield: false, weapon: 'axe',
   },
 
   // SILHUETA: tronco torcido de três quartos sobre joelho dobrado, arma junto

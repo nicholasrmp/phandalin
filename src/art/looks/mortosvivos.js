@@ -6,7 +6,9 @@
 //
 // TODOS usam `plan: 'mortoVivo'`, e quem escolhe a leitura é `undead`:
 //   'esqueleto' | 'zumbi' | 'ghoul' | 'espectro' | 'specter' | 'wraith'
-// (os três últimos caem no mesmo pintor de espectro).
+// São SEIS pintores diferentes. `specter` e `wraith` já caíram no mesmo pintor
+// de `espectro`, e é por isso que as duas figuras eram idênticas pixel a pixel;
+// hoje cada uma tem o seu, e `espectro` é só o vulto encapuzado de Agatha.
 //
 // CAMPOS QUE O PLANO LÊ — e só estes. `plans/mortoVivo.js` não passa por
 // `body.js`, então `species`, `build`, `heightMul`, `stance`, `marca`, `face` e
@@ -16,23 +18,31 @@
 //
 //   esqueleto  bone (ou skin) · eyeSocket · glow (ou eyes), opcional
 //   zumbi      skin · rot · outfit · outfitDark · eyes
-//   ghoul      skin · claw · mouth · eyes
+//   ghoul      skin · claw · mouth · tongue · eyes · wrap
 //   espectro   cloak (ou outfit) · glow (ou eyes) · void
+//   specter    cloak (ou outfit) · glow (ou eyes) · void
+//   wraith     cloak (ou outfit) · glow (ou eyes) · void · metal (ou helm)
+//
+// `tongue` e `wrap` são novos e só o ghoul usa: a língua pendurada é a
+// assinatura dele e as faixas de pano são o que tira o corpo de "palito liso".
+// `metal` já existia no vocabulário dos NPCs e virou o elmo do wraith, para o
+// look de Mormesk não precisar de campo novo.
 //
 // O DEFEITO 4 DO ELENCO (a paleta do inimigo virou uma lama só) se conserta
 // aqui, separando VALOR antes de matiz. As cinco figuras ocupam cinco faixas
 // afastadas, e é por isso que elas podem aparecer no mesmo encontro:
 //
-//   esqueleto  claro e quente      — o mais claro do elenco inteiro
-//   ghoul      claro e frio        — com a garra quase branca, acima de tudo
-//   zumbi      médio e esverdeado  — o único de valor médio
-//   espectro   escuro e azul       — translúcido, com um ponto de luz gelada
-//   wraith     quase preto, anil   — translúcido, com um ponto de luz VERDE
+//   esqueleto  claro e quente       — o mais claro do elenco inteiro
+//   ghoul      claro e frio         — com a garra quase branca, acima de tudo
+//   zumbi      médio e esverdeado   — o único de valor médio
+//   specter    médio-claro, violeta — translúcido e aceso, o único roxo
+//   wraith     quase preto, fumaça  — com o único brilho QUENTE da família
 //
-// O par espectro/wraith é o perigo de "par quase idêntico" (defeito 6) desta
-// família: mesmo pintor, mesma pose, mesma altura. Separá-los é trabalho de
-// cor e de valor — o manto do wraith está três degraus mais escuro e o brilho
-// dele muda de matiz, não só de intensidade. Ainda não basta; ver o relatório.
+// O par specter/wraith era o "par quase idêntico" (defeito 6) desta família:
+// mesmo pintor, mesma pose, mesma altura, IoU 1,000. Cor não resolvia, porque
+// a 55 px só a mancha chega ao jogador. Resolvido no plano, por MASSA: um
+// alarga para baixo num sino de névoa, o outro afina até virar fiapo e abre os
+// braços para os lados. A cor aqui é o reforço, não a diferença.
 
 export const MORTOS_VIVOS_LOOKS = {
 
@@ -65,42 +75,61 @@ export const MORTOS_VIVOS_LOOKS = {
     eyes: '#cfcdae',
   },
 
-  // SILHUETA: vulto dobrado para a frente, de costas arqueadas, que avança
-  // com dois braços longos demais terminados em garras maiores que a própria
-  // cabeça.
+  // SILHUETA: figura magra em meia passada de corrida, com um pé no ar e o
+  // outro plantado atrás, cabeça erguida acima do ombro e uma língua pendurada
+  // por fora do queixo, mãos em leque maiores que a própria cabeça.
   //
-  // Pele clara e FRIA, quase lilás: é o que impede o ghoul de ser lido como
-  // "zumbi grande". A garra é o elemento-herói e por isso é o pixel mais claro
-  // da figura inteira — o olho vai primeiro nela, que é exatamente a parte que
-  // o jogador precisa temer. A boca em vermelho sujo é a única cor saturada.
+  // Pele branco-azulada e FRIA, quase sem matiz: é o que impede o ghoul de ser
+  // lido como "zumbi magro". A garra é o elemento-herói e por isso é o pixel
+  // mais claro da figura inteira — o olho vai primeiro nela, que é exatamente a
+  // parte que o jogador precisa temer.
+  //
+  // O OLHO É APAGADO, de propósito: a luz dentro do crânio é marca exclusiva do
+  // specter e do wraith, e três mortos-vivos com fogo nos olhos seriam o mesmo
+  // bicho. A língua é o único pedaço de cor viva da figura e fica sozinha
+  // contra o branco-azulado — é ela que o jogador vê primeiro depois da garra.
   ghoul: {
     plan: 'mortoVivo', undead: 'ghoul',
-    skin: '#ad9ea6', claw: '#f4ece0',
-    mouth: '#7c2f34', eyes: '#eed76b',
+    skin: '#c3ced6', claw: '#f6f0e4',
+    mouth: '#5c2630', tongue: '#b35b65',
+    eyes: '#23202b', wrap: '#bdb09a',
   },
 
-  // SILHUETA: vulto encapuzado de ombros largos, sem perna nenhuma, que
-  // termina numa franja suspensa sem nada tocando o chão.
+  // SILHUETA: caveira de cabelo em filamentos abertos em coroa, tronco
+  // descarnado com os dois braços dobrados longe do corpo, e da cintura para
+  // baixo um sino de névoa que alarga sem encostar no chão.
   //
-  // Azul médio e dessaturado, translúcido: o tabuleiro aparece por dentro.
-  // O brilho é branco-azulado gelado, e fica dentro de um capuz quase preto
-  // porque o contraste local é o que faz dois pixels de luz lerem a 55 px.
+  // Violeta LUMINOSO por inteiro, translúcido: o tabuleiro aparece por dentro.
+  // Ele é a única figura de matiz roxo do elenco e a mais clara das três
+  // incorpóreas — lê como fumaça acesa, não como buraco. O brilho é
+  // branco-violeta e aparece em DOIS lugares, nas órbitas e nos dentes, que
+  // são a segunda coisa que o olho encontra depois da coroa de cabelo.
   specter: {
     plan: 'mortoVivo', undead: 'specter',
-    cloak: '#5d7694', glow: '#aef0ff', void: '#121626',
+    cloak: '#8a58c6', glow: '#f4ecff', void: '#2a1442',
   },
 
-  // SILHUETA: a mesma do espectro — e é esse o problema, resolvido só por cor
-  // até o plano aceitar altura (ver relatório).
+  // SILHUETA: duas pontas de elmo no alto de uma cabeça afundada entre ombros
+  // corcundas, dois braços longos demais abertos para os lados com os dedos se
+  // desfazendo em fiapos, e um corpo que afina até virar um feixe de tiras.
   //
-  // Manto anil quase preto: o wraith é a figura mais ESCURA do elenco, três
-  // degraus abaixo do espectro, e a 55 px lê como um buraco no tabuleiro
-  // enquanto o espectro lê como fumaça. O brilho troca de MATIZ, não de
-  // intensidade: verde-veneno em vez de branco-gelo. Matiz diferente sobrevive
+  // Leitura OPOSTA à do specter em tudo, e de propósito: ele alarga para
+  // baixo, este afina; ele é roxo claro, este é fumaça quase preta; ele tem a
+  // cara à mostra, este tem a cara enterrada num elmo. O wraith é a figura
+  // mais ESCURA do elenco e a 55 px lê como um buraco no tabuleiro.
+  //
+  // O brilho troca de MATIZ, e não só de intensidade: amarelo QUENTE dentro do
+  // preto, contra o branco-violeta frio do specter. Matiz diferente sobrevive
   // à miniatura; "um pouco mais escuro" não sobrevive.
+  //
+  // `metal` é o elmo — o único pedaço sólido da figura inteira, e o motivo de
+  // o olho pousar na cabeça em vez de escorregar pela fumaça. O campo já
+  // existia no vocabulário dos looks de NPC, então Mormesk ganha o elmo dele
+  // sem precisar de campo novo.
   wraith: {
     plan: 'mortoVivo', undead: 'wraith',
-    cloak: '#232a44', glow: '#7cf0b4', void: '#0b0d16',
+    cloak: '#262a31', glow: '#ffcf3d', void: '#080a0d',
+    metal: '#5e6773',
   },
 
 };

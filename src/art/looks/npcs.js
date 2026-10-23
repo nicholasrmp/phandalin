@@ -327,21 +327,41 @@ export const NPC_LOOKS = {
     face: { testa: 0.38, arcada: 1, macas: 1, mandibula: 0.94, queixo: 'pontudo', olhoGap: -1, olhoH: 1, olhoW: 3, nariz: 'fina', boca: 'fina' },
   },
 
-  // SILHUETA: a figura mais fina do elenco, de pés juntos, com duas tranças
-  // claras caindo abaixo do ombro, um pano esvoaçando de um lado e um cajado
-  // vertical com orbe.
+  // SILHUETA: a figura mais fina do elenco, de passada aberta, com um braço
+  // esticado para cima levando uma ARANHA no alto de um cajado e um pano
+  // aberto do lado oposto.
+  //
+  // O apelido dele é "a Aranha Negra" e a figura tem de dizer isso sozinha. O
+  // cajado anterior terminava no mesmo orbe de Iarno e de Hamun Kost: três
+  // magos, três bolinhas brilhantes, e o chefe da campanha era o do meio. A
+  // aranha de metal preto é um remate ESTRELADO que mais ninguém tem — é a
+  // leitura dele a 45 px e o único motivo de o cajado existir no sprite.
   //
   // Drow é a espécie mais magra de `body.js`, e isso é usado aqui como leitura
   // de espécie e não de ficha: num encontro em que ele chega acompanhado de
   // bugbears e aranhas, a figura do chefe é a MAIS ESTREITA no tabuleiro. O
   // contraste de largura é o que diz quem manda.
+  //
+  // Veste camada de couro escuro e não veste longa: os outros dois magos do
+  // elenco são `robe`, e uma terceira coluna de pano sem perna seria o mesmo
+  // contorno pela terceira vez. Com perna à mostra, a passada da postura
+  // `conjurador` aparece.
   nezznar: {
     species: 'drow', build: 'magro',
-    skin: '#564a62', hair: '#e4dcd4', hairStyle: 'long', beard: false,
-    outfit: '#36264a', outfitDark: '#1e142c', trim: '#9a7ac8',
-    metal: '#9aa2b0', leather: '#3a2c3a', eyes: '#e05a6a', glow: '#b06ae0',
-    armorStyle: 'robe', helm: false, shield: false, weapon: 'staff',
-    stance: 'mago', marca: ['manto', 'trancas'], cloak: '#241634',
+    skin: '#5b5466', hair: '#e8e4de', hairStyle: 'long', beard: false,
+    outfit: '#39353f', outfitDark: '#242029', trim: '#9e2232',
+    metal: '#8a8696', leather: '#262230', eyes: '#e05a6a',
+    armorStyle: 'leather', helm: false, shield: false, weapon: 'staff',
+    // A aranha de metal preto no topo do cajado, e o metal dela mais escuro
+    // que o resto da figura: ela tem de ler como vulto recortado, não como
+    // enfeite de prata.
+    staffTop: 'aranha', staffDark: '#4d4858',
+    stance: 'conjurador', marca: 'manto',
+    // Capa cinza-chumbo por fora, CARMIM por dentro. O vermelho aparece só
+    // onde a capa abre — é o único vermelho da figura, e é por ele que o olho
+    // acha o chefe numa sala cheia de cinza. O broche na gola (`trim`) é do
+    // mesmo vermelho e fecha a leitura perto.
+    cloak: '#262430', forro: '#9e2434',
     face: { testa: 0.42, arcada: 0, macas: 2, mandibula: 0.84, queixo: 'pontudo', olhoGap: 1, olhoH: 2, olhoW: 3, nariz: 'fina', narizW: 0.72, boca: 'fina' },
   },
 

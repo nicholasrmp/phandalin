@@ -14,6 +14,7 @@ import { HUMANOIDES_LOOKS } from './looks/humanoides.js';
 import { FERAS_LOOKS } from './looks/feras.js';
 import { MORTOS_VIVOS_LOOKS } from './looks/mortosvivos.js';
 import { ABERRACOES_LOOKS } from './looks/aberracoes.js';
+import { DRAGAO_LOOKS } from './looks/dragao.js';
 
 export const LOOKS = {
   ...PARTY_LOOKS,
@@ -22,6 +23,7 @@ export const LOOKS = {
   ...FERAS_LOOKS,
   ...MORTOS_VIVOS_LOOKS,
   ...ABERRACOES_LOOKS,
+  ...DRAGAO_LOOKS,
   ...NPC_LOOKS,
 };
 

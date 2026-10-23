@@ -53,7 +53,10 @@ const rosto = (o) => ({
  * bulk   largura de ombro, peito, braço e perna
  * arms   comprimento do braço (bugbear alcança abaixo do quadril)
  * neck   pixels de pescoço a mais ou a menos
- * ear    round | point | long | swept | wide
+ * belly  pança da ESPÉCIE, somada à da compleição. Existe porque o ogro é
+ *        barrigudo por anatomia e não por estar gordo: um ogro `magro`
+ *        continua sendo uma barriga com perninhas.
+ * ear    round | point | long | swept | wide | tufo
  * stance postura padrão de quem é dessa espécie (goblinoide não fica em sentido)
  *
  * Os valores são deliberadamente contidos. A primeira versão exagerava — o
@@ -128,17 +131,26 @@ export const SPECIES = {
       nariz: 'chata', narizW: 1.15, boca: 'larga',
     }),
   },
+  // Hobgoblin: soldado profissional, e soldado profissional fica AGACHADO
+  // atrás do escudo, não em posição de sentido. A cabeça é pequena de
+  // propósito — é ela que faz o tronco blindado e o escudo parecerem grandes.
+  // Pescoço zero: a gola da armadura come o que havia.
+  // SILHUETA: bloco baixo e torcido com uma placa enorme adiantada cobrindo
+  // metade da figura e uma lâmina saindo baixa do outro lado.
   hobgoblin: {
-    h: 1.10, legs: 1.04, head: 0.98, bulk: 1.18, arms: 1.00, neck: 1, ear: 'swept',
-    brow: true, flatNose: true, stance: 'militar',
+    h: 1.10, legs: 1.04, head: 0.94, bulk: 1.22, arms: 1.00, neck: 0, ear: 'swept',
+    brow: true, flatNose: true, fangs: true, stance: 'combate',
     face: rosto({
       testa: 0.30, arcada: 3, macas: 2, mandibula: 1.00, queixo: 'quadrado',
       projeta: 'arcada', olhoGap: -1, olhoH: 1, olhoW: 3,
-      nariz: 'chata', narizW: 0.90, boca: 'fina',
+      nariz: 'chata', narizW: 0.90, boca: 'presas',
     }),
   },
+  // Orelha `tufo`: alta, pontuda e com um tufo de pelo na ponta, como lince.
+  // É o que impede o bugbear de ser lido como urso ou como orc grande quando
+  // só o contorno chega ao jogador.
   bugbear: {
-    h: 1.20, legs: 0.92, head: 1.00, bulk: 1.24, arms: 1.22, neck: 0, ear: 'wide',
+    h: 1.20, legs: 0.92, head: 1.00, bulk: 1.24, arms: 1.22, neck: 0, ear: 'tufo',
     snout: true, fur: true, hunch: 1, fangs: true, stance: 'curvado',
     face: rosto({
       testa: 0.34, arcada: 1, macas: 0, mandibula: 0.95, queixo: 'redondo',
@@ -155,18 +167,33 @@ export const SPECIES = {
     }),
   },
 
-  // Ogro: Grande de verdade. A conta que o faz parecer Grande não é a altura
-  // sozinha — é ombro de 28 px sob uma cabeça de 13. Dois ogros lado a lado
-  // fecham um corredor, e é isso que precisa ler no tabuleiro.
-  // SILHUETA: trapézio imenso de ombro duas vezes mais largo que a cabeça,
-  // sem pescoço, com a cabeça afundada entre os ombros e braço de mão enorme.
+  // Ogro: Grande de verdade, só que a massa está na BARRIGA e não no ombro.
+  //
+  // A versão anterior era um trapézio de ombro de 28 px: isso é um humano
+  // aumentado, e o elenco já tinha três trapézios de ombro caído (orc, rufião,
+  // Rei Grol) — pintados de preto, os quatro eram a mesma mancha. O ogro é
+  // outro bicho: uma pança que pende à frente sob uma corcunda alta, com a
+  // cabeça PEQUENA enfiada abaixo da linha dos ombros, sem pescoço nenhum, e
+  // braços tão longos que as mãos chegam perto do chão.
+  //
+  // Por isso o ombro ENCOLHEU (bulk 1.40 → 1.12) enquanto a altura subiu: o
+  // que faz ler como Grande aqui é o volume do tronco contra uma cabeça de 9
+  // px, não a largura do ombro.
+  // SILHUETA: massa oval pendendo à frente sobre pernas curtas, cabeça abaixo
+  // da linha dos ombros e mãos à altura dos joelhos.
   ogro: {
-    h: 1.32, legs: 0.98, head: 0.82, bulk: 1.40, arms: 1.10, neck: -1, ear: 'round',
-    brow: true, wideNose: true, fangs: true, stance: 'bruto',
+    // `h: 1.46` parece muito, e não é: a postura `barrigudo` come 12 px em
+    // agachamento, ombro caído e cabeça baixa. Com 1.34 o contorno saía com
+    // 56 px — abaixo do humano, numa criatura Grande. Medir o CONTORNO, nunca
+    // a soma das peças.
+    // `neck: -6` afunda o crânio entre os ombros: medido, com -2 a cabeça
+    // ficava 6 px ACIMA da corcunda, o oposto da referência.
+    h: 1.58, legs: 0.78, head: 0.70, bulk: 1.12, arms: 1.38, neck: -6, ear: 'point',
+    brow: true, fangs: true, belly: 10, hunch: 2, stance: 'barrigudo',
     face: rosto({
-      testa: 0.26, arcada: 2, macas: 0, mandibula: 1.30, queixo: 'largo',
-      projeta: 'mandibula', olhoGap: -2, olhoH: 1, olhoW: 2,
-      nariz: 'bulbosa', narizW: 1.50, boca: 'frouxa',
+      testa: 0.30, arcada: 3, macas: 0, mandibula: 1.16, queixo: 'largo',
+      projeta: 'mandibula', olhoGap: -1, olhoH: 1, olhoW: 2,
+      nariz: 'chata', narizW: 1.15, boca: 'frouxa',
     }),
   },
 };
@@ -240,9 +267,13 @@ export function metrics(look) {
   const headTop = chin - headH;
   const crown = headTop - hairH;
 
+  // Pança: a da espécie mais a da compleição. Ela engrossa a CINTURA aqui e o
+  // pintor pendura a curva da barriga a partir dela — um ogro de cintura fina
+  // com uma bola colada na frente lê como alguém que engoliu uma bola.
+  const belly = (sp.belly ?? 0) + bd.belly;
   const shoulderW = clamp(r(BASE.shoulderW * wScale) + bd.shoulder, 7);
   const chestW = clamp(r(BASE.chestW * wScale), 6);
-  const waistW = clamp(chestW - 2 + bd.belly, 5);
+  const waistW = clamp(chestW - 2 + bd.belly + r(belly * 0.45), 5);
   const legW = clamp(r(BASE.legW * bulk), 2);
   const armW = clamp(r(BASE.armW * bulk), 2);
   const headW = clamp(r(BASE.headW * (0.6 + 0.4 * h) * headW1), 7);
@@ -259,7 +290,7 @@ export function metrics(look) {
     feetH, legH, torsoH, neckH, headH, hairH,
     footTop, waist, torsoTop, chin, headTop, crown,
     shoulderW, chestW, waistW, legW, armW, headW, jawW, footW, gap,
-    belly: bd.belly,
+    belly,
     hunch: sp.hunch ?? 0,
     // Postura: o look manda, a espécie decide se o look não mandou, e o pintor
     // cai no arquétipo deduzido da arma e da armadura se nenhum dos dois falou.

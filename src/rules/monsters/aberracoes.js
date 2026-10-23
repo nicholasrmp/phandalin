@@ -184,7 +184,7 @@ export const ABERRACOES = {
     name: 'Caveira Candente',
     look: 'caveiraCandente',
     fonte: 'propria',
-    size: 'miúdo',
+    size: 'pequeno',
     level: 4,
     cr: '3',
     xp: 700,
@@ -264,6 +264,83 @@ export const ABERRACOES = {
     multiattack: { count: 2 },
     traits: ['olhoUnico', 'guardaDeSoleira'],
     blurb: 'Fura quem fica longe com um olhar que atrasa, e ganha +2 de CA enquanto guarda a passagem — tire-o de lá.',
+  },
+
+  // GUARDA DE TESOURO. A criatura nova da rodada 3.
+  //
+  // LICENÇA — LEIA ANTES DE MEXER NUM NÚMERO DAQUI.
+  // O NOME e o CONCEITO desta criatura são CONTEÚDO DE FÃ (Fan Content Policy
+  // da Wizards of the Coast), a mesma política que já sustenta "Phandalin",
+  // "Nezznar" e "Venomfang" neste projeto, e que depende de o jogo continuar
+  // gratuito e de o aviso continuar visível — e que é REVOGÁVEL. O bloco abaixo
+  // é NOSSO: `fonte: 'propria'`, números escritos para este jogo e para um
+  // grupo de nível 3 a 5. Nada aqui foi copiado nem parafraseado de livro
+  // publicado, e a arte em `art/plans/aberracao.js` foi desenhada do zero.
+  //
+  // Se algum dia a política mudar, o conserto é trocar o NOME e o `look`; os
+  // números continuam válidos porque nunca foram de ninguém mais.
+  //
+  // O PAPEL NO ENCONTRO é diferente dos outros guardiões do bestiário, e é por
+  // isso que ele existe. O vigia ciclópico defende uma SOLEIRA e fica mais
+  // duro enquanto está nela; este aqui está amarrado a um OBJETO e se CURA
+  // enquanto está perto dele. A diferença muda a tática do grupo: contra o
+  // vigia a resposta é tirá-lo do lugar; contra este a resposta é matá-lo
+  // depressa ou levar o objeto embora, porque enquanto o cofre estiver ali o
+  // relógio corre contra o grupo. Dois guardiões com o mesmo truque seriam o
+  // mesmo encontro duas vezes.
+  //
+  // A CONTA: 39 PV e CA 14 contra um grupo de nível 4 que tira uns 30 por
+  // rodada dão duas rodadas se todos focarem nele — e é nesse "se" que mora o
+  // encontro, porque ele regenera 5 por turno enquanto ninguém o afastar do
+  // objeto. Dano de saída de ~14 por turno a 18 m: incomoda, não mata, e é o
+  // suficiente para o grupo não poder ignorá-lo e ir direto ao tesouro.
+  //
+  // Ele é INTELIGENTE (INT 13) e fala. Um grupo que negocia pode sair daqui
+  // sem rolar iniciativa, e isso é deliberado: é o único encontro da campanha
+  // que tem uma saída puramente de conversa antes do dragão.
+  spectator: {
+    id: 'spectator',
+    name: 'Spectator',
+    look: 'spectator',
+    fonte: 'propria',
+    size: 'médio',
+    // `level` só alimenta `proficiencyBonus`. CR 3 quer +2, e +2 vale de 1 a 4.
+    level: 4,
+    cr: '3',
+    xp: 700,
+    // FOR 8 é de propósito: ele não empurra, não agarra e não segura porta
+    // nenhuma. O que ele faz é olhar, e a conta toda do bloco sai de SAB 14.
+    abilities: { str: 8, dex: 14, con: 14, int: 13, wis: 14, cha: 11 },
+    ac: 14,
+    acNote: 'flutua e gira sobre o próprio eixo',
+    maxHp: 39,
+    // Ele não anda: flutua. Enquanto a grade só souber de `speedFt`, deixar 0
+    // aqui o prenderia no lugar e mataria o papel, então o valor de voo é o que
+    // vai no campo que o motor lê — mesma solução da caveira candente.
+    speedFt: 30,
+    flyFt: 30,
+    skills: ['percepcao', 'intuicao'],
+    attacks: [
+      {
+        // `art: 'bow'` é PROVISÓRIO, pelo mesmo motivo da fagulha da caveira:
+        // é o único traçado de projétil que `visuals.js` tem hoje. O certo é
+        // uma receita `raioOcular` — está pedido no relatório.
+        name: 'Raio das Hastes', bonus: 5, damage: '2d6', type: 'necrótico',
+        ranged: true, rangeFt: 60, longRangeFt: 60, art: 'bow',
+        // O susto é o que faz o raio valer mais que o dado: amedrontado, o
+        // alvo não pode AVANÇAR na direção dele, e o guardião ganha a rodada
+        // que precisava sem ter matado ninguém.
+        onHit: { save: 'wis', dc: 12, condition: 'amedrontado', note: 'o olho da haste não desgruda' },
+      },
+      { name: 'Mordida', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'bite' },
+    ],
+    // Dois raios por turno, nunca duas mordidas. A mordida existe só para
+    // castigar quem encostou nele; a peça é de longe, e o bloco tem de deixar
+    // isso óbvio para quem for ajustar o encontro depois.
+    multiattack: { count: 2, pattern: ['Raio das Hastes', 'Raio das Hastes'] },
+    immuneConditions: ['caido', 'agarrado'],
+    traits: ['flutuaSemPeso', 'quatroHastes', 'vinculoDoGuardiao', 'falaAntesDeLutar'],
+    blurb: 'Manda dois raios por turno que metem medo, e se cura enquanto estiver perto do que guarda — ou negocie, ou tire-o de lá.',
   },
 
   // CAPANGA DE BANDO. A vaga que o ELENCO.md chama de "broto espinhoso".
@@ -370,6 +447,19 @@ export const TRAITS = {
     name: 'Guarda de Soleira',
     desc: '+2 na CA enquanto estiver a até 1,5 m da passagem ou do objeto que guarda. Longe dela, perde o bônus.',
   },
+  quatroHastes: {
+    name: 'Quatro Hastes',
+    desc: 'As quatro hastes oculares olham para lados diferentes: não pode ser surpreendido, e quem tenta passar escondido por ele testa Furtividade com desvantagem.',
+  },
+  vinculoDoGuardiao: {
+    name: 'Vínculo do Guardião',
+    desc: 'Foi amarrado a um objeto e não pode se afastar mais de 9 m dele. Em compensação, recupera 5 PV no início de cada turno em que estiver a essa distância — tire-o de lá, ou leve o objeto embora.',
+  },
+  falaAntesDeLutar: {
+    name: 'Fala Antes de Lutar',
+    desc: 'É inteligente e conversa. Tem ordens, não ódio: um grupo que descobre quais são pode negociar a passagem sem rolar iniciativa.',
+  },
+
   falsoArbusto: {
     name: 'Falso Arbusto',
     desc: 'Parado, não se distingue de mato seco: vantagem em Furtividade e, se não tiver se movido, o grupo o vê surpreso.',

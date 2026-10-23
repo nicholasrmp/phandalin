@@ -74,6 +74,7 @@ const r = Math.round;
  * da criatura e corta o agachamento para a perna nunca virar um toco.
  *
  *   agacha    joelho dobrado: a cintura desce e a perna encurta
+ *   (arma)    lado | ombro | cravada | vertical | baixa | erguida
  *   lean      tronco para a frente (na vista de lado é deslocamento real em x)
  *   ombroCai  ombro desce e afunda no peito; negativo levanta
  *   peito     peito estufado: ombro e tórax mais largos
@@ -84,7 +85,9 @@ const r = Math.round;
  *   bracoExtra  braço mais comprido, pendendo abaixo do quadril
  *   estreita  ombro de três quartos: o corpo se vira (vista de frente/costas)
  *   apoio     peso num pé só: o quadril do outro lado cede
- *   arma      lado | ombro | cravada | vertical | baixa
+ *   arma      lado | ombro | cravada | vertical | baixa | erguida
+ *             (`look.armaApoio` sobrescreve, para quem quer a postura da
+ *              espécie mas segura a arma de outro jeito)
  *   escudoAdiante  escudo puxado para a frente do tronco
  *   calcanhares    pés juntos com a ponta virada para fora
  *
@@ -131,6 +134,42 @@ const POSTURAS = {
   militar: {
     ombroCai: -1, peito: 2, passo: -2, cabeca: -1, bracoFora: 0,
     arma: 'ombro', calcanhares: 1,
+  },
+
+  // Bloco baixo e torcido de joelhos dobrados, com uma placa adiantada
+  // cobrindo metade da figura e a arma saindo baixa do outro lado.
+  //
+  // É a postura do soldado que ESPERA A CARGA, e o oposto de `militar`: lá a
+  // figura se põe em pé para ser vista, aqui ela se encolhe atrás do escudo.
+  // O agachamento também devolve altura à célula — quem precisa de 64 px de
+  // corpo e estava gastando 73 de contorno conserta a escala aqui.
+  combate: {
+    agacha: 4, lean: 2, peito: 1, passo: 5, pernaFrente: 2, cabeca: 1,
+    bracoFora: 2, arma: 'baixa', escudoAdiante: 3, estreita: 3, apoio: 1,
+  },
+
+  // Massa oval pendendo à frente sobre pernas curtas, cabeça abaixo da linha
+  // dos ombros e mãos à altura do joelho.
+  //
+  // Nenhum outro arquétipo inclina tanto: somado à corcunda da espécie dá 7
+  // px de peito à frente do pé, contra 5 do goblin. É a leitura do ogro, e é
+  // o que o separa de `bruto` (orc, rufião), que também tem ombro caído mas
+  // fica de pé.
+  //
+  // `lean` é deslocamento REAL em x na vista de lado, e na vista de lado ele
+  // empurra o ombro — e com ele o braço — para fora da célula. Com lean 7
+  // mais corcunda 5, o braço do ogro saía pela lateral. Quem mexer nisto
+  // mede de novo: o teto é `lean + hunch + bracoFora + armW <= 22`.
+  barrigudo: {
+    agacha: 2, lean: 5, ombroCai: 3, passo: 3, pernaFrente: 1, cabeca: 8,
+    bracoFora: 4, bracoExtra: 10, arma: 'baixa', estreita: 2, apoio: 1,
+  },
+
+  // Passada aberta com um braço esticado para cima e uma haste acima da
+  // cabeça, mais alta que qualquer outra coisa do contorno.
+  conjurador: {
+    agacha: 1, lean: 1, passo: 4, pernaFrente: 3, bracoFora: 1,
+    arma: 'erguida', estreita: 2, apoio: 1,
   },
 
   // Pêra invertida: ombros caídos e arredondados no alto, braços passando
@@ -235,7 +274,10 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
   // chão é pose de descanso, e manter isso no golpe faria a figura bater com a
   // arma parada. O corpo de baixo mantém a postura — quem agacha, agacha para
   // golpear também.
-  const apoio = attack ? 'lado' : st.arma;
+  // `look.armaApoio` deixa um look manter a postura da espécie e mudar só a
+  // mão da arma: o bugbear continua curvado como todo bugbear, mas com a
+  // clava ERGUIDA acima da cabeça em vez de pendurada ao lado.
+  const apoio = attack ? 'lado' : (look.armaApoio ?? st.arma);
 
   // Vira o corpo de três quartos na vista de frente/costas. É o que dá "corpo
   // de lado" ao ladino sem desenhar uma quarta vista.
@@ -288,7 +330,11 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
   drawMarca(kit, look, m, ctxArt, 'atras');
 
   // ---- onde a mão fecha ----------------------------------------------------
-  const sleeve = look.armorStyle === 'plate' ? look.metal : look.outfit;
+  // `look.sleeve` é a cor do braço. Por padrão ela segue a roupa, o que está
+  // certo para quem veste manga — e errado para quem não veste nada: o ogro
+  // nu saía com braço da cor exata da barriga e PERDIA OS BRAÇOS, porque a
+  // única coisa que separava um do outro era a sombra de contato.
+  const sleeve = look.sleeve ?? (look.armorStyle === 'plate' ? look.metal : look.outfit);
   const armY = torsoTop + 2 + (attack ? -2 : 0);
   let armH = Math.max(5, r(m.torsoH * 0.6 * m.arms)) + st.bracoExtra;
   armH = Math.min(armH, Math.max(5, m.footTop - 3 - armY));
@@ -320,6 +366,13 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
       gripY = torsoTop + r(m.torsoH * 0.46);
       gripX = side ? desvio + Math.floor(chest / 2) + 1 : nearX - 1;
       break;
+    case 'erguida':
+      // A mão sobe ACIMA DO CRÂNIO e a arma sobe junto. É o que faz a clava do
+      // bugbear e o cajado de Nezznar existirem no contorno: parada ao lado do
+      // corpo, uma clava de espigões é só mais um retângulo colado no quadril.
+      gripY = Math.max(TETO + r(m.headH * 1.2), crown - Math.max(3, r(m.headH * 0.5)));
+      gripX = nearX + (side ? -1 : 2);
+      break;
     default:
       break;
   }
@@ -345,6 +398,27 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
     const cxc = x + Math.floor(m.armW / 2);
     coluna(y, alt, (t) => ({ c: cxc + fora * t, w: m.armW - afinaBraco * t }), cor, { topo: 1 });
     contato(cxc - Math.floor(m.armW / 2) + fora, y + alt - 1, m.armW, cor);
+    if (m.sp.fur) {
+      // O mesmo tufo das pernas: o braço de uma criatura peluda também tem de
+      // ter a borda rasgada, senão o pelo fica só no tronco e a figura vira
+      // "bicho de colete".
+      for (let i = 2; i < alt - 2; i += 3) {
+        const t = i / Math.max(1, alt - 1);
+        const ex = Math.round(cxc + fora * t);
+        const lw = Math.round(m.armW - afinaBraco * t);
+        px(ex - Math.floor(lw / 2) - 1, y + i, 1, 2, ramp(cor, 1));
+        px(ex + Math.ceil(lw / 2), y + i + 1, 1, 2, ramp(cor, -2));
+      }
+    }
+    if (look.faixas) {
+      const pano = ramp(look.leather, 2);
+      for (let i = 0; i < 2; i++) {
+        const t = 0.6 + i * 0.17;
+        const ex = Math.round(cxc + fora * t);
+        px(ex - Math.floor(m.armW / 2) - 1, y + r(alt * t), m.armW + 2, 2, i ? ramp(pano, -1) : pano);
+        px(ex - Math.floor(m.armW / 2) - 1, y + r(alt * t) + 1, m.armW + 2, 1, ramp(pano, -3));
+      }
+    }
   };
   /** Braço dobrado: ombro → cotovelo (para baixo e fora) → mão. */
   const bracoDobrado = (xo, yo, hx, hy, cor, fora) => {
@@ -362,6 +436,12 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
     // Sulco entre os dedos. Numa mão de ogro, com 6 px de largura, o bloco de
     // pele sem sulco nenhum lia como luva de boxe.
     for (let i = 1; i < m.armW - 1; i += 2) px(x + i, y + 1, 1, 1, ramp(look.skin, -2));
+    if (look.garras) {
+      // Unhas grossas e escuras na ponta dos dedos. Numa mão de 5 px é o
+      // único detalhe que cabe, e é o que diz que a mão AGARRA — sem elas a
+      // mão de um ogro ou de um bugbear é um bloco de pele.
+      for (let i = 0; i < m.armW; i += 2) px(x + i, y + 3, 1, 1, look.unha ?? '#2e261f');
+    }
   };
   const arma = () => drawWeapon(kit, look, m, {
     gripX, gripY, armW: m.armW, attack, frame: pose.frame, apoio, crown, lead,
@@ -389,18 +469,46 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
     px(shoulderX + shoulder - 1, torsoTop + 1, 1, cava, ramp(look.outfit, -4));
   }
   if (!side) {
-    const altFar = Math.min(armH, m.footTop - 4 - armY);
-    bracoReto(farX, armY, Math.max(4, altFar), ramp(sleeve, -2), -st.bracoFora);
-    mao(farX - Math.max(0, st.bracoFora), armY + Math.max(4, altFar));
+    const altFar = Math.max(4, Math.min(armH, m.footTop - 4 - armY));
+    bracoReto(farX, armY, altFar, ramp(sleeve, -2), -st.bracoFora);
+    const maoX = farX - Math.max(0, st.bracoFora);
+    if (look.manopla) {
+      // Manopla rebitada no braço que NÃO segura a arma. A assimetria é
+      // deliberada e é metade da silhueta do bugbear: ombreira espigada num
+      // ombro, manopla no outro braço. Equipamento assimétrico lê como saque
+      // de bandido; dois iguais leem como armadura de soldado.
+      const cou = look.leather;
+      const mh = Math.max(5, r(altFar * 0.45));
+      const my = armY + altFar - mh;
+      volume(maoX - 1, my, m.armW + 2, mh + 2, cou, { topo: 1 });
+      for (let i = 1; i < mh; i += 2) px(maoX, my + i, 1, 1, ramp(cou, 3));
+      // O espigão do punho é clampado à célula: num Rei Grol de ombro de 28
+      // px a manopla já nasce na borda, e o espigão saía fora — o contorno
+      // automático varre o alfa e some junto com o que foi cortado.
+      const esp = Math.max(-(META - 3), maoX - 3);
+      px(esp, my + mh - 3, 3, 2, ramp(cou, 1));               // espigão no punho
+      px(Math.max(-(META - 2), esp - 1), my + mh - 3, 1, 1, ramp(cou, 2));
+      contato(maoX - 1, my + mh + 2, m.armW + 2, cou);
+    }
+    mao(maoX, armY + altFar);
   }
 
   // Reto quando a mão cai embaixo do ombro; dobrado quando a postura a levou
   // para outro lugar.
   const retoNear = Math.abs(gripX - nearX) <= 1 && gripY >= nearY + r(armH * 0.8);
-  if (retoNear) bracoReto(nearX, nearY, Math.max(4, gripY - nearY), ramp(sleeve, -1), st.bracoFora);
+  if (apoio === 'erguida') {
+    // Braço esticado para cima: uma diagonal só, do ombro à mão. O cotovelo
+    // de `bracoDobrado` desce antes de subir, e num braço erguido isso dá uma
+    // dobra ao contrário — o ombro parecia deslocado.
+    membro(nearX, nearY, gripX, gripY, m.armW, ramp(sleeve, -1));
+  } else if (retoNear) bracoReto(nearX, nearY, Math.max(4, gripY - nearY), ramp(sleeve, -1), st.bracoFora);
   else bracoDobrado(nearX, nearY, gripX, gripY, ramp(sleeve, -1), Math.max(1, st.bracoFora));
 
-  if (!back) arma();
+  // De costas a arma fica escondida atrás do corpo — menos quando está
+  // ERGUIDA: aí ela passa acima da cabeça e é a assinatura da figura. Sem
+  // esta exceção o Nezznar de costas é um toco de braço apontando para o
+  // nada, e o cajado com a aranha, que é o apelido dele, some.
+  if (!back || apoio === 'erguida') arma();
   mao(gripX, gripY);
 
   // ---- escudo --------------------------------------------------------------
@@ -441,7 +549,12 @@ function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean
   const cor = look.outfitDark;
   const y = cintura;
   const h = m.footTop - cintura;
-  const bota = m.sp.bigFeet ? look.skin : look.leather;
+  const peludo = !!m.sp.fur;
+  // Criatura coberta de pelo não calça bota, e quem anda de trapo também não.
+  // Bota em cima de uma perna peluda é exatamente o detalhe que faz o bugbear
+  // ler como humano fantasiado de bicho.
+  const descalco = peludo || !!look.descalco;
+  const bota = descalco ? cor : m.sp.bigFeet ? look.skin : look.leather;
   const quadril = Math.floor(m.legW / 2) + Math.floor(m.gap / 2);   // quadril anatômico
   // `passo` abre o PÉ, não o quadril. Somado ao quadril, ele afastava o ponto
   // onde a perna nasce do tronco: o guerreiro de pernas abertas ficava com um
@@ -463,6 +576,33 @@ function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean
     const c = tom ? ramp(cor, tom) : cor;
     const hh = Math.max(4, h - atraso);
     coluna(y + atraso, hh, (t) => ({ c: anca + lado * aberto * t + curva(t), w: larg(t) }), c, { topo: 0 });
+    // Onde a perna está, a cada altura: tufo de pelo e faixa de pano precisam
+    // acompanhar a perna que abre e o joelho que dobra, senão ficam flutuando.
+    const eixo = (t) => Math.round(anca + lado * aberto * t + curva(t));
+    if (peludo) {
+      // Tufos saindo das DUAS bordas. O contorno automático segue cada tufo, e
+      // é só assim que "peludo" chega ao jogador a 45 px: pelo pintado dentro
+      // da silhueta some, pelo que quebra a borda não.
+      for (let i = 2; i < hh - 2; i += 3) {
+        const t = i / Math.max(1, hh - 1);
+        const ex = eixo(t);
+        const lw = Math.round(larg(t));
+        px(ex - Math.floor(lw / 2) - 1, y + atraso + i, 1, 2, ramp(c, 1));
+        px(ex + Math.ceil(lw / 2), y + atraso + i + 1, 1, 2, ramp(c, -2));
+      }
+    }
+    if (look.faixas) {
+      // Tiras de pano enroladas na canela, em alturas desiguais. É o que o
+      // ogro esfarrapado tem no lugar de bota, e dá à perna nua uma junta.
+      const pano = ramp(look.leather, 2);
+      for (let i = 0; i < 3; i++) {
+        const t = 0.58 + i * 0.14;
+        const ex = eixo(t);
+        const lw = Math.round(larg(t)) + 1;
+        px(ex - Math.floor(lw / 2), y + atraso + r(hh * t), lw, 2, i % 2 ? ramp(pano, -1) : pano);
+        px(ex - Math.floor(lw / 2), y + atraso + r(hh * t) + 1, lw, 1, ramp(pano, -3));
+      }
+    }
     const pe = Math.round(anca + lado * aberto);
     px(pe - Math.floor(larg(1) / 2), y + atraso + r(hh * 0.5), Math.max(1, r(larg(1)) - 1), 1, ramp(c, 1));
     contato(pe - Math.floor(m.legW / 2), m.footTop - 1, m.legW, c);
@@ -472,6 +612,15 @@ function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean
     volume(bx, m.footTop, pw, m.feetH, b, { topo: 1 });
     px(bx, m.footTop + m.feetH - 1, pw, 1, ramp(b, -4));
     if (m.feetH >= 4) px(bx, m.footTop + 1, pw, 1, ramp(b, 1));
+    if (descalco) {
+      // Dedos separados e garras de osso na ponta: é o que transforma o bloco
+      // do pé numa pata. A garra é o único ponto claro lá embaixo, e serve de
+      // âncora para o olho encontrar a base da figura.
+      for (let g = 1; g < pw - 1; g += 2) {
+        px(bx + g, m.footTop + 1, 1, m.feetH - 2, ramp(b, -3));
+        px(bx + g, m.footTop + m.feetH - 1, 1, 1, '#e4d8bc');
+      }
+    }
   };
 
   if (side) {
@@ -523,8 +672,29 @@ function drawTorso({ px, volume, contato, coluna }, look, m, { chestX, chest, sh
   coluna(torsoTop, h, forma, look.outfit, { topo: 1 });
 
   if (m.belly > 0 && !robe) {
-    const by = torsoTop + r(h * 0.45);
-    coluna(by, bottom - by, (t) => ({ c: dx(by + t * (bottom - by)), w: larguraEm(tDe(by + t * (bottom - by))) + m.belly * t }), look.outfit, { topo: 0 });
+    // A barriga PENDE. A versão anterior só alargava a coluna do tronco para
+    // baixo, o que engrossa a figura inteira e lê como "ombro largo", não como
+    // pança: um ogro assim era um trapézio um pouco mais gordo.
+    //
+    // Agora ela é uma massa própria, que nasce no meio do tronco, é mais larga
+    // que o peito, tem o maior diâmetro ABAIXO da cintura e desce um pouco
+    // além dela. A curva de seno é o que a faz pender em vez de encaixar.
+    const by = torsoTop + r(h * 0.34);
+    const bh = Math.max(6, bottom + r(m.belly * 0.42) - by);
+    const bw = larguraEm(tDe(by)) + m.belly;
+    // Ela pende para o LADO PARA ONDE O TRONCO SE INCLINA: um ogro curvado com
+    // a barriga centrada no quadril parecia equilibrar um barril.
+    const caiPara = r(desvio * 0.45);
+    coluna(by, bh, (t) => ({
+      c: dx(by + t * (bh - 1)) + r(caiPara * t),
+      w: bw * (0.56 + 0.44 * Math.sin(Math.PI * (0.16 + t * 0.72))),
+    }), look.outfit, { topo: 1 });
+    // Vinco sob a curva: a sombra onde a pança encosta no resto do corpo. Sem
+    // ela a barriga lê como um escudo redondo amarrado na frente.
+    const vy = by + r(bh * 0.72);
+    const vw = Math.max(3, r(bw * 0.62));
+    px(-Math.floor(vw / 2) + dx(vy) + caiPara, vy, vw, 1, ramp(look.outfit, -3));
+    px(-Math.floor(vw / 2) + dx(vy) + caiPara + 1, by + r(bh * 0.3), Math.max(2, r(vw * 0.5)), 1, ramp(look.outfit, 2));
   }
 
   const plateY = torsoTop + 1;
@@ -656,17 +826,61 @@ function drawTorso({ px, volume, contato, coluna }, look, m, { chestX, chest, sh
   }
 }
 
-function drawShield({ px, volume, contato }, look, m, { shoulderX, shoulder, torsoTop, side, back, adiante, cintura }) {
+function drawShield({ px, volume, contato, coluna }, look, m, { shoulderX, shoulder, torsoTop, side, back, adiante, cintura }) {
   const campo = look.trim ?? ramp(look.metal, -2);
   const aro = look.metal;
+  // `shieldStyle: 'torre'` é outro objeto, não um escudo maior: uma placa
+  // angulosa que vai do ombro ao joelho e come METADE da figura. Quando ele
+  // existe, é ele a silhueta — e é por isso que o dono dele não precisa de
+  // mais nenhuma marca alta.
+  const torre = look.shieldStyle === 'torre';
   // Escudo adiantado cobre o tronco: é a silhueta do clérigo, um retângulo
   // largo e alto onde os outros têm cintura.
-  const sw = Math.max(6, r(m.shoulderW * (adiante ? 0.52 : 0.36)));
-  const sh = Math.max(11, r(m.torsoH * (adiante ? 1.15 : 1.0)));
-  const sy = torsoTop + 2;
+  const sw = torre
+    ? Math.max(12, r(m.shoulderW * 0.78))
+    : Math.max(6, r(m.shoulderW * (adiante ? 0.52 : 0.36)));
+  const sh = torre
+    ? Math.max(20, r((m.torsoH + m.legH) * 0.76))
+    : Math.max(11, r(m.torsoH * (adiante ? 1.15 : 1.0)));
+  // A torre começa ABAIXO da linha do ombro: encostada no alto, ela comia o
+  // ombro e o pescoço e a figura virava um escudo com uma cabeça em cima.
+  const sy = torsoTop + (torre ? 3 : 2);
   const sx = side
-    ? shoulderX - 2 + adiante
-    : back ? shoulderX + shoulder - 1 : shoulderX - sw + 1 + adiante * 2;
+    ? shoulderX - (torre ? r(sw * 0.5) : 2) + adiante
+    : back ? shoulderX + shoulder - (torre ? r(sw * 0.4) : 1) : shoulderX - sw + 3 + adiante * 2;
+
+  if (torre) {
+    // Placa angulosa: larga no alto, bico embaixo, com uma QUILHA central de
+    // reforço. Os dois ombros do escudo são cortados em diagonal — um
+    // retângulo inteiro lia como porta, não como escudo de guerra.
+    const forma = (t) => ({
+      c: sx + Math.floor(sw / 2),
+      w: t < 0.1 ? sw - 4 + 40 * t : t < 0.68 ? sw : sw * (1 - (t - 0.68) * 1.35),
+    });
+    coluna(sy, sh, forma, campo, { topo: 1 });
+    // quilha: duas colunas no meio, uma de luz e uma de sombra
+    const qx = sx + Math.floor(sw / 2);
+    px(qx - 1, sy + 1, 1, sh - 3, ramp(campo, 3));
+    px(qx, sy + 1, 1, sh - 3, ramp(campo, -2));
+    // reforços horizontais em aço, que é o que dá as placas sobrepostas
+    for (let i = 1; i < 4; i++) {
+      const y = sy + r(sh * (0.18 * i + 0.1));
+      const lw = Math.round(forma((y - sy) / (sh - 1)).w);
+      px(qx - Math.floor(lw / 2) + 1, y, lw - 2, 1, ramp(aro, 1));
+      px(qx - Math.floor(lw / 2) + 1, y + 1, lw - 2, 1, ramp(aro, -3));
+    }
+    // aro externo e espigões no canto de fora, apontando para trás
+    px(sx + 1, sy, sw - 2, 1, ramp(aro, 2));
+    px(sx, sy + 2, 1, r(sh * 0.66), ramp(aro, 1));
+    px(sx + sw - 1, sy + 2, 1, r(sh * 0.66), ramp(aro, -3));
+    for (let i = 0; i < 3; i++) {
+      const y = sy + 1 + i * r(sh * 0.2);
+      px(sx - 2, y, 2, 2, ramp(aro, 1));
+      px(sx - 3, y, 1, 1, ramp(aro, 2));
+    }
+    contato(sx + 2, sy + sh, Math.max(2, sw - 6), campo);
+    return;
+  }
 
   // corpo do escudo, com os cantos de cima cortados e a ponta embaixo
   volume(sx, sy + 1, sw, sh - 3, campo, { topo: 0 });
@@ -757,6 +971,22 @@ function drawEars({ px, volume }, look, m, { headX, headW, headTop, headH, lead,
       const x = s < 0 ? headX - len : headX + headW;
       volume(x, earY - 2, len, 5, pele, { topo: 1 });
       px(x + (s < 0 ? 1 : len - 2), earY - 1, 1, 3, ramp(pele, -3));
+    }
+  } else if (sp.ear === 'tufo') {
+    // Orelha de lince: alta, pontuda, e com um TUFO DE PELO saindo da ponta.
+    // É o detalhe mais barato do bugbear e o mais útil — sai do contorno, e
+    // pintado de preto é o que separa a cabeça dele da do orc e da do urso.
+    const pelo = look.hair ?? ramp(pele, -2);
+    const len = Math.max(3, r(headW * 0.26));
+    for (const s of [-1, 1]) {
+      const x = s < 0 ? headX - len : headX + headW;
+      const fora = s < 0 ? x : x + len - 1;              // a borda externa
+      volume(x, earY - 1, len, 4, pele, { topo: 1 });
+      px(fora, earY - 3, 1, 3, pele);                    // a ponta sobe
+      px(x + (s < 0 ? len - 2 : 1), earY, 1, 3, ramp(pele, -3));   // concha
+      px(fora, earY - 5, 1, 2, pelo);                    // o tufo
+      px(fora + s, earY - 6, 1, 3, ramp(pelo, 1));
+      px(fora - s, earY - 4, 1, 1, ramp(pelo, -2));
     }
   } else if (sp.ear === 'long') {
     for (const s of [-1, 1]) {
@@ -956,13 +1186,27 @@ function drawFace(kit, look, m, { headX, headW, headTop, chin, headH, jawY, jawW
   // ---- boca ----------------------------------------------------------------
   // Estreita e só um degrau abaixo da maçã do rosto. Larga e escura, somada à
   // sombra do nariz logo acima, as duas liam como um bigode desenhado.
-  const larguraBoca = { fina: 0.20, reta: 0.26, larga: 0.34, frouxa: 0.40, presas: 0.34 }[f.boca] ?? 0.26;
+  const larguraBoca = { fina: 0.20, reta: 0.26, larga: 0.34, frouxa: 0.40, presas: 0.34, escancarada: 0.52 }[f.boca] ?? 0.26;
   // Três pixels acima do queixo, sempre. Colada no queixo, a boca somava com a
   // sombra da mandíbula e a figura ganhava um bigode que ninguém desenhou.
   const mouthY = Math.max(noseY + 2, Math.min(chin - 3, noseY + (rico ? 3 : 2)));
   const mw = Math.max(2, r(headW * larguraBoca));
   const mx = -Math.floor(mw / 2) + lead;
-  if (f.boca === 'frouxa') {
+  if (f.boca === 'escancarada') {
+    // BOCARRA aberta, com mais de metade da largura da cara e dentes
+    // irregulares em cima e embaixo. No ogro, com olho de 1 px e nariz chato,
+    // é a única coisa do rosto que chega ao jogador a 45 px — e é ela que diz
+    // que o bicho está gritando, não posando.
+    const mh = Math.max(3, r(headH * 0.24));
+    px(mx, mouthY - 1, mw, mh, ramp(pele, -5));                  // o vão
+    px(mx, mouthY - 2, mw, 1, ramp(pele, -2));                   // lábio de cima
+    px(mx + 1, mouthY - 1 + mh, mw - 2, 1, ramp(pele, 1));       // lábio de baixo
+    px(mx, mouthY - 1, 1, mh, ramp(pele, -3));                   // canto iluminado
+    for (let i = 0; i < mw - 1; i += 2) {
+      px(mx + i, mouthY - 1, 1, 1 + (i % 4 ? 1 : 0), '#e4d8bc');          // dentes de cima
+      px(mx + i + 1, mouthY - 2 + mh, 1, 1, ramp('#e4d8bc', -2));         // dentes de baixo
+    }
+  } else if (f.boca === 'frouxa') {
     // Boca de ogro: aberta, lábio de baixo pendendo. É o que diz "burro e
     // perigoso" sem precisar de expressão.
     px(mx, mouthY, mw, 2, ramp(pele, -5));
@@ -1160,6 +1404,10 @@ function drawCrown({ px, cut, volume, contato }, look, m, { headX, headW, headTo
  *   capuz          capuz de ponta caída atrás — ladino, acólito, assassino
  *   trancas        tranças ou rabo caindo abaixo do ombro — bárbaro, orc
  *   mochila        fardo nas costas com rolo acima do ombro — batedor, plebeu
+ *   saiote         tiras largas descendo do cinto até o meio da coxa —
+ *                  bugbear, ogro esfarrapado
+ *   arcoCostas     arco atravessado nas costas, passando acima do ombro, com
+ *                  aljava de flechas — hobgoblin, batedor
  *
  * `camada` é 'atras' (antes do tronco) ou 'frente' (depois da cabeça).
  */
@@ -1208,14 +1456,26 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
     if (marcas.includes('manto')) {
       // Pano esvoaçando para um lado só. A assimetria é o ponto: um manto
       // simétrico é uma capa, e capa já existe em `look.cloak`.
-      const pano = look.cloak ?? look.outfitDark;
+      //
+      // `look.forro` é o lado de DENTRO da capa. Quando a capa abre, é o forro
+      // que o jogador vê — e é por isso que o único vermelho de Nezznar está
+      // aqui e não no manto fechado das costas.
+      const pano = look.forro ?? look.cloak ?? look.outfitDark;
       const alto = torsoTop + 1;
       const base = cintura + r(m.legH * 0.5);
       const alc = Math.max(5, r(m.shoulderW * 0.75)) + sopro;
       const lado = back ? 1 : -1;
+      // A célula tem 52 px e x=0 é o centro, então o desenho vai de -26 a 25.
+      // Sem travar aqui, o manto de quem tem ombro largo — capitão bandido,
+      // sacerdote — escreve no quadrado VIZINHO da folha de sprites, e o
+      // contorno automático de sheet.js varre o alfa e prende o lixo lá.
+      const LIM = 24;   // 24, não 25: a última coluna fica para o contorno
       for (let y = alto; y < base; y++) {
         const t = (y - alto) / Math.max(1, base - alto - 1);
-        const ext = r(alc * Math.pow(t, 1.4));
+        let ext = r(alc * Math.pow(t, 1.4));
+        ext = lado < 0
+          ? Math.min(ext, shoulderX + LIM)
+          : Math.min(ext, LIM - shoulderX - shoulder + 1);
         if (ext <= 0) continue;
         const x0 = lado < 0 ? shoulderX - ext : shoulderX + shoulder;
         px(x0, y, ext, 1, t > 0.75 ? ramp(pano, -2) : pano);
@@ -1223,6 +1483,39 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
         if (ext >= 4) px(lado < 0 ? x0 + 1 : x0 + ext - 2, y, 1, 1, ramp(pano, 2));
       }
       px(shoulderX - (lado < 0 ? 1 : 0), alto, shoulder + 1, 1, ramp(pano, 1));
+    }
+
+    if (marcas.includes('arcoCostas')) {
+      // Arco e aljava atravessados nas costas. Fica na camada de trás: o
+      // tronco cobre o meio e sobram as duas pontas, uma ACIMA DO OMBRO e
+      // outra abaixo do quadril. São essas duas pontas que dizem "este
+      // soldado também atira" num contorno que o escudo já tomou inteiro.
+      const vara = ramp(look.leather, 2);
+      // A ponta de cima sobe até a ALTURA DA CABEÇA. Parando na linha do
+      // ombro, o arco ficava inteiro atrás do tronco e não existia no
+      // contorno — e um arco que não quebra o contorno não serve de marca.
+      const alto = Math.max(TETO + 6, torsoTop - Math.max(9, r(m.torsoH * 0.78)));
+      const baixo = cintura + r(m.legH * 0.3);
+      // A ponta alta fica do lado do ESCUDO e não do lado da arma: do lado da
+      // arma ela disputava espaço com a lâmina e as duas viravam um feixe de
+      // paus. Aqui ela sobe sozinha ao lado da cabeça.
+      const xAlto = (back ? 1 : -1) * 1 + (back ? shoulderX + shoulder : shoulderX - 2);
+      const xBaixo = back ? shoulderX - 1 : shoulderX + shoulder - 1;
+      traco(xBaixo, baixo, xAlto, alto, 2, vara);
+      px(xAlto, alto, 2, 2, ramp(vara, 2));                     // a ponta encastoada
+      // a corda, um pixel ao lado da vara e num tom bem mais claro
+      traco(xBaixo + 2, baixo, xAlto + 2, alto + 1, 1, '#ded2b4');
+      // Aljava: tubo curto no ombro com as PENAS saindo acima dele. São as
+      // penas que o jogador vê, porque o tubo fica atrás do tronco.
+      const ax = back ? shoulderX + 2 : shoulderX + shoulder - 4;
+      const ay = torsoTop - 1;
+      const ah = Math.max(6, r(m.torsoH * 0.55));
+      volume(ax, ay, 4, ah, look.leather, { topo: 1 });
+      px(ax, ay + ah - 1, 4, 1, ramp(look.leather, -4));
+      for (let i = 0; i < 4; i++) {
+        px(ax + i, ay - 5 - (i % 2), 1, 6, i % 2 ? ramp(vara, 1) : ramp(look.trim ?? vara, -1));
+        px(ax + i, ay - 5 - (i % 2), 1, 1, '#ded2b4');          // a ponta da pena
+      }
     }
 
     if (marcas.includes('trancas')) {
@@ -1316,8 +1609,13 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
       // UMA ombreira, de um lado só. A assimetria é o que identifica: as
       // ombreiras de `armorStyle: 'plate'` são duas e simétricas, e duas
       // ombreiras leem como armadura, não como figura.
-      const met = look.metal;
-      const ow = Math.max(5, r(shoulder * 0.34));
+      //
+      // Quem veste couro ganha a ombreira EM COURO, e não em aço: num bugbear
+      // coberto de pelo fulvo, a peça preta rebitada contra o pelo é metade
+      // da leitura da figura — uma placa clara de metal some no meio do pelo.
+      const couro = look.armorStyle === 'leather' || !look.armorStyle;
+      const met = couro ? look.leather : look.metal;
+      const ow = Math.max(5, r(shoulder * (couro ? 0.42 : 0.34)));
       const oh = Math.max(5, r(m.torsoH * 0.42));
       const ox = back ? shoulderX : side ? shoulderX - 1 : shoulderX + shoulder - ow;
       coluna(torsoTop - 1, oh, (t) => ({
@@ -1325,11 +1623,51 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
         w: ow * (0.62 + 0.38 * Math.sin(Math.PI * (0.2 + t * 0.6))),
       }), met, { topo: 1 });
       // espigões: é o que faz a ombreira passar do contorno
+      const alto = couro ? 5 : 4;
       for (let i = 1; i < ow - 1; i += 3) {
         px(ox + i, torsoTop - 3, 2, 2, ramp(met, 2));
-        px(ox + i, torsoTop - 4, 1, 1, ramp(met, 3));
+        px(ox + i, torsoTop - alto, 1, alto - 2, ramp(met, 3));
+      }
+      if (couro) {
+        // rebites: duas colunas de pontos claros, que é o que diz "couro
+        // cravejado" e não "pedra"
+        for (let i = 2; i < oh - 1; i += 3) px(ox + 1, torsoTop - 1 + i, 1, 1, ramp(met, 3));
       }
       contato(ox + 1, torsoTop - 1 + oh, ow - 2, met);
+    }
+
+    if (marcas.includes('saiote')) {
+      // Saiote de tiras largas, do cinto ao meio da coxa. É massa onde a
+      // figura peluda não tem nenhuma, e corta o corpo em dois: sem ele o
+      // bugbear é um bloco contínuo de pelo do ombro ao pé, e o ogro é uma
+      // barriga nua que desce direto na perna.
+      //
+      // As tiras têm COMPRIMENTOS DIFERENTES de propósito. Todas rentes na
+      // mesma linha leem como saia de prato; desiguais leem como couro velho.
+      const couro = look.leather;
+      const lw = Math.max(8, m.waistW + 3);
+      const x0 = -Math.floor(lw / 2) + r(desvio * 0.3);
+      const topo = cintura - 2;
+      // Até o MEIO da coxa e nem um pixel mais. Em criatura de perna curta
+      // (ogro), 46% da perna cobria o joelho inteiro e a figura ficava sem
+      // perna nenhuma — uma barriga pousada numa saia.
+      const queda = Math.max(4, r(m.legH * 0.36));
+      // cinto largo por cima das tiras
+      volume(x0, topo, lw, 3, ramp(couro, 1), { topo: 1 });
+      px(x0, topo + 2, lw, 1, ramp(couro, -4));
+      for (let i = 0; i < lw - 1; i += 3) {
+        const n = i / 3;
+        const alt = queda - (n % 3) * 2 - (i % 2);
+        // Largura irregular junto com o comprimento: tiras todas de 3 px e
+        // todas rentes leem como cerca de madeira, não como couro gasto.
+        const tw = 2 + (n % 4 === 1 ? 0 : 1);
+        const cor = n % 2 ? ramp(couro, -1) : couro;
+        px(x0 + i, topo + 3, tw, alt, cor);
+        px(x0 + i, topo + 3, 1, alt, ramp(cor, 2));              // fio de luz na tira
+        px(x0 + i + tw - 1, topo + 3, 1, alt, ramp(cor, -3));    // vão entre as tiras
+        px(x0 + i, topo + 3 + alt - 1, tw - 1, 1, ramp(cor, -4));  // ponta da tira
+      }
+      contato(x0 + 1, topo, lw - 2, couro);
     }
   }
 }
@@ -1344,9 +1682,12 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
  * `apoio` vem da postura: lado (pendurada), ombro (apoiada no ombro), cravada
  * (ponta no chão à frente), vertical (cajado em pé), baixa (junto do corpo).
  */
-function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, armW, attack, frame, apoio = 'lado', crown = m.crown, lead = 0 }) {
+function drawWeapon({ px, volume, contato, coluna, traco }, look, m, { gripX, gripY, armW, attack, frame, apoio = 'lado', crown = m.crown, lead = 0 }) {
   const metal = look.metal;
-  const wood = look.leather;
+  // `look.cabo` separa a MADEIRA do couro. Sem isso, o pau da clava do ogro
+  // saía da mesma cor dos trapos dele e a arma desaparecia dentro da figura:
+  // `leather` é, ao mesmo tempo, o cinto, o trapo e o cabo de toda arma.
+  const wood = look.cabo ?? look.leather;
   const trim = look.trim ?? wood;
 
   const s = Math.max(0.75, Math.min(1.5, m.h));
@@ -1370,7 +1711,10 @@ function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, ar
     const segs = inclina ? 3 : 1;
     const segH = Math.ceil(len / segs);
     for (let i = 0; i < segs; i++) {
-      const off = inclina ? r((inclina * (i + 1)) / segs) : 0;
+      // O PRIMEIRO segmento não se desloca. Deslocando já no primeiro, a
+      // lâmina nascia a três pixels da guarda e a arma lia como se estivesse
+      // flutuando ao lado da mão, partida em duas.
+      const off = inclina ? r((inclina * i) / (segs - 1 || 1)) : 0;
       const y = baseY - segH * (i + 1);
       px(bx + off - 1, y, t + 2, segH, borda);
       px(bx + off, y, t, segH, cor);
@@ -1387,6 +1731,109 @@ function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, ar
     for (let i = 1; i < alt; i += 2) px(x, gripY - 1 + i, T, 1, ramp(cor, -2));
   };
 
+  /**
+   * Remate do cajado. Orbe por padrão; `look.staffTop: 'aranha'` troca por uma
+   * aranha de metal.
+   *
+   * A aranha não é enfeite: o apelido de Nezznar é "a Aranha Negra" e é ela
+   * que diz isso ao jogador. Oito pernas saindo de um corpo bulboso dão um
+   * remate ESTRELADO, e nenhum outro cajado do elenco tem um — pintada de
+   * preto, a figura continua sendo "o mago da aranha no cajado".
+   */
+  const remate = (bx, topo) => {
+    const eixo = bx + Math.floor(T / 2);
+    if (look.staffTop !== 'aranha') {
+      const orb = look.glow ?? metal;
+      volume(bx - 2, topo - L(5), T + 4, L(6), orb, { topo: 1 });
+      px(bx - 1, topo - L(6), T + 2, 1, ramp(orb, 3));
+      px(bx - 1, topo - L(4), 2, 2, '#ffffff');
+      px(bx - 2, topo, T + 4, 1, ramp(orb, -3));
+      return;
+    }
+    // A aranha NÃO pode ser preta de verdade. O contorno automático de
+    // sheet.js é quase preto, e preencheu os vãos entre as pernas com a cor
+    // das pernas: com `#17151c` ela saía um borrão com duas pontas, lendo
+    // como coroa ou morcego. Em cinza-ardósia os vãos ficam mais escuros que
+    // as pernas e as oito pernas aparecem uma a uma.
+    const ferro = look.staffDark ?? ramp(metal, -4);
+    const cy = topo - 4;
+    // Quatro pernas de cada lado, com joelho ALTO e ponta BAIXA, em quatro
+    // ângulos diferentes — é o leque que lê como aranha. Pernas paralelas,
+    // todas no mesmo ângulo, leem como coroa de pontas.
+    const PERNAS = [[2, -4, 4, -1], [4, -3, 6, 1], [5, -1, 7, 3], [4, 1, 6, 5]];
+    for (const s of [-1, 1]) {
+      PERNAS.forEach(([jx, jy, px2, py2], i) => {
+        const claro = i % 2 === 0;
+        traco(eixo + s * 2, cy + r(i * 0.6), eixo + s * jx, cy + jy, 1, claro ? ramp(ferro, 2) : ferro);
+        traco(eixo + s * jx, cy + jy, eixo + s * px2, cy + py2, 1, claro ? ferro : ramp(ferro, -2));
+        px(eixo + s * px2, cy + py2, 1, 1, ramp(ferro, claro ? 3 : 1));   // a ponta da pata
+      });
+    }
+    // Corpo: cefalotórax pequeno embaixo, abdome bulboso em cima. O abdome é
+    // o ponto mais claro da peça, para o olho achar o centro do bicho.
+    volume(eixo - 1, cy, 3, 3, ferro, { topo: 1 });
+    volume(eixo - 2, cy - 4, 4, 4, ramp(ferro, 1), { topo: 1 });
+    px(eixo - 1, cy - 4, 2, 1, ramp(ferro, 3));          // luz no dorso polido
+    px(eixo - 1, cy + 2, 2, 1, ramp(ferro, -3));
+    // o engaste onde a aranha prende na haste
+    px(bx - 1, topo - 1, T + 2, 2, ramp(trim, 1));
+    px(bx - 1, topo + 1, T + 2, 1, ramp(trim, -3));
+  };
+
+  /**
+   * ERGUIDA acima da cabeça. A arma deixa de ser um apêndice pendurado ao
+   * lado do quadril e passa a ser a parte MAIS ALTA do contorno.
+   */
+  const erguer = () => {
+    const teto = TETO + 2;
+    if (look.weapon === 'staff') {
+      // O cajado atravessa a mão: sobe um pouco acima dela e desce ao longo
+      // do corpo, na diagonal do braço. O que marca o contorno é o remate.
+      const alto = Math.max(teto + L(8), gripY - L(6));
+      const baixo = Math.min(-2, gripY + L(26));
+      volume(x, alto, T, baixo - alto, wood, { topo: 1 });
+      for (let i = 5; i < baixo - alto; i += 8) px(x, alto + i, T, 1, ramp(wood, -2));
+      px(x, baixo - 1, T, 1, ramp(wood, -4));
+      remate(x, alto);
+      return;
+    }
+    // Cabo descendo da mão e cabeça da arma acima dela.
+    const haste0 = Math.max(teto + L(9), gripY - L(14));
+    const caboH = Math.max(5, gripY + L(9) - haste0);
+    volume(x, haste0, T, caboH, wood, { topo: 1 });
+    for (let i = 3; i < caboH; i += 5) px(x, haste0 + i, T, 1, ramp(wood, -2));
+    px(x - 1, haste0 + caboH - 2, T + 2, 2, ramp(trim, -1));   // soquete do punho
+    const hy = haste0;
+    switch (look.weapon) {
+      case 'axe':
+        volume(x + T, hy, T + 3, L(8), metal, { topo: 1 });
+        px(x + T, hy + 1, 1, L(6), ramp(metal, -4));
+        px(x + T + 2, hy + 1, T, L(6), ramp(metal, 2));
+        break;
+      case 'sword':
+      case 'dagger':
+      case 'gancho':
+        px(x - 2, hy, T + 4, 1, ramp(trim, 2));
+        haste(x, hy, L(16), T, metal, 0);
+        break;
+      default: {
+        // CLAVA DE ESPIGÕES. Os espigões saem dos dois lados e do alto: é
+        // isso que impede a cabeça da clava de ler como um tijolo no ar.
+        const ch = L(8);
+        const cy = hy - ch;
+        volume(x - 2, cy, T + 4, ch, metal, { topo: 1 });
+        px(x - 1, cy, T + 2, 1, ramp(metal, 3));
+        for (let i = 1; i < ch - 1; i += 3) {
+          px(x - 4, cy + i, 2, 2, ramp(metal, 1));
+          px(x + T + 2, cy + i + 1, 2, 2, ramp(metal, -2));
+        }
+        px(x, cy - 2, 2, 2, ramp(metal, 2));                   // o espigão do topo
+        px(x, cy - 3, 1, 1, ramp(metal, 3));
+        break;
+      }
+    }
+  };
+
   /** Haste em pé com a ponta no chão: cajado, lança, bordão de druida. */
   const emPe = () => {
     // Espaço reservado acima: o orbe do cajado mede L(6) e a ponta de lança
@@ -1399,11 +1846,7 @@ function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, ar
     px(x, base - 1, T, 1, ramp(wood, -4));
     contato(x - 1, base, T + 2, wood);
     if (look.weapon === 'staff') {
-      const orb = look.glow ?? metal;
-      volume(x - 2, alto - L(5), T + 4, L(6), orb, { topo: 1 });
-      px(x - 1, alto - L(6), T + 2, 1, ramp(orb, 3));
-      px(x - 1, alto - L(4), 2, 2, '#ffffff');
-      px(x - 2, alto, T + 4, 1, ramp(orb, -3));
+      remate(x, alto);
     } else {
       haste(x, alto, L(9), T, metal, 0);                     // ponta de metal
     }
@@ -1459,6 +1902,7 @@ function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, ar
 
   if (apoio === 'cravada') return cravar();
   if (apoio === 'vertical') return emPe();
+  if (apoio === 'erguida') return erguer();
 
   switch (look.weapon) {
     case 'sword': {
@@ -1474,6 +1918,36 @@ function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, ar
       px(x - 1, gripY - 2, T + 2, 1, ramp(trim, 1));
       haste(x, gripY - 2, L(9), T, metal, tilt);
       break;
+    case 'gancho': {
+      // Lâmina LONGA E FINA com um gancho perto da ponta, deitada para fora.
+      //
+      // Duas correções em relação à espada comum, e as duas são de leitura. A
+      // primeira: a lâmina é mais ESTREITA que a haste padrão (T-1). Com a
+      // espessura cheia, uma lâmina de 24 px saía com 5 px de largura e lia
+      // como rolo de papel, não como fio. A segunda: ela se deita de verdade
+      // (incl ≈ 1/3 do comprimento), e assim sai da frente do rosto de quem a
+      // segura em vez de cruzar a cara dele como um poste.
+      const fio = Math.max(2, T - 1);
+      // A lâmina se deita até onde a célula deixa. No golpe, um hobgoblin de
+      // ombro largo somava `gripX` já na borda com a inclinação e o fio saía
+      // pela lateral — e o que sai da célula perde o contorno.
+      const incl = Math.max(0, Math.min(tilt ? tilt + 2 : r(L(20) * 0.26), META - 4 - fio - x));
+      cabo(6);
+      volume(x - 1, gripY + 5, T + 2, 2, trim, { topo: 1 });   // pomo
+      px(x - 2, gripY - 3, T + 4, 1, ramp(trim, 2));           // guarda
+      px(x - 2, gripY - 2, T + 4, 1, ramp(trim, -2));
+      const len = L(22);
+      haste(x, gripY - 3, len, fio, metal, incl);
+      // O GANCHO: um dente saindo do dorso, a um quarto da ponta. É o que
+      // impede esta espada de ser a mesma barra cinza do bandido.
+      const gx = x + incl;
+      const gy = gripY - 3 - len + r(len * 0.26);
+      px(gx + fio, gy, 3, 2, metal);
+      px(gx + fio, gy, 3, 1, ramp(metal, 3));
+      px(gx + fio + 2, gy - 2, 1, 2, ramp(metal, 2));          // a ponta do dente
+      px(gx + fio, gy + 2, 2, 1, ramp(metal, -5));             // sombra sob o dente
+      break;
+    }
     case 'axe': {
       cabo(L(17) + 4);
       volume(x, gripY - 2 - L(17), T, L(17), wood, { topo: 1 });
@@ -1493,6 +1967,43 @@ function drawWeapon({ px, volume, contato, coluna }, look, m, { gripX, gripY, ar
       px(x - 3, hy + 1, 1, L(4), ramp(metal, -1));
       px(x + T + 2, hy + 1, 1, L(4), ramp(metal, -2));
       px(x - 1, hy + 1, 1, 1, ramp(metal, 3));
+      break;
+    }
+    case 'clava': {
+      // CLAVA DE TRONCO: um pau grosso que AFINA até a mão, com espigões
+      // escuros cravados no bojo. A maça do clérigo é uma haste fina com uma
+      // cabeça de metal — simétrica, fabricada. Esta é o contrário: um tronco
+      // que alguém arrancou e espetou pregos. O ogro não fabrica nada, e a
+      // arma tem de dizer isso.
+      // Ela aponta PARA BAIXO, e é isso que a faz ler como clava de ogro: o
+      // braço é tão longo que a mão já está na altura do joelho, e o tronco
+      // pendurado dali arrasta o bojo espetado perto do chão. Erguida, ela
+      // virava uma prancha de 40 px ao lado da figura.
+      const topo = gripY - 4;
+      const base = Math.min(-2, gripY + L(24));
+      const len = Math.max(8, base - topo);
+      const grosso = T + 2;
+      // O bojo é mais largo que a haste, e os espigões saem dele: o tronco
+      // inteiro é recuado para dentro da célula antes de desenhar, senão a
+      // ponta espetada some no corte da folha na vista de lado.
+      const cx0 = Math.max(-(META - grosso - 2), Math.min(META - grosso - 3, x));
+      coluna(topo, len, (t) => ({
+        c: cx0 + Math.floor(T / 2),
+        w: T + (grosso - T) * t,                // fino na mão, grosso no bojo
+      }), wood, { topo: 1 });
+      for (let i = 3; i < len; i += 5) px(cx0 - 1, topo + i, grosso - 1, 1, ramp(wood, -2));
+      px(cx0 - 1, base - 1, grosso, 1, ramp(wood, -4));
+      contato(cx0 - 1, base, grosso, wood);
+      // Espigões no terço de baixo, alternados, mais um na ponta. O ogro não
+      // fabrica arma: ele espeta prego num pau.
+      for (let i = 0; i < 2; i++) {
+        const sy = base - 4 - i * 4;
+        px(cx0 - 3, sy, 2, 2, ramp(metal, 1));
+        px(cx0 - 4, sy, 1, 1, ramp(metal, 2));
+        px(cx0 + grosso - 2, sy + 2, 2, 2, ramp(metal, -1));
+        px(cx0 + grosso, sy + 2, 1, 1, ramp(metal, 1));
+      }
+      px(cx0 + 1, base, 2, 2, ramp(metal, -2));
       break;
     }
     case 'staff':

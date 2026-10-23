@@ -1,32 +1,54 @@
-// PLANO CORPORAL: mortoVivo — esqueleto, zumbi, ghoul, espectro e wraith.
+// PLANO CORPORAL: mortoVivo — esqueleto, zumbi, ghoul, espectro, specter e
+// wraith.
 //
-// POR QUE UM ARQUIVO SÓ PARA QUATRO FIGURAS
-//   Elas compartilham quase nada de anatomia (uma não tem carne, outra não tem
+// POR QUE UM ARQUIVO SÓ PARA SEIS FIGURAS
+//   Elas compartilham quase nada de anatomia (uma não tem carne, três não têm
 //   pernas), mas compartilham o problema: no tabuleiro aparecem lado a lado, no
 //   mesmo encontro, e o jogador precisa saber qual é qual pela mancha. Mantê-las
-//   no mesmo arquivo é o que deixa comparar as quatro silhuetas de uma olhada
-//   enquanto se desenha — era exactamente o que faltava quando o hobgoblin e o
-//   orc saíram com o mesmo retângulo.
+//   no mesmo arquivo é o que deixa comparar as silhuetas de uma olhada enquanto
+//   se desenha — era exactamente o que faltava quando o hobgoblin e o orc
+//   saíram com o mesmo retângulo.
 //
 // O QUE ESCOLHE A LEITURA
-//   `look.undead` ∈ 'esqueleto' | 'zumbi' | 'ghoul' | 'espectro'. `specter` e
-//   `wraith` caem no espectro (o wraith é o mesmo plano com manto mais escuro e
-//   um pouco mais alto — quem decide isso é o look, não este arquivo).
+//   `look.undead` ∈ 'esqueleto' | 'zumbi' | 'ghoul' | 'espectro' | 'specter' |
+//   'wraith'. São seis pintores, não quatro com a cor trocada.
+//
+//   `specter` e `wraith` já caíram no MESMO pintor, e isso era um bug de
+//   jogabilidade, não de arte: quatro figuras do jogo — as duas criaturas, mais
+//   a NPC Agatha e o chefe Mormesk — apareciam com uma silhueta só (IoU 1,000,
+//   medido). Agatha é alguém com quem se CONVERSA e Mormesk MATA, e o jogador
+//   não tinha como saber em qual dos dois vultos falar. A 55 px só a mancha
+//   chega a ele, então manto três degraus mais escuro não era diferença
+//   nenhuma. Hoje a separação é de MASSA:
+//
+//     espectro → vulto encapuzado de ombros largos, franja de tiras suspensas
+//     specter  → coroa de cabelo larga em cima, sino de névoa largo embaixo
+//     wraith   → duas pontas de elmo em cima, fiapos estreitos embaixo, braços
+//                compridos abertos para os lados
+//
+//   Uma cresce para baixo, a outra afina; uma tem a cara à mostra, a outra a
+//   cara enterrada num elmo. Pintadas de preto continuam sendo três coisas.
 //
 // VALOR, NÃO SÓ MATIZ
 //   O defeito 4 do ELENCO (paleta de inimigo virou uma lama só) se conserta
-//   separando o VALOR, não inventando cor nova. As quatro famílias ficam em
-//   quatro faixas distantes: osso claro e quente, zumbi médio esverdeado, ghoul
-//   claro-frio acinzentado com garra quase branca, espectro escuro e azul. De
-//   olhos semicerrados dá para contar quatro manchas diferentes.
+//   separando o VALOR, não inventando cor nova. As famílias ficam em faixas
+//   distantes: osso claro e quente, zumbi médio esverdeado, ghoul claro-frio
+//   quase branco, specter violeta luminoso, wraith fumaça quase preta. De olhos
+//   semicerrados dá para contar as manchas.
 //
 // ELEMENTO-HERÓI (defeito 5: o olho não tem onde pousar)
 //   esqueleto → o vão entre as costelas · zumbi → a mandíbula caída e o ombro
-//   torto · ghoul → as garras grandes demais · espectro → os dois pontos de luz
-//   dentro do capuz vazio. O resto do corpo é propositalmente menos detalhado.
+//   torto · ghoul → as garras grandes demais e a língua para fora · espectro →
+//   os dois pontos de luz dentro do capuz vazio · specter → as órbitas e os
+//   dentes acesos · wraith → o elmo de chifres, a única peça sólida da família.
+//   O resto do corpo é propositalmente menos detalhado.
 //
-// Contorno preto é posto depois, em sheet.js, varrendo o alfa. Nada aqui
-// desenha contorno. Luz vem de cima e da esquerda, sempre.
+// Contorno preto é posto depois, em sheet.js, varrendo o alfa: todo pixel
+// transparente encostado na figura vira preto opaco. Isso tem duas
+// consequências que mandam no desenho das três figuras incorpóreas — peça
+// solta ganha moldura preta e vira borrão, e borda reta vira linha dura. Por
+// isso toda franja é recortada e nenhum fiapo fica descolado do corpo.
+// Nada aqui desenha contorno. Luz vem de cima e da esquerda, sempre.
 
 import { ramp } from '../kit.js';
 
@@ -37,8 +59,15 @@ const r = Math.round;
 const CORES = {
   esqueleto: { osso: '#ded2ae', orbita: '#191520' },
   zumbi: { pele: '#8d9a7a', mancha: '#474f3c', pano: '#6b5f49', olho: '#c9c7a8' },
-  ghoul: { pele: '#a89aa0', garra: '#efe6d8', boca: '#7a3436', olho: '#e8d26a' },
+  ghoul: {
+    pele: '#c2cdd5', garra: '#f4eee2', boca: '#5c2731',
+    lingua: '#ad555f', olho: '#241f2b', pano: '#bcb09a',
+  },
   espectro: { manto: '#58708f', brilho: '#a8ecff', vazio: '#131726' },
+  // O specter é LUMINOSO e violeta; o wraith é fumaça preta com um metal frio
+  // no elmo. Os dois nunca compartilham valor nem matiz, de propósito.
+  specter: { bruma: '#8d5cc6', brilho: '#f4ecff', vazio: '#2a1442' },
+  wraith: { fumaca: '#2a2e36', brilho: '#ffcf3d', vazio: '#090b0f', elmo: '#5a636f' },
 };
 
 /**
@@ -97,6 +126,25 @@ function colunaVeu({ px }, y, ch, forma, cor, alfa, { topo = 0, base = 0 } = {})
   }
 }
 
+/**
+ * Diagonal translúcida — o `traco` do kit, mas emitindo alfa, e com alfa que
+ * pode CAIR do começo para a ponta.
+ *
+ * Existe porque `traco` chama `ramp` por dentro para clarear o primeiro pixel,
+ * e `ramp` só entende hexadecimal: passar um rgba para ele devolve NaN e o
+ * traço some. A queda de alfa é o que faz um fio de cabelo do specter e um
+ * dedo do wraith se desfazerem no ar em vez de terminarem em ponta seca.
+ */
+function tracoVeu({ px }, x0, y0, x1, y1, esp, cor, alfa, alfaFim = alfa) {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const passos = Math.max(Math.abs(dx), Math.abs(dy), 1);
+  for (let i = 0; i <= passos; i++) {
+    const t = i / passos;
+    px(r(x0 + dx * t), r(y0 + dy * t), esp, esp, veu(cor, alfa + (alfaFim - alfa) * t));
+  }
+}
+
 /** Segmento de osso: diagonal com junta marcada nas duas pontas. */
 function ossoDiagonal({ traco, volume }, x0, y0, x1, y1, esp, cor) {
   traco(x0, y0, x1, y1, esp, cor);
@@ -109,9 +157,15 @@ export function paintMortoVivo(kit, look, dir, pose) {
   switch (look.undead) {
     case 'zumbi': return pintarZumbi(kit, look, dir, pose);
     case 'ghoul': return pintarGhoul(kit, look, dir, pose);
-    case 'espectro':
-    case 'specter':
-    case 'wraith': return pintarEspectro(kit, look, dir, pose);
+    // Três leituras separadas, e não uma com a cor trocada. Specter e wraith
+    // eram o MESMO desenho (IoU 1,000 medido): quatro figuras do jogo — as duas
+    // criaturas mais Agatha e Mormesk — apareciam com uma silhueta só, e uma
+    // delas é uma NPC com quem se CONVERSA enquanto a outra mata. Cor não
+    // resolve isso: a 55 px só a mancha chega ao jogador.
+    case 'specter': return pintarSpecter(kit, look, dir, pose);
+    case 'wraith': return pintarWraith(kit, look, dir, pose);
+    // `espectro` é o vulto encapuzado genérico, e hoje só Agatha o usa.
+    case 'espectro': return pintarEspectro(kit, look, dir, pose);
     default: return pintarEsqueleto(kit, look, dir, pose);
   }
 }
@@ -549,169 +603,237 @@ function zumbiCaido({ px, volume, contato, coluna }, pele, mancha, pano) {
 // ---------------------------------------------------------------------------
 // GHOUL
 //
-// SILHUETA: corpo dobrado para a frente sobre pernas flexionadas, com as
-// escápulas mais altas que a cabeça e dois braços desproporcionais terminando
-// em garras abertas que passam abaixo do joelho.
+// SILHUETA: figura magra e esticada em meia passada de corrida, com um pé no ar
+// e o outro plantado atrás, cabeça erguida acima do ombro e uma língua
+// pendurada por fora do queixo, mãos em leque maiores que a própria cabeça e
+// faixas de pano enroladas nos antebraços e nas canelas.
 //
-// O ghoul é o único do elenco cuja cabeça está mais BAIXA que o ombro. Isso é a
-// leitura inteira: um bicho pronto para saltar.
+// POR QUE ELE MUDOU DE POSTURA
+//   A figura antiga era um vulto agachado, de cabeça enfiada entre as
+//   escápulas. A referência é o oposto: o ghoul CORRE, de tronco esticado e
+//   queixo no alto. Agachado ele disputava a mancha com o zumbi (tronco pesado
+//   e inclinado, ombro caído); correndo, não disputa com ninguém — é a única
+//   criatura do elenco com um pé fora do chão, e um pé no ar sobrevive em preto.
+//
+// A LÍNGUA É A ASSINATURA, E TEM DE ENTRAR NA SILHUETA
+//   Língua pintada por cima do peito é invisível a 55 px: fica dentro do
+//   contorno da figura, e o contorno automático de `sheet.js` não entra no meio
+//   da mancha. Por isso ela sai pelo canto da boca e cai POR FORA da linha do
+//   queixo, no vão aberto entre a cabeça e o ombro — ali são oito linhas de
+//   gancho contra o fundo.
+//
+// A pele é branco-azulada e FRIA, quase sem matiz: é o que impede o ghoul de
+// ser lido como "zumbi magro". A garra continua sendo o pixel mais claro.
 // ---------------------------------------------------------------------------
 
 function pintarGhoul(kit, look, dir, pose) {
-  const { px, volume, contato, coluna } = kit;
+  const { px, volume, contato, coluna, traco } = kit;
   const c = CORES.ghoul;
   const pele = look.skin ?? c.pele;
   const garra = look.claw ?? c.garra;
   const boca = look.mouth ?? c.boca;
+  const lingua = look.tongue ?? c.lingua;
   const olho = look.eyes ?? c.olho;
+  const pano = look.wrap ?? c.pano;
+  // O trapo da cintura sai do MESMO pano das faixas, dois degraus mais escuro:
+  // no bicho é o mesmo material, só que o da cintura é o mais velho e o mais
+  // sujo. Uma cor só evita inventar mais um campo de look para dois retângulos.
+  const trapo = ramp(pano, -2);
 
-  if (pose.kind === 'down') return ghoulCaido(kit, pele, garra, boca);
+  if (pose.kind === 'down') return ghoulCaido(kit, pele, garra, boca, lingua, pano);
 
   const side = dir === 'side';
   const back = dir === 'back';
 
-  // O idle do ghoul é tensão, não balanço: o corpo abaixa e sobe 2 px, como
-  // bicho medindo o salto. Por isso o agachamento é que oscila.
-  const tensao = pose.kind === 'idle' && pose.frame === 1 ? 2 : 0;
-  const salto = pose.kind === 'attack' ? (pose.frame === 1 ? 5 : 2) : 0;
-  const recuo = pose.kind === 'hurt' ? -3 : 0;
-  const agacha = 4 + tensao - salto;          // quanto o corpo desce
+  // O idle do ghoul é a passada, não a respiração: ele não respira. No quadro 1
+  // o corpo sobe 2 px e o joelho livre sobe junto — é o alto da corrida.
+  const alto = pose.kind === 'idle' && pose.frame === 1;
+  const sobe = alto ? -2 : 0;
+  const lance = pose.kind === 'attack' ? (pose.frame === 1 ? 5 : 2) : 0;
+  const recuo = pose.kind === 'hurt' ? 3 : 0;
   const golpe = pose.kind === 'attack';
 
-  const yQuadril = -26 + agacha;
-  const yTroncoT = -47 + agacha + recuo;
-  const yEscapula = yTroncoT - 1;
-  const yCabecaT = yTroncoT + 1;              // o alto da cabeça JÁ está abaixo
-  const yCabecaB = yTroncoT + 11;             // do ombro: é a postura inteira
+  // 63 px de pé no chão e 65 no alto da passada: o ghoul é Médio e o teto da
+  // faixa é 66. Subir mais 1 px o poria fora da escala do tabuleiro, que é o
+  // que dá sentido de tamanho entre as criaturas.
+  const yQuadril = -29 + sobe;
+  const yOmbro = -46 + sobe + recuo;
+  const yQueixo = -51 + sobe + recuo;
+  const yCranio = -63 + sobe + recuo;
+  const inclina = side ? 3 + lance : 0;    // de perfil o tronco é uma diagonal
 
-  // ---- pernas flexionadas -------------------------------------------------
-  // Joelho projetado para fora e para a frente, canela voltando: é o zigue-zague
-  // que diz "dobrado", e nenhuma das outras três criaturas tem isso.
-  const pernas = side
-    ? [{ hx: -2, joelho: -9, pe: -3, tom: -2 }, { hx: 3, joelho: 8 + salto, pe: 3 + salto, tom: 0 }]
-    : [{ hx: -6, joelho: -11, pe: -8, tom: -1 }, { hx: 6, joelho: 11, pe: 8, tom: 0 }];
+  // ---- pernas em passada --------------------------------------------------
+  // Um pé plantado e o outro no ar, em alturas diferentes. É o único par de pés
+  // desencontrados do elenco e resolve a leitura quase sozinho.
+  const perna = (qx, jx, pex, yJoelho, yPe, tom) => {
+    const cor = ramp(pele, tom);
+    coluna(yQuadril, yJoelho - yQuadril, (t) => ({ c: qx + (jx - qx) * t, w: 6 - t * 1.5 }), cor, { topo: 1 });
+    volume(jx - 2, yJoelho, 5, 3, ramp(cor, 1), { topo: 1 });
+    contato(jx - 2, yJoelho + 2, 5, cor);
+    coluna(yJoelho + 3, yPe - 3 - (yJoelho + 3), (t) => ({ c: jx + (pex - jx) * t, w: 4.5 - t * 1.5 }), ramp(cor, -1), { topo: 0 });
+    // faixa de pano na canela: duas voltas e uma ponta solta. Ela quebra a
+    // perna em dois valores e impede que o par de canelas leia como dois
+    // palitos iguais.
+    px(pex - 3, yPe - 9, 6, 2, pano);
+    px(pex - 3, yPe - 9, 6, 1, ramp(pano, 2));
+    px(pex - 3, yPe - 6, 6, 2, ramp(pano, -1));
+    px(pex - 3, yPe - 5, 6, 1, ramp(pano, -3));
+    px(pex + (pex < 0 ? -4 : 3), yPe - 5, 2, 1, ramp(pano, -1));
+    // pé comprido e chato, de dedos separados, com a unha virada para FORA
+    const dirPe = pex < 0 ? -1 : 1;
+    volume(pex - 3, yPe - 3, 8, 3, ramp(cor, -1), { topo: 1 });
+    for (let d = 0; d < 3; d++) px(pex + dirPe * (2 + d), yPe - 4, 1, 2, ramp(garra, -1));
+    px(pex - 3, yPe - 1, 8, 1, ramp(cor, -4));
+  };
 
-  for (const p of pernas) {
-    const cor = ramp(pele, p.tom);
-    const yJoelho = -15 + r(agacha * 0.4);
-    coluna(yQuadril, yJoelho - yQuadril, (t) => ({ c: p.hx + (p.joelho - p.hx) * t, w: 6 - t * 1.5 }), cor, { topo: 1 });
-    volume(p.joelho - 2, yJoelho, 5, 3, ramp(cor, 1), { topo: 1 });
-    contato(p.joelho - 2, yJoelho + 2, 5, cor);
-    // a canela volta para trás: o zigue-zague quadril-joelho-pé é o que diz
-    // "dobrado", e nenhuma das outras três criaturas tem essa quebra
-    coluna(yJoelho + 3, -3 - yJoelho - 3, (t) => ({ c: p.joelho + (p.pe - p.joelho) * t, w: 4 - t }), ramp(cor, -1), { topo: 0 });
-    // pé comprido e chato, de dedos separados: o ghoul se apoia na planta toda
-    volume(p.pe - 3, -3, 8, 3, ramp(cor, -1), { topo: 1 });
-    // a unha do pé abre para FORA do corpo: as três na mesma borda deixavam o
-    // pé esquerdo com garra virada para dentro
-    const dirPe = p.hx < 0 ? -1 : 1;
-    for (let d = 0; d < 3; d++) px(p.pe + dirPe * (2 + d), -4, 1, 2, ramp(garra, -1));
-    px(p.pe - 3, -1, 8, 1, ramp(cor, -4));
+  // O pé plantado fica no chão mesmo quando o quadril sobe: é a perna que
+  // estica, e é dessa diferença que nasce a sensação de impulso.
+  const yPeNoAr = -9 + (alto ? -3 : 0);
+  if (side) {
+    perna(1, -5 - lance, -8 - lance, -16 + sobe, 0, -2);
+    perna(2 + lance, 8 + lance, 10 + lance, -22 + sobe, yPeNoAr, 0);
+  } else {
+    perna(5, 7, 8, -16 + sobe, 0, -2);
+    perna(-5, -11, -9, -22 + sobe, yPeNoAr, 0);
   }
 
-  // ---- tronco inclinado ---------------------------------------------------
-  // De perfil o tronco é uma diagonal, não uma caixa em pé: o ombro está à
-  // frente do quadril. De frente ele é um V invertido, estreito no quadril.
-  coluna(yTroncoT, yQuadril - yTroncoT + 2, (t) => {
-    const w = side ? 13 - t * 3 : t < 0.25 ? 17 : 17 - (t - 0.25) * 9;
-    return { c: side ? (1 - t) * (4 + salto) : 0, w };
+  // ---- tronco esticado ----------------------------------------------------
+  // Tórax largo e cintura muito fina: um V invertido. Esticado, não dobrado —
+  // o contrário exato do zumbi, que é pesado e torto.
+  coluna(yOmbro, yQuadril - yOmbro + 2, (t) => {
+    const w = side ? 12 - t * 3 : t < 0.3 ? 16 - t * 2 : 15.4 - (t - 0.3) * 7;
+    return { c: side ? (1 - t) * inclina : 0, w };
   }, pele, { topo: 1 });
 
-  // costelas aparentes: o ghoul é o único que mostra costela SOB a pele, em
-  // relevo, e não barra de osso solta como o esqueleto
-  for (let i = 0; i < 4; i++) {
-    const y = yTroncoT + 4 + i * 3;
-    const w = side ? 9 - i : 12 - i;
-    const x = side ? -2 + r((1 - i / 4) * (3 + salto)) : -Math.floor(w / 2);
+  // costelas em RELEVO sob a pele, não barra de osso solta como no esqueleto:
+  // a sombra funda com o lábio claro logo abaixo é o que diz "sob a pele"
+  for (let i = 0; i < 5; i++) {
+    const y = yOmbro + 3 + i * 3;
+    // A costela NÃO atravessa o tronco de borda a borda: sobra pele limpa dos
+    // dois lados. Barra de ponta a ponta lê como listra de camiseta, não como
+    // osso empurrando por dentro.
+    const w = r(side ? 8 - i * 0.8 : 10 - i * 1.2);
+    const x = side ? -3 + r((1 - i / 5) * inclina) : -Math.floor(w / 2);
     px(x, y, w, 1, ramp(pele, -3));
     px(x, y + 1, w, 1, ramp(pele, 1));
   }
-  // barriga encovada, logo acima do quadril
   // barriga encovada: a cova precisa do lábio claro embaixo, senão a sombra lê
   // como mancha de tinta em vez de volume afundado
-  px(side ? -1 : -5, yQuadril - 5, side ? 8 : 10, 3, ramp(pele, -2));
-  px(side ? -1 : -5, yQuadril - 2, side ? 8 : 10, 1, ramp(pele, 1));
+  px(side ? -2 : -5, yQuadril - 6, side ? 9 : 10, 3, ramp(pele, -2));
+  px(side ? -2 : -5, yQuadril - 3, side ? 9 : 10, 1, ramp(pele, 1));
 
-  // ---- escápulas erguidas -------------------------------------------------
-  // Duas corcovas acima da linha do pescoço. É isso que põe a cabeça no buraco
-  // entre os ombros e dá a postura de predador.
-  if (!side) {
-    for (const lado of [-1, 1]) {
-      const x = lado < 0 ? -8 : 7;
-      coluna(yEscapula - 3, 7, (t) => ({ c: x, w: 6 - t * 2 }), ramp(pele, lado < 0 ? 1 : -1), { topo: 1 });
-    }
-  } else {
-    coluna(yEscapula - 3, 7, (t) => ({ c: -2 - t, w: 8 - t * 2 }), ramp(pele, 1), { topo: 1 });
+  // ---- trapo na cintura ---------------------------------------------------
+  // Tiras de comprimento desigual descendo até o meio da coxa. Em preto elas
+  // tapam o vão entre as duas pernas e impedem que a passada leia como um U.
+  const cintoW = side ? 11 : 15;
+  const cintoX = -Math.floor(cintoW / 2) + (side ? 1 : 0);
+  px(cintoX, yQuadril - 1, cintoW, 3, trapo);
+  px(cintoX, yQuadril - 1, cintoW, 1, ramp(trapo, 2));
+  px(cintoX, yQuadril + 1, cintoW, 1, ramp(trapo, -3));
+  for (let i = 0; i < (side ? 4 : 6); i++) {
+    const tx = r(cintoX + i * (side ? 3 : 2.6));
+    const tw = 2 + (ruido(i + 7) > 0.55 ? 1 : 0);
+    const th = 4 + r(ruido(i + 3) * 8);
+    px(tx, yQuadril + 2, tw, th, ramp(trapo, -1 - (i % 2)));
+    px(tx, yQuadril + 2, tw, 1, trapo);
+    px(tx, yQuadril + 1 + th, tw, 1, ramp(trapo, -4));
   }
-  // Trapézio: liga as duas corcovas. Sem ele o alto do ghoul sai como dois
-  // vultos soltos no ar, e o vale entre as corcovas — onde a cabeça se enfia —
-  // é justamente o que dá a leitura de bicho medindo o salto.
-  coluna(yEscapula - 1, 4, (t) => ({ c: side ? -1 : 0, w: 9 - t * 2 }), ramp(pele, -1), { topo: 1 });
 
   // ---- braços longos ------------------------------------------------------
-  // O braço vai do ombro até abaixo do joelho. Essa desproporção é o motivo de
-  // o ghoul não poder ser confundido com um humano magro.
+  // Do ombro até abaixo do joelho, abertos para fora. A mão é maior que a
+  // cabeça: é o elemento-herói e leva o pixel mais claro de toda a figura.
   const bracos = side
-    ? [{ sx: 3 + salto, fora: 1, tom: 0 }]
-    : [{ sx: -9, fora: -1, tom: -1 }, { sx: 9, fora: 1, tom: 0 }];
+    ? [{ sx: 2 + lance, fora: 1, tom: 0 }]
+    : [{ sx: -8, fora: -1, tom: -1 }, { sx: 8, fora: 1, tom: 0 }];
 
   for (const b of bracos) {
     const cor = ramp(pele, b.tom);
-    const ombroY = yEscapula + 2;
-    const cotoveloX = b.sx + b.fora * 4;
-    const cotoveloY = ombroY + 12;
-    // A célula tem 52 px de largura e a garra aberta avança 9 px além da mão:
-    // a mão não pode passar de 11 px do centro, ou a ponta sai cortada na
-    // borda da célula — e garra cortada é o pior corte possível nesta criatura.
-    const maoX = Math.max(-11, Math.min(11, golpe ? b.sx + b.fora * 3 : b.sx + b.fora * 5));
-    const maoY = golpe ? ombroY + 6 : cotoveloY + 12;
+    const ombroY = yOmbro + 2;
+    const cotoveloX = b.sx + b.fora * 5;
+    const cotoveloY = ombroY + 11;
+    // A célula tem 52 px de largura e a garra aberta avança 11 px além da mão:
+    // a mão não pode passar de 12 px do centro, ou a ponta sai cortada na borda
+    // — e garra cortada é o pior corte possível nesta criatura.
+    //
+    // A mão também tem de ficar FORA da perna. Encostada na coxa, os dedos e a
+    // canela viram uma mancha só e o jogador perde as duas coisas de uma vez.
+    const maoX = Math.max(-12, Math.min(12, golpe ? b.sx + b.fora * 3 : b.sx + b.fora * 7));
+    const maoY = golpe ? ombroY + 4 : cotoveloY + 9;
 
     coluna(ombroY, cotoveloY - ombroY, (t) => ({ c: b.sx + (cotoveloX - b.sx) * t, w: 5 - t * 1.5 }), cor, { topo: 1 });
     volume(cotoveloX - 2, cotoveloY, 4, 3, ramp(cor, 1), { topo: 1 });
     contato(cotoveloX - 2, cotoveloY + 2, 4, cor);
     ossoDiagonal(kit, cotoveloX, cotoveloY + 2, maoX, maoY, 3, ramp(cor, -1));
+    // faixa no antebraço, no meio do caminho entre cotovelo e punho
+    const fx = r((cotoveloX + maoX) / 2);
+    const fy = r((cotoveloY + maoY) / 2);
+    px(fx - 2, fy - 1, 5, 2, pano);
+    px(fx - 2, fy - 1, 5, 1, ramp(pano, 2));
+    px(fx - 2, fy + 1, 5, 1, ramp(pano, -3));
+    px(fx + b.fora * 3, fy + 2, 2, 1, ramp(pano, -1));   // a ponta esvoaçando
     garras(kit, maoX, maoY, b.fora, garra, cor, golpe);
   }
 
-  // ---- cabeça baixa e projetada -------------------------------------------
-  const cabW = 12;
-  const cabX = side ? 6 + salto : 0;
-  coluna(yCabecaT, yCabecaB - yCabecaT, (t) => {
-    // crânio alto atrás, rosto afunilando: cabeça de rato grande, não de humano
-    const w = t < 0.25 ? cabW - 2 + t * 8 : cabW - (t - 0.25) * 7;
-    return { c: cabX + t * (side ? 2 : 0), w };
+  // ---- pescoço e cabeça ERGUIDA ------------------------------------------
+  // A cabeça está acima do ombro, de queixo no alto. Era exatamente ela que
+  // estava enfiada entre as escápulas na versão antiga, e é ela que abre o vão
+  // onde a língua aparece.
+  coluna(yQueixo, yOmbro - yQueixo + 1, (t) => ({ c: side ? inclina - 1 + t * 2 : 0, w: 5 + t * 2 }), ramp(pele, -1), { topo: 0 });
+
+  const cabX = side ? inclina + 2 : 0;
+  coluna(yCranio, yQueixo - yCranio, (t) => {
+    // crânio alto e estreito, maxilar afunilando: cabeça de cadáver seco
+    const w = t < 0.35 ? 9 + t * 6 : 11.1 - (t - 0.35) * 5;
+    return { c: cabX + (side ? t * 1.5 : 0), w };
   }, pele, { topo: 2 });
-  contato(cabX - 5, yCabecaT - 1, 10, pele);
-  // De frente a cabeça cai DENTRO do contorno do peito, e o contorno automático
-  // de sheet.js não entra no meio da figura. Sem estas duas arestas escuras a
-  // cabeça do ghoul desaparece dentro do tronco a 47 px.
-  for (const s2 of [-1, 1]) {
-    px(cabX + s2 * 6 - (s2 < 0 ? 0 : 1), yCabecaT + 1, 1, yCabecaB - yCabecaT - 2, ramp(pele, -4));
+  // Orelha pontuda, varrida para TRÁS e para cima. De perfil ela vai para o
+  // lado oposto ao do focinho: orelha apontando para a frente viraria chifre.
+  for (const lado of (side ? [-1] : [-1, 1])) {
+    const ex = cabX + lado * 4;
+    traco(ex, yCranio + 7, ex + lado * 4, yCranio + 3, 2, ramp(pele, lado < 0 ? 1 : -2));
   }
 
   if (!back) {
-    const olhoY = yCabecaT + 3;
-    const olhos = side ? [cabX + 2] : [cabX - 5, cabX + 2];
+    // olhos fundos e APAGADOS: a luz dentro do crânio é marca exclusiva do
+    // espectro e do wraith. O ghoul é cego de fome, não aceso.
+    const olhoY = yCranio + 4;
+    const olhos = side ? [cabX + 1] : [cabX - 4, cabX + 2];
     for (const ox of olhos) {
-      px(ox, olhoY, 3, 2, ramp(pele, -4));
-      px(ox, olhoY, 3, 1, ramp(olho, -1));
+      px(ox - 1, olhoY - 1, 5, 1, ramp(pele, -3));        // a arcada funda
+      px(ox, olhoY, 3, 2, ramp(olho, 1));
       px(ox + 1, olhoY, 1, 1, olho);
     }
-    // boca rasgada: a fenda passa da linha do rosto e sobe nos cantos. É o
-    // detalhe que faz o ghoul parecer que não tem bochecha.
-    const bocaY = yCabecaB - 4;
-    const bw = side ? 10 : 12;
-    const bx = side ? cabX - 2 : cabX - 6;
-    px(bx, bocaY, bw, 3, ramp(boca, -2));
-    px(bx, bocaY, bw, 1, ramp(pele, -3));
-    px(bx - 1, bocaY - 1, 2, 2, ramp(boca, -1));          // o rasgo subindo
-    px(bx + bw - 1, bocaY - 1, 2, 2, ramp(boca, -2));
-    for (let d = 0; d < 5; d++) {
-      px(bx + 1 + d * 2, bocaY, 1, golpe ? 2 : 1, ramp(garra, 1));
-      px(bx + 2 + d * 2, bocaY + 2, 1, 1, ramp(garra, -1));
+    // boca escancarada ocupando o terço de baixo da cara
+    const bw = side ? 7 : 10;
+    const bx = side ? cabX - 1 : cabX - 5;
+    // Uma linha de maçã do rosto entre o olho e a boca. Sem ela a cara vira
+    // olho-colado-em-boca e some a 55 px.
+    const by = yQueixo - 5;
+    px(bx, by, bw, 5, ramp(boca, -2));
+    px(bx, by, bw, 1, ramp(pele, -4));
+    px(bx + 1, by + 4, bw - 2, 1, ramp(boca, 1));
+    for (let d = 0; d < 4; d++) {
+      px(bx + 1 + d * 2, by, 1, 2, ramp(garra, 1));
+      px(bx + 2 + d * 2, by + 4, 1, 1, ramp(garra, -1));
+    }
+
+    // ---- a língua ---------------------------------------------------------
+    // Sai pelo canto da boca, abre para o lado e CAI por fora do queixo. O seno
+    // é só o gancho: reta ela lê como baba, curvada lê como língua.
+    const lx = side ? cabX + 5 : cabX - 5;
+    const ldir = side ? 1 : -1;
+    const comp = golpe ? 12 : 9;
+    for (let k = 0; k < comp; k++) {
+      const t = k / (comp - 1);
+      const x = lx + r(ldir * Math.sin(t * 2.2) * 3);
+      const lw = t > 0.78 ? 1 : 2;
+      px(x, by + 2 + k, lw, 1, ramp(lingua, t < 0.25 ? -2 : t > 0.72 ? -1 : 0));
+      if (lw === 2) px(x, by + 2 + k, 1, 1, ramp(lingua, 2));
     }
   } else {
-    coluna(yCabecaT + 2, 7, (t) => ({ c: cabX, w: 7 - t * 2 }), ramp(pele, -1), { topo: 1 });
+    // De costas: a nuca e as duas orelhas, sem rosto e sem língua. É assim que
+    // o jogador sabe que a criatura corre para longe dele.
+    coluna(yCranio + 3, 8, (t) => ({ c: cabX, w: 7 - t * 2 }), ramp(pele, -1), { topo: 1 });
   }
 }
 
@@ -723,12 +845,12 @@ function garras({ px, traco }, x, y, fora, garra, pele, aberto) {
   px(x - 2, y, 5, 4, ramp(pele, -1));
   px(x - 2, y, 5, 1, ramp(pele, 1));
   px(x - 2, y + 3, 5, 1, ramp(pele, -3));
-  // Três dedos saindo do MESMO nó e abrindo em leque. Dedos paralelos de 2 px
-  // de espessura se colam um no outro e a mão sai como uma pá; é a separação
-  // nas PONTAS que faz o jogador contar três garras a 47 px de altura.
+  // Quatro dedos saindo do MESMO nó e abrindo em leque. Dedos paralelos de 2 px
+  // se colam um no outro e a mão sai como uma pá; é a separação nas PONTAS que
+  // faz o jogador contar os dedos a 47 px de altura.
   const leque = aberto
-    ? [[6, 10], [9, 4], [9, -3]]
-    : [[4, 10], [7, 8], [9, 4]];
+    ? [[7, 11], [10, 5], [10, -2], [6, -6]]
+    : [[5, 12], [8, 10], [10, 5], [9, -1]];
   for (const [dx, dy] of leque) {
     const tx = x + fora * dx;
     const ty = y + dy;
@@ -738,28 +860,37 @@ function garras({ px, traco }, x, y, fora, garra, pele, aberto) {
   }
 }
 
-/** Ghoul no chão: fica dobrado, as garras ainda abertas. */
-function ghoulCaido({ px, contato, coluna, traco }, pele, garra, boca) {
-  // Não desaba nem estica: o ghoul morre na mesma dobra em que vivia, e é por
-  // isso que a mancha no chão dele tem um bico de cada lado.
-  coluna(-7, 7, (t) => ({ c: 0, w: 24 - t * 6 }), pele, { topo: 1, base: 1 });
-  contato(-12, -1, 24, pele);
-  for (let i = 0; i < 3; i++) px(-8 + i * 6, -6, 7, 1, ramp(pele, -3));
-  coluna(-12, 7, (t) => ({ c: -13, w: 10 - t * 3 }), pele, { topo: 2 });
-  px(-17, -9, 9, 2, ramp(boca, -2));
+/** Ghoul no chão: a corrida interrompida, a língua ainda para fora. */
+function ghoulCaido({ px, contato, coluna, traco }, pele, garra, boca, lingua, pano) {
+  // Ele não desaba em pilha: cai esticado, porque morreu correndo. A mancha no
+  // chão é longa e baixa, e tem um bico de garra numa das pontas.
+  coluna(-8, 8, (t) => ({ c: 1, w: 26 - t * 8 }), pele, { topo: 1, base: 1 });
+  contato(-12, 0, 26, pele);
+  for (let i = 0; i < 3; i++) px(-7 + i * 6, -7, 7, 1, ramp(pele, -3));
+  px(-4, -4, 7, 3, ramp(pano, -2));                 // o trapo amontoado
+  coluna(-13, 8, (t) => ({ c: -14, w: 10 - t * 3 }), pele, { topo: 2 });
+  px(-18, -10, 9, 2, ramp(boca, -2));
+  px(-16, -8, 2, 4, ramp(lingua, -1));              // a língua caída de lado
+  px(-16, -8, 1, 1, ramp(lingua, 2));
   // uma garra ainda esticada para fora da pilha
-  traco(10, -5, 19, -8, 2, ramp(pele, -1));
-  for (let d = 0; d < 3; d++) px(19 + d, -9 - d, 2, 2, ramp(garra, -1));
+  traco(11, -6, 20, -9, 2, ramp(pele, -1));
+  for (let d = 0; d < 3; d++) px(20 + d, -10 - d, 2, 2, ramp(garra, -1));
 }
 
 // ---------------------------------------------------------------------------
-// ESPECTRO (specter e wraith)
+// ESPECTRO — o vulto encapuzado genérico
 //
 // SILHUETA: vulto encapuzado de ombros largos que não tem perna nenhuma e
 // termina numa franja irregular de tiras suspensas, sem nada tocando o chão.
 //
 // O chão vazio embaixo é metade da leitura: nenhuma outra criatura do elenco
 // tem ar entre a figura e a linha do chão. A outra metade é o capuz vazio.
+//
+// QUEM USA: só Agatha, a NPC espectral (`looks/npcs.js`). O specter e o wraith
+// tinham caído aqui também, e era disso que vinha a colisão de silhueta: os
+// três eram o mesmo capuz. Agora cada um tem o seu pintor, e esta leitura ficou
+// sendo a assinatura dela — a única do trio com capuz e ombro largo, e a única
+// com quem se conversa.
 // ---------------------------------------------------------------------------
 
 function pintarEspectro(kit, look, dir, pose) {
@@ -791,11 +922,11 @@ function pintarEspectro(kit, look, dir, pose) {
   // ---- franja que se desfaz ----------------------------------------------
   // Cada tira perde alfa até zero na ponta. É aqui que a figura "não termina":
   // não existe linha de base, e o contorno automático só pega a borda viva.
-  const tiras = side ? 6 : 9;
+  const tiras = side ? 5 : 7;
   for (let i = 0; i < tiras; i++) {
     // passo irregular: tira colada na vizinha vira cortina, e cortina lê como
     // saia. O vão entre as tiras é o que faz a franja parecer desfiada.
-    const fx = (side ? -9 : -8) + i * 2 + (i % 3 === 0 ? 1 : 0) - r(avanco * 0.3);
+    const fx = (side ? -7 : -6) + i * 2 + (i % 3 === 0 ? 1 : 0) - r(avanco * 0.3);
     const comp = 7 + r(ruido(i + 1) * 9);
     const topo = yFranjaT + r(ruido(i + 20) * 3);
     for (let k = 0; k < comp; k++) {
@@ -815,7 +946,13 @@ function pintarEspectro(kit, look, dir, pose) {
   // ---- corpo --------------------------------------------------------------
   // Alarga do nada para os ombros. Translúcido no meio, mais firme em cima: o
   // olho sobe naturalmente até o capuz.
-  const corpoW = (t) => (side ? 9 + t * 5 : 13 + t * 9);
+  //
+  // O corpo e o ombro encolheram 6 px nesta rodada, e não é capricho. Larga, a
+  // figura encavalava no wraith — a mesma barra de ombro, a mesma coluna
+  // afunilando — e esses dois são justamente Agatha e Mormesk, a NPC com quem
+  // se conversa e o chefe que mata. Estreita, ela vira uma vela de cabeça
+  // grande contra um morcego de ombro largo: IoU 0,52 em vez de 1,000.
+  const corpoW = (t) => (side ? 8 + t * 4 : 10 + t * 7);
   // De perfil o vulto INCLINA: o capuz vai à frente e os farrapos arrastam
   // atrás, o que dá à vista de lado uma diagonal em vez do mesmo retângulo
   // vertical da vista de frente.
@@ -833,9 +970,10 @@ function pintarEspectro(kit, look, dir, pose) {
   }
 
   // ---- ombros ------------------------------------------------------------
-  // Barra larga e quase opaca. Dá ao espectro a única silhueta do elenco em que
-  // a largura máxima está no alto da figura.
-  const ombroW = side ? 13 : 23;
+  // Barra quase opaca, agora pouco mais larga que o capuz: a largura máxima
+  // desta figura está no ALTO, e o pico é o capuz, não o ombro. É o contrário
+  // do wraith, cujo ponto mais largo são os braços no meio do corpo.
+  const ombroW = side ? 11 : 17;
   colunaVeu(kit, yCapuzB - 2, 5, (t) => ({ c: 0, w: ombroW - t * 4 }), manto, 0.82, { topo: 1 });
   px(-Math.floor(ombroW / 2), yCapuzB + 3, ombroW, 1, veu(ramp(manto, -4), 0.7));
 
@@ -886,12 +1024,20 @@ function pintarEspectro(kit, look, dir, pose) {
   }
 }
 
-/** Espectro desfeito: quase nada no chão, só a luz apagando. */
-function espectroDissipado({ px }, manto, brilho) {
+/**
+ * Espectro desfeito: quase nada no chão, só a luz apagando.
+ *
+ * `espalha` existe para que as três leituras incorpóreas não terminem na mesma
+ * mancha: o specter se abre (1,3), o vulto encapuzado fica no meio (1,0) e o
+ * wraith se fecha num borrão apertado (0,7). Se o `down` for igual para os
+ * três, o jogador deixa de saber qual caiu — e é justamente no turno em que
+ * algo cai que ele precisa saber.
+ */
+function espectroDissipado({ px }, manto, brilho, espalha = 1) {
   // Nenhuma outra criatura deixa o quadrado praticamente vazio no `down`. É
   // nisso que o jogador vê que não havia corpo para cair.
   for (let i = 0; i < 7; i++) {
-    const x = -14 + i * 4;
+    const x = r((-14 + i * 4) * espalha);
     const y = -2 - r(ruido(i + 40) * 4);
     const w = 3 + r(ruido(i + 60) * 3);
     px(x, y, w, 1, veu(ramp(manto, -2), 0.26 - i * 0.02));
@@ -900,4 +1046,387 @@ function espectroDissipado({ px }, manto, brilho) {
   // o último ponto de luz, já quase sem força
   px(-1, -4, 2, 1, veu(brilho, 0.45));
   px(-2, -4, 1, 1, veu(ramp(brilho, -3), 0.2));
+}
+
+// ---------------------------------------------------------------------------
+// SPECTER
+//
+// SILHUETA: caveira de cabelo em filamentos abertos em coroa para cima e para
+// os lados, tronco descarnado com os dois braços dobrados longe do corpo, e da
+// cintura para baixo um sino de névoa que ALARGA até quase o chão sem encostar
+// nele.
+//
+// POR QUE ELE DEIXOU DE SER O MESMO DESENHO DO WRAITH
+//   Os dois eram o mesmo vulto encapuzado com o manto em cores diferentes —
+//   IoU 1,000, medido. A 55 px o detalhe some e só a mancha chega ao jogador,
+//   então "um pouco mais escuro" não era diferença nenhuma. Pior: Agatha, que
+//   é uma NPC com quem se CONVERSA, e Mormesk, que mata, apareciam como a
+//   mesma figura. Isso é um bug de jogabilidade, não de arte.
+//
+//   A separação agora é de MASSA, e sobrevive pintada de preto:
+//     specter → LARGO em cima (a coroa de cabelo) e LARGO embaixo (o sino),
+//               estreito no meio. É uma ampulheta invertida, uma água-viva.
+//     wraith  → ESTREITO em cima (duas pontas de elmo) e ESTREITO embaixo
+//               (fiapos), com a maior largura no meio, nos braços abertos.
+//   Uma cresce para baixo, a outra afina. Cor é o reforço, não a diferença.
+//
+// Translúcido: o tabuleiro aparece por dentro. O alfa cai para fora e para
+// baixo, e é por isso que a figura não tem onde terminar.
+// ---------------------------------------------------------------------------
+
+function pintarSpecter(kit, look, dir, pose) {
+  const { px } = kit;
+  const c = CORES.specter;
+  const bruma = look.cloak ?? look.outfit ?? c.bruma;
+  const brilho = look.glow ?? look.eyes ?? c.brilho;
+  const vazio = look.void ?? c.vazio;
+
+  // O specter se desfaz num borrão LARGO; o wraith num borrão apertado. A
+  // diferença entre os dois continua valendo no quadro de derrubado.
+  if (pose.kind === 'down') return espectroDissipado(kit, bruma, brilho, 1.3);
+
+  const side = dir === 'side';
+  const back = dir === 'back';
+
+  // Ele flutua MAIS do que os outros oscilam: 4 px contra 1 px do zumbi. É o
+  // sinal de que não tem peso, e dá para ver no tabuleiro.
+  const flut = pose.kind === 'idle' ? (pose.frame === 1 ? -4 : -1)
+    : pose.kind === 'attack' ? (pose.frame === 1 ? -6 : -3)
+      : pose.kind === 'hurt' ? 0 : -2;
+  const golpe = pose.kind === 'attack';
+  const eixo = side ? 2 : 0;
+
+  const yCranioT = -56 + flut;
+  const yCranioB = -45 + flut;
+  const yOmbro = -42 + flut;
+  const yCintura = -31 + flut;
+  const yNevoaT = -32 + flut;
+  const yNevoaB = -3 + flut;
+
+  // ---- o sino de névoa ----------------------------------------------------
+  // Desenhado COLUNA a coluna, e não linha a linha: cada coluna começa mais
+  // embaixo quanto mais longe do eixo, e é essa curva que dá sino em vez de
+  // triângulo. A base de cada coluna é irregular, senão a figura ganha uma
+  // linha de corte reta e passa a parecer apoiada em alguma coisa.
+  //
+  // A base é MUITO irregular de propósito. `sheet.js` contorna de preto todo
+  // pixel transparente encostado na figura, e uma base reta sairia como um
+  // triângulo de borda preta — fica parecendo uma saia de pano. Recortada, o
+  // contorno entra e sai e volta a ler como vapor.
+  const meia = side ? 11 : 15;
+  for (let x = -meia; x <= meia; x++) {
+    const u = Math.abs(x) / meia;
+    const topo = yNevoaT + r(u * u * 20);
+    const fundo = yNevoaB - r(ruido(x + 31) * 8) - r(u * 4);
+    for (let y = topo; y <= fundo; y++) {
+      const t = (y - yNevoaT) / (yNevoaB - yNevoaT);
+      const alfa = 0.6 - t * 0.26 - u * 0.14;
+      const tom = u > 0.62 ? -2 : t < 0.3 ? 1 : 0;
+      px(x + eixo, y, 1, 1, veu(ramp(bruma, tom), alfa));
+    }
+  }
+  // Redemoinhos: quatro fios mais opacos descendo dentro do sino. Névoa chapada
+  // lê como saia de pano; é o giro que diz que aquilo é vapor.
+  for (let i = 0; i < 4; i++) {
+    const sx = (side ? -6 : -10) + i * (side ? 5 : 7);
+    const comp = 8 + r(ruido(i + 11) * 7);
+    for (let k = 0; k < comp; k++) {
+      const t = k / comp;
+      px(sx + eixo + r(Math.sin(t * 3.1 + i) * 2), yNevoaT + 5 + k + i * 2, 1, 1, veu(ramp(bruma, 2), 0.32 - t * 0.16));
+    }
+  }
+
+  // ---- tronco descarnado --------------------------------------------------
+  // Mais opaco que a névoa: é onde está o corpo que sobrou, e o olho precisa
+  // subir dali até a caveira.
+  colunaVeu(kit, yOmbro, yCintura - yOmbro + 2, (t) => ({
+    c: eixo, w: side ? 9 - t * 2 : 15 - t * 4,
+  }), bruma, 0.86, { topo: 1 });
+  for (let i = 0; i < 4; i++) {
+    const w = r(side ? 7 - i : 10 - i * 1.3);
+    px(eixo - Math.floor(w / 2), yOmbro + 3 + i * 2, w, 1, veu(ramp(bruma, -3), 0.82));
+    px(eixo - Math.floor(w / 2), yOmbro + 4 + i * 2, w, 1, veu(ramp(bruma, 2), 0.5));
+  }
+  // pescoço: três linhas entre o queixo e o ombro. Sem ele a caveira senta em
+  // cima do peito e o rosto deixa de ter para onde olhar.
+  colunaVeu(kit, yCranioB, yOmbro - yCranioB + 1, () => ({ c: eixo, w: 5 }), ramp(bruma, -1), 0.9);
+
+  // ---- braços dobrados LONGE do corpo -------------------------------------
+  // Um erguido e um caído: a assimetria é o que impede o tronco de ler como
+  // tubo. Os dois ficam fora da névoa, para existirem na silhueta.
+  //
+  // Eles ficam DOBRADOS e perto do corpo. O wraith é quem estica os braços
+  // para longe; se o specter esticasse também, a maior largura das duas
+  // figuras voltaria para o mesmo lugar e a distinção se perderia de novo.
+  const bracos = side
+    ? [{ ox: 5, oy: 1, ex: 12, ey: 6, mx: 13, my: -3, fora: 1, sobe: -1 }]
+    : [
+      { ox: 7, oy: 1, ex: 12, ey: 5, mx: 12, my: -5, fora: 1, sobe: -1 },
+      { ox: -7, oy: 2, ex: -13, ey: 6, mx: -15, my: 9, fora: -1, sobe: 1 },
+    ];
+  for (const b of bracos) {
+    tracoVeu(kit, eixo + b.ox, yOmbro + b.oy, eixo + b.ex, yOmbro + b.ey, 2, ramp(bruma, 1), 0.88);
+    tracoVeu(kit, eixo + b.ex, yOmbro + b.ey, eixo + b.mx, yOmbro + b.my, 2, bruma, 0.88);
+    dedosLongos(kit, eixo + b.mx, yOmbro + b.my, b.fora, b.sobe, bruma, golpe);
+  }
+
+  // ---- cabelo em coroa ----------------------------------------------------
+  // Erguido como se flutuasse na água. É a peça que faz o ALTO desta figura ser
+  // largo — o wraith tem duas pontas de elmo finas no mesmo lugar, e largo
+  // contra estreito é a primeira coisa que separa os dois em preto.
+  //
+  // A coroa é uma MASSA ligada com a borda recortada, e não onze fios soltos.
+  // Fio solto de 1 px vira uma linha preta depois do contorno automático, e o
+  // violeta do meio some: onze fios soltos dariam um pente preto. Ligados, o
+  // contorno fecha só a borda de fora e os fios acesos vivem por dentro.
+  // Desenhada antes da caveira para que a raiz fique por baixo dela.
+  //
+  // Colunas longas e curtas ALTERNADAS: a borda de cima sai como um pente, e
+  // não como uma cúpula lisa. Cúpula vira cabelo de capacete; o pente é o que
+  // lê como fio solto depois que o contorno automático fecha a borda.
+  const meiaC = side ? 9 : 14;
+  const altura = (u) => r((1 - u * u) * 8);
+  for (let x = -meiaC; x <= meiaC; x++) {
+    const u = Math.abs(x) / meiaC;
+    const alt = r(altura(u) * (x % 2 ? 0.55 : 1.3)) + r(ruido(x + 80) * 3);
+    for (let k = 0; k < alt; k++) {
+      px(x + eixo, yCranioT + 2 - k, 1, 1, veu(ramp(bruma, 2), 0.52 - k * 0.028 - u * 0.12));
+    }
+  }
+  // fios acesos por dentro da coroa, cada um parando na borda dela
+  const fios = side ? 5 : 9;
+  for (let i = 0; i < fios; i++) {
+    const a = (side ? -1.3 : -1.45) + i * (side ? 0.65 : 0.36);
+    const x1 = r(Math.sin(a) * meiaC * 0.88);
+    const u = Math.abs(x1) / meiaC;
+    tracoVeu(kit, eixo + r(x1 * 0.25), yCranioT + 2, eixo + x1, yCranioT + 2 - altura(u) + 1, 1, ramp(bruma, 3), 0.78, 0.25);
+  }
+
+  // ---- caveira ------------------------------------------------------------
+  // Rosto À MOSTRA, e não capuz vazio: o capuz ficou com Agatha e o elmo com o
+  // wraith. Três mortos-vivos com a cara escondida seriam o mesmo bicho.
+  colunaVeu(kit, yCranioT, yCranioB - yCranioT, (t) => {
+    const w = t < 0.3 ? 9 + t * 5 : 10.5 - (t - 0.3) * 4;
+    return { c: eixo + (side ? 1 : 0), w };
+  }, ramp(bruma, 1), 0.95, { topo: 2 });
+
+  if (!back) {
+    // órbitas acesas: dois pontos de luz quase brancos dentro de um poço escuro
+    const olhoY = yCranioT + 3;
+    const olhos = side ? [eixo + 1] : [eixo - 4, eixo + 2];
+    for (const ox of olhos) {
+      px(ox - 1, olhoY - 1, 5, 3, veu(vazio, 0.92));
+      px(ox, olhoY, 3, 2, brilho);
+      px(ox, olhoY + 2, 3, 1, veu(ramp(brilho, -3), 0.45));
+    }
+    // sorriso largo: os dentes são o SEGUNDO ponto de luz da figura, e é a
+    // única boca acesa do elenco — o ghoul tem a boca escura e a língua fora.
+    const bw = side ? 7 : 11;
+    const bx = eixo - Math.floor(bw / 2) + (side ? 2 : 0);
+    const by = yCranioB - 4;
+    px(bx, by, bw, 4, veu(vazio, 0.92));
+    for (let d = 0; d < (side ? 3 : 5); d++) {
+      px(bx + 1 + d * 2, by, 1, golpe ? 4 : 3, veu(brilho, 0.95));
+    }
+    px(bx, by + 4, bw, 1, veu(ramp(bruma, -3), 0.7));
+  } else {
+    // De costas, só a calota e a raiz do cabelo: nenhuma luz. É assim que o
+    // jogador sabe que a criatura está virada para longe dele.
+    colunaVeu(kit, yCranioT + 3, 7, (t) => ({ c: eixo, w: 7 - t * 2 }), ramp(bruma, -1), 0.9);
+  }
+}
+
+/**
+ * Mão de dedos longos e finos. `sobe` manda para onde os dedos apontam: -1 é a
+ * mão erguida, 1 é a mão caída. Dedos de 1 px com alfa caindo para a ponta —
+ * dedo de 2 px vira pá, e dedo que termina em ponta seca vira garfo.
+ */
+function dedosLongos(kit, x, y, fora, sobe, cor, aberto) {
+  const { px } = kit;
+  px(x - 1, y - 1, 3, 3, veu(ramp(cor, 1), 0.9));
+  const leque = aberto ? [[1, 7], [4, 6], [6, 3], [6, -1]] : [[0, 6], [3, 6], [5, 4], [6, 1]];
+  for (const [dx, dy] of leque) {
+    tracoVeu(kit, x, y, x + fora * dx, y + sobe * dy, 1, ramp(cor, 1), 0.9, 0.5);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// WRAITH
+//
+// SILHUETA: duas pontas de elmo no alto de uma cabeça pequena e afundada entre
+// ombros corcundas, dois braços longos demais abertos para os lados e para
+// baixo com os dedos se desfazendo em fiapos, e um corpo que AFINA até virar
+// um feixe de tiras suspensas.
+//
+// É a leitura OPOSTA à do specter, de propósito (ver o comentário dele): esta
+// figura é estreita em cima, estreita embaixo e larga no meio. Pintadas de
+// preto, uma é água-viva e a outra é morcego.
+//
+// ELEMENTO-HERÓI: o elmo de chifres. É a única peça SÓLIDA e de metal em toda a
+// família dos mortos-vivos, e é o que diz ao jogador que esta coisa já foi
+// alguém com uma coroa — Mormesk. Os olhos são AMARELOS: matiz quente dentro do
+// preto, contra o branco-violeta frio do specter.
+// ---------------------------------------------------------------------------
+
+function pintarWraith(kit, look, dir, pose) {
+  const { px } = kit;
+  const c = CORES.wraith;
+  const fumaca = look.cloak ?? look.outfit ?? c.fumaca;
+  const brilho = look.glow ?? look.eyes ?? c.brilho;
+  const vazio = look.void ?? c.vazio;
+  // `metal` já existe nos looks de NPC e é exatamente o que o elmo pede; ler
+  // dele evita um campo novo só para esta peça.
+  const elmo = look.helm ?? look.metal ?? c.elmo;
+
+  if (pose.kind === 'down') return espectroDissipado(kit, fumaca, brilho, 0.7);
+
+  const side = dir === 'side';
+  const back = dir === 'back';
+
+  const flut = pose.kind === 'idle' ? (pose.frame === 1 ? -3 : -1)
+    : pose.kind === 'attack' ? (pose.frame === 1 ? -5 : -2)
+      : pose.kind === 'hurt' ? 1 : -2;
+  const golpe = pose.kind === 'attack';
+  // Ele AVANÇA: inclinado para a frente, como quem vem pegar. O specter paira.
+  const frente = (side ? 3 : 0) + (golpe ? (pose.frame === 1 ? 4 : 2) : 0);
+
+  // A cabeça fica ACIMA da linha dos ombros, e não dentro dela. Afundada no
+  // meio das corcovas, o elmo somia na barra escura do ombro e a figura virava
+  // um bloco chato com duas antenas — e o elmo é justamente onde o olho tem de
+  // pousar. Seis linhas de pescoço estreito entre a cara e a corcova resolvem.
+  const yElmoT = -58 + flut;
+  const yElmoB = -50 + flut;
+  const yRostoB = -44 + flut;
+  const yOmbro = -42 + flut;
+  const yNucleoB = -20 + flut;
+  const yFiosB = -4 + flut;
+
+  // ---- o feixe de fiapos --------------------------------------------------
+  // O corpo não termina: AFINA. Seis tiras estreitas, de comprimento desigual,
+  // dentro de 9 px do eixo. É o contrário do sino do specter e é metade da
+  // diferença entre os dois em preto.
+  const tiras = side ? 4 : 6;
+  for (let i = 0; i < tiras; i++) {
+    const fx = (side ? -4 : -7) + i * (side ? 3 : 3) - r(frente * 0.4);
+    const comp = 10 + r(ruido(i + 51) * 8);
+    for (let k = 0; k < comp; k++) {
+      const y = yNucleoB + k;
+      if (y > yFiosB + 4) break;
+      const t = k / comp;
+      // a tira serpenteia enquanto cai: reta ela lê como franja de tapete
+      const x = fx + r(Math.sin(t * 2.6 + i * 1.7) * 2);
+      px(x, y, t > 0.6 ? 1 : 2, 1, veu(ramp(fumaca, -1 - r(t * 2)), 0.72 - t * 0.5));
+    }
+  }
+
+  // ---- núcleo sólido ------------------------------------------------------
+  // Mais opaco que o specter inteiro: o wraith é denso no meio e só se desfaz
+  // nas bordas. É isso que o faz ler como um buraco no tabuleiro.
+  colunaVeu(kit, yOmbro, yNucleoB - yOmbro, (t) => ({
+    c: (side ? 1 : 0) + (1 - t) * frente * 0.3,
+    w: side ? 10 - t * 3 : 14 - t * 6,
+  }), fumaca, 0.9, { topo: 1 });
+  // Fumaça solta em volta do núcleo: borda macia, sem linha de corte.
+  //
+  // Cada bafo é calculado a partir da largura do núcleo NAQUELA altura e
+  // encosta nele por 1 px. Posição fixa não serve: de perfil o corpo é 5 px
+  // mais estreito, os bafos descolavam, e `sheet.js` contornaria cada um de
+  // preto — nove retângulos pretos flutuando ao lado da figura.
+  for (let i = 0; i < 9; i++) {
+    const lado = i % 2 ? 1 : -1;
+    const y = yOmbro + 2 + i * 2;
+    const t = (y - yOmbro) / Math.max(1, yNucleoB - yOmbro);
+    const meio = (side ? 10 - t * 3 : 14 - t * 6) / 2;
+    const w = 3 + r(ruido(i + 61) * 3);
+    const base = (side ? 1 : 0) + (1 - t) * frente * 0.3;
+    const x = lado < 0 ? r(base - meio) - w + 1 : r(base + meio) - 1;
+    px(x, y, w, 2, veu(ramp(fumaca, -2), 0.3));
+  }
+
+  // ---- ombros corcundas ---------------------------------------------------
+  // Duas corcovas acima da linha do ombro, com a cabeça afundada no vale entre
+  // elas. É a postura de quem avança baixo, e é o que dá os 2 px de largura
+  // máxima no MEIO da figura.
+  if (!side) {
+    for (const lado of [-1, 1]) {
+      colunaVeu(kit, yOmbro - 2, 7, (t) => ({ c: lado * 8, w: 9 - t * 3 }), ramp(fumaca, lado < 0 ? 1 : -1), 0.88, { topo: 1 });
+    }
+  } else {
+    colunaVeu(kit, yOmbro - 2, 7, (t) => ({ c: -2 + t * 2, w: 11 - t * 3 }), ramp(fumaca, 1), 0.88, { topo: 1 });
+  }
+
+  // ---- braços longos demais ----------------------------------------------
+  // Ombro, cotovelo, punho e DEPOIS os dedos, que continuam por mais 8 px se
+  // desfazendo. O braço inteiro é mais comprido que o tronco; nenhuma outra
+  // criatura do elenco chega tão longe para os lados.
+  //
+  // O punho para em 19 px do centro e os dedos avançam mais 4: 23 px, com
+  // 2 px de folga até a borda da célula. O contorno automático precisa de um
+  // pixel vazio em volta, e dedo cortado rente à borda lê como linha reta.
+  const bracos = side
+    ? [{ ox: 6, ex: 15, ey: 10, mx: 19, my: 20, fora: 1 }]
+    : [
+      { ox: -9, ex: -16, ey: 9, mx: -19, my: 19, fora: -1 },
+      { ox: 9, ex: 16, ey: 8, mx: 19, my: 17, fora: 1 },
+    ];
+  for (const b of bracos) {
+    const ox = b.ox + r(frente * 0.3);
+    tracoVeu(kit, ox, yOmbro + 1, b.ex + r(frente * 0.5), yOmbro + b.ey, 2, ramp(fumaca, 1), 0.9);
+    tracoVeu(kit, b.ex + r(frente * 0.5), yOmbro + b.ey, b.mx, yOmbro + b.my, 2, fumaca, 0.88);
+    // os dedos: quatro fiapos que começam finos e terminam em nada
+    const leque = golpe ? [[4, -3], [4, 2], [3, 7], [1, 9]] : [[2, 5], [4, 7], [4, 3], [2, 9]];
+    for (const [dx, dy] of leque) {
+      tracoVeu(kit, b.mx, yOmbro + b.my, b.mx + b.fora * dx, yOmbro + b.my + dy, 1, ramp(fumaca, 1), 0.85, 0.1);
+    }
+  }
+
+  // ---- rosto no escuro ----------------------------------------------------
+  // Poço preto sob a aba do elmo. É o contraste máximo da figura e é onde os
+  // dois pontos amarelos têm de brilhar.
+  const rx = r(frente * 0.5);
+  colunaVeu(kit, yElmoB, yRostoB - yElmoB + 1, (t) => ({ c: rx + (side ? 1 : 0), w: 9 - t * 2 }), vazio, 0.95);
+  if (!back) {
+    const olhoY = yElmoB + 2;
+    const olhos = side ? [rx + 1] : [rx - 3, rx + 2];
+    for (const ox of olhos) {
+      px(ox, olhoY, 2, 2, brilho);
+      px(ox - 1, olhoY, 1, 2, veu(ramp(brilho, -2), 0.6));      // o halo quente
+      px(ox + 2, olhoY, 1, 2, veu(ramp(brilho, -3), 0.4));
+      px(ox, olhoY + 2, 2, 1, veu(ramp(brilho, -3), 0.35));
+    }
+    if (golpe) {
+      // no golpe a luz escapa do elmo e desce pelo peito
+      for (let i = 0; i < 4; i++) {
+        px(rx - 2 + i * 2, yRostoB + 1 + i, 2, 1, veu(ramp(brilho, -2), 0.26 - i * 0.05));
+      }
+    }
+  }
+
+  // ---- elmo de chifres ----------------------------------------------------
+  // A calota é sólida e tem luz, núcleo e sombra como metal de verdade: é a
+  // única peça desta figura que não é fumaça, e é por isso que o olho pousa
+  // nela. A aba avança sobre o rosto e projeta a sombra onde ficam os olhos.
+  const hx = rx + (side ? 1 : 0);
+  colunaVeu(kit, yElmoT, yElmoB - yElmoT + 2, (t) => {
+    const w = t < 0.3 ? 9 + t * 10 : 12 - (t - 0.3) * 1.5;
+    return { c: hx, w };
+  }, elmo, 0.96, { topo: 2 });
+  px(hx - 6, yElmoB, 12, 1, ramp(elmo, -4));            // a aba, contra o rosto
+  px(hx - 1, yElmoT + 2, 2, 6, ramp(elmo, 2));          // a crista central
+
+  // Os chifres: saem da lateral da calota, abrem e sobem. Afinam de 3 px na
+  // base para 1 px na ponta — chifre de espessura constante lê como antena.
+  for (const lado of [-1, 1]) {
+    for (let k = 0; k <= 8; k++) {
+      const t = k / 8;
+      const cx = hx + lado * r(3 + Math.sin(t * 1.45) * 4.5);
+      const cw = t > 0.72 ? 1 : t > 0.35 ? 2 : 3;
+      px(lado < 0 ? cx - cw + 1 : cx, yElmoT + 1 - k, cw, 1, ramp(elmo, t > 0.5 ? 1 : -2));
+    }
+  }
+  if (side) {
+    // De perfil os dois chifres se sobrepõem; uma sombra no de trás separa os
+    // dois em vez de deixar um borrão de 2 px.
+    px(hx - 7, yElmoT - 6, 3, 2, ramp(elmo, -3));
+  }
 }

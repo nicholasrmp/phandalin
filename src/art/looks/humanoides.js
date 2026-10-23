@@ -306,19 +306,42 @@ export const HUMANOIDES_LOOKS = {
     face: { testa: 0.42, arcada: 0, macas: 2, mandibula: 0.86, queixo: 'pontudo', olhoGap: 1, olhoH: 2, olhoW: 3, nariz: 'fina', boca: 'fina' },
   },
 
-  // SILHUETA: trapézio imenso de ombro duas vezes mais largo que a cabeça, sem
-  // pescoço, com uma bossa no alto das costas e uma clava apoiada na diagonal.
+  // SILHUETA: massa oval pendendo à frente sobre pernas curtas e enfaixadas,
+  // com uma corcunda mais alta que a cabeça e as mãos à altura do joelho.
+  //
+  // A versão anterior era um trapézio de ombro largo e musculoso. Está errado:
+  // assim ele é um humano aumentado, e o elenco já tem três trapézios de ombro
+  // caído (orc, rufião, Rei Grol) — pintados de preto, os quatro eram a mesma
+  // mancha, que é o defeito mais caro de ELENCO.md.
+  //
+  // O ogro é uma PANÇA COM PERNINHAS: a barriga é a maior massa do corpo e
+  // pende à frente, a corcunda sobe acima da cabeça, a cabeça é pequena e
+  // está afundada abaixo da linha dos ombros, e os braços são tão longos que
+  // as mãos chegam perto do chão. A anatomia disso está em `body.js`; aqui só
+  // entram a tinta e os trapos.
   ogro: {
-    species: 'ogro', build: 'forte',
-    skin: '#c08a74', hair: '#2a1e18', hairStyle: 'spiky',
-    // Rosa-barro contra o verde do goblin e o marrom-vermelho do hobgoblin: o
-    // ogro é o grandão, e tem de sair da paleta dos goblinoides.
-    outfit: '#7a6250', outfitDark: '#4a3a2e', trim: '#8a5a3a',
-    metal: '#8e8a84', leather: '#5a4432', eyes: '#d8c24a',
-    armorStyle: 'leather', helm: false, shield: false, weapon: 'mace',
-    marca: 'corcunda',
-    noseTint: '#a85a52',
-    face: { testa: 0.24, arcada: 2, macas: 0, mandibula: 1.34, queixo: 'largo', projeta: 'mandibula', olhoGap: -2, olhoH: 1, nariz: 'bulbosa', narizW: 1.55, boca: 'frouxa' },
+    species: 'ogro', build: 'normal',
+    // Amarelado pálido, quase creme doentio, e LISO — nada de pelo. Entre o
+    // verde frio do goblin, o laranja do hobgoblin e o fulvo do bugbear, o
+    // ogro é o único claro: no tabuleiro ele é a mancha pálida e grande.
+    // TRÊS VALORES, não um. A primeira tentativa pintou cabeça, barriga e
+    // braços no mesmo creme e a figura virou uma mancha sem membros: a 45 px
+    // não sobrava nada além de uma bola. Agora a barriga é o mais claro (ela
+    // é a massa e tem de receber a luz), a cabeça e os braços são um degrau
+    // mais escuros e as pernas mais ainda — o olho encontra as peças.
+    skin: '#c2a677', hair: '#6a583e', hairStyle: 'bald',
+    outfit: '#e2d1a6', outfitDark: '#a08a62', sleeve: '#c2a677',
+    trim: '#a8926a', metal: '#8e8a84', leather: '#73653f', cabo: '#6a5230',
+    eyes: '#e8c84a',
+    helm: false, shield: false, weapon: 'clava',
+    // Trapos na cintura (saiote), tiras de pano enroladas nas canelas e nos
+    // antebraços (faixas), pés descalços e unha grossa escura. Nenhuma peça
+    // de armadura: o ogro não fabrica nada, ele veste o que sobrou.
+    marca: ['corcunda', 'saiote'], faixas: true, descalco: true,
+    garras: true, unha: '#4a3c2c',
+    // Olho minúsculo e amarelo sob uma arcada pesada, nariz chato, e uma
+    // BOCARRA que toma o resto da cara. A 45 px o rosto do ogro é a boca.
+    face: { testa: 0.30, arcada: 3, macas: 0, mandibula: 1.16, queixo: 'largo', projeta: 'mandibula', olhoGap: -1, olhoH: 1, olhoW: 2, nariz: 'chata', narizW: 1.15, boca: 'escancarada' },
   },
 
 };

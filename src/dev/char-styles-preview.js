@@ -18,6 +18,7 @@ import { FERAS_LOOKS } from '../art/looks/feras.js';
 import { MORTOS_VIVOS_LOOKS } from '../art/looks/mortosvivos.js';
 import { ABERRACOES_LOOKS } from '../art/looks/aberracoes.js';
 import { NPC_LOOKS } from '../art/looks/npcs.js';
+import { DRAGAO_LOOKS } from '../art/looks/dragao.js';
 import { MONSTERS } from '../rules/monsters.js';
 import { NPCS } from '../rules/npcs.js';
 
@@ -29,7 +30,8 @@ const FAMILIAS = [
   ['Humanoides', HUMANOIDES_LOOKS],
   ['Feras', FERAS_LOOKS],
   ['Mortos-vivos', MORTOS_VIVOS_LOOKS],
-  ['Aberrações, limo e dragão', ABERRACOES_LOOKS],
+  ['Aberrações e limo', ABERRACOES_LOOKS],
+  ['Dragão', DRAGAO_LOOKS],
   ['NPCs da campanha', NPC_LOOKS],
 ];
 

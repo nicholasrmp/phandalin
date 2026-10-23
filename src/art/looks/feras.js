@@ -11,9 +11,12 @@
 // pior, porque passa na verificação e some na revisão.
 //
 //   plan: 'quadrupede'  (`plans/quadrupede.js`) — lobo, lobo atroz
+//     porte       'grande' para criatura Grande; ausente para Média/Pequena.
+//                 É GEOMETRIA, não cor: o plano multiplica altura e
+//                 comprimento. Ver a nota de escala no topo daquele arquivo.
 //     outfit      corpo, cabeça, cauda
 //     outfitDark  patas, orelhas, quarto traseiro
-//     hair        cupim e tufo da cauda
+//     hair        cernelha, peitoral e cauda
 //     skin        parte interna da orelha e tromba (entra em ramp(), por isso
 //                 precisa ser uma cor de pele nua, não de pelo)
 //     eyes        olho
@@ -54,10 +57,12 @@
 //     morcego gigante  violeta com membrana rosa-poeira
 //     urso pardo       marrom-vermelho quente
 //     javali           umbre escuro com presa de marfim
-//     coruja-urso      verde-acinzentado FRIO com disco facial creme
+//     coruja-urso      cinza-pardo quase acromático, valor BAIXO, peito claro
 //     stirge           carmim, o único vermelho do elenco
 //   Nenhuma delas repete a dupla matiz+valor de outra, e nenhuma cai no bege
-//   médio dos goblinoides.
+//   médio dos goblinoides. A coruja-urso e o urso pardo são os dois que mais
+//   se aproximam em massa: separam-se por valor e saturação, não por matiz —
+//   ver a nota no look dela.
 
 export const FERAS_LOOKS = {
 
@@ -65,14 +70,9 @@ export const FERAS_LOOKS = {
   // CANÍDEOS — plano `quadrupede`
   // -------------------------------------------------------------------------
 
-  // SILHUETA: tubo horizontal comprido sobre quatro colunas curtas, com cupim
-  // acima da linha das costas, cabeça à frente na altura do dorso e cauda baixa.
-  //
-  // O lobo e o lobo atroz dividem a MESMA geometria: `quadrupede.js` não tem
-  // multiplicador de tamanho, então aqui os dois só podem ser separados por cor
-  // e valor. Está no relatório desta rodada como pedido ao dono daquele arquivo
-  // — um lobo atroz Grande pintado com 35 px viola a escala de ELENCO.md §3, e
-  // não é coisa que um look conserte.
+  // SILHUETA: tubo horizontal comprido sobre quatro colunas curtas, com a
+  // cernelha acima da linha das costas, o crânio afunilando num focinho longo
+  // à frente, duas orelhas em triângulo ereto e cauda baixa e farta.
   wolf: {
     plan: 'quadrupede',
     outfit: '#7a7a84', outfitDark: '#454550', hair: '#5c5c68',
@@ -83,11 +83,21 @@ export const FERAS_LOOKS = {
     trim: '#9a9088', metal: '#9a9088', leather: '#58504a',
   },
 
-  // O atroz é o mesmo molde dois valores mais escuro e com olho CLARO em vez de
-  // âmbar: no tabuleiro a mancha quase preta com dois pontos frios lê como
-  // "este não é o lobo de antes" antes de o jogador ler o nome.
+  // SILHUETA: o mesmo tubo sobre quatro colunas, meia cabeça mais alto que um
+  // humano, com a cernelha dominando o dorso e a cabeça maciça acima da linha
+  // das costas em vez de na altura dela.
+  //
+  // `porte: 'grande'` é o que conserta a colisão desta rodada: até agora os
+  // dois lobos saíam pixel a pixel idênticos (IoU 1,000) porque o plano não
+  // tinha noção de tamanho e o look só podia mudar cor. Cor sozinha nunca
+  // resolveria — no tabuleiro quem diz "Grande" é a altura contra o vizinho.
+  //
+  // O valor continua dois degraus abaixo do lobo comum, e o olho CLARO em vez
+  // de âmbar: a mancha quase preta com dois pontos frios lê como "este não é o
+  // lobo de antes" antes de o jogador ler o nome.
   direWolf: {
     plan: 'quadrupede',
+    porte: 'grande',
     outfit: '#3e4452', outfitDark: '#23272f', hair: '#2c313c',
     skin: '#8a6a72', eyes: '#e8f0ff',
     trim: '#5a6270', metal: '#8e96a4', leather: '#2a2e36',
@@ -160,8 +170,9 @@ export const FERAS_LOOKS = {
     leather: '#8f5f66', metal: '#efe6cc', eyes: '#ffc24a',
   },
 
-  // SILHUETA: corpo de pássaro gordo flutuando, com uma agulha reta saindo à
-  // frente tão longa quanto ele e quatro palhetas curtas nos flancos.
+  // SILHUETA: quatro lâminas membranosas esticadas em cruz em volta de um
+  // corpo minúsculo, com uma agulha reta de ponta virada saindo à frente da
+  // cabeça e uma cauda fina encurvada por baixo.
   //
   // Único vermelho do elenco inteiro, e de propósito: o stirge tem 2 PV e 19 px,
   // e sem uma cor que ninguém mais usa ele some entre as pernas das miniaturas
@@ -170,8 +181,12 @@ export const FERAS_LOOKS = {
   stirge: {
     plan: 'feras',
     fera: 'stirge',
+    // `metal` aqui NÃO é marfim. Na referência o stirge é vermelho-tijolo de
+    // ponta a ponta, probóscide inclusive — e `metal` é justamente a cor dela.
+    // Em creme de osso a agulha lia como bico de passarinho, que é a leitura
+    // errada: esta criatura não bica, ela ESPETA.
     hair: '#7a2a32', outfitDark: '#4a1a22', trim: '#c8565c',
-    leather: '#9a4a52', metal: '#efe0c4', eyes: '#ffe24a',
+    leather: '#9a4a52', metal: '#c87a62', eyes: '#ffe24a',
   },
 
   // -------------------------------------------------------------------------
@@ -200,18 +215,32 @@ export const FERAS_LOOKS = {
     leather: '#3a2418', metal: '#e8dcc0', eyes: '#c8782a',
   },
 
-  // SILHUETA: massa de urso erguida sobre duas pernas, encimada sem pescoço por
-  // uma cabeça redonda de onde saem um bico em cunha e dois tufos em diagonal.
+  // SILHUETA: massa larga de urso erguida sobre duas pernas, encimada sem
+  // pescoço por uma cabeça de coruja mais larga que alta, com dois tufos de
+  // pena abrindo em V acima dela e um bico aberto em gancho no meio da cara.
   //
-  // A ÚNICA criatura FRIA entre as bestas grandes. O urso pardo é marrom quente
-  // e tem quase a mesma massa; posto o verde-acinzentado aqui, as duas deixam de
-  // ser a mesma mancha quando aparecem no mesmo encontro. O disco facial creme
-  // (`trim`) é o elemento-herói e o que impede a coruja-urso de ler como urso.
+  // PALETA REFEITA NESTA RODADA (REFERENCIAS.md §6). O verde-água de antes era
+  // o pior erro do elenco: a criatura lia como gente de pijama. A referência é
+  // CINZA-PARDO ESCURO, quase marrom-chumbo, com o peito e a face bem mais
+  // claros — nada de verde em lugar nenhum.
+  //
+  // O argumento antigo (ser a única fria para não repetir o urso pardo) não se
+  // perde, só muda de eixo: a separação agora é de VALOR e de SATURAÇÃO, não
+  // de matiz. O urso pardo é `#7a4a2a`, marrom quente e saturado, de valor
+  // médio; a coruja-urso é quase acromática e dois degraus mais escura. No
+  // mesmo encontro são duas manchas distintas sem que nenhuma precise ser
+  // verde.
+  //
+  // Dois elementos-herói, e eles não competem porque ocupam áreas diferentes:
+  // `trim` (peito emplumado e disco facial) é a mancha clara de longe, e
+  // `metal` (bico) é o único amarelo da figura, concentrado em 9 px. A garra
+  // NÃO sai de `metal` — o plano a deriva de `leather` — justamente para não
+  // espalhar o amarelo por oito pontos e apagar o bico.
   owlbear: {
     plan: 'feras',
     fera: 'coruja-urso',
-    hair: '#5a6a62', outfitDark: '#3a4642', trim: '#efe3c2',
-    leather: '#2e3834', metal: '#e8c86a', eyes: '#ffb02a',
+    hair: '#4d4740', outfitDark: '#332e29', trim: '#b3ab98',
+    leather: '#262220', metal: '#e8b43c', eyes: '#2f231d',
   },
 
 };
