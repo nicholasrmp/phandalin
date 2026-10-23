@@ -123,7 +123,7 @@ export const SPECIES = {
   // juntinho; o orc projeta a MANDÍBULA, que passa da arcada. São três perfis
   // diferentes, não três cores.
   goblin: {
-    h: 0.72, legs: 0.86, head: 1.06, bulk: 0.90, arms: 1.04, neck: -1, ear: 'swept',
+    h: 0.72, legs: 0.86, head: 1.06, bulk: 0.90, arms: 1.04, neck: -1, ear: 'abano',
     flatNose: true, hunch: 2, darkEyes: true, fangs: true, stance: 'agachado',
     face: rosto({
       testa: 0.32, arcada: 1, macas: 0, mandibula: 0.82, queixo: 'recuado',

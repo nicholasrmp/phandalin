@@ -38,7 +38,9 @@
 import { makePortrait } from '../art/sheet.js';
 import { iconCanvas, iconeDeArma, iconeDeMagia } from '../art/icons.js';
 import { CONDITIONS, hasCondition } from '../rules/conditions.js';
-import { WEAPONS } from '../rules/equipment.js';
+import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
+import { isAdjacent } from '../core/grid.js';
+import { criarMinimapa } from './minimapa.js';
 import { getSpell } from '../rules/spells.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
 import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
@@ -125,6 +127,9 @@ export class Hud {
     this.banner = el('div', { class: 'turn-banner' });
     this.trilho = el('div', { class: 'trilho' });
     this.logList = el('div', { class: 'log-list' });
+    // O minimapa se pendura aqui dentro, e o HUD só lhe passa o encontro.
+    this.minimapaHost = el('div', { class: 'minimapa-host' });
+    this.minimapa = criarMinimapa(this.minimapaHost);
     this.barra = el('div', { class: 'barra-acao' });
     this.hint = el('div', { class: 'hint' });
     this.dica = el('div', { class: 'dica', role: 'tooltip' });
@@ -142,6 +147,10 @@ export class Hud {
           this.resumo,
           this.hint),
         el('aside', { class: 'coluna-log' },
+          // O minimapa vem ANTES do log: é referência, consultada de relance,
+          // e o log é narrativa, que rola. Referência que rola para fora da
+          // tela não é referência.
+          this.minimapaHost,
           el('h2', {}, 'Rolagens'),
           this.logList,
           el('footer', { class: 'legal' },
@@ -259,13 +268,16 @@ export class Hud {
   }
 
   /** Um azulejo da barra: ícone, tecla, estado e dica. */
-  tile(icone, { tecla = null, ativo = false, desabilitado = false, classe = '', dica = null, onClick = null }) {
+  tile(icone, { tecla = null, ativo = false, desabilitado = false, classe = '', dica = null, onClick = null, selo = null }) {
     const node = el('button', {
       class: `tile${ativo ? ' on' : ''}${desabilitado ? ' off' : ''}${classe ? ` ${classe}` : ''}`,
       disabled: desabilitado ? 'disabled' : null,
       onclick: onClick ?? undefined,
     },
-      iconCanvas(icone, 2),
+      iconCanvas(icone, 32),
+      // O selo é a QUANTIDADE, no canto de cima: a tecla já mora no de baixo,
+      // e duas plaquinhas no mesmo canto viram uma mancha só.
+      selo !== null ? el('span', { class: 'tile-selo' }, selo) : null,
       tecla ? el('span', { class: 'tecla' }, tecla) : null);
     // A tecla impressa no canto só vale metade: na dica ela aparece escrita,
     // que é onde o jogador procura quando quer decorar o atalho.
@@ -427,13 +439,19 @@ export class Hud {
     this.hint.textContent = text ?? '';
   }
 
-  update(enc, selected, mode) {
+  /**
+   * @param alvo  o inimigo sob o cursor, quando há um. É o que faz cada
+   *              azulejo de arma mostrar a chance contra ELE em vez de só o
+   *              dado da tabela.
+   */
+  update(enc, selected, mode, alvo = null) {
     this.acompanharLado(enc);
     this.setBanner(enc);
     this.renderOrdem(enc, selected, mode);
     this.renderTrilho(enc, selected, mode);
-    this.renderBarra(enc, selected, mode);
+    this.renderBarra(enc, selected, mode, alvo);
     this.renderViewBar();
+    this.minimapa.desenhar(enc, selected);
   }
 
   // ---- resumo do turno inimigo ----------------------------------------------
@@ -587,6 +605,28 @@ export class Hud {
    * ainda sobrou do turno — a mesma resposta das gemas, mas sem obrigar o
    * jogador a atravessar a tela para ver.
    */
+  /**
+   * Ação, bônus, reação e movimento restantes, no próprio cartão.
+   *
+   * Isto já existia — na DICA. Para planejar a rodada o jogador tinha de
+   * passar o mouse por quatro cartões, um de cada vez, e guardar de cabeça o
+   * que viu nos três anteriores. É o contrário do que um trilho serve para
+   * fazer. Três letras acesas ou apagadas dizem a mesma coisa de relance, e
+   * a dica continua lá para quem quiser o nome por extenso.
+   */
+  economiaDoCartao(c) {
+    const ponto = (rot, gasto, nome) => el('span', {
+      class: `eco${gasto ? ' gasto' : ''}`,
+      title: `${nome}: ${gasto ? 'já usada' : 'disponível'}`,
+    }, rot);
+    const pes = Math.max(0, Math.round(c.movementLeftFt ?? 0));
+    return el('div', { class: 'eco-linha' },
+      ponto('A', c.actionUsed, 'Ação'),
+      ponto('B', c.bonusUsed, 'Ação bônus'),
+      ponto('R', c.reactionUsed, 'Reação'),
+      el('span', { class: `eco-mov${pes === 0 ? ' gasto' : ''}` }, `${pes} pés`));
+  }
+
   fichaGrupo(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
     const fracao = Math.max(0, c.hp / c.maxHp);
@@ -609,6 +649,7 @@ export class Hud {
         down
           ? el('span', { class: 'ficha-morte' }, c.dead ? 'Morto' : `Morte ${c.deathSaves.successes}✓ ${c.deathSaves.failures}✗`)
           : null,
+        !down && enc.side === 'party' ? this.economiaDoCartao(c) : null,
         c.spellcasting
           ? el('div', { class: 'slots' }, c.spellcasting.slots.map((n, lvl) => (lvl === 0 || n === undefined ? null
             : el('span', { class: 'slot' }, `${lvl}º ${'◆'.repeat(n)}`))))
@@ -657,7 +698,14 @@ export class Hud {
     const golpes = this.golpesParaDerrubar(previsao, c);
 
     return this.ligarDica(
-      el('div', { class: `inimigo${down ? ' down' : ''}` },
+      el('div', {
+        class: `inimigo${down ? ' down' : ''}`,
+        // Passar o mouse aqui também vira contexto de alvo para a barra: é um
+        // alvo maior e mais estável que a figura no tabuleiro, e é onde o
+        // jogador já olha para comparar inimigos.
+        onmouseenter: () => this.handlers.onAlvoHover?.(c),
+        onmouseleave: () => this.handlers.onAlvoHover?.(null),
+      },
         el('div', { class: 'inimigo-topo' },
           el('strong', {}, c.name),
           el('span', { class: 'inimigo-ca' },
@@ -683,7 +731,7 @@ export class Hud {
 
   // ---- barra de ação --------------------------------------------------------
 
-  renderBarra(enc, c, mode) {
+  renderBarra(enc, c, mode, alvo = null) {
     this.hotkeys = [];
     // As letras são reservadas a cada montagem da barra: a barra muda com a
     // classe e com o turno, e tecla apontando para um azulejo que não existe
@@ -713,8 +761,12 @@ export class Hud {
     // e o guerreiro não tem nenhum: reservar a zona vazia para ele seria
     // mostrar um recurso que não existe.
     this.barra.append(...limpos(
-      this.zonaAtaques(enc, c, mode),
+      this.zonaAtaques(enc, c, mode, alvo),
       this.zonaComuns(enc, c, mode),
+      // Itens à esquerda do núcleo, junto das outras ações: é ação, não
+      // recurso de classe. `limpos` descarta a zona quando a mochila não tem
+      // consumível nenhum.
+      this.zonaItens(enc, c, mode),
       this.nucleo(c),
       this.zonaMovimento(c),
       this.zonaRecursos(c),
@@ -723,7 +775,7 @@ export class Hud {
     ));
   }
 
-  zonaAtaques(enc, c, mode) {
+  zonaAtaques(enc, c, mode, alvo = null) {
     const tiles = (c.weapons ?? []).map((wid, i) => {
       const w = WEAPONS[wid];
       const run = () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid });
@@ -732,19 +784,40 @@ export class Hud {
       // cortante", o dado cru da tabela, sem o modificador que o guerreiro
       // soma de verdade. O bônus de ataque é a metade que faltava da conta.
       const p = enc.weaponAttackProfile(c, wid);
+
+      // Com um inimigo sob o cursor, o azulejo deixa de mostrar só o que a
+      // arma É e passa a mostrar o que ela FAZ contra aquele alvo. A conta
+      // sai de `odds.js`, a mesma que o cartão do tabuleiro usa — duas contas
+      // de chance seriam duas chances diferentes no dia em que uma mudasse.
+      // `rotuloDeChance` é a MESMA função que rotula a lista de inimigos, e
+      // ela já resolve os quatro casos: dentro do alcance, corpo a corpo que
+      // ainda tem de andar até lá, fora de alcance de verdade, e sem visão.
+      // Reescrever isso aqui faria o azulejo e a lista discordarem sobre o
+      // mesmo inimigo na mesma tela.
+      const prev = alvo ? previsaoDeAtaque(enc, c, alvo, wid) : null;
+      const rot = prev ? this.rotuloDeChance(prev, alvo) : null;
+
+      const linhas = [
+        ['Ataque', formatModifier(p.bonus)],
+        ['Dano', `${p.damage} ${p.type}`],
+        ['Alcance', w.ranged ? `${w.rangeFt} pés (longo ${w.longRangeFt})` : `${w.reachFt ?? 5} pés`],
+      ];
+      if (rot) {
+        linhas.push([`Contra ${alvo.name}`, rot.aoChegar ? `${rot.texto} ao encostar` : rot.texto]);
+        if (!prev.foraDeAlcance && !prev.semVisao) linhas.push(['Dano esperado', prev.esperado.toFixed(1)]);
+      }
+
       return this.tile(iconeDeArma(w.art, w.name), {
         tecla,
         ativo: mode?.kind === 'attack' && mode.weaponId === wid,
         desabilitado: c.actionUsed,
         onClick: run,
+        selo: rot?.texto ?? null,
+        classe: rot ? `chance-${rot.classe}` : '',
         dica: {
           nome: w.name,
           tipo: w.ranged ? 'ataque à distância' : 'ataque corpo a corpo',
-          linhas: [
-            ['Ataque', formatModifier(p.bonus)],
-            ['Dano', `${p.damage} ${p.type}`],
-            ['Alcance', w.ranged ? `${w.rangeFt} pés (longo ${w.longRangeFt})` : `${w.reachFt ?? 5} pés`],
-          ],
+          linhas,
           texto: 'Clique num inimigo para atacar. Corpo a corpo longe do alvo anda até ele primeiro, gastando movimento.',
           custo: 'Ação',
           aviso: c.actionUsed ? 'A ação deste turno já foi usada' : null,
@@ -808,6 +881,76 @@ export class Hud {
   }
 
   /**
+   * Os itens de usar da mochila.
+   *
+   * Zona própria, e não um azulejo em "Ações", porque é o único grupo da
+   * barra que ACABA: a poção some quando a última é bebida, e a zona some
+   * junto. Misturada com Disparada e Esquivar, a barra mudaria de largura no
+   * meio do combate sem explicar por quê.
+   *
+   * O alvo sai daqui pronto quando é óbvio — beber a própria poção, o kit no
+   * aliado caído ao lado. Só o arremesso pede mira.
+   */
+  zonaItens(enc, c, mode) {
+    const lista = consumiveisDe(c);
+    if (!lista.length) return null;
+
+    const caido = enc.alliesOf(c).find(
+      (a) => !a.dead && !a.stable && hasCondition(a, 'inconsciente') && isAdjacent(a.pos, c.pos),
+    );
+
+    const tiles = lista.map(({ id, qtd, dados }) => {
+      const arremesso = dados.consumivel === 'arremesso';
+      const porBonus = dados.acao === 'bonus';
+      const semEconomia = porBonus ? c.bonusUsed : c.actionUsed;
+
+      // O kit de cura só serve se houver alguém caído ao lado. Sem isso ele
+      // fica apagado com o motivo na dica, em vez de gastar a ação à toa.
+      const precisaCaido = dados.consumivel === 'estabilizar';
+      const alvo = precisaCaido ? caido : null;
+      const semAlvo = precisaCaido && !alvo;
+      const desabilitado = semEconomia || semAlvo;
+
+      const acao = {
+        kind: 'item', itemId: id, mira: arremesso,
+        targetId: alvo?.id ?? null,
+      };
+      const run = () => this.handlers.onAction?.(acao);
+      const ligado = mode?.kind === 'item' && mode.itemId === id;
+
+      const linhas = [];
+      if (dados.cura) linhas.push(['Cura', dados.cura]);
+      if (dados.damage && dados.damage !== '0') linhas.push(['Dano', `${dados.damage} ${dados.damageType}`]);
+      if (arremesso) linhas.push(['Alcance', `${dados.rangeFt ?? 20} pés`]);
+      if (dados.usos) linhas.push(['Usos no kit', String(dados.usos)]);
+      linhas.push(['Na mochila', String(qtd)]);
+
+      return this.tile(dados.art ?? 'cura', {
+        desabilitado,
+        ativo: ligado,
+        onClick: run,
+        selo: qtd > 1 ? qtd : null,
+        dica: {
+          nome: dados.name,
+          tipo: dados.tipo,
+          linhas,
+          texto: dados.desc,
+          custo: porBonus ? 'Ação bônus' : 'Ação',
+          aviso: semAlvo
+            ? 'Ninguém caído ao seu lado'
+            : semEconomia
+              ? (porBonus ? 'A ação bônus deste turno já foi usada' : 'A ação deste turno já foi usada')
+              : arremesso ? 'Clique num inimigo para arremessar' : null,
+        },
+      });
+    });
+
+    return el('div', { class: 'zona zona-itens' },
+      el('div', { class: 'tiles' }, tiles),
+      el('span', { class: 'zona-rot' }, 'Itens'));
+  }
+
+  /**
    * O núcleo. As duas gemas são a informação mais consultada da tela inteira:
    * acesa é recurso disponível, apagada é gasto. O retrato no meio existe para
    * o jogador nunca precisar conferir de quem é o turno.
@@ -826,7 +969,7 @@ export class Hud {
 
     const gema = (icone, restam, nome, texto) => this.ligarDica(
       el('div', { class: `gema${restam ? '' : ' gasta'}` },
-        iconCanvas(icone, 1),
+        iconCanvas(icone, 16),
         restam > 1 ? el('span', { class: 'gema-n' }, restam) : null),
       { nome, texto, aviso: restam ? `${restam} disponível${restam > 1 ? 'is' : ''}` : 'Já usada neste turno' },
     );
@@ -864,7 +1007,7 @@ export class Hud {
       el('button', {
         class: 'btn-terminar',
         onclick: () => this.handlers.onEndTurn?.(),
-      }, iconCanvas('terminar', 2), 'Terminar', el('span', { class: 'tecla-inline' }, 'espaço')),
+      }, iconCanvas('terminar', 32), 'Terminar', el('span', { class: 'tecla-inline' }, 'espaço')),
       {
         nome: 'Terminar o turno',
         tipo: 'passa a vez',
@@ -917,7 +1060,7 @@ export class Hud {
       const [icone, nome] = nomes[id] ?? ['acao', id];
       linhasCarga.push(this.ligarDica(
         el('div', { class: 'slot-linha' },
-          iconCanvas(icone, 1),
+          iconCanvas(icone, 16),
           el('div', { class: 'pips' }, Array.from({ length: total }, (_, i) => el('span', { class: `pip${i < n ? '' : ' gasto'}` })))),
         { nome, linhas: [['Restam', `${n} de ${total}`]], texto: 'Volta num descanso.' },
       ));
@@ -943,7 +1086,7 @@ export class Hud {
           ...Array.from({ length: quadrados - 1 }, (_, i) => el('span', {
             class: 'mov-marca', style: { left: `${((i + 1) / quadrados) * 100}%` },
           }))),
-        el('div', { class: 'mov-num' }, iconCanvas('movimento', 1), `${resta} pés`)),
+        el('div', { class: 'mov-num' }, iconCanvas('movimento', 16), `${resta} pés`)),
       el('span', { class: 'zona-rot' }, 'Movimento'));
     return this.ligarDica(node, {
       nome: 'Deslocamento',
@@ -1015,7 +1158,7 @@ export class Hud {
    */
   zonaReacao(c) {
     const gasta = !!c.reactionUsed;
-    const node = el('div', { class: `reacao${gasta ? ' gasta' : ''}` }, iconCanvas('reacao', 2));
+    const node = el('div', { class: `reacao${gasta ? ' gasta' : ''}` }, iconCanvas('reacao', 32));
     return el('div', { class: 'zona zona-reacao' },
       this.ligarDica(node, {
         nome: 'Reação',

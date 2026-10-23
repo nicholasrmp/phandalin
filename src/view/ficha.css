@@ -1,6 +1,6 @@
-/* As variáveis de cor e de moldura (--gold, --pedra, --line, --bisel,
- * --serif...) vêm de src/style.css, que main.js importa antes de tudo.
- * Sem ele esta folha renderiza sem cor nem moldura — a dependência é
+/* As variáveis de cor e de moldura (--gold, --papel, --line, --bisel,
+ * --carimbo, --serif...) vêm de src/style.css, que main.js importa antes de
+ * tudo. Sem ele esta folha renderiza sem cor nem moldura — a dependência é
  * real e invisível, por isso está escrita aqui. */
 /* Ficha de personagem e inventário — pele própria, registro compartilhado.
  *
@@ -10,17 +10,23 @@
  * outra região tem, e misturar as duas coisas num arquivo só faria a próxima
  * pessoa ler 900 linhas para mexer numa linha de perícia.
  *
- * As variáveis são as de `style.css` (--gold, --pedra, --line, --bisel...):
+ * As variáveis são as de `style.css` (--gold, --papel, --line, --bisel...):
  * uma segunda paleta aqui seria uma segunda interface.
  *
  * TRÊS DECISÕES
  *   1. Número em sem-serifa e tabular; nome próprio e título em serifa. Uma
  *      coluna de perícias com números de largura diferente não se lê de bater
  *      o olho — e é para bater o olho que a ficha existe.
- *   2. Atributo e encaixe são SOQUETE (fundo afundado, borda clara em cima):
- *      é o que diz "aqui entra coisa" sem escrever isso.
+ *   2. Atributo e encaixe são CARIMBO (fundo afundado no papel, aresta clara
+ *      embaixo): é o que diz "aqui entra coisa" sem escrever isso.
  *   3. A moldura leva bisel. Sem ele a janela lê como caixa de diálogo de
  *      navegador por cima de um jogo de pixel art.
+ *
+ * O INVENTÁRIO É UM BONECO
+ * Três colunas: os quatro derivados que o equipamento muda, o boneco com os
+ * encaixes em anel, e a mochila em grade. O anel existe porque a figura é
+ * desenhada a partir do que está vestido — pôr o encaixe ao LADO da peça que
+ * ele muda transforma a troca em "vesti isto" em vez de "editei um campo".
  */
 
 .ficha-overlay {
@@ -32,19 +38,19 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(8, 6, 11, .74);
+  background: rgba(10, 7, 4, .72);
   backdrop-filter: blur(2px);
 }
 
 .ficha-janela {
   display: flex;
   flex-direction: column;
-  width: min(1060px, 100%);
+  width: min(1120px, 100%);
   max-height: 92vh;
-  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
-  border: 1px solid var(--line-forte);
+  background: var(--papelada);
+  border: 2px solid var(--gold-escuro);
   border-radius: 12px;
-  box-shadow: var(--bisel), 0 24px 70px rgba(0, 0, 0, .8);
+  box-shadow: var(--bisel), 0 26px 74px rgba(0, 0, 0, .75);
   overflow: hidden;
 }
 
@@ -55,24 +61,24 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #2a2534, #1d1a24);
+  border-bottom: 1px solid var(--gold-escuro);
+  background: linear-gradient(180deg, var(--papel-3), var(--papel));
 }
 
 .ficha-cabeca-retrato {
   width: 56px; height: 56px;
   display: grid; place-items: center;
-  background: linear-gradient(180deg, #211d29, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 2px solid var(--gold);
   border-radius: 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+  box-shadow: var(--carimbo);
   overflow: hidden;
 }
 
 .ficha-nome {
   font-family: var(--serif);
   font-size: 21px;
-  color: var(--gold);
+  color: var(--gold-escuro);
   line-height: 1.1;
 }
 .ficha-linhagem { font-size: 11.5px; color: var(--muted); }
@@ -83,17 +89,18 @@
   padding: 7px 12px;
   font-family: var(--serif); font-size: 13px;
   color: var(--muted);
-  background: linear-gradient(180deg, #221e2b, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+  box-shadow: var(--carimbo);
 }
-.ficha-aba:hover { color: var(--ink); border-color: var(--line-forte); }
+.ficha-aba:hover { color: var(--ink); border-color: var(--gold); }
 .ficha-aba.on {
-  color: #21190a;
-  background: linear-gradient(180deg, var(--gold), var(--gold-escuro));
-  border-color: var(--gold);
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border-color: var(--gold-escuro);
+  box-shadow: var(--bisel);
   font-weight: 700;
 }
 .ficha-aba .icone { image-rendering: pixelated; }
@@ -103,12 +110,13 @@
   display: grid; place-items: center;
   font-size: 17px; line-height: 1;
   color: var(--muted);
-  background: linear-gradient(180deg, #221e2b, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 8px;
   cursor: pointer;
+  box-shadow: var(--carimbo);
 }
-.ficha-fechar:hover { color: var(--ink); border-color: var(--red); }
+.ficha-fechar:hover { color: var(--red); border-color: var(--red); }
 
 /* ---- corpo ---- */
 .ficha-rolagem { overflow: auto; padding: 12px; }
@@ -122,8 +130,8 @@
 .ficha-coluna { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
 .bloco {
-  background: rgba(0, 0, 0, .22);
-  border: 1px solid var(--line);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
   border-radius: 10px;
   padding: 10px;
   box-shadow: var(--bisel);
@@ -134,8 +142,7 @@
   font-size: 11px;
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--gold);
-  opacity: .85;
+  color: var(--gold-escuro);
 }
 
 /* ---- atributos ---- */
@@ -143,14 +150,14 @@
 .atributo {
   display: grid; place-items: center; gap: 1px;
   padding: 7px 4px 6px;
-  background: linear-gradient(180deg, #221e2b, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 9px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+  box-shadow: var(--carimbo);
 }
 .atributo-rot {
   font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--muted);
+  color: #6b5a3f;
 }
 .atributo-val {
   font-size: 25px; font-weight: 700; line-height: 1.05;
@@ -160,8 +167,9 @@
 .atributo-mod {
   font-size: 12px; font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--gold);
-  border: 1px solid var(--line-forte);
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border: 1px solid var(--gold-escuro);
   border-radius: 4px;
   padding: 0 5px;
 }
@@ -176,33 +184,33 @@
   gap: 7px;
   padding: 3px 2px;
   font-size: 12px;
-  border-bottom: 1px dotted rgba(222, 198, 140, .09);
+  border-bottom: 1px dotted rgba(78, 56, 24, .22);
 }
 .linha.prof { color: var(--ink); }
 .linha:not(.prof) { color: var(--muted); }
 .linha-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .linha-atr {
   font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--muted); opacity: .8;
+  color: var(--muted); opacity: .85;
 }
 .linha-val {
   min-width: 26px; text-align: right;
   font-variant-numeric: tabular-nums; font-weight: 700;
 }
-.linha.prof .linha-val { color: var(--gold); }
+.linha.prof .linha-val { color: var(--gold-escuro); }
 
 /* O pip de proficiência: vazio, cheio, ou anel duplo para especialidade. */
 .pip-prof {
   width: 9px; height: 9px;
-  border: 1px solid var(--line-forte);
+  border: 1px solid var(--gold-escuro);
   border-radius: 50%;
-  background: rgba(0, 0, 0, .5);
+  background: rgba(78, 56, 24, .18);
 }
-.pip-prof.on { background: var(--gold); border-color: var(--gold); }
+.pip-prof.on { background: var(--gold); border-color: var(--gold-escuro); }
 .pip-prof.exp {
   background: var(--gold);
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--pedra), 0 0 0 3px var(--gold);
+  border-color: var(--gold-escuro);
+  box-shadow: 0 0 0 2px var(--papel-3), 0 0 0 3px var(--gold);
 }
 
 /* ---- derivados ---- */
@@ -210,23 +218,23 @@
 .numero {
   display: grid; place-items: center; gap: 2px;
   padding: 7px 4px;
-  background: linear-gradient(180deg, #221e2b, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 9px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+  box-shadow: var(--carimbo);
   text-align: center;
 }
 .numero-rot {
   font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--muted);
+  color: #6b5a3f;
 }
 .numero-val {
   font-size: 19px; font-weight: 700; line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 .numero-nota { font-size: 9.5px; color: var(--muted); }
-.numero.destaque { border-color: var(--line-forte); }
-.numero.destaque .numero-val { color: var(--gold); font-size: 23px; }
+.numero.destaque { border-width: 2px; border-color: var(--gold); }
+.numero.destaque .numero-val { color: var(--gold-escuro); font-size: 23px; }
 
 /* Rótulo de uma subdivisão dentro de um bloco ("A conta da CA", "Truques"). */
 .sub-rot {
@@ -245,89 +253,223 @@
   font-size: 12px;
   padding: 2px 0;
 }
-.conta-rot { color: #cfc7b6; }
+.conta-rot { color: #4a3b27; }
 .conta-nota { color: var(--muted); font-size: 10.5px; }
 .conta-val { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 28px; text-align: right; }
 .conta-linha.total {
   margin-top: 3px;
   padding-top: 5px;
-  border-top: 1px solid var(--line-forte);
+  border-top: 1px solid var(--gold-escuro);
 }
-.conta-linha.total .conta-rot { font-family: var(--serif); color: var(--gold); }
-.conta-linha.total .conta-val { color: var(--gold); font-size: 15px; }
+.conta-linha.total .conta-rot { font-family: var(--serif); color: var(--gold-escuro); }
+.conta-linha.total .conta-val { color: var(--gold-escuro); font-size: 15px; }
 
 /* ---- talentos e conjuração ---- */
-.talento { padding: 5px 0; border-bottom: 1px dotted rgba(222, 198, 140, .09); }
+.talento { padding: 5px 0; border-bottom: 1px dotted rgba(78, 56, 24, .22); }
 .talento:last-child { border-bottom: none; }
-.talento-nome { font-family: var(--serif); font-size: 13.5px; color: var(--gold); }
-.talento-texto { margin: 2px 0 0; font-size: 11.5px; line-height: 1.45; color: #cfc7b6; }
+.talento-nome { font-family: var(--serif); font-size: 13.5px; color: var(--gold-escuro); }
+.talento-texto { margin: 2px 0 0; font-size: 11.5px; line-height: 1.45; color: #4a3b27; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
 .chip {
   display: flex; align-items: center; gap: 5px;
   padding: 3px 7px 3px 4px;
   font-size: 11.5px;
-  background: linear-gradient(180deg, #241f2d, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 6px;
+  box-shadow: var(--carimbo);
 }
 .chip .icone { image-rendering: pixelated; }
 .chip-nivel { color: var(--muted); font-size: 9.5px; font-variant-numeric: tabular-nums; }
-.chip.truque { border-bottom-color: rgba(110, 184, 255, .35); }
+.chip.truque { border-bottom-color: var(--blue); }
 
-/* ---- inventário ---- */
-.inv { display: grid; grid-template-columns: 320px 1fr; gap: 12px; align-items: start; }
+/* ---- preparação de magias ---- */
+.prep-conta {
+  font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-escuro);
+  margin: 2px 0 4px;
+}
+.prep-conta.cheio { color: var(--red); }
+.prep-formula { font-weight: 400; color: var(--muted); font-size: 10.5px; }
+.prep-nota { margin: 0 0 6px; font-size: 10.5px; line-height: 1.4; color: var(--muted); }
 
-.encaixes { display: grid; gap: 7px; }
-.encaixe {
+.prep-lista { display: grid; gap: 3px; }
+.prep {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 11px 16px 1fr auto;
   align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 7px;
+  gap: 8px;
+  padding: 5px 7px;
   text-align: left;
+  font: inherit;
+  font-size: 12px;
   color: var(--ink);
-  background: linear-gradient(180deg, #241f2d, #1a1721);
-  border: 1px solid var(--line);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--line-forte);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.prep:hover { border-color: var(--gold); }
+.prep.on {
+  border-color: var(--gold);
+  background: linear-gradient(170deg, #f3e3b8, #e4cf9d);
+}
+/* Travada ainda é clicável: ela EXPLICA na dica por que não entra. Um botão
+   desabilitado em silêncio só deixa o jogador clicando sem entender. */
+.prep.travada { opacity: .55; }
+.prep.travada:hover { border-color: var(--red); }
+.prep-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prep .icone { image-rendering: pixelated; }
+
+/* ======================================================== inventário =====
+   Três colunas: derivados, boneco, mochila. */
+/* `stretch` para a mochila acompanhar a altura do boneco: com `start` ela
+   terminava onde acabava o último item e a coluna da direita ficava pela
+   metade. Os derivados seguram o tamanho deles com `align-content: start` —
+   esticar quatro caixas de número só faria quatro caixas gordas. */
+.inv {
+  display: grid;
+  grid-template-columns: 170px minmax(300px, 1fr) minmax(250px, 340px);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.inv-numeros { display: grid; gap: 8px; align-content: start; }
+.inv-numeros .numero { padding: 9px 6px; }
+
+/* ---- o boneco ---- */
+.boneco { display: grid; gap: 10px; }
+
+/* O palco cresce com a figura em vez de recortá-la: um bugbear é mais alto
+   que um halfling, e encolher a figura para caber pediria escala quebrada —
+   meio pixel esticado é exatamente o que esta arte não suporta.
+
+   O RECUO TEM DE SER MAIOR QUE O ENCAIXE. Os quatro encaixes estão presos às
+   bordas do palco (`top: 0`, `bottom: 0`…), então o recuo é o único corredor
+   que separa um encaixe da figura. Com recuo de 62 px e encaixe de 88 o de
+   baixo entrava três pixels nos pés da guerreira — e vinte nos de um bugbear.
+   98 > 88 resolve para qualquer altura, porque a figura cresce empurrando as
+   bordas, e os encaixes vão junto. Mexer num dos dois números pede mexer no
+   outro. */
+.boneco-palco {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 430px;
+  padding: 98px 116px;
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 10px;
+  box-shadow: var(--bisel);
+}
+
+/* O halo de runas: luz quente atrás da figura e um anel tracejado de latão.
+   É o que impede o boneco de parecer recortado e colado no papel. */
+.boneco-halo {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 284px; height: 284px;
+  margin: -142px 0 0 -142px;
+  border-radius: 50%;
+  border: 1px dashed rgba(161, 112, 42, .5);
+  background: radial-gradient(circle,
+    rgba(255, 246, 223, .95) 0%,
+    rgba(238, 217, 174, .5) 58%,
+    rgba(238, 217, 174, 0) 74%);
+  pointer-events: none;
+}
+
+.boneco-figura {
+  position: relative;
+  z-index: 1;
+  display: block;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 6px rgba(78, 56, 24, .35));
+}
+
+/* ---- encaixes do anel ---- */
+.boneco-palco .encaixe {
+  position: absolute;
+  z-index: 2;
+  width: 104px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  text-align: center;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel));
+  border: 1px solid var(--gold-escuro);
   border-radius: 9px;
   cursor: pointer;
   box-shadow: var(--bisel);
   font: inherit;
 }
-.encaixe:hover { border-color: var(--line-forte); }
-.encaixe.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(217, 180, 90, .45), 0 0 14px rgba(217, 180, 90, .25); }
-.encaixe.vazio { border-style: dashed; opacity: .78; }
+.boneco-palco .encaixe:hover { border-color: var(--gold); }
+.boneco-palco .encaixe.on {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold), 0 0 14px rgba(161, 112, 42, .45);
+}
+.boneco-palco .encaixe.vazio { border-style: dashed; opacity: .8; }
+
+/* A linha-guia que liga o encaixe à figura, como na referência. */
+.boneco-palco .encaixe::after {
+  content: '';
+  position: absolute;
+  background: var(--gold);
+  opacity: .45;
+  pointer-events: none;
+}
+.pos-esq   { left: 0;  top: 46%; transform: translateY(-50%); }
+.pos-dir   { right: 0; top: 46%; transform: translateY(-50%); }
+.pos-topo  { top: 0;    left: 50%; transform: translateX(-50%); }
+.pos-baixo { bottom: 0; left: 50%; transform: translateX(-50%); }
+.pos-esq::after   { left: 100%;   top: 50%;  width: 26px; height: 1px; }
+.pos-dir::after   { right: 100%;  top: 50%;  width: 26px; height: 1px; }
+.pos-topo::after  { top: 100%;    left: 50%; width: 1px;  height: 22px; }
+.pos-baixo::after { bottom: 100%; left: 50%; width: 1px;  height: 22px; }
 
 .encaixe-soquete {
   width: 44px; height: 44px;
   display: grid; place-items: center;
-  background: linear-gradient(180deg, #1d1926, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 7px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .65);
+  box-shadow: var(--carimbo);
 }
 .encaixe-soquete .icone { image-rendering: pixelated; }
-.sigla { font-family: var(--serif); font-size: 15px; color: var(--gold); letter-spacing: .04em; }
+.sigla { font-family: var(--serif); font-size: 15px; color: var(--gold-escuro); letter-spacing: .04em; }
 
-.encaixe-corpo { min-width: 0; display: grid; gap: 1px; }
 .encaixe-rot {
-  font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+  font-size: 8.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
 }
 .encaixe-nome {
-  font-family: var(--serif); font-size: 13.5px;
+  max-width: 100%;
+  font-family: var(--serif); font-size: 12px; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .encaixe.vazio .encaixe-nome { color: var(--muted); font-style: italic; }
-.encaixe-dado { font-size: 11px; color: #cfc7b6; font-variant-numeric: tabular-nums; }
 
-.trocador { margin-top: 8px; display: grid; gap: 4px; }
+/* ---- trocador ---- */
+.trocador {
+  display: grid; gap: 4px;
+  padding: 9px;
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 10px;
+  box-shadow: var(--bisel);
+}
 .trocador-tit {
   font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
 }
 .opcao {
   display: grid;
-  grid-template-columns: 26px 1fr auto;
+  /* 34 e não 26: o ícone de item passou a ter grade de 32, e a coluna velha
+     o cortava. Alargar a coluna é mais barato — e muito mais bonito — que
+     reduzir um desenho de 32 px para 16 jogando fora pixel sim, pixel não. */
+  grid-template-columns: 34px 1fr auto;
   align-items: center;
   gap: 8px;
   padding: 5px 7px;
@@ -335,73 +477,105 @@
   color: var(--ink);
   font: inherit;
   font-size: 12px;
-  background: linear-gradient(180deg, #241f2d, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 7px;
   cursor: pointer;
+  box-shadow: var(--carimbo);
 }
-.opcao:hover { border-color: var(--gold); }
+.opcao:hover { border-color: var(--gold); background: var(--papel-3); }
 .opcao .icone { image-rendering: pixelated; }
 .opcao-delta { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
-.opcao-delta.sobe { color: var(--green); }
+.opcao-delta.sobe { color: #2f7a3c; }
 .opcao-delta.desce { color: var(--red); }
 
+/* ---- mochila ---- */
 .mochila {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 6px;
 }
 .celula {
   position: relative;
   aspect-ratio: 1;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: 1fr auto auto;
   place-items: center;
   gap: 2px;
   padding: 5px 3px 4px;
   color: var(--ink);
   font: inherit;
-  background: linear-gradient(180deg, #1f1b27, var(--soquete));
-  border: 1px solid var(--line);
+  background: var(--soquete);
+  border: 1px solid var(--gold-escuro);
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 5px rgba(0, 0, 0, .6);
+  box-shadow: var(--carimbo);
 }
-.celula:hover { border-color: var(--line-forte); background: linear-gradient(180deg, #2a2435, #1b1724); }
-.celula.equipavel:hover { border-color: var(--gold); }
+.celula:hover { border-color: var(--gold); background: var(--papel-3); }
+.celula.equipavel:hover { box-shadow: var(--carimbo), 0 0 10px rgba(161, 112, 42, .4); }
 .celula .icone { image-rendering: pixelated; }
 .celula-nome {
   width: 100%;
-  font-size: 9.5px; line-height: 1.15; text-align: center; color: var(--muted);
+  font-size: 9.5px; line-height: 1.15; text-align: center; color: #6b5a3f;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.celula-qtd {
-  position: absolute; right: 3px; bottom: 3px;
-  font-size: 10px; font-weight: 700;
+/* O peso da pilha, miúdo e sem competir com o nome. É o número que decide o
+   que fica e o que sai quando a carga estoura. */
+.celula-peso {
+  font-size: 8.5px; line-height: 1.1;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
-  color: var(--ink);
-  background: rgba(0, 0, 0, .75);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0 3px;
+}
+
+.celula-qtd {
+  position: absolute; right: -3px; bottom: -3px;
+  min-width: 15px; height: 15px; line-height: 14px; text-align: center;
+  font-size: 9.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 50%;
 }
 .mochila-vazia { font-size: 12px; color: var(--muted); padding: 8px 2px; }
+
+/* ---- arrastar e soltar ----
+   Três estados, e os três precisam ser visíveis ANTES de soltar: o que está
+   saindo, o alvo que aceita e o alvo que recusa. Descobrir que não cabia
+   depois de soltar é o que faz arrastar parecer quebrado. */
+.celula.arrastando, .encaixe.arrastando { opacity: .4; }
+.aceita {
+  border-color: var(--gold) !important;
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 14px rgba(161, 112, 42, .5) !important;
+}
+.recusa {
+  border-color: var(--red) !important;
+  box-shadow: inset 0 0 0 2px rgba(168, 52, 32, .6) !important;
+}
+.bloco-mochila.aceita, .bloco-mochila.recusa { transition: box-shadow .08s; }
 
 /* ---- pé ---- */
 .ficha-pe {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px;
   padding: 8px 12px;
-  border-top: 1px solid var(--line);
-  background: rgba(0, 0, 0, .25);
+  border-top: 1px solid var(--gold-escuro);
+  background: linear-gradient(180deg, var(--papel), #c9b68c);
   font-size: 11px;
-  color: var(--muted);
+  color: #5d4e36;
 }
-.ficha-aviso { color: #e8a06a; }
+.ficha-aviso { color: #8a4a12; font-weight: 600; }
 .ficha-carga { font-variant-numeric: tabular-nums; }
 
 /* Em telas estreitas a janela passa a rolar numa coluna só: duas colunas de
-   perícia em 380 px de largura viram duas colunas ilegíveis. */
+   perícia em 380 px de largura viram duas colunas ilegíveis. O inventário
+   perde o anel antes disso — abaixo de 1040 px os encaixes laterais e a
+   figura disputam os mesmos pixels, e aí a coluna vence. */
+@media (max-width: 1040px) {
+  .inv { grid-template-columns: 1fr 1fr; }
+  .inv-numeros { grid-template-columns: repeat(2, 1fr); }
+  .boneco { grid-column: 1 / -1; order: 1; }
+}
 @media (max-width: 900px) {
   .ficha-overlay { padding: 8px; align-items: start; }
   .ficha-janela { max-height: 96vh; }
@@ -410,4 +584,7 @@
   .derivados { grid-template-columns: repeat(2, 1fr); }
   .ficha-cabeca { grid-template-columns: auto 1fr auto; row-gap: 8px; }
   .ficha-abas { grid-column: 1 / -1; }
+  /* O vertical continua 98: é a altura do encaixe que manda, e ela não mudou. */
+  .boneco-palco { padding: 98px 104px; }
+  .boneco-palco .encaixe { width: 92px; }
 }

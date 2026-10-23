@@ -14,15 +14,22 @@
 // — a figura é desenhada a partir desses campos.
 //
 // A ORGANIZAÇÃO
-// Vem das telas de personagem e de inventário de Baldur's Gate 3, pelo mesmo
+// A aba da FICHA vem das telas de personagem de Baldur's Gate 3, pelo mesmo
 // motivo que o HUD: é o mesmo jogo, e aquela arquitetura de informação já
-// resolveu problemas que apareceriam aqui de qualquer jeito. Duas colunas, os
-// encaixes do que está vestido em volta, mochila em grade, e os derivados
-// sempre visíveis. A arte é nossa.
+// resolveu problemas que apareceriam aqui de qualquer jeito. Duas colunas,
+// mochila em grade, derivados sempre visíveis.
+//
+// A aba do INVENTÁRIO é um boneco: os quatro derivados que o equipamento muda
+// à esquerda, a figura ao centro com os encaixes em anel à volta dela, e a
+// mochila à direita. O anel não é enfeite — a figura É desenhada a partir do
+// que está nos encaixes, então pôr o encaixe ao lado da peça que ele muda faz
+// a troca ler como "vesti isto" em vez de "editei um campo".
+//
+// A arte é nossa.
 
 import './ficha.css';
 
-import { makePortrait } from '../art/sheet.js';
+import { makeFigure, makePortrait } from '../art/sheet.js';
 import { LOOKS } from '../art/looks.js';
 import { iconCanvas, iconeDeArma, iconeDeMagia, temIcone } from '../art/icons.js';
 import {
@@ -37,6 +44,7 @@ import {
   motivoParaRecusar, equipar, cargaDe,
 } from '../rules/equipment.js';
 import { getSpell } from '../rules/spells.js';
+import { spellMod, limiteDePreparacao, fontesDePreparacao } from '../rules/party.js';
 import { chanceD20, pct } from '../rules/odds.js';
 import { formatModifier } from '../core/dice.js';
 
@@ -93,12 +101,12 @@ const sigla = (nome = '') => nome
  * soquete leva as iniciais em serifa: lê como placa gravada, e no dia em que o
  * ícone entrar o nome em `art` acende sozinho.
  */
-function iconeDeItem(id, escala = 2) {
+function iconeDeItem(id, alvo = 32) {
   const achado = itemDeId(id);
   if (!achado) return el('span', { class: 'sigla' }, '—');
   const { tipo, dados } = achado;
   const nome = tipo === 'arma' ? iconeDeArma(dados.art, dados.name) : dados.art;
-  if (nome && temIcone(nome)) return iconCanvas(nome, escala);
+  if (nome && temIcone(nome)) return iconCanvas(nome, alvo);
   return el('span', { class: 'sigla' }, sigla(dados.name));
 }
 
@@ -171,7 +179,7 @@ export function criarFicha(root, handlers = {}) {
     const botaoAba = (id, icone, texto) => el('button', {
       class: `ficha-aba${aba === id ? ' on' : ''}`,
       onclick: () => { aba = id; encaixeAberto = null; render(); },
-    }, temIcone(icone) ? iconCanvas(icone, 1) : null, texto);
+    }, temIcone(icone) ? iconCanvas(icone, 16) : null, texto);
 
     return el('div', { class: 'ficha-cabeca' },
       el('div', { class: 'ficha-cabeca-retrato' }, retrato),
@@ -342,7 +350,7 @@ export function criarFicha(root, handlers = {}) {
       const s = getSpell(sid);
       return comDica(
         el('div', { class: `chip${s.level === 0 ? ' truque' : ''}` },
-          iconCanvas(iconeDeMagia({ ...s, id: sid }), 1),
+          iconCanvas(iconeDeMagia({ ...s, id: sid }), 16),
           s.name,
           el('span', { class: 'chip-nivel' }, s.level === 0 ? 'truque' : `${s.level}º`)),
         {
@@ -377,10 +385,91 @@ export function criarFicha(root, handlers = {}) {
         }),
         numero('Ataque', formatModifier(atk), 'de magia'),
         numero('Espaços', espacos.length ? espacos.join(' · ') : '—', 'restantes')),
-      el('div', { class: 'sub-rot' }, 'Truques'),
+      el('div', { class: 'sub-rot' }, 'Truques — sempre prontos, não ocupam vaga'),
       el('div', { class: 'chips' }, (sc.cantrips ?? []).map(chip)),
-      el('div', { class: 'sub-rot' }, 'Magias preparadas'),
-      el('div', { class: 'chips' }, (sc.prepared ?? []).map(chip)));
+      blocoPreparacao(chip));
+  }
+
+  /**
+   * Preparar magias.
+   *
+   * POR QUE É UMA TELA E NÃO UMA LISTA
+   * `prepared` era um campo fixo em `party.js`: o mago abria a ficha, via as
+   * magias dele e não podia fazer nada a respeito. Preparar é a decisão que
+   * define o mago em 5e — é onde ele escolhe para que serve hoje.
+   *
+   * O LIMITE É A REGRA, e está escrito na tela: modificador de conjuração +
+   * nível. Quando ele estoura, o que falta não é desabilitado em silêncio —
+   * a contagem fica vermelha e o motivo aparece. Botão que não responde e não
+   * explica é pior que botão ausente.
+   */
+  function blocoPreparacao(chip) {
+    const sc = personagem.spellcasting;
+    const limite = limiteDePreparacao(personagem);
+    const fonte = fontesDePreparacao(personagem).filter((id) => getSpell(id).level > 0);
+    const preparadas = new Set(sc.prepared ?? []);
+    const cheio = preparadas.size >= limite;
+    const podeTrocar = handlers.podePreparar?.(personagem) ?? null;
+
+    const linha = (id) => {
+      const s = getSpell(id);
+      const ligada = preparadas.has(id);
+      // Desmarcar sempre pode; marcar só até o limite. Nunca ficar preso com
+      // o limite estourado é o que importa aqui.
+      const travada = Boolean(podeTrocar) || (!ligada && cheio);
+      const node = el('button', {
+        class: `prep${ligada ? ' on' : ''}${travada ? ' travada' : ''}`,
+        onclick: () => alternarPreparo(id),
+      },
+        el('span', { class: `pip-prof${ligada ? ' on' : ''}` }),
+        iconCanvas(iconeDeMagia({ ...s, id }), 16),
+        el('span', { class: 'prep-nome' }, s.name),
+        el('span', { class: 'chip-nivel' }, `${s.level}º`));
+      return comDica(node, {
+        nome: s.name,
+        tipo: `magia de ${s.level}º círculo`,
+        texto: s.desc,
+        aviso: podeTrocar ?? (travada ? `Já tem ${limite} preparadas — desmarque uma antes` : null),
+      });
+    };
+
+    return el('div', {},
+      el('div', { class: 'sub-rot' },
+        sc.livro ? 'Preparar do livro de magias' : 'Preparar da lista da classe'),
+      // Dito na tela, não só no código: o jogador tem de saber onde o jogo se
+      // afasta da regra que ele conhece.
+      el('p', { class: 'prep-nota' },
+        'No 5e isto acontece num descanso longo. Aqui não há descanso, então a troca vale no turno do grupo.'),
+      el('div', { class: `prep-conta${cheio ? ' cheio' : ''}` },
+        `${preparadas.size} de ${limite} preparadas`,
+        el('span', { class: 'prep-formula' },
+          ` · ${SIGLA_ATRIBUTO[sc.ability]} ${formatModifier(spellMod(personagem))} + nível ${personagem.level}`)),
+      el('div', { class: 'prep-lista' }, fonte.map(linha)));
+  }
+
+  function alternarPreparo(id) {
+    const veto = handlers.podePreparar?.(personagem);
+    if (veto) { aviso = veto; render(); return; }
+
+    const sc = personagem.spellcasting;
+    const atuais = new Set(sc.prepared ?? []);
+    if (atuais.has(id)) {
+      atuais.delete(id);
+    } else {
+      if (atuais.size >= limiteDePreparacao(personagem)) {
+        aviso = `${personagem.name} já tem ${limiteDePreparacao(personagem)} magias preparadas — desmarque uma antes.`;
+        render();
+        return;
+      }
+      atuais.add(id);
+    }
+    // A ORDEM DO LIVRO, não a ordem dos cliques: a barra de ação lê este
+    // array, e remarcar uma magia a mandaria para o fim da fila — o atalho de
+    // teclado dela mudaria sem ninguém ter pedido.
+    sc.prepared = fontesDePreparacao(personagem).filter((s) => atuais.has(s));
+    aviso = null;
+    handlers.onPreparar?.(personagem);
+    render();
   }
 
   function painelFicha() {
@@ -429,10 +518,16 @@ export function criarFicha(root, handlers = {}) {
     } else if (tipo === 'escudo') {
       linhas.push(['CA', `+${dados.ac}`]);
     } else if (tipo === 'item') {
-      if (dados.efeito) linhas.push(['Efeito', dados.efeito]);
+      if (dados.cura) linhas.push(['Cura', dados.cura]);
+      if (dados.damage && dados.damage !== '0') linhas.push(['Dano', `${dados.damage} ${dados.damageType}`]);
       if (dados.usos) linhas.push(['Usos', String(dados.usos)]);
-      if (dados.peso) linhas.push(['Peso', `${dados.peso} lb`]);
+      if (dados.raridade) linhas.push(['Raridade', dados.raridade]);
+      if (dados.sintonia) linhas.push(['Sintonia', 'exige']);
     }
+    // Peso e preço valem para TODA categoria, não só para `item`: a armadura
+    // de reserva é o objeto mais pesado da mochila e era o único sem o número.
+    if (dados.peso) linhas.push(['Peso', `${dados.peso} lb`]);
+    if (dados.custo) linhas.push(['Preço', `${dados.custo} po`]);
     return { nome: dados.name, tipo: dados.tipo ?? tipo, linhas, texto: dados.desc ?? null };
   }
 
@@ -445,30 +540,86 @@ export function criarFicha(root, handlers = {}) {
     return armorClass(hipotese) - armorClass(personagem);
   }
 
-  function blocoEncaixes() {
-    const linhas = SLOTS.map((slot) => {
-      const id = noEncaixe(personagem, slot.id);
-      const vazio = !id || id === 'nenhuma';
-      const node = el('button', {
-        class: `encaixe${vazio ? ' vazio' : ''}${encaixeAberto === slot.id ? ' on' : ''}`,
-        onclick: () => { encaixeAberto = encaixeAberto === slot.id ? null : slot.id; render(); },
-      },
-        el('div', { class: 'encaixe-soquete' }, vazio && slot.id !== 'armadura' ? el('span', { class: 'sigla' }, '·') : iconeDeItem(id)),
-        el('div', { class: 'encaixe-corpo' },
-          el('span', { class: 'encaixe-rot' }, slot.name),
-          el('span', { class: 'encaixe-nome' }, vazio && slot.id !== 'armadura' ? 'vazio' : nomeDeId(id)),
-          el('span', { class: 'encaixe-dado' }, vazio && slot.id !== 'armadura' ? '—' : oQueDa(id))));
-      return comDica(node, {
-        nome: slot.name,
-        tipo: vazio && slot.id !== 'armadura' ? 'encaixe vazio' : nomeDeId(id),
-        texto: 'Clique para ver o que cabe aqui.',
-      });
-    });
+  // O ANEL DE ENCAIXES
+  // Quatro posições em volta do boneco, como na referência: o que veste em
+  // cima, a mão que ataca à esquerda, o escudo à direita, a mão livre embaixo.
+  // São os quatro encaixes que as REGRAS têm. Capacete e botas apareceriam
+  // bem na moldura e seriam encaixe sem efeito nenhum na CA — decoração que
+  // mente sobre o que o jogo simula.
+  const ANEL = {
+    armadura: 'topo',
+    maoPrincipal: 'esq',
+    escudo: 'dir',
+    maoSecundaria: 'baixo',
+  };
 
-    return el('section', { class: 'bloco' },
-      el('h3', { class: 'bloco-tit' }, 'Equipado'),
-      el('div', { class: 'encaixes' }, linhas),
+  function encaixeDoAnel(slot) {
+    const id = noEncaixe(personagem, slot.id);
+    // 'nenhuma' é uma armadura de verdade no catálogo (CA 10 + Destreza
+    // inteira), então o encaixe de armadura nunca está "vazio".
+    const vazio = (!id || id === 'nenhuma') && slot.id !== 'armadura';
+    const node = el('button', {
+      class: `encaixe pos-${ANEL[slot.id]}${vazio ? ' vazio' : ''}${encaixeAberto === slot.id ? ' on' : ''}`,
+      onclick: () => { encaixeAberto = encaixeAberto === slot.id ? null : slot.id; render(); },
+    },
+      el('div', { class: 'encaixe-soquete' },
+        vazio ? el('span', { class: 'sigla' }, '·') : iconeDeItem(id)),
+      el('span', { class: 'encaixe-rot' }, slot.name),
+      el('span', { class: 'encaixe-nome' }, vazio ? 'vazio' : nomeDeId(id)));
+
+    tornarAlvoDeEncaixe(node, slot.id);
+    // O que já está equipado também se arrasta — para outro encaixe ou de
+    // volta para a mochila.
+    if (!vazio) tornarArrastavel(node, id);
+
+    return comDica(node, {
+      nome: vazio ? slot.name : nomeDeId(id),
+      tipo: slot.name,
+      texto: vazio ? 'Encaixe vazio.' : oQueDa(id),
+      aviso: 'Clique para trocar',
+    });
+  }
+
+  function boneco() {
+    // Idempotente, e barata quando nada mudou: garante que a figura já abra
+    // vestindo o que está nos encaixes, não só depois da primeira troca.
+    aplicarAparencia(personagem);
+    // 4× e não 3×: o recuo do palco reserva 196 px para os encaixes, e a 3×
+    // a figura ficava pequena no meio de todo esse pergaminho. A 4× um humano
+    // dá 248 px e passa a dominar o painel, que é o ponto de um boneco.
+    const figura = makeFigure(personagem.look, 4);
+    figura.className = 'boneco-figura';
+
+    return el('div', { class: 'boneco' },
+      el('div', { class: 'boneco-palco' },
+        el('div', { class: 'boneco-halo' }),
+        figura,
+        ...SLOTS.map(encaixeDoAnel)),
       encaixeAberto ? trocador(encaixeAberto) : null);
+  }
+
+  /** A coluna de derivados do conceito A: os quatro números que o equipamento
+   *  muda. Carga entra aqui e não na ficha porque é o único lugar onde ela
+   *  responde a um clique. */
+  function colunaDerivados() {
+    const ca = acBreakdown(personagem);
+    const pv = Math.max(0, Math.ceil(personagem.hp ?? personagem.maxHp));
+    const desloc = personagem.speedFt ?? 30;
+    const carga = cargaDe(personagem);
+
+    return el('div', { class: 'inv-numeros' },
+      numero('Classe de armadura', ca.total, null, {
+        destaque: true,
+        dica: {
+          nome: 'Classe de armadura',
+          linhas: ca.partes.map((p) => [p.rotulo, p.valor >= 0 ? `+${p.valor}` : String(p.valor)]),
+          texto: 'A conta inteira está na aba da ficha.',
+        },
+      }),
+      numero('Pontos de vida', `${pv}/${personagem.maxHp}`,
+        personagem.tempHp ? `+${personagem.tempHp} temporários` : null),
+      numero('Deslocamento', String(desloc), `pés · ${Math.floor(desloc / 5)} quadrados`),
+      numero('Carga', String(carga.peso), `de ${carga.capacidade} lb`));
   }
 
   function trocador(slotId) {
@@ -484,7 +635,7 @@ export function criarFicha(root, handlers = {}) {
         const vazio = !id || id === 'nenhuma';
         const delta = deltaDeCa(slotId, id);
         const node = el('button', { class: 'opcao', onclick: () => trocar(slotId, id) },
-          vazio && id !== 'nenhuma' ? el('span', { class: 'sigla' }, '·') : iconeDeItem(id, 1),
+          vazio && id !== 'nenhuma' ? el('span', { class: 'sigla' }, '·') : iconeDeItem(id, 32),
           el('span', {}, id === 'nenhuma' ? 'Sem armadura' : vazio ? 'Deixar vazio' : nomeDeId(id)),
           delta === null || delta === 0
             ? el('span', { class: 'opcao-delta' }, vazio ? '' : (weaponLine(personagem, id)?.dano ?? ''))
@@ -505,33 +656,151 @@ export function criarFicha(root, handlers = {}) {
     return 'maoPrincipal'; // deixa a recusa falar, com o motivo certo
   }
 
+  /** Peso de uma entrada inteira da mochila, arredondado a uma casa. */
+  function pesoDaPilha(e) {
+    const unidade = itemDeId(e.id)?.dados.peso ?? 0;
+    return Math.round(unidade * e.qtd * 10) / 10;
+  }
+
   function blocoMochila() {
     const conteudo = conteudoDaMochila(personagem);
     const celulas = conteudo.map((e) => {
       const slot = encaixeNatural(e.id);
+      const usavel = Boolean(itemDeId(e.id)?.dados.consumivel);
       const node = el('button', {
-        class: `celula${slot ? ' equipavel' : ''}`,
+        class: `celula${slot ? ' equipavel' : ''}${usavel ? ' usavel' : ''}`,
         onclick: () => {
-          if (!slot) { aviso = `${nomeDeId(e.id)} não vai em encaixe nenhum — é item de mochila.`; render(); return; }
-          trocar(slot, e.id);
+          if (slot) { trocar(slot, e.id); return; }
+          // Clicar numa poção tem de BEBÊ-LA. A resposta antiga era "é item
+          // de mochila", o que é verdade e não serve para nada.
+          if (usavel) { usar(e.id); return; }
+          aviso = `${nomeDeId(e.id)} não vai em encaixe nenhum e não é item de usar.`;
+          render();
         },
       },
         iconeDeItem(e.id),
         el('span', { class: 'celula-nome' }, nomeDeId(e.id)),
+        // O peso da PILHA, não o da unidade: na hora de largar coisa, o que
+        // importa é quanto sai da mochila, e três cordas são trinta libras.
+        pesoDaPilha(e) > 0 ? el('span', { class: 'celula-peso' }, `${pesoDaPilha(e)} lb`) : null,
         e.qtd > 1 ? el('span', { class: 'celula-qtd' }, e.qtd) : null);
+      tornarArrastavel(node, e.id);
       const dados = dicaDeItem(e.id);
-      return comDica(node, { ...dados, aviso: slot ? 'Clique para equipar' : null });
+      return comDica(node, {
+        ...dados,
+        aviso: slot
+          ? 'Clique ou arraste até o encaixe'
+          : usavel ? 'Clique para usar' : null,
+      });
     });
 
-    return el('section', { class: 'bloco' },
+    return tornarAlvoDeMochila(el('section', { class: 'bloco bloco-mochila' },
       el('h3', { class: 'bloco-tit' }, 'Mochila'),
       celulas.length
         ? el('div', { class: 'mochila' }, celulas)
-        : el('div', { class: 'mochila-vazia' }, 'Mochila vazia.'));
+        : el('div', { class: 'mochila-vazia' }, 'Mochila vazia. Arraste o que estiver equipado para cá.')));
   }
 
   function painelInventario() {
-    return el('div', { class: 'inv' }, blocoEncaixes(), blocoMochila());
+    return el('div', { class: 'inv' }, colunaDerivados(), boneco(), blocoMochila());
+  }
+
+  // ---- arrastar e soltar --------------------------------------------------
+  //
+  // POR QUE EXISTE
+  // Clicar já equipava, e funcionava. Mas arrastar é o que todo mundo tenta
+  // primeiro num inventário — e um gesto que não responde lê como tela
+  // quebrada, não como tela que prefere outro gesto.
+  //
+  // O ID VIAJA NUMA VARIÁVEL, não só no `dataTransfer`. O `dataTransfer` é a
+  // forma correta e continua sendo preenchido, mas `dragover` não deixa ler o
+  // que está sendo arrastado — e é em `dragover` que se decide se o encaixe
+  // aceita ou recusa o que vem vindo. Sem a variável, o encaixe só descobre
+  // que não cabia DEPOIS de soltar.
+
+  let arrastando = null;
+
+  function tornarArrastavel(node, id) {
+    node.setAttribute('draggable', 'true');
+    node.addEventListener('dragstart', (e) => {
+      arrastando = id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+      node.classList.add('arrastando');
+    });
+    node.addEventListener('dragend', () => {
+      arrastando = null;
+      node.classList.remove('arrastando');
+      // As marcas de alvo ficam em nós que o `render()` vai recriar, mas o
+      // `dragend` pode chegar sem render nenhum (soltou fora de tudo).
+      for (const el2 of janela.querySelectorAll('.aceita, .recusa')) {
+        el2.classList.remove('aceita', 'recusa');
+      }
+    });
+    return node;
+  }
+
+  function tornarAlvoDeEncaixe(node, slotId) {
+    node.addEventListener('dragover', (e) => {
+      if (!arrastando) return;
+      const recusa = motivoParaRecusar(personagem, slotId, arrastando);
+      node.classList.toggle('aceita', !recusa);
+      node.classList.toggle('recusa', Boolean(recusa));
+      // Só `preventDefault` deixa soltar. Não chamar no caso recusado é o que
+      // faz o cursor dizer "não" sem precisar de texto.
+      if (!recusa) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+    });
+    node.addEventListener('dragleave', () => node.classList.remove('aceita', 'recusa'));
+    node.addEventListener('drop', (e) => {
+      e.preventDefault();
+      node.classList.remove('aceita', 'recusa');
+      const id = arrastando ?? e.dataTransfer.getData('text/plain');
+      arrastando = null;
+      if (id) trocar(slotId, id);
+    });
+    return node;
+  }
+
+  /** A mochila aceita o que sair de um encaixe: soltar aqui é desequipar. */
+  function tornarAlvoDeMochila(node) {
+    node.addEventListener('dragover', (e) => {
+      if (!arrastando) return;
+      const slot = SLOTS.find((s) => noEncaixe(personagem, s.id) === arrastando);
+      // Guardar a mão principal não pode: o motor usa essa arma como ataque
+      // padrão e ficar sem ela deixaria o personagem sem ataque nenhum.
+      if (!slot || slot.id === 'maoPrincipal') { node.classList.add('recusa'); return; }
+      node.classList.add('aceita');
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    node.addEventListener('dragleave', () => node.classList.remove('aceita', 'recusa'));
+    node.addEventListener('drop', (e) => {
+      e.preventDefault();
+      node.classList.remove('aceita', 'recusa');
+      const id = arrastando;
+      arrastando = null;
+      const slot = SLOTS.find((s) => noEncaixe(personagem, s.id) === id);
+      if (slot && slot.id !== 'maoPrincipal') trocar(slot.id, slot.id === 'armadura' ? 'nenhuma' : null);
+    });
+    return node;
+  }
+
+  // ---- usar item ----------------------------------------------------------
+
+  /**
+   * Usar um consumível daqui de dentro.
+   *
+   * Quem executa é o ENCONTRO, via `onUsar`: a ficha não conhece economia de
+   * ação, alcance nem alvo, e escrever uma segunda versão dessas regras aqui
+   * seria a maneira mais rápida de a tela e o motor discordarem. A ficha só
+   * mostra o motivo que vier de volta.
+   */
+  function usar(id) {
+    const r = handlers.onUsar?.(personagem, id);
+    if (!r) { aviso = 'não dá para usar item agora'; render(); return; }
+    if (!r.ok) { aviso = r.why; render(); return; }
+    aviso = null;
+    render();
   }
 
   // ---- troca de equipamento -----------------------------------------------

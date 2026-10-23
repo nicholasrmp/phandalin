@@ -45,9 +45,35 @@ const FAIXAS = {
   grande: [66, 75],
 };
 
+/**
+ * O PISO DE ÁREA, e por que não existe mais uma faixa por categoria aqui.
+ *
+ * Havia uma tabela de faixas por tamanho (miúdo 12–34, grande 56–78…) medida
+ * contra o maior lado do sprite. Ela acusava giantSpider, giantBat e
+ * gelatinaOcre de pequenos demais para "grande". Medindo todo o elenco, a
+ * premissa não se sustenta por dois motivos:
+ *
+ *   1. A faixa de "grande" começava em 56 px e A CÉLULA TEM 52 DE LARGURA.
+ *      Para uma criatura que se espalha em vez de subir, a faixa era
+ *      inalcançável por construção — nenhum desenho poderia passar.
+ *   2. Medido em área, as categorias não se separam: o vigia ciclópico é
+ *      Médio com 1187 px² e o morcego gigante é Grande com 618. Um morcego é
+ *      asa fina esticada; um cubo de gosma é uma mancha. Ser Grande no 5e é
+ *      ocupar 3 × 3 metros, não ter mais pixels acesos.
+ *
+ * E a categoria JÁ É HONRADA onde importa: `pos.f` dá 2×2 quadrados à criatura
+ * Grande e `board.js` escala o sprite por `1 + (pegada − 1) × 0,4`. O tamanho
+ * mora na pegada do tabuleiro, não na célula da folha. A ferramenta estava
+ * medindo o lugar errado.
+ *
+ * O que sobra é o que continua valendo: uma criatura desenhada não pode sair
+ * como um cisco. O piso é folgado de propósito — a menor figura real do
+ * elenco, o stirge, tem 335 px².
+ */
+const MINIMA_NAO_BIPEDE = 250;
+
 const FAIXAS_PEGADA = {
-  // Com folga: estas faixas são invenção do projeto, não medida de nada. Errar
-  // por 3 px não é defeito; sair da categoria é.
+  // Mantida só para referência de quem for mexer: não é mais consultada.
   miúdo: [12, 34], miudo: [12, 34],
   pequeno: [26, 46],
   médio: [40, 66], medio: [40, 66],
@@ -56,6 +82,23 @@ const FAIXAS_PEGADA = {
 
 /** Armas verticais sobem legitimamente acima da cabeça. */
 const ARMA_ALTA = new Set(['staff', 'bow', 'lanca', 'alabarda']);
+
+/**
+ * Marcas que ficam ACIMA DA CABEÇA, e quanto cada uma acrescenta.
+ *
+ * A ferramenta já perdoava a haste erguida e não perdoava nada que o
+ * personagem usasse na cabeça — e aí acusava de "alto demais" exatamente as
+ * quatro figuras cuja altura extra é a intenção do desenho: o mago e o Iarno
+ * de chapéu pontudo, o cavaleiro e o chefe goblin de cimeira. Um chapéu de
+ * mago DEVE passar do crânio; é para isso que ele existe.
+ *
+ * O que não está aqui (capuz, manto, mochila, ombreira, trançar) não sobe
+ * acima da cabeça e por isso não ganha folga nenhuma.
+ *
+ * Soma-se a MAIOR, não todas: quem usa chapéu e mochila não fica mais alto
+ * por causa da mochila.
+ */
+const MARCA_ALTA = { chapeuPontudo: 10, cimeira: 6 };
 
 /** Colisões aceitas, com o motivo. Qualquer outra acima do limiar é falha. */
 const TOLERADAS = [
@@ -136,12 +179,15 @@ function alvoDe(look, size) {
   if (!look.plan && !look.quadruped) {
     try {
       const t = metrics(look).total;
-      const folga = ARMA_ALTA.has(look.weapon) ? 14 : 4;
+      const marcas = [].concat(look.marca ?? []);
+      const extraMarca = marcas.reduce((n, m) => Math.max(n, MARCA_ALTA[m] ?? 0), 0);
+      const folga = (ARMA_ALTA.has(look.weapon) ? 14 : 4) + extraMarca;
       return { medida: 'alt', min: t - 7, max: t + folga, texto: `anatomia pede ${t}` };
-    } catch { /* cai na faixa */ }
+    } catch { /* cai no piso de área */ }
   }
-  const f = FAIXAS_PEGADA[size];
-  return f ? { medida: 'pegada', min: f[0], max: f[1], texto: `pegada de ${size} pede ${f[0]}–${f[1]}` } : null;
+  // Não bípede: ver o comentário de MINIMA_NAO_BIPEDE.
+  return { medida: 'area', min: MINIMA_NAO_BIPEDE, max: Infinity,
+    texto: `criatura desenhada pede pelo menos ${MINIMA_NAO_BIPEDE} px²` };
 }
 
 // ---------------------------------------------------------------------------
@@ -163,10 +209,10 @@ for (const [chave, look] of Object.entries(LOOKS)) {
   }
 
   const alt = Math.max(...VISTAS.map((d) => vistas[d].caixa?.alt ?? 0));
-  const pegada = Math.max(...VISTAS.map((d) => Math.max(vistas[d].caixa?.alt ?? 0, vistas[d].caixa?.larg ?? 0)));
+  const area = Math.max(...VISTAS.map((d) => vistas[d].caixa?.acesos ?? 0));
   const size = tamanhoPorLook.get(chave) ?? 'médio';
   const alvo = alvoDe(look, size);
-  const medido = alvo?.medida === 'pegada' ? pegada : alt;
+  const medido = alvo?.medida === 'area' ? area : alt;
   if (alvo && medido && (medido < alvo.min || medido > alvo.max)) {
     falhas.push(`ESCALA ${chave}: ${alvo.texto} px, está com ${medido}`);
   }

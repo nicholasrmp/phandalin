@@ -181,7 +181,20 @@ export class Fx {
       if (it.loop && it.t >= it.dur) it.t -= it.dur;
       const k = Math.min(1, it.t / it.dur);
 
-      if (it.kind === 'walk') {
+      if (it.kind === 'walk' && it.path.length < 2) {
+        // CAMINHO DE UM PONTO SÓ — e isto travava o jogo inteiro.
+        //
+        // Acontece quando o motor manda andar para o quadrado onde a criatura
+        // já está. Aí `segs` é 0, o índice do segmento vira -1, e `path[-1]`
+        // é `undefined`: a linha seguinte lia `.x` dele e lançava. Como isso
+        // é dentro de `render`, que é dentro do `requestAnimationFrame`, a
+        // exceção não derrubava só o quadro — derrubava o laço, e o tabuleiro
+        // congelava de vez.
+        //
+        // Sem segmento não há o que interpolar: a figura fica onde está.
+        const p = it.path[0];
+        this.positions.set(it.id, { x: p.x, y: p.y, lift: 0, squash: 1, dx: 0, dy: 0 });
+      } else if (it.kind === 'walk') {
         const modo = ANDARES[it.andar] ?? ANDARES.passo;
         const segs = it.path.length - 1;
         const kk = modo.tempo ? modo.tempo(k) : k;

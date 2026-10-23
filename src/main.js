@@ -31,6 +31,9 @@ class App {
       onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
       onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
       onAbrirFicha: (c) => this.ficha?.abrir(c, 'ficha'),
+      // Mesma porta do hover do tabuleiro: um só caminho para "quem é o alvo
+      // em consideração", para os dois nunca discordarem.
+      onAlvoHover: (alvo) => this.definirAlvo(alvo),
     });
 
     // A ficha pendura o próprio véu em `root` e cuida do teclado dela enquanto
@@ -54,6 +57,28 @@ class App {
         audio.play('click');
         this.refresh();
       },
+      // Beber a poção pela ficha é a MESMA ação de bebê-la pela barra: passa
+      // pelo motor, gasta a ação do turno e entra no log. Uma segunda porta
+      // que curasse sem cobrar nada seria um jeito de o jogador curar de
+      // graça só por ter a janela aberta.
+      onUsar: (p, id) => {
+        if (this.enc?.side !== 'party' || this.enc.over) {
+          return { ok: false, why: 'dá para usar item só no turno do grupo' };
+        }
+        const r = this.enc.useItem(p, id, { target: p });
+        if (r.ok) { audio.play('click'); this.afterAct(); }
+        return r;
+      },
+      // LIBERDADE ASSUMIDA: no 5e, preparar magia é coisa de descanso longo.
+      // Este sandbox não tem descanso nenhum — tem um encontro que começa na
+      // primeira tela. Exigir a regra aqui deixaria a tela de preparação
+      // inalcançável para sempre, que é pior que a liberdade. O que se mantém
+      // é o que importa: não dá para reescrever o arsenal enquanto os
+      // inimigos agem.
+      podePreparar: () => (this.enc?.side === 'party' && !this.enc.over
+        ? null
+        : 'dá para preparar magias só no turno do grupo'),
+      onPreparar: () => { audio.play('click'); this.refresh(); },
       onFechar: () => this.refresh(),
     });
 
@@ -237,6 +262,19 @@ class App {
         const { target, amount } = ev;
         this.atImpact(() => {
           target.flash = 1;
+          // O ENCOLHIMENTO DE DOR, que existia na arte e nunca aparecia.
+          // Todo pintor do projeto honra `pose.kind === 'hurt'` — são vinte
+          // lugares entre `draw.js` e os planos — mas nada no jogo escolhia
+          // essa animação: ela era desenhada nas setenta folhas e morria lá.
+          // Quem já está no chão não encolhe: a pose de caído vence.
+          if (!target.dead && !hasCondition(target, 'inconsciente')) {
+            target.anim = { name: 'hurt', frame: 0 };
+            setTimeout(() => {
+              // Só limpa se ainda for a dor: um golpe que chegue no meio não
+              // pode ter a própria animação apagada pelo relógio do anterior.
+              if (target.anim?.name === 'hurt') target.anim = null;
+            }, 220);
+          }
           board?.floatText(target.pos, `-${Math.round(amount)}`, '#ff6a6a', amount >= 10);
           board?.bump(0.22);
         });
@@ -353,11 +391,26 @@ class App {
       this.afterAct();
       return;
     }
+    // Item de usar. O que tem alvo decidido (beber a própria poção, o kit no
+    // aliado caído ao lado) resolve na hora; o que é arremessado cai no modo
+    // de alvo junto com ataque e magia, logo abaixo.
+    if (action.kind === 'item' && !action.mira) {
+      const alvo = action.targetId
+        ? this.enc.combatants.find((x) => x.id === action.targetId)
+        : c;
+      const r = this.enc.useItem(c, action.itemId, { target: alvo ?? c });
+      if (!r.ok) { this.refuse(c, r.why); return; }
+      this.afterAct();
+      return;
+    }
     // Ataques e magias entram em modo de alvo.
     if (action.kind === 'spell') {
       const spell = getSpell(action.spellId);
       // Magias sem alvo individual resolvem na hora ou pedem um ponto.
-      if (spell.kind === 'buff') {
+      // `debuff` entra aqui junto com `buff`: as duas escolhem os próprios
+      // alvos por alcance, e pedir uma mira seria pedir um clique que não
+      // muda nada.
+      if (spell.kind === 'buff' || spell.kind === 'debuff') {
         this.enc.castSpell(c, action.spellId);
         this.afterAct();
         return;
@@ -371,9 +424,18 @@ class App {
     this.refresh();
   }
 
-  /** Recusa visível: diz o porquê e NÃO gasta nada. */
+  /**
+   * Recusa visível: diz o porquê e NÃO gasta nada.
+   *
+   * O motivo vai num CAMPO, não direto na dica. A versão anterior escrevia na
+   * dica e chamava `refresh()` na linha seguinte — e `refresh()` termina
+   * reescrevendo a dica com "clique num quadrado azul para mover". Resultado:
+   * o jogador via o ✖ e ouvia o som, e a explicação durava menos que um
+   * quadro. Guardar aqui faz a mensagem sobreviver exatamente ao refresh que
+   * vem logo atrás, e sumir no próximo — que é o tempo certo de um aviso.
+   */
   refuse(actor, why) {
-    this.hud.setHint(`✖ ${why}`);
+    this.recusa = why;
     this.board?.floatText(actor.pos, '✖', '#ffb04a');
     audio.play('deny');
     this.refresh();
@@ -480,6 +542,16 @@ class App {
         this.tryCast(c, this.mode.spellId, { target: occupant, point: occupant.pos });
         return;
       }
+      if (this.mode.kind === 'item') {
+        // `useItem` já recusa alcance e linha de visão, com o motivo pronto:
+        // repetir as guardas aqui seria uma segunda regra para divergir da
+        // primeira.
+        const r = this.enc.useItem(c, this.mode.itemId, { target: occupant });
+        if (!r.ok) { this.refuse(c, r.why); return; }
+        this.mode = null;
+        this.afterAct();
+        return;
+      }
     }
 
     // Seleção
@@ -495,8 +567,30 @@ class App {
     this.refresh();
   }
 
+  /**
+   * Quem é o alvo "em consideração".
+   *
+   * Com um inimigo aqui, cada azulejo de arma da barra passa a mostrar a
+   * chance de acerto contra ELE em vez de só o dado da tabela. É o circuito
+   * que faltava: a conta existia em `odds.js` e morava a meia tela de
+   * distância de onde se escolhe a arma.
+   *
+   * Só redesenha quando o alvo MUDA. O hover do tabuleiro dispara a cada
+   * movimento do mouse, e um `update()` por pixel percorrido derrubaria o
+   * quadro a quadro.
+   */
+  definirAlvo(candidato) {
+    const c = this.selected;
+    const novo = candidato && c && candidato.side !== c.side && !candidato.dead ? candidato : null;
+    if (novo === this.alvo) return;
+    this.alvo = novo;
+    this.hud.update(this.enc, c, this.mode, this.alvo);
+  }
+
   onTileHover(tile) {
     const c = this.selected;
+    this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
+
     if (!c || this.enc.side !== 'party' || this.mode) {
       this.board?.setOverlay({ path: null });
       if (this.mode && tile) this.updateHint(tile);
@@ -568,11 +662,16 @@ class App {
       // para sempre e nada daquilo aparece.
       mode: this.mode,
     });
-    this.hud.update(this.enc, c, this.mode);
+    this.hud.update(this.enc, c, this.mode, this.alvo);
     // A ficha fica por cima do jogo e não escuta o encontro: sem isto ela
     // congela com PV e espaços de magia velhos enquanto o combate anda.
     if (this.ficha?.estaAberta()) this.ficha.atualizar();
-    if (!this.mode) this.hud.setHint(c ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.` : '');
+    if (this.recusa) {
+      this.hud.setHint(`✖ ${this.recusa}`);
+      this.recusa = null;
+    } else if (!this.mode) {
+      this.hud.setHint(c ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.` : '');
+    }
   }
 }
 

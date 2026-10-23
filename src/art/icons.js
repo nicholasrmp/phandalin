@@ -14,6 +14,8 @@
 // A paleta é compartilhada de propósito: é ela que faz vinte desenhos
 // diferentes lerem como um conjunto só.
 
+import { ICONES_ITENS, PALETA_ITENS } from './icones-itens.js';
+
 const P = {
   1: '#e8eef5', // metal claro — fio, brilho
   2: '#aab6c6', // metal
@@ -566,6 +568,13 @@ const ICONES = {
   ],
 };
 
+// Os ícones de ITEM vêm de um arquivo próprio, em grade de 32. Ficam fora
+// daqui porque são outra categoria de desenho — objeto, não glifo — e porque
+// vinte e quatro grades de 32 linhas afogariam os glifos de interface, que é
+// o que este arquivo existe para guardar.
+Object.assign(P, PALETA_ITENS);
+Object.assign(ICONES, ICONES_ITENS);
+
 const cache = new Map();
 
 /**
@@ -575,17 +584,25 @@ const cache = new Map();
  * @param {number} escala  pixels de tela por pixel do ícone
  * @param {string|null} tinta  recolore o ícone inteiro (para estados apagados)
  */
-export function iconCanvas(nome, escala = 2, tinta = null) {
-  const chave = `${nome}|${escala}|${tinta ?? ''}`;
+export function iconCanvas(nome, alvo = 32, tinta = null) {
+  const chave = `${nome}|${alvo}|${tinta ?? ''}`;
   const pronto = cache.get(chave);
   if (pronto) return copiar(pronto);
 
   const grade = ICONES[nome];
   const cv = document.createElement('canvas');
-  cv.width = 16 * escala;
-  cv.height = 16 * escala;
   cv.className = 'icone';
-  if (!grade) return cv;
+  if (!grade) { cv.width = alvo; cv.height = alvo; return cv; }
+
+  // `alvo` é o tamanho em PIXELS DE TELA, não um multiplicador. Os ícones de
+  // item têm grade de 32 e os de interface, de 16: com um multiplicador, a
+  // mesma chamada produziria caixas de tamanhos diferentes conforme o ícone,
+  // e quem chama não tem como saber a resolução de cada um — nem deveria.
+  // Dizendo o tamanho que cabe, a escala sai daqui.
+  const lado = grade.length;
+  const escala = Math.max(1, Math.round(alvo / lado));
+  cv.width = lado * escala;
+  cv.height = lado * escala;
 
   const ctx = cv.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -620,12 +637,34 @@ export const temIcone = (nome) => Boolean(ICONES[nome]);
 
 /** Ícone de uma arma, pela arte declarada no equipamento. */
 export function iconeDeArma(art = '', nome = '') {
-  const t = `${art} ${nome}`.toLowerCase();
-  if (/arco|bow/.test(t)) return 'arco';
-  if (/adaga|dagger/.test(t)) return 'adaga';
-  if (/maça|maca|mace|martelo/.test(t)) return 'maca';
+  const t = `${art} ${nome}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  // A ORDEM É A REGRA. Quem testa por nome tem de vir antes de quem testa por
+  // `art`, senão a besta — cujo `art` é 'bow' — nunca chega no seu ramo. E
+  // "machadinha" tem de ser pega antes de "adaga", que é substring de nada
+  // mas cujo ramo é largo demais.
+  //
+  // Dezesseis ícones de arma para trinta e sete armas. A função é o mapa
+  // entre os dois, e sem ela trinta caíam no ramo final — o catálogo inteiro
+  // virava uma parede de espadas iguais.
+  //
+  // Os ramos mais ESPECÍFICOS primeiro: "espada grande" tem de ser pega
+  // antes de "espada", e "machado grande" antes de "machado", senão a arma
+  // de duas mãos sai com o desenho da de uma.
+  if (/besta|crossbow/.test(t)) return 'besta';
+  if (/arco|bow|funda|zarabatana/.test(t)) return 'arco';
+  if (/espada grande|greatsword/.test(t)) return 'espadaGrande';
+  if (/espada curta|shortsword/.test(t)) return 'espadaCurta';
+  if (/rapieira|rapier/.test(t)) return 'rapieira';
+  if (/cimitarra|scimitar/.test(t)) return 'cimitarra';
+  if (/machado grande|alabarda|greataxe|halberd/.test(t)) return 'machadoGrande';
   if (/machado|axe/.test(t)) return 'machado';
-  if (/cajado|staff|bordão/.test(t)) return 'cajado';
+  if (/mangual|flail/.test(t)) return 'mangual';
+  if (/martelo|malho|picareta|hammer|maul/.test(t)) return 'martelo';
+  if (/maca|mace|clava|estrela|club/.test(t)) return 'maca';
+  if (/foice|chicote|sickle|whip/.test(t)) return 'foice';
+  if (/lanca|azagaia|pique|tridente|glaive|spear|pike/.test(t)) return 'lanca';
+  if (/cajado|staff|bordao/.test(t)) return 'cajado';
+  if (/adaga|dagger|dardo|dart/.test(t)) return 'adaga';
   return 'espada';
 }
 

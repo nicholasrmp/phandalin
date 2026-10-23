@@ -61,6 +61,53 @@ export const SPELLS = {
     condition: 'abencoado', concentration: true,
     desc: 'Até 3 aliados somam 1d4 em ataques e testes de resistência. Concentração.',
   },
+
+  // ---- acréscimos -----------------------------------------------------------
+  //
+  // Entraram para que PREPARAR MAGIA seja uma escolha. Com o livro do mago
+  // tendo exatamente o número de magias que ele pode preparar, a tela de
+  // preparação é um formulário sem decisão nenhuma.
+  //
+  // Nenhuma usa mecânica que o motor não tenha: todas caem em `attack`,
+  // `save` ou `debuff`, que `castSpell` já resolve. Uma magia bonita cujo
+  // efeito o motor ignora seria exatamente o defeito que a poção era.
+
+  toqueArrepiante: {
+    id: 'toqueArrepiante', name: 'Toque Arrepiante', icon: '💀', level: 0, school: 'necromancia',
+    castTime: 'action', rangeFt: 120, kind: 'attack',
+    damage: '1d8', damageType: 'necrótico',
+    desc: 'Mão esquelética à distância. Ataque mágico, 1d8 necrótico.',
+  },
+  ondaTrovejante: {
+    id: 'ondaTrovejante', name: 'Onda Trovejante', icon: '🌊', level: 1, school: 'evocação',
+    castTime: 'action', rangeFt: 0, shape: 'cone', areaFt: 15,
+    kind: 'save', save: 'con', damage: '2d8', damageType: 'trovejante', halfOnSave: true,
+    desc: 'Estrondo que sai de você em 4,5 m. CD de CON, 2d8 trovejante, metade se passar.',
+  },
+  raioDeDoenca: {
+    id: 'raioDeDoenca', name: 'Raio de Doença', icon: '🤢', level: 1, school: 'necromancia',
+    castTime: 'action', rangeFt: 60, kind: 'attack',
+    damage: '2d8', damageType: 'veneno', applies: { condition: 'envenenado', rounds: 1 },
+    desc: 'Feixe esverdeado. 2d8 de veneno e o alvo fica envenenado até o fim do próximo turno dele.',
+  },
+  raioGuiado: {
+    id: 'raioGuiado', name: 'Raio Guiado', icon: '🌟', level: 1, school: 'evocação',
+    castTime: 'action', rangeFt: 120, kind: 'attack',
+    damage: '4d6', damageType: 'radiante',
+    desc: 'Lança de luz. Ataque mágico à distância, 4d6 radiante — o maior dano de 1º círculo que o clérigo tem.',
+  },
+  infligirFerimentos: {
+    id: 'infligirFerimentos', name: 'Infligir Ferimentos', icon: '🩸', level: 1, school: 'necromancia',
+    castTime: 'action', rangeFt: 5, kind: 'attack',
+    damage: '3d10', damageType: 'necrótico',
+    desc: 'Toque de pura decadência. Ataque mágico corpo a corpo, 3d10 necrótico. Erra feio quando erra.',
+  },
+  perdicao: {
+    id: 'perdicao', name: 'Perdição', icon: '🖤', level: 1, school: 'encantamento',
+    castTime: 'action', rangeFt: 30, kind: 'debuff', targets: 3, save: 'cha',
+    condition: 'amaldicoado', concentration: true,
+    desc: 'O espelho da Bênção: até 3 inimigos subtraem 1d4 de ataques e resistências. CD de CAR. Concentração.',
+  },
 };
 
 export const getSpell = (id) => {

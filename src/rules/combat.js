@@ -15,7 +15,10 @@ import {
   abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
   proficiencyBonus, ABILITY_NAME,
 } from './abilities.js';
-import { WEAPONS, weaponAbility } from './equipment.js';
+import {
+  WEAPONS, weaponAbility,
+  itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila,
+} from './equipment.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
 
 /**
@@ -608,6 +611,12 @@ export class Encounter {
       bonus += r.total;
       bonusPartes.push({ rotulo: `bênção ${dice}[${r.rolls.join('+')}]`, valor: r.total });
     }
+    // O espelho: Perdição tira o que a Bênção põe.
+    for (const dice of fx.attackPenaltyDice) {
+      const r = roll(this.rng, dice);
+      bonus -= r.total;
+      bonusPartes.push({ rotulo: `perdição −${dice}[${r.rolls.join('+')}]`, valor: -r.total });
+    }
 
     const atk = attackRoll(this.rng, bonus, ac, mods);
     const tgtFx = conditionEffects(target);
@@ -714,7 +723,7 @@ export class Encounter {
 
     // Efeito extra do ataque (mordida do lobo derruba).
     if (p.onHit && !target.dead && !hasCondition(target, 'inconsciente')) {
-      const save = savingThrow(this.rng, saveBonus(target, p.onHit.save), p.onHit.dc);
+      const save = this.resistencia(target, p.onHit.save, p.onHit.dc);
       const nomeCondicao = CONDITIONS[p.onHit.condition]?.name ?? p.onHit.condition;
       const r = this.explicarResistencia(target, p.onHit.save, p.onHit.dc, save, {
         contra: `${p.name} de ${attacker.name}`,
@@ -866,7 +875,7 @@ export class Encounter {
 
   concentrationCheck(actor, damage) {
     const dc = Math.max(10, Math.floor(damage / 2));
-    const save = savingThrow(this.rng, saveBonus(actor, 'con'), dc);
+    const save = this.resistencia(actor, 'con', dc);
     const magia = actor.concentrating ? getSpell(actor.concentrating.spellId)?.name : null;
     // A CD é metade do dano (mínimo 10): sem dizer isso, o jogador não entende
     // por que um golpe forte derruba a concentração e um fraco não.
@@ -947,12 +956,19 @@ export class Encounter {
 
     // Alvos de magia de bônus são escolhidos aqui, antes do evento, para a
     // camada de desenho poder marcar cada um sem recalcular a regra.
+    // `debuff` escolhe do outro lado, e por isso não inclui o conjurador nem
+    // dispensa quem está inconsciente — um inimigo caído ainda pode levar
+    // Perdição e acordar com ela.
     const buffTargets = spell.kind === 'buff'
       ? this.alliesOf(actor)
         .concat([actor])
         .filter((a) => distanceFt(actor.pos, a.pos) <= spell.rangeFt && !hasCondition(a, 'inconsciente'))
         .slice(0, spell.targets)
-      : null;
+      : spell.kind === 'debuff'
+        ? this.enemiesOf(actor)
+          .filter((e) => !e.dead && distanceFt(actor.pos, e.pos) <= spell.rangeFt)
+          .slice(0, spell.targets)
+        : null;
 
     this.onEvent({ type: 'spell', caster: actor, spell, target, point, areaTiles, buffTargets });
 
@@ -1034,7 +1050,7 @@ export class Encounter {
           const auto = fx.autoFailSaves.includes(spell.save);
           const save = auto
             ? { total: 0, success: false, rolls: [0] }
-            : savingThrow(this.rng, saveBonus(t, spell.save), dc);
+            : this.resistencia(t, spell.save, dc);
           const dmg = damageRoll(this.rng, spell.damage);
           const amount = save.success ? (spell.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
           // O que o sucesso compra é a decisão inteira: metade do dano ainda
@@ -1112,6 +1128,38 @@ export class Encounter {
         break;
       }
 
+      // O espelho do `buff`: mesma estrutura, mas o alvo RESISTE e os alvos
+      // são inimigos. Escrito ao lado dele de propósito — ler os dois juntos
+      // é o que impede um ganhar um comportamento que o outro não tem.
+      case 'debuff': {
+        const picks = (buffTargets ?? []).filter((t) => t && !t.dead);
+        if (!picks.length) { this.say('aviso', `${spell.name} não pegou ninguém.`); break; }
+        if (spell.concentration) {
+          this.dropConcentration(actor);
+          actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: [] };
+        }
+        const pegos = [];
+        for (const t of picks) {
+          const save = this.resistencia(t, spell.save, dc);
+          const r = this.explicarResistencia(t, spell.save, dc, save, {
+            contra: `${spell.name} de ${actor.name}`,
+            seSucesso: `resiste a ${spell.name}`,
+          });
+          if (save.success) {
+            this.say('magia', `${t.name} resiste a ${spell.name}.`, r.conta, { rolagem: r });
+            continue;
+          }
+          addCondition(t, spell.condition, { source: actor.id });
+          pegos.push(t);
+          this.say('condicao', `${t.name} fica sob ${spell.name}.`, r.conta, { rolagem: r });
+        }
+        // A concentração segura só quem FALHOU: manter na lista quem resistiu
+        // faria a magia "soltar" de alguém que nunca esteve preso.
+        if (spell.concentration && actor.concentrating) actor.concentrating.targets = pegos;
+        if (!pegos.length) this.dropConcentration(actor);
+        break;
+      }
+
       case 'sleep': {
         const center = point ?? target?.pos;
         if (!center) break;
@@ -1137,6 +1185,161 @@ export class Encounter {
     this.afterAction(actor);
     this.checkEnd();
     return { ok: true };
+  }
+
+  // ---- resistência ---------------------------------------------------------
+
+  /**
+   * Teste de resistência COM os dados de condição.
+   *
+   * `saveBonusDice` existia em `conditions.js` desde sempre, era coletado por
+   * `conditionEffects` e não era lido por ninguém. A Bênção diz, no próprio
+   * texto, "some 1d4 às jogadas de ataque E aos testes de resistência", e
+   * entregava só a primeira metade — o tipo de defeito que nunca aparece num
+   * teste, porque o número sai plausível de qualquer jeito.
+   *
+   * Esta é a ÚNICA porta: `savingThrow` não deve ser chamada direto de lugar
+   * nenhum deste arquivo, ou a próxima condição com dado de resistência vai
+   * valer em três sítios e faltar num quarto.
+   */
+  resistencia(actor, hab, dc) {
+    const fx = conditionEffects(actor);
+    let bonus = saveBonus(actor, hab);
+    const partes = [];
+    for (const dice of fx.saveBonusDice) {
+      const r = roll(this.rng, dice);
+      bonus += r.total;
+      partes.push({ rotulo: `bênção ${dice}[${r.rolls.join('+')}]`, valor: r.total });
+    }
+    for (const dice of fx.savePenaltyDice) {
+      const r = roll(this.rng, dice);
+      bonus -= r.total;
+      partes.push({ rotulo: `perdição −${dice}[${r.rolls.join('+')}]`, valor: -r.total });
+    }
+    return { ...savingThrow(this.rng, bonus, dc), partes };
+  }
+
+  // ---- itens de usar -------------------------------------------------------
+
+  /**
+   * Usar um item da mochila.
+   *
+   * POR QUE ISTO EXISTE
+   * A poção de cura dizia, na própria descrição, "uma ação para beber:
+   * recupera 2d4+2 pontos de vida". Era mentira. Nada no motor a consumia:
+   * ela nascia na mochila de todo personagem, ocupava peso, e clicar nela
+   * respondia "é item de mochila". O kit de cura prometia dez usos e não
+   * tinha nenhum. Um texto na tela que promete um efeito que o motor não
+   * cobra é pior que uma funcionalidade faltando, porque o jogador conta com
+   * ele.
+   *
+   * A ORDEM DAS GUARDAS IMPORTA. O item só sai da mochila DEPOIS que todas
+   * as recusas passaram. Consumir antes de validar gasta a poção e não cura —
+   * e é o tipo de defeito que só aparece no turno em que ela fazia falta.
+   *
+   * @returns {{ok: boolean, why?: string}}
+   */
+  useItem(actor, itemId, { target = actor } = {}) {
+    const dados = itemDeId(itemId)?.dados;
+    if (!dados?.consumivel) return { ok: false, why: `${nomeDeId(itemId)} não é item de usar` };
+
+    const porBonus = dados.acao === 'bonus';
+    if (porBonus ? actor.bonusUsed : actor.actionUsed) {
+      return { ok: false, why: porBonus ? 'a ação bônus deste turno já foi usada' : 'a ação deste turno já foi usada' };
+    }
+    if (!quantosNaMochila(actor, itemId)) return { ok: false, why: `${dados.name} não está na mochila` };
+
+    const veto = this.vetoDeItem(actor, dados, target);
+    if (veto) return { ok: false, why: veto };
+
+    // Daqui para baixo nada mais recusa: pode cobrar.
+    const gasto = consumirDaMochila(actor, itemId);
+    if (!gasto) return { ok: false, why: `${dados.name} não está na mochila` };
+    if (porBonus) actor.bonusUsed = true; else actor.actionUsed = true;
+
+    this.executarItem(actor, dados, target);
+
+    if (gasto.acabou) this.say('recurso', `${actor.name} usou o último ${dados.name.toLowerCase()}.`);
+    else if (dados.usos) this.say('recurso', `${dados.name}: restam ${gasto.restam} usos.`);
+
+    this.onEvent({ type: 'item', actor, item: dados, target });
+    this.afterAction(actor);
+    this.checkEnd();
+    return { ok: true };
+  }
+
+  /** O que impede ESTE item neste alvo. `null` = pode. */
+  vetoDeItem(actor, dados, target) {
+    if (dados.consumivel === 'curar' || dados.consumivel === 'estabilizar') {
+      if (target !== actor && !isAdjacent(actor.pos, target.pos)) {
+        return `${target.name} está longe demais — é preciso estar encostado`;
+      }
+    }
+    if (dados.consumivel === 'curar') {
+      if (target.dead) return `${target.name} já morreu`;
+      // Beber de vida cheia é LEGAL na regra e é sempre um erro de clique.
+      // Recusar custa ao jogador um aviso; deixar passar custa a poção que
+      // faria falta dois turnos depois.
+      if (target.hp >= target.maxHp) return `${target.name} está com a vida cheia`;
+    }
+    if (dados.consumivel === 'estabilizar') {
+      if (!hasCondition(target, 'inconsciente')) return `${target.name} não está caindo`;
+      if (target.stable) return `${target.name} já está estável`;
+      if (target.dead) return `${target.name} já morreu`;
+    }
+    if (dados.consumivel === 'arremesso') {
+      if (target === actor) return 'não dá para arremessar em si mesmo';
+      const dist = distanceFt(actor.pos, target.pos);
+      if (dist > (dados.rangeFt ?? 20)) return `fora de alcance — ${dist} pés, alcança ${dados.rangeFt ?? 20}`;
+      if (!this.field.hasLineOfSight(actor.pos, target.pos)) return 'sem linha de visão';
+    }
+    return null;
+  }
+
+  executarItem(actor, dados, target) {
+    switch (dados.consumivel) {
+      case 'curar': {
+        const r = roll(this.rng, dados.cura);
+        const curado = this.heal(target, r.total, dados.name);
+        const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
+        this.say('cura', `${actor.name} ${quem} ${curado} PV.`, `${dados.cura} = ${r.total}`);
+        break;
+      }
+      case 'estabilizar': {
+        // Sem teste de Medicina: é essa a vantagem do kit sobre as mãos.
+        target.stable = true;
+        this.say('cura', `${actor.name} estabiliza ${target.name} com o kit de cura.`, 'sem teste: o kit dispensa Medicina');
+        this.onEvent({ type: 'stabilized', target, by: actor });
+        break;
+      }
+      case 'arremesso': {
+        // Ataque à distância improvisado: sem proficiência, só Destreza.
+        const bonus = abilityMod(actor.abilities.dex);
+        const cobertura = this.field.coverBetween(actor.pos, target.pos);
+        const mods = this.attackModifiers(actor, target, { ranged: true });
+        const r = attackRoll(this.rng, bonus, target.ac + cobertura, mods);
+        if (!r.hit) {
+          this.say('ataque', `${actor.name} arremessa ${dados.name.toLowerCase()} e erra ${target.name}.`,
+            `d20[${r.rolls.join('/')}]${formatModifier(bonus)} = ${r.total} vs CA ${target.ac + cobertura}`);
+          break;
+        }
+        const imune = dados.alvoApenas && !dados.alvoApenas.includes(target.kindTag ?? target.tipo);
+        if (imune) {
+          this.say('aviso', `${dados.name} acerta ${target.name} e não faz nada: só afeta ${dados.alvoApenas.join(' e ')}.`);
+          break;
+        }
+        const dmg = damageRoll(this.rng, dados.damage, { critical: r.critical });
+        this.applyDamage(target, dmg.total, dados.damageType, actor);
+        this.say('ataque', `${actor.name} acerta ${target.name} com ${dados.name.toLowerCase()}: ${dmg.total} de ${dados.damageType}.`,
+          `d20[${r.rolls.join('/')}]${formatModifier(bonus)} = ${r.total} vs CA ${target.ac + cobertura}`);
+        break;
+      }
+      default:
+        // `beneficio` e `untar` estão no catálogo e ainda não têm efeito. Dizer
+        // isso é melhor que gastar a ação em silêncio e o jogador achar que
+        // funcionou.
+        this.say('aviso', `${dados.name} ainda não tem efeito implementado.`);
+    }
   }
 
   // ---- outras ações --------------------------------------------------------

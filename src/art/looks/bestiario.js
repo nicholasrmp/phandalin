@@ -66,13 +66,21 @@ export const BESTIARIO_LOOKS = {
   //
   // A corcunda é a marca dele. Sem ela o goblin era só "humanoide pequeno", o
   // que também descreve o halfling do grupo.
+  //
+  // A PELE SAIU DO CINZA-VERDE PARA O MOSTARDA. O verde apagado era a cor mais
+  // próxima do piso de pedra do tabuleiro, e uma criatura da cor do chão é uma
+  // criatura que o jogador não vê. O mostarda encosta no tan do bugbear
+  // (`#bd8a46`), e é de propósito que não se resolve por cor: os dois se
+  // separam por TAMANHO e silhueta — o bugbear é quase o dobro, tem orelha de
+  // tufo e cabelo em espetos, o goblin é baixo, corcunda e de orelha caída.
+  // Resolver no matiz custaria o mostarda dos dois.
   goblin: {
     species: 'goblin', build: 'magro',
-    stance: 'agachado', marca: 'corcunda',
-    skin: '#6b8257', hair: '#3a4026', hairStyle: 'bald',
-    outfit: '#5d5a4a', outfitDark: '#3d3b30', trim: '#cfc2a2',
-    metal: '#8e969e', leather: '#4e4132', eyes: '#d8b43a',
-    armorStyle: 'leather', helm: false, shield: true, weapon: 'sword',
+    stance: 'agachado', marca: ['corcunda', 'ombreira'],
+    skin: '#c0a046', hair: '#21201b', hairStyle: 'juba',
+    outfit: '#4a4036', outfitDark: '#2e2822', trim: '#8a7a52',
+    metal: '#9aa2ab', leather: '#4a3726', eyes: '#e8720f',
+    armorStyle: 'leather', helm: false, shield: true, weapon: 'scimitar',
   },
 
   // SILHUETA: figura baixa mas ERETA, pés juntos e ombro reto, com uma lâmina
