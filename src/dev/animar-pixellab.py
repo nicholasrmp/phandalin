@@ -40,6 +40,8 @@ BASE = 'https://api.pixellab.ai/v2'
 OITO = ['south', 'south-east', 'east', 'north-east',
         'north', 'north-west', 'west', 'south-west']
 CHAO = ['south']
+# As sete que faltam quando o sul ja foi gerado como teste.
+SETE = [d for d in OITO if d != 'south']
 
 # As descricoes sao especificas de proposito: `enhance_prompt` fica desligado,
 # entao o texto daqui e o texto que o modelo recebe.
@@ -81,6 +83,33 @@ POSES = [
     #
     # ('hurt', OITO, 'struck hard, head snapped back, arms flung outward, '
     #                'torso bent backward, knees buckling'),
+    # O ATAQUE OUTRA VEZ, NOUTRO MODELO.
+    #
+    # O `attack` do v3 acima tem o golpe estragado: contando os pixels da
+    # madeira do escudo, ele cai de 112 para 68 ao sul, de 70 para 31 ao
+    # norte e de 84 para 35 a oeste, sempre a partir do quadro 3. O v3
+    # REDESENHA o personagem a cada quadro e perde primeiro o que e pequeno e
+    # lateral.
+    #
+    # O `pixminimax` e outro modelo, e aceita duas coisas que o v3 nao tem:
+    # `subject_description`, que diz o que a figura E, e `initial_pose`, que
+    # diz de onde o movimento parte. As duas existem justamente para segurar
+    # a identidade ao longo da sequencia -- e o escudo e o teste.
+    #
+    # Custa por tamanho e por quadro: 64x64 com 8 quadros e uma geracao. Por
+    # isso este vai primeiro SO AO SUL, para medir antes de gastar oito.
+    ('attack-pix', SETE, {
+        'mode': 'pixminimax',
+        'action_description': 'swinging the scimitar down and forward in one '
+                              'overhead strike, lunging onto the front foot, '
+                              'then recovering to the ready stance',
+        'subject_description': 'a hunched goblin warrior with a round wooden '
+                               'shield strapped to his left forearm and an iron '
+                               'scimitar in his right hand',
+        'initial_pose': 'standing in a ready stance, scimitar held low at his '
+                        'side, round shield held across the chest',
+        'frame_count': 8,
+    }),
     # `getting-up` comeca NO CHAO e se levanta; o motor usa o primeiro quadro,
     # que e exatamente "derrubado mas acordado".
     ('down', CHAO, {'mode': 'template', 'template_animation_id': 'getting-up'}),
@@ -205,8 +234,10 @@ def main():
         # `frame_count` e `enhance_prompt` sao do modo custom; no template o
         # numero de quadros vem do proprio esqueleto.
         if extra['mode'] != 'template':
-            corpo['frame_count'] = QUADROS
-            corpo['enhance_prompt'] = False
+            # `setdefault`: a pose pode trazer o proprio numero de quadros --
+            # o pixminimax exige multiplo de 4, o v3 exige par entre 4 e 16.
+            corpo.setdefault('frame_count', QUADROS)
+            corpo.setdefault('enhance_prompt', False)
         r = pedir(token, corpo)
         if r.get('usage'):
             gasto.append((nome, r['usage']))

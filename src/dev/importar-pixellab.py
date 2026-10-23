@@ -41,6 +41,7 @@ TRES DECISOES QUE PRECISAM ESTAR ESCRITAS:
 """
 import argparse
 import json
+import re
 from pathlib import Path
 from PIL import Image
 
@@ -63,19 +64,22 @@ DIRECOES = ['south', 'south-east', 'east', 'north-east',
 PLANO = [
     ('idle',   ('rotations', None), [0],          [40, 40]),
     ('walk',   ('animation', 'walk'), [1, 2, 3, 4], [9, 9, 9, 9]),
-    # ATAQUE SAI NOS QUADROS 1 E 2, E ISSO E UM REMENDO DECLARADO.
+    # O ATAQUE VEM DO `attack-pix`, NAO DO `attack`.
     #
-    # O golpe de verdade esta nos quadros 3 e 4, e os dois estao estragados:
-    # o escudo se desfaz. Medido contando os pixels da madeira do escudo, por
-    # direcao -- sul 112 -> 68, norte 70 -> 31, oeste 84 -> 35. Cai entre um
-    # terco e metade, nas oito direcoes, sempre a partir do quadro 3.
+    # Sao duas geracoes do mesmo golpe, em modelos diferentes, e a folha
+    # guarda as duas. A do modo `v3` (`attack`) tem o golpe estragado: os
+    # pixels da madeira do escudo caem de 112 para 68 ao sul, 70 para 31 ao
+    # norte e 84 para 35 a oeste, sempre do quadro 3 em diante -- justo os
+    # quadros em que o golpe acontece. O `v3` redesenha o personagem a cada
+    # quadro e perde primeiro o que e pequeno e lateral.
     #
-    # E a mesma deriva de identidade da queda: o modo `v3` REDESENHA o
-    # personagem a cada quadro, e o que e pequeno e lateral -- um escudo de
-    # perfil -- e a primeira coisa que ele perde. Entao aqui ficam os dois
-    # quadros intactos, que leem como preparacao sem golpe. Fraco, mas
-    # inteiro, ate o ataque ser refeito.
-    ('attack', ('animation', 'attack'), [1, 2],   [8, 14]),
+    # A do `pixminimax` (`attack-pix`) recebeu `subject_description` e
+    # `initial_pose`, que dizem ao modelo o que a figura E e de onde o
+    # movimento parte. O escudo sobrevive: no quadro 3 a espada esta acima da
+    # cabeca com o escudo inteiro no braco esquerdo.
+    #
+    # Quadro 3 e a espada erguida, quadro 5 e o golpe descido.
+    ('attack', ('animation', 'attack-pix'), [3, 5], [8, 14]),
     ('down',   ('queda', 6), [0],                 [60]),
     ('sleep',  ('queda', 6), [0],                 [50, 50]),
     ('dead',   ('queda', 6), [0],                 [60]),
@@ -105,10 +109,19 @@ def main():
     im = Image.open(fonte / meta['path']).convert('RGBA')
 
     rot = next(r for r in meta['rows'] if r['type'] == 'rotations')
+    # O SERVIDOR REPARTE UM NOME EM VARIOS GRUPOS.
+    #
+    # Pedir uma animacao com um nome que ja existe no personagem cria um
+    # grupo novo chamado `nome_2`, `nome_3`... Gerar o ataque em duas levas
+    # -- uma direcao para testar, sete depois -- deixou as oito repartidas
+    # entre `attack-pix` e `attack-pix_2`, e o importador quebrou procurando
+    # sudeste onde so havia sul. Aqui o sufixo e removido e os grupos se
+    # juntam de volta numa coisa so.
     porDir = {}
     for r in meta['rows']:
         if r['type'] == 'animation':
-            porDir.setdefault(r['animation'], {})[r['direction']] = r
+            nome = re.sub(r'_\d+$', '', r['animation'] or '')
+            porDir.setdefault(nome, {})[r['direction']] = r
     queda = porDir.get(QUEDA, {}).get('south')
     if queda is None:
         raise SystemExit(f'a folha nao tem "{QUEDA}" ao sul')
@@ -116,11 +129,7 @@ def main():
     def recorte(row, f):
         return im.crop((f * CW, row * CH, (f + 1) * CW, (row + 1) * CH))
 
-    # A ancora, tirada do parado ao sul.
-    pe = base_do_quadro(recorte(rot['row'], 0))
     alvo = CH - GROUND - 1
-    desloca = alvo - pe
-    print(f'celula {CW}x{CH} | pe do parado em y={pe} -> y={alvo}  (desloca {desloca:+})')
 
     def quadro(fonte_, idx, dir_):
         tipo, arg = fonte_
@@ -130,6 +139,25 @@ def main():
             return recorte(queda['row'], arg)
         r = porDir[arg][dir_]
         return recorte(r['row'], idx)
+
+    def ancora(fonte_, dir_):
+        """
+        O deslocamento vertical do GRUPO, medido no quadro de referencia dele.
+
+        Uma ancora global nao serve. Cada animacao sai de uma geracao
+        propria, e geracoes diferentes enquadram o personagem na celula de
+        um jeito proprio: o ataque do `pixminimax` vinha 2 px mais baixo que
+        as rotacoes, e com a ancora global o goblin atacava afundado no
+        chao. Medindo no quadro 0 de cada grupo -- que e sempre a pose de
+        referencia, a mesma do parado -- os grupos ficam alinhados ENTRE SI,
+        e o movimento dentro de cada um fica preservado, porque todos os
+        quadros do grupo recebem o mesmo deslocamento.
+        """
+        tipo = fonte_[0]
+        if tipo == 'queda':
+            return None          # o chao ancora quadro a quadro
+        base = base_do_quadro(quadro(fonte_, 0, dir_))
+        return alvo - base
 
     maxq = max(len(q) if len(q) > 1 else len(h) for _, _, q, h in PLANO)
     largura = CW * S * maxq
@@ -143,6 +171,7 @@ def main():
         anims[nome] = {'y': bloco, 'fw': CW * S, 'fh': CH * S,
                        'frames': nq, 'hold': hold, 'total': sum(hold)}
         for linha, dir_ in enumerate(DIRECOES):
+            desloca = ancora(fonte_, dir_)
             for f in range(nq):
                 idx = quadros[f] if f < len(quadros) else quadros[-1]
                 cel = quadro(fonte_, idx, dir_)
@@ -154,8 +183,8 @@ def main():
                 # alinhamento de blocos 3x3, que e o que permite ao tabuleiro
                 # dividir por S sem perder pixel.
                 # No chao a ancora e a propria base do quadro; em pe, a do
-                # parado. Ver a nota 2 no topo do arquivo.
-                desce = (alvo - base_do_quadro(cel)) if fonte_[0] == 'queda' else desloca
+                # grupo. Ver a nota 2 no topo do arquivo.
+                desce = (alvo - base_do_quadro(cel)) if desloca is None else desloca
                 grande = cel.resize((CW * S, CH * S), Image.NEAREST)
                 folha.alpha_composite(
                     grande,

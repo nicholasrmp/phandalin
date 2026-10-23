@@ -142,3 +142,47 @@ Consequência: enquanto cada look inventar as próprias cores, o elenco nunca
 vai parecer um jogo só, por melhor que cada figura fique isolada. O conserto
 é uma **paleta do projeto** travada em código, com o pintor e o importador
 quantizando contra ela em vez de cada um deduzir a sua.
+
+## A silhueta reconhece a criatura; ela NÃO diz para onde a criatura olha
+
+Duas perguntas diferentes, e esta skill as tinha juntado.
+
+Medida a sobreposição de silhueta entre as oito direções do goblin do
+PixelLab, alinhadas pela base:
+
+| par | sobreposição |
+|---|---|
+| vizinhas (45°) | **67,0%** |
+| opostas (180°) | **70,7%** |
+
+Opostas parecem-se **mais** que vizinhas. De frente e de costas, a figura tem
+o mesmo contorno — atarracada, orelhas, o disco do escudo. Quem carrega a
+direção é o **interior**: rosto contra juba, a face do escudo, a posição da
+arma.
+
+Consequência prática: o teste da silhueta continua valendo para julgar se a
+figura lê como a criatura, e só para isso. Para julgar se uma direção está
+legível, olhe o interior — e num sprite de 46 px isso significa que o
+contraste rosto/cabelo precisa ser forte.
+
+**Não meça direção com diferença pixel a pixel.** Tentado antes: vizinhas
+87–93%, opostas 87–94%. A métrica satura, porque em pixel art dois desenhos
+quaisquer diferem em ~90% dos pixels.
+
+## Modos de animação do PixelLab, medidos no mesmo goblin
+
+`v3` redesenha o personagem a cada quadro e perde primeiro o que é pequeno e
+lateral. No ataque, os pixels da madeira do escudo caíam de 112 para 68 ao
+sul, 70 para 31 ao norte, 84 para 35 a oeste — sempre do quadro 3 em diante.
+
+`template` (esqueleto pronto, 1 geração/direção) tem o mesmo defeito e pode
+ser pior: `getting-up` saiu com a figura desmontada no quadro do meio.
+
+`pixminimax` aceita `subject_description` e `initial_pose`, que seguram a
+identidade, e entregou o golpe com a espada acima da cabeça e o escudo
+inteiro no braço. É o modo a usar para ação.
+
+A lista de templates é **por template de personagem** (o nosso é `mannequin`)
+e não está na documentação, que trunca. Para descobri-la sem gastar: peça com
+um `character_id` inexistente — template válido falha com "personagem não
+encontrado", inválido falha pelo nome, e nenhum dos dois gera.
