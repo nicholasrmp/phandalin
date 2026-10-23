@@ -58,7 +58,9 @@ const TETO = -(UTIL - 2);
 
 // Três vistas desenhadas. Com o espelhamento horizontal elas cobrem as oito
 // orientações da grade — e as quatro diagonais que a câmera isométrica usa.
-export const DIRECTIONS = ['front', 'side', 'back'];
+// A lista mora em `direcoes.js` agora, junto da regra que escolhe a fileira.
+// Fica reexportada aqui porque meia duzia de arquivos a importam do pintor.
+export { DIRECOES_3 as DIRECTIONS } from './direcoes.js';
 
 export const shade = tom;
 export { ramp, deep };
@@ -248,8 +250,8 @@ function apart(color, from, min = 0.14) {
 const lista = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 const tem = (v, nome) => lista(v).includes(nome);
 
-export function paint(ctx, ox, oy, w, h, look, dir, pose) {
-  const kit = makeKit(ctx, ox, oy, w, h, GROUND);
+export function paint(ctx, ox, oy, w, h, look, dir, pose, escala = 1) {
+  const kit = makeKit(ctx, ox, oy, w, h, GROUND, escala);
   const { px, volume, contato, coluna, traco } = kit;
 
   // Criatura que não é humanoide tem plano corporal próprio, no seu arquivo.
@@ -261,11 +263,16 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
   const back = dir === 'back';
   const front = dir === 'front';
 
-  if (pose.kind === 'down') return paintDown(kit, look, m);
+  if (pose.kind === 'down') return paintDown(kit, look, m, pose);
 
   // ---- pose ----------------------------------------------------------------
   const attack = pose.kind === 'attack';
   const st = postura(look, m);
+  // ANDAR vem como `idle` com `pose.andando` de 0 a 3: contato, passagem,
+  // contato, passagem. O `bob` de um pixel já cai nos quadros 1 e 3 sozinho,
+  // porque a animação alterna `frame` entre 0 e 1 — os quadros de passagem
+  // são exatamente os de frame 1. É coincidência feliz, e está escrita aqui
+  // para ninguém "consertar" o alternado achando que é descuido.
   const bob = pose.kind === 'idle' && pose.frame === 1 ? -1 : 0;
   const lean = attack ? (pose.frame === 1 ? 2 : 1) : 0;
   const recoil = pose.kind === 'hurt' ? -2 : 0;
@@ -449,7 +456,7 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
 
   // ---- pernas --------------------------------------------------------------
   const robe = look.armorStyle === 'robe';
-  if (!robe) drawLegs(kit, look, m, { side, attack, lean, st, cintura });
+  if (!robe) drawLegs(kit, look, m, { side, attack, lean, st, cintura, andando: pose.andando });
 
   if (back && !look.cloak) arma();
 
@@ -545,7 +552,7 @@ export function paint(ctx, ox, oy, w, h, look, dir, pose) {
 
 // ---------------------------------------------------------------------------
 
-function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean, st, cintura }) {
+function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean, st, cintura, andando = null }) {
   const cor = look.outfitDark;
   const y = cintura;
   const h = m.footTop - cintura;
@@ -570,7 +577,15 @@ function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean
   const larg = (t) => m.legW - fino * t + (t > 0.42 && t < 0.62 ? 1 : 0);
   // Joelho dobrado empurra a canela para a frente. Sem isso o agachamento só
   // encurta a perna, e a figura lê como anão, não como alguém agachado.
-  const curva = (t) => (side ? r(st.agacha * 0.9 * Math.sin(Math.PI * t)) : 0);
+  //
+  // O DESLOCAMENTO É LIMITADO PELA LARGURA DA PERNA. O goblin agachado tem
+  // `agacha` = 3 sobre uma perna de 4 px: o centro da coluna andava quase a
+  // largura dela inteira no meio da altura, a perna deixava de ser coluna e
+  // virava ESCADA — e era só no perfil, que é onde a lateral saía torta. É a
+  // mesma regra que o teto da passada aqui em cima já aplica à coxa; faltava
+  // aplicá-la ao joelho.
+  const joelho = Math.min(r(st.agacha * 0.9), Math.max(1, Math.floor(m.legW * 0.5)));
+  const curva = (t) => (side ? r(joelho * Math.sin(Math.PI * t)) : 0);
 
   const perna = (anca, lado, tom = 0, atraso = 0, aberto = abre) => {
     const c = tom ? ramp(cor, tom) : cor;
@@ -623,18 +638,28 @@ function drawLegs({ px, volume, contato, coluna }, look, m, { side, attack, lean
     }
   };
 
+  // O BALANÇO DO PASSO. Nos quadros de contato (0 e 2) uma perna vai à frente
+  // e a outra fica atrás; nos de passagem (1 e 3) as duas se encontram. É a
+  // OPOSIÇÃO que lê como andar — duas pernas avançando juntas lê como pulo.
+  // Proporcional à perna: um passo de 3 px fixo some num goblin e fica curto
+  // num ogro.
+  const bal = andando === null ? 0 : [1, 0, -1, 0][andando] * Math.max(2, r(m.legW * 0.8));
+
   if (side) {
     const avanco = (attack ? 2 : 0) + Math.max(0, st.pernaFrente);
-    perna(-r(m.legW / 2) - r(avanco * 0.6), -1, -2, 0, 1);
-    perna(-r(m.legW / 2) + avanco + lean, 1, 0, 0, 1);
+    perna(-r(m.legW / 2) - r(avanco * 0.6) - bal, -1, -2, 0, 1);
+    perna(-r(m.legW / 2) + avanco + lean + bal, 1, 0, 0, 1);
   } else {
     // Peso num pé só: o quadril do lado solto cede e aquela perna começa mais
     // baixo. Dois quadris na mesma linha é o que fazia a figura ler como
     // boneco de vestir.
-    perna(-quadril, -1, 0, st.apoio);
+    // De frente o passo não vai e volta — ele TESOURA: um pé abre, o outro
+    // fecha. É o que a perspectiva faz com quem anda na sua direção, e é o
+    // único sinal de passo que sobra quando não há perfil para mostrar.
+    perna(-quadril, -1, 0, st.apoio, abre + bal);
     // Perna adiantada: de frente ela aparece como um pé mais aberto e mais
     // baixo, que é o que a perspectiva faz com quem dá um passo à frente.
-    perna(quadril, 1, 0, 0, abre + Math.max(0, r(st.pernaFrente * 0.5)));
+    perna(quadril, 1, 0, 0, abre - bal + Math.max(0, r(st.pernaFrente * 0.5)));
     const vao = Math.max(1, quadril * 2 - m.legW + 1);
     px(-Math.floor(vao / 2), y, vao, Math.max(1, r(h * 0.45)), ramp(cor, -4));
   }
@@ -827,7 +852,18 @@ function drawTorso({ px, volume, contato, coluna }, look, m, { chestX, chest, sh
 }
 
 function drawShield({ px, volume, contato, coluna }, look, m, { shoulderX, shoulder, torsoTop, side, back, adiante, cintura }) {
-  const campo = look.trim ?? ramp(look.metal, -2);
+  // O CAMPO DO ESCUDO É MADEIRA, NÃO DEBRUM.
+  //
+  // Era `look.trim`, e `trim` é a cor do VIVO: fita, galão, orla. Em quase
+  // todo o elenco ela é a cor mais CLARA do look, porque debrum existe para
+  // destacar. Usada no campo inteiro, o escudo virava a coisa mais clara da
+  // figura — mais clara que o rosto. No goblin, cujo trim é `#cfc2a2`, lia
+  // como uma folha de papel pendurada no braço.
+  //
+  // Escudo é feito de madeira ou couro, e o brilho fica por conta do aro e do
+  // umbo, que já são de metal. `shieldFace` continua aberto para quem quiser
+  // um escudo pintado.
+  const campo = look.shieldFace ?? look.leather ?? ramp(look.metal, -2);
   const aro = look.metal;
   // `shieldStyle: 'torre'` é outro objeto, não um escudo maior: uma placa
   // angulosa que vai do ombro ao joelho e come METADE da figura. Quando ele
@@ -965,6 +1001,35 @@ function drawEars({ px, volume }, look, m, { headX, headW, headTop, headH, lead,
       px(x + (s < 0 ? -1 : 2), earY - 3, 1, 1, ramp(pele, 1));
       px(x + (s < 0 ? 1 : 0), earY, 1, 2, ramp(pele, -3));   // concha
     }
+  } else if (sp.ear === 'abano') {
+    // A ORELHA É A ASSINATURA DO GOBLIN.
+    //
+    // Ele usava `swept`, a mesma do hobgoblin: dois pixels de largura, que a
+    // 52 px de célula somem contra o crânio. Isso custava duas coisas — o
+    // goblin perdia o traço que todo mundo reconhece nele, e ficava com a
+    // MESMA cabeça do hobgoblin, que é o par que este elenco mais precisa
+    // separar.
+    //
+    // A orelha grande sai do contorno, e por sair do contorno sobrevive ao
+    // teste do preto: pintada de preto, a figura continua sendo um goblin.
+    // A orelha é desenhada COLUNA A COLUNA, não como um retângulo. Um bloco de
+    // 4 px de altura saindo reto da cabeça lê como asa de avião: o que faz
+    // ler como orelha é AFINAR até a ponta enquanto SOBE ao se afastar.
+    const len = Math.max(4, r(headW * 0.46));
+    for (const s of [-1, 1]) {
+      const base = s < 0 ? headX - 1 : headX + headW;
+      for (let i = 0; i < len; i++) {
+        const t = len > 1 ? i / (len - 1) : 1;           // 0 na cabeça, 1 na ponta
+        const alt = Math.max(1, Math.round(5 - 4 * t));  // afina de 5 para 1
+        const x = s < 0 ? base - 1 - i : base + i;
+        const y = earY - 1 - Math.round(t * 2);          // sobe ao se afastar
+        px(x, y, 1, alt, pele);
+        px(x, y, 1, 1, ramp(pele, s < 0 ? 2 : 1));       // borda de cima na luz
+        if (alt > 1) px(x, y + alt - 1, 1, 1, ramp(pele, -3));
+      }
+      // A concha: um risco escuro junto da cabeça, que é o que dá o funil.
+      px(s < 0 ? base - 2 : base + 1, earY, 1, 3, ramp(pele, -3));
+    }
   } else if (sp.ear === 'wide') {
     const len = Math.max(3, r(headW * 0.36));
     for (const s of [-1, 1]) {
@@ -1025,7 +1090,8 @@ function drawEars({ px, volume }, look, m, { headX, headW, headTop, headH, lead,
  * humanos de serem o mesmo NPC.
  */
 function drawFace(kit, look, m, { headX, headW, headTop, chin, headH, jawY, jawW, jawLead, front, side, lead, pele, afina }) {
-  const { px, volume, coluna } = kit;
+  const { px, volume, coluna, e } = kit;
+  const u = 1 / Math.max(1, e);          // UM pixel físico, em unidades lógicas
   const sp = m.sp;
   const f = m.face;
   const rico = headH >= 11;
@@ -1206,6 +1272,35 @@ function drawFace(kit, look, m, { headX, headW, headTop, chin, headH, jawY, jawW
       px(mx + i, mouthY - 1, 1, 1 + (i % 4 ? 1 : 0), '#e4d8bc');          // dentes de cima
       px(mx + i + 1, mouthY - 2 + mh, 1, 1, ramp('#e4d8bc', -2));         // dentes de baixo
     }
+  } else if (f.boca === 'dentuca') {
+    // DENTUÇA: o maxilar de baixo avança e os dentes passam do lábio de cima,
+    // tortos e de alturas desiguais.
+    //
+    // É o traço que mais diz "goblin" na referência, e é o primeiro deste
+    // pintor que SÓ EXISTE em alta resolução. Em pixel lógico inteiro, "dente
+    // torto" é um pixel — e um pixel não tem como ser torto. Com a folha em
+    // 3x, um terço de pixel lógico cai exatamente num pixel físico, e o dente
+    // passa a ter largura própria. Em 1x o ramo cai no plano B, uma barra
+    // clara, que é o que já dava para dizer naquele tamanho.
+    px(mx, mouthY, mw, 1, ramp(pele, -5));                      // a fenda
+    px(mx, mouthY - u, mw, u, ramp(pele, -2));                  // lábio de cima
+    px(mx, mouthY + 1, mw, u, ramp(pele, 1));                   // o maxilar avança
+    if (e >= 3) {
+      // O dente é MARFIM NA SOMBRA, não branco de papel, e entre um e outro
+      // sobra o vão escuro da boca. Dentes brancos encostados viram um bloco
+      // claro no meio da cara — foi o que apareceu na primeira tentativa.
+      const marfim = '#b9a982';
+      const passo = u * 3;
+      const quantos = Math.max(2, Math.floor(mw / passo));
+      for (let i = 0; i < quantos; i++) {
+        const alto = [2, 1, 2, 1, 1, 2, 1, 2][i % 8] * u;
+        const dx = mx + u + i * passo;
+        px(dx, mouthY + u - alto, u, alto, marfim);
+        px(dx, mouthY + u - alto, u, u, ramp(marfim, 2));       // a ponta pega luz
+      }
+    } else {
+      px(mx + 1, mouthY, Math.max(1, mw - 2), 1, '#e8dcc0');
+    }
   } else if (f.boca === 'frouxa') {
     // Boca de ogro: aberta, lábio de baixo pendendo. É o que diz "burro e
     // perigoso" sem precisar de expressão.
@@ -1216,7 +1311,10 @@ function drawFace(kit, look, m, { headX, headW, headTop, chin, headH, jawY, jawW
     px(mx, mouthY, mw, 1, ramp(pele, -3));
     if (rico) px(mx + 1, mouthY + 1, Math.max(1, mw - 1), 1, ramp(pele, 1)); // lábio de baixo
   }
-  if (sp.fangs) {
+  // A dentuça já É a dentição: somar as presas genéricas por cima acrescenta
+  // dois pixels brancos de 1 px lógico — três vezes mais grossos que os dentes
+  // que acabaram de ser desenhados — e some com eles num borrão claro.
+  if (sp.fangs && f.boca !== 'dentuca') {
     px(mx, mouthY + 1, 1, 1, '#ebe3cf');
     px(mx + mw - 1, mouthY + 1, 1, 1, '#ebe3cf');
   }
@@ -1310,7 +1408,7 @@ function drawFacial({ px, traco, volume }, look, m, { headX, headW, headTop, eye
   }
 }
 
-function drawCrown({ px, cut, volume, contato }, look, m, { headX, headW, headTop, crown, front, side, lead }) {
+function drawCrown({ px, cut, volume, contato, e }, look, m, { headX, headW, headTop, crown, front, side, lead }) {
   const hairH = headTop - crown;
   if (look.helm) {
     const met = look.metal;
@@ -1335,10 +1433,24 @@ function drawCrown({ px, cut, volume, contato }, look, m, { headX, headW, headTo
   const hair = look.hair ?? '#3a2c22';
   const long = look.hairStyle === 'long';
   switch (look.hairStyle) {
-    case 'bald':
-      px(headX + 1, crown + hairH - 1, headW - 2, 1, ramp(look.skin, 2));
-      px(headX + 2, crown + hairH - 2, Math.max(1, headW - 5), 1, ramp(look.skin, 3));
+    case 'bald': {
+      // CARECA É BRILHO NO CRÂNIO, NÃO UM BONÉ EM CIMA DELE.
+      //
+      // As duas faixas claras saíam em `crown + hairH - 1`, que é `headTop - 1`:
+      // ACIMA do crânio, numa faixa onde o pintor da cabeça não desenhou nada.
+      // Duas barras claras de ponta a ponta flutuando sobre a cabeça não leem
+      // como couro cabeludo — leem como a aba de um boné, e era por isso que o
+      // goblin parecia estar de boné.
+      //
+      // Brilho de superfície curva é CURTO, fica DENTRO da calota e DE UM LADO
+      // só: o lado da luz, que neste jogo é o alto-esquerdo.
+      const bw = Math.max(2, r(headW * 0.3));
+      const bx = headX + 2 + (side ? Math.max(1, r(headW * 0.22)) : 0);
+      px(bx, headTop + 1, bw, 1, ramp(look.skin, 2));
+      px(bx + 1, headTop, Math.max(1, bw - 2), 1, ramp(look.skin, 3));
+      px(headX + headW - 2, headTop + 1, 1, 2, ramp(look.skin, -2));   // nuca
       break;
+    }
     case 'hood': {
       const cap = look.outfitDark;
       const hh = hairH + r(m.headH * 0.6);
@@ -1346,6 +1458,58 @@ function drawCrown({ px, cut, volume, contato }, look, m, { headX, headW, headTo
       px(headX, crown - 1, headW, 1, ramp(cap, 2));
       px(headX - 1, crown + hh - 1, headW + 2, 1, ramp(cap, -4));
       px(headX, crown + hh, headW, 1, ramp(cap, -5));
+      break;
+    }
+    case 'juba': {
+      // JUBA: cabelo desgrenhado, de quem não penteia.
+      //
+      // O `default` logo abaixo desenha um retângulo com os dois cantos de
+      // cima cortados — e retângulo é exatamente o que um cabelo assim NÃO é.
+      // No goblin ele saía como um capacete preto encaixado no crânio.
+      //
+      // O que separa juba de penteado é o TOPO IRREGULAR: cada mecha termina
+      // numa altura própria. A variação é por índice, não sorteada, porque o
+      // mesmo goblin tem de sair igual nos vinte e um quadros da folha.
+      const hh = hairH + 2;
+      volume(headX, crown, headW, hh, hair, { topo: 1 });
+      cut(headX, crown, 1, 1);
+      cut(headX + headW - 1, crown, 1, 1);
+      for (let i = 0; i < headW; i++) {
+        const sobe = [2, 0, 3, 1, 2, 0, 1, 3][i % 8];
+        if (sobe) px(headX + i, crown - sobe, 1, sobe, i % 3 === 0 ? ramp(hair, 1) : hair);
+        if (i % 3 === 1) px(headX + i, crown, 1, hh, ramp(hair, -2));
+      }
+      // As pontas caem atrás da orelha, e mais compridas de um lado só: juba
+      // simétrica volta a ler como corte de cabelo.
+      const queda = Math.max(2, r(m.headH * 0.7));
+      for (const s of [-1, 1]) {
+        const x = s < 0 ? headX - 1 : headX + headW - 1;
+        const q = s < 0 ? queda : Math.max(2, r(queda * 0.65));
+        volume(x, crown + 2, 2, q, s < 0 ? hair : ramp(hair, -1), { topo: 0 });
+        px(x, crown + 2 + q, 2, 1, ramp(hair, -4));
+      }
+      // OSSOS E CHIFRE ESPETADOS NA JUBA.
+      //
+      // Na referência é o que quebra a massa preta do cabelo e diz que o bicho
+      // enfeita a si mesmo com o que mata. Osso de um pixel lógico vira um
+      // quadrado branco no meio do cabelo e lê como erro; em terços ele tem
+      // comprimento e espessura, que é o que faz ler como osso.
+      if (look.ossos && e >= 3) {
+        const u = 1 / e;
+        const osso = '#e4d9bf';
+        // dois ossinhos atravessados, em alturas diferentes
+        px(headX + 2, crown + 2 * u, u * 7, u * 2, osso);
+        px(headX + 2, crown + 2 * u, u * 7, u, ramp(osso, 2));
+        px(headX + 3, crown + u, u * 2, u * 4, ramp(osso, -1));
+        px(headX + headW - 6, crown + 5 * u, u * 2, u * 6, osso);
+        px(headX + headW - 6, crown + 5 * u, u, u * 6, ramp(osso, 2));
+        // o chifre: sobe do alto e se curva para fora
+        for (let i = 0; i < 6; i++) {
+          const esp = Math.max(1, 3 - Math.floor(i / 2));
+          px(headX + headW - 4 + Math.floor(i / 2) * u, crown - u * (i + 1), u * esp, u, i < 4 ? osso : ramp(osso, 2));
+        }
+      }
+      contato(headX + 1, crown + hh, headW - 2, hair);
       break;
     }
     case 'spiky':
@@ -1645,16 +1809,20 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
       // As tiras têm COMPRIMENTOS DIFERENTES de propósito. Todas rentes na
       // mesma linha leem como saia de prato; desiguais leem como couro velho.
       const couro = look.leather;
-      const lw = Math.max(8, m.waistW + 3);
+      // O CINTO SEGUE O QUADRIL. Com `waistW + 3` ele passava um pixel e meio
+      // de cada lado do corpo, e um pixel e meio lógico é quase cinco físicos
+      // na folha de 3x: o cinto deixava de ser cinto e virava uma PRATELEIRA
+      // atravessada na cintura, que é o que ele parecia no goblin.
+      const lw = Math.max(6, m.waistW + 1);
       const x0 = -Math.floor(lw / 2) + r(desvio * 0.3);
-      const topo = cintura - 2;
+      const topo = cintura - 1;
       // Até o MEIO da coxa e nem um pixel mais. Em criatura de perna curta
       // (ogro), 46% da perna cobria o joelho inteiro e a figura ficava sem
       // perna nenhuma — uma barriga pousada numa saia.
       const queda = Math.max(4, r(m.legH * 0.36));
       // cinto largo por cima das tiras
-      volume(x0, topo, lw, 3, ramp(couro, 1), { topo: 1 });
-      px(x0, topo + 2, lw, 1, ramp(couro, -4));
+      volume(x0, topo, lw, 2, ramp(couro, 1), { topo: 1 });
+      px(x0, topo + 1, lw, 1, ramp(couro, -4));
       for (let i = 0; i < lw - 1; i += 3) {
         const n = i / 3;
         const alt = queda - (n % 3) * 2 - (i % 2);
@@ -1662,10 +1830,10 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
         // todas rentes leem como cerca de madeira, não como couro gasto.
         const tw = 2 + (n % 4 === 1 ? 0 : 1);
         const cor = n % 2 ? ramp(couro, -1) : couro;
-        px(x0 + i, topo + 3, tw, alt, cor);
-        px(x0 + i, topo + 3, 1, alt, ramp(cor, 2));              // fio de luz na tira
-        px(x0 + i + tw - 1, topo + 3, 1, alt, ramp(cor, -3));    // vão entre as tiras
-        px(x0 + i, topo + 3 + alt - 1, tw - 1, 1, ramp(cor, -4));  // ponta da tira
+        px(x0 + i, topo + 2, tw, alt, cor);
+        px(x0 + i, topo + 2, 1, alt, ramp(cor, 2));              // fio de luz na tira
+        px(x0 + i + tw - 1, topo + 2, 1, alt, ramp(cor, -3));    // vão entre as tiras
+        px(x0 + i, topo + 2 + alt - 1, tw - 1, 1, ramp(cor, -4));  // ponta da tira
       }
       contato(x0 + 1, topo, lw - 2, couro);
     }
@@ -1683,6 +1851,13 @@ function drawMarca({ px, volume, contato, coluna, traco }, look, m, c, camada) {
  * (ponta no chão à frente), vertical (cajado em pé), baixa (junto do corpo).
  */
 function drawWeapon({ px, volume, contato, coluna, traco }, look, m, { gripX, gripY, armW, attack, frame, apoio = 'lado', crown = m.crown, lead = 0 }) {
+  // MÃO VAZIA É MÃO VAZIA. Sem esta linha, `weapon: null` caía no `default`
+  // do switch lá embaixo e a figura saía empunhando uma clava de espigões —
+  // a arma que ninguém pediu, na mão de quem não devia ter nenhuma. Apareceu
+  // na página do catálogo, nos bonecos de "só a armadura", e valia também
+  // para a Linene, que é lojista e estava armada sem saber.
+  if (!look.weapon) return;
+
   const metal = look.metal;
   // `look.cabo` separa a MADEIRA do couro. Sem isso, o pau da clava do ogro
   // saía da mesma cor dos trapos dele e a arma desaparecia dentro da figura:
@@ -1811,6 +1986,7 @@ function drawWeapon({ px, volume, contato, coluna, traco }, look, m, { gripX, gr
         px(x + T + 2, hy + 1, T, L(6), ramp(metal, 2));
         break;
       case 'sword':
+      case 'scimitar':
       case 'dagger':
       case 'gancho':
         px(x - 2, hy, T + 4, 1, ramp(trim, 2));
@@ -1861,6 +2037,7 @@ function drawWeapon({ px, volume, contato, coluna, traco }, look, m, { gripX, gr
     const base = -2;
     switch (look.weapon) {
       case 'sword':
+      case 'scimitar':
       case 'dagger': {
         volume(x, gripY - 4, T, 5, wood, { topo: 1 });        // cabo acima da mão
         volume(x - 1, gripY - 6, T + 2, 2, trim, { topo: 1 }); // pomo
@@ -1910,7 +2087,49 @@ function drawWeapon({ px, volume, contato, coluna, traco }, look, m, { gripX, gr
       volume(x - 1, gripY + 5, T + 2, 2, trim, { topo: 1 });     // pomo
       px(x - 2, gripY - 3, T + 4, 1, ramp(trim, 2));             // guarda
       px(x - 2, gripY - 2, T + 4, 1, ramp(trim, -2));
-      haste(x, gripY - 3, L(20), T, metal, tilt);
+      const len = L(20);
+      haste(x, gripY - 3, len, T, metal, tilt);
+      // A PONTA.
+      //
+      // `haste` desenha uma barra de espessura CONSTANTE, e barra de
+      // espessura constante não lê como lâmina: lê como régua. Era a mesma
+      // queixa já anotada na `gancho` logo abaixo, e valia para a espada de
+      // todo mundo — a do guerreiro, a do bandido, a do goblin.
+      const topo = gripY - 3 - len;
+      const bx = x + tilt;
+      px(bx, topo - 1, T, 1, metal);
+      px(bx + (T > 2 ? 1 : 0), topo - 2, Math.max(1, T - 2), 1, ramp(metal, 2));
+      px(bx + Math.floor(T / 2), topo - 3, 1, 1, ramp(metal, 3));   // o bico
+      break;
+    }
+    case 'scimitar': {
+      // CIMITARRA: a lâmina CURVA do goblinoide.
+      //
+      // Está aqui por duas razões. É a arma que o SRD põe na mão do goblin, e
+      // a curva dá a ele uma silhueta de arma que nenhum personagem do grupo
+      // tem — a 52 px, a mancha já diz quem é antes de o jogador ler o nome.
+      //
+      // Desenhada LINHA A LINHA, porque a curva é o ponto inteiro: cada linha
+      // sobe um pixel e se afasta um pouco MAIS que a anterior. Afastamento
+      // constante daria uma diagonal, que é outra coisa — diagonal lê como
+      // espada torta, curva lê como cimitarra.
+      cabo(5);
+      volume(x - 1, gripY + 4, T + 2, 2, trim, { topo: 1 });     // pomo
+      px(x - 2, gripY - 3, T + 4, 1, ramp(trim, 2));             // guarda
+      px(x - 2, gripY - 2, T + 4, 1, ramp(trim, -2));
+      const len = L(18);
+      for (let i = 0; i < len; i++) {
+        const t = len > 1 ? i / (len - 1) : 1;
+        const curva = r(t * t * len * 0.45) + tilt;
+        // A folha afina só no último terço: afinando desde a guarda, a lâmina
+        // vira um espinho.
+        const esp = Math.max(1, Math.round(T - (t > 0.62 ? (t - 0.62) * T * 2.4 : 0)));
+        const bx = x + curva;
+        const y = gripY - 4 - i;
+        px(bx - 1, y, esp + 2, 1, ramp(metal, -5));              // contorno
+        px(bx, y, esp, 1, metal);
+        px(bx, y, 1, 1, ramp(metal, 3));                         // o gume pega a luz
+      }
       break;
     }
     case 'dagger':
@@ -2028,13 +2247,160 @@ function drawWeapon({ px, volume, contato, coluna, traco }, look, m, { gripX, gr
   }
 }
 
-/** Caído: um vulto rente ao chão, do tamanho de quem caiu. */
-function paintDown({ px, volume, contato }, look, m) {
-  const w = Math.max(12, r(m.shoulderW * 1.4));
-  const x = -Math.floor(w / 2);
-  const body = look.armorStyle === 'robe' ? look.outfit : look.outfitDark;
-  volume(x, -6, w, 6, body, { topo: 1, base: 1 });
-  contato(x, -1, w, body);
-  volume(x + w - r(w * 0.32), -10, Math.max(4, r(m.headW * 0.7)), 5, look.skin, { topo: 1 });
-  volume(x - 2, -8, 4, 3, look.leather, { topo: 1 });
+/**
+ * No chão: um vulto rente ao solo, do tamanho de quem caiu.
+ *
+ * TRÊS ESTADOS NO MESMO DESENHO, e a diferença entre eles é a única pista que
+ * o jogador tem do tabuleiro. Antes os três — derrubado, dormindo e morto —
+ * saíam idênticos, e não havia como saber se valia a pena gastar uma ação
+ * para estabilizar ou se já era tarde.
+ *
+ *   derrubado  o corpo se apoia, a cabeça levantada. Ele está consciente.
+ *   dormindo   o corpo relaxa e RESPIRA: dois quadros, um pixel de diferença.
+ *   morto      nenhum apoio, membros soltos, e a cor some — o couro e o pano
+ *              puxam para o cinza, que é como o olho lê "isto acabou".
+ */
+/**
+ * A FIGURA NO CHÃO — derrubada, dormindo ou morta.
+ *
+ * Eram três caixas: um retângulo de seis pixels de tronco, um bloco de cabeça
+ * em cima e um bloco de braço do lado. Sem perna, sem orelha, sem arma. No
+ * tabuleiro não lia como alguém caído, lia como uma mancha — e esta é a pose
+ * que o jogador MAIS vê, porque todo combate termina com alguém no chão e o
+ * goblin cai em quase todos eles.
+ *
+ * O que faltava é o que faz uma figura deitada ler como figura: a PERNA
+ * dobrada, que dá o comprimento; a CABEÇA com orelha, que diz a espécie; e a
+ * ARMA no chão, que diz que aquilo ali estava lutando. E os três estados se
+ * separam pelo que o corpo FAZ, não só pela cor:
+ *
+ *   derrubado  cabeça ERGUIDA, braço empurrando o chão, arma ainda na mão
+ *   dormindo   corpo encolhido, cabeça pousada, peito subindo um pixel
+ *   morto      membros abertos, cor puxada ao cinza, arma LONGE da mão
+ *
+ * A figura deita com a cabeça à direita e os pés à esquerda, sempre — virar
+ * com a direção obrigaria cada estado a ter dois desenhos, e no chão ninguém
+ * repara para que lado o morto está apontado.
+ */
+function paintDown(kit, look, m, pose = {}) {
+  const { px, volume, contato } = kit;
+  const morto = !!pose.morto;
+  const dormindo = pose.dormindo !== undefined;
+  const erguido = !morto && !dormindo;        // só o derrubado levanta a cabeça
+
+  const vivo = look.armorStyle === 'robe' ? look.outfit : look.outfitDark;
+  // Morto perde saturação em vez de escurecer: escurecer só o faria ler como
+  // sombra, e a figura deitada já é escura.
+  const body = morto ? cinza(vivo, 0.65) : vivo;
+  const pele = morto ? cinza(look.skin, 0.55) : look.skin;
+  const couro = morto ? cinza(look.leather, 0.6) : look.leather;
+  const aco = morto ? cinza(look.metal ?? '#8e969e', 0.5) : look.metal ?? '#8e969e';
+
+  // Dormindo o peito sobe um pixel no segundo quadro. É pouco de propósito:
+  // mais que isso lê como convulsão, não como respiração.
+  const chao = dormindo && pose.dormindo === 1 ? -1 : 0;
+
+  // A espessura de quem está deitado é a PROFUNDIDADE do tronco, que sai do
+  // ombro — não da cabeça. Saindo da cabeça, o goblin cabeçudo deitava mais
+  // gordo que o hobgoblin, que é duas vezes ele.
+  const espes = Math.max(5, r(m.shoulderW * 0.6));           // espessura do tronco
+  const troncoW = Math.max(8, r(m.torsoH * 1.2));
+  const cabW = Math.max(4, r(m.headW * 0.95));
+  // Dormindo as pernas encolhem: é o que faz o corpo ler como enrolado em vez
+  // de esticado, sem precisar de outra pose.
+  const pernaW = Math.max(5, r(m.legH * (dormindo ? 0.70 : 0.95)));
+  const pe = -Math.floor((pernaW + troncoW + cabW) / 2);    // extremo dos pés
+  const troncoX = pe + pernaW;
+  const cabX = troncoX + troncoW;
+
+  // ---- pernas: coxa deitada, canela dobrada até a sola ----------------------
+  // SÃO DUAS PERNAS, e elas precisam ter um VÃO. Uma barra só na altura das
+  // coxas lê como cauda — foi o que apareceu no primeiro desenho.
+  const coxaH = Math.max(2, r(espes * 0.44));
+  const canelaW = Math.max(3, r(pernaW * 0.6));
+  // A de trás fica no chão e é mais escura; a da frente cruza por cima.
+  volume(troncoX - pernaW + 1, chao - coxaH, pernaW, coxaH, ramp(couro, -2), { topo: 1 });
+  volume(pe, chao - coxaH, canelaW, coxaH, ramp(couro, -3), { topo: 1 });
+  const altaY = chao - coxaH - (morto ? coxaH + 1 : coxaH);
+  volume(troncoX - pernaW + 2, altaY, pernaW - 1, coxaH, couro, { topo: 1 });
+  volume(pe + (morto ? 0 : 2), altaY, canelaW, coxaH, ramp(couro, 1), { topo: 1 });
+  px(pe, chao - 1, canelaW, 1, ramp(couro, -5));            // a sola no chão
+
+  // ---- tronco ---------------------------------------------------------------
+  volume(troncoX, chao - espes, troncoW, espes, body, { topo: 1, base: 1 });
+  px(troncoX + 1, chao - espes, troncoW - 2, 1, ramp(body, 2));   // costas na luz
+  px(troncoX, chao - 1, troncoW, 1, ramp(body, -4));              // o peso no chão
+  px(troncoX + 1, chao - Math.max(2, r(espes * 0.42)), troncoW - 2, 1, couro);  // cinto
+  contato(troncoX, chao, troncoW, body);
+
+  // ---- cabeça ---------------------------------------------------------------
+  // Deitada, a cabeça é um retângulo quase quadrado — e retângulo inteiro lê
+  // como CAIXOTE. O que a salva são três coisas: os cantos de trás cortados,
+  // o FOCINHO avançando na frente mais baixo que a testa, e a orelha. Juntas
+  // dizem para que lado a criatura está olhando, que é a informação de que o
+  // jogador precisa para saber se ela caiu de frente ou de costas.
+  const cabH = Math.max(4, r(m.headH * 0.72));
+  const cabY = erguido ? chao - espes - cabH + 2 : chao - cabH;
+  volume(cabX, cabY + 1, cabW - 2, cabH - 1, pele, { topo: 1 });
+  px(cabX + 1, cabY, cabW - 4, 1, ramp(pele, 2));            // alto do crânio
+  px(cabX, cabY + cabH - 1, 1, 1, ramp(pele, -4));           // canto de trás
+  // O focinho: avança e desce, deixando a testa acima dele.
+  const focH = Math.max(2, cabH - Math.max(2, r(cabH * 0.42)));
+  const focY = cabY + cabH - focH;
+  volume(cabX + cabW - 3, focY, 3, focH, pele, { topo: 1 });
+  px(cabX + cabW - 1, focY, 1, 1, ramp(pele, -3));
+  px(cabX + cabW - 4, focY + Math.max(1, focH - 2), 4, 1, ramp(pele, -5));   // a boca
+
+  // A ORELHA aponta para trás e para cima — é o lado que sobra de quem está
+  // deitado, e sem ela todo mundo cai com a mesma cabeça. Triângulo com base
+  // GROSSA encostada no crânio: fio de um pixel lia como antena.
+  const orelha = m.sp?.ear;
+  if (orelha && orelha !== 'wide' && orelha !== 'round') {
+    const len = Math.max(2, r(cabW * (orelha === 'abano' ? 0.55 : 0.34)));
+    for (let i = 0; i < len; i++) {
+      const t = len > 1 ? i / (len - 1) : 1;
+      const alt = Math.max(1, Math.round((cabH - 2) * (1 - t * 0.8)));
+      px(cabX - 1 - i, cabY + 1 - r(t * 2), 1, alt, i === 0 ? pele : ramp(pele, -1));
+      px(cabX - 1 - i, cabY + 1 - r(t * 2), 1, 1, ramp(pele, 1));
+    }
+  }
+
+  // O olho: ABERTO em quem está só derrubado, fechado nos outros dois. São
+  // dois pixels, e são eles que dizem se ainda há alguém ali.
+  px(cabX + cabW - 5, cabY + Math.max(1, r(cabH * 0.34)), 2, 1,
+    erguido ? look.eyes ?? '#d8b43a' : ramp(pele, -4));
+  if (erguido) contato(cabX + 1, cabY + cabH, cabW - 3, pele);
+
+  // ---- braço ----------------------------------------------------------------
+  const ombroX = cabX - Math.max(3, r(troncoW * 0.32));
+  if (erguido) {
+    // Empurrando o chão: é o braço que explica por que a cabeça está no alto.
+    volume(ombroX, chao - espes + 1, 3, espes - 1, pele, { topo: 1 });
+    px(ombroX - 1, chao - 1, 4, 1, ramp(pele, -3));         // a mão espalmada
+  } else if (morto) {
+    volume(troncoX - 1, chao - 3, Math.max(5, r(troncoW * 0.6)), 3, pele, { topo: 1 });
+  } else {
+    volume(ombroX, chao - 3, 4, 3, pele, { topo: 1 });      // dobrado sob a cabeça
+  }
+
+  // ---- a arma no chão -------------------------------------------------------
+  if (look.weapon) {
+    const lam = Math.max(5, r(troncoW * 0.85));
+    const lx = morto ? pe - 4 : dormindo ? pe : ombroX - lam - 1;
+    const ly = chao - 1;
+    px(lx, ly - 1, lam, 1, aco);
+    px(lx, ly - 1, lam - 1, 1, ramp(aco, 2));
+    px(lx - 1, ly - 1, 1, 1, ramp(aco, -4));
+    px(lx + lam, ly - 1, 1, 1, ramp(aco, -4));              // a ponta
+    px(lx + lam, ly - 2, 2, 2, couro);                      // o cabo, do lado da mão
+  }
+}
+
+/** Puxa uma cor para o cinza, mantendo o brilho. Não escurece: dessatura. */
+function cinza(hex, forca) {
+  const n = parseInt(hex.slice(1), 16);
+  const rr = (n >> 16) & 255; const gg = (n >> 8) & 255; const bb = n & 255;
+  const luz = Math.round(rr * 0.299 + gg * 0.587 + bb * 0.114);
+  const mix = (v) => Math.round(v + (luz - v) * forca);
+  return `#${[mix(rr), mix(gg), mix(bb)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }

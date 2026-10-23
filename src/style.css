@@ -1,41 +1,61 @@
 /* Phandalin — pele da interface.
  *
  * REGISTRO VISUAL
- * Pedra escura e latão. Três decisões carregam quase toda a diferença entre
- * "página web com botões" e "interface de RPG":
+ * Pergaminho e latão. Painel de papel envelhecido sobre um palco escuro, com
+ * ferragem de latão: dobradiça, rebite, canto e lacre de cera. Quatro decisões
+ * carregam quase toda a diferença entre "página web com botões" e "interface
+ * de RPG":
  *
  *   1. SERIFA nos nomes próprios e nos títulos. Dado continua em sem-serifa,
  *      porque número em serifa fica difícil de bater o olho. É a mistura que
  *      lê como livro de mesa.
  *   2. BISEL em tudo que é moldura: uma linha clara em cima e uma escura
- *      embaixo, por dentro. É o que faz o painel parecer uma placa de metal e
- *      não um retângulo pintado.
+ *      embaixo, por dentro. Em pergaminho a linha clara é quase branca e a
+ *      escura é marrom — preto sobre creme lê como sujeira, não como sombra.
  *   3. SOQUETE nos azulejos de ação: o fundo afunda e o ícone fica dentro. Um
- *      botão quadrado chapado lê como formulário.
+ *      botão quadrado chapado lê como formulário. Aqui o soquete é raso, de
+ *      carimbo no papel, não de buraco em pedra.
+ *   4. CANTO DE LATÃO nos painéis grandes. Duas cantoneiras em diagonal bastam
+ *      para o olho fechar as quatro; quatro de verdade custariam elementos que
+ *      não existem (`::before` e `::after` são dois).
+ *
+ * TINTA ESCURA SOBRE CLARO
+ * Esta folha já foi o inverso — creme sobre pedra. Virar a polaridade não é
+ * trocar duas variáveis: toda sombra preta vira marrom, toda barra de vida
+ * precisa de um verde mais fechado para sobreviver ao fundo claro, e todo
+ * `rgba(0,0,0,…)` que era "afundado" virava mancha. Por isso não sobrou
+ * nenhum preto puro no arquivo: o escuro daqui é #4e3818 diluído.
  *
  * Nenhum arquivo de fonte ou de imagem: só famílias que todo sistema tem, e
  * gradiente. O resto da arte é desenhada por código em `src/art/`.
  */
 
 :root {
-  --bg: #0f0d12;
-  --pedra: #1a171f;
-  --pedra-2: #23202a;
-  --soquete: #110f15;
-  --line: rgba(222, 198, 140, .14);
-  --line-forte: rgba(222, 198, 140, .3);
-  --ink: #ece6d8;
-  --muted: #998f7e;
-  --gold: #d9b45a;
-  --gold-escuro: #8a6d28;
-  --blue: #6eb8ff;
-  --red: #e0553c;
-  --green: #5fd07a;
+  --bg: #14100b;
+  --papel: #d6c49b;
+  --papel-2: #ebdcba;
+  --papel-3: #f5ead1;
+  --soquete: #c2a978;
+  --line: rgba(78, 56, 24, .28);
+  --line-forte: rgba(78, 56, 24, .52);
+  --ink: #352718;
+  --muted: #7c6a4e;
+  --gold: #a1702a;
+  --gold-claro: #e4c47e;
+  --gold-escuro: #75501a;
+  --lacre: #9c2a25;
+  --blue: #2c6a9e;
+  --red: #a83420;
+  --green: #3d8b4b;
   --font: 'Segoe UI', system-ui, sans-serif;
   --serif: 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
 
-  --bisel: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 -1px 0 rgba(0, 0, 0, .55);
-  --relevo: 0 2px 10px rgba(0, 0, 0, .5);
+  /* O escuro do bisel é marrom porque a base é creme. */
+  --bisel: inset 0 1px 0 rgba(255, 252, 242, .6), inset 0 -1px 0 rgba(78, 56, 24, .3);
+  /* Carimbo: o fundo afunda no papel em vez de virar buraco. */
+  --carimbo: inset 0 2px 4px rgba(78, 56, 24, .4), inset 0 -1px 0 rgba(255, 252, 242, .35);
+  --relevo: 0 3px 12px rgba(0, 0, 0, .5);
+  --papelada: linear-gradient(170deg, var(--papel-2), var(--papel));
 }
 
 * { box-sizing: border-box; }
@@ -44,7 +64,7 @@ html, body {
   margin: 0;
   height: 100%;
   background:
-    radial-gradient(120% 80% at 50% 0%, #1b1822 0%, var(--bg) 70%),
+    radial-gradient(130% 85% at 50% 0%, #241c12 0%, var(--bg) 72%),
     var(--bg);
   color: var(--ink);
   font-family: var(--font);
@@ -65,19 +85,31 @@ h2 {
   font-size: 12px;
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--gold);
-  opacity: .8;
+  color: var(--gold-escuro);
 }
 
 .muted { color: var(--muted); }
 
-/* Moldura padrão: pedra com bisel e um fio de latão. */
+/* Moldura padrão: pergaminho com bisel e fio de latão. */
 .painel {
-  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
-  border: 1px solid var(--line);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
   border-radius: 10px;
   box-shadow: var(--bisel), var(--relevo);
 }
+
+/* Cantoneira de latão. Duas em diagonal: ver o cabeçalho. */
+.cantos { position: relative; }
+.cantos::before, .cantos::after {
+  content: '';
+  position: absolute;
+  width: 11px; height: 11px;
+  border: 2px solid var(--gold);
+  opacity: .75;
+  pointer-events: none;
+}
+.cantos::before { top: 4px; left: 4px; border-right: 0; border-bottom: 0; border-radius: 4px 0 0 0; }
+.cantos::after { bottom: 4px; right: 4px; border-left: 0; border-top: 0; border-radius: 0 0 4px 0; }
 
 /* ======================================================== topo ============ */
 .hud-topo {
@@ -94,13 +126,14 @@ h2 {
   letter-spacing: .04em;
   padding: 6px 18px;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
-  border: 1px solid var(--line);
-  box-shadow: var(--bisel);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  box-shadow: var(--bisel), var(--relevo);
+  color: var(--ink);
 }
-.turn-banner.party { color: var(--blue); border-color: rgba(110, 184, 255, .3); }
-.turn-banner.foes { color: var(--red); border-color: rgba(224, 85, 60, .35); }
-.turn-banner.vitoria { color: var(--gold); border-color: var(--line-forte); }
+.turn-banner.party { color: #1d4e76; border-color: var(--blue); }
+.turn-banner.foes { color: #7c2414; border-color: var(--red); }
+.turn-banner.vitoria { color: var(--gold-escuro); border-color: var(--gold); }
 .turn-banner.derrota { color: var(--red); }
 
 /* ---- ordem de turno ---- */
@@ -109,10 +142,10 @@ h2 {
   align-items: center;
   gap: 5px;
   padding: 5px 10px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, .15));
-  border: 1px solid var(--line);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
   border-radius: 999px;
-  box-shadow: var(--bisel);
+  box-shadow: var(--bisel), var(--relevo);
   max-width: 60vw;
   overflow-x: auto;
   scrollbar-width: none;
@@ -127,23 +160,24 @@ h2 {
   padding: 2px;
   background: var(--soquete);
   border: 1px solid transparent;
+  box-shadow: var(--carimbo);
   cursor: default;
   transition: transform .1s;
 }
 .vez-retrato { height: 32px; display: grid; place-items: center; }
-.vez.agora { border-color: var(--line-forte); }
+.vez.agora { border-color: var(--gold-escuro); }
 .vez.alvo {
   border-color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold), 0 0 12px rgba(217, 180, 90, .3);
+  box-shadow: var(--carimbo), 0 0 0 1px var(--gold), 0 0 12px rgba(161, 112, 42, .45);
   transform: translateY(-2px);
 }
 .vez.agiu { opacity: .42; }
-.vez.down { opacity: .3; filter: grayscale(1); }
-.vez-pv { height: 3px; border-radius: 2px; background: rgba(0, 0, 0, .6); overflow: hidden; margin-top: 1px; }
+.vez.down { opacity: .32; filter: grayscale(1); }
+.vez-pv { height: 3px; border-radius: 2px; background: rgba(78, 56, 24, .5); overflow: hidden; margin-top: 1px; }
 .vez-pv i { display: block; height: 100%; background: var(--green); }
 .vez.down .vez-pv i { background: var(--red); }
 
-.vez-sep { color: var(--gold); opacity: .45; font-size: 12px; padding: 0 3px; }
+.vez-sep { color: var(--gold-escuro); opacity: .6; font-size: 12px; padding: 0 3px; }
 
 /* ---- câmera e som ---- */
 .viewbar {
@@ -151,11 +185,11 @@ h2 {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
-  border: 1px solid var(--line);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
   border-radius: 999px;
   padding: 4px 10px;
-  box-shadow: var(--bisel);
+  box-shadow: var(--bisel), var(--relevo);
 }
 .icon-btn {
   position: relative;
@@ -169,7 +203,7 @@ h2 {
   cursor: pointer;
   line-height: 1;
 }
-.icon-btn:hover { background: rgba(217, 180, 90, .14); color: var(--gold); }
+.icon-btn:hover { background: rgba(161, 112, 42, .2); color: var(--gold-escuro); }
 /* Som desligado: a nota apaga e leva um corte diagonal. Antes eram dois emoji
    de alto-falante — desenho do sistema operacional, fora do nosso registro. */
 .icon-btn.mudo { color: var(--muted); }
@@ -181,7 +215,7 @@ h2 {
   background: var(--red);
   transform: rotate(-35deg);
 }
-.divider { width: 1px; height: 18px; background: var(--line); }
+.divider { width: 1px; height: 18px; background: var(--line-forte); }
 .volume { width: 72px; accent-color: var(--gold); cursor: pointer; }
 
 /* ======================================================== meio ============ */
@@ -193,8 +227,9 @@ h2 {
 }
 
 .coluna-grupo, .coluna-log {
-  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
-  border: 1px solid var(--line);
+  position: relative;
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
   border-radius: 10px;
   box-shadow: var(--bisel), var(--relevo);
   padding: 10px;
@@ -203,6 +238,22 @@ h2 {
   flex-direction: column;
   min-height: 0;
 }
+
+/* O log é um rolo pendurado: barra de latão no alto e no pé. A coluna rola por
+   dentro, então as barras são `sticky` e não `absolute` — presas ao quadro,
+   não ao conteúdo que passa por baixo. */
+.coluna-log::before, .coluna-log::after {
+  content: '';
+  position: sticky;
+  display: block;
+  margin: -10px -10px 8px;
+  height: 7px;
+  flex: none;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold), var(--gold-escuro));
+  box-shadow: 0 1px 3px rgba(78, 56, 24, .5);
+}
+.coluna-log::before { top: -10px; }
+.coluna-log::after { bottom: -10px; margin: 8px -10px -10px; }
 
 .palco {
   position: relative; /* o resumo do turno inimigo flutua por cima do tabuleiro */
@@ -227,20 +278,20 @@ h2 {
 .board {
   image-rendering: pixelated;
   border-radius: 8px;
-  border: 1px solid var(--line);
+  border: 2px solid var(--gold-escuro);
   width: auto;
   height: auto;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   cursor: pointer;
-  box-shadow: 0 18px 54px rgba(0, 0, 0, .6);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, .65);
 }
 
 .hint {
   min-height: 18px;
   font-size: 13px;
-  color: var(--muted);
+  color: #a2967e; /* o palco é escuro aqui: a dica fica FORA do pergaminho */
   text-align: center;
 }
 
@@ -251,20 +302,20 @@ h2 {
   font-size: 11px;
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--gold);
-  opacity: .75;
+  color: var(--gold-escuro);
   margin: 10px 0 2px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line-forte);
   padding-top: 8px;
 }
 
 .ficha {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 8px;
   text-align: left;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .035), transparent);
-  border: 1px solid var(--line);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
   border-radius: 9px;
   padding: 7px;
   cursor: pointer;
@@ -272,12 +323,12 @@ h2 {
   color: var(--ink);
   box-shadow: var(--bisel);
 }
-.ficha:hover { border-color: var(--line-forte); }
+.ficha:hover { border-color: var(--gold); }
 .ficha.on {
   border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px rgba(217, 180, 90, .45), var(--bisel);
+  box-shadow: inset 0 0 0 1px var(--gold), var(--bisel);
 }
-.ficha.agiu { opacity: .55; }
+.ficha.agiu { opacity: .62; }
 .ficha.down { opacity: .5; filter: grayscale(.7); }
 
 .ficha-retrato {
@@ -287,14 +338,15 @@ h2 {
   border-radius: 6px;
   background: var(--soquete);
   display: grid; place-items: center;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6);
+  box-shadow: var(--carimbo), inset 0 0 0 1px var(--gold-escuro);
 }
+/* A CA é uma plaquinha de latão rebitada no canto do retrato. */
 .ficha-ca {
   position: absolute; right: 2px; bottom: 2px;
   font-size: 10px; font-weight: 700;
-  background: rgba(0, 0, 0, .75);
-  color: var(--ink);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  color: #2b1d07;
+  border: 1px solid var(--gold-escuro);
   border-radius: 4px;
   padding: 0 3px;
   font-variant-numeric: tabular-nums;
@@ -303,35 +355,67 @@ h2 {
 .ficha-corpo { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ficha-corpo strong { font-family: var(--serif); font-size: 14px; letter-spacing: .01em; }
 .ficha-sub { font-size: 10.5px; color: var(--muted); }
-.ficha-pv { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ficha-pv { font-size: 11px; color: #5d4e36; font-variant-numeric: tabular-nums; }
 .ficha-morte { font-size: 11px; color: var(--red); }
 
 .pixel { image-rendering: pixelated; flex: none; }
 
-.bar { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, .6); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .8); }
+.bar {
+  height: 6px; border-radius: 3px;
+  background: rgba(78, 56, 24, .42);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(78, 56, 24, .55);
+}
 .bar.small { height: 4px; }
 .bar i { display: block; height: 100%; }
 
 .slots { display: flex; gap: 7px; font-size: 10.5px; color: var(--blue); }
 
+/* ---- economia de turno no cartão ----
+   A, B e R são Ação, Bônus e Reação. Letra e não ícone: três desenhos de
+   16 px lado a lado viram borrão, e a inicial já é o nome. */
+.eco-linha { display: flex; align-items: center; gap: 3px; margin-top: 1px; }
+.eco {
+  width: 13px; height: 13px; line-height: 12px;
+  text-align: center;
+  font-size: 8.5px; font-weight: 700;
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 3px;
+  cursor: help;
+}
+.eco.gasto {
+  background: rgba(78, 56, 24, .14);
+  border-color: var(--line-forte);
+  color: var(--muted);
+}
+.eco-mov {
+  margin-left: 2px;
+  font-size: 9.5px;
+  color: #1d4e76;
+  font-variant-numeric: tabular-nums;
+}
+.eco-mov.gasto { color: var(--muted); }
+
 /* ---- condições ----
    Sigla de três letras em vez do emoji de `CONDITIONS[x].icon`: o chip é de
-   pedra como o resto da interface, e o nome inteiro mais o efeito estão na
+   papel como o resto da interface, e o nome inteiro mais o efeito estão na
    dica. Vermelho é o que te atrapalha, latão é o que te ajuda. */
 .conds { display: flex; flex-wrap: wrap; gap: 3px; }
 .cond {
   font-size: 9px; line-height: 14px; letter-spacing: .06em;
   font-variant-numeric: tabular-nums;
-  background: rgba(224, 85, 60, .16);
-  border: 1px solid rgba(224, 85, 60, .4);
-  color: #ffb1a2;
+  background: rgba(168, 52, 32, .16);
+  border: 1px solid rgba(168, 52, 32, .5);
+  color: #83271a;
   border-radius: 3px; padding: 0 3px;
   cursor: help;
 }
 .cond.boa {
-  background: rgba(217, 180, 90, .14);
-  border-color: rgba(217, 180, 90, .45);
-  color: var(--gold);
+  background: rgba(161, 112, 42, .16);
+  border-color: var(--gold);
+  color: var(--gold-escuro);
 }
 /* Na ordem de turno o azulejo tem 36 px: a condição vira um ponto, e o nome
    fica na dica. Texto de três letras ali quebraria a fila inteira. */
@@ -340,19 +424,19 @@ h2 {
   width: 5px; height: 5px; padding: 0;
   font-size: 0; /* a sigla continua no DOM para a leitura de tela */
   border-radius: 50%;
-  background: var(--red); border-color: rgba(0, 0, 0, .5);
+  background: var(--red); border-color: rgba(78, 56, 24, .55);
 }
 .conds.mini .cond.boa { background: var(--gold); }
 
 .inimigo {
-  background: rgba(0, 0, 0, .28);
-  border: 1px solid rgba(224, 85, 60, .18);
+  background: rgba(168, 52, 32, .07);
+  border: 1px solid rgba(168, 52, 32, .32);
   border-radius: 8px;
   padding: 6px 8px;
   display: flex; flex-direction: column; gap: 4px;
   cursor: help;
 }
-.inimigo.down { opacity: .42; filter: grayscale(.6); }
+.inimigo.down { opacity: .45; filter: grayscale(.6); }
 .inimigo-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .inimigo-topo strong { font-family: var(--serif); font-size: 12.5px; font-weight: 500; }
 .inimigo-ca { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -360,18 +444,31 @@ h2 {
 /* A chance de acerto do personagem selecionado. A cor é o atalho: verde é
    aposta boa, latão é duvidosa, vermelha é desperdício de ação. */
 .inimigo-chance { font-weight: 700; }
-.inimigo-chance.boa { color: var(--green); }
-.inimigo-chance.media { color: var(--gold); }
-.inimigo-chance.ruim { color: #ff8a7a; }
+.inimigo-chance.boa { color: #2f7a3c; }
+.inimigo-chance.media { color: var(--gold-escuro); }
+.inimigo-chance.ruim { color: var(--red); }
 /* Chance de quando encostar, no corpo a corpo que ainda tem de andar até lá:
    apagada porque ainda não é a chance de agora. */
 .inimigo-chance.longe { color: var(--muted); font-weight: 500; font-style: italic; }
+
+/* ---- minimapa ---- */
+.minimapa-host { flex: none; margin-bottom: 10px; }
+.minimapa h2 { margin-bottom: 5px; }
+.minimapa-tela {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: 4px;
+  box-shadow: var(--carimbo);
+}
 
 /* ---- log ---- */
 .log-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
 .log-entry {
   display: flex; gap: 7px; font-size: 12px; line-height: 1.4;
-  padding: 4px 6px; border-radius: 6px; background: rgba(0, 0, 0, .25);
+  padding: 4px 6px; border-radius: 6px;
+  background: rgba(255, 252, 242, .45);
   border-left: 2px solid transparent;
 }
 /* O losango de categoria substituiu treze emoji. Mesma linguagem dos `pip` de
@@ -382,46 +479,62 @@ h2 {
   margin-top: 5px;
   transform: rotate(45deg);
   background: var(--muted);
-  box-shadow: 0 0 5px rgba(0, 0, 0, .8);
+  box-shadow: 0 0 3px rgba(78, 56, 24, .5);
 }
 .rune-inicio, .rune-fim, .rune-recurso { background: var(--gold); }
 .rune-turno { background: var(--blue); }
-.rune-ataque { background: #d4574a; }
-.rune-magia { background: #a579d8; }
+.rune-ataque { background: #a8402c; }
+.rune-magia { background: #6b4b9c; }
 .rune-cura { background: var(--green); }
 .rune-morte { background: var(--red); }
-.rune-condicao { background: #ff8a3a; }
-.rune-acao { background: #8fd5ff; }
-.rune-reacao { background: #ffc83a; }
-.rune-aviso { background: #ffcf6a; }
-.rune-concentracao { background: #c0a0e0; }
+.rune-condicao { background: #b2621b; }
+.rune-acao { background: #2f7ba8; }
+.rune-reacao { background: #b08310; }
+.rune-aviso { background: #a8761a; }
+.rune-concentracao { background: #7a5ea8; }
 
 .log-text { display: block; }
 .log-detail { display: block; font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
-.log-turno { border-left-color: var(--blue); color: var(--blue); font-weight: 600; }
+.log-turno { border-left-color: var(--blue); color: #1d4e76; font-weight: 600; }
 .log-morte { border-left-color: var(--red); }
 .log-cura { border-left-color: var(--green); }
-.log-fim { border-left-color: var(--gold); color: var(--gold); font-weight: 700; }
-.log-aviso { border-left-color: #ffcf6a; color: #ffcf6a; }
+.log-fim { border-left-color: var(--gold); color: var(--gold-escuro); font-weight: 700; }
+.log-aviso { border-left-color: #a8761a; color: #7d5608; }
 
-.legal { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
-.legal p { font-size: 9.5px; line-height: 1.5; color: #6b6558; margin: 0 0 6px; }
+.legal { margin-top: 12px; border-top: 1px solid var(--line-forte); padding-top: 8px; }
+.legal p { font-size: 9.5px; line-height: 1.5; color: #8a7a60; margin: 0 0 6px; }
 
 /* ======================================================== barra ========== */
 .hud-baixo { display: grid; place-items: center; }
 
+/* A prancha de ação. Os lacres de cera nas pontas são o remate do conceito A:
+   a barra termina em selo, não em borda cortada. */
 .barra-acao {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 2px;
   padding: 7px 10px;
-  background: linear-gradient(180deg, var(--pedra-2), #16131c);
-  border: 1px solid var(--line-forte);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
   border-radius: 12px;
-  box-shadow: var(--bisel), 0 6px 22px rgba(0, 0, 0, .6);
+  box-shadow: var(--bisel), 0 8px 26px rgba(0, 0, 0, .55);
   max-width: 100%;
   overflow-x: auto;
 }
+.barra-acao::before, .barra-acao::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 16px; height: 16px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #c04a40, var(--lacre) 55%, #6d1a16);
+  box-shadow: 0 1px 3px rgba(78, 56, 24, .6);
+  pointer-events: none;
+}
+.barra-acao::before { left: -7px; }
+.barra-acao::after { right: -7px; }
 
 .barra-aviso {
   padding: 14px 24px;
@@ -435,17 +548,24 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 0 10px;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--line-forte);
 }
 .zona:last-child { border-right: none; }
+/* O rótulo vem por último no DOM, então cai embaixo da zona — e aqui vira a
+   cartela de latão do conceito A, que é o que dá nome a cada grupo. */
 .zona-rot {
-  font-size: 8.5px;
+  font-family: var(--serif);
+  font-size: 9px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--muted);
-  opacity: .65;
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 4px;
+  padding: 1px 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 252, 242, .5);
 }
 .tiles { display: flex; gap: 4px; flex-wrap: wrap; max-width: 320px; justify-content: center; }
 .zona-hotbar .tiles { max-width: 360px; }
@@ -456,32 +576,82 @@ h2 {
   position: relative;
   width: 40px; height: 40px;
   display: grid; place-items: center;
-  background: linear-gradient(180deg, #211d29, var(--soquete));
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--soquete), #b59b68);
+  border: 1px solid var(--gold-escuro);
   border-radius: 7px;
   cursor: pointer;
   padding: 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), inset 0 -2px 4px rgba(0, 0, 0, .6);
+  box-shadow: var(--carimbo);
 }
 .tile:hover:not(.off) {
-  border-color: var(--line-forte);
-  background: linear-gradient(180deg, #2b2535, #191520);
+  border-color: var(--gold);
+  background: linear-gradient(180deg, var(--papel-3), var(--soquete));
 }
 .tile.on {
   border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px rgba(217, 180, 90, .5), 0 0 14px rgba(217, 180, 90, .35);
+  box-shadow: inset 0 0 0 1px var(--gold), 0 0 14px rgba(161, 112, 42, .5);
 }
-.tile.off { opacity: .3; cursor: not-allowed; filter: grayscale(.8); }
+.tile.off { opacity: .34; cursor: not-allowed; filter: grayscale(.8); }
 .tile.vazio { cursor: default; opacity: .25; }
 .tile .icone { image-rendering: pixelated; }
+/* O número do atalho é um disco escuro na aresta de baixo, como em A. */
 .tile .tecla {
-  position: absolute; right: 2px; bottom: 1px;
-  font-size: 9px; color: var(--muted);
+  position: absolute; right: -3px; bottom: -3px;
+  min-width: 14px; height: 14px; line-height: 13px;
+  text-align: center;
+  font-size: 9px; font-weight: 700;
+  color: var(--papel-3);
+  background: #4a3618;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 2px #000;
 }
-.tile.truque { border-bottom-color: rgba(110, 184, 255, .35); }
-.tile.magia { border-bottom-color: rgba(217, 180, 90, .4); }
+.tile.truque { border-bottom-color: var(--blue); }
+.tile.magia { border-bottom-color: var(--gold); }
+
+/* O selo de CHANCE é mais largo (cabe "sem visão") e pinta pela faixa. */
+.tile[class*='chance-'] .tile-selo {
+  right: -8px;
+  border-radius: 7px;
+  padding: 0 4px;
+  min-width: 28px;
+  font-size: 9px;
+}
+.tile.chance-boa .tile-selo { background: linear-gradient(180deg, #b7dcb9, #7bb183); border-color: #2f7a3c; color: #16331c; }
+.tile.chance-media .tile-selo { background: linear-gradient(180deg, var(--gold-claro), var(--gold)); color: #2b1d07; }
+.tile.chance-ruim .tile-selo { background: linear-gradient(180deg, #e4b6ab, #c78d7f); border-color: var(--red); color: #4a150c; }
+/* "Longe" é a chance DE QUANDO ENCOSTAR: existe, mas ainda não é a de agora.
+   Apagada e em itálico, igual à da lista de inimigos. */
+.tile.chance-longe .tile-selo {
+  background: var(--soquete);
+  border-color: var(--line-forte);
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Selo de quantidade: canto de CIMA, porque o de baixo é da tecla. */
+.tile-selo {
+  position: absolute; right: -4px; top: -4px;
+  min-width: 15px; height: 15px; line-height: 14px;
+  text-align: center;
+  font-size: 9.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--papel-3), var(--soquete));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 50%;
+}
+
+/* Magia é medalhão redondo de latão — o único lugar da barra onde a forma
+   muda, porque é o único recurso que se gasta por círculo. */
+.zona-hotbar .tile {
+  border-radius: 50%;
+  border-width: 2px;
+  border-color: var(--gold);
+  background: radial-gradient(circle at 38% 30%, var(--papel-3), var(--soquete) 70%);
+}
+.zona-hotbar .tile:hover:not(.off) { border-color: var(--gold-claro); }
 
 /* ---- núcleo ---- */
 .nucleo {
@@ -490,22 +660,24 @@ h2 {
   align-items: center;
   gap: 3px;
   padding: 0 14px;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--line-forte);
 }
+/* O retrato do personagem da vez é a peça central: moldura de latão de verdade,
+   mais grossa que a de todo o resto. */
 .nucleo-retrato {
   position: relative;
   width: 58px; height: 58px;
   border-radius: 8px;
   overflow: hidden;
   background: var(--soquete);
-  border: 1px solid var(--line-forte);
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, .8), 0 0 0 1px rgba(0, 0, 0, .6);
+  border: 2px solid var(--gold);
+  box-shadow: var(--carimbo), 0 0 0 1px var(--gold-escuro);
   display: grid; place-items: center;
 }
 .nucleo-pv {
   position: absolute; left: 3px; right: 3px; bottom: 3px;
   height: 4px; border-radius: 2px;
-  background: rgba(0, 0, 0, .7); overflow: hidden;
+  background: rgba(78, 56, 24, .55); overflow: hidden;
 }
 .nucleo-pv i { display: block; height: 100%; }
 .nucleo-nome { font-family: var(--serif); font-size: 12px; color: var(--ink); }
@@ -515,20 +687,20 @@ h2 {
   width: 22px; height: 22px;
   display: grid; place-items: center;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #37303f, #141119);
-  border: 1px solid var(--line-forte);
-  box-shadow: 0 0 10px rgba(217, 180, 90, .25);
+  background: radial-gradient(circle at 35% 30%, var(--papel-3), var(--soquete));
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 1px 2px rgba(78, 56, 24, .35);
   cursor: help;
 }
 .gema .icone { image-rendering: pixelated; }
-.gema.gasta { opacity: .25; box-shadow: none; filter: grayscale(1); }
+.gema.gasta { opacity: .3; box-shadow: none; filter: grayscale(1); }
 
 .btn-terminar {
   display: flex; align-items: center; gap: 5px;
   margin-top: 2px;
-  background: linear-gradient(180deg, #2c4733, #1d2f22);
-  color: #cfe8d4;
-  border: 1px solid rgba(95, 208, 122, .3);
+  background: linear-gradient(180deg, #c9d9b6, #a7bd90);
+  color: #22361f;
+  border: 1px solid #5c7a46;
   border-radius: 7px;
   padding: 4px 10px;
   font-size: 11.5px;
@@ -536,13 +708,13 @@ h2 {
   cursor: pointer;
   box-shadow: var(--bisel);
 }
-.btn-terminar:hover { border-color: var(--green); color: #eafbee; }
+.btn-terminar:hover { border-color: #3d6b2c; background: linear-gradient(180deg, #d6e4c5, #b2c99a); }
 .btn-terminar .icone { image-rendering: pixelated; }
 /* A tecla impressa no próprio botão: atalho que não aparece não existe. */
 .tecla-inline {
   font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
-  color: #9dc0a6;
-  border: 1px solid rgba(95, 208, 122, .25);
+  color: #3e5a32;
+  border: 1px solid rgba(62, 90, 50, .45);
   border-radius: 3px;
   padding: 0 3px;
 }
@@ -556,10 +728,12 @@ h2 {
 .gema { position: relative; }
 .gema-n {
   position: absolute; right: -3px; bottom: -3px;
-  min-width: 13px; height: 13px; line-height: 13px;
+  min-width: 13px; height: 13px; line-height: 12px;
   font-size: 9px; font-weight: 700; text-align: center;
-  background: var(--gold); color: #211a08;
-  border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .7);
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  color: #2b1d07;
+  border: 1px solid var(--gold-escuro);
+  border-radius: 50%;
 }
 
 /* ---- recursos de classe ---- */
@@ -576,10 +750,10 @@ h2 {
 .pip {
   width: 8px; height: 8px;
   transform: rotate(45deg);
-  background: linear-gradient(180deg, #9ad0ff, #3f86c4);
-  box-shadow: 0 0 6px rgba(110, 184, 255, .5);
+  background: linear-gradient(180deg, #4e95cd, var(--blue));
+  box-shadow: inset 0 0 0 1px rgba(255, 252, 242, .35);
 }
-.pip.gasto { background: #2b2733; box-shadow: none; }
+.pip.gasto { background: rgba(78, 56, 24, .28); box-shadow: none; }
 
 /* ---- magias agrupadas por círculo ---- */
 .grupos-magia { display: flex; gap: 10px; align-items: flex-start; }
@@ -587,31 +761,34 @@ h2 {
 .grupo-magia .tiles { max-width: 180px; }
 .grupo-rot {
   font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--muted); opacity: .8;
+  color: var(--muted);
 }
-.grupo-slots { color: var(--blue); font-variant-numeric: tabular-nums; }
+.grupo-slots { color: #1d4e76; font-variant-numeric: tabular-nums; font-weight: 600; }
 
 /* ---- movimento ---- */
 .zona-mov { min-width: 150px; justify-content: center; }
 .mov { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+/* A corrente de latão do conceito A: o trilho é um elo vazado e o preenchido
+   acende. As marcas de 5 pés viram os pinos entre elos. */
 .mov-trilho {
   position: relative;
-  height: 12px;
-  border-radius: 6px;
+  height: 13px;
+  border-radius: 7px;
   background: var(--soquete);
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, .8);
+  border: 1px solid var(--gold-escuro);
+  box-shadow: var(--carimbo);
   overflow: hidden;
 }
 .mov-cheio {
   display: block; height: 100%;
-  background: linear-gradient(180deg, #8fd5ff, #3f86c4);
-  box-shadow: 0 0 10px rgba(110, 184, 255, .4);
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  box-shadow: inset 0 1px 0 rgba(255, 252, 242, .5);
   transition: width .18s ease-out;
 }
-.mov-marca { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0, 0, 0, .55); }
+.mov-marca { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(78, 56, 24, .5); }
 .mov-num {
   display: flex; align-items: center; justify-content: center; gap: 5px;
-  font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+  font-size: 11px; color: #5d4e36; font-variant-numeric: tabular-nums;
 }
 .mov-num .icone { image-rendering: pixelated; }
 
@@ -621,23 +798,23 @@ h2 {
   width: 40px; height: 40px;
   display: grid; place-items: center;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #3a2a26, #16100f);
-  border: 1px solid rgba(224, 85, 60, .4);
-  box-shadow: 0 0 12px rgba(224, 85, 60, .25);
+  background: radial-gradient(circle at 35% 30%, #e8cbbe, #cfa392);
+  border: 2px solid var(--red);
+  box-shadow: inset 0 1px 2px rgba(78, 56, 24, .3);
   cursor: help;
 }
 .reacao .icone { image-rendering: pixelated; }
-.reacao.gasta { opacity: .25; filter: grayscale(1); box-shadow: none; }
+.reacao.gasta { opacity: .3; filter: grayscale(1); box-shadow: none; }
 
 .btn {
-  background: linear-gradient(180deg, var(--pedra-2), var(--pedra));
-  color: var(--ink); border: 1px solid var(--line);
+  background: var(--papelada);
+  color: var(--ink); border: 1px solid var(--gold-escuro);
   border-radius: 8px; padding: 9px 16px; font-size: 14px; cursor: pointer;
   font-family: var(--serif); box-shadow: var(--bisel);
 }
 .btn.primary {
-  background: linear-gradient(180deg, var(--gold), var(--gold-escuro));
-  color: #211a08; border-color: var(--gold); font-weight: 700;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  color: #2b1d07; border-color: var(--gold-escuro); font-weight: 700;
 }
 
 /* ======================================================== dica =========== */
@@ -646,10 +823,10 @@ h2 {
   z-index: 50;
   max-width: 300px;
   padding: 10px 12px;
-  background: linear-gradient(180deg, #211d29, #15121b);
-  border: 1px solid var(--line-forte);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
   border-radius: 9px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, .75), var(--bisel);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .6), var(--bisel);
   pointer-events: none;
   opacity: 0;
   transform: translateY(4px);
@@ -657,29 +834,31 @@ h2 {
 }
 .dica.on { opacity: 1; transform: none; }
 .dica-topo { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-.dica-topo strong { font-family: var(--serif); font-size: 14.5px; color: var(--gold); }
+.dica-topo strong { font-family: var(--serif); font-size: 14.5px; color: var(--gold-escuro); }
 .dica-tipo { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
 .dica-linhas { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
 .dica-linha { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; }
 .dica-rot { color: var(--muted); }
 .dica-val { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
-.dica-val.boa { color: var(--green); font-weight: 700; }
-.dica-val.media { color: var(--gold); font-weight: 700; }
-.dica-val.ruim { color: #ff8a7a; font-weight: 700; }
+.dica-val.boa { color: #2f7a3c; font-weight: 700; }
+.dica-val.media { color: var(--gold-escuro); font-weight: 700; }
+.dica-val.ruim { color: var(--red); font-weight: 700; }
 .dica-val.longe { color: var(--muted); font-style: italic; }
-.dica-texto { margin: 0 0 6px; font-size: 12px; line-height: 1.45; color: #cfc7b6; }
+.dica-texto { margin: 0 0 6px; font-size: 12px; line-height: 1.45; color: #4a3b27; }
 .dica-custo {
   display: inline-block;
   font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--gold); border: 1px solid var(--line-forte);
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border: 1px solid var(--gold-escuro);
   border-radius: 4px; padding: 1px 6px;
 }
-.dica-aviso { margin-top: 6px; font-size: 11px; color: #e8a06a; }
+.dica-aviso { margin-top: 6px; font-size: 11px; color: #8a4a12; }
 .dica-atalho {
   margin-top: 6px;
   font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--muted);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line-forte);
   padding-top: 5px;
 }
 
@@ -694,10 +873,10 @@ h2 {
   z-index: 20;
   width: min(420px, 88%);
   padding: 9px 12px 8px;
-  background: linear-gradient(180deg, #241c1c, #15121b 70%);
-  border: 1px solid rgba(224, 85, 60, .45);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel));
+  border: 1px solid var(--red);
   border-radius: 10px;
-  box-shadow: var(--bisel), 0 12px 34px rgba(0, 0, 0, .7);
+  box-shadow: var(--bisel), 0 14px 38px rgba(0, 0, 0, .6);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
@@ -706,41 +885,41 @@ h2 {
 .resumo.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .resumo-topo { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
 .resumo-topo strong {
-  font-family: var(--serif); font-size: 13px; color: var(--gold);
+  font-family: var(--serif); font-size: 13px; color: var(--gold-escuro);
   letter-spacing: .02em;
 }
 .resumo-rodada { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .resumo-x {
   margin-left: auto;
-  background: transparent; border: 1px solid var(--line);
+  background: transparent; border: 1px solid var(--line-forte);
   color: var(--muted);
   border-radius: 4px; width: 18px; height: 18px; line-height: 1;
   font-size: 12px; cursor: pointer; padding: 0;
 }
-.resumo-x:hover { color: var(--ink); border-color: var(--line-forte); }
+.resumo-x:hover { color: var(--ink); border-color: var(--gold); }
 .resumo-dano, .resumo-cura, .resumo-baixa, .resumo-nada {
   font-size: 12px; font-variant-numeric: tabular-nums; margin-bottom: 3px;
 }
-.resumo-dano { color: #ff9a8a; font-weight: 600; }
-.resumo-cura { color: var(--green); }
+.resumo-dano { color: #8f2d1a; font-weight: 600; }
+.resumo-cura { color: #2f7a3c; }
 .resumo-baixa { color: var(--red); font-family: var(--serif); font-size: 13px; }
 .resumo-nada { color: var(--muted); }
 .resumo-linhas {
   margin: 6px 0 0; padding: 6px 0 0;
   list-style: none;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line-forte);
   display: flex; flex-direction: column; gap: 2px;
 }
-.resumo-linhas li { font-size: 11.5px; line-height: 1.35; color: #cfc7b6; }
+.resumo-linhas li { font-size: 11.5px; line-height: 1.35; color: #4a3b27; }
 .resumo-sobra { margin-top: 4px; font-size: 10.5px; color: var(--muted); }
 .resumo-pe {
   margin-top: 6px;
   font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--muted); opacity: .7; text-align: right;
+  color: var(--muted); text-align: right;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #3a3246; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #a98f60; border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* O tabuleiro é a peça principal: as colunas laterais cedem espaço antes dele. */

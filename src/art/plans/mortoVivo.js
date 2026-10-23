@@ -1380,6 +1380,44 @@ function pintarWraith(kit, look, dir, pose) {
     }
   }
 
+  // ---- coroa do wraith com nome -------------------------------------------
+  //
+  // `look.coroa` acende cinco pontas de osso acima do elmo. Existe por um
+  // motivo medido: Mormesk era um retint do wraith genérico — mesmas formas,
+  // cores diferentes — e a ferramenta de silhueta acusava IoU 1,000 entre os
+  // dois. Cor não separa criatura num quadrado de 52 px; forma separa. E a
+  // forma certa para ele é esta: ele mandava em alguma coisa antes de morrer,
+  // e os outros wraiths não.
+  //
+  // Vai ANTES do rosto de propósito: o poço preto sob a aba é o contraste
+  // máximo da figura e tem de ficar por cima de qualquer adorno.
+  if (look.coroa) {
+    const cx = r(frente * 0.5);
+    const ossoCoroa = look.coroa === true ? ramp(elmo, 4) : look.coroa;
+    const base = yElmoT - 1;
+    px(cx - 9, base, 18, 3, ossoCoroa);                     // o aro
+    px(cx - 9, base, 18, 1, ramp(ossoCoroa, 3));            // a luz de cima do aro
+    px(cx - 9, base + 2, 18, 1, ramp(ossoCoroa, -3));       // a sombra de baixo
+    // Pontas ALTAS, a do meio mais que as outras. A primeira versão tinha 6 px
+    // e sumia: vinte pixels numa máscara de setecentos não separam nada, e a
+    // silhueta continuou medindo IoU 0,987 contra o wraith comum. Separar
+    // criatura exige mudar a forma em escala que o olho pegue de longe.
+    // As pontas aparecem nas TRÊS vistas. Suprimi-las de costas foi erro meu:
+    // coroa se vê por trás, e era justamente a vista de costas que mantinha a
+    // colisão com o wraith comum — o pior caso de IoU é o que vale, e de
+    // costas as duas figuras continuavam idênticas.
+    const pontas = side
+      ? [[-5, 7], [-1, 10], [3, 12], [7, 8]]
+      : [[-9, 7], [-5, 10], [-1, 13], [3, 10], [7, 7]];
+    for (const [ox, alt] of pontas) {
+      px(cx + ox, base - alt, 2, alt, ossoCoroa);
+      px(cx + ox, base - alt, 1, alt, ramp(ossoCoroa, 2));
+      // De costas a ponta não pega o brilho dos olhos: não há olhos para ela
+      // pegar. Fica só o osso.
+      if (!back) px(cx + ox, base - alt, 2, 1, veu(brilho, 0.55));
+    }
+  }
+
   // ---- rosto no escuro ----------------------------------------------------
   // Poço preto sob a aba do elmo. É o contraste máximo da figura e é onde os
   // dois pontos amarelos têm de brilhar.

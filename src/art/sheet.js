@@ -4,24 +4,71 @@
 
 import { paint, DIRECTIONS } from './draw.js';
 import { resolveLook } from './looks.js';
+import { folhaImportada, carregarFolhas } from './folhas/index.js';
+
+const cache = new Map();
+
+// Carregar cedo, e uma vez. Quando um PNG chega, a chave dele sai do cache
+// para que a proxima consulta devolva a folha importada no lugar da pintada.
+carregarFolhas((key) => cache.delete(key));
 
 export const CELL_W = 52;
 export const CELL_H = 80;
 export const OUTLINE = [13, 11, 17];
 
+/**
+ * PIXELS FÍSICOS POR PIXEL LÓGICO.
+ *
+ * A célula continua sendo 52x80 para todo mundo que pensa em posição — a
+ * câmera, a ficha, o retrato, as sete famílias de plano corporal. O que muda é
+ * quantos pixels de verdade cada um desses 52x80 recebe na folha.
+ *
+ * O tabuleiro desenha o sprite 1:1 e deixa o zoom do navegador ampliar. Com
+ * S = 1 isso significava que uma criatura inteira tinha 52x80 pixels de
+ * informação e a tela esticava cada um deles — daí o ar de "quadradão". Com
+ * S = 3 a mesma figura chega com nove vezes mais pixels no mesmo tamanho de
+ * tela, e o desenho pode carregar o que não cabia: o espigão da ombreira, o
+ * osso no cabelo, a escama do saiote, o pelo da perneira.
+ *
+ * A escala não vira desenho sozinha. Ela abre espaço; quem preenche o espaço é
+ * o pintor. Uma figura escalada sem detalhe novo é a mesma figura maior.
+ */
+export const S = 3;
+export const CELL_PW = CELL_W * S;
+export const CELL_PH = CELL_H * S;
+
+// AS POSES NOVAS NÃO INVENTAM UM `kind` NOVO.
+//
+// `pose.kind` é lido em vinte lugares entre `draw.js` e os sete arquivos de
+// plano. Um `kind: 'dead'` obrigaria cada um deles a ganhar um ramo, e o que
+// esquecesse de ganhar desenharia... nada — porque todo pintor termina num
+// `else` que assume "em pé". Setenta figuras com um buraco dependendo do
+// estado é o tipo de defeito que só aparece no encontro em que fez falta.
+//
+// Então cada pose nova chega como um `kind` QUE JÁ EXISTE, mais uma bandeira
+// própria: andar é um `idle` com `andando`, dormir e morrer são `down` com
+// `dormindo` e `morto`. Pintor que ignora a bandeira continua certo — desenha
+// a pose vizinha, que é parecida. Pintor que a lê melhora. A migração fica
+// opcional por figura em vez de obrigatória por arquivo.
 export const ANIMS = [
   { name: 'idle', frames: 2, hold: [40, 40], pose: (i) => ({ kind: 'idle', frame: i }) },
+  // Quatro quadros: com dois, a perna vai e volta e lê como tremor. O ciclo
+  // é contato-passagem-contato-passagem, que é o mínimo que lê como passo.
+  { name: 'walk', frames: 4, hold: [9, 9, 9, 9], pose: (i) => ({ kind: 'idle', frame: i % 2, andando: i }) },
   { name: 'attack', frames: 2, hold: [8, 14], pose: (i) => ({ kind: 'attack', frame: i }) },
   { name: 'hurt', frames: 1, hold: [18], pose: () => ({ kind: 'hurt', frame: 0 }) },
   { name: 'down', frames: 1, hold: [60], pose: () => ({ kind: 'down', frame: 0 }) },
+  { name: 'sleep', frames: 2, hold: [50, 50], pose: (i) => ({ kind: 'down', frame: 0, dormindo: i }) },
+  { name: 'dead', frames: 1, hold: [60], pose: () => ({ kind: 'down', frame: 0, morto: true }) },
 ];
 
-const cache = new Map();
 
 export function getSheet(lookKey) {
   let sheet = cache.get(lookKey);
   if (!sheet) {
-    sheet = buildSheet(lookKey);
+    // A folha importada vence a pintada, quando existe e ja carregou. Fora
+    // isso nada muda: quem chama recebe o mesmo formato dos dois jeitos.
+    sheet = folhaImportada(lookKey) ?? buildSheet(lookKey);
     cache.set(lookKey, sheet);
   }
   return sheet;
@@ -30,8 +77,8 @@ export function getSheet(lookKey) {
 export function buildSheet(lookKey) {
   const look = resolveLook(lookKey);
   const maxFrames = ANIMS.reduce((m, a) => Math.max(m, a.frames), 0);
-  const width = CELL_W * maxFrames;
-  const height = CELL_H * DIRECTIONS.length * ANIMS.length;
+  const width = CELL_PW * maxFrames;
+  const height = CELL_PH * DIRECTIONS.length * ANIMS.length;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -40,33 +87,52 @@ export function buildSheet(lookKey) {
 
   const anims = {};
   ANIMS.forEach((anim, block) => {
-    const blockY = block * DIRECTIONS.length * CELL_H;
+    const blockY = block * DIRECTIONS.length * CELL_PH;
     anims[anim.name] = {
-      y: blockY, fw: CELL_W, fh: CELL_H, frames: anim.frames,
+      y: blockY, fw: CELL_PW, fh: CELL_PH, frames: anim.frames,
       hold: anim.hold, total: anim.hold.reduce((a, b) => a + b, 0),
     };
     DIRECTIONS.forEach((dir, row) => {
       for (let f = 0; f < anim.frames; f++) {
-        paint(ctx, f * CELL_W, blockY + row * CELL_H, CELL_W, CELL_H, look, dir, anim.pose(f));
+        // O canto da célula vai em pixels FÍSICOS; o tamanho dela, em lógicos.
+        // É essa assimetria que deixa o pintor inteiro intocado.
+        paint(ctx, f * CELL_PW, blockY + row * CELL_PH, CELL_W, CELL_H, look, dir, anim.pose(f), S);
       }
     });
   });
 
-  outline(ctx, width, height);
-  return { key: lookKey, image: canvas, w: width, h: height, anims };
+  outline(ctx, width, height, S);
+  // A folha DECLARA o seu eixo de direcoes. Quem desenha pergunta a ela em
+  // vez de assumir tres, e e isso que permite uma folha importada de oito
+  // direcoes conviver com as desenhadas em codigo.
+  return { key: lookKey, image: canvas, w: width, h: height, anims, dirs: DIRECTIONS };
 }
 
-function outline(ctx, width, height) {
+function outline(ctx, width, height, s = 1) {
+  // O CONTORNO TEM UM PIXEL LÓGICO, NÃO UM FÍSICO.
+  //
+  // Rodando no grid físico, a 3x a linha preta sairia três vezes mais fina em
+  // relação à figura e a 55 px no tabuleiro sumiria — justo a linha que existe
+  // para a figura não se dissolver no piso. Tudo que o kit desenha sai em
+  // blocos de s x s alinhados, então dá para varrer o grid lógico e provar
+  // cada bloco pelo seu canto.
   const img = ctx.getImageData(0, 0, width, height);
   const src = new Uint8ClampedArray(img.data);
   const dst = img.data;
-  const opaque = (x, y) => x >= 0 && y >= 0 && x < width && y < height && src[(y * width + x) * 4 + 3] > 0;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4;
-      if (src[i + 3] > 0) continue;
-      if (!(opaque(x - 1, y) || opaque(x + 1, y) || opaque(x, y - 1) || opaque(x, y + 1))) continue;
-      dst[i] = OUTLINE[0]; dst[i + 1] = OUTLINE[1]; dst[i + 2] = OUTLINE[2]; dst[i + 3] = 255;
+  const lw = Math.floor(width / s);
+  const lh = Math.floor(height / s);
+  const opaco = (lx, ly) => lx >= 0 && ly >= 0 && lx < lw && ly < lh
+    && src[(ly * s * width + lx * s) * 4 + 3] > 0;
+  for (let ly = 0; ly < lh; ly++) {
+    for (let lx = 0; lx < lw; lx++) {
+      if (opaco(lx, ly)) continue;
+      if (!(opaco(lx - 1, ly) || opaco(lx + 1, ly) || opaco(lx, ly - 1) || opaco(lx, ly + 1))) continue;
+      for (let dy = 0; dy < s; dy++) {
+        for (let dx = 0; dx < s; dx++) {
+          const i = ((ly * s + dy) * width + lx * s + dx) * 4;
+          dst[i] = OUTLINE[0]; dst[i + 1] = OUTLINE[1]; dst[i + 2] = OUTLINE[2]; dst[i + 3] = 255;
+        }
+      }
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -81,11 +147,11 @@ function caixaDo(lookKey) {
   if (pronta) return pronta;
   const sheet = getSheet(lookKey);
   const ctx = sheet.image.getContext('2d', { willReadFrequently: true });
-  const d = ctx.getImageData(0, sheet.anims.idle.y, CELL_W, CELL_H).data;
-  let x0 = CELL_W; let y0 = CELL_H; let x1 = -1; let y1 = -1;
-  for (let y = 0; y < CELL_H; y++) {
-    for (let x = 0; x < CELL_W; x++) {
-      if (d[(y * CELL_W + x) * 4 + 3] === 0) continue;
+  const d = ctx.getImageData(0, sheet.anims.idle.y, CELL_PW, CELL_PH).data;
+  let x0 = CELL_PW; let y0 = CELL_PH; let x1 = -1; let y1 = -1;
+  for (let y = 0; y < CELL_PH; y++) {
+    for (let x = 0; x < CELL_PW; x++) {
+      if (d[(y * CELL_PW + x) * 4 + 3] === 0) continue;
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
@@ -93,7 +159,7 @@ function caixaDo(lookKey) {
     }
   }
   const caixa = x1 < 0
-    ? { x0: 0, y0: 0, x1: CELL_W - 1, y1: CELL_H - 1, cx: CELL_W / 2 }
+    ? { x0: 0, y0: 0, x1: CELL_PW - 1, y1: CELL_PH - 1, cx: CELL_PW / 2 }
     : { x0, y0, x1, y1, cx: (x0 + x1) / 2 };
   caixas.set(lookKey, caixa);
   return caixa;
@@ -114,21 +180,65 @@ function caixaDo(lookKey) {
 export function makePortrait(lookKey, lado = 40) {
   const sheet = getSheet(lookKey);
   const b = caixaDo(lookKey);
-  const w = Math.min(lado, CELL_W);
-  const h = Math.min(lado, CELL_H);
-  const sx = Math.max(0, Math.min(Math.round(b.cx - w / 2), CELL_W - w));
-  const sy = Math.max(0, Math.min(b.y0 - 1, CELL_H - h));
+  // `lado` é LÓGICO: é o tamanho que a HUD quer na tela. A janela recortada e
+  // o canvas são físicos, e o CSS devolve o canvas ao tamanho pedido — assim a
+  // ficha ganha a resolução sem que nenhum layout se mexa.
+  const p = lado * S;
+  const w = Math.min(p, CELL_PW);
+  const h = Math.min(p, CELL_PH);
+  const sx = Math.max(0, Math.min(Math.round(b.cx - w / 2), CELL_PW - w));
+  const sy = Math.max(0, Math.min(b.y0 - S, CELL_PH - h));
 
   const canvas = document.createElement('canvas');
-  canvas.width = lado;
-  canvas.height = lado;
+  canvas.width = p;
+  canvas.height = p;
+  canvas.style.width = `${lado}px`;
+  canvas.style.height = `${lado}px`;
+  canvas.style.imageRendering = 'pixelated';
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
     sheet.image,
     sx, sheet.anims.idle.y + sy, w, h,
-    Math.floor((lado - w) / 2), Math.floor((lado - h) / 2), w, h,
+    Math.floor((p - w) / 2), Math.floor((p - h) / 2), w, h,
   );
+  return canvas;
+}
+
+/**
+ * A figura INTEIRA, de pé e de frente, para o boneco do inventário.
+ *
+ * `makePortrait` mira na cabeça e descarta o corpo; aqui é o contrário — o
+ * inventário existe para mostrar o que está VESTIDO, e isso mora do pescoço
+ * para baixo. Recorta pela caixa real do alfa, não pela célula de 52x80: a
+ * célula tem ar de sobra dos dois lados, e um halfling centrado nela ficaria
+ * do tamanho de um selo ao lado de um meio-orc.
+ *
+ * Consequência de propósito: duas figuras na mesma escala saem com ALTURAS
+ * diferentes na tela, porque têm alturas diferentes. É informação.
+ *
+ * A escala é inteira porque meio pixel esticado estraga a única coisa que esta
+ * arte tem a oferecer.
+ */
+export function makeFigure(lookKey, escala = 3) {
+  const sheet = getSheet(lookKey);
+  const b = caixaDo(lookKey);
+  const w = b.x1 - b.x0 + 1;        // físico
+  const h = b.y1 - b.y0 + 1;
+  const e = Math.max(1, Math.round(escala));
+
+  // O canvas fica na resolução NATIVA da folha e o CSS o põe no tamanho que o
+  // inventário pediu. Reamostrar aqui jogaria fora justamente os pixels que a
+  // folha de 3x existe para entregar.
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.width = `${Math.round((w / S) * e)}px`;
+  canvas.style.height = `${Math.round((h / S) * e)}px`;
+  canvas.style.imageRendering = 'pixelated';
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(sheet.image, b.x0, sheet.anims.idle.y + b.y0, w, h, 0, 0, w, h);
   return canvas;
 }
 
@@ -151,24 +261,58 @@ export function frameAt(anim, t, loop = true) {
  * @param {boolean} flip espelha horizontalmente (direção "side" ao contrário)
  * @param {number} row 0 = front, 1 = side
  */
+// Um buffer só, reaproveitado: tingir acontece em vários combatentes por
+// quadro, e criar um canvas por desenho custaria coletas de lixo no meio da
+// animação. Ele só cresce, nunca encolhe.
+let tintaCanvas = null;
+function bufferDeTinta(w, h) {
+  if (!tintaCanvas) tintaCanvas = document.createElement('canvas');
+  if (tintaCanvas.width < w) tintaCanvas.width = w;
+  if (tintaCanvas.height < h) tintaCanvas.height = h;
+  return tintaCanvas;
+}
+
 export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip = false, row = 0, alpha = 1, tint = null }) {
   const anim = sheet.anims[animName] ?? sheet.anims.idle;
   const sx = Math.min(frame, anim.frames - 1) * anim.fw;
   const sy = anim.y + row * anim.fh;
-  const w = anim.fw * scale;
-  const h = anim.fh * scale;
+  // `fw/fh` são físicos; o tabuleiro raciocina em lógicos. Dividir por S é o
+  // que mantém a criatura do mesmo TAMANHO na tela e só muda a densidade.
+  const w = (anim.fw / S) * scale;
+  const h = (anim.fh / S) * scale;
 
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.imageSmoothingEnabled = false;
   ctx.translate(x, y);
   if (flip) ctx.scale(-1, 1);
-  ctx.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, -w / 2, -h, w, h);
   if (tint) {
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.globalAlpha = alpha * tint.strength;
-    ctx.fillStyle = tint.color;
-    ctx.fillRect(-w / 2, -h, w, h);
+    // A TINTA PRECISA DE UM BUFFER, e isto é um conserto.
+    //
+    // Antes a cor era pintada direto no canvas do tabuleiro com
+    // `source-atop` e um `fillRect` da célula inteira. `source-atop` compõe
+    // sobre TUDO que já está desenhado ali — e o piso é desenhado antes da
+    // figura. O resultado era um retângulo colorido do tamanho da célula
+    // atrás da criatura. O flash branco sempre teve o defeito; ele passava
+    // porque dura três quadros. A tinta vermelha da dor, que fica 220 ms,
+    // deixou de passar.
+    //
+    // Pintando num buffer que só tem a figura, o `source-atop` encosta
+    // apenas nos pixels dela, e aí o buffer vai para o tabuleiro por cima.
+    const buf = bufferDeTinta(anim.fw, anim.fh);
+    const b = buf.getContext('2d');
+    b.clearRect(0, 0, anim.fw, anim.fh);
+    b.imageSmoothingEnabled = false;
+    b.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, 0, 0, anim.fw, anim.fh);
+    b.globalCompositeOperation = 'source-atop';
+    b.globalAlpha = tint.strength;
+    b.fillStyle = tint.color;
+    b.fillRect(0, 0, anim.fw, anim.fh);
+    b.globalCompositeOperation = 'source-over';
+    b.globalAlpha = 1;
+    ctx.drawImage(buf, 0, 0, anim.fw, anim.fh, -w / 2, -h, w, h);
+  } else {
+    ctx.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, -w / 2, -h, w, h);
   }
   ctx.restore();
 }

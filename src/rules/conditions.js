@@ -60,6 +60,16 @@ export const CONDITIONS = {
     speedPenaltyFt: 10,
     expiresAtTurnStart: true,
   },
+  // O espelho de `abencoado`, e por isso escrito igual: mesma estrutura,
+  // mesmo dado, sinal trocado. Um efeito que subtrai escrito de outro jeito
+  // seria a maneira mais rápida de os dois divergirem.
+  amaldicoado: {
+    name: 'Amaldiçoado', icon: '🖤',
+    desc: 'Subtrai 1d4 das jogadas de ataque e dos testes de resistência.',
+    attackPenaltyDice: '1d4',
+    savePenaltyDice: '1d4',
+    concentrationEffect: true,
+  },
 
   // REGRA DA CASA — não é SRD. No 5e, dano de fogo não incendeia ninguém.
   // Aqui magias de fogo podem pegar: a criatura sofre 1d4 no início do turno
@@ -112,6 +122,8 @@ export function conditionEffects(actor) {
     autoFailSaves: [],
     attackBonusDice: [],
     saveBonusDice: [],
+    attackPenaltyDice: [],
+    savePenaltyDice: [],
   };
   for (const c of actor.conditions ?? []) {
     const def = CONDITIONS[c.id];
@@ -128,6 +140,8 @@ export function conditionEffects(actor) {
     if (def.autoFailSaves) out.autoFailSaves.push(...def.autoFailSaves);
     if (def.attackBonusDice) out.attackBonusDice.push(def.attackBonusDice);
     if (def.saveBonusDice) out.saveBonusDice.push(def.saveBonusDice);
+    if (def.attackPenaltyDice) out.attackPenaltyDice.push(def.attackPenaltyDice);
+    if (def.savePenaltyDice) out.savePenaltyDice.push(def.savePenaltyDice);
   }
   return out;
 }

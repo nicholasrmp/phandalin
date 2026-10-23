@@ -1,0 +1,88 @@
+{
+  "cell": [
+    204,
+    204
+  ],
+  "s": 3,
+  "ground": 5,
+  "w": 816,
+  "h": 9792,
+  "dirs": [
+    "south",
+    "south-east",
+    "east",
+    "north-east",
+    "north",
+    "north-west",
+    "west",
+    "south-west"
+  ],
+  "anims": {
+    "idle": {
+      "y": 0,
+      "fw": 204,
+      "fh": 204,
+      "frames": 2,
+      "hold": [
+        40,
+        40
+      ],
+      "total": 80
+    },
+    "walk": {
+      "y": 1632,
+      "fw": 204,
+      "fh": 204,
+      "frames": 4,
+      "hold": [
+        9,
+        9,
+        9,
+        9
+      ],
+      "total": 36
+    },
+    "attack": {
+      "y": 3264,
+      "fw": 204,
+      "fh": 204,
+      "frames": 2,
+      "hold": [
+        8,
+        14
+      ],
+      "total": 22
+    },
+    "down": {
+      "y": 4896,
+      "fw": 204,
+      "fh": 204,
+      "frames": 1,
+      "hold": [
+        60
+      ],
+      "total": 60
+    },
+    "sleep": {
+      "y": 6528,
+      "fw": 204,
+      "fh": 204,
+      "frames": 2,
+      "hold": [
+        50,
+        50
+      ],
+      "total": 100
+    },
+    "dead": {
+      "y": 8160,
+      "fw": 204,
+      "fh": 204,
+      "frames": 1,
+      "hold": [
+        60
+      ],
+      "total": 60
+    }
+  }
+}

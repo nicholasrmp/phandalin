@@ -22,6 +22,7 @@
 //   losango para cima, os platôs são testados do mais alto para o mais baixo.
 
 import { getSheet, drawSprite, frameAt } from '../art/sheet.js';
+import { linhaDaDirecao } from '../art/direcoes.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt } from '../core/grid.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct } from '../rules/odds.js';
@@ -47,21 +48,25 @@ const WALL_LEFT = '#332e42';
 const WALL_RIGHT = '#564e6b';
 
 // Paleta do cartão de previsão. Os valores são os mesmos de `style.css`
-// (--pedra, --gold, --ink, --muted, --green, --red, --blue): o cartão é
+// (--papel-2, --gold, --ink, --muted, --green, --red, --blue): o cartão é
 // desenhado no canvas, logo não herda as variáveis CSS, mas tem de ler como
-// parte da mesma interface de pedra e latão.
+// parte da mesma interface de pergaminho e latão.
+//
+// É tinta escura sobre claro, ao contrário do mapa por baixo. Por isso o
+// verde, o vermelho e o azul daqui são mais fechados que os do tabuleiro: o
+// mesmo #5fd07a que brilha sobre pedra escura some sobre creme.
 const CARTAO = {
-  fundo: 'rgba(17, 15, 21, .9)',
-  fio: 'rgba(222, 198, 140, .34)',
-  luz: 'rgba(255, 255, 255, .07)',
-  sombra: 'rgba(0, 0, 0, .55)',
-  gold: '#d9b45a',
-  ink: '#ece6d8',
-  muted: '#998f7e',
-  green: '#5fd07a',
-  red: '#e0553c',
-  blue: '#6eb8ff',
-  amber: '#e0963c',
+  fundo: 'rgba(235, 220, 186, .94)',
+  fio: 'rgba(117, 80, 26, .85)',
+  luz: 'rgba(255, 252, 242, .6)',
+  sombra: 'rgba(78, 56, 24, .35)',
+  gold: '#8a5f1d',
+  ink: '#352718',
+  muted: '#7c6a4e',
+  green: '#2f7a3c',
+  red: '#a83420',
+  blue: '#2c6a9e',
+  amber: '#8a5a12',
 };
 
 // Alcance normal em latão discreto; alcance longo em âmbar tracejado, porque
@@ -432,14 +437,31 @@ export class Board {
     const byView = new Map();
     const byTile = new Map();
     for (const c of this.enc.combatants) {
-      if (c.dead && c.kind === 'npc') continue;
+      // O CORPO FICA.
+      //
+      // Antes era `if (c.dead && c.kind === 'npc') continue;` — o inimigo
+      // morto sumia do tabuleiro, e com ele a pose de morte, que só chegava a
+      // aparecer para o grupo. Deixar o corpo é o que faz a leitura bater com
+      // a ficção: alguém morreu ali, e ali é onde se procura o que ele
+      // carregava.
+      //
+      // Dois efeitos colaterais, por este laço também alimentar a oclusão:
+      // um corpo atrás de um bloco alto agora o deixa translúcido, e dois
+      // ocupantes no mesmo quadrado disputam a mesma chave. A segunda parte
+      // é resolvida logo abaixo; a primeira é aceitável, porque um corpo
+      // atrás de uma parede é exatamente o que o jogador quer enxergar.
       // Quem está andando é ordenado pelo quadrado em que ESTÁ, não pelo
       // destino: senão a figura passa por cima de paredes que já deixou.
       const w = this.fx.positionFor(c.id);
       const tx = w ? Math.round(w.x) : c.pos.x;
       const ty = w ? Math.round(w.y) : c.pos.y;
       const v = this.toView(tx, ty);
-      byView.set(vkey(v.vx, v.vy), c);
+      const kv = vkey(v.vx, v.vy);
+      // O corpo nunca esconde quem está vivo. Um quadrado com morto e vivo
+      // juntos desenha o vivo, aconteça em que ordem acontecer.
+      const jaLa = byView.get(kv);
+      if (jaLa && !jaLa.dead && c.dead) continue;
+      byView.set(kv, c);
       byTile.set(`${tx},${ty}`, c);
     }
 
@@ -577,8 +599,36 @@ export class Board {
     // continua consciente, só derrubado.
     const prone = !down && hasCondition(c, 'caido');
     const sheet = getSheet(c.look);
-    const animName = down || prone ? 'down' : c.anim?.name ?? 'idle';
-    const anim = sheet.anims[animName];
+
+    // QUAL ANIMAÇÃO MOSTRAR.
+    //
+    // Antes esta linha escolhia entre três: `down`, o que `c.anim` dissesse
+    // (e só `main.js` dizia, e só 'attack'), e `idle`. Resultado: a figura
+    // deslizava pelo tabuleiro na pose parada, o quadro de dano era desenhado
+    // nas setenta folhas e nunca aparecia, e inconsciente, dormindo e MORTO
+    // saíam com o mesmo desenho — o jogador não tinha como saber do tabuleiro
+    // se valia gastar uma ação para estabilizar alguém ou se já era tarde.
+    //
+    // A ordem é por PRECEDÊNCIA, do irreversível para o transitório: morto
+    // vence tudo, depois a inconsciência, depois a animação disparada por um
+    // evento (golpe, dano), depois andar, e parado é o que sobra.
+    //
+    // Dormindo distingue-se de morrendo pelos PV: a magia Sono aplica
+    // `inconsciente` em quem está de pé e inteiro, enquanto quem chegou a
+    // zero está sangrando. Mesma condição, duas leituras, e a diferença é a
+    // que decide o turno de quem olha.
+    const dormindo = hasCondition(c, 'inconsciente') && c.hp > 0;
+    const andando = Boolean(walking && (walking.dx || walking.dy));
+    const animName = c.dead ? 'dead'
+      : dormindo ? 'sleep'
+        : down || prone ? 'down'
+          : c.anim?.name
+            ?? (andando ? 'walk' : 'idle');
+    // A folha pode não trazer a animação pedida — o dano é o caso de hoje, e
+    // o `drawSprite` já cai para `idle` sozinho. Aqui o recuo precisa ser o
+    // mesmo, senão `frameAt` recebe `undefined` no dia em que alguém pedir um
+    // quadro que não é o zero.
+    const anim = sheet.anims[animName] ?? sheet.anims.idle;
     const frame = c.anim?.frame ?? frameAt(anim, this.time + (c.pos.x + c.pos.y) * 0.17);
 
     // A direção do mundo gira junto com a câmera.
@@ -586,12 +636,55 @@ export class Board {
       ? { dx: walking.dx, dy: walking.dy }
       : c.facingVec ?? { dx: 1, dy: 1 };
     const face = this.rotateVec(world.dx, world.dy);
-    const toward = face.dx + face.dy;
-    const row = down ? 0 : toward >= 0 ? 0 : 2;
-    const flip = !down && (face.dx - face.dy) < 0;
+    // A direção vira coordenada de TELA antes de virar fileira: no isométrico
+    // o x da tela é (dx - dy) e o y é (dx + dy). Quem traduz tela em fileira é
+    // `linhaDaDirecao`, que pergunta à folha quantas direções ela tem — três,
+    // desenhadas em código, ou oito, se a folha vier de fora.
+    //
+    // No chão não há direção: a figura está deitada, e a fileira 0 é a única
+    // que os pintores de `down` desenham.
+    const { row, flip } = down
+      ? { row: 0, flip: false }
+      : linhaDaDirecao(sheet.dirs, face.dx - face.dy, face.dx + face.dy);
+
+    // DANO EM FOLHA QUE NÃO TRAZ QUADRO DE DANO.
+    //
+    // Os setenta pintores procedurais honram `pose.kind === 'hurt'` e
+    // desenham o encolhimento — são vinte lugares entre `draw.js` e os
+    // planos. Uma folha importada só tem o que foi gerado, e gerar o dano
+    // custa uma geração POR DIREÇÃO para um quadro de 220 ms: oito desenhos
+    // que o jogador mal alcança ver, vezes cada criatura do elenco.
+    //
+    // Quando a folha não traz o quadro, o recuo vira EFEITO: a figura parada,
+    // deslocada dois pixels para os lados, com tinta vermelha por cima. O
+    // `drawSprite` já cai para `idle` sozinho quando a animação não existe,
+    // então o que falta aqui é só o tremor e a cor.
+    //
+    // Quem TEM o quadro continua usando o quadro. Isto é um recuo, não uma
+    // troca — nenhum dos setenta desenhos existentes é jogado fora.
+    const danoSemQuadro = animName === 'hurt' && !sheet.anims.hurt;
+    // ~25 Hz: três idas e vindas dentro dos 220 ms que o golpe dura.
+    const tremor = danoSemQuadro ? (Math.floor(this.time * 25) % 2 ? 2 : -2) : 0;
+    // O branco do impacto vem primeiro e decai rápido; o vermelho da dor fica
+    // enquanto a pose durar. Trocar na força do flash dá as duas leituras em
+    // vez de uma esconder a outra.
+    // O TETO DO CLARÃO EXISTE PORQUE A TINTA FOI CONSERTADA.
+    //
+    // `c.flash` começa em 1, e enquanto a tinta vazava para o ladrilho essa
+    // força se diluía no piso em volta — ninguém via o quanto era. Confinada
+    // à figura, força 1 apaga a criatura inteira e deixa uma silhueta branca
+    // chapada no lugar dela. O golpe tem de piscar, não de apagar quem levou.
+    //
+    // Meio clarão ainda lê como impacto e deixa a criatura reconhecível por
+    // baixo, que é o que importa num tabuleiro com oito figuras parecidas.
+    const CLARAO = 0.5;
+    const branco = (f) => ({ color: '#ffffff', strength: Math.min(CLARAO, f * CLARAO) });
+    const tinta = c.flash > 0.35 ? branco(c.flash)
+      : danoSemQuadro ? { color: '#c03028', strength: 0.45 }
+        : c.flash > 0 ? branco(c.flash) : null;
 
     drawSprite(ctx, sheet, animName, frame, {
-      x: sx,
+      x: sx + tremor,
       y: sy + 6,
       // 1:1 para quem ocupa um quadrado — escala quebrada borra a grade de
       // pixels. Para Grande e Enorme a regra cede: um ogro desenhado 1:1 em
@@ -601,14 +694,44 @@ export class Board {
       scale: 1 + (pegada - 1) * 0.4,
       flip,
       row,
-      alpha: c.acted && ally && !down ? 0.62 : 1,
-      tint: c.flash > 0 ? { color: '#ffffff', strength: Math.min(1, c.flash) } : null,
+      // O morto esmaece: continua lá para ser visto e saqueado, mas não
+      // disputa atenção com quem ainda pode agir.
+      alpha: c.dead ? 0.72 : (c.acted && ally && !down ? 0.62 : 1),
+      tint: tinta,
     });
     if (c.flash > 0) c.flash -= 0.08;
 
     this.drawConditionFx(ctx, c, baseX, baseY, prone);
 
-    if (down) return;
+    // O ÍCONE DIZ QUE TIPO DE CHÃO.
+    //
+    // A figura deitada responde "está no chão", que é a leitura instantânea
+    // que decide alvo e movimento. Ela não consegue dizer QUAL dos três — com
+    // 40 px de silhueta, um goblin dormindo e um goblin morto são o mesmo
+    // desenho, e tentar distingui-los na arte custaria uma geração por estado
+    // e por criatura para uma diferença que ninguém enxerga.
+    //
+    // E isto também CONSERTA uma leitura que estava invertida. A condição
+    // `inconsciente` usa a caveira, e a magia Sono aplica `inconsciente`: a
+    // caveira aparecia sobre quem dormia e sobre quem faz teste de morte —
+    // justamente quem ainda pode ser salvo —, enquanto o morto de verdade,
+    // que é a bandeira `c.dead` e não uma condição, não mostrava nada.
+    if (down) {
+      const marca = c.dead ? '\u{1F480}'        // morto
+        : dormindo ? '\u{1F4A4}'                // dormindo: Sono, ainda com PV
+          : '\u{23F3}';                         // morrendo: teste de morte
+      ctx.font = '13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      // Um talho escuro atrás, senão o ícone some no piso claro.
+      ctx.fillStyle = 'rgba(0,0,0,.5)';
+      ctx.beginPath();
+      ctx.ellipse(baseX, baseY - 32, 11, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText(marca, baseX, baseY - 27);
+      ctx.textAlign = 'left';
+      return;
+    }
 
     // Barra de vida com transição suave: o número do motor é instantâneo, mas a
     // barra alcança em ~0,3 s, o que casa com o tempo da animação de impacto.

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Phandalin — catálogo de itens</title>
+<style>
+  :root {
+    --fundo: #15121a; --painel: #1e1a26; --fundo2: #241f2e; --borda: #332b40;
+    --texto: #e8e2d4; --fraco: #a79cb0; --ouro: #c9a227; --chao: #2a2434;
+    --verde: #6fbf7a; --vermelho: #e0705c; --azul: #76a9e0; --roxo: #b08ad8;
+  }
+  body.claro {
+    --fundo: #ded6c6; --painel: #ece5d6; --fundo2: #e3dbc9; --borda: #c2b8a4;
+    --texto: #2a2420; --fraco: #6a6152; --chao: #d4cbb6;
+    --verde: #2f7a3c; --vermelho: #a83420; --azul: #2c6a9e; --roxo: #6b4b9c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px 16px 80px;
+    background: var(--fundo); color: var(--texto);
+    font: 15px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  }
+  .limite { max-width: 1500px; margin: 0 auto; }
+
+  h1 { font-size: 25px; margin: 0 0 6px; }
+  .topo p { margin: 0 0 14px; color: var(--fraco); max-width: 82ch; }
+
+  button, input, select {
+    background: var(--painel); color: var(--texto); border: 1px solid var(--borda);
+    border-radius: 7px; padding: 7px 12px; font: inherit;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--ouro); }
+  button.on { background: var(--ouro); color: #1b1710; border-color: var(--ouro); font-weight: 600; }
+
+  .barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .barra input { min-width: 260px; flex: 1; max-width: 420px; }
+  .conta { color: var(--fraco); font-variant-numeric: tabular-nums; }
+
+  .filtros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .filtros button { padding: 5px 11px; font-size: 13px; border-radius: 20px; }
+
+  /* ---- vitrine de sprites ---- */
+  .vitrine {
+    background: var(--painel); border: 1px solid var(--borda);
+    border-radius: 12px; padding: 16px 18px 18px; margin-bottom: 22px;
+  }
+  .vitrine h2 { margin: 0 0 4px; font-size: 18px; }
+  .vitrine > p { margin: 0 0 14px; color: var(--fraco); max-width: 82ch; font-size: 14px; }
+  .bonecos { display: flex; flex-wrap: wrap; gap: 10px; }
+  .boneco {
+    background: var(--chao); border: 1px solid var(--borda); border-radius: 9px;
+    padding: 8px 6px 7px; width: 112px; text-align: center;
+  }
+  .boneco canvas { display: block; margin: 0 auto 5px; image-rendering: pixelated; }
+  .boneco b { display: block; font-size: 12.5px; }
+  .boneco span { display: block; font-size: 11px; color: var(--fraco); }
+
+  .icones-folha { display: flex; flex-wrap: wrap; gap: 10px; }
+  .icone-cartao {
+    background: var(--chao); border: 1px solid var(--borda); border-radius: 9px;
+    padding: 8px 6px 6px; width: 112px; text-align: center;
+  }
+  .icone-cartao canvas { display: block; margin: 0 auto 5px; image-rendering: pixelated; }
+  .icone-cartao b { font-size: 11.5px; word-break: break-all; }
+
+  /* ---- seções ---- */
+  section { margin-bottom: 26px; }
+  section > h2 {
+    margin: 0 0 3px; font-size: 19px;
+    border-bottom: 1px solid var(--borda); padding-bottom: 6px;
+  }
+  section > h2 .qtd {
+    font-size: 12px; color: var(--fraco); border: 1px solid var(--borda);
+    border-radius: 20px; padding: 1px 9px; margin-left: 8px; vertical-align: 2px;
+  }
+  section > p.nota { margin: 6px 0 12px; color: var(--fraco); font-size: 13.5px; max-width: 86ch; }
+
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 10px; }
+
+  .item {
+    display: grid; grid-template-columns: 44px 1fr; gap: 10px;
+    background: var(--painel); border: 1px solid var(--borda);
+    border-radius: 9px; padding: 9px 11px 10px;
+  }
+  .item.magico { border-color: var(--roxo); }
+  .item.phandelver { border-color: var(--ouro); box-shadow: inset 0 0 0 1px rgba(201, 162, 39, .25); }
+
+  .caixa-icone {
+    width: 44px; height: 44px; display: grid; place-items: center;
+    background: var(--fundo2); border: 1px solid var(--borda); border-radius: 7px;
+  }
+  .caixa-icone canvas { image-rendering: pixelated; }
+  .mono { font: 600 15px/1 ui-serif, Georgia, serif; color: var(--ouro); letter-spacing: .5px; }
+
+  .corpo { min-width: 0; }
+  .nome { font-size: 14.5px; font-weight: 600; line-height: 1.25; }
+  .sub { font-size: 11.5px; color: var(--fraco); text-transform: lowercase; }
+  .linhas { margin-top: 5px; display: grid; gap: 1px; font-size: 12.5px; }
+  .l { display: flex; justify-content: space-between; gap: 10px; }
+  .l dt { color: var(--fraco); margin: 0; }
+  .l dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+  .l dd.destaque { color: var(--ouro); font-weight: 600; }
+  .desc { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--fraco); }
+
+  .selos { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .selo {
+    font-size: 10px; letter-spacing: .4px; text-transform: uppercase;
+    border: 1px solid var(--borda); border-radius: 4px; padding: 0 5px; color: var(--fraco);
+  }
+  .selo.srd { border-color: var(--verde); color: var(--verde); }
+  .selo.phb, .selo.dmg { border-color: var(--azul); color: var(--azul); }
+  .selo.propria { border-color: var(--ouro); color: var(--ouro); }
+  .selo.sintonia { border-color: var(--roxo); color: var(--roxo); }
+  .selo.r-incomum { border-color: var(--verde); color: var(--verde); }
+  .selo.r-raro { border-color: var(--azul); color: var(--azul); }
+  .selo.r-muito { border-color: var(--roxo); color: var(--roxo); }
+  .selo.r-lendario { border-color: var(--ouro); color: var(--ouro); }
+  .selo.usa { border-color: var(--vermelho); color: var(--vermelho); }
+
+  .vazio { color: var(--fraco); padding: 20px 2px; }
+  @media (max-width: 640px) { .grade { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div class="limite topo">
+    <h1>Catálogo de itens</h1>
+    <p>
+      Tudo que existe em <code>src/rules/items/</code>, lido dos mesmos arquivos que o jogo lê —
+      esta página não tem tabela própria. O ícone é o do jogo; quando ele ainda não foi desenhado,
+      o soquete leva as iniciais em serifa, exatamente como no inventário.
+      O selo de fonte diz de onde veio cada entrada.
+    </p>
+    <div class="barra">
+      <input id="busca" type="search" placeholder="Buscar por nome, tipo ou id…" autocomplete="off" />
+      <button id="tema">Fundo claro</button>
+      <span class="conta" id="conta"></span>
+    </div>
+    <div class="filtros" id="filtros"></div>
+  </div>
+  <div class="limite" id="vitrine"></div>
+  <div class="limite" id="secoes"></div>
+  <script type="module" src="/src/dev/catalogo.js"></script>
+</body>
+</html>

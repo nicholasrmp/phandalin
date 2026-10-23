@@ -22,18 +22,32 @@ export { ramp };
  * @param {number} w,h    tamanho da célula
  * @returns {{px,cut,volume,contato,coluna,cx,gy}}
  */
-export function makeKit(ctx, ox, oy, w, h, ground) {
+export function makeKit(ctx, ox, oy, w, h, ground, escala = 1) {
   const cx = Math.floor(w / 2);
   const gy = h - ground;
+
+  // A ESCALA MORA AQUI, E SÓ AQUI.
+  //
+  // Todo desenho deste jogo — setenta figuras, sete planos corporais, duas mil
+  // linhas de pintor — sai por `px`, `volume`, `coluna`, `traco` e `disco`, e
+  // os cinco terminam em `px`. Multiplicar no fim de `px` é o que permite a
+  // folha ter o triplo de pixels sem que uma única linha do pintor mude.
+  //
+  // `w`, `h`, `cx`, `gy` e tudo que o pintor calcula continuam em unidades
+  // LÓGICAS. Quem pensa em pixel lógico — a câmera, a ficha, o retrato — não
+  // precisa saber que a folha engordou.
+  const e = Math.max(1, Math.round(escala));
 
   /** Retângulo relativo ao centro da célula e à linha do chão. */
   const px = (x, y, pw, ph, color) => {
     if (pw <= 0 || ph <= 0) return;
     ctx.fillStyle = color;
-    ctx.fillRect(ox + cx + x, oy + gy + y, pw, ph);
+    ctx.fillRect((ox + (cx + x) * e), (oy + (gy + y) * e), pw * e, ph * e);
   };
 
-  const cut = (x, y, cw = 1, ch = 1) => ctx.clearRect(ox + cx + x, oy + gy + y, cw, ch);
+  const cut = (x, y, cw = 1, ch = 1) => ctx.clearRect(
+    ox + (cx + x) * e, oy + (gy + y) * e, cw * e, ch * e,
+  );
 
   /**
    * Volume cilíndrico. A última coluna volta a clarear um degrau: é a luz
@@ -123,5 +137,8 @@ export function makeKit(ctx, ox, oy, w, h, ground) {
     px(cxo - Math.max(1, Math.floor(raio * 0.4)), cyo - Math.max(1, Math.floor(raio * 0.4)), 1, 1, ramp(cor, 3));
   };
 
-  return { px, cut, volume, contato, coluna, traco, disco, cx, gy };
+  // `e` sai no kit para o pintor poder perguntar quanto espaço tem. Detalhe de
+  // um terço de pixel lógico cai exatamente num pixel físico quando e = 3, e
+  // vira borrão quando e = 1 — então quem desenha fino precisa checar antes.
+  return { px, cut, volume, contato, coluna, traco, disco, cx, gy, e };
 }

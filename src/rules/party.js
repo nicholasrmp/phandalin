@@ -96,6 +96,10 @@ export function makeParty() {
         ability: 'wis',
         cantrips: ['chamaSagrada'],
         prepared: ['curarFerimentos', 'palavraCurativa', 'bencao'],
+        // O clérigo prepara da LISTA DA CLASSE inteira, não de um livro: é a
+        // diferença entre ele e o mago, e é por isso que `lista` e `livro`
+        // são campos diferentes em vez de um só com dois nomes.
+        lista: ['curarFerimentos', 'palavraCurativa', 'bencao', 'raioGuiado', 'infligirFerimentos', 'perdicao'],
       },
       features: ['discipleOfLife', 'preserveLife'],
       resources: { channelDivinity: 1 },
@@ -118,8 +122,12 @@ export function makeParty() {
       weapons: ['bordao', 'adaga'],
       spellcasting: {
         ability: 'int',
-        cantrips: ['raioDeFogo', 'raioDeGelo'],
-        prepared: ['misselMagico', 'maosFlamejantes', 'sono'],
+        cantrips: ['raioDeFogo', 'raioDeGelo', 'toqueArrepiante'],
+        prepared: ['misselMagico', 'maosFlamejantes', 'sono', 'ondaTrovejante', 'raioDeDoenca'],
+        // O livro tem SEIS de 1º círculo e ele prepara cinco. A diferença de
+        // um é o que transforma a tela de preparação em escolha — com livro
+        // do tamanho do limite, preparar é um formulário sem decisão.
+        livro: ['misselMagico', 'maosFlamejantes', 'sono', 'ondaTrovejante', 'raioDeDoenca', 'infligirFerimentos'],
       },
       features: ['sculptSpells'],
       resources: {},
@@ -131,4 +139,31 @@ export function makeParty() {
 /** Modificador de conjuração do personagem. */
 export function spellMod(actor) {
   return actor.spellcasting ? abilityMod(actor.abilities[actor.spellcasting.ability]) : 0;
+}
+
+/**
+ * Quantas magias ele pode deixar preparadas: modificador de conjuração +
+ * nível, mínimo uma. Vale para mago e para clérigo — muda o atributo, não a
+ * fórmula.
+ *
+ * Truque NÃO conta: truque não se prepara, está sempre pronto. Misturar os
+ * dois faria o mago "gastar" vaga de preparação com Raio de Fogo.
+ */
+export function limiteDePreparacao(actor) {
+  if (!actor.spellcasting) return 0;
+  return Math.max(1, spellMod(actor) + (actor.level ?? 1));
+}
+
+/**
+ * De onde este personagem pode preparar.
+ *
+ * O mago lê o LIVRO, que é dele e cresce com o que ele copia; o clérigo lê a
+ * LISTA da classe, que é fixa e inteira. Quem não tiver nem um nem outro cai
+ * no que já está preparado — assim um conjurador sem catálogo declarado não
+ * perde as magias que tinha.
+ */
+export function fontesDePreparacao(actor) {
+  const sc = actor.spellcasting;
+  if (!sc) return [];
+  return sc.livro ?? sc.lista ?? sc.prepared ?? [];
 }

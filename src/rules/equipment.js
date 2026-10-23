@@ -1,52 +1,22 @@
 // SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
-// Armas, armaduras e o resto da mochila.
+// A MECÂNICA do inventário. O catálogo mora em `items/`.
+//
+// Este arquivo responde: o que cabe em cada encaixe, quanto pesa, como a CA é
+// montada, e o que uma troca faz com o boneco. Ele não guarda nenhuma tabela
+// de item — com as duas coisas juntas, mexer numa regra de duas linhas obriga
+// a rolar por quatrocentas entradas de dado.
 
 // A fórmula do modificador e do bônus de proficiência vêm de `abilities.js`
 // para não existirem duas vezes: `armorClass` nasceu com a conta copiada, e
 // uma segunda cópia na ficha é como o número da tela começa a divergir do
 // número que o motor usa.
 import { abilityMod, proficiencyBonus } from './abilities.js';
+import { WEAPONS, ARMORS, SHIELD, SHIELD_AC, ITEMS } from './items/index.js';
 
-export const WEAPONS = {
-  espadaLonga: {
-    id: 'espadaLonga', name: 'Espada longa', damage: '1d8', type: 'cortante',
-    ability: 'str', reachFt: 5, props: ['versátil'], art: 'sword',
-  },
-  espadaCurta: {
-    id: 'espadaCurta', name: 'Espada curta', damage: '1d6', type: 'perfurante',
-    ability: 'str', finesse: true, reachFt: 5, props: ['acuidade', 'leve'], art: 'sword',
-  },
-  adaga: {
-    id: 'adaga', name: 'Adaga', damage: '1d4', type: 'perfurante',
-    ability: 'str', finesse: true, reachFt: 5, rangeFt: 20, props: ['acuidade', 'leve', 'arremesso'], art: 'dagger',
-  },
-  maca: {
-    id: 'maca', name: 'Maça', damage: '1d6', type: 'concussão',
-    ability: 'str', reachFt: 5, props: [], art: 'mace',
-  },
-  bordao: {
-    id: 'bordao', name: 'Bordão', damage: '1d6', type: 'concussão',
-    ability: 'str', reachFt: 5, props: ['versátil'], art: 'staff',
-  },
-  arcoCurto: {
-    id: 'arcoCurto', name: 'Arco curto', damage: '1d6', type: 'perfurante',
-    ability: 'dex', ranged: true, rangeFt: 80, longRangeFt: 320, props: ['munição', 'duas mãos'], art: 'bow',
-  },
-  bestaLeve: {
-    id: 'bestaLeve', name: 'Besta leve', damage: '1d8', type: 'perfurante',
-    ability: 'dex', ranged: true, rangeFt: 80, longRangeFt: 320, props: ['munição', 'recarga'], art: 'bow',
-  },
-};
-
-export const ARMORS = {
-  nenhuma: { id: 'nenhuma', name: 'Sem armadura', base: 10, dexCap: Infinity, art: null },
-  couro: { id: 'couro', name: 'Couro', base: 11, dexCap: Infinity, art: 'leather' },
-  couroBatido: { id: 'couroBatido', name: 'Couro batido', base: 12, dexCap: Infinity, art: 'leather' },
-  brunea: { id: 'brunea', name: 'Brunea', base: 14, dexCap: 2, art: 'scale' },
-  cotaDeMalha: { id: 'cotaDeMalha', name: 'Cota de malha', base: 16, dexCap: 0, art: 'plate' },
-};
-
-export const SHIELD_AC = 2;
+// Reexportados porque meia dúzia de arquivos já importa estes nomes daqui, e
+// mudar todos eles para apontar para `items/` seria churn sem ganho: este
+// continua sendo o lugar onde se pergunta por equipamento.
+export { WEAPONS, ARMORS, SHIELD, SHIELD_AC, ITEMS };
 
 /** CA = base da armadura + DEX (limitado) + escudo + bônus diversos. */
 export function armorClass(actor) {
@@ -73,58 +43,6 @@ export function weaponAbility(actor, weapon) {
   const dex = actor.abilities.dex;
   return dex > str ? 'dex' : 'str';
 }
-
-// ---------------------------------------------------------------- itens ----
-//
-// POR QUE O CATÁLOGO CRESCEU
-// WEAPONS e ARMORS cobrem só o que o motor de combate lê. A mochila precisa do
-// resto: sem poção, corda e tocha, a aba de inventário é uma vitrine de dois
-// objetos e o jogador não tem nada para decidir. Nada daqui para baixo é lido
-// pelo motor — é catálogo e contabilidade de ficha, e por isso pode crescer
-// sem risco para o combate.
-
-export const ITEMS = {
-  pocaoDeCura: {
-    id: 'pocaoDeCura', name: 'Poção de cura', tipo: 'poção', art: 'cura',
-    pilha: true, peso: 0.5, efeito: '2d4+2',
-    desc: 'Uma ação para beber: recupera 2d4+2 pontos de vida.',
-  },
-  kitDeCura: {
-    id: 'kitDeCura', name: 'Kit de cura', tipo: 'ferramenta', art: 'estabilizar',
-    pilha: false, peso: 3, usos: 10,
-    desc: 'Dez usos. Estabiliza quem está morrendo sem precisar do teste de Medicina.',
-  },
-  tocha: {
-    id: 'tocha', name: 'Tocha', tipo: 'utilidade', art: 'fogo',
-    pilha: true, peso: 1,
-    desc: 'Luz plena em 6 m e penumbra em outros 6 m, por uma hora.',
-  },
-  corda: {
-    id: 'corda', name: 'Corda de cânhamo', tipo: 'utilidade', art: 'corda',
-    pilha: false, peso: 10,
-    desc: 'Quinze metros. Serve para descer um poço e para amarrar prisioneiro.',
-  },
-  racoes: {
-    id: 'racoes', name: 'Rações de viagem', tipo: 'utilidade', art: 'racoes',
-    pilha: true, peso: 2,
-    desc: 'Um dia de comida seca por unidade.',
-  },
-  moedaDeOuro: {
-    id: 'moedaDeOuro', name: 'Peças de ouro', tipo: 'moeda', art: 'moeda',
-    pilha: true, peso: 0.02,
-    desc: 'O que sobrou depois de comprar o equipamento inicial.',
-  },
-};
-
-/**
- * O escudo não entra em ARMORS porque não é armadura: ele ocupa UMA MÃO, e é
- * essa a regra que o inventário tem de poder recusar.
- */
-export const SHIELD = {
-  id: 'escudo', name: 'Escudo', tipo: 'escudo', art: 'escudo',
-  ac: SHIELD_AC, peso: 6,
-  desc: '+2 de CA. Ocupa uma das mãos, então não combina com arma de duas mãos.',
-};
 
 /** Os quatro encaixes do boneco de equipamento, na ordem em que aparecem. */
 export const SLOTS = [
@@ -238,9 +156,13 @@ export function aparenciaDe(actor) {
 
 // ---- treino em armadura ---------------------------------------------------
 
-const CATEGORIA_ARMADURA = {
-  nenhuma: 'nenhuma', couro: 'leve', couroBatido: 'leve', brunea: 'média', cotaDeMalha: 'pesada',
-};
+// A categoria sai da PRÓPRIA armadura (`items/armors.js`). Havia aqui uma
+// tabela paralela de id para categoria, e ela não sobreviveria a treze
+// armaduras: toda entrada nova que alguém esquecesse de registrar virava, em
+// silêncio, "sem categoria" — e o aviso de treino parava de aparecer justo
+// para quem vestisse placas sem saber. O campo obrigatório na entrada não tem
+// como ser esquecido.
+const categoriaDaArmadura = (armorId) => ARMORS[armorId]?.categoria ?? 'nenhuma';
 
 // Treino por classe. Fica aqui, e não em `party.js`, porque quem precisa dele
 // é o inventário: a ficha AVISA sem impedir, e é justamente vestir cota de
@@ -270,7 +192,7 @@ export function marcarTreinoDeArmadura(actor) {
 }
 
 export function avisoDeArmadura(actor, armorId) {
-  const cat = CATEGORIA_ARMADURA[armorId] ?? 'nenhuma';
+  const cat = categoriaDaArmadura(armorId);
   if (cat === 'nenhuma') return null;
   if (treinoEmArmadura(actor).includes(cat)) return null;
   return `${actor.className} não tem treino em armadura ${cat}: desvantagem em ataques, testes e resistências de Força e Destreza, e nada de conjurar.`;
@@ -297,7 +219,7 @@ function bagInicial(actor) {
   // Quem tem a perícia é quem carrega a ferramenta dela: o kit de cura na mão
   // de quem não sabe Medicina é peso morto.
   if (actor.skills?.includes('medicina')) bag.push({ id: 'kitDeCura', tipo: 'item', qtd: 1 });
-  if (actor.skills?.includes('furtividade')) bag.push({ id: 'corda', tipo: 'item', qtd: 1 });
+  if (actor.skills?.includes('furtividade')) bag.push({ id: 'cordaCanhamo', tipo: 'item', qtd: 1 });
   bag.push({ id: 'moedaDeOuro', tipo: 'item', qtd: 12 + (actor.level ?? 1) * 3 });
   return bag;
 }
@@ -439,6 +361,61 @@ export function equipar(actor, slot, id) {
   actor.ac = armorClass(actor);
   marcarTreinoDeArmadura(actor);
   return { ok: true, slot, de, para: id ?? null, acAntes, acDepois: actor.ac, semTreino: actor.armorUntrained };
+}
+
+// ---- consumo -------------------------------------------------------------
+
+/** Quantos deste item estão na mochila. Zero se não houver. */
+export function quantosNaMochila(actor, id) {
+  garantirInventario(actor);
+  return actor.bag.find((e) => e.id === id)?.qtd ?? 0;
+}
+
+/**
+ * Gasta UM uso de um item da mochila.
+ *
+ * Dois regimes, e a diferença importa. Item com `usos` (o kit de cura, com
+ * dez) perde uma carga e só sai da mochila na última; item sem `usos` (a
+ * poção) sai inteiro no primeiro uso.
+ *
+ * Devolve `false` sem mexer em nada se não houver o que gastar — quem chama
+ * tem de poder desistir ANTES de cobrar a ação do turno.
+ *
+ * @returns {false | {restam: number, acabou: boolean}}
+ */
+export function consumirDaMochila(actor, id) {
+  garantirInventario(actor);
+  const i = actor.bag.findIndex((e) => e.id === id);
+  if (i < 0) return false;
+  const entrada = actor.bag[i];
+  const dados = itemDeId(id)?.dados;
+
+  if (dados?.usos) {
+    // `usosRestantes` nasce na primeira vez que alguém usa, e não na criação
+    // da mochila: um kit intocado não precisa carregar contador.
+    entrada.usosRestantes ??= dados.usos;
+    entrada.usosRestantes -= 1;
+    if (entrada.usosRestantes > 0) return { restam: entrada.usosRestantes, acabou: false };
+    if (entrada.qtd > 1) {
+      entrada.qtd -= 1;
+      entrada.usosRestantes = dados.usos;
+      return { restam: dados.usos, acabou: false };
+    }
+    actor.bag.splice(i, 1);
+    return { restam: 0, acabou: true };
+  }
+
+  if (entrada.qtd > 1) { entrada.qtd -= 1; return { restam: entrada.qtd, acabou: false }; }
+  actor.bag.splice(i, 1);
+  return { restam: 0, acabou: true };
+}
+
+/** O que dá para usar agora, já separado do resto da mochila. */
+export function consumiveisDe(actor) {
+  garantirInventario(actor);
+  return actor.bag
+    .filter((e) => itemDeId(e.id)?.dados.consumivel)
+    .map((e) => ({ ...e, dados: itemDeId(e.id).dados }));
 }
 
 /** Peso carregado, em libras. Capacidade = 15 × Força, como no SRD. */

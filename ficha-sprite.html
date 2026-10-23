@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Phandalin — ficha de sprite</title>
+<style>
+  :root { --fundo:#14100b; --painel:#1e1a14; --borda:#3a3024; --texto:#ebe2d0; --fraco:#a2957c; --ouro:#c9a227; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:20px 16px 64px; background:var(--fundo); color:var(--texto);
+         font:15px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
+  .topo { max-width:1100px; margin:0 auto 18px; }
+  h1 { font-size:23px; margin:0 0 6px; }
+  .topo p { margin:0 0 10px; color:var(--fraco); max-width:80ch; }
+  #controles { display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+               max-width:1100px; margin:0 auto 18px; padding:10px 14px;
+               background:var(--painel); border:1px solid var(--borda); border-radius:10px; }
+  label { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--fraco); }
+  select { background:var(--fundo); color:var(--texto); border:1px solid var(--borda);
+           border-radius:6px; padding:3px 6px; font:inherit; font-size:13px; }
+  /* A ficha é desenhada no tamanho natural e NÃO é reduzida pelo CSS: um
+     canvas espremido borra tanto os pixels quanto a legenda, e a ficha existe
+     justamente para julgar pixel. Se não couber, rola na horizontal. */
+  #palco { overflow-x:auto; }
+  #palco canvas { max-width:none; }
+</style>
+</head>
+<body>
+  <div class="topo">
+    <h1>Ficha de sprite</h1>
+    <p>A página que se mostra antes de aceitar uma criatura: as oito direções
+       lado a lado, no tamanho que o tabuleiro de fato mostra, com a paleta
+       contada, o placar medido e a silhueta testada.</p>
+    <p>O que conferir, nesta ordem: a <em>silhueta</em> lê como a criatura;
+       a <em>dispersão de altura</em> entre direções fica perto de 1,4%, que é
+       o que prova "mesma criatura"; a proporção bate com o bicho (goblin é
+       largo e baixo); e os pés ficam no ladrilho no exemplo do jogo.</p>
+    <p>A ficha tem legenda; a folha que o motor lê não tem uma letra. Texto
+       queimado dentro de uma folha foi o defeito que custou um algoritmo de
+       componentes conexos para desfazer.</p>
+  </div>
+  <div id="controles"></div>
+  <div id="palco"></div>
+  <script type="module" src="/src/dev/ficha-sprite.js"></script>
+</body>
+</html>

@@ -160,13 +160,28 @@ export const NPC_LOOKS = {
   // Ela vende armas, então segura uma. É plebeu em regra e guerreira em
   // postura, e essa contradição é exatamente a leitura que queremos: a pessoa
   // do balcão que sabe o que está vendendo.
+  // LINENE GRAYWIND — ela VENDE armas, não as empunha.
+  //
+  // Vinha com espada na mão e postura de guerreiro, e a ferramenta de
+  // silhueta media IoU 0,953 contra o veterano: dois humanos fortes, de pé,
+  // armados, encarando a frente. Num quadrado de 52 px isso é a mesma pessoa.
+  //
+  // A correção é de caracterização antes de ser de silhueta. A dona do
+  // Lionshield Coster recebe atrás de um balcão: avental de couro grosso em
+  // vez de peitoral, prancheta em vez de lâmina, e o peso num pé só. O
+  // avental alarga a base e o braço livre abre o contorno — e aí ela deixa de
+  // ser um soldado de outra cor.
   linene: {
-    species: 'humano', build: 'forte', heightMul: 1.00,
+    species: 'humano', build: 'normal', heightMul: 0.98,
     skin: '#c9906a', hair: '#7a3a24', hairStyle: 'long', beard: false,
     outfit: '#7a3a30', outfitDark: '#4c2220', trim: '#c8a24a',
     metal: '#b2bac4', leather: '#6a4a2c', eyes: '#6a7a4a',
-    armorStyle: 'leather', helm: false, shield: false, weapon: 'sword',
-    stance: 'guerreiro', marca: 'trancas',
+    armorStyle: 'leather', helm: false, shield: false, weapon: null,
+    // `mochila` além do avental: tirar a espada a aproximou do plebeu (IoU
+    // 0,937), que é o outro humano desarmado do elenco. O fardo nas costas é
+    // o que abre o contorno — e é o que a dona de um posto de mercadoria
+    // carrega o dia inteiro.
+    stance: 'solto', marca: ['avental', 'mochila', 'trancas'],
     facial: 'cicatriz',
     face: { arcada: 2, macas: 2, mandibula: 1.06, queixo: 'quadrado', olhoGap: -1, nariz: 'reta', boca: 'fina' },
   },
@@ -388,8 +403,12 @@ export const NPC_LOOKS = {
   // Mesmo plano de Agatha, decisão de cor oposta (ver o comentário dela).
   // Mormesk é o ponto mais ESCURO de todo o elenco: contra o verde claro dela,
   // os dois nunca são a mesma mancha, nem no mesmo corredor.
+  // MORMESK — era um retint do wraith genérico, e a ferramenta de silhueta
+  // media IoU 1,000 entre os dois: mesmas formas, cores diferentes. Num
+  // quadrado de 52 px cor não distingue criatura. A coroa de osso é o que
+  // separa, e é a leitura certa — ele mandava em alguma coisa antes de morrer.
   mormesk: {
-    plan: 'mortoVivo', undead: 'wraith',
+    plan: 'mortoVivo', undead: 'wraith', coroa: '#cfc7a8',
     cloak: '#1e2436', glow: '#6ad8ff', void: '#080a12',
     outfit: '#1e2436', outfitDark: '#12161f', trim: '#4a5a72',
     skin: '#8a93a8', hair: '#2a3246', eyes: '#6ad8ff',
