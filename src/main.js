@@ -127,10 +127,11 @@ class App {
     const seed = seedFromString(`encontro:${Date.now()}`);
     const rng = makeRng(seed);
     // `?encontro=` escolhe o encontro inteiro: mapa, posições e inimigos andam
-    // juntos. `grandes` é uma vitrine de tamanho; `emboscada` é a estrada na
-    // mata. O padrão continua sendo o que foi balanceado — mexer nele para
-    // mostrar um recurso estragaria um equilíbrio que foi medido.
-    const variante = new URLSearchParams(location.search).get('encontro') ?? 'padrao';
+    // juntos. Sem ele abre a `emboscada`, a estrada na mata — é o cenário de
+    // teste. `padrao` é o encontro antigo, o que foi balanceado e que o
+    // simulador (`src/dev/balance.js`) continua medindo; `grandes` é uma
+    // vitrine de tamanho.
+    const variante = new URLSearchParams(location.search).get('encontro') ?? 'emboscada';
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
       mapa.terreno, mapa.altura, mapa.objetos);
