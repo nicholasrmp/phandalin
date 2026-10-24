@@ -36,7 +36,7 @@ from pathlib import Path
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from losango import TW, TH, LIFT, recortar_topo  # noqa: E402
+from losango import TW, TH, LIFT, recortar_topo, no_losango  # noqa: E402
 
 AQUI = Path(__file__).resolve().parents[2]
 LOTE = AQUI / '_referencias' / 'pixellab' / 'ladrilhos-pro' / '5523ee99-24ad-4112-b6be-ee7f192b98a8'
@@ -75,6 +75,17 @@ def faixa(im, ox, oy, lado):
     return out
 
 
+def tapar(t):
+    """Furo dentro do losango vira o vizinho aceso mais perto na fileira."""
+    px = t.load()
+    for y in range(TH):
+        cheios = [x for x in range(TW) if px[x, y][3]]
+        for x in range(TW):
+            if no_losango(x, y) and not px[x, y][3] and cheios:
+                px[x, y] = px[min(cheios, key=lambda c: abs(c - x)), y]
+    return t
+
+
 def main():
     linhas = []      # (material, [(esq, dir, topo)])
     for mat, nomes in MATERIAIS.items():
@@ -90,7 +101,7 @@ def main():
             esq, dir_ = faixa(im, ox, oy, 'esq'), faixa(im, ox, oy, 'dir')
             cheio = sum(1 for p in esq.getdata() if p[3]) + sum(1 for p in dir_.getdata() if p[3])
             print(f'{mat}-{n:<4} caixa {bb}  faces com {cheio}/{2 * FW * LIFT} px')
-            vs.append((esq, dir_, recortar_topo(im, ox, oy)))
+            vs.append((esq, dir_, tapar(recortar_topo(im, ox, oy))))
         if vs:
             linhas.append((mat, vs))
 

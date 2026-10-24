@@ -678,9 +678,19 @@ export class Board {
     const faixa = lift > 0 && s.face && faixaDaFace(s.face, 'esq', x, y, 0);
     if (faixa) {
       ctx.imageSmoothingEnabled = false;
+      // Só os níveis que aparecem: a face da esquerda fica atrás da vizinha
+      // de vista (vx, vy+1), a da direita atrás da (vx+1, vy). Sem o corte
+      // eram ~5 mil faixas por quadro na mansão; com ele, ~500.
+      const v = this.toView(x, y);
+      const frente = (dvx, dvy) => {
+        const p = this.fromView(v.vx + dvx, v.vy + dvy);
+        return this.field.inside(p.x, p.y) ? this.field.heightAt(p.x, p.y) : 0;
+      };
+      const visiveis = { esq: hgt - frente(0, 1), dir: hgt - frente(1, 0) };
       for (let n = 0; n < hgt; n++) {
         const oy = sy + TH / 2 + n * LIFT;
         for (const lado of ['esq', 'dir']) {
+          if (n >= visiveis[lado]) continue;
           const f = faixaDaFace(s.face, lado, x, y, n);
           ctx.drawImage(f.img, f.sx, f.sy, f.w, f.h, lado === 'esq' ? sx - TW / 2 : sx, oy, f.w, f.h);
         }
