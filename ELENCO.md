@@ -146,6 +146,10 @@ Goblin · Chefe goblin · Hobgoblin · Bugbear · Ogro · Bandido · Capitão ba
 Rufião · Batedor · Veterano · Mago · Acólito · Espião · Plebeu · Guarda · Nobre ·
 Cavaleiro · Drow — todos **SRD**.
 
+**Goblin arqueiro → criatura própria.** Não por faltar no SRD, mas por ser o
+goblin do SRD com um número mudado: sem escudo, a CA cai de 15 para 13 (couro
+mais Destreza). O resto da ficha é a do goblin.
+
 ### Bestas — plano `quadrupede` ou `feras`
 
 Lobo (feito) · Lobo atroz · Aranha gigante · Aranha-lobo gigante · Rato gigante ·

@@ -51,6 +51,47 @@ export const GOBLINOIDES = {
     blurb: 'Bate e desaparece: com Escapada Ágil se esconde ou desengaja na mesma rodada, sem dar ataque de oportunidade. Sete PV — morre de um golpe bom.',
   },
 
+  // O ARQUEIRO É O GOBLIN SEM O ESCUDO — e por isso já não é o bloco do SRD.
+  //
+  // Os números são os do goblin do SRD, com uma diferença só: a CA. A do
+  // goblin é 15, couro mais escudo; o arqueiro tem as duas mãos no arco e não
+  // carrega escudo, então fica com 13, couro (11) mais Destreza (+2). Um número
+  // mudado é o que separa "variante de look" de "criatura nossa" neste
+  // arquivo — o bandido e o bugbear que trocam só o desenho continuam SRD,
+  // marcados "sem um número mudado". Este mudou um, então é `'propria'`,
+  // derivado do goblin do SRD e documentado aqui.
+  //
+  // COMO ELE JOGA: `tatica: 'atirador'`. Atira de onde estiver, no alto ou no
+  // plano, e só usa a cimitarra com inimigo colado — que é também o que a
+  // regra pede, porque atirar com inimigo adjacente dá desvantagem. Sem a
+  // tática, a IA o trataria como qualquer goblin e o faria descer para
+  // brigar. A cimitarra não aparece no desenho: a família divide o
+  // equipamento da ficha entre as variantes, e o guerreiro também não carrega
+  // o arco. O golpe colado se lê pelo efeito da lâmina — bote e corte branco.
+  goblinArqueiro: {
+    id: 'goblinArqueiro',
+    name: 'Goblin arqueiro',
+    look: 'goblinArqueiro',
+    fonte: 'propria',             // goblin do SRD sem o escudo: CA 15 -> 13
+    size: 'pequeno',
+    level: 1,
+    cr: '1/4',
+    xp: 50,
+    abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
+    ac: 13,
+    acNote: 'armadura de couro',
+    maxHp: 7,
+    speedFt: 30,
+    skills: ['furtividade'],
+    attacks: [
+      { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
+      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
+    ],
+    traits: ['nimbleEscape'],
+    tatica: 'atirador',
+    blurb: 'Atira de onde estiver e não vem brigar: só puxa a cimitarra se você encostar. Com Escapada Ágil se afasta sem dar ataque de oportunidade. Sete PV — morre de um golpe bom.',
+  },
+
   goblinChefe: {
     id: 'goblinChefe',
     name: 'Chefe Goblin',

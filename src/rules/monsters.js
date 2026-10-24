@@ -60,6 +60,11 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     attacks: def.attacks,
     multiattack: def.multiattack ?? null,
     traits: def.traits ?? [],
+    // Como a IA joga esta criatura, quando não é o padrão. Hoje só existe
+    // 'atirador': atira de onde estiver e só usa a lâmina com inimigo colado.
+    // Sem copiar o campo aqui, `ai.js` nunca o veria — o combatente não
+    // carrega a ficha, só o que esta função passa adiante.
+    tatica: def.tatica ?? null,
     conditions: [],
     // A pegada viaja DENTRO da posição: assim `distanceFt` e `isAdjacent`
     // medem contra a caixa da criatura sem que nenhum chamador saiba disso.

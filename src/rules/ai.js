@@ -82,6 +82,50 @@ export function takeMonsterTurn(enc, monster) {
     return;
   }
 
+  // 1b: ATIRADOR — atira de onde estiver; a lâmina é só para quem encostou.
+  //
+  // A regra 2 abaixo manda todo monstro fechar distância, e o motivo está
+  // escrito lá: arco curto alcança o tabuleiro inteiro, e se todo mundo
+  // atirasse desde o primeiro turno o posicionamento deixaria de importar.
+  // Mas o goblin ARQUEIRO existe justamente para atirar, e quem tem
+  // `tatica: 'atirador'` pula essa preferência.
+  //
+  // Chegar aqui já quer dizer que ninguém está colado: se estivesse, a regra
+  // 1 acima teria usado a arma de corpo a corpo — o certo, porque atirar com
+  // inimigo adjacente dá desvantagem. Então, em ordem:
+  //   1. tiro no alcance NORMAL daqui;
+  //   2. andar até um ponto de tiro normal, sem encostar em ninguém, e atirar;
+  //   3. tiro no alcance LONGO daqui, com desvantagem — só quando não há como
+  //      chegar ao normal neste turno.
+  // `canAttack` aceita o alcance longo, então sem essa ordem o arqueiro
+  // atiraria com desvantagem de onde está em vez de dar alguns passos.
+  if (monster.tatica === 'atirador') {
+    const atira = (alvo) => enc.attackAction(monster, alvo.target, alvo.weaponName);
+    const tiro = pickReachableTarget(enc, monster, ordered, { rangedOnly: true, normalOnly: true });
+    if (tiro) {
+      atira(tiro);
+      enc.endTurn(monster);
+      return;
+    }
+    const posto = planShot(enc, monster, ordered, enemies);
+    if (posto) {
+      if (posto.path.length > 1) enc.moveAlong(monster, posto.path);
+      if (!monster.dead && !hasCondition(monster, 'inconsciente')) {
+        const depois = pickReachableTarget(enc, monster, ordered, { rangedOnly: true });
+        if (depois) atira(depois);
+      }
+      enc.endTurn(monster);
+      return;
+    }
+    const longo = pickReachableTarget(enc, monster, ordered, { rangedOnly: true });
+    if (longo) {
+      atira(longo);
+      enc.endTurn(monster);
+      return;
+    }
+    // Nenhum tiro possível neste turno: segue as regras de todos.
+  }
+
   // 2: fechar a distância e bater.
   //
   // Esta preferência é deliberada. Sem ela, todo monstro com arma à distância
@@ -122,12 +166,14 @@ export function takeMonsterTurn(enc, monster) {
   enc.endTurn(monster);
 }
 
-function pickReachableTarget(enc, monster, targets, { meleeOnly = false } = {}) {
+function pickReachableTarget(enc, monster, targets, { meleeOnly = false, rangedOnly = false, normalOnly = false } = {}) {
   for (const target of targets) {
     for (const atk of monster.attacks ?? []) {
       if (meleeOnly && atk.ranged) continue;
+      if (rangedOnly && !atk.ranged) continue;
       const check = enc.canAttack(monster, target, atk.name);
       if (!check.ok) continue;
+      if (normalOnly && check.longRange) continue;
       // Ataque corpo a corpo precisa estar no alcance de verdade.
       if (!atk.ranged && distanceFt(monster.pos, target.pos) > (atk.reachFt ?? 5)) continue;
       return { target, weaponName: atk.name };
@@ -159,6 +205,37 @@ function planApproach(enc, monster, targets, { meleeOnly = false } = {}) {
   }
   if (!best) return null;
   return { path: Battlefield.pathFrom(reached, best.node), target: best.target };
+}
+
+/**
+ * Um ponto de tiro para o atirador: alcançável neste turno, livre, SEM
+ * encostar em nenhum inimigo, com linha de visão e dentro do alcance NORMAL
+ * do arco de pelo menos um alvo. O alcance longo fica de fora de propósito:
+ * dá desvantagem, e andar até o normal custa só movimento.
+ *
+ * Entre os pontos possíveis vence o do alvo mais bem pontuado e, entre
+ * iguais, o caminho mais curto — o mesmo critério de `planApproach`.
+ */
+function planShot(enc, monster, targets, enemies) {
+  const arco = monster.attacks?.find((a) => a.ranged);
+  if (!arco) return null;
+  const reached = enc.reachableFor(monster);
+  let best = null;
+  for (const node of reached.values()) {
+    if (enc.occupied(node.x, node.y, monster)) continue;
+    const spot = { x: node.x, y: node.y, f: monster.pos.f };
+    if (enemies.some((e) => isAdjacent(spot, e.pos))) continue;
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      if (distanceFt(spot, t.pos) > arco.rangeFt) continue;
+      if (!enc.field.hasLineOfSight(spot, t.pos)) continue;
+      const rank = i * 1000 + node.cost;
+      if (!best || rank < best.rank) best = { rank, node };
+      break;
+    }
+  }
+  if (!best) return null;
+  return { path: Battlefield.pathFrom(reached, best.node) };
 }
 
 function retreat(enc, monster, threats) {

@@ -21,9 +21,19 @@
 
 import metaGoblin from './goblin.json';
 import urlGoblin from './goblin.png';
+import metaGoblinArqueiro from './goblinArqueiro.json';
+import urlGoblinArqueiro from './goblinArqueiro.png';
+import metaGoblinBoss from './goblinBoss.json';
+import urlGoblinBoss from './goblinBoss.png';
+import metaFighter from './fighter.json';
+import urlFighter from './fighter.png';
 
 const IMPORTADAS = {
   goblin: { meta: metaGoblin, url: urlGoblin },
+  goblinArqueiro: { meta: metaGoblinArqueiro, url: urlGoblinArqueiro },
+  goblinBoss: { meta: metaGoblinBoss, url: urlGoblinBoss },
+  // A Dara, guerreira draconata de cota de malha: o primeiro heroi do PixelLab.
+  fighter: { meta: metaFighter, url: urlFighter },
 };
 
 const prontas = new Map();
