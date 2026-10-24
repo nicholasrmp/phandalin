@@ -11,7 +11,42 @@
 // Cada primitiva é uma peça de vocabulário. As "frases" — o que cada arma e
 // cada magia mostram — ficam em `visuals.js`.
 
+import { EFEITOS } from '../art/efeitos.js';
+import '../art/efeitos-variantes.js';
+import { PALETA } from '../art/icons.js';
+
 const EASE_OUT = (k) => 1 - (1 - k) * (1 - k);
+
+// Quadros de efeito (folhas do OpenArt convertidas em grade): um canvas por
+// quadro, feito uma vez. O desenho é 1:1, como as figuras do tabuleiro.
+const quadrosCache = new Map();
+export function quadro(nome, i) {
+  const ef = EFEITOS[nome];
+  if (!ef) return null;
+  const k = `${nome}|${i}`;
+  let cv = quadrosCache.get(k);
+  if (!cv) {
+    const grade = ef.quadros[i];
+    cv = document.createElement('canvas');
+    // Quadro pode ser mais largo que alto (a onda de choque, a névoa).
+    cv.width = grade[0].length;
+    cv.height = grade.length;
+    const c = cv.getContext('2d');
+    for (let y = 0; y < grade.length; y++) {
+      for (let x = 0; x < grade[y].length; x++) {
+        const cor = PALETA[grade[y][x]];
+        if (!cor) continue;
+        c.fillStyle = cor;
+        c.fillRect(x, y, 1, 1);
+      }
+    }
+    quadrosCache.set(k, cv);
+  }
+  return cv;
+}
+
+/** Quantos quadros tem um efeito (0 se ele não existe). */
+export const temEfeito = (nome) => EFEITOS[nome]?.quadros.length ?? 0;
 const EASE_IN_OUT = (k) => (k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2);
 const TAU = Math.PI * 2;
 
@@ -523,9 +558,9 @@ export class Fx {
 
   projectile(from, to, {
     color = '#ffe9b0', style = 'arrow', dur = 0.26, arc = 0.5,
-    trail = false, spin = false, onDone = null,
+    trail = false, spin = false, onDone = null, sprite = null, fps = 14,
   } = {}) {
-    return this.add({ kind: 'projectile', from: { ...from }, to: { ...to }, color, style, dur, arc, trail, spin, onDone });
+    return this.add({ kind: 'projectile', from: { ...from }, to: { ...to }, color, style, dur, arc, trail, spin, onDone, sprite, fps });
   }
 
   beam(from, to, { color = '#bfe6ff', dur = 0.22, width = 3, jagged = true } = {}) {
@@ -533,6 +568,19 @@ export class Fx {
   }
 
   // ---- impactos -----------------------------------------------------------
+
+  /**
+   * Efeito de quadros tocado uma vez sobre um quadrado (a explosão do Raio de
+   * Fogo, o estouro de gelo). `altura` é quanto acima do chão o centro fica.
+   * `sumir` (segundos): segura o último quadro e esmaece, para efeito que
+   * termina cheio (a poça de graxa) não sumir de estalo.
+   */
+  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0 } = {}) {
+    const n = temEfeito(nome);
+    if (!n) return this;
+    const anim = n / fps;
+    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura });
+  }
 
   impact(tile, { color = '#ffd27a', count = 10, spread = 46, dur = 0.42 } = {}) {
     const parts = [];
@@ -747,7 +795,22 @@ export class Fx {
           ctx.save();
           ctx.translate(p.sx, y);
           if (it.spin) ctx.rotate(it.t * 18);
-          if (it.style === 'arrow') {
+          if (it.style === 'sprite' && temEfeito(it.sprite)) {
+            // O projétil desenhado aponta para a direita: gira para o ângulo
+            // NA TELA, inclinando com o arco de subida e descida.
+            const naTela = (ee) => {
+              const q = board.centerF(it.from.x + (it.to.x - it.from.x) * ee, it.from.y + (it.to.y - it.from.y) * ee);
+              return { x: q.sx, y: q.sy - CHEST - Math.sin(ee * Math.PI) * 40 * it.arc };
+            };
+            const p1 = naTela(Math.min(e, 0.98));
+            const p2 = naTela(Math.min(e, 0.98) + 0.02);
+            const angTela = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            const n = temEfeito(it.sprite);
+            const cv = quadro(it.sprite, Math.floor(it.t * (it.fps ?? 14)) % n);
+            ctx.rotate(angTela);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(cv, -Math.round(cv.width * 0.75), -Math.round(cv.height / 2));
+          } else if (it.style === 'arrow') {
             ctx.rotate(ang * 0.5);
             ctx.fillStyle = it.color;
             ctx.fillRect(-9, -1.5, 18, 3);
@@ -784,6 +847,19 @@ export class Fx {
             ctx.moveTo(-10, 0); ctx.lineTo(-3, -4); ctx.lineTo(2, 3); ctx.lineTo(10, -1);
             ctx.stroke();
           }
+          ctx.restore();
+          break;
+        }
+
+        case 'quadros': {
+          const { sx, sy } = at(it.tile);
+          const t = k * it.dur;
+          const cv = quadro(it.nome, Math.min(it.n - 1, Math.floor((t / it.anim) * it.n)));
+          if (!cv) break;
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          if (t > it.anim) ctx.globalAlpha = Math.max(0, 1 - (t - it.anim) / (it.dur - it.anim));
+          ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
           ctx.restore();
           break;
         }

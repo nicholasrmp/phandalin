@@ -22,6 +22,17 @@ export const MONSTERS = {
   ...ABERRACOES,
 };
 
+const FISICOS = ['cortante', 'perfurante', 'concussão'];
+
+// Tipo de criatura pela família, quando o bloco não diz. Regra precisa dele:
+// Sono não pega morto-vivo, cura não funciona em constructo.
+const TIPO_DA_FAMILIA = new Map([
+  ...Object.keys(GOBLINOIDES).map((id) => [id, 'humanoide']),
+  ...Object.keys(HUMANOIDES).map((id) => [id, 'humanoide']),
+  ...Object.keys(FERAS).map((id) => [id, 'fera']),
+  ...Object.keys(MORTOS_VIVOS).map((id) => [id, 'morto-vivo']),
+]);
+
 
 const TRACOS_BASE = {
   nimbleEscape: { name: 'Escapada Ágil', desc: 'Desengajar ou Esconder-se como ação bônus.' },
@@ -50,8 +61,11 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     level: def.level,
     abilities: { ...def.abilities },
     proficiency: proficiencyBonus(def.level),
-    saves: [],
+    // Resistências e perícias com especialização do bloco: o goblin rola
+    // Furtividade +6 (é a rolagem de surpresa da emboscada), não +4.
+    saves: def.saves ?? [],
     skills: def.skills ?? [],
+    expertise: def.expertise ?? [],
     ac: def.ac,
     maxHp,
     hp: maxHp,
@@ -85,5 +99,23 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     andar: def.andar ?? null,
     incorporeo: def.incorporeo ?? false,
     fonte: def.fonte ?? null,
+    tipo: def.tipo ?? TIPO_DA_FAMILIA.get(id) ?? null,
+    // Tipos de dano. As famílias escreveram com dois vocabulários (`resist` e
+    // `damageResistances`); aqui viram um só. Resistência física "só de armas
+    // não mágicas" (espectro, aparição) fica separada: arma mágica e magia
+    // passam por ela.
+    ...tiposDeDano(def),
+    conditionImmunities: [...(def.conditionImmunities ?? []), ...(def.immuneConditions ?? [])],
+  };
+}
+
+function tiposDeDano(def) {
+  const resist = [...(def.resist ?? []), ...(def.damageResistances ?? [])];
+  const naoMagico = def.damageResistancesNote ? resist.filter((t) => FISICOS.includes(t)) : [];
+  return {
+    resist: resist.filter((t) => !naoMagico.includes(t)),
+    resistNaoMagico: naoMagico,
+    immune: [...(def.immune ?? []), ...(def.damageImmunities ?? [])],
+    vulnerable: [...(def.vulnerable ?? []), ...(def.damageVulnerabilities ?? [])],
   };
 }

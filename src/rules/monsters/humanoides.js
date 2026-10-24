@@ -11,17 +11,10 @@
 // `fonte` é documentação de licença, não dado de jogo: `makeMonster` não a
 // copia para o combatente. Ela existe para auditoria do contrato do elenco.
 //
-// TRÊS BLOCOS ESTÃO MARCADOS `verificar`, E NÃO FOI DESCUIDO
-//   Rufião (Thug), Veterano (Veteran) e Drow existem no SRD 5.1, que a Wizards
-//   relançou em CC-BY-4.0 — mas o Monster Manual de 2024, de onde o SRD 5.1
-//   deriva, renomeou essa família de blocos genéricos (Thug virou Tough,
-//   Veteran virou Warrior Veteran) e eu não tenho certeza de que estes três
-//   sobreviveram no 5.2 com este nome. Como o projeto atribui 5.2 no NOTICE, e
-//   como chutar "SRD" é o pior erro possível aqui, eles ficam `verificar` com a
-//   razão escrita em `fonteNota`. Os números são os clássicos; o que falta é a
-//   confirmação de QUAL SRD os cobre. Nenhum deles é obrigatório para a
-//   campanha rodar: rufião e veterano têm substitutos de ND próximo neste
-//   arquivo, e o drow pode virar criatura nossa se a auditoria der negativo.
+// RUFIÃO, VETERANO E DROW
+//   Rufião (Thug), Veterano (Veteran) e Drow estão no SRD 5.1 (os dois
+//   primeiros no apêndice de PdMs, o drow na entrada de elfos), que é o que o
+//   projeto atribui no NOTICE.
 //
 // VARIANTES DE BANDIDO
 //   Três ids com o MESMO bloco do SRD e looks diferentes. `makeMonster` fixa um
@@ -121,13 +114,13 @@ export const HUMANOIDES = {
     skills: ['atletismo', 'enganacao'],
     attacks: [
       { name: 'Cimitarra', bonus: 5, damage: '1d6+3', type: 'cortante', reachFt: 5, art: 'sword' },
-      { name: 'Adaga', bonus: 5, damage: '1d4+3', type: 'perfurante', ranged: true, rangeFt: 20, longRangeFt: 60, art: 'dagger' },
+      { name: 'Adaga', bonus: 5, damage: '1d4+3', type: 'perfurante', reachFt: 5, art: 'dagger' },
+      { name: 'Adaga arremessada', bonus: 5, damage: '1d4+3', type: 'perfurante', ranged: true, rangeFt: 20, longRangeFt: 60, art: 'dagger' },
     ],
-    // Dois golpes, o segundo com desvantagem. O bloco do SRD dá três ataques
-    // (duas cimitarras e uma adaga); o motor só repete o mesmo ataque no mesmo
-    // alvo, e três repetições cheias matam um personagem de 3º nível em um
-    // turno. Dois, com o segundo penalizado, é o que mantém o encontro vivo.
-    multiattack: { count: 2, secondAtDisadvantage: true },
+    // Três golpes, como no SRD: duas cimitarras e uma adaga. É um inimigo de
+    // ND 2 — contra um grupo de 1º ou 2º nível, quem escala o encontro é que
+    // decide se ele entra.
+    multiattack: { count: 3, sequence: ['Cimitarra', 'Cimitarra', 'Adaga'] },
     traits: ['aparar'],
     blurb: 'Dois golpes por turno e, de reação, apara o primeiro ataque que o acertaria: 65 PV é a luta mais longa desta linha da campanha, e vale cercá-lo para gastar a reação dele antes do golpe grande.',
   },
@@ -138,8 +131,7 @@ export const HUMANOIDES = {
     id: 'rufiao',
     name: 'Rufião',
     look: 'rufiao',
-    fonte: 'verificar',
-    fonteNota: 'Thug está no SRD 5.1 (CC-BY-4.0), mas o Monster Manual 2024 o substituiu por Tough e eu não confirmo que o SRD 5.1 traga este bloco com este nome. Confirmar antes de marcar SRD; se der negativo, o rufião vira criatura nossa (os números abaixo já servem de ponto de partida).',
+    fonte: 'SRD',
     size: 'médio',
     level: 2,
     cr: '1/2',
@@ -153,7 +145,8 @@ export const HUMANOIDES = {
       { name: 'Maça', bonus: 4, damage: '1d6+2', type: 'concussão', reachFt: 5, art: 'mace' },
       { name: 'Besta pesada', bonus: 2, damage: '1d10', type: 'perfurante', ranged: true, rangeFt: 100, longRangeFt: 400, art: 'bow' },
     ],
-    multiattack: { count: 2, secondAtDisadvantage: true },
+    // Dois golpes de perto (SRD); a besta é um tiro só.
+    multiattack: { count: 2, sequence: ['Maça', 'Maça'] },
     traits: ['packTactics'],
     blurb: 'Nunca luta sozinho: com um aliado colado no alvo ataca com vantagem duas vezes por turno, e 32 PV o mantêm de pé tempo suficiente para isso. Quebre a dupla e ele perde metade da ameaça.',
   },
@@ -173,10 +166,12 @@ export const HUMANOIDES = {
     maxHp: 16,
     speedFt: 30,
     skills: ['natureza', 'percepcao', 'furtividade', 'sobrevivencia'],
+    expertise: ['natureza', 'percepcao', 'furtividade', 'sobrevivencia'],
     attacks: [
       { name: 'Arco longo', bonus: 4, damage: '1d8+2', type: 'perfurante', ranged: true, rangeFt: 150, longRangeFt: 600, art: 'bow' },
       { name: 'Espada curta', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'sword' },
     ],
+    multiattack: { count: 2 },
     traits: ['audicaoEVisaoApuradas'],
     blurb: 'Abre o combate de 45 m com dois tiros de 1d8+2 e some: percepção alta significa que ele vê o grupo primeiro, e quem não fecha a distância luta a rodada toda sob flecha.',
   },
@@ -185,8 +180,7 @@ export const HUMANOIDES = {
     id: 'veterano',
     name: 'Veterano',
     look: 'veterano',
-    fonte: 'verificar',
-    fonteNota: 'Veteran está no SRD 5.1 (CC-BY-4.0), mas o Monster Manual 2024 renomeou a família para Warrior Veteran e eu não confirmo que o SRD 5.1 traga este bloco com este nome. Confirmar antes de marcar SRD. Este é o bloco que o contrato do elenco pede para Daran Edermath, então a resposta importa.',
+    fonte: 'SRD',
     size: 'médio',
     level: 4,
     cr: '3',
@@ -201,7 +195,8 @@ export const HUMANOIDES = {
       { name: 'Espada longa', bonus: 5, damage: '1d8+3', type: 'cortante', reachFt: 5, art: 'sword' },
       { name: 'Besta pesada', bonus: 3, damage: '1d10+1', type: 'perfurante', ranged: true, rangeFt: 100, longRangeFt: 400, art: 'bow' },
     ],
-    multiattack: { count: 2, secondAtDisadvantage: true },
+    // Dois golpes de perto (SRD); a besta é um tiro só.
+    multiattack: { count: 2, sequence: ['Espada longa', 'Espada longa'] },
     blurb: 'CA 17 e 58 PV sem traço nenhum: é o muro do elenco humano, dá dois golpes por turno e obriga o grupo a gastar magia em vez de esperar a sorte dos dados.',
   },
 
@@ -235,7 +230,7 @@ export const HUMANOIDES = {
       // Só as magias que `rules/spells.js` tem. O bloco do SRD traz mais;
       // inventar id de magia aqui quebra `getSpell`, que lança erro.
       prepared: ['misselMagico', 'maosFlamejantes', 'sono'],
-      slots: [0, 4, 3],
+      slots: [0, 4, 3, 3, 3, 1],
     },
     traits: ['conjuracao'],
     blurb: 'Abre com Sono para tirar dois personagens da luta sem rolar ataque, depois Mãos Flamejantes em quem se amontoar; 40 PV e CA 12 significam que o grupo tem uma rodada para alcançá-lo.',
@@ -263,7 +258,7 @@ export const HUMANOIDES = {
       ability: 'wis',
       cantrips: ['chamaSagrada'],
       prepared: ['curarFerimentos'],
-      slots: [0, 2],
+      slots: [0, 3],
     },
     traits: ['conjuracao'],
     blurb: 'Cura 1d8+2 num aliado em vez de atacar: enquanto estiver de pé, o inimigo ao lado dele volta de 1 PV duas vezes. Nove PV — derrube-o primeiro.',
@@ -291,7 +286,7 @@ export const HUMANOIDES = {
       ability: 'wis',
       cantrips: ['chamaSagrada'],
       prepared: ['bencao', 'curarFerimentos', 'palavraCurativa'],
-      slots: [0, 4, 2],
+      slots: [0, 4, 3, 2],
     },
     traits: ['conjuracao', 'eminenciaDivina'],
     blurb: 'Gasta o primeiro turno em Bênção e transforma o bando todo: +1d4 em cada ataque e cada resistência dos aliados dele enquanto mantiver concentração. Dano nele quebra a concentração — é o alvo mais rentável do encontro.',
@@ -318,7 +313,8 @@ export const HUMANOIDES = {
       { name: 'Espada curta', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'sword' },
       { name: 'Besta de mão', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'bow' },
     ],
-    multiattack: { count: 2, secondAtDisadvantage: true },
+    // Dois golpes de perto (SRD); a besta é um tiro só.
+    multiattack: { count: 2, sequence: ['Espada curta', 'Espada curta'] },
     // `features` + `sneakAttack` é o formato que `combat.js` já lê para o
     // ladino do grupo. Hoje `makeMonster` não copia os dois, então o furtivo do
     // espião está desligado no motor — pedido no relatório.
@@ -414,9 +410,10 @@ export const HUMANOIDES = {
       { name: 'Espada grande', bonus: 5, damage: '2d6+3', type: 'cortante', reachFt: 5, art: 'sword' },
       { name: 'Besta pesada', bonus: 2, damage: '1d10', type: 'perfurante', ranged: true, rangeFt: 100, longRangeFt: 400, art: 'bow' },
     ],
-    multiattack: { count: 2, secondAtDisadvantage: true },
-    traits: ['bravura', 'lideranca'],
-    blurb: 'CA 18 e 2d6+3 duas vezes por turno, imune a medo: é o único humano do elenco que ganha a troca de golpes contra a guerreira, e o aliado ao lado dele rola melhor por causa da Liderança.',
+    // Dois golpes de perto (SRD); a besta é um tiro só.
+    multiattack: { count: 2, sequence: ['Espada grande', 'Espada grande'] },
+    traits: ['bravura', 'lideranca', 'aparar'],
+    blurb: 'CA 18 e 2d6+3 duas vezes por turno, firme contra o medo: é o único humano do elenco que ganha a troca de golpes contra a guerreira, e o aliado ao lado dele rola melhor por causa da Liderança.',
   },
 
   // --- drow e ogro ----------------------------------------------------------
@@ -425,8 +422,7 @@ export const HUMANOIDES = {
     id: 'drow',
     name: 'Drow',
     look: 'drow',
-    fonte: 'verificar',
-    fonteNota: 'Drow está no SRD 5.1 (CC-BY-4.0) como bloco genérico, mas eu não confirmo que o SRD 5.1 traga um bloco chamado Drow — o Monster Manual 2024 reorganizou os elfos escuros. Confirmar antes de marcar SRD. A magia innata (luzes dançantes, escuridão, fogo das fadas) foi omitida de propósito: nenhuma dessas magias existe em rules/spells.js, então o bloco não reivindica nada que o motor não resolva.',
+    fonte: 'SRD',
     size: 'médio',
     level: 1,
     cr: '1/4',

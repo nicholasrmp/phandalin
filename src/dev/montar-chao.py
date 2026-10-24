@@ -32,6 +32,15 @@ SAIDA = AQUI / 'src' / 'art' / 'folhas'
 FILEIRAS = [
     ('grama', '14578cc6-1049-42ef-81db-d6939425af88'),
     ('estrada', '5f9237e2-b95e-4436-84c5-b20bcdb115e6'),
+    # O esconderijo: duas levas de varias superficies cada, com os indices de
+    # cada uma. Na de caverna, 13 (poca d'agua) fica de fora: le como agua.
+    # Na de rocha, 12 (pontos brancos) leria como cristal.
+    ('caverna', '7936c366-c42a-481e-8c1e-8c5189fef90a', [0, 1, 2, 3, 4, 5, 10, 11, 12, 14, 15]),
+    ('riacho', '7936c366-c42a-481e-8c1e-8c5189fef90a', [6, 7]),
+    ('poco', '7936c366-c42a-481e-8c1e-8c5189fef90a', [8, 9]),
+    ('rocha', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [0, 1, 2, 3, 8, 9, 13]),
+    ('entulho', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [4, 5, 10, 14]),
+    ('ponte', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [6, 7, 11, 15]),
 ]
 
 
@@ -91,6 +100,28 @@ def limpar_aresta(t):
     return out
 
 
+def tapar_furos(t):
+    """
+    Pinta os furos do losango com a cor mais escura do proprio ladrilho.
+
+    As tabuas da ponte vem com o vao entre uma e outra transparente: no
+    tabuleiro o vao mostraria o fundo do canvas. A cor mais escura da peca e a
+    sombra entre as tabuas -- nao inventa cor.
+    """
+    from losango import no_losango
+    out = t.copy()
+    px = out.load()
+    acesos = [px[x, y] for y in range(TH) for x in range(TW) if no_losango(x, y) and px[x, y][3]]
+    if not acesos:
+        return out
+    escura = min(acesos, key=_lum)
+    for y in range(TH):
+        for x in range(TW):
+            if no_losango(x, y) and px[x, y][3] == 0:
+                px[x, y] = escura[:3] + (255,)
+    return out
+
+
 # O QUE DECIDE SE UMA VARIACAO ENTRA.
 #
 # Sorteadas por casa, variacoes que diferem no TOM DE BASE viram um xadrez: cada
@@ -109,21 +140,35 @@ def main():
     atlas = Image.new('RGBA', (16 * TW, len(FILEIRAS) * TH), (0, 0, 0, 0))
     meta = {'tw': TW, 'th': TH, 'fileiras': {}}
     previa = []
-    for linha, (nome, leva) in enumerate(FILEIRAS):
+    for linha, (nome, leva, *quais) in enumerate(FILEIRAS):
         arqs = sorted((LEVAS / leva).glob('tile_*.png'),
                       key=lambda p: int(p.stem.split('_')[1]))
         assert len(arqs) == 16, f'{nome}: esperava 16 ladrilhos, achei {len(arqs)}'
+        # Leva de varias superficies (chao, riacho e poco juntos): a fileira
+        # pega so os ladrilhos dela.
+        if quais:
+            arqs = [arqs[i] for i in quais[0]]
         candidatos = []
         for a in arqs:
             im = Image.open(a).convert('RGBA')
             base = im.getbbox()[3]
-            candidatos.append(recortar_topo(im, 0, base - TH))
+            t = recortar_topo(im, 0, base - TH)
+            if quais:
+                t = tapar_furos(t)
+            candidatos.append(t)
         medidas = [tom_e_aresta(t) for t in candidatos]
         mediana = sorted(m for m, _ in medidas)[len(medidas) // 2]
         topos = []
         fora = []
+        # Fileira escolhida a dedo (as do esconderijo): a escolha ja foi feita
+        # olhando, e o filtro fica mais largo. A pedra da caverna escurece a
+        # aresta mais que a grama (ate -19; a ponte, -26), e a limpeza tira a fileira de
+        # fora de qualquer jeito; com dois ladrilhos so, nao ha mediana.
+        desvio, aresta_min = (9.0, -30.0) if quais else (DESVIO_MAX, ARESTA_MIN)
+        if quais and len(candidatos) <= 2:
+            desvio = 99.0
         for i, (t, (m, a)) in enumerate(zip(candidatos, medidas)):
-            if abs(m - mediana) <= DESVIO_MAX and a >= ARESTA_MIN:
+            if abs(m - mediana) <= desvio and a >= aresta_min:
                 t = limpar_aresta(t)
                 atlas.alpha_composite(t, (len(topos) * TW, linha * TH))
                 topos.append(t)
@@ -150,7 +195,7 @@ def main():
 
     Z = 2
     w = sum(r.width * Z + 10 for _, r in previa) + 10
-    out = Image.new('RGB', (w, previa[0][1].height * Z + 24), (27, 22, 16))
+    out = Image.new('RGB', (w, max(r.height for _, r in previa) * Z + 24), (27, 22, 16))
     d = ImageDraw.Draw(out)
     x = 10
     for nome, r in previa:

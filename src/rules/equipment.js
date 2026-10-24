@@ -30,6 +30,20 @@ export function armorClass(actor) {
   // guerreira e ela ficaria com CA 11 em vez de 10, errado em todo ataque
   // contra ela. `acBonus` continua sendo o bônus que vale sempre (anel, magia).
   const comArmadura = (actor.armor ?? 'nenhuma') !== 'nenhuma';
+  // Defesa sem Armadura: o bárbaro soma CON (e aceita escudo), o monge soma
+  // SAB (e perde com escudo), a linhagem dracônica tem base 13. Só vale sem
+  // armadura, e a regra manda ficar com a maior das duas contas.
+  if (!comArmadura && actor.defesaSemArmadura) {
+    const tipo = actor.defesaSemArmadura;
+    const mod = (k) => Math.floor((actor.abilities[k] - 10) / 2);
+    let semArmadura = null;
+    if (tipo === 'con') semArmadura = 10 + dex + mod('con') + (actor.shield ? SHIELD_AC : 0);
+    if (tipo === 'wis' && !actor.shield) semArmadura = 10 + dex + mod('wis');
+    if (tipo === 'draconica') semArmadura = 13 + dex + (actor.shield ? SHIELD_AC : 0);
+    if (semArmadura != null) ac = Math.max(ac, semArmadura);
+  }
+  // Armadura Arcana: CA base 13 + DES enquanto estiver sem armadura.
+  if (!comArmadura && actor.armaduraArcana) ac = Math.max(ac, 13 + dex + (actor.shield ? SHIELD_AC : 0));
   ac += actor.acBonus ?? 0;
   if (comArmadura) ac += actor.acBonusArmadura ?? 0;
   // A armadura mágica (a Dragonguard é um peitoral +1): o bônus é dela, então
@@ -174,14 +188,14 @@ const categoriaDaArmadura = (armorId) => ARMORS[armorId]?.categoria ?? 'nenhuma'
 // é o inventário: a ficha AVISA sem impedir, e é justamente vestir cota de
 // malha no mago que demonstra a CA e o boneco mudando na mesma troca.
 const TREINO_POR_CLASSE = {
-  Guerreira: ['leve', 'média', 'pesada'], Guerreiro: ['leve', 'média', 'pesada'],
-  Clérigo: ['leve', 'média'], Clériga: ['leve', 'média'],
+  Guerreira: ['leve', 'média', 'pesada', 'escudo'], Guerreiro: ['leve', 'média', 'pesada', 'escudo'],
+  Clérigo: ['leve', 'média', 'escudo'], Clériga: ['leve', 'média', 'escudo'],
   Ladino: ['leve'], Ladina: ['leve'],
   Mago: [], Maga: [],
 };
 
 export function treinoEmArmadura(actor) {
-  return actor.armorTraining ?? TREINO_POR_CLASSE[actor.className] ?? ['leve', 'média', 'pesada'];
+  return actor.armorTraining ?? TREINO_POR_CLASSE[actor.className] ?? ['leve', 'média', 'pesada', 'escudo'];
 }
 
 /** Aviso, não proibição: diz o preço de vestir uma armadura sem treino. */
@@ -193,7 +207,9 @@ export function treinoEmArmadura(actor) {
  * promessa nunca era testada; o inventário novo a testa.
  */
 export function marcarTreinoDeArmadura(actor) {
-  actor.armorUntrained = Boolean(avisoDeArmadura(actor, actor.armor ?? 'nenhuma'));
+  // Escudo sem treino cobra o mesmo preço da armadura sem treino.
+  actor.armorUntrained = Boolean(avisoDeArmadura(actor, actor.armor ?? 'nenhuma'))
+    || (!!actor.shield && !treinoEmArmadura(actor).includes('escudo'));
   return actor.armorUntrained;
 }
 

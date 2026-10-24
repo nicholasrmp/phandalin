@@ -1,4 +1,5 @@
 import './style.css';
+import './view/layout.css';
 
 import { makeRng, seedFromString } from './core/rng.js';
 import { Battlefield, key, distanceFt } from './core/grid.js';
@@ -10,9 +11,20 @@ import { hasCondition } from './rules/conditions.js';
 import { getSpell } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
+import { montarHeroi } from './game/criacao.js';
+import { criarCapitulo1 } from './game/capitulo1.js';
+import { criarCenaCaverna } from './game/cena-caverna.js';
+import { criarCapitulo2 } from './game/capitulo2.js';
+import { narrar, narrativaAberta } from './view/narrativa.js';
+import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
+import { opcoesDaCasa } from './game/interacoes.js';
+import { conversar as conversarComArvore } from './game/dialogo.js';
+import { temEscuridao, visaoDoGrupo } from './rules/luz.js';
+import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
-import { criarFicha } from './view/ficha.js';
+import { criarFicha, aplicarAparencia } from './view/ficha.js';
+import { criarMenu } from './view/menu.js';
 import { audio } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
@@ -86,8 +98,6 @@ class App {
     this.canvas.className = 'board';
     this.hud.boardWrap.append(this.canvas);
 
-    this.newEncounter();
-
     let last = performance.now();
     const loop = (now) => {
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -103,7 +113,9 @@ class App {
     addEventListener('keydown', unlock, { once: true, capture: true });
 
     addEventListener('keydown', (e) => {
+      if (!this.enc || this.menu?.estaAberto()) return;
       if (e.key === 'Escape') { this.mode = null; this.refresh(); }
+      if (e.key === 'Enter' && this.mode?.alvos?.length) { e.preventDefault(); this.conjurarEscolhidos(); }
       if (e.key === ' ' && this.enc?.side === 'party') { e.preventDefault(); this.endTurn(); }
       if (e.key === 'Tab') { e.preventDefault(); this.cycleSelection(); }
       const k = e.key.toLowerCase();
@@ -118,39 +130,103 @@ class App {
         this.ficha.abrir(this.selected, k === 'i' ? 'inventario' : 'ficha');
       }
     });
+
+    // O MENU vem antes do tabuleiro. Ele é criado depois dos ouvintes de
+    // teclado de cima de propósito: enquanto aberto, ele segura as teclas na
+    // fase de captura, e o desbloqueio de som (também de captura) precisa
+    // continuar recebendo o primeiro gesto.
+    this.menu = criarMenu(root, {
+      onIniciar: (config) => this.newEncounter(config),
+      temPartida: () => Boolean(this.enc),
+    });
+    // O botão de voltar ao menu mora à esquerda do aviso de turno. O HUD
+    // guarda a referência do aviso, então embrulhá-lo não o desliga.
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'btn btn-menu';
+    menuBtn.textContent = 'Menu';
+    menuBtn.addEventListener('click', () => { audio.play('click'); this.menu.abrir(); });
+    const esquerda = document.createElement('div');
+    esquerda.className = 'hud-topo-esq';
+    this.hud.banner.replaceWith(esquerda);
+    esquerda.append(menuBtn, this.hud.banner);
+    this.montarLayoutLivre(esquerda);
+
+    // `?encontro=` pula o menu e abre direto na arena: é o atalho de quem
+    // testa (e dos agentes revisores, que abrem a página pela URL).
+    const busca = new URLSearchParams(location.search);
+    const direto = busca.get('encontro');
+    if (direto) this.newEncounter({ modo: 'arena', variante: direto, nivel: Number(busca.get('nivel')) || 2 });
+    else this.menu.abrir();
   }
 
-  newEncounter() {
+  /**
+   * Monta uma partida. `config` vem do menu: `{ modo, variante, nivel, ids,
+   * aventura }`. Sem ele, repete a última — é o "Novo encontro" do fim.
+   */
+  newEncounter(config = this.config) {
+    this.config = config;
     // A ficha guarda o personagem numa closure: aberta, continuaria mostrando
     // um combatente que não existe mais.
     this.ficha?.fechar();
     const seed = seedFromString(`encontro:${Date.now()}`);
     const rng = makeRng(seed);
-    // `?encontro=` escolhe o encontro inteiro: mapa, posições e inimigos andam
-    // juntos. Sem ele abre a `emboscada`, a estrada na mata — é o cenário de
-    // teste. `padrao` é o encontro antigo, o que foi balanceado e que o
-    // simulador (`src/dev/balance.js`) continua medindo; `grandes` é uma
-    // vitrine de tamanho.
-    const variante = new URLSearchParams(location.search).get('encontro') ?? 'emboscada';
+    // A variante escolhe o encontro inteiro: mapa, posições e inimigos andam
+    // juntos. `emboscada` é a estrada na mata, onde a campanha começa; `padrao`
+    // é o encontro antigo, o que foi balanceado e que o simulador
+    // (`src/dev/balance.js`) continua medindo; `grandes` é uma vitrine de
+    // tamanho.
+    // O capítulo 2 da campanha é o esconderijo dos goblins.
+    const variante = config.capitulo === 2 ? 'esconderijo' : (config.variante ?? 'emboscada');
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
       mapa.terreno, mapa.altura, mapa.objetos);
+    // Mapa com escuridão: breu por padrão, mais as fontes de luz dele (`rules/luz.js`).
+    // `luz` é 'escuro' (breu inteiro) ou uma grade de dígitos 0-2 por casa.
+    if (mapa.luz) {
+      field.luz = new Uint8Array(field.w * field.h);
+      if (Array.isArray(mapa.luz)) {
+        mapa.luz.forEach((linha, y) => { for (let x = 0; x < field.w; x++) field.luz[y * field.w + x] = Number(linha[x] ?? 0); });
+      }
+      field.luzes = (mapa.luzes ?? []).map((f) => ({ ...f }));
+    }
 
-    const party = makeParty();
+    // Campanha: os quatro heróis escolhidos, montados com o que o jogador
+    // marcou na preparação (ou com a escolha automática). Arena: o grupo
+    // pronto de `party.js`, no 2º nível.
+    // Capítulo seguinte: os MESMOS heróis, com as feridas, os espaços gastos e
+    // o que acharam pelo caminho (`continuarCom`). Quem morreu fica para trás.
+    const party = config.continuarCom
+      ? config.continuarCom.filter((c) => !c.dead)
+      : config.herois
+        ? config.herois.map(({ id, escolha }) => montarHeroi(id, escolha))
+        : makeParty({ nivel: config.nivel ?? 2, ids: config.ids ?? null });
+    if (config.continuarCom) {
+      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente'); }
+    }
     party.forEach((c, i) => {
       c.pos = { ...mapa.grupo[i] };
       c.facingVec = { ...mapa.olhar };
+      aplicarAparencia(c);      // a figura entra com a arma e a armadura que tem
     });
     const foes = buildFoes(variante);
+    // Campanha: os inimigos ficam fora do tabuleiro até a cena os chamar
+    // (`game/capitulo1.js`) — o grupo explora a estrada antes da luta.
+    // A arena da caverna também é uma cena: exploração no escuro antes da luta.
+    const cena = mapa.cena === 'esconderijo' ? criarCapitulo2
+      : config.modo === 'campanha' ? criarCapitulo1
+        : mapa.cena === 'caverna' ? criarCenaCaverna : null;
+    const capitulo = Boolean(cena);
+    this.inimigosEscondidos = capitulo ? foes : null;
 
     this.enc = new Encounter({
       battlefield: field,
       party,
-      foes,
+      foes: capitulo ? [] : foes,
       rng,
-      reinforcements: (round) => reinforcementsFor(round, variante),
-      emboscada: mapa.emboscada ?? null,
-      onLog: (entry) => this.hud.pushLog(entry),
+      // Na campanha, a emboscada é a da aventura: quatro goblins, sem reforço.
+      reinforcements: config.modo === 'campanha' ? () => null : (round) => reinforcementsFor(round, variante),
+      emboscada: capitulo ? null : (mapa.emboscada ?? null),
+      onLog: (entry) => { this.hud.pushLog(entry); this.contarNovidade?.(); },
       onEvent: (ev) => this.onEvent(ev),
     });
 
@@ -164,6 +240,18 @@ class App {
       onTileHover: (t) => { this.onTileHover(t); this.board?.render(0); },
     });
     this.board.onCameraChange = () => this.refresh();
+    // Botão direito sem arrastar: o menu de ações da casa.
+    this.board.onTileContext = (tile, e) => this.abrirContexto(tile, e);
+    fecharMenuContexto();
+
+    this.capitulo = null;
+    this.root.classList.remove('explorando');
+    if (capitulo) {
+      this.capitulo = cena(this, config);
+      this.refresh();
+      this.capitulo.iniciar();
+      return;
+    }
 
     this.enc.start();
     if (this.enc.side === 'party') this.select(this.firstActive());
@@ -190,6 +278,8 @@ class App {
   }
 
   onEvent(ev) {
+    // A cena do capítulo também escuta o combate (mortes, troca de lado).
+    this.capitulo?.evento?.(ev);
     const board = this.board;
     switch (ev.type) {
       case 'moved': {
@@ -229,9 +319,22 @@ class App {
         const { caster, spell, target, point } = ev;
         const dest = target?.pos ?? point ?? caster.pos;
         caster.facingVec = { dx: dest.x - caster.pos.x, dy: dest.y - caster.pos.y };
-        caster.anim = { name: 'attack', frame: 1 };
-        setTimeout(() => { caster.anim = null; }, 340);
+        // o gesto de magia, para quem tem um desenhado; os outros, o golpe.
+        // Os dois quadros: CARREGA e depois SOLTA.
+        caster.anim = { name: 'conjurar', frame: 0 };
+        setTimeout(() => { if (caster.anim?.name === 'conjurar') caster.anim.frame = 1; }, 150);
+        setTimeout(() => { caster.anim = null; }, 420);
         this.setImpactDelay(playSpellVisual(board, ev));
+        break;
+      }
+
+      // Golpe preparado (Trovejante, Abrasador, Colérico, Marcante, Cegante,
+      // Saraivada): o efeito toca no ACERTO, junto do golpe da arma.
+      case 'golpeMagico': {
+        const nome = ev.efeito === 'espinhos' ? 'vinhas'
+          : { fogo: 'golpe-fogo', 'psíquico': 'golpe-psiquico', trovejante: 'golpe-trovao' }[ev.tipo] ?? 'golpe-divino';
+        const espinhos = ev.efeito === 'espinhos';
+        this.atImpact(() => board?.fx.quadros(ev.alvo.pos, nome, espinhos ? { fps: 12, altura: 18 } : { fps: 8, sumir: 0.25 }));
         break;
       }
 
@@ -333,6 +436,8 @@ class App {
         this.mode = null;
         const outcome = ev.outcome;
         setTimeout(() => audio.play(outcome === 'vitoria' ? 'victory' : 'defeat'), 500);
+        // Na campanha, o fim da luta é a próxima cena, não o fim do jogo.
+        if (this.capitulo) setTimeout(() => this.capitulo?.fimDoCombate(outcome), 1400);
         break;
       }
 
@@ -392,8 +497,14 @@ class App {
     if (action.kind === 'dash') { this.enc.dash(c); this.afterAct(); return; }
     if (action.kind === 'dodge') { this.enc.dodge(c); this.afterAct(); return; }
     if (action.kind === 'disengage') { this.enc.disengage(c); this.afterAct(); return; }
+    if (action.kind === 'standUp' || action.kind === 'escape') {
+      const r = action.kind === 'standUp' ? this.enc.standUp(c) : this.enc.escapar(c);
+      if (!r.ok) { this.refuse(c, r.why); return; }
+      this.afterAct();
+      return;
+    }
     if (action.kind === 'feature') {
-      this.enc.useFeature(c, action.featureId);
+      this.enc.useFeature(c, action.featureId, { modo: action.modo });
       this.afterAct();
       return;
     }
@@ -409,16 +520,41 @@ class App {
       this.afterAct();
       return;
     }
+    // Clicar num círculo da fileira de espaços, com uma magia na mira,
+    // escolhe em que círculo ela sai.
+    if (action.kind === 'circulo') {
+      if (this.mode?.kind !== 'spell') return;
+      const spell = getSpell(this.mode.spellId);
+      if (this.enc.circuloDeConjuracao(c, spell, action.lvl) === null) {
+        this.refuse(c, `não dá para conjurar ${spell.name} no ${action.lvl}º círculo`);
+        return;
+      }
+      this.mode = { ...this.mode, circulo: action.lvl };
+      // Mais alvos no círculo maior; menos no menor corta a lista.
+      this.mode.alvos = this.mode.alvos.slice(0, this.enc.alvosDaMagia(spell, action.lvl, c));
+      this.refresh();
+      return;
+    }
     // Ataques e magias entram em modo de alvo.
     if (action.kind === 'spell') {
       const spell = getSpell(action.spellId);
-      // Magias sem alvo individual resolvem na hora ou pedem um ponto.
-      // `debuff` entra aqui junto com `buff`: as duas escolhem os próprios
-      // alvos por alcance, e pedir uma mira seria pedir um clique que não
-      // muda nada.
-      if (spell.kind === 'buff' || spell.kind === 'debuff') {
-        this.enc.castSpell(c, action.spellId);
-        this.afterAct();
+      // Magia só em si mesmo (Vida Falsa, Borrão, Espíritos Guardiões)
+      // resolve na hora.
+      const ativa = c.magiasAtivas?.[spell.id];
+      if (spell.kind === 'tempHp' || spell.kind === 'aura' || spell.kind === 'disparada' || spell.kind === 'reacao'
+        || (spell.kind === 'buff' && spell.rangeFt === 0)
+        || (['lamina', 'curaReuso'].includes(spell.kind) && !ativa)) {
+        this.tryCast(c, action.spellId);
+        return;
+      }
+      // Clicar de novo na magia com alvos já escolhidos CONJURA.
+      if (this.mode?.kind === 'spell' && this.mode.spellId === action.spellId && this.mode.alvos?.length) {
+        this.conjurarEscolhidos();
+        return;
+      }
+      if (!(this.mode?.kind === 'spell' && this.mode.spellId === action.spellId)) {
+        this.mode = { ...action, circulo: this.enc.circuloDeConjuracao(c, spell), alvos: [] };
+        this.refresh();
         return;
       }
     }
@@ -428,6 +564,49 @@ class App {
       ? null
       : action;
     this.refresh();
+  }
+
+  /** A magia de vários alvos (Bênção, Míssil Mágico) escolhe um por clique. */
+  escolheVarios(spell) {
+    return ['buff', 'debuff', 'auto', 'raios', 'healGrupo'].includes(spell.kind) || (spell.kind === 'save' && !!spell.alvos);
+  }
+
+  /**
+   * Um clique num alvo de magia de vários alvos: marca (ou desmarca) e,
+   * completa a conta, conjura. No Míssil Mágico o mesmo alvo pode levar mais
+   * de um dardo; nas outras, clicar de novo desmarca.
+   */
+  marcarAlvo(c, spell, alvo) {
+    const why = this.enc.porqueNaoAlvo(c, spell, alvo);
+    if (why) { this.refuse(c, why); return; }
+    const max = this.enc.alvosDaMagia(spell, this.mode.circulo, c);
+    const alvos = this.mode.alvos;
+    const i = alvos.indexOf(alvo);
+    // Dardo e raio podem repetir o alvo; aliado e inimigo das outras, não.
+    if (!['auto', 'raios'].includes(spell.kind) && i >= 0) alvos.splice(i, 1);
+    else if (alvos.length < max) {
+      // Lentidão (cubo de 12 m) e Respingo Ácido (a 1,5 m do primeiro):
+      // recusa na hora, com o motivo, em vez de o alvo sumir ao conjurar.
+      if (spell.cuboFt && this.enc.dentroDoCubo(spell, [...alvos, alvo]).length <= alvos.length) {
+        this.refuse(c, `fora do cubo de ${(spell.cuboFt / 5) * 1.5} m dos já marcados`);
+        this.refresh();
+        return;
+      }
+      if (spell.juntosFt && alvos.length && distanceFt(alvo.pos, alvos[0].pos) > spell.juntosFt) {
+        this.refuse(c, `o segundo alvo tem de estar a até ${(spell.juntosFt / 5) * 1.5} m do primeiro`);
+        this.refresh();
+        return;
+      }
+      alvos.push(alvo);
+    }
+    if (alvos.length >= max) { this.conjurarEscolhidos(); return; }
+    this.refresh();
+  }
+
+  conjurarEscolhidos() {
+    const c = this.selected;
+    if (!c || this.mode?.kind !== 'spell' || !this.mode.alvos?.length) return;
+    this.tryCast(c, this.mode.spellId, { target: this.mode.alvos[0], targets: [...this.mode.alvos] });
   }
 
   /**
@@ -482,7 +661,7 @@ class App {
     const prof = enc.weaponAttackProfile(c, weaponId);
     // Arma à distância não resolve andando: o problema é visão ou alcance.
     if (prof.ranged) { this.refuse(c, check.why); return; }
-    if (c.actionUsed) { this.refuse(c, 'a ação deste turno já foi usada'); return; }
+    if (!enc.podeAtacar(c)) { this.refuse(c, 'a ação deste turno já foi usada'); return; }
     if (c.movementLeftFt <= 0) { this.refuse(c, `sem movimento para chegar até ${target.name}`); return; }
 
     const reached = enc.reachableFor(c);
@@ -517,26 +696,40 @@ class App {
   }
 
   /** Conjuração com um clique, recusando sem gastar quando não dá. */
-  tryCast(c, spellId, { target = null, point = null } = {}) {
-    const r = this.enc.castSpell(c, spellId, { target, point });
+  tryCast(c, spellId, { target = null, point = null, targets = null } = {}) {
+    const circulo = this.mode?.kind === 'spell' && this.mode.spellId === spellId ? this.mode.circulo : null;
+    const r = this.enc.castSpell(c, spellId, { target, point, targets, circulo });
     this.mode = null;
     if (!r.ok) { this.refuse(c, r.why); return; }
     this.afterAct();
   }
 
   onTileClick(tile) {
-    if (this.ficha?.estaAberta()) return;
+    if (this.ficha?.estaAberta() || narrativaAberta()) return;
     if (this.enc.over || this.enc.side !== 'party' || this.busy) return;
     const occupant = this.enc.at(tile.x, tile.y);
     const c = this.selected;
 
     // Modo de alvo
     if (this.mode && c) {
+      const magia = this.mode.kind === 'spell' ? getSpell(this.mode.spellId) : null;
+      // Revivificar mira o CORPO, que `at` não devolve (morto não ocupa casa).
+      if (magia?.kind === 'reviver') {
+        const corpo = this.enc.combatants.find((x) => x.dead && x.side === c.side && x.pos.x === tile.x && x.pos.y === tile.y);
+        if (corpo) this.tryCast(c, this.mode.spellId, { target: corpo });
+        else this.refuse(c, 'clique no corpo de um aliado');
+        this.refresh();
+        return;
+      }
+      // Passo Nebuloso mira a casa de chegada.
+      if (magia?.mira === 'casa') { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
+      // No escuro, quem o grupo não vê não é alvo: mirar nele seria saber que está lá.
+      if (occupant && this.board?.figuraVisivel(occupant) === false && !magia?.shape) {
+        this.refuse(c, 'no escuro, não se vê ninguém ali');
+        return;
+      }
       if (!occupant) {
-        const spell = this.mode.kind === 'spell' ? getSpell(this.mode.spellId) : null;
-        if (spell && (spell.shape === 'cone' || spell.shape === 'sphere')) {
-          this.tryCast(c, this.mode.spellId, { point: tile });
-        }
+        if (magia?.shape) this.tryCast(c, this.mode.spellId, { point: tile });
         return;
       }
       if (this.mode.kind === 'attack') {
@@ -545,6 +738,11 @@ class App {
         return;
       }
       if (this.mode.kind === 'spell') {
+        const spell = getSpell(this.mode.spellId);
+        // Magia de área mira a CASA clicada, como a prévia — não a âncora da
+        // criatura Grande que estiver nela.
+        if (spell.shape) { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
+        if (this.escolheVarios(spell)) { this.marcarAlvo(c, spell, occupant); return; }
         this.tryCast(c, this.mode.spellId, { target: occupant, point: occupant.pos });
         return;
       }
@@ -570,6 +768,8 @@ class App {
     const node = reached.get(key(tile.x, tile.y));
     if (!node || node.cost === 0) return;
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
+    // Explorando: depois do passo, a cena vê se a armadilha dispara.
+    if (this.capitulo?.explorando) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
     this.refresh();
   }
 
@@ -629,9 +829,27 @@ class App {
       this.hud.setHint(bits.join(' · '));
     } else if (this.mode.kind === 'spell') {
       const s = getSpell(this.mode.spellId);
-      const d = distanceFt(c.pos, target.pos);
-      this.hud.setHint(`${s.name} · ${d} pés${d > s.rangeFt && s.rangeFt > 0 ? ' (fora de alcance)' : ''}`);
+      const why = this.enc.porqueNaoAlvo(c, s, target);
+      this.hud.setHint(why && !s.shape ? `✖ ${why}` : this.dicaDaMagia(c, s));
     }
+  }
+
+  /** A linha de dica da magia na mira: círculo, alvos escolhidos e como conjurar. */
+  dicaDaMagia(c, s) {
+    const circ = s.level > 0 && this.mode.circulo > s.level ? ` · no ${this.mode.circulo}º círculo` : '';
+    if (this.escolheVarios(s)) {
+      const max = this.enc.alvosDaMagia(s, this.mode.circulo, c);
+      const n = this.mode.alvos.length;
+      const quem = s.kind === 'auto' ? `${max} dardos: clique num inimigo por dardo (pode repetir)`
+        : s.kind === 'raios' ? `${max} raios: clique num inimigo por raio (pode repetir)`
+        : this.enc.miraAliados(s) ? `escolha até ${max} aliado${max > 1 ? 's' : ''}` : `escolha até ${max} inimigo${max > 1 ? 's' : ''}`;
+      return `${s.name}${circ} — ${quem} · ${n}/${max}${n ? ' · Enter ou a magia de novo conjura agora' : ''}`;
+    }
+    if (s.shape) return `${s.name}${circ} — aponte a área e clique`;
+    if (s.mira === 'casa') return `${s.name}${circ} — clique na casa de chegada (até ${s.rangeFt / 5 * 1.5} m)`;
+    if (s.kind === 'reviver') return `${s.name}${circ} — clique no corpo de um aliado ao seu lado`;
+    if (s.reuso && c.magiasAtivas?.[s.id]) return `${s.name} — já ativa: clique no alvo para golpear de novo, sem gastar espaço`;
+    return `${s.name}${circ} — clique no ${this.enc.miraAliados(s) ? 'aliado' : 'alvo'}`;
   }
 
   afterAct() {
@@ -644,17 +862,24 @@ class App {
 
   endTurn() {
     const c = this.selected;
-    if (!c || this.enc.side !== 'party') return;
+    if (!c || this.enc.side !== 'party' || this.capitulo?.explorando) return;
     this.enc.endTurn(c);
     this.select(this.firstActive());
     this.refresh();
   }
 
   refresh() {
+    if (!this.enc) return;   // ainda no menu, sem partida
     const c = this.selected;
+    // Quem acende como alvo possível: na magia, quem a magia aceita (aliado
+    // na cura e na Bênção, inimigo no resto); magia de área não acende
+    // ninguém, quem mostra o que ela pega é a prévia da área.
+    const magia = this.mode?.kind === 'spell' ? getSpell(this.mode.spellId) : null;
     const targets = this.mode && c
-      ? this.enc.combatants.filter((t) => !t.dead && t.side !== c.side
-        && (this.mode.kind !== 'attack' || this.enc.canAttack(c, t, this.mode.weaponId).ok))
+      ? magia
+        ? (magia.shape ? [] : this.enc.combatants.filter((t) => !this.enc.porqueNaoAlvo(c, magia, t)))
+        : this.enc.combatants.filter((t) => !t.dead && t.side !== c.side
+          && (this.mode.kind !== 'attack' || this.enc.canAttack(c, t, this.mode.weaponId).ok))
       : null;
 
     this.board?.setOverlay({
@@ -668,6 +893,9 @@ class App {
       // para sempre e nada daquilo aparece.
       mode: this.mode,
     });
+    // No escuro, quem o grupo não vê some também do HUD (fila e lista de inimigos).
+    const visao = temEscuridao(this.enc.field) ? visaoDoGrupo(this.enc) : null;
+    for (const x of this.enc.combatants) x.oculto = Boolean(visao) && x.side !== 'party' && !visao.has(`${x.pos.x},${x.pos.y}`);
     this.hud.update(this.enc, c, this.mode, this.alvo);
     // A ficha fica por cima do jogo e não escuta o encontro: sem isto ela
     // congela com PV e espaços de magia velhos enquanto o combate anda.
@@ -677,7 +905,146 @@ class App {
       this.recusa = null;
     } else if (!this.mode) {
       this.hud.setHint(c ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.` : '');
+    } else if (magia && c) {
+      this.hud.setHint(this.dicaDaMagia(c, magia));
     }
+    // Explorando a estrada: não há turno nem rodada, há um grupo andando.
+    if (this.capitulo?.explorando) {
+      this.hud.banner.textContent = `Exploração · ${this.capitulo.lugar ?? 'Trilha de Triboar'}`;
+      if (!this.recusa) this.hud.setHint(c ? `${c.name} — clique no chão para andar. Clique em outro herói para trocar.` : '');
+    }
+  }
+
+  // ---- layout ------------------------------------------------------------------
+
+  /**
+   * Tira a coluna da direita do caminho do tabuleiro (`view/layout.css`): o
+   * minimapa sai, as rolagens viram uma gaveta aberta pelo botão "Registro",
+   * e o aviso legal vira uma linha embaixo. Os elementos são os
+   * mesmos que o HUD criou e atualiza; só mudam de lugar.
+   */
+  montarLayoutLivre(topoEsquerda) {
+    const root = this.root;
+    const coluna = root.querySelector('.coluna-log');
+    const palco = root.querySelector('.palco');
+    if (!coluna || !palco) return;
+    root.classList.add('layout-livre');
+
+    // O minimapa sai da tela: o tabuleiro já mostra o mapa inteiro. O HUD
+    // continua atualizando o elemento, só que fora do documento.
+    this.hud.minimapaHost.remove();
+    const legal = coluna.querySelector('.legal');
+    if (legal) { legal.classList.add('legal-rodape'); palco.append(legal); }
+    coluna.classList.add('gaveta-registro');
+    palco.append(coluna);
+
+    const novidades = document.createElement('span');
+    novidades.className = 'novidades';
+    const botao = document.createElement('button');
+    botao.className = 'btn btn-registro';
+    botao.title = 'Rolagens e acontecimentos';
+    botao.append('Registro', novidades);
+    this.novidadesNoRegistro = 0;
+    this.alternarRegistro = (abrir = !coluna.classList.contains('aberta')) => {
+      coluna.classList.toggle('aberta', abrir);
+      botao.classList.toggle('aberto', abrir);
+      if (abrir) { this.novidadesNoRegistro = 0; novidades.textContent = ''; }
+    };
+    botao.addEventListener('click', () => { audio.play('click'); this.alternarRegistro(); });
+    // Conta o que chegou com a gaveta fechada, para o jogador saber que há
+    // rolagem nova sem precisar abrir.
+    this.contarNovidade = () => {
+      if (coluna.classList.contains('aberta')) return;
+      this.novidadesNoRegistro += 1;
+      novidades.textContent = this.novidadesNoRegistro > 99 ? '99+' : String(this.novidadesNoRegistro);
+    };
+    topoEsquerda.insertBefore(botao, this.hud.banner);
+  }
+
+  // ---- botão direito ---------------------------------------------------------
+
+  /** O menu de ações da casa clicada (`game/interacoes.js`). */
+  abrirContexto(tile, e) {
+    if (!this.enc || this.ficha?.estaAberta() || narrativaAberta() || this.menu?.estaAberto()) return;
+    const m = opcoesDaCasa(this, tile);
+    if (!m?.opcoes.length) return;
+    this.mode = null;
+    this.refresh();
+    abrirMenuContexto(this.root, {
+      x: e.clientX, y: e.clientY, ...m,
+      // Passar o mouse numa ação acende o alvo dela no tabuleiro.
+      aoPrevia: (o) => this.board?.setOverlay({ targets: o?.alvoPrevia ? [o.alvoPrevia] : null }),
+    });
+  }
+
+  /** Um texto curto no painel de narrativa, sem escolha (Olhar, Examinar). */
+  mostrarTexto(titulo, texto) {
+    narrar(this.root, { formato: 'painel', paginas: [{ titulo, texto: [].concat(texto) }] });
+  }
+
+  /**
+   * Conversa com um NPC. Com árvore de diálogo (dele ou da cena), as escolhas
+   * e os testes de `game/dialogo.js`, e o fim vai para a cena; sem árvore, as
+   * falas soltas dele, uma por página.
+   */
+  async conversar(npc) {
+    if (narrativaAberta()) return;
+    const arvore = npc.dialogo ?? this.capitulo?.dialogoDe?.(npc);
+    if (arvore) {
+      const fim = await conversarComArvore(this, npc, arvore);
+      this.capitulo?.depoisDaConversa?.(npc, fim);
+      this.refresh();
+      return;
+    }
+    const falas = npc.falas ?? [npc.frase ?? `${npc.name} olha para vocês e não diz nada.`];
+    narrar(this.root, { formato: 'painel', paginas: falas.map((f) => ({ texto: [{ nome: `${npc.name}:`, texto: f }] })) });
+  }
+
+  /** Conversa com árvore dada pela cena, sem passar pelo botão direito. */
+  conversarCom(npc, arvore) {
+    return conversarComArvore(this, npc, arvore);
+  }
+
+  /** Descanso do grupo, pelo menu do botão direito, fora da luta. */
+  async descansar(tipo) {
+    if (narrativaAberta()) return;
+    const herois = this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+    const linhas = tipo === 'longo'
+      ? await descansoLongoDoGrupo(this.root, { herois, texto: this.capitulo?.textoDoDescanso?.('longo') })
+      : await descansoCurto(this.root, { herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto') });
+    for (const t of linhas) this.enc.say('cura', t);
+    this.capitulo?.depoisDoDescanso?.(tipo);
+    this.refresh();
+  }
+
+  /** Acende ou apaga a tocha. Acender no meio da luta custa a ação. */
+  alternarTocha(c) {
+    const acender = !c.tochaAcesa;
+    c.tochaAcesa = acender;
+    if (acender && !this.capitulo?.explorando && this.enc.side === 'party') c.actionUsed = true;
+    this.enc.say('acao', acender
+      ? `${c.name} acende uma tocha: luz em 20 pés ao redor, e quem está no escuro agora vê de onde ela vem.`
+      : `${c.name} apaga a tocha.`);
+    this.refresh();
+  }
+
+  /** Usar item pelo menu: a mesma porta do clique na barra. */
+  usarItem(c, itemId, alvo) {
+    const r = this.enc.useItem(c, itemId, { target: alvo });
+    if (!r.ok) { this.refuse(c, r.why); return; }
+    this.afterAct();
+  }
+
+  /** Fim do capítulo (ou desistência): sai da partida e volta ao menu. */
+  encerrarPartida() {
+    fecharMenuContexto();
+    this.capitulo = null;
+    this.enc = null;
+    this.board = null;
+    this.selected = null;
+    this.mode = null;
+    this.root.classList.remove('explorando');
+    this.menu.abrir();
   }
 }
 

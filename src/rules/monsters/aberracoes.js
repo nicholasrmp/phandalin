@@ -12,19 +12,17 @@
 // ---------------------------------------------------------------------------
 // CAMPOS QUE O MOTOR AINDA NÃO LÊ
 //
-// `makeMonster` em `../monsters.js` copia abilities, ac, maxHp, speedFt,
-// attacks, multiattack, traits, skills e xp. Os campos abaixo estão aqui como
-// DADO declarado, e hoje só servem à ficha e ao relatório — quem cuida de
-// `rules/combat.js` precisa saber que eles existem:
+// `makeMonster` em `../monsters.js` copia para o combatente o que a regra lê:
 //
 //   fonte          licença: 'SRD' | 'propria' | 'verificar'
-//   resist/immune  tipos de dano reduzidos/anulados — `applyDamage` ignora
-//   vulnerable     dano dobrado — `applyDamage` ignora
-//   immuneConditions  `addCondition` não consulta
-//   saves          `makeMonster` força `saves: []`, então o bônus de
-//                  resistência do dragão não entra em jogo
+//   resist/immune  tipos de dano reduzidos/anulados (`applyDamage`)
+//   vulnerable     dano dobrado (`applyDamage`)
+//   immuneConditions  condições que não pegam (`aplicarCondicao`)
+//   saves          proficiência em resistências
 //   danoExtra      segundo tipo de dano no mesmo golpe (ácido da gelatina,
-//                  veneno da mordida do dragão) — `resolveAttack` só aplica um
+//                  veneno da mordida do dragão)
+//
+// Ainda só DADO, sem efeito no motor:
 //   flyFt/swimFt   deslocamento alternativo — a grade só conhece `speedFt`
 //   breath         arma de sopro em área, com recarga
 //
@@ -66,6 +64,7 @@ export const ABERRACOES = {
       },
     ],
     resist: ['ácido'],
+    immune: ['elétrico', 'cortante'],
     // O SRD lista mais condições; aqui só entram as que `conditions.js` tem.
     immuneConditions: ['caido', 'amedrontado'],
     traits: ['amorfo', 'escaladaAracnidea', 'divisao'],
@@ -127,9 +126,7 @@ export const ABERRACOES = {
       },
       { name: 'Garra', bonus: 7, damage: '2d6+4', type: 'cortante', reachFt: 5, art: 'claw' },
     ],
-    // Uma mordida e duas garradas. `combat.js` hoje repete o MESMO perfil
-    // `count` vezes, então `pattern` fica declarado para quando ele souber
-    // alternar — rodando como está, os três golpes saem como mordida.
+    // Uma mordida e duas garradas.
     multiattack: { count: 3, pattern: ['Mordida', 'Garra', 'Garra'] },
     // SOPRO. Modelado com a mesma forma de dado que `spells.js` usa em
     // `kind: 'save'`, para que `combat.js` possa reaproveitar o caminho de
@@ -256,7 +253,7 @@ export const ABERRACOES = {
         // e o interessante aqui é justamente que esconder-se funciona.
         name: 'Olhar Esmigalhador', bonus: 5, damage: '2d6', type: 'necrótico',
         ranged: true, rangeFt: 30, longRangeFt: 30, art: 'bow',
-        onHit: { save: 'con', dc: 13, condition: 'lento', note: 'perde o passo sob o olhar' },
+        onHit: { save: 'con', dc: 13, condition: 'lento', rounds: 1, note: 'perde o passo sob o olhar' },
       },
     ],
     // Duas garras quando o alvo encosta. O olhar é a ação de longe; as garras
@@ -330,7 +327,7 @@ export const ABERRACOES = {
         // O susto é o que faz o raio valer mais que o dado: amedrontado, o
         // alvo não pode AVANÇAR na direção dele, e o guardião ganha a rodada
         // que precisava sem ter matado ninguém.
-        onHit: { save: 'wis', dc: 12, condition: 'amedrontado', note: 'o olho da haste não desgruda' },
+        onHit: { save: 'wis', dc: 12, condition: 'amedrontado', rounds: 10, repete: true, note: 'o olho da haste não desgruda' },
       },
       { name: 'Mordida', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'bite' },
     ],

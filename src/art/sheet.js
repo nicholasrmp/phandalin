@@ -3,7 +3,7 @@
 // combatentes do mesmo tipo, entre encontros.
 
 import { paint, DIRECTIONS } from './draw.js';
-import { resolveLook } from './looks.js';
+import { resolveLook, LOOKS } from './looks.js';
 import { folhaImportada, carregarFolhas } from './folhas/index.js';
 import { retratoPintado } from './retratos/index.js';
 
@@ -13,7 +13,10 @@ const cache = new Map();
 // da figura -- o look base e cada combinacao de equipamento dela --, porque a
 // folha nova pode ser a resposta certa para qualquer uma. As caixas do
 // retrato tambem: foram medidas na folha velha.
-const daFigura = (key, base) => key === base || key.startsWith(`${base}@`);
+const daFigura = (key, base) => {
+  const k = key.split('~')[0];            // o estado (`~furia`) e da mesma figura
+  return k === base || k.startsWith(`${base}@`);
+};
 carregarFolhas((base) => {
   for (const key of [...cache.keys()]) if (daFigura(key, base)) cache.delete(key);
   for (const key of [...caixas.keys()]) if (daFigura(key, base)) caixas.delete(key);
@@ -82,7 +85,9 @@ export function getSheet(lookKey) {
 }
 
 export function buildSheet(lookKey) {
-  const look = resolveLook(lookKey);
+  // a chave com estado (`~furia`) nao esta em LOOKS: o pintor desenha a sem
+  // estado, que e a mesma figura
+  const look = resolveLook(LOOKS[lookKey] ? lookKey : lookKey.split('~')[0]);
   const maxFrames = ANIMS.reduce((m, a) => Math.max(m, a.frames), 0);
   const width = CELL_PW * maxFrames;
   const height = CELL_PH * DIRECTIONS.length * ANIMS.length;
@@ -314,14 +319,29 @@ function bufferDeTinta(w, h) {
   return tintaCanvas;
 }
 
+/**
+ * A animacao `nome` da folha, ou a vizinha que a substitui. CONJURAR so existe
+ * nas folhas de quem tem o gesto de magia desenhado (o Ilvan); quem nao tem
+ * conjura com o golpe, como sempre fez. O que faltar de vez cai no parado.
+ */
+export function animDaFolha(sheet, nome) {
+  return sheet.anims[nome] ?? (nome === 'conjurar' ? sheet.anims.attack : null) ?? sheet.anims.idle;
+}
+
+const CHAO_PADRAO = 5;
+
 export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip = false, row = 0, alpha = 1, tint = null }) {
-  const anim = sheet.anims[animName] ?? sheet.anims.idle;
+  const anim = animDaFolha(sheet, animName);
   const sx = Math.min(frame, anim.frames - 1) * anim.fw;
   const sy = anim.y + row * anim.fh;
   // `fw/fh` são físicos; o tabuleiro raciocina em lógicos. Dividir por S é o
   // que mantém a criatura do mesmo TAMANHO na tela e só muda a densidade.
   const w = (anim.fw / S) * scale;
+  // A folha importada com MARGEM tem o chao mais alto na celula (`ground`,
+  // em px logicos acima da base; o padrao e 5): a figura desce o tanto que
+  // ele subiu, e o pe continua no mesmo lugar do tabuleiro.
   const h = (anim.fh / S) * scale;
+  const topo = -h + ((sheet.ground ?? CHAO_PADRAO) - CHAO_PADRAO) * scale;
 
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -352,9 +372,9 @@ export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip 
     b.fillRect(0, 0, anim.fw, anim.fh);
     b.globalCompositeOperation = 'source-over';
     b.globalAlpha = 1;
-    ctx.drawImage(buf, 0, 0, anim.fw, anim.fh, -w / 2, -h, w, h);
+    ctx.drawImage(buf, 0, 0, anim.fw, anim.fh, -w / 2, topo, w, h);
   } else {
-    ctx.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, -w / 2, -h, w, h);
+    ctx.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, -w / 2, topo, w, h);
   }
   ctx.restore();
 }

@@ -9,6 +9,8 @@ Fontes, em ordem — a posterior vence a anterior, que é como uma folha de
 refação substitui o ícone reprovado:
   1. _referencias/icones/magias/embarcado/          (as 15 primeiras magias)
   2. _referencias/icones/lote/folha-NN/embarcado/   (o catálogo inteiro)
+     _referencias/icones/lote/novos-NN/embarcado/   (o que entrou depois:
+                                                      emblemas de classe etc.)
   3. _referencias/icones/lote/refazer-NN/embarcado/ (as refações)
 
 Só entra o que a revisão não mandou refazer: cada pasta de lote pode ter um
@@ -61,6 +63,7 @@ def recusados(pasta):
 def main():
     fontes = [ICONES / 'magias']
     fontes += sorted(ICONES.glob('lote/folha-*'))
+    fontes += sorted(ICONES.glob('lote/novos-*'))
     fontes += sorted(ICONES.glob('lote/refazer-*'))
     escolhidos = {}
     for pasta in fontes:

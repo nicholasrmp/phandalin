@@ -97,6 +97,22 @@ export const GLIFOS = {
   // boca de uma trilha e dar a quem se esconde atrás os mesmos +2 de CA da
   // carroça.
   'b': { kind: 3, sup: 'arbusto' },
+  // A caverna e a mata em volta dela (`game/esconderijo.js`).
+  'R': { kind: 1, sup: 'rocha' },
+  '_': { kind: 0, sup: 'caverna' },
+  // Meio metro de água fria e lenta: anda-se nela sem custo extra (a aventura
+  // diz isso do riacho do esconderijo).
+  'w': { kind: 0, sup: 'riacho' },
+  'W': { kind: 2, sup: 'poco' },          // fundo: nada-se, e nadar custa o dobro
+  '=': { kind: 0, sup: 'ponte' },
+  'x': { kind: 2, sup: 'entulho' },
+  'A': { kind: 3, sup: 'estalagmite' },
+  's': { kind: 3, sup: 'mantimentos' },
+  '%': { kind: 2, sup: 'espinheiro' },
+  'z': { kind: 0, sup: 'leito' },         // cama de pele e palha: passa-se por cima
+  'F': { kind: 0, sup: 'fogueira' },       // brasa: pisa-se, e queima (a cena cobra)
+  'K': { kind: 3, sup: 'bau' },
+  'P': { kind: 3, sup: 'tocaia' },        // ripas de madeira do posto dos vigias
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
@@ -183,7 +199,9 @@ export class Battlefield {
    * cada pé escalado custa 1 pé extra, então o degrau de 5 pés sai por 10.
    */
   costOf(x, y, fromX = null, fromY = null) {
-    let cost = this.tileAt(x, y) === 2 ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
+    // Terreno difícil: o do mapa (2) ou o que uma magia criou (Graxa).
+    const dificil = this.tileAt(x, y) === 2 || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y));
+    let cost = dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
     if (fromX !== null) {
       const climb = this.heightAt(x, y) - this.heightAt(fromX, fromY);
       if (climb > 0) cost += climb * FEET_PER_SQUARE;
@@ -317,28 +335,76 @@ export class Battlefield {
     return out;
   }
 
-  /** Cone do SRD: comprimento = largura. Aproximação em grade. */
+  /**
+   * Cone do SRD: em cada ponto, a largura é igual à distância até a origem.
+   *
+   * Na grade, o passo t (1..comprimento) pega as casas com desvio lateral de
+   * até floor(t/2): um cone de 4,5 m tem larguras 1, 3, 3 — sete casas. O
+   * cone anterior abria ±t por passo (15 casas, 10,5 m de boca) e pegava o
+   * dobro de alvos. Na diagonal vale a mesma conta com os dois eixos: a casa
+   * (a, b) entra se |a − b| <= floor(max(a, b) / 2), o que também dá sete.
+   */
   cone(origin, dir, lengthFt) {
     const len = Math.floor(lengthFt / FEET_PER_SQUARE);
-    const out = [];
     const nx = Math.sign(dir.x);
     const ny = Math.sign(dir.y);
-    for (let step = 1; step <= len; step++) {
-      for (let spread = -step; spread <= step; spread++) {
-        const x = origin.x + nx * step + (nx === 0 ? spread : 0);
-        const y = origin.y + ny * step + (ny === 0 ? spread : 0);
-        const px = nx !== 0 && ny !== 0 ? origin.x + nx * step : x;
-        const py = nx !== 0 && ny !== 0 ? origin.y + ny * step + spread : y;
-        if (this.inside(px, py)) out.push({ x: px, y: py });
+    const out = [];
+    if (!nx && !ny) return out;
+    if (nx && ny) {
+      for (let a = 1; a <= len; a++) {
+        for (let b = 1; b <= len; b++) {
+          if (Math.abs(a - b) > Math.floor(Math.max(a, b) / 2)) continue;
+          const x = origin.x + nx * a;
+          const y = origin.y + ny * b;
+          if (this.inside(x, y)) out.push({ x, y });
+        }
+      }
+      return out;
+    }
+    for (let t = 1; t <= len; t++) {
+      const lado = Math.floor(t / 2);
+      for (let s = -lado; s <= lado; s++) {
+        const x = origin.x + nx * t + (nx === 0 ? s : 0);
+        const y = origin.y + ny * t + (ny === 0 ? s : 0);
+        if (this.inside(x, y)) out.push({ x, y });
       }
     }
-    // remove repetidos
-    const seen = new Set();
-    return out.filter((p) => {
-      const k = key(p.x, p.y);
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+    return out;
+  }
+
+  /**
+   * Cubo que SAI do conjurador (Onda Trovejante): encostado nele, do lado de
+   * `dir`. Em linha reta, centrado no eixo; na diagonal, no canto.
+   */
+  cube(origin, dir, sizeFt) {
+    const n = Math.floor(sizeFt / FEET_PER_SQUARE);
+    const nx = Math.sign(dir.x);
+    const ny = Math.sign(dir.y);
+    const out = [];
+    if (!nx && !ny) return out;
+    const meio = Math.floor(n / 2);
+    for (let i = 1; i <= n; i++) {
+      for (let j = 0; j < n; j++) {
+        let x;
+        let y;
+        if (nx && ny) { x = origin.x + nx * i; y = origin.y + ny * (j + 1); }
+        else if (nx) { x = origin.x + nx * i; y = origin.y + j - meio; }
+        else { x = origin.x + j - meio; y = origin.y + ny * i; }
+        if (this.inside(x, y)) out.push({ x, y });
+      }
+    }
+    return out;
+  }
+
+  /** Quadrado de `sizeFt` com o canto de cima à esquerda em `corner` (Graxa). */
+  square(corner, sizeFt) {
+    const n = Math.max(1, Math.floor(sizeFt / FEET_PER_SQUARE));
+    const out = [];
+    for (let y = corner.y; y < corner.y + n; y++) {
+      for (let x = corner.x; x < corner.x + n; x++) {
+        if (this.inside(x, y)) out.push({ x, y });
+      }
+    }
+    return out;
   }
 }

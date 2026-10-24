@@ -1,0 +1,173 @@
+/* O menu do botão direito, nas peças de arte do HUD (`src/art/hud/`). */
+
+.menu-ctx {
+  position: fixed;
+  z-index: 80;
+  width: max-content;
+  min-width: 220px;
+  max-width: 280px;
+  /* A moldura de latão das colunas (9-slice, 19 px de canto), com o miolo. */
+  /* Moldura mais fina que a das colunas: 14 px de canto em vez de 19. */
+  border: 14px solid transparent;
+  border-image: url('../art/hud/painel.png') 19 fill / 14px stretch;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .6));
+  color: var(--ink);
+  font-family: var(--font);
+  animation: menu-ctx-entra .12s ease-out both;
+}
+@keyframes menu-ctx-entra { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+
+/* ------------------------------------------------------------- alvo -- */
+.menu-ctx-alvo {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin: -4px -4px 4px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid var(--line-forte);
+  image-rendering: auto;
+}
+.menu-ctx-retrato {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: url('../art/hud/slot.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+.menu-ctx-retrato canvas { width: 32px !important; height: 32px !important; }
+.menu-ctx-quem { display: grid; gap: 3px; min-width: 0; }
+.menu-ctx-nome { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.menu-ctx-nome strong { font-family: var(--serif); font-size: 15px; color: var(--gold-escuro); line-height: 1.1; }
+.menu-ctx-estado {
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.menu-ctx-estado.inimigo { color: var(--lacre); }
+.menu-ctx-estado.aliado { color: var(--green); }
+
+/* A vida na régua de latão do HUD. */
+.menu-ctx-vida {
+  position: relative;
+  height: 10px;
+  border: solid transparent;
+  border-width: 0 8px;
+  border-image: url('../art/hud/regua.png') 0 8 fill / 0 8px stretch;
+  image-rendering: pixelated;
+}
+.menu-ctx-vida i {
+  position: absolute; left: 0; top: 2px; bottom: 2px;
+  background: linear-gradient(180deg, #7fd38c, #3d8b4b);
+  border-radius: 1px;
+}
+.menu-ctx-vida.inimigo i { background: linear-gradient(180deg, #e0735f, #a83420); }
+.menu-ctx-vida span {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 9.5px; font-weight: 700; line-height: 1;
+  color: #fff6e0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .8);
+}
+.menu-ctx-etiquetas { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu-ctx-etiquetas span {
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: rgba(194, 169, 120, .38);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------ ações -- */
+.menu-ctx-acoes {
+  display: grid;
+  gap: 2px;
+  max-height: min(40vh, 300px);
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 2px;
+  image-rendering: auto;
+}
+.menu-ctx-grupo {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 4px 1px;
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold-escuro);
+}
+.menu-ctx-grupo::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-forte), transparent); }
+
+.menu-ctx-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 4px 1px 1px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.menu-ctx-item:hover:not([disabled]), .menu-ctx-item:focus-visible {
+  outline: none;
+  border-color: var(--gold-escuro);
+  background: linear-gradient(180deg, rgba(240, 214, 150, .85), rgba(215, 179, 102, .85));
+}
+/* O ícone no soquete de latão da barra de ações. */
+/* O ícone em 32 px, o tamanho nativo da arte, num quadro fino de latão — o
+ * soquete de 40 px da barra deixava cada linha alta demais. */
+.menu-ctx-icone {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(117, 80, 26, .55);
+  background: rgba(78, 56, 24, .12);
+  image-rendering: pixelated;
+}
+.menu-ctx-icone canvas { width: 32px; height: 32px; }
+.menu-ctx-sem-icone {
+  width: 10px; height: 10px;
+  background: linear-gradient(135deg, var(--gold-claro), var(--gold-escuro));
+  transform: rotate(45deg);
+}
+.menu-ctx-texto { display: grid; gap: 1px; min-width: 0; }
+.menu-ctx-rotulo { font-family: var(--serif); font-size: 13.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-ctx-texto small { font-size: 10.5px; color: var(--muted); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.menu-ctx-chance {
+  min-width: 36px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff8e6;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .25);
+}
+.menu-ctx-chance.boa { background: linear-gradient(180deg, #5fb36c, #2f7a3c); }
+.menu-ctx-chance.media { background: linear-gradient(180deg, #e0a84a, #a8701e); }
+.menu-ctx-chance.ruim { background: linear-gradient(180deg, #d0644e, #962f1f); }
+
+.menu-ctx-item kbd {
+  min-width: 15px;
+  padding: 0 3px;
+  font: 700 9.5px var(--font);
+  text-align: center;
+  color: var(--gold-escuro);
+  background: rgba(255, 248, 228, .7);
+  border: 1px solid var(--line-forte);
+  border-radius: 4px;
+}
+
+/* Recusada: cinza, com o motivo em vermelho-tijolo. */
+.menu-ctx-item.recusada { cursor: not-allowed; color: #8a8478; }
+.menu-ctx-item.recusada .menu-ctx-icone canvas { filter: grayscale(1); opacity: .55; }
+.menu-ctx-item.recusada small { color: #9b4a3a; white-space: normal; }

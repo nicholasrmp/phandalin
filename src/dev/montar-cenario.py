@@ -70,6 +70,66 @@ GRUPOS = {
         'quadros': {'todas': [0, 1, 12, 15, 32, 35, 43, 48, 60]},
         'ancora': 'base',
     },
+    # O ESCONDERIJO. Estalagmites: os cones naturais. Fora: 1 e 5, em
+    # camadas, leem como bolo; 7, gancho; 8, toco; 9, bolas empilhadas; 10,
+    # cristais (outra coisa no jogo); 11, baixo demais para cobertura; 12, em
+    # V; 13, domo; 14, bloco quebrado; 15, retorcido.
+    'estalagmite': {
+        'pasta': 'estalagmite/471bb363-ba17-4c60-bdb9-d170e6810144',
+        'quadros': {'todas': [0, 2, 3, 4, 6]},
+        'ancora': 'base',
+    },
+    # Mantimentos: quase todos servem. Fora: 1, pequeno demais; 6, 10 e 12,
+    # so sacos ou so barris -- a pilha precisa misturar, para ler como saque.
+    'mantimentos': {
+        'pasta': 'mantimentos/690ec642-2d29-4be0-b92d-fa6cf57de35b',
+        'quadros': {'todas': [0, 2, 3, 4, 5, 7, 8, 9, 11, 13, 14, 15]},
+        'ancora': 'base',
+    },
+    # Espinheiro: os emaranhados de galho com espinho. Fora: 1, arcos limpos
+    # demais; 2, 10 e 14, ralos a ponto de sumir; 3, 6, 7, 8 e 13, capim ou
+    # folhagem, que leriam como moita (cobertura) e o espinheiro e so terreno
+    # dificil.
+    'espinheiro': {
+        'pasta': 'espinheiro/9eea6415-d75b-4d5a-bd78-e9607e9250fb',
+        'quadros': {'todas': [0, 4, 5, 9, 11, 12, 15]},
+        'ancora': 'base',
+    },
+    # Camas do bando. ESTA LEVA VEIO COM A DESCRICAO ESCRITA embaixo de cada
+    # desenho, em pixel: `corta_texto` fica so com o primeiro bloco de linhas
+    # acesas de cima para baixo, e o texto (separado por uma faixa vazia) cai
+    # fora. Fora: 4 e 5, colchas de retalho que leem como tapete; 7 e 11,
+    # trouxas amarradas; 8, cranio; 12, ninho; 13 e 15, panos soltos.
+    'leito': {
+        'pasta': 'leito/ee5581ee-d05b-4cac-a2ef-9368e90c4c4b',
+        'quadros': {'todas': [0, 1, 2, 3, 6, 9, 10, 14]},
+        'ancora': 'base',
+        'corta_texto': True,
+    },
+    # A fogueira de Klarg: as de pedra em roda e lenha. Fora as que trazem
+    # panela, espeto, grelha ou chaleira (2, 4, 5, 7, 8, 9, 14), a que so tem
+    # brasa (10) e a de mochila (15).
+    'fogueira': {
+        'pasta': 'fogueira/196601da-f79e-4697-a76e-16641718f07a',
+        'quadros': {'todas': [0, 3, 6, 11, 12]},
+        'ancora': 'base',
+    },
+    # O posto dos vigias (area 2): biombos de ripas amarradas entre galhos.
+    # Fora: 4 e 6, fechados demais (leem como caixote); 5, cranio; 7, couro;
+    # 9, em perspectiva; 10, porta; 11, estandarte; 12, so folhagem; 14,
+    # desmontado.
+    'tocaia': {
+        'pasta': 'tocaia/513bd23b-7e5e-444a-81d9-de370a087f91',
+        'quadros': {'todas': [0, 1, 2, 3, 8, 13, 15]},
+        'ancora': 'base',
+    },
+    # O bau: os de madeira com cinta de ferro. Fora os dourados (3, 6, 15),
+    # o de corrente (8) e o de tabuas cruzadas (5).
+    'bau': {
+        'pasta': 'bau/acc56ec4-99eb-4efc-a090-d82d23c93f6c',
+        'quadros': {'todas': [0, 2, 4, 7, 9, 12]},
+        'ancora': 'base',
+    },
 }
 
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
@@ -84,6 +144,7 @@ DIRIGIDOS = {
     'carroca': {'pasta': 'carroca/e391322f-b2a9-4b1c-a7ef-4c1b55116880', 'meia_pegada': 14},
     'cavalo': {'pasta': 'cavalo/2d4dd2f2-d929-454d-bf40-97ae971d184d', 'meia_pegada': 9,
                'recolor': ('tordilho', None)},
+    # A ponte do esconderijo: tabuleiro de 2 x 2 casas com corrimao de corda.
 }
 
 # O cavalo B e o mesmo desenho com a pelagem trocada, cor por cor exata: baio
@@ -107,6 +168,18 @@ def recolorir(im, mapa):
             if a and (r, g, b) in alvo:
                 px[x, y] = alvo[(r, g, b)] + (a,)
     return out
+
+
+def corta_texto(im):
+    """So o primeiro bloco de linhas acesas, de cima para baixo."""
+    px = im.load()
+    linhas = [any(px[x, y][3] for x in range(im.width)) for y in range(im.height)]
+    ini = linhas.index(True)
+    fim = ini
+    while fim < im.height and linhas[fim]:
+        fim += 1
+    parte = im.crop((0, ini, im.width, fim))
+    return parte.crop(parte.getbbox())
 
 
 def ancora(im, modo):
@@ -143,7 +216,7 @@ def main():
         for papel, idxs in g['quadros'].items():
             for i in idxs:
                 im = Image.open(pasta / f'frame_urls_{i}.png').convert('RGBA')
-                im = im.crop(im.getbbox())
+                im = corta_texto(im) if g.get('corta_texto') else im.crop(im.getbbox())
                 quadros.append((nome, papel, i, im, ancora(im, g['ancora'])))
     for nome, g in DIRIGIDOS.items():
         pasta = OBJ / g['pasta']

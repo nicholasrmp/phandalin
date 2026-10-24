@@ -27,6 +27,16 @@ const corpo = (extra) => ({ ability: 'str', reachFt: 5, ...extra });
 const distancia = (extra) => ({ ability: 'dex', ranged: true, ...extra });
 
 export const WEAPONS = {
+  // ------------------------------------------------------------ talento ----
+  // O soco de quem tem o talento Brigão de Taverna (Livro do Jogador de 2024,
+  // regra da casa — ver `rules/talentos.js`): 1d4 + Força, sempre treinado.
+  // Não está à venda e não se larga: só entra na lista de quem tem o talento.
+  punhos: corpo({
+    id: 'punhos', name: 'Punhos', damage: '1d4', type: 'concussão',
+    props: ['desarmado'], art: null,
+    categoria: 'simples', peso: 0, custo: 0, fonte: 'phb',
+  }),
+
   // ---------------------------------------------------- simples, corpo ----
   clava: corpo({
     id: 'clava', name: 'Clava', damage: '1d4', type: 'concussão',

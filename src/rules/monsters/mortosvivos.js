@@ -21,16 +21,9 @@
 //   encontro.
 //
 // O QUE O MOTOR AINDA NÃO EXECUTA (declarado aqui, pendente lá — ver relatório)
-//   - `damageImmunities` / `damageResistances` / `damageVulnerabilities` /
-//     `conditionImmunities`: `applyDamage` em `combat.js` não olha o tipo do
-//     dano, e `makeMonster` em `monsters.js` não copia estes campos para o
-//     combatente. Ficam aqui como dado, não como efeito.
 //   - `undeadFortitude`, `incorporealMovement`, `lifeDrain`,
 //     `sunlightSensitivity` e `createSpecter` são traços SEM gancho no motor
 //     hoje: aparecem no painel pelo `TRAIT_INFO`, mas não mudam a rolagem.
-//   - `onHit.rounds`: `combat.js` chama `addCondition` sem duração, então a
-//     paralisia do ghoul não expira. É o pior efeito colateral desta família e
-//     está no topo do relatório.
 //   Nada disso foi contornado com número inflado: um bloco que compensa a regra
 //   que falta com +3 de dano vira um bloco errado no dia em que a regra chega.
 
@@ -117,13 +110,12 @@ export const MORTOS_VIVOS = {
     attacks: [
       {
         name: 'Garras', bonus: 4, damage: '2d4+2', type: 'cortante', reachFt: 5, art: 'claw',
-        // `atordoado` é SUBSTITUTO: `conditions.js` ainda não tem `paralisado`,
-        // e um id inexistente seria um efeito silencioso de zero. Atordoado
-        // entrega o essencial (incapacitado, deslocamento 0, falha automática
-        // em FOR e DES, vantagem para quem ataca); falta o crítico automático
-        // de perto. `rounds` está declarado e o motor IGNORA — enquanto
-        // ignorar, esta paralisia não expira.
-        onHit: { save: 'con', dc: 10, condition: 'atordoado', rounds: 2, note: 'congela no lugar' },
+        // Paralisia por 1 minuto, com nova resistência no fim de cada turno
+        // do alvo. Elfos e mortos-vivos não são afetados.
+        onHit: {
+          save: 'con', dc: 10, condition: 'paralisado', rounds: 10, repete: true, note: 'congela no lugar',
+          imunes: { ancestry: ['Elf'], tipo: ['morto-vivo'], motivo: 'elfos e mortos-vivos resistem à paralisia do ghoul' },
+        },
       },
       { name: 'Mordida', bonus: 2, damage: '2d6+2', type: 'perfurante', reachFt: 5, art: 'bite' },
     ],

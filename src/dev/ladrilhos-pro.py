@@ -72,6 +72,31 @@ CONJUNTOS = {
             '6). packed brown dirt road with faint cart wheel ruts. '
             '7). packed brown dirt road with a few tiny pebbles. '
             '8). packed brown dirt road with slightly darker damp patches.',
+    # O esconderijo dos goblins (capitulo 2). Chao, riacho e poco na MESMA
+    # leva: lado a lado no mapa, com tres pintores diferentes, a margem do
+    # riacho viraria uma costura de paleta.
+    'caverna': ESTILO + ' Underground cave, dim and cool, seen by torchlight. '
+               '1). dark grey-brown cave floor of packed earth and flat stone, uniform. '
+               '2). dark grey-brown cave floor with a few tiny pebbles. '
+               '3). dark grey-brown cave floor with a faint damp darker patch. '
+               '4). dark grey-brown cave floor with a thin crack in the stone. '
+               '5). dark grey-brown cave floor with a little grit and dust. '
+               '6). dark grey-brown cave floor, slightly smoother flat stone. '
+               '7). shallow clear stream water over dark pebbles, slight ripples, uniform. '
+               '8). shallow clear stream water over dark pebbles with a little foam. '
+               '9). deep still dark blue-green pool water, uniform. '
+               '10). deep still dark blue-green pool water with a faint reflection.',
+    # O topo da rocha (a massa entre os corredores, vista de cima), o entulho
+    # e as tabuas da ponte.
+    'rocha': ESTILO + ' Underground cave, dim and cool, seen by torchlight. '
+             '1). top of solid dark grey cave rock, rough and uneven, uniform. '
+             '2). top of solid dark grey cave rock with a few small cracks. '
+             '3). top of solid dark grey cave rock with faint lighter edges of stone. '
+             '4). top of solid dark grey cave rock, slightly mossy dark green flecks. '
+             '5). cave floor covered in loose broken rubble and small fallen rocks. '
+             '6). cave floor covered in loose broken rubble, a few larger chunks. '
+             '7). weathered wooden bridge planks laid side by side, dark brown, uniform. '
+             '8). weathered wooden bridge planks laid side by side with a few iron nails.',
 }
 
 

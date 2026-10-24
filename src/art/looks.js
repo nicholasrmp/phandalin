@@ -15,9 +15,11 @@ import { FERAS_LOOKS } from './looks/feras.js';
 import { MORTOS_VIVOS_LOOKS } from './looks/mortosvivos.js';
 import { ABERRACOES_LOOKS } from './looks/aberracoes.js';
 import { DRAGAO_LOOKS } from './looks/dragao.js';
+import { HEROIS_LOOKS } from './looks/herois.js';
 
 export const LOOKS = {
   ...PARTY_LOOKS,
+  ...HEROIS_LOOKS,
   ...BESTIARIO_LOOKS,
   ...HUMANOIDES_LOOKS,
   ...FERAS_LOOKS,

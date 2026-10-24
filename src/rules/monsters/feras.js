@@ -118,7 +118,7 @@ export const FERAS = {
     // porque é assim que o motor dobra o bônus — ver relatório, `makeMonster`
     // ainda não copia este campo para o combatente.
     expertise: ['furtividade'],
-    senses: { blindsightFt: 10, tremorsenseFt: 60, passivePerception: 10 },
+    senses: { blindsightFt: 10, darkvisionFt: 60, passivePerception: 10 },
     voice: 'hissSpider',
     // A ORDEM DESTE ARRAY É A TÁTICA DELA. `ai.js` pega o primeiro ataque usável
     // quando está colada no alvo e procura um ataque `ranged` quando não tem
@@ -144,10 +144,8 @@ export const FERAS = {
         name: 'Teia', bonus: 5, damage: 0, type: 'nenhum',
         ranged: true, rangeFt: 30, longRangeFt: 60, art: 'bow',
         recharge: '5-6',
-        // `agarrado` é a condição mais próxima que `conditions.js` tem de
-        // "contido": zera o deslocamento, mas não dá vantagem a quem ataca o
-        // alvo preso. A diferença está no relatório — a condição não é minha.
-        onHit: { save: 'dex', dc: 12, condition: 'agarrado', note: 'fica preso na teia' },
+        // Sem resistência: o acerto prende. Sai com Atletismo/Acrobacia CD 12.
+        onHit: { semResistencia: true, dc: 12, escape: 12, condition: 'contido', note: 'fica preso na teia' },
       },
     ],
     traits: ['spiderClimb', 'webSense', 'webWalker'],
@@ -173,7 +171,7 @@ export const FERAS = {
     speeds: { climbFt: 40 },
     skills: ['percepcao', 'furtividade'],
     expertise: ['furtividade'],
-    senses: { blindsightFt: 10, tremorsenseFt: 60, passivePerception: 13 },
+    senses: { blindsightFt: 10, darkvisionFt: 60, passivePerception: 13 },
     voice: 'hissSpider',
     attacks: [
       {
@@ -329,11 +327,10 @@ export const FERAS = {
     senses: { passivePerception: 13 },
     voice: 'gruntOgre',
     attacks: [
-      { name: 'Mordida', bonus: 5, damage: '1d8+4', type: 'perfurante', reachFt: 5, art: 'bite' },
-      { name: 'Garras', bonus: 5, damage: '2d6+4', type: 'cortante', reachFt: 5, art: 'claw' },
+      { name: 'Mordida', bonus: 6, damage: '1d8+4', type: 'perfurante', reachFt: 5, art: 'bite' },
+      { name: 'Garras', bonus: 6, damage: '2d6+4', type: 'cortante', reachFt: 5, art: 'claw' },
     ],
-    // Uma mordida E uma garrada, nesta ordem. `sequence` existe porque o motor
-    // hoje repete o MESMO ataque `count` vezes: ver relatório.
+    // Uma mordida E uma garrada, nesta ordem.
     multiattack: { count: 2, sequence: ['Mordida', 'Garras'] },
     traits: ['keenSmell'],
     blurb: 'Dois ataques por turno de perto, com a garrada valendo 2d6+4: concentra 19 de dano médio num alvo e escala parede para alcançá-lo.',

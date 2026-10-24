@@ -1,0 +1,508 @@
+/* O menu: a mesma pele do HUD (pergaminho e latão, `style.css`), num arquivo
+ * à parte para não disputar a folha principal com quem mexe no HUD. As cores
+ * vêm das variáveis de lá. */
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+}
+/* No meio de uma partida o fundo é o próprio combate, escurecido e borrado. */
+.menu.na-partida { background: transparent; backdrop-filter: blur(3px) saturate(.8); }
+
+/* -------------------------------------------------------------- camadas -- */
+.menu-fundo { position: absolute; inset: 0; overflow: hidden; }
+.menu-fundo-canvas {
+  position: absolute;
+  left: 0; top: 0;
+  transform-origin: 0 0;
+  image-rendering: pixelated;
+  pointer-events: none;
+  /* A cena fica no crepúsculo: o menu é o que deve brilhar. */
+  filter: brightness(.82) saturate(.92);
+  animation: menu-surge 1.6s ease-out both;
+}
+@keyframes menu-surge { from { opacity: 0; } to { opacity: 1; } }
+
+.menu-veu { position: absolute; inset: 0; pointer-events: none; }
+.menu[data-tela='titulo'] .menu-veu {
+  background:
+    linear-gradient(90deg, rgba(12, 9, 5, .93) 0%, rgba(12, 9, 5, .82) 26%, rgba(12, 9, 5, .25) 52%, rgba(12, 9, 5, 0) 70%),
+    radial-gradient(120% 90% at 65% 50%, transparent 55%, rgba(8, 6, 3, .75) 100%);
+}
+.menu[data-tela='quadro'] .menu-veu { background: rgba(12, 9, 5, .72); }
+.menu.na-partida .menu-veu { background: rgba(12, 9, 5, .66); }
+.menu.na-partida[data-tela='titulo'] .menu-veu {
+  background: linear-gradient(90deg, rgba(12, 9, 5, .94) 0%, rgba(12, 9, 5, .84) 30%, rgba(12, 9, 5, .5) 60%, rgba(12, 9, 5, .4) 100%);
+}
+
+.menu-palco {
+  position: absolute;
+  inset: 0 0 40px;
+  display: grid;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+.menu[data-tela='titulo'] .menu-palco { align-items: center; justify-items: start; padding-left: clamp(16px, 7vw, 110px); }
+.menu[data-tela='quadro'] .menu-palco { align-items: center; justify-items: center; }
+
+.menu-quadro {
+  width: min(960px, 100%);
+  position: relative;
+  padding: 26px 28px 22px;
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .65), var(--bisel);
+  animation: menu-entra .22s ease-out both;
+}
+@keyframes menu-entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* As duas cantoneiras de latão do HUD, em diagonal. */
+.menu-quadro::before,
+.menu-quadro::after {
+  content: '';
+  position: absolute;
+  width: 26px; height: 26px;
+  border: 3px solid var(--gold);
+  pointer-events: none;
+}
+.menu-quadro::before { top: 6px; left: 6px; border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; }
+.menu-quadro::after { bottom: 6px; right: 6px; border-left: 0; border-top: 0; border-radius: 0 0 6px 0; }
+
+.menu-legal {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(214, 196, 155, .5);
+}
+
+/* ----------------------------------------------------- tela de título -- */
+.menu-coluna {
+  display: grid;
+  gap: 26px;
+  width: min(660px, 100%);
+  animation: menu-entra .35s ease-out both;
+}
+
+.menu-logo { display: grid; justify-items: start; gap: 8px; }
+/* O logotipo é arte pronta (OpenArt). A largura acompanha a tela; a sombra
+ * escura por fora descola o latão do fundo vivo. */
+.menu-titulo { margin: 0; line-height: 0; }
+.menu-titulo-img {
+  display: block;
+  width: clamp(300px, 48vw, 660px);
+  height: auto;
+  margin-left: -8px;   /* o recorte tem uma borda de brilho à esquerda */
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .75));
+  user-select: none;
+}
+.menu-sub {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(233, 220, 191, .72);
+}
+
+.menu-itens { display: grid; gap: 2px; justify-items: start; }
+.menu-item {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0 7px 26px;
+  font-family: var(--serif);
+  font-size: 23px;
+  letter-spacing: .02em;
+  color: #e9dcbf;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .8);
+  transition: color .12s, transform .12s;
+}
+/* O losango de latão do item escolhido. */
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 50%;
+  width: 9px; height: 9px;
+  background: linear-gradient(135deg, #fbe7b0, #a1702a);
+  transform: translateY(-50%) rotate(45deg) scale(0);
+  transition: transform .12s;
+  box-shadow: 0 0 8px rgba(228, 196, 126, .7);
+}
+.menu-item:hover:not([disabled]),
+.menu-item:focus-visible {
+  outline: none;
+  color: #fbe7b0;
+  transform: translateX(6px);
+}
+.menu-item:hover:not([disabled])::before,
+.menu-item:focus-visible::before { transform: translateY(-50%) rotate(45deg) scale(1); }
+.menu-item.destaque { color: #f0cf86; }
+.menu-item[disabled] { cursor: not-allowed; color: rgba(200, 190, 170, .38); text-shadow: none; }
+.menu-etiqueta {
+  font-family: var(--font);
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid rgba(200, 190, 170, .3);
+  border-radius: 99px;
+  color: rgba(200, 190, 170, .55);
+}
+.menu-versao { margin: 0; font-size: 12px; letter-spacing: .08em; color: rgba(214, 196, 155, .45); }
+.menu-despedida { margin: 0; max-width: 34ch; font-size: 16px; line-height: 1.5; color: #e9dcbf; }
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-fundo-canvas, .menu-quadro, .menu-coluna { animation: none; }
+  .menu-item, .menu-item::before { transition: none; }
+}
+
+.menu-btn {
+  font-family: var(--serif);
+  font-size: 17px;
+  padding: 11px 18px;
+  color: var(--ink);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 9px;
+  box-shadow: var(--bisel);
+  cursor: pointer;
+}
+.menu-btn:hover:not([disabled]), .menu-btn:focus-visible { filter: brightness(1.06); outline: 2px solid var(--gold); outline-offset: 2px; }
+.menu-btn.primario {
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  color: #2b1d07;
+  font-weight: 700;
+}
+/* Desabilitado é CINZA, não papel apagado: tem de ler como "ainda não". */
+.menu-btn[disabled] {
+  cursor: not-allowed;
+  color: #8a8478;
+  background: linear-gradient(180deg, #d3cfc6, #bdb8ad);
+  border-color: #9a948a;
+  box-shadow: none;
+}
+
+/* -------------------------------------------------------- cabeçalho etc -- */
+.menu-cab { margin-bottom: 16px; }
+/* O `h2` do HUD é caixa-alta espaçada (é rótulo de painel); título de tela não. */
+.menu-cab h2 { margin: 0; font-family: var(--serif); font-size: 28px; color: var(--gold-escuro); text-transform: none; letter-spacing: normal; }
+.menu-cab p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+.menu-rodape {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.menu-rodape .primario { margin-left: auto; }
+.menu-contagem { font-size: 13px; color: var(--muted); }
+
+/* ------------------------------------------------- cartões de escolha -- */
+.menu-niveis { display: flex; gap: 8px; margin: 0 0 14px; flex-wrap: wrap; }
+.menu-nivel {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 14px;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.menu-nivel.ativo { background: var(--gold-escuro); color: var(--papel-3); font-weight: 600; }
+.menu-nivel:hover, .menu-nivel:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.menu-cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.menu-cartao {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 16px 18px;
+  font: inherit;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 10px;
+  box-shadow: var(--bisel);
+  cursor: pointer;
+}
+.menu-cartao strong { font-family: var(--serif); font-size: 20px; color: var(--gold-escuro); }
+.menu-cartao span { font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.menu-cartao:hover, .menu-cartao:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ------------------------------------------------------------ aventuras -- */
+.menu-aventuras {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  max-height: min(58vh, 560px);
+  overflow-y: auto;
+}
+.menu-aventura {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  text-align: left;
+  padding: 9px 12px;
+  font: inherit;
+  border-radius: 8px;
+  border: 1px solid #9a948a;
+  color: #7d786e;
+  background: linear-gradient(180deg, #d6d2c9, #c4bfb4);
+  cursor: not-allowed;
+}
+.menu-aventura-nome { font-family: var(--serif); font-size: 15px; }
+.menu-aventura-ano { font-size: 12px; align-self: start; }
+.menu-aventura-orig { grid-column: 1; font-size: 12px; font-style: italic; }
+.menu-aventura-resumo { grid-column: 1 / -1; margin-top: 4px; font-size: 13px; line-height: 1.45; }
+.menu-aventura.jogavel {
+  grid-column: 1 / -1;
+  cursor: pointer;
+  color: var(--ink);
+  border-color: var(--gold-escuro);
+  background: linear-gradient(170deg, var(--gold-claro), #d7b366);
+  box-shadow: var(--bisel);
+  padding: 13px 16px;
+}
+.menu-aventura.jogavel .menu-aventura-nome { font-size: 20px; font-weight: 700; color: #3b2608; }
+.menu-aventura.jogavel:hover, .menu-aventura.jogavel:focus-visible { outline: 2px solid var(--gold-escuro); outline-offset: 2px; }
+/* A jogável fica em cima, ocupando a linha inteira. */
+.menu-aventuras li:has(.jogavel) { grid-column: 1 / -1; order: -1; }
+
+/* --------------------------------------------------------------- heróis -- */
+.menu-herois-corpo { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 16px; }
+.menu-herois { display: grid; gap: 8px; align-content: start; }
+.menu-heroi {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 10px;
+  text-align: left;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--line-forte);
+  border-radius: 9px;
+  cursor: pointer;
+  opacity: .62;
+}
+.menu-heroi.escolhido { opacity: 1; border-color: var(--gold-escuro); box-shadow: var(--bisel); }
+.menu-heroi.foco { outline: 2px solid var(--gold); outline-offset: 1px; }
+.menu-heroi-retrato {
+  grid-row: 1 / -1;
+  display: grid; place-items: center;
+  background: var(--soquete);
+  border-radius: 7px;
+  box-shadow: var(--carimbo);
+}
+.menu-heroi-retrato canvas { image-rendering: pixelated; }
+.menu-heroi-nome { font-family: var(--serif); font-size: 17px; font-weight: 700; }
+.menu-heroi-classe { grid-column: 2; font-size: 12.5px; color: var(--muted); }
+.menu-heroi-ante { grid-column: 2; font-size: 12.5px; font-style: italic; }
+.menu-heroi-marca {
+  grid-column: 3; grid-row: 1;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+}
+.menu-heroi.escolhido .menu-heroi-marca { color: var(--green); font-weight: 700; }
+
+.menu-heroi-detalhe {
+  padding: 14px 18px;
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--line-forte);
+  border-radius: 10px;
+  box-shadow: var(--bisel);
+  max-height: min(58vh, 560px);
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.menu-heroi-detalhe h3 { margin: 0; font-family: var(--serif); font-size: 24px; color: var(--gold-escuro); }
+.menu-heroi-detalhe p { margin: 0 0 10px; }
+.menu-heroi-linha { color: var(--muted); margin: 2px 0 2px !important; }
+.menu-heroi-numeros { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink); }
+.menu-heroi-origem { font-style: italic; }
+.menu-heroi-tracos {
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;
+  margin: 4px 0 12px; padding: 10px 12px;
+  background: rgba(194, 169, 120, .25); border-radius: 8px;
+}
+.menu-heroi-tracos dt { font-family: var(--serif); font-weight: 700; color: var(--gold-escuro); }
+.menu-heroi-tracos dd { margin: 0; }
+.menu-dica { font-size: 12.5px; color: var(--muted); margin: 0 !important; }
+
+/* --------------------------------------------------------- texto e opções -- */
+.menu-texto section { margin-bottom: 12px; }
+.menu-texto h3 { margin: 0 0 3px; font-family: var(--serif); font-size: 16px; color: var(--gold-escuro); }
+.menu-texto p { margin: 0; font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; }
+
+.menu-opcoes { display: grid; gap: 14px; max-width: 520px; }
+.menu-opcao { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 12px; font-size: 15px; }
+.menu-opcao > span:first-child { font-family: var(--serif); font-weight: 700; }
+.menu-opcao input[type='range'] { accent-color: var(--gold); }
+.menu-opcao input[type='checkbox'] { justify-self: start; width: 18px; height: 18px; accent-color: var(--gold); }
+.menu-valor { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* O botão que volta ao menu fica antes do aviso de turno, no topo do HUD. */
+.hud-topo-esq { display: flex; align-items: center; gap: 10px; justify-self: start; min-width: 0; }
+.btn-menu { padding: 7px 12px; font-size: 13px; }
+
+@media (max-width: 720px) {
+  .menu-quadro { padding: 20px 16px 16px; }
+  .menu[data-tela='titulo'] .menu-palco { padding-left: 16px; justify-items: stretch; }
+  .menu[data-tela='titulo'] .menu-veu { background: rgba(12, 9, 5, .78); }
+  .menu-legal { font-size: 10px; }
+  .menu-herois-corpo { grid-template-columns: 1fr; }
+  .menu-heroi-detalhe { max-height: none; }
+  .menu-opcao { grid-template-columns: 1fr; }
+  .hud-topo-esq { justify-self: center; }
+}
+
+/* ------------------------------------------------- grupo: doze heróis -- */
+.menu-doze {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-content: start;
+  max-height: min(58vh, 560px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.menu-herois-corpo:has(.menu-doze) { grid-template-columns: minmax(300px, 420px) 1fr; }
+.menu-heroi.compacto { grid-template-columns: 52px 1fr; grid-template-rows: auto auto; padding: 6px 8px; opacity: .78; }
+.menu-heroi.compacto.escolhido { opacity: 1; }
+.menu-heroi.compacto .menu-heroi-retrato canvas { width: 44px !important; height: 44px !important; }
+.menu-heroi.compacto .menu-heroi-nome { font-size: 15px; }
+.menu-heroi.compacto .menu-heroi-classe { font-size: 11.5px; }
+.menu-heroi.compacto .menu-heroi-marca { grid-column: 2; grid-row: auto; font-size: 10px; }
+
+/* --------------------------------------------------- preparo: abas -- */
+.menu-abas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.menu-aba {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  text-align: left;
+  padding: 5px 12px 5px 6px;
+  font: inherit;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--line-forte);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.menu-aba > span:nth-child(2) { font-family: var(--serif); font-weight: 700; font-size: 15px; }
+.menu-aba small { grid-column: 2; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--green); }
+.menu-aba.pendente small { color: var(--lacre); }
+.menu-aba.ativa { border-color: var(--gold-escuro); box-shadow: var(--bisel); outline: 2px solid var(--gold); outline-offset: 1px; }
+/* `makePortrait` põe o tamanho no próprio canvas (estilo em linha), por isso
+ * o !important: aqui o retrato é miniatura. */
+.menu-heroi-retrato.mini { grid-row: 1 / -1; width: 36px; height: 36px; display: grid; place-items: center; overflow: hidden; }
+.menu-heroi-retrato.mini canvas { width: 32px !important; height: 32px !important; }
+
+.menu-preparo-corpo { display: grid; grid-template-columns: 1fr minmax(220px, 250px); gap: 14px; }
+.menu-preparo {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  max-height: min(56vh, 540px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.menu-secao h4 {
+  margin: 0 0 6px;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--gold-escuro);
+  display: flex; align-items: baseline; gap: 10px;
+}
+.menu-secao h4 small { font-family: var(--font); font-size: 12px; font-weight: 400; color: var(--muted); }
+
+.menu-opcoes-cartao { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; }
+.menu-opcao-cartao {
+  display: grid; gap: 3px;
+  text-align: left;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--line-forte);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.menu-opcao-cartao strong { font-family: var(--serif); font-size: 14.5px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.menu-opcao-cartao span { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.menu-opcao-cartao.marcada { border-color: var(--gold-escuro); background: linear-gradient(170deg, #f6e3b0, var(--gold-claro)); box-shadow: var(--bisel); }
+.menu-opcao-cartao.marcada span { color: var(--ink); }
+
+.menu-chips, .menu-linha-equip { display: flex; flex-wrap: wrap; gap: 5px; }
+.menu-linha-equip + .menu-linha-equip { margin-top: 6px; }
+.menu-chip {
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--line-forte);
+  border-radius: 99px;
+  cursor: pointer;
+}
+.menu-chip.marcada { border-color: var(--gold-escuro); background: linear-gradient(180deg, var(--gold-claro), #d7b366); font-weight: 700; color: #3b2608; }
+/* Sem regra ainda: cinza, mas escolhível. */
+.menu-chip.sem-regra { color: #8a8478; border-style: dashed; }
+.menu-chip.sem-regra.marcada { background: linear-gradient(180deg, #d9d4c8, #c4bfb4); color: #4a4640; border-style: solid; }
+.menu-sem-regra {
+  font-family: var(--font);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 99px;
+  border: 1px dashed #9a948a;
+  color: #7d786e;
+}
+
+.menu-preparo-resumo {
+  align-self: start;
+  display: grid; gap: 8px;
+  padding: 12px 14px;
+  background: linear-gradient(170deg, var(--papel-3), var(--papel-2));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 10px;
+  box-shadow: var(--bisel);
+}
+.menu-preparo-resumo h3 { margin: 0; font-family: var(--serif); font-size: 22px; color: var(--gold-escuro); }
+.menu-preparo-resumo .menu-heroi-linha { margin: 0 !important; font-size: 13px; }
+.menu-resumo-numeros { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 13.5px; }
+.menu-resumo-numeros dt { font-family: var(--serif); font-weight: 700; color: var(--gold-escuro); }
+.menu-resumo-numeros dd { margin: 0; font-variant-numeric: tabular-nums; }
+.menu-aviso { margin: 0; font-size: 12.5px; color: var(--lacre); }
+
+@media (max-width: 720px) {
+  .menu-herois-corpo:has(.menu-doze) { grid-template-columns: 1fr; }
+  .menu-doze { max-height: none; }
+  .menu-preparo-corpo { grid-template-columns: 1fr; }
+  .menu-preparo { max-height: none; }
+}

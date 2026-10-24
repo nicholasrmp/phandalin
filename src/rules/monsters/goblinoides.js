@@ -96,7 +96,9 @@ export const GOBLINOIDES = {
     id: 'goblinChefe',
     name: 'Chefe Goblin',
     look: 'goblinBoss',
-    fonte: 'SRD',
+    // O Chefe Goblin não está no SRD 5.1: bloco nosso, derivado do goblin do
+    // SRD (mais PV, cota de malha, dois golpes, Redirecionar Ataque).
+    fonte: 'propria',
     size: 'pequeno',
     level: 3,
     cr: '1',
@@ -165,7 +167,7 @@ export const GOBLINOIDES = {
       { name: 'Azagaia arremessada', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
     traits: ['brutamontes', 'ataqueSurpresa'],
-    blurb: 'Alcance de 3 m e 2d8+2 num golpe só: é o inimigo que abre o grupo pelo meio e mata um conjurador de 11 PV em uma rodada. Não deixe o mago na linha de frente dele.',
+    blurb: '2d8+2 num golpe só: é o inimigo que abre o grupo pelo meio e mata um conjurador de 11 PV em uma rodada. Não deixe o mago na linha de frente dele.',
   },
 
   // --- chefes nomeados da campanha -----------------------------------------
@@ -231,10 +233,10 @@ export const GOBLINOIDES = {
     id: 'yeemik',
     name: 'Yeemik',
     look: 'yeemik',
-    // Bloco do Chefe Goblin do SRD, sem número mudado. É o papel dele no
+    // Mesmo bloco do Chefe Goblin (nosso, não do SRD). É o papel dele no
     // módulo: o segundo em comando que quer o posto do chefe — e Redirecionar
     // Ataque é exatamente "empurra o subordinado na frente do golpe".
-    fonte: 'SRD',
+    fonte: 'propria',
     size: 'pequeno',
     level: 3,
     cr: '1',

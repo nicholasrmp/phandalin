@@ -1,0 +1,32 @@
+/* A tela de subir de nível, dentro do pergaminho da narrativa. */
+
+.nivel-lista { display: grid; gap: 8px; margin: 6px 0; font-family: var(--font); }
+.nivel-cartao {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  padding: 8px 10px 8px 6px;
+  border: 1px solid var(--line-forte);
+  border-radius: 8px;
+  background: rgba(255, 248, 228, .3);
+}
+.nivel-retrato {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: url('../art/hud/slot.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+.nivel-retrato canvas { width: 36px !important; height: 36px !important; }
+.nivel-cartao strong { font-family: var(--serif); font-size: 15px; color: var(--gold-escuro); }
+.nivel-cartao p { margin: 2px 0 0 !important; font-size: 13px; line-height: 1.4; }
+.nivel-escolha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
+.nivel-select {
+  font: 13px var(--font);
+  padding: 3px 6px;
+  color: var(--ink);
+  background: rgba(255, 248, 228, .7);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 6px;
+}
+.nivel-nota { color: var(--muted); }

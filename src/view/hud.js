@@ -42,7 +42,7 @@ import { CONDITIONS, hasCondition } from '../rules/conditions.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
-import { getSpell } from '../rules/spells.js';
+import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
 import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
 import { formatModifier } from '../core/dice.js';
@@ -96,8 +96,8 @@ const CONDICOES_BOAS = new Set(['abencoado', 'esquivando']);
 // sobrou foi agrupado para a mão esquerda: F/G/H para as armas, na ordem em
 // que elas aparecem, e R/X/C/T para as ações comuns.
 const TECLAS_ARMA = ['f', 'g', 'h'];
-const TECLAS_ACAO = { dash: 'r', dodge: 'x', disengage: 'c', stabilize: 't' };
-const TECLAS_FEATURE = ['v', 'b', 'n'];
+const TECLAS_ACAO = { dash: 'r', dodge: 'x', disengage: 'c', stabilize: 't', standUp: 'z', escape: 'y' };
+const TECLAS_FEATURE = ['v', 'b', 'n', 'j'];
 
 /** A gema de custo no canto do azulejo, pelo custo que a dica declara. */
 const CUSTO_GEMA = { 'Ação': 'acao', 'Ação bônus': 'bonus' };
@@ -618,12 +618,13 @@ export class Hud {
     };
 
     this.ordem.replaceChildren(
-      ...enc.allOf(agora).map((c) => ficha(c, true)),
+      // `oculto`: no escuro, quem o grupo não vê não entra na fila (`main.js`).
+      ...enc.allOf(agora).filter((c) => !c.oculto).map((c) => ficha(c, true)),
       this.ligarDica(el('span', { class: 'vez-sep' }, '▸'), {
         nome: 'Iniciativa por lado',
         texto: 'Todo o lado age e só então passa para o outro. Quem está à esquerda da marca joga nesta vez; à direita, espera.',
       }),
-      ...enc.allOf(depois).map((c) => ficha(c, false)),
+      ...enc.allOf(depois).filter((c) => !c.oculto).map((c) => ficha(c, false)),
     );
   }
 
@@ -632,8 +633,8 @@ export class Hud {
   renderTrilho(enc, selected, mode) {
     this.trilho.replaceChildren(...limpos(
       enc.allOf('party').map((c) => this.fichaGrupo(enc, c, selected)),
-      enc.allOf('foes').length ? el('div', { class: 'trilho-titulo' }, 'Inimigos') : null,
-      enc.allOf('foes').map((c) => this.fichaInimigo(enc, c, selected, mode)),
+      enc.allOf('foes').some((c) => !c.oculto) ? el('div', { class: 'trilho-titulo' }, 'Inimigos') : null,
+      enc.allOf('foes').filter((c) => !c.oculto).map((c) => this.fichaInimigo(enc, c, selected, mode)),
     ));
   }
 
@@ -813,7 +814,7 @@ export class Hud {
     // página de magias, não só na que está à vista. Conta também o que custa
     // "Livre", como a Ação Surpreendente.
     const sobra = fixas.some((t) => !t.classList.contains('off')) || magias.some((m) => !m.desabilitado);
-    this.barra.append(this.nucleo(c), this.bandeja(c, mode, fixas, magias), this.zonaTurno(c, sobra));
+    this.barra.append(this.nucleo(c), this.bandeja(c, mode, fixas, magias), this.zonaTurno(c, sobra, mode));
   }
 
   /**
@@ -901,7 +902,7 @@ export class Hud {
     const tiles = (c.weapons ?? []).map((wid, i) => {
       const w = WEAPONS[wid];
       const run = () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid });
-      const tecla = this.reservarTecla(TECLAS_ARMA[i], run, c.actionUsed);
+      const tecla = this.reservarTecla(TECLAS_ARMA[i], run, !enc.podeAtacar(c));
       // O perfil é a arma NAS MÃOS DESTE personagem: a dica mostrava "1d8
       // cortante", o dado cru da tabela, sem o modificador que o guerreiro
       // soma de verdade. O bônus de ataque é a metade que faltava da conta.
@@ -932,7 +933,7 @@ export class Hud {
       return this.tile(iconeDeArma(w.art, w.name), {
         tecla,
         ativo: mode?.kind === 'attack' && mode.weaponId === wid,
-        desabilitado: c.actionUsed,
+        desabilitado: !enc.podeAtacar(c),
         onClick: run,
         selo: rot?.texto ?? null,
         classe: rot ? `chance-${rot.classe}` : '',
@@ -942,7 +943,7 @@ export class Hud {
           linhas,
           texto: 'Clique num inimigo para atacar. Corpo a corpo longe do alvo anda até ele primeiro, gastando movimento.',
           custo: 'Ação',
-          aviso: c.actionUsed ? 'A ação deste turno já foi usada' : null,
+          aviso: !enc.podeAtacar(c) ? 'A ação deste turno já foi usada' : null,
         },
       });
     });
@@ -984,15 +985,31 @@ export class Hud {
     comum('correr', 'Disparada', 'Dobra o deslocamento deste turno.', 'Ação', { kind: 'dash' }, c.actionUsed);
     comum('esquivar', 'Esquivar', 'Quem te ataca fica com desvantagem; seus testes de Destreza ganham vantagem.', 'Ação', { kind: 'dodge' }, c.actionUsed);
     comum('desengajar', 'Desengajar', 'Sair de perto sem sofrer ataque de oportunidade.', 'Ação', { kind: 'disengage' }, c.actionUsed);
+    // Só aparecem quando valem: derrubado ou preso.
+    if (hasCondition(c, 'caido') && !hasCondition(c, 'inconsciente')) {
+      const custo = Math.ceil(enc.speedOf(c) / 2);
+      comum('levantar', 'Levantar-se', `Fica de pé gastando metade do deslocamento (${custo} pés). Caído, você rasteja a meio passo e ataca com desvantagem.`,
+        'Movimento', { kind: 'standUp' }, c.movementLeftFt < custo || custo === 0);
+    }
+    if (hasCondition(c, 'agarrado') || hasCondition(c, 'contido')) {
+      comum('escapar', 'Escapar', 'Teste de Atletismo ou Acrobacia (o melhor) contra a CD de quem prende.', 'Ação', { kind: 'escape' }, c.actionUsed);
+    }
 
     // O último campo é o recurso de `c.resources` que a habilidade gasta.
     const feats = {
       secondWind: ['folego', 'Retomar o Fôlego', 'Recupera 1d10 + nível de pontos de vida.', 'Ação bônus', () => !c.bonusUsed && c.resources?.secondWind > 0, 'secondWind'],
       actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0, 'actionSurge'],
-      cunningAction: ['ardilosa', 'Ação Ardilosa', 'Disparada, Desengajar ou Esconder-se como ação bônus.', 'Ação bônus', () => !c.bonusUsed, null],
       preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
     };
     for (const f of c.features ?? []) {
+      // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.
+      if (f === 'cunningAction') {
+        comum('correr', 'Ação Ardilosa: Disparada', 'Dobra o deslocamento como ação bônus.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'disparada' }, c.bonusUsed);
+        comum('desengajar', 'Ação Ardilosa: Desengajar', 'Sai de perto sem ataque de oportunidade, como ação bônus.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'desengajar' }, c.bonusUsed);
+        continue;
+      }
       const e = feats[f];
       if (!e) continue;
       comum(e[0], e[1], e[2], e[3], { kind: 'feature', featureId: f }, !e[4](), e[5]);
@@ -1112,7 +1129,7 @@ export class Hud {
    * O botão de terminar fecha o bloco: depois de ler o que sobrou, a próxima
    * decisão é se o turno acabou.
    */
-  zonaTurno(c, sobra) {
+  zonaTurno(c, sobra, mode = null) {
     // Ação Surpreendente dá uma ação EXTRA. Mostrar "1" quando restam duas é
     // esconder do guerreiro o recurso que define o turno dele.
     const acoesExtras = c.resources?.actionSurge ?? 0;
@@ -1159,7 +1176,7 @@ export class Hud {
           'Uma por turno, e só quando alguma habilidade a oferece.', 'Bônus'),
         linha('reacao', 'Reação', c.reactionUsed ? 0 : 1, 'fora do seu turno',
           'Ataque de oportunidade: quando um inimigo adjacente se afasta, você ataca de graça, sem clicar. Uma por rodada.')),
-      this.espacosDeMagia(c),
+      this.espacosDeMagia(c, mode),
       mov,
       this.botaoTerminar(c, sobra));
   }
@@ -1211,11 +1228,14 @@ export class Hud {
   magiasDe(c, mode) {
     const dc = spellSaveDc(c);
     const atk = spellAttackBonus(c);
-    return [...c.spellcasting.cantrips, ...c.spellcasting.prepared]
+    // Truques, preparadas e as sempre preparadas do domínio/juramento/círculo.
+    return magiasProntas(c)
       .map((sid) => ({ sid, s: getSpell(sid) }))
       .sort((a, b) => a.s.level - b.s.level)
       .map(({ sid, s }) => {
-        const semSlot = s.level > 0 && !c.spellcasting.slots[s.level];
+        // Sem espaço do círculo dela, a magia ainda sai num círculo maior.
+        const semSlot = s.level > 0 && !c.spellcasting.slots.some((n, i) => i >= s.level && n > 0);
+        const dano = dadosDaMagia(s, { nivel: c.level ?? 1 });
         const bonus = s.castTime === 'bonus';
         const gasto = bonus ? c.bonusUsed : c.actionUsed;
         const desabilitado = semSlot || gasto;
@@ -1240,14 +1260,14 @@ export class Hud {
               nome: s.name,
               tipo: s.level === 0 ? 'truque' : `magia de ${s.level}º círculo`,
               linhas: [
-                s.damage ? ['Dano', `${s.damage}${s.damageType ? ` ${s.damageType}` : ''}`] : null,
+                s.damage ? ['Dano', `${dano}${s.damageType ? ` ${s.damageType}` : ''}`] : null,
                 s.rangeFt ? ['Alcance', `${s.rangeFt} pés`] : null,
                 s.kind === 'attack' ? ['Ataque de magia', formatModifier(atk)] : null,
                 s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
               ],
               texto: s.desc,
               custo: bonus ? 'Ação bônus' : 'Ação',
-              aviso: semSlot ? `Sem espaço de ${s.level}º círculo` : gasto ? 'Recurso do turno já usado' : null,
+              aviso: semSlot ? `Sem espaço de ${s.level}º círculo ou maior` : gasto ? 'Recurso do turno já usado' : null,
             },
           }), s.level),
         };
@@ -1260,9 +1280,12 @@ export class Hud {
    * Gate 3 faz — o círculo é recurso, como a ação e o bônus, e fica sempre à
    * vista; nunca é uma aba que esconde magia.
    */
-  espacosDeMagia(c) {
+  espacosDeMagia(c, mode = null) {
     const max = c.spellcasting?.slotsMax ?? [];
     if (!c.spellcasting) return null;
+    // Com uma magia de círculo na mira, os círculos em que ela pode sair
+    // viram botões: clicar escolhe conjurar num círculo maior.
+    const naMira = mode?.kind === 'spell' ? getSpell(mode.spellId) : null;
     // O truque abre a legenda: é ela que explica o "T" do selo nos medalhões.
     const grupos = c.spellcasting.cantrips?.length
       ? [this.focoDeCirculo(this.ligarDica(
@@ -1275,16 +1298,21 @@ export class Hud {
       const total = max[lvl] ?? 0;
       if (!total) continue;
       const tem = c.spellcasting.slots?.[lvl] ?? 0;
-      grupos.push(this.focoDeCirculo(this.ligarDica(
-        el('span', { class: `espaco-circulo circulo-${lvl}${tem ? '' : ' esgotado'}` },
-          el('span', { class: 'espaco-num' }, ROMANO[lvl]),
-          Array.from({ length: total }, (_, i) => el('i', { class: i < tem ? 'cheio' : '' }))),
-        {
-          nome: `Espaços de ${lvl}º círculo`,
-          linhas: [['Restam', `${tem} de ${total}`]],
-          texto: 'Cada conjuração de magia deste círculo gasta um. Voltam num descanso longo.',
-        },
-      ), lvl));
+      const escolhivel = naMira && naMira.level > 0 && lvl >= naMira.level && tem > 0;
+      const escolhido = escolhivel && mode.circulo === lvl;
+      const grupo = el('span', {
+        class: `espaco-circulo circulo-${lvl}${tem ? '' : ' esgotado'}${escolhivel ? ' escolhivel' : ''}${escolhido ? ' escolhido' : ''}`,
+        onClick: escolhivel ? () => this.handlers.onAction?.({ kind: 'circulo', lvl }) : undefined,
+      },
+      el('span', { class: 'espaco-num' }, ROMANO[lvl]),
+      Array.from({ length: total }, (_, i) => el('i', { class: i < tem ? 'cheio' : '' })));
+      grupos.push(this.focoDeCirculo(this.ligarDica(grupo, {
+        nome: `Espaços de ${lvl}º círculo`,
+        linhas: [['Restam', `${tem} de ${total}`]],
+        texto: escolhivel
+          ? `Clique para conjurar ${naMira.name} neste círculo${lvl > naMira.level ? ' — mais forte, gasta um espaço maior' : ''}.`
+          : 'Cada conjuração de magia deste círculo gasta um. Voltam num descanso longo.',
+      }), lvl));
     }
     return grupos.length ? el('div', { class: 'espacos-magia' }, grupos) : null;
   }

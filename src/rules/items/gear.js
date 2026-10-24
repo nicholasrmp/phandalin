@@ -159,6 +159,9 @@ export const GEAR = {
   moedaDeCobre: pilha('moedaDeCobre', 'Peças de cobre', 0.01, 0.02, 'Cem valem uma de ouro.', { tipo: 'moeda', art: 'moeda' }),
   moedaDePrata: pilha('moedaDePrata', 'Peças de prata', 0.1, 0.02, 'Dez valem uma de ouro.', { tipo: 'moeda', art: 'moeda' }),
   moedaDeOuro: pilha('moedaDeOuro', 'Peças de ouro', 1, 0.02, 'A moeda em que todo preço desta tabela está escrito.', { tipo: 'moeda', art: 'moeda' }),
+  // Tesouro de aventura: só vale o que alguém pagar por ele.
+  denteDeOuro: pilha('denteDeOuro', 'Dente de ouro', 1, 0.01, 'Um dente de ouro arrancado de alguém. Vale o peso dele: 1 po.', { tipo: 'tesouro' }),
+  estatuetaDeSapo: item('estatuetaDeSapo', 'Sapo de jade', 40, 1, 'Estatueta de um sapo em jade, com olhos de ouro. Uns 40 po na mão de quem compra arte.', { tipo: 'tesouro' }),
   moedaDePlatina: pilha('moedaDePlatina', 'Peças de platina', 10, 0.02, 'Dez de ouro cada. Raras fora de cofre.', { tipo: 'moeda', art: 'moeda' }),
 };
 

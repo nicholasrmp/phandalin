@@ -38,6 +38,9 @@ const P = {
   e: '#2a2430', // vazio, buraco, sombra dura
 };
 
+/** A paleta, para quem desenha grade na mesma linguagem (efeitos de magia). */
+export const PALETA = P;
+
 const ICONES = {
   // ---- armas --------------------------------------------------------------
   espada: [
@@ -594,6 +597,20 @@ Object.assign(ICONES, ICONES_ACOES, ICONES_RACAS, ICONES_CLASSES);
 const ALIAS = {
   'raca-darkvision': 'magia-visaoNoEscuro',
   'classe-twoWeaponFighting': 'acao-duasArmas',
+  // O motor de progressão chama o aumento de atributo de `asi`.
+  'classe-asi': 'classe-abilityScoreImprovement',
+  // Mesma ideia, um desenho: o ancestral do feiticeiro é o do draconato, e o
+  // estilo de luta adicional é o estilo de luta.
+  'classe-dragonAncestor': 'raca-draconicAncestry',
+  'classe-additionalFightingStyle': 'classe-fightingStyle',
+  'classe-additionalMagicalSecrets': 'classe-magicalSecrets',
+  // O marcador "escolha a subclasse" mostra o emblema da classe.
+  'classe-primalPath': 'classe-barbaro', 'classe-bardCollege': 'classe-bardo',
+  'classe-otherworldlyPatron': 'classe-bruxo', 'classe-divineDomain': 'classe-clerigo',
+  'classe-druidCircle': 'classe-druida', 'classe-sorcerousOrigin': 'classe-feiticeiro',
+  'classe-martialArchetype': 'classe-guerreiro', 'classe-roguishArchetype': 'classe-ladino',
+  'classe-arcaneTradition': 'classe-mago', 'classe-monasticTradition': 'classe-monge',
+  'classe-rangerArchetype': 'classe-patrulheiro',
 };
 const resolver = (nome) => (ICONES[nome] ? nome : ALIAS[nome] ?? nome);
 
@@ -676,6 +693,7 @@ const ACAO_DO_HUD = {
   folego: 'classe-secondWind',
   surto: 'classe-actionSurge',
   ardilosa: 'classe-cunningAction',
+  levantar: 'acao-levantarSe',
   preservar: 'classe-preserveLife',
 };
 export function iconeDeAcao(nome) {

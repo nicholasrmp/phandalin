@@ -11,15 +11,16 @@
 
 import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDice } from '../core/dice.js';
 import { Battlefield, distanceFt, isAdjacent, key } from '../core/grid.js';
+import { ARMORS } from './items/index.js';
 import {
   abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
   proficiencyBonus, ABILITY_NAME, passivePerception,
 } from './abilities.js';
 import {
-  WEAPONS, weaponAbility,
+  WEAPONS, weaponAbility, armorClass,
   itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila,
 } from './equipment.js';
-import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
+import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, caEfetiva, CONDITIONS } from './conditions.js';
 
 /**
  * REGRAS DA CASA — nada aqui é SRD.
@@ -33,8 +34,13 @@ import { addCondition, removeCondition, hasCondition, getCondition, conditionEff
 export const HOUSE_RULES = {
   ignite: { enabled: true, chance: 0.35, rounds: 2, damage: '1d4' },
 };
-import { getSpell } from './spells.js';
+import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from './spells.js';
+import {
+  prepararTalentos, bonusDeIniciativa, segundaChanceNoAtaque, segundaChanceNaResistencia,
+  ajustarDanoDeArma, depoisDoAcerto, rolarCura, vetoDoMedico, medicoDeCampanha, temUsoGratis, gastarUsoGratis,
+} from './talentos.js';
 import { spellMod } from './party.js';
+import { modificadoresDeLuz } from './luz.js';
 
 // ---- rolagens que se explicam ---------------------------------------------
 //
@@ -181,6 +187,13 @@ function contaDeResistencia(r) {
   ].filter(Boolean).join(' · ');
 }
 
+/** '5-6' ou [5, 6] → 5. `null` quando o ataque não recarrega. */
+function recargaMinima(recharge) {
+  if (!recharge) return null;
+  if (Array.isArray(recharge)) return Math.min(...recharge);
+  return Number(String(recharge).split('-')[0]) || 6;
+}
+
 export class Encounter {
   constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {}, reinforcements = null, emboscada = null }) {
     this.field = battlefield;
@@ -196,11 +209,21 @@ export class Encounter {
     this.reinforcements = reinforcements;
 
     this.combatants = [...party, ...foes];
+    // Áreas que ficam no chão depois da magia (Graxa). O terreno difícil delas
+    // vai para o campo, que é quem calcula o custo de andar.
+    this.zonas = [];
+    this.auras = [];
+    this.field.dificeis = new Set();
+    this.field.dificeisExtra = null;
     for (const c of this.combatants) {
       c.movementLeftFt = 0;
       c.actionUsed = true;
       c.bonusUsed = true;
-      c.reactionUsed = true;
+      // A reação volta no começo do turno de cada um, mas ela EXISTE desde o
+      // primeiro instante do combate: quem perde a iniciativa ainda pode dar
+      // ataque de oportunidade no turno do outro lado. Só o surpreso fica sem
+      // ela até o fim do turno que perde (`rolarSurpresa`).
+      c.reactionUsed = false;
       c.acted = true;
       c.sneakUsedThisTurn = false;
       c.extraActions = 0;
@@ -245,7 +268,9 @@ export class Encounter {
   }
 
   enemiesOf(actor) {
-    return this.combatants.filter((c) => c.side !== actor.side && !c.dead && !hasCondition(c, 'inconsciente'));
+    // O NPC neutro (o goblin que só quer conversar) não é inimigo de ninguém
+    // até a cena mudar o lado dele.
+    return this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro' && !c.dead && !hasCondition(c, 'inconsciente'));
   }
 
   alliesOf(actor) {
@@ -255,12 +280,19 @@ export class Encounter {
   speedOf(actor) {
     const fx = conditionEffects(actor);
     if (fx.speedOverride !== null) return fx.speedOverride;
-    return Math.max(0, actor.speedFt - fx.speedPenaltyFt);
+    // Armadura pesada sem a Força mínima tira 3 m do deslocamento.
+    const forcaMinima = ARMORS[actor.armor ?? 'nenhuma']?.forcaMinima ?? 0;
+    const pesada = forcaMinima > (actor.abilities?.str ?? 10) ? 10 : 0;
+    const pes = Math.max(0, actor.speedFt - fx.speedPenaltyFt - pesada);
+    // Lentidão: metade, em casas inteiras.
+    const comBonus = (pes + fx.speedBonusFt) * (fx.speedMult ?? 1);
+    return fx.speedHalf ? Math.floor(comBonus / 10) * 5 : comBonus;
   }
 
   // ---- ciclo de turnos -----------------------------------------------------
 
   start() {
+    prepararTalentos(this);
     const partyInit = d20(this.rng, this.bestDex('party'));
     const foeInit = d20(this.rng, this.bestDex('foes'));
     this.say('inicio', `Iniciativa — Grupo ${partyInit.total} × ${foeInit.total} Inimigos`);
@@ -300,11 +332,17 @@ export class Encounter {
     if (!this.emboscada) return surpresos;
     const lado = this.emboscada.emboscadores;
     const alvos = lado === 'foes' ? 'party' : 'foes';
-    const furtivos = this.allOf(lado).map((c) => d20(this.rng, skillBonus(c, 'furtividade')).total);
+    // A cena pode trazer os testes já rolados (a chegada da exploração usa
+    // os mesmos para ver quem nota os emboscadores antes da luta).
+    const furtivos = this.emboscada.furtividade
+      ?? this.allOf(lado).map((c) => d20(this.rng, skillBonus(c, 'furtividade')).total);
     if (!furtivos.length) return surpresos;
     const menor = Math.min(...furtivos);
     for (const c of this.allOf(alvos)) {
-      if (passivePerception(c) < menor) surpresos.add(c.id);
+      if (passivePerception(c) < menor) {
+        surpresos.add(c.id);
+        c.reactionUsed = true;
+      }
     }
     const nomes = this.allOf(alvos).filter((c) => surpresos.has(c.id)).map((c) => c.name);
     this.say('inicio', `Furtividade dos emboscadores: ${furtivos.join(', ')} — `
@@ -313,7 +351,9 @@ export class Encounter {
   }
 
   bestDex(side) {
-    return Math.max(...this.allOf(side).map((c) => abilityMod(c.abilities.dex)), 0);
+    // O lado rola uma vez, com o melhor bônus entre os seus — o Alerta soma
+    // a proficiência de quem o tem (`talentos.js`).
+    return Math.max(...this.allOf(side).map((c) => bonusDeIniciativa(c)), 0);
   }
 
   beginSide(side) {
@@ -321,18 +361,40 @@ export class Encounter {
     if (side === this.firstSide) this.spawnReinforcements();
 
     this.side = side;
+    // Efeitos que duram "até o começo do próximo turno" do conjurador.
+    this.contarDuracoes((cond) => cond.lado === side && cond.quando === 'inicio');
     for (const c of this.allOf(side)) {
       c.movementLeftFt = this.speedOf(c);
       c.actionUsed = false;
       c.bonusUsed = false;
-      c.reactionUsed = false;
+      // Lentidão tira a reação enquanto durar.
+      c.reactionUsed = conditionEffects(c).semReacao;
       c.acted = false;
+      c.aurasNoTurno = [];
+      c.ataquesRestantes = 0;
+      for (const ativa of Object.values(c.magiasAtivas ?? {})) ativa.usadoNoTurno = false;
+      // Velocidade: uma ação a mais por turno, só para atacar (um golpe),
+      // correr, desengajar ou usar um objeto.
+      c.acaoLimitada = false;
+      c.acaoVelozDisponivel = hasCondition(c, 'acelerado');
+      this.comecoDoTurnoMagico(c);
       c.sneakUsedThisTurn = false;
       c.martialUsedThisTurn = false;
       c.extraActions = 0;
+      c.disengaging = false;
+      c.magiasNoTurno = [];
+      c.surgeUsedThisTurn = false;
+      this.rolarRecarga(c);
       this.tickConditions(c);
       this.burnTick(c);
       if (hasCondition(c, 'inconsciente') && c.kind === 'pc' && !c.stable) this.deathSave(c);
+    }
+    // Teia: quem começa o turno nela testa. Espíritos Guardiões: o inimigo
+    // que começa o turno na aura sofre.
+    for (const c of this.allOf(side)) {
+      if (c.dead) continue;
+      for (const zona of this.zonasEm(c.pos)) if (zona.quando === 'inicio') this.resistirAZona(c, zona, 'começa o turno');
+      for (const aura of this.aurasHostisEm(c, c.pos)) this.golpeDaAura(aura, c, 'começa o turno');
     }
     this.say('turno', side === 'party' ? `— Turno do grupo (rodada ${this.round}) —` : `— Turno dos inimigos (rodada ${this.round}) —`);
     this.onEvent({ type: 'sideStart', side });
@@ -355,15 +417,134 @@ export class Encounter {
     }
   }
 
+  /** Recarga (5–6): no começo do turno, um d6 por ataque gasto. */
+  rolarRecarga(c) {
+    for (const nome of Object.keys(c.recarregando ?? {})) {
+      if (!c.recarregando[nome]) continue;
+      const atk = c.attacks?.find((a) => a.name === nome);
+      const r = this.rng.die(6);
+      if (r >= recargaMinima(atk?.recharge)) {
+        c.recarregando[nome] = false;
+        this.say('recurso', `${c.name}: ${nome} recarregou (d6 = ${r}).`);
+      }
+    }
+  }
+
+  /** Começo do turno: some o que dura "até o começo do seu próximo turno". */
   tickConditions(c) {
     if (!c.conditions?.length) return;
-    c.conditions = c.conditions.filter((cond) => {
-      const def = CONDITIONS[cond.id];
-      if (def?.expiresAtTurnStart) return false;
-      if (cond.rounds === Infinity) return true;
-      cond.rounds -= 1;
-      return cond.rounds > 0;
-    });
+    c.conditions = c.conditions.filter((cond) => !CONDITIONS[cond.id]?.expiresAtTurnStart);
+  }
+
+  /**
+   * Fim do turno de um lado: as durações contam aqui, e quem está preso a um
+   * efeito que permite repetir a resistência ("no fim de cada turno seu")
+   * rola de novo.
+   *
+   * As durações contavam no COMEÇO do turno, e uma condição de uma rodada (o
+   * envenenado do Raio de Doença) sumia antes de o alvo agir — nunca dava a
+   * desvantagem que prometia.
+   */
+  fimDoTurnoDoLado(side) {
+    // Flecha Ácida: o ácido que ficou queima no fim do turno de quem levou.
+    for (const c of this.allOf(side)) {
+      const acido = getCondition(c, 'acidoAtrasado');
+      if (!acido || c.dead) continue;
+      const r = damageRoll(this.rng, acido.data.dano);
+      const dono = this.combatants.find((x) => x.id === acido.source);
+      this.say('magia', `O ácido ainda queima ${c.name}: ${r.total}.`, `${acido.data.dano}[${r.rolls.join('+')}]`);
+      this.applyDamage(c, r.total, 'ácido', dono ?? null, { magico: true });
+    }
+    for (const c of this.allOf(side)) {
+      for (const cond of [...(c.conditions ?? [])]) {
+        if (!cond.data?.repete || c.dead) continue;
+        // Medo: só repete quem termina o turno SEM ver quem o assustou.
+        if (cond.data.repete === 'semVisao') {
+          const fonteDoMedo = this.combatants.find((x) => x.id === cond.source && !x.dead);
+          if (fonteDoMedo && this.field.hasLineOfSight(c.pos, fonteDoMedo.pos)) continue;
+        }
+        const save = this.resistencia(c, cond.data.save, cond.data.dc);
+        const nome = CONDITIONS[cond.id]?.name ?? cond.id;
+        const r = this.explicarResistencia(c, cond.data.save, cond.data.dc, save, {
+          contra: `${nome} (nova resistência no fim do turno)`,
+          seSucesso: `deixa de estar ${nome.toLowerCase()}`,
+        });
+        if (save.success) {
+          removeCondition(c, cond.id);
+          this.say('condicao', `${c.name} se livra: não está mais ${nome.toLowerCase()}.`, r.conta, { rolagem: r });
+          this.soltouDaConcentracao(c, cond.id);
+        } else {
+          this.say('condicao', `${c.name} continua ${nome.toLowerCase()}.`, r.conta, { rolagem: r });
+        }
+      }
+      // Magias ativas sem concentração (Arma Espiritual): 1 minuto.
+      for (const [id, ativa] of Object.entries(c.magiasAtivas ?? {})) {
+        if (ativa.rodadas == null) continue;
+        ativa.rodadas -= 1;
+        if (ativa.rodadas <= 0) {
+          delete c.magiasAtivas[id];
+          this.say('magia', `${c.name}: ${getSpell(id).name} se desfaz.`);
+        }
+      }
+      // Magia de concentração com duração (Bênção: 1 minuto).
+      if (c.concentrating?.rounds) {
+        c.concentrating.rounds -= 1;
+        if (c.concentrating.rounds <= 0) {
+          this.say('concentracao', `${c.name}: ${getSpell(c.concentrating.spellId)?.name ?? 'a magia'} chega ao fim.`);
+          this.dropConcentration(c);
+        }
+      }
+    }
+    // Raio de Bruxa: a ação gasta noutra coisa encerra o arco.
+    for (const c of this.allOf(side)) {
+      const arco = c.magiasAtivas?.raioDeBruxa;
+      if (arco && c.actionUsed && !arco.usadoNoTurno && c.concentrating?.spellId === 'raioDeBruxa') {
+        this.say('concentracao', `${c.name} usou a ação noutra coisa: o arco do Raio de Bruxa se desfaz.`);
+        this.dropConcentration(c);
+      }
+    }
+    // Esfera Flamejante: no fim do turno do dono, quem está a 1,5 m dela.
+    for (const z of this.zonas) {
+      if (z.quando !== 'fimDono' || z.lado !== side) continue;
+      for (const c of this.combatants) {
+        // Quem está a 1,5 m da esfera (o próprio conjurador também, como no livro).
+        if (c.dead || !z.centro || distanceFt(c.pos, z.centro) > 5) continue;
+        this.danoDaZona(c, z, 'está perto');
+      }
+    }
+    // Graxa: quem termina o turno dentro dela testa de novo.
+    for (const c of this.allOf(side)) {
+      for (const zona of this.zonasEm(c.pos)) if (zona.quando === 'fim') this.resistirAZona(c, zona, 'termina o turno');
+    }
+    this.contarZonas(side);
+    // As durações: as que contam no turno de quem as carrega, e as que
+    // contam no fim do turno do lado do conjurador.
+    this.contarDuracoes((cond, dono) => (cond.lado ? cond.lado === side && cond.quando !== 'inicio' : dono.side === side));
+  }
+
+  /** Anda um passo nas durações que `conta` escolher; some o que zerar. */
+  contarDuracoes(conta) {
+    for (const c of this.combatants) {
+      if (!c.conditions?.length) continue;
+      c.conditions = c.conditions.filter((cond) => {
+        if (cond.rounds === Infinity || !conta(cond, c)) return true;
+        cond.rounds -= 1;
+        return cond.rounds > 0;
+      });
+    }
+  }
+
+  /**
+   * Põe uma condição e cobra o que ela implica. Condição que incapacita
+   * (atordoado, paralisado, inconsciente) derruba a concentração: a Bênção
+   * não continua valendo com o clérigo fora de combate.
+   */
+  aplicarCondicao(alvo, id, opcoes = {}) {
+    const fonte = typeof opcoes.source === 'string' ? this.combatants.find((c) => c.id === opcoes.source) : null;
+    if (this.imuneACondicao(alvo, id, fonte)) return null;
+    const cond = addCondition(alvo, id, opcoes);
+    if (CONDITIONS[id]?.incapacitated) this.dropConcentration(alvo);
+    return cond;
   }
 
   /**
@@ -420,13 +601,16 @@ export class Encounter {
   }
 
   /**
-   * Redirecionar Ataque (Chefe Goblin, SRD): ao ser alvo de um ataque, troca de
+   * Redirecionar Ataque (Chefe Goblin, conteúdo próprio): ao ser alvo de um ataque, troca de
    * lugar com um goblin adjacente, que vira o alvo. Gasta a reação dele.
    */
   tryRedirect(target) {
     if (!target.traits?.includes('redirectAttack') || target.reactionUsed) return target;
+    if (conditionEffects(target).incapacitated) return target;
+    // Qualquer goblin serve (o arqueiro também é goblin), desde que acordado.
     const buddy = this.alliesOf(target).find(
-      (a) => a.defId === 'goblin' && isAdjacent(a.pos, target.pos) && !hasCondition(a, 'inconsciente'),
+      (a) => /^goblin/i.test(a.defId ?? '') && !a.traits?.includes('redirectAttack')
+        && isAdjacent(a.pos, target.pos) && !conditionEffects(a).incapacitated,
     );
     if (!buddy) return target;
 
@@ -484,6 +668,8 @@ export class Encounter {
     if (this.over) return;
     const pending = this.allOf(this.side).filter((c) => !c.acted && !hasCondition(c, 'inconsciente'));
     if (pending.length > 0) return;
+    this.fimDoTurnoDoLado(this.side);
+    if (this.over) return;
     const next = this.side === 'party' ? 'foes' : 'party';
     if (next === this.firstSide) this.round += 1;
     this.beginSide(next);
@@ -508,26 +694,50 @@ export class Encounter {
 
   // ---- movimento -----------------------------------------------------------
 
-  reachableFor(actor) {
+  /**
+   * `evitarZonas`: o caminho não pisa em casa de zona (Graxa). É escolha de
+   * quem anda (a IA de quem tem juízo), não regra: quem já está dentro da
+   * zona anda livre para sair.
+   */
+  reachableFor(actor, { evitarZonas = false } = {}) {
     if (hasCondition(actor, 'inconsciente') || conditionEffects(actor).incapacitated) return new Map();
     const f = actor.pos.f ?? 1;
-    return this.field.reachable(
+    const evita = evitarZonas && this.zonas.length && !this.zonaEm(actor.pos);
+    const cabeNaPegada = this.cabeNaCasa(actor, f);
+    // Acorrentado (os lobos do canil): só anda até onde a corrente alcança.
+    const corrente = actor.corrente;
+    const cabe = corrente
+      ? (x, y) => distanceFt(corrente, { x, y }) <= corrente.raioFt && (!cabeNaPegada || cabeNaPegada(x, y))
+      : cabeNaPegada;
+    this.field.dificeisExtra = this.terrenoHostil(actor);
+    try {
+      return this.field.reachable(
       actor.pos,
-      actor.movementLeftFt,
+      // Caído só rasteja: cada metro custa o dobro.
+      Math.floor(actor.movementLeftFt / this.custoDeMovimento(actor)),
       (x, y) => this.occupied(x, y, actor),
       // Quem ocupa 2x2 só pisa onde os quatro quadrados existem e estão livres
       // de parede. Sem isto o ogro para com metade do corpo dentro da pedra.
-      f === 1 ? undefined : (x, y) => {
-        for (let dy = 0; dy < f; dy++) {
-          for (let dx = 0; dx < f; dx++) {
-            if (!this.field.inside(x + dx, y + dy)) return false;
-            if (this.field.blocksMove(x + dx, y + dy)) return false;
-            if (this.occupied(x + dx, y + dy, actor)) return false;
-          }
+      evita ? (x, y) => !this.zonaEm({ x, y, f }) && (!cabe || cabe(x, y)) : cabe,
+      );
+    } finally {
+      this.field.dificeisExtra = null;
+    }
+  }
+
+  /** Quem ocupa 2x2 só pisa onde as quatro casas existem e estão livres. */
+  cabeNaCasa(actor, f) {
+    if (f === 1) return undefined;
+    return (x, y) => {
+      for (let dy = 0; dy < f; dy++) {
+        for (let dx = 0; dx < f; dx++) {
+          if (!this.field.inside(x + dx, y + dy)) return false;
+          if (this.field.blocksMove(x + dx, y + dy)) return false;
+          if (this.occupied(x + dx, y + dy, actor)) return false;
         }
-        return true;
-      },
-    );
+      }
+      return true;
+    };
   }
 
   /** Move seguindo o caminho, resolvendo ataques de oportunidade a cada passo. */
@@ -537,27 +747,327 @@ export class Encounter {
     const dest = path[path.length - 1];
     const node = reached.get(key(dest.x, dest.y));
     if (!node) return false;
+    // O que se cobra é o caminho ANDADO: um desvio (a IA contornando a Graxa)
+    // custa mais que o caminho mais curto até a mesma casa.
+    const hostil = this.terrenoHostil(actor);
+    const custoAte = (fim) => {
+      this.field.dificeisExtra = hostil;
+      let pes = 0;
+      for (let i = 1; i <= fim; i++) pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y);
+      this.field.dificeisExtra = null;
+      return pes;
+    };
+    if (custoAte(path.length - 1) * this.custoDeMovimento(actor) > actor.movementLeftFt) return false;
     const origin = { ...actor.pos };
+    // O custo de rastejar vale o que era ao sair: cair no meio do caminho não
+    // cobra em dobro os passos já dados de pé.
+    const custo = this.custoDeMovimento(actor);
+    let ate = path.length - 1;
 
     for (let i = 1; i < path.length; i++) {
       const from = { ...actor.pos };
       const to = path[i];
       // Quem tinha o ator no alcance e deixa de ter leva a reação.
+      // Quem está incapacitado não reage, e quem não tem arma de perto não
+      // tem com que aproveitar a brecha.
       const threats = actor.disengaging ? [] : this.enemiesOf(actor).filter(
         (e) => !e.reactionUsed
+          && !conditionEffects(e).incapacitated
+          && this.armaDeOportunidade(e) !== undefined
           && distanceFt(e.pos, from) <= this.reachOf(e)
           && distanceFt(e.pos, to) > this.reachOf(e),
       );
+      // O ataque de oportunidade acontece LOGO ANTES de o alvo sair do
+      // alcance: resolvido com ele ainda na casa de partida. Resolvido depois,
+      // o atacante media a distância da casa nova e o ataque nunca alcançava.
+      for (const threat of threats) {
+        this.opportunityAttack(threat, actor);
+        if (actor.dead || hasCondition(actor, 'inconsciente')) break;
+      }
+      if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i - 1; break; }
       // `f` viaja junto: perder a pegada aqui faria o ogro virar Médio ao andar.
       actor.pos = { x: to.x, y: to.y, f: actor.pos.f ?? 1 };
-      for (const threat of threats) this.opportunityAttack(threat, actor);
-      if (actor.dead || hasCondition(actor, 'inconsciente')) break;
+      // Graxa: quem ENTRA na área testa; quem cai para ali mesmo.
+      const deAntes = this.zonasEm(from);
+      let parou = false;
+      for (const zona of this.zonasEm(actor.pos)) {
+        if (!zona.aoEntrar || deAntes.includes(zona)) continue;
+        if (!this.resistirAZona(actor, zona, 'entra')) parou = true;
+      }
+      if (parou) { ate = i; break; }
+      // Crescimento de Espinhos: cada casa andada dentro dela fere.
+      const espinhos = this.zonas.find((z) => z.danoPorPasso && z.casas.has(key(actor.pos.x, actor.pos.y)));
+      if (espinhos) {
+        const r = damageRoll(this.rng, espinhos.danoPorPasso);
+        this.say('magia', `${actor.name} anda entre os espinhos: ${r.total} perfurante.`, `${espinhos.danoPorPasso}[${r.rolls.join('+')}]`);
+        this.applyDamage(actor, r.total, 'perfurante', null, { magico: true });
+        if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i; break; }
+      }
+      // Espíritos Guardiões: entrar na aura dói (uma vez por turno).
+      for (const aura of this.aurasHostisEm(actor, actor.pos)) {
+        if (this.aurasHostisEm(actor, from).includes(aura)) continue;
+        this.golpeDaAura(aura, actor, 'entra');
+      }
+      if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i; break; }
     }
-    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - node.cost);
+    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - custoAte(ate) * custo);
     // `from` deixa a camada de desenho calcular para onde a figura está virada,
     // sem o motor precisar conhecer o conceito de "frente" (o 5e não tem).
-    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: path.map((p) => ({ ...p })) });
+    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: path.slice(0, ate + 1).map((p) => ({ ...p })) });
     return true;
+  }
+
+  // ---- zonas no chão (Graxa) ----------------------------------------------
+
+  proximaZona() {
+    this.contadorDeZonas = (this.contadorDeZonas ?? 0) + 1;
+    return this.contadorDeZonas;
+  }
+
+  /** Terreno difícil das zonas que o são (Raio Lunar e Esfera não são). */
+  atualizarDificeis() {
+    this.field.dificeis = new Set(this.zonas.filter((z) => z.dificil).flatMap((z) => [...z.casas]));
+  }
+
+  criarZona(actor, spell, casas, cd, { centro = null, circulo = spell.level } = {}) {
+    const dano = spell.zona.dano;
+    const zona = {
+      id: this.proximaZona(),
+      dificil: spell.zona.dificil ?? true,
+      // Raio Lunar, Esfera Flamejante, Nuvem de Adagas: a zona fere.
+      dano: dano ? { ...dano, dados: dadosDaMagia(spell, { circulo, notacao: dano.dados }) } : null,
+      centro: centro ? { x: centro.x, y: centro.y } : null,
+      dono: actor.id,
+      quando: spell.zona.quando ?? 'fim',
+      aoEntrar: spell.zona.aoEntrar ?? true,
+      em: spell.zona.em ?? 'na',
+      danoPorPasso: spell.zona.danoPorPasso ?? null,
+      condRodadas: spell.onFail?.rounds ?? Infinity,
+      imuneSe: spell.zona.imuneSe ?? null,
+      spellId: spell.id,
+      nome: spell.name,
+      casas: new Set(casas.map((t) => key(t.x, t.y))),
+      cd,
+      save: spell.save,
+      condition: spell.zona.semTeste ? null : spell.onFail?.condition ?? 'caido',
+      lado: actor.side,
+      rodadas: spell.zona.rodadas,
+    };
+    this.zonas.push(zona);
+    this.atualizarDificeis();
+    this.onEvent({ type: 'zona', zona });
+    return zona;
+  }
+
+  /** Todas as zonas sob a criatura (Raio Lunar por cima da Teia: as duas valem). */
+  zonasEm(pos) {
+    if (!this.zonas.length) return [];
+    const f = pos.f ?? 1;
+    return this.zonas.filter((z) => {
+      for (let dy = 0; dy < f; dy++) {
+        for (let dx = 0; dx < f; dx++) if (z.casas.has(key(pos.x + dx, pos.y + dy))) return true;
+      }
+      return false;
+    });
+  }
+
+  /** A primeira zona sob a criatura (qualquer casa da pegada dela). */
+  zonaEm(pos) {
+    if (!this.zonas.length) return null;
+    const f = pos.f ?? 1;
+    for (const z of this.zonas) {
+      for (let dy = 0; dy < f; dy++) {
+        for (let dx = 0; dx < f; dx++) if (z.casas.has(key(pos.x + dx, pos.y + dy))) return z;
+      }
+    }
+    return null;
+  }
+
+  /** A zona some antes da hora (a concentração da Teia caiu): solta os presos. */
+  desfazerZona(zona) {
+    this.zonas = this.zonas.filter((z) => z !== zona);
+    this.atualizarDificeis();
+    for (const c of this.combatants) {
+      for (const cond of [...(c.conditions ?? [])]) {
+        // Quem a zona derrubou continua no chão: só o que prende solta.
+        if (cond.source === `zona:${zona.id}` && cond.id !== 'caido') removeCondition(c, cond.id);
+      }
+    }
+    this.say('magia', `${zona.em === 'no' ? 'O' : 'A'} ${zona.nome} se desfaz.`);
+  }
+
+  /** Teste contra a zona. Devolve true se ficou de pé. */
+  resistirAZona(c, zona, porque) {
+    if (zona.dano) return this.danoDaZona(c, zona, porque);
+    if (!zona.condition) return true;
+    if (c.dead || hasCondition(c, 'inconsciente') || hasCondition(c, zona.condition)) return true;
+    // Nuvem Fétida: quem é imune a veneno passa direto.
+    if (zona.imuneSe && (c.immune?.includes(zona.imuneSe) || this.imuneACondicao(c, 'envenenado'))) return true;
+    const save = this.resistencia(c, zona.save, zona.cd);
+    const nome = CONDITIONS[zona.condition]?.name.toLowerCase() ?? zona.condition;
+    const r = this.explicarResistencia(c, zona.save, zona.cd, save, {
+      contra: `${zona.nome} (${c.name} ${porque} na área)`,
+      seSucesso: `não fica ${nome}`,
+    });
+    if (save.success) {
+      this.say('magia', `${c.name} ${porque} ${zona.em} ${zona.nome} e se equilibra.`, r.conta, { rolagem: r });
+      return true;
+    }
+    this.aplicarCondicao(c, zona.condition, { source: `zona:${zona.id}`, rounds: zona.condRodadas, data: { escape: zona.cd } });
+    // Nuvem Fétida: passa o turno engasgado, sem ação.
+    if (CONDITIONS[zona.condition]?.perdeAcao) c.actionUsed = true;
+    // Quem a teia prende entra na concentração de quem a conjurou.
+    const dono = this.combatants.find((x) => x.id === zona.concentracao);
+    if (dono?.concentrating?.zona === zona) dono.concentrating.targets.push(c);
+    this.say('condicao', `${c.name} ${porque} ${zona.em} ${zona.nome}: fica ${nome}.`, r.conta, { rolagem: r });
+    return false;
+  }
+
+  /** Zona que fere (Raio Lunar, Nuvem de Adagas): uma vez por turno de cada criatura. */
+  danoDaZona(c, zona, porque) {
+    if (c.dead) return true;
+    c.aurasNoTurno ??= [];
+    const marca = `z${zona.id}`;
+    if (c.aurasNoTurno.includes(marca)) return true;
+    c.aurasNoTurno.push(marca);
+    const dono = this.combatants.find((x) => x.id === zona.dono);
+    const r = damageRoll(this.rng, zona.dano.dados);
+    let total = r.total;
+    let conta = `${zona.dano.dados}[${r.rolls.join('+')}]`;
+    if (zona.dano.save) {
+      const save = this.resistencia(c, zona.dano.save, zona.cd);
+      const rr = this.explicarResistencia(c, zona.dano.save, zona.cd, save, { contra: zona.nome, seSucesso: zona.dano.metade ? 'metade do dano' : 'nenhum dano' });
+      if (save.success) total = zona.dano.metade ? Math.floor(total / 2) : 0;
+      conta = `${rr.conta} · ${conta}`;
+    }
+    this.say('magia', `${c.name} ${porque} ${zona.em} ${zona.nome} e sofre ${total}.`, conta);
+    this.applyDamage(c, total, zona.dano.tipo, dono ?? null, { magico: true });
+    return true;
+  }
+
+  /** As casas de uma aura agora (ela anda com quem a conjurou). */
+  casasDaAura(aura) {
+    return this.field.within(aura.dono.pos, aura.raioFt).filter((t) => this.field.hasLineOfSight(aura.dono.pos, t));
+  }
+
+  /** As auras de inimigos de `c` que pegam a casa `pos`. */
+  aurasHostisEm(c, pos) {
+    if (!this.auras?.length) return [];
+    return this.auras.filter((a) => !a.tipo && a.dono.side !== c.side && !a.dono.dead
+      && distanceFt(a.dono.pos, pos) <= a.raioFt && this.field.hasLineOfSight(a.dono.pos, pos));
+  }
+
+  /** Casas que custam o dobro para `c`: as auras inimigas (metade do passo). */
+  terrenoHostil(c) {
+    if (!this.auras?.length) return null;
+    const casas = new Set();
+    for (const a of this.auras) {
+      if (a.tipo || a.dono.side === c.side || a.dono.dead) continue;
+      for (const t of this.casasDaAura(a)) casas.add(key(t.x, t.y));
+    }
+    return casas.size ? casas : null;
+  }
+
+  /** Espíritos Guardiões: teste e dano, uma vez por turno da criatura. */
+  golpeDaAura(aura, c, porque) {
+    c.aurasNoTurno ??= [];
+    if (c.aurasNoTurno.includes(aura.id) || c.dead) return;
+    c.aurasNoTurno.push(aura.id);
+    const save = this.resistencia(c, aura.save, aura.cd);
+    const dmg = damageRoll(this.rng, aura.dano);
+    const amount = save.success ? (aura.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+    const r = this.explicarResistencia(c, aura.save, aura.cd, save, {
+      contra: `${aura.nome} de ${aura.dono.name}`,
+      seSucesso: 'metade do dano',
+    });
+    this.say('magia', `${c.name} ${porque} entre os ${aura.nome} e sofre ${amount}.`, `${r.conta} · ${aura.dano}[${dmg.rolls.join('+')}]`, { rolagem: r });
+    this.onEvent({ type: 'aura', aura, target: c });
+    this.applyDamage(c, amount, aura.damageType, aura.dono, { magico: true });
+  }
+
+  /** A duração das zonas conta no fim do turno do lado de quem conjurou. */
+  contarZonas(side) {
+    const antes = this.zonas.length;
+    this.zonas = this.zonas.filter((z) => {
+      if (z.lado !== side) return true;
+      z.rodadas -= 1;
+      if (z.rodadas > 0) return true;
+      this.say('magia', `${z.em === 'no' ? 'O' : 'A'} ${z.nome} se desfaz.`);
+      for (const c of this.combatants) {
+        for (const cond of [...(c.conditions ?? [])]) if (cond.source === `zona:${z.id}` && cond.id !== 'caido') removeCondition(c, cond.id);
+      }
+      return false;
+    });
+    if (this.zonas.length !== antes) this.atualizarDificeis();
+  }
+
+  /** Imunidade a condição do bloco (`contido` aparece também como 'imobilizado'). */
+  imuneACondicao(alvo, id, fonte = null) {
+    const lista = alvo.conditionImmunities ?? [];
+    // Heroísmo tira qualquer medo; Proteção contra o Bem e o Mal, só o que
+    // vem dos tipos dela.
+    const porMagia = (alvo.conditions ?? []).some((c) => {
+      const def = CONDITIONS[c.id];
+      if (!def?.imuneA?.includes(id)) return false;
+      return !def.contraTipos || def.contraTipos.includes(fonte?.tipo);
+    });
+    // Os blocos de monstro escrevem "enfeitiçado" e "imobilizado".
+    const APELIDOS = { hipnotizado: 'enfeitiçado', enfeiticado: 'enfeitiçado', contido: 'imobilizado' };
+    return porMagia || lista.includes(id) || lista.includes(APELIDOS[id]);
+  }
+
+  /** Multiplicador do custo de andar: 2 para quem está caído (rastejando). */
+  custoDeMovimento(actor) {
+    return hasCondition(actor, 'caido') ? 2 : 1;
+  }
+
+  /**
+   * Levantar-se do chão custa metade do deslocamento (SRD). Sem esta ação, o
+   * personagem que a mordida do lobo derrubava ficava caído o combate todo.
+   */
+  standUp(actor) {
+    if (!hasCondition(actor, 'caido')) return { ok: false, why: 'já está de pé' };
+    if (hasCondition(actor, 'inconsciente') || conditionEffects(actor).incapacitated) {
+      return { ok: false, why: 'incapacitado não se levanta' };
+    }
+    const custo = Math.ceil(this.speedOf(actor) / 2);
+    if (this.speedOf(actor) === 0 || actor.movementLeftFt < custo) {
+      return { ok: false, why: `levantar custa ${custo} pés de deslocamento` };
+    }
+    actor.movementLeftFt -= custo;
+    removeCondition(actor, 'caido');
+    this.say('acao', `${actor.name} se levanta (${custo} pés de deslocamento).`);
+    this.onEvent({ type: 'standUp', actor });
+    return { ok: true };
+  }
+
+  /**
+   * Escapar de quem agarra: ação, teste de Atletismo ou Acrobacia (o melhor)
+   * contra a CD do efeito.
+   */
+  escapar(actor) {
+    const preso = getCondition(actor, 'agarrado') ?? getCondition(actor, 'contido');
+    if (!preso) return { ok: false, why: 'não está preso' };
+    if (actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
+    if (actor.acaoLimitada) return { ok: false, why: 'a ação da Velocidade não serve para escapar' };
+    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado' };
+    actor.actionUsed = true;
+    const cd = preso.data?.escape ?? preso.data?.dc ?? 10;
+    const atl = skillBonus(actor, 'atletismo');
+    const acr = skillBonus(actor, 'acrobacia');
+    // Teia e Emaranhar: o livro pede Força, então só Atletismo.
+    const soForca = String(preso.source ?? '').startsWith('zona:');
+    const [pericia, bonus] = soForca || atl >= acr ? ['Atletismo', atl] : ['Acrobacia', acr];
+    const r = d20(this.rng, bonus);
+    const conta = `${pericia} d20[${r.rolls.join('/')}] ${formatModifier(bonus)} = ${r.total} vs CD ${cd}`;
+    if (r.total >= cd) {
+      removeCondition(actor, preso.id);
+      this.say('acao', `${actor.name} se solta.`, conta);
+    } else {
+      this.say('acao', `${actor.name} tenta se soltar e não consegue.`, conta);
+    }
+    this.afterAction(actor);
+    return { ok: true };
   }
 
   reachOf(actor) {
@@ -566,10 +1076,22 @@ export class Encounter {
     return w && !w.ranged ? (w.reachFt ?? 5) : 5;
   }
 
+  /**
+   * Com o que este combatente dá ataque de oportunidade: o ataque de perto
+   * do bloco (monstro) ou a arma de perto que ele empunha. `undefined` se não
+   * tiver nenhum; `null` quer dizer "a arma equipada" (personagem).
+   */
+  armaDeOportunidade(c) {
+    if (c.attacks) return c.attacks.find((a) => !a.ranged)?.name;
+    const w = WEAPONS[c.equippedWeapon];
+    if (w && !w.ranged) return null;
+    return (c.weapons ?? []).find((id) => WEAPONS[id] && !WEAPONS[id].ranged);
+  }
+
   opportunityAttack(attacker, target) {
     attacker.reactionUsed = true;
     this.say('reacao', `${attacker.name} aproveita a brecha (ataque de oportunidade).`);
-    this.resolveAttack(attacker, target, { opportunity: true });
+    this.resolveAttack(attacker, target, { opportunity: true, weaponId: this.armaDeOportunidade(attacker) });
   }
 
   // ---- vantagem / desvantagem ---------------------------------------------
@@ -583,6 +1105,15 @@ export class Encounter {
     const mods = modsVazios();
 
     if (atkFx.attackDisadvantage) fonte(mods, 'desvantagem', 'atacante prejudicado');
+    // Toque Arrepiante: desvantagem só contra quem conjurou.
+    if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
+    if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
+    // Invisível: ataca com vantagem e é atacado com desvantagem.
+    if (hasCondition(attacker, 'invisivel')) fonte(mods, 'vantagem', 'atacante invisível');
+    if (hasCondition(target, 'invisivel')) fonte(mods, 'desvantagem', 'alvo invisível');
+    // Proteção contra o Bem e o Mal: certos tipos atacam o protegido com desvantagem.
+    const protecao = (target.conditions ?? []).find((c) => CONDITIONS[c.id]?.contraTipos?.includes(attacker.tipo));
+    if (protecao) fonte(mods, 'desvantagem', CONDITIONS[protecao.id].name.toLowerCase());
     // O aviso de armadura sem treino prometia um preço que ninguém cobrava: o
     // mago podia vestir cota de malha e ir de CA 12 para 16 de graça. Enquanto
     // nada desequipava, a promessa nunca era testada — o inventário novo a
@@ -592,18 +1123,27 @@ export class Encounter {
     if (tgtFx.attackedDisadvantage) fonte(mods, 'desvantagem', 'alvo esquivando');
 
     const close = distanceFt(attacker.pos, target.pos) <= 5;
-    if (tgtFx.attackedAdvantageMelee && close) fonte(mods, 'vantagem', 'alvo caído e perto');
-    if (tgtFx.attackedDisadvantageRanged && ranged) fonte(mods, 'desvantagem', 'alvo caído e longe');
+    // Caído: quem ataca a até 1,5 m tem vantagem; de mais longe, desvantagem.
+    // Conta a DISTÂNCIA, não o tipo de arma — um arco encostado tem vantagem.
+    if (tgtFx.attackedAdvantageMelee) {
+      fonte(mods, close ? 'vantagem' : 'desvantagem', close ? 'alvo caído e perto' : 'alvo caído e longe');
+    }
 
     // Táticas de Matilha
     if (attacker.traits?.includes('packTactics')) {
-      const helper = this.alliesOf(attacker).some((a) => isAdjacent(a.pos, target.pos));
+      const helper = this.alliesOf(attacker).some(
+        (a) => isAdjacent(a.pos, target.pos) && !conditionEffects(a).incapacitated,
+      );
       if (helper) fonte(mods, 'vantagem', 'táticas de matilha');
     }
     // Ataque à distância com inimigo colado
-    if (ranged && !opportunity && this.enemiesOf(attacker).some((e) => isAdjacent(e.pos, attacker.pos))) {
+    if (ranged && !opportunity && this.enemiesOf(attacker).some(
+      (e) => isAdjacent(e.pos, attacker.pos) && !conditionEffects(e).incapacitated,
+    )) {
       fonte(mods, 'desvantagem', 'inimigo adjacente');
     }
+    // Escuridão: quem não vê o alvo erra mais; quem não é visto acerta mais.
+    modificadoresDeLuz(this, attacker, target, mods, fonte);
     return mods;
   }
 
@@ -627,22 +1167,38 @@ export class Encounter {
         ranged: !!atk.ranged, reachFt: atk.reachFt ?? 5,
         rangeFt: atk.rangeFt ?? 5, longRangeFt: atk.longRangeFt ?? atk.rangeFt ?? 5,
         onHit: atk.onHit ?? null, weapon: null, art: atk.art ?? null,
+        danoExtra: atk.danoExtra ?? atk.extraDamage ?? null,
+        recarga: recargaMinima(atk.recharge),
         // Bloco de criatura do SRD traz o bônus já somado, sem dizer quanto é
         // atributo e quanto é proficiência. Dizer "bloco da criatura" é honesto;
         // repartir em FOR e proficiência seria invenção nossa.
         bonusPartes: [{ rotulo: 'bloco da criatura', valor: atk.bonus }],
       };
     }
-    const w = WEAPONS[weaponId ?? actor.equippedWeapon];
-    const ability = weaponAbility(actor, w);
+    const w0 = WEAPONS[weaponId ?? actor.equippedWeapon];
+    // Shillelagh: a clava ou o bordão usa o atributo de conjuração, rola 1d8
+    // e conta como mágico.
+    const shillelagh = hasCondition(actor, 'shillelagh') && ['clava', 'bordao'].includes(weaponId ?? actor.equippedWeapon);
+    const w = shillelagh ? { ...w0, damage: '1d8', raridade: w0.raridade ?? 'magia' } : w0;
+    const ability = shillelagh ? actor.spellcasting.ability : weaponAbility(actor, w);
     const mod = abilityMod(actor.abilities[ability]);
-    // Arma mágica (Talon, Lightbringer, Hew): +X no ataque e no dano.
-    const magia = w.bonusAtaque ?? 0;
-    const noDano = mod + (w.bonusDano ?? 0);
+    // Proficiência só soma com arma treinada (a categoria ou a arma em si).
+    // Sem lista de treino declarada (NPC antigo), vale o que vinha antes.
+    const idDaArma = weaponId ?? actor.equippedWeapon;
+    const treinada = !actor.weaponTraining
+      || actor.weaponTraining.includes(w.categoria) || actor.weaponTraining.includes(idDaArma);
+    const prof = treinada ? actor.proficiency : 0;
+    // Arma mágica (Talon, Lightbringer, Hew): +X no ataque e no dano, e o dano
+    // extra no mesmo formato do dos monstros.
+    // Arma Mágica e Arma Elemental: +1 no ataque e no dano, e conta como mágica.
+    const porMagia = (actor.conditions ?? []).reduce((t, c) => t + (c.data?.bonusArma ?? CONDITIONS[c.id]?.bonusArma ?? 0), 0);
+    const magia = (w.bonusAtaque ?? 0) + porMagia;
+    const noDano = mod + (w.bonusDano ?? 0) + porMagia;
     return {
       name: w.name,
-      bonus: mod + actor.proficiency + magia,
+      bonus: mod + prof + magia,
       damage: `${w.damage}${noDano >= 0 ? '+' : ''}${noDano}`,
+      danoExtra: w.danoExtra ?? null,
       type: w.type,
       ranged: !!w.ranged,
       reachFt: w.reachFt ?? 5,
@@ -655,7 +1211,7 @@ export class Encounter {
       // que ENTROU é a única forma de o jogador ver a escolha acontecendo.
       bonusPartes: [
         { rotulo: ABILITY_NAME[ability], valor: mod },
-        { rotulo: 'proficiência', valor: actor.proficiency },
+        ...(prof ? [{ rotulo: 'proficiência', valor: prof }] : []),
         ...(magia ? [{ rotulo: 'arma mágica', valor: magia }] : []),
       ],
     };
@@ -663,6 +1219,7 @@ export class Encounter {
 
   canAttack(actor, target, weaponId) {
     const p = this.weaponAttackProfile(actor, weaponId);
+    if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
     const dist = distanceFt(actor.pos, target.pos);
     if (dist > p.longRangeFt) {
       const limite = p.ranged ? p.longRangeFt : p.reachFt;
@@ -683,34 +1240,40 @@ export class Encounter {
       return null;
     }
     const p = check.profile;
+    if (getCondition(attacker, 'enfeiticado')?.source === target.id) {
+      this.say('aviso', `${attacker.name} está encantado por ${target.name} e não o ataca.`);
+      return null;
+    }
+    // Santuário: quem ataca o protegido testa SAB antes; quem está protegido
+    // e ataca perde a proteção.
+    if (!this.passaPeloSantuario(attacker, target)) return null;
+    if (hasCondition(attacker, 'santuario')) {
+      removeCondition(attacker, 'santuario');
+      this.say('magia', `${attacker.name} ataca e perde o Santuário.`);
+    }
     const mods = this.attackModifiers(attacker, target, { ranged: p.ranged, opportunity });
     if (check.longRange) fonte(mods, 'desvantagem', 'alcance longo');
     if (disadvantage) fonte(mods, 'desvantagem', 'segundo ataque');
 
     const cover = p.ranged ? this.field.coverBetween(attacker.pos, target.pos) : 0;
-    const ac = target.ac + cover;
-    const caPartes = [{ rotulo: `CA de ${target.name}`, valor: target.ac }];
+    let ac = caEfetiva(target) + cover;
+    const caPartes = [{ rotulo: `CA de ${target.name}`, valor: caEfetiva(target) }];
     if (cover) caPartes.push({ rotulo: 'cobertura', valor: cover });
 
-    const fx = conditionEffects(attacker);
-    let bonus = p.bonus;
-    // As partes do bônus somam sempre o `bonus` que vai para a rolagem: o dado
-    // de bênção entra como parcela nomeada em vez de engordar um "+4" anônimo.
-    const bonusPartes = [...(p.bonusPartes ?? [])];
-    for (const dice of fx.attackBonusDice) {
-      const r = roll(this.rng, dice);
-      bonus += r.total;
-      bonusPartes.push({ rotulo: `bênção ${dice}[${r.rolls.join('+')}]`, valor: r.total });
-    }
-    // O espelho: Perdição tira o que a Bênção põe.
-    for (const dice of fx.attackPenaltyDice) {
-      const r = roll(this.rng, dice);
-      bonus -= r.total;
-      bonusPartes.push({ rotulo: `perdição −${dice}[${r.rolls.join('+')}]`, valor: -r.total });
-    }
+    const { bonus, partes: bonusPartes } = this.dadosDeAtaque(attacker, p.bonus, p.bonusPartes);
+    if (this.imagemDesvia(attacker, target, bonus, mods)) return { hit: false };
+    this.quebraInvisibilidade(attacker);
 
-    const atk = attackRoll(this.rng, bonus, ac, mods);
+    const atk = segundaChanceNoAtaque(this, attacker, target, attackRoll(this.rng, bonus, ac, mods), bonus, ac);
+    this.consumirAoAtacar(attacker, target);
+    // Escudo Arcano: a reação de quem ia ser acertado, se +5 faz errar.
+    if (atk.hit && !atk.critical && this.escudoArcano(target, attacker, atk.total, ac)) {
+      ac += 5;
+      caPartes.push({ rotulo: 'Escudo Arcano', valor: 5 });
+      atk.hit = false;
+    }
     const tgtFx = conditionEffects(target);
+    this.consumirMarcas(target);
     const autoCrit = tgtFx.critWithinReach && distanceFt(attacker.pos, target.pos) <= 5;
     const critical = atk.critical || (atk.hit && autoCrit);
 
@@ -750,6 +1313,7 @@ export class Encounter {
     };
 
     if (!atk.hit) {
+      if (p.recarga) (attacker.recarregando ??= {})[p.name] = true;
       const nota = atk.fumble
         ? ' — 1 natural, erra por regra'
         : porPouco ? ` — faltou ${faltou}` : '';
@@ -776,13 +1340,22 @@ export class Encounter {
       martial = damageRoll(this.rng, '2d6', { critical });
     }
 
-    const dmg = damageRoll(this.rng, damageNotation, { critical });
-    const total = dmg.total + (sneak?.total ?? 0) + (martial?.total ?? 0);
+    // Ataque sem dano (a teia da aranha só prende): o acerto vale pelo efeito.
+    const dmg = damageNotation
+      ? ajustarDanoDeArma(this, attacker, p, damageRoll(this.rng, damageNotation, { critical }))
+      : null;
+    // Raio do Enfraquecimento: golpe de Força causa metade.
+    const deForca = attacker.attacks ? !p.ranged : (p.weapon && weaponAbility(attacker, p.weapon) === 'str');
+    if (dmg && deForca && hasCondition(attacker, 'enfraquecido')) {
+      dmg.total = Math.floor(dmg.total / 2);
+      this.say('condicao', `${attacker.name} está enfraquecido: o golpe sai pela metade.`);
+    }
+    const total = (dmg?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
     // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
     // o ladino está manobrando o turno inteiro para conseguir.
-    const danoPartes = [parcelaDeDano('dano', dmg)];
+    const danoPartes = dmg ? [parcelaDeDano('dano', dmg)] : [];
     if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
     if (martial) danoPartes.push(parcelaDeDano('vantagem marcial', martial));
     rolagem.danoPartes = danoPartes;
@@ -798,8 +1371,10 @@ export class Encounter {
 
     this.say(
       'ataque',
-      `${attacker.name} acerta ${target.name} com ${p.name}${marcaCritico}: ${total} de dano ${p.type}.`,
-      `${detail} · ${parts.join(' + ')}`,
+      total
+        ? `${attacker.name} acerta ${target.name} com ${p.name}${marcaCritico}: ${total} de dano ${p.type}.`
+        : `${attacker.name} acerta ${target.name} com ${p.name}.`,
+      parts.length ? `${detail} · ${parts.join(' + ')}` : detail,
       { rolagem },
     );
     this.onEvent({
@@ -810,24 +1385,113 @@ export class Encounter {
       vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
       critoAutomatico: rolagem.critoAutomatico,
     });
-    this.applyDamage(target, total, p.type, attacker);
+    const magico = !!(p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
+    // Armadura de Agathys: vale se ele ainda tinha PV temporários ao ser acertado.
+    const agathys = !p.ranged && getCondition(target, 'agathys');
+    const geloDevolve = agathys && (target.tempHp ?? 0) > 0 ? agathys.data?.dano ?? 5 : 0;
+    this.applyDamage(target, total, p.type, attacker, { critical, magico, deArma: true, corpoACorpo: !p.ranged });
+    if (geloDevolve && !attacker.dead) {
+      this.say('magia', `O gelo de ${target.name} morde ${attacker.name}: ${geloDevolve} de frio.`);
+      this.applyDamage(attacker, geloDevolve, 'frio', target, { magico: true });
+    }
+    this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical });
+    if (p.recarga) (attacker.recarregando ??= {})[p.name] = true;
+    // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
+    if (p.danoExtra && !target.dead && (!p.danoExtra.contra || target.tipo === p.danoExtra.contra)) {
+      this.danoExtraDoGolpe(attacker, target, p, critical);
+    }
+    depoisDoAcerto(this, attacker, target, p);
 
     // Efeito extra do ataque (mordida do lobo derruba).
-    if (p.onHit && !target.dead && !hasCondition(target, 'inconsciente')) {
-      const save = this.resistencia(target, p.onHit.save, p.onHit.dc);
+    const imune = p.onHit && (
+      p.onHit.imunes?.ancestry?.some((a) => (target.ancestry ?? '').startsWith(a))
+      || p.onHit.imunes?.tipo?.includes(target.tipo)
+      || this.imuneACondicao(target, p.onHit.condition)
+    );
+    if (imune && !target.dead) {
+      this.say('condicao', `${target.name} não é afetado: ${p.onHit.imunes?.motivo ?? `imune a ${CONDITIONS[p.onHit.condition]?.name.toLowerCase() ?? p.onHit.condition}`}.`);
+    } else if (p.onHit && !target.dead && !hasCondition(target, 'inconsciente')) {
+      // Alguns efeitos não têm resistência: o acerto já basta (a teia prende).
+      const save = p.onHit.semResistencia
+        ? { success: false, total: 0, rolls: [] }
+        : this.resistencia(target, p.onHit.save, p.onHit.dc);
       const nomeCondicao = CONDITIONS[p.onHit.condition]?.name ?? p.onHit.condition;
-      const r = this.explicarResistencia(target, p.onHit.save, p.onHit.dc, save, {
-        contra: `${p.name} de ${attacker.name}`,
-        seSucesso: `não fica ${nomeCondicao}`,
-      });
+      const r = p.onHit.semResistencia
+        ? { conta: `sem resistência: o acerto basta · escapa com Atletismo ou Acrobacia CD ${p.onHit.escape ?? p.onHit.dc}` }
+        : this.explicarResistencia(target, p.onHit.save, p.onHit.dc, save, {
+          contra: `${p.name} de ${attacker.name}`,
+          seSucesso: `não fica ${nomeCondicao}`,
+        });
       if (!save.success) {
-        addCondition(target, p.onHit.condition);
+        this.aplicarCondicao(target, p.onHit.condition, {
+          rounds: p.onHit.rounds ?? Infinity,
+          source: attacker.id,
+          data: {
+            save: p.onHit.save,
+            dc: p.onHit.dc,
+            repete: !!p.onHit.repete,
+            escape: p.onHit.escape ?? null,
+          },
+        });
         this.say('condicao', `${target.name} ${p.onHit.note} — fica ${nomeCondicao}.`, r.conta, { rolagem: r });
       } else {
         this.say('condicao', `${target.name} se segura e escapa de ${nomeCondicao}.`, r.conta, { rolagem: r });
       }
     }
     return { hit: true, critical, damage: total, modo: mods.mode, danoPartes };
+  }
+
+  /**
+   * O segundo tipo de dano do mesmo golpe (o veneno da aranha, o ácido da
+   * gelatina). Com `save`, o alvo resiste: metade (`half`) ou nada.
+   */
+  danoExtraDoGolpe(attacker, target, p, critical) {
+    const ex = p.danoExtra;
+    const dmg = damageRoll(this.rng, ex.damage, { critical });
+    let amount = dmg.total;
+    let conta = contaDeDano(parcelaDeDano(ex.type, dmg));
+    if (ex.save) {
+      const save = this.resistencia(target, ex.save, ex.dc);
+      const r = this.explicarResistencia(target, ex.save, ex.dc, save, {
+        contra: `${ex.type} de ${p.name}`,
+        seSucesso: ex.half ? 'metade' : 'nada',
+      });
+      if (save.success) amount = ex.half ? Math.floor(amount / 2) : 0;
+      conta = `${r.conta} · ${conta}`;
+    }
+    this.say('ataque', `${target.name} sofre ${amount} de ${ex.type} de ${p.name}.`, conta);
+    this.applyDamage(target, amount, ex.type, attacker, { critical });
+  }
+
+  /**
+   * Os dados que condições somam ou tiram da jogada de ataque (Bênção,
+   * Perdição). Vale para arma E para magia: ataque de magia também é jogada
+   * de ataque. As partes somam sempre o `bonus` que vai para a rolagem: o dado
+   * entra como parcela nomeada em vez de engordar um "+4" anônimo.
+   */
+  dadosDeAtaque(attacker, base, partesBase = []) {
+    const fx = conditionEffects(attacker);
+    let bonus = base;
+    const partes = [...(partesBase ?? [])];
+    for (const dice of fx.attackBonusDice) {
+      const r = roll(this.rng, dice);
+      bonus += r.total;
+      partes.push({ rotulo: `bênção ${dice}[${r.rolls.join('+')}]`, valor: r.total });
+    }
+    // O espelho: Perdição tira o que a Bênção põe.
+    for (const dice of fx.attackPenaltyDice) {
+      const r = roll(this.rng, dice);
+      bonus -= r.total;
+      partes.push({ rotulo: `perdição −${dice}[${r.rolls.join('+')}]`, valor: -r.total });
+    }
+    return { bonus, partes };
+  }
+
+  /** Marcas que somem no primeiro ataque contra o alvo (Raio Guiado). */
+  consumirMarcas(target) {
+    for (const cond of [...(target.conditions ?? [])]) {
+      if (CONDITIONS[cond.id]?.consumidaAoSerAtacado) removeCondition(target, cond.id);
+    }
   }
 
   /**
@@ -839,26 +1503,80 @@ export class Encounter {
    *
    * @returns {{ok: boolean, why?: string}}
    */
+  /** Ainda pode atacar: ação livre, ou golpes do Ataque Extra guardados. */
+  podeAtacar(c) {
+    return !c.actionUsed || (c.ataquesRestantes ?? 0) > 0;
+  }
+
   attackAction(attacker, target, weaponId = null) {
-    if (attacker.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
+    // Ataque Extra: se o alvo caiu antes dos golpes acabarem, os que sobram
+    // ficam guardados e saem noutro alvo, sem gastar outra ação.
+    const continuando = attacker.actionUsed && (attacker.ataquesRestantes ?? 0) > 0;
+    if (attacker.actionUsed && !continuando) return { ok: false, why: 'a ação deste turno já foi usada' };
+    if (conditionEffects(attacker).incapacitated) return { ok: false, why: 'incapacitado não age' };
 
     const check = this.canAttack(attacker, target, weaponId);
     if (!check.ok) return { ok: false, why: check.why };
 
     attacker.actionUsed = true;
-    const ma = attacker.multiattack;
-    this.resolveAttack(attacker, target, { weaponId });
-    if (ma && ma.count > 1 && !target.dead && !hasCondition(target, 'inconsciente')) {
-      for (let i = 1; i < ma.count; i++) {
-        this.resolveAttack(attacker, target, { weaponId, disadvantage: ma.secondAtDisadvantage && i === 1 });
+    // Monstro nomeia o golpe pelo nome do bloco; personagem, pelo id da arma.
+    const arma = attacker.attacks ? (weaponId ?? check.profile.name) : weaponId;
+    const golpes = continuando ? Array(attacker.ataquesRestantes).fill(arma) : this.golpesDoAtaque(attacker, arma);
+    attacker.ataquesRestantes = 0;
+    for (const [i, golpe] of golpes.entries()) {
+      // Quem morreu no meio da sequência (Repreensão Infernal, Agathys) para.
+      if (attacker.dead || hasCondition(attacker, 'inconsciente')) break;
+      if (i > 0 && (target.dead || hasCondition(target, 'inconsciente'))) {
+        if (!attacker.attacks) {
+          attacker.ataquesRestantes = golpes.length - i;
+          this.say('acao', `${attacker.name} ainda tem ${attacker.ataquesRestantes} golpe${attacker.ataquesRestantes > 1 ? 's' : ''} do Ataque Extra para outro alvo.`);
+        }
+        break;
       }
+      // Cada golpe da sequência tem o seu alcance (a mordida de 3 m e a garra
+      // de 1,5 m do dragão): o que não alcança fica de fora.
+      if (i > 0 && !this.canAttack(attacker, target, golpe).ok) continue;
+      this.resolveAttack(attacker, target, {
+        weaponId: golpe,
+        disadvantage: attacker.multiattack?.secondAtDisadvantage && i === 1,
+      });
     }
     this.afterAction(attacker);
     return { ok: true };
   }
 
+  /**
+   * Os golpes de uma ação de Ataque. Sem Multiataque, um. Com `sequence` (ou
+   * `pattern`), os golpes do bloco, na ordem — o urso morde E arranha; se a
+   * arma escolhida não está na sequência (a besta do rufião), o Multiataque
+   * não vale para ela e sai um golpe só. Sem sequência, a mesma arma `count`
+   * vezes.
+   */
+  golpesDoAtaque(attacker, arma) {
+    const ma = attacker.multiattack;
+    // Lentidão e a ação da Velocidade: um ataque só, com Multiataque ou sem.
+    if (conditionEffects(attacker).umAtaque || attacker.acaoLimitada) return [arma];
+    // Ataque Extra dos personagens (guerreiro: 1, 2 ou 3 golpes a mais).
+    if (!attacker.attacks) return Array(1 + (attacker.ataquesExtras ?? 0)).fill(arma);
+    if (!ma || ma.count <= 1) return [arma];
+    const seq = ma.sequence ?? ma.pattern;
+    if (seq) return seq.includes(arma) ? seq.slice(0, ma.count) : [arma];
+    return Array(ma.count).fill(arma);
+  }
+
   afterAction(actor) {
-    if (actor.extraActions > 0) {
+    if (actor.actionUsed && actor.acaoVelozDisponivel && hasCondition(actor, 'acelerado') && !(actor.ataquesRestantes > 0)) {
+      actor.acaoVelozDisponivel = false;
+      actor.actionUsed = false;
+      actor.acaoLimitada = true;
+      this.say('recurso', `${actor.name} ainda tem a ação da Velocidade: um golpe, Disparada, Desengajar ou usar um objeto.`);
+    }
+    // Lentidão: no turno, a ação OU a ação bônus — usou uma, perdeu a outra.
+    if (conditionEffects(actor).acaoOuBonus && (actor.actionUsed || actor.bonusUsed)) {
+      actor.actionUsed = true;
+      actor.bonusUsed = true;
+    }
+    if (actor.extraActions > 0 && !(actor.ataquesRestantes > 0)) {
       actor.extraActions -= 1;
       actor.actionUsed = false;
       this.say('recurso', `${actor.name} ainda tem uma ação (Ação Surpreendente).`);
@@ -868,8 +1586,51 @@ export class Encounter {
 
   // ---- dano, cura e morte --------------------------------------------------
 
-  applyDamage(target, amount, type, source = null) {
+  /**
+   * O dano depois do tipo: imunidade zera, resistência divide, vulnerabilidade
+   * dobra (SRD). A resistência física "de armas não mágicas" não vale contra
+   * arma mágica nem magia.
+   */
+  danoPorTipo(target, amount, type, magico = false, deArma = false) {
+    if (!type) return amount;
+    if (target.immune?.includes(type)) return 0;
+    let out = amount;
+    // Proteção contra Lâminas: resistência que só vale contra golpe de arma.
+    const porCondicao = (target.conditions ?? []).some((c) => {
+      const def = CONDITIONS[c.id];
+      if (def?.resisteTipoDado && c.data?.tipo === type) return true;
+      return def?.resiste?.includes(type) && (!def.soDeArma || deArma);
+    });
+    if (porCondicao || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
+    if (target.vulnerable?.includes(type)) out *= 2;
+    return out;
+  }
+
+  applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false } = {}) {
     if (amount <= 0 || target.dead) return;
+    const bruto = amount;
+    amount = this.danoPorTipo(target, amount, type, magico, deArma);
+    this.ultimoDano = Math.max(0, amount);
+    if (amount !== bruto) {
+      const como = amount === 0 ? 'imune' : amount < bruto ? 'resistente' : 'vulnerável';
+      this.say('dano', `${target.name} é ${como} a ${type}: ${bruto} vira ${amount}.`);
+    }
+    if (amount <= 0) return;
+
+    // JÁ CAÍDO. Dano em quem está a 0 PV não é uma queda nova: é uma falha no
+    // teste de morte (duas, se foi crítico), e quem estava estável volta a
+    // morrer. Tratar como queda nova zerava as falhas — apanhar no chão
+    // salvava o personagem.
+    if (target.kind === 'pc' && target.hp <= 0) {
+      this.onEvent({ type: 'damage', target, amount, source });
+      if (amount >= target.maxHp) { this.morrer(target, 'dano maciço'); return; }
+      target.stable = false;
+      target.deathSaves.failures += critical ? 2 : 1;
+      this.say('morte', `${target.name} sofre dano caído — ${critical ? 'duas falhas' : 'uma falha'} no teste de morte (${target.deathSaves.failures}/3).`);
+      if (target.deathSaves.failures >= 3) this.morrer(target);
+      return;
+    }
+
     let left = amount;
     if (target.tempHp > 0) {
       const absorbed = Math.min(target.tempHp, left);
@@ -879,16 +1640,68 @@ export class Encounter {
     target.hp -= left;
     this.onEvent({ type: 'damage', target, amount, source });
 
-    if (target.concentrating) this.concentrationCheck(target, amount);
+    if (target.hp > 0) {
+      if (target.concentrating) this.concentrationCheck(target, amount);
+      // Sono: o dano acorda (de pé fica para ele: acorda caído).
+      if (getCondition(target, 'inconsciente')?.source === 'sono') {
+        removeCondition(target, 'inconsciente');
+        this.say('condicao', `${target.name} acorda com o golpe.`);
+      }
+      // Riso Histérico: o dano dá um novo teste, com vantagem.
+      for (const cond of [...(target.conditions ?? [])]) {
+        if (!CONDITIONS[cond.id]?.repeteAoSofrerDano || !cond.data?.save) continue;
+        const save = this.resistencia(target, cond.data.save, cond.data.dc, { vantagem: true });
+        if (save.success) {
+          removeCondition(target, cond.id);
+          this.say('condicao', `${target.name} para de rir com o golpe.`);
+        }
+      }
+      this.reacaoAoDano(target, source);
+      // Enfeitiçar Pessoa: dano de quem enfeitiçou (ou dos aliados dele) quebra.
+      const encanto = getCondition(target, 'enfeiticado');
+      const quemEncantou = encanto && this.combatants.find((x) => x.id === encanto.source);
+      if (encanto && source && quemEncantou && source.side === quemEncantou.side) {
+        removeCondition(target, 'enfeiticado');
+        this.say('condicao', `${target.name} acorda do encanto com o golpe.`);
+      }
+      // Padrão Hipnótico: o dano quebra o encanto.
+      for (const cond of [...(target.conditions ?? [])]) {
+        if (!CONDITIONS[cond.id]?.acordaComDano) continue;
+        removeCondition(target, cond.id);
+        this.say('condicao', `${target.name} desperta do ${CONDITIONS[cond.id].name.toLowerCase()} com o golpe.`);
+      }
+      return;
+    }
 
-    if (target.hp > 0) return;
+    // MORTE INSTANTÂNEA: o que sobra do dano depois de zerar os PV, se chegar
+    // ao máximo de PV, mata na hora.
+    const sobra = -target.hp;
     target.hp = 0;
+    // Concentração não sobrevive à queda: inconsciente é incapacitado.
+    this.dropConcentration(target);
+
+    // GOLPE NÃO LETAL (Livro do Jogador): quem zera a vida de alguém com um
+    // ataque corpo a corpo pode deixá-lo desacordado em vez de morto. O herói
+    // escolhe isso antes (`naoLetal`, no menu do botão direito).
+    if (target.kind === 'npc' && corpoACorpo && source?.naoLetal) {
+      addCondition(target, 'inconsciente');
+      addCondition(target, 'caido');
+      target.stable = true;
+      target.capturado = true;
+      this.say('morte', `${target.name} cai desacordado — vivo.`);
+      this.onEvent({ type: 'downed', target });
+      return;
+    }
 
     if (target.kind === 'npc') {
       target.dead = true;
+      target.morreuNaRodada = this.round;
       removeCondition(target, 'esquivando');
       this.say('morte', `${target.name} cai.`);
       this.onEvent({ type: 'died', target });
+    } else if (sobra >= target.maxHp) {
+      this.morrer(target, 'dano maciço');
+      return;
     } else {
       addCondition(target, 'inconsciente');
       addCondition(target, 'caido');
@@ -901,14 +1714,31 @@ export class Encounter {
     this.checkEnd();
   }
 
+  /** Morte de personagem: três falhas, ou dano maciço. */
+  morrer(target, motivo = null) {
+    target.dead = true;
+    // Revivificar só alcança quem morreu há até 1 minuto (10 rodadas).
+    target.morreuNaRodada = this.round;
+    target.hp = 0;
+    this.dropConcentration(target);
+    this.say('morte', `${target.name} morre${motivo ? ` (${motivo})` : ''}.`);
+    this.onEvent({ type: 'died', target });
+    this.checkEnd();
+  }
+
   heal(target, amount, source = null) {
     if (target.dead || amount <= 0) return 0;
+    if ((target.conditions ?? []).some((c) => CONDITIONS[c.id]?.semCura)) {
+      this.say('aviso', `${target.name} não recupera PV: a necromancia ainda segura a ferida.`);
+      return 0;
+    }
     const was = target.hp;
     const revived = hasCondition(target, 'inconsciente');
     target.hp = Math.min(target.maxHp, target.hp + amount);
     if (revived && target.hp > 0) {
+      // Acorda, mas no chão: o `caido` fica até ele gastar o deslocamento
+      // para se levantar.
       removeCondition(target, 'inconsciente');
-      removeCondition(target, 'caido');
       target.stable = false;
       target.deathSaves = { successes: 0, failures: 0 };
       this.say('cura', `${target.name} volta a si com ${target.hp} PV.`);
@@ -918,7 +1748,8 @@ export class Encounter {
   }
 
   deathSave(actor) {
-    const r = d20(this.rng, 0);
+    // Farol de Esperança: vantagem no teste de morte.
+    const r = d20(this.rng, 0, { advantage: conditionEffects(actor).vantagemMorte });
     // Teste de morte é d20 PURO: nenhum atributo, nenhuma proficiência. Dizer
     // isso evita a dúvida de por que o guerreiro com +3 de CON rola sem bônus.
     const conta = `d20[${r.rolls.join('/')}] = ${r.total} vs CD 10 · sem bônus (d20 puro) · 3 sucessos estabiliza, 3 falhas mata`;
@@ -957,10 +1788,7 @@ export class Encounter {
       actor.stable = true;
       this.say('morte', `${actor.name} se estabiliza.`);
     } else if (actor.deathSaves.failures >= 3) {
-      actor.dead = true;
-      this.say('morte', `${actor.name} morre.`);
-      this.onEvent({ type: 'died', target: actor });
-      this.checkEnd();
+      this.morrer(actor);
     }
   }
 
@@ -985,31 +1813,348 @@ export class Encounter {
   dropConcentration(actor) {
     const conc = actor.concentrating;
     if (!conc) return;
-    for (const t of conc.targets) removeCondition(t, conc.condition);
+    for (const t of conc.targets) {
+      // Velocidade: quando acaba, o alvo perde o próximo turno (letargia).
+      const depois = hasCondition(t, conc.condition) ? CONDITIONS[conc.condition]?.aoAcabar : null;
+      // Heroísmo: os PV temporários dele vão embora junto.
+      const pvDoHeroismo = conc.condition === 'heroico' ? getCondition(t, 'heroico')?.data?.pvTemp ?? 0 : 0;
+      if (pvDoHeroismo && (t.tempHp ?? 0) <= pvDoHeroismo) t.tempHp = 0;
+      removeCondition(t, conc.condition);
+      if (depois && !t.dead) {
+        // Acabou no turno do lado dele: o fim deste turno não pode apagar a
+        // letargia antes de ela valer no próximo.
+        // Acabou no turno do lado dele: se ele já agiu, perde o PRÓXIMO (2);
+        // se ainda não agiu, perde este mesmo (1). Nunca os dois.
+        addCondition(t, depois, { rounds: this.side === t.side && t.acted ? 2 : 1 });
+        this.say('condicao', `${t.name} fica letárgico: perde o próximo turno.`);
+      }
+    }
     actor.concentrating = null;
+    // A teia some, e quem ela prendia fica livre.
+    if (conc.zona) this.desfazerZona(conc.zona);
+    if (conc.aura) this.auras = this.auras.filter((a) => a !== conc.aura);
+    if (actor.magiasAtivas?.[conc.spellId]) delete actor.magiasAtivas[conc.spellId];
   }
 
   // ---- magias --------------------------------------------------------------
 
   /**
-   * Checa TUDO antes de a magia sair: espaço, ação, alvo, alcance e visão.
-   * Nenhum recurso é gasto aqui — é só a pergunta "dá para conjurar?".
+   * O círculo em que a magia sai: o pedido, se houver espaço nele; senão o
+   * menor círculo igual ou maior que o da magia com espaço livre. É isso que
+   * deixa o bruxo — que só tem espaços do círculo do pacto — conjurar magia
+   * de 1º círculo no 5º nível. `null` quando não há espaço nenhum.
    */
-  canCast(actor, spellId, { target = null, point = null } = {}) {
+  circuloDeConjuracao(actor, spell, pedido = null) {
+    if (spell.level === 0) return 0;
+    const slots = actor.spellcasting?.slots ?? [];
+    if (pedido != null) return pedido >= spell.level && slots[pedido] > 0 ? pedido : null;
+    for (let n = spell.level; n < slots.length; n++) if (slots[n] > 0) return n;
+    return null;
+  }
+
+  /**
+   * Quantos alvos o jogador escolhe para esta magia, já com o círculo: os 3
+   * aliados da Bênção (+1 por círculo acima), os dardos do Míssil Mágico.
+   * As magias de alvo único devolvem 1.
+   */
+  alvosDaMagia(spell, circulo = spell.level, actor = null) {
+    // Rajada Mística: um raio a mais no 5º, 11º e 17º nível.
+    if (spell.raiosPorNivel) {
+      const n = actor?.level ?? 1;
+      return spell.raios + (n >= 5) + (n >= 11) + (n >= 17);
+    }
+    if (spell.kind === 'save' && spell.alvos) return spell.alvos;
+    const acima = Math.max(0, (circulo ?? spell.level) - spell.level);
+    if (spell.kind === 'auto') return spell.darts + (spell.upcast?.dardos ?? 0) * acima;
+    if (spell.kind === 'raios') return spell.raios + (spell.upcast?.raios ?? 0) * acima;
+    if (spell.kind === 'marca') return 1;
+    if (spell.kind === 'healGrupo') return spell.targets;
+    if (spell.kind === 'buff' || spell.kind === 'debuff') return (spell.targets ?? 1) + (spell.upcast?.alvos ?? 0) * acima;
+    return 1;
+  }
+
+  /** A magia mira aliados (cura, bênção, armadura) ou inimigos? */
+  miraAliados(spell) {
+    return ['heal', 'buff', 'armadura', 'estabilizar', 'healGrupo', 'restaurar', 'reviver', 'curaReuso'].includes(spell.kind);
+  }
+
+  /**
+   * Por que esta criatura NÃO serve de alvo desta magia; `null` se serve. A
+   * mira do jogador e o tabuleiro perguntam aqui, para os dois nunca
+   * discordarem do que `castSpell` aceita.
+   */
+  porqueNaoAlvo(actor, spell, alvo) {
+    if (!alvo) return 'sem alvo';
+    if (spell.kind === 'teleporte') return 'escolha uma casa vazia';
+    // Revivificar é a única que mira um morto — e só um morto recente.
+    if (spell.kind === 'reviver') {
+      if (alvo.side !== actor.side) return 'escolha um aliado';
+      if (!alvo.dead) return `${alvo.name} não está morto`;
+      if (this.round - (alvo.morreuNaRodada ?? -Infinity) > spell.janelaRodadas) return `${alvo.name} morreu há mais de 1 minuto`;
+      if (distanceFt(actor.pos, alvo.pos) > spell.rangeFt) return 'é de toque: chegue ao lado';
+      return null;
+    }
+    if (alvo.dead) return 'sem alvo';
+    const aliado = alvo.side === actor.side;
+    if (this.miraAliados(spell) !== aliado) return this.miraAliados(spell) ? 'escolha um aliado' : 'escolha um inimigo';
+    if (spell.kind === 'buff' && hasCondition(alvo, 'inconsciente')) return `${alvo.name} está inconsciente`;
+    if (spell.kind === 'heal' && ['morto-vivo', 'constructo'].includes(alvo.tipo)) return 'cura não funciona em morto-vivo nem em constructo';
+    if (spell.kind === 'armadura' && (alvo.armor ?? 'nenhuma') !== 'nenhuma') return `${alvo.name} está de armadura`;
+    if (spell.kind === 'estabilizar' && (!hasCondition(alvo, 'inconsciente') || alvo.stable)) return `${alvo.name} não está morrendo`;
+    if (spell.kind === 'healGrupo' && ['morto-vivo', 'constructo'].includes(alvo.tipo)) return 'cura não funciona em morto-vivo nem em constructo';
+    if (spell.kind === 'restaurar' && !spell.remove.some((id) => hasCondition(alvo, id))) {
+      return `${alvo.name} não está cego, envenenado nem paralisado`;
+    }
+    // Personagem sem tipo declarado é humanoide (todos os heróis são).
+    if (spell.soTipo && (alvo.tipo ?? 'humanoide') !== spell.soTipo) return `só funciona em ${spell.soTipo}`;
+    if (spell.naoAfeta?.includes(alvo.tipo)) return `${alvo.tipo} não é afetado`;
+    if (spell.kind === 'calor' && !this.carregaMetal(alvo)) return `${alvo.name} não veste nem empunha metal`;
+    if (spell.kind === 'curaReuso') {
+      if (distanceFt(actor.pos, alvo.pos) > spell.raioFt) return 'fora da aura';
+      if (['morto-vivo', 'constructo'].includes(alvo.tipo)) return 'cura não funciona em morto-vivo nem em constructo';
+      return null;
+    }
+    if (spell.intMinima && (alvo.abilities?.int ?? 10) < spell.intMinima) return 'inteligência baixa demais para ser afetado';
+    // Raio de Bruxa já ativo: o arco está preso num alvo só.
+    // Raio de Bruxa e Calor no Metal ativos: presos a um alvo só.
+    const raio = spell.reusoAuto || spell.kind === 'calor' ? actor.magiasAtivas?.[spell.id] : null;
+    if (raio?.alvoId && raio.alvoId !== alvo.id) return spell.kind === 'calor' ? 'o metal que arde é de outro alvo' : 'o arco está preso em outro alvo';
+    // Arma Espiritual depois de conjurada: o alvo tem de estar a até 6 m da
+    // arma (ela anda) mais 1,5 m (ela golpeia de perto).
+    const arma = spell.kind === 'arma' ? actor.magiasAtivas?.[spell.id] : null;
+    if (arma) {
+      const d = distanceFt(arma.pos, alvo.pos);
+      return d > spell.alcanceDaArmaFt ? `a arma está longe — ${d} pés, ela alcança ${spell.alcanceDaArmaFt}` : null;
+    }
+    if (spell.rangeFt > 0 && alvo !== actor) {
+      const d = distanceFt(actor.pos, alvo.pos);
+      if (d > spell.rangeFt) return `fora de alcance — ${d} pés, a magia chega a ${spell.rangeFt}`;
+      if (!this.field.hasLineOfSight(actor.pos, alvo.pos)) return 'sem linha de visão';
+    }
+    return null;
+  }
+
+  /** Os quadrados que a magia pega, a partir do conjurador e do ponto mirado. */
+  areaDaMagia(actor, spell, alvo) {
+    if (!spell.shape) return null;
+    let casas;
+    let origem;
+    if (spell.centradoEmSi) alvo = actor.pos;
+    if (spell.shape === 'sphere' || spell.shape === 'square') {
+      if (!alvo) return null;
+      // Ponto dentro da parede não tem área: vazava para o outro lado.
+      if (this.field.blocksSight(alvo.x, alvo.y)) return [];
+      // Bola de Fogo: o fogo se espalha pelos cantos, contado pelo caminho.
+      if (spell.contornaEsquinas) return this.areaQueContorna(alvo, spell.areaFt);
+      casas = spell.shape === 'sphere' ? this.field.within(alvo, spell.areaFt) : this.field.square(alvo, spell.areaFt);
+      origem = alvo;
+    } else {
+      // A direção é a das 8 mais próxima do ÂNGULO até o cursor: com o sinal
+      // de cada eixo, qualquer cursor fora do eixo virava diagonal, e o cone
+      // podia não conter a casa apontada.
+      let dir = { x: 0, y: 0 };
+      if (alvo && (alvo.x !== actor.pos.x || alvo.y !== actor.pos.y)) {
+        const k = Math.round(Math.atan2(alvo.y - actor.pos.y, alvo.x - actor.pos.x) / (Math.PI / 4));
+        dir = { x: Math.round(Math.cos(k * Math.PI / 4)), y: Math.round(Math.sin(k * Math.PI / 4)) };
+      }
+      casas = spell.shape === 'cone' ? this.field.cone(actor.pos, dir, spell.areaFt) : this.field.cube(actor.pos, dir, spell.areaFt);
+      origem = actor.pos;
+    }
+    if (spell.shape === 'linha') {
+      // Relâmpago: a reta que sai do conjurador na direção do cursor, com o
+      // comprimento da magia; para na primeira parede.
+      if (!alvo || (alvo.x === actor.pos.x && alvo.y === actor.pos.y)) return [];
+      const dx = alvo.x - actor.pos.x;
+      const dy = alvo.y - actor.pos.y;
+      const passos = spell.areaFt / 5;
+      const n = Math.max(Math.abs(dx), Math.abs(dy));
+      // Uma casa por passo no eixo maior, arredondando igual para os dois
+      // lados: com Math.round puro, o meio-passo negativo voltava para a casa
+      // do conjurador (o Relâmpago para oeste o acertava).
+      const r = (v) => Math.sign(v) * Math.round(Math.abs(v));
+      const linha = [];
+      for (let i = 1; i <= passos; i++) {
+        const casa = { x: actor.pos.x + r((dx * i) / n), y: actor.pos.y + r((dy * i) / n) };
+        // Para na parede; caixote e carroça dão cobertura, não param o raio.
+        if (!this.field.inside(casa.x, casa.y) || this.field.blocksSight(casa.x, casa.y)) break;
+        linha.push(casa);
+      }
+      return linha;
+    }
+    // A área não atravessa parede: só as casas que a origem enxerga.
+    return casas.filter((t) => this.field.hasLineOfSight(origem, t));
+  }
+
+  /**
+   * A área de uma explosão que contorna esquinas: as casas a até `ft` pés de
+   * CAMINHO da origem, sem atravessar o que bloqueia a visão nem cortar quina.
+   */
+  areaQueContorna(origem, ft) {
+    const passos = ft / 5;
+    const vistos = new Map([[key(origem.x, origem.y), 0]]);
+    const fila = [{ x: origem.x, y: origem.y, d: 0 }];
+    while (fila.length) {
+      const cur = fila.shift();
+      if (cur.d >= passos) continue;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const x = cur.x + dx;
+          const y = cur.y + dy;
+          if (!this.field.inside(x, y) || this.field.blocksSight(x, y)) continue;
+          if (dx && dy && this.field.blocksSight(cur.x + dx, cur.y) && this.field.blocksSight(cur.x, cur.y + dy)) continue;
+          const k = key(x, y);
+          if (vistos.has(k)) continue;
+          vistos.set(k, cur.d + 1);
+          fila.push({ x, y, d: cur.d + 1 });
+        }
+      }
+    }
+    return [...vistos.keys()].map((k) => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+  }
+
+  /** Elfos e meio-elfos têm a ancestralidade feérica: magia não os põe para dormir. */
+  imuneASonoMagico(c) {
+    return c.tipo === 'morto-vivo' || /^(elf|meio-elf)/i.test(c.ancestry ?? '') || this.imuneACondicao(c, 'inconsciente');
+  }
+
+  /**
+   * Quem a magia de área pega de verdade, e em que papel. É a MESMA conta
+   * para o motor e para a prévia do tabuleiro — senão a prévia mente.
+   *
+   * - magia de resistência: toda criatura viva na área, uma vez só (a Grande
+   *   ocupa várias casas); aliados que Esculpir Magias poupa saem marcados;
+   * - Sono: só quem dorme (acordado, não morto-vivo, não elfo), em ordem de PV.
+   */
+  afetadosPelaArea(actor, spell, casas, circulo = spell.level) {
+    const vistos = [...new Set((casas ?? []).map((s) => this.at(s.x, s.y)))]
+      .filter((c) => c && !c.dead && !(spell.centradoEmSi && c === actor));
+    if (spell.kind === 'sleep') {
+      // Borrifo de Cores cega em vez de pôr para dormir: elfo não escapa,
+      // quem já está cego ou inconsciente não gasta a reserva.
+      const fica = spell.cega
+        ? (c) => !hasCondition(c, 'inconsciente') && !hasCondition(c, 'cego') && !this.imuneACondicao(c, 'cego')
+        : (c) => !hasCondition(c, 'inconsciente') && !this.imuneASonoMagico(c);
+      return vistos
+        .filter(fica)
+        .sort((a, b) => a.hp - b.hp)
+        .map((c) => ({ c, papel: c.side === actor.side ? 'aliado' : 'inimigo' }));
+    }
+    let poupa = actor.features?.includes('sculptSpells') && spell.school === 'evocação' ? 1 + circulo : 0;
+    return vistos.map((c) => {
+      if (c.side !== actor.side) return { c, papel: 'inimigo' };
+      if (poupa > 0) { poupa -= 1; return { c, papel: 'poupado' }; }
+      return { c, papel: 'aliado' };
+    });
+  }
+
+  /**
+   * Checa TUDO antes de a magia sair: preparada, espaço, ação, alvo, alcance e
+   * visão. Nenhum recurso é gasto aqui — é só a pergunta "dá para conjurar?".
+   */
+  canCast(actor, spellId, { target = null, point = null, circulo = null } = {}) {
     const spell = getSpell(spellId);
     if (!actor.spellcasting) return { ok: false, why: 'não conjura magias' };
+    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
     if (actor.armorUntrained) return { ok: false, why: 'armadura sem treino impede conjurar' };
-    if (spell.level > 0 && !actor.spellcasting.slots[spell.level]) {
-      return { ok: false, why: `sem espaço de magia de ${spell.level}º círculo` };
+    // Só se conjura o que está pronto: truque conhecido, magia preparada ou
+    // sempre preparada. Antes, o clérigo conjurava Míssil Mágico.
+    if (!magiasProntas(actor).includes(spellId)) return { ok: false, why: `${spell.name} não está preparada` };
+    // De novo: a Arma Espiritual e o Toque Vampírico já conjurados golpeiam
+    // sem espaço e sem contar como conjuração (a regra de ação bônus não vale).
+    if (spell.kind === 'reacao') {
+      return { ok: false, why: `${spell.name} é reação: sai sozinha quando ${spell.gatilho === 'dano' ? 'alguém fere você' : 'um ataque ia acertar você'}` };
+    }
+    const ativa = spell.reuso && actor.magiasAtivas?.[spellId];
+    if (ativa) {
+      if (spell.reuso === 'bonus' && actor.bonusUsed) return { ok: false, why: 'a ação bônus deste turno já foi usada' };
+      if (spell.reuso === 'acao' && actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
+      if (spell.reuso === 'acao' && actor.acaoLimitada) return { ok: false, why: 'a ação da Velocidade não repete magia' };
+      // Recuo Acelerado: correr de novo não pede alvo.
+      if (spell.kind === 'disparada') return { ok: true, spell, circulo: ativa.circulo, reuso: true };
+      // Raio Lunar, Esfera Flamejante: mover a zona pede a casa de destino.
+      if (spell.zona?.movel) {
+        if (!point) return { ok: false, why: 'escolha para onde mover' };
+        if (!this.field.inside(point.x, point.y) || this.field.blocksMove(point.x, point.y)) return { ok: false, why: 'casa bloqueada' };
+        const de = ativa.zona.centro ?? point;
+        if (distanceFt(de, point) > spell.zona.movel) return { ok: false, why: `${spell.name} anda até ${spell.zona.movel} pés por vez` };
+        if (spell.zona.ocupaCasa && this.at(point.x, point.y)) return { ok: false, why: 'a esfera precisa de uma casa vazia' };
+        return { ok: true, spell, circulo: ativa.circulo, reuso: true };
+      }
+      // Aura de Vitalidade: curar pede um aliado na aura.
+      if (spell.kind === 'curaReuso') {
+        if (!target) return { ok: false, why: 'escolha um aliado na aura' };
+        const porque = this.porqueNaoAlvo(actor, spell, target);
+        if (porque) return { ok: false, why: porque };
+        return { ok: true, spell, circulo: ativa.circulo, reuso: true };
+      }
+      if (!target) return { ok: false, why: 'escolha um alvo' };
+      // Bruxaria e Marca do Caçador só mudam de alvo quando o marcado cai.
+      if (spell.kind === 'marca') {
+        const marcado = this.combatants.find((c) => !c.dead && getCondition(c, spell.condition)?.source === actor.id);
+        if (marcado) return { ok: false, why: `${marcado.name} ainda carrega a ${spell.name}: ela só passa para outro quando ele cair` };
+      }
+      const porque = this.porqueNaoAlvo(actor, spell, target);
+      if (porque) return { ok: false, why: porque };
+      if (spell.reusoAuto && distanceFt(actor.pos, target.pos) > spell.rangeFt) return { ok: false, why: 'o alvo saiu do alcance do arco' };
+      return { ok: true, spell, circulo: ativa.circulo, reuso: true };
+    }
+    let slot = this.circuloDeConjuracao(actor, spell, circulo);
+    // Iniciado em Magia: a magia do talento sai uma vez sem espaço.
+    const gratis = slot === null && temUsoGratis(actor, spellId);
+    if (gratis) slot = spell.level;
+    if (slot === null) {
+      return { ok: false, why: circulo ? `sem espaço de ${circulo}º círculo` : `sem espaço de magia de ${spell.level}º círculo ou maior` };
     }
     if (spell.castTime === 'action' && actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
     if (spell.castTime === 'bonus' && actor.bonusUsed) return { ok: false, why: 'a ação bônus deste turno já foi usada' };
+    if (spell.castTime === 'action' && actor.acaoLimitada) return { ok: false, why: 'a ação da Velocidade não conjura magia' };
+    // Magia de ação bônus no turno: além dela, só um truque de 1 ação.
+    const ja = actor.magiasNoTurno ?? [];
+    const truqueDeAcao = spell.level === 0 && spell.castTime === 'action';
+    if (ja.some((m) => m.castTime === 'bonus') && !truqueDeAcao) {
+      return { ok: false, why: 'depois de uma magia de ação bônus, só um truque de 1 ação neste turno' };
+    }
+    if (spell.castTime === 'bonus' && ja.some((m) => !(m.level === 0 && m.castTime === 'action'))) {
+      return { ok: false, why: 'magia de ação bônus não sai no turno em que já saiu outra magia (só junto de um truque de 1 ação)' };
+    }
 
-    const precisaAlvo = spell.kind === 'attack' || spell.kind === 'auto' || spell.kind === 'heal';
+    const precisaAlvo = ['attack', 'auto', 'heal', 'armadura', 'estabilizar', 'raios', 'restaurar', 'reviver', 'arma', 'vampirico', 'marca', 'mira', 'calor'].includes(spell.kind)
+      || (spell.kind === 'save' && !spell.shape);
     if (precisaAlvo && !target) return { ok: false, why: 'escolha um alvo' };
+    if (['restaurar', 'reviver', 'arma', 'vampirico', 'marca', 'calor'].includes(spell.kind)
+      || (target && spell.kind !== 'heal' && (spell.soTipo || spell.naoAfeta || spell.intMinima))) {
+      const porque = this.porqueNaoAlvo(actor, spell, target);
+      if (porque) return { ok: false, why: porque };
+      // De toque: distância já checada; o resto (linha de visão) vale igual.
+      if (spell.kind === 'reviver') return { ok: true, spell, circulo: slot, gratis };
+    }
+    if (spell.kind === 'teleporte') {
+      if (!point) return { ok: false, why: 'escolha a casa de chegada' };
+      if (!this.field.inside(point.x, point.y) || this.field.blocksMove(point.x, point.y)) return { ok: false, why: 'casa bloqueada' };
+      if (this.at(point.x, point.y)) return { ok: false, why: 'casa ocupada' };
+    }
+    if (spell.kind === 'armadura' && (target.armor ?? 'nenhuma') !== 'nenhuma') {
+      return { ok: false, why: `${target.name} está de armadura — a magia só vale sem` };
+    }
+    if (spell.kind === 'estabilizar' && (!hasCondition(target, 'inconsciente') || target.stable || target.dead)) {
+      return { ok: false, why: `${target.name} não está morrendo` };
+    }
+    if (spell.kind === 'heal' && ['morto-vivo', 'constructo'].includes(target.tipo)) {
+      return { ok: false, why: 'cura não funciona em morto-vivo nem em constructo' };
+    }
+    if (['cone', 'cube', 'linha'].includes(spell.shape) && !this.areaDaMagia(actor, spell, point ?? target?.pos)?.length) {
+      return { ok: false, why: 'escolha para que lado' };
+    }
 
     const dest = target?.pos ?? point;
-    // Cone sai do próprio conjurador (alcance 0): não há distância a checar.
+    if (point && (spell.shape === 'sphere' || spell.shape === 'square') && this.field.blocksSight(point.x, point.y)) {
+      return { ok: false, why: 'o ponto está dentro da parede' };
+    }
+    // Esfera Flamejante: aparece numa casa vazia.
+    if (point && spell.zona?.ocupaCasa && this.at(point.x, point.y)) return { ok: false, why: 'a esfera precisa de uma casa vazia' };
+    // Cone e cubo saem do próprio conjurador (alcance 0): não há distância a
+    // checar.
     if (dest && spell.rangeFt > 0) {
       const d = distanceFt(actor.pos, dest);
       if (d > spell.rangeFt) {
@@ -1019,121 +2164,176 @@ export class Encounter {
         return { ok: false, why: 'sem linha de visão até o alvo' };
       }
     }
-    return { ok: true, spell };
+    return { ok: true, spell, circulo: slot, gratis };
   }
 
-  castSpell(actor, spellId, { target = null, point = null } = {}) {
-    const check = this.canCast(actor, spellId, { target, point });
+  castSpell(actor, spellId, { target = null, point = null, circulo = null, targets = null } = {}) {
+    const check = this.canCast(actor, spellId, { target, point, circulo });
     if (!check.ok) return { ok: false, why: check.why };
     const spell = check.spell;
+    const slot = check.circulo;
+    const acima = Math.max(0, slot - spell.level);
+    if (check.reuso) return this.reusarMagia(actor, spell, target, slot, point);
+    if (!this.miraAliados(spell) && spell.kind !== 'buff' && spell.kind !== 'tempHp') this.quebraInvisibilidade(actor);
+    // Santuário acaba quando o protegido conjura contra um inimigo.
+    if (hasCondition(actor, 'santuario') && !this.miraAliados(spell) && spell.kind !== 'buff' && spell.kind !== 'tempHp') {
+      removeCondition(actor, 'santuario');
+      this.say('magia', `${actor.name} conjura contra o inimigo e perde o Santuário.`);
+    }
     if (spell.castTime === 'action') actor.actionUsed = true;
     if (spell.castTime === 'bonus') actor.bonusUsed = true;
-    if (spell.level > 0) actor.spellcasting.slots[spell.level] -= 1;
+    if (check.gratis) gastarUsoGratis(this, actor);
+    else if (spell.level > 0) actor.spellcasting.slots[slot] -= 1;
+    (actor.magiasNoTurno ??= []).push({ level: spell.level, castTime: spell.castTime });
+    // Uma concentração por vez: a nova derruba a velha antes de tudo.
+    if (spell.concentration) this.dropConcentration(actor);
 
     const dc = spellSaveDc(actor);
     const atkBonus = spellAttackBonus(actor);
     const mod = spellMod(actor);
-    this.say('magia', `${actor.name} conjura ${spell.name}.`);
+    // Truque cresce com o nível; magia de círculo, com o espaço gasto.
+    const dano = dadosDaMagia(spell, { nivel: actor.level ?? 1, circulo: slot });
+    this.say('magia', `${actor.name} conjura ${spell.name}${acima ? ` no ${slot}º círculo` : ''}.`);
 
     // Área afetada, para a camada de desenho marcar os quadrados.
-    const areaTiles = spell.shape === 'cone'
-      ? this.field.cone(actor.pos, {
-        x: Math.sign((point?.x ?? actor.pos.x) - actor.pos.x),
-        y: Math.sign((point?.y ?? actor.pos.y) - actor.pos.y),
-      }, spell.areaFt)
-      : spell.shape === 'sphere' && (point ?? target?.pos)
-        ? this.field.within(point ?? target.pos, spell.areaFt)
-        : null;
+    const areaTiles = this.areaDaMagia(actor, spell, point ?? target?.pos);
 
     // Alvos de magia de bônus são escolhidos aqui, antes do evento, para a
-    // camada de desenho poder marcar cada um sem recalcular a regra.
-    // `debuff` escolhe do outro lado, e por isso não inclui o conjurador nem
-    // dispensa quem está inconsciente — um inimigo caído ainda pode levar
-    // Perdição e acordar com ela.
+    // camada de desenho poder marcar cada um sem recalcular a regra. Quem
+    // chama pode escolher (`targets`); sem escolha, vão os mais próximos.
+    // `debuff` escolhe do outro lado e pede linha de visão; inclui inimigo
+    // caído — ele ainda pode levar Perdição e acordar com ela.
+    const quantos = (spell.targets ?? 0) + (spell.upcast?.alvos ?? 0) * acima;
+    const perto = (lista) => lista.slice().sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos));
     const buffTargets = spell.kind === 'buff'
-      ? this.alliesOf(actor)
-        .concat([actor])
-        .filter((a) => distanceFt(actor.pos, a.pos) <= spell.rangeFt && !hasCondition(a, 'inconsciente'))
-        .slice(0, spell.targets)
-      : spell.kind === 'debuff'
-        ? this.enemiesOf(actor)
-          .filter((e) => !e.dead && distanceFt(actor.pos, e.pos) <= spell.rangeFt)
+      ? (targets ?? perto(this.alliesOf(actor).concat([actor])))
+        // Farol de Esperança vale para quem está caído: é o teste de morte dele.
+        .filter((a) => a.side === actor.side && !a.dead && distanceFt(actor.pos, a.pos) <= spell.rangeFt
+          && (spell.id === 'farolDeEsperanca' || spell.pvMax || !hasCondition(a, 'inconsciente')))
+        .slice(0, quantos)
+      : spell.kind === 'healGrupo'
+        // Cura em grupo pega também quem está caído: é para isso que ela existe.
+        ? (targets ?? perto(this.alliesOf(actor).concat([actor])).filter((a) => a.hp < a.maxHp))
+          .filter((a) => !this.porqueNaoAlvo(actor, spell, a))
           .slice(0, spell.targets)
-        : null;
+        : spell.kind === 'debuff'
+          ? this.dentroDoCubo(spell, (targets ?? perto(this.enemiesOf(actor)))
+            .filter((e) => e.side !== actor.side && !e.dead && distanceFt(actor.pos, e.pos) <= spell.rangeFt
+              && this.field.hasLineOfSight(actor.pos, e.pos)
+              && (!spell.soTipo || (e.tipo ?? 'humanoide') === spell.soTipo)
+              && !spell.naoAfeta?.includes(e.tipo)
+              && (!spell.intMinima || (e.abilities?.int ?? 10) >= spell.intMinima)))
+            .slice(0, quantos)
+          : null;
 
-    this.onEvent({ type: 'spell', caster: actor, spell, target, point, areaTiles, buffTargets });
+    // `dardos`: onde cada dardo do Míssil Mágico cai, para o desenho mandar
+    // cada um ao seu alvo.
+    const dardos = spell.kind === 'auto' || spell.kind === 'raios' || (spell.kind === 'save' && spell.alvos)
+      ? (targets?.length ? targets : [target]).filter((t) => t && !this.porqueNaoAlvo(actor, spell, t))
+      : null;
+    this.onEvent({ type: 'spell', caster: actor, spell, target, point, areaTiles, buffTargets, circulo: slot, dardos });
 
     switch (spell.kind) {
       case 'attack': {
         if (!target) break;
-        const mods = this.attackModifiers(actor, target, { ranged: true });
-        const cover = this.field.coverBetween(actor.pos, target.pos);
-        const ca = target.ac + cover;
-        const caPartes = [{ rotulo: `CA de ${target.name}`, valor: target.ac }];
-        if (cover) caPartes.push({ rotulo: 'cobertura', valor: cover });
-        // Ataque de magia é proficiência + o atributo de conjuração — nunca
-        // Força. Nomear o atributo é o que torna visível por que o mago acerta
-        // melhor que o clérigo com a mesma magia.
-        const atkPartes = [
-          { rotulo: ABILITY_NAME[actor.spellcasting.ability], valor: abilityMod(actor.abilities[actor.spellcasting.ability]) },
-          { rotulo: 'proficiência', valor: proficiencyBonus(actor.level) },
-        ];
-        const atk = attackRoll(this.rng, atkBonus, ca, mods);
-        const explicacao = explicarModo(mods);
-        const faltou = atk.hit || atk.fumble ? null : Math.max(0, ca - atk.total);
-        const porPouco = faltou !== null && faltou >= 1 && faltou <= 2;
-        const contaAtaque = [
-          `d20[${atk.rolls.join('/')}] ${explicarBonus(atkBonus, atkPartes)} = ${atk.total}`,
-          `vs CA ${ca}${cover ? ` (${caPartes.map((c) => `${c.rotulo} ${c.valor}`).join(' + ')})` : ''}`,
-          explicacao || null,
-        ].filter(Boolean).join(' · ');
-        const rolagem = {
-          categoria: 'ataqueDeMagia',
-          rotulo: spell.name,
-          actor, target,
-          d20: { rolls: [...atk.rolls], natural: atk.natural, total: atk.total, bonus: atkBonus },
-          bonusPartes: atkPartes,
-          alvoNumero: { rotulo: 'CA', valor: ca, partes: caPartes },
-          modo: mods.mode, anulado: mods.anulado,
-          vantagens: [...mods.vantagens], desvantagens: [...mods.desvantagens], motivos: [...mods.reasons],
-          explicacao, critico: atk.critical, faltou, errouPorPouco: porPouco,
-          naturalUm: atk.fumble, natural20: atk.critical,
-          conta: contaAtaque,
-        };
-        this.onEvent({ type: 'rolagem', ...rolagem });
-        if (!atk.hit) {
-          const nota = atk.fumble
-            ? ' — 1 natural, erra por regra'
-            : porPouco ? ` — faltou ${faltou}` : '';
-          this.say('magia', `${spell.name} erra ${target.name}${nota}.`, contaAtaque, { rolagem });
-          break;
+        // Orbe Cromático: o tipo que mais fere ESTE alvo (imunidade, resistência).
+        const comoSai = spell.tiposAEscolher
+          ? { ...spell, damageType: [...spell.tiposAEscolher].sort((a, b) => this.danoPorTipo(target, 10, b, true) - this.danoPorTipo(target, 10, a, true))[0] }
+          : spell;
+        const causado = this.ataqueMagico(actor, target, comoSai, dano, dc);
+        // Flecha Ácida: errou, metade do dano inicial; acertou, mais ácido no
+        // fim do próximo turno do alvo.
+        if (spell.danoAtrasado && !target.dead) {
+          if (causado > 0) {
+            const depois = dadosDaMagia(spell, { circulo: slot, notacao: spell.danoAtrasado });
+            this.aplicarCondicao(target, 'acidoAtrasado', { rounds: 1, source: actor.id, data: { dano: depois } });
+          } else {
+            const r = damageRoll(this.rng, dano);
+            const metade = Math.floor(r.total / 2);
+            this.say('magia', `O ácido respinga em ${target.name} mesmo assim: ${metade}.`, `${dano}[${r.rolls.join('+')}] → metade`);
+            this.applyDamage(target, metade, spell.damageType, actor, { magico: true });
+          }
         }
-        const dmg = damageRoll(this.rng, spell.damage, { critical: atk.critical });
-        const danoPartes = [parcelaDeDano('dano', dmg)];
-        rolagem.danoPartes = danoPartes;
-        rolagem.danoTotal = dmg.total;
-        this.say(
-          'magia',
-          `${spell.name} acerta ${target.name}${atk.critical ? ' — CRÍTICO (20 natural)' : ''}: ${dmg.total} de ${spell.damageType}.`,
-          `${contaAtaque} · ${contaDeDano(danoPartes[0])}`,
-          { rolagem },
-        );
-        this.applyDamage(target, dmg.total, spell.damageType, actor);
-        this.maybeIgnite(target, spell.damageType);
-        if (spell.applies && !target.dead) addCondition(target, spell.applies.condition, { rounds: spell.applies.rounds });
+        // Raio do Enfraquecimento: a concentração segura a condição de quem foi atingido.
+        if (spell.concentration && !spell.reusoAuto && causado > 0 && spell.applies) {
+          actor.concentrating = { spellId: spell.id, condition: spell.applies.condition, targets: [target], rounds: spell.duracaoRodadas };
+        }
+        // Raio de Bruxa: só prende o arco se acertou; aí vem a concentração.
+        if (spell.reusoAuto && causado > 0) {
+          actor.concentrating = { spellId: spell.id, condition: null, targets: [], rounds: spell.duracaoRodadas };
+          (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, alvoId: target.id, usadoNoTurno: true };
+        }
+        break;
+      }
+
+      case 'marca': {
+        this.aplicarCondicao(target, spell.condition, { source: actor.id });
+        actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: [target], rounds: spell.duracaoRodadas };
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null };
+        this.say('magia', `${target.name} fica marcado por ${spell.name}.`);
+        break;
+      }
+
+      // Ataque Certeiro: o próximo ataque seu contra ele tem vantagem.
+      case 'mira': {
+        this.aplicarCondicao(target, 'alvoCerteiro', { source: actor.id, rounds: 2, lado: actor.side, quando: 'fim' });
+        actor.concentrating = { spellId: spell.id, condition: 'alvoCerteiro', targets: [target], rounds: 2 };
+        this.say('magia', `${actor.name} lê as defesas de ${target.name}.`);
+        break;
+      }
+
+      // Lâmina Flamejante e Aura de Vitalidade: conjurar só põe de pé; o
+      // golpe (ação) ou a cura (bônus) vêm depois, sem espaço.
+      case 'lamina':
+      case 'curaReuso': {
+        actor.concentrating = { spellId: spell.id, condition: null, targets: [], rounds: spell.duracaoRodadas };
+        const dados = spell.kind === 'lamina'
+          ? dadosDaMagia(spell, { circulo: spell.level }).replace(/^(\d+)d/, (_, n) => `${Number(n) + Math.floor(acima / 2)}d`)
+          : dadosDaMagia(spell, { circulo: slot, notacao: spell.heal });
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, dano: dados };
+        this.say('magia', spell.kind === 'lamina' ? `Uma lâmina de fogo acende na mão de ${actor.name}.` : `Uma aura de vitalidade envolve ${actor.name}.`);
+        break;
+      }
+
+      // Calor no Metal: o metal que o alvo veste ou empunha arde.
+      case 'calor': {
+        actor.concentrating = { spellId: spell.id, condition: 'metalQuente', targets: [target], rounds: spell.duracaoRodadas };
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, dano, alvoId: target.id };
+        this.metalQuente(actor, target, spell, dano, dc);
+        break;
+      }
+
+      case 'disparada': {
+        actor.concentrating = { spellId: spell.id, condition: null, targets: [], rounds: spell.duracaoRodadas };
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null };
+        actor.movementLeftFt += this.speedOf(actor);
+        this.say('magia', `${actor.name} dispara: +${this.speedOf(actor)} pés de deslocamento.`);
         break;
       }
 
       case 'save': {
-        const targets = areaTiles
-          ? areaTiles.map((s) => this.at(s.x, s.y)).filter(Boolean)
-          : target ? [target] : [];
+        // Uma criatura Grande ocupa várias casas da área: conta uma vez só.
+        // Quem a área pega, e quem Esculpir Magias poupa: a mesma conta da
+        // prévia (`afetadosPelaArea`).
+        // Respingo Ácido: até 2 criaturas, a até 1,5 m da primeira.
+        const varios = spell.alvos && targets?.length
+          ? targets.filter((t, i, l) => l.indexOf(t) === i && !this.porqueNaoAlvo(actor, spell, t)
+            && distanceFt(t.pos, targets[0].pos) <= spell.juntosFt).slice(0, spell.alvos)
+          : null;
+        const pegos = spell.soZona ? []
+          : areaTiles ? this.afetadosPelaArea(actor, spell, areaTiles, slot)
+          : varios ? varios.map((c) => ({ c, papel: 'inimigo' }))
+            : target ? [{ c: target, papel: 'inimigo' }] : [];
+        // O dano de uma magia de área é rolado UMA vez para todos os alvos.
+        const dmg = dano ? damageRoll(this.rng, dano) : null;
+        // A teia nasce antes dos testes: quem fica contido fica preso A ELA.
+        const zona = spell.zona && areaTiles ? this.criarZona(actor, spell, areaTiles, dc, { centro: point ?? target?.pos, circulo: slot }) : null;
+        // Raio Lunar e Esfera Flamejante: a zona anda com a ação (ou bônus).
+        if (zona && spell.zona.movel) (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, zona };
+        const presos = [];
 
-        // Esculpir Magias: o evocador protege 1 + nível da magia de aliados.
-        let protectedCount = actor.features?.includes('sculptSpells') ? 1 + spell.level : 0;
-        for (const t of targets) {
-          if (t.side === actor.side && protectedCount > 0) {
-            protectedCount -= 1;
+        for (const { c: t, papel } of pegos) {
+          if (papel === 'poupado') {
             this.say('magia', `${t.name} é poupado (Esculpir Magias).`);
             continue;
           }
@@ -1142,8 +2342,7 @@ export class Encounter {
           const save = auto
             ? { total: 0, success: false, rolls: [0] }
             : this.resistencia(t, spell.save, dc);
-          const dmg = damageRoll(this.rng, spell.damage);
-          const amount = save.success ? (spell.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+          const amount = !dmg ? 0 : save.success ? (spell.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
           // O que o sucesso compra é a decisão inteira: metade do dano ainda
           // vale conjurar numa multidão, nenhum dano não vale contra um alvo só.
           // Qual condição travou o teste: "falha automática" sem culpado deixa
@@ -1151,60 +2350,113 @@ export class Encounter {
           const culpada = auto
             ? (t.conditions ?? []).find((c) => CONDITIONS[c.id]?.autoFailSaves?.includes(spell.save))
             : null;
+          const efeito = spell.onFail ? `não fica ${CONDITIONS[spell.onFail.condition]?.name.toLowerCase()}` : null;
           const r = this.explicarResistencia(t, spell.save, dc, save, {
             contra: `${spell.name} (CD ${dc} = 8 + proficiência + atributo de conjuração)`,
-            seSucesso: spell.halfOnSave ? 'metade do dano' : 'nenhum dano',
+            seSucesso: efeito ?? (spell.halfOnSave ? 'metade do dano' : 'nenhum dano'),
             automatica: auto,
             motivoAutomatico: culpada ? (CONDITIONS[culpada.id]?.name ?? culpada.id) : null,
           });
-          const danoPartes = [parcelaDeDano('dano', dmg)];
-          r.danoPartes = danoPartes;
-          r.danoAplicado = amount;
-          this.say(
-            'magia',
-            `${t.name} ${auto ? 'falha automaticamente' : save.success ? 'resiste' : 'falha'} contra ${spell.name} e sofre ${amount}.`,
-            `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && spell.halfOnSave ? ` → metade = ${amount}` : ''}`,
-            { rolagem: r },
-          );
+          const verbo = auto ? 'falha automaticamente' : save.success ? 'resiste' : 'falha';
+          if (dmg) {
+            const danoPartes = [parcelaDeDano('dano', dmg)];
+            r.danoPartes = danoPartes;
+            r.danoAplicado = amount;
+            this.say(
+              'magia',
+              `${t.name} ${verbo} contra ${spell.name} e sofre ${amount}.`,
+              `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && spell.halfOnSave ? ` → metade = ${amount}` : ''}`,
+              { rolagem: r },
+            );
+          } else {
+            this.say('magia', `${t.name} ${verbo} contra ${spell.name}.`, r.conta, { rolagem: r });
+          }
           if (amount > 0) {
-            this.applyDamage(t, amount, spell.damageType, actor);
+            this.applyDamage(t, amount, spell.damageType, actor, { magico: true });
             this.maybeIgnite(t, spell.damageType);
           }
+          if (!save.success && !t.dead) {
+            // Braços de Hadar: sem reação até o próximo turno dele.
+            if (spell.onFail?.semReacao) t.reactionUsed = true;
+            // Sussurros Dissonantes: gasta a reação fugindo.
+            if (spell.onFail?.fogeNaReacao && !t.reactionUsed && !conditionEffects(t).incapacitated) {
+              t.reactionUsed = true;
+              this.say('condicao', `${t.name} foge de ${actor.name}.`);
+              this.fugirDe(t, actor.pos, this.speedOf(t));
+            }
+            if (spell.onFail?.condition) {
+              const posta = this.aplicarCondicao(t, spell.onFail.condition, {
+                source: zona ? `zona:${zona.id}` : actor.id,
+                rounds: spell.onFail.rounds ?? Infinity,
+                data: { save: spell.save, dc, repete: spell.onFail.repete ?? false, escape: dc, foge: !!spell.onFail.foge },
+              });
+              if (posta) {
+                presos.push(t);
+                if (conditionEffects(t).semReacao) t.reactionUsed = true;
+                this.say('condicao', `${t.name} fica ${CONDITIONS[spell.onFail.condition]?.name.toLowerCase()}.`);
+              }
+            }
+            if (spell.pushFt) this.empurrar(t, actor.pos, spell.pushFt);
+          }
+        }
+        // Concentração (Medo, Padrão Hipnótico, Teia): segura quem falhou; a
+        // teia fica de pé mesmo sem ninguém preso.
+        if (spell.concentration) {
+          actor.concentrating = {
+            spellId: spell.id, condition: spell.onFail?.condition === 'caido' ? null : spell.onFail?.condition, targets: presos,
+            rounds: spell.duracaoRodadas ?? null, zona,
+          };
+          if (zona) zona.concentracao = actor.id;
+          if (!presos.length && !zona) this.dropConcentration(actor);
         }
         break;
       }
 
       case 'auto': {
-        if (!target) break;
-        let total = 0;
-        const rolls = [];
-        for (let i = 0; i < spell.darts; i++) {
+        // Cada dardo vai num alvo à escolha (`targets`); sem escolha, todos no
+        // alvo mirado.
+        // Cada alvo escolhido tem de estar ao alcance e à vista.
+        const alvos = (targets?.length ? targets : target ? [target] : [])
+          .filter((t) => !this.porqueNaoAlvo(actor, spell, t));
+        if (!alvos.length) break;
+        const dardos = spell.darts + (spell.upcast?.dardos ?? 0) * acima;
+        const porAlvo = new Map();
+        for (let i = 0; i < dardos; i++) {
+          const alvo = alvos[i % alvos.length];
           const d = damageRoll(this.rng, spell.damage);
-          total += d.total;
-          rolls.push(d.total);
+          porAlvo.set(alvo, [...(porAlvo.get(alvo) ?? []), d.total]);
         }
         // "Automática" é a razão de ser desta magia: não há rolagem de ataque
         // nem resistência, então nem CA alta nem vantagem mudam nada. Sem dizer
         // isso, o jogador não sabe que tem aqui a resposta para o alvo blindado.
-        const conta = `${spell.darts}× ${spell.damage} [${rolls.join(' + ')}] = ${total} · automática: não há rolagem de ataque nem de resistência`;
-        this.say('magia', `${spell.darts} dardos atingem ${target.name}: ${total} de ${spell.damageType}.`, conta, {
-          rolagem: {
-            categoria: 'automatica', rotulo: spell.name, actor, target,
-            danoTotal: total, parcelas: rolls, tipoDeDano: spell.damageType, conta,
-          },
-        });
-        this.applyDamage(target, total, spell.damageType, actor);
+        for (const [alvo, rolls] of porAlvo) {
+          if ((alvo.conditions ?? []).some((c) => CONDITIONS[c.id]?.bloqueiaMissil)) {
+            this.say('magia', `O Escudo Arcano de ${alvo.name} absorve os dardos.`);
+            continue;
+          }
+          const total = rolls.reduce((a, b) => a + b, 0);
+          const conta = `${rolls.length}× ${spell.damage} [${rolls.join(' + ')}] = ${total} · automática: não há rolagem de ataque nem de resistência`;
+          this.say('magia', `${rolls.length} dardo${rolls.length > 1 ? 's' : ''} atinge${rolls.length > 1 ? 'm' : ''} ${alvo.name}: ${total} de ${spell.damageType}.`, conta, {
+            rolagem: {
+              categoria: 'automatica', rotulo: spell.name, actor, target: alvo,
+              danoTotal: total, parcelas: rolls, tipoDeDano: spell.damageType, conta,
+            },
+          });
+          this.applyDamage(alvo, total, spell.damageType, actor, { magico: true });
+        }
         break;
       }
 
       case 'heal': {
         if (!target) break;
-        const r = roll(this.rng, spell.heal);
+        const dados = dadosDaMagia(spell, { circulo: slot, notacao: spell.heal });
+        const r = this.rolarCuraPara(target, dados, actor);
         let amount = r.total + (spell.addSpellMod ? mod : 0);
-        // Discípulo da Vida: +2 + nível da magia em cada cura de 1º círculo ou maior.
-        if (actor.features?.includes('discipleOfLife') && spell.level > 0) amount += 2 + spell.level;
+        // Discípulo da Vida: +2 + círculo do espaço gasto em cada cura de 1º
+        // círculo ou maior.
+        if (actor.features?.includes('discipleOfLife') && spell.level > 0) amount += 2 + slot;
         const healed = this.heal(target, amount, actor);
-        this.say('cura', `${target.name} recupera ${healed} PV.`, `${spell.heal}[${r.rolls.join('+')}]${spell.addSpellMod ? ` + ${mod}` : ''}`);
+        this.say('cura', `${target.name} recupera ${healed} PV.`, `${dados}[${r.rolls.join('+')}]${spell.addSpellMod ? ` + ${mod}` : ''}`);
         break;
       }
 
@@ -1212,10 +2464,46 @@ export class Encounter {
         const picks = buffTargets ?? [];
         if (spell.concentration) {
           this.dropConcentration(actor);
-          actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: picks };
+          actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: picks, rounds: spell.duracaoRodadas ?? null };
         }
-        for (const a of picks) addCondition(a, spell.condition, { source: actor.id });
-        this.say('magia', `${spell.name} em ${picks.map((p) => p.name).join(', ')}.`);
+        for (const a of picks) {
+          // Ajuda: PV máximo e atual sobem; conjurar de novo não empilha.
+          if (spell.pvMax) {
+            const mais = spell.pvMax + (spell.upcast?.fixo ?? 0) * acima;
+            const ja = getCondition(a, spell.condition)?.data?.pv ?? 0;
+            if (mais > ja) {
+              a.maxHp += mais - ja;
+              // Pela cura: quem estava caído a 0 PV levanta.
+              this.heal(a, mais - ja, actor);
+              addCondition(a, spell.condition, { source: actor.id, data: { pv: mais } });
+            }
+            continue;
+          }
+          // Proteção contra Energia e Arma Elemental: o jogo escolhe o tipo.
+          const tipo = spell.escolheTipo ? this.tipoParaEscolher(actor, spell) : null;
+          if (tipo) this.say('magia', `${spell.name} em ${a.name}: ${tipo}.`);
+          for (const id of CONDITIONS[spell.condition]?.removeAoReceber ?? []) removeCondition(a, id);
+          // Duração sem concentração, contada no turno de quem conjurou.
+          const duracao = spell.rodadasProprias
+            ? { rounds: spell.rodadasProprias, lado: actor.side, quando: 'fim' }
+            : {};
+          // Arma Mágica (+2 no 4º, +3 no 6º) e Arma Elemental (+2/2d4 no 5º, +3/3d4 no 7º).
+          const bonusArma = Object.entries(spell.escalaBonus ?? {}).reduce((b, [c, v]) => (slot >= Number(c) ? v : b), spell.escalaBonus ? 1 : undefined);
+          addCondition(a, spell.condition, {
+            source: actor.id, ...duracao,
+            data: { dc, pvTemp: mod, n: spell.imagens ?? 0, tipo, circulo: slot, bonusArma, dadosNoAcerto: bonusArma ? `${bonusArma}d4` : undefined },
+          });
+          // Passos Largos vale já neste turno, não só no próximo.
+          if (CONDITIONS[spell.condition]?.speedBonusFt && a.side === this.side) a.movementLeftFt += CONDITIONS[spell.condition].speedBonusFt;
+          // Velocidade no turno do próprio lado: a ação a mais já vale agora.
+          if (spell.condition === 'acelerado' && a.side === this.side) {
+            a.acaoVelozDisponivel = true;
+            a.movementLeftFt += this.speedOf(a) / 2;
+          }
+          // Heroísmo tira o medo que já estava lá.
+          for (const id of CONDITIONS[spell.condition]?.imuneA ?? []) removeCondition(a, id);
+        }
+        this.say('magia', `${spell.name} em ${picks.map((p) => p.name).join(', ')}${spell.pvMax ? ` (+${spell.pvMax + (spell.upcast?.fixo ?? 0) * acima} PV)` : ''}.`);
         break;
       }
 
@@ -1227,11 +2515,12 @@ export class Encounter {
         if (!picks.length) { this.say('aviso', `${spell.name} não pegou ninguém.`); break; }
         if (spell.concentration) {
           this.dropConcentration(actor);
-          actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: [] };
+          actor.concentrating = { spellId: spell.id, condition: spell.condition, targets: [], rounds: spell.duracaoRodadas ?? null };
         }
         const pegos = [];
         for (const t of picks) {
-          const save = this.resistencia(t, spell.save, dc);
+          // Enfeitiçar Pessoa: quem está lutando com você testa com vantagem.
+          const save = this.resistencia(t, spell.save, dc, { vantagem: !!spell.vantagemEmCombate });
           const r = this.explicarResistencia(t, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: `resiste a ${spell.name}`,
@@ -1240,35 +2529,165 @@ export class Encounter {
             this.say('magia', `${t.name} resiste a ${spell.name}.`, r.conta, { rolagem: r });
             continue;
           }
-          addCondition(t, spell.condition, { source: actor.id });
+          // Condição que incapacita (paralisado) derruba a concentração DO
+          // ALVO: por isso `aplicarCondicao`, não `addCondition`.
+          this.aplicarCondicao(t, spell.condition, {
+            source: actor.id,
+            rounds: spell.concentration ? Infinity : (spell.duracaoRodadas ?? Infinity),
+            data: spell.repete ? { save: spell.save, dc, repete: spell.repete } : null,
+          });
+          // Riso Histérico também derruba.
+          for (const id of spell.tambem ?? []) addCondition(t, id);
+          if (conditionEffects(t).semReacao) t.reactionUsed = true;
           pegos.push(t);
           this.say('condicao', `${t.name} fica sob ${spell.name}.`, r.conta, { rolagem: r });
         }
         // A concentração segura só quem FALHOU: manter na lista quem resistiu
         // faria a magia "soltar" de alguém que nunca esteve preso.
         if (spell.concentration && actor.concentrating) actor.concentrating.targets = pegos;
-        if (!pegos.length) this.dropConcentration(actor);
+        // Só solta a concentração se ela era DESTA magia: Cegueira resistida
+        // não pode derrubar a Teia que o mago já mantinha.
+        if (!pegos.length && spell.concentration) this.dropConcentration(actor);
         break;
       }
 
       case 'sleep': {
         const center = point ?? target?.pos;
         if (!center) break;
+        // Dois dados a mais na reserva por círculo acima do 1º.
         const pool = roll(this.rng, spell.pool);
         let left = pool.total;
-        const inArea = this.field.within(center, spell.areaFt)
-          .map((s) => this.at(s.x, s.y))
-          .filter((c) => c && !c.dead && !hasCondition(c, 'inconsciente'))
-          .sort((a, b) => a.hp - b.hp);
-        this.say('magia', `Sono acumula ${pool.total} PV.`, `5d8[${pool.rolls.join('+')}]`);
+        const partes = [`${spell.pool}[${pool.rolls.join('+')}]`];
+        for (let i = 0; i < acima; i++) {
+          const mais = roll(this.rng, spell.upcast.reserva);
+          left += mais.total;
+          partes.push(`${spell.upcast.reserva}[${mais.rolls.join('+')}]`);
+        }
+        // Mortos-vivos não dormem, e elfos e meio-elfos têm a ancestralidade
+        // feérica: não gastam o total (`afetadosPelaArea`, a conta da prévia).
+        const inArea = this.afetadosPelaArea(actor, spell, this.areaDaMagia(actor, spell, center)).map((x) => x.c);
+        this.say('magia', `${spell.name} acumula ${left} PV.`, partes.join(' + '));
         for (const c of inArea) {
           if (c.hp > left) break;
           left -= c.hp;
-          addCondition(c, 'inconsciente', { rounds: 10 });
+          // Um minuto, ou até sofrer dano (`applyDamage` acorda quem tem a
+          // marca do sono). Acorda caído: o `caido` fica até ele se levantar.
+          if (spell.cega) {
+            // Até o fim do seu próximo turno (do conjurador).
+            this.aplicarCondicao(c, 'cego', { rounds: 2, source: actor.id, lado: actor.side, quando: 'fim' });
+            this.say('condicao', `${c.name} fica cego pelas cores.`);
+            continue;
+          }
+          this.aplicarCondicao(c, 'inconsciente', { rounds: 10, source: 'sono' });
           addCondition(c, 'caido');
           c.acted = true;
           this.say('condicao', `${c.name} adormece.`);
         }
+        break;
+      }
+
+      case 'armadura': {
+        target.armaduraArcana = true;
+        target.ac = armorClass(target);
+        this.say('magia', `${target.name} fica envolto em força arcana: CA ${target.ac}.`);
+        break;
+      }
+
+      case 'tempHp': {
+        // PV temporários não somam: fica o maior.
+        const r = /^\d+$/.test(spell.tempHp) ? { total: Number(spell.tempHp), rolls: [spell.tempHp] } : roll(this.rng, spell.tempHp);
+        const total = r.total + (spell.upcast?.fixo ?? 0) * acima;
+        actor.tempHp = Math.max(actor.tempHp ?? 0, total);
+        // Armadura de Agathys: o frio que devolve sobe junto com o círculo.
+        if (spell.condition) addCondition(actor, spell.condition, { source: actor.id, data: { dano: total } });
+        this.say('magia', `${actor.name} ganha ${total} PV temporários.`, `${spell.tempHp}[${r.rolls.join('+')}]${acima ? ` + ${spell.upcast.fixo * acima}` : ''}`);
+        break;
+      }
+
+      case 'estabilizar': {
+        target.stable = true;
+        this.say('cura', `${actor.name} estabiliza ${target.name} com ${spell.name}.`, 'sem teste de Medicina');
+        this.onEvent({ type: 'stabilized', target, by: actor });
+        break;
+      }
+
+      // Raio Ardente: um ataque por raio, cada um no alvo escolhido para ele.
+      case 'raios': {
+        const alvos = (targets?.length ? targets : target ? [target] : []).filter((t) => !this.porqueNaoAlvo(actor, spell, t));
+        const n = this.alvosDaMagia(spell, slot, actor);
+        // Explosão Agonizante (invocação do bruxo): soma CAR em cada raio da Rajada.
+        const agonizante = spell.id === 'rajadaMistica' && actor.features?.includes('agonizingBlast') ? mod : 0;
+        for (let i = 0; i < n && alvos.length; i++) {
+          const alvo = alvos[i % alvos.length];
+          if (alvo.dead) continue;
+          this.ataqueMagico(actor, alvo, spell, dano, dc, { bonusDano: agonizante });
+        }
+        break;
+      }
+
+      case 'healGrupo': {
+        const dados = dadosDaMagia(spell, { circulo: slot, notacao: spell.heal });
+        for (const a of buffTargets ?? []) {
+          const r = this.rolarCuraPara(a, dados, actor);
+          let amount = r.total + (spell.addSpellMod ? mod : 0);
+          if (actor.features?.includes('discipleOfLife')) amount += 2 + slot;
+          const curado = this.heal(a, amount, actor);
+          this.say('cura', `${a.name} recupera ${curado} PV.`, `${dados}[${r.rolls.join('+')}]${spell.addSpellMod ? ` + ${mod}` : ''}`);
+        }
+        break;
+      }
+
+      case 'restaurar': {
+        const id = spell.remove.find((c) => hasCondition(target, c));
+        removeCondition(target, id);
+        this.say('cura', `${target.name} não está mais ${CONDITIONS[id].name.toLowerCase()}.`);
+        break;
+      }
+
+      // Passo Nebuloso: some e aparece. Não passa pelas casas do meio, então
+      // ninguém tem ataque de oportunidade.
+      case 'teleporte': {
+        const de = { ...actor.pos };
+        actor.pos = { x: point.x, y: point.y, f: actor.pos.f ?? 1 };
+        this.say('magia', `${actor.name} reaparece a ${distanceFt(de, actor.pos)} pés dali.`);
+        this.onEvent({ type: 'teleporte', actor, from: de, to: { ...actor.pos } });
+        break;
+      }
+
+      case 'reviver': {
+        target.dead = false;
+        target.hp = 1;
+        target.stable = false;
+        target.deathSaves = { successes: 0, failures: 0 };
+        removeCondition(target, 'inconsciente');
+        target.morreuNaRodada = null;
+        this.say('cura', `${target.name} volta à vida com 1 PV.`);
+        this.onEvent({ type: 'revived', target, by: actor });
+        break;
+      }
+
+      // Arma Espiritual: golpeia agora e fica, sem concentração.
+      case 'arma': {
+        const extra = Math.floor(acima / 2) * (spell.upcast?.dadosACada2 ?? 0);
+        const notacao = dadosDaMagia(spell, { circulo: spell.level }).replace(/^(\d+)d/, (_, n) => `${Number(n) + extra}d`);
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: spell.duracaoRodadas, pos: { ...target.pos }, dano: notacao };
+        this.ataqueMagico(actor, target, spell, notacao, dc, { bonusDano: spell.addSpellMod ? mod : 0 });
+        break;
+      }
+
+      // Toque Vampírico: concentração; enquanto durar, o toque se repete.
+      case 'vampirico': {
+        actor.concentrating = { spellId: spell.id, condition: null, targets: [], rounds: spell.duracaoRodadas };
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, dano };
+        this.toqueQueDrena(actor, target, spell, dano, dc);
+        break;
+      }
+
+      case 'aura': {
+        const aura = { id: this.proximaZona(), spellId: spell.id, nome: spell.name, dono: actor, raioFt: spell.raioFt, cd: dc, save: spell.save, dano, damageType: spell.damageType, halfOnSave: spell.halfOnSave, tipo: spell.tipoAura ?? null };
+        this.auras.push(aura);
+        actor.concentrating = { spellId: spell.id, condition: null, targets: [], rounds: spell.duracaoRodadas, aura };
+        this.say('magia', spell.tipoAura === 'manto' ? `Um poder sagrado irradia de ${actor.name}.` : `Espíritos rodeiam ${actor.name}.`);
         break;
       }
     }
@@ -1276,6 +2695,578 @@ export class Encounter {
     this.afterAction(actor);
     this.checkEnd();
     return { ok: true };
+  }
+
+  /** O golpe de novo de uma magia ativa: sem espaço, sem contar como conjuração. */
+  reusarMagia(actor, spell, target, slot, point = null) {
+    if (spell.reuso === 'bonus') actor.bonusUsed = true;
+    else actor.actionUsed = true;
+    const ativa = actor.magiasAtivas[spell.id];
+    const dc = spellSaveDc(actor);
+    if (spell.zona?.movel) {
+      const casas = this.areaDaMagia(actor, spell, point) ?? [];
+      ativa.zona.casas = new Set(casas.map((t) => key(t.x, t.y)));
+      ativa.zona.centro = { x: point.x, y: point.y };
+      this.atualizarDificeis();
+      this.say('magia', `${actor.name} move ${spell.name}.`);
+      this.onEvent({ type: 'spell', caster: actor, spell, point, areaTiles: casas, circulo: slot, reuso: true });
+      this.afterAction(actor);
+      return { ok: true };
+    }
+    if (spell.kind === 'curaReuso') {
+      const dados = ativa.dano;
+      const r = this.rolarCuraPara(target, dados, actor);
+      const curado = this.heal(target, r.total, actor);
+      this.say('cura', `${spell.name}: ${target.name} recupera ${curado} PV.`, `${dados}[${r.rolls.join('+')}]`);
+      this.onEvent({ type: 'spell', caster: actor, spell, target, point: target.pos, circulo: slot, reuso: true });
+      this.afterAction(actor);
+      return { ok: true };
+    }
+    if (spell.kind === 'disparada') {
+      actor.movementLeftFt += this.speedOf(actor);
+      this.say('magia', `${actor.name} dispara de novo: +${this.speedOf(actor)} pés.`);
+      this.onEvent({ type: 'spell', caster: actor, spell, point: actor.pos, circulo: slot, reuso: true });
+      this.afterAction(actor);
+      return { ok: true };
+    }
+    if (spell.kind === 'marca') {
+      this.aplicarCondicao(target, spell.condition, { source: actor.id });
+      if (actor.concentrating?.spellId === spell.id) actor.concentrating.targets = [target];
+      this.say('magia', `${actor.name} passa a ${spell.name} para ${target.name}.`);
+      this.onEvent({ type: 'spell', caster: actor, spell, target, point: target.pos, circulo: slot, reuso: true });
+      this.afterAction(actor);
+      return { ok: true };
+    }
+    // Golpear com a magia é atacar: desfaz Invisibilidade e Santuário.
+    this.quebraInvisibilidade(actor);
+    if (hasCondition(actor, 'santuario')) {
+      removeCondition(actor, 'santuario');
+      this.say('magia', `${actor.name} ataca e perde o Santuário.`);
+    }
+    ativa.usadoNoTurno = true;
+    this.say('magia', `${actor.name}: ${spell.name} golpeia de novo.`);
+    this.onEvent({ type: 'spell', caster: actor, spell, target, point: target.pos, circulo: slot, reuso: true });
+    if (spell.reusoAuto) {
+      const r = damageRoll(this.rng, spell.reusoAuto);
+      this.say('magia', `O arco de ${spell.name} queima ${target.name}: ${r.total} de ${spell.damageType}.`, `${spell.reusoAuto}[${r.rolls.join('+')}] · automático`);
+      this.applyDamage(target, r.total, spell.damageType, actor, { magico: true });
+    } else if (spell.kind === 'lamina') {
+      this.ataqueMagico(actor, target, spell, ativa.dano, dc);
+    } else if (spell.kind === 'calor') {
+      this.metalQuente(actor, target, spell, ativa.dano, dc);
+    } else if (spell.kind === 'arma') {
+      ativa.pos = { ...target.pos };
+      this.ataqueMagico(actor, target, spell, ativa.dano, dc, { bonusDano: spell.addSpellMod ? spellMod(actor) : 0 });
+    } else {
+      this.toqueQueDrena(actor, target, spell, ativa.dano, dc);
+    }
+    this.afterAction(actor);
+    this.checkEnd();
+    return { ok: true };
+  }
+
+  // ---- truques e 1º círculo: reações e efeitos de acerto -------------------
+
+  /** Veste armadura de metal (média ou pesada, menos a de peles). */
+  vesteMetal(c) {
+    const a = ARMORS[c.armor ?? 'nenhuma'];
+    return !!a && ['média', 'pesada'].includes(a.categoria) && c.armor !== 'peleDeAnimal';
+  }
+
+  /**
+   * Zombaria Viciosa: a desvantagem vale para um ataque só. Ataque Certeiro:
+   * a vantagem também (`alvo`, quem ele leu).
+   */
+  consumirAoAtacar(c, alvo = null) {
+    for (const cond of [...(c.conditions ?? [])]) {
+      if (CONDITIONS[cond.id]?.consumidaAoAtacar) removeCondition(c, cond.id);
+    }
+    if (alvo && getCondition(alvo, 'alvoCerteiro')?.source === c.id) {
+      removeCondition(alvo, 'alvoCerteiro');
+      if (c.concentrating?.spellId === 'ataqueCerteiro') c.concentrating = null;
+    }
+  }
+
+  /** Santuário: quem ataca o protegido faz SAB; falhou, perde o ataque. */
+  passaPeloSantuario(atacante, alvo) {
+    const s = getCondition(alvo, 'santuario');
+    if (!s || atacante.side === alvo.side) return true;
+    const dc = s.data?.dc ?? 13;
+    const save = this.resistencia(atacante, 'wis', dc);
+    const r = this.explicarResistencia(atacante, 'wis', dc, save, {
+      contra: `Santuário de ${alvo.name}`,
+      seSucesso: 'consegue atacar',
+    });
+    if (save.success) return true;
+    this.say('magia', `${atacante.name} hesita diante do Santuário e perde o ataque contra ${alvo.name}.`, r.conta, { rolagem: r });
+    return false;
+  }
+
+  /** Magia pronta, espaço livre, reação de pé: a reação pode sair. */
+  podeReagirCom(c, id) {
+    if (c.dead || c.reactionUsed || conditionEffects(c).incapacitated || !c.spellcasting) return null;
+    // No próprio turno, depois de uma magia de ação bônus, só truque de 1 ação.
+    if (this.side === c.side && (c.magiasNoTurno ?? []).some((m) => m.castTime === 'bonus')) return null;
+    if (!magiasProntas(c).includes(id)) return null;
+    const spell = getSpell(id);
+    const circulo = this.circuloDeConjuracao(c, spell);
+    return circulo === null ? null : { spell, circulo };
+  }
+
+  /**
+   * Escudo Arcano: sai sozinho quando o ataque ia acertar e +5 de CA o faz
+   * errar. Gastar a reação e o espaço num ataque que acertaria de qualquer
+   * jeito seria desperdício; por isso só nesse caso.
+   */
+  escudoArcano(alvo, atacante, total, ca) {
+    const pode = this.podeReagirCom(alvo, 'escudoArcano');
+    if (!pode || total >= ca + 5) return false;
+    alvo.reactionUsed = true;
+    alvo.spellcasting.slots[pode.circulo] -= 1;
+    this.aplicarCondicao(alvo, 'escudoArcano', { rounds: 1, source: alvo.id, lado: alvo.side, quando: 'inicio' });
+    this.say('magia', `${alvo.name} ergue o Escudo Arcano (reação): CA ${ca + 5}, o ataque de ${atacante.name} erra.`);
+    this.onEvent({ type: 'spell', caster: alvo, spell: pode.spell, target: alvo, point: alvo.pos, circulo: pode.circulo });
+    return true;
+  }
+
+  /** Repreensão Infernal: quem fere o bruxo leva chamas, na reação dele. */
+  reacaoAoDano(alvo, fonte) {
+    if (!fonte || fonte === alvo || fonte.dead || fonte.side === alvo.side || this.reagindo) return;
+    const pode = this.podeReagirCom(alvo, 'repreensaoInfernal');
+    if (!pode) return;
+    if (distanceFt(alvo.pos, fonte.pos) > pode.spell.rangeFt || !this.field.hasLineOfSight(alvo.pos, fonte.pos)) return;
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      alvo.spellcasting.slots[pode.circulo] -= 1;
+      const spell = pode.spell;
+      const dc = spellSaveDc(alvo);
+      this.say('magia', `${alvo.name} responde com Repreensão Infernal (reação).`);
+      this.onEvent({ type: 'spell', caster: alvo, spell, target: fonte, point: fonte.pos, circulo: pode.circulo });
+      const dmg = damageRoll(this.rng, dadosDaMagia(spell, { circulo: pode.circulo }));
+      const save = this.resistencia(fonte, spell.save, dc);
+      const amount = save.success ? Math.floor(dmg.total / 2) : dmg.total;
+      const r = this.explicarResistencia(fonte, spell.save, dc, save, { contra: spell.name, seSucesso: 'metade do dano' });
+      this.say('magia', `${fonte.name} ${save.success ? 'resiste' : 'falha'} e sofre ${amount} de fogo.`, `${r.conta} · ${dmg.notation ?? ''}[${dmg.rolls?.join('+') ?? ''}]`, { rolagem: r });
+      this.applyDamage(fonte, amount, spell.damageType, alvo, { magico: true });
+    } finally {
+      this.reagindo = false;
+    }
+  }
+
+  /**
+   * O que um acerto carrega além do dano: Bruxaria e Marca do Caçador no
+   * alvo, Favor Divino em quem ataca, e os golpes preparados (Trovejante,
+   * Abrasador, Colérico, Saraivada de Espinhos), que se gastam no acerto.
+   */
+  extrasDoAcerto(atacante, alvo, { arma, ranged, tipo, critical }) {
+    const extra = (rotulo, dados, tipoDano) => {
+      if (alvo.dead) return;
+      const r = damageRoll(this.rng, dados, { critical });
+      this.say('magia', `${rotulo}: +${r.total} de ${tipoDano} em ${alvo.name}.`, `${dados}[${r.rolls.join('+')}]`);
+      this.applyDamage(alvo, r.total, tipoDano, atacante, { magico: true });
+    };
+    for (const cond of [...(alvo.conditions ?? [])]) {
+      const m = CONDITIONS[cond.id]?.marcaDano;
+      if (!m || cond.source !== atacante.id || (m.soArma && !arma)) continue;
+      extra(CONDITIONS[cond.id].name, m.dados, m.tipo ?? tipo);
+    }
+    if (!arma) return;
+    for (const a of this.auras ?? []) {
+      if (a.tipo !== 'manto' || a.dono.dead || a.dono.side !== atacante.side) continue;
+      if (distanceFt(a.dono.pos, atacante.pos) <= a.raioFt && this.field.hasLineOfSight(a.dono.pos, atacante.pos)) extra(a.nome, '1d4', 'radiante');
+    }
+    for (const cond of [...(atacante.conditions ?? [])]) {
+      const def = CONDITIONS[cond.id];
+      // Arma Elemental guarda o tipo escolhido na condição.
+      if (def?.danoNoAcerto) extra(def.name, cond.data?.dadosNoAcerto ?? def.danoNoAcerto.dados, def.danoNoAcerto.tipo ?? cond.data?.tipo ?? tipo);
+      const g = def?.golpe;
+      if (!g || (g.alcance === 'perto' && ranged) || (g.alcance === 'distancia' && !ranged)) continue;
+      // O golpe preparado se gasta neste acerto.
+      removeCondition(atacante, cond.id);
+      this.onEvent({ type: 'golpeMagico', atacante, alvo, tipo: g.tipo, efeito: g.efeito });
+      const dc = spellSaveDc(atacante);
+      if (g.efeito === 'espinhos') {
+        // Saraivada: o alvo e quem estiver a 1,5 m dele.
+        const r = damageRoll(this.rng, this.dadosDoGolpe(cond, g));
+        const pegos = this.combatants.filter((c) => !c.dead && distanceFt(c.pos, alvo.pos) <= 5);
+        this.say('magia', `${def.name}: espinhos brotam em volta de ${alvo.name}.`);
+        for (const c of pegos) {
+          const save = this.resistencia(c, 'dex', dc);
+          const amount = save.success ? Math.floor(r.total / 2) : r.total;
+          this.applyDamage(c, amount, g.tipo, atacante, { magico: true });
+        }
+        this.dropConcentration(atacante);
+        continue;
+      }
+      extra(def.name, this.dadosDoGolpe(cond, g), g.tipo);
+      if (alvo.dead) { this.dropConcentration(atacante); continue; }
+      if (g.efeito === 'empurra') {
+        const save = this.resistencia(alvo, 'str', dc);
+        if (!save.success) {
+          this.empurrar(alvo, atacante.pos, 10);
+          addCondition(alvo, 'caido');
+          this.say('condicao', `${alvo.name} é arremessado e cai.`);
+        }
+        this.dropConcentration(atacante);
+      } else if (g.efeito === 'cega') {
+        const save = this.resistencia(alvo, 'con', dc);
+        if (!save.success && this.aplicarCondicao(alvo, 'cego', { source: atacante.id, data: { save: 'con', dc, repete: true } })) {
+          atacante.concentrating = { spellId: cond.id, condition: 'cego', targets: [alvo], rounds: atacante.concentrating?.rounds ?? 10 };
+          this.say('condicao', `${alvo.name} fica cego pela luz.`);
+        } else {
+          this.dropConcentration(atacante);
+        }
+      } else if (!g.efeito) {
+        this.dropConcentration(atacante);
+      } else if (g.efeito === 'chamusca') {
+        this.aplicarCondicao(alvo, 'chamuscado', { source: atacante.id, data: { dc } });
+        atacante.concentrating = { spellId: cond.id, condition: 'chamuscado', targets: [alvo], rounds: atacante.concentrating?.rounds ?? 10 };
+        this.say('condicao', `${alvo.name} pega fogo.`);
+      } else if (g.efeito === 'assusta') {
+        const save = this.resistencia(alvo, 'wis', dc);
+        if (!save.success && this.aplicarCondicao(alvo, 'amedrontado', { source: atacante.id, data: { save: 'wis', dc } })) {
+          atacante.concentrating = { spellId: cond.id, condition: 'amedrontado', targets: [alvo], rounds: atacante.concentrating?.rounds ?? 10 };
+          this.say('condicao', `${alvo.name} fica amedrontado de ${atacante.name}.`);
+        } else {
+          this.dropConcentration(atacante);
+        }
+      }
+    }
+  }
+
+  /**
+   * Imagem Espelhada: antes do ataque, um d20 diz se o golpe vai numa cópia
+   * (6+ com três, 8+ com duas, 11+ com uma). Indo, rola contra a CA da cópia
+   * (10 + DES); acertou, ela some. Devolve true se o ataque foi na cópia.
+   */
+  imagemDesvia(atacante, alvo, bonus, mods) {
+    const im = getCondition(alvo, 'imagens');
+    const n = im?.data?.n ?? 0;
+    // Quem não enxerga não é enganado pelas cópias.
+    if (!n || hasCondition(atacante, 'cego')) return false;
+    const precisa = { 3: 6, 2: 8, 1: 11 }[n];
+    if (this.rng.die(20) < precisa) return false;
+    const ca = 10 + abilityMod(alvo.abilities?.dex ?? 10);
+    const r = attackRoll(this.rng, bonus, ca, mods);
+    if (r.hit) {
+      im.data.n = n - 1;
+      if (!im.data.n) removeCondition(alvo, 'imagens');
+      this.say('magia', `${atacante.name} acerta uma cópia ilusória de ${alvo.name}: ela some (${n - 1} restam).`);
+    } else {
+      this.say('magia', `${atacante.name} ataca uma cópia ilusória de ${alvo.name} e erra.`);
+    }
+    return true;
+  }
+
+  /** Invisibilidade acaba quando o invisível ataca ou conjura contra alguém. */
+  quebraInvisibilidade(c) {
+    if (!hasCondition(c, 'invisivel')) return;
+    removeCondition(c, 'invisivel');
+    this.say('magia', `${c.name} reaparece.`);
+  }
+
+  /** Farol de Esperança: a cura sai no máximo dos dados. */
+  rolarCuraPara(alvo, notacao, conjurador) {
+    if (!conditionEffects(alvo).curaMaxima) return rolarCura(this, notacao, conjurador);
+    const m = /^(\d+)d(\d+)([+-]\d+)?$/.exec(String(notacao).replace(/\s/g, ''));
+    if (!m) return rolarCura(this, notacao, conjurador);
+    const rolls = Array(Number(m[1])).fill(Number(m[2]));
+    const mod = Number(m[3] ?? 0);
+    return { notation: notacao, rolls, mod, total: rolls.reduce((a, b) => a + b, 0) + mod };
+  }
+
+  /** Começo do turno: PV do Heroísmo e as chamas do Golpe Abrasador. */
+  comecoDoTurnoMagico(c) {
+    if (c.dead) return;
+    const heroico = getCondition(c, 'heroico');
+    if (heroico?.data?.pvTemp > 0) c.tempHp = Math.max(c.tempHp ?? 0, heroico.data.pvTemp);
+    const chamas = getCondition(c, 'chamuscado');
+    if (chamas) {
+      const save = this.resistencia(c, 'con', chamas.data?.dc ?? 13);
+      if (save.success) {
+        removeCondition(c, 'chamuscado');
+        this.say('condicao', `${c.name} apaga as chamas.`);
+        this.soltouDaConcentracao(c, 'chamuscado');
+      } else {
+        const r = damageRoll(this.rng, '1d6');
+        const dono = this.combatants.find((x) => x.id === chamas.source);
+        this.say('condicao', `${c.name} queima: ${r.total} de fogo.`);
+        this.applyDamage(c, r.total, 'fogo', dono ?? null, { magico: true });
+      }
+    }
+  }
+
+  /** Veste metal ou empunha arma de metal (Calor no Metal). */
+  carregaMetal(c) {
+    if (this.vesteMetal(c)) return true;
+    if (c.attacks) return c.attacks.some((a) => !a.natural && /espada|cimitarra|machad|lan[cç]a|ma[cç]a|adaga|martel|alabarda|mangual|tridente|azagaia|picareta|foice/i.test(a.name));
+    return (c.weapons ?? []).some((w) => w !== 'bordao' && w !== 'clava' && w !== 'arcoCurto' && w !== 'arcoLongo' && w !== 'funda');
+  }
+
+  /** Calor no Metal: 2d8 de fogo sem teste; quem veste o metal ataca com desvantagem. */
+  metalQuente(actor, target, spell, dano, dc) {
+    const r = damageRoll(this.rng, dano);
+    this.say('magia', `O metal de ${target.name} arde: ${r.total} de fogo.`, `${dano}[${r.rolls.join('+')}] · sem teste`);
+    this.applyDamage(target, r.total, 'fogo', actor, { magico: true });
+    if (target.dead) return;
+    // Arma ele larga (no jogo: fica com desvantagem se falhar); armadura não sai.
+    const preso = this.vesteMetal(target) || !this.resistencia(target, 'con', dc).success;
+    if (preso) this.aplicarCondicao(target, 'metalQuente', { rounds: 1, source: actor.id, lado: actor.side, quando: 'inicio' });
+  }
+
+  /**
+   * O tipo que o jogo escolhe por você. Proteção contra Energia: o que os
+   * inimigos à vista mais causam (fora o físico). Arma Elemental: o que menos
+   * os inimigos à vista resistem.
+   */
+  tipoParaEscolher(actor, spell) {
+    const tipos = ['ácido', 'frio', 'fogo', 'elétrico', 'trovejante'];
+    const inimigos = this.enemiesOf(actor).filter((e) => !e.dead);
+    if (spell.escolheTipo === 'defesa') {
+      const conta = new Map();
+      for (const e of inimigos) {
+        for (const a of e.attacks ?? []) if (tipos.includes(a.type)) conta.set(a.type, (conta.get(a.type) ?? 0) + 1);
+      }
+      return [...conta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'fogo';
+    }
+    const dano = (t) => inimigos.reduce((s, e) => s + this.danoPorTipo(e, 10, t, true), 0);
+    return [...tipos].sort((a, b) => dano(b) - dano(a))[0];
+  }
+
+  /** Os dados do golpe preparado, com o círculo em que a magia saiu. */
+  dadosDoGolpe(cond, g) {
+    const magia = Object.values(SPELLS).find((m) => m.condition === cond.id);
+    const circulo = cond.data?.circulo;
+    if (!magia?.upcast?.dados || !circulo) return g.dados;
+    return dadosDaMagia(magia, { circulo, notacao: g.dados });
+  }
+
+  /**
+   * O alvo único se livrou da condição (passou no teste): a concentração de
+   * quem a pôs não tem mais o que segurar.
+   */
+  soltouDaConcentracao(c, condId) {
+    for (const dono of this.combatants) {
+      const conc = dono.concentrating;
+      if (!conc || conc.condition !== condId || !conc.targets.includes(c)) continue;
+      if (conc.targets.some((t) => hasCondition(t, condId))) continue;
+      this.say('concentracao', `${dono.name}: ${getSpell(conc.spellId)?.name ?? 'a magia'} não segura mais ninguém.`);
+      this.dropConcentration(dono);
+    }
+  }
+
+  /** Foge andando (Sussurros Dissonantes): é movimento, provoca ataque de oportunidade. */
+  fugirDe(c, de, pes) {
+    const antes = c.movementLeftFt;
+    c.movementLeftFt = pes;
+    const alcance = this.reachableFor(c);
+    let melhor = null;
+    for (const node of alcance.values()) {
+      if (this.occupied(node.x, node.y, c)) continue;
+      const d = distanceFt({ x: node.x, y: node.y }, de);
+      if (!melhor || d > melhor.d) melhor = { d, node };
+    }
+    if (melhor && melhor.node.cost > 0) this.moveAlong(c, Battlefield.pathFrom(alcance, melhor.node));
+    c.movementLeftFt = antes;
+  }
+
+  /** Toque Vampírico: o dano necrótico, e metade volta como cura. */
+  toqueQueDrena(actor, target, spell, dano, dc) {
+    this.danoDoUltimoAtaque = 0;
+    const causado = this.ataqueMagico(actor, target, spell, dano, dc);
+    // Metade do que de fato entrou (imune a necrótico não dá nada).
+    const efetivo = causado > 0 ? this.danoDoUltimoAtaque : 0;
+    if (efetivo > 0) {
+      const curado = this.heal(actor, Math.floor(efetivo / 2), actor);
+      if (curado > 0) this.say('cura', `${actor.name} drena ${curado} PV.`);
+    }
+  }
+
+  /**
+   * Lentidão: os alvos têm de caber num cubo de `cuboFt`. Fica quem cabe no
+   * cubo junto com o primeiro da lista (o mais perto, ou o primeiro clicado).
+   */
+  dentroDoCubo(spell, lista) {
+    if (!spell.cuboFt || !lista.length) return lista;
+    const lado = spell.cuboFt / 5;
+    const fica = [lista[0]];
+    for (const c of lista.slice(1)) {
+      const xs = [...fica, c].map((x) => x.pos.x);
+      const ys = [...fica, c].map((x) => x.pos.y);
+      if (Math.max(...xs) - Math.min(...xs) < lado && Math.max(...ys) - Math.min(...ys) < lado) fica.push(c);
+    }
+    return fica;
+  }
+
+  /**
+   * Uma jogada de ataque mágico e o dano dela (Raio de Fogo, cada raio do Raio
+   * Ardente, o Toque Vampírico, a Arma Espiritual). Devolve o dano causado (0
+   * se errou). `bonusDano` soma ao dano (o modificador da Arma Espiritual).
+   */
+  ataqueMagico(actor, target, spell, dano, dc, { bonusDano = 0 } = {}) {
+    if (!this.passaPeloSantuario(actor, target)) return 0;
+    const atkBonus = spellAttackBonus(actor);
+    // Infligir Ferimentos é de toque: ataque corpo a corpo, sem a
+    // desvantagem de "inimigo adjacente" e sem cobertura.
+    const mods = this.attackModifiers(actor, target, { ranged: !spell.melee });
+    // Toque Chocante: vantagem contra armadura de metal.
+    if (spell.vantagemContraMetal && this.vesteMetal(target)) fonte(mods, 'vantagem', 'armadura de metal');
+    const cover = spell.melee ? 0 : this.field.coverBetween(actor.pos, target.pos);
+    const ca = caEfetiva(target) + cover;
+    const caPartes = [{ rotulo: `CA de ${target.name}`, valor: caEfetiva(target) }];
+    if (cover) caPartes.push({ rotulo: 'cobertura', valor: cover });
+    // Ataque de magia é proficiência + o atributo de conjuração — nunca
+    // Força. Nomear o atributo é o que torna visível por que o mago acerta
+    // melhor que o clérigo com a mesma magia. Bênção e Perdição valem
+    // aqui também: ataque de magia é jogada de ataque.
+    const extra = this.dadosDeAtaque(actor, atkBonus, [
+      { rotulo: ABILITY_NAME[actor.spellcasting.ability], valor: abilityMod(actor.abilities[actor.spellcasting.ability]) },
+      { rotulo: 'proficiência', valor: proficiencyBonus(actor.level) },
+    ]);
+    if (this.imagemDesvia(actor, target, extra.bonus, mods)) return 0;
+    const atk = attackRoll(this.rng, extra.bonus, ca, mods);
+    this.consumirAoAtacar(actor, target);
+    this.consumirMarcas(target);
+    // Acerto a até 1,5 m em alvo inconsciente ou paralisado é crítico,
+    // com magia ou com arma.
+    const autoCrit = atk.hit && conditionEffects(target).critWithinReach && distanceFt(actor.pos, target.pos) <= 5;
+    const critical = atk.critical || autoCrit;
+    const explicacao = explicarModo(mods);
+    const faltou = atk.hit || atk.fumble ? null : Math.max(0, ca - atk.total);
+    const porPouco = faltou !== null && faltou >= 1 && faltou <= 2;
+    const contaAtaque = [
+      `d20[${atk.rolls.join('/')}] ${explicarBonus(extra.bonus, extra.partes)} = ${atk.total}`,
+      `vs CA ${ca}${cover ? ` (${caPartes.map((c) => `${c.rotulo} ${c.valor}`).join(' + ')})` : ''}`,
+      explicacao || null,
+    ].filter(Boolean).join(' · ');
+    const rolagem = {
+      categoria: 'ataqueDeMagia',
+      rotulo: spell.name,
+      actor, target,
+      d20: { rolls: [...atk.rolls], natural: atk.natural, total: atk.total, bonus: extra.bonus },
+      bonusPartes: extra.partes,
+      alvoNumero: { rotulo: 'CA', valor: ca, partes: caPartes },
+      modo: mods.mode, anulado: mods.anulado,
+      vantagens: [...mods.vantagens], desvantagens: [...mods.desvantagens], motivos: [...mods.reasons],
+      explicacao, critico: critical, critoAutomatico: autoCrit && !atk.critical, faltou, errouPorPouco: porPouco,
+      naturalUm: atk.fumble, natural20: atk.critical,
+      conta: contaAtaque,
+    };
+    this.onEvent({ type: 'rolagem', ...rolagem });
+    if (!atk.hit) {
+      const nota = atk.fumble
+        ? ' — 1 natural, erra por regra'
+        : porPouco ? ` — faltou ${faltou}` : '';
+      this.say('magia', `${spell.name} erra ${target.name}${nota}.`, contaAtaque, { rolagem });
+      return 0;
+    }
+    // Ataque que não fere, só aplica o efeito (Raio do Enfraquecimento).
+    // Devolve 1: acertou, para quem pergunta se pegou.
+    if (!dano) {
+      this.say('magia', `${spell.name} acerta ${target.name}.`, contaAtaque, { rolagem });
+      if (spell.applies && !target.dead) this.aplicarEfeitoDeMagia(actor, target, spell, dc);
+      return 1;
+    }
+    const dmg = damageRoll(this.rng, dano, { critical });
+    if (bonusDano) dmg.total += bonusDano;
+    const danoPartes = [parcelaDeDano('dano', dmg)];
+    rolagem.danoPartes = danoPartes;
+    rolagem.danoTotal = dmg.total;
+    const marca = critical ? (autoCrit && !atk.critical ? ' — CRÍTICO (alvo indefeso ao alcance)' : ' — CRÍTICO (20 natural)') : '';
+    this.say(
+      'magia',
+      `${spell.name} acerta ${target.name}${marca}: ${dmg.total} de ${spell.damageType}.`,
+      `${contaAtaque} · ${contaDeDano(danoPartes[0])}`,
+      { rolagem },
+    );
+    this.ultimoDano = 0;
+    this.applyDamage(target, dmg.total, spell.damageType, actor, { critical, magico: true });
+    this.danoDoUltimoAtaque = this.ultimoDano;
+    this.maybeIgnite(target, spell.damageType);
+    this.extrasDoAcerto(actor, target, { arma: false, ranged: !spell.melee, tipo: spell.damageType, critical });
+    if (spell.tiraReacao && !target.dead) target.reactionUsed = true;
+    // Chicote de Espinhos: puxa para perto (empurrar "a partir" do ponto oposto).
+    if (spell.puxarFt && !target.dead && (target.pos.f ?? 1) <= 2) {
+      const longe = { x: 2 * target.pos.x - actor.pos.x, y: 2 * target.pos.y - actor.pos.y };
+      this.empurrar(target, longe, spell.puxarFt);
+    }
+    if (spell.applies && !target.dead) this.aplicarEfeitoDeMagia(actor, target, spell, dc);
+    // Toque Arrepiante: o morto-vivo atingido ataca o conjurador com
+    // desvantagem até o fim do próximo turno dele (do conjurador).
+    if (spell.mortoVivoArrepiado && target.tipo === 'morto-vivo' && !target.dead) {
+      this.aplicarCondicao(target, 'arrepiado', { rounds: 2, source: actor.id, lado: actor.side, quando: 'fim' });
+    }
+    return dmg.total;
+  }
+
+  /**
+   * O efeito extra de uma magia de ataque que acertou (Raio de Gelo, Raio
+   * Guiado, Toque Arrepiante, Raio de Doença). Com `save`, o alvo resiste.
+   */
+  aplicarEfeitoDeMagia(actor, target, spell, dc) {
+    const ef = spell.applies;
+    if (ef.save) {
+      const save = this.resistencia(target, ef.save, dc);
+      const nome = CONDITIONS[ef.condition]?.name.toLowerCase() ?? ef.condition;
+      const r = this.explicarResistencia(target, ef.save, dc, save, {
+        contra: `${spell.name} de ${actor.name}`,
+        seSucesso: `não fica ${nome}`,
+      });
+      if (save.success) {
+        this.say('condicao', `${target.name} resiste e não fica ${nome}.`, r.conta, { rolagem: r });
+        return;
+      }
+      this.say('condicao', `${target.name} fica ${nome}.`, r.conta, { rolagem: r });
+    }
+    const doConjurador = ef.conta === 'conjurador';
+    this.aplicarCondicao(target, ef.condition, {
+      rounds: ef.rounds ?? Infinity,
+      source: actor.id,
+      lado: doConjurador ? actor.side : null,
+      quando: ef.quando ?? 'fim',
+      data: ef.repete ? { save: ef.repete, dc, repete: true } : null,
+    });
+  }
+
+  /**
+   * Empurra para longe de `origem`, casa a casa, até `pes` ou até bater em
+   * parede, borda ou outra criatura.
+   */
+  empurrar(alvo, origem, pes) {
+    const dx = Math.sign(alvo.pos.x - origem.x);
+    const dy = Math.sign(alvo.pos.y - origem.y);
+    if (!dx && !dy) return;
+    const f = alvo.pos.f ?? 1;
+    const de = { ...alvo.pos };
+    const caminho = [{ ...alvo.pos }];
+    for (let i = 0; i < Math.floor(pes / 5); i++) {
+      const nx = alvo.pos.x + dx;
+      const ny = alvo.pos.y + dy;
+      let livre = true;
+      for (let oy = 0; oy < f && livre; oy++) {
+        for (let ox = 0; ox < f && livre; ox++) {
+          const x = nx + ox;
+          const y = ny + oy;
+          if (!this.field.inside(x, y) || this.field.blocksMove(x, y) || this.occupied(x, y, alvo)) livre = false;
+        }
+      }
+      if (!livre) break;
+      alvo.pos = { ...alvo.pos, x: nx, y: ny };
+      caminho.push({ ...alvo.pos });
+      // Crescimento de Espinhos fere em qualquer movimento, forçado também.
+      const espinhos = this.zonas.find((z) => z.danoPorPasso && z.casas.has(key(nx, ny)));
+      if (espinhos) {
+        const r = damageRoll(this.rng, espinhos.danoPorPasso);
+        this.say('magia', `${alvo.name} é arrastado pelos espinhos: ${r.total} perfurante.`);
+        this.applyDamage(alvo, r.total, 'perfurante', null, { magico: true });
+        if (alvo.dead) break;
+      }
+    }
+    if (caminho.length > 1) {
+      this.say('condicao', `${alvo.name} é empurrado ${(caminho.length - 1) * 5} pés.`);
+      this.onEvent({ type: 'moved', actor: alvo, from: de, to: { ...alvo.pos }, path: caminho, empurrado: true });
+    }
   }
 
   // ---- resistência ---------------------------------------------------------
@@ -1293,10 +3284,22 @@ export class Encounter {
    * nenhum deste arquivo, ou a próxima condição com dado de resistência vai
    * valer em três sítios e faltar num quarto.
    */
-  resistencia(actor, hab, dc) {
+  resistencia(actor, hab, dc, { vantagem = false } = {}) {
     const fx = conditionEffects(actor);
+    // Esquivando dá vantagem em resistência de DES; armadura sem treino dá
+    // desvantagem nas de FOR e DES.
+    const opts = {
+      advantage: vantagem || (hab === 'dex' && (hasCondition(actor, 'esquivando') || fx.vantagemDex))
+        || (hab === 'wis' && fx.vantagemSab),
+      disadvantage: (!!actor.armorUntrained && (hab === 'str' || hab === 'dex'))
+        || fx.saveDisadvantage.includes(hab),
+    };
     let bonus = saveBonus(actor, hab);
     const partes = [];
+    if (fx.saveFixo[hab]) {
+      bonus += fx.saveFixo[hab];
+      partes.push({ rotulo: 'lentidão', valor: fx.saveFixo[hab] });
+    }
     for (const dice of fx.saveBonusDice) {
       const r = roll(this.rng, dice);
       bonus += r.total;
@@ -1307,7 +3310,15 @@ export class Encounter {
       bonus -= r.total;
       partes.push({ rotulo: `perdição −${dice}[${r.rolls.join('+')}]`, valor: -r.total });
     }
-    return { ...savingThrow(this.rng, bonus, dc), partes };
+    // O truque Resistência vale UM teste: usado, acaba (e solta a
+    // concentração de quem conjurou).
+    for (const cond of [...(actor.conditions ?? [])]) {
+      if (!CONDITIONS[cond.id]?.consumidaNaResistencia) continue;
+      removeCondition(actor, cond.id);
+      const dono = this.combatants.find((c) => c.id === cond.source);
+      if (dono?.concentrating?.condition === cond.id) dono.concentrating = null;
+    }
+    return { ...segundaChanceNaResistencia(this, actor, savingThrow(this.rng, bonus, dc, opts), bonus, dc), partes };
   }
 
   // ---- itens de usar -------------------------------------------------------
@@ -1346,7 +3357,7 @@ export class Encounter {
     // Daqui para baixo nada mais recusa: pode cobrar.
     const gasto = consumirDaMochila(actor, itemId);
     if (!gasto) return { ok: false, why: `${dados.name} não está na mochila` };
-    if (porBonus) actor.bonusUsed = true; else actor.actionUsed = true;
+    if (porBonus) actor.bonusUsed = true; else this.gastarAcaoSimples(actor);
 
     this.executarItem(actor, dados, target);
 
@@ -1373,6 +3384,9 @@ export class Encounter {
       // faria falta dois turnos depois.
       if (target.hp >= target.maxHp) return `${target.name} está com a vida cheia`;
     }
+    // Curandeiro: o kit cura, não só estabiliza (`talentos.js`).
+    const medico = dados.consumivel === 'estabilizar' ? vetoDoMedico(actor, target) : undefined;
+    if (medico !== undefined) return medico;
     if (dados.consumivel === 'estabilizar') {
       if (!hasCondition(target, 'inconsciente')) return `${target.name} não está caindo`;
       if (target.stable) return `${target.name} já está estável`;
@@ -1397,6 +3411,10 @@ export class Encounter {
         break;
       }
       case 'estabilizar': {
+        if (vetoDoMedico(actor, target) === null) {
+          medicoDeCampanha(this, actor, target);
+          break;
+        }
         // Sem teste de Medicina: é essa a vantagem do kit sobre as mãos.
         target.stable = true;
         this.say('cura', `${actor.name} estabiliza ${target.name} com o kit de cura.`, 'sem teste: o kit dispensa Medicina');
@@ -1408,10 +3426,10 @@ export class Encounter {
         const bonus = abilityMod(actor.abilities.dex);
         const cobertura = this.field.coverBetween(actor.pos, target.pos);
         const mods = this.attackModifiers(actor, target, { ranged: true });
-        const r = attackRoll(this.rng, bonus, target.ac + cobertura, mods);
+        const r = attackRoll(this.rng, bonus, caEfetiva(target) + cobertura, mods);
         if (!r.hit) {
           this.say('ataque', `${actor.name} arremessa ${dados.name.toLowerCase()} e erra ${target.name}.`,
-            `d20[${r.rolls.join('/')}]${formatModifier(bonus)} = ${r.total} vs CA ${target.ac + cobertura}`);
+            `d20[${r.rolls.join('/')}]${formatModifier(bonus)} = ${r.total} vs CA ${caEfetiva(target) + cobertura}`);
           break;
         }
         const imune = dados.alvoApenas && !dados.alvoApenas.includes(target.kindTag ?? target.tipo);
@@ -1422,7 +3440,7 @@ export class Encounter {
         const dmg = damageRoll(this.rng, dados.damage, { critical: r.critical });
         this.applyDamage(target, dmg.total, dados.damageType, actor);
         this.say('ataque', `${actor.name} acerta ${target.name} com ${dados.name.toLowerCase()}: ${dmg.total} de ${dados.damageType}.`,
-          `d20[${r.rolls.join('/')}]${formatModifier(bonus)} = ${r.total} vs CA ${target.ac + cobertura}`);
+          `d20[${r.rolls.join('/')}]${formatModifier(bonus)} = ${r.total} vs CA ${caEfetiva(target) + cobertura}`);
         break;
       }
       default:
@@ -1435,9 +3453,24 @@ export class Encounter {
 
   // ---- outras ações --------------------------------------------------------
 
-  dash(actor) {
+  /**
+   * Gasta a ação para Disparada, Desengajar ou usar objeto. Com Velocidade, a
+   * ação a mais (que só serve para isso e para um golpe) sai primeiro, e a
+   * ação de verdade fica para o Ataque Extra ou uma magia.
+   */
+  gastarAcaoSimples(actor) {
+    if (!actor.actionUsed && actor.acaoVelozDisponivel && hasCondition(actor, 'acelerado') && !actor.acaoLimitada) {
+      actor.acaoVelozDisponivel = false;
+      this.say('recurso', `${actor.name} usa a ação da Velocidade.`);
+      return true;
+    }
     if (actor.actionUsed) return false;
     actor.actionUsed = true;
+    return true;
+  }
+
+  dash(actor) {
+    if (!this.gastarAcaoSimples(actor)) return false;
     actor.movementLeftFt += this.speedOf(actor);
     this.say('acao', `${actor.name} corre (Disparada).`);
     this.afterAction(actor);
@@ -1452,7 +3485,7 @@ export class Encounter {
    * haver espaço de magia sobrando morre, e o grupo não tem o que fazer.
    */
   stabilize(actor, target) {
-    if (actor.actionUsed || !isAdjacent(actor.pos, target.pos)) return false;
+    if (actor.actionUsed || actor.acaoLimitada || !isAdjacent(actor.pos, target.pos)) return false;
     if (!hasCondition(target, 'inconsciente') || target.stable || target.dead) return false;
     actor.actionUsed = true;
 
@@ -1469,7 +3502,7 @@ export class Encounter {
   }
 
   dodge(actor) {
-    if (actor.actionUsed) return false;
+    if (actor.actionUsed || actor.acaoLimitada) return false;
     actor.actionUsed = true;
     addCondition(actor, 'esquivando');
     this.say('acao', `${actor.name} se concentra em desviar.`);
@@ -1478,14 +3511,16 @@ export class Encounter {
   }
 
   disengage(actor, { bonus = false } = {}) {
-    if (bonus ? actor.bonusUsed : actor.actionUsed) return false;
-    if (bonus) actor.bonusUsed = true; else actor.actionUsed = true;
+    if (bonus) {
+      if (actor.bonusUsed) return false;
+      actor.bonusUsed = true;
+    } else if (!this.gastarAcaoSimples(actor)) return false;
     actor.disengaging = true;
     this.say('acao', `${actor.name} desengaja — ninguém leva ataque de oportunidade dele.`);
     return true;
   }
 
-  useFeature(actor, featureId, { target = null } = {}) {
+  useFeature(actor, featureId, { target = null, modo = null } = {}) {
     switch (featureId) {
       case 'secondWind': {
         if (actor.bonusUsed || !actor.resources.secondWind) return false;
@@ -1497,24 +3532,35 @@ export class Encounter {
         return true;
       }
       case 'actionSurge': {
-        if (!actor.resources.actionSurge) return false;
+        // Uma ação a mais, uma vez por turno (no 17º nível há duas cargas, mas
+        // ainda uma por turno). Se a ação normal já foi gasta, o surto a
+        // devolve agora; se não, fica guardada para depois dela — nunca as
+        // duas coisas, que davam três ações com uma carga.
+        if (!actor.resources.actionSurge || actor.surgeUsedThisTurn) return false;
         actor.resources.actionSurge -= 1;
-        actor.extraActions += 1;
-        actor.actionUsed = false;
+        actor.surgeUsedThisTurn = true;
+        if (actor.actionUsed) actor.actionUsed = false;
+        else actor.extraActions += 1;
         this.say('recurso', `${actor.name} usa Ação Surpreendente — ganha uma ação.`);
         return true;
       }
       case 'cunningAction': {
-        // Ação Ardilosa: Disparada ou Desengajar como ação bônus.
+        // Ação Ardilosa: UMA de Disparada ou Desengajar como ação bônus (o SRD
+        // dá também Esconder-se, que o motor ainda não tem).
         if (actor.bonusUsed) return false;
+        if (modo !== 'disparada' && modo !== 'desengajar') return false;
         actor.bonusUsed = true;
-        actor.movementLeftFt += this.speedOf(actor);
-        actor.disengaging = true;
-        this.say('recurso', `${actor.name} usa Ação Ardilosa: corre e desengaja.`);
+        if (modo === 'disparada') {
+          actor.movementLeftFt += this.speedOf(actor);
+          this.say('recurso', `${actor.name} usa Ação Ardilosa: corre.`);
+        } else {
+          actor.disengaging = true;
+          this.say('recurso', `${actor.name} usa Ação Ardilosa: desengaja.`);
+        }
         return true;
       }
       case 'preserveLife': {
-        if (actor.actionUsed || !actor.resources.channelDivinity) return false;
+        if (actor.actionUsed || actor.acaoLimitada || !actor.resources.channelDivinity) return false;
         actor.actionUsed = true;
         actor.resources.channelDivinity -= 1;
         let pool = actor.level * 5;

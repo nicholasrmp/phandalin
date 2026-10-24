@@ -6,9 +6,32 @@
 //   2. bater em quem está ao alcance agora, preferindo o alvo mais fácil
 //   3. andar até o alvo mais promissor e atacar
 //   4. se não alcançar ninguém, aproximar o máximo possível
+//
+// Quem tem juízo (modificador de Inteligência 0 ou mais: goblin, bandido)
+// contorna a Graxa no chão quando há outro caminho; bicho e morto-vivo
+// (Inteligência negativa: lobo, zumbi, esqueleto) passa reto e escorrega.
 
 import { distanceFt, isAdjacent, key, Battlefield } from '../core/grid.js';
-import { hasCondition } from './conditions.js';
+import { hasCondition, getCondition, conditionEffects, addCondition, removeCondition } from './conditions.js';
+import { abilityMod } from './abilities.js';
+
+/** Contorna zonas no chão? Só quem tem Inteligência de modificador 0 ou mais. */
+export function contornaZonas(monster) {
+  return abilityMod(monster.abilities?.int ?? 10) >= 0;
+}
+
+/**
+ * Roda um planejador de caminho primeiro no mapa que NÃO pisa na Graxa (para
+ * quem tem juízo) e, se ele não achar nada, no mapa normal: o esperto desvia
+ * quando dá, mas não fica parado se a única passagem é pela graxa.
+ */
+function comDesvio(enc, monster, planejar) {
+  if (enc.zonas?.length && contornaZonas(monster)) {
+    const desviando = planejar(enc.reachableFor(monster, { evitarZonas: true }));
+    if (desviando) return desviando;
+  }
+  return planejar(enc.reachableFor(monster));
+}
 
 function scoreTarget(enc, monster, target) {
   // Menor é melhor.
@@ -21,20 +44,62 @@ function scoreTarget(enc, monster, target) {
 }
 
 export function takeMonsterTurn(enc, monster) {
-  if (monster.dead || hasCondition(monster, 'inconsciente')) {
+  // Incapacitado (atordoado, paralisado) não faz nada no turno.
+  if (monster.dead || hasCondition(monster, 'inconsciente') || conditionEffects(monster).incapacitated) {
     enc.endTurn(monster);
     return;
   }
 
-  const enemies = enc.enemiesOf(monster);
+  // A cena pode gastar o turno do monstro antes da IA (os lobos acorrentados
+  // do esconderijo puxando a corrente). Devolver true encerra o turno.
+  if (enc.antesDoTurno?.(monster)) {
+    enc.endTurn(monster);
+    return;
+  }
+
+  // Comando ("Ajoelhe!"): cai e perde o turno.
+  if (hasCondition(monster, 'comandado')) {
+    removeCondition(monster, 'comandado');
+    addCondition(monster, 'caido');
+    enc.say('condicao', `${monster.name} obedece o comando: ajoelha e perde o turno.`);
+    enc.endTurn(monster);
+    return;
+  }
+
+  // Medo: quem está amedrontado pela magia corre para longe de quem o
+  // assustou (Disparada), pelo caminho que puder, e não ataca.
+  const medo = getCondition(monster, 'amedrontado');
+  // Só a magia Medo manda correr; o medo do Golpe Colérico só atrapalha.
+  const assustador = medo?.data?.foge && enc.combatants.find((c) => c.id === medo.source && !c.dead);
+  if (assustador) {
+    enc.dash(monster);
+    retreat(enc, monster, [assustador]);
+    enc.endTurn(monster);
+    return;
+  }
+
+  // Enfeitiçar Pessoa: quem está encantado não escolhe quem o encantou.
+  const encanto = getCondition(monster, 'enfeiticado');
+  const enemies = enc.enemiesOf(monster).filter((e) => e.id !== encanto?.source);
   if (enemies.length === 0) {
     enc.endTurn(monster);
     return;
   }
 
+  // Derrubado: levanta antes de tudo (custa metade do deslocamento).
+  if (hasCondition(monster, 'caido')) enc.standUp(monster);
+
   const ranged = monster.attacks?.some((a) => a.ranged);
   const melee = monster.attacks?.find((a) => !a.ranged);
   const adjacentFoes = enemies.filter((e) => isAdjacent(e.pos, monster.pos));
+
+  // Preso sem ninguém ao alcance: gasta a ação tentando se soltar.
+  if ((hasCondition(monster, 'agarrado') || hasCondition(monster, 'contido'))
+    && !pickReachableTarget(enc, monster, enemies)) {
+    enc.escapar(monster);
+    enc.endTurn(monster);
+    return;
+  }
 
   // Escapada Ágil: machucado e cercado → desengaja de graça e recua.
   if (
@@ -153,16 +218,16 @@ export function takeMonsterTurn(enc, monster) {
 
   // 4: nem atirar dá — encosta o máximo que conseguir.
   const closest = ordered[0];
-  const reached = enc.reachableFor(monster);
-  let best = null;
-  for (const node of reached.values()) {
-    if (enc.occupied(node.x, node.y, monster)) continue;
-    const d = distanceFt({ x: node.x, y: node.y }, closest.pos);
-    if (!best || d < best.d) best = { d, node };
-  }
-  if (best && best.node.cost > 0) {
-    enc.moveAlong(monster, Battlefield.pathFrom(reached, best.node));
-  }
+  const passo = comDesvio(enc, monster, (reached) => {
+    let best = null;
+    for (const node of reached.values()) {
+      if (enc.occupied(node.x, node.y, monster)) continue;
+      const d = distanceFt({ x: node.x, y: node.y }, closest.pos);
+      if (!best || d < best.d) best = { d, node };
+    }
+    return best && best.node.cost > 0 ? Battlefield.pathFrom(reached, best.node) : null;
+  });
+  if (passo) enc.moveAlong(monster, passo);
   enc.endTurn(monster);
 }
 
@@ -182,8 +247,11 @@ function pickReachableTarget(enc, monster, targets, { meleeOnly = false, rangedO
   return null;
 }
 
-function planApproach(enc, monster, targets, { meleeOnly = false } = {}) {
-  const reached = enc.reachableFor(monster);
+function planApproach(enc, monster, targets, opcoes = {}) {
+  return comDesvio(enc, monster, (reached) => planApproachEm(enc, monster, targets, reached, opcoes));
+}
+
+function planApproachEm(enc, monster, targets, reached, { meleeOnly = false } = {}) {
   const meleeAtk = monster.attacks?.find((a) => !a.ranged);
   const meleeReach = meleeAtk?.reachFt ?? 5;
   if (meleeOnly && !meleeAtk) return null;
@@ -217,9 +285,12 @@ function planApproach(enc, monster, targets, { meleeOnly = false } = {}) {
  * iguais, o caminho mais curto — o mesmo critério de `planApproach`.
  */
 function planShot(enc, monster, targets, enemies) {
+  return comDesvio(enc, monster, (reached) => planShotEm(enc, monster, targets, enemies, reached));
+}
+
+function planShotEm(enc, monster, targets, enemies, reached) {
   const arco = monster.attacks?.find((a) => a.ranged);
   if (!arco) return null;
-  const reached = enc.reachableFor(monster);
   let best = null;
   for (const node of reached.values()) {
     if (enc.occupied(node.x, node.y, monster)) continue;
@@ -239,16 +310,18 @@ function planShot(enc, monster, targets, enemies) {
 }
 
 function retreat(enc, monster, threats) {
-  const reached = enc.reachableFor(monster);
-  let best = null;
-  for (const node of reached.values()) {
-    if (enc.occupied(node.x, node.y, monster)) continue;
-    const spot = { x: node.x, y: node.y };
-    const nearest = Math.min(...threats.map((t) => distanceFt(spot, t.pos)));
-    const score = -nearest;
-    if (!best || score < best.score) best = { score, node };
-  }
-  if (best && best.node.cost > 0) enc.moveAlong(monster, Battlefield.pathFrom(reached, best.node));
+  const fuga = comDesvio(enc, monster, (reached) => {
+    let best = null;
+    for (const node of reached.values()) {
+      if (enc.occupied(node.x, node.y, monster)) continue;
+      const spot = { x: node.x, y: node.y };
+      const nearest = Math.min(...threats.map((t) => distanceFt(spot, t.pos)));
+      const score = -nearest;
+      if (!best || score < best.score) best = { score, node };
+    }
+    return best && best.node.cost > 0 ? Battlefield.pathFrom(reached, best.node) : null;
+  });
+  if (fuga) enc.moveAlong(monster, fuga);
 }
 
 /** Roda todos os monstros em sequência, com pausa entre eles para dar leitura. */

@@ -280,18 +280,12 @@ export const NPCS = {
     look: 'reidoth',
     papel: 'Druida errante das ruínas',
     bloco: 'druida',
-    // NÃO marquei 'SRD'. A seção 1 do ELENCO enumera os blocos de NPC que ela
-    // autoriza — plebeu, guarda, cavaleiro, mago, acólito, sacerdote, veterano,
-    // espião, capitão bandido — e DRUIDA não está nessa lista, embora a seção 4
-    // diga que todo NPC usa bloco do SRD. Eu não tenho certeza de que o bloco de
-    // druida sobreviveu no SRD 5.1, e o ELENCO manda não chutar atribuição.
-    // Substituto seguro, se a verificação der negativa: `acolito` (ele age como
-    // suporte, não como artilharia) — a troca é de uma linha.
-    fonte: 'verificar',
-    fonteNota: 'Bloco de druida: fora da lista de blocos de NPC autorizada na seção 1 do ELENCO. Verificar no SRD 5.1 antes de publicar.',
-    // Substituto já escolhido, para o jogo não quebrar enquanto a verificação
-    // não acontece: ele age como suporte, não como artilharia.
+    // O Druida está no apêndice de PdMs do SRD 5.1. O bloco ainda não existe
+    // aqui porque as magias dele (Produzir Chama, Constrição, Pele de Árvore)
+    // não estão em `spells.js`; até lá, o acólito faz o papel de suporte.
+    fonte: 'SRD',
     blocoSubstituto: 'acolito',
+    notaDoSubstituto: 'o bloco de druida espera as magias dele em spells.js',
     atitude: 'arredio',
     personalidade: {
       quer: 'Que a ruína volte a ser mato e que ninguém mais suba aquela colina, incluindo o grupo.',
@@ -513,7 +507,7 @@ export function makeNpc(id, pos, { rng = null, nameSuffix = '', side = null } = 
   const c = makeMonster(bloco, pos, { rng });
   c.id = `${id}-${++serie}`;
   c.defId = bloco;          // de onde saiu a ficha
-  if (bloco !== def.bloco) c.blocoNota = `substituto de "${def.bloco}": ${def.fonteNota ?? 'bloco ausente'}`;
+  if (bloco !== def.bloco) c.blocoNota = `substituto de "${def.bloco}": ${def.notaDoSubstituto ?? def.fonteNota ?? 'bloco ausente'}`;
   c.npcId = id;             // quem é a pessoa
   c.name = def.nome + (nameSuffix ? ` ${nameSuffix}` : '');
   c.look = def.look;

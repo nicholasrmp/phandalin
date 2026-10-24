@@ -823,6 +823,10 @@ h2 {
 }
 .espaco-circulo i.cheio { background: var(--circulo); }
 .espaco-circulo.esgotado { opacity: .5; }
+/* Com uma magia na mira: os círculos em que ela pode sair são botões. */
+.espaco-circulo.escolhivel { cursor: pointer; border-radius: 3px; padding: 0 2px; outline: 1px dashed rgba(138, 95, 29, .5); }
+.espaco-circulo.escolhivel:hover { outline-color: var(--circulo); }
+.espaco-circulo.escolhido { outline: 2px solid var(--circulo); background: rgba(255, 240, 200, .35); }
 .espaco-livre { font-size: 9px; font-style: italic; color: var(--muted); }
 
 /* O selo do círculo no medalhão de magia: o numeral romano (ou "T", de

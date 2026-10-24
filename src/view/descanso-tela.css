@@ -1,0 +1,80 @@
+/* A tela do descanso: uma linha por herói dentro do pergaminho da narrativa. */
+
+.descanso { display: grid; gap: 6px; margin: 4px 0 6px; font-family: var(--font); }
+.descanso-topo {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  font-size: 12.5px; color: var(--muted);
+}
+.descanso-auto, .descanso-gastar {
+  font: 600 13px var(--font);
+  padding: 5px 10px;
+  color: var(--ink);
+  background: rgba(255, 248, 228, .55);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.descanso-auto { background: linear-gradient(180deg, var(--gold-claro), var(--gold)); color: #2b1d07; }
+.descanso-gastar[disabled] { opacity: .45; cursor: not-allowed; }
+.descanso-auto:focus-visible, .descanso-gastar:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.descanso-linha {
+  display: grid;
+  grid-template-columns: 40px minmax(90px, 1fr) minmax(120px, 160px) 54px auto minmax(110px, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid var(--line-forte);
+  border-radius: 8px;
+  background: rgba(255, 248, 228, .3);
+}
+.descanso-retrato {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: url('../art/hud/slot.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+.descanso-retrato canvas { width: 32px !important; height: 32px !important; }
+.descanso-quem { display: grid; line-height: 1.2; min-width: 0; }
+.descanso-quem strong { font-family: var(--serif); font-size: 15px; color: var(--gold-escuro); }
+.descanso-quem small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* A vida na régua de latão do HUD, como no menu do botão direito. */
+.descanso-vida {
+  position: relative;
+  height: 14px;
+  border: solid transparent;
+  border-width: 0 8px;
+  border-image: url('../art/hud/regua.png') 0 8 fill / 0 8px stretch;
+  image-rendering: pixelated;
+}
+.descanso-vida i {
+  position: absolute; left: 0; top: 2px; bottom: 2px;
+  background: linear-gradient(180deg, #7fd38c, #3d8b4b);
+  border-radius: 1px;
+  transition: width .3s ease-out;
+}
+.descanso-vida span {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700; line-height: 1;
+  color: #fff6e0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .8);
+}
+.descanso-dados { font: 700 13px var(--font); color: var(--ink); text-align: center; font-variant-numeric: tabular-nums; }
+.descanso-ultimo { font-size: 12.5px; color: #2f6b3a; font-variant-numeric: tabular-nums; }
+.descanso-ultimo.pulso { animation: descanso-pulso .5s ease-out; }
+@keyframes descanso-pulso { from { transform: scale(1.15); } to { transform: none; } }
+
+@media (max-width: 720px) {
+  .descanso-linha { grid-template-columns: 40px 1fr auto; }
+  .descanso-vida { grid-column: 2 / 4; }
+  .descanso-dados { grid-column: 1; }
+  .descanso-ultimo { grid-column: 2 / 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .descanso-ultimo.pulso { animation: none; }
+  .descanso-vida i { transition: none; }
+}

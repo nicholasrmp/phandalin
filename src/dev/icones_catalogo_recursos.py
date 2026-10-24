@@ -21,6 +21,17 @@ secundária.
 ALIAS = {
     'raca-darkvision': 'magia-visaoNoEscuro',
     'classe-twoWeaponFighting': 'acao-duasArmas',
+    'classe-asi': 'classe-abilityScoreImprovement',
+    'classe-dragonAncestor': 'raca-draconicAncestry',
+    'classe-additionalFightingStyle': 'classe-fightingStyle',
+    'classe-additionalMagicalSecrets': 'classe-magicalSecrets',
+    # Marcador de subclasse = emblema da classe.
+    'classe-primalPath': 'classe-barbaro', 'classe-bardCollege': 'classe-bardo',
+    'classe-otherworldlyPatron': 'classe-bruxo', 'classe-divineDomain': 'classe-clerigo',
+    'classe-druidCircle': 'classe-druida', 'classe-sorcerousOrigin': 'classe-feiticeiro',
+    'classe-martialArchetype': 'classe-guerreiro', 'classe-roguishArchetype': 'classe-ladino',
+    'classe-arcaneTradition': 'classe-mago', 'classe-monasticTradition': 'classe-monge',
+    'classe-rangerArchetype': 'classe-patrulheiro',
 }
 
 ACOES = '''
@@ -263,6 +274,44 @@ mago|empoweredEvocation|Evocação Fortalecida|Empowered Evocation|a fire spark 
 mago|overchannel|Sobrecarga|Overchannel|a cracked violet orb overflowing with energy
 geral|spellcasting|Conjuração|Spellcasting|a glowing rolled spell scroll with a violet seal
 geral|abilityScoreImprovement|Aumento no Valor de Atributo|Ability Score Improvement|a golden upward arrow over a stone bust
+# --- emblemas das classes, das subclasses do SRD e das características de escolha
+# (entraram com o motor de progressão do 1º ao 20º). Os marcadores de subclasse
+# (primalPath, divineDomain...) usam o emblema da classe por ALIAS.
+barbaro|barbaro|Bárbaro|Barbarian|a heavy steel greataxe with a fur-wrapped handle
+bardo|bardo|Bardo|Bard|a golden lute with a bright violet music note above it
+bruxo|bruxo|Bruxo|Warlock|a dark violet tome with a glowing bright violet eye on its cover
+clerigo|clerigo|Clérigo|Cleric|a silver mace whose head is a bright golden sunburst
+druida|druida|Druida|Druid|a gnarled wooden staff topped with bright green leaves
+feiticeiro|feiticeiro|Feiticeiro|Sorcerer|an open palm with a bright orange and violet flame swirling above it
+guerreiro|guerreiro|Guerreiro|Fighter|a steel longsword standing in front of a round wooden shield
+ladino|ladino|Ladino|Rogue|a dark gray hood with a bright silver dagger blade crossing under it
+mago|mago|Mago|Wizard|a tall pointed blue wizard hat with bright silver stars
+monge|monge|Monge|Monk|a bamboo staff with a white cloth band wrapped around its middle
+paladino|paladino|Paladino|Paladin|a bright silver great helm with a golden halo ring above it
+patrulheiro|patrulheiro|Patrulheiro|Ranger|a green longbow with a nocked arrow and a single leaf
+barbaro|subBerserker|Caminho do Berserker|Path of the Berserker|a horned iron helm with glowing red eyes in its visor
+bardo|subConhecimento|Colégio do Conhecimento|College of Lore|a white feather quill crossing an open book with a golden page
+bruxo|subCorruptor|O Corruptor|The Fiend|a red horned demon skull wreathed in orange flames
+clerigo|subVida|Domínio da Vida|Life Domain|a white lily flower with a soft golden glow
+druida|subTerra|Círculo da Terra|Circle of the Land|a small floating rock island with a green tree on top
+feiticeiro|subDraconica|Linhagem Dracônica|Draconic Bloodline|a small red dragon curled around a glowing violet orb
+guerreiro|subCampeao|Campeão|Champion|a golden laurel wreath around a steel sword hilt
+ladino|subLadrao|Ladrão|Thief|a fat brown coin purse spilling bright gold coins
+mago|subEvocacao|Escola de Evocação|School of Evocation|a violet orb bursting with orange fire and blue lightning
+monge|subMaoAberta|Caminho da Mão Aberta|Way of the Open Hand|an open palm pushing a bright white circular shockwave
+paladino|subDevocao|Juramento de Devoção|Oath of Devotion|an upright silver sword with bright golden wings at its hilt
+patrulheiro|subCacador|Caçador|Hunter|a curved hunting horn with a green cord and a white fang
+geral|fightingStyle|Estilo de Luta|Fighting Style|a wooden training dummy with a sword stuck in its chest
+bardo|bonusProficiencies|Proficiências Adicionais|Bonus Proficiencies|an open book with three bright colored bookmarks
+druida|bonusCantrip|Truque Adicional|Bonus Cantrip|a tiny bright green spark sprouting from a seed
+paladino|sacredOath|Juramento Sagrado|Sacred Oath|a raised steel gauntlet with a glowing golden palm
+patrulheiro|huntersPrey|Presa do Caçador|Hunter's Prey|a red target ring over a large beast paw print
+patrulheiro|defensiveTactics|Táticas Defensivas|Defensive Tactics|a green cloak swirling around a round shield
+patrulheiro|multiattack|Ataque Múltiplo|Multiattack|three arrows flying in a fan
+patrulheiro|superiorHuntersDefense|Defesa Superior do Caçador|Superior Hunter's Defense|a steel bracer with a green leaf emblem deflecting an arrow
+feiticeiro|metamagic|Metamagia|Metamagic|a violet spell spark inside a turning golden gear
+bruxo|eldritchInvocations|Invocações Místicas|Eldritch Invocations|three floating violet rune stones glowing
+bruxo|pactBoon|Dádiva do Pacto|Pact Boon|a parchment contract scroll with a red wax seal and a golden ribbon
 '''
 
 
@@ -276,6 +325,8 @@ def entradas():
         yield {'id': id_, 'pt': pt, 'en': en, 'fonte': 'srd', 'categoria': 'raca',
                'prefixo': 'raca-', 'conceito': conceito}
     for linha in CLASSES.strip().splitlines():
+        if linha.startswith('#'):
+            continue
         classe, id_, pt, en, conceito = [x.strip() for x in linha.split('|')]
         yield {'id': id_, 'pt': pt, 'en': en, 'fonte': 'srd', 'categoria': 'classe',
                'classe': classe, 'prefixo': 'classe-', 'conceito': conceito}

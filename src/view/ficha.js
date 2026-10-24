@@ -118,9 +118,16 @@ function iconeDeItem(id, alvo = 32) {
  * o look no lugar não mudaria nada na tela: a folha velha continuaria em cache.
  * Então cada combinação de armadura, arma e escudo ganha a sua própria chave,
  * registrada no mesmo registro que o pintor consulta.
+ *
+ * Exportada porque o grupo tem de entrar no tabuleiro JÁ VESTIDO com o que
+ * escolheu na criação (`main.js`, ao montar o encontro) -- antes, a figura só
+ * trocava de arma quando alguém abria a ficha.
  */
-function aplicarAparencia(personagem) {
-  const base = (personagem.lookBase ??= personagem.look);
+export function aplicarAparencia(personagem) {
+  // um estado na chave (`~furia`) nao e a figura: a base fica sem ele, e ele
+  // volta para a chave nova -- trocar de arma em furia continua em furia
+  const [semEstado, estado] = String(personagem.look).split('~');
+  const base = (personagem.lookBase ??= semEstado);
   const look = LOOKS[base];
   if (!look) return;
   const ap = aparenciaDe(personagem);
@@ -136,7 +143,7 @@ function aplicarAparencia(personagem) {
     const chave = `${base}@${personagem.armor ?? 'nenhuma'}-${personagem.equippedWeapon ?? 'nada'}`
       + `${segunda}${ap.shield ? '-escudo' : ''}`;
     if (!LOOKS[chave]) LOOKS[chave] = { ...look, ...ap };
-    personagem.look = chave;
+    personagem.look = estado ? `${chave}~${estado}` : chave;
     return;
   }
 

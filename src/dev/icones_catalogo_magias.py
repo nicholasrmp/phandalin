@@ -255,6 +255,9 @@ comunhaoComANatureza|Comunhão com a Natureza|Commune with Nature|5|srd|a green 
 conjurarSaraivada|Conjurar Saraivada|Conjure Volley|5|phb|many arrows raining down
 coneDeFrio|Cone de Frio|Cone of Cold|5|srd|a cone-shaped blast of icy light blue frost
 conjurarElemental|Conjurar Elemental|Conjure Elemental|5|srd|a large fire elemental rising
+nevoaMortal|Névoa Mortal|Cloudkill|5|srd|a sickly yellow-green poison fog rolling forward
+reencarnacao|Reencarnação|Reincarnate|5|srd|a glowing green spirit rising out of an opening flower bud
+maoArcana|Mão Arcana|Arcane Hand|5|srd|a large translucent violet magical hand with spread fingers
 contatoOutroPlano|Contato com Outro Plano|Contact Other Plane|5|srd|a head linked to a distant star by a violet line
 contagio|Contágio|Contagion|5|srd|a diseased green rotting hand
 criacao|Criação|Creation|5|srd|a glowing violet cube forming from sparkles
@@ -288,6 +291,7 @@ portaoArcano|Portão Arcano|Arcane Gate|6|phb|two linked glowing portals
 barreiraDeLaminas|Barreira de Lâminas|Blade Barrier|6|srd|a whirling wall of blades
 correnteDeRelampagos|Corrente de Relâmpagos|Chain Lightning|6|srd|a lightning bolt chaining between three points
 circuloDaMorte|Círculo da Morte|Circle of Death|6|srd|a black and violet necrotic ring burst
+esferaCongelante|Esfera Congelante|Freezing Sphere|6|srd|a glowing pale blue frozen orb with frost spikes
 conjurarFada|Conjurar Fada|Conjure Fey|6|srd|a glowing fey creature with butterfly wings
 contingencia|Contingência|Contingency|6|srd|a glowing gem set into a small trigger mechanism
 criarMortoVivo|Criar Morto-Vivo|Create Undead|6|srd|a zombie rising from the ground

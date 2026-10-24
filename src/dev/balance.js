@@ -16,9 +16,9 @@ import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { makeMonster } from '../rules/monsters.js';
 import { takeMonsterTurn } from '../rules/ai.js';
-import { hasCondition } from '../rules/conditions.js';
+import { hasCondition, conditionEffects } from '../rules/conditions.js';
 import { WEAPONS } from '../rules/equipment.js';
-import { getSpell } from '../rules/spells.js';
+import { getSpell, magiasProntas } from '../rules/spells.js';
 import { distanceFt, Battlefield as BF } from '../core/grid.js';
 import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from '../game/encounter.js';
 
@@ -30,9 +30,21 @@ import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from '../game/encounte
 export function playCharacter(enc, c) {
   const foes = enc.enemiesOf(c);
   if (foes.length === 0) { enc.endTurn(c); return; }
+  if (conditionEffects(c).incapacitated) { enc.endTurn(c); return; }
+
+  // Derrubado: levanta antes de tudo. Preso: tenta se soltar se ninguém
+  // estiver ao alcance da arma de perto.
+  if (hasCondition(c, 'caido')) enc.standUp(c);
+  if ((hasCondition(c, 'agarrado') || hasCondition(c, 'contido'))
+    && !foes.some((f) => distanceFt(c.pos, f.pos) <= 5)) {
+    enc.escapar(c);
+    enc.endTurn(c);
+    return;
+  }
 
   // Levantar quem caiu vem primeiro, e é ação bônus: sai de graça.
-  if (c.spellcasting?.prepared.includes('palavraCurativa') && !c.bonusUsed) {
+  const prontas = magiasProntas(c);
+  if (prontas.includes('palavraCurativa') && !c.bonusUsed) {
     const down = enc.alliesOf(c).find((a) => !a.dead && a.hp <= 0 && distanceFt(c.pos, a.pos) <= 60);
     if (down && c.spellcasting.slots[1] > 0) enc.castSpell(c, 'palavraCurativa', { target: down });
   }
@@ -41,7 +53,7 @@ export function playCharacter(enc, c) {
   // Estabilizar não gasta recurso, então vem antes de queimar um espaço.
   const caido = enc.alliesOf(c).find((a) => !a.dead && !a.stable && hasCondition(a, 'inconsciente'));
   if (caido && !c.actionUsed) {
-    if (c.spellcasting?.prepared.includes('curarFerimentos') && c.spellcasting.slots[1] > 0
+    if (prontas.includes('curarFerimentos') && c.spellcasting.slots[1] > 0
         && distanceFt(c.pos, caido.pos) <= 5) {
       enc.castSpell(c, 'curarFerimentos', { target: caido });
       enc.endTurn(c);
@@ -52,7 +64,7 @@ export function playCharacter(enc, c) {
 
   // Curar ANTES de alguém cair — mas só com folga de espaços, para não ficar
   // sem nada na hora de levantar alguém.
-  if (!c.actionUsed && c.spellcasting?.prepared.includes('curarFerimentos') && c.spellcasting.slots[1] > 1) {
+  if (!c.actionUsed && prontas.includes('curarFerimentos') && c.spellcasting.slots[1] > 1) {
     const ferido = [c, ...enc.alliesOf(c)]
       .filter((a) => !a.dead && a.hp > 0 && a.hp < a.maxHp * 0.35 && distanceFt(c.pos, a.pos) <= 5)
       .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
@@ -76,9 +88,11 @@ export function playCharacter(enc, c) {
   const nearest = foes.slice().sort((a, b) => distanceFt(c.pos, a.pos) - distanceFt(c.pos, b.pos))[0];
 
   if (!c.actionUsed && c.spellcasting) {
-    for (const sid of [...c.spellcasting.prepared, ...c.spellcasting.cantrips]) {
+    // Magias de círculo antes dos truques, como antes.
+    for (const sid of [...prontas].sort((a, b) => getSpell(b).level - getSpell(a).level)) {
       const s = getSpell(sid);
       if (s.kind !== 'attack' && s.kind !== 'auto' && s.kind !== 'save') continue;
+      if (!s.damage) continue;
       if (s.level > 0 && !c.spellcasting.slots[s.level]) continue;
       if (s.rangeFt > 0 && distanceFt(c.pos, nearest.pos) > s.rangeFt) continue;
       if (!enc.field.hasLineOfSight(c.pos, nearest.pos)) continue;

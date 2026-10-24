@@ -8,6 +8,8 @@
 // É também o primeiro passo na direção de campanha como dados.
 
 import { makeMonster } from '../rules/monsters.js';
+import { makeNpc } from '../rules/npcs.js';
+import { MAPA_ESCONDERIJO } from './esconderijo.js';
 
 // '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura · '1'..'9' elevação
 //
@@ -119,6 +121,34 @@ export const MAPA_EMBOSCADA = {
   ],
 };
 
+// A CAVERNA ESCURA (arena de teste da luz e das conversas).
+//
+// Uma sala em anel em volta de um paredão de rocha. O grupo entra pelo sul;
+// os dois corredores sobem pelos lados do paredão e se encontram no nicho do
+// norte, onde Droop cochila ao lado de uma fogueira baixa — a única luz.
+// Um goblin de guarda em cada corredor, no breu, atrás da curva: os dois veem
+// no escuro, o grupo (na maioria) não. Quem acende tocha enxerga o corredor e
+// é enxergado do outro lado dele.
+//
+// Mapa nosso, de teste: não é o esconderijo da aventura.
+export const MAPA_CAVERNA = [
+  '###################',
+  '#####........######',
+  '####..........#####',
+  '###....####....####',
+  '##....######....###',
+  '##...########...###',
+  '#....########.....#',
+  '#.....######......#',
+  '#..o...####...o...#',
+  '#.................#',
+  '#......~~.........#',
+  '##.....~~....#....#',
+  '###..........##..##',
+  '#####..........####',
+  '###################',
+];
+
 /** O grupo escolta a carroça: logo à frente dela, na estrada, olhando para leste. */
 export const PARTY_SPOTS_EMBOSCADA = [
   { x: 5, y: 11 }, { x: 4, y: 12 }, { x: 4, y: 11 }, { x: 3, y: 13 },
@@ -142,6 +172,35 @@ export function mapaDo(variante = 'padrao') {
       emboscada: { emboscadores: 'foes' },
     };
   }
+  if (variante === 'esconderijo') {
+    return {
+      ...MAPA_ESCONDERIJO,
+      // A ponte cruza o canal de norte a sul: o corrimão corre nesse eixo.
+      objetos: [{ tipo: 'ponte', x: 20, y: 5, olha: { dx: 0, dy: 1 } }],
+      // O grupo chega pela trilha dos goblins, no canto sudoeste do campo.
+      grupo: [{ x: 5, y: 24 }, { x: 6, y: 25 }, { x: 4, y: 25 }, { x: 7, y: 25 }],
+      olhar: { dx: 1, dy: -1 },
+      // A fogueira da caverna do chefe: a única luz lá dentro.
+      // As duas fogueiras: a da comida no covil e a de Klarg.
+      luzes: [
+        { pos: { x: 5, y: 6 }, claro: 10, penumbra: 10, tipo: 'fogueira' },
+        { pos: { x: 32, y: 17 }, claro: 10, penumbra: 10, tipo: 'fogueira' },
+      ],
+      cena: 'esconderijo',
+    };
+  }
+  if (variante === 'caverna') {
+    return {
+      terreno: MAPA_CAVERNA,
+      altura: null,
+      grupo: [{ x: 7, y: 13 }, { x: 8, y: 13 }, { x: 6, y: 12 }, { x: 9, y: 12 }],
+      olhar: { dx: 0, dy: -1 },
+      luz: 'escuro',
+      // A fogueira de Droop: brasa baixa, 10 pés de luz e mais 10 de penumbra.
+      luzes: [{ pos: { x: 10, y: 1 }, claro: 10, penumbra: 10, tipo: 'fogueira' }],
+      cena: 'caverna',
+    };
+  }
   return { terreno: MAP, altura: null, grupo: PARTY_SPOTS, olhar: { dx: 1, dy: -1 } };
 }
 
@@ -160,6 +219,17 @@ export function mapaDo(variante = 'padrao') {
 export function buildFoes(variante = 'padrao') {
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
+  if (variante === 'esconderijo') return foesEsconderijo();
+  if (variante === 'caverna') {
+    // Os dois guardas, cada um atrás da curva do seu corredor, e Droop.
+    const foes = [
+      makeMonster('goblin', { x: 4, y: 3 }, { nameSuffix: 'da esquerda' }),
+      makeMonster('goblinArqueiro', { x: 14, y: 3 }, { nameSuffix: 'da direita' }),
+      makeMonster('droop', { x: 8, y: 1 }),
+    ];
+    for (const f of foes) f.facingVec = { dx: 0, dy: 1 };
+    return foes;
+  }
   const foes = [
     makeMonster('goblinChefe', { x: 12, y: 2 }),
     // O goblin fica COLADO no chefe de propósito: Redirecionar Ataque só
@@ -183,6 +253,61 @@ export function buildFoes(variante = 'padrao') {
  * chega na rodada 2 e outro na 4 impedem o combate de ser decidido na abertura
  * e dão forma ao encontro: aguentar, respirar, aguentar de novo.
  */
+/**
+ * O esconderijo, sala por sala. Cada criatura leva o `grupo` dela: a cena do
+ * capítulo 2 só põe um grupo no tabuleiro quando ele é visto ou nota o grupo
+ * de heróis, e a luta acaba quando AQUELE grupo cai — o resto continua onde
+ * estava, esperando.
+ */
+function foesEsconderijo() {
+  const m = (id, x, y, grupo, sufixo = '', olha = { dx: 0, dy: 1 }) => {
+    const f = makeMonster(id, { x, y }, { nameSuffix: sufixo });
+    f.grupo = grupo;
+    f.facingVec = olha;
+    return f;
+  };
+  // Área 6: Sildar amarrado na parte de cima (sul) do covil, com 1 PV.
+  const sildar = makeNpc('sildar', { x: 4, y: 10 }, { side: 'neutro' });
+  sildar.hp = 1;
+  sildar.grupo = 'covil';
+  sildar.refem = true;
+  // Yeemik tem 12 PV na aventura.
+  const yeemik = m('yeemik', 5, 10, 'covil', '', { dx: 0, dy: -1 });
+  yeemik.maxHp = 12;
+  yeemik.hp = 12;
+  const klargLobo = m('lobo', 33, 20, 'chefe', '', { dx: -1, dy: -1 });
+  klargLobo.name = 'Serrote';
+  return [
+    // Área 2: dois vigias no posto de ripas, no meio do mato.
+    m('goblin', 20, 22, 'vigias', 'vigia', { dx: -1, dy: 1 }),
+    m('goblin', 22, 23, 'vigias', 'vigia', { dx: -1, dy: 1 }),
+    // Área 3: três lobos acorrentados à estalagmite do meio do canil. A
+    // corrente não deixa nenhum chegar aos degraus da entrada.
+    ...[[21, 11], [24, 13], [22, 13]].map(([x, y]) => Object.assign(
+      m('lobo', x, y, 'canil', 'do canil', { dx: -1, dy: 0 }),
+      { corrente: { x: 23, y: 12, raioFt: 10 } })),
+    // Área 5: um goblin escondido na ponte, vigiando o riacho lá embaixo.
+    m('goblin', 21, 5, 'ponte', 'da ponte', { dx: 0, dy: 1 }),
+    // Área 6: cinco goblins junto ao fogo, na parte de baixo; Yeemik em cima.
+    m('goblin', 4, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
+    m('goblin', 6, 5, 'covil', 'do covil', { dx: -1, dy: 1 }),
+    m('goblin', 6, 7, 'covil', 'do covil', { dx: -1, dy: -1 }),
+    m('goblin', 3, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
+    m('goblin', 7, 6, 'covil', 'do covil', { dx: -1, dy: 0 }),
+    yeemik,
+    sildar,
+    // Área 7: três goblins guardam os poços.
+    m('goblin', 29, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    m('goblinArqueiro', 34, 9, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    m('goblin', 36, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    // Área 8: Klarg, o lobo Serrote e dois goblins.
+    m('klarg', 32, 19, 'chefe', '', { dx: -1, dy: -1 }),
+    klargLobo,
+    m('goblin', 29, 17, 'chefe', 'de Klarg', { dx: 0, dy: -1 }),
+    m('goblin', 35, 22, 'chefe', 'de Klarg', { dx: -1, dy: -1 }),
+  ];
+}
+
 /** Vitrine de tamanho: Médio, Grande e Grande de novo, lado a lado. */
 function foesGrandes() {
   const foes = [
@@ -272,6 +397,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
+  if (variante === 'caverna' || variante === 'esconderijo') return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

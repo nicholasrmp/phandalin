@@ -1,0 +1,133 @@
+/* A narrativa: o mesmo pergaminho do menu e do HUD (variáveis de `style.css`). */
+
+.narrativa {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  padding: 24px 16px;
+  animation: narrativa-entra .25s ease-out both;
+}
+.narrativa.saindo { animation: narrativa-sai .18s ease-in both; }
+@keyframes narrativa-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes narrativa-sai { to { opacity: 0; } }
+
+/* Tela: janela inteira, fundo escuro com um brilho de vela no meio. */
+.narrativa.tela {
+  place-items: center;
+  background:
+    radial-gradient(70% 60% at 50% 45%, rgba(70, 50, 22, .55) 0%, transparent 70%),
+    rgba(10, 8, 5, .96);
+  overflow-y: auto;
+}
+.narrativa.tela .narrativa-folha { width: min(720px, 100%); font-size: 16.5px; }
+
+/* Painel: embaixo, por cima do tabuleiro, sem tapar o mapa inteiro. */
+.narrativa.painel {
+  align-items: end;
+  justify-items: center;
+  background: linear-gradient(0deg, rgba(10, 8, 5, .7) 0%, rgba(10, 8, 5, 0) 55%);
+  pointer-events: none;
+}
+.narrativa.painel .narrativa-folha { width: min(640px, 100%); pointer-events: auto; margin-bottom: 8px; }
+
+.narrativa-folha {
+  position: relative;
+  padding: 22px 26px 18px;
+  color: var(--ink);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .65), var(--bisel);
+  line-height: 1.6;
+  font-family: var(--serif);
+}
+.narrativa-folha::before, .narrativa-folha::after {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 3px solid var(--gold);
+  pointer-events: none;
+}
+.narrativa-folha::before { top: 6px; left: 6px; border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; }
+.narrativa-folha::after { bottom: 6px; right: 6px; border-left: 0; border-top: 0; border-radius: 0 0 6px 0; }
+
+.narrativa-titulo { margin: 0 0 10px; font-size: 26px; color: var(--gold-escuro); text-transform: none; letter-spacing: normal; }
+.narrativa-folha p { margin: 0 0 12px; }
+.narrativa-fala strong { color: var(--gold-escuro); }
+.narrativa-teste {
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: rgba(194, 169, 120, .3);
+}
+.narrativa-teste.passou { color: #2f6b3a; }
+.narrativa-teste.falhou { color: var(--lacre); }
+.narrativa-pagina { font-family: var(--font); font-size: 12px; color: var(--muted); margin: 0 !important; }
+
+.narrativa-botoes { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+.narrativa-btn {
+  font-family: var(--serif);
+  font-size: 16px;
+  padding: 9px 18px;
+  color: var(--ink);
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 9px;
+  box-shadow: var(--bisel);
+  cursor: pointer;
+}
+.narrativa-btn.primario { background: linear-gradient(180deg, var(--gold-claro), var(--gold)); color: #2b1d07; font-weight: 700; }
+.narrativa-btn.discreto { margin-right: auto; background: none; box-shadow: none; border-color: transparent; color: var(--muted); }
+.narrativa-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* Enquanto o grupo explora: o tabuleiro manda, a barra de combate descansa. */
+.explorando .hud-baixo { opacity: .45; pointer-events: none; filter: saturate(.6); }
+
+@media (max-width: 720px) {
+  .narrativa-folha { padding: 18px 16px 14px; }
+  .narrativa.tela .narrativa-folha { font-size: 15.5px; }
+}
+
+/* ------------------------------------------------------------ conversa -- */
+/* Quem fala, num encaixe de madeira ao lado da fala. */
+.narrativa-com-retrato { display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: start; }
+.narrativa-retrato {
+  width: 76px; height: 76px;
+  display: grid; place-items: center;
+  background: url('../art/hud/slot.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+.narrativa-retrato canvas { width: 64px !important; height: 64px !important; }
+
+/* As respostas, uma por linha, numeradas como nos RPGs de conversa. */
+.narrativa-opcoes { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.narrativa-opcao {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 248, 228, .35);
+  border: 1px solid var(--line-forte);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.narrativa-opcao:hover:not([disabled]), .narrativa-opcao:focus-visible {
+  outline: none;
+  border-color: var(--gold-escuro);
+  background: linear-gradient(180deg, rgba(240, 214, 150, .85), rgba(215, 179, 102, .85));
+}
+.narrativa-opcao-num { font: 700 12px var(--font); color: var(--gold-escuro); text-align: center; }
+.narrativa-etiqueta { font-style: normal; font-family: var(--font); font-size: 12.5px; color: #6b4a14; }
+.narrativa-opcao.recusada { cursor: not-allowed; color: #8a8478; }
+.narrativa-opcao.recusada small { color: #9b4a3a; font-family: var(--font); font-size: 12px; }
+.narrativa-btn[disabled] { opacity: .5; cursor: not-allowed; }

@@ -22,6 +22,7 @@
 // Só `delay`, `start` e `onHit` são obrigatórios: receita antiga sem os três
 // últimos campos continua se comportando exatamente como antes.
 
+import { EFEITOS } from '../art/efeitos.js';
 import {
   audio, hitSoundFor, spellSoundFor, naturalAttackSoundFor, deathSoundFor,
 } from '../core/audio.js';
@@ -569,85 +570,632 @@ export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {
 
 // ---------------------------------------------------------------- magias
 
+/** O meio de um conjunto de casas (posição fracionária: o desenho aceita). */
+function centroDe(casas) {
+  return {
+    x: casas.reduce((a, t) => a + t.x, 0) / casas.length,
+    y: casas.reduce((a, t) => a + t.y, 0) / casas.length,
+  };
+}
+
 const SPELL_VISUALS = {
+  // AS ANIMAÇÕES DE QUADROS (`board.fx.quadros`, projétil `style: 'sprite'`)
+  // vêm das folhas do OpenArt em _referencias/efeitos/, convertidas por
+  // src/dev/importar-efeitos.py. As partículas que sobram aqui são tempero.
+
   // Luz do céu desabando sobre o alvo.
   chamaSagrada: (board, { dest }) => {
-    board.fx.pillar(dest, { color: '#ffe9a8', dur: 0.55, width: 20, height: 200 });
-    setTimeout(() => {
-      board.fx.ring(dest, { color: '#fff3c8', radius: 44, dur: 0.45 });
-      board.fx.motes(dest, { color: '#ffe9a8', count: 8, rise: 34, dur: 0.5 });
-    }, 200);
+    // A base da coluna toca o chão (a figura tem 64 px; o centro a 30 px).
+    board.fx.quadros(dest, 'luz-coluna', { fps: 14, altura: 30 });
     return 0.26;
   },
 
-  // Bola de fogo com rastro, que vira labareda no impacto.
+  // A bola com cauda de chamas voa girada na direção do alvo e explode em
+  // labareda e fumaça.
   raioDeFogo: (board, { caster, dest }) => {
-    board.fx.projectile(caster.pos, dest, { style: 'orb', color: '#ff7a3a', dur: 0.3, arc: 0.3, trail: true });
-    return 0.3;
+    const dur = 0.42;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'fogo-projetil', dur, arc: 0.3 });
+    setTimeout(() => board.fx.quadros(dest, 'fogo-impacto', { fps: 14 }), dur * 1000);
+    return dur;
   },
 
-  // Lasca de gelo que estilhaça.
+  // Lasca de gelo que estoura em cristais.
   raioDeGelo: (board, { caster, dest }) => {
-    board.fx.projectile(caster.pos, dest, { style: 'shard', color: '#bfe9ff', dur: 0.28, arc: 0.15, trail: true });
-    return 0.28;
+    const dur = 0.38;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'gelo-projetil', dur, arc: 0.15 });
+    setTimeout(() => board.fx.quadros(dest, 'gelo-impacto', { fps: 12 }), dur * 1000);
+    return dur;
   },
 
-  // Três dardos em sequência, cada um com seu estouro.
-  misselMagico: (board, { caster, dest, spell }) => {
-    const darts = spell.darts ?? 3;
-    for (let i = 0; i < darts; i++) {
+  // Os dardos saem em sequência, cada um para o alvo que o jogador escolheu,
+  // e estouram em anel violeta.
+  misselMagico: (board, { caster, dest, dardos }) => {
+    const alvos = dardos?.length ? dardos.map((t) => t.pos) : [dest];
+    const dur = 0.3;
+    alvos.forEach((alvo, i) => {
       setTimeout(() => {
-        board.fx.projectile(caster.pos, dest, { style: 'orb', color: '#b98cff', dur: 0.24, arc: 0.9 + i * 0.25, trail: true });
-        setTimeout(() => board.fx.impact(dest, { color: '#b98cff', count: 5, spread: 26, dur: 0.3 }), 240);
+        board.fx.projectile(caster.pos, alvo, { style: 'sprite', sprite: 'arcano-projetil', dur, arc: 0.9 + (i % 3) * 0.25 });
+        setTimeout(() => board.fx.quadros(alvo, 'arcano-impacto', { fps: 16 }), dur * 1000);
       }, i * 110);
-    }
-    return 0.24 + (darts - 1) * 0.11;
+    });
+    return dur + (alvos.length - 1) * 0.11;
   },
 
-  // Cone de fogo: as chamas acendem de perto para longe.
+  // Lança de luz e estrela dourada no impacto.
+  raioGuiado: (board, { caster, dest }) => {
+    const dur = 0.36;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'luz-projetil', dur, arc: 0.2 });
+    setTimeout(() => board.fx.quadros(dest, 'luz-impacto', { fps: 14 }), dur * 1000);
+    return dur;
+  },
+
+  // Feixe doente: orbe verde borbulhando e nuvem de veneno.
+  raioDeDoenca: (board, { caster, dest }) => {
+    const dur = 0.4;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'veneno-projetil', dur, arc: 0.25 });
+    setTimeout(() => board.fx.quadros(dest, 'veneno-impacto', { fps: 12 }), dur * 1000);
+    return dur;
+  },
+
+  // A mão espectral aparece NO alvo, aperta e some; o estouro necrótico
+  // (partículas, abaixo) vem no aperto.
+  toqueArrepiante: (board, { dest }) => {
+    board.fx.quadros(dest, 'necrotico-mao', { fps: 10 });
+    return 0.36;
+  },
+
+  // Infligir Ferimentos é de toque: o clérigo avança e a mão necrótica aperta.
+  infligirFerimentos: (board, { caster, dest }) => {
+    board.fx.lunge(caster, dest, 0.2);
+    board.fx.quadros(dest, 'necrotico-mao', { fps: 8 });
+    return 0.25;
+  },
+
+  // Cone de fogo: as chamas acendem de perto para longe, uma por casa.
   maosFlamejantes: (board, { caster, dest, areaTiles }) => {
     const tiles = areaTiles ?? [dest];
-    board.fx.area(tiles, { color: '#ff7a3a', dur: 0.55 });
     for (const t of tiles) {
       const d = Math.max(Math.abs(t.x - caster.pos.x), Math.abs(t.y - caster.pos.y));
-      setTimeout(() => board.fx.flames(t, { color: '#ff6a2a', count: 4, dur: 0.5 }), d * 55);
+      setTimeout(() => board.fx.quadros(t, 'fogo-chama', { fps: 14, altura: 18 }), d * 70);
     }
     return 0.22;
   },
 
-  // Névoa roxa e um "z" subindo de cada quadrado.
+  // Um estrondo só, no meio do cubo, e a onda saindo do conjurador. Uma onda
+  // por casa virava nove anéis sobrepostos que escondiam quem foi empurrado.
+  ondaTrovejante: (board, { caster, dest, areaTiles }) => {
+    board.fx.ring(caster.pos, { color: '#e8eef5', radius: 90, dur: 0.45, width: 3 });
+    board.fx.quadros(centroDe(areaTiles ?? [dest]), 'trovao-onda', { fps: 14, altura: 16 });
+    board.bump(0.35);
+    return 0.2;
+  },
+
+  // Névoa violeta derramando sobre a área.
   sono: (board, { areaTiles, dest }) => {
-    const tiles = areaTiles ?? [dest];
-    board.fx.area(tiles, { color: '#8f7ad8', dur: 0.8 });
-    tiles.slice(0, 10).forEach((t, i) => {
-      setTimeout(() => board.fx.glyph(t, { text: 'z', color: '#c7b4ff', dur: 0.9, size: 18 }), i * 70);
+    // Uma nuvem a cada 3 casas nos dois eixos, a partir do centro: cobre a
+    // área sem empilhar névoa sobre névoa (o `i % 3` da lista fazia faixas).
+    const tiles = (areaTiles ?? [dest]).filter((t) => (t.x - dest.x) % 3 === 0 && (t.y - dest.y) % 3 === 0);
+    tiles.forEach((t, i) => {
+      setTimeout(() => board.fx.quadros(t, 'sono-nevoa', { fps: 9, altura: 20, sumir: 0.3 }), i * 70);
     });
     return 0.3;
   },
 
-  // Cura por toque: pontos de luz subindo e uma argola.
-  curarFerimentos: (board, { dest }) => {
-    board.fx.ring(dest, { color: '#6ee89a', radius: 34, dur: 0.6, width: 3 });
-    board.fx.motes(dest, { color: '#9ff0b8', count: 12, rise: 50, dur: 0.75 });
-    board.fx.halo(dest, { color: '#9ff0b8', dur: 0.6, radius: 14 });
-    return 0.14;
+  // Poça escorregadia que se espalha no chão, uma só, no meio do quadrado;
+  // depois o chão escuro da zona (board.js) fica enquanto a magia durar.
+  graxa: (board, { areaTiles, dest }) => {
+    board.fx.quadros(centroDe(areaTiles ?? [dest]), 'graxa', { fps: 8, altura: 4, sumir: 0.5 });
+    return 0.3;
   },
 
-  // Cura à distância: um fio de luz chega antes dos pontos.
+  // Cura por toque e à distância: luz verde subindo do ferido.
+  curarFerimentos: (board, { dest }) => {
+    board.fx.quadros(dest, 'cura', { fps: 10 });
+    return 0.14;
+  },
   palavraCurativa: (board, { caster, dest }) => {
     board.fx.beam(caster.pos, dest, { color: '#9ff0b8', dur: 0.3, width: 2, jagged: false });
-    setTimeout(() => board.fx.motes(dest, { color: '#9ff0b8', count: 9, rise: 44, dur: 0.6 }), 180);
+    setTimeout(() => board.fx.quadros(dest, 'cura', { fps: 10 }), 180);
     return 0.2;
   },
 
-  // Bênção: argola dourada sobre cada abençoado.
+  // Bênção: auréola dourada descendo sobre cada abençoado.
   bencao: (board, { caster }, targets = []) => {
     board.fx.ring(caster.pos, { color: '#ffe9a8', radius: 72, dur: 0.75, width: 2 });
-    for (const t of targets) {
-      board.fx.halo(t.pos, { color: '#ffe9a8', dur: 0.9, radius: 17 });
-      board.fx.motes(t.pos, { color: '#ffe9a8', count: 6, rise: 36, dur: 0.7 });
+    targets.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'bencao', { fps: 10, altura: 48 }), i * 90));
+    return 0;
+  },
+
+  // Perdição: correntes violeta em cada alvo.
+  perdicao: (board, _ctx, targets = []) => {
+    targets.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'maldicao', { fps: 10, altura: 40 }), i * 90));
+    return 0;
+  },
+
+  // Proteções: no próprio alvo.
+  armaduraArcana: (board, { dest }) => {
+    board.fx.quadros(dest, 'armadura-arcana', { fps: 10 });
+    return 0;
+  },
+  vidaFalsa: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'vida-falsa', { fps: 10 });
+    return 0;
+  },
+  resistencia: (board, _ctx, targets = []) => {
+    for (const t of targets) board.fx.quadros(t.pos, 'resistencia', { fps: 10 });
+    return 0;
+  },
+  pouparOsMoribundos: (board, { dest }) => {
+    board.fx.quadros(dest, 'estabilizar', { fps: 9, altura: 20 });
+    return 0;
+  },
+
+  // ---- truques e 1º círculo dos heróis ---------------------------------------
+
+  // Rajada Mística: um raio de força por raio, cada um ao seu alvo.
+  rajadaMistica: (board, { caster, dest, dardos }) => {
+    const alvos = dardos?.length ? dardos.map((t) => t.pos) : [dest];
+    const dur = 0.26;
+    alvos.forEach((alvo, i) => setTimeout(() => {
+      board.fx.projectile(caster.pos, alvo, { style: 'sprite', sprite: 'arcano-projetil', dur, arc: 0.1 });
+      setTimeout(() => board.fx.quadros(alvo, 'arcano-impacto', { fps: 16 }), dur * 1000);
+    }, i * 110));
+    return dur + (alvos.length - 1) * 0.11;
+  },
+  zombariaViciosa: (board, { dest }) => {
+    board.fx.quadros(dest, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+    return 0.1;
+  },
+  produzirChama: (board, { caster, dest }) => {
+    const dur = 0.32;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'fogo-projetil', dur, arc: 0.45 });
+    setTimeout(() => board.fx.quadros(dest, 'fogo-impacto', { fps: 16 }), dur * 1000);
+    return dur;
+  },
+  chicoteDeEspinhos: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#6fc07a', dur: 0.3, width: 3, jagged: true });
+    board.fx.quadros(dest, 'vinhas-brotos', { fps: 14, altura: 18 });
+    return 0.15;
+  },
+  shillelagh: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#6ee89a', count: 10, rise: 34 });
+    return 0;
+  },
+  toqueChocante: (board, { caster, dest }) => {
+    board.fx.lunge(caster, dest, 0.18);
+    board.fx.quadros(dest, 'eletrico-faisca', { fps: 18, altura: 26 });
+    return 0.15;
+  },
+  respingoAcido: (board, { dest, dardos }) => {
+    for (const t of dardos?.length ? dardos.map((x) => x.pos) : [dest]) board.fx.quadros(t, 'acido-impacto', { fps: 16 });
+    return 0.1;
+  },
+  borrifoVenenoso: (board, { dest }) => {
+    board.fx.quadros(dest, 'veneno-impacto', { fps: 14 });
+    return 0.1;
+  },
+  protecaoContraLaminas: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'resistencia', { fps: 12 });
+    return 0;
+  },
+  bruxaria: (board, { dest }) => {
+    board.fx.quadros(dest, 'maldicao', { fps: 12, altura: 40 });
+    return 0;
+  },
+  marcaDoCacador: (board, { dest }) => {
+    board.fx.ring(dest, { color: '#6ee89a', radius: 42, dur: 0.7, width: 3 });
+    board.fx.motes(dest, { color: '#6ee89a', count: 12, rise: 20 });
+    return 0;
+  },
+  repreensaoInfernal: (board, { dest }) => {
+    board.fx.quadros(dest, 'fogo-chama', { fps: 14, altura: 18 });
+    board.fx.quadros(dest, 'fogo-impacto', { fps: 14 });
+    return 0.1;
+  },
+  escudoArcano: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'armadura-arcana', { fps: 8 });
+    return 0;
+  },
+  bracosDeHadar: (board, { caster, areaTiles }) => {
+    board.fx.area(areaTiles ?? [], { color: COR.necrotico, dur: 0.6 });
+    for (const t of (areaTiles ?? []).filter((_, i) => i % 3 === 0).slice(0, 8)) board.fx.quadros(t, 'necrotico-mao', { fps: 12 });
+    board.fx.ring(caster.pos, { color: '#a579d8', radius: 70, dur: 0.5, width: 3 });
+    return 0.2;
+  },
+  armaduraDeAgathys: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'gelo-impacto', { fps: 14 });
+    return 0;
+  },
+  risoHisterico: (board, { dest }) => {
+    board.fx.quadros(dest, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+    board.fx.motes(dest, { color: '#e8c35a', count: 14, rise: 30 });
+    return 0.1;
+  },
+  sussurrosDissonantes: (board, { dest }) => {
+    board.fx.quadros(dest, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+    board.fx.ring(dest, { color: '#a579d8', radius: 48, dur: 0.6, width: 3 });
+    return 0.1;
+  },
+  heroismo: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'bencao', { fps: 10, altura: 48 });
+    return 0;
+  },
+  fogoDasFadas: (board, { areaTiles, dest }) => {
+    const cores = ['#a579d8', '#6ea8e8', '#6ee89a'];
+    (areaTiles ?? [dest]).forEach((t, i) => board.fx.motes(t, { color: cores[i % 3], count: 2, rise: 16, dur: 0.9 }));
+    board.fx.area(areaTiles ?? [dest], { color: '#a579d8', dur: 0.6 });
+    return 0.2;
+  },
+  emaranhar: (board, { areaTiles, dest }) => {
+    board.fx.area(areaTiles ?? [dest], { color: '#6ee89a', dur: 0.7 });
+    (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0).slice(0, 10)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'vinhas', { fps: 10, altura: 18, sumir: 0.4 }), i * 50));
+    return 0.2;
+  },
+  // Orbe Cromático: projétil e impacto do tipo que o motor escolhe (o que
+  // mais fere o alvo), a mesma conta de `combat.js`.
+  orbeCromatico: (board, { caster, dest, spell }) => {
+    const alvo = board.enc.at(dest.x, dest.y);
+    const tipo = alvo
+      ? [...spell.tiposAEscolher].sort((a, b) => board.enc.danoPorTipo(alvo, 10, b, true) - board.enc.danoPorTipo(alvo, 10, a, true))[0]
+      : spell.damageType;
+    const como = {
+      fogo: ['fogo-projetil', 'fogo-impacto'], frio: ['gelo-projetil', 'gelo-impacto'],
+      veneno: ['veneno-projetil', 'veneno-impacto'], 'ácido': ['acido-projetil', 'acido-impacto'],
+      'elétrico': ['arcano-projetil', 'eletrico-faisca'], trovejante: ['arcano-projetil', 'trovao-onda'],
+    }[tipo] ?? ['arcano-projetil', 'arcano-impacto'];
+    const dur = 0.34;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: como[0], dur, arc: 0.3 });
+    setTimeout(() => board.fx.quadros(dest, como[1], { fps: 14, altura: como[1] === 'trovao-onda' ? 16 : undefined }), dur * 1000);
+    return dur;
+  },
+  // Comando: a palavra de ordem aparece sobre o alvo.
+  comando: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.glyph(t.pos, { text: '!', color: '#ffe9a8', size: 24, rise: 30 });
+      board.fx.ring(t.pos, { color: '#ffe9a8', radius: 42, dur: 0.6, width: 3 });
     }
     return 0;
+  },
+  santuario: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'egide-domo', { fps: 6, altura: 24, sumir: 0.5 });
+    return 0;
+  },
+  escudoDaFe: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'egide', { fps: 6, altura: 24, sumir: 0.5 });
+    return 0;
+  },
+  favorDivino: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'golpe-divino', { fps: 8, sumir: 0.25 });
+    return 0;
+  },
+  golpeTrovejante: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#e8eef5', count: 10, rise: 30 });
+    return 0;
+  },
+  golpeAbrasador: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#ff7a3a', count: 10, rise: 30 });
+    return 0;
+  },
+  golpeColerico: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#a579d8', count: 10, rise: 30 });
+    return 0;
+  },
+  saraivadaDeEspinhos: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#6ee89a', count: 10, rise: 30 });
+    return 0;
+  },
+  raioDeBruxa: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#bfe6ff', dur: 0.45, width: 3, jagged: true });
+    board.fx.quadros(dest, 'eletrico-faisca', { fps: 16, altura: 22 });
+    return 0.15;
+  },
+  recuoAcelerado: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#e8eef5', count: 8, rise: 14, spread: 30 });
+    return 0;
+  },
+  passosLargos: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.motes(t.pos, { color: '#e8eef5', count: 8, rise: 14 });
+    return 0;
+  },
+  protecaoBemMal: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'egide-violeta', { fps: 6, altura: 24, sumir: 0.5 });
+    return 0;
+  },
+
+  borrifoDeCores: (board, { areaTiles, dest }) => {
+    const cores = ['#e0553c', '#e8c35a', '#6ea8e8', '#a579d8', '#6ee89a'];
+    (areaTiles ?? [dest]).forEach((t, i) => board.fx.motes(t, { color: cores[i % cores.length], count: 3, rise: 14, dur: 0.6 }));
+    board.fx.area(areaTiles ?? [dest], { color: '#e8c35a', dur: 0.5 });
+    return 0.15;
+  },
+  ataqueCerteiro: (board, { dest }) => {
+    board.fx.ring(dest, { color: '#ffe9a8', radius: 40, dur: 0.5, width: 3 });
+    return 0;
+  },
+
+  enfeiticarPessoa: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.quadros(t.pos, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+      board.fx.ring(t.pos, { color: '#e8a0c8', radius: 44, dur: 0.7, width: 3 });
+    }
+    return 0;
+  },
+  invisibilidade: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'nevoa-prateada', { fps: 12, altura: 22 });
+    return 0;
+  },
+  imagemEspelhada: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'armadura-arcana', { fps: 14 });
+    board.fx.motes(caster.pos, { color: '#a579d8', count: 10, rise: 20, spread: 40 });
+    return 0;
+  },
+  crescimentoDeEspinhos: (board, { areaTiles, dest }) => {
+    board.fx.area(areaTiles ?? [dest], { color: '#b0875a', dur: 0.7 });
+    (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 3 === 0).slice(0, 12)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'espinhos-chao', { fps: 8, altura: 18 }), i * 40));
+    return 0.2;
+  },
+  flechaAcida: (board, { caster, dest }) => {
+    const dur = 0.36;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'acido-projetil', dur, arc: 0.3 });
+    setTimeout(() => board.fx.quadros(dest, 'acido-impacto', { fps: 14 }), dur * 1000);
+    return dur;
+  },
+  velocidade: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.quadros(t.pos, 'eletrico-faisca', { fps: 18, altura: 26 });
+      board.fx.motes(t.pos, { color: '#6ea8e8', count: 10, rise: 24 });
+    }
+    return 0;
+  },
+  nuvemFetida: (board, { areaTiles, dest }) => {
+    for (const t of (areaTiles ?? [dest]).filter((_, i) => i % 4 === 0).slice(0, 12)) board.fx.quadros(t, 'veneno-impacto', { fps: 10 });
+    return 0.2;
+  },
+  farolDeEsperanca: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'bencao', { fps: 10, altura: 48 });
+    return 0;
+  },
+
+  // ---- 2º e 3º círculo -------------------------------------------------------
+
+  peleDeArvore: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.motes(t.pos, { color: '#b0875a', count: 10, rise: 20 });
+    return 0;
+  },
+  armaMagica: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.motes(t.pos, { color: '#a579d8', count: 10, rise: 26 });
+    return 0;
+  },
+  golpeMarcante: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#ffe9a8', count: 10, rise: 30 });
+    return 0;
+  },
+  laminaFlamejante: (board, { caster, dest, reuso }) => {
+    if (!reuso) {
+      board.fx.motes(caster.pos, { color: '#ff7a3a', count: 10, rise: 24 });
+      return 0;
+    }
+    board.fx.lunge(caster, dest, 0.2);
+    board.fx.slash(dest, { color: '#ff7a3a', angle: -0.7, radius: 28, width: 5 });
+    setTimeout(() => board.fx.quadros(dest, 'fogo-impacto', { fps: 16 }), 90);
+    return 0.15;
+  },
+  calorNoMetal: (board, { dest }) => {
+    board.fx.quadros(dest, 'fogo-chama', { fps: 12, altura: 26 });
+    return 0.1;
+  },
+  raioDoEnfraquecimento: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#a579d8', dur: 0.45, width: 4, jagged: false });
+    board.fx.beam(caster.pos, dest, { color: '#2a2430', dur: 0.45, width: 2, jagged: false });
+    setTimeout(() => board.fx.quadros(dest, 'necrotico-mao', { fps: 10 }), 150);
+    return 0.2;
+  },
+  protecaoContraVeneno: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'resistencia-verde', { fps: 10 });
+    return 0;
+  },
+  nuvemDeAdagas: (board, { dest }) => {
+    board.fx.slash(dest, { color: '#e8eef5', angle: -0.4, radius: 24 });
+    board.fx.slash(dest, { color: '#aab6c6', angle: 0.6, radius: 20 });
+    return 0.1;
+  },
+  raioLunar: (board, { dest }) => {
+    board.fx.quadros(dest, 'luz-coluna-prata', { fps: 12, altura: 30 });
+    return 0.2;
+  },
+  esferaFlamejante: (board, { dest }) => {
+    board.fx.quadros(dest, 'fogo-impacto', { fps: 14 });
+    return 0.1;
+  },
+  rogarMaldicao: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'maldicao', { fps: 10, altura: 40 });
+    return 0;
+  },
+  // A cor do anel diz contra qual energia (a do motor, guardada na condição).
+  protecaoContraEnergia: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      const tipo = (t.conditions ?? []).find((c) => c.id === 'protegidoEnergia')?.data?.tipo;
+      const efeito = { fogo: 'resistencia-fogo', 'ácido': 'resistencia-acido', trovejante: 'resistencia-trovao' }[tipo] ?? 'resistencia';
+      board.fx.quadros(t.pos, efeito, { fps: 10 });
+    }
+    return 0;
+  },
+  tempestadeDeGranizo: (board, { areaTiles, dest }) => {
+    (areaTiles ?? [dest]).filter((_, i) => i % 9 === 0).slice(0, 14)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'gelo-impacto', { fps: 14 }), i * 50));
+    return 0.3;
+  },
+  golpeCegante: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#ffe9a8', count: 14, rise: 34 });
+    return 0;
+  },
+  mantoDoCruzado: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#ffe9a8', radius: 150, dur: 0.9, width: 2 });
+    return 0;
+  },
+  armaElemental: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.motes(t.pos, { color: '#ff7a3a', count: 10, rise: 26 });
+    return 0;
+  },
+  conjurarSaraivada: (board, { caster, areaTiles, dest }) => {
+    (areaTiles ?? [dest]).filter((_, i) => i % 4 === 0).slice(0, 12).forEach((t, i) => setTimeout(() => {
+      board.fx.projectile(caster.pos, t, { style: 'arrow', color: '#e8eef5', dur: 0.25, arc: 0.1 });
+    }, i * 30));
+    return 0.3;
+  },
+  auraDeVitalidade: (board, { caster, dest, reuso }) => {
+    if (reuso) board.fx.quadros(dest, 'cura', { fps: 10 });
+    else board.fx.ring(caster.pos, { color: '#9ff0b8', radius: 150, dur: 0.9, width: 2 });
+    return 0;
+  },
+  //
+  // As animações próprias vêm da folha h-magias23 (_referencias/efeitos/);
+  // as outras reaproveitam efeitos do 1º círculo.
+
+  // Três (ou mais) raios de fogo, cada um ao seu alvo, em sequência.
+  raioArdente: (board, { caster, dest, dardos, spell, circulo }) => {
+    const escolhidos = dardos?.length ? dardos.map((t) => t.pos) : [dest];
+    const n = spell.raios + (spell.upcast?.raios ?? 0) * Math.max(0, (circulo ?? spell.level) - spell.level);
+    const alvos = Array.from({ length: n }, (_, i) => escolhidos[i % escolhidos.length]);
+    const dur = 0.3;
+    alvos.forEach((alvo, i) => {
+      setTimeout(() => {
+        board.fx.projectile(caster.pos, alvo, { style: 'sprite', sprite: 'fogo-projetil', dur, arc: 0.15 + (i % 3) * 0.2 });
+        setTimeout(() => board.fx.quadros(alvo, 'fogo-impacto', { fps: 16 }), dur * 1000);
+      }, i * 120);
+    });
+    return dur + (alvos.length - 1) * 0.12;
+  },
+
+  // Estrondo numa esfera: a onda no centro e um anel que bate no chão.
+  despedacar: (board, { dest }) => {
+    board.fx.quadros(dest, 'trovao-onda', { fps: 14, altura: 16 });
+    board.fx.ring(dest, { color: '#e8eef5', radius: 70, dur: 0.4, width: 3 });
+    board.bump(0.45);
+    return 0.15;
+  },
+
+  // A conta de fogo voa até o ponto e explode: labaredas pela área.
+  bolaDeFogo: (board, { caster, dest, areaTiles }) => {
+    const dur = 0.45;
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'fogo-projetil', dur, arc: 0.5 });
+    // A explosão grande no centro (96 px, folha i-bola-arma) e estouros
+    // menores em roda, até a borda da esfera: grande sem esticar o pixel.
+    setTimeout(() => {
+      board.fx.quadros(dest, 'bola-de-fogo', { fps: 10, altura: 30, sumir: 0.25 });
+      const area = new Set((areaTiles ?? [dest]).map((t) => `${t.x},${t.y}`));
+      const anel = [[-3, 0], [3, 0], [0, -3], [0, 3], [-2, -2], [2, 2], [2, -2], [-2, 2]]
+        .map(([dx, dy]) => ({ x: dest.x + dx, y: dest.y + dy }))
+        .filter((t) => area.has(`${t.x},${t.y}`));
+      anel.forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'fogo-impacto', { fps: 14, altura: 16 }), 160 + i * 45));
+      const chamas = (areaTiles ?? []).filter((t) => (t.x + t.y) % 2 === 1).slice(0, 12);
+      chamas.forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'fogo-chama', { fps: 14, altura: 18 }), 200 + (i % 6) * 40));
+      board.fx.tremor(0.6);
+    }, dur * 1000);
+    return dur + 0.1;
+  },
+
+  // A linha inteira acende de uma vez: o raio é um traço quebrado até a ponta.
+  relampago: (board, { caster, dest, areaTiles }) => {
+    const ponta = areaTiles?.length ? areaTiles[areaTiles.length - 1] : dest;
+    board.fx.beam(caster.pos, ponta, { color: '#bfe6ff', dur: 0.4, width: 4, jagged: true });
+    board.fx.beam(caster.pos, ponta, { color: '#ffffff', dur: 0.25, width: 2, jagged: true });
+    (areaTiles ?? []).filter((_, i) => i % 2 === 0).slice(0, 10)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'eletrico-faisca', { fps: 16, altura: 22 }), i * 25));
+    board.bump(0.35);
+    return 0.12;
+  },
+
+  // Correntes em cada alvo (a mesma da Perdição, um tom de prisão).
+  // Correntes de aço em cada alvo (a da Perdição, em outra cor).
+  imobilizarPessoa: (board, _ctx, alvos = []) => {
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'corrente-aco', { fps: 9, altura: 40 }), i * 90));
+    return 0;
+  },
+  cegueiraSurdez: (board, _ctx, alvos = []) => {
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'nevoa-escura', { fps: 8, altura: 40 }), i * 90));
+    return 0;
+  },
+  borrao: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'armadura-arcana', { fps: 10 });
+    board.fx.motes(caster.pos, { color: '#e8eef5', count: 8, rise: 30 });
+    return 0;
+  },
+  ajuda: (board, _ctx, alvos = []) => {
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'bencao', { fps: 10, altura: 48 }), i * 90));
+    return 0;
+  },
+  restauracaoMenor: (board, { dest }) => {
+    board.fx.quadros(dest, 'cura', { fps: 10 });
+    return 0;
+  },
+  // Some numa névoa e reaparece noutra.
+  passoNebuloso: (board, { caster, dest }) => {
+    board.fx.quadros(caster.pos, 'nevoa-prateada', { fps: 12, altura: 22 });
+    setTimeout(() => board.fx.quadros(dest, 'nevoa-prateada', { fps: 12, altura: 22 }), 120);
+    return 0;
+  },
+  // Teia: a área clareia (a teia fica desenhada no chão enquanto durar).
+  teia: (board, { areaTiles, dest }) => {
+    board.fx.area(areaTiles ?? [dest], { color: '#f4f0e4', dur: 0.6 });
+    board.fx.quadros(centroDe(areaTiles ?? [dest]), 'teia', { fps: 8, altura: 2, sumir: 0.6 });
+    return 0.2;
+  },
+  // A arma espectral desce e golpeia.
+  // A arma espectral aparece ao lado do alvo, levanta, desce e bate. Entre um
+  // golpe e outro ela fica flutuando ali (board.drawMagiasAtivas), e some
+  // enquanto este ataque toca para não aparecer duas vezes.
+  armaEspiritual: (board, { caster, dest }) => {
+    const fps = 10;
+    const n = EFEITOS['arma-ataque']?.quadros.length ?? 0;
+    caster.armaOcultaAte = performance.now() + (n / fps) * 1000;
+    const lado = { x: dest.x + 0.3, y: dest.y - 0.3 };
+    board.fx.quadros(lado, 'arma-ataque', { fps, altura: 34 });
+    return n ? (3 / fps) : 0.12;
+  },
+  palavraCurativaEmMassa: (board, _ctx, alvos = []) => {
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'cura', { fps: 10 }), i * 70));
+    return 0.1;
+  },
+  // Um anel que se abre ao conjurar; depois, as chamas pequenas que giram em
+  // volta do clérigo enquanto a concentração durar (board.drawMagiasAtivas).
+  espiritosGuardioes: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#ffe9a8', radius: 110, dur: 0.8, width: 2 });
+    board.fx.motes(caster.pos, { color: '#ffe9a8', count: 10, rise: 30, spread: 60 });
+    return 0;
+  },
+  revivificar: (board, { dest }) => {
+    board.fx.quadros(dest, 'luz-coluna', { fps: 12, altura: 30 });
+    setTimeout(() => board.fx.quadros(dest, 'cura', { fps: 10 }), 300);
+    return 0.3;
+  },
+  lentidao: (board, _ctx, alvos = []) => {
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'nevoa-cinza', { fps: 5, altura: 24 }), i * 80));
+    return 0;
+  },
+  medo: (board, { caster, areaTiles, dest }) => {
+    board.fx.area(areaTiles ?? [dest], { color: COR.necrotico, dur: 0.6 });
+    const pegos = [...new Set((areaTiles ?? [dest]).map((t) => board.enc.at(t.x, t.y)))]
+      .filter((c) => c && c.side !== caster.side).slice(0, 6);
+    pegos.forEach((c, i) => setTimeout(() => board.fx.quadros(c.pos, 'medo-espectro', { fps: 4, altura: 44, sumir: 0.35 }), i * 80));
+    return 0.25;
+  },
+  padraoHipnotico: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    const meio = centroDe(casas);
+    casas.filter((t) => Math.round(t.x - meio.x) % 3 === 0 && Math.round(t.y - meio.y) % 3 === 0)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'hipnose', { fps: 8, altura: 6, sumir: 0.4 }), i * 60));
+    board.fx.area(casas, { color: '#a579d8', dur: 0.7 });
+    return 0.2;
+  },
+  // Toque que drena: a mão aperta e um fio verde volta a quem tocou.
+  toqueVampirico: (board, { caster, dest }) => {
+    board.fx.lunge(caster, dest, 0.2);
+    board.fx.quadros(dest, 'necrotico-mao', { fps: 9 });
+    setTimeout(() => board.fx.beam(dest, caster.pos, { color: '#9ff0b8', dur: 0.3, width: 2, jagged: false }), 280);
+    return 0.25;
   },
 
   /**
@@ -690,6 +1238,15 @@ SPELL_VISUALS.soproVenenoso = SPELL_VISUALS.sopro;
 SPELL_VISUALS.soproDeVeneno = SPELL_VISUALS.sopro;
 SPELL_VISUALS.soproVerde = SPELL_VISUALS.sopro;
 
+/** Magias cuja receita já desenha o impacto em quadros. */
+const IMPACTO_PROPRIO = new Set([
+  'raioDeFogo', 'raioDeGelo', 'misselMagico', 'raioGuiado', 'raioDeDoenca',
+  'chamaSagrada', 'maosFlamejantes', 'ondaTrovejante',
+  'raioArdente', 'despedacar', 'bolaDeFogo', 'relampago', 'armaEspiritual', 'toqueVampirico',
+  'rajadaMistica', 'produzirChama', 'toqueChocante', 'borrifoVenenoso', 'repreensaoInfernal', 'orbeCromatico',
+  'flechaAcida', 'laminaFlamejante', 'calorNoMetal', 'raioLunar', 'esferaFlamejante', 'nuvemDeAdagas',
+]);
+
 /** Como cada tipo de dano vira labareda, lasca ou estouro no impacto. */
 const IMPACT_BY_TYPE = {
   fogo: (board, tile) => board.fx.flames(tile, { color: '#ff6a2a', count: 5, dur: 0.45 }),
@@ -716,7 +1273,7 @@ const IMPACT_BY_TYPE = {
 
 const FALLBACK_COLOR = {
   fogo: '#ff7a3a', frio: '#8fd8ff', radiante: '#ffe9a8',
-  'energético': '#b98cff', raio: '#bfe6ff',
+  'energético': '#b98cff', raio: '#bfe6ff', 'elétrico': '#bfe6ff', trovejante: '#e8eef5', 'psíquico': '#a579d8',
   veneno: COR.veneno, 'ácido': COR.acido, 'necrótico': COR.necrotico,
 };
 
@@ -739,7 +1296,7 @@ export function playSpellVisual(board, ev) {
   let delay;
 
   if (recipe) {
-    delay = recipe(board, { caster, dest, spell, areaTiles }, ev.buffTargets ?? []);
+    delay = recipe(board, { caster, dest, spell, areaTiles, dardos: ev.dardos, circulo: ev.circulo, reuso: ev.reuso }, ev.buffTargets ?? []);
   } else {
     // Receita genérica, para magia nova que ainda não ganhou a sua.
     const color = FALLBACK_COLOR[spell.damageType] ?? '#c7b4ff';
@@ -756,8 +1313,9 @@ export function playSpellVisual(board, ev) {
     }
   }
 
-  // Impacto conforme a natureza, para quem causa dano.
-  if (spell.damage && spell.kind !== 'heal' && spell.kind !== 'buff') {
+  // Impacto conforme a natureza, para quem causa dano — menos nas magias
+  // cuja receita já toca a explosão própria em quadros.
+  if (spell.damage && spell.kind !== 'heal' && spell.kind !== 'buff' && !IMPACTO_PROPRIO.has(spell.id)) {
     const impact = IMPACT_BY_TYPE[spell.damageType];
     const tiles = spell.shape ? (areaTiles ?? [dest]) : [dest];
     setTimeout(() => {

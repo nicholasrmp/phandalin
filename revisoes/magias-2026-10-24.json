@@ -1,0 +1,265 @@
+{
+ "veredito": "As magias estão quase certas pelo livro. As 20 de spells.js têm dados, alcance, escala e concentração corretos, mas há 6 erros de regra que aparecem em jogo: a magia de ação bônus libera outra magia de círculo, o Sono põe meio-elfa para dormir, o Toque Arrepiante não dá desvantagem ao morto-vivo, a Graxa não fica no campo, a área atravessa parede e a criatura Grande é atingida no lugar errado.\nA área não é totalmente honesta. A prévia mostra fielmente o que o motor calcula, mas o motor ignora paredes. Com uma criatura Grande, o clique conjura numa área diferente da que a prévia mostra. A prévia do Sono também conta criaturas que a magia não pode atingir.\nOs efeitos estão desiguais. Raio de Fogo, Mãos Flamejantes e Bênção estão no nível. Míssil Mágico, Raio Guiado, Raio de Doença, Graxa, Resistência e os quadros vazios se corrigem de graça no conversor ou no código. Chama Sagrada, Perdição, Toque Arrepiante, Poupar os Moribundos e a cor da névoa do Sono só se resolvem com uma folha de refação (15 créditos).",
+ "confirmados": [
+  {
+   "gravidade": "erro",
+   "onde": "src/rules/combat.js:1441-1442 (canCast) e 1480-1481 (castSpell)",
+   "defeito": "O motor não aplica a regra da magia de ação bônus. Ele só checa actionUsed e bonusUsed, então o clérigo conjura Palavra Curativa e Raio Guiado no mesmo turno e gasta 2 espaços. A ordem inversa (Perdição e depois Palavra Curativa) também passa.",
+   "prova": "Rodei prova.mjs de novo: 'Palavra Curativa true | Raio Guiado no mesmo turno true | espaços [0,3] -> [0,1]' e 'Perdição (ação) true | Palavra Curativa depois true'. No código, canCast não tem nenhum controle de magia por turno. Pelo SRD 5.1, quem conjura uma magia de ação bônus só pode conjurar no mesmo turno um truque de 1 ação.",
+   "correcao": "Guardar no ator, por turno, magiaBonusNoTurno e magiaNaoTruqueNoTurno, e zerar os dois em beginSide. Em canCast: depois de uma magia bônus, só aceitar truque com castTime 'action'; uma magia bônus só sai se nenhuma outra magia, exceto truque de ação, saiu no turno. Mostrar o motivo no HUD e criar um teste em src/dev/testes-regras.mjs.",
+   "custo": "grátis",
+   "quem": "revisor-magia-regras"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "src/rules/combat.js:1412-1420 (areaDaMagia) e 1757 (Sono usa field.within direto)",
+   "defeito": "Nenhuma área checa linha desobstruída a partir do ponto de origem. Cone, cubo, esfera e quadrado atravessam parede. A prévia usa a mesma função, então mostra as casas atrás do muro como atingidas.",
+   "prova": "Rodei motor.mjs de novo. Com parede em x=4 e a linha de visão de Ilvan até o goblin false, o cone para leste inclui (5,3) e o log diz 'Goblin falha contra Mãos Flamejantes e sofre 9'. No Sono, com a linha de visão do centro até o goblin false, o log diz 'Goblin adormece.'",
+   "correcao": "Em areaDaMagia, filtrar as casas com this.field.hasLineOfSight(origem, casa). A origem é actor.pos no cone e no cubo e o ponto mirado na esfera e no quadrado. No case 'sleep', trocar field.within por this.areaDaMagia(actor, spell, center). Assim a prévia (board.areaDaMira) acompanha sozinha.",
+   "custo": "grátis",
+   "quem": "revisor-magia-area"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "src/main.js:665 (onTileClick, magia com ocupante)",
+   "defeito": "A magia de área conjura com point = occupant.pos, que é a casa-âncora da criatura. A prévia usa board.hover, a casa sob o cursor. Numa criatura Grande, clicar fora da âncora conjura numa área diferente da mostrada.",
+   "prova": "No código, combat.js:250 at() devolve a criatura Grande em qualquer uma das 4 casas, main.js:665 passa occupant.pos e board.js:1609 usa this.hover. No jogo, o revisor de área viu a prévia mostrar o cone leste com 2 inimigos, e o clique conjurou o cone nordeste, que atingiu só o Lobo Atroz.",
+   "correcao": "No modo spell, tratar spell.shape antes de olhar o ocupante: if (spell?.shape) { this.tryCast(c, id, { point: tile }); return; }.",
+   "custo": "grátis",
+   "quem": "revisor-magia-area"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "src/rules/combat.js:1759 (castSpell, case 'sleep')",
+   "defeito": "O filtro startsWith('Elf') não pega 'Meio-elfa' nem 'Meio-elfo'. A druida e a feiticeira de src/game/herois.js:141 e :181 dormem com o Sono, e o mago inimigo tem Sono preparado.",
+   "prova": "Rodei prova.mjs de novo: 'Meio-elfa -> dorme? true', 'Meio-elfo -> dorme? true'. Pelo SRD 5.1, a Ancestralidade Feérica do meio-elfo impede que magia o ponha para dormir.",
+   "correcao": "Trocar a comparação de string por um traço, por exemplo c.racial?.ancestralidadeFeerica, ou por /^(elf|meio-elf)/i. A mesma regra deve valer na prévia (ver o achado da prévia do Sono).",
+   "custo": "grátis",
+   "quem": "revisor-magia-regras"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "src/rules/spells.js:85-91 (toqueArrepiante) e combat.js aplicarEfeitoDeMagia",
+   "defeito": "Falta a segunda metade da magia. O morto-vivo atingido não fica com desvantagem nos ataques contra o conjurador, e o jogo tem esqueleto, zumbi, ghoul e espectro.",
+   "prova": "Rodei prova.mjs de novo: o esqueleto acertado fica com as condições [semCura], e attackModifiers dele contra Ilvan dá 'normal desvantagens: []'.",
+   "correcao": "Criar a condição 'arrepiado' com data.contra = id do conjurador e ler essa condição em attackModifiers. Aplicar só se target.tipo === 'morto-vivo', com rounds 2, conta do conjurador e quando 'fim'. Citar isso na desc.",
+   "custo": "grátis",
+   "quem": "revisor-magia-regras"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "src/rules/spells.js:138-143 (graxa, kind 'save') e visuals.js:662-665",
+   "defeito": "A Graxa resolve um teste só, na hora de conjurar. O quadrado não vira terreno difícil, e quem entra nele ou termina o turno ali não faz o teste. O visual some aos 0,75 s, o que combina com o motor mas não com o livro.",
+   "prova": "Rodei prova.mjs de novo: um goblin entra em (9,8), dentro do quadrado, e fica 'caído? false mov restante 20'. O Encounter não tem nenhum campo de zona.",
+   "correcao": "Criar zonas persistentes no Encounter, com casas, cd, lado e rodadas = 10. Em moveAlong, a zona conta como terreno difícil e pede o teste de DES ao entrar. Em fimDoTurnoDoLado, pede o teste a quem termina o turno ali. Desenhar a mancha no chão enquanto a zona existir. Se isso for adiado, dizer na desc que a versão é simplificada.",
+   "custo": "grátis",
+   "quem": "revisor-magia-regras (o visual veio do revisor-magia-beleza)"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js arcano-projetil (todos os quadros, linha 0) e arcano-impacto (q1 e q4, linha 62) — Míssil Mágico",
+   "defeito": "Uma barra escura #2a2430, que é a borda da grade da folha, foi convertida como desenho. Ela voa girando uns 17 px acima de cada dardo e aparece como um risco preto embaixo do anel do impacto.",
+   "prova": "Na minha medição, arcano-projetil q0 tem a linha 0 inteira 'eeee...' (T40 em q0, q3 e q5). No arcano-impacto, a linha 62 tem faixa 'e' no q1 e no q4. Recortei de novo em memória: com dy 0.02, a borda de cima fica livre (sobra só D4/D3 na ponta). Com escala 0.95, o impacto fica sem nenhuma borda tocada, fora as faíscas do q3.",
+   "correcao": "Em _referencias/efeitos/a-arcano-luz/especificacao.json, pôr \"dy\": 0.02 na fileira arcano-projetil e \"escala\": 0.95 na arcano-impacto. Depois, rodar importar-efeitos.py.",
+   "custo": "grátis",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js luz-projetil e luz-impacto — Raio Guiado (a-arcano-luz, sem 'somente')",
+   "defeito": "O radiante sai marrom e cor de pele, e não dourado. No quadro de dissipação (q4), a estrela vira raios pretos, que leem como necrótico.",
+   "prova": "Na minha medição, luz-impacto q3 tem 460 px de madeira contra 264 de ouro, e q4 tem 'e:217' de 304 px. No painel p2.png aparecem os raios pretos. Reconverti com somente ouro: q4 fica com 304 px e nenhum preto, sem borda tocada.",
+   "correcao": "Na fileira luz-impacto, usar \"somente\": [\"#e8c35a\",\"#a6822c\",\"#b0875a\",\"#8a6236\",\"#e2b183\",\"#f4f0e4\",\"#e8eef5\"]. Na luz-projetil, usar somente [\"#e8c35a\",\"#a6822c\",\"#f4f0e4\",\"#e8eef5\"]. Depois, reconverter.",
+   "custo": "grátis",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js veneno-projetil — Raio de Doença (b-necrotico-veneno, fileira de índice 2)",
+   "defeito": "O orbe sai cortado reto na borda direita em todos os quadros, e o q0 traz o alto do rótulo 'POISON IMPACT' na última linha.",
+   "prova": "Na minha medição, q0 tem bordas E1, D20 e B16, a linha 39 é '...11..11..' (texto), e q1 a q5 têm D14 a D18. Reconverti com dy 0.06, escala 0.8 e largura 1.35 (quadro 54x40): nenhuma borda tocada nos 6 quadros. O projétil é ancorado em 0.75 da largura (fx.js:808), então o quadro mais largo continua funcionando.",
+   "correcao": "Na fileira veneno-projetil, \"dy\": 0.06, \"escala\": 0.8, \"largura\": 1.35. Depois, reconverter. Descarto a proposta do revisor de beleza (pular [0], escala 0.7), que não foi testada.",
+   "custo": "grátis",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "src/view/visuals.js:653-658 (receita do Sono)",
+   "defeito": "tiles.filter(i%3===0).slice(0,10) percorre a área linha por linha e para na 4ª linha de 9. A névoa só aparece na metade de cima da esfera, longe de quem adormece.",
+   "prova": "No código, field.within gera as casas por y e depois por x, num total de 81. Os índices 0, 3, ..., 27 caem nas linhas 0 a 3. Na captura do revisor de beleza (M-sono.png), as nuvens ficam só no alto.",
+   "correcao": "Escolher as casas pela grade relativa ao centro: tiles.filter(t => (t.x-dest.x)%3===0 && (t.y-dest.y)%3===0). Também dá para tocar uma nuvem sobre cada criatura que adormeceu.",
+   "custo": "grátis",
+   "quem": "revisor-magia-beleza"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js luz-coluna — Chama Sagrada (c-sagrado-cura, fileira 0)",
+   "defeito": "No pico (q1 e q2), a coluna é um retângulo creme chapado de 57x58 px, com o topo reto. Ela esconde a criatura inteira e não lê como luz caindo do céu.",
+   "prova": "Na minha medição, q1 tem n=1598 px, dos quais 1316 são 'b' (osso, 82%). O painel p1.png mostra o bloco creme. Não é recorte: o quadro não encosta na borda (bbox y2-59), o topo reto já vem do desenho. Por isso nenhuma opção do conversor resolve.",
+   "correcao": "Refazer a fileira na folha de refação. Até lá, para o bloco ficar menos tempo na tela: em visuals.js, fps 14, e pular [1] (o q1 chapado) no conversor.",
+   "custo": "15 créditos, a folha é compartilhada",
+   "quem": "revisor-magia-beleza"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js maldicao — Perdição (f-refazer, fileira de índice 4)",
+   "defeito": "As correntes são de ferro preto: 85% #2a2430 e nenhum pixel violeta. Elas cobrem o goblin, e o último quadro é uma mancha preta de 2218 px. O q0 está vazio, e o q1 encosta na borda direita (D17).",
+   "prova": "Na minha medição, q0 está vazio, q5 tem n=2218 com e:1904, e q1 tem D17. O painel p1.png mostra os blocos pretos em C.",
+   "correcao": "Refazer a fileira na folha de refação e converter com somente [#a579d8,#e8eef5,#e0553c,#2a2430]. Em visuals.js, altura 40, para o efeito ficar acima do corpo.",
+   "custo": "15 créditos, a folha é compartilhada",
+   "quem": "revisor-magia-beleza (bordas e quadro vazio também pelo revisor-magia-recorte)"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js necrotico-mao — Toque Arrepiante (f-refazer, fileira 0, pular [0,2,3,4])",
+   "defeito": "Sobraram só 2 quadros: a mão violeta e depois uma silhueta preta chapada. O aperto ficou de fora (os quadros da folha vieram com fundo cinza e marrom e um punho cor de pele), e o centro pula uns 5 a 7 px entre os dois quadros.",
+   "prova": "Na minha medição: 2 quadros, q1 com e:894 de 914. O painel p1.png mostra a mão preta.",
+   "correcao": "Refazer a fileira na folha de refação, com fundo magenta liso em todos os quadros, e converter sem 'pular' e com somente [#a579d8,#e8eef5,#aab6c6,#2a2430]. A mesma fileira serve para a receita de Infligir Ferimentos.",
+   "custo": "15 créditos, a folha é compartilhada",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js estabilizar (q1 a q4) e resistencia (q2) — Poupar os Moribundos e Resistência",
+   "defeito": "O halo translúcido da folha virou um disco chapado que cobre o alvo. Estabilizar é uma sequência de 'ovos' brancos: o q3 tem 1597 de 1600 px em 'b' e encosta na base. Resistência tem um disco opaco de 2276 px no q2.",
+   "prova": "Na minha medição: estabilizar q3 n=1600, b:1597, B12. Resistencia q2 n=2276, 1:1652, 2:624, B2. O painel p1.png mostra os dois.",
+   "correcao": "Resistência, de graça: na especificação e-protecao, mudar a fileira resistencia para \"pular\": [2, 3] (tira o quadro do disco e fica anel, anel e faíscas). Estabilizar: refazer na folha de refação. Baixar o limiar de magenta() não resolve: o revisor de recorte testou, e a mancha só diminui.",
+   "custo": "grátis (Resistência) + 15 créditos, a folha é compartilhada (Estabilizar)",
+   "quem": "revisor-magia-recorte (e revisor-magia-beleza)"
+  },
+  {
+   "gravidade": "erro",
+   "onde": "efeitos.js: armadura-arcana q3-q4 VAZIOS, trovao-onda q4-q5 VAZIOS, sono-nevoa q5 vazio e q4 com 106 px, estabilizar q5 vazio, vida-falsa q5 com 4 px, maldicao q0 vazio",
+   "defeito": "O conversor apagou as dissipações translúcidas, então o efeito some de uma vez no pico e deixa um tempo morto na tela. Na Armadura Arcana, são 2 de 5 quadros, ou 0,2 s sem nada logo depois do ovo opaco.",
+   "prova": "Na minha medição, todos esses quadros dão 'n=0 VAZIO' ou poucos pixels. O painel p2.png mostra a onda e a névoa sumindo.",
+   "correcao": "Na especificação, 'pular' esses quadros: armadura-arcana [2,4,5] na coluna original, trovao-onda [4,5], sono-nevoa [4,5], estabilizar [5], vida-falsa [5] e maldicao [0]. Em fx.js, criar a opção quadros(..., { sumir: s }), que segura o último quadro e baixa o globalAlpha até 0, e usar sumir 0.2 nessas receitas.",
+   "custo": "grátis",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "src/rules/conditions.js:74-79 ('lento' com expiresAtTurnStart) e spells.js:41",
+   "defeito": "O 'lento' some no começo do turno do alvo. O movimento já foi calculado com -10, mas a Disparada (combat.js:2047) e o levantar-se (704) usam speedOf cheio.",
+   "prova": "Rodei prova.mjs de novo: 'no turno dele 20 | lento ainda? false' e 'depois da Disparada: 50'. Pelo SRD, seriam 40.",
+   "correcao": "Em spells.js:41, usar applies: { condition:'lento', rounds:1, conta:'conjurador', quando:'inicio' }, como o Toque Arrepiante, e tirar expiresAtTurnStart do 'lento'.",
+   "custo": "grátis",
+   "quem": "revisor-magia-regras"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "src/rules/combat.js:1416 (direção por Math.sign) e grid.js:329",
+   "defeito": "Qualquer cursor fora do eixo vira cone diagonal. Apontar para (±3,±1) ou (±1,±3) gera um cone que não contém a casa apontada. A prévia mostra isso, então não engana, mas contraria a intuição.",
+   "prova": "Rodei dir.mjs de novo: 'sinal (atual) cone ... fora da propria area: 8'. Quantizando pelo ângulo, dá 0.",
+   "correcao": "k = Math.round(Math.atan2(dy,dx)/(Math.PI/4)) e dir = OITO[(k+8)%8].",
+   "custo": "grátis",
+   "quem": "revisor-magia-area"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "src/view/board.js:1605-1629 (areaDaMira) contra combat.js:1757-1761",
+   "defeito": "A prévia do Sono conta criaturas que o motor ignora: inconscientes, mortos-vivos, elfos e imunes. Por isso alerta 'aliado na área!' para o elfo, que é imune.",
+   "prova": "No código, areaDaMira só descarta c.dead, enquanto o case 'sleep' filtra inconsciente, morto-vivo, Elf* e imunidade. O revisor de área capturou no jogo '4 aliados na área!' com Ilvan contado, e o log só fez 'Brenn adormece.'",
+   "correcao": "Extrair afetadosPelaArea(actor, spell, casas) do motor e usar esse método no castSpell e na prévia. Isso também corrige o meio-elfo nos dois lugares.",
+   "custo": "grátis",
+   "quem": "revisor-magia-area"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "src/core/grid.js:307-318 (within), usado pelo Sono",
+   "defeito": "A esfera de 6 m de raio sai 9x9 casas (13,5 m de lado, 27% a mais de área), porque o centro fica numa casa e as diagonais valem 5 pés.",
+   "prova": "Rodei prova.mjs de novo: 'sono {x:6,y:6} casas 81 caixa 45 x 45 pés'. Mãos Flamejantes (7 casas), Onda Trovejante (9) e Graxa (4) batem com o livro.",
+   "correcao": "Ancorar a esfera de raio par no cruzamento de linhas (8x8) ou assumir 9x9 como convenção da grade e dizer isso na desc. É uma decisão de projeto: o revisor de área considera o 9x9 coerente com a regra de diagonal = 5 pés.",
+   "custo": "grátis",
+   "quem": "revisor-magia-regras (e revisor-magia-beleza)"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "src/view/visuals.js:640-647 (receita da Onda Trovejante)",
+   "defeito": "A receita põe um anel trovao-onda de 93 px em cada uma das 9 casas do cubo. Os anéis se cruzam num emaranhado, sem a leitura de uma frente de choque que empurra.",
+   "prova": "No código, há um for sobre todas as areaTiles. O revisor de beleza capturou os nove anéis cruzados em M-onda.png.",
+   "correcao": "Tocar trovao-onda uma vez, no centro do cubo (ou só na fileira mais distante), mais um fx.ring saindo do conjurador. Somar o 'sumir' do achado dos quadros vazios.",
+   "custo": "grátis",
+   "quem": "revisor-magia-beleza"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "efeitos.js graxa q3-q5 e visuals.js:662-665",
+   "defeito": "A poça encosta nas duas laterais nos quadros finais (E9/D11, E6/D9, E7/D8), e a receita toca uma poça por casa, então a área vira 4 panquecas sobrepostas.",
+   "prova": "Na minha medição, graxa q3 tem bordas E9 e D11. Reconverti com largura 1.15 (quadro 74x64): nenhuma borda nos 6 quadros, centro x entre 36,2 e 36,8.",
+   "correcao": "Na fileira graxa da especificação d-area, \"largura\": 1.15. Na receita, tocar a poça uma vez no centro da área. A persistência entra junto com a zona do achado de regra.",
+   "custo": "grátis",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "efeitos.js fogo-projetil q0-q3 (D9/D10/D6/D6), gelo-projetil (D1-D2), luz-projetil (E/D até 5), veneno-impacto q0/q2/q3 (D8/D16/D30, T15), gelo-impacto q3 (E2/D5/T4)",
+   "defeito": "As pontas dos projéteis e a nuvem de veneno no maior quadro saem cortadas pela borda do quadro.",
+   "prova": "Minha medição confirma todas essas bordas.",
+   "correcao": "Na especificação: fogo-projetil \"largura\": 1.14, gelo-projetil 1.12 e veneno-impacto 1.12 (resolve o q0 e o q2; o q3 continua D18/T15). Os valores foram testados pelo revisor de recorte. O luz-projetil e o gelo-impacto ficam como estão.",
+   "custo": "grátis",
+   "quem": "revisor-magia-recorte (o veneno-impacto também pelo revisor-magia-beleza)"
+  },
+  {
+   "gravidade": "imprecisao",
+   "onde": "src/view/visuals.js: SPELL_VISUALS sem infligirFerimentos",
+   "defeito": "Infligir Ferimentos, uma magia de toque, cai na receita genérica: um orbe com gradiente voando até o alvo vizinho. É a única das 20 magias sem animação de quadros.",
+   "prova": "grep 'infligir' em src/view não acha nada. visuals.js:814-816 usa style 'orb' para kind 'attack'.",
+   "correcao": "Depois de refazer necrotico-mao, criar infligirFerimentos: board.fx.lunge(caster, dest, 0.2); board.fx.quadros(dest, 'necrotico-mao', { fps: 8 }); return 0.25.",
+   "custo": "grátis (usa a fileira refeita)",
+   "quem": "revisor-magia-recorte e revisor-magia-beleza"
+  },
+  {
+   "gravidade": "sugestao",
+   "onde": "src/main.js:541 (conjurarEscolhidos) e board.js:1632 (alvosEscolhidos)",
+   "defeito": "No Míssil Mágico, ao confirmar com Enter antes de marcar todos os dardos, os que sobram vão em rodízio para os alvos marcados, mas o selo mostra '✓' em cada um.",
+   "prova": "No código, combat.js:1666 distribui com alvos[i % alvos.length] e alvosEscolhidos só conta as marcas. O revisor de área viu no jogo o log '2 dardos atingem Lobo cinzento' depois de uma marca só.",
+   "correcao": "Na magia 'auto', alvosEscolhidos conta pela distribuição real (i % n para i < dardos), para o selo mostrar '×2'.",
+   "custo": "grátis",
+   "quem": "revisor-magia-area"
+  },
+  {
+   "gravidade": "sugestao",
+   "onde": "efeitos.js sono-nevoa (cor)",
+   "defeito": "A névoa saiu cinza metal e branca (57% e 34%), com só 9% de violeta. Lê como nuvem de tempo bom, igual à Onda Trovejante.",
+   "prova": "Na minha medição, q2 tem 2:1743, 1:508 e d:276. O painel p2.png mostra as nuvens cinzentas.",
+   "correcao": "Refazer na folha de refação (quinta fileira) e converter com somente [#a579d8,#e8eef5,#f4f0e4]. Só restringir a paleta, sem refazer, deixa o quadro cheio branco.",
+   "custo": "15 créditos, a folha é compartilhada",
+   "quem": "revisor-magia-beleza"
+  }
+ ],
+ "refacao": [
+  {
+   "efeito": "luz-coluna (Chama Sagrada)",
+   "descricao": "Row of 6 frames, pixel art, flat solid magenta #FF00FF background, hard-edged opaque pixels only, no glow, no soft light, no text: a narrow pillar of golden radiant light falling from above onto an empty spot. Frames: 1) thin gold line appearing from the top, 2) beam widening, brightest and widest at the base with gold sparks, 3) peak: column of separate vertical gold and pale-yellow streaks with see-through gaps between them, fading out toward the top, never a flat top edge, 4) streaks thinning, 5) sparks rising from the ground, 6) a few last gold sparks. Colors only gold #e8c35a, dark gold #a6822c and white #f4f0e4. Keep everything inside the cell with a margin."
+  },
+  {
+   "efeito": "maldicao (Perdição)",
+   "descricao": "Row of 6 frames, pixel art, flat solid magenta #FF00FF background, hard-edged opaque pixels only, no glow, no text: a CURSE, glowing violet #a579d8 chains of light with pale lilac #e8eef5 highlights wrapping around an empty center where a creature stands. Frames: 1) small violet runes appearing, 2) two chain arcs forming, 3) chains closing in a loose ring, 4) chains locking with a thin dim red #e0553c glint, 5) chains pulsing thinner, 6) chains breaking into violet dashes. No black or dark grey metal, the center stays empty so the creature remains visible, keep inside the cell with a margin."
+  },
+  {
+   "efeito": "necrotico-mao (Toque Arrepiante, e Infligir Ferimentos)",
+   "descricao": "Row of 6 frames, pixel art, flat solid magenta #FF00FF background in EVERY frame, hard-edged opaque pixels only, no glow, no text: a ghostly skeletal hand made only of pale violet #a579d8 and pale lilac #e8eef5 with grey #aab6c6 bones, never skin colored, never black. Frames: 1) violet wisps, 2) hand forming, 3) fingers spread wide, 4) hand clenching into a fist, 5) fist cracking, 6) hand dissolving into violet wisps. Same position and size in every frame, centered, with a margin from the cell edges."
+  },
+  {
+   "efeito": "estabilizar (Poupar os Moribundos)",
+   "descricao": "Row of 6 frames, pixel art, flat solid magenta #FF00FF background, hard-edged opaque pixels only, NO halo, NO glow, NO soft light circle, no text: a small candle flame of gentle life. Frames: 1) tiny white spark, 2) small gold #e8c35a flame appearing, 3) flame with a white #f4f0e4 core and a few gold motes around it, 4) flame steady with a thin dark-gold #a6822c outline, 5) flame shrinking with two rising motes, 6) one last small mote. Small, centered, about one third of the cell, never a filled disc."
+  },
+  {
+   "efeito": "sono-nevoa (Sono)",
+   "descricao": "Row of 6 frames, pixel art, wide cells, flat solid magenta #FF00FF background, hard-edged opaque pixels only, no glow, no text: dreamy sleep mist made of separate soft curls, violet #a579d8 with white #f4f0e4 highlights, no grey. Frames: 1) three small violet sparkles, 2) a few curls appearing, 3) mist spreading low and wide, 4) peak, curls drifting with small 'z'-like swirl shapes (not letters), 5) curls thinning into separate violet wisps (still opaque), 6) a few last violet wisps. Keep the mist low and inside the cell with a margin."
+  }
+ ],
+ "verificar": [
+  "Raio de Doença (spells.js:98-105, fonte 'propria'): os números são os da Ray of Sickness do PHB, que não está no SRD. Pela regra do projeto, magia fora do SRD é conteúdo próprio e não defeito, mas o comentário 'Números e texto do projeto' não é verdade. O dono decide se mecânica igual basta ou se troca o dado, o alcance ou o nome.",
+  "fogo-projetil com largura 1.14: não reproduzi (a fileira está na folha piloto). Aceito a medição do revisor de recorte, mas convém conferir depois de reconverter.",
+  "Cura (Curar Ferimentos e Palavra Curativa): textura manchada de branco e amarelo, mas legível. Fica fora desta folha. Entra numa próxima refação se sobrar orçamento.",
+  "Toque Arrepiante e Raio de Doença não foram capturados no jogo por nenhum revisor. Foram julgados pelos quadros e pela folha.",
+  "Graxa com mais de 60 pés de alcance e cone ou cubo saindo de conjurador Grande: ninguém testou no jogo. O caminho de código é o mesmo canCast."
+ ],
+ "falsos": [
+  "luz-coluna 'cortada pela borda da célula' (revisor-magia-beleza): a causa está errada. O quadro não encosta na borda (bbox y2-59, sem T). O topo reto vem do próprio desenho, e por isso nenhum ajuste de recorte resolve. O defeito visual continua confirmado.",
+  "Correções propostas pelo revisor de beleza para arcano-projetil (escala 0.9) e veneno-projetil (pular [0], escala 0.7): descartadas, porque não foram testadas. Ficam os valores do revisor de recorte, que reproduzi (dy 0.02, escala 0.95, dy 0.06 + escala 0.8 + largura 1.35).",
+  "'21 magias' no resumo do revisor de regras: src/rules/spells.js tem 20. O 21º efeito citado pelo revisor de beleza é o sopro do dragão, que não é magia de spells.js.",
+  "Baixar o limiar de magenta() de 70 para 40 como correção do halo: o próprio revisor de recorte mostrou que só reduz a mancha. Não serve como correção."
+ ]
+}

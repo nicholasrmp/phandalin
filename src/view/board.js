@@ -21,16 +21,18 @@
 //   Arredondar dá o losango que contém o ponto. Como a altura desloca o
 //   losango para cima, os platôs são testados do mais alto para o mais baixo.
 
-import { getSheet, drawSprite, frameAt } from '../art/sheet.js';
+import { getSheet, drawSprite, frameAt, animDaFolha } from '../art/sheet.js';
 import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
 import { ladrilhoChao } from '../art/chao.js';
 import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt } from '../core/grid.js';
-import { previsaoDeAtaque, previsaoDeMagia, pct } from '../rules/odds.js';
-import { SPELLS } from '../rules/spells.js';
+import { temEscuridao, visaoDoGrupo, fontesDeLuz, CLARO } from '../rules/luz.js';
+import { previsaoDeAtaque, previsaoDeMagia, pct, MAGIAS_DE_ATAQUE } from '../rules/odds.js';
+import { SPELLS, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc } from '../rules/abilities.js';
-import { Fx } from './fx.js';
+import { Fx, quadro } from './fx.js';
+import { EFEITOS } from '../art/efeitos.js';
 import { iconCanvas, temIcone } from '../art/icons.js';
 
 // `iconCanvas` devolve uma CÓPIA a cada chamada, porque um canvas não pode
@@ -76,6 +78,9 @@ const TOP_COLORS = {
 const ESTRADA = ['#9c8460', '#937a59'];
 const GRAMA = ['#5b7a43', '#54713e'];
 const TERRA = ['#4a3824', '#634c31'];
+const ROCHA_TOPO = ['#3b3631', '#37322e'];
+const ROCHA_LADO = ['#24201d', '#332d28'];
+const CAVERNA = ['#575049', '#504943'];
 //
 // `chao` é a fileira do atlas desenhado (`art/chao.js`) que vai por baixo.
 // `topo` continua existindo como recuo: é o losango liso que aparece enquanto
@@ -89,6 +94,21 @@ const SUPERFICIE = {
   cavalo: { topo: ESTRADA, lado: TERRA, objeto: 'cavalo', chao: 'estrada' },
   pedra: { topo: GRAMA, lado: TERRA, objeto: 'pedra', chao: 'grama' },
   arbusto: { topo: GRAMA, lado: TERRA, objeto: 'arbusto', chao: 'grama' },
+  // O esconderijo: cor lisa por enquanto, para julgar o traçado antes da arte.
+  // O esconderijo. `topo` é o recuo em cor lisa enquanto o atlas não carrega.
+  espinheiro: { topo: GRAMA, lado: TERRA, objeto: 'espinheiro', chao: 'grama' },
+  rocha: { topo: ROCHA_TOPO, lado: ROCHA_LADO, chao: 'rocha' },
+  caverna: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'caverna' },
+  riacho: { topo: ['#35647d', '#315d75'], lado: ROCHA_LADO, chao: 'riacho' },
+  poco: { topo: ['#22465e', '#204259'], lado: ROCHA_LADO, chao: 'poco' },
+  ponte: { topo: ['#7a5a36', '#6d5030'], lado: ['#3f2c19', '#53391f'], chao: 'ponte', objeto: 'ponte' },
+  entulho: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'entulho' },
+  estalagmite: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'estalagmite', chao: 'caverna' },
+  mantimentos: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mantimentos', chao: 'caverna' },
+  leito: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'leito', chao: 'caverna' },
+  fogueira: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'fogueira', chao: 'caverna' },
+  bau: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'bau', chao: 'caverna' },
+  tocaia: { topo: GRAMA, lado: TERRA, objeto: 'tocaia', chao: 'grama' },
 };
 
 // Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
@@ -98,6 +118,12 @@ const SUPERFICIE = {
 // propósito — a mata inteira é uma mancha contínua de `T`, e agrupá-la faria
 // dela uma árvore só.
 const MULTICASA = new Set(['carroca', 'cavalo']);
+
+// Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
+const SOMBRA_DO_BAIXO = {
+  arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
+  tocaia: 20,
+};
 
 // Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
 // criatura ali. Ver `transparenciaDaCasa`.
@@ -137,6 +163,27 @@ const CARTAO = {
 // atirar ali custa desvantagem e o tracejado lê como "permitido, mas pior".
 const CHAO_ALCANCE = { fill: 'rgba(217, 180, 90, .12)', stroke: 'rgba(217, 180, 90, .3)' };
 const CHAO_LONGO = { fill: 'rgba(224, 150, 60, .13)', stroke: 'rgba(224, 150, 60, .5)' };
+// Quem a área da magia pega: inimigo em vermelho, aliado em amarelo (cuidado!),
+// aliado que Esculpir Magias poupa em verde.
+/** A cor de cada coisa que fica no chão. */
+const COR_DA_ZONA = {
+  graxa: { fill: 'rgba(24,20,16,.42)', stroke: 'rgba(120,104,72,.55)' },
+  teia: { fill: 'rgba(244,240,228,.46)', stroke: 'rgba(255,255,255,.95)' },
+  aura: { fill: 'rgba(232,195,90,.06)', stroke: 'rgba(255,224,138,.38)' },
+  emaranhar: { fill: 'rgba(80,150,70,.34)', stroke: 'rgba(110,232,154,.6)' },
+  nuvemFetida: { fill: 'rgba(196,200,80,.34)', stroke: 'rgba(212,224,74,.6)' },
+  crescimentoDeEspinhos: { fill: 'rgba(110,90,50,.38)', stroke: 'rgba(176,135,90,.65)' },
+  raioLunar: { fill: 'rgba(110,168,232,.20)', stroke: 'rgba(170,200,240,.6)' },
+  esferaFlamejante: { fill: 'rgba(224,85,60,.30)', stroke: 'rgba(232,195,90,.7)' },
+  nuvemDeAdagas: { fill: 'rgba(170,182,198,.30)', stroke: 'rgba(232,238,245,.7)' },
+  tempestadeDeGranizo: { fill: 'rgba(110,168,232,.22)', stroke: 'rgba(232,238,245,.55)' },
+};
+
+const PAPEL_NA_AREA = {
+  inimigo: { fill: 'rgba(230, 70, 50, .40)', stroke: '#ff6a4b' },
+  aliado: { fill: 'rgba(240, 200, 60, .45)', stroke: '#ffd84a' },
+  poupado: { fill: 'rgba(110, 200, 120, .40)', stroke: '#8ff0a0' },
+};
 
 const FONTE_NOME = "13px 'Palatino Linotype', Palatino, Georgia, serif";
 const FONTE_DADO = '11px system-ui, sans-serif';
@@ -215,7 +262,9 @@ export class Board {
       if (t) this.onTileClick?.(t);
     });
 
-    // ---- girar com o botão direito ----
+    // ---- botão direito: girar arrastando, menu de ações clicando ----
+    // Segurar e arrastar gira a câmera; soltar sem arrastar abre o menu de
+    // contexto da casa (`onTileContext`: inspecionar, atacar, conversar...).
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 2) return;
@@ -237,10 +286,15 @@ export class Board {
       while (this.drag.acc >= STEP) { this.drag.acc -= STEP; this.rotate(1); this.onCameraChange?.(); }
       while (this.drag.acc <= -STEP) { this.drag.acc += STEP; this.rotate(-1); this.onCameraChange?.(); }
     };
-    this._onDragEnd = () => {
+    this._onDragEnd = (e) => {
       if (!this.drag) return;
       this.drag = null;
       canvas.style.cursor = '';
+      if (!this.dragMoved && e?.button === 2) {
+        const t = this.tileFromEvent(e);
+        if (t) this.onTileContext?.(t, e);
+      }
+      this.dragMoved = false;
     };
     addEventListener('mousemove', this._onDragMove);
     addEventListener('mouseup', this._onDragEnd);
@@ -248,7 +302,8 @@ export class Board {
     // ---- zoom com a roda ----
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.setZoom(this.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
+      // O zoom vai para onde o ponteiro está, não para o canto.
+      this.setZoom(this.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), { x: e.clientX, y: e.clientY });
       this.onCameraChange?.();
     }, { passive: false });
   }
@@ -258,23 +313,47 @@ export class Board {
    * tamanho na tela. Como `tileFromEvent` converte pelo retângulo medido, o
    * clique continua caindo no quadrado certo em qualquer zoom.
    */
-  setZoom(z) {
-    this.zoom = Math.max(0.55, Math.min(3, z));
+  /**
+   * `ancora` ({x, y} em coordenadas de tela): o ponto do tabuleiro que estava
+   * embaixo dela continua embaixo dela depois do zoom — é a roda do mouse
+   * ampliando para onde o ponteiro aponta. Sem âncora, o centro do que está à
+   * vista.
+   */
+  setZoom(z, ancora = null) {
     const el = this.canvas;
+    const quadro = el.parentElement;
+    const antes = el.getBoundingClientRect();
+    if (!ancora && quadro) {
+      const q = quadro.getBoundingClientRect();
+      ancora = { x: q.left + q.width / 2, y: q.top + q.height / 2 };
+    }
+    // Em que fração do tabuleiro a âncora cai, antes de mudar o tamanho.
+    const fx = ancora && antes.width ? (ancora.x - antes.left) / antes.width : 0.5;
+    const fy = ancora && antes.height ? (ancora.y - antes.top) / antes.height : 0.5;
+
+    this.zoom = Math.max(0.55, Math.min(3, z));
     if (Math.abs(this.zoom - 1) < 0.02) {
       this.zoom = 1;
       el.style.width = '';
       el.style.height = '';
       el.style.maxWidth = '';
       el.style.maxHeight = '';
-      return;
+    } else {
+      // Mede uma vez o tamanho "encaixado" para usar de base.
+      this.fitWidth ??= antes.width || el.width;
+      el.style.maxWidth = 'none';
+      el.style.maxHeight = 'none';
+      el.style.width = `${Math.round(this.fitWidth * this.zoom)}px`;
+      el.style.height = 'auto';
     }
-    // Mede uma vez o tamanho "encaixado" para usar de base.
-    this.fitWidth ??= el.getBoundingClientRect().width || el.width;
-    el.style.maxWidth = 'none';
-    el.style.maxHeight = 'none';
-    el.style.width = `${Math.round(this.fitWidth * this.zoom)}px`;
-    el.style.height = 'auto';
+
+    // Rola o quadro para a mesma fração do tabuleiro voltar para a âncora.
+    // `getBoundingClientRect` já mede o tamanho novo (força o layout).
+    if (ancora && quadro) {
+      const depois = el.getBoundingClientRect();
+      quadro.scrollLeft += depois.left + fx * depois.width - ancora.x;
+      quadro.scrollTop += depois.top + fy * depois.height - ancora.y;
+    }
   }
 
   zoomBy(factor) {
@@ -540,6 +619,13 @@ export class Board {
     ctx.save();
     ctx.globalAlpha = alphaChao;
 
+    // A ponte tem desenho próprio, alinhado à grade (`desenharPonte`).
+    if (s.objeto === 'ponte') {
+      this.desenharPonte(ctx, x, y, s);
+      ctx.restore();
+      return;
+    }
+
     if (lift > 0) {
       // A face lateral do barranco é TERRA, não grama: é o degrau marrom que
       // separa o alto do barranco da estrada.
@@ -600,6 +686,91 @@ export class Board {
     // profundidade continua a mesma — quem está atrás, quem está na frente —,
     // só deixa de haver chão por cima de objeto.
     if (s.objeto) (this._adiados ??= []).push([x, y, alphaObjeto, s]);
+  }
+
+  /**
+   * A PONTE, casa por casa e alinhada à grade.
+   *
+   * O sprite inteiro do PixelLab vinha numa perspectiva própria: as bordas
+   * dele não batiam com o ângulo das casas e a ponte parecia torta. Então ela
+   * é montada aqui com peças que JÁ seguem o losango: o riacho no nível 0
+   * embaixo, o tabuleiro de tábuas do atlas do chão (PixelLab) no nível da
+   * ponte, uma espessura fina de viga, e postes com corda nas duas bordas
+   * compridas. As tábuas correm atravessadas ao caminho — o desenho é
+   * espelhado quando a câmera gira e o caminho muda de diagonal na tela.
+   *
+   * O eixo do caminho vem da anotação do mapa (`objetos`, tipo 'ponte').
+   */
+  desenharPonte(ctx, x, y, s) {
+    const hgt = this.field.heightAt(x, y);
+    const { sx, sy } = this.iso(x, y, hgt);
+    const tela = (fx, fy, h) => {
+      const { vx, vy } = this.toView(fx, fy);
+      return { px: this.ox + (vx - vy) * (TW / 2), py: this.oy + (vx + vy) * (TH / 2) - h * LIFT + TH / 2 };
+    };
+    ctx.imageSmoothingEnabled = false;
+
+    // Embaixo, a água.
+    const agua = ladrilhoChao('riacho', x, y);
+    const fundo = this.iso(x, y, 0);
+    if (agua) ctx.drawImage(agua.img, agua.sx, agua.sy, agua.w, agua.h, fundo.sx - TW / 2, fundo.sy, agua.w, agua.h);
+
+    // A espessura do tabuleiro: uma viga de 5 px nas duas faces da frente.
+    const VIGA = 5;
+    for (const [lado, cor] of [[-1, '#3f2c19'], [1, '#2e2012']]) {
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      ctx.moveTo(sx + lado * TW / 2, sy + TH / 2);
+      ctx.lineTo(sx, sy + TH);
+      ctx.lineTo(sx, sy + TH + VIGA);
+      ctx.lineTo(sx + lado * TW / 2, sy + TH / 2 + VIGA);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // O eixo do caminho e o lado (normal) das bordas com corrimão.
+    const anot = this.field.objetos?.find((o) => o.tipo === 'ponte');
+    const t = anot?.olha ?? { dx: 0, dy: 1 };
+    const n = { dx: t.dy, dy: t.dx };
+    // Tábuas atravessadas ao caminho: na tela, na direção da normal. O
+    // ladrilho do atlas tem as tábuas em "\"; se a normal cai em "/", espelha.
+    const nv = this.rotateVec(n.dx, n.dy);
+    const barra = (nv.dx - nv.dy) * (nv.dx + nv.dy) > 0;   // true: "\" na tela
+    const lad = ladrilhoChao('ponte', x, y);
+    ctx.save();
+    if (!barra) { ctx.translate(sx * 2, 0); ctx.scale(-1, 1); }
+    if (lad) ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy, lad.w, lad.h);
+    else {
+      this.diamond(ctx, sx, sy);
+      ctx.fillStyle = s.topo[(x + y) % 2];
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Postes e corda nas bordas que não continuam em ponte.
+    const ehPonte = (xx, yy) => this.field.surfaceAt(xx, yy) === 'ponte';
+    for (const k of [1, -1]) {
+      if (ehPonte(x + k * n.dx, y + k * n.dy)) continue;
+      const a = tela(x + k * n.dx / 2 - t.dx / 2, y + k * n.dy / 2 - t.dy / 2, hgt);
+      const b = tela(x + k * n.dx / 2 + t.dx / 2, y + k * n.dy / 2 + t.dy / 2, hgt);
+      const ALTO = 13;
+      ctx.strokeStyle = '#b8a77a';
+      ctx.lineWidth = 1;
+      for (const alt of [ALTO - 2, ALTO - 7]) {
+        ctx.beginPath();
+        ctx.moveTo(a.px, a.py - alt);
+        ctx.quadraticCurveTo((a.px + b.px) / 2, (a.py + b.py) / 2 - alt + 4, b.px, b.py - alt);
+        ctx.stroke();
+      }
+      for (const p of [a, b]) {
+        ctx.fillStyle = '#3e2a1b';
+        ctx.fillRect(Math.round(p.px - 2), Math.round(p.py - ALTO), 4, ALTO + 2);
+        ctx.fillStyle = '#85603d';
+        ctx.fillRect(Math.round(p.px - 2), Math.round(p.py - ALTO), 1, ALTO + 1);
+        ctx.fillStyle = '#ab8558';
+        ctx.fillRect(Math.round(p.px - 2), Math.round(p.py - ALTO - 1), 4, 1);
+      }
+    }
   }
 
   /** Desenha os objetos que esperavam o fim da diagonal. */
@@ -667,12 +838,11 @@ export class Board {
       ctx.restore();
       return;
     }
-    const baixo = (s.objeto === 'arbusto' || s.objeto === 'pedra')
-      && spriteCenario(s.objeto, ['todas'], x, y);
+    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(s.objeto, ['todas'], x, y);
     if (baixo) {
-      // Moita ou pedra do PixelLab, 1:1, com o centro da base no centro da
-      // casa. A sombra acompanha a largura: a pedra é mais estreita.
-      const r = s.objeto === 'pedra' ? 17 : 24;
+      // Moita, pedra, estalagmite, mantimentos ou espinheiro do PixelLab, 1:1,
+      // com o centro da base no centro da casa. A sombra acompanha a largura.
+      const r = SOMBRA_DO_BAIXO[s.objeto];
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath();
       ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
@@ -771,6 +941,36 @@ export class Board {
       }
     } else if (s.objeto === 'pedra') {
       this.caixaIso(ctx, cx, cy, 13, 8, 10, ['#5d5e66', '#77787f', '#93949a']);
+    } else if (s.objeto === 'estalagmite') {
+      // Um cone de pedra, mais alto que largo. Provisório até a arte.
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx + 3, cy + 2, 15, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      for (const [cor, lado] of [['#4a443e', -1], ['#6a625a', 1]]) {
+        ctx.fillStyle = cor;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 40);
+        ctx.lineTo(cx + lado * 13, cy);
+        ctx.lineTo(cx, cy + 4);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (s.objeto === 'mantimentos') {
+      // Caixotes e sacos empilhados: o que o bando roubou das carroças.
+      this.caixaIso(ctx, cx - 6, cy + 2, 12, 7, 14, ['#5e4228', '#7a5833', '#94703f']);
+      this.caixaIso(ctx, cx + 9, cy - 2, 9, 5, 10, ['#6b5a3c', '#8a7550', '#a68f63']);
+    } else if (s.objeto === 'espinheiro') {
+      // Galhos baixos e emaranhados, com espinho: terreno difícil, não cobertura.
+      ctx.strokeStyle = '#3c4a26';
+      ctx.lineWidth = 2;
+      for (const [ox, oy, a] of [[-14, 2, -0.6], [-4, 5, 0.4], [6, 1, -0.3], [14, 4, 0.7], [0, -2, 0]]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + ox, cy + oy);
+        ctx.quadraticCurveTo(cx + ox + 6 * Math.sin(a), cy + oy - 10, cx + ox + 10 * Math.sin(a + 0.6), cy + oy - 14);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 1;
     }
     ctx.restore();
   }
@@ -1105,6 +1305,9 @@ export class Board {
       byTile.set(`${tx},${ty}`, c);
     }
 
+    // O que o grupo enxerga, num mapa com escuridão (null no mapa claro).
+    this._visao = temEscuridao(this.field) ? visaoDoGrupo(this.enc) : null;
+
     const reach = this.overlay.reachable;
     const targetSet = new Set((this.overlay.targets ?? []).map((t) => `${t.pos.x},${t.pos.y}`));
     const pathSet = new Set((this.overlay.path ?? []).map((p) => `${p.x},${p.y}`));
@@ -1113,8 +1316,28 @@ export class Board {
     // pura, então prever custa menos que manter dois estados em sincronia.
     this.modo = this.modoDeAlvo();
     this.previsoes = this.modo ? this.preverInimigos(this.modo) : null;
+    // A área que a magia pegaria se o jogador clicasse AGORA, e quem está nela.
+    this.areaMirada = this.areaDaMira();
+    const escolhidos = this.alvosEscolhidos();
+    // O chão que uma magia deixou (Graxa escura, Teia branca) enquanto ela
+    // durar, e a aura dos Espíritos Guardiões em volta de quem a conjurou.
+    const zonas = new Map();
+    for (const z of this.enc.zonas ?? []) for (const k of z.casas) zonas.set(k, COR_DA_ZONA[z.spellId] ?? COR_DA_ZONA.graxa);
+    // A aura marca só a BORDA, fraquinha: quem anda sabe onde ela começa,
+    // e o chão debaixo do clérigo não vira um tapete dourado.
+    for (const a of this.enc.auras ?? []) {
+      const casas = new Set(this.enc.casasDaAura(a).map((t) => `${t.x},${t.y}`));
+      for (const k of casas) {
+        const [x, y] = k.split(',').map(Number);
+        const borda = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !casas.has(`${x + dx},${y + dy}`));
+        if (borda && !zonas.has(k)) zonas.set(k, COR_DA_ZONA.aura);
+      }
+    }
+    const miraAliados = this.modo?.kind === 'spell' && this.enc.miraAliados(this.modo.spell);
 
     this.fx.drawGround(ctx, this);
+    // A metade de trás da roda dos Espíritos Guardiões vem antes das figuras.
+    this.drawMagiasAtivas(ctx, 'tras');
 
     this._figuras = this.figurasNaTela();
     // Árvores que esmaecem neste quadro: as que escondem a casa sob o cursor
@@ -1154,9 +1377,23 @@ export class Board {
           this.marcar(ctx, x, y, CHAO_LONGO.fill, CHAO_LONGO.stroke, true);
         }
       }
+      if (zonas.has(k)) this.fillDiamond(ctx, x, y, zonas.get(k).fill, zonas.get(k).stroke);
+      if (this.areaMirada?.casas.has(k)) {
+        const ok = this.areaMirada.ok;
+        this.marcar(ctx, x, y, ok ? 'rgba(255,128,48,.30)' : 'rgba(150,150,160,.22)',
+          ok ? 'rgba(255,170,100,.9)' : 'rgba(210,90,80,.75)');
+      }
+      const papel = this.areaMirada?.papeis.get(k);
+      if (papel) this.fillDiamond(ctx, x, y, PAPEL_NA_AREA[papel].fill, PAPEL_NA_AREA[papel].stroke);
+      if (escolhidos.has(k)) this.fillDiamond(ctx, x, y, 'rgba(232,195,90,.35)', '#ffe08a');
       if (this.previsoes?.impossiveis.has(k)) this.tintaImpossivel(ctx, x, y);
       if (pathSet.has(k)) this.marcar(ctx, x, y, 'rgba(170,225,255,.42)', 'rgba(200,240,255,.8)');
-      if (targetSet.has(k)) this.fillDiamond(ctx, x, y, 'rgba(255,90,70,.22)', '#ff6a4b');
+      if (targetSet.has(k)) {
+        // Alvo possível: vermelho quando a ação mira inimigo, verde quando
+        // mira aliado (cura, Bênção, Armadura Arcana).
+        if (miraAliados) this.fillDiamond(ctx, x, y, 'rgba(110,200,120,.24)', '#8ff0a0');
+        else this.fillDiamond(ctx, x, y, 'rgba(255,90,70,.22)', '#ff6a4b');
+      }
       if (this.hover && this.hover.x === x && this.hover.y === y) {
         this.marcar(ctx, x, y, 'rgba(255,255,255,.08)', 'rgba(255,255,255,.5)');
       }
@@ -1166,6 +1403,13 @@ export class Board {
       this.drawOccupantsOnDiagonal(ctx, byView, lastD);
     }
     this.desenharRaioX(ctx);
+    if (this._visao) this.desenharEscuridao(ctx, byView);
+
+    // O número de dardos (ou a ordem) por cima de cada alvo escolhido.
+    for (const [k, n] of escolhidos) {
+      const [ex, ey] = k.split(',').map(Number);
+      this.seloDeAlvo(ctx, ex, ey, n);
+    }
 
     // A cruz vem DEPOIS das figuras, de propósito: ela precisa riscar a
     // criatura, não ficar escondida atrás das pernas dela.
@@ -1176,6 +1420,7 @@ export class Board {
       }
     }
 
+    this.drawMagiasAtivas(ctx, 'frente');
     this.fx.drawOver(ctx, this);
     this.drawFloaters(ctx, dt);
     ctx.restore();
@@ -1188,8 +1433,98 @@ export class Board {
   drawOccupantsOnDiagonal(ctx, byView, d) {
     for (const [k, c] of byView) {
       const [vx, vy] = k.split(',').map(Number);
-      if (vx + vy === d) this.drawCombatant(ctx, c);
+      if (vx + vy === d && this.figuraVisivel(c)) this.drawCombatant(ctx, c);
     }
+  }
+
+  /** No escuro, quem não é do grupo só aparece se alguém do grupo o vê. */
+  figuraVisivel(c) {
+    return !this._visao || c.side === 'party' || this._visao.has(`${c.pos.x},${c.pos.y}`);
+  }
+
+  /**
+   * A ESCURIDÃO: uma máscara por cima do tabuleiro inteiro. Escuro onde o
+   * grupo não vê (o chão ainda se adivinha, para dar para andar), meia-luz na
+   * penumbra, nada onde é claro. As figuras e os objetos das casas vistas
+   * levam um recorte da altura deles, senão a máscara cortaria a cabeça de
+   * quem está na luz.
+   *
+   * A máscara só é refeita quando muda o que se vê (posições, tochas,
+   * rotação); a cada quadro ela é só colada, já borrada nas bordas. Por cima,
+   * um brilho quente em volta de cada fonte de luz.
+   */
+  desenharEscuridao(ctx, byView) {
+    const { width: w, height: h } = this.canvas;
+    const figuras = [];
+    for (const c of byView.values()) {
+      if (!c.dead && this.figuraVisivel(c) && this._visao.has(`${c.pos.x},${c.pos.y}`)) figuras.push(c);
+    }
+    const chave = [this.rot, w, h, figuras.map((c) => `${c.pos.x},${c.pos.y}`).join(';')].join('|');
+    if (this._mascara?.visao !== this._visao || this._mascara.chave !== chave) {
+      const nitida = this._mascara?.nitida ?? document.createElement('canvas');
+      const borrada = this._mascara?.borrada ?? document.createElement('canvas');
+      for (const cv of [nitida, borrada]) { if (cv.width !== w) cv.width = w; if (cv.height !== h) cv.height = h; }
+      const m = nitida.getContext('2d');
+      m.globalCompositeOperation = 'source-over';
+      m.clearRect(0, 0, w, h);
+      m.fillStyle = 'rgba(5, 4, 10, .8)';
+      m.fillRect(0, 0, w, h);
+      m.globalCompositeOperation = 'destination-out';
+      m.fillStyle = '#000';
+      const recortar = (x, y, alto) => {
+        const hgt = this.field.heightAt(x, y);
+        const { sx, sy } = this.iso(x, y, hgt);
+        // A face lateral desce do topo: a do degrau (altura) ou a da parede antiga.
+        const paredeAntiga = this.field.tileAt(x, y) === 1 && !SUPERFICIE[this.field.surfaceAt(x, y)];
+        const baixo = paredeAntiga ? LIFT * 1.6 : hgt * LIFT;
+        m.beginPath();
+        m.moveTo(sx - TW / 2, sy + TH / 2 + baixo);
+        m.lineTo(sx - TW / 2, sy + TH / 2 - alto);
+        m.lineTo(sx + TW / 2, sy + TH / 2 - alto);
+        m.lineTo(sx + TW / 2, sy + TH / 2 + baixo);
+        m.lineTo(sx, sy + TH + baixo);
+        m.closePath();
+        m.fill();
+      };
+      for (const [k, nivel] of this._visao) {
+        const [x, y] = k.split(',').map(Number);
+        m.globalAlpha = nivel === CLARO ? 1 : 0.45;
+        // Parede e objeto alto mostram a face inteira; chão, só o losango.
+        const sup = SUPERFICIE[this.field.surfaceAt(x, y)];
+        const alto = sup?.objeto ? 48 : TH / 2;
+        recortar(x, y, alto);
+      }
+      for (const c of figuras) {
+        m.globalAlpha = this._visao.get(`${c.pos.x},${c.pos.y}`) === CLARO ? 1 : 0.45;
+        const { sx, sy } = this.center(c.pos.x, c.pos.y);
+        m.fillRect(sx - 30, sy - 84, 60, 84);
+      }
+      m.globalAlpha = 1;
+      const b = borrada.getContext('2d');
+      b.clearRect(0, 0, w, h);
+      b.filter = 'blur(5px)';
+      b.drawImage(nitida, 0, 0);
+      b.filter = 'none';
+      this._mascara = { nitida, borrada, visao: this._visao, chave };
+    }
+    ctx.drawImage(this._mascara.borrada, 0, 0);
+
+    // O brilho quente das tochas e fogueiras.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const f of fontesDeLuz(this.enc)) {
+      const { sx, sy } = this.center(f.pos.x, f.pos.y);
+      const r = (f.claro / 5) * TW * 0.55;
+      const g = ctx.createRadialGradient(sx, sy - 20, 4, sx, sy, r);
+      const pulso = 0.11 + Math.sin(this.time * 9 + f.pos.x) * 0.012;
+      g.addColorStop(0, `rgba(255, 170, 70, ${pulso})`);
+      g.addColorStop(1, 'rgba(255, 120, 40, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, r, r / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   drawCombatant(ctx, c) {
@@ -1222,7 +1557,9 @@ export class Board {
     ctx.ellipse(baseX, baseY, 17, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    if (!down) {
+    // `soCenario`: o tabuleiro de fundo da tela de título. Lá a figura é
+    // personagem de cena, não peça de jogo — sem anel de lado, sem barra.
+    if (!down && !this.soCenario) {
       ctx.strokeStyle = ally ? 'rgba(110,200,255,.85)' : 'rgba(255,120,96,.8)';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -1273,7 +1610,7 @@ export class Board {
     // o `drawSprite` já cai para `idle` sozinho. Aqui o recuo precisa ser o
     // mesmo, senão `frameAt` recebe `undefined` no dia em que alguém pedir um
     // quadro que não é o zero.
-    const anim = sheet.anims[animName] ?? sheet.anims.idle;
+    const anim = animDaFolha(sheet, animName);
     const frame = c.anim?.frame ?? frameAt(anim, this.time + (c.pos.x + c.pos.y) * 0.17);
 
     // A direção do mundo gira junto com a câmera.
@@ -1371,6 +1708,7 @@ export class Board {
       ctx.drawImage(iconeTab(nome), Math.round(baseX - 16), Math.round(baseY - 56));
       return;
     }
+    if (this.soCenario) return;
 
     // Barra de vida com transição suave: o número do motor é instantâneo, mas a
     // barra alcança em ~0,3 s, o que casa com o tempo da animação de impacto.
@@ -1554,6 +1892,73 @@ export class Board {
   }
 
   /** Cruz riscando o alvo impossível — a recusa chega ANTES do clique. */
+  /**
+   * A prévia da área: com uma magia de área na mira, os quadrados que ela
+   * pegaria se o jogador clicasse agora (cone e cubo saindo do conjurador na
+   * direção do cursor; esfera e quadrado no cursor), se dá para conjurar ali,
+   * e quem está dentro. Aliado pego aparece em amarelo, e o que Esculpir
+   * Magias poupa aparece em verde — é a pergunta que o jogador faz antes de
+   * soltar fogo perto do guerreiro.
+   */
+  areaDaMira() {
+    const m = this.modo;
+    if (!m || m.kind !== 'spell' || !m.spell.shape || !this.hover) return null;
+    const actor = m.actor;
+    const casas = this.enc.areaDaMagia(actor, m.spell, this.hover) ?? [];
+    if (!casas.length) return null;
+    const circulo = this.overlay.mode?.circulo ?? m.spell.level;
+    const ok = this.enc.canCast(actor, m.spell.id, { point: this.hover, circulo }).ok;
+    // A mesma conta do motor: quem dorme, quem queima, quem Esculpir poupa.
+    const papeis = new Map();
+    let inimigos = 0;
+    let aliados = 0;
+    for (const { c, papel } of this.enc.afetadosPelaArea(actor, m.spell, casas, circulo)) {
+      if (papel === 'inimigo') inimigos += 1;
+      if (papel === 'aliado') aliados += 1;
+      papeis.set(`${c.pos.x},${c.pos.y}`, papel);
+    }
+    return { casas: new Set(casas.map((t) => `${t.x},${t.y}`)), ok, papeis, inimigos, aliados, poupados: [...papeis.values()].filter((p) => p === 'poupado').length };
+  }
+
+  /** Alvos já marcados numa magia de vários alvos: casa → quantas vezes. */
+  alvosEscolhidos() {
+    const out = new Map();
+    const modo = this.overlay.mode;
+    let alvos = modo?.alvos ?? [];
+    // Míssil Mágico: os dardos que sobram ao confirmar vão em rodízio para os
+    // marcados — o selo mostra essa conta, não só o clique.
+    const spell = modo?.kind === 'spell' ? SPELLS[modo.spellId] : null;
+    if (['auto', 'raios'].includes(spell?.kind) && alvos.length) {
+      const n = this.enc.alvosDaMagia(spell, modo.circulo, this.overlay.selected);
+      alvos = Array.from({ length: n }, (_, i) => alvos[i % alvos.length]);
+    }
+    for (const a of alvos) {
+      const k = `${a.pos.x},${a.pos.y}`;
+      out.set(k, (out.get(k) ?? 0) + 1);
+    }
+    return out;
+  }
+
+  /** O selo dourado sobre um alvo escolhido, com "×N" quando leva mais de um dardo. */
+  seloDeAlvo(ctx, x, y, n) {
+    const { sx, sy } = this.iso(x, y);
+    const cy = sy + TH / 2 - 46;
+    ctx.save();
+    ctx.fillStyle = '#2a2430';
+    ctx.strokeStyle = '#ffe08a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(sx, cy, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffe08a';
+    ctx.font = 'bold 11px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n > 1 ? `×${n}` : '✓', sx, cy + 1);
+    ctx.restore();
+  }
+
   cruzImpossivel(ctx, x, y) {
     const { sx, sy } = this.iso(x, y);
     const cy = sy + TH / 2 - 22;
@@ -1612,8 +2017,9 @@ export class Board {
   preverInimigos(modo) {
     const porId = new Map();
     const impossiveis = new Set();
+    if (modo.kind === 'spell' && (modo.spell.shape || this.enc.miraAliados(modo.spell))) return { porId, impossiveis };
     for (const alvo of this.enc.combatants) {
-      if (alvo.dead || alvo.side === modo.actor.side) continue;
+      if (alvo.dead || alvo.side === modo.actor.side || !this.figuraVisivel(alvo)) continue;
       const pv = this.preverContra(modo, alvo);
       if (!pv) continue;
       porId.set(alvo.id, pv);
@@ -1645,14 +2051,16 @@ export class Board {
       };
     }
     if (modo.kind === 'spell') {
+      const circulo = this.overlay.mode?.circulo ?? modo.spell.level;
       const p = previsaoDeMagia(this.enc, modo.actor, alvo, modo.spell, {
         atkBonus: spellAttackBonus(modo.actor) ?? 0,
         dc: spellSaveDc(modo.actor) ?? 10,
+        circulo,
       });
       // `previsaoDeMagia` devolve os motivos, mas não de que lado eles pesam;
       // a mesma conta pura diz isso, e o cartão precisa da direção.
-      const mods = modo.spell.kind === 'attack'
-        ? this.enc.attackModifiers(modo.actor, alvo, { ranged: true })
+      const mods = MAGIAS_DE_ATAQUE.includes(modo.spell.kind)
+        ? this.enc.attackModifiers(modo.actor, alvo, { ranged: !modo.spell.melee })
         : { advantage: false, disadvantage: false };
       return {
         tipo: p.tipo,
@@ -1668,11 +2076,117 @@ export class Board {
         desvantagem: mods.disadvantage && !mods.advantage,
         motivos: p.motivos,
         dc: p.dc,
-        dano: modo.spell.damage ?? null,
+        dano: modo.spell.damage ? dadosDaMagia(modo.spell, { nivel: modo.actor.level ?? 1, circulo }) : null,
         danoTipo: modo.spell.damageType ?? null,
       };
     }
     return null;
+  }
+
+  /**
+   * O que fica no tabuleiro enquanto a magia dura.
+   *
+   * - Espíritos Guardiões: doze espíritos pequenos andando em roda pelo
+   *   CONTORNO da aura (as casas da borda do quadrado de 4,5 m): é ali que o
+   *   inimigo que entra já é atingido. As que estão mais longe da câmera que o
+   *   clérigo (`camada` 'tras') saem antes das figuras; as outras, depois.
+   *   Sutil de propósito: dura o combate inteiro.
+   * - Arma Espiritual: a arma flutuando ao lado do último alvo, balançando,
+   *   até o minuto acabar. Some enquanto a animação de ataque toca.
+   */
+  drawMagiasAtivas(ctx, camada) {
+    const t = this.time;
+    const desenha = (nome, i, sx, sy, alpha = 1) => {
+      const n = EFEITOS[nome]?.quadros.length;
+      if (!n) return false;
+      const cv = quadro(nome, ((i % n) + n) % n);
+      if (!cv) return false;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - cv.height / 2));
+      ctx.restore();
+      return true;
+    };
+    for (const aura of this.enc.auras ?? []) {
+      const dono = aura.dono;
+      if (dono.dead) continue;
+      const meio = ((dono.pos.f ?? 1) - 1) / 2;
+      const cx = dono.pos.x + meio;
+      const cy = dono.pos.y + meio;
+      // Meia-largura do quadrado, medida até o centro das casas da borda.
+      const r = aura.raioFt / 5 + meio;
+      const volta = 8 * r;
+      // Manto do Cruzado: faíscas douradas miúdas, não os espíritos.
+      const manto = aura.tipo === 'manto';
+      // O espírito alado da folha j-herois; a chaminha só se ele faltar.
+      const sprite = EFEITOS['espirito-guardiao'] ? 'espirito-guardiao' : 'espirito-chama';
+      const n = manto ? 16 : 12;
+      const posicao = (tempo, i) => {
+        // Posição ao longo do perímetro, andando 1,5 casa por segundo.
+        const d = (((tempo * 1.5 + (i / n) * volta) % volta) + volta) % volta;
+        const lado = Math.floor(d / (2 * r));
+        const k = d - lado * 2 * r - r;
+        return [[k, -r], [r, k], [-k, r], [-r, -k]][lado];
+      };
+      for (let i = 0; i < n; i++) {
+        const [ox, oy] = posicao(t, i);
+        // Fora do mapa não se desenha (o clérigo encostado na borda).
+        if (!this.field.inside(Math.round(cx + ox), Math.round(cy + oy))) continue;
+        // Mais longe da câmera que o clérigo: atrás das figuras. Na tela, não
+        // no mundo: com a câmera girada o "atrás" muda.
+        const v = this.rotateVec(ox, oy);
+        if ((v.dx + v.dy < 0) !== (camada === 'tras')) continue;
+        const p = this.centerF(cx + ox, cy + oy);
+        const sy = p.sy - 11 + Math.sin(t * 2.6 + i) * 2;
+        if (manto) {
+          ctx.fillStyle = 'rgba(255,233,168,.75)';
+          ctx.fillRect(Math.round(p.sx) - 1, Math.round(sy) - 6, 2, 2);
+          continue;
+        }
+        // Um rastro curto (uma posição antes, fraca): sensação de giro.
+        // Os mesmos testes da chama: dentro do mapa e na mesma camada.
+        for (const [atras, alfa] of [[0.15, 0.2]]) {
+          const [rx, ry] = posicao(t - atras, i);
+          if (!this.field.inside(Math.round(cx + rx), Math.round(cy + ry))) continue;
+          const w = this.rotateVec(rx, ry);
+          if ((w.dx + w.dy < 0) !== (camada === 'tras')) continue;
+          const q = this.centerF(cx + rx, cy + ry);
+          desenha(sprite, Math.floor((t - atras) * 8 + i * 2), q.sx, q.sy - 16 + Math.sin((t - atras) * 2.6 + i) * 2, alfa);
+        }
+        desenha(sprite, Math.floor(t * 8 + i * 2), p.sx, sy - 5, 0.9);
+      }
+    }
+    // Na camada de trás: a Teia no chão, a Esfera acesa e o Raio Lunar (o
+    // que está no chão fica atrás de quem está à frente dele).
+    if (camada === 'tras') {
+      for (const z of this.enc.zonas ?? []) {
+        if (!z.centro) continue;
+        const p = this.centerF(z.centro.x, z.centro.y);
+        if (z.spellId === 'teia') {
+          // O quadrado parte do canto: a teia vai no meio das casas dela.
+          const casas = [...z.casas].map((k) => k.split(',').map(Number));
+          const meio = this.centerF(casas.reduce((a, c) => a + c[0], 0) / casas.length, casas.reduce((a, c) => a + c[1], 0) / casas.length);
+          const n = EFEITOS.teia?.quadros.length ?? 1;
+          desenha('teia', n - 1, meio.sx, meio.sy + 4, 0.9);
+        } else if (z.spellId === 'esferaFlamejante') {
+          // Só os quadros de chama cheia: sem a brasa do começo nem a fumaça do fim.
+          desenha('fogo-chama', [1, 2, 3, 2][Math.floor(t * 8) % 4], p.sx, p.sy - 18);
+        } else if (z.spellId === 'raioLunar') {
+          desenha('luz-coluna-prata', 2, p.sx, p.sy - 30, 0.45 + 0.15 * Math.sin(t * 3));
+        }
+      }
+    }
+    if (camada === 'tras') return;
+    for (const c of this.enc.combatants) {
+      const arma = c.magiasAtivas?.armaEspiritual;
+      if (!arma || c.dead || performance.now() < (c.armaOcultaAte ?? 0)) continue;
+      // Ao lado direito do alvo na tela (x+ desce à direita, y− sobe à
+      // direita): não cobre a cabeça dele.
+      // No mesmo ponto em que o ataque começa: a troca parada↔golpe não pula.
+      const p = this.centerF(arma.pos.x + 0.3, arma.pos.y - 0.3);
+      desenha('arma-parada', Math.floor(t * 6), p.sx, p.sy - 36 + Math.sin(t * 2) * 2);
+    }
   }
 
   // ---- cartão --------------------------------------------------------------
@@ -1687,15 +2201,28 @@ export class Board {
 
   cartaoDeAlvo(t) {
     const modo = this.modo;
-    const alvo = this.enc.at(t.x, t.y);
+    const quem = this.enc.at(t.x, t.y);
+    // Quem o grupo não vê é chão vazio para o cartão: mostrar a chance já o entregaria.
+    const alvo = quem && this.figuraVisivel(quem) ? quem : null;
     const linhas = [];
     const avisos = [];
 
     // Quadrado vazio (ou aliado): o que o jogador precisa ali é só saber se a
     // ação alcança aquele ponto.
-    if (!alvo || alvo.side === modo.actor.side) {
+    if (!alvo || alvo.side === modo.actor.side || this.areaMirada) {
       const d = distanceFt(modo.actor.pos, { x: t.x, y: t.y });
       linhas.push({ rotulo: 'distância', valor: `${d} pés` });
+      const a = this.areaMirada;
+      if (a) {
+        linhas.push({ rotulo: 'inimigos na área', valor: `${a.inimigos}`, cor: a.inimigos ? CARTAO.gold : undefined });
+        if (a.aliados) avisos.push({ texto: `${a.aliados} aliado${a.aliados > 1 ? 's' : ''} na área!`, cor: CARTAO.amber });
+        if (a.poupados) avisos.push({ texto: `${a.poupados} poupado${a.poupados > 1 ? 's' : ''} por Esculpir Magias`, cor: CARTAO.green });
+        if (!a.ok) {
+          const why = this.enc.canCast(modo.actor, modo.spell.id, { point: t, circulo: this.overlay.mode?.circulo }).why;
+          avisos.push({ texto: `não dá: ${why}`, cor: CARTAO.red });
+        }
+        return { titulo: modo.rotulo, subtitulo: 'área da magia', destaque: null, linhas, avisos };
+      }
       if (modo.limite > 0 && d > modo.limite) {
         avisos.push({ texto: `fora de alcance — alcança ${modo.limite} pés`, cor: CARTAO.red });
       } else if (modo.limite > 0 && d > modo.alcance) {

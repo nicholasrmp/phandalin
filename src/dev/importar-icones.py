@@ -127,9 +127,15 @@ def main():
         def magentoso(c):
             return c[0] - c[1] > 70 and c[2] - c[1] > 70 and abs(c[0] - c[2]) < 90
 
+        #
+        # Um ícone que é violeta DE PROPÓSITO na borda (a chama meio laranja,
+        # meio violeta do feiticeiro) declara `manterVioleta` e pula isto: sem
+        # a opção, a metade violeta inteira era comida como franja.
         fundo_cel = set()
         fila = [(x, y) for y in range(cel.height) for x in range(cel.width) if e_fundo(px[x, y])]
         fundo_cel.update(fila)
+        if opcoes.get('manterVioleta'):
+            fila = []
         while fila:
             x, y = fila.pop()
             for a2, b2 in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
