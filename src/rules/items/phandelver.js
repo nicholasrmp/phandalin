@@ -77,6 +77,10 @@ export const PHANDELVER_ITEMS = {
   pergaminhoDeEnfeiticar: nomeado('pergaminhoDeEnfeiticar', 'Pergaminho de Enfeitiçar Pessoa', 'comum',
     'Enfeitiçar Pessoa, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
     { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 25, magia: 'enfeiticarPessoa' }),
+  // O do Poço da Coruja Velha, num tubo de osso.
+  pergaminhoDeEscuridao: nomeado('pergaminhoDeEscuridao', 'Pergaminho de Escuridão', 'incomum',
+    'Escuridão, escrita para uma leitura só, guardada num tubo de osso. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 50, magia: 'escuridao' }),
   pergaminhoDeBolaDeFogo: nomeado('pergaminhoDeBolaDeFogo', 'Pergaminho de Bola de Fogo', 'incomum',
     'Bola de Fogo, escrita para uma leitura só. Por ora, vale o que um mago pagar.',
     { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 150, magia: 'bolaDeFogo' }),

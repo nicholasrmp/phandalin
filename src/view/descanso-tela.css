@@ -82,3 +82,8 @@
 /* Oração de Cura: uma segunda linha sob o herói, só para quem a tem pronta. */
 .descanso-oracao { grid-column: 2 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
 .descanso-oracao:empty { display: none; }
+
+/* Um grupo por magia de cura: nome, ganho e um botão por círculo. */
+.descanso-magia { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.descanso-magia small { color: var(--muted); font-size: 11px; max-width: 280px; }
+.descanso-orar:disabled { opacity: .5; cursor: not-allowed; }

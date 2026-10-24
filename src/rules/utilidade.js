@@ -189,7 +189,8 @@ export function podeConjurarFora(c, spellId, { circulo = null, ritual = false } 
   if (c.dead || c.hp <= 0) return { ok: false, why: 'quem está caído não conjura' };
   if (conditionEffects(c).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
   if (c.armorUntrained) return { ok: false, why: 'armadura sem treino impede conjurar' };
-  const deRitual = c.spellcasting.rituais?.includes(spellId) || c.spellcasting.livro?.includes(spellId);
+  // Só o mago conjura ritual sem preparar (do grimório); bardo, druida e clérigo só o que têm pronto.
+  const deRitual = c.classe === 'mago' && (c.spellcasting.rituais?.includes(spellId) || c.spellcasting.livro?.includes(spellId));
   if (!magiasProntas(c).includes(spellId) && !(ritual && deRitual)) return { ok: false, why: `${spell.name} não está preparada` };
   if (ritual) {
     if (!spell.ritual) return { ok: false, why: `${spell.name} não é ritual` };
@@ -205,6 +206,24 @@ export function podeConjurarFora(c, spellId, { circulo = null, ritual = false } 
   return { ok: true, spell, circulo: usa };
 }
 
+/**
+ * Larga a concentração de uma magia de COMBATE (Bênção, teia…) quando o herói
+ * se concentra em outra coisa fora da luta. Com o encontro (`enc`), usa a regra
+ * do combate inteira (zona, aura, queda do voo); sem ele, tira a condição dos alvos.
+ */
+function soltarConcentracao(c, enc) {
+  const conc = c.concentrating;
+  if (!conc) return;
+  if (enc?.dropConcentration) { enc.dropConcentration(c); return; }
+  for (const t of conc.targets ?? []) {
+    if (!conc.condition) continue;
+    const pv = ['heroico', 'aprimorado'].includes(conc.condition) ? getCondition(t, conc.condition)?.data?.pvTemp ?? 0 : 0;
+    if (pv && (t.tempHp ?? 0) <= pv) t.tempHp = 0;
+    removeCondition(t, conc.condition);
+  }
+  c.concentrating = null;
+}
+
 /** Os minutos que a conjuração leva. */
 export function tempoDeConjuracao(spellId, { ritual = false } = {}) {
   const u = UTIL[spellId];
@@ -212,6 +231,16 @@ export function tempoDeConjuracao(spellId, { ritual = false } = {}) {
   return (u?.tempo ?? s?.minutos ?? 0) + (ritual ? 10 : 0);
 }
 
+/** Corpos que não respondem a Falar com os Mortos (sem língua ou sem boca). */
+export const SEM_VOZ = new Set(['lobo', 'loboAtroz', 'ratoGigante', 'aranhaGigante', 'morcegoGigante', 'esqueleto', 'zumbi', 'javali', 'ursoPardo']);
+/** 10 dias em minutos: Falar com os Mortos não repete no mesmo corpo antes disso. */
+export const DEZ_DIAS = 14400;
+/** Corpo que não responde: morto-vivo (já não tem alma para chamar) ou sem boca. */
+export function motivoDeMortoMudo(corpo) {
+  if (corpo.tipo === 'morto-vivo') return 'um morto-vivo não responde: não há alma para chamar';
+  if (SEM_VOZ.has(corpo.defId) || corpo.semBoca) return 'o corpo não tem boca: não há como falar';
+  return null;
+}
 const humanoide = (npc) => (npc.tipo ?? 'humanoide') === 'humanoide';
 /** Um NPC solto da vila não tem ficha: vale como alguém comum (todos os atributos 10). */
 const comFicha = (npc) => (npc.abilities ? npc : { ...npc, abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } });
@@ -226,7 +255,7 @@ const comFicha = (npc) => (npc.abilities ? npc : { ...npc, abilities: { str: 10,
  *   alvo     herói, NPC ou item (id) conforme a magia
  *   opcao    o efeito escolhido (Prestidigitação, Aprimorar Atributo)
  */
-export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, ritual = false, alvo = null, opcao = null, ponto = null } = {}) {
+export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, ritual = false, alvo = null, opcao = null, ponto = null, enc = null } = {}) {
   const chk = podeConjurarFora(c, spellId, { circulo, ritual });
   if (!chk.ok) return chk;
   const { spell } = chk;
@@ -238,6 +267,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     if (!alvo) return { ok: false, why: 'escolha uma criatura' };
     if (alvo.dead) return { ok: false, why: 'ele está morto' };
     if (u.soHumanoide && !humanoide(alvo)) return { ok: false, why: `${spell.name} só pega humanoides` };
+    if (u.naoHostil && estado.npcs[chaveDoNpc(alvo)]?.ressentido === 'hostil') return { ok: false, why: 'ele já está hostil com vocês: não cai de novo' };
     if (u.naoHostil && (alvo.side === 'foes' && alvo.emLuta)) return { ok: false, why: 'ele está em luta contra vocês' };
     if (u.alcance == null && c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > spell.rangeFt) return { ok: false, why: `longe demais — ${spell.name} alcança ${spell.rangeFt} pés` };
     if (u.alcance != null && c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > u.alcance) return { ok: false, why: `longe demais — ${spell.name} alcança ${u.alcance} pés` };
@@ -247,7 +277,10 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
   if (u.alvo === 'item' && !alvo) return { ok: false, why: 'escolha um item' };
   if (u.alvo === 'morto') {
     if (!alvo?.dead) return { ok: false, why: 'precisa de um cadáver' };
-    if (estado.mortosFalados.includes(chaveDoNpc(alvo))) return { ok: false, why: 'este corpo já falou: a magia falha nos 10 dias seguintes' };
+    const motivoMorto = motivoDeMortoMudo(alvo);
+    if (motivoMorto) return { ok: false, why: motivoMorto };
+    const antigo = estado.mortosFalados.find((m) => (m.id ?? m) === chaveDoNpc(alvo));
+    if (antigo && (typeof antigo === 'string' || estado.minutos - antigo.minutos < DEZ_DIAS)) return { ok: false, why: 'este corpo já falou: a magia falha nos 10 dias seguintes' };
     if (c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > spell.rangeFt) return { ok: false, why: `longe demais — ${spell.name} alcança ${spell.rangeFt} pés` };
   }
   if (u.escolhe === 'atributo' && opcao && !APRIMORAR[opcao]) return { ok: false, why: 'opção inválida' };
@@ -276,7 +309,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
   if (u.conc) {
     const velha = estado.ativas.find((a) => a.por === c.id && a.conc);
     if (velha) { encerrar(estado, velha, grupo); fim.push(`${velha.nome} termina: ${c.name} se concentra em outra coisa.`); }
-    if (c.concentrating && !velha) c.concentrating = null;
+    if (c.concentrating && !velha) soltarConcentracao(c, enc);
   }
 
   // Resistência da criatura (Sugestão, Enfeitiçar Pessoa).
@@ -332,13 +365,13 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.info = infoDoItem(alvo.id ?? alvo);
     }
     if (u.efeito === 'mortos') {
-      estado.mortosFalados.push(chaveDoNpc(alvo));
+      estado.mortosFalados = estado.mortosFalados.filter((m) => (m.id ?? m) !== chaveDoNpc(alvo));
+      estado.mortosFalados.push({ id: chaveDoNpc(alvo), minutos: estado.minutos });
       resultado.corpo = alvo;
     }
     if (u.efeito === 'truque') resultado.truque = truque(estado, c, spellId, opcao, alvo, rng);
   } else {
-    // Resistiu: para a Enfeitiçar Pessoa, ele sabe.
-    if (u.efeito === 'enfeiticar' && alvo) (estado.npcs[chaveDoNpc(alvo)] ??= {}).ressentido = 'ciente';
+    // Resistiu: pelo livro, a Enfeitiçar Pessoa não deixa marca; ele só sabe quando a magia acaba (ver `encerrar`).
   }
 
   let ativa = null;
@@ -548,6 +581,8 @@ export function sondarMente(estado, herois, c, npc, rng) {
   const a = ativaDe(estado, herois, 'detectarPensamentos', { por: c });
   if (!a) return { ok: false, why: 'Detectar Pensamentos não está ativa' };
   if (c.pos && npc.pos && distanceFt(c.pos, npc.pos) > 30) return { ok: false, why: 'longe demais — 9 m' };
+  if ((npc.abilities?.int ?? 10) <= 3) return { ok: false, why: `${npc.name} não pensa em palavras: Inteligência 3 ou menos` };
+  if (npc.semIdioma) return { ok: false, why: `${npc.name} não fala nenhum idioma` };
   const key = chaveDoNpc(npc);
   const n = (estado.npcs[key] ??= {});
   if (n.mentePronta === 'fechada') return { ok: true, leu: false, percebeu: true, jaFechada: true };
@@ -555,9 +590,15 @@ export function sondarMente(estado, herois, c, npc, rng) {
   const dc = spellSaveDc(c);
   const r = d20(rng, saveBonus(comFicha(npc), 'wis'));
   const passou = r.total >= dc;
-  if (passou) { n.mentePronta = 'fechada'; return { ok: true, leu: false, percebeu: true, resistencia: { total: r.total, dc } }; }
+  if (passou) {
+    // Passou: ele sente a invasão, fecha a mente e a magia termina.
+    n.mentePronta = 'fechada';
+    encerrar(estado, a, herois);
+    return { ok: true, leu: false, percebeu: true, terminou: true, resistencia: { total: r.total, dc } };
+  }
+  // Falhou, mas o livro não deixa de dizer que ele PERCEBE que lhe leem a mente.
   n.sondado = true;
-  return { ok: true, leu: true, percebeu: false, resistencia: { total: r.total, dc } };
+  return { ok: true, leu: true, percebeu: true, resistencia: { total: r.total, dc } };
 }
 
 // ---------------------------------------------------------- consultas ----
@@ -573,7 +614,9 @@ export const falaPorMensagem = (estado, herois, npc) => Boolean(ativaDe(estado, 
 
 /** As magias que o herói pode conjurar fora do combate (para os menus). */
 export function magiasForaDoHeroi(c) {
-  return [...new Set([...magiasProntas(c), ...(c.spellcasting?.rituais ?? [])])].filter((id) => UTIL[id]).map((id) => getSpell(id));
+  // Só o mago conjura ritual sem preparar (grimório e livro de rituais).
+  const doLivro = c.classe === 'mago' ? [...(c.spellcasting?.rituais ?? []), ...(c.spellcasting?.livro ?? []).filter((id) => SPELLS[id]?.ritual)] : [];
+  return [...new Set([...magiasProntas(c), ...doLivro])].filter((id) => UTIL[id]).map((id) => getSpell(id));
 }
 
 /** Nome do círculo para o menu: "truque" ou "2º círculo". */

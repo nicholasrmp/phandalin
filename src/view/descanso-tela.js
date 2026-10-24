@@ -22,7 +22,8 @@ import {
 } from '../rules/descanso.js';
 import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
 import { hasCondition } from '../rules/conditions.js';
-import { magiasProntas } from '../rules/spells.js';
+import { magiasProntas, SPELLS, dadosDaMagia } from '../rules/spells.js';
+import { spellMod } from '../rules/party.js';
 
 function retrato(look) {
   try {
@@ -103,26 +104,40 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     ultimo.classList.add('pulso');
     grupo.atualizarTodas();
   };
+  // Um grupo por magia: "Bom Fruto  [1º ×2] [2º ×1] [3º ×0]", com o ganho e os
+  // espaços que restam. O círculo sem espaço fica desabilitado, com o motivo.
+  const grupoDeMagia = (spellId, nome, minimo, ganho, fazer, descricao) => {
+    const sl = c.spellcasting.slots ?? [];
+    const chips = [];
+    let algum = false;
+    for (let n = minimo; n < sl.length; n++) {
+      const restam = sl[n] ?? 0;
+      const b = el('button', {
+        class: 'descanso-gastar descanso-orar',
+        title: restam > 0 ? `${descricao}; gasta um espaço de ${n}º círculo (restam ${restam})` : `sem espaço de ${n}º círculo`,
+        disabled: restam <= 0,
+        'aria-label': `${nome}, ${n}º círculo, restam ${restam}`,
+      }, `${n}º ×${restam}`);
+      if (restam > 0) { algum = true; b.addEventListener('click', () => { audio.play('click'); fazer(n); }); }
+      chips.push(b);
+    }
+    return el('span', { class: 'descanso-magia' },
+      el('strong', {}, nome),
+      el('small', {}, algum ? ganho : `${ganho} · sem espaço de ${minimo}º círculo ou maior`),
+      ...chips);
+  };
   const atualizarOracao = () => {
     orar.replaceChildren();
-    if (c.spellcasting && !c.dead && magiasProntas(c).includes('bomFruto')) {
-      const sl = c.spellcasting.slots ?? [];
-      for (let n = 1; n < sl.length; n++) {
-        if (!(sl[n] > 0)) continue;
-        const b = el('button', { class: 'descanso-gastar descanso-orar', title: `Gasta um espaço de ${n}º círculo; dez frutinhas, 1 PV cada` },
-          `Bom Fruto (${n}º círculo)`);
-        b.addEventListener('click', () => { audio.play('click'); comerFruto(n); });
-        orar.append(b);
-      }
+    if (!c.spellcasting || c.dead) return;
+    const prontas = magiasProntas(c);
+    if (prontas.includes('bomFruto')) {
+      orar.append(grupoDeMagia('bomFruto', 'Bom Fruto', SPELLS.bomFruto.level,
+        `${SPELLS.bomFruto.frutos} PV no total, 1 por fruta, a quem mais precisa`, comerFruto, 'dez frutinhas, 1 PV cada'));
     }
-    if (!c.spellcasting || c.dead || !magiasProntas(c).includes('oracaoDeCura')) return;
-    const slots = c.spellcasting.slots ?? [];
-    for (let n = 2; n < slots.length; n++) {
-      if (!(slots[n] > 0)) continue;
-      const b = el('button', { class: 'descanso-gastar descanso-orar', title: `Gasta um espaço de ${n}º círculo; cura até 6 aliados` },
-        `Oração de Cura (${n}º círculo)`);
-      b.addEventListener('click', () => { audio.play('click'); rezar(n); });
-      orar.append(b);
+    if (prontas.includes('oracaoDeCura')) {
+      const sp = SPELLS.oracaoDeCura;
+      orar.append(grupoDeMagia('oracaoDeCura', 'Oração de Cura', sp.level,
+        `${dadosDaMagia(sp, { circulo: sp.level, notacao: sp.heal })}+${spellMod(c)} PV em cada um, até ${sp.targets} aliados (10 min)`, rezar, 'cura até 6 aliados'));
     }
   };
   const atualizarTudo = () => { atualizar(); atualizarOracao(); };

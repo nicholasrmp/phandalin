@@ -36,7 +36,8 @@ export const PENUMBRA = 1;
 export const ESCURO = 0;
 
 const TOCHA = { claro: 20, penumbra: 20 };
-const LUZINHAS = { claro: 10, penumbra: 10 };
+// Luzes Dançantes: cada luzinha emite só penumbra num raio de 3 m (10 pés), sem luz clara.
+const LUZINHAS = { claro: -1, penumbra: 11 };
 
 // Quem tem visão no escuro (60 pés), pela ancestralidade do herói ou pela
 // família do monstro, quando a ficha não diz.

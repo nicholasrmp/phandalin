@@ -104,12 +104,12 @@ function fichasProntas(nivel) {
         ability: 'wis',
         // Três truques, como o clérigo de 1º nível conhece.
         cantrips: ['chamaSagrada', 'pouparOsMoribundos', 'resistencia'],
-        // Rituais à mão (`rules/utilidade.js`): conjuráveis fora do combate sem gastar espaço.
-        rituais: ['detectarMagia'],
         // Bênção e Curar Ferimentos não estão aqui: são magias do Domínio da
         // Vida, sempre preparadas (`sempreProntas`), e não ocupam vaga.
+        // Detectar Magia vem por último: o clérigo só a tem preparada se sobrar vaga (como ritual,
+        // sem grimório, ele precisa dela preparada).
         prepared: ['palavraCurativa', 'raioGuiado', 'perdicao', 'espiritosGuardioes', 'imobilizarPessoa',
-          'palavraCurativaEmMassa', 'cegueiraSurdez', 'ajuda'],
+          'palavraCurativaEmMassa', 'cegueiraSurdez', 'ajuda', 'detectarMagia'],
         // O clérigo prepara da LISTA DA CLASSE inteira, não de um livro: é a
         // diferença entre ele e o mago, e é por isso que `lista` e `livro`
         // são campos diferentes em vez de um só com dois nomes.
@@ -117,7 +117,7 @@ function fichasProntas(nivel) {
         // domínio (3º e 5º nível).
         lista: ['palavraCurativa', 'raioGuiado', 'infligirFerimentos', 'perdicao',
           'imobilizarPessoa', 'cegueiraSurdez', 'ajuda', 'espiritosGuardioes', 'palavraCurativaEmMassa', 'dissiparMagia',
-          'silencio', 'eloDeProtecao', 'acalmarEmocoes', 'oracaoDeCura'],
+          'silencio', 'eloDeProtecao', 'acalmarEmocoes', 'oracaoDeCura', 'detectarMagia'],
       },
       blurbs: {
         1: 'Domínio da Vida: toda cura dele rende mais. Duas magias de 1º círculo por descanso longo.',

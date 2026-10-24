@@ -50,6 +50,7 @@ export const MISSOES = {
   orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'Viajantes relatam orcs perto do Cume da Wyvern, a leste pela Trilha de Triboar. Dar um jeito neles.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
   reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
+  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
   mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Um colar de esmeraldas, escondido numa caixa sob as prateleiras da antiga loja de ervas da família, no canto sudeste de Árvore Trovão. Mirna o deu a quem o achar.' },
   linene: { titulo: 'Os suprimentos da Escudo Leão', de: 'Linene Graywind', texto: 'A última caravana da Escudo Leão nunca chegou. Quem achar a carga, ou disser onde está, ganha uma recompensa.', recompensa: '50 po' },
 };
@@ -430,6 +431,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             opcoes: [
               { texto: 'O que acha dos Marcarrubra?', vai: 'marcarrubra', uma: true },
               { texto: 'Precisa de alguma coisa?', vai: 'coruja', uma: true },
+              { texto: 'Estivemos no Poço da Coruja Velha.', vai: 'relatoCoruja', uma: true,
+                requer: () => ((feitos.kostNegociou || feitos.kostDerrotado) && !v.feito.relatoCoruja ? null : 'nada'), oculta: true },
               { texto: 'Podemos dormir no seu galpão esta noite?', fim: 'galpaoDaran' },
               { texto: 'Até mais.', fim: 'sai' },
             ],
@@ -437,6 +440,22 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           marcarrubra: {
             ao: () => { missao('marcarrubra'); pista('Os Marcarrubra têm uma base embaixo da Mansão Tresendar, no leste da vila.'); },
             fala: 'Que alguém devia ter feito alguma coisa há muito tempo — e eu já estou velho para entrar sozinho num ninho de ratos. O chefe deles atende por Cajavidro. Bebem no Gigante Adormecido, mas dormem embaixo da Mansão Tresendar, a ruína do leste.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
+          relatoCoruja: {
+            ao: () => {
+              v.feito.relatoCoruja = true;
+              concluir('coruja');
+              // O livro: 200 XP por negociar com o mago e contar ao Daran. Quem
+              // o venceu já ganhou os 800 lá.
+              if (feitos.kostNegociou && !feitos.kostDerrotado) {
+                app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + 200, motivo: [app.xpPendente?.motivo, 'O relato do Poço da Coruja Velha'].filter(Boolean).join('; ') };
+              }
+            },
+            narra: 'Daran ouve tudo de braços cruzados, e só descruza quando vocês falam do manto vermelho.',
+            fala: () => (feitos.kostDerrotado
+              ? ['Um Mago Vermelho de Thay, cavando ruína de Netheril. E vocês o derrubaram. Bom. Gente assim não aparece sozinha: onde tem um, logo tem outro procurando por ele.']
+              : ['Um Mago Vermelho de Thay. Não gosto disso, mas gosto menos ainda de guerra que não precisa acontecer. Vocês fizeram certo em conversar.', 'Fiquem de olho nele. Se ele achar o que procura naquela torre, não vai ser coisa boa para ninguém.']),
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           coruja: {
@@ -776,6 +795,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       tela.atualizar();
     },
     onMenu: () => { tela.fechar(); app.encerrarPartida(); },
+    // Sair da vila pela Trilha Triboar: o mapa da região.
+    botoes: [{ rotulo: 'Viajar', dica: 'Sair de Phandalin pelo mapa da região', fazer: () => { tela.fechar(); app.irParaRegiao(vivos(), 'phandalin'); } }],
     // A ficha fora de combate: vestir o que se comprou, guardar para vender.
     onFicha: (c) => app.abrirFichaNaVila(c, () => tela.atualizar()),
   });

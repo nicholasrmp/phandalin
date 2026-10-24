@@ -181,6 +181,20 @@ export const HUMANOIDES_LOOKS = {
     face: { testa: 0.44, arcada: 1, macas: 2, mandibula: 0.86, queixo: 'pontudo', olhoH: 1, nariz: 'fina', boca: 'fina' },
   },
 
+  // HAMUN KOST, o Mago Vermelho do Poço da Coruja Velha. SILHUETA: corpo
+  // robusto num manto vermelho comprido, cabeça raspada (sem chapéu: é o
+  // contrário do mago genérico) e um bastão curto. A tatuagem da testa é
+  // escura, pequena demais para o sprite: fica para o retrato.
+  hamunKost: {
+    species: 'humano', build: 'forte', heightMul: 1.0,
+    skin: '#e8d2bc', hair: '#e8d2bc', hairStyle: 'bald', beard: false,
+    outfit: '#8a1e1e', outfitDark: '#561010', trim: '#d4a63c',
+    metal: '#a2aab8', leather: '#443726', eyes: '#3a2a1a', glow: '#9cff9c',
+    armorStyle: 'robe', helm: false, shield: false, weapon: 'staff',
+    stance: 'mago', cloak: '#6e1414',
+    face: { testa: 0.5, arcada: 1, macas: 1, mandibula: 1, queixo: 'quadrado', olhoH: 1, nariz: 'larga', boca: 'fina' },
+  },
+
   // SILHUETA: figura de veste lisa com a cabeça inteira dentro de um capuz
   // fechado, sem pescoço à vista e com as mãos vazias.
   acolito: {

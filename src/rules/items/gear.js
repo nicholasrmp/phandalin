@@ -173,6 +173,7 @@ export const GEAR = {
   malaquita: pilha('malaquita', 'Malaquita', 15, 0, 'Pedra verde de veios escuros, polida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
   cornalina: pilha('cornalina', 'Cornalina', 10, 0, 'Pedrinha laranja translúcida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
   peridoto: pilha('peridoto', 'Peridoto', 15, 0, 'Pedra verde-oliva, clara contra a luz.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  joiaMiuda: pilha('joiaMiuda', 'Joia miúda', 25, 0, 'Pedrinha lapidada, achada numa caixinha de um império que não existe mais.', { tipo: 'tesouro', fonte: 'propria', art: 'item-perolaDoPoder' }),
   perola: pilha('perola', 'Pérola', 100, 0, 'Pérola grande e perfeita, guardada num lenço de seda.', { tipo: 'tesouro', fonte: 'propria', art: 'item-perolaDoPoder' }),
   brincosDeRubi: item('brincosDeRubi', 'Brincos de rubi', 30, 0, 'Um par de brincos com um rubi minúsculo cada.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
   anelDePlatina: pilha('anelDePlatina', 'Anel de sinete de platina', 50, 0, 'Sinete de família, com um brasão gasto.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),

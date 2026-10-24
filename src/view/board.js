@@ -124,6 +124,8 @@ const SUPERFICIE = {
   casa: { topo: GRAMA, lado: TERRA, objeto: 'casa', chao: 'grama' },
   taverna: { topo: ESTRADA, lado: TERRA, objeto: 'taverna', chao: 'estrada' },
   barris: { topo: GRAMA, lado: TERRA, objeto: 'mantimentos', chao: 'grama' },
+  tenda: { topo: GRAMA, lado: TERRA, objeto: 'tenda', chao: 'grama' },
+  pocoVelho: { topo: GRAMA, lado: TERRA, objeto: 'pocoVelho', chao: 'grama' },
 };
 
 // Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
@@ -132,12 +134,12 @@ const SUPERFICIE = {
 // cavalos na tela onde o mapa tem dois. Árvore, arbusto e pedra ficam fora de
 // propósito — a mata inteira é uma mancha contínua de `T`, e agrupá-la faria
 // dela uma árvore só.
-const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna']);
+const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda']);
 
 // Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
 const SOMBRA_DO_BAIXO = {
   arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
-  tocaia: 20, mesa: 22, sarcofago: 24, grade: 20,
+  tocaia: 20, mesa: 22, sarcofago: 24, grade: 20, pocoVelho: 22,
 };
 
 // Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
@@ -965,6 +967,11 @@ export class Board {
       ctx.beginPath();
       ctx.ellipse(cx - 10, cy - alto - 10, 10, 7, 0, 0, Math.PI * 2);
       ctx.fill();
+    } else if (s.objeto === 'tenda') {
+      // Recuo enquanto o atlas não carrega: um pavilhão listrado.
+      this.caixaIso(ctx, cx, cy, 52, 26, 30, ['#7a2a2a', '#a8473a', '#d9b05a']);
+    } else if (s.objeto === 'pocoVelho') {
+      this.caixaIso(ctx, cx, cy, 18, 9, 12, ['#56575a', '#77766f', '#1b393f']);
     } else if (s.objeto === 'casa' || s.objeto === 'taverna') {
       // Recuo enquanto o atlas não carrega: um bloco com telhado escuro.
       this.caixaIso(ctx, cx, cy, 80, 40, s.objeto === 'taverna' ? 70 : 52, ['#77766f', '#9e998b', '#463d3c']);
@@ -1692,7 +1699,7 @@ export class Board {
     ctx.globalCompositeOperation = 'lighter';
     for (const f of fontesDeLuz(this.enc)) {
       const { sx, sy } = this.center(f.pos.x, f.pos.y);
-      const r = (f.claro / 5) * TW * 0.55;
+      const r = (Math.max(f.claro, 5) / 5) * TW * 0.55;
       const g = ctx.createRadialGradient(sx, sy - 20, 4, sx, sy, r);
       const pulso = 0.11 + Math.sin(this.time * 9 + f.pos.x) * 0.012;
       g.addColorStop(0, `rgba(255, 170, 70, ${pulso})`);

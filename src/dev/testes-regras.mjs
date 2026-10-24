@@ -18,7 +18,7 @@ import { takeMonsterTurn, contornaZonas } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
 import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
-import { comoVe, visaoNoEscuro } from '../rules/luz.js';
+import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
 import { oracaoDeCura, bomFrutoNoDescanso } from '../rules/descanso.js';
 
@@ -3750,7 +3750,7 @@ teste('Sugestão e Enfeitiçar Pessoa: a CD de SAB do alvo decide; Sugestão cum
   assert.ok(e.ok && e.resultado.resistiu);
   assert.equal(g.ilvan.spellcasting.slots[1], antes - 1);
   assert.equal(ativaDe(g.estado, g.party, 'enfeiticarPessoa', { npc: forte }), null);
-  assert.equal(g.estado.npcs[chaveDoNpc(forte)].ressentido, 'ciente');
+  assert.ok(!g.estado.npcs[chaveDoNpc(forte)]?.ressentido, 'pelo livro, quem resiste não fica marcado');
   const fera = makeMonster('lobo', { x: 8, y: 7 });
   assert.equal(conjurarFora(g.estado, g.ilvan, 'enfeiticarPessoa', { ...g.ctx, alvo: fera }).ok, false, 'só humanoides');
 });
@@ -3762,13 +3762,92 @@ teste('Detectar Pensamentos: sondar a mente deixa a conversa mais fácil, e resi
   assert.ok(conjurarFora(g.estado, g.ilvan, 'detectarPensamentos', g.ctx).ok);
   g.goblin.abilities.wis = 1;
   const r = sondarMente(g.estado, g.party, g.ilvan, g.goblin, g.rng);
-  assert.ok(r.leu && !r.percebeu);
+  assert.ok(r.leu && r.percebeu, 'quem falha também percebe que lhe leram a mente');
+  assert.ok(ativaDe(g.estado, g.party, 'detectarPensamentos', { por: g.ilvan }), 'leu: a magia continua');
   assert.equal(previsaoDeTeste(g.estado, g.party, g.dara, 'persuasao', 12, { npc: g.goblin }).vantagem, true, 'sabe o que ele quer ouvir');
   const duro = makeMonster('goblin', { x: 8, y: 6 });
   duro.abilities.wis = 80;
   const f = sondarMente(g.estado, g.party, g.ilvan, duro, g.rng);
-  assert.ok(f.percebeu && !f.leu);
+  assert.ok(f.percebeu && !f.leu && f.terminou);
+  assert.equal(ativaDe(g.estado, g.party, 'detectarPensamentos', { por: g.ilvan }), null, 'passou na SAB: a magia termina');
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'detectarPensamentos', g.ctx).ok);
   assert.ok(sondarMente(g.estado, g.party, g.ilvan, duro, g.rng).jaFechada);
+  // INT 3 ou menos e quem não fala: não funciona.
+  const fera = makeMonster('goblin', { x: 8, y: 7 });
+  fera.abilities.int = 2;
+  assert.match(sondarMente(g.estado, g.party, g.ilvan, fera, g.rng).why, /Inteligência/);
+  const mudo = makeMonster('goblin', { x: 8, y: 8 });
+  mudo.semIdioma = true;
+  assert.equal(sondarMente(g.estado, g.party, g.ilvan, mudo, g.rng).ok, false);
+});
+
+teste('Ritual sem preparar: só o mago; o clérigo só conjura Detectar Magia se a tiver preparada', () => {
+  const g = grupoDeUtilidade();
+  assert.ok(!g.brenn.spellcasting.rituais, 'sem lista de rituais no clérigo');
+  assert.ok(g.brenn.spellcasting.lista.includes('detectarMagia'), 'ele pode prepará-la da lista da classe');
+  assert.equal(podeConjurarFora(g.brenn, 'detectarMagia', { ritual: true }).ok, false, 'não preparada: nada de ritual');
+  g.brenn.spellcasting.prepared.push('detectarMagia');
+  assert.equal(podeConjurarFora(g.brenn, 'detectarMagia', { ritual: true }).ok, true, 'preparada: ritual sem espaço');
+  g.brenn.spellcasting.prepared = g.brenn.spellcasting.prepared.filter((i) => i !== 'detectarMagia');
+  assert.equal(podeConjurarFora(g.brenn, 'detectarMagia', { ritual: true }).ok, false, 'não preparada: nada de ritual');
+  g.brenn.spellcasting.livro = ['detectarMagia'];
+  assert.equal(podeConjurarFora(g.brenn, 'detectarMagia', { ritual: true }).ok, false, 'livro não é de clérigo');
+  assert.equal(podeConjurarFora(g.ilvan, 'detectarMagia', { ritual: true }).ok, true, 'o mago a conjura do grimório');
+});
+
+teste('Concentração do combate não vaza: conjurar Luzes Dançantes fora desfaz a Bênção', () => {
+  const { enc, party } = montar();
+  const brenn = party[BRENN];
+  brenn.pos = { x: 3, y: 3 };
+  party[DARA].pos = { x: 3, y: 4 };
+  brenn.spellcasting.cantrips.push('luzesDancantes');
+  assert.ok(enc.castSpell(brenn, 'bencao').ok);
+  assert.ok(hasCondition(party[DARA], 'abencoado'));
+  const estado = estadoDe({});
+  const r = conjurarFora(estado, brenn, 'luzesDancantes', { herois: party, rng: makeRng(2), enc });
+  assert.ok(r.ok, r.why);
+  assert.ok(!hasCondition(party[DARA], 'abencoado'), 'a Bênção acabou');
+  assert.equal(brenn.concentrating.spellId, 'luzesDancantes');
+  // Sem encontro (vila), a condição também sai.
+  const g = grupoDeUtilidade({ cantrips: ['luzesDancantes'] });
+  g.brenn.spellcasting.slots[1] = 3;
+  g.dara.conditions.push({ id: 'abencoado', rounds: 10 });
+  g.brenn.concentrating = { spellId: 'bencao', condition: 'abencoado', targets: [g.dara], rounds: 10 };
+  assert.ok(conjurarFora(g.estado, g.brenn, 'luzesDancantes', g.ctx).ok);
+  assert.ok(!hasCondition(g.dara, 'abencoado'));
+});
+
+teste('Amizade recusa quem já está hostil; Falar com os Mortos recusa morto-vivo e passa de 10 dias', () => {
+  const g = grupoDeUtilidade({ cantrips: ['amizade'], prepared: ['falarComOsMortos'] });
+  g.estado.npcs[chaveDoNpc(g.goblin)] = { ressentido: 'hostil' };
+  const a = conjurarFora(g.estado, g.ilvan, 'amizade', { ...g.ctx, alvo: g.goblin });
+  assert.equal(a.ok, false);
+  assert.match(a.why, /hostil/);
+  g.ilvan.spellcasting.slots[3] = 3;
+  const zumbi = makeMonster('zumbi', { x: 6, y: 6 });
+  zumbi.dead = true;
+  const antes = g.ilvan.spellcasting.slots[3];
+  const z = conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: zumbi });
+  assert.equal(z.ok, false);
+  assert.equal(g.ilvan.spellcasting.slots[3], antes, 'recusou antes de gastar');
+  const corpo = makeMonster('goblin', { x: 6, y: 7 });
+  corpo.dead = true;
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: corpo }).ok);
+  assert.equal(g.estado.mortosFalados[0].id, chaveDoNpc(corpo));
+  assert.equal(conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: corpo }).ok, false);
+  g.estado.minutos += 14400;
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: corpo }).ok, 'liberado após 10 dias');
+});
+
+teste('Luzes Dançantes: só penumbra em 3 m, sem luz clara', () => {
+  const g = grupoDeUtilidade({ cantrips: ['luzesDancantes'] });
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'luzesDancantes', g.ctx).ok);
+  const enc = { combatants: g.party, field: { w: 12, h: 12, luz: new Uint8Array(144), luzes: [] }, zonas: [] };
+  const f = fontesDeLuz(enc).find((x) => x.pos === g.ilvan.pos);
+  assert.ok(f, 'emite luz');
+  assert.equal(nivelDeLuz(enc.field, g.ilvan.pos.x, g.ilvan.pos.y, [f]), PENUMBRA, 'na própria casa só penumbra');
+  assert.equal(nivelDeLuz(enc.field, g.ilvan.pos.x + 2, g.ilvan.pos.y, [f]), PENUMBRA, 'a 3 m (2 casas)');
+  assert.equal(nivelDeLuz(enc.field, g.ilvan.pos.x + 3, g.ilvan.pos.y, [f]), ESCURO, 'a 4,5 m já é escuro');
 });
 
 teste('Falar com os Mortos: um cadáver só responde uma vez; Compreender Idiomas e Falar com Animais ficam de pé', () => {

@@ -17,6 +17,9 @@ import { criarCenaCaverna } from './game/cena-caverna.js';
 import { criarCapitulo2 } from './game/capitulo2.js';
 import { criarRuaMarcarrubra } from './game/capitulo3-rua.js';
 import { criarMansao } from './game/capitulo3-mansao.js';
+import { criarEstrada } from './game/capitulo4-estrada.js';
+import { criarPoco } from './game/capitulo4-poco.js';
+import { abrirRegiao } from './game/regiao.js';
 import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta } from './view/narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
@@ -206,6 +209,8 @@ class App {
     // O capítulo 2 da campanha é o esconderijo dos goblins.
     const variante = config.capitulo === 2 ? 'esconderijo'
       : config.capitulo === 3 ? (config.cenaDaVila ?? 'rua')
+        // Capítulo 4, a região: os encontros da estrada e os lugares dela.
+        : config.capitulo === 4 ? config.cenaDaVila
         : (config.variante ?? 'emboscada');
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
@@ -253,6 +258,8 @@ class App {
     const cena = mapa.cena === 'esconderijo' ? criarCapitulo2
       : mapa.cena === 'rua' ? criarRuaMarcarrubra
       : mapa.cena === 'mansao' ? criarMansao
+      : mapa.cena === 'ermo' ? criarEstrada
+      : mapa.cena === 'poco' ? criarPoco
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
     const capitulo = Boolean(cena);
@@ -1195,6 +1202,18 @@ class App {
     this.mode = null;
     this.root.classList.remove('explorando');
     return abrirPhandalin(this, { grupo, chegando });
+  }
+
+  /** Sai do tabuleiro para o mapa da região, com o grupo parado em `onde`. */
+  irParaRegiao(grupo, onde = 'phandalin') {
+    fecharMenuContexto();
+    this.capitulo = null;
+    this.enc = null;
+    this.board = null;
+    this.selected = null;
+    this.mode = null;
+    this.root.classList.remove('explorando');
+    return abrirRegiao(this, { grupo, onde });
   }
 
   /** Fim do capítulo (ou desistência): sai da partida e volta ao menu. */

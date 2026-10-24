@@ -327,8 +327,22 @@ export class Hud {
    * interface. A sigla de três letras sobra para onde o ícone não cabe.
    */
   condChips(c, { mini = false } = {}) {
-    const lista = c.conditions ?? [];
-    if (!lista.length) return null;
+    const bruta = c.conditions ?? [];
+    if (!bruta.length) return null;
+    // Chips repetidos (duas Luzes, a mesma condição de duas fontes) viram um só,
+    // com a maior duração; sem ícone, a mesma sigla também junta.
+    const porChave = new Map();
+    for (const x of bruta) {
+      const k = mini || !temIcone(x.id) ? sigla(CONDITIONS[x.id]?.name ?? x.id) : x.id;
+      const antes = porChave.get(k);
+      if (!antes) porChave.set(k, { ...x, _n: 1, _fontes: [x] });
+      else {
+        antes._n += 1;
+        antes._fontes.push(x);
+        if (!(Number.isFinite(antes.rounds) && Number.isFinite(x.rounds) ? antes.rounds >= x.rounds : !Number.isFinite(x.rounds))) antes.rounds = x.rounds;
+      }
+    }
+    const lista = [...porChave.values()];
     return el('div', { class: `conds${mini ? ' mini' : ''}` }, lista.map((x) => {
       const def = CONDITIONS[x.id];
       const nome = def?.name ?? x.id;
@@ -344,7 +358,11 @@ export class Hud {
         {
           nome,
           tipo: 'condição',
-          linhas: [Number.isFinite(x.rounds) ? ['Rodadas restantes', String(x.rounds)] : null],
+          linhas: [
+            Number.isFinite(x.rounds) ? ['Duração', x.rounds >= 10 ? `${Math.round(x.rounds / 10)} min (${x.rounds} rodadas)` : `${x.rounds} rodada${x.rounds === 1 ? '' : 's'}`] : null,
+            (c.concentrating?.condition === x.id || def?.concentrationEffect) ? ['Concentração', 'acaba se quem a mantém perder a concentração'] : null,
+            x._n > 1 ? ['Fontes', String(x._n)] : null,
+          ],
           texto: def?.desc,
           aviso: def?.houseRule ? 'Regra da casa — não é do SRD' : null,
         },

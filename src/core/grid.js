@@ -129,6 +129,10 @@ export const GLIFOS = {
   'H': { kind: 1, sup: 'casa' },
   'Y': { kind: 1, sup: 'taverna' },
   'u': { kind: 3, sup: 'barris' },
+  // O Poço da Coruja Velha: a tenda do mago (2 x 2, não se atravessa nem se
+  // vê através) e o poço velho do pátio (cobertura, como uma mureta).
+  'n': { kind: 1, sup: 'tenda' },
+  'q': { kind: 3, sup: 'pocoVelho' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];

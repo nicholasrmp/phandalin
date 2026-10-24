@@ -80,7 +80,8 @@ export const MORTOS = {
   ],
 };
 /** Quem não responde a Falar com os Mortos (sem língua ou sem boca). */
-export const MUDOS = new Set(['lobo', 'loboAtroz', 'ratoGigante', 'aranhaGigante', 'morcegoGigante', 'esqueleto', 'zumbi', 'javali', 'ursoPardo']);
+import { SEM_VOZ } from '../rules/utilidade.js';
+export const MUDOS = SEM_VOZ;
 
 /** Falar com Animais: o que o bicho tem a dizer (cheiro, medo, fome, dono). */
 export const ANIMAIS = {

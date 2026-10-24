@@ -45,7 +45,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod } from '../rules/abilities.js';
 import { distanceFt, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, removeCondition, hasCondition } from '../rules/conditions.js';
@@ -53,7 +53,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
 import { ctxDe } from './magias-fora.js';
-import { rolarTeste, disfarcado } from '../rules/utilidade.js';
+import { rolarTeste, disfarcado, ativaDe } from '../rules/utilidade.js';
 
 const MOVIMENTO = 60;
 
@@ -277,7 +277,23 @@ export function criarMansao(app, config) {
 
   const nota = (f, c) => podeVer(enc, f, c) && (emiteLuz(c) || distanceFt(f.pos, c.pos) <= 30);
   // O manto vermelho ou o Disfarçar-se: para quem não olha direito, é um Marcarrubra.
-  const vestido = (c) => Boolean(c.mantoVermelho || disfarcado(ctxDe(app, enc).estado, herois(), c));
+  // O manto engana sempre; o Disfarçar-se engana até alguém examinar de perto:
+  // o melhor da cripta rola Investigação (INT) contra a CD de magia de quem o conjurou,
+  // uma vez por magia (a CD que a descrição da magia promete).
+  const exame = new Map();
+  const vestido = (c) => {
+    if (c.mantoVermelho) return true;
+    const x = ctxDe(app, enc);
+    if (!disfarcado(x.estado, herois(), c)) return false;
+    const a = ativaDe(x.estado, herois(), 'disfarcarSe', { por: c });
+    if (!a) return false;
+    if (!exame.has(a.n)) {
+      const olhos = (grupos.cripta?.membros ?? []).filter((f) => f.side === 'foes' && !f.dead);
+      const bonus = Math.max(...olhos.map((f) => abilityMod(f.abilities?.int ?? 10)), -5);
+      exame.set(a.n, olhos.length ? d20(enc.rng, bonus).total < spellSaveDc(c) : true);
+    }
+    return exame.get(a.n);
+  };
 
   // --------------------------------------------------- portas secretas ----
   /** Quem tem Percepção passiva 15 nota a porta secreta a 3 m sem procurar. */

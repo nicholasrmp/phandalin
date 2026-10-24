@@ -421,7 +421,7 @@ export const SPELLS = {
     id: 'enfeiticarPessoa', name: 'Enfeitiçar Pessoa', level: 1, school: 'encantamento', fonte: 'srd',
     castTime: 'action', rangeFt: 30, kind: 'debuff', targets: 1, save: 'wis', condition: 'enfeiticado',
     soTipo: 'humanoide', vantagemEmCombate: true, upcast: { alvos: 1 },
-    desc: 'Um humanoide faz CD de SAB, com vantagem por estar lutando com você, ou fica enfeitiçado: não o ataca. Dano seu ou dos seus aliados desfaz. 1 hora. +1 alvo por círculo acima do 1º.',
+    desc: 'Um humanoide faz CD de SAB, com vantagem por estar lutando com você, ou fica enfeitiçado: não o ataca. Dano seu ou dos seus aliados desfaz. 1 hora. +1 alvo por círculo acima do 1º. (Fora do combate: se ele resiste, nada fica; quando a magia acaba, ele sabe que foi enfeitiçado e, como regra da casa, passa a ter desvantagem nos testes de Carisma com você.)',
   },
 
   // ---- 2º círculo -------------------------------------------------------------
@@ -777,7 +777,7 @@ export const SPELLS = {
     id: 'orientacao', name: 'Orientação', level: 0, school: 'adivinhação', fonte: 'srd',
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'orientado',
     concentration: true, duracaoRodadas: 10,
-    desc: 'Toque num aliado: no próximo teste de atributo que ele fizer, soma 1d4, e a magia acaba. Concentração, até 1 minuto. (No jogo, vale nos testes que o combate rola: escapar de agarrão, teia ou vinhas, estabilizar um moribundo e dissipar magia; os testes de perícia fora do combate ainda não somam o dado.)',
+    desc: 'Toque num aliado: no próximo teste de atributo que ele fizer, soma 1d4, e a magia acaba. Concentração, até 1 minuto. (No jogo, vale nos testes que o combate rola: escapar de agarrão, teia ou vinhas, estabilizar um moribundo e dissipar magia; fora do combate, o dado também soma no próximo teste de perícia, e a magia acaba.)',
   },
   silencio: {
     id: 'silencio', name: 'Silêncio', level: 2, school: 'ilusão', fonte: 'srd', ritual: true,
@@ -830,7 +830,7 @@ export const SPELLS = {
     id: 'ilusaoMenor', name: 'Ilusão Menor', level: 0, school: 'ilusão', fonte: 'srd',
     castTime: 'action', rangeFt: 30, shape: 'sphere', areaFt: 0, kind: 'save', soZona: true,
     zona: { rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ilusao: true, ocupaCasa: true },
-    desc: 'Uma imagem de um objeto (um caixote, uma pedra) numa casa vazia a até 9 m, por 1 minuto. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles, e eles atacam e são atacados como no escuro. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. (Simplificação: o jogo ignora o som, e só o outro lado é enganado — seus aliados sempre sabem. Uma vez desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar.)',
+    desc: 'Uma imagem de um objeto (um caixote, uma pedra) numa casa vazia a até 9 m, por 1 minuto. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles, e eles atacam e são atacados como no escuro. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. (Simplificação: o jogo ignora o som, e só o outro lado é enganado — seus aliados sempre sabem. Uma vez desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar. Fora do combate, como regra da casa, dá vantagem em Enganação por 1 minuto.)',
   },
   visaoNoEscuro: {
     id: 'visaoNoEscuro', name: 'Visão no Escuro', level: 2, school: 'transmutação', fonte: 'srd',
@@ -853,7 +853,7 @@ export const SPELLS = {
     id: 'sugestao', name: 'Sugestão', level: 2, school: 'encantamento', fonte: 'srd',
     castTime: 'action', rangeFt: 30, kind: 'debuff', targets: 1, save: 'wis', condition: 'sugerido',
     concentration: true, duracaoRodadas: 4800,
-    desc: 'Uma criatura a até 9 m que pode ouvir você faz CD de SAB (imunes a encanto não são afetados). Se falha, segue a sugestão que você dá. (Simplificação: no jogo a sugestão é sempre "abandone a luta e vá embora": ele não ataca e se afasta do grupo, até ser ferido por você ou por um aliado seu.) Concentração, até 8 horas.',
+    desc: 'Uma criatura a até 9 m que pode ouvir você faz CD de SAB (imunes a encanto não são afetados). Se falha, segue a sugestão que você dá. (Simplificação: no jogo a sugestão é sempre "abandone a luta e vá embora": ele não ataca e se afasta do grupo, até ser ferido por você ou por um aliado seu.) Concentração, até 8 horas. (Regra da casa fora do combate: o próximo teste social de Persuasão, Intimidação ou Enganação com ele é cumprido, e a magia acaba.)',
   },
   luzDoDia: {
     id: 'luzDoDia', name: 'Luz do Dia', level: 3, school: 'evocação', fonte: 'srd',
@@ -979,12 +979,12 @@ export const SPELLS = {
   luzesDancantes: {
     id: 'luzesDancantes', name: 'Luzes Dançantes', level: 0, school: 'evocação', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 120, kind: 'utilidade', concentration: true, duracaoMin: 1,
-    desc: 'Até quatro luzinhas flutuam ao seu redor, fraquinhas: luz clara em 3 m e penumbra por mais 3 m, por 1 minuto. Concentração. (Simplificação: no jogo as luzes acompanham quem conjurou, sem mover-se à parte. Só fora de combate; no escuro, vale como uma tocha pequena que não ocupa a mão.)',
+    desc: 'Até quatro luzinhas flutuam ao seu redor, fraquinhas: cada uma emite só penumbra num raio de 3 m, por 1 minuto. Concentração. (Simplificação: no jogo as luzes acompanham quem conjurou, sem mover-se à parte. Só fora de combate; no escuro, vale como uma tocha pequena que não ocupa a mão.)',
   },
   mensagem: {
     id: 'mensagem', name: 'Mensagem', level: 0, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 120, kind: 'utilidade', duracaoMin: 1,
-    desc: 'Você sussurra e só a criatura que você aponta, a até 36 m, ouve — mesmo atrás de uma porta ou parede fina. Ela pode responder em sussurro. No jogo, deixa conversar com um NPC que está longe demais para a voz normal. Só fora de combate.',
+    desc: 'Você sussurra e só a criatura que você aponta, a até 36 m, ouve — mesmo atrás de uma porta ou parede fina. Ela pode responder em sussurro. (Simplificação: o livro dura 1 rodada; no jogo dura 1 minuto, o tempo de uma conversa curta, e deixa conversar com um NPC longe demais para a voz normal. Só fora de combate.)',
   },
   detectarMagia: {
     id: 'detectarMagia', name: 'Detectar Magia', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
@@ -1004,12 +1004,12 @@ export const SPELLS = {
   disfarcarSe: {
     id: 'disfarcarSe', name: 'Disfarçar-se', level: 1, school: 'ilusão', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 60,
-    desc: 'Por 1 hora você muda a própria aparência (altura, rosto, roupa) sem mudar o corpo: quem toca descobre. Quem examina faz Investigação contra a sua CD de magia. No jogo, vale como o manto vermelho: passa por um dos Marcarrubra para quem não olha direito, e dá vantagem em Enganação nas conversas. Só fora de combate.',
+    desc: 'Por 1 hora você muda a própria aparência (altura, rosto, roupa) sem mudar o corpo: quem toca descobre. Quem examina faz Investigação contra a sua CD de magia. (No jogo, vale como o manto vermelho: passa por um dos Marcarrubra para quem não olha direito, e, como regra da casa, dá vantagem em Enganação nas conversas. Só fora de combate.)',
   },
   falarComAnimais: {
     id: 'falarComAnimais', name: 'Falar com Animais', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 10,
-    desc: 'Por 10 minutos você entende o que os bichos dizem e pode falar com eles. Eles sabem pouco além do que cheiram e veem, e nem sempre simpatizam com você. No jogo, dá vantagem em Lidar com Animais e deixa ouvir o que a fera sabe. Pode ser ritual. Só fora de combate.',
+    desc: 'Por 10 minutos você entende o que os bichos dizem e pode falar com eles. Eles sabem pouco além do que cheiram e veem, e nem sempre simpatizam com você. (Regra da casa: dá vantagem em Lidar com Animais e deixa ouvir o que a fera sabe.) Pode ser ritual. Só fora de combate.',
   },
   abrir: {
     id: 'abrir', name: 'Abrir', level: 2, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
@@ -1019,7 +1019,7 @@ export const SPELLS = {
   detectarPensamentos: {
     id: 'detectarPensamentos', name: 'Detectar Pensamentos', level: 2, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 30, kind: 'utilidade', concentration: true, duracaoMin: 1,
-    desc: 'Por 1 minuto você ouve os pensamentos de superfície das criaturas a até 9 m (que o entendam). Dá para sondar uma criatura: ela faz CD de SAB para impedir (e percebe a invasão). No jogo, nas conversas aparece a opção de sondar a mente do NPC. Concentração. Só fora de combate.',
+    desc: 'Por 1 minuto você ouve os pensamentos de superfície das criaturas a até 9 m (que o entendam). Dá para sondar uma criatura: ela faz CD de SAB para impedir; se passa, percebe a invasão e a magia termina. Quem falha também percebe que lhe leram a mente. Não funciona em criatura com Inteligência 3 ou menos, nem em quem não fala idioma nenhum. (Regra da casa: depois de sondar, o que você descobre dá vantagem em Persuasão e Enganação com ela.) No jogo, nas conversas aparece a opção de sondar a mente do NPC. Concentração. Só fora de combate.',
   },
   verOInvisivel: {
     id: 'verOInvisivel', name: 'Ver o Invisível', level: 2, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,

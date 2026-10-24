@@ -32,6 +32,32 @@ export const HUMANOIDES = {
 
   // --- bandidos -------------------------------------------------------------
 
+  // Batedores do bando do Cume da Wyvern (Parte 3): andam pela Trilha
+  // Triboar atrás de viajantes. Bloco do SRD 5.1; a Agressividade (ação
+  // bônus para avançar até o inimigo) ainda não é jogada pelo motor.
+  orc: {
+    id: 'orc',
+    name: 'Orc',
+    look: 'orc',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 2,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 16, dex: 12, con: 16, int: 7, wis: 11, cha: 10 },
+    ac: 13,
+    acNote: 'armadura de couro cru',
+    maxHp: 15,
+    speedFt: 30,
+    senses: { darkvisionFt: 60 },
+    skills: ['intimidacao'],
+    attacks: [
+      { name: 'Machado grande', bonus: 5, damage: '1d12+3', type: 'cortante', reachFt: 5, art: 'axe' },
+      { name: 'Azagaia', bonus: 5, damage: '1d6+3', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
+    ],
+    blurb: 'Bate forte com o machado grande (1d12+3) e arremessa azagaias de longe. Pouca CA, muitos PV.',
+  },
+
   bandido: {
     id: 'bandido',
     name: 'Bandido',
@@ -302,6 +328,34 @@ export const HUMANOIDES = {
     },
     traits: ['conjuracao'],
     blurb: 'Abre com armadura arcana, cola em quem chega perto com imobilizar e chove mísseis de longe; com 8 PV ou menos e sem saída, se rende.',
+  },
+
+  // O MAGO VERMELHO DO POÇO DA CORUJA VELHA (Parte 3). Bloco NOSSO
+  // (`fonte: 'propria'`): um necromante que prefere negociar a lutar, com os
+  // zumbis na frente. Nível 4 dá +2 de proficiência: CD 13 e +5 nas magias.
+  hamunKost: {
+    id: 'hamunKost',
+    name: 'Hamun Kost',
+    look: 'hamunKost',
+    fonte: 'propria',
+    size: 'médio',
+    level: 4,
+    cr: '1',
+    xp: 200,
+    abilities: { str: 10, dex: 12, con: 14, int: 16, wis: 13, cha: 11 },
+    ac: 12,
+    acNote: 'manto de mago',
+    maxHp: 27,
+    speedFt: 30,
+    saves: ['int', 'wis'],
+    skills: ['arcanismo', 'historia'],
+    attacks: [
+      { name: 'Adaga', bonus: 3, damage: '1d4+1', type: 'perfurante', reachFt: 5, art: 'dagger' },
+      // O truque que o motor sabe usar por monstro.
+      { name: 'Toque Arrepiante', bonus: 5, damage: '1d8', type: 'necrótico', ranged: true, rangeFt: 120, longRangeFt: 120, art: 'bow' },
+    ],
+    traits: ['conjuracao'],
+    blurb: 'Fica atrás dos zumbis e gela de longe com o toque arrepiante. Fala antes de lutar: basta alguém responder.',
   },
 
   acolito: {

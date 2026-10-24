@@ -2,6 +2,10 @@
 // o dinheiro e o diário de missões. Clicar num lugar abre a cena dele
 // (`game/phandalin.js`).
 //
+// A mesma tela serve ao mapa da REGIÃO (`game/regiao.js`): outra pintura,
+// outra proporção, outro título e outros botões (`o.pintura`, `o.proporcao`,
+// `o.titulo`, `o.botoes`).
+//
 // O MAPA é a pintura da vila (OpenArt, `art/vila/phandalin.webp`), fora do
 // tabuleiro como combinado. Os marcadores ficam em % dela, por cima.
 
@@ -31,11 +35,13 @@ export function abrirTelaVila(root, o) {
 
   // A pintura e os marcadores dentro de uma moldura com a proporção dela, para
   // a % dos marcadores cair sempre no mesmo prédio, qualquer que seja a tela.
-  const quadro = el('div', { class: 'vila-quadro', style: { backgroundImage: `url(${pintura})` } });
+  const quadro = el('div', { class: 'vila-quadro', style: { backgroundImage: `url(${o.pintura ?? pintura})` } });
+  // Propriedade personalizada só entra por setProperty.
+  if (o.proporcao) quadro.style.setProperty('--proporcao', o.proporcao);
   const mapa = el('div', { class: 'vila-mapa' }, quadro);
   for (const l of o.lugares) {
     const b = el('button', {
-      class: 'vila-pino',
+      class: `vila-pino${l.cidade ? ' cidade' : ''}`,
       style: { left: `${l.x}%`, top: `${l.y}%` },
       title: l.nome,
       onclick: () => { audio.play('click'); o.onLugar(l); },
@@ -63,13 +69,14 @@ export function abrirTelaVila(root, o) {
     diario.hidden = false;
   };
 
-  const caixa = el('div', { class: 'vila' },
+  const caixa = el('div', { class: `vila${o.classe ? ` ${o.classe}` : ''}` },
     el('header', { class: 'vila-topo' },
-      el('h2', {}, 'Phandalin'), momento, dinheiro,
+      el('h2', {}, o.titulo ?? 'Phandalin'), momento, dinheiro,
       el('div', { class: 'vila-acoes' },
+        ...(o.botoes ?? []).map((b) => el('button', { class: 'vila-btn', title: b.dica ?? '', onclick: b.fazer }, b.rotulo)),
         el('button', { class: 'vila-btn', onclick: abrirDiario }, 'Diário'),
         el('button', { class: 'vila-btn', title: 'Ficha e inventário (vestir, guardar)', onclick: () => o.onFicha?.(o.grupo.find((c) => !c.dead)) }, 'Ficha'),
-        el('button', { class: 'vila-btn', onclick: () => o.onDormir() }, 'Dormir'),
+        ...(o.onDormir ? [el('button', { class: 'vila-btn', onclick: () => o.onDormir() }, 'Dormir')] : []),
         el('button', { class: 'vila-btn discreto', onclick: () => o.onMenu() }, 'Menu'))),
     el('div', { class: 'vila-corpo' }, mapa, el('aside', { class: 'vila-lado' }, grupo, log)),
     diario);
@@ -80,6 +87,8 @@ export function abrirTelaVila(root, o) {
     momento.textContent = o.momento();
     dinheiro.textContent = moedas(o.dinheiro());
     for (const l of o.lugares) {
+      // Na região, lugar que o grupo ainda não conhece nem aparece.
+      pinos.get(l.id).hidden = o.visivel ? !o.visivel(l) : false;
       pinos.get(l.id).classList.toggle('fechado', !o.aberto(l));
       pinos.get(l.id).classList.toggle('novidade', Boolean(o.novidade?.(l)));
     }

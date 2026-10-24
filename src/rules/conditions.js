@@ -413,7 +413,7 @@ export const CONDITIONS = {
   // Luzes Dançantes (truque): as luzinhas acompanham quem conjurou, mais fracas que uma tocha (`luz.js`).
   luzesDancantes: {
     name: 'Luzes Dançantes',
-    desc: 'Luzinhas flutuam junto de você: luz clara em 3 m e penumbra por mais 3 m.',
+    desc: 'Luzinhas flutuam junto de você: penumbra num raio de 3 m, só isso.',
     concentrationEffect: true,
   },
   // Orientação (truque): 1d4 no próximo teste de atributo, e acaba.

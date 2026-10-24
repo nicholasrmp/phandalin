@@ -55,9 +55,12 @@
 }
 .vila-quadro {
   position: relative;
-  aspect-ratio: 1264 / 848;
+  /* A proporção da pintura: a vila (1264 x 848) por padrão; a região passa
+     a dela em `--proporcao`. */
+  --proporcao: calc(1264 / 848);
+  aspect-ratio: var(--proporcao);
   container: quadro / inline-size;
-  width: min(100cqw, 100cqh * 1264 / 848);
+  width: min(100cqw, 100cqh * var(--proporcao));
   background: center / 100% 100% no-repeat;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 0 40px rgba(0, 0, 0, .5) inset;
 }
@@ -87,6 +90,9 @@
 }
 .vila-pino:hover span, .vila-pino:focus-visible span { background: #fff4d8; outline: none; }
 .vila-pino.fechado { opacity: .5; }
+.vila-pino[hidden] { display: none; }
+/* Região: cidade grande, fora desta aventura — marcador cinza, só de referência. */
+.vila-pino.cidade i { background: linear-gradient(135deg, #c8c2b4, #7d776c); }
 /* Alguém ali tem algo para o grupo: um "!" dourado em cima do marcador. */
 .vila-pino.novidade::before {
   content: '!';
@@ -159,3 +165,11 @@
 .vila-diario li.feita strong { text-decoration: line-through; color: var(--muted); }
 .vila-diario p { margin: 2px 0; font-size: 13px; }
 @media (max-width: 720px) { .vila-diario { inset: 4%; } }
+
+/* A região: poucos marcadores, então o nome fica sempre à vista. Lugar ainda
+   não jogável diz "em breve"; cidade grande, nada. */
+@container quadro (max-width: 900px) {
+  .regiao .vila-pino span { display: block; font-size: 11px; }
+}
+.regiao .vila-pino.fechado span::after { content: ' · em breve'; }
+.regiao .vila-pino.cidade span::after { content: ''; }

@@ -118,11 +118,18 @@ export function abrirMenuContexto(root, { x, y, titulo, subtitulo = null, alvo =
     corpo.append(b);
   }
 
-  caixa.append(cabecalho({ titulo, subtitulo, alvo }), corpo);
+  // A rolagem do corpo ganha uma sombra no pé enquanto houver itens abaixo.
+  const rolagem = el('div', { class: 'menu-ctx-rolagem' }, corpo);
+  const sombra = () => {
+    const mais = corpo.scrollHeight - corpo.scrollTop - corpo.clientHeight > 4;
+    if (mais) rolagem.setAttribute('data-mais', ''); else rolagem.removeAttribute('data-mais');
+  };
+  corpo.addEventListener('scroll', sombra);
+  caixa.append(cabecalho({ titulo, subtitulo, alvo }), rolagem);
   // Fixa e estreita ANTES de medir: se a folha de estilo ainda não valer, a
   // caixa sairia no fluxo da página, larga como a janela, e a conta abaixo a
   // jogaria no canto de cima.
-  Object.assign(caixa.style, { position: 'fixed', left: '0px', top: '0px', maxWidth: '280px' });
+  Object.assign(caixa.style, { position: 'fixed', left: '0px', top: '0px', maxWidth: Number.isFinite(x) ? '280px' : '340px' });
   caixa.addEventListener('mouseleave', () => aoPrevia?.(null));
   root.append(caixa);
 
@@ -139,6 +146,7 @@ export function abrirMenuContexto(root, { x, y, titulo, subtitulo = null, alvo =
     const left = direita ? px + 18 : px - 18 - r.width;
     caixa.style.left = `${Math.max(8, Math.min(left, innerWidth - r.width - 8))}px`;
     caixa.style.top = `${Math.max(8, Math.min(py - 24, innerHeight - r.height - 8))}px`;
+    sombra();
   };
   posicionar();
   requestAnimationFrame(posicionar);

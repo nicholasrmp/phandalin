@@ -11,6 +11,7 @@ import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { MAPA_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
+import { MAPA_POCO } from './poco.js';
 
 // '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura · '1'..'9' elevação
 //
@@ -183,6 +184,29 @@ const PREDIOS_RUA = [
   { tipo: 'casa', x: 14, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
 ];
 
+// O ERMO (Parte 3): a Trilha Triboar entre colinas, para os encontros do
+// caminho. A trilha corre de oeste a leste no meio; pedras e moitas dão
+// cobertura dos dois lados, e uns poucos carvalhos fecham os cantos. De
+// noite é o mesmo chão, com a fogueira do acampamento no meio da trilha.
+export const MAPA_ERMO = [
+  'TT,,,,,,,,,,,,,,,,,,TT',
+  'T,,,,b,,,,,,,,,r,,,,,T',
+  ',,,,,,,,,,r,,,,,,,,,,,',
+  ',,r,,,,,,,,,,,,,,b,,,,',
+  ',,,,,,,,b,,,,,,,,,,,,,',
+  ',,,,,,,,,,,,,,,,,,,,,,',
+  '::::::::::::::::::::::',
+  '::::::::::::::::::::::',
+  ',,,,,,,,,,,,,,,,,,,,,,',
+  ',,,,b,,,,,,,,,,,r,,,,,',
+  ',,,,,,,,,,,,r,,,,,,,,,',
+  ',,,,,,,r,,,,,,,,,,b,,,',
+  ',,b,,,,,,,,,,,,,,,,,,,',
+  'T,,,,,,,,,,,b,,,,,,,,T',
+  'TT,,,,,,,,,,,,,,,,,,TT',
+];
+export const MAPA_ERMO_NOITE = MAPA_ERMO.map((l, y) => (y === 7 ? `${l.slice(0, 11)}F${l.slice(12)}` : l));
+
 /** O grupo escolta a carroça: logo à frente dela, na estrada, olhando para leste. */
 export const PARTY_SPOTS_EMBOSCADA = [
   { x: 5, y: 11 }, { x: 4, y: 12 }, { x: 4, y: 11 }, { x: 3, y: 13 },
@@ -216,6 +240,32 @@ export function mapaDo(variante = 'padrao') {
       grupo: [{ x: 3, y: 4 }, { x: 3, y: 6 }, { x: 2, y: 5 }, { x: 4, y: 5 }],
       olhar: { dx: 1, dy: 0 },
       cena: 'rua',
+    };
+  }
+  if (variante === 'poco') {
+    // O Poço da Coruja Velha: o grupo sobe a encosta pelo caminho antigo, do sul.
+    return {
+      ...MAPA_POCO,
+      objetos: [{ tipo: 'tenda', x: 8, y: 9, olha: { dx: 0, dy: 1 } }],
+      grupo: [{ x: 12, y: 20 }, { x: 13, y: 20 }, { x: 12, y: 21 }, { x: 13, y: 21 }],
+      olhar: { dx: 0, dy: -1 },
+      cena: 'poco',
+    };
+  }
+  if (variante === 'ermo' || variante === 'ermoNoite') {
+    // Encontro na Trilha Triboar. De dia o grupo vem andando pela trilha; de
+    // noite está em volta da fogueira, e o resto do mapa é breu.
+    const noite = variante === 'ermoNoite';
+    return {
+      terreno: noite ? MAPA_ERMO_NOITE : MAPA_ERMO,
+      altura: null,
+      objetos: [],
+      grupo: noite
+        ? [{ x: 10, y: 6 }, { x: 12, y: 6 }, { x: 10, y: 8 }, { x: 12, y: 8 }]
+        : [{ x: 9, y: 6 }, { x: 10, y: 7 }, { x: 8, y: 7 }, { x: 11, y: 6 }],
+      olhar: { dx: 1, dy: 0 },
+      cena: 'ermo',
+      ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 7 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
     };
   }
   if (variante === 'mansao' || variante === 'mansaoTunel') {
@@ -280,6 +330,8 @@ export function mapaDo(variante = 'padrao') {
  *   recurso estragaria um equilíbrio que foi medido. Chega por `?encontro=`.
  */
 export function buildFoes(variante = 'padrao') {
+  // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
+  if (variante === 'ermo' || variante === 'ermoNoite' || variante === 'poco') return [];
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
@@ -535,7 +587,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel'].includes(variante)) return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

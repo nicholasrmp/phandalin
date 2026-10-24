@@ -33,7 +33,7 @@ import { podeVer } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
 import {
   UTIL, TRUQUES, estadoDe, conjurarFora, podeConjurarFora, ativaDe, ativasDoGrupo, avancar, relogioTexto,
-  magiasForaDoHeroi, circuloTexto, sondarMente, falaPorMensagem, chaveDoNpc, infoDoItem, tempoDeConjuracao,
+  magiasForaDoHeroi, sondarMente, motivoDeMortoMudo, falaPorMensagem, chaveDoNpc, infoDoItem, tempoDeConjuracao,
 } from '../rules/utilidade.js';
 import { PENSAMENTOS, MORTOS, MUDOS, ANIMAIS, eAnimal } from './magias-fora-dados.js';
 import { itemDeId } from '../rules/equipment.js';
@@ -84,7 +84,7 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
       break;
     case 'enfeiticarPessoa':
       t.push(res.resistiu
-        ? `${alvo.name} resiste (SAB ${res.resistencia.total} contra CD ${dc}). Ele percebe que alguém tentou enfeitiçá-lo.`
+        ? `${alvo.name} resiste (SAB ${res.resistencia.total} contra CD ${dc}). A magia não pega, e ele só desconfia.`
         : `${alvo.name} falha (SAB ${res.resistencia.total} contra CD ${dc}): trata ${c.name} como um velho conhecido. Vantagem nos testes de Carisma com ele por ${dura(id)}; depois, ele saberá.`);
       break;
     case 'ilusaoMenor': t.push(`${c.name} desenha no ar uma imagem de coisa pequena (um caixote, uma pedra) e um ruído que distrai. Por 1 minuto, vantagem em Enganação.`); break;
@@ -112,7 +112,7 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
       break;
     }
     case 'consertar': break;
-    case 'luzesDancantes': t.push(`Quatro luzinhas começam a girar em volta de ${c.name}: luz clara em 3 m e penumbra por mais 3, por 1 minuto (concentração).`); break;
+    case 'luzesDancantes': t.push(`Quatro luzinhas começam a girar em volta de ${c.name}: cada uma só em penumbra num raio de 3 m, por 1 minuto (concentração).`); break;
     case 'mensagem': t.push(`${c.name} cobre a boca e sussurra: o som viaja até ${nome} e só ele ouve. Por 1 minuto ele pode responder baixinho, a até 36 m.`); break;
     case 'detectarMagia': {
       t.push(`${c.name} fecha os olhos e abre uma segunda visão: por 10 minutos, o que é mágico a até 9 m brilha, com a cor da sua escola.`);
@@ -144,7 +144,7 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
 export function lancar(x, c, spellId, opts = {}) {
   const { estado, rng } = x;
   const herois = x.herois();
-  const r = conjurarFora(estado, c, spellId, { herois, rng, ...opts });
+  const r = conjurarFora(estado, c, spellId, { herois, rng, enc: x.enc, ...opts });
   if (!r.ok) return { r, texto: [r.why] };
   const texto = contar(x, c, r, opts);
   x.say(`${c.name} conjura ${r.spell.name}${opts.ritual ? ' (ritual)' : ''}${r.circulo > 0 && !opts.ritual ? `, ${r.circulo}º círculo` : ''}.`);
@@ -227,8 +227,8 @@ export async function escolherEConjurar(app, c, spellId) {
     if (!a) return null;
     opts.alvo = a;
   } else if (u.alvo === 'morto') {
-    const cand = (app.enc?.combatants ?? []).filter((m) => m.dead && distanceFt(c.pos, m.pos) <= spell.rangeFt);
-    if (!cand.length) { app.refuse?.(c, 'nenhum cadáver ao alcance (3 m)'); return null; }
+    const cand = (app.enc?.combatants ?? []).filter((m) => m.dead && distanceFt(c.pos, m.pos) <= spell.rangeFt && !motivoDeMortoMudo(m));
+    if (!cand.length) { app.refuse?.(c, 'nenhum cadáver ao alcance (3 m) que ainda possa responder'); return null; }
     const a = await escolher(app, spell.name, 'Qual corpo?', cand.map((m) => ({ rotulo: m.name, valor: m })));
     if (!a) return null;
     opts.alvo = a;
@@ -265,6 +265,39 @@ export async function escolherEConjurar(app, c, spellId) {
 
 // -------------------------------------------------------------- menu ----
 
+/**
+ * O detalhe de uma linha de magia: `custo · duração · ◎ concentração`.
+ * Custo: "truque", "1 espaço de 2º (restam 3)" ou "ritual, 10 min, sem espaço".
+ */
+export function detalheDeMagia(c, s, { ritual = false } = {}) {
+  const u = UTIL[s.id];
+  const pode = podeConjurarFora(c, s.id, ritual ? { ritual: true } : {});
+  let custo;
+  if (ritual) custo = 'ritual, 10 min, sem espaço';
+  else if (s.level === 0) custo = 'truque';
+  else {
+    const n = pode.ok ? pode.circulo : s.level;
+    custo = `1 espaço de ${n}º (restam ${c.spellcasting?.slots?.[n] ?? 0})`;
+  }
+  const tempo = tempoDeConjuracao(s.id, { ritual });
+  return [custo, u.min ? dura(s.id) : (tempo && !ritual ? `leva ${tempo} min` : null), u.conc ? '◎ concentração' : null].filter(Boolean).join(' · ');
+}
+
+/**
+ * Ordena as linhas de magia: o que dá para fazer agora primeiro, depois as
+ * recusadas; "esperar" no fim; os rituais num bloco à parte, sob o subtítulo.
+ */
+export const GRUPO_RITUAIS = 'Rituais (10 min, sem espaço)';
+function organizar(ops) {
+  const nivel = (o) => o.circulo ?? 0;
+  const ordem = (a, b) => (Boolean(a.motivo) - Boolean(b.motivo)) || nivel(a) - nivel(b) || String(a.rotulo).localeCompare(String(b.rotulo), 'pt-BR');
+  const magias = ops.filter((o) => o.grupo === 'Magias de utilidade' && !o.ritual && !o.fixo).sort(ordem);
+  const fim = ops.filter((o) => o.fixo);
+  const rituais = ops.filter((o) => o.ritual).sort(ordem).map((o) => ({ ...o, grupo: GRUPO_RITUAIS }));
+  const resto = ops.filter((o) => o.grupo !== 'Magias de utilidade' && !o.ritual && !o.fixo);
+  return [...magias, ...fim, ...rituais, ...resto];
+}
+
 const icone = (s) => iconeDeMagia(s);
 
 /**
@@ -279,11 +312,10 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
   const linha = (s, extra = {}) => {
     const u = UTIL[s.id];
     const pode = podeConjurarFora(c, s.id, extra.ritual ? { ritual: true } : {});
-    const tempo = tempoDeConjuracao(s.id, { ritual: Boolean(extra.ritual) });
     return {
       grupo: 'Magias de utilidade', rotulo: `${s.name}${extra.ritual ? ' (ritual)' : ''}`,
       icone: icone(s), circulo: s.level, motivo: extra.motivo ?? (pode.ok ? null : pode.why),
-      detalhe: [extra.ritual ? '10 min, sem espaço' : s.level === 0 ? 'truque' : circuloTexto(s), u.min ? dura(s.id) : null, tempo && !extra.ritual ? `${tempo} min` : null].filter(Boolean).join(' · '),
+      detalhe: detalheDeMagia(c, s, { ritual: Boolean(extra.ritual) }),
       alvoPrevia: extra.previa ?? null,
       fazer: extra.fazer,
     };
@@ -301,7 +333,7 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
       const longe = c.pos && occ.pos && distanceFt(c.pos, occ.pos) > alc ? `longe demais — ${alc} pés` : null;
       const abre = async (opcao = null) => conjurarComTela(app, c, s.id, { alvo: occ, opcao });
       ops.push(linha(s, {
-        motivo: longe ?? (podeConjurarFora(c, s.id).ok ? null : podeConjurarFora(c, s.id).why),
+        motivo: longe ?? (alvoMorto ? motivoDeMortoMudo(occ) : null) ?? (podeConjurarFora(c, s.id).ok ? null : podeConjurarFora(c, s.id).why),
         previa: occ,
         fazer: async () => {
           if (s.id === 'mensagem') {
@@ -322,8 +354,7 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
     if (vivo && eAnimal(occ) && occ.side !== 'party' && ativaDe(x.estado, x.herois(), 'falarComAnimais')) {
       ops.push({ grupo: 'Magias de utilidade', rotulo: 'Falar com o animal', icone: 'magia-falarComAnimais', detalhe: 'Falar com Animais', fazer: () => conversarComAnimal(app, c, occ) });
     }
-    // Falar com os Mortos, já feita: as perguntas que sobraram.
-    return ops;
+    return organizar(ops);
   }
 
   // Casa vazia ou objeto: os ganchos da cena nesta casa.
@@ -339,12 +370,12 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
       const det = ativaDe(x.estado, x.herois(), 'detectarMagia');
       const dono = det && x.herois().find((h) => h.id === det.por);
       if (dono && distanceFt(dono.pos, g) <= 30) {
-        ops.push({ grupo: 'Magias de utilidade', rotulo: 'Ler a aura', icone: 'magia-detectarMagia', detalhe: `${g.nome} · ${g.aura.escola}`,
+        ops.push({ grupo: 'Magias de utilidade', rotulo: 'Ler a aura (Detectar Magia)', icone: 'magia-detectarMagia', detalhe: g.nome,
           fazer: () => app.mostrarTexto(g.nome, [`Aura de ${g.aura.escola}.`, g.aura.texto]) });
       }
     }
   }
-  return ops;
+  return organizar(ops);
 }
 
 /** As linhas do menu quando se clica no PRÓPRIO herói (ou num aliado): auto-alvo e área. */
@@ -362,11 +393,10 @@ export function opcoesDoHeroi(app, c, alvo) {
     if (s.ritual && podeConjurarFora(c, s.id, { ritual: true }).ok) variantes.push({ ritual: true });
     for (const v of variantes) {
       const pode = podeConjurarFora(c, s.id, v);
-      const tempo = tempoDeConjuracao(s.id, { ritual: v.ritual });
       ops.push({
         grupo: 'Magias de utilidade', rotulo: `${s.name}${v.ritual ? ' (ritual)' : ''}`, icone: icone(s), circulo: s.level,
         motivo: pode.ok ? null : pode.why,
-        detalhe: [v.ritual ? '10 min, sem espaço' : s.level === 0 ? 'truque' : circuloTexto(s), u.min ? dura(s.id) : null, tempo && !v.ritual ? `${tempo} min` : null].filter(Boolean).join(' · '),
+        detalhe: detalheDeMagia(c, s, { ritual: v.ritual }), ritual: v.ritual,
         fazer: () => (u.alvo === 'item' || u.alvo === 'escolha' || u.escolhe
           ? escolherEConjurar(app, c, s.id)
           : conjurarComTela(app, c, s.id, { ritual: v.ritual })),
@@ -377,11 +407,11 @@ export function opcoesDoHeroi(app, c, alvo) {
   const ativas = ativasDoGrupo(x.estado, x.herois());
   if (ativas.length || x.estado.minutos > 0) {
     ops.push({
-      grupo: 'Magias de utilidade', rotulo: 'Esperar 10 minutos', icone: 'acao-esperar', detalhe: ativas.length ? `${ativas.length} magia(s) ativa(s) · ${relogioTexto(x.estado)}` : relogioTexto(x.estado),
+      grupo: 'Magias de utilidade', fixo: true, rotulo: 'Esperar 10 minutos', icone: 'acao-esperar', detalhe: ativas.length ? `${ativas.length} magia(s) ativa(s) · ${relogioTexto(x.estado)}` : relogioTexto(x.estado),
       fazer: () => esperar(app, 10),
     });
   }
-  return ops;
+  return organizar(ops);
 }
 
 /** O tempo passa sem fazer nada: as magias de duração correm. */
@@ -423,8 +453,9 @@ export function sondar(x, c, npc, noId = null, noPensa = null) {
   const r = sondarMente(x.estado, x.herois(), c, npc, x.rng);
   if (!r.ok) return [r.why];
   if (r.jaFechada) return [`${npc.name} fechou a mente: só um zumbido surdo.`];
-  if (r.percebeu) return [`${npc.name} estremece e franze a testa, como quem sentiu uma mão na nuca. A mente dele se fecha. (SAB ${r.resistencia.total} contra CD ${r.resistencia.dc}.)`];
+  if (r.percebeu) return [`${npc.name} estremece e franze a testa, como quem sentiu uma mão na nuca. A mente dele se fecha e a magia termina. (SAB ${r.resistencia.total} contra CD ${r.resistencia.dc}.)`];
   const t = [`Pensamentos de ${npc.name}: ${pensamentoDe(npc, noId, noPensa)}`];
+  if (!r.jaLida) t.push(`${npc.name} não resistiu, mas sente que alguém lhe lê a mente.`);
   if (!r.jaLida) t.push(`Sabendo o que ele quer ouvir, os testes de Persuasão e de Enganação com ele passam a ter vantagem.`);
   x.say(`${c.name} lê a mente de ${npc.name}.`);
   return t;
@@ -494,7 +525,7 @@ export async function conjurarNaConversa(app, x, npc) {
   const cand = magiasNaConversa(x, npc);
   const itens = cand.map(({ h, s }) => {
     const pode = podeConjurarFora(h, s.id);
-    return { rotulo: `${s.name} — ${h.name}`, detalhe: s.level === 0 ? 'truque' : circuloTexto(s), motivo: pode.ok ? null : pode.why, valor: { h, s } };
+    return { rotulo: `${s.name}${s.id === 'aprimorarAtributo' ? ' (Esplendor da Águia)' : ''} — ${h.name}`, detalhe: detalheDeMagia(h, s), motivo: pode.ok ? null : pode.why, valor: { h, s } };
   });
   const r = await escolher(app, 'Conjurar', 'Quem conjura o quê? Gasta espaço de verdade e o tempo passa.', itens);
   if (!r) return null;
