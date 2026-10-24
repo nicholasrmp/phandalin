@@ -136,6 +136,14 @@ GRUPOS = {
         'quadros': {'todas': [0, 1, 2, 3, 9]},
         'ancora': 'base',
     },
+    # O poco velho do Poco da Coruja Velha: os de armacao e balde, inteiros.
+    # Fora os de cipo (2, 4, 10), o de telhadinho (6), o sem armacao (12) e
+    # os de tampa ou tabua (5, 8, 13, 14, 15).
+    'pocoVelho': {
+        'pasta': 'pocoVelho/72b3fdb1-a2f7-4f03-b90f-840fe6d5e556',
+        'quadros': {'todas': [0, 1, 3, 7, 9, 11]},
+        'ancora': 'base',
+    },
     # O bau: os de madeira com cinta de ferro. Fora os dourados (3, 6, 15),
     # o de corrente (8) e o de tabuas cruzadas (5).
     'bau': {
@@ -167,6 +175,8 @@ DIRIGIDOS = {
                'cores': {'#8f7a3e': '#66572c', '#6e5a2c': '#4c3e1f', '#b39d5c': '#85733f'}},
     'casa-b': {'pasta': 'casa-b/b991eb38-97fc-48fa-b31c-1d74a61e2e46', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
     'taverna': {'pasta': 'taverna/e672b189-bc57-474d-ae3c-db375a0c3da5', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
+    # A tenda do Mago Vermelho no Poco da Coruja Velha: pegada de 2 x 2.
+    'tenda': {'pasta': 'tenda/87bd764f-d760-4411-b99c-ce86c8a5afa6', 'meia_pegada': 24, 'direcoes': DIAGONAIS},
 }
 
 # O cavalo B e o mesmo desenho com a pelagem trocada, cor por cor exata: baio

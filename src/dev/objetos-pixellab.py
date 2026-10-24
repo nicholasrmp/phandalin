@@ -180,6 +180,23 @@ PRO_FLASH['taverna'] = {
     'target_palette': {'colors': PEDRA + REBOCO + MADEIRA[:3] + ['#2c3038', '#434a55', '#5c6470', '#f0a030']},
 }
 
+# O Poco da Coruja Velha: a tenda do Mago Vermelho (pegada 2 x 2; tem porta
+# de um lado, por isso oito vistas).
+PRO_FLASH['tenda'] = {
+    'description': (
+        'The tent FILLS THE WHOLE CANVAS WIDTH, edge to edge. Colorful striped canvas pavilion tent '
+        'of a wealthy traveling wizard for an isometric tactical RPG, square footprint, red and '
+        'ochre vertical stripes, peaked roof on a central pole with a small pennant, guy ropes and '
+        'wooden stakes, one front flap tied open showing a dark interior. About 60 px tall. No '
+        'ground, no people. Dark brown selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 128, 'height': 128},
+    'n_directions': 8,
+    'seed': 20261110,
+    'target_palette': {'colors': ['#561010', '#8a1e1e', '#b8402c', '#d4a63c', '#e8c870', '#f2e2b0',
+                                  '#3e2a1b', '#5e4029', '#85603d', '#968a6c', '#1a1414']},
+}
+
 CONJUNTOS = {
     'arvore': {
         'description': (
@@ -387,6 +404,19 @@ CONJUNTOS = {
         'item_descriptions': ['sarcophagus, carved robed figure on the lid', 'sarcophagus with a cracked lid',
                               'sarcophagus with moss on the corners', 'sarcophagus with a plain lid and runes'],
         'target_palette': {'colors': GRANITO + ['#4a7236', '#33572e']},
+    },
+    # O poco velho do patio do Poco da Coruja Velha.
+    'pocoVelho': {
+        'description': (
+            'Old round stone well for an isometric tactical RPG ruin, low weathered stone ring wall '
+            'about 40 px wide and 22 px tall, a simple wooden crossbeam frame with a rope and a new '
+            'wooden bucket, dark water deep inside, looks the same from all sides, sitting on the '
+            'bottom of the canvas. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['old stone well with a wooden frame and bucket', 'old stone well, a few stones missing',
+                              'old stone well with moss at the base', 'old stone well, bucket resting on the rim'],
+        'target_palette': {'colors': GRANITO + MADEIRA[:4] + ['#17313a', '#4a7236']},
     },
     # O bau do tesouro do bando.
     'bau': {

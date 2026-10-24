@@ -354,8 +354,7 @@ export const HUMANOIDES = {
       // O truque que o motor sabe usar por monstro.
       { name: 'Toque Arrepiante', bonus: 5, damage: '1d8', type: 'necrótico', ranged: true, rangeFt: 120, longRangeFt: 120, art: 'bow' },
     ],
-    traits: ['conjuracao'],
-    blurb: 'Fica atrás dos zumbis e gela de longe com o toque arrepiante. Fala antes de lutar: basta alguém responder.',
+    blurb: 'Prefere conversar: basta alguém responder e ele segura os mortos. Se a conversa falha, apunhala quem chega perto.',
   },
 
   acolito: {

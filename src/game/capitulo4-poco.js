@@ -2,6 +2,10 @@
 //
 // As REGRAS seguem o livro; o TEXTO é nosso:
 //   - doze zumbis esperam dentro da base da torre, sem ser vistos de fora.
+//     Saem pela porta, que tem uma casa de largura: três de início e mais
+//     dois a cada três rodadas (decisão nossa, medida pelo revisor de
+//     encontro: os doze de uma vez matavam o grupo inteiro de nível 3 em uma
+//     luta de cada quatro). Com o grupo abaixo do nível 3, a torre tem oito;
 //     Quem tem Percepção passiva 10 ou mais sente cheiro de morte vindo dela;
 //   - quando o grupo chega perto da torre ou da tenda, os zumbis saem, e o
 //     mago sai da tenda perguntando o que é aquilo;
@@ -26,6 +30,7 @@ import { makeMonster } from '../rules/monsters.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { POCO } from './poco.js';
+import { prepararLevas } from './levas.js';
 
 const MOVIMENTO = 60;
 const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
@@ -65,7 +70,17 @@ export function criarPoco(app, config) {
     }
   }
   const kost = ['morto', 'preso'].includes(salvo.kost) ? null : makeMonster('hamunKost', { x: 9, y: 11 });
-  if (kost) kost.facingVec = { dx: 0, dy: 1 };
+  if (kost) {
+    kost.facingVec = { dx: 0, dy: 1 };
+    // Com `falas`, o menu do botão direito oferece "Conversar" até no meio da
+    // luta: o livro diz que basta alguém falar com ele para ele segurar os mortos.
+    kost.falas = ['…'];
+  }
+  let levas = null;
+  const nivelMedio = () => {
+    const g = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+    return g.reduce((s, c) => s + (c.level ?? 1), 0) / Math.max(1, g.length);
+  };
 
   function prepararExploracao() {
     enc.over = false;
@@ -87,24 +102,39 @@ export function criarPoco(app, config) {
     app.refresh();
   }
 
-  /** Os zumbis saem da torre e o mago sai da tenda. */
-  function trazerTodos() {
-    for (const f of [...zumbis, kost].filter(Boolean)) {
-      if (enc.combatants.includes(f) || f.dead) continue;
-      f.side = 'foes';
-      if (enc.occupied(f.pos.x, f.pos.y)) f.pos = { ...f.pos, ...casaPerto(f.pos) };
-      enc.addCombatant(f);
-    }
-    // Os primeiros já estão na porta da torre, saindo para o pátio.
+  /** Os zumbis que esta torre tem para este grupo, os vencidos de fora. */
+  function daTorre() {
+    const total = Math.max(0, (nivelMedio() >= 3 ? 12 : 8) - (salvo.zumbisMortos ?? 0));
+    return zumbis.filter((z) => !z.dead).slice(0, total);
+  }
+
+  /** Os três primeiros saem da porta, e o mago sai da tenda. */
+  function trazerPrimeiros() {
     const porta = POCO.porta;
-    zumbis.slice(0, 4).forEach((z, i) => {
-      const p = casaPerto({ x: porta.x - 1, y: porta.y - 1 + i });
-      z.pos = { ...z.pos, x: p.x, y: p.y };
+    daTorre().slice(0, 3).forEach((z, i) => {
+      if (enc.combatants.includes(z)) return;
+      z.side = 'foes';
+      z.pos = { ...z.pos, ...casaPerto({ x: porta.x - 1, y: porta.y - 1 + i }) };
+      enc.addCombatant(z);
     });
+    if (kost && !kost.dead && !enc.combatants.includes(kost)) {
+      kost.pos = { ...kost.pos, ...casaPerto({ x: 9, y: 11 }) };
+      enc.addCombatant(kost);
+    }
   }
 
   function combate() {
-    trazerTodos();
+    trazerPrimeiros();
+    if (kost) kost.side = 'foes';
+    // O resto sai pela porta, dois de cada vez, a cada três rodadas.
+    const resto = daTorre().filter((z) => !enc.combatants.includes(z));
+    const ondas = [];
+    for (let i = 0; i < resto.length; i += 2) {
+      const units = resto.slice(i, i + 2);
+      for (const z of units) { z.side = 'foes'; z.pos = { ...z.pos, x: POCO.porta.x - 1, y: POCO.porta.y }; }
+      ondas.push({ rodada: 4 + (i / 2) * 3, units, aviso: 'Mais mortos arrastam os pés para fora da porta escura da torre.' });
+    }
+    levas = prepararLevas(enc, ondas);
     estado.explorando = false;
     estado.lutando = true;
     root.classList.remove('explorando');
@@ -133,7 +163,8 @@ export function criarPoco(app, config) {
   }
 
   async function despertar() {
-    trazerTodos();
+    trazerPrimeiros();
+    if (kost) kost.side = 'neutro';
     app.refresh();
     const r = await narrar(root, {
       formato: 'painel',
@@ -152,15 +183,21 @@ export function criarPoco(app, config) {
   }
 
   // ------------------------------------------------------ Hamun Kost ----
+  // As opções de uma vez só do Kost valem por conversa, não para sempre:
+  // quem recusou o trato numa visita pode aceitar na outra.
+  const esquecerUsadas = () => { if (camp.flags) delete camp.flags['dialogo:hamunKost:usadas']; };
+
   async function conversa() {
+    esquecerUsadas();
     const fim = await app.conversarCom(kost, arvoreKost());
     if (fim === 'luta') {
       await painel('— Que pena. Eu estava gostando da conversa. — Ele estala os dedos, e os mortos voltam a andar.');
-      kost.side = 'foes';
       combate();
       return;
     }
-    if (!salvo.kost) salvo.kost = 'paz';
+    // Fechar a conversa não decide nada: o mago espera na porta da tenda, e
+    // dá para falar com ele de novo.
+    if (fim === 'paz' && !salvo.kost) salvo.kost = 'paz';
     recolher();
     prepararExploracao();
   }
@@ -187,19 +224,20 @@ export function criarPoco(app, config) {
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         tatuagem: {
-          narra: 'O desenho na testa é um sinal de escola de magia — a dos que mexem com a morte. Necromancia.',
+          narra: 'Quem estudou um pouco de magia reconhece o traço: não é enfeite, é a marca de uma escola. E esta escola trata de cadáveres. Necromancia.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         nadaTatuagem: { narra: 'Um desenho escuro, anguloso. Pode ser qualquer coisa.', opcoes: [{ texto: '…', vai: 'oi' }] },
         manto: {
-          narra: 'Manto vermelho, cabeça raspada, tatuagem: é como se vestem os magos de Thay, uma terra muito a leste, governada por eles.',
+          narra: 'Vermelho dos pés à cabeça, crânio pelado, desenho na testa: é o uniforme dos magos de Thay. Lá longe, no leste, são eles que mandam — e não costumam viajar sem motivo.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         nadaManto: { narra: 'Um manto caro, de lã boa. Só isso.', opcoes: [{ texto: '…', vai: 'oi' }] },
         favor: {
           fala: [
             'Informação é mercadoria. Eu tenho, vocês querem. Façam-me um favor, e eu pago com o que sei.',
-            'Os orcs do Cume da Wyvern, ao sul daqui, rondam este acampamento. Tirem-nos de lá. Ou — mais simples — perguntem à banshee de Conyberry o nome do mago que ergueu esta torre. Eu não vou irritar uma banshee; vocês talvez tenham menos a perder.',
+            'Tem um bando de orcs no Cume da Wyvern, aqui ao sul. Já vieram farejar o meu pátio duas vezes; na terceira, alguém se machuca, e não quero que seja a minha lona. Livrem-me deles.',
+            'Ou então: a velha de Conyberry — a banshee — sabe o nome de quem ergueu esta torre. Eu precisaria desse nome. Mas não falo com mortos de mau humor. Vocês, pelo jeito, falam com qualquer um.',
           ],
           opcoes: [
             { texto: 'Combinado. Os dois, se der.', vai: 'acordo' },
@@ -213,8 +251,8 @@ export function criarPoco(app, config) {
             feitos.kostNegociou = true;
             (vila.missoes ??= {});
             vila.missoes.orcs ??= 'ativa';
-            vila.missoes.kost = 'ativa';
-            (vila.pistas ??= []).push('Hamun Kost, um Mago Vermelho de Thay, cava as ruínas do Poço da Coruja Velha com zumbis de guarda. Ele troca informação por um favor: tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre.');
+            vila.missoes.kost ??= 'ativa';
+            if (!(vila.pistas ??= []).some((p) => p.startsWith('Hamun Kost'))) vila.pistas.push('Hamun Kost, um Mago Vermelho de Thay, cava as ruínas do Poço da Coruja Velha com zumbis de guarda. Ele troca informação por um favor: tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre.');
           },
           fala: 'Ótimo. Gente prática. Voltem quando tiverem alguma coisa, e não tragam mais ninguém.',
           opcoes: [{ texto: '…', vai: 'volta' }],
@@ -222,6 +260,19 @@ export function criarPoco(app, config) {
         volta: {
           narra: 'Ele volta para a tenda. Os zumbis se arrastam de volta para o escuro da torre.',
           opcoes: [{ texto: '…', fim: 'paz' }],
+        },
+      },
+    };
+  }
+
+  function arvoreEmLuta() {
+    return {
+      inicio: 'oi',
+      nos: {
+        oi: {
+          narra: 'No meio da gritaria, alguém chama o mago pelo nome.',
+          fala: '— Ah, agora querem conversar? — Ele ergue a mão, e os mortos que ainda estão na porta param. — Falem. E falem rápido, que eles não têm paciência.',
+          opcoes: [{ texto: 'Segura esses mortos e conversamos.', fim: 'segura' }],
         },
       },
     };
@@ -261,6 +312,13 @@ export function criarPoco(app, config) {
     if (ev.type === 'died' && ev.target === kost) salvo.kost = 'morto';
   }
 
+  /** Falou com o Kost no meio da luta: a próxima leva demora mais duas rodadas. */
+  function segurar() {
+    if (!levas) return;
+    levas.atrasar(2);
+    enc.say('acao', 'Hamun Kost ergue a mão: os mortos na porta da torre param, esperando.');
+  }
+
   async function fimDoCombate(outcome) {
     if (outcome !== 'vitoria') {
       estado.encerrado = true;
@@ -269,6 +327,8 @@ export function criarPoco(app, config) {
       app.encerrarPartida();
       return;
     }
+    levas?.limpar();
+    levas = null;
     if (kost && !kost.dead && (kost.capturado || hasCondition(kost, 'inconsciente'))) salvo.kost = 'preso';
     const texto = [salvo.kost === 'preso'
       ? 'Hamun Kost está caído, amarrado com o próprio cinto. Os zumbis que sobraram desabam sem a vontade dele.'
@@ -326,14 +386,24 @@ export function criarPoco(app, config) {
     depoisDeMover,
     fimDoCombate,
     evento,
-    // Em paz, clicar no mago reabre a conversa (pela tela de diálogo do motor).
-    dialogoDe: (npc) => (npc === kost && ['acordo', 'paz'].includes(salvo.kost) ? arvoreKost() : null),
+    // Clicar no mago: em paz, a conversa inteira; no meio da luta, uma fala
+    // curta que segura a próxima leva de mortos por duas rodadas.
+    dialogoDe: (npc) => {
+      if (npc !== kost) return null;
+      if (estado.lutando) return arvoreEmLuta();
+      if (salvo.despertou && !['morto', 'preso'].includes(salvo.kost)) { esquecerUsadas(); return arvoreKost(); }
+      return null;
+    },
     depoisDaConversa: async (npc, fim) => {
-      if (npc !== kost || fim !== 'luta') return;
-      await painel('— Que pena. Eu estava gostando da conversa. — Ele estala os dedos, e os mortos voltam a andar.');
-      salvo.kost = null;
-      kost.side = 'foes';
-      combate();
+      if (npc !== kost) return;
+      if (estado.lutando) { if (fim === 'segura') segurar(); return; }
+      if (fim === 'luta') {
+        await painel('— Que pena. Eu estava gostando da conversa. — Ele estala os dedos, e os mortos voltam a andar.');
+        salvo.kost = null;
+        combate();
+      } else if (fim === 'paz' && !salvo.kost) {
+        salvo.kost = 'paz';
+      }
     },
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
@@ -348,7 +418,7 @@ export function criarPoco(app, config) {
       await narrar(root, { formato: 'painel', paginas: [{ titulo: 'O Poço da Coruja Velha', texto: [
         salvo.despertou
           ? 'O cume de sempre, o vento de sempre. A tenda vermelha continua no meio do pátio.'
-          : 'No alto de um cume comprido, o que foi uma torre de vigia: muros que viraram montes de pedra em volta de um pátio, e a base rachada da torre num canto. No meio do pátio, uma tenda de lona listrada, de cores vivas demais para este lugar. Ninguém à vista.',
+          : 'A trilha sobe o cume em zigue-zague e termina numa coisa que já foi forte: pedra lavrada espalhada pelo capim, um anel de entulho que um dia foi muro, e um toco grosso de torre rachada ao meio. E, plantada bem no meio de tudo, uma tenda listrada de vermelho e amarelo, alegre como uma feira. Nenhuma fumaça. Ninguém responde ao vento.',
       ] }] });
     },
   };

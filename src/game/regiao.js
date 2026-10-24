@@ -7,8 +7,9 @@
 //   - um teste de encontro de dia e outro de noite: d20, 17 a 20 é encontro, e
 //     um d12 na tabela da Trilha Triboar diz o quê (`ENCONTROS`);
 //   - o XP de um encontro é o dos monstros, dividido pelo grupo.
-// A ração: uma por herói por dia de marcha. Sem ela, o dia rende menos (o
-// grupo caça no caminho) — decisão nossa, o livro não conta comida.
+// A ração: uma por herói por dia de marcha. Sem ela, o grupo caça e colhe
+// pelo caminho, sem efeito de regra — decisão nossa, o livro não conta comida.
+// Chega-se ao fim da última marcha: a noite no destino já é do lugar.
 //
 // Os LUGARES ficam em % da pintura (`art/vila/regiao.webp`, OpenArt). A
 // distância sai da pintura: a escala é tal que Phandalin–Poço da Coruja
@@ -127,7 +128,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       formato: 'painel',
       paginas: [{ titulo: l.nome, texto: [
         `${km} km de ${LOCAL[reg.onde].nome}: ${dias === 1 ? 'um dia' : `${dias} dias`} de marcha, com acampamento à noite.`,
-        `Rações: o grupo leva ${temRacoes}, e a viagem pede ${precisa}.${temRacoes < precisa ? ' Faltando, vão caçar pelo caminho — e andar menos descansados.' : ''}`,
+        `Rações: o grupo leva ${temRacoes}, e a viagem pede ${precisa}.${temRacoes < precisa ? ' O que faltar, vão caçar e colher pelo caminho.' : ''}`,
       ] }],
       escolhas: [
         { rotulo: 'Ficar', valor: 'fica' },
@@ -159,9 +160,10 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         const linha = PAISAGENS[Math.floor(rng() * PAISAGENS.length)];
         registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome}: ${linha}`);
         const e = sortearEncontro(rng, 'dia');
-        via.periodo = 'noite';
+        via.periodo = via.dia === via.dias ? 'chegou' : 'noite';
         if (e) { await encontro(e); return; }
       }
+      if (via.periodo === 'chegou') break;
       if (via.periodo === 'noite') {
         const e = sortearEncontro(rng, 'noite');
         via.periodo = 'descanso';
@@ -169,7 +171,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       }
       // A noite passou (com ou sem luta): o descanso longo do acampamento.
       for (const t of await descansoLongoDoGrupo(app.root, { herois: vivos(), titulo: 'Acampamento',
-        texto: [via.semComida ? 'Uma noite mal dormida, de barriga meio vazia.' : 'Fogueira baixa, um de vigia por vez.'] })) registrar(t);
+        texto: [via.semComida ? 'Uma noite de barriga meio vazia, mas de olhos fechados.' : 'Fogueira baixa, um de vigia por vez.'] })) registrar(t);
       v.dia += 1;
       v.tempo = 0;
       via.dia += 1;

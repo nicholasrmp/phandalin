@@ -728,6 +728,20 @@ export class Encounter {
     if (this.over) return true;
     const partyUp = this.living('party').length;
     const foesUp = this.living('foes').length;
+    // A cena ainda tem gente para trazer (uma onda, uma segunda leva): o campo
+    // vazio não acaba a luta, o próximo lote entra agora.
+    if (foesUp === 0 && partyUp > 0 && this.lotePendente) {
+      const lote = this.lotePendente();
+      if (lote?.units?.length) {
+        for (const unit of lote.units) {
+          unit.pos = this.casaLivreMaisProxima(unit.pos) ?? unit.pos;
+          this.addCombatant(unit);
+        }
+        this.say('turno', lote.aviso ?? 'Reforços chegam!');
+        this.onEvent({ type: 'reinforcements', units: lote.units, aviso: lote.aviso });
+        return false;
+      }
+    }
     if (foesUp === 0) {
       this.over = true;
       this.outcome = 'vitoria';

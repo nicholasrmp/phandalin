@@ -74,8 +74,11 @@ for (x, y) in ((2, 3), (23, 2), (1, 13), (24, 11), (3, 19), (22, 20), (8, 20), (
     casa(x, y, 'r')
 for (x, y) in ((3, 8), (23, 7), (2, 16), (24, 17), (6, 20), (19, 21), (10, 2), (16, 1)):
     casa(x, y, 'b')
-# Dentro do patio: um monte de pedra caida da torre e um caixote do mago.
+# Dentro do patio: pedra caida da torre e mato, para quem luta ali ter onde
+# se abrigar (o revisor de mapa achou so tres coberturas no patio todo). A
+# saida da porta da torre, (13,6..9), fica livre.
 casa(16, 13, 'r'); casa(7, 14, 'b')
+casa(12, 9, 'r'); casa(15, 12, 'b'); casa(10, 13, 'r')
 
 # ---------------------------------------------------------------- saida ----
 import json

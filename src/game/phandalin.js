@@ -46,11 +46,11 @@ export const MISSOES = {
   iarno: { titulo: 'Onde está Iarno?', de: 'Sildar Hallwinter', texto: 'Iarno Albrek, mago da Aliança dos Lordes — baixo, barba preta, uns trinta anos — sumiu explorando a Mansão Tresendar há dois meses. Achá-lo, vivo ou não.', recompensa: '200 po por acabar com os Marcarrubra' },
   marcarrubra: { titulo: 'Os Marcarrubra', de: 'a vila', texto: 'A gangue de mantos vermelhos domina Phandalin. Frequentam o Gigante Adormecido; a base deles fica embaixo da Mansão Tresendar, no leste da vila.' },
   halia: { titulo: 'A oferta de Halia', de: 'Halia Thornton', texto: 'Eliminar o líder dos Marcarrubra, o Cajavidro, e levar a ela qualquer correspondência achada no quarto dele.', recompensa: '100 po' },
-  coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', texto: 'Alguém cava nas ruínas do Poço da Coruja Velha, a dois dias a nordeste, e garimpeiros dizem ter sido perseguidos por mortos-vivos. Descobrir o que está acontecendo.' },
+  coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', texto: 'Na torre velha do Poço da Coruja Velha, dois dias a nordeste, há gente nova — e uns garimpeiros juram que foram postos para correr por mortos que andavam. Ir lá ver quem é, e contar ao Daran.' },
   orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'Viajantes relatam orcs perto do Cume da Wyvern, a leste pela Trilha de Triboar. Dar um jeito neles.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
   reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
-  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
+  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe. (O Cume e Conyberry ainda não estão abertos nesta versão do jogo.)' },
   mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Um colar de esmeraldas, escondido numa caixa sob as prateleiras da antiga loja de ervas da família, no canto sudeste de Árvore Trovão. Mirna o deu a quem o achar.' },
   linene: { titulo: 'Os suprimentos da Escudo Leão', de: 'Linene Graywind', texto: 'A última caravana da Escudo Leão nunca chegou. Quem achar a carga, ou disser onde está, ganha uma recompensa.', recompensa: '50 po' },
 };
@@ -460,7 +460,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           },
           coruja: {
             ao: () => missao('coruja'),
-            fala: 'Garimpeiros nas colinas a nordeste dizem que alguém está cavando nas ruínas do Poço da Coruja Velha — uma torre de vigia de Netheril, um império de magos antigos. E que mortos-vivos os perseguiram por lá. São dois dias de marcha. Descubram o que é.',
+            fala: 'Tem uma coisa me incomodando. Lá para o nordeste, a dois dias de marcha, há uma torre de vigia caída, do tempo de Netheril — um império de magos que acabou antes de qualquer reino de hoje. Uns garimpeiros passaram por lá, voltaram brancos, e juram que foram postos para correr por mortos que andavam. Alguém está mexendo naquelas pedras. Quero saber quem.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
         },

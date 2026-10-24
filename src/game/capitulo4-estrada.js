@@ -13,6 +13,11 @@
 // (lobos, urso-coruja, hobgoblins) tenta chegar escondido; de noite, todos
 // chegam no escuro, contra a vigia de quem estiver acordado.
 //
+// BANDO GRANDE (6 ou mais) chega em duas levas: metade no começo, o resto na
+// terceira rodada, pela borda. O número é o do livro; a chegada aos poucos é
+// nossa — o revisor de encontro mediu que seis hobgoblins de uma vez matavam
+// o grupo inteiro de nível 2 em mais de um terço das lutas.
+//
 // Vencida a luta, a viagem continua de onde parou (`continuarViagem`).
 
 import { narrar } from '../view/narrativa.js';
@@ -20,6 +25,7 @@ import { d20 } from '../core/dice.js';
 import { skillBonus } from '../rules/abilities.js';
 import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
+import { prepararLevas } from './levas.js';
 
 const CACADORES = new Set(['lobo', 'corujaUrso', 'hobgoblin']);
 
@@ -33,35 +39,48 @@ export function criarEstrada(app, config) {
   const feitos = (camp.feitos ??= {});
   const vila = (camp.vila ??= { pistas: [] });
 
-  // Onde cada um aparece: de dia, pelo leste da trilha e pelas colinas do
-  // norte; de noite, em roda, saindo do escuro.
-  function lugares(n) {
+  // Onde cada um aparece: de dia, metade pelo leste da trilha e metade pelas
+  // colinas do sudeste; de noite, em roda, saindo do escuro — longe da
+  // fogueira o bastante para a vigia ter tempo de gritar.
+  const tomadas = new Set();
+  function lugares(n, segunda = false) {
     const out = [];
     for (let i = 0; i < n; i++) {
       let p;
       if (noite) {
-        const a = (i / n) * Math.PI * 2 + 0.4;
-        p = { x: Math.round(11 + Math.cos(a) * 8), y: Math.round(7 + Math.sin(a) * 5.5) };
+        const a = (i / n) * Math.PI * 2 + (segunda ? 0.4 + Math.PI / n : 0.4);
+        p = { x: Math.round(11 + Math.cos(a) * 10), y: Math.round(7 + Math.sin(a) * 6.2) };
+      } else if ((i + (segunda ? 1 : 0)) % 2 === 0) {
+        p = { x: 18 + (i % 3), y: 3 + Math.floor(i / 6) * 2 + (i % 2) };
       } else {
-        p = { x: 18 + (i % 3), y: 3 + Math.floor(i / 3) * 2 + (i % 2) };
+        p = { x: 19 + (i % 3), y: 11 + (Math.floor(i / 2) % 3) };
       }
-      p.x = Math.max(1, Math.min(20, p.x));
-      p.y = Math.max(1, Math.min(13, p.y));
-      out.push(enc.casaLivreMaisProxima(p) ?? p);
+      p.x = Math.max(1, Math.min(21, p.x));
+      p.y = Math.max(0, Math.min(13, p.y));
+      // Casa livre de verdade: nem herói, nem outro da mesma leva.
+      let q = enc.casaLivreMaisProxima(p) ?? p;
+      for (let r = 1; tomadas.has(`${q.x},${q.y}`) && r < 6; r++) q = enc.casaLivreMaisProxima({ x: p.x - r, y: p.y }) ?? q;
+      tomadas.add(`${q.x},${q.y}`);
+      out.push(q);
     }
     return out;
   }
 
   const inimigos = [];
-  for (const [i, p] of lugares(e.qtd).entries()) {
+  const primeira = e.qtd >= 6 ? Math.ceil(e.qtd / 2) : e.qtd;
+  const posicoes = [...lugares(primeira), ...lugares(e.qtd - primeira, true)];
+  for (const [i, p] of posicoes.entries()) {
     const f = makeMonster(e.id, { x: p.x, y: p.y }, { nameSuffix: e.qtd > 1 ? 'ABCDEFGHIJKL'[i] : '' });
     f.facingVec = { dx: Math.sign(11 - p.x) || -1, dy: Math.sign(7 - p.y) };
     inimigos.push(f);
   }
 
+  let levas = null;
+
   async function fimDoCombate(outcome) {
     if (estado.encerrado) return;
     estado.encerrado = true;
+    levas?.limpar();
     const grupo = enc.combatants.filter((c) => c.side === 'party');
     if (outcome !== 'vitoria') {
       await narrar(root, { formato: 'tela', paginas: [{ titulo: 'Na Trilha Triboar', texto: [
@@ -85,7 +104,7 @@ export function criarEstrada(app, config) {
       if (preso && !feitos.sabeOCastelo) await interrogarGoblin(preso, texto);
     }
     if (e.id === 'hobgoblin') {
-      texto.push('Dobrado no cinto de um dos hobgoblins, um papel sujo: um rosto mal desenhado — é de um de vocês, sem dúvida —, um "25 peças de ouro por este" e, embaixo, uma aranha preta.');
+      texto.push('Um dos hobgoblins guardava, dobrado várias vezes, um retrato a carvão: torto, borrado, mas é um de vocês, sem dúvida. No verso, um valor em ouro e uma aranha negra desenhada à pena, no lugar da assinatura. Alguém está pagando pela cabeça de vocês.');
       if (!vila.pistas.some((p) => p.startsWith('Hobgoblins caçam'))) {
         (vila.pistas ??= []).push('Hobgoblins caçam o grupo na estrada: o Aranha Negra pôs 25 peças de ouro na cabeça de um de vocês.');
       }
@@ -147,11 +166,14 @@ export function criarEstrada(app, config) {
         : 'Na curva da trilha, entre as pedras e o capim alto, vocês não estão sozinhos.';
       await narrar(root, { formato: 'painel', paginas: [{ titulo: noite ? 'Acampamento' : 'Trilha Triboar', texto: [o] }],
         escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-      for (const f of inimigos) enc.addCombatant(f);
+      for (const f of inimigos.slice(0, primeira)) enc.addCombatant(f);
+      // O resto do bando chega na terceira rodada.
+      levas = prepararLevas(enc, [{ rodada: 3, units: inimigos.slice(primeira),
+        aviso: noite ? 'Mais deles saem do escuro, do outro lado da fogueira!' : 'Mais deles sobem a trilha, correndo para alcançar os outros!' }]);
       // Quem chega escondido: de noite, todos; de dia, só os que caçam.
       const escondidos = noite || CACADORES.has(e.id);
       enc.emboscada = escondidos
-        ? { emboscadores: 'foes', furtividade: inimigos.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total) }
+        ? { emboscadores: 'foes', furtividade: inimigos.slice(0, primeira).map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total) }
         : null;
       app.selected = null;
       enc.start();

@@ -546,6 +546,9 @@ class App {
   // ---- seleção e modos -----------------------------------------------------
 
   firstActive() {
+    // A cena pode ter fechado o tabuleiro (fim da luta, ida para a vila ou a
+    // região) com o turno dos inimigos ainda terminando.
+    if (!this.enc) return null;
     return this.enc.allOf('party').find((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente')) ?? null;
   }
 
