@@ -51,7 +51,7 @@ export const PHANDELVER_ITEMS = {
 
   // ------------------------------------------------ tesouro com nome próprio ----
   penteDeAgatha: nomeado('penteDeAgatha', 'Pente de prata de Agatha', 'incomum',
-    'Pente de prata trabalhada. A banshee que o perdeu responde a uma pergunta de quem o devolver.',
+    'Pente de prata trabalhada, com pedrinhas. A Irmã Garaele o manda de presente para a banshee de Conyberry.',
     { tipo: 'maravilhoso', peso: 0.5, valor: 25 }),
 
   esmeraldaDoAranhaNegra: nomeado('esmeraldaDoAranhaNegra', 'Pingente de esmeralda', 'incomum',

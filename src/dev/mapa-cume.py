@@ -69,6 +69,9 @@ casa(18, 9, ':', 0)
 pinta(R(7, 14), R(5, 11), 'k', 2)
 ESCADA = (12, 4)                          # no corredor, ao pe do paredao
 casa(12, 5, 'l', 1)                       # o degrau do meio da escada
+# A segunda escada, do lado sul, longe do vigia: quem quer o alto do planalto
+# para atirar nao precisa passar por ele.
+ESCADA2 = (10, 13)                        # pintada depois do campo, abaixo
 
 # ------------------------------------------------- o campo, a sudeste ----
 pinta(R(7, 29), R(12, 20), ',', 0)
@@ -89,6 +92,7 @@ for (x, y) in [(23, 14), (25, 17), (10, 14), (13, 20), (26, 19)]:
     casa(x, y, 'b', 0)
 # Os troncos caidos onde o vale encontra o campo.
 casa(6, 15, 'r', 0)
+casa(10, 12, 'l', 1)                      # a segunda escada (ver ESCADA2)
 
 # ------------------------------------------------- a caverna dos orcs ----
 # Cavada no planalto leste, abrindo para o acampamento das camas.
@@ -97,9 +101,16 @@ pinta(R(20, 26), R(6, 9), '_', 0)
 # A boca tem duas casas de largura: o ogro, que é Grande, precisa de duas.
 ENTRADA = (21, 5)
 casa(21, 5, '_', 0); casa(22, 5, '_', 0)
+# Penumbra la dentro: a fogueira deles, quase apagada, no fundo. As paredes
+# ficam no escuro.
 for y in R(5, 10):
     for x in R(19, 27):
         L[y][x] = 0
+for y in R(6, 9):
+    for x in R(20, 26):
+        L[y][x] = 1
+L[5][21] = L[5][22] = 1
+casa(23, 8, 'F', 0)
 BAU = (25, 6)
 casa(*BAU, 'K', 0)
 casa(20, 9, 'z'); casa(22, 9, 'z'); casa(26, 9, 'z')
@@ -107,8 +118,11 @@ casa(20, 9, 'z'); casa(22, 9, 'z'); casa(26, 9, 'z')
 pinta(R(28, 29), R(5, 10), ',', 0)
 for (x, y) in ((29, 5), (29, 6), (28, 6)):
     casa(x, y, 'T', 0)
-# A pedra do vigia, uns 20 m (13 casas) da boca da caverna, na passagem.
-PEDRA_DO_VIGIA = (17, 8)
+# O vigia fica na saida da passagem, o mais longe da boca que este mapa
+# permite (o livro fala em uns 20 m; aqui sao uns 7), com uma pedra a
+# sudeste para se encostar. A passagem continua com duas casas livres: o
+# ogro, que e Grande, precisa delas.
+PEDRA_DO_VIGIA = (18, 10)
 casa(*PEDRA_DO_VIGIA, 'r', 0)
 
 # --------------------------------------------- os dois acampamentos ----
@@ -118,8 +132,9 @@ casa(4, 1, 'u'); casa(5, 1, 'u')          # barris
 for x in (14, 15, 16, 17):
     casa(x, 1, 'z')                       # camas de palha ao longo do paredao
 casa(16, 3, 'F'); casa(22, 3, 'F')        # fogueiras
-casa(18, 4, 'u'); casa(19, 4, 'u')        # barris
-casa(20, 2, 'u')                          # caixote
+# Barris e caixote encostados no paredao norte, fora do caminho: o ogro
+# precisa de duas casas livres para ir da caverna ao corredor.
+casa(18, 1, 'u'); casa(19, 1, 'u'); casa(21, 1, 'u')
 
 # ---------------------------------------------------------------- saida ----
 import json
@@ -144,6 +159,8 @@ extra = {
     'bau': {'x': BAU[0], 'y': BAU[1]},
     'pedraDoVigia': {'x': PEDRA_DO_VIGIA[0], 'y': PEDRA_DO_VIGIA[1]},
     'escada': {'x': ESCADA[0], 'y': ESCADA[1]},
+    'escada2': {'x': ESCADA2[0], 'y': ESCADA2[1]},
+    'vigia': {'x': 17, 'y': 9},
     'caverna': {'x0': 20, 'y0': 5, 'x1': 26, 'y1': 9},
     'saida': [{'x': x, 'y': 20} for x in range(24, 30)],
 }

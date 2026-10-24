@@ -229,20 +229,20 @@ export function criarPoco(app, config) {
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         tatuagem: {
-          narra: 'Quem estudou um pouco de magia reconhece o traço: não é enfeite, é a marca de uma escola. E esta escola trata de cadáveres. Necromancia.',
+          narra: 'O desenho é de um livro de magia, não de um tatuador: um selo de escola. E é a escola dos que levantam os mortos.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         nadaTatuagem: { narra: 'Um desenho escuro, anguloso. Pode ser qualquer coisa.', opcoes: [{ texto: '…', vai: 'oi' }] },
         manto: {
-          narra: 'Vermelho dos pés à cabeça, crânio pelado, desenho na testa: é o uniforme dos magos de Thay. Lá longe, no leste, são eles que mandam — e não costumam viajar sem motivo.',
+          narra: 'Quem já ouviu histórias de viajante reconhece o conjunto: os Magos Vermelhos de Thay, um país do leste distante onde quem governa é quem sabe magia. Um deles, tão longe de casa, não está passeando.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         nadaManto: { narra: 'Um manto caro, de lã boa. Só isso.', opcoes: [{ texto: '…', vai: 'oi' }] },
         favor: {
           fala: [
             'Informação é mercadoria. Eu tenho, vocês querem. Façam-me um favor, e eu pago com o que sei.',
-            'Tem um bando de orcs no Cume da Wyvern, aqui ao sul. Já vieram farejar o meu pátio duas vezes; na terceira, alguém se machuca, e não quero que seja a minha lona. Livrem-me deles.',
-            'Ou então: a velha de Conyberry — a banshee — sabe o nome de quem ergueu esta torre. Eu precisaria desse nome. Mas não falo com mortos de mau humor. Vocês, pelo jeito, falam com qualquer um.',
+            'Duas coisas me fariam muito feliz. A primeira: tem orcs morando naquele morro do sul, o Cume da Wyvern, e eles andam passando perto demais daqui. Mortos eu tenho de sobra; orcs vivos, não quero.',
+            'A segunda é mais delicada. Esta torre teve um dono, e quero saber o nome dele. Quem sabe é uma banshee lá para os lados de Conyberry. Eu, pessoalmente, prefiro não acordar mortos que não são meus.',
           ],
           opcoes: [
             { texto: 'Combinado. Os dois, se der.', vai: 'acordo' },

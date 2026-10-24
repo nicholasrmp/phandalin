@@ -55,9 +55,15 @@ export async function visitarConyberry(app, grupo) {
     return;
   }
 
+  // Recusou da última vez: só volta a aparecer depois de um dia inteiro.
+  if (salvo.estado === 'recusou' && (vila.dia ?? 1) * 24 + (vila.tempo ?? 0) < salvo.voltaEm) {
+    await painel('O covil', 'Nada se acende. O frio está lá, e a sensação de que alguém olha de dentro da cabana, mas ninguém se mostra. Hoje, não.');
+    return;
+  }
+
   await painel('O covil', [
-    'A picada afunda na mata, e a mata fica mais velha a cada passo: musgo grosso nos troncos, cipó pendurado, um frio que não combina com a estação. Depois de algumas horas, onde as árvores se juntam mais, galhos tortos crescem uns por cima dos outros e formam uma cabana, com uma portinha baixa.',
-    'Lá dentro, móveis élficos antigos, cobertos de pó: uma mesa, prateleiras, um divã. E o frio piora.',
+    'Algumas horas mata adentro, os passarinhos param de cantar. Ninguém comenta, mas todos notam. A picada termina numa clareira onde nada cresce, e no meio dela há uma casinha que ninguém construiu: as árvores em volta se curvaram até se tocar, e os galhos se trançaram em parede e telhado.',
+    'A porta é baixa. Do outro lado, poeira, cheiro de flor seca, móveis de madeira clara com entalhes que nenhum marceneiro da região saberia fazer.',
   ]);
 
   const agatha = { id: 'agatha', name: 'Agatha', look: 'agatha' };
@@ -65,14 +71,12 @@ export async function visitarConyberry(app, grupo) {
     inicio: 'oi',
     nos: {
       oi: {
-        narra: 'Uma luz pálida se acende no ar e ganha forma de mulher élfica, de cabelo e vestido que flutuam num vento que não existe. Deve ter sido linda. O rosto, agora, é uma coisa torta de raiva antiga.',
-        fala: 'Mais mortais na minha casa. Sabem quanto tempo eu esperei a morte, e ela não veio? Digam o que querem, e saiam.',
+        narra: 'Primeiro, o frio na nuca. Depois, um som baixo de choro, de lugar nenhum. E ela está ali, no canto escuro, sem ter chegado: uma elfa feita de luz fraca, que não faz sombra na parede.',
+        fala: 'Gente viva, de botas sujas, no meu chão. O último que entrou assim nunca mais saiu da mata. Falem logo.',
         opcoes: [
           { texto: 'Trouxemos um presente, senhora: um pente de prata.', vai: 'pente',
             requer: () => (temPente() ? null : 'ninguém tem o pente'), oculta: true },
           { texto: 'Viemos com respeito pedir uma resposta, senhora.', teste: { pericia: 'persuasao', cd: 15 }, sucesso: 'aceita', falha: 'recusa' },
-          { texto: 'Com todo o respeito, e com todo o tempo que a senhora quiser.', teste: { pericia: 'persuasao', cd: 15, vantagem: true }, sucesso: 'aceita', falha: 'recusa',
-            requer: (ctx) => (ctx.herois.some((h) => (h.abilities?.cha ?? 10) >= 12) ? null : 'ninguém aqui tem o jeito para isso'), oculta: true },
           { texto: 'Responda o que perguntarmos, fantasma.', fim: 'ofendida' },
           { texto: 'Desculpe o incômodo. Já vamos.', fim: 'sai' },
         ],
@@ -84,12 +88,16 @@ export async function visitarConyberry(app, grupo) {
         opcoes: [{ texto: '…', vai: 'aceita' }],
       },
       recusa: {
+        ao: () => {
+          salvo.estado = 'recusou';
+          salvo.voltaEm = (vila.dia ?? 1) * 24 + (vila.tempo ?? 0) + 24;
+        },
         fala: 'Palavras de mercador. Voltem quando souberem falar com uma dama.',
         narra: 'A luz se apaga. O frio fica.',
         opcoes: [{ texto: '…', fim: 'recusou' }],
       },
       aceita: {
-        fala: 'Sei que vocês procuram muita coisa. Perguntem uma — só uma — e eu respondo.',
+        fala: 'Uma pergunta. Escolham bem: eu não respondo duas vezes, e não minto. Depois, saiam da minha casa.',
         opcoes: [
           { texto: 'Onde está o grimório de Arco Suave?', fim: 'grimorio' },
           { texto: 'Qual o nome do mago que ergueu a torre do Poço da Coruja Velha?', fim: 'torre' },

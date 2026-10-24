@@ -47,7 +47,7 @@ export const MISSOES = {
   marcarrubra: { titulo: 'Os Marcarrubra', de: 'a vila', texto: 'A gangue de mantos vermelhos domina Phandalin. Frequentam o Gigante Adormecido; a base deles fica embaixo da Mansão Tresendar, no leste da vila.' },
   halia: { titulo: 'A oferta de Halia', de: 'Halia Thornton', texto: 'Eliminar o líder dos Marcarrubra, o Cajavidro, e levar a ela qualquer correspondência achada no quarto dele.', recompensa: '100 po' },
   coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', texto: 'Na torre velha do Poço da Coruja Velha, dois dias a nordeste, há gente nova — e uns garimpeiros juram que foram postos para correr por mortos que andavam. Ir lá ver quem é, e contar ao Daran.' },
-  orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'Viajantes relatam orcs perto do Cume da Wyvern, a leste pela Trilha de Triboar. Dar um jeito neles.', recompensa: '100 po' },
+  orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'O Harbin pagou um aviso na porta do salão: um bando de orcs anda assaltando quem passa pela Trilha Triboar, e se esconde para os lados do Cume da Wyvern. Acabar com o bando.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
   reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
   kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
@@ -69,7 +69,7 @@ export const FACCOES = [
     quando: (f) => f.cajavidro,
     convite: 'Halia fecha a porta do escritório. — Os Marcarrubra eram amadores. Eu represento gente que não é. Dinheiro, influência, amigos nos lugares certos. Algum de vocês tem ambição de verdade?' },
   { id: 'harpistas', nome: 'Harpistas', lugar: 'santuario', npc: 'irmaGaraele', titulo: 'Sentinela',
-    quando: (f) => f.grimorioDeArcoSuave,
+    quando: (f) => f.agathaGrimorio,
     convite: 'Garaele espera o santuário esvaziar. — Há uma rede de gente que sabe das coisas antes de elas acontecerem, e age em silêncio. A informação que vocês trouxeram foi preciosa. Alguém de vocês quer fazer parte?' },
   { id: 'alianca', nome: 'Aliança dos Lordes', lugar: 'salao', npc: 'sildar', titulo: 'Manto',
     quando: (f, v) => v.sildar && f.casteloDentefino && f.traicaoDeIarno,
@@ -424,8 +424,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           },
           agatha: {
             fala: [
-              'Fui atrás de alguém que não quis me ver: Agatha, uma banshee, que vive perto de Conyberry. Preciso que ela responda uma pergunta — onde está o grimório de um mago lendário, Arco Suave.',
-              'Ela é vaidosa. Levem este pente de prata com pedras como presente, e convençam-na a falar. Pago com três poções de cura.',
+              'Fui até a mata atrás de Conyberry falar com uma banshee, Agatha. Ela me pôs para correr antes de eu abrir a boca. A pergunta continua de pé: onde foi parar o grimório de Arco Suave, um mago de muito tempo atrás?',
+              'Talvez ela ouça vocês. Elfos mortos continuam gostando de coisa bonita: levem este pente de prata, de presente. Se ela responder, eu pago com três poções de cura.',
             ],
             opcoes: [
               { texto: 'Aceitamos.', fim: 'agatha' },
@@ -572,7 +572,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         orcs: {
           ao: () => missao('orcs'),
           narra: 'Harbin enxuga a testa.',
-          fala: 'Viajantes reclamam de orcs na Trilha de Triboar, a leste, perto do Cume da Wyvern. Cem peças de ouro para quem resolver isso.',
+          fala: 'Ah, o aviso. Pois é. Carroça assaltada, mercador sumido, um pastor que voltou sem as ovelhas e sem a orelha… Todo mundo jura que foram orcs, e que eles se enfiam naquele morro grande do leste, o Cume da Wyvern. O salão paga cem peças de ouro a quem acabar com isso. Cem! É muito dinheiro.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         preso: {
