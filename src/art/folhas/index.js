@@ -29,14 +29,15 @@ import urlGoblinBoss from './goblinBoss.png';
 // (`dara-malha-maca-escudo`, `brenn-escamas-besta`). O registro se monta
 // sozinho a partir dos nomes (abaixo), porque sao dezenas de combinacoes e
 // uma lista escrita a mao erraria uma.
-const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json'], { eager: true, import: 'default' });
-const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png'], { eager: true, query: '?url', import: 'default' });
+const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json', './pip-*.json'], { eager: true, import: 'default' });
+const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png', './pip-*.png'], { eager: true, query: '?url', import: 'default' });
 
 // De quem e cada prefixo, e qual folha e a PADRAO -- a do kit das regras, que
 // leva a chave do look e carrega primeiro.
 const HEROIS = {
   dara: { look: 'fighter', padrao: 'malha-espada-escudo' },
   brenn: { look: 'cleric', padrao: 'escamas-maca-escudo' },
+  pip: { look: 'rogue', padrao: 'couro-espada' },
 };
 
 // UMA FIGURA, VARIAS FOLHAS: O QUE ELA TEM NAS MAOS.
@@ -74,6 +75,12 @@ const ARMA_DO_ARQUIVO = {
   malho: ['duasMaos', 'malho'],
   arco: ['arco', 'arco'],
   besta: ['besta', 'besta'],
+  rapieira: ['umaMao', 'rapieira'],
+  'besta-de-mao': ['besta', 'bestaDeMao'],
+  // duas armas, uma em cada mao: a familia e `principal+secundaria`
+  adagas: ['duasArmas', 'adaga+adaga'],
+  espadas: ['duasArmas', 'espada+espada'],
+  'espada-adaga': ['duasArmas', 'espada+adaga'],
   // os itens nomeados da aventura, reskin das familias-mae
   'talon-escudo': ['umaMaoEscudo', 'talon'],
   'lightbringer-escudo': ['umaMaoEscudo', 'lightbringer'],
@@ -97,7 +104,7 @@ for (const [caminho, meta] of Object.entries(HEROI_META)) {
 // malha, escamas, placas) mais a Dragonguard.
 const FAMILIA_DA_ARMADURA = {
   nenhuma: 'roupa', acolchoada: 'roupa',
-  couro: 'couro', couroBatido: 'couro',
+  couro: 'couro', couroBatido: 'couroBatido',
   peleDeAnimal: 'peles',
   camisaoDeMalha: 'malha', malhaDeAneis: 'malha', cotaDeMalha: 'malha',
   brunea: 'escamas',
@@ -108,8 +115,8 @@ const FAMILIA_DA_ARMADURA = {
 // AS FAMILIAS DE ARMA: o desenho que aparece na mao. Os itens nomeados da
 // aventura caem na familia da arma-base deles.
 const FAMILIA_DA_ARMA = {
-  espadaLonga: 'espada', espadaCurta: 'espada', cimitarra: 'espada', rapieira: 'espada',
-  talon: 'talon', adaga: 'espada', dardo: 'espada', foice: 'espada',
+  espadaLonga: 'espada', espadaCurta: 'espada', cimitarra: 'espada', rapieira: 'rapieira',
+  talon: 'talon', adaga: 'adaga', dardo: 'adaga', foice: 'espada',
   maca: 'maca', marteloLeve: 'martelo', marteloDeGuerra: 'martelo', estrelaMatinal: 'maca',
   mangual: 'maca', picareta: 'maca', clava: 'maca', lightbringer: 'lightbringer',
   machadinha: 'machado', machadoDeBatalha: 'machado', hew: 'hew',
@@ -117,15 +124,17 @@ const FAMILIA_DA_ARMA = {
   machadoGrande: 'machadoGrande', alabarda: 'machadoGrande', glaive: 'machadoGrande',
   malho: 'malho', clavaGrande: 'malho',
   arcoCurto: 'arco', arcoLongo: 'arco', funda: 'arco',
-  bestaLeve: 'besta', bestaPesada: 'besta', bestaDeMao: 'besta',
+  bestaLeve: 'besta', bestaPesada: 'besta', bestaDeMao: 'bestaDeMao',
 };
 
 // OS ITENS NOMEADOS TEM FAMILIA PROPRIA (o reskin deles), e uma MAE: a familia
 // cujo desenho serve enquanto o reskin nao existe. A Dragonguard e um
 // peitoral, entao veste as placas. O martelo tem desenho so no kit do Brenn;
-// na mao de quem nao tem, vale a maca.
+// na mao de quem nao tem, vale a maca. Rapieira, adaga e besta de mao, so no
+// do Pip: na Dara valem a espada e a besta.
 const MAE = {
   talon: 'espada', lightbringer: 'maca', hew: 'machado', dragonguard: 'placas', martelo: 'maca',
+  rapieira: 'espada', adaga: 'espada', bestaDeMao: 'besta', couroBatido: 'couro',
 };
 
 // O JEITO DE SEGURAR. O que nao esta aqui e de uma mao.
@@ -135,8 +144,15 @@ const DUAS_MAOS = new Set(['espadaGrande', 'machadoGrande', 'malho', 'clavaGrand
   'glaive', 'alabarda', 'pique', 'lancaMontada', 'bordao', 'cajadoAranha', 'cajadoDeDefesa']);
 
 const DISTANCIA = new Set(['arco', 'besta']);
+// quem nao tem folha de duas armas segura a principal sem escudo
+const POSTURA_MAE = { duasArmas: 'umaMao' };
 
-function posturaDe(arma, escudo) {
+// adaga na principal e espada na secundaria e o desenho da espada com adaga
+// trocado de mao: vale como a familia-mae
+const trocadas = (familia) => familia.split('+').reverse().join('+');
+
+function posturaDe(arma, escudo, segunda) {
+  if (segunda) return 'duasArmas';
   if (ARCOS.has(arma)) return 'arco';
   if (BESTAS.has(arma)) return 'besta';
   if (DUAS_MAOS.has(arma)) return 'duasMaos';
@@ -144,7 +160,8 @@ function posturaDe(arma, escudo) {
 }
 
 /**
- * `fighter@cotaDeMalha-maca-escudo` -> o que a figura deve mostrar.
+ * `fighter@cotaDeMalha-maca-escudo` -> o que a figura deve mostrar. A arma da
+ * mao secundaria vem com `+`: `rogue@couro-espadaCurta+adaga`.
  * Uma chave sem `@` e o look base: quer a folha padrao.
  */
 function lerChave(key) {
@@ -153,12 +170,14 @@ function lerChave(key) {
   const partes = resto.split('-');
   const escudo = partes[partes.length - 1] === 'escudo';
   if (escudo) partes.pop();
-  const [armadura, arma = 'nada'] = partes;
+  const [armadura, armas = 'nada'] = partes;
+  const [arma, segunda] = armas.split('+');
+  const fam = (a) => FAMILIA_DA_ARMA[a] ?? a;
   return {
     base,
     armadura: FAMILIA_DA_ARMADURA[armadura] ?? armadura,
-    familia: FAMILIA_DA_ARMA[arma] ?? arma,
-    postura: posturaDe(arma, escudo),
+    familia: segunda ? `${fam(arma)}+${fam(segunda)}` : fam(arma),
+    postura: posturaDe(arma, escudo, segunda),
   };
 }
 
@@ -204,8 +223,9 @@ export function folhaImportada(key) {
     let nota = -1;
     for (const [k, e] of daFigura) {
       if (!e.postura) continue;
-      const n = (e.familia === quer.familia ? 4 : e.familia === MAE[quer.familia] ? 3 : 0)
-        + (e.postura === quer.postura ? 2 : 0)
+      const n = (e.familia === quer.familia ? 4 : e.familia === MAE[quer.familia] ? 3
+        : e.familia === trocadas(quer.familia) ? 3 : 0)
+        + (e.postura === quer.postura ? 2 : e.postura === POSTURA_MAE[quer.postura] ? 1 : 0)
         + (e.armadura === quer.armadura ? 1 : e.armadura === MAE[quer.armadura] ? 0.5 : 0)
         // no empate, o mesmo tipo de luta: lanca sem folha propria vai para
         // uma arma de corpo a corpo, nao para a besta

@@ -131,8 +131,10 @@ function aplicarAparencia(personagem) {
   // Quem escolhe a folha a partir da chave é `folhaImportada`, que nunca cai
   // no pintor enquanto houver uma folha da figura -- a Dara não vira humana.
   if (temArteImportada(base)) {
+    // a arma da mao secundaria entra com `+`: `rogue@couro-espadaCurta+adaga`
+    const segunda = personagem.offhandWeapon ? `+${personagem.offhandWeapon}` : '';
     const chave = `${base}@${personagem.armor ?? 'nenhuma'}-${personagem.equippedWeapon ?? 'nada'}`
-      + `${ap.shield ? '-escudo' : ''}`;
+      + `${segunda}${ap.shield ? '-escudo' : ''}`;
     if (!LOOKS[chave]) LOOKS[chave] = { ...look, ...ap };
     personagem.look = chave;
     return;

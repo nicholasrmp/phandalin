@@ -377,6 +377,61 @@ PERSONAGENS['clericBesta'] = {
     },
 }
 
+# Pip, ladino halfling. Alvo: 42 px de figura, quadro 44 (multiplo de 4).
+# O kit inicial pelo Livro do Jogador e o da criacao: espada curta, arco curto,
+# couro. A CAPA DE CAPUZ LEVANTADO e escolha do dono: e a cara do ladino. O
+# verde-escuro da capa e o do retrato (`src/art/retratos/rogue.webp`).
+PERSONAGENS['rogue'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Pip, ladino halfling',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 44, 'height': 44},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male halfling rogue. ' + ESTILO_HEROI +
+            'Skin ramp: #f6d0a8 light, #d9a07a mid, #8a5a40 deep shadow. Cloak: '
+            'dark forest green, #3f5a3a light, #2b3d28 mid, #18241a deep. Leather: '
+            'brown, #8a6440 light, #5e4430 mid, #33241a deep. Steel ramp: #d8dde3, '
+            '#9aa3ad, #4e5660. Eyes: green. THE HALFLING: very small and slim, '
+            'about half the height of a human, with adult proportions, a youthful '
+            'cheeky face with a sly grin, small pointed ears. CLOTHES: a dark '
+            'green hooded cloak with the HOOD UP over his head, the face visible '
+            'under it, the cloak reaching his knees; under it a fitted brown '
+            'leather armor jerkin, a belt with pouches and a sheathed dagger, '
+            'dark trousers and soft leather boots. WEAPON: a steel shortsword in '
+            'the right hand, the left hand empty and open. No shield. POSE: '
+            'standing in a low ready crouch facing the viewer, feet apart, sword '
+            'held low and forward, so the silhouette is broken and readable. Full '
+            'body in frame. BACKGROUND: plain, empty. No ground, no shadow, no '
+            'scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, painted '
+            'rendering, 3D render, multiple characters, shield, hood down.'
+        ),
+    },
+}
+
+# AS POSTURAS DO PIP, registradas das tiras das edicoes `pip-*`.
+_PIP = ('A pixel art game sprite of a small male halfling rogue with a dark '
+        'green hooded cloak with the hood up and brown leather armor, ')
+for _chave, _edicao, _maos in (
+        ('rogueAdagas', 'pip-duas-adagas', 'a steel dagger in each hand.'),
+        ('rogueArco', 'pip-arco', 'a short bow of curved brown wood in his left hand.'),
+        ('rogueBestaDeMao', 'pip-besta-de-mao', 'a hand crossbow of dark wood and steel in his right hand.')):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': f'_referencias/pixellab/edicoes/{_edicao}/tira.png',
+        'corpo': {
+            'name': f'Pip ({_edicao[4:]})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': _PIP + _maos,
+        },
+    }
+
 # A ordem das oito vistas na tira de uma edicao, a mesma das rotacoes.
 DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
             'west', 'south-west']

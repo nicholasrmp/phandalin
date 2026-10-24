@@ -115,6 +115,31 @@ EDICOES.update({
 })
 
 
+# AS POSTURAS DO PIP. Armas ja desenhadas, com textura, como as do Brenn.
+_PIP_MANTEM = (
+    ' Keep everything else exactly the same: the small halfling body, the dark '
+    'green cloak with the hood UP over his head, the face under the hood, the '
+    'brown leather armor, the belt, the boots, the pose of the legs, the '
+    'direction each frame is facing and the colours.'
+)
+EDICOES.update({
+    'pip-duas-adagas': (
+        'Replace the shortsword with a steel dagger in his right hand, and put a '
+        'second steel dagger in his left hand: one short double-edged dagger in '
+        'each hand, blades pointing forward, held low and ready.' + _PIP_MANTEM),
+    'pip-arco': (
+        'Remove the shortsword. He holds one short bow of curved brown wood with '
+        'a taut string, upright in his left hand at his side; his right hand is '
+        'empty. A small leather quiver of arrows on his back, under the cloak.'
+        + _PIP_MANTEM),
+    'pip-besta-de-mao': (
+        'Replace the shortsword with one hand crossbow held in his right hand, '
+        'pointing forward: a small pistol-sized crossbow with a dark wooden stock '
+        'and a short steel bow with a taut string. His left hand is empty.'
+        + _PIP_MANTEM),
+})
+
+
 def chamar(token, metodo, caminho, corpo=None):
     req = urllib.request.Request(f'{BASE}{caminho}',
                                  data=json.dumps(corpo).encode() if corpo else None,

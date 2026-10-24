@@ -357,6 +357,41 @@ CRIATURAS['clericBesta'] = {
               'shooting a bolt, then lowering it'),
 }
 
+# O PIP. A queda so na folha base (espada curta); as posturas usam a dela.
+_PIP = ('a small male halfling rogue in a dark green hooded cloak with the '
+        'hood up over his head and brown leather armor, ')
+CRIATURAS.update({
+    'rogue': {
+        'sujeito': _PIP + 'a steel shortsword in his right hand, the left hand empty',
+        'parado': 'shortsword held low and forward, in a low ready crouch',
+        'golpe': ('lunging and thrusting the shortsword in one quick stab {para}, '
+                  'then springing back'),
+        'chao': 'the shortsword dropped beside his right hand, the cloak spread under him',
+    },
+    'rogueAdagas': {
+        'sem_queda': True,
+        'sujeito': _PIP + 'a steel dagger in each hand',
+        'parado': 'a dagger in each hand held low and forward, in a low ready crouch',
+        'golpe': ('slashing {para} with the dagger in his right hand and then '
+                  'stabbing with the dagger in his left hand, one quick strike '
+                  'after the other'),
+    },
+    'rogueArco': {
+        'sem_queda': True,
+        'sujeito': _PIP + 'a short bow of curved brown wood in his left hand, a quiver on his back',
+        'parado': 'short bow held low in his left hand',
+        'golpe': ('raising the short bow, drawing an arrow to his cheek and '
+                  'loosing it {para}, then lowering the bow'),
+    },
+    'rogueBestaDeMao': {
+        'sem_queda': True,
+        'sujeito': _PIP + 'a small hand crossbow of dark wood and steel in his right hand',
+        'parado': 'hand crossbow held low in his right hand',
+        'golpe': ('raising the hand crossbow with his right arm extended, aiming '
+                  '{para} and shooting a bolt, then lowering it'),
+    },
+})
+
 # AS POSTURAS DE ARMA DA DARA. Sem queda: o corpo no chao e o mesmo em todas,
 # e vem da folha de espada e escudo. A arma de arco, besta e duas maos e verde
 # puro (marcador; ver `editar-pixellab.py`) e o texto repete isso, porque o

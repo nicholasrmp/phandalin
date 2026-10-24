@@ -226,6 +226,33 @@ PERFIS = {
                         'north-east': [4, 5], 'north': [3, 5], 'north-west': [3, 4],
                         'west': [3, 4], 'south-west': [3, 5]},
     },
+    # PIP, ladino halfling. Estocada: ERGUIDA e BOTE, escolhidos olhando. Ao
+    # norte, do 2 em diante o modelo vira o Pip de lado; vale o golpe antes.
+    'rogue': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [3, 5], 'north': [2, 4], 'north-west': [3, 5], 'west': [2, 4], 'south-west': [2, 4]},
+    },
+    # As duas adagas: o golpe da DIREITA e o da ESQUERDA. O modelo pos rastros
+    # brancos enormes no 1-2 e no 5; ficam os quadros sem rastro. A nordeste
+    # do 3 ao 6 ele vira de frente: valem o 1 e o 7.
+    'rogueAdagas': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 7], 'south-east': [4, 7], 'east': [3, 7], 'north-east': [1, 7], 'north': [2, 6], 'north-west': [1, 7], 'west': [3, 7], 'south-west': [4, 7]},
+    },
+    # O arco curto: ARMADO e DISPARO (a flecha saindo).
+    'rogueArco': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [5, 7], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [4, 6], 'north': [2, 6], 'north-west': [4, 6], 'west': [3, 5], 'south-west': [3, 6]},
+    },
+    # A besta de mao: MIRA e DISPARO (o virote saindo).
+    'rogueBestaDeMao': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [4, 5], 'south-east': [3, 4], 'east': [4, 5], 'north-east': [3, 4], 'north': [4, 5], 'north-west': [3, 4], 'west': [4, 5], 'south-west': [3, 4]},
+    },
     # A Dara de malha. Mesmo criterio: espada ERGUIDA e GOLPE, escolhidos
     # olhando. Ao norte o golpe para baixo e o quadro 2, que vem ANTES do
     # erguido (4) na sequencia do modelo; a ordem aqui e a do motor, nao a do

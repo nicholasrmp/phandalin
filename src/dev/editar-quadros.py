@@ -197,6 +197,43 @@ EDICOES.update({
         'his arm and his armored body instead. Nothing else changes.'),
 })
 
+# O KIT DO PIP: as armas por edicao da folha base (espada curta) e da de duas
+# adagas; o couro batido por edicao de todas.
+_PIP_MANTEM = (
+    ' Keep everything else exactly the same: the small halfling body, the dark '
+    'green cloak with the hood up over his head, the face under the hood, the '
+    'belt, the boots, the pose and position in every frame, the direction each '
+    'frame faces and the colours.'
+)
+EDICOES.update({
+    'pip-arma-rapieira': (
+        'Replace the shortsword in his right hand with a rapier: a long, thin, '
+        'straight steel blade with a swept steel basket hilt, held the same way, '
+        'in the same position and pointing the same direction as the shortsword '
+        'in every frame. Keep the brown leather armor.' + _PIP_MANTEM),
+    'pip-arma-espadas': (
+        'Replace the dagger in each of his hands with a steel shortsword: one '
+        'shortsword in each hand, each held the same way, in the same position '
+        'and pointing the same direction as the dagger it replaces in every '
+        'frame. Keep the brown leather armor.' + _PIP_MANTEM),
+    'pip-arma-espada-adaga': (
+        'Replace only the dagger in his right hand with a steel shortsword, held '
+        'the same way, in the same position and pointing the same direction in '
+        'every frame. Keep the dagger in his left hand exactly as it is. Keep '
+        'the brown leather armor.' + _PIP_MANTEM),
+    # o corpo no chao das posturas que nao sao a da espada curta
+    'pip-queda-sem-arma': (
+        'Remove the sword and any weapon near him. The halfling keeps the same '
+        'cloak, armor, pose and colours; where the weapon was, only the ground. '
+        'Nothing else changes.'),
+    'pip-armadura-couro-batido': (
+        'Replace his plain brown leather armor with studded leather armor: a '
+        'darker brown leather jerkin covered with rows of small round steel '
+        'rivets, with studded leather shoulder guards. Keep the weapons he holds '
+        'exactly as they are in every frame: same shape, position and colour.'
+        + _PIP_MANTEM),
+})
+
 # Quadros que o motor usa por direcao, nos grupos da folha do PixelLab: o
 # parado (rotacoes), o andar 1-4 e os dois do ataque escolhidos no perfil
 # `fighter` de `importar-pixellab.py`.
@@ -224,6 +261,11 @@ ATAQUE_POR_PERFIL = {
                'north': [3, 2], 'north-west': [4, 8], 'west': [3, 4], 'south-west': [3, 4]},
     'clericBesta': {'south': [3, 4], 'south-east': [3, 5], 'east': [4, 5], 'north-east': [4, 5],
                     'north': [3, 5], 'north-west': [3, 4], 'west': [3, 4], 'south-west': [3, 5]},
+    # o Pip: os mesmos quadros dos perfis de `importar-pixellab.py`
+    'rogue': {'south': [3, 5], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [3, 5], 'north': [2, 4], 'north-west': [3, 5], 'west': [2, 4], 'south-west': [2, 4]},
+    'rogueAdagas': {'south': [3, 7], 'south-east': [4, 7], 'east': [3, 7], 'north-east': [1, 7], 'north': [2, 6], 'north-west': [1, 7], 'west': [3, 7], 'south-west': [4, 7]},
+    'rogueArco': {'south': [5, 7], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [4, 6], 'north': [2, 6], 'north-west': [4, 6], 'west': [3, 5], 'south-west': [3, 6]},
+    'rogueBestaDeMao': {'south': [4, 5], 'south-east': [3, 4], 'east': [4, 5], 'north-east': [3, 4], 'north': [4, 5], 'north-west': [3, 4], 'west': [4, 5], 'south-west': [3, 4]},
 }
 ATAQUE = ATAQUE_DARA
 COM_QUEDA = False
