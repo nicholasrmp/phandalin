@@ -1012,12 +1012,18 @@ export class Hud {
       comum('levantar', 'Levantar-se', `Fica de pé gastando metade do deslocamento (${custo} pés). Caído, você rasteja a meio passo e ataca com desvantagem.`,
         'Movimento', { kind: 'standUp' }, c.movementLeftFt < custo || custo === 0);
     }
-    // Saltar por cima da tocaia, do caixote ou do buraco: só aparece quando
-    // há por onde (`destinosDoSalto`).
-    if (!enc.over && enc.destinosDoSalto(c).size) {
+    // Saltar por cima da tocaia, do caixote ou do buraco. Fica sempre na
+    // barra; apagado, diz por que não dá agora (`destinosDoSalto`).
+    if (!enc.over) {
       const pes = enc.alcanceDoSalto(c);
+      const da = enc.destinosDoSalto(c).size > 0;
+      const correu = enc.explorando || (c.corridaFt ?? 0) >= 10;
+      const motivo = da ? null
+        : hasCondition(c, 'caido') ? 'Levante-se primeiro'
+          : pes < 10 ? `O salto alcança só ${pes} pés agora${correu ? '' : ': ande 3 m antes para pegar corrida'}`
+            : 'Nenhum obstáculo, buraco ou terreno difícil ao alcance do salto';
       comum('pular', 'Saltar', `Salto em distância de até ${pes} pés por cima de obstáculo baixo, buraco ou terreno difícil (Força em pés com 3 m de corrida antes; metade parado). Gasta o deslocamento; obstáculo pede Atletismo CD 10, pousar em terreno difícil, Acrobacia CD 10.`,
-        'Movimento', { kind: 'salto' }, false);
+        'Movimento', { kind: 'salto' }, !da, null, motivo);
     }
     if (hasCondition(c, 'agarrado') || hasCondition(c, 'contido') || hasCondition(c, 'presoPorVinhas')) {
       comum('escapar', 'Escapar', 'Teste de Atletismo ou Acrobacia (o melhor) contra a CD de quem prende.', 'Ação', { kind: 'escape' }, c.actionUsed);

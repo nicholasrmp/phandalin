@@ -44,9 +44,13 @@ SAIDA = AQUI / 'src' / 'art' / 'folhas'
 
 # Material -> blocos. A alvenaria e a parede construida do porao; o penhasco
 # e a rocha natural (a fenda, a caverna).
+# Escolhidos empilhando quatro niveis (a previa do motor): fora os que trazem
+# uma linha clara na aresta de cima (0, 3, 4) -- vira uma faixa a cada 22 px
+# --, o muito picado (6), e no penhasco os de saliencia que se repete igual
+# em cada nivel (10, 13, 15) e o picado (11).
 MATERIAIS = {
-    'alvenaria': [0, 1, 2, 3, 4, 5, 6, 7],
-    'penhasco': [8, 9, 10, 11, 12, 13, 14, 15],
+    'alvenaria': [1, 2, 5, 7],
+    'penhasco': [8, 9, 12, 14],
 }
 FW = TW // 2            # largura de uma face
 FH = TH // 2 + LIFT     # altura da faixa: a rampa da aresta mais um nivel
@@ -65,6 +69,9 @@ def faixa(im, ox, oy, lado):
                 px = s[sx, sy]
                 if px[3]:
                     d[x, topo + r] = px[:3] + (255,)
+                elif r and d[x, topo + r - 1][3]:
+                    # Um furo na arte vira buraco na parede: repete o de cima.
+                    d[x, topo + r] = d[x, topo + r - 1]
     return out
 
 

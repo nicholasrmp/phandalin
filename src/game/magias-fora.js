@@ -179,6 +179,9 @@ async function escolher(app, titulo, texto, itens) {
   return r?.v ?? null;
 }
 
+/** O gancho vale nesta casa? (Um poço tem várias: `casas`; os outros, só a sua.) */
+export const cobre = (g, t) => (g.casas ? g.casas.some(([x, y]) => x === t.x && y === t.y) : g.x === t.x && g.y === t.y);
+
 export const ganchosPerto = (app, c, tipo, alcanceFt) => (app.capitulo?.ganchosMagicos?.(c) ?? [])
   .filter((g) => g.tipo === tipo && (!c.pos || distanceFt(c.pos, g) <= alcanceFt));
 
@@ -324,7 +327,7 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
   }
 
   // Casa vazia ou objeto: os ganchos da cena nesta casa.
-  const gs = (app.capitulo?.ganchosMagicos?.(c) ?? []).filter((g) => tile && g.x === tile.x && g.y === tile.y);
+  const gs = (app.capitulo?.ganchosMagicos?.(c) ?? []).filter((g) => tile && cobre(g, tile));
   for (const g of gs) {
     for (const s of lista) {
       const u = UTIL[s.id];
@@ -403,7 +406,7 @@ export function auras(app) {
   if (!dono) return [];
   return (app.capitulo.ganchosMagicos?.(dono) ?? [])
     .filter((g) => g.tipo === 'magico' && g.aura && distanceFt(dono.pos, g) <= 30)
-    .map((g) => ({ x: g.x, y: g.y, escola: g.aura.escola, nome: g.nome }));
+    .flatMap((g) => (g.casas ?? [[g.x, g.y]]).map(([x, y]) => ({ x, y, escola: g.aura.escola, nome: g.nome })));
 }
 
 // ----------------------------------------------- conversas das magias ----

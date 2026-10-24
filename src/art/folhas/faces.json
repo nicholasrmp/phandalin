@@ -6,21 +6,21 @@
  "faces": {
   "alvenaria": {
    "y": 0,
-   "n": 8
+   "n": 4
   },
   "penhasco": {
    "y": 70,
-   "n": 8
+   "n": 4
   }
  },
  "topos": {
   "alvenaria": {
    "y": 38,
-   "n": 8
+   "n": 4
   },
   "penhasco": {
    "y": 108,
-   "n": 8
+   "n": 4
   }
  }
 }

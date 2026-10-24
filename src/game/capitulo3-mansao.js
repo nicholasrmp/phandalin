@@ -763,24 +763,12 @@ export function criarMansao(app, config) {
         });
       }
     }
+    const cisterna = [];
     for (let y = 0; y < f.h; y++) {
       for (let x = 0; x < f.w; x++) {
         const p = { x, y };
         const sup = f.surfaceAt(x, y);
-        if (sup === 'cisterna' && NO_PORAO(p) && !salvo.bolsa) {
-          out.push({
-            id: 'cisterna', tipo: 'alcance', x, y, nome: 'A cisterna',
-            fazer: async (h) => {
-              salvo.bolsa = true;
-              guardar(h, 'pocaoDeCura', 1); guardar(h, 'pocaoDeInvisibilidade', 1); guardar(h, 'moedaDeOuro', 50); guardar(h, 'roupaDeViagem', 1);
-              await painel(`A mão espectral tateia a água gelada, acha um fio e puxa: sobe uma bolsa de couro encerado, pingando. Dentro, roupa limpa e seca, 50 peças de ouro, uma poção de cura e outra de invisibilidade. ${h.name} guarda.`);
-            },
-          });
-          out.push({
-            id: 'cisterna-aura', tipo: 'magico', x, y, nome: 'A cisterna',
-            aura: { escola: 'ilusão e evocação', texto: 'No fundo, algo pequeno e quieto brilha em duas cores: uma de ilusão, outra de evocação. Coisa de frasquinho, não de armadilha.' },
-          });
-        }
+        if (sup === 'cisterna' && NO_PORAO(p) && !salvo.bolsa) cisterna.push([x, y]);
         if (sup === 'bau' && NO_QUARTO(p) && !salvo.bauIarno) {
           out.push({
             id: 'bau-iarno', tipo: 'magico', x, y, nome: 'O baú do chefe',
@@ -788,6 +776,22 @@ export function criarMansao(app, config) {
           });
         }
       }
+    }
+    // A cisterna é um poço de várias casas: um ponto só, que vale em qualquer uma delas.
+    if (cisterna.length) {
+      const [cx, cy] = cisterna[Math.floor(cisterna.length / 2)];
+      out.push({
+        id: 'cisterna', tipo: 'alcance', x: cx, y: cy, casas: cisterna, nome: 'A cisterna',
+        fazer: async (h) => {
+          salvo.bolsa = true;
+          guardar(h, 'pocaoDeCura', 1); guardar(h, 'pocaoDeInvisibilidade', 1); guardar(h, 'moedaDeOuro', 50); guardar(h, 'roupaDeViagem', 1);
+          await painel(`A mão espectral tateia a água gelada, acha um fio e puxa: sobe uma bolsa de couro encerado, pingando. Dentro, roupa limpa e seca, 50 peças de ouro, uma poção de cura e outra de invisibilidade. ${h.name} guarda.`);
+        },
+      });
+      out.push({
+        id: 'cisterna-aura', tipo: 'magico', x: cx, y: cy, casas: cisterna, nome: 'A cisterna',
+        aura: { escola: 'ilusão e evocação', texto: 'No fundo, algo pequeno e quieto brilha em duas cores: uma de ilusão, outra de evocação. Coisa de frasquinho, não de armadilha.' },
+      });
     }
     // Os esqueletos da cripta: uma magia velha e fria os mantém de pé.
     const cr = grupos.cripta;
