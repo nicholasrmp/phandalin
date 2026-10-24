@@ -151,23 +151,34 @@ export const MAPA_CAVERNA = [
 ];
 
 // A RUA DE PHANDALIN (capítulo 3): a briga com os Marcarrubra. Uma rua de
-// terra entre casas (provisórias: blocos de parede até a arte), barris e uma
-// carroça. A taverna Gigante Adormecido é o bloco grande do sudeste.
+// terra entre casas de pedra e reboco; a taverna Gigante Adormecido fica ao
+// norte, com o pátio de barris ao lado, e os Marcarrubra esperam na frente
+// dela. Cada prédio ocupa 3 x 3 casas (`H` casa, `Y` taverna) e é um sprite
+// só; casas iguais nunca encostam, senão viram um prédio só (`pegadaDe`).
 export const MAPA_RUA = [
-  'TT,,,####,,,,####,,,TT',
-  'T,,,,####,,,,####,,,,T',
-  ',,,,,####,,o,####,,,,,',
+  'TT,,HHH,,HHH,,YYY,u,TT',
+  'T,,,HHH,,HHH,,YYY,,u,T',
+  ',,,,HHH,,HHH,,YYY,,,,,',
   ',,,,,,,,,,,,,,,,,,,,,,',
   '::::::::::::::::::::::',
   '::::::::::::::::::::::',
   '::::::::::::::::::::::',
-  ',,,,,,,,,,,,,,,,o,,,,,',
-  ',,,####,,,,,,,,######,',
-  ',,,####,,b,,,,,######,',
-  ',,,####,,,,,,,,######,',
+  ',,,,,,,,,,,,,,,,u,,,,,',
+  ',,,HHH,,,,,,,,HHH,,,,,',
+  ',,,HHH,,b,,,,,HHH,,,,,',
+  ',,,HHH,,,,,,,,HHH,,,,,',
   ',,,,,,,,,,,r,,,,,,,,,,',
   'TT,,,,,,,,,,,,,,,,,,TT',
   'TTTTTTTT,,,,,,TTTTTTTT',
+];
+
+/** Qual prédio é cada bloco da rua e para onde fica a porta. */
+const PREDIOS_RUA = [
+  { tipo: 'casa', x: 4, y: 0, olha: { dx: 0, dy: 1 }, variante: 'a' },
+  { tipo: 'casa', x: 9, y: 0, olha: { dx: 0, dy: 1 }, variante: 'b' },
+  { tipo: 'taverna', x: 14, y: 0, olha: { dx: 0, dy: 1 } },
+  { tipo: 'casa', x: 3, y: 8, olha: { dx: 0, dy: -1 }, variante: 'b' },
+  { tipo: 'casa', x: 14, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
 ];
 
 /** O grupo escolta a carroça: logo à frente dela, na estrada, olhando para leste. */
@@ -197,7 +208,7 @@ export function mapaDo(variante = 'padrao') {
     return {
       terreno: MAPA_RUA,
       altura: null,
-      objetos: [],
+      objetos: PREDIOS_RUA,
       // O grupo vem pela rua, do oeste; os Marcarrubra esperam a leste, na
       // frente do Gigante Adormecido.
       grupo: [{ x: 3, y: 4 }, { x: 3, y: 6 }, { x: 2, y: 5 }, { x: 4, y: 5 }],
@@ -213,9 +224,9 @@ export function mapaDo(variante = 'padrao') {
     return {
       ...MAPA_MANSAO,
       // As duas pontes cruzam a fenda de leste a oeste.
-      objetos: Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 } })),
+      objetos: Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),
       grupo: tunel
-        ? [{ x: 12, y: 19 }, { x: 13, y: 19 }, { x: 13, y: 18 }, { x: 12, y: 18 }]
+        ? [{ x: 10, y: 19 }, { x: 11, y: 19 }, { x: 10, y: 18 }, { x: 11, y: 18 }]
         : [{ x: 28, y: 15 }, { x: 28, y: 14 }, { x: 28, y: 16 }, { x: 29, y: 15 }],
       olhar: tunel ? { dx: 0, dy: -1 } : { dx: -1, dy: 0 },
       cena: 'mansao',
@@ -392,15 +403,18 @@ function foesMansao() {
   mosk.name = 'Mosk';
   mosk.chave = true;
   const droop = neutro(m('droop', 4, 15, 'guardas', '', { dx: 0, dy: 1 }), 'Droop');
-  // Área 12: o Cajavidro na escrivaninha; o rato dele vigia a oficina (11).
-  const iarno = makeNpc('iarno', { x: 7, y: 2 }, {});
+  // Área 12: o Cajavidro na escrivaninha, de costas para a passagem secreta;
+  // o rato dele vigia a oficina (11). Ninguém sabe o nome dele até ele falar.
+  const iarno = makeNpc('iarno', { x: 9, y: 2 }, {});
   iarno.grupo = 'cajavidro';
-  iarno.facingVec = { dx: 1, dy: 0 };
+  iarno.name = 'Cajavidro';
+  iarno.facingVec = { dx: -1, dy: 1 };
   iarno.chave = true;
   const rato = neutro(m('ratoGigante', 4, 4, 'rato', '', { dx: 1, dy: 0 }), 'Rato do mago');
   Object.assign(rato, { maxHp: 1, hp: 1, ac: 10, attacks: [], familiar: true });
   // Área 10: quatro Marcarrubra bêbados no jogo de pedrinhas.
-  const estar = [[3, 9], [4, 9], [5, 8], [2, 8]].map(([x, y], i) => m('marcarrubra', x, y, 'estar', 'da mesa ' + 'ABCD'[i], { dx: 0, dy: -1 }));
+  const estar = [[3, 9, 0, -1], [4, 9, 0, -1], [5, 8, -1, 0], [2, 8, 1, 0]]
+    .map(([x, y, dx, dy], i) => m('marcarrubra', x, y, 'estar', 'da mesa ' + 'ABCD'[i], { dx, dy }));
   return [
     // Área 2: três Marcarrubra de folga no alojamento.
     m('marcarrubra', 17, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
@@ -414,12 +428,15 @@ function foesMansao() {
     m('marcarrubra', 21, 4, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
     m('marcarrubra', 22, 5, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
     ...presos,
-    // Área 8: o vigia de um olho só, escondido perto da ponta oeste das pontes.
-    m('vigiaCiclopico', 9, 9, 'fenda', '', { dx: 1, dy: 0 }),
-    // Área 9: três bugbears e o goblin Droop.
+    // Área 8: o vigia de um olho só, encolhido junto da coluna do oeste.
+    m('vigiaCiclopico', 9, 12, 'fenda', '', { dx: 1, dy: 0 }),
+    // Área 9: três bugbears e o goblin Droop. O terceiro bugbear dorme no
+    // beliche e só levanta na segunda rodada: os três de pé ao mesmo tempo
+    // matavam um herói de nível 2 em uma luta de cada quatro (revisor de
+    // encontro, 300 lutas); com um dormindo, em menos de uma em dez.
     mosk,
-    m('bugbear', 3, 16, 'guardas', '', { dx: 0, dy: -1 }),
-    m('bugbear', 5, 16, 'guardas', '', { dx: 0, dy: -1 }),
+    m('bugbear', 3, 16, 'guardas', 'da porta', { dx: 0, dy: -1 }),
+    Object.assign(m('bugbear', 6, 18, 'guardas', 'do beliche', { dx: -1, dy: -1 }), { dormindo: true }),
     droop,
     ...estar,
     iarno,

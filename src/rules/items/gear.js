@@ -155,6 +155,11 @@ export const GEAR = {
     rangeFt: 20, acao: 'acao',
   }),
 
+  // Bom Fruto (magia de 1º círculo): `combat.js` põe dez na mochila de quem conjura.
+  bomFruto: pilha('bomFruto', 'Bom Fruto', 0, 0, 'Fruta conjurada pela magia Bom Fruto. Uma ação, encostado em quem come: recupera 1 PV.', {
+    tipo: 'poção', art: 'cura', consumivel: 'curar', cura: '1', acao: 'acao', fonte: 'propria',
+  }),
+
   // -------------------------------------------------------------- moeda ----
   moedaDeCobre: pilha('moedaDeCobre', 'Peças de cobre', 0.01, 0.02, 'Cem valem uma de ouro.', { tipo: 'moeda', art: 'moeda' }),
   moedaDePrata: pilha('moedaDePrata', 'Peças de prata', 0.1, 0.02, 'Dez valem uma de ouro.', { tipo: 'moeda', art: 'moeda' }),
@@ -171,7 +176,7 @@ export const GEAR = {
   perola: pilha('perola', 'Pérola', 100, 0, 'Pérola grande e perfeita, guardada num lenço de seda.', { tipo: 'tesouro', fonte: 'propria', art: 'item-perolaDoPoder' }),
   brincosDeRubi: item('brincosDeRubi', 'Brincos de rubi', 30, 0, 'Um par de brincos com um rubi minúsculo cada.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
   anelDePlatina: pilha('anelDePlatina', 'Anel de sinete de platina', 50, 0, 'Sinete de família, com um brasão gasto.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
-  tapaOlho: item('tapaOlho', 'Tapa-olho com pedras', 50, 0, 'Couro preto cravejado de pedrinhas. Mosk usava por elegância, com os dois olhos bons.', { tipo: 'tesouro', fonte: 'propria' }),
+  tapaOlho: item('tapaOlho', 'Tapa-olho com pedras', 50, 0, 'Couro preto com pedrinhas costuradas em volta. Puro enfeite: o dono enxergava bem dos dois lados.', { tipo: 'tesouro', fonte: 'propria' }),
   reagente: pilha('reagente', 'Reagente raro', 25, 0.1, 'Frasquinho de reagente alquímico: mercúrio, bile ou pó de beladona. Um boticário paga bem.', { tipo: 'tesouro', fonte: 'propria', art: 'item-ampola' }),
   pelesDeCastor: pilha('pelesDeCastor', 'Pele de castor', 2, 1, 'Pele curtida, roubada de uma caravana da Trilha de Triboar.', { tipo: 'tesouro', fonte: 'propria', art: 'item-cobertor' }),
   mantoVermelho: pilha('mantoVermelho', 'Manto vermelho', 0.1, 1, 'O manto encardido dos Marcarrubra. Vestido, passa por um deles — com quem não presta muita atenção.', { fonte: 'propria', art: 'item-roupaDeViagem' }),

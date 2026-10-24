@@ -124,6 +124,34 @@ export function oracaoDeCura(rng, conjurador, alvos, { circulo = 2 } = {}) {
   return { ok: true, circulo, curas };
 }
 
+/**
+ * Bom Fruto (1º círculo) fora de combate: as dez frutinhas são comidas logo, uma
+ * a uma, por quem mais precisa — cada uma cura 1 PV. Gasta um espaço e devolve
+ * { ok, why } ou { ok, circulo, curas: [{ alvo, cura }] }. Sobra de fruta não
+ * existe aqui: o que não cabe em ninguém ferido se perde.
+ */
+export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
+  const spell = SPELLS.bomFruto;
+  const sc = conjurador.spellcasting;
+  if (conjurador.dead || conjurador.hp <= 0) return { ok: false, why: 'quem está caído não conjura' };
+  if (!sc || !magiasProntas(conjurador).includes('bomFruto')) return { ok: false, why: `${spell.name} não está preparada` };
+  if (circulo < spell.level || !(sc.slots?.[circulo] > 0)) return { ok: false, why: `sem espaço de ${circulo}º círculo` };
+  const quem = [...new Set(alvos)].filter((c) => !c.dead && !['morto-vivo', 'constructo'].includes(c.tipo));
+  if (!quem.some((c) => c.hp < c.maxHp)) return { ok: false, why: 'ninguém precisa de cura' };
+  sc.slots[circulo] -= 1;
+  const cura = new Map(quem.map((c) => [c, 0]));
+  for (let i = 0; i < spell.frutos; i++) {
+    // A fruta vai para quem está mais ferido (menor fração de PV).
+    const alvo = quem.filter((c) => c.hp < c.maxHp).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    if (!alvo) break;
+    const antes = alvo.hp;
+    alvo.hp = Math.min(alvo.maxHp, Math.max(0, antes) + 1);
+    if (antes <= 0 && alvo.hp > 0) acordar(alvo);
+    cura.set(alvo, cura.get(alvo) + 1);
+  }
+  return { ok: true, circulo, curas: [...cura].filter(([, n]) => n > 0).map(([alvo, n]) => ({ alvo, cura: n })) };
+}
+
 /** Descanso longo inteiro. */
 export function descansoLongo(c) {
   if (c.dead) return;

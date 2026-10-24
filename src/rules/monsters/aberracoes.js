@@ -245,6 +245,8 @@ export const ABERRACOES = {
     maxHp: 45,
     speedFt: 30,
     skills: ['investigacao', 'percepcao', 'furtividade'],
+    // Vive no breu: o olho único vê longe sem luz nenhuma.
+    senses: { darkvisionFt: 120 },
     attacks: [
       { name: 'Garra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'claw' },
       {
@@ -258,7 +260,7 @@ export const ABERRACOES = {
     ],
     // Duas garras quando o alvo encosta. O olhar é a ação de longe; as garras
     // são o castigo de quem resolveu trocar golpe com ele na soleira.
-    multiattack: { count: 2 },
+    multiattack: { count: 2, sequence: ['Garra', 'Garra'] },
     traits: ['olhoUnico', 'guardaDeSoleira'],
     blurb: 'Fura quem fica longe com um olhar que atrasa, e ganha +2 de CA enquanto guarda a passagem — tire-o de lá.',
   },

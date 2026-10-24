@@ -50,7 +50,7 @@ export const MISSOES = {
   orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'Viajantes relatam orcs perto do Cume da Wyvern, a leste pela Trilha de Triboar. Dar um jeito neles.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
   reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
-  mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Na loja de ervas da família de Mirna, no sudeste das ruínas de Árvore Trovão, há uma caixa escondida sob as prateleiras com um colar de esmeraldas. É de quem achar.' },
+  mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Um colar de esmeraldas, escondido numa caixa sob as prateleiras da antiga loja de ervas da família, no canto sudeste de Árvore Trovão. Mirna o deu a quem o achar.' },
   linene: { titulo: 'Os suprimentos da Escudo Leão', de: 'Linene Graywind', texto: 'A última caravana da Escudo Leão nunca chegou. Quem achar a carga, ou disser onde está, ganha uma recompensa.', recompensa: '50 po' },
 };
 
@@ -339,6 +339,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                   requer: () => (feitos.marcarrubra && !v.feito.sildarPagouGangue ? null : 'nada'), oculta: true },
                 { texto: 'Trouxemos o Cajavidro. É o Iarno.', vai: 'iarno', uma: true,
                   requer: () => (v.iarnoPreso && !v.feito.iarnoEntregue ? null : 'nada'), oculta: true },
+                { texto: 'O chefe dos Marcarrubra era o Iarno.', vai: 'iarnoSumiu', uma: true,
+                  requer: () => (['morto', 'fugiu'].includes(app.campanha?.mansao?.iarno) && !v.feito.iarnoEntregue ? null : 'nada'), oculta: true },
                 { texto: 'E o pagamento da escolta?', vai: 'escolta', uma: true,
                   requer: () => (!v.feito.escolta ? null : 'nada'), oculta: true },
                 { texto: 'Procurar o chefe da vila.', fim: 'harbin' },
@@ -370,6 +372,14 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                 'Iarno. Eu vim a Phandalin procurar você. Achei que estivesse morto.',
                 'Fica preso no salão até eu conseguir mandá-lo para Neverwinter. Lá decidem o que fazer com um traidor da Aliança. Vocês fizeram mais do que eu pedi.',
               ],
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            iarnoSumiu: {
+              ao: () => { v.feito.iarnoEntregue = true; concluir('iarno'); feitos.traicaoDeIarno = true; },
+              narra: 'Vocês contam do mago do cajado de vidro: a barba, a altura, o jeito de falar. Sildar fica calado um tempo.',
+              fala: () => (app.campanha?.mansao?.iarno === 'morto'
+                ? ['É ele. Iarno. Vim a Phandalin atrás dele e ele estava aqui o tempo todo, mandando nos bandidos.', 'Morto, não responde a ninguém. Mas Neverwinter vai saber o que ele fez, e a Aliança vai olhar com mais cuidado para quem manda para longe.']
+                : ['Iarno. Vivo, solto, e agora sabendo que alguém viu a cara dele.', 'Vou escrever para Neverwinter hoje. Se ele aparecer em qualquer cidade da Aliança, vai ter quem o reconheça.']),
               opcoes: [{ texto: '…', vai: 'oi' }],
             },
             escolta: {
@@ -625,8 +635,9 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
 
   async function semNpc(l) {
     if (l.id === 'marcenaria') {
-      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: [
-        'A oficina de Thel Dendrar está fechada, a porta escorada com uma tábua. Lá dentro, cadeiras pela metade e serragem no chão. Ninguém mexe nisso há dias.'] }] });
+      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: v.feito.dendrarEmCasa
+        ? ['A porta está aberta de novo. Mirna varre a serragem devagar enquanto os filhos separam as tábuas boas das ruins. Ninguém fala muito. Quando veem vocês, param e acenam.']
+        : ['A oficina de Thel Dendrar está fechada, a porta escorada com uma tábua. Lá dentro, cadeiras pela metade e serragem no chão. Ninguém mexe nisso há dias.'] }] });
       return 'sai';
     }
     if (l.id === 'gigante') return v.feito.ruaVencida ? gigante() : 'gigante';

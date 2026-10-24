@@ -172,6 +172,9 @@ def main():
             if c in fil.get('pular', []):
                 continue
             cx, cy = (c + 0.5) * cwr, (r + 0.5 + fil.get('dy', 0)) * ch
+            # `x0`/`passoX`: centros dos quadros fora da grade regular (o gerador deslocou a fileira)
+            if 'passoX' in fil:
+                cx = fil.get('x0', cwr / 2) + c * fil['passoX']
             qx = qr * largura
             cel = folha.crop((int(cx - qx / 2), int(cy - qr / 2), int(cx + qx / 2), int(cy + qr / 2)))
             grade = converter_celula(cel, lado, pal, esp.get('fundoEscuro', False), largo, fil.get('franjaEstreita', False), fil.get('fundoClaro', False))

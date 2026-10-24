@@ -25,5 +25,7 @@ for ARM in couro couroBatido malha; do
   Q="$P/anim-corin-queda-sem-arma$K"
   imp $P/anim$K ranger $ARM-espada
   imp $EP/anim$K rangerEspadas $ARM-espadas --queda-de "$Q"
-  imp $AR/anim$K rangerArco $ARM-arco --queda-de "$Q"
+  # a base do arco despiu as pernas a nordeste: o couro usa a copia vestida
+  A=$AR/anim$K; [ $ARM = couro ] && A=$AR/anim-corin-calca
+  imp $A rangerArco $ARM-arco --queda-de "$Q"
 done

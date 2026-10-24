@@ -212,6 +212,14 @@ _TORVIK_MANTEM = (
     'every frame, the direction each frame faces and the colours.'
 )
 
+_CORIN_MANTEM = (
+    ' Keep everything else exactly the same: the lean human ranger with short '
+    'brown hair and a short beard, the brown leather cuirass with the crossed '
+    'straps, the moss green cloak with the hood down, the quiver on his back, '
+    'the belt, the boots, the pose and position in every frame, the direction '
+    'each frame faces and the colours.'
+)
+
 # O KIT DO PIP: as armas por edicao da folha base (espada curta) e da de duas
 # adagas; o couro batido por edicao de todas.
 _PIP_MANTEM = (
@@ -297,6 +305,33 @@ EDICOES.update({
         'Remove the shield and any weapon near him. The dwarf keeps the same armor, '
         'helm, blue tabard, pose and colours; where the shield was, draw his arm '
         'and his armored body instead. Nothing else changes.'),
+    # O KIT DO CORIN: as armaduras por edicao de todas as posturas.
+    'corin-armadura-couro-batido': (
+        'Replace his plain brown leather cuirass with studded leather armor: a '
+        'darker brown leather jerkin covered with rows of small round steel '
+        'rivets, with studded leather shoulder guards. His legs are always covered '
+        'by dark trousers and tall leather boots, never bare skin. Keep the weapons '
+        'he holds exactly as they are in every frame: same shape, position and colour.'
+        + _CORIN_MANTEM.replace('the brown leather cuirass with the crossed straps, ', '')),
+    'corin-armadura-malha': (
+        'Replace his brown leather cuirass with a steel chain shirt: a short '
+        'hauberk of small riveted steel rings covering his chest and belly down to '
+        'the hips, with short mail sleeves, worn under the crossed leather straps. '
+        'His legs are always covered by dark trousers and tall leather boots, never bare skin. '
+        'Keep the weapons he holds exactly as they are in every frame: same shape, '
+        'position and colour.'
+        + _CORIN_MANTEM.replace('the brown leather cuirass with the crossed straps, ', '')),
+    # no golpe do arco a nordeste o modelo despiu as pernas (e o importador,
+    # que centra pela pele, fez a figura pular de lado)
+    'corin-calca': (
+        'Dress his bare legs: he wears dark grey-brown trousers down to tall brown '
+        'leather boots, no bare skin on the legs or thighs. Keep the bow and arrow '
+        'exactly as they are in every frame: same shape, position and colour.'
+        + _CORIN_MANTEM),
+    'corin-queda-sem-arma': (
+        'Remove the longsword and any weapon near him. The ranger keeps the same '
+        'cloak, armor, pose and colours; where the sword was, only the ground. '
+        'Nothing else changes.'),
     'pip-armadura-couro-batido': (
         'Replace his plain brown leather armor with studded leather armor: a '
         'darker brown leather jerkin covered with rows of small round steel '
@@ -348,6 +383,10 @@ ATAQUE_POR_PERFIL = {
     'paladinAzagaia': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [2, 7], 'north': [3, 5], 'north-west': [2, 7], 'west': [3, 5], 'south-west': [3, 5]},
     'paladinBesta': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 3], 'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 5], 'west': [2, 3], 'south-west': [3, 5]},
     'paladinArco': {'south': [4, 6], 'south-east': [3, 6], 'east': [4, 6], 'north-east': [1, 8], 'north': [3, 6], 'north-west': [1, 8], 'west': [4, 6], 'south-west': [3, 6]},
+    # o Corin
+    'ranger': {'south': [2, 5], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [5, 2], 'north': [2, 5], 'north-west': [5, 2], 'west': [2, 4], 'south-west': [3, 5]},
+    'rangerEspadas': {'south': [2, 4], 'south-east': [2, 5], 'east': [4, 3], 'north-east': [1, 4], 'north': [4, 6], 'north-west': [1, 4], 'west': [4, 3], 'south-west': [2, 5]},
+    'rangerArco': {'south': [3, 6], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [3, 6], 'north': [3, 5], 'north-west': [3, 6], 'west': [3, 5], 'south-west': [3, 5]},
 }
 ATAQUE = ATAQUE_DARA
 COM_QUEDA = False
@@ -494,6 +533,10 @@ def main():
         r = chamar(token, 'POST', '/edit-animation-v2', corpo)
         print(f'{d}: trabalho {r["background_job_id"]}  usage={r.get("usage")}', flush=True)
         jobs.append((d, pos, cels, jan, r['background_job_id']))
+        # O id vai para o disco ANTES da espera: se o processo morrer, o
+        # resultado (ja pago) volta com `--trabalhos` sem pagar de novo.
+        with open(saida / 'trabalhos.txt', 'a', encoding='utf-8') as f:
+            f.write(f'{d}={r["background_job_id"]}\n')
 
     # A copia da folha: os quadros editados por cima, o resto igual.
     destino = fonte.parent / (a.saida or f'{fonte.name}-{a.edicao}')
@@ -502,16 +545,24 @@ def main():
     nova = Image.open(destino / meta['path']).convert('RGBA')
     colar = {int(v) for v in a.colar.split(',')} if a.colar else None
     inicio = time.time()
+    falhas = []
     for d, pos, cels, jan, job in jobs:
+        # Uma direcao que falha (o servidor derruba trabalho parado) nao leva
+        # as outras junto: a folha sai com as prontas e a falha e repedida so.
         while True:
-            st = chamar(token, 'GET', f'/background-jobs/{job}')
-            if st.get('status') == 'completed':
+            try:
+                st = chamar(token, 'GET', f'/background-jobs/{job}')
+            except SystemExit as e:   # 500 passageiro na consulta
+                print(f'{d}: consulta falhou ({e}); tentando de novo', flush=True)
+                time.sleep(30)
+                continue
+            if st.get('status') in ('completed', 'failed') or time.time() - inicio > 5400:
                 break
-            if st.get('status') == 'failed':
-                raise SystemExit(f'{d} falhou: {json.dumps(st)[:600]}')
-            if time.time() - inicio > 1800:
-                raise SystemExit('tempo esgotado')
             time.sleep(10)
+        if st.get('status') != 'completed':
+            print(f'{d} FALHOU ({job}): {json.dumps(st)[:300]}', flush=True)
+            falhas.append(d)
+            continue
         lr = st.get('last_response') or {}
         imgs = imagens_em(lr.get('quantized_images') or lr.get('images'))
         print(f'{d}: pronto, {len(imgs)} quadros, custo {st.get("usage")}', flush=True)
@@ -528,7 +579,7 @@ def main():
             tira.alpha_composite(ed, ((i * 2 + 1) * JANELA, 0))
         tira.save(saida / f'{d}.png')
     nova.save(destino / meta['path'])
-    print(f'folha editada: {destino}')
+    print(f'folha editada: {destino}' + (f'  FALTAM: {",".join(falhas)}' if falhas else ''))
 
 
 if __name__ == '__main__':

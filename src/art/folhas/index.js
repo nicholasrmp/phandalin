@@ -29,8 +29,8 @@ import urlGoblinBoss from './goblinBoss.png';
 // (`dara-malha-maca-escudo`, `brenn-escamas-besta`). O registro se monta
 // sozinho a partir dos nomes (abaixo), porque sao dezenas de combinacoes e
 // uma lista escrita a mao erraria uma.
-const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json', './pip-*.json', './ilvan-*.json', './grask-*.json', './torvik-*.json'], { eager: true, import: 'default' });
-const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png', './pip-*.png', './ilvan-*.png', './grask-*.png', './torvik-*.png'], { eager: true, query: '?url', import: 'default' });
+const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json', './pip-*.json', './ilvan-*.json', './grask-*.json', './torvik-*.json', './corin-*.json'], { eager: true, import: 'default' });
+const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png', './pip-*.png', './ilvan-*.png', './grask-*.png', './torvik-*.png', './corin-*.png'], { eager: true, query: '?url', import: 'default' });
 
 // De quem e cada prefixo, e qual folha e a PADRAO -- a do kit das regras, que
 // leva a chave do look e carrega primeiro.
@@ -41,6 +41,7 @@ const HEROIS = {
   ilvan: { look: 'wizard', padrao: 'roupa-bordao' },
   grask: { look: 'barbarian', padrao: 'roupa-machado-grande' },
   torvik: { look: 'paladin', padrao: 'malha-espada-escudo' },
+  corin: { look: 'ranger', padrao: 'couro-espadas' },
 };
 
 // UMA FIGURA, VARIAS FOLHAS: O QUE ELA TEM NAS MAOS.
@@ -148,10 +149,12 @@ const FAMILIA_DA_ARMA = {
 // cujo desenho serve enquanto o reskin nao existe. A Dragonguard e um
 // peitoral, entao veste as placas. O martelo tem desenho so no kit do Brenn;
 // na mao de quem nao tem, vale a maca. Rapieira, adaga e besta de mao, so no
-// do Pip: na Dara valem a espada e a besta.
+// do Pip: na Dara valem a espada e a besta. A brunea veste a malha em quem
+// nao tem escamas desenhadas (Corin, Dara, Torvik); antes ela caia na
+// Dragonguard por empate.
 const MAE = {
   talon: 'espada', lightbringer: 'maca', hew: 'machado', dragonguard: 'placas', martelo: 'maca',
-  rapieira: 'espada', adaga: 'espada', bestaDeMao: 'besta', couroBatido: 'couro',
+  rapieira: 'espada', adaga: 'espada', bestaDeMao: 'besta', couroBatido: 'couro', escamas: 'malha',
   cajadoDeDefesa: 'bordao', cajadoAranha: 'bordao',
 };
 

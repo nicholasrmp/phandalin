@@ -80,3 +80,10 @@ recorte('egide-domo', 'egide', [0, 1, 3]);
 variante('egide-violeta', 'egide-domo', { 6: 'd', 7: 'd' });
 // Medo: o crânio de fumaça em violeta, não cinza.
 variante('medo-espectro', 'medo-espectro', { 3: 'd' });
+
+// Glifo de Proteção: a erupção dourada na cor de cada tipo de dano da runa.
+variante('glifo-acido', 'glifo-erupcao', { 6: 'c', 7: '5' });
+variante('glifo-frio', 'glifo-erupcao', { 6: '9', 7: '3', b: '1' });
+variante('glifo-fogo', 'glifo-erupcao', { 6: '8', 7: '5', b: '6' });
+variante('glifo-eletrico', 'glifo-erupcao', { 6: 'b', 7: '9', 1: '9' });
+variante('glifo-trovejante', 'glifo-erupcao', { 6: 'd', 7: '3', b: '1' });

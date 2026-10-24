@@ -331,7 +331,7 @@ export const NPCS = {
       fala: 'Cortês e condescendente, usa o título antigo. Oferece acordo primeiro, porque gosta mais de ser aceito que de vencer.',
     },
     frase: 'Eu fui enviado para trazer a lei. Eu trouxe. A lei agora é minha.',
-    blurb: 'Abre com cone de fogo nos amontoados e some em invisibilidade quando a CA dele falha.',
+    blurb: 'Luta de longe atrás da armadura arcana, com raio de gelo; com 8 PV ou menos e encurralado, se rende.',
   },
 
   nezznar: {

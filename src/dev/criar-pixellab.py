@@ -600,6 +600,66 @@ for _chave, _edicao, _maos in (
         },
     }
 
+# Corin, patrulheiro humano. Alvo: 61 px de figura, quadro 64. Kit decidido
+# com o dono: espada longa, duas espadas curtas e arco longo; couro (a base),
+# couro batido e camisao de malha. Cores do retrato (`src/art/retratos/
+# ranger.webp`): cabelo castanho curto, barba curta, capa verde-musgo de capuz
+# ABAIXADO, couro marrom com correias cruzadas no peito. O capuz abaixado e o
+# porte alto o separam do Pip (capa verde de capuz levantado, halfling).
+PERSONAGENS['ranger'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Corin, patrulheiro humano',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male human ranger. ' + ESTILO_HEROI +
+            'Skin ramp: #e2b08c light, #c08866 mid, #7e5440 deep shadow. Hair '
+            'and beard: brown, #7a5a3c light, #5a4028 mid, #36261a deep. Cloak: '
+            'moss green, #5e6e48 light, #44523a mid, #2a3424 deep. Leather: '
+            'brown, #8a6444 light, #624630 mid, #3a2a1e deep. Steel ramp: '
+            '#d8dde3, #9aa3ad, #4e5660. Eyes: grey-green. THE HUMAN: a lean, '
+            'athletic man of average height, a weathered face, short tousled '
+            'brown hair and a short brown beard. ARMOR: a fitted brown leather '
+            'cuirass with leather shoulder guards and leather bracers, two '
+            'leather straps crossing his chest, a belt with pouches, dark '
+            'trousers and tall leather boots. A long moss green cloak over his '
+            'shoulders, the HOOD DOWN on his back, his head bare. A leather '
+            'quiver of arrows on his back. WEAPON: a steel longsword in his '
+            'right hand. POSE: standing in a ready stance facing the viewer, '
+            'feet apart, the longsword held low and out from the body, the left '
+            'hand free and slightly forward, so the silhouette is broken and '
+            'readable. Full body in frame. BACKGROUND: plain, empty. No ground, '
+            'no shadow, no scenery, no text. NEGATIVE: anti-aliasing, blur, '
+            'gradients, painted rendering, 3D render, multiple characters, hood '
+            'up, helmet, shield, metal armor.'
+        ),
+    },
+}
+
+# AS POSTURAS DO CORIN, registradas das tiras das edicoes `corin-*`.
+_CORIN = ('A pixel art game sprite of a lean male human ranger with short brown '
+          'hair and a short beard, a brown leather cuirass and a moss green cloak '
+          'with the hood down, ')
+for _chave, _edicao, _maos in (
+        ('rangerEspadas', 'corin-espadas', 'a steel shortsword in each hand.'),
+        ('rangerArco', 'corin-arco', 'a longbow of brown wood in his left hand.')):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': f'_referencias/pixellab/edicoes/{_edicao}/tira.png',
+        'corpo': {
+            'name': f'Corin ({_edicao[6:]})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': _CORIN + _maos,
+        },
+    }
+
 # A ordem das oito vistas na tira de uma edicao, a mesma das rotacoes.
 DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
             'west', 'south-west']

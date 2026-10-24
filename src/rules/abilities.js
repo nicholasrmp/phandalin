@@ -37,9 +37,11 @@ export function skillBonus(actor, skill) {
   const ability = SKILLS[skill];
   const base = abilityMod(actor.abilities[ability]);
   const prof = proficiencyBonus(actor.level);
-  if (actor.expertise?.includes(skill)) return base + prof * 2;
-  if (actor.skills?.includes(skill)) return base + prof;
-  return base;
+  // Passo sem Rastro: +10 em Furtividade (`conditions.js`, `semRastro`).
+  const rastro = skill === 'furtividade' && actor.conditions?.some((c) => c.id === 'semRastro') ? 10 : 0;
+  if (actor.expertise?.includes(skill)) return base + prof * 2 + rastro;
+  if (actor.skills?.includes(skill)) return base + prof + rastro;
+  return base + rastro;
 }
 
 /** Bônus de um teste de resistência. */

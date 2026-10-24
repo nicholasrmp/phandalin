@@ -26,7 +26,7 @@ const nomeado = (id, name, raridade, desc, extra = {}) => ({
 export const PHANDELVER_ITEMS = {
   // ------------------------------------------- saídas da Forja das Magias ----
   talon: nomeado('talon', 'Talon', 'incomum',
-    'Espada longa +1 com um falcão gravado no copo. A lâmina acende sozinha quando há orc por perto.',
+    'Espada longa +1, de copo em forma de falcão. Foi de um cavaleiro Tresendar, há muito tempo.',
     { tipo: 'arma mágica', art: 'espada', peso: 3, bonusAtaque: 1, bonusDano: 1, base: 'espadaLonga' }),
 
   lightbringer: nomeado('lightbringer', 'Lightbringer', 'incomum',
@@ -68,6 +68,18 @@ export const PHANDELVER_ITEMS = {
   pergaminhoDeMagia: nomeado('pergaminhoDeMagia', 'Pergaminho de magia', 'comum',
     'Uma única magia escrita para ser lida uma vez só. O pergaminho vira cinza junto com a conjuração.',
     { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, consumivel: 'magia', acao: 'acao' }),
+  // Os três do esconderijo dos Marcarrubra. Ainda não se leem em combate (o
+  // motor não conjura de pergaminho): por ora são tesouro, e o Câmbio de
+  // Minério paga o preço de tabela.
+  pergaminhoDeAuguro: nomeado('pergaminhoDeAuguro', 'Pergaminho de Augúrio', 'incomum',
+    'Augúrio, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 50, magia: 'augurio' }),
+  pergaminhoDeEnfeiticar: nomeado('pergaminhoDeEnfeiticar', 'Pergaminho de Enfeitiçar Pessoa', 'comum',
+    'Enfeitiçar Pessoa, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 25, magia: 'enfeiticarPessoa' }),
+  pergaminhoDeBolaDeFogo: nomeado('pergaminhoDeBolaDeFogo', 'Pergaminho de Bola de Fogo', 'incomum',
+    'Bola de Fogo, escrita para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 150, magia: 'bolaDeFogo' }),
 };
 
 /**

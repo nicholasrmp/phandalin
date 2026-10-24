@@ -31,6 +31,7 @@ import { criarMenu } from './view/menu.js';
 import { audio } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
+  playGlifoVisual, playCordaoVisual, playAnuladaVisual,
 } from './view/visuals.js';
 
 
@@ -354,7 +355,7 @@ class App {
         // Flecha Relampejante: faísca no alvo e um anel de raios na explosão.
         if (ev.efeito === 'flecha') {
           // O raio corre do atirador ao alvo (~0,25 s) antes da faísca.
-          board?.fx.beam(ev.atacante.pos, ev.alvo.pos, { color: '#bfe6ff', dur: 0.25, width: 4, jagged: true });
+          board?.fx.projectile(ev.atacante.pos, ev.alvo.pos, { style: 'sprite', sprite: 'flecha-raio', dur: 0.25, arc: 0.15 });
           this.atImpact(() => {
             board?.fx.quadros(ev.alvo.pos, 'eletrico-faisca', { fps: 16, altura: 24 });
             board?.fx.ring(ev.alvo.pos, { color: '#bfe6ff', radius: 90, dur: 0.5, width: 3 });
@@ -366,6 +367,24 @@ class App {
         const nome = espinhos ? 'vinhas'
           : { fogo: 'golpe-fogo', 'psíquico': 'golpe-psiquico', trovejante: 'golpe-trovao' }[ev.tipo] ?? 'golpe-divino';
         this.atImpact(() => board?.fx.quadros(ev.alvo.pos, nome, espinhos ? { fps: 12, altura: 18 } : { fps: 8, sumir: 0.25 }));
+        break;
+      }
+
+      // Lote 12: a runa estoura, uma flecha do cordão voa, o voador pousa de pé, a magia é anulada.
+      case 'glifo': {
+        playGlifoVisual(board, ev);
+        break;
+      }
+      case 'cordao': {
+        playCordaoVisual(board, ev);
+        break;
+      }
+      case 'pousou': {
+        board?.fx.motes(ev.target.pos, { color: '#dff3ff', count: 8, rise: 18, spread: 18, dur: 0.6 });
+        break;
+      }
+      case 'anulada': {
+        playAnuladaVisual(board, ev);
         break;
       }
 
@@ -573,6 +592,7 @@ class App {
       // resolve na hora.
       const ativa = c.magiasAtivas?.[spell.id];
       if (spell.kind === 'tempHp' || spell.kind === 'aura' || spell.kind === 'disparada' || spell.kind === 'reacao'
+        || spell.kind === 'frutos' || spell.kind === 'rastro'
         || (spell.kind === 'buff' && spell.rangeFt === 0)
         || (['lamina', 'curaReuso'].includes(spell.kind) && !ativa)) {
         this.tryCast(c, action.spellId);

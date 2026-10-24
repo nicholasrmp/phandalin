@@ -12,7 +12,7 @@ import { makeMonster, MONSTERS } from '../rules/monsters.js';
 import { skillBonus } from '../rules/abilities.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
-import { marcarTreinoDeArmadura } from '../rules/equipment.js';
+import { marcarTreinoDeArmadura, quantosNaMochila, WEAPONS } from '../rules/equipment.js';
 import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
 import { takeMonsterTurn, contornaZonas } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
@@ -20,7 +20,7 @@ import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects }
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
-import { oracaoDeCura } from '../rules/descanso.js';
+import { oracaoDeCura, bomFrutoNoDescanso } from '../rules/descanso.js';
 
 const MAPA = Array(12).fill('............');
 const [DARA, PIP, BRENN, ILVAN] = [0, 1, 2, 3];
@@ -3125,5 +3125,357 @@ teste('Dissipar Magia em Aprimorar Atributo (Urso) tira os PV temporários', () 
   assert.equal(dara.tempHp, 0, 'os PV temporários vão junto');
 });
 
+// ---- lote 12: Queda Suave, Bom Fruto, Imagem Silenciosa/Maior, Cordão de Flechas, Passo sem Rastro,
+//      Patas de Aranha, Contramágica, Glifo de Proteção ----
+
+teste('Queda Suave: quando o Voo acaba, a reação de um aliado faz o voador descer sem dano e de pé', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['voo', 'quedaSuave'] });
+  assert.ok(enc.castSpell(ilvan, 'voo', { target: dara, targets: [dara] }).ok);
+  const hp = dara.hp;
+  const slots = ilvan.spellcasting.slots[1];
+  enc.dropConcentration(ilvan);
+  assert.ok(!hasCondition(dara, 'voando'));
+  assert.equal(dara.hp, hp, 'sem dano de queda');
+  assert.ok(!hasCondition(dara, 'caido'), 'pousa de pé');
+  assert.equal(ilvan.reactionUsed, true, 'gastou a reação');
+  assert.equal(ilvan.spellcasting.slots[1], slots - 1, 'e um espaço de 1º círculo');
+});
+
+teste('Queda Suave: sem reação livre (ou sem a magia), a queda dói como sempre; até 5 criaturas, 18 m', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['voo', 'quedaSuave'] });
+  assert.ok(enc.castSpell(ilvan, 'voo', { target: dara, targets: [dara] }).ok);
+  ilvan.reactionUsed = true;
+  const hp = dara.hp;
+  enc.dropConcentration(ilvan);
+  assert.ok(dara.hp < hp && hasCondition(dara, 'caido'), 'sem reação, cai');
+  // Fora do alcance de 18 m: a reação não vale.
+  const m = magoDoLote({ magias: ['voo', 'quedaSuave'] });
+  assert.ok(m.enc.castSpell(m.ilvan, 'voo', { target: m.dara, targets: [m.dara] }).ok);
+  m.ilvan.pos = { x: 0, y: 0 };
+  m.dara.pos = { x: 11, y: 11 };
+  m.enc.field.tiles[5 * 12 + 5] = 1; // uma parede no meio: Ilvan não vê Dara cair
+  m.enc.dropConcentration(m.ilvan);
+  assert.ok(hasCondition(m.dara, 'caido'), 'sem linha de visão a magia não alcança');
+  // Cinco criaturas de uma vez.
+  const g = magoDoLote({ magias: ['quedaSuave'] });
+  const seis = [g.dara, g.party[PIP], g.party[BRENN], g.ilvan];
+  const antes = seis.map((c) => c.hp);
+  g.enc.quedaDe(seis);
+  assert.deepEqual(seis.map((c) => c.hp), antes, 'quatro caindo, todos amortecidos por uma reação só');
+  assert.ok(seis.every((c) => !hasCondition(c, 'caido')));
+});
+
+teste('Bom Fruto: dez frutinhas na mochila, cada uma cura 1 PV com uma ação; fora de combate o descanso as reparte', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['bomFruto'] });
+  assert.ok(enc.castSpell(ilvan, 'bomFruto').ok);
+  assert.equal(quantosNaMochila(ilvan, 'bomFruto'), 10);
+  dara.hp = dara.maxHp - 5;
+  dara.pos = { x: 6, y: 5 };
+  ilvan.pos = { x: 6, y: 6 };
+  liberarAcao(ilvan);
+  const r = enc.useItem(ilvan, 'bomFruto', { target: dara });
+  assert.ok(r.ok, r.why);
+  assert.equal(dara.hp, dara.maxHp - 4);
+  assert.equal(quantosNaMochila(ilvan, 'bomFruto'), 9);
+  // Descanso: até 10 PV distribuídos, a quem está mais ferido.
+  const d = montar({ nivel: 5 });
+  const mago = d.party[ILVAN];
+  mago.spellcasting.prepared.push('bomFruto');
+  d.party[DARA].hp = d.party[DARA].maxHp - 3;
+  d.party[PIP].hp = d.party[PIP].maxHp - 20;
+  const ant = [d.party[DARA].hp, d.party[PIP].hp];
+  const rr = bomFrutoNoDescanso(mago, d.party);
+  assert.ok(rr.ok, rr.why);
+  assert.equal(rr.curas.reduce((t, c) => t + c.cura, 0), 10);
+  assert.equal(d.party[DARA].hp - ant[0] + d.party[PIP].hp - ant[1], 10);
+});
+
+teste('Imagem Silenciosa: 3×3 casas, tira a visão do outro lado, anda com a ação; desfaz ao ser examinada', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['imagemSilenciosa'], foes: [['bandidoMachadeiro', { x: 10, y: 5 }]] });
+  ilvan.pos = { x: 2, y: 5 };
+  dara.pos = { x: 1, y: 5 };
+  const foe = foes[0];
+  assert.ok(comoVe(enc, ilvan, foe.pos) > 0 && comoVe(enc, foe, ilvan.pos) > 0, 'sem a imagem, todos se veem');
+  assert.equal(enc.castSpell(ilvan, 'imagemSilenciosa', { point: { x: 40, y: 5 } }).ok, false);
+  assert.ok(enc.castSpell(ilvan, 'imagemSilenciosa', { point: { x: 5, y: 4 } }).ok);
+  const z = enc.zonas.find((x) => x.spellId === 'imagemSilenciosa');
+  assert.equal(z.casas.size, 9, '3×3');
+  assert.equal(comoVe(enc, foe, ilvan.pos), 0, 'o inimigo não vê o que está atrás da imagem');
+  assert.ok(comoVe(enc, ilvan, foe.pos) > 0, 'o conjurador vê através dela');
+  // Mover com a ação: a imagem sai do caminho e o cache de visão acompanha.
+  liberarAcao(ilvan);
+  const mover = enc.castSpell(ilvan, 'imagemSilenciosa', { point: { x: 5, y: 8 } });
+  assert.ok(mover.ok, mover.why);
+  assert.equal(enc.zonas.filter((x) => x.spellId === 'imagemSilenciosa').length, 1);
+  assert.ok(z.casas.has('5,8') && !z.casas.has('5,4'), 'a imagem andou');
+  assert.ok(comoVe(enc, foe, ilvan.pos) > 0, 'liberou a linha de visão');
+  assert.equal(ilvan.spellcasting.slots[1], 3, 'mover não gasta espaço (4 − 1)');
+  // Concentração caiu, imagem some.
+  enc.dropConcentration(ilvan);
+  assert.ok(!enc.zonas.some((x) => x.spellId === 'imagemSilenciosa'));
+});
+
+teste('Imagens: a Silenciosa anda até 120 pés por vez e a Maior até 240, ao alcance', () => {
+  assert.equal(getSpell('imagemSilenciosa').zona.movel, 120);
+  assert.equal(getSpell('imagemMaior').zona.movel, 240);
+});
+
+teste('Imagem Maior: 4×4 casas e 36 m; o inimigo que a examina com sucesso a desfaz', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['imagemMaior'], foes: [['bandidoMachadeiro', { x: 9, y: 6 }]] });
+  assert.ok(enc.castSpell(ilvan, 'imagemMaior', { point: { x: 5, y: 3 } }).ok);
+  const z = enc.zonas.find((x) => x.spellId === 'imagemMaior');
+  assert.equal(z.casas.size, 16, '4×4');
+  assert.equal(z.ilusao, true);
+  // O bandido está colado na imagem: examina e vê que é só uma ilusão.
+  const foe = foes[0];
+  foe.pos = { x: 8, y: 5 };
+  d20Fixo(enc, 20);
+  enc.beginSide('foes');
+  assert.ok(enc.examinarIlusao(foe, z).ok);
+  assert.ok(!enc.zonas.includes(z), 'desfeita');
+});
+
+teste('Cordão de Flechas: uma flecha ataca o inimigo que entra a 9 m (1ª vez no turno) ou termina o turno ali; 4 flechas e acaba', () => {
+  const { enc, h, foes, log } = comHeroi('patrulheiro', 5, { magias: ['cordaoDeFlechas'], foes: [['bandidoMachadeiro', { x: 10, y: 10 }]] });
+  h.pos = { x: 2, y: 2 };
+  assert.ok(enc.castSpell(h, 'cordaoDeFlechas', { point: { x: 3, y: 2 } }).ok);
+  const z = enc.zonas.find((x) => x.spellId === 'cordaoDeFlechas');
+  assert.equal(z.cordao.flechas, 4);
+  assert.ok(z.cd > 0, 'a zona leva a CD da magia');
+  const foe = foes[0];
+  foe.maxHp = foe.hp = 500;
+  enc.beginSide('foes');
+  foe.pos = { x: 11, y: 2 };
+  const n = log.length;
+  enc.moveAlong(foe, [{ x: 11, y: 2 }, { x: 10, y: 2 }]);
+  assert.equal(z.cordao.flechas, 4, 'a 35 pés ainda não entrou (o alcance é 30 pés a partir de x=3)');
+  foe.movementLeftFt = 30;
+  enc.moveAlong(foe, [{ x: 10, y: 2 }, { x: 9, y: 2 }, { x: 8, y: 2 }]);
+  assert.equal(z.cordao.flechas, 3, 'entrou: uma flecha');
+  assert.ok(log.slice(n).some((e) => /Cordão de Flechas/.test(e.text)));
+  foe.movementLeftFt = 30;
+  enc.moveAlong(foe, [{ x: 8, y: 2 }, { x: 7, y: 2 }]);
+  assert.equal(z.cordao.flechas, 3, 'só a primeira entrada vale no turno');
+  enc.fimDoTurnoDoLado('foes');
+  assert.equal(z.cordao.flechas, 2, 'terminar o turno ali dá mais uma flecha');
+  // Aliado não dispara.
+  enc.cordaoNoFimDoTurno(h);
+  assert.equal(z.cordao.flechas, 2, 'quem é do lado do conjurador não dispara');
+  // As flechas acabam.
+  enc.cordaoNoFimDoTurno(foe);
+  enc.cordaoNoFimDoTurno(foe);
+  assert.ok(!enc.zonas.includes(z), 'sem flechas, a magia acaba');
+});
+
+teste('Cordão de Flechas: resistência de DES contra a CD; falhou = 1d6 perfurante cheio, passou = nada; gasta a flecha nos dois casos', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 5, { magias: ['cordaoDeFlechas'], foes: [['bandidoMachadeiro', { x: 10, y: 10 }]] });
+  h.pos = { x: 2, y: 2 };
+  assert.ok(enc.castSpell(h, 'cordaoDeFlechas', { point: { x: 3, y: 2 } }).ok);
+  const z = enc.zonas.find((x) => x.spellId === 'cordaoDeFlechas');
+  const foe = foes[0];
+  foe.maxHp = foe.hp = 500;
+  foe.pos = { x: 5, y: 2 };
+  resistenciasDao(enc, true);
+  enc.flechaDoCordao(z, foe, 'termina o turno no alcance do');
+  assert.equal(foe.hp, 500, 'passou: nada');
+  assert.equal(z.cordao.flechas, 3, 'a flecha gasta mesmo assim');
+  resistenciasDao(enc, false);
+  enc.flechaDoCordao(z, foe, 'termina o turno no alcance do');
+  assert.ok(foe.hp < 500 && foe.hp >= 494, 'falhou: 1d6 cheio');
+  assert.equal(z.cordao.flechas, 2);
+});
+
+teste('Cordão de Flechas: círculo acima do 2º dá +2 flechas', () => {
+  const { enc, h } = comHeroi('patrulheiro', 5, { magias: ['cordaoDeFlechas'], foes: [['bandidoMachadeiro', { x: 10, y: 10 }]] });
+  h.spellcasting.slots[3] = 1;
+  h.spellcasting.slots[2] = 0;
+  assert.ok(enc.castSpell(h, 'cordaoDeFlechas', { point: { x: 3, y: 5 }, circulo: 3 }).ok);
+  assert.equal(enc.zonas.find((x) => x.spellId === 'cordaoDeFlechas').cordao.flechas, 6);
+});
+
+teste('Passo sem Rastro: +10 em Furtividade para quem está a 9 m; ao se afastar, perde', () => {
+  const { enc: e2, ilvan, dara, party } = magoDoLote({ magias: ['passoSemRastro'] });
+  ilvan.pos = { x: 6, y: 1 };
+  dara.pos = { x: 6, y: 4 };
+  party[PIP].pos = { x: 6, y: 11 };
+  const furt = (c) => skillBonus(c, 'furtividade');
+  const [d0, p0, i0] = [furt(dara), furt(party[PIP]), furt(ilvan)];
+  assert.ok(e2.castSpell(ilvan, 'passoSemRastro').ok);
+  assert.equal(furt(dara), d0 + 10, 'a 6 m');
+  assert.equal(furt(ilvan), i0 + 10, 'o conjurador também');
+  assert.equal(furt(party[PIP]), p0, 'a 15 m, não');
+  // Afastar-se de quem conjurou tira o véu.
+  dara.pos = { x: 6, y: 9 };
+  e2.renovarRastro();
+  assert.equal(furt(dara), d0, 'longe demais');
+  dara.pos = { x: 6, y: 5 };
+  e2.renovarRastro();
+  assert.equal(furt(dara), d0 + 10, 'voltou');
+  e2.dropConcentration(ilvan);
+  assert.equal(furt(dara), d0, 'sem concentração, acaba');
+});
+
+teste('Passo sem Rastro: quem foi dissipado não ganha o véu de volta ao renová-lo', () => {
+  const { enc: e2, ilvan, dara } = magoDoLote({ magias: ['passoSemRastro', 'dissiparMagia'] });
+  ilvan.pos = { x: 6, y: 1 };
+  dara.pos = { x: 6, y: 4 };
+  assert.ok(e2.castSpell(ilvan, 'passoSemRastro').ok);
+  assert.ok(dara.conditions.some((c) => c.id === 'semRastro'));
+  const conc = ilvan.concentrating;
+  conc.dissipados = [dara.id];
+  dara.conditions = dara.conditions.filter((c) => c.id !== 'semRastro');
+  e2.renovarRastro();
+  assert.ok(!dara.conditions.some((c) => c.id === 'semRastro'), 'não volta');
+  assert.ok(ilvan.conditions.some((c) => c.id === 'semRastro'), 'o conjurador segue com o véu');
+});
+
+teste('Passo sem Rastro: a Furtividade de surpresa do combate soma o +10', () => {
+  const { enc, ilvan, dara, party } = magoDoLote({ magias: ['passoSemRastro'] });
+  assert.ok(enc.castSpell(ilvan, 'passoSemRastro').ok);
+  assert.ok(party.every((c) => c.pos && distanceFt(c.pos, ilvan.pos) <= 30 ? hasCondition(c, 'semRastro') : true));
+  assert.ok(hasCondition(dara, 'semRastro'));
+});
+
+teste('Patas de Aranha: sobe degraus de 2 níveis sem custo, mas terreno difícil continua custando o dobro (o Voo ignora)', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['patasDeAranha', 'voo'] });
+  dara.pos = { x: 5, y: 5 };
+  // Uma coluna de 2 níveis de altura em x=3 e entulho em x=2.
+  for (let y = 0; y < 12; y++) { enc.field.heights[y * 12 + 3] = 2; enc.field.tiles[y * 12 + 2] = 2; }
+  dara.movementLeftFt = 20;
+  assert.ok(enc.reachableFor(dara).has('4,5'), 'a pé chega ao pé do degrau');
+  assert.ok(!enc.reachableFor(dara).has('2,5'), 'a pé, o degrau de 2 níveis é parede');
+  assert.ok(enc.castSpell(ilvan, 'patasDeAranha', { target: dara, targets: [dara] }).ok);
+  assert.ok(hasCondition(dara, 'escalando'));
+  const a = enc.reachableFor(dara);
+  assert.ok(a.has('2,5'), 'com patas de aranha, sobe o degrau (5+5+10 = 20)');
+  assert.ok(!a.has('1,5'), 'o terreno difícil de x=2 continua dobrando o custo');
+  assert.equal(enc.field.escalando, false, 'o campo volta ao normal');
+  // O Voo, ao contrário, ignora o terreno difícil.
+  tirarCondicao(dara, 'escalando');
+  liberarAcao(ilvan);
+  assert.ok(enc.castSpell(ilvan, 'voo', { target: dara, targets: [dara] }).ok);
+  dara.movementLeftFt = 20;
+  assert.ok(enc.reachableFor(dara).has('1,5'), 'voando passa por cima de tudo');
+});
+
+teste('Contramágica: o inimigo atento anula a magia (o espaço se perde); sem reação, ela sai', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['misselMagico'], foes: [['mago', { x: 9, y: 6 }]] });
+  const mago = foes[0];
+  mago.spellcasting.prepared.push('contramagia');
+  const hp = mago.hp;
+  const s1 = ilvan.spellcasting.slots[1];
+  const r = enc.castSpell(ilvan, 'misselMagico', { target: mago });
+  assert.ok(r.ok && r.anulada, 'anulada');
+  assert.equal(mago.hp, hp, 'nenhum dardo chegou');
+  assert.equal(ilvan.spellcasting.slots[1], s1 - 1, 'o espaço de quem conjurou se perde');
+  assert.equal(mago.reactionUsed, true);
+  assert.equal(mago.spellcasting.slots[3], 2, 'gastou um espaço de 3º círculo');
+  // Sem reação livre, a magia sai.
+  liberarAcao(ilvan);
+  const r2 = enc.castSpell(ilvan, 'misselMagico', { target: mago });
+  assert.ok(r2.ok && !r2.anulada);
+  assert.ok(mago.hp < hp, 'agora os dardos acertam');
+});
+
+teste('Contramágica: quando precisa de teste, gasta o MENOR espaço de 3º círculo ou maior', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['voo'], foes: [['mago', { x: 9, y: 6 }]] });
+  const mago = foes[0];
+  mago.spellcasting.prepared.push('contramagia');
+  mago.spellcasting.slots = [0, 0, 0, 1, 1];
+  ilvan.spellcasting.slots[5] = 1;
+  const rr = enc.castSpell(ilvan, 'voo', { target: ilvan, targets: [ilvan], circulo: 5 });
+  assert.ok(rr.ok);
+  assert.equal(mago.spellcasting.slots[3], 0, 'gastou o de 3º, o menor que a Contramágica aceita');
+  assert.equal(mago.spellcasting.slots[4], 1, 'o de 4º ficou');
+  const m2 = magoDoLote({ magias: ['voo'], foes: [['mago', { x: 9, y: 6 }]] });
+  const mg = m2.foes[0];
+  mg.spellcasting.prepared.push('contramagia');
+  mg.spellcasting.slots = [0, 0, 0, 1, 0, 1];
+  m2.ilvan.spellcasting.slots[4] = 1;
+  m2.enc.castSpell(m2.ilvan, 'voo', { target: m2.ilvan, targets: [m2.ilvan], circulo: 4 });
+  assert.equal(mg.spellcasting.slots[5], 0, 'só o 5º basta sem teste');
+  assert.equal(mg.spellcasting.slots[3], 1);
+});
+
+teste('Contramágica: truque passa; círculo maior que o espaço pede teste CD 10 + círculo; vale também contra o inimigo conjurador', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['voo'], truques: ['raioDeFogo'], foes: [['mago', { x: 9, y: 6 }]] });
+  const mago = foes[0];
+  mago.spellcasting.prepared.push('contramagia');
+  enc.castSpell(ilvan, 'raioDeFogo', { target: mago });
+  assert.equal(mago.reactionUsed, false, 'truque não é contramagiado');
+  // Um espaço só de 3º círculo contra uma magia do 4º: teste de atributo.
+  mago.spellcasting.slots = [0, 0, 0, 1];
+  ilvan.spellcasting.slots[4] = 1;
+  liberarAcao(ilvan);
+  const rr = enc.castSpell(ilvan, 'voo', { target: ilvan, targets: [ilvan], circulo: 4 });
+  assert.ok(rr.ok);
+  assert.equal(mago.spellcasting.slots[3], 0, 'gastou o espaço');
+  assert.equal(mago.reactionUsed, true);
+  // O herói com Contramágica interrompe o mago inimigo.
+  const h = magoDoLote({ magias: ['contramagia'], foes: [['mago', { x: 9, y: 6 }]] });
+  const inimigo = h.foes[0];
+  const hpIlvan = h.ilvan.hp;
+  const hpDara = h.dara.hp;
+  inimigo.actionUsed = false;
+  const rc = h.enc.castSpell(inimigo, 'misselMagico', { target: h.ilvan });
+  assert.ok(rc.anulada, 'o herói contramagiou');
+  assert.equal(h.ilvan.hp, hpIlvan);
+  assert.equal(h.dara.hp, hpDara);
+  assert.equal(h.ilvan.reactionUsed, true);
+});
+
+teste('Glifo de Proteção: o inimigo que pisa dispara a runa; esfera de 6 m, DES, tipo escolhido, aliados também; a runa some', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['glifoDeProtecao'], foes: [['bandidoMachadeiro', { x: 10, y: 6 }]] });
+  ilvan.pos = { x: 2, y: 6 };
+  dara.pos = { x: 4, y: 6 };
+  const foe = foes[0];
+  foe.maxHp = foe.hp = 300;
+  assert.ok(enc.castSpell(ilvan, 'glifoDeProtecao', { point: { x: 3, y: 6 }, opcao: 'frio' }).ok);
+  const z = enc.zonas.find((x) => x.spellId === 'glifoDeProtecao');
+  assert.equal(z.glifo.tipo, 'frio');
+  assert.equal(z.glifo.dados, '5d8');
+  assert.equal(z.inofensiva, true, 'a IA não desvia (e não a vê)');
+  // Aliado pisando não dispara.
+  const hpDara = dara.hp;
+  dara.movementLeftFt = 30;
+  enc.moveAlong(dara, [{ x: 4, y: 6 }, { x: 3, y: 6 }]);
+  assert.ok(enc.zonas.includes(z), 'aliado não dispara');
+  assert.equal(dara.hp, hpDara);
+  dara.pos = { x: 4, y: 7 };
+  // O inimigo pisa.
+  resistenciasDao(enc, false);
+  enc.beginSide('foes');
+  foe.pos = { x: 5, y: 6 };
+  foe.movementLeftFt = 30;
+  const hpFoe = foe.hp;
+  const hpIlvan = ilvan.hp;
+  enc.moveAlong(foe, [{ x: 5, y: 6 }, { x: 4, y: 6 }, { x: 3, y: 6 }]);
+  assert.ok(!enc.zonas.includes(z), 'a runa some ao disparar');
+  assert.ok(foe.hp < hpFoe, 'o inimigo levou o dano');
+  assert.ok(ilvan.hp < hpIlvan && dara.hp < hpDara, 'aliados na esfera também');
+  assert.equal(foe.pos.x, 3, 'parou na casa da runa');
+});
+
+teste('Glifo de Proteção: padrão trovejante; círculo acima do 3º dá +1d8; teste de DES passa para metade', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['glifoDeProtecao'], foes: [['bandidoMachadeiro', { x: 10, y: 6 }]] });
+  ilvan.spellcasting.slots[4] = 1;
+  ilvan.pos = { x: 2, y: 6 };
+  assert.ok(enc.castSpell(ilvan, 'glifoDeProtecao', { point: { x: 3, y: 6 }, circulo: 4 }).ok);
+  const z = enc.zonas.find((x) => x.spellId === 'glifoDeProtecao');
+  assert.equal(z.glifo.tipo, 'trovejante');
+  assert.equal(z.glifo.dados, '6d8');
+  const foe = foes[0];
+  foe.maxHp = foe.hp = 300;
+  dara.pos = { x: 11, y: 11 };
+  ilvan.pos = { x: 11, y: 0 };
+  resistenciasDao(enc, true);
+  enc.beginSide('foes');
+  foe.pos = { x: 4, y: 6 };
+  foe.movementLeftFt = 30;
+  enc.moveAlong(foe, [{ x: 4, y: 6 }, { x: 3, y: 6 }]);
+  const dano = 300 - foe.hp;
+  assert.ok(dano >= 3 && dano <= 24, `metade de 6d8 (${dano})`);
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
-if (falhas) process.exit(1);
+if (falhas) process.exit(1);

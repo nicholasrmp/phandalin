@@ -18,7 +18,7 @@ import { audio } from '../core/audio.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
 import {
-  dadoDeVida, dadosDeVida, gastarDadoDeVida, dadosSugeridos, recuperarNoCurto, descansoLongo, oracaoDeCura,
+  dadoDeVida, dadosDeVida, gastarDadoDeVida, dadosSugeridos, recuperarNoCurto, descansoLongo, oracaoDeCura, bomFrutoNoDescanso,
 } from '../rules/descanso.js';
 import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
 import { hasCondition } from '../rules/conditions.js';
@@ -86,8 +86,35 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     ultimo.classList.add('pulso');
     grupo.atualizarTodas();
   };
+  // Bom Fruto (1º círculo): as dez frutinhas curam 1 PV cada, a quem mais precisa.
+  const comerFruto = (circulo) => {
+    const alvos = [...grupo.vivos].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
+    const r = bomFrutoNoDescanso(c, alvos, { circulo });
+    if (!r.ok) {
+      ultimo.textContent = r.why;
+      registro.push(`${c.name} não consegue conjurar o Bom Fruto: ${r.why}.`);
+    } else {
+      const soma = r.curas.reduce((n, x) => n + x.cura, 0);
+      ultimo.textContent = `Bom Fruto (${circulo}º): +${soma} PV no grupo`;
+      registro.push(`${c.name} conjura o Bom Fruto (${circulo}º círculo): ${r.curas.map((x) => `${x.alvo.name} +${x.cura}`).join(', ')}.`);
+    }
+    ultimo.classList.remove('pulso');
+    void ultimo.offsetWidth;
+    ultimo.classList.add('pulso');
+    grupo.atualizarTodas();
+  };
   const atualizarOracao = () => {
     orar.replaceChildren();
+    if (c.spellcasting && !c.dead && magiasProntas(c).includes('bomFruto')) {
+      const sl = c.spellcasting.slots ?? [];
+      for (let n = 1; n < sl.length; n++) {
+        if (!(sl[n] > 0)) continue;
+        const b = el('button', { class: 'descanso-gastar descanso-orar', title: `Gasta um espaço de ${n}º círculo; dez frutinhas, 1 PV cada` },
+          `Bom Fruto (${n}º círculo)`);
+        b.addEventListener('click', () => { audio.play('click'); comerFruto(n); });
+        orar.append(b);
+      }
+    }
     if (!c.spellcasting || c.dead || !magiasProntas(c).includes('oracaoDeCura')) return;
     const slots = c.spellcasting.slots ?? [];
     for (let n = 2; n < slots.length; n++) {

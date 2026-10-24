@@ -200,6 +200,26 @@ EDICOES.update({
 })
 
 
+# AS POSTURAS DO CORIN (a base e a espada longa).
+_CORIN_MANTEM = (
+    ' Keep everything else exactly the same: the lean human ranger with short '
+    'brown hair and a short beard, the brown leather cuirass with the crossed '
+    'straps, the moss green cloak with the hood down, the quiver on his back, '
+    'the belt, the boots, the pose of the legs, the direction each frame is '
+    'facing and the colours.'
+)
+EDICOES.update({
+    'corin-espadas': (
+        'Replace the longsword with two steel shortswords, one in each hand: each '
+        'a straight steel blade with a small cross guard, held low and ready at '
+        'his sides, blades pointing forward.' + _CORIN_MANTEM),
+    'corin-arco': (
+        'Remove the longsword. He holds one longbow of curved brown wood with a '
+        'taut string, tall and upright in his left hand at his side; his right '
+        'hand is empty.' + _CORIN_MANTEM),
+})
+
+
 def chamar(token, metodo, caminho, corpo=None):
     req = urllib.request.Request(f'{BASE}{caminho}',
                                  data=json.dumps(corpo).encode() if corpo else None,

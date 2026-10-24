@@ -882,6 +882,63 @@ export const SPELLS = {
     desc: 'Toque num aliado: por 10 minutos ele ganha deslocamento de voo de 18 m. (No jogo ele voa por cima do terreno difícil e dos degraus de elevação, e as zonas do chão — Graxa, Espinhos — não o pegam; a Teia e o resto ainda pegam. Obstáculos e criaturas continuam barrando o caminho, e o voador ainda pode ser alcançado em combate corpo a corpo.) Se a concentração cair, ele cai: 1d6 contundente (o jogo supõe uns 3 m de altura) e fica caído. +1 alvo por círculo acima do 3º.',
   },
 
+  // ---- lote 12: queda, frutos, imagens, flechas, rastro, aranha, contramágica, glifo ----
+
+  quedaSuave: {
+    id: 'quedaSuave', name: 'Queda Suave', level: 1, school: 'transmutação', fonte: 'srd',
+    castTime: 'reacao', rangeFt: 60, kind: 'reacao', gatilho: 'queda', alvosDaQueda: 5,
+    desc: 'Reação, sai sozinha: quando você, ou um aliado que você vê a até 18 m, cai (no jogo, só quando o Voo acaba), até 5 criaturas caindo desaceleram: não sofrem dano de queda e pousam de pé. (Só quem tem a magia preparada e um espaço livre reage; vale uma queda por reação.)',
+  },
+  bomFruto: {
+    id: 'bomFruto', name: 'Bom Fruto', level: 1, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 0, kind: 'frutos', frutos: 10,
+    desc: 'Dez frutinhas surgem na sua mochila. Quem come uma (uma ação, encostado em quem recebe) recupera 1 PV. (No jogo as frutas ficam na mochila de quem conjurou, sem os 24 h de validade nem o alimento do dia; fora de combate, o descanso conjura a magia e distribui até 10 PV entre o grupo. Sem concentração.)',
+  },
+  imagemSilenciosa: {
+    id: 'imagemSilenciosa', name: 'Imagem Silenciosa', level: 1, school: 'ilusão', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, shape: 'square', areaFt: 15, kind: 'save', soZona: true, reuso: 'acao',
+    zona: { rodadas: 100, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ilusao: true, movel: 120, dentroDoAlcance: true },
+    concentration: true, duracaoRodadas: 100,
+    desc: 'Uma imagem de um objeto, criatura ou fenômeno (3×3 casas) a até 18 m, por até 10 minutos. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. Com a ação você a move para qualquer ponto ao alcance. Concentração. (Simplificação: o jogo ignora o som — a imagem é muda mesmo — e só o outro lado é enganado; seus aliados sempre sabem. Desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar.)',
+  },
+  cordaoDeFlechas: {
+    id: 'cordaoDeFlechas', name: 'Cordão de Flechas', level: 2, school: 'transmutação', fonte: 'propria',
+    castTime: 'action', rangeFt: 5, shape: 'square', areaFt: 5, kind: 'save', soZona: true, upcast: { flechas: 2 },
+    zona: { rodadas: 4800, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ocupaCasa: true, cordao: { flechas: 4, raioFt: 30, dano: '1d6', tipo: 'perfurante' } },
+    desc: 'Você finca quatro flechas no chão ao seu alcance. Quando um inimigo seu entra a até 9 m delas pela primeira vez no turno, ou termina o turno ali, uma flecha o atinge: ele faz uma resistência de Destreza contra a CD da sua magia e, se falhar, sofre 1d6 de dano perfurante; se passar, nada. Cada tiro gasta uma flecha; sem flechas, a magia acaba. Dura 8 horas. +2 flechas por círculo acima do 2º. (No jogo, o tiro sai do ponto das flechas, sem consumir munição e sem jogada de ataque, e quem a magia não "designa" é todo mundo do seu lado. Sem concentração.)',
+  },
+  passoSemRastro: {
+    id: 'passoSemRastro', name: 'Passo sem Rastro', level: 2, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 0, kind: 'rastro', raioFt: 30,
+    concentration: true, duracaoRodadas: 600,
+    desc: 'Um véu de sombra e silêncio acompanha você: você e os aliados a até 9 m de você ganham +10 em Furtividade (e, no livro, não deixam rastro). Concentração, até 1 hora. (No jogo, o bônus vale enquanto o aliado fica a 9 m de você — o jogo confere no começo de cada turno e quando alguém se move — e vale nas jogadas de Furtividade do combate e das cenas de exploração; o rastro não existe.)',
+  },
+  patasDeAranha: {
+    id: 'patasDeAranha', name: 'Patas de Aranha', level: 2, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'escalando',
+    concentration: true, duracaoRodadas: 600,
+    desc: 'Toque numa criatura (você ou um aliado): por até 1 hora ela sobe por paredes e anda de cabeça para baixo no teto, sem testes. (No jogo ela sobe os degraus de elevação sem o custo extra de escalada e sem o limite de um nível por passo, como o Voo faz; mas NÃO ignora terreno difícil nem as zonas do chão, e o teto não existe. Concentração.)',
+  },
+  contramagia: {
+    id: 'contramagia', name: 'Contramágica', level: 3, school: 'abjuração', fonte: 'srd',
+    castTime: 'reacao', rangeFt: 60, kind: 'reacao', gatilho: 'conjuracao', upcast: { circulo: true },
+    desc: 'Reação, sai sozinha: quando uma criatura do outro lado, a até 18 m e à vista, conjura uma magia, você a interrompe. Magia de círculo igual ou menor ao do espaço que você gasta falha sozinha; maior, pede um teste do seu atributo de conjuração contra CD 10 + círculo da magia. O espaço dela se perde. Usando espaço maior, interrompe magias de até esse círculo. (Simplificação: o jogo só reage contra magias de 1º círculo ou maior — truque passa —, usa o menor espaço que já basta e o conjurador que perde a magia não perde a concentração anterior.)',
+  },
+  imagemMaior: {
+    id: 'imagemMaior', name: 'Imagem Maior', level: 3, school: 'ilusão', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'square', areaFt: 20, kind: 'save', soZona: true, reuso: 'acao',
+    zona: { rodadas: 100, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ilusao: true, movel: 240, dentroDoAlcance: true },
+    concentration: true, duracaoRodadas: 100,
+    desc: 'Como Imagem Silenciosa, mas maior (4×4 casas) a até 36 m, e com som, cheiro e temperatura no livro. Quem não é do seu lado não enxerga através dela; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, a desmascara. Com a ação você a move. Concentração, até 10 minutos. (Simplificação: som e cheiro não existem no jogo, então a única diferença para a Imagem Silenciosa é o tamanho e o alcance; a versão permanente do 6º círculo não existe.)',
+  },
+  glifoDeProtecao: {
+    id: 'glifoDeProtecao', name: 'Glifo de Proteção', level: 3, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, shape: 'square', areaFt: 5, kind: 'save', soZona: true, save: 'dex',
+    damage: '5d8', damageType: 'trovejante', halfOnSave: true, escolheTipoDoGlifo: true, upcast: { dados: 1 },
+    zona: { rodadas: 4800, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ocupaCasa: true, glifo: { raioFt: 20, save: 'dex' } },
+    desc: 'Você grava uma runa explosiva numa casa ao seu alcance. Quando um inimigo seu entra nela, a runa explode numa esfera de 6 m de raio: cada criatura ali (aliados também!) faz CD de DES ou sofre 5d8 de dano, metade se passar, do tipo que você escolheu ao gravar — ácido, frio, fogo, elétrico ou trovejante (sem pedido, o jogo escolhe o que mais fere os inimigos à vista, e trovejante se empatar). A runa some ao disparar. Seus inimigos não a veem. A explosão interrompe o passo de quem pisou na runa. +1d8 por círculo acima do 3º. (Simplificação: o livro leva 1 hora para gravar; no jogo é 1 ação, sem o incenso de 200 po. Dispara por quem pisa na casa; a variante de magia armazenada não existe. Sem concentração, dura 8 horas.)',
+  },
+
 };
 
 /**

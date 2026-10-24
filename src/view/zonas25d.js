@@ -11,7 +11,11 @@
 //   Névoa Obscurecente  uma nuvem de tufos em pé nas casas;
 //   Ilusão Menor        um caixote ou uma rocha trêmulo e translúcido;
 //   Crescer Plantas     capim e moitas floridas, afastadas das figuras;
-//   Luz do Dia          um sol pequeno sobre o ponto (+ o domo 'sol' de `fx.js`).
+//   Luz do Dia          um sol pequeno sobre o ponto (+ o domo 'sol' de `fx.js`);
+//   Imagem Silenciosa/  pilhas de caixotes e rochas trêmulas e translúcidas, uma por casa
+//   Imagem Maior        (mais altas no miolo), que pulam as casas com figuras;
+//   Cordão de Flechas   o feixe de flechas fincadas no ponto;
+//   Glifo de Proteção   uma runa que paira e pulsa (só o grupo a vê).
 //
 // As que ESCONDEM são desenhadas por `board.zonasObscurasPorCima`, depois da
 // máscara de escuridão, com o recorte elíptico das figuras à vista.
@@ -204,7 +208,7 @@ function objetoSprite(v, fase) {
         // Contorno: o pixel que tem vizinho vazio.
         const borda = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !objetoCor(v, x - desliza + dx, y + dy));
         const entre = !borda && [[1, 0], [0, 1], [-1, 0], [0, -1]].some(([dx, dy]) => objetoCor(v, x - desliza + dx, y + dy)?.face !== p.face);
-        let rgb = p.rgb.map((q, i) => Math.round(q * 0.82 + [199, 180, 255][i] * 0.18));
+        let rgb = p.rgb.map((q, i) => Math.round(q * 0.75 + [160, 150, 220][i] * 0.25));
         let a = 0.68;
         if (entre) { rgb = rgb.map((q) => Math.round(q * 0.7)); a = 0.78; }
         if (borda) { rgb = [168, 148, 226].map((q, i) => Math.round(q * 0.82 + [199, 180, 255][i] * 0.18)); a = 0.85; }
@@ -404,6 +408,182 @@ function desenharSol(ctx, board, z) {
   ctx.restore();
 }
 
+// ---- Lote 12: Cordão de Flechas e Glifo de Proteção ----------------------------------------
+//
+//   Cordão de Flechas  o feixe das flechas fincadas no ponto (uma a menos a cada tiro);
+//   Glifo de Proteção  uma runa que paira e pulsa sobre a casa, na cor do dano — só o lado
+//                      de quem a gravou a vê (a runa é invisível para os inimigos).
+//
+// Pintados ponto a ponto, sem suavização, e guardados por (quantidade|tipo|fase).
+
+const linhaPx = (put, x0, y0, x1, y1, rgb, a = 1) => {
+  let x = Math.round(x0); let y = Math.round(y0);
+  const xf = Math.round(x1); const yf = Math.round(y1);
+  const dx = Math.abs(xf - x); const dy = Math.abs(yf - y);
+  const sx = x < xf ? 1 : -1; const sy = y < yf ? 1 : -1;
+  let err = dx - dy;
+  for (let i = 0; i < 200; i++) {
+    put(x, y, rgb, a);
+    if (x === xf && y === yf) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x += sx; }
+    if (e2 < dx) { err += dx; y += sy; }
+  }
+};
+
+const FLECHAS_W = 48;
+const FLECHAS_H = 60;
+const FLECHAS_OX = 24;
+const FLECHAS_OY = 52;
+const flechasCache = new Map();
+
+/** O feixe de `n` flechas fincadas (até 8): hastes pardas, penas vermelhas e brancas, ponta de aço cravada. */
+function feixeDeFlechas(n) {
+  n = Math.max(1, Math.min(8, n));
+  if (flechasCache.has(n)) return flechasCache.get(n);
+  const c = pintar(FLECHAS_W, FLECHAS_H, (put) => {
+    // A sombra no chão: uma elipse achatada, em pixels.
+    for (let y = -4; y <= 4; y++) for (let x = -14; x <= 14; x++) {
+      if ((x / 14) ** 2 + (y / 4) ** 2 <= 1) put(FLECHAS_OX + x, FLECHAS_OY + y, [28, 22, 18], 0.35);
+    }
+    for (let i = 0; i < n; i++) {
+      const f = n === 1 ? 0 : i / (n - 1) - 0.5;
+      const base = FLECHAS_OX + f * 22 + (i % 2 ? 1 : -1);
+      const inclina = f * 0.7 + (i % 2 ? 0.06 : -0.06);
+      const comp = Math.round((27 + (i % 3) * 2) * 1.3);
+      const topoX = base + Math.sin(inclina) * comp;
+      const topoY = FLECHAS_OY + 2 - Math.cos(inclina) * comp;
+      // A haste: parda com um fio claro do lado da luz.
+      linhaPx(put, base, FLECHAS_OY + 2, topoX, topoY, [128, 90, 54]);
+      linhaPx(put, base + 1, FLECHAS_OY + 2, topoX + 1, topoY, [128, 90, 54]);
+      linhaPx(put, base - 1, FLECHAS_OY + 2, topoX - 1, topoY, [176, 132, 82], 0.9);
+      // A ponta de aço, cravada: só o primeiro palmo aparece.
+      linhaPx(put, base, FLECHAS_OY + 2, base + Math.sin(inclina) * 3, FLECHAS_OY + 2 - Math.cos(inclina) * 3, [190, 196, 208]);
+      // As penas: três linhas curtas no alto, alternando vermelho e marfim.
+      for (let k = 0; k < 3; k++) {
+        const t = 1 - k * 0.07;
+        const px = base + Math.sin(inclina) * comp * t;
+        const py = FLECHAS_OY + 2 - Math.cos(inclina) * comp * t;
+        put(px - 1, py, k % 2 ? [245, 240, 230] : [210, 60, 50]);
+        put(px + 1, py, k % 2 ? [210, 60, 50] : [245, 240, 230]);
+      }
+      put(topoX, topoY - 1, [236, 232, 214]);
+    }
+  });
+  flechasCache.set(n, c);
+  return c;
+}
+
+function desenharFeixe(ctx, board, z) {
+  const { sx, sy } = board.centerF(z.centro.x, z.centro.y);
+  const o = feixeDeFlechas(z.cordao.flechas);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  // Nasce em meio segundo, como as esferas; um brilho fraco rodeia o feixe.
+  if (!vistaEm.has(z)) vistaEm.set(z, board.time);
+  const nasce = Math.min(1, (board.time - vistaEm.get(z)) / 0.5);
+  // Halo quente atrás do feixe, para ele ler como flechas e não como um cajado.
+  const hx = Math.round(sx);
+  const hy = Math.round(sy - 22);
+  const g = ctx.createRadialGradient(hx, hy, 2, hx, hy, 32);
+  g.addColorStop(0, 'rgba(255,236,190,.5)');
+  g.addColorStop(1, 'rgba(255,236,190,0)');
+  ctx.globalAlpha = nasce;
+  ctx.fillStyle = g;
+  ctx.fillRect(hx - 32, hy - 32, 64, 64);
+  ctx.drawImage(o, Math.round(sx - FLECHAS_OX), Math.round(sy - FLECHAS_OY + 4));
+  ctx.restore();
+}
+
+const RUNA_W = 64;
+const RUNA_H = 40;
+const COR_RUNA = {
+  'ácido': [[158, 232, 74], [88, 148, 40]],
+  frio: [[196, 236, 255], [96, 160, 214]],
+  fogo: [[255, 150, 70], [188, 64, 30]],
+  'elétrico': [[200, 232, 255], [92, 140, 230]],
+  trovejante: [[226, 214, 255], [128, 104, 200]],
+};
+const runaCache = new Map();
+
+/** A runa: dois anéis em perspectiva, uma estrela de seis pontas e tracinhos entre os anéis. */
+function runaSprite(tipo, fase) {
+  const chave = `${tipo}|${fase}`;
+  if (runaCache.has(chave)) return runaCache.get(chave);
+  const [claro, escuro] = COR_RUNA[tipo] ?? COR_RUNA.trovejante;
+  const cx = RUNA_W / 2;
+  const cy = RUNA_H / 2;
+  const A = 28; const B = 14; // raio do anel de fora
+  const c = pintar(RUNA_W, RUNA_H, (put) => {
+    for (let y = 0; y < RUNA_H; y++) for (let x = 0; x < RUNA_W; x++) {
+      const e = ((x - cx + 0.5) / A) ** 2 + ((y - cy + 0.5) / B) ** 2;
+      if (e <= 1 && e > 0.8) put(x, y, e > 0.9 ? claro : escuro, 0.95); // anel de fora
+      else if (e <= 0.62 && e > 0.5) put(x, y, claro, 0.8); // anel de dentro
+      else if (e <= 0.5) put(x, y, escuro, 0.16); // o disco
+    }
+    // A estrela de seis pontas, girando de quadro em quadro (os pontos andam pelo anel de dentro).
+    const pts = [];
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2 + (fase * Math.PI) / 12;
+      pts.push([cx + Math.cos(ang) * A * 0.72, cy + Math.sin(ang) * B * 0.72]);
+    }
+    for (let i = 0; i < 6; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[(i + 2) % 6];
+      linhaPx(put, x0, y0, x1, y1, claro, 0.9);
+    }
+    // Tracinhos entre os dois anéis, onde estariam as letras da runa.
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2 + (fase % 2 ? 0.1 : 0);
+      const r1 = 0.83; const r2 = 0.93;
+      linhaPx(put, cx + Math.cos(ang) * A * r1, cy + Math.sin(ang) * B * r1, cx + Math.cos(ang) * A * r2, cy + Math.sin(ang) * B * r2, escuro, 0.9);
+    }
+    put(cx, cy, [255, 255, 255], 0.95);
+  });
+  runaCache.set(chave, c);
+  return c;
+}
+
+function desenharRuna(ctx, board, z, ocupadas) {
+  // A runa é invisível para os inimigos de quem a gravou: só o grupo a vê.
+  if (z.lado !== 'party') return;
+  const v = board.toView(z.centro.x, z.centro.y);
+  if (ocupadas.has(`${v.vx},${v.vy}`)) return;
+  const { sx, sy } = board.centerF(z.centro.x, z.centro.y);
+  const fase = Math.floor(board.time * 3) % 4;
+  const bob = Math.round(Math.sin(board.time * 2.2) * 4);
+  const pulso = 0.72 + 0.18 * Math.sin(board.time * 3.1);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if (!vistaEm.has(z)) vistaEm.set(z, board.time);
+  const nasce = Math.min(1, (board.time - vistaEm.get(z)) / 0.5);
+  // A sombra da runa no chão, para ela ler como algo que paira.
+  ctx.globalAlpha = 0.22 * nasce;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(Math.round(sx), Math.round(sy + 2), 24, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = pulso * nasce;
+  ctx.drawImage(runaSprite(z.glifo.tipo, fase), Math.round(sx - RUNA_W / 2), Math.round(sy - RUNA_H / 2 - 10 + bob));
+  // Um segundo anel, mais largo, respira por cima da sombra.
+  const [, escuroRuna] = COR_RUNA[z.glifo.tipo] ?? COR_RUNA.trovejante;
+  ctx.globalAlpha = (0.55 + 0.25 * Math.sin(board.time * 2.6)) * nasce;
+  ctx.strokeStyle = `rgb(${escuroRuna.join(',')})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(Math.round(sx), Math.round(sy + 1), 30, 14, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // Três faíscas sobem devagar da runa.
+  const [claro] = COR_RUNA[z.glifo.tipo] ?? COR_RUNA.trovejante;
+  ctx.fillStyle = `rgb(${claro.join(',')})`;
+  for (let i = 0; i < 3; i++) {
+    const t = (board.time * 0.5 + i / 3) % 1;
+    ctx.globalAlpha = (1 - t) * 0.9 * nasce;
+    ctx.fillRect(Math.round(sx - 14 + i * 14 + Math.sin(t * 6 + i) * 3), Math.round(sy - 12 - t * 26), 2, 2);
+  }
+  ctx.restore();
+}
+
 /**
  * Os volumes em pé das zonas do lote 11 cuja casa está na diagonal `d`
  * (chamado por `paredesNaDiagonal`, depois das figuras dessa diagonal).
@@ -414,19 +594,40 @@ function volumesNaDiagonal(ctx, board, d) {
   let ocupadas = null;
   for (const z of zs) {
     if (z.ilusao) {
+      // Imagem de mais de uma casa: pilhas em cada casa, mais altas no miolo; as casas com figura ficam livres.
+      const grande = z.casas.size > 1;
+      if (grande) ocupadas ??= casasOcupadasNaVista(board);
       for (const k of z.casas) {
         const [x, y] = k.split(',').map(Number);
         const v = board.toView(x, y);
         if (v.vx + v.vy !== d) continue;
+        if (grande && ocupadas.has(`${v.vx},${v.vy}`)) continue;
+        const atras = grande && ocupadas.has(`${v.vx - 1},${v.vy - 1}`);
         const { sx, sy } = board.centerF(x, y);
         const o = objetoSprite((x + y) % 2, Math.floor(board.time * 5) % 4);
         // Nasce em meio segundo, como as esferas.
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         if (!vistaEm.has(z)) vistaEm.set(z, board.time);
-        ctx.globalAlpha = Math.min(1, (board.time - vistaEm.get(z)) / 0.5) * (0.85 + 0.15 * Math.sin(board.time * Math.PI * 12));
+        const base = Math.min(1, (board.time - vistaEm.get(z)) / 0.5) * (0.85 + 0.15 * Math.sin(board.time * Math.PI * 12));
+        const miolo = grande && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => z.casas.has(`${x + dx},${y + dy}`));
+        ctx.globalAlpha = grande ? base * 0.8 : base;
         ctx.drawImage(o.canvas, Math.round(sx - o.ox), Math.round(sy - o.oy + 4));
+        // O segundo andar do miolo: só a caixa de cima, mais fraca, para o que está atrás aparecer.
+        if (miolo && !atras) {
+          ctx.globalAlpha = base * 0.5;
+          ctx.drawImage(o.canvas, Math.round(sx - o.ox), Math.round(sy - o.oy + 4 - CX_H));
+        }
         ctx.restore();
+      }
+    } else if (z.cordao && z.centro) {
+      const v = board.toView(z.centro.x, z.centro.y);
+      if (v.vx + v.vy === d) desenharFeixe(ctx, board, z);
+    } else if (z.glifo && z.centro) {
+      const v = board.toView(z.centro.x, z.centro.y);
+      if (v.vx + v.vy === d) {
+        ocupadas ??= casasOcupadasNaVista(board);
+        desenharRuna(ctx, board, z, ocupadas);
       }
     } else if (z.dificil4) {
       ocupadas ??= casasOcupadasNaVista(board);

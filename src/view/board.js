@@ -115,6 +115,10 @@ const SUPERFICIE = {
   sarcofago: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'sarcofago', chao: 'caverna' },
   grade: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'grade', chao: 'caverna' },
   fosso: { topo: ['#14110e', '#110e0c'], lado: ['#0d0b09', '#15120f'] },
+  // A rua: o prédio é um sprite só, desenhado na casa da frente da pegada.
+  casa: { topo: GRAMA, lado: TERRA, objeto: 'casa', chao: 'grama' },
+  taverna: { topo: ESTRADA, lado: TERRA, objeto: 'taverna', chao: 'estrada' },
+  barris: { topo: GRAMA, lado: TERRA, objeto: 'mantimentos', chao: 'grama' },
 };
 
 // Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
@@ -123,7 +127,7 @@ const SUPERFICIE = {
 // cavalos na tela onde o mapa tem dois. Árvore, arbusto e pedra ficam fora de
 // propósito — a mata inteira é uma mancha contínua de `T`, e agrupá-la faria
 // dela uma árvore só.
-const MULTICASA = new Set(['carroca', 'cavalo']);
+const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna']);
 
 // Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
 const SOMBRA_DO_BAIXO = {
@@ -133,7 +137,7 @@ const SOMBRA_DO_BAIXO = {
 
 // Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
 // criatura ali. Ver `transparenciaDaCasa`.
-const ESMAECE = new Set(['copa', 'carroca']);
+const ESMAECE = new Set(['copa', 'carroca', 'casa', 'taverna']);
 const TRANSLUCIDO = 0.42;
 // Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
 const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
@@ -197,6 +201,12 @@ const COR_DA_ZONA = {
   ilusaoMenor: { fill: 'rgba(199,180,255,.10)', stroke: 'rgba(199,180,255,.45)' },
   luzDoDia: { fill: 'rgba(255,240,170,.05)', stroke: 'rgba(255,244,190,.18)' },
   crescerPlantas: { fill: 'rgba(70,130,60,.16)', stroke: 'rgba(110,200,100,.22)' },
+  // Lote 12: as imagens e as flechas têm volume em 2.5D (`zonas25d.js`), então o chão mal se pinta;
+  // a runa do Glifo paira sobre a casa e não pinta o chão (para o inimigo ela nem existe).
+  imagemSilenciosa: { fill: 'rgba(199,180,255,.07)', stroke: 'rgba(199,180,255,.38)' },
+  imagemMaior: { fill: 'rgba(199,180,255,.07)', stroke: 'rgba(199,180,255,.38)' },
+  cordaoDeFlechas: { fill: 'rgba(216,196,154,.06)', stroke: 'rgba(216,196,154,.35)' },
+  glifoDeProtecao: { fill: 'rgba(0,0,0,0)', stroke: 'rgba(0,0,0,0)' },
 };
 
 const PAPEL_NA_AREA = {
@@ -740,8 +750,11 @@ export class Board {
     };
     ctx.imageSmoothingEnabled = false;
 
-    // Embaixo, a água.
-    const agua = ladrilhoChao('riacho', x, y);
+    // A anotação desta ponte: a da mesma fileira ou coluna da casa.
+    const anot = this.field.objetos?.find((o) => o.tipo === 'ponte' && (o.olha?.dx ? o.y === y : o.x === x))
+      ?? this.field.objetos?.find((o) => o.tipo === 'ponte');
+    // Embaixo, a água (ou o que o mapa disser: a fenda da mansão é pedregulho).
+    const agua = ladrilhoChao(anot?.fundo ?? 'riacho', x, y);
     const fundo = this.iso(x, y, 0);
     if (agua) ctx.drawImage(agua.img, agua.sx, agua.sy, agua.w, agua.h, fundo.sx - TW / 2, fundo.sy, agua.w, agua.h);
 
@@ -759,7 +772,6 @@ export class Board {
     }
 
     // O eixo do caminho e o lado (normal) das bordas com corrimão.
-    const anot = this.field.objetos?.find((o) => o.tipo === 'ponte');
     const t = anot?.olha ?? { dx: 0, dy: 1 };
     const n = { dx: t.dy, dy: t.dx };
     // Tábuas atravessadas ao caminho: na tela, na direção da normal. O
@@ -838,9 +850,16 @@ export class Board {
     }
     if (dirigido) {
       // A arte do PixelLab, 1:1, com a âncora no centro da pegada.
+      const ox = Math.round(cx - dirigido.ax);
+      const oy = Math.round(cy - dirigido.ay);
+      // Prédio alto esmaece quando cobre alguém atrás dele, como a árvore alta.
+      if (s.objeto === 'casa' || s.objeto === 'taverna') {
+        const v = this.toView(x, y);
+        if (this.cobreFigura(ox, oy, dirigido.w, dirigido.h, v.vx + v.vy)
+          || this._esmaecer?.has(`${x},${y}`)) ctx.globalAlpha = TRANSLUCIDO;
+      }
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(dirigido.img, dirigido.x, dirigido.y, dirigido.w, dirigido.h,
-        Math.round(cx - dirigido.ax), Math.round(cy - dirigido.ay), dirigido.w, dirigido.h);
+      ctx.drawImage(dirigido.img, dirigido.x, dirigido.y, dirigido.w, dirigido.h, ox, oy, dirigido.w, dirigido.h);
       ctx.restore();
       return;
     }
@@ -917,6 +936,9 @@ export class Board {
       ctx.beginPath();
       ctx.ellipse(cx - 10, cy - alto - 10, 10, 7, 0, 0, Math.PI * 2);
       ctx.fill();
+    } else if (s.objeto === 'casa' || s.objeto === 'taverna') {
+      // Recuo enquanto o atlas não carrega: um bloco com telhado escuro.
+      this.caixaIso(ctx, cx, cy, 80, 40, s.objeto === 'taverna' ? 70 : 52, ['#77766f', '#9e998b', '#463d3c']);
     } else if (s.objeto === 'carroca') {
       // Uma caixa só sobre as quatro casas, com as quatro rodas nos cantos.
       // Provisório até a arte do PixelLab.

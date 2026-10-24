@@ -489,6 +489,34 @@ CRIATURAS.update({
     },
 })
 
+# O CORIN. Queda so na folha base (espada longa); as posturas usam a queda
+# sem arma, editada da base.
+_CORIN = ('a lean male human ranger with short brown hair and a short beard, a '
+          'brown leather cuirass and a moss green cloak with the hood down, ')
+CRIATURAS.update({
+    'ranger': {
+        'sujeito': _CORIN + 'a steel longsword in his right hand, the left hand empty',
+        'parado': 'longsword held low at his side, the left hand free',
+        'golpe': ('swinging the longsword in one overhead strike {para}, a short step '
+                  'in that direction, then recovering'),
+        'chao': 'the longsword dropped beside his right hand, the green cloak spread under him',
+    },
+    'rangerEspadas': {
+        'sem_queda': True,
+        'sujeito': _CORIN + 'a steel shortsword in each hand',
+        'parado': 'a shortsword in each hand held low at his sides',
+        'golpe': ('slashing {para} with the shortsword in his right hand and then with '
+                  'the shortsword in his left hand, one quick blow after the other'),
+    },
+    'rangerArco': {
+        'sem_queda': True,
+        'sujeito': _CORIN + 'a longbow of brown wood in his left hand, a quiver on his back',
+        'parado': 'longbow held low in his left hand',
+        'golpe': ('raising the longbow, drawing an arrow to his cheek and loosing it '
+                  '{para}, then lowering the bow'),
+    },
+})
+
 # AS POSTURAS DE ARMA DA DARA. Sem queda: o corpo no chao e o mesmo em todas,
 # e vem da folha de espada e escudo. A arma de arco, besta e duas maos e verde
 # puro (marcador; ver `editar-pixellab.py`) e o texto repete isso, porque o

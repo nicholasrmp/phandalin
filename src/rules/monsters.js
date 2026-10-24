@@ -106,6 +106,17 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     // passam por ela.
     ...tiposDeDano(def),
     conditionImmunities: [...(def.conditionImmunities ?? []), ...(def.immuneConditions ?? [])],
+    // Conjuração no motor: só o bloco que opta (`noMotor`) entra no motor de magias — os
+    // outros conjuradores têm o bloco escrito, mas a IA ainda não conjura por eles. Sem
+    // este campo o Mago do SRD não reagiria com Contramágica contra o grupo.
+    ...(def.spellcasting?.noMotor ? {
+      spellcasting: {
+        ...def.spellcasting,
+        cantrips: [...(def.spellcasting.cantrips ?? [])],
+        prepared: [...(def.spellcasting.prepared ?? [])],
+        slots: [...(def.spellcasting.slots ?? [])],
+      },
+    } : {}),
   };
 }
 

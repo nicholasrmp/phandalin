@@ -121,6 +121,11 @@ export const GLIFOS = {
   // Buraco aberto no chão (o fosso achado ou disparado): não se anda nele —
   // o desnível barra —, mas visão e flecha passam por cima.
   'O': { kind: 2, sup: 'fosso' },
+  // A rua de Phandalin: prédios de 3 x 3 casas (um sprite só por prédio; a
+  // variante vem da anotação do mapa) e barris e caixotes na grama.
+  'H': { kind: 1, sup: 'casa' },
+  'Y': { kind: 1, sup: 'taverna' },
+  'u': { kind: 3, sup: 'barris' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
@@ -213,7 +218,8 @@ export class Battlefield {
     const dificil = this.tileAt(x, y) === 2 || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y));
     // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
     let cost = this.dificeis4?.has(key(x, y)) ? FEET_PER_SQUARE * 4 : dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
-    if (fromX !== null) {
+    // Patas de Aranha: sobe sem o custo da escalada, mas pisa em terreno difícil.
+    if (fromX !== null && !this.escalando) {
       const climb = this.heightAt(x, y) - this.heightAt(fromX, fromY);
       if (climb > 0) cost += climb * FEET_PER_SQUARE;
     }
@@ -259,7 +265,7 @@ export class Battlefield {
         if (!cabe(nx, ny)) continue;
         // Não corta quina entre duas paredes.
         if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
-        if (!this.voando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
+        if (!this.voando && !this.escalando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
 
         const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y);
         if (cost > budgetFt) continue;

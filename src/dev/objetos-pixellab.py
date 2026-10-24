@@ -86,6 +86,100 @@ PRO_FLASH = {
     },
 }
 
+# NAO USADO NO JOGO: as duas levas sairam numa perspectiva propria, que nao
+# bate com o angulo da grade -- a ponte parecia torta. O tabuleiro desenha a
+# ponte casa por casa com as tabuas do atlas do chao (`board.desenharPonte`).
+# Fica aqui como registro do que foi tentado.
+PRO_FLASH['ponte'] = {
+    # A ponte do esconderijo cruza o canal do riacho: um tabuleiro quadrado
+    # de 2 x 2 casas, com corrimao nos dois lados compridos. Tem direcao (o
+    # corrimao corre num eixo so), por isso vai pelas oito vistas.
+    'description': (
+        'The bridge FILLS THE WHOLE CANVAS WIDTH, edge to edge: it is a big object, not a small '
+        'one in the middle. '
+        'Short rickety wooden footbridge for an isometric tactical RPG cave, seen as a square '
+        'deck of weathered planks laid crosswise, with a low railing of wooden posts and a '
+        'rope along both long sides, two thick log beams underneath at the ends. The deck is '
+        'flat and level, about as long as it is wide. No water, no ground, no rocks. Weathered '
+        'brown wood, hemp rope. Dark brown selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    # A primeira leva (128 x 96) saiu com uns 70 px de largura: metade da
+    # pegada de 2 x 2 casas, que tem 128 px na tela. Tela maior e o pedido de
+    # encher a largura.
+    'image_size': {'width': 160, 'height': 128},
+    'n_directions': 8,
+    'seed': 20261027,
+    'target_palette': {'colors': MADEIRA + ['#8a7a55', '#b8a77a']},
+}
+
+PRO_FLASH['estalagem'] = {
+    # Teste de comparação com a rota Tripo3D + Blender (Estalagem Stonehill,
+    # Phandalin). Mesma descrição do modelo 3D.
+    'description': (
+        'The building FILLS THE WHOLE CANVAS WIDTH. A newly built two-story frontier inn for an '
+        'isometric fantasy tactical RPG: ground floor of rough-cut grey fieldstone, upper floor of '
+        'rustic timber framing, steep wooden shingle roof, one stone chimney, a small covered porch '
+        'with a hanging wooden sign over the door, shuttered windows. Rectangular footprint about '
+        '1.3 times longer than wide. No ground, no people. Dark brown selective outline, not black. '
+        + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 224, 'height': 224},
+    'n_directions': 8,
+    'seed': 20261028,
+    'target_palette': {'colors': MADEIRA + GRANITO + ['#6b4a2e', '#8c6a46']},
+}
+
+# A RUA DE PHANDALIN: duas casas e a taverna, cada uma com pegada de 3 x 3
+# casas (o PixelLab enche ~70% da tela: 256 px dao uns 185 de largura, que e
+# a base de 3 casas). Especificacao em
+# `_referencias/cenario-rua-mansao/especificacao.md`. Telhado mais escuro que
+# a estrada, parede mais clara: senao some tudo no marrom.
+PEDRA = ['#3a3b3e', '#56575a', '#77766f', '#9e998b']
+REBOCO = ['#a89f86', '#c2b48f', '#d8cdb0']
+PRO_FLASH['casa-a'] = {
+    'description': (
+        'The building FILLS THE WHOLE CANVAS WIDTH, edge to edge. Small frontier cottage for an '
+        'isometric tactical RPG, square footprint, one storey: low rough fieldstone walls, cream '
+        'plaster upper part, thick thatched roof in straw ochre, one small stone chimney, one plank '
+        'door about as tall as a goblin, one shuttered window. Walls up to the eaves about 50 px '
+        'tall, ridge no higher than 90 px. Weathered, lived in. No ground, no people. Dark brown '
+        'selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 256, 'height': 256},
+    'n_directions': 8,
+    'seed': 20261101,
+    'target_palette': {'colors': PEDRA + REBOCO + MADEIRA[:3] + ['#6e5a2c', '#8f7a3e', '#b39d5c']},
+}
+PRO_FLASH['casa-b'] = {
+    'description': (
+        'The building FILLS THE WHOLE CANVAS WIDTH, edge to edge. Frontier house for an isometric '
+        'tactical RPG, square footprint: timber-framed upper floor over a low fieldstone base, '
+        'steep roof of dark weathered wooden shingles (very dark brown-grey, darker than a dirt '
+        'road), tall stone chimney, small lean-to porch on one side, two shuttered windows, plank '
+        'door. Eaves about 56 px, ridge no higher than 90 px. No ground, no people. Dark brown '
+        'selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 256, 'height': 256},
+    'n_directions': 8,
+    'seed': 20261102,
+    'target_palette': {'colors': PEDRA + REBOCO + MADEIRA[:3] + ['#2e2a2a', '#463d3c', '#5c504a', '#76665a']},
+}
+PRO_FLASH['taverna'] = {
+    'description': (
+        'The building FILLS THE WHOLE CANVAS WIDTH, edge to edge. Rowdy frontier tavern for an '
+        'isometric tactical RPG, square footprint, one and a half storeys: stone ground floor, '
+        'plaster and dark timber upper floor with two dormer windows glowing warm orange, steep '
+        'slate blue-grey roof (cold dark grey-blue, never red), two stone chimneys, wide double '
+        'plank door under a small covered porch, and a hanging wooden sign painted with a sleeping '
+        'giant lying on his side. Eaves about 72 px, ridge no higher than 120 px. No ground, no '
+        'people. Dark brown selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 256, 'height': 256},
+    'n_directions': 8,
+    'seed': 20261103,
+    'target_palette': {'colors': PEDRA + REBOCO + MADEIRA[:3] + ['#2c3038', '#434a55', '#5c6470', '#f0a030']},
+}
+
 CONJUNTOS = {
     'arvore': {
         'description': (
@@ -174,6 +268,111 @@ CONJUNTOS = {
         'item_descriptions': ['single round boulder', 'boulder with a split crack',
                               'flat wide boulder', 'two stacked stones'],
         'target_palette': {'colors': GRANITO + FOLHA[2:5]},
+    },
+    # O ESCONDERIJO DOS GOBLINS (capitulo 2). Uma casa cada, quase simetricos:
+    # uma direcao basta. A estalagmite e cobertura -- precisa subir acima da
+    # cintura de um goblin (~40 px) sem virar coluna --; os mantimentos sao o
+    # saque das carrocas; o espinheiro e terreno dificil, nao cobertura: baixo
+    # e ralo, para nao ler como moita.
+    'estalagmite': {
+        'description': (
+            'Single cave stalagmite for an isometric tactical RPG, rising from the ground: a '
+            'tapering cone of wet dark grey limestone, about 22 px wide at the base and 44 px '
+            'tall, slightly irregular with two or three ring ridges, base centered at the bottom '
+            'of the canvas. Lit from the upper left, deep shadow on the right. Dark selective '
+            'outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['tall slender stalagmite', 'short thick stalagmite',
+                              'stalagmite with a small second spike beside it',
+                              'stalagmite slightly leaning, broken tip'],
+        'target_palette': {'colors': ['#141312', '#24221f', '#38342f', '#4f4942', '#6b635a', '#8a8175']},
+    },
+    'mantimentos': {
+        'description': (
+            'Small pile of stolen supplies for an isometric tactical RPG cave: wooden crates, '
+            'grain sacks and a small barrel stacked together, about 46 px wide and 34 px tall, '
+            'sitting on the bottom of the canvas. Weathered brown wood, pale canvas sacks, dark '
+            'iron bands. Lit from the upper left. Dark brown selective outline, not black. '
+            + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['two crates and a sack', 'a barrel and two sacks',
+                              'three stacked crates', 'one crate, one barrel, one sack'],
+        'target_palette': {'colors': MADEIRA + LONA + FERRO},
+    },
+    'espinheiro': {
+        'description': (
+            'Low tangle of thorny briar brambles for an isometric tactical RPG, wild bramble '
+            'canes arching low with sharp thorns and a few small dark leaves, sparse with gaps '
+            'showing through, about 52 px wide and only 18 px tall, sitting on the bottom of the '
+            'canvas, no flowers, no berries. Dark green and brown. Selective outline, not black. '
+            + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['briar tangle, wide and flat', 'briar with three arching canes',
+                              'sparse briar patch', 'briar tangle, denser on the left'],
+        'target_palette': {'colors': FOLHA[:5] + TRONCO[:3]},
+    },
+    # As camas do bando: no covil e na caverna do chefe, como no mapa da
+    # aventura. Chatas no chao -- passa-se por cima --, entao baixas: so
+    # pele e palha, nada que suba acima de 10 px.
+    'leito': {
+        'description': (
+            'Goblin bedroll on a cave floor for an isometric tactical RPG: a ragged animal fur '
+            'and a rolled grey wool blanket on a thin layer of straw, lying flat on the ground, '
+            'about 44 px wide and only 14 px tall, sitting on the bottom of the canvas. Muted '
+            'browns and greys. Lit from the upper left. Dark selective outline, not black. '
+            + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['fur pelt with a rolled blanket', 'straw pallet with a dirty blanket',
+                              'two overlapping furs', 'bedroll with a small leather pillow'],
+        'target_palette': {'colors': ['#1d1611', '#3b2a1c', '#5c4430', '#806247', '#a68a63',
+                                      '#4a4a4a', '#6e6c66', '#8f8a7f', '#b39d5c']},
+    },
+    # O posto dos vigias (area 2): ripas de madeira presas entre galhos,
+    # formando um biombo baixo atras do qual os goblins se agacham. Uma casa
+    # por segmento.
+    'tocaia': {
+        'description': (
+            'Crude goblin lookout screen for an isometric tactical RPG: a short section of rough '
+            'wooden slats and sticks lashed together with rope, propped between two forked '
+            'branches, with a few leafy twigs woven in as camouflage, about 44 px wide and 30 px '
+            'tall, sitting on the bottom of the canvas. Weathered brown wood, green leaves. Lit '
+            'from the upper left. Dark brown selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['slat screen, straight', 'slat screen, slightly leaning',
+                              'slat screen with leafy branches', 'slat screen, one slat broken'],
+        'target_palette': {'colors': MADEIRA + FOLHA[1:6]},
+    },
+    # A fogueira de Klarg: a unica luz do esconderijo.
+    'fogueira': {
+        'description': (
+            'Small campfire for an isometric tactical RPG cave: a ring of dark stones around '
+            'burning logs and glowing embers, short orange and yellow flames, about 34 px wide '
+            'and 30 px tall, sitting on the bottom of the canvas. Dark selective outline, not '
+            'black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['campfire, flames medium', 'campfire, low flames and big embers',
+                              'campfire with a spit over it', 'campfire, stones uneven'],
+        'target_palette': {'colors': ['#141312', '#38342f', '#5c554d', '#3e2a1b', '#5e4029',
+                                      '#8c2a12', '#d0581c', '#f0a030', '#ffe080']},
+    },
+    # O bau do tesouro do bando.
+    'bau': {
+        'description': (
+            'Sturdy wooden treasure chest for an isometric tactical RPG, closed lid, dark iron '
+            'bands and a heavy lock, about 34 px wide and 28 px tall, sitting on the bottom of '
+            'the canvas, seen from the front-left. Weathered brown wood. Lit from the upper left. '
+            'Dark brown selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['closed chest with iron bands', 'closed chest, rounded lid',
+                              'closed chest with a padlock', 'closed chest, worn corners'],
+        'target_palette': {'colors': MADEIRA + FERRO + ['#b39d5c']},
     },
 }
 

@@ -323,6 +323,26 @@ PERFIS = {
         'quadros': [3, 5],
         'por_direcao': {'south': [4, 6], 'south-east': [3, 6], 'east': [4, 6], 'north-east': [1, 8], 'north': [3, 6], 'north-west': [1, 8], 'west': [4, 6], 'south-west': [3, 6]},
     },
+    # CORIN, patrulheiro humano. Espada ERGUIDA e GOLPE, pulando os rastros
+    # brancos; ao nordeste o golpe (2) vem antes do erguido (5) no modelo.
+    'ranger': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.5, 0.7), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [2, 5], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [5, 2], 'north': [2, 5], 'north-west': [5, 2], 'west': [2, 4], 'south-west': [3, 5]},
+    },
+    # As duas espadas curtas: o golpe de uma mao e o da outra.
+    'rangerEspadas': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.5, 0.7), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 5], 'east': [4, 3], 'north-east': [1, 4], 'north': [4, 6], 'north-west': [1, 4], 'west': [4, 3], 'south-west': [2, 5]},
+    },
+    # O arco longo: ARMADO e DISPARO (a flecha saindo). Ao norte o arco some
+    # no disparo (6): valem o armado e o puxado.
+    'rangerArco': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.5, 0.7), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 6], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [3, 6], 'north': [3, 5], 'north-west': [3, 6], 'west': [3, 5], 'south-west': [3, 5]},
+    },
     # A Dara de malha. Mesmo criterio: espada ERGUIDA e GOLPE, escolhidos
     # olhando. Ao norte o golpe para baixo e o quadro 2, que vem ANTES do
     # erguido (4) na sequencia do modelo; a ordem aqui e a do motor, nao a do

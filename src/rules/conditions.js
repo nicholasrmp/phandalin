@@ -496,6 +496,21 @@ export const CONDITIONS = {
     concentrationEffect: true,
   },
 
+  // Patas de Aranha (2º círculo): sobe como o Voo sobe, mas pisa no chão (ver `combat.js`, `escalaAgora`).
+  escalando: {
+    name: 'Patas de aranha',
+    desc: 'Sobe paredes e degraus de elevação sem custo extra nem limite de um nível por passo. Terreno difícil e zonas do chão continuam valendo.',
+    concentrationEffect: true,
+  },
+  // Passo sem Rastro (2º círculo): `abilities.js` (`skillBonus`) soma o +10 em Furtividade;
+  // `combat.js` (`renovarRastro`) tira a condição de quem se afasta mais de 9 m de quem a conjurou.
+  semRastro: {
+    name: 'Passo sem rastro',
+    desc: '+10 em Furtividade enquanto ficar a até 9 m de quem conjurou o véu.',
+    furtividadeBonus: 10,
+    concentrationEffect: true,
+  },
+
   queimando: {
     name: 'Queimando',
     desc: 'Sofre 1d4 de fogo no início de cada turno seu.',

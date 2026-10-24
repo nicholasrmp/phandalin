@@ -40,7 +40,7 @@ const TOCHA = { claro: 20, penumbra: 20 };
 // Quem tem visão no escuro (60 pés), pela ancestralidade do herói ou pela
 // família do monstro, quando a ficha não diz.
 const ANCESTRAIS_COM_VISAO = /an[ãa]o|elf|meio-orc|gnom|tifer|tiefling/i;
-const MONSTROS_COM_VISAO = /goblin|bugbear|hobgoblin|orc|klarg|yeemik|droop|grol/i;
+const MONSTROS_COM_VISAO = /goblin|bugbear|hobgoblin|orc|klarg|yeemik|droop|grol|esqueleto|skeleton/i;
 
 /** Alcance da visão no escuro, em pés (0 = não tem). */
 export function visaoNoEscuro(c) {
@@ -66,7 +66,7 @@ export const temEscuridao = (field) => Boolean(field.luz);
 export function casasEscondidas(enc) {
   const zonas = (enc.zonas ?? []).filter((z) => z.obscuro || z.ilusao);
   if (!zonas.length) return null;
-  const chave = zonas.map((z) => `${z.id}:${z.obscuro ?? 'ilusao'}:${z.casas.size}`).join('|');
+  const chave = zonas.map((z) => `${z.id}:${z.obscuro ?? 'ilusao'}:${z.casas.size}:${z.centro?.x ?? ''},${z.centro?.y ?? ''}`).join('|');
   if (enc._escondidas?.chave === chave) return enc._escondidas;
   const pesada = new Set();
   const magica = new Set();
@@ -173,7 +173,9 @@ export function visaoDoGrupo(enc) {
   const grupo = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
   const chave = grupo.map((c) => `${c.pos.x},${c.pos.y},${emiteLuz(c) ? 1 : 0}`).join('|')
     + `#${(enc.field.luzes ?? []).length}#${casasEscondidas(enc)?.chave ?? ''}`
-    + `#${(enc.zonas ?? []).filter((z) => z.luz).map((z) => z.id).join('.')}`;
+    + `#${(enc.zonas ?? []).filter((z) => z.luz).map((z) => z.id).join('.')}`
+    // A cena que abre porta ou cava buraco no mapa sobe a versão.
+    + `#${enc.field.versao ?? 0}`;
   if (enc._visao?.chave === chave) return enc._visao.mapa;
   const fontes = fontesDeLuz(enc);
   const mapa = new Map();

@@ -44,6 +44,10 @@ export const OLHAR = {
   leito: ['Cama de goblin', 'Pele fedida sobre palha. Ninguém dorme bem aqui.'],
   fogueira: ['Fogueira', 'Brasa viva. Pisar nela queima; cair nela queima mais.'],
   bau: ['Um baú', 'Madeira com cinta de ferro, no meio dos caixotes.'],
+  mesa: ['Uma mesa', 'Madeira grossa, manchada de vinho e de cera de vela.'],
+  sarcofago: ['Um sarcófago', 'Pedra lavrada, com a tampa pesada no lugar.'],
+  grade: ['Grade de ferro', 'Barras grossas, chumbadas na pedra. Dá para ver, e atirar, por entre elas.'],
+  fosso: ['Um fosso', 'Um buraco escuro no meio do chão. Pular não dá; pelas beiradas, talvez.'],
   tocaia: ['O posto dos vigias', 'Ripas de madeira amarradas entre galhos, um abrigo para quem quer ver sem ser visto.'],
   espinheiro: ['Espinheiro', 'Mato baixo e cheio de espinho. Atrapalha o passo, não esconde ninguém.'],
   escuro: ['Escuridão', 'Breu. Daqui não se enxerga nada ali — nem chão, nem parede, nem quem estiver parado nela.'],
@@ -253,6 +257,8 @@ export function opcoesDaCasa(app, tile) {
         });
       }
     }
+    // O que a cena deixa o herói fazer consigo mesmo (vestir um disfarce…).
+    if (occ === c) for (const o of app.capitulo?.interacoesDoHeroi?.(c) ?? []) opcoes.push(o);
     return { titulo, subtitulo: `${estadoAparente(occ)} · aliado`, alvo, opcoes };
   }
 

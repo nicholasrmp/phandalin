@@ -254,8 +254,10 @@ export const HUMANOIDES = {
       cantrips: ['raioDeFogo', 'raioDeGelo'],
       // Só as magias que `rules/spells.js` tem. O bloco do SRD traz mais;
       // inventar id de magia aqui quebra `getSpell`, que lança erro.
-      prepared: ['misselMagico', 'maosFlamejantes', 'sono'],
+      prepared: ['misselMagico', 'maosFlamejantes', 'sono', 'contramagia'],
       slots: [0, 4, 3, 3, 3, 1],
+      // Entra no motor de magias: o Mago reage com Contramágica (a IA ainda não o faz conjurar no turno dele).
+      noMotor: true,
     },
     traits: ['conjuracao'],
     blurb: 'Abre com Sono para tirar dois personagens da luta sem rolar ataque, depois Mãos Flamejantes em quem se amontoar; 40 PV e CA 12 significam que o grupo tem uma rodada para alcançá-lo.',
@@ -277,14 +279,19 @@ export const HUMANOIDES = {
     cr: '1',
     xp: 200,
     abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 13 },
-    ac: 12,
-    acNote: 'sem armadura; 15 com armadura arcana do cajado',
+    // Já está sob a armadura arcana quando o grupo chega: ele conjura de
+    // manhã, como quem veste roupa.
+    ac: 15,
+    acNote: 'armadura arcana',
     maxHp: 22,
     speedFt: 30,
     saves: ['int', 'wis'],
     skills: ['arcanismo', 'historia', 'enganacao'],
     attacks: [
       { name: 'Cajado de vidro', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff' },
+      // O truque que o motor sabe usar por monstro: de longe, enquanto a IA
+      // não conjura o resto da lista.
+      { name: 'Raio de Gelo', bonus: 5, damage: '1d8', type: 'frio', ranged: true, rangeFt: 60, longRangeFt: 60, art: 'bow' },
     ],
     // Nível 3 dá +2 de proficiência: CD 13 e +5 de ataque mágico com INT 17.
     spellcasting: {
