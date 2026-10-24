@@ -14,11 +14,12 @@
 //   log (direita)            o que acabou de acontecer e por quê
 //   barra de ação (baixo)    o que EU posso fazer agora
 //
-// A barra de ação é dividida em zonas, e a divisão não é estética: cada zona é
-// um recurso diferente do turno. Ataques e ações comuns gastam a AÇÃO; a
-// hotbar gasta ação ou ação bônus conforme a magia; o medidor gasta MOVIMENTO;
-// a reação é de fora do turno. O núcleo, no meio, mostra as gemas de ação e de
-// bônus — é a resposta mais rápida para "o que ainda me resta".
+// A barra de ação tem três blocos. À esquerda, o núcleo diz de quem é o turno.
+// No meio, uma bandeja só com tudo que se clica, em grupos: ataques e ações
+// comuns gastam a AÇÃO, itens e magias gastam ação ou bônus; as cargas de
+// classe ficam no canto do próprio azulejo. À direita, a economia inteira —
+// ação, bônus, reação e movimento, com nome e gema acesa ou apagada —, que é a
+// resposta mais rápida para "o que ainda me resta", e o botão de terminar.
 //
 // Antes disso tudo era uma fileira de botões de texto com emoji, e emoji é
 // desenho do sistema operacional: era metade da cara de amador.
@@ -98,6 +99,19 @@ const TECLAS_ARMA = ['f', 'g', 'h'];
 const TECLAS_ACAO = { dash: 'r', dodge: 'x', disengage: 'c', stabilize: 't' };
 const TECLAS_FEATURE = ['v', 'b', 'n'];
 
+/** A gema de custo no canto do azulejo, pelo custo que a dica declara. */
+const CUSTO_GEMA = { 'Ação': 'acao', 'Ação bônus': 'bonus' };
+
+/**
+ * As duas seções da bandeja têm duas fileiras. A de magias pagina com até N
+ * colunas por página (menos em tela estreita).
+ */
+const FILEIRAS = 2;
+
+/** O círculo da magia em numeral romano, como no selo do medalhão. */
+const ROMANO = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+const colunasDeMagia = () => (matchMedia('(max-width: 1150px)').matches ? 6 : 8);
+
 /** Sigla de três letras sem acento: chip de condição legível sem emoji. */
 const sigla = (texto) => texto.normalize('NFD').replace(/\p{M}/gu, '').slice(0, 3).toUpperCase();
 
@@ -116,6 +130,14 @@ export class Hud {
     this.root = root;
     this.hotkeys = [];
     this.teclas = new Map();
+    // A página da grade de magias e a magia mirada, por personagem (ver
+    // `bandeja`), e a hora da última troca de página pela roda do mouse.
+    this.paginaGrade = new Map();
+    this.miradaGrade = new Map();
+    this.ultimaRoda = 0;
+    // A grade de magias tem menos colunas em tela estreita; atravessar o
+    // limite com a barra aberta remonta a barra na hora.
+    matchMedia('(max-width: 1150px)').addEventListener('change', () => this.redesenharBarra());
 
     // Estado do resumo do turno inimigo (ver `acompanharLado`).
     this.ladoAtual = null;
@@ -272,9 +294,17 @@ export class Hud {
     const node = el('button', {
       class: `tile${ativo ? ' on' : ''}${desabilitado ? ' off' : ''}${classe ? ` ${classe}` : ''}`,
       disabled: desabilitado ? 'disabled' : null,
+      // O nome vem da dica. Sem isto a leitura de tela anunciava o texto do
+      // azulejo — a tecla "F", o selo "T" —, e `ligarDica` só põe o nome em
+      // nó sem texto.
+      'aria-label': dica?.nome ?? null,
       onclick: onClick ?? undefined,
     },
       iconCanvas(icone, 32),
+      // O CUSTO, no canto de cima à esquerda: a mesma gema do bloco do turno
+      // — âmbar é ação, azul é bônus —, para o azulejo dizer o que gasta sem
+      // texto. Vem do custo que a dica já declara.
+      CUSTO_GEMA[dica?.custo] ? el('span', { class: `tile-custo ${CUSTO_GEMA[dica.custo]}`, 'aria-hidden': 'true' }) : null,
       // O selo é a QUANTIDADE, no canto de cima: a tecla já mora no de baixo,
       // e duas plaquinhas no mesmo canto viram uma mancha só.
       selo !== null ? el('span', { class: 'tile-selo' }, selo) : null,
@@ -638,7 +668,8 @@ export class Hud {
   fichaGrupo(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
     const fracao = Math.max(0, c.hp / c.maxHp);
-    const retrato = makePortrait(c.look, 44);
+    // 36 e não 44: o retrato mora dentro do slot de madeira de .ficha-retrato.
+    const retrato = makePortrait(c.look, 36);
     retrato.className = 'pixel';
 
     const node = el('button', {
@@ -740,12 +771,16 @@ export class Hud {
   // ---- barra de ação --------------------------------------------------------
 
   renderBarra(enc, c, mode, alvo = null) {
+    this.ultimaBarra = [enc, c, mode, alvo];
     this.hotkeys = [];
     // As letras são reservadas a cada montagem da barra: a barra muda com a
     // classe e com o turno, e tecla apontando para um azulejo que não existe
     // mais é pior que tecla nenhuma.
     this.teclas = new Map();
     this.barra.replaceChildren();
+    // O mouse pode estar sobre um medalhão que a remontagem tirou do lugar, e
+    // o mouseleave dele nunca vem: o foco de círculo é limpo aqui.
+    this.barra.classList.remove('com-foco');
 
     if (enc.over) {
       this.barra.append(el('div', { class: 'barra-aviso' },
@@ -765,25 +800,104 @@ export class Hud {
       return;
     }
 
-    // A barra muda com a classe. O mago precisa de gestão de espaços de magia
-    // e o guerreiro não tem nenhum: reservar a zona vazia para ele seria
-    // mostrar um recurso que não existe.
-    this.barra.append(...limpos(
-      this.zonaAtaques(enc, c, mode, alvo),
-      this.zonaComuns(enc, c, mode),
-      // Itens à esquerda do núcleo, junto das outras ações: é ação, não
-      // recurso de classe. `limpos` descarta a zona quando a mochila não tem
-      // consumível nenhum.
-      this.zonaItens(enc, c, mode),
-      this.nucleo(c),
-      this.zonaMovimento(c),
-      this.zonaRecursos(c),
-      c.spellcasting ? this.zonaHotbar(c, mode) : null,
-      this.zonaReacao(c),
-    ));
+    // TRÊS BLOCOS: quem joga (núcleo), o que dá para fazer (a bandeja) e o
+    // que sobrou do turno (economia, espaços de magia e terminar). Já foram
+    // sete caixas lado a lado, cada uma com moldura e plaquinha.
+    const fixas = [
+      ...this.tilesAtaques(enc, c, mode, alvo),
+      ...this.tilesComuns(enc, c, mode),
+      ...this.tilesItens(enc, c, mode),
+    ];
+    const magias = c.spellcasting ? this.magiasDe(c, mode) : [];
+    // Sobra o que fazer enquanto houver azulejo habilitado — em qualquer
+    // página de magias, não só na que está à vista. Conta também o que custa
+    // "Livre", como a Ação Surpreendente.
+    const sobra = fixas.some((t) => !t.classList.contains('off')) || magias.some((m) => !m.desabilitado);
+    this.barra.append(this.nucleo(c), this.bandeja(c, mode, fixas, magias), this.zonaTurno(c, sobra));
   }
 
-  zonaAtaques(enc, c, mode, alvo = null) {
+  /**
+   * A BANDEJA, como a barra do Baldur's Gate 3, em duas seções.
+   *
+   * À esquerda, as AÇÕES FIXAS — ataques, ações comuns e itens —, sempre à
+   * vista, nunca paginadas: são o que o jogador usa todo turno, e uma versão
+   * anterior desta barra as escondia atrás de filtro e página justamente no
+   * mago, que é quem mais precisa achar o Esquivar e a poção depressa.
+   *
+   * À direita, as MAGIAS, do truque ao 9º, com o aro na cor do círculo. Só
+   * esta seção pagina: enquanto as magias cabem, a grade tem o tamanho delas;
+   * quando passam de uma página, ganha largura fixa, setas e "1/3", e a roda
+   * do mouse sobre ela troca de página. O círculo não é aba: os espaços ficam
+   * no bloco do turno. A página é lembrada por personagem, e mirar uma magia
+   * leva à página dela.
+   */
+  bandeja(c, mode, fixas, magias) {
+    const grade = (azulejos, colunas, classe) => {
+      const node = el('div', { class: `grade-acoes ${classe}` }, azulejos);
+      node.style.setProperty('--colunas', colunas);
+      return node;
+    };
+    const secaoFixa = grade(fixas, Math.ceil(fixas.length / FILEIRAS), 'grade-fixa');
+    if (!magias.length) return el('div', { class: 'bandeja-acoes' }, secaoFixa);
+
+    const maxColunas = colunasDeMagia();
+    const porPagina = maxColunas * FILEIRAS;
+    const paginas = Math.ceil(magias.length / porPagina);
+    let pagina = Math.min(this.paginaGrade.get(c.id) ?? 0, paginas - 1);
+    // Mirar uma magia leva à página dela UMA vez, quando a mira começa. Se
+    // levasse a cada remontagem, as setas não sairiam do lugar enquanto a
+    // mira estivesse ativa.
+    const mirando = mode?.kind === 'spell' ? mode.spellId : null;
+    if (mirando && mirando !== this.miradaGrade.get(c.id)) {
+      const i = magias.findIndex((m) => m.sid === mirando);
+      if (i >= 0) pagina = Math.floor(i / porPagina);
+    }
+    this.miradaGrade.set(c.id, mirando);
+    this.paginaGrade.set(c.id, pagina);
+
+    // As teclas 1–9 são das magias da página à vista; as letras de arma e de
+    // ação já foram reservadas ao montar os azulejos fixos.
+    const azulejos = magias.slice(pagina * porPagina, (pagina + 1) * porPagina).map((m) => {
+      const n = this.hotkeys.length + 1;
+      if (n <= 9) this.hotkeys.push({ run: m.run, disabled: m.desabilitado });
+      return m.criar(n <= 9 ? String(n) : null);
+    });
+    const colunas = paginas > 1 ? maxColunas : Math.ceil(azulejos.length / FILEIRAS);
+    // Na última página, os soquetes que sobram ficam vazios: as setas não
+    // mudam de lugar ao trocar de página.
+    if (paginas > 1) while (azulejos.length < porPagina) azulejos.push(el('span', { class: 'tile vazio', 'aria-hidden': 'true' }));
+    const secaoMagias = grade(azulejos, colunas, 'grade-magias');
+
+    const ir = (p) => { this.paginaGrade.set(c.id, (p + paginas) % paginas); this.redesenharBarra(); };
+    if (paginas > 1) {
+      // Um gesto de trackpad dispara dezenas de eventos de roda: sem freio,
+      // cada um virava uma página. Uma troca a cada 250 ms, e a roda para na
+      // primeira e na última página em vez de dar a volta.
+      secaoMagias.addEventListener('wheel', (ev) => {
+        ev.preventDefault();
+        const agora = performance.now();
+        if (agora - this.ultimaRoda < 250) return;
+        const p = Math.min(paginas - 1, Math.max(0, pagina + Math.sign(ev.deltaY)));
+        if (p === pagina) return;
+        this.ultimaRoda = agora;
+        ir(p);
+      }, { passive: false });
+    }
+
+    return el('div', { class: 'bandeja-acoes' },
+      secaoFixa,
+      el('span', { class: 'separador', 'aria-hidden': 'true' }),
+      secaoMagias,
+      paginas > 1
+        ? el('div', { class: 'paginador' },
+          el('button', { class: 'pag', 'aria-label': 'Página anterior de magias', onclick: () => ir(pagina - 1) }, '▲'),
+          el('span', { class: 'pag-num' }, `${pagina + 1}/${paginas}`),
+          el('button', { class: 'pag', 'aria-label': 'Próxima página de magias', onclick: () => ir(pagina + 1) }, '▼'))
+        : null);
+  }
+
+  /** Os azulejos de arma. */
+  tilesAtaques(enc, c, mode, alvo = null) {
     const tiles = (c.weapons ?? []).map((wid, i) => {
       const w = WEAPONS[wid];
       const run = () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid });
@@ -832,15 +946,13 @@ export class Hud {
         },
       });
     });
-    return el('div', { class: 'zona zona-ataques' },
-      el('div', { class: 'tiles' }, tiles),
-      el('span', { class: 'zona-rot' }, 'Ataques'));
+    return tiles;
   }
 
-  zonaComuns(enc, c, mode) {
+  tilesComuns(enc, c, mode) {
     const tiles = [];
     let proximaExtra = 0;
-    const comum = (icone, nome, texto, custo, acao, desabilitado) => {
+    const comum = (icone, nome, texto, custo, acao, desabilitado, carga = null) => {
       const run = () => this.handlers.onAction?.(acao);
       // Ação comum tem letra fixa (R, X, C, T) e habilidade de classe pega a
       // próxima do pote: fixar V para "Retomar o Fôlego" e V para "Ação
@@ -850,11 +962,22 @@ export class Hud {
         run,
         desabilitado,
       );
+      // A CARGA NO PRÓPRIO AZULEJO. Retomar o Fôlego e Ação Surpreendente
+      // mostravam as cargas numa zona "Recursos" à parte, longe do botão que
+      // as gasta; agora o número fica no canto do azulejo, como a quantidade
+      // de poções.
+      const restam = carga ? (c.resources?.[carga] ?? 0) : null;
+      const total = carga ? (c.resourcesMax?.[carga] ?? restam) : null;
       tiles.push(this.tile(iconeDeAcao(icone), {
         tecla,
         desabilitado,
         onClick: run,
-        dica: { nome, texto, custo, aviso: desabilitado ? 'Indisponível agora' : null },
+        selo: carga ? restam : null,
+        dica: {
+          nome, texto, custo,
+          linhas: carga ? [['Cargas', `${restam} de ${total}`]] : null,
+          aviso: desabilitado ? 'Indisponível agora' : null,
+        },
       }));
     };
 
@@ -862,16 +985,17 @@ export class Hud {
     comum('esquivar', 'Esquivar', 'Quem te ataca fica com desvantagem; seus testes de Destreza ganham vantagem.', 'Ação', { kind: 'dodge' }, c.actionUsed);
     comum('desengajar', 'Desengajar', 'Sair de perto sem sofrer ataque de oportunidade.', 'Ação', { kind: 'disengage' }, c.actionUsed);
 
+    // O último campo é o recurso de `c.resources` que a habilidade gasta.
     const feats = {
-      secondWind: ['folego', 'Retomar o Fôlego', 'Recupera 1d10 + nível de pontos de vida.', 'Ação bônus', () => !c.bonusUsed && c.resources?.secondWind > 0],
-      actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0],
-      cunningAction: ['ardilosa', 'Ação Ardilosa', 'Disparada, Desengajar ou Esconder-se como ação bônus.', 'Ação bônus', () => !c.bonusUsed],
-      preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0],
+      secondWind: ['folego', 'Retomar o Fôlego', 'Recupera 1d10 + nível de pontos de vida.', 'Ação bônus', () => !c.bonusUsed && c.resources?.secondWind > 0, 'secondWind'],
+      actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0, 'actionSurge'],
+      cunningAction: ['ardilosa', 'Ação Ardilosa', 'Disparada, Desengajar ou Esconder-se como ação bônus.', 'Ação bônus', () => !c.bonusUsed, null],
+      preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
     };
     for (const f of c.features ?? []) {
       const e = feats[f];
       if (!e) continue;
-      comum(e[0], e[1], e[2], e[3], { kind: 'feature', featureId: f }, !e[4]());
+      comum(e[0], e[1], e[2], e[3], { kind: 'feature', featureId: f }, !e[4](), e[5]);
     }
 
     const caido = enc.alliesOf(c).find(
@@ -883,25 +1007,20 @@ export class Hud {
         { kind: 'stabilize', targetId: caido.id }, c.actionUsed);
     }
 
-    return el('div', { class: 'zona zona-comuns' },
-      el('div', { class: 'tiles' }, tiles),
-      el('span', { class: 'zona-rot' }, 'Ações'));
+    return tiles;
   }
 
   /**
    * Os itens de usar da mochila.
    *
-   * Zona própria, e não um azulejo em "Ações", porque é o único grupo da
-   * barra que ACABA: a poção some quando a última é bebida, e a zona some
-   * junto. Misturada com Disparada e Esquivar, a barra mudaria de largura no
-   * meio do combate sem explicar por quê.
+   * Ficam no fim das ações fixas, porque são o único grupo da barra que
+   * ACABA: a poção some quando a última é bebida, e o resto não sai do lugar.
    *
    * O alvo sai daqui pronto quando é óbvio — beber a própria poção, o kit no
    * aliado caído ao lado. Só o arremesso pede mira.
    */
-  zonaItens(enc, c, mode) {
+  tilesItens(enc, c, mode) {
     const lista = consumiveisDe(c);
-    if (!lista.length) return null;
 
     const caido = enc.alliesOf(c).find(
       (a) => !a.dead && !a.stable && hasCondition(a, 'inconsciente') && isAdjacent(a.pos, c.pos),
@@ -934,6 +1053,7 @@ export class Hud {
       linhas.push(['Na mochila', String(qtd)]);
 
       return this.tile(dados.art ?? 'cura', {
+        classe: 'item',
         desabilitado,
         ativo: ligado,
         onClick: run,
@@ -953,69 +1073,120 @@ export class Hud {
       });
     });
 
-    return el('div', { class: 'zona zona-itens' },
-      el('div', { class: 'tiles' }, tiles),
-      el('span', { class: 'zona-rot' }, 'Itens'));
+    return tiles;
   }
 
   /**
-   * O núcleo. As duas gemas são a informação mais consultada da tela inteira:
-   * acesa é recurso disponível, apagada é gasto. O retrato no meio existe para
-   * o jogador nunca precisar conferir de quem é o turno.
+   * O núcleo: de quem é o turno. O retrato no medalhão existe para o jogador
+   * nunca precisar conferir quem está jogando; nome, PV e CA ficam escritos
+   * embaixo. As gemas de ação e bônus que moravam aqui foram para `zonaTurno`.
    */
   nucleo(c) {
-    const retrato = makePortrait(c.look, 58);
+    // 46: o diâmetro do vão escuro do medalhão de .nucleo-retrato.
+    const retrato = makePortrait(c.look, 46);
     retrato.className = 'pixel';
     // `fracao`, e não `pct`: `pct` agora é a formatação de porcentagem que vem
     // de `rules/odds.js`, e um nome local igual ao importado é bug esperando.
     const fracao = Math.max(0, c.hp / c.maxHp);
 
+    return el('div', { class: 'nucleo' },
+      el('div', { class: 'nucleo-retrato' }, retrato),
+      el('div', { class: 'nucleo-nome' }, c.name),
+      el('div', { class: 'nucleo-pv' },
+        el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
+      el('div', { class: 'nucleo-vitais' },
+        el('span', {}, `${Math.max(0, Math.ceil(c.hp))}/${c.maxHp} PV`),
+        el('span', { class: 'nucleo-ca' }, `CA ${c.ac}`)));
+  }
+
+  /**
+   * A ECONOMIA DO TURNO, NUM LUGAR SÓ.
+   *
+   * Ação, ação bônus e reação são gemas com NOME ao lado: acesa é disponível,
+   * apagada é gasta. Embaixo, o movimento que sobra. É a resposta para "o que
+   * ainda me resta", e antes ela estava espalhada em três lugares: duas gemas
+   * sem nome no núcleo, o medidor numa zona e a reação noutra — desenhada como
+   * um botão grande, que pedia um clique que não fazia nada. A reação não se
+   * clica: o ataque de oportunidade acontece sozinho.
+   *
+   * O botão de terminar fecha o bloco: depois de ler o que sobrou, a próxima
+   * decisão é se o turno acabou.
+   */
+  zonaTurno(c, sobra) {
     // Ação Surpreendente dá uma ação EXTRA. Mostrar "1" quando restam duas é
     // esconder do guerreiro o recurso que define o turno dele.
     const acoesExtras = c.resources?.actionSurge ?? 0;
     const acoesRestam = (c.actionUsed ? 0 : 1) + acoesExtras;
 
-    const gema = (icone, restam, nome, texto) => this.ligarDica(
-      el('div', { class: `gema${restam ? '' : ' gasta'}` },
-        iconCanvas(icone, 16),
-        restam > 1 ? el('span', { class: 'gema-n' }, restam) : null),
-      { nome, texto, aviso: restam ? `${restam} disponível${restam > 1 ? 'is' : ''}` : 'Já usada neste turno' },
+    // Em linha: gema e nome. A gema acesa ou apagada já diz "pronta" ou
+    // "usada"; o número só aparece quando há mais de uma.
+    // O rótulo é curto ("Bônus"); o nome inteiro fica na dica.
+    const linha = (tipo, nome, restam, quando, texto, rotulo = nome) => this.ligarDica(
+      el('div', { class: `economia-linha${restam ? '' : ' gasta'}` },
+        el('span', { class: `gema-luz ${tipo}` }),
+        el('span', { class: 'economia-nome' }, rotulo),
+        restam > 1 ? el('span', { class: 'economia-estado' }, `×${restam}`) : null),
+      { nome, tipo: quando, texto, aviso: restam ? `${restam} disponível${restam > 1 ? 'is' : ''}` : 'Já usada' },
     );
 
-    return el('div', { class: 'nucleo' },
-      el('div', { class: 'nucleo-retrato' },
-        retrato,
-        el('div', { class: 'nucleo-pv' },
-          el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } }))),
-      el('div', { class: 'nucleo-nome' }, c.name),
-      el('div', { class: 'nucleo-vitais' },
-        el('span', {}, `${Math.max(0, Math.ceil(c.hp))}/${c.maxHp} PV`),
-        el('span', { class: 'nucleo-ca' }, `CA ${c.ac}`)),
-      el('div', { class: 'gemas' },
-        gema('acao', acoesRestam, 'Ação',
+    const total = c.speedFt || 30;
+    const resta = Math.max(0, c.movementLeftFt ?? 0);
+    const fracao = Math.min(1, resta / total);
+    // Marcas de 1,5 m (um quadrado) para o jogador contar quadrados, não pés.
+    const quadrados = Math.max(1, Math.round(total / 5));
+    const mov = this.ligarDica(
+      el('div', { class: 'mov' },
+        el('div', { class: 'mov-rot' }, el('span', {}, 'Movimento'), el('strong', {}, `${resta} pés`)),
+        el('div', { class: 'mov-trilho' },
+          el('i', { class: 'mov-cheio', style: { width: `${fracao * 100}%` } }),
+          ...Array.from({ length: quadrados - 1 }, (_, i) => el('span', {
+            class: 'mov-marca', style: { left: `${((i + 1) / quadrados) * 100}%` },
+          })))),
+      {
+        nome: 'Deslocamento',
+        linhas: [['Resta', `${resta} pés · ${Math.floor(resta / 5)} quadrados`], ['Total por turno', `${total} pés`]],
+        texto: 'Clique num quadrado azul para andar. Mover não gasta a ação.',
+      },
+    );
+
+    return el('div', { class: 'zona zona-turno' },
+      el('div', { class: 'economia' },
+        linha('acao', 'Ação', acoesRestam, 'no seu turno',
           acoesExtras
             ? 'Uma por turno — e Ação Surpreendente dá outra.'
             : 'Uma por turno: atacar, conjurar, disparada, esquivar, desengajar.'),
-        gema('bonus', c.bonusUsed ? 0 : 1, 'Ação bônus', 'Uma por turno, e só quando alguma habilidade a oferece.')),
-      this.botaoTerminar(c));
+        linha('bonus', 'Ação bônus', c.bonusUsed ? 0 : 1, 'no seu turno',
+          'Uma por turno, e só quando alguma habilidade a oferece.', 'Bônus'),
+        linha('reacao', 'Reação', c.reactionUsed ? 0 : 1, 'fora do seu turno',
+          'Ataque de oportunidade: quando um inimigo adjacente se afasta, você ataca de graça, sem clicar. Uma por rodada.')),
+      this.espacosDeMagia(c),
+      mov,
+      this.botaoTerminar(c, sobra));
   }
 
   /**
    * Terminar o turno é irreversível e ficava com `title` do navegador. A dica
    * agora lista o que seria JOGADO FORA: ação, bônus e os pés que sobraram.
    * É o aviso que impede o clique de reflexo que custa um turno de guerreiro.
+   *
+   * O botão acende quando não sobra nada: nenhum azulejo ainda habilitado e
+   * nenhum pé de movimento. Acender só porque a ação
+   * acabou fazia o guerreiro passar a vez com a Ação Surpreendente ou o
+   * Retomar o Fôlego ainda na mão.
    */
-  botaoTerminar(c) {
+  botaoTerminar(c, sobra = true) {
     const perdas = [];
     if (!c.actionUsed) perdas.push('a ação');
     if (!c.bonusUsed) perdas.push('a ação bônus');
     if ((c.movementLeftFt ?? 0) > 0) perdas.push(`${c.movementLeftFt} pés de movimento`);
+    const pronto = !sobra && (c.movementLeftFt ?? 0) <= 0;
 
     return this.ligarDica(
       el('button', {
-        class: 'btn-terminar',
+        class: `btn-terminar${pronto ? ' pronto' : ''}`,
         onclick: () => this.handlers.onEndTurn?.(),
-      }, iconCanvas('terminar', 32), 'Terminar', el('span', { class: 'tecla-inline' }, 'espaço')),
+      }, el('span', { class: 'lacre' }), el('span', { class: 'btn-terminar-texto' }, 'Terminar turno'),
+      el('span', { class: 'tecla-inline' }, 'espaço')),
       {
         nome: 'Terminar o turno',
         tipo: 'passa a vez',
@@ -1027,154 +1198,115 @@ export class Hud {
   }
 
   /**
-   * Os recursos que NÃO são da economia de turno: espaços de magia e cargas de
-   * classe. Mudam com a classe porque a classe é isso — o mago gerencia
-   * espaços, o guerreiro gerencia duas cargas e o ladino não gerencia nada.
-   * Quem não tem nada a gerenciar não ganha a zona.
+   * As magias, em ordem do truque ao 9º círculo.
+   *
+   * CADA CÍRCULO TEM COR. Truque é aço (de graça, à vontade); do 1º ao 3º,
+   * metais — bronze, prata, ouro; do 4º ao 6º, gemas — esmeralda, safira,
+   * rubi; do 7º ao 9º, tons arcanos. A cor está no aro do medalhão e nos
+   * espaços de magia do bloco do turno, que é onde o círculo vira recurso.
+   *
+   * Devolve descritores, e não azulejos: a tecla 1–9 depende de a magia
+   * cair na página à vista, e isso só a grade sabe (ver `renderBarra`).
    */
-  zonaRecursos(c) {
-    const blocos = [];
-
-    if (c.spellcasting) {
-      const max = c.spellcasting.slotsMax ?? c.spellcasting.slots;
-      const linhas = [];
-      for (let lvl = 1; lvl < c.spellcasting.slots.length; lvl++) {
-        const total = max[lvl] ?? 0;
-        if (!total) continue;
-        const tem = c.spellcasting.slots[lvl] ?? 0;
-        linhas.push(this.ligarDica(
-          el('div', { class: 'slot-linha' },
-            el('span', { class: 'slot-lvl' }, `${lvl}º`),
-            el('div', { class: 'pips' }, Array.from({ length: total }, (_, i) => el('span', { class: `pip${i < tem ? '' : ' gasto'}` })))),
-          {
-            nome: `Espaços de ${lvl}º círculo`,
-            linhas: [['Restam', `${tem} de ${total}`]],
-            texto: 'Gastos ao conjurar. Voltam num descanso longo.',
-          },
-        ));
-      }
-      if (linhas.length) blocos.push(el('div', { class: 'recurso-grupo' }, linhas));
-    }
-
-    const nomes = {
-      secondWind: ['folego', 'Retomar o Fôlego'],
-      actionSurge: ['surto', 'Ação Surpreendente'],
-      channelDivinity: ['preservar', 'Canalizar Divindade'],
-    };
-    const linhasCarga = [];
-    for (const [id, n] of Object.entries(c.resources ?? {})) {
-      const total = c.resourcesMax?.[id] ?? n;
-      if (!total) continue;
-      const [icone, nome] = nomes[id] ?? ['acao', id];
-      linhasCarga.push(this.ligarDica(
-        el('div', { class: 'slot-linha' },
-          iconCanvas(icone, 16),
-          el('div', { class: 'pips' }, Array.from({ length: total }, (_, i) => el('span', { class: `pip${i < n ? '' : ' gasto'}` })))),
-        { nome, linhas: [['Restam', `${n} de ${total}`]], texto: 'Volta num descanso.' },
-      ));
-    }
-    if (linhasCarga.length) blocos.push(el('div', { class: 'recurso-grupo' }, linhasCarga));
-
-    if (!blocos.length) return null;
-    return el('div', { class: 'zona zona-recursos' },
-      el('div', { class: 'recursos' }, blocos),
-      el('span', { class: 'zona-rot' }, 'Recursos'));
-  }
-
-  zonaMovimento(c) {
-    const total = c.speedFt || 30;
-    const resta = Math.max(0, c.movementLeftFt ?? 0);
-    const fracao = Math.min(1, resta / total);
-    // Marcas de 1,5 m (um quadrado) para o jogador contar quadrados, não pés.
-    const quadrados = Math.max(1, Math.round(total / 5));
-    const node = el('div', { class: 'zona zona-mov' },
-      el('div', { class: 'mov' },
-        el('div', { class: 'mov-trilho' },
-          el('i', { class: 'mov-cheio', style: { width: `${fracao * 100}%` } }),
-          ...Array.from({ length: quadrados - 1 }, (_, i) => el('span', {
-            class: 'mov-marca', style: { left: `${((i + 1) / quadrados) * 100}%` },
-          }))),
-        el('div', { class: 'mov-num' }, iconCanvas('movimento', 16), `${resta} pés`)),
-      el('span', { class: 'zona-rot' }, 'Movimento'));
-    return this.ligarDica(node, {
-      nome: 'Deslocamento',
-      linhas: [['Resta', `${resta} pés · ${Math.floor(resta / 5)} quadrados`], ['Total por turno', `${total} pés`]],
-      texto: 'Clique num quadrado azul para andar. Mover não gasta a ação.',
-    });
-  }
-
-  zonaHotbar(c, mode) {
-    const grupos = new Map();
-    {
-      const dc = spellSaveDc(c);
-      const atk = spellAttackBonus(c);
-      const todas = [...c.spellcasting.cantrips, ...c.spellcasting.prepared];
-      for (const sid of todas) {
-        const s = getSpell(sid);
+  magiasDe(c, mode) {
+    const dc = spellSaveDc(c);
+    const atk = spellAttackBonus(c);
+    return [...c.spellcasting.cantrips, ...c.spellcasting.prepared]
+      .map((sid) => ({ sid, s: getSpell(sid) }))
+      .sort((a, b) => a.s.level - b.s.level)
+      .map(({ sid, s }) => {
         const semSlot = s.level > 0 && !c.spellcasting.slots[s.level];
         const bonus = s.castTime === 'bonus';
         const gasto = bonus ? c.bonusUsed : c.actionUsed;
         const desabilitado = semSlot || gasto;
-        const n = this.hotkeys.length + 1;
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
-        if (n <= 9) this.hotkeys.push({ run, disabled: desabilitado });
-        if (!grupos.has(s.level)) grupos.set(s.level, []);
-        grupos.get(s.level).push(this.tile(iconeDeMagia({ ...s, id: sid }), {
-          tecla: n <= 9 ? String(n) : null,
-          ativo: mode?.kind === 'spell' && mode.spellId === sid,
+        return {
+          sid,
+          run,
           desabilitado,
-          classe: s.level === 0 ? 'truque' : 'magia',
-          onClick: run,
-          dica: {
-            nome: s.name,
-            tipo: s.level === 0 ? 'truque' : `magia de ${s.level}º círculo`,
-            linhas: [
-              s.damage ? ['Dano', `${s.damage}${s.damageType ? ` ${s.damageType}` : ''}`] : null,
-              s.rangeFt ? ['Alcance', `${s.rangeFt} pés`] : null,
-              s.kind === 'attack' ? ['Ataque de magia', formatModifier(atk)] : null,
-              s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
-            ],
-            texto: s.desc,
-            custo: bonus ? 'Ação bônus' : 'Ação',
-            aviso: semSlot ? `Sem espaço de ${s.level}º círculo` : gasto ? 'Recurso do turno já usado' : null,
-          },
-        }));
-      }
-    }
-    // Agrupado por círculo, com o truque primeiro: é assim que o jogador
-    // pensa a mão dele — o que é de graça e o que custa um espaço.
-    const colunas = [...grupos.entries()].sort((a, b) => a[0] - b[0]).map(([lvl, tiles]) => {
-      const max = c.spellcasting.slotsMax?.[lvl] ?? 0;
-      const tem = c.spellcasting.slots?.[lvl] ?? 0;
-      return el('div', { class: 'grupo-magia' },
-        el('div', { class: 'tiles' }, tiles),
-        el('span', { class: 'grupo-rot' },
-          lvl === 0 ? 'truques' : `${lvl}º`,
-          lvl > 0 && max ? el('span', { class: 'grupo-slots' }, ` ${tem}/${max}`) : null));
-    });
-
-    return el('div', { class: 'zona zona-hotbar' },
-      el('div', { class: 'grupos-magia' }, colunas),
-      el('span', { class: 'zona-rot' }, 'Magias'));
+          criar: (tecla) => this.focoDeCirculo(this.tile(iconeDeMagia({ ...s, id: sid }), {
+            tecla,
+            ativo: mode?.kind === 'spell' && mode.spellId === sid,
+            desabilitado,
+            classe: `circulo-${s.level}`,
+            // O SELO DO CÍRCULO, no canto de cima: o numeral romano, na cor
+            // dele, e "T" no truque. Só a cor do aro obrigava a decorar dez
+            // cores, e aço (truque) e prata (2º) quase não se distinguem.
+            // Romano, e não algarismo, porque o algarismo do canto de baixo
+            // já é a tecla de atalho: "1" em cima e "1" embaixo confundia.
+            selo: s.level === 0 ? 'T' : ROMANO[s.level],
+            onClick: run,
+            dica: {
+              nome: s.name,
+              tipo: s.level === 0 ? 'truque' : `magia de ${s.level}º círculo`,
+              linhas: [
+                s.damage ? ['Dano', `${s.damage}${s.damageType ? ` ${s.damageType}` : ''}`] : null,
+                s.rangeFt ? ['Alcance', `${s.rangeFt} pés`] : null,
+                s.kind === 'attack' ? ['Ataque de magia', formatModifier(atk)] : null,
+                s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
+              ],
+              texto: s.desc,
+              custo: bonus ? 'Ação bônus' : 'Ação',
+              aviso: semSlot ? `Sem espaço de ${s.level}º círculo` : gasto ? 'Recurso do turno já usado' : null,
+            },
+          }), s.level),
+        };
+      });
   }
 
   /**
-   * A reação é o único recurso que o jogador gasta FORA do próprio turno, e é
-   * por isso que ela fica separada no canto: o ataque de oportunidade acontece
-   * sozinho quando um inimigo sai de perto, e o jogador precisa saber se ainda
-   * tem essa carta antes de deixar o inimigo passar.
+   * Os espaços de magia, no bloco do turno: um grupo por círculo, com o
+   * número e uma pedrinha por espaço, na cor do círculo. É o que o Baldur's
+   * Gate 3 faz — o círculo é recurso, como a ação e o bônus, e fica sempre à
+   * vista; nunca é uma aba que esconde magia.
    */
-  zonaReacao(c) {
-    const gasta = !!c.reactionUsed;
-    const node = el('div', { class: `reacao${gasta ? ' gasta' : ''}` }, iconCanvas('reacao', 32));
-    return el('div', { class: 'zona zona-reacao' },
-      this.ligarDica(node, {
-        nome: 'Reação',
-        tipo: 'fora do seu turno',
-        texto: 'Ataque de oportunidade: quando um inimigo adjacente se afasta, você ataca de graça. Uma por rodada.',
-        aviso: gasta ? 'Já usada nesta rodada' : 'Disponível',
-      }),
-      el('span', { class: 'zona-rot' }, 'Reação'));
+  espacosDeMagia(c) {
+    const max = c.spellcasting?.slotsMax ?? [];
+    if (!c.spellcasting) return null;
+    // O truque abre a legenda: é ela que explica o "T" do selo nos medalhões.
+    const grupos = c.spellcasting.cantrips?.length
+      ? [this.focoDeCirculo(this.ligarDica(
+        el('span', { class: 'espaco-circulo circulo-0' },
+          el('span', { class: 'espaco-num' }, 'T'), el('span', { class: 'espaco-livre' }, 'à vontade')),
+        { nome: 'Truques', texto: 'Magias de círculo 0: não gastam espaço, podem ser conjuradas todo turno.' },
+      ), 0)]
+      : [];
+    for (let lvl = 1; lvl < max.length; lvl++) {
+      const total = max[lvl] ?? 0;
+      if (!total) continue;
+      const tem = c.spellcasting.slots?.[lvl] ?? 0;
+      grupos.push(this.focoDeCirculo(this.ligarDica(
+        el('span', { class: `espaco-circulo circulo-${lvl}${tem ? '' : ' esgotado'}` },
+          el('span', { class: 'espaco-num' }, ROMANO[lvl]),
+          Array.from({ length: total }, (_, i) => el('i', { class: i < tem ? 'cheio' : '' }))),
+        {
+          nome: `Espaços de ${lvl}º círculo`,
+          linhas: [['Restam', `${tem} de ${total}`]],
+          texto: 'Cada conjuração de magia deste círculo gasta um. Voltam num descanso longo.',
+        },
+      ), lvl));
+    }
+    return grupos.length ? el('div', { class: 'espacos-magia' }, grupos) : null;
+  }
+
+  /**
+   * Liga a magia ao espaço dela. Passar o mouse num medalhão acende o círculo
+   * dele na fileira de espaços (e apaga as magias de outros círculos);
+   * passar num círculo da fileira acende as magias dele na grade.
+   */
+  focoDeCirculo(node, lvl) {
+    const ligar = (on) => {
+      this.barra.classList.toggle('com-foco', on);
+      for (const alvo of this.barra.querySelectorAll(`.circulo-${lvl}`)) alvo.classList.toggle('em-foco', on);
+    };
+    node.addEventListener('mouseenter', () => ligar(true));
+    node.addEventListener('mouseleave', () => ligar(false));
+    return node;
+  }
+
+  /** Remonta a barra com o mesmo estado — para a troca de página das magias. */
+  redesenharBarra() {
+    if (this.ultimaBarra) this.renderBarra(...this.ultimaBarra);
   }
 
   // ---- câmera e som ---------------------------------------------------------

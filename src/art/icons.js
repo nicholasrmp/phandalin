@@ -667,8 +667,7 @@ export function iconeDeRecurso(id) {
 
 // Os azulejos da barra de ações nasceram com ícones de 16 px desenhados à mão,
 // com nomes próprios. Onde já existe o ícone de 32 da mesma ação, ele vence;
-// onde não existe, o antigo continua. As gemas e os contadores de recurso
-// (`nucleo`, `slot-linha`) chamam `iconCanvas` direto e ficam com os de 16.
+// onde não existe, o antigo continua.
 const ACAO_DO_HUD = {
   correr: 'acao-disparada',
   esquivar: 'acao-esquivar',

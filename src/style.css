@@ -226,13 +226,23 @@ h2 {
   min-height: 0;
 }
 
+/* MOLDURA DE LATÃO.
+   As colunas e a barra de ações usam a moldura de src/art/hud/painel.png
+   (OpenArt, na paleta dos ícones), em 9-slice: os cantos de 19 px ficam
+   inteiros e as réguas entre eles esticam. 1 px de arte = 1 px de tela, como
+   os ícones de 32. A borda de 19 px já é o respiro do conteúdo, por isso o
+   padding zera. */
+.coluna-grupo, .coluna-log {
+  border: 19px solid transparent;
+  border-image: url('./art/hud/painel.png') 19 fill / 19px stretch;
+  border-radius: 0;
+  image-rendering: pixelated;
+}
 .coluna-grupo, .coluna-log {
   position: relative;
-  background: var(--papelada);
-  border: 1px solid var(--gold-escuro);
-  border-radius: 10px;
-  box-shadow: var(--bisel), var(--relevo);
-  padding: 10px;
+  background: none;
+  box-shadow: var(--relevo);
+  padding: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -331,14 +341,15 @@ h2 {
 .ficha.agiu { opacity: .62; }
 .ficha.down { opacity: .5; filter: grayscale(.7); }
 
+/* O retrato fica dentro do slot de madeira de src/art/hud/slot.png; por isso
+   o hud.js o pede com 36 px, e a moldura sobra em volta. */
 .ficha-retrato {
   position: relative;
   width: 44px; height: 44px;
   overflow: hidden;
-  border-radius: 6px;
-  background: var(--soquete);
+  background: url('./art/hud/slot.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
   display: grid; place-items: center;
-  box-shadow: var(--carimbo), inset 0 0 0 1px var(--gold-escuro);
 }
 /* A CA é uma plaquinha de latão rebitada no canto do retrato. */
 .ficha-ca {
@@ -367,6 +378,17 @@ h2 {
   box-shadow: inset 0 1px 2px rgba(78, 56, 24, .55);
 }
 .bar.small { height: 4px; }
+/* No cartão do grupo, a vida corre num trilho de latão (src/art/hud/barra.png)
+   em 9-slice: as pontas arredondadas ficam, o meio estica. O sulco é escuro e
+   o preenchimento continua vindo do CSS, na cor da vida. */
+.ficha .bar {
+  height: 14px; box-sizing: border-box;
+  border-radius: 0; box-shadow: none;
+  background: #2a2430 padding-box;
+  border: solid transparent; border-width: 4px 5px;
+  border-image: url('./art/hud/barra.png') 4 5 / 4px 5px stretch;
+  image-rendering: pixelated;
+}
 .bar i { display: block; height: 100%; }
 
 .slots { display: flex; gap: 7px; font-size: 10.5px; color: var(--blue); }
@@ -514,34 +536,31 @@ h2 {
 /* ======================================================== barra ========== */
 .hud-baixo { display: grid; place-items: center; }
 
-/* A prancha de ação. Os lacres de cera nas pontas são o remate do conceito A:
-   a barra termina em selo, não em borda cortada. */
+/* A PRANCHA DE AÇÃO — conceito A, madeira escura e latão.
+   Peças do OpenArt em src/art/hud/, todas a 1 px de arte = 1 px de tela:
+   a prancha de nogueira com cantos de latão (barra-madeira), a bandeja de
+   pergaminho de cada zona (bandeja), a plaquinha com o nome (placa), o
+   medalhão do retrato, a régua de latão das barras, as gemas da economia e o
+   botão de terminar. As que esticam são 9-slice com o miolo de uma coluna só,
+   para esticar sem arrastar detalhe da ponta. */
 .barra-acao {
   position: relative;
   display: flex;
   align-items: stretch;
-  gap: 2px;
-  padding: 7px 10px;
-  background: var(--papelada);
-  border: 1px solid var(--gold-escuro);
-  border-radius: 12px;
-  box-shadow: var(--bisel), 0 8px 26px rgba(0, 0, 0, .55);
+  gap: 6px;
+  padding: 0;
+  border: solid transparent;
+  border-width: 22px 24px;
+  border-image: url('./art/hud/barra-madeira.png') 22 24 fill / 22px 24px stretch;
+  image-rendering: pixelated;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .55);
   max-width: 100%;
   overflow-x: auto;
 }
-.barra-acao::before, .barra-acao::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 16px; height: 16px;
-  margin-top: -8px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 36% 30%, #c04a40, var(--lacre) 55%, #6d1a16);
-  box-shadow: 0 1px 3px rgba(78, 56, 24, .6);
-  pointer-events: none;
-}
-.barra-acao::before { left: -7px; }
-.barra-acao::after { right: -7px; }
+
+/* Zona não encolhe: encolhida, os azulejos quebravam em coluna e a barra
+   inteira dobrava de altura. Se faltar largura, a barra rola de lado. */
+.barra-acao > * { flex-shrink: 0; }
 
 .barra-aviso {
   padding: 14px 24px;
@@ -550,56 +569,67 @@ h2 {
   font-size: 14px;
 }
 
-/* Cada zona é um recurso diferente do turno; a linha de latão separa. */
-.zona {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 0 10px;
-  border-right: 1px solid var(--line-forte);
+/* A BANDEJA (ver `bandeja` em hud.js), em duas seções como a barra do
+   Baldur's Gate 3: à esquerda as ações fixas (ataques, ações, itens), sempre
+   à vista; à direita as magias, que paginam quando não cabem. Uma linha de
+   latão separa as duas. */
+.bandeja-acoes, .zona-turno {
+  border: 8px solid transparent;
+  border-image: url('./art/hud/bandeja.png') 8 fill / 8px stretch;
+  image-rendering: pixelated;
 }
-.zona:last-child { border-right: none; }
-/* O rótulo vem por último no DOM, então cai embaixo da zona — e aqui vira a
-   cartela de latão do conceito A, que é o que dá nome a cada grupo. */
-.zona-rot {
-  font-family: var(--serif);
-  font-size: 9px;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: #2b1d07;
+.bandeja-acoes { display: flex; align-items: center; gap: 10px; padding: 2px 6px; }
+.grade-acoes {
+  display: grid;
+  grid-template-columns: repeat(var(--colunas), 40px);
+  grid-auto-rows: 40px;
+  gap: 4px;
+}
+.separador { align-self: stretch; width: 1px; margin: 4px 0; background: var(--line-forte); }
+.paginador { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.pag {
+  width: 20px; height: 18px; padding: 0;
+  font-size: 9px; line-height: 1; color: #2b1d07;
   background: linear-gradient(180deg, var(--gold-claro), var(--gold));
-  border: 1px solid var(--gold-escuro);
-  border-radius: 4px;
-  padding: 1px 9px;
-  box-shadow: inset 0 1px 0 rgba(255, 252, 242, .5);
+  border: 1px solid var(--gold-escuro); border-radius: 4px;
+  cursor: pointer;
 }
-.tiles { display: flex; gap: 4px; flex-wrap: wrap; max-width: 320px; justify-content: center; }
-.zona-hotbar .tiles { max-width: 360px; }
-.zona-hotbar:has(.tile.vazio) { padding: 0 6px; }
+.pag:hover { filter: brightness(1.1); }
+.pag-num { font-size: 10px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.zona { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 
-/* ---- azulejo ---- */
+/* ---- azulejo ----
+   O soquete de latão de src/art/hud/azulejo.png, desenhado a 40 px: o ícone
+   de 32 fica no poço do meio. O de item usa o slot de madeira escura, que
+   separa o que se gasta do que se faz. */
 .tile {
   position: relative;
   width: 40px; height: 40px;
   display: grid; place-items: center;
-  background: linear-gradient(180deg, var(--soquete), #b59b68);
-  border: 1px solid var(--gold-escuro);
-  border-radius: 7px;
+  background: url('./art/hud/azulejo.png') center / 100% 100% no-repeat;
+  border: none;
+  border-radius: 0;
+  image-rendering: pixelated;
   cursor: pointer;
   padding: 0;
-  box-shadow: var(--carimbo);
 }
-.tile:hover:not(.off) {
-  border-color: var(--gold);
-  background: linear-gradient(180deg, var(--papel-3), var(--soquete));
-}
-.tile.on {
-  border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px var(--gold), 0 0 14px rgba(161, 112, 42, .5);
-}
+.tile:hover:not(.off) { filter: brightness(1.12); }
+.tile.on { box-shadow: 0 0 0 1px var(--gold-claro), 0 0 14px rgba(161, 112, 42, .6); }
+.tile.item { background-image: url('./art/hud/slot.png'); }
 .tile.off { opacity: .34; cursor: not-allowed; filter: grayscale(.8); }
-.tile.vazio { cursor: default; opacity: .25; }
+/* Soquete vazio: só na última página das magias, para as setas não mudarem
+   de lugar ao trocar de página. */
+.tile.vazio { cursor: default; opacity: .35; filter: grayscale(.4); }
+/* A gema de custo, no canto de cima à esquerda (âmbar ação, azul bônus). */
+.tile-custo {
+  position: absolute; left: -3px; top: -3px;
+  width: 11px; height: 11px;
+  background: center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.tile-custo.acao { background-image: url('./art/hud/gema-ambar.png'); }
+.tile-custo.bonus { background-image: url('./art/hud/gema-azul.png'); }
 .tile .icone { image-rendering: pixelated; }
 /* O número do atalho é um disco escuro na aresta de baixo, como em A. */
 .tile .tecla {
@@ -613,8 +643,6 @@ h2 {
   border-radius: 50%;
   font-variant-numeric: tabular-nums;
 }
-.tile.truque { border-bottom-color: var(--blue); }
-.tile.magia { border-bottom-color: var(--gold); }
 
 /* O selo de CHANCE é mais largo (cabe "sem visão") e pinta pela faixa. */
 .tile[class*='chance-'] .tile-selo {
@@ -650,168 +678,190 @@ h2 {
   border-radius: 50%;
 }
 
-/* Magia é medalhão redondo de latão — o único lugar da barra onde a forma
-   muda, porque é o único recurso que se gasta por círculo. */
-.zona-hotbar .tile {
+/* Magia é medalhão redondo, com o aro na cor do círculo — o único lugar da
+   grade onde a forma muda, porque é o único recurso que se gasta por círculo. */
+.tile[class*='circulo-'] {
   border-radius: 50%;
-  border-width: 2px;
-  border-color: var(--gold);
+  border: 3px solid var(--circulo, var(--gold));
   background: radial-gradient(circle at 38% 30%, var(--papel-3), var(--soquete) 70%);
+  image-rendering: auto;
 }
-.zona-hotbar .tile:hover:not(.off) { border-color: var(--gold-claro); }
+.tile[class*='circulo-']:hover:not(.off) { filter: brightness(1.1); }
 
-/* ---- núcleo ---- */
+/* ---- núcleo: de quem é o turno ----
+   Direto na madeira, sem bandeja: é o centro da barra, não um recurso. O
+   retrato fica no medalhão de latão; nome, vida e CA embaixo, em letra clara
+   sobre a nogueira. */
 .nucleo {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 0 14px;
-  border-right: 1px solid var(--line-forte);
+  padding: 0 6px;
+  color: var(--papel-3);
 }
-/* O retrato do personagem da vez é a peça central: moldura de latão de verdade,
-   mais grossa que a de todo o resto. */
 .nucleo-retrato {
   position: relative;
-  width: 58px; height: 58px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--soquete);
-  border: 2px solid var(--gold);
-  box-shadow: var(--carimbo), 0 0 0 1px var(--gold-escuro);
+  width: 72px; height: 72px;
+  background: url('./art/hud/medalhao.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
   display: grid; place-items: center;
 }
-.nucleo-pv {
-  position: absolute; left: 3px; right: 3px; bottom: 3px;
-  height: 4px; border-radius: 2px;
-  background: rgba(78, 56, 24, .55); overflow: hidden;
+.nucleo-retrato > canvas { border-radius: 50%; }
+.nucleo-nome { font-family: var(--serif); font-size: 13px; font-weight: 700; color: var(--papel-3); }
+.nucleo-vitais {
+  display: flex; gap: 8px; align-items: baseline;
+  font-size: 10.5px; color: var(--papel-2); font-variant-numeric: tabular-nums;
 }
+.nucleo-ca { color: var(--gold-claro); }
+
+/* A RÉGUA DE LATÃO (src/art/hud/regua.png): o mesmo trilho para a vida do
+   núcleo e para o movimento. Pontas de 8 px fixas, o meio estica; o sulco
+   escuro tem 6 px, e o preenchimento corre dentro dele. */
+.nucleo-pv, .mov-trilho {
+  position: relative;
+  height: 12px; box-sizing: border-box;
+  padding: 3px 0;
+  border: solid transparent; border-width: 0 8px;
+  border-image: url('./art/hud/regua.png') 0 8 fill / 0 8px stretch;
+  image-rendering: pixelated;
+}
+.nucleo-pv { width: 86px; }
 .nucleo-pv i { display: block; height: 100%; }
-.nucleo-nome { font-family: var(--serif); font-size: 12px; color: var(--ink); }
 
-.gemas { display: flex; gap: 6px; }
-.gema {
-  width: 22px; height: 22px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--papel-3), var(--soquete));
-  border: 1px solid var(--gold);
-  box-shadow: inset 0 1px 2px rgba(78, 56, 24, .35);
-  cursor: help;
-}
-.gema .icone { image-rendering: pixelated; }
-.gema.gasta { opacity: .3; box-shadow: none; filter: grayscale(1); }
-
+/* ---- botão de terminar ----
+   Placa de latão com miolo de nogueira, o lacre de cera à esquerda e o nome
+   escrito: o lacre sozinho, sem texto, não dizia que aquilo encerra o turno. */
 .btn-terminar {
-  display: flex; align-items: center; gap: 5px;
-  margin-top: 2px;
-  background: linear-gradient(180deg, #c9d9b6, #a7bd90);
-  color: #22361f;
-  border: 1px solid #5c7a46;
-  border-radius: 7px;
-  padding: 4px 10px;
-  font-size: 11.5px;
-  font-family: var(--font);
+  position: relative;
+  margin: 3px 0 0 14px;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; box-sizing: border-box;
+  padding: 0 8px 0 16px;
+  border: solid transparent; border-width: 0 18px;
+  border-image: url('./art/hud/botao-madeira.png') 0 18 fill / 0 18px stretch;
+  image-rendering: pixelated;
+  background: none;
+  color: var(--papel-3);
+  font-family: var(--serif); font-size: 13px; font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
-  box-shadow: var(--bisel);
 }
-.btn-terminar:hover { border-color: #3d6b2c; background: linear-gradient(180deg, #d6e4c5, #b2c99a); }
-.btn-terminar .icone { image-rendering: pixelated; }
+.btn-terminar:hover { filter: brightness(1.12); }
+.btn-terminar .lacre {
+  position: absolute; left: -16px; top: 50%; margin-top: -12px;
+  width: 24px; height: 24px;
+  background: url('./art/hud/lacre.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+/* Ação e movimento gastos: nada mais muda o turno, e o botão chama. */
+.btn-terminar.pronto { animation: chamar 1.6s ease-in-out infinite; }
+@keyframes chamar {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(228, 196, 126, 0)); }
+  50% { filter: drop-shadow(0 0 7px rgba(228, 196, 126, .9)) brightness(1.1); }
+}
 /* A tecla impressa no próprio botão: atalho que não aparece não existe. */
 .tecla-inline {
-  font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
-  color: #3e5a32;
-  border: 1px solid rgba(62, 90, 50, .45);
+  font-family: var(--font);
+  font-size: 8.5px; font-weight: 400; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gold-claro);
+  border: 1px solid rgba(228, 196, 126, .5);
   border-radius: 3px;
   padding: 0 3px;
 }
 
-/* ---- vitais e gemas ---- */
-.nucleo-vitais {
-  display: flex; gap: 8px; align-items: baseline;
-  font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums;
+/* ---- seu turno: a economia ----
+   As três numa linha: gema e nome. Acesa é disponível; gasta, a gema apaga e
+   o nome esmaece. Em coluna, as três davam a altura da barra inteira. */
+/* Largura fixa: com nove círculos, os espaços de magia quebram em linhas em
+   vez de esticar o bloco e empurrar a barra para fora da tela. */
+.zona.zona-turno { justify-content: center; align-items: stretch; gap: 7px; padding: 4px 8px; width: 236px; }
+.zona-turno .btn-terminar { align-self: center; }
+.economia { display: flex; gap: 12px; justify-content: space-between; }
+.economia-linha {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--ink); white-space: nowrap; cursor: help;
 }
-.nucleo-ca { color: var(--ink); }
-.gema { position: relative; }
-.gema-n {
-  position: absolute; right: -3px; bottom: -3px;
-  min-width: 13px; height: 13px; line-height: 12px;
-  font-size: 9px; font-weight: 700; text-align: center;
-  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
-  color: #2b1d07;
-  border: 1px solid var(--gold-escuro);
-  border-radius: 50%;
+.gema-luz {
+  width: 16px; height: 16px; flex: none;
+  background: center / 100% 100% no-repeat;
+  image-rendering: pixelated;
 }
+.gema-luz.acao { background-image: url('./art/hud/gema-ambar.png'); }
+.gema-luz.bonus { background-image: url('./art/hud/gema-azul.png'); }
+.gema-luz.reacao { background-image: url('./art/hud/gema-rubi.png'); }
+.economia-linha.gasta .gema-luz { background-image: url('./art/hud/gema-apagada.png'); }
+.economia-linha.gasta { color: var(--muted); }
+.economia-estado { font-size: 10px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
 
-/* ---- recursos de classe ---- */
-.zona-recursos { justify-content: center; }
-.recursos { display: flex; gap: 12px; align-items: center; }
-.recurso-grupo { display: flex; flex-direction: column; gap: 3px; }
-.slot-linha { display: flex; align-items: center; gap: 5px; cursor: help; }
-.slot-linha .icone { image-rendering: pixelated; }
-.slot-lvl {
-  font-size: 10px; color: var(--muted);
-  font-variant-numeric: tabular-nums; min-width: 14px;
-}
-.pips { display: flex; gap: 2px; }
-.pip {
-  width: 8px; height: 8px;
+/* ---- magias: a cor de cada círculo ----
+   Truque é aço; 1º a 3º, metais (bronze, prata, ouro); 4º a 6º, gemas
+   (esmeralda, safira, rubi); 7º a 9º, arcanos (ametista, rosa, radiante). A
+   cor vai no aro do medalhão e na etiqueta do círculo. */
+.circulo-0 { --circulo: #8f9bab; }
+.circulo-1 { --circulo: #b0742f; }
+.circulo-2 { --circulo: #c3ccd6; }
+.circulo-3 { --circulo: #e2b53e; }
+.circulo-4 { --circulo: #4fae62; }
+.circulo-5 { --circulo: #4a8fd8; }
+.circulo-6 { --circulo: #d5452e; }
+.circulo-7 { --circulo: #9a66d6; }
+.circulo-8 { --circulo: #d4589c; }
+.circulo-9 { --circulo: #fff1b8; }
+/* O 9º é o único claro demais para ler só pelo aro: ganha brilho. */
+.tile.circulo-9 { box-shadow: 0 0 6px 1px rgba(255, 215, 106, .85); }
+
+/* Os espaços de magia no bloco do turno: o número do círculo e uma pedrinha
+   por espaço, na cor dele. Cheia é espaço disponível. */
+.espacos-magia { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.espaco-circulo { display: inline-flex; align-items: center; gap: 3px; cursor: help; }
+.espaco-num { font-family: var(--serif); font-size: 10px; font-weight: 700; color: var(--ink); margin-right: 1px; }
+.espaco-circulo i {
+  width: 7px; height: 7px;
   transform: rotate(45deg);
-  background: linear-gradient(180deg, #4e95cd, var(--blue));
-  box-shadow: inset 0 0 0 1px rgba(255, 252, 242, .35);
+  border: 1px solid color-mix(in srgb, var(--circulo) 55%, #2b1d07);
 }
-.pip.gasto { background: rgba(78, 56, 24, .28); box-shadow: none; }
+.espaco-circulo i.cheio { background: var(--circulo); }
+.espaco-circulo.esgotado { opacity: .5; }
+.espaco-livre { font-size: 9px; font-style: italic; color: var(--muted); }
 
-/* ---- magias agrupadas por círculo ---- */
-.grupos-magia { display: flex; gap: 10px; align-items: flex-start; }
-.grupo-magia { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.grupo-magia .tiles { max-width: 180px; }
-.grupo-rot {
-  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--muted);
+/* O selo do círculo no medalhão de magia: o numeral romano (ou "T", de
+   truque) na cor do círculo — a mesma cor do aro e da fileira de espaços. */
+.tile[class*='circulo-'] .tile-selo {
+  right: -5px; top: -5px;
+  border-radius: 7px; padding: 0 2px;
+  font-size: 8.5px; letter-spacing: -.02em;
+  font-family: var(--serif);
+  color: #2b1d07;
+  background: var(--circulo);
+  border-color: #2b1d07;
 }
-.grupo-slots { color: #1d4e76; font-variant-numeric: tabular-nums; font-weight: 600; }
 
-/* ---- movimento ---- */
-.zona-mov { min-width: 150px; justify-content: center; }
-.mov { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-/* A corrente de latão do conceito A: o trilho é um elo vazado e o preenchido
-   acende. As marcas de 5 pés viram os pinos entre elos. */
-.mov-trilho {
-  position: relative;
-  height: 13px;
-  border-radius: 7px;
-  background: var(--soquete);
-  border: 1px solid var(--gold-escuro);
-  box-shadow: var(--carimbo);
-  overflow: hidden;
+/* FOCO DE CÍRCULO (ver `focoDeCirculo`): com o mouse numa magia ou num
+   círculo da fileira de espaços, o círculo acende nos dois lugares e as
+   magias de outros círculos esmaecem. */
+.barra-acao.com-foco .tile[class*='circulo-']:not(.em-foco) { opacity: .35; }
+.tile[class*='circulo-'].em-foco { box-shadow: 0 0 0 2px var(--circulo), 0 0 10px var(--circulo); }
+.espaco-circulo.em-foco {
+  outline: 2px solid var(--circulo); outline-offset: 2px; border-radius: 3px;
+  background: color-mix(in srgb, var(--circulo) 25%, transparent);
 }
+
+/* ---- movimento, embaixo da economia ----
+   Na régua de latão: o preenchido é o que sobra, e as marcas de 5 pés são os
+   quadrados para contar. */
+.mov { display: flex; flex-direction: column; gap: 2px; margin-top: 3px; cursor: help; }
+.mov-rot {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
+  font-size: 11px; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.mov-rot strong { font-size: 11px; }
 .mov-cheio {
   display: block; height: 100%;
   background: linear-gradient(180deg, var(--gold-claro), var(--gold));
-  box-shadow: inset 0 1px 0 rgba(255, 252, 242, .5);
   transition: width .18s ease-out;
 }
-.mov-marca { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(78, 56, 24, .5); }
-.mov-num {
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-  font-size: 11px; color: #5d4e36; font-variant-numeric: tabular-nums;
-}
-.mov-num .icone { image-rendering: pixelated; }
-
-/* ---- reação ---- */
-.zona-reacao { justify-content: center; }
-.reacao {
-  width: 40px; height: 40px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #e8cbbe, #cfa392);
-  border: 2px solid var(--red);
-  box-shadow: inset 0 1px 2px rgba(78, 56, 24, .3);
-  cursor: help;
-}
-.reacao .icone { image-rendering: pixelated; }
-.reacao.gasta { opacity: .3; filter: grayscale(1); box-shadow: none; }
+.mov-marca { position: absolute; top: 3px; bottom: 3px; width: 1px; background: rgba(42, 36, 48, .55); }
 
 .btn {
   background: var(--papelada);
@@ -932,12 +982,21 @@ h2 {
 /* O tabuleiro é a peça principal: as colunas laterais cedem espaço antes dele. */
 @media (max-width: 1400px) {
   .hud-meio { grid-template-columns: 224px 1fr 280px; }
-  .zona { padding: 0 7px; }
 }
 @media (max-width: 1150px) {
   .hud-meio { grid-template-columns: 196px 1fr 232px; gap: 8px; }
   .tile { width: 36px; height: 36px; }
   .ficha-retrato { width: 40px; height: 40px; }
+  /* BARRA COMPACTA. Com as magias, a barra do clérigo não cabia em 1024 px.
+     Aqui a tecla do botão de terminar vai só para a dica, os azulejos caem
+     para 36 px e a página de magias para seis colunas. */
+  .btn-terminar .tecla-inline { display: none; }
+  .economia { gap: 8px; }
+  .grade-acoes { grid-template-columns: repeat(var(--colunas), 36px); grid-auto-rows: 36px; }
+  .bandeja-acoes { gap: 8px; padding: 2px 4px; }
+  .zona.zona-turno { width: 206px; }
+  .barra-acao { gap: 4px; }
+  .btn-terminar { font-size: 12px; }
 }
 /* Em coluna única a página passa a rolar: sem isso o log fica embaixo da barra
    de ações e é cortado pelo overflow do body. */
