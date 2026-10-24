@@ -29,8 +29,8 @@ import urlGoblinBoss from './goblinBoss.png';
 // (`dara-malha-maca-escudo`, `brenn-escamas-besta`). O registro se monta
 // sozinho a partir dos nomes (abaixo), porque sao dezenas de combinacoes e
 // uma lista escrita a mao erraria uma.
-const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json', './pip-*.json'], { eager: true, import: 'default' });
-const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png', './pip-*.png'], { eager: true, query: '?url', import: 'default' });
+const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json', './pip-*.json', './ilvan-*.json', './grask-*.json', './torvik-*.json'], { eager: true, import: 'default' });
+const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png', './pip-*.png', './ilvan-*.png', './grask-*.png', './torvik-*.png'], { eager: true, query: '?url', import: 'default' });
 
 // De quem e cada prefixo, e qual folha e a PADRAO -- a do kit das regras, que
 // leva a chave do look e carrega primeiro.
@@ -38,6 +38,9 @@ const HEROIS = {
   dara: { look: 'fighter', padrao: 'malha-espada-escudo' },
   brenn: { look: 'cleric', padrao: 'escamas-maca-escudo' },
   pip: { look: 'rogue', padrao: 'couro-espada' },
+  ilvan: { look: 'wizard', padrao: 'roupa-bordao' },
+  grask: { look: 'barbarian', padrao: 'roupa-machado-grande' },
+  torvik: { look: 'paladin', padrao: 'malha-espada-escudo' },
 };
 
 // UMA FIGURA, VARIAS FOLHAS: O QUE ELA TEM NAS MAOS.
@@ -81,21 +84,34 @@ const ARMA_DO_ARQUIVO = {
   adagas: ['duasArmas', 'adaga+adaga'],
   espadas: ['duasArmas', 'espada+espada'],
   'espada-adaga': ['duasArmas', 'espada+adaga'],
+  // o mago: o bordao (e os cajados da aventura, reskin dele) e a adaga
+  bordao: ['duasMaos', 'bordao'],
+  'cajado-defesa': ['duasMaos', 'cajadoDeDefesa'],
+  'cajado-aranha': ['duasMaos', 'cajadoAranha'],
+  adaga: ['umaMao', 'adaga'],
+  // o barbaro: duas machadinhas e a azagaia de arremesso
+  machadinhas: ['duasArmas', 'machado+machado'],
+  azagaia: ['arremesso', 'azagaia'],
   // os itens nomeados da aventura, reskin das familias-mae
   'talon-escudo': ['umaMaoEscudo', 'talon'],
   'lightbringer-escudo': ['umaMaoEscudo', 'lightbringer'],
   'hew-escudo': ['umaMaoEscudo', 'hew'],
 };
+// UM ESTADO depois de `~` no nome e a mesma folha num estado que se ve: a
+// furia do Grask (`grask-roupa-machado-grande~furia`). A chave de look pede o
+// estado do mesmo jeito (`barbarian@nenhuma-machadoGrande~furia`, ver
+// `comEstado`); sem folha naquele estado, vale a normal.
 for (const [caminho, meta] of Object.entries(HEROI_META)) {
-  const nome = caminho.slice(2, -5);                       // dara-malha-maca-escudo
+  const [nome, estado = null] = caminho.slice(2, -5).split('~');   // dara-malha-maca-escudo
   const [prefixo, armadura, ...resto] = nome.split('-');
   const heroi = HEROIS[prefixo];
   const [postura, familia] = ARMA_DO_ARQUIVO[resto.join('-')] ?? [];
   if (!heroi || !postura) continue;
-  const chave = `${armadura}-${resto.join('-')}` === heroi.padrao ? heroi.look : nome;
+  const padrao = `${armadura}-${resto.join('-')}` === heroi.padrao;
+  const chave = padrao && !estado ? heroi.look : caminho.slice(2, -5);
   IMPORTADAS[chave] = {
     base: heroi.look, meta, url: HEROI_URL[caminho.replace('.json', '.png')],
-    postura, familia, armadura,
+    postura, familia, armadura, estado, padrao,
   };
 }
 
@@ -119,10 +135,11 @@ const FAMILIA_DA_ARMA = {
   talon: 'talon', adaga: 'adaga', dardo: 'adaga', foice: 'espada',
   maca: 'maca', marteloLeve: 'martelo', marteloDeGuerra: 'martelo', estrelaMatinal: 'maca',
   mangual: 'maca', picareta: 'maca', clava: 'maca', lightbringer: 'lightbringer',
-  machadinha: 'machado', machadoDeBatalha: 'machado', hew: 'hew',
+  machadinha: 'machado', machadoDeBatalha: 'machado', hew: 'hew', azagaia: 'azagaia', lancaCurta: 'azagaia',
   espadaGrande: 'espadaGrande',
   machadoGrande: 'machadoGrande', alabarda: 'machadoGrande', glaive: 'machadoGrande',
   malho: 'malho', clavaGrande: 'malho',
+  bordao: 'bordao', cajadoDeDefesa: 'cajadoDeDefesa', cajadoAranha: 'cajadoAranha',
   arcoCurto: 'arco', arcoLongo: 'arco', funda: 'arco',
   bestaLeve: 'besta', bestaPesada: 'besta', bestaDeMao: 'bestaDeMao',
 };
@@ -135,6 +152,7 @@ const FAMILIA_DA_ARMA = {
 const MAE = {
   talon: 'espada', lightbringer: 'maca', hew: 'machado', dragonguard: 'placas', martelo: 'maca',
   rapieira: 'espada', adaga: 'espada', bestaDeMao: 'besta', couroBatido: 'couro',
+  cajadoDeDefesa: 'bordao', cajadoAranha: 'bordao',
 };
 
 // O JEITO DE SEGURAR. O que nao esta aqui e de uma mao.
@@ -143,16 +161,30 @@ const BESTAS = new Set(['bestaLeve', 'bestaPesada', 'bestaDeMao']);
 const DUAS_MAOS = new Set(['espadaGrande', 'machadoGrande', 'malho', 'clavaGrande',
   'glaive', 'alabarda', 'pique', 'lancaMontada', 'bordao', 'cajadoAranha', 'cajadoDeDefesa']);
 
+// a azagaia e de arremesso, mas no desempate ela e corpo a corpo: sem folha
+// de azagaia, a figura segura uma arma de mao, nao um arco
 const DISTANCIA = new Set(['arco', 'besta']);
 // quem nao tem folha de duas armas segura a principal sem escudo
-const POSTURA_MAE = { duasArmas: 'umaMao' };
+const POSTURA_MAE = { duasArmas: 'umaMao', arremesso: 'umaMao', umaMao: 'duasArmas' };
 
-// adaga na principal e espada na secundaria e o desenho da espada com adaga
-// trocado de mao: vale como a familia-mae
-const trocadas = (familia) => familia.split('+').reverse().join('+');
+// DUAS ARMAS SEM A FOLHA EXATA: compara mao a mao, nas duas ordens. Arma
+// igual vale 2, a mae dela 1,5. Rapieira com adaga e a espada com adaga
+// (1,5 + 2), nao as duas espadas (1,5 + 1,5) -- a mae da adaga tambem e a
+// espada, mas a adaga desenhada vence.
+function parteAParte(tem, quer) {
+  const t = tem.split('+');
+  const q = quer.split('+');
+  if (t.length !== 2 || q.length !== 2) return 0;
+  const par = (a, b) => (a === b ? 2 : MAE[b] === a ? 1.5 : 0);
+  const n = Math.max(par(t[0], q[0]) + par(t[1], q[1]), par(t[0], q[1]) + par(t[1], q[0]));
+  return n >= 3 ? Math.min(n, 3.9) : 0;
+}
+
+const ARREMESSO = new Set(['azagaia']);
 
 function posturaDe(arma, escudo, segunda) {
   if (segunda) return 'duasArmas';
+  if (ARREMESSO.has(arma) && !escudo) return 'arremesso';
   if (ARCOS.has(arma)) return 'arco';
   if (BESTAS.has(arma)) return 'besta';
   if (DUAS_MAOS.has(arma)) return 'duasMaos';
@@ -164,9 +196,10 @@ function posturaDe(arma, escudo, segunda) {
  * mao secundaria vem com `+`: `rogue@couro-espadaCurta+adaga`.
  * Uma chave sem `@` e o look base: quer a folha padrao.
  */
-function lerChave(key) {
+function lerChave(chave) {
+  const [key, estado = null] = chave.split('~');
   const [base, resto] = key.split('@');
-  if (!resto) return { base, padrao: true };
+  if (!resto) return { base, padrao: true, estado };
   const partes = resto.split('-');
   const escudo = partes[partes.length - 1] === 'escudo';
   if (escudo) partes.pop();
@@ -178,6 +211,7 @@ function lerChave(key) {
     armadura: FAMILIA_DA_ARMADURA[armadura] ?? armadura,
     familia: segunda ? `${fam(arma)}+${fam(segunda)}` : fam(arma),
     postura: posturaDe(arma, escudo, segunda),
+    estado,
   };
 }
 
@@ -193,7 +227,7 @@ function carregar(key) {
   const image = new Image();
   image.onload = () => {
     prontas.set(key, {
-      key, base, image, w: meta.w, h: meta.h, anims: meta.anims, dirs: meta.dirs,
+      key, base, image, w: meta.w, h: meta.h, anims: meta.anims, dirs: meta.dirs, ground: meta.ground,
       postura, familia, armadura,
     });
     aoCarregarFolha?.(base);
@@ -219,22 +253,36 @@ export function folhaImportada(key) {
   const daFigura = Object.entries(IMPORTADAS).filter(([, e]) => e.base === quer.base);
   if (daFigura.length === 0) return null;
   let escolhida = quer.base;
-  if (!quer.padrao) {
-    let nota = -1;
+  if (quer.padrao && quer.estado) {
+    // o look base num estado: a folha padrao naquele estado, se houver
+    escolhida = daFigura.find(([, e]) => e.padrao && e.estado === quer.estado)?.[0] ?? quer.base;
+  } else if (!quer.padrao) {
+    let nota = -Infinity;
     for (const [k, e] of daFigura) {
       if (!e.postura) continue;
-      const n = (e.familia === quer.familia ? 4 : e.familia === MAE[quer.familia] ? 3
-        : e.familia === trocadas(quer.familia) ? 3 : 0)
+      // o estado pesa mais que tudo: folha de outro estado so na falta
+      const n = (e.estado === quer.estado ? 0 : -20)
+        + (e.familia === quer.familia ? 4
+          : e.familia === MAE[quer.familia] ? 3
+            : quer.familia.includes('+') ? parteAParte(e.familia, quer.familia)
+              // uma machadinha so, e o Grask so tem a folha das duas
+              : e.familia.split('+').includes(quer.familia) ? 2.5 : 0)
         + (e.postura === quer.postura ? 2 : e.postura === POSTURA_MAE[quer.postura] ? 1 : 0)
         + (e.armadura === quer.armadura ? 1 : e.armadura === MAE[quer.armadura] ? 0.5 : 0)
-        // no empate, o mesmo tipo de luta: lanca sem folha propria vai para
-        // uma arma de corpo a corpo, nao para a besta
-        + (DISTANCIA.has(e.postura) === DISTANCIA.has(quer.postura) ? 0.2 : 0)
+        // o mesmo tipo de luta: espada grande sem folha propria vai para uma
+        // arma de corpo a corpo, nao para a besta
+        + (DISTANCIA.has(e.postura) === DISTANCIA.has(quer.postura) ? 3 : 0)
+        // e nunca um escudo que o personagem nao esta usando (nem o contrario):
+        // o escudo diz a CA na tela. A Dara de maca sem escudo segura a espada
+        // sem escudo, nao a maca com ele.
+        - ((e.postura === 'umaMaoEscudo') !== (quer.postura === 'umaMaoEscudo') ? 2.5 : 0)
         // e a arma comum: lanca sem folha propria nao vira Lightbringer
-        - (MAE[e.familia] && e.familia !== quer.familia ? 0.1 : 0);
+        - (MAE[e.familia] && e.familia !== quer.familia ? 0.1 : 0)
+        // empate de verdade: a folha padrao, e nao a primeira na ordem alfabetica
+        + (e.padrao ? 0.05 : 0);
       if (n > nota) { nota = n; escolhida = k; }
     }
-    if (nota < 7 && !avisadas.has(key)) {
+    if (nota < 10 && !avisadas.has(key)) {
       avisadas.add(key);
       console.info(`[folhas] sem arte exata para ${key} (${quer.familia}, ${quer.postura}, `
         + `${quer.armadura}); usando ${escolhida}`);
@@ -264,4 +312,14 @@ export function carregarFolhas(aoCarregar) {
   disparado = true;
   aoCarregarFolha = aoCarregar;
   for (const [key, e] of Object.entries(IMPORTADAS)) if (key === e.base) carregar(key);
+}
+
+/**
+ * A chave de look com um ESTADO ligado ou desligado: `comEstado(look, 'furia',
+ * true)`. Quem marca o estado nas regras (a Furia do barbaro) troca o `look`
+ * do personagem por esta chave; a folha daquele estado aparece se existir.
+ */
+export function comEstado(look, estado, ligado) {
+  const semEstado = String(look).split('~')[0];
+  return ligado ? `${semEstado}~${estado}` : semEstado;
 }

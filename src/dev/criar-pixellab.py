@@ -432,6 +432,174 @@ for _chave, _edicao, _maos in (
         },
     }
 
+# Ilvan, mago alto elfo. Alvo: 60 px de figura, quadro 64. Sem armadura (o
+# mago nao tem treino); o bordao e a arma e o foco arcano do kit inicial. As
+# cores sao as do retrato (`src/art/retratos/wizard.webp`): cabelo
+# branco-prateado comprido, manto indigo com bordado violeta.
+PERSONAGENS['wizard'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Ilvan, mago alto elfo',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male high elf wizard. ' + ESTILO_HEROI +
+            'Skin ramp: #f6dcc4 light, #dcb496 mid, #9a7058 deep shadow. Robe: '
+            'deep indigo, #4a50a0 light, #343a7a mid, #1e2250 deep. Embroidery '
+            'and trim: light violet #a8a0e8. Hair: silver white, #f0f2f6 light, '
+            '#c8ced8 mid, #8a92a0 deep. Wood: warm brown. Eyes: pale blue. THE '
+            'ELF: tall and slender, graceful, a narrow ageless face with high '
+            'cheekbones, long pointed ears and long straight silver-white hair '
+            'falling past his shoulders. CLOTHES: a long deep indigo wizard robe '
+            'down to his feet with wide sleeves, a high collar and light violet '
+            'embroidered trim, a dark leather belt with a small spellbook '
+            'pouch, soft boots. No armor, no hat. WEAPON: a tall wooden '
+            'quarterstaff, a little taller than he is, held upright in his '
+            'right hand, a small pale blue crystal set in its top. POSE: standing '
+            'calm and upright facing the viewer, the staff planted beside him, '
+            'the left hand raised slightly with open fingers, so the silhouette '
+            'is broken and readable. Full body in frame. BACKGROUND: plain, '
+            'empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, hat, armor, beard.'
+        ),
+    },
+}
+
+# A POSTURA DE ADAGA DO ILVAN, registrada da tira da edicao `ilvan-adaga`.
+PERSONAGENS['wizardAdaga'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/ilvan-adaga/tira.png',
+    'corpo': {
+        'name': 'Ilvan (adaga)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': (
+            'A pixel art game sprite of a tall slender male high elf wizard with '
+            'long silver-white hair and pointed ears, in a long deep indigo robe '
+            'with light violet trim, a steel dagger in his right hand.'),
+    },
+}
+
+# Grask, barbaro meio-orc. Alvo: 62 px de figura, quadro 64. Sem armadura
+# (a Defesa sem Armadura): peito nu, manto de pele nos ombros. Cores do
+# retrato (`src/art/retratos/barbarian.webp`): pele cinza-esverdeada, cabelo
+# preto comprido, olhos ambar, cicatriz no olho, faixa de pintura vermelha.
+PERSONAGENS['barbarian'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Grask, barbaro meio-orc',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male half-orc barbarian. ' + ESTILO_HEROI +
+            'Skin ramp: grey-green, #9aae86 light, #74886a mid, #44523e deep '
+            'shadow. Hair: black. Fur: warm brown, #8a6a48 light, #5e4630 mid, '
+            '#36281c deep. Leather: dark brown. Steel ramp: #d8dde3, #9aa3ad, '
+            '#4e5660. War paint: red #c0392b. Eyes: amber. THE HALF-ORC: tall, '
+            'massive and muscular, broad shoulders, a heavy jaw with two small '
+            'tusks, a scar across one eye, long black hair tied back, a stripe of '
+            'red war paint across his face. CLOTHES: bare muscular chest and arms, '
+            'a thick brown fur mantle over his shoulders, leather bracers, a wide '
+            'leather belt, a fur-trimmed leather kilt, wrapped legs and fur '
+            'boots. No armor, no helmet. WEAPON: a huge steel greataxe with a '
+            'wooden haft held in both hands across his body. POSE: standing in a '
+            'wide aggressive ready stance facing the viewer, feet apart, the '
+            'greataxe held diagonally, so the silhouette is broken and readable. '
+            'Full body in frame. BACKGROUND: plain, empty. No ground, no shadow, '
+            'no scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple characters, armor, helmet, '
+            'shield.'
+        ),
+    },
+}
+
+# AS POSTURAS DO GRASK, registradas das tiras das edicoes `grask-*`.
+_GRASK = ('A pixel art game sprite of a huge muscular male half-orc barbarian '
+          'with grey-green skin, tusks, long black hair, red war paint, a bare '
+          'chest and a brown fur mantle, ')
+for _chave, _edicao, _maos in (
+        ('barbarianMachadinhas', 'grask-machadinhas', 'a steel handaxe in each hand.'),
+        ('barbarianAzagaia', 'grask-azagaia', 'a wooden javelin raised in his right hand.')):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': f'_referencias/pixellab/edicoes/{_edicao}/tira.png',
+        'corpo': {
+            'name': f'Grask ({_edicao[6:]})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': _GRASK + _maos,
+        },
+    }
+
+# Torvik, paladino anao da montanha. Alvo: 53 px de figura, quadro 56. O kit
+# inicial do Livro do Jogador: cota de malha, arma marcial e escudo. Capacete
+# SEMPRE, liso de aco, e sobreveste AZUL com barra branca: e o que o separa do
+# Brenn (cabeca descoberta, sobreveste cinza e ouro, sol no escudo).
+PERSONAGENS['paladin'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Torvik, paladino anao',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 56, 'height': 56},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male mountain dwarf paladin. ' + ESTILO_HEROI +
+            'Skin ramp: #eab08a light, #c08060 mid, #7a4a34 deep shadow. Steel '
+            'ramp: #d8dde3, #9aa3ad, #4e5660. Tabard: royal blue, #4a6cb8 light, '
+            '#2e4a8a mid, #1c2c58 deep, with a white trim. Beard: dark brown. '
+            'Leather: dark brown. Eyes: grey-blue. THE DWARF: short and very '
+            'stout and broad-shouldered, thick arms, short sturdy legs, a stern '
+            'face with a short thick dark brown beard. ARMOR: a steel chain mail '
+            'hauberk with mail sleeves, a royal blue tabard with a white trim and a '
+            'small white hammer emblem on the chest, a steel open-faced helm with '
+            'a nose guard always on his head, steel gauntlets, a leather belt and '
+            'heavy boots. WEAPONS: a steel longsword in the right hand and a steel '
+            'heater shield painted royal blue with a white hammer emblem on the '
+            'left arm. POSE: standing in a ready stance facing the viewer, feet '
+            'apart, sword held low and out from the body, shield forward, so the '
+            'silhouette is broken and readable. Full body in frame. BACKGROUND: '
+            'plain, empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, bare head, gold, long braided beard.'
+        ),
+    },
+}
+
+# AS POSTURAS DO TORVIK, registradas das tiras das edicoes `torvik-*`.
+_TORVIK = ('A pixel art game sprite of a short stout male dwarf paladin with a '
+           'dark brown beard, a steel open-faced helm, steel plate armor and a '
+           'royal blue tabard and cape with white trim, ')
+for _chave, _edicao, _maos in (
+        ('paladinEspadaGrande', 'torvik-espada-grande', 'a steel greatsword held in both hands.'),
+        ('paladinAzagaia', 'torvik-azagaia', 'a wooden javelin raised in his right hand.'),
+        ('paladinBesta', 'torvik-besta', 'a heavy crossbow of dark wood and steel held in both hands.'),
+        ('paladinArco', 'torvik-arco', 'a longbow of brown wood in his left hand.')):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': f'_referencias/pixellab/edicoes/{_edicao}/tira.png',
+        'corpo': {
+            'name': f'Torvik ({_edicao[7:]})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': _TORVIK + _maos,
+        },
+    }
+
 # A ordem das oito vistas na tira de uma edicao, a mesma das rotacoes.
 DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
             'west', 'south-west']

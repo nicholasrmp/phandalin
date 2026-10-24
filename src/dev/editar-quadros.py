@@ -179,6 +179,7 @@ EDICOES.update({
     'brenn-armadura-placas': (
         'Replace his steel scale mail with full plate armor: a polished steel '
         'breastplate, rounded steel pauldrons, steel vambraces and steel greaves. '
+        'Keep the grey tabard cape hanging over his back. '
         'Keep the weapon he holds, and the shield if he has one, exactly as they '
         'are in every frame: same shape, position and colour.' + _BRENN_MANTEM),
     # De placas ele vai de capacete (pedido do dono). Aro dourado e o sol na
@@ -197,6 +198,20 @@ EDICOES.update({
         'his arm and his armored body instead. Nothing else changes.'),
 })
 
+_GRASK_MANTEM = (
+    ' Keep everything else exactly the same: the huge muscular half-orc with '
+    'grey-green skin, tusks, long black hair and red war paint, the brown fur '
+    'mantle, the belt and kilt, the pose and position in every frame, the '
+    'direction each frame faces and the colours.'
+)
+
+_TORVIK_MANTEM = (
+    ' Keep everything else exactly the same: the short stout dwarf with the dark '
+    'brown beard, the steel open-faced helm, the steel plate armor, the royal blue '
+    'tabard and cape with white trim, the belt, the boots, the pose and position in '
+    'every frame, the direction each frame faces and the colours.'
+)
+
 # O KIT DO PIP: as armas por edicao da folha base (espada curta) e da de duas
 # adagas; o couro batido por edicao de todas.
 _PIP_MANTEM = (
@@ -211,21 +226,77 @@ EDICOES.update({
         'straight steel blade with a swept steel basket hilt, held the same way, '
         'in the same position and pointing the same direction as the shortsword '
         'in every frame. Keep the brown leather armor.' + _PIP_MANTEM),
+    # A espada tem de ler como ESPADA ao lado da adaga: na primeira leva o
+    # modelo so repintou a lamina e as duas armas sairam do mesmo tamanho.
     'pip-arma-espadas': (
         'Replace the dagger in each of his hands with a steel shortsword: one '
-        'shortsword in each hand, each held the same way, in the same position '
-        'and pointing the same direction as the dagger it replaces in every '
-        'frame. Keep the brown leather armor.' + _PIP_MANTEM),
+        'shortsword in each hand, each with a straight blade about TWICE as long '
+        'as the dagger it replaces and a small cross guard, held the same way, in '
+        'the same position and pointing the same direction as the dagger in every '
+        'frame. Both blades must be visible. Keep the brown leather armor.'
+        + _PIP_MANTEM),
     'pip-arma-espada-adaga': (
-        'Replace only the dagger in his right hand with a steel shortsword, held '
-        'the same way, in the same position and pointing the same direction in '
-        'every frame. Keep the dagger in his left hand exactly as it is. Keep '
-        'the brown leather armor.' + _PIP_MANTEM),
+        'Replace only the dagger in his right hand with a steel shortsword: a '
+        'straight blade about TWICE as long as the dagger, with a small cross '
+        'guard, held the same way, in the same position and pointing the same '
+        'direction in every frame. Keep the short dagger in his left hand exactly '
+        'as it is, so the long sword and the short dagger are clearly different. '
+        'Keep the brown leather armor.' + _PIP_MANTEM),
     # o corpo no chao das posturas que nao sao a da espada curta
     'pip-queda-sem-arma': (
         'Remove the sword and any weapon near him. The halfling keeps the same '
         'cloak, armor, pose and colours; where the weapon was, only the ground. '
         'Nothing else changes.'),
+    # o Ilvan no chao sem o cajado, para a postura de adaga
+    'ilvan-queda-sem-cajado': (
+        'Remove the wooden staff and any weapon near him. The elf keeps the same '
+        'robe, hair, pose and colours; where the staff was, only the ground. '
+        'Nothing else changes.'),
+    # O KIT DO GRASK: as armas de duas maos por edicao da folha do machado
+    # grande; o gibao de peles por edicao de todas.
+    'grask-arma-espada-grande': (
+        'Replace the greataxe with a greatsword: a long, broad two-handed steel '
+        'blade with a cross guard and a leather-wrapped grip, gripped in both hands '
+        'the same way, in the same position and pointing the same direction as the '
+        'greataxe in every frame.' + _GRASK_MANTEM),
+    'grask-arma-malho': (
+        'Replace the greataxe with a maul: a long wooden haft with a massive square '
+        'iron hammer head, gripped in both hands the same way, in the same position '
+        'and pointing the same direction as the greataxe in every frame.'
+        + _GRASK_MANTEM),
+    'grask-queda-sem-arma': (
+        'Remove the greataxe and any weapon near him. The half-orc keeps the same '
+        'body, fur mantle, pose and colours; where the weapon was, only the ground. '
+        'Nothing else changes.'),
+    'grask-armadura-peles': (
+        'Dress him in hide armor: a thick vest of stitched brown animal hides and '
+        'furs covering his chest and belly, bound with leather straps, hide '
+        'shoulder guards over the fur mantle. Keep the weapons he holds exactly as '
+        'they are in every frame: same shape, position and colour.' + _GRASK_MANTEM),
+    # O KIT DO TORVIK: a base saiu de PLACAS; a cota de malha (a das regras) e
+    # as armas de uma mao sao edicoes.
+    'torvik-arma-martelo': (
+        'Replace the longsword in his right hand with a dwarven warhammer: a wooden '
+        'handle about as long as his forearm topped by a heavy square steel hammer '
+        'head, held the same way, in the same position and pointing the same '
+        'direction as the sword in every frame. Keep the blue shield with the white '
+        'hammer on his left arm.' + _TORVIK_MANTEM),
+    'torvik-arma-maca': (
+        'Replace the longsword in his right hand with a flanged mace: a wooden '
+        'handle about as long as his forearm topped by a heavy round steel head with '
+        'flanges, held the same way, in the same position and pointing the same '
+        'direction as the sword in every frame. Keep the blue shield with the white '
+        'hammer on his left arm.' + _TORVIK_MANTEM),
+    'torvik-armadura-malha': (
+        'Replace his steel plate armor with a steel chain mail hauberk of small '
+        'riveted rings with mail sleeves, no pauldrons, no breastplate. Keep the '
+        'steel open-faced helm, the royal blue tabard and cape with white trim, and '
+        'keep the weapon he holds, and the shield if he has one, exactly as they '
+        'are in every frame.' + _TORVIK_MANTEM.replace('the steel plate armor, ', '')),
+    'torvik-queda-sem-escudo': (
+        'Remove the shield and any weapon near him. The dwarf keeps the same armor, '
+        'helm, blue tabard, pose and colours; where the shield was, draw his arm '
+        'and his armored body instead. Nothing else changes.'),
     'pip-armadura-couro-batido': (
         'Replace his plain brown leather armor with studded leather armor: a '
         'darker brown leather jerkin covered with rows of small round steel '
@@ -257,15 +328,26 @@ ATAQUE_POR_PERFIL = {
     'fighterDuasMaos': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
                         'north': [6, 1], 'north-west': [3, 6], 'west': [1, 7], 'south-west': [1, 6]},
     # o Brenn: os mesmos quadros do perfil `cleric` de `importar-pixellab.py`
-    'cleric': {'south': [3, 5], 'south-east': [3, 4], 'east': [3, 4], 'north-east': [4, 8],
-               'north': [3, 2], 'north-west': [4, 8], 'west': [3, 4], 'south-west': [3, 4]},
+    'cleric': {'south': [3, 5], 'south-east': [3, 4], 'east': [3, 4], 'north-east': [4, 8], 'north': [3, 1], 'north-west': [4, 8], 'west': [3, 4], 'south-west': [3, 4]},
     'clericBesta': {'south': [3, 4], 'south-east': [3, 5], 'east': [4, 5], 'north-east': [4, 5],
                     'north': [3, 5], 'north-west': [3, 4], 'west': [3, 4], 'south-west': [3, 5]},
     # o Pip: os mesmos quadros dos perfis de `importar-pixellab.py`
     'rogue': {'south': [3, 5], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [3, 5], 'north': [2, 4], 'north-west': [3, 5], 'west': [2, 4], 'south-west': [2, 4]},
     'rogueAdagas': {'south': [3, 7], 'south-east': [4, 7], 'east': [3, 7], 'north-east': [1, 7], 'north': [2, 6], 'north-west': [1, 7], 'west': [3, 7], 'south-west': [4, 7]},
-    'rogueArco': {'south': [5, 7], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [4, 6], 'north': [2, 6], 'north-west': [4, 6], 'west': [3, 5], 'south-west': [3, 6]},
+    'rogueArco': {'south': [5, 7], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [2, 6], 'north': [2, 6], 'north-west': [2, 6], 'west': [3, 5], 'south-west': [3, 6]},
     'rogueBestaDeMao': {'south': [4, 5], 'south-east': [3, 4], 'east': [4, 5], 'north-east': [3, 4], 'north': [4, 5], 'north-west': [3, 4], 'west': [4, 5], 'south-west': [3, 4]},
+    'wizard': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 5],
+               'north': [1, 4], 'north-west': [3, 5], 'west': [3, 5], 'south-west': [2, 5]},
+    # o Grask
+    'barbarian': {'south': [3, 6], 'south-east': [4, 6], 'east': [3, 5], 'north-east': [6, 1], 'north': [1, 2], 'north-west': [6, 1], 'west': [3, 5], 'south-west': [4, 6]},
+    'barbarianMachadinhas': {'south': [1, 5], 'south-east': [4, 2], 'east': [2, 7], 'north-east': [3, 5], 'north': [4, 6], 'north-west': [3, 5], 'west': [2, 7], 'south-west': [4, 2]},
+    'barbarianAzagaia': {'south': [3, 4], 'south-east': [4, 5], 'east': [3, 6], 'north-east': [4, 6], 'north': [2, 6], 'north-west': [4, 6], 'west': [3, 6], 'south-west': [4, 5]},
+    # o Torvik
+    'paladin': {'south': [3, 6], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [1, 8], 'north': [3, 2], 'north-west': [1, 8], 'west': [3, 5], 'south-west': [3, 6]},
+    'paladinEspadaGrande': {'south': [3, 7], 'south-east': [2, 6], 'east': [2, 7], 'north-east': [4, 8], 'north': [5, 8], 'north-west': [4, 8], 'west': [2, 7], 'south-west': [2, 6]},
+    'paladinAzagaia': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [2, 7], 'north': [3, 5], 'north-west': [2, 7], 'west': [3, 5], 'south-west': [3, 5]},
+    'paladinBesta': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 3], 'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 5], 'west': [2, 3], 'south-west': [3, 5]},
+    'paladinArco': {'south': [4, 6], 'south-east': [3, 6], 'east': [4, 6], 'north-east': [1, 8], 'north': [3, 6], 'north-west': [1, 8], 'west': [4, 6], 'south-west': [3, 6]},
 }
 ATAQUE = ATAQUE_DARA
 COM_QUEDA = False
@@ -353,6 +435,8 @@ def main():
                    '(os outros vao so de contexto, cortados pela janela)')
     p.add_argument('--trabalhos', help='direcao=id,... de pedidos ja enviados (o log os imprime): '
                    'busca o resultado sem pagar de novo, se o processo morreu esperando')
+    p.add_argument('--saida', help='nome da pasta de saida, ao lado da fonte (padrao: <fonte>-<edicao>); '
+                   'para um REMENDO: a fonte mudou (golpe regerado) e a pasta de sempre e uma copia da velha')
     p.add_argument('--go', action='store_true')
     a = p.parse_args()
     global ATAQUE, COM_QUEDA, JANELA
@@ -412,7 +496,7 @@ def main():
         jobs.append((d, pos, cels, jan, r['background_job_id']))
 
     # A copia da folha: os quadros editados por cima, o resto igual.
-    destino = fonte.parent / f'{fonte.name}-{a.edicao}'
+    destino = fonte.parent / (a.saida or f'{fonte.name}-{a.edicao}')
     if not destino.exists():
         shutil.copytree(fonte, destino)
     nova = Image.open(destino / meta['path']).convert('RGBA')

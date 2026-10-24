@@ -140,6 +140,66 @@ EDICOES.update({
 })
 
 
+# A POSTURA DE ADAGA DO ILVAN.
+EDICOES.update({
+    'ilvan-adaga': (
+        'Remove the wooden quarterstaff completely. He holds one steel dagger in '
+        'his right hand, held low and pointing forward; his left hand stays raised '
+        'with open fingers. Keep everything else exactly the same: the tall slender '
+        'elf, the long silver-white hair and pointed ears, the long indigo robe '
+        'with light violet trim, the belt and pouch, the pose of the legs, the '
+        'direction each frame is facing and the colours.'),
+})
+
+
+# AS POSTURAS DO GRASK.
+_GRASK_MANTEM = (
+    ' Keep everything else exactly the same: the huge muscular half-orc with '
+    'grey-green skin, tusks, long black hair and red war paint, the bare chest, '
+    'the brown fur mantle, the belt and kilt, the pose of the legs, the '
+    'direction each frame is facing and the colours.'
+)
+EDICOES.update({
+    'grask-machadinhas': (
+        'Replace the greataxe with two handaxes, one in each hand: each a short '
+        'wooden handle with a small steel axe head, held low and ready at his '
+        'sides.' + _GRASK_MANTEM),
+    'grask-azagaia': (
+        'Replace the greataxe with one javelin: a long thin wooden throwing spear '
+        'with a small steel point, held in his right hand raised at shoulder '
+        'height ready to throw, his left hand empty and forward.' + _GRASK_MANTEM),
+})
+
+
+# AS POSTURAS DO TORVIK (a base dele saiu de placas).
+_TORVIK_MANTEM = (
+    ' Keep everything else exactly the same: the short stout dwarf with the '
+    'dark brown beard, the steel open-faced helm, the steel plate armor, the '
+    'royal blue tabard and cape with white trim, the belt, the boots, the pose '
+    'of the legs, the direction each frame is facing and the colours.'
+)
+EDICOES.update({
+    'torvik-espada-grande': (
+        'Remove the blue shield and the longsword. He holds one steel greatsword, '
+        'a long broad two-handed blade with a cross guard, gripped with both hands '
+        'in front of him, the blade pointing up diagonally.' + _TORVIK_MANTEM),
+    'torvik-azagaia': (
+        'Remove the blue shield and the longsword. He holds one javelin, a long '
+        'thin wooden throwing spear with a small steel point, raised in his right '
+        'hand at shoulder height ready to throw; his left hand is empty.'
+        + _TORVIK_MANTEM),
+    'torvik-besta': (
+        'Remove the blue shield and the longsword. He holds one heavy crossbow of '
+        'dark wood with a steel bow and a taut string, with both hands at waist '
+        'level, pointing forward.' + _TORVIK_MANTEM),
+    'torvik-arco': (
+        'Remove the blue shield and the longsword. He holds one longbow of curved '
+        'brown wood with a taut string, upright in his left hand at his side; his '
+        'right hand is empty. A leather quiver of arrows on his back.'
+        + _TORVIK_MANTEM),
+})
+
+
 def chamar(token, metodo, caminho, corpo=None):
     req = urllib.request.Request(f'{BASE}{caminho}',
                                  data=json.dumps(corpo).encode() if corpo else None,

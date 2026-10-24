@@ -211,16 +211,14 @@ PERFIS = {
     # entao a folha e importada com `--espelho` e o lado oeste sai do leste.
     # A pele e rosada; a barba castanha fica fora da faixa pelo valor baixo.
     'cleric': {
-        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'cabeca': 10,
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.3, 0.75, 0.78), 'margem': 8, 'cabeca': 10,
         'quadros': [3, 5],
-        'por_direcao': {'south': [3, 5], 'south-east': [3, 4], 'east': [3, 4],
-                        'north-east': [4, 8], 'north': [3, 2], 'north-west': [4, 8],
-                        'west': [3, 4], 'south-west': [3, 4]},
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 4], 'east': [3, 4], 'north-east': [4, 8], 'north': [3, 1], 'north-west': [4, 8], 'west': [3, 4], 'south-west': [3, 4]},
     },
     # A besta do Brenn: MIRA e DISPARO (o quadro com o virote saindo). A
     # besta ja vem desenhada, madeira e aco -- nada de verde para trocar.
     'clericBesta': {
-        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'cabeca': 10,
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.3, 0.75, 0.78), 'margem': 8, 'cabeca': 10,
         'quadros': [3, 5],
         'por_direcao': {'south': [3, 4], 'south-east': [3, 5], 'east': [4, 5],
                         'north-east': [4, 5], 'north': [3, 5], 'north-west': [3, 4],
@@ -229,7 +227,7 @@ PERFIS = {
     # PIP, ladino halfling. Estocada: ERGUIDA e BOTE, escolhidos olhando. Ao
     # norte, do 2 em diante o modelo vira o Pip de lado; vale o golpe antes.
     'rogue': {
-        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'pele_sv': (0.3, 0.75, 0.75), 'margem': 8, 'cabeca': 8,
         'quadros': [3, 5],
         'por_direcao': {'south': [3, 5], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [3, 5], 'north': [2, 4], 'north-west': [3, 5], 'west': [2, 4], 'south-west': [2, 4]},
     },
@@ -237,21 +235,93 @@ PERFIS = {
     # brancos enormes no 1-2 e no 5; ficam os quadros sem rastro. A nordeste
     # do 3 ao 6 ele vira de frente: valem o 1 e o 7.
     'rogueAdagas': {
-        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'pele_sv': (0.3, 0.75, 0.75), 'margem': 8, 'cabeca': 8,
         'quadros': [3, 5],
         'por_direcao': {'south': [3, 7], 'south-east': [4, 7], 'east': [3, 7], 'north-east': [1, 7], 'north': [2, 6], 'north-west': [1, 7], 'west': [3, 7], 'south-west': [4, 7]},
     },
     # O arco curto: ARMADO e DISPARO (a flecha saindo).
     'rogueArco': {
-        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'pele_sv': (0.3, 0.75, 0.75), 'margem': 8, 'cabeca': 8,
         'quadros': [3, 5],
-        'por_direcao': {'south': [5, 7], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [4, 6], 'north': [2, 6], 'north-west': [4, 6], 'west': [3, 5], 'south-west': [3, 6]},
+        'por_direcao': {'south': [5, 7], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [2, 6], 'north': [2, 6], 'north-west': [2, 6], 'west': [3, 5], 'south-west': [3, 6]},
     },
     # A besta de mao: MIRA e DISPARO (o virote saindo).
     'rogueBestaDeMao': {
-        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'cabeca': 8,
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'pele_sv': (0.3, 0.75, 0.75), 'margem': 8, 'cabeca': 8,
         'quadros': [3, 5],
         'por_direcao': {'south': [4, 5], 'south-east': [3, 4], 'east': [4, 5], 'north-east': [3, 4], 'north': [4, 5], 'north-west': [3, 4], 'west': [4, 5], 'south-west': [3, 4]},
+    },
+    # ILVAN, mago alto elfo. Sem edicoes de armadura, entao as oito direcoes
+    # sao as do modelo, sem espelho (o cajado fica na mao certa). Golpe:
+    # ERGUIDO e DESCIDO, pulando os rastros azuis do 3. Magia: o cristal
+    # CARREGANDO e a luz SAINDO da mao.
+    'wizard': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.08), 'pele_sv': (0.25, 0.52, 0.78), 'margem': 8, 'cabeca': 10,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4],
+                        'north-east': [2, 5], 'north': [1, 4], 'north-west': [3, 5],
+                        'west': [3, 5], 'south-west': [2, 5]},
+        'conjurar': {'south': [4, 5], 'south-east': [2, 3], 'east': [3, 4],
+                     'north-east': [3, 4], 'north': [2, 3], 'north-west': [2, 3],
+                     'west': [3, 4], 'south-west': [2, 3]},
+    },
+    # A adaga do Ilvan: ERGUIDA e ESTOCADA; a magia, CARREGA e SOLTA.
+    'wizardAdaga': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.08), 'pele_sv': (0.25, 0.52, 0.78), 'margem': 8, 'cabeca': 10,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [1, 3], 'south-east': [2, 4], 'east': [2, 1],
+                        'north-east': [3, 5], 'north': [2, 4], 'north-west': [2, 4],
+                        'west': [2, 4], 'south-west': [2, 3]},
+        'conjurar': {'south': [2, 3], 'south-east': [1, 2], 'east': [2, 3],
+                     'north-east': [2, 3], 'north': [2, 3], 'north-west': [1, 2],
+                     'west': [2, 3], 'south-west': [3, 4]},
+    },
+    # GRASK, barbaro meio-orc. Machado ERGUIDO e DESCIDO, pulando os rastros
+    # do 4. Ao norte o modelo apaga o machado no rastro (3-6): valem 2 e 7.
+    'barbarian': {
+        'ataque': ['attack-dir'], 'pele': (0.18, 0.32), 'pele_sv': (0.15, 0.6, 0.3), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 6], 'south-east': [4, 6], 'east': [3, 5], 'north-east': [6, 1], 'north': [1, 2], 'north-west': [6, 1], 'west': [3, 5], 'south-west': [4, 6]},
+    },
+    # As duas machadinhas: o golpe de uma mao e o da outra.
+    'barbarianMachadinhas': {
+        'ataque': ['attack-dir'], 'pele': (0.18, 0.32), 'pele_sv': (0.15, 0.6, 0.3), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [1, 5], 'south-east': [4, 2], 'east': [2, 7], 'north-east': [3, 5], 'north': [4, 6], 'north-west': [3, 5], 'west': [2, 7], 'south-west': [4, 2]},
+    },
+    # A azagaia: PREPARA e ARREMESSA.
+    'barbarianAzagaia': {
+        'ataque': ['attack-dir'], 'pele': (0.18, 0.32), 'pele_sv': (0.15, 0.6, 0.3), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 4], 'south-east': [4, 5], 'east': [3, 6], 'north-east': [4, 6], 'north': [2, 6], 'north-west': [4, 6], 'west': [3, 6], 'south-west': [4, 5]},
+    },
+    # TORVIK, paladino anao (a base saiu de placas; a malha e edicao). Quadros
+    # escolhidos olhando: sem rastro, sem o giro para a camera, e na azagaia
+    # ao norte antes das manchas vermelhas do 6 em diante.
+    'paladin': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.25, 0.46, 0.85), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 6], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [1, 8], 'north': [3, 2], 'north-west': [1, 8], 'west': [3, 5], 'south-west': [3, 6]},
+    },
+    'paladinEspadaGrande': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.25, 0.46, 0.85), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 7], 'south-east': [2, 6], 'east': [2, 7], 'north-east': [4, 8], 'north': [5, 8], 'north-west': [4, 8], 'west': [2, 7], 'south-west': [2, 6]},
+    },
+    'paladinAzagaia': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.25, 0.46, 0.85), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [2, 7], 'north': [3, 5], 'north-west': [2, 7], 'west': [3, 5], 'south-west': [3, 5]},
+    },
+    'paladinBesta': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.25, 0.46, 0.85), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 3], 'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 5], 'west': [2, 3], 'south-west': [3, 5]},
+    },
+    'paladinArco': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'pele_sv': (0.25, 0.46, 0.85), 'margem': 8, 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [4, 6], 'south-east': [3, 6], 'east': [4, 6], 'north-east': [1, 8], 'north': [3, 6], 'north-west': [1, 8], 'west': [4, 6], 'south-west': [3, 6]},
     },
     # A Dara de malha. Mesmo criterio: espada ERGUIDA e GOLPE, escolhidos
     # olhando. Ao norte o golpe para baixo e o quadro 2, que vem ANTES do
@@ -280,6 +350,11 @@ PERFIS = {
 # a volta no vermelho, que fica nas duas pontas do circulo de matiz.
 PELE = (0.08, 0.18)
 CABECA = 0       # px; ver `centro_do_corpo`
+# Saturacao (min, max) e valor minimo da pele. A matiz sozinha nao separa: a
+# madeira do cajado, o couro do cinto e o bronze da Dragonguard tem a matiz da
+# pele clara, e o centro do corpo ia atras deles -- a figura pulava de lado no
+# golpe, e o mesmo golpe saia em lugares diferentes em cada armadura.
+PELE_SV = (0.35, 1.01, 0.35)
 # Direcoes em que o ataque e ancorado pelo pe, quadro a quadro, como o andar.
 # Na Dara o modelo SOBE a figura no golpe a noroeste (5 px) e a nordeste
 # (3 px), e com a ancora do grupo ela golpeava flutuando sobre a sombra.
@@ -291,7 +366,8 @@ def e_pele(c):
     h, sat, v = colorsys.rgb_to_hsv(r, g, b)
     lo, hi = PELE
     dentro = lo <= h <= hi if lo <= hi else (h >= lo or h <= hi)
-    return dentro and sat > 0.35 and v > 0.35
+    smin, smax, vmin = PELE_SV
+    return dentro and smin < sat < smax and v > vmin
 
 
 def centro_do_corpo(cel):
@@ -578,8 +654,11 @@ def main():
                    help='o lado oeste sai do leste virado (folhas editadas so em 5 direcoes)')
     p.add_argument('--verde', help='o verde que sobrar vira este material (ver RAMPAS_DO_VERDE)')
     p.add_argument('--queda-de', help='pasta de onde tirar o corpo no chao (padrao: a do perfil)')
+    p.add_argument('--ataque-de', action='append', default=[],
+                   help='direcao=pasta:q1,q2 -- o golpe dessa direcao vem de OUTRA pasta (um golpe '
+                        'regerado e vestido a parte, o REMENDO), com os quadros dados')
     a = p.parse_args()
-    global PLANO, QUADROS_POR_DIRECAO, PELE, CABECA, PE_NO_ATAQUE
+    global PLANO, QUADROS_POR_DIRECAO, PELE, PELE_SV, CABECA, PE_NO_ATAQUE
     perfil = dict(PERFIS.get(a.chave, {}))
     if a.espelho:
         perfil['espelho'] = True
@@ -589,6 +668,7 @@ def main():
         perfil['queda_de'] = a.queda_de
     PE_NO_ATAQUE = {('attack', d) for d in perfil.get('pe_no_ataque', [])}
     PELE = perfil.get('pele', PELE)
+    PELE_SV = perfil.get('pele_sv', PELE_SV)
     CABECA = perfil.get('cabeca', CABECA)
     if 'ataque' in perfil:
         PLANO = [(n, ('animation', perfil['ataque']), perfil['quadros'], h)
@@ -596,6 +676,12 @@ def main():
                  for n, fonte_, q, h in PLANO]
         QUADROS_POR_DIRECAO = {('attack', d): q
                                for d, q in perfil.get('por_direcao', {}).items()}
+    # A MAGIA (`conjurar`), para quem conjura: o gesto proprio do `cast-dir`,
+    # CARREGA e SOLTA, que o motor usa nas magias no lugar do golpe. Quem nao
+    # tem a animacao conjura com o golpe, como sempre.
+    if 'conjurar' in perfil:
+        PLANO = PLANO + [('conjurar', ('animation', 'cast-dir'), [3, 5], [10, 16])]
+        QUADROS_POR_DIRECAO.update({('conjurar', d): q for d, q in perfil['conjurar'].items()})
 
     fonte = Path(a.fonte)
     meta = json.loads(next(j for j in fonte.glob('*.json') if j.name not in ('armas.json', 'meta.json')).read_text(encoding='utf-8'))['spritesheet']
@@ -658,11 +744,29 @@ def main():
                 return porDir[n][dir_]
         raise SystemExit(f'nenhum de {nomes} tem a direcao {dir_}')
 
+    # A MARGEM: a celula do motor e maior que a do PixelLab, `margem` px de
+    # folga em volta. O importador puxa o corpo de volta para o centro no
+    # golpe, e a arma que o modelo desenhou encostada na borda saia cortada
+    # pela celula; o machado que desce abaixo dos pes, tambem. Com a margem
+    # embaixo o chao sobe na celula, e a folha diz onde ele fica (`ground`):
+    # `drawSprite` desce a figura o tanto que o chao subiu.
+    SCW, SCH = CW, CH
+    M = perfil.get('margem', 0)
+    CW, CH = SCW + 2 * M, SCH + 2 * M
+    CHAO = GROUND + M
+
+    def com_margem(cel):
+        if not M:
+            return cel
+        nova = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
+        nova.paste(cel, (M, M))
+        return nova
+
     def recorte(row, f, fonte_im=None):
-        cel = (fonte_im or im).crop((f * CW, row * CH, (f + 1) * CW, (row + 1) * CH))
+        cel = com_margem((fonte_im or im).crop((f * SCW, row * SCH, (f + 1) * SCW, (row + 1) * SCH)))
         return verde_vira(cel, perfil['verde_vira']) if perfil.get('verde_vira') else cel
 
-    alvo = CH - GROUND - 1
+    alvo = CH - CHAO - 1
 
     def origem(fonte_, idx, dir_):
         '''(fileira, coluna) do quadro na folha do PixelLab.'''
@@ -673,14 +777,33 @@ def main():
             return queda[0]['row'], queda[1]
         return grupo(arg, dir_)['row'], idx
 
+    # O REMENDO: o golpe de algumas direcoes vem de outra pasta.
+    remendos = {}
+    for r_ in a.ataque_de:
+        dir_r, resto = r_.split('=', 1)
+        pasta_r, qs = resto.rsplit(':', 1)
+        pr = Path(pasta_r)
+        mr = json.loads(next(j for j in pr.glob('*.json') if j.name not in ('armas.json', 'meta.json'))
+                        .read_text(encoding='utf-8'))['spritesheet']
+        imr = Image.open(pr / mr['path']).convert('RGBA')
+        linhas = [x for x in mr['rows'] if x['type'] == 'animation'
+                  and re.sub(r'_\d+$', '', x['animation'] or '') in (
+                      [perfil['ataque']] if isinstance(perfil.get('ataque'), str) else perfil.get('ataque', []))
+                  and x['direction'] == dir_r]
+        remendos[dir_r] = (imr, linhas[-1]['row'])          # o grupo mais novo da direcao
+        QUADROS_POR_DIRECAO[('attack', dir_r)] = [int(q) for q in qs.split(',')]
+
     def quadro(fonte_, idx, dir_):
+        if fonte_[0] == 'animation' and fonte_[1] == perfil.get('ataque') and dir_ in remendos:
+            imr, row = remendos[dir_]
+            return recorte(row, idx, fonte_im=imr)
         if fonte_[0] == 'queda':
             return recorte(*origem(fonte_, idx, dir_), fonte_im=im_queda)
         if fonte_ == ('animation', 'walk') and dir_ in perfil.get('arco_do_parado', ()):
             row, col = origem(fonte_, idx, dir_)
-            bruto = im.crop((col * CW, row * CH, (col + 1) * CW, (row + 1) * CH))
-            parado = im.crop((rot['directions'].index(dir_) * CW, rot['row'] * CH,
-                              (rot['directions'].index(dir_) + 1) * CW, (rot['row'] + 1) * CH))
+            bruto = com_margem(im.crop((col * SCW, row * SCH, (col + 1) * SCW, (row + 1) * SCH)))
+            parado = com_margem(im.crop((rot['directions'].index(dir_) * SCW, rot['row'] * SCH,
+                                         (rot['directions'].index(dir_) + 1) * SCW, (rot['row'] + 1) * SCH)))
             cel = colar_arco(bruto, parado)
             return verde_vira(cel, perfil['verde_vira']) if perfil.get('verde_vira') else cel
         return recorte(*origem(fonte_, idx, dir_))
@@ -729,7 +852,7 @@ def main():
             dir_ = ESPELHO.get(dir_real, dir_real) if perfil.get('espelho') else dir_real
             desloca = ancora(fonte_, dir_)
             escolha = QUADROS_POR_DIRECAO.get((nome, dir_), quadros)
-            ref_x = centro_do_corpo(quadro(fonte_, 0, dir_)) if nome == 'attack' else None
+            ref_x = centro_do_corpo(quadro(fonte_, 0, dir_)) if nome in ('attack', 'conjurar') else None
             for f in range(nq):
                 idx = escolha[f] if f < len(escolha) else escolha[-1]
                 cel = quadro(fonte_, idx, dir_)
@@ -786,7 +909,7 @@ def main():
     png = SAIDA / f'{nome_saida}.png'
     folha.save(png, optimize=True)
     saida = {
-        'cell': [CW * S, CH * S], 's': S, 'ground': GROUND,
+        'cell': [CW * S, CH * S], 's': S, 'ground': CHAO,
         'w': largura, 'h': altura, 'dirs': DIRECOES, 'anims': anims,
     }
     # As medidas da arma, em px LOGICOS dentro da celula: armas[anim][dir][quadro].

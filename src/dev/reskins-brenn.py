@@ -93,11 +93,13 @@ def cabeca_da_maca(px, x0, y0, C, maior=80, longe=12, alongada=2.2, cheia=0.4):
 # vira uma ilha so com elas; o que se pinta e o disco de aco em volta do
 # ponto.
 A_MAO = {
-    (0, 1): (24, 51), (3, 1): (25, 51), (3, 2): (26, 50),      # sudeste
-    (0, 2): (36, 52), (4, 2): None, (4, 3): (36, 52),          # leste
+    (0, 1): (24, 51), (0, 2): (36, 52),                        # parado SE e E
     (11, 8): (53, 41),                                         # nordeste, golpe
     (6, 3): (53, 46), (6, 4): (53, 45),                        # norte, andar
 }
+# No andar a sudeste e a leste o modelo leva a cabeca da maca para junto da
+# bota; o disco e o vizinho pintavam a bota de ouro. Ali so vale a forma.
+SO_A_FORMA = {3, 4}
 RAIO = 4
 
 
@@ -153,6 +155,8 @@ def cabecas(px, meta, C, **forma):
         if (row, f) in achadas:
             continue
         r = fileiras[row]
+        if row in SO_A_FORMA:
+            continue
         viz = ([(andar.get(r['directions'][f]), 0)] if r['type'] == 'rotations'
                else [(row, f - 1), (row, f + 1)])
         for v in viz:

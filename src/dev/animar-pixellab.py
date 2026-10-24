@@ -355,6 +355,8 @@ CRIATURAS['clericBesta'] = {
     'parado': 'light crossbow held in both hands at waist level, pointing forward',
     'golpe': ('raising the light crossbow to his shoulder, aiming {para} and '
               'shooting a bolt, then lowering it'),
+    # ao norte o modelo mira para a direita, de costas; foram tres tentativas
+    # (incl. 'the crossbow points the same way he faces'), todas iguais.
 }
 
 # O PIP. A queda so na folha base (espada curta); as posturas usam a dela.
@@ -389,6 +391,101 @@ CRIATURAS.update({
         'parado': 'hand crossbow held low in his right hand',
         'golpe': ('raising the hand crossbow with his right arm extended, aiming '
                   '{para} and shooting a bolt, then lowering it'),
+    },
+})
+
+# O ILVAN. O bordao e a arma; a magia e um gesto da mao livre com o cajado
+# erguido, e a luz azul do cristal.
+_ILVAN = ('a tall slender male high elf wizard with long silver-white hair and '
+          'pointed ears, in a long deep indigo robe with light violet trim, ')
+CRIATURAS.update({
+    'wizard': {
+        'sujeito': _ILVAN + 'a tall wooden quarterstaff with a pale blue crystal on top in his right hand',
+        'parado': 'standing upright, the staff planted beside him',
+        'golpe': ('swinging the quarterstaff in one strike {para} with both hands, '
+                  'a short step in that direction, then recovering'),
+        'magia': ('casting a spell: raising the staff with the crystal glowing pale '
+                  'blue and thrusting his open left hand {para}, a burst of pale blue '
+                  'light leaving his hand, then lowering both'),
+        'chao': 'the staff dropped beside him, his silver hair spread on the ground',
+    },
+    'wizardAdaga': {
+        'sem_queda': True,
+        'sujeito': _ILVAN + 'a steel dagger in his right hand',
+        'parado': 'standing upright, the dagger held low in his right hand',
+        'golpe': ('stabbing the dagger {para} in one quick thrust, then stepping '
+                  'back'),
+        'magia': ('casting a spell: thrusting his open left hand {para}, a burst of '
+                  'pale blue light leaving his hand, then lowering it'),
+    },
+})
+
+# O GRASK. A queda so na folha base; as posturas usam a queda sem arma.
+_GRASK = ('a huge muscular male half-orc barbarian with grey-green skin, tusks, '
+          'long black hair and red war paint, a bare chest and a brown fur mantle, ')
+CRIATURAS.update({
+    'barbarian': {
+        'sujeito': _GRASK + 'a huge steel greataxe held in both hands',
+        'parado': 'greataxe held diagonally across the body in a wide stance',
+        'golpe': ('swinging the greataxe in one huge overhead chop {para} with both '
+                  'hands, a heavy step in that direction, then recovering'),
+        'chao': 'the greataxe dropped beside him, the fur mantle spread under him',
+    },
+    'barbarianMachadinhas': {
+        'sem_queda': True,
+        'sujeito': _GRASK + 'a steel handaxe in each hand',
+        'parado': 'a handaxe in each hand held low at his sides',
+        'golpe': ('chopping {para} with the handaxe in his right hand and then with '
+                  'the handaxe in his left hand, one quick blow after the other'),
+    },
+    'barbarianAzagaia': {
+        'sem_queda': True,
+        'sujeito': _GRASK + 'a wooden javelin with a steel point in his right hand',
+        'parado': 'javelin raised at shoulder height in his right hand',
+        'golpe': ('drawing back and hurling the javelin {para} with a powerful throw, '
+                  'his arm following through'),
+    },
+})
+
+# O TORVIK. Queda so na folha base; as posturas sem escudo usam a queda sem
+# escudo, editada da base.
+_TORVIK = ('a short stout male dwarf paladin with a dark brown beard, a steel '
+           'open-faced helm, steel plate armor and a royal blue tabard and cape, ')
+CRIATURAS.update({
+    'paladin': {
+        'sujeito': _TORVIK + 'a blue heater shield with a white hammer on his left arm, a steel longsword in his right hand',
+        'parado': 'longsword held low at his side, shield held forward across the body',
+        'golpe': ('swinging the longsword in one overhead strike {para}, a short step '
+                  'in that direction, then recovering, the shield staying on his left arm'),
+        'chao': 'the blue shield still on his left arm resting on his chest, the longsword dropped beside his right hand, the helm still on',
+    },
+    'paladinEspadaGrande': {
+        'sem_queda': True,
+        'sujeito': _TORVIK + 'a steel greatsword held in both hands',
+        'parado': 'greatsword gripped in both hands in front of him, the blade pointing up',
+        'golpe': ('swinging the greatsword in one huge overhead chop {para} with both '
+                  'hands, a heavy step in that direction, then recovering'),
+    },
+    'paladinAzagaia': {
+        'sem_queda': True,
+        'sujeito': _TORVIK + 'a wooden javelin with a steel point in his right hand',
+        'parado': 'javelin raised at shoulder height in his right hand',
+        'golpe': ('drawing back and hurling the javelin {para} with a powerful throw, '
+                  'his arm following through'),
+    },
+    'paladinBesta': {
+        'sem_queda': True,
+        'sujeito': _TORVIK + 'a heavy crossbow of dark wood and steel held in both hands',
+        'parado': 'heavy crossbow held in both hands at waist level, pointing forward',
+        'golpe': ('raising the heavy crossbow to his shoulder, aiming {para} and '
+                  'shooting a bolt, then lowering it'),
+    },
+    'paladinArco': {
+        'sem_queda': True,
+        'sujeito': _TORVIK + 'a longbow of brown wood in his left hand, a quiver on his back',
+        'parado': 'longbow held low in his left hand',
+        'golpe': ('raising the longbow, drawing an arrow to his cheek and loosing it '
+                  '{para}, then lowering the bow'),
     },
 })
 
@@ -448,6 +545,20 @@ def poses_de(chave):
             'initial_pose': f'standing in a ready stance {olha}, ' + c['parado'],
             'frame_count': 8,
         }))
+    # A MAGIA, para quem conjura: um gesto proprio por direcao, que o motor usa
+    # nas magias no lugar do golpe de arma (`conjurar`).
+    if c.get('magia'):
+        for d in OITO:
+            olha, para = OLHAR[d]
+            poses.append(('cast-dir', [d], {
+                'mode': 'pixminimax',
+                'action_description': (
+                    f'{olha}, ' + c['magia'].format(para=para) + '. The body keeps '
+                    'facing the same way the whole time and never turns around.'),
+                'subject_description': c['sujeito'],
+                'initial_pose': f'standing {olha}, ' + c['parado'],
+                'frame_count': 8,
+            }))
     if c.get('sem_queda'):
         return poses
     poses.append(('queda-pix', ['south'], {
