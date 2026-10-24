@@ -92,6 +92,12 @@ EDICOES = {
         'pose and position in every frame, the direction each frame faces and '
         'the colours.'
     ),
+    # o corpo no chao das posturas SEM escudo (espada so, duas maos, arco, besta)
+    'queda-sem-escudo': (
+        'Remove the shield and any weapon she is holding. The dragonborn fighter '
+        'keeps the same armor, the same pose and the same colors; where the shield '
+        'was, draw her arm and her armored body instead. Nothing else changes.'
+    ),
     'arma-machado-grande': (
         'Replace the bright green greatsword with a greataxe: a long wooden haft '
         'gripped in both of her hands with a huge double-bladed steel axe head at '
@@ -149,6 +155,48 @@ for _nome, _armadura in (
     EDICOES[f'armadura-{_nome}'] = (
         f'Replace her steel chain mail hauberk with {_armadura}.' + _ARMADURA_MANTEM)
 
+# O KIT DO BRENN, pela mesma receita: a pose fica, troca a arma ou a armadura.
+_BRENN_MANTEM = (
+    ' Keep everything else exactly the same: the short stout dwarf body, the '
+    'bearded face and bare head, the grey tabard with the gold trim, the belt, '
+    'the boots, the pose and position in every frame, the direction each frame '
+    'faces and the colours.'
+)
+EDICOES.update({
+    'brenn-arma-martelo': (
+        'Replace the flanged mace in his right hand with a dwarven warhammer: a '
+        'wooden handle about as long as his forearm topped by a heavy square '
+        'steel hammer head with a short spike on the back, held the same way, in '
+        'the same position and pointing the same direction as the mace in every '
+        'frame. Keep the steel heater shield with the golden sun emblem on his '
+        'left arm and the steel scale mail.' + _BRENN_MANTEM),
+    'brenn-armadura-malha': (
+        'Replace his steel scale mail with a full chain mail hauberk of small '
+        'riveted steel rings, with mail sleeves, down to the thighs. Keep the '
+        'weapon he holds, and the shield if he has one, exactly as they are in '
+        'every frame: same shape, position and colour, and a bright green weapon '
+        'stays bright green.' + _BRENN_MANTEM),
+    'brenn-armadura-placas': (
+        'Replace his steel scale mail with full plate armor: a polished steel '
+        'breastplate, rounded steel pauldrons, steel vambraces and steel greaves. '
+        'Keep the weapon he holds, and the shield if he has one, exactly as they '
+        'are in every frame: same shape, position and colour.' + _BRENN_MANTEM),
+    # De placas ele vai de capacete (pedido do dono). Aro dourado e o sol na
+    # testa: o Torvik, o outro anao, usa um capacete liso de aco e azul.
+    'brenn-capacete': (
+        'Add a helmet to his head: a rounded steel dwarven helm with a gold rim '
+        'and a small golden sun on the brow, open-faced so his face and his '
+        'long grey-brown beard stay visible. Keep the plate armor, the weapon he '
+        'holds and the shield if he has one exactly as they are in every frame. '
+        'Keep everything else exactly the same: the short stout dwarf body, the '
+        'pose and position in every frame, the direction each frame faces and '
+        'the colours.'),
+    'brenn-queda-sem-escudo': (
+        'Remove the shield and any weapon he is holding. The dwarf keeps the same '
+        'armor, the same pose and the same colours; where the shield was, draw '
+        'his arm and his armored body instead. Nothing else changes.'),
+})
+
 # Quadros que o motor usa por direcao, nos grupos da folha do PixelLab: o
 # parado (rotacoes), o andar 1-4 e os dois do ataque escolhidos no perfil
 # `fighter` de `importar-pixellab.py`.
@@ -166,8 +214,16 @@ ATAQUE_POR_PERFIL = {
                     'north': [4, 6], 'north-west': [3, 6], 'west': [3, 6], 'south-west': [3, 6]},
     'fighterBesta': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 5], 'north-east': [3, 6],
                      'north': [3, 6], 'north-west': [3, 6], 'west': [3, 6], 'south-west': [3, 6]},
+    # a espada grande ao sul: o quadro 2 tem o borrao do golpe, o 1 e o erguido limpo
+    'fighterEspadaGrande': {'south': [1, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
+                            'north': [6, 1], 'north-west': [3, 6], 'west': [1, 7], 'south-west': [1, 6]},
     'fighterDuasMaos': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
                         'north': [6, 1], 'north-west': [3, 6], 'west': [1, 7], 'south-west': [1, 6]},
+    # o Brenn: os mesmos quadros do perfil `cleric` de `importar-pixellab.py`
+    'cleric': {'south': [3, 5], 'south-east': [3, 4], 'east': [3, 4], 'north-east': [4, 8],
+               'north': [3, 2], 'north-west': [4, 8], 'west': [3, 4], 'south-west': [3, 4]},
+    'clericBesta': {'south': [3, 4], 'south-east': [3, 5], 'east': [4, 5], 'north-east': [4, 5],
+                    'north': [3, 5], 'north-west': [3, 4], 'west': [3, 4], 'south-west': [3, 5]},
 }
 ATAQUE = ATAQUE_DARA
 COM_QUEDA = False
@@ -249,9 +305,15 @@ def main():
     p.add_argument('--direcoes', required=True, help='separadas por virgula')
     p.add_argument('--perfil', default='fighter', choices=sorted(ATAQUE_POR_PERFIL))
     p.add_argument('--com-queda', action='store_true', help='o quadro do corpo no chao vai junto ao sul')
+    p.add_argument('--janela', help='x,y do canto da janela, no lugar da centrada na uniao '
+                   '(para uma arma que passa dos 80 px: mira a janela no quadro que cortou)')
+    p.add_argument('--colar', help='indices dos quadros da direcao que voltam para a folha '
+                   '(os outros vao so de contexto, cortados pela janela)')
+    p.add_argument('--trabalhos', help='direcao=id,... de pedidos ja enviados (o log os imprime): '
+                   'busca o resultado sem pagar de novo, se o processo morreu esperando')
     p.add_argument('--go', action='store_true')
     a = p.parse_args()
-    global ATAQUE, COM_QUEDA
+    global ATAQUE, COM_QUEDA, JANELA
     ATAQUE = ATAQUE_POR_PERFIL[a.perfil]
     COM_QUEDA = a.com_queda
 
@@ -259,6 +321,8 @@ def main():
     jmeta = next(j for j in fonte.glob('*.json') if j.name not in ('armas.json', 'meta.json'))
     meta = json.loads(jmeta.read_text(encoding='utf-8'))['spritesheet']
     lado = meta['cell_size']['width']
+    # celula menor que a janela (o Brenn, de 72): a janela e a celula inteira
+    JANELA = min(JANELA, lado)
     folha = Image.open(fonte / meta['path']).convert('RGBA')
     texto = EDICOES[a.edicao]
     if len(texto) > 1000:
@@ -269,6 +333,9 @@ def main():
         pos = quadros_da_direcao(meta, d)
         cels = [folha.crop((c * lado, r * lado, (c + 1) * lado, (r + 1) * lado)) for r, c in pos]
         jan, u = janela(cels, lado)
+        if a.janela:
+            x, y = (int(v) for v in a.janela.split(','))
+            jan = (x, y, x + JANELA, y + JANELA)
         fora = (u[0] < jan[0] or u[1] < jan[1] or u[2] > jan[2] or u[3] > jan[3])
         print(f'{d:11} {len(pos)} quadros  janela {jan}  uniao {u}'
               + ('  (passa da janela: o excesso volta do original)' if fora else ''))
@@ -286,7 +353,11 @@ def main():
     saida = RAIZ / '_referencias' / 'pixellab' / 'edicoes' / a.edicao / f'{a.perfil}-{fonte.parent.name[:12]}-{fonte.name}'
     saida.mkdir(parents=True, exist_ok=True)
     jobs = []
+    ja = dict(t.split('=') for t in a.trabalhos.split(',')) if a.trabalhos else None
     for d, pos, cels, jan in plano:
+        if ja is not None:
+            jobs.append((d, pos, cels, jan, ja[d]))
+            continue
         corpo = {
             'description': texto,
             'image_size': {'width': JANELA, 'height': JANELA},
@@ -303,6 +374,7 @@ def main():
     if not destino.exists():
         shutil.copytree(fonte, destino)
     nova = Image.open(destino / meta['path']).convert('RGBA')
+    colar = {int(v) for v in a.colar.split(',')} if a.colar else None
     inicio = time.time()
     for d, pos, cels, jan, job in jobs:
         while True:
@@ -320,11 +392,12 @@ def main():
         tira = Image.new('RGBA', (JANELA * 2 * len(pos), JANELA))
         for i, ((r, c), cel) in enumerate(zip(pos, cels)):
             ed = Image.open(io.BytesIO(base64.b64decode(imgs[i]))).convert('RGBA')
-            nova_cel = cel.copy()
-            # Dentro da janela, o editado inteiro (inclusive o transparente,
-            # para a cauda sumir); fora dela, o original.
-            nova_cel.paste(ed, jan[:2])
-            nova.paste(nova_cel, (c * lado, r * lado))
+            if colar is None or i in colar:
+                nova_cel = cel.copy()
+                # Dentro da janela, o editado inteiro (inclusive o transparente,
+                # para a cauda sumir); fora dela, o original.
+                nova_cel.paste(ed, jan[:2])
+                nova.paste(nova_cel, (c * lado, r * lado))
             tira.alpha_composite(cel.crop(jan), (i * 2 * JANELA, 0))
             tira.alpha_composite(ed, ((i * 2 + 1) * JANELA, 0))
         tira.save(saida / f'{d}.png')

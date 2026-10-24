@@ -35,38 +35,41 @@ if [ "$ARM" = reskins ]; then
   imp $M/anim-dara-sem-cauda-arma-machado$P-hew fighter hew-escudo --espelho --queda-de "$M/anim-dara-sem-cauda$P"
   ARM=dragonguard
   Q=$M/anim-dara-sem-cauda$P-dragonguard
+  N=$M/anim-dara-sem-cauda$P-queda-sem-escudo-dragonguard   # o corpo no chao sem escudo
   imp $M/anim-dara-sem-cauda$P-dragonguard fighter espada-escudo --espelho
-  imp $E/anim-postura-sem-cauda$P-dragonguard fighterSemEscudo espada --espelho --queda-de "$Q"
+  imp $E/anim-postura-sem-cauda$P-dragonguard fighterSemEscudo espada --espelho --queda-de "$N"
   imp $M/anim-dara-sem-cauda-arma-maca$P-dragonguard fighter maca-escudo --espelho --queda-de "$Q"
   imp $M/anim-dara-sem-cauda-arma-machado$P-dragonguard fighter machado-escudo --espelho --queda-de "$Q"
-  imp $D/anim-postura-sem-cauda$P-dragonguard fighterEspadaGrande espada-grande --espelho --queda-de "$Q"
-  imp $D/anim-postura-sem-cauda-arma-machado-grande$P-dragonguard fighterDuasMaos machado-grande --espelho --verde apagar --queda-de "$Q"
-  imp $D/anim-postura-sem-cauda-arma-malho$P-dragonguard fighterDuasMaos malho --espelho --verde apagar --queda-de "$Q"
-  imp $A/anim-postura-sem-cauda$P-dragonguard fighterArco arco --espelho --queda-de "$Q"
-  imp $B/anim-postura-sem-cauda-cauda-creme$P-dragonguard fighterBesta besta --espelho --queda-de "$Q"
+  imp $D/anim-postura-sem-cauda$P-dragonguard fighterEspadaGrande espada-grande --espelho --queda-de "$N"
+  imp $D/anim-postura-sem-cauda-arma-machado-grande$P-dragonguard fighterDuasMaos machado-grande --espelho --verde apagar --queda-de "$N"
+  imp $D/anim-postura-sem-cauda-arma-malho$P-dragonguard fighterDuasMaos malho --espelho --verde apagar --queda-de "$N"
+  imp $A/anim-postura-sem-cauda$P-dragonguard fighterArco arco --espelho --queda-de "$N"
+  imp $B/anim-postura-sem-cauda-cauda-creme$P-dragonguard fighterBesta besta --espelho --queda-de "$N"
   imp $M/anim-dara-sem-cauda$P-talon-dragonguard fighter talon-escudo --espelho
   imp $M/anim-dara-sem-cauda-arma-maca$P-lightbringer-dragonguard fighter lightbringer-escudo --espelho --queda-de "$Q"
   imp $M/anim-dara-sem-cauda-arma-machado$P-hew-dragonguard fighter hew-escudo --espelho --queda-de "$Q"
 elif [ "$ARM" = malha ]; then
+  N=$M/anim-dara-sem-cauda-sem-arma-queda-sem-escudo   # o corpo no chao sem escudo
   imp $M/anim-dara-sem-cauda fighter espada-escudo
-  imp $E/anim-postura-sem-cauda fighterSemEscudo espada
+  imp $E/anim-postura-sem-cauda fighterSemEscudo espada --queda-de "$N"
   imp $M/anim-dara-sem-cauda-arma-maca fighter maca-escudo --espelho
   imp $M/anim-dara-sem-cauda-arma-machado fighter machado-escudo --espelho
-  imp $D/anim-postura-sem-cauda fighterEspadaGrande espada-grande
-  imp $D/anim-postura-sem-cauda-arma-machado-grande fighterDuasMaos machado-grande --espelho --verde apagar
-  imp $D/anim-postura-sem-cauda-arma-malho fighterDuasMaos malho --espelho --verde apagar
-  imp $A/anim-postura-sem-cauda fighterArco arco
-  imp $B/anim-postura-sem-cauda-cauda-creme fighterBesta besta
+  imp $D/anim-postura-sem-cauda fighterEspadaGrande espada-grande --queda-de "$N"
+  imp $D/anim-postura-sem-cauda-arma-machado-grande fighterDuasMaos machado-grande --espelho --verde apagar --queda-de "$N"
+  imp $D/anim-postura-sem-cauda-arma-malho fighterDuasMaos malho --espelho --verde apagar --queda-de "$N"
+  imp $A/anim-postura-sem-cauda fighterArco arco --queda-de "$N"
+  imp $B/anim-postura-sem-cauda-cauda-creme fighterBesta besta --queda-de "$N"
 else
   S="-armadura-$ARM"
   Q=$M/anim-dara-sem-cauda$S              # o corpo no chao vestido com a armadura
+  N=$Q-queda-sem-escudo                   # o mesmo, sem escudo nem arma
   imp $M/anim-dara-sem-cauda$S fighter espada-escudo --espelho
-  imp $E/anim-postura-sem-cauda$S fighterSemEscudo espada --espelho --queda-de "$Q"
+  imp $E/anim-postura-sem-cauda$S fighterSemEscudo espada --espelho --queda-de "$N"
   imp $M/anim-dara-sem-cauda-arma-maca$S fighter maca-escudo --espelho --queda-de "$Q"
   imp $M/anim-dara-sem-cauda-arma-machado$S fighter machado-escudo --espelho --queda-de "$Q"
-  imp $D/anim-postura-sem-cauda$S fighterEspadaGrande espada-grande --espelho --queda-de "$Q"
-  imp $D/anim-postura-sem-cauda-arma-machado-grande$S fighterDuasMaos machado-grande --espelho --verde apagar --queda-de "$Q"
-  imp $D/anim-postura-sem-cauda-arma-malho$S fighterDuasMaos malho --espelho --verde apagar --queda-de "$Q"
-  imp $A/anim-postura-sem-cauda$S fighterArco arco --espelho --queda-de "$Q"
-  imp $B/anim-postura-sem-cauda-cauda-creme$S fighterBesta besta --espelho --queda-de "$Q"
+  imp $D/anim-postura-sem-cauda$S fighterEspadaGrande espada-grande --espelho --queda-de "$N"
+  imp $D/anim-postura-sem-cauda-arma-machado-grande$S fighterDuasMaos machado-grande --espelho --verde apagar --queda-de "$N"
+  imp $D/anim-postura-sem-cauda-arma-malho$S fighterDuasMaos malho --espelho --verde apagar --queda-de "$N"
+  imp $A/anim-postura-sem-cauda$S fighterArco arco --espelho --queda-de "$N"
+  imp $B/anim-postura-sem-cauda-cauda-creme$S fighterBesta besta --espelho --queda-de "$N"
 fi

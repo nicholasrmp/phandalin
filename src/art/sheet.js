@@ -5,6 +5,7 @@
 import { paint, DIRECTIONS } from './draw.js';
 import { resolveLook } from './looks.js';
 import { folhaImportada, carregarFolhas } from './folhas/index.js';
+import { retratoPintado } from './retratos/index.js';
 
 const cache = new Map();
 
@@ -228,6 +229,21 @@ export function makePortrait(lookKey, lado = 40) {
     sx, sheet.anims.idle.y + sy, w, h,
     Math.floor((p - w) / 2), Math.floor((p - h) / 2), w, h,
   );
+
+  // Herói com retrato pintado: ele por cima do recorte, assim que carregar.
+  // Pintura não é pixel art -- reduzida, pede suavização, não vizinho.
+  const pintado = retratoPintado(lookKey);
+  if (pintado) {
+    const pintar = () => {
+      canvas.style.imageRendering = 'auto';
+      ctx.clearRect(0, 0, p, p);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(pintado, 0, 0, p, p);
+    };
+    if (pintado.complete && pintado.naturalWidth) pintar();
+    else pintado.addEventListener('load', pintar, { once: true });
+  }
   return canvas;
 }
 

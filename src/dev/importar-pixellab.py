@@ -194,7 +194,7 @@ PERFIS = {
         'ataque': ['attack-dir'], 'pele': (0.94, 0.04), 'cabeca': 14, 'quadros': [3, 5],
         'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
         'verde_vira': 'aco',
-        'por_direcao': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
+        'por_direcao': {'south': [1, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
                         'north': [6, 1], 'north-west': [3, 6], 'west': [1, 4], 'south-west': [1, 6]},
     },
     'fighterDuasMaos': {
@@ -202,6 +202,29 @@ PERFIS = {
         'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
         'por_direcao': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
                         'north': [6, 1], 'north-west': [3, 6], 'west': [1, 4], 'south-west': [1, 6]},
+    },
+    # BRENN, clerigo anao. Maca ERGUIDA e GOLPE, escolhidos olhando os 9
+    # quadros de cada direcao. Ao norte, do 4 em diante o modelo vira o anao
+    # de frente; o golpe e pego antes (3 erguida, 2 descendo). A nordeste os
+    # quadros 1-3 olham para a esquerda; valem o 4 (maca no alto, de costas) e
+    # o 8 (baixada). O oeste veio fraco -- a maca vai para o lado de tras --,
+    # entao a folha e importada com `--espelho` e o lado oeste sai do leste.
+    # A pele e rosada; a barba castanha fica fora da faixa pelo valor baixo.
+    'cleric': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 4], 'east': [3, 4],
+                        'north-east': [4, 8], 'north': [3, 2], 'north-west': [4, 8],
+                        'west': [3, 4], 'south-west': [3, 4]},
+    },
+    # A besta do Brenn: MIRA e DISPARO (o quadro com o virote saindo). A
+    # besta ja vem desenhada, madeira e aco -- nada de verde para trocar.
+    'clericBesta': {
+        'ataque': ['attack-dir'], 'pele': (0.02, 0.09), 'cabeca': 10,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 4], 'south-east': [3, 5], 'east': [4, 5],
+                        'north-east': [4, 5], 'north': [3, 5], 'north-west': [3, 4],
+                        'west': [3, 4], 'south-west': [3, 5]},
     },
     # A Dara de malha. Mesmo criterio: espada ERGUIDA e GOLPE, escolhidos
     # olhando. Ao norte o golpe para baixo e o quadro 2, que vem ANTES do
@@ -575,9 +598,18 @@ def main():
         fq = AQUI / perfil['queda_de']
         mq = json.loads(next(j for j in fq.glob('*.json') if j.name not in ('armas.json', 'meta.json'))
                         .read_text(encoding='utf-8'))['spritesheet']
-        if mq['cell_size'] != meta['cell_size']:
-            raise SystemExit('a folha da queda tem outra celula')
         im_queda = Image.open(fq / mq['path']).convert('RGBA')
+        # Celula de outro tamanho (a besta do Brenn tem 76, a maca 72): cada
+        # celula da queda e recentrada numa celula do tamanho desta folha.
+        cq, cn = mq['cell_size']['width'], meta['cell_size']['width']
+        if cq != cn:
+            colunas, linhas = im_queda.width // cq, im_queda.height // cq
+            nova = Image.new('RGBA', (colunas * cn, linhas * cn), (0, 0, 0, 0))
+            for lin in range(linhas):
+                for col in range(colunas):
+                    cel = im_queda.crop((col * cq, lin * cq, (col + 1) * cq, (lin + 1) * cq))
+                    nova.paste(cel, (col * cn + (cn - cq) // 2, lin * cn + (cn - cq) // 2))
+            im_queda = nova
         porDir_queda = {}
         for r in mq['rows']:
             if r['type'] == 'animation':

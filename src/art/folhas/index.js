@@ -25,11 +25,19 @@ import metaGoblinArqueiro from './goblinArqueiro.json';
 import urlGoblinArqueiro from './goblinArqueiro.png';
 import metaGoblinBoss from './goblinBoss.json';
 import urlGoblinBoss from './goblinBoss.png';
-// As folhas da Dara seguem um nome: `dara-<armadura>-<arma>.json/.png`. O
-// registro dela se monta sozinho a partir dos nomes (abaixo), porque sao 6
-// armaduras x 9 armas e uma lista escrita a mao erraria uma.
-const DARA_META = import.meta.glob('./dara-*.json', { eager: true, import: 'default' });
-const DARA_URL = import.meta.glob('./dara-*.png', { eager: true, query: '?url', import: 'default' });
+// As folhas dos herois seguem um nome: `<heroi>-<armadura>-<arma>.json/.png`
+// (`dara-malha-maca-escudo`, `brenn-escamas-besta`). O registro se monta
+// sozinho a partir dos nomes (abaixo), porque sao dezenas de combinacoes e
+// uma lista escrita a mao erraria uma.
+const HEROI_META = import.meta.glob(['./dara-*.json', './brenn-*.json'], { eager: true, import: 'default' });
+const HEROI_URL = import.meta.glob(['./dara-*.png', './brenn-*.png'], { eager: true, query: '?url', import: 'default' });
+
+// De quem e cada prefixo, e qual folha e a PADRAO -- a do kit das regras, que
+// leva a chave do look e carrega primeiro.
+const HEROIS = {
+  dara: { look: 'fighter', padrao: 'malha-espada-escudo' },
+  brenn: { look: 'cleric', padrao: 'escamas-maca-escudo' },
+};
 
 // UMA FIGURA, VARIAS FOLHAS: O QUE ELA TEM NAS MAOS.
 //
@@ -41,7 +49,7 @@ const DARA_URL = import.meta.glob('./dara-*.png', { eager: true, query: '?url', 
 // por cima foi tentado e ficou feio: desenhada sozinha, de lado, ela nao tem
 // a perspectiva de 3/4 da figura, nao inclina nem borra com o golpe, e a mao
 // nao fecha no cabo. A edicao do PixelLab troca a arma mantendo a pose; uma
-// folha serve a familia inteira (a da maca serve a martelo e estrela).
+// folha serve a familia inteira (a da maca serve a estrela e ao mangual).
 //
 // Cada folha declara a POSTURA (o jeito de segurar) e a FAMILIA. Uma folha
 // sem postura e a unica da sua figura e vale para tudo (monstros). As folhas
@@ -60,6 +68,7 @@ const ARMA_DO_ARQUIVO = {
   espada: ['umaMao', 'espada'],
   'maca-escudo': ['umaMaoEscudo', 'maca'],
   'machado-escudo': ['umaMaoEscudo', 'machado'],
+  'martelo-escudo': ['umaMaoEscudo', 'martelo'],
   'espada-grande': ['duasMaos', 'espadaGrande'],
   'machado-grande': ['duasMaos', 'machadoGrande'],
   malho: ['duasMaos', 'malho'],
@@ -70,16 +79,15 @@ const ARMA_DO_ARQUIVO = {
   'lightbringer-escudo': ['umaMaoEscudo', 'lightbringer'],
   'hew-escudo': ['umaMaoEscudo', 'hew'],
 };
-for (const [caminho, meta] of Object.entries(DARA_META)) {
+for (const [caminho, meta] of Object.entries(HEROI_META)) {
   const nome = caminho.slice(2, -5);                       // dara-malha-maca-escudo
-  const [, armadura, ...resto] = nome.split('-');
+  const [prefixo, armadura, ...resto] = nome.split('-');
+  const heroi = HEROIS[prefixo];
   const [postura, familia] = ARMA_DO_ARQUIVO[resto.join('-')] ?? [];
-  if (!postura) continue;
-  // A folha padrao da Dara -- a das regras: malha, espada e escudo -- tem a
-  // chave do look, `fighter`; e ela que carrega primeiro.
-  const chave = nome === 'dara-malha-espada-escudo' ? 'fighter' : nome;
+  if (!heroi || !postura) continue;
+  const chave = `${armadura}-${resto.join('-')}` === heroi.padrao ? heroi.look : nome;
   IMPORTADAS[chave] = {
-    base: 'fighter', meta, url: DARA_URL[caminho.replace('.json', '.png')],
+    base: heroi.look, meta, url: HEROI_URL[caminho.replace('.json', '.png')],
     postura, familia, armadura,
   };
 }
@@ -102,7 +110,7 @@ const FAMILIA_DA_ARMADURA = {
 const FAMILIA_DA_ARMA = {
   espadaLonga: 'espada', espadaCurta: 'espada', cimitarra: 'espada', rapieira: 'espada',
   talon: 'talon', adaga: 'espada', dardo: 'espada', foice: 'espada',
-  maca: 'maca', marteloLeve: 'maca', marteloDeGuerra: 'maca', estrelaMatinal: 'maca',
+  maca: 'maca', marteloLeve: 'martelo', marteloDeGuerra: 'martelo', estrelaMatinal: 'maca',
   mangual: 'maca', picareta: 'maca', clava: 'maca', lightbringer: 'lightbringer',
   machadinha: 'machado', machadoDeBatalha: 'machado', hew: 'hew',
   espadaGrande: 'espadaGrande',
@@ -114,14 +122,19 @@ const FAMILIA_DA_ARMA = {
 
 // OS ITENS NOMEADOS TEM FAMILIA PROPRIA (o reskin deles), e uma MAE: a familia
 // cujo desenho serve enquanto o reskin nao existe. A Dragonguard e um
-// peitoral, entao veste as placas.
-const MAE = { talon: 'espada', lightbringer: 'maca', hew: 'machado', dragonguard: 'placas' };
+// peitoral, entao veste as placas. O martelo tem desenho so no kit do Brenn;
+// na mao de quem nao tem, vale a maca.
+const MAE = {
+  talon: 'espada', lightbringer: 'maca', hew: 'machado', dragonguard: 'placas', martelo: 'maca',
+};
 
 // O JEITO DE SEGURAR. O que nao esta aqui e de uma mao.
 const ARCOS = new Set(['arcoCurto', 'arcoLongo', 'funda']);
 const BESTAS = new Set(['bestaLeve', 'bestaPesada', 'bestaDeMao']);
 const DUAS_MAOS = new Set(['espadaGrande', 'machadoGrande', 'malho', 'clavaGrande',
   'glaive', 'alabarda', 'pique', 'lancaMontada', 'bordao', 'cajadoAranha', 'cajadoDeDefesa']);
+
+const DISTANCIA = new Set(['arco', 'besta']);
 
 function posturaDe(arma, escudo) {
   if (ARCOS.has(arma)) return 'arco';
@@ -193,7 +206,12 @@ export function folhaImportada(key) {
       if (!e.postura) continue;
       const n = (e.familia === quer.familia ? 4 : e.familia === MAE[quer.familia] ? 3 : 0)
         + (e.postura === quer.postura ? 2 : 0)
-        + (e.armadura === quer.armadura ? 1 : e.armadura === MAE[quer.armadura] ? 0.5 : 0);
+        + (e.armadura === quer.armadura ? 1 : e.armadura === MAE[quer.armadura] ? 0.5 : 0)
+        // no empate, o mesmo tipo de luta: lanca sem folha propria vai para
+        // uma arma de corpo a corpo, nao para a besta
+        + (DISTANCIA.has(e.postura) === DISTANCIA.has(quer.postura) ? 0.2 : 0)
+        // e a arma comum: lanca sem folha propria nao vira Lightbringer
+        - (MAE[e.familia] && e.familia !== quer.familia ? 0.1 : 0);
       if (n > nota) { nota = n; escolhida = k; }
     }
     if (nota < 7 && !avisadas.has(key)) {

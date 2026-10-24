@@ -314,6 +314,69 @@ for _chave, _edicao, _maos in (
         },
     }
 
+# Brenn, clerigo anao da colina (Dominio da Vida). Alvo: 50 px de figura,
+# quadro 52 (multiplo de 4, exigencia da rota; a razao do guerreiro daria 53). O kit inicial dele pelo Livro do Jogador
+# e o padrao da criacao: brunea, maca, escudo, besta leve. O resto do kit
+# (martelo de guerra, malha, besta) sai por edicao, como na Dara.
+# O retrato pintado (`src/art/retratos/cleric.webp`) manda nas cores: barba
+# trancada cinza-castanha, sobreveste cinza-parda com barra dourada, o sol
+# dourado no peito. O escudo e de aco com o sol, nao redondo de madeira (o
+# dos goblins) nem o brasao do dragao (o da Dara). Cabeca descoberta: o
+# capacete e do Torvik, o outro anao, e e o que separa os dois de longe.
+PERSONAGENS['cleric'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Brenn, clerigo anao',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 52, 'height': 52},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male hill dwarf cleric. ' + ESTILO_HEROI +
+            'Skin ramp: #f0b890 light, #c98a64 mid, #7a4a34 deep shadow. Steel '
+            'ramp: #d8dde3, #9aa3ad, #4e5660. Beard and hair: grey-brown, '
+            '#b8a888 light, #8a7a5a mid, #4e4432 deep. Tabard: grey-tan #a89c80 '
+            'with a gold #e0c24a trim. Leather: warm brown. Eyes: blue-grey. '
+            'THE DWARF: short and very stout, as wide as he is tall at the '
+            'shoulders, thick arms, short sturdy legs, a big head with a broad '
+            'ruddy face, a big nose, bushy eyebrows, short grey-brown hair and '
+            'a long thick braided grey-brown beard down to his belt, tied with '
+            'gold rings. Bare head, no helmet. ARMOR: scale mail of overlapping '
+            'steel scales covering the torso and the upper arms, a grey-tan '
+            'tabard with a gold trim over it, a wide leather belt, a gold sun '
+            'holy symbol on a chain on his chest, leather gloves and heavy '
+            'leather boots. WEAPONS: a steel flanged mace in the right hand and '
+            'a steel heater shield with a golden sun emblem on the left arm. '
+            'POSE: standing in a ready stance facing the viewer, feet apart, '
+            'mace held low and out from the body, shield forward, so the '
+            'silhouette is broken and readable. Full body in frame. BACKGROUND: '
+            'plain, empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, helmet, tall slender body.'
+        ),
+    },
+}
+
+# A POSTURA DE BESTA DO BRENN, registrada da tira da edicao `brenn-besta`
+# (arma ja desenhada, madeira e aco -- nada de verde).
+PERSONAGENS['clericBesta'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/brenn-besta/tira.png',
+    'corpo': {
+        'name': 'Brenn (besta)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': (
+            'A pixel art game sprite of a short, very stout male hill dwarf '
+            'cleric with a long grey-brown beard and a bare head, in steel scale '
+            'mail and a grey tabard with gold trim, holding a light crossbow of '
+            'dark wood and steel in both hands, no shield.'),
+    },
+}
+
 # A ordem das oito vistas na tira de uma edicao, a mesma das rotacoes.
 DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
             'west', 'south-west']

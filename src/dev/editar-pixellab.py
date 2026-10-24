@@ -96,6 +96,25 @@ EDICOES.update({
 })
 
 
+# AS POSTURAS DO BRENN. A arma vem JA DESENHADA, com madeira e aco: o verde
+# recolorido depois sai chapado, sem textura (foi o defeito da espada grande,
+# do arco e da besta da Dara, e o dono nao quer que se repita).
+_BRENN_MANTEM = (
+    ' Keep everything else exactly the same: the short stout dwarf body, the '
+    'bearded face and bare head, the steel scale mail, the grey tabard with '
+    'the gold trim, the belt, the boots, the pose of the legs, the direction '
+    'each frame is facing and the colours.'
+)
+EDICOES.update({
+    'brenn-besta': (
+        'Remove the steel shield with the sun emblem and the mace. He holds one '
+        'light crossbow with both hands at waist level, pointing forward: a '
+        'dark brown wooden stock with visible wood grain, a short curved steel '
+        'bow across the front with a taut string, and a steel trigger.'
+        + _BRENN_MANTEM),
+})
+
+
 def chamar(token, metodo, caminho, corpo=None):
     req = urllib.request.Request(f'{BASE}{caminho}',
                                  data=json.dumps(corpo).encode() if corpo else None,

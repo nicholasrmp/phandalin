@@ -218,6 +218,7 @@ def main():
             (D / f'anim-postura-sem-cauda{pc}', 'duasMaos', 5),
             (D / f'anim-postura-sem-cauda-arma-machado-grande{pc}', 'duasMaos', 13),
             (D / f'anim-postura-sem-cauda-arma-malho{pc}', 'duasMaos', 10),
+            (M / f'anim-dara-sem-cauda{pc}-queda-sem-escudo', None, 0),
             (A / f'anim-postura-sem-cauda{pc}', None, 0),
             (B / f'anim-postura-sem-cauda-cauda-creme{pc}', None, 0)):
         reskin(origem, origem.parent / f'{origem.name}-dragonguard', postura, armadura_fn=dragonguard,

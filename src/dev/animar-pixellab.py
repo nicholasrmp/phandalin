@@ -329,6 +329,34 @@ CRIATURAS = {
     },
 }
 
+# Brenn, clerigo anao, de brunea com maca e escudo: a folha base dele.
+CRIATURAS['cleric'] = {
+    'sujeito': ('a short, very stout male hill dwarf cleric with a long '
+                'grey-brown beard, bare head, in steel scale mail and a '
+                'grey tabard with gold trim, a steel heater shield with a '
+                'golden sun emblem on his left arm, a steel flanged mace in '
+                'his right hand'),
+    'parado': 'mace held low at his side, shield held forward across the body',
+    'golpe': ('swinging the mace in one overhead strike {para}, a short step '
+              'in that direction, then recovering, the shield staying on his '
+              'left arm'),
+    'chao': ('the sun shield still on his left arm resting on his chest, the '
+             'mace dropped beside his right hand'),
+}
+
+# A besta do Brenn. Sem queda: o corpo no chao sem escudo sai de uma edicao
+# da queda da folha base (`brenn-queda-sem-escudo`).
+CRIATURAS['clericBesta'] = {
+    'sem_queda': True,
+    'sujeito': ('a short, very stout male hill dwarf cleric with a long '
+                'grey-brown beard, bare head, in steel scale mail and a grey '
+                'tabard with gold trim, holding a light crossbow of dark wood '
+                'and steel in both hands, no shield'),
+    'parado': 'light crossbow held in both hands at waist level, pointing forward',
+    'golpe': ('raising the light crossbow to his shoulder, aiming {para} and '
+              'shooting a bolt, then lowering it'),
+}
+
 # AS POSTURAS DE ARMA DA DARA. Sem queda: o corpo no chao e o mesmo em todas,
 # e vem da folha de espada e escudo. A arma de arco, besta e duas maos e verde
 # puro (marcador; ver `editar-pixellab.py`) e o texto repete isso, porque o
