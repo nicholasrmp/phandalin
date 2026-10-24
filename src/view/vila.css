@@ -1,0 +1,161 @@
+/* A tela da vila: mapa à esquerda, grupo e registro à direita. */
+
+.vila {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+  padding: 12px;
+  background: radial-gradient(80% 70% at 50% 40%, rgba(70, 50, 22, .45), transparent 70%), #17120c;
+  font-family: var(--font);
+  color: var(--ink);
+}
+.vila[hidden] { display: none; }
+.vila.em-cena > * { filter: brightness(.5) saturate(.8); transition: filter .2s; }
+
+.vila-topo {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 8px 14px;
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 10px;
+  box-shadow: var(--bisel);
+}
+.vila-topo h2 { margin: 0; font-family: var(--serif); color: var(--gold-escuro); font-size: 22px; }
+.vila-momento { font-weight: 700; }
+.vila-dinheiro { color: #6b4a14; }
+.vila-acoes { margin-left: auto; display: flex; gap: 8px; }
+.vila-btn {
+  font: 600 14px var(--font);
+  padding: 6px 14px;
+  color: #2b1d07;
+  background: linear-gradient(180deg, var(--gold-claro), var(--gold));
+  border: 1px solid var(--gold-escuro);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.vila-btn.discreto { background: none; color: var(--muted); }
+
+.vila-corpo { display: grid; grid-template-columns: 1fr 280px; gap: 10px; min-height: 0; }
+@media (max-width: 900px) { .vila-corpo { grid-template-columns: 1fr; } }
+
+/* O mapa: a pintura inteira, sem cortar, centrada numa moldura escura. */
+.vila-mapa {
+  position: relative;
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--gold-escuro);
+  border-radius: 10px;
+  background: #1d160d;
+  overflow: hidden;
+  container-type: size;
+}
+.vila-quadro {
+  position: relative;
+  aspect-ratio: 1264 / 848;
+  container: quadro / inline-size;
+  width: min(100cqw, 100cqh * 1264 / 848);
+  background: center / 100% 100% no-repeat;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 0 40px rgba(0, 0, 0, .5) inset;
+}
+.vila-pino {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: grid; justify-items: center; gap: 2px;
+  background: none; border: 0; padding: 0;
+  cursor: pointer;
+  font: 600 12px var(--font);
+  color: #2b1d07;
+}
+.vila-pino i {
+  width: 16px; height: 16px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: linear-gradient(135deg, #e9c46a, #a5741e);
+  border: 2px solid #4a3010;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .5);
+}
+.vila-pino span {
+  padding: 1px 6px;
+  background: rgba(245, 232, 200, .92);
+  border: 1px solid #8a6a32;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.vila-pino:hover span, .vila-pino:focus-visible span { background: #fff4d8; outline: none; }
+.vila-pino.fechado { opacity: .5; }
+/* Alguém ali tem algo para o grupo: um "!" dourado em cima do marcador. */
+.vila-pino.novidade::before {
+  content: '!';
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  width: 14px; height: 14px; display: grid; place-items: center;
+  font: 800 11px var(--font); color: #2b1d07;
+  background: #ffd76a; border: 1px solid #4a3010; border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 215, 106, .9);
+  animation: vila-pulso 1.6s ease-in-out infinite;
+}
+@keyframes vila-pulso { 50% { box-shadow: 0 0 12px rgba(255, 215, 106, 1); } }
+@media (prefers-reduced-motion: reduce) { .vila-pino.novidade::before { animation: none; } }
+/* Pintura pequena: os nomes se atropelam no centro da vila. Só o marcador; o
+   nome aparece ao passar o mouse (ou no foco do teclado). */
+@container quadro (max-width: 900px) {
+  .vila-pino span { display: none; }
+  .vila-pino:hover, .vila-pino:focus-visible { z-index: 1; }
+  .vila-pino:hover span, .vila-pino:focus-visible span { display: block; }
+}
+.vila-pino.fechado span::after { content: ' · fechado'; color: #8a4030; font-weight: 400; }
+
+.vila-lado { display: grid; grid-template-rows: auto 1fr; gap: 10px; min-height: 0; }
+.vila-grupo { display: grid; gap: 6px; }
+.vila-heroi {
+  display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center;
+  padding: 5px 8px 5px 5px;
+  background: var(--papelada);
+  border: 1px solid var(--line-forte);
+  border-radius: 8px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.vila-heroi:hover { border-color: var(--gold-escuro); }
+.vila-retrato {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: url('../art/hud/slot.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated; overflow: hidden;
+}
+.vila-retrato canvas { width: 32px !important; height: 32px !important; }
+.vila-heroi strong { font-family: var(--serif); color: var(--gold-escuro); }
+.vila-heroi small { display: block; font-size: 11px; color: var(--muted); }
+.vila-vida { position: relative; height: 10px; margin-top: 3px; background: rgba(60, 40, 20, .35); border-radius: 3px; }
+.vila-vida i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #7fd38c, #3d8b4b); border-radius: 3px; }
+.vila-vida span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 9px; font-weight: 700; color: #fff6e0; text-shadow: 0 1px 0 #000; }
+
+.vila-log {
+  margin: 0; padding: 8px 10px 8px 26px;
+  overflow-y: auto;
+  background: rgba(245, 232, 200, .9);
+  border: 1px solid var(--line-forte);
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.vila-log li { margin-bottom: 4px; }
+
+.vila-diario {
+  position: fixed; inset: 8% 15%;
+  z-index: 86;
+  overflow-y: auto;
+  padding: 18px 24px;
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .65);
+}
+.vila-diario[hidden] { display: none; }
+.vila-diario h3 { margin: 0 0 6px; font-family: var(--serif); color: var(--gold-escuro); }
+.vila-diario h4 { margin: 12px 0 4px; }
+.vila-diario li { margin-bottom: 8px; }
+.vila-diario li.feita strong { text-decoration: line-through; color: var(--muted); }
+.vila-diario p { margin: 2px 0; font-size: 13px; }
+@media (max-width: 720px) { .vila-diario { inset: 4%; } }

@@ -45,6 +45,121 @@ export function quadro(nome, i) {
   return cv;
 }
 
+/**
+ * Domo de proteção em 2.5D, desenhado ponto a ponto em pixel art: uma BOLHA
+ * de luz, não uma gaiola nem uma redoma. Nada de barras cruzando a figura — o
+ * volume vem do véu translúcido em cascas (mais denso na borda, como vidro
+ * visto de lado), da elipse no chão, da luz na beira esquerda e de um reflexo.
+ * Sai em camadas que o tabuleiro intercala na ordem de profundidade:
+ *   tras   — a borda densa de cima, o contorno e a metade de trás do chão;
+ *   frente — o miolo do véu, tudo abaixo do centro, o arco da frente do chão
+ *            e o reflexo;
+ *   brilho — o contorno em branco, para o lampejo quando a bolha fecha.
+ *   raio: meia largura no chão (a casa tem 32); altura: até o topo, em px.
+ */
+const DOMO_CORES = {
+  ouro: [232, 195, 90],
+  violeta: [165, 121, 216],
+};
+const DOMO_BRANCO = [244, 240, 228];
+// Meio elipsoide: topo redondo de cúpula, e o `m` do véu fica exato na silhueta.
+const PERFIL = (s) => Math.sqrt(Math.max(0, 1 - s ** 2));
+// O véu em degraus (pixel art: nada de degradê contínuo). `m` é quão perto da
+// borda o pixel está, de 0 (meio) a 1 (borda).
+const VEU = (m) => (m > 0.95 ? 0.36 : m > 0.86 ? 0.2 : m > 0.7 ? 0.09 : 0.03);
+const domosCache = new Map();
+function domoCamadas(cor, raio, altura) {
+  const chave = `${cor}|${raio}|${altura}`;
+  if (domosCache.has(chave)) return domosCache.get(chave);
+  const [r, g, b] = DOMO_CORES[cor] ?? DOMO_CORES.ouro;
+  const claro = [r, g, b].map((v) => Math.round(v + (255 - v) * 0.45));
+  const larg = raio * 2 + 5;
+  const alt = altura + Math.ceil(raio / 2) + 5;
+  const ox = raio + 2; // o centro do chão dentro do quadro
+  const oy = altura + 2;
+  const novo = () => new Uint8ClampedArray(larg * alt * 4);
+  const tras = novo();
+  const frente = novo();
+  const brilho = novo();
+  const px = (buf, x, y, [cr, cg, cb], a) => {
+    if (x < 0 || y < 0 || x >= larg || y >= alt) return;
+    const i = (y * larg + x) * 4;
+    buf[i] = cr; buf[i + 1] = cg; buf[i + 2] = cb; buf[i + 3] = Math.round(a * 255);
+  };
+  // O véu, em cascas. A borda densa de cima vai atrás da figura; tudo abaixo
+  // do centro fica na frente (senão o chão da casa da frente o apagaria).
+  for (let y = 0; y < alt; y++) {
+    for (let x = 0; x < larg; x++) {
+      const dx = x - ox;
+      const dy = y - oy; // < 0 acima do chão
+      let m = -1;
+      if (dy <= 0) {
+        const sv = -dy / altura;
+        if (sv <= 1 && Math.abs(dx) <= raio * PERFIL(sv)) m = Math.sqrt((dx / raio) ** 2 + sv ** 2);
+      } else {
+        const e = (dx / raio) ** 2 + (dy / (raio / 2)) ** 2;
+        if (e <= 1) m = Math.sqrt(e);
+      }
+      if (m >= 0) px(dy > 0 || m <= 0.86 ? frente : tras, x, y, [r, g, b], VEU(m));
+    }
+  }
+  // O contorno, traçado linha a linha (sem buracos no topo) e limpo dos
+  // degraus em L (comparando com o último ponto MANTIDO).
+  const lado = [];
+  let xa = Math.round(raio);
+  for (let k = 0; k <= altura; k++) {
+    const xb = Math.round(raio * PERFIL(k / altura));
+    for (let x = xa; x >= xb; x--) lado.push([x, -k]);
+    xa = xb;
+  }
+  const unicos = lado.filter((p, i) => i === 0 || p[0] !== lado[i - 1][0] || p[1] !== lado[i - 1][1]);
+  const caminho = [];
+  for (let i = 0; i < unicos.length; i++) {
+    const p = unicos[i];
+    const c = unicos[i + 1];
+    const a = caminho[caminho.length - 1];
+    if (a && c && a[0] !== c[0] && a[1] !== c[1] && (a[0] === p[0] || a[1] === p[1]) && (c[0] === p[0] || c[1] === p[1])) continue;
+    caminho.push(p);
+  }
+  // Luz na beira esquerda e no topo; o lado direito, na sombra, mais fraco.
+  for (const [x, y] of caminho) {
+    for (const s of [-1, 1]) {
+      if (s === -1 && x === 0) continue;
+      const sv = -y / altura;
+      const [c, a] = s < 0 || sv > 0.8 ? [claro, sv > 0.12 ? 0.9 : 0.6] : [[r, g, b], 0.45];
+      px(tras, ox + s * x, oy + y, c, a);
+      px(brilho, ox + s * x, oy + y, DOMO_BRANCO, 0.9);
+    }
+  }
+  // A elipse do chão: a metade de trás fraca, a da frente mais forte.
+  const vistos = new Set();
+  for (let i = 0; i < 720; i++) {
+    const t = (i / 720) * Math.PI * 2;
+    const qx = Math.round(ox + raio * Math.cos(t));
+    const qy = Math.round(oy + (raio / 2) * Math.sin(t));
+    const k = `${qx},${qy}`;
+    if (vistos.has(k)) continue;
+    vistos.add(k);
+    if (qy > oy) px(frente, qx, qy, [r, g, b], 0.55);
+    else px(tras, qx, qy, [r, g, b], 0.25);
+  }
+  // O reflexo: um risco curvo, branco, no alto à esquerda — é ele que diz "bolha".
+  for (let i = 0; i <= 60; i++) {
+    const sv = 0.55 + (i / 60) * 0.3;
+    px(frente, Math.round(ox - raio * PERFIL(sv) + 4), Math.round(oy - altura * sv), DOMO_BRANCO, 0.85);
+  }
+  const tela = (buf) => {
+    const cv = document.createElement('canvas');
+    cv.width = larg;
+    cv.height = alt;
+    cv.getContext('2d').putImageData(new ImageData(buf, larg, alt), 0, 0);
+    return cv;
+  };
+  const camadas = { tras: tela(tras), frente: tela(frente), brilho: tela(brilho), ox, oy };
+  domosCache.set(chave, camadas);
+  return camadas;
+}
+
 /** Quantos quadros tem um efeito (0 se ele não existe). */
 export const temEfeito = (nome) => EFEITOS[nome]?.quadros.length ?? 0;
 const EASE_IN_OUT = (k) => (k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2);
@@ -575,11 +690,23 @@ export class Fx {
    * `sumir` (segundos): segura o último quadro e esmaece, para efeito que
    * termina cheio (a poça de graxa) não sumir de estalo.
    */
-  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0 } = {}) {
+  // `de`: a casa de quem lançou. O desenho que vem da esquerda (o chicote)
+  // vira de lado quando quem lançou está à direita na tela.
+  // `entrar`: segundos para aparecer (lampejo), em vez de surgir de estalo.
+  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0, de = null, entrar = 0 } = {}) {
     const n = temEfeito(nome);
     if (!n) return this;
     const anim = n / fps;
-    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura });
+    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura, de: de && { ...de }, entrar });
+  }
+
+  /**
+   * Domo de proteção (Escudo da Fé, Santuário, Proteção contra o Bem e o
+   * Mal): sobe do chão, fica um instante e se apaga.
+   */
+  // `id`: de quem a bolha protege — ela acompanha a figura se ela andar.
+  domo(tile, { cor = 'ouro', dur = 1.4, raio = 36, altura = 68, id = null } = {}) {
+    return this.add({ kind: 'domo', tile: { ...tile }, cor, dur, raio, altura, id, f: tile.f ?? 1 });
   }
 
   impact(tile, { color = '#ffd27a', count = 10, spread = 46, dur = 0.42 } = {}) {
@@ -675,6 +802,7 @@ export class Fx {
     for (const it of this.items) {
       const k = Math.min(1, it.t / it.dur);
 
+
       if (it.kind === 'ring') {
         const r = it.radius * EASE_OUT(k);
         const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
@@ -763,6 +891,75 @@ export class Fx {
   }
 
   // ---- desenho: acima das figuras -----------------------------------------
+
+  /**
+   * Os domos em cena, com a casa em que estão AGORA (quem anda leva a bolha)
+   * e as duas diagonais de profundidade: a de trás (a casa) e a da frente (a
+   * mais perto da câmera que a pegada ocupa). Lista vazia quase sempre.
+   */
+  domosAtivos(board) {
+    const out = [];
+    for (const it of this.items) {
+      if (it.kind !== 'domo') continue;
+      const c = it.id != null ? board.enc.combatants.find((q) => q.id === it.id) : null;
+      if (c && !board.figuraVisivel(c)) continue; // a bolha no escuro não entrega ninguém
+      const w = it.id != null ? this.positionFor(it.id) : null;
+      const ax = w ? w.x : c ? c.pos.x : it.tile.x;
+      const ay = w ? w.y : c ? c.pos.y : it.tile.y;
+      const rx = Math.round(ax);
+      const ry = Math.round(ay);
+      const v = board.toView(rx, ry);
+      let dFrente = v.vx + v.vy;
+      for (const [i, j] of [[it.f - 1, 0], [0, it.f - 1], [it.f - 1, it.f - 1]]) {
+        const q = board.toView(rx + i, ry + j);
+        dFrente = Math.max(dFrente, q.vx + q.vy);
+      }
+      const meio = (it.f - 1) / 2;
+      out.push({ it, x: ax + meio, y: ay + meio, dTras: v.vx + v.vy, dFrente });
+    }
+    return out;
+  }
+
+  /** As camadas dos domos de uma diagonal (o tabuleiro chama no laço de profundidade). */
+  domosNaDiagonal(ctx, board, domos, d, camada) {
+    for (const o of domos) {
+      if ((camada === 'tras' ? o.dTras : o.dFrente) === d) this.desenharDomo(ctx, board, o, camada);
+    }
+  }
+
+  /**
+   * Uma camada do domo. A bolha INFLA (passa um pouco do tamanho e assenta aos
+   * 0,35 s), lampeja em branco quando fecha, fica, e no fim se abre e some.
+   * O tamanho anda em passos de 4 px: poucas entradas no cache.
+   */
+  desenharDomo(ctx, board, o, camada) {
+    const { it } = o;
+    const t = it.t;
+    let e = 1;
+    let extra = 0;
+    let alfa = 1;
+    if (t < 0.25) e = 1.06 * EASE_OUT(t / 0.25);
+    else if (t < 0.35) e = 1.06 - 0.06 * ((t - 0.25) / 0.1);
+    const fim = it.dur * 0.65;
+    if (t > fim) {
+      const k = Math.min(1, (t - fim) / (it.dur - fim));
+      alfa = 1 - k;
+      extra = k;
+    }
+    const altura = 4 * Math.round((it.altura * e + 4 * extra) / 4);
+    if (altura < 8) return;
+    const raio = 2 * Math.round((it.raio * (0.7 + 0.3 * e) + 3 * extra) / 2);
+    const d = domoCamadas(it.cor, raio, altura);
+    const { sx, sy } = board.centerF(o.x, o.y);
+    const x0 = Math.round(sx - d.ox);
+    const y0 = Math.round(sy - d.oy);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = alfa;
+    ctx.drawImage(d[camada], x0, y0);
+    if (camada === 'tras' && t >= 0.3 && t < 0.38) ctx.drawImage(d.brilho, x0, y0);
+    ctx.restore();
+  }
 
   drawOver(ctx, board) {
     for (const it of this.items) {
@@ -859,6 +1056,8 @@ export class Fx {
           ctx.save();
           ctx.imageSmoothingEnabled = false;
           if (t > it.anim) ctx.globalAlpha = Math.max(0, 1 - (t - it.anim) / (it.dur - it.anim));
+          if (it.entrar && t < it.entrar) ctx.globalAlpha = t / it.entrar;
+          if (it.de && at(it.de).sx > sx) { ctx.translate(2 * Math.round(sx), 0); ctx.scale(-1, 1); }
           ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
           ctx.restore();
           break;

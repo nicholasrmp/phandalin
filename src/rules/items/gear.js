@@ -101,7 +101,7 @@ export const GEAR = {
   sabao: item('sabao', 'Sabão', 0.02, 0, 'Para tirar o que a aventura deixou.'),
   apito: item('apito', 'Apito de sinalização', 0.05, 0, 'Ouve-se de longe. Inclusive por quem não devia.'),
   pedraDeAmolar: item('pedraDeAmolar', 'Pedra de amolar', 0.01, 1, 'Devolve o fio à lâmina.'),
-  talhaEModa: item('talhaEModa', 'Talha e moitão', 2, 5, 'Levanta quatro vezes o peso que você levantaria.'),
+  talhaEModa: item('talhaEModa', 'Talha e moitão', 1, 5, 'Levanta quatro vezes o peso que você levantaria.'),
   giz: pilha('giz', 'Giz', 0.01, 0, 'Para marcar o caminho de volta.'),
   perfume: item('perfume', 'Perfume', 5, 0, 'Uma ampola. Pode valer mais que uma mentira bem contada.'),
   roupaComum: item('roupaComum', 'Roupa comum', 0.5, 3, 'Não chama atenção, que é o ponto.'),

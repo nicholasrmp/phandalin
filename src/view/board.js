@@ -480,6 +480,16 @@ export class Board {
   }
 
   floatText(pos, text, color, big = false) {
+    // Danos que chegam juntos na mesma casa (os dardos do Míssil, o golpe e a
+    // chuva da Saraivada) viram um número só, somado — e não três empilhados.
+    const m = /^-(\d+)$/.exec(text);
+    const junto = m && this.floaters.find((f) => f.x === pos.x && f.y === pos.y && f.color === color && f.t < 0.15 && /^-\d+$/.test(f.text));
+    if (junto) {
+      const total = Number(junto.text.slice(1)) + Number(m[1]);
+      junto.text = `-${total}`;
+      junto.big = junto.big || big || total >= 10;
+      return;
+    }
     this.floaters.push({ x: pos.x, y: pos.y, text, color, big, t: 0 });
   }
 
@@ -1349,13 +1359,13 @@ export class Board {
       const c = t && this._copas.get(`${t.x},${t.y}`);
       if (c && c.frac > 0.1) for (const k of c.arvores) this._esmaecer.add(k);
     }
+    // Domos de proteção em cena (quase sempre nenhum): entram no laço de
+    // profundidade, pela diagonal da casa, como as figuras.
+    const domos = this.fx.domosAtivos(this);
     let lastD = -1;
     for (const cell of this.order) {
       // Ao mudar de diagonal, desenha quem estava na anterior.
-      if (cell.d !== lastD && lastD >= 0) {
-        this.descarregarObjetos(ctx);
-        this.drawOccupantsOnDiagonal(ctx, byView, lastD);
-      }
+      if (cell.d !== lastD && lastD >= 0) this.fecharDiagonal(ctx, byView, lastD, domos);
       lastD = cell.d;
 
       const { x, y, vx, vy } = cell;
@@ -1370,7 +1380,7 @@ export class Board {
         }
       }
       if (this.modo && this.modo.limite > 0) {
-        const d = distanceFt(this.modo.actor.pos, { x, y });
+        const d = distanceFt(this.modo.origem ?? this.modo.actor.pos, { x, y });
         if (d > 0 && d <= this.modo.alcance) {
           this.marcar(ctx, x, y, CHAO_ALCANCE.fill, CHAO_ALCANCE.stroke);
         } else if (d > 0 && d <= this.modo.limite) {
@@ -1399,8 +1409,8 @@ export class Board {
       }
     }
     if (lastD >= 0) {
-      this.descarregarObjetos(ctx);
-      this.drawOccupantsOnDiagonal(ctx, byView, lastD);
+      this.fecharDiagonal(ctx, byView, lastD, domos);
+      this.fx.domosNaDiagonal(ctx, this, domos, lastD, 'frente');
     }
     this.desenharRaioX(ctx);
     if (this._visao) this.desenharEscuridao(ctx, byView);
@@ -1428,6 +1438,20 @@ export class Board {
     // Fora do `restore` do tremor: o cartão é leitura, e texto que sacode fica
     // ilegível justamente no quadro em que o jogador quer ler.
     this.drawCartao(ctx);
+  }
+
+  /**
+   * Fecha a diagonal `d`: o que está em pé nela, na ordem certa com os domos.
+   * A frente dos domos da diagonal de trás vem DEPOIS do chão desta (o arco
+   * da frente pisa nele) e antes do que está em pé aqui.
+   */
+  fecharDiagonal(ctx, byView, d, domos) {
+    if (domos.length) {
+      this.fx.domosNaDiagonal(ctx, this, domos, d - 1, 'frente');
+      this.fx.domosNaDiagonal(ctx, this, domos, d, 'tras');
+    }
+    this.descarregarObjetos(ctx);
+    this.drawOccupantsOnDiagonal(ctx, byView, d);
   }
 
   drawOccupantsOnDiagonal(ctx, byView, d) {
@@ -1459,7 +1483,9 @@ export class Board {
     for (const c of byView.values()) {
       if (!c.dead && this.figuraVisivel(c) && this._visao.has(`${c.pos.x},${c.pos.y}`)) figuras.push(c);
     }
-    const chave = [this.rot, w, h, figuras.map((c) => `${c.pos.x},${c.pos.y}`).join(';')].join('|');
+    // Quem tem bolha de proteção leva um recorte maior (a bolha passa da figura).
+    const domoDe = new Map(this.fx.domosAtivos(this).filter((o) => o.it.id != null).map((o) => [o.it.id, o.it]));
+    const chave = [this.rot, w, h, figuras.map((c) => `${c.pos.x},${c.pos.y}${domoDe.has(c.id) ? 'd' : ''}`).join(';')].join('|');
     if (this._mascara?.visao !== this._visao || this._mascara.chave !== chave) {
       const nitida = this._mascara?.nitida ?? document.createElement('canvas');
       const borrada = this._mascara?.borrada ?? document.createElement('canvas');
@@ -1497,7 +1523,15 @@ export class Board {
       for (const c of figuras) {
         m.globalAlpha = this._visao.get(`${c.pos.x},${c.pos.y}`) === CLARO ? 1 : 0.45;
         const { sx, sy } = this.center(c.pos.x, c.pos.y);
-        m.fillRect(sx - 30, sy - 84, 60, 84);
+        const domo = domoDe.get(c.id);
+        if (domo) {
+          // Centrado na pegada (a Grande ocupa 2x2) e da largura da bolha.
+          const meio = (domo.f - 1) / 2;
+          const q = this.centerF(c.pos.x + meio, c.pos.y + meio);
+          const meia = domo.raio + 4;
+          m.fillRect(q.sx - meia, q.sy - (domo.altura + 16), meia * 2, domo.altura + 34);
+        }
+        else m.fillRect(sx - 30, sy - 84, 60, 84);
       }
       m.globalAlpha = 1;
       const b = borrada.getContext('2d');
@@ -2000,6 +2034,12 @@ export class Board {
       // estranho não pode derrubar o quadro inteiro do tabuleiro.
       const spell = SPELLS[modo.spellId];
       if (!spell) return null;
+      // Raio Lunar, Esfera Flamejante já no chão: o limite é quanto a zona
+      // anda, contado de onde ela está — não o alcance da magia.
+      const zona = spell.zona?.movel && actor.magiasAtivas?.[spell.id]?.zona;
+      if (zona?.centro) {
+        return { kind: 'spell', actor, spell, rotulo: `Mover ${spell.name}`, origem: zona.centro, alcance: spell.zona.movel, limite: spell.zona.movel };
+      }
       return {
         kind: 'spell',
         actor,
@@ -2210,8 +2250,8 @@ export class Board {
     // Quadrado vazio (ou aliado): o que o jogador precisa ali é só saber se a
     // ação alcança aquele ponto.
     if (!alvo || alvo.side === modo.actor.side || this.areaMirada) {
-      const d = distanceFt(modo.actor.pos, { x: t.x, y: t.y });
-      linhas.push({ rotulo: 'distância', valor: `${d} pés` });
+      const d = distanceFt(modo.origem ?? modo.actor.pos, { x: t.x, y: t.y });
+      linhas.push({ rotulo: modo.origem ? 'distância da zona' : 'distância', valor: `${d} pés` });
       const a = this.areaMirada;
       if (a) {
         linhas.push({ rotulo: 'inimigos na área', valor: `${a.inimigos}`, cor: a.inimigos ? CARTAO.gold : undefined });

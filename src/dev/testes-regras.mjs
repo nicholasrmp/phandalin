@@ -1839,5 +1839,170 @@ teste('Esfera Flamejante não aparece em casa ocupada e queima o dono encostado'
   assert.ok(ilvan.hp < 100, 'quem conjurou encostado também queima');
 });
 
+// ---- pendências da rodada 2 (R30, A18) ----------------------------------------
+
+teste('golpe com dano extra pede UM teste de concentração, pela soma', () => {
+  const { enc, h, foes, log } = comHeroi('paladino', 5, { magias: ['golpeMarcante'] });
+  foes[0].hp = foes[0].maxHp = 300;
+  foes[0].concentrating = { spellId: 'raioDeBruxa', condition: null, targets: [], rounds: 10 };
+  assert.ok(enc.castSpell(h, 'golpeMarcante').ok);
+  d20Fixo(enc, 18);
+  enc.attackAction(h, foes[0], 'adaga');
+  const testes = log.filter((e) => /(mantém|perde) a concentração/.test(e.text) && e.text.startsWith(foes[0].name));
+  // O paladino de 5º ataca duas vezes: um teste por golpe, não por parcela.
+  const golpes = log.filter((e) => /^Herói acerta/.test(e.text));
+  assert.equal(testes.length, golpes.length, 'um teste por golpe');
+  // O primeiro golpe leva a arma e o Golpe Marcante: a CD sai da soma.
+  const arma = Number(golpes[0].text.match(/(\d+) de dano/)[1]);
+  const marcante = Number(log.find((e) => /Golpe Marcante: \+\d+/.test(e.text)).text.match(/\+(\d+)/)[1]);
+  assert.ok(JSON.stringify(testes[0]).includes(`${arma + marcante} de dano`), 'a CD sai da soma do golpe');
+});
+
+teste('Esculpir Magias poupa os aliados com menos PV, não a primeira casa', () => {
+  const { enc, party } = montar({ nivel: 3 });
+  const ilvan = party[ILVAN];
+  if (!ilvan.features.includes('sculptSpells')) ilvan.features.push('sculptSpells');
+  const [forte, medio, fraco] = [party[DARA], party[BRENN], party[PIP]];
+  forte.hp = 40; medio.hp = 20; fraco.hp = 5;
+  const casas = [forte, medio, fraco].map((c) => ({ ...c.pos }));
+  const papel = new Map(enc.afetadosPelaArea(ilvan, getSpell('maosFlamejantes'), casas, 1).map((r) => [r.c, r.papel]));
+  assert.equal(papel.get(fraco), 'poupado');
+  assert.equal(papel.get(medio), 'poupado');
+  assert.equal(papel.get(forte), 'aliado');
+});
+
+// ---- uma fonte de dano, Esculpir Magias (chefe da folha K) ----------------------
+
+const testesDeConcentracao = (log, nome) => log.filter((e) => /(mantém|perde) a concentração/.test(e.text) && e.text.startsWith(nome));
+
+teste('quem cai na mordida não leva falha de morte pelo veneno do mesmo golpe', () => {
+  const { enc, party, foes, log } = montar({ lado: 'foes', foes: [['aranhaGigante', { x: 3, y: 5 }]] });
+  const pip = party[PIP];
+  pip.pos = { x: 2, y: 5 };
+  pip.hp = 1;
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  const res = enc.attackAction(foes[0], pip, 'Mordida');
+  assert.ok(hasCondition(pip, 'inconsciente') || pip.dead, JSON.stringify(res) + ' ' + log.slice(-6).map((e) => e.text).join(' | '));
+  if (!pip.dead) assert.equal(pip.deathSaves.failures, 0, 'o veneno é o mesmo golpe');
+});
+
+teste('Míssil Mágico: um teste de concentração por dardo', () => {
+  const { enc, party, foes, log } = montar({ nivel: 3 });
+  foes[0].hp = foes[0].maxHp = 100;
+  foes[0].concentrating = { spellId: 'raioDeBruxa', condition: null, targets: [], rounds: 10 };
+  resistenciasDao(enc, true);
+  assert.ok(enc.castSpell(party[ILVAN], 'misselMagico', { target: foes[0] }).ok);
+  assert.equal(testesDeConcentracao(log, foes[0].name).length, 3);
+});
+
+teste('Saraivada de Espinhos: a chuva é outra fonte e aparece no registro', () => {
+  const { enc, h, foes, log } = comHeroi('patrulheiro', 5, { magias: ['saraivadaDeEspinhos'], foes: [['ogro', { x: 6, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 300;
+  foes[0].concentrating = { spellId: 'raioDeBruxa', condition: null, targets: [], rounds: 10 };
+  // Conta os testes de concentração sem deixar a concentração cair no meio.
+  const testes = [];
+  enc.concentrationCheck = (c, dano) => { if (c === foes[0]) testes.push(dano); };
+  assert.ok(enc.castSpell(h, 'saraivadaDeEspinhos').ok);
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  const n = log.length;
+  enc.attackAction(h, foes[0], 'arcoLongo');
+  const depois = log.slice(n);
+  assert.ok(depois.some((e) => /sofre \d+ de perfurante \(Saraivada de Espinhos\)/.test(e.text)), depois.map((e) => e.text).join(' | '));
+  const golpes = depois.filter((e) => /^Herói acerta/.test(e.text)).length;
+  assert.equal(testes.length, golpes + 1, 'o golpe e a chuva, cada um com o seu');
+});
+
+teste('Riso Histérico: um teste por golpe, não por parcela', () => {
+  const { enc, h, foes, log } = comHeroi('paladino', 5, { magias: ['golpeMarcante'] });
+  foes[0].hp = foes[0].maxHp = 300;
+  addCondition(foes[0], 'gargalhando', { source: 'x', data: { save: 'wis', dc: 30 } });
+  let testes = 0;
+  const original = enc.resistencia.bind(enc);
+  enc.resistencia = (c, save, dc, o) => { if (c === foes[0] && save === 'wis') testes += 1; return { ...original(c, save, dc, o), success: false }; };
+  assert.ok(enc.castSpell(h, 'golpeMarcante').ok);
+  d20Fixo(enc, 18);
+  enc.attackAction(h, foes[0], 'adaga');
+  const golpes = log.filter((e) => /^Herói acerta/.test(e.text)).length;
+  assert.equal(testes, golpes);
+});
+
+teste('Esculpir Magias não poupa o próprio mago', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const ilvan = party[ILVAN];
+  if (!ilvan.features.includes('sculptSpells')) ilvan.features.push('sculptSpells');
+  const papeis = enc.afetadosPelaArea(ilvan, getSpell('bolaDeFogo'), [{ ...ilvan.pos }, { ...party[DARA].pos }], 3);
+  assert.equal(papeis.find((r) => r.c === ilvan)?.papel, 'aliado');
+  assert.equal(papeis.find((r) => r.c === party[DARA])?.papel, 'poupado');
+});
+
+teste('herói já caído: a mordida com veneno conta falhas uma vez só', () => {
+  const { enc, party, foes } = montar({ lado: 'foes', foes: [['aranhaGigante', { x: 3, y: 5 }]] });
+  const pip = party[PIP];
+  pip.pos = { x: 2, y: 5 };
+  pip.maxHp = 200;
+  pip.hp = 0;
+  addCondition(pip, 'inconsciente');
+  addCondition(pip, 'caido');
+  pip.deathSaves = { successes: 0, failures: 0 };
+  resistenciasDao(enc, false);
+  // Crítico: a mordida dá duas falhas; o veneno do mesmo golpe não soma mais duas.
+  d20Fixo(enc, 20);
+  enc.attackAction(foes[0], pip, 'Mordida');
+  assert.ok(!pip.dead, 'o veneno não é um segundo golpe');
+  assert.equal(pip.deathSaves.failures, 2);
+});
+
+teste('arrastado pelos espinhos: cada 1,5 m é um teste à parte do golpe', () => {
+  const { enc, h, foes } = comHeroi('paladino', 5, { magias: ['golpeTrovejante'], foes: [['ogro', { x: 3, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 300;
+  foes[0].concentrating = { spellId: 'raioDeBruxa', condition: null, targets: [], rounds: 10 };
+  const testes = [];
+  enc.concentrationCheck = (c, dano) => { if (c === foes[0]) testes.push(dano); };
+  // Espinhos em toda a fileira atrás do ogro.
+  enc.zonas.push({ nome: 'Crescimento de Espinhos', danoPorPasso: '2d4', casas: new Set(['4,5', '5,5', '6,5', '7,5']), dono: h });
+  assert.ok(enc.castSpell(h, 'golpeTrovejante').ok);
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  const antes = foes[0].pos.x;
+  enc.attackAction(h, foes[0], 'adaga');
+  const passos = foes[0].pos.x - antes;
+  assert.ok(passos > 0, 'foi empurrado');
+  // O golpe (com o trovão) num teste, cada passo nos espinhos no seu; o
+  // segundo ataque do Ataque Extra, se acertou, no dele.
+  assert.ok(testes.length >= 1 + passos, `testes ${testes.join(',')} · passos ${passos}`);
+});
+
+teste('o mago dentro da própria Bola de Fogo sofre o dano', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const ilvan = party[ILVAN];
+  if (!ilvan.features.includes('sculptSpells')) ilvan.features.push('sculptSpells');
+  ilvan.hp = ilvan.maxHp = 200;
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(ilvan, 'bolaDeFogo', { point: { ...ilvan.pos } }).ok);
+  assert.ok(ilvan.hp < 200, 'Esculpir Magias poupa os outros, não ele');
+});
+
+teste('mover o Raio Lunar conta 60 pés do feixe, não do conjurador', () => {
+  // Campo comprido: o feixe longe do Brenn, para as duas medidas divergirem.
+  const field = new Battlefield(40, 3, Array(3).fill('.'.repeat(40)));
+  const party = makeParty({ nivel: 3 });
+  party.forEach((c, i) => { c.pos = { x: i, y: 0 }; });
+  const brenn = party[BRENN];
+  const enc = new Encounter({ battlefield: field, party, foes: [makeMonster('goblin', { x: 39, y: 2 })], rng: makeRng(1), onLog: () => {} });
+  enc.firstSide = 'party';
+  enc.round = 1;
+  enc.beginSide('party');
+  brenn.spellcasting.prepared.push('raioLunar');
+  assert.ok(enc.castSpell(brenn, 'raioLunar', { point: { x: 25, y: 1 } }).ok);
+  enc.beginSide('foes');
+  enc.beginSide('party');
+  // A 60 pés do feixe e a 175 do Brenn (além dos 120 da magia): pode.
+  assert.ok(enc.canCast(brenn, 'raioLunar', { point: { x: 37, y: 1 } }).ok, enc.canCast(brenn, 'raioLunar', { point: { x: 37, y: 1 } }).why);
+  // A 65 pés do feixe: não.
+  assert.equal(enc.canCast(brenn, 'raioLunar', { point: { x: 38, y: 1 } }).ok, false);
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 if (falhas) process.exit(1);

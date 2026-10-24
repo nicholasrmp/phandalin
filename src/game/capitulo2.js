@@ -787,13 +787,13 @@ export function criarCapitulo2(app, config) {
             vivo
               ? 'Sildar Hallwinter, da Aliança dos Lordes, anda devagar, mas anda. Ele conta o que ouviu dos goblins: Gundren e o mapa dele foram levados ao Castelo Dentefino, a mando de alguém que chamam de Aranha Negra. Sildar oferece 50 peças de ouro para ser escoltado a Phandalin.'
               : 'Do anão, nenhum sinal: foi levado para outro lugar. A trilha volta para a estrada, e a estrada leva a Phandalin.',
-            'Os suprimentos com a marca do leão azul ficam esperando uma carroça. O próximo capítulo ainda está sendo escrito.',
+            'Os suprimentos com a marca do leão azul ficam esperando uma carroça. A estrada leva a Phandalin.',
           ],
         },
       ],
-      escolhas: [{ rotulo: 'Voltar ao menu', valor: 'menu', primaria: true }],
+      escolhas: [{ rotulo: 'Seguir para Phandalin', valor: 'vila', primaria: true }],
     });
-    app.encerrarPartida();
+    app.irParaVila(enc.combatants.filter((c) => c.side === 'party' && !c.dead), { chegando: true });
   }
 
   // --------------------------------------------------------- conversas ----

@@ -149,6 +149,26 @@ export const MAPA_CAVERNA = [
   '###################',
 ];
 
+// A RUA DE PHANDALIN (capítulo 3): a briga com os Marcarrubra. Uma rua de
+// terra entre casas (provisórias: blocos de parede até a arte), barris e uma
+// carroça. A taverna Gigante Adormecido é o bloco grande do sudeste.
+export const MAPA_RUA = [
+  'TT,,,####,,,,####,,,TT',
+  'T,,,,####,,,,####,,,,T',
+  ',,,,,####,,o,####,,,,,',
+  ',,,,,,,,,,,,,,,,,,,,,,',
+  '::::::::::::::::::::::',
+  '::::::::::::::::::::::',
+  '::::::::::::::::::::::',
+  ',,,,,,,,,,,,,,,,o,,,,,',
+  ',,,####,,,,,,,,######,',
+  ',,,####,,b,,,,,######,',
+  ',,,####,,,,,,,,######,',
+  ',,,,,,,,,,,r,,,,,,,,,,',
+  'TT,,,,,,,,,,,,,,,,,,TT',
+  'TTTTTTTT,,,,,,TTTTTTTT',
+];
+
 /** O grupo escolta a carroça: logo à frente dela, na estrada, olhando para leste. */
 export const PARTY_SPOTS_EMBOSCADA = [
   { x: 5, y: 11 }, { x: 4, y: 12 }, { x: 4, y: 11 }, { x: 3, y: 13 },
@@ -170,6 +190,18 @@ export function mapaDo(variante = 'padrao') {
       olhar: { dx: 1, dy: 0 },
       // Os goblins estão escondidos: rola-se surpresa no começo (combat.js).
       emboscada: { emboscadores: 'foes' },
+    };
+  }
+  if (variante === 'rua') {
+    return {
+      terreno: MAPA_RUA,
+      altura: null,
+      objetos: [],
+      // O grupo vem pela rua, do oeste; os Marcarrubra esperam a leste, na
+      // frente do Gigante Adormecido.
+      grupo: [{ x: 3, y: 4 }, { x: 3, y: 6 }, { x: 2, y: 5 }, { x: 4, y: 5 }],
+      olhar: { dx: 1, dy: 0 },
+      cena: 'rua',
     };
   }
   if (variante === 'esconderijo') {
@@ -220,6 +252,15 @@ export function buildFoes(variante = 'padrao') {
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
+  if (variante === 'rua') {
+    // Quatro bandidos Marcarrubra (a aventura), na frente da taverna.
+    const foes = [[17, 4], [18, 5], [17, 6], [19, 5]].map(([x, y], i) => {
+      const f = makeMonster('marcarrubra', { x, y }, { nameSuffix: 'ABCD'[i] });
+      f.facingVec = { dx: -1, dy: 0 };
+      return f;
+    });
+    return foes;
+  }
   if (variante === 'caverna') {
     // Os dois guardas, cada um atrás da curva do seu corredor, e Droop.
     const foes = [
@@ -397,7 +438,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (variante === 'caverna' || variante === 'esconderijo') return null;
+  if (variante === 'caverna' || variante === 'esconderijo' || variante === 'rua') return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

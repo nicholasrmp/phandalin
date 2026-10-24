@@ -151,6 +151,31 @@ export const HUMANOIDES = {
     blurb: 'Nunca luta sozinho: com um aliado colado no alvo ataca com vantagem duas vezes por turno, e 32 PV o mantêm de pé tempo suficiente para isso. Quebre a dupla e ele perde metade da ameaça.',
   },
 
+  // O bandido da gangue que domina Phandalin (A Mina Perdida de Phandelver).
+  // Números do bloco da aventura; o manto vermelho sujo é o uniforme deles.
+  marcarrubra: {
+    id: 'marcarrubra',
+    name: 'Bandido Marcarrubra',
+    look: 'rufiao',
+    fonte: 'aventura',
+    size: 'médio',
+    level: 1,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 11, dex: 14, con: 12, int: 9, wis: 9, cha: 11 },
+    ac: 14,
+    acNote: 'couro batido',
+    maxHp: 16,
+    speedFt: 30,
+    skills: ['intimidacao'],
+    attacks: [
+      { name: 'Espada curta', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'sword' },
+    ],
+    multiattack: { count: 2, sequence: ['Espada curta', 'Espada curta'] },
+    traits: [],
+    blurb: 'Ladrão mesquinho de manto vermelho encardido. Dois golpes de espada curta por turno; vive de intimidar quem não revida.',
+  },
+
   batedor: {
     id: 'batedor',
     name: 'Batedor',

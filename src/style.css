@@ -881,7 +881,8 @@ h2 {
 /* ======================================================== dica =========== */
 .dica {
   position: fixed;
-  z-index: 50;
+  /* Acima da ficha, mesmo quando ela abre sobre a vila (88). */
+  z-index: 89;
   max-width: 300px;
   padding: 10px 12px;
   background: linear-gradient(170deg, var(--papel-3), var(--papel-2));

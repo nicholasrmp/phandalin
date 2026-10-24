@@ -61,9 +61,10 @@ function quemRola(ctx, teste) {
 }
 
 /** O contexto que as funções da árvore recebem. */
-function contexto(app, npc) {
-  const enc = app.enc;
-  const herois = enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
+function contexto(app, npc, fora = null) {
+  // Fora do tabuleiro (a vila), quem chama dá o grupo, o dado e o registro.
+  const enc = fora ?? app.enc;
+  const herois = (fora?.herois ?? enc.combatants).filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const campanha = (app.campanha ??= {});
   const flags = (campanha.flags ??= {});
   return {
@@ -78,9 +79,10 @@ function contexto(app, npc) {
  * @param {object} app   o jogo (`main.js`)
  * @param {object} npc   a criatura com quem se fala (nome, look)
  * @param {object} arvore
+ * @param {object} [fora]  fora do tabuleiro: { herois, rng, say(tipo, texto) }
  */
-export async function conversar(app, npc, arvore) {
-  const ctx = contexto(app, npc);
+export async function conversar(app, npc, arvore, fora = null) {
+  const ctx = contexto(app, npc, fora);
   const usadas = (ctx.flags[`dialogo:${npc.defId ?? npc.id ?? npc.name}:usadas`] ??= []);
   let id = arvore.inicio;
   let teste = null;

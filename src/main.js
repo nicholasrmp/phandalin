@@ -15,6 +15,8 @@ import { montarHeroi } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
 import { criarCenaCaverna } from './game/cena-caverna.js';
 import { criarCapitulo2 } from './game/capitulo2.js';
+import { criarRuaMarcarrubra } from './game/capitulo3-rua.js';
+import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta } from './view/narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
@@ -56,7 +58,8 @@ class App {
       dica: (node, dados) => this.hud.ligarDica(node, dados),
       // Trocar de armadura no meio da briga não pode ser de graça. Fora do
       // turno do grupo, nem isso.
-      podeEquipar: (p) => (this.enc?.side === 'party' && !this.enc.over
+      // Fora de combate (na vila), troca-se à vontade.
+      podeEquipar: (p) => (!this.enc || (this.enc.side === 'party' && !this.enc.over)
         ? null
         : 'dá para trocar equipamento só no turno do grupo'),
       onEquipar: (p, troca) => {
@@ -91,7 +94,13 @@ class App {
         ? null
         : 'dá para preparar magias só no turno do grupo'),
       onPreparar: () => { audio.play('click'); this.refresh(); },
-      onFechar: () => this.refresh(),
+      onFechar: () => {
+        this.refresh();
+        document.querySelector('.ficha-overlay')?.classList.remove('na-vila');
+        const depois = this._aoFecharFicha;
+        this._aoFecharFicha = null;
+        depois?.();
+      },
     });
 
     this.canvas = document.createElement('canvas');
@@ -176,7 +185,9 @@ class App {
     // (`src/dev/balance.js`) continua medindo; `grandes` é uma vitrine de
     // tamanho.
     // O capítulo 2 da campanha é o esconderijo dos goblins.
-    const variante = config.capitulo === 2 ? 'esconderijo' : (config.variante ?? 'emboscada');
+    const variante = config.capitulo === 2 ? 'esconderijo'
+      : config.capitulo === 3 ? (config.cenaDaVila ?? 'rua')
+        : (config.variante ?? 'emboscada');
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
       mapa.terreno, mapa.altura, mapa.objetos);
@@ -200,6 +211,12 @@ class App {
       : config.herois
         ? config.herois.map(({ id, escolha }) => montarHeroi(id, escolha))
         : makeParty({ nivel: config.nivel ?? 2, ids: config.ids ?? null });
+    // Partida nova: a campanha anterior (vila, missões, flags dos diálogos,
+    // feitos, XP a receber) não vem junto.
+    if (!config.continuarCom) {
+      this.campanha = {};
+      this.xpPendente = null;
+    }
     if (config.continuarCom) {
       for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente'); }
     }
@@ -213,6 +230,7 @@ class App {
     // (`game/capitulo1.js`) — o grupo explora a estrada antes da luta.
     // A arena da caverna também é uma cena: exploração no escuro antes da luta.
     const cena = mapa.cena === 'esconderijo' ? criarCapitulo2
+      : mapa.cena === 'rua' ? criarRuaMarcarrubra
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
     const capitulo = Boolean(cena);
@@ -845,6 +863,7 @@ class App {
         : this.enc.miraAliados(s) ? `escolha até ${max} aliado${max > 1 ? 's' : ''}` : `escolha até ${max} inimigo${max > 1 ? 's' : ''}`;
       return `${s.name}${circ} — ${quem} · ${n}/${max}${n ? ' · Enter ou a magia de novo conjura agora' : ''}`;
     }
+    if (s.zona?.movel && c.magiasAtivas?.[s.id]?.zona) return `Mover ${s.name} — clique no destino (até ${s.zona.movel / 5 * 1.5} m de onde está, sem gastar espaço)`;
     if (s.shape) return `${s.name}${circ} — aponte a área e clique`;
     if (s.mira === 'casa') return `${s.name}${circ} — clique na casa de chegada (até ${s.rangeFt / 5 * 1.5} m)`;
     if (s.kind === 'reviver') return `${s.name}${circ} — clique no corpo de um aliado ao seu lado`;
@@ -1035,7 +1054,30 @@ class App {
     this.afterAct();
   }
 
+  /**
+   * Sai do tabuleiro para a vila de Phandalin (capítulo 3), com o grupo. A
+   * vila é uma tela própria (`game/phandalin.js`); o tabuleiro volta só para
+   * as lutas.
+   */
+  irParaVila(grupo, { chegando = false } = {}) {
+    fecharMenuContexto();
+    this.capitulo = null;
+    this.enc = null;
+    this.board = null;
+    this.selected = null;
+    this.mode = null;
+    this.root.classList.remove('explorando');
+    return abrirPhandalin(this, { grupo, chegando });
+  }
+
   /** Fim do capítulo (ou desistência): sai da partida e volta ao menu. */
+  /** A ficha aberta na vila, por cima dela; `aoFechar` redesenha a vila. */
+  abrirFichaNaVila(heroi, aoFechar) {
+    this._aoFecharFicha = aoFechar;
+    this.ficha.abrir(heroi, 'inventario');
+    document.querySelector('.ficha-overlay')?.classList.add('na-vila');
+  }
+
   encerrarPartida() {
     fecharMenuContexto();
     this.capitulo = null;

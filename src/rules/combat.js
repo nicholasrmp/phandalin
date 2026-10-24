@@ -1389,17 +1389,22 @@ export class Encounter {
     // Armadura de Agathys: vale se ele ainda tinha PV temporários ao ser acertado.
     const agathys = !p.ranged && getCondition(target, 'agathys');
     const geloDevolve = agathys && (target.tempHp ?? 0) > 0 ? agathys.data?.dano ?? 5 : 0;
-    this.applyDamage(target, total, p.type, attacker, { critical, magico, deArma: true, corpoACorpo: !p.ranged });
+    // O golpe e o que ele soma (Bruxaria, golpe divino, o veneno da aranha)
+    // são UMA fonte de dano: um teste de concentração só, pela soma.
+    this.umaFonteDeDano(() => {
+      this.applyDamage(target, total, p.type, attacker, { critical, magico, deArma: true, corpoACorpo: !p.ranged });
+      this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical });
+      // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
+      if (p.danoExtra && !target.dead && (!p.danoExtra.contra || target.tipo === p.danoExtra.contra)) {
+        this.danoExtraDoGolpe(attacker, target, p, critical);
+      }
+    });
+    // O gelo da Agathys é outra fonte, com o seu próprio teste.
     if (geloDevolve && !attacker.dead) {
       this.say('magia', `O gelo de ${target.name} morde ${attacker.name}: ${geloDevolve} de frio.`);
       this.applyDamage(attacker, geloDevolve, 'frio', target, { magico: true });
     }
-    this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical });
     if (p.recarga) (attacker.recarregando ??= {})[p.name] = true;
-    // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
-    if (p.danoExtra && !target.dead && (!p.danoExtra.contra || target.tipo === p.danoExtra.contra)) {
-      this.danoExtraDoGolpe(attacker, target, p, critical);
-    }
     depoisDoAcerto(this, attacker, target, p);
 
     // Efeito extra do ataque (mordida do lobo derruba).
@@ -1622,11 +1627,23 @@ export class Encounter {
     // morrer. Tratar como queda nova zerava as falhas — apanhar no chão
     // salvava o personagem.
     if (target.kind === 'pc' && target.hp <= 0) {
+      // Caiu NESTE golpe: a parcela que vem depois (o veneno da mordida) é o
+      // mesmo dano, e soma à sobra para o dano maciço — não é falha nova.
+      const antes = this.quedasDaFonte?.get(target);
+      if (antes != null) {
+        const s = antes + amount;
+        this.quedasDaFonte.set(target, s);
+        this.onEvent({ type: 'damage', target, amount, source });
+        if (s >= target.maxHp) this.morrer(target, 'dano maciço');
+        return;
+      }
       this.onEvent({ type: 'damage', target, amount, source });
       if (amount >= target.maxHp) { this.morrer(target, 'dano maciço'); return; }
       target.stable = false;
       target.deathSaves.failures += critical ? 2 : 1;
       this.say('morte', `${target.name} sofre dano caído — ${critical ? 'duas falhas' : 'uma falha'} no teste de morte (${target.deathSaves.failures}/3).`);
+      // As parcelas seguintes deste golpe (o veneno) já não contam falha nova.
+      this.quedasDaFonte?.set(target, amount);
       if (target.deathSaves.failures >= 3) this.morrer(target);
       return;
     }
@@ -1641,21 +1658,18 @@ export class Encounter {
     this.onEvent({ type: 'damage', target, amount, source });
 
     if (target.hp > 0) {
-      if (target.concentrating) this.concentrationCheck(target, amount);
+      if (target.concentrating) {
+        if (this.danoDaFonte) this.danoDaFonte.set(target, (this.danoDaFonte.get(target) ?? 0) + amount);
+        else this.concentrationCheck(target, amount);
+      }
       // Sono: o dano acorda (de pé fica para ele: acorda caído).
       if (getCondition(target, 'inconsciente')?.source === 'sono') {
         removeCondition(target, 'inconsciente');
         this.say('condicao', `${target.name} acorda com o golpe.`);
       }
-      // Riso Histérico: o dano dá um novo teste, com vantagem.
-      for (const cond of [...(target.conditions ?? [])]) {
-        if (!CONDITIONS[cond.id]?.repeteAoSofrerDano || !cond.data?.save) continue;
-        const save = this.resistencia(target, cond.data.save, cond.data.dc, { vantagem: true });
-        if (save.success) {
-          removeCondition(target, cond.id);
-          this.say('condicao', `${target.name} para de rir com o golpe.`);
-        }
-      }
+      // Riso Histérico: o dano dá um novo teste — um por fonte, não por parcela.
+      if (this.risoDaFonte) this.risoDaFonte.add(target);
+      else this.repetirAoSofrerDano(target);
       this.reacaoAoDano(target, source);
       // Enfeitiçar Pessoa: dano de quem enfeitiçou (ou dos aliados dele) quebra.
       const encanto = getCondition(target, 'enfeiticado');
@@ -1677,6 +1691,7 @@ export class Encounter {
     // ao máximo de PV, mata na hora.
     const sobra = -target.hp;
     target.hp = 0;
+    this.quedasDaFonte?.set(target, sobra);
     // Concentração não sobrevive à queda: inconsciente é incapacitado.
     this.dropConcentration(target);
 
@@ -1789,6 +1804,62 @@ export class Encounter {
       this.say('morte', `${actor.name} se estabiliza.`);
     } else if (actor.deathSaves.failures >= 3) {
       this.morrer(actor);
+    }
+  }
+
+  /**
+   * Junta o dano de uma fonte só (o golpe e o que ele soma) e faz UM teste de
+   * concentração por alvo, com a CD da soma — e não um por parcela.
+   */
+  umaFonteDeDano(fn) {
+    const fora = this.danoDaFonte;
+    const foraRiso = this.risoDaFonte;
+    const foraQuedas = this.quedasDaFonte;
+    const soma = new Map();
+    const riso = new Set();
+    this.danoDaFonte = soma;
+    this.risoDaFonte = riso;
+    // Quem cai neste golpe, com a sobra do dano (para o dano maciço).
+    this.quedasDaFonte = fora ? foraQuedas : new Map();
+    try { fn(); } finally {
+      this.danoDaFonte = fora;
+      this.risoDaFonte = foraRiso;
+      this.quedasDaFonte = foraQuedas;
+    }
+    for (const [alvo, dano] of soma) {
+      if (!alvo.concentrating || alvo.dead || alvo.hp <= 0) continue;
+      if (fora) fora.set(alvo, (fora.get(alvo) ?? 0) + dano);
+      else this.concentrationCheck(alvo, dano);
+    }
+    for (const alvo of riso) {
+      if (foraRiso) foraRiso.add(alvo);
+      else this.repetirAoSofrerDano(alvo);
+    }
+  }
+
+  /**
+   * Dano de OUTRA fonte no meio de um golpe (os espinhos do empurrão, a
+   * Repreensão Infernal, a chuva da Saraivada, cada dardo do Míssil): conta
+   * sozinho, com o seu próprio teste de concentração.
+   */
+  outraFonte(fn) {
+    const guardado = [this.danoDaFonte, this.risoDaFonte, this.quedasDaFonte];
+    this.danoDaFonte = this.risoDaFonte = this.quedasDaFonte = null;
+    try { this.umaFonteDeDano(fn); } finally {
+      [this.danoDaFonte, this.risoDaFonte, this.quedasDaFonte] = guardado;
+    }
+  }
+
+  /** Riso Histérico: cada dano sofrido dá um novo teste, com vantagem. */
+  repetirAoSofrerDano(t) {
+    if (t.dead || t.hp <= 0) return;
+    for (const cond of [...(t.conditions ?? [])]) {
+      if (!CONDITIONS[cond.id]?.repeteAoSofrerDano || !cond.data?.save) continue;
+      const save = this.resistencia(t, cond.data.save, cond.data.dc, { vantagem: true });
+      if (save.success) {
+        removeCondition(t, cond.id);
+        this.say('condicao', `${t.name} para de rir com o golpe.`);
+      }
     }
   }
 
@@ -2040,12 +2111,21 @@ export class Encounter {
         .sort((a, b) => a.hp - b.hp)
         .map((c) => ({ c, papel: c.side === actor.side ? 'aliado' : 'inimigo' }));
     }
-    let poupa = actor.features?.includes('sculptSpells') && spell.school === 'evocação' ? 1 + circulo : 0;
+    // Esculpir Magias: o mago escolhe quem poupa. Escolhe por ele os que mais
+    // perdem com o golpe — menos PV primeiro —, e não a ordem das casas.
+    const vagas = actor.features?.includes('sculptSpells') && spell.school === 'evocação' ? 1 + circulo : 0;
+    // São OUTRAS criaturas que ele possa ver: nunca ele mesmo.
+    const poupados = new Set(vistos.filter((c) => c.side === actor.side && c !== actor && this.veParaEsculpir(actor, c))
+      .sort((a, b) => a.hp - b.hp).slice(0, vagas));
     return vistos.map((c) => {
       if (c.side !== actor.side) return { c, papel: 'inimigo' };
-      if (poupa > 0) { poupa -= 1; return { c, papel: 'poupado' }; }
-      return { c, papel: 'aliado' };
+      return { c, papel: poupados.has(c) ? 'poupado' : 'aliado' };
     });
+  }
+
+  /** Esculpir Magias só poupa quem o mago vê. */
+  veParaEsculpir(mago, c) {
+    return !hasCondition(mago, 'cego') && !hasCondition(c, 'invisivel') && this.field.hasLineOfSight(mago.pos, c.pos);
   }
 
   /**
@@ -2442,7 +2522,9 @@ export class Encounter {
               danoTotal: total, parcelas: rolls, tipoDeDano: spell.damageType, conta,
             },
           });
-          this.applyDamage(alvo, total, spell.damageType, actor, { magico: true });
+          // Cada dardo é uma fonte de dano: um teste de concentração por dardo,
+          // e a resistência reduz dardo a dardo. O registro sai somado.
+          for (const d of rolls) this.outraFonte(() => this.applyDamage(alvo, d, spell.damageType, actor, { magico: true }));
         }
         break;
       }
@@ -2848,7 +2930,7 @@ export class Encounter {
       const amount = save.success ? Math.floor(dmg.total / 2) : dmg.total;
       const r = this.explicarResistencia(fonte, spell.save, dc, save, { contra: spell.name, seSucesso: 'metade do dano' });
       this.say('magia', `${fonte.name} ${save.success ? 'resiste' : 'falha'} e sofre ${amount} de fogo.`, `${r.conta} · ${dmg.notation ?? ''}[${dmg.rolls?.join('+') ?? ''}]`, { rolagem: r });
-      this.applyDamage(fonte, amount, spell.damageType, alvo, { magico: true });
+      this.outraFonte(() => this.applyDamage(fonte, amount, spell.damageType, alvo, { magico: true }));
     } finally {
       this.reagindo = false;
     }
@@ -2891,11 +2973,14 @@ export class Encounter {
         const r = damageRoll(this.rng, this.dadosDoGolpe(cond, g));
         const pegos = this.combatants.filter((c) => !c.dead && distanceFt(c.pos, alvo.pos) <= 5);
         this.say('magia', `${def.name}: espinhos brotam em volta de ${alvo.name}.`);
-        for (const c of pegos) {
+        // A chuva é outra fonte ("além do efeito normal do ataque"), com teste próprio.
+        for (const c of pegos) this.outraFonte(() => {
           const save = this.resistencia(c, 'dex', dc);
           const amount = save.success ? Math.floor(r.total / 2) : r.total;
+          const rr = this.explicarResistencia(c, 'dex', dc, save, { contra: def.name, seSucesso: 'metade do dano' });
+          this.say('magia', `${c.name} ${save.success ? 'resiste' : 'falha'} e sofre ${amount} de ${g.tipo} (${def.name}).`, rr.conta, { rolagem: rr });
           this.applyDamage(c, amount, g.tipo, atacante, { magico: true });
-        }
+        });
         this.dropConcentration(atacante);
         continue;
       }
@@ -3181,10 +3266,12 @@ export class Encounter {
       { rolagem },
     );
     this.ultimoDano = 0;
-    this.applyDamage(target, dmg.total, spell.damageType, actor, { critical, magico: true });
-    this.danoDoUltimoAtaque = this.ultimoDano;
-    this.maybeIgnite(target, spell.damageType);
-    this.extrasDoAcerto(actor, target, { arma: false, ranged: !spell.melee, tipo: spell.damageType, critical });
+    this.umaFonteDeDano(() => {
+      this.applyDamage(target, dmg.total, spell.damageType, actor, { critical, magico: true });
+      this.danoDoUltimoAtaque = this.ultimoDano;
+      this.maybeIgnite(target, spell.damageType);
+      this.extrasDoAcerto(actor, target, { arma: false, ranged: !spell.melee, tipo: spell.damageType, critical });
+    });
     if (spell.tiraReacao && !target.dead) target.reactionUsed = true;
     // Chicote de Espinhos: puxa para perto (empurrar "a partir" do ponto oposto).
     if (spell.puxarFt && !target.dead && (target.pos.f ?? 1) <= 2) {
@@ -3259,7 +3346,8 @@ export class Encounter {
       if (espinhos) {
         const r = damageRoll(this.rng, espinhos.danoPorPasso);
         this.say('magia', `${alvo.name} é arrastado pelos espinhos: ${r.total} perfurante.`);
-        this.applyDamage(alvo, r.total, 'perfurante', null, { magico: true });
+        // Cada 1,5 m arrastado é um dano à parte, não parte do golpe que empurrou.
+        this.outraFonte(() => this.applyDamage(alvo, r.total, 'perfurante', null, { magico: true }));
         if (alvo.dead) break;
       }
     }

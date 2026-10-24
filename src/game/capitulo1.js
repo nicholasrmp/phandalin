@@ -415,12 +415,11 @@ export function criarCapitulo1(app, config) {
           outcome === 'vitoria'
             ? 'Vocês põem a carroça de volta na estrada. Em Phandalin, Elmar Barthen espera a carga — e vai querer saber de Gundren.'
             : 'Vocês seguem a pé para Phandalin. Lá dá para comprar equipamento novo na Barthen Provisões, descansar e voltar atrás da trilha.',
-          'O próximo capítulo ainda está sendo escrito.',
         ],
       }],
-      escolhas: [{ rotulo: 'Voltar ao menu', valor: 'menu', primaria: true }],
+      escolhas: [{ rotulo: 'Seguir para Phandalin', valor: 'vila', primaria: true }],
     });
-    app.encerrarPartida();
+    app.irParaVila(enc.combatants.filter((c) => c.side === 'party' && !c.dead), { chegando: true });
   }
 
   // ------------------------------------------------------- botão direito ----

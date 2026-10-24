@@ -514,6 +514,16 @@ function guessArt(name = '') {
 }
 
 /** Artes que este arquivo sabe desenhar. Serve de referência para `monsters.js`. */
+// O domo de proteção do tamanho de quem protege: baixo e largo o bastante para
+// ler como bolha, alto o bastante para a cabeça caber (as cabeças ficam a
+// ~56–62 px). Grande/Enorme crescem com a pegada.
+const domoDe = (t) => {
+  const f = t.pos.f ?? 1;
+  if (f > 1) return { raio: 32 * f + 4, altura: 4 * Math.round((62 * (1 + (f - 1) * 0.4) + 10) / 4) };
+  const pequeno = t.size === 'pequeno' || /halfling|pequenin|gnom/i.test(`${t.ancestry ?? ''} ${t.raca ?? ''}`);
+  return pequeno ? { raio: 30, altura: 56 } : { raio: 36, altura: 68 };
+};
+
 export const ARTES = Object.freeze(Object.keys(WEAPON_VISUALS));
 
 /**
@@ -743,7 +753,7 @@ const SPELL_VISUALS = {
     return dur + (alvos.length - 1) * 0.11;
   },
   zombariaViciosa: (board, { dest }) => {
-    board.fx.quadros(dest, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+    board.fx.quadros(dest, 'psiquico', { fps: 10, altura: 40, sumir: 0.2 });
     return 0.1;
   },
   produzirChama: (board, { caster, dest }) => {
@@ -754,7 +764,9 @@ const SPELL_VISUALS = {
   },
   chicoteDeEspinhos: (board, { caster, dest }) => {
     board.fx.beam(caster.pos, dest, { color: '#6fc07a', dur: 0.3, width: 3, jagged: true });
-    board.fx.quadros(dest, 'vinhas-brotos', { fps: 14, altura: 18 });
+    // O cipó vem do lado de quem lançou; aos 250 ms, o estalo.
+    board.fx.quadros(dest, 'chicote-espinhos', { fps: 12, altura: 24, sumir: 0.15, de: caster.pos });
+    setTimeout(() => board.fx.impact(dest, { color: '#6fc07a', count: 6, spread: 24 }), 250);
     return 0.15;
   },
   shillelagh: (board, { caster }) => {
@@ -807,12 +819,12 @@ const SPELL_VISUALS = {
     return 0;
   },
   risoHisterico: (board, { dest }) => {
-    board.fx.quadros(dest, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+    board.fx.quadros(dest, 'psiquico', { fps: 10, altura: 40, sumir: 0.2 });
     board.fx.motes(dest, { color: '#e8c35a', count: 14, rise: 30 });
     return 0.1;
   },
   sussurrosDissonantes: (board, { dest }) => {
-    board.fx.quadros(dest, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+    board.fx.quadros(dest, 'psiquico', { fps: 10, altura: 40, sumir: 0.2 });
     board.fx.ring(dest, { color: '#a579d8', radius: 48, dur: 0.6, width: 3 });
     return 0.1;
   },
@@ -858,11 +870,21 @@ const SPELL_VISUALS = {
     return 0;
   },
   santuario: (board, _ctx, alvos = []) => {
-    for (const t of alvos) board.fx.quadros(t.pos, 'egide-domo', { fps: 6, altura: 24, sumir: 0.5 });
+    for (const t of alvos) {
+      board.fx.domo(t.pos, { cor: 'ouro', id: t.id, ...domoDe(t) });
+      board.fx.motes(t.pos, { color: '#e8c35a', count: 8, rise: 40, spread: 50 });
+    }
     return 0;
   },
   escudoDaFe: (board, _ctx, alvos = []) => {
-    for (const t of alvos) board.fx.quadros(t.pos, 'egide', { fps: 6, altura: 24, sumir: 0.5 });
+    // O domo, e o escudo lampejando ACIMA da cabeça (não no rosto).
+    for (const t of alvos) {
+      board.fx.domo(t.pos, { cor: 'ouro', id: t.id, ...domoDe(t) });
+      board.fx.motes(t.pos, { color: '#e8c35a', count: 8, rise: 40, spread: 50 });
+      // O escudo encosta no topo da bolha, como brasão dela; aos 300 ms, junto do lampejo.
+      const alto = Math.max(74, domoDe(t).altura + 10);
+      setTimeout(() => board.fx.quadros(t.pos, 'egide-escudo', { fps: 2, altura: alto, sumir: 0.3, entrar: 0.08 }), 300);
+    }
     return 0;
   },
   favorDivino: (board, { caster }) => {
@@ -899,7 +921,10 @@ const SPELL_VISUALS = {
     return 0;
   },
   protecaoBemMal: (board, _ctx, alvos = []) => {
-    for (const t of alvos) board.fx.quadros(t.pos, 'egide-violeta', { fps: 6, altura: 24, sumir: 0.5 });
+    for (const t of alvos) {
+      board.fx.domo(t.pos, { cor: 'violeta', id: t.id, ...domoDe(t) });
+      board.fx.motes(t.pos, { color: '#a579d8', count: 8, rise: 40, spread: 50 });
+    }
     return 0;
   },
 
@@ -916,7 +941,7 @@ const SPELL_VISUALS = {
 
   enfeiticarPessoa: (board, _ctx, alvos = []) => {
     for (const t of alvos) {
-      board.fx.quadros(t.pos, 'psiquico', { fps: 6, altura: 40, sumir: 0.35 });
+      board.fx.quadros(t.pos, 'psiquico', { fps: 10, altura: 40, sumir: 0.2 });
       board.fx.ring(t.pos, { color: '#e8a0c8', radius: 44, dur: 0.7, width: 3 });
     }
     return 0;
@@ -932,8 +957,11 @@ const SPELL_VISUALS = {
   },
   crescimentoDeEspinhos: (board, { areaTiles, dest }) => {
     board.fx.area(areaTiles ?? [dest], { color: '#b0875a', dur: 0.7 });
-    (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 3 === 0).slice(0, 12)
-      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'espinhos-chao', { fps: 8, altura: 18 }), i * 40));
+    // Casas alternadas, espalhadas pela área inteira (não só as primeiras).
+    const sel = (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0);
+    const passo = Math.max(1, Math.ceil(sel.length / 16));
+    sel.filter((_, i) => i % passo === 0)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'espinhos-chao', { fps: 8, altura: 10, sumir: 0.5 }), i * 40));
     return 0.2;
   },
   flechaAcida: (board, { caster, dest }) => {
@@ -1178,8 +1206,9 @@ const SPELL_VISUALS = {
   medo: (board, { caster, areaTiles, dest }) => {
     board.fx.area(areaTiles ?? [dest], { color: COR.necrotico, dur: 0.6 });
     const pegos = [...new Set((areaTiles ?? [dest]).map((t) => board.enc.at(t.x, t.y)))]
-      .filter((c) => c && c.side !== caster.side).slice(0, 6);
-    pegos.forEach((c, i) => setTimeout(() => board.fx.quadros(c.pos, 'medo-espectro', { fps: 4, altura: 44, sumir: 0.35 }), i * 80));
+      // O cone pega aliados também: o desenho mostra todos que o motor testa.
+      .filter((c) => c && c !== caster).slice(0, 10);
+    pegos.forEach((c, i) => setTimeout(() => board.fx.quadros(c.pos, 'medo-espectro', { fps: 6, altura: c.size === 'grande' || c.size === 'enorme' ? 100 : 70, sumir: 0.3 }), i * 80));
     return 0.25;
   },
   padraoHipnotico: (board, { areaTiles, dest }) => {

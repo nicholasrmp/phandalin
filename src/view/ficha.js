@@ -102,7 +102,7 @@ const sigla = (nome = '') => nome
  * soquete leva as iniciais em serifa: lê como placa gravada, e no dia em que o
  * ícone entrar o nome em `art` acende sozinho.
  */
-function iconeDeItem(id, alvo = 32) {
+export function iconeDeItem(id, alvo = 32) {
   const achado = itemDeId(id);
   if (!achado) return el('span', { class: 'sigla' }, '—');
   const { tipo, dados } = achado;

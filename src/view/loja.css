@@ -1,0 +1,82 @@
+/* A loja: pergaminho sobre a vila escurecida, como o diário. */
+
+.loja {
+  position: fixed;
+  inset: 0;
+  z-index: 87;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 7, 3, .55);
+  font-family: var(--font);
+  color: var(--ink);
+}
+.loja-caixa {
+  width: min(860px, 100%);
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: auto auto auto auto 1fr auto;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--papelada);
+  border: 1px solid var(--gold-escuro);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .65);
+  min-height: 0;
+}
+.loja-topo { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; }
+.loja-topo h3 { margin: 0; font-family: var(--serif); color: var(--gold-escuro); }
+.loja-topo small { color: var(--muted); }
+.loja-fala { margin: 4px 0 0; font-style: italic; font-size: 13px; }
+.loja-retrato {
+  width: 56px; height: 56px; display: grid; place-items: center; overflow: hidden;
+  border: 1px solid var(--gold-escuro); border-radius: 8px;
+}
+.loja-bolsa { display: grid; text-align: right; }
+.loja-dinheiro { font-weight: 700; color: #6b4a14; }
+
+.loja-abas { display: flex; gap: 6px; border-bottom: 1px solid var(--line-forte); }
+.loja-aba {
+  font: 600 14px var(--font); padding: 5px 14px; cursor: pointer;
+  background: none; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; color: var(--muted);
+}
+.loja-aba.ativa { background: rgba(255, 248, 228, .7); border-color: var(--line-forte); color: var(--ink); }
+
+.loja-herois { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.loja-herois > small { color: var(--muted); margin-right: 4px; }
+.loja-heroi {
+  display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; cursor: pointer;
+  font: 600 13px var(--font); color: var(--ink);
+  background: rgba(255, 248, 228, .5); border: 1px solid var(--line-forte); border-radius: 18px;
+}
+.loja-heroi.ativo { background: linear-gradient(180deg, var(--gold-claro), var(--gold)); border-color: var(--gold-escuro); }
+.loja-heroi-retrato { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; }
+.loja-heroi-retrato canvas { width: 28px !important; height: 28px !important; }
+
+.loja-busca {
+  width: 100%; font: 14px var(--font); padding: 5px 10px;
+  border: 1px solid var(--line-forte); border-radius: 8px; background: rgba(255, 252, 242, .8);
+}
+
+.loja-lista { overflow-y: auto; min-height: 120px; padding-right: 4px; }
+.loja-lista h4 { margin: 10px 0 4px; font-family: var(--serif); color: var(--gold-escuro); }
+.loja-item {
+  display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center;
+  padding: 5px 6px; border-bottom: 1px solid rgba(78, 56, 24, .15);
+}
+.loja-item:hover { background: rgba(255, 248, 228, .55); }
+.loja-icone { width: 36px; height: 36px; display: grid; place-items: center; }
+.loja-icone .sigla { font: 700 12px var(--serif); color: var(--gold-escuro); }
+.loja-desc { display: grid; min-width: 0; }
+.loja-desc small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.loja-desc .loja-alerta { color: #8a3020; }
+.loja-preco { font-weight: 700; white-space: nowrap; color: #6b4a14; }
+.loja-item .vila-btn[disabled] { opacity: .45; cursor: not-allowed; }
+.loja-vazio { color: var(--muted); font-style: italic; }
+.loja-rodape { min-height: 1.3em; font-size: 13px; color: var(--gold-escuro); }
+
+@media (max-width: 640px) {
+  .loja-topo { grid-template-columns: auto 1fr; }
+  .loja-item { grid-template-columns: 32px 1fr auto; }
+  .loja-item .loja-preco { grid-column: 2; }
+}

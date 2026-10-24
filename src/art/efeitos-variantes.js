@@ -39,19 +39,44 @@ variante('resistencia-fogo', 'resistencia', { 9: '8', 2: '7' });
 variante('resistencia-acido', 'resistencia', { 9: '6', 2: '7' });
 variante('resistencia-trovao', 'resistencia', { 9: '1' });
 variante('resistencia-verde', 'resistencia', { 9: 'c' });
-// Crescimento de Espinhos: as vinhas, secas (sem o verde), só os brotos baixos.
+// As vinhas secas (sem o verde).
 variante('vinhas-secas', 'vinhas', { c: '4' });
-recorte('espinhos-chao', 'vinhas-secas', [0, 1, 0]);
-// Chicote de Espinhos: um estalo de brotos, não o matagal do Emaranhar.
-recorte('vinhas-brotos', 'vinhas', [0, 1]);
 // O golpe divino na cor de cada golpe preparado; o estouro branco também muda.
 variante('golpe-fogo', 'golpe-divino', { 7: '8', b: '6' });
 variante('golpe-psiquico', 'golpe-divino', { 7: 'd', 6: 'b', b: 'd' });
 variante('golpe-trovao', 'golpe-divino', { 7: '9', 6: '1', b: '9' });
 // A espada do golpe base em ouro claro, não bronze (depois das variantes, que saem do original).
 variante('golpe-divino', 'golpe-divino', { 7: '6', 6: 'b' });
-// O choque psíquico segura o pico um quadro a mais (os quadros de antes se perderam).
-recorte('psiquico', 'psiquico', [0, 0, 1, 2]);
-// Égide: Santuário é só o domo (não é CA); Proteção contra o Bem e o Mal, em violeta.
-recorte('egide-domo', 'egide', [0, 2]);
-variante('egide-violeta', 'egide-domo', { 1: 'd' });
+// A égide sem a base reta (o anel de seleção faz o chão) e o escudo dela
+// separado, para lampejar ACIMA da cabeça em vez de no rosto.
+const tem = (l) => /[^.]/.test(l);
+function semBase(nome, n = 5) {
+  const e = EFEITOS[nome];
+  if (!e) return;
+  e.quadros = e.quadros.map((g) => {
+    let fim = g.length - 1;
+    while (fim > 0 && !tem(g[fim])) fim--;
+    const ref = g[fim - n];
+    return g.map((l, y) => (y > fim - n && y <= fim ? [...l].map((k, x) => (ref[x] === '.' ? '.' : k)).join('') : l));
+  });
+}
+function escudoDaEgide() {
+  const e = EFEITOS.egide;
+  if (!e) return;
+  const g = e.quadros[2];
+  const topo = e.quadros[3].findIndex(tem);
+  const y0 = g.findIndex(tem);
+  let x0 = Infinity;
+  let x1 = -1;
+  for (let y = y0; y < topo; y++) [...g[y]].forEach((k, x) => { if (k !== '.') { x0 = Math.min(x0, x); x1 = Math.max(x1, x); } });
+  const y1 = Math.min(g.length - 1, topo + (topo - y0) - 1);
+  EFEITOS['egide-escudo'] = { lado: y1 - y0 + 1, quadros: [g.slice(y0, y1 + 1).map((l) => l.slice(x0, x1 + 1))] };
+}
+semBase('egide');
+escudoDaEgide();
+// Égide: Santuário é só o domo, sem o escudo (não é CA); Proteção contra o
+// Bem e o Mal, o mesmo domo em violeta.
+recorte('egide-domo', 'egide', [0, 1, 3]);
+variante('egide-violeta', 'egide-domo', { 6: 'd', 7: 'd' });
+// Medo: o crânio de fumaça em violeta, não cinza.
+variante('medo-espectro', 'medo-espectro', { 3: 'd' });

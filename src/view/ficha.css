@@ -594,3 +594,6 @@
   .boneco-palco { padding: 98px 104px; }
   .boneco-palco .encaixe { width: 92px; }
 }
+
+/* Aberta na vila: por cima da tela da vila (85) e da loja (87). */
+.ficha-overlay.na-vila { z-index: 88; }
