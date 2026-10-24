@@ -114,7 +114,8 @@ function fichasProntas(nivel) {
         // Arma Espiritual, Restauração Menor e Revivificar também são do
         // domínio (3º e 5º nível).
         lista: ['palavraCurativa', 'raioGuiado', 'infligirFerimentos', 'perdicao',
-          'imobilizarPessoa', 'cegueiraSurdez', 'ajuda', 'espiritosGuardioes', 'palavraCurativaEmMassa'],
+          'imobilizarPessoa', 'cegueiraSurdez', 'ajuda', 'espiritosGuardioes', 'palavraCurativaEmMassa', 'dissiparMagia',
+          'silencio', 'eloDeProtecao', 'acalmarEmocoes', 'oracaoDeCura'],
       },
       blurbs: {
         1: 'Domínio da Vida: toda cura dele rende mais. Duas magias de 1º círculo por descanso longo.',
@@ -145,7 +146,8 @@ function fichasProntas(nivel) {
         // Raio de Doença é conteúdo próprio (não está no SRD).
         livro: ['misselMagico', 'maosFlamejantes', 'sono', 'armaduraArcana', 'ondaTrovejante', 'graxa', 'raioDeDoenca', 'vidaFalsa',
           'raioArdente', 'passoNebuloso', 'teia', 'despedacar', 'bolaDeFogo', 'relampago',
-          'padraoHipnotico', 'lentidao', 'borrao', 'imobilizarPessoa', 'medo', 'toqueVampirico', 'cegueiraSurdez'],
+          'padraoHipnotico', 'lentidao', 'borrao', 'imobilizarPessoa', 'medo', 'toqueVampirico', 'cegueiraSurdez',
+          'nevoaObscurecente', 'escuridao', 'lufadaDeVento', 'dissiparMagia', 'aumentarReduzir', 'coroaDaLoucura'],
       },
       blurbs: {
         1: 'Frágil e decisivo. Duas magias de 1º círculo por descanso longo: cada uma conta.',

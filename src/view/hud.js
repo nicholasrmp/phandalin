@@ -991,7 +991,7 @@ export class Hud {
       comum('levantar', 'Levantar-se', `Fica de pé gastando metade do deslocamento (${custo} pés). Caído, você rasteja a meio passo e ataca com desvantagem.`,
         'Movimento', { kind: 'standUp' }, c.movementLeftFt < custo || custo === 0);
     }
-    if (hasCondition(c, 'agarrado') || hasCondition(c, 'contido')) {
+    if (hasCondition(c, 'agarrado') || hasCondition(c, 'contido') || hasCondition(c, 'presoPorVinhas')) {
       comum('escapar', 'Escapar', 'Teste de Atletismo ou Acrobacia (o melhor) contra a CD de quem prende.', 'Ação', { kind: 'escape' }, c.actionUsed);
     }
 
@@ -1236,9 +1236,12 @@ export class Hud {
         // Sem espaço do círculo dela, a magia ainda sai num círculo maior.
         const semSlot = s.level > 0 && !c.spellcasting.slots.some((n, i) => i >= s.level && n > 0);
         const dano = dadosDaMagia(s, { nivel: c.level ?? 1 });
-        const bonus = s.castTime === 'bonus';
+        // Repetir uma magia ativa (Lufada, Convocar) usa a ação do `reuso`, e
+        // não a de conjurar, e não gasta espaço.
+        const repete = Boolean(s.reuso && c.magiasAtivas?.[sid]);
+        const bonus = repete ? s.reuso === 'bonus' : s.castTime === 'bonus';
         const gasto = bonus ? c.bonusUsed : c.actionUsed;
-        const desabilitado = semSlot || gasto;
+        const desabilitado = (semSlot && !repete) || gasto || Boolean(s.foraDeCombate);
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
         return {
           sid,
@@ -1266,8 +1269,8 @@ export class Hud {
                 s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
               ],
               texto: s.desc,
-              custo: bonus ? 'Ação bônus' : 'Ação',
-              aviso: semSlot ? `Sem espaço de ${s.level}º círculo ou maior` : gasto ? 'Recurso do turno já usado' : null,
+              custo: repete ? `${bonus ? 'Ação bônus' : 'Ação'} · repetir, sem espaço` : s.foraDeCombate ? '10 minutos' : bonus ? 'Ação bônus' : 'Ação',
+              aviso: s.foraDeCombate ? 'Só fora de combate, no descanso' : semSlot && !repete ? `Sem espaço de ${s.level}º círculo ou maior` : gasto ? 'Recurso do turno já usado' : null,
             },
           }), s.level),
         };

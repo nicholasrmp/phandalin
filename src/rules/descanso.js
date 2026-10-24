@@ -18,6 +18,9 @@
 import { abilityMod } from './abilities.js';
 import { CLASSES } from './classes/index.js';
 import { removeCondition } from './conditions.js';
+import { SPELLS, magiasProntas, dadosDaMagia } from './spells.js';
+import { spellMod } from './party.js';
+import { rolarCura } from './talentos.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
 const VOLTAM_NO_CURTO = new Set(['secondWind', 'actionSurge', 'channelDivinity', 'ki', 'wildShape']);
@@ -88,6 +91,37 @@ export function recuperarNoCurto(c) {
     }
   }
   return frases;
+}
+
+/**
+ * Oração de Cura (2º círculo): leva 10 minutos, então só existe fora de
+ * combate — o motor de combate a recusa. Até 6 criaturas recuperam 2d8 + o
+ * modificador de conjuração, +1d8 por círculo acima do 2º; gasta um espaço.
+ * Quem estava caído a 0 PV acorda, no chão. Devolve { ok, why } ou
+ * { ok, circulo, curas: [{ alvo, cura }] }.
+ */
+export function oracaoDeCura(rng, conjurador, alvos, { circulo = 2 } = {}) {
+  const spell = SPELLS.oracaoDeCura;
+  const sc = conjurador.spellcasting;
+  if (conjurador.dead || conjurador.hp <= 0) return { ok: false, why: 'quem está caído não reza' };
+  if (!sc || !magiasProntas(conjurador).includes('oracaoDeCura')) return { ok: false, why: `${spell.name} não está preparada` };
+  if (circulo < spell.level || !(sc.slots?.[circulo] > 0)) return { ok: false, why: `sem espaço de ${circulo}º círculo` };
+  const quem = [...new Set(alvos)].filter((c) => !c.dead && !['morto-vivo', 'constructo'].includes(c.tipo));
+  if (!quem.length) return { ok: false, why: 'ninguém para curar' };
+  if (quem.length > spell.targets) return { ok: false, why: `${spell.name} cura até ${spell.targets} criaturas` };
+  sc.slots[circulo] -= 1;
+  const dados = dadosDaMagia(spell, { circulo, notacao: spell.heal });
+  const curas = quem.map((alvo) => {
+    const r = rolarCura({ rng }, dados, conjurador);
+    let total = r.total + spellMod(conjurador);
+    // Discípulo da Vida: +2 + círculo do espaço gasto.
+    if (conjurador.features?.includes('discipleOfLife')) total += 2 + circulo;
+    const antes = Math.max(0, alvo.hp);
+    alvo.hp = Math.min(alvo.maxHp, antes + Math.max(0, total));
+    if (antes <= 0 && alvo.hp > 0) acordar(alvo);
+    return { alvo, cura: alvo.hp - antes, rolagem: r.rolls };
+  });
+  return { ok: true, circulo, curas };
 }
 
 /** Descanso longo inteiro. */

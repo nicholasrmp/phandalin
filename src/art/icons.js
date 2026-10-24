@@ -20,6 +20,7 @@ import { ICONES_MAGIAS } from './icones-magias.js';
 import { ICONES_ACOES } from './icones-acoes.js';
 import { ICONES_RACAS } from './icones-racas.js';
 import { ICONES_CLASSES } from './icones-classes.js';
+import { ICONES_OBJETOS } from './icones-objetos.js';
 
 const P = {
   1: '#e8eef5', // metal claro — fio, brilho
@@ -587,6 +588,8 @@ Object.assign(ICONES, ICONES_CONDICOES);
 Object.assign(ICONES, ICONES_MAGIAS);
 // Ações, traços de raça e recursos de classe: src/dev/icones_consolidar.py.
 Object.assign(ICONES, ICONES_ACOES, ICONES_RACAS, ICONES_CLASSES);
+// Um ícone por item do catálogo (`item-<id>`): src/dev/icones_consolidar.py.
+Object.assign(ICONES, ICONES_OBJETOS);
 
 // DOIS NOMES, UM DESENHO.
 //

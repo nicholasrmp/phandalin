@@ -219,6 +219,19 @@ def main():
                     c = mais_perto(cor[x, y], permitidas)
                     op[ox + x, oy + y] = c + (255,)
                     grade[oy + y][ox + x] = chave_de[c]
+        # CONTORNO DE 1 PX, quando o revisor pede (`contorno: true`). Uma
+        # folha inteira de itens veio sem o traço escuro e as armas finas
+        # sumiam no fundo do HUD: o pixel vazio colado no desenho vira a cor
+        # de contorno da paleta (a última, #2a2430).
+        if opcoes.get('contorno'):
+            tinta = pal[-1]
+            borda = [(x, y) for y in range(LADO) for x in range(LADO)
+                     if op[x, y][3] == 0 and any(
+                         0 <= a2 < LADO and 0 <= b2 < LADO and op[a2, b2][3] and op[a2, b2][:3] != tinta
+                         for a2, b2 in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)))]
+            for x, y in borda:
+                op[x, y] = tinta + (255,)
+                grade[y][x] = chave_de[tinta]
         out.save(pasta / 'embarcado' / f'{nome}.png')
         linhas = '\n'.join(f"    '{''.join(l)}'," for l in grade)
         blocos.append(f"  // {desc}\n  '{a.prefixo}{nome}': [\n{linhas}\n  ],")

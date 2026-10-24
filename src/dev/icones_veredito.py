@@ -53,10 +53,12 @@ def aplicar(pasta, arquivo):
                 fila.append({'chave': k, 'motivo': v['motivo'], 'entrada': item})
         elif ver == 'aceitar-com-ressalva':
             ressalvas[k] = v['motivo']
-        elif ver == 'ajustar-conversor' and v.get('somente'):
+        elif ver == 'ajustar-conversor' and (v.get('somente') or v.get('contorno')):
+            # `contorno: true` acrescenta o traço de 1 px que a folha não trouxe.
+            opcoes = {k2: v[k2] for k2 in ('somente', 'contorno') if v.get(k2)}
             for it in esp['icones']:
                 if it[0] == k:
-                    it[2:] = [{'somente': v['somente']}]
+                    it[2:] = [opcoes]
                     ajustou = True
     (pasta / 'veredito.json').write_text(json.dumps({'refazer': refazer}, indent=1, ensure_ascii=False), encoding='utf-8')
     (pasta / 'ressalvas.json').write_text(json.dumps(ressalvas, indent=1, ensure_ascii=False), encoding='utf-8')

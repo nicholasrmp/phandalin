@@ -13,11 +13,23 @@
 // NO COMBATE: atacar quem não se vê dá desvantagem; ser atacado por quem não
 // se vê dá vantagem ao atacante. As duas se anulam, como manda a regra.
 //
+// ZONAS QUE ESCONDEM. Uma zona de magia pode trazer `obscuro` (ver
+// `spells.js`, `zona.obscuro`) e vale para a visão como a escuridão do mapa:
+//   'pesada'  (Névoa Obscurecente) ninguém vê dentro dela nem através dela;
+//   'magica'  (Escuridão, Fome de Hadar) quem está dentro é visto como no
+//             breu total: nem a luz do mapa, nem a tocha, nem a visão no
+//             escuro ajudam. Quem está dentro ainda vê o que está iluminado fora.
+// Funciona em qualquer mapa, com ou sem `field.luz`.
+//
+// LUZ (truque). Quem a carrega (`luzMagica`) vale como uma tocha acesa que não
+// se apaga: as mesmas medidas, a mesma pista para quem enxerga no escuro.
+//
 // TOCHA. Acender e apagar é interação com objeto, de graça. A tocha mostra o
 // caminho e revela quem a carrega: um goblin com visão no escuro vê o herói
 // iluminado de longe. É a escolha tática da caverna.
 
-import { distanceFt } from '../core/grid.js';
+import { distanceFt, key } from '../core/grid.js';
+import { hasCondition, CONDITIONS } from './conditions.js';
 
 export const CLARO = 2;
 export const PENUMBRA = 1;
@@ -32,6 +44,12 @@ const MONSTROS_COM_VISAO = /goblin|bugbear|hobgoblin|orc|klarg|yeemik|droop|grol
 
 /** Alcance da visão no escuro, em pés (0 = não tem). */
 export function visaoNoEscuro(c) {
+  // A magia Visão no Escuro soma-se à natural: vale o maior dos dois alcances.
+  const magia = hasCondition(c, 'visaoNoEscuro') ? CONDITIONS.visaoNoEscuro.alcanceFt : 0;
+  return Math.max(magia, visaoNatural(c));
+}
+
+function visaoNatural(c) {
   if (c.visaoNoEscuro != null) return c.visaoNoEscuro;
   if (c.senses?.darkvisionFt) return c.senses.darkvisionFt;
   if (c.kind === 'pc') return ANCESTRAIS_COM_VISAO.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 60 : 0;
@@ -41,13 +59,42 @@ export function visaoNoEscuro(c) {
 /** O mapa tem escuridão? Sem ela nada disto roda — a estrada de dia não paga a conta. */
 export const temEscuridao = (field) => Boolean(field.luz);
 
-/** As fontes de luz agora: tochas acesas de quem está vivo, e as do mapa. */
+/**
+ * As casas das zonas que escondem, por tipo. Guardado no encontro enquanto as
+ * zonas não mudam: `comoVe` é chamado casa por casa.
+ */
+export function casasEscondidas(enc) {
+  const zonas = (enc.zonas ?? []).filter((z) => z.obscuro || z.ilusao);
+  if (!zonas.length) return null;
+  const chave = zonas.map((z) => `${z.id}:${z.obscuro ?? 'ilusao'}:${z.casas.size}`).join('|');
+  if (enc._escondidas?.chave === chave) return enc._escondidas;
+  const pesada = new Set();
+  const magica = new Set();
+  // Ilusão Menor: casa → lado de quem a conjurou (esse lado enxerga através).
+  const ilusao = new Map();
+  for (const z of zonas) {
+    if (z.ilusao) { for (const k of z.casas) ilusao.set(k, z.lado); continue; }
+    for (const k of z.casas) (z.obscuro === 'pesada' ? pesada : magica).add(k);
+  }
+  enc._escondidas = { chave, pesada, magica, ilusao };
+  return enc._escondidas;
+}
+
+/** Há escuridão a calcular: a do mapa ou a de uma zona de magia? */
+export const temEscuridaoEm = (enc) => temEscuridao(enc.field) || Boolean(casasEscondidas(enc));
+
+/** Emite luz: tocha acesa ou o truque Luz. */
+export const emiteLuz = (c) => !c.dead && Boolean(c.tochaAcesa || hasCondition(c, 'luzMagica'));
+
+/** As fontes de luz agora: tochas e truques Luz de quem está vivo, e as do mapa. */
 export function fontesDeLuz(enc) {
   const fontes = [];
   for (const c of enc.combatants) {
-    if (c.tochaAcesa && !c.dead) fontes.push({ pos: c.pos, ...TOCHA });
+    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...TOCHA });
   }
   for (const f of enc.field.luzes ?? []) fontes.push(f);
+  // Luz do Dia: uma esfera de luz plena e mais uma de penumbra, num ponto.
+  for (const z of enc.zonas ?? []) if (z.luz && z.centro) fontes.push({ pos: z.centro, claro: z.luz.claro, penumbra: z.luz.penumbra });
   return fontes;
 }
 
@@ -69,9 +116,37 @@ export function nivelDeLuz(field, x, y, fontes) {
  */
 export function comoVe(enc, obs, pos, fontes = null) {
   const field = enc.field;
-  if (!temEscuridao(field)) return CLARO;
+  const zonas = casasEscondidas(enc);
+  if (!temEscuridao(field) && !zonas) return CLARO;
   if (obs.pos.x === pos.x && obs.pos.y === pos.y) return CLARO;
+  // Só uma Ilusão Menor num mapa claro: nada é escuro, só o que fica atrás da imagem.
+  if (zonas && !temEscuridao(field) && !zonas.pesada.size && !zonas.magica.size) {
+    for (const q of field.line(obs.pos, pos).slice(1, -1)) {
+      const lado = zonas.ilusao.get(key(q.x, q.y));
+      if (lado && lado !== obs.side) return ESCURO;
+    }
+    return CLARO;
+  }
   if (!field.hasLineOfSight(obs.pos, pos)) return ESCURO;
+  if (zonas) {
+    // Névoa: quem olha de dentro, quem está dentro e o que fica do outro lado.
+    if (zonas.pesada.size) {
+      if (zonas.pesada.has(key(obs.pos.x, obs.pos.y))) return ESCURO;
+      for (const q of field.line(obs.pos, pos)) if (zonas.pesada.has(key(q.x, q.y))) return ESCURO;
+    }
+    // Escuridão mágica: nada ilumina nem enxerga lá dentro.
+    if (zonas.magica.has(key(pos.x, pos.y))) return ESCURO;
+    // Ilusão Menor: a imagem tira a visão de quem a vê como objeto de verdade (o
+    // outro lado) para o que está ATRÁS dela; a casa da própria imagem se vê.
+    if (zonas.ilusao.size) {
+      const linha = field.line(obs.pos, pos);
+      for (let i = 1; i < linha.length - 1; i++) {
+        const lado = zonas.ilusao.get(key(linha[i].x, linha[i].y));
+        if (lado && lado !== obs.side) return ESCURO;
+      }
+    }
+  }
+  if (!temEscuridao(field)) return CLARO;
   const luz = nivelDeLuz(field, pos.x, pos.y, fontes ?? fontesDeLuz(enc));
   if (luz > ESCURO) return luz;
   return distanceFt(obs.pos, pos) <= visaoNoEscuro(obs) ? PENUMBRA : ESCURO;
@@ -84,7 +159,7 @@ export const podeVer = (enc, obs, alvo) => comoVe(enc, obs, alvo.pos) > ESCURO;
  * é a função de lá que registra a origem de cada uma.
  */
 export function modificadoresDeLuz(enc, atacante, alvo, mods, fonte) {
-  if (!temEscuridao(enc.field)) return;
+  if (!temEscuridaoEm(enc)) return;
   if (!podeVer(enc, atacante, alvo)) fonte(mods, 'desvantagem', 'alvo oculto no escuro');
   if (!podeVer(enc, alvo, atacante)) fonte(mods, 'vantagem', 'atacante oculto no escuro');
 }
@@ -96,8 +171,9 @@ export function modificadoresDeLuz(enc, atacante, alvo, mods, fonte) {
  */
 export function visaoDoGrupo(enc) {
   const grupo = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
-  const chave = grupo.map((c) => `${c.pos.x},${c.pos.y},${c.tochaAcesa ? 1 : 0}`).join('|')
-    + `#${(enc.field.luzes ?? []).length}`;
+  const chave = grupo.map((c) => `${c.pos.x},${c.pos.y},${emiteLuz(c) ? 1 : 0}`).join('|')
+    + `#${(enc.field.luzes ?? []).length}#${casasEscondidas(enc)?.chave ?? ''}`
+    + `#${(enc.zonas ?? []).filter((z) => z.luz).map((z) => z.id).join('.')}`;
   if (enc._visao?.chave === chave) return enc._visao.mapa;
   const fontes = fontesDeLuz(enc);
   const mapa = new Map();

@@ -47,9 +47,10 @@ const GRUPOS = {
 /**
  * Abre a loja e resolve quando o jogador fecha.
  * @param {HTMLElement} root
- * @param {{ loja: object, npc: {name: string, look: string}, grupo: object[], aoMudar?: () => void }} o
+ * @param {{ loja: object, npc: {name: string, look: string}, grupo: object[], aoMudar?: (t: string) => void,
+ *           onFicha?: (heroi: object, depois: () => void) => void }} o
  */
-export function abrirLoja(root, { loja, npc, grupo, aoMudar }) {
+export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
   return new Promise((resolve) => {
     const vivos = () => grupo.filter((c) => !c.dead);
     const podeComprar = loja.estoque().length > 0;
@@ -97,12 +98,16 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar }) {
           class: `loja-aba${aba === a ? ' ativa' : ''}`,
           onclick: () => { aba = a; aviso = ''; desenhar(); },
         }, a === 'comprar' ? 'Comprar' : 'Vender')));
-      herois.replaceChildren(el('small', {}, aba === 'comprar' ? 'Para quem:' : 'Quem vende:'),
+      herois.replaceChildren(...[el('small', {}, aba === 'comprar' ? 'Para quem:' : 'Quem vende:'),
         ...vivos().map((c) => el('button', {
           class: `loja-heroi${c === heroi ? ' ativo' : ''}`,
           title: c.name,
           onclick: () => { heroi = c; aviso = ''; desenhar(); },
-        }, el('span', { class: 'loja-heroi-retrato' }, retrato(c.look, 28)), c.name)));
+        }, el('span', { class: 'loja-heroi-retrato' }, retrato(c.look, 28)), c.name)),
+        onFicha ? el('button', {
+          class: 'vila-btn discreto loja-ficha', title: 'Vestir o que comprou, ou guardar para vender',
+          onclick: () => onFicha(heroi, desenhar),
+        }, `Ficha de ${heroi.name}`) : null].filter(Boolean));
       rodape.textContent = aviso;
     }
 

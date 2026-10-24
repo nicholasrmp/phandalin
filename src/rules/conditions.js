@@ -58,6 +58,16 @@ export const CONDITIONS = {
     attackedAdvantage: true,
     saveDisadvantage: ['dex'],
   },
+  // Golpe Constritor: o mesmo aperto do `contido`, mas num registro à parte,
+  // para não sobrescrever nem soltar a Teia ou o Emaranhar do mesmo alvo.
+  presoPorVinhas: {
+    name: 'Preso pelas vinhas',
+    desc: 'Deslocamento 0. Desvantagem em ataques e em resistências de DES. Ataques contra têm vantagem. As vinhas ferem no começo do seu turno.',
+    speed: 0,
+    attackDisadvantage: true,
+    attackedAdvantage: true,
+    saveDisadvantage: ['dex'],
+  },
   esquivando: {
     name: 'Esquivando',
     desc: 'Ataques contra você têm desvantagem. Vantagem em testes de resistência de DES.',
@@ -360,6 +370,21 @@ export const CONDITIONS = {
     desc: 'O próximo acerto à distância com arma faz brotar espinhos em volta do alvo.',
     golpe: { dados: '1d10', tipo: 'perfurante', alcance: 'distancia', efeito: 'espinhos' },
   },
+  duelo: {
+    name: 'Duelo Compelido',
+    desc: 'Desvantagem para atacar qualquer um que não seja o conjurador, e não se afasta mais de 9 m dele.',
+    concentrationEffect: true,
+  },
+  golpeConstritor: {
+    name: 'Golpe Constritor',
+    desc: 'O próximo acerto com arma: vinhas prendem o alvo (CD de FOR) e o ferem a cada turno dele.',
+    golpe: { dados: '1d6', tipo: 'perfurante', alcance: 'qualquer', efeito: 'constringe' },
+  },
+  flechaRelampago: {
+    name: 'Flecha Relampejante',
+    desc: 'O próximo ataque à distância vira um raio: 4d8 elétrico no alvo (metade se errar) e uma explosão em volta.',
+    flecha: { alvo: '4d8', explosao: '2d8', tipo: 'elétrico' },
+  },
   chamuscado: {
     name: 'Em chamas (Golpe Abrasador)',
     desc: 'No começo de cada turno, CD de CON ou 1d6 de fogo; passar apaga.',
@@ -375,6 +400,99 @@ export const CONDITIONS = {
     desc: 'Aberrações, celestiais, elementais, fadas, corruptores e mortos-vivos atacam com desvantagem.',
     contraTipos: ['aberração', 'celestial', 'elemental', 'fada', 'corruptor', 'morto-vivo'],
     imuneA: ['amedrontado'],
+    concentrationEffect: true,
+  },
+
+  // ---- lote 10: Luz, Orientação, Aumentar/Reduzir, Elo, Coroa, Calma ----------
+
+  // Luz (truque): quem a carrega acende como uma tocha (`luz.js`, fontesDeLuz).
+  luzMagica: {
+    name: 'Luz',
+    desc: 'Emite luz clara num raio de 6 m e penumbra por mais 6 m, como uma tocha.',
+  },
+  // Orientação (truque): 1d4 no próximo teste de atributo, e acaba.
+  orientado: {
+    name: 'Orientado',
+    desc: 'Soma 1d4 no próximo teste de atributo que fizer.',
+    testeBonusDice: '1d4',
+    consumidaNoTeste: true,
+    concentrationEffect: true,
+  },
+  // Aumentar/Reduzir: o dano de arma muda em 1d4 (`danoArmaDados`) e a Força
+  // ganha vantagem (aumentado) ou desvantagem (reduzido) em testes e resistências.
+  aumentado: {
+    name: 'Aumentado',
+    desc: 'Cresce: +1d4 no dano de arma e vantagem em testes e resistências de Força.',
+    danoArmaDados: '1d4',
+    vantagemTeste: ['str'],
+    concentrationEffect: true,
+  },
+  reduzido: {
+    name: 'Reduzido',
+    desc: 'Encolhe: −1d4 no dano de arma (nunca abaixo de 1) e desvantagem em testes e resistências de Força.',
+    danoArmaDados: '-1d4',
+    desvantagemTeste: ['str'],
+    concentrationEffect: true,
+  },
+  // Elo de Proteção: +1 de CA e nas resistências, resistência a todo dano; o
+  // conjurador (o `source`) sofre o mesmo dano (`combat.js`, eloDeProtecao).
+  eloDeProtecao: {
+    name: 'Elo de Proteção',
+    desc: '+1 de CA e nas resistências, resistência a todo dano. Quem conjurou o elo sofre o mesmo dano que você.',
+    acBonus: 1,
+    saveFixo: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
+    resisteTudo: true,
+  },
+  // Coroa da Loucura: a IA do alvo ataca o aliado mais próximo dele (`ai.js`).
+  coroaDaLoucura: {
+    name: 'Coroa da Loucura',
+    desc: 'Enfeitiçado: gasta a ação atacando um aliado seu, escolhido por quem o coroou. Repete a resistência no fim de cada turno.',
+    concentrationEffect: true,
+  },
+  // Acalmar Emoções: `data.modo` é 'suprime' (tirou medo ou encanto) ou
+  // 'indiferente' (a IA não ataca até ver o perigo).
+  calmo: {
+    name: 'Calmo',
+    desc: 'Sem medo nem encanto; se estava indiferente, não ataca ninguém até ser ferido ou ver um amigo ferido.',
+    imuneA: ['amedrontado', 'enfeiticado', 'hipnotizado', 'coroaDaLoucura'],
+    concentrationEffect: true,
+  },
+
+  // ---- lote 11: visão no escuro, atributo, ilusão, sugestão, voo ---------------
+
+  // Visão no Escuro (2º círculo): `luz.js` (`visaoNoEscuro`) lê esta condição.
+  visaoNoEscuro: {
+    name: 'Visão no Escuro',
+    desc: 'Enxerga no escuro até 18 m, como se fosse penumbra (a escuridão mágica continua opaca).',
+    alcanceFt: 60,
+  },
+  // Aprimorar Atributo: `data.hab` diz qual atributo ganha vantagem nos TESTES
+  // (não nas resistências); `data.opcao` é touro, gato, urso, aguia, raposa ou coruja.
+  aprimorado: {
+    name: 'Atributo aprimorado',
+    desc: 'Vantagem nos testes de um atributo (e, com a Graça do Gato, nenhum dano de queda; com a Resistência do Urso, PV temporários).',
+    vantagemSoTesteDados: true,
+    concentrationEffect: true,
+  },
+  // Força Fantasmagórica: o alvo acredita na ilusão e é ferido por ela no
+  // início de cada turno dele (`combat.js`, `ilusaoTick`); gastar a ação num
+  // teste de Investigação contra a CD a desfaz (`investigarIlusao`).
+  iludido: {
+    name: 'Iludido',
+    desc: 'Crê numa ilusão que o fere: 1d6 psíquico no início do seu turno. Pode gastar a ação para investigá-la (INT contra a CD).',
+    concentrationEffect: true,
+  },
+  // Sugestão: a IA do alvo abandona a luta e se afasta do grupo (`ai.js`).
+  sugerido: {
+    name: 'Sugestionado',
+    desc: 'Seguiu uma sugestão: não ataca e se afasta do grupo, até ser ferido por quem o sugestionou ou pelos aliados dela.',
+    concentrationEffect: true,
+  },
+  // Voo (3º círculo): ignora terreno difícil e o chão (ver `combat.js`, `voaAgora`).
+  voando: {
+    name: 'Voando',
+    desc: 'Voa a 18 m: ignora terreno difícil, degraus de elevação e as zonas que só pegam quem pisa no chão. Se a magia acabar, cai.',
+    vooFt: 60,
     concentrationEffect: true,
   },
 
@@ -397,16 +515,19 @@ export function hasCondition(actor, id) {
  * turno do lado dele: `lado` diz qual lado, e `quando` ('fim' ou 'inicio')
  * diz em que ponto do turno desse lado a conta anda.
  */
-export function addCondition(actor, id, { rounds = Infinity, source = null, data = null, lado = null, quando = 'fim' } = {}) {
+export function addCondition(actor, id, { rounds = Infinity, source = null, data = null, lado = null, quando = 'fim', magia = null } = {}) {
   actor.conditions ??= [];
   const existing = actor.conditions.find((c) => c.id === id);
   if (existing) {
     existing.rounds = Math.max(existing.rounds, rounds);
     if (data) existing.data = data;
+    if (magia) existing.magia = magia;
     if (lado) { existing.lado = lado; existing.quando = quando; }
     return existing;
   }
-  const c = { id, rounds, source, data, lado, quando };
+  // `magia` ({ id, circulo }) marca o efeito como de magia: é o que o
+  // Dissipar Magia procura. Condição de mordida ou de armadilha não tem.
+  const c = { id, rounds, source, data, lado, quando, magia };
   actor.conditions.push(c);
   return c;
 }
@@ -446,10 +567,14 @@ export function conditionEffects(actor) {
     umAtaque: false,
     speedBonusFt: 0,
     speedMult: 1,
+    vooFt: 0,
     vantagemDex: false,
     vantagemSab: false,
     vantagemMorte: false,
     curaMaxima: false,
+    vantagemTeste: [],
+    vantagemSoTeste: [],
+    desvantagemTeste: [],
   };
   for (const c of actor.conditions ?? []) {
     const def = CONDITIONS[c.id];
@@ -477,10 +602,14 @@ export function conditionEffects(actor) {
     if (def.umAtaque) out.umAtaque = true;
     if (def.speedBonusFt) out.speedBonusFt += def.speedBonusFt;
     if (def.speedMult) out.speedMult *= def.speedMult;
+    if (def.vooFt) out.vooFt = Math.max(out.vooFt, def.vooFt);
     if (def.vantagemDex) out.vantagemDex = true;
     if (def.vantagemSab) out.vantagemSab = true;
     if (def.vantagemMorte) out.vantagemMorte = true;
     if (def.curaMaxima) out.curaMaxima = true;
+    if (def.vantagemTeste) out.vantagemTeste.push(...def.vantagemTeste);
+    if (def.vantagemSoTesteDados && c.data?.hab) out.vantagemSoTeste.push(c.data.hab);
+    if (def.desvantagemTeste) out.desvantagemTeste.push(...def.desvantagemTeste);
   }
   return out;
 }

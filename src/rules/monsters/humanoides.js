@@ -261,6 +261,42 @@ export const HUMANOIDES = {
     blurb: 'Abre com Sono para tirar dois personagens da luta sem rolar ataque, depois Mãos Flamejantes em quem se amontoar; 40 PV e CA 12 significam que o grupo tem uma rodada para alcançá-lo.',
   },
 
+  // O CAJAVIDRO (Iarno Albrek), chefe dos Marcarrubra. O livro dá a ele um
+  // bloco de mago fraco que não está no SRD; o `mago` do SRD é nível 6 e
+  // varreria um grupo de nível 2 com uma bola de fogo. Este bloco é NOSSO
+  // (`fonte: 'propria'`): números escritos para o papel que o livro dá —
+  // 200 XP, foge ou se rende, abre com armadura arcana do cajado e joga
+  // mísseis de longe. Nada copiado do bloco publicado.
+  cajavidro: {
+    id: 'cajavidro',
+    name: 'Cajavidro',
+    look: 'iarno',
+    fonte: 'propria',
+    size: 'médio',
+    level: 3,
+    cr: '1',
+    xp: 200,
+    abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 13 },
+    ac: 12,
+    acNote: 'sem armadura; 15 com armadura arcana do cajado',
+    maxHp: 22,
+    speedFt: 30,
+    saves: ['int', 'wis'],
+    skills: ['arcanismo', 'historia', 'enganacao'],
+    attacks: [
+      { name: 'Cajado de vidro', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff' },
+    ],
+    // Nível 3 dá +2 de proficiência: CD 13 e +5 de ataque mágico com INT 17.
+    spellcasting: {
+      ability: 'int',
+      cantrips: ['raioDeGelo', 'toqueChocante'],
+      prepared: ['armaduraArcana', 'misselMagico', 'escudoArcano', 'enfeiticarPessoa', 'imobilizarPessoa', 'passoNebuloso'],
+      slots: [0, 4, 2],
+    },
+    traits: ['conjuracao'],
+    blurb: 'Abre com armadura arcana, cola em quem chega perto com imobilizar e chove mísseis de longe; com 8 PV ou menos e sem saída, se rende.',
+  },
+
   acolito: {
     id: 'acolito',
     name: 'Acólito',

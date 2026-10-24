@@ -37,6 +37,7 @@ MODULOS = {
     'acao-': ('icones-acoes.js', 'ICONES_ACOES', 'ações de combate'),
     'raca-': ('icones-racas.js', 'ICONES_RACAS', 'traços de raça do SRD 5.1'),
     'classe-': ('icones-classes.js', 'ICONES_CLASSES', 'recursos de classe do SRD 5.1'),
+    'item-': ('icones-objetos.js', 'ICONES_OBJETOS', 'itens do catálogo (armas, armaduras, equipamento, ferramentas, montarias, mágicos)'),
 }
 
 
@@ -64,6 +65,7 @@ def main():
     fontes = [ICONES / 'magias']
     fontes += sorted(ICONES.glob('lote/folha-*'))
     fontes += sorted(ICONES.glob('lote/novos-*'))
+    fontes += sorted(ICONES.glob('lote/itens-*'))
     fontes += sorted(ICONES.glob('lote/refazer-*'))
     escolhidos = {}
     for pasta in fontes:

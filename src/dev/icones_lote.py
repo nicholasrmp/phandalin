@@ -39,9 +39,17 @@ def carregar(nome):
     return m
 
 
-def catalogo():
-    return list(carregar('icones_catalogo_magias.py').entradas()) + \
-        list(carregar('icones_catalogo_recursos.py').entradas())
+CATALOGOS = {
+    # As folhas do primeiro catálogo (magias e recursos) já foram geradas como
+    # `folha-NN`; os itens vêm depois, em `itens-NN`, para não pisar nelas.
+    'magias': (('icones_catalogo_magias.py', 'icones_catalogo_recursos.py'), 'folha'),
+    'itens': (('icones_catalogo_itens.py',), 'itens'),
+}
+
+
+def catalogo(nome='magias'):
+    arquivos, _ = CATALOGOS[nome]
+    return [e for a in arquivos for e in carregar(a).entradas()]
 
 
 def prompt(itens, colunas, linhas):
@@ -72,15 +80,16 @@ def prompt(itens, colunas, linhas):
     )
 
 
-def planejar(por_folha):
+def planejar(por_folha, nome='magias'):
     colunas, linhas = GRADES[por_folha]
-    itens = catalogo()
+    itens = catalogo(nome)
+    pasta_base = CATALOGOS[nome][1]
     n = math.ceil(len(itens) / por_folha)
     SAIDA.mkdir(parents=True, exist_ok=True)
     indice = []
     for k in range(n):
         lote = itens[k * por_folha:(k + 1) * por_folha]
-        pasta = SAIDA / f'folha-{k + 1:02d}'
+        pasta = SAIDA / f'{pasta_base}-{k + 1:02d}'
         pasta.mkdir(exist_ok=True)
         esp = {
             'paleta': PALETA, 'colunas': colunas, 'linhas': linhas,
@@ -94,7 +103,7 @@ def planejar(por_folha):
         cats = sorted({x['categoria'] for x in lote})
         indice.append({'folha': k + 1, 'n': len(lote), 'categorias': cats,
                        'de': lote[0]['prefixo'] + lote[0]['id'], 'ate': lote[-1]['prefixo'] + lote[-1]['id']})
-    (SAIDA / 'indice.json').write_text(json.dumps(indice, indent=1, ensure_ascii=False), encoding='utf-8')
+    (SAIDA / ('indice.json' if nome == 'magias' else f'indice-{nome}.json')).write_text(json.dumps(indice, indent=1, ensure_ascii=False), encoding='utf-8')
     print(f'{len(itens)} ícones em {n} folhas de {por_folha} ({colunas}x{linhas})')
     for f in indice:
         print(f"  folha {f['folha']:02d}  {f['n']:2d}  {','.join(f['categorias']):14}  {f['de']} .. {f['ate']}")
@@ -105,11 +114,12 @@ def main():
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('planejar')
     p.add_argument('--por-folha', type=int, default=24, choices=sorted(GRADES))
+    p.add_argument('--catalogo', default='magias', choices=sorted(CATALOGOS))
     q = sub.add_parser('prompt')
     q.add_argument('folha', type=int)
     a = ap.parse_args()
     if a.cmd == 'planejar':
-        planejar(a.por_folha)
+        planejar(a.por_folha, a.catalogo)
     else:
         print((SAIDA / f'folha-{a.folha:02d}' / 'prompt.txt').read_text(encoding='utf-8'))
 

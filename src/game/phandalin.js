@@ -49,7 +49,8 @@ export const MISSOES = {
   coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', texto: 'Alguém cava nas ruínas do Poço da Coruja Velha, a dois dias a nordeste, e garimpeiros dizem ter sido perseguidos por mortos-vivos. Descobrir o que está acontecendo.' },
   orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'Viajantes relatam orcs perto do Cume da Wyvern, a leste pela Trilha de Triboar. Dar um jeito neles.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
-  reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece cada palmo da região — inclusive onde fica o Castelo Dentefino. Ele foi para as ruínas de Árvore Trovão, a uns 80 km a noroeste.' },
+  reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
+  mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Na loja de ervas da família de Mirna, no sudeste das ruínas de Árvore Trovão, há uma caixa escondida sob as prateleiras com um colar de esmeraldas. É de quem achar.' },
   linene: { titulo: 'Os suprimentos da Escudo Leão', de: 'Linene Graywind', texto: 'A última caravana da Escudo Leão nunca chegou. Quem achar a carga, ou disser onde está, ganha uma recompensa.', recompensa: '50 po' },
 };
 
@@ -91,7 +92,7 @@ export const LUGARES = [
   { id: 'mansao', nome: 'Mansão Tresendar', x: 90.2, y: 47.2, npc: null, sempreAberto: true },
 ];
 
-const QUADRO = 'Paredes grossas de pedra, telhado de madeira e uma torre de sino. Num quadro ao lado da porta: "RECOMPENSA — Orcs perto do Cume da Wyvern! Quem tiver coragem, entre para saber mais." Selo da vila, assinatura ilegível.';
+const QUADRO = 'O prédio mais sólido da vila: pedra grossa e uma torre com sino. Pregado na porta, um papel já amarelado promete recompensa a quem der fim aos orcs vistos para os lados do Cume da Wyvern — "tratar aqui dentro". A assinatura é um borrão.';
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 
@@ -129,10 +130,10 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       paginas: [{
         titulo: 'Phandalin',
         texto: [
-          'A trilha esburacada sobe um morro de mato e, lá de cima, aparece Phandalin: umas quarenta ou cinquenta casas simples, algumas sobre alicerces de pedra muito mais velhos. Muros caídos, cobertos de hera e espinho, cercam as construções novas — um dia isto aqui foi bem maior.',
-          'A rua principal, de barro, sobe até uma mansão em ruínas num morro a leste. Crianças brincam na grama; alguém olha vocês passarem e volta ao que fazia.',
-          v.sildar ? 'Sildar solta o ar, aliviado. — Primeiro, uma cama. Me disseram que a estalagem daqui é um luxo.' : null,
-          'O dia está acabando: dá para ver um ou dois lugares antes de procurar onde dormir.',
+          'Mais uma curva da trilha, e o mato se abre: lá embaixo está Phandalin. Telhados de madeira escura espalhados sem muito plano, fumaça de chaminé, um cachorro latindo para ninguém. Aqui e ali, pedaços de muralha antiga afloram do capim — restos de uma cidade que existiu neste lugar e foi esquecida.',
+          'Numa elevação a leste, uma casa-forte de pedra sem telhado vigia a vila como um dente quebrado. Um carroceiro para, mede vocês de cima a baixo e segue sem dar bom-dia.',
+          v.sildar ? 'Sildar apalpa o rosto inchado. — Se houver uma cama nesta vila, esta noite ela é minha. O resto conversamos depois.' : null,
+          'O sol já vai baixo: dá para resolver uma ou duas coisas antes de procurar onde passar a noite.',
         ].filter(Boolean),
       }],
     });
@@ -150,12 +151,12 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'No meio da vila, uma hospedaria nova de pedra bruta e madeira rústica. A sala de beber está cheia, e todo mundo olha para vocês com curiosidade.',
+            narra: 'Um prédio de dois andares bem no centro da vila, ainda com cheiro de madeira nova. Lareira acesa, mesas compridas, meia Phandalin de caneco na mão — e todas as cabeças viram quando a porta abre.',
             fala: agradece
               ? 'A sala inteira se vira quando vocês entram. Toblen bate no balcão: — Os que limparam a rua! A primeira rodada é da casa. Fazia tempo que ninguém aqui ria alto.'
               : v.feito.toblen
               ? 'De volta? Sente aí. O que vai ser?'
-              : 'Toblen Stonehill, às ordens. Vim de Triboar achando que ia ficar rico minerando — descobri que sei mais de estalagem que de picareta. Seis quartos, comida quente, e nenhum Marcarrubra se eu puder evitar.',
+              : 'Bem-vindos à Stonehill! Toblen, o dono. Saí de Triboar com uma picareta e um sonho: a picareta enferrujou, o sonho virou esta casa. Tenho seis quartos, um ensopado de que ninguém reclama, e Marcarrubra aqui dentro só por cima de mim.',
             ao: () => { v.feito.toblen = true; },
             opcoes: [
               { texto: 'Ouvir as conversas da sala.', vai: 'rumores', uma: true },
@@ -177,13 +178,13 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             },
             narra: 'Uma rodada de cerveja depois, a sala fala sozinha:',
             fala: [
-              'Narth, um fazendeiro velho: — A Irmã Garaele, do santuário, sumiu uns dias e voltou toda arranhada. Ninguém sabe de onde.',
-              'Elsa, a moça que serve: — O Daran do pomar? Já foi aventureiro, dizem. E dos bons.',
-              'Lanar, mineiro: — Tem orc na ponta leste da Trilha de Triboar. O chefe da vila anda procurando quem os espante.',
-              'Trilena, a mulher do Toblen, mais baixo: — O Thel Dendrar, o marceneiro, encarou os Marcarrubra há dez dias. Mataram ele na frente de todo mundo e levaram o corpo. A mulher e os dois filhos sumiram.',
-              'Pip, o caçula do Toblen: — O Carp, da fazenda Alderleaf, achou um túnel secreto no mato! Os Marcarrubra quase pegaram ele.',
-              'Freda, a tecelã: — Eles mexem com todo mundo. Menos com o Câmbio de Minério. Ninguém mexe com a Halia Thornton.',
-              'E todos concordam numa coisa: os Marcarrubra ficam no Gigante Adormecido, no leste da vila. Encrenca.',
+              'Trilena, a mulher do Toblen, puxa uma cadeira para perto: — O Thel Dendrar, o marceneiro, perdeu a paciência com os Marcarrubra faz uns dez dias. Disse umas verdades na cara deles. Morreu ali mesmo, e o corpo sumiu. A mulher e os dois filhos também — ninguém viu mais.',
+              'Lanar, ainda com pó de pedra na barba: — Lá para o leste, na Trilha de Triboar, apareceu orc. O chefe da vila pendurou um aviso pedindo voluntário. Voluntário, rá.',
+              'Freda, a tecelã, baixando a voz: — Repararam? A gangue cobra de todo mundo. De todo mundo menos do Câmbio de Minério. A Halia Thornton nunca teve uma vidraça quebrada.',
+              'Narth, um velho de mãos rachadas, sem tirar os olhos do caneco: — A elfa do santuário passou uns dias fora. Voltou mancando, cheia de arranhão. Perguntei; ela mudou de assunto.',
+              'Pip, o filho mais novo do Toblen, se espremendo entre as mesas: — Sabiam que o Carp achou um buraco escondido no mato? Ele jura que tem bandido lá dentro, e que escapou por um triz!',
+              'Elsa, equilibrando quatro canecos: — Conselho de quem já viu briga de verdade? Batam na porta do Daran, lá do pomar. Dizem que no tempo dele era coisa séria.',
+              'E toda vez que alguém diz "Marcarrubra", os olhos da sala escorregam para o leste — para o Gigante Adormecido, a taverna onde eles bebem.',
             ],
             opcoes: [{ texto: 'Voltar a falar com Toblen.', vai: 'oi' }],
           },
@@ -201,7 +202,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'O maior posto de troca da vila: mochilas, sacos de dormir, corda, rações. Armas e armadura, não — "isso é com a Linene, na Escudo Leão".',
+            narra: 'Prateleiras até o teto e cheiro de corda nova e couro curtido. Dois rapazes, Ander e Thistle, carregam sacos de farinha para dentro. Uma tabuleta avisa: armas e armaduras, só na Escudo Leão.',
             fala: 'Elmar Barthen. Em que posso ajudar?',
             opcoes: [
               { texto: 'Trouxemos a carroça de Gundren Rockseeker.', vai: 'carroca', uma: true,
@@ -221,7 +222,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             ao: () => { missao('gundren'); },
             fala: [
               'Capturado? Gundren é meu amigo… Ele falava de ter achado a mina perdida do Pacto de Phandelver, nessas colinas. Achem ele, por favor.',
-              'Os irmãos dele, Nundro e Tharden, estão acampados em algum lugar fora da vila. Não aparecem faz uns dez dias. Devem voltar a qualquer hora para reabastecer.',
+              'Os irmãos dele, Nundro e Tharden, montaram acampamento em algum lugar nas colinas. Faz uns dez dias que ninguém os vê por aqui — mantimento acaba, e eles vão ter de aparecer.',
             ],
             opcoes: [
               { texto: 'A mina perdida de Phandelver?', teste: { pericia: 'historia', cd: 15 }, sucesso: 'mina', falha: 'naoSabe' },
@@ -249,7 +250,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'Na porta, uma placa de madeira em forma de escudo com um leão azul pintado.',
+            narra: 'Sobre a porta, o brasão da companhia — um leão em pé dentro de um escudo — já desbotado de sol. Lá dentro, caixas empilhadas e uma mulher fazendo contas sem levantar a cabeça.',
             fala: 'Linene Graywind. Este posto é da Escudo Leão, de Yartar. Armas e armaduras nos fundos — para quem eu acho que não vai usar contra a vila.',
             ao: () => missao('linene'),
             opcoes: [
@@ -278,11 +279,13 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'O Câmbio de Minério pesa, mede e paga o que os garimpeiros acham — e, na falta de outra autoridade, registra quem tem direito a qual riacho.',
+            narra: 'Um balcão alto, balanças de latão e mapas pregados na parede, com riachos marcados a tinta. É aqui que garimpeiro troca pedra por moeda — e onde se anota quem pode cavar onde.',
             fala: 'Halia Thornton, mestra do Câmbio. Gente nova, e com cara de quem sabe se virar. Interessante.',
             opcoes: [
               { texto: 'Procuramos o Castelo Dentefino.', vai: 'castelo', uma: true },
               { texto: 'E os Marcarrubra?', vai: 'oferta', uma: true },
+              { texto: 'Trouxemos os papéis do Cajavidro.', vai: 'carta', uma: true,
+                requer: () => (v.feito.cartaDoCajavidro && feitos.cajavidro && !v.feito.haliaPagou ? null : 'nada'), oculta: true },
               { texto: 'Vender pedras e objetos de valor.', fim: 'loja' },
               { texto: 'Até mais.', fim: 'sai' },
             ],
@@ -309,6 +312,12 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           semMotivo: { fala: 'Gosto de saber com quem a vila está lidando. Só isso.', opcoes: [{ texto: '…', vai: 'oi' }] },
+          carta: {
+            ao: () => { v.feito.haliaPagou = true; concluir('halia'); repartir(vivos(), 100 * 100); registro.push('Halia paga 100 po pelo Cajavidro e pelos papéis.'); },
+            narra: 'Halia lê a carta com a aranha desenhada duas vezes, devagar, e a guarda numa gaveta com chave.',
+            fala: 'Combinado é combinado. Cem peças de ouro. E, se um dia quiserem trabalho de verdade, a porta está aberta.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
         },
       });
     },
@@ -326,6 +335,10 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               fala: 'Vocês. Bom. Tenho trabalho, e tenho como pagar.',
               opcoes: [
                 { texto: 'O que precisa de nós?', vai: 'sildar', uma: true },
+                { texto: 'Os Marcarrubra acabaram.', vai: 'fimDaGangue', uma: true,
+                  requer: () => (feitos.marcarrubra && !v.feito.sildarPagouGangue ? null : 'nada'), oculta: true },
+                { texto: 'Trouxemos o Cajavidro. É o Iarno.', vai: 'iarno', uma: true,
+                  requer: () => (v.iarnoPreso && !v.feito.iarnoEntregue ? null : 'nada'), oculta: true },
                 { texto: 'E o pagamento da escolta?', vai: 'escolta', uma: true,
                   requer: () => (!v.feito.escolta ? null : 'nada'), oculta: true },
                 { texto: 'Procurar o chefe da vila.', fim: 'harbin' },
@@ -337,6 +350,25 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               fala: [
                 'Duas coisas. Primeiro, o Castelo Dentefino: achem e derrotem ou expulsem o chefe da tribo, e a Aliança paga quinhentas peças de ouro. Procurem os bandos de saqueadores pela Trilha de Triboar — algum vai ter vindo de lá.',
                 'Segundo: Iarno Albrek, meu colega da Aliança, mago, baixo, barba preta, uns trinta anos. Sumiu explorando a Mansão Tresendar há dois meses. Tragam ele de volta, ou o que sobrou. E pelo fim dos Marcarrubra, duzentas peças de ouro.',
+              ],
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            fimDaGangue: {
+              ao: () => { v.feito.sildarPagouGangue = true; concluir('marcarrubra'); repartir(vivos(), 200 * 100); registro.push('Sildar paga 200 po pelo fim dos Marcarrubra.'); },
+              fala: 'Então Phandalin respira. A Aliança prometeu duzentas peças de ouro por isso, e aqui estão.',
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            iarno: {
+              ao: () => {
+                v.feito.iarnoEntregue = true;
+                concluir('iarno');
+                app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + 200, motivo: 'O Cajavidro entregue a Sildar' };
+                feitos.traicaoDeIarno = true;
+              },
+              narra: 'Sildar olha um bom tempo para o homem amarrado antes de falar.',
+              fala: [
+                'Iarno. Eu vim a Phandalin procurar você. Achei que estivesse morto.',
+                'Fica preso no salão até eu conseguir mandá-lo para Neverwinter. Lá decidem o que fazer com um traidor da Aliança. Vocês fizeram mais do que eu pedi.',
               ],
               opcoes: [{ texto: '…', vai: 'oi' }],
             },
@@ -357,7 +389,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'O único templo da vila: um santuário pequeno, de pedras tiradas das ruínas, dedicado a Tymora, a deusa da sorte.',
+            narra: 'Um nicho de pedra reaproveitada, com uma moeda de prata entalhada sobre o altar: o santuário de Tymora, a deusa da sorte. Velas, flores do campo, e uma elfa jovem varrendo o chão.',
             fala: 'Irmã Garaele. Que a sorte sorria para vocês — e os Marcarrubra que se danem.',
             opcoes: [
               { texto: 'Dizem que a senhora voltou machucada de algum lugar.', vai: 'agatha', uma: true },
@@ -383,17 +415,18 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'Uma cabana pequena e arrumada ao lado de um pomar de maçãs. O dono é um meio-elfo com mais de cem anos, ainda em forma.',
+            narra: 'Fileiras de macieiras bem podadas e, no meio delas, uma casinha caprichada. Quem atende é um meio-elfo de cabelo prateado: a idade está no rosto, não nos ombros.',
             fala: 'Daran Edermath. Já andei por estradas piores que as suas. Sentem.',
             opcoes: [
               { texto: 'O que acha dos Marcarrubra?', vai: 'marcarrubra', uma: true },
               { texto: 'Precisa de alguma coisa?', vai: 'coruja', uma: true },
+              { texto: 'Podemos dormir no seu galpão esta noite?', fim: 'galpaoDaran' },
               { texto: 'Até mais.', fim: 'sai' },
             ],
           },
           marcarrubra: {
             ao: () => { missao('marcarrubra'); pista('Os Marcarrubra têm uma base embaixo da Mansão Tresendar, no leste da vila.'); },
-            fala: 'Que já passou da hora de alguém ensinar uma lição a eles, e ao chefe deles, o Cajavidro. Ficam no Gigante Adormecido — mas o covil de verdade é embaixo da Mansão Tresendar, a ruína no leste.',
+            fala: 'Que alguém devia ter feito alguma coisa há muito tempo — e eu já estou velho para entrar sozinho num ninho de ratos. O chefe deles atende por Cajavidro. Bebem no Gigante Adormecido, mas dormem embaixo da Mansão Tresendar, a ruína do leste.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           coruja: {
@@ -410,26 +443,26 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'Uma fazenda simples. A dona, uma halfling de quarenta e poucos anos, parece saber de tudo que acontece na vila.',
-            fala: 'Qelline Alderleaf. Se a estalagem estiver cara, o palheiro é de vocês. — Atrás dela, um menino halfling não tira os olhos das armas de vocês.',
+            narra: 'Uma casa de fazenda baixa, horta na frente, galinhas soltas pelo terreiro. A dona, uma halfling de olhar esperto, vem enxugando as mãos no avental — e pelo jeito já sabe quem vocês são.',
+            fala: 'Qelline Alderleaf. Se faltar cama na estalagem, o galpão está aí, seco e de graça. — Meio escondido atrás dela, um menino halfling devora com os olhos as espadas de vocês.',
             opcoes: [
               { texto: 'Falar com o menino, Carp.', vai: 'carp', uma: true },
               { texto: 'Procuramos o Castelo Dentefino — ou uma mina perdida.', vai: 'reidoth', uma: true },
-              { texto: 'Dormir no palheiro esta noite.', fim: 'palheiro' },
+              { texto: 'Dormir no galpão esta noite.', fim: 'palheiro' },
               { texto: 'Até mais.', fim: 'sai' },
             ],
           },
           carp: {
             ao: () => { v.feito.tunel = true; pista('Carp sabe onde fica um túnel secreto no mato perto da Mansão Tresendar, que leva ao covil dos Marcarrubra. Ele pode mostrar.'); },
             fala: [
-              'Carp, dez anos, sussurrando: — Eu vou ser aventureiro. Eu tava brincando no mato perto da mansão velha e achei um túnel escondido numa moita!',
-              '— Saíram dois bandidos grandes e feios lá de dentro e foram falar com dois Marcarrubra. Não me viram, mas foi por pouco. Eles têm um covil embaixo da mansão. Eu mostro onde é!',
+              'Carp, dez anos, falando baixo e depressa: — Eu vou ser aventureiro, tá? Eu tava no mato atrás da mansão velha e achei uma passagem secreta, escondida no meio das moitas!',
+              '— Aí saíram dois sujeitos enormes, feios de dar medo, e foram se encontrar com uns Marcarrubra. Eu fiquei grudado no chão, sem respirar. Eles moram lá embaixo, eu sei. Eu levo vocês!',
             ],
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           reidoth: {
             ao: () => missao('reidoth'),
-            fala: 'Procurem o Reidoth, um druida amigo meu: não existe um palmo de terra por aqui que ele não conheça. Ele foi para as ruínas de Árvore Trovão, a oeste da Floresta de Neverwinter — uns oitenta quilômetros a noroeste. Eu explico o caminho.',
+            fala: 'Vocês precisam do Reidoth. É druida, amigo antigo, e conhece estas terras como eu conheço a minha horta. Da última vez que passou, ia para as ruínas de Árvore Trovão, a oeste da Floresta de Neverwinter — uns oitenta quilômetros a noroeste. Eu desenho o caminho.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
         },
@@ -475,7 +508,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               return ['Os senhores! Marcarrubra mortos na rua principal!',
                 'Não vou punir ninguém, que fique claro. Mas eles vão querer revanche, e quem paga é a vila. Nada de mais confusão, entendido?'];
             }
-            return 'Os Marcarrubra? Uma guilda de mercenários, nada desse escândalo todo. O que os senhores desejam?';
+            return 'Os Marcarrubra? Rapazes de uma companhia de escolta, só isso. A vila fala demais. Pois não — em que posso servir?';
           },
           opcoes: [
             { texto: 'Sobre os orcs do aviso.', vai: 'orcs', uma: true },
@@ -598,10 +631,16 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     }
     if (l.id === 'gigante') return v.feito.ruaVencida ? gigante() : 'gigante';
     if (l.id === 'mansao') {
-      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: [
-        'Mais castelo que casa, a mansão em ruínas fica num morro baixo entre a mata e o mato, no leste da vila. Está deserta — mas há muitas pegadas levando a uma escada de pedra que desce das ruínas de uma cozinha grande.',
-        '(O esconderijo dos Marcarrubra é a próxima etapa da construção.)'] }] });
-      return 'sai';
+      const porOnde = await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: [
+        'A ruína domina o morro do leste: muralhas grossas, janelas sem vidro, mato crescendo dentro dos salões. Ninguém mora ali — mas a terra está cheia de marcas de bota, e todas vão para o mesmo canto, onde uma escada de pedra afunda no meio do que um dia foi uma cozinha.'] }],
+        escolhas: [
+          { rotulo: 'Voltar', valor: 'sai' },
+          ...(v.feito.tunel ? [{ rotulo: 'O túnel do Carp', valor: 'mansaoTunel' }] : []),
+          { rotulo: 'Descer a escada da cozinha', valor: 'mansao', primaria: true },
+        ],
+      });
+      if (porOnde === 'sai' || !porOnde) return 'sai';
+      return { descer: porOnde };
     }
     return 'sai';
   }
@@ -617,8 +656,16 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     }
     tela.esconder();
     const fim = l.npc ? await CENAS[l.id]() : await semNpc(l);
+    if (fim?.descer) {
+      tela.fechar();
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: fim.descer, continuarCom: grupo });
+      return;
+    }
     if (fim === 'loja') {
-      await abrirLoja(app.root, { loja: LOJAS[l.id], npc: pessoa(l.npc), grupo: vivos(), aoMudar: (t) => registro.push(t) });
+      await abrirLoja(app.root, {
+        loja: LOJAS[l.id], npc: pessoa(l.npc), grupo: vivos(), aoMudar: (t) => registro.push(t),
+        onFicha: (c, depois) => app.abrirFichaNaVila(c, depois),
+      });
     }
     const convite = conviteDe(l);
     if (convite) await convidar(convite);
@@ -627,7 +674,9 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       cobrar(vivos(), 5 * 10 * vivos().length);
       await dormir('Um quarto na Estalagem Stonehill, cama de verdade, sopa quente.');
     } else if (fim === 'palheiro') {
-      await dormir('O palheiro da Qelline cheira a feno e a vaca, mas é seco, quente e de graça.');
+      await dormir('O galpão da Qelline cheira a feno e a vaca, mas é seco, quente e de graça.');
+    } else if (fim === 'galpaoDaran') {
+      await dormir('O galpão do Daran cheira a maçã e a palha limpa. Ele mesmo faz a primeira vigia, por hábito.');
     } else if (fim === 'gigante') {
       return brigaDeRua(true);
     } else if (!l.sempreAberto || l.npc) {
@@ -655,15 +704,30 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   async function brigaDeRua(naTaverna) {
     v.feito.ruaMarcarrubra = true;
     tela.esconder();
-    await narrar(app.root, {
+    // O livro: os dois lados se provocam à vontade, e ninguém é pego de
+    // surpresa. Responder não muda a luta — muda como ela começa.
+    const resposta = await narrar(app.root, {
       formato: 'painel',
       paginas: [{ texto: naTaverna
-        ? ['O Gigante Adormecido é uma taverna caindo aos pedaços. Na varanda coberta, quatro humanos de mantos vermelhos encardidos, escorados em barris vazios, acompanham vocês com os olhos.',
-          'Um deles cospe no chão. — Ora, ora. Uma ninhada inteira de filhotes. Vieram latir para a gente?']
-        : ['Na rua, quatro sujeitos de mantos vermelhos encardidos esperam por vocês, com a mão no cabo das armas.',
-          'Um deles cospe no chão. — Hora de ir embora, forasteiros. Larguem as coisas de valor e sigam caminho.'] }],
-      escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }],
+        ? ['O Gigante Adormecido é um barracão torto no fim da rua, com uma varanda que parece prestes a desabar. Quatro homens de capa vermelha encardida tomam a varanda inteira — um sentado num barril, os outros encostados nas colunas — e param de conversar quando vocês chegam perto.',
+          'O maior deles desce os degraus devagar, sorrindo sem os dentes da frente. — Olha só, turistas. Ninguém avisou vocês de que esta rua tem dono?']
+        : ['No meio da rua, quatro sujeitos de capa vermelha fecham a passagem, espalhados para ninguém contornar. Um deles brinca com uma faca.',
+          '— Daqui ninguém passa sem pagar pedágio, forasteiros. E hoje o pedágio é tudo o que vocês carregam.'] }],
+      escolhas: [
+        { rotulo: 'Responder à altura', valor: 'provoca' },
+        { rotulo: 'Tentar acalmar', valor: 'acalma' },
+        { rotulo: 'Às armas!', valor: 'luta', primaria: true },
+      ],
     });
+    if (resposta !== 'luta') {
+      await narrar(app.root, {
+        formato: 'painel',
+        paginas: [{ texto: [resposta === 'provoca'
+          ? '— Engraçadinho. Quero ver rir de cara no barro. — As mãos já estão nos cabos das espadas.'
+          : '— Calma? A gente está calmíssimo. — O da faca ri, e os outros desembainham.'] }],
+        escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }],
+      });
+    }
     tela.fechar();
     app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'rua', continuarCom: grupo });
   }
@@ -688,15 +752,15 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       const quarto = 5 * 10 * vivos().length;
       const v2 = await narrar(app.root, {
         formato: 'painel',
-        paginas: [{ titulo: 'Onde dormir', texto: [`Quarto na Estalagem Stonehill: ${quarto / 10} peças de prata para o grupo. Ou o palheiro da fazenda Alderleaf, de graça, ou acampar fora da vila.`] }],
+        paginas: [{ titulo: 'Onde dormir', texto: [`Quarto na Estalagem Stonehill: ${quarto / 10} peças de prata para o grupo. Ou o galpão da fazenda Alderleaf, de graça, ou acampar fora da vila.`] }],
         escolhas: [
           { rotulo: 'Acampar fora', valor: 'acampar' },
-          { rotulo: 'Palheiro', valor: 'palheiro' },
+          { rotulo: 'Galpão da Qelline', valor: 'palheiro' },
           { rotulo: 'Estalagem', valor: 'estalagem', primaria: true, motivo: totalEmCobre(vivos()) < quarto ? 'sem dinheiro' : null },
         ],
       });
       if (v2 === 'estalagem') cobrar(vivos(), quarto);
-      await dormir(v2 === 'estalagem' ? 'Um quarto na Estalagem Stonehill.' : v2 === 'palheiro' ? 'O palheiro da Qelline.' : 'Um acampamento à beira da mata, revezando a vigia.');
+      await dormir(v2 === 'estalagem' ? 'Um quarto na Estalagem Stonehill.' : v2 === 'palheiro' ? 'O galpão da Qelline.' : 'Um acampamento à beira da mata, revezando a vigia.');
       tela.mostrar();
       tela.atualizar();
     },
@@ -705,6 +769,13 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     onFicha: (c) => app.abrirFichaNaVila(c, () => tela.atualizar()),
   });
   for (const t of registro.splice(0)) tela.registrar(t);
+
+  // Voltando do esconderijo dos Marcarrubra.
+  if (v.dendrarLivres && !v.feito.dendrarEmCasa) {
+    v.feito.dendrarEmCasa = true;
+    tela.registrar('A família Dendrar está de volta em casa.');
+  }
+  for (const id of v.missoesExtra ?? []) if (!v.missoes[id]) { v.missoes[id] = 'ativa'; tela.registrar(`Nova missão: ${MISSOES[id].titulo}.`); }
 
   // Voltando de uma luta com XP: sobe de nível se der.
   if (app.xpPendente) {

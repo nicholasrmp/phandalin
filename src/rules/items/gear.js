@@ -120,7 +120,7 @@ export const GEAR = {
   simboloSagradoEmblema: item('simboloSagradoEmblema', 'Emblema sagrado', 5, 0, 'Símbolo da divindade, gravado no escudo ou preso à roupa.', { art: 'bencao' }),
   simboloSagradoRelicario: item('simboloSagradoRelicario', 'Relicário', 5, 2, 'Símbolo da divindade com uma relíquia dentro.', { art: 'bencao' }),
   bolsaDeComponentes: item('bolsaDeComponentes', 'Bolsa de componentes', 25, 2, 'Compartimentos com tudo que uma magia pede, desde que o componente não tenha preço.', { art: 'arcano' }),
-  azevinho: item('azevinho', 'Ramo de azevinho', 1, 0, 'Foco druídico.'),
+  azevinho: item('azevinho', 'Ramo de visco', 1, 0, 'Foco druídico.'),
   totem: item('totem', 'Totem', 1, 0, 'Foco druídico.'),
   varinhaDeTeixo: item('varinhaDeTeixo', 'Varinha de teixo', 10, 1, 'Foco druídico.'),
 
@@ -160,8 +160,21 @@ export const GEAR = {
   moedaDePrata: pilha('moedaDePrata', 'Peças de prata', 0.1, 0.02, 'Dez valem uma de ouro.', { tipo: 'moeda', art: 'moeda' }),
   moedaDeOuro: pilha('moedaDeOuro', 'Peças de ouro', 1, 0.02, 'A moeda em que todo preço desta tabela está escrito.', { tipo: 'moeda', art: 'moeda' }),
   // Tesouro de aventura: só vale o que alguém pagar por ele.
-  denteDeOuro: pilha('denteDeOuro', 'Dente de ouro', 1, 0.01, 'Um dente de ouro arrancado de alguém. Vale o peso dele: 1 po.', { tipo: 'tesouro' }),
-  estatuetaDeSapo: item('estatuetaDeSapo', 'Sapo de jade', 40, 1, 'Estatueta de um sapo em jade, com olhos de ouro. Uns 40 po na mão de quem compra arte.', { tipo: 'tesouro' }),
+  denteDeOuro: pilha('denteDeOuro', 'Dente de ouro', 1, 0.01, 'Um dente de ouro arrancado de alguém. Vale o peso dele: 1 po.', { tipo: 'tesouro', fonte: 'propria' }),
+  estatuetaDeSapo: item('estatuetaDeSapo', 'Sapo de jade', 40, 1, 'Estatueta de um sapo em jade, com olhos de ouro. Uns 40 po na mão de quem compra arte.', { tipo: 'tesouro', fonte: 'propria' }),
+  // Os tesouros do esconderijo dos Marcarrubra (valores da aventura; nomes e
+  // frases nossos). Vendem-se pelo valor cheio no Câmbio de Minério.
+  granada: pilha('granada', 'Granada', 10, 0, 'Pedra vermelho-escura, lapidada às pressas.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  malaquita: pilha('malaquita', 'Malaquita', 15, 0, 'Pedra verde de veios escuros, polida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  cornalina: pilha('cornalina', 'Cornalina', 10, 0, 'Pedrinha laranja translúcida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  peridoto: pilha('peridoto', 'Peridoto', 15, 0, 'Pedra verde-oliva, clara contra a luz.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  perola: pilha('perola', 'Pérola', 100, 0, 'Pérola grande e perfeita, guardada num lenço de seda.', { tipo: 'tesouro', fonte: 'propria', art: 'item-perolaDoPoder' }),
+  brincosDeRubi: item('brincosDeRubi', 'Brincos de rubi', 30, 0, 'Um par de brincos com um rubi minúsculo cada.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
+  anelDePlatina: pilha('anelDePlatina', 'Anel de sinete de platina', 50, 0, 'Sinete de família, com um brasão gasto.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
+  tapaOlho: item('tapaOlho', 'Tapa-olho com pedras', 50, 0, 'Couro preto cravejado de pedrinhas. Mosk usava por elegância, com os dois olhos bons.', { tipo: 'tesouro', fonte: 'propria' }),
+  reagente: pilha('reagente', 'Reagente raro', 25, 0.1, 'Frasquinho de reagente alquímico: mercúrio, bile ou pó de beladona. Um boticário paga bem.', { tipo: 'tesouro', fonte: 'propria', art: 'item-ampola' }),
+  pelesDeCastor: pilha('pelesDeCastor', 'Pele de castor', 2, 1, 'Pele curtida, roubada de uma caravana da Trilha de Triboar.', { tipo: 'tesouro', fonte: 'propria', art: 'item-cobertor' }),
+  mantoVermelho: pilha('mantoVermelho', 'Manto vermelho', 0.1, 1, 'O manto encardido dos Marcarrubra. Vestido, passa por um deles — com quem não presta muita atenção.', { fonte: 'propria', art: 'item-roupaDeViagem' }),
   moedaDePlatina: pilha('moedaDePlatina', 'Peças de platina', 10, 0.02, 'Dez de ouro cada. Raras fora de cofre.', { tipo: 'moeda', art: 'moeda' }),
 };
 

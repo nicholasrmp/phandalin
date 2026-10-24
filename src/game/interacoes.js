@@ -19,7 +19,7 @@ import { iconeDeArma, iconeDeMagia } from '../art/icons.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { hasCondition } from '../rules/conditions.js';
 import { distanceFt, isAdjacent } from '../core/grid.js';
-import { temEscuridao, visaoDoGrupo, visaoNoEscuro } from '../rules/luz.js';
+import { temEscuridaoEm, visaoDoGrupo, visaoNoEscuro } from '../rules/luz.js';
 
 /** O que se vê de longe, por superfície do mapa. Texto nosso. */
 export const OLHAR = {
@@ -107,7 +107,7 @@ export function opcoesDaCasa(app, tile) {
 
   // No escuro, o que o grupo não vê não existe para o menu: nem o goblin
   // parado ali, nem o chão. Mostrar o nome dele já seria entregá-lo.
-  if (temEscuridao(enc.field) && !visaoDoGrupo(enc).has(`${tile.x},${tile.y}`) && occ?.side !== 'party') {
+  if (temEscuridaoEm(enc) && !visaoDoGrupo(enc).has(`${tile.x},${tile.y}`) && occ?.side !== 'party') {
     const [nome, texto] = OLHAR.escuro;
     return { titulo: nome, subtitulo: null, opcoes: [olhar(nome, texto)], alvo: { icone: 'acao-procurar', lado: 'objeto', etiquetas: [] } };
   }

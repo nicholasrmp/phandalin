@@ -322,8 +322,8 @@ export const NPCS = {
     nome: 'Iarno Albrek',
     look: 'iarno',
     papel: 'Mago contratado que virou chefe de bando',
-    bloco: 'mago',
-    fonte: 'SRD',
+    bloco: 'cajavidro',
+    fonte: 'propria',
     atitude: 'hostil',
     personalidade: {
       quer: 'Mandar em algo pequeno o suficiente para ninguém de fora vir conferir.',

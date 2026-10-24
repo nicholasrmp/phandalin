@@ -18,10 +18,11 @@ import { audio } from '../core/audio.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
 import {
-  dadoDeVida, dadosDeVida, gastarDadoDeVida, dadosSugeridos, recuperarNoCurto, descansoLongo,
+  dadoDeVida, dadosDeVida, gastarDadoDeVida, dadosSugeridos, recuperarNoCurto, descansoLongo, oracaoDeCura,
 } from '../rules/descanso.js';
 import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
 import { hasCondition } from '../rules/conditions.js';
+import { magiasProntas } from '../rules/spells.js';
 
 function retrato(look) {
   try {
@@ -35,7 +36,7 @@ function retrato(look) {
 
 const nomeDaClasse = (c) => c.className ?? CLASSES[c.classe]?.nome ?? '';
 
-function linhaDoHeroi(c, rng, registro) {
+function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: () => {} }) {
   const vida = el('div', { class: 'descanso-vida' }, el('i'), el('span'));
   const dados = el('span', { class: 'descanso-dados' });
   const ultimo = el('span', { class: 'descanso-ultimo' });
@@ -66,14 +67,47 @@ function linhaDoHeroi(c, rng, registro) {
   };
   botao.addEventListener('click', () => { audio.play('click'); gastar(); });
 
-  atualizar();
+  // Oração de Cura (10 minutos): quem a tem pronta e espaço de 2º círculo ou
+  // mais reza pelos aliados vivos (até 6, os mais feridos primeiro).
+  const orar = el('span', { class: 'descanso-oracao' });
+  const rezar = (circulo) => {
+    const alvos = [...grupo.vivos].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp).slice(0, 6);
+    const r = oracaoDeCura(rng, c, alvos, { circulo });
+    if (!r.ok) {
+      ultimo.textContent = r.why;
+      registro.push(`${c.name} não consegue rezar: ${r.why}.`);
+    } else {
+      const soma = r.curas.reduce((n, x) => n + x.cura, 0);
+      ultimo.textContent = `Oração de Cura (${circulo}º): +${soma} PV no grupo`;
+      registro.push(`${c.name} reza a Oração de Cura (${circulo}º círculo): ${r.curas.map((x) => `${x.alvo.name} +${x.cura}`).join(', ')}.`);
+    }
+    ultimo.classList.remove('pulso');
+    void ultimo.offsetWidth;
+    ultimo.classList.add('pulso');
+    grupo.atualizarTodas();
+  };
+  const atualizarOracao = () => {
+    orar.replaceChildren();
+    if (!c.spellcasting || c.dead || !magiasProntas(c).includes('oracaoDeCura')) return;
+    const slots = c.spellcasting.slots ?? [];
+    for (let n = 2; n < slots.length; n++) {
+      if (!(slots[n] > 0)) continue;
+      const b = el('button', { class: 'descanso-gastar descanso-orar', title: `Gasta um espaço de ${n}º círculo; cura até 6 aliados` },
+        `Oração de Cura (${n}º círculo)`);
+      b.addEventListener('click', () => { audio.play('click'); rezar(n); });
+      orar.append(b);
+    }
+  };
+  const atualizarTudo = () => { atualizar(); atualizarOracao(); };
+
+  atualizarTudo();
   const linha = el('div', { class: 'descanso-linha' },
     el('span', { class: 'descanso-retrato' }, retrato(c.look)),
     el('div', { class: 'descanso-quem' },
       el('strong', {}, c.name),
       el('small', {}, [nomeDaClasse(c), hasCondition(c, 'inconsciente') ? 'caído, estável' : ''].filter(Boolean).join(' · '))),
-    vida, dados, botao, ultimo);
-  return { linha, gastarSugerido: () => { for (let n = dadosSugeridos(c); n > 0; n--) if (!gastar()) break; } };
+    vida, dados, botao, ultimo, orar);
+  return { linha, atualizar: atualizarTudo, gastarSugerido: () => { for (let n = dadosSugeridos(c); n > 0; n--) if (!gastar()) break; } };
 }
 
 /**
@@ -84,7 +118,8 @@ function linhaDoHeroi(c, rng, registro) {
 export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curto', texto = null }) {
   const vivos = herois.filter((c) => !c.dead);
   const registro = [];
-  const linhas = vivos.map((c) => linhaDoHeroi(c, rng, registro));
+  const grupo = { vivos, atualizarTodas: () => linhas.forEach((l) => l.atualizar()) };
+  const linhas = vivos.map((c) => linhaDoHeroi(c, rng, registro, grupo));
   const conteudo = el('div', { class: 'descanso' },
     el('div', { class: 'descanso-topo' },
       el('span', {}, 'Cada dado cura o que rolar mais a Constituição. Um por vez.'),

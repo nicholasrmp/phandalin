@@ -113,6 +113,14 @@ export const GLIFOS = {
   'F': { kind: 0, sup: 'fogueira' },       // brasa: pisa-se, e queima (a cena cobra)
   'K': { kind: 3, sup: 'bau' },
   'P': { kind: 3, sup: 'tocaia' },        // ripas de madeira do posto dos vigias
+  // O porão da Mansão Tresendar. Glifos próprios para não mexer no que `o` e
+  // `P` desenham nos mapas ao ar livre.
+  'm': { kind: 3, sup: 'mesa' },
+  'Q': { kind: 3, sup: 'sarcofago' },
+  'G': { kind: 3, sup: 'grade' },          // grade de ferro das celas
+  // Buraco aberto no chão (o fosso achado ou disparado): não se anda nele —
+  // o desnível barra —, mas visão e flecha passam por cima.
+  'O': { kind: 2, sup: 'fosso' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
@@ -199,9 +207,12 @@ export class Battlefield {
    * cada pé escalado custa 1 pé extra, então o degrau de 5 pés sai por 10.
    */
   costOf(x, y, fromX = null, fromY = null) {
+    // Quem voa não pisa no chão: terreno difícil e degrau não custam nada.
+    if (this.voando) return FEET_PER_SQUARE;
     // Terreno difícil: o do mapa (2) ou o que uma magia criou (Graxa).
     const dificil = this.tileAt(x, y) === 2 || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y));
-    let cost = dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
+    // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
+    let cost = this.dificeis4?.has(key(x, y)) ? FEET_PER_SQUARE * 4 : dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
     if (fromX !== null) {
       const climb = this.heightAt(x, y) - this.heightAt(fromX, fromY);
       if (climb > 0) cost += climb * FEET_PER_SQUARE;
@@ -248,7 +259,7 @@ export class Battlefield {
         if (!cabe(nx, ny)) continue;
         // Não corta quina entre duas paredes.
         if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
-        if (this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
+        if (!this.voando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
 
         const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y);
         if (cost > budgetFt) continue;

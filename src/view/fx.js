@@ -57,9 +57,18 @@ export function quadro(nome, i) {
  *   brilho — o contorno em branco, para o lampejo quando a bolha fecha.
  *   raio: meia largura no chão (a casa tem 32); altura: até o topo, em px.
  */
+// `rgb`: o véu; `borda`: o contorno claro (sem ela, é o véu clareado 45%). As
+// esferas `escuro` das zonas que escondem usam véu de miolo fraco (nunca opaco)
+// e a borda forte: o que importa é a silhueta.
 const DOMO_CORES = {
-  ouro: [232, 195, 90],
-  violeta: [165, 121, 216],
+  ouro: { rgb: [232, 195, 90] },
+  violeta: { rgb: [165, 121, 216] },
+  gelo: { rgb: [155, 183, 216], borda: [205, 225, 245] }, // Silêncio
+  vento: { rgb: [223, 243, 255], borda: [255, 255, 255] },
+  agua: { rgb: [120, 196, 232] }, // Acalmar Emoções
+  breu: { rgb: [20, 12, 32], borda: [138, 100, 196], escuro: true }, // Escuridão
+  vazio: { rgb: [10, 8, 26], borda: [130, 200, 240], escuro: true }, // Fome de Hadar
+  sol: { rgb: [255, 236, 160], borda: [255, 250, 214] }, // Luz do Dia
 };
 const DOMO_BRANCO = [244, 240, 228];
 // Meio elipsoide: topo redondo de cúpula, e o `m` do véu fica exato na silhueta.
@@ -67,12 +76,23 @@ const PERFIL = (s) => Math.sqrt(Math.max(0, 1 - s ** 2));
 // O véu em degraus (pixel art: nada de degradê contínuo). `m` é quão perto da
 // borda o pixel está, de 0 (meio) a 1 (borda).
 const VEU = (m) => (m > 0.95 ? 0.36 : m > 0.86 ? 0.2 : m > 0.7 ? 0.09 : 0.03);
+// Esfera escura: a casca forte, o miolo nunca passa de .35.
+const VEU_ESCURO = (m) => (m > 0.95 ? 0.5 : m > 0.86 ? 0.35 : m > 0.7 ? 0.26 : 0.18);
 const domosCache = new Map();
-function domoCamadas(cor, raio, altura) {
-  const chave = `${cor}|${raio}|${altura}`;
+/**
+ * `op` (0,35 a 1) escala o véu: uma esfera de zona cobre muitas casas e não
+ * pode esconder as figuras dentro; a borda clara perde força acima de 48 px de raio.
+ */
+export function domoCamadas(cor, raio, altura, op = 1) {
+  op = Math.round(op * 20) / 20;
+  const chave = `${cor}|${raio}|${altura}|${op}`;
   if (domosCache.has(chave)) return domosCache.get(chave);
-  const [r, g, b] = DOMO_CORES[cor] ?? DOMO_CORES.ouro;
-  const claro = [r, g, b].map((v) => Math.round(v + (255 - v) * 0.45));
+  const def = DOMO_CORES[cor] ?? DOMO_CORES.ouro;
+  const [r, g, b] = def.rgb;
+  const veu = def.escuro ? VEU_ESCURO : (m) => VEU(m) * op;
+  // (Só as esferas de zona, com `op` < 1, têm a borda mais fraca; o domo de proteção segue igual.)
+  const aBorda = raio <= 48 || op >= 1 || cor === 'gelo' || cor === 'vazio' ? 0.9 : 0.6;
+  const claro = def.borda ?? [r, g, b].map((v) => Math.round(v + (255 - v) * 0.45));
   const larg = raio * 2 + 5;
   const alt = altura + Math.ceil(raio / 2) + 5;
   const ox = raio + 2; // o centro do chão dentro do quadro
@@ -100,7 +120,7 @@ function domoCamadas(cor, raio, altura) {
         const e = (dx / raio) ** 2 + (dy / (raio / 2)) ** 2;
         if (e <= 1) m = Math.sqrt(e);
       }
-      if (m >= 0) px(dy > 0 || m <= 0.86 ? frente : tras, x, y, [r, g, b], VEU(m));
+      if (m >= 0) px(dy > 0 || m <= 0.86 ? frente : tras, x, y, [r, g, b], veu(m));
     }
   }
   // O contorno, traçado linha a linha (sem buracos no topo) e limpo dos
@@ -126,9 +146,15 @@ function domoCamadas(cor, raio, altura) {
     for (const s of [-1, 1]) {
       if (s === -1 && x === 0) continue;
       const sv = -y / altura;
-      const [c, a] = s < 0 || sv > 0.8 ? [claro, sv > 0.12 ? 0.9 : 0.6] : [[r, g, b], 0.45];
+      const [c, a] = s < 0 || sv > 0.8 ? [claro, sv > 0.12 ? aBorda : 0.6] : [def.borda ? claro : [r, g, b], def.borda ? aBorda * (op < 1 ? 0.95 : 0.55) : 0.45];
       px(tras, ox + s * x, oy + y, c, a);
       px(brilho, ox + s * x, oy + y, DOMO_BRANCO, 0.9);
+      // Esfera de zona (grande): o contorno em 2 px, senão some na escala do mapa.
+      if (op < 1) {
+        px(tras, ox + s * (x - 1), oy + y + 1, c, a * 0.85);
+        px(tras, ox + s * x, oy + y + 1, c, a * 0.85);
+        px(tras, ox + s * (x - 1), oy + y, c, a * 0.85);
+      }
     }
   }
   // A elipse do chão: a metade de trás fraca, a da frente mais forte.
@@ -678,8 +704,9 @@ export class Fx {
     return this.add({ kind: 'projectile', from: { ...from }, to: { ...to }, color, style, dur, arc, trail, spin, onDone, sprite, fps });
   }
 
-  beam(from, to, { color = '#bfe6ff', dur = 0.22, width = 3, jagged = true } = {}) {
-    return this.add({ kind: 'beam', from: { ...from }, to: { ...to }, color, dur, width, jagged });
+  // `pulso`: o fio pulsa (Coroa da Loucura) em vez de só esmaecer.
+  beam(from, to, { color = '#bfe6ff', dur = 0.22, width = 3, jagged = true, pulso = false } = {}) {
+    return this.add({ kind: 'beam', from: { ...from }, to: { ...to }, color, dur, width, jagged, pulso });
   }
 
   // ---- impactos -----------------------------------------------------------
@@ -705,8 +732,9 @@ export class Fx {
    * Mal): sobe do chão, fica um instante e se apaga.
    */
   // `id`: de quem a bolha protege — ela acompanha a figura se ela andar.
-  domo(tile, { cor = 'ouro', dur = 1.4, raio = 36, altura = 68, id = null } = {}) {
-    return this.add({ kind: 'domo', tile: { ...tile }, cor, dur, raio, altura, id, f: tile.f ?? 1 });
+  // `op`: força do véu (esfera grande = véu fraco; ver `domoCamadas`).
+  domo(tile, { cor = 'ouro', dur = 1.4, raio = 36, altura = 68, id = null, op = 1 } = {}) {
+    return this.add({ kind: 'domo', tile: { ...tile }, cor, dur, raio, altura, id, f: tile.f ?? 1, op });
   }
 
   impact(tile, { color = '#ffd27a', count = 10, spread = 46, dur = 0.42 } = {}) {
@@ -748,8 +776,8 @@ export class Fx {
   // ---- magia --------------------------------------------------------------
 
   /** Coluna de luz descendo do alto sobre o quadrado. */
-  pillar(tile, { color = '#ffe9a8', dur = 0.5, width = 18, height = 190 } = {}) {
-    return this.add({ kind: 'pillar', tile: { ...tile }, color, dur, width, height });
+  pillar(tile, { color = '#ffe9a8', dur = 0.5, width = 18, height = 190, alpha = 1 } = {}) {
+    return this.add({ kind: 'pillar', tile: { ...tile }, color, dur, width, height, alpha });
   }
 
   /** Línguas de fogo subindo. Serve para magia de fogo e para queimadura. */
@@ -788,8 +816,9 @@ export class Fx {
     return this.add({ kind: 'glyph', tile: { ...tile }, text, color, dur, rise, size });
   }
 
-  ring(tile, { color = '#9fe8ff', radius = 46, dur = 0.5, width = 3 } = {}) {
-    return this.add({ kind: 'ring', tile: { ...tile }, color, radius, dur, width });
+  // `fecha`: o anel nasce grande e se fecha sobre o alvo (Reduzir), em vez de abrir.
+  ring(tile, { color = '#9fe8ff', radius = 46, dur = 0.5, width = 3, fecha = false } = {}) {
+    return this.add({ kind: 'ring', tile: { ...tile }, color, radius, dur, width, fecha });
   }
 
   area(tiles, { color = '#ff8a4a', dur = 0.5 } = {}) {
@@ -804,10 +833,10 @@ export class Fx {
 
 
       if (it.kind === 'ring') {
-        const r = it.radius * EASE_OUT(k);
+        const r = it.fecha ? it.radius * (1 - EASE_OUT(k) * 0.85) : it.radius * EASE_OUT(k);
         const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
         ctx.save();
-        ctx.globalAlpha = 1 - k;
+        ctx.globalAlpha = it.fecha ? Math.min(1, (1 - k) * 1.6) : 1 - k;
         ctx.strokeStyle = it.color;
         ctx.lineWidth = it.width;
         ctx.beginPath();
@@ -917,7 +946,49 @@ export class Fx {
       const meio = (it.f - 1) / 2;
       out.push({ it, x: ax + meio, y: ay + meio, dTras: v.vx + v.vy, dFrente });
     }
+    // O Silêncio é uma esfera de gelo enquanto a zona existir: nenhuma vida
+    // própria, o tabuleiro lê `enc.zonas` a cada quadro.
+    for (const z of board.enc.zonas ?? []) {
+      if (z.silencio && !z.obscuro) out.push(this.domoDaZona(board, z, 'gelo'));
+      // Luz do Dia: a esfera de luz plena, clara e fraca, que não esconde ninguém.
+      else if (z.luz) out.push(this.domoDaZona(board, z, 'sol'));
+    }
     return out;
+  }
+
+  /**
+   * A esfera fixa de uma zona, no formato de `domosAtivos`: centro (o da zona,
+   * ou a média das casas), raio pela casa mais distante (~45 px por casa) em
+   * degraus de 8 px, e as duas diagonais pelas casas de trás e da frente.
+   * Cacheada por zona e rotação; só o fade-in (0,5 s) depende do tempo.
+   */
+  domoDaZona(board, z, cor) {
+    const chave = `${z.id}|${board.rot}|${cor}|${z.casas.size}`;
+    this._zonaDomos ??= new Map();
+    let o = this._zonaDomos.get(chave);
+    if (!o) {
+      if (this._zonaDomos.size > 24) this._zonaDomos.clear();
+      const cs = [...z.casas].map((k) => k.split(',').map(Number));
+      const cx = z.centro ? z.centro.x : cs.reduce((n, c) => n + c[0], 0) / cs.length;
+      const cy = z.centro ? z.centro.y : cs.reduce((n, c) => n + c[1], 0) / cs.length;
+      let casas = Math.max(...cs.map(([x, y]) => Math.hypot(x - cx, y - cy))) + 0.5;
+      if (cor === 'sol') casas = Math.min(casas, 6.5);
+      let raio = Math.max(16, 8 * Math.round((casas * 45) / 8));
+      if (cor === 'sol') raio = Math.min(raio, 288);
+      let altura = 4 * Math.round(Math.min(170, Math.max(40, raio * 0.8)) / 4);
+      if (cor === 'sol') altura = 4 * Math.round(raio * 0.55 / 4);
+      const ds = cs.map(([x, y]) => { const v = board.toView(x, y); return v.vx + v.vy; });
+      // Uma esfera grande cobre o chão de várias diagonais: as costas só podem
+      // vir depois do chão que elas cobrem (o centro), senão o contorno de cima
+      // fica debaixo das casas de trás.
+      const vc = board.toView(cx, cy);
+      o = {
+        it: { cor, raio, altura, f: 1, fixo: true, id: null, op: cor === 'sol' ? Math.min(0.55, Math.min(1, Math.max(0.85, 48 / raio))) : Math.min(1, Math.max(0.85, 48 / raio)), vistoEm: board.time },
+        x: cx, y: cy, dTras: Math.round(vc.vx + vc.vy), dFrente: Math.max(...ds),
+      };
+      this._zonaDomos.set(chave, o);
+    }
+    return o;
   }
 
   /** As camadas dos domos de uma diagonal (o tabuleiro chama no laço de profundidade). */
@@ -934,6 +1005,18 @@ export class Fx {
    */
   desenharDomo(ctx, board, o, camada) {
     const { it } = o;
+    if (it.fixo) {
+      // Esfera de zona: sem inflar, sem lampejo, sem fade-out (a zona some e a
+      // esfera some com ela); só aparece em 0,5 s na primeira vez.
+      const d = domoCamadas(it.cor, it.raio, it.altura, it.op);
+      const { sx, sy } = board.centerF(o.x, o.y);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = Math.min(1, (board.time - it.vistoEm) / 0.5);
+      ctx.drawImage(d[camada], Math.round(sx - d.ox), Math.round(sy - d.oy));
+      ctx.restore();
+      return;
+    }
     const t = it.t;
     let e = 1;
     let extra = 0;
@@ -949,7 +1032,7 @@ export class Fx {
     const altura = 4 * Math.round((it.altura * e + 4 * extra) / 4);
     if (altura < 8) return;
     const raio = 2 * Math.round((it.raio * (0.7 + 0.3 * e) + 3 * extra) / 2);
-    const d = domoCamadas(it.cor, raio, altura);
+    const d = domoCamadas(it.cor, raio, altura, it.op ?? 1);
     const { sx, sy } = board.centerF(o.x, o.y);
     const x0 = Math.round(sx - d.ox);
     const y0 = Math.round(sy - d.oy);
@@ -1067,7 +1150,7 @@ export class Fx {
           const a = at(it.from);
           const b = at(it.to);
           ctx.save();
-          ctx.globalAlpha = 1 - k;
+          ctx.globalAlpha = (1 - k) * (it.pulso ? 0.55 + 0.45 * Math.sin(it.t * 18) ** 2 : 1);
           ctx.strokeStyle = it.color;
           ctx.lineWidth = it.width * (1 - k * 0.5);
           ctx.shadowColor = it.color;
@@ -1312,7 +1395,7 @@ export class Fx {
           const bottom = top + it.height * drop;
           const w = it.width * (0.6 + 0.4 * fade);
           ctx.save();
-          ctx.globalAlpha = fade;
+          ctx.globalAlpha = fade * (it.alpha ?? 1);
           const grd = ctx.createLinearGradient(sx, top, sx, bottom);
           grd.addColorStop(0, 'rgba(255,255,255,0)');
           grd.addColorStop(0.3, it.color);

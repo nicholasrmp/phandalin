@@ -48,7 +48,7 @@ import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
 import { abilityMod, skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
 import { distanceFt, Battlefield, SUPERFICIES } from '../core/grid.js';
-import { podeVer, visaoNoEscuro } from '../rules/luz.js';
+import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, hasCondition } from '../rules/conditions.js';
 import { darXp, proximoNivelEm } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
@@ -243,7 +243,7 @@ export function criarCapitulo2(app, config) {
   }
 
   // ------------------------------------------------------------ quem vê ----
-  const nota = (f, c) => podeVer(enc, f, c) && (c.tochaAcesa || distanceFt(f.pos, c.pos) <= 30);
+  const nota = (f, c) => podeVer(enc, f, c) && (emiteLuz(c) || distanceFt(f.pos, c.pos) <= 30);
 
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
@@ -268,7 +268,7 @@ export function criarCapitulo2(app, config) {
         const quem = herois().find((h) => podeVer(enc, h, visto));
         const nossa = g.id === 'chefe';     // desavisado, Klarg pode ser surpreendido
         await asArmas([
-          visaoNoEscuro(quem) && !quem.tochaAcesa
+          visaoNoEscuro(quem) && !emiteLuz(quem)
             ? `No cinza da visão no escuro, ${quem.name} vê movimento ${SALAS[g.id].em}: ${visto.name}${hostis(g).length > 1 ? ', e não está sozinho' : ''}.`
             : `A luz alcança ${SALAS[g.id].nome} e pega ${visto.name} desprevenido.`,
           nossa ? 'Eles ainda não perceberam vocês.' : 'Ninguém é surpreendido.',
@@ -279,7 +279,7 @@ export function criarCapitulo2(app, config) {
       const notou = hostis(g).find((f) => herois().some((h) => nota(f, h)));
       if (notou) {
         const alvo = herois().find((h) => nota(notou, h));
-        await asArmas(alvo.tochaAcesa
+        await asArmas(emiteLuz(alvo)
           ? `Do fundo do escuro, um grito agudo — a tocha de ${alvo.name} entregou o grupo antes de alguém ver qualquer coisa.`
           : `Alguma coisa raspa na pedra, perto. ${alvo.name} não vê nada — mas alguma coisa no escuro vê ${alvo.name}.`);
         await combate(g, g.id === 'chefe' && estado.subiuChamine ? 'nossa' : 'deles');

@@ -80,3 +80,4 @@
   .loja-item { grid-template-columns: 32px 1fr auto; }
   .loja-item .loja-preco { grid-column: 2; }
 }
+.loja-ficha { margin-left: auto; }

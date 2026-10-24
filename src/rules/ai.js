@@ -36,6 +36,8 @@ function comDesvio(enc, monster, planejar) {
 function scoreTarget(enc, monster, target) {
   // Menor é melhor.
   let score = distanceFt(monster.pos, target.pos);
+  // Duelo Compelido: quem o desafiou é o único alvo que ele quer.
+  if (getCondition(monster, 'duelo')?.source === target.id) score -= 500;
   score -= (1 - target.hp / target.maxHp) * 30;        // machucado atrai
   if (target.ac <= 13) score -= 10;                     // alvo mole
   if (hasCondition(target, 'caido')) score -= 8;
@@ -66,6 +68,50 @@ export function takeMonsterTurn(enc, monster) {
     return;
   }
 
+  // Acalmar Emoções: indiferente, não ataca ninguém até o perigo ser real
+  // (`acordaIndiferentes`, no motor, tira a calma quando um inimigo fere).
+  if (getCondition(monster, 'calmo')?.data?.modo === 'indiferente') {
+    enc.say('condicao', `${monster.name} observa, indiferente.`);
+    enc.endTurn(monster);
+    return;
+  }
+
+  // Sugestão: abandona a luta e se afasta do grupo (a sugestão é sempre esta, no jogo)
+  // até ser ferido por quem a deu ou pelos aliados dela (`combat.js`, applyDamage).
+  if (hasCondition(monster, 'sugerido')) {
+    const grupo = enc.enemiesOf(monster);
+    enc.say('condicao', `${monster.name} segue a sugestão: larga a luta e se afasta.`);
+    if (grupo.length) {
+      enc.dash(monster);
+      retreat(enc, monster, grupo);
+    }
+    enc.endTurn(monster);
+    return;
+  }
+
+  // Coroa da Loucura: antes de se mover, ataca de perto o aliado mais próximo
+  // dele. Sem aliado vivo ou sem arma de perto, age normal.
+  if (hasCondition(monster, 'coroaDaLoucura')) {
+    const irmaos = enc.alliesOf(monster)
+      .filter((a) => !hasCondition(a, 'inconsciente'))
+      .sort((a, b) => distanceFt(monster.pos, a.pos) - distanceFt(monster.pos, b.pos));
+    if (irmaos.length && monster.attacks?.some((a) => !a.ranged)) {
+      if (hasCondition(monster, 'caido')) enc.standUp(monster);
+      let golpe = pickReachableTarget(enc, monster, irmaos, { meleeOnly: true });
+      if (!golpe) {
+        const plano = planApproach(enc, monster, irmaos, { meleeOnly: true });
+        if (plano) {
+          if (plano.path.length > 1) enc.moveAlong(monster, plano.path);
+          if (!monster.dead && !hasCondition(monster, 'inconsciente')) golpe = pickReachableTarget(enc, monster, irmaos, { meleeOnly: true });
+        }
+      }
+      enc.say('condicao', `${monster.name}, coroado de loucura, volta-se contra os seus.`);
+      if (golpe && !monster.dead) enc.attackAction(monster, golpe.target, golpe.weaponName);
+      enc.endTurn(monster);
+      return;
+    }
+  }
+
   // Medo: quem está amedrontado pela magia corre para longe de quem o
   // assustou (Disparada), pelo caminho que puder, e não ataca.
   const medo = getCondition(monster, 'amedrontado');
@@ -93,8 +139,26 @@ export function takeMonsterTurn(enc, monster) {
   const melee = monster.attacks?.find((a) => !a.ranged);
   const adjacentFoes = enemies.filter((e) => isAdjacent(e.pos, monster.pos));
 
+  // Ilusões: sem nada ao alcance para atacar, gasta a ação examinando a Força
+  // Fantasmagórica que o fere ou uma Ilusão Menor colada nele.
+  if ((hasCondition(monster, 'iludido') || enc.ilusoesAoAlcance(monster).length)
+    && !pickReachableTarget(enc, monster, enemies)) {
+    if (hasCondition(monster, 'iludido')) enc.investigarIlusao(monster);
+    else {
+      // Colado na ilusão: primeiro tenta chegar a alguém; só examina se continuar sem alvo.
+      const plano = planApproach(enc, monster, enemies, { meleeOnly: true });
+      if (plano?.path.length > 1) enc.moveAlong(monster, plano.path);
+      if (monster.dead || hasCondition(monster, 'inconsciente')) { enc.endTurn(monster); return; }
+      const depois = pickReachableTarget(enc, monster, enemies);
+      if (depois) enc.attackAction(monster, depois.target, depois.weaponName);
+      else enc.examinarIlusao(monster);
+    }
+    enc.endTurn(monster);
+    return;
+  }
+
   // Preso sem ninguém ao alcance: gasta a ação tentando se soltar.
-  if ((hasCondition(monster, 'agarrado') || hasCondition(monster, 'contido'))
+  if ((hasCondition(monster, 'agarrado') || hasCondition(monster, 'contido') || hasCondition(monster, 'presoPorVinhas'))
     && !pickReachableTarget(enc, monster, enemies)) {
     enc.escapar(monster);
     enc.endTurn(monster);

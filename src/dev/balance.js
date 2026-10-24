@@ -35,7 +35,7 @@ export function playCharacter(enc, c) {
   // Derrubado: levanta antes de tudo. Preso: tenta se soltar se ninguém
   // estiver ao alcance da arma de perto.
   if (hasCondition(c, 'caido')) enc.standUp(c);
-  if ((hasCondition(c, 'agarrado') || hasCondition(c, 'contido'))
+  if ((hasCondition(c, 'agarrado') || hasCondition(c, 'contido') || hasCondition(c, 'presoPorVinhas'))
     && !foes.some((f) => distanceFt(c.pos, f.pos) <= 5)) {
     enc.escapar(c);
     enc.endTurn(c);

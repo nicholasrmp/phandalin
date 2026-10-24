@@ -1,0 +1,437 @@
+clava|arma|a short knobbly brown wood club, thick at the top and narrow at the grip, drawn diagonally
+adaga|arma|a small steel dagger with a short light steel blade, tiny crossguard and tan leather grip, drawn diagonally
+clavaGrande|arma|a huge heavy brown wood greatclub with a massive rounded head bound by two slate iron bands, drawn diagonally
+machadinha|arma|a small one-handed handaxe with a brown wood haft and a single light steel half-moon blade, drawn diagonally
+azagaia|arma|a slim light javelin with a long thin brown wood shaft and a small leaf-shaped light steel point, drawn diagonally
+marteloLeve|arma|a small light hammer with a short brown wood handle and a compact square slate iron head, drawn diagonally
+maca|arma|a mace with a brown wood handle and a round light steel head ringed by short flanges, drawn diagonally
+bordao|arma|a long plain brown wood quarterstaff with tan leather wrapping in the middle and slate iron caps on both ends, drawn diagonally
+foice|arma|a curved sickle with a short brown wood handle and a crescent light steel blade, drawn diagonally
+lancaCurta|arma|a spear with a medium brown wood shaft and a broad leaf-shaped light steel spearhead, drawn diagonally
+bestaLeve|arma|a light crossbow with a brown wood stock, a light steel bow arm and a loaded bolt, seen from the side, drawn diagonally
+dardo|arma|two small throwing darts with weighted light steel points and short red feather fletching, drawn diagonally
+arcoCurto|arma|a short curved brown wood bow with a tan leather grip and an off-white string, drawn diagonally
+funda|arma|a tan leather sling with a cradle pouch holding a round slate stone and two loose cords
+machadoDeBatalha|arma|a battleaxe with a long brown wood haft and a large single light steel crescent blade, drawn diagonally
+mangual|arma|a flail with a brown wood handle, a short slate iron chain and a spiked light steel ball, drawn diagonally
+glaive|arma|a glaive polearm with a long brown wood shaft topped by a single curved knife-like light steel blade, drawn diagonally
+machadoGrande|arma|a huge two-handed greataxe with a long brown wood haft and a wide double-bitted light steel head, drawn diagonally
+espadaGrande|arma|a huge two-handed greatsword with a long broad light steel blade, wide crossguard and long tan leather grip, drawn diagonally
+alabarda|arma|a halberd with a long brown wood shaft topped by a light steel axe blade, a back hook and a spear point, drawn diagonally
+lancaMontada|arma|a long jousting lance, a tapering pole striped red and off-white with a round light steel vamplate hand guard, drawn diagonally
+espadaLonga|arma|a straight longsword with a light steel double-edged blade, a gold crossguard and a tan leather grip, drawn diagonally
+malho|arma|a huge two-handed maul with a long brown wood haft and a big blocky slate iron hammer head, drawn diagonally
+estrelaMatinal|arma|a morningstar with a brown wood handle and a round light steel head studded with long spikes, drawn diagonally
+pique|arma|a very long thin pike, a slender brown wood pole with a small narrow light steel point, drawn diagonally across the whole frame
+rapieira|arma|a rapier with a very thin long light steel blade and a gold swept basket hilt guard, drawn diagonally
+cimitarra|arma|a scimitar with a strongly curved light steel blade widening near the tip and a gold hilt, drawn diagonally
+espadaCurta|arma|a short sword with a short wide light steel blade, small crossguard and tan leather grip, drawn diagonally
+tridente|arma|a trident with a brown wood shaft and a light steel head of three straight barbed prongs, drawn diagonally
+picareta|arma|a war pick with a brown wood haft and a single long pointed slate iron spike head, drawn diagonally
+marteloDeGuerra|arma|a warhammer with a brown wood haft, a flat square light steel hammer face and a short back spike, drawn diagonally
+chicote|arma|a coiled tan leather whip with a short brown wood handle and a loose curling lash
+zarabatana|arma|a long thin brown wood blowgun tube with tan leather bands and a slightly flared mouthpiece, drawn diagonally
+bestaDeMao|arma|a tiny one-handed hand crossbow with a short brown wood pistol stock and a small light steel bow arm, seen from the side
+bestaPesada|arma|a big heavy crossbow with a thick brown wood stock, a wide slate iron bow arm and a crank at the back, seen from the side, drawn diagonally
+arcoLongo|arma|a tall longbow, a long gently curved brown wood stave with an off-white string, drawn diagonally across the whole frame
+rede|arma|a bundled fishing net of tan rope mesh with small slate weights along its edge
+talon|arma|a straight longsword with a gold hawk-shaped crossguard and a light steel blade glowing pale sky blue, with one small gold sparkle, drawn diagonally
+lightbringer|arma|a gold flanged mace whose head blazes with bright golden radiant light, with one small gold sparkle, drawn diagonally
+hew|arma|a battleaxe with a brown wood haft and a large light steel crescent blade edged in bright green, with one small gold sparkle, drawn diagonally
+cajadoAranha|arma|a near-black wooden staff topped by a carved violet spider with long legs gripping the tip, faint off-white web strands, drawn diagonally
+cajadoDeDefesa|arma|a brown wood staff with a curled hooked top holding a glowing sky blue round shield-like orb, drawn diagonally
+acolchoada|armadura|a puffy quilted padded tunic of cream cloth with visible stitched diamond quilting and short sleeves
+couro|armadura|a tan leather cuirass breastplate with rounded shoulder pauldrons and brown stitched edges
+couroBatido|armadura|a brown leather vest armor covered in rows of small gold rivets, with short leather shoulder guards
+peleDeAnimal|armadura|a rough hide armor tunic of shaggy brown fur pelts with a tan leather belt and fur-trimmed shoulders
+camisaoDeMalha|armadura|a short-sleeved light steel chain shirt reaching only to the waist, fine ring mesh texture
+brunea|armadura|a scale mail coat of overlapping slate iron scales like fish scales over a tan leather backing, reaching the thighs
+peitoral|armadura|a single smooth shiny light steel breastplate cuirass with a rounded chest and tan leather straps, no sleeves
+meiaArmadura|armadura|a half plate armor of light steel chest plate with big rounded shoulder pauldrons and arm plates, open below the waist
+malhaDeAneis|armadura|a heavy ring mail coat of large separate slate iron rings sewn onto a brown leather jerkin
+cotaDeMalha|armadura|a full long-sleeved knee-length light steel chain mail hauberk with a hood, dense ring mesh texture
+brigantina|armadura|a splint armor coat of vertical slate iron strips riveted onto brown leather, with chain mail at the shoulders
+placas|armadura|a full suit of shining light steel plate armor shown as an upper body with a closed helmet, pauldrons and gauntlets
+dragonguard|armadura|a light steel breastplate embossed with a red dragon scale pattern across the chest, with one small gold sparkle
+escudo|armadura|a round brown wood shield with a slate iron rim and a central light steel boss, in 3/4 view
+flechas|municao|a bundle of three arrows with brown wood shafts, light steel heads and off-white feather fletching, drawn diagonally
+virotes|municao|a bundle of three short thick crossbow bolts with slate iron heads and stiff red vanes, drawn diagonally
+balasDeFunda|municao|a small pile of round dull slate lead sling bullets
+agulhas|municao|a small bundle of four thin blowgun needles with light steel points and tiny red fluff tails, drawn diagonally
+penteDeAgatha|campanha|an ornate silver hair comb of light steel with long fine teeth and a curling decorated spine, faint pale violet ghostly glow
+esmeraldaDoAranhaNegra|campanha|a teardrop green emerald pendant in a light steel setting hanging from a thin silver chain
+pergaminhoDeMagia|campanha|a rolled cream parchment scroll partly unrolled, tied with a red ribbon and glowing with a faint violet magic shimmer
+mochila|equipamento|a tan leather backpack with a rolled brown bedroll strapped on top and a gold buckle, three-quarter view
+bolsa|equipamento|a small round tan leather belt pouch cinched shut with a drawstring and a dark gold toggle
+saco|equipamento|a lumpy cream burlap sack tied at the neck with a brown cord, slouching to one side
+barril|equipamento|a brown wood barrel with two slate iron hoops, seen from the side
+cesto|equipamento|an open-topped woven tan wicker basket with a curved handle arching over it
+bau|equipamento|a heavy brown wood treasure chest with slate iron bands, closed, with a gold lock plate on the front
+jarro|equipamento|a round-bellied red clay jug with a narrow neck and a small loop handle
+panela|equipamento|a black iron cooking pot with a curved slate bail handle arching over it, side view
+frasco|equipamento|a squat light steel pewter tankard with a hinged lid and a side handle
+cantil|equipamento|a flat round tan leather waterskin canteen with a brown wood stopper and a shoulder strap
+ampola|equipamento|a tiny slim glass vial with a cork stopper, holding a little sky blue liquid
+garrafaDeVidro|equipamento|a tall clear glass bottle with a long neck and a brown cork, glinting off-white
+balde|equipamento|a brown wood bucket with slate iron hoops and a thin rope handle
+estojoDeVirotes|equipamento|a short squat brown leather case with a flap lid, three stubby crossbow bolt tails with light steel fins poking out
+aljava|equipamento|a tall tan leather quiver tilted diagonally with several arrows with red fletching sticking out the top
+estojoDeMapas|equipamento|a long rigid brown leather cylinder map case with dark gold end caps and a strap
+tocha|equipamento|a burning wooden torch held diagonally, brown wood handle wrapped in cloth with a bright red-orange flame on top
+vela|equipamento|a single cream wax candle on a small gold dish holder with a little yellow flame
+lampada|equipamento|a small brown clay oil lamp shaped like a low teardrop with a tiny yellow flame at the spout
+lanterna|equipamento|a square slate iron hooded lantern with glass panes glowing warm gold and a ring handle on top
+lanternaFuraco|equipamento|a cylindrical dark iron bullseye lantern lying sideways, casting a single cone of gold light out of its front lens
+caixaDeIsca|equipamento|a small open brown wood tinderbox with a grey flint, a light steel striker and a bright orange spark
+cordaCanhamo|equipamento|a coiled loop of thick tan hemp rope with a frayed end
+cordaDeSeda|equipamento|a neat coiled loop of thin smooth off-white silk rope with a red tassel at the end
+ganchoDeEscalada|equipamento|a light steel grappling hook with three curved iron prongs and a ring with a short rope tied on
+kitDeEscalada|equipamento|a brown leather climbing harness bundle with light steel pitons and a carabiner ring hanging from it
+pitao|equipamento|a single light steel iron piton spike, a flat wedge with an eye ring at its head, held diagonally
+martelo|equipamento|a small claw hammer with a slate iron head and brown wood handle, diagonal
+marreta|equipamento|a large two-handed sledgehammer with a heavy blocky slate iron head and long brown wood handle, diagonal
+pedeCabra|equipamento|a light steel crowbar with a curved hooked split end, diagonal
+pa|equipamento|a shovel with a broad flat light steel blade and long brown wood handle, diagonal
+picaretaDeMineiro|equipamento|a miner's pickaxe with a curved double-pointed slate iron head on a brown wood handle, diagonal
+escada|equipamento|a short upright brown wood ladder with five rungs, seen slightly tilted
+vara|equipamento|a long straight plain brown wood pole lying diagonally across the whole frame with a tan wrapped grip
+correntes|equipamento|a loose heap of thick slate iron chain links curling in an S shape
+algemas|equipamento|a pair of light steel iron manacles linked by a short chain, both cuffs open
+cadeado|equipamento|a heavy slate iron padlock with a curved shackle and a small gold key beside it
+aries|equipamento|a portable battering ram, a thick brown wood log with a blunt slate iron cap and two rope handles, side view
+bolasDeRolamento|equipamento|a small pile of shiny light steel ball bearings spilling from a tipped tan cloth pouch
+estrepes|equipamento|a small scatter of three spiky dark slate iron caltrops, four-pointed jacks
+armadilhaDeCaca|equipamento|an open steel-jawed hunting trap with jagged slate teeth in a ring and a chain, seen from above at an angle
+espigoesDeFerro|equipamento|a bundle of four long slate iron spikes tied together with a brown cord
+tinta|equipamento|a small squat glass ink bottle full of near-black ink with a cork stopper
+pena|equipamento|a long white feather quill pen with a sharpened dark tip, diagonal
+papel|equipamento|a single flat sheet of cream paper with one corner curling up, blank
+pergaminhoEmBranco|equipamento|a rolled tan parchment scroll tied with a red ribbon, blank
+livro|equipamento|a closed thick book with a brown leather cover and gold corner caps, three-quarter view
+livroDeMagias|equipamento|a closed thick spellbook with a violet leather cover, gold clasp and a small glowing violet star on the cover
+abaco|equipamento|a brown wood abacus frame with rows of red and cream beads on rods
+lupa|equipamento|a round magnifying glass with a gold rim and brown wood handle, the lens glinting sky blue, diagonal
+lunetaDeAlcance|equipamento|a brass spyglass telescope extended in three gold segments, diagonal
+ampulheta|equipamento|an hourglass with brown wood ends and posts, glass bulbs with tan sand running down
+balancaDeMercador|equipamento|a gold merchant's balance scale with two hanging pans on a crossbar over a central post
+cera|equipamento|a stick of red sealing wax beside a round red wax seal blob
+anelDeSinete|equipamento|a heavy gold signet ring with a flat oval face, three-quarter view
+espelhoDeAco|equipamento|a small handheld polished light steel mirror with a short handle, its face glinting off-white
+sacoDeDormir|equipamento|a rolled green bedroll tied with two tan leather straps, side view
+cobertor|equipamento|a folded thick red wool blanket with a cream striped edge
+barraca|equipamento|a small triangular cream canvas tent with a brown wood pole and an open flap, three-quarter view
+kitDeRefeicao|equipamento|a slate tin mess kit, a small pan with a folding handle and a cup nested inside, a spoon beside it
+racoes|equipamento|a tied tan cloth bundle of travel rations with a strip of brown jerky and a round biscuit on top
+equipamentoDePesca|equipamento|a brown wood fishing rod with a line curving down to a red and white bobber and hook
+sabao|equipamento|a pale green bar of soap with a few white bubbles
+apito|equipamento|a small gold signal whistle on a short cord, side view
+pedraDeAmolar|equipamento|a flat rectangular slate grey whetstone with a light steel blade edge sparkling on it
+talhaEModa|equipamento|a block and tackle, two brown wood pulley blocks with slate iron hooks joined by tan rope loops
+giz|equipamento|two sticks of off-white chalk crossed, with a little white dust
+perfume|equipamento|an ornate small violet glass perfume bottle with a gold stopper and a round atomizer bulb
+roupaComum|equipamento|a plain folded tan linen tunic with a brown rope belt, front view
+roupaDeViagem|equipamento|a hooded brown wool traveling cloak draped over sturdy tan boots, front view
+roupaFina|equipamento|an elegant red velvet doublet with gold buttons and gold trim, front view
+roupaDeFantasia|equipamento|a white theatrical half mask with a red feathered plume over a folded violet cloak
+vestes|equipamento|a long flowing sky blue robe with wide sleeves and gold trim, front view
+focoArcanoCristal|equipamento|a single long pointed violet crystal shard glowing with a soft light
+focoArcanoOrbe|equipamento|a glowing sky blue glass orb resting on a small gold claw stand
+focoArcanoVarinha|equipamento|a slim brown wood wand with a small white glowing spark at the tip, diagonal
+focoArcanoCetro|equipamento|a short gold scepter with an ornate flanged head and a red gem, diagonal
+focoArcanoCajado|equipamento|a tall brown wood quarterstaff with a curled top cradling a small violet gem, diagonal
+simboloSagradoAmuleto|equipamento|a gold sun-disc amulet hanging from a short chain, with radiant spikes around it
+simboloSagradoEmblema|equipamento|a flat round gold badge emblem with a raised radiant sun shape, sitting on a red cloth patch
+simboloSagradoRelicario|equipamento|a small ornate gold box reliquary with a peaked lid and a tiny glowing window showing a bone
+bolsaDeComponentes|equipamento|a tan leather belt pouch with several small compartments open, bits of green herb and violet crystal peeking out
+azevinho|equipamento|a sprig of dark green holly leaves with three red berries
+totem|equipamento|a small carved brown wood totem post with a carved animal face and green feathers tied on
+varinhaDeTeixo|equipamento|a gnarled twisting dark brown yew wand with a small green leaf sprouting near the tip, diagonal
+pocaoDeCura|equipamento|a round-bellied glass potion flask with a cork, full of bright red liquid
+kitDeCura|equipamento|a tan leather satchel with a red cross stitched on the flap and a rolled cream bandage beside it
+aguaBenta|equipamento|a slim teardrop glass flask of clear sky blue water with a gold stopper and a tiny gold glow
+fogoAlquimico|equipamento|a squat round glass flask of glowing orange-red liquid with a little flame licking from the cork
+acido|equipamento|a squat square glass bottle of bubbling bright green acid with a cork
+antitoxina|equipamento|a tall thin glass vial of pale cream-white liquid with a green stopper
+venenoBasico|equipamento|a small gourd-shaped dark violet glass bottle with a near-black stopper and a green drip down its side
+oleo|equipamento|a brown clay oil flask with a narrow neck, a dark gold oil drip running down the side
+moedaDeCobre|equipamento|a small stack of round copper coins in red-brown tones, a few scattered
+moedaDePrata|equipamento|a small stack of round silver coins in light steel, a few scattered
+moedaDeOuro|equipamento|a small stack of round gold coins, a few scattered, shining
+denteDeOuro|equipamento|a single gold tooth molar with roots, shining
+estatuetaDeSapo|equipamento|a small green jade frog figurine sitting, with two gold eyes, side view
+moedaDePlatina|equipamento|a small stack of round platinum coins in off-white with a cool sky blue sheen, a few scattered
+ferramentasDeLadrao|ferramenta|an open tan leather roll holding slate lockpicks and a small file, with a tiny light steel mirror
+kitDeDisfarce|ferramenta|a light steel hand mirror beside a cream face-powder puff and a brown fake mustache
+kitDeFalsificacao|ferramenta|a rolled cream document with a dangling red wax seal and a brown wooden stamp beside it
+kitDeHerbalismo|ferramenta|a light steel mortar and pestle with a sprig of green leaves sticking out
+kitDeVenenos|ferramenta|a small dark glass vial of bright green poison with a red stopper beside a tan leather glove
+ferramentasDeNavegacao|ferramenta|a brass gold sextant seen from the side with a light steel arc and small mirror
+ferramentasDeCartografo|ferramenta|a brass gold drafting compass standing open on a rolled cream map
+ferramentasDeFerreiro|ferramenta|a slate blacksmith hammer resting on a small dark steel anvil with a red-hot glowing tip
+ferramentasDeCarpinteiro|ferramenta|a brown wooden handsaw with a light steel toothed blade crossed with a carpenter's square
+ferramentasDePedreiro|ferramenta|a light steel mason's trowel with a brown wooden handle crossed with a slate chisel
+ferramentasDeJoalheiro|ferramenta|a gold jeweler's loupe beside a small sky blue faceted gemstone
+ferramentasDeFuntileiro|ferramenta|a small light steel clockwork gear with a slate screwdriver crossed over it
+ferramentasDeCouro|ferramenta|a curved light steel leather-cutting knife lying on a tan leather hide piece
+ferramentasDeSapateiro|ferramenta|a wooden cobbler's shoe last shaped like a foot with a small slate tack hammer
+ferramentasDeOleiro|ferramenta|a brown clay pot on a round slate potter's wheel, seen from the side
+ferramentasDeVidreiro|ferramenta|a long slate glassblowing pipe with a glowing sky blue glass bubble at the end
+ferramentasDeTecelao|ferramenta|a small brown wooden hand loom with cream threads and a spindle
+ferramentasDeEntalhador|ferramenta|a brown wooden block half-carved with a slate gouge chisel stuck in it
+suprimentosDeAlquimista|ferramenta|a glass alembic still with a bulbous body and long spout, bubbling violet liquid
+suprimentosDeCervejeiro|ferramenta|a small brown wooden keg with light steel hoops and a green hop cone on top
+suprimentosDeCaligrafo|ferramenta|a white quill feather dipped in a small near-black ink pot
+suprimentosDePintor|ferramenta|a brown wooden painter's palette with red, sky blue, gold and green paint dabs and a brush
+utensiliosDeCozinheiro|ferramenta|a light steel cooking pot with a brown wooden ladle and a little steam
+jogoDeDados|ferramenta|two off-white dice with near-black pips tumbling side by side
+baralho|ferramenta|a fanned hand of three cream playing cards with red and near-black suit marks
+alaude|ferramenta|a pear-shaped brown wooden lute with a bent-back pegbox, seen from the front
+lira|ferramenta|a small gold U-shaped lyre with cream strings
+flauta|ferramenta|a long thin brown wooden flute held diagonally with a row of finger holes
+tambor|ferramenta|a round drum with a cream skin top and red body laced with tan cords
+gaitaDeFoles|ferramenta|a bagpipe with a red plaid bag and three brown wooden drone pipes
+trompa|ferramenta|a curved gold hunting horn with a flared bell and a tan leather strap
+flautaDePa|ferramenta|a pan flute of seven brown cane pipes of descending length bound with tan cord
+viola|ferramenta|a brown wooden viol with a long neck and a bow resting across it
+dulcimer|ferramenta|a trapezoid brown wooden hammered dulcimer with light steel strings and two small hammers
+charamela|ferramenta|a brown wooden shawm with a long conical body and a flared bell, held diagonally
+cavaloDeMontaria|montaria|a slender brown riding horse in full side profile with a tan saddle
+cavaloDeGuerra|montaria|a large brown wood warhorse in side profile wearing light steel barding and a red cloth
+cavaloDeTracao|montaria|a stocky heavy draft horse in side profile, tan with feathered off-white hooves and a collar
+pônei|montaria|a small round chubby cream pony in side profile with a shaggy mane
+mula|montaria|a slate gray mule in side profile with long ears and two tan packs
+camelo|montaria|a tan one-humped camel in side profile
+mastim|montaria|a big brown mastiff dog in side profile with a tan riding saddle
+elefante|montaria|a slate gray elephant in side profile with off-white tusks and a red blanket
+selaDeMontaria|montaria|a plain tan leather riding saddle seen from the side
+selaDeGuerra|montaria|a high-backed brown war saddle with a tall cantle and light steel trim
+selaExotica|montaria|an unusual violet saddle with gold trim and small cream wing-shaped flaps
+freioERedea|montaria|a light steel horse bit with tan leather reins looped in a coil
+alforjes|montaria|two tan leather saddlebags joined by a strap, with brass gold buckles
+carroca|montaria|a small two-wheeled brown wooden cart with shafts in side profile
+carrocaGrande|montaria|a large four-wheeled brown wagon with a cream canvas cover in side profile
+carruagem|montaria|a closed red and gold four-wheeled coach with a door and window in side profile
+carroDeGuerra|montaria|a light two-wheeled war chariot with a light steel front and big wheels in side profile
+treno|montaria|a brown wooden sled with curved runners and a red seat in side profile
+barcoARemo|montaria|a small brown wooden rowboat with two oars in side profile
+barcaca|montaria|a flat wide brown wooden barge with a low cabin in side profile
+navioALonga|montaria|a long narrow viking longship with a dragon prow, a row of round shields and a single red striped sail
+navioMercante|montaria|a round-bellied merchant sailing ship with a tall mast and cream square sails in side profile
+galera|montaria|a long low galley with many oars along the side and one cream lateen sail in side profile
+navioDeGuerra|montaria|a large warship with a light steel ram at the prow, a ballista on deck and red sails in side profile
+pocaoDeCuraMaior|magico|a tall slender glass vial of glowing red liquid with a cork stopper
+pocaoDeCuraSuperior|magico|a large square glass bottle of glowing red liquid with a gold cap
+pocaoDeCuraSuprema|magico|a big ornate teardrop flask of bright red liquid with a gold stopper and gold filigree band
+pocaoDeVitalidade|magico|a round-bellied flask of bright green liquid with a cream wax seal and a small green leaf tied to the neck
+pocaoDeHeroismo|magico|a wide shield-shaped glass flask of golden liquid with a gold stopper glowing softly
+pocaoDeEscalada|magico|a gourd-shaped flask of tan-brown liquid with a short coil of rope tied around the neck
+pocaoDeVelocidade|magico|a narrow tilted flask of sky blue liquid with white speed streaks trailing behind it
+pocaoDeInvisibilidade|magico|a faintly outlined flask of clear off-white liquid fading to near transparency with a faint sky blue shimmer
+pocaoDeVoo|magico|a round flask of sky blue liquid with two small white feathered wings on its sides
+pocaoDeRespiracaoAquatica|magico|a squat round flask of deep sky blue liquid with three small white bubbles rising from it
+pocaoDeResistencia|magico|a stout square flask split half red and half sky blue liquid with a slate metal cap
+pocaoDeCrescimento|magico|a tall flask of green liquid with a big green upward arrow-shaped stopper
+pocaoDeDiminuicao|magico|a tiny squat flask of violet liquid with a very small slate cork
+pocaoDeFormaGasosa|magico|an open-necked flask of pale off-white liquid with light steel gray mist curling out of the top
+pocaoDeSoproDeFogo|magico|a tall thin bottle shaped like a dragon head with an open mouth, filled with bright red liquid and a small orange flame puff coming out of the mouth
+pocaoDeLeituraMental|magico|a tall flask of violet liquid with a small gold eye-shaped stopper
+pocaoDeClarividencia|magico|a spherical crystal flask of sky blue liquid with a swirling white glow inside
+pocaoDeAmizadeAnimal|magico|a gourd flask of warm tan liquid with a small brown paw-print charm tied to the neck
+pocaoDeVeneno|magico|a round flask of dark red liquid with green bubbling froth and a small green skull-shaped stopper
+pocaoDeForcaDeGigante|magico|a heavy oversized brown clay jug with a red liquid splash at the mouth and a slate iron band
+pocaoDeLongevidade|magico|an elegant hourglass-shaped flask of shimmering gold liquid with a cream stopper
+oleoDeAfiar|magico|a small slate metal oil can with a long spout dripping a golden drop onto a light steel blade edge
+oleoDeEscorregar|magico|a squat brown clay jar tipped over spilling a glossy off-white puddle of oil
+oleoDeEtereidade|magico|a slim cream flask of translucent violet oil with ghostly violet wisps rising
+unguentoRestaurador|magico|a small round tan tin of ointment with the lid off showing cream salve and a soft green glow
+filtroDoAmor|magico|a heart-shaped glass flask of pink-red liquid with a gold stopper
+armaMais1|magico|a light steel longsword with a gold crossguard pointing diagonally up-right with one small gold sparkle beside it
+armaMais2|magico|a light steel longsword with a gold crossguard pointing diagonally up-right with two small gold sparkles beside it
+armaMais3|magico|a light steel longsword with a gold crossguard pointing diagonally up-right with three small gold sparkles beside it
+municaoMais1|magico|a single arrow with a light steel head and red fletching pointing diagonally up-right with one small gold sparkle beside it
+municaoMais2|magico|a single arrow with a light steel head and red fletching pointing diagonally up-right with two small gold sparkles beside it
+municaoMais3|magico|a single arrow with a light steel head and red fletching pointing diagonally up-right with three small gold sparkles beside it
+linguaDeFogo|magico|a longsword pointing diagonally up-right with its blade wrapped in bright red-orange flames
+marcaDeGelo|magico|a longsword pointing diagonally up-right with a pale sky blue icy blade and white frost crystals along the edge
+espadaSolar|magico|a gold sword hilt pointing diagonally up-right with a blade made entirely of bright golden radiant light
+matadoraDeDragoes|magico|a broad light steel greatsword pointing diagonally up-right with a red dragon-head crossguard
+matadoraDeGigantes|magico|a huge heavy slate greatsword pointing diagonally up-right with a thick brown leather-wrapped grip
+espadaDanca|magico|a light steel longsword floating upright in midair with sky blue motion swirls around it
+espadaDeGume|magico|a light steel longsword pointing diagonally up-right with a razor-thin gleaming white edge line
+espadaVorpal|magico|a long gleaming off-white sword pointing diagonally up-right with a curved gold guard and a bright white glint at the tip
+espadaDaSorte|magico|a light steel longsword pointing diagonally up-right with a green four-leaf clover-shaped pommel
+espadaDeRoubarVida|magico|a dark slate longsword pointing diagonally up-right with dark violet necrotic smoke along the blade and a red gem in the hilt
+espadaDeFerir|magico|a jagged serrated light steel sword pointing diagonally up-right with red drops falling from the edge
+defensora|magico|a light steel longsword pointing diagonally up-right with a large gold shield-shaped crossguard
+vingadoraSagrada|magico|a light steel longsword pointing diagonally up-right with a gold winged crossguard and a soft golden radiant glow
+machadoBerserker|magico|a big double-bladed light steel battleaxe pointing diagonally up-right with a brown haft and a red glowing aura
+ladraDeNoveVidas|magico|a slim slate rapier pointing diagonally up-right with a gold basket hilt and a dark violet glow on the blade
+macaDaDisrupcao|magico|a flanged light steel mace pointing diagonally up-right with its head shining bright golden radiant light
+macaDoGolpe|magico|a heavy slate mace pointing diagonally up-right with a blocky square head and gold bands
+macaDoTerror|magico|a dark slate mace pointing diagonally up-right with a skull-shaped head and violet wisps
+arremessadorAnao|magico|a stout dwarven warhammer pointing diagonally up-right with a light steel head, gold bands and a sky blue curved return trail
+azagaiaDoRaio|magico|a javelin pointing diagonally up-right crackling with sky blue and white lightning
+tridenteDoComando|magico|a light steel three-pronged trident pointing diagonally up-right with sky blue water swirling around the shaft
+arcoJuramentado|magico|a dark brown elven longbow in a tall curve with a glowing gold string and a red glint at the grip
+flechaAssassina|magico|a single near-black arrow pointing diagonally up-right with a red glowing barbed head
+armaDeAlerta|magico|a light steel longsword pointing diagonally up-right with a gold open-eye-shaped crossguard glowing sky blue
+armaduraMais1|magico|a light steel breastplate in 3/4 view with one small gold sparkle beside it
+armaduraMais2|magico|a light steel breastplate in 3/4 view with two small gold sparkles beside it
+armaduraMais3|magico|a light steel breastplate in 3/4 view with three small gold sparkles beside it
+escudoMais1|magico|a round light steel shield with a gold rim and boss with one small gold sparkle beside it
+escudoMais2|magico|a round light steel shield with a gold rim and boss with two small gold sparkles beside it
+escudoMais3|magico|a round light steel shield with a gold rim and boss with three small gold sparkles beside it
+armaduraAdamantina|magico|a heavy full plate breastplate in 3/4 view of near-black adamantine plates with a faint violet sheen
+armaduraDeMithral|magico|a gleaming off-white mithral chain shirt in 3/4 view with a soft silver shine
+armaduraDeResistencia|magico|a light steel breastplate in 3/4 view with a glowing red gem set in the center
+armaduraDeInvulnerabilidade|magico|a massive light steel plate breastplate in 3/4 view with gold trim and a glowing gold outline
+placasAnas|magico|a broad stocky slate plate breastplate in 3/4 view with thick gold bands and riveted square plates
+malhaElfica|magico|a slim chain shirt in 3/4 view of shimmering pale green and off-white rings with leaf-shaped trim
+couroGlamourizado|magico|a brown studded leather vest in 3/4 view with gold rivets and a violet shimmer of illusion around it
+armaduraDeEscamasDeDragao|magico|a scale mail breastplate in 3/4 view made of overlapping bright red dragon scales with a gold collar
+armaduraDeDemonio|magico|a near-black spiked plate breastplate in 3/4 view with red glowing cracks and clawed shoulder spikes
+placasDaEtereidade|magico|a pale translucent light steel plate breastplate in 3/4 view fading into ghostly violet wisps
+escudoAnimado|magico|a round light steel shield floating in midair with sky blue motion swirls around it
+escudoCaptador|magico|a round brown wooden shield with a gold rim and two arrows stuck in it
+escudoSentinela|magico|a light steel kite shield with a large gold open-eye emblem
+escudoGuardaMagia|magico|a light steel heater shield glowing with a violet arcane ward outline
+escudoAtraidor|magico|a round dark slate shield with a red glowing center pulling three small arrows toward it
+anelDeProtecao|magico|a gold ring in 3/4 view with a large sky blue gem and a faint sky blue shield-shaped glow
+anelDeQuedaSuave|magico|a light steel ring in 3/4 view with a small white feather drifting above it
+anelDeAcaoLivre|magico|a gold ring in 3/4 view with a broken slate chain link beside it
+anelDeInvisibilidade|magico|a plain gold band in 3/4 view half fading into transparency with a faint off-white shimmer
+anelDeSalto|magico|a tan ring in 3/4 view with a green gem and a small curved green upward arc above it
+anelDeEscudoMental|magico|a light steel ring in 3/4 view with a violet gem inside a small violet dome glow
+anelDeRegeneracao|magico|a gold ring in 3/4 view with a bright green gem and a soft green glow
+anelDeResistencia|magico|a slate ring in 3/4 view with a large red gem and a red glow
+anelDeNatacao|magico|a sky blue wave-shaped ring in 3/4 view with a small white bubble above it
+anelDeCalor|magico|a gold ring in 3/4 view with a red-orange gem and a small red flame above it
+anelDeAndarSobreAgua|magico|a light steel ring in 3/4 view resting on a flat sky blue water ripple
+anelDeTelecinesia|magico|a gold ring in 3/4 view with a violet gem and a small slate pebble floating above it
+anelDeArmazenarMagia|magico|a gold ring in 3/4 view with five small gems of red, sky blue, green, violet and gold
+anelDeReflexao|magico|a light steel ring in 3/4 view with a mirror-bright off-white gem and a sky blue beam bouncing off it
+anelDoAriete|magico|a heavy slate ring in 3/4 view shaped like a ram head with curled tan horns
+anelDeEstrelasCadentes|magico|a dark slate ring in 3/4 view with a gold star-shaped gem and a tiny gold shooting star trail
+anelDeVisaoDeRaioX|magico|a light steel ring in 3/4 view with a glowing sky blue eye-shaped gem
+anelDeTresDesejos|magico|a gold ring in 3/4 view with three large glowing off-white diamond gems in a row
+varinhaDeMisseisMagicos|magico|a slender brown wooden wand pointing diagonally up-right with three small violet glowing darts flying from the tip
+varinhaDeTeia|magico|a slender slate wand pointing diagonally up-right with an off-white spiderweb spraying from the tip
+varinhaDeBolaDeFogo|magico|a slender red wooden wand pointing diagonally up-right with a bright red-orange fire orb at the tip
+varinhaDeRaios|magico|a slender light steel wand pointing diagonally up-right with a jagged sky blue and white lightning bolt from the tip
+varinhaDeParalisia|magico|a slender off-white bone wand pointing diagonally up-right with a pale green glowing tip
+varinhaDeMedo|magico|a slender near-black wand pointing diagonally up-right with a violet skull-shaped wisp at the tip
+varinhaDeDeteccaoDeInimigos|magico|a slender brown wand pointing diagonally up-right with a red glowing gem tip sending out a red ring pulse
+varinhaDeAtadura|magico|a slender slate wand pointing diagonally up-right wrapped by a glowing gold chain
+varinhaDePolimorfia|magico|a twisted green wand pointing diagonally up-right with a violet and green swirl at the tip
+varinhaDeSegredos|magico|a slender tan wand pointing diagonally up-right with a small gold keyhole-shaped glow at the tip
+varinhaDoMagoDeGuerra|magico|a sturdy slate metal wand pointing diagonally up-right with gold bands and a sky blue crystal tip
+varinhaDasMaravilhas|magico|a crooked brown wand pointing diagonally up-right with a burst of red, gold, green and sky blue sparks at the tip
+cajadoDeCura|magico|a tall brown wooden staff pointing diagonally up-right topped with a gold sunburst and a soft green healing glow
+cajadoDeFogo|magico|a long brown wood staff topped with a curled iron crook holding a blazing red-orange flame
+cajadoDeGelo|magico|a long pale steel staff topped with a cluster of sharp sky blue ice crystals and frost
+cajadoDoGolpe|magico|a thick brown wood quarterstaff with heavy steel bands and a glowing off-white force burst at its tip, with three small gold sparkles
+cajadoDeEnxame|magico|a gnarled brown wood staff topped with a round tan hive buzzing with tiny near-black insects
+cajadoDaSerpente|magico|a brown wood staff whose top is carved into a rearing green snake head with open fangs
+cajadoDoEncanto|magico|a slender brown wood staff topped with a heart-shaped violet gem glowing softly pink
+cajadoDeMurchar|magico|a twisted near-black dead wood staff with withered branches and a dark violet necrotic glow at the top
+cajadoDoCantoDosPassaros|magico|a brown wood staff with small carved pipes along it and a small sky blue bird perched on its top
+cajadoDasFlores|magico|a smooth tan wood staff whose top sprouts green leaves and small red and cream flowers
+cajadoDoTrovaoERaio|magico|a dark steel staff topped with a gold fork crackling with blue-white lightning bolts, with two small gold sparkles
+cajadoDasFlorestas|magico|a living brown wood staff with green leafy branches growing from its crooked top, with two small gold sparkles
+cajadoDoPoder|magico|a tall slate steel staff topped with a large red gem held in gold claws, with two small gold sparkles
+cajadoDoMagi|magico|a tall ornate gold and violet staff topped with a ring holding a floating glowing off-white star, with two small gold sparkles
+cetroDeAbsorcao|magico|a short gold rod topped with an open cupped claw drawing in a swirl of violet magic
+cetroDeAlerta|magico|a short slate steel rod with a flanged head set with a watchful sky blue eye-shaped gem
+cetroDoGuardiaoDoPacto|magico|a short near-black rod topped with a curled horn-shaped head and a small violet flame
+cetroDeSeguranca|magico|a short gold rod topped with a small green dome like a tiny pocket garden
+cetroDoDominio|magico|a royal gold scepter topped with a small crown and a large red jewel
+cetroDoPoderioSenhorial|magico|a heavy slate steel rod with a flanged mace-like head and three gold buttons along the grip
+cetroDaRessurreicao|magico|a short off-white ivory rod topped with a gold sunburst glowing radiant
+bolsaDeConter|magico|a small tan leather drawstring pouch with a faint violet swirl spilling from its opening
+buracoPortatil|magico|a round near-black cloth disc folded at one edge like a hole, with a violet rim
+manoplasDeForcaDeOgro|magico|a pair of bulky slate iron gauntlets with spiked knuckles and red leather cuffs
+faixaDeIntelecto|magico|a thin gold headband circlet with a small sky blue gem in its front
+mantoDeProtecao|magico|a folded slate grey cloak with a shield-shaped gold clasp
+mantoElfico|magico|a hooded green cloak with a leaf-shaped light steel clasp
+mantoDeDeslocamento|magico|a sky blue cloak shown doubled with a faint translucent offset copy shimmering beside it
+mantoDoMorcego|magico|a near-black cloak spread wide with scalloped bat-wing edges
+mantoDaArraia|magico|a sky blue cloak shaped like a manta ray with a pointed tail and a cream underside
+capaDoCharlatao|magico|a short red cape with a high collar and a small violet puff of teleport smoke
+botasElficas|magico|a pair of soft green leather boots with pointed curled toes
+botasDeLevitacao|magico|a pair of tan leather boots floating above a small sky blue glow
+botasDeVelocidade|magico|a pair of red leather boots with gold speed streaks trailing behind the heels
+botasDeMarchaESalto|magico|a pair of sturdy brown leather boots with thick springy coiled soles
+botasAladas|magico|a pair of tan leather boots with small off-white feathered wings at the ankles
+asasDeVoo|magico|a folded cream feathered cloak opening into two large off-white wings
+chinelosDeEscalarParedes|magico|a pair of soft violet slippers with small green sticky gecko-pad soles
+braceletesDeArqueiro|magico|a pair of tan leather bracers with a gold arrow emblem on each
+braceletesDeDefesa|magico|a pair of polished light steel bracers with gold trim and a faint sky blue glow
+brocheDeEscudo|magico|a round gold brooch shaped like a tiny shield with a sky blue center
+luvasDeAgarrarProjetis|magico|a pair of brown leather gloves with one hand catching an arrow in mid-flight
+luvasDeNadarEEscalar|magico|a pair of green leather gloves with webbed fingers
+luvasDeLadrao|magico|a pair of near-black slim leather gloves with violet fingertips
+oculosDeNoite|magico|a pair of round goggles with green glowing lenses on a brown leather strap
+olhosDaAguia|magico|a pair of small curved crystal eye lenses with a gold glint, beside a small eagle feather
+olhosDeVisaoMinuciosa|magico|a pair of small curved crystal eye lenses glowing sky blue
+olhosDoEncanto|magico|a pair of small curved crystal eye lenses glowing pink-violet with a tiny heart sparkle
+chapeuDeDisfarce|magico|a wide-brimmed tan felt hat with a red feather, its brim shimmering violet
+elmoDeTelepatia|magico|a light steel open helm with a violet gem on the brow sending small curved waves
+elmoDeCompreenderIdiomas|magico|a light steel helm with a gold ear-shaped flange on each side
+elmoDeBrilho|magico|a polished light steel helm studded with many small red, sky blue and off-white gems glowing gold
+medalhaoDosPensamentos|magico|a round gold locket on a chain with a small violet gem and faint thought waves
+amuletoDeAdaptacao|magico|a sky blue round amulet on a chain with a small air bubble rising from it
+amuletoDeSaude|magico|a red heart-shaped amulet on a gold chain
+amuletoContraVeneno|magico|a gold amulet set with a dark-rimmed green stone on a chain
+amuletoDeFecharFeridas|magico|a cream amulet with a red cross-shaped stitch mark on a light steel chain
+colarDeBolasDeFogo|magico|a gold necklace hung with several small glowing red-orange fire beads
+colarDeContasDeOracao|magico|a loop of cream prayer beads with a few larger gold and sky blue beads
+perolaDoPoder|magico|a single large glowing off-white pearl with a faint violet shine
+pedraDaBoaSorte|magico|a smooth polished green agate stone with a small gold sparkle
+escaravelhoDeProtecao|magico|a gold scarab beetle medallion with spread wings and a sky blue shell
+gemaDeVidencia|magico|a large faceted sky blue gem with an eye-shaped glint inside
+gemaDeBrilho|magico|a long faceted cream crystal prism shooting off-white rays of light
+cordaDeEscalada|magico|a coiled tan rope with one end rising straight up by itself
+cordaDeEnredar|magico|a coiled brown rope with its loose end twisting into a knotted loop
+varaImovel|magico|a short slate iron rod with a gold button, floating level in the air
+decantadorDeAguaInfinita|magico|a round-bellied light steel decanter with its stopper out, gushing sky blue water
+solventeUniversal|magico|a tall thin clear vial of off-white liquid with a red wax stopper
+colaSoberana|magico|a small round gold jar of thick cream-white glue with a dripping lid
+poDeDesaparecimento|magico|a small tan pouch with a puff of fine off-white sparkling dust fading to nothing
+poDeSecura|magico|a small brown pouch with a dry pellet of pale tan dust beside it
+poDeEspirroETosse|magico|a small tan pouch with a puff of sickly green dust
+algemasDimensionais|magico|a pair of light steel shackles joined by a short chain with glowing violet cuffs
+gemaElemental|magico|a rough faceted gem with a swirl of sky blue air trapped inside
+figuraDePoderMaravilhoso|magico|a small gold statuette of a sitting lion on a little slate base
+corcelDeObsidiana|magico|a small glossy near-black obsidian statuette of a rearing horse with red eyes
+lanternaReveladora|magico|a light steel hooded lantern casting a gold cone of light
+espelhoDeAprisionarVida|magico|a tall oval mirror in a dark gold frame with a swirling violet surface
+vassouraVoadora|magico|a brown wood broom with a tan straw bristle head, flying sideways with small motion lines
+tapeteVoador|magico|a rolled-out red rug with gold tasseled edges floating with a gentle wave
+lequeDoVento|magico|an open folding fan of cream paper on brown ribs with a sky blue gust curling off it
+gaitasDoAssombro|magico|a set of bagpipes with a near-black bag and slate drones and a faint violet haze
+gaitasDosEsgotos|magico|a set of small tan reed panpipes with a small grey rat beside them
+trompaDeExplosao|magico|a curved off-white horn with a gold mouthpiece blasting a burst of sky blue sound rings
+trompaDeValhalla|magico|a large curved brown ox horn with gold bands and a faint off-white spectral glow
+baralhoDeIlusoes|magico|a fanned deck of three cream cards with violet backs shimmering
+mantoDeOlhos|magico|a slate grey robe covered with many small open eyes
+mantoDasEstrelas|magico|a deep violet robe sprinkled with small glowing gold stars
+mantoDeCoresCintilantes|magico|a robe shimmering with bright bands of red, gold, green, sky blue and violet
+mantoDoArquimago|magico|a long red robe with gold trim and a high collar
+mantoDeItensUteis|magico|a tan robe covered with small sewn-on cloth patches of different colors
+pedraDeControlarElemental|magico|a rough brown and slate rock chunk glowing green at its cracks
+bracadeirasDeBilarro|magico|a light steel sphere made of curved iron bands, slightly open
+fichaDePenaDeQuaal|magico|a single off-white feather with a gold quill tip and a faint sparkle
+aljavaDeEhlonna|magico|a tall tan leather quiver with three compartments holding arrows, a bow and javelins
+aljavaEficiente|magico|a tall brown leather quiver stuffed with green-fletched arrows and a violet glow at its mouth
+instrumentoDosBardos|magico|a gold lute with a long neck and a faint violet magical glow around its strings
+pedraIoun|magico|a small floating red ellipsoid stone orbiting with a sky blue spark trail
+talismaDoBemSupremo|magico|a gold sunburst holy symbol pendant glowing radiant off-white
+talismaDoMalSupremo|magico|a near-black spiked holy symbol pendant with a dark violet glow
+tomoDoPensamentoClaro|magico|a thick closed book with a sky blue cover and gold corners
+tomoDaLideranca|magico|a thick closed book with a red cover and gold corners
+tomoDoEntendimento|magico|a thick closed book with a green cover and gold corners
+manualDoGolemDeCarne|magico|a thick closed book with a cracked slate stone-like cover bound with iron clasps
+manualDeExercicioRapido|magico|a thick closed book with a brown leather cover and a gold clasp
+manualDaAgilidade|magico|a thick closed book with a violet cover and a light steel clasp
+manualDaSaude|magico|a thick closed book with a tan cover and a red clasp
+pocoDeMuitosMundos|magico|a round near-black cloth disc with a swirling violet and sky blue portal in its center

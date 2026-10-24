@@ -174,7 +174,7 @@ L.mago = {
 // entram para a subida de nível (`game/nivel.js`).
 L.paladino = {
   truques: [],
-  magias: ['bencao', 'comando', 'compelirDuelo', 'curarFerimentos', 'detectarBemMal', 'detectarMagia',
+  magias: ['bencao', 'comando', 'dueloCompelido', 'curarFerimentos', 'detectarBemMal', 'detectarMagia',
     'detectarVenenoDoenca', 'escudoDaFe', 'favorDivino', 'heroismo', 'protecaoBemMal', 'purificarAlimentos',
     'golpeAbrasador', 'golpeTrovejante', 'golpeColerico'],
 };
@@ -185,8 +185,29 @@ L.patrulheiro = {
     'passosLargos', 'falarComAnimais'],
 };
 
-/** A lista de magias de uma classe (truques e 1º círculo). */
-export const listaDaClasse = (classe) => L[classe] ?? { truques: [], magias: [] };
+// Magias de 2º e 3º círculo que o motor já joga, por classe (Livro do Jogador).
+// Só entram na escolha da subida de nível quando o herói já tem espaço delas;
+// a criação (1º nível) continua lendo `L` direto. A lista cresce com o motor.
+const ALTAS = {
+  bardo: ['silencio', 'coroaDaLoucura', 'acalmarEmocoes', 'dissiparMagia', 'aprimorarAtributo', 'forcaFantasmagorica', 'sugestao', 'crescerPlantas'],
+  clerigo: ['silencio', 'eloDeProtecao', 'acalmarEmocoes', 'oracaoDeCura', 'dissiparMagia', 'aprimorarAtributo', 'luzDoDia', 'removerMaldicao'],
+  druida: ['lufadaDeVento', 'muralhaDeVento', 'convocarRelampagos', 'dissiparMagia', 'visaoNoEscuro', 'aprimorarAtributo', 'luzDoDia', 'crescerPlantas'],
+  feiticeiro: ['escuridao', 'lufadaDeVento', 'aumentarReduzir', 'coroaDaLoucura', 'dissiparMagia', 'visaoNoEscuro', 'aprimorarAtributo', 'forcaFantasmagorica', 'sugestao', 'luzDoDia', 'voo'],
+  bruxo: ['escuridao', 'coroaDaLoucura', 'fomeDeHadar', 'dissiparMagia', 'sugestao', 'removerMaldicao', 'voo'],
+  mago: ['escuridao', 'lufadaDeVento', 'aumentarReduzir', 'coroaDaLoucura', 'dissiparMagia', 'visaoNoEscuro', 'forcaFantasmagorica', 'sugestao', 'removerMaldicao', 'voo'],
+  paladino: ['eloDeProtecao', 'oracaoDeCura', 'dissiparMagia', 'luzDoDia', 'removerMaldicao'],
+  patrulheiro: ['silencio', 'muralhaDeVento', 'flechaRelampago', 'visaoNoEscuro', 'luzDoDia', 'crescerPlantas'],
+};
+
+/**
+ * A lista de magias de uma classe: truques e 1º círculo e, com `circuloMax`
+ * maior, as de 2º e 3º que o motor joga.
+ */
+export const listaDaClasse = (classe, circuloMax = 1) => {
+  const base = L[classe] ?? { truques: [], magias: [] };
+  const altas = (ALTAS[classe] ?? []).filter((id) => (SPELLS[id]?.level ?? 9) <= circuloMax);
+  return altas.length ? { ...base, magias: [...base.magias, ...altas] } : base;
+};
 
 /**
  * O que cada classe conjuradora escolhe no 1º nível.

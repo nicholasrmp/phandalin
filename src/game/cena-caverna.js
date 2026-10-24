@@ -24,7 +24,7 @@ import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
 import { skillBonus } from '../rules/abilities.js';
 import { distanceFt } from '../core/grid.js';
-import { podeVer, visaoNoEscuro } from '../rules/luz.js';
+import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 
 const MOVIMENTO = 60;
 
@@ -65,7 +65,7 @@ export function criarCenaCaverna(app, config) {
 
   // ------------------------------------------------------------- quem vê ----
   /** O guarda nota o herói: vê, e está a 30 pés — ou o herói é uma tocha andando. */
-  const guardaNota = (g, c) => podeVer(enc, g, c) && (c.tochaAcesa || distanceFt(g.pos, c.pos) <= 30);
+  const guardaNota = (g, c) => podeVer(enc, g, c) && (emiteLuz(c) || distanceFt(g.pos, c.pos) <= 30);
 
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
@@ -79,7 +79,7 @@ export function criarCenaCaverna(app, config) {
         formato: 'painel',
         paginas: [{
           texto: [
-            visaoNoEscuro(quem) && !quem.tochaAcesa
+            visaoNoEscuro(quem) && !emiteLuz(quem)
               ? `No cinza da visão no escuro, ${quem.name} distingue uma silhueta pequena encostada na rocha: um goblin de guarda, que ainda não percebeu nada.`
               : `A luz alcança a curva do corredor e pega um goblin de guarda no meio de um bocejo.`,
             'Ninguém é surpreendido.',
@@ -97,7 +97,7 @@ export function criarCenaCaverna(app, config) {
         formato: 'painel',
         paginas: [{
           texto: [
-            alvo.tochaAcesa
+            emiteLuz(alvo)
               ? `Do fundo do escuro, uma voz aguda: "Fogo! Fogo vindo!" A tocha de ${alvo.name} entregou o grupo muito antes de alguém ver qualquer coisa.`
               : `Alguma coisa raspa na pedra, perto. ${alvo.name} não vê nada — mas alguma coisa no escuro vê ${alvo.name}.`,
           ],

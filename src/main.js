@@ -16,12 +16,13 @@ import { criarCapitulo1 } from './game/capitulo1.js';
 import { criarCenaCaverna } from './game/cena-caverna.js';
 import { criarCapitulo2 } from './game/capitulo2.js';
 import { criarRuaMarcarrubra } from './game/capitulo3-rua.js';
+import { criarMansao } from './game/capitulo3-mansao.js';
 import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta } from './view/narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
-import { temEscuridao, visaoDoGrupo } from './rules/luz.js';
+import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
 import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
@@ -231,6 +232,7 @@ class App {
     // A arena da caverna também é uma cena: exploração no escuro antes da luta.
     const cena = mapa.cena === 'esconderijo' ? criarCapitulo2
       : mapa.cena === 'rua' ? criarRuaMarcarrubra
+      : mapa.cena === 'mansao' ? criarMansao
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
     const capitulo = Boolean(cena);
@@ -349,9 +351,20 @@ class App {
       // Golpe preparado (Trovejante, Abrasador, Colérico, Marcante, Cegante,
       // Saraivada): o efeito toca no ACERTO, junto do golpe da arma.
       case 'golpeMagico': {
-        const nome = ev.efeito === 'espinhos' ? 'vinhas'
+        // Flecha Relampejante: faísca no alvo e um anel de raios na explosão.
+        if (ev.efeito === 'flecha') {
+          // O raio corre do atirador ao alvo (~0,25 s) antes da faísca.
+          board?.fx.beam(ev.atacante.pos, ev.alvo.pos, { color: '#bfe6ff', dur: 0.25, width: 4, jagged: true });
+          this.atImpact(() => {
+            board?.fx.quadros(ev.alvo.pos, 'eletrico-faisca', { fps: 16, altura: 24 });
+            board?.fx.ring(ev.alvo.pos, { color: '#bfe6ff', radius: 90, dur: 0.5, width: 3 });
+            board?.bump(0.35);
+          });
+          break;
+        }
+        const espinhos = ev.efeito === 'espinhos' || ev.efeito === 'constringe';
+        const nome = espinhos ? 'vinhas'
           : { fogo: 'golpe-fogo', 'psíquico': 'golpe-psiquico', trovejante: 'golpe-trovao' }[ev.tipo] ?? 'golpe-divino';
-        const espinhos = ev.efeito === 'espinhos';
         this.atImpact(() => board?.fx.quadros(ev.alvo.pos, nome, espinhos ? { fps: 12, altura: 18 } : { fps: 8, sumir: 0.25 }));
         break;
       }
@@ -747,7 +760,8 @@ class App {
         return;
       }
       if (!occupant) {
-        if (magia?.shape) this.tryCast(c, this.mode.spellId, { point: tile });
+        // Dissipar Magia também mira uma casa de zona.
+        if (magia?.shape || magia?.kind === 'dissipar') this.tryCast(c, this.mode.spellId, { point: tile });
         return;
       }
       if (this.mode.kind === 'attack') {
@@ -913,7 +927,7 @@ class App {
       mode: this.mode,
     });
     // No escuro, quem o grupo não vê some também do HUD (fila e lista de inimigos).
-    const visao = temEscuridao(this.enc.field) ? visaoDoGrupo(this.enc) : null;
+    const visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc) : null;
     for (const x of this.enc.combatants) x.oculto = Boolean(visao) && x.side !== 'party' && !visao.has(`${x.pos.x},${x.pos.y}`);
     this.hud.update(this.enc, c, this.mode, this.alvo);
     // A ficha fica por cima do jogo e não escuta o encontro: sem isto ela

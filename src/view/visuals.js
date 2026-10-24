@@ -517,6 +517,11 @@ function guessArt(name = '') {
 // O domo de proteção do tamanho de quem protege: baixo e largo o bastante para
 // ler como bolha, alto o bastante para a cabeça caber (as cabeças ficam a
 // ~56–62 px). Grande/Enorme crescem com a pegada.
+/** Raio, em px, de uma esfera de zona: a casa mais longe do centro (~45 px por casa), em degraus de 8. */
+const raioDeEsferaPx = (casas, centro) => {
+  const m = Math.max(0, ...casas.map((t) => Math.hypot(t.x - centro.x, t.y - centro.y))) + 0.5;
+  return Math.max(16, 8 * Math.round((m * 45) / 8));
+};
 const domoDe = (t) => {
   const f = t.pos.f ?? 1;
   if (f > 1) return { raio: 32 * f + 4, altura: 4 * Math.round((62 * (1 + (f - 1) * 0.4) + 10) / 4) };
@@ -581,6 +586,11 @@ export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {
 // ---------------------------------------------------------------- magias
 
 /** O meio de um conjunto de casas (posição fracionária: o desenho aceita). */
+/** Distância em casas (a maior das duas) entre dois quadrados. */
+function distanciaDe(a, b) {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+}
+
 function centroDe(casas) {
   return {
     x: casas.reduce((a, t) => a + t.x, 0) / casas.length,
@@ -1219,6 +1229,279 @@ const SPELL_VISUALS = {
     board.fx.area(casas, { color: '#a579d8', dur: 0.7 });
     return 0.2;
   },
+  // ---- lote de escuridão, vento e raio ----------------------------------------
+
+  // Um fio de fogo liga o conjurador ao duelista; o anel marca quem está preso a ele.
+  dueloCompelido: (board, { caster }, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.beam(caster.pos, t.pos, { color: '#ff9a7a', dur: 0.5, width: 2, jagged: false });
+      board.fx.quadros(t.pos, 'maldicao', { fps: 10, altura: 40 });
+      board.fx.ring(t.pos, { color: '#ff9a7a', radius: 42, dur: 0.6, width: 3 });
+    }
+    return 0.1;
+  },
+  // O gesto verde do golpe preparado; as vinhas brotam no acerto (main.js, 'golpeMagico').
+  golpeConstritor: (board, { caster }) => {
+    board.fx.quadros(caster.pos, 'vinhas', { fps: 10, altura: 14, sumir: 0.3 });
+    board.fx.motes(caster.pos, { color: '#6ee89a', count: 10, rise: 30 });
+    return 0;
+  },
+  // Névoa: nuvens cinzentas pela esfera, brancas e baixas.
+  nevoaObscurecente: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    board.fx.area(casas, { color: '#dfe6ec', dur: 0.8 });
+    // Os tufos de névoa são a zona (desenhados pelo tabuleiro enquanto durar).
+    return 0.2;
+  },
+  // Escuridão: o breu desce sobre a esfera, roxo-escuro, com fumaça de sombra.
+  escuridao: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    board.fx.area(casas, { color: '#1c1428', dur: 0.9 });
+    casas.filter((t) => (t.x + t.y) % 3 === 0).slice(0, 12)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'nevoa-escura', { fps: 8, altura: 16, sumir: 0.5 }), i * 50));
+    return 0.2;
+  },
+  // Lufada: o vento corre pela linha, de quem conjurou até a ponta.
+  lufadaDeVento: (board, { caster, dest, areaTiles }) => {
+    const casas = areaTiles ?? [dest];
+    const ponta = casas.length ? casas.reduce((a, t) => (distanciaDe(caster.pos, t) > distanciaDe(caster.pos, a) ? t : a), casas[0]) : dest;
+    board.fx.sopro(caster.pos, ponta, { color: '#dfeaf2', dur: 1.0, spread: 0.12, tiles: casas });
+    // Os motes correm a linha toda, cada casa um pouco depois da anterior:
+    // o vento chega na ponta junto com o sopro, e não só na metade.
+    casas.forEach((t) => setTimeout(
+      () => board.fx.motes(t, { color: '#e8f0f6', count: 3, rise: 8, spread: 40, dur: 0.6 }),
+      distanciaDe(caster.pos, t) * 40,
+    ));
+    return 0.3;
+  },
+  // Fome de Hadar: a esfera escurece e o frio sobe do chão.
+  fomeDeHadar: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    board.fx.area(casas, { color: '#120c1e', dur: 1 });
+    casas.filter((t) => (t.x + t.y) % 3 === 0).slice(0, 12)
+      .forEach((t, i) => setTimeout(() => {
+        board.fx.quadros(t, 'nevoa-escura', { fps: 8, altura: 16, sumir: 0.5 });
+        board.fx.shards(t, { color: '#9fe0ff', count: 8, spread: 40 });
+      }, i * 55));
+    board.fx.tremor(0.3);
+    return 0.25;
+  },
+  // Convocar Relâmpagos: o raio desce do céu sobre o ponto (a nuvem fica fora do quadro).
+  convocarRelampagos: (board, { dest, areaTiles }) => {
+    // O raio é um fio torto que vem de cima: o ponto do céu fica dez meias casas
+    // acima do alvo NA TELA, qualquer que seja a rotação da câmera.
+    const v = board.toView(dest.x, dest.y);
+    const ceu = board.fromView(v.vx - 5, v.vy - 5);
+    board.fx.beam(ceu, dest, { color: '#bfe6ff', dur: 0.6, width: 8, jagged: true });
+    board.fx.beam(ceu, dest, { color: '#ffffff', dur: 0.4, width: 3, jagged: true });
+    board.fx.quadros(dest, 'eletrico-faisca', { fps: 16, altura: 22, sumir: 0.4 });
+    (areaTiles ?? []).filter((t) => t.x !== dest.x || t.y !== dest.y).slice(0, 6)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'eletrico-faisca', { fps: 16, altura: 12, sumir: 0.4 }), 60 + i * 30));
+    board.fx.ring(dest, { color: '#bfe6ff', radius: 60, dur: 0.6, width: 3 });
+    board.bump(0.4);
+    return 0.2;
+  },
+  // Flecha Relampejante: o gesto; o raio e a explosão tocam no ataque ('golpeMagico').
+  flechaRelampago: (board, { caster }) => {
+    board.fx.motes(caster.pos, { color: '#bfe6ff', count: 10, rise: 30 });
+    board.fx.quadros(caster.pos, 'eletrico-faisca', { fps: 14, altura: 30 });
+    return 0;
+  },
+  // ---- lote 10: luz, silêncio, tamanho, elo, loucura, calma, cura em grupo, vento ----
+
+  // Luz: o aliado acende como uma tocha clara; o halo e a coluna fina contam o raio de 6 m.
+  luz: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.quadros(t.pos, 'luz-coluna', { fps: 12, altura: 26 });
+      board.fx.halo(t.pos, { color: '#fff1b8', dur: 1.1, radius: 36 });
+      // O brilho no chão: a luz que a criatura passa a emitir.
+      board.fx.ring(t.pos, { color: '#fff1b8', radius: 40, dur: 1.1, width: 3 });
+      board.fx.area([t.pos], { color: '#fff1b8', dur: 1.1 });
+      board.fx.motes(t.pos, { color: '#fff1b8', count: 8, rise: 34, spread: 24 });
+    }
+    return 0;
+  },
+  // Orientação: um brilho azul-claro na testa e o "+1d4" que sobe.
+  orientacao: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.quadros(t.pos, 'resistencia', { fps: 10, altura: 40 });
+      board.fx.glyph(t.pos, { text: '+1d4', color: '#9fe8ff', dur: 1.1, size: 16, rise: 44 });
+    }
+    return 0;
+  },
+  // Silêncio: o véu azul-gelo cai sobre a esfera, parado, e o som some (sem partícula viva).
+  silencio: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    board.fx.area(casas, { color: '#9bb7d8', dur: 0.9 });
+    board.fx.ring(dest, { color: '#c9defa', radius: 100, dur: 1.0, width: 2 });
+    // A esfera de gelo em si é a zona (desenhada pelo tabuleiro enquanto durar).
+    return 0.2;
+  },
+  // Aumentar sobe dourado e se alarga; Reduzir fecha em violeta, baixo, junto do chão.
+  aumentarReduzir: (board, { caster, dest }) => {
+    const alvo = board.enc.at(dest.x, dest.y);
+    if (alvo && alvo.side === caster.side) {
+      board.fx.pillar(dest, { color: '#ffe9a8', dur: 0.7, width: 22, height: 120 });
+      board.fx.ring(dest, { color: '#e8c35a', radius: 60, dur: 0.8, width: 3 });
+      board.fx.motes(dest, { color: '#ffe9a8', count: 12, rise: 60, spread: 34 });
+    } else {
+      // Reduzir: um anel lavanda grande que se FECHA sobre o alvo.
+      board.fx.ring(dest, { color: '#b9a4ee', radius: 56, dur: 0.8, width: 3, fecha: true });
+      board.fx.ring(dest, { color: '#d9ccf7', radius: 34, dur: 0.6, width: 2, fecha: true });
+      board.fx.motes(dest, { color: '#b9a4ee', count: 6, rise: 14, spread: 30, dur: 0.6 });
+    }
+    return 0.1;
+  },
+  // Elo de Proteção: um fio dourado liga os dois e a bolha fecha no protegido.
+  eloDeProtecao: (board, { caster }, alvos = []) => {
+    for (const t of alvos) {
+      // O fio é prata-azulado e dura 1,5 s: não confunde com a bolha dourada do Escudo da Fé.
+      board.fx.beam(caster.pos, t.pos, { color: '#d6e6ff', dur: 1.5, width: 3, jagged: false });
+      board.fx.ring(caster.pos, { color: '#d6e6ff', radius: 34, dur: 0.6, width: 2 });
+      board.fx.domo(t.pos, { cor: 'ouro', id: t.id, ...domoDe(t) });
+      board.fx.motes(t.pos, { color: '#e8c35a', count: 8, rise: 40, spread: 50 });
+    }
+    return 0;
+  },
+  // Coroa da Loucura: a coroa de maldição cai na cabeça e um fio liga o conjurador; manter é só o fio.
+  coroaDaLoucura: (board, { caster, dest, reuso }, alvos = []) => {
+    const quem = reuso ? [{ pos: dest }] : alvos;
+    for (const t of quem) {
+      board.fx.beam(caster.pos, t.pos, { color: '#e8a0c8', dur: reuso ? 0.5 : 0.9, width: 2, jagged: true, pulso: true });
+      if (reuso) { board.fx.ring(t.pos, { color: '#e8a0c8', radius: 36, dur: 0.5, width: 2 }); continue; }
+      board.fx.quadros(t.pos, 'psiquico', { fps: 10, altura: 44, sumir: 0.2 });
+      board.fx.ring(t.pos, { color: '#e8a0c8', radius: 44, dur: 0.7, width: 3 });
+    }
+    return 0.1;
+  },
+  // Acalmar Emoções: uma onda verde-água lenta, sem faísca.
+  acalmarEmocoes: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    board.fx.area(casas, { color: '#8fd8c0', dur: 1.0 });
+    board.fx.ring(dest, { color: '#bff0de', radius: 100, dur: 1.1, width: 2 });
+    // Uma lente baixa e larga de água sobre a esfera, em vez de faíscas.
+    const raio = raioDeEsferaPx(casas, dest);
+    board.fx.domo(dest, { cor: 'agua', raio, altura: Math.max(8, 4 * Math.round(raio * 0.25 / 4)), dur: 1.6, op: Math.min(1, Math.max(0.35, 48 / raio)) });
+    return 0.2;
+  },
+  // Oração de Cura (descanso): a luz desce sobre cada um.
+  oracaoDeCura: (board, _ctx, alvos = []) => {
+    // A coluna é VERDE com halo (a Luz é amarela e acende o alvo): cura em grupo.
+    alvos.forEach((t, i) => setTimeout(() => {
+      board.fx.pillar(t.pos, { color: '#9ff0b8', dur: 0.9, width: 26, height: 150 });
+      board.fx.halo(t.pos, { color: '#9ff0b8', dur: 1.0, radius: 26 });
+      board.fx.quadros(t.pos, 'cura', { fps: 10 });
+    }, i * 90));
+    return 0.1;
+  },
+  // Muralha de Vento: uma cortina de ar clara corre a linha, casa a casa, e o chão estremece.
+  muralhaDeVento: (board, { areaTiles, dest }) => {
+    const casas = areaTiles ?? [dest];
+    board.fx.area(casas, { color: '#dff3ff', dur: 1.0 });
+    // A parede em si é a zona (tiras de ar desenhadas pelo tabuleiro enquanto durar).
+    casas.forEach((t, i) => setTimeout(() => {
+      board.fx.motes(t, { color: '#eaf8ff', count: 5, rise: 44, spread: 30, dur: 0.7 });
+    }, i * 45));
+    return 0.3;
+  },
+
+  // ---- lote 11: ilusão, visão, atributo, sugestão, luz do dia, maldição, plantas, voo ----
+
+  // Ilusão Menor: um tremor de violeta e a imagem brota (o objeto em si é a zona, desenhada em 2.5D).
+  ilusaoMenor: (board, { caster, dest }) => {
+    board.fx.motes(caster.pos, { color: '#c7b4ff', count: 6, rise: 28, spread: 16 });
+    board.fx.beam(caster.pos, dest, { color: '#c7b4ff', dur: 0.35, width: 2, jagged: true });
+    board.fx.ring(dest, { color: '#c7b4ff', radius: 30, dur: 0.6, width: 2 });
+    board.fx.motes(dest, { color: '#e4daff', count: 10, rise: 34, spread: 18, dur: 0.8 });
+    return 0.25;
+  },
+  // Visão no Escuro: dois brilhos verde-água nos olhos e um anel que se abre.
+  visaoNoEscuro: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.halo(t.pos, { color: '#8fe8d0', dur: 1.0, radius: 20 });
+      board.fx.motes(t.pos, { color: '#ffffff', count: 2, rise: 6, spread: 6, dur: 0.9 });
+      board.fx.ring(t.pos, { color: '#8fe8d0', radius: 50, dur: 0.9, width: 2 });
+      board.fx.motes(t.pos, { color: '#bff5e6', count: 8, rise: 38, spread: 14, dur: 0.9 });
+    }
+    return 0;
+  },
+  // Aprimorar Atributo: a coluna tem a cor do atributo e a sigla sobe junto.
+  aprimorarAtributo: (board, _ctx, alvos = []) => {
+    const OPCAO = {
+      touro: ['#e0784a', 'FOR'], gato: ['#e8c35a', 'DES'], urso: ['#b88a5a', 'CON'],
+      aguia: ['#fff0b0', 'CAR'], raposa: ['#9fc6ff', 'INT'], coruja: ['#c7b4ff', 'SAB'],
+    };
+    for (const t of alvos) {
+      const op = t.conditions?.find((c) => c.id === 'aprimorado')?.data?.opcao;
+      const [cor, sigla] = OPCAO[op] ?? ['#ffe9a8', '+'];
+      board.fx.pillar(t.pos, { color: cor, dur: 0.8, width: 12, height: 80, alpha: 0.55 });
+      board.fx.ring(t.pos, { color: cor, radius: 44, dur: 0.8, width: 3 });
+      board.fx.glyph(t.pos, { text: sigla, color: cor, dur: 1.1, size: 16, rise: 50 });
+    }
+    return 0;
+  },
+  // Força Fantasmagórica: o fio psíquico entra na cabeça e a ilusão se acende.
+  forcaFantasmagorica: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#c08ae8', dur: 0.5, width: 2, jagged: true, pulso: true });
+    board.fx.quadros(dest, 'psiquico', { fps: 10, altura: 52, sumir: 0.3 });
+    board.fx.ring(dest, { color: '#c08ae8', radius: 48, dur: 0.7, width: 3 });
+    return 0.2;
+  },
+  // Sugestão: ondas rosadas lentas e um "…" na testa, sem faísca.
+  sugestao: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#f0a8d0', dur: 0.8, width: 2, jagged: false, pulso: true });
+    board.fx.ring(dest, { color: '#f0a8d0', radius: 50, dur: 0.9, width: 2 });
+    board.fx.ring(dest, { color: '#f8d0e6', radius: 30, dur: 0.7, width: 2 });
+    board.fx.glyph(dest, { text: '…', color: '#f8d0e6', dur: 1.2, size: 32, rise: 36 });
+    return 0.3;
+  },
+  // Luz do Dia: um clarão dourado sobe no ponto e se apaga num anel enorme (a esfera de luz fica na zona).
+  luzDoDia: (board, { dest, areaTiles }) => {
+    board.fx.pillar(dest, { color: '#fff3c0', dur: 0.9, width: 34, height: 230 });
+    board.fx.ring(dest, { color: '#fff3c0', radius: 120, dur: 1.0, width: 3 });
+    board.fx.ring(dest, { color: '#ffe9a8', radius: 60, dur: 0.7, width: 3 });
+    board.fx.area((areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0).slice(0, 40), { color: '#fff3c0', dur: 0.9 });
+    board.fx.motes(dest, { color: '#fffbe0', count: 16, rise: 80, spread: 40, dur: 1.0 });
+    board.bump(0.25);
+    return 0.3;
+  },
+  // Remover Maldição: a corrente violeta estala e sobe em cinzas claras.
+  removerMaldicao: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.quadros(t.pos, 'maldicao', { fps: 12, altura: 40, sumir: 0.2 });
+      board.fx.pillar(t.pos, { color: '#fff3c0', dur: 0.7, width: 20, height: 120 });
+      board.fx.shards(t.pos, { color: '#c7b4ff', count: 8, spread: 34 });
+      board.fx.motes(t.pos, { color: '#fff3c0', count: 10, rise: 56, spread: 20 });
+    }
+    return 0;
+  },
+  // Crescer Plantas: o verde corre do ponto para fora, casa a casa (as moitas são a zona, em 2.5D).
+  crescerPlantas: (board, { dest, areaTiles }) => {
+    const casas = (areaTiles ?? [dest]).slice().sort((a, b) => Math.hypot(a.x - dest.x, a.y - dest.y) - Math.hypot(b.x - dest.x, b.y - dest.y));
+    board.fx.ring(dest, { color: '#6ee89a', radius: 70, dur: 0.9, width: 3 });
+    board.fx.area(casas.filter((t) => (t.x + t.y) % 2 === 0).slice(0, 60), { color: '#6ee89a', dur: 0.9 });
+    board.fx.motes(dest, { color: '#9ff0b8', count: 14, rise: 50, spread: 40, dur: 0.9 });
+    return 0.3;
+  },
+  // Voo: o vento sobe em coluna e o alvo se solta do chão (a flutuação é desenhada pelo tabuleiro).
+  voo: (board, _ctx, alvos = []) => {
+    for (const t of alvos) {
+      board.fx.pillar(t.pos, { color: '#dff3ff', dur: 0.8, width: 24, height: 130 });
+      board.fx.ring(t.pos, { color: '#dff3ff', radius: 48, dur: 0.8, width: 3 });
+      board.fx.motes(t.pos, { color: '#ffffff', count: 12, rise: 60, spread: 26, dur: 0.9 });
+      board.fx.hop(t, { dur: 0.5, height: 30 });
+    }
+    return 0;
+  },
+
+  // Dissipar: um anel violeta se abre e a zona (ou a criatura) se desfaz em brumas.
+  dissiparMagia: (board, { dest, areaTiles }) => {
+    board.fx.ring(dest, { color: '#c7b4ff', radius: 70, dur: 0.7, width: 3 });
+    board.fx.quadros(dest, 'nevoa-prateada', { fps: 12, altura: 26 });
+    board.fx.motes(dest, { color: '#c7b4ff', count: 12, rise: 36, spread: 40 });
+    return 0.2;
+  },
+
   // Toque que drena: a mão aperta e um fio verde volta a quem tocou.
   toqueVampirico: (board, { caster, dest }) => {
     board.fx.lunge(caster, dest, 0.2);
@@ -1274,6 +1557,7 @@ const IMPACTO_PROPRIO = new Set([
   'raioArdente', 'despedacar', 'bolaDeFogo', 'relampago', 'armaEspiritual', 'toqueVampirico',
   'rajadaMistica', 'produzirChama', 'toqueChocante', 'borrifoVenenoso', 'repreensaoInfernal', 'orbeCromatico',
   'flechaAcida', 'laminaFlamejante', 'calorNoMetal', 'raioLunar', 'esferaFlamejante', 'nuvemDeAdagas',
+  'convocarRelampagos',
 ]);
 
 /** Como cada tipo de dano vira labareda, lasca ou estouro no impacto. */

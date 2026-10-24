@@ -69,7 +69,8 @@ export function subirUmNivel(c) {
   const escolhas = [];
   const sc = c.spellcasting;
   if (sc && conj) {
-    const lista = listaDaClasse(c.classe).magias.filter(magiaTemRegra);
+    const maior = slots.reduce((m, n, i) => (n > 0 ? i : m), 0);
+    const lista = listaDaClasse(c.classe, maior).magias.filter(magiaTemRegra);
     const mod = abilityMod(c.abilities[conj.atributo]);
     if (conj.prepara === 'conhecidas') {
       const quantas = (conj.conhecidas?.[c.level] ?? 0) - conhecidasAntes;

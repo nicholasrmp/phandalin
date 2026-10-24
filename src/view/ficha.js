@@ -106,6 +106,8 @@ export function iconeDeItem(id, alvo = 32) {
   const achado = itemDeId(id);
   if (!achado) return el('span', { class: 'sigla' }, '—');
   const { tipo, dados } = achado;
+  // O ícone do próprio item primeiro; o genérico da família, se ainda não houver.
+  if (temIcone(`item-${id}`)) return iconCanvas(`item-${id}`, alvo);
   const nome = tipo === 'arma' ? iconeDeArma(dados.art, dados.name) : dados.art;
   if (nome && temIcone(nome)) return iconCanvas(nome, alvo);
   return el('span', { class: 'sigla' }, sigla(dados.name));
@@ -392,7 +394,7 @@ export function criarFicha(root, handlers = {}) {
             s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
           ],
           texto: s.desc,
-          custo: s.castTime === 'bonus' ? 'Ação bônus' : 'Ação',
+          custo: s.foraDeCombate ? '10 minutos' : s.castTime === 'bonus' ? 'Ação bônus' : 'Ação',
         },
       );
     };

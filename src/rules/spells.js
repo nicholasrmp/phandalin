@@ -22,6 +22,9 @@
 //   marca      maldição/marca num alvo: dano extra nos acertos de quem marcou
 //   reacao     sai sozinha, na reação (Escudo Arcano, Repreensão Infernal)
 //   disparada  o conjurador corre (Recuo Acelerado)
+//   dissipar   acaba com magias de círculo igual ou menor numa criatura ou zona
+//   ampliar    Aumentar/Reduzir: aliado cresce, inimigo (se falha em CON) encolhe
+//   acalmar    Acalmar Emoções: tira medo e encanto, ou deixa o inimigo indiferente
 //
 // `raiosPorNivel`: o truque ganha raios (não dados) no 5º, 11º e 17º nível.
 // `semEscala`: o dano do truque não cresce em dados (a Rajada cresce em raios).
@@ -36,12 +39,40 @@
 // `repete`: o alvo repete a resistência no fim de cada turno dele;
 // 'semVisao' só quando termina o turno sem ver o conjurador (Medo).
 //
+// `sustenta`: a concentração segue de pé mesmo sem ninguém preso (Lufada de
+// Vento, Convocar Relâmpagos): o efeito vem de novo com `reuso`.
+// `empurraAoLongo`: o empurrão segue a direção da linha, não "para longe de você".
+// `larguraFt`: a linha tem essa largura (10 pés = 2 casas).
+// `zona.obscuro`: 'pesada' (névoa: ninguém vê dentro nem através) ou 'magica'
+// (escuridão: nem a visão no escuro enxerga dentro).
+// `zona.fimDano`: dano no fim do turno de quem está na zona (Fome de Hadar).
+//
+// `umaPorVez`: conjurar de novo em outra criatura tira o efeito da anterior (Luz).
+// `naoEmSi`: o alvo tem de ser outra criatura (Elo de Proteção).
+// `ambosLados`: serve em aliado e em inimigo; o motor escolhe pelo lado (Aumentar/Reduzir).
+// `mantem`: depois de conjurada, a ação do conjurador a MANTÉM a cada turno; sem
+// ela, a magia acaba no fim do turno (Coroa da Loucura).
+// `foraDeCombate`: leva 10 minutos; o motor de combate recusa (Oração de Cura) e
+// `rules/descanso.js` a conjura no descanso.
+// `ritual`: o livro permite conjurar como ritual; o jogo só registra a marca.
+// `zona.silencio`: ninguém na zona conjura nem sofre dano trovejante.
+// `zona.barraProjetil`: ataque à distância com arma que cruza a zona erra (Muralha de Vento).
+// `shape: 'muralha'`: linha reta de `areaFt` pés, centrada no ponto e de través
+// para o conjurador (a diagonal faz degraus, para ninguém passar pela fresta).
+//
+// `zona.ilusao`: a zona é a imagem de um objeto (Ilusão Menor): tira a visão do outro lado.
+// `zona.luz`: fonte de luz num ponto, `{claro, penumbra}` em pés (Luz do Dia).
+// `zona.dificil4`: terreno que custa 4x (Crescer Plantas); `soVegetal` e `poupaAliados`
+// recortam a área (só chão natural; sem as casas dos aliados).
+// `escolheAtributo`: o jogador (ou o jogo) escolhe o atributo (Aprimorar Atributo).
+//
 // `fonte`: 'srd' é magia do SRD 5.1; 'propria' é conteúdo do projeto, com
 // texto e números nossos.
 //
 // `upcast`: o que a magia ganha por círculo acima do dela, quando conjurada
 // com espaço maior — `dados` (um dado a mais do mesmo tipo), `dardos`,
-// `alvos`, `reserva` (dados a mais na reserva do Sono) ou `fixo` (soma fixa).
+// `alvos`, `reserva` (dados a mais na reserva do Sono), `fixo` (soma fixa)
+// ou `areaFt` (raio maior, em pés).
 //
 // `applies.conta` diz de quem é o turno que conta a duração: 'conjurador'
 // para os efeitos que duram "até o fim (ou o começo) do seu próximo turno".
@@ -163,7 +194,7 @@ export const SPELLS = {
   graxa: {
     id: 'graxa', name: 'Graxa', level: 1, school: 'conjuração', fonte: 'srd',
     castTime: 'action', rangeFt: 60, shape: 'square', areaFt: 10,
-    kind: 'save', save: 'dex', onFail: { condition: 'caido' }, zona: { rodadas: 10 },
+    kind: 'save', save: 'dex', onFail: { condition: 'caido' }, zona: { noChao: true, rodadas: 10 },
     desc: 'Um quadrado de 3 m escorregadio por 1 minuto: terreno difícil. Quem está nele, entra nele ou termina o turno nele faz CD de DES ou cai.',
   },
   resistencia: {
@@ -233,7 +264,7 @@ export const SPELLS = {
 
   ataqueCerteiro: {
     id: 'ataqueCerteiro', name: 'Ataque Certeiro', level: 0, school: 'adivinhação', fonte: 'srd',
-    castTime: 'action', rangeFt: 30, kind: 'mira', concentration: true,
+    castTime: 'action', rangeFt: 30, kind: 'mira', concentration: true, semVerbal: true,
     desc: 'Você lê as defesas de uma criatura: seu próximo ataque contra ela, até o fim do seu próximo turno, tem vantagem. Concentração.',
   },
 
@@ -471,7 +502,7 @@ export const SPELLS = {
   crescimentoDeEspinhos: {
     id: 'crescimentoDeEspinhos', name: 'Crescimento de Espinhos', level: 2, school: 'transmutação', fonte: 'srd',
     castTime: 'action', rangeFt: 150, shape: 'sphere', areaFt: 20, kind: 'save', soZona: true,
-    zona: { em: 'no', rodadas: 100, quando: 'nunca', aoEntrar: false, danoPorPasso: '2d4', semTeste: true },
+    zona: { noChao: true, em: 'no', rodadas: 100, quando: 'nunca', aoEntrar: false, danoPorPasso: '2d4', semTeste: true },
     concentration: true, duracaoRodadas: 100,
     desc: 'Espinhos escondidos numa esfera de 6 m de raio: terreno difícil, e cada 1,5 m andado dentro dela fere 2d4 perfurante. Concentração, até 10 minutos.',
   },
@@ -669,6 +700,201 @@ export const SPELLS = {
     concentration: true, duracaoRodadas: 10,
     desc: 'Ataque mágico de toque: 3d6 necrótico, e você recupera metade do dano. Enquanto se concentrar (até 1 minuto), repete o toque com a ação, sem gastar espaço. +1d6 por círculo acima do 3º.',
   },
+
+  // ---- lote de escuridão, vento e raio ------------------------------------------
+
+  dueloCompelido: {
+    id: 'dueloCompelido', name: 'Duelo Compelido', level: 1, school: 'encantamento', fonte: 'propria',
+    castTime: 'bonus', rangeFt: 30, kind: 'debuff', targets: 1, save: 'wis', condition: 'duelo',
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Ação bônus. Uma criatura faz CD de SAB ou só pensa em duelar com você: ataca qualquer outro com desvantagem e não se afasta mais de 9 m de você (no jogo, ela simplesmente não sai do raio, sem teste para tentar). Acaba se você atacar ou ferir outro, se um aliado seu ferir o alvo, ou se você terminar o turno a mais de 9 m dele. Concentração, até 1 minuto.',
+  },
+  golpeConstritor: {
+    id: 'golpeConstritor', name: 'Golpe Constritor', level: 1, school: 'conjuração', fonte: 'propria',
+    castTime: 'bonus', rangeFt: 0, kind: 'buff', targets: 1, condition: 'golpeConstritor', upcast: { dados: 1 },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Ação bônus. O próximo acerto com arma, de perto ou à distância, faz brotar vinhas: o alvo faz CD de FOR (vantagem se for Grande ou maior) ou fica contido. No começo de cada turno dele, as vinhas ferem 1d6 perfurante; ele se solta gastando a ação num teste de Atletismo. Concentração, até 1 minuto. +1d6 por círculo acima do 1º.',
+  },
+  nevoaObscurecente: {
+    id: 'nevoaObscurecente', name: 'Névoa Obscurecente', level: 1, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'sphere', areaFt: 20, kind: 'save', soZona: true,
+    zona: { rodadas: 600, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, obscuro: 'pesada' },
+    concentration: true, duracaoRodadas: 600, upcast: { areaFt: 20 },
+    desc: 'Uma névoa espessa numa esfera de 6 m de raio. Ninguém vê através dela nem dentro dela: quem ataca ou é atacado às cegas segue as regras de visão (desvantagem para quem não vê, vantagem contra quem não é visto, e as duas se anulam). Não atrapalha o andar. (No jogo, o vento não a dispersa, e a magia ainda pede só linha reta, não visão.) Concentração, até 1 hora. +6 m de raio por círculo acima do 1º.',
+  },
+  escuridao: {
+    id: 'escuridao', name: 'Escuridão', level: 2, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, shape: 'sphere', areaFt: 15, kind: 'save', soZona: true, contornaEsquinas: true,
+    zona: { rodadas: 100, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, obscuro: 'magica' },
+    concentration: true, duracaoRodadas: 100,
+    desc: 'Escuridão mágica numa esfera de 4,5 m de raio. Nenhuma luz a ilumina e nem a visão no escuro enxerga dentro dela: quem está lá é visto como no breu total. Quem está dentro enxerga o que está iluminado fora. (No jogo, ela não é cortada por objeto que a cubra nem se apaga por luz de magia de círculo 2 ou menor; a Luz do Dia, de 3º, a dissipa — mas uma Escuridão lançada depois dela vence na sobreposição.) Concentração, até 10 minutos.',
+  },
+  lufadaDeVento: {
+    id: 'lufadaDeVento', name: 'Lufada de Vento', level: 2, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 0, shape: 'linha', areaFt: 60, larguraFt: 10, kind: 'save', save: 'str',
+    pushFt: 15, empurraAoLongo: true, sustenta: true, reuso: 'bonus',
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma ventania de 18 m por 3 m sai de você. Quem está nela faz CD de FOR ou é empurrado 4,5 m ao longo da linha. Enquanto você se concentrar (até 1 minuto), a ação bônus muda a direção. (Regra da casa: no jogo o vento empurra ao conjurar e de novo a cada ação bônus que você gastar nela — o livro empurra só quem começa o turno na linha. Só o empurrão: sem terreno difícil contra o vento, sem apagar chama nem dispersar gás.)',
+  },
+  fomeDeHadar: {
+    id: 'fomeDeHadar', name: 'Fome de Hadar', level: 3, school: 'conjuração', fonte: 'propria',
+    castTime: 'action', rangeFt: 150, shape: 'sphere', areaFt: 20, kind: 'save', soZona: true, save: 'dex',
+    zona: {
+      rodadas: 10, quando: 'inicio', aoEntrar: false, dificil: true, semTeste: true, obscuro: 'magica',
+      dano: { dados: '2d6', tipo: 'frio' },
+      fimDano: { dados: '2d6', tipo: 'ácido', save: 'dex' },
+    },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Um vazio de escuridão e frio numa esfera de 6 m de raio, terreno difícil. Quem começa o turno nela sofre 2d6 de frio; quem termina o turno nela faz CD de DES ou sofre 2d6 de ácido. Vale para todos, aliados também. A escuridão é mágica: a visão no escuro não a vê. Concentração, até 1 minuto.',
+  },
+  convocarRelampagos: {
+    id: 'convocarRelampagos', name: 'Convocar Relâmpagos', level: 3, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'sphere', areaFt: 5, kind: 'save', save: 'dex',
+    damage: '3d10', damageType: 'elétrico', halfOnSave: true, upcast: { dados: 1 },
+    sustenta: true, reuso: 'acao', concentration: true, duracaoRodadas: 100,
+    desc: 'Uma nuvem de tempestade se forma e um raio cai num ponto que você vê a até 36 m: raio de 1,5 m, CD de DES, 3d10 elétrico, metade se passar. A cada turno seguinte, a ação deixa cair outro raio, sem gastar espaço. Concentração, até 10 minutos. +1d10 por círculo acima do 3º. (No jogo, vale também em lugar fechado, e não há o bônus de dano da tempestade ao ar livre; o livro pede céu aberto.)',
+  },
+  flechaRelampago: {
+    id: 'flechaRelampago', name: 'Flecha Relampejante', level: 3, school: 'transmutação', fonte: 'propria',
+    castTime: 'bonus', rangeFt: 0, kind: 'buff', targets: 1, condition: 'flechaRelampago', upcast: { dados: 1 },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Ação bônus. O próximo ataque à distância com arma vira um raio: 4d8 elétrico no alvo no lugar do dano da arma (metade se errar). Acertando ou não, quem está a até 3 m do alvo faz CD de DES ou sofre 2d8 elétrico, metade se passar (o alvo já levou o seu e não entra nessa explosão). Concentração, até 1 minuto. +1d8 em cada dano por círculo acima do 3º.',
+  },
+  dissiparMagia: {
+    id: 'dissiparMagia', name: 'Dissipar Magia', level: 3, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, kind: 'dissipar',
+    desc: 'Mire uma criatura ou uma zona (clique numa casa dela): toda magia de círculo igual ou menor ao do espaço gasto acaba na hora. Magia de círculo maior pede um teste de atributo seu (d20 + modificador de conjuração contra 10 + círculo da magia). Numa zona, ela se desfaz e solta quem estava preso a ela. (No jogo, não alcança Espíritos Guardiões e outras auras que andam com o conjurador, nem objetos.)',
+  },
+
+  // ---- lote 10: luz, silêncio, tamanho, elo, loucura, calma, cura em grupo, vento ----
+
+  luz: {
+    id: 'luz', name: 'Luz', level: 0, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'luzMagica', umaPorVez: true,
+    desc: 'Toque num aliado (ou em si): ele passa a brilhar como uma tocha, com luz clara num raio de 6 m e penumbra por mais 6 m, por 1 hora. Conjurar de novo em outro passa a luz para ele. (No jogo, só em aliado ou em si; o livro também deixa mirar um inimigo, que resiste com DES.)',
+  },
+  orientacao: {
+    id: 'orientacao', name: 'Orientação', level: 0, school: 'adivinhação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'orientado',
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Toque num aliado: no próximo teste de atributo que ele fizer, soma 1d4, e a magia acaba. Concentração, até 1 minuto. (No jogo, vale nos testes que o combate rola: escapar de agarrão, teia ou vinhas, estabilizar um moribundo e dissipar magia; os testes de perícia fora do combate ainda não somam o dado.)',
+  },
+  silencio: {
+    id: 'silencio', name: 'Silêncio', level: 2, school: 'ilusão', fonte: 'srd', ritual: true,
+    castTime: 'action', rangeFt: 120, shape: 'sphere', areaFt: 20, kind: 'save', soZona: true,
+    zona: { rodadas: 100, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, silencio: true },
+    concentration: true, duracaoRodadas: 100,
+    desc: 'Uma esfera de 6 m de raio onde não passa som. Quem está dentro não conjura magia e é imune a dano trovejante (aliado também). Concentração, até 10 minutos. (Simplificação: o livro barra só as magias com componente verbal; no jogo a zona barra toda conjuração, e o ritual de 10 minutos não é usado.)',
+  },
+  aumentarReduzir: {
+    id: 'aumentarReduzir', name: 'Aumentar/Reduzir', level: 2, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 30, kind: 'ampliar', ambosLados: true, save: 'con',
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma criatura a até 9 m. Aliado: AUMENTA, com +1d4 de dano em cada acerto com arma e vantagem em testes e resistências de Força. Inimigo: faz CD de CON; se falha, ENCOLHE, com −1d4 de dano de arma (nunca abaixo de 1) e desvantagem nos mesmos testes de Força. O jogo escolhe pelo lado do alvo. Concentração, até 1 minuto. (O tamanho muda só na história: o alvo não ocupa mais nem menos casas. O pozinho de ferro pedido pelo livro não é cobrado.)',
+  },
+  eloDeProtecao: {
+    id: 'eloDeProtecao', name: 'Elo de Proteção', level: 2, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'eloDeProtecao', naoEmSi: true,
+    desc: 'Toque num aliado (não em você): por 1 hora ele ganha +1 de CA e nas resistências e resistência a todo dano, e você sofre o mesmo dano que ele sofrer, já depois da resistência dele (o dano que chega a você ainda passa pela SUA própria resistência, se tiver). Acaba se você cair a 0 PV ou se os dois ficarem a mais de 18 m um do outro. Sem concentração. (Os dois anéis de platina de 50 po cada, pedidos pelo livro, não são cobrados.)',
+  },
+  coroaDaLoucura: {
+    id: 'coroaDaLoucura', name: 'Coroa da Loucura', level: 2, school: 'encantamento', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, kind: 'debuff', targets: 1, save: 'wis', condition: 'coroaDaLoucura',
+    soTipo: 'humanoide', repete: true, mantem: true, reuso: 'acao', concentration: true, duracaoRodadas: 10,
+    desc: 'Um humanoide a até 36 m faz CD de SAB ou fica enfeitiçado: no turno dele, antes de se mover, ele gasta a ação num ataque corpo a corpo contra o aliado mais próximo dele (se não houver nenhum, age normal). Ele repete a resistência no fim de cada turno. Você precisa gastar a sua ação, em cada turno seu, para manter a coroa (clique no alvo de novo, sem gastar espaço); sem a ação, a magia acaba. Concentração, até 1 minuto. (No jogo, quem escolhe a vítima é a IA: sempre o aliado mais perto do enfeitiçado.)',
+  },
+  acalmarEmocoes: {
+    id: 'acalmarEmocoes', name: 'Acalmar Emoções', level: 2, school: 'encantamento', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, shape: 'sphere', areaFt: 20, kind: 'acalmar', save: 'cha',
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma esfera de 6 m de raio. Cada humanoide dentro faz CD de CAR (aliado aceita sem testar). Quem falha fica calmo por 1 minuto: se estava com medo ou enfeitiçado, isso acaba e ele fica imune a ambos; se não estava, fica indiferente e não ataca ninguém até ser ferido (ou um amigo dele que ele vê) ou até alguém atacar ou mirar uma magia hostil nele ou nesse amigo. (Ver o amigo ferido, sem ataque nem magia, não acorda.) Concentração, até 1 minuto. (O jogo escolhe sozinho entre os dois efeitos, como descrito. O livro só suprime o medo e o encanto; aqui eles acabam de vez. Aliado calmo só perde medo e encanto, nunca fica indiferente.)',
+  },
+  oracaoDeCura: {
+    id: 'oracaoDeCura', name: 'Oração de Cura', level: 2, school: 'evocação', fonte: 'srd',
+    castTime: 'minutos', rangeFt: 30, kind: 'healGrupo', targets: 6, heal: '2d8', addSpellMod: true, upcast: { dados: 1 },
+    foraDeCombate: true,
+    desc: 'Leva 10 minutos: até 6 criaturas a até 9 m recuperam 2d8 + o modificador de conjuração. +1d8 por círculo acima do 2º. Só fora de combate, no descanso; durante a luta, o jogo recusa.',
+  },
+  muralhaDeVento: {
+    id: 'muralhaDeVento', name: 'Muralha de Vento', level: 3, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 50, kind: 'save', save: 'str',
+    damage: '3d8', damageType: 'contundente', halfOnSave: true,
+    zona: { rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, barraProjetil: true },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma muralha de vento forte, em linha reta de 15 m (10 casas; na diagonal a linha tem mais casas), centrada no ponto que você mira e de través para você. Ao surgir, quem está nela faz CD de FOR ou sofre 3d8 contundente, metade se passar. Enquanto durar, todo ataque à distância com arma (flecha, virote, pedra) que cruze a muralha erra sozinho. Concentração, até 1 minuto. (No jogo, só os projéteis de arma são barrados: magias, criaturas Grandes e gás atravessam; o livro também sopra névoa e voadores, o que o jogo não faz.)',
+  },
+
+  // ---- lote 11: ilusão, visão, atributo, sugestão, luz do dia, maldição, plantas, voo ----
+
+  ilusaoMenor: {
+    id: 'ilusaoMenor', name: 'Ilusão Menor', level: 0, school: 'ilusão', fonte: 'srd',
+    castTime: 'action', rangeFt: 30, shape: 'sphere', areaFt: 0, kind: 'save', soZona: true,
+    zona: { rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ilusao: true, ocupaCasa: true },
+    desc: 'Uma imagem de um objeto (um caixote, uma pedra) numa casa vazia a até 9 m, por 1 minuto. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles, e eles atacam e são atacados como no escuro. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. (Simplificação: o jogo ignora o som, e só o outro lado é enganado — seus aliados sempre sabem. Uma vez desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar.)',
+  },
+  visaoNoEscuro: {
+    id: 'visaoNoEscuro', name: 'Visão no Escuro', level: 2, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'visaoNoEscuro',
+    desc: 'Toque num aliado (ou em si): por 8 horas ele enxerga no escuro até 18 m, como se fosse penumbra. Quem já tem visão no escuro mais longa mantém a sua. (A escuridão mágica, como a da magia Escuridão, continua opaca.) Sem concentração.',
+  },
+  aprimorarAtributo: {
+    id: 'aprimorarAtributo', name: 'Aprimorar Atributo', level: 2, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'aprimorado', escolheAtributo: true,
+    concentration: true, duracaoRodadas: 600, upcast: { alvos: 1 },
+    desc: 'Toque num aliado: ele ganha vantagem nos testes de um atributo, à escolha — Força do Touro (FOR), Graça do Gato (DES, e não sofre dano de queda), Resistência do Urso (CON, e 2d6 PV temporários que somem com a magia), Esplendor da Águia (CAR), Astúcia da Raposa (INT) ou Sabedoria da Coruja (SAB). Concentração, até 1 hora. +1 alvo por círculo acima do 2º. (No jogo, a escolha vem do pedido do jogador; sem pedido, o jogo dá a Resistência do Urso, ou a Força do Touro / Graça do Gato a quem está preso e precisa escapar. Vale nos testes de atributo que o combate rola, como escapar; não nas resistências.)',
+  },
+  forcaFantasmagorica: {
+    id: 'forcaFantasmagorica', name: 'Força Fantasmagórica', level: 2, school: 'ilusão', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'debuff', targets: 1, save: 'int', condition: 'iludido',
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma criatura a até 18 m faz CD de INT. Se falha, ela vê uma ilusão feita só para a mente dela: no início de cada turno dela, 1d6 psíquico. Ela pode gastar a ação para examinar a ilusão (teste de Investigação contra a sua CD); se passar, a magia acaba nela. Concentração, até 1 minuto. (Simplificação: o livro fere só se a criatura está junto da ilusão; no jogo o dano vem todo início de turno, sem a ilusão ocupar casa alguma.)',
+  },
+  sugestao: {
+    id: 'sugestao', name: 'Sugestão', level: 2, school: 'encantamento', fonte: 'srd',
+    castTime: 'action', rangeFt: 30, kind: 'debuff', targets: 1, save: 'wis', condition: 'sugerido',
+    concentration: true, duracaoRodadas: 4800,
+    desc: 'Uma criatura a até 9 m que pode ouvir você faz CD de SAB (imunes a encanto não são afetados). Se falha, segue a sugestão que você dá. (Simplificação: no jogo a sugestão é sempre "abandone a luta e vá embora": ele não ataca e se afasta do grupo, até ser ferido por você ou por um aliado seu.) Concentração, até 8 horas.',
+  },
+  luzDoDia: {
+    id: 'luzDoDia', name: 'Luz do Dia', level: 3, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, shape: 'sphere', areaFt: 60, kind: 'save', soZona: true,
+    zona: { rodadas: 600, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, luz: { claro: 60, penumbra: 60 } },
+    desc: 'Uma esfera de luz solar num ponto a até 18 m: luz plena num raio de 18 m e penumbra por mais 18 m, por 1 hora. Se a esfera encosta numa escuridão mágica de círculo 3 ou menor (Escuridão, Fome de Hadar), essa escuridão é dissipada. (Na sobreposição, a Escuridão lançada depois vence a Luz do Dia.) (No jogo, o ponto fica parado no chão em vez de prender-se a um objeto. Sem concentração.)',
+  },
+  removerMaldicao: {
+    id: 'removerMaldicao', name: 'Remover Maldição', level: 3, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['rogado', 'bruxaria'], todas: true,
+    desc: 'Toque num aliado: toda maldição que pese sobre ele acaba — Rogar Maldição e Bruxaria, as duas que existem no jogo. (Objetos amaldiçoados e a sintonia com itens malditos ainda não existem no jogo.)',
+  },
+  crescerPlantas: {
+    id: 'crescerPlantas', name: 'Crescer Plantas', level: 3, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 150, shape: 'sphere', areaFt: 100, kind: 'save', soZona: true,
+    zona: {
+      rodadas: 4800, quando: 'nunca', aoEntrar: false, dificil: false, dificil4: true, semTeste: true,
+      soVegetal: true, poupaAliados: true,
+    },
+    desc: 'A vegetação comum num raio de 30 m do ponto (a até 45 m de você) fica espessa: cada 1,5 m andado ali custa 6 m de deslocamento (4×). Dura o encontro inteiro. (Versão de 1 ação do livro. No jogo, só vira mato o chão natural — grama, mato, terra batida; não pedra, estrada nem caverna —, e as casas que seus aliados ocupam ao conjurar ficam de fora. O raio inteiro vale, cortado pelo mapa e pelas paredes. Sem concentração.)',
+  },
+  voo: {
+    id: 'voo', name: 'Voo', level: 3, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'voando',
+    concentration: true, duracaoRodadas: 100, upcast: { alvos: 1 },
+    desc: 'Toque num aliado: por 10 minutos ele ganha deslocamento de voo de 18 m. (No jogo ele voa por cima do terreno difícil e dos degraus de elevação, e as zonas do chão — Graxa, Espinhos — não o pegam; a Teia e o resto ainda pegam. Obstáculos e criaturas continuam barrando o caminho, e o voador ainda pode ser alcançado em combate corpo a corpo.) Se a concentração cair, ele cai: 1d6 contundente (o jogo supõe uns 3 m de altura) e fica caído. +1 alvo por círculo acima do 3º.',
+  },
+
+};
+
+/**
+ * Aprimorar Atributo: as seis opções do livro. `hab` ganha vantagem nos testes;
+ * `pv` são PV temporários (somem com a magia); `semQueda` anula o dano de queda.
+ */
+export const APRIMORAR = {
+  touro: { hab: 'str', nome: 'Força do Touro' },
+  gato: { hab: 'dex', nome: 'Graça do Gato', semQueda: true },
+  urso: { hab: 'con', nome: 'Resistência do Urso', pv: '2d6' },
+  aguia: { hab: 'cha', nome: 'Esplendor da Águia' },
+  raposa: { hab: 'int', nome: 'Astúcia da Raposa' },
+  coruja: { hab: 'wis', nome: 'Sabedoria da Coruja' },
 };
 
 export const getSpell = (id) => {

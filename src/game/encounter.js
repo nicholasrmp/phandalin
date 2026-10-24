@@ -10,6 +10,7 @@
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { MAPA_ESCONDERIJO } from './esconderijo.js';
+import { MAPA_MANSAO, MANSAO } from './mansao.js';
 
 // '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura · '1'..'9' elevação
 //
@@ -204,6 +205,23 @@ export function mapaDo(variante = 'padrao') {
       cena: 'rua',
     };
   }
+  if (variante === 'mansao' || variante === 'mansaoTunel') {
+    // O esconderijo dos Marcarrubra embaixo da Mansão Tresendar. Pela escada
+    // da cozinha (área 1, a leste) ou pelo túnel que o Carp achou (área 8, ao
+    // sul, saindo do mato).
+    const tunel = variante === 'mansaoTunel';
+    return {
+      ...MAPA_MANSAO,
+      // As duas pontes cruzam a fenda de leste a oeste.
+      objetos: Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 } })),
+      grupo: tunel
+        ? [{ x: 12, y: 19 }, { x: 13, y: 19 }, { x: 13, y: 18 }, { x: 12, y: 18 }]
+        : [{ x: 28, y: 15 }, { x: 28, y: 14 }, { x: 28, y: 16 }, { x: 29, y: 15 }],
+      olhar: tunel ? { dx: 0, dy: -1 } : { dx: -1, dy: 0 },
+      cena: 'mansao',
+      entrada: tunel ? 'tunel' : 'cozinha',
+    };
+  }
   if (variante === 'esconderijo') {
     return {
       ...MAPA_ESCONDERIJO,
@@ -252,6 +270,7 @@ export function buildFoes(variante = 'padrao') {
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
+  if (variante === 'mansao' || variante === 'mansaoTunel') return foesMansao();
   if (variante === 'rua') {
     // Quatro bandidos Marcarrubra (a aventura), na frente da taverna.
     const foes = [[17, 4], [18, 5], [17, 6], [19, 5]].map(([x, y], i) => {
@@ -349,6 +368,65 @@ function foesEsconderijo() {
   ];
 }
 
+/**
+ * O esconderijo dos Marcarrubra, sala a sala (Parte 2 da aventura). Cada
+ * grupo só entra no tabuleiro quando a cena o chama (`capitulo3-mansao.js`).
+ */
+function foesMansao() {
+  const m = (id, x, y, grupo, sufixo = '', olha = { dx: 0, dy: 1 }) => {
+    const f = makeMonster(id, { x, y }, { nameSuffix: sufixo });
+    f.grupo = grupo;
+    f.facingVec = olha;
+    return f;
+  };
+  const neutro = (f, nome) => Object.assign(f, { side: 'neutro', name: nome });
+  // Área 5: a família Dendrar presa nas jaulas.
+  const presos = [
+    neutro(m('plebeu', 22, 2, 'jaulas'), 'Nars Dendrar'),
+    neutro(m('plebeu', 21, 7, 'jaulas'), 'Mirna Dendrar'),
+    neutro(m('plebeu', 23, 7, 'jaulas'), 'Nilsa Dendrar'),
+  ];
+  for (const p of presos) { p.preso = true; p.attacks = []; }
+  // Área 9: Mosk, o chefe dos bugbears, com o tapa-olho e a chave.
+  const mosk = m('bugbear', 4, 17, 'guardas', '', { dx: 0, dy: -1 });
+  mosk.name = 'Mosk';
+  mosk.chave = true;
+  const droop = neutro(m('droop', 4, 15, 'guardas', '', { dx: 0, dy: 1 }), 'Droop');
+  // Área 12: o Cajavidro na escrivaninha; o rato dele vigia a oficina (11).
+  const iarno = makeNpc('iarno', { x: 7, y: 2 }, {});
+  iarno.grupo = 'cajavidro';
+  iarno.facingVec = { dx: 1, dy: 0 };
+  iarno.chave = true;
+  const rato = neutro(m('ratoGigante', 4, 4, 'rato', '', { dx: 1, dy: 0 }), 'Rato do mago');
+  Object.assign(rato, { maxHp: 1, hp: 1, ac: 10, attacks: [], familiar: true });
+  // Área 10: quatro Marcarrubra bêbados no jogo de pedrinhas.
+  const estar = [[3, 9], [4, 9], [5, 8], [2, 8]].map(([x, y], i) => m('marcarrubra', x, y, 'estar', 'da mesa ' + 'ABCD'[i], { dx: 0, dy: -1 }));
+  return [
+    // Área 2: três Marcarrubra de folga no alojamento.
+    m('marcarrubra', 17, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    m('marcarrubra', 17, 14, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    m('marcarrubra', 18, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    // Área 4: três esqueletos diante dos sarcófagos.
+    m('esqueleto', 17, 6, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
+    m('esqueleto', 17, 9, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
+    m('esqueleto', 18, 7, 'cripta', 'da cripta', { dx: -1, dy: 0 }),
+    // Área 5: dois Marcarrubra de guarda nas jaulas.
+    m('marcarrubra', 21, 4, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
+    m('marcarrubra', 22, 5, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
+    ...presos,
+    // Área 8: o vigia de um olho só, escondido perto da ponta oeste das pontes.
+    m('vigiaCiclopico', 9, 9, 'fenda', '', { dx: 1, dy: 0 }),
+    // Área 9: três bugbears e o goblin Droop.
+    mosk,
+    m('bugbear', 3, 16, 'guardas', '', { dx: 0, dy: -1 }),
+    m('bugbear', 5, 16, 'guardas', '', { dx: 0, dy: -1 }),
+    droop,
+    ...estar,
+    iarno,
+    rato,
+  ];
+}
+
 /** Vitrine de tamanho: Médio, Grande e Grande de novo, lado a lado. */
 function foesGrandes() {
   const foes = [
@@ -438,7 +516,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (variante === 'caverna' || variante === 'esconderijo' || variante === 'rua') return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

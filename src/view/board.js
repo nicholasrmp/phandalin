@@ -27,11 +27,12 @@ import { ladrilhoChao } from '../art/chao.js';
 import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt } from '../core/grid.js';
-import { temEscuridao, visaoDoGrupo, fontesDeLuz, CLARO } from '../rules/luz.js';
+import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, CLARO } from '../rules/luz.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct, MAGIAS_DE_ATAQUE } from '../rules/odds.js';
 import { SPELLS, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc } from '../rules/abilities.js';
 import { Fx, quadro } from './fx.js';
+import { paredesNaDiagonal, desenharVolumeObscuro } from './zonas25d.js';
 import { EFEITOS } from '../art/efeitos.js';
 import { iconCanvas, temIcone } from '../art/icons.js';
 
@@ -109,6 +110,11 @@ const SUPERFICIE = {
   fogueira: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'fogueira', chao: 'caverna' },
   bau: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'bau', chao: 'caverna' },
   tocaia: { topo: GRAMA, lado: TERRA, objeto: 'tocaia', chao: 'grama' },
+  // O porão da mansão: cor lisa e caixas provisórias até a arte do PixelLab.
+  mesa: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mesa', chao: 'caverna' },
+  sarcofago: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'sarcofago', chao: 'caverna' },
+  grade: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'grade', chao: 'caverna' },
+  fosso: { topo: ['#14110e', '#110e0c'], lado: ['#0d0b09', '#15120f'] },
 };
 
 // Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
@@ -122,7 +128,7 @@ const MULTICASA = new Set(['carroca', 'cavalo']);
 // Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
 const SOMBRA_DO_BAIXO = {
   arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
-  tocaia: 20,
+  tocaia: 20, mesa: 22, sarcofago: 24, grade: 20,
 };
 
 // Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
@@ -177,6 +183,20 @@ const COR_DA_ZONA = {
   esferaFlamejante: { fill: 'rgba(224,85,60,.30)', stroke: 'rgba(232,195,90,.7)' },
   nuvemDeAdagas: { fill: 'rgba(170,182,198,.30)', stroke: 'rgba(232,238,245,.7)' },
   tempestadeDeGranizo: { fill: 'rgba(110,168,232,.22)', stroke: 'rgba(232,238,245,.55)' },
+  // As três que escondem são repintadas POR CIMA da máscara de escuridão
+  // (`zonasObscurasPorCima`), senão a máscara apaga a cor e viram o mesmo buraco
+  // preto. A Névoa é pálida e respira (`onda`); as outras duas são pretas, com
+  // a borda que as distingue: violeta na Escuridão, azul-gelo na Fome de Hadar.
+  nevoaObscurecente: { fill: 'rgba(214,222,230,.7)', stroke: 'rgba(240,244,248,.65)', rgb: '214,222,230', alfa: 0.7, onda: 0.07 },
+  escuridao: { fill: 'rgba(28,20,40,.85)', stroke: 'rgba(120,90,170,.6)' },
+  fomeDeHadar: { fill: 'rgba(18,10,32,.85)', stroke: 'rgba(130,200,240,.65)' },
+  // Silêncio: um véu azul-gelo e parado, sem brilho; a Muralha de Vento: faixa de ar claro.
+  silencio: { fill: 'rgba(120,150,190,.26)', stroke: 'rgba(190,215,245,.7)' },
+  muralhaDeVento: { fill: 'rgba(214,236,248,.15)', stroke: 'rgba(240,250,255,.6)' },
+  // Lote 11: a imagem quase não pinta o chão (o volume é que conta); a luz é um calor leve; o mato, um verde fraco.
+  ilusaoMenor: { fill: 'rgba(199,180,255,.10)', stroke: 'rgba(199,180,255,.45)' },
+  luzDoDia: { fill: 'rgba(255,240,170,.05)', stroke: 'rgba(255,244,190,.18)' },
+  crescerPlantas: { fill: 'rgba(70,130,60,.16)', stroke: 'rgba(110,200,100,.22)' },
 };
 
 const PAPEL_NA_AREA = {
@@ -970,6 +990,21 @@ export class Board {
       // Caixotes e sacos empilhados: o que o bando roubou das carroças.
       this.caixaIso(ctx, cx - 6, cy + 2, 12, 7, 14, ['#5e4228', '#7a5833', '#94703f']);
       this.caixaIso(ctx, cx + 9, cy - 2, 9, 5, 10, ['#6b5a3c', '#8a7550', '#a68f63']);
+    } else if (s.objeto === 'mesa') {
+      this.caixaIso(ctx, cx, cy, 20, 10, 12, ['#4a3220', '#5e4029', '#85603d']);
+    } else if (s.objeto === 'sarcofago') {
+      this.caixaIso(ctx, cx, cy, 24, 12, 14, ['#4b4a46', '#605f59', '#7d7a70']);
+    } else if (s.objeto === 'grade') {
+      // Barras verticais sobre a casa: lê como grade, deixa ver quem está atrás.
+      ctx.strokeStyle = '#3a3b40';
+      ctx.lineWidth = 2;
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i * 7, cy + 4 - Math.abs(i) * 2);
+        ctx.lineTo(cx + i * 7, cy - 30 - Math.abs(i) * 2);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 1;
     } else if (s.objeto === 'espinheiro') {
       // Galhos baixos e emaranhados, com espinho: terreno difícil, não cobertura.
       ctx.strokeStyle = '#3c4a26';
@@ -1092,6 +1127,60 @@ export class Board {
     if (stroke && (this._copas?.get(`${x},${y}`)?.frac ?? 0) > 0.25) {
       (this._raioX ??= []).push([x, y, stroke, tracejado]);
     }
+  }
+
+  /**
+   * A cor das zonas que escondem (Névoa, Escuridão, Fome de Hadar), por cima
+   * da máscara: a máscara é preta e apagaria o matiz de cada uma. Pinta só o
+   * losango do chão, com a borda nas casas de fora, e deixa de fora o recorte
+   * das figuras que o grupo vê — então não revela nada que a máscara esconde.
+   * Roda também no mapa claro (a zona liga a máscara por conta própria).
+   */
+  zonasObscurasPorCima(ctx, figuras = []) {
+    const zonas = (this.enc.zonas ?? []).filter((z) => z.obscuro);
+    if (!zonas.length) return;
+    // O volume vai num canvas auxiliar; em volta de cada figura à vista o
+    // tom é apagado com um degradê radial (suave, sem borda de bolha), então
+    // não revela quem a máscara esconde.
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const aux = (this._zonaAux ??= document.createElement('canvas'));
+    if (aux.width !== w || aux.height !== h) { aux.width = w; aux.height = h; }
+    const a = aux.getContext('2d');
+    a.setTransform(1, 0, 0, 1, 0, 0);
+    a.globalCompositeOperation = 'source-over';
+    a.clearRect(0, 0, w, h);
+    a.save();
+    a.lineWidth = 1.5;
+    for (const z of zonas) {
+      const cor = COR_DA_ZONA[z.spellId] ?? COR_DA_ZONA[z.obscuro === 'pesada' ? 'nevoaObscurecente' : 'escuridao'];
+      for (const k of z.casas) {
+        const [x, y] = k.split(',').map(Number);
+        const borda = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !z.casas.has(`${x + dx},${y + dy}`));
+        // A névoa respira: o alfa oscila devagar, defasado de casa em casa.
+        const fill = cor.onda
+          ? `rgba(${cor.rgb},${(cor.alfa + Math.sin(this.time * 1.4 + (x + y) * 0.7) * cor.onda).toFixed(3)})`
+          : cor.fill;
+        this.marcar(a, x, y, fill, borda ? cor.stroke : null);
+      }
+      // O volume: a esfera escura (Escuridão, Hadar) ou a nuvem de tufos (Névoa).
+      desenharVolumeObscuro(a, this, z);
+    }
+    a.restore();
+    a.globalCompositeOperation = 'destination-out';
+    for (const c of figuras) {
+      const { sx, sy } = this.center(c.pos.x, c.pos.y);
+      const g = a.createRadialGradient(sx, sy - 30, 0, sx, sy - 30, 44);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(20 / 44, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      a.fillStyle = g;
+      a.fillRect(sx - 44, sy - 74, 88, 88);
+    }
+    a.globalCompositeOperation = 'source-over';
+    ctx.drawImage(aux, 0, 0);
+    // `marcar` guarda contornos para o raio-X das copas; estes não entram.
+    if (this._raioX) this._raioX.length = 0;
   }
 
   /** Os contornos guardados por `marcar`, por cima das copas. */
@@ -1316,7 +1405,7 @@ export class Board {
     }
 
     // O que o grupo enxerga, num mapa com escuridão (null no mapa claro).
-    this._visao = temEscuridao(this.field) ? visaoDoGrupo(this.enc) : null;
+    this._visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc) : null;
 
     const reach = this.overlay.reachable;
     const targetSet = new Set((this.overlay.targets ?? []).map((t) => `${t.pos.x},${t.pos.y}`));
@@ -1452,6 +1541,8 @@ export class Board {
     }
     this.descarregarObjetos(ctx);
     this.drawOccupantsOnDiagonal(ctx, byView, d);
+    // A Muralha de Vento: as tiras desta diagonal, depois das figuras dela.
+    paredesNaDiagonal(ctx, this, d);
   }
 
   drawOccupantsOnDiagonal(ctx, byView, d) {
@@ -1542,6 +1633,7 @@ export class Board {
       this._mascara = { nitida, borrada, visao: this._visao, chave };
     }
     ctx.drawImage(this._mascara.borrada, 0, 0);
+    this.zonasObscurasPorCima(ctx, figuras);
 
     // O brilho quente das tochas e fogueiras.
     ctx.save();
@@ -1586,10 +1678,25 @@ export class Board {
       sy -= off.lift ?? 0;   // salto do golpe de cima para baixo
     }
 
-    ctx.fillStyle = 'rgba(0,0,0,.42)';
+    // Voo: a figura boia acima do chão e a sombra fica no chão, menor e mais fraca.
+    const voa = !down && hasCondition(c, 'voando') && !hasCondition(c, 'caido');
+    if (voa) sy -= 26 + Math.round(Math.sin(this.time * 2.4 + c.pos.x * 0.9 + c.pos.y * 0.55) * 3);
+
+    ctx.fillStyle = voa ? 'rgba(0,0,0,.26)' : 'rgba(0,0,0,.42)';
     ctx.beginPath();
-    ctx.ellipse(baseX, baseY, 17, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(baseX, baseY, voa ? 13 : 17, voa ? 6 : 8, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (voa) {
+      // Segunda elipse tracejada sob a figura: marca a altura do voo.
+      ctx.save();
+      ctx.strokeStyle = 'rgba(223,243,255,.55)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.ellipse(baseX, baseY, 15 + Math.sin(this.time * 3), 7 + Math.sin(this.time * 3) * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // `soCenario`: o tabuleiro de fundo da tela de título. Lá a figura é
     // personagem de cena, não peça de jogo — sem anel de lado, sem barra.
@@ -1707,7 +1814,8 @@ export class Board {
       // cima de uma base do dobro da largura lê como anão num tablado. A conta
       // vai atrás da proporção real (ogro ~1,7x a altura de um humano), que a
       // célula de 80 px sozinha não alcança.
-      scale: 1 + (pegada - 1) * 0.4,
+      // Aumentar/Reduzir mexem na escala (×1,25 / ×0,75): é o único sinal de tamanho do jogo.
+      scale: (1 + (pegada - 1) * 0.4) * (hasCondition(c, 'aumentado') ? 1.25 : hasCondition(c, 'reduzido') ? 0.75 : 1),
       flip,
       row,
       // O morto esmaece: continua lá para ser visto e saqueado, mas não
@@ -1938,9 +2046,10 @@ export class Board {
     const m = this.modo;
     if (!m || m.kind !== 'spell' || !m.spell.shape || !this.hover) return null;
     const actor = m.actor;
-    const casas = this.enc.areaDaMagia(actor, m.spell, this.hover) ?? [];
-    if (!casas.length) return null;
+    // O círculo escolhido conta: a Névoa em círculo maior tem área maior.
     const circulo = this.overlay.mode?.circulo ?? m.spell.level;
+    const casas = this.enc.casasDaZona(actor, m.spell, this.enc.areaDaMagia(actor, m.spell, this.hover, circulo) ?? []);
+    if (!casas.length) return null;
     const ok = this.enc.canCast(actor, m.spell.id, { point: this.hover, circulo }).ok;
     // A mesma conta do motor: quem dorme, quem queima, quem Esculpir poupa.
     const papeis = new Map();

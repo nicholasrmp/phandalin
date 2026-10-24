@@ -13,11 +13,14 @@ import { skillBonus } from '../rules/abilities.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
 import { marcarTreinoDeArmadura } from '../rules/equipment.js';
-import { Battlefield, distanceFt } from '../core/grid.js';
+import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
 import { takeMonsterTurn, contornaZonas } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
-import { addCondition, hasCondition, getCondition, caEfetiva } from '../rules/conditions.js';
+import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
+import { comoVe, visaoNoEscuro } from '../rules/luz.js';
+import { listaDaClasse } from '../game/criacao.js';
+import { oracaoDeCura } from '../rules/descanso.js';
 
 const MAPA = Array(12).fill('............');
 const [DARA, PIP, BRENN, ILVAN] = [0, 1, 2, 3];
@@ -2004,5 +2007,1123 @@ teste('mover o Raio Lunar conta 60 pés do feixe, não do conjurador', () => {
   assert.equal(enc.canCast(brenn, 'raioLunar', { point: { x: 38, y: 1 } }).ok, false);
 });
 
+// ---- lote: Duelo, Constritor, Névoa, Escuridão, Lufada, Hadar, Relâmpagos, Flecha, Dissipar ----
+
+/** Um mago de 5º nível que conhece a magia, num campo vazio com os inimigos dados. */
+function magoCom(magia, { foes = [['goblin', { x: 6, y: 5 }]], nivel = 5 } = {}) {
+  const r = montar({ nivel, foes });
+  const ilvan = r.party[ILVAN];
+  ilvan.spellcasting.prepared.push(magia);
+  ilvan.spellcasting.livro.push(magia);
+  return { ...r, ilvan };
+}
+
+teste('Duelo Compelido: desvantagem contra os outros, preso ao raio de 9 m e fixado no conjurador', () => {
+  const dara = makeParty({ nivel: 2 })[DARA];
+  dara.pos = { x: 3, y: 6 };
+  const { enc, h, foes } = comHeroi('paladino', 5, {
+    magias: ['dueloCompelido'], aliados: [dara], foes: [['goblin', { x: 3, y: 5 }]],
+  });
+  foes[0].hp = foes[0].maxHp = 60;
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'dueloCompelido', { targets: [foes[0]] }).ok);
+  assert.ok(hasCondition(foes[0], 'duelo'));
+  assert.ok(enc.attackModifiers(foes[0], dara).desvantagens.includes('duelo compelido'));
+  assert.ok(!enc.attackModifiers(foes[0], h).desvantagens.includes('duelo compelido'));
+  // Não se afasta além de 9 m (30 pés) do paladino, mesmo com 30 pés de passo.
+  enc.fimDoTurnoDoLado('party');
+  enc.beginSide('foes');
+  const alcance = enc.reachableFor(foes[0]);
+  assert.ok([...alcance.values()].every((n) => distanceFt(h.pos, n) <= 30), 'não sai do raio');
+  assert.ok([...alcance.values()].some((n) => distanceFt(h.pos, n) >= 25), 'mas anda dentro dele');
+  // A IA ataca o conjurador, não o aliado que estava ali ao lado.
+  const alvos = [];
+  const atacar = enc.attackAction.bind(enc);
+  enc.attackAction = (a, t, w) => { alvos.push(t); return atacar(a, t, w); };
+  takeMonsterTurn(enc, foes[0]);
+  assert.equal(alvos[0], h);
+});
+
+teste('Duelo Compelido acaba quando o conjurador ataca outro, ou um aliado fere o duelado', () => {
+  const dara = makeParty({ nivel: 2 })[DARA];
+  dara.pos = { x: 4, y: 6 };
+  const { enc, h, foes } = comHeroi('paladino', 5, {
+    magias: ['dueloCompelido'], aliados: [dara], foes: [['goblin', { x: 3, y: 5 }], ['goblin', { x: 2, y: 6 }]],
+  });
+  foes.forEach((f) => { f.hp = f.maxHp = 80; });
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'dueloCompelido', { targets: [foes[0]] }).ok);
+  assert.equal(h.concentrating?.spellId, 'dueloCompelido');
+  // Atacar o duelado não acaba.
+  d20Fixo(enc, 18);
+  enc.resolveAttack(h, foes[0], { weaponId: 'adaga' });
+  assert.equal(h.concentrating?.spellId, 'dueloCompelido');
+  // Aliado ferindo o duelado: acaba.
+  enc.applyDamage(foes[0], 1, 'cortante', dara);
+  assert.equal(h.concentrating, null);
+  assert.ok(!hasCondition(foes[0], 'duelo'));
+  // De novo, e agora o conjurador ataca o OUTRO goblin.
+  h.bonusUsed = false;
+  h.magiasNoTurno = [];
+  h.spellcasting.slots[1] = 2;
+  assert.ok(enc.castSpell(h, 'dueloCompelido', { targets: [foes[0]] }).ok);
+  enc.resolveAttack(h, foes[1], { weaponId: 'adaga' });
+  assert.equal(h.concentrating, null);
+  assert.ok(!hasCondition(foes[0], 'duelo'));
+});
+
+teste('Duelo Compelido acaba se o conjurador termina o turno a mais de 9 m do duelado', () => {
+  const { enc, h, foes } = comHeroi('paladino', 5, { magias: ['dueloCompelido'], foes: [['goblin', { x: 3, y: 5 }]] });
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'dueloCompelido', { targets: [foes[0]] }).ok);
+  h.pos = { x: 11, y: 11 };
+  enc.fimDoTurnoDoLado('party');
+  assert.equal(h.concentrating, null);
+});
+
+teste('Golpe Constritor: vinhas prendem, ferem no começo do turno e somem quando ele se solta', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 5, { magias: ['golpeConstritor'], foes: [['goblin', { x: 3, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 80;
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  assert.ok(enc.castSpell(h, 'golpeConstritor').ok);
+  assert.ok(hasCondition(h, 'golpeConstritor'));
+  enc.resolveAttack(h, foes[0], { weaponId: 'adaga' });
+  const contido = getCondition(foes[0], 'presoPorVinhas');
+  assert.ok(contido?.data?.vinhas, 'as vinhas prenderam');
+  assert.ok(!hasCondition(foes[0], 'contido'), 'não usa a condição da Teia');
+  assert.ok(!hasCondition(h, 'golpeConstritor'), 'o golpe preparado se gasta');
+  assert.equal(h.concentrating?.condition, 'presoPorVinhas');
+  enc.fimDoTurnoDoLado('party');
+  const antes = foes[0].hp;
+  enc.beginSide('foes');
+  assert.ok(foes[0].hp < antes, 'as vinhas apertam no começo do turno');
+  // Soltar-se é uma ação de Atletismo (FOR) e desfaz a magia.
+  d20Fixo(enc, 20);
+  assert.ok(enc.escapar(foes[0]).ok);
+  assert.ok(!hasCondition(foes[0], 'presoPorVinhas'));
+  assert.equal(h.concentrating, null);
+});
+
+teste('Golpe Constritor sobre quem já está na Teia: as duas prisões valem, e soltar uma não solta a outra', () => {
+  const ilvan = makeParty({ nivel: 5 })[ILVAN];
+  ilvan.spellcasting.prepared.push('teia');
+  ilvan.spellcasting.livro.push('teia');
+  ilvan.pos = { x: 1, y: 3 };
+  const { enc, h, foes } = comHeroi('patrulheiro', 5, {
+    magias: ['golpeConstritor'], aliados: [ilvan], foes: [['goblin', { x: 3, y: 5 }]],
+  });
+  foes[0].hp = foes[0].maxHp = 80;
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  assert.ok(enc.castSpell(ilvan, 'teia', { point: { x: 3, y: 5 } }).ok);
+  assert.ok(hasCondition(foes[0], 'contido'), 'presa pela Teia');
+  assert.ok(enc.castSpell(h, 'golpeConstritor').ok);
+  enc.resolveAttack(h, foes[0], { weaponId: 'adaga' });
+  assert.ok(hasCondition(foes[0], 'contido'), 'a Teia continua');
+  assert.ok(hasCondition(foes[0], 'presoPorVinhas'), 'e as vinhas também');
+  assert.equal(getCondition(foes[0], 'contido').source, `zona:${enc.zonas[0].id}`, 'a Teia não foi sobrescrita');
+  // Derrubar a concentração do Constritor solta só as vinhas.
+  enc.dropConcentration(h);
+  assert.ok(!hasCondition(foes[0], 'presoPorVinhas'));
+  assert.ok(hasCondition(foes[0], 'contido'), 'a Teia segura');
+});
+
+teste('Golpe Constritor no 2º círculo fere 2d6; resistir à vinha não prende', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 5, { magias: ['golpeConstritor'], foes: [['goblin', { x: 3, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 80;
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  assert.ok(enc.castSpell(h, 'golpeConstritor', { circulo: 2 }).ok);
+  enc.resolveAttack(h, foes[0], { weaponId: 'adaga' });
+  assert.equal(getCondition(foes[0], 'presoPorVinhas').data.vinhas.dados, '2d6');
+  const o = comHeroi('patrulheiro', 5, { magias: ['golpeConstritor'], foes: [['goblin', { x: 3, y: 5 }]] });
+  o.foes[0].hp = o.foes[0].maxHp = 80;
+  resistenciasDao(o.enc, true);
+  d20Fixo(o.enc, 18);
+  assert.ok(o.enc.castSpell(o.h, 'golpeConstritor').ok);
+  o.enc.resolveAttack(o.h, o.foes[0], { weaponId: 'adaga' });
+  assert.ok(!hasCondition(o.foes[0], 'presoPorVinhas'));
+  assert.equal(o.h.concentrating, null);
+});
+
+teste('Névoa Obscurecente: ninguém vê dentro nem através, e não atrapalha o andar', () => {
+  const { enc, party, foes, ilvan } = magoCom('nevoaObscurecente', { foes: [['goblin', { x: 5, y: 5 }]] });
+  const dara = party[DARA];
+  dara.pos = { x: 1, y: 5 };
+  foes[0].pos = { x: 9, y: 5 };
+  assert.equal(comoVe(enc, dara, foes[0].pos) > 0, true, 'sem névoa, vê');
+  assert.ok(enc.castSpell(ilvan, 'nevoaObscurecente', { point: { x: 5, y: 5 } }).ok);
+  assert.equal(enc.zonas[0].obscuro, 'pesada');
+  assert.equal(comoVe(enc, dara, foes[0].pos), 0, 'a névoa está no meio da linha');
+  const longe = party[PIP];
+  longe.pos = { x: 11, y: 11 };
+  assert.equal(comoVe(enc, longe, { x: 11, y: 6 }) > 0, true, 'fora da linha da névoa, vê');
+  // Quem está dentro não vê nada, e o atacante às cegas fica com desvantagem.
+  foes[0].pos = { x: 5, y: 5 };
+  const mods = enc.attackModifiers(dara, foes[0], { ranged: true });
+  assert.ok(mods.desvantagens.includes('alvo oculto no escuro'));
+  assert.ok(mods.vantagens.includes('atacante oculto no escuro'));
+  assert.equal(enc.field.dificeis.size, 0, 'não é terreno difícil');
+  // A concentração cai e a névoa some.
+  enc.dropConcentration(ilvan);
+  assert.equal(comoVe(enc, dara, foes[0].pos) > 0, true);
+});
+
+teste('Névoa Obscurecente cresce com o círculo (+6 m de raio)', () => {
+  const { enc, ilvan } = magoCom('nevoaObscurecente');
+  const normal = enc.areaDaMagia(ilvan, getSpell('nevoaObscurecente'), { x: 6, y: 5 }, 1).length;
+  const maior = enc.areaDaMagia(ilvan, getSpell('nevoaObscurecente'), { x: 6, y: 5 }, 2).length;
+  assert.ok(maior > normal);
+});
+
+teste('Névoa Obscurecente: a área (e a prévia) pega o círculo escolhido: 81, 289 e 625 casas', () => {
+  const ilvan = makeParty({ nivel: 5 })[ILVAN];
+  ilvan.pos = { x: 2, y: 15 };
+  const enc = new Encounter({
+    battlefield: new Battlefield(30, 30, Array(30).fill('.'.repeat(30))), party: [ilvan],
+    foes: [makeMonster('goblin', { x: 28, y: 28 })], rng: makeRng(1), onLog: () => {},
+  });
+  const nevoa = getSpell('nevoaObscurecente');
+  const ponto = { x: 15, y: 15 };
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto).length, 81);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 1).length, 81);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 2).length, 289);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 3).length, 625);
+});
+
+teste('Escuridão contorna esquinas: uma parede segura a esfera', () => {
+  assert.equal(getSpell('escuridao').contornaEsquinas, true);
+  const mapa = Array(12).fill('............');
+  mapa[5] = '.....#......';
+  mapa[4] = '.....#......';
+  mapa[6] = '.....#......';
+  const ilvan = makeParty({ nivel: 5 })[ILVAN];
+  ilvan.pos = { x: 1, y: 1 };
+  const enc = new Encounter({ battlefield: new Battlefield(12, 12, mapa), party: [ilvan], foes: [makeMonster('goblin', { x: 11, y: 11 })], rng: makeRng(1), onLog: () => {} });
+  const casas = enc.areaDaMagia(ilvan, getSpell('escuridao'), { x: 4, y: 5 });
+  assert.ok(casas.length > 0);
+  const livre = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party: [ilvan], foes: [makeMonster('goblin', { x: 11, y: 11 })], rng: makeRng(1), onLog: () => {} });
+  assert.ok(casas.length < livre.areaDaMagia(ilvan, getSpell('escuridao'), { x: 4, y: 5 }).length, 'a parede corta parte da esfera');
+});
+
+teste('Escuridão: a visão no escuro não enxerga dentro, mas quem está dentro vê fora', () => {
+  const { enc, party, foes, ilvan } = magoCom('escuridao', { foes: [['goblin', { x: 6, y: 5 }]] });
+  const dara = party[DARA];
+  dara.pos = { x: 2, y: 5 };
+  dara.visaoNoEscuro = 60;
+  foes[0].pos = { x: 6, y: 5 };
+  assert.equal(comoVe(enc, dara, foes[0].pos) > 0, true, 'sem a magia, vê');
+  ilvan.pos = { x: 2, y: 8 };
+  assert.ok(enc.castSpell(ilvan, 'escuridao', { point: { x: 6, y: 5 } }).ok);
+  assert.equal(enc.zonas[0].obscuro, 'magica');
+  assert.equal(comoVe(enc, dara, foes[0].pos), 0, 'nem a visão no escuro');
+  assert.equal(comoVe(enc, foes[0], dara.pos) > 0, true, 'de dentro, vê quem está fora na luz');
+  assert.ok(enc.attackModifiers(dara, foes[0]).desvantagens.includes('alvo oculto no escuro'));
+  assert.equal(enc.field.dificeis.size, 0);
+});
+
+teste('Lufada de Vento (regra da casa): empurra 4,5 m ao longo da linha ao conjurar e de novo a cada ação bônus gasta', () => {
+  const { enc, h, foes } = comHeroi('druida', 5, {
+    magias: ['lufadaDeVento'], foes: [['goblin', { x: 5, y: 5 }], ['goblin', { x: 6, y: 6 }], ['goblin', { x: 5, y: 9 }]],
+  });
+  foes.forEach((f) => { f.hp = f.maxHp = 60; });
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'lufadaDeVento', { point: { x: 9, y: 5 } }).ok);
+  assert.equal(foes[0].pos.x, 8, 'na linha: 3 casas para o leste');
+  assert.equal(foes[1].pos.x, 9, 'na casa ao lado da linha também');
+  assert.equal(foes[2].pos.x, 5, 'fora da linha, fica');
+  assert.equal(h.concentrating?.spellId, 'lufadaDeVento', 'a concentração segura sem ninguém preso');
+  // Regra da casa (o livro empurra só quem começa o turno na linha): cada ação
+  // bônus gasta na magia empurra de novo, sem espaço.
+  const espacos = h.spellcasting.slots[2];
+  assert.ok(enc.castSpell(h, 'lufadaDeVento', { point: { x: 9, y: 5 } }).ok);
+  assert.ok(foes[0].pos.x > 8);
+  assert.equal(h.spellcasting.slots[2], espacos);
+  assert.equal(h.bonusUsed, true);
+  assert.equal(enc.canCast(h, 'lufadaDeVento', { point: { x: 9, y: 5 } }).ok, false, 'só uma ação bônus por turno');
+});
+
+teste('Lufada de Vento: quem passa na resistência de FOR fica onde está', () => {
+  const { enc, h, foes } = comHeroi('druida', 5, { magias: ['lufadaDeVento'], foes: [['goblin', { x: 5, y: 5 }]] });
+  resistenciasDao(enc, true);
+  assert.ok(enc.castSpell(h, 'lufadaDeVento', { point: { x: 9, y: 5 } }).ok);
+  assert.equal(foes[0].pos.x, 5);
+});
+
+teste('Fome de Hadar: frio no começo do turno, ácido no fim, escuridão mágica e terreno difícil', () => {
+  const { enc, h, foes, log } = comHeroi('bruxo', 5, { magias: ['fomeDeHadar'], foes: [['goblin', { x: 8, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 200;
+  assert.ok(enc.castSpell(h, 'fomeDeHadar', { point: { x: 8, y: 5 } }).ok);
+  const z = enc.zonas[0];
+  assert.equal(z.obscuro, 'magica');
+  assert.ok(enc.field.dificeis.has('8,5'), 'terreno difícil');
+  assert.equal(comoVe(enc, h, foes[0].pos), 0, 'escuridão mágica');
+  enc.fimDoTurnoDoLado('party');
+  const inicio = foes[0].hp;
+  enc.beginSide('foes');
+  assert.ok(foes[0].hp < inicio, 'frio no começo do turno');
+  assert.ok(log.some((e) => /sofre \d+ de frio\./.test(e.text) && /Fome de Hadar/.test(e.text)));
+  resistenciasDao(enc, false);
+  const meio = foes[0].hp;
+  enc.fimDoTurnoDoLado('foes');
+  assert.ok(foes[0].hp < meio, 'ácido no fim do turno');
+  assert.ok(log.some((e) => /termina o turno na Fome de Hadar e sofre \d+ de ácido/.test(e.text)));
+});
+
+teste('Fome de Hadar: passar na resistência de DES livra do ácido; círculo maior não soma dados (o livro não tem)', () => {
+  const { enc, h, foes } = comHeroi('bruxo', 5, { magias: ['fomeDeHadar'], foes: [['goblin', { x: 8, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 200;
+  assert.ok(enc.castSpell(h, 'fomeDeHadar', { point: { x: 8, y: 5 } }).ok);
+  resistenciasDao(enc, true);
+  const antes = foes[0].hp;
+  enc.fimDoTurnoDoLado('foes');
+  assert.equal(foes[0].hp, antes);
+  const alto = comHeroi('bruxo', 7, { magias: ['fomeDeHadar'], foes: [['goblin', { x: 8, y: 5 }]] });
+  assert.ok(alto.enc.castSpell(alto.h, 'fomeDeHadar', { point: { x: 8, y: 5 }, circulo: 4 }).ok);
+  assert.equal(getSpell('fomeDeHadar').upcast, undefined);
+  assert.equal(alto.enc.zonas[0].dano.dados, '2d6');
+  assert.equal(alto.enc.zonas[0].fimDano.dados, '2d6');
+});
+
+teste('Convocar Relâmpagos: raio de 1,5 m e, nos turnos seguintes, outro raio com a ação, sem espaço', () => {
+  const { enc, h, foes } = comHeroi('druida', 5, {
+    magias: ['convocarRelampagos'], foes: [['goblin', { x: 7, y: 5 }], ['goblin', { x: 7, y: 6 }], ['goblin', { x: 10, y: 10 }]],
+  });
+  foes.forEach((f) => { f.hp = f.maxHp = 100; });
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'convocarRelampagos', { point: { x: 7, y: 5 } }).ok);
+  assert.ok(foes[0].hp < 100 && foes[1].hp < 100, 'os dois no raio de 1,5 m');
+  assert.equal(foes[2].hp, 100, 'fora do raio');
+  assert.equal(h.concentrating?.spellId, 'convocarRelampagos');
+  assert.equal(enc.canCast(h, 'convocarRelampagos', { point: { x: 7, y: 5 } }).ok, false, 'a ação já foi usada');
+  const espacos = h.spellcasting.slots[3];
+  enc.fimDoTurnoDoLado('party');
+  enc.beginSide('foes');
+  enc.fimDoTurnoDoLado('foes');
+  enc.beginSide('party');
+  const antes = foes[2].hp;
+  assert.ok(enc.castSpell(h, 'convocarRelampagos', { point: { x: 10, y: 10 } }).ok);
+  assert.ok(foes[2].hp < antes, 'um raio novo, noutro ponto');
+  assert.equal(h.spellcasting.slots[3], espacos, 'sem gastar espaço');
+  // Alcance de 36 m: 120 pés.
+  enc.beginSide('foes');
+  enc.beginSide('party');
+  assert.equal(enc.canCast(h, 'convocarRelampagos', { point: { x: 11, y: 11 } }).ok, true);
+});
+
+teste('Convocar Relâmpagos: alcance de 36 m (120 pés) vale, 125 pés é recusado', () => {
+  const h = criarPersonagem({
+    ...BASE(), id: 'h', name: 'Herói', abilities: { str: 14, dex: 14, con: 14, int: 16, wis: 16, cha: 16 },
+  }, { classe: 'druida', nivel: 5 });
+  h.pos = { x: 2, y: 5 };
+  h.spellcasting.prepared = [...(h.spellcasting.prepared ?? []), 'convocarRelampagos'];
+  const enc = new Encounter({
+    battlefield: new Battlefield(40, 12, Array(12).fill('.'.repeat(40))), party: [h],
+    foes: [makeMonster('goblin', { x: 30, y: 10 })], rng: makeRng(1), onLog: () => {},
+  });
+  enc.firstSide = 'party';
+  enc.round = 1;
+  enc.beginSide('party');
+  assert.equal(enc.canCast(h, 'convocarRelampagos', { point: { x: 26, y: 5 } }).ok, true, '24 casas = 120 pés');
+  const longe = enc.canCast(h, 'convocarRelampagos', { point: { x: 27, y: 5 } });
+  assert.equal(longe.ok, false, '25 casas = 125 pés');
+  assert.match(longe.why, /alcance/);
+});
+
+teste('Convocar Relâmpagos no 4º círculo rola 4d10', () => {
+  assert.equal(dadosDaMagia(getSpell('convocarRelampagos'), { circulo: 4 }), '4d10');
+});
+
+teste('Flecha Relampejante: o ataque vira raio no alvo e explode em quem está a 3 m', () => {
+  const { enc, h, foes, log } = comHeroi('patrulheiro', 9, {
+    magias: ['flechaRelampago'],
+    foes: [['ogro', { x: 6, y: 5 }], ['goblin', { x: 8, y: 5 }], ['goblin', { x: 11, y: 11 }]],
+  });
+  foes.forEach((f) => { f.hp = f.maxHp = 300; });
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  assert.ok(hasCondition(h, 'flechaRelampago'));
+  enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
+  assert.ok(log.some((e) => /acerta .* com .*: \d+ de dano elétrico/.test(e.text)), log.slice(-6).map((e) => e.text).join(' | '));
+  assert.ok(foes[0].hp <= 300 - 4, '4d8 no alvo');
+  assert.ok(foes[1].hp < 300, 'o goblin a 3 m levou a explosão');
+  assert.equal(foes[2].hp, 300, 'o longe não');
+  assert.ok(!hasCondition(h, 'flechaRelampago'));
+  assert.equal(h.concentrating, null);
+});
+
+teste('Flecha Relampejante: 4d8 puro no alvo (sem modificador), que não entra na explosão', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 9, {
+    magias: ['flechaRelampago'], foes: [['ogro', { x: 6, y: 5 }], ['goblin', { x: 8, y: 5 }]],
+  });
+  foes.forEach((f) => { f.hp = f.maxHp = 300; });
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 18);
+  const die = enc.rng.die.bind(enc.rng);
+  enc.rng.die = (lados) => (lados === 8 ? 5 : die(lados));
+  const golpes = [];
+  const aplicar = enc.applyDamage.bind(enc);
+  enc.applyDamage = (c, n, tipo, ...r) => { golpes.push([c, n, tipo]); return aplicar(c, n, tipo, ...r); };
+  assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
+  const noAlvo = golpes.filter(([c]) => c === foes[0]);
+  assert.equal(noAlvo.length, 1, 'o alvo leva um dano só: não entra na explosão');
+  assert.equal(noAlvo[0][1], 20, '4d8 (5 em cada) e nenhum modificador somado');
+  assert.equal(noAlvo[0][2], 'elétrico');
+  assert.equal(foes[0].hp, 280);
+  assert.equal(foes[1].hp, 290, 'o goblin a 3 m leva 2d8 cheios na explosão (falhou)');
+});
+
+teste('Flecha Relampejante: errando, o alvo leva exatamente metade de 4d8', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 9, { magias: ['flechaRelampago'], foes: [['ogro', { x: 6, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 300;
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 1);
+  const die = enc.rng.die.bind(enc.rng);
+  enc.rng.die = (lados) => (lados === 8 ? 5 : die(lados));
+  assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
+  assert.equal(foes[0].hp, 290, 'metade de 20');
+});
+
+teste('Flecha Relampejante: errando, o alvo leva metade e a explosão sai igual; cada dano é uma fonte', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 9, {
+    magias: ['flechaRelampago'], foes: [['ogro', { x: 6, y: 5 }], ['goblin', { x: 8, y: 5 }]],
+  });
+  foes.forEach((f) => { f.hp = f.maxHp = 300; });
+  foes[1].concentrating = { spellId: 'raioDeBruxa', condition: null, targets: [], rounds: 10 };
+  const testes = [];
+  enc.concentrationCheck = (c, dano) => { if (c === foes[1]) testes.push(dano); };
+  resistenciasDao(enc, false);
+  d20Fixo(enc, 1);
+  assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
+  assert.ok(foes[0].hp < 300, 'metade do raio mesmo errando');
+  assert.ok(foes[0].hp >= 300 - 16, 'só metade de 4d8');
+  assert.ok(foes[1].hp < 300, 'explosão sai errando também');
+  assert.equal(testes.length, 1);
+  assert.equal(enc.dadosDaFlecha({ data: { circulo: 4 } }).alvo, '5d8');
+  assert.equal(enc.dadosDaFlecha({ data: { circulo: 4 } }).explosao, '3d8');
+});
+
+teste('Flecha Relampejante só se gasta num ataque à distância', () => {
+  const { enc, h, foes } = comHeroi('patrulheiro', 9, { magias: ['flechaRelampago'], foes: [['goblin', { x: 3, y: 5 }]] });
+  foes[0].hp = foes[0].maxHp = 300;
+  d20Fixo(enc, 18);
+  assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  enc.resolveAttack(h, foes[0], { weaponId: 'adaga' });
+  assert.ok(hasCondition(h, 'flechaRelampago'), 'a adaga não gasta');
+});
+
+teste('Dissipar Magia: acaba com a magia da criatura e solta a concentração de quem a mantinha', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const [brenn, ilvan] = [party[BRENN], party[ILVAN]];
+  ilvan.spellcasting.prepared.push('imobilizarPessoa');
+  ilvan.spellcasting.livro.push('imobilizarPessoa');
+  brenn.spellcasting.prepared.push('dissiparMagia');
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(ilvan, 'imobilizarPessoa', { targets: [foes[0]] }).ok);
+  assert.ok(hasCondition(foes[0], 'paralisado'));
+  assert.ok(enc.castSpell(brenn, 'dissiparMagia', { target: foes[0] }).ok);
+  assert.ok(!hasCondition(foes[0], 'paralisado'));
+  assert.equal(ilvan.concentrating, null);
+});
+
+teste('Dissipar Magia em aliado: tira a Armadura Arcana (círculo 1) e devolve a CA', () => {
+  const { enc, party } = montar({ nivel: 5, foes: [['goblin', { x: 10, y: 10 }]] });
+  const [brenn, ilvan] = [party[BRENN], party[ILVAN]];
+  brenn.spellcasting.prepared.push('dissiparMagia');
+  const caSem = ilvan.ac;
+  assert.ok(enc.castSpell(ilvan, 'armaduraArcana', { target: ilvan }).ok);
+  assert.ok(ilvan.armaduraArcana);
+  assert.ok(ilvan.ac > caSem, 'a armadura subiu a CA');
+  const r = enc.castSpell(brenn, 'dissiparMagia', { target: ilvan });
+  assert.ok(r.ok, r.why);
+  assert.ok(!ilvan.armaduraArcana);
+  assert.equal(ilvan.ac, caSem);
+});
+
+teste('Dissipar Magia: Sono, Borrifo de Cores e Ataque Certeiro carregam o círculo do espaço usado', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const [brenn, ilvan] = [party[BRENN], party[ILVAN]];
+  brenn.spellcasting.prepared.push('dissiparMagia');
+  resistenciasDao(enc, false);
+  foes[0].hp = foes[0].maxHp = 1;
+  assert.ok(enc.castSpell(ilvan, 'sono', { point: { x: 6, y: 5 }, circulo: 3 }).ok);
+  const dorme = getCondition(foes[0], 'inconsciente');
+  assert.equal(dorme?.magia?.id, 'sono');
+  assert.equal(dorme.magia.circulo, 3, 'o espaço usado, não o círculo da magia');
+  assert.ok(enc.castSpell(brenn, 'dissiparMagia', { target: foes[0] }).ok);
+  assert.ok(!hasCondition(foes[0], 'inconsciente'), 'Dissipar acorda quem o Sono derrubou');
+});
+
+teste('Dissipar Magia numa zona: ela se desfaz e solta quem prendia', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 8, y: 8 }]] });
+  const [brenn, ilvan] = [party[BRENN], party[ILVAN]];
+  ilvan.spellcasting.prepared.push('teia');
+  ilvan.spellcasting.livro.push('teia');
+  brenn.spellcasting.prepared.push('dissiparMagia');
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(ilvan, 'teia', { point: { x: 8, y: 8 } }).ok);
+  assert.ok(hasCondition(foes[0], 'contido'));
+  assert.equal(enc.canCast(brenn, 'dissiparMagia', { point: { x: 1, y: 1 } }).ok, false, 'casa sem zona');
+  assert.ok(enc.castSpell(brenn, 'dissiparMagia', { point: { x: 8, y: 8 } }).ok);
+  assert.equal(enc.zonas.length, 0);
+  assert.ok(!hasCondition(foes[0], 'contido'));
+  assert.equal(ilvan.concentrating, null);
+});
+
+teste('Dissipar Magia de círculo maior que o espaço pede teste de atributo', () => {
+  const alta = () => {
+    const r = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+    r.party[BRENN].spellcasting.prepared.push('dissiparMagia');
+    addCondition(r.foes[0], 'rogado', { source: r.party[ILVAN].id, magia: { id: 'rogarMaldicao', circulo: 5 } });
+    return r;
+  };
+  const falha = alta();
+  d20Fixo(falha.enc, 1);
+  assert.ok(falha.enc.castSpell(falha.party[BRENN], 'dissiparMagia', { target: falha.foes[0] }).ok);
+  assert.ok(hasCondition(falha.foes[0], 'rogado'), 'd20 baixo: a magia de 5º círculo resiste');
+  const passa = alta();
+  d20Fixo(passa.enc, 20);
+  assert.ok(passa.enc.castSpell(passa.party[BRENN], 'dissiparMagia', { target: passa.foes[0] }).ok);
+  assert.ok(!hasCondition(passa.foes[0], 'rogado'));
+});
+
+teste('as 9 magias novas estão na lista das classes certas', () => {
+  const ids = {
+    dueloCompelido: 'paladino', golpeConstritor: 'patrulheiro', nevoaObscurecente: 'druida', escuridao: 'feiticeiro',
+    lufadaDeVento: 'druida', fomeDeHadar: 'bruxo', convocarRelampagos: 'druida', flechaRelampago: 'patrulheiro',
+    dissiparMagia: 'clerigo',
+  };
+  for (const [id, classe] of Object.entries(ids)) {
+    assert.ok(SPELLS[id], id);
+    assert.ok(listaDaClasse(classe, 3).magias.includes(id), `${id} em ${classe}`);
+  }
+  assert.ok(!listaDaClasse('druida', 1).magias.includes('convocarRelampagos'), 'o 1º nível não vê o 3º círculo');
+});
+
+// ---- lote 10: Luz, Orientação, Silêncio, Aumentar/Reduzir, Elo, Coroa, Calma, Oração, Muralha ----
+
+const daraEm = (x, y) => {
+  const d = makeParty({ nivel: 2 })[DARA];
+  d.pos = { x, y };
+  return d;
+};
+
+teste('Luz: o aliado vira fonte de luz e a escuridão recua; conjurar noutro passa a luz', () => {
+  const dara = daraEm(2, 6);
+  const pip = makeParty({ nivel: 2 })[PIP];
+  pip.pos = { x: 1, y: 5 };
+  const { enc, h } = comHeroi('clerigo', 3, { truques: ['luz'], aliados: [dara, pip], foes: [['goblin', { x: 10, y: 10 }]] });
+  enc.field.luz = new Array(144).fill(0);
+  const longe = { x: 2, y: 9 };
+  assert.equal(comoVe(enc, h, longe), 0, 'no breu, sem luz, não se vê');
+  assert.ok(enc.castSpell(h, 'luz', { targets: [dara] }).ok);
+  assert.ok(hasCondition(dara, 'luzMagica'));
+  assert.ok(comoVe(enc, h, longe) > 0, 'a 4,5 m da Dara acesa, a casa está iluminada');
+  h.actionUsed = false;
+  assert.ok(enc.castSpell(h, 'luz', { targets: [pip] }).ok);
+  assert.ok(hasCondition(pip, 'luzMagica') && !hasCondition(dara, 'luzMagica'), 'a luz mudou de dono');
+  assert.equal(h.spellcasting.slots[1], h.spellcasting.slotsMax[1], 'truque não gasta espaço');
+});
+
+teste('Orientação: soma 1d4 no próximo teste de atributo e acaba', () => {
+  const tenta = (comMagia) => {
+    const dara = daraEm(2, 6);
+    const { enc, h } = comHeroi('clerigo', 3, { truques: ['orientacao'], aliados: [dara], foes: [['goblin', { x: 10, y: 10 }]] });
+    const bonus = skillBonus(dara, 'atletismo');
+    addCondition(dara, 'agarrado', { data: { escape: 10 + bonus + 2 } });
+    const die = enc.rng.die.bind(enc.rng);
+    enc.rng.die = (l) => (l === 20 ? 10 : l === 4 ? 4 : die(l));
+    if (comMagia) assert.ok(enc.castSpell(h, 'orientacao', { targets: [dara] }).ok);
+    enc.escapar(dara);
+    return { dara, h };
+  };
+  const sem = tenta(false);
+  assert.ok(hasCondition(sem.dara, 'agarrado'), 'sem Orientação: 10 + bônus não chega à CD');
+  const com = tenta(true);
+  assert.ok(!hasCondition(com.dara, 'agarrado'), 'com Orientação: o 1d4 (4) chega');
+  assert.ok(!hasCondition(com.dara, 'orientado'), 'o dado vale um teste só');
+  assert.equal(com.h.concentrating, null, 'a magia acaba e solta a concentração');
+});
+
+teste('Silêncio: quem está na zona não conjura e é imune a trovejante; fora, nada muda', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 3, { truques: ['chamaSagrada'], magias: ['silencio'], foes: [['goblin', { x: 3, y: 5 }]] });
+  const fora = { x: 11, y: 11 };
+  assert.ok(enc.castSpell(h, 'silencio', { point: { x: 2, y: 5 } }).ok);
+  assert.ok(enc.zonasEm(h.pos).some((z) => z.silencio));
+  assert.ok(enc.zonasEm(foes[0].pos).some((z) => z.silencio));
+  h.actionUsed = false;
+  const c = enc.canCast(h, 'chamaSagrada', { target: foes[0] });
+  assert.equal(c.ok, false);
+  assert.match(c.why, /Silêncio/);
+  const antes = h.hp;
+  enc.applyDamage(h, 6, 'trovejante', foes[0], { magico: true });
+  assert.equal(h.hp, antes, 'trovejante não faz nada dentro do Silêncio');
+  enc.applyDamage(h, 3, 'cortante', foes[0]);
+  assert.equal(h.hp, antes - 3, 'outro dano segue normal');
+  assert.equal(enc.zonasEm(fora).length, 0);
+  enc.dropConcentration(h);
+  assert.equal(enc.zonasEm(h.pos).length, 0, 'sem a concentração, o Silêncio se desfaz');
+  assert.equal(enc.canCast(h, 'chamaSagrada', { target: foes[0] }).ok, true);
+});
+
+teste('Aumentar: +1d4 no dano de arma e vantagem em Força; Reduzir tira 1d4 (nunca abaixo de 1) e dá desvantagem', () => {
+  const dara = daraEm(3, 6);
+  const { enc, h, foes } = comHeroi('mago', 5, { magias: ['aumentarReduzir'], aliados: [dara], foes: [['goblin', { x: 3, y: 5 }]] });
+  const goblin = foes[0];
+  goblin.maxHp = goblin.hp = 200;
+  d20Fixo(enc, 20);
+  const sem = enc.resolveAttack(dara, goblin);
+  assert.ok(!sem.danoPartes.some((p) => p.rotulo === 'aumentar'));
+  assert.ok(enc.castSpell(h, 'aumentarReduzir', { target: dara }).ok);
+  assert.ok(hasCondition(dara, 'aumentado'));
+  const com = enc.resolveAttack(dara, goblin);
+  const extra = com.danoPartes.find((p) => p.rotulo === 'aumentar');
+  assert.ok(extra && extra.total >= 2, 'crítico: 2d4 a mais');
+  assert.equal(com.damage, com.danoPartes.reduce((a, p) => a + p.total, 0));
+  assert.equal(enc.resistencia(dara, 'str', 5).rolls.length, 2, 'vantagem em resistência de Força');
+  assert.equal(enc.resistencia(dara, 'dex', 5).rolls.length, 1, 'só Força');
+  // Reduzir: o goblin falha na CON e encolhe.
+  h.actionUsed = false;
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'aumentarReduzir', { target: goblin }).ok, 'conjurar de novo troca o alvo da concentração');
+  assert.ok(hasCondition(goblin, 'reduzido') && !hasCondition(dara, 'aumentado'));
+  assert.equal(enc.resistencia(goblin, 'str', 5).rolls.length, 2, 'desvantagem também rola dois dados');
+  const dano = enc.resolveAttack(goblin, dara, { weaponId: 'Cimitarra' });
+  const menos = dano.danoPartes.find((p) => p.rotulo === 'reduzir');
+  assert.ok(menos && menos.total < 0);
+  assert.ok(dano.damage >= 1, 'o golpe nunca fica abaixo de 1');
+});
+
+teste('Reduzir: quem passa na CON não encolhe e a concentração não fica de pé', () => {
+  const { enc, h, foes } = comHeroi('mago', 5, { magias: ['aumentarReduzir'], foes: [['goblin', { x: 3, y: 5 }]] });
+  resistenciasDao(enc, true);
+  assert.ok(enc.castSpell(h, 'aumentarReduzir', { target: foes[0] }).ok);
+  assert.ok(!hasCondition(foes[0], 'reduzido'));
+  assert.equal(h.concentrating, null);
+});
+
+teste('Elo de Proteção: +1 de CA, resistência a todo dano e o conjurador sofre o mesmo; acaba se ele cai', () => {
+  const dara = daraEm(2, 6);
+  const { enc, h, foes } = comHeroi('clerigo', 5, { magias: ['eloDeProtecao'], aliados: [dara], foes: [['goblin', { x: 3, y: 5 }]] });
+  const ca = caEfetiva(dara);
+  assert.equal(enc.castSpell(h, 'eloDeProtecao', { target: h }).ok, false, 'não vale em si mesmo');
+  assert.ok(enc.castSpell(h, 'eloDeProtecao', { targets: [dara] }).ok);
+  assert.equal(caEfetiva(dara), ca + 1);
+  assert.equal(h.concentrating, null, 'sem concentração');
+  const [hd, hh] = [dara.hp, h.hp];
+  enc.applyDamage(dara, 10, 'cortante', foes[0]);
+  assert.equal(dara.hp, hd - 5, 'resistência a todo dano: metade');
+  assert.equal(h.hp, hh - 5, 'o conjurador sofre o mesmo');
+  // Conjurador a 0 PV: o elo se desfaz e o protegido apanha sozinho (com a resistência que sobra: nenhuma).
+  h.hp = 0;
+  enc.applyDamage(dara, 4, 'cortante', foes[0]);
+  assert.ok(!hasCondition(dara, 'eloDeProtecao'));
+  assert.equal(dara.hp, hd - 9, 'o dano de agora vem inteiro depois de o elo cair');
+});
+
+teste('Elo de Proteção: acaba quando os dois ficam a mais de 18 m', () => {
+  const dara = daraEm(2, 6);
+  const { enc, h, foes } = comHeroi('clerigo', 5, { magias: ['eloDeProtecao'], aliados: [dara], foes: [['goblin', { x: 3, y: 5 }]] });
+  enc.field = new Battlefield(20, 12, Array(12).fill('.'.repeat(20)));
+  assert.ok(enc.castSpell(h, 'eloDeProtecao', { targets: [dara] }).ok);
+  dara.pos = { x: 18, y: 6 };
+  const hh = h.hp;
+  enc.applyDamage(dara, 8, 'cortante', foes[0]);
+  assert.ok(!hasCondition(dara, 'eloDeProtecao'));
+  assert.equal(h.hp, hh, 'longe demais, o conjurador não sente');
+});
+
+teste('Coroa da Loucura: o enfeitiçado ataca o aliado dele, e a ação do conjurador a mantém', () => {
+  const { enc, h, foes } = comHeroi('mago', 5, {
+    magias: ['coroaDaLoucura'], foes: [['goblin', { x: 6, y: 5 }], ['goblin', { x: 7, y: 5 }]],
+  });
+  const [a, b] = foes;
+  const controle = comHeroi('mago', 5, { foes: [['goblin', { x: 6, y: 5 }], ['goblin', { x: 7, y: 5 }]] });
+  d20Fixo(controle.enc, 20);
+  controle.enc.beginSide('foes');
+  takeMonsterTurn(controle.enc, controle.foes[0]);
+  assert.equal(controle.foes[1].hp, controle.foes[1].maxHp, 'sem a coroa, o goblin não bate no amigo');
+
+  d20Fixo(enc, 20);
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'coroaDaLoucura', { targets: [a] }).ok);
+  assert.ok(hasCondition(a, 'coroaDaLoucura'));
+  // A coroa pede a ação a cada turno: sem ela, cai no fim do turno.
+  enc.fimDoTurnoDoLado('party');
+  assert.ok(h.concentrating, 'no turno em que foi conjurada, a ação já foi gasta');
+  enc.beginSide('foes');
+  const hpH = h.hp;
+  takeMonsterTurn(enc, a);
+  assert.ok(b.hp < b.maxHp, 'bateu no aliado');
+  assert.equal(h.hp, hpH, 'o herói não foi tocado');
+  enc.beginSide('party');
+  assert.ok(enc.castSpell(h, 'coroaDaLoucura', { target: a }).ok, 'mantida com a ação, sem espaço');
+  assert.equal(h.spellcasting.slots[2], h.spellcasting.slotsMax[2] - 1, 'só o espaço da primeira vez');
+  enc.fimDoTurnoDoLado('party');
+  assert.ok(h.concentrating && hasCondition(a, 'coroaDaLoucura'));
+  enc.beginSide('foes');
+  enc.beginSide('party');
+  enc.fimDoTurnoDoLado('party');
+  assert.equal(h.concentrating, null, 'sem a ação, a coroa cai');
+  assert.ok(!hasCondition(a, 'coroaDaLoucura'));
+});
+
+teste('Coroa da Loucura: sem aliado perto o enfeitiçado age normal', () => {
+  const { enc, h, foes } = comHeroi('mago', 5, { magias: ['coroaDaLoucura'], foes: [['goblin', { x: 3, y: 5 }]] });
+  d20Fixo(enc, 20);
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'coroaDaLoucura', { targets: [foes[0]] }).ok);
+  enc.fimDoTurnoDoLado('party');
+  enc.beginSide('foes');
+  const antes = h.hp;
+  takeMonsterTurn(enc, foes[0]);
+  assert.ok(h.hp < antes, 'o único alvo possível é o herói');
+});
+
+teste('Acalmar Emoções: suprime medo e encanto, ou deixa o inimigo indiferente até o perigo ser real', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 5, {
+    magias: ['acalmarEmocoes'], foes: [['goblin', { x: 5, y: 5 }], ['goblin', { x: 6, y: 5 }]],
+  });
+  const [medroso, quieto] = foes;
+  addCondition(medroso, 'amedrontado', { source: h.id });
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'acalmarEmocoes', { point: { x: 5, y: 5 } }).ok);
+  assert.ok(!hasCondition(medroso, 'amedrontado'), 'o medo passa');
+  assert.equal(getCondition(medroso, 'calmo').data.modo, 'suprime');
+  assert.equal(enc.imuneACondicao(medroso, 'amedrontado'), true, 'e não volta enquanto durar');
+  assert.equal(getCondition(quieto, 'calmo').data.modo, 'indiferente');
+  d20Fixo(enc, 20);
+  enc.beginSide('foes');
+  const hp = h.hp;
+  takeMonsterTurn(enc, quieto);
+  assert.equal(h.hp, hp, 'o indiferente não ataca');
+  // Um inimigo fere o amigo dele: a indiferença acaba.
+  enc.applyDamage(medroso, 1, 'cortante', h);
+  assert.ok(!hasCondition(quieto, 'calmo'), 'ver o amigo ferido acorda a indiferença');
+});
+
+teste('Acalmar Emoções: quem passa na CAR segue como estava', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 5, { magias: ['acalmarEmocoes'], foes: [['goblin', { x: 5, y: 5 }]] });
+  resistenciasDao(enc, true);
+  assert.ok(enc.castSpell(h, 'acalmarEmocoes', { point: { x: 5, y: 5 } }).ok);
+  assert.ok(!hasCondition(foes[0], 'calmo'));
+  assert.equal(h.concentrating, null);
+});
+
+teste('Oração de Cura: o combate recusa; no descanso cura até 6 com 2d8 + modificador e gasta um espaço', () => {
+  const aliados = [daraEm(2, 6), daraEm(2, 7)];
+  const { enc, h } = comHeroi('clerigo', 5, { magias: ['oracaoDeCura'], aliados, foes: [['goblin', { x: 10, y: 10 }]] });
+  const c = enc.canCast(h, 'oracaoDeCura');
+  assert.equal(c.ok, false);
+  assert.match(c.why, /10 minutos/);
+  for (const a of aliados) a.hp = 1;
+  h.hp = 1;
+  const espacos = h.spellcasting.slots[2];
+  const r = oracaoDeCura(makeRng(7), h, [h, ...aliados]);
+  assert.ok(r.ok);
+  assert.equal(h.spellcasting.slots[2], espacos - 1);
+  assert.ok(r.curas.every((x) => x.cura >= 1), 'cada um cura pelo menos 1');
+  assert.ok(aliados.every((a) => a.hp > 1));
+  assert.equal(oracaoDeCura(makeRng(7), h, Array(7).fill(aliados[0])).ok, true, 'o mesmo alvo repetido conta uma vez');
+  const sete = [h, ...aliados, ...[1, 2, 3, 4].map((i) => daraEm(i, 0))];
+  assert.equal(oracaoDeCura(makeRng(7), h, sete).ok, false, 'até 6 criaturas');
+});
+
+teste('Muralha de Vento: dano ao surgir, e o projétil de arma que a cruza erra sozinho', () => {
+  const { enc, h, foes } = comHeroi('druida', 5, {
+    magias: ['muralhaDeVento'], pos: { x: 2, y: 5 },
+    foes: [['goblin', { x: 4, y: 6 }], ['goblinArqueiro', { x: 8, y: 5 }]],
+  });
+  const [no_muro, arqueiro] = foes;
+  no_muro.maxHp = no_muro.hp = 200;
+  const casas = enc.areaDaMagia(h, getSpell('muralhaDeVento'), { x: 4, y: 5 });
+  assert.equal(casas.length, 10, 'dez casas, 15 m');
+  assert.ok(casas.every((q) => q.x === 4), 'de través para o conjurador');
+  d20Fixo(enc, 20);
+  const livre = enc.resolveAttack(arqueiro, h, { weaponId: 'Arco curto' });
+  assert.equal(livre.hit, true, 'sem muralha o 20 natural acerta');
+  const hp = no_muro.hp;
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'muralhaDeVento', { point: { x: 4, y: 5 } }).ok);
+  assert.ok(no_muro.hp < hp, 'quem estava na muralha faz FOR e apanha 3d8');
+  assert.ok(enc.zonasEm({ x: 4, y: 2 }).some((z) => z.barraProjetil));
+  const hpH = h.hp;
+  const bloqueado = enc.resolveAttack(arqueiro, h, { weaponId: 'Arco curto' });
+  assert.equal(bloqueado.hit, false);
+  assert.equal(bloqueado.muralha, true);
+  assert.equal(h.hp, hpH);
+  // Corpo a corpo e magia passam: a muralha só barra projétil de arma.
+  no_muro.pos = { x: 3, y: 5 };
+  const fora = enc.resolveAttack(no_muro, h, { weaponId: 'Cimitarra' });
+  assert.ok(fora, 'ataque de perto não é barrado');
+  assert.notEqual(fora.muralha, true);
+});
+
+teste('as 9 magias do lote 10 estão nas listas de classe certas', () => {
+  const onde = {
+    luz: ['clerigo', 'bardo', 'feiticeiro'], orientacao: ['clerigo', 'druida'],
+    silencio: ['bardo', 'clerigo', 'patrulheiro'], aumentarReduzir: ['feiticeiro', 'mago'],
+    eloDeProtecao: ['clerigo', 'paladino'], coroaDaLoucura: ['bardo', 'bruxo', 'feiticeiro', 'mago'],
+    acalmarEmocoes: ['bardo', 'clerigo'], oracaoDeCura: ['clerigo', 'paladino'],
+    muralhaDeVento: ['druida', 'patrulheiro'],
+  };
+  for (const [id, classes] of Object.entries(onde)) {
+    const s = SPELLS[id];
+    assert.ok(s && s.fonte === 'srd' && s.desc, id);
+    for (const classe of classes) {
+      const l = listaDaClasse(classe, 3);
+      assert.ok(l.magias.includes(id) || l.truques.includes(id), `${id} em ${classe}`);
+    }
+  }
+  assert.ok(!listaDaClasse('clerigo', 1).magias.includes('silencio'), 'o 1º nível não vê o 2º círculo');
+  assert.ok(!listaDaClasse('mago', 2).magias.includes('muralhaDeVento'));
+});
+
+
+teste('Silêncio: a magia já em pé repete o golpe e Ataque Certeiro (sem verbal) passa; conjurar nova é recusado', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 5, {
+    truques: ['ataqueCerteiro'], magias: ['silencio', 'armaEspiritual'], foes: [['goblin', { x: 3, y: 5 }]],
+  });
+  const alvo = foes[0];
+  assert.ok(enc.castSpell(h, 'armaEspiritual', { target: alvo, point: alvo.pos }).ok, 'em pé antes do Silêncio');
+  h.magiasNoTurno = []; // (o turno seguinte)
+  h.bonusUsed = false;
+  assert.ok(enc.castSpell(h, 'silencio', { point: { x: 2, y: 5 } }).ok);
+  h.actionUsed = false;
+  h.bonusUsed = false;
+  h.magiasNoTurno = [];
+  const reuso = enc.canCast(h, 'armaEspiritual', { target: alvo, point: alvo.pos });
+  assert.ok(!/Silêncio/.test(reuso.why ?? ''), 'reusar a magia já em pé não é barrado pelo Silêncio');
+  const certeiro = enc.canCast(h, 'ataqueCerteiro', { target: alvo });
+  assert.ok(!/Silêncio/.test(certeiro.why ?? ''), 'Ataque Certeiro não tem verbal');
+  delete h.magiasAtivas.armaEspiritual;
+  const nova = enc.canCast(h, 'armaEspiritual', { target: alvo, point: alvo.pos });
+  assert.equal(nova.ok, false);
+  assert.match(nova.why, /Silêncio/, 'conjurar de novo dentro do Silêncio é recusado');
+});
+
+teste('Acalmar Emoções: atacar (acerto ou erro) ou lançar magia hostil acorda a indiferença; só humanoide acordado entra na área', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 5, {
+    magias: ['acalmarEmocoes'], truques: ['chamaSagrada'], foes: [['goblin', { x: 5, y: 5 }], ['goblin', { x: 6, y: 5 }]],
+  });
+  const [a, b] = foes;
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(h, 'acalmarEmocoes', { point: { x: 5, y: 5 } }).ok);
+  assert.ok(hasCondition(a, 'calmo') && hasCondition(b, 'calmo'));
+  h.pos = { x: 4, y: 5 };
+  d20Fixo(enc, 1);
+  enc.resolveAttack(h, a);
+  assert.ok(!hasCondition(a, 'calmo'), 'atacar acorda o alvo, acerte ou erre');
+  const { enc: e2, h: h2, foes: f2 } = comHeroi('clerigo', 5, {
+    magias: ['acalmarEmocoes'], truques: ['chamaSagrada'], foes: [['goblin', { x: 5, y: 5 }]],
+  });
+  resistenciasDao(e2, false);
+  assert.ok(e2.castSpell(h2, 'acalmarEmocoes', { point: { x: 5, y: 5 } }).ok);
+  assert.ok(hasCondition(f2[0], 'calmo'));
+  h2.actionUsed = false;
+  h2.concentrating = null;
+  resistenciasDao(e2, true);
+  e2.castSpell(h2, 'chamaSagrada', { target: f2[0] });
+  assert.ok(!hasCondition(f2[0], 'calmo'), 'a magia hostil acorda a indiferença');
+  const { enc: e3, h: h3, foes: f3 } = comHeroi('clerigo', 5, {
+    magias: ['acalmarEmocoes'], foes: [['goblin', { x: 5, y: 5 }], ['ogro', { x: 6, y: 5 }], ['goblin', { x: 5, y: 6 }]],
+  });
+  addCondition(f3[2], 'inconsciente');
+  const area = e3.areaDaMagia(h3, getSpell('acalmarEmocoes'), { x: 5, y: 5 });
+  const pegos = e3.afetadosPelaArea(h3, getSpell('acalmarEmocoes'), area).map((x) => x.c);
+  assert.ok(pegos.includes(f3[0]));
+  assert.ok(!pegos.includes(f3[2]), 'inconsciente fora');
+  assert.equal(pegos.includes(f3[1]), (f3[1].tipo ?? 'humanoide') === 'humanoide', 'só humanoide entra na prévia');
+});
+
+teste('Elo de Proteção: o teste de resistência mostra "Elo de Proteção" (+1), não "lentidão"', () => {
+  const { enc, h } = comHeroi('clerigo', 5, { foes: [['goblin', { x: 10, y: 10 }]] });
+  addCondition(h, 'eloDeProtecao', { source: 'x' });
+  const rotulos = JSON.stringify(enc.resistencia(h, 'dex', 10));
+  assert.ok(!/lentid/i.test(rotulos), 'sem o rótulo de lentidão');
+  assert.match(rotulos, /Elo de Proteção/);
+});
+
+
+// ---- lote 11: Ilusão Menor, Visão no Escuro, Aprimorar Atributo, Força Fantasmagórica, Sugestão,
+//      Luz do Dia, Remover Maldição, Crescer Plantas, Voo ----
+
+/** Mago de 5º nível com as magias dadas, ao lado da Dara, para magias de toque. */
+function magoDoLote({ magias = [], truques = [], foes = [['bandidoMachadeiro', { x: 10, y: 10 }]] } = {}) {
+  const r = montar({ nivel: 5, foes });
+  const ilvan = r.party[ILVAN];
+  ilvan.spellcasting.prepared.push(...magias);
+  ilvan.spellcasting.cantrips.push(...truques);
+  ilvan.pos = { x: 6, y: 6 };
+  return { ...r, ilvan, dara: r.party[DARA] };
+}
+const liberarAcao = (c) => { c.actionUsed = false; c.bonusUsed = false; c.magiasNoTurno = []; };
+const tirarCondicao = (c, id) => { c.conditions = c.conditions.filter((x) => x.id !== id); };
+
+teste('Ilusão Menor: tira a visão do outro lado, não do seu; examinar com sucesso a desfaz; atravessar também', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ truques: ['ilusaoMenor'], foes: [['bandidoMachadeiro', { x: 8, y: 5 }]] });
+  ilvan.pos = { x: 2, y: 5 };
+  dara.pos = { x: 4, y: 6 };
+  const foe = foes[0];
+  assert.ok(comoVe(enc, foe, ilvan.pos) > 0, 'sem a imagem, ele vê');
+  assert.equal(enc.castSpell(ilvan, 'ilusaoMenor', { point: { x: 4, y: 6 } }).ok, false, 'a casa tem de estar vazia');
+  assert.ok(enc.castSpell(ilvan, 'ilusaoMenor', { point: { x: 5, y: 5 } }).ok);
+  const z = enc.zonas.find((q) => q.ilusao);
+  assert.ok(z && z.casas.size === 1, 'uma casa só');
+  assert.equal(comoVe(enc, foe, ilvan.pos), 0, 'a imagem tapa a linha para o inimigo');
+  assert.ok(comoVe(enc, ilvan, foe.pos) > 0, 'o conjurador enxerga através da própria imagem');
+  assert.equal(enc.field.dificeis.size, 0, 'não é terreno difícil nem parede');
+  // Um aliado passa por cima dela sem desfazê-la.
+  dara.pos = { x: 4, y: 5 };
+  dara.movementLeftFt = 30;
+  enc.moveAlong(dara, [{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }]);
+  assert.ok(enc.zonas.includes(z), 'o lado do conjurador sabe que é imagem');
+  // Examinar: falha mantém, sucesso desfaz.
+  foe.pos = { x: 6, y: 4 };
+  foe.actionUsed = false;
+  d20Fixo(enc, 1);
+  assert.ok(enc.examinarIlusao(foe).ok);
+  assert.ok(enc.zonas.includes(z), 'falhou no teste: a imagem fica');
+  foe.actionUsed = false;
+  d20Fixo(enc, 20);
+  assert.ok(enc.examinarIlusao(foe).ok);
+  assert.ok(!enc.zonas.includes(z), 'passou: some');
+  assert.ok(comoVe(enc, foe, ilvan.pos) > 0);
+  // Atravessar: o inimigo que pisa na casa desfaz.
+  liberarAcao(ilvan);
+  const nova = enc.castSpell(ilvan, 'ilusaoMenor', { point: { x: 5, y: 5 } });
+  assert.ok(nova.ok, nova.why);
+  const z2 = enc.zonas.find((q) => q.ilusao);
+  foe.pos = { x: 6, y: 5 };
+  foe.movementLeftFt = 30;
+  enc.moveAlong(foe, [{ x: 6, y: 5 }, { x: 5, y: 5 }, { x: 4, y: 5 }]);
+  assert.ok(!enc.zonas.includes(z2), 'atravessar desfaz');
+});
+
+teste('Ilusão Menor: o inimigo colado nela, sem nada para atacar, gasta o turno examinando', () => {
+  const { enc, ilvan, foes } = magoDoLote({ truques: ['ilusaoMenor'], foes: [['bandidoMachadeiro', { x: 9, y: 5 }]] });
+  const foe = foes[0];
+  const z = enc.criarZona(ilvan, getSpell('ilusaoMenor'), [{ x: 8, y: 5 }], 14, { centro: { x: 8, y: 5 }, circulo: 0 });
+  // O grupo todo longe, onde o bandido não alcança neste turno.
+  enc.combatants.filter((c) => c !== foe).forEach((c, i) => { c.pos = { x: 0, y: i }; });
+  foe.pos = { x: 11, y: 11 };
+  foe.pos = { x: 9, y: 5 };
+  enc.beginSide('foes');
+  d20Fixo(enc, 20);
+  foe.speedFt = 0;
+  takeMonsterTurn(enc, foe);
+  assert.ok(foe.actionUsed, 'gastou a ação');
+  assert.ok(!enc.zonas.includes(z), 'examinou e desfez');
+});
+
+teste('Visão no Escuro: o aliado vê 18 m no breu; a Escuridão mágica continua opaca', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['visaoNoEscuro', 'escuridao'] });
+  enc.field.luz = new Array(144).fill(0);
+  dara.pos = { x: 5, y: 5 };
+  const longe = { x: 5, y: 9 }; // 6 m
+  assert.equal(comoVe(enc, dara, longe), 0, 'sem a magia, no breu, não vê');
+  assert.ok(enc.castSpell(ilvan, 'visaoNoEscuro', { target: dara, targets: [dara] }).ok);
+  assert.ok(hasCondition(dara, 'visaoNoEscuro'));
+  assert.ok(comoVe(enc, dara, longe) > 0, 'com a magia, vê a 6 m');
+  assert.ok(comoVe(enc, dara, { x: 11, y: 5 }) > 0, 'a 9 m ainda vê');
+  assert.equal(visaoNoEscuro(dara), 60, '18 m');
+  enc.criarZona(ilvan, getSpell('escuridao'), [{ x: 5, y: 9 }], 14, { centro: { x: 5, y: 9 }, circulo: 2 });
+  assert.equal(comoVe(enc, dara, longe), 0, 'a escuridão mágica barra até a visão no escuro');
+});
+
+teste('Aprimorar Atributo: Urso dá 2d6 PV temporários e vantagem em CON, e eles somem com a magia; Gato nega a queda', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['aprimorarAtributo'] });
+  assert.ok(enc.castSpell(ilvan, 'aprimorarAtributo', { target: dara, targets: [dara] }).ok);
+  const c = getCondition(dara, 'aprimorado');
+  assert.equal(c.data.opcao, 'urso', 'sem pedido e sem estar preso, o Urso');
+  assert.ok(dara.tempHp >= 2 && dara.tempHp <= 12);
+  assert.ok(conditionEffects(dara).vantagemSoTeste.includes('con'));
+  assert.ok(!conditionEffects(dara).vantagemTeste.includes('con'), 'só testes, não resistências');
+  enc.dropConcentration(ilvan);
+  assert.ok(!hasCondition(dara, 'aprimorado'));
+  assert.equal(dara.tempHp, 0, 'os PV temporários vão embora com a magia');
+  // Pedido explícito: Gato, e a queda não fere.
+  liberarAcao(ilvan);
+  assert.ok(enc.castSpell(ilvan, 'aprimorarAtributo', { target: dara, targets: [dara], opcao: 'gato' }).ok);
+  assert.equal(getCondition(dara, 'aprimorado').data.hab, 'dex');
+  const hp = dara.hp;
+  enc.cair(dara);
+  assert.equal(dara.hp, hp, 'Graça do Gato: sem dano de queda');
+  // Preso numa teia: o jogo escolhe o atributo do escape (Touro, pois a Teia pede Força).
+  addCondition(dara, 'contido', { source: 'zona:1' });
+  assert.equal(enc.opcaoDeAprimorar(dara), 'touro');
+  // O teste de atributo rola com vantagem de verdade.
+  tirarCondicao(dara, 'contido');
+  const rolagens = [];
+  const die = enc.rng.die.bind(enc.rng);
+  enc.rng.die = (l) => { const v = die(l); if (l === 20) rolagens.push(v); return v; };
+  enc.testeDeAtributo(dara, 'dex', 0);
+  assert.equal(rolagens.length, 2, 'dois d20: vantagem em DES');
+  rolagens.length = 0;
+  enc.testeDeAtributo(dara, 'str', 0);
+  assert.equal(rolagens.length, 1, 'sem vantagem em FOR');
+});
+
+teste('Força Fantasmagórica: falha em INT leva 1d6 psíquico no início do turno; examinar com sucesso a desfaz', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['forcaFantasmagorica'], foes: [['bandidoMachadeiro', { x: 8, y: 6 }]] });
+  const foe = foes[0];
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(ilvan, 'forcaFantasmagorica', { target: foe }).ok);
+  assert.ok(hasCondition(foe, 'iludido'));
+  assert.ok(getCondition(foe, 'iludido').data.dc > 8);
+  const hp = foe.hp;
+  enc.beginSide('foes');
+  assert.ok(foe.hp < hp && hp - foe.hp <= 6, 'a ilusão feriu no início do turno');
+  foe.actionUsed = false;
+  d20Fixo(enc, 20);
+  assert.ok(enc.investigarIlusao(foe).ok);
+  assert.ok(!hasCondition(foe, 'iludido'));
+  assert.equal(ilvan.concentrating, null, 'sem ninguém iludido, a concentração cai');
+  // Resistindo, nada acontece.
+  const { enc: e2, ilvan: i2, foes: f2 } = magoDoLote({ magias: ['forcaFantasmagorica'], foes: [['bandidoMachadeiro', { x: 8, y: 6 }]] });
+  resistenciasDao(e2, true);
+  e2.castSpell(i2, 'forcaFantasmagorica', { target: f2[0] });
+  assert.ok(!hasCondition(f2[0], 'iludido'));
+});
+
+teste('Sugestão: o humanoide que falha larga a luta e se afasta; ferido por aliado do conjurador, volta', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['sugestao'], foes: [['bandidoMachadeiro', { x: 6, y: 8 }]] });
+  const foe = foes[0];
+  resistenciasDao(enc, false);
+  assert.ok(enc.castSpell(ilvan, 'sugestao', { target: foe }).ok);
+  assert.ok(hasCondition(foe, 'sugerido'));
+  enc.beginSide('foes');
+  const antes = distanceFt(foe.pos, ilvan.pos);
+  const hpIlvan = ilvan.hp;
+  takeMonsterTurn(enc, foe);
+  assert.ok(distanceFt(foe.pos, ilvan.pos) > antes, 'se afastou');
+  assert.equal(ilvan.hp, hpIlvan, 'não atacou');
+  // O golpe da Dara quebra a sugestão.
+  enc.applyDamage(foe, 1, 'cortante', dara);
+  assert.ok(!hasCondition(foe, 'sugerido'));
+  assert.equal(ilvan.concentrating, null);
+  // Qualquer criatura que ouça serve: o lobo também aceita.
+  const { enc: e2, ilvan: i2, foes: f2 } = magoDoLote({ magias: ['sugestao'], foes: [['lobo', { x: 6, y: 8 }]] });
+  assert.equal(e2.canCast(i2, 'sugestao', { target: f2[0] }).ok, true);
+});
+
+teste('Luz do Dia: ilumina o breu num raio de 18 m e dissipa a Escuridão (círculo ≤ 3) que toca', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['luzDoDia', 'escuridao'] });
+  enc.field.luz = new Array(144).fill(0);
+  dara.pos = { x: 2, y: 2 };
+  const alvo = { x: 11, y: 11 };
+  assert.equal(comoVe(enc, dara, alvo), 0, 'no breu');
+  assert.ok(enc.castSpell(ilvan, 'escuridao', { point: { x: 9, y: 9 } }).ok);
+  assert.ok(enc.zonas.some((z) => z.obscuro === 'magica'));
+  liberarAcao(ilvan);
+  assert.ok(enc.castSpell(ilvan, 'luzDoDia', { point: { x: 8, y: 8 } }).ok);
+  assert.ok(!enc.zonas.some((z) => z.obscuro === 'magica'), 'a luz do dia dissipou a escuridão');
+  assert.equal(comoVe(enc, dara, alvo), 2, 'em plena luz');
+  assert.ok(enc.zonas.find((z) => z.luz).luz.claro === 60);
+});
+
+teste('Remover Maldição: tira Rogar Maldição e Bruxaria de uma vez, e solta quem as mantinha', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['removerMaldicao'] });
+  const foe = foes[0];
+  addCondition(dara, 'rogado', { source: foe.id });
+  addCondition(dara, 'bruxaria', { source: foe.id });
+  foe.concentrating = { spellId: 'rogarMaldicao', condition: 'rogado', targets: [dara], rounds: 10 };
+  assert.equal(enc.canCast(ilvan, 'removerMaldicao', { target: foe }).ok, false, 'só aliado');
+  assert.ok(enc.castSpell(ilvan, 'removerMaldicao', { target: dara }).ok);
+  assert.ok(!hasCondition(dara, 'rogado') && !hasCondition(dara, 'bruxaria'));
+  assert.equal(foe.concentrating, null, 'sem maldição, a concentração do inimigo cai');
+  liberarAcao(ilvan);
+  const r = enc.canCast(ilvan, 'removerMaldicao', { target: dara });
+  assert.equal(r.ok, false, 'sem maldição, não há o que tirar');
+  assert.match(r.why, /amaldiçoado/);
+});
+
+teste('Crescer Plantas: o terreno custa 4×, poupa as casas dos aliados e o chão que não é natural', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['crescerPlantas'], foes: [['bandidoMachadeiro', { x: 9, y: 9 }]] });
+  enc.field.surfaces[5 * 12 + 3] = SUPERFICIES.indexOf('estrada'); // (3,5) é estrada
+  assert.ok(enc.castSpell(ilvan, 'crescerPlantas', { point: { x: 5, y: 5 } }).ok);
+  const z = enc.zonas.find((q) => q.dificil4);
+  assert.ok(z && z.casas.size > 100, 'o raio de 30 m cobre o mapa');
+  assert.ok(!z.casas.has('3,5'), 'estrada não vira mato');
+  assert.ok(!z.casas.has('5,5') && !z.casas.has('6,6'), 'quem está lá fica de fora');
+  assert.equal(enc.field.costOf(8, 8), 20, 'cada 1,5 m custa 6 m');
+  assert.equal(enc.field.costOf(3, 5), 5, 'na estrada anda-se normal');
+  const foe = foes[0];
+  foe.movementLeftFt = 30;
+  const alcance = enc.reachableFor(foe);
+  const longe = [...alcance.values()].filter((n) => distanceFt(foe.pos, n) > 5);
+  assert.equal(longe.length, 0, '30 pés dão uma casa só no mato cerrado');
+  enc.desfazerZona(z);
+  assert.equal(enc.field.costOf(8, 8), 5, 'ao acabar, o custo volta');
+});
+
+teste('Voo: 18 m, ignora terreno difícil e degraus, e as zonas do chão; ao cair da concentração, cai 1d6 e fica caído', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['voo'] });
+  for (const x of [2, 3, 4]) for (let y = 0; y < 12; y++) enc.field.tiles[y * 12 + x] = 2; // três colunas de entulho no caminho
+  dara.pos = { x: 5, y: 5 };
+  dara.movementLeftFt = 30;
+  assert.ok(!enc.reachableFor(dara).has('1,5'), 'a pé, o entulho segura');
+  assert.ok(enc.castSpell(ilvan, 'voo', { target: dara, targets: [dara] }).ok);
+  assert.ok(hasCondition(dara, 'voando'));
+  assert.equal(dara.movementLeftFt, 60, 'o voo já vale neste turno: 18 m');
+  assert.ok(enc.reachableFor(dara).has('1,5'), 'voando, passa por cima');
+  assert.equal(enc.field.voando, false, 'o campo volta ao normal');
+  // Zona do chão (Graxa) não pega quem voa.
+  const graxa = enc.criarZona(ilvan, getSpell('graxa'), [{ x: 5, y: 5 }], 15, { centro: { x: 5, y: 5 }, circulo: 1 });
+  resistenciasDao(enc, false);
+  assert.equal(enc.resistirAZona(dara, graxa, 'começa o turno'), true, 'voando, a graxa não o derruba');
+  // A concentração cai: ele cai.
+  const hp = dara.hp;
+  enc.dropConcentration(ilvan);
+  assert.ok(!hasCondition(dara, 'voando'));
+  assert.ok(dara.hp < hp && hp - dara.hp <= 6, '1d6 de queda');
+  assert.ok(hasCondition(dara, 'caido'));
+  tirarCondicao(dara, 'caido');
+  assert.equal(enc.resistirAZona(dara, graxa, 'começa o turno'), false, 'no chão, a graxa pega');
+});
+
+
+
+teste('Lote 11 (revisão): prévia de zona inofensiva vazia; prévia do Crescer Plantas sem as casas dos aliados', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['luzDoDia', 'crescerPlantas'], foes: [['bandidoMachadeiro', { x: 8, y: 8 }]] });
+  const area = enc.areaDaMagia(ilvan, getSpell('luzDoDia'), { x: 8, y: 8 }) ?? [];
+  assert.ok(area.length > 0);
+  assert.deepEqual(enc.afetadosPelaArea(ilvan, getSpell('luzDoDia'), area, 3), [], 'luz não "afeta" ninguém');
+  const cp = getSpell('crescerPlantas');
+  const casas = enc.casasDaZona(ilvan, cp, enc.areaDaMagia(ilvan, cp, { x: 5, y: 5 }) ?? []);
+  assert.ok(casas.length > 50);
+  const tem = (x, y) => casas.some((t) => t.x === x && t.y === y);
+  assert.ok(!tem(ilvan.pos.x, ilvan.pos.y) && !tem(dara.pos.x, dara.pos.y), 'a prévia poupa os aliados');
+  assert.ok(tem(foes[0].pos.x, foes[0].pos.y), 'o inimigo fica dentro');
+});
+
+teste('Ilusão Menor: o inimigo colado nela anda até o alvo antes de examinar', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ truques: ['ilusaoMenor'], foes: [['bandidoMachadeiro', { x: 9, y: 5 }]] });
+  const foe = foes[0];
+  const z = enc.criarZona(ilvan, getSpell('ilusaoMenor'), [{ x: 8, y: 5 }], 14, { centro: { x: 8, y: 5 }, circulo: 0 });
+  enc.combatants.filter((c) => c !== foe).forEach((c, i) => { c.pos = { x: 0, y: i + 6 }; });
+  dara.pos = { x: 11, y: 5 };
+  foe.pos = { x: 9, y: 5 };
+  enc.beginSide('foes');
+  takeMonsterTurn(enc, foe);
+  assert.ok(Math.abs(foe.pos.x - 11) + Math.abs(foe.pos.y - 5) <= 2, 'foi até a Dara');
+  assert.ok(enc.zonas.includes(z), 'não gastou o turno examinando');
+});
+
+teste('Dissipar Magia em Aprimorar Atributo (Urso) tira os PV temporários', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['aprimorarAtributo', 'dissiparMagia'] });
+  assert.ok(enc.castSpell(ilvan, 'aprimorarAtributo', { target: dara, targets: [dara] }).ok);
+  assert.ok(dara.tempHp > 0);
+  liberarAcao(ilvan);
+  assert.ok(enc.castSpell(ilvan, 'dissiparMagia', { target: dara }).ok);
+  assert.ok(!hasCondition(dara, 'aprimorado'));
+  assert.equal(dara.tempHp, 0, 'os PV temporários vão junto');
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
-if (falhas) process.exit(1);
+if (falhas) process.exit(1);

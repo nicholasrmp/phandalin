@@ -69,9 +69,10 @@ export function criarRuaMarcarrubra(app, config) {
         conta: {
           ao: (ctx) => { ctx.flags.sabeDoCajavidro = true; },
           fala: [
-            'Tá! O chefe é o Cajavidro, um mago — chamam assim por causa do cajado de vidro. Ninguém sabe o nome dele. Ele fica no lado oeste do esconderijo, embaixo da Mansão Tresendar.',
-            'Quem paga é um tal de Aranha Negra: quer os aventureiros assustados e o povo da vila quieto. Mandou uns bugbears para reforçar.',
-            'Lá embaixo, na parte funda, tem um monstro… todo olho. E os presos ficam perto das criptas velhas, vigiados por esqueletos.',
+            '…Tá bom, tá bom! Lá embaixo da mansão tem gente presa, perto dos túmulos velhos. Quem vigia são uns esqueletos. Eu não chego perto daquilo, juro.',
+            'O chefe? A gente chama de Cajavidro, por causa do cajado — é de vidro, e brilha. É mago. Fica na ala oeste, lá embaixo. Nome de verdade, ninguém sabe.',
+            'E tem… uma coisa. Na parte mais funda, numa fenda. Um olho só, do tamanho de um escudo. Fala dentro da cabeça da gente. Eu desço o mínimo possível.',
+            'Ele recebe ordem de alguém. Um tal de Aranha Negra, que quer a vila de cabeça baixa e aventureiro bem longe. Mandou até uns bugbears para ajudar.',
           ],
           opcoes: [{ texto: 'Entregar ao chefe da vila.', fim: 'preso' }],
         },
@@ -100,7 +101,7 @@ export function criarRuaMarcarrubra(app, config) {
       const preso = enc.combatants.find((f) => f.side === 'foes' && f.capturado && !f.dead);
       if (preso) {
         await interrogar(preso);
-        if (vila) (vila.pistas ??= []).push('Um Marcarrubra preso contou: o Cajavidro, mago do cajado de vidro, fica no lado oeste do esconderijo embaixo da Mansão Tresendar; um "monstro todo olho" guarda a parte funda; os presos ficam perto das criptas, vigiados por esqueletos; quem paga é o Aranha Negra.');
+        if (vila) (vila.pistas ??= []).push('O Marcarrubra capturado falou: há presos perto das criptas, sob guarda de esqueletos; uma criatura de um olho só vive numa fenda funda; o chefe, Cajavidro, é um mago de cajado de vidro na ala oeste; e quem dá as ordens é o Aranha Negra.');
       }
       await narrar(root, { formato: 'painel', paginas: [{ texto: [
         estado.fugiu ? 'O último correu para a Mansão Tresendar. Agora eles sabem que vocês existem.' : 'A rua fica quieta. Algumas janelas se abrem, devagar.',

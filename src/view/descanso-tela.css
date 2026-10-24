@@ -78,3 +78,7 @@
   .descanso-ultimo.pulso { animation: none; }
   .descanso-vida i { transition: none; }
 }
+
+/* Oração de Cura: uma segunda linha sob o herói, só para quem a tem pronta. */
+.descanso-oracao { grid-column: 2 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.descanso-oracao:empty { display: none; }
