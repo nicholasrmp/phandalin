@@ -112,7 +112,7 @@ export function narrar(root, { formato = 'tela', paginas, escolhas = null, pular
       }
       const corpo = [
         p.teste && el('p', { class: `narrativa-teste ${p.teste.passou ? 'passou' : 'falhou'}` },
-          `${p.teste.quem} · ${p.teste.pericia}: ${p.teste.total} contra CD ${p.teste.cd} — ${p.teste.passou ? 'sucesso' : 'falha'}`),
+          `${p.teste.quem} · ${p.teste.pericia}: ${p.teste.total} contra CD ${p.teste.cd} — ${p.teste.passou ? 'sucesso' : 'falha'}${p.teste.fontes?.length ? ` (${p.teste.fontes.join('; ')})` : ''}`),
         ...(p.texto ?? []).map((t) => (typeof t === 'string'
           ? el('p', {}, t)
           : el('p', { class: 'narrativa-fala' }, el('strong', {}, t.nome), ' ', t.texto))),

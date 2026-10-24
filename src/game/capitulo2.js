@@ -52,6 +52,8 @@ import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, hasCondition } from '../rules/conditions.js';
 import { darXp, proximoNivelEm } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
+import { ctxDe } from './magias-fora.js';
+import { rolarTeste, ativaDe } from '../rules/utilidade.js';
 
 const MOVIMENTO = 60;
 
@@ -110,9 +112,11 @@ export function criarCapitulo2(app, config) {
     const b = (c.bag ??= []).find((i) => i.id === id);
     if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
   };
+  // Os testes passam pelas magias de utilidade: Orientação soma 1d4, Falar com Animais dá vantagem.
   const teste = (c, pericia, cd) => {
-    const r = d20(enc.rng, skillBonus(c, pericia));
-    return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
+    const x = ctxDe(app, enc);
+    const r = rolarTeste(x.estado, x.herois(), enc.rng, c, pericia, cd);
+    return { quem: r.quem, pericia: r.pericia, total: r.total, cd, passou: r.passou, fontes: r.fontes };
   };
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
 
@@ -347,6 +351,13 @@ export function criarCapitulo2(app, config) {
     return async () => {
       if (comida) comida.qtd -= 1;
       const t = teste(c, 'lidarComAnimais', cd);
+      // Falar com Animais: além da vantagem, dá para ouvir o que os lobos rosnam.
+      const x = ctxDe(app, enc);
+      if (ativaDe(x.estado, x.herois(), 'falarComAnimais')) {
+        await narrar(root, { formato: 'painel', paginas: [{ titulo: 'Falar com Animais', texto: [
+          `${c.name} entende o rosnado: "corrente machuca… carne seca cheira bem… o grande de pelo no queixo vai voltar… não grita, não corre, o grande de pelo não gosta de barulho".`,
+        ] }] });
+      }
       enc.say('acao', `${c.name} · Lidar com Animais: ${t.total} contra CD ${cd} — ${t.passou ? 'sucesso' : 'falha'}`);
       if (t.passou) {
         g.tregua = true;
@@ -850,7 +861,7 @@ export function criarCapitulo2(app, config) {
       const comida = (c.bag ?? []).some((i) => i.id === 'racoes' && i.qtd > 0);
       ops.push({
         rotulo: 'Acalmar os lobos', icone: 'acao-ajudar',
-        detalhe: `Lidar com Animais, CD ${comida ? '10 (com comida)' : '15'}`,
+        detalhe: `Lidar com Animais, CD ${comida ? '10 (com comida)' : '15'}${ativaDe(ctxDe(app, enc).estado, herois(), 'falarComAnimais') ? ' · vantagem (Falar com Animais)' : ''}`,
         motivo: longe(30), fazer: acalmarLobos(c),
       });
     }
@@ -890,6 +901,25 @@ export function criarCapitulo2(app, config) {
     return ops;
   }
 
+  // O que a cena aceita das magias de utilidade (`game/magias-fora.js`): o baú de Klarg tem duas
+  // poções de cura, e o Detectar Magia as acende no chão.
+  function ganchosMagicos() {
+    if (!estado.explorando || estado.bauAchado) return [];
+    const f = enc.field;
+    const out = [];
+    for (let y = 0; y < f.h; y++) {
+      for (let x = 0; x < f.w; x++) {
+        if (DENTRO_DO_KLARG({ x, y }) && f.surfaceAt(x, y) === 'bau') {
+          out.push({
+            id: `bau:${x},${y}`, tipo: 'magico', x, y, nome: 'O baú entre os suprimentos',
+            aura: { escola: 'evocação', texto: 'Duas auras pequenas e iguais lá dentro, de frasquinhos que curam. Nada mais de mágico no baú.' },
+          });
+        }
+      }
+    }
+    return out;
+  }
+
   function motivoSemDescanso(tipo) {
     if (!estado.explorando) return 'só fora da luta';
     if (tipo === 'longo' && !grupos.chefe.vencido) return 'com Klarg lá dentro, ninguém dorme oito horas aqui';
@@ -901,6 +931,7 @@ export function criarCapitulo2(app, config) {
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
+    ganchosMagicos,
     depoisDeMover,
     fimDoCombate,
     evento,

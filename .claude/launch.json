@@ -6,12 +6,6 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5190
-    },
-    {
-      "name": "phandalin-estatico",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "preview", "--outDir", "C:/Users/Niczin/AppData/Local/Temp/claude/C--Users-Niczin-Downloads-Phandalin/023fd5fd-527b-4a27-b77b-3ab1c0601c94/scratchpad/dist-dev", "--port", "5199", "--strictPort"],
-      "port": 5199
     }
   ]
 }

@@ -88,6 +88,35 @@ CONJUNTOS = {
                '10). deep still dark blue-green pool water with a faint reflection.',
     # O topo da rocha (a massa entre os corredores, vista de cima), o entulho
     # e as tabuas da ponte.
+    # O porao da Mansao Tresendar: lajes quentes (o piso da caverna e a
+    # referencia de tom), a agua da cisterna e o fosso aberto.
+    'masmorra': ESTILO + ' Cellar under a ruined manor, dim and warm, seen by torchlight. '
+                '1). large square grey-brown flagstones with thin dark mortar joints, worn smooth, uniform. '
+                '2). large square grey-brown flagstones with dark mortar joints and a few tiny chips. '
+                '3). large square grey-brown flagstones, two slabs of slightly different tone. '
+                '4). large square grey-brown flagstones with uneven joints. '
+                '5). large square grey-brown flagstones, very worn and dusty. '
+                '6). large square grey-brown flagstones with one thin diagonal crack. '
+                '7). large square grey-brown flagstones with a small dark damp moss patch in the middle. '
+                '8). large square grey-brown flagstones with a little fine grit. '
+                '9). still dark green-black cistern water, flat, a few pale highlight pixels. '
+                '10). still dark green-black cistern water with one faint ring. '
+                '11). bottomless near-black pit, almost entirely black with a few dark grey flecks. '
+                '12). bottomless near-black pit, black with faint dark brown bands.',
+    # Faces laterais do porao (montar-faces.py): BLOCOS com face, todos numa
+    # chamada para sairem no mesmo tom. Pedidos um a um, os de alvenaria
+    # vieram creme, roxo e rosa.
+    'paredes': ESTILO.replace('No objects,', 'Each tile is a solid block with its two side faces visible. No objects,') + ' '
+               '1). cut-stone masonry block, warm grey-brown hewn stone courses with thin dark mortar, uniform. '
+               '2). cut-stone masonry block, warm grey-brown courses, one slightly cracked stone. '
+               '3). cut-stone masonry block, warm grey-brown courses, one darker repaired stone. '
+               '4). cut-stone masonry block, warm grey-brown courses, slightly worn edges. '
+               '5). cut-stone masonry block, warm grey-brown courses, a few chipped stones. '
+               '6). cut-stone masonry block, warm grey-brown courses, faint dust. '
+               '7). natural cave rock cliff block, dark cold grey stone, rough vertical strata. '
+               '8). natural cave rock cliff block, dark cold grey stone, a long crack. '
+               '9). natural cave rock cliff block, dark cold grey stone, small ledges. '
+               '10). natural cave rock cliff block, dark cold grey stone, rough and uneven.',
     'rocha': ESTILO + ' Underground cave, dim and cool, seen by torchlight. '
              '1). top of solid dark grey cave rock, rough and uneven, uniform. '
              '2). top of solid dark grey cave rock with a few small cracks. '
@@ -97,6 +126,14 @@ CONJUNTOS = {
              '6). cave floor covered in loose broken rubble, a few larger chunks. '
              '7). weathered wooden bridge planks laid side by side, dark brown, uniform. '
              '8). weathered wooden bridge planks laid side by side with a few iron nails.',
+}
+
+
+# Paleta forcada por conjunto. Paredes: alvenaria quente (topo claro, faces
+# do porao) e rocha fria escura -- nunca azul saturado.
+PALETAS = {
+    'paredes': ['#1e1c1a', '#2a2724', '#3d3a35', '#57534b', '#6e695d', '#8d8878', '#a39e8c',
+                '#1f2428', '#2c3035', '#3b3f44', '#4d5156', '#62666a'],
 }
 
 
@@ -135,6 +172,8 @@ def main():
     p.add_argument('--go', action='store_true')
     p.add_argument('--buscar', metavar='TILE_ID', help='so baixa um pedido ja feito')
     p.add_argument('--semente', type=int, default=20261024)
+    p.add_argument('--profundidade', type=float, default=0,
+                   help='tile_depth_ratio: 0 sem face lateral; os blocos de parede pedem face')
     p.add_argument('--angulo', type=float, default=None,
                    help='tile_view_angle; 30 da o losango 2:1 (seno de 30 = 0,5)')
     a = p.parse_args()
@@ -153,8 +192,8 @@ def main():
         # de 158 a 311 pixels faltando dentro da particao exata. Esticar para
         # 32 seria escala quebrada (1,23x), que destroi pixel art; mudar o TH
         # do motor mexeria em criatura, camera e clique. Entao se pede certo.
-        'tile_height': 32,
-        'tile_depth_ratio': 0,
+        'tile_height': 32 if not a.profundidade else 64,
+        'tile_depth_ratio': a.profundidade,
         # A segunda leva provou que `tile_height` so define a LONA: veio 64x32,
         # mas o losango dentro dela tinha 22 px de altura. O achatamento vem do
         # angulo da camera. Um losango 2:1 e um quadrado girado 45 graus e
@@ -165,6 +204,8 @@ def main():
     }
     if a.angulo is not None:
         corpo['tile_view_angle'] = a.angulo
+    if a.conjunto in PALETAS:
+        corpo['target_palette'] = {'colors': PALETAS[a.conjunto]}
     _, b = chamar(token, 'GET', '/balance')
     antes = b['subscription']['generations']
     print('PLANO')

@@ -37,12 +37,13 @@
 //    rola sozinho: quando o turno volta, ninguém sabe o que acabou de doer.
 
 import { makePortrait } from '../art/sheet.js';
-import { iconCanvas, iconeDeArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
+import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
 import { CONDITIONS, hasCondition } from '../rules/conditions.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
 import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
+import { UTIL_FORA } from '../rules/utilidade.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
 import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
 import { formatModifier } from '../core/dice.js';
@@ -96,8 +97,8 @@ const CONDICOES_BOAS = new Set(['abencoado', 'esquivando']);
 // sobrou foi agrupado para a mão esquerda: F/G/H para as armas, na ordem em
 // que elas aparecem, e R/X/C/T para as ações comuns.
 const TECLAS_ARMA = ['f', 'g', 'h'];
-const TECLAS_ACAO = { dash: 'r', dodge: 'x', disengage: 'c', stabilize: 't', standUp: 'z', escape: 'y' };
-const TECLAS_FEATURE = ['v', 'b', 'n', 'j'];
+const TECLAS_ACAO = { dash: 'r', dodge: 'x', disengage: 'c', stabilize: 't', standUp: 'z', escape: 'y', salto: 'j' };
+const TECLAS_FEATURE = ['v', 'b', 'n', 'k'];
 
 /** A gema de custo no canto do azulejo, pelo custo que a dica declara. */
 const CUSTO_GEMA = { 'Ação': 'acao', 'Ação bônus': 'bonus' };
@@ -901,6 +902,26 @@ export class Hud {
   tilesAtaques(enc, c, mode, alvo = null) {
     const tiles = (c.weapons ?? []).map((wid, i) => {
       const w = WEAPONS[wid];
+      // Arma guardada não ataca: o azulejo SACA. Custa a interação gratuita
+      // do turno, ou a ação se ela já foi gasta (`custoDeInteracao`).
+      if (!enc.empunha(c, wid)) {
+        const custo = enc.custoDeInteracao(c);
+        const sacar = () => this.handlers.onAction?.({ kind: 'sacar', weaponId: wid });
+        return this.tile(iconeDaArma(wid, w), {
+          tecla: this.reservarTecla(TECLAS_ARMA[i], sacar, !custo),
+          desabilitado: !custo,
+          classe: 'guardada',
+          onClick: sacar,
+          dica: {
+            nome: `Sacar ${w.name}`,
+            tipo: 'arma guardada',
+            texto: `Põe ${w.name} na mão principal; a arma de agora volta para a bainha. Só se ataca com a arma na mão.`,
+            custo: custo === 'acao' ? 'Ação' : null,
+            linhas: [['Custo', custo === 'interacao' ? 'interação gratuita do turno' : custo === 'acao' ? 'a ação (a interação gratuita já foi usada)' : custo === 'livre' ? 'nenhum' : 'nada sobrou neste turno']],
+            aviso: custo ? null : 'A interação gratuita e a ação deste turno já foram usadas',
+          },
+        });
+      }
       const run = () => this.handlers.onAction?.({ kind: 'attack', weaponId: wid });
       const tecla = this.reservarTecla(TECLAS_ARMA[i], run, !enc.podeAtacar(c));
       // O perfil é a arma NAS MÃOS DESTE personagem: a dica mostrava "1d8
@@ -930,7 +951,7 @@ export class Hud {
         if (!prev.foraDeAlcance && !prev.semVisao) linhas.push(['Dano esperado', prev.esperado.toFixed(1)]);
       }
 
-      return this.tile(iconeDeArma(w.art, w.name), {
+      return this.tile(iconeDaArma(wid, w), {
         tecla,
         ativo: mode?.kind === 'attack' && mode.weaponId === wid,
         desabilitado: !enc.podeAtacar(c),
@@ -953,7 +974,7 @@ export class Hud {
   tilesComuns(enc, c, mode) {
     const tiles = [];
     let proximaExtra = 0;
-    const comum = (icone, nome, texto, custo, acao, desabilitado, carga = null) => {
+    const comum = (icone, nome, texto, custo, acao, desabilitado, carga = null, motivo = null) => {
       const run = () => this.handlers.onAction?.(acao);
       // Ação comum tem letra fixa (R, X, C, T) e habilidade de classe pega a
       // próxima do pote: fixar V para "Retomar o Fôlego" e V para "Ação
@@ -977,7 +998,7 @@ export class Hud {
         dica: {
           nome, texto, custo,
           linhas: carga ? [['Cargas', `${restam} de ${total}`]] : null,
-          aviso: desabilitado ? 'Indisponível agora' : null,
+          aviso: desabilitado ? (motivo ?? 'Indisponível agora') : null,
         },
       }));
     };
@@ -991,8 +1012,29 @@ export class Hud {
       comum('levantar', 'Levantar-se', `Fica de pé gastando metade do deslocamento (${custo} pés). Caído, você rasteja a meio passo e ataca com desvantagem.`,
         'Movimento', { kind: 'standUp' }, c.movementLeftFt < custo || custo === 0);
     }
+    // Saltar por cima da tocaia, do caixote ou do buraco: só aparece quando
+    // há por onde (`destinosDoSalto`).
+    if (!enc.over && enc.destinosDoSalto(c).size) {
+      const pes = enc.alcanceDoSalto(c);
+      comum('pular', 'Saltar', `Salto em distância de até ${pes} pés por cima de obstáculo baixo, buraco ou terreno difícil (Força em pés com 3 m de corrida antes; metade parado). Gasta o deslocamento; obstáculo pede Atletismo CD 10, pousar em terreno difícil, Acrobacia CD 10.`,
+        'Movimento', { kind: 'salto' }, false);
+    }
     if (hasCondition(c, 'agarrado') || hasCondition(c, 'contido') || hasCondition(c, 'presoPorVinhas')) {
       comum('escapar', 'Escapar', 'Teste de Atletismo ou Acrobacia (o melhor) contra a CD de quem prende.', 'Ação', { kind: 'escape' }, c.actionUsed);
+    }
+
+    // Examinar uma ilusão: a imagem do outro lado (Ilusão Menor, Imagem
+    // Silenciosa/Maior) ou a Força Fantasmagórica que prende o próprio herói.
+    const imagens = (enc.zonas ?? []).filter((z) => z.ilusao && z.lado !== c.side);
+    if (imagens.length) {
+      const perto = enc.ilusoesAoAlcance(c).length > 0;
+      const motivo = c.actionUsed ? 'A ação deste turno já foi usada' : !perto ? 'Chegue a 1,5 m da imagem' : null;
+      comum('procurar', 'Examinar a ilusão', 'Teste de Investigação (INT) contra a CD da magia. Se passar, a imagem some. Tem de estar a 1,5 m dela.',
+        'Ação', { kind: 'examinar' }, Boolean(motivo), null, motivo);
+    }
+    if (hasCondition(c, 'iludido')) {
+      comum('procurar', 'Investigar a ilusão', 'Teste de Investigação (INT) contra a CD de quem a lançou. Se passar, a Força Fantasmagórica acaba em você.',
+        'Ação', { kind: 'investigar' }, c.actionUsed, null, c.actionUsed ? 'A ação deste turno já foi usada' : null);
     }
 
     // O último campo é o recurso de `c.resources` que a habilidade gasta.
@@ -1004,9 +1046,9 @@ export class Hud {
     for (const f of c.features ?? []) {
       // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.
       if (f === 'cunningAction') {
-        comum('correr', 'Ação Ardilosa: Disparada', 'Dobra o deslocamento como ação bônus.', 'Ação bônus',
+        comum('ardilosaDisparada', 'Ação Ardilosa: Disparada', 'Dobra o deslocamento como ação bônus.', 'Ação bônus',
           { kind: 'feature', featureId: f, modo: 'disparada' }, c.bonusUsed);
-        comum('desengajar', 'Ação Ardilosa: Desengajar', 'Sai de perto sem ataque de oportunidade, como ação bônus.', 'Ação bônus',
+        comum('ardilosaDesengajar', 'Ação Ardilosa: Desengajar', 'Sai de perto sem ataque de oportunidade, como ação bônus.', 'Ação bônus',
           { kind: 'feature', featureId: f, modo: 'desengajar' }, c.bonusUsed);
         continue;
       }
@@ -1241,7 +1283,8 @@ export class Hud {
         const repete = Boolean(s.reuso && c.magiasAtivas?.[sid]);
         const bonus = repete ? s.reuso === 'bonus' : s.castTime === 'bonus';
         const gasto = bonus ? c.bonusUsed : c.actionUsed;
-        const desabilitado = (semSlot && !repete) || gasto || Boolean(s.foraDeCombate);
+        const foraDoCombate = Boolean(this.handlers.explorando?.() && (s.soFora || UTIL_FORA.has(sid)));
+        const desabilitado = foraDoCombate ? semSlot && s.level > 0 : (semSlot && !repete) || gasto || Boolean(s.foraDeCombate || s.soFora);
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
         return {
           sid,
@@ -1269,8 +1312,8 @@ export class Hud {
                 s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
               ],
               texto: s.desc,
-              custo: repete ? `${bonus ? 'Ação bônus' : 'Ação'} · repetir, sem espaço` : s.foraDeCombate ? '10 minutos' : bonus ? 'Ação bônus' : 'Ação',
-              aviso: s.foraDeCombate ? 'Só fora de combate, no descanso' : semSlot && !repete ? `Sem espaço de ${s.level}º círculo ou maior` : gasto ? 'Recurso do turno já usado' : null,
+              custo: repete ? `${bonus ? 'Ação bônus' : 'Ação'} · repetir, sem espaço` : foraDoCombate ? 'Fora de combate · pelo relógio' : s.foraDeCombate ? '10 minutos' : s.soFora ? 'Utilidade' : bonus ? 'Ação bônus' : 'Ação',
+              aviso: foraDoCombate ? (semSlot && s.level > 0 ? `Sem espaço de ${s.level}º círculo ou maior` : 'Conjura agora: gasta espaço e o tempo passa') : s.soFora ? 'Só fora de combate (explorando e conversando)' : s.foraDeCombate ? 'Só fora de combate, no descanso' : semSlot && !repete ? `Sem espaço de ${s.level}º círculo ou maior` : gasto ? 'Recurso do turno já usado' : null,
             },
           }), s.level),
         };

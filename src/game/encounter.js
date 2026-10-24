@@ -177,7 +177,9 @@ const PREDIOS_RUA = [
   { tipo: 'casa', x: 4, y: 0, olha: { dx: 0, dy: 1 }, variante: 'a' },
   { tipo: 'casa', x: 9, y: 0, olha: { dx: 0, dy: 1 }, variante: 'b' },
   { tipo: 'taverna', x: 14, y: 0, olha: { dx: 0, dy: 1 } },
-  { tipo: 'casa', x: 3, y: 8, olha: { dx: 0, dy: -1 }, variante: 'b' },
+  // Ao sul, na frente da câmera, só a casa baixa: a de enxaimel é alta e
+  // larga demais e cobria metade do grupo na rua.
+  { tipo: 'casa', x: 3, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
   { tipo: 'casa', x: 14, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
 ];
 

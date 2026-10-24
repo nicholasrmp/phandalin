@@ -697,11 +697,27 @@ const ACAO_DO_HUD = {
   surto: 'classe-actionSurge',
   ardilosa: 'classe-cunningAction',
   levantar: 'acao-levantarSe',
+  pular: 'acao-saltar',
   preservar: 'classe-preserveLife',
+};
+// Enquanto o desenho próprio não existe, o de antes.
+const ACAO_RESERVA = {
+  pular: 'magia-salto',
+  ardilosaDisparada: 'acao-disparada',
+  ardilosaDesengajar: 'acao-desengajar',
 };
 export function iconeDeAcao(nome) {
   const novo = ACAO_DO_HUD[nome] ?? `acao-${nome}`;
-  return temIcone(novo) ? novo : nome;
+  if (temIcone(novo)) return novo;
+  return ACAO_RESERVA[nome] ?? nome;
+}
+
+/**
+ * O ícone de UMA arma pelo id: o do catálogo de itens (`item-<id>`, o desenho
+ * revisado de cada arma) e, se ainda não houver, o genérico da família.
+ */
+export function iconeDaArma(id, w = {}) {
+  return temIcone(`item-${id}`) ? `item-${id}` : iconeDeArma(w.art, w.name);
 }
 
 /** Ícone de uma arma, pela arte declarada no equipamento. */

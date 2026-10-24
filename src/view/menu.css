@@ -390,6 +390,8 @@
 .menu-herois-corpo:has(.menu-doze) { grid-template-columns: minmax(300px, 420px) 1fr; }
 .menu-heroi.compacto { grid-template-columns: 52px 1fr; grid-template-rows: auto auto; padding: 6px 8px; opacity: .78; }
 .menu-heroi.compacto.escolhido { opacity: 1; }
+.menu-heroi.indisponivel { opacity: .38; filter: grayscale(1); cursor: not-allowed; }
+.menu-heroi.indisponivel .menu-heroi-marca { color: var(--ink); font-weight: 700; }
 .menu-heroi.compacto .menu-heroi-retrato canvas { width: 44px !important; height: 44px !important; }
 .menu-heroi.compacto .menu-heroi-nome { font-size: 15px; }
 .menu-heroi.compacto .menu-heroi-classe { font-size: 11.5px; }

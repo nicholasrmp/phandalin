@@ -99,7 +99,7 @@ export function abrirMenuContexto(root, { x, y, titulo, subtitulo = null, alvo =
     }
     const tecla = !o.motivo && atalho < 9 ? String(++atalho) : null;
     const b = el('button', {
-      class: `menu-ctx-item${o.motivo ? ' recusada' : ''}`,
+      class: `menu-ctx-item${o.motivo ? ' recusada' : ''}${o.destaque ? ' destaque' : ''}`,
       role: 'menuitem',
       disabled: Boolean(o.motivo),
       title: o.motivo ?? null,

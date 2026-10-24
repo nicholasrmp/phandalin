@@ -939,6 +939,99 @@ export const SPELLS = {
     desc: 'Você grava uma runa explosiva numa casa ao seu alcance. Quando um inimigo seu entra nela, a runa explode numa esfera de 6 m de raio: cada criatura ali (aliados também!) faz CD de DES ou sofre 5d8 de dano, metade se passar, do tipo que você escolheu ao gravar — ácido, frio, fogo, elétrico ou trovejante (sem pedido, o jogo escolhe o que mais fere os inimigos à vista, e trovejante se empatar). A runa some ao disparar. Seus inimigos não a veem. A explosão interrompe o passo de quem pisou na runa. +1d8 por círculo acima do 3º. (Simplificação: o livro leva 1 hora para gravar; no jogo é 1 ação, sem o incenso de 200 po. Dispara por quem pisa na casa; a variante de magia armazenada não existe. Sem concentração, dura 8 horas.)',
   },
 
+  // ---- lote 13: magias de UTILIDADE (fora do combate; `rules/utilidade.js`) ----
+  //
+  // `soFora`: o motor de combate recusa; elas valem na exploração e nas conversas
+  // (menu do botão direito, barra de magias e a opção "Conjurar" das conversas).
+  // `duracaoMin`: duração em MINUTOS (o relógio do jogo, não rodadas).
+  // `ritual`: pode ser conjurada como ritual (+10 minutos, sem gastar espaço).
+
+  taumaturgia: {
+    id: 'taumaturgia', name: 'Taumaturgia', level: 0, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1,
+    desc: 'Sua voz troveja, o chão treme e as chamas das velas se curvam. No jogo: por 1 minuto você tem vantagem nos testes de Intimidação. (O livro só dá efeitos de cena, sem número; a vantagem é regra da casa. Só fora de combate.)',
+  },
+  amizade: {
+    id: 'amizade', name: 'Amizade', level: 0, school: 'encantamento', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 10, kind: 'utilidade', concentration: true, duracaoMin: 1,
+    desc: 'Por 1 minuto você tem vantagem nos testes de Carisma contra UMA criatura que não seja hostil. Quando a magia acaba, ela percebe que foi influenciada e fica hostil. Concentração. (No jogo, vale nas conversas com ela; depois, os testes sociais com ela têm desvantagem. Só fora de combate.)',
+  },
+  maoMagica: {
+    id: 'maoMagica', name: 'Mãos Mágicas', level: 0, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1,
+    desc: 'Uma mão espectral a até 9 m pega, abre, puxa ou aciona algo leve (até 5 kg): abrir uma porta destrancada, puxar um fio, apalpar o fundo de uma cisterna. Não ataca nem carrega mais que isso. (No jogo, vale nos pontos da cena que pedem um objeto a distância. Só fora de combate.)',
+  },
+  prestidigitacao: {
+    id: 'prestidigitacao', name: 'Prestidigitação', level: 0, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 10, kind: 'utilidade', duracaoMin: 60, escolhe: 'truque',
+    desc: 'Pequenos truques de feiticeiro: acender ou apagar uma tocha, limpar ou sujar algo, esquentar ou esfriar comida, soltar uma fumaça colorida, deixar uma marca ou um cheiro. No jogo, acender e apagar a tocha de um aliado de graça (sem a pederneira) é o efeito que muda alguma coisa; o resto é descrição. Só fora de combate.',
+  },
+  arteDruidica: {
+    id: 'arteDruidica', name: 'Druidismo', level: 0, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1, escolhe: 'truque',
+    desc: 'Pequenos sinais da natureza: prever o tempo das próximas 24 horas, fazer uma flor abrir, acender ou apagar uma vela ou fogueira. No jogo, prever o tempo dá a previsão do dia e acender/apagar mexe na tocha de um aliado; o resto é descrição. Só fora de combate.',
+  },
+  consertar: {
+    id: 'consertar', name: 'Consertar', level: 0, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 5, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Leva 1 minuto: refaz uma única quebra ou rasgo de até 30 cm num objeto — uma corrente partida, uma corda, uma alça, um vaso. Não conserta item mágico nem fura o limite de tamanho. (No jogo, vale nos objetos quebrados da cena. Só fora de combate.)',
+  },
+  luzesDancantes: {
+    id: 'luzesDancantes', name: 'Luzes Dançantes', level: 0, school: 'evocação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 120, kind: 'utilidade', concentration: true, duracaoMin: 1,
+    desc: 'Até quatro luzinhas flutuam ao seu redor, fraquinhas: luz clara em 3 m e penumbra por mais 3 m, por 1 minuto. Concentração. (Simplificação: no jogo as luzes acompanham quem conjurou, sem mover-se à parte. Só fora de combate; no escuro, vale como uma tocha pequena que não ocupa a mão.)',
+  },
+  mensagem: {
+    id: 'mensagem', name: 'Mensagem', level: 0, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 120, kind: 'utilidade', duracaoMin: 1,
+    desc: 'Você sussurra e só a criatura que você aponta, a até 36 m, ouve — mesmo atrás de uma porta ou parede fina. Ela pode responder em sussurro. No jogo, deixa conversar com um NPC que está longe demais para a voz normal. Só fora de combate.',
+  },
+  detectarMagia: {
+    id: 'detectarMagia', name: 'Detectar Magia', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', concentration: true, duracaoMin: 10,
+    desc: 'Por 10 minutos você sente a presença de magia a até 9 m e vê um brilho em volta do que é mágico, com a escola dela. No jogo: objetos mágicos da cena a até 9 m ficam marcados no chão e dizem a escola; os itens mágicos na mochila do grupo também respondem. Concentração. Pode ser ritual. (Simplificação: o livro não atravessa barreira grossa; aqui, só o que está à vista e no alcance. Só fora de combate.)',
+  },
+  identificar: {
+    id: 'identificar', name: 'Identificar', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 5, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Leva 1 minuto (ritual, 10): você toca um objeto e descobre o que ele é — se é mágico, a raridade e o que faz. (Simplificação: sem a pérola de 100 po do livro. No jogo, vale para qualquer item da mochila. Só fora de combate.)',
+  },
+  compreenderIdiomas: {
+    id: 'compreenderIdiomas', name: 'Compreender Idiomas', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Por 1 hora você entende qualquer idioma falado e lê qualquer texto que tocar (não decifra código nem texto mágico). No jogo, abre as falas e os escritos em idioma que o grupo não conhece: o caderno em anão, o que os goblins dizem entre si. Pode ser ritual. Só fora de combate.',
+  },
+  disfarcarSe: {
+    id: 'disfarcarSe', name: 'Disfarçar-se', level: 1, school: 'ilusão', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Por 1 hora você muda a própria aparência (altura, rosto, roupa) sem mudar o corpo: quem toca descobre. Quem examina faz Investigação contra a sua CD de magia. No jogo, vale como o manto vermelho: passa por um dos Marcarrubra para quem não olha direito, e dá vantagem em Enganação nas conversas. Só fora de combate.',
+  },
+  falarComAnimais: {
+    id: 'falarComAnimais', name: 'Falar com Animais', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 10,
+    desc: 'Por 10 minutos você entende o que os bichos dizem e pode falar com eles. Eles sabem pouco além do que cheiram e veem, e nem sempre simpatizam com você. No jogo, dá vantagem em Lidar com Animais e deixa ouvir o que a fera sabe. Pode ser ritual. Só fora de combate.',
+  },
+  abrir: {
+    id: 'abrir', name: 'Abrir', level: 2, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 60, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Uma porta, baú ou cela trancada a até 18 m se destranca sozinha (a magia solta um estrondo que se ouve a 90 m). Serve para um tipo de tranca por vez. (No jogo, vale nas fechaduras da cena e dispensa o teste; o estrondo avisa quem está perto. Só fora de combate.)',
+  },
+  detectarPensamentos: {
+    id: 'detectarPensamentos', name: 'Detectar Pensamentos', level: 2, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', concentration: true, duracaoMin: 1,
+    desc: 'Por 1 minuto você ouve os pensamentos de superfície das criaturas a até 9 m (que o entendam). Dá para sondar uma criatura: ela faz CD de SAB para impedir (e percebe a invasão). No jogo, nas conversas aparece a opção de sondar a mente do NPC. Concentração. Só fora de combate.',
+  },
+  verOInvisivel: {
+    id: 'verOInvisivel', name: 'Ver o Invisível', level: 2, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Por 1 hora você enxerga criaturas e objetos invisíveis (e o Plano Etéreo) como se fossem visíveis. No jogo, mostra quem está invisível na cena e o que a ilusão esconde. Sem concentração. Só fora de combate.',
+  },
+  falarComOsMortos: {
+    id: 'falarComOsMortos', name: 'Falar com os Mortos', level: 3, school: 'necromancia', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 10, kind: 'utilidade', duracaoMin: 10,
+    desc: 'Um cadáver com boca a até 3 m responde a até cinco perguntas, por 10 minutos, no idioma que sabia em vida, em respostas curtas e crípticas e só sobre o que sabia. Se o corpo já foi alvo desta magia nos últimos 10 dias, ela falha. Só fora de combate.',
+  },
+
 };
 
 /**
@@ -953,6 +1046,26 @@ export const APRIMORAR = {
   raposa: { hab: 'int', nome: 'Astúcia da Raposa' },
   coruja: { hab: 'wis', nome: 'Sabedoria da Coruja' },
 };
+
+/**
+ * As opções que o jogador escolhe ao conjurar: `spell.opcoes` (lista de
+ * { id, rotulo, detalhe }) ou, nas duas magias do livro que já escolhem,
+ * Aprimorar Atributo e Glifo de Proteção. Sem escolha: null.
+ */
+export function opcoesDaMagia(spell) {
+  if (spell.opcoes?.length) return spell.opcoes;
+  if (spell.escolheAtributo) {
+    const nomeHab = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' };
+    return Object.entries(APRIMORAR).map(([id, o]) => ({
+      id, rotulo: o.nome,
+      detalhe: `vantagem em ${nomeHab[o.hab]}${o.pv ? ' e 2d6 PV temporários' : ''}${o.semQueda ? ' e sem dano de queda' : ''}`,
+    }));
+  }
+  if (spell.escolheTipoDoGlifo) {
+    return ['trovejante', 'ácido', 'frio', 'fogo', 'elétrico'].map((id) => ({ id, rotulo: `Dano ${id}`, detalhe: 'o glifo explode com este tipo de dano' }));
+  }
+  return null;
+}
 
 export const getSpell = (id) => {
   const s = SPELLS[id];

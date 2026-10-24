@@ -164,7 +164,7 @@ export function aplicarAparencia(personagem) {
  * @param {{
  *   onEquipar?: (personagem: object, troca: object) => void,
  *   onFechar?: () => void,
- *   podeEquipar?: (personagem: object) => string|null,
+ *   podeEquipar?: (personagem: object, slot: string) => string|null,
  *   dica?: (node: HTMLElement, dados: object) => HTMLElement,
  * }} handlers
  */
@@ -836,7 +836,7 @@ export function criarFicha(root, handlers = {}) {
   // ---- troca de equipamento -----------------------------------------------
 
   function trocar(slot, id) {
-    const veto = handlers.podeEquipar?.(personagem);
+    const veto = handlers.podeEquipar?.(personagem, slot);
     if (veto) { aviso = veto; render(); return; }
 
     const r = equipar(personagem, slot, id);

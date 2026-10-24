@@ -52,6 +52,8 @@ import { addCondition, removeCondition, hasCondition } from '../rules/conditions
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
+import { ctxDe } from './magias-fora.js';
+import { rolarTeste, disfarcado } from '../rules/utilidade.js';
 
 const MOVIMENTO = 60;
 
@@ -115,10 +117,11 @@ export function criarMansao(app, config) {
     if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
   };
   const tem = (c, id) => (c.bag ?? []).some((i) => i.id === id && i.qtd > 0);
+  // Os testes passam pelas magias de utilidade (Orientação soma 1d4, Aprimorar Atributo dá vantagem...).
   const teste = (c, pericia, cd, vantagem = false) => {
-    let r = d20(enc.rng, skillBonus(c, pericia));
-    if (vantagem) { const r2 = d20(enc.rng, skillBonus(c, pericia)); if (r2.total > r.total) r = r2; }
-    return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
+    const x = ctxDe(app, enc);
+    const r = rolarTeste(x.estado, x.herois(), enc.rng, c, pericia, cd, { vantagem });
+    return { quem: r.quem, pericia: r.pericia, total: r.total, cd, passou: r.passou, fontes: r.fontes };
   };
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
@@ -129,7 +132,7 @@ export function criarMansao(app, config) {
   });
 
   // ------------------------------------------------------------- o mapa ----
-  const chao = SUPERFICIES.indexOf('caverna');
+  const chao = SUPERFICIES.indexOf('laje');
   function abrirCasa(x, y, h) {
     const f = enc.field;
     const i = y * f.w + x;
@@ -273,7 +276,8 @@ export function criarMansao(app, config) {
   }
 
   const nota = (f, c) => podeVer(enc, f, c) && (emiteLuz(c) || distanceFt(f.pos, c.pos) <= 30);
-  const vestido = (c) => Boolean(c.mantoVermelho);
+  // O manto vermelho ou o Disfarçar-se: para quem não olha direito, é um Marcarrubra.
+  const vestido = (c) => Boolean(c.mantoVermelho || disfarcado(ctxDe(app, enc).estado, herois(), c));
 
   // --------------------------------------------------- portas secretas ----
   /** Quem tem Percepção passiva 15 nota a porta secreta a 3 m sem procurar. */
@@ -718,6 +722,86 @@ export function criarMansao(app, config) {
     return null;
   }
 
+  // ------------------------------------------------- magias de utilidade ----
+  /**
+   * O que a cena aceita das magias de utilidade (`game/magias-fora.js`): fechaduras para o Abrir,
+   * pontos de alcance para as Mãos Mágicas e auras para o Detectar Magia.
+   */
+  function ganchosMagicos() {
+    if (!estado.explorando) return [];
+    const f = enc.field;
+    const out = [];
+    const tr = MANSAO.trancada;
+    if (!salvo.trancadaAberta) {
+      out.push({
+        id: 'trancada', tipo: 'trancada', x: tr.x, y: tr.y, nome: 'A porta trancada do depósito de armas',
+        fazer: async () => {
+          abrirTrancada();
+          await painel('A tranca estala por dentro, com um estrondo que corre pelo porão, e a porta se entreabre sozinha.');
+          app.refresh();
+        },
+      });
+    }
+    const pa = MANSAO.portas.alojamento;
+    if (!salvo.portas.includes('alojamento')) {
+      out.push({
+        id: 'alojamento', tipo: 'alcance', x: pa.x, y: pa.y, nome: 'A porta do alojamento',
+        fazer: async (h) => { abrirPorta('alojamento'); app.refresh(); await depoisDeMover(h); },
+      });
+    }
+    if (!salvo.celas) {
+      const guardado = grupos.jaulas && pendentes().includes(grupos.jaulas) ? 'os guardas ainda estão aqui' : null;
+      for (const j of Object.values(MANSAO.jaulas)) {
+        out.push({
+          id: `cela:${j.x},${j.y}`, tipo: 'trancada', x: j.x, y: j.y, nome: 'A cela', motivo: guardado,
+          fazer: async () => {
+            salvo.celas = true;
+            salvo.presosLivres = true;
+            await painel('As trancas das celas estalam juntas e as portas rangem abertas. A família sai devagar, sem acreditar.');
+            await app.conversarCom(presos[1] ?? presos[0], arvoreDendrar);
+          },
+        });
+      }
+    }
+    for (let y = 0; y < f.h; y++) {
+      for (let x = 0; x < f.w; x++) {
+        const p = { x, y };
+        const sup = f.surfaceAt(x, y);
+        if (sup === 'cisterna' && NO_PORAO(p) && !salvo.bolsa) {
+          out.push({
+            id: 'cisterna', tipo: 'alcance', x, y, nome: 'A cisterna',
+            fazer: async (h) => {
+              salvo.bolsa = true;
+              guardar(h, 'pocaoDeCura', 1); guardar(h, 'pocaoDeInvisibilidade', 1); guardar(h, 'moedaDeOuro', 50); guardar(h, 'roupaDeViagem', 1);
+              await painel(`A mão espectral tateia a água gelada, acha um fio e puxa: sobe uma bolsa de couro encerado, pingando. Dentro, roupa limpa e seca, 50 peças de ouro, uma poção de cura e outra de invisibilidade. ${h.name} guarda.`);
+            },
+          });
+          out.push({
+            id: 'cisterna-aura', tipo: 'magico', x, y, nome: 'A cisterna',
+            aura: { escola: 'ilusão e evocação', texto: 'No fundo, algo pequeno e quieto brilha em duas cores: uma de ilusão, outra de evocação. Coisa de frasquinho, não de armadilha.' },
+          });
+        }
+        if (sup === 'bau' && NO_QUARTO(p) && !salvo.bauIarno) {
+          out.push({
+            id: 'bau-iarno', tipo: 'magico', x, y, nome: 'O baú do chefe',
+            aura: { escola: 'encantamento e evocação', texto: 'Dois rolos de pergaminho lá dentro: um sussurra encantamento, o outro queima em evocação.' },
+          });
+        }
+      }
+    }
+    // Os esqueletos da cripta: uma magia velha e fria os mantém de pé.
+    const cr = grupos.cripta;
+    if (cr && pendentes().includes(cr)) {
+      for (const m of hostis(cr)) {
+        out.push({
+          id: `esq:${m.id}`, tipo: 'magico', x: m.pos.x, y: m.pos.y, nome: 'Um esqueleto encostado no sarcófago',
+          aura: { escola: 'necromancia', texto: 'Uma magia velha e fria o mantém de pé, esperando alguém que não tenha a senha nem o manto. Não é estátua.' },
+        });
+      }
+    }
+    return out;
+  }
+
   // ------------------------------------------------------ botão direito ----
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
@@ -726,7 +810,7 @@ export function criarMansao(app, config) {
     const f = enc.field;
 
     // Paredes: procurar porta secreta, e escutar atrás das portas.
-    if (sup === 'rocha') {
+    if (sup === 'rocha' || sup === 'alvenaria') {
       ops.push({
         rotulo: 'Procurar porta secreta', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 · paredes a até 3 m',
         motivo: longe(10),
@@ -827,7 +911,7 @@ export function criarMansao(app, config) {
         },
       });
     }
-    if (sup === 'poco' && NO_PORAO(tile) && !salvo.bolsa) {
+    if (sup === 'cisterna' && NO_PORAO(tile) && !salvo.bolsa) {
       const vara = tem(c, 'vara');
       ops.push({
         rotulo: 'Sondar a cisterna', icone: 'acao-procurar', detalhe: vara ? 'com a vara: acha na hora' : 'Percepção, CD 15', motivo: longe(5),
@@ -1108,6 +1192,7 @@ export function criarMansao(app, config) {
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
+    ganchosMagicos,
     interacoesDoHeroi,
     depoisDeMover,
     fimDoCombate,

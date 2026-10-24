@@ -28,7 +28,7 @@ import { atributoDoIniciado } from '../rules/talentos.js';
 /** Truques e magias de 1º círculo do Livro do Jogador: id → [nome, círculo]. */
 export const MAGIAS_INICIAIS = {
   amizade: ['Amizade', 0],
-  arteDruidica: ['Arte Druídica', 0],
+  arteDruidica: ['Druidismo', 0],
   ataqueCerteiro: ['Ataque Certeiro', 0],
   borrifoVenenoso: ['Borrifo Venenoso', 0],
   chamaSagrada: ['Chama Sagrada', 0],
@@ -38,7 +38,7 @@ export const MAGIAS_INICIAIS = {
   luz: ['Luz', 0],
   luzesDancantes: ['Luzes Dançantes', 0],
   mensagem: ['Mensagem', 0],
-  maoMagica: ['Mão Mágica', 0],
+  maoMagica: ['Mãos Mágicas', 0],
   orientacao: ['Orientação', 0],
   pouparOsMoribundos: ['Poupar os Moribundos', 0],
   prestidigitacao: ['Prestidigitação', 0],
@@ -189,12 +189,12 @@ L.patrulheiro = {
 // Só entram na escolha da subida de nível quando o herói já tem espaço delas;
 // a criação (1º nível) continua lendo `L` direto. A lista cresce com o motor.
 const ALTAS = {
-  bardo: ['silencio', 'coroaDaLoucura', 'acalmarEmocoes', 'dissiparMagia', 'aprimorarAtributo', 'forcaFantasmagorica', 'sugestao', 'crescerPlantas', 'imagemMaior', 'glifoDeProtecao'],
-  clerigo: ['silencio', 'eloDeProtecao', 'acalmarEmocoes', 'oracaoDeCura', 'dissiparMagia', 'aprimorarAtributo', 'luzDoDia', 'removerMaldicao', 'glifoDeProtecao'],
+  bardo: ['silencio', 'coroaDaLoucura', 'acalmarEmocoes', 'dissiparMagia', 'aprimorarAtributo', 'forcaFantasmagorica', 'sugestao', 'crescerPlantas', 'imagemMaior', 'glifoDeProtecao', 'abrir', 'detectarPensamentos', 'verOInvisivel', 'falarComOsMortos'],
+  clerigo: ['silencio', 'eloDeProtecao', 'acalmarEmocoes', 'oracaoDeCura', 'dissiparMagia', 'aprimorarAtributo', 'luzDoDia', 'removerMaldicao', 'glifoDeProtecao', 'falarComOsMortos'],
   druida: ['lufadaDeVento', 'muralhaDeVento', 'convocarRelampagos', 'dissiparMagia', 'visaoNoEscuro', 'aprimorarAtributo', 'luzDoDia', 'crescerPlantas', 'passoSemRastro'],
-  feiticeiro: ['escuridao', 'lufadaDeVento', 'aumentarReduzir', 'coroaDaLoucura', 'dissiparMagia', 'visaoNoEscuro', 'aprimorarAtributo', 'forcaFantasmagorica', 'sugestao', 'luzDoDia', 'voo', 'patasDeAranha', 'contramagia', 'imagemMaior'],
+  feiticeiro: ['escuridao', 'lufadaDeVento', 'aumentarReduzir', 'coroaDaLoucura', 'dissiparMagia', 'visaoNoEscuro', 'aprimorarAtributo', 'forcaFantasmagorica', 'sugestao', 'luzDoDia', 'voo', 'patasDeAranha', 'contramagia', 'imagemMaior', 'abrir', 'detectarPensamentos', 'verOInvisivel'],
   bruxo: ['escuridao', 'coroaDaLoucura', 'fomeDeHadar', 'dissiparMagia', 'sugestao', 'removerMaldicao', 'voo', 'patasDeAranha', 'contramagia', 'imagemMaior'],
-  mago: ['escuridao', 'lufadaDeVento', 'aumentarReduzir', 'coroaDaLoucura', 'dissiparMagia', 'visaoNoEscuro', 'forcaFantasmagorica', 'sugestao', 'removerMaldicao', 'voo', 'patasDeAranha', 'contramagia', 'imagemMaior', 'glifoDeProtecao'],
+  mago: ['escuridao', 'lufadaDeVento', 'aumentarReduzir', 'coroaDaLoucura', 'dissiparMagia', 'visaoNoEscuro', 'forcaFantasmagorica', 'sugestao', 'removerMaldicao', 'voo', 'patasDeAranha', 'contramagia', 'imagemMaior', 'glifoDeProtecao', 'abrir', 'detectarPensamentos', 'verOInvisivel'],
   paladino: ['eloDeProtecao', 'oracaoDeCura', 'dissiparMagia', 'luzDoDia', 'removerMaldicao'],
   patrulheiro: ['silencio', 'muralhaDeVento', 'flechaRelampago', 'visaoNoEscuro', 'luzDoDia', 'crescerPlantas', 'cordaoDeFlechas', 'passoSemRastro'],
 };

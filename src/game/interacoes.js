@@ -15,11 +15,13 @@
 import { previsaoDeAtaque, previsaoDeMagia, chanceD20 } from '../rules/odds.js';
 import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc, saveBonus, abilityMod } from '../rules/abilities.js';
-import { iconeDeArma, iconeDeMagia } from '../art/icons.js';
+import { iconeDaArma, iconeDeMagia } from '../art/icons.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { hasCondition } from '../rules/conditions.js';
 import { distanceFt, isAdjacent } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, visaoNoEscuro } from '../rules/luz.js';
+import { opcoesDeMagia, opcoesDoHeroi, ctxDe } from './magias-fora.js';
+import { falaPorMensagem } from '../rules/utilidade.js';
 
 /** O que se vê de longe, por superfície do mapa. Texto nosso. */
 export const OLHAR = {
@@ -44,6 +46,7 @@ export const OLHAR = {
   leito: ['Cama de goblin', 'Pele fedida sobre palha. Ninguém dorme bem aqui.'],
   fogueira: ['Fogueira', 'Brasa viva. Pisar nela queima; cair nela queima mais.'],
   bau: ['Um baú', 'Madeira com cinta de ferro, no meio dos caixotes.'],
+  alvenaria: ['Parede de pedra', 'Blocos lavrados e bem assentados. Alguém construiu isto para durar.'],
   mesa: ['Uma mesa', 'Madeira grossa, manchada de vinho e de cera de vela.'],
   sarcofago: ['Um sarcófago', 'Pedra lavrada, com a tampa pesada no lugar.'],
   grade: ['Grade de ferro', 'Barras grossas, chumbadas na pedra. Dá para ver, e atirar, por entre elas.'],
@@ -131,15 +134,21 @@ export function opcoesDaCasa(app, tile) {
         c && c !== occ ? `${distanceFt(c.pos, occ.pos)} pés de ${c.name}` : null].filter(Boolean),
     };
 
+    // Magias de utilidade (explorando): Falar com os Mortos, Amizade, Mensagem...
+    const magias = explorando ? opcoesDeMagia(app, c, { occ }) : [];
+
     if (occ.dead) {
       opcoes.push(olhar(occ.name, `${occ.name} está morto. ${occ.blurb ?? ''}`.trim()));
+      opcoes.push(...magias);
       return { titulo, subtitulo, alvo, opcoes };
     }
 
     if (occ.side === 'neutro' || occ.falas) {
-      const longe = c && distanceFt(c.pos, occ.pos) > 30;
+      // A Mensagem leva a voz até 36 m: ele responde baixinho.
+      const porMensagem = c && explorando && falaPorMensagem(ctxDe(app).estado, ctxDe(app).herois(), occ);
+      const longe = c && distanceFt(c.pos, occ.pos) > (porMensagem ? 120 : 30);
       opcoes.push({
-        rotulo: 'Conversar', icone: 'acao-ajudar',
+        rotulo: 'Conversar', icone: 'acao-ajudar', detalhe: porMensagem ? 'por Mensagem' : undefined,
         motivo: longe ? `longe demais para conversar — chegue a 30 pés (está a ${distanceFt(c.pos, occ.pos)})` : null,
         fazer: () => app.conversar(occ),
       });
@@ -162,7 +171,7 @@ export function opcoesDaCasa(app, tile) {
           const andar = !ranged && p.foraDeAlcance;
           opcoes.push({
             grupo: 'Atacar', rotulo: nome, motivo, alvoPrevia: occ,
-            icone: iconeDeArma(WEAPONS[w]?.art, nome),
+            icone: iconeDaArma(w, WEAPONS[w]),
             chance: andar ? null : p.chance, chanceTexto: andar ? null : pct(p.chance),
             detalhe: `${p.perfil.damage} ${p.perfil.type}${andar ? ' · anda até ele' : ''}${p.alcanceLongo ? ' · alcance longo, desvantagem' : ''}`,
             fazer: () => app.tryAttack(c, occ, w),
@@ -183,10 +192,13 @@ export function opcoesDaCasa(app, tile) {
       } else if (!vez && !explorando) {
         opcoes.push({ rotulo: 'Atacar', icone: 'acao-atacar', motivo: 'espere a vez do grupo', fazer: () => {} });
       }
+      opcoes.push(...magias);
       return { titulo, subtitulo, alvo, opcoes };
     }
 
     // Aliado.
+    opcoes.push(...magias);
+    if (occ === c && explorando) opcoes.push(...opcoesDoHeroi(app, c, occ));
     if (c !== occ && !app.capitulo?.encerrado) {
       opcoes.push({ rotulo: 'Selecionar', icone: 'acao-preparar', detalhe: 'passar o comando para ele', fazer: () => app.select(occ) });
     }
@@ -265,7 +277,18 @@ export function opcoesDaCasa(app, tile) {
   // ------------------------------------------------------- objeto / chão ----
   const [nome, texto] = OLHAR[sup] ?? OLHAR.chao;
   opcoes.push(olhar(nome, texto));
+  // Uma imagem ilusória do outro lado nesta casa: examinar gasta a ação.
+  const imagem = (app.enc?.zonas ?? []).find((z) => z.ilusao && z.lado !== c?.side && z.casas.has(`${tile.x},${tile.y}`));
+  if (imagem && c && app.enc.side === 'party') {
+    const perto = app.enc.ilusoesAoAlcance(c).includes(imagem);
+    opcoes.push({
+      rotulo: 'Examinar a ilusão', icone: 'acao-procurar', detalhe: 'Investigação contra a CD — gasta a ação',
+      motivo: c.actionUsed ? 'a ação deste turno já foi usada' : !perto ? 'longe — chegue a 1,5 m da imagem' : null,
+      fazer: () => app.chooseAction({ kind: 'examinar', zona: imagem }),
+    });
+  }
   for (const o of app.capitulo?.interacoes?.(tile, sup, c) ?? []) opcoes.push(o);
+  if (explorando) opcoes.push(...opcoesDeMagia(app, c, { tile }));
   const dist = c ? distanceFt(c.pos, tile) : null;
   return {
     titulo: nome, subtitulo: null, opcoes,

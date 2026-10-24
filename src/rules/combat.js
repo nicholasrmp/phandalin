@@ -18,7 +18,7 @@ import {
 } from './abilities.js';
 import {
   WEAPONS, weaponAbility, armorClass,
-  itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila, garantirInventario,
+  itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila, garantirInventario, equipar,
 } from './equipment.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, caEfetiva, CONDITIONS } from './conditions.js';
 
@@ -373,6 +373,10 @@ export class Encounter {
       c.movementLeftFt = this.speedOf(c);
       c.actionUsed = false;
       c.bonusUsed = false;
+      // A interação gratuita com um objeto (sacar a arma) e o quanto já andou
+      // neste turno (a corrida antes do salto).
+      c.interacaoUsada = false;
+      c.corridaFt = 0;
       // Lentidão tira a reação enquanto durar.
       c.reactionUsed = conditionEffects(c).semReacao;
       c.acted = false;
@@ -728,6 +732,9 @@ export class Encounter {
       this.over = true;
       this.outcome = 'vitoria';
       this.say('fim', 'Inimigos derrotados.');
+      // Fora do combate ninguém conta deslocamento: quem está acordado e no
+      // chão se levanta. Sem isto a figura ficava deitada até o descanso.
+      for (const c of this.allOf('party')) this.levantarForaDoCombate(c);
     } else if (partyUp === 0) {
       this.over = true;
       this.outcome = 'derrota';
@@ -903,6 +910,9 @@ export class Encounter {
       if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i; break; }
     }
     actor.movementLeftFt = Math.max(0, actor.movementLeftFt - custoAte(ate) * custo);
+    // A corrida antes do salto: a DISTÂNCIA andada desde a última coisa que
+    // não foi andar (`afterAction` e o próprio salto zeram).
+    actor.corridaFt = (actor.corridaFt ?? 0) + ate * 5;
     // Passo sem Rastro: o véu anda com quem o conjurou.
     this.renovarRastro();
     // `from` deixa a camada de desenho calcular para onde a figura está virada,
@@ -1512,6 +1522,198 @@ export class Encounter {
     return { ok: true };
   }
 
+  /** De pé de graça, fora do combate (quem está acordado). */
+  levantarForaDoCombate(c) {
+    if (c.dead || !hasCondition(c, 'caido') || hasCondition(c, 'inconsciente')) return;
+    removeCondition(c, 'caido');
+    this.onEvent({ type: 'standUp', actor: c });
+  }
+
+  // ---- as armas nas mãos ----------------------------------------------------
+
+  /**
+   * As armas que o personagem EMPUNHA: a da mão principal e a da secundária.
+   * Só com elas se ataca (Livro do Jogador): a espada na mochila não corta.
+   * Monstro ataca pelo bloco e não passa por aqui.
+   */
+  armasNaMao(c) {
+    if (c.attacks) return [];
+    return [...new Set([c.equippedWeapon, c.offhandWeapon].filter((id) => id && WEAPONS[id]))];
+  }
+
+  /** Pode atacar com esta arma agora? Os punhos (Brigão de Taverna) estão sempre à mão. */
+  empunha(c, weaponId) {
+    if (c.attacks || !weaponId) return true;
+    return this.armasNaMao(c).includes(weaponId) || !!WEAPONS[weaponId]?.props?.includes('desarmado');
+  }
+
+  /**
+   * O que custa mexer numa arma agora. Sacar ou guardar uma arma é a
+   * interação gratuita do turno; a segunda, no mesmo turno, gasta a ação
+   * (Usar um Objeto). Fora do combate é de graça. `null` = não dá.
+   */
+  custoDeInteracao(c) {
+    if (this.over || this.explorando) return 'livre';
+    if (!c.interacaoUsada) return 'interacao';
+    if (!c.actionUsed) return 'acao';
+    return null;
+  }
+
+  cobrarInteracao(c, custo) {
+    if (custo === 'interacao') c.interacaoUsada = true;
+    else if (custo === 'acao') {
+      c.actionUsed = true;
+      // A ação gasta assim é uma ação como outra: o Surto e a Velocidade
+      // devolvem a deles aqui também.
+      this.afterAction(c);
+    }
+  }
+
+  /**
+   * Troca a arma da mão principal por outra que ele carrega. A que sai volta
+   * para a bainha; a ficha e o desenho seguem o que está na mão.
+   */
+  sacarArma(actor, weaponId) {
+    if (actor.attacks) return { ok: false, why: 'esta criatura ataca pelo bloco' };
+    if (!(actor.weapons ?? []).includes(weaponId)) return { ok: false, why: 'não carrega essa arma' };
+    if (actor.equippedWeapon === weaponId) return { ok: false, why: 'essa arma já está na mão' };
+    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
+    const custo = this.custoDeInteracao(actor);
+    if (!custo) return { ok: false, why: 'a interação gratuita e a ação deste turno já foram usadas' };
+    const r = equipar(actor, 'maoPrincipal', weaponId);
+    if (!r.ok) return r;
+    this.cobrarInteracao(actor, custo);
+    const como = custo === 'interacao' ? 'interação gratuita' : custo === 'acao' ? 'gasta a ação' : null;
+    this.say('acao', `${actor.name} saca ${WEAPONS[weaponId].name}.`, como);
+    this.onEvent({ type: 'armaTrocada', actor });
+    return { ok: true, custo };
+  }
+
+  // ---- o salto ----------------------------------------------------------------
+
+  /**
+   * Quantos pés o salto em distância alcança (Livro do Jogador): a Força em
+   * pés com 3 m de corrida antes, metade parado. O salto conta no
+   * deslocamento, então não passa do que sobra dele.
+   */
+  alcanceDoSalto(actor) {
+    // Na exploração não há turno: conta como quem pega corrida.
+    const correu = this.explorando || (actor.corridaFt ?? 0) >= 10;
+    const forca = actor.abilities?.str ?? 10;
+    return Math.min(correu ? forca : Math.floor(forca / 2), actor.movementLeftFt ?? 0);
+  }
+
+  /**
+   * As casas onde o salto pode cair, em linha reta (reta ou diagonal), por
+   * cima do que barra o passo baixo: cobertura (a tocaia de ripas, o caixote,
+   * a carroça), terreno difícil e buraco. Parede, árvore e casa são altas
+   * demais; criatura no meio não se pula. Só vale se o salto atravessa algo:
+   * salto em chão limpo é só andar.
+   */
+  destinosDoSalto(actor) {
+    const out = new Map();
+    if ((actor.pos.f ?? 1) !== 1 || hasCondition(actor, 'caido') || conditionEffects(actor).incapacitated) return out;
+    if (this.speedOf(actor) === 0 || hasCondition(actor, 'agarrado') || hasCondition(actor, 'contido')) return out;
+    const casas = Math.floor(this.alcanceDoSalto(actor) / 5);
+    const { x: x0, y: y0 } = actor.pos;
+    // As mesmas cercas do andar: a corrente do canil e o Duelo Compelido.
+    const duelista = this.duelistaDe(actor);
+    const podePousar = (x, y) => (!actor.corrente || distanceFt(actor.corrente, { x, y }) <= actor.corrente.raioFt)
+      && (!duelista || distanceFt(duelista.pos, { x, y }) <= 30 || distanceFt(duelista.pos, { x, y }) <= distanceFt(duelista.pos, actor.pos));
+    const h0 = this.field.heightAt(x0, y0);
+    const fundo = new Set(['fosso', 'poco', 'cisterna']);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      let atravessa = false;
+      for (let n = 1; n <= casas; n++) {
+        const x = x0 + dx * n;
+        const y = y0 + dy * n;
+        const t = this.field.tileAt(x, y);
+        const h = this.field.heightAt(x, y);
+        if (t === 1 || h > h0) break;
+        const quem = this.at(x, y);
+        const pousa = n >= 2 && atravessa && !quem && h >= h0 - 1 && podePousar(x, y)
+          && (t === 0 || (t === 2 && !fundo.has(this.field.surfaceAt(x, y))));
+        if (pousa) out.set(key(x, y), { x, y, cost: n * 5, salto: true });
+        if (quem) break;
+        if (t === 2 || t === 3 || this.dificilParaPouso(actor, x, y)) atravessa = true;
+      }
+    }
+    return out;
+  }
+
+  /** Terreno difícil para quem pousa: o do mapa e o das zonas (Graxa, Espinhos). */
+  dificilParaPouso(actor, x, y) {
+    const k = key(x, y);
+    return this.field.tileAt(x, y) === 2 || !!this.field.dificeis?.has(k) || !!this.field.dificeis4?.has(k)
+      || !!this.terrenoHostil(actor)?.has?.(k);
+  }
+
+  /**
+   * Salta até `dest`. Por cima de obstáculo (cobertura): Atletismo CD 10, e
+   * quem falha bate nele e cai na casa de antes. Pousar em terreno difícil:
+   * Acrobacia CD 10, ou cai. Sair do alcance de alguém provoca o ataque de
+   * oportunidade como andar.
+   */
+  pular(actor, dest) {
+    const alvo = this.destinosDoSalto(actor).get(key(dest.x, dest.y));
+    if (!alvo) return { ok: false, why: 'não dá para saltar até lá' };
+    const origin = { ...actor.pos };
+    const dx = Math.sign(dest.x - origin.x);
+    const dy = Math.sign(dest.y - origin.y);
+    const n = alvo.cost / 5;
+    const threats = actor.disengaging ? [] : this.enemiesOf(actor).filter(
+      (e) => !e.reactionUsed && !conditionEffects(e).incapacitated
+        && this.armaDeOportunidade(e) !== undefined
+        && distanceFt(e.pos, origin) <= this.reachOf(e)
+        && distanceFt(e.pos, dest) > this.reachOf(e),
+    );
+    for (const t of threats) {
+      this.opportunityAttack(t, actor);
+      if (actor.dead || hasCondition(actor, 'inconsciente')) return { ok: true };
+    }
+    // Onde ele de fato para: o primeiro obstáculo que não passar o barra.
+    let fim = n;
+    let caiu = false;
+    for (let i = 1; i < n; i++) {
+      const x = origin.x + dx * i;
+      const y = origin.y + dy * i;
+      if (this.field.tileAt(x, y) !== 3) continue;
+      const r = this.testeDeAtributo(actor, 'str', skillBonus(actor, 'atletismo'), 'Atletismo');
+      if (r.total >= 10) {
+        this.say('acao', `${actor.name} salta por cima do obstáculo.`, `${r.conta} vs CD 10`);
+        continue;
+      }
+      this.say('acao', `${actor.name} bate no obstáculo e cai.`, `${r.conta} vs CD 10`);
+      fim = i - 1;
+      caiu = true;
+      break;
+    }
+    actor.pos = { x: origin.x + dx * fim, y: origin.y + dy * fim, f: 1 };
+    if (!caiu && this.dificilParaPouso(actor, actor.pos.x, actor.pos.y)) {
+      const r = this.testeDeAtributo(actor, 'dex', skillBonus(actor, 'acrobacia'), 'Acrobacia');
+      if (r.total < 10) {
+        caiu = true;
+        this.say('acao', `${actor.name} pousa mal no terreno difícil e cai.`, `${r.conta} vs CD 10`);
+      }
+    }
+    if (caiu) addCondition(actor, 'caido');
+    else this.say('acao', `${actor.name} salta ${n * 5} pés.`);
+    // O salto conta no deslocamento: paga o que voou, ao menos uma casa.
+    const gasto = Math.max(fim, 1) * 5;
+    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - gasto);
+    actor.corridaFt = 0;
+    // A casa de pouso dispara o que andar até ela dispararia.
+    for (const zona of this.zonasEm(actor.pos)) {
+      if (zona.aoEntrar && !this.zonasEm(origin).includes(zona)) this.resistirAZona(actor, zona, 'entra');
+    }
+    this.paraNaCasa?.(actor, actor.pos);
+    this.renovarRastro();
+    const caminho = [];
+    for (let i = 0; i <= fim; i++) caminho.push({ x: origin.x + dx * i, y: origin.y + dy * i });
+    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: caminho, salto: true });
+    return { ok: true };
+  }
+
   /**
    * Escapar de quem agarra: ação, teste de Atletismo ou Acrobacia (o melhor)
    * contra a CD do efeito.
@@ -1558,7 +1760,10 @@ export class Encounter {
     if (c.attacks) return c.attacks.find((a) => !a.ranged)?.name;
     const w = WEAPONS[c.equippedWeapon];
     if (w && !w.ranged) return null;
-    return (c.weapons ?? []).find((id) => WEAPONS[id] && !WEAPONS[id].ranged);
+    // Só com o que está na mão (ou os punhos de quem treinou): o arqueiro de
+    // arco na mão não aproveita a brecha com a espada embainhada.
+    return this.armasNaMao(c).find((id) => !WEAPONS[id].ranged)
+      ?? (c.weapons ?? []).find((id) => WEAPONS[id]?.props?.includes('desarmado'));
   }
 
   opportunityAttack(attacker, target) {
@@ -1694,6 +1899,11 @@ export class Encounter {
   }
 
   canAttack(actor, target, weaponId) {
+    if (!actor.attacks) {
+      const id = weaponId ?? actor.equippedWeapon;
+      if (!WEAPONS[id]) return { ok: false, why: 'sem arma na mão — saque uma' };
+      if (!this.empunha(actor, id)) return { ok: false, why: `${WEAPONS[id].name} não está na mão — saque a arma primeiro` };
+    }
     const p = this.weaponAttackProfile(actor, weaponId);
     if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
     const dist = distanceFt(actor.pos, target.pos);
@@ -2115,6 +2325,7 @@ export class Encounter {
   }
 
   afterAction(actor) {
+    actor.corridaFt = 0;
     if (actor.actionUsed && actor.acaoVelozDisponivel && hasCondition(actor, 'acelerado') && !(actor.ataquesRestantes > 0)) {
       actor.acaoVelozDisponivel = false;
       actor.actionUsed = false;
@@ -2233,7 +2444,8 @@ export class Encounter {
     const fx = conditionEffects(actor);
     const r = d20(this.rng, bonus, {
       advantage: fx.vantagemTeste.includes(hab) || fx.vantagemSoTeste.includes(hab),
-      disadvantage: fx.desvantagemTeste.includes(hab),
+      disadvantage: fx.desvantagemTeste.includes(hab)
+        || (!!actor.armorUntrained && (hab === 'str' || hab === 'dex')),
     });
     let total = r.total;
     const extras = [];
@@ -2413,6 +2625,7 @@ export class Encounter {
       target.stable = false;
       target.deathSaves = { successes: 0, failures: 0 };
       this.say('cura', `${target.name} volta a si com ${target.hp} PV.`);
+      if (this.over) this.levantarForaDoCombate(target);
     }
     this.onEvent({ type: 'heal', target, amount: target.hp - was, source });
     return target.hp - was;
@@ -2864,6 +3077,7 @@ export class Encounter {
     // sempre preparada. Antes, o clérigo conjurava Míssil Mágico.
     if (!magiasProntas(actor).includes(spellId)) return { ok: false, why: `${spell.name} não está preparada` };
     // Oração de Cura leva 10 minutos: o combate não os tem.
+    if (spell.soFora) return { ok: false, why: `${spell.name} é magia de utilidade: só fora de combate (explorando e conversando)` };
     if (spell.foraDeCombate) return { ok: false, why: `${spell.name} leva 10 minutos: só fora de combate, no descanso` };
     // De novo: a Arma Espiritual e o Toque Vampírico já conjurados golpeiam
     // sem espaço e sem contar como conjuração (a regra de ação bônus não vale).

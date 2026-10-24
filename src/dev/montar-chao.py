@@ -41,7 +41,30 @@ FILEIRAS = [
     ('rocha', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [0, 1, 2, 3, 8, 9, 13]),
     ('entulho', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [4, 5, 10, 14]),
     ('ponte', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [6, 7, 11, 15]),
+    # O porao da Mansao Tresendar. Fora: 4 (poeira demais), 8-11 sao agua e
+    # fosso, 12 e 14 (rachado e com poca, leem como outra coisa), 15 (buraco
+    # com borda: o fosso tem 2 x 2 casas e a borda faria uma grade).
+    ('laje', '0275c74c-e80e-4191-84eb-8774ea880520', [0, 1, 2, 3]),
+    ('cisterna', '0275c74c-e80e-4191-84eb-8774ea880520', [8, 9]),
+    ('fosso', '0275c74c-e80e-4191-84eb-8774ea880520', [10]),
 ]
+
+
+# A laje saiu clara demais (luminancia mediana 118) para um porao: o piso
+# tem de ficar perto do da caverna (~68), senao a sala brilha mais que a
+# tocha. Escurecer e multiplicar: o desenho e as juntas ficam.
+ESCURECER = {'laje': 0.6}
+
+
+def escurecer(t, f):
+    t = t.copy()
+    px = t.load()
+    for y in range(t.height):
+        for x in range(t.width):
+            r, g, b, a = px[x, y]
+            if a:
+                px[x, y] = (int(r * f), int(g * f), int(b * f), a)
+    return t
 
 
 def _lum(c):
@@ -155,6 +178,8 @@ def main():
             t = recortar_topo(im, 0, base - TH)
             if quais:
                 t = tapar_furos(t)
+            if nome in ESCURECER:
+                t = escurecer(t, ESCURECER[nome])
             candidatos.append(t)
         medidas = [tom_e_aresta(t) for t in candidatos]
         mediana = sorted(m for m, _ in medidas)[len(medidas) // 2]

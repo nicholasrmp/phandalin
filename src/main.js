@@ -7,8 +7,8 @@ import { Encounter } from './rules/combat.js';
 import { makeParty } from './rules/party.js';
 import { makeMonster } from './rules/monsters.js';
 import { runMonsterSide } from './rules/ai.js';
-import { hasCondition } from './rules/conditions.js';
-import { getSpell } from './rules/spells.js';
+import { hasCondition, conditionEffects } from './rules/conditions.js';
+import { getSpell, opcoesDaMagia } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarHeroi } from './game/criacao.js';
@@ -24,6 +24,8 @@ import { opcoesDaCasa } from './game/interacoes.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
 import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
 import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
+import { UTIL_FORA, estadoDe as estadoDeUtilidade, avancar as avancarTempo, ativasDoGrupo } from './rules/utilidade.js';
+import { escolherEConjurar, conjurarComTela, esperar as esperarTempo, auras as aurasDoDetectarMagia } from './game/magias-fora.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { criarFicha, aplicarAparencia } from './view/ficha.js';
@@ -47,6 +49,8 @@ class App {
       onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
       onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
       onAbrirFicha: (c) => this.ficha?.abrir(c, 'ficha'),
+      // Explorando, as magias de utilidade saem pelo relógio, não pela rodada.
+      explorando: () => Boolean(this.capitulo?.explorando),
       // Mesma porta do hover do tabuleiro: um só caminho para "quem é o alvo
       // em consideração", para os dois nunca discordarem.
       onAlvoHover: (alvo) => this.definirAlvo(alvo),
@@ -61,10 +65,23 @@ class App {
       // Trocar de armadura no meio da briga não pode ser de graça. Fora do
       // turno do grupo, nem isso.
       // Fora de combate (na vila), troca-se à vontade.
-      podeEquipar: (p) => (!this.enc || (this.enc.side === 'party' && !this.enc.over)
-        ? null
-        : 'dá para trocar equipamento só no turno do grupo'),
+      // Em combate, o Livro do Jogador cobra: sacar ou guardar arma é a
+      // interação gratuita do turno (a segunda gasta a ação), o escudo gasta a
+      // ação e armadura leva minutos.
+      podeEquipar: (p, slot) => {
+        const enc = this.enc;
+        if (!enc || enc.over || this.capitulo?.explorando) return null;
+        if (enc.side !== 'party') return 'dá para trocar equipamento só no turno do grupo';
+        if (p.hp <= 0 || conditionEffects(p).incapacitated) return 'incapacitado não troca de arma';
+        if (slot === 'armadura') return 'vestir ou tirar armadura leva minutos: só fora do combate';
+        if (slot === 'escudo') return p.actionUsed ? 'pôr ou tirar o escudo gasta a ação, e ela já foi usada' : null;
+        return enc.custoDeInteracao(p) ? null : 'a interação gratuita e a ação deste turno já foram usadas';
+      },
       onEquipar: (p, troca) => {
+        const enc = this.enc;
+        if (enc && !enc.over && !this.capitulo?.explorando) {
+          enc.cobrarInteracao(p, troca.slot === 'escudo' ? 'acao' : enc.custoDeInteracao(p));
+        }
         this.hud.pushLog({
           kind: 'recurso',
           text: `${p.name} trocou ${troca.slot}: CA ${troca.acAntes} → ${troca.acDepois}`,
@@ -220,7 +237,9 @@ class App {
       this.xpPendente = null;
     }
     if (config.continuarCom) {
-      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente'); }
+      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente'); c.concentrating = null; }
+      // As magias de utilidade da cena anterior ficaram para trás (o relógio segue).
+      if (this.campanha?.utilidade) this.campanha.utilidade.ativas = [];
     }
     party.forEach((c, i) => {
       c.pos = { ...mapa.grupo[i] };
@@ -250,6 +269,9 @@ class App {
       onLog: (entry) => { this.hud.pushLog(entry); this.contarNovidade?.(); },
       onEvent: (ev) => this.onEvent(ev),
     });
+    // O motor pergunta se é exploração (sacar arma de graça, salto sem contar
+    // corrida); quem sabe é o capítulo.
+    Object.defineProperty(this.enc, 'explorando', { get: () => !!this.capitulo?.explorando });
 
     this.hud.logList.replaceChildren();
     this.selected = null;
@@ -538,15 +560,41 @@ class App {
     const c = this.selected;
     if (!c || this.enc.side !== 'party') return;
 
+    // Fora do combate, a magia de utilidade é conjurada pelo relógio (`rules/utilidade.js`).
+    if (action.kind === 'spell' && this.capitulo?.explorando && UTIL_FORA.has(action.spellId) && !narrativaAberta()) {
+      escolherEConjurar(this, c, action.spellId);
+      return;
+    }
+
     if (action.kind === 'stabilize') {
       const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
       if (alvo) this.enc.stabilize(c, alvo);
       this.afterAct();
       return;
     }
+    if (action.kind === 'examinar' || action.kind === 'investigar') {
+      const r = action.kind === 'examinar' ? this.enc.examinarIlusao(c, action.zona ?? null) : this.enc.investigarIlusao(c);
+      if (!r.ok) { this.refuse(c, r.why); return; }
+      this.afterAct();
+      return;
+    }
     if (action.kind === 'dash') { this.enc.dash(c); this.afterAct(); return; }
     if (action.kind === 'dodge') { this.enc.dodge(c); this.afterAct(); return; }
     if (action.kind === 'disengage') { this.enc.disengage(c); this.afterAct(); return; }
+    // Sacar a arma guardada: a figura troca de folha junto (a família da arma).
+    if (action.kind === 'sacar') {
+      const r = this.enc.sacarArma(c, action.weaponId);
+      if (!r.ok) { this.refuse(c, r.why); return; }
+      aplicarAparencia(c);
+      this.afterAct();
+      return;
+    }
+    // Saltar: entra no modo de escolher a casa de pouso (ou sai dele).
+    if (action.kind === 'salto') {
+      this.mode = this.mode?.kind === 'salto' ? null : { kind: 'salto' };
+      this.refresh();
+      return;
+    }
     if (action.kind === 'standUp' || action.kind === 'escape') {
       const r = action.kind === 'standUp' ? this.enc.standUp(c) : this.enc.escapar(c);
       if (!r.ok) { this.refuse(c, r.why); return; }
@@ -747,9 +795,27 @@ class App {
   }
 
   /** Conjuração com um clique, recusando sem gastar quando não dá. */
-  tryCast(c, spellId, { target = null, point = null, targets = null } = {}) {
+  tryCast(c, spellId, { target = null, point = null, targets = null, opcao = null } = {}) {
     const circulo = this.mode?.kind === 'spell' && this.mode.spellId === spellId ? this.mode.circulo : null;
-    const r = this.enc.castSpell(c, spellId, { target, point, targets, circulo });
+    // Magia com escolha (Aprimorar Atributo, Glifo de Proteção): pergunta antes
+    // de gastar. Esc fecha o seletor e deixa a mira como estava.
+    const lista = opcao ? null : opcoesDaMagia(getSpell(spellId));
+    if (lista) {
+      const sugerida = getSpell(spellId).escolheTipoDoGlifo
+        ? this.enc.tipoDoGlifo(null, c)
+        : this.enc.opcaoDeAprimorar(target ?? c);
+      const ordem = [...lista].sort((a, b) => (b.id === sugerida) - (a.id === sugerida));
+      abrirMenuContexto(this.root, {
+        x: NaN, y: NaN, titulo: getSpell(spellId).name, subtitulo: 'escolha uma opção',
+        opcoes: ordem.map((o) => ({
+          rotulo: o.rotulo, detalhe: o.id === sugerida ? `sugerida — ${o.detalhe ?? ''}` : o.detalhe,
+          destaque: o.id === sugerida,
+          fazer: () => this.tryCast(c, spellId, { target, point, targets, opcao: o.id }),
+        })),
+      });
+      return;
+    }
+    const r = this.enc.castSpell(c, spellId, { target, point, targets, circulo, opcao });
     this.mode = null;
     if (!r.ok) { this.refuse(c, r.why); return; }
     this.afterAct();
@@ -763,6 +829,15 @@ class App {
 
     // Modo de alvo
     if (this.mode && c) {
+      if (this.mode.kind === 'salto') {
+        const r = this.enc.pular(c, tile);
+        if (!r.ok) { this.refuse(c, r.why); return; }
+        this.mode = null;
+        // Explorando: a cena vê o pouso como vê um passo (vigias, armadilhas).
+        if (this.capitulo?.explorando) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+        this.afterAct();
+        return;
+      }
       const magia = this.mode.kind === 'spell' ? getSpell(this.mode.spellId) : null;
       // Revivificar mira o CORPO, que `at` não devolve (morto não ocupa casa).
       if (magia?.kind === 'reviver') {
@@ -928,7 +1003,8 @@ class App {
     // na cura e na Bênção, inimigo no resto); magia de área não acende
     // ninguém, quem mostra o que ela pega é a prévia da área.
     const magia = this.mode?.kind === 'spell' ? getSpell(this.mode.spellId) : null;
-    const targets = this.mode && c
+    const salto = this.mode?.kind === 'salto';
+    const targets = this.mode && c && !salto
       ? magia
         ? (magia.shape ? [] : this.enc.combatants.filter((t) => !this.enc.porqueNaoAlvo(c, magia, t)))
         : this.enc.combatants.filter((t) => !t.dead && t.side !== c.side
@@ -937,8 +1013,13 @@ class App {
 
     this.board?.setOverlay({
       selected: c,
-      reachable: c && !this.mode && this.enc.side === 'party' ? this.enc.reachableFor(c) : null,
+      // No modo de salto, o chão azul são as casas de pouso.
+      reachable: c && this.enc.side === 'party'
+        ? (salto ? this.enc.destinosDoSalto(c) : !this.mode ? this.enc.reachableFor(c) : null)
+        : null,
       targets,
+      // O Detectar Magia ativo acende o chão onde há aura (`game/magias-fora.js`).
+      auras: this.capitulo?.explorando ? aurasDoDetectarMagia(this) : null,
       path: null,
       // `mode` é a chave que acende a camada de previsão inteira do tabuleiro:
       // chão de alcance, tracejado do alcance longo, cruz de alvo impossível e
@@ -1066,8 +1147,20 @@ class App {
       ? await descansoLongoDoGrupo(this.root, { herois, texto: this.capitulo?.textoDoDescanso?.('longo') })
       : await descansoCurto(this.root, { herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto') });
     for (const t of linhas) this.enc.say('cura', t);
+    // O descanso é tempo de verdade: as magias de duração correm (uma hora, oito horas).
+    for (const t of avancarTempo(estadoDeUtilidade(this.campanha ??= {}), tipo === 'longo' ? 480 : 60, herois)) this.enc.say('magia', t);
     this.capitulo?.depoisDoDescanso?.(tipo);
     this.refresh();
+  }
+
+  /** Conjura uma magia de utilidade fora do combate (menu, barra de magias, conversa). */
+  conjurarFora(c, spellId, opts = {}) {
+    return conjurarComTela(this, c, spellId, opts);
+  }
+
+  /** O tempo passa; as magias de duração correm. */
+  esperar(minutos) {
+    return esperarTempo(this, minutos);
   }
 
   /** Acende ou apaga a tocha. Acender no meio da luta custa a ação. */

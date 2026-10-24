@@ -104,6 +104,8 @@ function fichasProntas(nivel) {
         ability: 'wis',
         // Três truques, como o clérigo de 1º nível conhece.
         cantrips: ['chamaSagrada', 'pouparOsMoribundos', 'resistencia'],
+        // Rituais à mão (`rules/utilidade.js`): conjuráveis fora do combate sem gastar espaço.
+        rituais: ['detectarMagia'],
         // Bênção e Curar Ferimentos não estão aqui: são magias do Domínio da
         // Vida, sempre preparadas (`sempreProntas`), e não ocupam vaga.
         prepared: ['palavraCurativa', 'raioGuiado', 'perdicao', 'espiritosGuardioes', 'imobilizarPessoa',
@@ -138,6 +140,8 @@ function fichasProntas(nivel) {
       spellcasting: {
         ability: 'int',
         cantrips: ['raioDeFogo', 'raioDeGelo', 'toqueArrepiante'],
+        // O livro de rituais do mago: conjura sem preparar e sem espaço, em 10 minutos a mais.
+        rituais: ['detectarMagia', 'identificar', 'compreenderIdiomas'],
         prepared: ['misselMagico', 'bolaDeFogo', 'raioArdente', 'teia', 'maosFlamejantes', 'sono',
           'passoNebuloso', 'relampago', 'armaduraArcana', 'ondaTrovejante', 'despedacar'],
         // O grimório começa com seis magias de mago e ganha duas por nível:

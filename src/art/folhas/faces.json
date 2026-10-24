@@ -1,0 +1,26 @@
+{
+ "fw": 32,
+ "fh": 38,
+ "tw": 64,
+ "th": 32,
+ "faces": {
+  "alvenaria": {
+   "y": 0,
+   "n": 8
+  },
+  "penhasco": {
+   "y": 70,
+   "n": 8
+  }
+ },
+ "topos": {
+  "alvenaria": {
+   "y": 38,
+   "n": 8
+  },
+  "penhasco": {
+   "y": 108,
+   "n": 8
+  }
+ }
+}

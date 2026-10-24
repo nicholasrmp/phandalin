@@ -171,3 +171,7 @@
 .menu-ctx-item.recusada { cursor: not-allowed; color: #8a8478; }
 .menu-ctx-item.recusada .menu-ctx-icone canvas { filter: grayscale(1); opacity: .55; }
 .menu-ctx-item.recusada small { color: #9b4a3a; white-space: normal; }
+
+/* a opção que o jogo sugere no seletor de magia */
+.menu-ctx-item.destaque { box-shadow: inset 3px 0 0 #e0b24a; background: rgba(224, 178, 74, .12); }
+.menu-ctx-item.destaque .menu-ctx-rotulo { color: #6b3f00; font-weight: 700; }

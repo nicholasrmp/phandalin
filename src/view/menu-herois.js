@@ -14,6 +14,7 @@
 import { el } from './hud.js';
 import { audio } from '../core/audio.js';
 import { nomeDeId } from '../rules/equipment.js';
+import { temArteImportada } from '../art/folhas/index.js';
 import {
   HEROIS, montarHeroi, escolhaAutomatica, problemasDaEscolha, regrasDeMagia,
   SUBCLASSES_1, TALENTOS_DE_ORIGEM, EQUIPAMENTO_1, nomeDaMagia, magiaTemRegra, nomeDoPacote,
@@ -21,6 +22,10 @@ import {
 } from '../game/criacao.js';
 
 const GRUPO = 4;   // a carroça leva quatro, e o mapa tem quatro lugares de partida
+
+// Só entra na carroça quem já tem as animações do PixelLab: os outros aparecem
+// apagados, "Não disponível", até a arte deles ficar pronta (pedido do dono).
+const disponivel = (h) => temArteImportada(h.look);
 
 const semRegra = () => el('small', { class: 'menu-sem-regra', title: 'Fica guardado na ficha, mas ainda não muda o combate.' }, 'sem regra ainda');
 const foraDoCombate = () => el('small', { class: 'menu-sem-regra', title: 'O efeito é de loja e ofício, que o jogo ainda não tem.' }, 'fora do combate');
@@ -57,6 +62,13 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
       let faltou = false;
       lista.replaceChildren(...HEROIS.map((h) => {
         const marcado = grupo.escolhidos.includes(h.id);
+        if (!disponivel(h)) {
+          return el('button', { class: 'menu-heroi compacto indisponivel', disabled: true, title: 'A arte deste herói ainda está sendo feita.' },
+            el('span', { class: 'menu-heroi-retrato' }, retrato(h.look, () => { faltou = true; })),
+            el('span', { class: 'menu-heroi-nome' }, h.name),
+            el('span', { class: 'menu-heroi-classe' }, `${h.className} · ${h.raca}`),
+            el('span', { class: 'menu-heroi-marca' }, 'Não disponível'));
+        }
         return el('button', {
           class: `menu-heroi compacto${marcado ? ' escolhido' : ''}${grupo.foco === h.id ? ' foco' : ''}`,
           'aria-pressed': String(marcado),

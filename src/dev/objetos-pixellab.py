@@ -361,6 +361,33 @@ CONJUNTOS = {
         'target_palette': {'colors': ['#141312', '#38342f', '#5c554d', '#3e2a1b', '#5e4029',
                                       '#8c2a12', '#d0581c', '#f0a030', '#ffe080']},
     },
+    # O porao da mansao: mesa e sarcofago, de uma casa cada.
+    'mesa': {
+        'description': (
+            'Sturdy square wooden table for an isometric tactical RPG dungeon room, about 48 px '
+            'wide and 34 px tall counting the top, thick legs, scarred top, looks the same from '
+            'all sides, sitting on the bottom of the canvas. Weathered brown wood. Lit from the '
+            'upper left. Dark brown selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['bare table', 'table with two pewter mugs', 'table with a scroll and a candle stub',
+                              'table with a loaf and a knife', 'table with scattered coins',
+                              'table with a bowl and a spoon', 'table with a rolled map', 'table with an open book'],
+        'target_palette': {'colors': MADEIRA + LONA + FERRO},
+    },
+    'sarcofago': {
+        'description': (
+            'Stone sarcophagus on a crypt floor for an isometric tactical RPG, low and long, '
+            'about 50 px long and 30 px tall, heavy grey stone lid carved with a relief of a '
+            'robed figure with folded hands, chipped corners, seen from the front-left, sitting '
+            'on the bottom of the canvas. Lit from the upper left. Dark selective outline, not '
+            'black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['sarcophagus, carved robed figure on the lid', 'sarcophagus with a cracked lid',
+                              'sarcophagus with moss on the corners', 'sarcophagus with a plain lid and runes'],
+        'target_palette': {'colors': GRANITO + ['#4a7236', '#33572e']},
+    },
     # O bau do tesouro do bando.
     'bau': {
         'description': (

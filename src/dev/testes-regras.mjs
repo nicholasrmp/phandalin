@@ -1910,6 +1910,7 @@ teste('Saraivada de Espinhos: a chuva é outra fonte e aparece no registro', () 
   resistenciasDao(enc, false);
   d20Fixo(enc, 18);
   const n = log.length;
+  h.equippedWeapon = 'arcoLongo';   // só se atira com o arco na mão
   enc.attackAction(h, foes[0], 'arcoLongo');
   const depois = log.slice(n);
   assert.ok(depois.some((e) => /sofre \d+ de perfurante \(Saraivada de Espinhos\)/.test(e.text)), depois.map((e) => e.text).join(' | '));
@@ -2345,6 +2346,7 @@ teste('Flecha Relampejante: o ataque vira raio no alvo e explode em quem está a
   d20Fixo(enc, 18);
   assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
   assert.ok(hasCondition(h, 'flechaRelampago'));
+  h.equippedWeapon = 'arcoLongo';   // só se atira com o arco na mão
   enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
   assert.ok(log.some((e) => /acerta .* com .*: \d+ de dano elétrico/.test(e.text)), log.slice(-6).map((e) => e.text).join(' | '));
   assert.ok(foes[0].hp <= 300 - 4, '4d8 no alvo');
@@ -2367,6 +2369,7 @@ teste('Flecha Relampejante: 4d8 puro no alvo (sem modificador), que não entra n
   const aplicar = enc.applyDamage.bind(enc);
   enc.applyDamage = (c, n, tipo, ...r) => { golpes.push([c, n, tipo]); return aplicar(c, n, tipo, ...r); };
   assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  h.equippedWeapon = 'arcoLongo';   // só se atira com o arco na mão
   enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
   const noAlvo = golpes.filter(([c]) => c === foes[0]);
   assert.equal(noAlvo.length, 1, 'o alvo leva um dano só: não entra na explosão');
@@ -2384,6 +2387,7 @@ teste('Flecha Relampejante: errando, o alvo leva exatamente metade de 4d8', () =
   const die = enc.rng.die.bind(enc.rng);
   enc.rng.die = (lados) => (lados === 8 ? 5 : die(lados));
   assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  h.equippedWeapon = 'arcoLongo';   // só se atira com o arco na mão
   enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
   assert.equal(foes[0].hp, 290, 'metade de 20');
 });
@@ -2399,6 +2403,7 @@ teste('Flecha Relampejante: errando, o alvo leva metade e a explosão sai igual;
   resistenciasDao(enc, false);
   d20Fixo(enc, 1);
   assert.ok(enc.castSpell(h, 'flechaRelampago').ok);
+  h.equippedWeapon = 'arcoLongo';   // só se atira com o arco na mão
   enc.resolveAttack(h, foes[0], { weaponId: 'arcoLongo' });
   assert.ok(foes[0].hp < 300, 'metade do raio mesmo errando');
   assert.ok(foes[0].hp >= 300 - 16, 'só metade de 4d8');
@@ -3475,6 +3480,369 @@ teste('Glifo de Proteção: padrão trovejante; círculo acima do 3º dá +1d8; 
   enc.moveAlong(foe, [{ x: 4, y: 6 }, { x: 3, y: 6 }]);
   const dano = 300 - foe.hp;
   assert.ok(dano >= 3 && dano <= 24, `metade de 6d8 (${dano})`);
+});
+
+// ---- armas na mão, salto e levantar --------------------------------------
+
+teste('Só se ataca com a arma na mão; sacar é a interação gratuita, a segunda gasta a ação', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 1);
+  h.weapons = ['espadaLonga', 'arcoLongo'];
+  h.equippedWeapon = 'espadaLonga';
+  h.shield = false;
+  assert.ok(!enc.canAttack(h, foes[0], 'arcoLongo').ok, 'o arco está na bainha');
+  assert.ok(enc.canAttack(h, foes[0], 'espadaLonga').ok);
+  assert.equal(enc.sacarArma(h, 'arcoLongo').custo, 'interacao');
+  assert.equal(h.equippedWeapon, 'arcoLongo');
+  assert.equal(h.actionUsed, false);
+  assert.equal(enc.sacarArma(h, 'espadaLonga').custo, 'acao');
+  assert.equal(h.actionUsed, true);
+  assert.ok(!enc.sacarArma(h, 'arcoLongo').ok, 'nada sobrou no turno');
+});
+
+teste('Sacar gastando a ação não queima a Ação Surpreendente', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 1);
+  h.weapons = ['espadaLonga', 'adaga'];
+  h.equippedWeapon = 'espadaLonga';
+  h.extraActions = 1;
+  enc.sacarArma(h, 'adaga');
+  enc.sacarArma(h, 'espadaLonga');
+  assert.equal(h.actionUsed, false, 'a ação extra voltou');
+  assert.ok(enc.attackAction(h, foes[0], 'espadaLonga').ok);
+});
+
+teste('Mão vazia não trava: o ataque recusa com motivo', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 1);
+  h.equippedWeapon = undefined;
+  assert.equal(enc.canAttack(h, foes[0], null).ok, false);
+  assert.equal(enc.attackAction(h, foes[0]).ok, false);
+});
+
+teste('Fim do combate: quem está acordado e caído se levanta', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 1);
+  addCondition(h, 'caido');
+  foes[0].dead = true;
+  foes[0].hp = 0;
+  enc.checkEnd();
+  assert.ok(!hasCondition(h, 'caido'));
+});
+
+teste('Salto em distância por cima da tocaia: FOR em pés com corrida, metade parado', () => {
+  const { enc, h } = comHeroi('clerigo', 1, { foes: [['goblin', { x: 11, y: 11 }]] });
+  enc.field = new Battlefield(12, 12, [
+    '............', '............', '............', '............', '............',
+    '.....P......', '............', '............', '............', '............',
+    '............', '............']);
+  h.pos = { x: 4, y: 5, f: 1 };
+  h.abilities.str = 14;
+  h.movementLeftFt = 30;
+  h.corridaFt = 0;
+  assert.equal(enc.alcanceDoSalto(h), 7, 'parado: metade da Força');
+  assert.equal(enc.destinosDoSalto(h).size, 0, 'parado não passa a tocaia');
+  h.corridaFt = 10;
+  assert.equal(enc.alcanceDoSalto(h), 14);
+  assert.ok(enc.destinosDoSalto(h).has('6,5'), 'com corrida pousa do outro lado');
+  d20Fixo(enc, 15);
+  assert.ok(enc.pular(h, { x: 6, y: 5 }).ok);
+  assert.deepEqual([h.pos.x, h.pos.y], [6, 5]);
+  assert.equal(h.movementLeftFt, 20);
+  assert.ok(!hasCondition(h, 'caido'));
+});
+
+teste('Salto: quem falha o Atletismo bate na tocaia e cai antes dela', () => {
+  const { enc, h } = comHeroi('clerigo', 1, { foes: [['goblin', { x: 11, y: 11 }]] });
+  enc.field = new Battlefield(12, 12, [
+    '............', '............', '............', '............', '............',
+    '.....P......', '............', '............', '............', '............',
+    '............', '............']);
+  h.pos = { x: 4, y: 5, f: 1 };
+  h.movementLeftFt = 30;
+  h.corridaFt = 10;
+  d20Fixo(enc, 1);
+  enc.pular(h, { x: 6, y: 5 });
+  assert.deepEqual([h.pos.x, h.pos.y], [4, 5]);
+  assert.ok(hasCondition(h, 'caido'));
+});
+
+// ---- magias de utilidade fora do combate (rules/utilidade.js) -------------------
+
+import {
+  estadoDe, conjurarFora, avancar, ativaDe, previsaoDeTeste, rolarTeste, melhorParaTeste, sondarMente,
+  podeConjurarFora, infoDoItem, auraDe, UTIL_FORA, entendeIdiomas, chaveDoNpc,
+} from '../rules/utilidade.js';
+
+/** Grupo de nível 3 com as magias de utilidade que o teste pede (espaços cheios). */
+function grupoDeUtilidade({ seed = 3, cantrips = [], prepared = [] } = {}) {
+  const party = makeParty({ nivel: 3 });
+  const brenn = party[2];
+  const ilvan = party[3];
+  for (const c of [brenn, ilvan]) {
+    c.spellcasting.cantrips.push(...cantrips);
+    c.spellcasting.prepared.push(...prepared);
+  }
+  brenn.pos = { x: 5, y: 5 };
+  ilvan.pos = { x: 6, y: 5 };
+  party[0].pos = { x: 4, y: 5 };
+  party[1].pos = { x: 4, y: 6 };
+  const campanha = {};
+  const estado = estadoDe(campanha);
+  const rng = makeRng(seed);
+  const goblin = makeMonster('goblin', { x: 8, y: 5 });
+  goblin.side = 'neutro';
+  return { party, brenn, ilvan, dara: party[0], pip: party[1], estado, rng, goblin, ctx: { herois: party, rng } };
+}
+
+teste('UTIL: toda magia de utilidade existe, é SRD e o combate a recusa', () => {
+  const { enc, party } = montar();
+  for (const id of UTIL_FORA) {
+    const s = SPELLS[id];
+    assert.ok(s, id);
+    assert.ok(['srd', 'propria'].includes(s.fonte), id);
+  }
+  const novas = Object.values(SPELLS).filter((s) => s.soFora);
+  assert.ok(novas.length >= 17, `magias novas: ${novas.length}`);
+  const ilvan = party[ILVAN];
+  ilvan.spellcasting.cantrips.push('taumaturgia');
+  const r = enc.canCast(ilvan, 'taumaturgia');
+  assert.equal(r.ok, false);
+  assert.match(r.why, /fora de combate/);
+});
+
+teste('conjurar fora: truque não gasta espaço; magia de círculo gasta e respeita o círculo', () => {
+  const g = grupoDeUtilidade({ prepared: ['abrir'], cantrips: ['taumaturgia'] });
+  const antes = g.ilvan.spellcasting.slots.slice();
+  const r1 = conjurarFora(g.estado, g.ilvan, 'taumaturgia', g.ctx);
+  assert.ok(r1.ok, r1.why);
+  assert.deepEqual(g.ilvan.spellcasting.slots, antes, 'truque é de graça');
+  const r2 = conjurarFora(g.estado, g.ilvan, 'abrir', g.ctx);
+  assert.ok(r2.ok, r2.why);
+  assert.equal(g.ilvan.spellcasting.slots[2], antes[2] - 1, 'gastou um espaço de 2º');
+  g.ilvan.spellcasting.slots[2] = 0;
+  const r3 = podeConjurarFora(g.ilvan, 'abrir');
+  assert.equal(r3.ok, false);
+  assert.match(r3.why, /sem espaço/);
+});
+
+teste('conjurar fora: o tempo anda — Taumaturgia (1 min) dá vantagem em Intimidação e acaba no relógio', () => {
+  const g = grupoDeUtilidade({ cantrips: ['taumaturgia'] });
+  const sem = previsaoDeTeste(g.estado, g.party, g.ilvan, 'intimidacao', 12);
+  assert.equal(sem.vantagem, false);
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'taumaturgia', g.ctx).ok);
+  const com = previsaoDeTeste(g.estado, g.party, g.ilvan, 'intimidacao', 12);
+  assert.equal(com.vantagem, true);
+  assert.ok(com.chance > sem.chance, 'a chance sobe com a vantagem');
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.brenn, 'intimidacao', 12).vantagem, false, 'só quem conjurou');
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.ilvan, 'persuasao', 12).vantagem, false, 'só Intimidação');
+  avancar(g.estado, 0.5, g.party);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.ilvan, 'intimidacao', 12).vantagem, true, 'meio minuto depois ainda vale');
+  const fim = avancar(g.estado, 1, g.party);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.ilvan, 'intimidacao', 12).vantagem, false);
+  assert.ok(fim.some((t) => /Taumaturgia/.test(t)), fim.join('|'));
+});
+
+teste('conjurar fora: ritual não gasta espaço, leva 10 minutos a mais e cabe só a quem tem o ritual', () => {
+  const g = grupoDeUtilidade();
+  const antes = g.ilvan.spellcasting.slots.slice();
+  const t0 = g.estado.minutos;
+  const r = conjurarFora(g.estado, g.ilvan, 'detectarMagia', { ...g.ctx, ritual: true });
+  assert.ok(r.ok, r.why);
+  assert.deepEqual(g.ilvan.spellcasting.slots, antes);
+  assert.equal(g.estado.minutos - t0, 10, 'ritual: +10 minutos');
+  assert.equal(r.ativa.fim - r.ativa.inicio, 10, 'Detectar Magia dura 10 minutos depois');
+  assert.equal(podeConjurarFora(g.dara, 'detectarMagia', { ritual: true }).ok, false);
+  g.ilvan.spellcasting.cantrips.push('taumaturgia');
+  assert.equal(podeConjurarFora(g.ilvan, 'taumaturgia', { ritual: true }).ok, false, 'Taumaturgia não é ritual');
+});
+
+teste('conjurar fora: concentração — a nova derruba a velha (Detectar Magia → Amizade)', () => {
+  const g = grupoDeUtilidade({ cantrips: ['amizade'] });
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'detectarMagia', { ...g.ctx, ritual: true }).ok);
+  assert.ok(ativaDe(g.estado, g.party, 'detectarMagia', { por: g.ilvan }));
+  assert.equal(g.ilvan.concentrating.spellId, 'detectarMagia');
+  const b = conjurarFora(g.estado, g.ilvan, 'amizade', { ...g.ctx, alvo: g.goblin });
+  assert.ok(b.ok, b.why);
+  assert.equal(ativaDe(g.estado, g.party, 'detectarMagia', { por: g.ilvan }), null, 'a primeira caiu');
+  assert.equal(g.ilvan.concentrating.spellId, 'amizade');
+  // Quem perde a concentração (dano na luta) perde a magia também.
+  g.ilvan.concentrating = null;
+  assert.equal(ativaDe(g.estado, g.party, 'amizade', { por: g.ilvan }), null);
+});
+
+teste('Luz fora do combate: vira condição do alvo, passa a luz para outro e acaba em 1 hora', () => {
+  const g = grupoDeUtilidade({ cantrips: ['luz'] });
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'luz', { ...g.ctx, alvo: g.dara }).ok);
+  assert.ok(hasCondition(g.dara, 'luzMagica'));
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'luz', { ...g.ctx, alvo: g.pip }).ok);
+  assert.ok(!hasCondition(g.dara, 'luzMagica'), 'a luz mudou de mãos');
+  assert.ok(hasCondition(g.pip, 'luzMagica'));
+  avancar(g.estado, 59, g.party);
+  assert.ok(hasCondition(g.pip, 'luzMagica'), 'aos 59 minutos ainda brilha');
+  avancar(g.estado, 2, g.party);
+  assert.ok(!hasCondition(g.pip, 'luzMagica'));
+});
+
+teste('Visão no Escuro, Passo sem Rastro e Aprimorar Atributo fora do combate: condições com relógio', () => {
+  const g = grupoDeUtilidade({ prepared: ['visaoNoEscuro', 'passoSemRastro', 'aprimorarAtributo'] });
+  g.ilvan.spellcasting.slots[2] = 4;
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'visaoNoEscuro', { ...g.ctx, alvo: g.dara }).ok);
+  assert.ok(visaoNoEscuro(g.dara) >= 60);
+  const bonusAntes = skillBonus(g.pip, 'furtividade');
+  const rastro = conjurarFora(g.estado, g.ilvan, 'passoSemRastro', g.ctx);
+  assert.ok(rastro.ok, rastro.why);
+  assert.ok(hasCondition(g.pip, 'semRastro'));
+  assert.equal(skillBonus(g.pip, 'furtividade'), bonusAntes + 10);
+  // Aprimorar Atributo (Esplendor da Águia) dá vantagem em Persuasão a quem o recebeu.
+  g.brenn.spellcasting.slots[2] = 2;
+  assert.ok(conjurarFora(g.estado, g.brenn, 'aprimorarAtributo', { ...g.ctx, alvo: g.dara, opcao: 'aguia' }).ok);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.dara, 'persuasao', 12).vantagem, true);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.dara, 'atletismo', 12).vantagem, false);
+  avancar(g.estado, 61, g.party);
+  assert.ok(!hasCondition(g.dara, 'aprimorado'));
+  assert.ok(!hasCondition(g.pip, 'semRastro'));
+  assert.ok(hasCondition(g.dara, 'visaoNoEscuro'), 'Visão no Escuro dura 8 horas');
+  avancar(g.estado, 8 * 60, g.party);
+  assert.ok(!hasCondition(g.dara, 'visaoNoEscuro'));
+});
+
+teste('Orientação fora do combate: soma 1d4 no PRÓXIMO teste de perícia e acaba', () => {
+  const g = grupoDeUtilidade({ cantrips: ['orientacao'] });
+  assert.ok(conjurarFora(g.estado, g.brenn, 'orientacao', { ...g.ctx, alvo: g.dara }).ok);
+  const p = previsaoDeTeste(g.estado, g.party, g.dara, 'atletismo', 15);
+  assert.deepEqual(p.bonusDado, ['1d4']);
+  const r = rolarTeste(g.estado, g.party, g.rng, g.dara, 'atletismo', 15);
+  assert.ok(!hasCondition(g.dara, 'orientado'), 'consumida');
+  assert.equal(ativaDe(g.estado, g.party, 'orientacao'), null);
+  assert.ok(r.total >= 2 + skillBonus(g.dara, 'atletismo'));
+  assert.equal(g.brenn.concentrating, null, 'a concentração acabou junto');
+});
+
+teste('Amizade: vantagem em Carisma contra ele; quando acaba, ele fica hostil e os testes sociais pioram', () => {
+  const g = grupoDeUtilidade({ cantrips: ['amizade'] });
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'amizade', { ...g.ctx, alvo: g.goblin }).ok);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.ilvan, 'persuasao', 12, { npc: g.goblin }).vantagem, true);
+  const outro = makeMonster('goblin', { x: 9, y: 9 });
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.ilvan, 'persuasao', 12, { npc: outro }).vantagem, false);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.ilvan, 'atletismo', 12, { npc: g.goblin }).vantagem, false);
+  avancar(g.estado, 2, g.party);
+  const depois = previsaoDeTeste(g.estado, g.party, g.ilvan, 'persuasao', 12, { npc: g.goblin });
+  assert.equal(depois.desvantagem, true, 'agora ele está hostil');
+  assert.equal(g.estado.npcs[chaveDoNpc(g.goblin)].ressentido, 'hostil');
+  const inimigo = makeMonster('goblin', { x: 8, y: 6 });
+  inimigo.emLuta = true;
+  assert.equal(conjurarFora(g.estado, g.ilvan, 'amizade', { ...g.ctx, alvo: inimigo }).ok, false, 'em luta, não');
+});
+
+teste('Sugestão e Enfeitiçar Pessoa: a CD de SAB do alvo decide; Sugestão cumpre o próximo teste social', () => {
+  const g = grupoDeUtilidade({ prepared: ['sugestao', 'enfeiticarPessoa'] });
+  g.ilvan.spellcasting.slots[2] = 9;
+  g.ilvan.spellcasting.slots[1] = 9;
+  g.goblin.abilities.wis = 1;                      // nunca resiste
+  const s = conjurarFora(g.estado, g.ilvan, 'sugestao', { ...g.ctx, alvo: g.goblin });
+  assert.ok(s.ok && !s.resultado.resistiu, JSON.stringify(s.resultado));
+  const p = previsaoDeTeste(g.estado, g.party, g.dara, 'persuasao', 30, { npc: g.goblin });
+  assert.equal(p.chance, 1, 'o teste social é cumprido');
+  const r = rolarTeste(g.estado, g.party, g.rng, g.dara, 'persuasao', 30, { npc: g.goblin });
+  assert.equal(r.passou, true);
+  assert.equal(ativaDe(g.estado, g.party, 'sugestao', { npc: g.goblin }), null, 'a sugestão vale uma vez');
+  const forte = makeMonster('goblin', { x: 8, y: 6 });
+  forte.abilities.wis = 80;
+  const antes = g.ilvan.spellcasting.slots[1];
+  const e = conjurarFora(g.estado, g.ilvan, 'enfeiticarPessoa', { ...g.ctx, alvo: forte });
+  assert.ok(e.ok && e.resultado.resistiu);
+  assert.equal(g.ilvan.spellcasting.slots[1], antes - 1);
+  assert.equal(ativaDe(g.estado, g.party, 'enfeiticarPessoa', { npc: forte }), null);
+  assert.equal(g.estado.npcs[chaveDoNpc(forte)].ressentido, 'ciente');
+  const fera = makeMonster('lobo', { x: 8, y: 7 });
+  assert.equal(conjurarFora(g.estado, g.ilvan, 'enfeiticarPessoa', { ...g.ctx, alvo: fera }).ok, false, 'só humanoides');
+});
+
+teste('Detectar Pensamentos: sondar a mente deixa a conversa mais fácil, e resistir fecha a mente', () => {
+  const g = grupoDeUtilidade({ prepared: ['detectarPensamentos'] });
+  g.ilvan.spellcasting.slots[2] = 9;
+  assert.equal(sondarMente(g.estado, g.party, g.ilvan, g.goblin, g.rng).ok, false, 'sem a magia ativa');
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'detectarPensamentos', g.ctx).ok);
+  g.goblin.abilities.wis = 1;
+  const r = sondarMente(g.estado, g.party, g.ilvan, g.goblin, g.rng);
+  assert.ok(r.leu && !r.percebeu);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.dara, 'persuasao', 12, { npc: g.goblin }).vantagem, true, 'sabe o que ele quer ouvir');
+  const duro = makeMonster('goblin', { x: 8, y: 6 });
+  duro.abilities.wis = 80;
+  const f = sondarMente(g.estado, g.party, g.ilvan, duro, g.rng);
+  assert.ok(f.percebeu && !f.leu);
+  assert.ok(sondarMente(g.estado, g.party, g.ilvan, duro, g.rng).jaFechada);
+});
+
+teste('Falar com os Mortos: um cadáver só responde uma vez; Compreender Idiomas e Falar com Animais ficam de pé', () => {
+  const g = grupoDeUtilidade({ prepared: ['falarComOsMortos'] });
+  g.ilvan.spellcasting.slots[3] = 2;
+  const corpo = makeMonster('goblin', { x: 6, y: 6 });
+  assert.equal(conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: corpo }).ok, false, 'vivo não fala');
+  corpo.dead = true;
+  const r = conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: corpo });
+  assert.ok(r.ok, r.why);
+  assert.equal(g.ilvan.spellcasting.slots[3], 1);
+  const denovo = conjurarFora(g.estado, g.ilvan, 'falarComOsMortos', { ...g.ctx, alvo: corpo });
+  assert.equal(denovo.ok, false);
+  assert.match(denovo.why, /já falou/);
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'compreenderIdiomas', { ...g.ctx, ritual: true }).ok);
+  assert.ok(entendeIdiomas(g.estado, g.party));
+  avancar(g.estado, 61, g.party);
+  assert.ok(!entendeIdiomas(g.estado, g.party));
+  g.brenn.spellcasting.prepared.push('falarComAnimais');
+  g.brenn.spellcasting.slots[1] = 4;
+  assert.ok(conjurarFora(g.estado, g.brenn, 'falarComAnimais', g.ctx).ok);
+  assert.equal(previsaoDeTeste(g.estado, g.party, g.brenn, 'lidarComAnimais', 12).vantagem, true);
+});
+
+teste('Identificar e Detectar Magia: a mochila responde (poção, pergaminho) e o anel de sinete não é mágico', () => {
+  const g = grupoDeUtilidade();
+  g.dara.bag = [{ id: 'pocaoDeInvisibilidade', tipo: 'item', qtd: 1 }, { id: 'anelDePlatina', tipo: 'item', qtd: 1 }, { id: 'pergaminhoDeAuguro', tipo: 'item', qtd: 1 }];
+  assert.equal(auraDe('anelDePlatina'), null);
+  assert.equal(auraDe('pocaoDeInvisibilidade').escola, 'ilusão');
+  const dm = conjurarFora(g.estado, g.ilvan, 'detectarMagia', { ...g.ctx, ritual: true });
+  assert.ok(dm.ok);
+  assert.deepEqual(dm.resultado.mochila.map((m) => m.id).sort(), ['pergaminhoDeAuguro', 'pocaoDeInvisibilidade']);
+  const id = conjurarFora(g.estado, g.ilvan, 'identificar', { ...g.ctx, ritual: true, alvo: { id: 'anelDePlatina' } });
+  assert.ok(id.ok, id.why);
+  assert.equal(id.resultado.info.magico, false);
+  assert.ok(g.estado.identificados.includes('anelDePlatina'));
+  assert.equal(infoDoItem('pocaoDeInvisibilidade').magico, true);
+});
+
+teste('Prestidigitação acende a tocha; Druidismo prevê o tempo; Oração de Cura cura fora do combate em 10 minutos', () => {
+  const g = grupoDeUtilidade({ cantrips: ['prestidigitacao', 'arteDruidica'] });
+  const t0 = g.estado.minutos;
+  assert.ok(!g.dara.tochaAcesa);
+  const p = conjurarFora(g.estado, g.ilvan, 'prestidigitacao', { ...g.ctx, opcao: 'tocha', alvo: g.dara });
+  assert.ok(p.ok, p.why);
+  assert.equal(g.dara.tochaAcesa, true);
+  const c = conjurarFora(g.estado, g.ilvan, 'arteDruidica', { ...g.ctx, opcao: 'clima' });
+  assert.ok(c.ok && typeof c.resultado.truque.clima === 'string');
+  g.brenn.spellcasting.prepared.push('oracaoDeCura');
+  g.dara.hp = 1;
+  const o = conjurarFora(g.estado, g.brenn, 'oracaoDeCura', g.ctx);
+  assert.ok(o.ok, o.why);
+  assert.ok(g.dara.hp > 1);
+  assert.equal(g.brenn.spellcasting.slots[2], 1);
+  assert.ok(g.estado.minutos - t0 >= 10);
+});
+
+teste('conjurar fora: caído ou incapacitado não conjura', () => {
+  const g = grupoDeUtilidade({ cantrips: ['taumaturgia'] });
+  addCondition(g.ilvan, 'paralisado');
+  assert.equal(conjurarFora(g.estado, g.ilvan, 'taumaturgia', g.ctx).ok, false);
+  const h = grupoDeUtilidade({ cantrips: ['taumaturgia'] });
+  h.ilvan.hp = 0;
+  assert.equal(conjurarFora(h.estado, h.ilvan, 'taumaturgia', h.ctx).ok, false);
+});
+
+teste('melhorParaTeste escolhe quem tem a melhor chance, com a vantagem da magia', () => {
+  const g = grupoDeUtilidade({ cantrips: ['taumaturgia'] });
+  for (const h of g.party) h.abilities.cha = 8;
+  g.brenn.abilities.cha = 10;
+  g.ilvan.abilities.cha = 8;
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'taumaturgia', g.ctx).ok);
+  const m = melhorParaTeste(g.estado, g.party, 'intimidacao', 14);
+  assert.equal(m.quem, g.ilvan, 'a vantagem pesa mais que +0/+1 de diferença');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

@@ -165,10 +165,21 @@ export function criarCenaCaverna(app, config) {
             requer: (ctx) => (ctx.flags.droopContou ? 'ele já contou tudo' : null), oculta: true },
           { texto: 'Estes túneis foram cavados à mão, e não por goblin. Quem cavou?', etiqueta: 'Anão', vai: 'tunel', uma: true,
             requer: (ctx) => (ctx.algum((c) => /an[ãa]o/i.test(`${c.raca ?? ''} ${c.ancestry ?? ''}`)) ? null : 'só um anão repara nisso'), oculta: true },
+          { texto: 'Escutar o que Droop resmunga entre dentes, em goblin.', magia: 'compreenderIdiomas', magiaNome: 'Compreender Idiomas',
+            vai: 'murmura', uma: true, oculta: true },
           { texto: 'Some daqui, Droop. E não volta.', fim: 'solto' },
           { texto: 'Atacar.', fim: 'luta' },
           { texto: 'Até mais.', fim: 'paz' },
         ],
+      },
+      // Compreender Idiomas: o que o goblin resmunga sem querer, em goblin. É o mesmo que
+      // ele contaria sob pressão, sem teste e sem ele saber que foi ouvido.
+      murmura: {
+        narra: 'A magia pesca as palavras que o goblin engole entre os dentes e as devolve em língua de gente.',
+        fala: () => (guardasVivos().length
+          ? ['…o da esquerda ronca, o da direita finge que não vê Droop, e se eles gritam o grande lá no fundo acorda… Droop não vai ser o que avisou. Droop não viu nada…']
+          : ['…o grande mora depois do rio, com os lobos. Droop nunca vai lá. Droop só carrega lenha…']),
+        opcoes: [{ texto: 'Mais uma coisa…', vai: 'oi' }],
       },
       quem: {
         fala: () => (guardasVivos().length

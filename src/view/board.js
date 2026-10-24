@@ -24,6 +24,7 @@
 import { getSheet, drawSprite, frameAt, animDaFolha } from '../art/sheet.js';
 import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
 import { ladrilhoChao } from '../art/chao.js';
+import { faixaDaFace, topoDoBloco } from '../art/faces.js';
 import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt } from '../core/grid.js';
@@ -98,12 +99,12 @@ const SUPERFICIE = {
   // O esconderijo: cor lisa por enquanto, para julgar o traçado antes da arte.
   // O esconderijo. `topo` é o recuo em cor lisa enquanto o atlas não carrega.
   espinheiro: { topo: GRAMA, lado: TERRA, objeto: 'espinheiro', chao: 'grama' },
-  rocha: { topo: ROCHA_TOPO, lado: ROCHA_LADO, chao: 'rocha' },
-  caverna: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'caverna' },
+  rocha: { topo: ROCHA_TOPO, lado: ROCHA_LADO, chao: 'rocha', face: 'penhasco' },
+  caverna: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'caverna', face: 'penhasco' },
   riacho: { topo: ['#35647d', '#315d75'], lado: ROCHA_LADO, chao: 'riacho' },
   poco: { topo: ['#22465e', '#204259'], lado: ROCHA_LADO, chao: 'poco' },
   ponte: { topo: ['#7a5a36', '#6d5030'], lado: ['#3f2c19', '#53391f'], chao: 'ponte', objeto: 'ponte' },
-  entulho: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'entulho' },
+  entulho: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'entulho', face: 'penhasco' },
   estalagmite: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'estalagmite', chao: 'caverna' },
   mantimentos: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mantimentos', chao: 'caverna' },
   leito: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'leito', chao: 'caverna' },
@@ -111,10 +112,14 @@ const SUPERFICIE = {
   bau: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'bau', chao: 'caverna' },
   tocaia: { topo: GRAMA, lado: TERRA, objeto: 'tocaia', chao: 'grama' },
   // O porão da mansão: cor lisa e caixas provisórias até a arte do PixelLab.
-  mesa: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mesa', chao: 'caverna' },
-  sarcofago: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'sarcofago', chao: 'caverna' },
-  grade: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'grade', chao: 'caverna' },
-  fosso: { topo: ['#14110e', '#110e0c'], lado: ['#0d0b09', '#15120f'] },
+  // A parede construída: topo em corte e faces de pedra lavrada (atlas das faces).
+  alvenaria: { topo: ROCHA_TOPO, lado: ROCHA_LADO, topoBloco: 'alvenaria', face: 'alvenaria' },
+  laje: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria' },
+  cisterna: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'cisterna', face: 'alvenaria' },
+  mesa: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mesa', chao: 'laje', face: 'alvenaria' },
+  sarcofago: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'sarcofago', chao: 'laje', face: 'alvenaria' },
+  grade: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'grade', chao: 'laje', face: 'alvenaria' },
+  fosso: { topo: ['#14110e', '#110e0c'], lado: ['#0d0b09', '#15120f'], chao: 'fosso' },
   // A rua: o prédio é um sprite só, desenhado na casa da frente da pegada.
   casa: { topo: GRAMA, lado: TERRA, objeto: 'casa', chao: 'grama' },
   taverna: { topo: ESTRADA, lado: TERRA, objeto: 'taverna', chao: 'estrada' },
@@ -177,6 +182,8 @@ const CHAO_LONGO = { fill: 'rgba(224, 150, 60, .13)', stroke: 'rgba(224, 150, 60
 // aliado que Esculpir Magias poupa em verde.
 /** A cor de cada coisa que fica no chão. */
 const COR_DA_ZONA = {
+  // Detectar Magia: o chão onde há aura brilha em violeta.
+  auraMagica: { fill: 'rgba(170,120,255,.34)', stroke: 'rgba(222,196,255,.95)' },
   graxa: { fill: 'rgba(24,20,16,.42)', stroke: 'rgba(120,104,72,.55)' },
   teia: { fill: 'rgba(244,240,228,.46)', stroke: 'rgba(255,255,255,.95)' },
   aura: { fill: 'rgba(232,195,90,.06)', stroke: 'rgba(255,224,138,.38)' },
@@ -666,7 +673,19 @@ export class Board {
       return;
     }
 
-    if (lift > 0) {
+    // Faces desenhadas (alvenaria, penhasco): uma faixa de um nível por vez,
+    // da de cima para baixo, até o chão. Sem o atlas, as de cor lisa abaixo.
+    const faixa = lift > 0 && s.face && faixaDaFace(s.face, 'esq', x, y, 0);
+    if (faixa) {
+      ctx.imageSmoothingEnabled = false;
+      for (let n = 0; n < hgt; n++) {
+        const oy = sy + TH / 2 + n * LIFT;
+        for (const lado of ['esq', 'dir']) {
+          const f = faixaDaFace(s.face, lado, x, y, n);
+          ctx.drawImage(f.img, f.sx, f.sy, f.w, f.h, lado === 'esq' ? sx - TW / 2 : sx, oy, f.w, f.h);
+        }
+      }
+    } else if (lift > 0) {
       // A face lateral do barranco é TERRA, não grama: é o degrau marrom que
       // separa o alto do barranco da estrada.
       ctx.fillStyle = s.lado[0];
@@ -691,7 +710,7 @@ export class Board {
     // motor, e o canto da célula fica meia largura à esquerda do vértice de
     // cima. A grade NÃO vem da arte — o montador limpa a aresta de cada
     // ladrilho — e sim do traço abaixo, igual em toda superfície.
-    const lad = s.chao && ladrilhoChao(s.chao, x, y);
+    const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (s.chao && ladrilhoChao(s.chao, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy, lad.w, lad.h);
@@ -1454,6 +1473,7 @@ export class Board {
         if (borda && !zonas.has(k)) zonas.set(k, COR_DA_ZONA.aura);
       }
     }
+    for (const a of this.overlay.auras ?? []) zonas.set(`${a.x},${a.y}`, COR_DA_ZONA.auraMagica);
     const miraAliados = this.modo?.kind === 'spell' && this.enc.miraAliados(this.modo.spell);
 
     this.fx.drawGround(ctx, this);

@@ -617,6 +617,9 @@ h2 {
 .tile.on { box-shadow: 0 0 0 1px var(--gold-claro), 0 0 14px rgba(161, 112, 42, .6); }
 .tile.item { background-image: url('./art/hud/slot.png'); }
 .tile.off { opacity: .34; cursor: not-allowed; filter: grayscale(.8); }
+/* arma na bainha: o azulejo saca, não ataca */
+.tile.guardada:not(.off) { border-style: dashed; }
+.tile.guardada:not(.off) canvas { filter: saturate(.55) brightness(.9); }
 /* Soquete vazio: só na última página das magias, para as setas não mudarem
    de lugar ao trocar de página. */
 .tile.vazio { cursor: default; opacity: .35; filter: grayscale(.4); }

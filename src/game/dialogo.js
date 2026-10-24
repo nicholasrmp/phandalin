@@ -31,33 +31,46 @@
 //   etiqueta  o "[Anão]" na frente, para quem a opção existe
 //   uma       some depois de escolhida (perguntas de um menu de dúvidas)
 //   efeito    (ctx) → void, roda ao escolher (marcar uma flag, dar um item)
+//   magia     'compreenderIdiomas' (ou outra): a opção só existe com essa magia de
+//             pé no grupo (ctx.magia(id)); sem ela fica cinza, ou some com `oculta`
+//   magiaNome o nome da magia, para o motivo em cinza
 //
 // NÓ
 //   fala      o que o NPC diz (string ou lista)
 //   narra     texto de cena antes da fala, sem nome
 //   ao        (ctx) → void, roda ao chegar no nó
+//   pensa     o que ele pensa neste nó (Detectar Pensamentos); sem isto, vale o
+//             texto geral da criatura em `magias-fora-dados.js`
 //   fim       nó sem opções que encerra com esse valor
 //
 // As flags da campanha moram em `app.campanha.flags`; a conversa pode lê-las
 // em `requer` e escrevê-las em `efeito`, então o que se descobriu falando com
 // um NPC muda o que outro diz.
 //
+// MAGIAS. As magias de utilidade (rules/utilidade.js) entram na conversa sozinhas:
+// as chances mostram a vantagem que elas dão (Taumaturgia, Amizade, Enfeitiçar
+// Pessoa, Sugestão...), a opção "Conjurar uma magia…" aparece quando alguém do
+// grupo pode conjurar algo que vale aqui, e a de "Sondar a mente" com Detectar
+// Pensamentos de pé. Conjurar gasta o espaço e o tempo, e a conversa continua no
+// mesmo nó.
+//
 // TEXTO NOSSO, sempre. Os nomes do cenário entram pela Fan Content Policy; as
 // falas são escritas aqui.
 
 import { narrar } from '../view/narrativa.js';
-import { d20 } from '../core/dice.js';
-import { skillBonus, SKILL_NAME } from '../rules/abilities.js';
+import { SKILL_NAME } from '../rules/abilities.js';
+import { previsaoDeTeste, melhorParaTeste, rolarTeste, ativaDe, entendeIdiomas } from '../rules/utilidade.js';
+import { ctxDe, magiasNaConversa, conjurarNaConversa, sondar } from './magias-fora.js';
 
 const comoLista = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const sinal = (n) => (n >= 0 ? `+${n}` : `${n}`);
 /** Chance de um teste: sem o 20 natural automático, que é só do ataque. */
 const chanceDoTeste = (bonus, cd) => Math.max(0, Math.min(1, (21 - (cd - bonus)) / 20));
 
-/** Quem rola o teste: o selecionado, ou o melhor do grupo naquela perícia. */
+/** Quem rola o teste: o selecionado, ou o de melhor chance (com as magias) naquela perícia. */
 function quemRola(ctx, teste) {
   if (teste.quem === 'selecionado' && ctx.falante) return ctx.falante;
-  return ctx.herois.reduce((a, b) => (skillBonus(b, teste.pericia) > skillBonus(a, teste.pericia) ? b : a));
+  return melhorParaTeste(ctx.estado, ctx.herois, teste.pericia, teste.cd, { npc: ctx.npc }).quem;
 }
 
 /** O contexto que as funções da árvore recebem. */
@@ -67,10 +80,14 @@ function contexto(app, npc, fora = null) {
   const herois = (fora?.herois ?? enc.combatants).filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const campanha = (app.campanha ??= {});
   const flags = (campanha.flags ??= {});
+  const x = ctxDe(app, enc);
   return {
-    app, enc, npc, herois, flags,
+    app, enc, npc, herois, flags, x, estado: x.estado,
     falante: herois.includes(app.selected) ? app.selected : herois[0],
     algum: (pred) => herois.some(pred),
+    // Uma magia de utilidade de pé no grupo (Compreender Idiomas, Detectar Pensamentos...).
+    magia: (id) => Boolean(ativaDe(x.estado, herois, id)),
+    entendeIdiomas: () => entendeIdiomas(x.estado, herois),
   };
 }
 
@@ -86,13 +103,18 @@ export async function conversar(app, npc, arvore, fora = null) {
   const usadas = (ctx.flags[`dialogo:${npc.defId ?? npc.id ?? npc.name}:usadas`] ??= []);
   let id = arvore.inicio;
   let teste = null;
+  // Depois de conjurar ou sondar, o mesmo nó volta: sem repetir a fala nem o `ao`.
+  let repetindo = false;
+  let extra = [];
 
   for (let passos = 0; passos < 200; passos++) {
     const no = arvore.nos[id];
     if (!no) throw new Error(`diálogo: nó "${id}" não existe`);
-    no.ao?.(ctx);
-    const falas = comoLista(typeof no.fala === 'function' ? no.fala(ctx) : no.fala);
-    const narra = comoLista(typeof no.narra === 'function' ? no.narra(ctx) : no.narra);
+    if (!repetindo) no.ao?.(ctx);
+    const falas = repetindo ? [] : comoLista(typeof no.fala === 'function' ? no.fala(ctx) : no.fala);
+    const narra = repetindo ? extra : comoLista(typeof no.narra === 'function' ? no.narra(ctx) : no.narra);
+    repetindo = false;
+    extra = [];
     const paginas = [];
     // A primeira página leva o resultado do teste que trouxe até aqui.
     if (narra.length) paginas.push({ texto: narra });
@@ -114,17 +136,38 @@ export async function conversar(app, npc, arvore, fora = null) {
       const motivo = o.requer?.(ctx) ?? null;
       if (motivo && o.oculta) return;
       let detalhe = o.etiqueta ?? null;
+      const semMagia = o.magia && !ctx.magia(o.magia);
+      if (semMagia && o.oculta) return;
       if (o.teste) {
         const quem = quemRola(ctx, o.teste);
-        const bonus = skillBonus(quem, o.teste.pericia);
-        const chance = Math.round(chanceDoTeste(bonus, o.teste.cd) * 100);
-        detalhe = [detalhe, `${SKILL_NAME[o.teste.pericia]} CD ${o.teste.cd} · ${quem.name} ${sinal(bonus)} · ${chance}%`]
+        const p = previsaoDeTeste(ctx.estado, ctx.herois, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc });
+        const marca = p.auto ? ' · cumprido' : p.vantagem ? ' · vantagem' : p.desvantagem ? ' · desvantagem' : '';
+        detalhe = [detalhe, `${SKILL_NAME[o.teste.pericia]} CD ${o.teste.cd} · ${quem.name} ${sinal(p.bonus)}${marca} · ${Math.round(p.chance * 100)}%`]
           .filter(Boolean).join('] [');
       }
-      visiveis.push({ rotulo: o.texto, detalhe, motivo, valor: { o, chave } });
+      visiveis.push({ rotulo: o.texto, detalhe, motivo: motivo ?? (semMagia ? `precisa de ${o.magiaNome ?? o.magia}` : null), valor: { o, chave } });
     });
 
+    // As magias de utilidade: conjurar na conversa e sondar a mente.
+    if (magiasNaConversa(ctx.x, npc).length) {
+      visiveis.push({ rotulo: 'Conjurar uma magia…', detalhe: 'gasta espaço e tempo', valor: { magia: true } });
+    }
+    if (!npc.dead && ativaDe(ctx.estado, ctx.herois, 'detectarPensamentos')) {
+      visiveis.push({ rotulo: 'Sondar a mente dele', detalhe: 'Detectar Pensamentos', valor: { sondar: true } });
+    }
+
     const escolha = await narrar(app.root, { formato: 'painel', paginas, escolhas: visiveis, lista: true });
+    if (escolha?.magia || escolha?.sondar) {
+      if (escolha.magia) {
+        const texto = await conjurarNaConversa(app, ctx.x, npc);
+        extra = texto ?? ['Ninguém conjura nada.'];
+      } else {
+        const dono = ctx.herois.find((h) => ativaDe(ctx.estado, ctx.herois, 'detectarPensamentos', { por: h }));
+        extra = dono ? sondar(ctx.x, dono, npc, id, no.pensa) : ['A magia não está de pé.'];
+      }
+      repetindo = true;
+      continue;
+    }
     if (!escolha?.o) return 'saiu';
     const { o, chave } = escolha;
     if (o.uma) usadas.push(chave);
@@ -132,10 +175,10 @@ export async function conversar(app, npc, arvore, fora = null) {
 
     if (o.teste) {
       const quem = quemRola(ctx, o.teste);
-      const r = d20(ctx.enc.rng, skillBonus(quem, o.teste.pericia));
-      const passou = r.total >= o.teste.cd;
-      teste = { quem: quem.name, pericia: SKILL_NAME[o.teste.pericia], total: r.total, cd: o.teste.cd, passou };
-      ctx.enc.say('acao', `${quem.name} · ${SKILL_NAME[o.teste.pericia]}: ${r.total} contra CD ${o.teste.cd} — ${passou ? 'sucesso' : 'falha'}`);
+      const r = rolarTeste(ctx.estado, ctx.herois, ctx.enc.rng, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc });
+      const passou = r.passou;
+      teste = { quem: quem.name, pericia: SKILL_NAME[o.teste.pericia], total: r.total, cd: o.teste.cd, passou, fontes: r.fontes };
+      ctx.enc.say('acao', `${quem.name} · ${SKILL_NAME[o.teste.pericia]}: ${r.total} contra CD ${o.teste.cd} — ${passou ? 'sucesso' : 'falha'}${r.fontes.length ? ` (${r.fontes.join('; ')})` : ''}`);
       const destino = passou ? o.sucesso : o.falha;
       if (destino == null) return passou ? 'sucesso' : 'falha';
       id = destino;

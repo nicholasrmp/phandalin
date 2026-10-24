@@ -123,6 +123,19 @@ GRUPOS = {
         'quadros': {'todas': [0, 1, 2, 3, 8, 13, 15]},
         'ancora': 'base',
     },
+    # O porao da mansao. Mesa: fora 6, 8-12, 14 e 15 (papel grande ou objeto
+    # alto demais por cima). Sarcofago: so os de tampa inteira e fechada --
+    # a cena manda abrir --, fora os quebrados, acorrentados e com cipo.
+    'mesa': {
+        'pasta': 'mesa/62f79e21-9e1f-483b-ae95-1d240c419f33',
+        'quadros': {'todas': [0, 1, 2, 3, 4, 5, 7, 13]},
+        'ancora': 'base',
+    },
+    'sarcofago': {
+        'pasta': 'sarcofago/f778cffd-2bb5-4d84-af27-eb6a15fde315',
+        'quadros': {'todas': [0, 1, 2, 3, 9]},
+        'ancora': 'base',
+    },
     # O bau: os de madeira com cinta de ferro. Fora os dourados (3, 6, 15),
     # o de corrente (8) e o de tabuas cruzadas (5).
     'bau': {
@@ -134,6 +147,7 @@ GRUPOS = {
 
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
             'north', 'north-west', 'west', 'south-west']
+DIAGONAIS = ['south-east', 'north-east', 'north-west', 'south-west']
 
 # Objetos com direcao: as oito vistas de `rotation_urls`, uma por papel, e o
 # tabuleiro escolhe pela rotacao da camera. `ancora` aqui e o centro da
@@ -145,6 +159,14 @@ DIRIGIDOS = {
     'cavalo': {'pasta': 'cavalo/2d4dd2f2-d929-454d-bf40-97ae971d184d', 'meia_pegada': 9,
                'recolor': ('tordilho', None)},
     # A ponte do esconderijo: tabuleiro de 2 x 2 casas com corrimao de corda.
+    # A rua de Phandalin: pegada de 3 x 3 casas, cujo centro fica 48 px acima
+    # da quina da frente; o pe da parede fica um pouco recuado da quina.
+    # O colmo saiu mais claro que a estrada (luminancia 121 contra 99): o
+    # telhado tem de ser a parte mais escura, entao as tres cores dele descem.
+    'casa-a': {'pasta': 'casa-a/d0fbc498-ad5b-4a1f-9d3f-20f70b17b577', 'meia_pegada': 44, 'direcoes': DIAGONAIS,
+               'cores': {'#8f7a3e': '#66572c', '#6e5a2c': '#4c3e1f', '#b39d5c': '#85733f'}},
+    'casa-b': {'pasta': 'casa-b/b991eb38-97fc-48fa-b31c-1d74a61e2e46', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
+    'taverna': {'pasta': 'taverna/e672b189-bc57-474d-ae3c-db375a0c3da5', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
 }
 
 # O cavalo B e o mesmo desenho com a pelagem trocada, cor por cor exata: baio
@@ -223,9 +245,13 @@ def main():
         if not pasta.exists():
             print(f'  ({nome}: pasta ainda nao existe, pulando)')
             continue
-        for d in DIRECOES:
+        # O tabuleiro so usa as quatro diagonais; o predio grande nao gasta
+        # atlas com as outras quatro.
+        for d in g.get('direcoes', DIRECOES):
             im = Image.open(pasta / f'storage_urls_{d}.png').convert('RGBA')
             im = im.crop(im.getbbox())
+            if 'cores' in g:
+                im = recolorir(im, g['cores'])
             a = (im.width // 2, im.height - 1 - g['meia_pegada'])
             quadros.append((nome, d, d, im, a))
             if 'recolor' in g:

@@ -136,7 +136,9 @@ casa(27, 11, '_', 4, 1)                              # porta ao pé da escada da
 
 # --------------------------------------------- 1. Porão ----
 pinta(R(21, 27), R(12, 18), '_', 4, 2)
-pinta(R(21, 23), R(14, 16), 'W', 4, 2)               # a cisterna
+# A cisterna tem mureta: a água fica um nível acima do piso, e o motor
+# desenha a borda de pedra. Entrar nela é escalar a mureta.
+pinta(R(21, 23), R(14, 16), 'W', 5, 2)               # a cisterna
 for x in R(21, 23): casa(x, 12, 's')
 casa(22, 18, 's'); casa(23, 18, 's')
 # Patamar de 1,5 x 4,5 m a leste, com duas escadinhas descendo para o porão.
@@ -154,6 +156,16 @@ for (x, y) in [(16, 15), (17, 15), (18, 15), (19, 14)]: casa(x, y, 's')
 
 # Túnel da porta secreta da cisterna até a caverna (a passagem sul).
 pinta(R(15, 19), [17], '_', 4, 0)
+
+# O que é caverna natural (a 8, o túnel e a saída) fica chão de terra; o
+# resto do porão, que foi construído, é piso de lajes (`L`).
+NATURAL = {(x, y) for (y, x0, x1) in caverna for x in R(x0, x1)} | {(x, 17) for x in R(15, 19)}
+for y in range(H):
+    for x in range(W):
+        if T[y][x] == '_' and (x, y) not in NATURAL:
+            T[y][x] = 'L'
+        if T[y][x] == 'W':
+            T[y][x] = 'V'
 
 # Portas secretas: parede até alguém achar.
 for (x, y, _) in SECRETAS.values():
@@ -177,6 +189,21 @@ for y in range(H):
             luzes = [L[b][a] for a, b in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))
                      if 0 <= a < W and 0 <= b < H and T[b][a] != 'R']
             L[y][x] = max(luzes) if luzes else 0
+
+# ------------------------------------------------- alvenaria e rocha ----
+# Parede que encosta em sala construída (laje, cisterna, mesa…) é alvenaria
+# (`M`); a que só encosta na caverna e na fenda é rocha natural (`R`). As
+# portas secretas e a trancada ficam no corpo da alvenaria: abertas, viram
+# laje (a cena troca a casa).
+CONSTRUIDO = set('LVmQGsKz')
+for y in range(H):
+    for x in range(W):
+        if T[y][x] != 'R':
+            continue
+        viz = [T[b][a] for a in (x - 1, x, x + 1) for b in (y - 1, y, y + 1)
+               if 0 <= a < W and 0 <= b < H and (a, b) != (x, y)]
+        if any(v in CONSTRUIDO for v in viz):
+            T[y][x] = 'M'
 
 # ---------------------------------------------------------------- saída ----
 import json

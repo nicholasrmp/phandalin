@@ -121,6 +121,9 @@ export const GLIFOS = {
   // Buraco aberto no chão (o fosso achado ou disparado): não se anda nele —
   // o desnível barra —, mas visão e flecha passam por cima.
   'O': { kind: 2, sup: 'fosso' },
+  'L': { kind: 0, sup: 'laje' },           // piso de lajes do porão
+  'M': { kind: 1, sup: 'alvenaria' },      // parede de pedra lavrada do porão
+  'V': { kind: 2, sup: 'cisterna' },       // água parada da cisterna: nada-se
   // A rua de Phandalin: prédios de 3 x 3 casas (um sprite só por prédio; a
   // variante vem da anotação do mapa) e barris e caixotes na grama.
   'H': { kind: 1, sup: 'casa' },

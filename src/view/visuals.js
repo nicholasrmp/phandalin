@@ -1251,7 +1251,7 @@ const SPELL_VISUALS = {
     const casas = areaTiles ?? [dest];
     board.fx.area(casas, { color: '#dfe6ec', dur: 0.8 });
     // Os tufos de névoa são a zona (desenhados pelo tabuleiro enquanto durar).
-    casas.filter((t) => (t.x + t.y) % 3 === 0).slice(0, 8)
+    casas.filter((t) => (t.x + t.y) % 3 === 0).slice(0, 4)
       .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'nevoa-nuvem', { fps: 9, altura: 16, sumir: 0.4 }), i * 60));
     return 0.2;
   },
@@ -1259,7 +1259,7 @@ const SPELL_VISUALS = {
   escuridao: (board, { areaTiles, dest }) => {
     const casas = areaTiles ?? [dest];
     board.fx.area(casas, { color: '#1c1428', dur: 0.9 });
-    casas.filter((t) => (t.x + t.y) % 3 === 0).slice(0, 10)
+    casas.filter((t) => (t.x + t.y) % 4 === 0).slice(0, 3)
       .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'escuridao-explosao', { fps: 9, altura: 16, sumir: 0.5 }), i * 50));
     return 0.2;
   },
@@ -1335,7 +1335,7 @@ const SPELL_VISUALS = {
   silencio: (board, { areaTiles, dest }) => {
     const casas = areaTiles ?? [dest];
     board.fx.area(casas, { color: '#9bb7d8', dur: 0.9 });
-    board.fx.quadros(dest, 'silencio-onda', { fps: 8, altura: 6, sumir: 0.2 });
+    board.fx.quadros(dest, 'silencio-onda', { fps: 8, altura: 10, sumir: 0.2 });
     board.fx.ring(dest, { color: '#c9defa', radius: 100, dur: 1.0, width: 2 });
     // A esfera de gelo em si é a zona (desenhada pelo tabuleiro enquanto durar).
     return 0.2;
@@ -1344,11 +1344,11 @@ const SPELL_VISUALS = {
   aumentarReduzir: (board, { caster, dest }) => {
     const alvo = board.enc.at(dest.x, dest.y);
     if (alvo && alvo.side === caster.side) {
-      board.fx.quadros(dest, 'aumentar', { fps: 9, altura: 40, sumir: 0.2 });
+      board.fx.quadros(dest, 'aumentar', { fps: 9, altura: 44, sumir: 0.2 });
       board.fx.motes(dest, { color: '#ffe9a8', count: 8, rise: 60, spread: 34 });
     } else {
       // Reduzir: um anel lavanda grande que se FECHA sobre o alvo.
-      board.fx.quadros(dest, 'reduzir', { fps: 9, altura: 32, sumir: 0.2 });
+      board.fx.quadros(dest, 'reduzir', { fps: 9, altura: 36, sumir: 0.2 });
       board.fx.motes(dest, { color: '#b9a4ee', count: 6, rise: 14, spread: 30, dur: 0.6 });
     }
     return 0.1;
@@ -1370,7 +1370,7 @@ const SPELL_VISUALS = {
     for (const t of quem) {
       board.fx.beam(caster.pos, t.pos, { color: '#e8a0c8', dur: reuso ? 0.5 : 0.9, width: 2, jagged: true, pulso: true });
       if (reuso) { board.fx.ring(t.pos, { color: '#e8a0c8', radius: 36, dur: 0.5, width: 2 }); continue; }
-      board.fx.quadros(t.pos, 'coroa-loucura', { fps: 8, altura: 66, sumir: 0.3 });
+      board.fx.quadros(t.pos, 'coroa-loucura', { fps: 8, altura: 70, sumir: 0.3 });
       board.fx.ring(t.pos, { color: '#e8a0c8', radius: 44, dur: 0.7, width: 3 });
     }
     return 0.1;
@@ -1436,7 +1436,7 @@ const SPELL_VISUALS = {
     for (const t of alvos) {
       const op = t.conditions?.find((c) => c.id === 'aprimorado')?.data?.opcao;
       const [cor, sigla] = OPCAO[op] ?? ['#ffe9a8', '+'];
-      board.fx.quadros(t.pos, 'aprimorar', { fps: 9, altura: 34, sumir: 0.2 });
+      board.fx.quadros(t.pos, 'aprimorar', { fps: 9, altura: 38, sumir: 0.2 });
       board.fx.pillar(t.pos, { color: cor, dur: 0.8, width: 12, height: 80, alpha: 0.35 });
       board.fx.ring(t.pos, { color: cor, radius: 44, dur: 0.8, width: 3 });
       board.fx.glyph(t.pos, { text: sigla, color: cor, dur: 1.1, size: 16, rise: 50 });
@@ -1454,13 +1454,13 @@ const SPELL_VISUALS = {
   sugestao: (board, { caster, dest }) => {
     board.fx.beam(caster.pos, dest, { color: '#f0a8d0', dur: 0.8, width: 2, jagged: false, pulso: true });
     board.fx.ring(dest, { color: '#f0a8d0', radius: 50, dur: 0.9, width: 2 });
-    board.fx.quadros(dest, 'sugestao-espiral', { fps: 7, altura: 66, sumir: 0.3 });
+    board.fx.quadros(dest, 'sugestao-espiral', { fps: 7, altura: 66, sumir: 0.5 });
     board.fx.glyph(dest, { text: '…', color: '#f8d0e6', dur: 1.2, size: 32, rise: 36 });
     return 0.3;
   },
   // Luz do Dia: um clarão dourado sobe no ponto e se apaga num anel enorme (a esfera de luz fica na zona).
   luzDoDia: (board, { dest, areaTiles }) => {
-    board.fx.quadros(dest, 'sol-clarao', { fps: 8, altura: 110, sumir: 0.3 });
+    board.fx.quadros(dest, 'sol-clarao', { fps: 8, altura: 118, sumir: 0.3 });
     board.fx.ring(dest, { color: '#fff3c0', radius: 120, dur: 1.0, width: 3 });
     board.fx.ring(dest, { color: '#ffe9a8', radius: 60, dur: 0.7, width: 3 });
     board.fx.area((areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0).slice(0, 40), { color: '#fff3c0', dur: 0.9 });
@@ -1481,10 +1481,9 @@ const SPELL_VISUALS = {
   crescerPlantas: (board, { dest, areaTiles }) => {
     const casas = (areaTiles ?? [dest]).slice().sort((a, b) => Math.hypot(a.x - dest.x, a.y - dest.y) - Math.hypot(b.x - dest.x, b.y - dest.y));
     board.fx.ring(dest, { color: '#6ee89a', radius: 70, dur: 0.9, width: 3 });
-    board.fx.area(casas.filter((t) => (t.x + t.y) % 2 === 0).slice(0, 60), { color: '#6ee89a', dur: 0.9 });
     board.fx.motes(dest, { color: '#9ff0b8', count: 8, rise: 50, spread: 40, dur: 0.9 });
-    casas.filter((t) => (t.x + t.y) % 2 === 0).slice(0, 16).forEach((t) => setTimeout(
-      () => board.fx.quadros(t, 'plantas-brotar', { fps: 9, altura: 12, sumir: 0.3 }),
+    casas.filter((t) => (t.x + t.y) % 3 === 0).slice(0, 6).forEach((t) => setTimeout(
+      () => board.fx.quadros(t, 'plantas-brotar', { fps: 9, altura: 8, sumir: 0.3 }),
       distanciaDe(dest, t) * 60,
     ));
     return 0.3;
@@ -1514,7 +1513,7 @@ const SPELL_VISUALS = {
   // Bom Fruto: frutinhas vermelhas e verdes brotam em volta da mochila.
   bomFruto: (board, { caster }) => {
     board.fx.ring(caster.pos, { color: '#9fe870', radius: 44, dur: 0.7, width: 2 });
-    board.fx.quadros(caster.pos, 'bom-fruto', { fps: 6, altura: 34, sumir: 0.3 });
+    board.fx.quadros(caster.pos, 'bom-fruto', { fps: 6, altura: 34, sumir: 0.5 });
     board.fx.motes(caster.pos, { color: '#9fe870', count: 6, rise: 38, spread: 22, dur: 0.9 });
     return 0.2;
   },
@@ -1565,7 +1564,7 @@ const SPELL_VISUALS = {
     board.fx.beam(caster.pos, dest, { color: '#f0e8ff', dur: 0.4, width: 3, jagged: true });
     board.fx.ring(dest, { color: '#f0e8ff', radius: 64, dur: 0.5, width: 3, fecha: true });
     board.fx.halo(caster.pos, { color: '#c7b4ff', dur: 0.6, radius: 24 });
-    board.fx.quadros(dest, 'contramagica-x', { fps: 10, altura: 36 });
+    board.fx.quadros(dest, 'contramagica-x', { fps: 10, altura: 44 });
     return 0.35;
   },
   // Glifo de Proteção: a runa é gravada no chão num risco de luz dourada (a runa em si é a zona, em 2.5D).
@@ -1578,7 +1577,7 @@ const SPELL_VISUALS = {
 
   // Dissipar: um anel violeta se abre e a zona (ou a criatura) se desfaz em brumas.
   dissiparMagia: (board, { dest, areaTiles }) => {
-    board.fx.quadros(dest, 'dissipar-sigilo', { fps: 10, altura: 22 });
+    board.fx.quadros(dest, 'dissipar-sigilo', { fps: 10, altura: 26 });
     board.fx.motes(dest, { color: '#c7b4ff', count: 12, rise: 36, spread: 40 });
     return 0.2;
   },

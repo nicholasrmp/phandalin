@@ -109,7 +109,11 @@ export function playCharacter(enc, c) {
   const melee = c.weapons?.find((w) => !WEAPONS[w].ranged);
   const ranged = c.weapons?.find((w) => WEAPONS[w].ranged);
 
-  if (!c.actionUsed && melee && distanceFt(c.pos, nearest.pos) <= 5) {
+  // Só se ataca com a arma na mão: a outra é sacada antes (a interação
+  // gratuita do turno; `sacarArma` cobra a ação se ela já foi gasta).
+  const naMao = (w) => enc.empunha(c, w) || enc.sacarArma(c, w).ok;
+
+  if (!c.actionUsed && melee && distanceFt(c.pos, nearest.pos) <= 5 && naMao(melee)) {
     enc.attackAction(c, nearest, melee);
     enc.endTurn(c);
     return;
@@ -126,8 +130,8 @@ export function playCharacter(enc, c) {
 
   if (!c.actionUsed && !c.dead && !hasCondition(c, 'inconsciente')) {
     const d = distanceFt(c.pos, nearest.pos);
-    if (melee && d <= 5) enc.attackAction(c, nearest, melee);
-    else if (ranged && enc.canAttack(c, nearest, ranged).ok) enc.attackAction(c, nearest, ranged);
+    if (melee && d <= 5 && naMao(melee)) enc.attackAction(c, nearest, melee);
+    else if (ranged && d > 5 && naMao(ranged) && enc.canAttack(c, nearest, ranged).ok) enc.attackAction(c, nearest, ranged);
   }
   if (!c.acted) enc.endTurn(c);
 }
