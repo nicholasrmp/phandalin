@@ -1575,6 +1575,49 @@ const SPELL_VISUALS = {
     return 0.3;
   },
 
+  // ---- lote 13: invocações, Piscar, Levitação, Círculo Mágico ----
+
+  // Conjurar Animais: um anel verde se abre no chão e folhas sobem; as feras chegam com o evento 'invocado'.
+  conjurarAnimais: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#8fe6a8', radius: 76, dur: 0.8, width: 3 });
+    board.fx.ring(caster.pos, { color: '#d9f7c4', radius: 48, dur: 0.6, width: 2 });
+    board.fx.motes(caster.pos, { color: '#b6f0a0', count: 16, rise: 54, spread: 44, dur: 1.0 });
+    board.fx.shards(caster.pos, { color: '#6ec86e', count: 8, spread: 40 });
+    return 0.3;
+  },
+  // Animar os Mortos: uma bruma verde-violeta sai do corpo e a terra se abre sob ele.
+  animarMortos: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#9ff0b8', dur: 0.35, width: 2, jagged: true });
+    board.fx.ring(dest, { color: '#7fe0a0', radius: 52, dur: 0.8, width: 3 });
+    board.fx.quadros(dest, 'necrotico-mao', { fps: 9 });
+    board.fx.motes(dest, { color: '#a58ad8', count: 16, rise: 50, spread: 26, dur: 1.0 });
+    board.fx.shards(dest, { color: '#5a4a64', count: 8, spread: 30 });
+    return 0.35;
+  },
+  // Piscar: o contorno de quem conjura treme em azul-claro (o some/volta vem dos eventos).
+  piscar: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#bfe6ff', radius: 44, dur: 0.6, width: 2 });
+    board.fx.motes(caster.pos, { color: '#e8f4ff', count: 10, rise: 36, spread: 20, dur: 0.8 });
+    return 0.15;
+  },
+  // Levitação: o vento sobe em coluna sob o alvo, e o corpo se solta do chão (a altura é do tabuleiro).
+  levitacao: (board, { caster, dest, reuso }) => {
+    board.fx.beam(caster.pos, dest, { color: '#cfe8ff', dur: 0.35, width: 2, jagged: false });
+    board.fx.ring(dest, { color: '#dff3ff', radius: reuso ? 36 : 52, dur: 0.8, width: 3 });
+    board.fx.motes(dest, { color: '#ffffff', count: 12, rise: 70, spread: 18, dur: 1.0 });
+    if (!reuso) board.fx.hop(board.enc.at(dest.x, dest.y) ?? caster, { dur: 0.5, height: 36 });
+    return 0.2;
+  },
+  // Círculo Mágico: dois anéis de runas correm pelo chão e o cilindro sobe (ele em si é a zona, em 2.5D).
+  circuloMagico: (board, { caster, dest, areaTiles }) => {
+    board.fx.beam(caster.pos, dest, { color: '#e6e0ff', dur: 0.35, width: 2, jagged: false });
+    board.fx.ring(dest, { color: '#e6e0ff', radius: 110, dur: 0.9, width: 3 });
+    board.fx.ring(dest, { color: '#b8a8ff', radius: 70, dur: 0.7, width: 2 });
+    board.fx.area((areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0), { color: '#d8ccff', dur: 0.8 });
+    board.fx.motes(dest, { color: '#f4f0ff', count: 18, rise: 80, spread: 70, dur: 1.1 });
+    return 0.3;
+  },
+
   // Dissipar: um anel violeta se abre e a zona (ou a criatura) se desfaz em brumas.
   dissiparMagia: (board, { dest, areaTiles }) => {
     board.fx.quadros(dest, 'dissipar-sigilo', { fps: 10, altura: 26 });

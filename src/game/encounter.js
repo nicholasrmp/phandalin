@@ -12,6 +12,7 @@ import { makeNpc } from '../rules/npcs.js';
 import { MAPA_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
 import { MAPA_POCO } from './poco.js';
+import { MAPA_CUME } from './cume.js';
 
 // '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura · '1'..'9' elevação
 //
@@ -242,6 +243,17 @@ export function mapaDo(variante = 'padrao') {
       cena: 'rua',
     };
   }
+  if (variante === 'cume') {
+    // O Cume da Wyvern: o grupo chega pelo campo do sudeste, já de olho na
+    // passagem que sobe para o acampamento.
+    return {
+      ...MAPA_CUME,
+      objetos: [],
+      grupo: [{ x: 25, y: 18 }, { x: 26, y: 18 }, { x: 25, y: 19 }, { x: 26, y: 19 }],
+      olhar: { dx: -1, dy: -1 },
+      cena: 'cume',
+    };
+  }
   if (variante === 'poco') {
     // O Poço da Coruja Velha: o grupo sobe a encosta pelo caminho antigo, do sul.
     return {
@@ -331,7 +343,7 @@ export function mapaDo(variante = 'padrao') {
  */
 export function buildFoes(variante = 'padrao') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (variante === 'ermo' || variante === 'ermoNoite' || variante === 'poco') return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume'].includes(variante)) return [];
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
@@ -587,7 +599,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco'].includes(variante)) return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

@@ -69,6 +69,12 @@ const DOMO_CORES = {
   breu: { rgb: [20, 12, 32], borda: [138, 100, 196], escuro: true }, // Escuridão
   vazio: { rgb: [10, 8, 26], borda: [130, 200, 240], escuro: true }, // Fome de Hadar
   sol: { rgb: [255, 236, 160], borda: [255, 250, 214] }, // Luz do Dia
+  // Círculo Mágico: uma cor por tipo de criatura que ele barra.
+  'circ-celestial': { rgb: [255, 226, 130], borda: [255, 246, 200] },
+  'circ-elemental': { rgb: [242, 142, 72], borda: [255, 214, 170] },
+  'circ-feérico': { rgb: [140, 230, 150], borda: [210, 250, 214] },
+  'circ-corruptor': { rgb: [232, 72, 72], borda: [255, 186, 170] },
+  'circ-morto-vivo': { rgb: [176, 134, 232], borda: [226, 208, 250] },
 };
 const DOMO_BRANCO = [244, 240, 228];
 // Meio elipsoide: topo redondo de cúpula, e o `m` do véu fica exato na silhueta.
@@ -182,6 +188,98 @@ export function domoCamadas(cor, raio, altura, op = 1) {
     return cv;
   };
   const camadas = { tras: tela(tras), frente: tela(frente), brilho: tela(brilho), ox, oy };
+  domosCache.set(chave, camadas);
+  return camadas;
+}
+
+/**
+ * O CILINDRO do Círculo Mágico, em pixel art: a mesma ideia do domo (véu em
+ * degraus, nada de gaiola), mas com paredes retas e tampa plana.
+ *   - o véu das paredes é quase nulo no miolo e forte só nas bordas laterais e
+ *     no alto, como vidro visto de lado: nenhuma figura dentro fica escondida;
+ *   - a elipse do chão leva um anel de runas (traços radiais), que é o que diz
+ *     "círculo" e não "tubo";
+ *   - sai em duas camadas como o domo: `tras` (paredes de trás, tampa de trás,
+ *     chão de trás) e `frente` (paredes da frente, chão da frente, tampa da frente).
+ *   raio: meia largura no chão; altura: da base à tampa, em px.
+ */
+export function cilindroCamadas(cor, raio, altura) {
+  const chave = `cil|${cor}|${raio}|${altura}`;
+  if (domosCache.has(chave)) return domosCache.get(chave);
+  const def = DOMO_CORES[cor] ?? DOMO_CORES['circ-morto-vivo'];
+  const rgb = def.rgb;
+  const claro = def.borda ?? rgb;
+  const meio = Math.round(raio / 2);
+  const larg = raio * 2 + 5;
+  const alt = altura + raio + 6;
+  const ox = raio + 2;
+  const oy = altura + meio + 3;
+  const novo = () => new Uint8ClampedArray(larg * alt * 4);
+  const tras = novo();
+  const frente = novo();
+  const px = (buf, x, y, [cr, cg, cb], a) => {
+    if (x < 0 || y < 0 || x >= larg || y >= alt) return;
+    const i = (y * larg + x) * 4;
+    // Não apaga um pixel mais forte já pintado.
+    if (buf[i + 3] >= Math.round(a * 255)) return;
+    buf[i] = cr; buf[i + 1] = cg; buf[i + 2] = cb; buf[i + 3] = Math.round(a * 255);
+  };
+  // As paredes: para cada coluna, o trecho de trás e o da frente.
+  for (let dx = -raio; dx <= raio; dx++) {
+    const e = Math.round(meio * Math.sqrt(Math.max(0, 1 - (dx / raio) ** 2)));
+    const lado = Math.abs(dx) / raio;
+    for (const [buf, base] of [[tras, oy - e], [frente, oy + e]]) {
+      for (let v = 0; v <= altura; v++) {
+        const t = v / altura;
+        let a = 0.045;
+        if (lado > 0.93) a += 0.15;
+        if (t > 0.92) a += 0.1;
+        // Em degraus: a faixa de baixo é a mais fraca (o pé da parede).
+        if (t < 0.12) a *= 0.6;
+        px(buf, ox + dx, base - v, rgb, a);
+      }
+    }
+  }
+  // As arestas verticais, na silhueta (a esquerda recebe a luz).
+  for (let v = 0; v <= altura; v++) {
+    px(tras, ox - raio, oy - v, claro, 0.7);
+    px(tras, ox + raio, oy - v, rgb, 0.5);
+  }
+  // As elipses: a do chão (e o anel de runas dentro dela) e a da tampa.
+  const vistos = new Set();
+  const elipse = (cy, rx, ry, aTras, aFrente, cc) => {
+    for (let i = 0; i < 900; i++) {
+      const t = (i / 900) * Math.PI * 2;
+      const qx = Math.round(ox + rx * Math.cos(t));
+      const qy = Math.round(cy + ry * Math.sin(t));
+      const k = `${qx},${qy},${cy},${rx}`;
+      if (vistos.has(k)) continue;
+      vistos.add(k);
+      if (Math.sin(t) > 0) px(frente, qx, qy, cc, aFrente); else px(tras, qx, qy, cc, aTras);
+    }
+  };
+  elipse(oy, raio, meio, 0.4, 0.75, claro);
+  elipse(oy - altura, raio, meio, 0.65, 0.4, claro);
+  elipse(oy, raio * 0.86, meio * 0.86, 0.3, 0.55, rgb);
+  // As runas: um traço radial a cada 22,5 graus, entre o anel de dentro e a borda.
+  for (let k = 0; k < 16; k++) {
+    const t = (k / 16) * Math.PI * 2 + 0.1;
+    for (let s = 0.86; s <= 0.98; s += 0.02) {
+      const qx = Math.round(ox + raio * s * Math.cos(t));
+      const qy = Math.round(oy + meio * s * Math.sin(t));
+      if (Math.sin(t) > 0) px(frente, qx, qy, claro, 0.7); else px(tras, qx, qy, claro, 0.4);
+    }
+  }
+  // Um brilho no alto à esquerda, o que diz "vidro".
+  for (let v = Math.round(altura * 0.55); v < Math.round(altura * 0.9); v++) px(frente, ox - raio + 5, oy - v + meio, [255, 255, 255], 0.5);
+  const tela = (buf) => {
+    const cv = document.createElement('canvas');
+    cv.width = larg;
+    cv.height = alt;
+    cv.getContext('2d').putImageData(new ImageData(buf, larg, alt), 0, 0);
+    return cv;
+  };
+  const camadas = { tras: tela(tras), frente: tela(frente), brilho: tela(novo()), ox, oy };
   domosCache.set(chave, camadas);
   return camadas;
 }
@@ -952,6 +1050,8 @@ export class Fx {
       if (z.silencio && !z.obscuro) out.push(this.domoDaZona(board, z, 'gelo'));
       // Luz do Dia: a esfera de luz plena, clara e fraca, que não esconde ninguém.
       else if (z.luz) out.push(this.domoDaZona(board, z, 'sol'));
+      // Círculo Mágico: o cilindro de runas, na cor do tipo que ele barra.
+      else if (z.circuloMagico) out.push(this.domoDaZona(board, z, `circ-${z.circuloMagico.tipo}`));
     }
     return out;
   }
@@ -977,13 +1077,15 @@ export class Fx {
       if (cor === 'sol') raio = Math.min(raio, 288);
       let altura = 4 * Math.round(Math.min(170, Math.max(40, raio * 0.8)) / 4);
       if (cor === 'sol') altura = 4 * Math.round(raio * 0.55 / 4);
+      const cilindro = cor.startsWith('circ-');
+      if (cilindro) altura = 4 * Math.round(Math.min(120, raio * 0.8) / 4);
       const ds = cs.map(([x, y]) => { const v = board.toView(x, y); return v.vx + v.vy; });
       // Uma esfera grande cobre o chão de várias diagonais: as costas só podem
       // vir depois do chão que elas cobrem (o centro), senão o contorno de cima
       // fica debaixo das casas de trás.
       const vc = board.toView(cx, cy);
       o = {
-        it: { cor, raio, altura, f: 1, fixo: true, id: null, op: cor === 'sol' ? Math.min(0.55, Math.min(1, Math.max(0.85, 48 / raio))) : Math.min(1, Math.max(0.85, 48 / raio)), vistoEm: board.time },
+        it: { cor, raio, altura, cilindro, f: 1, fixo: true, id: null, op: cor === 'sol' ? Math.min(0.55, Math.min(1, Math.max(0.85, 48 / raio))) : Math.min(1, Math.max(0.85, 48 / raio)), vistoEm: board.time },
         x: cx, y: cy, dTras: Math.round(vc.vx + vc.vy), dFrente: Math.max(...ds),
       };
       this._zonaDomos.set(chave, o);
@@ -1008,7 +1110,7 @@ export class Fx {
     if (it.fixo) {
       // Esfera de zona: sem inflar, sem lampejo, sem fade-out (a zona some e a
       // esfera some com ela); só aparece em 0,5 s na primeira vez.
-      const d = domoCamadas(it.cor, it.raio, it.altura, it.op);
+      const d = it.cilindro ? cilindroCamadas(it.cor, it.raio, it.altura) : domoCamadas(it.cor, it.raio, it.altura, it.op);
       const { sx, sy } = board.centerF(o.x, o.y);
       ctx.save();
       ctx.imageSmoothingEnabled = false;

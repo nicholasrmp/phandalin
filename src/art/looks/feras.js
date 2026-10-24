@@ -215,6 +215,37 @@ export const FERAS_LOOKS = {
     leather: '#3a2418', metal: '#e8dcc0', eyes: '#c8782a',
   },
 
+  // REAPROVEITADOS (sem arte nova, so troca de paleta): as feras que o
+  // Conjurar Animais pede e o bestiario nao tinha. Cada uma usa o plano da fera
+  // mais parecida: urso-negro = urso pardo escurecido; tigre-dente-de-sabre =
+  // plano do lobo atroz (grande) em laranja; javali gigante = javali mais
+  // escuro; cabra gigante = plano do javali em bege-claro.
+  blackBear: {
+    plan: 'feras',
+    fera: 'urso',
+    hair: '#2a2622', outfitDark: '#16130f', trim: '#a8825a',
+    leather: '#1c1814', metal: '#e8dcc0', eyes: '#c8782a',
+  },
+  saberTiger: {
+    plan: 'quadrupede',
+    porte: 'grande',
+    outfit: '#c8782a', outfitDark: '#6a3a14', hair: '#a85a1c',
+    skin: '#e8c89a', eyes: '#ffe066',
+    trim: '#f4ead0', metal: '#f4ead0', leather: '#3a2414',
+  },
+  giantBoar: {
+    plan: 'feras',
+    fera: 'javali',
+    hair: '#2a2420', outfitDark: '#1a1612', trim: '#5a4c3a',
+    leather: '#6a4a3e', metal: '#f4ead0', eyes: '#e8402a',
+  },
+  giantGoat: {
+    plan: 'feras',
+    fera: 'javali',
+    hair: '#d8cfba', outfitDark: '#9a907c', trim: '#f4ead0',
+    leather: '#c8b89a', metal: '#6a5c4a', eyes: '#e8c030',
+  },
+
   // SILHUETA: massa larga de urso erguida sobre duas pernas, encimada sem
   // pescoço por uma cabeça de coruja mais larga que alta, com dois tufos de
   // pena abrindo em V acima dela e um bico aberto em gancho no meio da cara.

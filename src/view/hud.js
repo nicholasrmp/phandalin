@@ -488,7 +488,10 @@ export class Hud {
       return;
     }
     const party = enc.side === 'party';
-    this.banner.textContent = party ? `Rodada ${enc.round} · seu turno` : `Rodada ${enc.round} · inimigos`;
+    const circulos = (enc.zonas ?? []).filter((z) => z.circuloMagico).map((z) => z.circuloMagico.tipo);
+    const plural = { celestial: 'celestiais', elemental: 'elementais', 'feérico': 'feéricos', corruptor: 'corruptores', 'morto-vivo': 'mortos-vivos' };
+    const circ = circulos.length ? ` · Círculo: barra ${[...new Set(circulos)].map((t) => plural[t] ?? t).join(', ')}` : '';
+    this.banner.textContent = (party ? `Rodada ${enc.round} · seu turno` : `Rodada ${enc.round} · inimigos`) + circ;
     this.banner.className = `turn-banner ${party ? 'party' : 'foes'}`;
   }
 
@@ -505,6 +508,7 @@ export class Hud {
     this.acompanharLado(enc);
     this.setBanner(enc);
     this.renderOrdem(enc, selected, mode);
+    this.enc = enc;
     this.renderTrilho(enc, selected, mode);
     this.renderBarra(enc, selected, mode, alvo);
     this.renderViewBar();
@@ -617,15 +621,16 @@ export class Hud {
       // quando a vez troca, e "atordoado" muda o plano da rodada inteira.
       const chips = this.condChips(c, { mini: true });
       const previsao = this.previsaoContra(enc, selected, c, mode);
+      const numero = c.invocado ? /(\d+)$/.exec(c.name)?.[1] : null;
       const node = el('div', {
         class: `vez${ativo ? ' agora' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${selected === c ? ' alvo' : ''}`,
       },
-        el('div', { class: 'vez-retrato' }, retrato),
+        el('div', { class: 'vez-retrato' }, retrato, numero ? el('span', { class: 'vez-num' }, numero) : null),
         el('div', { class: 'vez-pv' }, el('i', { style: { width: `${fracao * 100}%` } })),
         chips);
       return this.ligarDica(node, {
         nome: c.name,
-        tipo: c.kind === 'npc' ? 'inimigo' : `${c.className} · Nv ${c.level}`,
+        tipo: c.invocado ? `invocado de ${enc.combatants.find((x) => x.id === c.invocado.donoId)?.name ?? 'alguém do grupo'}` : c.kind === 'npc' ? 'inimigo' : `${c.className} · Nv ${c.level}`,
         linhas: [
           ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
           ['Classe de armadura', String(c.ac)],
@@ -685,6 +690,36 @@ export class Hud {
       el('span', { class: `eco-mov${pes === 0 ? ' gasto' : ''}` }, `${pes} pés`));
   }
 
+  /** "Controlar" x "Agir sozinho" do invocado: lembrado por criatura (`invocado.auto`). */
+  botaoAuto(c) {
+    const auto = Boolean(c.invocado?.auto);
+    return el('span', {
+      class: `btn-auto${auto ? ' on' : ''}`,
+      role: 'button',
+      tabindex: '0',
+      title: auto ? 'Agindo sozinho: a IA aliada joga o turno. Clique para controlar.' : 'Você comanda. Clique para deixar agir sozinho.',
+      onclick: (e) => { e.stopPropagation(); this.handlers.onAutoInvocado?.(c); },
+    }, auto ? 'Agir sozinho' : 'Controlar');
+  }
+
+  /** O atalho do dono, junto do "Terminar turno": todos os invocados dele de uma vez. */
+  botaoAutoDoDono(dono) {
+    const enc = this.enc;
+    const lista = (enc?.combatants ?? []).filter((x) => x.invocado?.donoId === dono.id && !x.dead);
+    if (!lista.length) return null;
+    const todos = lista.every((x) => x.invocado.auto);
+    return this.ligarDica(
+      el('button', {
+        class: `btn-auto-dono${todos ? ' on' : ''}`,
+        onclick: () => this.handlers.onAutoDosInvocados?.(dono),
+      }, todos ? 'Invocados: agem sozinhos' : 'Invocados: você controla'),
+      {
+        nome: 'Invocados de ' + dono.name,
+        tipo: 'alterna para todos',
+        texto: 'Alterna todos os invocados deste personagem entre "Controlar" e "Agir sozinho". Ao terminar o turno do dono, os que ainda não agiram encerram o turno (os sozinhos jogam antes).',
+      });
+  }
+
   fichaGrupo(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
     const fracao = Math.max(0, c.hp / c.maxHp);
@@ -692,16 +727,25 @@ export class Hud {
     const retrato = makePortrait(c.look, 36);
     retrato.className = 'pixel';
 
+    const dono = c.invocado ? enc.combatants.find((x) => x.id === c.invocado.donoId) : null;
+    const donoNome = dono?.name ?? 'quem o conjurou';
+    const eter = hasCondition(c, 'etereo');
+    const numero = c.invocado ? /(\d+)$/.exec(c.name)?.[1] : null;
     const node = el('button', {
-      class: `ficha${selected === c ? ' on' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}`,
+      class: `ficha${selected === c ? ' on' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${c.invocado ? ' invocado' : ''}${eter ? ' etereo' : ''}`,
       onclick: () => this.handlers.onSelect?.(c),
       // A ficha do grupo é o ponto mais clicado da tela e só selecionava.
       ondblclick: () => this.handlers.onAbrirFicha?.(c),
     },
-      el('div', { class: 'ficha-retrato' }, retrato, el('span', { class: 'ficha-ca' }, c.ac)),
+      el('div', { class: 'ficha-retrato' }, retrato, c.invocado ? null : el('span', { class: 'ficha-ca' }, c.ac),
+        numero ? el('span', { class: 'ficha-num' }, numero) : null),
       el('div', { class: 'ficha-corpo' },
         el('strong', {}, c.name),
-        el('span', { class: 'ficha-sub' }, `${c.className} ${c.ancestry}`),
+        el('span', { class: 'ficha-sub' }, c.invocado
+          ? `Invocado de ${donoNome}${getSpell(c.invocado.spellId).concentration ? ' · concentração' : ''}`
+          : `${c.className} ${c.ancestry}`),
+        eter ? el('span', { class: 'tarja-etereo' }, 'No Plano Etéreo') : null,
+        c.invocado ? this.botaoAuto(c) : null,
         el('div', { class: 'bar' },
           el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
         el('span', { class: 'ficha-pv' }, `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`),
@@ -726,8 +770,10 @@ export class Hud {
 
     return this.ligarDica(node, {
       nome: c.name,
-      tipo: `${c.className} ${c.ancestry} · Nv ${c.level}`,
+      tipo: c.invocado ? `Invocado de ${donoNome} · ${c.ancestry} (${c.invocado.corpo ? `ergue-se de ${c.invocado.corpo}` : 'fera conjurada'})` : `${c.className} ${c.ancestry} · Nv ${c.level}`,
       linhas: [
+        c.invocado ? ['Controle', c.invocado.auto ? 'age sozinho (IA aliada)' : 'você comanda'] : null,
+        eter ? ['No Plano Etéreo', 'volta no começo do próximo turno'] : null,
         ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
         ['Classe de armadura', String(c.ac)],
         ['Deslocamento', `${Math.max(0, c.movementLeftFt ?? 0)} de ${c.speedFt || 30} pés`],
@@ -736,7 +782,9 @@ export class Hud {
       ],
       texto: down
         ? 'Fora de combate. Um aliado adjacente pode estabilizar com uma ação.'
-        : 'Clique para assumir este personagem. Tab passa para o próximo que ainda não agiu.',
+        : c.invocado
+          ? (getSpell(c.invocado.spellId).concentration ? `Dura enquanto ${donoNome} se concentrar. ` : '') + 'Clique para comandar; o botão alterna entre controlar e agir sozinho.'
+          : 'Clique para assumir este personagem. Tab passa para o próximo que ainda não agiu.',
       aviso: down
         ? (c.dead ? 'Morto' : 'Inconsciente — rolando testes de morte')
         : c.acted ? 'Turno encerrado nesta rodada' : null,
@@ -918,11 +966,14 @@ export class Hud {
 
   /** Os azulejos de arma. */
   tilesAtaques(enc, c, mode, alvo = null) {
-    const tiles = (c.weapons ?? []).map((wid, i) => {
-      const w = WEAPONS[wid];
+    // Criatura invocada (lobo, esqueleto): ataca com os golpes do bloco de monstro, que
+    // nunca estão "guardados" e se chamam pelo nome.
+    const doBloco = !c.weapons && !!c.attacks;
+    const tiles = (doBloco ? c.attacks.map((a) => a.name) : (c.weapons ?? [])).map((wid, i) => {
+      const w = doBloco ? (({ name, ranged, rangeFt, longRangeFt, reachFt, art }) => ({ name, ranged, rangeFt, longRangeFt, reachFt, art }))(enc.weaponAttackProfile(c, wid)) : WEAPONS[wid];
       // Arma guardada não ataca: o azulejo SACA. Custa a interação gratuita
       // do turno, ou a ação se ela já foi gasta (`custoDeInteracao`).
-      if (!enc.empunha(c, wid)) {
+      if (!doBloco && !enc.empunha(c, wid)) {
         const custo = enc.custoDeInteracao(c);
         const sacar = () => this.handlers.onAction?.({ kind: 'sacar', weaponId: wid });
         return this.tile(iconeDaArma(wid, w), {
@@ -1244,6 +1295,7 @@ export class Hud {
           'Ataque de oportunidade: quando um inimigo adjacente se afasta, você ataca de graça, sem clicar. Uma por rodada.')),
       this.espacosDeMagia(c, mode),
       mov,
+      this.botaoAutoDoDono(c),
       this.botaoTerminar(c, sobra));
   }
 

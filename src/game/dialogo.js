@@ -175,7 +175,7 @@ export async function conversar(app, npc, arvore, fora = null) {
 
     if (o.teste) {
       const quem = quemRola(ctx, o.teste);
-      const r = rolarTeste(ctx.estado, ctx.herois, ctx.enc.rng, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc });
+      const r = rolarTeste(ctx.estado, ctx.herois, ctx.enc.rng, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc, vantagem: Boolean(o.teste.vantagem) });
       const passou = r.passou;
       teste = { quem: quem.name, pericia: SKILL_NAME[o.teste.pericia], total: r.total, cd: o.teste.cd, passou, fontes: r.fontes };
       ctx.enc.say('acao', `${quem.name} · ${SKILL_NAME[o.teste.pericia]}: ${r.total} contra CD ${o.teste.cd} — ${passou ? 'sucesso' : 'falha'}${r.fontes.length ? ` (${r.fontes.join('; ')})` : ''}`);

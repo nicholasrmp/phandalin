@@ -211,7 +211,7 @@ export function criarFicha(root, handlers = {}) {
       el('div', {},
         el('div', { class: 'ficha-nome' }, personagem.name),
         el('div', { class: 'ficha-linhagem' },
-          `${personagem.className} ${personagem.ancestry} · nível ${personagem.level}`)),
+          personagem.invocado ? `Invocado · ${personagem.ancestry}` : `${personagem.className} ${personagem.ancestry} · nível ${personagem.level}`)),
       el('div', { class: 'ficha-abas' },
         botaoAba('ficha', 'ficha', 'Ficha'),
         botaoAba('inventario', 'mochila', 'Inventário')),

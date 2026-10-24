@@ -35,6 +35,7 @@ export const HOUSE_RULES = {
   ignite: { enabled: true, chance: 0.35, rounds: 2, damage: '1d4' },
 };
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia, APRIMORAR } from './spells.js';
+import { makeMonster } from './monsters.js';
 import {
   prepararTalentos, bonusDeIniciativa, segundaChanceNoAtaque, segundaChanceNaResistencia,
   ajustarDanoDeArma, depoisDoAcerto, rolarCura, vetoDoMedico, medicoDeCampanha, temUsoGratis, gastarUsoGratis,
@@ -262,7 +263,8 @@ export class Encounter {
    */
   at(x, y) {
     return this.combatants.find((c) => {
-      if (c.dead) return false;
+      // Quem piscou para o Plano Etéreo não ocupa casa: dá para passar por onde estava.
+      if (c.dead || hasCondition(c, 'etereo')) return false;
       const f = c.pos.f ?? 1;
       return x >= c.pos.x && x < c.pos.x + f && y >= c.pos.y && y < c.pos.y + f;
     });
@@ -276,7 +278,7 @@ export class Encounter {
   enemiesOf(actor) {
     // O NPC neutro (o goblin que só quer conversar) não é inimigo de ninguém
     // até a cena mudar o lado dele.
-    return this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro' && !c.dead && !hasCondition(c, 'inconsciente'));
+    return this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro' && !c.dead && !hasCondition(c, 'inconsciente') && !hasCondition(c, 'etereo'));
   }
 
   alliesOf(actor) {
@@ -369,6 +371,8 @@ export class Encounter {
     this.side = side;
     // Efeitos que duram "até o começo do próximo turno" do conjurador.
     this.contarDuracoes((cond) => cond.lado === side && cond.quando === 'inicio');
+    // Piscar: quem sumiu no fim do turno anterior volta antes de qualquer outra coisa.
+    for (const c of this.allOf(side)) if (hasCondition(c, 'etereo')) this.voltarDoEtereo(c);
     for (const c of this.allOf(side)) {
       c.movementLeftFt = this.speedOf(c);
       c.actionUsed = false;
@@ -555,6 +559,8 @@ export class Encounter {
         if (zona.fimDano && !c.dead) this.danoDeFimDaZona(c, zona);
       }
     }
+    // Piscar: o d20 do fim do turno, antes de a duração andar.
+    for (const c of this.allOf(side)) this.piscarNoFimDoTurno(c);
     this.contarZonas(side);
     // As durações: as que contam no turno de quem as carrega, e as que
     // contam no fim do turno do lado do conjurador.
@@ -580,6 +586,7 @@ export class Encounter {
    */
   aplicarCondicao(alvo, id, opcoes = {}) {
     const fonte = typeof opcoes.source === 'string' ? this.combatants.find((c) => c.id === opcoes.source) : null;
+    if (id !== 'etereo' && hasCondition(alvo, 'etereo')) return null;
     if (this.imuneACondicao(alvo, id, fonte)) return null;
     const cond = addCondition(alvo, id, opcoes);
     if (CONDITIONS[id]?.incapacitated) this.dropConcentration(alvo);
@@ -613,7 +620,16 @@ export class Encounter {
    * Null se não houver nenhuma a até 6 casas — aí o chamador decide.
    */
   casaLivreMaisProxima(pos) {
-    const livre = (x, y) => this.field.inside(x, y) && !this.field.blocksMove(x, y) && !this.occupied(x, y);
+    // A pegada inteira precisa estar livre: fera Grande (f = 2) ocupa 2x2.
+    const f = pos.f ?? 1;
+    const livre = (x, y) => {
+      for (let dy = 0; dy < f; dy++) {
+        for (let dx = 0; dx < f; dx++) {
+          if (!this.field.inside(x + dx, y + dy) || this.field.blocksMove(x + dx, y + dy) || this.occupied(x + dx, y + dy)) return false;
+        }
+      }
+      return true;
+    };
     for (let r = 0; r <= 6; r++) {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {
@@ -637,6 +653,102 @@ export class Encounter {
     c.concentrating = null;
     this.combatants.push(c);
     return c;
+  }
+
+  // ---- criaturas invocadas aliadas -----------------------------------------
+  //
+  // UMA MECÂNICA SÓ para toda magia que põe uma criatura a lutar pelo grupo
+  // (Conjurar Animais, Animar os Mortos e as que vierem: Conjurar Elemental...).
+  //
+  //  - Entra em `combatants` com a ficha de monstro de `makeMonster`, mas do LADO
+  //    de quem conjurou (`side`), então o grupo a comanda como um herói: a
+  //    seleção, o movimento e o ataque pelo HUD valem sem código novo, e os
+  //    inimigos a escolhem como alvo (`enemiesOf`) como a qualquer outro.
+  //  - Não tem iniciativa própria: o jogo rola por LADO, e ela age no turno do
+  //    grupo, na ordem que o jogador quiser. Entra com o turno já gasto
+  //    (`addCombatant`) e só age a partir do próximo turno do grupo.
+  //  - `invocado = { donoId, spellId }` é a marca. Quem a lê: `checkEnd` (não
+  //    segura o grupo de pé nem a vitória), `dropConcentration` e o fim do
+  //    encontro (`dispensarInvocados`), o XP (`xp = 0`) e o Revivificar.
+  //  - Para jogá-la sozinha (IA aliada), `takeMonsterTurn` já serve: ela só
+  //    pergunta por `enemiesOf`, que olha o lado.
+  invocar(dono, defId, pos, { spellId, sufixo = '' } = {}) {
+    const m = makeMonster(defId, pos, { rng: this.rng, nameSuffix: sufixo });
+    const casa = this.casaLivreMaisProxima({ x: pos.x, y: pos.y, f: m.pos.f });
+    if (!casa) return null;
+    m.pos = { x: casa.x, y: casa.y, f: m.pos.f };
+    m.side = dono.side;
+    // No livro 2014, as feras do Conjurar Animais são feéricas (o Círculo Mágico as barra).
+    if (spellId === 'conjurarAnimais') m.tipo = 'feérico';
+    m.invocado = { donoId: dono.id, spellId, auto: Boolean(dono.invocadosAuto) };
+    // Não vale XP, e o painel do grupo lê estes dois campos do herói.
+    m.xp = 0;
+    m.className = 'Invocado';
+    m.ancestry = m.tipo ?? 'criatura';
+    this.addCombatant(m);
+    this.onEvent({ type: 'invocado', criatura: m, dono });
+    return m;
+  }
+
+  /** Os invocados de um dono (vivos, em jogo). */
+  invocadosDe(dono) {
+    return this.combatants.filter((c) => c.invocado?.donoId === dono.id && !c.dead);
+  }
+
+  /** "Agir sozinho" de UM invocado: a IA aliada joga o turno dele. */
+  definirAutoDoInvocado(c, auto) {
+    if (c.invocado) c.invocado.auto = Boolean(auto);
+  }
+
+  /** "Agir sozinhos" para TODOS os invocados do dono (e para os que ele invocar depois). */
+  definirAutoDosInvocados(dono, auto) {
+    dono.invocadosAuto = Boolean(auto);
+    for (const c of this.invocadosDe(dono)) c.invocado.auto = Boolean(auto);
+  }
+
+  /** Tira do encontro as criaturas invocadas que `quais` escolher (a magia acabou, o encontro acabou). */
+  dispensarInvocados(quais, motivo = null) {
+    const saem = this.combatants.filter((c) => c.invocado && quais(c));
+    if (!saem.length) return;
+    this.combatants = this.combatants.filter((c) => !saem.includes(c));
+    for (const c of saem) {
+      if (!c.dead && !this.over) this.say('magia', `${c.name} some${motivo ? ` (${motivo})` : ''}.`);
+      this.onEvent({ type: 'dispensado', target: c });
+    }
+  }
+
+  /** O sufixo numérico dos nomes: "Lobo Atroz 2", para o grupo saber quem é quem. */
+  sufixoDeInvocado(defId, i, total, antes = 0) {
+    return total + antes > 1 ? String(antes + i + 1) : '';
+  }
+
+  // ---- Piscar ---------------------------------------------------------------
+
+  /** Fim do turno de quem pisca: 1d20, e 11 ou mais manda para o Plano Etéreo. */
+  piscarNoFimDoTurno(c) {
+    if (c.dead || !hasCondition(c, 'piscando') || hasCondition(c, 'etereo') || hasCondition(c, 'inconsciente')) return;
+    const d = this.rng.die(20);
+    if (d < 11) {
+      this.say('magia', `${c.name} pisca: d20 = ${d}, continua aqui.`);
+      return;
+    }
+    this.say('magia', `${c.name} pisca: d20 = ${d} — some para o Plano Etéreo até o começo do próximo turno.`);
+    addCondition(c, 'etereo', { source: c.id, data: { origem: { x: c.pos.x, y: c.pos.y } } });
+    this.onEvent({ type: 'sumiu', target: c, de: { ...c.pos } });
+  }
+
+  /** Volta do Plano Etéreo: na casa de onde saiu, ou na livre mais próxima. */
+  voltarDoEtereo(c) {
+    const eter = getCondition(c, 'etereo');
+    const origem = eter?.data?.origem ?? c.pos;
+    // Ainda etéreo na conta: assim ele não ocupa a própria casa de volta.
+    const casa = this.casaLivreMaisProxima({ x: origem.x, y: origem.y, f: c.pos.f ?? 1 }) ?? origem;
+    removeCondition(c, 'etereo');
+    if (c.dead) return;
+    const de = { ...c.pos };
+    c.pos = { x: casa.x, y: casa.y, f: c.pos.f ?? 1 };
+    this.say('magia', `${c.name} volta do Plano Etéreo.`);
+    this.onEvent({ type: 'voltou', target: c, de, to: { ...c.pos } });
   }
 
   /**
@@ -726,8 +838,10 @@ export class Encounter {
 
   checkEnd() {
     if (this.over) return true;
-    const partyUp = this.living('party').length;
-    const foesUp = this.living('foes').length;
+    // A criatura invocada luta ao lado do grupo, mas não o mantém de pé: se os
+    // quatro heróis caem, é derrota mesmo com o lobo em pé.
+    const partyUp = this.living('party').filter((c) => !c.invocado).length;
+    const foesUp = this.living('foes').filter((c) => !c.invocado).length;
     // A cena ainda tem gente para trazer (uma onda, uma segunda leva): o campo
     // vazio não acaba a luta, o próximo lote entra agora.
     if (foesUp === 0 && partyUp > 0 && this.lotePendente) {
@@ -754,7 +868,20 @@ export class Encounter {
       this.outcome = 'derrota';
       this.say('fim', 'O grupo caiu.');
     }
-    if (this.over) this.onEvent({ type: 'end', outcome: this.outcome });
+    if (this.over) {
+      // Quem piscou para o Plano Etéreo volta antes de tudo, senão fica lá para sempre.
+      for (const c of this.combatants) if (hasCondition(c, 'etereo')) this.voltarDoEtereo(c);
+      // As magias de combate acabam com o encontro: Levitação (e a concentração que a segura),
+      // Piscar e Conjurar Animais. Sem isto o herói ficava com deslocamento 0 até o descanso.
+      for (const c of this.combatants) {
+        for (const id of ['levitando', 'piscando', 'etereo']) if (hasCondition(c, id)) removeCondition(c, id);
+        const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
+        if (k === 'levitar' || k === 'invocar') c.concentrating = null;
+      }
+      // O encontro acaba e as criaturas invocadas vão embora com ele.
+      this.dispensarInvocados(() => true, 'o encontro acabou');
+      this.onEvent({ type: 'end', outcome: this.outcome });
+    }
     return this.over;
   }
 
@@ -789,6 +916,11 @@ export class Encounter {
     this.field.dificeisExtra = this.terrenoHostil(actor);
     this.field.voando = this.voaAgora(actor);
     this.field.escalando = this.escalaAgora(actor);
+    // Círculo Mágico: o tipo barrado não entra (quem já está dentro anda livre).
+    const barras = this.circulosQueBarram(actor);
+    const cabeFinal = barras.length
+      ? (x, y) => !barras.some((z) => this.pegadaEmZona(z, x, y, f)) && (!cabe || cabe(x, y))
+      : cabe;
     try {
       return this.field.reachable(
       actor.pos,
@@ -797,7 +929,7 @@ export class Encounter {
       (x, y) => this.occupied(x, y, actor),
       // Quem ocupa 2x2 só pisa onde os quatro quadrados existem e estão livres
       // de parede. Sem isto o ogro para com metade do corpo dentro da pedra.
-      evita ? (x, y) => !hostil({ x, y, f }) && (!cabe || cabe(x, y)) : cabe,
+      evita ? (x, y) => !hostil({ x, y, f }) && (!cabeFinal || cabeFinal(x, y)) : cabeFinal,
       );
     } finally {
       this.field.dificeisExtra = null;
@@ -875,6 +1007,7 @@ export class Encounter {
         (e) => !e.reactionUsed
           && !conditionEffects(e).incapacitated
           && this.armaDeOportunidade(e) !== undefined
+          && !this.separadosPelaAltura(e, actor)
           && distanceFt(e.pos, from) <= this.reachOf(e)
           && distanceFt(e.pos, to) > this.reachOf(e),
       );
@@ -996,6 +1129,8 @@ export class Encounter {
         dados: dadosDaMagia(spell, { circulo, notacao: spell.damage }),
         tipo: tipo ?? spell.damageType,
       } : null,
+      // Círculo Mágico: o tipo de criatura que ele barra.
+      circuloMagico: spell.zona.circuloMagico ? { tipo: tipo ?? 'morto-vivo' } : null,
       circulo,
       condRodadas: spell.onFail?.rounds ?? Infinity,
       imuneSe: spell.zona.imuneSe ?? null,
@@ -1010,6 +1145,7 @@ export class Encounter {
     };
     this.zonas.push(zona);
     this.atualizarDificeis();
+    if (zona.circuloMagico) this.say('magia', `Um círculo de proteção se fecha em ${zona.casas.size} casas: ${zona.circuloMagico.tipo} não entra, ataca com desvantagem e não enfeitiça nem amedronta quem está dentro.`);
     // Luz do Dia: dissipa a escuridão mágica de círculo 3 ou menor que ela toca.
     if (zona.luz) this.luzDissipaEscuridao(zona);
     this.onEvent({ type: 'zona', zona });
@@ -1211,7 +1347,7 @@ export class Encounter {
    * um espaço livre, a até 18 m e à vista, faz até 5 delas descerem sem dano e
    * de pé. As outras caem como sempre (`cair`).
    */
-  quedaDe(lista) {
+  quedaDe(lista, dados = '1d6') {
     const caindo = lista.filter((c) => !c.dead);
     if (!caindo.length) return;
     // Quem já não sofreria dano (Graça do Gato) não precisa da magia.
@@ -1238,7 +1374,7 @@ export class Encounter {
     }
     for (const c of caindo) {
       if (protegidos.includes(c)) this.onEvent({ type: 'pousou', target: c });
-      else this.cair(c);
+      else this.cair(c, dados);
     }
   }
 
@@ -1302,15 +1438,15 @@ export class Encounter {
   // ---- voo --------------------------------------------------------------------
 
   /** O voador perde o voo: cai (1d6 contundente, o jogo supõe ~3 m) e fica caído. */
-  cair(c) {
+  cair(c, dados = '1d6') {
     if (c.dead) return;
     const gato = getCondition(c, 'aprimorado')?.data?.opcao === 'gato';
     if (gato) {
       this.say('condicao', `${c.name} cai de pé, leve como um gato: sem dano.`);
       return;
     }
-    const r = damageRoll(this.rng, '1d6');
-    this.say('condicao', `${c.name} deixa de voar e cai: ${r.total} contundente.`, `1d6[${r.rolls.join('+')}]`);
+    const r = damageRoll(this.rng, dados);
+    this.say('condicao', `${c.name} deixa de ${dados === '1d6' ? 'voar' : 'levitar'} e cai: ${r.total} contundente.`, `${dados}[${r.rolls.join('+')}]`);
     this.applyDamage(c, r.total, 'contundente', null);
     if (!c.dead && !hasCondition(c, 'inconsciente')) addCondition(c, 'caido');
     this.onEvent({ type: 'caiu', target: c });
@@ -1499,6 +1635,8 @@ export class Encounter {
   /** Imunidade a condição do bloco (`contido` aparece também como 'imobilizado'). */
   imuneACondicao(alvo, id, fonte = null) {
     const lista = alvo.conditionImmunities ?? [];
+    // Círculo Mágico: o tipo barrado não enfeitiça nem amedronta quem está dentro.
+    if (fonte && ['enfeiticado', 'amedrontado', 'sugerido', 'hipnotizado', 'coroaDaLoucura'].includes(id) && this.circuloProtege(fonte, alvo)) return true;
     // Heroísmo tira qualquer medo; Proteção contra o Bem e o Mal, só o que
     // vem dos tipos dela.
     const porMagia = (alvo.conditions ?? []).some((c) => {
@@ -1759,6 +1897,49 @@ export class Encounter {
     return { ok: true };
   }
 
+  /**
+   * Levitação: quem flutua a 6 m não é alcançado em corpo a corpo por quem está
+   * no chão, nem alcança quem está no chão. Quem voa (Voo) ou também levita
+   * chega até ele.
+   */
+  separadosPelaAltura(a, b) {
+    const alto = (c) => hasCondition(c, 'levitando');
+    const aereo = (c) => alto(c) || hasCondition(c, 'voando');
+    return (alto(a) && !aereo(b)) || (alto(b) && !aereo(a));
+  }
+
+  // ---- Círculo Mágico ---------------------------------------------------------
+
+  /** As zonas de Círculo Mágico que valem contra o tipo de `c`. */
+  circulosContra(c) {
+    return (this.zonas ?? []).filter((z) => z.circuloMagico && z.circuloMagico.tipo === (c.tipo ?? 'humanoide'));
+  }
+
+  /** O círculo barra o tipo de quem anda — a menos que ele já esteja dentro dele. */
+  circulosQueBarram(c) {
+    return this.circulosContra(c).filter((z) => !this.pegadaEmZona(z, c.pos.x, c.pos.y, c.pos.f ?? 1));
+  }
+
+  /** Alguma casa da pegada (x, y, f×f) está na zona? */
+  pegadaEmZona(z, x, y, f = 1) {
+    for (let dy = 0; dy < f; dy++) for (let dx = 0; dx < f; dx++) if (z.casas.has(key(x + dx, y + dy))) return true;
+    return false;
+  }
+
+  /** O alvo está dentro de um círculo que vale contra o tipo do atacante? */
+  circuloProtege(atacante, alvo) {
+    return this.circulosContra(atacante).some((z) => this.pegadaEmZona(z, alvo.pos.x, alvo.pos.y, alvo.pos.f ?? 1));
+  }
+
+  /** O tipo que o círculo barra: o pedido, ou o mais comum entre os inimigos da lista. */
+  tipoDoCirculo(opcao, actor) {
+    const validos = ['celestial', 'elemental', 'feérico', 'corruptor', 'morto-vivo'];
+    if (validos.includes(opcao)) return opcao;
+    const conta = new Map();
+    for (const c of this.enemiesOf(actor)) if (validos.includes(c.tipo)) conta.set(c.tipo, (conta.get(c.tipo) ?? 0) + 1);
+    return [...conta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'morto-vivo';
+  }
+
   reachOf(actor) {
     if (actor.attacks) return Math.max(...actor.attacks.filter((a) => !a.ranged).map((a) => a.reachFt ?? 5), 5);
     const w = WEAPONS[actor.equippedWeapon];
@@ -1803,6 +1984,8 @@ export class Encounter {
     // Duelo Compelido: só quem o desafiou é alvo sem desvantagem.
     const duelo = getCondition(attacker, 'duelo');
     if (duelo && duelo.source !== target.id) fonte(mods, 'desvantagem', 'duelo compelido');
+    // Círculo Mágico: o tipo barrado ataca quem está dentro com desvantagem.
+    if (this.circuloProtege(attacker, target)) fonte(mods, 'desvantagem', 'círculo mágico');
     // Invisível: ataca com vantagem e é atacado com desvantagem.
     if (hasCondition(attacker, 'invisivel')) fonte(mods, 'vantagem', 'atacante invisível');
     if (hasCondition(target, 'invisivel')) fonte(mods, 'desvantagem', 'alvo invisível');
@@ -1918,12 +2101,17 @@ export class Encounter {
       if (!WEAPONS[id]) return { ok: false, why: 'sem arma na mão — saque uma' };
       if (!this.empunha(actor, id)) return { ok: false, why: `${WEAPONS[id].name} não está na mão — saque a arma primeiro` };
     }
+    if (hasCondition(actor, 'etereo') || hasCondition(target, 'etereo')) return { ok: false, why: 'está no Plano Etéreo' };
     const p = this.weaponAttackProfile(actor, weaponId);
     if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
     const dist = distanceFt(actor.pos, target.pos);
     if (dist > p.longRangeFt) {
       const limite = p.ranged ? p.longRangeFt : p.reachFt;
       return { ok: false, why: `fora de alcance — ${dist} pés, ${p.name} alcança ${limite}` };
+    }
+    // Levitação: a 6 m do chão, só à distância.
+    if (!p.ranged && p.reachFt < 25 && this.separadosPelaAltura(actor, target)) {
+      return { ok: false, why: 'um deles levita a 6 m do chão — corpo a corpo não alcança, só ataque à distância' };
     }
     if (p.ranged && !this.field.hasLineOfSight(actor.pos, target.pos)) {
       return { ok: false, why: 'sem linha de visão até o alvo' };
@@ -2482,6 +2670,8 @@ export class Encounter {
 
   applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false } = {}) {
     if (amount <= 0 || target.dead) return;
+    // No Plano Etéreo nada atinge.
+    if (hasCondition(target, 'etereo')) return;
     const bruto = amount;
     // Elo de Proteção: confere antes — um elo que acaba agora não resiste a este golpe.
     const doElo = this.donoDoElo(target);
@@ -2774,14 +2964,17 @@ export class Encounter {
     const conc = actor.concentrating;
     if (!conc) return;
     const caindo = [];
+    const levitando = [];
     for (const t of conc.targets) {
       // Velocidade: quando acaba, o alvo perde o próximo turno (letargia).
       const depois = hasCondition(t, conc.condition) ? CONDITIONS[conc.condition]?.aoAcabar : null;
       // Heroísmo: os PV temporários dele vão embora junto.
       this.tirarPvTempDaCondicao(t, conc.condition);
       const voava = conc.condition === 'voando' && hasCondition(t, 'voando');
+      const levitava = conc.condition === 'levitando' && hasCondition(t, 'levitando');
       removeCondition(t, conc.condition);
       if (voava) caindo.push(t);
+      if (levitava) levitando.push(t);
       if (depois && !t.dead) {
         // Acabou no turno do lado dele: o fim deste turno não pode apagar a
         // letargia antes de ela valer no próximo.
@@ -2794,6 +2987,11 @@ export class Encounter {
     actor.concentrating = null;
     // Quem perdeu o voo cai; a Queda Suave de um aliado pode amortecer.
     if (caindo.length) this.quedaDe(caindo);
+    if (levitando.length) this.quedaDe(levitando, '2d6');
+    // Conjurar Animais: as feras somem com a concentração.
+    if (SPELLS[conc.spellId]?.kind === 'invocar') {
+      this.dispensarInvocados((c) => c.invocado.donoId === actor.id && c.invocado.spellId === conc.spellId, 'a concentração acabou');
+    }
     // A teia some, e quem ela prendia fica livre.
     if (conc.zona) this.desfazerZona(conc.zona);
     if (conc.aura) this.auras = this.auras.filter((a) => a !== conc.aura);
@@ -2853,13 +3051,30 @@ export class Encounter {
     // Revivificar é a única que mira um morto — e só um morto recente.
     if (spell.kind === 'reviver') {
       if (alvo.side !== actor.side) return 'escolha um aliado';
+      if (alvo.invocado) return 'criaturas invocadas não voltam à vida';
       if (!alvo.dead) return `${alvo.name} não está morto`;
       if (this.round - (alvo.morreuNaRodada ?? -Infinity) > spell.janelaRodadas) return `${alvo.name} morreu há mais de 1 minuto`;
       if (distanceFt(actor.pos, alvo.pos) > spell.rangeFt) return 'é de toque: chegue ao lado';
       return null;
     }
+    // Animar os Mortos também mira um corpo, mas de qualquer lado.
+    if (spell.kind === 'animarMortos') {
+      if (!alvo.dead) return `${alvo.name} não é um cadáver`;
+      if (alvo.kind === 'pc') return 'os heróis não se erguem como mortos-vivos';
+      if (alvo.invocado) return 'não sobra corpo de uma criatura invocada';
+      if (alvo.reerguido) return 'este corpo já foi erguido uma vez';
+      if ((alvo.tipo ?? 'humanoide') !== 'humanoide') return 'só cadáveres humanoides';
+      if (!['pequeno', 'médio'].includes(alvo.size ?? 'médio')) return 'só cadáveres Pequenos ou Médios';
+      if (distanceFt(actor.pos, alvo.pos) > spell.rangeFt) return 'é de toque: chegue perto do corpo';
+      return null;
+    }
     if (alvo.dead) return 'sem alvo';
+    if (hasCondition(alvo, 'etereo')) return `${alvo.name} está no Plano Etéreo`;
     const aliado = alvo.side === actor.side;
+    if (spell.kind === 'levitar') {
+      if (!['miúdo', 'pequeno', 'médio'].includes(alvo.size ?? 'médio')) return 'pesado demais: a magia ergue só criatura Pequena ou Média';
+      if (hasCondition(alvo, 'levitando')) return `${alvo.name} já levita`;
+    }
     if (spell.kind !== 'dissipar' && !spell.ambosLados && this.miraAliados(spell) !== aliado) return this.miraAliados(spell) ? 'escolha um aliado' : 'escolha um inimigo';
     if (spell.naoEmSi && alvo === actor) return 'escolha outra criatura, não você';
     // Coroa da Loucura: a ação que a mantém só serve à criatura coroada.
@@ -3082,6 +3297,7 @@ export class Encounter {
     const spell = getSpell(spellId);
     if (!actor.spellcasting) return { ok: false, why: 'não conjura magias' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
+    if (hasCondition(actor, 'etereo')) return { ok: false, why: 'está no Plano Etéreo' };
     // Silêncio: sem som não há verbal. Quem repete uma magia já em pé (o golpe é
     // só um gesto) passa, e a magia sem componente verbal (Ataque Certeiro) também.
     if (!(spell.reuso && actor.magiasAtivas?.[spellId]) && !spell.semVerbal
@@ -3145,6 +3361,19 @@ export class Encounter {
         if (porque) return { ok: false, why: porque };
         return { ok: true, spell, circulo: ativa.circulo, reuso: true };
       }
+      // Levitação: a ação leva o levitante até 6 m, para uma casa livre que o conjurador veja.
+      if (spell.kind === 'levitar') {
+        const levitante = this.combatants.find((c) => c.id === ativa.alvoId && !c.dead && hasCondition(c, 'levitando'));
+        if (!levitante) return { ok: false, why: 'ninguém levita agora' };
+        if (!point) return { ok: false, why: 'escolha a casa para onde levar' };
+        if (!this.field.inside(point.x, point.y) || this.field.blocksMove(point.x, point.y)) return { ok: false, why: 'casa bloqueada' };
+        if (this.occupied(point.x, point.y, levitante)) return { ok: false, why: 'casa ocupada' };
+        const d = distanceFt(levitante.pos, point);
+        if (d > 20) return { ok: false, why: `a levitação leva até 20 pés (6 m) por ação — ${d} pés` };
+        if (distanceFt(actor.pos, point) > spell.rangeFt) return { ok: false, why: 'fora de alcance' };
+        if (!this.field.hasLineOfSight(actor.pos, point)) return { ok: false, why: 'sem linha de visão até a casa' };
+        return { ok: true, spell, circulo: ativa.circulo, reuso: true };
+      }
       if (!target) return { ok: false, why: 'escolha um alvo' };
       // Bruxaria e Marca do Caçador só mudam de alvo quando o marcado cai.
       if (spell.kind === 'marca') {
@@ -3176,7 +3405,7 @@ export class Encounter {
       return { ok: false, why: 'magia de ação bônus não sai no turno em que já saiu outra magia (só junto de um truque de 1 ação)' };
     }
 
-    const precisaAlvo = ['attack', 'auto', 'heal', 'armadura', 'estabilizar', 'raios', 'restaurar', 'reviver', 'arma', 'vampirico', 'marca', 'mira', 'calor', 'ampliar'].includes(spell.kind)
+    const precisaAlvo = ['attack', 'auto', 'heal', 'armadura', 'estabilizar', 'raios', 'restaurar', 'reviver', 'arma', 'vampirico', 'marca', 'mira', 'calor', 'ampliar', 'levitar', 'animarMortos'].includes(spell.kind)
       || (spell.kind === 'save' && !spell.shape);
     if (precisaAlvo && !target) return { ok: false, why: 'escolha um alvo' };
     if (spell.naoEmSi && target === actor) return { ok: false, why: 'escolha outra criatura, não você' };
@@ -3189,12 +3418,12 @@ export class Encounter {
         return { ok: false, why: 'escolha uma criatura ou uma casa de zona' };
       }
     }
-    if (['restaurar', 'reviver', 'arma', 'vampirico', 'marca', 'calor', 'ampliar'].includes(spell.kind)
+    if (['restaurar', 'reviver', 'arma', 'vampirico', 'marca', 'calor', 'ampliar', 'levitar', 'animarMortos'].includes(spell.kind)
       || (target && spell.kind !== 'heal' && (spell.soTipo || spell.naoAfeta || spell.intMinima))) {
       const porque = this.porqueNaoAlvo(actor, spell, target);
       if (porque) return { ok: false, why: porque };
       // De toque: distância já checada; o resto (linha de visão) vale igual.
-      if (spell.kind === 'reviver') return { ok: true, spell, circulo: slot, gratis };
+      if (spell.kind === 'reviver' || spell.kind === 'animarMortos') return { ok: true, spell, circulo: slot, gratis };
     }
     if (spell.kind === 'teleporte') {
       if (!point) return { ok: false, why: 'escolha a casa de chegada' };
@@ -3244,7 +3473,8 @@ export class Encounter {
     if (check.reuso) return this.reusarMagia(actor, spell, target, slot, point);
     // Aumentar num aliado não é ato hostil; Reduzir num inimigo é.
     const hostil = !this.miraAliados(spell) && spell.kind !== 'buff' && spell.kind !== 'tempHp'
-      && !(spell.kind === 'ampliar' && target?.side === actor.side);
+      && !['invocar', 'animarMortos'].includes(spell.kind)
+      && !(['ampliar', 'levitar'].includes(spell.kind) && target?.side === actor.side);
     if (hostil) this.quebraInvisibilidade(actor);
     // Santuário acaba quando o protegido conjura contra um inimigo.
     if (hasCondition(actor, 'santuario') && hostil) {
@@ -3798,6 +4028,78 @@ export class Encounter {
         break;
       }
 
+      // Conjurar Animais: o pacote escolhido (ou o padrão) surge do lado do grupo.
+      case 'invocar': {
+        const pacote = spell.pacotes[opcao] ?? spell.pacotes[spell.pacotePadrao];
+        // 5º círculo dobra, 7º triplica, 9º quadruplica.
+        const n = pacote.n * (1 + Math.floor(acima / 2));
+        actor.concentrating = { spellId: spell.id, condition: null, targets: [], rounds: spell.duracaoRodadas };
+        const criadas = [];
+        const antes = this.combatants.filter((c) => c.invocado && c.defId === pacote.defId).length;
+        for (let i = 0; i < n; i++) {
+          const c = this.invocar(actor, pacote.defId, actor.pos, { spellId: spell.id, sufixo: this.sufixoDeInvocado(pacote.defId, i, n, antes) });
+          if (!c) break;
+          criadas.push(c);
+        }
+        if (!criadas.length) {
+          this.say('aviso', `${spell.name} não achou casa livre para as feras.`);
+          this.dropConcentration(actor);
+          break;
+        }
+        this.say('magia', criadas.length > 1
+          ? `${criadas.length}× ${criadas[0].name.replace(/ \d+$/, '')} surgem ao lado de ${actor.name} e lutam pelo grupo.`
+          : `${criadas[0].name} surge ao lado de ${actor.name} e luta pelo grupo.`);
+        break;
+      }
+
+      // Animar os Mortos: o cadáver mirado (e, em círculo alto, os mais próximos) se ergue.
+      case 'animarMortos': {
+        const defId = opcao === 'zumbi' ? 'zumbi' : 'esqueleto';
+        const extras = (spell.upcast?.criaturas ?? 0) * acima;
+        const corpos = [target, ...this.combatants
+          .filter((c) => c !== target && !this.porqueNaoAlvo(actor, spell, c))
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))
+          .slice(0, extras)];
+        const erguidos = [];
+        const antes = this.combatants.filter((c) => c.invocado && c.defId === defId).length;
+        corpos.forEach((corpo, i) => {
+          const c = this.invocar(actor, defId, corpo.pos, { spellId: spell.id, sufixo: this.sufixoDeInvocado(defId, i, corpos.length, antes) });
+          if (!c) return;
+          corpo.reerguido = true;
+          c.invocado.corpo = corpo.name;
+          erguidos.push(c);
+        });
+        this.say('magia', erguidos.length
+          ? `${erguidos.map((c) => c.name).join(', ')} se ergue${erguidos.length > 1 ? 'm' : ''} do chão e obedece${erguidos.length > 1 ? 'm' : ''} a ${actor.name}.`
+          : `${spell.name} não achou casa livre.`);
+        break;
+      }
+
+      // Levitação: o aliado aceita; o inimigo resiste com CON. Quem concentra o move depois.
+      case 'levitar': {
+        if (target.side !== actor.side) {
+          this.acordaIndiferentes(target, actor);
+          const save = this.resistencia(target, spell.save, dc);
+          const r = this.explicarResistencia(target, spell.save, dc, save, {
+            contra: `${spell.name} de ${actor.name}`,
+            seSucesso: 'continua no chão',
+          });
+          if (save.success) {
+            this.say('magia', `${target.name} resiste a ${spell.name}.`, r.conta, { rolagem: r });
+            break;
+          }
+          this.say('condicao', `${target.name} sobe do chão.`, r.conta, { rolagem: r });
+        } else {
+          this.say('magia', `${target.name} sobe do chão e flutua.`);
+        }
+        const posta = this.aplicarCondicao(target, 'levitando', { source: actor.id, magia: { id: spell.id, circulo: slot } });
+        if (!posta) { this.say('magia', `${target.name} não é afetado.`); break; }
+        target.movementLeftFt = 0;
+        actor.concentrating = { spellId: spell.id, condition: 'levitando', targets: [target], rounds: spell.duracaoRodadas };
+        (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, alvoId: target.id };
+        break;
+      }
+
       case 'aura': {
         const aura = { id: this.proximaZona(), spellId: spell.id, nome: spell.name, dono: actor, raioFt: spell.raioFt, cd: dc, save: spell.save, dano, damageType: spell.damageType, halfOnSave: spell.halfOnSave, tipo: spell.tipoAura ?? null };
         this.auras.push(aura);
@@ -3809,8 +4111,8 @@ export class Encounter {
 
     // Duelo Compelido acaba se o conjurador lança magia hostil contra outro.
     if (actor.concentrating?.spellId === 'dueloCompelido' && spell.id !== 'dueloCompelido'
-      && !this.miraAliados(spell) && !['buff', 'tempHp', 'dissipar'].includes(spell.kind)
-      && !(spell.kind === 'ampliar' && target?.side === actor.side)) {
+      && !this.miraAliados(spell) && !['buff', 'tempHp', 'dissipar', 'invocar', 'animarMortos'].includes(spell.kind)
+      && !(['ampliar', 'levitar'].includes(spell.kind) && target?.side === actor.side)) {
       const duelados = actor.concentrating.targets;
       const atingidos = [target, ...(targets ?? []), ...(areaTiles ? this.afetadosPelaArea(actor, spell, areaTiles, slot).map((x) => x.c) : [])]
         .filter((c) => c && c.side !== actor.side && c !== actor);
@@ -3847,6 +4149,17 @@ export class Encounter {
       }
       return;
     }
+    // Uma fera de Conjurar Animais é a magia: dissipar nela encerra a magia toda.
+    if (target.invocado && getSpell(target.invocado.spellId).concentration) {
+      const mag = getSpell(target.invocado.spellId);
+      if (passa(mag.level, mag.name)) {
+        this.say('magia', `${mag.name} acaba: ${target.name} se desfaz.`);
+        const dono = this.combatants.find((c) => c.id === target.invocado.donoId);
+        if (dono?.concentrating?.spellId === mag.id) this.dropConcentration(dono);
+        else this.dispensarInvocados((c) => c === target);
+      }
+      return;
+    }
     let achou = false;
     for (const cond of [...(target.conditions ?? [])]) {
       // Cair no chão não é efeito de magia, mesmo quando a magia derrubou.
@@ -3858,6 +4171,7 @@ export class Encounter {
       removeCondition(target, cond.id);
       this.say('magia', `${getSpell(cond.magia.id).name} acaba em ${target.name} (${nome}).`);
       if (cond.id === 'voando') this.quedaDe([target]);
+      if (cond.id === 'levitando') this.quedaDe([target], '2d6');
       // A concentração de quem a mantinha perde este alvo; sem nenhum, cai.
       for (const dono of this.combatants) {
         const conc = dono.concentrating;
@@ -3903,7 +4217,7 @@ export class Encounter {
     // O dano de uma magia de área é rolado UMA vez para todos os alvos.
     const dmg = dano ? damageRoll(this.rng, dano) : null;
     // A teia nasce antes dos testes: quem fica contido fica preso A ELA.
-    const zona = !reuso && spell.zona && areaTiles ? this.criarZona(actor, spell, areaTiles, dc, { centro: point ?? target?.pos, circulo: slot, tipo: spell.escolheTipoDoGlifo ? this.tipoDoGlifo(opcao, actor) : null }) : null;
+    const zona = !reuso && spell.zona && areaTiles ? this.criarZona(actor, spell, areaTiles, dc, { centro: point ?? target?.pos, circulo: slot, tipo: spell.escolheTipoDoGlifo ? this.tipoDoGlifo(opcao, actor) : spell.escolheTipoDoCirculo ? this.tipoDoCirculo(opcao, actor) : null }) : null;
     // Raio Lunar e Esfera Flamejante: a zona anda com a ação (ou bônus).
     if (zona && spell.zona.movel) (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, zona };
     const presos = [];
@@ -4006,6 +4320,16 @@ export class Encounter {
       this.atualizarDificeis();
       this.say('magia', `${actor.name} move ${spell.name}.`);
       this.onEvent({ type: 'spell', caster: actor, spell, point, areaTiles: casas, circulo: slot, reuso: true });
+      this.afterAction(actor);
+      return { ok: true };
+    }
+    if (spell.kind === 'levitar') {
+      const levitante = this.combatants.find((c) => c.id === ativa.alvoId);
+      const de = { ...levitante.pos };
+      levitante.pos = { x: point.x, y: point.y, f: levitante.pos.f ?? 1 };
+      this.say('magia', `${actor.name} leva ${levitante.name} pelo ar, ${distanceFt(de, levitante.pos) * 0.3} m adiante.`);
+      this.onEvent({ type: 'spell', caster: actor, spell, target: levitante, point, circulo: slot, reuso: true });
+      this.onEvent({ type: 'teleporte', actor: levitante, from: de, to: { ...levitante.pos } });
       this.afterAction(actor);
       return { ok: true };
     }

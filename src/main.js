@@ -6,7 +6,7 @@ import { Battlefield, key, distanceFt } from './core/grid.js';
 import { Encounter } from './rules/combat.js';
 import { makeParty } from './rules/party.js';
 import { makeMonster } from './rules/monsters.js';
-import { runMonsterSide } from './rules/ai.js';
+import { runMonsterSide, runAutoSummons, encerrarTurnoComInvocados } from './rules/ai.js';
 import { hasCondition, conditionEffects } from './rules/conditions.js';
 import { getSpell, opcoesDaMagia } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
@@ -19,6 +19,7 @@ import { criarRuaMarcarrubra } from './game/capitulo3-rua.js';
 import { criarMansao } from './game/capitulo3-mansao.js';
 import { criarEstrada } from './game/capitulo4-estrada.js';
 import { criarPoco } from './game/capitulo4-poco.js';
+import { criarCume } from './game/capitulo4-cume.js';
 import { abrirRegiao } from './game/regiao.js';
 import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta } from './view/narrativa.js';
@@ -47,6 +48,9 @@ class App {
       onSelect: (c) => this.select(c),
       onAction: (a) => this.chooseAction(a),
       onEndTurn: () => this.endTurn(),
+      // Invocados: "Controlar" x "Agir sozinho", por criatura ou para todas de um dono.
+      onAutoInvocado: (c) => this.alternarAuto(c),
+      onAutoDosInvocados: (dono) => this.alternarAutoDoDono(dono),
       onRestart: () => this.newEncounter(),
       onRotate: (d) => this.rotateView(d),
       onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
@@ -260,6 +264,7 @@ class App {
       : mapa.cena === 'mansao' ? criarMansao
       : mapa.cena === 'ermo' ? criarEstrada
       : mapa.cena === 'poco' ? criarPoco
+      : mapa.cena === 'cume' ? criarCume
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
     const capitulo = Boolean(cena);
@@ -417,6 +422,29 @@ class App {
         break;
       }
 
+      // Criaturas invocadas pelo grupo (Conjurar Animais, Animar os Mortos).
+      case 'invocado': {
+        const morto = ev.criatura.tipo === 'morto-vivo';
+        board?.fx.ring(ev.criatura.pos, { color: morto ? '#9ff0b8' : '#8fe6a8', radius: 46, dur: 0.7, width: 3 });
+        board?.fx.motes(ev.criatura.pos, { color: morto ? '#7fa890' : '#d9f7c4', count: 12, rise: 40, spread: 24, dur: 0.9 });
+        break;
+      }
+      case 'dispensado': {
+        board?.fx.motes(ev.target.pos, { color: '#c7b4ff', count: 10, rise: 34, spread: 20, dur: 0.8 });
+        break;
+      }
+      // Piscar: o clarão de quem some e o de quem volta.
+      case 'sumiu': {
+        board?.fx.ring(ev.de, { color: '#bfe6ff', radius: 40, dur: 0.6, width: 2 });
+        board?.fx.motes(ev.de, { color: '#e8f4ff', count: 12, rise: 46, spread: 20, dur: 0.8 });
+        break;
+      }
+      case 'voltou': {
+        board?.fx.ring(ev.to, { color: '#bfe6ff', radius: 40, dur: 0.6, width: 2 });
+        board?.fx.motes(ev.to, { color: '#e8f4ff', count: 10, rise: 30, spread: 18, dur: 0.7 });
+        break;
+      }
+
       case 'reinforcements': {
         audio.play('down');
         for (const u of ev.units) {
@@ -506,6 +534,8 @@ class App {
           queueMicrotask(() => this.runFoes());
         } else {
           this.select(this.firstActive());
+          // Invocados em "agir sozinho" jogam o turno deles, sem pedir nada.
+          if (this.enc.combatants.some((x) => x.invocado?.auto && x.side === 'party' && !x.acted)) queueMicrotask(() => this.runInvocadosAuto());
         }
         break;
       }
@@ -535,6 +565,30 @@ class App {
     this.refresh();
   }
 
+  async runInvocadosAuto(donoId = null) {
+    this.refresh();
+    await runAutoSummons(this.enc, { donoId, delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() });
+    if (this.selected?.acted) this.select(this.firstActive());
+    this.refresh();
+  }
+
+  alternarAuto(c) {
+    if (!c?.invocado) return;
+    this.enc.definirAutoDoInvocado(c, !c.invocado.auto);
+    audio.play('click');
+    if (c.invocado.auto && this.enc.side === 'party' && !c.acted) { this.runInvocadosAuto(); return; }
+    this.refresh();
+  }
+
+  alternarAutoDoDono(dono) {
+    const lista = this.enc.invocadosDe(dono);
+    const todosAuto = lista.length > 0 && lista.every((x) => x.invocado.auto);
+    this.enc.definirAutoDosInvocados(dono, !todosAuto);
+    audio.play('click');
+    if (!todosAuto && this.enc.side === 'party') { this.runInvocadosAuto(dono.id); return; }
+    this.refresh();
+  }
+
   /** Gira a câmera em 90°. A grade do jogo não muda — só a leitura dela. */
   rotateView(delta) {
     if (!this.board) return;
@@ -549,11 +603,11 @@ class App {
     // A cena pode ter fechado o tabuleiro (fim da luta, ida para a vila ou a
     // região) com o turno dos inimigos ainda terminando.
     if (!this.enc) return null;
-    return this.enc.allOf('party').find((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente')) ?? null;
+    return this.enc.allOf('party').find((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto) ?? null;
   }
 
   cycleSelection() {
-    const list = this.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente'));
+    const list = this.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto);
     if (list.length === 0) return;
     const i = list.indexOf(this.selected);
     this.select(list[(i + 1) % list.length]);
@@ -650,7 +704,7 @@ class App {
       // resolve na hora.
       const ativa = c.magiasAtivas?.[spell.id];
       if (spell.kind === 'tempHp' || spell.kind === 'aura' || spell.kind === 'disparada' || spell.kind === 'reacao'
-        || spell.kind === 'frutos' || spell.kind === 'rastro'
+        || spell.kind === 'frutos' || spell.kind === 'rastro' || spell.kind === 'invocar'
         || (spell.kind === 'buff' && spell.rangeFt === 0)
         || (['lamina', 'curaReuso'].includes(spell.kind) && !ativa)) {
         this.tryCast(c, action.spellId);
@@ -857,6 +911,16 @@ class App {
         this.refresh();
         return;
       }
+      // Animar os Mortos também mira o corpo, mas de qualquer lado.
+      if (magia?.kind === 'animarMortos') {
+        const corpo = this.enc.combatants.find((x) => x.dead && x.pos.x === tile.x && x.pos.y === tile.y && !x.reerguido && !x.invocado);
+        if (corpo) this.tryCast(c, this.mode.spellId, { target: corpo });
+        else this.refuse(c, 'clique num cadáver');
+        this.refresh();
+        return;
+      }
+      // Levitação já em curso: a ação leva o levitante para a casa clicada.
+      if (magia?.kind === 'levitar' && c.magiasAtivas?.[magia.id] && !occupant) { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
       // Passo Nebuloso mira a casa de chegada.
       if (magia?.mira === 'casa') { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
       // No escuro, quem o grupo não vê não é alvo: mirar nele seria saber que está lá.
@@ -1001,9 +1065,12 @@ class App {
   endTurn() {
     const c = this.selected;
     if (!c || this.enc.side !== 'party' || this.capitulo?.explorando) return;
-    this.enc.endTurn(c);
-    this.select(this.firstActive());
-    this.refresh();
+    // Terminar o turno do dono encerra também os invocados dele (os "sozinhos" jogam antes).
+    this.selected = null;
+    encerrarTurnoComInvocados(this.enc, c, { delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() }).then(() => {
+      if (this.enc.side === 'party') this.select(this.firstActive());
+      this.refresh();
+    });
   }
 
   refresh() {

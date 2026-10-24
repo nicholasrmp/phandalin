@@ -27,6 +27,7 @@ import { totalEmCobre } from './comercio.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MISSOES } from './phandalin.js';
+import { visitarConyberry } from './conyberry.js';
 
 const LARG = 896;
 const ALT = 1200;
@@ -35,8 +36,8 @@ const KM_POR_DIA = 36;
 export const LOCAIS = [
   { id: 'phandalin', nome: 'Phandalin', x: 58.0, y: 70.0, sempre: true, jogavel: true },
   { id: 'poco', nome: 'Poço da Coruja Velha', x: 84.3, y: 41.7, missao: 'coruja', jogavel: true },
-  { id: 'cume', nome: 'Cume da Wyvern', x: 88.2, y: 60.0, missao: 'orcs' },
-  { id: 'conyberry', nome: 'Ruínas de Conyberry', x: 91.5, y: 22.0, missao: 'agatha' },
+  { id: 'cume', nome: 'Cume da Wyvern', x: 88.2, y: 60.0, missao: 'orcs', jogavel: true },
+  { id: 'conyberry', nome: 'Ruínas de Conyberry', x: 91.5, y: 22.0, missao: 'agatha', jogavel: true },
   { id: 'arvoreTrovao', nome: 'Árvore Trovão', x: 32.4, y: 38.3, missao: 'reidoth' },
   { id: 'castelo', nome: 'Castelo Dentefino', x: 51.9, y: 43.3, feito: 'sabeOCastelo' },
   { id: 'neverwinter', nome: 'Neverwinter', x: 14.5, y: 30.8, sempre: true, cidade: true },
@@ -144,6 +145,18 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
   async function entrar(l) {
     tela.fechar();
     if (l.id === 'phandalin') { app.irParaVila(vivos(), { chegando: true }); return; }
+    if (l.id === 'conyberry') {
+      // Sem tabuleiro: a visita é uma conversa. Depois, a região de novo.
+      feitos.visitou_conyberry = true;
+      await visitarConyberry(app, vivos());
+      abrirRegiao(app, { grupo, onde: 'conyberry' });
+      return;
+    }
+    if (l.id === 'cume') {
+      feitos.visitou_cume = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'cume', continuarCom: vivos() });
+      return;
+    }
     if (l.id === 'poco') {
       feitos.visitou_poco = true;
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'poco', continuarCom: vivos() });

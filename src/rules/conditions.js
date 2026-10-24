@@ -517,6 +517,25 @@ export const CONDITIONS = {
     concentrationEffect: true,
   },
 
+  // Levitação (2º círculo): o alvo sobe 6 m e fica no ar. Não anda sozinho (só o conjurador o
+  // move, com a ação) e quem está no chão não o alcança em corpo a corpo (`combat.js`, `canAttack`).
+  levitando: {
+    name: 'Levitando',
+    desc: 'Flutua a 6 m do chão: não anda sozinho (o conjurador o move até 6 m por ação). Quem está no chão não o alcança em corpo a corpo, e ele não alcança quem está no chão. Se a magia acabar, cai.',
+    speed: 0,
+    concentrationEffect: true,
+  },
+  // Piscar (3º círculo): o d20 no fim de cada turno decide se ele some do plano material (`combat.js`, `piscarNoFimDoTurno`).
+  piscando: {
+    name: 'Piscando',
+    desc: 'No fim de cada turno seu, rola 1d20: com 11 ou mais, some para o Plano Etéreo e só volta no começo do seu próximo turno.',
+  },
+  etereo: {
+    name: 'No Plano Etéreo',
+    desc: 'Fora do plano material até o começo do próximo turno seu: não pode ser atingido, escolhido como alvo nem afetado, e não ataca nem conjura.',
+    inalcancavel: true,
+  },
+
   queimando: {
     name: 'Queimando',
     desc: 'Sofre 1d4 de fogo no início de cada turno seu.',

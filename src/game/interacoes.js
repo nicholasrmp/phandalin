@@ -46,6 +46,8 @@ export const OLHAR = {
   leito: ['Cama de goblin', 'Pele fedida sobre palha. Ninguém dorme bem aqui.'],
   fogueira: ['Fogueira', 'Brasa viva. Pisar nela queima; cair nela queima mais.'],
   bau: ['Um baú', 'Madeira com cinta de ferro, no meio dos caixotes.'],
+  pedregal: ['Alto do planalto', 'Pedra nua e capim duro, lá em cima. De cá se vê o desfiladeiro inteiro.'],
+  escada: ['Escada de cordas', 'Cordas grossas e degraus de galho, presas no alto do paredão. Rangem, mas aguentam.'],
   tenda: ['Uma tenda', 'Lona listrada de cores vivas, bem esticada. Coisa cara, para estas colinas.'],
   pocoVelho: ['O poço velho', 'Uma mureta de pedra gasta em volta de um buraco fundo. Lá embaixo, água limpa.'],
   alvenaria: ['Parede de pedra', 'Blocos lavrados e bem assentados. Alguém construiu isto para durar.'],

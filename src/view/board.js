@@ -126,6 +126,8 @@ const SUPERFICIE = {
   barris: { topo: GRAMA, lado: TERRA, objeto: 'mantimentos', chao: 'grama' },
   tenda: { topo: GRAMA, lado: TERRA, objeto: 'tenda', chao: 'grama' },
   pocoVelho: { topo: GRAMA, lado: TERRA, objeto: 'pocoVelho', chao: 'grama' },
+  pedregal: { topo: ['#8d8878', '#86826f'], lado: ROCHA_LADO, chao: 'planalto', face: 'penhasco' },
+  escada: { topo: ['#8d8878', '#86826f'], lado: ROCHA_LADO, objeto: 'escada', chao: 'planalto', face: 'penhasco' },
 };
 
 // Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
@@ -216,6 +218,8 @@ const COR_DA_ZONA = {
   imagemMaior: { fill: 'rgba(199,180,255,.07)', stroke: 'rgba(199,180,255,.38)' },
   cordaoDeFlechas: { fill: 'rgba(216,196,154,.06)', stroke: 'rgba(216,196,154,.35)' },
   glifoDeProtecao: { fill: 'rgba(0,0,0,0)', stroke: 'rgba(0,0,0,0)' },
+  // Lote 13: o Círculo Mágico tem cilindro de runas em 2.5D (`fx.js`, `cilindroCamadas`); o chão só leva um véu.
+  circuloMagico: { fill: 'rgba(214,204,255,.10)', stroke: 'rgba(236,230,255,.5)' },
 };
 
 const PAPEL_NA_AREA = {
@@ -967,6 +971,14 @@ export class Board {
       ctx.beginPath();
       ctx.ellipse(cx - 10, cy - alto - 10, 10, 7, 0, 0, Math.PI * 2);
       ctx.fill();
+    } else if (s.objeto === 'escada') {
+      // Escada de cordas: dois montantes e degraus, encostada no paredão.
+      ctx.strokeStyle = '#6b4a2c';
+      ctx.lineWidth = 2;
+      for (const ox of [-7, 7]) { ctx.beginPath(); ctx.moveTo(cx + ox, cy + 6); ctx.lineTo(cx + ox, cy - 34); ctx.stroke(); }
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + 2 - i * 6); ctx.lineTo(cx + 7, cy + 2 - i * 6); ctx.stroke(); }
+      ctx.lineWidth = 1;
     } else if (s.objeto === 'tenda') {
       // Recuo enquanto o atlas não carrega: um pavilhão listrado.
       this.caixaIso(ctx, cx, cy, 52, 26, 30, ['#7a2a2a', '#a8473a', '#d9b05a']);
@@ -1607,12 +1619,15 @@ export class Board {
   drawOccupantsOnDiagonal(ctx, byView, d) {
     for (const [k, c] of byView) {
       const [vx, vy] = k.split(',').map(Number);
-      if (vx + vy === d && this.figuraVisivel(c)) this.drawCombatant(ctx, c);
+      // No Plano Etéreo (Piscar) a figura vira um fantasma, não some: parece defeito se sumir.
+      if (vx + vy === d && (this.figuraVisivel(c) || hasCondition(c, 'etereo'))) this.drawCombatant(ctx, c);
     }
   }
 
   /** No escuro, quem não é do grupo só aparece se alguém do grupo o vê. */
   figuraVisivel(c) {
+    // Piscar: quem está no Plano Etéreo não aparece no tabuleiro.
+    if (hasCondition(c, 'etereo')) return false;
     return !this._visao || c.side === 'party' || this._visao.has(`${c.pos.x},${c.pos.y}`);
   }
 
@@ -1712,6 +1727,20 @@ export class Board {
     ctx.restore();
   }
 
+  /** O tipo de `c` é barrado por um Círculo Mágico e ele está fora, encostado na borda. */
+  barradoPeloCirculo(c) {
+    for (const z of this.enc.zonas ?? []) {
+      if (!z.circuloMagico || z.circuloMagico.tipo !== (c.tipo ?? 'humanoide') || c.dead) continue;
+      const f = c.pos.f ?? 1;
+      if (this.enc.pegadaEmZona(z, c.pos.x, c.pos.y, f)) continue;
+      for (const k of z.casas) {
+        const [zx, zy] = k.split(',').map(Number);
+        if (zx >= c.pos.x - 1 && zx <= c.pos.x + f && zy >= c.pos.y - 1 && zy <= c.pos.y + f) return true;
+      }
+    }
+    return false;
+  }
+
   drawCombatant(ctx, c) {
     const walking = this.fx.positionFor(c.id);
     const here = walking ?? c.pos;
@@ -1738,14 +1767,28 @@ export class Board {
     }
 
     // Voo: a figura boia acima do chão e a sombra fica no chão, menor e mais fraca.
-    const voa = !down && hasCondition(c, 'voando') && !hasCondition(c, 'caido');
-    if (voa) sy -= 26 + Math.round(Math.sin(this.time * 2.4 + c.pos.x * 0.9 + c.pos.y * 0.55) * 3);
+    // Levitação: o dobro da altura do voo, e a figura balança devagar (6 m do chão).
+    const levita = !down && hasCondition(c, 'levitando') && !hasCondition(c, 'caido');
+    const voa = !down && (levita || hasCondition(c, 'voando')) && !hasCondition(c, 'caido');
+    if (voa) sy -= (levita ? 46 : 26) + Math.round(Math.sin(this.time * 2.4 + c.pos.x * 0.9 + c.pos.y * 0.55) * 3);
 
-    ctx.fillStyle = voa ? 'rgba(0,0,0,.26)' : 'rgba(0,0,0,.42)';
-    ctx.beginPath();
-    ctx.ellipse(baseX, baseY, voa ? 13 : 17, voa ? 6 : 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    if (voa) {
+    // Círculo Mágico: o inimigo barrado que parou na borda leva um contorno vermelho tracejado piscando.
+    if (!down && !this.soCenario && this.barradoPeloCirculo(c)) {
+      const p = 0.55 + 0.35 * Math.sin(this.time * 5);
+      for (let dy = 0; dy < pegada; dy++) for (let dx = 0; dx < pegada; dx++) {
+        this.fillDiamond(ctx, here.x + dx, here.y + dy, `rgba(255,50,40,${0.16 * p})`, 'rgba(0,0,0,0)');
+        ctx.save(); ctx.lineWidth = 3; this.strokeDiamondTracejado(ctx, here.x + dx, here.y + dy, `rgba(255,80,70,${p})`); ctx.restore();
+      }
+    }
+    // Piscar: no Plano Etéreo a figura é um fantasma azul-pálido, ~50% de alfa, sem sombra, anel nem barra.
+    const eter = hasCondition(c, 'etereo');
+    if (!eter) {
+      ctx.fillStyle = voa ? 'rgba(0,0,0,.26)' : 'rgba(0,0,0,.42)';
+      ctx.beginPath();
+      ctx.ellipse(baseX, baseY, voa ? 13 : 17, voa ? 6 : 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (voa && !eter) {
       // Segunda elipse tracejada sob a figura: marca a altura do voo.
       ctx.save();
       ctx.strokeStyle = 'rgba(223,243,255,.55)';
@@ -1759,12 +1802,21 @@ export class Board {
 
     // `soCenario`: o tabuleiro de fundo da tela de título. Lá a figura é
     // personagem de cena, não peça de jogo — sem anel de lado, sem barra.
-    if (!down && !this.soCenario) {
-      ctx.strokeStyle = ally ? 'rgba(110,200,255,.85)' : 'rgba(255,120,96,.8)';
+    // O INVOCADO leva anel próprio: verde-limão e pontilhado, para não se confundir
+    // com o ciano contínuo dos heróis nem com o vermelho dos inimigos.
+    if (!down && !this.soCenario && !eter) {
+      ctx.save();
+      if (c.invocado) {
+        ctx.strokeStyle = 'rgba(190,240,90,.95)';
+        ctx.setLineDash([4, 3]);
+      } else {
+        ctx.strokeStyle = ally ? 'rgba(110,200,255,.85)' : 'rgba(255,120,96,.8)';
+      }
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.ellipse(baseX, baseY, 19 * pegada, 9.5 * pegada, 0, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
       ctx.lineWidth = 1;
     }
 
@@ -1861,9 +1913,12 @@ export class Board {
     // baixo, que é o que importa num tabuleiro com oito figuras parecidas.
     const CLARAO = 0.5;
     const branco = (f) => ({ color: '#ffffff', strength: Math.min(CLARAO, f * CLARAO) });
-    const tinta = c.flash > 0.35 ? branco(c.flash)
-      : danoSemQuadro ? { color: '#c03028', strength: 0.45 }
-        : c.flash > 0 ? branco(c.flash) : null;
+    // Morto-vivo erguido por Animar os Mortos: tinta verde-fantasma sobre a figura.
+    const erguido = !down && c.invocado && c.tipo === 'morto-vivo' ? { color: '#6fffb0', strength: 0.3 } : null;
+    const tinta = eter ? { color: '#a8d8ff', strength: 0.6 }
+      : c.flash > 0.35 ? branco(c.flash)
+        : danoSemQuadro ? { color: '#c03028', strength: 0.45 }
+          : c.flash > 0 ? branco(c.flash) : erguido;
 
     drawSprite(ctx, sheet, animName, frame, {
       x: sx + tremor,
@@ -1879,11 +1934,12 @@ export class Board {
       row,
       // O morto esmaece: continua lá para ser visto e saqueado, mas não
       // disputa atenção com quem ainda pode agir.
-      alpha: c.dead ? 0.72 : (c.acted && ally && !down ? 0.62 : 1),
+      alpha: eter ? 0.5 : c.dead ? 0.72 : (c.acted && ally && !down ? 0.62 : 1),
       tint: tinta,
     });
     if (c.flash > 0) c.flash -= 0.08;
 
+    if (eter) return;
     this.drawConditionFx(ctx, c, baseX, baseY, prone);
 
     // O ÍCONE DIZ QUE TIPO DE CHÃO.
@@ -1929,6 +1985,17 @@ export class Board {
     }
     ctx.fillStyle = ally ? (real > 0.5 ? '#5fd07a' : real > 0.25 ? '#ffc83a' : '#ff5a5a') : '#d4574a';
     ctx.fillRect(baseX - bw / 2, by, bw * real, 4);
+    if (c.invocado) {
+      // Selo do invocado: losango verde-limão com um ponto escuro, à esquerda da barra.
+      const lx = Math.round(baseX - bw / 2 - 8);
+      const ly = Math.round(by + 2);
+      ctx.fillStyle = 'rgba(0,0,0,.75)';
+      ctx.beginPath(); ctx.moveTo(lx, ly - 6); ctx.lineTo(lx + 6, ly); ctx.lineTo(lx, ly + 6); ctx.lineTo(lx - 6, ly); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#bef05a';
+      ctx.beginPath(); ctx.moveTo(lx, ly - 5); ctx.lineTo(lx + 5, ly); ctx.lineTo(lx, ly + 5); ctx.lineTo(lx - 5, ly); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2a4a14';
+      ctx.fillRect(lx - 1, ly - 1, 2, 2);
+    }
 
     const conds = (c.conditions ?? [])
       .filter((x) => CONDITIONS[x.id] && temIcone(x.id))

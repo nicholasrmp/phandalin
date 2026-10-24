@@ -214,7 +214,12 @@ export function criarPoco(app, config) {
             { texto: 'O que você faz aqui?', vai: 'evasivo', uma: true },
             { texto: '(Examinar a tatuagem da testa)', teste: { pericia: 'arcanismo', cd: 10 }, sucesso: 'tatuagem', falha: 'nadaTatuagem', uma: true },
             { texto: '(Examinar o manto vermelho)', teste: { pericia: 'historia', cd: 10 }, sucesso: 'manto', falha: 'nadaManto', uma: true },
-            { texto: 'Procuramos informação. Sobre a região.', vai: 'favor', uma: true },
+            { texto: 'Procuramos informação. Sobre a região.', vai: 'favor', uma: true,
+              requer: () => (salvo.kost === 'acordo' ? 'nada' : null), oculta: true },
+            { texto: 'Os orcs do Cume da Wyvern não incomodam mais ninguém.', vai: 'pago',
+              requer: () => (salvo.kost === 'acordo' && feitos.cumeLimpo && !feitos.kostPagou ? null : 'nada'), oculta: true },
+            { texto: 'A banshee respondeu: o mago da torre se chamava Arthindol.', vai: 'pago',
+              requer: () => (salvo.kost === 'acordo' && feitos.agathaTorre && !feitos.kostPagou ? null : 'nada'), oculta: true },
             { texto: 'Atacar.', fim: 'luta' },
             { texto: 'Vamos embora. Bom estudo.', fim: 'paz' },
           ],
@@ -244,6 +249,22 @@ export function criarPoco(app, config) {
             { texto: 'Não fazemos favor para necromante.', fim: 'paz' },
             { texto: 'Atacar.', fim: 'luta' },
           ],
+        },
+        pago: {
+          ao: () => {
+            feitos.kostPagou = true;
+            feitos.sabeOCastelo = true;
+            (vila.missoes ??= {}).kost = 'feita';
+            if (!(vila.pistas ??= []).some((p) => p.startsWith('Hamun Kost contou'))) {
+              vila.pistas.push('Hamun Kost contou onde fica o Castelo Dentefino: goblins passam pelas colinas a caminho da mata de Neverwinter, ao norte da Trilha Triboar, e voltam para umas torres caídas lá dentro. Agora o castelo aparece no mapa da região.');
+            }
+          },
+          narra: 'Ele sorri pela primeira vez, sem mostrar os dentes.',
+          fala: [
+            'Gente de palavra. Que raridade. Então ouçam: goblins passam por estas colinas toda semana, carregando coisa roubada, e todos vão para o mesmo lugar — para o norte, mata adentro, umas torres velhas caindo umas por cima das outras.',
+            'O chefe deles se diz rei. Não vale o título, mas tem muitos súditos. Boa caçada.',
+          ],
+          opcoes: [{ texto: '…', fim: 'paz' }],
         },
         acordo: {
           ao: () => {

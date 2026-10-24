@@ -137,6 +137,18 @@ export const HUMANOIDES_LOOKS = {
     face: { testa: 0.28, arcada: 3, macas: 0, mandibula: 1.24, queixo: 'largo', projeta: 'mandibula', olhoGap: -2, olhoH: 1, boca: 'frouxa' },
   },
 
+  // O Marcarrubra: o rufião com o manto escarlate encardido da gangue. A figura
+  // de verdade é a folha do PixelLab (`folhas/marcarrubra`); esta só aparece
+  // enquanto a folha carrega.
+  marcarrubra: {
+    species: 'humano', build: 'gordo', heightMul: 1.02,
+    skin: '#b07a50', hair: '#2a1f18', hairStyle: 'bald',
+    outfit: '#453222', outfitDark: '#2e2016', trim: '#842220',
+    metal: '#8a9298', leather: '#453222', eyes: '#5a4a3a',
+    armorStyle: 'leather', helm: false, shield: false, weapon: 'sword',
+    cloak: '#842220', stance: 'bruto', facial: ['narizQuebrado', 'cicatriz'],
+  },
+
   // SILHUETA: bloco baixo e comprido com um fardo nas costas, um rolo acima do
   // ombro e um arco encostado na perna da frente.
   batedor: {

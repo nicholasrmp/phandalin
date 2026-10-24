@@ -14,7 +14,7 @@ import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
 import { marcarTreinoDeArmadura, quantosNaMochila, WEAPONS } from '../rules/equipment.js';
 import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
-import { takeMonsterTurn, contornaZonas } from '../rules/ai.js';
+import { takeMonsterTurn, contornaZonas, runAutoSummons, encerrarTurnoComInvocados } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
 import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
@@ -3922,6 +3922,348 @@ teste('melhorParaTeste escolhe quem tem a melhor chance, com a vantagem da magia
   assert.ok(conjurarFora(g.estado, g.ilvan, 'taumaturgia', g.ctx).ok);
   const m = melhorParaTeste(g.estado, g.party, 'intimidacao', 14);
   assert.equal(m.quem, g.ilvan, 'a vantagem pesa mais que +0/+1 de diferença');
+});
+
+// ---- lote 13: criaturas invocadas aliadas, Piscar, Levitação, Círculo Mágico ----
+
+/** Passa a vez do grupo e a dos inimigos (sem eles agirem), voltando ao grupo. */
+function passarUmaRodada(enc) {
+  for (const c of enc.allOf('party')) if (!c.acted) enc.endTurn(c);
+  for (const c of enc.allOf('foes')) if (!c.acted) enc.endTurn(c);
+}
+
+teste('Conjurar Animais: as feras entram do lado do grupo, sem XP, e o jogador as comanda no turno seguinte', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['conjurarAnimais'] });
+  const r = enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd1' });
+  assert.ok(r.ok, r.why);
+  const lobos = enc.combatants.filter((c) => c.invocado);
+  assert.equal(lobos.length, 2, 'o pacote de ND 1 são 2 feras');
+  assert.ok(lobos.every((c) => c.side === 'party' && c.xp === 0 && c.defId === 'loboAtroz'));
+  assert.notEqual(lobos[0].name, lobos[1].name, 'nomes numerados para não confundir');
+  assert.ok(lobos.every((c) => c.acted && c.actionUsed), 'entram com o turno gasto');
+  assert.ok(ilvan.concentrating?.spellId === 'conjurarAnimais');
+  // Inimigos as escolhem como alvo.
+  assert.ok(enc.enemiesOf(foes[0]).includes(lobos[0]));
+  // No turno seguinte, agem como um herói: o jogador as seleciona, move e ataca.
+  passarUmaRodada(enc);
+  assert.ok(!lobos[0].acted && lobos[0].movementLeftFt > 0 && !lobos[0].actionUsed);
+  foes[0].pos = { x: lobos[0].pos.x + 1, y: lobos[0].pos.y };
+  const hp = foes[0].hp;
+  const golpe = enc.attackAction(lobos[0], foes[0], lobos[0].attacks[0].name);
+  assert.ok(golpe.ok, golpe.why);
+  assert.ok(lobos[0].actionUsed);
+  // A IA aliada (para quem quiser jogá-las sozinhas) usa o mesmo caminho dos monstros.
+  takeMonsterTurn(enc, lobos[1]);
+  assert.ok(lobos[1].acted);
+  assert.ok(foes[0].hp <= hp);
+});
+
+teste('Conjurar Animais: pacotes e círculo alto (5º dobra); a concentração que cai leva as feras junto', () => {
+  const { enc, ilvan } = magoDoLote({ magias: ['conjurarAnimais'] });
+  ilvan.spellcasting.slots[5] = 1;
+  assert.ok(enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd14', circulo: 5 }).ok);
+  assert.equal(enc.combatants.filter((c) => c.invocado).length, 16, '8 lobos dobram para 16 no 5º círculo');
+  enc.dropConcentration(ilvan);
+  assert.equal(enc.combatants.filter((c) => c.invocado).length, 0);
+  liberarAcao(ilvan);
+  assert.ok(enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd2' }).ok);
+  const urso = enc.combatants.find((c) => c.invocado);
+  assert.equal(urso.defId, 'tigreDenteDeSabre');
+  // Dano que derruba o conjurador desfaz a magia.
+  enc.applyDamage(ilvan, 999, 'contundente');
+  assert.equal(enc.combatants.filter((c) => c.invocado).length, 0);
+});
+
+teste('Conjurar Animais: não segura a derrota, não vale XP e some quando o encontro acaba', () => {
+  const { enc, party, ilvan } = magoDoLote({ magias: ['conjurarAnimais'] });
+  enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd1' });
+  const lobos = enc.combatants.filter((c) => c.invocado);
+  for (const h of party) { h.hp = 0; addCondition(h, 'inconsciente'); h.deathSaves = { successes: 0, failures: 0 }; }
+  enc.checkEnd();
+  assert.equal(enc.outcome, 'derrota', 'os lobos em pé não impedem a derrota');
+  assert.equal(enc.combatants.filter((c) => c.invocado).length, 0, 'sumiram com o encontro');
+  // Vitória: matar o único inimigo basta; as feras não contam para nada.
+  const m = magoDoLote({ magias: ['conjurarAnimais'] });
+  m.enc.castSpell(m.ilvan, 'conjurarAnimais', { opcao: 'nd1' });
+  m.enc.applyDamage(m.foes[0], 999, 'contundente');
+  assert.equal(m.enc.outcome, 'vitoria');
+  assert.equal(m.enc.combatants.filter((c) => c.invocado).length, 0);
+  assert.ok(lobos.every((l) => l.xp === 0));
+});
+
+teste('Conjurar Animais: Dissipar Magia numa fera encerra a magia; Revivificar não a traz de volta', () => {
+  const { enc, ilvan, dara } = magoDoLote({ magias: ['conjurarAnimais', 'dissiparMagia', 'revivificar'] });
+  enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd1' });
+  const lobos = enc.combatants.filter((c) => c.invocado);
+  lobos[0].hp = 0; lobos[0].dead = true; lobos[0].morreuNaRodada = enc.round;
+  dara.pos = { ...lobos[0].pos };
+  assert.match(enc.porqueNaoAlvo(dara, getSpell('revivificar'), lobos[0]) ?? '', /invocadas/);
+  liberarAcao(ilvan);
+  ilvan.pos = { x: lobos[1].pos.x - 1, y: lobos[1].pos.y };
+  const r = enc.castSpell(ilvan, 'dissiparMagia', { target: lobos[1] });
+  assert.ok(r.ok, r.why);
+  assert.equal(enc.combatants.filter((c) => c.invocado).length, 0);
+  assert.equal(ilvan.concentrating, null);
+});
+
+teste('Animar os Mortos: ergue um esqueleto ou zumbi do cadáver humanoide, uma vez só; herói e invocado não servem', () => {
+  const { enc, party, ilvan, foes } = magoDoLote({ magias: ['animarMortos'], foes: [['goblin', { x: 7, y: 6 }], ['bandidoMachadeiro', { x: 11, y: 11 }]] });
+  const cadaver = foes[0];
+  assert.match(enc.porqueNaoAlvo(ilvan, getSpell('animarMortos'), cadaver) ?? '', /não é um cadáver/);
+  enc.applyDamage(cadaver, 999, 'contundente');
+  assert.ok(cadaver.dead);
+  assert.equal(enc.castSpell(ilvan, 'animarMortos', { target: party[DARA] }).ok, false);
+  const r = enc.castSpell(ilvan, 'animarMortos', { target: cadaver, opcao: 'zumbi' });
+  assert.ok(r.ok, r.why);
+  const zumbi = enc.combatants.find((c) => c.invocado);
+  assert.equal(zumbi.defId, 'zumbi');
+  assert.equal(zumbi.side, 'party');
+  assert.deepEqual({ x: zumbi.pos.x, y: zumbi.pos.y }, { x: cadaver.pos.x, y: cadaver.pos.y }, 'surge onde o corpo estava');
+  assert.equal(cadaver.reerguido, true);
+  assert.equal(ilvan.concentrating, null, 'não é concentração');
+  liberarAcao(ilvan);
+  assert.match(enc.castSpell(ilvan, 'animarMortos', { target: cadaver }).why ?? '', /já foi erguido/);
+  zumbi.dead = true;
+  assert.match(enc.porqueNaoAlvo(ilvan, getSpell('animarMortos'), zumbi) ?? '', /invocada/);
+  // Fica até o fim do encontro, mesmo sem o conjurador.
+  assert.ok(enc.combatants.includes(zumbi));
+});
+
+teste('Animar os Mortos: círculo alto ergue mais mortos dos corpos próximos', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['animarMortos'], foes: [['goblin', { x: 7, y: 6 }], ['goblin', { x: 7, y: 7 }], ['goblin', { x: 6, y: 7 }], ['bandidoMachadeiro', { x: 11, y: 11 }]] });
+  for (const f of foes.slice(0, 3)) enc.applyDamage(f, 999, 'contundente');
+  ilvan.spellcasting.slots[4] = 1;
+  const r = enc.castSpell(ilvan, 'animarMortos', { target: foes[0], opcao: 'esqueleto', circulo: 4 });
+  assert.ok(r.ok, r.why);
+  assert.equal(enc.combatants.filter((c) => c.invocado).length, 3, '4º círculo: 1 + 2');
+});
+
+teste('Piscar: d20 11+ no fim do turno manda para o Plano Etéreo até o começo do turno seguinte', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['piscar'], foes: [['goblin', { x: 8, y: 6 }]] });
+  assert.ok(enc.castSpell(ilvan, 'piscar').ok);
+  assert.ok(hasCondition(ilvan, 'piscando'));
+  d20Fixo(enc, 5);
+  passarUmaRodada(enc);
+  assert.ok(!hasCondition(ilvan, 'etereo'), '5 não pisca');
+  d20Fixo(enc, 15);
+  for (const c of enc.allOf('party')) enc.endTurn(c);
+  assert.ok(hasCondition(ilvan, 'etereo'), '15 pisca');
+  assert.equal(enc.side, 'foes');
+  const foe = foes[0];
+  assert.ok(!enc.enemiesOf(foe).includes(ilvan), 'não é alvo da IA');
+  assert.equal(enc.canAttack(foe, ilvan).ok, false);
+  const hp = ilvan.hp;
+  enc.applyDamage(ilvan, 10, 'fogo', foe);
+  assert.equal(ilvan.hp, hp, 'nada o atinge');
+  assert.equal(enc.at(ilvan.pos.x, ilvan.pos.y), undefined, 'não ocupa a casa');
+  assert.ok(enc.porqueNaoAlvo(foe, getSpell('raioDeFogo'), ilvan));
+  for (const c of enc.allOf('foes')) enc.endTurn(c);
+  assert.ok(!hasCondition(ilvan, 'etereo'), 'volta no começo do turno do grupo');
+  assert.deepEqual({ x: ilvan.pos.x, y: ilvan.pos.y }, { x: 6, y: 6 });
+  assert.ok(ilvan.movementLeftFt > 0 && !ilvan.actionUsed, 'e age normalmente');
+});
+
+teste('Piscar: volta para a casa livre mais próxima se a de origem foi ocupada', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['piscar'], foes: [['goblin', { x: 9, y: 6 }]] });
+  enc.castSpell(ilvan, 'piscar');
+  d20Fixo(enc, 20);
+  for (const c of enc.allOf('party')) enc.endTurn(c);
+  assert.ok(hasCondition(ilvan, 'etereo'));
+  foes[0].pos = { x: 6, y: 6 };
+  for (const c of enc.allOf('foes')) enc.endTurn(c);
+  assert.ok(!hasCondition(ilvan, 'etereo'));
+  assert.ok(distanceFt(ilvan.pos, { x: 6, y: 6 }) <= 10 && distanceFt(ilvan.pos, foes[0].pos) > 0, 'a casa ocupada ficou com o goblin');
+});
+
+teste('Levitação: o alvo sobe e não anda; corpo a corpo do chão não o alcança; o conjurador o move 6 m; concentração que cai o derruba', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['levitacao'], foes: [['bandidoMachadeiro', { x: 8, y: 5 }]] });
+  dara.pos = { x: 7, y: 6 };
+  const foe = foes[0];
+  assert.ok(enc.canAttack(foe, dara).ok, 'antes, alcança');
+  const r = enc.castSpell(ilvan, 'levitacao', { target: dara });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(dara, 'levitando'));
+  assert.equal(enc.speedOf(dara), 0, 'não anda sozinho');
+  assert.equal(enc.canAttack(foe, dara).ok, false, 'o corpo a corpo não alcança');
+  assert.equal(enc.canAttack(dara, foe).ok, false, 'e ele não alcança o chão (arma de perto)');
+  // Quem voa também chega lá.
+  addCondition(foe, 'voando');
+  assert.ok(enc.canAttack(foe, dara).ok);
+  tirarCondicao(foe, 'voando');
+  // A ação do conjurador o leva até 6 m.
+  liberarAcao(ilvan);
+  assert.equal(enc.castSpell(ilvan, 'levitacao', { point: { x: 7, y: 11 } }).ok, false, 'mais de 6 m');
+  const m = enc.castSpell(ilvan, 'levitacao', { point: { x: 4, y: 7 } });
+  assert.ok(m.ok, m.why);
+  assert.deepEqual({ x: dara.pos.x, y: dara.pos.y }, { x: 4, y: 7 });
+  // A magia cai: ele cai, leva 2d6 e fica caído.
+  const hp = dara.hp;
+  enc.dropConcentration(ilvan);
+  assert.ok(!hasCondition(dara, 'levitando') && hasCondition(dara, 'caido'));
+  assert.ok(dara.hp < hp, 'dano de queda');
+});
+
+teste('Levitação num inimigo: CON resiste; quem falha fica pendurado e perde o corpo a corpo; Grande pesa demais', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['levitacao'], foes: [['bandidoMachadeiro', { x: 8, y: 6 }], ['ogro', { x: 10, y: 10 }]] });
+  const [bandido, ogro] = foes;
+  assert.match(enc.porqueNaoAlvo(ilvan, getSpell('levitacao'), ogro) ?? '', /pesado demais/);
+  d20Fixo(enc, 20);
+  assert.ok(enc.castSpell(ilvan, 'levitacao', { target: bandido }).ok);
+  assert.ok(!hasCondition(bandido, 'levitando'), 'passou na CON');
+  assert.equal(ilvan.concentrating, null);
+  liberarAcao(ilvan);
+  d20Fixo(enc, 1);
+  assert.ok(enc.castSpell(ilvan, 'levitacao', { target: bandido }).ok);
+  assert.ok(hasCondition(bandido, 'levitando'), 'falhou');
+  dara.pos = { x: 7, y: 6 };
+  assert.equal(enc.canAttack(bandido, dara).ok, false);
+  assert.equal(enc.reachableFor(bandido).size <= 1, true, 'preso no ar');
+});
+
+teste('Círculo Mágico: o tipo escolhido não entra, ataca com desvantagem e não amedronta quem está dentro', () => {
+  const { enc, party, ilvan, dara, foes } = magoDoLote({ magias: ['circuloMagico'], foes: [['esqueleto', { x: 11, y: 6 }], ['goblin', { x: 11, y: 8 }]] });
+  const [esq, gob] = foes;
+  ilvan.pos = { x: 5, y: 6 };
+  dara.pos = { x: 6, y: 6 };
+  const r = enc.castSpell(ilvan, 'circuloMagico', { point: { x: 6, y: 6 }, opcao: 'morto-vivo' });
+  assert.ok(r.ok, r.why);
+  const z = enc.zonas.find((q) => q.circuloMagico);
+  assert.equal(z.circuloMagico.tipo, 'morto-vivo');
+  assert.ok(z.casas.has('6,6') && z.casas.has('8,6') && !z.casas.has('9,6'), 'raio de 3 m = 2 casas');
+  // O esqueleto não entra.
+  esq.movementLeftFt = 60;
+  const alcance = enc.reachableFor(esq);
+  assert.ok(!alcance.has('8,6') && !alcance.has('6,6'), 'casas do círculo fora do alcance');
+  assert.ok(alcance.has('10,6'), 'fora dele anda');
+  gob.movementLeftFt = 60;
+  assert.ok(enc.reachableFor(gob).has('8,7') || enc.reachableFor(gob).has('8,6'), 'goblin entra');
+  // Desvantagem contra quem está dentro; fora do círculo, não.
+  assert.ok(JSON.stringify(enc.attackModifiers(esq, dara)).includes('círculo mágico'));
+  assert.ok(!JSON.stringify(enc.attackModifiers(esq, party[PIP])).includes('círculo mágico'));
+  assert.ok(!JSON.stringify(enc.attackModifiers(gob, dara)).includes('círculo mágico'), 'só o tipo escolhido');
+  // Medo e encanto de fora não pegam quem está dentro.
+  assert.equal(enc.aplicarCondicao(dara, 'amedrontado', { source: esq.id }), null);
+  assert.ok(enc.aplicarCondicao(dara, 'amedrontado', { source: gob.id }), 'o goblin amedronta');
+  // Quem já estava dentro sai andando.
+  esq.pos = { x: 7, y: 6 };
+  esq.movementLeftFt = 30;
+  assert.ok(enc.reachableFor(esq).has('10,6'));
+});
+
+teste('Círculo Mágico: sem tipo escolhido, vale o tipo mais comum entre os inimigos', () => {
+  const { enc, ilvan } = magoDoLote({ magias: ['circuloMagico'], foes: [['zumbi', { x: 11, y: 6 }], ['esqueleto', { x: 11, y: 8 }], ['goblin', { x: 11, y: 10 }]] });
+  assert.ok(enc.castSpell(ilvan, 'circuloMagico', { point: { x: 6, y: 6 } }).ok);
+  assert.equal(enc.zonas.find((q) => q.circuloMagico).circuloMagico.tipo, 'morto-vivo');
+});
+
+teste('as cinco magias entram nas listas de classe do Livro do Jogador', () => {
+  const tem = (classe, id, nivel) => listaDaClasse(classe, nivel).magias.includes(id);
+  assert.ok(tem('druida', 'conjurarAnimais', 3) && tem('patrulheiro', 'conjurarAnimais', 3));
+  assert.ok(tem('clerigo', 'animarMortos', 3) && tem('mago', 'animarMortos', 3) && !tem('bruxo', 'animarMortos', 3));
+  assert.ok(tem('mago', 'piscar', 3) && tem('feiticeiro', 'piscar', 3));
+  assert.ok(tem('mago', 'levitacao', 2) && tem('feiticeiro', 'levitacao', 2) && !tem('mago', 'levitacao', 1));
+  for (const c of ['clerigo', 'paladino', 'bruxo', 'mago']) assert.ok(tem(c, 'circuloMagico', 3), c);
+  for (const id of ['conjurarAnimais', 'animarMortos', 'piscar', 'levitacao', 'circuloMagico']) assert.equal(SPELLS[id].fonte, 'srd');
+});
+
+// ---- fichas de feras de ND 1/2 e 2, e invocados que agem sozinhos ----
+
+teste('Feras de ND 1/2 e 2 (SRD): fichas completas com o ND certo, e cada pacote usa a ficha do ND dele', () => {
+  const esperado = { ursoNegro: ['1/2', 19], cabraGigante: ['1/2', 19], javaliGigante: ['2', 42], tigreDenteDeSabre: ['2', 52] };
+  for (const [id, [cr, hp]] of Object.entries(esperado)) {
+    const m = MONSTERS[id];
+    assert.ok(m, id);
+    assert.equal(m.cr, cr, id);
+    assert.equal(m.maxHp, hp, id);
+    assert.equal(m.tipo, 'fera');
+    assert.ok(m.attacks.length >= 1 && m.look);
+  }
+  assert.equal(MONSTERS.tigreDenteDeSabre.multiattack.count, 2);
+  const nd = (id) => MONSTERS[SPELLS.conjurarAnimais.pacotes[id].defId].cr;
+  assert.equal(nd('nd2'), '2'); assert.equal(nd('nd2b'), '2');
+  assert.equal(nd('nd1'), '1');
+  assert.equal(nd('nd12'), '1/2'); assert.equal(nd('nd12b'), '1/2');
+  assert.equal(nd('nd14'), '1/4');
+  assert.deepEqual(['nd2', 'nd1', 'nd12', 'nd14'].map((id) => SPELLS.conjurarAnimais.pacotes[id].n), [1, 2, 4, 8]);
+  assert.ok(!/não há ficha/.test(SPELLS.conjurarAnimais.desc));
+  const { enc, ilvan } = magoDoLote({ magias: ['conjurarAnimais'] });
+  assert.ok(enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd12' }).ok);
+  const ursos = enc.combatants.filter((c) => c.invocado);
+  assert.equal(ursos.length, 4);
+  assert.ok(ursos.every((c) => c.defId === 'ursoNegro'));
+  assert.deepEqual(ursos.map((c) => c.name.match(/[0-9]+$/)?.[0]), ['1', '2', '3', '4']);
+});
+
+teste('Invocados: "agir sozinho" por criatura, por dono, e Terminar turno do dono encerra os invocados', async () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['conjurarAnimais'] });
+  enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd12' });
+  const feras = enc.combatants.filter((c) => c.invocado);
+  assert.ok(feras.every((c) => c.invocado.auto === false), 'começam manuais');
+  passarUmaRodada(enc);
+  assert.ok(feras.every((c) => !c.acted));
+  // Uma fera sozinha; as outras ficam manuais.
+  enc.definirAutoDoInvocado(feras[0], true);
+  foes[0].hp = foes[0].maxHp = 999;
+  foes[0].pos = { x: feras[0].pos.x + 1, y: feras[0].pos.y };
+  await runAutoSummons(enc);
+  assert.ok(feras[0].acted, 'a fera em auto jogou o turno sem pedir nada');
+  assert.ok(feras.slice(1).every((c) => !c.acted), 'as manuais esperam');
+  // Terminar o turno do dono encerra as manuais que não agiram.
+  await encerrarTurnoComInvocados(enc, ilvan);
+  assert.ok(feras.every((c) => c.acted) && ilvan.acted);
+  // Por dono: marca todos e vale para as próximas invocações do dono.
+  enc.definirAutoDosInvocados(ilvan, true);
+  assert.ok(feras.every((c) => c.invocado.auto) && ilvan.invocadosAuto);
+  enc.definirAutoDosInvocados(ilvan, false);
+  assert.ok(feras.every((c) => !c.invocado.auto));
+});
+
+teste('Invocados em "agir sozinho" jogam quando o encontro encerra o turno do dono', async () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['conjurarAnimais'] });
+  enc.definirAutoDosInvocados(ilvan, true);
+  enc.castSpell(ilvan, 'conjurarAnimais', { opcao: 'nd1' });
+  const lobos = enc.combatants.filter((c) => c.invocado);
+  assert.ok(lobos.every((c) => c.invocado.auto), 'nascem em auto quando o dono está em auto');
+  passarUmaRodada(enc);
+  foes[0].hp = foes[0].maxHp = 999;
+  foes[0].pos = { x: lobos[0].pos.x + 1, y: lobos[0].pos.y };
+  await encerrarTurnoComInvocados(enc, ilvan);
+  assert.ok(lobos.every((c) => c.acted));
+  assert.ok(foes[0].hp < 999, "os lobos em auto atacaram");
+});
+
+teste('Conjurar Animais: feras Grandes não se empilham nem cobrem o conjurador; são feéricas', () => {
+  for (const op of ['nd1', 'nd2', 'nd12', 'nd14']) {
+    const { enc, ilvan } = magoDoLote({ magias: ['conjurarAnimais'], foes: [['goblin', { x: 11, y: 11 }]] });
+    assert.ok(enc.castSpell(ilvan, 'conjurarAnimais', { opcao: op }).ok);
+    const usadas = new Map();
+    for (const c of enc.combatants.filter((q) => !q.dead)) {
+      const f = c.pos.f ?? 1;
+      for (let dx = 0; dx < f; dx++) for (let dy = 0; dy < f; dy++) {
+        const k = `${c.pos.x + dx},${c.pos.y + dy}`;
+        assert.ok(!usadas.has(k), `${op}: ${c.name} em cima de ${usadas.get(k)} (${k})`);
+        usadas.set(k, c.name);
+      }
+    }
+    assert.ok(enc.combatants.filter((c) => c.invocado).every((c) => c.tipo === 'feérico'), 'feéricas');
+  }
+});
+
+teste('Fim do encontro: quem piscou volta do Plano Etéreo e Levitação, Piscar e a concentração acabam', () => {
+  const a = magoDoLote({ magias: ['piscar'] });
+  addCondition(a.ilvan, 'piscando', { source: a.ilvan.id });
+  addCondition(a.ilvan, 'etereo', { source: a.ilvan.id, data: { origem: { x: 6, y: 6 } } });
+  a.foes[0].hp = 0; a.foes[0].dead = true;
+  assert.ok(a.enc.checkEnd());
+  assert.ok(!hasCondition(a.ilvan, 'etereo') && !hasCondition(a.ilvan, 'piscando'));
+  assert.equal(a.enc.at(a.ilvan.pos.x, a.ilvan.pos.y), a.ilvan);
+  const b = magoDoLote({ magias: ['levitacao'] });
+  assert.ok(b.enc.castSpell(b.ilvan, 'levitacao', { target: b.dara }).ok);
+  assert.ok(hasCondition(b.dara, 'levitando') && b.ilvan.concentrating);
+  b.foes[0].hp = 0; b.foes[0].dead = true;
+  assert.ok(b.enc.checkEnd());
+  assert.ok(!hasCondition(b.dara, 'levitando'), 'volta a andar');
+  assert.equal(b.ilvan.concentrating, null);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

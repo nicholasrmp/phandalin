@@ -47,6 +47,10 @@ FILEIRAS = [
     ('laje', '0275c74c-e80e-4191-84eb-8774ea880520', [0, 1, 2, 3]),
     ('cisterna', '0275c74c-e80e-4191-84eb-8774ea880520', [8, 9]),
     ('fosso', '0275c74c-e80e-4191-84eb-8774ea880520', [10]),
+    # O alto dos planaltos do Cume da Wyvern. Fora: 0 (brilho), 3 e 11 (tufo
+    # grande, repete), 4 e 12 (escuros), 6 e 14 (buraco), 9 (racha funda),
+    # 13 (manchas brancas).
+    ('planalto', 'e2f1ffc5-6074-4aa7-9000-48c7ae76ff34', [1, 2, 5, 7, 8, 10, 15]),
 ]
 
 

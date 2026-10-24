@@ -132,6 +132,10 @@ export const GLIFOS = {
   // O Poço da Coruja Velha: a tenda do mago (2 x 2, não se atravessa nem se
   // vê através) e o poço velho do pátio (cobertura, como uma mureta).
   'n': { kind: 1, sup: 'tenda' },
+  // O Cume da Wyvern: o alto dos planaltos de pedra (anda-se em cima; o
+  // paredão em volta é o desnível) e a escada de cordas que sobe até lá.
+  'k': { kind: 0, sup: 'pedregal' },
+  'l': { kind: 0, sup: 'escada' },
   'q': { kind: 3, sup: 'pocoVelho' },
 };
 

@@ -280,13 +280,17 @@ export function takeMonsterTurn(enc, monster) {
     return;
   }
 
-  // 4: nem atirar dá — encosta o máximo que conseguir.
+  // 4: nem atirar dá — encosta o máximo que conseguir. A distância é a do
+  // CAMINHO até o alvo, não a da linha reta: pela linha reta, quem está numa
+  // caverna fica colado na parede do fundo mais perto do alvo, e nunca sai
+  // pela boca (o bando do Cume da Wyvern ficou assim, parado).
   const closest = ordered[0];
+  const ateOAlvo = enc.field.reachable(closest.pos, 2000);
   const passo = comDesvio(enc, monster, (reached) => {
     let best = null;
     for (const node of reached.values()) {
       if (enc.occupied(node.x, node.y, monster)) continue;
-      const d = distanceFt({ x: node.x, y: node.y }, closest.pos);
+      const d = ateOAlvo.get(key(node.x, node.y))?.cost ?? (5000 + distanceFt({ x: node.x, y: node.y }, closest.pos));
       if (!best || d < best.d) best = { d, node };
     }
     return best && best.node.cost > 0 ? Battlefield.pathFrom(reached, best.node) : null;
@@ -402,4 +406,48 @@ export async function runMonsterSide(enc, { delayMs = 520, onStep = () => {} } =
     const espera = typeof delayMs === 'function' ? delayMs() : delayMs;
     await new Promise((r) => setTimeout(r, espera));
   }
+}
+
+/**
+ * Criaturas invocadas em "agir sozinho": quando chega a vez do grupo, a IA aliada
+ * joga o turno de cada uma (`takeMonsterTurn` só pergunta por `enemiesOf`, que olha
+ * o lado). `donoId` restringe aos invocados de um herói; sem ele, todos do lado.
+ */
+export async function runAutoSummons(enc, { delayMs = 0, onStep = () => {}, donoId = null } = {}) {
+  const pendentes = () => enc.combatants.filter((c) => c.invocado?.auto && c.side === enc.side && !c.acted && !c.dead
+    && !hasCondition(c, 'inconsciente') && (!donoId || c.invocado.donoId === donoId));
+  while (!enc.over) {
+    const c = pendentes()[0];
+    if (!c) break;
+    onStep(c);
+    takeMonsterTurn(enc, c);
+    if (enc.over) break;
+    const espera = typeof delayMs === 'function' ? delayMs() : delayMs;
+    if (espera > 0) await new Promise((r) => setTimeout(r, espera));
+  }
+}
+
+/**
+ * "Terminar turno" de um herói: encerra também os invocados dele que ainda não agiram.
+ * Os que estão em "agir sozinho" jogam o turno (IA aliada); os manuais só passam a vez.
+ * Um invocado que termina o próprio turno encerra só a si.
+ */
+export async function encerrarTurnoComInvocados(enc, actor, { delayMs = 0, onStep = () => {} } = {}) {
+  if (!actor.invocado) {
+    const meus = enc.combatants.filter((c) => c.invocado?.donoId === actor.id && !c.acted && !c.dead
+      && !hasCondition(c, 'inconsciente'));
+    for (const c of meus) {
+      if (c.acted) continue;
+      if (c.invocado.auto) {
+        onStep(c);
+        takeMonsterTurn(enc, c);
+        const espera = typeof delayMs === 'function' ? delayMs() : delayMs;
+        if (espera > 0) await new Promise((r) => setTimeout(r, espera));
+      } else {
+        enc.endTurn(c);
+      }
+      if (enc.over) return;
+    }
+  }
+  if (!actor.acted) enc.endTurn(actor);
 }

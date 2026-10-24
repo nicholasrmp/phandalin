@@ -598,6 +598,8 @@ Object.assign(ICONES, ICONES_OBJETOS);
 // secundária. Gerar dois desenhos para a mesma ideia daria dois ícones quase
 // iguais, que é exatamente o par confundível que a revisão manda refazer.
 const ALIAS = {
+  // Condições sem desenho próprio reaproveitam o da magia que as causa.
+  levitando: 'magia-levitacao', piscando: 'magia-piscar', etereo: 'magia-piscar',
   'raca-darkvision': 'magia-visaoNoEscuro',
   'classe-twoWeaponFighting': 'acao-duasArmas',
   // O motor de progressão chama o aumento de atributo de `asi`.

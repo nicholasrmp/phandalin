@@ -77,6 +77,20 @@
 // `applies.conta` diz de quem é o turno que conta a duração: 'conjurador'
 // para os efeitos que duram "até o fim (ou o começo) do seu próximo turno".
 
+/**
+ * Conjurar Animais: os quatro pacotes do livro (número × ND). `defId` é a ficha de
+ * `monsters/feras.js` que serve de corpo; onde o jogo não tem a fera do ND pedido,
+ * entra a mais próxima (declarado na `desc` da magia).
+ */
+export const PACOTES_DE_ANIMAIS = {
+  nd2: { n: 1, defId: 'tigreDenteDeSabre', rotulo: '1 fera de ND 2', detalhe: 'um tigre-dente-de-sabre (52 PV, garras e mordida)' },
+  nd2b: { n: 1, defId: 'javaliGigante', rotulo: '1 fera de ND 2 (javali)', detalhe: 'um javali gigante (42 PV, investida que derruba)' },
+  nd1: { n: 2, defId: 'loboAtroz', rotulo: '2 feras de ND 1', detalhe: 'dois lobos atrozes' },
+  nd12: { n: 4, defId: 'ursoNegro', rotulo: '4 feras de ND 1/2', detalhe: 'quatro ursos-negros' },
+  nd12b: { n: 4, defId: 'cabraGigante', rotulo: '4 feras de ND 1/2 (cabras)', detalhe: 'quatro cabras gigantes (investida que derruba)' },
+  nd14: { n: 8, defId: 'lobo', rotulo: '8 feras de ND 1/4', detalhe: 'oito lobos' },
+};
+
 export const SPELLS = {
   chamaSagrada: {
     id: 'chamaSagrada', name: 'Chama Sagrada', level: 0, school: 'evocação', fonte: 'srd',
@@ -1030,6 +1044,51 @@ export const SPELLS = {
     id: 'falarComOsMortos', name: 'Falar com os Mortos', level: 3, school: 'necromancia', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 10, kind: 'utilidade', duracaoMin: 10,
     desc: 'Um cadáver com boca a até 3 m responde a até cinco perguntas, por 10 minutos, no idioma que sabia em vida, em respostas curtas e crípticas e só sobre o que sabia. Se o corpo já foi alvo desta magia nos últimos 10 dias, ela falha. Só fora de combate.',
+  },
+
+  // ---- lote 13: criaturas invocadas (aliadas), Piscar, Levitação e Círculo Mágico ----
+
+  conjurarAnimais: {
+    id: 'conjurarAnimais', name: 'Conjurar Animais', level: 3, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 0, kind: 'invocar', invocacao: 'animais',
+    concentration: true, duracaoRodadas: 600,
+    pacotes: PACOTES_DE_ANIMAIS,
+    pacotePadrao: 'nd1',
+    opcoes: Object.entries(PACOTES_DE_ANIMAIS).map(([id, p]) => ({ id, rotulo: p.rotulo, detalhe: p.detalhe })),
+    desc: 'Feras feéricas surgem ao seu redor e lutam a seu lado, até 1 hora, enquanto você concentrar. Você escolhe o pacote: 1 fera de ND 2 (tigre-dente-de-sabre ou javali gigante), 2 de ND 1 (lobos atrozes), 4 de ND 1/2 (ursos-negros ou cabras gigantes) ou 8 de ND 1/4 (lobos); no 5º círculo o número dobra, no 7º triplica e no 9º quadruplica. Você as comanda no seu turno como os heróis (selecione, mova, ataque). Elas somem se a concentração cair, se morrerem ou quando o encontro acaba, e não contam para o XP. (Simplificações: o livro tem alcance de 18 m, com as feras em casas livres que você veja; aqui elas surgem em casas livres ao redor de quem conjura, sem escolher o ponto, e só agem no próximo turno do grupo, em vez de ter iniciativa própria; o livro deixa o Mestre escolher a espécie, aqui ela vem do pacote.)',
+  },
+  animarMortos: {
+    id: 'animarMortos', name: 'Animar os Mortos', level: 3, school: 'necromancia', fonte: 'srd',
+    castTime: 'action', rangeFt: 10, kind: 'animarMortos',
+    opcoes: [
+      { id: 'esqueleto', rotulo: 'Esqueleto', detalhe: 'CA 13, 13 PV; golpeia com espada curta ou atira de arco curto' },
+      { id: 'zumbi', rotulo: 'Zumbi', detalhe: 'CA 8, 22 PV; lento, e volta com 1 PV ao cair (Tenacidade)' },
+    ],
+    upcast: { criaturas: 2 },
+    desc: 'Toque num cadáver humanoide Médio ou Pequeno (de qualquer lado, menos os dos heróis) a até 3 m: ele se ergue como um esqueleto ou zumbi sob o seu comando. Cada cadáver só se ergue uma vez. +2 mortos-vivos por círculo acima do 3º, cada um de um cadáver à vista a até 3 m (os mais próximos). Você os comanda no seu turno como os heróis. (Simplificações: o livro leva 1 minuto para conjurar e a obediência dura 24 horas; no jogo é uma ação e dura até o fim do encontro, sem precisar reafirmar o controle. Eles só agem no próximo turno do grupo. Não contam para o XP.)',
+  },
+  piscar: {
+    id: 'piscar', name: 'Piscar', level: 3, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 0, kind: 'buff', targets: 1, condition: 'piscando',
+    rodadasProprias: 10,
+    desc: 'Por 1 minuto, no fim de cada turno seu você rola 1d20: com 11 ou mais, some para o Plano Etéreo. Ali ninguém o atinge nem o escolhe como alvo, e você não ataca nem conjura. Você volta no começo do seu próximo turno, numa casa livre a até 3 m de onde sumiu. (Simplificação: o livro deixa você escolher a casa de volta; no jogo ela é a mesma de onde saiu, ou a mais próxima livre.)',
+  },
+  levitacao: {
+    id: 'levitacao', name: 'Levitação', level: 2, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'levitar', ambosLados: true, save: 'con',
+    concentration: true, duracaoRodadas: 100, reuso: 'acao',
+    pesoMaximo: 'médio',
+    desc: 'Uma criatura Pequena ou Média a até 18 m sobe 6 m e fica no ar, até 10 minutos, enquanto você concentrar. Aliado aceita; inimigo faz CD de CON e, se passar, nada acontece. Quem levita não anda sozinho (deslocamento 0); você, com a ação, o move até 6 m para qualquer casa livre que veja. Quem está no chão não alcança o levitante em corpo a corpo, e ele não alcança quem está no chão (só ataques à distância). Se a concentração cair, ele cai: 2d6 de dano contundente e fica caído. (Simplificações: o livro move o alvo em 6 m na vertical; no jogo a altura é fixa e o movimento é na horizontal. Objetos não são alvo, e o limite de 225 kg vira "criatura Pequena ou Média".)',
+  },
+  circuloMagico: {
+    id: 'circuloMagico', name: 'Círculo Mágico', level: 3, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 10, shape: 'sphere', areaFt: 10, kind: 'save', soZona: true,
+    escolheTipoDoCirculo: true,
+    zona: { rodadas: 600, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, circuloMagico: true },
+    opcoes: ['celestial', 'elemental', 'feérico', 'corruptor', 'morto-vivo'].map((id) => ({
+      id, rotulo: { celestial: 'Celestiais', elemental: 'Elementais', 'feérico': 'Feéricos', corruptor: 'Corruptores', 'morto-vivo': 'Mortos-vivos' }[id], detalhe: 'não entram, atacam com desvantagem e não enfeitiçam nem amedrontam quem está dentro',
+    })),
+    desc: 'Um cilindro de 3 m de raio e 6 m de altura, centrado num ponto a até 3 m, dura 1 hora. Você escolhe um tipo: celestial, elemental, feérico, corruptor ou morto-vivo. Criaturas desse tipo não entram nele por vontade própria (quem já está dentro pode sair), têm desvantagem em ataques contra quem está dentro e não podem enfeitiçar nem amedrontar quem está dentro. (Simplificações: o livro leva 1 minuto para conjurar e permite também prender a criatura dentro do círculo; no jogo é uma ação e só vale a proteção contra o tipo. Quem é jogado para dentro à força ou teleportado não é barrado. Sem os 100 po de prata e ferro. Nos níveis acima do 3º a duração não cresce: o jogo já deixa o encontro inteiro coberto.)',
   },
 
 };

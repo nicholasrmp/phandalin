@@ -1023,3 +1023,33 @@ h2 {
   .barra-acao { flex-wrap: wrap; justify-content: center; }
   .zona, .nucleo { border-right: none; }
 }
+
+/* Invocados: número do mesmo tipo, botão Controlar/Agir sozinho, tarja etérea. */
+.ficha.invocado { border-style: dashed; }
+.ficha-num, .vez-num {
+  position: absolute; left: 2px; top: 1px;
+  font-size: 10px; font-weight: 800; line-height: 1;
+  color: #1c2a0a; background: #bef05a;
+  border: 1px solid #5c7a1c; border-radius: 3px; padding: 1px 3px;
+}
+.vez-retrato { position: relative; }
+.vez-num { left: 0; top: -1px; font-size: 9px; padding: 0 2px; }
+.btn-auto {
+  align-self: flex-start; cursor: pointer;
+  font-size: 10px; font-weight: 700; letter-spacing: .02em;
+  padding: 1px 6px; border-radius: 9px;
+  color: #3c5a10; background: rgba(190, 240, 90, .25); border: 1px solid #7a9a2c;
+}
+.btn-auto.on { color: #1c2a0a; background: #bef05a; }
+.btn-auto:hover { filter: brightness(1.12); }
+.btn-auto-dono {
+  align-self: center; cursor: pointer;
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 9px;
+  color: #3c5a10; background: rgba(190, 240, 90, .25); border: 1px solid #7a9a2c;
+}
+.btn-auto-dono.on { color: #1c2a0a; background: #bef05a; }
+.tarja-etereo {
+  align-self: flex-start; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+  color: #17304a; background: #bfe6ff; border: 1px solid #6aa6d4;
+}
+.ficha.etereo { filter: saturate(.6); }

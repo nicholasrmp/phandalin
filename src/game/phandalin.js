@@ -50,7 +50,7 @@ export const MISSOES = {
   orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'Viajantes relatam orcs perto do Cume da Wyvern, a leste pela Trilha de Triboar. Dar um jeito neles.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
   reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
-  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe. (O Cume e Conyberry ainda não estão abertos nesta versão do jogo.)' },
+  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
   mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Um colar de esmeraldas, escondido numa caixa sob as prateleiras da antiga loja de ervas da família, no canto sudeste de Árvore Trovão. Mirna o deu a quem o achar.' },
   linene: { titulo: 'Os suprimentos da Escudo Leão', de: 'Linene Graywind', texto: 'A última caravana da Escudo Leão nunca chegou. Quem achar a carga, ou disser onde está, ganha uma recompensa.', recompensa: '50 po' },
 };
@@ -404,8 +404,23 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             fala: 'Irmã Garaele. Que a sorte sorria para vocês — e os Marcarrubra que se danem.',
             opcoes: [
               { texto: 'Dizem que a senhora voltou machucada de algum lugar.', vai: 'agatha', uma: true },
+              { texto: 'A banshee respondeu sobre o grimório.', vai: 'agathaFeita', uma: true,
+                requer: () => (feitos.agathaGrimorio && !v.feito.garaelePagou ? null : 'nada'), oculta: true },
               { texto: 'Até mais.', fim: 'sai' },
             ],
+          },
+          agathaFeita: {
+            ao: () => {
+              v.feito.garaelePagou = true;
+              concluir('agatha');
+              const quem = vivos()[0];
+              const b = (quem.bag ??= []).find((i) => i.id === 'pocaoDeCura');
+              if (b) b.qtd += 3; else quem.bag.push({ id: 'pocaoDeCura', tipo: 'item', qtd: 3 });
+              registro.push(`A Irmã Garaele paga com três poções de cura (${quem.name} guarda).`);
+            },
+            narra: 'Ela escreve o nome — Tsernoth, Iriaebor — num papel dobrado, e o guarda dentro da manga.',
+            fala: 'Cem anos de pista fria, e agora um nome. É mais do que eu tinha ontem. Tomem: prometi três poções, e Tymora gosta de quem cumpre.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
           },
           agatha: {
             fala: [
@@ -541,10 +556,18 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           },
           opcoes: [
             { texto: 'Sobre os orcs do aviso.', vai: 'orcs', uma: true },
+            { texto: 'Os orcs do Cume da Wyvern acabaram.', vai: 'orcsFeitos', uma: true,
+              requer: () => (feitos.cumeLimpo && !v.feito.harbinPagouOrcs ? null : 'nada'), oculta: true },
             { texto: 'Trouxemos um Marcarrubra preso.', vai: 'preso',
               requer: () => (temPreso() ? null : 'ninguém preso'), oculta: true },
             { texto: 'Até mais.', fim: 'sai' },
           ],
+        },
+        orcsFeitos: {
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 100 * 100); registro.push('Harbin paga 100 po pelos orcs do Cume da Wyvern.'); },
+          narra: 'Harbin conta as moedas duas vezes antes de soltar o saco.',
+          fala: 'Cem peças de ouro, como estava no papel. E, por favor, não espalhem que foi tão fácil: os próximos vão querer cobrar mais.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
         },
         orcs: {
           ao: () => missao('orcs'),
@@ -699,7 +722,15 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     }
     const convite = conviteDe(l);
     if (convite) await convidar(convite);
-    if (fim === 'agatha') missao('agatha');
+    if (fim === 'agatha') {
+      missao('agatha');
+      // O presente para a banshee vai com o grupo.
+      const quem = vivos()[0];
+      if (!vivos().some((c) => (c.bag ?? []).some((i) => i.id === 'penteDeAgatha'))) {
+        (quem.bag ??= []).push({ id: 'penteDeAgatha', tipo: 'item', qtd: 1 });
+        registro.push(`A Irmã Garaele entrega o pente de prata (${quem.name} guarda).`);
+      }
+    }
     if (fim === 'dormir') {
       cobrar(vivos(), 5 * 10 * vivos().length);
       await dormir('Um quarto na Estalagem Stonehill, cama de verdade, sopa quente.');

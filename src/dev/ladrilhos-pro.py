@@ -117,6 +117,17 @@ CONJUNTOS = {
                '8). natural cave rock cliff block, dark cold grey stone, a long crack. '
                '9). natural cave rock cliff block, dark cold grey stone, small ledges. '
                '10). natural cave rock cliff block, dark cold grey stone, rough and uneven.',
+    # O alto dos planaltos do Cume da Wyvern: pedra bege-acinzentada ao sol,
+    # com capim duro nas frestas (o mapa de referencia do usuario).
+    'planalto': ESTILO + ' Rocky hilltop in bright daylight, warm beige-grey stone. '
+                '1). flat weathered beige-grey bedrock, uniform. '
+                '2). flat weathered beige-grey bedrock with a few thin cracks. '
+                '3). beige-grey bedrock with small loose pebbles. '
+                '4). beige-grey bedrock with a tuft of dry yellow grass in a crack. '
+                '5). beige-grey bedrock, slightly darker and rougher. '
+                '6). beige-grey bedrock with faint lichen spots. '
+                '7). beige-grey bedrock with a shallow worn dip. '
+                '8). beige-grey bedrock with tiny scattered gravel.',
     'rocha': ESTILO + ' Underground cave, dim and cool, seen by torchlight. '
              '1). top of solid dark grey cave rock, rough and uneven, uniform. '
              '2). top of solid dark grey cave rock with a few small cracks. '

@@ -336,6 +336,118 @@ export const FERAS = {
     blurb: 'Dois ataques por turno de perto, com a garrada valendo 2d6+4: concentra 19 de dano médio num alvo e escala parede para alcançá-lo.',
   },
 
+  // -------------------------------------------------------------------------
+  // FERAS DE ND 1/2 E 2 - as que o Conjurar Animais pede (SRD 5.1)
+  // Sprites REAPROVEITADOS por troca de paleta (src/art/looks/feras.js):
+  // urso-negro usa o urso pardo escurecido; cabra gigante e javali gigante usam
+  // o plano do javali; tigre-dente-de-sabre usa o plano do lobo atroz.
+  // -------------------------------------------------------------------------
+
+  ursoNegro: {
+    id: 'ursoNegro',
+    name: 'Urso-Negro',
+    look: 'blackBear',
+    size: 'médio',
+    tipo: 'fera',
+    fonte: 'SRD',
+    level: 1,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 15, dex: 10, con: 14, int: 2, wis: 12, cha: 7 },
+    ac: 11,
+    acNote: 'pelo natural',
+    maxHp: 19,
+    hpDice: '3d8+6',
+    speedFt: 40,
+    speeds: { climbFt: 30 },
+    skills: ['percepcao'],
+    senses: { passivePerception: 13 },
+    voice: 'gruntOgre',
+    attacks: [
+      { name: 'Mordida', bonus: 3, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'bite' },
+      { name: 'Garras', bonus: 3, damage: '2d4+2', type: 'cortante', reachFt: 5, art: 'claw' },
+    ],
+    multiattack: { count: 2, sequence: ['Mordida', 'Garras'] },
+    traits: ['keenSmell'],
+    blurb: 'Mordida e garrada no mesmo turno, 12 de dano médio; escala árvores e muros atrás de quem foge.',
+  },
+
+  cabraGigante: {
+    id: 'cabraGigante',
+    name: 'Cabra Gigante',
+    look: 'giantGoat',
+    size: 'grande',
+    tipo: 'fera',
+    fonte: 'SRD',
+    level: 1,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 17, dex: 11, con: 12, int: 3, wis: 12, cha: 6 },
+    ac: 11,
+    acNote: 'pelo natural',
+    maxHp: 19,
+    hpDice: '3d10+3',
+    speedFt: 40,
+    senses: { passivePerception: 11 },
+    attacks: [
+      { name: 'Chifrada', bonus: 5, damage: '2d4+3', type: 'contundente', reachFt: 5, art: 'bite' },
+    ],
+    traits: ['chargeGoat'],
+    blurb: 'Corre e marra: depois de 6 m em linha reta a chifrada ganha +2d4 e o alvo, se falhar em FOR CD 13, cai no chão.',
+  },
+
+  javaliGigante: {
+    id: 'javaliGigante',
+    name: 'Javali Gigante',
+    look: 'giantBoar',
+    size: 'grande',
+    tipo: 'fera',
+    fonte: 'SRD',
+    level: 3,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 17, dex: 10, con: 16, int: 2, wis: 7, cha: 5 },
+    ac: 12,
+    acNote: 'pelo natural',
+    maxHp: 42,
+    hpDice: '5d10+15',
+    speedFt: 40,
+    senses: { passivePerception: 8 },
+    attacks: [
+      { name: 'Presas', bonus: 5, damage: '2d6+3', type: 'cortante', reachFt: 5, art: 'claw' },
+    ],
+    traits: ['chargeGiantBoar', 'relentlessGiant'],
+    blurb: 'Presas de 2d6+3 e investida de +2d6 que derruba (FOR CD 13); quando o dano o levaria a 0, fica de pé com 1 PV.',
+  },
+
+  tigreDenteDeSabre: {
+    id: 'tigreDenteDeSabre',
+    name: 'Tigre-Dente-de-Sabre',
+    look: 'saberTiger',
+    size: 'grande',
+    tipo: 'fera',
+    fonte: 'SRD',
+    level: 3,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 18, dex: 14, con: 15, int: 3, wis: 12, cha: 8 },
+    ac: 12,
+    acNote: 'pelo natural',
+    maxHp: 52,
+    hpDice: '7d10+14',
+    speedFt: 40,
+    skills: ['percepcao', 'furtividade'],
+    senses: { passivePerception: 13 },
+    voice: 'growlWolf',
+    attacks: [
+      { name: 'Garras', bonus: 6, damage: '2d6+5', type: 'cortante', reachFt: 5, art: 'claw' },
+      { name: 'Mordida', bonus: 6, damage: '1d10+5', type: 'perfurante', reachFt: 5, art: 'bite' },
+    ],
+    multiattack: { count: 2, sequence: ['Garras', 'Mordida'] },
+    traits: ['keenSmell', 'pounce'],
+    blurb: 'Garras e mordida no mesmo turno (cerca de 18 de dano); se corre 6 m em linha reta e acerta as garras, o alvo faz FOR CD 14 ou cai no chão.',
+  },
+
   corujaUrso: {
     id: 'corujaUrso',
     name: 'Coruja-Urso',
@@ -409,6 +521,22 @@ export const TRAITS = {
   relentless: {
     name: 'Implacável',
     desc: 'Dano de 7 ou menos que o levaria a 0 PV o deixa com 1 PV. Recarrega após um descanso.',
+  },
+  chargeGoat: {
+    name: 'Investida',
+    desc: 'Movendo-se 6 m em linha reta antes de acertar a chifrada: +2d4 de dano contundente e resistência de FOR CD 13 ou cai no chão.',
+  },
+  chargeGiantBoar: {
+    name: 'Investida',
+    desc: 'Movendo-se 6 m em linha reta antes de acertar as presas: +2d6 de dano cortante e resistência de FOR CD 13 ou cai no chão.',
+  },
+  relentlessGiant: {
+    name: 'Implacável',
+    desc: 'Dano de 10 ou menos que o levaria a 0 PV o deixa com 1 PV. Recarrega após um descanso.',
+  },
+  pounce: {
+    name: 'Salto',
+    desc: 'Movendo-se 6 m em linha reta antes de acertar as garras: resistência de FOR CD 14 ou cai no chão; se cair, a fera morde como ação bônus.',
   },
   bloodDrain: {
     name: 'Dreno de Sangue',

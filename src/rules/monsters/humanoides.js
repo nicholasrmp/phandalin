@@ -182,7 +182,7 @@ export const HUMANOIDES = {
   marcarrubra: {
     id: 'marcarrubra',
     name: 'Bandido Marcarrubra',
-    look: 'rufiao',
+    look: 'marcarrubra',
     fonte: 'aventura',
     size: 'médio',
     level: 1,
@@ -328,6 +328,34 @@ export const HUMANOIDES = {
     },
     traits: ['conjuracao'],
     blurb: 'Abre com armadura arcana, cola em quem chega perto com imobilizar e chove mísseis de longe; com 8 PV ou menos e sem saída, se rende.',
+  },
+
+  // BRUGHOR MACHADO-MORDEDOR, chefe do bando orc do Cume da Wyvern (Parte 3).
+  // Bloco NOSSO (`fonte: 'propria'`): um orc maior, mais duro e mais bruto
+  // que os outros, que bate duas vezes com o machado. Os orcs dele lutam até
+  // ele cair; aí fogem (a cena cuida disso).
+  brughor: {
+    id: 'brughor',
+    name: 'Brughor Machado-Mordedor',
+    look: 'orc',
+    fonte: 'propria',
+    size: 'médio',
+    level: 4,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 18, dex: 12, con: 16, int: 8, wis: 11, cha: 12 },
+    ac: 14,
+    acNote: 'peles e um escudo velho',
+    maxHp: 38,
+    speedFt: 30,
+    senses: { darkvisionFt: 60 },
+    skills: ['intimidacao'],
+    attacks: [
+      { name: 'Machado grande', bonus: 6, damage: '1d12+4', type: 'cortante', reachFt: 5, art: 'axe' },
+      { name: 'Azagaia', bonus: 6, damage: '1d6+4', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
+    ],
+    multiattack: { count: 2, sequence: ['Machado grande', 'Machado grande'] },
+    blurb: 'Dois golpes de machado por turno. Enquanto ele estiver de pé, os orcs dele não correm.',
   },
 
   // O MAGO VERMELHO DO POÇO DA CORUJA VELHA (Parte 3). Bloco NOSSO
