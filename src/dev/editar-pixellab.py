@@ -31,6 +31,8 @@ from PIL import Image
 
 BASE = 'https://api.pixellab.ai/v2'
 RAIZ = Path(__file__).resolve().parents[2]
+DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
+            'west', 'south-west']
 
 # O que fica igual em toda edicao de armadura da Dara: o que a faz ser ela.
 _DARA_MANTEM = (
@@ -59,6 +61,39 @@ EDICOES = {
                    'padded cloth gambeson tunic in muted brown over her clothes, '
                    'no metal on the body.' + _DARA_MANTEM),
 }
+
+# AS POSTURAS DE ARMA, para o motor desenhar a arma por cima.
+#
+# A arma de cada postura e pedida em VERDE PURO: e a cor que nao existe em
+# nenhum lugar da Dara. Depois o importador acha o verde, mede a mao e o
+# angulo em cada quadro e apaga a arma -- a folha fica sem arma e o motor
+# desenha a que estiver equipada. Pedir de maos vazias perderia justamente a
+# pose de quem segura alguma coisa, e a medida da mao.
+_POSTURA_MANTEM = (
+    ' Keep everything else exactly the same: the red dragonborn head, horns '
+    'and amber eyes, no tail, the chain mail, the cream tabard with red trim, '
+    'the belt, the cream trouser flaps, the pose of the legs, the direction '
+    'each frame is facing and the colours.'
+)
+_VERDE = 'painted entirely in flat bright pure green #00ff00, a single solid colour'
+EDICOES.update({
+    'dara-sem-escudo': (
+        'Remove the steel shield completely: her left arm hangs free and relaxed '
+        'at her side with an empty clawed hand. Keep the longsword in her right '
+        'hand.' + _POSTURA_MANTEM),
+    'dara-arco': (
+        'Remove the steel shield and the longsword. She holds a longbow ' + _VERDE +
+        ', upright in her left hand at her side, and her right hand is empty.'
+        + _POSTURA_MANTEM),
+    'dara-besta': (
+        'Remove the steel shield and the longsword. She holds a heavy crossbow ' +
+        _VERDE + ', with both hands at waist level, pointing forward.'
+        + _POSTURA_MANTEM),
+    'dara-duas-maos': (
+        'Remove the steel shield and the longsword. She holds a greatsword ' +
+        _VERDE + ', gripped with both hands in front of her, the blade pointing '
+        'up diagonally.' + _POSTURA_MANTEM),
+})
 
 
 def chamar(token, metodo, caminho, corpo=None):
@@ -110,11 +145,22 @@ def imagens_em(obj):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('edicao', choices=sorted(EDICOES))
-    p.add_argument('--fonte', required=True, help='pasta do personagem baixado')
+    p.add_argument('--fonte', help='pasta do personagem baixado')
+    p.add_argument('--tira', help='ou uma tira de 8 vistas lado a lado (sul primeiro)')
     p.add_argument('--go', action='store_true')
     a = p.parse_args()
 
-    quadros, (cw, ch) = rotacoes(RAIZ / a.fonte)
+    if a.tira:
+        # A tira de uma edicao anterior: as 8 vistas na ordem das rotacoes.
+        tira = Image.open(RAIZ / a.tira).convert('RGBA')
+        lado = tira.width // len(DIRECOES)
+        quadros = [(d, tira.crop((i * lado, 0, (i + 1) * lado, tira.height)))
+                   for i, d in enumerate(DIRECOES)]
+        cw, ch = lado, tira.height
+    elif a.fonte:
+        quadros, (cw, ch) = rotacoes(RAIZ / a.fonte)
+    else:
+        raise SystemExit('passe --fonte ou --tira')
     corpo = {
         'description': EDICOES[a.edicao],
         'image_size': {'width': cw, 'height': ch},

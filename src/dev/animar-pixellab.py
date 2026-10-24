@@ -329,6 +329,45 @@ CRIATURAS = {
     },
 }
 
+# AS POSTURAS DE ARMA DA DARA. Sem queda: o corpo no chao e o mesmo em todas,
+# e vem da folha de espada e escudo. A arma de arco, besta e duas maos e verde
+# puro (marcador; ver `editar-pixellab.py`) e o texto repete isso, porque o
+# pixminimax redesenha a figura a cada quadro e precisa ser lembrado.
+_DARA = ('a female red dragonborn fighter with long swept-back horns, no tail, '
+         'no wings, in a steel chain mail hauberk and a cream tabard with red '
+         'trim, ')
+CRIATURAS.update({
+    'fighterSemEscudo': {
+        'sujeito': _DARA + 'a steel longsword in her right hand, no shield, the '
+                           'left hand empty',
+        'parado': 'longsword held low at her side, the left arm free',
+        'golpe': ('swinging the longsword in one overhead strike {para}, a short '
+                  'step in that direction, then recovering'),
+        'sem_queda': True,
+    },
+    'fighterArco': {
+        'sujeito': _DARA + 'a bright pure green longbow in her left hand, no shield',
+        'parado': 'the green bow held upright in the left hand at her side',
+        'golpe': ('raising the green bow, nocking an arrow and drawing it back to '
+                  'her cheek, then loosing it {para}, then lowering the bow'),
+        'sem_queda': True,
+    },
+    'fighterBesta': {
+        'sujeito': _DARA + 'a bright pure green heavy crossbow in both hands, no shield',
+        'parado': 'the green crossbow held in both hands at waist level',
+        'golpe': ('raising the green crossbow to her shoulder, aiming and shooting '
+                  'a bolt {para}, the recoil jolting it, then lowering it'),
+        'sem_queda': True,
+    },
+    'fighterDuasMaos': {
+        'sujeito': _DARA + 'a bright pure green greatsword gripped in both hands, no shield',
+        'parado': 'the green greatsword held in both hands, blade up diagonally',
+        'golpe': ('swinging the green greatsword with both hands in one heavy '
+                  'overhead strike {para}, a step in that direction, then recovering'),
+        'sem_queda': True,
+    },
+})
+
 
 def poses_de(chave):
     c = CRIATURAS[chave]
@@ -346,6 +385,8 @@ def poses_de(chave):
             'initial_pose': f'standing in a ready stance {olha}, ' + c['parado'],
             'frame_count': 8,
         }))
+    if c.get('sem_queda'):
+        return poses
     poses.append(('queda-pix', ['south'], {
         'mode': 'pixminimax',
         'action_description': ('struck down, falling backward and landing flat on '
@@ -369,8 +410,15 @@ def main():
                    help='nomes ja pedidos, separados por virgula')
     p.add_argument('--somente', default='',
                    help='so estes nomes, separados por virgula')
+    p.add_argument('--direcoes', default='',
+                   help='so estas direcoes, separadas por virgula: com a fila cheia o '
+                        'servidor aceita parte de um pedido de oito, e o resto se repede assim')
     a = p.parse_args()
     poses = poses_de(a.criatura) if a.criatura else POSES
+    if a.direcoes:
+        so = [d.strip() for d in a.direcoes.split(',') if d.strip()]
+        poses = [(n, [d for d in ds if d in so], e) for n, ds, e in poses]
+        poses = [(n, ds, e) for n, ds, e in poses if ds]
     if not a.character_id:
         if not a.criatura:
             raise SystemExit('passe --character-id ou --criatura')

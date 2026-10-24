@@ -35,7 +35,7 @@ export const PHANDELVER_ITEMS = {
 
   hew: nomeado('hew', 'Hew', 'incomum',
     'Machado de batalha +1 que corta madeira como quem corta pão. Contra criatura vegetal, mais 1d8 e o golpe não fecha.',
-    { tipo: 'arma mágica', art: 'machado', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'machadoDeBatalha', danoExtra: '1d8' }),
+    { tipo: 'arma mágica', art: 'machado', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'machadoDeBatalha', danoExtra: '1d8', contra: 'planta' }),
 
   dragonguard: nomeado('dragonguard', 'Dragonguard', 'raro',
     'Peitoral +1 lavrado com escamas. Resistência ao sopro de dragão, e vantagem para não se abalar com a presença de um.',

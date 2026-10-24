@@ -285,6 +285,35 @@ PERSONAGENS['fighterMalha'] = {
     },
 }
 
+# AS POSTURAS DE ARMA DA DARA, registradas do mesmo jeito: cada uma e a tira
+# da sua edicao (`editar-pixellab.py dara-<postura>`). A arma de cada uma e
+# verde puro de proposito -- e o marcador que o importador apaga depois de
+# medir a mao. Ver `editar-pixellab.py`.
+_DARA_BASE = ('A pixel art game sprite of a female red dragonborn fighter with '
+              'two long horns swept back and amber eyes, no tail, no wings, in a '
+              'full chain mail hauberk, a cream-white tabard with a red trim, a '
+              'leather belt and cream trouser flaps. ')
+for _chave, _edicao, _maos in (
+        ('fighterSemEscudo', 'dara-sem-escudo',
+         'A steel longsword in her right hand, the left hand empty, no shield.'),
+        ('fighterArco', 'dara-arco',
+         'A bright pure green longbow in her left hand, no shield.'),
+        ('fighterBesta', 'dara-besta',
+         'A bright pure green heavy crossbow held in both hands, no shield.'),
+        ('fighterDuasMaos', 'dara-duas-maos',
+         'A bright pure green greatsword held in both hands, no shield.')):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': f'_referencias/pixellab/edicoes/{_edicao}/tira.png',
+        'corpo': {
+            'name': f'Dara ({_edicao[5:]})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': _DARA_BASE + _maos,
+        },
+    }
+
 # A ordem das oito vistas na tira de uma edicao, a mesma das rotacoes.
 DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
             'west', 'south-west']

@@ -32,6 +32,9 @@ export function armorClass(actor) {
   const comArmadura = (actor.armor ?? 'nenhuma') !== 'nenhuma';
   ac += actor.acBonus ?? 0;
   if (comArmadura) ac += actor.acBonusArmadura ?? 0;
+  // A armadura mágica (a Dragonguard é um peitoral +1): o bônus é dela, então
+  // vem com ela e sai com ela.
+  ac += armor.bonusCA ?? 0;
   return ac;
 }
 
@@ -92,7 +95,7 @@ export function acBreakdown(actor) {
   const comArmadura = (actor.armor ?? 'nenhuma') !== 'nenhuma';
   const bonusSempre = actor.acBonus ?? 0;
   const bonusArmadura = comArmadura ? (actor.acBonusArmadura ?? 0) : 0;
-  const bonus = bonusSempre + bonusArmadura;
+  const bonus = bonusSempre + bonusArmadura + (armor.bonusCA ?? 0);
 
   const partes = [
     { rotulo: armor.name, valor: armor.base, nota: 'base da armadura' },
@@ -106,6 +109,7 @@ export function acBreakdown(actor) {
           : `limite ${armor.dexCap}`,
     },
   ];
+  if (armor.bonusCA) partes.push({ rotulo: 'Armadura mágica', valor: armor.bonusCA, nota: `${armor.name} +${armor.bonusCA}` });
   if (escudo) partes.push({ rotulo: 'Escudo', valor: escudo, nota: 'na mão secundária' });
   if (bonusSempre) partes.push({ rotulo: 'Bônus', valor: bonusSempre, nota: 'magia ou item' });
   // Separado do outro porque some quando a armadura sai, e o painel existe
@@ -131,12 +135,14 @@ export function weaponLine(actor, weaponId) {
   const ability = weaponAbility(actor, w);
   const mod = abilityMod(actor.abilities[ability]);
   const prof = actor.proficiency ?? proficiencyBonus(actor.level ?? 1);
+  // Arma mágica: +X no ataque e no dano, somado como o combate soma.
+  const noDano = mod + (w.bonusDano ?? 0);
   return {
     arma: w,
     ability,
     mod,
-    bonus: mod + prof,
-    dano: `${w.damage}${mod >= 0 ? '+' : ''}${mod}`,
+    bonus: mod + prof + (w.bonusAtaque ?? 0),
+    dano: `${w.damage}${noDano >= 0 ? '+' : ''}${noDano}`,
     alcanceFt: w.ranged ? w.rangeFt : (w.reachFt ?? 5),
     ranged: !!w.ranged,
     duasMaos: duasMaos(weaponId),

@@ -53,7 +53,101 @@ EDICOES = {
         'pose and position in every frame, the direction each frame faces and '
         'the colours.'
     ),
+    # As posturas de arma: a arma e o MARCADOR verde (ou a espada de aco), e
+    # tem de sair igual -- e por ela que o extrator mede a mao.
+    # Ao sul, a besta saiu com uma cauda CREME e comprida curvando para a
+    # direita, e a edicao generica nao a reconheceu como cauda.
+    'cauda-creme': (
+        'Remove the long cream-coloured tail that curves out from behind her '
+        'legs to the right side of the image. She has NO tail at all: nothing '
+        'sticks out sideways from behind her legs. Keep the bright green '
+        'crossbow exactly as it is in every frame, and keep everything else '
+        'exactly the same: the red dragonborn head and horns, the chain mail, '
+        'the cream tabard with red trim, the belt, the legs and feet, the pose '
+        'and position in every frame and the colours.'
+    ),
+    # AS FAMILIAS DE ARMA, desenhadas DENTRO da animacao. A edicao troca so
+    # a arma e mantem a pose: a nova arma inclina e borra junto com o golpe,
+    # o que nenhuma arma colada por cima consegue. Uma arma por familia --
+    # maca serve a martelo e estrela, machado a machadinha e Hew.
+    'arma-maca': (
+        'Replace the longsword in her right hand with a flanged mace: a wooden '
+        'handle about as long as her forearm topped by a heavy round steel head '
+        'with flanges, held the same way, in the same position and pointing the '
+        'same direction as the sword in every frame. Keep the steel heater '
+        'shield with the red dragon emblem on her left arm. She has no tail. '
+        'Keep everything else exactly the same: the red dragonborn head and '
+        'horns, the chain mail, the cream tabard with red trim, the belt, the '
+        'pose and position in every frame, the direction each frame faces and '
+        'the colours.'
+    ),
+    'arma-machado': (
+        'Replace the longsword in her right hand with a battleaxe: a wooden haft '
+        'a bit longer than her forearm with a wide single-bladed steel axe head '
+        'at the top, held the same way, in the same position and pointing the '
+        'same direction as the sword in every frame. Keep the steel heater '
+        'shield with the red dragon emblem on her left arm. She has no tail. '
+        'Keep everything else exactly the same: the red dragonborn head and '
+        'horns, the chain mail, the cream tabard with red trim, the belt, the '
+        'pose and position in every frame, the direction each frame faces and '
+        'the colours.'
+    ),
+    'arma-machado-grande': (
+        'Replace the bright green greatsword with a greataxe: a long wooden haft '
+        'gripped in both of her hands with a huge double-bladed steel axe head at '
+        'the far end, in the same position and pointing the same direction as '
+        'the sword in every frame. Nothing green remains. She has no tail. Keep '
+        'everything else exactly the same: the red dragonborn head and horns, the '
+        'chain mail, the cream tabard with red trim, the belt, the pose and '
+        'position in every frame, the direction each frame faces and the colours.'
+    ),
+    'arma-malho': (
+        'Replace the bright green greatsword with a maul: a long wooden haft '
+        'gripped in both of her hands with a massive square iron hammer head at '
+        'the far end, in the same position and pointing the same direction as '
+        'the sword in every frame. Nothing green remains. She has no tail. Keep '
+        'everything else exactly the same: the red dragonborn head and horns, the '
+        'chain mail, the cream tabard with red trim, the belt, the pose and '
+        'position in every frame, the direction each frame faces and the colours.'
+    ),
+    'postura-sem-cauda': (
+        'Remove the dragon tail: she is a dragonborn and has NO tail. Any red '
+        'scaly tail behind her legs must disappear completely; behind the knees '
+        'keep only a short plain cream cloth flap of her trousers, not pointed '
+        'and not curling. Keep the weapon she holds exactly as it is, the same '
+        'shape, position and colour in every frame; if it is a bow, it is one '
+        'single unbroken curved bow. Keep everything else exactly the same: '
+        'the red dragonborn head and horns, the chain mail, the cream tabard with '
+        'red trim, the belt, the pose and position in every frame, the direction '
+        'each frame faces and the colours.'
+    ),
 }
+
+# AS ARMADURAS DA DARA, por edicao de cada folha de arma. A arma, o escudo e
+# a pose ficam; so a armadura muda. A arma verde de algumas folhas (o
+# marcador da espada grande, do arco e da besta) tem de continuar verde: e
+# ela que o importador troca por madeira ou aco depois.
+_ARMADURA_MANTEM = (
+    ' Keep the weapon she holds, and the shield if she has one, exactly as they '
+    'are in every frame: same shape, position and colour, and a bright green '
+    'weapon stays bright green. She has no tail. Keep everything else exactly '
+    'the same: the red dragonborn head and horns, the cream tabard with red '
+    'trim, the belt, the pose and position in every frame, the direction each '
+    'frame faces and the colours of her scales.'
+)
+for _nome, _armadura in (
+        ('placas', 'full plate armor: polished steel breastplate, steel pauldrons, '
+                   'steel vambraces and steel greaves'),
+        ('escamas', 'scale mail: a coat of overlapping steel scales like fish scales '
+                    'down to the thighs, worn over a leather jerkin'),
+        ('couro', 'a fitted brown leather cuirass with leather shoulder guards and '
+                  'leather bracers, studded with small steel rivets'),
+        ('peles', 'hide armor of thick brown furs and tanned animal hides, a fur '
+                  'mantle over the shoulders, bound with leather straps'),
+        ('roupa', 'no armor at all: a quilted padded cloth gambeson tunic in muted '
+                  'brown, no metal on the body')):
+    EDICOES[f'armadura-{_nome}'] = (
+        f'Replace her steel chain mail hauberk with {_armadura}.' + _ARMADURA_MANTEM)
 
 # Quadros que o motor usa por direcao, nos grupos da folha do PixelLab: o
 # parado (rotacoes), o andar 1-4 e os dois do ataque escolhidos no perfil
@@ -61,6 +155,22 @@ EDICOES = {
 ATAQUE_DARA = {'south': [2, 5], 'south-east': [3, 5], 'east': [2, 4],
                'north-east': [5, 8], 'north': [4, 2], 'north-west': [3, 6],
                'west': [3, 6], 'south-west': [3, 6]}
+
+# Os mesmos quadros, por postura. Tem de bater com os perfis de
+# `importar-pixellab.py`: e so neles que vale gastar a edicao.
+ATAQUE_POR_PERFIL = {
+    'fighter': ATAQUE_DARA,
+    'fighterSemEscudo': {'south': [2, 5], 'south-east': [2, 5], 'east': [2, 3], 'north-east': [1, 3],
+                         'north': [2, 3], 'north-west': [4, 6], 'west': [3, 6], 'south-west': [3, 5]},
+    'fighterArco': {'south': [3, 7], 'south-east': [3, 6], 'east': [2, 5], 'north-east': [3, 5],
+                    'north': [4, 6], 'north-west': [3, 6], 'west': [3, 6], 'south-west': [3, 6]},
+    'fighterBesta': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 5], 'north-east': [3, 6],
+                     'north': [3, 6], 'north-west': [3, 6], 'west': [3, 6], 'south-west': [3, 6]},
+    'fighterDuasMaos': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
+                        'north': [6, 1], 'north-west': [3, 6], 'west': [1, 7], 'south-west': [1, 6]},
+}
+ATAQUE = ATAQUE_DARA
+COM_QUEDA = False
 
 
 def quadros_da_direcao(meta, dir_):
@@ -70,9 +180,15 @@ def quadros_da_direcao(meta, dir_):
     for r in meta['rows']:
         if r['type'] == 'animation':
             grupos.setdefault(re.sub(r'_\d+$', '', r['animation']), {})[r['direction']] = r
-    return ([(rot['row'], rot['directions'].index(dir_))] +
-            [(grupos['walk'][dir_]['row'], f) for f in (1, 2, 3, 4)] +
-            [(grupos['attack-dir'][dir_]['row'], f) for f in ATAQUE_DARA[dir_]])
+    pos = ([(rot['row'], rot['directions'].index(dir_))] +
+           [(grupos['walk'][dir_]['row'], f) for f in (1, 2, 3, 4)] +
+           [(grupos['attack-dir'][dir_]['row'], f) for f in ATAQUE[dir_]])
+    # O corpo no chao tambem veste a armadura: o quadro da queda vai junto ao
+    # sul, onde ele e desenhado (8 quadros, ainda dentro dos 9 do pedido).
+    if COM_QUEDA and dir_ == 'south' and 'queda-pix' in grupos:
+        q = grupos['queda-pix']['south']
+        pos.append((q['row'], q['frame_count'] - 1))
+    return pos
 
 
 def janela(celulas, lado):
@@ -98,12 +214,19 @@ def chamar(token, metodo, caminho, corpo=None):
     req.add_header('Authorization', f'Bearer {token}')
     if corpo:
         req.add_header('Content-Type', 'application/json')
-    try:
-        with urllib.request.urlopen(req, timeout=300) as r:
-            return json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise SystemExit(f'HTTP {e.code} em {metodo} {caminho}: '
-                         f'{e.read().decode(errors="replace")[:800]}')
+    for _ in range(80):
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            # Fila cheia (20 trabalhos ao mesmo tempo no Tier 3): espera e
+            # tenta de novo. Nao custa nada -- so roda quando entra.
+            if e.code == 429:
+                time.sleep(45)
+                continue
+            raise SystemExit(f'HTTP {e.code} em {metodo} {caminho}: '
+                             f'{e.read().decode(errors="replace")[:800]}')
+    raise SystemExit('a fila nunca abriu')
 
 
 def imagens_em(obj):
@@ -124,11 +247,16 @@ def main():
     p.add_argument('edicao', choices=sorted(EDICOES))
     p.add_argument('--fonte', required=True, help='pasta da folha de animacoes do PixelLab')
     p.add_argument('--direcoes', required=True, help='separadas por virgula')
+    p.add_argument('--perfil', default='fighter', choices=sorted(ATAQUE_POR_PERFIL))
+    p.add_argument('--com-queda', action='store_true', help='o quadro do corpo no chao vai junto ao sul')
     p.add_argument('--go', action='store_true')
     a = p.parse_args()
+    global ATAQUE, COM_QUEDA
+    ATAQUE = ATAQUE_POR_PERFIL[a.perfil]
+    COM_QUEDA = a.com_queda
 
     fonte = RAIZ / a.fonte
-    jmeta = next(fonte.glob('*.json'))
+    jmeta = next(j for j in fonte.glob('*.json') if j.name not in ('armas.json', 'meta.json'))
     meta = json.loads(jmeta.read_text(encoding='utf-8'))['spritesheet']
     lado = meta['cell_size']['width']
     folha = Image.open(fonte / meta['path']).convert('RGBA')
@@ -155,7 +283,7 @@ def main():
         print('(seco: nada foi enviado. use --go)')
         return
 
-    saida = RAIZ / '_referencias' / 'pixellab' / 'edicoes' / a.edicao
+    saida = RAIZ / '_referencias' / 'pixellab' / 'edicoes' / a.edicao / f'{a.perfil}-{fonte.parent.name[:12]}-{fonte.name}'
     saida.mkdir(parents=True, exist_ok=True)
     jobs = []
     for d, pos, cels, jan in plano:

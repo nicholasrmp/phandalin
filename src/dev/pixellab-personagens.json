@@ -5,5 +5,9 @@
   "goblinArqueiro-v1": "a42df5a0-a11f-4084-8d1c-af3fc5093d23",
   "goblinBoss-v1": "9b23d123-98d9-4c46-b0bb-21324dc17a66",
   "fighter": "705467ab-7d8d-46a6-befe-680d864a63b6",
-  "fighterMalha": "65b1e8af-17a9-4cff-9eee-580b58c97c27"
+  "fighterMalha": "65b1e8af-17a9-4cff-9eee-580b58c97c27",
+  "fighterSemEscudo": "c29a9610-6020-4a09-8590-69c7c6d132dd",
+  "fighterArco": "e113e412-ecf7-47fa-97da-b5705a28c040",
+  "fighterBesta": "3269c32a-f032-471a-9b16-1be6c2d141ac",
+  "fighterDuasMaos": "6e0dc359-e329-470b-af0d-6538ee0f04ca"
 }

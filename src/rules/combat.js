@@ -636,10 +636,13 @@ export class Encounter {
     const w = WEAPONS[weaponId ?? actor.equippedWeapon];
     const ability = weaponAbility(actor, w);
     const mod = abilityMod(actor.abilities[ability]);
+    // Arma mágica (Talon, Lightbringer, Hew): +X no ataque e no dano.
+    const magia = w.bonusAtaque ?? 0;
+    const noDano = mod + (w.bonusDano ?? 0);
     return {
       name: w.name,
-      bonus: mod + actor.proficiency,
-      damage: `${w.damage}${mod >= 0 ? '+' : ''}${mod}`,
+      bonus: mod + actor.proficiency + magia,
+      damage: `${w.damage}${noDano >= 0 ? '+' : ''}${noDano}`,
       type: w.type,
       ranged: !!w.ranged,
       reachFt: w.reachFt ?? 5,
@@ -653,6 +656,7 @@ export class Encounter {
       bonusPartes: [
         { rotulo: ABILITY_NAME[ability], valor: mod },
         { rotulo: 'proficiência', valor: actor.proficiency },
+        ...(magia ? [{ rotulo: 'arma mágica', valor: magia }] : []),
       ],
     };
   }

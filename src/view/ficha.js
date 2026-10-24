@@ -31,6 +31,7 @@ import './ficha.css';
 
 import { makeFigure, makePortrait } from '../art/sheet.js';
 import { LOOKS } from '../art/looks.js';
+import { temArteImportada } from '../art/folhas/index.js';
 import { iconCanvas, iconeDeArma, iconeDeMagia, iconeDeRecurso, temIcone } from '../art/icons.js';
 import {
   ABILITIES, ABILITY_NAME, SKILLS, SKILL_NAME,
@@ -123,6 +124,19 @@ function aplicarAparencia(personagem) {
   const look = LOOKS[base];
   if (!look) return;
   const ap = aparenciaDe(personagem);
+
+  // FIGURA COM ARTE DO PIXELLAB: a chave leva os ITENS, não o estilo do
+  // pintor. O pintor junta cota de malha e placas em `plate`, e espada longa e
+  // espada grande em `sword`; para a arte importada são folhas diferentes.
+  // Quem escolhe a folha a partir da chave é `folhaImportada`, que nunca cai
+  // no pintor enquanto houver uma folha da figura -- a Dara não vira humana.
+  if (temArteImportada(base)) {
+    const chave = `${base}@${personagem.armor ?? 'nenhuma'}-${personagem.equippedWeapon ?? 'nada'}`
+      + `${ap.shield ? '-escudo' : ''}`;
+    if (!LOOKS[chave]) LOOKS[chave] = { ...look, ...ap };
+    personagem.look = chave;
+    return;
+  }
 
   const igualAoBase = look.armorStyle === ap.armorStyle
     && (look.weapon ?? null) === ap.weapon

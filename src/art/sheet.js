@@ -8,9 +8,15 @@ import { folhaImportada, carregarFolhas } from './folhas/index.js';
 
 const cache = new Map();
 
-// Carregar cedo, e uma vez. Quando um PNG chega, a chave dele sai do cache
-// para que a proxima consulta devolva a folha importada no lugar da pintada.
-carregarFolhas((key) => cache.delete(key));
+// Carregar cedo, e uma vez. Quando um PNG chega, saem do cache TODAS as chaves
+// da figura -- o look base e cada combinacao de equipamento dela --, porque a
+// folha nova pode ser a resposta certa para qualquer uma. As caixas do
+// retrato tambem: foram medidas na folha velha.
+const daFigura = (key, base) => key === base || key.startsWith(`${base}@`);
+carregarFolhas((base) => {
+  for (const key of [...cache.keys()]) if (daFigura(key, base)) cache.delete(key);
+  for (const key of [...caixas.keys()]) if (daFigura(key, base)) caixas.delete(key);
+});
 
 export const CELL_W = 52;
 export const CELL_H = 80;
@@ -146,12 +152,14 @@ function caixaDo(lookKey) {
   const pronta = caixas.get(lookKey);
   if (pronta) return pronta;
   const sheet = getSheet(lookKey);
-  const ctx = sheet.image.getContext('2d', { willReadFrequently: true });
-  const d = ctx.getImageData(0, sheet.anims.idle.y, CELL_PW, CELL_PH).data;
-  let x0 = CELL_PW; let y0 = CELL_PH; let x1 = -1; let y1 = -1;
-  for (let y = 0; y < CELL_PH; y++) {
-    for (let x = 0; x < CELL_PW; x++) {
-      if (d[(y * CELL_PW + x) * 4 + 3] === 0) continue;
+  // A célula é a DA FOLHA: a pintada tem 156x240, a importada do PixelLab
+  // 288x288. Medir a importada pela célula pintada cortava a figura.
+  const { fw, fh } = sheet.anims.idle;
+  const d = pixelsDaFolha(sheet, sheet.anims.idle.y, fw, fh);
+  let x0 = fw; let y0 = fh; let x1 = -1; let y1 = -1;
+  for (let y = 0; y < fh; y++) {
+    for (let x = 0; x < fw; x++) {
+      if (d[(y * fw + x) * 4 + 3] === 0) continue;
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
@@ -159,10 +167,27 @@ function caixaDo(lookKey) {
     }
   }
   const caixa = x1 < 0
-    ? { x0: 0, y0: 0, x1: CELL_PW - 1, y1: CELL_PH - 1, cx: CELL_PW / 2 }
+    ? { x0: 0, y0: 0, x1: fw - 1, y1: fh - 1, cx: fw / 2 }
     : { x0, y0, x1, y1, cx: (x0 + x1) / 2 };
   caixas.set(lookKey, caixa);
   return caixa;
+}
+
+/**
+ * Os pixels de uma faixa da folha. A pintada é um canvas e responde direto; a
+ * importada é um `Image`, que não tem `getContext` -- passa por um canvas de
+ * rascunho do tamanho da faixa.
+ */
+function pixelsDaFolha(sheet, y, w, h) {
+  if (sheet.image.getContext) {
+    return sheet.image.getContext('2d', { willReadFrequently: true }).getImageData(0, y, w, h).data;
+  }
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(sheet.image, 0, y, w, h, 0, 0, w, h);
+  return ctx.getImageData(0, 0, w, h).data;
 }
 
 /**
@@ -184,10 +209,11 @@ export function makePortrait(lookKey, lado = 40) {
   // o canvas são físicos, e o CSS devolve o canvas ao tamanho pedido — assim a
   // ficha ganha a resolução sem que nenhum layout se mexa.
   const p = lado * S;
-  const w = Math.min(p, CELL_PW);
-  const h = Math.min(p, CELL_PH);
-  const sx = Math.max(0, Math.min(Math.round(b.cx - w / 2), CELL_PW - w));
-  const sy = Math.max(0, Math.min(b.y0 - S, CELL_PH - h));
+  const { fw, fh } = sheet.anims.idle;
+  const w = Math.min(p, fw);
+  const h = Math.min(p, fh);
+  const sx = Math.max(0, Math.min(Math.round(b.cx - w / 2), fw - w));
+  const sy = Math.max(0, Math.min(b.y0 - S, fh - h));
 
   const canvas = document.createElement('canvas');
   canvas.width = p;

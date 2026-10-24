@@ -120,6 +120,7 @@ QUADROS_POR_DIRECAO = {
 # O SENTIDO HORIZONTAL DE CADA DIRECAO NA TELA, para o bote do ataque.
 SENTIDO_X = {'south': 0, 'south-east': 1, 'east': 1, 'north-east': 1,
              'north': 0, 'north-west': -1, 'west': -1, 'south-west': -1}
+ESPELHO = {'west': 'east', 'south-west': 'south-east', 'north-west': 'north-east'}
 BOTE = 3        # px logicos que o golpe pode avancar no sentido da direcao
 
 
@@ -162,6 +163,45 @@ PERFIS = {
             'north-east': [3, 7], 'north': [2, 4], 'north-west': [3, 6],
             'west': [3, 5], 'south-west': [4, 7],
         },
+    },
+    # AS POSTURAS DE ARMA DA DARA. Os quadros sao os mesmos que a edicao de
+    # cauda limpou (`ATAQUE_POR_PERFIL` em `editar-quadros.py`); a queda vem da
+    # folha principal; arco e besta trocam o verde por madeira e ferro.
+    'fighterSemEscudo': {
+        'ataque': ['attack-dir'], 'pele': (0.94, 0.04), 'cabeca': 14, 'quadros': [3, 5],
+        'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
+        'por_direcao': {'south': [2, 5], 'south-east': [2, 5], 'east': [2, 3], 'north-east': [1, 3],
+                        'north': [2, 3], 'north-west': [4, 6], 'west': [3, 6], 'south-west': [3, 5]},
+    },
+    'fighterArco': {
+        'ataque': ['attack-dir'], 'pele': (0.94, 0.04), 'cabeca': 14, 'quadros': [3, 5],
+        'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
+        'verde_vira': 'madeira',
+        'arco_do_parado': ['south-east', 'east', 'north-east', 'north', 'south-west'],
+        'por_direcao': {'south': [3, 7], 'south-east': [3, 6], 'east': [2, 5], 'north-east': [3, 5],
+                        'north': [4, 6], 'north-west': [3, 6], 'west': [3, 6], 'south-west': [3, 6]},
+    },
+    'fighterBesta': {
+        'ataque': ['attack-dir'], 'pele': (0.94, 0.04), 'cabeca': 14, 'quadros': [3, 5],
+        'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
+        'verde_vira': 'besta',
+        'por_direcao': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 5], 'north-east': [3, 6],
+                        'north': [3, 6], 'north-west': [3, 6], 'west': [3, 6], 'south-west': [3, 6]},
+    },
+    # A espada grande: a propria espada verde da postura de duas maos, que ja
+    # e uma espada grande desenhada no golpe -- so troca o verde por aco.
+    'fighterEspadaGrande': {
+        'ataque': ['attack-dir'], 'pele': (0.94, 0.04), 'cabeca': 14, 'quadros': [3, 5],
+        'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
+        'verde_vira': 'aco',
+        'por_direcao': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
+                        'north': [6, 1], 'north-west': [3, 6], 'west': [1, 4], 'south-west': [1, 6]},
+    },
+    'fighterDuasMaos': {
+        'ataque': ['attack-dir'], 'pele': (0.94, 0.04), 'cabeca': 14, 'quadros': [3, 5],
+        'queda_de': '_referencias/pixellab/fighterMalha-65b1e8af/anim-dara-sem-cauda-sem-arma',
+        'por_direcao': {'south': [2, 5], 'south-east': [1, 6], 'east': [2, 5], 'north-east': [1, 3],
+                        'north': [6, 1], 'north-west': [3, 6], 'west': [1, 4], 'south-west': [1, 6]},
     },
     # A Dara de malha. Mesmo criterio: espada ERGUIDA e GOLPE, escolhidos
     # olhando. Ao norte o golpe para baixo e o quadro 2, que vem ANTES do
@@ -268,6 +308,211 @@ def respirar(cel):
     return out
 
 
+# O MARCADOR VERDE VIRA MATERIAL. Arco e besta foram gerados em verde puro
+# (ver `editar-pixellab.py`) e ficam no desenho: o tiro e um movimento
+# proprio e a arma gerada ja esta no angulo de cada quadro. Aqui o verde vira
+# a rampa do material pela luminosidade, e o resto da figura nao muda.
+RAMPAS_DO_VERDE = {
+    'madeira': [(86, 54, 32), (128, 82, 48), (170, 116, 70), (204, 154, 98)],
+    'besta': [(66, 66, 74), (104, 72, 44), (140, 96, 58), (176, 130, 80)],
+    # a espada grande verde da postura de duas maos ja e uma espada grande:
+    # vira aco, com a rampa da espada original da Dara
+    'aco': [(46, 50, 62), (98, 106, 120), (160, 170, 182), (232, 236, 240)],
+}
+
+
+def verde_vira(cel, material):
+    """
+    O verde vira o material. Onde o verde tem tons, a luminosidade escolhe o
+    degrau da rampa. Onde e CHAPADO -- a espada grande saiu num verde so --,
+    a luminosidade nao diz nada e tudo viraria um branco liso; ai o degrau
+    sai da FORMA: a borda virada para a luz (cima e esquerda) e clara, a do
+    lado oposto e escura, o miolo e o tom medio. E o sombreado de tres tons do
+    resto da figura.
+    """
+    out = cel.copy()
+    px = out.load()
+    W, H = out.size
+    if material == 'apagar':
+        # Sobra do marcador fora da janela da edicao: some, com o contorno.
+        def verde(p):
+            h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in p[:3]))
+            return p[3] and 0.2 <= h <= 0.47 and s > 0.35 and v > 0.15
+        vs = {(x, y) for y in range(H) for x in range(W) if verde(px[x, y])}
+        for x, y in list(vs):
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (x + dx, y + dy)
+                    if 0 <= q[0] < W and 0 <= q[1] < H and px[q][3] and max(px[q][:3]) < 40:
+                        vs.add(q)
+        for q in vs:
+            px[q] = (0, 0, 0, 0)
+        return out
+    rampa = RAMPAS_DO_VERDE[material]
+
+    def e_verde(p):
+        h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in p[:3]))
+        return p[3] and 0.2 <= h <= 0.47 and s > 0.35 and v > 0.15
+    verdes = {(x, y) for y in range(H) for x in range(W) if e_verde(px[x, y])}
+    tons = {px[q][:3] for q in verdes}
+    chapado = len(tons) <= 2
+    for x, y in verdes:
+        if chapado:
+            luz = (x - 1, y - 1) not in verdes or (x - 1, y) not in verdes and (x, y - 1) not in verdes
+            sombra = (x + 1, y + 1) not in verdes or (x + 1, y) not in verdes and (x, y + 1) not in verdes
+            r = rampa[3] if luz and not sombra else rampa[1] if sombra and not luz else rampa[2]
+        else:
+            v = colorsys.rgb_to_hsv(*(c / 255 for c in px[x, y][:3]))[2]
+            r = rampa[min(len(rampa) - 1, int(v * len(rampa) * 0.999))]
+        px[x, y] = (*r, px[x, y][3])
+    return out
+
+
+# As pecas de apagar marcador que o conserto do arco usa (vieram do extrator
+# de arma, que saiu do projeto quando a arma colada foi abandonada).
+def hsv(p):
+    return colorsys.rgb_to_hsv(*(x / 255 for x in p[:3]))
+
+
+def _escuro(p):
+    return p[3] and hsv(p)[2] < 0.2
+
+
+def _escama(p):
+    h, s, v = hsv(p)
+    return p[3] and (h > 0.94 or h < 0.06) and s > 0.45 and v > 0.2
+
+
+def _verde(p):
+    h, s, v = hsv(p)
+    return p[3] and 0.2 <= h <= 0.47 and s > 0.35 and v > 0.15
+
+
+def _apagar(img, mask):
+    """
+    Tira a arma e fecha o buraco.
+
+    O buraco e decidido pelos vizinhos: se em volta ha mais fundo (ou
+    contorno preto, que e borda e nao corpo) do que corpo, o buraco e fundo.
+    Senao e corpo, e a cor vem do vizinho de MESMA PARIDADE -- (x+y) par com
+    par, impar com impar. A malha e as escamas sao xadrez de dois tons; copiar
+    o vizinho colado da a cor errada em metade dos pixels e o remendo vira
+    borrao, copiar o de mesma paridade continua a trama.
+    """
+    out = img.copy()
+    px = out.load()
+    W, H = img.size
+    falta = set(mask)
+    for p in falta:
+        px[p] = (0, 0, 0, 0)
+    perto = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    mesma = ((1, 1), (-1, -1), (1, -1), (-1, 1), (2, 0), (-2, 0), (0, 2), (0, -2))
+    for _ in range(30):
+        if not falta:
+            break
+        novo = {}
+        for (x, y) in falta:
+            viz = [px[x + dx, y + dy] for dx, dy in perto
+                   if 0 <= x + dx < W and 0 <= y + dy < H and (x + dx, y + dy) not in falta]
+            # Um vizinho so nao decide: na base de uma lamina que sai da mao, o
+            # unico vizinho conhecido e a mao, e preencher por ele estendia a
+            # mao lamina acima como um palito.
+            if len(viz) < 2:
+                continue
+            opacos = [v for v in viz if v[3] and not _escuro(v)]
+            if len(opacos) * 2 <= len(viz):
+                novo[(x, y)] = (0, 0, 0, 0)
+                continue
+            par = [px[x + dx, y + dy] for dx, dy in mesma
+                   if 0 <= x + dx < W and 0 <= y + dy < H and (x + dx, y + dy) not in falta
+                   and px[x + dx, y + dy][3] and not _escuro(px[x + dx, y + dy])]
+            if par:
+                novo[(x, y)] = max(set(par), key=par.count)
+            elif opacos:
+                novo[(x, y)] = max(set(opacos), key=opacos.count)
+        if not novo:
+            break
+        for p, c in novo.items():
+            px[p] = c
+        falta -= set(novo)
+    for p in falta:
+        px[p] = (0, 0, 0, 0)
+    # FIOS SOLTOS: sobra do contorno da arma fora do corpo, uma linha preta de
+    # 1 px com quase nada em volta. Corpo de verdade nunca e assim.
+    # Vale para o cinza do aco tambem: um fio de lamina de 1 px que sobrou.
+    def cinza(p):
+        h, s_, v = hsv(p)
+        return _escuro(p) or s_ < 0.3
+    for _ in range(5):
+        tirar = []
+        for y in range(H):
+            for x in range(W):
+                if not px[x, y][3]:
+                    continue
+                n = sum(1 for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx or dy)
+                        and 0 <= x + dx < W and 0 <= y + dy < H and px[x + dx, y + dy][3])
+                if n <= 2 and cinza(px[x, y]):
+                    tirar.append((x, y))
+        for p in tirar:
+            px[p] = (0, 0, 0, 0)
+    return out
+
+
+class _Marcador:
+    escuro = staticmethod(_escuro)
+    escama = staticmethod(_escama)
+    verde = staticmethod(_verde)
+    apagar = staticmethod(_apagar)
+
+
+def colar_arco(cel, parado):
+    """
+    O ARCO DO PARADO NO QUADRO DO ANDAR.
+
+    No andar o modelo quebra o arco em metade das direcoes: some, se parte em
+    pedacos, gira de lado. Aqui o arco do quadro (o verde) sai e entra o do
+    parado, inteiro, deslocado o quanto a cabeca se deslocou -- a cabeca e a
+    parte do corpo que melhor acompanha o balanco do passo. O braco do arco
+    no andar quase nao mexe, entao o arco parado no lugar le como segurado.
+    """
+    ea = _Marcador
+    W, H = cel.size
+    pc = cel.load()
+    verde_q = {(x, y) for y in range(H) for x in range(W) if ea.verde(pc[x, y])}
+    # o contorno do arco velho: escuro encostado no verde
+    contorno = {(x + dx, y + dy) for x, y in verde_q for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                if 0 <= x + dx < W and 0 <= y + dy < H and (x + dx, y + dy) not in verde_q
+                and ea.escuro(pc[x + dx, y + dy])}
+    limpo = ea.apagar(cel, verde_q | contorno)
+
+    def topo_da_cabeca(img):
+        p = img.load()
+        pts = [(x, y) for y in range(img.height) for x in range(img.width) if ea.escama(p[x, y])]
+        if not pts:
+            return None
+        t = pts[0][1]
+        cab = [x for x, y in pts if y < t + 12]
+        return sorted(cab)[len(cab) // 2], t
+    a, b = topo_da_cabeca(parado), topo_da_cabeca(limpo)
+    dx, dy = (b[0] - a[0], b[1] - a[1]) if a and b else (0, 0)
+    pp = parado.load()
+    verde_p = {(x, y) for y in range(H) for x in range(W) if ea.verde(pp[x, y])}
+    out = limpo.copy()
+    po = out.load()
+    novos = set()
+    for x, y in verde_p:
+        q = (x + dx, y + dy)
+        if 0 <= q[0] < W and 0 <= q[1] < H:
+            po[q] = pp[x, y]
+            novos.add(q)
+    for x, y in novos:
+        for ex, ey in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + ex, y + ey)
+            if 0 <= q[0] < W and 0 <= q[1] < H and q not in novos and not po[q][3]:
+                po[q] = (13, 11, 17, 255)
+    return out
+
+
 def base_do_quadro(cel):
     """A fileira mais baixa com pixel aceso, ou None se o quadro for vazio."""
     bb = cel.getbbox()
@@ -278,9 +523,20 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--fonte', required=True, help='pasta com o PNG e o JSON do PixelLab')
     p.add_argument('--chave', default='goblin')
+    p.add_argument('--nome', help='nome do arquivo de saida (padrao: a chave)')
+    p.add_argument('--espelho', action='store_true',
+                   help='o lado oeste sai do leste virado (folhas editadas so em 5 direcoes)')
+    p.add_argument('--verde', help='o verde que sobrar vira este material (ver RAMPAS_DO_VERDE)')
+    p.add_argument('--queda-de', help='pasta de onde tirar o corpo no chao (padrao: a do perfil)')
     a = p.parse_args()
     global PLANO, QUADROS_POR_DIRECAO, PELE, CABECA, PE_NO_ATAQUE
-    perfil = PERFIS.get(a.chave, {})
+    perfil = dict(PERFIS.get(a.chave, {}))
+    if a.espelho:
+        perfil['espelho'] = True
+    if a.verde:
+        perfil['verde_vira'] = a.verde
+    if a.queda_de:
+        perfil['queda_de'] = a.queda_de
     PE_NO_ATAQUE = {('attack', d) for d in perfil.get('pe_no_ataque', [])}
     PELE = perfil.get('pele', PELE)
     CABECA = perfil.get('cabeca', CABECA)
@@ -292,7 +548,7 @@ def main():
                                for d, q in perfil.get('por_direcao', {}).items()}
 
     fonte = Path(a.fonte)
-    meta = json.loads(next(fonte.glob('*.json')).read_text(encoding='utf-8'))['spritesheet']
+    meta = json.loads(next(j for j in fonte.glob('*.json') if j.name not in ('armas.json', 'meta.json')).read_text(encoding='utf-8'))['spritesheet']
     CW = meta['cell_size']['width']
     CH = meta['cell_size']['height']
     im = Image.open(fonte / meta['path']).convert('RGBA')
@@ -311,9 +567,24 @@ def main():
         if r['type'] == 'animation':
             nome = re.sub(r'_\d+$', '', r['animation'] or '')
             porDir.setdefault(nome, {})[r['direction']] = r
+    # A POSE DE CHAO PODE VIR DE OUTRA FOLHA. As posturas de arma da Dara
+    # (sem escudo, arco, besta, duas maos) nao geraram queda: o corpo no chao
+    # e o mesmo em todas, e vem da folha principal dela (`queda_de`).
+    im_queda, porDir_queda = im, porDir
+    if perfil.get('queda_de'):
+        fq = AQUI / perfil['queda_de']
+        mq = json.loads(next(j for j in fq.glob('*.json') if j.name not in ('armas.json', 'meta.json'))
+                        .read_text(encoding='utf-8'))['spritesheet']
+        if mq['cell_size'] != meta['cell_size']:
+            raise SystemExit('a folha da queda tem outra celula')
+        im_queda = Image.open(fq / mq['path']).convert('RGBA')
+        porDir_queda = {}
+        for r in mq['rows']:
+            if r['type'] == 'animation':
+                porDir_queda.setdefault(re.sub(r'_\d+$', '', r['animation'] or ''), {})[r['direction']] = r
     queda = None
     for nome_q, quadro_q in QUEDAS:
-        r = porDir.get(nome_q, {}).get('south')
+        r = porDir_queda.get(nome_q, {}).get('south')
         if r is not None:
             queda = (r, quadro_q if quadro_q >= 0 else r['frame_count'] - 1)
             print(f'pose de chao: "{nome_q}", quadro {queda[1]}')
@@ -328,18 +599,39 @@ def main():
                 return porDir[n][dir_]
         raise SystemExit(f'nenhum de {nomes} tem a direcao {dir_}')
 
-    def recorte(row, f):
-        return im.crop((f * CW, row * CH, (f + 1) * CW, (row + 1) * CH))
+    def recorte(row, f, fonte_im=None):
+        cel = (fonte_im or im).crop((f * CW, row * CH, (f + 1) * CW, (row + 1) * CH))
+        return verde_vira(cel, perfil['verde_vira']) if perfil.get('verde_vira') else cel
 
     alvo = CH - GROUND - 1
 
-    def quadro(fonte_, idx, dir_):
+    def origem(fonte_, idx, dir_):
+        '''(fileira, coluna) do quadro na folha do PixelLab.'''
         tipo, arg = fonte_
         if tipo == 'rotations':
-            return recorte(rot['row'], DIRECOES.index(dir_))
+            return rot['row'], rot['directions'].index(dir_)
         if tipo == 'queda':
-            return recorte(queda[0]['row'], queda[1])
-        return recorte(grupo(arg, dir_)['row'], idx)
+            return queda[0]['row'], queda[1]
+        return grupo(arg, dir_)['row'], idx
+
+    def quadro(fonte_, idx, dir_):
+        if fonte_[0] == 'queda':
+            return recorte(*origem(fonte_, idx, dir_), fonte_im=im_queda)
+        if fonte_ == ('animation', 'walk') and dir_ in perfil.get('arco_do_parado', ()):
+            row, col = origem(fonte_, idx, dir_)
+            bruto = im.crop((col * CW, row * CH, (col + 1) * CW, (row + 1) * CH))
+            parado = im.crop((rot['directions'].index(dir_) * CW, rot['row'] * CH,
+                              (rot['directions'].index(dir_) + 1) * CW, (rot['row'] + 1) * CH))
+            cel = colar_arco(bruto, parado)
+            return verde_vira(cel, perfil['verde_vira']) if perfil.get('verde_vira') else cel
+        return recorte(*origem(fonte_, idx, dir_))
+
+    # A ARMA, quando a folha veio de `extrair-arma.py`: a mao, o eixo e o
+    # alcance de cada quadro, medidos na folha do PixelLab. Seguem o quadro
+    # para a folha do motor com o mesmo deslocamento que o quadro sofre.
+    medidas = fonte / 'armas.json'
+    armas_fonte = json.loads(medidas.read_text(encoding='utf-8')) if medidas.exists() else None
+    armas = {}
 
     def ancora(fonte_, dir_):
         """
@@ -371,7 +663,11 @@ def main():
         nq = len(hold)
         anims[nome] = {'y': bloco, 'fw': CW * S, 'fh': CH * S,
                        'frames': nq, 'hold': hold, 'total': sum(hold)}
-        for linha, dir_ in enumerate(DIRECOES):
+        for linha, dir_real in enumerate(DIRECOES):
+            # ESPELHO: o lado oeste sai do leste virado. Gera-se 5 direcoes em
+            # vez de 8 (a arma e o escudo trocam de mao olhando para oeste,
+            # como em muito jogo isometrico); ver `espelho` nos perfis.
+            dir_ = ESPELHO.get(dir_real, dir_real) if perfil.get('espelho') else dir_real
             desloca = ancora(fonte_, dir_)
             escolha = QUADROS_POR_DIRECAO.get((nome, dir_), quadros)
             ref_x = centro_do_corpo(quadro(fonte_, 0, dir_)) if nome == 'attack' else None
@@ -412,19 +708,56 @@ def main():
                 # quadro vizinho quando o deslocamento era grande.
                 celula = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
                 celula.paste(cel, (dx, dy), cel)
+                if armas_fonte is not None:
+                    row, col = origem(fonte_, idx, dir_)
+                    m = armas_fonte.get(str(row), {}).get(str(col))
+                    if m:
+                        m = dict(m, mao=[round(m['mao'][0] + dx, 1), round(m['mao'][1] + dy, 1)])
+                    armas.setdefault(nome, [[] for _ in DIRECOES])[linha].append(m)
                 # Ampliar depois de deslocar mantem o alinhamento de blocos
                 # 3x3, que e o que permite ao tabuleiro dividir por S sem
                 # perder pixel.
+                if dir_ != dir_real:
+                    celula = celula.transpose(Image.FLIP_LEFT_RIGHT)
                 folha.alpha_composite(celula.resize((CW * S, CH * S), Image.NEAREST),
                                       (f * CW * S, bloco + linha * CH * S))
 
     SAIDA.mkdir(parents=True, exist_ok=True)
-    png = SAIDA / f'{a.chave}.png'
+    nome_saida = a.nome or a.chave
+    png = SAIDA / f'{nome_saida}.png'
     folha.save(png, optimize=True)
-    (SAIDA / f'{a.chave}.json').write_text(json.dumps({
+    saida = {
         'cell': [CW * S, CH * S], 's': S, 'ground': GROUND,
         'w': largura, 'h': altura, 'dirs': DIRECOES, 'anims': anims,
-    }, indent=2), encoding='utf-8')
+    }
+    # As medidas da arma, em px LOGICOS dentro da celula: armas[anim][dir][quadro].
+    # `null` onde o quadro nao tem arma (no chao, ou o extrator nao achou).
+    if armas:
+        # QUADRO SEM ARMA VISIVEL: de costas e de lado a arma fica atras do
+        # corpo, e o extrator nao acha nada. Sem medida a arma sumiria por um
+        # quadro do andar e voltaria no seguinte. Vale a medida do vizinho da
+        # mesma direcao -- outro quadro da animacao, depois o andar, depois o
+        # parado, e por ultimo o ataque -- desenhada ATRAS do corpo, que e
+        # onde ela estava.
+        for n, ds in armas.items():
+            if n in ('down', 'sleep', 'dead'):
+                continue
+            for d, qs in enumerate(ds):
+                for q, m in enumerate(qs):
+                    if m is not None:
+                        continue
+                    for fonte_viz in (qs, armas.get('walk', [[]] * 8)[d], armas.get('idle', [[]] * 8)[d],
+                                      armas.get('attack', [[]] * 8)[d]):
+                        viz = [v for v in fonte_viz if v and not v.get('inferida')]
+                        if viz:
+                            qs[q] = dict(viz[0], frente=False, inferida=True)
+                            break
+        saida['armas'] = armas
+        faltam = [(n, DIRECOES[d], q) for n, ds in armas.items() if n not in ('down', 'sleep', 'dead')
+                  for d, qs in enumerate(ds) for q, m in enumerate(qs) if m is None]
+        print(f'medidas de arma: {sum(len(q) for ds in armas.values() for q in ds)} quadros, '
+              f'{len(faltam)} sem medida em pe: {faltam}')
+    (SAIDA / f'{nome_saida}.json').write_text(json.dumps(saida, indent=2), encoding='utf-8')
     print(f'{png}  {largura}x{altura}  {png.stat().st_size/1024:.0f} KB')
     print(f'{len(PLANO)} animacoes x {len(DIRECOES)} direcoes')
 
