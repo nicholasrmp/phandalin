@@ -166,6 +166,41 @@ for (x, y) in [(16, 15), (17, 15), (18, 15), (19, 14)]: casa(x, y, 's')
 # Túnel da porta secreta da cisterna até a caverna (a passagem sul).
 pinta(R(15, 19), [17], '_', 4, 0)
 
+# A LUZ. O castelo tem braseiros acesos e poças de luz quente; a mansão era
+# breu de ponta a ponta, e por isso a tinta das salas não aparecia. Os
+# Marcarrubra MORAM aqui: as salas que eles ocupam têm fogo. As que não ocupam
+# — a cripta, o depósito, os corredores, a caverna e a entrada do porão —
+# continuam no escuro, que é o contraste.
+#
+# Os braseiros são casas de verdade (bloqueiam, como no castelo) e ficam em
+# canto onde ninguém pisa nem nasce. Onde não sobrou canto livre, a luz sai de
+# um objeto que já estava lá — a escrivaninha do mago, a pilha de roupas das
+# jaulas — e aí nada no terreno muda.
+LUZES = []
+for (x, y, claro, penumbra, tipo, braseiro) in [
+    (5, 2, 20, 20, 'fogueira', True),    # 11 oficina: o alambique aceso
+    (6, 8, 20, 20, 'fogueira', True),    # 10 sala de estar: o braseiro do jogo
+    (6, 16, 20, 20, 'fogueira', True),   # 9 alojamento dos bugbears
+    (19, 12, 20, 20, 'fogueira', True),  # 2 alojamento dos Marcarrubra
+    (8, 2, 15, 15, 'tocha', False),      # 12 quarto: a vela da escrivaninha
+    (23, 5, 15, 15, 'tocha', False),     # 5 jaulas: a lanterna na pilha
+]:
+    if braseiro:
+        casa(x, y, 'e')
+    LUZES.append({'pos': {'x': x, 'y': y}, 'claro': claro, 'penumbra': penumbra, 'tipo': tipo})
+
+# AS SALAS, por casa. É o que o tabuleiro usa para dar a cada cômodo a sua
+# tinta (`TINTA_DE_SALA` em `view/board.js`) — o mesmo que o castelo faz. Só
+# aparência: não mexe em passo, visão nem luz.
+SALAS = {
+    'oficina': (2, 2, 5, 4), 'quartoMago': (7, 2, 9, 3),
+    'deposito': (12, 2, 14, 4), 'armas': (18, 2, 19, 3),
+    'jaulas': (21, 2, 23, 7), 'cripta': (16, 5, 19, 10),
+    'estarRubro': (2, 8, 6, 11), 'guardasBugbear': (2, 15, 6, 18),
+    'alojamentoRubro': (16, 12, 19, 15), 'corredorFosso': (21, 9, 28, 10),
+    'poraoCisterna': (21, 12, 27, 18),
+}
+
 # O que é caverna natural (a 8, o túnel e a saída) fica chão de terra; o
 # resto do porão, que foi construído, é piso de lajes (`L`).
 NATURAL = {(x, y) for (y, x0, x1) in caverna for x in R(x0, x1)} | {(x, 17) for x in R(15, 19)}
@@ -235,11 +270,18 @@ cab = '''// O ESCONDERIJO DOS MARCARRUBRA (Parte 2): os porões da Mansão Trese
 // 0 breu.
 '''
 dados = {
+    'luzes': LUZES,
     'terreno': [''.join(l) for l in T],
     'altura': [''.join(alt(v) for v in l) for l in A],
     'luz': [''.join(str(v) for v in l) for l in L],
 }
+# As casas de cada sala, já com o piso decidido: parede e grade ficam de fora.
+CELULAS = {nome: [{'x': x, 'y': y} for y in R(y0, y1) for x in R(x0, x1)
+                  if T[y][x] not in 'RG']
+           for nome, (x0, y0, x1, y1) in SALAS.items()}
+
 extra = {
+    'salas': CELULAS,
     'secretas': {k: {'x': x, 'y': y, 'h': h} for k, (x, y, h) in SECRETAS.items()},
     'trancada': {'x': TRANCADA[0], 'y': TRANCADA[1], 'h': 4},
     'portas': {k: {'x': x, 'y': y, 'h': h} for k, (x, y, h) in PORTAS.items()},

@@ -184,6 +184,19 @@ const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho']);
 // A TINTA DE CADA SALA, por cima da laje (ver `drawTile`). Fraca de
 // propósito: é para a sala ter temperatura, não para virar outro piso.
 const TINTA_DE_SALA = {
+  // Mansão Tresendar: os porões dos Marcarrubra.
+  oficina: 'rgba(36, 44, 56, .20)',          // alambique, vidro e umidade
+  quartoMago: 'rgba(44, 36, 58, .20)',       // o único cômodo com cuidado
+  deposito: 'rgba(48, 40, 22, .18)',         // fardo, pele e poeira
+  armas: 'rgba(38, 38, 42, .18)',            // ferro encostado na parede
+  jaulas: 'rgba(30, 30, 34, .24)',           // pedra lavada e palha velha
+  cripta: 'rgba(28, 36, 60, .22)',           // pedra fria de sarcófago
+  estarRubro: 'rgba(70, 48, 26, .20)',       // cerveja entornada e fumaça
+  guardasBugbear: 'rgba(52, 40, 28, .22)',   // palha podre e pelo de bugbear
+  alojamentoRubro: 'rgba(56, 44, 30, .18)',  // beliche e roupa suja
+  corredorFosso: 'rgba(34, 32, 30, .18)',    // argamassa caída
+  poraoCisterna: 'rgba(32, 42, 48, .18)',    // o frio que vem da água
+
   torreUrso: 'rgba(62, 44, 24, .26)',      // terra batida e palha podre
   banquete: 'rgba(70, 52, 22, .20)',       // gordura velha e restos
   santuario: 'rgba(28, 36, 60, .20)',      // pedra fria de templo

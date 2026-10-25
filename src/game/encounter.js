@@ -301,6 +301,8 @@ export function mapaDo(variante = 'padrao') {
     const tunel = variante === 'mansaoTunel';
     return {
       ...MAPA_MANSAO,
+      // Cada cômodo com a sua tinta no tabuleiro, como no castelo.
+      salas: MANSAO.salas,
       // As duas pontes cruzam a fenda de leste a oeste.
       objetos: Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),
       grupo: tunel
