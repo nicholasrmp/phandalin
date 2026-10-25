@@ -201,9 +201,9 @@ export function opcoesDaCasa(app, tile) {
       return { titulo, subtitulo, alvo, opcoes };
     }
 
-    // Aliado.
-    opcoes.push(...magias);
-    if (occ === c && explorando) opcoes.push(...opcoesDoHeroi(app, c, occ));
+    // Aliado. As magias de utilidade são a lista longa (vinte linhas e os
+    // rituais): vão DEPOIS das poucas opções que estão sempre aqui, ou a ficha,
+    // a tocha e o descanso ficam a telas de rolagem de distância.
     if (c !== occ && !app.capitulo?.encerrado) {
       opcoes.push({ rotulo: 'Selecionar', icone: 'acao-preparar', detalhe: 'passar o comando para ele', fazer: () => app.select(occ) });
     }
@@ -276,6 +276,8 @@ export function opcoesDaCasa(app, tile) {
     }
     // O que a cena deixa o herói fazer consigo mesmo (vestir um disfarce…).
     if (occ === c) for (const o of app.capitulo?.interacoesDoHeroi?.(c) ?? []) opcoes.push(o);
+    opcoes.push(...magias);
+    if (occ === c && explorando) opcoes.push(...opcoesDoHeroi(app, c, occ));
     return { titulo, subtitulo: `${estadoAparente(occ)} · aliado`, alvo, opcoes };
   }
 

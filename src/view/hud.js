@@ -898,7 +898,11 @@ export class Hud {
     // TRÊS BLOCOS: quem joga (núcleo), o que dá para fazer (a bandeja) e o
     // que sobrou do turno (economia, espaços de magia e terminar). Já foram
     // sete caixas lado a lado, cada uma com moldura e plaquinha.
-    const fixas = [
+    // Explorando não há turno: atacar, correr e esquivar não valem nada e a
+    // barra fica só com as magias de utilidade (`.explorando .hud-baixo` em
+    // `narrativa.css` apaga o resto e deixa a bandeja viva).
+    const explorando = Boolean(this.handlers.explorando?.());
+    const fixas = explorando ? [] : [
       ...this.tilesAtaques(enc, c, mode, alvo),
       ...this.tilesComuns(enc, c, mode),
       ...this.tilesItens(enc, c, mode),
@@ -1395,8 +1399,12 @@ export class Hud {
         const repete = Boolean(s.reuso && c.magiasAtivas?.[sid]);
         const bonus = repete ? s.reuso === 'bonus' : s.castTime === 'bonus';
         const gasto = bonus ? c.bonusUsed : c.actionUsed;
-        const foraDoCombate = Boolean(this.handlers.explorando?.() && (s.soFora || UTIL_FORA.has(sid)));
-        const desabilitado = foraDoCombate ? semSlot && s.level > 0 : (semSlot && !repete) || gasto || Boolean(s.foraDeCombate || s.soFora);
+        const explorandoAgora = Boolean(this.handlers.explorando?.());
+        const foraDoCombate = Boolean(explorandoAgora && (s.soFora || UTIL_FORA.has(sid)));
+        // Explorando, só a magia de utilidade sai: a de combate nem tem em quem pegar.
+        const desabilitado = foraDoCombate ? semSlot && s.level > 0
+          : explorandoAgora ? true
+            : (semSlot && !repete) || gasto || Boolean(s.foraDeCombate || s.soFora);
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
         return {
           sid,

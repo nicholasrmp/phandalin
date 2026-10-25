@@ -98,8 +98,10 @@ const MARCA_FORMA = {
   'marca-espia': { raio: 14, altura: 46, glifo: 'olho' },
   'marca-verdade': { raio: 18, altura: 58, glifo: 'balanca' },
   'marca-alarme': { raio: 40, altura: 14, glifo: 'aviso' },
-  'marca-aparencia': { raio: 26, altura: 20, glifo: null },
-  'marca-fingido': { raio: 24, altura: 20, glifo: null },
+  // Aparência e Fingir de Morto moram os dois sob um herói: as duas formas têm de ser
+  // opostas (halo alto com máscara × poça rasa e larga), ou uma vira a outra na tela.
+  'marca-aparencia': { raio: 22, altura: 40, glifo: 'mascara' },
+  'marca-fingido': { raio: 26, altura: 8, glifo: null },
 };
 const GLIFOS = {
   mais: ['...#...', '...#...', '...#...', '#######', '...#...', '...#...', '...#...'],
@@ -109,6 +111,8 @@ const GLIFOS = {
   alvo: ['..###..', '.#...#.', '#..#..#', '#.###.#', '#..#..#', '.#...#.', '..###..'],
   olho: ['.......', '..###..', '.#...#.', '#..#..#', '.#...#.', '..###..', '.......'],
   balanca: ['...#...', '#######', '#..#..#', '#..#..#', '...#...', '...#...', '.#####.'],
+  // Máscara de rosto: a face cheia com dois buracos de olho.
+  mascara: ['.#####.', '#######', '##.#.##', '#######', '#.###.#', '.#...#.', '..###..'],
 };
 /** Desenha um glifo de 7x7 em pixels grandes, com contorno escuro, centrado em (cx, cy). */
 function desenharGlifo(ctx, nome, cx, cy, cor, escala = 2) {

@@ -453,8 +453,13 @@ export function opcoesDoHeroi(app, c, alvo) {
     if (!ehSi) continue;
     if (['criatura', 'morto', 'aliado'].includes(u.alvo)) continue;
     if (u.alvo === 'objeto' && u.gancho !== 'procurado') continue;
-    const variantes = [{ ritual: false }];
-    if (s.ritual && podeConjurarFora(c, s.id, { ritual: true }).ok) variantes.push({ ritual: true });
+    // O mago vê no menu os rituais do grimório sem tê-los preparado. A linha
+    // normal deles só dizia "não está preparada" logo acima da linha de ritual
+    // que a oferece: some com ela quando é só o ritual que vale.
+    const podeRitual = s.ritual && podeConjurarFora(c, s.id, { ritual: true }).ok;
+    const variantes = [];
+    if (podeConjurarFora(c, s.id).ok || !podeRitual) variantes.push({ ritual: false });
+    if (podeRitual) variantes.push({ ritual: true });
     for (const v of variantes) {
       const pode = podeConjurarFora(c, s.id, v);
       ops.push({

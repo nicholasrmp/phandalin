@@ -84,6 +84,9 @@
 
 /* Enquanto o grupo explora: o tabuleiro manda, a barra de combate descansa. */
 .explorando .hud-baixo { opacity: .45; pointer-events: none; filter: saturate(.6); }
+/* ...menos a bandeja: é por ela que se conjura a magia de utilidade andando
+   pelo mapa, e sem isto o atalho só existia no menu do botão direito. */
+.explorando .hud-baixo .bandeja-acoes { opacity: 1; pointer-events: auto; filter: none; }
 
 @media (max-width: 720px) {
   .narrativa-folha { padding: 18px 16px 14px; }
