@@ -12,15 +12,22 @@
 //   fora        o grupo chega pela trilha a sudoeste. Campo, mata nas bordas,
 //               espinheiro; o riacho desce da boca para sudoeste. A leste
 //               dele, o matagal onde dois goblins vigiam a entrada
-//   túnel       da boca para o norte, o riacho no meio (terreno difícil) e uma
-//               margem seca de cada lado. Escuro a partir da boca
+//   túnel       da boca para o norte, o riacho no meio (meio metro de água: a
+//               aventura diz que não atrasa ninguém, e `costOf` cobra 5 pés
+//               normais) e uma margem seca a LESTE, de uma casa. A oeste é
+//               rocha. Escuro a partir da boca
 //   canil       a leste do túnel, um degrau acima: os lobos acorrentados. Uma
 //               fenda de entulho no fundo sobe até a caverna do chefe
 //   degraus     no alto do túnel, para oeste, sobem dois níveis até o covil
 //   covil       a sala grande do oeste, nível 2, com o palco do chefe dos
-//               goblins (nível 3) e os mantimentos roubados
+//               goblins (nível 4, e a escada natural de (4,8)/(5,8) no 3) e
+//               os mantimentos roubados. Subir até Yeemik custa 20 pés: um
+//               turno, não uma barreira
 //   anel        do covil, um corredor sobe ao norte e corre para leste até a
-//               ponte, que cruza o canal do riacho no nível 2
+//               ponte, que cruza o canal do riacho no nível 4 — 6 m acima da
+//               água, como no livro. Do canal não se sobe nela: o degrau de
+//               quatro níveis é parede. Chega-se pelo anel ou pela passagem
+//               dos poços
 //   poços       nordeste: dois poços represados por um dique de pedra solta;
 //               o de baixo é a nascente do canal
 //   chefe       sudeste, a caverna maior, com o tesouro do bando
@@ -46,8 +53,8 @@ export const MAPA_ESCONDERIJO = {
     'Rz_____z__RRxxwww_RR_______R______WWWW_R',
     'R_________RRRRwww_RR________R__A_______R',
     'R_ss__A___RRRRwww_RRRRRRRRR__A_________R',
-    'R__s____z_RRRRwww_RRR____RR________A__RR',
-    'RR_______RRRRRwww_RR______R___R_______RR',
+    'R__s____z_RRRRwww_RRR____RR_R______A__RR',
+    'RR_______RRRRRwww_RR______R__RR_______RR',
     'RRRRRRRRRRRRRRwww______A__RR__________RR',
     'RRRRRRRRRRRRRRwww_RR_____xRRRR_RRRRRRRRR',
     'RRRRRRRRRRRRRRwww_RR______RRRR__RRRRRRRR',
@@ -57,7 +64,7 @@ export const MAPA_ESCONDERIJO = {
     'TTTT,,,,,,,,,,,ww,,,,,,,RRR___A________R',
     'TT,,,,,,r,,,,,ww,,,,,,,,RRR____________R',
     'TT,,,%%,,,,,,,ww,%%b%%b%%RR_______A____R',
-    'TT,,,,%,,,,,,ww,,%b%PPP%bRR__________s_R',
+    'TT,,,,%,,,,,,ww,,%bbPPP%bRR__________s_R',
     'TTT,r,,,,,,,,ww,,b%P,,,P%,RR_A______Ks_R',
     'TTT,,,,,,%%,ww,,,%%P,,,%b,RR_______sss_R',
     'TTT,,,,,,,,,ww,,,b%%,%%b%,RR__________RR',
@@ -76,8 +83,8 @@ export const MAPA_ESCONDERIJO = {
     '5222222222531100001544444445444444444445',
     '5444334444522200001544444444544444444445',
     '5444444444522100001555555554444444444445',
-    '5444444444551100001221111254444444444455',
-    '5544444445551100002211111154445444444455',
+    '5444444444551100001221111254544444444455',
+    '5544444445551100002211111154455444444455',
     '5555555555551100000111111155444444444455',
     '5555555555511100002211111125554555555555',
     '2222222222221100001211111124453344444444',

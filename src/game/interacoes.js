@@ -16,7 +16,7 @@ import { previsaoDeAtaque, previsaoDeMagia, chanceD20 } from '../rules/odds.js';
 import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc, saveBonus, abilityMod } from '../rules/abilities.js';
 import { iconeDaArma, iconeDeMagia } from '../art/icons.js';
-import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
+import { WEAPONS, consumiveisDe, garantirInventario } from '../rules/equipment.js';
 import { hasCondition, maxHpEfetivo } from '../rules/conditions.js';
 import { distanceFt, isAdjacent } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, visaoNoEscuro } from '../rules/luz.js';
@@ -61,7 +61,10 @@ export const OLHAR = {
   escuro: ['Escuridão', 'Breu. Daqui não se enxerga nada ali — nem chão, nem parede, nem quem estiver parado nela.'],
 };
 
-const temTocha = (c) => (c.bag ?? []).some((i) => i.id === 'tocha' && i.qtd > 0);
+// `garantirInventario`: a mochila nasce preguiçosa, e ler `c.bag` cru dizia
+// que ninguém tinha tocha — some a opção de acender, e os heróis sem visão
+// no escuro entravam no esconderijo às cegas com duas tochas na mochila.
+const temTocha = (c) => garantirInventario(c).bag.some((i) => i.id === 'tocha' && i.qtd > 0);
 
 /** Como a ferida de uma criatura se vê, sem dar o número. */
 export function estadoAparente(c) {

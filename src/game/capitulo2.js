@@ -54,6 +54,8 @@ import { darXp, proximoNivelEm } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste, ativaDe } from '../rules/utilidade.js';
+import { guardar, totalEmCobre, cobrar } from './comercio.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;
 
@@ -68,10 +70,12 @@ const SALAS = {
 
 // O riacho lá fora, linha por linha (a coluna da margem oeste dele): quem
 // pisa nele ou além está atravessando para o lado dos vigias.
-const RIACHO_FORA = { 16: 14, 17: 14, 18: 15, 19: 14, 20: 14, 21: 13, 22: 13, 23: 12, 24: 12, 25: 11, 26: 11, 27: 10 };
-// Só lá fora (e na boca): dentro da caverna, leste do riacho é outra coisa.
-const atravessou = (p) => (p.y >= 16 && p.x >= RIACHO_FORA[p.y] && p.x <= 26)
-  || (p.y >= 13 && p.y <= 17 && p.x >= 13 && p.x <= 19);
+const RIACHO_FORA = { 18: 15, 19: 14, 20: 14, 21: 13, 22: 13, 23: 12, 24: 12, 25: 11, 26: 11, 27: 10 };
+// SÓ a céu aberto. A regra antiga também cobria a boca e o túnel, e aí não
+// sobrava uma casa sequer de entrada sem gatilho — medido: 0 casas com y<13
+// alcançáveis sem acionar os vigias. Quem sobe pela margem oeste e entra pela
+// boca passa por eles; quem cruza o riacho no campo, não.
+const atravessou = (p) => p.y >= 18 && p.x >= (RIACHO_FORA[p.y] ?? 99) && p.x <= 26;
 
 // A passagem por onde a enchente desce: o túnel do riacho, a curva, o canal
 // embaixo da ponte e os degraus do canil. Quem está na ponte ou no canil
@@ -102,16 +106,13 @@ export function criarCapitulo2(app, config) {
     explorando: false, encerrado: false, lutando: null,
     acordo: false, sildarLivre: false, tregua: false, tregaFeita: false,
     enchente: null, enchentes: 0, klargAvisado: false, subiuChamine: false,
+    lobosRosnaram: false,
     ressaltoQuebrado: false, bauAchado: false, klargFugiu: false,
   };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const hostis = (g) => g.membros.filter((f) => f.side === 'foes' && !f.dead && !f.fugiu);
   const pendentes = () => Object.values(grupos).filter((g) => !g.ativo && !g.vencido && !g.tregua && hostis(g).length);
-  const guardar = (c, id, qtd) => {
-    const b = (c.bag ??= []).find((i) => i.id === id);
-    if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
-  };
   // Os testes passam pelas magias de utilidade: Orientação soma 1d4, Falar com Animais dá vantagem.
   const teste = (c, pericia, cd) => {
     const x = ctxDe(app, enc);
@@ -258,6 +259,7 @@ export function criarCapitulo2(app, config) {
     for (const g of pendentes()) {
       if (g.id === 'vigias') { if (await vigias(g, c)) return; continue; }
       if (g.id === 'ponte') { if (await ponte(g)) return; continue; }
+      if (g.id === 'canil') { if (await canil(g)) return; continue; }
       if (g.id === 'chefe' && estado.klargAvisado) {
         // Avisado, Klarg se esconde atrás das estalagmites e espera.
         const entrou = herois().find((h) => DENTRO_DO_KLARG(h.pos));
@@ -319,6 +321,39 @@ export function criarCapitulo2(app, config) {
   }
 
   // ------------------------------------------------------------- área 3 ----
+  /**
+   * O canil não vira luta só por ser visto. Os lobos estão presos a um espeto
+   * de ferro e não alcançam o túnel: de longe eles rosnam, e dá para tentar
+   * acalmá-los. A briga começa quando alguém entra no alcance da corrente.
+   *
+   * Antes, o ramo genérico de `depoisDeMover` abria o combate assim que um
+   * herói com visão no escuro os enxergava — e isso é inevitável, porque a
+   * única fileira que liga o túnel ao canil (y=12) deixa os três à vista.
+   * Medido: "Acalmar os lobos" nunca chegava a ser clicável.
+   */
+  async function canil(g) {
+    const presos = hostis(g);
+    if (!presos.length) return false;
+    const naCorrente = presos.some((f) => herois().some((h) => (f.corrente
+      ? distanceFt(f.corrente, h.pos) <= f.corrente.raioFt + 5
+      : distanceFt(f.pos, h.pos) <= 10)));
+    if (!naCorrente) {
+      // Vistos de longe: rosnam uma vez, e o aviso diz o que dá para fazer.
+      if (!estado.lobosRosnaram && presos.some((f) => herois().some((h) => podeVer(enc, h, f)))) {
+        estado.lobosRosnaram = true;
+        await narrar(root, { formato: 'painel', paginas: [{ texto: [
+          'Um degrau acima, a leste do túnel, ferro raspa na pedra: três lobos magros se levantam e rosnam, presos por correntes a um espeto cravado no meio do chão. Nenhum deles alcança o túnel.',
+          'Botão direito no canil para tentar acalmá-los — ou passe de longe, pelo riacho.',
+        ] }] });
+        app.refresh();
+      }
+      return false;
+    }
+    await asArmas('As correntes estalam: os três lobos se jogam para a frente até onde o ferro deixa, babando.');
+    await combate(g, null);
+    return true;
+  }
+
   /** Os lobos acorrentados puxam a corrente quando veem alguém fora do alcance. */
   enc.antesDoTurno = (m) => {
     if (m.corrente && !m.dead) {
@@ -340,14 +375,24 @@ export function criarCapitulo2(app, config) {
       }
       return true;
     }
-    // Klarg fugindo pela chaminé (morto o Serrote).
-    if (m === klarg && klarg.fugindo && !klarg.dead) return fugirPelaChamine();
+    // Klarg e a chaminé. Morto o Serrote ele ruge, mas ainda briga: só corre
+    // quando perde METADE da vida. Com a fuga disparando na morte do lobo,
+    // "matar o Serrote primeiro" virava a jogada dominante — medido em 1500
+    // lutas: 99,1% de vitória contra 93,9%, e em 41% delas Klarg saía da
+    // caverna sem ter dado um só golpe.
+    if (m === klarg && !klarg.dead) {
+      if (!klarg.fugindo && serrote?.dead && klarg.hp * 2 <= klarg.maxHp) {
+        klarg.fugindo = true;
+        enc.say('acao', 'Klarg sangra, olha o Serrote caído e decide que esta caverna não vale a pele dele.');
+      }
+      if (klarg.fugindo) return fugirPelaChamine();
+    }
     return false;
   };
 
   function acalmarLobos(c) {
     const g = grupos.canil;
-    const comida = (c.bag ?? []).find((i) => i.id === 'racoes' && i.qtd > 0);
+    const comida = garantirInventario(c).bag.find((i) => i.id === 'racoes' && i.qtd > 0);
     const cd = comida ? 10 : 15;
     return async () => {
       if (comida) comida.qtd -= 1;
@@ -539,19 +584,11 @@ export function criarCapitulo2(app, config) {
     app.refresh();
   }
 
-  function ouroDoGrupo() {
-    return herois().reduce((s, h) => s + ((h.bag ?? []).find((i) => i.id === 'moedaDeOuro')?.qtd ?? 0), 0);
-  }
-  function pagar(qtd) {
-    let falta = qtd;
-    for (const h of herois()) {
-      const m = (h.bag ?? []).find((i) => i.id === 'moedaDeOuro');
-      if (!m || falta <= 0) continue;
-      const tira = Math.min(m.qtd, falta);
-      m.qtd -= tira;
-      falta -= tira;
-    }
-  }
+  // O resgate sai do dinheiro do GRUPO, em qualquer moeda e com troco: ler só
+  // `moedaDeOuro` fazia o jogo ver 18 po onde o grupo carregava 89 em valor —
+  // as 600 de cobre e 110 de prata do baú de Klarg não contavam.
+  const ouroDoGrupo = () => Math.floor(totalEmCobre(herois()) / 100);
+  const pagar = (qtd) => cobrar(herois(), qtd * 100);
 
   // O resgate que Yeemik cobra é nosso número: a aventura só diz que é alto.
   const RESGATE = 50;
@@ -724,8 +761,7 @@ export function criarCapitulo2(app, config) {
   function evento(ev) {
     fogueira(ev);
     if (ev.type === 'died' && ev.target === serrote && klarg && !klarg.dead) {
-      klarg.fugindo = true;
-      enc.say('acao', 'Klarg vê o Serrote cair e ruge — e corre para a chaminé do oeste.');
+      enc.say('acao', 'Klarg vê o Serrote cair e ruge, com os dentes à mostra. Ele não corre: fica.');
     }
     if (ev.type === 'sideStart' && ev.side === 'foes' && estado.enchente) {
       estado.enchente.turnos -= 1;
@@ -876,7 +912,7 @@ export function criarCapitulo2(app, config) {
     // Área 3: acalmar os lobos, e a chaminé.
     const g3 = grupos.canil;
     if (tile.x >= 18 && tile.x <= 25 && tile.y >= 10 && tile.y <= 15 && !g3.vencido && !g3.tregua) {
-      const comida = (c.bag ?? []).some((i) => i.id === 'racoes' && i.qtd > 0);
+      const comida = garantirInventario(c).bag.some((i) => i.id === 'racoes' && i.qtd > 0);
       ops.push({
         rotulo: 'Acalmar os lobos', icone: 'acao-ajudar',
         detalhe: `Lidar com Animais, CD ${comida ? '10 (com comida)' : '15'}${ativaDe(ctxDe(app, enc).estado, herois(), 'falarComAnimais') ? ' · vantagem (Falar com Animais)' : ''}`,
@@ -981,9 +1017,21 @@ export function criarCapitulo2(app, config) {
     await combate(g, 'nossa');
   }
 
+  /** Sala resolvida: caiu, fez trégua ou não sobrou ninguém de pé nela. */
+  const salaLimpa = (g) => g.vencido || g.tregua || !hostis(g).length;
+
   function motivoSemDescanso(tipo) {
     if (!estado.explorando) return 'só fora da luta';
-    if (tipo === 'longo' && !grupos.chefe.vencido) return 'com Klarg lá dentro, ninguém dorme oito horas aqui';
+    if (tipo === 'longo' && !grupos.chefe.vencido) {
+      // Com o covil e os poços resolvidos, o esconderijo inteiro fica atrás do
+      // grupo: só a caverna do chefe continua de pé, e ela tem uma porta de uma
+      // casa para vigiar. Antes, Klarg vivo proibia o descanso longo em
+      // qualquer caso, e a luta dele derrubava 32% das cadeias por DESGASTE —
+      // o grupo chegava com 52 dos 68 PV e sem espaço de magia nenhum.
+      if (!salaLimpa(grupos.covil) || !salaLimpa(grupos.pocos)) {
+        return 'com os goblins acordados aí dentro, ninguém dorme oito horas';
+      }
+    }
     return null;
   }
 
@@ -1003,7 +1051,9 @@ export function criarCapitulo2(app, config) {
     motivoSemDescanso,
     textoDoDescanso: (tipo) => (tipo === 'curto'
       ? ['Uma hora encostados na rocha, longe da passagem, revezando quem fica de olho.']
-      : ['Oito horas no fundo da caverna, com a fogueira de Klarg ainda em brasa e um de vocês sempre acordado.']),
+      : [grupos.chefe.vencido
+        ? 'Oito horas no fundo da caverna, com a fogueira de Klarg ainda em brasa e um de vocês sempre acordado.'
+        : 'Oito horas no covil tomado, com a porta do fundo à vista e dois de vocês acordados por vez. Lá atrás, no escuro, alguma coisa grande anda de um lado para o outro a noite inteira.']),
     // Descansar lá fora faz barulho: os vigias atacam.
     depoisDoDescanso: () => barulhoLaFora(),
     async iniciar() {

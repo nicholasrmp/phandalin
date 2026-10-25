@@ -3164,6 +3164,19 @@ export class Encounter {
       return;
     }
 
+    // O REFÉM não morre a 0 PV. Todo NPC que cai a 0 morre de uma vez neste
+    // motor, e isso valia também para quem está amarrado com 1 PV esperando
+    // resgate: uma Mãos Flamejantes mirada no captor matava o refém junto,
+    // sem teste de morte e sem volta. Refém cai desacordado e estável.
+    if (target.kind === 'npc' && target.refem) {
+      addCondition(target, 'inconsciente');
+      addCondition(target, 'caido');
+      target.stable = true;
+      this.say('morte', `${target.name} desmaia — vivo, mas não aguenta mais nada.`);
+      this.onEvent({ type: 'downed', target });
+      return;
+    }
+
     if (target.kind === 'npc') {
       // O metamorfo disfarçado volta à forma verdadeira ao morrer (o livro).
       this.revelarDisfarce(target, 'ao cair');

@@ -439,11 +439,13 @@ function foesEsconderijo() {
       { corrente: { x: 23, y: 12, raioFt: 10 } })),
     // Área 5: um goblin escondido na ponte, vigiando o riacho lá embaixo.
     m('goblin', 21, 5, 'ponte', 'da ponte', { dx: 0, dy: 1 }),
-    // Área 6: cinco goblins junto ao fogo, na parte de baixo; Yeemik em cima.
+    // Área 6: quatro goblins junto ao fogo, na parte de baixo; Yeemik em cima.
+    // Eram cinco, e com o bloco de ND 1 do Yeemik isso dava 900 de XP
+    // ajustado — "mortal" para quatro de 2º nível, com 18% de derrota medida
+    // mesmo com o grupo inteiro e descansado. Com quatro: 95,5% de vitória.
     m('goblin', 4, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
     m('goblin', 6, 5, 'covil', 'do covil', { dx: -1, dy: 1 }),
     m('goblin', 6, 7, 'covil', 'do covil', { dx: -1, dy: -1 }),
-    m('goblin', 3, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
     m('goblin', 7, 6, 'covil', 'do covil', { dx: -1, dy: 0 }),
     yeemik,
     sildar,
@@ -452,7 +454,10 @@ function foesEsconderijo() {
     m('goblinArqueiro', 34, 9, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
     m('goblin', 36, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
     // Área 8: Klarg, o lobo Serrote e dois goblins.
-    m('klarg', 32, 19, 'chefe', '', { dx: -1, dy: -1 }),
+    // Klarg fica ATRÁS da estalagmite de (30,18), como a cena narra: de
+    // (32,19) a cobertura medida era 0 de três das quatro casas da porta; de
+    // (30,19) é 2 de todas, e ele some da linha de visão de (30,13) e (30,14).
+    m('klarg', 30, 19, 'chefe', '', { dx: 1, dy: -1 }),
     klargLobo,
     m('goblin', 29, 17, 'chefe', 'de Klarg', { dx: 0, dy: -1 }),
     m('goblin', 35, 22, 'chefe', 'de Klarg', { dx: -1, dy: -1 }),

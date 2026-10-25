@@ -139,6 +139,11 @@ casa(36, 22, 'K', 2)
 # vista de outra a 90 pés (170 com tocha) e a exploração não existia: medido
 # pelo revisor de mapa, os gatilhos de longe caem de 282 para 37 casas.
 casa(31, 13, 'R'); casa(30, 15, 'R'); casa(30, 11, 'R')   # corredor poços->Klarg: 1 casa e cotovelo
+# O cotovelo acima parou cedo: sobrava uma diagonal quase reta dos poços até
+# a fogueira de Klarg. Medido com `hasLineOfSight`: 13 casas do lado dos poços
+# viam o bando do chefe. Com estas duas, 5 — e as cinco são a própria porta e
+# os dois degraus de descida, ou seja, só se vê Klarg pisando na soleira.
+casa(29, 11, 'R'); casa(28, 10, 'R')                       # fecha a diagonal poços->Klarg
 casa(27, 17, 'R'); casa(28, 17, 'R')                       # anteparo na saída da fenda
 casa(16, 6, 'R')                                           # pedra na curva do riacho
 casa(14, 5, 'R'); casa(10, 6, 'R')                         # quina na curva e pilar no patamar dos degraus
@@ -160,8 +165,10 @@ for y in R(7, 17):
 
 # Área 2: no meio do mato, uma clareira aberta com ripas de madeira fazendo um
 # abrigo para os vigias. O mato em volta é terreno difícil, não parede.
+# (19,21) era um '%' que a regra de quina selava: chão onde ninguém entra nem
+# sai. Vira moita, como as vizinhas.
 mato = ['%%b%%b%%',
-        '%b%PPP%b',
+        '%bbPPP%b',
         'b%P,,,P%',
         '%%P,,,%b',
         'b%%,%%b%',
