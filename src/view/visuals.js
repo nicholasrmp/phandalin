@@ -422,19 +422,16 @@ const WEAPON_VISUALS = {
    */
   web: (board, { attacker, target }) => {
     return {
-      delay: 0.3,
+      delay: 0.36,
       som: 'castPoison',
       somInicio: 'hissSpider',
+      // A bola de seda do OpenArt (`teia-projetil`) voa presa a um fio que
+      // sai da aranha (`fio`); no alvo, a rede se abre e vira casulo.
       start: () => board.fx.projectile(attacker.pos, target.pos, {
-        style: 'orb', color: COR.teia, dur: 0.3, arc: 0.55, trail: true,
+        style: 'sprite', sprite: 'teia-projetil', fio: true, color: COR.teia, dur: 0.34, arc: 0.55, fps: 12,
       }),
       onHit: () => {
-        for (let i = 0; i < 3; i++) {
-          board.fx.slash(target.pos, {
-            color: COR.teia, angle: -0.5 + i * 1.05, sweep: 1.5,
-            radius: 24 + i * 4, width: 1.5, dur: 0.6,
-          });
-        }
+        board.fx.quadros(target.pos, 'teia-impacto', { fps: 9, sumir: 0.6 });
         board.fx.agarrao(target.pos, { color: COR.teia, dur: 0.5 });
         board.fx.area([target.pos], { color: COR.teia, dur: 0.9 });
         board.floatText(target.pos, 'preso na teia!', '#e6e6ea');

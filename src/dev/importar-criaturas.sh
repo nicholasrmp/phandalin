@@ -69,3 +69,10 @@ T=$R/drowTiro-441ae051/anim
 python src/dev/importar-pixellab.py --fonte $R/drowEspada-4267c440/anim-drow-besta --chave drowEspada --nome drowBesta   --ataque-de south=$T:3,5 --ataque-de south-east=$T:3,5 --ataque-de east=$T:3,4 --ataque-de north-east=$T:3,5   --ataque-de north=$T:3,5 --ataque-de north-west=$T:3,4 --ataque-de west=$T:3,4 --ataque-de south-west=$T:3,5 | grep -E "KB" || true
 # o stirge: a vista de 24 px escolhida pelo dono (OpenArt pelas imagens dele)
 python src/dev/importar-pixellab.py --fonte $R/stirge-9c6017a5/anim --chave stirge --nome stirge | grep -E "KB" || true
+# a aranha gigante (aprovada pelo dono): a Mordida e a Teia (`anim-so-teia`, as
+# fileiras da teia separadas da folha do mesmo personagem), e o floco de teia
+# solto do andar apagado
+A=$R/aranhaGigante-d547674e
+python src/dev/importar-pixellab.py --fonte $A/anim --chave aranhaGigante --nome aranhaGigante | grep -E "KB" || true
+python src/dev/importar-pixellab.py --fonte $A/anim-so-teia --chave aranhaGiganteTeia --nome aranhaGiganteTeia --queda-de $A/anim | grep -E "KB" || true
+python src/dev/limpar-teia-aranha.py

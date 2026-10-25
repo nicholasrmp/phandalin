@@ -142,12 +142,14 @@ export const FERAS = {
         // "NdM±K" em texto e estoura com "Notação de dado inválida: \"0\"" — um
         // ataque sem dano tem de entrar como número ou a teia derruba o combate.
         name: 'Teia', bonus: 5, damage: 0, type: 'nenhum',
-        ranged: true, rangeFt: 30, longRangeFt: 60, art: 'bow',
+        ranged: true, rangeFt: 30, longRangeFt: 60, art: 'web',
         recharge: '5-6',
         // Sem resistência: o acerto prende. Sai com Atletismo/Acrobacia CD 12.
         onHit: { semResistencia: true, dc: 12, escape: 12, condition: 'contido', note: 'fica preso na teia' },
       },
     ],
+    // A folha da Teia (o abdomen erguido e o jato de seda) quando ela atira.
+    aparencias: { 'Teia': 'giantSpider@nenhuma-teia' },
     traits: ['spiderClimb', 'webSense', 'webWalker'],
     blurb: 'Prende um alvo de 9 m com teia e desce para morder quem não anda mais; o veneno vale metade do dano e cobra resistência de CON.',
   },

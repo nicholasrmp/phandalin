@@ -515,6 +515,22 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
                         'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
     },
+    # A ARANHA GIGANTE (aprovada pelo dono). Centro pelo corpo marrom-carvao
+    # (cabeca e abdomen). A Mordida: o corpo ERGUIDO e as PRESAS cravando.
+    'aranhaGigante': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.14), 'pele_sv': (0.08, 0.4, 0.25), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [3, 6], 'south-east': [3, 6], 'east': [4, 7], 'north-east': [3, 6],
+                        'north': [3, 5], 'north-west': [3, 5], 'west': [3, 6], 'south-west': [3, 7]},
+    },
+    # A Teia (o golpe da `anim-so-teia`): o abdomen erguendo e o JATO de seda
+    # saindo; o fio ate o alvo e o motor que desenha (`fx.js`, estilo `teia`).
+    'aranhaGiganteTeia': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.14), 'pele_sv': (0.08, 0.4, 0.25), 'margem': 8,
+        'quadros': [3, 4],
+        'por_direcao': {'south': [3, 4], 'south-east': [3, 4], 'east': [3, 5], 'north-east': [3, 4],
+                        'north': [3, 4], 'north-west': [3, 5], 'west': [3, 5], 'south-west': [3, 4]},
+    },
     'ranger': {
         'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.5, 0.7), 'margem': 8, 'cabeca': 10,
         'quadros': [3, 5],

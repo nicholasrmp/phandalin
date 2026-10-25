@@ -73,6 +73,10 @@ import metaDrowBesta from './drowBesta.json';
 import urlDrowBesta from './drowBesta.png';
 import metaStirge from './stirge.json';
 import urlStirge from './stirge.png';
+import metaAranhaGigante from './aranhaGigante.json';
+import urlAranhaGigante from './aranhaGigante.png';
+import metaAranhaGiganteTeia from './aranhaGiganteTeia.json';
+import urlAranhaGiganteTeia from './aranhaGiganteTeia.png';
 import metaHobgoblin from './hobgoblin.json';
 import urlHobgoblin from './hobgoblin.png';
 import metaHobgoblinArco from './hobgoblinArco.json';
@@ -168,6 +172,17 @@ const IMPORTADAS = {
   },
   // o stirge (24 px, escolhido pelo dono)
   stirge: { base: 'stirge', meta: metaStirge, url: urlStirge },
+  // A ARANHA GIGANTE (aprovada pelo dono), duas folhas: a Mordida (padrao) e
+  // a Teia, quando atira (`aparencias` do bloco `aranhaGigante`, chave
+  // `giantSpider@nenhuma-teia`).
+  giantSpider: {
+    base: 'giantSpider', meta: metaAranhaGigante, url: urlAranhaGigante,
+    postura: 'umaMao', familia: 'presas', armadura: 'roupa', padrao: true,
+  },
+  'giantSpider-teia': {
+    base: 'giantSpider', meta: metaAranhaGiganteTeia, url: urlAranhaGiganteTeia,
+    postura: 'umaMao', familia: 'teia', armadura: 'roupa',
+  },
   // O HOBGOBLIN, o unico monstro de duas folhas: espada e escudo (a padrao) e
   // o arco longo, que ele pega quando atira (`aparencias` do bloco em
   // `rules/monsters/goblinoides.js`). A chave do arco e

@@ -889,6 +889,36 @@ CRIATURAS.update({
 })
 
 
+# A ARANHA GIGANTE (aprovada pelo dono): anda nas oito patas, a Mordida e o
+# bote com as presas, e a Teia (`aranhaGiganteTeia`, so o golpe, no mesmo
+# personagem) e o jato de seda do abdomen.
+_ARANHA = ('a giant hairy spider as big as a horse: dark charcoal-brown bristly body, a big '
+           'round abdomen with red stripes, eight long hairy legs with red bands at the joints, '
+           'eight small red eyes and two big ivory-tipped fangs')
+CRIATURAS.update({
+    'aranhaGigante': {
+        'sujeito': _ARANHA,
+        'andar': ('scuttling forward on its eight legs, the legs moving in alternating waves, '
+                  'the body low and level, the abdomen bobbing slightly'),
+        'parado': 'crouched low on its eight legs, the front legs slightly raised, fangs spread',
+        'golpe': ('rearing up on the back legs with the front legs raised high, then lunging '
+                  '{para} and sinking its two big fangs down in a fast bite, then dropping '
+                  'back low on all eight legs'),
+        'cair': ('struck down, the giant spider collapses: the body slumps flat on the ground, '
+                 'then flips onto its back with the eight legs curled up into the air, and lies '
+                 'still'),
+    },
+    'aranhaGiganteTeia': {
+        'sem_queda': True,
+        'sujeito': _ARANHA,
+        'parado': 'crouched low on its eight legs, the front legs slightly raised, fangs spread',
+        'golpe': ('raising and tilting its big abdomen forward and shooting a thick white strand '
+                  'of sticky web {para}, the web flying out in a long line, then lowering the '
+                  'abdomen and crouching back low'),
+    },
+})
+
+
 def poses_de(chave):
     c = CRIATURAS[chave]
     # Quem nao anda em duas pernas diz como anda (`andar`): o lobo trota.

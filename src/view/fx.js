@@ -846,10 +846,10 @@ export class Fx {
   // ---- projéteis ----------------------------------------------------------
 
   projectile(from, to, {
-    color = '#ffe9b0', style = 'arrow', dur = 0.26, arc = 0.5,
+    color = '#ffe9b0', style = 'arrow', dur = 0.26, arc = 0.5, fio = false,
     trail = false, spin = false, onDone = null, sprite = null, fps = 14,
   } = {}) {
-    return this.add({ kind: 'projectile', from: { ...from }, to: { ...to }, color, style, dur, arc, trail, spin, onDone, sprite, fps });
+    return this.add({ kind: 'projectile', from: { ...from }, to: { ...to }, color, style, dur, arc, trail, spin, onDone, sprite, fps, fio });
   }
 
   // `pulso`: o fio pulsa (Coroa da Loucura) em vez de só esmaecer.
@@ -1248,7 +1248,7 @@ export class Fx {
             it.from.y + (it.to.y - it.from.y) * e,
           );
           const lift = Math.sin(e * Math.PI) * 40 * it.arc;
-          const y = p.sy - CHEST - lift;
+          let y = p.sy - CHEST - lift;
           const ang = Math.atan2(it.to.y - it.from.y, it.to.x - it.from.x);
 
           if (it.trail && it.past) {
@@ -1260,6 +1260,32 @@ export class Fx {
               const s = 5 * (1 - q.age / 0.22);
               ctx.fillRect(qp.sx - s / 2, qp.sy - CHEST - q.lift - s / 2, s, s);
             }
+            ctx.restore();
+          }
+
+          // Teia: o fio de seda fica preso a quem atirou e se estende pelo
+          // arco até a bola de teia, que voa na ponta.
+          if (it.style === 'teia' || it.fio) {
+            ctx.save();
+            ctx.strokeStyle = it.color;
+            ctx.globalAlpha = 0.85;
+            ctx.lineWidth = 1;
+            // Reta na TELA entre as duas pontas: amostrar `centerF` no meio do
+            // caminho pega a altura de cada casa e o fio sai em degraus.
+            const a0 = board.centerF(it.from.x, it.from.y);
+            const a1 = board.centerF(it.to.x, it.to.y);
+            ctx.beginPath();
+            for (let i = 0; i <= 12; i++) {
+              const ee = (e * i) / 12;
+              const qx = a0.sx + (a1.sx - a0.sx) * ee;
+              const qy = a0.sy + (a1.sy - a0.sy) * ee - CHEST - Math.sin(ee * Math.PI) * 40 * it.arc;
+              if (i === 0) ctx.moveTo(Math.round(qx) + 0.5, Math.round(qy) + 0.5);
+              else ctx.lineTo(Math.round(qx) + 0.5, Math.round(qy) + 0.5);
+            }
+            ctx.stroke();
+            p.sx = a0.sx + (a1.sx - a0.sx) * e;
+            p.sy = a0.sy + (a1.sy - a0.sy) * e;
+            y = p.sy - CHEST - lift;
             ctx.restore();
           }
 
@@ -1288,6 +1314,15 @@ export class Fx {
             ctx.beginPath();
             ctx.moveTo(9, 0); ctx.lineTo(3, -4); ctx.lineTo(3, 4);
             ctx.closePath(); ctx.fill();
+          } else if (it.style === 'teia') {
+            // A bola de seda: um tufo de pixels que gira, sem brilho de magia.
+            ctx.rotate(it.t * 9);
+            ctx.fillStyle = it.color;
+            ctx.fillRect(-3, -3, 6, 6);
+            ctx.fillRect(-6, -1, 12, 2);
+            ctx.fillRect(-1, -6, 2, 12);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-1, -1, 2, 2);
           } else if (it.style === 'orb') {
             const grd = ctx.createRadialGradient(0, 0, 1, 0, 0, 11);
             grd.addColorStop(0, '#ffffff');

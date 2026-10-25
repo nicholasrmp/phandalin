@@ -1590,6 +1590,42 @@ DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
 
 LIMITES = {'description': 2000, 'edit_description': 1000}
 
+# A ARANHA GIGANTE (capitulo 4: as aranhas do Nezznar na Caverna do Eco das
+# Ondas). Grande, baixa e larga: quadro de 80. Pelo Livro dos Monstros, uma
+# aranha peluda escura do tamanho de um cavalo, oito patas longas e oito olhos.
+# Nao ha esqueleto de aranha no PixelLab; o `cat` e o quadrupede mais baixo.
+PERSONAGENS['aranhaGigante'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Aranha gigante',
+        'template_id': 'cat',
+        'view': 'low top-down',
+        'image_size': {'width': 80, 'height': 80},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a giant spider, a monstrous hairy spider as '
+            'big as a horse. ' + ESTILO_HEROI +
+            'Body ramp: dark charcoal brown, #5e5048 light, #3e342e mid, #1e1916 '
+            'deep shadow, covered in short bristly hairs. Markings: a dull blood-red '
+            '#8a2a22 hourglass pattern on top of the abdomen and red bands on the '
+            'leg joints. Fangs: glossy black with ivory tips. Eyes: EIGHT small '
+            'glossy red #e04a3a eyes clustered on the front of the head. THE GIANT '
+            'SPIDER: a big bulbous round ABDOMEN at the back, a smaller head and '
+            'thorax at the front with two large curved FANGS (chelicerae) and two '
+            'short pedipalps. EXACTLY EIGHT long jointed hairy LEGS, four on each '
+            'side, arching high above the body and spread wide on the ground. Body '
+            'low to the ground in a crouching hunting stance, front legs raised '
+            'slightly. Three-quarter view from above, the whole spider readable. '
+            'Full body in frame. BACKGROUND: plain, empty. No ground, no shadow, no '
+            'web, no scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple animals, insect wings, six '
+            'legs, ten legs, human face, cute, tarantula toy, scorpion tail.'
+        ),
+    },
+}
+
 
 def imagens_da_tira(caminho):
     """Vista sul como referencia e as outras sete como direcoes prontas."""

@@ -530,6 +530,7 @@ function foesGrandes() {
     makeMonster('goblin', { x: 12, y: 1 }, { nameSuffix: 'A' }),
     makeMonster('ogro', { x: 10, y: 2 }),
     makeMonster('loboAtroz', { x: 11, y: 6 }, { nameSuffix: 'da matilha' }),
+    makeMonster('aranhaGigante', { x: 13, y: 3 }),
   ];
   for (const f of foes) f.facingVec = { dx: -1, dy: 1 };
   return foes;
