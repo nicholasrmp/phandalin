@@ -22,6 +22,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { conversar } from './dialogo.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 export async function visitarConyberry(app, grupo) {
   const camp = (app.campanha ??= {});
@@ -32,10 +33,10 @@ export async function visitarConyberry(app, grupo) {
   const registro = [];
   const fora = { herois: vivos(), rng: app.rngDaVila ??= { die: (n) => 1 + Math.floor(Math.random() * n) }, say: (_k, t) => registro.push(t) };
   const pista = (t) => { if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t); };
-  const temPente = () => vivos().some((c) => (c.bag ?? []).some((i) => i.id === 'penteDeAgatha' && i.qtd > 0));
+  const temPente = () => vivos().some((c) => garantirInventario(c).bag.some((i) => i.id === 'penteDeAgatha' && i.qtd > 0));
   const tirarPente = () => {
     for (const c of vivos()) {
-      const i = (c.bag ?? []).find((x) => x.id === 'penteDeAgatha');
+      const i = garantirInventario(c).bag.find((x) => x.id === 'penteDeAgatha');
       if (i) { c.bag.splice(c.bag.indexOf(i), 1); return; }
     }
   };

@@ -31,6 +31,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { POCO } from './poco.js';
 import { prepararLevas } from './levas.js';
+import { guardar } from './comercio.js';
 
 const MOVIMENTO = 60;
 const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
@@ -48,10 +49,6 @@ export function criarPoco(app, config) {
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
-  const guardar = (c, id, qtd) => {
-    const b = (c.bag ??= []).find((i) => i.id === id);
-    if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
-  };
   const teste = (c, pericia, cd) => {
     const r = d20(enc.rng, skillBonus(c, pericia));
     return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };

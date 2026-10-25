@@ -55,6 +55,8 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { prepararLevas } from './levas.js';
 import { CASTELO } from './castelo.js';
+import { guardar } from './comercio.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;
 const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
@@ -104,10 +106,6 @@ export function criarCastelo(app, config) {
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
   const asArmas = (texto) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto) }], escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-  const guardar = (c, id, qtd) => {
-    const b = (c.bag ??= []).find((i) => i.id === id);
-    if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
-  };
   const teste = (c, pericia, cd) => {
     const r = d20(enc.rng, skillBonus(c, pericia));
     return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
@@ -403,7 +401,7 @@ export function criarCastelo(app, config) {
     if (r === 'disfarce') {
       // Enganação de cada herói contra a Intuição dos vigias: um que vença basta.
       const intuicao = Math.max(...arqueiros.map((f) => d20(enc.rng, skillBonus(f, 'intuicao')).total), 0);
-      const mantos = herois().every((h) => h.mantoVermelho || (h.bag ?? []).some((i) => i.id === 'mantoVermelho'));
+      const mantos = herois().every((h) => h.mantoVermelho || garantirInventario(h).bag.some((i) => i.id === 'mantoVermelho'));
       const quem = melhor('enganacao');
       const rol = herois().map((h) => d20(enc.rng, skillBonus(h, 'enganacao'), { advantage: mantos }).total);
       const venceu = rol.some((v) => v > intuicao);
@@ -900,7 +898,7 @@ export function criarCastelo(app, config) {
     // O portão traseiro.
     if (!salvo.portaoAberto && junto(tile, 'portaoTraseiro')) {
       ops.push({ rotulo: 'Forçar a fechadura', icone: 'acao-usarObjeto', detalhe: 'ferramentas de ladrão · Destreza, CD 15',
-        motivo: longe(5) ?? ((c.bag ?? []).some((i) => i.id === 'ferramentasDeLadrao') ? null : `${c.name} não tem ferramentas de ladrão`),
+        motivo: longe(5) ?? (garantirInventario(c).bag.some((i) => i.id === 'ferramentasDeLadrao') ? null : `${c.name} não tem ferramentas de ladrão`),
         fazer: async () => {
           const t = teste(c, 'prestidigitacao', 15);
           if (t.passou) { salvo.portaoAberto = true; abrir('portaoTraseiro'); }
@@ -933,11 +931,11 @@ export function criarCastelo(app, config) {
     }
     // A torre do urso-coruja.
     if (!salvo.ursoSolto && junto(tile, 'portaUrso') && grupos.urso && !grupos.urso.vencido) {
-      const temCarne = herois().some((h) => (h.bag ?? []).some((i) => i.id === 'racoes' && i.qtd > 0));
+      const temCarne = herois().some((h) => garantirInventario(h).bag.some((i) => i.id === 'racoes' && i.qtd > 0));
       if (!salvo.ursoCalmo) {
         ops.push({ rotulo: 'Jogar carne pela fresta', icone: 'acao-usarObjeto', detalhe: 'uma ração de viagem', motivo: longe(5) ?? (temCarne ? null : 'ninguém tem ração para dar'),
           fazer: async () => {
-            const dono = herois().find((h) => (h.bag ?? []).some((i) => i.id === 'racoes' && i.qtd > 0));
+            const dono = herois().find((h) => garantirInventario(h).bag.some((i) => i.id === 'racoes' && i.qtd > 0));
             const rr = dono.bag.find((i) => i.id === 'racoes'); rr.qtd -= 1;
             salvo.ursoCalmo = true;
             await painel('Do outro lado da porta, um rugido que vira um ronco satisfeito, e barulho de osso quebrando.');
@@ -1025,7 +1023,7 @@ export function criarCastelo(app, config) {
    * cala para sempre (`feitos.estatuetaUsada`).
    */
   function interacoesDoHeroi(c) {
-    const tem = (c.bag ?? []).some((i) => i.id === 'estatuetaDoElfo');
+    const tem = garantirInventario(c).bag.some((i) => i.id === 'estatuetaDoElfo');
     if (!tem || feitos.estatuetaUsada || !estado.explorando) return [];
     return [{
       rotulo: 'Consultar a estatueta',

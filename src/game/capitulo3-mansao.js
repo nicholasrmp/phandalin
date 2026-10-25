@@ -54,6 +54,8 @@ import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste, disfarcado, disfarceDe, ativaDe } from '../rules/utilidade.js';
+import { guardar } from './comercio.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;
 
@@ -112,11 +114,7 @@ export function criarMansao(app, config) {
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const hostis = (g) => (g?.membros ?? []).filter((f) => f.side === 'foes' && !f.dead && !f.fugiu);
   const pendentes = () => Object.values(grupos).filter((g) => g.id !== 'rato' && !g.ativo && !g.vencido && !g.tregua && hostis(g).length);
-  const guardar = (c, id, qtd) => {
-    const b = (c.bag ??= []).find((i) => i.id === id);
-    if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
-  };
-  const tem = (c, id) => (c.bag ?? []).some((i) => i.id === id && i.qtd > 0);
+  const tem = (c, id) => garantirInventario(c).bag.some((i) => i.id === id && i.qtd > 0);
   // Os testes passam pelas magias de utilidade (Orientação soma 1d4, Aprimorar Atributo dá vantagem...).
   const teste = (c, pericia, cd, vantagem = false) => {
     const x = ctxDe(app, enc);

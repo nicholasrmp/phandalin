@@ -10,6 +10,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { distanceFt, Battlefield } from '../core/grid.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const SAIDA = { x: 21, y: 5 };      // para o leste, rumo à Mansão Tresendar
 
@@ -93,7 +94,7 @@ export function criarRuaMarcarrubra(app, config) {
       for (const c of grupo.filter((x) => !x.dead)) {
         c.hp = Math.max(1, c.hp);
         c.conditions = [];
-        c.bag = (c.bag ?? []).filter((i) => !/^moeda/.test(i.id));
+        c.bag = garantirInventario(c).bag.filter((i) => !/^moeda/.test(i.id));
       }
       await narrar(root, { formato: 'tela', paginas: [{ titulo: 'Na lama', texto: [
         'Vocês acordam na rua, doloridos e com os bolsos vazios. Alguém riscou na lama, com a ponta de uma espada: "PRÓXIMA VEZ, SEM ACORDAR".'] }] });

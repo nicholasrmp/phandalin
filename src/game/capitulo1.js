@@ -39,6 +39,7 @@ import { d20 } from '../core/dice.js';
 import { skillBonus, SKILL_NAME } from '../rules/abilities.js';
 import { guardar } from './comercio.js';
 import { distanceFt, Battlefield } from '../core/grid.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;   // quanto cada herói anda por clique na exploração (pés)
 const CD = 10;
@@ -263,7 +264,7 @@ export function criarCapitulo1(app, config) {
       c.stable = false;
       c.deathSaves = { successes: 0, failures: 0 };
       // Roubados: as moedas e o que dava para vender.
-      c.bag = (c.bag ?? []).filter((i) => !/^moeda|pocao/.test(i.id));
+      c.bag = garantirInventario(c).bag.filter((i) => !/^moeda|pocao/.test(i.id));
     }
     await narrar(root, {
       formato: 'tela',

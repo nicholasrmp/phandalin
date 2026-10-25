@@ -33,6 +33,7 @@ import { itemDeId } from './equipment.js';
 import { oracaoDeCura, bomFrutoNoDescanso } from './descanso.js';
 import { APRIMORAR } from './spells.js';
 import { encherAgua, guardarMagico } from './mantimentos.js';
+import { garantirInventario } from './equipment.js';
 
 /**
  * O que cada magia faz FORA do combate. Campos:
@@ -433,7 +434,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     else if (u.alvo === 'aliado' && alvo) alvosIds = [alvo.id];
     // Os efeitos próprios.
     if (u.efeito === 'detectarMagia') {
-      resultado.mochila = grupo.flatMap((h) => (h.bag ?? []).filter((i) => i.qtd > 0 && auraDe(i.id)).map((i) => ({ dono: h, id: i.id, ...auraDe(i.id) })));
+      resultado.mochila = grupo.flatMap((h) => garantirInventario(h).bag.filter((i) => i.qtd > 0 && auraDe(i.id)).map((i) => ({ dono: h, id: i.id, ...auraDe(i.id) })));
     }
     if (u.efeito === 'identificar') {
       resultado.item = alvo;
@@ -460,7 +461,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.mantimentos = { racoes, litros, nosCantis, sobra, entrada };
     }
     if (u.efeito === 'purificar') {
-      const estragados = grupo.flatMap((h) => (h.bag ?? []).filter((i) => i.id === 'racoes' && i.estragada));
+      const estragados = grupo.flatMap((h) => garantirInventario(h).bag.filter((i) => i.id === 'racoes' && i.estragada));
       for (const i of estragados) delete i.estragada;
       // O livro purifica COMIDA E BEBIDA, não criaturas: só sai o mal que veio
       // da água parada (`maldaAgua`, de `rules/mantimentos.js`). Veneno de
@@ -471,7 +472,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     }
     if (u.efeito === 'venenos') {
       resultado.venenos = {
-        mochila: grupo.flatMap((h) => (h.bag ?? []).filter((i) => i.estragada).map((i) => ({ dono: h, id: i.id }))),
+        mochila: grupo.flatMap((h) => garantirInventario(h).bag.filter((i) => i.estragada).map((i) => ({ dono: h, id: i.id }))),
         gente: grupo.filter((h) => !h.dead && hasCondition(h, 'envenenado')),
         // Venenosa é quem tem dano de veneno no bloco (`monsters/*.js`): a
         // aranha e a aranha-lobo mordem com veneno em `extraDamage`.

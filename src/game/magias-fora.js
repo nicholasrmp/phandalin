@@ -47,6 +47,7 @@ import { playSpellVisual } from '../view/visuals.js';
 const COM_VISUAL = new Set(['salto', 'alarme', 'detectarBemMal', 'encontrarArmadilhas', 'zonaDaVerdade', 'localizarObjeto', 'linguas',
   'alterarAparencia', 'cativar', 'amizadeAnimal', 'sentidosDaFera', 'fingirDeMorto', 'falarComPlantas', 'encontrarFamiliar']);
 import { itemDeId } from '../rules/equipment.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const NOME_HAB = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' };
 
@@ -304,7 +305,7 @@ export async function escolherEConjurar(app, c, spellId) {
     if (!a) return null;
     opts.alvo = a;
   } else if (u.alvo === 'item') {
-    const itens = herois.flatMap((h) => (h.bag ?? []).filter((i) => i.qtd > 0).map((i) => ({ h, i, d: itemDeId(i.id)?.dados })));
+    const itens = herois.flatMap((h) => garantirInventario(h).bag.filter((i) => i.qtd > 0).map((i) => ({ h, i, d: itemDeId(i.id)?.dados })));
     if (!itens.length) { app.refuse?.(c, 'ninguém carrega nada para examinar'); return null; }
     const a = await escolher(app, spell.name, 'Qual objeto?', itens.map(({ h, i, d }) => ({ rotulo: d?.name ?? i.id, detalhe: h.name, valor: { id: i.id } })));
     if (!a) return null;

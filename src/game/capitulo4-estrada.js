@@ -28,6 +28,7 @@ import { montarAcampamento, oQueAVigiaPercebe } from '../rules/acampamento.js';
 import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
 import { prepararLevas } from './levas.js';
+import { guardar } from './comercio.js';
 
 
 
@@ -113,10 +114,6 @@ export function criarEstrada(app, config) {
     const texto = [];
     const vivos = grupo.filter((c) => !c.dead);
     const quem = vivos[0];
-    const guardar = (c, id, qtd) => {
-      const b = (c.bag ??= []).find((i) => i.id === id);
-      if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
-    };
     if (e.id === 'goblin' && quem) {
       let pc = 0;
       for (let i = 0; i < inimigos.length; i++) pc += enc.rng.die(10);

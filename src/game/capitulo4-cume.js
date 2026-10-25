@@ -35,6 +35,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { prepararLevas } from './levas.js';
 import { CUME } from './cume.js';
+import { guardar } from './comercio.js';
 
 const MOVIMENTO = 60;
 const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
@@ -52,10 +53,6 @@ export function criarCume(app, config) {
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
-  const guardar = (c, id, qtd) => {
-    const b = (c.bag ??= []).find((i) => i.id === id);
-    if (b) b.qtd += qtd; else c.bag.push({ id, tipo: 'item', qtd });
-  };
 
   // ---------------------------------------------------------- os orcs ----
   const vigia = salvo.vigia ? null : makeMonster('orc', { ...CUME.vigia }, { nameSuffix: 'de vigia' });

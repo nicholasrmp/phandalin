@@ -31,6 +31,7 @@ import { descansoLongoDoGrupo } from '../view/descanso-tela.js';
 import { NPCS } from '../rules/npcs.js';
 import { totalEmCobre, guardar, cobrar, pagarCada, repartir, LOJAS } from './comercio.js';
 import { abrirLoja } from '../view/loja.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 // ------------------------------------------------------------- o tempo ----
 // Seis momentos por dia; o grupo chega no quinto (fim de tarde). Cada visita
@@ -341,7 +342,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                 { texto: 'O rei Grol está morto.', vai: 'grolMorto', uma: true,
                   requer: () => (feitos.grolMorto && !v.feito.castelaPago ? null : 'nada'), oculta: true },
                 { texto: 'Achamos a sua espada.', vai: 'espada', uma: true,
-                  requer: () => (vivos().some((c) => (c.bag ?? []).some((i) => i.id === 'espadaDeSildar')) ? null : 'nada'), oculta: true },
+                  requer: () => (vivos().some((c) => garantirInventario(c).bag.some((i) => i.id === 'espadaDeSildar')) ? null : 'nada'), oculta: true },
                 { texto: 'Os Marcarrubra acabaram.', vai: 'fimDaGangue', uma: true,
                   requer: () => (feitos.marcarrubra && !v.feito.sildarPagouGangue ? null : 'nada'), oculta: true },
                 { texto: 'Trouxemos o Cajavidro. É o Iarno.', vai: 'iarno', uma: true,
@@ -367,7 +368,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                 v.feito.gundrenPago = true;
                 concluir('gundren');
                 for (const c of vivos()) {
-                  const b = (c.bag ??= []).find((i) => i.id === 'moedaDeOuro');
+                  const b = garantirInventario(c).bag.find((i) => i.id === 'moedaDeOuro');
                   if (b) b.qtd += 25; else c.bag.push({ id: 'moedaDeOuro', tipo: 'item', qtd: 25 });
                 }
                 app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + 200, motivo: [app.xpPendente?.motivo, 'O Gundren de volta a Phandalin'].filter(Boolean).join('; ') };
@@ -388,7 +389,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             espada: {
               ao: () => {
                 for (const c of vivos()) {
-                  const i = (c.bag ?? []).find((x) => x.id === 'espadaDeSildar');
+                  const i = garantirInventario(c).bag.find((x) => x.id === 'espadaDeSildar');
                   if (i) { c.bag.splice(c.bag.indexOf(i), 1); break; }
                 }
                 feitos.espadaDevolvida = true;
@@ -455,7 +456,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               v.feito.garaelePagou = true;
               concluir('agatha');
               const quem = vivos()[0];
-              const b = (quem.bag ??= []).find((i) => i.id === 'pocaoDeCura');
+              const b = garantirInventario(quem).bag.find((i) => i.id === 'pocaoDeCura');
               if (b) b.qtd += 3; else quem.bag.push({ id: 'pocaoDeCura', tipo: 'item', qtd: 3 });
               registro.push(`A Irmã Garaele paga com três poções de cura (${quem.name} guarda).`);
             },
@@ -767,8 +768,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       missao('agatha');
       // O presente para a banshee vai com o grupo.
       const quem = vivos()[0];
-      if (!vivos().some((c) => (c.bag ?? []).some((i) => i.id === 'penteDeAgatha'))) {
-        (quem.bag ??= []).push({ id: 'penteDeAgatha', tipo: 'item', qtd: 1 });
+      if (!vivos().some((c) => garantirInventario(c).bag.some((i) => i.id === 'penteDeAgatha'))) {
+        garantirInventario(quem).bag.push({ id: 'penteDeAgatha', tipo: 'item', qtd: 1 });
         registro.push(`A Irmã Garaele entrega o pente de prata (${quem.name} guarda).`);
       }
     }

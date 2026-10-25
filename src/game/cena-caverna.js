@@ -25,6 +25,7 @@ import { d20 } from '../core/dice.js';
 import { skillBonus } from '../rules/abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
+import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;
 
@@ -311,7 +312,7 @@ export function criarCenaCaverna(app, config) {
       for (const f of todos) enc.addCombatant(f);
       // O grupo da arena não traz pacote de aventureiro: tochas na entrada.
       for (const c of herois()) {
-        if (!(c.bag ?? []).some((i) => i.id === 'tocha')) (c.bag ??= []).push({ id: 'tocha', tipo: 'item', qtd: 3 });
+        if (!garantirInventario(c).bag.some((i) => i.id === 'tocha')) garantirInventario(c).bag.push({ id: 'tocha', tipo: 'item', qtd: 3 });
       }
       prepararExploracao();
       const semVisao = herois().filter((c) => !visaoNoEscuro(c)).map((c) => c.name);

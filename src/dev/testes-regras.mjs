@@ -4312,7 +4312,13 @@ teste('Identificar e Detectar Magia: a mochila responde (poção, pergaminho) e 
   assert.equal(auraDe('pocaoDeInvisibilidade').escola, 'ilusão');
   const dm = conjurarFora(g.estado, g.ilvan, 'detectarMagia', { ...g.ctx, ritual: true });
   assert.ok(dm.ok);
-  assert.deepEqual(dm.resultado.mochila.map((m) => m.id).sort(), ['pergaminhoDeAuguro', 'pocaoDeInvisibilidade']);
+  const naMochila = dm.resultado.mochila.map((m) => m.id);
+  assert.ok(naMochila.includes('pergaminhoDeAuguro') && naMochila.includes('pocaoDeInvisibilidade'));
+  assert.ok(!naMochila.includes('anelDePlatina'));
+  // As poções de cura iniciais dos OUTROS heróis acendem também, e devem: a
+  // mochila nasce preguiçosa, e agora Detectar Magia a materializa antes de
+  // olhar, em vez de ver vazio quem nunca abriu a ficha.
+  assert.ok(naMochila.includes('pocaoDeCura'));
   const id = conjurarFora(g.estado, g.ilvan, 'identificar', { ...g.ctx, ritual: true, alvo: { id: 'anelDePlatina' } });
   assert.ok(id.ok, id.why);
   assert.equal(id.resultado.info.magico, false);
