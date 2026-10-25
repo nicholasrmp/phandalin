@@ -53,6 +53,14 @@ export const ABERRACOES_LOOKS = {
   // O âmbar é mais saturado que o ocre de referência porque esta criatura é a
   // única do elenco cuja silhueta é mais larga que alta: ela se lê pela mancha
   // de cor no chão, e um ocre lavado desaparecia contra a pedra do piso.
+  // GRICK — provisório: o corpo de lesma do plano `gosma`, em cinza de pedra,
+  // até a folha própria (verme com tentáculos e bico).
+  grick: {
+    plan: 'gosma',
+    outfit: '#6f6a5e', outfitDark: '#3d3a33', glow: '#a39e8c',
+    trim: '#2a2724', metal: '#c9b88a',
+  },
+
   gelatinaOcre: {
     plan: 'gosma',
     outfit: '#b98a22', outfitDark: '#6a4a10', glow: '#f2dd86',

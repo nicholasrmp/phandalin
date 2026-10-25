@@ -51,7 +51,8 @@ export function saveBonus(actor, ability) {
 }
 
 /** Percepção passiva = 10 + bônus de Percepção. */
-export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao');
+// Cativar: desvantagem em Percepção vale −5 na passiva (SRD, passiva = 10 + bônus, vantagem/desvantagem ±5).
+export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao') - (actor.conditions?.some((c) => c.id === 'cativado') ? 5 : 0);
 
 /** CD de magia = 8 + proficiência + modificador de conjuração. */
 export function spellSaveDc(actor) {

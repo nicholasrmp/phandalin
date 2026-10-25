@@ -54,12 +54,18 @@
 // Pensamentos de pé. Conjurar gasta o espaço e o tempo, e a conversa continua no
 // mesmo nó.
 //
+// ZONA DA VERDADE E CATIVAR. Um nó pode trazer `zona: {...}` (o que ele diz de verdade sob a
+// Zona da Verdade, no lugar da mentira) e `ajuda: {...}` (o que muda se ele está cativado, e não
+// grita nem chama ajuda): ver `dialogo-magia.js`. As opções aceitam `zona: true` (só existem se o
+// NPC está sob a Zona) e `magia: 'linguas'` (só com Línguas de pé: falar o idioma dele).
+//
 // TEXTO NOSSO, sempre. Os nomes do cenário entram pela Fan Content Policy; as
 // falas são escritas aqui.
 
 import { narrar } from '../view/narrativa.js';
 import { SKILL_NAME } from '../rules/abilities.js';
-import { previsaoDeTeste, melhorParaTeste, rolarTeste, ativaDe, entendeIdiomas } from '../rules/utilidade.js';
+import { previsaoDeTeste, melhorParaTeste, rolarTeste, ativaDe, entendeIdiomas, temMagia, sobZona, estaCativado, falaIdiomas } from '../rules/utilidade.js';
+import { noSobMagia } from './dialogo-magia.js';
 import { ctxDe, magiasNaConversa, conjurarNaConversa, sondar } from './magias-fora.js';
 
 const comoLista = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
@@ -85,9 +91,14 @@ function contexto(app, npc, fora = null) {
     app, enc, npc, herois, flags, x, estado: x.estado,
     falante: herois.includes(app.selected) ? app.selected : herois[0],
     algum: (pred) => herois.some(pred),
-    // Uma magia de utilidade de pé no grupo (Compreender Idiomas, Detectar Pensamentos...).
-    magia: (id) => Boolean(ativaDe(x.estado, herois, id)),
+    // Uma magia de utilidade de pé no grupo (Compreender Idiomas, Detectar Pensamentos...);
+    // Línguas vale por Compreender Idiomas.
+    magia: (id) => temMagia(x.estado, herois, id),
     entendeIdiomas: () => entendeIdiomas(x.estado, herois),
+    falaIdiomas: () => falaIdiomas(x.estado, herois),
+    // O NPC desta conversa está sob a Zona da Verdade (não mente) ou cativado (não chama ajuda)?
+    zona: () => Boolean(npc) && sobZona(x.estado, herois, npc),
+    cativado: () => Boolean(npc) && estaCativado(npc),
   };
 }
 
@@ -108,8 +119,10 @@ export async function conversar(app, npc, arvore, fora = null) {
   let extra = [];
 
   for (let passos = 0; passos < 200; passos++) {
-    const no = arvore.nos[id];
-    if (!no) throw new Error(`diálogo: nó "${id}" não existe`);
+    const no0 = arvore.nos[id];
+    if (!no0) throw new Error(`diálogo: nó "${id}" não existe`);
+    // As magias mudam o nó: a Zona da Verdade vira a mentira em verdade, o Cativar cala o grito.
+    const no = noSobMagia(no0, { zona: ctx.zona(), cativado: ctx.cativado() });
     if (!repetindo) no.ao?.(ctx);
     const falas = repetindo ? [] : comoLista(typeof no.fala === 'function' ? no.fala(ctx) : no.fala);
     const narra = repetindo ? extra : comoLista(typeof no.narra === 'function' ? no.narra(ctx) : no.narra);
@@ -133,7 +146,7 @@ export async function conversar(app, npc, arvore, fora = null) {
     no.opcoes.forEach((o, i) => {
       const chave = `${id}:${i}`;
       if (o.uma && usadas.includes(chave)) return;
-      const motivo = o.requer?.(ctx) ?? null;
+      const motivo = (o.zona && !ctx.zona() ? 'só sob a Zona da Verdade' : null) ?? o.requer?.(ctx) ?? null;
       if (motivo && o.oculta) return;
       let detalhe = o.etiqueta ?? null;
       const semMagia = o.magia && !ctx.magia(o.magia);

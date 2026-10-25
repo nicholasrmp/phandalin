@@ -139,7 +139,10 @@ export const GOBLINOIDES = {
       { name: 'Arco longo', bonus: 3, damage: '1d8+1', type: 'perfurante', ranged: true, rangeFt: 150, longRangeFt: 600, art: 'bow' },
     ],
     traits: ['martialAdvantage'],
-    blurb: 'CA 18 e Vantagem Marcial: +2d6 se um aliado dele estiver colado no seu alvo. Pune quem se amontoa.',
+    // A figura troca de folha com a arma: de espada e escudo (a padrão) e,
+    // quando atira, com o arco na mão (`attackAction` em `rules/combat.js`).
+    aparencias: { 'Arco longo': 'hobgoblin@cotaDeMalha-arcoLongo' },
+    blurb: 'CA 18, espada e escudo de perto e arco longo de longe. Vantagem Marcial: +2d6 se um aliado dele estiver colado no seu alvo. Pune quem se amontoa.',
   },
 
   bugbear: {
@@ -214,7 +217,7 @@ export const GOBLINOIDES = {
     abilities: { str: 17, dex: 14, con: 14, int: 10, wis: 11, cha: 12 },
     ac: 16,
     acNote: 'peles reforçadas com placas tomadas de mortos',
-    maxHp: 52,
+    maxHp: 45,
     speedFt: 30,
     skills: ['furtividade', 'intimidacao'],
     attacks: [

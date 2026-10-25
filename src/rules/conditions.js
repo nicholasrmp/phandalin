@@ -536,6 +536,34 @@ export const CONDITIONS = {
     inalcancavel: true,
   },
 
+  // ---- lote 14: utilidade 2 -------------------------------------------------------
+
+  // Salto: `combat.js` (`alcanceDoSalto`, `destinosDoSalto`) triplica o alcance e deixa pousar um nível acima.
+  saltoTriplo: {
+    name: 'Salto',
+    desc: 'A distância dos seus saltos é três vezes maior, e o salto pode pousar um nível acima.',
+    saltoMult: 3,
+  },
+  // Cativar: `abilities.js` (`passivePerception`) tira 5 da Percepção passiva (desvantagem em Percepção);
+  // quem está cativado não grita nem chama ajuda (as cenas perguntam por `estaCativado`).
+  cativado: {
+    name: 'Cativado',
+    desc: 'Só tem olhos para quem o cativou: desvantagem em Percepção para notar qualquer outra coisa, e não grita nem chama ajuda.',
+    percepcaoPenalidade: 5,
+    concentrationEffect: true,
+  },
+  // Fingir de Morto: os inimigos o tratam como morto (`combat.js`, `enemiesOf`).
+  fingeMorto: {
+    name: 'Fingindo-se de morto',
+    desc: 'Parece morto: cego, incapacitado, deslocamento 0, com resistência a todo dano menos psíquico. Os inimigos o ignoram enquanto houver outro alvo.',
+    incapacitated: true,
+    speed: 0,
+    attackDisadvantage: true,
+    attackedAdvantage: true,
+    resisteTudo: true,
+    resisteTudoExceto: ['psíquico', 'psiquico'],
+  },
+
   queimando: {
     name: 'Queimando',
     desc: 'Sofre 1d4 de fogo no início de cada turno seu.',

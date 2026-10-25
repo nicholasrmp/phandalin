@@ -25,9 +25,10 @@ import { getSheet, drawSprite, frameAt, animDaFolha } from '../art/sheet.js';
 import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
 import { ladrilhoChao } from '../art/chao.js';
 import { faixaDaFace, topoDoBloco } from '../art/faces.js';
+import { pecaDaParede } from '../art/paredes.js';
 import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
-import { distanceFt } from '../core/grid.js';
+import { distanceFt, ARESTA } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, CLARO } from '../rules/luz.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct, MAGIAS_DE_ATAQUE } from '../rules/odds.js';
 import { SPELLS, dadosDaMagia } from '../rules/spells.js';
@@ -114,6 +115,7 @@ const SUPERFICIE = {
   // O porão da mansão: cor lisa e caixas provisórias até a arte do PixelLab.
   // A parede construída: topo em corte e faces de pedra lavrada (atlas das faces).
   alvenaria: { topo: ROCHA_TOPO, lado: ROCHA_LADO, topoBloco: 'alvenaria', face: 'alvenaria' },
+  seteira: { topo: ROCHA_TOPO, lado: ROCHA_LADO, topoBloco: 'alvenaria', face: 'alvenaria', objeto: 'seteira' },
   laje: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria' },
   cisterna: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'cisterna', face: 'alvenaria' },
   mesa: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mesa', chao: 'laje', face: 'alvenaria' },
@@ -128,6 +130,19 @@ const SUPERFICIE = {
   pocoVelho: { topo: GRAMA, lado: TERRA, objeto: 'pocoVelho', chao: 'grama' },
   pedregal: { topo: ['#8d8878', '#86826f'], lado: ROCHA_LADO, chao: 'planalto', face: 'penhasco' },
   escada: { topo: ['#8d8878', '#86826f'], lado: ROCHA_LADO, objeto: 'escada', chao: 'planalto', face: 'penhasco' },
+  // O Castelo Dentefino: tudo sobre a laje.
+  altar: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'altar' },
+  banheira: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'banheira' },
+  mesaBanquete: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'mesaBanquete' },
+  camaRei: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'camaRei' },
+  portaoCaido: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'portaoQuebrado' },
+  braseiro: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'braseiro' },
+  braseiroFrio: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'braseiroFrio' },
+  armeiro: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'armeiro' },
+  palha: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'palha' },
+  desabamento: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'desabamento' },
+  caixotes: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'mantimentos' },
+  arca: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'bau' },
 };
 
 // Objetos que se estendem por mais de uma casa. As casas vizinhas com a mesma
@@ -136,18 +151,29 @@ const SUPERFICIE = {
 // cavalos na tela onde o mapa tem dois. Árvore, arbusto e pedra ficam fora de
 // propósito — a mata inteira é uma mancha contínua de `T`, e agrupá-la faria
 // dela uma árvore só.
-const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda']);
+const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda',
+  'altar', 'banheira', 'mesaBanquete', 'camaRei', 'portaoQuebrado']);
 
 // Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
 const SOMBRA_DO_BAIXO = {
   arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
   tocaia: 20, mesa: 22, sarcofago: 24, grade: 20, pocoVelho: 22,
+  braseiro: 14, braseiroFrio: 14, armeiro: 20, palha: 20, desabamento: 22,
 };
 
 // Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
 // criatura ali. Ver `transparenciaDaCasa`.
-const ESMAECE = new Set(['copa', 'carroca', 'casa', 'taverna']);
+const ESMAECE = new Set(['copa', 'carroca', 'casa', 'taverna', 'altar', 'mesaBanquete', 'camaRei', 'banheira']);
 const TRANSLUCIDO = 0.42;
+
+// PAREDES DE BORDA (`core/grid.js`): a parede fina entre duas casas. A arte
+// vem do kit de construção do PixelLab (`art/paredes.js`): uma peça por tipo
+// de aresta, já na projeção do tabuleiro. Cada casa desenha as
+// arestas do norte e do oeste — as que ficam ATRÁS dela na câmera fixa —, logo
+// depois do próprio chão: assim a parede cobre quem está do outro lado e é
+// coberta por quem está na casa. Do lado de fora (capim, estrada) a mesma
+// aresta é a parede da FRENTE de uma sala: sai só um toco, para se ver dentro.
+const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho']);
 // Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
 const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
 
@@ -235,6 +261,20 @@ const FONTE_CHANCE = '700 19px system-ui, sans-serif';
 
 const vkey = (vx, vy) => `${vx},${vy}`;
 
+/** O que cada coluna de luz das magias de utilidade quer dizer (dica ao passar o cursor). */
+const LEGENDA_DA_MARCA = {
+  'marca-bem': 'Detectar o Bem e o Mal: o bem (+)',
+  'marca-mal': 'Detectar o Bem e o Mal: o mal (x)',
+  'marca-neutro': 'Detectar o Bem e o Mal: nem bem nem mal',
+  'marca-armadilha': 'Encontrar Armadilhas: perigo escondido',
+  'marca-alvo': 'Localizar Objeto: o que você procura',
+  'marca-espia': 'Sentidos da Fera: o que o bicho viu',
+  'marca-verdade': 'Zona da Verdade: não consegue mentir',
+  'marca-alarme': 'Alarme: a área vigiada',
+  'marca-aparencia': 'Alterar Aparência: o corpo está transformado',
+  'marca-fingido': 'Fingir de Morto: parece morto',
+};
+
 export class Board {
   constructor(canvas, { encounter, onTileClick, onTileHover }) {
     this.canvas = canvas;
@@ -306,8 +346,8 @@ export class Board {
     });
 
     // ---- botão direito: girar arrastando, menu de ações clicando ----
-    // Segurar e arrastar gira a câmera; soltar sem arrastar abre o menu de
-    // contexto da casa (`onTileContext`: inspecionar, atacar, conversar...).
+    // Botão direito: soltar sem arrastar abre o menu de contexto da casa
+    // (a câmera não gira mais: arrastar não faz nada) (`onTileContext`: inspecionar, atacar, conversar...).
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 2) return;
@@ -426,8 +466,13 @@ export class Board {
     this.pointer = null;
   }
 
-  rotate(delta) {
-    this.setRotation(this.rot + delta);
+  /**
+   * A CÂMERA É FIXA: o mapa tem uma vista só, como os isométricos pintados
+   * (paredes inteiras no fundo, cortadas na frente; objeto de cenário com uma
+   * vista). `rot` fica sempre 0; o código de rotação continua só porque as
+   * contas de `toView`/`rotateVec` passam por ele.
+   */
+  rotate() {
     return this.rot;
   }
 
@@ -887,8 +932,9 @@ export class Board {
       // A arte do PixelLab, 1:1, com a âncora no centro da pegada.
       const ox = Math.round(cx - dirigido.ax);
       const oy = Math.round(cy - dirigido.ay);
-      // Prédio alto esmaece quando cobre alguém atrás dele, como a árvore alta.
-      if (s.objeto === 'casa' || s.objeto === 'taverna') {
+      // Prédio e móvel alto esmaecem quando cobrem alguém atrás, como a
+      // árvore alta.
+      if (ESMAECE.has(s.objeto)) {
         const v = this.toView(x, y);
         if (this.cobreFigura(ox, oy, dirigido.w, dirigido.h, v.vx + v.vy)
           || this._esmaecer?.has(`${x},${y}`)) ctx.globalAlpha = TRANSLUCIDO;
@@ -971,6 +1017,10 @@ export class Board {
       ctx.beginPath();
       ctx.ellipse(cx - 10, cy - alto - 10, 10, 7, 0, 0, Math.PI * 2);
       ctx.fill();
+    } else if (s.objeto === 'seteira') {
+      // A fenda dos arqueiros: um rasgo escuro no meio do bloco de pedra.
+      ctx.fillStyle = '#141210';
+      ctx.fillRect(cx - 3, cy - 10, 6, 12);
     } else if (s.objeto === 'escada') {
       // Escada de cordas: dois montantes e degraus, encostada no paredão.
       ctx.strokeStyle = '#6b4a2c';
@@ -1283,6 +1333,71 @@ export class Board {
     return false;
   }
 
+  /** A casa é de fora (capim, estrada) — a parede ao norte/oeste dela é a da frente de alguma sala? */
+  casaDeFora(x, y) {
+    if (!this.field.inside(x, y)) return true;
+    const s = SUPERFICIE[this.field.surfaceAt(x, y)];
+    return !s || CHAO_DE_FORA.has(s.chao);
+  }
+
+  /** As paredes de borda do norte e do oeste da casa (x, y). */
+  desenharParedes(ctx, x, y, d) {
+    const f = this.field;
+    if (!f.paredeN) return;
+    const i = y * f.w + x;
+    // Do lado de fora a parede é a da FRENTE de alguma sala: sai só o toco,
+    // para se ver dentro. Dentro, ela sobe inteira.
+    const fora = this.casaDeFora(x, y);
+    for (const lado of ['N', 'O']) {
+      const cod = lado === 'N' ? f.paredeN[i] : f.paredeO[i];
+      if (!cod) continue;
+      if (cod === ARESTA.aberta && fora) continue;
+      const nome = (cod === ARESTA.porta ? 'porta' : cod === ARESTA.aberta ? 'arco' : 'parede') + lado;
+      const peca = pecaDaParede(nome);
+      const { sx, sy } = this.iso(x, y, f.heightAt(x, y));
+      const x0 = sx - TW / 2;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      if (peca) {
+        const px = Math.round(x0 + peca.ax);
+        const py = Math.round(sy + peca.ay + (fora ? peca.h - TH : 0));
+        const alt = fora ? TH : peca.h;
+        // Esmaece quando esconde alguém atrás, ou a casa sob o cursor.
+        if (!fora && (this.cobreFigura(px, py, peca.w, alt, d)
+          || (this.hover && this.cobreTela(px, py, peca.w, alt, this.hover)))) ctx.globalAlpha = TRANSLUCIDO;
+        if (fora) {
+          // O toco: só a fatia de baixo da peça.
+          ctx.drawImage(peca.img, peca.x, peca.y + peca.h - TH, peca.w, TH, px, py, peca.w, TH);
+        } else {
+          ctx.drawImage(peca.img, peca.x, peca.y, peca.w, peca.h, px, py, peca.w, peca.h);
+        }
+        // A seteira: a fenda escura aberta na pedra.
+        if (cod === ARESTA.seteira) {
+          ctx.fillStyle = '#0d0c0b';
+          const fx = px + (lado === 'N' ? peca.w * 0.45 : peca.w * 0.3);
+          ctx.fillRect(Math.round(fx), Math.round(py + peca.h - 46), 5, 16);
+        }
+        ctx.restore();
+        continue;
+      }
+      // Sem o atlas: a faixa de pedra das faces, empilhada.
+      const face = lado === 'N' ? 'esq' : 'dir';
+      const niveis = fora ? 1 : 3;
+      for (let n = 0; n < niveis; n++) {
+        const fx = faixaDaFace('alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
+        const py = sy + TH / 2 - (niveis - 1 - n) * LIFT;
+        if (fx) ctx.drawImage(fx.img, fx.sx, fx.sy, fx.w, fx.h, lado === 'N' ? sx - TW / 2 : sx, py, fx.w, fx.h);
+      }
+      ctx.restore();
+    }
+  }
+
+  /** O retângulo de tela cobre a casa `t` (o cursor)? */
+  cobreTela(x0, y0, w, h, t) {
+    const { sx, sy } = this.center(t.x, t.y);
+    return sx > x0 && sx < x0 + w && sy - 30 < y0 + h && sy > y0;
+  }
+
   /** O retângulo de tela de cada criatura no tabuleiro, com a diagonal dela. */
   figurasNaTela() {
     const out = [];
@@ -1531,6 +1646,7 @@ export class Board {
       const { x, y, vx, vy } = cell;
       const transp = this.transparenciaDaCasa(x, y, vx, vy, byView);
       this.drawTile(ctx, x, y, transp.chao, transp.objeto);
+      this.desenharParedes(ctx, x, y, cell.d);
 
       const k = `${x},${y}`;
       if (reach) {
@@ -1806,13 +1922,16 @@ export class Board {
     // com o ciano contínuo dos heróis nem com o vermelho dos inimigos.
     if (!down && !this.soCenario && !eter) {
       ctx.save();
-      if (c.invocado) {
+      if (c.invocado && !c.familiar) {
         ctx.strokeStyle = 'rgba(190,240,90,.95)';
         ctx.setLineDash([4, 3]);
+      } else if (c.familiar) {
+        // O familiar é do grupo: o aro ciano dos aliados, mais largo, porque o bicho é miúdo.
+        ctx.strokeStyle = 'rgba(110,200,255,.95)';
       } else {
         ctx.strokeStyle = ally ? 'rgba(110,200,255,.85)' : 'rgba(255,120,96,.8)';
       }
-      ctx.lineWidth = 2;
+      ctx.lineWidth = c.familiar ? 3 : 2;
       ctx.beginPath();
       ctx.ellipse(baseX, baseY, 19 * pegada, 9.5 * pegada, 0, 0, Math.PI * 2);
       ctx.stroke();
@@ -2555,6 +2674,12 @@ export class Board {
   cartaoDeMovimento(t) {
     const actor = this.overlay.selected;
     const alvo = this.enc.at(t.x, t.y);
+    // A coluna de luz de uma magia de utilidade: a cor sozinha não diz o que é (legenda na dica).
+    const marca = (this.overlay.marcas ?? []).find((k) => k.x === t.x && k.y === t.y);
+    const legenda = marca ? LEGENDA_DA_MARCA[marca.cor] : null;
+    if (legenda && !alvo) {
+      return { titulo: marca.nome ?? 'Marca', subtitulo: legenda, destaque: null, linhas: [], avisos: [] };
+    }
 
     if (alvo) {
       const linhas = [
@@ -2569,7 +2694,7 @@ export class Board {
         subtitulo: alvo.side === 'party' ? 'aliado' : 'inimigo',
         destaque: null,
         linhas,
-        avisos: [],
+        avisos: legenda ? [{ texto: legenda, cor: CARTAO.gold }] : [],
       };
     }
 

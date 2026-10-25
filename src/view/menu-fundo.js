@@ -29,7 +29,7 @@ export function criarFundo() {
 
   const mapa = mapaDo('emboscada');
   const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
-    mapa.terreno, mapa.altura, mapa.objetos);
+    mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
   const party = makeParty({ nivel: 1 });
   // Lugares de cena, não os de combate: na fileira de cima da estrada, onde
   // nenhuma copa da mata do sul cobre ninguém — senão a árvore esmaece (é a

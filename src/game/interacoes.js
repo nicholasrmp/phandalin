@@ -50,6 +50,7 @@ export const OLHAR = {
   escada: ['Escada de cordas', 'Cordas grossas e degraus de galho, presas no alto do paredão. Rangem, mas aguentam.'],
   tenda: ['Uma tenda', 'Lona listrada de cores vivas, bem esticada. Coisa cara, para estas colinas.'],
   pocoVelho: ['O poço velho', 'Uma mureta de pedra gasta em volta de um buraco fundo. Lá embaixo, água limpa.'],
+  seteira: ['Seteira', 'Uma fenda estreita na pedra, da largura de uma flecha. Do outro lado, alguém pode estar olhando.'],
   alvenaria: ['Parede de pedra', 'Blocos lavrados e bem assentados. Alguém construiu isto para durar.'],
   mesa: ['Uma mesa', 'Madeira grossa, manchada de vinho e de cera de vela.'],
   sarcofago: ['Um sarcófago', 'Pedra lavrada, com a tampa pesada no lugar.'],
@@ -230,7 +231,7 @@ export function opcoesDaCasa(app, tile) {
         });
       }
       if (occ !== c && hasCondition(occ, 'inconsciente') && !occ.stable) {
-        const motivo = c.actionUsed ? 'a ação deste turno já foi usada' : !isAdjacent(c.pos, occ.pos) ? 'encoste nele primeiro' : null;
+        const motivo = c.actionUsed ? 'a ação deste turno já foi usada' : !enc.field.vizinhos(c.pos, occ.pos) ? 'encoste nele primeiro' : null;
         opcoes.push({
           grupo: 'Socorrer', rotulo: 'Estabilizar', detalhe: 'Medicina, CD 10', icone: 'acao-estabilizar', motivo, alvoPrevia: occ,
           fazer: () => { app.enc.stabilize(c, occ); app.afterAct(); },

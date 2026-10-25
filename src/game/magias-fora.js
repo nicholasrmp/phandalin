@@ -36,6 +36,16 @@ import {
   magiasForaDoHeroi, sondarMente, motivoDeMortoMudo, falaPorMensagem, chaveDoNpc, infoDoItem, tempoDeConjuracao,
 } from '../rules/utilidade.js';
 import { PENSAMENTOS, MORTOS, MUDOS, ANIMAIS, eAnimal } from './magias-fora-dados.js';
+import {
+  preparar, posConjurar, contarNovas, marcas as marcasDasMagias, acordar, ferasAoAlcance, bichosDisponiveis,
+} from './magias-fora-nucleo.js';
+import { espiar, perguntarAsPlantas } from './magias-fora-extra.js';
+import { eFeraAmansavel } from '../rules/utilidade.js';
+import { playSpellVisual } from '../view/visuals.js';
+
+/** As magias do lote 14: fora do combate, tocam a receita visual delas (as de antes seguem sem). */
+const COM_VISUAL = new Set(['salto', 'alarme', 'detectarBemMal', 'encontrarArmadilhas', 'zonaDaVerdade', 'localizarObjeto', 'linguas',
+  'alterarAparencia', 'cativar', 'amizadeAnimal', 'sentidosDaFera', 'fingirDeMorto', 'falarComPlantas', 'encontrarFamiliar']);
 import { itemDeId } from '../rules/equipment.js';
 
 const NOME_HAB = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' };
@@ -67,6 +77,11 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
   const t = [];
   if (r.ritual) t.push(`${c.name} conjura ${r.spell.name} como ritual: dez minutos de gestos e murmúrios, e nenhum espaço gasto.`);
   const dc = res.dc;
+  const novas = contarNovas(x, c, r, { alvo, opcao });
+  if (novas) {
+    t.push(...novas, ...(r.fim ?? []));
+    return t;
+  }
   switch (id) {
     case 'luz': t.push(`${alvo.name} passa a brilhar como uma tocha, sem fogo: luz clara em 6 m e penumbra por mais 6, por ${dura(id)}.`); break;
     case 'orientacao': t.push(`${c.name} toca ${alvo.name}. No próximo teste de perícia dele soma 1d4, e a magia acaba (ou em 1 minuto).`); break;
@@ -144,8 +159,12 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
 export function lancar(x, c, spellId, opts = {}) {
   const { estado, rng } = x;
   const herois = x.herois();
+  const prep = preparar(x, c, spellId, opts);
+  if (prep.erro) return { r: { ok: false, why: prep.erro }, texto: [prep.erro] };
+  opts = prep.opts;
   const r = conjurarFora(estado, c, spellId, { herois, rng, enc: x.enc, ...opts });
   if (!r.ok) return { r, texto: [r.why] };
+  posConjurar(x, c, spellId, r, opts);
   const texto = contar(x, c, r, opts);
   x.say(`${c.name} conjura ${r.spell.name}${opts.ritual ? ' (ritual)' : ''}${r.circulo > 0 && !opts.ritual ? `, ${r.circulo}º círculo` : ''}.`);
   if (r.resultado.tipo === 'sugestao' || r.resultado.tipo === 'enfeiticar') x.say(texto[texto.length - 1] ?? '');
@@ -159,6 +178,13 @@ export async function conjurarComTela(app, c, spellId, opts = {}) {
   const { r, texto } = lancar(x, c, spellId, opts);
   if (!r.ok) { app.refuse?.(c, r.why); return r; }
   const spell = r.spell;
+  if (COM_VISUAL.has(spellId) && app.board) {
+    try {
+      const alvo = opts.alvo?.pos ? opts.alvo : null;
+      const ponto = opts.gancho ? { x: opts.gancho.x, y: opts.gancho.y } : null;
+      playSpellVisual(app.board, { caster: c, spell, target: alvo, point: ponto, areaTiles: null, buffTargets: alvo ? [alvo] : [] });
+    } catch (e) { /* o visual nunca derruba a magia */ }
+  }
   const paginas = [];
   if (texto.length) paginas.push({ titulo: spell.name, texto });
   if (paginas.length) await narrar(app.root, { formato: 'painel', paginas });
@@ -216,7 +242,10 @@ export async function escolherEConjurar(app, c, spellId) {
   }
   const herois = x.herois();
   if (u.alvo === 'aliado') {
-    const a = await escolher(app, spell.name, 'Em quem?', herois.map((h) => ({ rotulo: h.name, detalhe: h === c ? 'em si' : null, valor: h })));
+    // Toque (5 pés): só quem está ao lado.
+    const toque = spell.rangeFt > 0 && spell.rangeFt <= 5;
+    const perto = herois.filter((h) => h === c || !toque || !h.pos || !c.pos || distanceFt(c.pos, h.pos) <= 5);
+    const a = await escolher(app, spell.name, toque ? 'Em quem? (toque: a até 1,5 m)' : 'Em quem?', perto.map((h) => ({ rotulo: h.name, detalhe: h === c ? 'em si' : null, valor: h })));
     if (!a) return null;
     opts.alvo = a;
   } else if (u.alvo === 'criatura') {
@@ -245,6 +274,26 @@ export async function escolherEConjurar(app, c, spellId) {
     const g = gs.length === 1 ? gs[0] : await escolher(app, spell.name, 'Onde?', gs.map((k) => ({ rotulo: k.nome, valor: k })));
     if (!g) return null;
     opts.gancho = g;
+  } else if (u.alvo === 'bicho') {
+    const bichos = bichosDisponiveis(app, c, x.estado);
+    if (!bichos.length) { app.refuse?.(c, 'nenhum bicho disposto por perto: convoque um familiar ou amanse uma fera'); return null; }
+    const a = bichos.length === 1 ? bichos[0] : await escolher(app, spell.name, 'Qual bicho?', bichos.map((m) => ({ rotulo: m.name, valor: m })));
+    if (!a) return null;
+    opts.alvo = a;
+  } else if (u.alvo === 'feras') {
+    const cand = ferasAoAlcance(app, c, spell.rangeFt);
+    if (!cand.length) { app.refuse?.(c, 'nenhuma fera à vista a 9 m (Inteligência 3 ou menos)'); return null; }
+    opts.criaturas = cand;
+    opts.gancho = ganchosPerto(app, c, 'fera', spell.rangeFt)[0];
+    // Uma fera por círculo: com várias à vista, o jogador escolhe quanto gastar.
+    const slots = c.spellcasting.slots ?? [];
+    const circulos = slots.map((n, i) => ({ n, i })).filter(({ n, i }) => i >= spell.level && n > 0);
+    if (cand.length > 1 && circulos.length > 1) {
+      const circ = await escolher(app, spell.name, `${cand.length} feras à vista. Qual espaço gastar?`,
+        circulos.map(({ n, i }) => ({ rotulo: `${i}º círculo`, detalhe: `pega até ${i - spell.level + 1} fera(s) · restam ${n}`, valor: i })));
+      if (!circ) return null;
+      opts.circulo = circ;
+    }
   } else if (u.alvo === 'escolha') {
     const o = await escolher(app, spell.name, 'O que você faz?', TRUQUES[spellId].map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));
     if (!o) return null;
@@ -328,7 +377,9 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
       const alvoCriatura = u.alvo === 'criatura' && vivo && occ.side !== 'party';
       const alvoAliado = u.alvo === 'aliado' && occ.side === 'party' && vivo;
       const alvoMorto = u.alvo === 'morto' && occ.dead;
-      if (!(alvoCriatura || alvoAliado || alvoMorto)) continue;
+      const alvoFera = u.alvo === 'feras' && vivo && eFeraAmansavel(occ);
+      const alvoBicho = u.alvo === 'bicho' && vivo && occ.side !== 'foes' && occ.side !== 'party' && (occ.tipo === 'fera' || occ.familiar);
+      if (!(alvoCriatura || alvoAliado || alvoMorto || alvoFera || alvoBicho)) continue;
       const alc = u.alcance ?? s.rangeFt;
       const longe = c.pos && occ.pos && distanceFt(c.pos, occ.pos) > alc ? `longe demais — ${alc} pés` : null;
       const abre = async (opcao = null) => conjurarComTela(app, c, s.id, { alvo: occ, opcao });
@@ -350,6 +401,11 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
         },
       }));
     }
+    // Fingir de Morto: só quem conjurou, ao lado, toca o amigo e ele acorda.
+    if (vivo && occ.side === 'party' && occ !== c && c.pos && occ.pos && distanceFt(c.pos, occ.pos) <= 5
+        && occ.conditions?.some((k) => k.id === 'fingeMorto' && (!k.source || k.source === c.id))) {
+      ops.push({ grupo: 'Magias de utilidade', rotulo: 'Acordar (Fingir de Morto)', icone: 'magia-fingirDeMorto', detalhe: occ.name, fazer: () => { acordar(x, occ); app.refresh?.(); } });
+    }
     // Falar com Animais, já ativa: o bicho responde.
     if (vivo && eAnimal(occ) && occ.side !== 'party' && ativaDe(x.estado, x.herois(), 'falarComAnimais')) {
       ops.push({ grupo: 'Magias de utilidade', rotulo: 'Falar com o animal', icone: 'magia-falarComAnimais', detalhe: 'Falar com Animais', fazer: () => conversarComAnimal(app, c, occ) });
@@ -357,6 +413,13 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
     return organizar(ops);
   }
 
+  // Sentidos da Fera de pé: o bicho vai espiar esta casa.
+  if (tile && ativaDe(x.estado, x.herois(), 'sentidosDaFera', { por: c })) {
+    ops.push({
+      grupo: 'Magias de utilidade', rotulo: 'Mandar o bicho espiar aqui', icone: 'magia-sentidosDaFera', detalhe: 'Sentidos da Fera · 1 minuto',
+      fazer: async () => { const r = await espiar(app, x, c, tile); if (!r.ok) app.refuse?.(c, r.why); },
+    });
+  }
   // Casa vazia ou objeto: os ganchos da cena nesta casa.
   const gs = (app.capitulo?.ganchosMagicos?.(c) ?? []).filter((g) => tile && cobre(g, tile));
   for (const g of gs) {
@@ -388,7 +451,8 @@ export function opcoesDoHeroi(app, c, alvo) {
     const ehSi = alvo === c;
     // Em si: auto-alvo, área, grupo, escolha, item. Os de aliado e de criatura saem em `opcoesDeMagia`.
     if (!ehSi) continue;
-    if (['criatura', 'morto', 'objeto', 'aliado'].includes(u.alvo)) continue;
+    if (['criatura', 'morto', 'aliado'].includes(u.alvo)) continue;
+    if (u.alvo === 'objeto' && u.gancho !== 'procurado') continue;
     const variantes = [{ ritual: false }];
     if (s.ritual && podeConjurarFora(c, s.id, { ritual: true }).ok) variantes.push({ ritual: true });
     for (const v of variantes) {
@@ -397,11 +461,18 @@ export function opcoesDoHeroi(app, c, alvo) {
         grupo: 'Magias de utilidade', rotulo: `${s.name}${v.ritual ? ' (ritual)' : ''}`, icone: icone(s), circulo: s.level,
         motivo: pode.ok ? null : pode.why,
         detalhe: detalheDeMagia(c, s, { ritual: v.ritual }), ritual: v.ritual,
-        fazer: () => (u.alvo === 'item' || u.alvo === 'escolha' || u.escolhe
+        fazer: () => (['item', 'escolha', 'objeto', 'feras', 'bicho'].includes(u.alvo) || u.escolhe
           ? escolherEConjurar(app, c, s.id)
           : conjurarComTela(app, c, s.id, { ritual: v.ritual })),
       });
     }
+  }
+  // Falar com Plantas de pé: perguntar ao mato.
+  if (ehSiMesmo(alvo, c) && ativaDe(x.estado, x.herois(), 'falarComPlantas', { por: c })) {
+    ops.push({
+      grupo: 'Magias de utilidade', fixo: true, rotulo: 'Perguntar às plantas', icone: 'magia-falarComPlantas', detalhe: 'Falar com Plantas · raio de 9 m',
+      fazer: async () => { const r = await perguntarAsPlantas(app, x, c); if (!r.ok) app.refuse?.(c, r.why); },
+    });
   }
   // O tempo, quando há magia de duração rodando.
   const ativas = ativasDoGrupo(x.estado, x.herois());
@@ -412,6 +483,14 @@ export function opcoesDoHeroi(app, c, alvo) {
     });
   }
   return organizar(ops);
+}
+
+const ehSiMesmo = (alvo, c) => alvo === c;
+
+/** As colunas de luz que as magias deixam no mapa (`magias-fora-extra.js`): Bem e Mal, armadilhas, Localizar. */
+export function marcasDoJogo(app) {
+  if (!app.capitulo?.explorando || !app.enc) return [];
+  return marcasDasMagias(ctxDe(app));
 }
 
 /** O tempo passa sem fazer nada: as magias de duração correm. */
@@ -539,6 +618,7 @@ export async function conjurarNaConversa(app, x, npc) {
     opts.alvo = a;
   }
   if (u.escolhe === 'atributo') opts.opcao = 'aguia';
+  opts.npc = npc;
   const { r: res, texto } = lancar(x, h, s.id, opts);
   void res;
   return texto;

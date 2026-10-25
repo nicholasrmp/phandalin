@@ -10,7 +10,7 @@
 // reescrever nada.
 
 import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDice } from '../core/dice.js';
-import { Battlefield, distanceFt, isAdjacent, key } from '../core/grid.js';
+import { Battlefield, distanceFt, isAdjacent, key, FEET_PER_SQUARE } from '../core/grid.js';
 import { ARMORS } from './items/index.js';
 import {
   abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
@@ -278,7 +278,22 @@ export class Encounter {
   enemiesOf(actor) {
     // O NPC neutro (o goblin que só quer conversar) não é inimigo de ninguém
     // até a cena mudar o lado dele.
-    return this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro' && !c.dead && !hasCondition(c, 'inconsciente') && !hasCondition(c, 'etereo'));
+    const todos = this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro' && !c.dead && !hasCondition(c, 'inconsciente') && !hasCondition(c, 'etereo'));
+    // Quem finge de morto só é ignorado havendo outro alvo; senão a luta travava num impasse.
+    const vivos = todos.filter((c) => !hasCondition(c, 'fingeMorto'));
+    return vivos.length ? vivos : todos;
+  }
+
+  /** Fingir de Morto: só quem conjurou desfaz, tocando o amigo (ao lado), com uma ação. */
+  despertarFingido(actor, target) {
+    if (actor.actionUsed || actor.acaoLimitada || !this.field.vizinhos(actor.pos, target.pos)) return false;
+    const k = target.conditions?.find((x) => x.id === 'fingeMorto');
+    if (!k || (k.source && k.source !== actor.id)) return false;
+    actor.actionUsed = true;
+    removeCondition(target, 'fingeMorto');
+    this.say('acao', `${actor.name} toca ${target.name} e encerra Fingir de Morto.`);
+    this.afterAction(actor);
+    return true;
   }
 
   alliesOf(actor) {
@@ -308,6 +323,9 @@ export class Encounter {
     // Guarda quem abriu: a rodada só vira quando a vez volta para esse lado.
     this.firstSide = partyInit.total >= foeInit.total ? 'party' : 'foes';
     this.surpresos = this.rolarSurpresa();
+    // Ganchos de quem monta o encontro: o familiar do grupo entra (`rules/familiar.js`), depois da
+    // surpresa (um espírito chamado não é pego desprevenido).
+    this.aoComecar?.(this);
     this.beginSide(this.firstSide);
   }
 
@@ -346,12 +364,16 @@ export class Encounter {
       ?? this.allOf(lado).map((c) => d20(this.rng, skillBonus(c, 'furtividade')).total);
     if (!furtivos.length) return surpresos;
     const menor = Math.min(...furtivos);
+    const avisados = [];
     for (const c of this.allOf(alvos)) {
       if (passivePerception(c) < menor) {
+        // Alarme: o aviso soa antes de os emboscadores chegarem, e quem estava perto da marca se prepara.
+        if (lado === 'foes' && this.protegidoDeSurpresa?.(c)) { avisados.push(c.name); continue; }
         surpresos.add(c.id);
         c.reactionUsed = true;
       }
     }
+    if (avisados.length) this.say('inicio', `O Alarme toca: ${avisados.join(', ')} ${avisados.length > 1 ? 'ouvem' : 'ouve'} o aviso e não ${avisados.length > 1 ? 'são pegos' : 'é pego'} de surpresa.`);
     const nomes = this.allOf(alvos).filter((c) => surpresos.has(c.id)).map((c) => c.name);
     this.say('inicio', `Furtividade dos emboscadores: ${furtivos.join(', ')} — `
       + (nomes.length ? `surpreendidos: ${nomes.join(', ')}.` : 'ninguém foi surpreendido.'));
@@ -628,7 +650,8 @@ export class Encounter {
           if (!this.field.inside(x + dx, y + dy) || this.field.blocksMove(x + dx, y + dy) || this.occupied(x + dx, y + dy)) return false;
         }
       }
-      return true;
+      // E sem parede de borda cortando o corpo dela.
+      return !this.field.paredeNaPegada(x, y, f);
     };
     for (let r = 0; r <= 6; r++) {
       for (let dy = -r; dy <= r; dy++) {
@@ -761,7 +784,7 @@ export class Encounter {
     // Qualquer goblin serve (o arqueiro também é goblin), desde que acordado.
     const buddy = this.alliesOf(target).find(
       (a) => /^goblin/i.test(a.defId ?? '') && !a.traits?.includes('redirectAttack')
-        && isAdjacent(a.pos, target.pos) && !conditionEffects(a).incapacitated,
+        && this.field.vizinhos(a.pos, target.pos) && !conditionEffects(a).incapacitated,
     );
     if (!buddy) return target;
 
@@ -782,7 +805,7 @@ export class Encounter {
   martialApplies(attacker, target) {
     if (!attacker.traits?.includes('martialAdvantage') || attacker.martialUsedThisTurn) return false;
     return this.alliesOf(attacker).some(
-      (a) => isAdjacent(a.pos, target.pos) && !conditionEffects(a).incapacitated && !a.dead,
+      (a) => this.field.vizinhos(a.pos, target.pos) && !conditionEffects(a).incapacitated && !a.dead,
     );
   }
 
@@ -930,6 +953,7 @@ export class Encounter {
       // Quem ocupa 2x2 só pisa onde os quatro quadrados existem e estão livres
       // de parede. Sem isto o ogro para com metade do corpo dentro da pedra.
       evita ? (x, y) => !hostil({ x, y, f }) && (!cabeFinal || cabeFinal(x, y)) : cabeFinal,
+      f,
       );
     } finally {
       this.field.dificeisExtra = null;
@@ -962,6 +986,7 @@ export class Encounter {
         for (let dx = 0; dx < f; dx++) {
           if (!this.field.inside(x + dx, y + dy)) return false;
           if (this.field.blocksMove(x + dx, y + dy)) return false;
+          if (this.field.paredeNaPegada(x, y, f)) return false;
           if (this.occupied(x + dx, y + dy, actor)) return false;
         }
       }
@@ -1009,6 +1034,7 @@ export class Encounter {
           && this.armaDeOportunidade(e) !== undefined
           && !this.separadosPelaAltura(e, actor)
           && distanceFt(e.pos, from) <= this.reachOf(e)
+          && this.field.contato(e.pos, from)
           && distanceFt(e.pos, to) > this.reachOf(e),
       );
       // O ataque de oportunidade acontece LOGO ANTES de o alvo sair do
@@ -1752,7 +1778,9 @@ export class Encounter {
     // Na exploração não há turno: conta como quem pega corrida.
     const correu = this.explorando || (actor.corridaFt ?? 0) >= 10;
     const forca = actor.abilities?.str ?? 10;
-    return Math.min(correu ? forca : Math.floor(forca / 2), actor.movementLeftFt ?? 0);
+    // Salto (magia): a distância triplica.
+    const mult = hasCondition(actor, 'saltoTriplo') ? 3 : 1;
+    return Math.min((correu ? forca : Math.floor(forca / 2)) * mult, actor.movementLeftFt ?? 0);
   }
 
   /**
@@ -1773,6 +1801,10 @@ export class Encounter {
     const podePousar = (x, y) => (!actor.corrente || distanceFt(actor.corrente, { x, y }) <= actor.corrente.raioFt)
       && (!duelista || distanceFt(duelista.pos, { x, y }) <= 30 || distanceFt(duelista.pos, { x, y }) <= distanceFt(duelista.pos, actor.pos));
     const h0 = this.field.heightAt(x0, y0);
+    // Com a magia Salto o salto pode pousar um nível acima do de partida e passa por cima de buraco
+    // (o fosso do corredor é um desnível que, a pé, barra o passo).
+    const magico = hasCondition(actor, 'saltoTriplo');
+    const sobe = magico ? 1 : 0;
     const fundo = new Set(['fosso', 'poco', 'cisterna']);
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
       let atravessa = false;
@@ -1781,13 +1813,14 @@ export class Encounter {
         const y = y0 + dy * n;
         const t = this.field.tileAt(x, y);
         const h = this.field.heightAt(x, y);
-        if (t === 1 || h > h0) break;
+        const buraco = magico && fundo.has(this.field.surfaceAt(x, y));
+        if (t === 1 || (h > h0 + sobe && !buraco)) break;
         const quem = this.at(x, y);
         const pousa = n >= 2 && atravessa && !quem && h >= h0 - 1 && podePousar(x, y)
           && (t === 0 || (t === 2 && !fundo.has(this.field.surfaceAt(x, y))));
         if (pousa) out.set(key(x, y), { x, y, cost: n * 5, salto: true });
         if (quem) break;
-        if (t === 2 || t === 3 || this.dificilParaPouso(actor, x, y)) atravessa = true;
+        if (t === 2 || t === 3 || buraco || this.dificilParaPouso(actor, x, y)) atravessa = true;
       }
     }
     return out;
@@ -1987,8 +2020,10 @@ export class Encounter {
     // Círculo Mágico: o tipo barrado ataca quem está dentro com desvantagem.
     if (this.circuloProtege(attacker, target)) fonte(mods, 'desvantagem', 'círculo mágico');
     // Invisível: ataca com vantagem e é atacado com desvantagem.
-    if (hasCondition(attacker, 'invisivel')) fonte(mods, 'vantagem', 'atacante invisível');
-    if (hasCondition(target, 'invisivel')) fonte(mods, 'desvantagem', 'alvo invisível');
+    // Visão verdadeira (o nothic): dentro do alcance dela, invisível não esconde.
+    const ve = (quem, alvo) => (quem.senses?.truesightFt ?? 0) >= distanceFt(quem.pos, alvo.pos);
+    if (hasCondition(attacker, 'invisivel') && !ve(target, attacker)) fonte(mods, 'vantagem', 'atacante invisível');
+    if (hasCondition(target, 'invisivel') && !ve(attacker, target)) fonte(mods, 'desvantagem', 'alvo invisível');
     // Proteção contra o Bem e o Mal: certos tipos atacam o protegido com desvantagem.
     const protecao = (target.conditions ?? []).find((c) => CONDITIONS[c.id]?.contraTipos?.includes(attacker.tipo));
     if (protecao) fonte(mods, 'desvantagem', CONDITIONS[protecao.id].name.toLowerCase());
@@ -2010,13 +2045,13 @@ export class Encounter {
     // Táticas de Matilha
     if (attacker.traits?.includes('packTactics')) {
       const helper = this.alliesOf(attacker).some(
-        (a) => isAdjacent(a.pos, target.pos) && !conditionEffects(a).incapacitated,
+        (a) => this.field.vizinhos(a.pos, target.pos) && !conditionEffects(a).incapacitated,
       );
       if (helper) fonte(mods, 'vantagem', 'táticas de matilha');
     }
     // Ataque à distância com inimigo colado
     if (ranged && !opportunity && this.enemiesOf(attacker).some(
-      (e) => isAdjacent(e.pos, attacker.pos) && !conditionEffects(e).incapacitated,
+      (e) => this.field.vizinhos(e.pos, attacker.pos) && !conditionEffects(e).incapacitated,
     )) {
       fonte(mods, 'desvantagem', 'inimigo adjacente');
     }
@@ -2032,7 +2067,7 @@ export class Encounter {
     if (!usable) return false;
     if (mods.advantage && !mods.disadvantage) return true;
     if (mods.disadvantage) return false;
-    return this.alliesOf(attacker).some((a) => isAdjacent(a.pos, target.pos) && !hasCondition(a, 'inconsciente'));
+    return this.alliesOf(attacker).some((a) => this.field.vizinhos(a.pos, target.pos) && !hasCondition(a, 'inconsciente'));
   }
 
   // ---- ataques -------------------------------------------------------------
@@ -2051,6 +2086,9 @@ export class Encounter {
         // atributo e quanto é proficiência. Dizer "bloco da criatura" é honesto;
         // repartir em FOR e proficiência seria invenção nossa.
         bonusPartes: [{ rotulo: 'bloco da criatura', valor: atk.bonus }],
+        // Acao por TESTE de resistencia (o Olhar Apodrecedor do nothic): sem
+        // jogada de ataque; o alvo testa e, falhando, leva o dano.
+        teste: atk.teste ?? null,
       };
     }
     const w0 = WEAPONS[weaponId ?? actor.equippedWeapon];
@@ -2103,8 +2141,15 @@ export class Encounter {
     }
     if (hasCondition(actor, 'etereo') || hasCondition(target, 'etereo')) return { ok: false, why: 'está no Plano Etéreo' };
     const p = this.weaponAttackProfile(actor, weaponId);
+    // Acao por teste (o Olhar Apodrecedor) mira 'uma criatura que ele possa ver'.
+    if (p.teste && hasCondition(actor, 'cego')) return { ok: false, why: 'cego, não vê o alvo' };
     if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
     const dist = distanceFt(actor.pos, target.pos);
+    // Parede de borda: a 1,5 m, mas do outro lado do muro.
+    if (!p.ranged && !this.field.contato(actor.pos, target.pos)
+      && (dist <= FEET_PER_SQUARE || !this.field.hasLineOfSight(actor.pos, target.pos))) {
+      return { ok: false, why: 'há uma parede no meio' };
+    }
     if (dist > p.longRangeFt) {
       const limite = p.ranged ? p.longRangeFt : p.reachFt;
       return { ok: false, why: `fora de alcance — ${dist} pés, ${p.name} alcança ${limite}` };
@@ -2128,6 +2173,13 @@ export class Encounter {
       return null;
     }
     let p = check.profile;
+    // A figura mostra a arma do golpe: o hobgoblin de espada e escudo pega o
+    // arco para atirar e volta à espada no corpo a corpo (`aparencias` do
+    // bloco). Aqui, e não na ação de Ataque, para valer também na reação.
+    if (attacker.aparencias) {
+      attacker.lookBase ??= attacker.look;
+      attacker.look = attacker.aparencias[p.name] ?? attacker.lookBase;
+    }
     if (getCondition(attacker, 'enfeiticado')?.source === target.id) {
       this.say('aviso', `${attacker.name} está encantado por ${target.name} e não o ataca.`);
       return null;
@@ -2141,6 +2193,24 @@ export class Encounter {
     if (hasCondition(attacker, 'santuario')) {
       removeCondition(attacker, 'santuario');
       this.say('magia', `${attacker.name} ataca e perde o Santuário.`);
+    }
+    // Sem jogada de ataque: o alvo testa a resistencia (Olhar Apodrecedor).
+    if (p.teste) {
+      this.quebraInvisibilidade(attacker);
+      const t = p.teste;
+      const r = this.resistencia(target, t.save, t.dc);
+      const conta = `${ABILITY_NAME[t.save] ?? t.save} ${r.total} vs CD ${t.dc}`;
+      let dano = 0;
+      if (!r.success) {
+        dano = damageRoll(this.rng, p.damage).total;
+        this.say('ataque', `${attacker.name} usa ${p.name} em ${target.name}: ${dano} de dano ${p.type}.`, conta);
+        this.applyDamage(target, dano, p.type, attacker, { magico: !!t.magico });
+      } else {
+        this.say('ataque', `${attacker.name} usa ${p.name} em ${target.name}, que resiste.`, conta);
+      }
+      this.onEvent({ type: 'attack', attacker, target, hit: !r.success, ranged: p.ranged, damageType: p.type,
+        weaponName: p.name, art: p.art, damage: dano, rolagem: null, modo: 'normal', vantagens: [], desvantagens: [], motivos: [], teste: true });
+      return { hit: !r.success, teste: true };
     }
     // Muralha de Vento: o projétil de arma que cruza o vento erra, sem rolar.
     if (p.ranged && this.muralhaNoCaminho(attacker.pos, target.pos)) {
@@ -2563,7 +2633,7 @@ export class Encounter {
     // Proteção contra Lâminas: resistência que só vale contra golpe de arma.
     const porCondicao = (target.conditions ?? []).some((c) => {
       const def = CONDITIONS[c.id];
-      if (def?.resisteTudo) return true;
+      if (def?.resisteTudo && !def.resisteTudoExceto?.includes(type)) return true;
       if (def?.resisteTipoDado && c.data?.tipo === type) return true;
       return def?.resiste?.includes(type) && (!def.soDeArma || deArma);
     });
@@ -2682,6 +2752,12 @@ export class Encounter {
       this.say('dano', `${target.name} é ${como} a ${type}: ${bruto} vira ${amount}.`);
     }
     if (amount <= 0) return;
+    // Amizade Animal acaba se o grupo fere a fera (inclusive com dano de área).
+    if (target.amizadeAnimal && source?.side === 'party') {
+      delete target.amizadeAnimal;
+      target.side = 'foes';
+      this.say('aviso', `${target.name} sente a dor e a amizade se desfaz: volta a rosnar.`);
+    }
     if (doElo) this.danoDoElo(doElo, amount, type, source);
 
     // JÁ CAÍDO. Dano em quem está a 0 PV não é uma queda nova: é uma falha no
@@ -3189,6 +3265,8 @@ export class Encounter {
         const casa = { x: actor.pos.x + r((dx * i) / n), y: actor.pos.y + r((dy * i) / n) };
         // Para na parede; caixote e carroça dão cobertura, não param o raio.
         if (!this.field.inside(casa.x, casa.y) || this.field.blocksSight(casa.x, casa.y)) break;
+        const antes = linha[linha.length - 1] ?? actor.pos;
+        if (!this.field.passa(antes.x, antes.y, casa.x, casa.y, 'visao')) break;
         linha.push(casa);
       }
       // Lufada de Vento: 3 m de largura são duas casas, a segunda ao lado.
@@ -3227,6 +3305,7 @@ export class Encounter {
           const y = cur.y + dy;
           if (!this.field.inside(x, y) || this.field.blocksSight(x, y)) continue;
           if (dx && dy && this.field.blocksSight(cur.x + dx, cur.y) && this.field.blocksSight(cur.x, cur.y + dy)) continue;
+          if (!this.field.passa(cur.x, cur.y, x, y, 'visao')) continue;
           const k = key(x, y);
           if (vistos.has(k)) continue;
           vistos.set(k, cur.d + 1);
@@ -4460,6 +4539,11 @@ export class Encounter {
     if (this.side === c.side && (c.magiasNoTurno ?? []).some((m) => m.castTime === 'bonus')) return null;
     if (!magiasProntas(c).includes(id)) return null;
     const spell = getSpell(id);
+    // Item que conjura por cargas (o Cajado de Defesa do Cajavidro): primeiro
+    // as cargas, depois o espaco.
+    const cajado = c.spellcasting.cajado;
+    const custo = cajado?.magias?.[id];
+    if (custo) return cajado.cargas >= custo ? { spell, circulo: spell.level, cajado: custo } : null;
     const circulo = this.circuloDeConjuracao(c, spell);
     return circulo === null ? null : { spell, circulo };
   }
@@ -4471,11 +4555,14 @@ export class Encounter {
    */
   escudoArcano(alvo, atacante, total, ca) {
     const pode = this.podeReagirCom(alvo, 'escudoArcano');
-    if (!pode || total >= ca + 5) return false;
+    // Já erguido: um segundo escudo não soma (a CA já tem o +5).
+    if (!pode || total >= ca + 5 || hasCondition(alvo, 'escudoArcano')) return false;
     alvo.reactionUsed = true;
-    alvo.spellcasting.slots[pode.circulo] -= 1;
+    if (pode.cajado) alvo.spellcasting.cajado.cargas -= pode.cajado;
+    else alvo.spellcasting.slots[pode.circulo] -= 1;
     this.aplicarCondicao(alvo, 'escudoArcano', { rounds: 1, source: alvo.id, lado: alvo.side, quando: 'inicio' });
-    this.say('magia', `${alvo.name} ergue o Escudo Arcano (reação): CA ${ca + 5}, o ataque de ${atacante.name} erra.`);
+    const doCajado = pode.cajado ? ` do cajado (${alvo.spellcasting.cajado.cargas} cargas)` : '';
+    this.say('magia', `${alvo.name} ergue o Escudo Arcano${doCajado} (reação): CA ${ca + 5}, o ataque de ${atacante.name} erra.`);
     this.onEvent({ type: 'spell', caster: alvo, spell: pode.spell, target: alvo, point: alvo.pos, circulo: pode.circulo });
     return true;
   }
@@ -4930,6 +5017,7 @@ export class Encounter {
           if (!this.field.inside(x, y) || this.field.blocksMove(x, y) || this.occupied(x, y, alvo)) livre = false;
         }
       }
+      if (livre && !this.field.passaPegada(alvo.pos.x, alvo.pos.y, nx, ny, f)) livre = false;
       if (!livre) break;
       alvo.pos = { ...alvo.pos, x: nx, y: ny };
       caminho.push({ ...alvo.pos });
@@ -5060,7 +5148,7 @@ export class Encounter {
   /** O que impede ESTE item neste alvo. `null` = pode. */
   vetoDeItem(actor, dados, target) {
     if (dados.consumivel === 'curar' || dados.consumivel === 'estabilizar') {
-      if (target !== actor && !isAdjacent(actor.pos, target.pos)) {
+      if (target !== actor && !this.field.vizinhos(actor.pos, target.pos)) {
         return `${target.name} está longe demais — é preciso estar encostado`;
       }
     }
@@ -5172,7 +5260,7 @@ export class Encounter {
    * haver espaço de magia sobrando morre, e o grupo não tem o que fazer.
    */
   stabilize(actor, target) {
-    if (actor.actionUsed || actor.acaoLimitada || !isAdjacent(actor.pos, target.pos)) return false;
+    if (actor.actionUsed || actor.acaoLimitada || !this.field.vizinhos(actor.pos, target.pos)) return false;
     if (!hasCondition(target, 'inconsciente') || target.stable || target.dead) return false;
     actor.actionUsed = true;
 

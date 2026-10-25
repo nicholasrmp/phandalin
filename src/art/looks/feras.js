@@ -170,6 +170,24 @@ export const FERAS_LOOKS = {
     leather: '#8f5f66', metal: '#efe6cc', eyes: '#ffc24a',
   },
 
+  // FAMILIARES (Convocar Familiar): os mesmos planos do rato e do morcego gigantes, recoloridos.
+  // Um espírito chamado por magia não tem o pardo morto de bicho de esgoto: o rato é creme e
+  // castanho-claro, com o rosa da pele nua mais vivo, e o morcego é um marrom-ouro de membrana
+  // clara, com olhos de brasa. A silhueta é a do plano, de propósito: lê como "o rato" e "o
+  // morcego" do jogo, só que menores e de cor própria.
+  familiarRat: {
+    plan: 'feras',
+    fera: 'ratoGigante',
+    hair: '#c9b48a', outfitDark: '#8e7a58', trim: '#f2ead2',
+    leather: '#f0b4b0', metal: '#fff6dc', eyes: '#7ad8ff',
+  },
+  familiarBat: {
+    plan: 'feras',
+    fera: 'morcegoGigante',
+    hair: '#7a5a3a', outfitDark: '#4a3422', trim: '#c8a070',
+    leather: '#b88a54', metal: '#fff0cc', eyes: '#7ad8ff',
+  },
+
   // SILHUETA: quatro lâminas membranosas esticadas em cruz em volta de um
   // corpo minúsculo, com uma agulha reta de ponta virada saindo à frente da
   // cabeça e uma cauda fina encurvada por baixo.

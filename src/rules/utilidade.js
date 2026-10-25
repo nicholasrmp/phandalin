@@ -73,7 +73,37 @@ export const UTIL = {
   detectarPensamentos: { alvo: 'area', min: 1, conc: true, efeito: 'pensamentos', dialogo: true },
   verOInvisivel: { alvo: 'si', min: 60, efeito: 'verInvisivel' },
   falarComOsMortos: { alvo: 'morto', min: 10, efeito: 'mortos' },
+  // Lote 14.
+  salto: { alvo: 'aliado', cond: 'saltoTriplo', min: 1 },
+  alarme: { alvo: 'area', min: 480, efeito: 'alarme', ritual: true },
+  detectarBemMal: { alvo: 'area', min: 10, conc: true, efeito: 'detectarBemMal' },
+  encontrarArmadilhas: { alvo: 'area', efeito: 'armadilhas', gancho: 'armadilha' },
+  zonaDaVerdade: { alvo: 'criatura', min: 10, efeito: 'zona', save: 'cha', dialogo: true, alcance: 60 },
+  localizarObjeto: { alvo: 'objeto', min: 10, conc: true, efeito: 'localizar', gancho: 'procurado' },
+  linguas: { alvo: 'si', min: 60, efeito: 'idiomas', dialogo: true },
+  alterarAparencia: { alvo: 'si', min: 60, conc: true, efeito: 'disfarce', dialogo: true },
+  cativar: { alvo: 'area', min: 1, efeito: 'cativar', save: 'wis', dialogo: true },
+  amizadeAnimal: { alvo: 'feras', min: 1440, efeito: 'amizadeAnimal', save: 'wis' },
+  sentidosDaFera: { alvo: 'bicho', min: 60, conc: true, efeito: 'sentidos', ritual: true },
+  fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
+  falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
+  encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
 };
+
+/** Os bichos que Convocar Familiar chama: a ficha mora em `monsters/feras.js`. */
+export const FAMILIARES = {
+  rato: { defId: 'ratoFamiliar', nome: 'Rato', maxHp: 1 },
+  morcego: { defId: 'morcegoFamiliar', nome: 'Morcego', maxHp: 1 },
+};
+/** Tipos que Detectar o Bem e o Mal sente, e de que lado da balança cada um cai. */
+export const TIPOS_BEM_MAL = {
+  celestial: 'bem', elemental: 'neutro', 'feérico': 'neutro', fada: 'neutro',
+  corruptor: 'mal', 'morto-vivo': 'mal', 'aberração': 'mal', aberracao: 'mal',
+};
+/** Quantos pés vale o "9 m" do Detectar o Bem e o Mal. */
+export const ALCANCE_BEM_MAL = 30;
+/** Raio, em pés, em que o Alarme avisa (a cena inteira do acampamento). */
+export const RAIO_DO_ALARME = 60;
 
 /** Os ids das magias que têm uso fora do combate. */
 export const UTIL_FORA = new Set(Object.keys(UTIL));
@@ -145,6 +175,11 @@ export function encerrar(estado, a, herois, { texto = null } = {}) {
     }
   }
   if (dono?.concentrating?.ativaId === a.n) dono.concentrating = null;
+  // Cativar solta os cativos; Amizade Animal devolve a fera ao lado de onde veio.
+  for (const m of a.criaturas ?? []) {
+    if (a.efeito === 'cativar') removeCondition(m, 'cativado');
+    if (a.efeito === 'amizadeAnimal' && m.amizadeAnimal && !m.dead) { m.side = 'foes'; delete m.amizadeAnimal; }
+  }
   // Amizade e Enfeitiçar Pessoa: quem foi influenciado percebe, e não perdoa.
   if ((a.efeito === 'amizade' || a.efeito === 'enfeiticar') && a.npc) {
     const n = (estado.npcs[a.npc] ??= {});
@@ -241,6 +276,9 @@ export function motivoDeMortoMudo(corpo) {
   if (SEM_VOZ.has(corpo.defId) || corpo.semBoca) return 'o corpo não tem boca: não há como falar';
   return null;
 }
+/** Imune a enfeitiçado (bloco ou magia): o encanto nem tenta. */
+const imuneAEncanto = (m) => (m.conditionImmunities ?? []).some((i) => i === 'enfeitiçado' || i === 'enfeiticado')
+  || (m.conditions ?? []).some((k) => CONDITIONS[k.id]?.imuneA?.includes('enfeiticado'));
 const humanoide = (npc) => (npc.tipo ?? 'humanoide') === 'humanoide';
 /** Um NPC solto da vila não tem ficha: vale como alguém comum (todos os atributos 10). */
 const comFicha = (npc) => (npc.abilities ? npc : { ...npc, abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } });
@@ -255,7 +293,7 @@ const comFicha = (npc) => (npc.abilities ? npc : { ...npc, abilities: { str: 10,
  *   alvo     herói, NPC ou item (id) conforme a magia
  *   opcao    o efeito escolhido (Prestidigitação, Aprimorar Atributo)
  */
-export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, ritual = false, alvo = null, opcao = null, ponto = null, enc = null } = {}) {
+export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, ritual = false, alvo = null, opcao = null, ponto = null, enc = null, criaturas = [], dados = null } = {}) {
   const chk = podeConjurarFora(c, spellId, { circulo, ritual });
   if (!chk.ok) return chk;
   const { spell } = chk;
@@ -271,6 +309,15 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     if (u.naoHostil && (alvo.side === 'foes' && alvo.emLuta)) return { ok: false, why: 'ele está em luta contra vocês' };
     if (u.alcance == null && c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > spell.rangeFt) return { ok: false, why: `longe demais — ${spell.name} alcança ${spell.rangeFt} pés` };
     if (u.alcance != null && c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > u.alcance) return { ok: false, why: `longe demais — ${spell.name} alcança ${u.alcance} pés` };
+  }
+  if (u.alvo === 'bicho') {
+    if (!alvo) return { ok: false, why: 'escolha um bicho' };
+    if (alvo.dead || (alvo.tipo !== 'fera' && !alvo.familiar)) return { ok: false, why: 'precisa de uma fera disposta' };
+    if (alvo.side === 'foes') return { ok: false, why: 'a fera tem de estar disposta (do seu lado ou neutra)' };
+  }
+  if (u.alvo === 'feras') {
+    const bons = criaturas.filter(eFeraAmansavel);
+    if (!bons.length) return { ok: false, why: 'nenhuma fera ao alcance (Inteligência 3 ou menos)' };
   }
   if (u.alvo === 'aliado' && !alvo) alvo = c;
   if (u.alvo === 'aliado' && (alvo.dead || alvo.side !== 'party')) return { ok: false, why: 'só em aliado' };
@@ -325,6 +372,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
 
   let alvosIds = [];
   const aplicados = [];
+  const afetadas = [];
   if (!resultado.resistiu) {
     if (u.cond) {
       let alvos = [];
@@ -370,6 +418,40 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.corpo = alvo;
     }
     if (u.efeito === 'truque') resultado.truque = truque(estado, c, spellId, opcao, alvo, rng);
+    if (u.efeito === 'amizadeAnimal') {
+      // Uma fera por círculo (1º círculo = 1, 2º = 2…); cada uma resiste por SABEDORIA.
+      const dc = spellSaveDc(c);
+      const limite = chk.circulo - spell.level + 1;
+      resultado.dc = dc;
+      resultado.feras = criaturas.filter(eFeraAmansavel).slice(0, limite).map((m) => {
+        if (imuneAEncanto(m)) return { m, total: null, resistiu: true, imune: true };
+        if (c.pos && m.pos && distanceFt(c.pos, m.pos) > spell.rangeFt) return { m, total: null, resistiu: true, longe: true };
+        const r = d20(rng, saveBonus(comFicha(m), 'wis'));
+        const resistiu = r.total >= dc;
+        if (!resistiu) { m.side = 'neutro'; m.amizadeAnimal = c.id; afetadas.push(m); }
+        return { m, total: r.total, resistiu };
+      });
+      resultado.resistiu = afetadas.length === 0;
+    }
+    if (u.efeito === 'cativar') {
+      // Quem ouve e vê, menos os do grupo: SABEDORIA ou só tem olhos para o conjurador.
+      const dc = spellSaveDc(c);
+      resultado.dc = dc;
+      resultado.cativos = criaturas.filter((m) => !m.dead && m.hp > 0 && m.side !== 'party'
+        && !(c.pos && m.pos && distanceFt(c.pos, m.pos) > spell.rangeFt)).map((m) => {
+        if (imuneAEncanto(m)) return { m, total: null, resistiu: true, imune: true };
+        const r = d20(rng, saveBonus(comFicha(m), 'wis'));
+        const resistiu = r.total >= dc;
+        if (!resistiu) { addCondition(m, 'cativado', { rounds: Infinity, source: c.id }); afetadas.push(m); }
+        return { m, total: r.total, resistiu };
+      });
+      resultado.resistiu = afetadas.length === 0;
+    }
+    if (u.efeito === 'familiar') {
+      const f = FAMILIARES[opcao] ?? FAMILIARES.rato;
+      estado.familiar = { defId: f.defId, opcao: opcao in FAMILIARES ? opcao : 'rato', nome: f.nome, dono: c.id, hp: f.maxHp, maxHp: f.maxHp };
+      resultado.familiar = estado.familiar;
+    }
   } else {
     // Resistiu: pelo livro, a Enfeitiçar Pessoa não deixa marca; ele só sabe quando a magia acaba (ver `encerrar`).
   }
@@ -380,8 +462,12 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       n: ++estado.serial, spellId, nome: spell.name, por: c.id, circulo: chk.circulo, ritual: chk.ritual,
       inicio: estado.minutos, fim: estado.minutos + duracao, conc: Boolean(u.conc),
       alvos: alvosIds, npc: u.alvo === 'criatura' || u.alvo === 'morto' ? chaveDoNpc(alvo) : null,
-      cond: u.cond ?? null, efeito: u.efeito ?? null, data: opcao ? { opcao } : null,
+      cond: u.cond ?? null, efeito: u.efeito ?? null,
+      data: opcao || dados ? { ...(opcao ? { opcao } : {}), ...(dados ?? {}) } : null,
     };
+    // As criaturas afetadas (Cativar, Amizade Animal) ficam fora do JSON da campanha.
+    if (afetadas.length) Object.defineProperty(ativa, 'criaturas', { value: afetadas, enumerable: false, writable: true });
+    if (u.alvo === 'bicho' && alvo) ativa.data = { ...(ativa.data ?? {}), bicho: alvo.id };
     estado.ativas.push(ativa);
     if (u.conc) {
       c.concentrating = { spellId, condition: u.cond ?? null, targets: aplicados, rounds: duracao * 10, ativaId: ativa.n, fora: true };
@@ -444,6 +530,11 @@ function truque(estado, c, spellId, opcao, alvo, rng) {
 
 /** Os efeitos que cada truque oferece (o jogador escolhe). */
 export const TRUQUES = {
+  // Convocar Familiar: a forma do bicho (só as duas que a arte do jogo tem).
+  encontrarFamiliar: [
+    { id: 'rato', rotulo: 'Um rato', detalhe: 'miúdo e farejador; entra por qualquer fresta' },
+    { id: 'morcego', rotulo: 'Um morcego', detalhe: 'miúdo; voa por cima de fossos e escuta através da parede' },
+  ],
   prestidigitacao: [
     { id: 'tocha', rotulo: 'Acender ou apagar uma tocha', detalhe: 'sem pederneira, de graça' },
     { id: 'limpar', rotulo: 'Limpar ou sujar algo', detalhe: 'uma peça de roupa, um cubo de 30 cm' },
@@ -480,6 +571,7 @@ export function modificadores(estado, herois, quem, pericia, { npc = null } = {}
   if (hab === 'cha' && npc && ativaDe(estado, herois, 'amizade', { por: quem, npc })) vant('Amizade');
   if (hab === 'cha' && npc && ativaDe(estado, herois, 'enfeiticarPessoa', { por: quem, npc })) vant('Enfeitiçar Pessoa');
   if (pericia === 'enganacao' && meu('disfarcarSe')) vant('Disfarçar-se');
+  if (pericia === 'enganacao' && meu('alterarAparencia')) vant('Alterar Aparência');
   if (pericia === 'enganacao' && meu('ilusaoMenor')) vant('Ilusão Menor (distração)');
   if (pericia === 'lidarComAnimais' && meu('falarComAnimais')) vant('Falar com Animais');
   if (npc && (pericia === 'persuasao' || pericia === 'enganacao') && estado.npcs[key]?.sondado) vant('mente sondada');
@@ -603,11 +695,49 @@ export function sondarMente(estado, herois, c, npc, rng) {
 
 // ---------------------------------------------------------- consultas ----
 
-/** O grupo entende o idioma? (Compreender Idiomas ativa em alguém.) */
+/** O grupo entende o idioma? (Compreender Idiomas ou Línguas ativa em alguém.) */
 export const entendeIdiomas = (estado, herois) => Boolean(ativasDoGrupo(estado, herois).find((a) => a.efeito === 'idiomas'));
 
-/** Há alguém do grupo vestido de outra pessoa (Disfarçar-se)? */
-export const disfarcado = (estado, herois, c) => Boolean(ativaDe(estado, herois, 'disfarcarSe', { por: c }));
+/** O grupo FALA o idioma (Línguas)? Compreender Idiomas só entende. */
+export const falaIdiomas = (estado, herois) => Boolean(ativasDoGrupo(estado, herois).find((a) => a.spellId === 'linguas'));
+
+/** Uma magia de pé no grupo, contando as que valem por ela (Línguas vale por Compreender Idiomas). */
+const VALE_POR = { compreenderIdiomas: ['linguas'], disfarcarSe: ['alterarAparencia'] };
+export function temMagia(estado, herois, id, filtro = {}) {
+  return [id, ...(VALE_POR[id] ?? [])].some((i) => ativaDe(estado, herois, i, filtro));
+}
+
+/** Há alguém do grupo vestido de outra pessoa (Disfarçar-se ou Alterar Aparência)? */
+export const disfarcado = (estado, herois, c) => Boolean(disfarceDe(estado, herois, c));
+/** A magia de disfarce de pé de `c`, ou null. */
+export const disfarceDe = (estado, herois, c) => ativaDe(estado, herois, 'disfarcarSe', { por: c }) ?? ativaDe(estado, herois, 'alterarAparencia', { por: c });
+
+/** A criatura está sob a Zona da Verdade (não consegue mentir)? */
+export const sobZona = (estado, herois, npc) => Boolean(ativaDe(estado, herois, 'zonaDaVerdade', { npc }));
+/** A criatura está cativada (não grita, não chama ajuda)? */
+export const estaCativado = (m) => hasCondition(m, 'cativado');
+
+/** Uma fera que a Amizade Animal pega: tipo fera, Inteligência 3 ou menos, viva e não do grupo. */
+export const eFeraAmansavel = (m) => Boolean(m) && m.tipo === 'fera' && (m.abilities?.int ?? 10) <= 3 && !m.dead && m.hp > 0 && m.side !== 'party';
+
+/**
+ * O Alarme avisa quem está perto da marca, na cena onde foi lançado. Devolve a magia
+ * ativa que cobre `pos` em `lugar`, ou null.
+ */
+export function alarmeCobre(estado, herois, lugar, pos) {
+  if (lugar == null) return null;
+  return ativasDoGrupo(estado, herois).find((a) => a.spellId === 'alarme' && a.data?.cena === lugar && a.data?.ponto
+    && distanceFt(a.data.ponto, pos) <= RAIO_DO_ALARME) ?? null;
+}
+
+/** O lado da balança de uma criatura para o Detectar o Bem e o Mal: 'bem' | 'mal' | 'neutro' | null (não sente). */
+export const ladoBemMal = (m) => TIPOS_BEM_MAL[m?.tipo] ?? null;
+
+/** As criaturas que o Detectar o Bem e o Mal de `dono` sente agora, entre `criaturas`. */
+export function sentidasPorBemMal(estado, herois, dono, criaturas) {
+  if (!ativaDe(estado, herois, 'detectarBemMal', { por: dono })) return [];
+  return criaturas.filter((m) => !m.dead && m.side !== 'party' && ladoBemMal(m) && m.pos && distanceFt(dono.pos, m.pos) <= ALCANCE_BEM_MAL);
+}
 
 /** A Mensagem permite falar com este NPC longe (até 36 m)? */
 export const falaPorMensagem = (estado, herois, npc) => Boolean(ativaDe(estado, herois, 'mensagem', { npc }));

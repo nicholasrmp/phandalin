@@ -323,7 +323,8 @@ export const NPCS = {
     look: 'iarno',
     papel: 'Mago contratado que virou chefe de bando',
     bloco: 'cajavidro',
-    fonte: 'propria',
+    // a ficha de combate é a do livro da aventura (`monsters/humanoides.js`)
+    fonte: 'aventura',
     atitude: 'hostil',
     personalidade: {
       quer: 'Mandar em algo pequeno o suficiente para ninguém de fora vir conferir.',
@@ -331,7 +332,7 @@ export const NPCS = {
       fala: 'Cortês e condescendente, usa o título antigo. Oferece acordo primeiro, porque gosta mais de ser aceito que de vencer.',
     },
     frase: 'Eu fui enviado para trazer a lei. Eu trouxe. A lei agora é minha.',
-    blurb: 'Luta de longe atrás da armadura arcana, com raio de gelo; com 8 PV ou menos e encurralado, se rende.',
+    blurb: 'Prende o mais forte com Imobilizar Pessoa, solta Mísseis Mágicos de longe e some com Passo Nebuloso; sem fuga e com 8 PV ou menos, se rende.',
   },
 
   nezznar: {

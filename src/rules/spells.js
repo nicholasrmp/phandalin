@@ -992,7 +992,7 @@ export const SPELLS = {
   },
   luzesDancantes: {
     id: 'luzesDancantes', name: 'Luzes Dançantes', level: 0, school: 'evocação', fonte: 'srd', soFora: true, utilidade: true,
-    castTime: 'action', rangeFt: 120, kind: 'utilidade', concentration: true, duracaoMin: 1,
+    castTime: 'action', rangeFt: 60, kind: 'utilidade', duracaoMin: 1,
     desc: 'Até quatro luzinhas flutuam ao seu redor, fraquinhas: cada uma emite só penumbra num raio de 3 m, por 1 minuto. Concentração. (Simplificação: no jogo as luzes acompanham quem conjurou, sem mover-se à parte. Só fora de combate; no escuro, vale como uma tocha pequena que não ocupa a mão.)',
   },
   mensagem: {
@@ -1089,6 +1089,83 @@ export const SPELLS = {
       id, rotulo: { celestial: 'Celestiais', elemental: 'Elementais', 'feérico': 'Feéricos', corruptor: 'Corruptores', 'morto-vivo': 'Mortos-vivos' }[id], detalhe: 'não entram, atacam com desvantagem e não enfeitiçam nem amedrontam quem está dentro',
     })),
     desc: 'Um cilindro de 3 m de raio e 6 m de altura, centrado num ponto a até 3 m, dura 1 hora. Você escolhe um tipo: celestial, elemental, feérico, corruptor ou morto-vivo. Criaturas desse tipo não entram nele por vontade própria (quem já está dentro pode sair), têm desvantagem em ataques contra quem está dentro e não podem enfeitiçar nem amedrontar quem está dentro. (Simplificações: o livro leva 1 minuto para conjurar e permite também prender a criatura dentro do círculo; no jogo é uma ação e só vale a proteção contra o tipo. Quem é jogado para dentro à força ou teleportado não é barrado. Sem os 100 po de prata e ferro. Nos níveis acima do 3º a duração não cresce: o jogo já deixa o encontro inteiro coberto.)',
+  },
+
+  // ---- lote 14: utilidade 2 (Livro do Jogador 2014; texto e simplificações nossos) ----
+  //
+  // Salto e Fingir de Morto valem também na luta (são `buff`); as outras são
+  // `soFora`, como as de `rules/utilidade.js`, onde mora o que cada uma faz na cena.
+
+  salto: {
+    id: 'salto', name: 'Salto', level: 1, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'saltoTriplo',
+    rodadasProprias: 10,
+    desc: 'Toque numa criatura: por 1 minuto, a distância de cada salto dela triplica. No jogo, vale no salto do tabuleiro, dentro e fora da luta: ele alcança três vezes mais longe (um fosso de 3 m deixa de ser problema) e pode pousar um nível acima de onde saiu. (Como no livro, cada pé saltado gasta um pé de deslocamento; sem concentração.)',
+  },
+  alarme: {
+    id: 'alarme', name: 'Alarme', level: 1, school: 'abjuração', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 30, kind: 'utilidade', duracaoMin: 480,
+    desc: 'Leva 1 minuto (ritual: 11). Você marca um lugar por 8 horas. Quando uma criatura Pequena ou maior entra nele sem dizer a senha, soa um aviso na sua cabeça. No jogo, quem está a até 18 m da marca ouve o aviso: numa emboscada daquela cena ninguém do grupo é pego de surpresa, e o registro diz que o alarme tocou. (Simplificações: o livro é um cubo de 6 m e o aviso é só para o conjurador, que acorda; aqui ele avisa o grupo, e vale na cena onde foi lançado, sem escolher entre aviso mental ou sonoro. Só fora de combate.)',
+  },
+  detectarBemMal: {
+    id: 'detectarBemMal', name: 'Detectar o Bem e o Mal', level: 1, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', concentration: true, duracaoMin: 10,
+    desc: 'Por 10 minutos você sente a presença e o lugar de aberrações, celestiais, elementais, feéricos, corruptores e mortos-vivos a até 9 m, mesmo atrás de parede. No jogo, essas criaturas acendem no mapa com uma luz (azul para o bem, vermelha para o mal) enquanto você se concentrar. (Simplificações: o livro bloqueia a magia com 30 cm de pedra, 2,5 cm de metal, uma chapa fina de chumbo ou 90 cm de madeira ou terra, e também sente lugares e objetos consagrados ou profanados; aqui nenhuma parede esconde e só vale para criaturas, e o jogo diz o tipo e o lado, nunca o nome. Só fora de combate.)',
+  },
+  encontrarArmadilhas: {
+    id: 'encontrarArmadilhas', name: 'Encontrar Armadilhas', level: 2, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 120, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Você sente se há armadilhas a até 36 m e à vista, e fica sabendo que perigo é, mas não como desarmá-las. No jogo, as armadilhas feitas de propósito que estão à vista (o fio do castelo, o fosso coberto) aparecem marcadas e, sabidas, o grupo passa por elas sem disparar; se não há nenhuma, a magia diz isso. Fraquezas naturais, como uma laje rachada, ela não vê. (Simplificação: o livro dá só a presença e o tipo de perigo, não o ponto exato; aqui o mapa crava o ponto. Só fora de combate.)',
+  },
+  zonaDaVerdade: {
+    id: 'zonaDaVerdade', name: 'Zona da Verdade', level: 2, school: 'encantamento', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 60, kind: 'utilidade', duracaoMin: 10,
+    desc: 'Por 10 minutos, quem está na esfera de 4,5 m de raio e falha numa resistência de CARISMA não consegue mentir (pode calar ou responder de lado). Você sabe se cada um resistiu. No jogo, vale para a criatura com quem você conversa: ela faz a resistência; se falha, as falas que seriam mentira saem verdadeiras (só as conversas que têm essa fala mudam; não há perguntas novas). (Simplificação: a esfera do livro pega todos nela; aqui ela acompanha o interlocutor da conversa. Quem resiste sabe que a magia tentou, e pode mentir. Só fora de combate.)',
+  },
+  localizarObjeto: {
+    id: 'localizarObjeto', name: 'Localizar Objeto', level: 2, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 1000, kind: 'utilidade', concentration: true, duracaoMin: 10,
+    desc: 'Por 10 minutos você sente a direção de um objeto que conhece (que já viu de perto) ou de um tipo de objeto (uma chave, um baú), o mais próximo, a até 300 m. No jogo, o texto diz a direção (em oito pontos) e se está perto ou longe, e o objeto fica marcado no mapa enquanto você se concentrar. (Simplificações: o livro dá só a direção e o mapa crava o ponto exato; a marca não acompanha o objeto se ele mudar de dono; a chapa fina de chumbo, que no livro bloqueia a magia, não conta aqui. Não acha criaturas. Só fora de combate.)',
+  },
+  linguas: {
+    id: 'linguas', name: 'Línguas', level: 3, school: 'adivinhação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Por 1 hora você entende qualquer idioma falado e fala qualquer idioma que conheça uma criatura que o ouça. No jogo, vale como Compreender Idiomas (ouve o que o goblin murmura) e, nas conversas que têm essa fala, dá para responder na língua deles (goblin, bugbear...), o que muda o que eles aceitam; hoje são duas falas, não um idioma livre. (Simplificação: no jogo é só você; o livro permite tocar outra criatura. Só fora de combate.)',
+  },
+  alterarAparencia: {
+    id: 'alterarAparencia', name: 'Alterar Aparência', level: 2, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', concentration: true, duracaoMin: 60,
+    desc: 'Por 1 hora você muda a própria forma: rosto, altura, roupa, voz, até a idade, dentro de um corpo humanoide. Concentração. No jogo, vale como Disfarçar-se (passa por um dos Marcarrubra, e como a mudança é real, não há exame de Investigação, ao contrário do Disfarçar-se). (Regra da casa: vantagem em Enganação enquanto durar. Simplificação: das três formas do livro, só a mudança de aparência; sem nadar nem armas naturais. Só fora de combate.)',
+  },
+  cativar: {
+    id: 'cativar', name: 'Cativar', level: 2, school: 'encantamento', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 60, kind: 'utilidade', duracaoMin: 1,
+    desc: 'Você tece uma conversa tão prendente que as criaturas à vista que o ouvem fazem uma resistência de SABEDORIA. Quem falha só tem olhos para você por 1 minuto, com desvantagem em Percepção para notar qualquer outra coisa. Sem concentração; acaba se você ficar incapacitado ou calar. Criatura imune a enfeitiçado não é afetada. Alcance de 18 m. No jogo, quem está cativado não grita nem dá o alarme (não chama ajuda) e é pego de surpresa mais fácil (Percepção passiva −5, que vale contra qualquer um, não só contra você). (Regra da casa: o livro não impede o grito, só prende a atenção. Só fora de combate.)',
+  },
+  amizadeAnimal: {
+    id: 'amizadeAnimal', name: 'Amizade Animal', level: 1, school: 'encantamento', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1440,
+    desc: 'Uma fera (Inteligência 3 ou menos) a até 9 m, à vista, faz uma resistência de SABEDORIA; falhando, fica convencida de que você não é ameaça e não ataca por 24 horas, até você ou um aliado ferir qualquer fera dessas. +1 fera por círculo acima do 1º. (Simplificação: no jogo, a fera enfeitiçada fica neutra e sai das fileiras inimigas; os lobos acorrentados do esconderijo deixam de rosnar. Só fora de combate.)',
+  },
+  sentidosDaFera: {
+    id: 'sentidosDaFera', name: 'Sentidos da Fera', level: 2, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', concentration: true, duracaoMin: 60,
+    desc: 'Você toca uma fera disposta e, por 1 hora, enquanto se concentrar, pode usar a ação para ver e ouvir pelos sentidos dela, ficando cego e surdo ao seu redor. No jogo: com o seu familiar ou uma fera amiga por perto, você escolhe uma casa do mapa e o bicho vai espiar, e você fica sabendo quem está lá (as criaturas aparecem marcadas no mapa por um tempo). Pode ser ritual. (Simplificação: o bicho vai espiar a uma casa a até 18 m dele e volta; o livro deixa você ficar nos olhos dele o tempo todo. Só fora de combate.)',
+  },
+  fingirDeMorto: {
+    id: 'fingirDeMorto', name: 'Fingir de Morto', level: 3, school: 'necromancia', fonte: 'srd', ritual: true,
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
+    desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
+  },
+  falarComPlantas: {
+    id: 'falarComPlantas', name: 'Falar com Plantas', level: 3, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 10,
+    desc: 'Por 10 minutos você conversa com as plantas num raio de 9 m. Elas contam o que passou por ali (quem pisou, quem se escondeu). No jogo, onde há mato, árvore ou espinheiro, a opção "Perguntar às plantas" (clicando em você) revela quem está escondido por perto. (Simplificações: as plantas só dizem o que viram de gente e bicho; o pedido do livro de mudar o terreno (atrapalhar ou abrir caminho) fica para o Crescer Plantas. Só fora de combate.)',
+  },
+  encontrarFamiliar: {
+    id: 'encontrarFamiliar', name: 'Convocar Familiar', level: 1, school: 'conjuração', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 10, rangeFt: 10, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Você chama um espírito em forma de bicho miúdo (rato ou morcego) que obedece e serve de olho e ouvido seu. Não ataca; se cai a 0 PV, some e você refaz a magia. Só um por vez. No jogo, ele entra no tabuleiro e no painel do grupo e é a fera disposta de Sentidos da Fera. (Simplificações: o livro leva 1 hora e 10 po de incenso; aqui são 10 minutos, de graça; só rato e morcego, os dois que a arte do jogo tem; o familiar acompanha o grupo de cena em cena, com os PV que tinha. Sem entrega de magias de toque.)',
   },
 
 };

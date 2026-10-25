@@ -393,6 +393,7 @@ export class Hud {
     if (atacante.side === alvo.side) return null;
     if (atacante.dead || hasCondition(atacante, 'inconsciente')) return null;
     if (alvo.dead) return null;
+    if (atacante.attacks && !atacante.attacks.length) return null;   // o familiar não ataca
     const weaponId = mode?.kind === 'attack' ? mode.weaponId : null;
     return previsaoDeAtaque(enc, atacante, alvo, weaponId);
   }
@@ -623,7 +624,7 @@ export class Hud {
       const previsao = this.previsaoContra(enc, selected, c, mode);
       const numero = c.invocado ? /(\d+)$/.exec(c.name)?.[1] : null;
       const node = el('div', {
-        class: `vez${ativo ? ' agora' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${selected === c ? ' alvo' : ''}`,
+        class: `vez${ativo ? ' agora' : ''}${c.acted && !c.familiar ? ' agiu' : ''}${down ? ' down' : ''}${selected === c ? ' alvo' : ''}`,
       },
         el('div', { class: 'vez-retrato' }, retrato, numero ? el('span', { class: 'vez-num' }, numero) : null),
         el('div', { class: 'vez-pv' }, el('i', { style: { width: `${fracao * 100}%` } })),
@@ -637,7 +638,7 @@ export class Hud {
           ...this.linhasDePrevisao(previsao, selected, c),
           this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
         ],
-        aviso: down ? 'Fora de combate' : this.avisoDePrevisao(previsao) ?? (c.acted ? 'Já agiu nesta rodada' : null),
+        aviso: down ? 'Fora de combate' : this.avisoDePrevisao(previsao) ?? (c.acted && !c.familiar ? 'Já agiu nesta rodada' : null),
       });
     };
 
@@ -702,6 +703,12 @@ export class Hud {
     }, auto ? 'Agir sozinho' : 'Controlar');
   }
 
+  /** O deslocamento do familiar em palavras: o morcego voa, o rato anda. */
+  deslocamentoDoFamiliar(c) {
+    const voo = c.speeds?.flyFt;
+    return voo ? `voa ${voo} pés` : `anda ${c.speedFt || 20} pés`;
+  }
+
   /** O atalho do dono, junto do "Terminar turno": todos os invocados dele de uma vez. */
   botaoAutoDoDono(dono) {
     const enc = this.enc;
@@ -732,7 +739,7 @@ export class Hud {
     const eter = hasCondition(c, 'etereo');
     const numero = c.invocado ? /(\d+)$/.exec(c.name)?.[1] : null;
     const node = el('button', {
-      class: `ficha${selected === c ? ' on' : ''}${c.acted ? ' agiu' : ''}${down ? ' down' : ''}${c.invocado ? ' invocado' : ''}${eter ? ' etereo' : ''}`,
+      class: `ficha${selected === c ? ' on' : ''}${c.acted && !c.familiar ? ' agiu' : ''}${down ? ' down' : ''}${c.invocado ? ' invocado' : ''}${eter ? ' etereo' : ''}`,
       onclick: () => this.handlers.onSelect?.(c),
       // A ficha do grupo é o ponto mais clicado da tela e só selecionava.
       ondblclick: () => this.handlers.onAbrirFicha?.(c),
@@ -742,7 +749,7 @@ export class Hud {
       el('div', { class: 'ficha-corpo' },
         el('strong', {}, c.name),
         el('span', { class: 'ficha-sub' }, c.invocado
-          ? `Invocado de ${donoNome}${getSpell(c.invocado.spellId).concentration ? ' · concentração' : ''}`
+          ? (c.familiar ? `Familiar de ${donoNome} · não ataca` : `Invocado de ${donoNome}${getSpell(c.invocado.spellId).concentration ? ' · concentração' : ''}`)
           : `${c.className} ${c.ancestry}`),
         eter ? el('span', { class: 'tarja-etereo' }, 'No Plano Etéreo') : null,
         c.invocado ? this.botaoAuto(c) : null,
@@ -752,7 +759,8 @@ export class Hud {
         down
           ? el('span', { class: 'ficha-morte' }, c.dead ? 'Morto' : `Morte ${c.deathSaves.successes}✓ ${c.deathSaves.failures}✗`)
           : null,
-        !down && enc.side === 'party' ? this.economiaDoCartao(c) : null,
+        // O familiar não ataca nem conjura: em vez de uma barra de ações apagada, uma linha que diz o que ele faz.
+        !down && enc.side === 'party' ? (c.familiar ? el('span', { class: 'ficha-sub' }, `${this.deslocamentoDoFamiliar(c)} · obedece, não ataca`) : this.economiaDoCartao(c)) : null,
         c.spellcasting
           ? el('div', { class: 'slots' }, c.spellcasting.slots.map((n, lvl) => (lvl === 0 || n === undefined ? null
             : el('span', { class: 'slot' }, `${lvl}º ${'◆'.repeat(n)}`))))
@@ -770,20 +778,20 @@ export class Hud {
 
     return this.ligarDica(node, {
       nome: c.name,
-      tipo: c.invocado ? `Invocado de ${donoNome} · ${c.ancestry} (${c.invocado.corpo ? `ergue-se de ${c.invocado.corpo}` : 'fera conjurada'})` : `${c.className} ${c.ancestry} · Nv ${c.level}`,
+      tipo: c.invocado ? `${c.familiar ? 'Familiar' : 'Invocado'} de ${donoNome} · ${c.ancestry} (${c.familiar ? 'espírito de bicho miúdo; obedece e não ataca' : c.invocado.corpo ? `ergue-se de ${c.invocado.corpo}` : 'fera conjurada'})` : `${c.className} ${c.ancestry} · Nv ${c.level}`,
       linhas: [
         c.invocado ? ['Controle', c.invocado.auto ? 'age sozinho (IA aliada)' : 'você comanda'] : null,
         eter ? ['No Plano Etéreo', 'volta no começo do próximo turno'] : null,
         ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
         ['Classe de armadura', String(c.ac)],
-        ['Deslocamento', `${Math.max(0, c.movementLeftFt ?? 0)} de ${c.speedFt || 30} pés`],
+        c.familiar ? ['Deslocamento', this.deslocamentoDoFamiliar(c)] : ['Deslocamento', `${Math.max(0, c.movementLeftFt ?? 0)} de ${c.speedFt || 30} pés`],
         restos.length ? ['Ainda tem', restos.join(', ')] : null,
         this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
       ],
       texto: down
         ? 'Fora de combate. Um aliado adjacente pode estabilizar com uma ação.'
         : c.invocado
-          ? (getSpell(c.invocado.spellId).concentration ? `Dura enquanto ${donoNome} se concentrar. ` : '') + 'Clique para comandar; o botão alterna entre controlar e agir sozinho.'
+          ? (c.familiar ? `Olho e ouvido de ${donoNome}; se cair a 0 PV, o espírito se vai. ` : getSpell(c.invocado.spellId).concentration ? `Dura enquanto ${donoNome} se concentrar. ` : '') + 'Clique para comandar; o botão alterna entre controlar e agir sozinho.'
           : 'Clique para assumir este personagem. Tab passa para o próximo que ainda não agiu.',
       aviso: down
         ? (c.dead ? 'Morto' : 'Inconsciente — rolando testes de morte')
@@ -829,11 +837,30 @@ export class Hud {
           ...this.linhasDePrevisao(previsao, selected, c),
           golpes ? ['Para derrubar', golpes] : null,
           this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
+          ...this.linhasDeConjurador(c),
         ],
         texto: c.blurb ?? (previsao ? null : 'Escolha um personagem à esquerda para ver a chance de acerto contra este inimigo.'),
         aviso: this.avisoDePrevisao(previsao) ?? (down ? 'Fora de combate' : null),
       },
     );
+  }
+
+  /**
+   * O que um inimigo conjurador ainda tem (o Cajavidro): as magias, os
+   * espaços que sobram em cada círculo e as cargas do item. É a ficha dele
+   * que o jogador vê gastar ao longo da luta.
+   */
+  linhasDeConjurador(c) {
+    const sc = c.spellcasting;
+    if (!sc || c.kind === 'pc') return [];
+    const nome = (id) => getSpell(id)?.name ?? id;
+    const linhas = [];
+    if (sc.cantrips?.length) linhas.push(['Truques', sc.cantrips.map(nome).join(', ')]);
+    if (sc.prepared?.length) linhas.push(['Magias', sc.prepared.map(nome).join(', ')]);
+    const espacos = (sc.slots ?? []).map((n, i) => (i > 0 ? `${i}º: ${n}` : null)).filter(Boolean);
+    if (espacos.length) linhas.push(['Espaços', espacos.join(' · ')]);
+    if (sc.cajado) linhas.push(['Cajado', `${sc.cajado.cargas} cargas`]);
+    return linhas;
   }
 
   // ---- barra de ação --------------------------------------------------------
@@ -1011,7 +1038,8 @@ export class Hud {
       const rot = prev ? this.rotuloDeChance(prev, alvo) : null;
 
       const linhas = [
-        ['Ataque', formatModifier(p.bonus)],
+        // Acao por teste (o Olhar Apodrecedor): sem bonus, a CD do alvo.
+        p.teste ? ['Teste', `${p.teste.save.toUpperCase()} CD ${p.teste.dc}`] : ['Ataque', formatModifier(p.bonus)],
         ['Dano', `${p.damage} ${p.type}`],
         ['Alcance', w.ranged ? `${w.rangeFt} pés (longo ${w.longRangeFt})` : `${w.reachFt ?? 5} pés`],
       ];
@@ -1139,6 +1167,14 @@ export class Hud {
     if (caido) {
       comum('estabilizar', `Estabilizar ${caido.name}`, 'Teste de Medicina CD 10. Impede a morte; não cura.', 'Ação',
         { kind: 'stabilize', targetId: caido.id }, c.actionUsed);
+    }
+
+    // Fingir de Morto: o conjurador toca o amigo que finge e desfaz a magia.
+    const fingido = enc.alliesOf(c).find((a) => !a.dead && isAdjacent(a.pos, c.pos)
+      && a.conditions?.some((k) => k.id === 'fingeMorto' && (!k.source || k.source === c.id)));
+    if (fingido) {
+      comum('estabilizar', `Acordar ${fingido.name}`, 'Toca o amigo e encerra Fingir de Morto.', 'Ação',
+        { kind: 'despertar', targetId: fingido.id }, c.actionUsed);
     }
 
     return tiles;
@@ -1499,19 +1535,6 @@ export class Hud {
     );
 
     this.viewBar.replaceChildren(
-      botao('↺', {
-        nome: 'Girar para a esquerda',
-        tipo: 'câmera',
-        texto: 'Gira a vista em 90°. A grade do jogo não muda — só o lado de onde você a vê, para destravar a peça escondida atrás da parede.',
-        atalho: 'Q',
-      }, () => this.handlers.onRotate?.(-1)),
-      botao('↻', {
-        nome: 'Girar para a direita',
-        tipo: 'câmera',
-        texto: 'Gira a vista em 90° no outro sentido.',
-        atalho: 'E',
-      }, () => this.handlers.onRotate?.(1)),
-      el('span', { class: 'divider' }),
       botao('－', {
         nome: 'Afastar',
         tipo: 'câmera',

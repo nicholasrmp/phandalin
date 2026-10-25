@@ -10,7 +10,8 @@
 // tabuleiro, o HUD e, um dia, a IA. E é PURA — não altera nada no encontro,
 // só lê. Pode ser chamada a cada quadro sem medo.
 
-import { caEfetiva } from './conditions.js';
+import { caEfetiva, conditionEffects } from './conditions.js';
+import { saveBonus } from './abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { averageOf } from '../core/dice.js';
 import { dadosDaMagia } from './spells.js';
@@ -47,6 +48,22 @@ export function chanceCritico({ advantage = false, disadvantage = false } = {}) 
  *   danoMedio: number, esperado: number, motivos: string[],
  * }}
  */
+/**
+ * A chance de o alvo FALHAR num teste de resistencia: o bonus dele, os fixos e
+ * a media dos dados das condicoes (Bencao, Perdicao, Elo de Protecao, Lentidao)
+ * e a vantagem ou desvantagem que `conditionEffects` declara.
+ */
+function chanceDeFalhar(alvo, hab, cd) {
+  const fx = conditionEffects(alvo);
+  let bonus = saveBonus(alvo, hab) + (fx.saveFixo?.[hab] ?? 0);
+  for (const dados of fx.saveBonusDice ?? []) bonus += averageOf(dados);
+  const passa = Math.min(1, Math.max(0, (21 - (cd - bonus)) / 20));
+  const vant = fx.vantagemTeste?.includes(hab) || (hab === 'dex' && fx.vantagemDex) || (hab === 'wis' && fx.vantagemSab);
+  const desv = fx.saveDisadvantage?.includes(hab) || fx.desvantagemTeste?.includes(hab);
+  const p = vant && !desv ? 1 - (1 - passa) ** 2 : desv && !vant ? passa ** 2 : passa;
+  return 1 - p;
+}
+
 export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
   const perfil = enc.weaponAttackProfile(attacker, weaponId);
   const dist = distanceFt(attacker.pos, target.pos);
@@ -71,8 +88,10 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
     reasons: alcanceLongo ? [...base.reasons, 'alcance longo'] : base.reasons,
   };
 
-  const chance = foraDeAlcance || semVisao ? 0 : chanceD20(perfil.bonus, caAlvo, mods);
-  const critico = foraDeAlcance || semVisao ? 0 : chanceCritico(mods);
+  // Acao por teste (o Olhar Apodrecedor): a chance e a de o ALVO falhar.
+  const falha = perfil.teste ? chanceDeFalhar(target, perfil.teste.save, perfil.teste.dc) : null;
+  const chance = foraDeAlcance || semVisao ? 0 : falha ?? chanceD20(perfil.bonus, caAlvo, mods);
+  const critico = foraDeAlcance || semVisao || perfil.teste ? 0 : chanceCritico(mods);
   const danoMedio = averageOf(perfil.damage);
 
   return {

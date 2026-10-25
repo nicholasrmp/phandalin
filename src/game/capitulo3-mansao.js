@@ -53,7 +53,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
 import { ctxDe } from './magias-fora.js';
-import { rolarTeste, disfarcado, ativaDe } from '../rules/utilidade.js';
+import { rolarTeste, disfarcado, disfarceDe, ativaDe } from '../rules/utilidade.js';
 
 const MOVIMENTO = 60;
 
@@ -285,8 +285,10 @@ export function criarMansao(app, config) {
     if (c.mantoVermelho) return true;
     const x = ctxDe(app, enc);
     if (!disfarcado(x.estado, herois(), c)) return false;
-    const a = ativaDe(x.estado, herois(), 'disfarcarSe', { por: c });
+    const a = disfarceDe(x.estado, herois(), c);       // Disfarçar-se ou Alterar Aparência
     if (!a) return false;
+    // Alterar Aparência muda o corpo de verdade: não há exame. Só o Disfarçar-se (ilusão) é examinado.
+    if (a.spellId === 'alterarAparencia') return true;
     if (!exame.has(a.n)) {
       const olhos = (grupos.cripta?.membros ?? []).filter((f) => f.side === 'foes' && !f.dead);
       const bonus = Math.max(...olhos.map((f) => abilityMod(f.abilities?.int ?? 10)), -5);
@@ -550,6 +552,9 @@ export function criarMansao(app, config) {
     // Derrubado sem morrer (golpe não letal) também fica preso.
     const caido = hasCondition(iarno, 'inconsciente');
     if (iarno.hp > 8 && !caido) return false;
+    // Ainda tem por onde sumir (Passo Nebuloso num espaço de 2º): tenta antes
+    // de se render (`conjurarNoTurno` em `rules/ai.js`).
+    if (!caido && (iarno.spellcasting?.slots?.[2] ?? 0) > 0) return false;
     iarno.side = 'neutro';
     iarno.rendido = true;
     iarno.name = 'Iarno Albrek';
@@ -573,8 +578,20 @@ export function criarMansao(app, config) {
     return false;
   };
 
+  /** O bicho de Sentidos da Fera viu estas criaturas escondidas: elas já não pegam ninguém de surpresa. */
+  function espiou(criaturas) {
+    for (const g of Object.values(grupos)) {
+      if (g.membros.some((m) => criaturas.includes(m))) g.furtividade = g.furtividade.map(() => 0);
+    }
+  }
+
   function evento(ev) {
     if (ev.type === 'died' && ev.target === iarno) salvo.iarno = 'morto';
+    // Salto: quem pula o fosso de uma beirada à outra ganha o XP de passar por ele.
+    if (ev.type === 'moved' && ev.salto && ev.actor.side === 'party' && salvo.fossoVisto
+      && ((ev.from.x <= 22 && ev.to.x >= 25) || (ev.from.x >= 25 && ev.to.x <= 22)) && ev.to.y >= 9 && ev.to.y <= 10) {
+      void xpDoFosso();
+    }
     if (ev.type === 'moved' && ev.path?.length > 1) {
       estado.de.set(ev.actor, ev.path[ev.path.length - 2]);
       // Na luta, a armadilha dispara para qualquer um (fora dela, quem cuida
@@ -786,6 +803,7 @@ export function criarMansao(app, config) {
         const sup = f.surfaceAt(x, y);
         if (sup === 'cisterna' && NO_PORAO(p) && !salvo.bolsa) cisterna.push([x, y]);
         if (sup === 'bau' && NO_QUARTO(p) && !salvo.bauIarno) {
+          out.push({ id: 'bau-iarno-p', tipo: 'procurado', x, y, nome: 'Um baú (o mais próximo)' });
           out.push({
             id: 'bau-iarno', tipo: 'magico', x, y, nome: 'O baú do chefe',
             aura: { escola: 'encantamento e evocação', texto: 'Dois rolos de pergaminho lá dentro: um sussurra encantamento, o outro queima em evocação.' },
@@ -808,6 +826,23 @@ export function criarMansao(app, config) {
         id: 'cisterna-aura', tipo: 'magico', x: cx, y: cy, casas: cisterna, nome: 'A cisterna',
         aura: { escola: 'ilusão e evocação', texto: 'No fundo, algo pequeno e quieto brilha em duas cores: uma de ilusão, outra de evocação. Coisa de frasquinho, não de armadilha.' },
       });
+    }
+    // Lote 14: a armadilha do corredor (Encontrar Armadilhas) e o que Localizar Objeto acha.
+    out.push({
+      id: 'fosso', tipo: 'armadilha', x: MANSAO.fosso[0].x, y: MANSAO.fosso[0].y, nome: 'O fosso coberto do corredor',
+      semMarca: true, vista: salvo.fossoVisto,
+      texto: 'as lajes do meio do corredor não assentam: por baixo, um fosso fundo, de duas casas de largura. Nas beiradas sobra um parapeito estreito (ou dá para saltar por cima, com a magia Salto).',
+      revelar: () => {
+        if (salvo.fossoVisto) return false;
+        salvo.fossoVisto = true;
+        marcarFosso();
+        return true;
+      },
+    });
+    if (!salvo.temChave && mosk) out.push({ id: 'chave-mosk', tipo: 'procurado', x: mosk.pos.x, y: mosk.pos.y, nome: 'Uma chave de ferro (a mais próxima)' });
+    if (cisterna.length) {
+      const [bx, by] = cisterna[Math.floor(cisterna.length / 2)];
+      out.push({ id: 'bolsa-cisterna', tipo: 'procurado', x: bx, y: by, nome: 'Uma bolsa de couro encerado (a mais próxima)' });
     }
     // Os esqueletos da cripta: uma magia velha e fria os mantém de pé.
     const cr = grupos.cripta;
@@ -923,10 +958,14 @@ export function criarMansao(app, config) {
             // Eles vêm de mansinho: quem tiver ouvido os passos não é surpreendido.
             for (const [i, fm] of g.membros.entries()) { const p = casaPerto({ x: 21 + i, y: 13 }); fm.pos = { ...fm.pos, x: p.x, y: p.y }; }
             const ouviu = herois().find((h) => passivePerception(h) >= Math.min(...g.furtividade));
+            // Alarme: o aviso toca na cabeça de todos antes de os passos chegarem.
+            const alarme = !ouviu && herois().some((h) => enc.protegidoDeSurpresa?.(h));
             await asArmas(ouviu
               ? `${ouviu.name} ouve passos abafados vindo da porta do oeste e avisa a tempo: três Marcarrubra entram de espada na mão.`
-              : 'Três Marcarrubra entram de mansinho pela porta do oeste — e ninguém ouviu eles chegarem.');
-            await combate(g, ouviu ? null : 'deles');
+              : alarme
+                ? 'O Alarme toca na cabeça de todos: passos abafados na porta do oeste. Três Marcarrubra entram de espada na mão e dão de cara com um grupo de prontidão.'
+                : 'Três Marcarrubra entram de mansinho pela porta do oeste — e ninguém ouviu eles chegarem.');
+            await combate(g, ouviu || alarme ? null : 'deles');
           }
         },
       });
@@ -1213,6 +1252,7 @@ export function criarMansao(app, config) {
     get encerrado() { return estado.encerrado; },
     interacoes,
     ganchosMagicos,
+    espiou,
     interacoesDoHeroi,
     depoisDeMover,
     fimDoCombate,

@@ -53,7 +53,9 @@ export function visaoNoEscuro(c) {
 
 function visaoNatural(c) {
   if (c.visaoNoEscuro != null) return c.visaoNoEscuro;
-  if (c.senses?.darkvisionFt) return c.senses.darkvisionFt;
+  if (c.senses?.darkvisionFt || c.senses?.truesightFt) {
+    return Math.max(c.senses.darkvisionFt ?? 0, c.senses.truesightFt ?? 0);
+  }
   if (c.kind === 'pc') return ANCESTRAIS_COM_VISAO.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 60 : 0;
   return MONSTROS_COM_VISAO.test(`${c.id ?? ''} ${c.name ?? ''}`) ? 60 : 0;
 }

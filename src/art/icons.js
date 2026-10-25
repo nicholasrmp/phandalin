@@ -767,8 +767,15 @@ export function iconeDeArma(art = '', nome = '') {
  * ícone de fogo; Raio Guiado (radiante) e Raio de Doença (veneno), com o de
  * relâmpago. O tipo de dano é dado, o nome é palavra — o dado vem primeiro.
  */
+// Magias do lote 14 que ainda não têm ícone próprio usam o da parente mais próxima (sem arte nova).
+const ICONE_PARECIDO = {
+  linguas: 'compreenderIdiomas', alterarAparencia: 'disfarcarSe', cativar: 'sugestao',
+  sentidosDaFera: 'falarComAnimais', fingirDeMorto: 'falarComOsMortos',
+};
+
 export function iconeDeMagia(spell = {}) {
   if (spell.id && ICONES[`magia-${spell.id}`]) return `magia-${spell.id}`;
+  if (spell.id && ICONE_PARECIDO[spell.id] && ICONES[`magia-${ICONE_PARECIDO[spell.id]}`]) return `magia-${ICONE_PARECIDO[spell.id]}`;
   const dano = `${spell.damageType ?? ''}`.toLowerCase();
   const id = `${spell.id ?? ''} ${spell.name ?? ''}`.toLowerCase();
   if (spell.kind === 'heal') return 'cura';

@@ -135,9 +135,16 @@ export function takeMonsterTurn(enc, monster) {
   // Derrubado: levanta antes de tudo (custa metade do deslocamento).
   if (hasCondition(monster, 'caido')) enc.standUp(monster);
 
+  // CONJURADOR que joga as magias no turno (o Cajavidro): `conjuraNoTurno` no
+  // bloco. A magia vem antes da arma; sem magia que sirva, segue a IA de sempre.
+  if (monster.spellcasting?.conjuraNoTurno && conjurarNoTurno(enc, monster, enemies)) {
+    enc.endTurn(monster);
+    return;
+  }
+
   const ranged = monster.attacks?.some((a) => a.ranged);
   const melee = monster.attacks?.find((a) => !a.ranged);
-  const adjacentFoes = enemies.filter((e) => isAdjacent(e.pos, monster.pos));
+  const adjacentFoes = enemies.filter((e) => enc.field.vizinhos(e.pos, monster.pos));
 
   // Ilusões: sem nada ao alcance para atacar, gasta a ação examinando a Força
   // Fantasmagórica que o fere ou uma Ilusão Menor colada nele.
@@ -285,7 +292,7 @@ export function takeMonsterTurn(enc, monster) {
   // caverna fica colado na parede do fundo mais perto do alvo, e nunca sai
   // pela boca (o bando do Cume da Wyvern ficou assim, parado).
   const closest = ordered[0];
-  const ateOAlvo = enc.field.reachable(closest.pos, 2000);
+  const ateOAlvo = enc.field.reachable(closest.pos, 2000, () => false, () => true, monster.pos.f ?? 1);
   const passo = comDesvio(enc, monster, (reached) => {
     let best = null;
     for (const node of reached.values()) {
@@ -296,6 +303,12 @@ export function takeMonsterTurn(enc, monster) {
     return best && best.node.cost > 0 ? Battlefield.pathFrom(reached, best.node) : null;
   });
   if (passo) enc.moveAlong(monster, passo);
+  // Depois de andar, ainda ha a acao: o que ficou ao alcance (o olhar do
+  // vigia a 9 m, o arco que agora alcanca) e usado em vez de desperdicado.
+  if (!monster.dead && !hasCondition(monster, 'inconsciente') && !monster.actionUsed) {
+    const depois = pickReachableTarget(enc, monster, ordered);
+    if (depois) enc.attackAction(monster, depois.target, depois.weaponName);
+  }
   enc.endTurn(monster);
 }
 
@@ -363,7 +376,7 @@ function planShotEm(enc, monster, targets, enemies, reached) {
   for (const node of reached.values()) {
     if (enc.occupied(node.x, node.y, monster)) continue;
     const spot = { x: node.x, y: node.y, f: monster.pos.f };
-    if (enemies.some((e) => isAdjacent(spot, e.pos))) continue;
+    if (enemies.some((e) => enc.field.vizinhos(spot, e.pos))) continue;
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
       if (distanceFt(spot, t.pos) > arco.rangeFt) continue;
@@ -450,4 +463,105 @@ export async function encerrarTurnoComInvocados(enc, actor, { delayMs = 0, onSte
     }
   }
   if (!actor.acted) enc.endTurn(actor);
+}
+
+
+/**
+ * A tática de quem conjura pelo bloco (o Cajavidro, do livro da aventura):
+ *   1. ferido (metade dos PV ou menos) e com inimigo colado: Passo Nebuloso
+ *      para longe, como ação bônus, e o turno continua;
+ *   2. sem concentração: Imobilizar Pessoa no humanoide mais perto que ainda
+ *      não tentou prender;
+ *   3. preso alguém e outro colado: Enfeitiçar Pessoa nele (não o ataca);
+ *   4. Mísseis Mágicos no 1º círculo (o 2º fica para prender e fugir);
+ *   5. sem espaço: anda até colar e usa Toque Chocante.
+ * Devolve true se gastou a ação numa magia.
+ */
+function conjurarNoTurno(enc, m, enemies) {
+  const podeVer = (t) => enc.field.hasLineOfSight(m.pos, t.pos);
+  const perto = enemies
+    .filter((e) => !e.dead && !hasCondition(e, 'inconsciente'))
+    .sort((a, b) => distanceFt(m.pos, a.pos) - distanceFt(m.pos, b.pos));
+  if (!perto.length) return false;
+  const colado = perto.find((e) => enc.field.vizinhos(e.pos, m.pos));
+  const slots = m.spellcasting.slots ?? [];
+
+  if (colado && m.hp <= m.maxHp / 2 && !m.bonusUsed && (slots[2] ?? 0) > 0) {
+    const destino = casaLonge(enc, m, perto, 30);
+    if (destino) enc.castSpell(m, 'passoNebuloso', { point: destino, circulo: 2 });
+  }
+  if (m.dead || hasCondition(m, 'inconsciente') || m.actionUsed) return m.actionUsed;
+  const depoisDoBonus = (m.magiasNoTurno ?? []).some((x) => x.castTime === 'bonus');
+
+  const tenta = (id, opts) => enc.castSpell(m, id, opts).ok;
+  if (!depoisDoBonus && !m.concentrating && (slots[2] ?? 0) > 1) {
+    m.tentouPrender ??= new Set();
+    const humanoide = (e) => !e.tipo || e.tipo === 'humanoide';
+    const alvo = perto.find((e) => humanoide(e) && !m.tentouPrender.has(e.id)
+      && distanceFt(m.pos, e.pos) <= 60 && podeVer(e) && !hasCondition(e, 'paralisado'));
+    if (alvo) {
+      m.tentouPrender.add(alvo.id);
+      if (tenta('imobilizarPessoa', { target: alvo, point: alvo.pos, circulo: 2 })) return true;
+    }
+  }
+  const livre = perto.find((e) => enc.field.vizinhos(e.pos, m.pos) && !hasCondition(e, 'paralisado') && !hasCondition(e, 'enfeiticado'));
+  if (!depoisDoBonus && m.concentrating && livre && (slots[1] ?? 0) > 0
+    && tenta('enfeiticarPessoa', { target: livre, point: livre.pos, circulo: 1 })) return true;
+  // Os dardos vão no mais fraco só até bastar para derrubá-lo (3,5 cada);
+  // o resto vai no próximo. Dardo em quem já caiu é falha no teste de morte.
+  const aoAlcance = perto
+    .filter((e) => distanceFt(m.pos, e.pos) <= 120 && podeVer(e))
+    .sort((a, b) => a.hp - b.hp);
+  if (!depoisDoBonus && aoAlcance.length && (slots[1] ?? 0) > 0) {
+    const dardos = [];
+    for (const e of aoAlcance) {
+      const precisa = Math.max(1, Math.ceil(e.hp / 3.5));
+      for (let k = 0; k < precisa && dardos.length < 3; k++) dardos.push(e);
+      if (dardos.length >= 3) break;
+    }
+    while (dardos.length < 3) dardos.push(dardos[dardos.length - 1]);
+    if (tenta('misselMagico', { target: dardos[0], targets: dardos, point: dardos[0].pos, circulo: 1 })) return true;
+  }
+  // Truque de toque: se não está colado, anda até colar antes.
+  let junto = perto.find((e) => enc.field.vizinhos(e.pos, m.pos));
+  if (!junto && !depoisDoBonus && magiasProntasTem(m, 'toqueChocante')) {
+    const alvo = perto[0];
+    const reach = enc.reachableFor(m);
+    let melhor = null;
+    for (const n of reach.values()) {
+      if (enc.occupied(n.x, n.y, m) || !enc.field.vizinhos({ x: n.x, y: n.y }, alvo.pos)) continue;
+      if (!melhor || n.cost < melhor.cost) melhor = n;
+    }
+    if (melhor) {
+      enc.moveAlong(m, Battlefield.pathFrom(reach, melhor));
+      if (!m.dead && enc.field.vizinhos(m.pos, alvo.pos)) junto = alvo;
+    }
+  }
+  if (junto && tenta('toqueChocante', { target: junto, point: junto.pos })) return true;
+  // Depois do Passo Nebuloso só cabe truque: um mago não volta para o cajado.
+  if (depoisDoBonus) {
+    enc.dodge(m);
+    return true;
+  }
+  return false;
+}
+
+const magiasProntasTem = (m, id) => (m.spellcasting?.cantrips ?? []).includes(id)
+  || (m.spellcasting?.prepared ?? []).includes(id);
+
+/** A casa livre e visível até `pes` que fica mais longe do inimigo mais próximo. */
+function casaLonge(enc, m, inimigos, pes) {
+  const r = pes / 5;
+  let melhor = null;
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const x = m.pos.x + dx;
+      const y = m.pos.y + dy;
+      if (!enc.field.inside(x, y) || enc.field.blocksMove(x, y) || enc.occupied(x, y, m)) continue;
+      if (!enc.field.hasLineOfSight(m.pos, { x, y })) continue;
+      const d = Math.min(...inimigos.map((e) => distanceFt({ x, y }, e.pos)));
+      if (!melhor || d > melhor.d) melhor = { d, x, y };
+    }
+  }
+  return melhor && melhor.d > 5 ? { x: melhor.x, y: melhor.y } : null;
 }

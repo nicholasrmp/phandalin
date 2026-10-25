@@ -20,6 +20,7 @@ import { criarMansao } from './game/capitulo3-mansao.js';
 import { criarEstrada } from './game/capitulo4-estrada.js';
 import { criarPoco } from './game/capitulo4-poco.js';
 import { criarCume } from './game/capitulo4-cume.js';
+import { criarCastelo } from './game/capitulo4-castelo.js';
 import { abrirRegiao } from './game/regiao.js';
 import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta } from './view/narrativa.js';
@@ -28,8 +29,9 @@ import { opcoesDaCasa } from './game/interacoes.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
 import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
 import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
-import { UTIL_FORA, estadoDe as estadoDeUtilidade, avancar as avancarTempo, ativasDoGrupo } from './rules/utilidade.js';
-import { escolherEConjurar, conjurarComTela, esperar as esperarTempo, auras as aurasDoDetectarMagia } from './game/magias-fora.js';
+import { UTIL_FORA, estadoDe as estadoDeUtilidade, avancar as avancarTempo, ativasDoGrupo, alarmeCobre } from './rules/utilidade.js';
+import { entrarNoEncontro as familiarEntra, sairDoEncontro as familiarSai } from './rules/familiar.js';
+import { escolherEConjurar, conjurarComTela, esperar as esperarTempo, auras as aurasDoDetectarMagia, marcasDoJogo } from './game/magias-fora.js';
 import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { criarFicha, aplicarAparencia } from './view/ficha.js';
@@ -52,7 +54,6 @@ class App {
       onAutoInvocado: (c) => this.alternarAuto(c),
       onAutoDosInvocados: (dono) => this.alternarAutoDoDono(dono),
       onRestart: () => this.newEncounter(),
-      onRotate: (d) => this.rotateView(d),
       onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
       onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
       onAbrirFicha: (c) => this.ficha?.abrir(c, 'ficha'),
@@ -154,8 +155,6 @@ class App {
       if (e.key === ' ' && this.enc?.side === 'party') { e.preventDefault(); this.endTurn(); }
       if (e.key === 'Tab') { e.preventDefault(); this.cycleSelection(); }
       const k = e.key.toLowerCase();
-      if (k === 'q') this.rotateView(-1);
-      if (k === 'e') this.rotateView(1);
       if (k === 'm') { audio.toggleMute(); this.refresh(); }
       // `i` e `p` abrem a ficha. `c` NÃO: o HUD reservou essa tecla para
       // Desengajar, e as duas no mesmo atalho fariam o turno depender de qual
@@ -218,7 +217,7 @@ class App {
         : (config.variante ?? 'emboscada');
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
-      mapa.terreno, mapa.altura, mapa.objetos);
+      mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
     // Mapa com escuridão: breu por padrão, mais as fontes de luz dele (`rules/luz.js`).
     // `luz` é 'escuro' (breu inteiro) ou uma grade de dígitos 0-2 por casa.
     if (mapa.luz) {
@@ -265,6 +264,7 @@ class App {
       : mapa.cena === 'ermo' ? criarEstrada
       : mapa.cena === 'poco' ? criarPoco
       : mapa.cena === 'cume' ? criarCume
+      : mapa.cena === 'castelo' ? criarCastelo
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
     const capitulo = Boolean(cena);
@@ -281,6 +281,11 @@ class App {
       onLog: (entry) => { this.hud.pushLog(entry); this.contarNovidade?.(); },
       onEvent: (ev) => this.onEvent(ev),
     });
+    // Ganchos do encontro para as magias de utilidade: o familiar entra na luta e o Alarme avisa o grupo
+    // (numa emboscada de quem o Alarme cobre, ninguém é pego de surpresa).
+    this.enc.aoComecar = (e) => familiarEntra(e, estadoDeUtilidade(this.campanha ??= {}));
+    this.enc.protegidoDeSurpresa = (c) => Boolean(c.pos && alarmeCobre(estadoDeUtilidade(this.campanha ??= {}),
+      this.enc.combatants.filter((h) => h.side === 'party' && !h.dead && h.hp > 0), this.capitulo?.lugar, c.pos));
     // O motor pergunta se é exploração (sacar arma de graça, salto sem contar
     // corrida); quem sabe é o capítulo.
     Object.defineProperty(this.enc, 'explorando', { get: () => !!this.capitulo?.explorando });
@@ -430,6 +435,10 @@ class App {
         break;
       }
       case 'dispensado': {
+        // O familiar guarda os PV na campanha (e some do registro se caiu).
+        if (ev.target.familiar && familiarSai(estadoDeUtilidade(this.campanha ??= {}), ev.target)) {
+          this.enc?.say('magia', `${ev.target.name} se desfaz em fumaça: o espírito volta ao seu lugar. Refaça Convocar Familiar para chamar outro.`);
+        }
         board?.fx.motes(ev.target.pos, { color: '#c7b4ff', count: 10, rise: 34, spread: 20, dur: 0.8 });
         break;
       }
@@ -589,14 +598,6 @@ class App {
     this.refresh();
   }
 
-  /** Gira a câmera em 90°. A grade do jogo não muda — só a leitura dela. */
-  rotateView(delta) {
-    if (!this.board) return;
-    this.board.rotate(delta);
-    audio.play('click');
-    this.refresh();
-  }
-
   // ---- seleção e modos -----------------------------------------------------
 
   firstActive() {
@@ -630,6 +631,12 @@ class App {
       return;
     }
 
+    if (action.kind === 'despertar') {
+      const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
+      if (alvo) this.enc.despertarFingido(c, alvo);
+      this.afterAct();
+      return;
+    }
     if (action.kind === 'stabilize') {
       const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
       if (alvo) this.enc.stabilize(c, alvo);
@@ -1097,6 +1104,8 @@ class App {
       targets,
       // O Detectar Magia ativo acende o chão onde há aura (`game/magias-fora.js`).
       auras: this.capitulo?.explorando ? aurasDoDetectarMagia(this) : null,
+      // As colunas de luz das magias de utilidade: Bem e Mal, armadilhas, Localizar Objeto, o que o bicho viu.
+      marcas: this.capitulo?.explorando ? marcasDoJogo(this) : null,
       path: null,
       // `mode` é a chave que acende a camada de previsão inteira do tabuleiro:
       // chão de alcance, tracejado do alcance longo, cruz de alvo impossível e

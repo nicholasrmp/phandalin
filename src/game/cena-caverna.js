@@ -167,6 +167,10 @@ export function criarCenaCaverna(app, config) {
             requer: (ctx) => (ctx.algum((c) => /an[ãa]o/i.test(`${c.raca ?? ''} ${c.ancestry ?? ''}`)) ? null : 'só um anão repara nisso'), oculta: true },
           { texto: 'Escutar o que Droop resmunga entre dentes, em goblin.', magia: 'compreenderIdiomas', magiaNome: 'Compreender Idiomas',
             vai: 'murmura', uma: true, oculta: true },
+          // Línguas: falar o idioma dele muda o que ele aceita (vantagem, e a CD cai de 12 para 8).
+          { texto: 'Dizer a Droop, em goblin, que vocês vieram derrubar o chefe grande.', magia: 'linguas', magiaNome: 'Línguas',
+            teste: { pericia: 'persuasao', cd: 8, vantagem: true }, sucesso: 'conta', falha: 'desconfia', oculta: true,
+            requer: (ctx) => (ctx.flags.droopContou ? 'ele já contou tudo' : null) },
           { texto: 'Some daqui, Droop. E não volta.', fim: 'solto' },
           { texto: 'Atacar.', fim: 'luta' },
           { texto: 'Até mais.', fim: 'paz' },
@@ -201,6 +205,15 @@ export function criarCenaCaverna(app, config) {
         ],
       },
       desconfia: {
+        // Zona da Verdade: o "não sabe de nada" é mentira, e sob a magia ele não consegue dizê-la.
+        zona: {
+          fala: ['Ajudar? Ajudar é… Droop sabe! O da esquerda dorme encostado na parede, o da direita tem arco e não dorme nunca. Droop tem medo, medo, mas a língua não deixa Droop mentir.'],
+          ao: (ctx) => { ctx.flags.droopContou = true; estado.avisados = true; },
+          opcoes: [
+            { texto: 'Mais uma coisa…', vai: 'oi' },
+            { texto: 'Bom goblin. Fica aí.', fim: 'paz' },
+          ],
+        },
         fala: 'Ajudar? Ajudar é o que o chefe grande diz antes de bater. Droop não sabe de nada. Nada, nada.',
         opcoes: [
           { texto: 'Você vai saber de alguma coisa quando eu terminar.', teste: { pericia: 'intimidacao', cd: 12 }, sucesso: 'conta', falha: 'grita' },
@@ -208,6 +221,12 @@ export function criarCenaCaverna(app, config) {
         ],
       },
       grita: {
+        // Cativar: preso à conversa de quem o cativou, Droop tenta gritar e só sai um chiado.
+        ajuda: {
+          narra: 'Droop arregala os olhos, enche o peito para gritar — mas a voz de quem o cativou ainda o prende: o grito sai um chiado sem força, e nenhum guarda vira a cabeça.',
+          fala: 'In… invasor… invasorzinho…',
+          fim: 'paz',
+        },
         narra: 'Droop arregala os olhos, enche o peito e berra para os corredores.',
         fala: 'INVASOR! INVASOR NA FOGUEIRA!',
         fim: 'alarme',

@@ -527,10 +527,44 @@ export function criarCapitulo1(app, config) {
     return ops;
   }
 
+  /**
+   * Falar com Plantas: o mato conta quem se esconde nele. Quem estiver a 9 m dos goblins ouve o
+   * cochicho: a emboscada se desfaz (sem surpresa) e o grupo entra na luta de olhos abertos.
+   */
+  async function plantasSabem(c) {
+    const perto = escondidos.filter((f) => !f.dead && distanceFt(f.pos, c.pos) <= 30);
+    if (!estado.explorando || !perto.length) {
+      await narrar(root, { formato: 'painel', paginas: [{ titulo: 'Falar com Plantas', texto: [
+        'O mato fala de cavalos, de corvos e do vento. De gente escondida, aqui perto, ele não sabe de nada.'] }] });
+      return;
+    }
+    const escolha = await narrar(root, {
+      formato: 'painel',
+      paginas: [{ titulo: 'Falar com Plantas', texto: [
+        `O mato cochicha em coro, nervoso: "${escondidos.length} deles… com arcos… deitados atrás das moitas dos dois lados… esperando o grupo chegar nos cavalos".`,
+        `${c.name} sabe onde estão. Os goblins, não sabem que foram descobertos.`,
+      ] }],
+      escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }, { rotulo: 'Ainda não', valor: 'ainda' }],
+    });
+    // Sabendo onde estão, a emboscada deles já não surpreende ninguém, lute o grupo agora ou depois.
+    furtividade.fill(0);
+    if (escolha === 'ainda') return;
+    estado.explorando = false;
+    combate(false);
+  }
+
+  /** O bicho de Sentidos da Fera viu os goblins escondidos: eles já não pegam ninguém de surpresa. */
+  function espiou(criaturas) {
+    if (criaturas.some((f) => escondidos.includes(f))) furtividade.fill(0);
+  }
+
   return {
+    lugar: 'Trilha de Triboar',
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
+    plantasSabem,
+    espiou,
     async iniciar() {
       // Como na aventura: o grupo vem pela curva com os cavalos a uns quinze
       // metros, e dos quatro goblins dois correm para o corpo a corpo e dois

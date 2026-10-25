@@ -326,6 +326,36 @@ const WEAPON_VISUALS = {
    * rampa. Golpe que resolve em 0,2 s desperdiça o único som do jogo que anda
    * para dentro.
    */
+  /**
+   * Olhar Apodrecedor do vigia ciclopico: o olho ACENDE verde-amarelo (a cor
+   * que so ele tem no elenco) e um raio da mesma cor vai ate o alvo; quem
+   * falha no teste pisca no roxo necrotico e solta cinza que sobe -- podre.
+   */
+  rottingGaze: (board, { attacker, target }) => {
+    return {
+      delay: 0.45,
+      somInicio: 'castNecrotic',
+      som: null,
+      start: () => {
+        // O olho acende (quadros do OpenArt, `_referencias/efeitos/t-olhar`) e
+        // o raio sai dele; o feixe e de codigo (a fileira de raio da folha saiu
+        // na diagonal e o projetil gira supondo a direita).
+        // Tudo no amarelo do olho convertido (#e8c35a, a cor da paleta): o
+        // verde-amarelo do vigia nao existe na paleta e sumia no chao verde.
+        // O feixe tem contorno escuro por baixo, como o resto da arte.
+        board.fx.quadros(attacker.pos, 'apodrecer-olho', { fps: 10, altura: 38 });
+        board.fx.piscar(attacker, { color: '#e8c35a', dur: 0.45 });
+        board.fx.beam(attacker.pos, target.pos, { color: '#2a2430', dur: 0.4, width: 5, jagged: false });
+        board.fx.beam(attacker.pos, target.pos, { color: '#e8c35a', dur: 0.4, width: 2, jagged: false });
+      },
+      onHit: () => {
+        board.fx.quadros(target.pos, 'apodrecer-impacto', { fps: 12, sumir: 0.2 });
+        board.fx.piscar(target, { color: COR.necrotico, dur: 0.5 });
+      },
+      faisca: false,
+    };
+  },
+
   lifeDrain: (board, { attacker, target }) => {
     return {
       delay: 0.55,
@@ -556,7 +586,8 @@ export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {
 
   setTimeout(() => {
     if (!ev.hit) {
-      board.floatText(ev.target.pos, 'errou', '#9aa3b2');
+      // Acao por teste (o olhar): quem nao foi atingido RESISTIU, nao "errou".
+      board.floatText(ev.target.pos, ev.teste ? 'resistiu' : 'errou', '#9aa3b2');
       audio.play('miss');
       return;
     }
@@ -1616,6 +1647,126 @@ const SPELL_VISUALS = {
     board.fx.area((areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0), { color: '#d8ccff', dur: 0.8 });
     board.fx.motes(dest, { color: '#f4f0ff', count: 18, rise: 80, spread: 70, dur: 1.1 });
     return 0.3;
+  },
+
+  // ---- lote 14: utilidade 2 (as cenas de fora de combate também tocam estas receitas) ----
+
+  // Salto: um anel de capim sob os pés e o alvo dá um pulinho de mola.
+  salto: (board, { caster, dest }, alvos = []) => {
+    const quem = alvos[0] ?? board.enc.at(dest.x, dest.y) ?? caster;
+    board.fx.ring(quem.pos, { color: '#c9f2a0', radius: 46, dur: 0.5, width: 3 });
+    board.fx.motes(quem.pos, { color: '#e6ffc2', count: 12, rise: 62, spread: 14, dur: 0.9 });
+    board.fx.hop(quem, { dur: 0.5, height: 36 });
+    return 0.2;
+  },
+  // Alarme: um sino mudo: dois anéis dourados se abrem do chão e uma estrela de aviso pisca.
+  alarme: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#ffd27a', radius: 120, dur: 1.1, width: 3 });
+    board.fx.ring(caster.pos, { color: '#fff0c0', radius: 70, dur: 0.8, width: 2 });
+    board.fx.ring(caster.pos, { color: '#ffe9a8', radius: 40, dur: 1.6, width: 2 });
+    board.fx.glyph(caster.pos, { text: '!', color: '#ffd27a', dur: 1.0, rise: 46, size: 22 });
+    return 0.2;
+  },
+  // Detectar o Bem e o Mal: um anel azul-claro se abre e, por dentro, outro vermelho. As colunas de luz sobre quem a magia sente vêm do mapa.
+  detectarBemMal: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#9fd0ff', radius: 150, dur: 1.2, width: 3 });
+    board.fx.ring(caster.pos, { color: '#f03c46', radius: 100, dur: 1.0, width: 3 });
+    board.fx.glyph(caster.pos, { text: '+', color: '#9fd0ff', dur: 1.1, rise: 40, size: 22 });
+    board.fx.glyph(caster.pos, { text: '×', color: '#f03c46', dur: 1.3, rise: 52, size: 22 });
+    board.fx.halo(caster.pos, { color: '#e4f0ff', dur: 1.1, radius: 26 });
+    board.fx.motes(caster.pos, { color: '#ffffff', count: 14, rise: 40, spread: 70, dur: 1.2 });
+    return 0.25;
+  },
+  // Encontrar Armadilhas: um pulso laranja varre a cena e estilhaços sobem do chão onde há perigo.
+  encontrarArmadilhas: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#ffb04a', radius: 170, dur: 1.2, width: 3 });
+    board.fx.ring(caster.pos, { color: '#ffd9a0', radius: 110, dur: 0.9, width: 2 });
+    board.fx.motes(caster.pos, { color: '#ffc27a', count: 12, rise: 36, spread: 80, dur: 1.1 });
+    board.fx.shards(caster.pos, { color: '#ffb04a', count: 10, spread: 70 });
+    board.fx.glyph(caster.pos, { text: '!', color: '#ffb04a', dur: 1.0, rise: 46, size: 24 });
+    return 0.25;
+  },
+  // Zona da Verdade: o domo dourado-claro sobe em volta de quem fala (a coluna que fica vem do mapa).
+  zonaDaVerdade: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#fff3c0', dur: 0.3, width: 2, jagged: false });
+    board.fx.domo(dest, { cor: 'marca-verdade', dur: 1.5, raio: 52, altura: 64, op: 1 });
+    board.fx.ring(dest, { color: '#ffce46', radius: 60, dur: 0.9, width: 3 });
+    board.fx.glyph(dest, { text: '⚖', color: '#ffce46', dur: 1.2, rise: 44, size: 24 });
+    return 0.3;
+  },
+  // Localizar Objeto: um fio ciano corre até o objeto e a coluna acende lá.
+  localizarObjeto: (board, { caster, dest }) => {
+    board.fx.ring(caster.pos, { color: '#28e6c8', radius: 60, dur: 0.7, width: 2 });
+    board.fx.beam(caster.pos, dest, { color: '#28e6c8', dur: 0.6, width: 2, jagged: false, pulso: true });
+    board.fx.ring(dest, { color: '#7ff5e0', radius: 54, dur: 0.9, width: 3 });
+    board.fx.motes(dest, { color: '#c8fff4', count: 12, rise: 56, spread: 18, dur: 1.0 });
+    return 0.5;
+  },
+  // Línguas: letras de todos os alfabetos sobem em volta da cabeça de quem fala.
+  linguas: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#ffe9a8', radius: 56, dur: 0.8, width: 2 });
+    board.fx.glyph(caster.pos, { text: 'ᚠ', color: '#ffe9a8', dur: 1.5, rise: 50, size: 26 });
+    board.fx.glyph(caster.pos, { text: 'ʃ', color: '#bfe6ff', dur: 1.5, rise: 40, size: 26 });
+    board.fx.glyph(caster.pos, { text: 'ж', color: '#ffc7a0', dur: 1.5, rise: 56, size: 26 });
+    board.fx.motes(caster.pos, { color: '#fff3c8', count: 12, rise: 50, spread: 26, dur: 1.0 });
+    return 0.2;
+  },
+  // Alterar Aparência: o contorno de quem conjura treme e a cor muda, como cera derretendo.
+  alterarAparencia: (board, { caster }) => {
+    board.fx.piscar(caster, { dur: 0.7, color: '#e8d8ff' });
+    board.fx.ring(caster.pos, { color: '#c7b4ff', radius: 52, dur: 0.8, width: 3 });
+    board.fx.derreter(caster, { color: '#d9c7ff', dur: 0.8 });
+    board.fx.motes(caster.pos, { color: '#e8dcff', count: 14, rise: 44, spread: 20, dur: 1.0 });
+    return 0.25;
+  },
+  // Cativar: uma espiral hipnótica sobe da voz de quem conta a história.
+  cativar: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#f4c7ff', radius: 130, dur: 1.2, width: 3 });
+    board.fx.glyph(caster.pos, { text: '♪', color: '#f4c7ff', dur: 1.3, rise: 50, size: 26 });
+    board.fx.glyph(caster.pos, { text: '♫', color: '#fbe3ff', dur: 1.5, rise: 62, size: 26 });
+    board.fx.motes(caster.pos, { color: '#fbe3ff', count: 14, rise: 38, spread: 70, dur: 1.1 });
+    return 0.25;
+  },
+  // Amizade Animal: corações e um anel verde-folha em volta da fera.
+  amizadeAnimal: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#bff0b0', dur: 0.3, width: 2, jagged: false });
+    board.fx.ring(dest, { color: '#9fe59a', radius: 46, dur: 0.9, width: 3 });
+    board.fx.glyph(dest, { text: '♥', color: '#ff9ac0', dur: 1.1, rise: 46, size: 22 });
+    board.fx.motes(dest, { color: '#d6f7c4', count: 10, rise: 40, spread: 16, dur: 1.0 });
+    return 0.3;
+  },
+  // Sentidos da Fera: um olho verde-água se abre sobre o bicho e a visão corre dele até a casa.
+  sentidosDaFera: (board, { caster, dest }) => {
+    board.fx.ring(dest, { color: '#cdeb46', radius: 48, dur: 0.9, width: 3 });
+    board.fx.halo(dest, { color: '#eaff9a', dur: 1.0, radius: 22 });
+    board.fx.glyph(dest, { text: '◉', color: '#cdeb46', dur: 1.2, rise: 40, size: 26 });
+    board.fx.beam(caster.pos, dest, { color: '#cdeb46', dur: 0.4, width: 2, jagged: false, pulso: true });
+    return 0.3;
+  },
+  // Fingir de Morto: o alvo empalidece, o contorno fica cinzento e uma fumaça fria sobe do chão.
+  fingirDeMorto: (board, { caster, dest }, alvos = []) => {
+    const quem = alvos[0] ?? board.enc.at(dest.x, dest.y) ?? caster;
+    board.fx.beam(caster.pos, quem.pos, { color: '#c9c2d8', dur: 0.3, width: 2, jagged: false });
+    board.fx.dissipar(quem, { color: '#c9c2d8', dur: 0.9 });
+    board.fx.ring(quem.pos, { color: '#b4acc8', radius: 44, dur: 0.9, width: 3 });
+    board.fx.quadros(quem.pos, 'sono-nevoa', { fps: 8, altura: 20, sumir: 0.3 });
+    return 0.3;
+  },
+  // Falar com Plantas: brotos sobem do chão em volta de quem conjura, num anel de folhas.
+  falarComPlantas: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#8fe6a8', radius: 140, dur: 1.2, width: 3 });
+    board.fx.quadros(caster.pos, 'plantas-brotar', { fps: 10, altura: 28, sumir: 0.3 });
+    for (const [dx, dy] of [[1, 0], [-1, 1], [0, -2]]) board.fx.quadros({ x: caster.pos.x + dx, y: caster.pos.y + dy }, 'plantas-brotar', { fps: 10, altura: 22, sumir: 0.3 });
+    board.fx.motes(caster.pos, { color: '#c8f5b0', count: 16, rise: 50, spread: 80, dur: 1.2 });
+    return 0.25;
+  },
+  // Convocar Familiar: o círculo de giz se fecha, a fumaça de incenso sobe e o bicho aparece (o corpo é o do tabuleiro).
+  encontrarFamiliar: (board, { caster }) => {
+    board.fx.ring(caster.pos, { color: '#fff3c8', radius: 50, dur: 1.0, width: 2 });
+    board.fx.ring(caster.pos, { color: '#c7b4ff', radius: 80, dur: 0.9, width: 2 });
+    board.fx.quadros(caster.pos, 'luz-orbe', { fps: 8, altura: 28, sumir: 0.3 });
+    board.fx.motes(caster.pos, { color: '#e8e0ff', count: 16, rise: 48, spread: 30, dur: 1.2 });
+    return 0.6;
   },
 
   // Dissipar: um anel violeta se abre e a zona (ou a criatura) se desfaz em brumas.

@@ -75,7 +75,53 @@ const DOMO_CORES = {
   'circ-feérico': { rgb: [140, 230, 150], borda: [210, 250, 214] },
   'circ-corruptor': { rgb: [232, 72, 72], borda: [255, 186, 170] },
   'circ-morto-vivo': { rgb: [176, 134, 232], borda: [226, 208, 250] },
+  // Marcas das magias de utilidade (colunas de luz sobre quem a magia revela): o bem é azul-claro, o mal
+  // vermelho, o que não é nem um nem outro verde; armadilha laranja; o objeto de Localizar ciano; o que o bicho viu verde-água.
+  'marca-bem': { rgb: [120, 190, 255], borda: [210, 236, 255] },
+  'marca-mal': { rgb: [240, 60, 70], borda: [255, 170, 170] },
+  'marca-neutro': { rgb: [214, 220, 232], borda: [250, 252, 255] }, // prata: nem bem nem mal
+  'marca-armadilha': { rgb: [255, 150, 40], borda: [255, 220, 150] },
+  'marca-alvo': { rgb: [40, 230, 200], borda: [190, 255, 244] }, // Localizar Objeto: verde-turquesa
+  'marca-espia': { rgb: [205, 235, 70], borda: [240, 255, 160] }, // o que o bicho viu: verde-lima
+  'marca-verdade': { rgb: [255, 206, 70], borda: [255, 236, 150] }, // Zona da Verdade: o cilindro dourado em volta de quem não mente
+  'marca-alarme': { rgb: [255, 200, 90], borda: [255, 240, 190] }, // Alarme: o anel baixo no chão
+  'marca-aparencia': { rgb: [190, 150, 255], borda: [226, 208, 255] }, // Alterar Aparência: o halo lilás de quem está transformado
+  'marca-fingido': { rgb: [170, 172, 184], borda: [214, 216, 226] }, // Fingir de Morto: a figura apagada, cinza
 };
+// Cada marca tem forma própria (raio, altura) e um glifo no topo: a cor sozinha não distinguia as colunas.
+const MARCA_FORMA = {
+  'marca-bem': { raio: 16, altura: 76, glifo: 'mais' },
+  'marca-mal': { raio: 16, altura: 76, glifo: 'xis' },
+  'marca-neutro': { raio: 14, altura: 60, glifo: 'ponto' },
+  'marca-armadilha': { raio: 24, altura: 26, glifo: 'aviso', pisca: true },
+  'marca-alvo': { raio: 10, altura: 84, glifo: 'alvo' },
+  'marca-espia': { raio: 14, altura: 46, glifo: 'olho' },
+  'marca-verdade': { raio: 18, altura: 58, glifo: 'balanca' },
+  'marca-alarme': { raio: 40, altura: 14, glifo: 'aviso' },
+  'marca-aparencia': { raio: 26, altura: 20, glifo: null },
+  'marca-fingido': { raio: 24, altura: 20, glifo: null },
+};
+const GLIFOS = {
+  mais: ['...#...', '...#...', '...#...', '#######', '...#...', '...#...', '...#...'],
+  xis: ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#'],
+  ponto: ['.......', '..###..', '.#####.', '.#####.', '.#####.', '..###..', '.......'],
+  aviso: ['...#...', '..#.#..', '..#.#..', '.#.#.#.', '.#.#.#.', '#.....#', '#######'],
+  alvo: ['..###..', '.#...#.', '#..#..#', '#.###.#', '#..#..#', '.#...#.', '..###..'],
+  olho: ['.......', '..###..', '.#...#.', '#..#..#', '.#...#.', '..###..', '.......'],
+  balanca: ['...#...', '#######', '#..#..#', '#..#..#', '...#...', '...#...', '.#####.'],
+};
+/** Desenha um glifo de 7x7 em pixels grandes, com contorno escuro, centrado em (cx, cy). */
+function desenharGlifo(ctx, nome, cx, cy, cor, escala = 2) {
+  const g = GLIFOS[nome];
+  if (!g) return;
+  const x0 = Math.round(cx - (3.5 * escala));
+  const y0 = Math.round(cy - (3.5 * escala));
+  const [r, gg, b] = cor;
+  for (const [dx, dy, fill] of [[-1, 0, '#1a1426'], [1, 0, '#1a1426'], [0, -1, '#1a1426'], [0, 1, '#1a1426'], [0, 0, `rgb(${r},${gg},${b})`]]) {
+    ctx.fillStyle = fill;
+    for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) if (g[j][i] === '#') ctx.fillRect(x0 + i * escala + dx, y0 + j * escala + dy, escala, escala);
+  }
+}
 const DOMO_BRANCO = [244, 240, 228];
 // Meio elipsoide: topo redondo de cúpula, e o `m` do véu fica exato na silhueta.
 const PERFIL = (s) => Math.sqrt(Math.max(0, 1 - s ** 2));
@@ -1044,6 +1090,8 @@ export class Fx {
       const meio = (it.f - 1) / 2;
       out.push({ it, x: ax + meio, y: ay + meio, dTras: v.vx + v.vy, dFrente });
     }
+    // As colunas de luz das magias de utilidade (`overlay.marcas`, de `game/magias-fora-extra.js`).
+    for (const m of board.overlay?.marcas ?? []) out.push(this.domoDaMarca(board, m));
     // O Silêncio é uma esfera de gelo enquanto a zona existir: nenhuma vida
     // própria, o tabuleiro lê `enc.zonas` a cada quadro.
     for (const z of board.enc.zonas ?? []) {
@@ -1054,6 +1102,37 @@ export class Fx {
       else if (z.circuloMagico) out.push(this.domoDaZona(board, z, `circ-${z.circuloMagico.tipo}`));
     }
     return out;
+  }
+
+  /**
+   * Uma coluna de luz translúcida (cilindro, como o Círculo Mágico) sobre uma casa marcada por uma
+   * magia de utilidade. Fica em volta da figura sem escondê-la (o véu é quase nulo no miolo).
+   */
+  domoDaMarca(board, m) {
+    const chave = `${m.x},${m.y},${m.cor},${m.f ?? 1},${board.rot}`;
+    this._marcaDomos ??= new Map();
+    let o = this._marcaDomos.get(chave);
+    if (!o) {
+      if (this._marcaDomos.size > 60) this._marcaDomos.clear();
+      const f = m.f ?? 1;
+      const forma = MARCA_FORMA[m.cor] ?? {};
+      const meio = (f - 1) / 2;
+      const v = board.toView(m.x, m.y);
+      let dFrente = v.vx + v.vy;
+      for (const [i, j] of [[f - 1, 0], [0, f - 1], [f - 1, f - 1]]) {
+        const q = board.toView(m.x + i, m.y + j);
+        dFrente = Math.max(dFrente, q.vx + q.vy);
+      }
+      o = {
+        it: {
+          cor: m.cor, raio: (forma.raio ?? 16) + 12 * (f - 1), altura: (forma.altura ?? 56) + 16 * (f - 1), cilindro: true, f: 1, fixo: true, id: null, op: 1,
+          vistoEm: board.time, glifo: forma.glifo ?? null, pisca: Boolean(forma.pisca),
+        },
+        x: m.x + meio, y: m.y + meio, dTras: v.vx + v.vy, dFrente,
+      };
+      this._marcaDomos.set(chave, o);
+    }
+    return o;
   }
 
   /**
@@ -1114,8 +1193,14 @@ export class Fx {
       const { sx, sy } = board.centerF(o.x, o.y);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.globalAlpha = Math.min(1, (board.time - it.vistoEm) / 0.5);
+      const surgir = Math.min(1, (board.time - it.vistoEm) / 0.5);
+      // Armadilha pisca a 2 Hz: o perigo chama a atenção sem esconder a casa.
+      ctx.globalAlpha = surgir * (it.pisca ? (Math.floor(board.time * 4) % 2 ? 1 : 0.5) : 1);
       ctx.drawImage(d[camada], Math.round(sx - d.ox), Math.round(sy - d.oy));
+      if (camada === 'frente' && it.glifo && it.cilindro) {
+        const bob = Math.round(Math.sin(board.time * 3 + o.x * 1.7 + o.y) * 2);
+        desenharGlifo(ctx, it.glifo, sx, sy - it.altura - 12 + bob, DOMO_CORES[it.cor]?.borda ?? DOMO_CORES[it.cor]?.rgb ?? [255, 255, 255]);
+      }
       ctx.restore();
       return;
     }

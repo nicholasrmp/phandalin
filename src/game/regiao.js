@@ -39,7 +39,7 @@ export const LOCAIS = [
   { id: 'cume', nome: 'Cume da Wyvern', x: 88.2, y: 60.0, missao: 'orcs', jogavel: true },
   { id: 'conyberry', nome: 'Ruínas de Conyberry', x: 91.5, y: 22.0, missao: 'agatha', jogavel: true },
   { id: 'arvoreTrovao', nome: 'Árvore Trovão', x: 32.4, y: 38.3, missao: 'reidoth' },
-  { id: 'castelo', nome: 'Castelo Dentefino', x: 51.9, y: 43.3, feito: 'sabeOCastelo' },
+  { id: 'castelo', nome: 'Castelo Dentefino', x: 51.9, y: 43.3, feito: 'sabeOCastelo', jogavel: true },
   { id: 'neverwinter', nome: 'Neverwinter', x: 14.5, y: 30.8, sempre: true, cidade: true },
   { id: 'leilon', nome: 'Leilon', x: 39.0, y: 89.0, sempre: true, cidade: true },
 ];
@@ -150,6 +150,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       feitos.visitou_conyberry = true;
       await visitarConyberry(app, vivos());
       abrirRegiao(app, { grupo, onde: 'conyberry' });
+      return;
+    }
+    if (l.id === 'castelo') {
+      feitos.visitou_castelo = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'castelo', continuarCom: vivos() });
       return;
     }
     if (l.id === 'cume') {

@@ -336,6 +336,12 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               fala: 'Vocês. Bom. Tenho trabalho, e tenho como pagar.',
               opcoes: [
                 { texto: 'O que precisa de nós?', vai: 'sildar', uma: true },
+                { texto: 'Trouxemos o Gundren de volta.', vai: 'gundrenVolta', uma: true,
+                  requer: () => (v.gundrenResgatado && !v.feito.gundrenPago ? null : 'nada'), oculta: true },
+                { texto: 'O rei Grol está morto.', vai: 'grolMorto', uma: true,
+                  requer: () => (feitos.grolMorto && !v.feito.castelaPago ? null : 'nada'), oculta: true },
+                { texto: 'Achamos a sua espada.', vai: 'espada', uma: true,
+                  requer: () => (vivos().some((c) => (c.bag ?? []).some((i) => i.id === 'espadaDeSildar')) ? null : 'nada'), oculta: true },
                 { texto: 'Os Marcarrubra acabaram.', vai: 'fimDaGangue', uma: true,
                   requer: () => (feitos.marcarrubra && !v.feito.sildarPagouGangue ? null : 'nada'), oculta: true },
                 { texto: 'Trouxemos o Cajavidro. É o Iarno.', vai: 'iarno', uma: true,
@@ -354,6 +360,41 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                 'Duas coisas. Primeiro, o Castelo Dentefino: achem e derrotem ou expulsem o chefe da tribo, e a Aliança paga quinhentas peças de ouro. Procurem os bandos de saqueadores pela Trilha de Triboar — algum vai ter vindo de lá.',
                 'Segundo: Iarno Albrek, meu colega da Aliança, mago, baixo, barba preta, uns trinta anos. Sumiu explorando a Mansão Tresendar há dois meses. Tragam ele de volta, ou o que sobrou. E pelo fim dos Marcarrubra, duzentas peças de ouro.',
               ],
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            gundrenVolta: {
+              ao: () => {
+                v.feito.gundrenPago = true;
+                concluir('gundren');
+                for (const c of vivos()) {
+                  const b = (c.bag ??= []).find((i) => i.id === 'moedaDeOuro');
+                  if (b) b.qtd += 25; else c.bag.push({ id: 'moedaDeOuro', tipo: 'item', qtd: 25 });
+                }
+                app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + 200, motivo: [app.xpPendente?.motivo, 'O Gundren de volta a Phandalin'].filter(Boolean).join('; ') };
+                registro.push('Gundren paga 25 po a cada um e promete um décimo do que a mina render.');
+              },
+              narra: 'Gundren aperta a mão de cada um, com força demais, e só então senta.',
+              fala: [
+                'Vinte e cinco peças de ouro para cada um, que é o que eu tenho agora. E um décimo de tudo o que a mina render, quando ela voltar a funcionar. Palavra de Buscapedra.',
+                'Mas a mina tem dono agora, e o dono se chama Aranha Negra. Meus irmãos estão lá — ou estavam. Eu não peço que vocês vão. Eu imploro.',
+              ],
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            grolMorto: {
+              ao: () => { v.feito.castelaPago = true; concluir('castelo'); repartir(vivos(), 500 * 100); registro.push('Sildar paga 500 po pelo fim do rei Grol.'); },
+              fala: 'O rei goblin, morto. A estrada fica mais segura do que esteve em anos. Quinhentas peças de ouro, como a Aliança prometeu.',
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            espada: {
+              ao: () => {
+                for (const c of vivos()) {
+                  const i = (c.bag ?? []).find((x) => x.id === 'espadaDeSildar');
+                  if (i) { c.bag.splice(c.bag.indexOf(i), 1); break; }
+                }
+                feitos.espadaDevolvida = true;
+              },
+              narra: 'Sildar segura a espada pelo cabo, olha o brasão, e por um momento não diz nada.',
+              fala: 'Vinte anos de estrada com esta espada. Achei que tinha virado enfeite de goblin. Eu fico devendo isto a vocês — e eu pago as minhas dívidas.',
               opcoes: [{ texto: '…', vai: 'oi' }],
             },
             fimDaGangue: {

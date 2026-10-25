@@ -23,6 +23,12 @@ export function prepararLevas(enc, levas) {
   return {
     atrasar(n) { for (const l of fila) l.rodada += n; },
     get restantes() { return fila.reduce((s, l) => s + l.units.length, 0); },
+    /** Põe mais uma leva na fila, no meio da luta (o mensageiro que volta). */
+    adicionar(l) {
+      if (!l?.units?.length) return;
+      fila.push(l);
+      fila.sort((a, b) => a.rodada - b.rodada);
+    },
     /** Tira da fila quem não vem mais (o bando que fugiu antes de sair). */
     remover(pred) {
       for (const l of fila) l.units = l.units.filter((u) => !pred(u));

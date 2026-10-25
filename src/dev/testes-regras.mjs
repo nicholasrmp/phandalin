@@ -4266,5 +4266,571 @@ teste('Fim do encontro: quem piscou volta do Plano Etéreo e Levitação, Piscar
   assert.equal(b.ilvan.concentrating, null);
 });
 
+teste('Vigia (nothic): Olhar Apodrecedor sem jogada de ataque, CON CD 12, 3d6 só para quem falha', () => {
+  const { enc, h, foes, log } = comHeroi('clerigo', 1, { foes: [['vigiaCiclopico', { x: 6, y: 5 }]] });
+  const v = foes[0];
+  h.hp = h.maxHp = 200;
+  d20Fixo(enc, 2);
+  const n = log.length;
+  enc.resolveAttack(v, h, { weaponId: 'Olhar Apodrecedor' });
+  assert.ok(log.slice(n).some((e) => /Olhar Apodrecedor .*: \d+ de dano necrótico/.test(e.text)), log.slice(n).map((e) => e.text).join(' | '));
+  assert.ok(h.hp <= 197 && h.hp >= 182, `3d6 (${200 - h.hp})`);
+  d20Fixo(enc, 19);
+  const antes = h.hp;
+  enc.resolveAttack(v, h, { weaponId: 'Olhar Apodrecedor' });
+  assert.equal(h.hp, antes, 'quem passa no teste não leva nada');
+});
+
+teste('Vigia (nothic): visão verdadeira vê quem está invisível a até 36 m; o goblin não', () => {
+  const { enc, h, foes } = comHeroi('clerigo', 1, { foes: [['vigiaCiclopico', { x: 6, y: 5 }], ['goblin', { x: 7, y: 5 }]] });
+  addCondition(h, 'invisivel');
+  const [v, g] = foes;
+  assert.ok(v.senses?.truesightFt === 120, 'os sentidos do bloco chegam ao combatente');
+  assert.ok(!enc.attackModifiers(v, h).reasons.includes('alvo invisível'));
+  assert.ok(enc.attackModifiers(g, h).reasons.includes('alvo invisível'));
+});
+
+teste('Cajavidro: imobiliza, solta mísseis, foge com Passo Nebuloso e ergue o Escudo pelas cargas do cajado', async () => {
+  const { takeMonsterTurn } = await import('../rules/ai.js');
+  const { enc, h, foes, log } = comHeroi('clerigo', 1, { foes: [['cajavidro', { x: 8, y: 5 }]] });
+  const cj = foes[0];
+  h.hp = h.maxHp = 100;
+  assert.equal(cj.ac, 16);
+  assert.ok(cj.spellcasting?.conjuraNoTurno, 'conjuração no motor');
+  enc.beginSide('foes');
+  takeMonsterTurn(enc, cj);
+  assert.ok(log.some((e) => /Cajavidro conjura Imobilizar Pessoa/.test(e.text)), 'abre com Imobilizar Pessoa');
+  h.conditions = [];
+  cj.concentrating = null;
+  cj.spellcasting.slots[2] = 0;
+  enc.beginSide('foes');
+  takeMonsterTurn(enc, cj);
+  assert.ok(log.some((e) => /Cajavidro conjura Míssil Mágico/.test(e.text)), 'sem 2º círculo, mísseis');
+  h.pos = { x: cj.pos.x - 1, y: cj.pos.y };
+  cj.hp = 10;
+  cj.spellcasting.slots[2] = 1;
+  enc.beginSide('foes');
+  takeMonsterTurn(enc, cj);
+  assert.ok(log.some((e) => /Cajavidro conjura Passo Nebuloso/.test(e.text)), 'encurralado, some');
+  const cargas = cj.spellcasting.cajado.cargas;
+  assert.ok(enc.escudoArcano(cj, h, 17, 16), 'o escudo faz o golpe errar');
+  assert.equal(cj.spellcasting.cajado.cargas, cargas - 2, 'gasta 2 cargas do cajado');
+  assert.ok(!enc.escudoArcano(cj, h, 17, 21), 'não ergue um segundo escudo');
+});
+
+// Paredes de borda (`core/grid.js`): a parede fina entre duas casas.
+function campoComParede() {
+  // Uma parede no oeste das casas (5, 2..6): separa a coluna 4 da 5. Uma
+  // porta aberta em (5, 4) e uma seteira em (5, 6).
+  const o = Array.from({ length: 12 }, (_, y) => '.....' + (y === 4 ? '/' : y === 6 ? 'J' : y >= 2 && y <= 6 ? '#' : '.') + '......');
+  return new Battlefield(12, 12, MAPA, null, null, { n: [], o });
+}
+teste('parede de borda barra o passo e a visão; porta aberta deixa passar', () => {
+  const f = campoComParede();
+  assert.ok(!f.passa(4, 3, 5, 3), 'não atravessa a parede');
+  assert.ok(f.passa(4, 4, 5, 4), 'passa pela porta aberta');
+  assert.ok(!f.passa(4, 2, 5, 3), 'não escorrega pela quina da parede');
+  assert.ok(!f.hasLineOfSight({ x: 3, y: 3 }, { x: 7, y: 3 }), 'parede corta a visão');
+  assert.ok(f.hasLineOfSight({ x: 3, y: 4 }, { x: 7, y: 4 }), 'pela porta se vê');
+  // Reto seriam 10 pés até (5, 3); pela porta (5, 4) são 15.
+  assert.ok(!f.reachable({ x: 3, y: 3 }, 10).has('5,3'), 'em 10 pés não atravessa a parede');
+  assert.ok(f.reachable({ x: 3, y: 3 }, 15).has('5,3'), 'dando a volta pela porta, chega');
+});
+teste('seteira de borda: barra o passo, deixa ver, e dá três quartos de cobertura a quem está atrás', () => {
+  const f = campoComParede();
+  assert.ok(!f.passa(4, 6, 5, 6), 'não se passa pela seteira');
+  assert.ok(f.hasLineOfSight({ x: 1, y: 6 }, { x: 5, y: 6 }), 'vê-se pela fenda');
+  assert.equal(f.coverBetween({ x: 1, y: 6 }, { x: 5, y: 6 }), 5, 'o arqueiro atrás da fenda tem +5');
+  f.porAresta(4, 3, 5, 3, 3);
+  assert.ok(f.passa(4, 3, 5, 3), 'aresta aberta no meio do jogo');
+});
+teste('criatura Grande não fica com a parede de borda no meio do corpo', () => {
+  const o = Array.from({ length: 12 }, (_, y) => (y === 5 ? '......#.....' : '............'));
+  const f = new Battlefield(12, 12, MAPA, null, null, { n: [], o });
+  assert.ok(f.paredeNaPegada(5, 4, 2), 'a parede corta a pegada 2x2');
+  const r = f.reachable({ x: 2, y: 4 }, 60, () => false, () => true, 2);
+  assert.ok(!r.has('5,4') && !r.has('5,5'), 'o ogro não para atravessado na parede');
+});
+
+// ---- utilidade 2, lote 14 (rules/utilidade.js, rules/familiar.js, game/magias-fora-nucleo.js) ----
+
+import {
+  alarmeCobre, falaIdiomas, temMagia, disfarcado, sobZona, estaCativado, eFeraAmansavel, sentidasPorBemMal, ladoBemMal,
+} from '../rules/utilidade.js';
+import { noSobMagia } from '../game/dialogo-magia.js';
+import { entrarNoEncontro, sairDoEncontro, familiarVirtual } from '../rules/familiar.js';
+import { direcaoDe, revelarArmadilhas, marcas as marcasDoMapa, preparar as prepararMagia, plantasPerto, ferasAoAlcance } from '../game/magias-fora-nucleo.js';
+import { passivePerception } from '../rules/abilities.js';
+
+/** Dá 3º círculo aos conjuradores do grupo de utilidade (nível 3 só tem até o 2º). */
+const com3 = (g) => { for (const c of [g.brenn, g.ilvan]) c.spellcasting.slots[3] = 2; return g; };
+/** Põe a criatura nos eixos do campo (cenário vazio, sem pessoas por perto). */
+const afastar = (g) => { g.dara.pos = { x: 4, y: 5 }; g.pip.pos = { x: 1, y: 8 }; g.brenn.pos = { x: 1, y: 1 }; g.ilvan.pos = { x: 1, y: 2 }; };
+
+teste('lote 14: as 14 magias existem, são SRD, estão nas listas certas e o combate recusa as de cena', () => {
+  const ids = ['salto', 'alarme', 'detectarBemMal', 'encontrarArmadilhas', 'zonaDaVerdade', 'localizarObjeto', 'linguas',
+    'alterarAparencia', 'cativar', 'amizadeAnimal', 'sentidosDaFera', 'fingirDeMorto', 'falarComPlantas', 'encontrarFamiliar'];
+  for (const id of ids) {
+    assert.ok(SPELLS[id], id);
+    assert.equal(SPELLS[id].fonte, 'srd', id);
+    assert.ok(SPELLS[id].desc.length > 60, `${id}: descrição`);
+  }
+  const lista = (classe, n) => listaDaClasse(classe, n).magias;
+  assert.ok(lista('mago', 3).includes('alterarAparencia') && lista('mago', 3).includes('linguas') && lista('mago', 1).includes('encontrarFamiliar'));
+  assert.ok(lista('druida', 3).includes('sentidosDaFera') && lista('druida', 3).includes('falarComPlantas') && lista('druida', 1).includes('amizadeAnimal'));
+  assert.ok(lista('bardo', 3).includes('cativar') && lista('bardo', 3).includes('zonaDaVerdade') && lista('bardo', 3).includes('fingirDeMorto'));
+  assert.ok(lista('clerigo', 3).includes('encontrarArmadilhas') && lista('clerigo', 1).includes('detectarBemMal'));
+  assert.ok(lista('patrulheiro', 3).includes('encontrarArmadilhas') && lista('paladino', 3).includes('zonaDaVerdade'));
+  assert.ok(lista('bruxo', 3).includes('cativar') && lista('feiticeiro', 3).includes('alterarAparencia'));
+  // As de cena o combate recusa; Salto e Fingir de Morto valem nos dois.
+  const { enc, party } = montar({ nivel: 5 });
+  const ilvan = party[ILVAN];
+  ilvan.spellcasting.prepared.push('cativar', 'salto');
+  assert.match(enc.canCast(ilvan, 'cativar').why, /fora de combate/);
+  assert.ok(!SPELLS.salto.soFora && !SPELLS.fingirDeMorto.soFora);
+});
+
+teste('Salto: com a magia, o salto cruza o fosso que a pé barra e pousa um nível acima', () => {
+  const g = grupoDeUtilidade({ prepared: ['salto'] });
+  afastar(g);
+  const field = new Battlefield(12, 12, MAPA);
+  for (const x of [5, 6]) {
+    const i = 5 * field.w + x;
+    field.tiles[i] = 2; field.surfaces[i] = SUPERFICIES.indexOf('fosso'); field.heights[i] = 2;
+  }
+  const enc = new Encounter({ battlefield: field, party: g.party, foes: [], rng: g.rng });
+  g.dara.movementLeftFt = 30;
+  g.dara.corridaFt = 10;
+  assert.equal(enc.destinosDoSalto(g.dara).has('7,5'), false, 'a pé o fosso barra o salto');
+  const r = conjurarFora(g.estado, g.ilvan, 'salto', { ...g.ctx, alvo: g.dara });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(g.dara, 'saltoTriplo'));
+  assert.equal(enc.alcanceDoSalto(g.dara), 30, 'o alcance triplica (limitado pelo deslocamento)');
+  assert.ok(enc.destinosDoSalto(g.dara).has('7,5'), 'com a magia, cai do outro lado');
+  assert.ok(enc.pular(g.dara, { x: 7, y: 5 }).ok);
+  assert.deepEqual([g.dara.pos.x, g.dara.pos.y], [7, 5]);
+  // Um nível acima: o degrau que a pé não se alcança.
+  const f2 = new Battlefield(12, 12, MAPA);
+  f2.tiles[5 * f2.w + 5] = 2;
+  f2.heights[5 * f2.w + 6] = 1;
+  const enc2 = new Encounter({ battlefield: f2, party: [g.pip], foes: [], rng: g.rng });
+  g.pip.pos = { x: 4, y: 5 }; g.pip.movementLeftFt = 30; g.pip.corridaFt = 10;
+  assert.equal(enc2.destinosDoSalto(g.pip).has('6,5'), false);
+  addCondition(g.pip, 'saltoTriplo');
+  assert.ok(enc2.destinosDoSalto(g.pip).has('6,5'), 'sobe um nível');
+  // Acaba no relógio (1 minuto).
+  avancar(g.estado, 2, g.party);
+  assert.ok(!hasCondition(g.dara, 'saltoTriplo'));
+});
+
+teste('Alarme: ninguém perto da marca é pego de surpresa na emboscada daquela cena — e só ali', () => {
+  const g = grupoDeUtilidade({ prepared: ['alarme'] });
+  const t0 = g.estado.minutos;
+  const r = conjurarFora(g.estado, g.ilvan, 'alarme', { ...g.ctx, ritual: true, dados: { ponto: { x: 5, y: 5 }, cena: 'Esconderijo' } });
+  assert.ok(r.ok, r.why);
+  assert.equal(g.estado.minutos - t0, 11, '1 minuto + 10 do ritual');
+  assert.ok(alarmeCobre(g.estado, g.party, 'Esconderijo', { x: 8, y: 5 }));
+  assert.equal(alarmeCobre(g.estado, g.party, 'Outro lugar', { x: 5, y: 5 }), null, 'só na cena do alarme');
+  assert.equal(alarmeCobre(g.estado, g.party, 'Esconderijo', { x: 5, y: 40 }), null, 'só perto da marca');
+  assert.equal(alarmeCobre(g.estado, g.party, 'Esconderijo', { x: 8, y: 5 }).fim - t0 - 11, 480, 'dura 8 horas');
+  const emboscada = (protege) => {
+    const { enc, log } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+    enc.emboscada = { emboscadores: 'foes', furtividade: [30] };
+    if (protege) enc.protegidoDeSurpresa = (c) => Boolean(alarmeCobre(g.estado, g.party, 'Esconderijo', c.pos));
+    enc.start();
+    return log.map((e) => e.text).join('\n');
+  };
+  const sem = emboscada(false);
+  assert.match(sem, /surpreendidos: Dara, Pip, Brenn, Ilvan/, 'sem o alarme todos são surpreendidos');
+  const com = emboscada(true);
+  assert.match(com, /O Alarme toca: Dara, Pip, Brenn, Ilvan ouvem o aviso/, 'com o alarme, o registro conta');
+  assert.match(com, /ninguém foi surpreendido/);
+});
+
+teste('Detectar o Bem e o Mal: sente morto-vivo e aberração a 9 m (e o lado da balança), não o goblin nem o que está longe', () => {
+  const g = grupoDeUtilidade({ prepared: ['detectarBemMal'] });
+  const esq = makeMonster('esqueleto', { x: 8, y: 5 });
+  const gob = makeMonster('goblin', { x: 7, y: 5 });
+  const longe = makeMonster('esqueleto', { x: 20, y: 5 });
+  const todos = [esq, gob, longe];
+  assert.equal(sentidasPorBemMal(g.estado, g.party, g.brenn, todos).length, 0, 'sem a magia, nada');
+  const r = conjurarFora(g.estado, g.brenn, 'detectarBemMal', g.ctx);
+  assert.ok(r.ok, r.why);
+  assert.deepEqual(sentidasPorBemMal(g.estado, g.party, g.brenn, todos).map((m) => m.id), [esq.id]);
+  assert.equal(ladoBemMal(esq), 'mal');
+  assert.equal(ladoBemMal(gob), null);
+  assert.equal(g.brenn.concentrating.spellId, 'detectarBemMal', 'concentração');
+  // O mapa recebe a coluna de luz (marca) sobre quem a magia sente.
+  const app = { capitulo: { explorando: true, lugar: 'X' }, enc: { combatants: [esq, gob, longe, ...g.party] }, inimigosEscondidos: [] };
+  const m = marcasDoMapa({ app, estado: g.estado, herois: () => g.party });
+  assert.deepEqual(m.map((k) => [k.x, k.y, k.cor]), [[8, 5, 'marca-mal']]);
+  avancar(g.estado, 11, g.party);
+  assert.equal(sentidasPorBemMal(g.estado, g.party, g.brenn, todos).length, 0, 'acaba em 10 minutos');
+});
+
+teste('Encontrar Armadilhas: revela as armadilhas à vista, desarma o que a cena desarma e marca o mapa; fora da vista, não', () => {
+  const g = grupoDeUtilidade({ prepared: ['encontrarArmadilhas'] });
+  const field = new Battlefield(40, 12, Array(12).fill('.'.repeat(40)));
+  let fossoAberto = false;
+  const gs = [
+    { id: 'fosso', tipo: 'armadilha', x: 9, y: 5, nome: 'O fosso coberto', texto: 'lajes falsas', revelar: () => { fossoAberto = true; return true; } },
+    { id: 'longe', tipo: 'armadilha', x: 38, y: 5, nome: 'Uma armadilha longe', texto: 'longe', revelar: () => true },
+  ];
+  const app = { capitulo: { explorando: true, lugar: 'X', ganchosMagicos: () => gs }, enc: { field, combatants: g.party }, refresh() {} };
+  const r = conjurarFora(g.estado, g.brenn, 'encontrarArmadilhas', g.ctx);
+  assert.ok(r.ok, r.why);
+  assert.equal(fossoAberto, false, 'conjurar na regra não revela sozinho: é a cena que revela');
+  const achadas = revelarArmadilhas(app, g.estado, g.brenn);
+  assert.deepEqual(achadas.map((a) => a.nome), ['O fosso coberto'], 'só a que está a até 36 m e à vista');
+  assert.ok(fossoAberto);
+  assert.equal(g.estado.marcas.length, 1);
+  assert.deepEqual(marcasDoMapa({ app, estado: g.estado, herois: () => g.party }).map((k) => k.cor), ['marca-armadilha']);
+  assert.equal(revelarArmadilhas(app, g.estado, g.brenn)[0].novo, true, 'a cena diz se é nova (aqui o gancho de teste sempre diz que é)');
+  assert.equal(g.estado.marcas.length, 1, 'a marca não se repete');
+});
+
+teste('Zona da Verdade: quem falha na CAR não mente (o nó troca a mentira pela verdade); quem resiste mente à vontade', () => {
+  const g = grupoDeUtilidade({ prepared: ['zonaDaVerdade'] });
+  const npc = makeMonster('goblin', { x: 8, y: 5 });
+  npc.side = 'neutro';
+  npc.abilities.cha = -10;
+  assert.equal(sobZona(g.estado, g.party, npc), false);
+  const r = conjurarFora(g.estado, g.ilvan, 'zonaDaVerdade', { ...g.ctx, alvo: npc });
+  assert.ok(r.ok, r.why);
+  assert.equal(r.resultado.resistiu, false);
+  assert.ok(sobZona(g.estado, g.party, npc));
+  const no = { fala: 'Combinado.', zona: { fala: 'Eu cobro ouro.' }, fim: 'acordo' };
+  assert.equal(noSobMagia(no, { zona: true }).fala, 'Eu cobro ouro.');
+  assert.equal(noSobMagia(no, { zona: true }).fim, 'acordo', 'o resto do nó fica');
+  assert.match(noSobMagia(no, { zona: true }).narra, /Zona da Verdade/);
+  assert.equal(noSobMagia(no, { zona: false }).fala, 'Combinado.', 'sem a zona, a mentira fica');
+  // Quem resiste (CAR altíssima) segue livre para mentir.
+  const forte = makeMonster('goblin', { x: 8, y: 6 });
+  forte.side = 'neutro';
+  forte.abilities.cha = 100;
+  const r2 = conjurarFora(g.estado, g.ilvan, 'zonaDaVerdade', { ...g.ctx, alvo: forte });
+  assert.ok(r2.resultado.resistiu);
+  assert.equal(sobZona(g.estado, g.party, forte), false);
+  assert.ok(sobZona(g.estado, g.party, npc), 'a zona do primeiro segue de pé');
+  avancar(g.estado, 11, g.party);
+  assert.equal(sobZona(g.estado, g.party, npc), false, 'acaba em 10 minutos');
+});
+
+teste('Localizar Objeto: guarda onde está o objeto escolhido, marca o mapa enquanto dura a concentração', () => {
+  const g = grupoDeUtilidade({ prepared: ['localizarObjeto'] });
+  const app = { capitulo: { explorando: true, lugar: 'X' }, enc: { combatants: g.party }, inimigosEscondidos: [] };
+  const lista = () => marcasDoMapa({ app, estado: g.estado, herois: () => g.party });
+  assert.equal(lista().length, 0);
+  const sem = prepararMagia({ app, estado: g.estado, herois: () => g.party }, g.brenn, 'localizarObjeto', {});
+  assert.match(sem.erro, /escolha/);
+  const gancho = { id: 'chave', x: 9, y: 2, nome: 'Uma chave de ferro' };
+  const { opts } = prepararMagia({ app, estado: g.estado, herois: () => g.party }, g.brenn, 'localizarObjeto', { gancho });
+  const r = conjurarFora(g.estado, g.brenn, 'localizarObjeto', { ...g.ctx, ...opts });
+  assert.ok(r.ok, r.why);
+  assert.deepEqual(r.ativa.data.ponto, { x: 9, y: 2 });
+  assert.equal(g.brenn.concentrating.spellId, 'localizarObjeto');
+  assert.deepEqual(lista().map((k) => [k.x, k.y, k.cor]), [[9, 2, 'marca-alvo']]);
+  g.brenn.concentrating = null;
+  assert.equal(lista().length, 0, 'sem concentração, a marca some');
+});
+
+teste('Línguas: entende e FALA o idioma (Compreender Idiomas só entende); o diálogo conta Línguas por Compreender', () => {
+  const g = com3(grupoDeUtilidade({ prepared: ['linguas', 'compreenderIdiomas'] }));
+  assert.equal(falaIdiomas(g.estado, g.party), false);
+  assert.equal(temMagia(g.estado, g.party, 'compreenderIdiomas'), false);
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'compreenderIdiomas', g.ctx).ok);
+  assert.equal(entendeIdiomas(g.estado, g.party), true);
+  assert.equal(falaIdiomas(g.estado, g.party), false, 'só entende');
+  const h = com3(grupoDeUtilidade({ prepared: ['linguas'] }));
+  const r = conjurarFora(h.estado, h.ilvan, 'linguas', h.ctx);
+  assert.ok(r.ok, r.why);
+  assert.equal(falaIdiomas(h.estado, h.party), true);
+  assert.equal(entendeIdiomas(h.estado, h.party), true);
+  assert.equal(temMagia(h.estado, h.party, 'compreenderIdiomas'), true, 'a opção de ouvir o murmúrio também abre');
+  assert.equal(h.ilvan.spellcasting.slots[3], 1, 'gastou um espaço de 3º');
+  avancar(h.estado, 61, h.party);
+  assert.equal(falaIdiomas(h.estado, h.party), false, 'acaba em 1 hora');
+});
+
+teste('Alterar Aparência: vantagem em Enganação e passa por disfarçado (como Disfarçar-se), com concentração', () => {
+  const g = grupoDeUtilidade({ prepared: ['alterarAparencia'] });
+  const sem = previsaoDeTeste(g.estado, g.party, g.ilvan, 'enganacao', 12);
+  assert.equal(sem.vantagem, false);
+  assert.equal(disfarcado(g.estado, g.party, g.ilvan), false);
+  const r = conjurarFora(g.estado, g.ilvan, 'alterarAparencia', g.ctx);
+  assert.ok(r.ok, r.why);
+  const com = previsaoDeTeste(g.estado, g.party, g.ilvan, 'enganacao', 12);
+  assert.equal(com.vantagem, true);
+  assert.ok(com.chance > sem.chance);
+  assert.ok(com.fontes.includes('Alterar Aparência'));
+  assert.equal(disfarcado(g.estado, g.party, g.ilvan), true, 'a cena vê quem está vestido de outro');
+  assert.equal(disfarcado(g.estado, g.party, g.brenn), false);
+  assert.equal(g.ilvan.concentrating.spellId, 'alterarAparencia');
+});
+
+teste('Cativar: quem falha na SAB não grita, tem Percepção passiva −5 e é pego de surpresa; acaba em 1 minuto', () => {
+  const g = grupoDeUtilidade({ prepared: ['cativar'] });
+  const a = makeMonster('goblin', { x: 9, y: 5 });
+  const b = makeMonster('goblin', { x: 9, y: 6 });
+  a.abilities.wis = -10;
+  b.abilities.wis = 100;
+  const baseA = passivePerception(a);
+  const r = conjurarFora(g.estado, g.ilvan, 'cativar', { ...g.ctx, criaturas: [a, b] });
+  assert.ok(r.ok, r.why);
+  assert.ok(estaCativado(a) && hasCondition(a, 'cativado'));
+  assert.ok(!estaCativado(b), 'quem resiste fica como estava');
+  assert.equal(passivePerception(a), baseA - 5);
+  // Na emboscada do grupo, a Percepção −5 vira a diferença entre notar e ser surpreendido.
+  const { enc, foes } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  const alvo = foes[0];
+  const passiva = passivePerception(alvo);
+  enc.emboscada = { emboscadores: 'party', furtividade: [passiva] };
+  enc.start();
+  assert.ok(!enc.surpresos.has(alvo.id), 'sem Cativar, empate não surpreende');
+  const { enc: enc2, foes: foes2 } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  addCondition(foes2[0], 'cativado');
+  enc2.emboscada = { emboscadores: 'party', furtividade: [passiva] };
+  enc2.start();
+  assert.ok(enc2.surpresos.has(foes2[0].id), 'cativado, é surpreendido');
+  avancar(g.estado, 2, g.party);
+  assert.ok(!hasCondition(a, 'cativado'), 'acaba com a magia');
+  // Sem ninguém à vista que ouça, a cena nem deixa conjurar (não gasta o espaço).
+  const app = { capitulo: { lugar: 'X' }, enc: { combatants: g.party, field: new Battlefield(12, 12, MAPA) }, inimigosEscondidos: [] };
+  assert.match(prepararMagia({ app, estado: g.estado, herois: () => g.party }, g.ilvan, 'cativar', {}).erro, /ninguém/);
+});
+
+teste('Amizade Animal: a fera falha na SAB e fica neutra (não é mais inimiga); uma fera por círculo; só feras de INT ≤ 3', () => {
+  const g = grupoDeUtilidade({ prepared: ['amizadeAnimal'] });
+  const lobos = () => ['a', 'b', 'c'].map((s, i) => { const l = makeMonster('lobo', { x: 9, y: 4 + i }); l.abilities.wis = -10; return l; });
+  const um = lobos();
+  assert.ok(um.every(eFeraAmansavel));
+  const r1 = conjurarFora(g.estado, g.ilvan, 'amizadeAnimal', { ...g.ctx, criaturas: um });
+  assert.ok(r1.ok, r1.why);
+  assert.deepEqual(um.map((l) => l.side), ['neutro', 'foes', 'foes'], 'espaço de 1º pega uma fera');
+  const dois = lobos();
+  const r2 = conjurarFora(g.estado, g.ilvan, 'amizadeAnimal', { ...g.ctx, criaturas: dois, circulo: 2 });
+  assert.ok(r2.ok, r2.why);
+  assert.deepEqual(dois.map((l) => l.side), ['neutro', 'neutro', 'foes'], 'espaço de 2º pega duas');
+  assert.equal(g.ilvan.spellcasting.slots[2], 1);
+  // O inimigo neutro sai da conta da luta.
+  const f = new Battlefield(12, 12, MAPA);
+  const enc = new Encounter({ battlefield: f, party: g.party, foes: dois, rng: g.rng });
+  assert.equal(enc.enemiesOf(g.dara).length, 1);
+  // Resiste quem é forte; goblin e fera esperta não são alvo.
+  const forte = makeMonster('lobo', { x: 9, y: 7 });
+  forte.abilities.wis = 100;
+  const r3 = conjurarFora(g.estado, g.ilvan, 'amizadeAnimal', { ...g.ctx, criaturas: [forte] });
+  assert.ok(r3.resultado.resistiu && forte.side === 'foes');
+  assert.equal(conjurarFora(g.estado, g.ilvan, 'amizadeAnimal', { ...g.ctx, criaturas: [makeMonster('goblin', { x: 9, y: 8 })] }).ok, false);
+  // Acaba em 24 horas: a fera volta ao lado de onde veio.
+  avancar(g.estado, 1441, g.party);
+  assert.equal(um[0].side, 'foes');
+  assert.equal(ferasAoAlcance({ capitulo: null, enc: { combatants: [], field: f }, inimigosEscondidos: [] }, g.ilvan, 30).length, 0);
+});
+
+teste('Convocar Familiar: o espírito entra na luta ao lado do dono, não ataca, é alvo, e some se cai', () => {
+  const g = grupoDeUtilidade({ prepared: ['encontrarFamiliar'] });
+  const t0 = g.estado.minutos;
+  assert.equal(familiarVirtual(g.estado, g.ilvan), null, 'sem a magia, não há familiar');
+  const r = conjurarFora(g.estado, g.ilvan, 'encontrarFamiliar', { ...g.ctx, ritual: true, opcao: 'morcego' });
+  assert.ok(r.ok, r.why);
+  assert.equal(g.estado.minutos - t0, 20, 'ritual de 10 minutos (no livro 1 hora) + 10');
+  assert.equal(g.estado.familiar.defId, 'morcegoFamiliar');
+  assert.equal(familiarVirtual(g.estado, g.ilvan).familiar, true);
+  const { enc, party, foes } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  enc.aoComecar = (e) => entrarNoEncontro(e, g.estado);
+  enc.start();
+  const fam = enc.combatants.find((c) => c.familiar);
+  assert.ok(fam, 'o familiar entra no tabuleiro quando a luta começa');
+  assert.equal(fam.side, 'party');
+  assert.deepEqual(fam.attacks, [], 'não ataca');
+  assert.equal(fam.hp, 1);
+  assert.ok(fam.invocado && fam.invocado.donoId, 'conta como criatura invocada: não segura a vitória nem vale XP');
+  assert.equal(fam.xp, 0);
+  assert.ok(enc.enemiesOf(foes[0]).includes(fam), 'os inimigos podem escolhê-lo');
+  assert.equal(enc.combatants.filter((c) => c.familiar).length, 1);
+  entrarNoEncontro(enc, g.estado);
+  assert.equal(enc.combatants.filter((c) => c.familiar).length, 1, 'só um por vez');
+  // Cai: o registro some.
+  fam.hp = 0; fam.dead = true;
+  assert.equal(sairDoEncontro(g.estado, fam), true);
+  assert.equal(g.estado.familiar, null);
+  assert.equal(party.length, 4);
+  // Duas formas, um por vez: conjurar de novo troca de bicho.
+  conjurarFora(g.estado, g.ilvan, 'encontrarFamiliar', { ...g.ctx, ritual: true, opcao: 'rato' });
+  assert.equal(g.estado.familiar.defId, 'ratoFamiliar');
+  assert.equal(makeMonster('ratoFamiliar', { x: 1, y: 1 }).attacks.length, 0);
+});
+
+teste('Sentidos da Fera: precisa de uma fera disposta — o familiar serve, a fera inimiga não; concentração de 1 hora', () => {
+  const g = grupoDeUtilidade({ prepared: ['sentidosDaFera', 'encontrarFamiliar'] });
+  const sem = conjurarFora(g.estado, g.brenn, 'sentidosDaFera', g.ctx);
+  assert.equal(sem.ok, false, 'sem bicho escolhido não conjura');
+  const lobo = makeMonster('lobo', { x: 5, y: 6 });
+  const hostil = conjurarFora(g.estado, g.brenn, 'sentidosDaFera', { ...g.ctx, alvo: lobo });
+  assert.equal(hostil.ok, false);
+  assert.match(hostil.why, /disposta/);
+  assert.ok(conjurarFora(g.estado, g.ilvan, 'encontrarFamiliar', { ...g.ctx, ritual: true, opcao: 'rato' }).ok);
+  const bicho = familiarVirtual(g.estado, g.brenn);
+  const r = conjurarFora(g.estado, g.brenn, 'sentidosDaFera', { ...g.ctx, ritual: true, alvo: bicho });
+  assert.ok(r.ok, r.why);
+  assert.equal(r.ativa.data.bicho, 'familiar');
+  assert.equal(r.ativa.fim - r.ativa.inicio, 60);
+  assert.equal(g.brenn.concentrating.spellId, 'sentidosDaFera');
+  // Amansada pela Amizade Animal, a fera passa a servir.
+  lobo.side = 'neutro';
+  assert.ok(conjurarFora(g.estado, g.brenn, 'sentidosDaFera', { ...g.ctx, alvo: lobo }).ok);
+});
+
+teste('Fingir de Morto: o alvo parece morto — inimigos o ignoram, ele não age, resiste a tudo menos psíquico; acorda com o toque', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const dara = party[DARA];
+  const ilvan = party[ILVAN];
+  ilvan.pos = { x: 4, y: 5 };
+  ilvan.spellcasting.prepared.push('fingirDeMorto');
+  assert.ok(enc.enemiesOf(foes[0]).includes(dara), 'sem a magia, o goblin a vê');
+  const r = enc.castSpell(ilvan, 'fingirDeMorto', { targets: [dara] });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(dara, 'fingeMorto'));
+  assert.ok(!enc.enemiesOf(foes[0]).includes(dara), 'os inimigos a tratam como morta');
+  assert.ok(conditionEffects(dara).incapacitated);
+  assert.equal(enc.danoPorTipo(dara, 10, 'cortante'), 5, 'resiste a todo dano');
+  assert.equal(enc.danoPorTipo(dara, 10, 'psíquico'), 10, 'menos o psíquico');
+  assert.equal(enc.speedOf(dara), 0);
+});
+
+teste('Falar com Plantas: dura 10 minutos; só há o que perguntar onde há planta a 9 m', () => {
+  const g = com3(grupoDeUtilidade({ prepared: ['falarComPlantas'] }));
+  const r = conjurarFora(g.estado, g.ilvan, 'falarComPlantas', g.ctx);
+  assert.ok(r.ok, r.why);
+  assert.ok(ativaDe(g.estado, g.party, 'falarComPlantas', { por: g.ilvan }));
+  const f = new Battlefield(12, 12, MAPA);
+  g.ilvan.pos = { x: 2, y: 5 };
+  const app = { enc: { field: f } };
+  assert.equal(plantasPerto(app, g.ilvan), 0, 'chão limpo: ninguém para conversar');
+  f.surfaces[5 * f.w + 8] = SUPERFICIES.indexOf('arbusto');
+  f.surfaces[5 * f.w + 11] = SUPERFICIES.indexOf('arbusto');
+  assert.equal(plantasPerto(app, g.ilvan), 1, 'só o mato a até 9 m');
+  avancar(g.estado, 11, g.party);
+  assert.equal(ativaDe(g.estado, g.party, 'falarComPlantas', { por: g.ilvan }), null);
+});
+
+teste('a espada não atravessa a parede de borda, mas alcança pela porta', () => {
+  const o = Array.from({ length: 12 }, (_, y) => (y === 5 ? '......#.....' : y === 6 ? '....../.....' : '............'));
+  const { enc, party, foes } = montar({ foes: [['goblin', { x: 6, y: 5 }]] });
+  enc.field = new Battlefield(12, 12, MAPA, null, null, { n: [], o });
+  const h = party[0];
+  h.pos = { x: 5, y: 5 };
+  assert.ok(!enc.canAttack(h, foes[0]).ok, 'há uma parede no meio');
+  // Pela porta, de frente. Na diagonal não vale: não se dá a volta na ponta
+  // da parede num passo (a mesma regra de quina do movimento).
+  h.pos = { x: 5, y: 6 };
+  foes[0].pos = { x: 6, y: 6 };
+  assert.ok(enc.canAttack(h, foes[0]).ok, 'pela porta aberta alcança');
+});
+teste('ataque de oportunidade não atravessa a parede de borda', () => {
+  const o = Array.from({ length: 12 }, (_, y) => (y === 5 ? '......#.....' : '............'));
+  const { enc, party, foes } = montar({ foes: [['goblin', { x: 6, y: 5 }]] });
+  enc.field = new Battlefield(12, 12, MAPA, null, null, { n: [], o });
+  const h = party[0];
+  h.pos = { x: 5, y: 5 };
+  foes[0].reactionUsed = false;
+  const antes = h.hp;
+  enc.moveAlong(h, [{ x: 5, y: 5 }, { x: 4, y: 5 }]);
+  assert.equal(h.hp, antes, 'o goblin do outro lado do muro não alcança');
+});
+
+teste('o hobgoblin mostra o arco quando atira e a espada quando golpeia', () => {
+  const { enc, party, foes } = montar({ foes: [['hobgoblin', { x: 9, y: 5 }]] });
+  const hob = foes[0];
+  const h = party[0];
+  assert.equal(hob.look, 'hobgoblin');
+  h.pos = { x: 2, y: 5 };
+  hob.actionUsed = false;
+  assert.ok(enc.attackAction(hob, h, 'Arco longo').ok);
+  assert.equal(hob.look, 'hobgoblin@cotaDeMalha-arcoLongo', 'arco na mão');
+  h.pos = { x: 8, y: 5 };
+  hob.actionUsed = false;
+  assert.ok(enc.attackAction(hob, h, 'Espada longa').ok);
+  assert.equal(hob.look, 'hobgoblin', 'de volta à espada e ao escudo');
+});
+
+// ---- revisão do lote 14: tipos das aberrações, Cativar, Fingir de Morto, Amizade Animal ----
+
+teste('tipos das aberrações: cada bloco tem o do livro, e o Detectar o Bem e o Mal só acende as certas', () => {
+  const tipos = { gelatinaOcre: 'gosma', grick: 'monstruosidade', doppelganger: 'monstruosidade', dragaoVerdeJovem: 'dragão',
+    caveiraCandente: 'morto-vivo', espinheiroRastejante: 'planta', vigiaCiclopico: 'aberração', spectator: 'aberração' };
+  for (const [id, t] of Object.entries(tipos)) assert.equal(makeMonster(id, { x: 1, y: 1 }).tipo, t, id);
+  assert.equal(ladoBemMal(makeMonster('grick', { x: 1, y: 1 })), null, 'grick não é aberração');
+  assert.equal(ladoBemMal(makeMonster('dragaoVerdeJovem', { x: 1, y: 1 })), null);
+  assert.equal(ladoBemMal(makeMonster('caveiraCandente', { x: 1, y: 1 })), 'mal');
+  assert.equal(ladoBemMal(makeMonster('vigiaCiclopico', { x: 1, y: 1 })), 'mal');
+  // Imobilizar Pessoa só pega humanoide: o doppelganger (monstruosidade) fica de fora.
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['doppelganger', { x: 6, y: 5 }], ['goblin', { x: 6, y: 6 }]] });
+  party[ILVAN].spellcasting.prepared.push('imobilizarPessoa');
+  assert.match(enc.porqueNaoAlvo(party[ILVAN], getSpell('imobilizarPessoa'), foes[0]), /humanoide/, 'doppelganger não é humanoide');
+  assert.equal(enc.porqueNaoAlvo(party[ILVAN], getSpell('imobilizarPessoa'), foes[1]), null);
+});
+
+teste('Cativar: 60 pés, sem concentração; imune a enfeitiçado passa; longe demais não pega', () => {
+  assert.equal(SPELLS.cativar.rangeFt, 60);
+  assert.ok(!SPELLS.cativar.concentration);
+  const g = grupoDeUtilidade({ prepared: ['cativar'] });
+  afastar(g);
+  const perto = makeMonster('goblin', { x: 5, y: 2 });
+  const imune = makeMonster('ghoul', { x: 5, y: 3 });
+  const longe = makeMonster('goblin', { x: 20, y: 2 });
+  for (const m of [perto, imune, longe]) m.abilities.wis = -10;
+  const r = conjurarFora(g.estado, g.ilvan, 'cativar', { ...g.ctx, criaturas: [perto, imune, longe] });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(perto, 'cativado'));
+  assert.ok(!hasCondition(imune, 'cativado'), 'imune a enfeitiçado passa direto');
+  assert.ok(!hasCondition(longe, 'cativado'), 'a 95 pés está fora do alcance');
+  assert.equal(g.ilvan.concentrating ?? null, null, 'sem concentração');
+});
+
+teste('Amizade Animal: imune a enfeitiçado não é amansada; ferir a fera desfaz a amizade', () => {
+  const g = grupoDeUtilidade({ prepared: ['amizadeAnimal'] });
+  afastar(g);
+  const l = makeMonster('lobo', { x: 5, y: 2 });
+  l.abilities.wis = -10;
+  l.conditionImmunities = [...(l.conditionImmunities ?? []), 'enfeitiçado'];
+  conjurarFora(g.estado, g.ilvan, 'amizadeAnimal', { ...g.ctx, criaturas: [l] });
+  assert.equal(l.side, 'foes', 'imune: nada muda');
+  const { enc, party, foes } = montar({ foes: [['lobo', { x: 10, y: 10 }]] });
+  foes[0].side = 'neutro'; foes[0].amizadeAnimal = 'x';
+  enc.applyDamage(foes[0], 1, 'cortante', party[0]);
+  assert.equal(foes[0].side, 'foes', 'o grupo feriu a fera: a amizade acaba');
+});
+
+teste('Fingir de Morto: com o grupo todo fingindo a luta não trava; só o conjurador desfaz, ao lado, com ação', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const dara = party[DARA];
+  const ilvan = party[ILVAN];
+  ilvan.pos = { x: 4, y: 5 };
+  ilvan.spellcasting.prepared.push('fingirDeMorto');
+  assert.ok(enc.castSpell(ilvan, 'fingirDeMorto', { targets: [dara] }).ok);
+  assert.ok(!enc.enemiesOf(foes[0]).includes(dara), 'havendo outro alvo, ela é ignorada');
+  for (const c of party) if (c !== dara) addCondition(c, 'fingeMorto', { source: ilvan.id });
+  assert.ok(enc.enemiesOf(foes[0]).length > 0, 'todos fingindo: ainda há alvo (a luta não trava)');
+  const pip = party[1];
+  assert.ok(!enc.despertarFingido(pip, dara), 'outro aliado não desfaz');
+  ilvan.pos = { x: 9, y: 9 };
+  assert.ok(!enc.despertarFingido(ilvan, dara), 'longe não desfaz');
+  ilvan.pos = { x: 4, y: 6 };
+  ilvan.actionUsed = false;
+  assert.ok(enc.despertarFingido(ilvan, dara));
+  assert.ok(!hasCondition(dara, 'fingeMorto') && ilvan.actionUsed, 'desfeita, e gastou a ação');
+});
+
+teste('Alarme só cobre uma cena nomeada; Localizar Objeto dá a direção em oito pontos', () => {
+  const g = grupoDeUtilidade({ prepared: ['alarme'] });
+  conjurarFora(g.estado, g.ilvan, 'alarme', { ...g.ctx, dados: { ponto: { x: 5, y: 5 }, cena: undefined } });
+  assert.equal(alarmeCobre(g.estado, g.party, undefined, { x: 5, y: 5 }), null, 'sem cena, não cobre qualquer lugar');
+  assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 5, y: 1 }), 'ao nordeste');
+  assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 5, y: 9 }), 'ao sudoeste');
+  assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 9, y: 9 }), 'ao sul');
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 if (falhas) process.exit(1);

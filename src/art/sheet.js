@@ -3,7 +3,7 @@
 // combatentes do mesmo tipo, entre encontros.
 
 import { paint, DIRECTIONS } from './draw.js';
-import { resolveLook, LOOKS } from './looks.js';
+import { resolveLook } from './looks.js';
 import { folhaImportada, carregarFolhas } from './folhas/index.js';
 import { retratoPintado } from './retratos/index.js';
 
@@ -85,9 +85,9 @@ export function getSheet(lookKey) {
 }
 
 export function buildSheet(lookKey) {
-  // a chave com estado (`~furia`) nao esta em LOOKS: o pintor desenha a sem
-  // estado, que e a mesma figura
-  const look = resolveLook(LOOKS[lookKey] ? lookKey : lookKey.split('~')[0]);
+  // a chave com estado (`~furia`) ou de folha (`@...`) sem look proprio: o
+  // pintor desenha a figura base (`resolveLook`)
+  const look = resolveLook(lookKey);
   const maxFrames = ANIMS.reduce((m, a) => Math.max(m, a.frames), 0);
   const width = CELL_PW * maxFrames;
   const height = CELL_PH * DIRECTIONS.length * ANIMS.length;

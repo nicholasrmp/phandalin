@@ -159,7 +159,8 @@ export function criarCapitulo2(app, config) {
     estado.explorando = false;
     estado.lutando = g;
     root.classList.remove('explorando');
-    if (g.id === 'pocos') estado.klargAvisado = true;      // um goblin corre avisar Klarg
+    // Um goblin corre avisar Klarg — a não ser que todos estejam cativados (Cativar): ninguém grita nem corre.
+    if (g.id === 'pocos' && !hostis(g).every((f) => hasCondition(f, 'cativado'))) estado.klargAvisado = true;
     enc.emboscada = surpresa === 'deles'
       ? { emboscadores: 'foes', furtividade: g.furtividade }
       : surpresa === 'nossa'
@@ -398,7 +399,8 @@ export function criarCapitulo2(app, config) {
   // ------------------------------------------------------------- área 4 ----
   /** O ressalto frágil da passagem do oeste. */
   async function ressalto(c) {
-    if (estado.ressaltoQuebrado || pequeno(c) || !RESSALTO.some((p) => p.x === c.pos.x && p.y === c.pos.y)) return false;
+    // Encontrar Armadilhas: quem sabe da laje rachada passa rente à parede, de um em um, sem pisar nela.
+    if (estado.ressaltoQuebrado || estado.ressaltoVisto || pequeno(c) || !RESSALTO.some((p) => p.x === c.pos.x && p.y === c.pos.y)) return false;
     estado.ressaltoQuebrado = true;
     const r = enc.resistencia(c, 'dex', 10);
     const dano = enc.rng.die(6) + enc.rng.die(6);
@@ -566,6 +568,11 @@ export function criarCapitulo2(app, config) {
           ],
           opcoes: [
             { texto: 'Combinado. Onde está o Klarg?', vai: 'acordo' },
+            // Zona da Verdade: o "combinado" dele é mentira, e sob a magia ele não a sustenta.
+            { texto: 'Jure aqui, na Zona da Verdade: o humano é nosso só com a cabeça de Klarg, sem resgate.', zona: true, oculta: true, vai: 'jura' },
+            // Línguas: de chefe para chefe, no idioma dele.
+            { texto: 'Falar com ele em goblin, de chefe para chefe: soltar o homem agora o faz parecer forte.', magia: 'linguas', magiaNome: 'Línguas', oculta: true,
+              teste: { pericia: 'persuasao', cd: 15, vantagem: true }, sucesso: 'solta', falha: 'nao' },
             { texto: 'Solte o homem agora, como prova. A gente cuida do Klarg de qualquer jeito.', teste: { pericia: 'persuasao', cd: 15 }, sucesso: 'solta', falha: 'nao' },
             { texto: 'Solte ele, ou ninguém nesta sala vê o sol de novo.', teste: { pericia: 'intimidacao', cd: 15 }, sucesso: 'solta', falha: 'furia' },
             { texto: 'Atacar.', fim: 'luta' },
@@ -574,7 +581,18 @@ export function criarCapitulo2(app, config) {
         acordo: {
           narra: 'Do chão, com a boca inchada, o homem amarrado murmura: — Não confiem nele.',
           fala: 'Gente esperta! Klarg mora no fundo, no leste, depois dos poços. Voltem com a cabeça e o humano é de vocês.',
+          // Sob a Zona da Verdade, o "de vocês" cai: depois da cabeça vem o resgate.
+          zona: { fala: 'Klarg mora no fundo, no leste, depois dos poços. Voltem com a cabeça… e depois Yeemik cobra ouro pelo humano. Cobra, cobra! Yeemik não consegue dizer que não cobra.' },
           fim: 'acordo',
+        },
+        jura: {
+          narra: 'A Zona da Verdade aperta a garganta de Yeemik: ele tenta jurar que não cobra nada e só sai um engasgo.',
+          fala: 'Yeemik… Yeemik não pode dizer isso! Yeemik cobra, cobra ouro, o humano comeu a comida de Yeemik! Mas Yeemik só quer o lugar do Klarg, de verdade, de verdade!',
+          opcoes: [
+            { texto: 'Então solte o homem agora, sem ouro, e a cabeça de Klarg sai de graça.', teste: { pericia: 'persuasao', cd: 10 }, sucesso: 'solta', falha: 'nao' },
+            { texto: 'Combinado. A cabeça, e o resgate depois.', vai: 'acordo' },
+            { texto: 'Atacar.', fim: 'luta' },
+          ],
         },
         nao: {
           fala: 'Prova? Yeemik é que quer prova. Cabeça primeiro, humano depois.',
@@ -904,12 +922,29 @@ export function criarCapitulo2(app, config) {
   // O que a cena aceita das magias de utilidade (`game/magias-fora.js`): o baú de Klarg tem duas
   // poções de cura, e o Detectar Magia as acende no chão.
   function ganchosMagicos() {
-    if (!estado.explorando || estado.bauAchado) return [];
+    if (!estado.explorando) return [];
     const f = enc.field;
     const out = [];
+    // Lote 14: as feras do canil (Amizade Animal), e o baú (Localizar Objeto).
+    const canil = grupos.canil;
+    if (canil && !canil.vencido && !canil.tregua && hostis(canil).length) {
+      out.push({
+        id: 'canil', tipo: 'fera', x: 21, y: 12, nome: 'Os lobos acorrentados',
+        criaturas: () => hostis(canil),
+        // Quando nenhum lobo ainda rosna, o canil está em trégua: eles aparecem deitados, nas correntes.
+        aplicar: () => {
+          if (hostis(canil).length) return;
+          canil.tregua = true;
+          trazer(canil);
+          enc.say('acao', 'Os três lobos se deitam nas correntes, de olho no grupo, sem rosnar. Dá para passar.');
+        },
+      });
+    }
+    // A laje frágil é fraqueza natural da pedra, não armadilha: Encontrar Armadilhas não a vê.
     for (let y = 0; y < f.h; y++) {
       for (let x = 0; x < f.w; x++) {
-        if (DENTRO_DO_KLARG({ x, y }) && f.surfaceAt(x, y) === 'bau') {
+        if (!estado.bauAchado && DENTRO_DO_KLARG({ x, y }) && f.surfaceAt(x, y) === 'bau') {
+          out.push({ id: `bau-p:${x},${y}`, tipo: 'procurado', x, y, nome: 'Um baú (o mais próximo)' });
           out.push({
             id: `bau:${x},${y}`, tipo: 'magico', x, y, nome: 'O baú entre os suprimentos',
             aura: { escola: 'evocação', texto: 'Duas auras pequenas e iguais lá dentro, de frasquinhos que curam. Nada mais de mágico no baú.' },
@@ -918,6 +953,32 @@ export function criarCapitulo2(app, config) {
       }
     }
     return out;
+  }
+
+  /** O bicho de Sentidos da Fera viu estas criaturas escondidas: elas já não pegam ninguém de surpresa. */
+  function espiou(criaturas) {
+    for (const g of Object.values(grupos)) {
+      if (g.membros.some((m) => criaturas.includes(m))) g.furtividade = g.furtividade.map(() => 0);
+    }
+  }
+
+  /** Falar com Plantas: o mato conta quem se esconde nele (os vigias do posto de ripas). */
+  async function plantasSabem(c) {
+    const g = grupos.vigias;
+    const perto = pendentes().includes(g) && hostis(g).some((f) => distanceFt(f.pos, c.pos) <= 30);
+    if (!perto) {
+      await narrar(root, { formato: 'painel', paginas: [{ titulo: 'Falar com Plantas', texto: [
+        'O mato fala de gente: só o grupo, a trilha, e um cheiro velho de goblin que veio do riacho e voltou. Nada escondido aqui por perto.'] }] });
+      return;
+    }
+    const escolha = await narrar(root, {
+      formato: 'painel',
+      paginas: [{ texto: ['O mato farfalha em coro: "dois, dois de arco, atrás das ripas onde o galho vergou… um cochila, o outro olha o riacho".',
+        `${c.name} já sabe onde estão, e eles não sabem que foram descobertos.`] }],
+      escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }, { rotulo: 'Ainda não', valor: 'ainda' }],
+    });
+    if (escolha === 'ainda') { espiou(hostis(g)); return; }
+    await combate(g, 'nossa');
   }
 
   function motivoSemDescanso(tipo) {
@@ -932,6 +993,8 @@ export function criarCapitulo2(app, config) {
     get encerrado() { return estado.encerrado; },
     interacoes,
     ganchosMagicos,
+    plantasSabem,
+    espiou,
     depoisDeMover,
     fimDoCombate,
     evento,

@@ -151,6 +151,24 @@ GRUPOS = {
         'quadros': {'todas': [0, 2, 4, 7, 9, 12]},
         'ancora': 'base',
     },
+    # O Castelo Dentefino. Braseiros: tigela de pedra e cobre, acesos; o do
+    # salao escuro e o de carvao frio. Fora: os de outra forma (caixa preta,
+    # gargula, carrinho, pendurado, anel de chao), que liam como outra coisa.
+    'braseiro': {'pasta': 'braseiro/3282bda6-3394-4afa-9abe-c0ac23944ff9',
+                 'quadros': {'todas': [5, 11, 14]}, 'ancora': 'base'},
+    'braseiroFrio': {'pasta': 'braseiro/3282bda6-3394-4afa-9abe-c0ac23944ff9',
+                     'quadros': {'todas': [1]}, 'ancora': 'base'},
+    'armeiro': {'pasta': 'armeiro/e20c304d-0abb-4748-a688-5f0739401856',
+                'quadros': {'todas': [0, 1, 5, 9, 14]}, 'ancora': 'base'},
+    # A palha saiu clara demais para o piso escuro do castelo: desce para as
+    # cores do colmo da casa-a, e a laje de baixo escurece.
+    'palha': {'pasta': 'palha/041026ed-097e-4a1d-b58b-fed3797b51b8',
+              'quadros': {'todas': [0, 1, 3]}, 'ancora': 'base',
+              'cores': {'#b39d5c': '#85733f', '#8f7a3e': '#66572c', '#6e5a2c': '#4c3e1f', '#8f8a7f': '#5e5a52'}},
+    # Escombro que barra o passo: so os montes altos (fora o cascalho raso,
+    # a grade, o arco e o estandarte).
+    'desabamento': {'pasta': 'desabamento/cb5332a0-ec17-42b9-9cc3-1ef3d9e8fe25',
+                    'quadros': {'todas': [1, 2, 3, 4, 5, 9, 11, 15]}, 'ancora': 'base'},
 }
 
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
@@ -177,6 +195,15 @@ DIRIGIDOS = {
     'taverna': {'pasta': 'taverna/e672b189-bc57-474d-ae3c-db375a0c3da5', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
     # A tenda do Mago Vermelho no Poco da Coruja Velha: pegada de 2 x 2.
     'tenda': {'pasta': 'tenda/87bd764f-d760-4411-b99c-ce86c8a5afa6', 'meia_pegada': 24, 'direcoes': DIAGONAIS},
+    # O Castelo Dentefino: moveis de varias casas.
+    'altar': {'pasta': 'altar/f1c6ef6a-9358-4fd8-a72d-a11f333c029f', 'meia_pegada': 22, 'direcoes': DIAGONAIS},
+    'banheira': {'pasta': 'banheira/f3ace672-b48e-48f7-afac-1d1a7f83b840', 'meia_pegada': 20, 'direcoes': DIAGONAIS},
+    # A mesa comprida saiu torta nas vistas NE e NW; e simetrica de ponta a
+    # ponta, entao a NE usa a SW e a NW usa a SE.
+    'mesaBanquete': {'pasta': 'mesaBanquete/6267f6c9-c151-4822-9f48-fc6b6831f5fb', 'meia_pegada': 24, 'direcoes': DIAGONAIS,
+                     'vista': {'north-east': 'south-west', 'north-west': 'south-east'}},
+    'camaRei': {'pasta': 'camaRei/13ea8bbb-b47d-4d0f-9095-c8155ed2ddba', 'meia_pegada': 28, 'direcoes': DIAGONAIS},
+    'portaoQuebrado': {'pasta': 'portaoQuebrado/acfd293b-b5cf-4b0b-b5ae-461c361cfdb0', 'meia_pegada': 20, 'direcoes': DIAGONAIS},
 }
 
 # O cavalo B e o mesmo desenho com a pelagem trocada, cor por cor exata: baio
@@ -249,6 +276,8 @@ def main():
             for i in idxs:
                 im = Image.open(pasta / f'frame_urls_{i}.png').convert('RGBA')
                 im = corta_texto(im) if g.get('corta_texto') else im.crop(im.getbbox())
+                if 'cores' in g:
+                    im = recolorir(im, g['cores'])
                 quadros.append((nome, papel, i, im, ancora(im, g['ancora'])))
     for nome, g in DIRIGIDOS.items():
         pasta = OBJ / g['pasta']
@@ -258,7 +287,7 @@ def main():
         # O tabuleiro so usa as quatro diagonais; o predio grande nao gasta
         # atlas com as outras quatro.
         for d in g.get('direcoes', DIRECOES):
-            im = Image.open(pasta / f'storage_urls_{d}.png').convert('RGBA')
+            im = Image.open(pasta / f"storage_urls_{g.get('vista', {}).get(d, d)}.png").convert('RGBA')
             im = im.crop(im.getbbox())
             if 'cores' in g:
                 im = recolorir(im, g['cores'])

@@ -289,45 +289,47 @@ export const HUMANOIDES = {
     blurb: 'Abre com Sono para tirar dois personagens da luta sem rolar ataque, depois Mãos Flamejantes em quem se amontoar; 40 PV e CA 12 significam que o grupo tem uma rodada para alcançá-lo.',
   },
 
-  // O CAJAVIDRO (Iarno Albrek), chefe dos Marcarrubra. O livro dá a ele um
-  // bloco de mago fraco que não está no SRD; o `mago` do SRD é nível 6 e
-  // varreria um grupo de nível 2 com uma bola de fogo. Este bloco é NOSSO
-  // (`fonte: 'propria'`): números escritos para o papel que o livro dá —
-  // 200 XP, foge ou se rende, abre com armadura arcana do cajado e joga
-  // mísseis de longe. Nada copiado do bloco publicado.
+  // O CAJAVIDRO (Iarno Albrek), chefe dos Marcarrubra. Os números são os do
+  // livro da aventura (A Mina Perdida de Phandelver): o bloco de mago maligno
+  // que ela traz, mais o Cajado de Defesa que dá o nome a ele (+1 na CA, 10
+  // cargas: Armadura Arcana por 1, Escudo Arcano por 2). Conteúdo de fã, com
+  // as regras escritas por nós; nenhum texto do livro copiado.
   cajavidro: {
     id: 'cajavidro',
     name: 'Cajavidro',
     look: 'iarno',
-    fonte: 'propria',
+    fonte: 'aventura',
     size: 'médio',
-    level: 3,
+    // Conjurador de 4º nível: +2 de proficiência, CD 13 e +5 com INT 17.
+    level: 4,
     cr: '1',
     xp: 200,
-    abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 13 },
-    // Já está sob a armadura arcana quando o grupo chega: ele conjura de
-    // manhã, como quem veste roupa.
-    ac: 15,
-    acNote: 'armadura arcana',
+    abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 11 },
+    // Chega já sob a Armadura Arcana do cajado (13 + DES 2) e com o +1 do
+    // próprio cajado; sem a armadura seria 13 (12 + 1).
+    ac: 16,
+    acNote: 'Armadura Arcana do cajado, +1 do Cajado de Defesa',
     maxHp: 22,
+    hpDice: '5d8',
     speedFt: 30,
     saves: ['int', 'wis'],
-    skills: ['arcanismo', 'historia', 'enganacao'],
+    skills: ['arcanismo', 'historia'],
     attacks: [
       { name: 'Cajado de vidro', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff' },
-      // O truque que o motor sabe usar por monstro: de longe, enquanto a IA
-      // não conjura o resto da lista.
-      { name: 'Raio de Gelo', bonus: 5, damage: '1d8', type: 'frio', ranged: true, rangeFt: 60, longRangeFt: 60, art: 'bow' },
     ],
-    // Nível 3 dá +2 de proficiência: CD 13 e +5 de ataque mágico com INT 17.
     spellcasting: {
       ability: 'int',
-      cantrips: ['raioDeGelo', 'toqueChocante'],
-      prepared: ['armaduraArcana', 'misselMagico', 'escudoArcano', 'enfeiticarPessoa', 'imobilizarPessoa', 'passoNebuloso'],
-      slots: [0, 4, 2],
+      cantrips: ['luz', 'maoMagica', 'toqueChocante'],
+      // Escudo Arcano sai do cajado (2 cargas), não de espaço: `cajado`.
+      prepared: ['enfeiticarPessoa', 'misselMagico', 'imobilizarPessoa', 'passoNebuloso', 'escudoArcano'],
+      slots: [0, 4, 3],
+      cajado: { cargas: 10, magias: { armaduraArcana: 1, escudoArcano: 2 } },
+      noMotor: true,
+      // A IA conjura no turno dele (`conjurarNoTurno` em `rules/ai.js`).
+      conjuraNoTurno: true,
     },
-    traits: ['conjuracao'],
-    blurb: 'Abre com armadura arcana, cola em quem chega perto com imobilizar e chove mísseis de longe; com 8 PV ou menos e sem saída, se rende.',
+    traits: ['conjuracao', 'cajadoDeDefesa'],
+    blurb: 'Prende o mais forte com Imobilizar Pessoa, solta Mísseis Mágicos de longe, some com Passo Nebuloso quando encurralado e ergue o Escudo Arcano pelo cajado. Sem fuga e com 8 PV ou menos, se rende.',
   },
 
   // BRUGHOR MACHADO-MORDEDOR, chefe do bando orc do Cume da Wyvern (Parte 3).
@@ -660,6 +662,10 @@ export const TRAITS = {
   eminenciaDivina: {
     name: 'Eminência Divina',
     desc: 'Gastando um espaço de magia, o próximo golpe dele leva +3d6 de dano radiante.',
+  },
+  cajadoDeDefesa: {
+    name: 'Cajado de Defesa',
+    desc: '+1 na CA enquanto o segura. Tem 10 cargas: Armadura Arcana gasta 1, Escudo Arcano gasta 2 (a reação contra um golpe que ia acertar).',
   },
   conjuracao: {
     name: 'Conjuração',

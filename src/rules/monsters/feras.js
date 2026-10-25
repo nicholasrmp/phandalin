@@ -240,6 +240,55 @@ export const FERAS = {
     blurb: 'Entra voando 18 m, morde e sai do alcance de todo mundo no mesmo turno; escuridão não o atrasa, surdez sim.',
   },
 
+  // FAMILIARES (Convocar Familiar, SRD): bichos miúdos de 1 PV que obedecem e não atacam.
+  // São criaturas NOSSAS na forma (o espírito vem com a magia) e SRD nos números: Rato e Morcego
+  // do apêndice de criaturas. `familiar: true` marca a ficha; o combate lê o resto em
+  // `rules/familiar.js`. Sem ataques: o familiar nunca ataca (livro).
+  ratoFamiliar: {
+    id: 'ratoFamiliar',
+    name: 'Rato (familiar)',
+    look: 'familiarRat',
+    size: 'miúdo',
+    tipo: 'fera',
+    fonte: 'SRD',
+    familiar: true,
+    level: 1,
+    cr: '0',
+    xp: 0,
+    abilities: { str: 2, dex: 11, con: 9, int: 2, wis: 10, cha: 4 },
+    ac: 10,
+    maxHp: 1,
+    hpDice: '1d4-1',
+    speedFt: 20,
+    senses: { darkvisionFt: 30, passivePerception: 10 },
+    attacks: [],
+    traits: ['keenSmell'],
+    blurb: 'Um rato miúdo, olho e ouvido de quem o chamou. Não ataca; pelo olfato aguçado, farejando o que está além da porta.',
+  },
+
+  morcegoFamiliar: {
+    id: 'morcegoFamiliar',
+    name: 'Morcego (familiar)',
+    look: 'familiarBat',
+    size: 'miúdo',
+    tipo: 'fera',
+    fonte: 'SRD',
+    familiar: true,
+    level: 1,
+    cr: '0',
+    xp: 0,
+    abilities: { str: 2, dex: 15, con: 8, int: 2, wis: 12, cha: 4 },
+    ac: 12,
+    maxHp: 1,
+    hpDice: '1d4-1',
+    speedFt: 30,
+    speeds: { walkFt: 5, flyFt: 30 },
+    senses: { blindsightFt: 60, passivePerception: 11 },
+    attacks: [],
+    traits: ['echolocation', 'keenHearing'],
+    blurb: 'Um morcego miúdo que voa sobre qualquer fosso e escuta o que está atrás da parede. Não ataca; é olho e ouvido de quem o chamou.',
+  },
+
   stirge: {
     id: 'stirge',
     name: 'Stirge',

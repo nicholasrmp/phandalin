@@ -37,6 +37,7 @@ export const ABERRACOES = {
 
   gelatinaOcre: {
     id: 'gelatinaOcre',
+    tipo: 'gosma',
     name: 'Gelatina Ocre',
     look: 'gelatinaOcre',
     fonte: 'SRD',
@@ -71,8 +72,38 @@ export const ABERRACOES = {
     blurb: 'Tranca o corredor e cobra pedágio em ácido. Lenta demais para perseguir — e se parte em duas se você a cortar.',
   },
 
+  // O GRICK do Castelo Dentefino (área 8), o bicho de estimação do Lhupo.
+  // Bloco do SRD 5.1. A Camuflagem de Pedra (vantagem em Furtividade no
+  // meio de pedra) entra como perícia alta; a resistência a dano não mágico
+  // fica de fora até o motor saber distinguir arma mágica.
+  grick: {
+    id: 'grick',
+    tipo: 'monstruosidade',
+    name: 'Grick',
+    look: 'grick',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 3,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 14, dex: 14, con: 11, int: 3, wis: 14, cha: 5 },
+    ac: 14,
+    acNote: 'couro de pedra',
+    maxHp: 27,
+    speedFt: 30,
+    senses: { darkvisionFt: 60 },
+    skills: ['furtividade', 'percepcao'],
+    attacks: [
+      { name: 'Tentáculos', bonus: 4, damage: '2d6+2', type: 'cortante', reachFt: 5, art: 'claw' },
+      { name: 'Bico', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'bite' },
+    ],
+    multiattack: { count: 2, sequence: ['Tentáculos', 'Bico'] },
+    blurb: 'Espera no alto, no escuro, e cai em cima de quem passa: tentáculos e um bico que rasga.',
+  },
+
   doppelganger: {
     id: 'doppelganger',
+    tipo: 'monstruosidade',
     name: 'Doppelganger',
     look: 'doppelganger',
     fonte: 'SRD',
@@ -99,6 +130,7 @@ export const ABERRACOES = {
 
   dragaoVerdeJovem: {
     id: 'dragaoVerdeJovem',
+    tipo: 'dragão',
     name: 'Dragão Verde Jovem',
     look: 'dragaoVerdeJovem',
     fonte: 'SRD',
@@ -178,6 +210,7 @@ export const ABERRACOES = {
   // parede.
   caveiraCandente: {
     id: 'caveiraCandente',
+    tipo: 'morto-vivo',
     name: 'Caveira Candente',
     look: 'caveiraCandente',
     fonte: 'propria',
@@ -232,37 +265,39 @@ export const ABERRACOES = {
   // CA 15 (17 colada na soleira) dão três rodadas de luta.
   vigiaCiclopico: {
     id: 'vigiaCiclopico',
+    tipo: 'aberração',
     name: 'Vigia Ciclópico',
     look: 'vigiaCiclopico',
-    fonte: 'propria',
+    // Os números e as habilidades do nothic do Livro dos Monstros (2014), a
+    // pedido do dono; o nome e a arte continuam nossos (conteúdo de fã).
+    fonte: 'MM',
     size: 'médio',
     level: 3,
     cr: '2',
     xp: 450,
     abilities: { str: 14, dex: 16, con: 16, int: 13, wis: 10, cha: 8 },
     ac: 15,
-    acNote: 'couro grosso, agachado',
+    acNote: 'armadura natural',
     maxHp: 45,
+    hpDice: '6d8+18',
     speedFt: 30,
-    skills: ['investigacao', 'percepcao', 'furtividade'],
-    // Vive no breu: o olho único vê longe sem luz nenhuma.
-    senses: { darkvisionFt: 120 },
+    skills: ['arcanismo', 'intuicao', 'percepcao', 'furtividade'],
+    // Visão verdadeira de 36 m: vê no breu e através de ilusões e invisibilidade.
+    senses: { truesightFt: 120, passivePerception: 12 },
     attacks: [
-      { name: 'Garra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'claw' },
+      { name: 'Garra', bonus: 4, damage: '1d6+3', type: 'cortante', reachFt: 5, art: 'claw' },
       {
-        // O olhar é um ATAQUE e não um teste de resistência de propósito: o
-        // motor já resolve ataque à distância com cobertura e linha de visão,
-        // e o interessante aqui é justamente que esconder-se funciona.
-        name: 'Olhar Esmigalhador', bonus: 5, damage: '2d6', type: 'necrótico',
-        ranged: true, rangeFt: 30, longRangeFt: 30, art: 'bow',
-        onHit: { save: 'con', dc: 13, condition: 'lento', rounds: 1, note: 'perde o passo sob o olhar' },
+        // Sem jogada de ataque: o alvo que ele vê a até 9 m testa CON contra
+        // a magia do olhar, e só falhando leva o dano.
+        name: 'Olhar Apodrecedor', damage: '3d6', type: 'necrótico',
+        ranged: true, rangeFt: 30, longRangeFt: 30, art: 'rottingGaze',
+        teste: { save: 'con', dc: 12, magico: true },
       },
     ],
-    // Duas garras quando o alvo encosta. O olhar é a ação de longe; as garras
-    // são o castigo de quem resolveu trocar golpe com ele na soleira.
+    // Ataques Múltiplos: duas garras.
     multiattack: { count: 2, sequence: ['Garra', 'Garra'] },
-    traits: ['olhoUnico', 'guardaDeSoleira'],
-    blurb: 'Fura quem fica longe com um olhar que atrasa, e ganha +2 de CA enquanto guarda a passagem — tire-o de lá.',
+    traits: ['visaoAgucada', 'percepcaoEstranha'],
+    blurb: 'Duas garras de perto e, de longe, um olhar que apodrece quem falhar em CON CD 12. Vê no breu e vê quem está invisível.',
   },
 
   // GUARDA DE TESOURO. A criatura nova da rodada 3.
@@ -299,6 +334,7 @@ export const ABERRACOES = {
   // que tem uma saída puramente de conversa antes do dragão.
   spectator: {
     id: 'spectator',
+    tipo: 'aberração',
     name: 'Spectator',
     look: 'spectator',
     fonte: 'propria',
@@ -353,6 +389,7 @@ export const ABERRACOES = {
   // recompensa.
   espinheiroRastejante: {
     id: 'espinheiroRastejante',
+    tipo: 'planta',
     name: 'Espinheiro Rastejante',
     look: 'espinheiroRastejante',
     fonte: 'propria',
@@ -438,13 +475,13 @@ export const TRAITS = {
     name: 'Reacende',
     desc: 'Reduzida a 0 PV, a chama apaga mas o osso fica. Se os restos não forem queimados ou destruídos, ela volta a arder em uma hora com metade dos PV.',
   },
-  olhoUnico: {
-    name: 'Olho Único',
-    desc: 'Sem noção de profundidade: desvantagem em Percepção por visão e em ataques à distância contra alvo a mais de 9 m.',
+  visaoAgucada: {
+    name: 'Visão Aguçada',
+    desc: 'Vantagem em testes de Sabedoria (Percepção) que dependem da visão.',
   },
-  guardaDeSoleira: {
-    name: 'Guarda de Soleira',
-    desc: '+2 na CA enquanto estiver a até 1,5 m da passagem ou do objeto que guarda. Longe dela, perde o bônus.',
+  percepcaoEstranha: {
+    name: 'Percepção Estranha',
+    desc: 'Ação: escolhe uma criatura que ele veja a até 9 m. A Enganação dela é disputada com a Intuição dele; se ele vencer, aprende por magia um fato ou segredo do alvo. Quem é imune a ser enfeitiçado vence sempre. (Ainda não é uma ação do jogo.)',
   },
   quatroHastes: {
     name: 'Quatro Hastes',

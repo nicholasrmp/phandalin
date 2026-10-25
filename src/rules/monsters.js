@@ -31,6 +31,7 @@ const TIPO_DA_FAMILIA = new Map([
   ...Object.keys(HUMANOIDES).map((id) => [id, 'humanoide']),
   ...Object.keys(FERAS).map((id) => [id, 'fera']),
   ...Object.keys(MORTOS_VIVOS).map((id) => [id, 'morto-vivo']),
+  // Aberrações: o tipo vem escrito em cada bloco (grick é monstruosidade, dragão é dragão...).
 ]);
 
 
@@ -71,6 +72,7 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     hp: maxHp,
     tempHp: 0,
     speedFt: def.speedFt,
+    speeds: def.speeds ?? null,
     attacks: def.attacks,
     multiattack: def.multiattack ?? null,
     traits: def.traits ?? [],
@@ -99,6 +101,11 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     andar: def.andar ?? null,
     incorporeo: def.incorporeo ?? false,
     fonte: def.fonte ?? null,
+    // Os sentidos do bloco (visao no escuro, visao verdadeira): sem copiar,
+    // nenhum monstro levava o que declara para o combate.
+    senses: { ...(def.senses ?? {}) },
+    // A folha de cada arma, para quem troca (o hobgoblin pega o arco).
+    ...(def.aparencias ? { aparencias: { ...def.aparencias } } : {}),
     tipo: def.tipo ?? TIPO_DA_FAMILIA.get(id) ?? null,
     // Tipos de dano. As famílias escreveram com dois vocabulários (`resist` e
     // `damageResistances`); aqui viram um só. Resistência física "só de armas
@@ -115,6 +122,7 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
         cantrips: [...(def.spellcasting.cantrips ?? [])],
         prepared: [...(def.spellcasting.prepared ?? [])],
         slots: [...(def.spellcasting.slots ?? [])],
+        ...(def.spellcasting.cajado ? { cajado: { ...def.spellcasting.cajado, magias: { ...def.spellcasting.cajado.magias } } } : {}),
       },
     } : {}),
   };

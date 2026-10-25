@@ -30,7 +30,9 @@ export const LOOKS = {
 };
 
 export function resolveLook(key) {
-  const look = LOOKS[key];
+  // Uma chave de folha (`hobgoblin@cotaDeMalha-arcoLongo`) ou de estado
+  // (`~furia`) sem look proprio e a mesma figura: vale o look base.
+  const look = LOOKS[key] ?? LOOKS[String(key).split(/[~@]/)[0]];
   if (!look) throw new Error(`Look desconhecido: "${key}"`);
   return look;
 }

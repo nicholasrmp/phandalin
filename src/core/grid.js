@@ -123,6 +123,9 @@ export const GLIFOS = {
   'O': { kind: 2, sup: 'fosso' },
   'L': { kind: 0, sup: 'laje' },           // piso de lajes do porão
   'M': { kind: 1, sup: 'alvenaria' },      // parede de pedra lavrada do porão
+  // Seteira: a parede com a fenda dos arqueiros. Não se passa por ela, mas
+  // se vê e se atira — e quem está atrás tem cobertura.
+  'J': { kind: 3, sup: 'seteira' },
   'V': { kind: 2, sup: 'cisterna' },       // água parada da cisterna: nada-se
   // A rua de Phandalin: prédios de 3 x 3 casas (um sprite só por prédio; a
   // variante vem da anotação do mapa) e barris e caixotes na grama.
@@ -137,9 +140,43 @@ export const GLIFOS = {
   'k': { kind: 0, sup: 'pedregal' },
   'l': { kind: 0, sup: 'escada' },
   'q': { kind: 3, sup: 'pocoVelho' },
+  // O Castelo Dentefino: móveis próprios sobre a laje (os da caverna pintavam
+  // um remendo de chão de gruta no salão). Os de várias casas são um sprite
+  // só por pegada, com a direção vinda da anotação do mapa, e NÃO se pisam:
+  // o sprite sai na casa da frente da pegada e cobriria quem estivesse nas
+  // de trás.
+  'a': { kind: 3, sup: 'altar' },
+  'B': { kind: 3, sup: 'banheira' },        // borda de azulejo: cobertura, não se entra
+  'N': { kind: 3, sup: 'mesaBanquete' },
+  'D': { kind: 3, sup: 'camaRei' },         // cama grande: cobertura
+  'I': { kind: 3, sup: 'portaoCaido' },     // a folha caída do portão: cobertura no terraço
+  'e': { kind: 3, sup: 'braseiro' },
+  'f': { kind: 3, sup: 'braseiroFrio' },     // carvão apagado, no salão escuro
+  'g': { kind: 3, sup: 'armeiro' },
+  'p': { kind: 0, sup: 'palha' },
+  'E': { kind: 3, sup: 'desabamento' },     // pedra caída: barra o passo, não a visão
+  'i': { kind: 3, sup: 'caixotes' },
+  't': { kind: 3, sup: 'arca' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
+
+// PAREDES DE BORDA. A parede fina fica na aresta ENTRE duas casas, não ocupa
+// casa nenhuma — como nos isométricos pintados, em que a sala é a sala e a
+// parede é o contorno dela. Cada casa guarda a aresta do norte (com a casa de
+// cima, y-1) e a do oeste (com a da esquerda, x-1).
+//
+// No mapa, duas grades de texto do tamanho do terreno, `paredes.n` e
+// `paredes.o`, com um caractere por casa:
+//   .  nada
+//   #  parede: barra passo e visão
+//   +  porta fechada: idem, até abrir
+//   /  porta aberta (ou arco): passa tudo; o desenho mostra o batente
+//   J  seteira: barra o passo, não a visão; quem está atrás tem cobertura
+export const ARESTA = { nada: 0, parede: 1, porta: 2, aberta: 3, seteira: 4 };
+const ARESTA_DO_CHAR = { '.': 0, '#': 1, '+': 2, '/': 3, J: 4 };
+const BARRA_PASSO = new Set([1, 2, 4]);
+const BARRA_VISAO = new Set([1, 2]);
 
 export class Battlefield {
   /**
@@ -151,9 +188,17 @@ export class Battlefield {
    *   nível 0). Existe porque um caractere só não diz "grama no alto do
    *   barranco": o glifo diz a grama, esta grade diz o alto.
    */
-  constructor(w, h, rows = null, alturas = null, objetos = null) {
+  constructor(w, h, rows = null, alturas = null, objetos = null, paredes = null) {
     this.w = w;
     this.h = h;
+    // As arestas: `paredeN[i]` é a do norte da casa i, `paredeO[i]` a do oeste.
+    this.paredeN = new Uint8Array(w * h);
+    this.paredeO = new Uint8Array(w * h);
+    for (const [lado, grade] of [['paredeN', paredes?.n], ['paredeO', paredes?.o]]) {
+      (grade ?? []).forEach((linha, y) => {
+        for (let x = 0; x < Math.min(w, linha.length); x++) this[lado][y * w + x] = ARESTA_DO_CHAR[linha[x]] ?? 0;
+      });
+    }
     // Anotações de desenho dos objetos de várias casas — para onde apontam e
     // qual variante. Como `surfaces`, só o tabuleiro lê; nenhuma regra usa.
     // Cada item: { tipo, x, y, olha: {dx, dy}, variante? }, com (x, y) em
@@ -217,6 +262,82 @@ export class Battlefield {
     return this.tileAt(x, y) === 1;
   }
 
+  /** O código da aresta entre duas casas VIZINHAS NO EIXO (0 se não houver). */
+  aresta(ax, ay, bx, by) {
+    if (bx === ax + 1 && by === ay) return this.inside(bx, by) ? this.paredeO[by * this.w + bx] : 0;
+    if (bx === ax - 1 && by === ay) return this.inside(ax, ay) ? this.paredeO[ay * this.w + ax] : 0;
+    if (by === ay + 1 && bx === ax) return this.inside(bx, by) ? this.paredeN[by * this.w + bx] : 0;
+    if (by === ay - 1 && bx === ax) return this.inside(ax, ay) ? this.paredeN[ay * this.w + ax] : 0;
+    return 0;
+  }
+
+  /** Muda uma aresta no meio do jogo (porta aberta, arrombada). */
+  porAresta(ax, ay, bx, by, codigo) {
+    if (bx === ax + 1) this.paredeO[by * this.w + bx] = codigo;
+    else if (bx === ax - 1) this.paredeO[ay * this.w + ax] = codigo;
+    else if (by === ay + 1) this.paredeN[by * this.w + bx] = codigo;
+    else if (by === ay - 1) this.paredeN[ay * this.w + ax] = codigo;
+    this.versao = (this.versao ?? 0) + 1;
+  }
+
+  /**
+   * Passa de uma casa para a vizinha (também na diagonal) sem cruzar parede?
+   * `tipo` é 'passo' ou 'visao'. Na diagonal, nenhuma das quatro arestas que
+   * se encontram na quina pode barrar: não se escorrega pela ponta de uma
+   * parede, nem com o corpo nem com o olho.
+   */
+  passa(ax, ay, bx, by, tipo = 'passo') {
+    const barra = tipo === 'visao' ? BARRA_VISAO : BARRA_PASSO;
+    if (ax === bx || ay === by) return !barra.has(this.aresta(ax, ay, bx, by));
+    return !barra.has(this.aresta(ax, ay, bx, ay)) && !barra.has(this.aresta(bx, ay, bx, by))
+      && !barra.has(this.aresta(ax, ay, ax, by)) && !barra.has(this.aresta(ax, by, bx, by));
+  }
+
+  /**
+   * Dá para TOCAR de `a` em `b` — encostar a espada, a mão, o frasco?
+   *
+   * Duas caixas adjacentes com uma parede de borda entre elas estão a 1,5 m
+   * uma da outra, e sem isto a espada atravessava o muro. Basta um par de
+   * casas, uma de cada pegada, vizinhas e sem parede entre elas.
+   */
+  contato(a, b) {
+    if (distanceFt(a, b) > FEET_PER_SQUARE) return false;
+    for (const p of squaresOf(a)) {
+      for (const q of squaresOf(b)) {
+        if (Math.abs(p.x - q.x) > 1 || Math.abs(p.y - q.y) > 1) continue;
+        if (p.x === q.x && p.y === q.y) return true;
+        if (this.passa(p.x, p.y, q.x, q.y)) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Vizinhas de verdade: adjacentes E sem parede de borda entre elas. */
+  vizinhos(a, b) {
+    return isAdjacent(a, b) && this.contato(a, b);
+  }
+
+  /** Há parede de passo DENTRO da pegada f x f com canto em (x, y)? */
+  paredeNaPegada(x, y, f) {
+    for (let dy = 0; dy < f; dy++) {
+      for (let dx = 0; dx < f; dx++) {
+        if (dx + 1 < f && BARRA_PASSO.has(this.aresta(x + dx, y + dy, x + dx + 1, y + dy))) return true;
+        if (dy + 1 < f && BARRA_PASSO.has(this.aresta(x + dx, y + dy, x + dx, y + dy + 1))) return true;
+      }
+    }
+    return false;
+  }
+
+  /** A criatura de pegada f passa da âncora a para a âncora b (vizinhas)? */
+  passaPegada(ax, ay, bx, by, f = 1) {
+    for (let dy = 0; dy < f; dy++) {
+      for (let dx = 0; dx < f; dx++) {
+        if (!this.passa(ax + dx, ay + dy, bx + dx, by + dy)) return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Custo de entrar num quadrado, em pés.
    * Terreno difícil custa o dobro (SRD). Subir um nível é escalada: no SRD,
@@ -257,7 +378,7 @@ export class Battlefield {
    *   parede — e, diferente de `occupied`, vale também para passar, porque
    *   quem não cabe não passa.
    */
-  reachable(from, budgetFt, occupied = () => false, cabe = () => true) {
+  reachable(from, budgetFt, occupied = () => false, cabe = () => true, f = 1) {
     const seen = new Map();
     seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null });
     // Fila simples ordenada por custo: a grade é pequena, não precisa de heap.
@@ -274,6 +395,8 @@ export class Battlefield {
         const ny = cur.y + dy;
         if (!this.inside(nx, ny) || this.blocksMove(nx, ny)) continue;
         if (!cabe(nx, ny)) continue;
+        if (!this.passaPegada(cur.x, cur.y, nx, ny, f)) continue;
+        if (f > 1 && this.paredeNaPegada(nx, ny, f)) continue;
         // Não corta quina entre duas paredes.
         if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
         if (!this.voando && !this.escalando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
@@ -331,7 +454,9 @@ export class Battlefield {
   hasLineOfSight(a, b) {
     const eye = Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     const pts = this.line(a, b);
-    for (let i = 1; i < pts.length - 1; i++) {
+    for (let i = 1; i < pts.length; i++) {
+      if (!this.passa(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, 'visao')) return false;
+      if (i === pts.length - 1) break;
       if (this.blocksSight(pts[i].x, pts[i].y)) return false;
       if (this.heightAt(pts[i].x, pts[i].y) > eye) return false;
     }
@@ -342,6 +467,17 @@ export class Battlefield {
   coverBetween(a, b) {
     const low = Math.min(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     const pts = this.line(a, b);
+    // Seteira na última aresta (colada no alvo): três quartos de cobertura,
+    // +5 (SRD). A fenda é estreita para quem está DENTRO, não para quem atira
+    // de dentro para fora — por isso só conta a do lado do alvo.
+    const n = pts.length;
+    if (n > 1) {
+      const p = pts[n - 2];
+      const q = pts[n - 1];
+      const arestas = p.x === q.x || p.y === q.y ? [this.aresta(p.x, p.y, q.x, q.y)]
+        : [this.aresta(p.x, p.y, q.x, p.y), this.aresta(q.x, p.y, q.x, q.y), this.aresta(p.x, p.y, p.x, q.y), this.aresta(p.x, q.y, q.x, q.y)];
+      if (arestas.includes(4)) return 5;
+    }
     for (let i = 1; i < pts.length - 1; i++) {
       if (this.tileAt(pts[i].x, pts[i].y) === 3) return 2;
       if (this.heightAt(pts[i].x, pts[i].y) > low) return 2;
