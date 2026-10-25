@@ -76,3 +76,7 @@ A=$R/aranhaGigante-d547674e
 python src/dev/importar-pixellab.py --fonte $A/anim --chave aranhaGigante --nome aranhaGigante | grep -E "KB" || true
 python src/dev/importar-pixellab.py --fonte $A/anim-so-teia --chave aranhaGiganteTeia --nome aranhaGiganteTeia --queda-de $A/anim | grep -E "KB" || true
 python src/dev/limpar-teia-aranha.py
+# o Nezznar, a Aranha Negra (aprovado pelo dono): o golpe de sul e a queda vem
+# da refacao (`anim-sul-novo`, so as fileiras novas da segunda leva)
+N=$R/nezznar-dcf083b3
+python src/dev/importar-pixellab.py --fonte $N/anim --chave nezznar --nome nezznar --queda-de $N/anim-sul-novo --ataque-de south=$N/anim-sul-novo:1,2 | grep -E "KB" || true

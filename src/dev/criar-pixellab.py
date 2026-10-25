@@ -1590,6 +1590,51 @@ DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
 
 LIMITES = {'description': 2000, 'edit_description': 1000}
 
+# O NEZZNAR, a Aranha Negra (capitulo 4: a Caverna do Eco das Ondas). Medio,
+# quadro de 64, do mesmo tamanho da drow. Pelo modelo oficial que o dono
+# mandou, descrito em texto: drow magro de cabelo branco comprido, casaco de
+# couro escuro em placas, capa cinza de FORRO CARMIM e o cajado preto com a
+# aranha de metal no topo. As cores sao as do look `nezznar`
+# (`src/art/looks/npcs.js`): o vermelho so aparece onde a capa abre, e e por
+# ele que o olho acha o chefe numa sala cinza.
+PERSONAGENS['nezznar'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Nezznar',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a drow archmage, a male dark elf wizard. '
+            + ESTILO_HEROI +
+            'Skin ramp: grey-purple, #6e6680 light, #5b5466 mid, #332e3e deep '
+            'shadow. Hair: white #f0ece6 light with #bcb8b4 shadow. Coat and '
+            'armor: dark charcoal, #39353f light, #242029 mid, #14121a deep. '
+            'Cloak outside: dark slate #2e2b38. Cloak lining: bright CRIMSON, '
+            '#9e2434 light, #6e1624 deep. Metal trim: #8a8696. Staff: black '
+            'wood #1a1620 with a dark metal #4d4858 spider. Eyes: red #e05a6a. '
+            'THE DROW: a tall, slender, severe male elf with grey-purple skin, '
+            'long pointed ears, white eyebrows, narrow red eyes, a hard frowning '
+            'face and LONG WHITE HAIR falling straight past his shoulders. CLOTHES: a high-collared dark charcoal leather coat '
+            'layered with sculpted plates over the chest and shoulders, a small '
+            'crimson gem at the throat, armored bracers on both forearms, a wide '
+            'belt with a crimson gem, dark trousers and tall boots. CLOAK: a long '
+            'dark slate cloak hanging from both shoulders, open at the front, its '
+            'inner LINING BRIGHT CRIMSON RED, visible where the cloak flares. WEAPON: a tall slim BLACK staff held upright in '
+            'his right hand, taller than he is, topped with a black metal SPIDER '
+            'with spread legs. POSE: standing facing the viewer, the staff '
+            'vertical at his right side, the left hand open at his side. Full '
+            'body in frame. BACKGROUND: plain, empty. No ground, no shadow, no '
+            'scenery, no web, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple characters, hood, hat, '
+            'beard, bald, sword, bow, shield, green skin, pink skin, ponytail.'
+        ),
+    },
+}
+
 # A ARANHA GIGANTE (capitulo 4: as aranhas do Nezznar na Caverna do Eco das
 # Ondas). Grande, baixa e larga: quadro de 80. Pelo Livro dos Monstros, uma
 # aranha peluda escura do tamanho de um cavalo, oito patas longas e oito olhos.

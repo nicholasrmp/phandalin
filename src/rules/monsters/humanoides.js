@@ -333,6 +333,55 @@ export const HUMANOIDES = {
     blurb: 'Prende o mais forte com Imobilizar Pessoa, solta Mísseis Mágicos de longe, some com Passo Nebuloso quando encurralado e ergue o Escudo Arcano pelo cajado. Sem fuga e com 8 PV ou menos, se rende.',
   },
 
+  // NEZZNAR, A ARANHA NEGRA (Parte 4: a Caverna do Eco das Ondas). O bloco e
+  // o MAGO do SRD inteiro -- os mesmos numeros, nenhum inventado -- com o que
+  // o faz DROW por cima, e nada mais:
+  //   . visao no escuro de 36 m (a do drow, nao a de 18 m do mago);
+  //   . Ascendencia Feerica e Sensibilidade a Luz Solar;
+  //   . Fogo das Fadas entre as magias preparadas, que e a conjuracao inata
+  //     do drow e a unica dela que o motor executa (a IA abre com ela,
+  //     `fogoDasFadasNoTurno` em `rules/ai.js`). Luzes Dancantes e Escuridao
+  //     ficam de fora porque o motor nao as tem.
+  // O ND continua 6 (2.300 PX): os tracos de drow nao mudam os numeros da
+  // luta, so o lado em que ela e travada -- no escuro ele enxerga 36 m, e sob
+  // o sol ataca com desvantagem.
+  nezznar: {
+    id: 'nezznar',
+    name: 'Nezznar',
+    look: 'nezznar',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 6,
+    cr: '6',
+    xp: 2300,
+    abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 11 },
+    // A CA DO BLOCO JÁ CONTA A ARMADURA ARCANA, como a do Hamun Kost: a
+    // magia dura 8 horas, então um mago entra na luta com ela de pé, e o
+    // próprio bloco do SRD diz "15 com armadura arcana". O espaço gasto nela
+    // sai dos de 1º (quatro no bloco, três aqui).
+    ac: 15,
+    acNote: 'Armadura Arcana (13 + DES)',
+    maxHp: 40,
+    speedFt: 30,
+    saves: ['int', 'wis'],
+    skills: ['arcanismo', 'historia'],
+    senses: { darkvisionFt: 120, passivePerception: 11 },
+    attacks: [
+      { name: 'Adaga', bonus: 5, damage: '1d4+2', type: 'perfurante', reachFt: 5, art: 'dagger' },
+    ],
+    spellcasting: {
+      ability: 'int',
+      cantrips: ['raioDeFogo', 'raioDeGelo'],
+      prepared: ['armaduraArcana', 'misselMagico', 'maosFlamejantes', 'sono', 'contramagia', 'fogoDasFadas'],
+      slots: [0, 3, 3, 3, 3, 1],
+      noMotor: true,
+      // A IA conjura no turno dele, como a do Hamun Kost.
+      conjuraNoTurno: true,
+    },
+    traits: ['conjuracao', 'ascendenciaFeerica', 'sensibilidadeALuzSolar'],
+    blurb: 'Drow mago de CA 15 pela Armadura Arcana: abre com Fogo das Fadas para acender o grupo, depois Sono e Mãos Flamejantes em quem se amontoar. Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
+  },
+
   // BRUGHOR MACHADO-MORDEDOR, chefe do bando orc do Cume da Wyvern (Parte 3).
   // Bloco NOSSO (`fonte: 'propria'`): um orc maior, mais duro e mais bruto
   // que os outros, que bate duas vezes com o machado. Os orcs dele lutam até

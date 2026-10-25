@@ -889,6 +889,41 @@ CRIATURAS.update({
 })
 
 
+# O NEZZNAR, a Aranha Negra (aprovado pelo dono). Mago com cajado: o golpe e a
+# bordoada do Cajado Aranha e a `magia` e o gesto de conjurar, que o motor usa
+# no lugar do golpe quando ele lanca (`conjurar`). O dourado da barra da capa
+# entra no texto porque o pixminimax redesenha a figura a cada quadro.
+_NEZZNAR = ('a slender male drow archmage with grey-purple skin, long white hair and red '
+            'eyes, in a dark charcoal plated leather coat and a dark slate cloak with a '
+            'crimson lining and a gold-trimmed hem, holding a tall black staff topped '
+            'with a metal spider')
+CRIATURAS['nezznar'] = {
+    'sujeito': _NEZZNAR,
+    'parado': 'standing upright, the black spider staff planted vertically at his right side',
+    'golpe': ('swinging the black spider staff in one hard strike {para} with both hands, '
+              'a short step in that direction, then recovering'),
+    'magia': ('casting a spell: raising the black spider staff, the metal spider at its top '
+              'glowing crimson, and thrusting his open left hand {para}, a burst of crimson '
+              'light leaving his hand, then lowering both'),
+    'chao': 'the black spider staff dropped beside him, the crimson-lined cloak spread on the ground',
+}
+
+# A REFACAO DO SUL: no golpe de sul o cajado SUMIU das maos nos quadros do
+# meio, e a queda virou um vulto agachado em vez de um corpo deitado. O texto
+# daqui repete o cajado em todo quadro e diz o corpo esticado no chao.
+CRIATURAS['nezznarSul'] = {
+    'sujeito': _NEZZNAR,
+    'parado': 'standing upright, the black spider staff planted vertically at his right side',
+    'golpe': ('gripping the black spider staff IN BOTH HANDS the whole time, raising it and '
+              'striking {para} in one hard overhead blow, the black staff and its metal '
+              'spider clearly visible in his hands in EVERY frame, a short step in that '
+              'direction, then recovering'),
+    'cair': ('struck down, the drow archmage falls backward and lands FLAT ON HIS BACK, then '
+             'lies still: the body stretched out flat on the ground, arms spread wide, legs '
+             'straight, the long white hair spread out, the dark cloak open under him showing '
+             'its crimson lining, the black spider staff fallen on the ground beside him'),
+}
+
 # A ARANHA GIGANTE (aprovada pelo dono): anda nas oito patas, a Mordida e o
 # bote com as presas, e a Teia (`aranhaGiganteTeia`, so o golpe, no mesmo
 # personagem) e o jato de seda do abdomen.

@@ -5890,6 +5890,27 @@ teste('drow do Manual: dois golpes de espada curta e Fogo das Fadas em grupo', (
   assert.ok(d.concentrating, 'mantém a concentração');
 });
 
+teste('Nezznar: o mago do SRD com os traços de drow por cima', () => {
+  const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
+  const { enc, foes } = montar({ foes: [['nezznar', { x: 8, y: 5 }]], pos, lado: 'foes' });
+  const n = foes[0];
+  // Os números são os do mago do SRD, sem nada inventado.
+  assert.equal(MONSTERS.nezznar.cr, '6');
+  assert.equal(n.xp, 2300);
+  // A CA já conta a Armadura Arcana (13 + DES 2), e o espaço dela saiu dos de 1º.
+  assert.equal(n.ac, 15);
+  assert.equal(n.spellcasting.slots[1], 3);
+  assert.equal(n.maxHp, 40);
+  // E o que o faz drow: enxerga 36 m no escuro e tem os dois traços.
+  assert.equal(n.senses.darkvisionFt, 120);
+  assert.ok(n.traits.includes('ascendenciaFeerica'));
+  assert.ok(n.traits.includes('sensibilidadeALuzSolar'));
+  // A conjuração inata que o motor executa: abre com o Fogo das Fadas.
+  takeMonsterTurn(enc, n);
+  assert.equal(n.spellcasting.slots[1], 2, 'gastou um espaço de 1º no Fogo das Fadas');
+  assert.ok(n.concentrating, 'mantém a concentração');
+});
+
 teste('o doppelganger disfarçado de drow se revela ao atacar ou ao cair', () => {
   const { enc, party, foes } = montar({ foes: [['doppelganger', { x: 6, y: 5 }], ['doppelganger', { x: 8, y: 8 }]], lado: 'foes' });
   const [a, b] = foes;

@@ -515,6 +515,23 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
                         'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
     },
+    # O NEZZNAR, a Aranha Negra (aprovado pelo dono). Mago de cajado: o golpe e
+    # a bordoada e `conjurar` e o gesto da magia, que o motor usa no lugar do
+    # golpe quando ele lanca. A PELE e cinza-ARROXEADA de matiz quase igual ao
+    # da armadura: o que as separa e o VALOR (rosto ~0,45, armadura ~0,25), e
+    # `cabeca` manda contar so a pele do alto, que e o rosto. O golpe de SUL
+    # vem da refacao (`--ataque-de`), porque no original o cajado sumia da mao.
+    'nezznar': {
+        'ataque': ['attack-dir'], 'pele': (0.62, 0.85), 'pele_sv': (0.08, 0.45, 0.33),
+        'margem': 8, 'cabeca': 12,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [1, 2], 'south-east': [2, 3], 'east': [2, 4],
+                        'north-east': [3, 4], 'north': [2, 4], 'north-west': [3, 4],
+                        'west': [3, 4], 'south-west': [2, 3]},
+        'conjurar': {'south': [2, 4], 'south-east': [2, 5], 'east': [2, 4],
+                     'north-east': [3, 4], 'north': [2, 3], 'north-west': [2, 4],
+                     'west': [1, 4], 'south-west': [1, 4]},
+    },
     # A ARANHA GIGANTE (aprovada pelo dono). Centro pelo corpo marrom-carvao
     # (cabeca e abdomen). A Mordida: o corpo ERGUIDO e as PRESAS cravando.
     'aranhaGigante': {

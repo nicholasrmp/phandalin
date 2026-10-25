@@ -340,7 +340,9 @@ export const NPCS = {
     nome: 'Nezznar',
     look: 'nezznar',
     papel: 'Drow que caça a forja perdida',
-    bloco: 'mago',
+    // O bloco do mago do SRD com os traços de drow por cima
+    // (`rules/monsters/humanoides.js`), e não o `mago` genérico.
+    bloco: 'nezznar',
     fonte: 'SRD',
     atitude: 'hostil',
     personalidade: {

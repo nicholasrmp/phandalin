@@ -73,6 +73,8 @@ import metaDrowBesta from './drowBesta.json';
 import urlDrowBesta from './drowBesta.png';
 import metaStirge from './stirge.json';
 import urlStirge from './stirge.png';
+import metaNezznar from './nezznar.json';
+import urlNezznar from './nezznar.png';
 import metaAranhaGigante from './aranhaGigante.json';
 import urlAranhaGigante from './aranhaGigante.png';
 import metaAranhaGiganteTeia from './aranhaGiganteTeia.json';
@@ -172,6 +174,9 @@ const IMPORTADAS = {
   },
   // o stirge (24 px, escolhido pelo dono)
   stirge: { base: 'stirge', meta: metaStirge, url: urlStirge },
+  // O NEZZNAR, a Aranha Negra (aprovado pelo dono): a unica folha com
+  // `conjurar`, o gesto do Cajado Aranha que o motor usa nas magias dele.
+  nezznar: { base: 'nezznar', meta: metaNezznar, url: urlNezznar },
   // A ARANHA GIGANTE (aprovada pelo dono), duas folhas: a Mordida (padrao) e
   // a Teia, quando atira (`aparencias` do bloco `aranhaGigante`, chave
   // `giantSpider@nenhuma-teia`).
