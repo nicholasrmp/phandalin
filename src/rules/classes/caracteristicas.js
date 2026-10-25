@@ -16,15 +16,15 @@ export const CARACTERISTICAS = {
   spellcasting: C('Conjuração', 'passiva', 'Conjura magias da lista da classe com os espaços da tabela do nível.', { motor: true }),
   abilityScoreImprovement: C('Aumento no Valor de Atributo', 'passiva', '+2 num atributo ou +1 em dois, sem passar de 20.'),
   asi: C('Aumento no Valor de Atributo', 'passiva', '+2 num atributo ou +1 em dois, sem passar de 20.'),
-  extraAttack: C('Ataque Extra', 'passiva', 'A ação de Atacar faz um ataque a mais.'),
+  extraAttack: C('Ataque Extra', 'passiva', 'A ação de Atacar faz um ataque a mais.', { motor: true }),
   unarmoredDefense: C('Defesa sem Armadura', 'passiva', 'Sem armadura, a CA é 10 + DES + um segundo atributo da classe.', { motor: true }),
   fightingStyle: C('Estilo de Luta', 'passiva', 'Uma especialidade de combate, escolhida uma vez.', { motor: true }),
   additionalFightingStyle: C('Estilo de Luta Adicional', 'passiva', 'Um segundo estilo de luta, diferente do primeiro.'),
   expertise: C('Especialização', 'passiva', 'Dobra a proficiência em duas perícias já treinadas.', { motor: true }),
   evasion: C('Evasão', 'passiva', 'Contra efeitos de área com resistência de DES: sucesso não sofre nada, falha sofre metade.'),
-  uncannyDodge: C('Esquiva Sobrenatural', 'reacao', 'Reação: corta pela metade o dano de um ataque que você vê chegar.'),
+  uncannyDodge: C('Esquiva Sobrenatural', 'reacao', 'Reação: corta pela metade o dano de um ataque que você vê chegar.', { motor: true }),
   timelessBody: C('Corpo Atemporal', 'fora', 'Envelhece muito mais devagar e não sofre o desgaste da idade.'),
-  channelDivinity: C('Canalizar Divindade', 'acao', 'Poder divino com cargas que voltam no descanso curto; cada domínio ou juramento dá os seus usos.'),
+  channelDivinity: C('Canalizar Divindade', 'acao', 'Poder divino com cargas que voltam no descanso curto; cada domínio ou juramento dá os seus usos.', { motor: true }),
 
   // ---- estilos de luta -----------------------------------------------------
   archery: C('Estilo: Arquearia', 'passiva', '+2 nos ataques com armas à distância.', { motor: true }),
@@ -36,9 +36,9 @@ export const CARACTERISTICAS = {
 
   // ---- bárbaro -------------------------------------------------------------
   rage: C('Fúria', 'bonus', 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a dano físico, por 1 minuto; sem conjurar nem manter concentração.', { motor: true }),
-  recklessAttack: C('Ataque Descuidado', 'livre', 'Vantagem nos ataques corpo a corpo com FOR neste turno; até o seu próximo, ataques contra você também têm.'),
-  dangerSense: C('Sentido de Perigo', 'passiva', 'Vantagem em resistências de DES contra o que você consegue ver.'),
-  fastMovement: C('Movimento Rápido', 'passiva', '+10 pés de deslocamento sem armadura pesada.'),
+  recklessAttack: C('Ataque Descuidado', 'livre', 'Vantagem nos ataques corpo a corpo com FOR neste turno; até o seu próximo, ataques contra você também têm.', { motor: true }),
+  dangerSense: C('Sentido de Perigo', 'passiva', 'Vantagem em resistências de DES contra o que você consegue ver.', { motor: true }),
+  fastMovement: C('Movimento Rápido', 'passiva', '+10 pés de deslocamento sem armadura pesada.', { motor: true }),
   feralInstinct: C('Instinto Selvagem', 'passiva', 'Vantagem na iniciativa; surpreso, pode agir se entrar em fúria primeiro.'),
   brutalCritical: C('Crítico Brutal', 'passiva', 'Dados extras de dano da arma num acerto crítico corpo a corpo.'),
   relentlessRage: C('Fúria Implacável', 'passiva', 'Em fúria, cair a 0 PV pede resistência de CON; com sucesso, fica com 1 PV.'),
@@ -64,8 +64,8 @@ export const CARACTERISTICAS = {
   peerlessSkill: C('Perícia Inigualável', 'livre', 'Gasta uma Inspiração para somar o dado a um teste de atributo próprio.'),
 
   // ---- clérigo -------------------------------------------------------------
-  turnUndead: C('Expulsar Mortos-Vivos', 'acao', 'Mortos-vivos que falhem na resistência de SAB fogem por 1 minuto.'),
-  destroyUndead: C('Destruir Mortos-Vivos', 'passiva', 'Mortos-vivos fracos que falham contra Expulsar são destruídos.'),
+  turnUndead: C('Expulsar Mortos-Vivos', 'acao', 'Mortos-vivos que falhem na resistência de SAB fogem por 1 minuto.', { motor: true }),
+  destroyUndead: C('Destruir Mortos-Vivos', 'passiva', 'Mortos-vivos fracos que falham contra Expulsar são destruídos.', { motor: true }),
   divineIntervention: C('Intervenção Divina', 'acao', 'Pede ajuda à divindade; a chance é o nível em porcentagem (certa no 20º).'),
   discipleOfLife: C('Discípulo da Vida', 'passiva', 'Cura de magia de 1º círculo ou mais rende 2 + o círculo a mais.', { motor: true }),
   preserveLife: C('Preservar a Vida', 'acao', 'Canalizar Divindade: divide 5 × nível em cura entre os feridos por perto.', { motor: true }),
@@ -100,7 +100,7 @@ export const CARACTERISTICAS = {
   flurryOfBlows: C('Rajada de Golpes', 'bonus', '1 ki: dois golpes desarmados depois de Atacar.'),
   patientDefense: C('Defesa Paciente', 'bonus', '1 ki: Esquivar como ação bônus.'),
   stepOfTheWind: C('Passo do Vento', 'bonus', '1 ki: Disparada ou Desengajar como bônus, e salto dobrado.'),
-  unarmoredMovement: C('Movimento sem Armadura', 'passiva', 'Deslocamento extra sem armadura nem escudo; depois, corre por paredes e água.'),
+  unarmoredMovement: C('Movimento sem Armadura', 'passiva', 'Deslocamento extra sem armadura nem escudo; depois, corre por paredes e água.', { motor: true }),
   deflectMissiles: C('Desviar Projéteis', 'reacao', 'Reduz o dano de um projétil; se zerar, pode devolvê-lo por 1 ki.'),
   slowFall: C('Queda Lenta', 'reacao', 'Reduz o dano de queda em 5 × nível.'),
   stunningStrike: C('Ataque Atordoante', 'livre', '1 ki num acerto: o alvo fica atordoado se falhar em CON.'),
@@ -119,7 +119,7 @@ export const CARACTERISTICAS = {
   // ---- paladino ------------------------------------------------------------
   divineSense: C('Sentido Divino', 'acao', 'Sente celestiais, corruptores e mortos-vivos por perto.', { motor: true }),
   layOnHands: C('Cura pelas Mãos', 'acao', 'Uma reserva de 5 × nível de PV para curar ou tirar doença e veneno.', { motor: true }),
-  divineSmite: C('Destruição Divina', 'livre', 'Num acerto corpo a corpo com arma, gasta um espaço: 2d8 radiante + 1d8 por círculo acima do 1º (máximo 5d8), +1d8 contra mortos-vivos e corruptores.'),
+  divineSmite: C('Destruição Divina', 'livre', 'Num acerto corpo a corpo com arma, gasta um espaço: 2d8 radiante + 1d8 por círculo acima do 1º (máximo 5d8), +1d8 contra mortos-vivos e corruptores.', { motor: true }),
   divineHealth: C('Saúde Divina', 'passiva', 'Imune a doenças.'),
   auraOfProtection: C('Aura de Proteção', 'passiva', 'Você e aliados por perto somam seu CAR às resistências.'),
   auraOfCourage: C('Aura de Coragem', 'passiva', 'Você e aliados por perto não podem ser amedrontados.'),

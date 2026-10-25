@@ -307,7 +307,14 @@ export class Encounter {
     // Armadura pesada sem a Força mínima tira 3 m do deslocamento.
     const forcaMinima = ARMORS[actor.armor ?? 'nenhuma']?.forcaMinima ?? 0;
     const pesada = forcaMinima > (actor.abilities?.str ?? 10) ? 10 : 0;
-    const pes = Math.max(0, Math.max(actor.speedFt, fx.vooFt) - fx.speedPenaltyFt - pesada);
+    // MOVIMENTO RÁPIDO (bárbaro) e MOVIMENTO SEM ARMADURA (monge): o bônus
+    // da classe só vale com o corpo livre — o bárbaro fora da armadura
+    // pesada, o monge sem armadura nenhuma e sem escudo.
+    const semArmadura = (!actor.armor || actor.armor === 'nenhuma') && !actor.shield;
+    const livre = actor.features?.includes('unarmoredMovement')
+      ? semArmadura : ARMORS[actor.armor ?? 'nenhuma']?.categoria !== 'pesada';
+    const daClasse = livre ? (actor.bonusDeDeslocamento ?? 0) : 0;
+    const pes = Math.max(0, Math.max(actor.speedFt, fx.vooFt) + daClasse - fx.speedPenaltyFt - pesada);
     // Lentidão: metade, em casas inteiras.
     const comBonus = (pes + fx.speedBonusFt) * (fx.speedMult ?? 1);
     return fx.speedHalf ? Math.floor(comBonus / 10) * 5 : comBonus;
@@ -2116,6 +2123,12 @@ export class Encounter {
     const mods = modsVazios();
 
     if (atkFx.attackDisadvantage) fonte(mods, 'desvantagem', 'atacante prejudicado');
+    // ATAQUE DESCUIDADO: vantagem no corpo a corpo com Força, que é a metade
+    // boa do negócio; a metade ruim está na condição.
+    if (hasCondition(attacker, 'descuidado') && !ranged
+      && (!attacker.attacks ? weaponAbility(attacker, WEAPONS[attacker.equippedWeapon] ?? {}) === 'str' : true)) {
+      fonte(mods, 'vantagem', 'ataque descuidado');
+    }
     // Toque Arrepiante: desvantagem só contra quem conjurou.
     if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
     if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
@@ -2543,6 +2556,15 @@ export class Encounter {
     // FÚRIA: bônus FIXO no dano corpo a corpo com Força. Não é dado, então
     // não dobra no crítico — e é por isso que ele entra como parcela própria
     // em vez de somar no dado da arma.
+    // DESTRUIÇÃO DIVINA: os dados de luz que o paladino carregou antes do
+    // golpe, só em arma corpo a corpo, e um a mais contra morto-vivo.
+    let smite = null;
+    if (dmg && !p.ranged && attacker.smitePronto && p.weapon) {
+      const circ = attacker.smitePronto;
+      const extra = target.tipo === 'morto-vivo' ? 1 : 0;
+      smite = damageRoll(this.rng, `${1 + circ + extra}d8`, { critical });
+      attacker.smitePronto = null;
+    }
     const duelismo = dmg && estilo === 'dueling'
       ? { notation: '+2', rolls: [], mod: 2, total: 2, critical: false } : null;
     let furia = null;
@@ -2552,13 +2574,14 @@ export class Encounter {
     // Aumentar/Reduzir: +1d4 ou −1d4 no dano de arma.
     const tamanho = dmg ? this.ajusteDeTamanho(attacker, dmg, critical) : null;
     const total = (dmg?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
-      + (surpresa?.total ?? 0) + (furia?.total ?? 0) + (duelismo?.total ?? 0);
+      + (surpresa?.total ?? 0) + (furia?.total ?? 0) + (duelismo?.total ?? 0) + (smite?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
     // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
     // o ladino está manobrando o turno inteiro para conseguir.
     const danoPartes = dmg ? [parcelaDeDano('dano', dmg)] : [];
     if (tamanho) danoPartes.push(tamanho);
+    if (smite) danoPartes.push(parcelaDeDano('destruição divina', smite));
     if (duelismo) danoPartes.push(parcelaDeDano('estilo: duelismo', duelismo));
     if (furia) danoPartes.push(parcelaDeDano('fúria', furia));
     if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
@@ -3022,6 +3045,17 @@ export class Encounter {
     if (amount !== bruto) {
       const como = amount === 0 ? 'imune' : amount < bruto ? 'resistente' : 'vulnerável';
       this.say('dano', `${target.name} é ${como} a ${type}: ${bruto} vira ${amount}.`);
+    }
+    // ESQUIVA SOBRENATURAL: o ladino usa a reação e o golpe que ele VÊ chegar
+    // sai pela metade. Automática, como a Proteção: é reação que só serve
+    // para isto, e perguntar a cada golpe pararia a luta.
+    if (source && deArma && amount > 0 && !target.reactionUsed
+      && target.features?.includes('uncannyDodge')
+      && !conditionEffects(target).incapacitated && !hasCondition(target, 'cego')
+      && this.field.hasLineOfSight(target.pos, source.pos)) {
+      target.reactionUsed = true;
+      amount = Math.floor(amount / 2);
+      this.say('recurso', `${target.name} se desvia: o golpe sai pela metade (${amount}).`);
     }
     if (amount <= 0) return;
     // Apanhar também mantém a fúria de pé.
@@ -5342,6 +5376,10 @@ export class Encounter {
    */
   resistencia(actor, hab, dc, { vantagem = false } = {}) {
     const fx = conditionEffects(actor);
+    // SENTIDO DE PERIGO: o bárbaro esquiva do que consegue ver. Aqui, de
+    // tudo que pede Destreza — o motor não guarda se a armadilha era visível.
+    if (hab === 'dex' && actor.features?.includes('dangerSense')
+      && !conditionEffects(actor).incapacitated && !hasCondition(actor, 'cego')) vantagem = true;
     // Esquivando dá vantagem em resistência de DES; armadura sem treino dá
     // desvantagem nas de FOR e DES.
     const opts = {
@@ -5708,6 +5746,58 @@ export class Encounter {
         if (!voltaram.length) return false;
         actor.resources.arcaneRecovery -= 1;
         this.say('recurso', `${actor.name} recolhe o que sobrou da magia do dia: ${voltaram.map((c) => `${c}º`).join(', ')}.`);
+        return true;
+      }
+      case 'recklessAttack': {
+        // ATAQUE DESCUIDADO: de graça, no começo do turno, e vale o turno
+        // inteiro. A condição cai no começo do PRÓXIMO turno dele.
+        if (hasCondition(actor, 'descuidado')) return false;
+        addCondition(actor, 'descuidado', { rounds: 1, quando: 'inicio', lado: actor.side });
+        this.say('recurso', `${actor.name} ataca sem se proteger.`);
+        return true;
+      }
+      case 'turnUndead': {
+        // EXPULSAR MORTOS-VIVOS: ação e uma carga de Canalizar Divindade.
+        // Cada morto-vivo a 9 m testa Sabedoria contra a CD de magia do
+        // clérigo; quem falha foge por um minuto. Do 5º nível, o que é fraco
+        // demais (ND 1/2 ou menos) vira pó na hora.
+        if (actor.actionUsed || !actor.resources?.channelDivinity) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cd = spellSaveDc(actor);
+        const destroi = actor.features?.includes('destroyUndead');
+        const perto = this.combatants.filter(
+          (m) => !m.dead && m.tipo === 'morto-vivo' && distanceFt(actor.pos, m.pos) <= 30,
+        );
+        this.say('recurso', `${actor.name} ergue o símbolo sagrado (CD ${cd}).`);
+        for (const m of perto) {
+          const r = this.resistencia(m, 'wis', cd);
+          if (r.success) { this.say('resistencia', `${m.name} resiste.`); continue; }
+          if (destroi && (m.cr ?? 9) <= 0.5) {
+            this.say('dano', `${m.name} vira pó.`);
+            this.applyDamage(m, m.hp + 10, 'radiante', actor);
+            continue;
+          }
+          addCondition(m, 'amedrontado', { rounds: 10, source: actor.id });
+          m.fugindoDe = actor.id;
+          this.say('condicao', `${m.name} recua, sem conseguir chegar perto.`);
+        }
+        if (!perto.length) this.say('recurso', 'Nenhum morto-vivo por perto.');
+        return true;
+      }
+      case 'divineSmite': {
+        // DESTRUIÇÃO DIVINA: gasta um espaço e o PRÓXIMO golpe de arma corpo
+        // a corpo deste turno leva 2d8 radiantes (+1d8 por círculo acima do
+        // primeiro, +1d8 contra morto-vivo). Declarar antes é a única forma
+        // honesta num jogo por turnos: o livro deixa decidir depois do
+        // acerto, e perguntar a cada golpe pararia a luta.
+        const circulo = modo ? Number(modo) : 1;
+        const sc = actor.spellcasting;
+        if (!sc || !(sc.slots?.[circulo] > 0)) return false;
+        if (actor.smitePronto) return false;
+        sc.slots[circulo] -= 1;
+        actor.smitePronto = circulo;
+        this.say('recurso', `${actor.name} carrega o golpe de luz (${circulo}º círculo).`);
         return true;
       }
       case 'twoWeaponFighting': {

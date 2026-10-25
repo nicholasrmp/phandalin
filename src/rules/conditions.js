@@ -81,6 +81,14 @@ export const CONDITIONS = {
     saveBonusDice: '1d4',
     concentrationEffect: true,
   },
+  // ATAQUE DESCUIDADO: o bárbaro troca defesa por acerto. A vantagem nos
+  // ataques DELE é lida em `attackModifiers`; esta condição é o preço —
+  // quem o ataca também tem vantagem, até o próximo turno dele.
+  descuidado: {
+    name: 'Descuidado',
+    desc: 'Ataca com vantagem, e quem o ataca também tem vantagem — até o seu próximo turno.',
+    attackedAdvantage: true,
+  },
   // INSPIRAÇÃO BÁRDICA. O dado vai no bolso de quem recebe e sai no primeiro
   // ataque, teste ou resistência que ele escolher gastar — por isso os três
   // `consumida*` juntos: o motor tira a condição no primeiro dos três que

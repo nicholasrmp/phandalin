@@ -707,6 +707,9 @@ const ACAO_DO_HUD = {
   sentidoDivino: 'classe-divineSense',
   recuperacaoArcana: 'classe-arcaneRecovery',
   artesMarciais: 'classe-martialArts',
+  descuidado: 'classe-recklessAttack',
+  expulsar: 'classe-turnUndead',
+  smite: 'classe-divineSmite',
 };
 // Enquanto o desenho próprio não existe, o de antes.
 const ACAO_RESERVA = {

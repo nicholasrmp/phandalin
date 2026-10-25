@@ -21,6 +21,7 @@ import {
   LUGARES, VIGIAS, MINUTOS_QUE_QUEBRAM_O_DESCANSO, HORAS_LEVES, HORAS_DA_NOITE,
   procurarLugar, montarAcampamento, atencaoDaVigia, ocultacaoDoAcampamento,
   coberturaDaNoite, vigiaDeTurno, descansou, noiteQuebrada, oQueAVigiaPercebe,
+  textoDoAcampamento, noiteFechada,
 } from '../rules/acampamento.js';
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm,
@@ -197,6 +198,80 @@ teste('inimigo no caminho continua fechando a passagem', () => {
   const caminho = Battlefield.pathFrom(alcance, { x: 7, y: 5 });
   assert.ok(!caminho.some((p) => p.x === 6 && p.y === 5), 'o caminho contorna o inimigo');
   assert.ok(!enc.moveAlong(dara, [{ x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }]), 'não atravessa inimigo');
+});
+
+// ---- poderes do 2º ao 5º nível ---------------------------------------------
+
+teste('Ataque Descuidado: vantagem para ele, e vantagem contra ele', () => {
+  const { enc, b: c, foes } = comBarbaro(2);
+  const gob = foes[0];
+  gob.pos = { x: c.pos.x + 1, y: c.pos.y };
+  assert.equal(enc.attackModifiers(c, gob, { ranged: false }).advantage, false);
+  assert.ok(enc.useFeature(c, 'recklessAttack'));
+  assert.ok(enc.attackModifiers(c, gob, { ranged: false }).advantage, 'ele ataca com vantagem');
+  assert.ok(enc.attackModifiers(gob, c, { ranged: false }).advantage, 'e apanha com vantagem');
+});
+
+teste('Sentido de Perigo dá vantagem na resistência de Destreza', () => {
+  const { enc, b: c } = comBarbaro(2);
+  assert.ok(c.features.includes('dangerSense'));
+  const r = enc.resistencia(c, 'dex', 30);
+  assert.equal(r.mode, 'vantagem');
+  assert.notEqual(enc.resistencia(c, 'wis', 30).mode, 'vantagem', 'só Destreza');
+});
+
+teste('Movimento Rápido só vale fora da armadura pesada', () => {
+  const { enc, b: c } = comBarbaro(5);
+  c.speedFt = 30;
+  c.armor = 'nenhuma';
+  assert.equal(enc.speedOf(c), 40, 'sem armadura, +3 m');
+  c.armor = 'placas';
+  c.abilities = { ...c.abilities, str: 18 };   // força de sobra: sem a multa da armadura
+  assert.equal(enc.speedOf(c), 30, 'de placas, não');
+});
+
+teste('Esquiva Sobrenatural corta o golpe pela metade e gasta a reação', () => {
+  const { enc, party, foes } = montar({ nivel: 5 });
+  const pip = party[PIP];
+  const gob = foes[0];
+  pip.pos = { x: 5, y: 5 }; gob.pos = { x: 6, y: 5 };
+  assert.ok(pip.features.includes('uncannyDodge'));
+  pip.reactionUsed = false;
+  const antes = pip.hp;
+  enc.applyDamage(pip, 10, 'cortante', gob, { deArma: true });
+  assert.equal(antes - pip.hp, 5, 'metade');
+  assert.ok(pip.reactionUsed);
+  // Com a reação gasta, o golpe seguinte vem inteiro.
+  const meio = pip.hp;
+  enc.applyDamage(pip, 10, 'cortante', gob, { deArma: true });
+  assert.equal(meio - pip.hp, 10);
+});
+
+teste('Expulsar Mortos-Vivos faz o zumbi fugir, e o 5º nível o destrói', () => {
+  const { enc, c } = comClasse('clerigo', 2);
+  const z = makeMonster('zumbi', { x: c.pos.x + 2, y: c.pos.y });
+  enc.addCombatant(z); z.side = 'foes';
+  z.abilities = { ...z.abilities, wis: 1 };   // falha o teste quase sempre
+  assert.ok(enc.useFeature(c, 'turnUndead'));
+  assert.equal(c.resources.channelDivinity, 0, 'gastou a carga');
+  assert.ok(hasCondition(z, 'amedrontado') || z.dead, 'fugiu ou virou pó');
+});
+
+teste('Destruição Divina gasta o espaço e carrega o próximo golpe', () => {
+  const { enc, c, foes } = comClasse('paladino', 2, {
+    weapons: ['espadaLonga'], equippedWeapon: 'espadaLonga',
+  });
+  const alvo = foes[0];
+  alvo.pos = { x: c.pos.x + 1, y: c.pos.y };
+  alvo.maxHp = alvo.hp = 300; alvo.ac = -5;
+  const espacos = c.spellcasting.slots[1];
+  assert.ok(enc.useFeature(c, 'divineSmite', { modo: '1' }));
+  assert.equal(c.spellcasting.slots[1], espacos - 1);
+  const r = enc.resolveAttack(c, alvo, { weaponId: 'espadaLonga' });
+  const luz = (r.danoPartes ?? []).find((d) => d.rotulo === 'destruição divina');
+  assert.ok(luz, 'a parcela da luz entra no golpe');
+  assert.equal(luz.dados.length, 2, '2d8 no 1º círculo');
+  assert.equal(c.smitePronto, null, 'descarregou');
 });
 
 // ---- estilos de luta -------------------------------------------------------
@@ -6367,6 +6442,88 @@ teste('a vigia da noite rola uma vez so, e a margem decide quem acorda', () => {
   assert.equal(dormindo.atencao, 0);
   assert.equal(dormindo.notou, false);
   assert.equal(dormindo.dormem.length, party.length, 'o acampamento inteiro dorme');
+});
+
+// ---- as magias de abrigo da noite ------------------------------------------
+
+teste('as quatro magias de abrigo existem, com circulo e classes do livro', () => {
+  const esperado = [
+    ['truqueDaCorda', 2, false],
+    ['chamaContinua', 2, false],
+    ['repousoTranquilo', 2, true],
+    ['pequenaCabana', 3, true],
+  ];
+  for (const [id, nivel, ritual] of esperado) {
+    const e = getSpell(id);
+    assert.ok(e, id + ' existe');
+    assert.equal(e.level, nivel, id + ' e de ' + nivel + 'o circulo');
+    assert.equal(e.soFora, true, id + ' so vale fora de combate');
+    assert.equal(e.fonte, 'srd', id + ' e do SRD');
+    assert.equal(Boolean(e.ritual), ritual, id + ': ritual ' + ritual);
+    assert.ok(/Simplifica|Regra da casa|regra da casa/.test(e.desc), id + ' declara o que muda do livro');
+  }
+  // Duracoes do livro: a corda uma hora, a cabana oito, o repouso dez dias.
+  assert.equal(getSpell('truqueDaCorda').duracaoMin, 60);
+  assert.equal(getSpell('pequenaCabana').duracaoMin, 480);
+  assert.equal(getSpell('repousoTranquilo').duracaoMin, 10 * 24 * 60);
+  assert.equal(getSpell('chamaContinua').duracaoMin, 0, 'a chama nao acaba');
+  // A cabana leva um minuto para subir.
+  assert.equal(getSpell('pequenaCabana').castTime, 'minutos');
+  assert.equal(getSpell('pequenaCabana').minutos, 1);
+  // Listas de classe.
+  assert.ok(listaDaClasse('mago', 3).magias.includes('pequenaCabana'), 'o mago tem a cabana');
+  assert.ok(listaDaClasse('bardo', 3).magias.includes('pequenaCabana'), 'o bardo tambem');
+  assert.ok(!listaDaClasse('clerigo', 3).magias.includes('pequenaCabana'), 'o clerigo nao');
+  assert.ok(listaDaClasse('mago', 2).magias.includes('truqueDaCorda'), 'o mago tem a corda');
+  assert.ok(listaDaClasse('bruxo', 2).magias.includes('truqueDaCorda'), 'o bruxo tambem');
+  assert.ok(listaDaClasse('clerigo', 2).magias.includes('chamaContinua'), 'o clerigo tem a chama');
+  assert.ok(listaDaClasse('clerigo', 2).magias.includes('repousoTranquilo'), 'e o repouso');
+  assert.ok(listaDaClasse('paladino', 2).magias.includes('repousoTranquilo'), 'o paladino tambem');
+});
+
+teste('a Pequena Cabana fecha a noite: ninguem vigia e todos descansam', () => {
+  const { party } = montar();
+  // Sem cabana, quem vigia quatro horas nao descansa.
+  const sem = montarAcampamento({ vigia: 'dois', herois: party });
+  assert.equal(sem.vigias.filter((c) => !descansou(c, sem)).length, 2);
+  assert.equal(noiteFechada(sem), false);
+  // Com a cabana, ninguem precisa ficar de olho.
+  const com = montarAcampamento({ vigia: 'dois', cabana: true, herois: party });
+  assert.equal(noiteFechada(com), true);
+  for (const c of party) assert.equal(descansou(c, com), true, c.name + ' dorme a noite toda');
+  // E o registro conta isso.
+  assert.ok(/Cabana/.test(textoDoAcampamento(com)));
+  assert.ok(!/vigia \(/.test(textoDoAcampamento(com)), 'nao fala de turnos de vigia');
+});
+
+teste('a Chama Continua da a luz da fogueira sem entregar o acampamento', () => {
+  const { party } = montar();
+  const escuro = montarAcampamento({ lugar: 'aberto', fogueira: false, herois: party });
+  const comFogo = montarAcampamento({ lugar: 'aberto', fogueira: true, herois: party });
+  const comChama = montarAcampamento({ lugar: 'aberto', fogueira: false, chamaContinua: true, herois: party });
+  // A vigia enxerga igual com fogo ou com chama.
+  assert.equal(atencaoDaVigia(comChama), atencaoDaVigia(comFogo), 'a chama ilumina como a fogueira');
+  assert.equal(atencaoDaVigia(comChama), atencaoDaVigia(escuro) + 2);
+  // Mas so a fogueira se ve de longe.
+  assert.equal(ocultacaoDoAcampamento(comFogo), ocultacaoDoAcampamento(escuro) - 2, 'o fogo entrega');
+  assert.equal(ocultacaoDoAcampamento(comChama), ocultacaoDoAcampamento(escuro), 'a chama nao');
+});
+
+teste('Repouso Tranquilo guarda o corpo e o tira de Animar os Mortos', () => {
+  const { party } = montar({ nivel: 5 });
+  const brenn = garantirInventario(party[BRENN]);
+  brenn.spellcasting.prepared.push('repousoTranquilo');
+  brenn.spellcasting.slots = [0, 4, 3, 2];
+  const morto = makeMonster('goblin', { x: 6, y: 5 });
+  morto.dead = true;
+  morto.pos = { x: 6, y: 5 };
+  brenn.pos = { x: 6, y: 6 };
+  const estado = estadoDe({ vila: { dia: 1 } });
+  const r = conjurarFora(estado, brenn, 'repousoTranquilo', {
+    herois: party, rng: makeRng(8), ritual: true, alvo: morto, criaturas: [morto],
+  });
+  assert.ok(r.ok, r.why);
+  assert.equal(morto.repousoTranquilo, true, 'o corpo fica guardado');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);
