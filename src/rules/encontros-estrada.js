@@ -21,8 +21,16 @@
 //   - evitar o encontro é um teste de grupo de Furtividade contra a atenção
 //     deles; falhando, o grupo é notado fora de posição e rola a iniciativa
 //     com desvantagem. Surpresa não há: o grupo VIU o bando;
-//   - conversar rende metade do XP do bando: resolver o encontro vale, mas
-//     menos que encarar. Passar sem ser visto não rende XP nenhum.
+//   - o bando que cruza a trilha é o da aventura, sempre; o que muda com o
+//     nível do grupo é QUANTOS vieram. A tabela publicada foi escrita para o
+//     1º ao 3º nível, e no 5º sete das oito linhas viram passeio, então o
+//     bando cresce até deixar de ser fácil para quem está ali (`escalarBando`);
+//   - conversar rende XP pelo PERIGO que o bando era: metade quando ele seria
+//     uma luta fácil, três quartos quando difícil, tudo quando mortal.
+//     Resolver um encontro perigoso sem derramar sangue vale tanto quanto
+//     vencê-lo. Passar sem ser visto não rende XP nenhum.
+
+import { XP_POR_NIVEL } from './progressao.js';
 
 export const ENCONTROS = [
   { id: 'stirge', nome: 'stirges', dia: [1, 2], noite: [1, 3], qtd: [1, 8, 2] },
@@ -102,8 +110,56 @@ export function reacaoDe(rng, encontroId) {
   return REACOES.indiferente;
 }
 
-/** Metade do XP do bando: resolver sem luta vale, mas menos que encarar. */
-export const xpDeConversa = (xpDoBando) => Math.floor((xpDoBando ?? 0) / 2);
+/**
+ * Quanto o bando pesa para ESTE grupo, medido no que o jogo já tem: o XP dele,
+ * por cabeça, contra o que falta a um herói para subir do nível em que está.
+ * A tabela de XP por nível é do SRD; os cortes são nossos.
+ *
+ * Devolve 'facil', 'dificil' ou 'mortal'.
+ */
+export function perigoDoBando(xpDoBando, herois) {
+  const vivos = (herois ?? []).filter((c) => !c.dead);
+  if (!vivos.length || !xpDoBando) return 'facil';
+  const nivel = Math.max(1, Math.round(vivos.reduce((n, c) => n + (c.level ?? 1), 0) / vivos.length));
+  const degrau = (XP_POR_NIVEL[nivel + 1] ?? XP_POR_NIVEL[XP_POR_NIVEL.length - 1]) - (XP_POR_NIVEL[nivel] ?? 0);
+  if (degrau <= 0) return 'facil';
+  const fracao = (xpDoBando / vivos.length) / degrau;
+  if (fracao >= 0.15) return 'mortal';
+  if (fracao >= 0.07) return 'dificil';
+  return 'facil';
+}
+
+/** O quanto do XP do bando a conversa rende, por perigo. */
+export const XP_POR_PERIGO = { facil: 0.5, dificil: 0.75, mortal: 1 };
+
+/**
+ * O XP de resolver o encontro na conversa. Sem o grupo, metade — é o que a
+ * camada anterior fazia, e serve de valor de segurança.
+ */
+export function xpDeConversa(xpDoBando, herois = null) {
+  const fatia = herois ? XP_POR_PERIGO[perigoDoBando(xpDoBando, herois)] : 0.5;
+  return Math.floor((xpDoBando ?? 0) * fatia);
+}
+
+/**
+ * Quantos do bando vieram, para este grupo. A tabela da aventura foi escrita
+ * para os primeiros níveis: no 5º, quase toda linha dela é passeio. O bando
+ * cresce — nunca a espécie, sempre o número — até deixar de ser uma luta
+ * fácil, com teto para a cena caber no mapa.
+ *
+ * O NÚMERO SOZINHO NÃO SALVA TUDO: medido, no 2º nível nada cresce (a tabela
+ * publicada já serve), no 3º quase tudo chega a "difícil", e no 5º as linhas
+ * fracas — estirge, goblin, hobgoblin, orc, lobo — batem no teto de doze
+ * ainda fáceis. Para o 5º nível valer de verdade faltaria criatura mais dura
+ * na tabela, e essa é da aventura: não é nossa para mudar.
+ *
+ * Devolve { qtd, cresceu }.
+ */
+export function escalarBando(qtd, xpDeUm, herois, { teto = 12 } = {}) {
+  let n = qtd;
+  while (n < teto && perigoDoBando(n * xpDeUm, herois) === 'facil') n += 1;
+  return { qtd: n, cresceu: n - qtd };
+}
 
 /** Há conversa quando o bando negocia e não chegou decidido a brigar. */
 export function podeConversar(encontroId, reacao) {

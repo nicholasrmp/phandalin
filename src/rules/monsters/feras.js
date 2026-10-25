@@ -309,11 +309,15 @@ export const FERAS = {
     hpDice: '1d4',
     speedFt: 40,
     speeds: { walkFt: 10, flyFt: 40 },
+    // So o desenho: o stirge e figura que paira (o tabuleiro o ergue do chao).
+    pairaNoAr: true,
     senses: { darkvisionFt: 60, passivePerception: 9 },
     voice: 'screechStirge',
     attacks: [
       {
         name: 'Dreno de Sangue', bonus: 5, damage: '1d4+3', type: 'perfurante', reachFt: 5, art: 'bite',
+        // Acertou, grudou (sem teste): `grudar` em `rules/combat.js`.
+        gruda: true,
         // SEM `onHit` DE PROPÓSITO. A agulha não derruba nem envenena: ela
         // GRUDA, e no bloco do SRD isso não tem resistência — acertou, prendeu.
         // `onHit` do motor SEMPRE rola um teste, então qualquer CD que eu
@@ -502,7 +506,9 @@ export const FERAS = {
     name: 'Coruja-Urso',
     look: 'owlbear',
     size: 'grande',
-    tipo: 'fera',
+    // Monstruosidade, não fera (o Livro dos Monstros): Amizade Animal e as
+    // magias de fera não a pegam.
+    tipo: 'monstruosidade',
     fonte: 'SRD',
     // Nível 4 mantém a proficiência em +2, que é a de CR 3. Nível 5 daria +3 e
     // inflaria perícias e resistências da criatura.

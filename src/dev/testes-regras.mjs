@@ -20,7 +20,7 @@ import { makeRng } from '../core/rng.js';
 import {
   LUGARES, VIGIAS, MINUTOS_QUE_QUEBRAM_O_DESCANSO, HORAS_LEVES, HORAS_DA_NOITE,
   procurarLugar, montarAcampamento, atencaoDaVigia, ocultacaoDoAcampamento,
-  coberturaDaNoite, vigiaDeTurno, descansou, noiteQuebrada,
+  coberturaDaNoite, vigiaDeTurno, descansou, noiteQuebrada, oQueAVigiaPercebe,
 } from '../rules/acampamento.js';
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm,
@@ -32,7 +32,8 @@ import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from
 import { listaDaClasse } from '../game/criacao.js';
 import {
   sortearEncontro, distanciaInicial, reacaoDe, REACOES, NEGOCIAVEIS, xpDeConversa,
-  podeConversar, vantagemDeDistancia, atencaoDoBando,
+  podeConversar, vantagemDeDistancia, atencaoDoBando, perigoDoBando, escalarBando,
+  XP_POR_PERIGO,
 } from '../rules/encontros-estrada.js';
 import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo } from '../rules/descanso.js';
 import { nivelDeExaustao, mudarExaustao, maxHpEfetivo, exaustaoFatal } from '../rules/conditions.js';
@@ -4865,6 +4866,34 @@ teste('Alarme só cobre uma cena nomeada; Localizar Objeto dá a direção em oi
   assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 9, y: 9 }), 'ao sul');
 });
 
+teste('o orc Agressivo corre como ação bônus e bate no mesmo turno', () => {
+  const pos = [{ x: 1, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }];
+  const { enc, party, foes } = montar({ foes: [['orc', { x: 11, y: 5 }]], pos, lado: 'foes' });
+  const orc = foes[0];
+  takeMonsterTurn(enc, orc);
+  assert.ok(orc.bonusUsed, 'gastou a ação bônus');
+  assert.ok(party.some((h) => Math.abs(orc.pos.x - h.pos.x) <= 1 && Math.abs(orc.pos.y - h.pos.y) <= 1), `colou num herói: ${JSON.stringify(orc.pos)}`);
+  assert.ok(orc.actionUsed, 'e ainda atacou');
+});
+
+teste('o grick só usa o bico se os tentáculos acertarem', () => {
+  const { enc, party, foes } = montar({ foes: [['grick', { x: 6, y: 5 }]], lado: 'foes' });
+  const g = foes[0];
+  const golpes = [];
+  const orig = enc.resolveAttack.bind(enc);
+  let acerta = false;
+  enc.resolveAttack = (a, t, o) => { golpes.push(o.weaponId); return { hit: acerta }; };
+  enc.attackAction(g, party[0], 'Tentáculos');
+  assert.deepEqual(golpes, ['Tentáculos'], 'errou os tentáculos: sem bico');
+  golpes.length = 0;
+  acerta = true;
+  g.actionUsed = false;
+  enc.attackAction(g, party[0], 'Tentáculos');
+  assert.deepEqual(golpes, ['Tentáculos', 'Bico'], 'acertou: o bico vem');
+  enc.resolveAttack = orig;
+  assert.deepEqual(g.resistNaoMagico, ['cortante', 'perfurante', 'concussão']);
+});
+
 // ---- mantimentos de viagem -------------------------------------------------
 
 teste('exaustao sobe em degraus e cada um cobra o que o livro manda', () => {
@@ -5219,6 +5248,42 @@ teste('o 6o degrau mata, e morto-vivo nao cansa', () => {
   }
 });
 
+teste('Hamun Kost joga como o mago maligno da aventura: conjura no turno', () => {
+  const pos = [{ x: 2, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }];
+  const { enc, foes } = montar({ foes: [['hamunKost', { x: 9, y: 5 }]], pos, lado: 'foes' });
+  const k = foes[0];
+  assert.equal(k.ac, 15, 'já sob Armadura Arcana');
+  assert.equal(k.maxHp, 22);
+  const antes = k.spellcasting.slots.reduce((a, b) => a + b, 0);
+  takeMonsterTurn(enc, k);
+  const depois = k.spellcasting.slots.reduce((a, b) => a + b, 0);
+  assert.ok(depois < antes, 'gastou um espaço de magia no turno');
+});
+
+teste('doppelganger: Emboscador dá vantagem e o Ataque Surpresa soma 3d6 na 1ª rodada', () => {
+  const { enc, party, foes } = montar({ foes: [['doppelganger', { x: 6, y: 5 }]], lado: 'foes' });
+  const d = foes[0];
+  const alvo = party[0];
+  enc.surpresos = new Set([alvo.id]);
+  enc.surpreendidos = new Set([alvo.id]);
+  const mods = enc.attackModifiers(d, alvo);
+  assert.ok(mods.reasons.some((r) => /emboscador/.test(r)), 'vantagem do Emboscador');
+  const eventos = [];
+  enc.onEvent = (e) => eventos.push(e);
+  alvo.ac = -50;
+  d.actionUsed = false;
+  enc.attackAction(d, alvo, 'Golpe');
+  const golpes = eventos.filter((e) => e.type === 'attack' && e.hit);
+  assert.ok(golpes.length > 0, 'acertou');
+  assert.ok(golpes.every((e) => e.rolagem.danoPartes.some((p) => /ataque surpresa/.test(p.rotulo ?? p.nome ?? JSON.stringify(p)))), 'parcela do Ataque Surpresa');
+  // Na 2ª rodada, sem bônus.
+  enc.round = 2;
+  eventos.length = 0;
+  d.actionUsed = false;
+  enc.attackAction(d, alvo, 'Golpe');
+  assert.ok(eventos.filter((e) => e.type === 'attack' && e.hit).every((e) => !JSON.stringify(e.rolagem.danoPartes).includes('ataque surpresa')));
+});
+
 // ---- ritmo de marcha -------------------------------------------------------
 
 teste('cada ritmo anda o que o livro manda, e a marcha forcada encurta a viagem', () => {
@@ -5413,6 +5478,43 @@ teste('a exaustao da estrada atravessa a luta do caminho', () => {
   c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente' || k.id === 'exausto');
   assert.equal(nivelDeExaustao(c), 2, 'a exaustao fica');
   assert.equal(hasCondition(c, 'abencoado'), false, 'a condicao de combate sai');
+});
+
+teste('drow do Manual: dois golpes de espada curta e Fogo das Fadas em grupo', () => {
+  const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
+  const { enc, party, foes } = montar({ foes: [['drow', { x: 8, y: 5 }]], pos, lado: 'foes' });
+  const d = foes[0];
+  assert.equal(enc.golpesDoAtaque(d, 'Espada curta').length, 2, 'Ataques Múltiplos');
+  assert.equal(d.senses.darkvisionFt, 120);
+  takeMonsterTurn(enc, d);
+  assert.equal(d.spellcasting.slots[1], 2, 'gastou um uso do Fogo das Fadas');
+  assert.ok(d.concentrating, 'mantém a concentração');
+});
+
+teste('o doppelganger disfarçado de drow se revela ao atacar ou ao cair', () => {
+  const { enc, party, foes } = montar({ foes: [['doppelganger', { x: 6, y: 5 }], ['doppelganger', { x: 8, y: 8 }]], lado: 'foes' });
+  const [a, b] = foes;
+  for (const d of foes) { d.disfarce = { look: d.look, de: 'a drow' }; d.look = 'drow'; }
+  assert.equal(a.look, 'drow');
+  a.actionUsed = false;
+  enc.attackAction(a, party[0], 'Golpe');
+  assert.equal(a.look, 'doppelganger', 'atacou: forma verdadeira');
+  assert.equal(a.disfarce, null);
+  enc.applyDamage(b, 999, 'concussão', party[0]);
+  assert.equal(b.look, 'doppelganger', 'caiu: forma verdadeira');
+});
+
+teste('a drow mostra a besta quando atira e a espada quando golpeia', () => {
+  const { enc, party, foes } = montar({ foes: [['drow', { x: 9, y: 5 }]], lado: 'foes' });
+  const d = foes[0];
+  party[0].pos = { x: 4, y: 5 };
+  d.actionUsed = false;
+  assert.ok(enc.attackAction(d, party[0], 'Besta de mão').ok);
+  assert.equal(d.look, 'drow@camisaoDeMalha-bestaDeMao');
+  party[0].pos = { x: 8, y: 5 };
+  d.actionUsed = false;
+  assert.ok(enc.attackAction(d, party[0], 'Espada curta').ok);
+  assert.equal(d.look, 'drow');
 });
 
 // ---- a noite e o acampamento -----------------------------------------------
@@ -5641,6 +5743,29 @@ teste('a despensa conta a metade ja aberta', () => {
   assert.ok(depois.dias <= antes, 'e nunca mais do que havia antes');
 });
 
+teste('stirge: gruda no acerto, drena 1d4+3 por turno, solta com 10 PV e pode ser arrancado', () => {
+  const { enc, party, foes } = montar({ foes: [['stirge', { x: 6, y: 5 }], ['stirge', { x: 4, y: 5 }]], lado: 'foes' });
+  const [a, b] = foes;
+  const h = party[0];
+  h.maxHp = 60; h.hp = 60; h.ac = -50;
+  a.actionUsed = false;
+  enc.attackAction(a, h, 'Dreno de Sangue');
+  assert.equal(a.grudadoEm, h.id, 'grudou');
+  const antes = h.hp;
+  let voltas = 0;
+  while (a.grudadoEm && voltas < 5) { a.acted = false; a.actionUsed = false; takeMonsterTurn(enc, a); voltas++; }
+  assert.ok(h.hp < antes, 'drenou');
+  assert.equal(a.grudadoEm, null, 'soltou depois de 10 PV');
+  assert.ok(antes - h.hp >= 10);
+  // o segundo gruda e o herói o arranca com a ação
+  b.actionUsed = false;
+  enc.attackAction(b, h, 'Dreno de Sangue');
+  assert.equal(b.grudadoEm, h.id);
+  h.actionUsed = false;
+  assert.ok(enc.arrancarGrudado(h, b).ok);
+  assert.equal(b.grudadoEm, null);
+});
+
 // ---- o encontro antes das armas --------------------------------------------
 
 teste('a distancia inicial e 2d6 x 3 m, e metade no mato fechado', () => {
@@ -5705,14 +5830,34 @@ teste('podeConversar: a propria funcao que a tela usa', () => {
   assert.equal(REACOES.indiferente.cd, 10, 'facil');
 });
 
-teste('conversar rende metade do XP; evitar nao rende nada', () => {
+teste('conversar rende pelo perigo do bando; evitar nao rende nada', () => {
   const goblins = Array.from({ length: 4 }, () => makeMonster('goblin', { x: 0, y: 0 }));
   const xp = goblins.reduce((n, m) => n + m.xp, 0);
   assert.equal(xp, 200);
+  // Sem grupo, metade: e o valor de seguranca.
   assert.equal(xpDeConversa(xp), 100, 'metade');
   assert.equal(xpDeConversa(0), 0);
   assert.equal(xpDeConversa(undefined), 0, 'sem bando, sem XP');
   assert.equal(xpDeConversa(25), 12, 'e sempre inteiro');
+  // Com o grupo, a fatia sai do perigo: 200 XP sao muito no 2o nivel e pouco
+  // no 5o, e o mesmo bando paga diferente.
+  const baixo = montar({ nivel: 2 }).party;
+  const alto = montar({ nivel: 5 }).party;
+  assert.equal(perigoDoBando(xp, baixo), 'dificil', '50 XP por cabeca contra 600 de degrau');
+  assert.equal(perigoDoBando(xp, alto), 'facil', '50 por cabeca contra 7500');
+  assert.equal(xpDeConversa(xp, baixo), 150, 'dificil: tres quartos');
+  assert.equal(xpDeConversa(xp, alto), 100, 'facil: metade');
+  // E um bando que de fato mata no 2o nivel paga tudo.
+  const orcs = Array.from({ length: 5 }, () => makeMonster('orc', { x: 0, y: 0 }));
+  const xpOrcs = orcs.reduce((n, m) => n + m.xp, 0);
+  assert.equal(perigoDoBando(xpOrcs, baixo), 'mortal');
+  assert.equal(xpDeConversa(xpOrcs, baixo), xpOrcs, 'mortal: tudo');
+  assert.equal(XP_POR_PERIGO.facil, 0.5);
+  assert.equal(XP_POR_PERIGO.dificil, 0.75);
+  assert.equal(XP_POR_PERIGO.mortal, 1);
+  // Grupo vazio ou morto nao quebra a conta.
+  assert.equal(perigoDoBando(xp, []), 'facil');
+  assert.equal(perigoDoBando(0, baixo), 'facil');
   // Evitar nao chama `xpDeConversa` nenhuma vez: o XP de quem some da trilha
   // e zero, e o unico caminho que paga XP e o da conversa.
   const comoAconteceNoJogo = (saida, xpDoBando) => (saida === 'falar' ? xpDeConversa(xpDoBando) : 0);
@@ -5828,6 +5973,64 @@ teste('a chance da tela bate com o que o dado faz', () => {
   const medida = passou / N;
   assert.ok(Math.abs(medida - prevista) < 0.03,
     'previsto ' + prevista.toFixed(3) + ', medido ' + medida.toFixed(3));
+});
+
+teste('o bando cresce ate deixar de ser facil para quem esta na trilha', () => {
+  const goblin = makeMonster('goblin', { x: 0, y: 0 });
+  const baixo = montar({ nivel: 2 }).party;
+  const alto = montar({ nivel: 5 }).party;
+  // No 2o nivel, quatro goblins ja sao mortais: ninguem cresce.
+  const noDois = escalarBando(4, goblin.xp, baixo);
+  assert.equal(noDois.cresceu, 0, 'a tabela da aventura basta no 2o nivel');
+  assert.equal(noDois.qtd, 4);
+  // No 5o, quatro goblins sao passeio: o bando cresce.
+  const noCinco = escalarBando(4, goblin.xp, alto);
+  assert.ok(noCinco.cresceu > 0, 'no 5o nivel vem mais gente');
+  // Cresce ate deixar de ser facil OU ate o teto — e para o goblin, que vale
+  // 50 XP, o teto chega antes: doze deles ainda sao passeio no 5o nivel. O
+  // numero sozinho nao salva as linhas fracas da tabela.
+  assert.ok(perigoDoBando(noCinco.qtd * goblin.xp, alto) !== 'facil' || noCinco.qtd === 12);
+  // Com um bicho que vale mais, o crescimento morde antes do teto.
+  const ghoul = makeMonster('ghoul', { x: 0, y: 0 });
+  const comGhoul = escalarBando(2, ghoul.xp, alto);
+  assert.ok(comGhoul.qtd < 12, 'o carnical para antes do teto');
+  assert.notEqual(perigoDoBando(comGhoul.qtd * ghoul.xp, alto), 'facil');
+  // E para no teto, para a cena caber no mapa.
+  const teto = escalarBando(1, 1, alto, { teto: 12 });
+  assert.equal(teto.qtd, 12, 'o teto segura');
+  // A ESPECIE nunca muda: so o numero.
+  assert.equal(escalarBando(4, goblin.xp, alto).qtd >= 4, true, 'nunca encolhe');
+  // Um bando ja mortal nao cresce em nivel nenhum.
+  const ogro = makeMonster('ogro', { x: 0, y: 0 });
+  assert.equal(escalarBando(1, ogro.xp, baixo).cresceu, 0, 'um ogro ja basta no 2o nivel');
+});
+
+teste('a vigia da noite rola uma vez so, e a margem decide quem acorda', () => {
+  const { party } = montar();
+  const camp = montarAcampamento({ lugar: 'aberto', fogueira: true, vigia: 'revezam', herois: party });
+  const dado = (v) => { const f = () => v; f.die = () => 1; return f; };
+  // Furtividade baixissima: a vigia nota com folga e acorda todo mundo.
+  const facil = oQueAVigiaPercebe(dado(0.1), camp, [1, 2, 3]);
+  assert.equal(facil.menor, 1, 'vale a pior rolagem deles');
+  assert.ok(facil.notou);
+  assert.ok(facil.gritouATempo, 'com margem de 5 ou mais, da tempo de sacudir o resto');
+  assert.ok(camp.vigias.includes(facil.deTurno), 'um dos que se revezam');
+  assert.equal(facil.dormem.length, party.length - 1, 'os outros dormem');
+  // Em cima da hora: nota, mas so salva quem estava de pe.
+  const emCima = oQueAVigiaPercebe(dado(0.1), camp, [facil.atencao - 2]);
+  assert.ok(emCima.notou);
+  assert.equal(emCima.gritouATempo, false);
+  // Furtividade altissima: nem o vigia nota.
+  const nada = oQueAVigiaPercebe(dado(0.1), camp, [99]);
+  assert.equal(nada.notou, false);
+  assert.equal(nada.gritouATempo, false);
+  // Sem vigia nenhum, ninguem nota e todos dormem.
+  const sem = montarAcampamento({ vigia: 'ninguem', herois: party });
+  const dormindo = oQueAVigiaPercebe(dado(0.1), sem, [1]);
+  assert.equal(dormindo.deTurno, null);
+  assert.equal(dormindo.atencao, 0);
+  assert.equal(dormindo.notou, false);
+  assert.equal(dormindo.dormem.length, party.length, 'o acampamento inteiro dorme');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

@@ -1176,6 +1176,15 @@ export class Hud {
         { kind: 'stabilize', targetId: caido.id }, c.actionUsed);
     }
 
+    // Stirge grudado em si ou num aliado colado: arrancar gasta a ação.
+    for (const quem of [c, ...enc.alliesOf(c).filter((a) => !a.dead && isAdjacent(a.pos, c.pos))]) {
+      for (const s of enc.grudadosEm(quem)) {
+        comum('estabilizar', `Arrancar ${s.name}${quem === c ? '' : ` de ${quem.name}`}`,
+          'O stirge se solta e para de drenar sangue.', 'Ação',
+          { kind: 'arrancarGrudado', targetId: s.id }, c.actionUsed);
+      }
+    }
+
     // Fingir de Morto: o conjurador toca o amigo que finge e desfaz a magia.
     const fingido = enc.alliesOf(c).find((a) => !a.dead && isAdjacent(a.pos, c.pos)
       && a.conditions?.some((k) => k.id === 'fingeMorto' && (!k.source || k.source === c.id)));

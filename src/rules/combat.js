@@ -208,6 +208,7 @@ export class Encounter {
     // encontro; a regra de surpresa é do motor (`rolarSurpresa`).
     this.emboscada = emboscada;
     this.surpresos = new Set();
+    this.surpreendidos = new Set();
     // Função (round) → { aviso, units } ou null. O motor não sabe QUEM chega;
     // isso é dado do encontro.
     this.reinforcements = reinforcements;
@@ -326,6 +327,10 @@ export class Encounter {
     // Guarda quem abriu: a rodada só vira quando a vez volta para esse lado.
     this.firstSide = partyInit.total >= foeInit.total ? 'party' : 'foes';
     this.surpresos = this.rolarSurpresa();
+    // Quem FOI surpreendido, para o Ataque Surpresa (bugbear, doppelganger): a
+    // lista acima se esvazia quando o surpreso perde o turno, mas o dano extra
+    // vale a primeira rodada inteira.
+    this.surpreendidos = new Set(this.surpresos);
     // Ganchos de quem monta o encontro: o familiar do grupo entra (`rules/familiar.js`), depois da
     // surpresa (um espírito chamado não é pego desprevenido).
     this.aoComecar?.(this);
@@ -1101,7 +1106,79 @@ export class Encounter {
     // `from` deixa a camada de desenho calcular para onde a figura está virada,
     // sem o motor precisar conhecer o conceito de "frente" (o 5e não tem).
     this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: path.slice(0, ate + 1).map((p) => ({ ...p })) });
+    // Quem tem stirge grudado leva o stirge junto.
+    this.levarGrudados(actor);
     return true;
+  }
+
+  // --- DRENAR SANGUE (o stirge, Manual dos Monstros) -----------------------
+  //   acertou: gruda no alvo, sem teste; grudado, não ataca;
+  //   no começo de cada turno dele, o alvo perde 1d4+3 PV;
+  //   solta depois de drenar 10 PV, ou quando o alvo morre;
+  //   qualquer criatura (o alvo também) arranca o stirge com uma ação.
+  /** Os stirges grudados em `alvo`. */
+  grudadosEm(alvo) {
+    return this.combatants.filter((m) => !m.dead && m.grudadoEm === alvo.id);
+  }
+
+  grudar(m, alvo) {
+    m.grudadoEm = alvo.id;
+    m.drenado = 0;
+    this.say('condicao', `${m.name} crava a tromba em ${alvo.name} e fica grudado.`);
+    this.onEvent({ type: 'grudou', actor: m, target: alvo });
+  }
+
+  soltarGrudado(m, motivo) {
+    if (!m.grudadoEm) return;
+    m.grudadoEm = null;
+    m.drenado = 0;
+    this.say('condicao', `${m.name} ${motivo}.`);
+  }
+
+  /** O turno do stirge grudado: drena 1d4+3. Devolve true se ainda está grudado. */
+  drenarSangue(m) {
+    const alvo = this.combatants.find((c) => c.id === m.grudadoEm);
+    if (!alvo || alvo.dead) { this.soltarGrudado(m, 'se solta: não há mais o que beber'); return false; }
+    if (!isAdjacent(m.pos, alvo.pos)) this.levarGrudados(alvo);
+    const r = damageRoll(this.rng, '1d4+3');
+    const antes = alvo.hp;
+    this.applyDamage(alvo, r.total, 'perda de sangue', m);
+    m.drenado += Math.max(0, antes - alvo.hp) || r.total;
+    this.say('dano', `${m.name} drena o sangue de ${alvo.name}: ${r.total} PV.`, `1d4+3 = ${r.total}`);
+    if (alvo.dead || m.drenado >= 10) {
+      // Cheio, ele voa para digerir (o Manual): não ataca mais (`saciado`).
+      if (!alvo.dead) m.saciado = true;
+      this.soltarGrudado(m, alvo.dead ? 'se solta do corpo' : 'se solta, cheio de sangue, e voa para longe');
+      return false;
+    }
+    return true;
+  }
+
+  /** Os grudados acompanham o alvo: cada um vai para uma casa livre colada nele. */
+  levarGrudados(alvo) {
+    for (const m of this.grudadosEm(alvo)) {
+      if (isAdjacent(m.pos, alvo.pos)) continue;
+      let casa = null;
+      for (let dy = -1; dy <= 1 && !casa; dy++) {
+        for (let dx = -1; dx <= 1 && !casa; dx++) {
+          const x = alvo.pos.x + dx;
+          const y = alvo.pos.y + dy;
+          if ((dx || dy) && this.field.inside(x, y) && !this.field.blocksMove(x, y) && !this.occupied(x, y, m)) casa = { x, y };
+        }
+      }
+      if (casa) m.pos = { ...m.pos, ...casa, f: alvo.pos.f ?? m.pos.f };
+    }
+  }
+
+  /** Arrancar um stirge (de si ou de um aliado colado): gasta a ação. */
+  arrancarGrudado(actor, m) {
+    const alvo = this.combatants.find((c) => c.id === m?.grudadoEm);
+    if (!alvo) return { ok: false, why: 'não está grudado em ninguém' };
+    if (alvo !== actor && !isAdjacent(actor.pos, alvo.pos)) return { ok: false, why: 'precisa estar colado em quem tem o stirge' };
+    if (!this.gastarAcaoSimples(actor)) return { ok: false, why: 'a ação deste turno já foi usada' };
+    this.soltarGrudado(m, `é arrancado por ${actor.name}`);
+    this.afterAction(actor);
+    return { ok: true };
   }
 
   // ---- zonas no chão (Graxa) ----------------------------------------------
@@ -2033,6 +2110,8 @@ export class Encounter {
     // Visão verdadeira (o nothic): dentro do alcance dela, invisível não esconde.
     const ve = (quem, alvo) => (quem.senses?.truesightFt ?? 0) >= distanceFt(quem.pos, alvo.pos);
     if (hasCondition(attacker, 'invisivel') && !ve(target, attacker)) fonte(mods, 'vantagem', 'atacante invisível');
+    // Emboscador (o doppelganger): vantagem contra quem ainda está surpreso.
+    if (attacker.traits?.includes('emboscador') && this.surpresos?.has(target.id)) fonte(mods, 'vantagem', 'emboscador');
     if (hasCondition(target, 'invisivel') && !ve(attacker, target)) fonte(mods, 'desvantagem', 'alvo invisível');
     // Proteção contra o Bem e o Mal: certos tipos atacam o protegido com desvantagem.
     const protecao = (target.conditions ?? []).find((c) => CONDITIONS[c.id]?.contraTipos?.includes(attacker.tipo));
@@ -2099,6 +2178,8 @@ export class Encounter {
         // Acao por TESTE de resistencia (o Olhar Apodrecedor do nothic): sem
         // jogada de ataque; o alvo testa e, falhando, leva o dano.
         teste: atk.teste ?? null,
+        // Drenar Sangue (o stirge): o acerto gruda no alvo.
+        gruda: !!atk.gruda,
       };
     }
     const w0 = WEAPONS[weaponId ?? actor.equippedWeapon];
@@ -2174,7 +2255,25 @@ export class Encounter {
     return { ok: true, profile: p, longRange: p.ranged && dist > p.rangeFt };
   }
 
+  /**
+   * O DISFARCE de um metamorfo (o Vyerith, doppelganger, de drow): quem monta a
+   * cena põe `disfarce: { look, de }` e o look falso no combatente; o primeiro
+   * ataque dele, ou a queda, desfaz o disfarce e a figura volta ao look
+   * verdadeiro (`disfarce.look`).
+   */
+  revelarDisfarce(c, quando = '') {
+    if (!c?.disfarce) return;
+    const { look, de } = c.disfarce;
+    c.disfarce = null;
+    c.look = look;
+    c.lookBase = look;
+    this.say('acao', `A pele de ${de ?? c.name} escorre ${quando ? `${quando} ` : ''}— ${c.name} era um doppelganger!`);
+    this.onEvent({ type: 'revelou', target: c });
+  }
+
   resolveAttack(attacker, target, { weaponId = null, opportunity = false, disadvantage = false } = {}) {
+    // Atacar desfaz o disfarce do metamorfo: o golpe já sai da forma verdadeira.
+    if (attacker.disfarce) this.revelarDisfarce(attacker, 'no ataque');
     // O chefe pode jogar um capanga na frente antes de a rolagem acontecer.
     target = this.tryRedirect(target);
     const check = this.canAttack(attacker, target, weaponId);
@@ -2328,6 +2427,14 @@ export class Encounter {
       attacker.martialUsedThisTurn = true;
       martial = damageRoll(this.rng, '2d6', { critical });
     }
+    // Ataque Surpresa: na primeira rodada, quem acerta uma criatura que ele
+    // surpreendeu soma dados (2d6 o bugbear, 3d6 o doppelganger).
+    let surpresa = null;
+    const dadosDaSurpresa = attacker.traits?.includes('ataqueSurpresaDoppelganger') ? '3d6'
+      : attacker.traits?.includes('ataqueSurpresa') ? '2d6' : null;
+    if (dadosDaSurpresa && this.round === 1 && this.surpreendidos?.has(target.id)) {
+      surpresa = damageRoll(this.rng, dadosDaSurpresa, { critical });
+    }
 
     // Ataque sem dano (a teia da aranha só prende): o acerto vale pelo efeito.
     const dmg = damageNotation
@@ -2341,7 +2448,8 @@ export class Encounter {
     }
     // Aumentar/Reduzir: +1d4 ou −1d4 no dano de arma.
     const tamanho = dmg ? this.ajusteDeTamanho(attacker, dmg, critical) : null;
-    const total = (dmg?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0);
+    const total = (dmg?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
+      + (surpresa?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
     // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
@@ -2350,6 +2458,7 @@ export class Encounter {
     if (tamanho) danoPartes.push(tamanho);
     if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
     if (martial) danoPartes.push(parcelaDeDano('vantagem marcial', martial));
+    if (surpresa) danoPartes.push(parcelaDeDano('ataque surpresa', surpresa));
     rolagem.danoPartes = danoPartes;
     rolagem.danoTotal = total;
     rolagem.tipoDeDano = p.type;
@@ -2437,6 +2546,8 @@ export class Encounter {
         this.say('condicao', `${target.name} se segura e escapa de ${nomeCondicao}.`, r.conta, { rolagem: r });
       }
     }
+    // Drenar Sangue (o stirge): o acerto GRUDA no alvo, sem teste.
+    if (p.gruda && !target.dead && !attacker.dead) this.grudar(attacker, target);
     return { hit: true, critical, damage: total, modo: mods.mode, danoPartes };
   }
 
@@ -2565,6 +2676,7 @@ export class Encounter {
     const arma = attacker.attacks ? (weaponId ?? check.profile.name) : weaponId;
     const golpes = continuando ? Array(attacker.ataquesRestantes).fill(arma) : this.golpesDoAtaque(attacker, arma);
     attacker.ataquesRestantes = 0;
+    let anterior = null;
     for (const [i, golpe] of golpes.entries()) {
       // Quem morreu no meio da sequência (Repreensão Infernal, Agathys) para.
       if (attacker.dead || hasCondition(attacker, 'inconsciente')) break;
@@ -2578,7 +2690,10 @@ export class Encounter {
       // Cada golpe da sequência tem o seu alcance (a mordida de 3 m e a garra
       // de 1,5 m do dragão): o que não alcança fica de fora.
       if (i > 0 && !this.canAttack(attacker, target, golpe).ok) continue;
-      this.resolveAttack(attacker, target, {
+      // `seAcertar` (o grick): o golpe seguinte só sai se o anterior acertou —
+      // o bico só morde quem os tentáculos agarraram.
+      if (i > 0 && attacker.multiattack?.seAcertar && !anterior?.hit) break;
+      anterior = this.resolveAttack(attacker, target, {
         weaponId: golpe,
         disadvantage: attacker.multiattack?.secondAtDisadvantage && i === 1,
       });
@@ -2867,6 +2982,8 @@ export class Encounter {
     }
 
     if (target.kind === 'npc') {
+      // O metamorfo disfarçado volta à forma verdadeira ao morrer (o livro).
+      this.revelarDisfarce(target, 'ao cair');
       target.dead = true;
       target.morreuNaRodada = this.round;
       removeCondition(target, 'esquivando');
@@ -5281,6 +5398,18 @@ export class Encounter {
     }
     if (actor.actionUsed) return false;
     actor.actionUsed = true;
+    return true;
+  }
+
+  /**
+   * Agressivo (o orc): como ação bônus, anda até o seu deslocamento em direção
+   * a um inimigo. Quem decide para onde é a IA (`rules/ai.js`, regra 2).
+   */
+  investidaAgressiva(actor) {
+    if (actor.bonusUsed || !actor.traits?.includes('agressivo')) return false;
+    actor.bonusUsed = true;
+    actor.movementLeftFt += this.speedOf(actor);
+    this.say('acao', `${actor.name} avança furioso (Agressivo).`);
     return true;
   }
 

@@ -45,14 +45,15 @@ import {
 } from '../rules/marcha.js';
 import {
   VIGIAS, procurarLugar, montarAcampamento, atencaoDaVigia, coberturaDaNoite,
-  ocultacaoDoAcampamento, descansou, noiteQuebrada, textoDoAcampamento,
+  ocultacaoDoAcampamento, descansou, noiteQuebrada, textoDoAcampamento, oQueAVigiaPercebe,
 } from '../rules/acampamento.js';
 import {
   ENCONTROS, sortearEncontro, distanciaInicial, reacaoDe, podeConversar,
-  vantagemDeDistancia, atencaoDoBando, xpDeConversa,
+  vantagemDeDistancia, atencaoDoBando, xpDeConversa, perigoDoBando, escalarBando,
 } from '../rules/encontros-estrada.js';
 import { makeMonster } from '../rules/monsters.js';
-import { passivePerception } from '../rules/abilities.js';
+import { passivePerception, skillBonus } from '../rules/abilities.js';
+import { d20 } from '../core/dice.js';
 
 export { ENCONTROS, sortearEncontro };
 
@@ -492,9 +493,51 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
    * null quando o encontro acabou sem luta.
    */
   async function saidaDoEncontro(rng, e) {
-    // À noite o grupo está acampado e dormindo: não há sumir da trilha nem
-    // puxar conversa com quem já chegou mordendo.
-    if (e.periodo === 'noite') return 'luta';
+    // À NOITE o grupo está acampado. A vigia rola aqui, e é ela que diz se há
+    // saída: só quem foi avisado a tempo pode apagar o fogo e ficar quieto.
+    // Quem dormiu ou notou em cima da hora acorda com eles em cima.
+    if (e.periodo === 'noite') {
+      const camp3 = montarAcampamento({ ...(camp.viagem?.acampamento ?? {}), herois: vivos() });
+      const bandoN = Array.from({ length: e.qtd }, () => makeMonster(e.id, { x: 0, y: 0 }));
+      const furtividades = bandoN.map((f) => d20(rng, skillBonus(f, 'furtividade')).total);
+      const vigia = oQueAVigiaPercebe(rng, camp3, furtividades);
+      // A cena usa ESTA rolagem: rolar de novo lá daria duas noites diferentes.
+      if (camp.viagem) camp.viagem.vigiaDaNoite = { ...vigia, furtividades };
+      if (!vigia.gritouATempo) return 'luta';
+
+      const atencaoN = atencaoDoBando(bandoN.map((m) => passivePerception(m)));
+      const chanceN = chanceDeEsconder(vivos(), atencaoN);
+      tela?.esconder?.();
+      const rN = await narrar(app.root, {
+        formato: 'painel',
+        paginas: [{ titulo: 'No acampamento', texto: [
+          `${vigia.deTurno.name} estava de vigia e ouve de longe (atenção ${vigia.atencao} contra ${vigia.menor}): ${e.qtd > 1 ? `${e.qtd} ` : ''}${e.nome} vêm na direção do acampamento, e ainda dá tempo.`,
+          `Apagar o fogo e ficar quieto é um teste de grupo de Furtividade contra a atenção deles (${atencaoN}), ${Math.round(chanceN * 100)}% de chance. Dando certo, eles passam reto; falhando, a luta começa com o grupo no escuro, sem fogueira.`,
+          'Acordar todos e esperar de armas na mão não custa nada: a vigia avisou a tempo, e ninguém vai ser pego de surpresa.',
+          'Regra da casa: a saída da noite é nossa — o livro não traz nada sobre apagar fogueira para não ser achado.',
+        ] }],
+        escolhas: [
+          { rotulo: 'Acordar todos', valor: 'luta' },
+          { rotulo: 'Apagar o fogo', valor: 'calar' },
+        ],
+      });
+      tela?.mostrar?.();
+      if (rN !== 'calar') return 'luta';
+
+      const furtivoN = furtividadeDoGrupo(rng, vivos(), bandoN, passivePerception, { atencao: atencaoN });
+      if (furtivoN.furtivo) {
+        registrar(`O fogo é abafado e ninguém respira (Furtividade ${furtivoN.rolagem} contra ${atencaoN}): ${e.nome} passam a alguns passos e seguem. Nenhum XP, e a noite vira uma hora mais curta.`);
+        for (const t of avancarTempo(estadoDeUtilidade(camp), 60, vivos())) registrar(t);
+        return null;
+      }
+      registrar(`O fogo é abafado tarde demais (Furtividade ${furtivoN.rolagem} contra ${atencaoN}): eles acham o acampamento no escuro.`);
+      // Sem fogueira e avisado: ninguém é surpreendido, mas também não há luz.
+      if (camp.viagem) {
+        camp.viagem.acampamento = { ...(camp.viagem.acampamento ?? {}), fogueira: false };
+        camp.viagem.vigiaDaNoite = { ...vigia, furtividades };
+      }
+      return 'luta';
+    }
     const herois = vivos();
     const terreno = camp.viagem?.terrenoDoDia ?? 'comum';
     const dist = distanciaInicial(rng, terreno);
@@ -536,7 +579,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
           + `${porDistancia.vantagem ? (terreno === 'farto' ? ' O mato fechado ajuda: com vantagem.' : ' Estão longe: com vantagem.') : porDistancia.desvantagem ? ' Estão em cima: com desvantagem.' : ''}`
           + ' Nenhum XP, uma hora perdida, e falhando o grupo é notado fora de posição: a iniciativa sai com desvantagem.',
         podeFalar
-          ? `${falante.quem.name} tentaria conversa: Persuasão contra CD ${reacao.cd}, ${Math.round(falante.p.chance * 100)}% de chance. Dá metade do XP do bando.`
+          ? `${falante.quem.name} tentaria conversa: Persuasão contra CD ${reacao.cd}, ${Math.round(falante.p.chance * 100)}% de chance. Rende ${xpDeConversa(xpDoBando, herois)} XP dos ${xpDoBando} do bando — ${perigoDoBando(xpDoBando, herois) === 'mortal' ? 'tudo, porque essa luta podia acabar mal' : perigoDoBando(xpDoBando, herois) === 'dificil' ? 'três quartos, porque a luta seria dura' : 'metade, porque a luta seria fácil'}.`
           : 'Com esses não há conversa: nenhum deles tem o que ganhar em parar para falar.',
         devagar
           ? 'O grupo vem devagar e escondido: encarar pode começar com a emboscada sendo dele.'
@@ -566,7 +609,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (r === 'falar') {
       const t = rolarTeste(estadoDeUtilidade(camp), herois, rng, falante.quem, 'persuasao', reacao.cd);
       if (t.passou) {
-        const xp = xpDeConversa(xpDoBando);
+        const xp = xpDeConversa(xpDoBando, herois);
         registrar(`${falante.quem.name} conversa e ${e.nome} seguem caminho (Persuasão ${t.total} contra ${reacao.cd}).`);
         await pagarXp(xp, `Conversa na Trilha Triboar (${e.nome})`);
         for (const t2 of avancarTempo(estadoDeUtilidade(camp), 10, herois)) registrar(t2);
@@ -593,8 +636,14 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
   }
 
   async function encontro(e) {
+    // A tabela da aventura foi escrita para os primeiros níveis: o bando
+    // cresce até deixar de ser fácil para quem está na trilha hoje
+    // (`rules/encontros-estrada.js`). A espécie nunca muda, só o número.
+    const umDeles = makeMonster(e.id, { x: 0, y: 0 });
+    const escala = escalarBando(e.qtd, umDeles.xp ?? 0, vivos());
+    if (escala.cresceu) e.qtd = escala.qtd;
     const quando = e.periodo === 'dia' ? 'Na trilha' : 'No acampamento, à noite';
-    registrar(`${quando}: ${e.qtd > 1 ? `${e.qtd} ` : ''}${e.nome}.`);
+    registrar(`${quando}: ${e.qtd > 1 ? `${e.qtd} ` : ''}${e.nome}${escala.cresceu ? ` (${escala.cresceu} a mais do que a tabela pede: o grupo já não é o que era)` : ''}.`);
     const rng = dadoDaViagem(camp, camp.viagem ?? {});
     const saida = await saidaDoEncontro(rng, e);
     // Sem luta: a viagem segue de onde parou.
@@ -606,6 +655,8 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       encontro: e, acampamento: camp.viagem?.acampamento ?? null,
       // A distância que a tela mostrou é a que vale no tabuleiro.
       distanciaFt: camp.viagem?.distanciaDoEncontro ?? null,
+      // E a vigia da noite já foi rolada: a cena usa o mesmo resultado.
+      vigia: camp.viagem?.vigiaDaNoite ?? null,
       // `pego`: o grupo tentou sumir e foi notado. Não há surpresa (ele viu o
       // bando), mas rola a iniciativa com desvantagem.
       pegoDeCostas: saida === 'pego',

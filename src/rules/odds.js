@@ -92,10 +92,20 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
   const falha = perfil.teste ? chanceDeFalhar(target, perfil.teste.save, perfil.teste.dc) : null;
   const chance = foraDeAlcance || semVisao ? 0 : falha ?? chanceD20(perfil.bonus, caAlvo, mods);
   const critico = foraDeAlcance || semVisao || perfil.teste ? 0 : chanceCritico(mods);
-  const danoMedio = averageOf(perfil.damage);
+  // ATAQUE FURTIVO na conta. Ele é a maior parte do dano de um ladino — no
+  // 3º nível, 2d6 contra 1d6+3 de espada curta, ou seja, mais que dobra o
+  // golpe — e a previsão o ignorava: a opção de atacar dizia o mesmo número
+  // com e sem furtivo, e o jogador decidia onde parar com a conta errada.
+  //
+  // Vale a mesma condição que o motor cobra na hora de resolver o ataque
+  // (`combat.sneakApplies`), para o número prometido ser o que o dado paga.
+  const arma = perfil.weapon ?? null;
+  const furtivo = enc.sneakApplies?.(attacker, target, arma, mods) ? attacker.sneakAttack : null;
+  const danoMedio = averageOf(perfil.damage) + (furtivo ? averageOf(furtivo) : 0);
 
   return {
     perfil,
+    furtivo,
     mods,
     cobertura,
     caEfetiva: caAlvo,

@@ -325,6 +325,196 @@ PERFIS = {
     },
     # CORIN, patrulheiro humano. Espada ERGUIDA e GOLPE, pulando os rastros
     # brancos; ao nordeste o golpe (2) vem antes do erguido (5) no modelo.
+    # O BUGBEAR: clava ERGUIDA e o GOLPE, pulando os rastros de terra e, ao
+    # norte, o brilho branco dos quadros 4-5. Centro pela mediana de TODO o
+    # pelo fulvo, sem `cabeca`: com a clava erguida a pele mais alta e a MAO,
+    # e medir por ela jogava o corpo 45 px para o lado oposto.
+    'bugbear80': {
+        'ataque': ['attack-dir'], 'pele': (0.06, 0.13), 'pele_sv': (0.4, 0.92, 0.55), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [3, 6], 'south-east': [2, 5], 'east': [3, 6], 'north-east': [3, 6], 'north': [2, 6], 'north-west': [4, 8], 'west': [4, 7], 'south-west': [3, 6]},
+    },
+    # O KLARG: o mesmo corpo de pelo descorado (`reskins-klarg.py`); o centro
+    # e o pelo cor de osso, pouco saturado.
+    'klarg': {
+        'ataque': ['attack-dir'], 'pele': (0.06, 0.16), 'pele_sv': (0.06, 0.4, 0.55), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [3, 6], 'south-east': [2, 5], 'east': [3, 6], 'north-east': [3, 6], 'north': [2, 6], 'north-west': [4, 8], 'west': [4, 7], 'south-west': [3, 6]},
+    },
+    # O MARCARRUBRA: espada ERGUIDA e o CORTE (um corte so: com dois o modelo
+    # girava o corpo). A nordeste ele ainda vira de frente no meio do golpe;
+    # valem o 5 e o 8, de costas.
+    # Centro pela pele de toda a figura (sem `cabeca`, a mao erguida enganaria).
+    'marcarrubra': {
+        'ataque': ['attack-dir'], 'pele': (0.04, 0.11), 'pele_sv': (0.3, 0.75, 0.5), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [3, 6], 'south-east': [4, 6], 'east': [2, 4], 'north-east': [5, 8],
+                        'north': [1, 3], 'north-west': [2, 3], 'west': [2, 4], 'south-west': [3, 6]},
+    },
+    # O ESQUELETO: espada ERGUIDA e o GOLPE (a revisao trocou S, E e W: no
+    # quadro de antes a espada sumia ou o corpo virava de perfil). Centro pelo osso (bege, meio
+    # saturado); sem `cabeca`, que a mao erguida engana.
+    'esqueleto': {
+        'ataque': ['attack-dir'], 'pele': (0.06, 0.14), 'pele_sv': (0.2, 0.7, 0.5), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 7], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [2, 4],
+                        'north': [3, 6], 'north-west': [3, 5], 'west': [3, 4], 'south-west': [3, 6]},
+    },
+    # O RATO GIGANTE (quadrupede pequeno, esqueleto `cat`): AGACHADO e o BOTE
+    # (ao norte o 5 erguia o rato nas patas de tras; ao sul o 5 virava para SE).
+    # Centro pelo pelo pardo, como o lobo.
+    'ratoGigante': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.3, 0.3), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 3], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
+                        'north': [3, 6], 'north-west': [2, 4], 'west': [2, 5], 'south-west': [2, 4]},
+    },
+    # O VIGIA CICLOPICO (o personagem animado e o `vigiaDirecoes`: vistas
+    # reordenadas, oeste espelhado do leste na tira). Golpe: ERGUE a garra e
+    # RASGA. Centro pela pele marrom-escura.
+    'vigiaDirecoes': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 0.1), 'pele_sv': (0.25, 0.8, 0.25), 'margem': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 6], 'south-east': [2, 4], 'east': [3, 4], 'north-east': [4, 5],
+                        'north': [4, 5], 'north-west': [4, 5], 'west': [3, 4], 'south-west': [3, 4]},
+    },
+    # O CAJAVIDRO: cajado ERGUIDO e o GOLPE; a magia, CARREGA e SOLTA. A oeste
+    # e a sudoeste o meio da magia descora a tunica para rosa: valem os
+    # quadros de fora dela.
+    'cajavidro': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.6, 0.55), 'margem': 8,
+        'quadros': [2, 5],
+        'por_direcao': {'south': [2, 7], 'south-east': [2, 5], 'east': [3, 5], 'north-east': [3, 6],
+                        'north': [2, 6], 'north-west': [3, 5], 'west': [3, 6], 'south-west': [4, 6]},
+        'conjurar': {'south': [2, 6], 'south-east': [2, 3], 'east': [2, 3], 'north-east': [3, 5],
+                     'north': [1, 4], 'north-west': [2, 3], 'west': [1, 2], 'south-west': [1, 4]},
+    },
+    # O LOBO (quadrupede). Nao ha pele: o centro e o PELO cinza (qualquer matiz,
+    # pouca saturacao, nem o contorno nem o branco puro). Golpe: AGACHADO e o
+    # BOTE de boca aberta. Sem edicoes, as oito direcoes sao do modelo.
+    'loboDirecoes': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.25, 0.3), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
+                        'north': [2, 4], 'north-west': [3, 5], 'west': [2, 4], 'south-west': [2, 4]},
+    },
+    # O LOBO ATROZ: o mesmo criterio do lobo, com o pelo quase preto azulado
+    # (saturacao ate 0,6, valor desde 0,15: so o contorno preto fica de fora).
+    # Ao norte o quadro 3 vira a cara para quem olha: o 1 e o 4.
+    'loboAtrozDirecoes': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.6, 0.15), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 5], 'east': [1, 3], 'north-east': [1, 4],
+                        'north': [1, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
+    },
+    # O ORC e o BRUGHOR: machado ERGUIDO e a PANCADA, olhando. Pele cinza:
+    # o centro e o cinza claro pouco saturado (o pelo fulvo e o couro ficam
+    # de fora pela saturacao; o ferro do machado e do elmo e mais escuro).
+    'orc': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.12, 0.5), 'margem': 8,
+        # a calca oliva do golpe e da queda vira a cinza-azulada da parada
+        'oliva_vira': [(21, 20, 26), (35, 37, 46), (58, 60, 72)],
+        'quadros': [3, 6],
+        'por_direcao': {'south': [4, 7], 'south-east': [3, 5], 'east': [3, 6], 'north-east': [3, 6],
+                        'north': [4, 7], 'north-west': [3, 7], 'west': [3, 5], 'south-west': [3, 7]},
+    },
+    'brughor': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.12, 0.5), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [3, 6], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [4, 6],
+                        'north': [3, 5], 'north-west': [4, 7], 'west': [4, 7], 'south-west': [5, 8]},
+    },
+    # O OGRO (gordo, pelo modelo oficial): clava ERGUIDA e a PANCADA. Centro
+    # pela pele bege-palida; o valor alto deixa a madeira da clava de fora. A
+    # noroeste o modelo vira a cara para oeste no fim e o rastro cobre o corpo,
+    # e ao norte a clava some na pancada: ali a clava erguida e depois baixa
+    # (3 e 1, 3 e 0). Ao sul o 5 encostava na borda de baixo; a oeste o 5
+    # achatava a clava.
+    'ogroGordo': {
+        'ataque': ['attack-dir'], 'pele': (0.05, 0.13), 'pele_sv': (0.2, 0.6, 0.55), 'margem': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 7], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [3, 5],
+                        'north': [3, 1], 'north-west': [3, 0], 'west': [4, 6], 'south-west': [3, 6]},
+    },
+    # O REI GROL (o bugbear de 80 editado): machado ERGUIDO e a PANCADA. Pelo
+    # quase preto: o centro e o do lobo atroz (qualquer matiz, valor desde
+    # 0,15). Ao sul o 3 e uma explosao branca: o 2 e o 5.
+    'reiGrol': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.6, 0.15), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [2, 5], 'south-east': [2, 5], 'east': [3, 6], 'north-east': [3, 5],
+                        'north': [3, 7], 'north-west': [4, 7], 'west': [3, 6], 'south-west': [3, 6]},
+    },
+    # A CORUJA-URSO: a pata erguida e o bote de garra e bico. Centro pelo pelo
+    # cinza-arroxeado. A nordeste, do 3 ao 5, sobram lascas soltas no ar: 2 e 6.
+    'corujaUrsoDirecoes': {
+        'ataque': ['attack-dir'], 'pele': (0.6, 0.95), 'pele_sv': (0.05, 0.45, 0.25), 'margem': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [2, 6],
+                        'north': [3, 4], 'north-west': [3, 5], 'west': [3, 5], 'south-west': [3, 5]},
+    },
+    # O ZUMBI: os bracos ERGUIDOS e a PANCADA. Centro pela pele cinza-parda
+    # (o colete verde-azulado e o cabelo cinza ficam de fora).
+    'zumbi': {
+        'ataque': ['attack-dir'], 'pele': (0.05, 0.15), 'pele_sv': (0.15, 0.6, 0.35), 'margem': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [4, 5], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [3, 5],
+                        'north': [3, 5], 'north-west': [4, 6], 'west': [4, 6], 'south-west': [4, 6]},
+    },
+    # O GRICK (vista sul aprovada pelo dono). O Multiataque do livro: o quadro 1
+    # e os TENTACULOS chicoteando abertos (2), o 2 e o feixe fechado com o BICO
+    # mordendo na ponta (4 ou 5). Centro pelo couro verde-oliva.
+    'grick': {
+        'ataque': ['attack-dir'], 'pele': (0.12, 0.25), 'pele_sv': (0.2, 0.6, 0.25), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [1, 4], 'north-east': [2, 5],
+                        'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 5]},
+    },
+    # O CARNICAL (aprovado pelo dono): o PREPARO e a GARRADA. Centro pela pele
+    # cinza-azulada. Ao norte o 5 e o 6 deixam riscos no ar: o 4 e o 7.
+    'carnical': {
+        'ataque': ['attack-dir'], 'pele': (0.5, 0.66), 'pele_sv': (0.08, 0.45, 0.45), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
+                        'north': [4, 7], 'north-west': [3, 4], 'west': [2, 4], 'south-west': [2, 4]},
+    },
+    # HAMUN KOST (aprovado pelo dono): o PREPARO e a MAO ESPECTRAL saindo da
+    # palma (o Toque Arrepiante). Centro pela pele palida da cabeca e das maos.
+    # A oeste o primeiro pedido virou para a direita: pedido de novo (1 ger.).
+    'hamunKost': {
+        'ataque': ['attack-dir'], 'pele': (0.03, 0.11), 'pele_sv': (0.12, 0.5, 0.6), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [1, 3], 'east': [1, 3], 'north-east': [3, 5],
+                        'north': [1, 3], 'north-west': [2, 4], 'west': [3, 4], 'south-west': [2, 4]},
+    },
+    # O DOPPELGANGER (forma verdadeira, aprovada pelo dono): o braco ARMADO e o
+    # GOLPE do punho. Centro pela pele cinza-azulada (pouca saturacao).
+    'doppelganger': {
+        'ataque': ['attack-dir'], 'pele': (0.5, 0.72), 'pele_sv': (0.05, 0.4, 0.3), 'margem': 8,
+        'quadros': [3, 4],
+        # A leste o modelo vira de costas no golpe duas vezes: o de oeste espelhado.
+        'espelhar_ataque': {'east': 'west'},
+        'por_direcao': {'south': [3, 4], 'south-east': [3, 4], 'east': [3, 4], 'north-east': [2, 4],
+                        'north': [3, 4], 'north-west': [3, 4], 'west': [3, 4], 'south-west': [3, 4]},
+    },
+    # A DROW (aprovada pelo dono): o golpe de ESPADA CURTA (braco armado e o
+    # corte, sem o quadro do rastro branco) e o TIRO de besta de mao (a mira e o
+    # disparo), este pelo `--ataque-de` vindo do `drowTiro`. Centro pela pele
+    # cinza-arroxeada (a armadura preta fica de fora pelo valor).
+    'drowEspada': {
+        'ataque': ['attack-dir'], 'pele': (0.65, 0.82), 'pele_sv': (0.06, 0.45, 0.28), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [1, 5], 'north-east': [3, 4],
+                        'north': [1, 3], 'north-west': [3, 5], 'west': [5, 6], 'south-west': [4, 6]},
+    },
+    # O STIRGE (aprovado pelo dono, 24 px): as asas recolhidas e o MERGULHO da
+    # tromba (o Drenar Sangue). Centro pelo corpo ferrugem.
+    'stirge': {
+        'ataque': ['attack-dir'], 'pele': (0.97, 0.06), 'pele_sv': (0.3, 0.85, 0.2), 'margem': 8,
+        'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
+                        'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
+    },
     'ranger': {
         'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.5, 0.7), 'margem': 8, 'cabeca': 10,
         'quadros': [3, 5],
@@ -342,6 +532,27 @@ PERFIS = {
         'ataque': ['attack-dir'], 'pele': (0.03, 0.1), 'pele_sv': (0.25, 0.5, 0.7), 'margem': 8, 'cabeca': 10,
         'quadros': [3, 5],
         'por_direcao': {'south': [3, 6], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [3, 6], 'north': [3, 5], 'north-west': [3, 6], 'west': [3, 5], 'south-west': [3, 5]},
+    },
+    # O HOBGOBLIN de espada e escudo: espada ERGUIDA e o CORTE, olhando. A
+    # leste o modelo vira de costas do 3 em diante (duas vezes): o 1 e o 2. A
+    # revisao trocou N (espada sumida), O (escudo dobrado), S (o rastro branco
+    # do corte encostava na borda) e SE (o rastro escondia o corpo).
+    # Centro pela pele laranja-avermelhada; o valor minimo alto deixa de fora
+    # a madeira do arco e o couro, que tem o mesmo matiz. Sem `cabeca`.
+    'hob': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 0.06), 'pele_sv': (0.5, 0.8, 0.68), 'margem': 8,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [5, 7], 'south-east': [4, 6], 'east': [1, 2], 'north-east': [2, 3],
+                        'north': [1, 3], 'north-west': [3, 5], 'west': [2, 3], 'south-west': [5, 4]},
+    },
+    # O de ARCO: a corda puxada com a flecha e logo depois do disparo. A
+    # noroeste e sudoeste o modelo guarda o arco nas costas logo depois de
+    # soltar: ali sao dois quadros de corda puxada.
+    'hobArco': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 0.06), 'pele_sv': (0.5, 0.8, 0.68), 'margem': 8,
+        'quadros': [3, 6],
+        'por_direcao': {'south': [4, 6], 'south-east': [3, 6], 'east': [3, 6], 'north-east': [4, 6],
+                        'north': [3, 6], 'north-west': [3, 5], 'west': [3, 5], 'south-west': [3, 5]},
     },
     # A Dara de malha. Mesmo criterio: espada ERGUIDA e GOLPE, escolhidos
     # olhando. Ao norte o golpe para baixo e o quadro 2, que vem ANTES do
@@ -465,6 +676,25 @@ RAMPAS_DO_VERDE = {
     # vira aco, com a rampa da espada original da Dara
     'aco': [(46, 50, 62), (98, 106, 120), (160, 170, 182), (232, 236, 240)],
 }
+
+
+def oliva_vira(cel, rampa):
+    """
+    O verde-oliva ESCURO vira a rampa dada, pelo valor. O orc: o modelo
+    redesenha a figura a cada quadro e pinta a calca de oliva no golpe e na
+    queda, onde a parada e o andar a tem cinza-azulada escura.
+    """
+    out = cel.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            p = px[x, y]
+            if not p[3]:
+                continue
+            h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in p[:3]))
+            if 0.12 <= h <= 0.26 and s > 0.3 and v < 0.32:
+                px[x, y] = (*rampa[min(len(rampa) - 1, int(v / 0.32 * len(rampa)))], p[3])
+    return out
 
 
 def verde_vira(cel, material):
@@ -784,6 +1014,8 @@ def main():
 
     def recorte(row, f, fonte_im=None):
         cel = com_margem((fonte_im or im).crop((f * SCW, row * SCH, (f + 1) * SCW, (row + 1) * SCH)))
+        if perfil.get('oliva_vira'):
+            cel = oliva_vira(cel, perfil['oliva_vira'])
         return verde_vira(cel, perfil['verde_vira']) if perfil.get('verde_vira') else cel
 
     alvo = CH - CHAO - 1
@@ -814,6 +1046,12 @@ def main():
         QUADROS_POR_DIRECAO[('attack', dir_r)] = [int(q) for q in qs.split(',')]
 
     def quadro(fonte_, idx, dir_):
+        # O GOLPE ESPELHADO de outra direcao (`espelhar_ataque`: {'east': 'west'}):
+        # quando o modelo vira de costas no golpe de um lado e acerta o outro,
+        # e a figura e simetrica (o doppelganger, sem arma nem roupa).
+        if fonte_[0] == 'animation' and fonte_[1] == perfil.get('ataque')                 and dir_ in perfil.get('espelhar_ataque', {}):
+            outra = perfil['espelhar_ataque'][dir_]
+            return quadro(fonte_, idx, outra).transpose(Image.FLIP_LEFT_RIGHT)
         if fonte_[0] == 'animation' and fonte_[1] == perfil.get('ataque') and dir_ in remendos:
             imr, row = remendos[dir_]
             return recorte(row, idx, fonte_im=imr)

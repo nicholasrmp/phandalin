@@ -517,6 +517,338 @@ CRIATURAS.update({
     },
 })
 
+# O BUGBEAR (e o Klarg, que e este corpo recolorido). Clava de cravos.
+_BUGBEAR = ('a huge hunched hairy bugbear with tawny gold fur, a rust-red mane, lynx '
+            'ears, a black leather pauldron, gauntlet, belt and strip kilt, ')
+CRIATURAS.update({
+    'bugbear80': {
+        'sujeito': _BUGBEAR + 'a wooden club studded with iron spikes in his right hand',
+        'parado': 'hunched, the spiked club raised at shoulder height in his right hand',
+        'golpe': ('raising the spiked club high and smashing it down {para} in one heavy '
+                  'overhead blow, a heavy step in that direction, then recovering'),
+        'chao': 'the spiked club dropped beside his right hand, the shaggy fur spread on the ground',
+    },
+})
+
+# O MARCARRUBRA: dois golpes de espada curta por turno (o bloco da aventura).
+_MARCARRUBRA = ('a stocky bald human thug with a broken nose, a dark brown studded leather '
+                'jerkin and a long grimy scarlet cloak, ')
+CRIATURAS.update({
+    'marcarrubra': {
+        'sujeito': _MARCARRUBRA + 'a steel shortsword in his right hand',
+        'parado': 'shortsword held low and out from the body, the left fist clenched',
+        # Dois cortes no texto faziam o modelo girar o corpo no meio do golpe
+        # (de frente ou de costas em metade das direcoes): um corte so.
+        'golpe': ('swinging the shortsword in one overhead strike {para}, a short step '
+                  'in that direction, then recovering'),
+        'chao': 'the shortsword dropped beside his hand, the scarlet cloak spread under him',
+    },
+})
+
+# O HOBGOBLIN: espada e escudo (a base) e o arco longo (`hobArco`, troca quando
+# ataca de longe). Canhoto como nasceu: escudo no braco direito.
+_HOB = ('a stocky hobgoblin soldier with red-orange skin, long pointed ears, black hair '
+        'tied back, dark blue-grey steel plate and chain armor with spiked pauldrons '
+        'and a brown fur skirt, ')
+CRIATURAS.update({
+    'hob': {
+        'sujeito': _HOB + 'a round steel shield on one arm and a steel longsword in the other hand, a longbow on his back',
+        'parado': 'the shield raised in front of the body, the longsword held low and ready',
+        'golpe': ('stepping in behind the shield and slashing the longsword {para} in one '
+                  'strong overhead strike, the shield kept up, then recovering'),
+        'chao': 'the longsword and the round shield dropped beside him',
+    },
+    'hobArco': {
+        'sem_queda': True,
+        'sujeito': _HOB + 'a longbow of dark wood in one hand, a round shield slung on his back',
+        'parado': 'longbow held low at his side',
+        'golpe': ('raising the longbow, drawing an arrow to his cheek and loosing it '
+                  '{para}, then lowering the bow'),
+    },
+})
+
+# AS CRIATURAS DA MANSAO.
+CRIATURAS.update({
+    'esqueleto': {
+        'sujeito': 'an animated human skeleton with a rusty iron shortsword in its right hand and brown rags on the hips',
+        'parado': 'stiff ready stance, the shortsword held out from the body',
+        'golpe': ('swinging the rusty shortsword in one overhead strike {para}, a short '
+                  'step in that direction, then recovering'),
+        'chao': 'collapsed into a heap of loose bones, the skull resting on top, the rusty shortsword beside it',
+        'cair': ('struck down, the skeleton falls apart and collapses into a heap of loose '
+                 'bones on the ground, the skull on top, the rusty shortsword beside it, '
+                 'then lies still'),
+    },
+    'ratoGigante': {
+        'sujeito': 'a giant grey-brown sewer rat with big pink ears, a long naked pink tail and red eyes',
+        'andar': ('scurrying forward on all four legs, body low, the long tail '
+                  'swaying behind'),
+        'parado': 'crouched on all four legs, snout forward, whiskers twitching',
+        'golpe': ('crouching, then lunging {para} with a snapping bite of the long '
+                  'yellow incisors, then landing back on all fours'),
+        'cair': ('struck down, the rat flips onto its side, legs curled up and the '
+                 'long tail limp, and lies still'),
+    },
+    'vigia': {
+        'sujeito': ('a hunched gaunt one-eyed cave creature with very dark brown skin, a '
+                    'single huge yellow-green eye in its face and long curved claws'),
+        'parado': 'crouched and leaning forward, the clawed hands raised and spread',
+        'golpe': ('lunging {para} and raking with the long claws of both hands, one '
+                  'swipe after the other, then recovering'),
+        'chao': 'the claws spread on the ground, the huge eye closed',
+        'cair': ('struck down, the creature falls onto its back with the long clawed '
+                 'arms sprawled out and the huge eye closed, and lies still'),
+    },
+})
+
+# O VIGIA de verdade (o `vigia` de antes ficou descartado: o dono mostrou que
+# ele e agachado em quatro membros, com espinhos e bocarra).
+CRIATURAS['vigiaDirecoes'] = {
+    'sujeito': ('a gaunt crouching cave aberration with one enormous yellow-green eye, a '
+                'gaping toothy mouth, bone spikes on the head and back and mottled dark '
+                'brown and red skin'),
+    'andar': ('prowling forward low on all four long limbs like a hunting beast, '
+              'head low, the spiny back arched'),
+    'parado': 'crouched on all four long limbs, head low and forward, claws on the ground',
+    'golpe': ('rearing up and raking {para} with the long claws of one arm, the jaws '
+              'gaping, then dropping back onto all fours'),
+    'cair': ('struck down, the creature collapses onto its side with its long limbs '
+             'sprawled out and the huge eye closed, and lies still'),
+}
+
+# O CAJAVIDRO: o cajado de vidro e a magia (mãos e luz), como o Ilvan.
+_CAJAVIDRO = ('a lean human wizard with long dark hair and a short beard, in a long deep '
+              'crimson robe with pale embroidered trim, a crimson sash and a satchel, ')
+CRIATURAS['cajavidro'] = {
+    'sujeito': _CAJAVIDRO + 'a tall staff of pale translucent glass in his right hand',
+    'parado': 'standing upright, the glass staff planted beside him, the left hand raised',
+    'golpe': ('swinging the glass staff in one strike {para} with both hands, a short '
+              'step in that direction, then recovering'),
+    'magia': ('casting a spell: raising the glass staff, its top glowing pale blue-white, '
+              'and thrusting his open left hand {para}, a burst of pale violet light '
+              'leaving his hand, then lowering both'),
+    'chao': 'the glass staff dropped beside him, the crimson robe spread on the ground',
+}
+
+# O LOBO. Quadrupede (esqueleto `dog`): trota, da o bote com a mordida e cai
+# de lado. O personagem animado e o `loboDirecoes` (a tira com as vistas no
+# lugar certo).
+_LOBO = 'a lean grey wolf with amber eyes, a pale throat and a darker saddle along the back'
+CRIATURAS.update({
+    'loboDirecoes': {
+        'sujeito': _LOBO,
+        'andar': ('trotting forward on all four legs in a steady diagonal gait, '
+                  'head low, tail level, body steady'),
+        'parado': 'standing on all four legs, head low and forward, ears up',
+        'golpe': ('crouching, then lunging {para} with a snapping bite of the open '
+                  'jaws, front paws lifting off the ground, then landing back on all fours'),
+        # Na primeira leva as pernas viraram listras e o corpo lia como tapete:
+        # o texto pede as quatro patas e a cabeca de perfil.
+        'cair': ('struck down, the wolf collapses onto its side and lies still: the body '
+                 'lying sideways on the ground, all four legs limp with the paws clearly '
+                 'visible, the head resting on the ground in profile, eyes closed, '
+                 'the bushy tail lying flat behind'),
+    },
+})
+
+# O LOBO ATROZ: o lobo em grande, quase preto, de juba eriçada. A mordida
+# derruba (CD 13 de FOR): o bote pesado, com o peso do corpo. Animado o
+# `loboAtrozDirecoes` (vistas reordenadas e escurecidas, `atroz-tira.py`).
+CRIATURAS['loboAtrozDirecoes'] = {
+    'sujeito': ('a huge massive dire wolf with near-black blue-grey fur, a thick bristling '
+                'mane over the neck and shoulders, pale icy eyes and long white fangs'),
+    'andar': ('loping forward on all four legs in a heavy powerful stride, head low, '
+              'the bristling mane rolling, tail level'),
+    'parado': 'standing on all four legs, head low and forward, ears flat back, fangs bared',
+    'golpe': ('crouching, then lunging {para} with a savage snapping bite of the huge '
+              'jaws, the front paws lifting off the ground, then landing back heavily on '
+              'all fours'),
+    'cair': ('struck down, the dire wolf collapses onto its side and lies still: the body '
+             'lying sideways on the ground, all four legs limp with the paws clearly '
+             'visible, the head resting on the ground in profile, eyes closed, the bushy '
+             'tail lying flat behind'),
+}
+
+# O ORC e o BRUGHOR (o chefe, edicao do mesmo corpo). Machado grande nas duas
+# maos: um golpe de cima para baixo.
+_ORC = ('a hulking ash-grey orc with big lower tusks and short dark hair, a tawny fur '
+        'mantle on the shoulders, a bone tusk pauldron, a brown leather tunic, a dark red '
+        'sash, dark trousers and black boots, ')
+CRIATURAS.update({
+    'orc': {
+        'sujeito': _ORC + 'a big iron greataxe held in both hands',
+        'parado': 'the greataxe held low across the body in both hands',
+        'golpe': ('raising the greataxe high over his head with both hands and chopping '
+                  'it down {para} in one heavy blow, a heavy step in that direction, then '
+                  'recovering'),
+        'chao': 'the greataxe dropped beside him',
+    },
+    'brughor': {
+        'sujeito': (_ORC + 'a battered horned iron helmet, a necklace of teeth, red war '
+                    'paint, a big iron greataxe held in both hands'),
+        'parado': 'the greataxe held low across the body in both hands',
+        'golpe': ('raising the greataxe high over his head with both hands and chopping '
+                  'it down {para} in one heavy blow, a heavy step in that direction, then '
+                  'recovering'),
+        # Na primeira queda o elmo sumiu: o texto diz que ele fica na cabeca.
+        'chao': ('the horned iron helmet still on his head, the greataxe dropped beside '
+                 'him, the fur mantle spread under him'),
+    },
+})
+
+# O OGRO: a clava grande de madeira com cravos, numa mao so (o modelo oficial).
+CRIATURAS['ogroGordo'] = {
+    'sujeito': ('a huge obese pale tan ogre with a gigantic pot belly, a small bald head, a '
+                'tusked underbite, leather straps, a ragged hide loincloth, a crude wooden '
+                'greatclub studded with iron spikes in his right hand'),
+    'andar': ('lumbering forward with heavy slow steps, the huge belly swaying, hunched, '
+              'the greatclub dragging low at his side'),
+    'parado': 'hunched, the spiked greatclub held low at his side',
+    'golpe': ('raising the spiked greatclub high and smashing it down {para} in one heavy '
+              'overhead blow, a heavy step in that direction, then recovering'),
+    'chao': 'the spiked greatclub dropped beside him, the huge belly up',
+}
+
+# O REI GROL: o bugbear rei, de machado de batalha.
+CRIATURAS['reiGrol'] = {
+    'sujeito': ('a huge hunched bugbear king with near-black fur, a black mane, a crude horned '
+                'iron crown, an eyepatch, a black leather pauldron, gauntlet and belt, a dark red '
+                'loincloth, a big iron battleaxe in his right hand'),
+    'parado': 'hunched, the battleaxe held upright at his right side',
+    'golpe': ('raising the battleaxe high and chopping it down {para} in one heavy overhead '
+              'blow, a heavy step in that direction, then recovering'),
+    'chao': 'the battleaxe dropped beside him, the horned crown fallen off beside his head',
+}
+
+# A CORUJA-URSO: anda de quatro como urso; o ataque e o Multiataque do livro,
+# a patada de garras e a bicada no mesmo bote.
+CRIATURAS['corujaUrsoDirecoes'] = {
+    'sujeito': ('an owlbear: a huge bear body with dusky purple-grey feathered fur, big paws '
+                'with long black claws, and the head of a horned owl with a pale cream facial '
+                'disc and a hooked beak'),
+    'andar': ('lumbering forward on all four legs like a bear, heavy shoulders rolling, '
+              'head low'),
+    'parado': 'standing on all four legs, head low and forward, beak open',
+    'golpe': ('rearing up on the hind legs, raking {para} with the long claws of a front paw '
+              'and snapping the hooked beak down {para}, then dropping back onto all fours'),
+    'cair': ('struck down, the owlbear collapses onto its side and lies still: the heavy body '
+             'lying sideways on the ground, the four legs limp with the claws visible, the owl '
+             'head resting on the ground in profile, eyes closed'),
+}
+
+# O ZUMBI: arrasta o pe e bate com os dois bracos de cima para baixo (o Golpe
+# do bloco, concussao).
+CRIATURAS['zumbi'] = {
+    'sujeito': ('a gaunt shambling zombie with grey-brown rotting skin, thin stringy grey hair, '
+                'a torn open teal vest, a red wound on the belly, ragged olive trousers and '
+                'bare feet'),
+    'andar': ('shambling forward slowly, dragging one foot, hunched, arms hanging forward, '
+              'head lolling'),
+    'parado': 'hunched, both arms hanging forward with clawed fingers',
+    'golpe': ('raising both arms high and clubbing them down {para} together in one heavy '
+              'blow, lurching a step in that direction, then recovering'),
+    'chao': 'sprawled face up, arms flung out, motionless',
+}
+
+# O GRICK (a vista sul aprovada pelo dono). O ataque segue o Multiataque do
+# Livro dos Monstros: os TENTACULOS chicoteiam e agarram, e so entao o BICO
+# morde no meio deles (`seAcertar` no bloco). O quadro 1 do golpe e o agarrao
+# dos tentaculos; o 2, o bico mordendo.
+CRIATURAS['grick'] = {
+    'sujeito': ('a grick: a thick segmented olive-green worm with a pale tan underside and no '
+                'face, no eyes, no arms and no legs, its body coiled in an S and its front end '
+                'reared up and split into four sucker-lined tentacles with hooked ivory claws '
+                'around a hooked beak in a red maw'),
+    'andar': ('slithering forward like a snake, the coiled body undulating along the ground, '
+              'the four tentacles swaying, no legs'),
+    'parado': 'reared up on its coils, the four tentacles spread wide around the beak',
+    'golpe': ('lashing all four tentacles out {para} and wrapping them around the prey, then '
+              'lunging forward {para} and stabbing the hooked beak between the closed '
+              'tentacles in a bite, then rearing back up'),
+    'cair': ('struck down, the grick collapses: the worm body falls flat and sprawls on the '
+             'ground in a loose coil, the four tentacles limp and splayed, and lies still'),
+}
+
+# O CARNICAL (aprovado pelo dono). No livro ele nao tem Multiataque: a acao e
+# a garra (que paralisa) OU a mordida; a IA usa a garra. O golpe e o bote de
+# garras.
+CRIATURAS['carnical'] = {
+    'sujeito': ('a gaunt hunched ghoul with pale ashen blue-grey skin, a bald head with pointed '
+                'ears, a fanged mouth with a long red tongue hanging out, very long arms with '
+                'long black claws, a ragged tan loincloth and strips of tan cloth wrapped on the '
+                'forearms and one shin, bare feet'),
+    'andar': ('stalking forward in a fast hunched lope like a hungry predator, knees bent, the '
+              'long clawed arms swinging low'),
+    'parado': 'hunched, knees bent, the long clawed hands held low and spread, tongue out',
+    'golpe': ('lunging forward {para} and raking down with the long black claws of both hands '
+              'in a vicious swipe, then recoiling into a crouch'),
+    'chao': 'sprawled on his back, the long arms flung out, the tongue lolling, motionless',
+}
+
+# HAMUN KOST (aprovado pelo dono). O ataque que ele mais usa e o Toque
+# Arrepiante de longe: o golpe e o gesto da magia, o cetro erguido e a mao
+# aberta soltando a mao espectral.
+CRIATURAS['hamunKost'] = {
+    'sujeito': ('a bald tattooed Red Wizard necromancer in a long deep red robe with a wide '
+                'collar over black clothes, green flames on the hem, gold amulet and bracers, '
+                'holding an ornate golden spiked scepter'),
+    'parado': 'standing upright, the golden scepter held across the body',
+    'golpe': ('casting a necromantic spell: raising the golden scepter in one hand and '
+              'thrusting the other open hand {para}, a ghostly green skeletal hand of energy '
+              'flying from his palm {para}, then lowering both'),
+    'chao': 'the golden scepter dropped beside him, the red robe spread on the ground',
+}
+
+# O DOPPELGANGER (forma verdadeira, aprovada pelo dono). O ataque e o Golpe do
+# bloco (concussao), duas vezes por turno: a pancada com o punho comprido.
+CRIATURAS['doppelganger'] = {
+    'sujeito': ('a tall thin lanky doppelganger in its true form, smooth hairless slate blue-grey '
+                'skin, a bald elongated head with blank white eyes, very long arms with big '
+                'long-fingered hands, no clothes'),
+    'andar': ('walking forward with a smooth, eerie, gliding gait, the long arms hanging loose'),
+    'parado': 'standing still, slightly hunched, the long arms hanging loose at its sides',
+    'golpe': ('swinging a long arm and slamming its fist down {para} in one fast heavy blow, a '
+              'step in that direction, then recovering'),
+    'chao': 'sprawled on its back, the long thin limbs flung out, motionless',
+}
+
+# A DROW (aprovada pelo dono): espada curta numa mao e besta de mao na outra.
+# Ataques Multiplos de espada no `drowEspada`; o tiro no `drowTiro` (so o
+# golpe; o andar e a queda vem do outro, `--ataque-de` no importador).
+_DROW = ('a slender female drow with dark purple-grey skin, white hair in a high ponytail, '
+         'black spiked plate armor over dark chain mail, a slim curved shortsword in the right '
+         'hand and a small hand crossbow in the left hand')
+CRIATURAS.update({
+    'drowEspada': {
+        'sujeito': _DROW,
+        'parado': 'the shortsword held low at her side, the hand crossbow pointing forward',
+        'golpe': ('slashing {para} with the shortsword in one quick strike, a short step in '
+                  'that direction, then recovering'),
+        'chao': 'the shortsword and the hand crossbow dropped beside her, the white hair spread',
+    },
+    'drowTiro': {
+        'sem_queda': True,
+        'sujeito': _DROW,
+        'parado': 'the shortsword held low at her side, the hand crossbow pointing forward',
+        'golpe': ('raising the small hand crossbow in her left hand, aiming {para} with the arm '
+                  'stretched out and shooting a bolt, the crossbow kicking back, then lowering it'),
+    },
+})
+
+# O STIRGE (aprovado pelo dono, 24 px): voa batendo as quatro asas, o ataque e
+# o Drenar Sangue (o mergulho e a tromba cravando), e cai de asas abertas.
+CRIATURAS['stirge'] = {
+    'sujeito': ('a tiny stirge: a small rust-red flying blood-sucker with four pale cream bat '
+                'wings in an X, a bulbous head with orange eyes and a long needle proboscis, '
+                'thin pincer legs dangling'),
+    'andar': 'flying forward, flapping its four bat wings fast, hovering in the air',
+    'parado': 'hovering in the air, the four wings spread, the proboscis pointing forward',
+    'golpe': ('diving {para} and stabbing its long needle proboscis forward, the wings swept '
+              'back, then pulling back up and hovering'),
+    'cair': ('struck down, the stirge falls out of the air and lands on the ground, its four '
+             'wings crumpled and splayed, and lies still'),
+}
+
 # AS POSTURAS DE ARMA DA DARA. Sem queda: o corpo no chao e o mesmo em todas,
 # e vem da folha de espada e escudo. A arma de arco, besta e duas maos e verde
 # puro (marcador; ver `editar-pixellab.py`) e o texto repete isso, porque o
@@ -559,9 +891,11 @@ CRIATURAS.update({
 
 def poses_de(chave):
     c = CRIATURAS[chave]
+    # Quem nao anda em duas pernas diz como anda (`andar`): o lobo trota.
     poses = [('walk', OITO, {'mode': 'v3',
-                             'action_description': 'walking forward, legs alternating in '
-                                                   'a full stride, arms swinging in opposition'})]
+                             'action_description': c.get('andar') or (
+                                 'walking forward, legs alternating in '
+                                 'a full stride, arms swinging in opposition')})]
     for d in OITO:
         olha, para = OLHAR[d]
         poses.append(('attack-dir', [d], {
@@ -591,9 +925,9 @@ def poses_de(chave):
         return poses
     poses.append(('queda-pix', ['south'], {
         'mode': 'pixminimax',
-        'action_description': ('struck down, falling backward and landing flat on '
-                               f'{c.get("dela", "his")} back, then lying still: '
-                               + c['chao']),
+        'action_description': c.get('cair') or (
+            'struck down, falling backward and landing flat on '
+            f'{c.get("dela", "his")} back, then lying still: ' + c['chao']),
         'subject_description': c['sujeito'],
         'initial_pose': 'standing in a ready stance facing the viewer, ' + c['parado'],
         'frame_count': 8,

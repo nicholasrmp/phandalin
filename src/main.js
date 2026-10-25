@@ -218,6 +218,18 @@ class App {
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
       mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
+    // As salas do mapa, por casa: o tabuleiro usa para apagar a parede da
+    // sala em que o grupo está (ver `board.desenharParedes`).
+    // A decoração pendurada nas paredes, por aresta ('x,y,N' ou 'x,y,O').
+    if (mapa.decor) {
+      field.decor = new Map(mapa.decor.map((d) => [`${d.x},${d.y},${d.lado}`, d.tipo]));
+    }
+    if (mapa.salas) {
+      field.sala = new Map();
+      for (const [nome, casas] of Object.entries(mapa.salas)) {
+        for (const c of casas) field.sala.set(`${c.x},${c.y}`, nome);
+      }
+    }
     // Mapa com escuridão: breu por padrão, mais as fontes de luz dele (`rules/luz.js`).
     // `luz` é 'escuro' (breu inteiro) ou uma grade de dígitos 0-2 por casa.
     if (mapa.luz) {
@@ -636,6 +648,13 @@ class App {
     if (action.kind === 'despertar') {
       const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
       if (alvo) this.enc.despertarFingido(c, alvo);
+      this.afterAct();
+      return;
+    }
+    if (action.kind === 'arrancarGrudado') {
+      const s = this.enc.combatants.find((x) => x.id === action.targetId);
+      const r = s ? this.enc.arrancarGrudado(c, s) : { ok: false, why: 'não há stirge' };
+      if (!r.ok) { this.refuse(c, r.why); return; }
       this.afterAct();
       return;
     }

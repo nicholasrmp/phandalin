@@ -238,3 +238,30 @@ export function textoDoAcampamento(camp) {
   return `Acampamento: ${partes.join(', ')}. Atenção média ${atencaoDaVigia(camp) || 'nenhuma'}`
     + `${cobertura < 100 ? `, e só ${cobertura}% da noite com alguém de olho` : ''}.`;
 }
+
+/**
+ * O que a vigia percebe quando alguma coisa chega: quem estava de pé, com que
+ * atenção, e com quanta folga notou (ou não).
+ *
+ * `furtividades` são as rolagens de quem chega. Devolve
+ * { deTurno, atencao, menor, notou, gritouATempo, dormem }.
+ *
+ * Regra da casa: notar com 5 ou mais de folga dá tempo de sacudir o resto do
+ * acampamento; notar em cima da hora só salva quem já estava de pé.
+ */
+export function oQueAVigiaPercebe(rng, camp, furtividades) {
+  const menor = furtividades.length ? Math.min(...furtividades) : 0;
+  const deTurno = camp ? vigiaDeTurno(rng, camp) : null;
+  const atencao = deTurno ? atencaoDaVigia(camp, deTurno) : 0;
+  const margem = atencao - menor;
+  const notou = Boolean(deTurno) && margem >= 0;
+  return {
+    deTurno,
+    atencao,
+    menor,
+    margem,
+    notou,
+    gritouATempo: notou && margem >= 5,
+    dormem: camp ? camp.herois.filter((c) => c !== deTurno) : [],
+  };
+}

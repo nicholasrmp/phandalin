@@ -2058,7 +2058,17 @@ export class Board {
       const w = this.fx.positionFor(c.id);
       const tx = w ? Math.round(w.x) : c.pos.x;
       const ty = w ? Math.round(w.y) : c.pos.y;
-      const v = this.toView(tx, ty);
+      // Grande e Enorme entram na ordem pela casa da FRENTE da pegada (a mais
+      // perto da camera na vista atual): assim as outras casas da pegada ja
+      // foram pintadas e nao cortam as pernas da figura centrada nelas.
+      let v = this.toView(tx, ty);
+      const pegadaF = c.pos.f ?? 1;
+      for (let dy = 0; dy < pegadaF; dy++) {
+        for (let dx = 0; dx < pegadaF; dx++) {
+          const o = this.toView(tx + dx, ty + dy);
+          if (o.vx + o.vy > v.vx + v.vy) v = o;
+        }
+      }
       const kv = vkey(v.vx, v.vy);
       // O corpo nunca esconde quem está vivo. Um quadrado com morto e vivo
       // juntos desenha o vivo, aconteça em que ordem acontecer.
@@ -2384,7 +2394,11 @@ export class Board {
     // Deslocamento de investida, já no espaço da câmera.
     const off = this.fx.offsetFor(c.id);
     let sx = baseX;
-    let sy = baseY;
+    // Grande e Enorme: com os pes no centro da pegada o corpo sobe e a figura
+    // parece estar so na casa de tras. O dono pediu o corpo NO MEIO das casas:
+    // a figura desce meia casa (em tela) por casa a mais de pegada, e os pes
+    // vao para a metade da frente.
+    let sy = baseY + (pegada - 1) * TH * 0.75;
     if (off) {
       const v = this.rotateVec(off.dx, off.dy);
       sx += (v.dx - v.dy) * (TW / 2);

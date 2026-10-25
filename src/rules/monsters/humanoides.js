@@ -34,7 +34,7 @@ export const HUMANOIDES = {
 
   // Batedores do bando do Cume da Wyvern (Parte 3): andam pela Trilha
   // Triboar atrás de viajantes. Bloco do SRD 5.1; a Agressividade (ação
-  // bônus para avançar até o inimigo) ainda não é jogada pelo motor.
+  // bônus para avançar até o inimigo) é a regra 2 da IA (`rules/ai.js`).
   orc: {
     id: 'orc',
     name: 'Orc',
@@ -55,7 +55,8 @@ export const HUMANOIDES = {
       { name: 'Machado grande', bonus: 5, damage: '1d12+3', type: 'cortante', reachFt: 5, art: 'axe' },
       { name: 'Azagaia', bonus: 5, damage: '1d6+3', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
-    blurb: 'Bate forte com o machado grande (1d12+3) e arremessa azagaias de longe. Pouca CA, muitos PV.',
+    traits: ['agressivo'],
+    blurb: 'Agressivo: corre até o grupo como ação bônus e ainda bate com o machado grande (1d12+3). Pouca CA, muitos PV.',
   },
 
   bandido: {
@@ -339,7 +340,7 @@ export const HUMANOIDES = {
   brughor: {
     id: 'brughor',
     name: 'Brughor Machado-Mordedor',
-    look: 'orc',
+    look: 'brughor',
     fonte: 'propria',
     size: 'médio',
     level: 4,
@@ -357,34 +358,48 @@ export const HUMANOIDES = {
       { name: 'Azagaia', bonus: 6, damage: '1d6+4', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
     multiattack: { count: 2, sequence: ['Machado grande', 'Machado grande'] },
-    blurb: 'Dois golpes de machado por turno. Enquanto ele estiver de pé, os orcs dele não correm.',
+    traits: ['agressivo'],
+    blurb: 'Agressivo como os orcs dele, e dois golpes de machado por turno. Enquanto ele estiver de pé, os orcs não correm.',
   },
 
-  // O MAGO VERMELHO DO POÇO DA CORUJA VELHA (Parte 3). Bloco NOSSO
-  // (`fonte: 'propria'`): um necromante que prefere negociar a lutar, com os
-  // zumbis na frente. Nível 4 dá +2 de proficiência: CD 13 e +5 nas magias.
+  // O MAGO VERMELHO DO POÇO DA CORUJA VELHA (Parte 3). O livro da aventura dá
+  // a ele a ficha do MAGO MALIGNO do apêndice (a mesma do Cajavidro, sem o
+  // cajado de vidro): conjurador de 4º nível, +2 de proficiência, CD 13 e +5
+  // com INT 17. O bordão é o cetro dourado do desenho. A pedido do dono, ele
+  // chega já sob ARMADURA ARCANA (8 horas): CA 13 + DES, e um espaço de 1º a
+  // menos.
   hamunKost: {
     id: 'hamunKost',
     name: 'Hamun Kost',
     look: 'hamunKost',
-    fonte: 'propria',
+    fonte: 'aventura',
     size: 'médio',
     level: 4,
     cr: '1',
     xp: 200,
-    abilities: { str: 10, dex: 12, con: 14, int: 16, wis: 13, cha: 11 },
-    ac: 12,
-    acNote: 'manto de mago',
-    maxHp: 27,
+    abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 11 },
+    ac: 15,
+    acNote: 'Armadura Arcana (13 + DES)',
+    maxHp: 22,
+    hpDice: '5d8',
     speedFt: 30,
     saves: ['int', 'wis'],
     skills: ['arcanismo', 'historia'],
     attacks: [
-      { name: 'Adaga', bonus: 3, damage: '1d4+1', type: 'perfurante', reachFt: 5, art: 'dagger' },
-      // O truque que o motor sabe usar por monstro.
-      { name: 'Toque Arrepiante', bonus: 5, damage: '1d8', type: 'necrótico', ranged: true, rangeFt: 120, longRangeFt: 120, art: 'bow' },
+      { name: 'Cetro', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff' },
     ],
-    blurb: 'Prefere conversar: basta alguém responder e ele segura os mortos. Se a conversa falha, apunhala quem chega perto.',
+    spellcasting: {
+      ability: 'int',
+      cantrips: ['luz', 'maoMagica', 'toqueChocante'],
+      prepared: ['armaduraArcana', 'enfeiticarPessoa', 'misselMagico', 'imobilizarPessoa', 'passoNebuloso'],
+      // Um dos quatro espaços de 1º já foi na Armadura Arcana.
+      slots: [0, 3, 3],
+      noMotor: true,
+      // A IA conjura no turno dele (`conjurarNoTurno` em `rules/ai.js`).
+      conjuraNoTurno: true,
+    },
+    traits: ['conjuracao'],
+    blurb: 'Prefere conversar: basta alguém responder e ele segura os mortos. Se a conversa falha, prende o mais forte com Imobilizar Pessoa, solta Mísseis Mágicos de longe e some com Passo Nebuloso quando encurralado.',
   },
 
   acolito: {
@@ -582,7 +597,9 @@ export const HUMANOIDES = {
     ac: 15,
     acNote: 'camisão de malha',
     maxHp: 13,
+    hpDice: '3d8',
     speedFt: 30,
+    senses: { darkvisionFt: 120, passivePerception: 12 },
     skills: ['percepcao', 'furtividade'],
     attacks: [
       { name: 'Espada curta', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'sword' },
@@ -596,7 +613,24 @@ export const HUMANOIDES = {
         onHit: { save: 'con', dc: 13, condition: 'envenenado', note: 'fica envenenado pelo dardo' },
       },
     ],
-    traits: ['ascendenciaFeerica', 'sensibilidadeALuzSolar'],
+    // O Manual dos Monstros do dono (pt-BR): Ataques Múltiplos, dois golpes de
+    // espada curta.
+    multiattack: { count: 2, sequence: ['Espada curta', 'Espada curta'] },
+    // A figura troca de folha com a arma: a besta de mao quando atira.
+    aparencias: { 'Besta de mão': 'drow@camisaoDeMalha-bestaDeMao' },
+    // CONJURAÇÃO INATA (CAR, CD 11): globos de luz à vontade; escuridão e fogo
+    // das fadas 3/dia cada. Os 3/dia viram espaços (3 de 1º para o fogo, 3 de
+    // 2º para a escuridão). A IA abre com o Fogo das Fadas em grupo de heróis
+    // (`rules/ai.js`); a Escuridão fica na ficha, sem a IA usar.
+    spellcasting: {
+      ability: 'cha',
+      cantrips: ['luzesDancantes'],
+      prepared: ['fogoDasFadas', 'escuridao'],
+      slots: [0, 3, 3],
+      inata: true,
+      noMotor: true,
+    },
+    traits: ['ascendenciaFeerica', 'conjuracaoInataDrow', 'sensibilidadeALuzSolar'],
     blurb: 'Atira dardos envenenados de 9 m e dá desvantagem ao grupo inteiro com o veneno; sob luz do sol, porém, ele é que ataca com desvantagem — lute no claro e o drow vira o mais fraco do bando.',
   },
 
@@ -614,6 +648,7 @@ export const HUMANOIDES = {
     acNote: 'armadura de peles',
     maxHp: 59,
     speedFt: 40,
+    senses: { darkvisionFt: 60 },
     attacks: [
       { name: 'Clava grande', bonus: 6, damage: '2d8+4', type: 'concussão', reachFt: 5, art: 'mace' },
       { name: 'Azagaia', bonus: 6, damage: '2d6+4', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
@@ -635,6 +670,14 @@ export const HUMANOIDES = {
  * aparar, ação astuta nem sensibilidade à luz. Estão no relatório.
  */
 export const TRAITS = {
+  conjuracaoInataDrow: {
+    name: 'Conjuração Inata',
+    desc: 'Carisma, CD 11. À vontade: globos de luz. 3/dia cada: escuridão e fogo das fadas.',
+  },
+  agressivo: {
+    name: 'Agressivo',
+    desc: 'Ação bônus: anda até o seu deslocamento em direção a um inimigo.',
+  },
   aparar: {
     name: 'Aparar',
     desc: 'Reação: sabendo que o ataque vem, soma +2 à CA contra um ataque corpo a corpo por rodada.',

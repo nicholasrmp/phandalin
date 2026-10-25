@@ -660,6 +660,930 @@ for _chave, _edicao, _maos in (
         },
     }
 
+# O LOBO (capitulo 2: o canil dos goblins e o Ripper do Klarg). Medio, um
+# quadro de 48: no de 64 ele saiu com 57 px, a altura de um humano. Um
+# quadrupede: o esqueleto `dog` do PixelLab, que a rota tem desde a v3. Cores do
+# look procedural `wolf` (`src/art/looks/feras.js`): cinza de pelo, olho ambar.
+PERSONAGENS['lobo'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Lobo cinzento',
+        'template_id': 'dog',
+        'view': 'low top-down',
+        'image_size': {'width': 48, 'height': 48},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a wild grey wolf, a lean hunting beast. '
+            + ESTILO_HEROI +
+            'Fur ramp: grey, #a4a4ae light, #7a7a84 mid, #454550 deep shadow, '
+            'with a paler #c8c4bc throat and belly and a darker #2e2e38 saddle '
+            'along the back. Nose and lips: near black. Eyes: amber #ffd24a. '
+            'THE WOLF: a big lean grey wolf standing on all four legs in a '
+            'tense hunting stance, head low and forward, ears up, long muzzle '
+            'with the lips pulled back showing white fangs, thick shaggy neck '
+            'ruff, long legs, bushy tail held low. Side-on three-quarter body, '
+            'the whole animal readable. No collar, no saddle, no rider. Full '
+            'body in frame. BACKGROUND: plain, empty. No ground, no shadow, no '
+            'scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple animals, dog collar, cute '
+            'puppy.'
+        ),
+    },
+}
+
+# O LOBO ATROZ (a matilha do capitulo 4, a Conjuracao de Animais). Grande:
+# quadro de 72, cerca de 1,5 vez o lobo de 48. Cores do look `direWolf`
+# (`src/art/looks/feras.js`): quase preto azulado, valor baixo, e o olho CLARO
+# e frio no lugar do ambar do lobo comum -- le como "nao e o lobo de antes".
+PERSONAGENS['loboAtroz'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Lobo atroz',
+        'template_id': 'dog',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a dire wolf, a huge primeval wolf as big '
+            'as a horse. ' + ESTILO_HEROI +
+            'Fur ramp: near-black blue-grey, #5a6270 light, #3e4452 mid, #23272f '
+            'deep shadow, with a slightly paler #6a7282 throat and a black '
+            '#1a1d24 saddle along the back. Nose and lips: black. Eyes: pale icy '
+            'white-blue #e8f0ff. THE DIRE WOLF: massive and heavily muscled, a '
+            'broad deep chest, a huge head with a heavy jaw, the lips pulled back '
+            'over long white fangs, a thick shaggy mane of bristling fur over the '
+            'neck and shoulders, ragged fur at the edges, powerful long legs with '
+            'big paws, a bushy tail held low. Standing on all four legs in a '
+            'menacing stalking stance, head low and forward, ears flat back. '
+            'Side-on three-quarter body, the whole animal readable. No collar, '
+            'no saddle, no rider. Full body in frame. BACKGROUND: plain, empty. '
+            'No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, painted rendering, 3D render, multiple animals, '
+            'dog collar, cute puppy, grey wolf, amber eyes.'
+        ),
+    },
+}
+
+# O lobo atroz que se anima: as vistas no lugar e o pelo quase preto
+# (`src/dev/atroz-tira.py`, sem geracao).
+PERSONAGENS['loboAtrozDirecoes'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/lobo-atroz-direcoes/tira.png',
+    'corpo': {
+        'name': 'Lobo atroz (direcoes)',
+        'template_id': 'dog',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of a huge dire wolf with near-black blue-grey '
+                        'fur, a bristling mane and pale icy eyes.'),
+    },
+}
+
+# O ORC (capitulo 4: o Cume da Wyvern e a estrada). Medio, quadro de 72 com
+# folga para o machado grande erguido. Cores do look `orc`
+# O DONO MANDOU O MODELO OFICIAL (descrito aqui em texto; arte oficial nao vai
+# para o gerador): pele CINZA, cabelo curto escuro no alto, manto de pele
+# fulva, ombreira de presas no ombro esquerdo, tunica de couro, faixa
+# vermelho-escura, avental com borda de pele. A primeira leva (verde, de
+# trancas, `orc-a6bda240`) foi descartada. O Brughor, o chefe deles, e uma
+# edicao deste corpo (`editar-pixellab.py brughor`).
+PERSONAGENS['orc'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Orc',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of an orc warrior. ' + ESTILO_HEROI +
+            'Skin ramp: ash GREY, #b4b6b8 light, #8e9094 mid, #5a5c62 deep. '
+            'Hair: dark brown #2e2620. Fur: tawny yellow-brown, #c8a85a light, '
+            '#9a7c3e mid, #5e4a26 deep. Leather tunic: dull brown #6e5c48. Sash: '
+            'dark red-brown #5a2e26. Trousers: dark olive #3e4232. Boots: '
+            'near black #2a2826. Bone: ivory #d8cc98. THE ORC: a huge, hulking, '
+            'heavily muscled brute with ASH GREY skin, a massive jaw with two '
+            'big lower tusks, a flat nose, a heavy brow, pointed ears, short '
+            'dark hair swept up on top of the head. CLOTHES: a big mantle of '
+            'shaggy tawny fur over both shoulders, a huge trophy pauldron of '
+            'curved bone tusks and claws on his left shoulder, a brown leather '
+            'tunic with a strap across the chest, a wide dark red-brown sash, a '
+            'leather apron with ragged fur edges, forearms wrapped in leather '
+            'with fur cuffs, dark trousers and heavy black boots. WEAPON: a big '
+            'iron GREATAXE with a wide crescent blade, held in BOTH HANDS low '
+            'across the body. POSE: a wide heavy ready stance facing the viewer, '
+            'knees bent. Nothing reaches far above the head. Full body in frame. '
+            'BACKGROUND: plain, empty. No ground, no shadow, no scenery, no '
+            'text. NEGATIVE: anti-aliasing, blur, gradients, 3D render, '
+            'multiple characters, green skin, braids, shield, helmet, cape.'
+        ),
+    },
+}
+
+# O BRUGHOR que se anima: o orc com elmo de chifres, colar de dentes e pintura
+# de guerra (edicao `brughor`).
+PERSONAGENS['brughor'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/brughor/tira.png',
+    'corpo': {
+        'name': 'Brughor, chefe orc',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of an ash-grey orc war chief with a horned '
+                        'iron helmet, a tawny fur mantle, a necklace of teeth, red war paint '
+                        'and a greataxe.'),
+    },
+}
+
+# O OGRO (capitulo 4: o Cume da Wyvern, a arena e a estrada). Grande: quadro
+# de 96, mais alto que o bugbear (69 px no de 80). Pelo modelo oficial que o
+# dono mandou, descrito em texto: pele bege-palida, barriga enorme, curvado,
+# cabeca pequena e careca, queixo para a frente com presas, tanga de couro
+# rasgada e trapos amarrados, clava de madeira com cravos de ferro.
+PERSONAGENS['ogro'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Ogro',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 96, 'height': 96},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of an ogre, a huge brutish giant. '
+            + ESTILO_HEROI +
+            'Skin ramp: pale tan, #e0c8a0 light, #c2a677 mid, #8a6e48 deep shadow. '
+            'Leather and rags: #6a5038 with #3e2e20 shadow. Wood: #8a6440. Iron '
+            'spikes: #8e8e8e. Eyes: small dull yellow. THE OGRE: a towering, '
+            'hunched, OBESE giant, NOT muscular: a gigantic soft round pot belly '
+            'that sags over the belt and is the widest part of the body, flabby '
+            'chest and arms, heavy sloping shoulders, short bowed legs, a SMALL BALD '
+            'head sunk low between the shoulders, a jutting underbite jaw with '
+            'two lower tusks, a wide angry mouth, pale tan skin with no hair. '
+            'CLOTHES: a ragged hide loincloth on a rope belt, a leather strap '
+            'across the chest, dirty cloth rags wrapped around the forearms, '
+            'shins and bare feet. WEAPON: a huge crude wooden GREATCLUB studded '
+            'with iron spikes, held in the right hand, its head resting low near '
+            'the ground at his side. POSE: standing hunched forward facing the '
+            'viewer, the free left hand hanging open, so the silhouette is '
+            'broken and readable. Full body in frame. BACKGROUND: plain, empty. '
+            'No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, painted rendering, 3D render, multiple characters, '
+            'hair, armor plate, helmet, shield, green skin, tail, six-pack abs, '
+            'bodybuilder.'
+        ),
+    },
+}
+
+# O OGRO QUE SE ANIMA: a primeira leva (`ogro-e357ff45`, clava de madeira)
+# engordada pela edicao `ogro-gordo` em duas metades de 4 vistas (acima de 80
+# px o pedido aceita so 4 quadros). O texto sozinho o fez musculoso duas vezes.
+PERSONAGENS['ogroGordo'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/ogro-gordo/tira.png',
+    'corpo': {
+        'name': 'Ogro (gordo)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of an obese pale tan ogre with a huge pot belly, '
+                        'a small bald head, tusks, a hide loincloth and a spiked wooden greatclub.'),
+    },
+}
+
+# O REI GROL que se anima: o bugbear de 80 editado em rei (`rei-grol`).
+PERSONAGENS['reiGrol'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/rei-grol/tira.png',
+    'corpo': {
+        'name': 'Rei Grol',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of a hunched bugbear king with near-black fur, '
+                        'a horned iron crown, an eyepatch, black leather gear, a dark red loincloth '
+                        'and a big iron battleaxe.'),
+    },
+}
+
+# A CORUJA-URSO (capitulo 4: o Castelo Cragmaw e a estrada). Grande, de quatro:
+# o esqueleto `bear`, quadro de 80. Pelas imagens que o dono mandou, descritas
+# em texto: corpo de urso de pelo-pena cinza-arroxeado escuro, cabeca de
+# coruja com disco facial creme, bico curvo, crista de penas, garras pretas.
+PERSONAGENS['corujaUrso'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Coruja-urso',
+        'template_id': 'bear',
+        'view': 'low top-down',
+        'image_size': {'width': 80, 'height': 80},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of an owlbear, a monstrous beast with the body '
+            'of a bear and the head of an owl. ' + ESTILO_HEROI +
+            'Feathered fur ramp: dusky purple-grey, #8a8098 light, #5e5668 mid, '
+            '#36303e deep shadow, with darker feather stripes. Facial disc: pale '
+            'cream #e8d8c0 with a tan #b89878 rim. Beak: tan-yellow #c8a060 with '
+            'a dark tip. Claws: black. Eyes: big round black eyes with a dark rim. '
+            'THE OWLBEAR: a huge heavy bear body on four thick legs, a hunched '
+            'muscular back, shaggy fur that turns into ragged feathers at the '
+            'shoulders and forelegs, big paws with long curved black claws. The '
+            'head of a great horned OWL: a round pale facial disc, a short hooked '
+            'beak open in a screech, two tufts of feathers like horns, a crest of '
+            'spiky feathers over the head. Standing on all four legs in a '
+            'menacing stance, head low and forward. Side-on three-quarter body, '
+            'the whole animal readable. Full body in frame. BACKGROUND: plain, '
+            'empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple animals, wings, tail feathers fan, cute, brown bear face.'
+        ),
+    },
+}
+
+# A coruja-urso que se anima: vistas no lugar e sem as manchas laranja
+# (`src/dev/coruja-tira.py`, sem geracao).
+PERSONAGENS['corujaUrsoDirecoes'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/coruja-urso-direcoes/tira.png',
+    'corpo': {
+        'name': 'Coruja-urso (direcoes)',
+        'template_id': 'bear',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of an owlbear: a bear body with dusky purple-grey '
+                        'feathered fur and the head of a horned owl with a pale cream facial disc.'),
+    },
+}
+
+# O ZUMBI (capitulo 4: o Poco da Coruja Velha). Medio, quadro de 64. Pelo
+# modelo oficial que o dono mandou, descrito em texto: magro e cinza-pardo,
+# cabelo grisalho ralo e comprido, boca aberta, colete verde-azulado rasgado
+# e aberto, barriga rasgada e vermelha, calca oliva em farrapos, pes descalcos.
+PERSONAGENS['zumbi'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Zumbi',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a shambling zombie, a rotting walking '
+            'corpse. ' + ESTILO_HEROI +
+            'Skin ramp: dead grey-brown, #a8988a light, #7e6e62 mid, #4a3e38 '
+            'deep, with dark red #6e1e1e wounds. Hair: dirty grey #8e8e88. Vest: '
+            'faded teal #3e8a84 with #245a56 shadow. Trousers: olive #6e6a3a '
+            'with #44422a shadow. Eyes: pale yellow. THE ZOMBIE: a tall, gaunt '
+            'dead man with grey-brown rotting skin stretched over the ribs, a '
+            'balding head with long thin stringy grey hair, a gaping mouth, '
+            'hollow eyes. CLOTHES: a torn sleeveless teal vest hanging open, '
+            'a torn-open belly with a dark red wound, ragged olive trousers '
+            'ripped at one knee, bare feet. POSE: shambling forward facing the '
+            'viewer, hunched, head tilted, both arms hanging forward with '
+            'clawed fingers, one leg dragging. Full body in frame. BACKGROUND: '
+            'plain, empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, weapon, armor, green skin, skeleton.'
+        ),
+    },
+}
+
+# O GRICK (capitulo 4: o Castelo Cragmaw). Medio, quadro de 64. Pelo modelo
+# oficial que o dono mandou, descrito em texto: verme grosso de couro
+# verde-acinzentado, erguido em S, com a ponta da cabeca aberta em quatro
+# tentaculos de ventosas com garras e um bico no meio. O PixelLab so tem
+# esqueleto de humanoide e de quadrupede: o `mannequin` em pe e o mais perto do
+# verme erguido.
+PERSONAGENS['grick'] = {
+    'rota': '/create-character-v3',
+    # A VISTA SUL APROVADA PELO DONO: o OpenArt redesenhou a imagem oficial em
+    # pixel art (o texto sozinho deu rosto e bracos duas vezes) e ela foi
+    # reduzida a 68 px (`_referencias/pixellab/grick-ref/reduzir.py`).
+    'referencia': '_referencias/pixellab/edicoes/grick-sul/sul.png',
+    'corpo': {
+        'name': 'Grick',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a grick, a monstrous worm. ' + ESTILO_HEROI +
+            'Hide ramp: olive green, #8e9a68 light, #66704a mid, #3a4028 deep, with '
+            'a pale tan #c8b896 ribbed underside. Tentacles: pale grey #b8b0b8 with '
+            'rows of round dark suckers. Beak and claws: ivory #e0d8c0. Mouth: dark '
+            'red #6e1e22. THE GRICK: a thick, heavy, segmented worm body coiled on '
+            'the ground in an S curve, its front half reared UPRIGHT. It has NO '
+            'HEAD, NO FACE, NO EYES, NO ARMS, NO HANDS and NO LEGS. The top end of '
+            'the worm body simply splits open into FOUR thick tentacles spread in '
+            'an X, each lined with suckers and ending in a curved hooked claw. At '
+            'the very center of the four tentacles is only a hooked beak in a red '
+            'gaping maw. POSE: reared up facing the viewer, the four tentacles '
+            'spread wide, coils on the ground below. Full body in frame. '
+            'BACKGROUND: plain, empty. No ground, no shadow, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, 3D render, face, eyes, nose, teeth '
+            'face, head, arms, hands, legs, human, medusa, snake head.'
+        ),
+    },
+}
+
+# O CARNICAL (ghoul; a estrada da regiao). Medio, quadro de 64. Pela imagem
+# que o dono mandou, descrita em texto: magro, pele cinza-azulada palida,
+# careca, orelha pontuda, boca de presas com a lingua vermelha comprida para
+# fora, bracos longos de garras pretas, tanga e tiras de pano encardido nos
+# bracos e numa canela, pes descalcos de garra, curvado e avancando. A arte
+# do OpenArt reduzida a 64 px virou fiapos (o dono rejeitou).
+PERSONAGENS['carnical'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Carnical',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a ghoul, a ravenous undead flesh-eater. '
+            + ESTILO_HEROI +
+            'Skin ramp: pale ashen blue-grey, #c8d4dc light, #98a8b4 mid, #5e6a78 '
+            'deep shadow. Rags: dirty tan, #c8a878 light, #9a7a52 mid, #5e4830 '
+            'deep. Claws and toenails: black. Tongue and gums: red #b83a3a. Eyes: '
+            'pale. THE GHOUL: a gaunt, wiry humanoid of human height, sinewy '
+            'muscles and visible ribs under the pale grey-blue skin, a bald '
+            'elongated head with long pointed ears, a gaping mouth full of sharp '
+            'fangs with a LONG RED TONGUE hanging out over the chin. Very long '
+            'thin arms reaching to the knees, ending in big hands with long '
+            'curved black claws. CLOTHES: only a ragged dirty tan loincloth, '
+            'strips of torn tan cloth wrapped around both forearms and around '
+            'one shin, bare clawed feet. POSE: hunched and stalking forward '
+            'toward the viewer, knees bent, the long clawed hands held low and '
+            'spread at the sides, ready to pounce. Full body in frame. '
+            'BACKGROUND: plain, empty. No ground, no shadow, no scenery, no '
+            'text. NEGATIVE: anti-aliasing, blur, gradients, painted rendering, '
+            '3D render, multiple characters, clothes, armor, weapon, hair, green '
+            'skin, zombie shirt.'
+        ),
+    },
+}
+
+# HAMUN KOST (capitulo 4: o Poco da Coruja Velha), o Mago Vermelho de Thay.
+# Medio, quadro de 64. Pela imagem que o dono mandou, descrita em texto:
+# careca com tatuagens pretas na cabeca, brinco, manto vermelho de gola larga
+# sobre roupa preta, chamas verdes na barra, amuleto dourado, cetro dourado
+# de cravos nas duas maos.
+PERSONAGENS['hamunKost'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Hamun Kost',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a Red Wizard, a sinister human necromancer. '
+            + ESTILO_HEROI +
+            'Skin ramp: pale, #e8d2bc light, #c8a890 mid, #8a6a58 deep. Robe: '
+            'deep red, #c8382a light, #8a1e1e mid, #561010 deep, with an orange-red '
+            'heavy collar. Undergarment: black #242024 with #3e3a40 highlights. '
+            'Gold: #d4a63c with #8a6a20 shadow. Hem flames: sickly green #7ac83a. '
+            'THE WIZARD: a lean stern man, a completely BALD head covered with '
+            'black tattoo patterns over the scalp and brow, a hard frowning face, '
+            'a gold earring. CLOTHES: a long flowing deep red robe with a wide '
+            'heavy turned-up collar around the shoulders, worn open over black '
+            'tight sleeves and a black tunic, a black leather belt with a gold '
+            'buckle, gold bracers, a gold amulet on the chest, the robe hem '
+            'embroidered with green flames, dark boots. WEAPON: an ornate GOLDEN '
+            'SCEPTER with a spiked flanged head, held diagonally across the body '
+            'in both hands, its head low. POSE: standing facing the viewer, a '
+            'menacing stance. Full body in frame. BACKGROUND: plain, empty. No '
+            'ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, painted rendering, 3D render, multiple characters, '
+            'hair, beard, hood, hat, armor, shield, sword.'
+        ),
+    },
+}
+
+# O DOPPELGANGER (capitulo 4: Vyerith, no Castelo Cragmaw), na FORMA
+# VERDADEIRA. Medio, quadro de 64. Pela imagem que o dono mandou, descrita em
+# texto: alto e esguio, sem roupa e sem feicoes marcadas, pele cinza-azulada
+# lisa, careca, olhos brancos sem pupila, bracos compridos e maos grandes.
+PERSONAGENS['doppelganger'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Doppelganger',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a doppelganger in its true form, an eerie '
+            'shapeshifter. ' + ESTILO_HEROI +
+            'Skin ramp: smooth slate blue-grey, #8aa0b8 light, #5e7288 mid, '
+            '#36445a deep shadow, with faint purple-brown tints in the shadows. '
+            'Eyes: blank glowing white, no pupils. THE DOPPELGANGER: a tall, '
+            'thin, lanky humanoid with NO clothes and no visible genitals, '
+            'smooth hairless featureless grey-blue skin over long sinewy '
+            'muscles, a completely bald elongated head, a flat face with only '
+            'two big blank white eyes, a tiny nose and a thin lipless mouth, '
+            'small pointed ears. Very long thin arms hanging down to the '
+            'knees, big long-fingered hands, long thin legs, bare feet. POSE: '
+            'standing upright and still facing the viewer, slightly hunched, '
+            'the long arms hanging loose at its sides, unsettling and calm. '
+            'Full body in frame. BACKGROUND: plain, empty. No ground, no '
+            'shadow, no scenery, no text. NEGATIVE: anti-aliasing, blur, '
+            'gradients, painted rendering, 3D render, multiple characters, '
+            'clothes, armor, weapon, hair, tail, wings, horns.'
+        ),
+    },
+}
+
+# A DROW (o monstro `drow` e o DISFARCE do Vyerith, o doppelganger do
+# Castelo Cragmaw). Media, quadro de 64. Pela imagem que o dono mandou e o
+# Manual dos Monstros dele, descritos em texto: pele cinza-arroxeada escura,
+# cabelo branco num rabo alto, armadura de placas roxo-escuras de espinhos
+# sobre camisao de malha, espada curta numa mao e besta de mao na outra.
+PERSONAGENS['drow'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Drow',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a female drow warrior, a dark elf. '
+            + ESTILO_HEROI +
+            'Skin ramp: dark purple-grey, #6e6680 light, #4a4258 mid, #2c2638 deep. '
+            'Hair: pure white #f4f2f6 with light grey #c8c6cc shadow. Armor: BLACK, '
+            '#3a3a40 light, #222226 mid, #0e0e10 deep, with dark steel grey '
+            '#6a6a74 edges. Chain mail: dark grey #48484e. Blades: pale steel '
+            '#c8c4d8. Eyes: '
+            'pale white. THE DROW: a slender, tall female elf with dark purple-grey '
+            'skin, long pointed ears, pale glowing eyes and long WHITE hair tied '
+            'in a high ponytail. ARMOR, ALL BLACK: a fitted dark chain mail shirt '
+            'under spiked BLACK plate pieces: pointed spiky pauldrons, a sculpted '
+            'breastplate, a plated belt, plated thigh guards and tall pointed '
+            'black boots, a small quiver of bolts at the hip. NO CLOAK, NO CAPE: '
+            'her back is the armor. WEAPONS: a slim curved SHORTSWORD held low '
+            'in the right hand, and a tiny one-handed HAND CROSSBOW in the left '
+            'hand: a short straight black stock no longer than her forearm with '
+            'a small horizontal bow at the front, held level and pointing '
+            'forward at waist height, like a pistol. POSE: standing confident '
+            'facing the viewer. Full body in frame. BACKGROUND: plain, empty. No '
+            'ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, 3D render, multiple characters, cloak, cape, '
+            'hood, helmet, shield, longbow, big crossbow, staff.'
+        ),
+    },
+}
+
+# A DROW QUE SE ANIMA (aprovada pelo dono): armadura preta, sem capa, espada
+# curta e besta de mao (edicao `drow-preta`). Registrada DUAS vezes, de graca:
+# `drowEspada` anima andar, golpe e queda; `drowTiro` so o tiro de besta.
+for _chave in ('drowEspada', 'drowTiro'):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': '_referencias/pixellab/edicoes/drow-preta/tira.png',
+        'corpo': {
+            'name': f'Drow ({_chave[4:].lower()})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': ('A pixel art game sprite of a female drow with dark purple-grey skin, '
+                            'white hair in a high ponytail, black spiked armor, a shortsword and a '
+                            'small hand crossbow.'),
+        },
+    }
+
+# O STIRGE (a estrada da regiao). Miudo e voador: quadro de 48, esqueleto
+# `dog` (nao ha esqueleto de bicho voador). Pela imagem que o dono mandou,
+# descrita em texto: morcego cruzado com mosquito, asas de membrana creme com
+# dedos ferrugem, corpo ferrugem de barriga palida, tromba longa de agulha e
+# quatro patas finas de pinca.
+PERSONAGENS['stirge'] = {
+    'rota': '/create-character-v3',
+    # A VISTA SUL APROVADA PELO DONO: o texto deu asas de inseto; o OpenArt
+    # redesenhou as imagens oficiais (`stirge-ref/openart-2.jpg`) e o dono
+    # escolheu a menor, 24 px (`stirge-ref/reduzir2.py`): e Miudo. O esqueleto
+    # e o `mannequin`: o `dog` o punha em pe como um dragaozinho.
+    'referencia': '_referencias/pixellab/edicoes/stirge-sul/sul.png',
+    'corpo': {
+        'name': 'Stirge',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 48, 'height': 48},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a stirge, a small flying blood-sucking beast, '
+            'a cross between a bat and a giant mosquito. ' + ESTILO_HEROI +
+            'Body and wing bones: rust red-brown, #b8644a light, #8a4430 mid, '
+            '#52261a deep. Wing membranes and belly: pale cream, #e8dcc0 light, '
+            '#c8b898 mid. Proboscis: dark red-brown. Eyes: small orange. THE '
+            'STIRGE: a small wiry rust-red body with a pale cream belly, two big '
+            'BAT WINGS spread wide with long finger bones and pale cream '
+            'membranes, a long thin needle-like PROBOSCIS pointing forward from '
+            'the small head, four thin jointed legs ending in pincer claws '
+            'hanging under the body, a short barbed tail. POSE: hovering in the '
+            'air, wings spread wide, proboscis forward, legs dangling. Full body '
+            'in frame. BACKGROUND: plain, empty. No ground, no shadow, no '
+            'scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple creatures, standing on legs, '
+            'fur, dog, cat, bird, feathers.'
+        ),
+    },
+}
+
+# O BUGBEAR (capitulo 2: Klarg; capitulo 3: os da mansao). Alvo: 69 px de
+# figura (a escala de `looks/bestiario.js`), quadro 72. Cores do look
+# `bugbear`: pelo fulvo dourado, cabelo ruivo, couro PRETO no equipamento. O
+# Klarg e este mesmo corpo com o pelo descorado (recolor, sem geracao). A clava
+# vai BAIXA: erguida, passava do topo do quadro e o cravo saia cortado.
+PERSONAGENS['bugbear'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Bugbear',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a bugbear, a huge hairy goblinoid brute. '
+            + ESTILO_HEROI +
+            'Fur ramp: tawny gold, #d8a45a light, #bd8a46 mid, #8f5b29 deep shadow. '
+            'Mane: rust red-brown #7a3c1c. Leather gear: near black #241f1e with '
+            '#3a3432 highlights. Iron: #9a948e. Eyes: amber #e0a53a. THE BUGBEAR: '
+            'very tall, hunched and heavily muscled, covered in shaggy tawny fur '
+            'with ragged tufts at the edges, a bear-like face with a broad flat '
+            'nose, small fangs and a shaggy rust-red mane, big lynx ears with '
+            'tufted tips, long arms, bare clawed feet. GEAR: one spiked black '
+            'leather pauldron on the left shoulder, a black leather gauntlet on '
+            'the left forearm, a wide black leather belt and a kilt of black '
+            'leather strips to mid-thigh. WEAPON: a big wooden morningstar club '
+            'studded with iron spikes held in the right hand. POSE: standing in a '
+            'hunched ready stance facing the viewer, feet apart, the spiked club '
+            'held low at his right side with its head near the knee, the left '
+            'clawed hand open and forward, so the silhouette is broken and '
+            'readable. Nothing reaches above the top of his ears. '
+            'Full body in frame. BACKGROUND: plain, empty. No ground, no shadow, '
+            'no scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple characters, armor plate, '
+            'helmet, shield, shoes.'
+        ),
+    },
+}
+
+# O MARCARRUBRA (capitulo 3): o bandido da gangue que domina Phandalin. Humano,
+# 61 px, quadro 64. O manto escarlate encardido e o uniforme deles e o que os
+# separa de qualquer outro humano no tabuleiro; couro batido e espada curta
+# (o bloco da aventura).
+PERSONAGENS['marcarrubra'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Bandido Marcarrubra',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male human thug of a street gang. '
+            + ESTILO_HEROI +
+            'Skin ramp: #d8a47c light, #b07a50 mid, #6e4630 deep shadow. Cloak: '
+            'grimy scarlet, #b0302a light, #842220 mid, #4e1414 deep, with a '
+            'frayed dirty hem. Leather: dark brown #453222 with small steel '
+            'rivets #8a9298. Trousers: dull brown. Eyes: dark. THE THUG: a stocky '
+            'broad-shouldered man with a shaved head, a broken nose, a scar on '
+            'the cheek and a heavy jaw with stubble. CLOTHES: a dark brown studded '
+            'leather jerkin, a long grimy scarlet cloak over his shoulders with the '
+            'hood down, a belt with a pouch, dull brown trousers and worn boots. '
+            'WEAPON: a steel shortsword in his right hand. POSE: standing in a '
+            'cocky menacing stance facing the viewer, feet apart, the shortsword '
+            'held low and out from the body, the left fist clenched, so the '
+            'silhouette is broken and readable. Full body in frame. BACKGROUND: '
+            'plain, empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, helmet, shield, hair, metal armor.'
+        ),
+    },
+}
+
+# AS CRIATURAS DA MANSAO (capitulo 3). Cores dos looks procedurais.
+#   esqueleto  medio, a altura de um humano (quadro 64); osso bege-claro, a
+#              figura mais clara do tabuleiro, orbitas vazias e sem brilho
+#   rato       pequeno (quadro 40), esqueleto `cat`; pelo pardo de valor morto,
+#              pele nua rosa (orelha, cauda, focinho) e olho vermelho
+#   vigia      o "vigia ciclopico": medio e encurvado (quadro 56), o marrom mais
+#              escuro do bestiario e um olho unico de iris verde-amarela. Arte
+#              NOSSA (ver `looks/aberracoes.js`): nada copiado de ilustracao.
+PERSONAGENS['esqueleto'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Esqueleto',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of an animated human skeleton warrior. '
+            + ESTILO_HEROI +
+            'Bone ramp: warm pale beige, #f2ead0 light, #e4d8b4 mid, #a8987a deep '
+            'shadow. Eye sockets: empty and dark #17131d, no glow. Rusty iron: '
+            '#8a7a6a. Rags: faded dark brown #4a3a2c. THE SKELETON: a full human '
+            'skeleton of normal height, clearly visible skull with empty eye '
+            'sockets and a grinning jaw, ribcage, spine, pelvis and long arm and '
+            'leg bones, a few scraps of rotten brown cloth hanging from the hips. '
+            'WEAPON: a notched rusty iron shortsword in the right hand. POSE: '
+            'standing in a stiff ready stance facing the viewer, feet apart, the '
+            'shortsword held out from the body, the left bony hand open, so the '
+            'silhouette is broken and readable. Full body in frame. BACKGROUND: '
+            'plain, empty. No ground, no shadow, no scenery, no text. NEGATIVE: '
+            'anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, glowing eyes, flesh, armor, helmet, shield.'
+        ),
+    },
+}
+PERSONAGENS['ratoGigante'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Rato gigante',
+        'template_id': 'cat',
+        'view': 'low top-down',
+        'image_size': {'width': 40, 'height': 40},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a giant rat, a filthy sewer rat as big as a '
+            'dog. ' + ESTILO_HEROI +
+            'Fur ramp: dull grey-brown, #8a7e74 light, #6b6058 mid, #453d37 deep '
+            'shadow, with a paler #b5a894 belly. Bare skin: pink #d59a9a on the big '
+            'round ears, the long naked tail, the paws and the pointed snout tip. '
+            'Teeth: two long yellow-white incisors #f2ead2. Eyes: small beady red '
+            '#e04a3a. THE RAT: a hunched rat on all four legs, a pointed snout with '
+            'whiskers, big round pink ears, a long thick naked pink tail longer '
+            'than the body, ragged greasy fur. Side-on three-quarter body, the '
+            'whole animal readable. Full body in frame. BACKGROUND: plain, empty. '
+            'No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, painted rendering, 3D render, multiple animals, '
+            'cute, cartoon mouse.'
+        ),
+    },
+}
+PERSONAGENS['vigia'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Vigia ciclopico',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 56, 'height': 56},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a hunched one-eyed cave aberration. '
+            + ESTILO_HEROI +
+            'Skin ramp: very dark brown, #6a5440 light, #4a3a2c mid, #231a13 deep '
+            'shadow. The eye: a single huge round eye with a pale ivory #e4dcba '
+            'white, a bright yellow-green #c2cf36 iris and a black pupil. Claws: '
+            'pale yellowed bone. THE CREATURE: a gaunt, stooped humanoid with a '
+            'hairless lumpy head that is almost all one enormous staring eye in '
+            'the middle of the face, a small mouth of jagged teeth under it, a '
+            'thin bony body with a hunched spine, long thin arms ending in long '
+            'curved claws that hang to the knees, bent legs and clawed feet, a few '
+            'grey rags. POSE: crouched and leaning forward facing the viewer, the '
+            'clawed hands raised and spread, so the silhouette is broken and '
+            'readable. Full body in frame. BACKGROUND: plain, empty. No ground, no '
+            'shadow, no scenery, no text. NEGATIVE: anti-aliasing, blur, '
+            'gradients, painted rendering, 3D render, multiple characters, two '
+            'eyes, tentacles, weapon, clothing.'
+        ),
+    },
+}
+
+# O VIGIA, segunda leva: o dono mostrou como ele tem de ser -- agachado sobre
+# quatro membros longos, espinhos de osso na cabeca e nas costas, bocarra de
+# dentes sob o olho, pele manchada. A descricao e nossa (nenhuma imagem de
+# terceiros vai ao gerador).
+# (terceira tentativa: na segunda o olho saiu pequeno e nasceu um rabo)
+PERSONAGENS['vigia2'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Vigia ciclopico (2)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 56, 'height': 56},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a hunched one-eyed cave aberration. '
+            + ESTILO_HEROI +
+            'Skin ramp: dark mottled brown, #6e5446 light, #4a3a2c mid, #231a13 deep '
+            'shadow, with blotchy dark red #7a2e24 patches. Spikes: long pale bone '
+            '#d8cbb0 with dark tips. The eye: one huge round eye, bright yellow-green '
+            '#c2cf36 iris with a black pupil and a pale rim. Teeth: long yellowed '
+            '#e4dcba. Claws: long, curved, near black. THE CREATURE: a gaunt, '
+            'emaciated thing crouched low on four long thin limbs like a hunting '
+            'beast, its back arched high, NO TAIL. THE HEAD IS DOMINATED BY ONE '
+            'ENORMOUS EYE: a single cyclops eye bigger than the mouth, covering the '
+            'whole upper face, glowing yellow-green, no other eyes; right under it '
+            'a wide gaping mouth full of long jagged teeth; a crest of long sharp '
+            'bone spikes on top of the head and a row '
+            'of spikes running down the spine; thin sinewy arms and legs with '
+            'visible ribs, big hands and feet ending in long curved black claws. '
+            'POSE: crouched on all fours leaning toward the viewer, head low and '
+            'forward, claws spread on the ground, so the silhouette is broken and '
+            'readable. Full body in frame. BACKGROUND: plain, empty. No ground, no '
+            'shadow, no scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, multiple characters, two eyes, clothing, '
+            'rags, weapon, standing upright, tail, small eyes, green skin, stripes.'
+        ),
+    },
+}
+
+# O vigia que se anima: as vistas do `vigia2` vieram deslocadas uma casa do sul
+# ao norte, e sem uma vista de costas para a esquerda; o lado oeste e o leste
+# espelhado (a criatura e simetrica). Registro de tira: de graca.
+PERSONAGENS['vigiaDirecoes'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/vigia-direcoes/tira.png',
+    'corpo': {
+        'name': 'Vigia ciclopico (direcoes)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of a gaunt crouching cave aberration with one '
+                        'enormous yellow-green eye, a gaping toothy mouth, bone spikes on the '
+                        'head and back and mottled dark brown and red skin.'),
+    },
+}
+
+# O CAJAVIDRO (Iarno Albrek), chefe dos Marcarrubra. Humano, 61 px, quadro 64.
+# Pelo que o dono mostrou: tunica carmesim com bordado claro, faixa, bolsa a
+# tiracolo, cabelo escuro comprido e barba curta, e o cajado de VIDRO que da o
+# nome. Descricao nossa; nenhuma imagem de terceiros vai ao gerador.
+PERSONAGENS['cajavidro'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Cajavidro (Iarno)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a male human evil wizard. ' + ESTILO_HEROI +
+            'Skin ramp: #e2b490 light, #c08c68 mid, #7e5440 deep shadow. Hair and '
+            'beard: dark brown #3a2a20. Robes: deep crimson, #b0302e light, #842222 '
+            'mid, #4e1416 deep, with pale cream #e8dcc0 embroidered trim. Leather: '
+            'dark brown. Glass: pale icy translucent white-blue, #e8f0f8 light, '
+            '#b8c8d8 mid, #8090a8 deep, with white glints. THE WIZARD: a lean man '
+            'with long dark brown hair to the shoulders, a short pointed beard and a '
+            'haughty sneer. CLOTHES: a long deep crimson robe with wide sleeves and '
+            'pale embroidered trim on the collar and cuffs, a wide crimson sash at '
+            'the waist with a ring of keys, a leather strap across the chest to a '
+            'satchel on the hip, crimson trousers and soft boots. No hat, no armor. '
+            'WEAPON: a tall staff made entirely of pale translucent glass, taller '
+            'than he is, its top twisting into an ornate swirl, held upright in his '
+            'right hand. POSE: standing facing the viewer, the glass staff planted '
+            'beside him, the left hand raised with open fingers as if about to cast, '
+            'so the silhouette is broken and readable. Full body in frame. '
+            'BACKGROUND: plain, empty. No ground, no shadow, no scenery, no text. '
+            'NEGATIVE: anti-aliasing, blur, gradients, painted rendering, 3D render, '
+            'multiple characters, hat, armor, wooden staff.'
+        ),
+    },
+}
+
+# O HOBGOBLIN (capitulo 4: o castelo Cragmaw). Alvo: 64 px de figura (a escala
+# de `looks/bestiario.js`), quadro 72, com folga para o golpe. O kit e o do
+# bloco do Livro dos Monstros: cota de malha, escudo, espada longa e arco longo
+# (nas costas enquanto luta de espada). A descricao veio da imagem que o dono
+# mandou, em texto: arte oficial nao vai para o gerador. Cores do look
+# `hobgoblin`: pele laranja-avermelhada, armadura de aco azul-acinzentado.
+PERSONAGENS['hobgoblin'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Hobgoblin',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a hobgoblin soldier, a disciplined '
+            'goblinoid. ' + ESTILO_HEROI +
+            'Skin ramp: red-orange, #e07a4a light, #c05c34 mid, #7e3420 deep '
+            'shadow. Hair: dark red-brown #52221a. Armor plates: dark blue-grey '
+            'steel, #5f6d82 light, #394659 mid, #222a37 deep. Chain mail: '
+            '#9aa3b2 with #5f6d82 shadow. Leather and fur: #4e3b28. Eyes: '
+            'orange #ff8a2a. LEFT ARM: a LARGE dark steel SHIELD strapped to '
+            'the left forearm, tall as his torso, with a jagged spiked rim, held '
+            'forward on his left side and covering him from shoulder to knee. '
+            'RIGHT HAND: ONE steel longsword with a hooked notch near the tip. '
+            'Only one sword. THE HOBGOBLIN: a stocky broad-shouldered goblinoid '
+            'of human height, red-orange skin, long pointed ears swept back, a '
+            'heavy brow, a scowling face with small lower fangs, dark hair '
+            'shaved on the sides and tied back on top. ARMOR: a chain mail '
+            'hauberk under dark blue-grey steel plates, one big SPIKED pauldron '
+            'on the left shoulder, a plate belt, armored greaves and pointed '
+            'steel boots, a short brown fur skirt below the belt. A quiver at '
+            'the right hip. A LONGBOW slung diagonally across his BACK, its '
+            'upper tip above the right shoulder. POSE: a low wide ready stance '
+            'facing the viewer, knees bent, the shield forward, the longsword '
+            'held low and out to the right side. Full body in frame. '
+            'BACKGROUND: plain, empty. No ground, no shadow, no scenery, no '
+            'text. NEGATIVE: anti-aliasing, blur, gradients, 3D render, '
+            'multiple characters, two swords, dual wielding, helmet, crest, '
+            'cape, green skin.'
+        ),
+    },
+}
+
+# O HOBGOBLIN QUE SE ANIMA: as oito vistas de cabelo preto (o dono pediu; o
+# PixelLab o fez carmim e a edicao `hob-base-preto` trocou). Ele saiu canhoto:
+# escudo no braco direito, espada na esquerda, igual em todas as vistas. A
+# postura de ARCO e a edicao `hob-arco` (espada na bainha, escudo nas costas).
+_HOB = ('A pixel art game sprite of a stocky hobgoblin with red-orange skin, long '
+        'pointed ears, black hair tied back, dark blue-grey steel plate and chain '
+        'armor with spiked pauldrons and a brown fur skirt, ')
+for _chave, _edicao, _maos in (
+        ('hob', 'hob-base-preto', 'a steel shield and a longsword, a longbow on his back.'),
+        ('hobArco', 'hob-arco-preto', 'a longbow in one hand, a shield on his back.')):
+    PERSONAGENS[_chave] = {
+        'rota': '/create-character-v3',
+        'tira': f'_referencias/pixellab/edicoes/{_edicao}/tira.png',
+        'corpo': {
+            'name': f'Hobgoblin ({_edicao[4:]})',
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'n_directions': 8,
+            'description': _HOB + _maos,
+        },
+    }
+
+# O BUGBEAR QUE SE ANIMA: as oito vistas da primeira leva (a5aafa..., clava
+# erguida, a melhor) num quadro de 80, com folga em cima para o golpe. A
+# segunda leva, de clava baixa, inventou rabo e trocou a clava por um barril.
+PERSONAGENS['bugbear80'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/bugbear-80/tira.png',
+    'corpo': {
+        'name': 'Bugbear (80)',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of a hunched hairy bugbear with tawny fur, a '
+                        'rust-red mane, black leather pauldron, gauntlet, belt and strip kilt, '
+                        'and an iron-spiked wooden club.'),
+    },
+}
+
+# O lobo veio com as vistas GIRADAS uma casa (a "sul" olhava para sudeste, a
+# "sudoeste" de frente). A tira reordenada vira o personagem que se anima; o
+# registro de tira e de graca.
+PERSONAGENS['loboDirecoes'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/lobo-direcoes/tira.png',
+    'corpo': {
+        'name': 'Lobo cinzento (direcoes)',
+        'template_id': 'dog',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of a lean grey wolf with amber eyes, a pale '
+                         'throat and a darker saddle along the back.'),
+    },
+}
+
 # A ordem das oito vistas na tira de uma edicao, a mesma das rotacoes.
 DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
             'west', 'south-west']
@@ -724,6 +1648,12 @@ def main():
         if 'tira' in PERSONAGENS[chave]:
             corpo['reference_image'], corpo['direction_images'] = imagens_da_tira(
                 PERSONAGENS[chave]['tira'])
+        elif 'referencia' in PERSONAGENS[chave]:
+            # So a vista SUL, ja em pixel art: o v3 gira nas outras sete.
+            import base64
+            dados = (RAIZ / PERSONAGENS[chave]['referencia']).read_bytes()
+            corpo['reference_image'] = {'type': 'base64', 'format': 'png',
+                                        'base64': base64.b64encode(dados).decode()}
         for campo, teto in LIMITES.items():
             if campo in corpo and len(corpo[campo]) > teto:
                 raise SystemExit(f'{chave}: {campo} tem {len(corpo[campo])} '

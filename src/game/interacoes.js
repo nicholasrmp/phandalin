@@ -178,7 +178,9 @@ export function opcoesDaCasa(app, tile) {
             grupo: 'Atacar', rotulo: nome, motivo, alvoPrevia: occ,
             icone: iconeDaArma(w, WEAPONS[w]),
             chance: andar ? null : p.chance, chanceTexto: andar ? null : pct(p.chance),
-            detalhe: `${p.perfil.damage} ${p.perfil.type}${andar ? ' · anda até ele' : ''}${p.alcanceLongo ? ' · alcance longo, desvantagem' : ''}`,
+            // O furtivo aparece no rótulo: é a maior parte do dano do ladino,
+            // e saber ANTES se ele pega é o que decide de onde atacar.
+            detalhe: `${p.perfil.damage} ${p.perfil.type}${p.furtivo ? ` · +${p.furtivo} furtivo` : ''}${andar ? ' · anda até ele' : ''}${p.alcanceLongo ? ' · alcance longo, desvantagem' : ''}`,
             fazer: () => app.tryAttack(c, occ, w),
           });
         }

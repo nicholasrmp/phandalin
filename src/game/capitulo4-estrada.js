@@ -24,7 +24,7 @@ import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception } from '../rules/abilities.js';
 import { ritmoDe, furtividadeDoGrupo } from '../rules/marcha.js';
-import { montarAcampamento, atencaoDaVigia, vigiaDeTurno } from '../rules/acampamento.js';
+import { montarAcampamento, oQueAVigiaPercebe } from '../rules/acampamento.js';
 import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
 import { prepararLevas } from './levas.js';
@@ -219,15 +219,13 @@ export function criarEstrada(app, config) {
         const acamp = config.acampamento
           ? montarAcampamento({ ...config.acampamento, herois: enc.allOf('party') })
           : null;
-        const furtivos = furtividadeDeles();
-        const menor = Math.min(...furtivos);
-        const deTurno = acamp ? vigiaDeTurno(enc.rng, acamp) : null;
-        const atencao = deTurno ? atencaoDaVigia(acamp, deTurno) : 0;
-        const margem = atencao - menor;
-        const notou = Boolean(deTurno) && margem >= 0;
-        // Regra da casa: notar cedo (5 ou mais de margem) dá tempo de sacudir
-        // o resto; notar em cima da hora só salva quem estava de pé.
-        const gritouATempo = notou && margem >= 5;
+        // A rolagem já veio feita de `game/regiao.js`, que a usou para decidir
+        // se havia saída: rolar de novo aqui daria dois resultados diferentes
+        // para a mesma noite.
+        const furtivos = config.vigia?.furtividades ?? furtividadeDeles();
+        const vigia = config.vigia ?? oQueAVigiaPercebe(enc.rng, acamp, furtivos);
+        const { atencao, menor, notou, gritouATempo } = vigia;
+        const deTurno = vigia.deTurno && enc.allOf('party').find((c) => c.id === vigia.deTurno.id);
         const dormem = acamp
           ? enc.allOf('party').filter((c) => c !== deTurno)
           : enc.allOf('party');

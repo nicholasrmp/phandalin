@@ -25,6 +25,58 @@ import metaGoblinArqueiro from './goblinArqueiro.json';
 import urlGoblinArqueiro from './goblinArqueiro.png';
 import metaGoblinBoss from './goblinBoss.json';
 import urlGoblinBoss from './goblinBoss.png';
+import metaLobo from './lobo.json';
+import urlLobo from './lobo.png';
+import metaBugbear from './bugbear.json';
+import urlBugbear from './bugbear.png';
+import metaKlarg from './klarg.json';
+import urlKlarg from './klarg.png';
+import metaMarcarrubra from './marcarrubra.json';
+import urlMarcarrubra from './marcarrubra.png';
+import metaEsqueleto from './esqueleto.json';
+import urlEsqueleto from './esqueleto.png';
+import metaRato from './ratoGigante.json';
+import urlRato from './ratoGigante.png';
+import metaVigia from './vigiaCiclopico.json';
+import urlVigia from './vigiaCiclopico.png';
+import metaCajavidro from './cajavidro.json';
+import urlCajavidro from './cajavidro.png';
+import metaYeemik from './yeemik.json';
+import urlYeemik from './yeemik.png';
+import metaDroop from './droop.json';
+import urlDroop from './droop.png';
+import metaLoboAtroz from './loboAtroz.json';
+import urlLoboAtroz from './loboAtroz.png';
+import metaOrc from './orc.json';
+import urlOrc from './orc.png';
+import metaBrughor from './brughor.json';
+import urlBrughor from './brughor.png';
+import metaOgro from './ogro.json';
+import urlOgro from './ogro.png';
+import metaReiGrol from './reiGrol.json';
+import urlReiGrol from './reiGrol.png';
+import metaCorujaUrso from './corujaUrso.json';
+import urlCorujaUrso from './corujaUrso.png';
+import metaZumbi from './zumbi.json';
+import urlZumbi from './zumbi.png';
+import metaGrick from './grick.json';
+import urlGrick from './grick.png';
+import metaCarnical from './carnical.json';
+import urlCarnical from './carnical.png';
+import metaHamunKost from './hamunKost.json';
+import urlHamunKost from './hamunKost.png';
+import metaDoppelganger from './doppelganger.json';
+import urlDoppelganger from './doppelganger.png';
+import metaDrow from './drow.json';
+import urlDrow from './drow.png';
+import metaDrowBesta from './drowBesta.json';
+import urlDrowBesta from './drowBesta.png';
+import metaStirge from './stirge.json';
+import urlStirge from './stirge.png';
+import metaHobgoblin from './hobgoblin.json';
+import urlHobgoblin from './hobgoblin.png';
+import metaHobgoblinArco from './hobgoblinArco.json';
+import urlHobgoblinArco from './hobgoblinArco.png';
 // As folhas dos herois seguem um nome: `<heroi>-<armadura>-<arma>.json/.png`
 // (`dara-malha-maca-escudo`, `brenn-escamas-besta`). O registro se monta
 // sozinho a partir dos nomes (abaixo), porque sao dezenas de combinacoes e
@@ -64,6 +116,70 @@ const IMPORTADAS = {
   goblin: { base: 'goblin', meta: metaGoblin, url: urlGoblin },
   goblinArqueiro: { base: 'goblinArqueiro', meta: metaGoblinArqueiro, url: urlGoblinArqueiro },
   goblinBoss: { base: 'goblinBoss', meta: metaGoblinBoss, url: urlGoblinBoss },
+  // o lobo do PixelLab (esqueleto de quadrupede) no look `wolf`
+  wolf: { base: 'wolf', meta: metaLobo, url: urlLobo },
+  // o lobo atroz: o mesmo esqueleto em grande, quase preto (`atroz-tira.py`)
+  direWolf: { base: 'direWolf', meta: metaLoboAtroz, url: urlLoboAtroz },
+  // o bugbear do PixelLab, e o Klarg: o mesmo corpo de pelo descorado
+  bugbear: { base: 'bugbear', meta: metaBugbear, url: urlBugbear },
+  klarg: { base: 'klarg', meta: metaKlarg, url: urlKlarg },
+  marcarrubra: { base: 'marcarrubra', meta: metaMarcarrubra, url: urlMarcarrubra },
+  // as criaturas da mansao
+  skeleton: { base: 'skeleton', meta: metaEsqueleto, url: urlEsqueleto },
+  giantRat: { base: 'giantRat', meta: metaRato, url: urlRato },
+  vigiaCiclopico: { base: 'vigiaCiclopico', meta: metaVigia, url: urlVigia },
+  // o Cajavidro (Iarno), no look `iarno` (o monstro e o NPC usam o mesmo)
+  iarno: { base: 'iarno', meta: metaCajavidro, url: urlCajavidro },
+  // Yeemik e Droop: o goblin do PixelLab recolorido e com faixa na testa
+  // (`src/dev/reskins-goblins.py`, sem geracao)
+  yeemik: { base: 'yeemik', meta: metaYeemik, url: urlYeemik },
+  droop: { base: 'droop', meta: metaDroop, url: urlDroop },
+  // o orc (pelo modelo oficial que o dono mandou) e o Brughor, o chefe deles:
+  // o mesmo corpo com elmo de chifres e pintura de guerra
+  orc: { base: 'orc', meta: metaOrc, url: urlOrc },
+  brughor: { base: 'brughor', meta: metaBrughor, url: urlBrughor },
+  // o ogro gordo do modelo oficial (`ogroGordo`: a primeira leva engordada)
+  ogro: { base: 'ogro', meta: metaOgro, url: urlOgro },
+  // o Rei Grol: o bugbear editado em rei (pelo quase preto, coroa, machado)
+  reiGrol: { base: 'reiGrol', meta: metaReiGrol, url: urlReiGrol },
+  // a coruja-urso: esqueleto `bear`, vistas no lugar (`coruja-tira.py`)
+  owlbear: { base: 'owlbear', meta: metaCorujaUrso, url: urlCorujaUrso },
+  // o zumbi do Poco da Coruja Velha (pelo modelo oficial)
+  zombie: { base: 'zombie', meta: metaZumbi, url: urlZumbi },
+  // o grick do Castelo Cragmaw: a vista sul aprovada pelo dono (o OpenArt
+  // redesenhou a imagem oficial em pixel art) girada no PixelLab
+  grick: { base: 'grick', meta: metaGrick, url: urlGrick },
+  // o carnical (ghoul), pela imagem do dono
+  ghoul: { base: 'ghoul', meta: metaCarnical, url: urlCarnical },
+  // Hamun Kost, o Mago Vermelho do Poco da Coruja Velha (pela imagem do dono)
+  hamunKost: { base: 'hamunKost', meta: metaHamunKost, url: urlHamunKost },
+  // o doppelganger na forma verdadeira (pela imagem do dono)
+  doppelganger: { base: 'doppelganger', meta: metaDoppelganger, url: urlDoppelganger },
+  // A DROW (aprovada pelo dono), duas folhas como o hobgoblin: a espada curta
+  // (padrao) e a besta de mao, quando atira (`aparencias` do bloco `drow`).
+  // E tambem o disfarce do Vyerith, o doppelganger do Castelo Cragmaw.
+  drow: {
+    base: 'drow', meta: metaDrow, url: urlDrow,
+    postura: 'umaMao', familia: 'espada', armadura: 'malha', padrao: true,
+  },
+  'drow-besta': {
+    base: 'drow', meta: metaDrowBesta, url: urlDrowBesta,
+    postura: 'besta', familia: 'bestaDeMao', armadura: 'malha',
+  },
+  // o stirge (24 px, escolhido pelo dono)
+  stirge: { base: 'stirge', meta: metaStirge, url: urlStirge },
+  // O HOBGOBLIN, o unico monstro de duas folhas: espada e escudo (a padrao) e
+  // o arco longo, que ele pega quando atira (`aparencias` do bloco em
+  // `rules/monsters/goblinoides.js`). A chave do arco e
+  // `hobgoblin@cotaDeMalha-arcoLongo`, lida como as dos herois.
+  hobgoblin: {
+    base: 'hobgoblin', meta: metaHobgoblin, url: urlHobgoblin,
+    postura: 'umaMaoEscudo', familia: 'espada', armadura: 'malha', padrao: true,
+  },
+  'hobgoblin-arco': {
+    base: 'hobgoblin', meta: metaHobgoblinArco, url: urlHobgoblinArco,
+    postura: 'arco', familia: 'arco', armadura: 'malha',
+  },
 };
 
 // O que cada sufixo de arquivo significa: a postura (o jeito de segurar) e a

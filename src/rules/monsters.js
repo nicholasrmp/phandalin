@@ -104,6 +104,7 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     // Os sentidos do bloco (visao no escuro, visao verdadeira): sem copiar,
     // nenhum monstro levava o que declara para o combate.
     senses: { ...(def.senses ?? {}) },
+    ...(def.pairaNoAr ? { pairaNoAr: true } : {}),
     // A folha de cada arma, para quem troca (o hobgoblin pega o arco).
     ...(def.aparencias ? { aparencias: { ...def.aparencias } } : {}),
     tipo: def.tipo ?? TIPO_DA_FAMILIA.get(id) ?? null,

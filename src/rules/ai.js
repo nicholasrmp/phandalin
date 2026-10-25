@@ -52,6 +52,19 @@ export function takeMonsterTurn(enc, monster) {
     return;
   }
 
+  // Stirge grudado: no começo do turno drena o sangue em vez de atacar.
+  if (monster.grudadoEm && enc.drenarSangue(monster)) {
+    enc.endTurn(monster);
+    return;
+  }
+  // Saciado: voa para longe de todos e não ataca mais.
+  if (monster.saciado) {
+    const longe = enc.enemiesOf(monster).filter((e) => !e.dead);
+    if (longe.length) retreat(enc, monster, longe);
+    enc.endTurn(monster);
+    return;
+  }
+
   // A cena pode gastar o turno do monstro antes da IA (os lobos acorrentados
   // do esconderijo puxando a corrente). Devolver true encerra o turno.
   if (enc.antesDoTurno?.(monster)) {
@@ -137,6 +150,11 @@ export function takeMonsterTurn(enc, monster) {
 
   // CONJURADOR que joga as magias no turno (o Cajavidro): `conjuraNoTurno` no
   // bloco. A magia vem antes da arma; sem magia que sirva, segue a IA de sempre.
+  // O drow abre com o FOGO DAS FADAS quando dois ou mais heróis cabem no cubo.
+  if (fogoDasFadasNoTurno(enc, monster, enemies)) {
+    enc.endTurn(monster);
+    return;
+  }
   if (monster.spellcasting?.conjuraNoTurno && conjurarNoTurno(enc, monster, enemies)) {
     enc.endTurn(monster);
     return;
@@ -268,7 +286,12 @@ export function takeMonsterTurn(enc, monster) {
   // metralha do outro lado do mapa no primeiro turno (arco curto tem 24 m de
   // alcance — mais que o tabuleiro inteiro), o posicionamento deixa de importar
   // e o mago morre antes de agir. Goblin que fecha distância dá um combate.
-  const plan = planApproach(enc, monster, ordered, { meleeOnly: true });
+  // Agressivo (o orc): quando o deslocamento normal não basta para encostar,
+  // a ação bônus vira mais um deslocamento para chegar e bater no mesmo turno.
+  let plan = planApproach(enc, monster, ordered, { meleeOnly: true });
+  if (!plan && monster.traits?.includes('agressivo') && enc.investidaAgressiva(monster)) {
+    plan = planApproach(enc, monster, ordered, { meleeOnly: true });
+  }
   if (plan) {
     if (plan.path.length > 1) enc.moveAlong(monster, plan.path);
     if (!monster.dead && !hasCondition(monster, 'inconsciente')) {
@@ -564,4 +587,23 @@ function casaLonge(enc, m, inimigos, pes) {
     }
   }
   return melhor && melhor.d > 5 ? { x: melhor.x, y: melhor.y } : null;
+}
+
+/**
+ * Fogo das Fadas (o drow, por conjuração inata): sem concentração ativa e com
+ * espaço, mira o cubo de 6 m que pega mais heróis a até 18 m. Só com dois ou
+ * mais: um alvo só não paga a ação de dois golpes de espada.
+ */
+function fogoDasFadasNoTurno(enc, m, enemies) {
+  const sc = m.spellcasting;
+  if (!sc?.prepared?.includes('fogoDasFadas') || m.concentrating || (sc.slots?.[1] ?? 0) < 1) return false;
+  const vivos = enemies.filter((e) => !e.dead && !hasCondition(e, 'inconsciente') && !hasCondition(e, 'feerico'));
+  let melhor = null;
+  for (const e of vivos) {
+    if (distanceFt(m.pos, e.pos) > 60 || !enc.field.hasLineOfSight(m.pos, e.pos)) continue;
+    const pegos = vivos.filter((o) => Math.abs(o.pos.x - e.pos.x) <= 1 && Math.abs(o.pos.y - e.pos.y) <= 1).length;
+    if (!melhor || pegos > melhor.pegos) melhor = { pegos, e };
+  }
+  if (!melhor || melhor.pegos < 2) return false;
+  return enc.castSpell(m, 'fogoDasFadas', { target: melhor.e, point: melhor.e.pos, circulo: 1 }).ok;
 }

@@ -220,6 +220,79 @@ EDICOES.update({
 })
 
 
+# O HOBGOBLIN DE ARCO: a mesma figura com o arco longo na mao. Ele nasceu
+# canhoto (escudo no braco direito, espada na mao esquerda) e assim ficou: o
+# escudo vai para as costas e a espada para a bainha, porque o bloco do
+# livro tem as tres coisas e ele so troca o que esta na mao.
+EDICOES.update({
+    'hob-arco': (
+        'Remove the shield from his arm and the sword from his hand. He now holds '
+        'EXACTLY ONE longbow of curved dark wood with a taut string, tall and '
+        'upright in ONE hand only, the hand that held the sword, on the same side '
+        'of the body in every frame. The other hand is empty and open. Only one '
+        'bow in each frame, never two, never a bow on both sides. The longsword is '
+        'sheathed in a scabbard at his hip and the round steel shield is slung '
+        'on his back. Keep everything else exactly the same: the red-orange '
+        'skin, the long pointed ears, the red-brown hair tied back, the steel '
+        'plate and chain armor with the spiked pauldrons, the brown belt and '
+        'fur skirt, the boots, the pose of the legs, the direction each frame is '
+        'facing and the colours.'),
+})
+
+# O CABELO PRETO (pedido do dono): o PixelLab o fez carmim. Por codigo nao
+# separa: a sombra do rosto e o verso da orelha sao do mesmo carmim.
+_HOB_PRETO = (
+    'Make his hair BLACK: jet black with dark blue-grey highlights, the same '
+    'hairstyle, the same shape. Keep the red-orange skin of the face and ears '
+    'exactly as it is. Keep everything else exactly the same: the armor, the '
+    'weapons, the pose, the direction each frame is facing and the colours.')
+EDICOES.update({'hob-base-preto': _HOB_PRETO, 'hob-arco-preto': _HOB_PRETO})
+
+# O BRUGHOR: o orc com a marca de chefe. Pelo que se ve de longe: o elmo de
+# chifres muda a silhueta e o manto escuro muda a massa dos ombros.
+EDICOES['brughor'] = (
+    'Make him the orc war chief: put a battered iron helmet with two big curved '
+    'horns on his head, a necklace of large teeth on his chest and bold red war '
+    'paint in stripes across his face and arms. Keep everything else exactly the '
+    'same: the ash grey skin, the tusks, the tawny fur mantle, the bone tusk '
+    'pauldron, the brown leather tunic, the red sash, the greataxe, the pose, the '
+    'direction each frame is facing and the colours.')
+
+# O OGRO GORDO: o PixelLab o faz musculoso duas vezes seguidas (o esqueleto
+# `mannequin` puxa para o atleta); o modelo oficial do dono e obeso.
+EDICOES['ogro-gordo-a'] = EDICOES['ogro-gordo-b'] = (
+    'Make him OBESE instead of muscular: a gigantic soft round pot belly that sags '
+    'over the belt and is the widest part of the body, flabby chest, thick soft '
+    'arms, no visible abs or defined muscles, a double chin under the jutting '
+    'tusked jaw. Keep everything else exactly the same: the small bald head, the '
+    'pale tan skin, the leather straps, the ragged hide loincloth, the wrapped '
+    'shins and bare feet, the wooden spiked greatclub, the pose of the legs, the '
+    'direction each frame is facing and the colours.')
+
+# O REI GROL: o bugbear do PixelLab (`bugbear-80`) como o rei dos Cragmaw. O
+# look `reiGrol`: pelo quase preto, tapa-olho, chifres, e o MACHADO no lugar
+# da clava (o "Machado do rei" do bloco).
+EDICOES['rei-grol'] = (
+    'Make him the bugbear king: dye all his fur NEAR BLACK with dark brown-grey '
+    'highlights and a black mane, put a black leather EYEPATCH over his left eye '
+    'and a scar across his face, a crude iron crown with two big curved horns on '
+    'his head, a tattered dark red cloth hanging from the belt. Replace the spiked '
+    'club with a big iron BATTLEAXE with a wide crescent blade, held the same way. '
+    'Keep everything else exactly the same: the bugbear body and lynx ears, the '
+    'black leather pauldron, gauntlet, belt and strip kilt, the pose, the direction '
+    'each frame is facing and the colours of the leather.')
+
+# A DROW DE ARMADURA PRETA (pedido do dono): a versao sem capa e com a besta de
+# mao certa (`drow-2-violeta`), so com a armadura recolorida. Criar de novo
+# pelo texto trouxe a capa de volta.
+EDICOES['drow-preta'] = (
+    'Recolor ALL of her armor to BLACK: the spiked plate pauldrons, the breastplate, '
+    'the plated belt, the thigh guards and the tall boots become black with dark grey '
+    'edges, and the chain mail becomes dark grey. Make her hair pure white. Keep '
+    'everything else exactly the same: her dark purple-grey skin, the pointed ears, '
+    'the high ponytail, the shortsword, the small hand crossbow, no cloak, the pose, '
+    'the direction each frame is facing.')
+
 def chamar(token, metodo, caminho, corpo=None):
     req = urllib.request.Request(f'{BASE}{caminho}',
                                  data=json.dumps(corpo).encode() if corpo else None,
@@ -271,15 +344,18 @@ def main():
     p.add_argument('edicao', choices=sorted(EDICOES))
     p.add_argument('--fonte', help='pasta do personagem baixado')
     p.add_argument('--tira', help='ou uma tira de 8 vistas lado a lado (sul primeiro)')
+    p.add_argument('--de', type=int, default=0, help='a primeira direcao da tira (0 = sul)')
     p.add_argument('--go', action='store_true')
     a = p.parse_args()
 
     if a.tira:
         # A tira de uma edicao anterior: as 8 vistas na ordem das rotacoes.
         tira = Image.open(RAIZ / a.tira).convert('RGBA')
-        lado = tira.width // len(DIRECOES)
-        quadros = [(d, tira.crop((i * lado, 0, (i + 1) * lado, tira.height)))
-                   for i, d in enumerate(DIRECOES)]
+        # Quadros quadrados: a tira pode ter menos de 8 (acima de 80 px o
+        # pedido aceita so 4, e o ogro vai em duas metades: `--de 4`).
+        lado = tira.height
+        quadros = [(DIRECOES[a.de + i], tira.crop((i * lado, 0, (i + 1) * lado, tira.height)))
+                   for i in range(tira.width // lado)]
         cw, ch = lado, tira.height
     elif a.fonte:
         quadros, (cw, ch) = rotacoes(RAIZ / a.fonte)

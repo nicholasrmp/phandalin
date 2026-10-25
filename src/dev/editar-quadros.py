@@ -305,6 +305,40 @@ EDICOES.update({
         'Remove the shield and any weapon near him. The dwarf keeps the same armor, '
         'helm, blue tabard, pose and colours; where the shield was, draw his arm '
         'and his armored body instead. Nothing else changes.'),
+    # O BUGBEAR: a leste a clava sumia atras do corpo (parado e andando) e ao
+    # norte o quadro da pancada saia sem ela.
+    'bugbear-clava': (
+        'The bugbear always holds his wooden club studded with iron spikes in his '
+        'right hand, and the club is clearly VISIBLE in every frame, never hidden '
+        'behind his body: when he stands or walks it is held at his side or '
+        'resting on his shoulder in front of the body, and in the striking frame '
+        'it is swung down in front of him. Keep everything else exactly the same: '
+        'the hunched hairy bugbear with tawny gold fur, the rust-red mane, the '
+        'lynx ears, the black leather pauldron, gauntlet, belt and strip kilt, the '
+        'pose and position in every frame, the direction each frame faces and the '
+        'colours.'),
+    # O REI GROL: a leste (parado e andando) o machado sumia, como a clava do
+    # bugbear de onde ele veio.
+    'grol-machado': (
+        'The bugbear king always holds his big iron battleaxe with a wide crescent '
+        'blade in his right hand, and the axe is clearly VISIBLE in every frame, '
+        'never hidden behind his body: when he stands or walks it is held upright '
+        'at his side in front of the body, and in the striking frame it is swung '
+        'down in front of him. Keep everything else exactly the same: the hunched '
+        'bugbear with near-black fur, the horned iron crown, the black leather '
+        'pauldron, gauntlet and belt, the dark red loincloth, the pose and position '
+        'in every frame, the direction each frame faces and the colours.'),
+    # A DROW: a besta de mao virava um laco retorcido junto a mao (parada e
+    # andando) ao sul, sudoeste, oeste, noroeste e norte.
+    'drow-besta': (
+        'Redraw the small HAND CROSSBOW in her left hand so it is clean and readable in '
+        'every frame: a short straight black wooden stock no longer than her forearm, '
+        'held level in one hand like a pistol, with a small straight horizontal bow '
+        'across its front end and a taut string, pointing forward. Never a loop, never a '
+        'curl, never tangled. Keep everything else exactly the same: the female drow with '
+        'dark purple-grey skin and white ponytail, the black spiked armor, the shortsword '
+        'in the other hand, the pose and position in every frame, the direction each frame '
+        'faces and the colours.'),
     # O KIT DO CORIN: as armaduras por edicao de todas as posturas.
     'corin-armadura-couro-batido': (
         'Replace his plain brown leather cuirass with studded leather armor: a '
@@ -350,6 +384,14 @@ ATAQUE_DARA = {'south': [2, 5], 'south-east': [3, 5], 'east': [2, 4],
 # Os mesmos quadros, por postura. Tem de bater com os perfis de
 # `importar-pixellab.py`: e so neles que vale gastar a edicao.
 ATAQUE_POR_PERFIL = {
+    'drowEspada': {'south': [2, 4], 'south-east': [2, 4], 'east': [1, 5], 'north-east': [3, 4],
+                   'north': [1, 3], 'north-west': [3, 5], 'west': [5, 6], 'south-west': [4, 6]},
+    'zumbi': {'south': [4, 5], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [3, 5],
+              'north': [3, 5], 'north-west': [4, 6], 'west': [4, 6], 'south-west': [4, 6]},
+    'reiGrol': {'south': [2, 5], 'south-east': [2, 5], 'east': [3, 6], 'north-east': [3, 5],
+                'north': [3, 7], 'north-west': [4, 7], 'west': [3, 6], 'south-west': [3, 6]},
+    'brughor': {'south': [3, 6], 'south-east': [3, 6], 'east': [3, 5], 'north-east': [4, 6],
+                'north': [3, 5], 'north-west': [4, 7], 'west': [4, 7], 'south-west': [5, 8]},
     'fighter': ATAQUE_DARA,
     'fighterSemEscudo': {'south': [2, 5], 'south-east': [2, 5], 'east': [2, 3], 'north-east': [1, 3],
                          'north': [2, 3], 'north-west': [4, 6], 'west': [3, 6], 'south-west': [3, 5]},
@@ -383,6 +425,11 @@ ATAQUE_POR_PERFIL = {
     'paladinAzagaia': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5], 'north-east': [2, 7], 'north': [3, 5], 'north-west': [2, 7], 'west': [3, 5], 'south-west': [3, 5]},
     'paladinBesta': {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 3], 'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 5], 'west': [2, 3], 'south-west': [3, 5]},
     'paladinArco': {'south': [4, 6], 'south-east': [3, 6], 'east': [4, 6], 'north-east': [1, 8], 'north': [3, 6], 'north-west': [1, 8], 'west': [4, 6], 'south-west': [3, 6]},
+    # o bugbear (e o Klarg, recolorido dele)
+    'bugbear80': {'south': [3, 6], 'south-east': [2, 5], 'east': [3, 6], 'north-east': [3, 6], 'north': [2, 6], 'north-west': [4, 8], 'west': [4, 7], 'south-west': [3, 6]},
+    # as criaturas da mansao (para `limpar-soltos.py`)
+    'esqueleto': {'south': [2, 7], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [2, 4], 'north': [3, 6], 'north-west': [3, 5], 'west': [3, 4], 'south-west': [3, 6]},
+    'ratoGigante': {'south': [2, 3], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4], 'north': [3, 6], 'north-west': [2, 4], 'west': [2, 5], 'south-west': [2, 4]},
     # o Corin
     'ranger': {'south': [2, 5], 'south-east': [3, 5], 'east': [2, 4], 'north-east': [5, 2], 'north': [2, 5], 'north-west': [5, 2], 'west': [2, 4], 'south-west': [3, 5]},
     'rangerEspadas': {'south': [2, 4], 'south-east': [2, 5], 'east': [4, 3], 'north-east': [1, 4], 'north': [4, 6], 'north-west': [1, 4], 'west': [4, 3], 'south-west': [2, 5]},
