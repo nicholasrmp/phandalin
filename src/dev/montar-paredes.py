@@ -36,6 +36,7 @@ KIT = AQUI / '_referencias' / 'pixellab' / 'kits' / 'castelo' / '3bb40817-30e2-4
 SAIDA = AQUI / 'src' / 'art' / 'folhas'
 TW, TH = 64, 32
 ORIGEM = (19, 73)          # o losango do chao dentro da lona da peca
+ALTURA_PAREDE = 64         # px da base da parede ate o topo dela
 
 # O que o tabuleiro pede -> a peca do kit. 'N' e a aresta do norte da casa
 # (com a de cima) e 'O' a do oeste (com a da esquerda).
@@ -46,6 +47,9 @@ PECAS = {
     'portaO': ('doors', 'Wa'),
     'arcoN': ('doors', 'Nb'),
     'arcoO': ('doors', 'Wb'),
+    # O encontro das duas arestas na quina oeste da casa: uma peca so, senao
+    # as duas paredes se cruzam e sobra um degrau.
+    'cantoNO': ('outer_corners', 'NW'),
     'pilar': ('pillar', None),
 }
 
@@ -65,10 +69,16 @@ def main():
     meta = {'pecas': {}, 'origem': {'x': ORIGEM[0], 'y': ORIGEM[1]}}
     for i, (nome, corte, caixa) in enumerate(recortes):
         atlas.alpha_composite(corte, (i * larg, 0))
+        # O PILAR SOBE COM A PAREDE. Ele e mais baixo que a parede (77 px
+        # contra 87), e ancorado pelo proprio desenho ele ficava 10 px abaixo
+        # da junção -- media do revisor de render: o vertice de baixo dele
+        # caia no centro da casa, e a junção fica 10 px acima. Entao ele usa o
+        # mesmo `ay` das paredes.
+        ay = -ALTURA_PAREDE if nome == 'pilar' else caixa[1] - ORIGEM[1]
         meta['pecas'][nome] = {
             'x': i * larg, 'y': 0, 'w': corte.width, 'h': corte.height,
             # Onde desenhar, a partir do canto esquerdo do losango da casa.
-            'ax': caixa[0] - ORIGEM[0], 'ay': caixa[1] - ORIGEM[1],
+            'ax': caixa[0] - ORIGEM[0], 'ay': ay,
         }
     atlas.save(SAIDA / 'paredes.png', optimize=True)
     (SAIDA / 'paredes.json').write_text(json.dumps(meta, indent=1), encoding='utf-8')

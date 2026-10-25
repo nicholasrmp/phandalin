@@ -264,13 +264,24 @@ export const BESTIARIO_LOOKS = {
   // lugar dele é `looks/humanoides.js`, com os outros humanoides hostis de
   // bloco SRD. Fica até o dono daquele arquivo levá-lo; nenhuma criatura nova
   // de outra família entra aqui.
+  // As cores do MODELO OFICIAL que o dono mandou (a arte do PixelLab segue o
+  // mesmo): pele cinza, cabelo curto escuro, tunica de couro e manto de pele
+  // fulva. O pintor procedural so desenha quando a folha importada falta.
   orc: {
     species: 'orc', build: 'normal',
-    marca: 'trancas',
-    skin: '#7d8a74', hair: '#1a1612', hairStyle: 'spiky',
-    outfit: '#5a4a38', outfitDark: '#3a2f24', trim: '#8a3a2a',
-    metal: '#a0a8b0', leather: '#5a4630', eyes: '#d84a3a',
+    skin: '#8e9094', hair: '#2e2620', hairStyle: 'spiky',
+    outfit: '#6e5c48', outfitDark: '#3e3226', trim: '#5a2e26',
+    metal: '#a0a8b0', leather: '#9a7c3e', eyes: '#d84a3a',
     armorStyle: 'leather', helm: false, shield: false, weapon: 'axe',
+  },
+  // O Brughor, chefe dos orcs do Cume da Wyvern: o mesmo corpo com elmo de
+  // chifres e pintura de guerra vermelha.
+  brughor: {
+    species: 'orc', build: 'forte',
+    skin: '#8e9094', hair: '#2e2620', hairStyle: 'spiky',
+    outfit: '#6e5c48', outfitDark: '#3e3226', trim: '#a8322a',
+    metal: '#7e848c', leather: '#9a7c3e', eyes: '#d84a3a',
+    armorStyle: 'leather', helm: true, shield: false, weapon: 'axe',
   },
 
 };

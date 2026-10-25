@@ -34,9 +34,12 @@ GRUPOS = {
     # Ficaram de fora 9 (retorcida), 11 (chorao), 12 (alamo), 14 (folha
     # espinhenta) e 15 (galho seco), que sao outras especies e quebrariam a
     # mata; 10, pequena demais; 7, de laterais retas, que le como sebe.
+    # A primeira leva de arvore tinha 65 a 80 px: muda, do tamanho de um
+    # heroi, ao lado das altas de 150. Esta foi pedida numa tela de 112 e deu
+    # uns 100 px, com tronco grosso aparecendo.
     'arvore': {
-        'pasta': 'arvore/aabe3eab-4200-4cd4-9e6c-4c30b0963276',
-        'quadros': {'borda': [0, 1, 2, 3, 4, 5, 8, 13], 'miolo': [6]},
+        'pasta': 'arvore3/36655f47-7031-4dda-95e7-82a3b39b80d7',
+        'quadros': {'borda': [0, 1, 3], 'miolo': [2]},
         'ancora': 'tronco',
     },
     # As arvores altas da mata esparsa, 126-151 px: umas tres alturas de
@@ -144,36 +147,82 @@ GRUPOS = {
         'quadros': {'todas': [0, 1, 3, 7, 9, 11]},
         'ancora': 'base',
     },
+    # DECORACAO DE PAREDE do castelo: pendurada na face da parede de borda,
+    # nao no chao. Uma leva de 64, ja desenhada no plano da face isometrica.
+    # Os papeis dizem o que cada coisa E, e o mapa escolhe pelo papel.
+    'decorParede': {
+        'pasta': 'paredeDecor/a007d8da-3f35-4982-87ab-5e9077eca3be',
+        # Curado olhando no tabuleiro: fora os suportes horizontais de
+        # ferramenta (18, 50) e os escudos redondos (26, 33, 36, 57), que
+        # na parede leem como cano e tampa de esgoto, e a rachadura (31),
+        # que parece um risco e nao musgo.
+        'quadros': {
+            'tochaAcesa': [0, 42, 55],
+            'tochaApagada': [1, 27],
+            'quadro': [2, 46, 60],
+            'bandeira': [3, 13, 43, 59],
+            'musgo': [4],
+            'teia': [5],
+            'corrente': [6, 48, 53],
+            'cranio': [7, 38, 62],
+            'armas': [39],
+            'escudo': [9, 20],
+        },
+        'ancora': 'centro',
+    },
+    # OS VAOS da parede de borda: porta, arco e porta escorada, ja desenhados
+    # no plano da face isometrica. Antes eu desenhava a folha de madeira e o
+    # arco a mao, no canvas, e aparecia que era desenho meu e nao arte.
+    # Escolhidos: porta de tabuas com ferragem (0), porta em arco (6, 10) e
+    # porta dupla (13); arco de pedra vazio (1) e arco com escombro (12);
+    # escorada com a trava atravessada (2, 15).
+    'vaoParede': {
+        'pasta': 'vaoDeParede/30cc9f14-9c6e-4c04-bd26-ccb1083efda7',
+        'quadros': {'porta': [0, 6, 10, 13], 'arco': [1, 12], 'barrada': [2, 15]},
+        'ancora': 'centro',
+    },
     # O bau: os de madeira com cinta de ferro. Fora os dourados (3, 6, 15),
     # o de corrente (8) e o de tabuas cruzadas (5).
     'bau': {
-        'pasta': 'bau/acc56ec4-99eb-4efc-a090-d82d23c93f6c',
-        'quadros': {'todas': [0, 2, 4, 7, 9, 12]},
-        'ancora': 'base',
+        # A primeira leva deu baus de 59 px de largura, quase um heroi
+        # deitado; esta foi pedida numa tela de 44 e deu 37 x 31.
+        'pasta': 'bau3/9f1a57b8-a484-4c9f-bde1-b6ac63ab7b89',
+        'quadros': {'todas': [0, 3, 7, 9, 12, 15]},
+        'ancora': 'chao',
     },
     # O Castelo Dentefino. Braseiros: tigela de pedra e cobre, acesos; o do
     # salao escuro e o de carvao frio. Fora: os de outra forma (caixa preta,
     # gargula, carrinho, pendurado, anel de chao), que liam como outra coisa.
-    'braseiro': {'pasta': 'braseiro/3282bda6-3394-4afa-9abe-c0ac23944ff9',
-                 'quadros': {'todas': [5, 11, 14]}, 'ancora': 'base'},
-    'braseiroFrio': {'pasta': 'braseiro/3282bda6-3394-4afa-9abe-c0ac23944ff9',
-                     'quadros': {'todas': [1]}, 'ancora': 'base'},
+    # A primeira leva de braseiro saiu com 60 px -- a altura de um heroi --
+    # porque o objeto enche a tela que se pede, e a tela era 64. Esta foi
+    # pedida numa tela de 48 e deu 35 a 46 px, na altura da cintura. Nela os
+    # quadros pares estao acesos e os impares, apagados.
+    'braseiro': {'pasta': 'braseiro3/89021477-68cb-4e2b-bb7a-9e33bc8d74c0',
+                 'quadros': {'todas': [0, 2, 4, 6]}, 'ancora': 'chao'},
+    'braseiroFrio': {'pasta': 'braseiro3/89021477-68cb-4e2b-bb7a-9e33bc8d74c0',
+                     'quadros': {'todas': [1, 7]}, 'ancora': 'chao'},
     'armeiro': {'pasta': 'armeiro/e20c304d-0abb-4748-a688-5f0739401856',
-                'quadros': {'todas': [0, 1, 5, 9, 14]}, 'ancora': 'base'},
-    # A palha saiu clara demais para o piso escuro do castelo: desce para as
-    # cores do colmo da casa-a, e a laje de baixo escurece.
-    'palha': {'pasta': 'palha/041026ed-097e-4a1d-b58b-fed3797b51b8',
-              'quadros': {'todas': [0, 1, 3]}, 'ancora': 'base',
-              'cores': {'#b39d5c': '#85733f', '#8f7a3e': '#66572c', '#6e5a2c': '#4c3e1f', '#8f8a7f': '#5e5a52'}},
+                'quadros': {'todas': [0, 1, 5, 9, 14]}, 'ancora': 'chao'},
+    # A primeira leva de palha veio clara e com uma LAJE de pedra desenhada
+    # por baixo: no tabuleiro aquilo lia como palete. Esta foi pedida sem base
+    # e ja na paleta escura. Fora: as que viram ninho, novelo de corda ou
+    # emaranhado preto.
+    'palha': {'pasta': 'palha2/1d6731c3-430b-4e58-9165-1bf2180d781f',
+              'quadros': {'todas': [0, 1, 3, 9]}, 'ancora': 'deitado'},
     # Escombro que barra o passo: so os montes altos (fora o cascalho raso,
     # a grade, o arco e o estandarte).
     'desabamento': {'pasta': 'desabamento/cb5332a0-ec17-42b9-9cc3-1ef3d9e8fe25',
-                    'quadros': {'todas': [1, 2, 3, 4, 5, 9, 11, 15]}, 'ancora': 'base'},
+                    'quadros': {'todas': [1, 2, 3, 4, 5, 9, 11, 15]}, 'ancora': 'deitado'},
 }
 
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
             'north', 'north-west', 'west', 'south-west']
 DIAGONAIS = ['south-east', 'north-east', 'north-west', 'south-west']
+# A CAMERA E FIXA: o tabuleiro nao gira mais, entao cada objeto usa UMA vista
+# so -- a que o `olha` dele pede (`board.spriteDirecional`: (1,0) e sudeste,
+# (0,1) sudoeste, (0,-1) nordeste, (1,-1) leste). Guardar as quatro diagonais
+# gastava um terco do atlas em quadros que nunca apareciam.
+SE, SO, NE, L, O = ['south-east'], ['south-west'], ['north-east'], ['east'], ['west']
 
 # Objetos com direcao: as oito vistas de `rotation_urls`, uma por papel, e o
 # tabuleiro escolhe pela rotacao da camera. `ancora` aqui e o centro da
@@ -181,29 +230,28 @@ DIAGONAIS = ['south-east', 'north-east', 'north-west', 'south-west']
 # -- a roda da frente ou o corpo deitado tocam o chao na borda da FRENTE da
 # pegada, que fica meia pegada abaixo do centro dela. Calibrado na medicao.
 DIRIGIDOS = {
-    'carroca': {'pasta': 'carroca/e391322f-b2a9-4b1c-a7ef-4c1b55116880', 'meia_pegada': 14},
+    'carroca': {'pasta': 'carroca/e391322f-b2a9-4b1c-a7ef-4c1b55116880', 'meia_pegada': 14, 'direcoes': SE},
+    # Os dois cavalos caidos da emboscada: o baio de perfil para leste, o
+    # tordilho (mesmo desenho, pelagem trocada) para oeste.
     'cavalo': {'pasta': 'cavalo/2d4dd2f2-d929-454d-bf40-97ae971d184d', 'meia_pegada': 9,
-               'recolor': ('tordilho', None)},
+               'direcoes': L + O, 'recolor': ('tordilho', None)},
     # A ponte do esconderijo: tabuleiro de 2 x 2 casas com corrimao de corda.
     # A rua de Phandalin: pegada de 3 x 3 casas, cujo centro fica 48 px acima
     # da quina da frente; o pe da parede fica um pouco recuado da quina.
     # O colmo saiu mais claro que a estrada (luminancia 121 contra 99): o
     # telhado tem de ser a parte mais escura, entao as tres cores dele descem.
-    'casa-a': {'pasta': 'casa-a/d0fbc498-ad5b-4a1f-9d3f-20f70b17b577', 'meia_pegada': 44, 'direcoes': DIAGONAIS,
+    'casa-a': {'pasta': 'casa-a/d0fbc498-ad5b-4a1f-9d3f-20f70b17b577', 'meia_pegada': 44, 'direcoes': SO + NE,
                'cores': {'#8f7a3e': '#66572c', '#6e5a2c': '#4c3e1f', '#b39d5c': '#85733f'}},
-    'casa-b': {'pasta': 'casa-b/b991eb38-97fc-48fa-b31c-1d74a61e2e46', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
-    'taverna': {'pasta': 'taverna/e672b189-bc57-474d-ae3c-db375a0c3da5', 'meia_pegada': 44, 'direcoes': DIAGONAIS},
+    'casa-b': {'pasta': 'casa-b/b991eb38-97fc-48fa-b31c-1d74a61e2e46', 'meia_pegada': 44, 'direcoes': SO},
+    'taverna': {'pasta': 'taverna/e672b189-bc57-474d-ae3c-db375a0c3da5', 'meia_pegada': 44, 'direcoes': SO},
     # A tenda do Mago Vermelho no Poco da Coruja Velha: pegada de 2 x 2.
-    'tenda': {'pasta': 'tenda/87bd764f-d760-4411-b99c-ce86c8a5afa6', 'meia_pegada': 24, 'direcoes': DIAGONAIS},
+    'tenda': {'pasta': 'tenda/87bd764f-d760-4411-b99c-ce86c8a5afa6', 'meia_pegada': 24, 'direcoes': SO},
     # O Castelo Dentefino: moveis de varias casas.
-    'altar': {'pasta': 'altar/f1c6ef6a-9358-4fd8-a72d-a11f333c029f', 'meia_pegada': 22, 'direcoes': DIAGONAIS},
-    'banheira': {'pasta': 'banheira/f3ace672-b48e-48f7-afac-1d1a7f83b840', 'meia_pegada': 20, 'direcoes': DIAGONAIS},
-    # A mesa comprida saiu torta nas vistas NE e NW; e simetrica de ponta a
-    # ponta, entao a NE usa a SW e a NW usa a SE.
-    'mesaBanquete': {'pasta': 'mesaBanquete/6267f6c9-c151-4822-9f48-fc6b6831f5fb', 'meia_pegada': 24, 'direcoes': DIAGONAIS,
-                     'vista': {'north-east': 'south-west', 'north-west': 'south-east'}},
-    'camaRei': {'pasta': 'camaRei/13ea8bbb-b47d-4d0f-9095-c8155ed2ddba', 'meia_pegada': 28, 'direcoes': DIAGONAIS},
-    'portaoQuebrado': {'pasta': 'portaoQuebrado/acfd293b-b5cf-4b0b-b5ae-461c361cfdb0', 'meia_pegada': 20, 'direcoes': DIAGONAIS},
+    'altar': {'pasta': 'altar/f1c6ef6a-9358-4fd8-a72d-a11f333c029f', 'meia_pegada': 22, 'direcoes': SO},
+    'banheira': {'pasta': 'banheira/f3ace672-b48e-48f7-afac-1d1a7f83b840', 'meia_pegada': 20, 'direcoes': SE},
+    'mesaBanquete': {'pasta': 'mesaBanquete/6267f6c9-c151-4822-9f48-fc6b6831f5fb', 'meia_pegada': 24, 'direcoes': SO},
+    'camaRei': {'pasta': 'camaRei/13ea8bbb-b47d-4d0f-9095-c8155ed2ddba', 'meia_pegada': 28, 'direcoes': SO},
+    'portaoQuebrado': {'pasta': 'portaoQuebrado/acfd293b-b5cf-4b0b-b5ae-461c361cfdb0', 'meia_pegada': 20, 'direcoes': SO},
 }
 
 # O cavalo B e o mesmo desenho com a pelagem trocada, cor por cor exata: baio
@@ -242,6 +290,18 @@ def corta_texto(im):
 
 
 def ancora(im, modo):
+    """Onde a casa toca o desenho.
+
+    O tabuleiro desenha o objeto em (centro da casa - ancora), entao ancora
+    ALTA sobe o objeto. 'tronco' acha o pe da arvore. O resto e uma fracao da
+    altura, medida do fundo para cima:
+
+      0,25  o padrao, para quem tem base de elipse larga (moita, pedra);
+      0,10  quem se apoia no chao pelo fundo do desenho (bau, braseiro,
+            armeiro, mesa): com 0,25 eles subiam e colavam na parede de tras;
+      0,45  quem esta DEITADO no chao (palha, escombro): o desenho inteiro e
+            a pegada, e o centro dele e o centro da casa.
+    """
     px = im.load()
     w, h = im.size
     if modo == 'tronco':
@@ -249,8 +309,8 @@ def ancora(im, modo):
             xs = [x for x in range(w) if px[x, y][3] > 0]
             if xs:
                 return xs[len(xs) // 2], y
-    # base: centro da elipse da base
-    return w // 2, h - 1 - h // 4
+    fracao = {'chao': 0.10, 'deitado': 0.45}.get(modo, 0.25)
+    return w // 2, h - 1 - int(h * fracao)
 
 
 def main():

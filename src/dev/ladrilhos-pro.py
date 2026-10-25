@@ -103,6 +103,39 @@ CONJUNTOS = {
                 '10). still dark green-black cistern water with one faint ring. '
                 '11). bottomless near-black pit, almost entirely black with a few dark grey flecks. '
                 '12). bottomless near-black pit, black with faint dark brown bands.',
+    # O piso do Castelo Dentefino. O piso que veio no KIT de construcao nao
+    # serve de ladrilho: ele tem UMA laje grande por casa, com junta preta
+    # larga, e repetido vira uma grade de blocos escuros; as quatro variacoes
+    # dele ainda pulam de tom. Aqui se pede pedra MIUDA, junta fina e clara e
+    # pouca diferenca entre as variacoes, que e o que faz um chao parecer
+    # chao e nao xadrez.
+    'lajeCastelo': ESTILO + ' Old castle hall floor, cool grey stone, even daylight. '
+                   '1). floor of small flat grey paving stones, thin pale joints, uniform. '
+                   '2). floor of small flat grey paving stones with a few tiny chips. '
+                   '3). floor of small flat grey paving stones, slightly worn smooth in places. '
+                   '4). floor of small flat grey paving stones with a little fine dust. '
+                   '5). floor of small flat grey paving stones with one thin hairline crack. '
+                   '6). floor of small flat grey paving stones, a few stones a shade darker. '
+                   '7). floor of small flat grey paving stones with faint pale mortar patches. '
+                   '8). floor of small flat grey paving stones with a few grains of grit.',
+    # SUJEIRA DO CASTELO. O chao liso, mesmo com oito variacoes sorteadas e
+    # espelhadas, continua lendo como papel de parede: nada no piso CONTA
+    # nada. Estes nao sao variacoes do piso -- sao DECALQUES, postos de
+    # proposito e com parcimonia, e cada um diz o que aconteceu naquela casa.
+    # Mesma pedra, mesma paleta e mesma luz do `lajeCastelo`, senao a mancha
+    # vira remendo de outro chao.
+    'sujeiraCastelo': ESTILO + ' Old castle hall floor, cool grey stone, even daylight. '
+                      'Every tile is the SAME floor of small flat grey paving stones with '
+                      'thin pale joints, with one thing left on it. The floor must match '
+                      'edge to edge so it sits among clean floor tiles. '
+                      '1). with a few scattered pale animal bones. '
+                      '2). with a dark dried brown stain soaked into the stone. '
+                      '3). with a patch of dark green moss in the joints. '
+                      '4). with a few broken clay pot shards. '
+                      '5). with a black soot and scorch mark. '
+                      '6). with a shallow puddle of dark still water. '
+                      '7). with loose dry yellow straw scattered over it. '
+                      '8). with fallen grey plaster dust and small rubble.',
     # Faces laterais do porao (montar-faces.py): BLOCOS com face, todos numa
     # chamada para sairem no mesmo tom. Pedidos um a um, os de alvenaria
     # vieram creme, roxo e rosa.
@@ -143,6 +176,14 @@ CONJUNTOS = {
 # Paleta forcada por conjunto. Paredes: alvenaria quente (topo claro, faces
 # do porao) e rocha fria escura -- nunca azul saturado.
 PALETAS = {
+    # A paleta do kit de construcao do castelo, para o chao e a parede serem
+    # da mesma pedra.
+    'lajeCastelo': ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b', '#b4afa2'],
+    # A mesma pedra, mais o pouco de cor que o decalque pede: osso, sangue
+    # seco, musgo, barro, fuligem e palha. Sem isso a leva sai cinza e o
+    # decalque some no proprio chao.
+    'sujeiraCastelo': ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b', '#b4afa2',
+                       '#cfc6ae', '#5a3a28', '#2f4a2c', '#7a5a3a', '#141311', '#b89a52'],
     'paredes': ['#1e1c1a', '#2a2724', '#3d3a35', '#57534b', '#6e695d', '#8d8878', '#a39e8c',
                 '#1f2428', '#2c3035', '#3b3f44', '#4d5156', '#62666a'],
 }

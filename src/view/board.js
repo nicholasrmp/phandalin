@@ -23,7 +23,7 @@
 
 import { getSheet, drawSprite, frameAt, animDaFolha } from '../art/sheet.js';
 import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
-import { ladrilhoChao } from '../art/chao.js';
+import { ladrilhoChao, sorteio } from '../art/chao.js';
 import { faixaDaFace, topoDoBloco } from '../art/faces.js';
 import { pecaDaParede } from '../art/paredes.js';
 import { spriteCenario } from '../art/cenario.js';
@@ -117,6 +117,11 @@ const SUPERFICIE = {
   alvenaria: { topo: ROCHA_TOPO, lado: ROCHA_LADO, topoBloco: 'alvenaria', face: 'alvenaria' },
   seteira: { topo: ROCHA_TOPO, lado: ROCHA_LADO, topoBloco: 'alvenaria', face: 'alvenaria', objeto: 'seteira' },
   laje: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria' },
+  // Os decalques do castelo: a mesma laje, com uma marca.
+  ossos: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'ossos', face: 'alvenaria' },
+  mancha: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'mancha', face: 'alvenaria' },
+  cacos: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'cacos', face: 'alvenaria' },
+  musgoChao: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'musgoChao', face: 'alvenaria' },
   cisterna: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'cisterna', face: 'alvenaria' },
   mesa: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'mesa', chao: 'laje', face: 'alvenaria' },
   sarcofago: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'sarcofago', chao: 'laje', face: 'alvenaria' },
@@ -174,6 +179,25 @@ const TRANSLUCIDO = 0.42;
 // coberta por quem está na casa. Do lado de fora (capim, estrada) a mesma
 // aresta é a parede da FRENTE de uma sala: sai só um toco, para se ver dentro.
 const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho']);
+// Altura da parede de borda, em níveis de 22 px. Três é o bastante para ela
+// ler como muro sem engolir meia sala atrás dela.
+// A TINTA DE CADA SALA, por cima da laje (ver `drawTile`). Fraca de
+// propósito: é para a sala ter temperatura, não para virar outro piso.
+const TINTA_DE_SALA = {
+  torreUrso: 'rgba(62, 44, 24, .26)',      // terra batida e palha podre
+  banquete: 'rgba(70, 52, 22, .20)',       // gordura velha e restos
+  santuario: 'rgba(28, 36, 60, .20)',      // pedra fria de templo
+  salaoEscuro: 'rgba(20, 26, 44, .24)',    // a capela sem luz
+  rei: 'rgba(58, 34, 40, .16)',            // o tapete vermelho que já houve
+  despensa: 'rgba(48, 40, 22, .18)',
+  ruina: 'rgba(40, 52, 30, .22)',          // mato entrando pela pedra
+  terraco: 'rgba(44, 50, 44, .14)',
+  salaoArmadilha: 'rgba(36, 34, 30, .18)', // argamassa caída
+  alojamentoHob: 'rgba(44, 38, 30, .16)',
+  guarda: 'rgba(44, 38, 30, .16)',
+};
+
+const ALTURA_PAREDE = 3;
 // Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
 const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
 
@@ -774,7 +798,31 @@ export class Board {
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (s.chao && ladrilhoChao(s.chao, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy, lad.w, lad.h);
+      // ESPELHAR POR CASA dobra a variação sem arte nova: o losango é
+      // simétrico na largura, então a imagem virada continua encaixando na
+      // grade, e a mancha que antes repetia na mesma diagonal some. Sete
+      // ladrilhos viram catorze.
+      if (sorteio(x * 3 + 1, y * 7 + 5, 2)) {
+        ctx.save();
+        ctx.translate(sx + TW / 2, sy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, 0, 0, lad.w, lad.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy, lad.w, lad.h);
+      }
+      // A TINTA DA SALA. O castelo inteiro é a mesma laje, e sala igual de
+      // ponta a ponta lê como papel de parede. Em vez de um piso novo por
+      // sala — que é arte nova para cada uma — cada sala puxa a MESMA laje
+      // para um lado: o covil do urso para o terroso, o santuário para o
+      // frio, o banquete para a gordura velha. É pouco e é de graça, e a
+      // porta entre duas salas passa a ser uma troca de ambiente.
+      const tinta = TINTA_DE_SALA[this.field.sala?.get(`${x},${y}`)];
+      if (tinta) {
+        this.diamond(ctx, sx, sy);
+        ctx.fillStyle = tinta;
+        ctx.fill();
+      }
     } else {
       this.diamond(ctx, sx, sy);
       ctx.fillStyle = (x + y) % 2 ? s.topo[0] : s.topo[1];
@@ -932,6 +980,17 @@ export class Board {
       // A arte do PixelLab, 1:1, com a âncora no centro da pegada.
       const ox = Math.round(cx - dirigido.ax);
       const oy = Math.round(cy - dirigido.ay);
+      // A SOMBRA DE CONTATO. Sem ela o altar, a cama e a banheira pairam um
+      // palmo acima da laje: o olho usa a sombra para decidir o que está
+      // apoiado. Uma elipse na pegada inteira, antes do sprite.
+      const raio = Math.max(dirigido.w * 0.34, 12);
+      const som = ctx.createRadialGradient(cx, cy + 2, 2, cx, cy + 2, raio);
+      som.addColorStop(0, 'rgba(8,6,4,.42)');
+      som.addColorStop(1, 'rgba(8,6,4,0)');
+      ctx.fillStyle = som;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 2, raio, raio / 2.4, 0, 0, Math.PI * 2);
+      ctx.fill();
       // Prédio e móvel alto esmaecem quando cobrem alguém atrás, como a
       // árvore alta.
       if (ESMAECE.has(s.objeto)) {
@@ -1333,6 +1392,68 @@ export class Board {
     return false;
   }
 
+  /**
+   * As salas onde há alguém do grupo. A parede que esconde uma delas fica
+   * translúcida: entrar numa sala é ver a sala inteira, e não o muro de
+   * 87 px que fica entre ela e a câmera.
+   */
+  salasDoGrupo() {
+    const sala = this.field.sala;
+    if (!sala) return null;
+    const dentro = new Set();
+    for (const c of this.enc.combatants) {
+      if (c.side !== 'party' || c.dead || !c.pos) continue;
+      const n = sala.get(`${c.pos.x},${c.pos.y}`);
+      if (n) dentro.add(n);
+    }
+    return dentro.size ? dentro : null;
+  }
+
+  /**
+   * O BARRANCO: a terra por baixo das duas bordas da frente do mapa.
+   *
+   * O tabuleiro acabava num losango duro sobre o vazio, como um tabuleiro de
+   * papel largado no escuro. Um palmo de terra embaixo basta para o mapa
+   * virar um PEDAÇO DE MUNDO cortado, e não um recorte: o olho aceita que o
+   * chão continua, só não está sendo mostrado.
+   */
+  desenharBarranco(ctx) {
+    const f = this.field;
+    const FUNDO = 26;                       // a altura da terra, em px
+    ctx.save();
+    for (const [borda, canto] of [['sul', 0], ['leste', 1]]) {
+      for (let k = 0; k < (borda === 'sul' ? f.w : f.h); k++) {
+        const x = borda === 'sul' ? k : f.w - 1;
+        const y = borda === 'sul' ? f.h - 1 : k;
+        // A casa da quina precisa das DUAS arestas — a de baixo à esquerda e
+        // a de baixo à direita. Pulando-a aqui ficava um rasgo de 32 px com
+        // o fundo da tela aparecendo bem na ponta do mapa. Não há
+        // sobreposição: cada borda desenha uma aresta diferente.
+        const { sx, sy } = this.iso(x, y, f.heightAt(x, y));
+        // A aresta da frente: a de baixo à esquerda no sul, a de baixo à
+        // direita no leste.
+        const a = canto === 0 ? { x: sx - TW / 2, y: sy + TH / 2 } : { x: sx, y: sy + TH };
+        const b = canto === 0 ? { x: sx, y: sy + TH } : { x: sx + TW / 2, y: sy + TH / 2 };
+        // EM FAIXAS, não em degradê. A aresta desce 16 px dentro da própria
+        // casa, então um degradê vertical pega cada ponta num tom diferente
+        // e a borda do mapa sai serrilhada, casa a casa. Faixas paralelas à
+        // aresta acompanham a inclinação e emendam sem costura.
+        const faixa = (de, ate, cor) => {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y + de); ctx.lineTo(b.x, b.y + de);
+          ctx.lineTo(b.x, b.y + ate); ctx.lineTo(a.x, a.y + ate);
+          ctx.closePath();
+          ctx.fillStyle = cor;
+          ctx.fill();
+        };
+        faixa(0, 3, canto === 0 ? '#5a472f' : '#483825');          // a terra na quebra do capim
+        faixa(3, FUNDO * 0.55, canto === 0 ? '#3d2f1f' : '#302617');
+        faixa(FUNDO * 0.55, FUNDO, canto === 0 ? '#241c12' : '#1b150e');
+      }
+    }
+    ctx.restore();
+  }
+
   /** A casa é de fora (capim, estrada) — a parede ao norte/oeste dela é a da frente de alguma sala? */
   casaDeFora(x, y) {
     if (!this.field.inside(x, y)) return true;
@@ -1345,51 +1466,407 @@ export class Board {
     const f = this.field;
     if (!f.paredeN) return;
     const i = y * f.w + x;
-    // Do lado de fora a parede é a da FRENTE de alguma sala: sai só o toco,
-    // para se ver dentro. Dentro, ela sobe inteira.
     const fora = this.casaDeFora(x, y);
+    const niveis = fora ? 1 : (f.paredeAlt?.[i] || ALTURA_PAREDE);
     for (const lado of ['N', 'O']) {
       const cod = lado === 'N' ? f.paredeN[i] : f.paredeO[i];
       if (!cod) continue;
       if (cod === ARESTA.aberta && fora) continue;
-      const nome = (cod === ARESTA.porta ? 'porta' : cod === ARESTA.aberta ? 'arco' : 'parede') + lado;
-      const peca = pecaDaParede(nome);
+      // A casa que a parede esconde: a de trás dela, na tela.
+      const [ax, ay] = lado === 'O' ? [x - 1, y] : [x, y - 1];
+      // PORTÃO NA MURALHA. A altura vem da casa de FORA quando a aresta é
+      // dela — e aí um portão que dá para o capim saía num muro de 22 px,
+      // uma porta de 17 px de altura, um cotoco. Mas a parede é do castelo,
+      // não do jardim: numa passagem, a altura é a da sala que ela serve.
+      const niveisAqui = (fora && (cod === ARESTA.porta || cod === ARESTA.aberta)
+        && f.inside(ax, ay) && !this.casaDeFora(ax, ay))
+        ? (f.paredeAlt?.[ay * f.w + ax] || ALTURA_PAREDE)
+        : niveis;
+      const escondeSala = this._salasOcupadas?.has(f.sala?.get(`${ax},${ay}`));
       const { sx, sy } = this.iso(x, y, f.heightAt(x, y));
-      const x0 = sx - TW / 2;
+      // A aresta na tela: a do NORTE é a de cima à direita do losango (do
+      // vértice de cima ao da direita) e a do OESTE é a de cima à esquerda.
+      const A = { x: sx, y: sy };
+      const B = lado === 'N' ? { x: sx + TW / 2, y: sy + TH / 2 } : { x: sx - TW / 2, y: sy + TH / 2 };
+      const alto = niveisAqui * LIFT;
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      if (peca) {
-        const px = Math.round(x0 + peca.ax);
-        const py = Math.round(sy + peca.ay + (fora ? peca.h - TH : 0));
-        const alt = fora ? TH : peca.h;
-        // Esmaece quando esconde alguém atrás, ou a casa sob o cursor.
-        if (!fora && (this.cobreFigura(px, py, peca.w, alt, d)
-          || (this.hover && this.cobreTela(px, py, peca.w, alt, this.hover)))) ctx.globalAlpha = TRANSLUCIDO;
-        if (fora) {
-          // O toco: só a fatia de baixo da peça.
-          ctx.drawImage(peca.img, peca.x, peca.y + peca.h - TH, peca.w, TH, px, py, peca.w, TH);
-        } else {
-          ctx.drawImage(peca.img, peca.x, peca.y, peca.w, peca.h, px, py, peca.w, peca.h);
-        }
-        // A seteira: a fenda escura aberta na pedra.
-        if (cod === ARESTA.seteira) {
-          ctx.fillStyle = '#0d0c0b';
-          const fx = px + (lado === 'N' ? peca.w * 0.45 : peca.w * 0.3);
-          ctx.fillRect(Math.round(fx), Math.round(py + peca.h - 46), 5, 16);
-        }
-        ctx.restore();
-        continue;
+      if (!fora && (escondeSala
+        || this.cobreFigura(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, d)
+        || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, this.hover)))) {
+        ctx.globalAlpha = TRANSLUCIDO;
       }
-      // Sem o atlas: a faixa de pedra das faces, empilhada.
-      const face = lado === 'N' ? 'esq' : 'dir';
-      const niveis = fora ? 1 : 3;
-      for (let n = 0; n < niveis; n++) {
-        const fx = faixaDaFace('alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
-        const py = sy + TH / 2 - (niveis - 1 - n) * LIFT;
-        if (fx) ctx.drawImage(fx.img, fx.sx, fx.sy, fx.w, fx.h, lado === 'N' ? sx - TW / 2 : sx, py, fx.w, fx.h);
-      }
+      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y);
       ctx.restore();
     }
+    // O que está pendurado nas paredes desta casa, por último — e com o
+    // MESMO alfa da parede. Opaca sobre pedra esmaecida, a tocha ficava
+    // flutuando no ar na frente do parapeito.
+    if (!fora && f.decor) {
+      for (const lado of ['N', 'O']) {
+        const cod = lado === 'N' ? f.paredeN[i] : f.paredeO[i];
+        if (!cod || cod === ARESTA.aberta) continue;
+        const pendurado = f.decor.get(`${x},${y},${lado}`);
+        if (!pendurado) continue;
+        const { sx, sy } = this.iso(x, y, f.heightAt(x, y));
+        const A = { x: sx, y: sy };
+        const B = lado === 'N' ? { x: sx + TW / 2, y: sy + TH / 2 } : { x: sx - TW / 2, y: sy + TH / 2 };
+        // A ALTURA É A DESTA CASA, não a padrão: a torre tem 4 níveis e a
+        // ruína 2. Com 66 px fixos, o quadro de uma torre decidia a
+        // translucidez pela parede errada e a tocha ficava baixa demais.
+        const alto = niveis * LIFT;
+        const [ax, ay] = lado === 'O' ? [x - 1, y] : [x, y - 1];
+        ctx.save();
+        if (this._salasOcupadas?.has(f.sala?.get(`${ax},${ay}`))
+          || this.cobreFigura(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, d)
+          || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, this.hover))) {
+          ctx.globalAlpha = TRANSLUCIDO;
+        }
+        this.desenharDecor(ctx, pendurado, lado, sx, sy, x, y, alto);
+        ctx.restore();
+      }
+    }
+  }
+
+  /**
+   * UMA PAREDE DE BORDA, desenhada (não um sprite).
+   *
+   * O sprite pronto do kit tem tampa nas duas pontas: onde dois pedaços se
+   * encontram num ângulo, as tampas se chocam e sobra um talho, e nenhuma
+   * peça de canto fecha todos os casos (esquina, T e cruz). Desenhada, a
+   * parede é uma FAIXA CONTÍNUA que simplesmente vira na quina, como nos
+   * mapas de masmorra: um topo de pedra com espessura, a face lavrada abaixo
+   * e um fio escuro no pé.
+   *
+   * A face usa as faixas de alvenaria do atlas (`art/faces.js`, 22 px por
+   * nível), recortadas no paralelogramo da aresta.
+   */
+  faceDaParede(ctx, lado, A, B, alto, cod, x, y) {
+    const f = this.field;
+    const ESP = 7;            // espessura da parede, em px de tela
+    // A FAIXA NÃO SE TROCA: ela carrega a PERSPECTIVA, não só o tom. A arte
+    // de 'esq' tem as fiadas correndo para um lado e a de 'dir' para o
+    // outro, cada uma desenhada para a sua face. Trocar as duas para acertar
+    // o tom — que foi o que eu fiz antes — põe a pedra correndo no mesmo
+    // sentido nos dois lados, e o canto da sala deixa de virar.
+    //
+    // A aresta do NORTE desce à direita na tela, que é a face 'esq' do bloco;
+    // a do OESTE desce à esquerda, que é a 'dir'. O tom se acerta logo abaixo.
+    const face = lado === 'N' ? 'esq' : 'dir';
+    const em = (t) => ({ x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t });
+    // O VÃO é um BURACO, não um desenho por cima: a pedra é recortada nele, e
+    // por ali se vê o que já foi desenhado atrás — o chão da outra sala, os
+    // móveis, quem estiver lá. Pintar o vão de preto fechava a passagem com
+    // tinta e matava a profundidade.
+    const vao = this.vaoDaAresta(lado, A, B, alto, cod, x, y);
+    // A SOMBRA DE CONTATO no pé: uma faixa escura caindo da parede para
+    // dentro da sala. Sem ela a parede parece apoiada no chão sem tocá-lo, e
+    // o olho não acha onde uma acaba e o outro começa. É a mesma coisa que
+    // a elipse debaixo de um móvel, só que comprida.
+    if (cod !== ARESTA.aberta) {
+      const funda = lado === 'N' ? { x: -10, y: 5 } : { x: 10, y: 5 };
+      const som = ctx.createLinearGradient(A.x, A.y, A.x + funda.x, A.y + funda.y);
+      som.addColorStop(0, 'rgba(10, 8, 6, .42)');
+      som.addColorStop(1, 'rgba(10, 8, 6, 0)');
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+      ctx.lineTo(B.x + funda.x, B.y + funda.y); ctx.lineTo(A.x + funda.x, A.y + funda.y);
+      ctx.closePath();
+      ctx.fillStyle = som;
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+    ctx.lineTo(B.x, B.y - alto); ctx.lineTo(A.x, A.y - alto);
+    ctx.closePath();
+    // Porta fechada tapa a passagem com a folha de madeira; arco aberto não.
+    if (vao && cod === ARESTA.aberta) vao.contorno(ctx);
+    ctx.clip('evenodd');
+    let pintou = false;
+    for (let n = 0; n < Math.ceil(alto / LIFT); n++) {
+      const fx = faixaDaFace('alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
+      if (!fx) break;
+      pintou = true;
+      ctx.drawImage(fx.img, fx.sx, fx.sy, fx.w, fx.h,
+        Math.min(A.x, B.x), Math.round(A.y - alto + n * LIFT), fx.w, fx.h);
+    }
+    if (!pintou) {
+      ctx.fillStyle = lado === 'N' ? '#4e4842' : '#3a3530';
+      ctx.fill();
+    }
+    // O TOM, por cima da pedra. A luz do jogo vem de cima à ESQUERDA — é o
+    // que o desenho dos móveis diz, com o brilho na quina de cima à
+    // esquerda — mas o atlas das faces veio iluminado do outro lado. Como a
+    // faixa não pode ser trocada sem virar a pedra, a correção é esta: um
+    // véu claro na face que recebe a luz e um escuro na que fica na sombra.
+    // O véu é FRACO de propósito. Com 40% de preto a face sombreada ficava
+    // com a pedra mole: a diferença entre bloco e junta encolhe junto com o
+    // tom, e a alvenaria vira massa. Um véu menos pesado nos dois lados
+    // guarda a mesma leitura de volume sem apagar o desenho da pedra.
+    ctx.fillStyle = lado === 'N' ? 'rgba(255,246,224,.15)' : 'rgba(14,16,28,.30)';
+    ctx.fill();
+    ctx.restore();
+    // A SETEIRA: a fenda estreita, aberta na pedra na altura do peito.
+    if (cod === ARESTA.seteira) {
+      const q0 = em(0.42);
+      const q1 = em(0.58);
+      ctx.beginPath();
+      ctx.moveTo(q0.x, q0.y - (alto - 18)); ctx.lineTo(q1.x, q1.y - (alto - 18));
+      ctx.lineTo(q1.x, q1.y - (alto - 18) - 22); ctx.lineTo(q0.x, q0.y - (alto - 18) - 22);
+      ctx.closePath();
+      ctx.fillStyle = '#0b0a09';
+      ctx.fill();
+      ctx.strokeStyle = '#6b655c';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    // O TOPO: a espessura da parede, vista de cima. É ele que faz a quina
+    // virar sem emenda — o topo de uma aresta encosta no da outra.
+    const topoA = { x: A.x, y: A.y - alto };
+    const topoB = { x: B.x, y: B.y - alto };
+    const dx = lado === 'N' ? -ESP : ESP;
+    ctx.beginPath();
+    ctx.moveTo(topoA.x, topoA.y); ctx.lineTo(topoB.x, topoB.y);
+    ctx.lineTo(topoB.x + dx, topoB.y + ESP / 2); ctx.lineTo(topoA.x + dx, topoA.y + ESP / 2);
+    ctx.closePath();
+    // Menos claro do que era. A capa branca saltava mais que a própria
+    // parede, e onde um muro baixo passa na frente de uma torre ela lia como
+    // prateleira pregada na pedra.
+    ctx.fillStyle = lado === 'N' ? '#8d8878' : '#7a7568';
+    ctx.fill();
+    // O contorno vai só nas arestas LIVRES do topo (a de fora e a de
+    // dentro). Contornar também as laterais punha um entalhe escuro na
+    // emenda de cada casa, e o muro saía picotado a cada 32 px.
+    ctx.strokeStyle = 'rgba(22,20,18,.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(topoA.x, topoA.y); ctx.lineTo(topoB.x, topoB.y);
+    ctx.moveTo(topoA.x + dx, topoA.y + ESP / 2); ctx.lineTo(topoB.x + dx, topoB.y + ESP / 2);
+    ctx.stroke();
+    // O fio escuro no pé, do lado de dentro: dá o assentamento. Ele PARA no
+    // vão — atravessando o limiar, punha uma faixa escura no meio da
+    // passagem, como se houvesse degrau onde não há.
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+    ctx.lineTo(B.x + dx, B.y + ESP / 2); ctx.lineTo(A.x + dx, A.y + ESP / 2);
+    ctx.closePath();
+    if (vao && cod === ARESTA.aberta) vao.contorno(ctx);
+    ctx.fillStyle = 'rgba(12,10,8,.35)';
+    ctx.fill('evenodd');
+    ctx.restore();
+    // A TAMPA DE PONTA. O topo tem 7 px de espessura; onde a parede acaba
+    // sem continuar nem virar a quina, essa espessura termina no ar e a
+    // faixa clara do topo pousa sobre a face da parede de trás, lendo como
+    // uma prateleira flutuando. A tampa fecha o corte: é a parede vista de
+    // lado, da altura dela.
+    const aresta = (ax, ay, qual) => {
+      if (!f.inside(ax, ay)) return 0;
+      return qual === 'N' ? f.paredeN[ay * f.w + ax] : f.paredeO[ay * f.w + ax];
+    };
+    const pontas = lado === 'N'
+      ? [[A, !aresta(x - 1, y, 'N') && !aresta(x, y, 'O') && !aresta(x, y - 1, 'O')],
+        [B, !aresta(x + 1, y, 'N') && !aresta(x + 1, y, 'O') && !aresta(x + 1, y - 1, 'O')]]
+      : [[A, !aresta(x, y - 1, 'O') && !aresta(x, y, 'N') && !aresta(x - 1, y, 'N')],
+        [B, !aresta(x, y + 1, 'O') && !aresta(x, y + 1, 'N') && !aresta(x - 1, y + 1, 'N')]];
+    for (const [ponto, livre] of pontas) {
+      if (!livre) continue;
+      ctx.beginPath();
+      ctx.moveTo(ponto.x, ponto.y);
+      ctx.lineTo(ponto.x + dx, ponto.y + ESP / 2);
+      ctx.lineTo(ponto.x + dx, ponto.y + ESP / 2 - alto);
+      ctx.lineTo(ponto.x, ponto.y - alto);
+      ctx.closePath();
+      ctx.fillStyle = lado === 'N' ? '#4b453c' : '#3c372f';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(18,16,14,.7)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // SEM PILASTRA. Já houve aqui uma faixa clara de quatro em quatro casas,
+    // para dar ritmo ao pano de pedra. Não funcionou: num pano de 32 px de
+    // largura a faixa sai com 12 px e com as bordas em degradê, e lê como
+    // uma MANCHA borrada atravessando a alvenaria, não como coluna. Ritmo
+    // de parede, neste tamanho, tem de vir da própria pedra — de uma faixa
+    // de atlas com a pilastra desenhada —, não de tinta por cima.
+    // A moldura e a folha, uma vez por passagem.
+    if (vao && vao.ultima) {
+      // Porta aberta mostra a FOLHA encostada no batente; arcada não tem
+      // folha nenhuma. O mapa diz qual é qual (`field.folha`); sem essa
+      // lista, todo vão é arcada, que é como os outros mapas se comportam.
+      const [bx, by] = lado === 'N' ? [x, y - 1] : [x - 1, y];
+      const temFolha = f.folha?.has(`${x},${y},${bx},${by}`) ?? false;
+      this.acabamentoDoVao(ctx, vao, lado, cod, temFolha);
+    }
+  }
+
+  /**
+   * A GEOMETRIA DO VÃO de uma aresta, ou `null` se ela é pedra cheia.
+   *
+   * Um vão de duas casas (os portões) é UMA passagem: todas as casas do
+   * corrido recortam o mesmo buraco, e só a última desenha a moldura.
+   *
+   * `contorno(ctx)` acrescenta o arco ao caminho que já está aberto, em
+   * coordenadas de tela — o canvas guarda o caminho depois da transformação,
+   * então o recorte feito aqui continua valendo fora dela.
+   */
+  vaoDaAresta(lado, A, B, alto, cod, x, y) {
+    if (cod !== ARESTA.porta && cod !== ARESTA.aberta) return null;
+    const f = this.field;
+    const mesma = (ax, ay) => (lado === 'N'
+      ? f.inside(ax, ay) && f.paredeN[ay * f.w + ax] === cod
+      : f.inside(ax, ay) && f.paredeO[ay * f.w + ax] === cod);
+    // Recua até a primeira casa do corrido e mede o comprimento dele.
+    let atras = 0;
+    while (mesma(lado === 'N' ? x - atras - 1 : x, lado === 'N' ? y : y - atras - 1)) atras += 1;
+    let total = atras + 1;
+    for (;;) {
+      const adiante = total - atras;
+      if (!mesma(lado === 'N' ? x + adiante : x, lado === 'N' ? y : y + adiante)) break;
+      total += 1;
+    }
+    // O pé do vão: o meio do corrido, rente ao chão. Porta que não encosta no
+    // chão não lê como porta.
+    const passo = { x: B.x - A.x, y: B.y - A.y };
+    const inicio = { x: A.x - passo.x * atras, y: A.y - passo.y * atras };
+    const pe = { x: inicio.x + passo.x * (total / 2), y: inicio.y + passo.y * (total / 2) };
+    // Raio inteiro: com meio pixel o batente do arco saía borrado.
+    const raio = Math.round(Math.abs(passo.x) * total * 0.78 / 2);
+    const altura = Math.round(alto * 0.80);
+    const sentido = lado === 'N' ? 1 : -1;
+    return {
+      // A MOLDURA E A FOLHA SAEM NA ULTIMA CASA DO CORRIDO, nao na primeira.
+      // O acabamento e desenhado FORA do recorte da pedra, para cobrir o vao
+      // inteiro; saindo na primeira casa, a casa seguinte do corrido era
+      // desenhada depois e repintava chao e pedra por cima dele — a porta de
+      // duas casas aparecia cortada ao meio. A ultima casa do corrido e a
+      // ultima a ser desenhada nas duas arestas (a do norte anda em x, a do
+      // oeste em y, e as duas crescem com a profundidade).
+      ultima: atras === total - 1,
+      raio,
+      altura,
+      sentido,
+      /** Roda `fn` com o canvas já deitado no plano da parede. */
+      noPlano(ctx, fn) {
+        ctx.save();
+        ctx.translate(pe.x, pe.y);
+        ctx.transform(sentido, 0.5, 0, 1, 0, 0);
+        fn();
+        ctx.restore();
+      },
+      contorno(ctx) {
+        ctx.save();
+        ctx.translate(pe.x, pe.y);
+        // A face desce meio pixel para cada pixel de lado; é essa a inclinação
+        // do plano. A aresta do oeste é o espelho dela.
+        ctx.transform(sentido, 0.5, 0, 1, 0, 0);
+        ctx.moveTo(-raio, 0);
+        ctx.lineTo(-raio, -(altura - raio));
+        ctx.arc(0, -(altura - raio), raio, Math.PI, 0);
+        ctx.lineTo(raio, 0);
+        ctx.closePath();
+        ctx.restore();
+      },
+    };
+  }
+
+  /** A moldura de aduelas e, se a porta está fechada, a folha de madeira. */
+  acabamentoDoVao(ctx, vao, lado, cod, temFolha = false) {
+    const { raio, altura } = vao;
+    // A FOLHA ENCOSTADA, quando a porta está aberta. Sem ela o vão aberto
+    // fica igual a uma arcada, e o jogador não tem como saber o que pode
+    // fechar atrás de si. É uma tábua estreita no batente, vista quase de
+    // perfil — que é como uma porta aberta aparece nesta câmera.
+    if (cod === ARESTA.aberta && temFolha) {
+      const larg = Math.max(6, Math.round(raio * 0.58));
+      const alt = Math.round(altura * 0.94);
+      vao.noPlano(ctx, () => {
+        ctx.fillStyle = '#4a3524';
+        ctx.fillRect(-raio + 1, -alt, larg, alt);
+        // A quina da folha pega a luz; o lado de dentro some na sombra do vão.
+        ctx.fillStyle = '#6b4e2f';
+        ctx.fillRect(-raio + 1, -alt, 2, alt);
+        ctx.strokeStyle = 'rgba(22,16,10,.8)';
+        ctx.lineWidth = 1;
+        for (let t = -raio + 4; t < -raio + larg; t += 3) {
+          ctx.beginPath(); ctx.moveTo(t + 0.5, -alt); ctx.lineTo(t + 0.5, 0); ctx.stroke();
+        }
+        ctx.fillStyle = '#2b2622';
+        ctx.fillRect(-raio + 1, -alt + 8, larg, 2);
+        ctx.fillRect(-raio + 1, -8, larg, 2);
+        ctx.fillStyle = 'rgba(10,8,6,.55)';
+        ctx.fillRect(-raio + larg, -alt, 2, alt);
+      });
+    }
+    // A FOLHA DE MADEIRA tapa a passagem: tábuas em pé, duas cintas de ferro
+    // e a argola. O arco aberto não leva nada — por ele se vê a outra sala.
+    if (cod === ARESTA.porta) {
+      ctx.save();
+      ctx.beginPath();
+      vao.contorno(ctx);
+      ctx.clip();
+      vao.noPlano(ctx, () => {
+        ctx.fillStyle = '#4a3524';
+        ctx.fillRect(-raio, -altura, raio * 2, altura);
+        ctx.strokeStyle = 'rgba(22,16,10,.75)';
+        ctx.lineWidth = 1;
+        for (let t = -raio + 4; t < raio - 1; t += 5) {
+          ctx.beginPath(); ctx.moveTo(t, -altura); ctx.lineTo(t, 0); ctx.stroke();
+        }
+        ctx.fillStyle = '#2b2622';
+        ctx.fillRect(-raio, -altura + 9, raio * 2, 3);
+        ctx.fillRect(-raio, -9, raio * 2, 3);
+        ctx.strokeStyle = '#7a6844';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(raio - 5, -Math.round(altura * 0.45), 3, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+    // A MOLDURA: as aduelas do arco e as ombreiras, na pedra clara do topo.
+    ctx.beginPath();
+    vao.contorno(ctx);
+    ctx.strokeStyle = lado === 'N' ? '#9a9483' : '#827c6e';
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.beginPath();
+    vao.contorno(ctx);
+    ctx.strokeStyle = 'rgba(16,14,12,.8)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  /**
+   * A decoração pendurada na face da parede: tocha, quadro, bandeira, musgo.
+   *
+   * A aresta do NORTE é a de cima à direita do losango (do vértice de cima
+   * ao da direita) e a do OESTE é a de cima à esquerda. O desenho veio no
+   * plano de uma face que desce para a DIREITA, que é a do norte; a do oeste
+   * usa o espelho dele.
+   */
+  desenharDecor(ctx, tipo, lado, sx, sy, x, y, alto = ALTURA_PAREDE * LIFT) {
+    const d = spriteCenario('decorParede', [tipo], x, y);
+    if (!d) return;
+    // O meio da aresta, na altura do peito de quem passa — uma FRAÇÃO da
+    // parede, não 32 px fixos: na torre de 88 px a tocha ficava rente ao
+    // chão, e na ruína de 44 px o musgo encavalava no topo.
+    const mx = lado === 'N' ? sx + TW / 4 : sx - TW / 4;
+    const my = Math.round(sy + TH / 4 - alto * 0.52);
+    // A PEÇA DEITA NO PLANO DA PAREDE, como a porta e o arco. Ela foi
+    // desenhada de frente; colada reta na face inclinada, o pergaminho fica
+    // com o topo na horizontal enquanto os tijolos descem, e lê como adesivo.
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.translate(Math.round(mx), Math.round(my));
+    ctx.transform(lado === 'N' ? 1 : -1, 0.5, 0, 1, 0, 0);
+    ctx.drawImage(d.img, d.x, d.y, d.w, d.h,
+      Math.round(-d.ax), Math.round(-d.ay), d.w, d.h);
+    ctx.restore();
   }
 
   /** O retângulo de tela cobre a casa `t` (o cursor)? */
@@ -1540,7 +2017,9 @@ export class Board {
   // ---- render --------------------------------------------------------------
 
   render(dt) {
-    this.time += dt;
+    // Sem `dt` (um render pedido à mão, de fora do laço) o relógio viraria
+    // NaN para sempre, e com ele todo o balanço, o tremor e o pulso da luz.
+    this.time += Number.isFinite(dt) ? dt : 0;
     this.fx.update(dt);
     const ctx = this.ctx;
 
@@ -1625,6 +2104,7 @@ export class Board {
     this.drawMagiasAtivas(ctx, 'tras');
 
     this._figuras = this.figurasNaTela();
+    this._salasOcupadas = this.salasDoGrupo();
     // Árvores que esmaecem neste quadro: as que escondem a casa sob o cursor
     // ou o destino do caminho. Sem isso o jogador mira uma casa que não vê.
     this._copas = this.coberturaDasCopas();
@@ -1637,6 +2117,8 @@ export class Board {
     // Domos de proteção em cena (quase sempre nenhum): entram no laço de
     // profundidade, pela diagonal da casa, como as figuras.
     const domos = this.fx.domosAtivos(this);
+    // O chão do mapa não flutua: antes do primeiro ladrilho, o barranco.
+    this.desenharBarranco(ctx);
     let lastD = -1;
     for (const cell of this.order) {
       // Ao mudar de diagonal, desenha quem estava na anterior.
@@ -1825,21 +2307,49 @@ export class Board {
     ctx.drawImage(this._mascara.borrada, 0, 0);
     this.zonasObscurasPorCima(ctx, figuras);
 
-    // O brilho quente das tochas e fogueiras.
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (const f of fontesDeLuz(this.enc)) {
+    // O BRILHO QUENTE das tochas e fogueiras. São DUAS poças por fonte: um
+    // miolo curto e forte, que dá o lugar do fogo, e um halo largo e fraco,
+    // que faz a luz morrer aos poucos em vez de ter borda. Com uma só, ou o
+    // fogo não aparecia, ou o chão em volta ficava lavado.
+    //
+    // O brilho é pintado NUMA TELA À PARTE e depois furado pela mesma máscara
+    // da escuridão. Somado direto no tabuleiro, ele atravessava o breu: as
+    // tochas do castelo acendiam salas que o grupo ainda não tinha visto.
+    // Sem fogo em cena não há o que acender: um mapa ao ar livre não paga
+    // duas passadas de tela cheia nem os 10 MB do canvas à toa.
+    const fontes = fontesDeLuz(this.enc);
+    if (!fontes.length) return;
+    const brilho = this._brilho ?? (this._brilho = document.createElement('canvas'));
+    if (brilho.width !== w) brilho.width = w;
+    if (brilho.height !== h) brilho.height = h;
+    const bg = brilho.getContext('2d');
+    bg.globalCompositeOperation = 'source-over';
+    bg.clearRect(0, 0, w, h);
+    bg.globalCompositeOperation = 'lighter';
+    for (const f of fontes) {
       const { sx, sy } = this.center(f.pos.x, f.pos.y);
       const r = (Math.max(f.claro, 5) / 5) * TW * 0.55;
-      const g = ctx.createRadialGradient(sx, sy - 20, 4, sx, sy, r);
-      const pulso = 0.11 + Math.sin(this.time * 9 + f.pos.x) * 0.012;
-      g.addColorStop(0, `rgba(255, 170, 70, ${pulso})`);
-      g.addColorStop(1, 'rgba(255, 120, 40, 0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, r, r / 2, 0, 0, Math.PI * 2);
-      ctx.fill();
+      const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02;
+      for (const [esc, forca, cor] of [[1, 0.26, '255, 186, 96'], [1.9, 0.10, '255, 136, 52']]) {
+        const g = bg.createRadialGradient(sx, sy - 20, 3, sx, sy, r * esc);
+        g.addColorStop(0, `rgba(${cor}, ${forca + pulso})`);
+        g.addColorStop(0.55, `rgba(${cor}, ${(forca + pulso) * 0.35})`);
+        g.addColorStop(1, 'rgba(255, 120, 40, 0)');
+        bg.fillStyle = g;
+        bg.beginPath();
+        bg.ellipse(sx, sy, r * esc, r * esc / 2, 0, 0, Math.PI * 2);
+        bg.fill();
+      }
     }
+    // UMA passada. O véu da escuridão é de 80%, de propósito: o que já foi
+    // visto continua se enxergando de leve. O brilho segue a mesma conta e
+    // sobra a 20% no escuro, o que é o fogo longe, não um holofote.
+    bg.globalCompositeOperation = 'destination-out';
+    bg.drawImage(this._mascara.borrada, 0, 0);
+    bg.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(brilho, 0, 0);
     ctx.restore();
   }
 
@@ -1885,7 +2395,8 @@ export class Board {
     // Voo: a figura boia acima do chão e a sombra fica no chão, menor e mais fraca.
     // Levitação: o dobro da altura do voo, e a figura balança devagar (6 m do chão).
     const levita = !down && hasCondition(c, 'levitando') && !hasCondition(c, 'caido');
-    const voa = !down && (levita || hasCondition(c, 'voando')) && !hasCondition(c, 'caido');
+    // `pairaNoAr` (o stirge): a figura e sempre desenhada no ar, sem a regra de voo.
+    const voa = !down && (levita || hasCondition(c, 'voando') || c.pairaNoAr) && !hasCondition(c, 'caido');
     if (voa) sy -= (levita ? 46 : 26) + Math.round(Math.sin(this.time * 2.4 + c.pos.x * 0.9 + c.pos.y * 0.55) * 3);
 
     // Círculo Mágico: o inimigo barrado que parou na borda leva um contorno vermelho tracejado piscando.

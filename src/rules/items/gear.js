@@ -178,6 +178,7 @@ export const GEAR = {
   caliceDeOuro: item('caliceDeOuro', 'Cálice dourado', 150, 0.5, 'Cálice de ritual feito por mãos humanas, roubado de um altar que não era de goblin.', { tipo: 'tesouro', fonte: 'propria' }),
   facaDeRitual: item('facaDeRitual', 'Faca de ritual', 60, 0.5, 'Lâmina curta de cabo dourado, mais enfeite que arma.', { tipo: 'tesouro', fonte: 'propria' }),
   incensario: item('incensario', 'Incensário dourado', 120, 1, 'Ainda cheira a resina antiga.', { tipo: 'tesouro', fonte: 'propria' }),
+  conhaqueAnao: item('conhaqueAnao', 'Conhaque anão', 50, 2, 'Barrilzinho de conhaque anão de primeira, do tipo que o dono guarda e não vende. Vinte copos — e, dizem, o terceiro já basta para derrubar quem não for anão.', { tipo: 'tesouro', fonte: 'propria' }),
   estatuetaDoElfo: item('estatuetaDoElfo', 'Estatueta de elfo solar', 100, 1, 'Um elfo de ouro do tamanho de um palmo, de olhos fechados. Dizem que, nas mãos de alguém de bom coração, ela responde a uma única pergunta — e depois se cala para sempre.', { tipo: 'tesouro', fonte: 'propria' }),
   espadaDeSildar: item('espadaDeSildar', 'Espada de Sildar', 0, 1.5, 'Espada longa com o brasão de Neverwinter no cabo. É do Sildar Hallwinter, e ele vai querer de volta.', { fonte: 'propria', vendavel: false, missao: true }),
   mapaDeGundren: item('mapaDeGundren', 'Mapa de Gundren', 0, 0, 'O mapa da Caverna Onda Eco, desenhado pelos irmãos Buscapedra. Não se vende.', { fonte: 'propria', vendavel: false, missao: true }),

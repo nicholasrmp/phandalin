@@ -357,11 +357,11 @@ export const NPCS = {
     nome: 'Hamun Kost',
     look: 'hamunKost',
     papel: 'Necromante de manto vermelho',
-    bloco: 'mago',
-    fonte: 'SRD',
-    // O bloco é o de mago do SRD. A escola de necromancia aqui é sabor de
-    // descrição e de escolha de magia na mesa, não número novo: um "mago
-    // necromante" com PV e CA inventados seria bloco nosso vestido de SRD.
+    bloco: 'hamunKost',
+    fonte: 'aventura',
+    // O bloco é o do livro da aventura: o mago maligno do apêndice
+    // (`hamunKost` em `rules/monsters/humanoides.js`). A necromancia é sabor
+    // de descrição, não número novo.
     atitude: 'barganha',
     personalidade: {
       quer: 'Terminar a leitura que começou nos ossos daquele lugar, e ir embora sem briga se der.',
@@ -456,11 +456,8 @@ export const NPCS = {
     look: 'reiGrol',
     papel: 'Bugbear que se declarou rei',
     bloco: 'reiGrol',
-    // CRIATURA NOSSA, e a atribuição vem do bloco: `monsters/goblinoides.js`
-    // marca `reiGrol` como `fonte: 'propria'` porque o bugbear do SRD é ND 1 e
-    // cairia na primeira rodada contra o grupo de 3º nível. Eu repito a marca
-    // aqui em vez de escrever 'SRD' por herança — a atribuição segue o bloco.
-    fonte: 'propria',
+    // O bloco é o bugbear do SRD, sem mudança: é o que a aventura põe aqui.
+    fonte: 'SRD',
     atitude: 'hostil',
     personalidade: {
       quer: 'Vender o que capturou pelo maior preço, antes que quem o contratou descubra que ele tem escolha.',

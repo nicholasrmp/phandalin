@@ -248,6 +248,10 @@ export function mapaDo(variante = 'padrao') {
     // O Castelo Dentefino: o grupo sai da mata pela encosta a oeste do terraço.
     return {
       ...MAPA_CASTELO,
+      // As casas de cada sala: o tabuleiro apaga a parede da sala em que o
+      // grupo entrou (`board.desenharParedes`).
+      salas: CASTELO.celulas,
+      decor: CASTELO.decor,
       grupo: [[0, 9], [0, 10], [1, 9], [0, 11]].map(([x, y]) => ({ x: x + CASTELO.desloc.x, y: y + CASTELO.desloc.y })),
       olhar: { dx: 1, dy: 0 },
       cena: 'castelo',

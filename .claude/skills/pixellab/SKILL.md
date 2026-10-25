@@ -110,6 +110,24 @@ reskin da base.
 (altura ±10%, massa ±15%), estados distintos (>3% da célula), paleta unificada no importador, sem inventar cauda/escudo
 sumido; conferir cada fileira `walk` depois de animar (com fila cheia o PixelLab aceita só parte das direções).
 
+## O tamanho vem da TELA, não da descrição
+
+Medido em 2026-10-25, gerando de novo baú, braseiro e árvore: pedir "about 40 px wide"
+numa tela de 64 devolve 60 px do mesmo jeito. **O objeto enche a tela que se pede.**
+Então o tamanho se controla por `size` (rota de uma direção) ou `image_size`
+(`pro-flash`), e não por texto. A casa do tabuleiro tem 64 px de largura e uma criatura
+Média tem 45 a 62 px, então: baú `size: 44`, braseiro `size: 48`, árvore `size: 112`.
+
+Duas consequências:
+
+- `item_descriptions` tem de ter exatamente o número de objetos que a tela produz
+  (tela 128 dá 4, tela 64 dá 16). Errar devolve 422 com a conta na mensagem.
+- `n_directions: 1` no `pro-flash` devolve a vista FRONTAL (`first_frame_direction` é
+  `const: 'south'`, não dá para escolher). Para objeto comprido, que no tabuleiro
+  deita na diagonal, continua valendo pedir as 8 vistas e guardar só a diagonal no
+  atlas: custa 2 ou 3 gerações a mais e sai na projeção certa. A rota de uma direção
+  serve para objeto de uma casa e simétrico.
+
 ## Armadilhas aprendidas
 
 - `tile_height` não achata o losango; o ângulo (30) sim. Pedir altura E ângulo.

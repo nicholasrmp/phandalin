@@ -78,6 +78,9 @@ export const MORTOS_VIVOS = {
     acNote: 'sem armadura, carne mole',
     maxHp: 22,
     speedFt: 20,
+    // Resistência de SAB +0 do Livro dos Monstros: a proficiência (+2) sobre SAB 6.
+    saves: ['wis'],
+    senses: { darkvisionFt: 60 },
     // Pancada de cima para baixo com os dois braços: a receita `mace` sacode a
     // tela, e esse peso é a única coisa que o zumbi tem a seu favor.
     attacks: [
@@ -107,6 +110,7 @@ export const MORTOS_VIVOS = {
     acNote: 'agilidade de bicho',
     maxHp: 22,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     attacks: [
       {
         name: 'Garras', bonus: 4, damage: '2d4+2', type: 'cortante', reachFt: 5, art: 'claw',

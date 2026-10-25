@@ -30,6 +30,10 @@
 //   - o refém: avisado e atacado assim mesmo, Grol dá um turno de aviso e mata
 //     o Gundren no segundo — a menos que alguém esteja colado no anão, ou que
 //     ele já tenha perdido metade dos PV (aí ele só pensa na própria pele);
+//   - os blocos são os do livro, sem reforço: o Grol é o bugbear de 45 PV que
+//     a aventura descreve (pág. 40), não um bugbear comum de 27. Medido com o
+//     motor, um chefe inventado no lugar dele levava o quarto de 1.900 para
+//     2.900 de XP ajustado, pagando os 950 do livro;
 //   - as levas: o alarme dos arqueiros traz a torre sul e metade dos
 //     hobgoblins; o fio traz o banquete em duas ondas e o santuário; o lobo
 //     do rei chega na segunda rodada;
@@ -134,6 +138,8 @@ export function criarCastelo(app, config) {
   [[13, 14], [14, 14], [15, 14], [14, 16], [16, 16], [15, 17], [16, 17]].forEach(([x, y], i) =>
     m('goblin', x, y, i < 4 ? 'banquete' : 'cozinha', `cozinheiro ${'ABCDEFG'[i]}`));
   const grick = m('grick', 16, 12, 'grick', '', { dx: 0, dy: -1 });
+  // Lhupo: o goblin que diz escutar Maglubiyet. Poder divino ele não tem —
+  // o livro é claro nisso —, mas o bando acredita, e é com isso que ele manda.
   const lhupo = m('goblin', 16, 3, 'santuario', '', { dx: 0, dy: -1 });
   Object.assign(lhupo, { name: 'Lhupo', maxHp: 12, hp: 12 });
   m('goblin', 15, 3, 'santuario', 'acólito A', { dx: 0, dy: -1 });
@@ -146,6 +152,10 @@ export function criarCastelo(app, config) {
   Object.assign(rosnado, { name: 'Rosnado', maxHp: 18, hp: 18 });
   const vyerith = m('doppelganger', 27, 5, 'rei', '', { dx: 1, dy: 0 });
   vyerith.name = 'Vyerith';
+  // DISFARÇADO DE DROW, como no livro (a emissária do Aranha Negra). O primeiro
+  // ataque dela, ou a queda, revela o doppelganger (`revelarDisfarce`).
+  vyerith.disfarce = { look: vyerith.look, de: 'a drow' };
+  vyerith.look = 'drow';
   // Gundren: desacordado, estável, a 0 PV, perto da mesa.
   const gundren = salvo.gundren === 'morto' || salvo.gundren === 'livre' ? null : makeNpc('gundren', J(30, 8), {});
   if (gundren) {
@@ -167,6 +177,98 @@ export function criarCastelo(app, config) {
   function abrir(nome) {
     for (const [a, b] of CASTELO.arestas[nome] ?? []) enc.field.porAresta(a.x, a.y, b.x, b.y, ARESTA.aberta);
   }
+  // As arestas que têm dono: estas só abrem pela interação própria delas
+  // (chave, barra, força), e o botão genérico de porta não as pega.
+  const ESPECIAIS = new Set(Object.values(CASTELO.arestas ?? {}).flat()
+    .flatMap(([a, b]) => [`${a.x},${a.y},${b.x},${b.y}`, `${b.x},${b.y},${a.x},${a.y}`]));
+
+  // QUAL VÃO TEM FOLHA. O mapa separa a porta da ARCADA: o salão escuro e o
+  // santuário têm pedra vazada, sem nada para fechar. Sem esta conta, o menu
+  // oferecia "fechar a porta" num arco vazio e uma folha de madeira nascia
+  // do nada no meio da arcada. O tabuleiro lê a mesma lista para desenhar a
+  // folha encostada quando a porta está aberta.
+  const CHAVE = (a, b) => `${a.x},${a.y},${b.x},${b.y}`;
+  const COM_FOLHA = new Set((CASTELO.folhas ?? [])
+    .flatMap(([a, b]) => [CHAVE(a, b), CHAVE(b, a)]));
+  enc.field.folha = COM_FOLHA;
+
+  /**
+   * As arestas de porta ou arco encostadas em `tile`, para o menu de abrir e
+   * fechar. Devolve a aresta (as duas casas) e o que ela é agora.
+   */
+  function portasDaCasa(tile) {
+    const f = enc.field;
+    const out = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { x: tile.x + dx, y: tile.y + dy };
+      if (!f.inside(n.x, n.y)) continue;
+      const cod = f.aresta(tile.x, tile.y, n.x, n.y);
+      if (cod !== ARESTA.porta && cod !== ARESTA.aberta) continue;
+      if (ESPECIAIS.has(CHAVE(tile, n))) continue;
+      if (!COM_FOLHA.has(CHAVE(tile, n))) continue;   // arcada não fecha
+      out.push({ a: tile, b: n, cod });
+    }
+    return out;
+  }
+
+  /**
+   * As arestas de porta FECHADA encostadas em `tile` — inclusive as que têm
+   * dono. Escutar e espiar valem em qualquer porta fechada; o que elas não
+   * fazem é abrir.
+   */
+  function fechadasDaCasa(tile) {
+    const f = enc.field;
+    const out = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { x: tile.x + dx, y: tile.y + dy };
+      if (!f.inside(n.x, n.y)) continue;
+      if (f.aresta(tile.x, tile.y, n.x, n.y) !== ARESTA.porta) continue;
+      out.push({ a: tile, b: n });
+    }
+    return out;
+  }
+
+  /** O nome da sala de uma casa, ou null se ela é de fora. */
+  const salaDe = (p) => Object.keys(CELULAS).find((nome) => CELULAS[nome].has(`${p.x},${p.y}`)) ?? null;
+
+  /**
+   * Quem está NESSA sala agora: os moradores vivos que ainda não foram
+   * batidos. Eles ganham posição no começo da cena, mesmo antes de entrar no
+   * tabuleiro, então escutar à porta conta a verdade e não um palpite.
+   */
+  function moradoresEm(sala) {
+    if (!sala) return [];
+    const vivos = [];
+    for (const g of Object.values(grupos)) {
+      if (g.vencido) continue;
+      for (const f of g.membros) {
+        if (f.dead || f.hp <= 0 || !f.pos) continue;
+        if (naSala(f.pos, sala)) vivos.push(f);
+      }
+    }
+    return vivos;
+  }
+
+  /** O que se vê de cada sala pela fresta. */
+  const OLHO_DA_SALA = {
+    guarda: 'Palha no chão, armas encostadas na parede, cheiro de gente que dorme vestida.',
+    alojamentoHob: 'Camas em ordem e armas penduradas em fila: quem mora aqui tem disciplina.',
+    postoNorte: 'Uma fresta na pedra dando para o vale, e marcas de pé em volta dela.',
+    postoSul: 'Uma fresta na pedra dando para o vale, e marcas de pé em volta dela.',
+    banquete: 'Uma mesa comprida coberta de restos, e um braseiro aceso no fundo.',
+    cozinha: 'Panelas, ossos e um fogo baixo.',
+    despensa: 'Sacos rasgados, barris e um cheiro azedo.',
+    santuario: 'Um altar de pedra e panos escuros pendurados; alguma coisa de ouro brilha ali.',
+    salaoEscuro: 'Um salão alto sem luz nenhuma, com figuras de asas talhadas na pedra.',
+    salaoArmadilha: 'Argamassa caída e entulho. Alguma coisa de cobre reluz rente ao chão.',
+    torreUrso: 'Escuro, e um bafo quente de bicho grande. Ossos roídos espalhados.',
+    torreSul: 'Entulho e caixotes encostados, o teto meio caído.',
+    ruina: 'Céu aberto, mato nascendo entre as pedras.',
+    rei: 'Peles numa cama grande, banheiras de azulejo e um braseiro aceso.',
+    corredor: 'Um corredor vazio.',
+    terraco: 'O terraço e a encosta lá fora.',
+  };
+
   /** A casa clicada encosta na porta `nome` (de um lado ou do outro)? */
   const junto = (tile, nome) => (CASTELO.arestas[nome] ?? []).some(([a, b]) =>
     (tile.x === a.x && tile.y === a.y) || (tile.x === b.x && tile.y === b.y));
@@ -413,10 +515,15 @@ export function criarCastelo(app, config) {
       const quem = dentroDaSala ?? herois().find((h) => ve(alvo, h));
       // O santuário: se ouviram a luta com o grick, esperam escondidos atrás
       // do altar; se não, estão rezando de costas.
+      // O santuário: se ouviram a luta com o grick, esperam escondidos atrás
+      // do altar; se não, estão de joelhos rezando a Maglubiyet, de costas.
       const surpresa = g.id === 'santuario' ? (salvo.grickOuviu ? 'deles' : 'nossa') : null;
-      await asArmas(visaoNoEscuro(quem) && !emiteLuz(quem)
-        ? `No cinza da visão no escuro, ${quem.name} vê movimento em ${g.nome}.`
-        : `${quem.name} dá de cara com ${g.nome} — e eles com vocês.`);
+      await asArmas(g.id === 'santuario' && !salvo.grickOuviu
+        ? ['Três goblins de joelhos diante do altar, de costas para a porta, repetindo um nome em coro: Maglubiyet, Maglubiyet. O da frente fala por cima dos outros, como quem traduz o que só ele ouve.',
+          `${quem.name} entra antes que eles percebam.`]
+        : visaoNoEscuro(quem) && !emiteLuz(quem)
+          ? `No cinza da visão no escuro, ${quem.name} vê movimento em ${g.nome}.`
+          : `${quem.name} dá de cara com ${g.nome} — e eles com vocês.`);
       // Quem divide a sala vem junto (o alojamento, o banquete).
       combate(pendentes().filter((x) => x.sala === g.sala), surpresa);
       return;
@@ -486,7 +593,7 @@ export function criarCastelo(app, config) {
       estado.refemTurnos = 0;
     } else {
       await asArmas([
-        'Antes da porta, já se ouve a conversa: o rei rosna números, e alguém responde baixinho, num tom educado que não combina com o lugar.',
+        'Antes mesmo da porta já se ouve a negociação. Um dos dois perde a paciência a cada frase; o outro não levanta a voz uma vez sequer, e é esse que assusta.',
         'Lá dentro, couro de bicho forrando o chão e cabeças secas na parede. O rei Grol é um bugbear grisalho, de costas tortas; o lobo dele se levanta num canto. Do outro lado da mesa, uma elfa de pele escura e cabelo branco olha para vocês como quem já esperava visita. Encostado na parede, um anão desacordado.',
       ]);
     }
@@ -641,6 +748,96 @@ export function criarCastelo(app, config) {
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
     const em = (sala) => naSala(tile, sala);
 
+    // ABRIR E FECHAR. Toda porta do castelo abre e fecha de graça, como no
+    // livro — e fechar vale a pena: a porta fechada corta a visão, e é assim
+    // que o grupo some de um corredor ou tranca um bando numa sala. As
+    // portas com dono (o portão de ferro, a do urso, a escorada) não entram
+    // aqui: elas têm o teste delas.
+    for (const { a: ca, b: cb, cod } of portasDaCasa(tile)) {
+      const fechada = cod === ARESTA.porta;
+      ops.push({
+        rotulo: fechada ? 'Abrir a porta' : 'Fechar a porta',
+        icone: fechada ? 'acao-usarObjeto' : 'acao-empurrar',
+        detalhe: fechada ? 'de graça' : 'corta a visão',
+        motivo: longe(5) ?? (enc.combatants.some((o) => !o.dead && o.pos
+          && ((o.pos.x === ca.x && o.pos.y === ca.y) || (o.pos.x === cb.x && o.pos.y === cb.y))
+          && o !== c && !fechada) ? 'tem alguém na passagem' : null),
+        fazer: async () => {
+          enc.field.porAresta(ca.x, ca.y, cb.x, cb.y, fechada ? ARESTA.aberta : ARESTA.porta);
+          enc.say('acao', fechada
+            ? `${c.name} empurra a porta, que cede com um rangido.`
+            : `${c.name} fecha a porta e encosta o ombro nela até o trinco pegar.`);
+          app.refresh();
+        },
+      });
+    }
+    // ESCUTAR, ESPIAR E PROCURAR ARMADILHA — na porta FECHADA. Com a porta
+    // aberta não há o que escutar nem por onde espiar: olha-se.
+    //
+    // Estes três são o que um grupo faz antes de abrir uma porta numa
+    // masmorra, e cada um devolve coisa de verdade: o escutar conta quem
+    // está do outro lado DE FATO (os moradores já têm posição desde o
+    // começo, mesmo antes de entrarem no tabuleiro), e o espiar diz o que a
+    // sala tem. A porta com dono (portão, urso, escorada) também entra: é
+    // justamente nela que se quer ouvir antes.
+    for (const { b: outro } of fechadasDaCasa(tile)) {
+      const sala = salaDe(outro);
+      const vizinhos = () => moradoresEm(sala);
+      ops.push({
+        rotulo: 'Escutar à porta', icone: 'acao-procurar', detalhe: 'Percepção, CD 10',
+        motivo: longe(5),
+        fazer: async () => {
+          const t = teste(c, 'percepcao', 10);
+          const quem = vizinhos();
+          if (!t.passou) {
+            await painel('Madeira grossa e o próprio sangue batendo no ouvido. Não dá para dizer o que há do outro lado.', { teste: t });
+            return;
+          }
+          await painel(quem.length === 0
+            ? 'Silêncio. Nada se mexe do outro lado — nem passo, nem respiração.'
+            : quem.length === 1
+              ? 'Alguém se mexe lá dentro, sozinho: um arrastar de pé e depois quieto.'
+              : quem.length <= 3
+                ? `Vozes baixas, duas ou três, na língua dos goblins. Discutem alguma coisa sem pressa.`
+                : 'Muita gente. Risada, um banco arrastado, metal batendo em metal. Não são poucos.', { teste: t });
+        },
+      });
+      ops.push({
+        rotulo: 'Espiar pela fresta', icone: 'acao-procurar', detalhe: 'Percepção, CD 12',
+        motivo: longe(5),
+        fazer: async () => {
+          const t = teste(c, 'percepcao', 12);
+          if (!t.passou) {
+            await painel('A fresta é um fio de luz, e o olho não acostuma a tempo. Só vultos.', { teste: t });
+            return;
+          }
+          const quem = vizinhos();
+          await painel([
+            OLHO_DA_SALA[sala] ?? 'Do outro lado, pedra e sombra.',
+            quem.length ? `E gente: ${quem.length === 1 ? 'um só' : `uns ${quem.length}`}.` : 'Ninguém à vista.',
+          ].join(' '), { teste: t });
+        },
+      });
+      ops.push({
+        rotulo: 'Procurar armadilhas na porta', icone: 'acao-procurar', detalhe: 'Investigação, CD 12',
+        motivo: longe(5),
+        fazer: async () => {
+          const t = teste(c, 'investigacao', 12);
+          // O castelo tem UMA armadilha, e ela não é de porta: é o fio no
+          // entulho do salão. Procurar na porta errada não acha nada, e
+          // dizer isso é melhor que inventar perigo.
+          const perto = !salvo.armadilha && em('salaoArmadilha');
+          if (t.passou && perto) {
+            salvo.armadilha = 'vista';
+            await painel('Na porta, nada — mas o olho treinado desce para o chão: um fio de cobre no entulho, na altura do tornozelo, amarrado a pinos no teto.', { teste: t });
+            return;
+          }
+          await painel(t.passou
+            ? 'Dobradiça, tranca, batente, soleira. A porta é só uma porta.'
+            : 'Poeira e madeira velha. Difícil dizer se há alguma coisa aqui.', { teste: t });
+        },
+      });
+    }
     // O fio do salão.
     if (!salvo.armadilha && em('salaoArmadilha')) {
       ops.push({ rotulo: 'Procurar armadilhas', icone: 'acao-procurar', detalhe: 'Percepção, CD 10', motivo: longe(15),
@@ -657,9 +854,10 @@ export function criarCastelo(app, config) {
           salvo.despensa = true;
           feitos.espadaDoSildar = true;
           guardar(c, 'espadaDeSildar', 1);
+          guardar(c, 'conhaqueAnao', 1);
           await painel([
-            'Sacos rasgados, um cheiro azedo de comida velha. Atrás deles, enfiado num canto como lixo, um equipamento de soldado: besta pesada, cota de malha manchada de marrom e uma espada longa, nua, com o brasão de Neverwinter no punho.',
-            `É o equipamento do Sildar. ${c.name} pega a espada; ele vai gostar de vê-la de novo. Escondido no meio da sujeira, ainda sobra um barrilzinho de conhaque anão.`,
+            'Sacos rasgados e um cheiro azedo de comida que passou do ponto. No canto mais fundo, jogado como quem se livra de peso, está o que tomaram de um soldado — e quem tomou não soube o que tinha nas mãos: o aço ainda está bom.',
+            `${c.name} reconhece o brasão de Neverwinter no punho da espada. É do Sildar, e ele vai querer de volta. Junto do equipamento, um barrilzinho que não combina com despensa de goblin: conhaque anão, do bom.`,
           ]);
         } });
     }
@@ -669,7 +867,7 @@ export function criarCastelo(app, config) {
         fazer: async () => {
           salvo.armas = true;
           guardar(c, 'bordaoDePenas', 1);
-          await painel(`O arsenal dos hobgoblins, em ordem de soldado: espadas, maças de cravos, um feixe de lanças. Destoando de tudo, um cajado fino com penas talhadas na madeira, delicado demais para mão de hobgoblin. ${c.name} fica com ele.`);
+          await painel(`Os hobgoblins guardam as armas como gente de tropa: tudo pendurado, tudo em ordem, nada no chão. No meio daquele ferro todo, uma peça que ninguém ali sabe empunhar — madeira leve, penas talhadas no cabo, mais oferenda que arma. ${c.name} fica com ela.`);
         } });
     }
     // O braseiro do salão escuro: a estatueta.
@@ -678,15 +876,16 @@ export function criarCastelo(app, config) {
         fazer: async () => {
           salvo.braseiro = true;
           guardar(c, 'estatuetaDoElfo', 1);
-          await painel(`As cinzas estão frias há dias. Enfiada no fundo delas, uma trouxa de pano encarnado, pesada demais para ser só pano: dentro, um elfo de ouro, de olhos fechados. Algum goblin guardava o seu segredo longe dos outros. ${c.name} guarda.`);
+          await painel(`As cinzas estão frias há dias, e alguém andou mexendo nelas. No fundo, embrulhada com cuidado que não é de goblin, uma figura de ouro: um elfo de olhos fechados, do tamanho de um palmo. Quem a escondeu aqui não queria dividir. ${c.name} guarda.`);
         } });
     }
     if (em('salaoEscuro') && sup === 'laje' && !salvo.religiao) {
       ops.push({ rotulo: 'Examinar os entalhes', icone: 'acao-procurar', detalhe: 'Religião, CD 10', motivo: longe(10),
         fazer: async () => {
-          salvo.religiao = true;
           const t = teste(c, 'religiao', 10);
-          await painel(t.passou ? 'Os símbolos nas estátuas ainda se leem: o livro, a estrela, o sol nascendo, a moeda. Deuses dos homens — conhecimento, magia, aurora e sorte. O castelo foi de outra gente, muito antes dos goblins.' : 'Figuras de asas, gastas pelo tempo. Quem são, não dá para dizer.', { teste: t });
+          // Só marca quando alguém acerta: o livro não limita a uma tentativa.
+          if (t.passou) salvo.religiao = true;
+          await painel(t.passou ? 'As figuras seguram livro, estrela, sol e moeda — a gente deste castelo rezava a um panteão que não é goblin nenhum. Quem ergueu estas paredes morreu há muito, e os que moram aqui agora não fazem ideia de quem era.' : 'Figuras de asas, gastas pelo tempo. Quem são, não dá para dizer.', { teste: t });
         } });
     }
     // O altar do santuário.
@@ -695,7 +894,7 @@ export function criarCastelo(app, config) {
         fazer: async () => {
           salvo.altar = true;
           guardar(c, 'caliceDeOuro', 1); guardar(c, 'facaDeRitual', 1); guardar(c, 'incensario', 1);
-          await painel(`Os goblins jogaram um pano sujo de sangue por cima da pedra, mas por baixo dele os deuses do salão escuro estão talhados de novo. Arrumados em fila sobre o pano, três peças douradas: faca, incensário e cálice. ${c.name} guarda.`);
+          await painel(`A pedra do altar é antiga e boa, e ninguém aqui a entalhou: por baixo do pano imundo repetem-se as mesmas figuras do salão. Em cima, o ouro que os goblins não fundiram nem venderam — eles acham que serve para alguma coisa. ${c.name} guarda.`);
         } });
     }
     // O portão traseiro.
@@ -736,7 +935,7 @@ export function criarCastelo(app, config) {
     if (!salvo.ursoSolto && junto(tile, 'portaUrso') && grupos.urso && !grupos.urso.vencido) {
       const temCarne = herois().some((h) => (h.bag ?? []).some((i) => i.id === 'racoes' && i.qtd > 0));
       if (!salvo.ursoCalmo) {
-        ops.push({ rotulo: 'Jogar comida pela fresta', icone: 'acao-usarObjeto', detalhe: 'uma ração', motivo: longe(5) ?? (temCarne ? null : 'ninguém tem rações'),
+        ops.push({ rotulo: 'Jogar carne pela fresta', icone: 'acao-usarObjeto', detalhe: 'uma ração de viagem', motivo: longe(5) ?? (temCarne ? null : 'ninguém tem ração para dar'),
           fazer: async () => {
             const dono = herois().find((h) => (h.bag ?? []).some((i) => i.id === 'racoes' && i.qtd > 0));
             const rr = dono.bag.find((i) => i.id === 'racoes'); rr.qtd -= 1;
@@ -819,6 +1018,43 @@ export function criarCastelo(app, config) {
     return ops;
   }
 
+  /**
+   * A ESTATUETA DO ELFO SOLAR. O livro dá a ela um augúrio: quem não é mau,
+   * segurando-a, faz uma pergunta e ouve a resposta na cabeça — uma vez só,
+   * e nunca mais. Ela responde ao que o grupo pode querer saber aqui; depois
+   * cala para sempre (`feitos.estatuetaUsada`).
+   */
+  function interacoesDoHeroi(c) {
+    const tem = (c.bag ?? []).some((i) => i.id === 'estatuetaDoElfo');
+    if (!tem || feitos.estatuetaUsada || !estado.explorando) return [];
+    return [{
+      rotulo: 'Consultar a estatueta',
+      icone: 'acao-usarObjeto',
+      detalhe: 'uma pergunta, uma vez só',
+      fazer: async () => {
+        const r = await narrar(root, {
+          formato: 'painel',
+          paginas: [{ texto: [
+            `${c.name} fecha a mão no elfo de ouro, e o ouro esquenta. Não é uma voz: é uma certeza que aparece do nada, como se sempre tivesse estado ali. Uma pergunta — e só uma.`,
+          ] }],
+          escolhas: [
+            { rotulo: 'Onde está o mapa do Gundren?', valor: 'mapa', primaria: true },
+            { rotulo: 'O que nos espera lá dentro?', valor: 'perigo' },
+            { rotulo: 'Quem é o Aranha Negra?', valor: 'aranha' },
+            { rotulo: 'Guardar a pergunta', valor: 'nada' },
+          ],
+        });
+        if (r === 'nada') return;
+        feitos.estatuetaUsada = true;
+        await painel({
+          mapa: 'DEBAIXO DE QUEM DORME. O ouro esfria na mão, e o elfo não diz mais nada — nem agora, nem nunca.',
+          perigo: 'UM QUE MENTE COM A CARA DE OUTRO. O ouro esfria na mão, e o elfo não diz mais nada — nem agora, nem nunca.',
+          aranha: 'UM NOME EMPRESTADO, FUNDO NA TERRA, ONDE A SUA GENTE CAVOU DEMAIS. O ouro esfria na mão, e o elfo não diz mais nada — nem agora, nem nunca.',
+        }[r]);
+      },
+    }];
+  }
+
   function arvoreGundren() {
     return {
       inicio: 'oi',
@@ -829,7 +1065,7 @@ export function criarCastelo(app, config) {
             'Vocês… vocês vieram. Pelos ossos do meu avô. Eu achei que ia morrer nesta latrina de castelo.',
             salvo.mapa === 'achado'
               ? 'E o mapa! Vocês acharam o mapa. Então ainda há esperança para os meus irmãos.'
-              : 'O mapa… o rei escondeu o meu mapa em algum lugar daqui. Eu não saio deste castelo sem ele.',
+              : 'O mapa… eles me tomaram o mapa. Onde foi parar, eu não sei — estive apagado o tempo todo. E eu não saio deste castelo sem ele.',
           ],
           opcoes: [
             { texto: 'Seus irmãos?', vai: 'irmaos', uma: true },
@@ -847,7 +1083,8 @@ export function criarCastelo(app, config) {
   async function sair() {
     // Acordado, o Gundren não sai sem o mapa enquanto ele ainda estiver aqui.
     if (gundren && !gundren.dead && salvo.gundren === 'acordado' && !salvo.mapa) {
-      await painel('— Sem o meu mapa, não — diz Gundren, firme como pode. — O rei guardou ele em algum canto do quarto dele. Procurem.');
+      // O livro é explícito: ele NÃO sabe onde o rei escondeu o mapa.
+      await painel('— Sem o meu mapa, não — diz Gundren, firme como pode. — Onde o bugbear enfiou, eu não faço ideia; estive apagado o tempo todo. Mas sem ele eu não dou um passo.');
       return;
     }
     estado.encerrado = true;
@@ -883,6 +1120,7 @@ export function criarCastelo(app, config) {
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
+    interacoesDoHeroi,
     ganchosMagicos,
     depoisDeMover,
     fimDoCombate,

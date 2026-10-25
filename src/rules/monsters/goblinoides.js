@@ -204,33 +204,35 @@ export const GOBLINOIDES = {
     id: 'reiGrol',
     name: 'Rei Grol',
     look: 'reiGrol',
-    // CRIATURA NOSSA. O bugbear do SRD é ND 1, e ND 1 é o chefe de UM
-    // corredor, não o fim desta linha da campanha: contra quatro personagens
-    // de 3º nível ele cai na primeira rodada e o encontro não conta história
-    // nenhuma. Então os números abaixo são nossos — PV e ataques de chefe num
-    // corpo de bugbear — e não reivindicam atribuição de SRD.
-    fonte: 'propria',
+    // O BUGBEAR DA AVENTURA: o bloco do SRD com os PONTOS DE VIDA DO LIVRO.
+    // A aventura o descreve como "um bugbear velho e feroz com 45 pontos de
+    // vida" (pág. 40), e não como um bugbear comum de 27. O resto — CA 16, a
+    // clava de 2d8+2 com Brutamontes, o Ataque Surpresa — é o bloco do SRD,
+    // sem reforço nosso: já tentamos um chefe inventado (duas machadadas e um
+    // grito de guerra) e isso levava o quarto de 1.900 para 2.900 de XP
+    // ajustado, pagando os 950 do livro.
+    fonte: 'SRD',
     size: 'médio',
-    level: 5,
-    cr: '3',
-    xp: 700,
-    abilities: { str: 17, dex: 14, con: 14, int: 10, wis: 11, cha: 12 },
+    level: 3,
+    cr: '1',
+    xp: 200,
+    abilities: { str: 15, dex: 14, con: 13, int: 8, wis: 11, cha: 9 },
     ac: 16,
-    acNote: 'peles reforçadas com placas tomadas de mortos',
+    acNote: 'armadura de peles, escudo',
     maxHp: 45,
     speedFt: 30,
-    skills: ['furtividade', 'intimidacao'],
+    skills: ['furtividade', 'sobrevivencia'],
+    expertise: ['furtividade'],
     attacks: [
-      { name: 'Machado do rei', bonus: 5, damage: '2d8+3', type: 'cortante', reachFt: 5, art: 'axe' },
-      { name: 'Azagaia', bonus: 5, damage: '1d6+3', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
+      // O dado a mais já é Brutamontes, como o bloco do SRD o escreve.
+      { name: 'Machado do rei', bonus: 4, damage: '2d8+2', type: 'cortante', reachFt: 5, art: 'axe' },
+      { name: 'Azagaia', bonus: 4, damage: '2d6+2', type: 'perfurante', reachFt: 5, art: 'javelin' },
+      { name: 'Azagaia arremessada', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
-    // Dois machadadas por turno, a segunda com desvantagem. Sem a desvantagem
-    // a média passa de 25 de dano num turno e ele mata um personagem de 3º
-    // nível do cheio — chefe memorável é o que ameaça, não o que executa.
-    multiattack: { count: 2, secondAtDisadvantage: true },
-    traits: ['brutamontes', 'ataqueSurpresa', 'gritoDeGuerra'],
-    blurb: 'Duas machadadas por turno e um grito que dá vantagem aos goblinoides ao redor por uma rodada: quem o deixa gritar luta contra o bando inteiro com vantagem.',
+    traits: ['brutamontes', 'ataqueSurpresa'],
+    blurb: 'O rei goblin é um bugbear: 2d8+2 num golpe só, e a emboscada dele soma 2d6. Quem segura o machado dele é quem tem a melhor armadura.',
   },
+
 
   yeemik: {
     id: 'yeemik',
@@ -297,9 +299,5 @@ export const TRAITS = {
   ataqueSurpresa: {
     name: 'Ataque Surpresa',
     desc: 'Se surpreende a criatura e acerta na primeira rodada, +2d6 de dano.',
-  },
-  gritoDeGuerra: {
-    name: 'Grito de Guerra',
-    desc: 'Uma vez por combate, de ação: goblinoides aliados a até 9 m ganham vantagem em ataques até o fim da próxima rodada.',
   },
 };

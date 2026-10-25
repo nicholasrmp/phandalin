@@ -156,6 +156,12 @@ export const GLIFOS = {
   'p': { kind: 0, sup: 'palha' },
   'E': { kind: 3, sup: 'desabamento' },     // pedra caída: barra o passo, não a visão
   'i': { kind: 3, sup: 'caixotes' },
+  // DECALQUES: a marca que a sala deixou no chao. Pisa-se em cima — eles
+  // nao mudam nada na regra, so contam o que aconteceu ali.
+  'c': { kind: 0, sup: 'ossos' },        // ossos roidos
+  'v': { kind: 0, sup: 'mancha' },       // sangue seco, fuligem
+  'd': { kind: 0, sup: 'cacos' },        // cacos, poeira, reboco caido
+  'j': { kind: 0, sup: 'musgoChao' },    // musgo nas juntas, poca parada
   't': { kind: 3, sup: 'arca' },
 };
 
@@ -197,6 +203,17 @@ export class Battlefield {
     for (const [lado, grade] of [['paredeN', paredes?.n], ['paredeO', paredes?.o]]) {
       (grade ?? []).forEach((linha, y) => {
         for (let x = 0; x < Math.min(w, linha.length); x++) this[lado][y * w + x] = ARESTA_DO_CHAR[linha[x]] ?? 0;
+      });
+    }
+    // Quantos níveis a parede desta casa levanta, se o mapa disser. Castelo
+    // de altura única lê como uma caixa: o horizonte fica reto de ponta a
+    // ponta. Com esta grade a torre passa do muro, e a silhueta volta.
+    if (paredes?.alt) {
+      this.paredeAlt = new Uint8Array(w * h);
+      paredes.alt.forEach((linha, y) => {
+        for (let x = 0; x < Math.min(w, linha.length); x++) {
+          this.paredeAlt[y * w + x] = Number(linha[x]) || 0;
+        }
       });
     }
     // Anotações de desenho dos objetos de várias casas — para onde apontam e

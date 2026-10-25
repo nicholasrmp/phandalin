@@ -24,6 +24,7 @@ from losango import TW, TH, recortar_topo, furos, remendo  # noqa: E402
 
 AQUI = Path(__file__).resolve().parents[2]
 LEVAS = AQUI / '_referencias' / 'pixellab' / 'ladrilhos-pro'
+PIXELLAB = AQUI / '_referencias' / 'pixellab'
 SAIDA = AQUI / 'src' / 'art' / 'folhas'
 
 # A leva de cada superficie. Sao as duas geradas com `tile_view_angle: 30`,
@@ -44,7 +45,22 @@ FILEIRAS = [
     # O porao da Mansao Tresendar. Fora: 4 (poeira demais), 8-11 sao agua e
     # fosso, 12 e 14 (rachado e com poca, leem como outra coisa), 15 (buraco
     # com borda: o fosso tem 2 x 2 casas e a borda faria uma grade).
-    ('laje', '0275c74c-e80e-4191-84eb-8774ea880520', [0, 1, 2, 3]),
+    # A laje do castelo. O piso que vem no KIT de construcao NAO serve de
+    # ladrilho: e uma laje grande por casa, com junta preta larga, e repetido
+    # vira uma grade de blocos; as quatro variacoes ainda pulam de tom. Esta
+    # leva foi pedida como pedra miuda, de junta fina, na paleta do kit.
+    # Fora: 5 e 13 (escuras demais), 1, 4, 9, 10 e 12 (rachadura ou sujeira
+    # que repete e vira desenho), 6 (lisa demais).
+    ('laje', 'de7011f0-a282-42df-b7cc-bf1fed4b48e7', [0, 2, 3, 7, 8, 11, 14, 15]),
+    # DECALQUES DO CASTELO (leva `sujeiraCastelo`). Nao sao variacoes do
+    # piso: sao marcas postas de proposito, uma a uma, pelo gerador do mapa,
+    # porque cada uma CONTA alguma coisa da sala. Mesma pedra e mesma luz da
+    # fileira `laje`, para a marca nao virar remendo de outro chao.
+    # Fora: 12 (fuligem quase preta, com verde) e 13 (poca lavada).
+    ('ossos', 'e460163d-dc68-4d58-adda-fb4e587d5bbb', [0, 8]),
+    ('mancha', 'e460163d-dc68-4d58-adda-fb4e587d5bbb', [1, 9, 4]),
+    ('cacos', 'e460163d-dc68-4d58-adda-fb4e587d5bbb', [3, 11, 7, 15]),
+    ('musgoChao', 'e460163d-dc68-4d58-adda-fb4e587d5bbb', [2, 10, 5]),
     ('cisterna', '0275c74c-e80e-4191-84eb-8774ea880520', [8, 9]),
     ('fosso', '0275c74c-e80e-4191-84eb-8774ea880520', [10]),
     # O alto dos planaltos do Cume da Wyvern. Fora: 0 (brilho), 3 e 11 (tufo
@@ -54,10 +70,14 @@ FILEIRAS = [
 ]
 
 
-# A laje saiu clara demais (luminancia mediana 118) para um porao: o piso
-# tem de ficar perto do da caverna (~68), senao a sala brilha mais que a
-# tocha. Escurecer e multiplicar: o desenho e as juntas ficam.
-ESCURECER = {'laje': 0.6}
+# A laje vem clara (e pedra ao sol). Escurecer e multiplicar: o desenho e as
+# juntas ficam, e o fator deixa o chao um degrau abaixo da parede do kit --
+# chao mais escuro que parede e o que separa um do outro de longe.
+# As fileiras de decalque sairam da leva com a pedra mais clara que a da
+# `laje`, e no tabuleiro cada marca lia como um losango PALIDO posto por
+# cima do chao, em vez de uma marca NO chao. Medido: 0,86 poe a laje no tom
+# do kit de construcao, e 0,74 poe os decalques no tom da laje.
+ESCURECER = {'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
 
 
 def escurecer(t, f):
@@ -168,9 +188,11 @@ def main():
     meta = {'tw': TW, 'th': TH, 'fileiras': {}}
     previa = []
     for linha, (nome, leva, *quais) in enumerate(FILEIRAS):
-        arqs = sorted((LEVAS / leva).glob('tile_*.png'),
-                      key=lambda p: int(p.stem.split('_')[1]))
-        assert len(arqs) == 16, f'{nome}: esperava 16 ladrilhos, achei {len(arqs)}'
+        pasta = (PIXELLAB / leva) if '/' in leva else (LEVAS / leva)
+        arqs = sorted(pasta.glob('tile_*.png'), key=lambda p: int(p.stem.split('_')[1]))
+        # Uma leva de ladrilhos tem 16; um kit de construcao tem 58, e dele so
+        # interessam os indices do piso.
+        assert len(arqs) in (16, 58), f'{nome}: esperava 16 ou 58, achei {len(arqs)}'
         # Leva de varias superficies (chao, riacho e poco juntos): a fileira
         # pega so os ladrilhos dela.
         if quais:

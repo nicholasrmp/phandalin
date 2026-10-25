@@ -90,14 +90,20 @@ export const ABERRACOES = {
     ac: 14,
     acNote: 'couro de pedra',
     maxHp: 27,
+    hpDice: '6d8',
     speedFt: 30,
-    senses: { darkvisionFt: 60 },
+    speeds: { climbFt: 30 },
+    senses: { darkvisionFt: 60, passivePerception: 12 },
     skills: ['furtividade', 'percepcao'],
+    damageResistances: ['cortante', 'perfurante', 'concussão'],
+    damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas',
     attacks: [
       { name: 'Tentáculos', bonus: 4, damage: '2d6+2', type: 'cortante', reachFt: 5, art: 'claw' },
       { name: 'Bico', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'bite' },
     ],
-    multiattack: { count: 2, sequence: ['Tentáculos', 'Bico'] },
+    // O Livro dos Monstros: um ataque de tentáculos e, SE ACERTAR, o bico.
+    multiattack: { count: 2, sequence: ['Tentáculos', 'Bico'], seAcertar: true },
+    traits: ['camuflagemDePedra'],
     blurb: 'Espera no alto, no escuro, e cai em cima de quem passa: tentáculos e um bico que rasga.',
   },
 
@@ -115,8 +121,11 @@ export const ABERRACOES = {
     ac: 14,
     acNote: 'reflexos',
     maxHp: 52,
+    hpDice: '8d8+16',
     speedFt: 30,
+    senses: { darkvisionFt: 60, passivePerception: 11 },
     skills: ['enganacao', 'intuicao'],
+    conditionImmunities: ['enfeitiçado'],
     attacks: [
       { name: 'Golpe', bonus: 6, damage: '1d6+4', type: 'concussão', reachFt: 5, art: 'mace' },
     ],
@@ -428,6 +437,10 @@ export const TRAITS = {
   amorfo: {
     name: 'Amorfa',
     desc: 'Atravessa uma abertura de 2,5 cm sem gastar deslocamento extra.',
+  },
+  camuflagemDePedra: {
+    name: 'Camuflagem de Pedra',
+    desc: 'Vantagem em Furtividade para se esconder em terreno rochoso. (Ainda não é uma ação do jogo.)',
   },
   escaladaAracnidea: {
     name: 'Escalada Aracnídea',

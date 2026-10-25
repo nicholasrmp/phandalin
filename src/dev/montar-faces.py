@@ -86,6 +86,46 @@ def tapar(t):
     return t
 
 
+def brilho(im):
+    px = [p for p in im.getdata() if p[3] > 40]
+    if not px:
+        return 0.0
+    return sum(0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2] for p in px) / len(px)
+
+
+def emparelhar(vs, mat):
+    """Tira a faixa fora de tom.
+
+    As variacoes de uma mesma face tem de ser a MESMA pedra sob a MESMA luz;
+    o que muda e o desenho da junta. Uma variacao 35% mais escura que as
+    irmas nao le como variacao: le como remendo, e o muro fica manchado de
+    retangulos de 32x22. Entao cada faixa e puxada para o brilho mediano das
+    suas iguais, sem mexer na cor.
+    """
+    for col in (0, 1):
+        bs = [brilho(v[col]) for v in vs]
+        vivos = sorted(b for b in bs if b > 0)
+        if not vivos:
+            continue
+        meio = vivos[len(vivos) // 2]
+        for i, v in enumerate(vs):
+            if bs[i] <= 0:
+                continue
+            k = meio / bs[i]
+            # Correcao so onde ela faz falta, e nunca dobrando o brilho.
+            if 0.9 < k < 1.11:
+                continue
+            k = max(0.6, min(1.6, k))
+            im = v[col]
+            dados = [(min(255, int(r * k)), min(255, int(g * k)), min(255, int(b * k)), a)
+                     for (r, g, b, a) in im.getdata()]
+            novo = Image.new('RGBA', im.size)
+            novo.putdata(dados)
+            print('  %s faixa %d (%s): brilho %.0f -> %.0f' % (mat, i, 'esq' if col == 0 else 'dir', bs[i], bs[i] * k))
+            vs[i] = tuple(novo if j == col else v[j] for j in range(3))
+    return vs
+
+
 def main():
     linhas = []      # (material, [(esq, dir, topo)])
     for mat, nomes in MATERIAIS.items():
@@ -103,6 +143,7 @@ def main():
             print(f'{mat}-{n:<4} caixa {bb}  faces com {cheio}/{2 * FW * LIFT} px')
             vs.append((esq, dir_, tapar(recortar_topo(im, ox, oy))))
         if vs:
+            vs = emparelhar(vs, mat)
             linhas.append((mat, vs))
 
     larg = max(len(vs) for _, vs in linhas) * TW

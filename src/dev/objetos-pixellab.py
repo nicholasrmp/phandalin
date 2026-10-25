@@ -197,6 +197,114 @@ PRO_FLASH['tenda'] = {
                                   '#3e2a1b', '#5e4029', '#85603d', '#968a6c', '#1a1414']},
 }
 
+# O CASTELO DENTEFINO: os moveis de varias casas, com direcao (oito vistas).
+# Especificacao em `_referencias/revisao-castelo/objetos-spec.md`.
+SANGUE = ['#4a1510', '#6e2418']
+OURO = ['#b39d5c', '#d4a63c']
+PRO_FLASH['altar'] = {
+    'description': (
+        'The altar FILLS THE WHOLE CANVAS WIDTH. Carved grey stone altar in a ruined castle shrine '
+        'for an isometric tactical RPG: a long rectangular block twice as long as wide, worn relief '
+        'carvings of winged figures on the sides, a dirty red-brown bloodstained cloth draped over '
+        'the top, a small golden chalice, a knife and a censer standing on one end. About 44 px '
+        'tall. No ground. Dark selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 128, 'height': 128},
+    'n_directions': 8,
+    'seed': 20261120,
+    'target_palette': {'colors': GRANITO + SANGUE + OURO},
+}
+# Sonda de projecao (NAO USADA): a vista 'high top-down' deixou o eixo do
+# altar entre 9 e 50 graus, pior que a 'low top-down' (19 a 28; a grade e
+# 26,6). Fica o registro.
+PRO_FLASH['altar2'] = dict(PRO_FLASH['altar'], view='high top-down', seed=20261125, description=(
+    'The altar FILLS THE WHOLE CANVAS WIDTH. Standard 2:1 isometric game projection: the long '
+    'axis of the altar runs along the isometric grid, about 26 degrees from horizontal in the '
+    'diagonal views. ') + PRO_FLASH['altar']['description'].split('WIDTH. ', 1)[1])
+PRO_FLASH['banheira'] = {
+    'description': (
+        'The bathtub FILLS THE WHOLE CANVAS WIDTH. Long rectangular sunken-looking bathtub of a '
+        'bugbear king for an isometric tactical RPG castle bedroom: low walls covered in cream and '
+        'blue-green glazed ceramic tiles, a dark stone rim, murky still water inside, twice as long '
+        'as wide, about 22 px tall. No ground. Dark selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 128, 'height': 96},
+    'n_directions': 8,
+    'seed': 20261121,
+    'target_palette': {'colors': GRANITO + ['#17313a', '#35647d', '#c2b48f', '#968a6c']},
+}
+PRO_FLASH['mesaBanquete'] = {
+    'description': (
+        'The table FILLS THE WHOLE CANVAS WIDTH, edge to edge. Very long heavy wooden banquet '
+        'table, three times longer than wide, with a plank bench along each long side, gnawed '
+        'bones, pewter plates, wooden mugs and a tipped-over jug on top, for an isometric tactical '
+        'RPG goblin feast hall. About 36 px tall. No ground, no people. Dark brown selective '
+        'outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 160, 'height': 128},
+    'n_directions': 8,
+    'seed': 20261122,
+    'target_palette': {'colors': MADEIRA + LONA + FERRO},
+}
+PRO_FLASH['camaRei'] = {
+    'description': (
+        'The bed FILLS THE WHOLE CANVAS WIDTH, edge to edge. Huge crude bed of a bugbear king for '
+        'an isometric tactical RPG: a wide low wooden frame on a square footprint piled with thick '
+        'brown and grey animal furs, a tall roughly carved wooden headboard on one side, about '
+        '24 px tall, headboard up to 36 px. No ground, no people. Dark brown selective outline, '
+        'not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 128, 'height': 128},
+    'n_directions': 8,
+    'seed': 20261123,
+    'target_palette': {'colors': MADEIRA + BAIO + ['#6e6c66', '#8f8a7f', '#b39d5c']},
+}
+PRO_FLASH['portaoQuebrado'] = {
+    'description': (
+        'The gate FILLS THE WHOLE CANVAS WIDTH. One broken leaf of a heavy wooden castle gate '
+        'lying fallen on the floor for an isometric tactical RPG: thick vertical planks bound '
+        'with green-tarnished bronze straps and big rivets, splintered holes, a missing corner, '
+        'twice as long as wide, flat on the ground, about 16 px tall. No ground, no wall. Dark '
+        'brown selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 128, 'height': 96},
+    'n_directions': 8,
+    'seed': 20261124,
+    'target_palette': {'colors': MADEIRA + ['#2f4a3a', '#4e7a5e', '#7aa287']},
+}
+
+# UMA VISTA SO. Desde que a camera ficou fixa, objeto de cenario nao precisa
+# das oito vistas: so a que o `olha` dele pede. Aqui `n_directions: 1` devolve
+# a vista frontal ('south'), que o montador guarda sob o nome que o tabuleiro
+# procura. Mede-se a altura em px na descricao porque a escala e o defeito
+# que mais aparece: uma criatura Media tem 45 a 62 px nesta grade.
+PRO_FLASH['banheira2'] = {
+    'description': (
+        'The bathtub FILLS THE WHOLE CANVAS WIDTH, edge to edge, lying along the view diagonal '
+        'that descends to the right. Long rectangular sunken bathtub of a bugbear king for an '
+        'isometric tactical RPG castle bedroom: low walls of cream and blue-green glazed ceramic '
+        'tiles with a dark stone rim, murky still water inside, twice as long as wide, only 22 px '
+        'tall. No ground. Dark selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 96, 'height': 64},
+    'n_directions': 1,
+    'seed': 20261140,
+    'target_palette': {'colors': GRANITO + ['#17313a', '#35647d', '#c2b48f', '#968a6c']},
+}
+PRO_FLASH['mesaBanquete2'] = {
+    'description': (
+        'The table FILLS THE WHOLE CANVAS WIDTH, edge to edge, lying along the view diagonal that '
+        'descends to the right. Very long heavy wooden banquet table, three times longer than '
+        'wide, with a plank bench along each long side, gnawed bones, pewter plates and a tipped '
+        'jug on top, for an isometric tactical RPG goblin feast hall. About 34 px tall. No ground, '
+        'no people. Dark brown selective outline, not black. ' + PIXEL),
+    'view': 'low top-down',
+    'image_size': {'width': 128, 'height': 64},
+    'n_directions': 1,
+    'seed': 20261141,
+    'target_palette': {'colors': MADEIRA + LONA + FERRO},
+}
+
 CONJUNTOS = {
     'arvore': {
         'description': (
@@ -418,6 +526,164 @@ CONJUNTOS = {
                               'old stone well with moss at the base', 'old stone well, bucket resting on the rim'],
         'target_palette': {'colors': GRANITO + MADEIRA[:4] + ['#17313a', '#4a7236']},
     },
+    # O TAMANHO VEM DA TELA, NAO DA DESCRICAO. Medido: pedir "about 40 px
+    # wide" numa tela de 64 devolve 60 px do mesmo jeito -- o objeto enche a
+    # tela que se pede. Entao bau, braseiro e companhia saem numa tela do
+    # tamanho que eles tem de ter no tabuleiro (a casa tem 64 de largura).
+    'bau3': {
+        'description': (
+            'Sturdy wooden treasure chest for an isometric tactical RPG, closed lid, dark iron '
+            'bands and a heavy lock, seen from the front-left, sitting on the bottom of the '
+            'canvas. Weathered brown wood. Lit from the upper left. Dark brown selective outline, '
+            'not black. ' + PIXEL),
+        'size': 44,
+        'view': 'top-down',
+        'item_descriptions': ['closed chest with iron bands', 'closed chest, rounded lid',
+                              'closed chest with a padlock', 'closed chest, worn corners'],
+        'target_palette': {'colors': MADEIRA + FERRO + ['#b39d5c']},
+    },
+    'braseiro3': {
+        'description': (
+            'Fire brazier for an isometric tactical RPG castle hall, looks the same from all '
+            'sides: a shallow round bowl of stone or metal on a low base, glowing coals and short '
+            'flames, sitting on the bottom of the canvas. Lit from the upper left. Dark selective '
+            'outline, not black. ' + PIXEL),
+        'size': 48,
+        'view': 'top-down',
+        'item_descriptions': ['grey stone bowl on a low base, flames',
+                              'grey stone bowl on a low base, cold dark coals, no fire',
+                              'green-tinted copper bowl on a low iron tripod, flames',
+                              'green-tinted copper bowl on a low iron tripod, embers'],
+        'target_palette': {'colors': GRANITO[:4] + ['#5e3a1e', '#8a5a2a', '#3f7a5c',
+                                                    '#8c2a12', '#d0581c', '#f0a030', '#ffe080']},
+    },
+    # Uma tela de 128 devolve QUATRO objetos, nao dezesseis: a quantidade de
+    # `item_descriptions` tem de bater, senao a API recusa com 422.
+    'arvore3': {
+        'description': (
+            'Full-grown oak tree for an isometric tactical RPG forest edge, with a visible thick '
+            'brown trunk under a broad round canopy of layered green foliage, sitting on the '
+            'bottom of the canvas. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 112,
+        'view': 'top-down',
+        'item_descriptions': ['broad round oak', 'oak leaning slightly, forked trunk',
+                              'dense dark oak', 'old gnarled oak with a thinner canopy'],
+        'target_palette': {'colors': FOLHA + TRONCO},
+    },
+    # A palha: a primeira leva desenhou uma LAJE de pedra debaixo do capim, e
+    # no tabuleiro aquilo lia como palete, nao como colchao. Aqui se pede so
+    # a palha, e escura: o piso do castelo tem luminancia ~68.
+    'palha2': {
+        'description': (
+            'Loose straw sleeping pallet for an isometric tactical RPG goblin lair: ONLY a flat '
+            'heap of dull brown-gold straw with a threadbare grey blanket thrown over it, lying '
+            'directly on nothing. NO stone slab, NO floor tile, NO base, NO platform under it. '
+            'About 44 px wide and only 14 px tall, ankle height. Dull and dirty, not bright '
+            'yellow. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['straw heap with a blanket', 'bare straw heap', 'straw heap, scattered',
+                              'straw heap with a small sack'],
+        'target_palette': {'colors': ['#2a1f12', '#4c3e1f', '#66572c', '#85733f', '#3b3a36', '#56554f']},
+    },
+    # DECORACAO DE PAREDE do castelo. Nao fica no chao: fica pendurada na
+    # face da parede de borda, que corre na diagonal da grade. Por isso se
+    # pede a peca JA na face isometrica, descendo para a direita; o tabuleiro
+    # espelha para a outra face. Tela de 32: peca pequena, do tamanho de um
+    # braco, que e o que uma tocha tem.
+    'paredeDecor': {
+        'description': (
+            'Wall fixture for an isometric tactical RPG castle, mounted flat ON a stone wall '
+            'face that runs down to the right at 27 degrees, seen from the front-left. The piece '
+            'lies in the plane of that wall. No wall behind it, no floor, no shadow on the '
+            'ground. Grim, old and weathered. Lit from the upper left. Dark selective outline, '
+            'not black. ' + PIXEL),
+        'size': 32,
+        'view': 'top-down',
+        'item_descriptions': [
+            'iron wall sconce holding a burning torch, orange flame',
+            'iron wall sconce holding a spent black torch, no flame',
+            'small old oil painting in a cracked gilt frame, dark portrait',
+            'ragged red cloth banner hanging from an iron rod',
+            'patch of green moss spreading over the stones',
+            'grey cobweb stretched across the corner of the wall',
+            'rusty iron chain with an open shackle bolted to the wall',
+            'animal skull nailed to the wall as a goblin trophy',
+        ],
+        'target_palette': {'colors': GRANITO + MADEIRA[:3] + FERRO
+                           + ['#8c2a12', '#d0581c', '#f0a030', '#ffe080',
+                              '#33572e', '#4a7236', '#b39d5c', '#8a1e1e']},
+    },
+    # PORTAS E ARCOS DA PAREDE DE BORDA. Mesma ideia da decoracao: a peca ja
+    # vem desenhada NO PLANO da face isometrica, que desce para a direita, e o
+    # tabuleiro espelha para a outra face. O vao tem uns 64 px de altura por
+    # 32 de largura na tela, entao a tela de 48 cobre a folha inteira.
+    'vaoDeParede': {
+        'description': (
+            'Doorway piece for an isometric tactical RPG castle, seen flat ON a stone wall face '
+            'that runs down to the right at 27 degrees. Only the opening and its frame: the door '
+            'leaf, the stone jambs on each side and the stone lintel or arch above. The piece '
+            'lies in the plane of that wall. No wall beyond the frame, no floor, no shadow on the '
+            'ground. Tall and narrow, about 30 px wide and 46 px tall. Grim, old and weathered. '
+            'Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 48,
+        'view': 'top-down',
+        'item_descriptions': [
+            'closed heavy wooden door of vertical planks with iron bands and a ring handle, in a plain stone frame',
+            'open stone archway with a rounded arch, pitch dark inside',
+            'closed iron-bound wooden door, barred shut with a thick timber across it',
+            'open stone archway with a heavy ragged curtain hanging across it',
+        ],
+        'target_palette': {'colors': GRANITO + MADEIRA + FERRO + ['#2f4a3a', '#4e7a5e', '#8a1e1e', '#561010']},
+    },
+    # O bau do tesouro do bando. A primeira leva saiu com 59 px de largura --
+    # do tamanho de um heroi; um bau de verdade tem uns 40 x 34.
+    'bau2': {
+        'description': (
+            'Sturdy wooden treasure chest for an isometric tactical RPG, closed lid, dark iron '
+            'bands and a heavy lock, SMALL: about 40 px wide and only 34 px tall, a third of the '
+            'height of a person, sitting on the bottom of the canvas, seen from the front-left. '
+            'Weathered brown wood. Lit from the upper left. Dark brown selective outline, not '
+            'black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['closed chest with iron bands', 'closed chest, rounded lid',
+                              'closed chest with a padlock', 'closed chest, worn corners'],
+        'target_palette': {'colors': MADEIRA + FERRO + ['#b39d5c']},
+    },
+    # O braseiro: a primeira leva deu pedestais de 60 px, altos demais.
+    'braseiro2': {
+        'description': (
+            'Fire brazier for an isometric tactical RPG castle hall, looks the same from all '
+            'sides: a shallow round bowl of stone or metal on a LOW base, glowing coals and short '
+            'flames, SMALL: about 34 px wide and 40 px tall counting the flames, reaching a '
+            "person's waist, sitting on the bottom of the canvas. Lit from the upper left. Dark "
+            'selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['grey stone bowl on a low base, flames',
+                              'grey stone bowl on a low base, cold dark coals, no fire',
+                              'green-tinted copper bowl on a low iron tripod, flames',
+                              'green-tinted copper bowl on a low iron tripod, embers'],
+        'target_palette': {'colors': GRANITO[:4] + ['#5e3a1e', '#8a5a2a', '#3f7a5c',
+                                                    '#8c2a12', '#d0581c', '#f0a030', '#ffe080']},
+    },
+    # A arvore da borda da mata saiu com 65 a 80 px: muda, do tamanho de um
+    # heroi. Uma arvore adulta tem o dobro.
+    'arvore2': {
+        'description': (
+            'Full-grown oak tree for an isometric tactical RPG forest edge, TALL: about 110 px '
+            'tall and 90 px wide, two and a half times the height of a person, with a visible '
+            'thick brown trunk under a broad round canopy of layered green foliage, sitting on '
+            'the bottom of the canvas. Lit from the upper left. Dark selective outline, not '
+            'black. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': ['broad round oak', 'oak leaning slightly', 'oak with a forked trunk',
+                              'dense dark oak', 'oak with a thinner canopy', 'tall narrow oak',
+                              'oak with two trunks', 'old gnarled oak'],
+        'target_palette': {'colors': FOLHA + TRONCO},
+    },
     # O bau do tesouro do bando.
     'bau': {
         'description': (
@@ -430,6 +696,59 @@ CONJUNTOS = {
         'item_descriptions': ['closed chest with iron bands', 'closed chest, rounded lid',
                               'closed chest with a padlock', 'closed chest, worn corners'],
         'target_palette': {'colors': MADEIRA + FERRO + ['#b39d5c']},
+    },
+    # O CASTELO DENTEFINO: os moveis de uma casa.
+    'braseiro': {
+        'description': (
+            'Fire brazier for an isometric tactical RPG castle hall, looks the same from all '
+            'sides: a round metal or stone bowl full of glowing coals and short orange flames on '
+            'a short pedestal or tripod, about 30 px wide and 36 px tall, sitting on the bottom of '
+            'the canvas. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['grey carved stone bowl on a thick pedestal, flames',
+                              'grey carved stone bowl on a thick pedestal, cold dark coals, no fire',
+                              'green-tinted copper bowl on an iron tripod, tall flames',
+                              'green-tinted copper bowl on an iron tripod, low flames and embers'],
+        'target_palette': {'colors': GRANITO[:4] + ['#5e3a1e', '#8a5a2a', '#3f7a5c',
+                                                    '#8c2a12', '#d0581c', '#f0a030', '#ffe080']},
+    },
+    'armeiro': {
+        'description': (
+            'Wooden weapon rack for an isometric tactical RPG castle barracks: two upright posts '
+            'with crossbars holding spears, swords and a round shield, about 44 px wide and 46 px '
+            'tall, sitting on the bottom of the canvas, seen from the front-left. Weathered brown '
+            'wood, grey steel. Lit from the upper left. Dark brown selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['rack full of spears', 'rack with swords and a round shield',
+                              'half empty rack with maces', 'rack with greatswords and a feathered staff'],
+        'target_palette': {'colors': MADEIRA + FERRO + ['#77766f', '#9e998b']},
+    },
+    'palha': {
+        'description': (
+            'Straw sleeping pallet on a stone floor for an isometric tactical RPG goblin lair: a '
+            'flat mat of loose golden straw with a threadbare grey blanket, about 44 px wide and '
+            'only 14 px tall, sitting on the bottom of the canvas. Lit from the upper left. Dark '
+            'selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['straw mat with a blanket', 'bare straw mat', 'two stacked straw mats',
+                              'straw mat with a small sack'],
+        'target_palette': {'colors': ['#3b2a1c', '#6e5a2c', '#8f7a3e', '#b39d5c', '#6e6c66', '#8f8a7f']},
+    },
+    'desabamento': {
+        'description': (
+            'Heap of collapsed castle masonry for an isometric tactical RPG: broken grey cut stone '
+            'blocks, shards of wall and dusty gravel piled irregularly, about 50 px wide and 32 px '
+            'tall, sitting on the bottom of the canvas. Lit from the upper left. Dark selective '
+            'outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': ['low flat heap of gravel and shards', 'tall heap of cut stone blocks',
+                              'heap with a splintered wooden beam sticking out', 'heap with one big carved block',
+                              'heap of small blocks', 'heap of blocks with a broken column piece'],
+        'target_palette': {'colors': GRANITO + MADEIRA[:3]},
     },
 }
 
