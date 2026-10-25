@@ -435,6 +435,7 @@ export class Encounter {
       c.disengaging = false;
       c.magiasNoTurno = [];
       c.surgeUsedThisTurn = false;
+      c.atacouDeMonge = false;
       this.fimDaFuria(c);
       this.rolarRecarga(c);
       this.tickConditions(c);
@@ -2203,7 +2204,14 @@ export class Encounter {
     // Shillelagh: a clava ou o bordão usa o atributo de conjuração, rola 1d8
     // e conta como mágico.
     const shillelagh = hasCondition(actor, 'shillelagh') && ['clava', 'bordao'].includes(weaponId ?? actor.equippedWeapon);
-    const w = shillelagh ? { ...w0, damage: '1d8', raridade: w0.raridade ?? 'magia' } : w0;
+    // ARTES MARCIAIS do monge: no punho e na ARMA DE MONGE (simples corpo a
+    // corpo, menos as de duas mãos e as pesadas, mais a espada curta) ele
+    // rola o dado da classe quando este é maior que o da arma, e usa
+    // Destreza se ela for melhor que a Força. É o que faz o monge de 1º
+    // nível bater de verdade com as mãos.
+    const marcial = this.artesMarciais(actor, weaponId ?? actor.equippedWeapon, w0);
+    const w = shillelagh ? { ...w0, damage: '1d8', raridade: w0.raridade ?? 'magia' }
+      : marcial ? { ...w0, damage: marcial.dado, finesse: true } : w0;
     const ability = shillelagh ? actor.spellcasting.ability : weaponAbility(actor, w);
     const mod = abilityMod(actor.abilities[ability]);
     // Proficiência só soma com arma treinada (a categoria ou a arma em si).
@@ -2302,6 +2310,9 @@ export class Encounter {
     // A fúria se alimenta de briga: atacar um hostil mantém o bárbaro nela
     // por mais um turno (ver `fimDaFuria`).
     if (hasCondition(attacker, 'furia') && target.side !== attacker.side) attacker.furiaAgiu = true;
+    // O golpe de ação bônus do monge só vem DEPOIS de um ataque de monge.
+    if (this.artesMarciais(attacker, weaponId ?? attacker.equippedWeapon,
+      WEAPONS[weaponId ?? attacker.equippedWeapon])) attacker.atacouDeMonge = true;
     // A figura mostra a arma do golpe: o hobgoblin de espada e escudo pega o
     // arco para atirar e volta à espada no corpo a corpo (`aparencias` do
     // bloco). Aqui, e não na ação de Ataque, para valer também na reação.
@@ -2668,6 +2679,27 @@ export class Encounter {
     return { bonus, partes };
   }
 
+  /**
+   * O DADO DAS ARTES MARCIAIS para esta arma, ou null.
+   *
+   * Vale no punho e na arma de monge; e só quando o dado da classe é MAIOR
+   * que o da arma — o SRD diz "pode usar", e ninguém escolheria o menor.
+   */
+  artesMarciais(actor, idDaArma, w) {
+    if (!actor.dadoDeArtesMarciais || !w || w.ranged) return null;
+    const deMonge = idDaArma === 'punhos' || idDaArma === 'espadaCurta'
+      || (w.categoria === 'simples' && !w.duasMaos && !w.pesada);
+    if (!deMonge) return null;
+    // A DESTREZA VALE SEMPRE na arma de monge — é metade da característica, e
+    // é ela que faz o monge existir sem Força. O dado da classe só entra
+    // quando é MAIOR que o da arma: o SRD diz "pode usar", e ninguém
+    // escolheria o menor. No 1º nível os dois são d4, então o que muda é o
+    // atributo; do 5º em diante muda também o dado.
+    const faces = (d) => Number(String(d).match(/d(\d+)/)?.[1] ?? 0);
+    const dado = actor.dadoDeArtesMarciais;
+    return { dado: faces(dado) > faces(w.damage) ? `1${dado}` : w.damage };
+  }
+
   /** Marcas que somem no primeiro ataque contra o alvo (Raio Guiado). */
   consumirMarcas(target) {
     for (const cond of [...(target.conditions ?? [])]) {
@@ -2895,12 +2927,13 @@ export class Encounter {
     let total = r.total;
     const extras = [];
     for (const cond of [...(actor.conditions ?? [])]) {
-      const dados = CONDITIONS[cond.id]?.testeBonusDice;
+      const def = CONDITIONS[cond.id];
+      const dados = def?.testeBonusDice ?? (def?.dadoNaData ? cond.data?.dado : null);
       if (!dados) continue;
       const d = roll(this.rng, dados);
       total += d.total;
-      extras.push(`${CONDITIONS[cond.id].name.toLowerCase()} ${dados}[${d.rolls.join('+')}]`);
-      if (CONDITIONS[cond.id].consumidaNoTeste) {
+      extras.push(`${def.name.toLowerCase()} ${dados}[${d.rolls.join('+')}]`);
+      if (def.consumidaNoTeste) {
         removeCondition(actor, cond.id);
         const dono = this.combatants.find((c) => c.id === cond.source);
         if (dono?.concentrating?.condition === cond.id) dono.concentrating = null;
@@ -5536,6 +5569,93 @@ export class Encounter {
         if (actor.actionUsed) actor.actionUsed = false;
         else actor.extraActions += 1;
         this.say('recurso', `${actor.name} usa Ação Surpreendente — ganha uma ação.`);
+        return true;
+      }
+      case 'bardicInspiration': {
+        // INSPIRAÇÃO BÁRDICA: ação bônus, uma carga, um aliado a até 18 m que
+        // consiga ouvir. O dado fica com ELE e sai no primeiro ataque, teste
+        // ou resistência que ele quiser — a condição `inspirado` guarda o
+        // dado e o motor a consome no primeiro dos três.
+        const alvo = target;
+        if (actor.bonusUsed || !actor.resources?.bardicInspiration) return false;
+        if (!alvo || alvo === actor || alvo.side !== actor.side || alvo.dead) return false;
+        if (distanceFt(actor.pos, alvo.pos) > 60) return false;
+        if (hasCondition(alvo, 'inspirado')) return false;
+        actor.bonusUsed = true;
+        actor.resources.bardicInspiration -= 1;
+        // A escala do bardo dá 'd6'; o rolador quer '1d6'.
+        const escala = actor.dadoDeInspiracao ?? 'd6';
+        const dado = String(escala).startsWith('d') ? `1${escala}` : String(escala);
+        addCondition(alvo, 'inspirado', { rounds: 100, source: actor.id, data: { dado } });
+        this.say('recurso', `${actor.name} inspira ${alvo.name}: ${dado} para somar num ataque, teste ou resistência.`);
+        return true;
+      }
+      case 'layOnHands': {
+        // CURA PELAS MÃOS: ação, encosta e tira da reserva o que mandar —
+        // aqui, o que faltar ao ferido, até acabar a reserva.
+        const alvo = target ?? actor;
+        if (actor.actionUsed || !actor.resources?.layOnHands) return false;
+        if (!alvo || alvo.dead || !isAdjacent(actor.pos, alvo.pos) && alvo !== actor) return false;
+        const falta = maxHpEfetivo(alvo) - alvo.hp;
+        if (falta <= 0) return false;
+        const quanto = Math.min(falta, actor.resources.layOnHands);
+        actor.actionUsed = true;
+        actor.resources.layOnHands -= quanto;
+        this.heal(alvo, quanto, actor);
+        this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name}: ${quanto} PV (restam ${actor.resources.layOnHands} na reserva).`);
+        return true;
+      }
+      case 'divineSense': {
+        // SENTIDO DIVINO: ação, uma carga, e diz o que há de morto-vivo,
+        // corruptor ou celestial a 18 m — inclusive o que o grupo ainda não
+        // enxerga, que é para isso que ele serve.
+        if (actor.actionUsed || !actor.resources?.divineSense) return false;
+        actor.actionUsed = true;
+        actor.resources.divineSense -= 1;
+        // Os tipos como o bestiário os escreve. Corruptor e celestial ainda
+        // não existem no jogo; ficam na lista para quando existirem.
+        const TIPOS = new Set(['morto-vivo', 'corruptor', 'celestial']);
+        const achados = this.combatants.filter(
+          (c) => !c.dead && c !== actor && TIPOS.has(c.tipo) && distanceFt(actor.pos, c.pos) <= 60,
+        );
+        this.say('recurso', achados.length
+          ? `${actor.name} sente o que não devia estar aqui: ${achados.map((c) => c.name).join(', ')}.`
+          : `${actor.name} abre os sentidos e não encontra nada de impuro a 18 m.`);
+        return true;
+      }
+      case 'arcaneRecovery': {
+        // RECUPERAÇÃO ARCANA: fora da luta, uma vez por dia, espaços somando
+        // metade do nível (arredondado para cima), nenhum acima do 5º.
+        if (!actor.resources?.arcaneRecovery) return false;
+        if (!this.over && this.combatants.some((c) => c.side !== actor.side && !c.dead)) return false;
+        const sc = actor.spellcasting;
+        if (!sc) return false;
+        let pontos = Math.ceil(actor.level / 2);
+        const voltaram = [];
+        for (let circ = 5; circ >= 1 && pontos > 0; circ--) {
+          while (pontos >= circ && (sc.slots?.[circ] ?? 0) < (sc.slotsMax?.[circ] ?? 0)) {
+            sc.slots[circ] += 1;
+            pontos -= circ;
+            voltaram.push(circ);
+          }
+        }
+        if (!voltaram.length) return false;
+        actor.resources.arcaneRecovery -= 1;
+        this.say('recurso', `${actor.name} recolhe o que sobrou da magia do dia: ${voltaram.map((c) => `${c}º`).join(', ')}.`);
+        return true;
+      }
+      case 'martialArts': {
+        // ARTES MARCIAIS, a parte de ação bônus: depois de ATACAR com o punho
+        // ou com arma de monge, um golpe desarmado a mais. É o que dobra o
+        // dano do monge no turno, e é por isso que a ação de Atacar tem de
+        // ter acontecido antes.
+        if (actor.bonusUsed || !actor.actionUsed) return false;
+        if (!actor.dadoDeArtesMarciais) return false;
+        if (!actor.atacouDeMonge) return false;
+        if (!target || target.dead || !isAdjacent(actor.pos, target.pos)) return false;
+        actor.bonusUsed = true;
+        this.say('recurso', `${actor.name} emenda um golpe desarmado.`);
+        this.resolveAttack(actor, target, { weaponId: 'punhos' });
         return true;
       }
       case 'rage': {

@@ -81,6 +81,21 @@ export const CONDITIONS = {
     saveBonusDice: '1d4',
     concentrationEffect: true,
   },
+  // INSPIRAÇÃO BÁRDICA. O dado vai no bolso de quem recebe e sai no primeiro
+  // ataque, teste ou resistência que ele escolher gastar — por isso os três
+  // `consumida*` juntos: o motor tira a condição no primeiro dos três que
+  // acontecer. O tamanho do dado cresce com o nível do bardo, então ele vem
+  // em `data.dado` em vez de escrito aqui.
+  inspirado: {
+    name: 'Inspirado',
+    desc: 'Soma o dado da Inspiração Bárdica num ataque, teste ou resistência — o primeiro que você quiser.',
+    // O dado cresce com o nível do bardo (d6, d8, d10, d12), então ele vem
+    // na instância (`data.dado`) e não escrito aqui.
+    dadoNaData: true,
+    consumidaAoAtacar: true,
+    consumidaNaResistencia: true,
+    consumidaNoTeste: true,
+  },
   // A FÚRIA do bárbaro. O que o SRD dá, posto nos campos que o motor já
   // sabe ler: vantagem em teste E resistência de Força (`vantagemTeste` vale
   // para os dois), e resistência aos três danos físicos. O bônus de dano não
@@ -750,6 +765,11 @@ export function conditionEffects(actor) {
     if (def.saveDisadvantage) out.saveDisadvantage.push(...def.saveDisadvantage);
     if (def.attackBonusDice) out.attackBonusDice.push(def.attackBonusDice);
     if (def.saveBonusDice) out.saveBonusDice.push(def.saveBonusDice);
+    // Dado guardado na instância (Inspiração Bárdica): vale nos três.
+    if (def.dadoNaData && c.data?.dado) {
+      out.attackBonusDice.push(c.data.dado);
+      out.saveBonusDice.push(c.data.dado);
+    }
     if (def.attackPenaltyDice) out.attackPenaltyDice.push(def.attackPenaltyDice);
     if (def.savePenaltyDice) out.savePenaltyDice.push(def.savePenaltyDice);
     if (def.acBonus) out.acBonus += def.acBonus;

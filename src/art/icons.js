@@ -702,6 +702,11 @@ const ACAO_DO_HUD = {
   pular: 'acao-saltar',
   preservar: 'classe-preserveLife',
   furia: 'classe-rage',
+  inspiracao: 'classe-bardicInspiration',
+  curaMaos: 'classe-layOnHands',
+  sentidoDivino: 'classe-divineSense',
+  recuperacaoArcana: 'classe-arcaneRecovery',
+  artesMarciais: 'classe-martialArts',
 };
 // Enquanto o desenho próprio não existe, o de antes.
 const ACAO_RESERVA = {

@@ -17,10 +17,10 @@ export const CARACTERISTICAS = {
   abilityScoreImprovement: C('Aumento no Valor de Atributo', 'passiva', '+2 num atributo ou +1 em dois, sem passar de 20.'),
   asi: C('Aumento no Valor de Atributo', 'passiva', '+2 num atributo ou +1 em dois, sem passar de 20.'),
   extraAttack: C('Ataque Extra', 'passiva', 'A ação de Atacar faz um ataque a mais.'),
-  unarmoredDefense: C('Defesa sem Armadura', 'passiva', 'Sem armadura, a CA é 10 + DES + um segundo atributo da classe.'),
+  unarmoredDefense: C('Defesa sem Armadura', 'passiva', 'Sem armadura, a CA é 10 + DES + um segundo atributo da classe.', { motor: true }),
   fightingStyle: C('Estilo de Luta', 'passiva', 'Uma especialidade de combate, escolhida uma vez.'),
   additionalFightingStyle: C('Estilo de Luta Adicional', 'passiva', 'Um segundo estilo de luta, diferente do primeiro.'),
-  expertise: C('Especialização', 'passiva', 'Dobra a proficiência em duas perícias já treinadas.'),
+  expertise: C('Especialização', 'passiva', 'Dobra a proficiência em duas perícias já treinadas.', { motor: true }),
   evasion: C('Evasão', 'passiva', 'Contra efeitos de área com resistência de DES: sucesso não sofre nada, falha sofre metade.'),
   uncannyDodge: C('Esquiva Sobrenatural', 'reacao', 'Reação: corta pela metade o dano de um ataque que você vê chegar.'),
   timelessBody: C('Corpo Atemporal', 'fora', 'Envelhece muito mais devagar e não sofre o desgaste da idade.'),
@@ -51,7 +51,7 @@ export const CARACTERISTICAS = {
   retaliation: C('Retaliação', 'reacao', 'Ao sofrer dano de alguém ao lado, ataca de volta corpo a corpo.'),
 
   // ---- bardo ---------------------------------------------------------------
-  bardicInspiration: C('Inspiração Bárdica', 'bonus', 'Dá a um aliado um dado para somar a um teste, ataque ou resistência.'),
+  bardicInspiration: C('Inspiração Bárdica', 'bonus', 'Dá a um aliado um dado para somar a um teste, ataque ou resistência.', { motor: true }),
   jackOfAllTrades: C('Pau pra Toda Obra', 'passiva', 'Metade da proficiência em testes de atributo sem perícia treinada.'),
   songOfRest: C('Canção de Descanso', 'fora', 'No descanso curto, quem gasta dado de vida recupera um dado extra.'),
   fontOfInspiration: C('Fonte de Inspiração', 'passiva', 'A Inspiração Bárdica volta também no descanso curto.'),
@@ -95,7 +95,7 @@ export const CARACTERISTICAS = {
   survivor: C('Sobrevivente', 'passiva', 'Com até metade dos PV, recupera 5 + CON por turno.'),
 
   // ---- monge ---------------------------------------------------------------
-  martialArts: C('Artes Marciais', 'bonus', 'Golpes desarmados e armas de monge usam DES e o dado de Artes Marciais; um golpe extra como bônus.'),
+  martialArts: C('Artes Marciais', 'bonus', 'Golpes desarmados e armas de monge usam DES e o dado de Artes Marciais; um golpe extra como bônus.', { motor: true }),
   ki: C('Ki', 'passiva', 'Pontos de ki iguais ao nível, que voltam no descanso curto.'),
   flurryOfBlows: C('Rajada de Golpes', 'bonus', '1 ki: dois golpes desarmados depois de Atacar.'),
   patientDefense: C('Defesa Paciente', 'bonus', '1 ki: Esquivar como ação bônus.'),
@@ -117,8 +117,8 @@ export const CARACTERISTICAS = {
   quiveringPalm: C('Palma Trêmula', 'acao', '3 ki: vibrações num golpe que podem derrubar o alvo a 0 PV depois.'),
 
   // ---- paladino ------------------------------------------------------------
-  divineSense: C('Sentido Divino', 'acao', 'Sente celestiais, corruptores e mortos-vivos por perto.'),
-  layOnHands: C('Cura pelas Mãos', 'acao', 'Uma reserva de 5 × nível de PV para curar ou tirar doença e veneno.'),
+  divineSense: C('Sentido Divino', 'acao', 'Sente celestiais, corruptores e mortos-vivos por perto.', { motor: true }),
+  layOnHands: C('Cura pelas Mãos', 'acao', 'Uma reserva de 5 × nível de PV para curar ou tirar doença e veneno.', { motor: true }),
   divineSmite: C('Destruição Divina', 'livre', 'Num acerto corpo a corpo com arma, gasta um espaço: 2d8 radiante + 1d8 por círculo acima do 1º (máximo 5d8), +1d8 contra mortos-vivos e corruptores.'),
   divineHealth: C('Saúde Divina', 'passiva', 'Imune a doenças.'),
   auraOfProtection: C('Aura de Proteção', 'passiva', 'Você e aliados por perto somam seu CAR às resistências.'),
@@ -235,7 +235,7 @@ export const CARACTERISTICAS = {
   witchSight: C('Visão da Bruxa', 'passiva', 'Vê a forma verdadeira de metamorfos e ilusões a 30 pés.'),
 
   // ---- mago ----------------------------------------------------------------
-  arcaneRecovery: C('Recuperação Arcana', 'fora', 'No descanso curto, recupera espaços somando metade do nível. Uma vez por dia.'),
+  arcaneRecovery: C('Recuperação Arcana', 'fora', 'No descanso curto, recupera espaços somando metade do nível. Uma vez por dia.', { motor: true }),
   spellMastery: C('Domínio de Magia', 'passiva', 'Uma magia de 1º e uma de 2º círculo sem gastar espaço.'),
   signatureSpells: C('Magias de Assinatura', 'passiva', 'Duas magias de 3º círculo sempre preparadas, uma vez cada sem espaço.'),
   evocationSavant: C('Especialista em Evocação', 'fora', 'Copiar evocações para o livro custa metade.'),

@@ -199,6 +199,90 @@ teste('inimigo no caminho continua fechando a passagem', () => {
   assert.ok(!enc.moveAlong(dara, [{ x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }]), 'não atravessa inimigo');
 });
 
+// ---- os poderes de 1º nível que faltavam -----------------------------------
+
+/** Troca a Dara por um personagem de classe, para testar o poder dele. */
+function comClasse(classe, nivel = 1, extra = {}) {
+  const { enc, party, foes } = montar({ nivel: Math.max(nivel, 1) });
+  // Os atributos entram na CRIAÇÃO: as cargas de Inspiração e de Sentido
+  // Divino saem do modificador de Carisma, e pô-los depois deixaria os dois
+  // em NaN.
+  const abilities = { str: 12, dex: 16, con: 14, int: 14, wis: 14, cha: 16 };
+  const c = criarPersonagem({ name: 'T', raca: 'humano', abilities }, { classe, nivel });
+  Object.assign(c, {
+    id: party[DARA].id, side: 'party', pos: { ...party[DARA].pos }, abilities,
+    hp: 30, maxHp: 30, ac: 14, ...extra,
+  });
+  enc.combatants[enc.combatants.indexOf(party[DARA])] = c;
+  party[DARA] = c;
+  c.bonusUsed = false; c.actionUsed = false;
+  return { enc, c, party, foes };
+}
+
+teste('Inspiração Bárdica: o dado fica com o aliado e sai no primeiro uso', () => {
+  const { enc, c, party } = comClasse('bardo', 1);
+  const pip = party[PIP];
+  pip.pos = { x: c.pos.x + 1, y: c.pos.y };
+  assert.equal(c.resources.bardicInspiration, 3, 'uma por ponto de Carisma');
+  assert.ok(enc.useFeature(c, 'bardicInspiration', { target: pip }));
+  assert.equal(c.resources.bardicInspiration, 2);
+  assert.ok(hasCondition(pip, 'inspirado'));
+  assert.equal(getCondition(pip, 'inspirado').data.dado, '1d6');
+  // O dado entra na conta do teste e some depois dele.
+  const r = enc.testeDeAtributo(pip, 'dex');
+  assert.ok(r.conta.includes('inspirado 1d6['), `a conta mostra o dado: ${r.conta}`);
+  assert.ok(!hasCondition(pip, 'inspirado'), 'gastou');
+});
+
+teste('Cura pelas Mãos: tira da reserva o que falta, e a reserva encolhe', () => {
+  const { enc, c, party } = comClasse('paladino', 2);
+  const pip = party[PIP];
+  pip.pos = { x: c.pos.x + 1, y: c.pos.y };
+  pip.hp = pip.maxHp - 6;
+  assert.equal(c.resources.layOnHands, 10, '5 x nível');
+  assert.ok(enc.useFeature(c, 'layOnHands', { target: pip }));
+  assert.equal(pip.hp, pip.maxHp, 'curou o que faltava');
+  assert.equal(c.resources.layOnHands, 4, 'a reserva pagou 6');
+  assert.ok(c.actionUsed);
+});
+
+teste('Sentido Divino acha o morto-vivo que ninguém está vendo', () => {
+  const { enc, c } = comClasse('paladino', 1);
+  const z = makeMonster('zumbi', { x: c.pos.x + 2, y: c.pos.y });
+  enc.addCombatant(z); z.side = 'foes';
+  const antes = c.resources.divineSense;
+  assert.ok(enc.useFeature(c, 'divineSense'));
+  assert.equal(c.resources.divineSense, antes - 1);
+  assert.ok(enc.log.some((l) => l.text?.includes(z.name)), 'disse o nome do morto-vivo');
+});
+
+teste('Recuperação Arcana devolve espaços fora da luta, uma vez', () => {
+  const { enc, c, foes } = comClasse('mago', 3);
+  for (const f of foes) { f.dead = true; f.hp = 0; }
+  c.spellcasting.slots[1] = 0;
+  c.spellcasting.slots[2] = 0;
+  assert.ok(enc.useFeature(c, 'arcaneRecovery'));
+  const somados = [1, 2].reduce((t, k) => t + c.spellcasting.slots[k] * k, 0);
+  assert.equal(somados, 2, 'metade do 3º nível, arredondado para cima');
+  assert.ok(!enc.useFeature(c, 'arcaneRecovery'), 'uma vez por dia');
+});
+
+teste('Artes Marciais: o punho usa Destreza, e o golpe bônus vem depois de atacar', () => {
+  const { enc, c, foes } = comClasse('monge', 1, { weapons: ['punhos'], equippedWeapon: 'punhos' });
+  const alvo = foes[0];
+  alvo.pos = { x: c.pos.x + 1, y: c.pos.y };
+  alvo.maxHp = alvo.hp = 200; alvo.ac = -5;
+  // Destreza 16 contra Força 12: o punho tem de usar a melhor.
+  const perfil = enc.weaponAttackProfile(c, 'punhos');
+  assert.ok(perfil.damage.endsWith('+3'), `usa Destreza: ${perfil.damage}`);
+  // Sem ter atacado, não há golpe bônus.
+  assert.ok(!enc.useFeature(c, 'martialArts', { target: alvo }), 'antes da ação de Atacar, não');
+  enc.attackAction(c, alvo, 'punhos');
+  assert.ok(c.atacouDeMonge);
+  assert.ok(enc.useFeature(c, 'martialArts', { target: alvo }), 'depois de atacar, sim');
+  assert.ok(c.bonusUsed);
+});
+
 // ---- fúria do bárbaro ------------------------------------------------------
 
 /** Um bárbaro no lugar da Dara, para os testes de Fúria. */

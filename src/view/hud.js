@@ -1159,6 +1159,14 @@ export class Hud {
         () => !c.bonusUsed && c.resources?.rage > 0 && !hasCondition(c, 'furia')
           && ARMORS[c.armor]?.categoria !== 'pesada',
         'rage'],
+      // Sentido Divino e Recuperação Arcana não pedem alvo: azulejo simples.
+      divineSense: ['sentidoDivino', 'Sentido Divino',
+        'Sente mortos-vivos, corruptores e celestiais a até 18 m — inclusive os que ninguém está vendo.',
+        'Ação', () => !c.actionUsed && c.resources?.divineSense > 0, 'divineSense'],
+      arcaneRecovery: ['recuperacaoArcana', 'Recuperação Arcana',
+        `Fora da luta, recupera espaços de magia somando ${Math.ceil((c.level ?? 1) / 2)} círculos. Uma vez por dia.`,
+        'Fora da luta', () => c.resources?.arcaneRecovery > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
+        'arcaneRecovery'],
     };
     for (const f of c.features ?? []) {
       // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.

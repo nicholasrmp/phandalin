@@ -84,6 +84,11 @@ const TALENTOS = {
   discipleOfLife: ['Discípulo da Vida', 'Toda cura de magia de 1º círculo ou mais rende 2 + o círculo da magia a mais.'],
   preserveLife: ['Preservar a Vida', 'Canalizar Divindade: 5 × nível de PV para dividir entre os feridos a até 9 m, até metade dos PV máximos de cada um.'],
   sculptSpells: ['Esculpir Magias', 'Escolhe 1 + o círculo da magia de aliados dentro da área: eles não sofrem nada.'],
+  bardicInspiration: ['Inspiração Bárdica', 'Ação bônus: dá a um aliado que te ouça, a até 18 m, um dado para somar num ataque, teste ou resistência à escolha dele. Clique nele para inspirar.'],
+  layOnHands: ['Cura pelas Mãos', 'Ação: encosta num ferido ao lado e tira da reserva os pontos de vida que faltam. Clique nele para curar.'],
+  divineSense: ['Sentido Divino', 'Ação: sente mortos-vivos, corruptores e celestiais a até 18 m — inclusive os que ninguém está vendo.'],
+  arcaneRecovery: ['Recuperação Arcana', 'Fora da luta, uma vez por dia: recupera espaços de magia somando metade do seu nível.'],
+  martialArts: ['Artes Marciais', 'O punho e a arma de monge usam Destreza, e rolam o dado da classe quando ele é maior. Depois de atacar com eles, um golpe desarmado de ação bônus.'],
   rage: ['Fúria', 'Ação bônus: vantagem em testes e resistências de Força, bônus no dano corpo a corpo com Força e metade do dano de contundente, perfurante e cortante. Um minuto, e acaba antes se você passar um turno sem atacar ninguém nem apanhar. Não entra de armadura pesada.'],
 };
 

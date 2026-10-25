@@ -698,6 +698,7 @@ class App {
       this.afterAct();
       return;
     }
+
     // Item de usar. O que tem alvo decidido (beber a própria poção, o kit no
     // aliado caído ao lado) resolve na hora; o que é arremessado cai no modo
     // de alvo junto com ataque e magia, logo abaixo.
@@ -1216,6 +1217,16 @@ class App {
       // Passar o mouse numa ação acende o alvo dela no tabuleiro.
       aoPrevia: (o) => this.board?.setOverlay({ targets: o?.alvoPrevia ? [o.alvoPrevia] : null }),
     });
+  }
+
+  /**
+   * Um poder de classe que pede ALVO (Inspiração Bárdica, Cura pelas Mãos, o
+   * golpe de ação bônus do monge). O azulejo da barra não serve para eles:
+   * lá não há onde escolher em quem.
+   */
+  usarFeature(c, featureId, { target = null } = {}) {
+    if (!this.enc.useFeature(c, featureId, { target })) return;
+    this.afterAct();
   }
 
   /** Um texto curto no painel de narrativa, sem escolha (Olhar, Examinar). */

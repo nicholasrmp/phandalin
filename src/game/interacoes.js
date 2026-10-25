@@ -199,6 +199,17 @@ export function opcoesDaCasa(app, tile) {
       } else if (!vez && !explorando) {
         opcoes.push({ rotulo: 'Atacar', icone: 'acao-atacar', motivo: 'espere a vez do grupo', fazer: () => {} });
       }
+      // O golpe de ação bônus do monge, depois da ação de Atacar.
+      if (c && vez && c.features?.includes('martialArts')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Golpe desarmado', icone: 'classe-martialArts',
+          detalhe: `ação bônus · ${c.dadoDeArtesMarciais ?? 'd4'}`,
+          motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada'
+            : !c.atacouDeMonge ? 'só depois de atacar com o punho ou arma de monge'
+              : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
+          fazer: () => app.usarFeature(c, 'martialArts', { target: occ }),
+        });
+      }
       opcoes.push(...magias);
       return { titulo, subtitulo, alvo, opcoes };
     }
