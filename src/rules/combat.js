@@ -435,6 +435,7 @@ export class Encounter {
       c.disengaging = false;
       c.magiasNoTurno = [];
       c.surgeUsedThisTurn = false;
+      this.fimDaFuria(c);
       this.rolarRecarga(c);
       this.tickConditions(c);
       this.burnTick(c);
@@ -969,6 +970,13 @@ export class Encounter {
       // de parede. Sem isto o ogro para com metade do corpo dentro da pedra.
       evita ? (x, y) => !hostil({ x, y, f }) && (!cabeFinal || cabeFinal(x, y)) : cabeFinal,
       f,
+      // POR QUEM SE PASSA: o aliado e o neutro, sim; o inimigo, não. É o que
+      // o livro diz — atravessa-se o espaço de uma criatura amiga, e o de uma
+      // hostil só com dois tamanhos de diferença (que o motor ainda não faz).
+      (x, y) => {
+        const quem = this.at(x, y);
+        return !!quem && (quem.side === actor.side || quem.side === 'neutro');
+      },
       );
     } finally {
       this.field.dificeisExtra = null;
@@ -1016,6 +1024,15 @@ export class Encounter {
     const dest = path[path.length - 1];
     const node = reached.get(key(dest.x, dest.y));
     if (!node) return false;
+    // Passar por cima de um aliado pode; terminar o movimento em cima dele,
+    // não. A busca marca isso em `parar`, e é aqui que se cobra — este é o
+    // caminho por onde TODO mundo anda, herói e monstro.
+    if (node.parar === false) return false;
+    // E nenhum passo do meio pode ser por cima de quem não se atravessa: o
+    // caminho pode ter vindo de fora (a cena, a IA), não só de `pathFrom`.
+    for (let i = 1; i < path.length - 1; i++) {
+      if (reached.get(key(path[i].x, path[i].y))?.passar === false) return false;
+    }
     // O que se cobra é o caminho ANDADO: um desvio (a IA contornando a Graxa)
     // custa mais que o caminho mais curto até a mesma casa.
     const hostil = this.terrenoHostil(actor);
@@ -2282,6 +2299,9 @@ export class Encounter {
       return null;
     }
     let p = check.profile;
+    // A fúria se alimenta de briga: atacar um hostil mantém o bárbaro nela
+    // por mais um turno (ver `fimDaFuria`).
+    if (hasCondition(attacker, 'furia') && target.side !== attacker.side) attacker.furiaAgiu = true;
     // A figura mostra a arma do golpe: o hobgoblin de espada e escudo pega o
     // arco para atirar e volta à espada no corpo a corpo (`aparencias` do
     // bloco). Aqui, e não na ação de Ataque, para valer também na reação.
@@ -2446,16 +2466,24 @@ export class Encounter {
       dmg.total = Math.floor(dmg.total / 2);
       this.say('condicao', `${attacker.name} está enfraquecido: o golpe sai pela metade.`);
     }
+    // FÚRIA: bônus FIXO no dano corpo a corpo com Força. Não é dado, então
+    // não dobra no crítico — e é por isso que ele entra como parcela própria
+    // em vez de somar no dado da arma.
+    let furia = null;
+    if (dmg && deForca && !p.ranged && hasCondition(attacker, 'furia') && attacker.danoDeFuria) {
+      furia = { notation: `+${attacker.danoDeFuria}`, rolls: [], mod: attacker.danoDeFuria, total: attacker.danoDeFuria, critical: false };
+    }
     // Aumentar/Reduzir: +1d4 ou −1d4 no dano de arma.
     const tamanho = dmg ? this.ajusteDeTamanho(attacker, dmg, critical) : null;
     const total = (dmg?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
-      + (surpresa?.total ?? 0);
+      + (surpresa?.total ?? 0) + (furia?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
     // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
     // o ladino está manobrando o turno inteiro para conseguir.
     const danoPartes = dmg ? [parcelaDeDano('dano', dmg)] : [];
     if (tamanho) danoPartes.push(tamanho);
+    if (furia) danoPartes.push(parcelaDeDano('fúria', furia));
     if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
     if (martial) danoPartes.push(parcelaDeDano('vantagem marcial', martial));
     if (surpresa) danoPartes.push(parcelaDeDano('ataque surpresa', surpresa));
@@ -2768,6 +2796,26 @@ export class Encounter {
   }
 
   /**
+   * O FIM DA FÚRIA, conferido no começo do turno do bárbaro.
+   *
+   * O SRD diz que ela acaba se, no turno dele, o bárbaro não ATACAR ninguém
+   * hostil e não tiver SOFRIDO dano desde o turno anterior. `furiaAgiu`
+   * guarda as duas coisas: o ataque marca na hora de resolver, o dano marca
+   * em `applyDamage`, e entrar em fúria já marca — senão ela morria antes do
+   * primeiro golpe.
+   *
+   * Os dez turnos de duração são contados pela própria condição.
+   */
+  fimDaFuria(c) {
+    if (!hasCondition(c, 'furia')) { c.furiaAgiu = false; return; }
+    if (!c.furiaAgiu) {
+      removeCondition(c, 'furia');
+      this.say('recurso', `A fúria de ${c.name} passa: um turno sem atacar nem apanhar.`);
+    }
+    c.furiaAgiu = false;
+  }
+
+  /**
    * Elo de Proteção: quem conjurou o elo sofre o mesmo dano que o protegido
    * (já depois da resistência dele). O elo acaba se o conjurador cai a 0 PV ou
    * se os dois ficam a mais de 18 m. `emElo` impede o eco: o dano que volta
@@ -2877,6 +2925,8 @@ export class Encounter {
       this.say('dano', `${target.name} é ${como} a ${type}: ${bruto} vira ${amount}.`);
     }
     if (amount <= 0) return;
+    // Apanhar também mantém a fúria de pé.
+    if (hasCondition(target, 'furia')) target.furiaAgiu = true;
     // Amizade Animal acaba se o grupo fere a fera (inclusive com dano de área).
     if (target.amizadeAnimal && source?.side === 'party') {
       delete target.amizadeAnimal;
@@ -5486,6 +5536,25 @@ export class Encounter {
         if (actor.actionUsed) actor.actionUsed = false;
         else actor.extraActions += 1;
         this.say('recurso', `${actor.name} usa Ação Surpreendente — ganha uma ação.`);
+        return true;
+      }
+      case 'rage': {
+        // FÚRIA: ação bônus, uma carga, um minuto (dez rodadas). O bárbaro
+        // que não luta sai dela — a condição de fim está em `fimDaFuria`,
+        // conferida no começo de cada turno dele.
+        if (actor.bonusUsed || !actor.resources?.rage) return false;
+        if (hasCondition(actor, 'furia')) return false;
+        // O SRD não deixa entrar em fúria de armadura pesada.
+        if (ARMORS[actor.armor]?.categoria === 'pesada') return false;
+        actor.bonusUsed = true;
+        actor.resources.rage -= 1;
+        addCondition(actor, 'furia', { rounds: 10, quando: 'fim' });
+        // Entrar em fúria já conta como "fez alguma coisa" na rodada: senão
+        // ela acabaria no começo do turno seguinte, antes do primeiro golpe.
+        actor.furiaAgiu = true;
+        // A concentração não sobrevive à fúria.
+        if (actor.concentrating) this.dropConcentration(actor);
+        this.say('recurso', `${actor.name} entra em FÚRIA.`);
         return true;
       }
       case 'cunningAction': {

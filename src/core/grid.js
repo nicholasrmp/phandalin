@@ -395,9 +395,9 @@ export class Battlefield {
    *   parede — e, diferente de `occupied`, vale também para passar, porque
    *   quem não cabe não passa.
    */
-  reachable(from, budgetFt, occupied = () => false, cabe = () => true, f = 1) {
+  reachable(from, budgetFt, occupied = () => false, cabe = () => true, f = 1, atravessa = () => false) {
     const seen = new Map();
-    seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null });
+    seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null, parar: true, passar: true });
     // Fila simples ordenada por custo: a grade é pequena, não precisa de heap.
     const queue = [{ x: from.x, y: from.y, cost: 0 }];
 
@@ -423,9 +423,18 @@ export class Battlefield {
         const nKey = key(nx, ny);
         const prev = seen.get(nKey);
         if (prev && prev.cost <= cost) continue;
-        seen.set(nKey, { x: nx, y: ny, cost, from: curKey });
-        // Atravessa aliados, mas não pode parar em cima deles.
-        if (!occupied(nx, ny)) queue.push({ x: nx, y: ny, cost });
+        // PASSAR E PARAR SÃO COISAS DIFERENTES. Pelo livro, atravessa-se o
+        // quadrado de um ALIADO à vontade; o que não se pode é terminar o
+        // movimento em cima dele. Antes, a busca simplesmente não seguia por
+        // um quadrado tomado — e com isso um aliado parado num corredor
+        // fechava a passagem para o grupo inteiro.
+        //
+        // `parar` diz se a casa serve de DESTINO; a busca continua por ela
+        // de qualquer jeito quando `atravessa` deixa.
+        const tomada = occupied(nx, ny);
+        const passa = !tomada || atravessa(nx, ny);
+        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada, passar: passa });
+        if (passa) queue.push({ x: nx, y: ny, cost });
       }
     }
     return seen;

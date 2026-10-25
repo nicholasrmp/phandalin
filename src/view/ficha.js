@@ -84,6 +84,7 @@ const TALENTOS = {
   discipleOfLife: ['Discípulo da Vida', 'Toda cura de magia de 1º círculo ou mais rende 2 + o círculo da magia a mais.'],
   preserveLife: ['Preservar a Vida', 'Canalizar Divindade: 5 × nível de PV para dividir entre os feridos a até 9 m, até metade dos PV máximos de cada um.'],
   sculptSpells: ['Esculpir Magias', 'Escolhe 1 + o círculo da magia de aliados dentro da área: eles não sofrem nada.'],
+  rage: ['Fúria', 'Ação bônus: vantagem em testes e resistências de Força, bônus no dano corpo a corpo com Força e metade do dano de contundente, perfurante e cortante. Um minuto, e acaba antes se você passar um turno sem atacar ninguém nem apanhar. Não entra de armadura pesada.'],
 };
 
 /** Iniciais para o soquete de um item que ainda não tem ícone desenhado. */
@@ -355,7 +356,8 @@ export function criarFicha(root, handlers = {}) {
     const lista = (personagem.features ?? []).map((f) => {
       const t = TALENTOS[f];
       if (!t) return null;
-      const extra = f === 'sneakAttack' && personagem.sneakAttack ? ` Hoje são ${personagem.sneakAttack}.` : '';
+      const extra = f === 'sneakAttack' && personagem.sneakAttack ? ` Hoje são ${personagem.sneakAttack}.`
+        : f === 'rage' && personagem.danoDeFuria ? ` Hoje o bônus é +${personagem.danoDeFuria}.` : '';
       // O ícone do recurso, quando existe, fica à esquerda — o mesmo que o
       // jogador vê no azulejo da barra de ações, para ligar a frase ao botão.
       const icone = iconeDeRecurso(f);

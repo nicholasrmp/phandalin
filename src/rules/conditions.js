@@ -81,6 +81,17 @@ export const CONDITIONS = {
     saveBonusDice: '1d4',
     concentrationEffect: true,
   },
+  // A FÚRIA do bárbaro. O que o SRD dá, posto nos campos que o motor já
+  // sabe ler: vantagem em teste E resistência de Força (`vantagemTeste` vale
+  // para os dois), e resistência aos três danos físicos. O bônus de dano não
+  // cabe aqui porque depende do nível do bárbaro e só vale no corpo a corpo
+  // com Força — isso o combate resolve, em `resolveAttack`.
+  furia: {
+    name: 'Fúria',
+    desc: 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a contundente, perfurante e cortante. Não pode conjurar nem se concentrar.',
+    vantagemTeste: ['str'],
+    resiste: ['contundente', 'perfurante', 'cortante'],
+  },
   lento: {
     name: 'Lento',
     desc: 'Deslocamento reduzido em 3 m.',

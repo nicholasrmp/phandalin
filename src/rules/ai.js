@@ -35,9 +35,23 @@ function comDesvio(enc, monster, planejar) {
 
 function scoreTarget(enc, monster, target) {
   // Menor é melhor.
-  let score = distanceFt(monster.pos, target.pos);
+  //
+  // A DISTÂNCIA PESA TRÊS VEZES. Antes ela entrava em pé de igualdade com o
+  // apetite, e a soma dos bônus (mago de armadura leve: 22) comprava 6 m de
+  // caminhada — então o bando inteiro passava pela guerreira e ia no mago,
+  // toda luta, desde o primeiro turno. Medido: em vinte sorteios do primeiro
+  // turno da emboscada, os quatro goblins bateram só no clérigo e no mago.
+  //
+  // Isso não é só monótono, é jogar mal: atravessar a linha custa ataque de
+  // oportunidade e deixa o goblin cercado. Com o peso em três, os bônus
+  // decidem ENTRE alvos de distância parecida, que é o que eles são.
+  let score = distanceFt(monster.pos, target.pos) * 2;
   // Duelo Compelido: quem o desafiou é o único alvo que ele quer.
   if (getCondition(monster, 'duelo')?.source === target.id) score -= 500;
+  // QUEM JÁ ESTÁ COLADO NELE é o alvo. Sair de perto para procurar outro dá
+  // ataque de oportunidade de graça, e atacar à distância com um inimigo ao
+  // lado é com desvantagem — as duas coisas que um goblin não faria.
+  if (enc.field.vizinhos(monster.pos, target.pos)) score -= 25;
   score -= (1 - target.hp / target.maxHp) * 30;        // machucado atrai
   if (target.ac <= 13) score -= 10;                     // alvo mole
   if (hasCondition(target, 'caido')) score -= 8;

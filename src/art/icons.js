@@ -701,6 +701,7 @@ const ACAO_DO_HUD = {
   levantar: 'acao-levantarSe',
   pular: 'acao-saltar',
   preservar: 'classe-preserveLife',
+  furia: 'classe-rage',
 };
 // Enquanto o desenho próprio não existe, o de antes.
 const ACAO_RESERVA = {

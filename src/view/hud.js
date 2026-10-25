@@ -40,6 +40,7 @@ import { makePortrait } from '../art/sheet.js';
 import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
 import { CONDITIONS, hasCondition, maxHpEfetivo, DEGRAUS_DE_EXAUSTAO } from '../rules/conditions.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
+import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
 import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
@@ -1152,6 +1153,12 @@ export class Hud {
       secondWind: ['folego', 'Retomar o Fôlego', 'Recupera 1d10 + nível de pontos de vida.', 'Ação bônus', () => !c.bonusUsed && c.resources?.secondWind > 0, 'secondWind'],
       actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0, 'actionSurge'],
       preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      rage: ['furia', 'Fúria',
+        `Vantagem em testes e resistências de Força, +${c.danoDeFuria ?? 2} de dano corpo a corpo com Força e resistência a contundente, perfurante e cortante. Um minuto; acaba antes se você passar um turno sem atacar nem apanhar.`,
+        'Ação bônus',
+        () => !c.bonusUsed && c.resources?.rage > 0 && !hasCondition(c, 'furia')
+          && ARMORS[c.armor]?.categoria !== 'pesada',
+        'rage'],
     };
     for (const f of c.features ?? []) {
       // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.

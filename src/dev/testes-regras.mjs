@@ -136,6 +136,69 @@ teste('Ação Ardilosa faz Disparada OU Desengajar, não as duas', () => {
   assert.ok(!enc.useFeature(pip, 'cunningAction', { modo: 'desengajar' }), 'segunda ação bônus no mesmo turno');
 });
 
+// ---- escolha de alvo da IA -------------------------------------------------
+
+teste('goblin colado na guerreira bate nela, e não corre atrás do mago ferido', () => {
+  const { enc, party, foes } = montar({ foes: [['goblin', { x: 6, y: 5 }]] });
+  const [dara, , , ilvan] = party;
+  dara.pos = { x: 5, y: 5 };
+  ilvan.pos = { x: 10, y: 5 };
+  ilvan.hp = Math.ceil(ilvan.maxHp / 3);   // o alvo mais apetitoso que existe
+  enc.beginSide('foes');
+  takeMonsterTurn(enc, foes[0]);
+  assert.deepEqual({ x: foes[0].pos.x, y: foes[0].pos.y }, { x: 6, y: 5 }, 'não sai de perto');
+  assert.ok(ilvan.hp === Math.ceil(ilvan.maxHp / 3), 'o mago não foi tocado');
+});
+
+teste('a distância pesa mais que o apetite: não atravessa a linha para pegar o mago', () => {
+  const { enc, party, foes } = montar({ foes: [['goblin', { x: 10, y: 5 }]] });
+  const [dara, pip, brenn, ilvan] = party;
+  dara.pos = { x: 8, y: 5 };          // guerreira no caminho, a 3 casas do goblin
+  ilvan.pos = { x: 2, y: 5 };         // mago bem atrás dela
+  pip.pos = { x: 1, y: 10 }; brenn.pos = { x: 2, y: 10 };
+  const vidaDoMago = ilvan.hp;
+  enc.beginSide('foes');
+  takeMonsterTurn(enc, foes[0]);
+  // O goblin fecha a distância com a guerreira, não passa por ela.
+  assert.ok(distanceFt(foes[0].pos, dara.pos) <= 5, 'parou junto da guerreira');
+  assert.equal(ilvan.hp, vidaDoMago, 'o mago, atrás dela, não foi tocado');
+});
+
+// ---- passar por aliado -----------------------------------------------------
+
+teste('passa pelo aliado no corredor, mas não para em cima dele', () => {
+  const { enc, party } = montar();
+  const [dara, pip] = party;
+  // Fila indiana: Dara, Pip, e o chão livre depois.
+  dara.pos = { x: 5, y: 5 };
+  pip.pos = { x: 6, y: 5 };
+  dara.movementLeftFt = 30;
+  const alcance = enc.reachableFor(dara);
+  const noPip = alcance.get(`${pip.pos.x},${pip.pos.y}`);
+  const depois = alcance.get('7,5');
+  assert.ok(noPip, 'a casa do aliado entra no alcance');
+  assert.equal(noPip.parar, false, 'mas não serve de destino');
+  assert.ok(depois, 'a casa DEPOIS do aliado é alcançável — passa por ele');
+  assert.equal(depois.parar, true);
+  // E o motor recusa parar em cima dele.
+  assert.ok(!enc.moveAlong(dara, [dara.pos, { ...pip.pos }]), 'não termina em cima do aliado');
+  assert.ok(enc.moveAlong(dara, [{ x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }]), 'atravessa e para depois');
+  assert.deepEqual({ x: dara.pos.x, y: dara.pos.y }, { x: 7, y: 5 });
+});
+
+teste('inimigo no caminho continua fechando a passagem', () => {
+  const { enc, party, foes } = montar({ foes: [['goblin', { x: 6, y: 5 }]] });
+  const dara = party[DARA];
+  dara.pos = { x: 5, y: 5 };
+  dara.movementLeftFt = 30;
+  const alcance = enc.reachableFor(dara);
+  assert.equal(alcance.get('6,5')?.parar, false, 'não para em cima do goblin');
+  // Pelo outro lado dá a volta; o que não existe é atravessar a casa dele.
+  const caminho = Battlefield.pathFrom(alcance, { x: 7, y: 5 });
+  assert.ok(!caminho.some((p) => p.x === 6 && p.y === 5), 'o caminho contorna o inimigo');
+  assert.ok(!enc.moveAlong(dara, [{ x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }]), 'não atravessa inimigo');
+});
+
 // ---- fúria do bárbaro ------------------------------------------------------
 
 /** Um bárbaro no lugar da Dara, para os testes de Fúria. */
@@ -145,7 +208,7 @@ function comBarbaro(nivel = 3) {
     { classe: 'barbaro', nivel });
   Object.assign(b, {
     id: party[DARA].id, side: 'party', pos: { ...party[DARA].pos },
-    str: 16, dex: 12, con: 16, int: 10, wis: 10, cha: 10,
+    abilities: { str: 16, dex: 12, con: 16, int: 10, wis: 10, cha: 10 },
     weapons: ['machadoDeBatalha'], equippedWeapon: 'machadoDeBatalha', armor: 'couro',
     hp: 40, maxHp: 40, ac: 14,
   });
@@ -154,6 +217,61 @@ function comBarbaro(nivel = 3) {
   b.bonusUsed = false; b.actionUsed = false;
   return { enc, b, foes };
 }
+
+teste('Fúria: ação bônus, gasta carga, e não entra duas vezes', () => {
+  const { enc, b } = comBarbaro();
+  assert.equal(b.resources.rage, 3, 'três fúrias no 3º nível');
+  assert.ok(enc.useFeature(b, 'rage'));
+  assert.ok(hasCondition(b, 'furia'));
+  assert.equal(b.resources.rage, 2);
+  assert.ok(!enc.useFeature(b, 'rage'), 'já está em fúria, e a ação bônus já foi');
+});
+
+teste('Fúria: não entra de armadura pesada', () => {
+  const { enc, b } = comBarbaro();
+  b.armor = 'placas';
+  assert.ok(!enc.useFeature(b, 'rage'));
+  assert.ok(!hasCondition(b, 'furia'));
+  assert.equal(b.resources.rage, 3, 'a carga não se gasta à toa');
+});
+
+teste('Fúria: metade do dano físico e vantagem em Força', () => {
+  const { enc, b } = comBarbaro();
+  enc.useFeature(b, 'rage');
+  const antes = b.hp;
+  enc.applyDamage(b, 10, 'cortante');
+  assert.equal(antes - b.hp, 5, 'cortante pela metade');
+  const cheio = b.hp;
+  enc.applyDamage(b, 10, 'fogo');
+  assert.equal(cheio - b.hp, 10, 'fogo não é físico: dano inteiro');
+  const fx = conditionEffects(b);
+  assert.ok(fx.vantagemTeste.includes('str'), 'vantagem em Força');
+});
+
+teste('Fúria: soma dano fixo no corpo a corpo com Força, e não no arco', () => {
+  const { enc, b, foes } = comBarbaro();
+  foes[0].maxHp = foes[0].hp = 500;
+  foes[0].ac = -5;                       // acerta sempre: o teste é do dano
+  b.pos = { x: 6, y: 4 };
+  enc.useFeature(b, 'rage');
+  const r = enc.resolveAttack(b, foes[0], { weaponId: 'machadoDeBatalha' });
+  const furia = (r.danoPartes ?? []).find((d) => d.rotulo === 'fúria');
+  assert.ok(furia, 'a parcela da fúria aparece no dano');
+  assert.equal(furia.total, b.danoDeFuria);
+  assert.equal(b.danoDeFuria, 2, '+2 até o 8º nível');
+});
+
+teste('Fúria: um turno sem atacar nem apanhar e ela passa', () => {
+  const { enc, b } = comBarbaro();
+  enc.useFeature(b, 'rage');
+  assert.ok(hasCondition(b, 'furia'));
+  // Entrar em fúria conta como agir: o turno seguinte ainda a encontra de pé.
+  enc.beginSide('foes'); enc.beginSide('party');
+  assert.ok(hasCondition(b, 'furia'), 'não acaba no turno em que entrou');
+  // Agora um turno inteiro sem atacar e sem apanhar.
+  enc.beginSide('foes'); enc.beginSide('party');
+  assert.ok(!hasCondition(b, 'furia'), 'passou');
+});
 
 // ---- morte -----------------------------------------------------------------
 
@@ -724,6 +842,12 @@ teste('invocações de Rajada Mística pedem o truque', () => {
   assert.ok(!c.features.includes('agonizingBlast'));
   const com = criarPersonagem({ ...BASE(), spellcasting: { ability: 'cha', cantrips: ['rajadaMistica'], prepared: [] } }, { classe: 'bruxo', nivel: 2 });
   assert.ok(com.features.includes('agonizingBlast'));
+});
+
+teste('Fúria ilimitada no 20º não vira Infinity', () => {
+  const c = criarPersonagem(BASE(), { classe: 'barbaro', nivel: 20 });
+  assert.ok(c.resourcesIlimitados.includes('rage'));
+  assert.ok(!JSON.stringify(c.resourcesMax).includes('null'));
 });
 
 // ---- revisão das magias (revisoes/magias-2026-10-24.json) -------------------
