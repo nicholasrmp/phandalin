@@ -47,6 +47,7 @@ export const MORTOS_VIVOS = {
     acNote: 'restos de armadura',
     maxHp: 13,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     // `dagger` é a receita de estocada curta de `visuals.js`, que é o que a
     // espada curta faz; o corte largo de `sword` mentiria sobre o alcance.
     attacks: [
@@ -167,6 +168,9 @@ export const MORTOS_VIVOS = {
     damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas',
     damageImmunities: ['necrótico', 'veneno'],
     conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'agarrado', 'paralisado', 'petrificado', 'envenenado', 'caido', 'imobilizado', 'inconsciente'],
+    // O motor desenha quem e `incorporeo` TRANSLUCIDO, e a morte dele nao e
+    // um corpo que cai: e um vulto que se dissipa (`visuals.js`).
+    incorporeo: true,
     traits: ['incorporealMovement', 'lifeDrain', 'sunlightSensitivity'],
     blurb: 'Vem por dentro da parede até quem se escondeu e drena 3d6 necróticos do PV máximo do alvo.',
   },
@@ -206,6 +210,7 @@ export const MORTOS_VIVOS = {
     damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas e não prateadas',
     damageImmunities: ['necrótico', 'veneno'],
     conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'agarrado', 'paralisado', 'petrificado', 'envenenado', 'caido', 'imobilizado'],
+    incorporeo: true,
     traits: ['incorporealMovement', 'lifeDrain', 'sunlightSensitivity', 'createSpecter'],
     blurb: 'Atravessa a parede, arranca 4d8+3 do PV máximo de um alvo por turno e ergue espectros de quem cai.',
   },

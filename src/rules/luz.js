@@ -42,7 +42,11 @@ const LUZINHAS = { claro: -1, penumbra: 11 };
 // Quem tem visão no escuro (60 pés), pela ancestralidade do herói ou pela
 // família do monstro, quando a ficha não diz.
 const ANCESTRAIS_COM_VISAO = /an[ãa]o|elf|meio-orc|gnom|tifer|tiefling/i;
-const MONSTROS_COM_VISAO = /goblin|bugbear|hobgoblin|orc|klarg|yeemik|droop|grol|esqueleto|skeleton/i;
+// ÚLTIMO recurso, e só para quem não trouxe `senses` na ficha: os blocos dos
+// goblinoides e do esqueleto declaram `senses.darkvisionFt` e não passam por
+// aqui. Ancorado no começo da palavra de propósito — solto, "orc" dava 60 pés
+// de visão no escuro a qualquer criatura com "orc" no meio do nome.
+const MONSTROS_COM_VISAO = /\b(goblin|bugbear|hobgoblin|orc|klarg|yeemik|droop|grol|esqueleto|skeleton)/i;
 
 /** Alcance da visão no escuro, em pés (0 = não tem). */
 export function visaoNoEscuro(c) {

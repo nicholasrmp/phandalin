@@ -106,7 +106,7 @@ export function criarCapitulo2(app, config) {
     explorando: false, encerrado: false, lutando: null,
     acordo: false, sildarLivre: false, tregua: false, tregaFeita: false,
     enchente: null, enchentes: 0, klargAvisado: false, subiuChamine: false,
-    lobosRosnaram: false,
+    lobosRosnaram: false, ponteCortada: false, diqueRompido: false,
     ressaltoQuebrado: false, bauAchado: false, klargFugiu: false,
   };
 
@@ -438,6 +438,17 @@ export function criarCapitulo2(app, config) {
       await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [`A pedra solta escorrega e ${c.name} cai no fundo da chaminé: ${dano} de dano.`] }] });
     }
     app.refresh();
+    // Sair da chaminé NÃO abre a luta por si. A chaminé existe para flanquear,
+    // e antes entregava um herói sozinho a 5 pés de um goblin e a 20 de Klarg:
+    // medido, 68% de vitória e 46% de morte para quem subia primeiro. Quem sobe
+    // no escuro encosta na pedra e espera; quem sobe de tocha acesa se entrega,
+    // e aí vale o gatilho normal.
+    if (subir && t.passou && !emiteLuz(c)) {
+      await narrar(root, { formato: 'painel', paginas: [{ texto: [
+        `${c.name} sai da chaminé e se encosta na pedra, no escuro, sem fazer barulho. Dá para subir o resto do grupo antes de ir em frente — mas basta um passo lá dentro para a caverna acordar.`,
+      ] }] });
+      return;
+    }
     await depoisDeMover(c);
   }
 
@@ -933,6 +944,70 @@ export function criarCapitulo2(app, config) {
         fazer: async () => {
           await achouOBau(c);
           if (podeEncerrar()) await fimDoCapitulo(['O esconderijo é de vocês.']);
+        },
+      });
+    }
+    // Área 5: cortar as cordas da ponte, das pontas dela. A ponte continua de
+    // pé (é corda e prancha, e só um dos cabos cede): quem está em cima é que
+    // despenca os 6 m no canal. Derrubar a ponte inteira travaria o capítulo —
+    // ela é o único caminho do anel para os poços.
+    if (sup === 'ponte' && !estado.ponteCortada) {
+      const emCima = hostis(grupos.ponte).find((f) => f.pos.x >= 20 && f.pos.x <= 21 && f.pos.y >= 5 && f.pos.y <= 6);
+      ops.push({
+        rotulo: 'Cortar as cordas da ponte', icone: 'acao-usarObjeto',
+        detalhe: emCima ? `Atletismo, CD 10 · ${emCima.name} cai 6 m` : 'Atletismo, CD 10 · não tem ninguém em cima',
+        motivo: longe(5),
+        fazer: async () => {
+          const t = teste(c, 'atletismo', 10);
+          if (!t.passou) {
+            await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [
+              `A corda é de fibra trançada, grossa como um pulso, e ${c.name} não consegue passar o fio nela sem subir na ponte.`] }] });
+            return;
+          }
+          estado.ponteCortada = true;
+          const linhas = [`${c.name} serra o cabo de apoio até ele arrebentar. A ponte tomba para um lado e fica pendurada por um cabo só.`];
+          if (emCima) {
+            const dano = enc.rng.die(6) + enc.rng.die(6);
+            enc.applyDamage(emCima, dano, 'contundente');
+            if (!emCima.dead) {
+              addCondition(emCima, 'caido');
+              const agua = casaPerto({ x: 19, y: 6 });
+              emCima.pos = { ...emCima.pos, x: agua.x, y: agua.y };
+            }
+            trazer(grupos.ponte);
+            linhas.push(emCima.dead
+              ? `${emCima.name} despenca de costas no canal, seis metros abaixo, e não se levanta (${dano} de dano).`
+              : `${emCima.name} despenca no canal com as pranchas, seis metros abaixo: ${dano} de dano, e fica caído na água rasa.`);
+            enc.say('dano', `${emCima.name} cai da ponte: ${dano} de dano.`);
+          }
+          await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: linhas }] });
+          app.refresh();
+          if (emCima && !emCima.dead) await combate(grupos.ponte, 'nossa');
+        },
+      });
+    }
+    // Área 7: romper o dique de propósito, para gastar a enchente antes que o
+    // goblin da ponte a solte em cima do grupo.
+    if (sup === 'entulho' && tile.y === 4 && tile.x >= 32 && tile.x <= 37) {
+      const semAgua = estado.enchentes >= 2 || estado.diqueRompido;
+      ops.push({
+        rotulo: 'Romper o dique', icone: 'acao-usarObjeto',
+        detalhe: semAgua ? 'os tanques já desceram' : 'Atletismo, CD 15 · solta a água antes que eles soltem',
+        motivo: longe(5) ?? (semAgua ? 'não sobrou água represada' : null),
+        fazer: async () => {
+          const t = teste(c, 'atletismo', 15);
+          if (!t.passou) {
+            await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [
+              `${c.name} empurra, chuta e puxa as pedras do dique. Elas rangem e ficam onde estão.`] }] });
+            return;
+          }
+          estado.diqueRompido = true;
+          await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [
+            `${c.name} desencaixa a pedra de baixo e sai da frente. O dique desmonta sozinho, e o tanque despeja no canal.`,
+            'A armadilha deles acabou de ser gasta do lado errado.',
+          ] }] });
+          estado.enchente = { turnos: 0 };
+          await enchente();
         },
       });
     }

@@ -1014,8 +1014,13 @@ teste('imunidade a condição do bloco: espectro não fica caído', () => {
   assert.ok(!hasCondition(esp, 'caido'));
 });
 
-teste('Chefe Goblin e Raio de Doença marcados como conteúdo próprio', () => {
-  assert.equal(MONSTERS.goblinChefe.fonte, 'propria');
+// O Chefe Goblin era marcado 'propria', mas o bloco é o do Livro dos Monstros
+// (2014) número por número — CA 17, 21 PV, Escapada Ágil, Redirecionar Ataque e
+// o segundo ataque com desvantagem. Passou a 'MM', como o Vigia Ciclópico, até
+// que se decida redesenhá-lo. Yeemik usa o mesmo bloco e carrega o mesmo selo.
+teste('Chefe Goblin e Yeemik marcados como Livro dos Monstros, não como nossos', () => {
+  assert.equal(MONSTERS.goblinChefe.fonte, 'MM');
+  assert.equal(MONSTERS.yeemik.fonte, 'MM');
   assert.equal(SPELLS.raioDeDoenca.fonte, 'propria');
 });
 

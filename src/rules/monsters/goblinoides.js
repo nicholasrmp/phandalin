@@ -36,6 +36,7 @@ export const GOBLINOIDES = {
     acNote: 'armadura de couro, escudo',
     maxHp: 7,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
     // Furtividade +6 no SRD. Proficiência só dá +4 (DES +2, prof +2); o +6
     // é especialização. Com só `skills` o motor calculava +4 — e isso
@@ -82,7 +83,10 @@ export const GOBLINOIDES = {
     acNote: 'armadura de couro',
     maxHp: 7,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
+    // Mesma Furtividade do goblin do SRD (+6): só a CA muda nesta variação.
+    expertise: ['furtividade'],
     attacks: [
       { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
       { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
@@ -96,9 +100,12 @@ export const GOBLINOIDES = {
     id: 'goblinChefe',
     name: 'Chefe Goblin',
     look: 'goblinBoss',
-    // O Chefe Goblin não está no SRD 5.1: bloco nosso, derivado do goblin do
-    // SRD (mais PV, cota de malha, dois golpes, Redirecionar Ataque).
-    fonte: 'propria',
+    // O Chefe Goblin NÃO está no SRD 5.1, e este bloco não é derivado do
+    // goblin: são os números e os traços do Chefe Goblin do Livro dos Monstros
+    // (2014) — CA 17, 21 PV, dois ataques, Escapada Ágil e Redirecionar
+    // Ataque. Estava marcado 'propria', o que não era verdade. O nome e a arte
+    // continuam nossos, como no Vigia Ciclópico.
+    fonte: 'MM',
     size: 'pequeno',
     level: 3,
     cr: '1',
@@ -108,6 +115,7 @@ export const GOBLINOIDES = {
     acNote: 'camisão de malha, escudo',
     maxHp: 21,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
     expertise: ['furtividade'],
     attacks: [
@@ -134,6 +142,7 @@ export const GOBLINOIDES = {
     acNote: 'cota de malha, escudo',
     maxHp: 11,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     attacks: [
       { name: 'Espada longa', bonus: 3, damage: '1d8+1', type: 'cortante', reachFt: 5, art: 'sword' },
       { name: 'Arco longo', bonus: 3, damage: '1d8+1', type: 'perfurante', ranged: true, rangeFt: 150, longRangeFt: 600, art: 'bow' },
@@ -159,6 +168,7 @@ export const GOBLINOIDES = {
     acNote: 'armadura de peles, escudo',
     maxHp: 27,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade', 'sobrevivencia'],
     expertise: ['furtividade'],
     attacks: [
@@ -190,6 +200,7 @@ export const GOBLINOIDES = {
     acNote: 'armadura de peles, escudo',
     maxHp: 27,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade', 'sobrevivencia'],
     expertise: ['furtividade'],
     attacks: [
@@ -221,6 +232,7 @@ export const GOBLINOIDES = {
     acNote: 'armadura de peles, escudo',
     maxHp: 45,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade', 'sobrevivencia'],
     expertise: ['furtividade'],
     attacks: [
@@ -238,10 +250,13 @@ export const GOBLINOIDES = {
     id: 'yeemik',
     name: 'Yeemik',
     look: 'yeemik',
-    // Mesmo bloco do Chefe Goblin (nosso, não do SRD). É o papel dele no
-    // módulo: o segundo em comando que quer o posto do chefe — e Redirecionar
-    // Ataque é exatamente "empurra o subordinado na frente do golpe".
-    fonte: 'propria',
+    // Mesmo bloco do Chefe Goblin, e pela mesma razão ele é 'MM' e não
+    // 'propria': os números vêm do Livro dos Monstros (2014). É o papel dele
+    // no módulo — o segundo em comando que quer o posto do chefe —, e
+    // Redirecionar Ataque é exatamente "empurra o subordinado na frente do
+    // golpe". Quem jogar com 12 PV (o que `encounter.js` força no esconderijo)
+    // está jogando com um bloco mais fraco que este.
+    fonte: 'MM',
     size: 'pequeno',
     level: 3,
     cr: '1',
@@ -251,6 +266,7 @@ export const GOBLINOIDES = {
     acNote: 'camisão de malha, escudo',
     maxHp: 21,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
     expertise: ['furtividade'],
     attacks: [
@@ -276,6 +292,7 @@ export const GOBLINOIDES = {
     acNote: 'armadura de couro, escudo',
     maxHp: 7,
     speedFt: 30,
+    senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
     expertise: ['furtividade'],
     attacks: [
