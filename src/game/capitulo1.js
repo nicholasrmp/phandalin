@@ -37,6 +37,7 @@ import { descansoCurto } from '../view/descanso-tela.js';
 import { heroiPorId } from './herois.js';
 import { d20 } from '../core/dice.js';
 import { skillBonus, SKILL_NAME } from '../rules/abilities.js';
+import { guardar } from './comercio.js';
 import { distanceFt, Battlefield } from '../core/grid.js';
 
 const MOVIMENTO = 60;   // quanto cada herói anda por clique na exploração (pés)
@@ -63,7 +64,11 @@ export function criarCapitulo1(app, config) {
   for (let y = 0; y < enc.field.h; y++) {
     for (let x = 0; x < enc.field.w; x++) if (enc.field.surfaceAt(x, y) === 'cavalo') cavalos.push({ x, y });
   }
-  const estado = { explorando: false, examinou: false, encerrado: false };
+  const estado = {
+    explorando: false, examinou: false, encerrado: false,
+    // Corpos já revistados, e se o conjunto de armas que presta já saiu.
+    revistados: new Set(), pegouArmas: false, sinalDoAnao: false,
+  };
 
   // ------------------------------------------------------------ abertura ----
   function abertura() {
@@ -314,6 +319,58 @@ export function criarCapitulo1(app, config) {
     return app.conversarCom(goblin, arvore);
   }
 
+  // ------------------------------------------------------- os que ficaram ----
+  // A aventura não dá tesouro à emboscada: o bando vive do que rouba na
+  // estrada, e o que valia já subiu a trilha com os prisioneiros. O pouco que
+  // está nos corpos é nosso acréscimo, e é pouco de propósito — cobre, um
+  // conjunto de armas que presta e, para quem revistar com atenção, a prova de
+  // que Gundren foi levado vivo.
+  const mortosDoBando = () =>
+    enc.combatants.filter((f) => f.side === 'foes' && f.dead && !estado.revistados.has(f));
+
+  /** O que se vê nos corpos sem mexer neles. */
+  function olharOsMortos(mortos) {
+    const n = mortos.length;
+    return [
+      n === 1
+        ? 'O goblin é pequeno, magro, de pele acinzentada e orelhas grandes; veste retalhos de couro batido costurados com tira de couro cru.'
+        : `São ${n}: pequenos, magros, de pele acinzentada e orelhas grandes, vestindo retalhos de couro batido costurados com tira de couro cru.`,
+      'Nenhum usa nada igual ao do outro. Tudo neles é de segunda mão, e nada foi feito para eles — as botas sobram, os cintos dão duas voltas.',
+      n === 1
+        ? 'No pescoço dele, uma coleira de couro com uma garra de três dedos queimada a ferro. Quem marca os outros assim não é goblin nenhum.'
+        : 'No pescoço de um deles, uma coleira de couro com uma garra de três dedos queimada a ferro. Quem marca os outros assim não é goblin nenhum.',
+    ];
+  }
+
+  /** Revista os corpos: guarda o que acharam em `quem` e devolve as linhas. */
+  function revistarOsMortos(quem, mortos, bem) {
+    let cobre = 0;
+    let prata = 0;
+    for (const m of mortos) {
+      estado.revistados.add(m);
+      cobre += enc.rng.die(6);
+      if (enc.rng.die(3) === 3) prata += enc.rng.die(4);
+    }
+    guardar(quem, 'moedaDeCobre', cobre);
+    if (prata) guardar(quem, 'moedaDePrata', prata);
+    const linhas = [
+      `Nas tiras de couro e nos bolsos remendados: ${cobre} peças de cobre${prata ? `, ${prata} de prata` : ''}, uma pedra lascada que servia de amuleto, carne seca que ninguém vai querer e um dado de osso sozinho. ${quem.name} guarda o que vale.`,
+    ];
+    if (mortos.length >= 2 && !estado.pegouArmas) {
+      estado.pegouArmas = true;
+      guardar(quem, 'cimitarra', 1);
+      guardar(quem, 'arcoCurto', 1);
+      guardar(quem, 'aljava', 1);
+      linhas.push('As armas vieram de donos diferentes e ninguém cuidou de nenhuma. De tudo, presta um conjunto: uma cimitarra que ainda tem fio, um arco curto inteiro e uma aljava quase cheia.');
+    }
+    if (bem && !estado.sinalDoAnao) {
+      estado.sinalDoAnao = true;
+      ((app.campanha ??= {}).flags ??= {}).sinalDoAnao = true;
+      linhas.push('E, enrolado num cinto, um pedaço de capa de lã boa, do tamanho de um anão, rasgada e não cortada. Junto, um broche de latão torto, do tipo que fecha capa. Quem tirou isso de Gundren tirou com ele reclamando — e levou o resto trilha acima.');
+    }
+    return linhas;
+  }
+
   async function fimDoCombate(outcome) {
     if (estado.encerrado) return;
     estado.encerrado = true;
@@ -330,6 +387,26 @@ export function criarCapitulo1(app, config) {
       paginas.push({ titulo: 'Depois da luta', texto: [
         'Os cavalos no meio da estrada são os de Gundren e de Sildar, mortos há um dia pelas flechas. Os alforjes foram esvaziados; ao lado, um tubo de guardar mapa, vazio.',
       ] });
+    }
+
+    // Os corpos do bando: olhar é de graça, revistar é uma escolha — e um
+    // teste, porque o que importa está escondido no cinto de um deles.
+    const mortos = outcome === 'vitoria' ? mortosDoBando() : [];
+    if (mortos.length) {
+      const escolha = await narrar(root, {
+        formato: 'tela',
+        paginas: [...paginas, { titulo: 'Os que ficaram', texto: olharOsMortos(mortos) }],
+        escolhas: [
+          { rotulo: 'Revistar os corpos', valor: 'revistar', primaria: true },
+          { rotulo: 'Deixar como estão', valor: 'deixar' },
+        ],
+      });
+      paginas.length = 0;
+      const quem = grupo.slice().sort((a, b) => skillBonus(b, 'investigacao') - skillBonus(a, 'investigacao'))[0];
+      if (escolha === 'revistar' && quem) {
+        const t = testar(enc, quem, ['investigacao', 'percepcao']);
+        paginas.push({ titulo: 'Revistando os corpos', teste: t, texto: revistarOsMortos(quem, mortos, t.passou) });
+      }
     }
 
     // A trilha: quem procura acha o lugar usado para emboscadas há tempo, e a
@@ -502,6 +579,22 @@ export function criarCapitulo1(app, config) {
     if (!c) return [];
     const ops = [];
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
+    // Revistar um corpo no meio da luta custa a ação do turno: dá para fazer,
+    // e quase nunca é a melhor ideia.
+    const corpo = enc.combatants.find((f) => f.side === 'foes' && f.dead && !estado.revistados.has(f)
+      && f.pos && f.pos.x === tile.x && f.pos.y === tile.y);
+    if (corpo && !estado.explorando && !enc.over && enc.side === 'party') {
+      ops.push({
+        rotulo: 'Revistar o goblin', icone: 'acao-procurar', detalhe: 'Investigação, CD 10 · gasta a ação',
+        motivo: c.actionUsed ? 'a ação deste turno já foi usada' : longe(5) && 'encoste no corpo primeiro',
+        fazer: async () => {
+          c.actionUsed = true;
+          const t = testar(enc, c, ['investigacao', 'percepcao']);
+          await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: revistarOsMortos(c, [corpo], t.passou) }] });
+          app.afterAct();
+        },
+      });
+    }
     if (sup === 'cavalo') {
       if (estado.explorando) {
         ops.push({
