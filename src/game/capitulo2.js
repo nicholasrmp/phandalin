@@ -21,9 +21,9 @@
 //               quem passa de 45 kg o quebra (Destreza CD 10, 2d6 e cai).
 //   área 5      um goblin escondido na ponte. Visto só com Percepção contra a
 //               Furtividade dele; nota quem traz luz ou chega sem cuidado.
-//               Quando nota, dá o sinal aos poços e atira azagaias; dois
+//               Quando nota, assobia para o fundo e atira de arco; dois
 //               turnos dos goblins depois, desce a ENCHENTE pelo túnel.
-//   área 6      cinco goblins junto ao fogo na parte baixa, Yeemik em cima com
+//   área 6      quatro goblins junto ao fogo na parte baixa, Yeemik em cima com
 //               Sildar amarrado (1 PV). Quando o grupo está ganhando, Yeemik
 //               pede trégua com a faca no pescoço do refém e propõe a cabeça
 //               de Klarg. Recusado, joga Sildar do ressalto. Mesmo com Klarg
@@ -107,6 +107,7 @@ export function criarCapitulo2(app, config) {
     acordo: false, sildarLivre: false, tregua: false, tregaFeita: false,
     enchente: null, enchentes: 0, klargAvisado: false, subiuChamine: false,
     lobosRosnaram: false, ponteCortada: false, diqueRompido: false,
+    escutaram: new Set(),
     ressaltoQuebrado: false, bauAchado: false, klargFugiu: false,
   };
 
@@ -160,8 +161,6 @@ export function criarCapitulo2(app, config) {
     estado.explorando = false;
     estado.lutando = g;
     root.classList.remove('explorando');
-    // Um goblin corre avisar Klarg — a não ser que todos estejam cativados (Cativar): ninguém grita nem corre.
-    if (g.id === 'pocos' && !hostis(g).every((f) => hasCondition(f, 'cativado'))) estado.klargAvisado = true;
     enc.emboscada = surpresa === 'deles'
       ? { emboscadores: 'foes', furtividade: g.furtividade }
       : surpresa === 'nossa'
@@ -484,7 +483,7 @@ export function criarCapitulo2(app, config) {
     if (!visto && !notou) return false;
     if (notou && !estado.enchentes) estado.enchente ??= { turnos: 2 };
     await asArmas(notou
-      ? [`No alto, sobre uma ponte frágil de madeira e corda seis metros acima do riacho, um goblin assobia três vezes para o fundo da caverna e puxa uma azagaia.`,
+      ? [`No alto, sobre uma ponte frágil de madeira e corda seis metros acima do riacho, um goblin assobia três vezes para o fundo da caverna e põe uma flecha na corda.`,
         visto ? 'Vocês o viram ao mesmo tempo.' : 'Ele viu vocês primeiro.']
       : [`${visto.name} distingue, lá no alto, uma ponte frágil de madeira e corda — e um goblin deitado nela, de olho no riacho.`]);
     await combate(g, notou && !visto ? 'deles' : null);
@@ -774,6 +773,17 @@ export function criarCapitulo2(app, config) {
     if (ev.type === 'died' && ev.target === serrote && klarg && !klarg.dead) {
       enc.say('acao', 'Klarg vê o Serrote cair e ruge, com os dentes à mostra. Ele não corre: fica.');
     }
+    // AVISAR KLARG custa um turno de goblin. Antes, começar a luta dos poços já
+    // o deixava avisado, mesmo que os três caíssem na primeira rodada — e o
+    // ramo "Klarg desavisado" virava código morto. Agora alguém precisa estar
+    // de pé, não cativado e com a vez chegando para gritar.
+    if (ev.type === 'sideStart' && ev.side === 'foes' && estado.lutando === grupos.pocos && !estado.klargAvisado) {
+      const grita = hostis(grupos.pocos).find((f) => !hasCondition(f, 'cativado') && !hasCondition(f, 'inconsciente'));
+      if (grita) {
+        estado.klargAvisado = true;
+        enc.say('acao', `${grita.name} grita para o fundo da caverna, em goblin. Lá atrás, alguma coisa grande responde.`);
+      }
+    }
     if (ev.type === 'sideStart' && ev.side === 'foes' && estado.enchente) {
       estado.enchente.turnos -= 1;
       if (estado.enchente.turnos <= 0) setTimeout(() => enchente(), 0);
@@ -911,7 +921,14 @@ export function criarCapitulo2(app, config) {
     if (sup === 'rocha') {
       ops.push({
         rotulo: 'Escutar', icone: 'acao-procurar', detalhe: 'Percepção, CD 15 · a água abafa tudo',
+        // Uma tentativa por herói em cada ponto de escuta. Sem isso a opção não
+        // custava nada, não marcava nada e não tinha alcance: dava para clicar
+        // na mesma rocha até passar na CD 15, o que é o mesmo que não ter CD.
+        // Outro herói pode tentar — são outros ouvidos —, o mesmo não.
+        motivo: longe(5) ?? (estado.escutaram.has(`${c.id}:${tile.x},${tile.y}`)
+          ? `${c.name} já encostou o ouvido aqui` : null),
         fazer: async () => {
+          estado.escutaram.add(`${c.id}:${tile.x},${tile.y}`);
           const t = teste(c, 'percepcao', 15);
           const perto = pendentes().filter((g) => hostis(g).some((f) => distanceFt(f.pos, c.pos) <= 50));
           await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [t.passou

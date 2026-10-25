@@ -17,6 +17,7 @@ import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { makeNpc } from '../rules/npcs.js';
 import { makeMonster, MONSTERS } from '../rules/monsters.js';
+import { averageOf } from '../core/dice.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { guardar, totalEmCobre, cobrar } from '../game/comercio.js';
 import { Battlefield, distanceFt } from '../core/grid.js';
@@ -227,6 +228,22 @@ teste('a visão no escuro dos goblinoides vem do bloco, não do nome', () => {
   // E um nome inventado não ganha visão no escuro de brinde.
   const falso = { kind: 'monster', id: 'porcoDoMato', name: 'Porco do Mato' };
   assert.equal(visaoNoEscuro(falso), 0);
+});
+
+teste('os dados de vida dos goblinoides batem com os PV do bloco', () => {
+  for (const id of ['goblin', 'goblinArqueiro', 'goblinChefe', 'hobgoblin', 'bugbear', 'klarg', 'yeemik', 'droop']) {
+    const m = MONSTERS[id];
+    assert.ok(m.hpDice, `${id} sem hpDice`);
+    assert.equal(Math.floor(averageOf(m.hpDice)), m.maxHp, `${id}: ${m.hpDice} não dá ${m.maxHp}`);
+  }
+  // O Rei Grol fica de fora de propósito: 45 PV não fecham com dado nenhum.
+  assert.equal(MONSTERS.reiGrol.hpDice, undefined);
+});
+
+teste('o goblin da ponte atira do que ele tem: arco, não azagaia', () => {
+  const g = makeMonster('goblin', { x: 0, y: 0 });
+  const distancia = g.attacks.filter((a) => a.ranged).map((a) => a.name);
+  assert.deepEqual(distancia, ['Arco curto']);
 });
 
 teste('o bloco do Chefe Goblin está marcado como do Livro dos Monstros', () => {

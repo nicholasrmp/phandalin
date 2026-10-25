@@ -52,8 +52,9 @@ export const FERAS = {
     attacks: [
       {
         name: 'Mordida', bonus: 4, damage: '2d4+2', type: 'perfurante', reachFt: 5, art: 'bite',
-        // A CD é 11 e não 12: o lobo derruba com frequência mas não sempre, e é
-        // esse "às vezes" que faz a matilha valer a pena em vez de um lobo só.
+        // CD 11, como no SRD. É baixa de propósito: o lobo derruba com
+        // frequência, mas não sempre, e é esse "às vezes" que faz a matilha
+        // valer a pena em vez de um lobo só.
         onHit: { save: 'str', dc: 11, condition: 'caido', note: 'vai ao chão' },
       },
     ],

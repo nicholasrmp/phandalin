@@ -35,6 +35,7 @@ export const GOBLINOIDES = {
     ac: 15,
     acNote: 'armadura de couro, escudo',
     maxHp: 7,
+    hpDice: '2d6',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
@@ -82,6 +83,7 @@ export const GOBLINOIDES = {
     ac: 13,
     acNote: 'armadura de couro',
     maxHp: 7,
+    hpDice: '2d6',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
@@ -114,6 +116,7 @@ export const GOBLINOIDES = {
     ac: 17,
     acNote: 'camisão de malha, escudo',
     maxHp: 21,
+    hpDice: '6d6',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
@@ -141,6 +144,7 @@ export const GOBLINOIDES = {
     ac: 18,
     acNote: 'cota de malha, escudo',
     maxHp: 11,
+    hpDice: '2d8+2',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     attacks: [
@@ -167,6 +171,7 @@ export const GOBLINOIDES = {
     ac: 16,
     acNote: 'armadura de peles, escudo',
     maxHp: 27,
+    hpDice: '5d8+5',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade', 'sobrevivencia'],
@@ -199,6 +204,7 @@ export const GOBLINOIDES = {
     ac: 16,
     acNote: 'armadura de peles, escudo',
     maxHp: 27,
+    hpDice: '5d8+5',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade', 'sobrevivencia'],
@@ -211,6 +217,9 @@ export const GOBLINOIDES = {
     blurb: 'O primeiro bugbear que o grupo encontra: espera na emboscada, abre com Ataque Surpresa e concentra tudo em quem entrou primeiro na caverna.',
   },
 
+  // Sem `hpDice`: os 45 PV do Rei Grol não fecham com nenhum número inteiro de
+  // dados de vida (d8 com Constituição 13 rende 5,5 por dado). É número
+  // escolhido, não rolado, e inventar um dado aqui seria mentir na ficha.
   reiGrol: {
     id: 'reiGrol',
     name: 'Rei Grol',
@@ -265,6 +274,7 @@ export const GOBLINOIDES = {
     ac: 17,
     acNote: 'camisão de malha, escudo',
     maxHp: 21,
+    hpDice: '6d6',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade'],
@@ -291,6 +301,7 @@ export const GOBLINOIDES = {
     ac: 15,
     acNote: 'armadura de couro, escudo',
     maxHp: 7,
+    hpDice: '2d6',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['furtividade'],

@@ -427,16 +427,39 @@ function planShotEm(enc, monster, targets, enemies, reached) {
   return { path: Battlefield.pathFrom(reached, best.node) };
 }
 
+/**
+ * Recuar de quem ameaça — sem cair no colo de outro.
+ *
+ * A conta media só a distância dos inimigos passados em `threats`, que na
+ * Escapada Ágil são apenas os COLADOS. O resultado é que um goblin ferido
+ * desengajava e ia parar grudado noutro herói, o que anula o traço: medido no
+ * esconderijo, Yeemik fazia isso em 6 dos 333 turnos dele, sempre descendo a
+ * saliência para perto do grupo.
+ *
+ * Agora casa colada em QUALQUER inimigo é descartada, e o desempate é a
+ * distância de todos. Se nenhuma casa passar no filtro — cercado de verdade —,
+ * vale a conta antiga, para o monstro não ficar parado por preciosismo.
+ */
 function retreat(enc, monster, threats) {
-  const fuga = comDesvio(enc, monster, (reached) => {
+  const inimigos = enc.enemiesOf(monster).filter((c) => !c.dead);
+  const escolher = (reached, evitarColado) => {
     let best = null;
     for (const node of reached.values()) {
       if (enc.occupied(node.x, node.y, monster)) continue;
       const spot = { x: node.x, y: node.y };
-      const nearest = Math.min(...threats.map((t) => distanceFt(spot, t.pos)));
-      const score = -nearest;
+      if (evitarColado && inimigos.some((c) => isAdjacent(spot, c.pos))) continue;
+      const deQuemAmeaca = Math.min(...threats.map((t) => distanceFt(spot, t.pos)));
+      const deTodos = inimigos.length
+        ? Math.min(...inimigos.map((c) => distanceFt(spot, c.pos)))
+        : deQuemAmeaca;
+      // Primeiro longe de quem ameaça; empatado, longe de todo o resto.
+      const score = -(deQuemAmeaca * 100 + deTodos);
       if (!best || score < best.score) best = { score, node };
     }
+    return best;
+  };
+  const fuga = comDesvio(enc, monster, (reached) => {
+    const best = escolher(reached, true) ?? escolher(reached, false);
     return best && best.node.cost > 0 ? Battlefield.pathFrom(reached, best.node) : null;
   });
   if (fuga) enc.moveAlong(monster, fuga);
