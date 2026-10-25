@@ -18,7 +18,7 @@ export const CARACTERISTICAS = {
   asi: C('Aumento no Valor de Atributo', 'passiva', '+2 num atributo ou +1 em dois, sem passar de 20.'),
   extraAttack: C('Ataque Extra', 'passiva', 'A ação de Atacar faz um ataque a mais.'),
   unarmoredDefense: C('Defesa sem Armadura', 'passiva', 'Sem armadura, a CA é 10 + DES + um segundo atributo da classe.', { motor: true }),
-  fightingStyle: C('Estilo de Luta', 'passiva', 'Uma especialidade de combate, escolhida uma vez.'),
+  fightingStyle: C('Estilo de Luta', 'passiva', 'Uma especialidade de combate, escolhida uma vez.', { motor: true }),
   additionalFightingStyle: C('Estilo de Luta Adicional', 'passiva', 'Um segundo estilo de luta, diferente do primeiro.'),
   expertise: C('Especialização', 'passiva', 'Dobra a proficiência em duas perícias já treinadas.', { motor: true }),
   evasion: C('Evasão', 'passiva', 'Contra efeitos de área com resistência de DES: sucesso não sofre nada, falha sofre metade.'),
@@ -27,12 +27,12 @@ export const CARACTERISTICAS = {
   channelDivinity: C('Canalizar Divindade', 'acao', 'Poder divino com cargas que voltam no descanso curto; cada domínio ou juramento dá os seus usos.'),
 
   // ---- estilos de luta -----------------------------------------------------
-  archery: C('Estilo: Arquearia', 'passiva', '+2 nos ataques com armas à distância.'),
+  archery: C('Estilo: Arquearia', 'passiva', '+2 nos ataques com armas à distância.', { motor: true }),
   defense: C('Estilo: Defesa', 'passiva', '+1 de CA enquanto estiver de armadura.', { motor: true }),
-  dueling: C('Estilo: Duelismo', 'passiva', '+2 de dano com arma corpo a corpo de uma mão e a outra mão livre de armas.'),
-  greatWeaponFighting: C('Estilo: Armas Grandes', 'passiva', 'Rola de novo 1 e 2 no dano de arma de duas mãos ou versátil empunhada com as duas.'),
-  protection: C('Estilo: Proteção', 'reacao', 'Com escudo, impõe desvantagem a um ataque contra aliado ao seu lado.'),
-  twoWeaponFighting: C('Estilo: Duas Armas', 'passiva', 'Soma o atributo ao dano do ataque com a segunda arma.'),
+  dueling: C('Estilo: Duelismo', 'passiva', '+2 de dano com arma corpo a corpo de uma mão e a outra mão livre de armas.', { motor: true }),
+  greatWeaponFighting: C('Estilo: Armas Grandes', 'passiva', 'Rola de novo 1 e 2 no dano de arma de duas mãos ou versátil empunhada com as duas.', { motor: true }),
+  protection: C('Estilo: Proteção', 'reacao', 'Com escudo, impõe desvantagem a um ataque contra aliado ao seu lado.', { motor: true }),
+  twoWeaponFighting: C('Estilo: Duas Armas', 'passiva', 'Soma o atributo ao dano do ataque com a segunda arma.', { motor: true }),
 
   // ---- bárbaro -------------------------------------------------------------
   rage: C('Fúria', 'bonus', 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a dano físico, por 1 minuto; sem conjurar nem manter concentração.', { motor: true }),

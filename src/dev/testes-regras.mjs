@@ -199,6 +199,109 @@ teste('inimigo no caminho continua fechando a passagem', () => {
   assert.ok(!enc.moveAlong(dara, [{ x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }]), 'não atravessa inimigo');
 });
 
+// ---- estilos de luta -------------------------------------------------------
+
+/** Um guerreiro com o estilo pedido, no lugar da Dara. */
+function comEstilo(estilo, extra = {}) {
+  const { enc, party, foes } = montar();
+  const abilities = { str: 16, dex: 16, con: 14, int: 10, wis: 10, cha: 10 };
+  const c = criarPersonagem({ name: 'G', raca: 'humano', abilities },
+    { classe: 'guerreiro', nivel: 1, escolhas: { 1: { estiloDeLuta: estilo } } });
+  Object.assign(c, {
+    id: party[DARA].id, side: 'party', pos: { ...party[DARA].pos }, abilities,
+    hp: 30, maxHp: 30, ac: 14, ...extra,
+  });
+  enc.combatants[enc.combatants.indexOf(party[DARA])] = c;
+  party[DARA] = c;
+  c.bonusUsed = false; c.actionUsed = false;
+  return { enc, c, party, foes };
+}
+
+teste('Estilo Arquearia: +2 no ataque à distância, e nada no corpo a corpo', () => {
+  const { enc, c } = comEstilo('archery', { weapons: ['arcoCurto', 'espadaLonga'] });
+  assert.ok(c.features.includes('archery'));
+  const arco = enc.weaponAttackProfile(c, 'arcoCurto');
+  const espada = enc.weaponAttackProfile(c, 'espadaLonga');
+  const semEstilo = comEstilo('defense', { weapons: ['arcoCurto'] });
+  const arcoSem = semEstilo.enc.weaponAttackProfile(semEstilo.c, 'arcoCurto');
+  assert.equal(arco.bonus - arcoSem.bonus, 2, 'o arco ganha 2');
+  assert.ok(arco.bonusPartes.some((p) => p.rotulo.includes('arquearia')), 'a parcela aparece na conta');
+  assert.equal(espada.bonus, enc.weaponAttackProfile(semEstilo.c, 'espadaLonga').bonus, 'a espada não muda');
+});
+
+teste('Estilo Duelismo: +2 de dano de uma mão, e nada com a outra ocupada', () => {
+  const { enc, c, foes } = comEstilo('dueling', {
+    weapons: ['espadaCurta'], equippedWeapon: 'espadaCurta',
+  });
+  const alvo = foes[0];
+  alvo.pos = { x: c.pos.x + 1, y: c.pos.y };
+  alvo.maxHp = alvo.hp = 300; alvo.ac = -5;
+  const r = enc.resolveAttack(c, alvo, { weaponId: 'espadaCurta' });
+  assert.ok((r.danoPartes ?? []).some((d) => d.rotulo.includes('duelismo')), 'a parcela do duelismo entra');
+  // Com uma arma na outra mão, o estilo não vale.
+  c.offhandWeapon = 'adaga';
+  const r2 = enc.resolveAttack(c, alvo, { weaponId: 'espadaCurta' });
+  assert.ok(!(r2.danoPartes ?? []).some((d) => d.rotulo.includes('duelismo')), 'com a outra mão ocupada, não');
+});
+
+teste('Estilo Armas Grandes rola de novo o 1 e o 2 do dado da arma', () => {
+  // Mede a média: com 2d6 e rejeitando 1 e 2, ela sobe de 7 para ~8,33.
+  const { enc, c, foes } = comEstilo('greatWeaponFighting', {
+    weapons: ['espadaGrande'], equippedWeapon: 'espadaGrande',
+  });
+  const alvo = foes[0];
+  alvo.pos = { x: c.pos.x + 1, y: c.pos.y };
+  alvo.maxHp = alvo.hp = 100000; alvo.ac = -5;
+  let soma = 0; let n = 0;
+  for (let i = 0; i < 400; i++) {
+    const r = enc.resolveAttack(c, alvo, { weaponId: 'espadaGrande' });
+    const dado = (r.danoPartes ?? []).find((d) => d.rotulo === 'dano');
+    if (!dado || dado.critico) continue;
+    soma += dado.dados.reduce((t, v) => t + v, 0); n += dado.dados.length;
+  }
+  const media = soma / n;
+  assert.ok(media > 3.9, `a média de cada dado sobe acima de 3,9 — deu ${media.toFixed(2)}`);
+});
+
+teste('Estilo Proteção: o aliado de escudo gasta a reação e atrapalha o golpe', () => {
+  const { enc, c, party, foes } = comEstilo('protection', { shield: true });
+  const pip = party[PIP];
+  const gob = foes[0];
+  pip.pos = { x: 5, y: 5 };
+  c.pos = { x: 5, y: 6 };          // o guerreiro ao lado de quem vai apanhar
+  gob.pos = { x: 6, y: 5 };
+  c.reactionUsed = false;
+  assert.equal(enc.protecaoDeAliado(gob, pip), c, 'ele é o protetor');
+  enc.resolveAttack(gob, pip);
+  assert.ok(c.reactionUsed, 'gastou a reação');
+  assert.ok(enc.log.some((l) => l.text?.includes('ergue o escudo')), 'disse o que fez');
+  // Com a reação gasta, não protege de novo.
+  assert.equal(enc.protecaoDeAliado(gob, pip), null);
+});
+
+teste('Duas Armas: o golpe da outra mão não soma o atributo, com o estilo soma', () => {
+  const semEstilo = comEstilo('defense', {
+    weapons: ['espadaCurta', 'adaga'], equippedWeapon: 'espadaCurta', offhandWeapon: 'adaga',
+  });
+  const comE = comEstilo('twoWeaponFighting', {
+    weapons: ['espadaCurta', 'adaga'], equippedWeapon: 'espadaCurta', offhandWeapon: 'adaga',
+  });
+  for (const { enc, c, foes } of [semEstilo, comE]) {
+    const alvo = foes[0];
+    alvo.pos = { x: c.pos.x + 1, y: c.pos.y };
+    alvo.maxHp = alvo.hp = 300; alvo.ac = -5;
+    c.actionUsed = true; c.bonusUsed = false;
+  }
+  const dano = ({ enc, c, foes }) => {
+    const r = enc.resolveAttack(c, foes[0], { weaponId: 'adaga', maoSecundaria: true });
+    return (r.danoPartes ?? []).find((d) => d.rotulo === 'dano')?.mod ?? null;
+  };
+  assert.equal(dano(semEstilo), 0, 'sem o estilo, o dano da adaga vai sem o atributo');
+  assert.equal(dano(comE), 3, 'com o estilo, soma a Destreza');
+  // E a ação bônus existe: com as duas leves, depois de atacar.
+  assert.ok(comE.enc.useFeature(comE.c, 'twoWeaponFighting', { target: comE.foes[0] }));
+});
+
 // ---- os poderes de 1º nível que faltavam -----------------------------------
 
 /** Troca a Dara por um personagem de classe, para testar o poder dele. */

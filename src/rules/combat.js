@@ -2226,9 +2226,11 @@ export class Encounter {
     const porMagia = (actor.conditions ?? []).reduce((t, c) => t + (c.data?.bonusArma ?? CONDITIONS[c.id]?.bonusArma ?? 0), 0);
     const magia = (w.bonusAtaque ?? 0) + porMagia;
     const noDano = mod + (w.bonusDano ?? 0) + porMagia;
+    // ESTILO: ARQUEARIA. +2 em toda jogada de ataque com arma à distância.
+    const arquearia = w.ranged && actor.features?.includes('archery') ? 2 : 0;
     return {
       name: w.name,
-      bonus: mod + prof + magia,
+      bonus: mod + prof + magia + arquearia,
       damage: `${w.damage}${noDano >= 0 ? '+' : ''}${noDano}`,
       danoExtra: w.danoExtra ?? null,
       type: w.type,
@@ -2245,8 +2247,47 @@ export class Encounter {
         { rotulo: ABILITY_NAME[ability], valor: mod },
         ...(prof ? [{ rotulo: 'proficiência', valor: prof }] : []),
         ...(magia ? [{ rotulo: 'arma mágica', valor: magia }] : []),
+        ...(arquearia ? [{ rotulo: 'estilo: arquearia', valor: arquearia }] : []),
       ],
     };
+  }
+
+  /**
+   * Quem está protegendo `target` deste golpe, ou null.
+   *
+   * O Estilo de Luta: Proteção pede escudo, reação livre, e estar a 1,5 m de
+   * quem vai apanhar — e quem se protege não é o próprio protetor.
+   */
+  protecaoDeAliado(attacker, target) {
+    if (!target || target.side === attacker.side) return null;
+    return this.alliesOf(target).find(
+      (a) => a !== target && a.features?.includes('protection') && a.shield
+        && !a.reactionUsed && !a.dead && !conditionEffects(a).incapacitated
+        && isAdjacent(a.pos, target.pos) && !hasCondition(a, 'inconsciente'),
+    ) ?? null;
+  }
+
+  /**
+   * O ESTILO DE LUTA que vale PARA ESTE GOLPE, ou null.
+   *
+   * Duelismo e Armas Grandes dependem do que está nas mãos agora, não só da
+   * escolha feita na criação — por isso a conta fica aqui e não na ficha.
+   */
+  estiloNoGolpe(actor, w) {
+    if (!w || w.ranged || !actor.features) return null;
+    // As propriedades da arma vêm em `props`, como o livro as escreve.
+    const prop = (nome) => (w.props ?? []).includes(nome);
+    const duasMaos = prop('duas mãos');
+    const outraMao = actor.offhandWeapon && WEAPONS[actor.offhandWeapon];
+    // DUELISMO: arma de uma mão e a outra mão sem ARMA (escudo pode).
+    if (actor.features.includes('dueling') && !duasMaos && !outraMao) return 'dueling';
+    // ARMAS GRANDES: de duas mãos, ou versátil empunhada com as duas — que
+    // aqui é a versátil sem nada na outra mão e sem escudo.
+    const versatilNasDuas = w.versatil && !outraMao && !actor.shield;
+    if (actor.features.includes('greatWeaponFighting') && (duasMaos || versatilNasDuas)) {
+      return 'greatWeaponFighting';
+    }
+    return null;
   }
 
   canAttack(actor, target, weaponId) {
@@ -2296,7 +2337,7 @@ export class Encounter {
     this.onEvent({ type: 'revelou', target: c });
   }
 
-  resolveAttack(attacker, target, { weaponId = null, opportunity = false, disadvantage = false } = {}) {
+  resolveAttack(attacker, target, { weaponId = null, opportunity = false, disadvantage = false, maoSecundaria = false } = {}) {
     // Atacar desfaz o disfarce do metamorfo: o golpe já sai da forma verdadeira.
     if (attacker.disfarce) this.revelarDisfarce(attacker, 'no ataque');
     // O chefe pode jogar um capanga na frente antes de a rolagem acontecer.
@@ -2365,6 +2406,16 @@ export class Encounter {
       return { hit: false, muralha: true };
     }
     const mods = this.attackModifiers(attacker, target, { ranged: p.ranged, opportunity });
+    // ESTILO: PROTEÇÃO. Um aliado de escudo ao lado de quem vai apanhar gasta
+    // a REAÇÃO para atrapalhar o golpe. É automático de propósito: perguntar
+    // a cada ataque inimigo travaria a luta, e ninguém diria não a uma reação
+    // que só serve para isso.
+    const protetor = this.protecaoDeAliado(attacker, target);
+    if (protetor) {
+      protetor.reactionUsed = true;
+      fonte(mods, 'desvantagem', `proteção de ${protetor.name}`);
+      this.say('recurso', `${protetor.name} ergue o escudo na frente de ${target.name}.`);
+    }
     if (check.longRange) fonte(mods, 'desvantagem', 'alcance longo');
     if (disadvantage) fonte(mods, 'desvantagem', 'segundo ataque');
 
@@ -2467,9 +2518,21 @@ export class Encounter {
       surpresa = damageRoll(this.rng, dadosDaSurpresa, { critical });
     }
 
+    // ESTILO DE LUTA no golpe: Armas Grandes rola de novo o 1 e o 2 dos dados
+    // da arma; Duelismo soma 2 ao dano. Os dois dependem do que está nas
+    // mãos agora, por isso a conta é aqui e não na ficha.
+    const estilo = this.estiloNoGolpe(attacker, p.weapon);
+    // A MÃO SECUNDÁRIA não soma o atributo no dano — a não ser com o Estilo
+    // de Luta: Duas Armas, que existe exatamente para isso.
+    if (maoSecundaria && !attacker.features?.includes('twoWeaponFighting')) {
+      const mod = abilityMod(attacker.abilities[weaponAbility(attacker, p.weapon ?? {})] ?? 10);
+      if (mod > 0) damageNotation = String(damageNotation).replace(/\+\d+$/, '');
+    }
     // Ataque sem dano (a teia da aranha só prende): o acerto vale pelo efeito.
     const dmg = damageNotation
-      ? ajustarDanoDeArma(this, attacker, p, damageRoll(this.rng, damageNotation, { critical }))
+      ? ajustarDanoDeArma(this, attacker, p, damageRoll(this.rng, damageNotation, {
+        critical, rerolarAte: estilo === 'greatWeaponFighting' ? 2 : 0,
+      }))
       : null;
     // Raio do Enfraquecimento: golpe de Força causa metade.
     const deForca = attacker.attacks ? !p.ranged : (p.weapon && weaponAbility(attacker, p.weapon) === 'str');
@@ -2480,6 +2543,8 @@ export class Encounter {
     // FÚRIA: bônus FIXO no dano corpo a corpo com Força. Não é dado, então
     // não dobra no crítico — e é por isso que ele entra como parcela própria
     // em vez de somar no dado da arma.
+    const duelismo = dmg && estilo === 'dueling'
+      ? { notation: '+2', rolls: [], mod: 2, total: 2, critical: false } : null;
     let furia = null;
     if (dmg && deForca && !p.ranged && hasCondition(attacker, 'furia') && attacker.danoDeFuria) {
       furia = { notation: `+${attacker.danoDeFuria}`, rolls: [], mod: attacker.danoDeFuria, total: attacker.danoDeFuria, critical: false };
@@ -2487,13 +2552,14 @@ export class Encounter {
     // Aumentar/Reduzir: +1d4 ou −1d4 no dano de arma.
     const tamanho = dmg ? this.ajusteDeTamanho(attacker, dmg, critical) : null;
     const total = (dmg?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
-      + (surpresa?.total ?? 0) + (furia?.total ?? 0);
+      + (surpresa?.total ?? 0) + (furia?.total ?? 0) + (duelismo?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
     // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
     // o ladino está manobrando o turno inteiro para conseguir.
     const danoPartes = dmg ? [parcelaDeDano('dano', dmg)] : [];
     if (tamanho) danoPartes.push(tamanho);
+    if (duelismo) danoPartes.push(parcelaDeDano('estilo: duelismo', duelismo));
     if (furia) danoPartes.push(parcelaDeDano('fúria', furia));
     if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
     if (martial) danoPartes.push(parcelaDeDano('vantagem marcial', martial));
@@ -5642,6 +5708,23 @@ export class Encounter {
         if (!voltaram.length) return false;
         actor.resources.arcaneRecovery -= 1;
         this.say('recurso', `${actor.name} recolhe o que sobrou da magia do dia: ${voltaram.map((c) => `${c}º`).join(', ')}.`);
+        return true;
+      }
+      case 'twoWeaponFighting': {
+        // DUAS ARMAS. Não existia no motor: o estilo que o guerreiro escolhia
+        // não tinha o que modificar. Aqui está a ação em si — golpe de ação
+        // bônus com a arma da outra mão, as duas LEVES —, e o estilo entra no
+        // dano, em `resolveAttack`.
+        const outra = actor.offhandWeapon;
+        const principal = WEAPONS[actor.equippedWeapon];
+        const secundaria = WEAPONS[outra];
+        if (actor.bonusUsed || !actor.actionUsed || !secundaria || !principal) return false;
+        const leve = (w) => (w.props ?? []).includes('leve');
+        if (!leve(principal) || !leve(secundaria)) return false;
+        if (!target || target.dead || !isAdjacent(actor.pos, target.pos)) return false;
+        actor.bonusUsed = true;
+        this.say('recurso', `${actor.name} golpeia com a ${secundaria.name.toLowerCase()} da outra mão.`);
+        this.resolveAttack(actor, target, { weaponId: outra, maoSecundaria: true });
         return true;
       }
       case 'martialArts': {

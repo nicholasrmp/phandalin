@@ -82,11 +82,18 @@ export function attackRoll(rng, bonus, ac, opts) {
   };
 }
 
-/** Dano. No crítico, os dados dobram; o modificador não. */
-export function damageRoll(rng, notation, { critical = false } = {}) {
+/**
+ * Dano. No crítico, os dados dobram; o modificador não.
+ *
+ * `rerolarAte` é o Estilo de Luta: Armas Grandes — rola de novo todo dado que
+ * cair em 1 ou 2, e FICA com o segundo resultado, mesmo que seja pior. É o
+ * que o SRD manda: a rolagem nova vale, não a melhor das duas.
+ */
+export function damageRoll(rng, notation, { critical = false, rerolarAte = 0 } = {}) {
   const { count, sides, mod } = parseDice(notation);
   const dice = count * (critical ? 2 : 1);
-  const rolls = dice > 0 ? rollDice(rng, dice, sides) : [];
+  let rolls = dice > 0 ? rollDice(rng, dice, sides) : [];
+  if (rerolarAte > 0) rolls = rolls.map((v) => (v <= rerolarAte ? rollDice(rng, 1, sides)[0] : v));
   const total = Math.max(0, sum(rolls) + mod);
   return { total, rolls, mod, critical, notation: String(notation) };
 }

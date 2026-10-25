@@ -199,6 +199,23 @@ export function opcoesDaCasa(app, tile) {
       } else if (!vez && !explorando) {
         opcoes.push({ rotulo: 'Atacar', icone: 'acao-atacar', motivo: 'espere a vez do grupo', fazer: () => {} });
       }
+      // O golpe com a outra mão, depois da ação de Atacar.
+      if (c && vez && c.offhandWeapon && WEAPONS[c.offhandWeapon]) {
+        const leve = (w) => (w?.props ?? []).includes('leve');
+        const dupla = leve(WEAPONS[c.equippedWeapon]) && leve(WEAPONS[c.offhandWeapon]);
+        if (dupla) {
+          const comEstilo = c.features?.includes('twoWeaponFighting');
+          opcoes.push({
+            grupo: 'Atacar', rotulo: `Outra mão: ${WEAPONS[c.offhandWeapon].name}`,
+            icone: iconeDaArma(c.offhandWeapon, WEAPONS[c.offhandWeapon]),
+            detalhe: `ação bônus · ${WEAPONS[c.offhandWeapon].damage}${comEstilo ? ' + atributo (estilo: duas armas)' : ' · sem o atributo no dano'}`,
+            motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada'
+              : !c.actionUsed ? 'primeiro ataque com a mão principal'
+                : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
+            fazer: () => app.usarFeature(c, 'twoWeaponFighting', { target: occ }),
+          });
+        }
+      }
       // O golpe de ação bônus do monge, depois da ação de Atacar.
       if (c && vez && c.features?.includes('martialArts')) {
         opcoes.push({
