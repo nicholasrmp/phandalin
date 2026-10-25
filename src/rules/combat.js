@@ -316,8 +316,11 @@ export class Encounter {
 
   start() {
     prepararTalentos(this);
-    const partyInit = d20(this.rng, this.bestDex('party'));
-    const foeInit = d20(this.rng, this.bestDex('foes'));
+    // `iniciativaRuim` é o lado que foi pego fora de posição: ele VIU o outro,
+    // então não há surpresa, mas rola a iniciativa com desvantagem. É o castigo
+    // de quem tentou se esconder e foi notado (`game/regiao.js`).
+    const partyInit = d20(this.rng, this.bestDex('party'), { disadvantage: this.iniciativaRuim === 'party' });
+    const foeInit = d20(this.rng, this.bestDex('foes'), { disadvantage: this.iniciativaRuim === 'foes' });
     this.say('inicio', `Iniciativa — Grupo ${partyInit.total} × ${foeInit.total} Inimigos`);
     this.round = 1;
     // Guarda quem abriu: a rodada só vira quando a vez volta para esse lado.

@@ -24,13 +24,16 @@ import {
 } from '../rules/acampamento.js';
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm,
-  cobrarMarchaForcada, furtividadeDoGrupo, podeMarchar,
+  cobrarMarchaForcada, furtividadeDoGrupo, chanceDeEsconder, podeMarchar,
 } from '../rules/marcha.js';
 import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
-import { sortearEncontro } from '../rules/encontros-estrada.js';
+import {
+  sortearEncontro, distanciaInicial, reacaoDe, REACOES, NEGOCIAVEIS, xpDeConversa,
+  podeConversar, vantagemDeDistancia, atencaoDoBando,
+} from '../rules/encontros-estrada.js';
 import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo } from '../rules/descanso.js';
 import { nivelDeExaustao, mudarExaustao, maxHpEfetivo, exaustaoFatal } from '../rules/conditions.js';
 import {
@@ -5636,6 +5639,195 @@ teste('a despensa conta a metade ja aberta', () => {
   // Duas racoes inteiras mais uma metade dao dois dias e meio: dois dias cheios.
   assert.equal(depois.dias, Math.floor((depois.racoes + 0.5) / 1));
   assert.ok(depois.dias <= antes, 'e nunca mais do que havia antes');
+});
+
+// ---- o encontro antes das armas --------------------------------------------
+
+teste('a distancia inicial e 2d6 x 3 m, e metade no mato fechado', () => {
+  const dado = (v) => { const f = () => v; f.die = (n) => 1 + Math.floor(v * n); return f; };
+  // Com o d6 sempre em 1: 2 x 10 = 20 pes. Com 6: 12 x 10 = 120.
+  assert.equal(distanciaInicial(dado(0.01), 'comum'), 20, 'dois uns');
+  assert.equal(distanciaInicial(dado(0.99), 'comum'), 120, 'dois seis');
+  // No mato fechado, metade, arredondada para o quadrado de 5 pes.
+  assert.equal(distanciaInicial(dado(0.99), 'farto'), 60);
+  assert.equal(distanciaInicial(dado(0.01), 'farto'), 10);
+  // E a faixa inteira cabe entre 20 e 120.
+  const rng = makeRng(5);
+  for (let i = 0; i < 200; i++) {
+    const d = distanciaInicial(rng, 'comum');
+    assert.ok(d >= 20 && d <= 120, 'distancia fora da faixa: ' + d);
+    assert.equal(d % 10, 0, 'a distancia vem em dezenas de pes');
+  }
+});
+
+teste('a reacao e 2d6: os onze totais caem na faixa certa', () => {
+  // Um dado que devolve os dois d6 pedidos, em ordem.
+  const doisD6 = (a, b) => {
+    const fila = [a, b];
+    let i = 0;
+    const f = () => (fila[i++] - 0.5) / 6;
+    f.die = (n) => (n === 6 ? fila[Math.min(i++, 1)] : 1);
+    return f;
+  };
+  const faixa = (total) => {
+    // Qualquer par que some `total`.
+    const a = Math.max(1, total - 6);
+    return reacaoDe(doisD6(a, total - a), 'goblin').id;
+  };
+  for (const t of [2, 3, 4, 5]) assert.equal(faixa(t), 'hostil', t + ' e hostil');
+  for (const t of [6, 7, 8]) assert.equal(faixa(t), 'desconfiado', t + ' e desconfiado');
+  for (const t of [9, 10, 11, 12]) assert.equal(faixa(t), 'indiferente', t + ' e indiferente');
+});
+
+teste('quem nao negocia chega hostil, nem que o dado de doze', () => {
+  const alto = () => { const f = () => 0.99; f.die = (n) => n; return f; };
+  for (const id of ['lobo', 'corujaUrso', 'ghoul', 'stirge', 'ogro']) {
+    assert.equal(NEGOCIAVEIS.has(id), false, id + ' nao negocia');
+    assert.equal(reacaoDe(alto(), id).id, 'hostil', id + ' chega hostil com 12');
+  }
+  for (const id of ['goblin', 'hobgoblin', 'orc']) {
+    assert.equal(NEGOCIAVEIS.has(id), true, id + ' negocia');
+  }
+});
+
+teste('podeConversar: a propria funcao que a tela usa', () => {
+  // Nao reimplementada aqui: se a regra mudar, o teste muda junto.
+  assert.equal(podeConversar('goblin', REACOES.indiferente), true);
+  assert.equal(podeConversar('goblin', REACOES.desconfiado), true);
+  assert.equal(podeConversar('goblin', REACOES.hostil), false, 'hostil nao ouve');
+  assert.equal(podeConversar('lobo', REACOES.indiferente), false, 'o lobo nunca ouve');
+  // Aceita tanto a reacao inteira quanto o id dela.
+  assert.equal(podeConversar('orc', 'desconfiado'), true);
+  assert.equal(podeConversar('orc', 'hostil'), false);
+  // Hostil nao tem CD: o livro nao da teste para convencer quem ja vem brigar.
+  assert.equal(REACOES.hostil.cd, null);
+  assert.equal(REACOES.desconfiado.cd, 15, 'medio, pela tabela do livro');
+  assert.equal(REACOES.indiferente.cd, 10, 'facil');
+});
+
+teste('conversar rende metade do XP; evitar nao rende nada', () => {
+  const goblins = Array.from({ length: 4 }, () => makeMonster('goblin', { x: 0, y: 0 }));
+  const xp = goblins.reduce((n, m) => n + m.xp, 0);
+  assert.equal(xp, 200);
+  assert.equal(xpDeConversa(xp), 100, 'metade');
+  assert.equal(xpDeConversa(0), 0);
+  assert.equal(xpDeConversa(undefined), 0, 'sem bando, sem XP');
+  assert.equal(xpDeConversa(25), 12, 'e sempre inteiro');
+  // Evitar nao chama `xpDeConversa` nenhuma vez: o XP de quem some da trilha
+  // e zero, e o unico caminho que paga XP e o da conversa.
+  const comoAconteceNoJogo = (saida, xpDoBando) => (saida === 'falar' ? xpDeConversa(xpDoBando) : 0);
+  assert.equal(comoAconteceNoJogo('evitar', xp), 0);
+  assert.equal(comoAconteceNoJogo('luta', xp), 0, 'a luta paga pelo bando morto, nao por aqui');
+  assert.equal(comoAconteceNoJogo('falar', xp), 100);
+});
+
+teste('a distancia pesa em sair da trilha, e o mato fechado esconde', () => {
+  // Regra da casa: longe da vantagem, em cima da desvantagem.
+  assert.deepEqual(vantagemDeDistancia(120), { vantagem: true, desvantagem: false });
+  assert.deepEqual(vantagemDeDistancia(90), { vantagem: true, desvantagem: false });
+  assert.deepEqual(vantagemDeDistancia(60), { vantagem: false, desvantagem: false });
+  assert.deepEqual(vantagemDeDistancia(30), { vantagem: false, desvantagem: true });
+  assert.deepEqual(vantagemDeDistancia(20), { vantagem: false, desvantagem: true });
+  // No mato fechado ha onde se meter: vantagem mesmo com o bando perto. Sem
+  // isso o terreno farto saia PIOR que o descampado, porque ele encurta a
+  // distancia do encontro pela metade.
+  assert.deepEqual(vantagemDeDistancia(30, 'farto'), { vantagem: true, desvantagem: false });
+  assert.deepEqual(vantagemDeDistancia(60, 'farto'), { vantagem: true, desvantagem: false });
+  assert.deepEqual(vantagemDeDistancia(20, 'farto'), { vantagem: false, desvantagem: true },
+    'em cima nem o mato salva');
+  // E a furtividade do grupo aceita isso de verdade.
+  const { party } = montar();
+  const bando = [makeMonster('goblin', { x: 10, y: 10 })];
+  const doisDados = () => {
+    let n = 0;
+    const f = () => (n++ === 0 ? 0.99 : 0.01);
+    f.die = (lados) => Math.max(1, Math.ceil(f() * lados));
+    return f;
+  };
+  const pip = [party[PIP]];
+  const comVantagem = furtividadeDoGrupo(doisDados(), pip, bando, passivePerception, { vantagem: true });
+  assert.equal(comVantagem.rolagens[0], 20 + skillBonus(party[PIP], 'furtividade'), 'com vantagem fica com o 20');
+  const comDesvantagem = furtividadeDoGrupo(doisDados(), pip, bando, passivePerception, { desvantagem: true });
+  assert.equal(comDesvantagem.rolagens[0], 1 + skillBonus(party[PIP], 'furtividade'), 'com desvantagem, o 1');
+});
+
+teste('quem foi notado perde a iniciativa, mas nao e surpreendido', () => {
+  // O grupo VIU o bando (a tela do encontro mostrou a quantos pes estava):
+  // pelo livro, quem ve a ameaca nao e surpreendido.
+  const { enc, party } = montar();
+  enc.iniciativaRuim = 'party';
+  enc.emboscada = null;
+  assert.equal(enc.rolarSurpresa().size, 0, 'ninguem e surpreendido');
+  // E a desvantagem na iniciativa chega de verdade: com desvantagem o motor
+  // rola DOIS dados para o grupo e um para os inimigos, em vez de um e um.
+  const contar = (ruim) => {
+    const m = montar();
+    let n = 0;
+    m.enc.rng = { die: (lados) => { n += 1; return Math.ceil(lados / 2); } };
+    m.enc.iniciativaRuim = ruim;
+    m.enc.start();
+    return n;
+  };
+  const normal = contar(null);
+  assert.equal(contar('party') - normal, 1, 'um dado a mais, o da desvantagem do grupo');
+  assert.equal(contar('foes') - normal, 1, 'e o mesmo do outro lado');
+});
+
+teste('mais olhos veem mais: o tamanho do bando sobe a atencao', () => {
+  const goblin = passivePerception(makeMonster('goblin', { x: 0, y: 0 }));
+  const um = [goblin];
+  assert.equal(atencaoDoBando(um), goblin, 'um goblin e a passiva dele');
+  assert.equal(atencaoDoBando([goblin, goblin, goblin]), goblin, 'ate tres, o mesmo');
+  assert.equal(atencaoDoBando(Array(4).fill(goblin)), goblin + 1, 'o quarto soma 1');
+  assert.equal(atencaoDoBando(Array(9).fill(goblin)), goblin + 2, 'nove somam 2');
+  // E vale a MELHOR passiva do bando, nao a media.
+  const lobo = passivePerception(makeMonster('lobo', { x: 0, y: 0 }));
+  assert.ok(lobo > goblin);
+  assert.equal(atencaoDoBando([goblin, lobo]), lobo);
+  assert.equal(atencaoDoBando([]), 0);
+});
+
+teste('a chance que a tela mostra conta a armadura pesada', () => {
+  const { party } = montar();
+  const dara = party[DARA];
+  assert.equal(ARMORS[dara.armor]?.furtividade, 'desvantagem', 'Dara usa cota de malha');
+  const pip = party[PIP];
+  assert.notEqual(ARMORS[pip.armor]?.furtividade, 'desvantagem', 'Pip nao');
+  // Com o mesmo bonus de Furtividade, quem veste pesado tem menos chance.
+  const cd = 12;
+  const soDara = chanceDeEsconder([dara], cd);
+  const soPip = chanceDeEsconder([pip], cd);
+  const bruto = (c) => Math.max(0, Math.min(1, (21 - (cd + 1 - skillBonus(c, 'furtividade'))) / 20));
+  assert.ok(Math.abs(soPip - bruto(pip)) < 1e-9, 'Pip rola um dado so');
+  assert.ok(Math.abs(soDara - bruto(dara) ** 2) < 1e-9, 'Dara rola com desvantagem');
+  assert.ok(soDara < bruto(dara), 'e por isso a chance dela e menor que o bonus sugere');
+  // A vantagem da distancia desfaz a desvantagem, como manda o livro.
+  const comVantagem = chanceDeEsconder([dara], cd, { vantagem: true });
+  assert.ok(Math.abs(comVantagem - bruto(dara)) < 1e-9, 'vantagem e desvantagem se anulam');
+  // Grupo inteiro: metade passando, o grupo passa — entre 0 e 1, e cai quando
+  // a atencao sobe.
+  const facil = chanceDeEsconder(party, 5);
+  const dificil = chanceDeEsconder(party, 25);
+  assert.ok(facil > dificil);
+  assert.ok(facil <= 1 && dificil >= 0);
+  assert.equal(chanceDeEsconder([], 10), 0, 'sem ninguem, nenhuma chance');
+});
+
+teste('a chance da tela bate com o que o dado faz', () => {
+  // A tela mostra `chanceDeEsconder`; o jogo rola `furtividadeDoGrupo`. Os
+  // dois tem de dizer a mesma coisa, ou a tela mente.
+  const { party } = montar();
+  const atencao = 12;
+  const prevista = chanceDeEsconder(party, atencao);
+  const rng = makeRng(77);
+  let passou = 0;
+  const N = 4000;
+  for (let i = 0; i < N; i++) {
+    if (furtividadeDoGrupo(rng, party, [], null, { atencao }).furtivo) passou += 1;
+  }
+  const medida = passou / N;
+  assert.ok(Math.abs(medida - prevista) < 0.03,
+    'previsto ' + prevista.toFixed(3) + ', medido ' + medida.toFixed(3));
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

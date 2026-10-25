@@ -144,8 +144,11 @@ export function cobrarMarchaForcada(rng, herois, horasExtras) {
  * passar, o grupo passa. A CD é a melhor Percepção passiva do que vem pela
  * frente. O empate vale para quem defende, como no resto do motor
  * (`combat.js`, `rolarSurpresa`): é preciso PASSAR da atenção deles.
+ *
+ * `vantagem` e `desvantagem` vêm de fora: a distância do encontro é uma delas
+ * (`rules/encontros-estrada.js`, `vantagemDeDistancia`).
  */
-export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe) {
+export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe, { vantagem = false, desvantagem = false, atencao: atencaoDada = null } = {}) {
   const vivos = herois.filter((c) => !c.dead);
   if (!vivos.length) return { furtivo: false, rolagem: 0, atencao: 0, rolagens: [] };
   const rolagens = vivos.map((c) => {
@@ -153,11 +156,13 @@ export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe) {
     // O 1º degrau de exaustão atrapalha (Furtividade é teste de Destreza), e a
     // armadura pesada também: andar de cota de malha pela mata faz barulho.
     const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem';
-    const desvantagem = pelaArmadura
+    const ruim = desvantagem || pelaArmadura
       || fx.desvantagemSoTeste.includes('dex') || fx.desvantagemTeste.includes('dex');
-    return d20(rng, skillBonus(c, 'furtividade'), { disadvantage: desvantagem }).total;
+    return d20(rng, skillBonus(c, 'furtividade'), { advantage: vantagem, disadvantage: ruim }).total;
   });
-  const atencao = Math.max(0, ...inimigos.map((m) => passivaDe(m)));
+  // `atencao` pode vir pronta de fora: o encontro de estrada soma ao bando o
+  // que o TAMANHO dele dá (`rules/encontros-estrada.js`, `atencaoDoBando`).
+  const atencao = atencaoDada ?? Math.max(0, ...inimigos.map((m) => passivaDe(m)));
   const passaram = rolagens.filter((r) => r > atencao).length;
   const furtivo = passaram * 2 >= rolagens.length;
   // A rolagem que vale para a surpresa é a do meio: com metade passando, é ela
@@ -165,6 +170,40 @@ export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe) {
   const ordenadas = [...rolagens].sort((a, b) => a - b);
   const rolagem = ordenadas[Math.floor(ordenadas.length / 2)];
   return { furtivo, rolagem, atencao, rolagens, passaram };
+}
+
+/**
+ * A chance de o grupo passar no teste de grupo de Furtividade, de 0 a 1, sem
+ * rolar nada: é o número que a tela do encontro mostra. Conta a desvantagem da
+ * armadura pesada e a da exaustão, que a faixa de bônus sozinha escondia.
+ *
+ * Teste de grupo: metade ou mais passando, o grupo passa. A conta é a soma das
+ * combinações em que pelo menos metade passa.
+ */
+export function chanceDeEsconder(herois, atencao, { vantagem = false, desvantagem = false } = {}) {
+  const vivos = herois.filter((c) => !c.dead);
+  if (!vivos.length) return 0;
+  const ps = vivos.map((c) => {
+    const fx = conditionEffects(c);
+    const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem';
+    const ruim = desvantagem || pelaArmadura
+      || fx.desvantagemSoTeste.includes('dex') || fx.desvantagemTeste.includes('dex');
+    // Precisa PASSAR da atenção: o empate vale para quem defende.
+    const alvo = atencao + 1 - skillBonus(c, 'furtividade');
+    const p = Math.max(0, Math.min(1, (21 - alvo) / 20));
+    if (vantagem && !ruim) return 1 - (1 - p) ** 2;
+    if (ruim && !vantagem) return p ** 2;
+    return p;
+  });
+  // Poisson-binomial: a chance de k passarem, para cada k.
+  let dist = [1];
+  for (const p of ps) {
+    const nova = new Array(dist.length + 1).fill(0);
+    dist.forEach((v, k) => { nova[k] += v * (1 - p); nova[k + 1] += v * p; });
+    dist = nova;
+  }
+  const precisa = Math.ceil(ps.length / 2);
+  return dist.slice(precisa).reduce((a, b) => a + b, 0);
 }
 
 /** Quem está cansado demais para forçar a marcha (5º degrau: não anda). */

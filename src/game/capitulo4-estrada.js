@@ -29,7 +29,7 @@ import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
 import { prepararLevas } from './levas.js';
 
-const CACADORES = new Set(['lobo', 'corujaUrso', 'hobgoblin']);
+
 
 export function criarEstrada(app, config) {
   const enc = app.enc;
@@ -41,11 +41,23 @@ export function criarEstrada(app, config) {
   const feitos = (camp.feitos ??= {});
   const vila = (camp.vila ??= { pistas: [] });
 
+  // A DISTÂNCIA que a tela do encontro mostrou (`game/regiao.js`) é a mesma
+  // que vale no tabuleiro: era a maior mentira da tela quando o bando nascia
+  // sempre a 35 pés, estivesse escrito 20 ou 120. O grupo recua para o oeste
+  // da trilha e o bando nasce na coluna que a distância pede. O mapa tem 22
+  // colunas, então o teto real é de 80 pés.
+  const COLUNA_DO_GRUPO = 4;
+  const colunaDoBando = () => {
+    const pes = config.distanciaFt ?? 40;
+    return Math.max(COLUNA_DO_GRUPO + 2, Math.min(21, COLUNA_DO_GRUPO + Math.round(pes / 5)));
+  };
+
   // Onde cada um aparece: de dia, metade pelo leste da trilha e metade pelas
   // colinas do sudeste; de noite, em roda, saindo do escuro — longe da
   // fogueira o bastante para a vigia ter tempo de gritar.
   const tomadas = new Set();
   function lugares(n, segunda = false) {
+    const col = colunaDoBando();
     const out = [];
     for (let i = 0; i < n; i++) {
       let p;
@@ -53,9 +65,9 @@ export function criarEstrada(app, config) {
         const a = (i / n) * Math.PI * 2 + (segunda ? 0.4 + Math.PI / n : 0.4);
         p = { x: Math.round(11 + Math.cos(a) * 10), y: Math.round(7 + Math.sin(a) * 6.2) };
       } else if ((i + (segunda ? 1 : 0)) % 2 === 0) {
-        p = { x: 18 + (i % 3), y: 3 + Math.floor(i / 6) * 2 + (i % 2) };
+        p = { x: col + (i % 3), y: 3 + Math.floor(i / 6) * 2 + (i % 2) };
       } else {
-        p = { x: 19 + (i % 3), y: 11 + (Math.floor(i / 2) % 3) };
+        p = { x: col + 1 + (i % 3), y: 11 + (Math.floor(i / 2) % 3) };
       }
       p.x = Math.max(1, Math.min(21, p.x));
       p.y = Math.max(0, Math.min(13, p.y));
@@ -119,7 +131,14 @@ export function criarEstrada(app, config) {
     }
     if (texto.length) await narrar(root, { formato: 'painel', paginas: [{ texto }] });
     const xp = inimigos.filter((f) => f.dead || f.hp <= 0 || f.capturado).reduce((s, f) => s + (f.xp ?? 0), 0);
-    if (xp) app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + xp, motivo: `Na Trilha Triboar (${e.nome})` };
+    // O motivo que já estava guardado não se perde: o XP de duas coisas
+    // diferentes chega junto e o jogador tem de saber de onde veio.
+    if (xp) {
+      app.xpPendente = {
+        xp: (app.xpPendente?.xp ?? 0) + xp,
+        motivo: [app.xpPendente?.motivo, `Na Trilha Triboar (${e.nome})`].filter(Boolean).join('; '),
+      };
+    }
     fecharTabuleiro();
     continuarViagem(app, vivos);
   }
@@ -174,12 +193,21 @@ export function criarEstrada(app, config) {
         : 'Na curva da trilha, entre as pedras e o capim alto, vocês não estão sozinhos.';
       await narrar(root, { formato: 'painel', paginas: [{ titulo: noite ? 'Acampamento' : 'Trilha Triboar', texto: [o] }],
         escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
+      // De dia o grupo fica no oeste da trilha: é de lá que a distância conta.
+      if (!noite) {
+        const fila = [{ x: COLUNA_DO_GRUPO, y: 6 }, { x: COLUNA_DO_GRUPO + 1, y: 7 },
+          { x: COLUNA_DO_GRUPO - 1, y: 7 }, { x: COLUNA_DO_GRUPO + 2, y: 6 }];
+        enc.allOf('party').forEach((c, i) => {
+          const alvo = fila[i] ?? fila[fila.length - 1];
+          const q = enc.casaLivreMaisProxima(alvo);
+          if (q) c.pos = { ...c.pos, ...q };
+        });
+      }
       for (const f of inimigos.slice(0, primeira)) enc.addCombatant(f);
       // O resto do bando chega na terceira rodada.
       levas = prepararLevas(enc, [{ rodada: 3, units: inimigos.slice(primeira),
         aviso: noite ? 'Mais deles saem do escuro, do outro lado da fogueira!' : 'Mais deles sobem a trilha, correndo para alcançar os outros!' }]);
-      // Quem chega escondido: de noite, todos; de dia, só os que caçam.
-      const escondidos = noite || CACADORES.has(e.id);
+
       const primeiros = inimigos.slice(0, primeira);
       const furtividadeDeles = () => primeiros.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
 
@@ -226,6 +254,20 @@ export function criarEstrada(app, config) {
         // bando, quem embosca é o grupo. Falhando, o encontro corre como
         // correria no passo normal — andar devagar não apaga a emboscada de
         // quem caça.
+        // O grupo tentou sair da trilha e foi notado (`game/regiao.js`). Pelo
+        // livro não há surpresa: o grupo VIU o bando — a tela do encontro
+        // mostrou a quantos pés ele estava. O que ele perde é a posição, e
+        // isso vira desvantagem na iniciativa.
+        if (config.pegoDeCostas) {
+          enc.emboscada = null;
+          enc.iniciativaRuim = 'party';
+          enc.say('inicio', 'O grupo foi notado saindo da trilha, meio fora de posição: a iniciativa sai com desvantagem.');
+          app.selected = null;
+          enc.start();
+          if (enc.side === 'party') app.select(app.firstActive());
+          app.refresh();
+          return;
+        }
         const ritmo = ritmoDe(camp.viagem?.ritmo);
         const nossa = ritmo.furtivo
           ? furtividadeDoGrupo(enc.rng, enc.allOf('party'), primeiros, passivePerception)
@@ -238,7 +280,11 @@ export function criarEstrada(app, config) {
           enc.say('inicio', `O grupo vinha devagar e em silêncio (Furtividade ${nossa.rolagem} contra ${nossa.atencao}): são eles que são pegos.`);
         } else {
           if (nossa) enc.say('inicio', `O grupo vinha devagar, mas foi ouvido (Furtividade ${nossa.rolagem} contra ${nossa.atencao}).`);
-          enc.emboscada = escondidos ? { emboscadores: 'foes', furtividade: furtividadeDeles() } : null;
+          // De DIA não há emboscada contra o grupo: a tela do encontro
+          // (`game/regiao.js`) mostrou o bando a tantos pés, e quem vê a
+          // ameaça não é surpreendido. A emboscada da estrada ficou para a
+          // noite, com o grupo dormindo, e para quando é o GRUPO que embosca.
+          enc.emboscada = null;
         }
       }
       app.selected = null;
