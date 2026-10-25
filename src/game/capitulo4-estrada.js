@@ -22,7 +22,8 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus } from '../rules/abilities.js';
+import { skillBonus, passivePerception } from '../rules/abilities.js';
+import { ritmoDe, furtividadeDoGrupo } from '../rules/marcha.js';
 import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
 import { prepararLevas } from './levas.js';
@@ -172,9 +173,32 @@ export function criarEstrada(app, config) {
         aviso: noite ? 'Mais deles saem do escuro, do outro lado da fogueira!' : 'Mais deles sobem a trilha, correndo para alcançar os outros!' }]);
       // Quem chega escondido: de noite, todos; de dia, só os que caçam.
       const escondidos = noite || CACADORES.has(e.id);
-      enc.emboscada = escondidos
-        ? { emboscadores: 'foes', furtividade: inimigos.slice(0, primeira).map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total) }
+      const primeiros = inimigos.slice(0, primeira);
+      // Em ritmo lento o grupo anda escondido (`rules/marcha.js`): ninguém o
+      // pega de surpresa, e se a Furtividade dele passar da Percepção passiva
+      // do bando, quem embosca é o grupo. Regra da casa: o livro só diz que o
+      // ritmo lento "permite usar furtividade" e não detalha o resultado.
+      // De DIA e em ritmo lento o grupo anda escondido (`rules/marcha.js`): se
+      // o teste de grupo de Furtividade passar da Percepção passiva do bando,
+      // quem embosca é o grupo. Falhando, o encontro corre como correria no
+      // passo normal — andar devagar não apaga a emboscada de quem caça.
+      // À noite o grupo está parado na fogueira: ritmo nenhum vale ali.
+      const ritmo = ritmoDe(camp.viagem?.ritmo);
+      const nossa = !noite && ritmo.furtivo
+        ? furtividadeDoGrupo(enc.rng, enc.allOf('party'), primeiros, passivePerception)
         : null;
+      if (nossa?.furtivo) {
+        // UMA rolagem, a do grupo: `rolarSurpresa` fica com o MENOR valor da
+        // lista, então mandar as quatro faria a pior delas valer por todas e a
+        // emboscada não surpreenderia ninguém.
+        enc.emboscada = { emboscadores: 'party', furtividade: [nossa.rolagem] };
+        enc.say('inicio', `O grupo vinha devagar e em silêncio (Furtividade ${nossa.rolagem} contra ${nossa.atencao}): são eles que são pegos.`);
+      } else {
+        if (nossa) enc.say('inicio', `O grupo vinha devagar, mas foi ouvido (Furtividade ${nossa.rolagem} contra ${nossa.atencao}).`);
+        enc.emboscada = escondidos
+          ? { emboscadores: 'foes', furtividade: primeiros.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total) }
+          : null;
+      }
       app.selected = null;
       enc.start();
       if (enc.side === 'party') app.select(app.firstActive());

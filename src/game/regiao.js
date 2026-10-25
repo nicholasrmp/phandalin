@@ -2,8 +2,8 @@
 // os lugares que o grupo conhece, e a viagem entre eles.
 //
 // As REGRAS da viagem são as do livro; o texto é nosso:
-//   - o grupo marcha 36 km por dia (dez horas), descansa oito e gasta o resto
-//     montando acampamento — um descanso longo por noite;
+//   - o grupo marcha oito horas por dia, no ritmo que escolher
+//     (`rules/marcha.js`), e acampa à noite — um descanso longo por noite;
 //   - um teste de encontro de dia e outro de noite: d20, 17 a 20 é encontro, e
 //     um d12 na tabela da Trilha Triboar diz o quê (`ENCONTROS`);
 //   - o XP de um encontro é o dos monstros, dividido pelo grupo.
@@ -36,6 +36,9 @@ import {
   despensaMagica, limparMagicoVencido, encherCantis,
 } from '../rules/mantimentos.js';
 import { estadoDe as estadoDeUtilidade, podeConjurarFora } from '../rules/utilidade.js';
+import {
+  RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm, cobrarMarchaForcada, podeMarchar,
+} from '../rules/marcha.js';
 
 /**
  * O dado da viagem: semeado pelo trajeto, com o estado guardado em
@@ -75,10 +78,17 @@ const px = (l) => ({ x: l.x / 100 * LARG, y: l.y / 100 * ALT });
 const dist = (a, b) => Math.hypot(px(a).x - px(b).x, px(a).y - px(b).y);
 const KM_POR_PX = 2 * KM_POR_DIA / dist(LOCAL.phandalin, LOCAL.poco);
 
-/** Quilômetros e dias de marcha entre dois lugares. */
-export function trajeto(de, para) {
+/**
+ * Quilômetros e dias de marcha entre dois lugares, no ritmo escolhido
+ * (`rules/marcha.js`). Sem ritmo, o normal: 36 km por dia.
+ */
+export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0 } = {}) {
   const km = Math.round(dist(LOCAL[de], LOCAL[para]) * KM_POR_PX / 2) * 2;
-  return { km, dias: Math.max(1, Math.ceil(km / KM_POR_DIA)) };
+  return {
+    km,
+    dias: diasDeMarcha(km, KM_POR_DIA, ritmo, horasExtras),
+    porDia: kmPorDia(KM_POR_DIA, ritmo, horasExtras),
+  };
 }
 
 /**
@@ -150,27 +160,72 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       return;
     }
     if (l.id === reg.onde) { await entrar(l); return; }
-    const { km, dias } = trajeto(reg.onde, l.id);
+    // Quem está no 5º degrau de exaustão tem deslocamento 0: não há partir.
+    const parados = vivos().filter((c) => !podeMarchar(c));
+    if (parados.length) {
+      tela.esconder();
+      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: 'Ninguém sai daqui', texto: [
+        `${parados.map((c) => c.name).join(', ')} não ${parados.length > 1 ? 'conseguem' : 'consegue'} dar mais um passo: o cansaço chegou ao ponto em que o corpo não obedece.`,
+        'Descansem, comam e bebam antes de pegar a estrada.',
+      ] }] });
+      tela.mostrar();
+      return;
+    }
+    const { km } = trajeto(reg.onde, l.id);
     // Partindo de um lugar habitado, ninguém sai com o cantil pela metade.
     const encheu = encherCantis(vivos());
     const d = despensaDoGrupo(vivos());
-    const precisa = dias * vivos().length;
+    // Quantos dias em cada ritmo, para a escolha ser informada.
+    const porRitmo = Object.values(RITMOS).map((r) => ({ r, ...trajeto(reg.onde, l.id, { ritmo: r.id }) }));
+    const normal = porRitmo.find((x) => x.r.id === 'normal');
     tela.esconder();
-    const r = await narrar(app.root, {
+    const escolha = await narrar(app.root, {
       formato: 'painel',
       paginas: [{ titulo: l.nome, texto: [
-        `${km} km de ${LOCAL[reg.onde].nome}: ${dias === 1 ? 'um dia' : `${dias} dias`} de marcha, com acampamento à noite.`,
-        `Rações: o grupo leva ${d.racoes}, e a viagem pede ${precisa}.${d.racoes < precisa ? ' O que faltar sai da caça e da colheita — ou da fome.' : ''}`,
+        `${km} km de ${LOCAL[reg.onde].nome}, com acampamento a cada noite.`,
+        `Rações: o grupo leva ${d.racoes}, e a viagem pede ${normal.dias * vivos().length} em ritmo normal.${d.racoes < normal.dias * vivos().length ? ' O que faltar sai da caça e da colheita — ou da fome.' : ''}`,
         `Água: ${encheu > 0 ? `os cantis foram enchidos aqui (${encheu} litro(s)) e levam ` : 'os cantis levam '}${d.agua} litro(s), um dia para cada um. O resto é riacho, chuva ou magia.`,
-        'O grupo marcha em ritmo normal, 36 km por dia, e caça pelo caminho quando falta o que comer ou beber. (O ritmo de marcha do livro — lento, normal e rápido — ainda não é escolha no jogo.)',
+        'Em que passo?',
+        ...porRitmo.map((x) => {
+          // Com os dias iguais aos do passo normal, o ritmo só troca risco por
+          // risco: vale dizer isso antes de o jogador escolher.
+          const semGanho = x.r.id === 'rapido' && x.dias >= normal.dias;
+          const nota = semGanho ? ' (os mesmos dias do passo normal, só com menos horas de estrada por dia)' : '';
+          return `· ${x.r.nome}: ${x.porDia} km por dia, ${x.dias === 1 ? 'um dia' : `${x.dias} dias`}, ${x.dias * vivos().length} ração(ões)${nota} — ${x.r.resumo}.`;
+        }),
       ] }],
       escolhas: [
         { rotulo: 'Ficar', valor: 'fica' },
-        { rotulo: 'Partir', valor: 'parte', primaria: true },
+        ...porRitmo.map((x) => ({ rotulo: x.r.nome, valor: x.r.id, primaria: x.r.id === 'normal' })),
       ],
     });
-    if (r !== 'parte') { tela.mostrar(); return; }
-    camp.viagem = { de: reg.onde, para: l.id, dias, dia: 1, periodo: 'dia' };
+    if (!RITMOS[escolha]) { tela.mostrar(); return; }
+
+    // Marcha forçada: só vale perguntar quando ela encurta a viagem.
+    let horasExtras = 0;
+    const comExtras = trajeto(reg.onde, l.id, { ritmo: escolha, horasExtras: EXTRAS_MAX });
+    const semExtras = trajeto(reg.onde, l.id, { ritmo: escolha });
+    if (comExtras.dias < semExtras.dias) {
+      const forcar = await narrar(app.root, {
+        formato: 'painel',
+        paginas: [{ titulo: 'Forçar a marcha?', texto: [
+          `Mais duas horas de estrada por dia encurtam a viagem de ${semExtras.dias} para ${comExtras.dias} dia(s).`,
+          'O preço é do livro: um teste de Constituição por hora a mais — CD 11 na nona hora, 12 na décima. Quem falha ganha um degrau de exaustão.',
+        ] }],
+        escolhas: [
+          { rotulo: 'No passo normal', valor: 'nao', primaria: true },
+          { rotulo: 'Forçar', valor: 'sim' },
+        ],
+      });
+      if (forcar === 'sim') horasExtras = EXTRAS_MAX;
+    }
+
+    const rota = trajeto(reg.onde, l.id, { ritmo: escolha, horasExtras });
+    marcharEm(vivos(), escolha);
+    camp.viagem = {
+      de: reg.onde, para: l.id, dias: rota.dias, dia: 1, periodo: 'dia',
+      ritmo: escolha, horasExtras, kmRestantes: rota.km, porDia: rota.porDia,
+    };
     await seguirViagem();
   }
 
@@ -207,16 +262,27 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     // O dado da viagem é semeado como o resto do jogo, e o estado dele viaja
     // junto: uma luta no meio do caminho não rebobina a estrada.
     const rng = dadoDaViagem(camp, via);
-    while (via.dia <= via.dias) {
+    while ((via.kmRestantes ?? 0) > 0 || via.periodo === 'chegou') {
       if (via.periodo === 'dia') {
         const paisagem = rng.pick(PAISAGENS);
-        registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome}: ${paisagem.texto}`);
+        // O dia anda o que o ritmo rende, ou o que falta — o que for menor.
+        const kmHoje = Math.min(via.kmRestantes ?? via.porDia, via.porDia);
+        const fracao = via.porDia > 0 ? kmHoje / via.porDia : 1;
+        registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome} (${Math.round(kmHoje)} km): ${paisagem.texto}`);
         for (const t of await oDiaDoGrupo(rng, paisagem)) registrar(t);
-        const e = sortearEncontro(rng, 'dia');
-        via.periodo = via.dia === via.dias ? 'chegou' : 'noite';
+        via.kmRestantes = Math.max(0, (via.kmRestantes ?? via.porDia) - kmHoje);
+        // Menos horas na estrada, menos chance de topar com alguma coisa: o
+        // teste do dia só acontece na fração do dia que o grupo marchou. É o
+        // que faz o passo acelerado valer a pena.
+        const e = fracao >= 1 || rng() < fracao ? sortearEncontro(rng, 'dia') : null;
+        via.periodo = via.kmRestantes <= 0 ? 'chegou' : 'noite';
         if (e) { await encontro(e); return; }
       }
       if (via.periodo === 'chegou') break;
+      // Acampado, o ritmo não vale: a Percepção perdida no passo acelerado
+      // volta enquanto o grupo está parado na fogueira — inclusive se a noite
+      // virar luta, por isso isto vem ANTES do encontro noturno.
+      marcharEm(vivos(), null);
       if (via.periodo === 'noite') {
         const e = sortearEncontro(rng, 'noite');
         via.periodo = 'descanso';
@@ -232,10 +298,13 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       via.dia += 1;
       via.periodo = 'dia';
       via.semComida = false;
+      // De manhã o grupo volta ao passo escolhido.
+      marcharEm(vivos(), via.ritmo);
     }
     reg.onde = via.para;
     camp.viagem = null;
-    // Chegando, há poço, riacho ou taverna: os cantis enchem sozinhos.
+    // Chegando, o ritmo sai de cima do grupo e os cantis enchem sozinhos.
+    marcharEm(grupo, null);
     encherCantis(vivos());
     registrar(`O grupo chega a ${LOCAL[reg.onde].nome}.`);
     tela.atualizar();
@@ -257,7 +326,12 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const faltaComida = antes.dias < 1;
     const faltaAgua = !paisagem.agua && antes.diasDeAgua < 1;
 
-    if (faltaComida || faltaAgua) {
+    // Depressa ninguém caça nem colhe: o livro só deixa em ritmo normal ou lento.
+    const ritmo = ritmoDe(camp.viagem?.ritmo);
+    if ((faltaComida || faltaAgua) && !ritmo.forrageia) {
+      linhas.push('No passo acelerado ninguém para para caçar nem colher.');
+    }
+    if ((faltaComida || faltaAgua) && ritmo.forrageia) {
       const quem = melhorForrageador(herois);
       if (quem) {
         // Localizar Animais ou Plantas aponta onde está a caça: vantagem no teste.
@@ -290,6 +364,9 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const purificada = Boolean(purifica);
     for (const t of diaDeViagem(rng, herois, { calor: paisagem.calor, agua: paisagem.agua, fontes, purificada })) linhas.push(t);
     if (herois.some((c) => (c.diasSemComida ?? 0) > 0)) camp.viagem.semComida = true;
+
+    // As horas a mais da marcha forçada cobram no fim do dia.
+    for (const t of cobrarMarchaForcada(rng, herois, camp.viagem?.horasExtras ?? 0)) linhas.push(t);
 
     const depois = despensaDoGrupo(herois, { calor: paisagem.calor });
     linhas.push(`Despensa: ${depois.racoes} ração(ões) e ${depois.agua} litro(s) de água — ${depois.dias} dia(s) de comida.`);
@@ -325,7 +402,8 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     // A despensa fica à vista: a decisão de partir depende dela.
     momento: () => {
       const d = despensaDoGrupo(vivos());
-      return `Dia ${v.dia} · em ${LOCAL[reg.onde].nome} · ${d.racoes} ração(ões), ${d.agua} L`;
+      const marcha = camp.viagem ? ` · ${ritmoDe(camp.viagem.ritmo).nome.toLowerCase()}${camp.viagem.horasExtras ? ', forçando' : ''}` : '';
+      return `Dia ${v.dia} · em ${LOCAL[reg.onde].nome}${marcha} · ${d.racoes} ração(ões), ${d.agua} L`;
     },
     dinheiro: () => totalEmCobre(vivos()),
     visivel: conhecido,

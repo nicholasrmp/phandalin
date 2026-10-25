@@ -245,7 +245,9 @@ class App {
       this.xpPendente = null;
     }
     if (config.continuarCom) {
-      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente'); c.concentrating = null; }
+      // A exaustão não é condição de combate: ela vem da estrada (fome, sede,
+      // marcha forçada) e tem de atravessar a luta e o capítulo seguinte.
+      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente' || k.id === 'exausto'); c.concentrating = null; }
       // As magias de utilidade da cena anterior ficaram para trás (o relógio segue).
       if (this.campanha?.utilidade) this.campanha.utilidade.ativas = [];
     }

@@ -9,13 +9,18 @@ import assert from 'node:assert/strict';
 import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { makeMonster, MONSTERS } from '../rules/monsters.js';
-import { skillBonus } from '../rules/abilities.js';
+import { skillBonus, saveBonus } from '../rules/abilities.js';
+import { ARMORS } from '../rules/items/armors.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
 import { marcarTreinoDeArmadura, quantosNaMochila, WEAPONS, garantirInventario, itemDeId } from '../rules/equipment.js';
 import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
 import { takeMonsterTurn, contornaZonas, runAutoSummons, encerrarTurnoComInvocados } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
+import {
+  RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm,
+  cobrarMarchaForcada, furtividadeDoGrupo, podeMarchar,
+} from '../rules/marcha.js';
 import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
@@ -5203,6 +5208,202 @@ teste('o 6o degrau mata, e morto-vivo nao cansa', () => {
   if (osso?.conditionImmunities?.includes('exausto')) {
     assert.equal(mudarExaustao(osso, 3), 0, 'quem e imune a exaustao nao ganha degrau');
   }
+});
+
+// ---- ritmo de marcha -------------------------------------------------------
+
+teste('cada ritmo anda o que o livro manda, e a marcha forcada encurta a viagem', () => {
+  // A proporcao do livro sobre os 36 km do ritmo normal da regiao.
+  assert.equal(kmPorDia(36, 'lento'), 27);
+  assert.equal(kmPorDia(36, 'normal'), 36);
+  assert.equal(kmPorDia(36, 'rapido'), 45);
+  // Oito horas sao o dia; cada hora a mais rende a mesma fatia.
+  assert.equal(kmPorDia(36, 'normal', 2), 45, 'duas horas a mais em ritmo normal');
+  assert.equal(kmPorDia(36, 'rapido', 2), 56, 'e depressa, mais ainda');
+  // Um ritmo desconhecido cai no normal, nao quebra.
+  assert.equal(kmPorDia(36, 'nenhum'), 36);
+  // Dias: 72 km dao dois dias no normal e tres devagar.
+  assert.equal(diasDeMarcha(72, 36, 'normal'), 2);
+  assert.equal(diasDeMarcha(72, 36, 'lento'), 3);
+  assert.equal(diasDeMarcha(72, 36, 'rapido'), 2);
+  assert.equal(diasDeMarcha(72, 36, 'normal', 2), 2, 'forcar nem sempre encurta');
+  assert.equal(diasDeMarcha(100, 36, 'normal'), 3);
+  assert.equal(diasDeMarcha(100, 36, 'normal', 2), 3);
+  assert.equal(diasDeMarcha(90, 36, 'normal'), 3);
+  assert.equal(diasDeMarcha(90, 36, 'normal', 2), 2, 'aqui encurta');
+  // Nunca menos de um dia.
+  assert.equal(diasDeMarcha(1, 36, 'rapido', 2), 1);
+});
+
+teste('depressa custa 5 de Percepcao passiva, e so devagar da furtividade', () => {
+  const { party } = montar();
+  const c = party[DARA];
+  const base = passivePerception(c);
+  marcharEm(party, 'rapido');
+  assert.equal(passivePerception(c), base - 5, 'depressa: 5 a menos');
+  marcharEm(party, 'normal');
+  assert.equal(passivePerception(c), base, 'no passo normal nao muda nada');
+  marcharEm(party, 'lento');
+  assert.equal(passivePerception(c), base, 'devagar tambem nao');
+  marcharEm(party, null);
+  assert.equal(c.marcha, undefined, 'chegando, o ritmo sai de cima do grupo');
+  assert.equal(passivePerception(c), base);
+  // Quem caca e colhe: o livro so deixa em ritmo normal ou lento.
+  assert.equal(ritmoDe('lento').forrageia, true);
+  assert.equal(ritmoDe('normal').forrageia, true);
+  assert.equal(ritmoDe('rapido').forrageia, false);
+  assert.equal(ritmoDe('lento').furtivo, true);
+  assert.equal(ritmoDe('normal').furtivo, false);
+  assert.equal(ritmoDe('rapido').furtivo, false);
+});
+
+teste('a Percepcao perdida no passo acelerado faz o grupo ser emboscado', () => {
+  // Uma emboscada que o grupo nota no passo normal e nao nota depressa.
+  const alvo = () => {
+    const { enc, party } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+    return { enc, c: party[DARA] };
+  };
+  const a = alvo();
+  const passiva = passivePerception(a.c);
+  // Furtividade exatamente igual a passiva: nao surpreende (a regra e "abaixo").
+  a.enc.emboscada = { emboscadores: 'foes', furtividade: [passiva] };
+  assert.equal(a.enc.rolarSurpresa().has(a.c.id), false, 'no passo normal, nota');
+  const b = alvo();
+  marcharEm([b.c], 'rapido');
+  b.enc.emboscada = { emboscadores: 'foes', furtividade: [passiva] };
+  assert.equal(b.enc.rolarSurpresa().has(b.c.id), true, 'depressa, nao nota');
+  marcharEm([b.c], null);
+});
+
+teste('a marcha forcada cobra CD 11 na nona hora e 12 na decima', () => {
+  const { party } = montar();
+  // Um dado que cai no numero exato pedido, para medir a CD e nao a sorte.
+  const total = (c, alvo) => dadoFixo(alvo - saveBonus(c, 'con'));
+  const so = (c) => { for (const h of party) h.dead = h !== c; return [c]; };
+
+  const a = party[DARA];
+  // 10 contra a nona hora: pelo livro e falha (CD 11).
+  cobrarMarchaForcada(total(a, 10), so(a), 1);
+  assert.equal(nivelDeExaustao(a), 1, '10 nao passa na CD 11 da nona hora');
+
+  const b = party[PIP];
+  // 11 passa na nona (CD 11) e falha na decima (CD 12).
+  cobrarMarchaForcada(total(b, 11), so(b), 2);
+  assert.equal(nivelDeExaustao(b), 1, '11 passa na nona e falha na decima');
+
+  const c = party[BRENN];
+  cobrarMarchaForcada(total(c, 12), so(c), 2);
+  assert.equal(nivelDeExaustao(c), 0, '12 passa nas duas');
+
+  const d = party[ILVAN];
+  // Sem horas a mais, nao ha o que cobrar.
+  assert.deepEqual(cobrarMarchaForcada(makeRng(1), so(d), 0), []);
+  // Com o dado no 1, as duas horas falham: dois degraus.
+  const linhas = cobrarMarchaForcada(dadoFixo(1), so(d), 2);
+  assert.equal(nivelDeExaustao(d), 2, 'uma hora, um degrau; duas horas, dois');
+  assert.ok(/contra 11/.test(linhas.join(' ')), 'o registro mostra a CD da hora');
+  assert.ok(/contra 12/.test(linhas.join(' ')), 'e a da hora seguinte');
+  // O jogo nao passa de duas horas a mais.
+  assert.equal(EXTRAS_MAX, 2);
+  for (const h of party) h.dead = false;
+  const e = party[DARA];
+  mudarExaustao(e, -9);
+  cobrarMarchaForcada(dadoFixo(1), so(e), 9);
+  assert.equal(nivelDeExaustao(e), EXTRAS_MAX, 'nove horas a mais nao viram nove degraus');
+});
+
+teste('a marcha forcada mata quem chega ao sexto degrau', () => {
+  const { party } = montar();
+  const c = party[DARA];
+  for (const h of party) h.dead = h !== c;
+  mudarExaustao(c, 4);
+  cobrarMarchaForcada(dadoFixo(1), [c], 2);
+  assert.equal(nivelDeExaustao(c), 6);
+  assert.ok(c.dead, 'o sexto degrau mata na estrada');
+});
+
+teste('andando devagar, o grupo passa se METADE se esconder', () => {
+  const { party } = montar();
+  const bando = [makeMonster('goblin', { x: 10, y: 10 }), makeMonster('lobo', { x: 11, y: 10 })];
+  const passiva = (m) => passivePerception(m);
+  const atencao = Math.max(...bando.map(passiva));
+  const bom = furtividadeDoGrupo(dadoFixo(20), party, bando, passiva);
+  assert.equal(bom.atencao, atencao, 'a CD e a melhor Percepcao passiva do bando');
+  assert.equal(bom.passaram, party.length, 'com 20 passam todos');
+  assert.equal(bom.furtivo, true);
+  const ruim = furtividadeDoGrupo(dadoFixo(1), party, bando, passiva);
+  assert.equal(ruim.passaram, 0, 'com 1 nao passa ninguem');
+  assert.equal(ruim.furtivo, false);
+  // O empate vale para quem defende: e preciso PASSAR da atencao deles.
+  const empate = (c) => dadoFixo(atencao - skillBonus(c, 'furtividade'));
+  const so = [party[DARA]];
+  assert.equal(furtividadeDoGrupo(empate(so[0]), so, bando, passiva).furtivo, false,
+    'rolagem igual a passiva nao esconde ninguem');
+  const acima = dadoFixo(atencao + 1 - skillBonus(so[0], 'furtividade'));
+  assert.equal(furtividadeDoGrupo(acima, so, bando, passiva).furtivo, true, 'um a mais, sim');
+  // Grupo morto nao se esconde.
+  const mortos = party.map((c) => ({ ...c, dead: true }));
+  assert.equal(furtividadeDoGrupo(dadoFixo(20), mortos, bando, passiva).furtivo, false);
+});
+
+teste('o 1o degrau de exaustao atrapalha a furtividade do grupo', () => {
+  const { party } = montar();
+  // Pip e o ladino: sem armadura pesada, so a exaustao atrapalha.
+  const c = party[PIP];
+  const bando = [makeMonster('goblin', { x: 10, y: 10 })];
+  const passiva = (m) => passivePerception(m);
+  // Um dado que devolve 20 na primeira rolagem e 1 na segunda: com
+  // desvantagem o motor rola duas vezes e fica com a pior.
+  const doisDados = () => {
+    let n = 0;
+    const f = () => (n++ === 0 ? 0.99 : 0.01);
+    f.die = (lados) => Math.max(1, Math.ceil(f() * lados));
+    f.int = (k) => Math.floor(f() * k);
+    f.pick = (a) => a[0];
+    f.chance = () => false;
+    f.shuffle = (a) => a.slice();
+    return f;
+  };
+  const inteiro = furtividadeDoGrupo(doisDados(), [c], bando, passiva);
+  assert.equal(inteiro.rolagens[0], 20 + skillBonus(c, 'furtividade'), 'sem exaustao fica com o 20');
+  mudarExaustao(c, 1);
+  const cansado = furtividadeDoGrupo(doisDados(), [c], bando, passiva);
+  assert.equal(cansado.rolagens[0], 1 + skillBonus(c, 'furtividade'), 'com exaustao fica com o 1');
+  mudarExaustao(c, -1);
+
+  // E quem veste armadura pesada rola com desvantagem, como manda o livro.
+  const dara = party[DARA];
+  assert.equal(ARMORS[dara.armor]?.furtividade, 'desvantagem', 'Dara usa cota de malha');
+  const pesada = furtividadeDoGrupo(doisDados(), [dara], bando, passiva);
+  assert.equal(pesada.rolagens[0], 1 + skillBonus(dara, 'furtividade'), 'de cota de malha, fica com o 1');
+});
+
+teste('a emboscada do grupo manda UMA rolagem, a do grupo', () => {
+  // `rolarSurpresa` fica com o MENOR valor da lista: mandar as quatro faria a
+  // pior delas valer por todas, e a emboscada nao surpreenderia ninguem.
+  const { enc, foes } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  const alvo = foes[0];
+  const passiva = passivePerception(alvo);
+  // Quatro rolagens, uma delas horrivel: e isso que o codigo antigo mandava.
+  enc.emboscada = { emboscadores: 'party', furtividade: [passiva + 9, passiva + 7, 3, 2] };
+  assert.equal(enc.rolarSurpresa().has(alvo.id), false, 'com a pior da lista, ninguem e surpreendido');
+  // Uma rolagem so, a que o teste de grupo decidiu.
+  const b = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  b.enc.emboscada = { emboscadores: 'party', furtividade: [passiva + 1] };
+  assert.equal(b.enc.rolarSurpresa().has(b.foes[0].id), true, 'com a do grupo, surpreende');
+});
+
+teste('a exaustao da estrada atravessa a luta do caminho', () => {
+  // `main.js` limpa as condicoes ao entrar numa cena com `continuarCom`, mas a
+  // exaustao vem da estrada e tem de ficar.
+  const { party } = montar();
+  const c = party[DARA];
+  mudarExaustao(c, 2);
+  addCondition(c, 'abencoado', { rounds: 10 });
+  // O mesmo filtro de `main.js`.
+  c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente' || k.id === 'exausto');
+  assert.equal(nivelDeExaustao(c), 2, 'a exaustao fica');
+  assert.equal(hasCondition(c, 'abencoado'), false, 'a condicao de combate sai');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);
