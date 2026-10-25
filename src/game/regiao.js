@@ -37,7 +37,8 @@ import {
   despensaMagica, limparMagicoVencido, encherCantis,
 } from '../rules/mantimentos.js';
 import {
-  estadoDe as estadoDeUtilidade, podeConjurarFora, melhorParaTeste, rolarTeste, avancar as avancarTempo,
+  estadoDe as estadoDeUtilidade, podeConjurarFora, melhorParaTeste, rolarTeste,
+  avancar as avancarTempo, ativaDe,
 } from '../rules/utilidade.js';
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm, cobrarMarchaForcada, podeMarchar,
@@ -46,6 +47,7 @@ import {
 import {
   VIGIAS, procurarLugar, montarAcampamento, atencaoDaVigia, coberturaDaNoite,
   ocultacaoDoAcampamento, descansou, noiteQuebrada, textoDoAcampamento, oQueAVigiaPercebe,
+  noiteFechada,
 } from '../rules/acampamento.js';
 import {
   ENCONTROS, sortearEncontro, distanciaInicial, reacaoDe, podeConversar,
@@ -281,17 +283,19 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         // Onde armar, com fogo ou sem, e quem fica de vigia. O acampamento
         // vive em `camp.viagem` para sobreviver a uma luta no meio da noite.
         via.acampamento = await escolherAcampamento(rng, via);
-        const camp = montarAcampamento({ ...via.acampamento, herois: vivos() });
+        const camp = montarAcampamento({ ...via.acampamento, ...abrigoDoGrupo(), herois: vivos() });
         registrar(textoDoAcampamento(camp));
-        // O que esconde o acampamento sobe a barra do encontro; o fogo desce.
-        const e = sortearEncontro(rng, 'noite', { ajuste: ocultacaoDoAcampamento(camp) });
+        // Dentro da Pequena Cabana nada entra: não há encontro para sortear.
+        const e = noiteFechada(camp)
+          ? null
+          : sortearEncontro(rng, 'noite', { ajuste: ocultacaoDoAcampamento(camp) });
         via.periodo = 'descanso';
         if (e) { await encontro(e); return; }
       }
       // A noite passou (com ou sem luta): o descanso longo do acampamento.
       // Quem não comeu nem bebeu o dia todo não tira degrau de exaustão, e
       // quem passou quatro horas de vigia não descansou de verdade.
-      const campNoite = montarAcampamento({ ...(via.acampamento ?? {}), herois: vivos() });
+      const campNoite = montarAcampamento({ ...(via.acampamento ?? {}), ...abrigoDoGrupo(), herois: vivos() });
       // O livro: só UMA HORA ou mais de esforço manda recomeçar o descanso. A
       // luta da noite soma os minutos dela em `capitulo4-estrada.js`; uma luta
       // de rodadas nem chega perto, mas a regra fica onde devia estar.
@@ -403,6 +407,20 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
    * A tela do acampamento: onde armar, fogo ou escuro, e quem fica de vigia.
    * Devolve { lugar, fogueira, vigia } para `rules/acampamento.js`.
    */
+  /**
+   * As magias de abrigo que o grupo tem de pé agora: a Pequena Cabana fecha a
+   * noite, a Chama Contínua ilumina sem entregar o acampamento
+   * (`rules/acampamento.js`).
+   */
+  function abrigoDoGrupo() {
+    const estado = estadoDeUtilidade(camp);
+    const herois = vivos();
+    return {
+      cabana: Boolean(ativaDe(estado, herois, 'pequenaCabana')),
+      chamaContinua: Boolean(ativaDe(estado, herois, 'chamaContinua')),
+    };
+  }
+
   async function escolherAcampamento(rng, via) {
     const herois = vivos();
     const terreno = via.terrenoDoDia ?? 'comum';
@@ -500,7 +518,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       // Cada noite começa com a fogueira que o grupo escolheu: a brasa de
       // ontem não atravessa para hoje.
       if (camp.viagem) camp.viagem.semFogueira = false;
-      const camp3 = montarAcampamento({ ...(camp.viagem?.acampamento ?? {}), herois: vivos() });
+      const camp3 = montarAcampamento({ ...(camp.viagem?.acampamento ?? {}), ...abrigoDoGrupo(), herois: vivos() });
       const bandoN = Array.from({ length: e.qtd }, () => makeMonster(e.id, { x: 0, y: 0 }));
       // Só a PRIMEIRA leva chega agora, como na cena: rolar a Furtividade do
       // bando inteiro fazia o bando grande ser mais fácil de ouvir, porque o
@@ -511,8 +529,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       const vigia = oQueAVigiaPercebe(rng, camp3, furtividades);
       // A cena usa ESTA rolagem: rolar de novo lá daria duas noites diferentes.
       if (camp.viagem) camp.viagem.vigiaDaNoite = { ...vigia, furtividades };
-      // Sem aviso a tempo não há escolha; sem fogueira não há o que apagar.
-      if (!vigia.gritouATempo || !camp3.fogueira) return 'luta';
+      const temCorda = Boolean(ativaDe(estadoDeUtilidade(camp), vivos(), 'truqueDaCorda'));
+      // Sem aviso a tempo não há escolha. Com aviso, sempre há o que fazer:
+      // apagar o fogo só vale se houver fogo, mas subir pela corda não depende
+      // dele — era um defeito a magia preparada sumir justo na noite escura.
+      if (!vigia.gritouATempo || (!camp3.fogueira && !temCorda)) return 'luta';
 
       const atencaoN = atencaoDoBando(bandoN.map((m) => passivePerception(m)));
       const chanceN = chanceDeEsconder(vivos(), atencaoN);
@@ -521,16 +542,24 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         formato: 'painel',
         paginas: [{ titulo: 'No acampamento', texto: [
           `${vigia.deTurno.name} estava de vigia e ouve de longe (atenção ${vigia.atencao} contra ${vigia.menor}): ${nomeDoBando(e)} vêm na direção do acampamento, e ainda dá tempo.`,
-          `Apagar o fogo e ficar quieto é um teste de grupo de Furtividade contra a atenção deles (${atencaoN}), ${Math.round(chanceN * 100)}% de chance. Dando certo, eles passam reto e não há XP; falhando, a luta começa com o acampamento na brasa, e só quem enxerga no escuro vê direito.`,
+          camp3.fogueira ? `Apagar o fogo e ficar quieto é um teste de grupo de Furtividade contra a atenção deles (${atencaoN}), ${Math.round(chanceN * 100)}% de chance. Dando certo, eles passam reto e não há XP; falhando, a luta começa com o acampamento na brasa, e só quem enxerga no escuro vê direito.` : null,
           'Acordar todos e esperar de armas na mão não custa nada: a vigia avisou a tempo, e ninguém vai ser pego de surpresa.',
+          temCorda
+            ? 'E há o Truque da Corda de pé: subir por ela tira o grupo do mundo por uma hora, e eles passam por um acampamento vazio. Sem teste e sem XP.'
+            : null,
           'Regra da casa: a saída da noite é nossa — o livro não traz nada sobre apagar fogueira para não ser achado.',
-        ] }],
+        ].filter(Boolean) }],
         escolhas: [
           { rotulo: 'Acordar todos', valor: 'luta' },
-          { rotulo: 'Apagar o fogo', valor: 'calar' },
+          ...(camp3.fogueira ? [{ rotulo: 'Apagar o fogo', valor: 'calar' }] : []),
+          ...(temCorda ? [{ rotulo: 'Subir pela corda', valor: 'corda' }] : []),
         ],
       });
       tela?.mostrar?.();
+      if (rN === 'corda') {
+        registrar(`O grupo sobe pela corda e some do mundo por uma hora: ${nomeDoBando(e)} passam pelo acampamento vazio e seguem. Nenhum XP.`);
+        return null;
+      }
       if (rN !== 'calar') return 'luta';
 
       const furtivoN = furtividadeDoGrupo(rng, vivos(), bandoN, passivePerception, { atencao: atencaoN });

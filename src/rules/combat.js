@@ -3451,6 +3451,8 @@ export class Encounter {
       if (alvo.kind === 'pc') return 'os heróis não se erguem como mortos-vivos';
       if (alvo.invocado) return 'não sobra corpo de uma criatura invocada';
       if (alvo.reerguido) return 'este corpo já foi erguido uma vez';
+      // Repouso Tranquilo (`rules/utilidade.js`): o corpo guardado não se ergue.
+      if (alvo.repousoTranquilo) return 'o corpo está sob Repouso Tranquilo: não se ergue';
       if ((alvo.tipo ?? 'humanoide') !== 'humanoide') return 'só cadáveres humanoides';
       if (!['pequeno', 'médio'].includes(alvo.size ?? 'médio')) return 'só cadáveres Pequenos ou Médios';
       if (distanceFt(actor.pos, alvo.pos) > spell.rangeFt) return 'é de toque: chegue perto do corpo';

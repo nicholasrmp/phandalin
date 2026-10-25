@@ -6475,10 +6475,12 @@ teste('as quatro magias de abrigo existem, com circulo e classes do livro', () =
   assert.ok(listaDaClasse('bardo', 3).magias.includes('pequenaCabana'), 'o bardo tambem');
   assert.ok(!listaDaClasse('clerigo', 3).magias.includes('pequenaCabana'), 'o clerigo nao');
   assert.ok(listaDaClasse('mago', 2).magias.includes('truqueDaCorda'), 'o mago tem a corda');
-  assert.ok(listaDaClasse('bruxo', 2).magias.includes('truqueDaCorda'), 'o bruxo tambem');
+  assert.ok(!listaDaClasse('bruxo', 2).magias.includes('truqueDaCorda'), 'o bruxo nao tem');
   assert.ok(listaDaClasse('clerigo', 2).magias.includes('chamaContinua'), 'o clerigo tem a chama');
-  assert.ok(listaDaClasse('clerigo', 2).magias.includes('repousoTranquilo'), 'e o repouso');
-  assert.ok(listaDaClasse('paladino', 2).magias.includes('repousoTranquilo'), 'o paladino tambem');
+  assert.ok(listaDaClasse('mago', 2).magias.includes('chamaContinua'), 'o mago tambem');
+  assert.ok(listaDaClasse('clerigo', 2).magias.includes('repousoTranquilo'), 'o clerigo tem o repouso');
+  assert.ok(listaDaClasse('mago', 2).magias.includes('repousoTranquilo'), 'o mago tambem');
+  assert.ok(!listaDaClasse('paladino', 2).magias.includes('repousoTranquilo'), 'o paladino nao');
 });
 
 teste('a Pequena Cabana fecha a noite: ninguem vigia e todos descansam', () => {
@@ -6524,6 +6526,68 @@ teste('Repouso Tranquilo guarda o corpo e o tira de Animar os Mortos', () => {
   });
   assert.ok(r.ok, r.why);
   assert.equal(morto.repousoTranquilo, true, 'o corpo fica guardado');
+  // E o que importa: Animar os Mortos recusa o corpo guardado.
+  const { enc, party: p2 } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const osso = p2[ILVAN];
+  osso.spellcasting.prepared.push('animarMortos');
+  osso.spellcasting.slots = [0, 4, 3, 2];
+  const corpo = enc.combatants.find((c) => c.side !== 'party');
+  corpo.dead = true;
+  osso.pos = { x: 6, y: 6 };
+  const antes = enc.canCast(osso, 'animarMortos', { target: corpo });
+  assert.equal(antes.ok, true, 'sem o Repouso, o corpo serve: ' + (antes.why ?? ''));
+  corpo.repousoTranquilo = true;
+  const depois = enc.canCast(osso, 'animarMortos', { target: corpo });
+  assert.equal(depois.ok, false, 'com o Repouso, nao serve');
+  assert.ok(/Repouso Tranquilo/.test(depois.why), 'e diz por que: ' + depois.why);
+});
+
+teste('as magias de abrigo viram magia ativa de verdade e expiram na hora', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('chamaContinua', 'truqueDaCorda', 'pequenaCabana');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  const ctx = { herois: party, rng: makeRng(12) };
+
+  // A Chama Continua tem de ficar ATIVA: sem isso o acampamento nunca a ve.
+  assert.ok(conjurarFora(estado, mago, 'chamaContinua', ctx).ok);
+  assert.ok(ativaDe(estado, party, 'chamaContinua'), 'a chama fica de pe');
+  // E nao acaba: dez anos adiante ainda esta la.
+  avancar(estado, 60 * 24 * 365, party);
+  assert.ok(ativaDe(estado, party, 'chamaContinua'), 'um ano depois, ainda acesa');
+
+  // A corda dura uma hora exata.
+  assert.ok(conjurarFora(estado, mago, 'truqueDaCorda', ctx).ok);
+  assert.ok(ativaDe(estado, party, 'truqueDaCorda'));
+  avancar(estado, 59, party);
+  assert.ok(ativaDe(estado, party, 'truqueDaCorda'), 'aos 59 minutos ainda vale');
+  avancar(estado, 1, party);
+  assert.equal(ativaDe(estado, party, 'truqueDaCorda'), null, 'aos 60 acabou');
+
+  // A cabana dura oito horas.
+  assert.ok(conjurarFora(estado, mago, 'pequenaCabana', { ...ctx, ritual: true }).ok);
+  assert.ok(ativaDe(estado, party, 'pequenaCabana'));
+  avancar(estado, 479, party);
+  assert.ok(ativaDe(estado, party, 'pequenaCabana'), 'as 7h59 ainda cobre');
+  avancar(estado, 1, party);
+  assert.equal(ativaDe(estado, party, 'pequenaCabana'), null, 'as 8h acabou');
+});
+
+teste('o ritual da Pequena Cabana leva onze minutos, e com espaco um', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('pequenaCabana');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  // Ritual: o minuto da magia mais os dez do ritual.
+  const comRitual = estadoDe({ vila: { dia: 1 } });
+  conjurarFora(comRitual, mago, 'pequenaCabana', { herois: party, rng: makeRng(1), ritual: true });
+  assert.equal(comRitual.minutos, 11, 'um minuto de magia, dez de ritual');
+  // Com espaco de magia, so o minuto dela.
+  const comEspaco = estadoDe({ vila: { dia: 1 } });
+  conjurarFora(comEspaco, mago, 'pequenaCabana', { herois: party, rng: makeRng(1) });
+  assert.equal(comEspaco.minutos, 1);
+  assert.equal(mago.spellcasting.slots[3], 2, 'e gastou o espaco de 3o');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

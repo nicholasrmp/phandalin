@@ -89,6 +89,14 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // Abrigo da noite (`rules/acampamento.js`).
+  truqueDaCorda: { alvo: 'si', min: 60, efeito: 'corda' },
+  // A chama não acaba: dez anos de duração é o jeito de dizer "até ser
+  // dissipada" num motor que conta minutos. Sem duração ela nunca entrava
+  // na lista de magias ativas, e o acampamento nunca a via.
+  chamaContinua: { alvo: 'si', min: 10 * 365 * 24 * 60, efeito: 'chama' },
+  repousoTranquilo: { alvo: 'morto', min: 14400, efeito: 'repouso', ritual: true },
+  pequenaCabana: { alvo: 'si', min: 480, efeito: 'cabana', ritual: true, tempo: 1 },
   // Mantimentos de viagem (`rules/mantimentos.js`).
   criarDestruirAgua: { alvo: 'si', efeito: 'agua' },
   criarComidaEAgua: { alvo: 'si', efeito: 'banquete' },
@@ -181,6 +189,8 @@ export function ativaDe(estado, herois, spellId, { por = null, npc = null, alvo 
 
 /** Desfaz uma magia ativa: condições, concentração e o que ela deixa para trás. */
 export function encerrar(estado, a, herois, { texto = null } = {}) {
+  // Repouso Tranquilo: passados os dez dias, o corpo volta a ser um corpo.
+  if (a.spellId === 'repousoTranquilo' && a.corpo) delete a.corpo.repousoTranquilo;
   estado.ativas = estado.ativas.filter((x) => x !== a);
   const dono = heroiPorId(herois, a.por);
   for (const id of a.alvos) {
@@ -468,6 +478,12 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
         criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
       };
     }
+    // ---- abrigo: o que a noite vai perguntar depois ----
+    if (u.efeito === 'repouso') {
+      // O corpo guardado não apodrece e não serve para Animar os Mortos.
+      if (alvo) { alvo.repousoTranquilo = true; resultado.corpo = alvo; }
+    }
+    if (u.efeito === 'cabana' || u.efeito === 'corda' || u.efeito === 'chama') resultado.abrigo = u.efeito;
     if (u.efeito === 'caca') {
       // A magia é instantânea no livro: ela diz onde está a caça AGORA. No
       // jogo isso vira a vantagem na forragem DESTE dia, e só dele.
@@ -524,6 +540,9 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     // As criaturas afetadas (Cativar, Amizade Animal) ficam fora do JSON da campanha.
     if (afetadas.length) Object.defineProperty(ativa, 'criaturas', { value: afetadas, enumerable: false, writable: true });
     if (u.alvo === 'bicho' && alvo) ativa.data = { ...(ativa.data ?? {}), bicho: alvo.id };
+    // Repouso Tranquilo: a magia guarda o corpo para poder devolvê-lo ao fim
+    // dos dez dias. Fora do JSON da campanha, como as outras criaturas.
+    if (u.efeito === 'repouso' && alvo) Object.defineProperty(ativa, 'corpo', { value: alvo, enumerable: false, writable: true });
     estado.ativas.push(ativa);
     if (u.conc) {
       c.concentrating = { spellId, condition: u.cond ?? null, targets: aplicados, rounds: duracao * 10, ativaId: ativa.n, fora: true };

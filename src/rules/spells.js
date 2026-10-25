@@ -1157,6 +1157,28 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
     desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
   },
+  // ---- abrigo da noite (`rules/acampamento.js`) ----
+  truqueDaCorda: {
+    id: 'truqueDaCorda', name: 'Truque da Corda', level: 2, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Uma corda de até 18 m sobe sozinha e fica de pé no ar. No alto dela abre-se uma entrada para um espaço fora deste mundo, onde cabem oito criaturas, e a corda pode ser puxada para dentro. Por uma hora, quem está lá dentro não pode ser atacado nem virar alvo de magia; a corda, se ficar de fora, continua à vista. Quem estiver dentro quando a hora acabar cai de lá. (Regras da casa, porque o livro não trata disso: no acampamento o bando que chega passa pelo lugar vazio e segue, e a hora da magia cobre o encontro inteiro, seja qual for a hora da noite. Simplificação: o jogo não desenha o espaço nem a janela para espiar. Só fora de combate.)',
+  },
+  chamaContinua: {
+    id: 'chamaContinua', name: 'Chama Contínua', level: 2, school: 'evocação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Uma chama que não consome nada e não se apaga brota de um objeto que você toca: ilumina como uma tocha — 6 m de luz e mais 6 de penumbra — e não dá calor nenhum. Dura até ser dissipada. (Simplificação: no jogo ela fica com o grupo, não num objeto escolhido, e o custo de 50 po em pó de rubi que o livro consome não é cobrado. Regras da casa: no acampamento ela vale +2 para quem vigia, o mesmo que a fogueira, embora o livro não dê bônus de luz nenhum; e, ao contrário da fogueira, não entrega o acampamento a quem passa longe. Só fora de combate.)',
+  },
+  repousoTranquilo: {
+    id: 'repousoTranquilo', name: 'Repouso Tranquilo', level: 2, school: 'necromancia', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', duracaoMin: 14400,
+    desc: 'Você toca um cadáver e o protege por dez dias: ele não apodrece e não pode virar morto-vivo. O tempo que o corpo passa sob a magia não conta para as magias que exigem um morto recente. Ritual. (Simplificação: o jogo não tem apodrecimento nem janela de "morto recente" para o Falar com os Mortos, então o que resta da magia aqui é o que importa — Animar os Mortos recusa um corpo guardado. Passados os dez dias, ele volta a ser um corpo como outro qualquer. Só fora de combate.)',
+  },
+  pequenaCabana: {
+    id: 'pequenaCabana', name: 'Pequena Cabana', level: 3, school: 'evocação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 0, kind: 'utilidade', duracaoMin: 480,
+    desc: 'Uma cúpula de força de 3 m de raio se fecha em volta de você e fica oito horas. Cabem nove criaturas. De fora ela é opaca, da cor que você quiser, e continua bem à vista; de dentro se vê tudo. Quem estava lá quando ela subiu entra e sai à vontade; mais ninguém atravessa, nem criatura, nem objeto, nem magia. A magia termina se você sair da área. Ritual. (Simplificação: o jogo não desenha a cúpula e põe o grupo inteiro dentro dela. Regra da casa: na estrada, a noite dentro da cabana nem sorteia encontro — no livro a cúpula é visível e um bando esperto pode acampar do lado de fora e esperar. Só fora de combate.)',
+  },
+
   // ---- mantimentos de viagem (`rules/mantimentos.js`) ----
   criarDestruirAgua: {
     id: 'criarDestruirAgua', name: 'Criar ou Destruir Água', level: 1, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,

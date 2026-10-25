@@ -136,6 +136,18 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
         : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
       break;
     }
+    case 'truqueDaCorda':
+      t.push(`${c.name} joga a corda para cima e ela fica de pé, dura como um mastro. Lá no alto há uma dobra no ar: o grupo sobe e, por uma hora, não está em lugar nenhum que se possa alcançar daqui.`);
+      break;
+    case 'chamaContinua':
+      t.push(`Uma chama fria acende na pedra que ${c.name} segura e não se apaga mais. Ilumina como uma tocha e não esquenta nada — e, à noite, não é a fogueira que se vê de longe.`);
+      break;
+    case 'repousoTranquilo':
+      t.push(`${c.name} fecha os olhos do morto e põe duas moedas sobre eles. Por dez dias o corpo fica como está: não apodrece, não incha, e nada o levanta.`);
+      break;
+    case 'pequenaCabana':
+      t.push(`${c.name} desenha a cúpula no ar com um minuto de palavras. Uma casca de força se fecha em volta do grupo: de fora é uma meia-esfera opaca e bem visível, de dentro o céu continua ali. Quem está dentro entra e sai; de fora não entra nada, por oito horas.`);
+      break;
     case 'localizarAnimaisPlantas':
       t.push(`${c.name} fecha os olhos e sente a vida em volta: onde bebe o bicho, onde cresce o que se come. Enquanto durar, o grupo caça e colhe com vantagem.`);
       break;

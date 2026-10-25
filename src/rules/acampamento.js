@@ -154,7 +154,7 @@ export function procurarLugar(rng, quem, { terreno = 'comum', vantagem = false }
 }
 
 /** O acampamento montado, como a noite vai usá-lo. */
-export function montarAcampamento({ lugar = 'aberto', fogueira = true, vigia = 'revezam', herois = [] } = {}) {
+export function montarAcampamento({ lugar = 'aberto', fogueira = true, vigia = 'revezam', herois = [], chamaContinua = false, cabana = false } = {}) {
   const l = LUGARES[lugar] ?? LUGARES.aberto;
   const v = VIGIAS[vigia] ?? VIGIAS.revezam;
   const vivos = herois.filter((c) => !c.dead);
@@ -162,7 +162,7 @@ export function montarAcampamento({ lugar = 'aberto', fogueira = true, vigia = '
   // ninguém. A ordem é por olho, que é quem vai de vigia primeiro.
   const porOlho = [...vivos].sort((a, b) => passivePerception(b) - passivePerception(a));
   const vigias = porOlho.slice(0, v.quantos(vivos.length));
-  return { lugar: l, fogueira, vigia: v, vigias, herois: vivos };
+  return { lugar: l, fogueira, vigia: v, vigias, herois: vivos, chamaContinua, cabana };
 }
 
 /**
@@ -197,7 +197,10 @@ export function vigiaDeTurno(rng, camp) {
  */
 export function atencaoDaVigia(camp, quem = null) {
   if (!camp.vigias.length) return 0;
-  const extra = camp.lugar.vigia + (camp.fogueira ? 2 : 0);
+  // A Chama Contínua ilumina como tocha e não é fogo: dá a mesma vigia que a
+  // fogueira e não entrega o acampamento (`ocultacaoDoAcampamento`).
+  const luz = camp.fogueira || camp.chamaContinua ? 2 : 0;
+  const extra = camp.lugar.vigia + luz;
   if (quem) return passivePerception(quem) + extra;
   const soma = camp.vigias.reduce((n, c) => n + passivePerception(c), 0);
   return Math.floor(soma / camp.vigias.length) + extra;
@@ -211,9 +214,22 @@ export function ocultacaoDoAcampamento(camp) {
   return camp.lugar.ocultacao - (camp.fogueira ? 2 : 0);
 }
 
+/**
+ * A Pequena Cabana fecha a noite: nada entra, ninguém precisa vigiar, e o
+ * descanso longo vale para todos.
+ *
+ * Dispensar a vigia é consequência do livro — ninguém atravessa a cúpula, não
+ * há o que vigiar. Já a noite não sortear encontro nenhum (`game/regiao.js`) é
+ * REGRA DA CASA: no livro a cúpula é opaca mas bem visível, e um bando esperto
+ * pode sentar do lado de fora e esperar as oito horas passarem.
+ */
+export const noiteFechada = (camp) => Boolean(camp?.cabana);
+
 /** Quem dormiu o bastante para o descanso LONGO valer (até duas horas de vigia). */
 export function descansou(c, camp) {
   if (!camp) return true;
+  // Dentro da cabana ninguém precisa ficar de olho: todos dormem a noite toda.
+  if (noiteFechada(camp)) return true;
   const deVigia = camp.vigias.includes(c);
   return !deVigia || camp.vigia.horas <= HORAS_LEVES;
 }
@@ -229,8 +245,12 @@ export function noiteQuebrada(minutos) {
 
 /** A linha do registro: o que o grupo armou e o que isso vale. */
 export function textoDoAcampamento(camp) {
+  if (noiteFechada(camp)) {
+    return 'Acampamento: dentro da Pequena Cabana. Nada entra, ninguém vigia, e todos dormem a noite inteira.';
+  }
   const partes = [camp.lugar.nome.toLowerCase()];
-  partes.push(camp.fogueira ? 'fogueira acesa' : 'sem fogo');
+  partes.push([camp.fogueira ? 'fogueira acesa' : 'sem fogo', camp.chamaContinua ? 'chama contínua' : null]
+    .filter(Boolean).join(' e '));
   partes.push(camp.vigias.length
     ? `${camp.vigia.nome.toLowerCase()} (${camp.vigia.horas} h cada)`
     : 'ninguém de vigia');
