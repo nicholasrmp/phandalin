@@ -230,6 +230,18 @@ export function opcoesDaCasa(app, tile) {
           fazer: () => app.usarFeature(c, 'martialArts', { target: occ }),
         });
       }
+      // Os dois gastos de ki que miram um inimigo.
+      if (c && vez && c.features?.includes('flurryOfBlows')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Rajada de Golpes', icone: 'classe-flurryOfBlows',
+          detalhe: `ação bônus · 1 ki · dois golpes de ${c.dadoDeArtesMarciais ?? 'd4'}`,
+          motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada'
+            : !(c.resources?.ki > 0) ? 'sem pontos de ki'
+              : !c.atacouDeMonge ? 'só depois de atacar com o punho ou arma de monge'
+                : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
+          fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ }),
+        });
+      }
       opcoes.push(...magias);
       return { titulo, subtitulo, alvo, opcoes };
     }

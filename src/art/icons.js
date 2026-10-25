@@ -710,12 +710,17 @@ const ACAO_DO_HUD = {
   descuidado: 'classe-recklessAttack',
   expulsar: 'classe-turnUndead',
   smite: 'classe-divineSmite',
+  rajada: 'classe-flurryOfBlows',
+  defesaPaciente: 'classe-patientDefense',
+  atordoante: 'classe-stunningStrike',
 };
 // Enquanto o desenho próprio não existe, o de antes.
 const ACAO_RESERVA = {
   pular: 'magia-salto',
   ardilosaDisparada: 'acao-disparada',
   ardilosaDesengajar: 'acao-desengajar',
+  ventoDisparada: 'classe-stepOfTheWind',
+  ventoDesengajar: 'classe-stepOfTheWind',
 };
 export function iconeDeAcao(nome) {
   const novo = ACAO_DO_HUD[nome] ?? `acao-${nome}`;

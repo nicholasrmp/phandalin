@@ -443,6 +443,9 @@ export class Encounter {
       c.magiasNoTurno = [];
       c.surgeUsedThisTurn = false;
       c.atacouDeMonge = false;
+      // O ki do Ataque Atordoante paga o turno, não a luta: armar e não
+      // acertar perde o ponto, como no livro.
+      c.atordoantePronto = false;
       this.fimDaFuria(c);
       this.rolarRecarga(c);
       this.tickConditions(c);
@@ -630,6 +633,28 @@ export class Encounter {
    * (atordoado, paralisado, inconsciente) derruba a concentração: a Bênção
    * não continua valendo com o clérigo fora de combate.
    */
+  /** CD de ki do monge: 8 + proficiência + Sabedoria. */
+  cdDeKi(monge) {
+    return 8 + proficiencyBonus(monge.level ?? 1) + abilityMod(monge.abilities?.wis ?? 10);
+  }
+
+  /** O teste de Constituição do Ataque Atordoante, já com a conta aberta. */
+  ataqueAtordoante(monge, alvo) {
+    const cd = this.cdDeKi(monge);
+    const save = this.resistencia(alvo, 'con', cd);
+    this.explicarResistencia(alvo, 'con', cd, save, {
+      contra: `Ataque Atordoante de ${monge.name}`,
+      seSucesso: 'não fica atordoado',
+    });
+    if (save.success) return false;
+    const posto = this.aplicarCondicao(alvo, 'atordoado', {
+      rounds: 1, quando: 'fim', lado: monge.side, source: monge.id,
+    });
+    if (!posto) return false;
+    this.say('condicao', `${alvo.name} fica ATORDOADO até o fim do próximo turno de ${monge.name}.`);
+    return true;
+  }
+
   aplicarCondicao(alvo, id, opcoes = {}) {
     const fonte = typeof opcoes.source === 'string' ? this.combatants.find((c) => c.id === opcoes.source) : null;
     if (id !== 'etereo' && hasCondition(alvo, 'etereo')) return null;
@@ -919,6 +944,10 @@ export class Encounter {
       // Quem piscou para o Plano Etéreo volta antes de tudo, senão fica lá para sempre.
       for (const c of this.combatants) if (hasCondition(c, 'etereo')) this.voltarDoEtereo(c);
       // As magias de combate acabam com o encontro: Levitação (e a concentração que a segura),
+    // O ki do Ataque Atordoante paga ESTE turno: armar e não acertar perde o
+    // ponto. Aqui, e não só no começo do lado, para que um ataque de
+    // oportunidade entre turnos não gaste um golpe armado na rodada passada.
+    actor.atordoantePronto = false;
       // Piscar e Conjurar Animais. Sem isto o herói ficava com deslocamento 0 até o descanso.
       for (const c of this.combatants) {
         for (const id of ['levitando', 'piscando', 'etereo']) if (hasCondition(c, id)) removeCondition(c, id);
@@ -2689,6 +2718,16 @@ export class Encounter {
       explosao: dadosDaMagia(magia, { circulo, notacao: def.explosao }),
       tipo: def.tipo,
     };
+    // ATAQUE ATORDOANTE: o monge gastou 1 ki antes do golpe. No primeiro
+    // acerto de arma CORPO A CORPO depois disso, o alvo faz Constituição
+    // contra a CD de ki ou fica atordoado até o fim do próximo turno dele.
+    // Carregar antes é o mesmo contrato da Destruição Divina: o livro deixa
+    // decidir depois do acerto, e perguntar a cada golpe pararia a luta.
+    if (attacker.atordoantePronto && !p.ranged && p.weapon && !target.dead) {
+      attacker.atordoantePronto = false;
+      this.ataqueAtordoante(attacker, target);
+    }
+
   }
 
   /**
@@ -5958,3 +5997,52 @@ export class Encounter {
     this.onLog(entry);
   }
 }
+      case 'flurryOfBlows': {
+        // RAJADA DE GOLPES: 1 ki na ação bônus, depois de ATACAR, por DOIS
+        // golpes desarmados. É a Artes Marciais paga: um golpe a mais pelo
+        // ponto de ki, e por isso as duas não podem sair no mesmo turno.
+        if (actor.bonusUsed || !actor.actionUsed) return false;
+        if (!actor.atacouDeMonge || !(actor.resources?.ki > 0)) return false;
+        if (!target || target.dead || !isAdjacent(actor.pos, target.pos)) return false;
+        actor.bonusUsed = true;
+        actor.resources.ki -= 1;
+        this.say('recurso', `${actor.name} gasta 1 ki: Rajada de Golpes (${actor.resources.ki} de ki).`);
+        this.resolveAttack(actor, target, { weaponId: 'punhos' });
+        if (!target.dead) this.resolveAttack(actor, target, { weaponId: 'punhos' });
+        return true;
+      }
+      case 'patientDefense': {
+        // DEFESA PACIENTE: 1 ki na ação bônus para Esquivar.
+        if (actor.bonusUsed || !(actor.resources?.ki > 0)) return false;
+        if (hasCondition(actor, 'esquivando')) return false;
+        actor.bonusUsed = true;
+        actor.resources.ki -= 1;
+        addCondition(actor, 'esquivando', { rounds: 1, quando: 'inicio', lado: actor.side });
+        this.say('recurso', `${actor.name} gasta 1 ki: Defesa Paciente (${actor.resources.ki} de ki).`);
+        return true;
+      }
+      case 'stepOfTheWind': {
+        // PASSO DO VENTO: 1 ki na ação bônus, Disparada OU Desengajar. (O
+        // salto dobrado do livro não tem o que modificar: o motor não pula.)
+        if (actor.bonusUsed || !(actor.resources?.ki > 0)) return false;
+        if (modo !== 'disparada' && modo !== 'desengajar') return false;
+        actor.bonusUsed = true;
+        actor.resources.ki -= 1;
+        if (modo === 'disparada') {
+          actor.movementLeftFt += this.speedOf(actor);
+          this.say('recurso', `${actor.name} gasta 1 ki: Passo do Vento, e corre (${actor.resources.ki} de ki).`);
+        } else {
+          actor.disengaging = true;
+          this.say('recurso', `${actor.name} gasta 1 ki: Passo do Vento, e desengaja (${actor.resources.ki} de ki).`);
+        }
+        return true;
+      }
+      case 'stunningStrike': {
+        // ATAQUE ATORDOANTE: carrega o golpe por 1 ki. O efeito mora no
+        // acerto, em `resolveAttack`; aqui só se paga e se arma.
+        if (!(actor.resources?.ki > 0) || actor.atordoantePronto) return false;
+        actor.resources.ki -= 1;
+        actor.atordoantePronto = true;
+        this.say('recurso', `${actor.name} gasta 1 ki e arma o Ataque Atordoante (${actor.resources.ki} de ki).`);
+        return true;
+      }

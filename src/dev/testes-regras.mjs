@@ -461,6 +461,92 @@ teste('Artes Marciais: o punho usa Destreza, e o golpe bônus vem depois de atac
   assert.ok(c.bonusUsed);
 });
 
+// ---- o ki do monge ---------------------------------------------------------
+
+/** Um monge de 5º nível com um alvo colado que não erra e não morre. */
+function comMonge(nivel = 5) {
+  const { enc, c, foes } = comClasse('monge', nivel, { weapons: ['punhos'], equippedWeapon: 'punhos' });
+  const alvo = foes[0];
+  alvo.pos = { x: c.pos.x + 1, y: c.pos.y };
+  alvo.maxHp = alvo.hp = 200;
+  alvo.ac = -5;
+  return { enc, c, alvo };
+}
+
+teste('Ki: o monge ganha pontos iguais ao nível a partir do 2º', () => {
+  const abilities = { str: 12, dex: 16, con: 14, int: 14, wis: 14, cha: 16 };
+  const base = { name: 'M', raca: 'humano', abilities };
+  assert.equal(criarPersonagem(base, { classe: 'monge', nivel: 1 }).resources?.ki ?? 0, 0);
+  assert.equal(criarPersonagem(base, { classe: 'monge', nivel: 2 }).resources.ki, 2);
+  assert.equal(criarPersonagem(base, { classe: 'monge', nivel: 5 }).resources.ki, 5);
+});
+
+teste('Rajada de Golpes: 1 ki na ação bônus por DOIS golpes, e só depois de atacar', () => {
+  const { enc, c, alvo } = comMonge();
+  assert.ok(!enc.useFeature(c, 'flurryOfBlows', { target: alvo }), 'antes da ação de Atacar, não');
+  enc.attackAction(c, alvo, 'punhos');
+  const antes = alvo.hp;
+  const ki = c.resources.ki;
+  assert.ok(enc.useFeature(c, 'flurryOfBlows', { target: alvo }));
+  assert.equal(c.resources.ki, ki - 1);
+  assert.ok(c.bonusUsed);
+  // Dois golpes de verdade: o dado de Artes Marciais é d6 no 5º, com +3 de
+  // Destreza, então dois acertos tiram pelo menos 8.
+  assert.ok(antes - alvo.hp >= 8, `dois golpes tiram mais que um: ${antes - alvo.hp}`);
+});
+
+teste('Rajada de Golpes sem ki não sai', () => {
+  const { enc, c, alvo } = comMonge();
+  enc.attackAction(c, alvo, 'punhos');
+  c.resources.ki = 0;
+  assert.ok(!enc.useFeature(c, 'flurryOfBlows', { target: alvo }));
+  assert.ok(!c.bonusUsed);
+});
+
+teste('Defesa Paciente: 1 ki e o monge fica esquivando', () => {
+  const { enc, c } = comMonge();
+  const ki = c.resources.ki;
+  assert.ok(enc.useFeature(c, 'patientDefense'));
+  assert.equal(c.resources.ki, ki - 1);
+  assert.ok(hasCondition(c, 'esquivando'));
+  assert.ok(!enc.useFeature(c, 'patientDefense'), 'a ação bônus já foi');
+});
+
+teste('Passo do Vento: corre ou desengaja por 1 ki, um dos dois', () => {
+  const { enc, c } = comMonge();
+  const anda = c.movementLeftFt;
+  assert.ok(!enc.useFeature(c, 'stepOfTheWind', { modo: 'esconder' }), 'só disparada ou desengajar');
+  assert.ok(enc.useFeature(c, 'stepOfTheWind', { modo: 'disparada' }));
+  assert.equal(c.movementLeftFt, anda + enc.speedOf(c));
+  assert.equal(c.resources.ki, 4);
+  c.bonusUsed = false;
+  assert.ok(enc.useFeature(c, 'stepOfTheWind', { modo: 'desengajar' }));
+  assert.ok(c.disengaging);
+});
+
+teste('Ataque Atordoante: arma por 1 ki e o acerto pede Constituição', () => {
+  const { enc, c, alvo } = comMonge();
+  assert.equal(enc.cdDeKi(c), 8 + 3 + 2);          // proficiência 3, Sabedoria 14
+  const ki = c.resources.ki;
+  assert.ok(enc.useFeature(c, 'stunningStrike'));
+  assert.equal(c.resources.ki, ki - 1);
+  assert.ok(c.atordoantePronto);
+  assert.ok(!enc.useFeature(c, 'stunningStrike'), 'não acumula dois golpes armados');
+  // CON tão baixa que a resistência não passa: o acerto atordoa.
+  alvo.abilities.con = 1;
+  enc.attackAction(c, alvo, 'punhos');
+  assert.equal(c.atordoantePronto, false, 'o golpe armado é gasto no acerto');
+  assert.ok(hasCondition(alvo, 'atordoado'));
+});
+
+teste('Ataque Atordoante: o ki armado vale só o turno, e some ao fim dele', () => {
+  const { enc, c, alvo } = comMonge();
+  enc.useFeature(c, 'stunningStrike');
+  assert.ok(c.atordoantePronto);
+  enc.endTurn(c);
+  assert.ok(!c.atordoantePronto, 'armar e não acertar perde o ponto, como no livro');
+});
+
 // ---- fúria do bárbaro ------------------------------------------------------
 
 /** Um bárbaro no lugar da Dara, para os testes de Fúria. */

@@ -1172,6 +1172,12 @@ export class Hud {
       divineSense: ['sentidoDivino', 'Sentido Divino',
         'Sente mortos-vivos, corruptores e celestiais a até 18 m — inclusive os que ninguém está vendo.',
         'Ação', () => !c.actionUsed && c.resources?.divineSense > 0, 'divineSense'],
+      patientDefense: ['defesaPaciente', 'Defesa Paciente',
+        'Gasta 1 ponto de ki para Esquivar: quem atacar você rola com desvantagem, e você rola DES com vantagem.',
+        'Ação bônus', () => !c.bonusUsed && c.resources?.ki > 0 && !hasCondition(c, 'esquivando'), 'ki'],
+      stunningStrike: ['atordoante', 'Ataque Atordoante',
+        `Gasta 1 ponto de ki e carrega o próximo acerto de arma corpo a corpo deste turno: o alvo testa Constituição CD ${enc.cdDeKi(c)} ou fica atordoado até o fim do seu próximo turno.`,
+        'Livre', () => !c.atordoantePronto && c.resources?.ki > 0, 'ki'],
       arcaneRecovery: ['recuperacaoArcana', 'Recuperação Arcana',
         `Fora da luta, recupera espaços de magia somando ${Math.ceil((c.level ?? 1) / 2)} círculos. Uma vez por dia.`,
         'Fora da luta', () => c.resources?.arcaneRecovery > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
@@ -1179,6 +1185,15 @@ export class Hud {
     };
     for (const f of c.features ?? []) {
       // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.
+      // Passo do Vento também é UMA escolha por ação bônus: um azulejo por modo.
+      if (f === 'stepOfTheWind') {
+        const semKi = c.bonusUsed || !(c.resources?.ki > 0);
+        comum('ventoDisparada', 'Passo do Vento: correr', 'Gasta 1 ponto de ki e dobra o deslocamento neste turno.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'disparada' }, semKi, 'ki');
+        comum('ventoDesengajar', 'Passo do Vento: desengajar', 'Gasta 1 ponto de ki e sai de perto sem levar ataque de oportunidade.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'desengajar' }, semKi, 'ki');
+        continue;
+      }
       if (f === 'cunningAction') {
         comum('ardilosaDisparada', 'Ação Ardilosa: Disparada', 'Dobra o deslocamento como ação bônus.', 'Ação bônus',
           { kind: 'feature', featureId: f, modo: 'disparada' }, c.bonusUsed);
