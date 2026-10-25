@@ -109,6 +109,36 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
     case 'bomFruto':
       t.push(`Dez frutinhas surgem e são comidas no ato.${res.curas.length ? ` ${res.curas.map((k) => `${k.alvo.name} +${k.cura} PV`).join('; ')}.` : ''}`);
       break;
+    case 'criarDestruirAgua': case 'criarComidaEAgua': {
+      const m = res.mantimentos ?? {};
+      const partes = [];
+      if (m.racoes) partes.push(`comida para ${m.racoes} pessoas por um dia`);
+      if (m.litros) partes.push(`${m.litros} litros de água limpa`);
+      t.push(`${c.name} conjura ${partes.join(' e ')}.`);
+      if (m.nosCantis) t.push(`${m.nosCantis} litro(s) vão para os cantis do grupo; o resto estraga no fim do dia se ninguém comer nem beber.`);
+      else t.push('Tudo isso estraga no fim do dia se ninguém comer nem beber.');
+      break;
+    }
+    case 'purificarAlimentos': {
+      const p = res.purificou ?? {};
+      if (!p.racoes && !p.gente?.length) t.push(`${c.name} abençoa o que o grupo carrega. Não havia nada estragado — mas agora é certeza.`);
+      else t.push(`${c.name} passa a mão sobre a comida e a água: ${[p.racoes ? `${p.racoes} ração(ões) voltam a prestar` : null, p.gente?.length ? `${p.gente.map((h) => h.name).join(', ')} para de passar mal` : null].filter(Boolean).join(' e ')}.`);
+      break;
+    }
+    case 'detectarVenenoDoenca': {
+      const v = res.venenos ?? {};
+      const linhas = [];
+      if (v.mochila?.length) linhas.push(`na mochila: ${v.mochila.map((i) => `${i.dono.name} carrega ração estragada`).join('; ')}`);
+      if (v.gente?.length) linhas.push(`no grupo: ${v.gente.map((h) => h.name).join(', ')} está envenenado`);
+      if (v.criaturas?.length) linhas.push(`por perto: ${v.criaturas.map((m) => m.name).join(', ')}`);
+      t.push(linhas.length
+        ? `Por dez minutos ${c.name} sente o veneno e a doença a 9 m — ${linhas.join('; ')}.`
+        : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
+      break;
+    }
+    case 'localizarAnimaisPlantas':
+      t.push(`${c.name} fecha os olhos e sente a vida em volta: onde bebe o bicho, onde cresce o que se come. Enquanto durar, o grupo caça e colhe com vantagem.`);
+      break;
     case 'taumaturgia': t.push(`A voz de ${c.name} troveja, as velas se curvam e o chão estremece. Por 1 minuto, vantagem em Intimidação.`); break;
     case 'amizade': t.push(`${c.name} abre o melhor sorriso e deixa ${nome} à vontade. Vantagem nos testes de Carisma com ele por 1 minuto (enquanto concentrado). Depois ele vai se lembrar de que foi influenciado.`); break;
     case 'maoMagica': break;

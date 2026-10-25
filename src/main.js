@@ -1230,7 +1230,13 @@ class App {
     if (narrativaAberta()) return;
     const herois = this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
     const linhas = tipo === 'longo'
-      ? await descansoLongoDoGrupo(this.root, { herois, texto: this.capitulo?.textoDoDescanso?.('longo') })
+      // Na estrada, quem passou o dia sem comer ou sem beber dorme, mas não
+      // desfaz degrau de exaustão (`rules/mantimentos.js`).
+      ? await descansoLongoDoGrupo(this.root, {
+        herois,
+        texto: this.capitulo?.textoDoDescanso?.('longo'),
+        alimentado: (c) => (c.diasSemComida ?? 0) === 0 && !c.semAgua,
+      })
       : await descansoCurto(this.root, { herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto') });
     for (const t of linhas) this.enc.say('cura', t);
     // O descanso é tempo de verdade: as magias de duração correm (uma hora, oito horas).

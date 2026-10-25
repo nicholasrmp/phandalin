@@ -38,7 +38,7 @@
 
 import { makePortrait } from '../art/sheet.js';
 import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
-import { CONDITIONS, hasCondition } from '../rules/conditions.js';
+import { CONDITIONS, hasCondition, maxHpEfetivo, DEGRAUS_DE_EXAUSTAO } from '../rules/conditions.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
@@ -345,7 +345,8 @@ export class Hud {
     const lista = [...porChave.values()];
     return el('div', { class: `conds${mini ? ' mini' : ''}` }, lista.map((x) => {
       const def = CONDITIONS[x.id];
-      const nome = def?.name ?? x.id;
+      // Exaustão: o degrau faz parte do nome, porque é ele que diz o que dói.
+      const nome = def?.porNivel && x.data?.nivel ? `${def.name} ${x.data.nivel}` : (def?.name ?? x.id);
       // O ícone de 32 px entra onde cabe. Na ordem de turno (`mini`) o
       // azulejo tem 36 px de largura: ali a condição continua sendo um ponto
       // colorido, e a sigla fica no DOM para a leitura de tela.
@@ -362,6 +363,8 @@ export class Hud {
             Number.isFinite(x.rounds) ? ['Duração', x.rounds >= 10 ? `${Math.round(x.rounds / 10)} min (${x.rounds} rodadas)` : `${x.rounds} rodada${x.rounds === 1 ? '' : 's'}`] : null,
             (c.concentrating?.condition === x.id || def?.concentrationEffect) ? ['Concentração', 'acaba se quem a mantém perder a concentração'] : null,
             x._n > 1 ? ['Fontes', String(x._n)] : null,
+            def?.porNivel && x.data?.nivel
+              ? ['Agora', DEGRAUS_DE_EXAUSTAO.slice(0, x.data.nivel).join(' · ')] : null,
           ],
           texto: def?.desc,
           aviso: def?.houseRule ? 'Regra da casa — não é do SRD' : null,
@@ -615,7 +618,7 @@ export class Hud {
 
     const ficha = (c, ativo) => {
       const down = c.dead || hasCondition(c, 'inconsciente');
-      const fracao = Math.max(0, c.hp / c.maxHp);
+      const fracao = Math.max(0, c.hp / maxHpEfetivo(c));
       const retrato = makePortrait(c.look, 32);
       retrato.className = 'pixel';
       // A condição também aparece aqui: a ordem de turno é onde o olho está
@@ -633,7 +636,7 @@ export class Hud {
         nome: c.name,
         tipo: c.invocado ? `invocado de ${enc.combatants.find((x) => x.id === c.invocado.donoId)?.name ?? 'alguém do grupo'}` : c.kind === 'npc' ? 'inimigo' : `${c.className} · Nv ${c.level}`,
         linhas: [
-          ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
+          ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${maxHpEfetivo(c)}`],
           ['Classe de armadura', String(c.ac)],
           ...this.linhasDePrevisao(previsao, selected, c),
           this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
@@ -729,7 +732,7 @@ export class Hud {
 
   fichaGrupo(enc, c, selected) {
     const down = c.dead || hasCondition(c, 'inconsciente');
-    const fracao = Math.max(0, c.hp / c.maxHp);
+    const fracao = Math.max(0, c.hp / maxHpEfetivo(c));
     // 36 e não 44: o retrato mora dentro do slot de madeira de .ficha-retrato.
     const retrato = makePortrait(c.look, 36);
     retrato.className = 'pixel';
@@ -755,7 +758,7 @@ export class Hud {
         c.invocado ? this.botaoAuto(c) : null,
         el('div', { class: 'bar' },
           el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
-        el('span', { class: 'ficha-pv' }, `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`),
+        el('span', { class: 'ficha-pv' }, `${Math.max(0, Math.ceil(c.hp))} / ${maxHpEfetivo(c)}`),
         down
           ? el('span', { class: 'ficha-morte' }, c.dead ? 'Morto' : `Morte ${c.deathSaves.successes}✓ ${c.deathSaves.failures}✗`)
           : null,
@@ -782,7 +785,7 @@ export class Hud {
       linhas: [
         c.invocado ? ['Controle', c.invocado.auto ? 'age sozinho (IA aliada)' : 'você comanda'] : null,
         eter ? ['No Plano Etéreo', 'volta no começo do próximo turno'] : null,
-        ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
+        ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${maxHpEfetivo(c)}`],
         ['Classe de armadura', String(c.ac)],
         c.familiar ? ['Deslocamento', this.deslocamentoDoFamiliar(c)] : ['Deslocamento', `${Math.max(0, c.movementLeftFt ?? 0)} de ${c.speedFt || 30} pés`],
         restos.length ? ['Ainda tem', restos.join(', ')] : null,
@@ -806,7 +809,7 @@ export class Hud {
    * uma porcentagem sem dono seria mentira.
    */
   fichaInimigo(enc, c, selected, mode) {
-    const fracao = Math.max(0, c.hp / c.maxHp);
+    const fracao = Math.max(0, c.hp / maxHpEfetivo(c));
     const down = hasCondition(c, 'inconsciente');
     const previsao = this.previsaoContra(enc, selected, c, mode);
     const chance = this.rotuloDeChance(previsao, c);
@@ -833,7 +836,7 @@ export class Hud {
         tipo: 'inimigo',
         linhas: [
           ['Classe de armadura', String(c.ac)],
-          ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${c.maxHp}`],
+          ['Pontos de vida', `${Math.max(0, Math.ceil(c.hp))} / ${maxHpEfetivo(c)}`],
           ...this.linhasDePrevisao(previsao, selected, c),
           golpes ? ['Para derrubar', golpes] : null,
           this.nomesDeCondicao(c) ? ['Condições', this.nomesDeCondicao(c)] : null,
@@ -1261,7 +1264,7 @@ export class Hud {
     retrato.className = 'pixel';
     // `fracao`, e não `pct`: `pct` agora é a formatação de porcentagem que vem
     // de `rules/odds.js`, e um nome local igual ao importado é bug esperando.
-    const fracao = Math.max(0, c.hp / c.maxHp);
+    const fracao = Math.max(0, c.hp / maxHpEfetivo(c));
 
     return el('div', { class: 'nucleo' },
       el('div', { class: 'nucleo-retrato' }, retrato),
@@ -1269,7 +1272,7 @@ export class Hud {
       el('div', { class: 'nucleo-pv' },
         el('i', { style: { width: `${fracao * 100}%`, background: fracao > 0.5 ? '#5fd07a' : fracao > 0.25 ? '#ffc83a' : '#ff5a5a' } })),
       el('div', { class: 'nucleo-vitais' },
-        el('span', {}, `${Math.max(0, Math.ceil(c.hp))}/${c.maxHp} PV`),
+        el('span', {}, `${Math.max(0, Math.ceil(c.hp))}/${maxHpEfetivo(c)} PV`),
         el('span', { class: 'nucleo-ca' }, `CA ${c.ac}`)));
   }
 

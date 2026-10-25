@@ -21,7 +21,7 @@ import {
   dadoDeVida, dadosDeVida, gastarDadoDeVida, dadosSugeridos, recuperarNoCurto, descansoLongo, oracaoDeCura, bomFrutoNoDescanso,
 } from '../rules/descanso.js';
 import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
-import { hasCondition } from '../rules/conditions.js';
+import { hasCondition, nivelDeExaustao, maxHpEfetivo } from '../rules/conditions.js';
 import { magiasProntas, SPELLS, dadosDaMagia } from '../rules/spells.js';
 import { spellMod } from '../rules/party.js';
 
@@ -44,14 +44,14 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
   const botao = el('button', { class: 'descanso-gastar' }, 'Gastar 1 dado');
 
   const atualizar = () => {
-    const frac = Math.max(0, Math.min(1, c.hp / c.maxHp));
+    const frac = Math.max(0, Math.min(1, c.hp / maxHpEfetivo(c)));
     vida.firstChild.style.width = `${Math.round(frac * 100)}%`;
-    vida.lastChild.textContent = `${Math.max(0, c.hp)}/${c.maxHp} PV`;
+    vida.lastChild.textContent = `${Math.max(0, c.hp)}/${maxHpEfetivo(c)} PV`;
     const restam = dadosDeVida(c);
     dados.textContent = `${restam}× d${dadoDeVida(c)}`;
     dados.title = `${restam} dado${restam === 1 ? '' : 's'} de vida restante${restam === 1 ? '' : 's'}`;
-    botao.disabled = restam <= 0 || c.hp >= c.maxHp;
-    botao.title = restam <= 0 ? 'sem dados de vida' : c.hp >= c.maxHp ? 'vida cheia' : '';
+    botao.disabled = restam <= 0 || c.hp >= maxHpEfetivo(c);
+    botao.title = restam <= 0 ? 'sem dados de vida' : c.hp >= maxHpEfetivo(c) ? 'vida cheia' : '';
   };
 
   const gastar = () => {
@@ -72,7 +72,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
   // mais reza pelos aliados vivos (até 6, os mais feridos primeiro).
   const orar = el('span', { class: 'descanso-oracao' });
   const rezar = (circulo) => {
-    const alvos = [...grupo.vivos].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp).slice(0, 6);
+    const alvos = [...grupo.vivos].sort((a, b) => a.hp / maxHpEfetivo(a) - b.hp / maxHpEfetivo(b)).slice(0, 6);
     const r = oracaoDeCura(rng, c, alvos, { circulo });
     if (!r.ok) {
       ultimo.textContent = r.why;
@@ -89,7 +89,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
   };
   // Bom Fruto (1º círculo): as dez frutinhas curam 1 PV cada, a quem mais precisa.
   const comerFruto = (circulo) => {
-    const alvos = [...grupo.vivos].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
+    const alvos = [...grupo.vivos].sort((a, b) => a.hp / maxHpEfetivo(a) - b.hp / maxHpEfetivo(b));
     const r = bomFrutoNoDescanso(c, alvos, { circulo });
     if (!r.ok) {
       ultimo.textContent = r.why;
@@ -190,9 +190,17 @@ export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curt
 }
 
 /** Descanso longo do grupo: tudo volta. Devolve as linhas do registro. */
-export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso longo', texto = null }) {
+/**
+ * `alimentado` é uma função `(heroi) => boolean`: o livro só tira um degrau de
+ * exaustão de quem descansou COM comida e bebida. Na viagem, quem passou o dia
+ * sem comer dorme, mas não se recupera do cansaço.
+ */
+export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso longo', texto = null, alimentado = null }) {
   const vivos = herois.filter((c) => !c.dead);
-  for (const c of vivos) descansoLongo(c);
+  const antes = new Map(vivos.map((c) => [c, nivelDeExaustao(c)]));
+  for (const c of vivos) descansoLongo(c, { alimentado: alimentado ? alimentado(c) : true });
+  const aliviados = vivos.filter((c) => nivelDeExaustao(c) < antes.get(c));
+  const cansados = vivos.filter((c) => nivelDeExaustao(c) > 0);
   await narrar(root, {
     formato: 'tela',
     paginas: [{
@@ -200,8 +208,11 @@ export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso lo
       texto: [
         ...(texto ?? ['Oito horas: uma refeição quente, turnos de vigia, sono.']),
         `${vivos.map((c) => c.name).join(', ')} acordam com a vida cheia, os espaços de magia e os recursos de volta, e metade dos dados de vida gastos.`,
-      ],
+        aliviados.length ? `A noite desfaz um degrau de cansaço de ${aliviados.map((c) => c.name).join(', ')}.` : null,
+        cansados.length ? `Ainda exausto: ${cansados.map((c) => `${c.name} (${nivelDeExaustao(c)})`).join(', ')}.` : null,
+      ].filter(Boolean),
     }],
   });
-  return ['O grupo termina um descanso longo: vida, magia e recursos de volta.'];
+  return ['O grupo termina um descanso longo: vida, magia e recursos de volta.',
+    ...(cansados.length ? [`Exaustão ainda em ${cansados.map((c) => `${c.name} ${nivelDeExaustao(c)}`).join(', ')}.`] : [])];
 }

@@ -10,6 +10,7 @@
 // tabuleiro como combinado. Os marcadores ficam em % dela, por cima.
 
 import './vila.css';
+import { maxHpEfetivo } from '../rules/conditions.js';
 import { el } from './hud.js';
 import { audio } from '../core/audio.js';
 import { makePortrait } from '../art/sheet.js';
@@ -99,7 +100,7 @@ export function abrirTelaVila(root, o) {
       el('div', {},
         el('strong', {}, c.name),
         el('small', {}, `${c.className ?? ''} · nível ${c.level ?? 1}${c.titulo ? ` · ${c.titulo}` : ''}`),
-        el('div', { class: 'vila-vida' }, el('i', { style: { width: `${Math.round(Math.max(0, c.hp) / c.maxHp * 100)}%` } }), el('span', {}, `${Math.max(0, c.hp)}/${c.maxHp}`))))));
+        el('div', { class: 'vila-vida' }, el('i', { style: { width: `${Math.round(Math.max(0, c.hp) / maxHpEfetivo(c) * 100)}%` } }), el('span', {}, `${Math.max(0, c.hp)}/${maxHpEfetivo(c)}`))))));
   }
 
   return {

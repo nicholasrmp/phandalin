@@ -569,7 +569,80 @@ export const CONDITIONS = {
     desc: 'Sofre 1d4 de fogo no início de cada turno seu.',
     houseRule: true,
   },
+
+  /**
+   * Exaustão não é uma condição como as outras: são seis degraus que se
+   * somam, e o degrau mora em `data.nivel`. Por isso os efeitos dela saem em
+   * `conditionEffects` pelo nível, e não pelas chaves fixas daqui.
+   *
+   * 1 desvantagem em testes de atributo · 2 deslocamento pela metade ·
+   * 3 desvantagem em ataques e em testes de resistência · 4 PV máximo pela
+   * metade · 5 deslocamento 0 · 6 morte.
+   */
+  exausto: {
+    name: 'Exausto',
+    desc: 'Cansaço que se acumula em seis degraus: cada um soma ao anterior, e o sexto mata. Um descanso longo, com comida e água, tira um degrau.',
+    porNivel: true,
+  },
 };
+
+/** Os seis degraus da exaustão, para o texto do jogo. */
+export const DEGRAUS_DE_EXAUSTAO = [
+  'Desvantagem em testes de atributo',
+  'Deslocamento pela metade',
+  'Desvantagem em ataques e em testes de resistência',
+  'Pontos de vida máximos pela metade',
+  'Deslocamento 0',
+  'Morte',
+];
+
+const HABILIDADES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+/** O degrau de exaustão de `actor`, de 0 a 6. */
+export function nivelDeExaustao(actor) {
+  return actor?.conditions?.find((c) => c.id === 'exausto')?.data?.nivel ?? 0;
+}
+
+/**
+ * Sobe (ou desce, com `n` negativo) os degraus de exaustão e devolve o nível
+ * novo. No 0 a condição sai; no 6 quem carrega morre, e isso é com quem chama.
+ */
+export function mudarExaustao(actor, n) {
+  // Morto-vivo e constructo não cansam: o bloco deles lista 'exausto'.
+  if (n > 0 && actor?.conditionImmunities?.includes('exausto')) return nivelDeExaustao(actor);
+  const nivel = Math.max(0, Math.min(6, nivelDeExaustao(actor) + n));
+  if (nivel === 0) {
+    removeCondition(actor, 'exausto');
+    return 0;
+  }
+  const c = addCondition(actor, 'exausto', { data: { nivel } });
+  c.data = { nivel };
+  // No 4º degrau o teto cai pela metade: quem estava acima dele desce junto,
+  // ou o `Math.min` da cura passaria a TIRAR vida de quem está "cheio".
+  if (nivel >= 4) actor.hp = Math.min(actor.hp ?? 0, maxHpEfetivo(actor));
+  return nivel;
+}
+
+/**
+ * O 6º degrau é a morte. Devolve true se matou — quem chama escreve a frase,
+ * porque só a camada de jogo sabe como contar.
+ */
+export function exaustaoFatal(actor) {
+  if (nivelDeExaustao(actor) < 6 || actor.dead) return false;
+  actor.dead = true;
+  actor.hp = 0;
+  return true;
+}
+
+/**
+ * O PV máximo que vale agora: no 4º degrau de exaustão, metade (arredondada
+ * para baixo). É o que o dano maciço, a cura e as barras de vida devem ler,
+ * não `c.maxHp` cru.
+ */
+export function maxHpEfetivo(c) {
+  const max = c?.maxHp ?? 0;
+  return nivelDeExaustao(c) >= 4 ? Math.floor(max / 2) : max;
+}
 
 export function hasCondition(actor, id) {
   return actor.conditions?.some((c) => c.id === id) ?? false;
@@ -642,7 +715,13 @@ export function conditionEffects(actor) {
     curaMaxima: false,
     vantagemTeste: [],
     vantagemSoTeste: [],
+    // `desvantagemTeste` vale no teste de atributo E na resistência (Reduzir
+    // pune as duas coisas em Força). `desvantagemSoTeste` vale só no teste de
+    // atributo: é o 1º degrau de exaustão, que não toca em resistência — essa
+    // começa no 3º.
     desvantagemTeste: [],
+    desvantagemSoTeste: [],
+    pvMaxMetade: false,
   };
   for (const c of actor.conditions ?? []) {
     const def = CONDITIONS[c.id];
@@ -678,6 +757,16 @@ export function conditionEffects(actor) {
     if (def.vantagemTeste) out.vantagemTeste.push(...def.vantagemTeste);
     if (def.vantagemSoTesteDados && c.data?.hab) out.vantagemSoTeste.push(c.data.hab);
     if (def.desvantagemTeste) out.desvantagemTeste.push(...def.desvantagemTeste);
+    // Exaustão: os degraus se somam, então cada um lê o nível guardado na
+    // condição em vez de uma chave fixa da tabela.
+    if (def.porNivel) {
+      const n = c.data?.nivel ?? 0;
+      if (n >= 1) out.desvantagemSoTeste.push(...HABILIDADES);
+      if (n >= 2) out.speedHalf = true;
+      if (n >= 3) { out.attackDisadvantage = true; out.saveDisadvantage.push(...HABILIDADES); }
+      if (n >= 4) out.pvMaxMetade = true;
+      if (n >= 5) out.speedOverride = 0;
+    }
   }
   return out;
 }

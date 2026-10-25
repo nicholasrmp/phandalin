@@ -7,8 +7,10 @@
 //   - um teste de encontro de dia e outro de noite: d20, 17 a 20 é encontro, e
 //     um d12 na tabela da Trilha Triboar diz o quê (`ENCONTROS`);
 //   - o XP de um encontro é o dos monstros, dividido pelo grupo.
-// A ração: uma por herói por dia de marcha. Sem ela, o grupo caça e colhe
-// pelo caminho, sem efeito de regra — decisão nossa, o livro não conta comida.
+// Os MANTIMENTOS são os do livro e moram em `rules/mantimentos.js`: uma ração
+// e quatro litros de água por pessoa por dia, fome e sede cobrando exaustão, e
+// um teste de Sobrevivência por dia para caçar e colher. A paisagem do dia diz
+// se havia água no caminho.
 // Chega-se ao fim da última marcha: a noite no destino já é do lugar.
 //
 // Os LUGARES ficam em % da pintura (`art/vila/regiao.webp`, OpenArt). A
@@ -28,6 +30,30 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MISSOES } from './phandalin.js';
 import { visitarConyberry } from './conyberry.js';
+import { makeRng, seedFromString } from '../core/rng.js';
+import {
+  diaDeViagem, forragear, melhorForrageador, despensaDoGrupo,
+  despensaMagica, limparMagicoVencido, encherCantis,
+} from '../rules/mantimentos.js';
+import { estadoDe as estadoDeUtilidade, podeConjurarFora } from '../rules/utilidade.js';
+
+/**
+ * O dado da viagem: semeado pelo trajeto, com o estado guardado em
+ * `via.semente`. Assim uma luta no meio do caminho não rebobina a estrada, e
+ * a mesma viagem se repete igual — como o resto do jogo.
+ */
+function dadoDaViagem(camp, via) {
+  via.semente ??= seedFromString(`viagem:${via.de}:${via.para}:${camp.vila?.dia ?? 1}`);
+  const rng = makeRng(via.semente);
+  const original = rng.state;
+  // Cada rolagem guarda o estado novo: o dado sobrevive ao fechar a tela.
+  const guardar = () => { via.semente = original(); };
+  const embrulhar = (f) => (...args) => { const r = f(...args); guardar(); return r; };
+  const saida = embrulhar(rng);
+  for (const k of ['int', 'die', 'pick', 'chance', 'shuffle']) saida[k] = embrulhar(rng[k]);
+  saida.state = original;
+  return saida;
+}
 
 const LARG = 896;
 const ALT = 1200;
@@ -86,14 +112,17 @@ export function sortearEncontro(rng, periodo) {
 }
 
 // Um dia de estrada, em poucas palavras. Sorteado, para a viagem não ser
-// sempre a mesma; nada aqui muda regra.
+// sempre a mesma. `agua` diz se houve riacho, poço ou chuva de onde beber;
+// `calor` dobra a água do dia; `terreno` dá a CD de quem vai caçar e colher.
 const PAISAGENS = [
-  'Colinas baixas de capim amarelo, uma depois da outra. O vento não para.',
-  'Uma garoa fina o dia inteiro. À tarde, o sol sai bem a tempo de secar as capas.',
-  'Rastros de carroça velhos na trilha, e um marco de pedra com um nome que ninguém consegue ler.',
-  'Um bando de corvos acompanha o grupo por horas, de árvore em árvore.',
-  'Ao longe, a mata escura de Neverwinter; mais perto, só pedra, urze e silêncio.',
-  'Um riacho raso, bom para encher os cantis. Alguém acha uma ponta de flecha antiga na margem.',
+  { texto: 'Colinas baixas de capim amarelo, uma depois da outra. O vento não para.', terreno: 'comum' },
+  { texto: 'Uma garoa fina o dia inteiro. À tarde, o sol sai bem a tempo de secar as capas.', agua: true, terreno: 'comum' },
+  { texto: 'Rastros de carroça velhos na trilha, e um marco de pedra com um nome que ninguém consegue ler.', terreno: 'comum' },
+  { texto: 'Um bando de corvos acompanha o grupo por horas, de árvore em árvore.', terreno: 'comum' },
+  { texto: 'Ao longe, a mata escura de Neverwinter; mais perto, só pedra, urze e silêncio.', terreno: 'ermo' },
+  { texto: 'Um riacho raso, bom para encher os cantis. Alguém acha uma ponta de flecha antiga na margem.', agua: true, terreno: 'farto' },
+  { texto: 'Sol aberto e nenhuma sombra na trilha o dia inteiro. As bocas secam antes do meio-dia.', calor: true, terreno: 'ermo' },
+  { texto: 'A trilha corre junto de um brejo de água parada, cheio de juncos e mosquito.', agua: 'suja', terreno: 'farto' },
 ];
 
 /**
@@ -122,14 +151,18 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     }
     if (l.id === reg.onde) { await entrar(l); return; }
     const { km, dias } = trajeto(reg.onde, l.id);
+    // Partindo de um lugar habitado, ninguém sai com o cantil pela metade.
+    const encheu = encherCantis(vivos());
+    const d = despensaDoGrupo(vivos());
     const precisa = dias * vivos().length;
-    const temRacoes = vivos().reduce((s, c) => s + ((c.bag ?? []).find((i) => i.id === 'racoes')?.qtd ?? 0), 0);
     tela.esconder();
     const r = await narrar(app.root, {
       formato: 'painel',
       paginas: [{ titulo: l.nome, texto: [
         `${km} km de ${LOCAL[reg.onde].nome}: ${dias === 1 ? 'um dia' : `${dias} dias`} de marcha, com acampamento à noite.`,
-        `Rações: o grupo leva ${temRacoes}, e a viagem pede ${precisa}.${temRacoes < precisa ? ' O que faltar, vão caçar e colher pelo caminho.' : ''}`,
+        `Rações: o grupo leva ${d.racoes}, e a viagem pede ${precisa}.${d.racoes < precisa ? ' O que faltar sai da caça e da colheita — ou da fome.' : ''}`,
+        `Água: ${encheu > 0 ? `os cantis foram enchidos aqui (${encheu} litro(s)) e levam ` : 'os cantis levam '}${d.agua} litro(s), um dia para cada um. O resto é riacho, chuva ou magia.`,
+        'O grupo marcha em ritmo normal, 36 km por dia, e caça pelo caminho quando falta o que comer ou beber. (O ritmo de marcha do livro — lento, normal e rápido — ainda não é escolha no jogo.)',
       ] }],
       escolhas: [
         { rotulo: 'Ficar', valor: 'fica' },
@@ -171,12 +204,14 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
   /** Anda a viagem a partir de `camp.viagem` até chegar ou até um encontro. */
   async function seguirViagem() {
     const via = camp.viagem;
-    const rng = () => Math.random();
+    // O dado da viagem é semeado como o resto do jogo, e o estado dele viaja
+    // junto: uma luta no meio do caminho não rebobina a estrada.
+    const rng = dadoDaViagem(camp, via);
     while (via.dia <= via.dias) {
       if (via.periodo === 'dia') {
-        comer();
-        const linha = PAISAGENS[Math.floor(rng() * PAISAGENS.length)];
-        registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome}: ${linha}`);
+        const paisagem = rng.pick(PAISAGENS);
+        registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome}: ${paisagem.texto}`);
+        for (const t of await oDiaDoGrupo(rng, paisagem)) registrar(t);
         const e = sortearEncontro(rng, 'dia');
         via.periodo = via.dia === via.dias ? 'chegou' : 'noite';
         if (e) { await encontro(e); return; }
@@ -188,7 +223,9 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         if (e) { await encontro(e); return; }
       }
       // A noite passou (com ou sem luta): o descanso longo do acampamento.
+      // Quem não comeu nem bebeu o dia todo não tira degrau de exaustão.
       for (const t of await descansoLongoDoGrupo(app.root, { herois: vivos(), titulo: 'Acampamento',
+        alimentado: (c) => (c.diasSemComida ?? 0) === 0 && !c.semAgua,
         texto: [via.semComida ? 'Uma noite de barriga meio vazia, mas de olhos fechados.' : 'Fogueira baixa, um de vigia por vez.'] })) registrar(t);
       v.dia += 1;
       v.tempo = 0;
@@ -198,24 +235,65 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     }
     reg.onde = via.para;
     camp.viagem = null;
+    // Chegando, há poço, riacho ou taverna: os cantis enchem sozinhos.
+    encherCantis(vivos());
     registrar(`O grupo chega a ${LOCAL[reg.onde].nome}.`);
     tela.atualizar();
     await entrar(LOCAL[reg.onde]);
   }
 
-  /** Uma ração por herói; quem não tem, divide a caça do dia. */
-  function comer() {
-    let faltam = 0;
-    for (const c of vivos()) {
-      const r = (c.bag ?? []).find((i) => i.id === 'racoes' && i.qtd > 0)
-        ?? vivos().map((o) => (o.bag ?? []).find((i) => i.id === 'racoes' && i.qtd > 0)).find(Boolean);
-      if (r) { r.qtd -= 1; } else faltam += 1;
+  /**
+   * Um dia inteiro de estrada para o grupo: quem caça e colhe, quem come,
+   * quem bebe, e o que a fome e a sede cobram. Devolve as frases do registro.
+   *
+   * Forrageia quem tem o melhor bônus de Sobrevivência, e só quando faltar
+   * comida ou água para o dia seguinte: procurar o que já se tem é tempo
+   * jogado fora, e o livro deixa a escolha com o grupo.
+   */
+  async function oDiaDoGrupo(rng, paisagem) {
+    const herois = vivos();
+    const linhas = [];
+    const antes = despensaDoGrupo(herois, { calor: paisagem.calor });
+    const faltaComida = antes.dias < 1;
+    const faltaAgua = !paisagem.agua && antes.diasDeAgua < 1;
+
+    if (faltaComida || faltaAgua) {
+      const quem = melhorForrageador(herois);
+      if (quem) {
+        // Localizar Animais ou Plantas aponta onde está a caça: vantagem no teste.
+        // Localizar Animais ou Plantas vale no dia em que foi conjurada.
+        const vantagem = (estadoDeUtilidade(camp).cacaNoDia ?? -1) === v.dia;
+        const f = forragear(rng, quem, { terreno: paisagem.terreno ?? 'comum', vantagem, grupo: herois });
+        linhas.push(f.ok
+          ? `${quem.name} caça e colhe pelo caminho (Sobrevivência ${f.teste} contra ${f.cd}${vantagem ? ', com vantagem' : ''}): ${f.racoes} ração(ões) e ${f.litros} litro(s) de água${f.perdidos ? `, e ${f.perdidos} litro(s) se perdem por falta de cantil` : ''}.`
+          : `${quem.name} procura caça e raiz o dia todo e não acha nada (Sobrevivência ${f.teste} contra ${f.cd}${vantagem ? ', com vantagem' : ''}).`);
+      }
     }
-    for (const c of vivos()) c.bag = (c.bag ?? []).filter((i) => i.id !== 'racoes' || i.qtd > 0);
-    if (faltam) {
-      camp.viagem.semComida = true;
-      registrar(`Faltou ração para ${faltam === 1 ? 'um' : faltam}: o grupo caça e colhe o que dá pelo caminho.`);
+
+    // As rações que a magia faz: Criar Comida e Água e Criar ou Destruir Água
+    // alimentam antes de a mochila ser aberta, e o que sobra estraga no fim do
+    // dia. A despensa mora no estado das magias de utilidade, que é onde elas
+    // a enchem (`rules/utilidade.js`).
+    const mant = estadoDeUtilidade(camp);
+    mant.dia = v.dia;
+    for (const e of limparMagicoVencido(mant, v.dia)) {
+      linhas.push(`O que ${e.nome} fez ontem estragou: ${[e.racoes && `${e.racoes} ração(ões)`, e.litros && `${e.litros} litro(s)`].filter(Boolean).join(' e ')} se perdem.`);
     }
+    const fontes = despensaMagica(mant);
+    // Purificar Alimentos e Bebidas limpa a água do dia antes de alguém beber.
+    // É ritual (dez minutos, sem espaço), então quem a tem preparada a conjura
+    // sozinho diante de um brejo: ninguém escolheria beber lama tendo a magia.
+    const purifica = paisagem.agua === 'suja'
+      ? herois.find((h) => !h.dead && podeConjurarFora(h, 'purificarAlimentos', { ritual: true }).ok)
+      : null;
+    if (purifica) linhas.push(`${purifica.name} purifica a água parada antes de o grupo beber (ritual, dez minutos).`);
+    const purificada = Boolean(purifica);
+    for (const t of diaDeViagem(rng, herois, { calor: paisagem.calor, agua: paisagem.agua, fontes, purificada })) linhas.push(t);
+    if (herois.some((c) => (c.diasSemComida ?? 0) > 0)) camp.viagem.semComida = true;
+
+    const depois = despensaDoGrupo(herois, { calor: paisagem.calor });
+    linhas.push(`Despensa: ${depois.racoes} ração(ões) e ${depois.agua} litro(s) de água — ${depois.dias} dia(s) de comida.`);
+    return linhas;
   }
 
   async function encontro(e) {
@@ -244,7 +322,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     estado: { missoes: v.missoes ?? {}, pistas: v.pistas ?? [], registro: (reg.registro ??= []) },
     grupo,
     missoes: MISSOES,
-    momento: () => `Dia ${v.dia} · em ${LOCAL[reg.onde].nome}`,
+    // A despensa fica à vista: a decisão de partir depende dela.
+    momento: () => {
+      const d = despensaDoGrupo(vivos());
+      return `Dia ${v.dia} · em ${LOCAL[reg.onde].nome} · ${d.racoes} ração(ões), ${d.agua} L`;
+    },
     dinheiro: () => totalEmCobre(vivos()),
     visivel: conhecido,
     aberto: (l) => Boolean(l.jogavel),

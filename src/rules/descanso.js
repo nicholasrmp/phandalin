@@ -17,7 +17,7 @@
 
 import { abilityMod } from './abilities.js';
 import { CLASSES } from './classes/index.js';
-import { removeCondition } from './conditions.js';
+import { removeCondition, maxHpEfetivo, mudarExaustao, nivelDeExaustao } from './conditions.js';
 import { SPELLS, magiasProntas, dadosDaMagia } from './spells.js';
 import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
@@ -33,14 +33,14 @@ export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
  * se não há dado, o personagem está com a vida cheia ou morto.
  */
 export function gastarDadoDeVida(rng, c) {
-  if (c.dead || c.hp >= c.maxHp || dadosDeVida(c) <= 0) return null;
+  if (c.dead || c.hp >= maxHpEfetivo(c) || dadosDeVida(c) <= 0) return null;
   const lados = dadoDeVida(c);
   const rolagem = rng.die(lados);
   const con = abilityMod(c.abilities.con);
   const cura = Math.max(0, rolagem + con);
   c.dadosDeVidaRestantes -= 1;
   const antes = Math.max(0, c.hp);
-  c.hp = Math.min(c.maxHp, antes + cura);
+  c.hp = Math.max(antes, Math.min(maxHpEfetivo(c), antes + cura));
   if (c.hp > 0) acordar(c);
   return { lados, rolagem, con, cura: c.hp - antes, restam: c.dadosDeVidaRestantes };
 }
@@ -56,7 +56,7 @@ function acordar(c) {
 /** Quantos dados um personagem gastaria sozinho: até ficar perto da vida cheia. */
 export function dadosSugeridos(c) {
   const media = dadoDeVida(c) / 2 + 0.5 + abilityMod(c.abilities.con);
-  const falta = c.maxHp - c.hp;
+  const falta = maxHpEfetivo(c) - c.hp;
   return Math.max(0, Math.min(dadosDeVida(c), Math.floor(falta / Math.max(1, media))));
 }
 
@@ -117,7 +117,7 @@ export function oracaoDeCura(rng, conjurador, alvos, { circulo = 2 } = {}) {
     // Discípulo da Vida: +2 + círculo do espaço gasto.
     if (conjurador.features?.includes('discipleOfLife')) total += 2 + circulo;
     const antes = Math.max(0, alvo.hp);
-    alvo.hp = Math.min(alvo.maxHp, antes + Math.max(0, total));
+    alvo.hp = Math.max(antes, Math.min(maxHpEfetivo(alvo), antes + Math.max(0, total)));
     if (antes <= 0 && alvo.hp > 0) acordar(alvo);
     return { alvo, cura: alvo.hp - antes, rolagem: r.rolls };
   });
@@ -137,29 +137,44 @@ export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
   if (!sc || !magiasProntas(conjurador).includes('bomFruto')) return { ok: false, why: `${spell.name} não está preparada` };
   if (circulo < spell.level || !(sc.slots?.[circulo] > 0)) return { ok: false, why: `sem espaço de ${circulo}º círculo` };
   const quem = [...new Set(alvos)].filter((c) => !c.dead && !['morto-vivo', 'constructo'].includes(c.tipo));
-  if (!quem.some((c) => c.hp < c.maxHp)) return { ok: false, why: 'ninguém precisa de cura' };
+  if (!quem.some((c) => c.hp < maxHpEfetivo(c))) return { ok: false, why: 'ninguém precisa de cura' };
   sc.slots[circulo] -= 1;
   const cura = new Map(quem.map((c) => [c, 0]));
   for (let i = 0; i < spell.frutos; i++) {
     // A fruta vai para quem está mais ferido (menor fração de PV).
-    const alvo = quem.filter((c) => c.hp < c.maxHp).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    const alvo = quem.filter((c) => c.hp < maxHpEfetivo(c)).sort((a, b) => a.hp / maxHpEfetivo(a) - b.hp / maxHpEfetivo(b))[0];
     if (!alvo) break;
     const antes = alvo.hp;
-    alvo.hp = Math.min(alvo.maxHp, Math.max(0, antes) + 1);
+    alvo.hp = Math.max(antes, Math.min(maxHpEfetivo(alvo), Math.max(0, antes) + 1));
     if (antes <= 0 && alvo.hp > 0) acordar(alvo);
     cura.set(alvo, cura.get(alvo) + 1);
   }
   return { ok: true, circulo, curas: [...cura].filter(([, n]) => n > 0).map(([alvo, n]) => ({ alvo, cura: n })) };
 }
 
-/** Descanso longo inteiro. */
-export function descansoLongo(c) {
+/**
+ * Descanso longo inteiro.
+ *
+ * `alimentado` diz se a pessoa teve o dia de comida e de água: o livro só
+ * tira um degrau de exaustão de quem descansou COM comida e bebida. Sem a
+ * informação (arena, descanso de cena), vale alimentado — fora da viagem o
+ * jogo não conta mantimento.
+ */
+export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
   acordar(c);
-  c.hp = c.maxHp;
+  if (nivelDeExaustao(c) > 0 && alimentado) mudarExaustao(c, -1);
+  // O mal da água parada (`rules/mantimentos.js`) passa dormindo. Regra da
+  // casa: o livro não dá duração para água ruim.
+  if (c.maldaAgua) { removeCondition(c, 'envenenado'); c.maldaAgua = false; }
+  c.hp = maxHpEfetivo(c);
   c.tempHp = 0;
   const nivel = c.level ?? 1;
-  c.dadosDeVidaRestantes = Math.min(nivel, dadosDeVida(c) + Math.max(1, Math.floor(nivel / 2)));
+  // Poção de vitalidade: no descanso seguinte, os dados de vida voltam TODOS.
+  c.dadosDeVidaRestantes = c.dadosDeVidaCheios
+    ? nivel
+    : Math.min(nivel, dadosDeVida(c) + Math.max(1, Math.floor(nivel / 2)));
+  c.dadosDeVidaCheios = false;
   for (const [id, max] of Object.entries(c.resourcesMax ?? {})) c.resources[id] = max;
   if (c.spellcasting?.slotsMax) c.spellcasting.slots = c.spellcasting.slotsMax.slice();
   if (c.magiaGratis) c.magiaGratis.usada = false;

@@ -32,6 +32,7 @@ import { distanceFt } from '../core/grid.js';
 import { itemDeId } from './equipment.js';
 import { oracaoDeCura, bomFrutoNoDescanso } from './descanso.js';
 import { APRIMORAR } from './spells.js';
+import { encherAgua, guardarMagico } from './mantimentos.js';
 
 /**
  * O que cada magia faz FORA do combate. Campos:
@@ -88,6 +89,12 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // Mantimentos de viagem (`rules/mantimentos.js`).
+  criarDestruirAgua: { alvo: 'si', efeito: 'agua' },
+  criarComidaEAgua: { alvo: 'si', efeito: 'banquete' },
+  purificarAlimentos: { alvo: 'si', efeito: 'purificar', ritual: true },
+  detectarVenenoDoenca: { alvo: 'area', min: 10, conc: true, efeito: 'venenos', ritual: true },
+  localizarAnimaisPlantas: { alvo: 'si', min: 1, efeito: 'caca', ritual: true },
 };
 
 /** Os bichos que Convocar Familiar chama: a ficha mora em `monsters/feras.js`. */
@@ -117,7 +124,18 @@ export const estaFora = (id) => UTIL_FORA.has(id);
 
 /** O estado do grupo, guardado na campanha. */
 export function estadoDe(campanha) {
-  return (campanha.utilidade ??= { minutos: 0, ativas: [], npcs: {}, identificados: [], mortosFalados: [], serial: 0 });
+  const e = (campanha.utilidade ??= { minutos: 0, ativas: [], npcs: {}, identificados: [], mortosFalados: [], serial: 0 });
+  // O dia da campanha mora na vila; a despensa mágica precisa dele para saber
+  // o que foi conjurado HOJE e o que estragou ontem (`rules/mantimentos.js`).
+  e.dia = campanha.vila?.dia ?? e.dia ?? 0;
+  return e;
+}
+
+/** Tem veneno no bloco: morde ou pica com dano de veneno (`monsters/*.js`). */
+export function eVenenosa(m) {
+  return (m?.attacks ?? []).some((a) => a?.type === 'veneno'
+    || a?.extraDamage?.type === 'veneno'
+    || (a?.extras ?? []).some((e) => e?.type === 'veneno'));
 }
 
 /** A chave de um NPC (criatura ou personagem solto da vila). */
@@ -418,6 +436,44 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.corpo = alvo;
     }
     if (u.efeito === 'truque') resultado.truque = truque(estado, c, spellId, opcao, alvo, rng);
+    // ---- mantimentos: a água e a comida que a magia faz ----
+    // Entram na despensa do grupo (`rules/mantimentos.js`), que estraga no
+    // fim do dia; a água também enche os cantis na hora, porque o cantil
+    // guarda de um dia para o outro e a água conjurada não.
+    if (u.efeito === 'agua' || u.efeito === 'banquete') {
+      const litros = (spell.agua ?? 0) + (spell.upcast?.agua ?? 0) * (chk.circulo - spell.level);
+      const racoes = spell.racoes ?? 0;
+      let nosCantis = 0;
+      for (const h of grupo.filter((x) => !x.dead)) nosCantis += encherAgua(h, Math.max(0, litros - nosCantis));
+      const sobra = Math.max(0, litros - nosCantis);
+      const entrada = guardarMagico(estado, { racoes, litros: sobra, nome: spell.name, dia: estado.dia ?? 0 });
+      resultado.mantimentos = { racoes, litros, nosCantis, sobra, entrada };
+    }
+    if (u.efeito === 'purificar') {
+      const estragados = grupo.flatMap((h) => (h.bag ?? []).filter((i) => i.id === 'racoes' && i.estragada));
+      for (const i of estragados) delete i.estragada;
+      // O livro purifica COMIDA E BEBIDA, não criaturas: só sai o mal que veio
+      // da água parada (`maldaAgua`, de `rules/mantimentos.js`). Veneno de
+      // lâmina ou de mordida continua onde está.
+      const envenenados = grupo.filter((h) => !h.dead && h.maldaAgua && hasCondition(h, 'envenenado'));
+      for (const h of envenenados) { removeCondition(h, 'envenenado'); h.maldaAgua = false; }
+      resultado.purificou = { racoes: estragados.reduce((n, i) => n + (i.qtd ?? 0), 0), gente: envenenados };
+    }
+    if (u.efeito === 'venenos') {
+      resultado.venenos = {
+        mochila: grupo.flatMap((h) => (h.bag ?? []).filter((i) => i.estragada).map((i) => ({ dono: h, id: i.id }))),
+        gente: grupo.filter((h) => !h.dead && hasCondition(h, 'envenenado')),
+        // Venenosa é quem tem dano de veneno no bloco (`monsters/*.js`): a
+        // aranha e a aranha-lobo mordem com veneno em `extraDamage`.
+        criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
+      };
+    }
+    if (u.efeito === 'caca') {
+      // A magia é instantânea no livro: ela diz onde está a caça AGORA. No
+      // jogo isso vira a vantagem na forragem DESTE dia, e só dele.
+      estado.cacaNoDia = estado.dia ?? 0;
+      resultado.caca = true;
+    }
     if (u.efeito === 'amizadeAnimal') {
       // Uma fera por círculo (1º círculo = 1, 2º = 2…); cada uma resiste por SABEDORIA.
       const dc = spellSaveDc(c);
@@ -580,7 +636,7 @@ export function modificadores(estado, herois, quem, pericia, { npc = null } = {}
   // As condições do próprio herói: Aprimorar Atributo, Aumentar/Reduzir.
   const fx = conditionEffects(quem);
   if (fx.vantagemTeste.includes(hab) || fx.vantagemSoTeste.includes(hab)) vant(hab === 'cha' ? 'Esplendor da Águia' : 'atributo aprimorado');
-  if (fx.desvantagemTeste.includes(hab)) desv('condição');
+  if (fx.desvantagemTeste.includes(hab) || fx.desvantagemSoTeste.includes(hab)) desv('condição');
   // Orientação: 1d4 no próximo teste.
   for (const c of quem.conditions ?? []) {
     const d = CONDITIONS[c.id]?.testeBonusDice;

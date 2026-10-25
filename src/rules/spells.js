@@ -1157,6 +1157,34 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
     desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
   },
+  // ---- mantimentos de viagem (`rules/mantimentos.js`) ----
+  criarDestruirAgua: {
+    id: 'criarDestruirAgua', name: 'Criar ou Destruir Água', level: 1, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 0,
+    agua: 40, upcast: { agua: 40 },
+    desc: 'Você faz surgir 40 litros de água limpa, que caem num recipiente aberto ou como chuva num cubo de 9 m — ou destrói a mesma quantidade de água ao alcance. Em círculo maior, mais 40 litros por círculo. Na estrada, a água vai para os cantis do grupo. (Simplificações: o livro conta 10 galões, e o jogo arredonda um galão para quatro litros, o dia de uma pessoa; o jogo não usa a metade que destrói água nem a usa para apagar chama. Regra da casa: a água que não cabe em cantil nenhum se perde no fim do dia, porque o grupo não tem onde carregá-la. Só fora de combate.)',
+  },
+  purificarAlimentos: {
+    id: 'purificarAlimentos', name: 'Purificar Alimentos e Bebidas', level: 1, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 10, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Toda a comida e bebida numa esfera de 1,5 m a até 3 m de você fica pura: sai o veneno e sai a doença. Na estrada, limpa a água parada do brejo antes de o grupo beber, e desfaz o mal de quem já bebeu água ruim. Veneno de lâmina ou de mordida ela não tira — o livro purifica comida e bebida, não criaturas. Ritual. (Simplificação: nada na aventura estraga uma ração ainda, então a parte da comida da magia fica guardada para quando isso existir. Só fora de combate.)',
+  },
+  detectarVenenoDoenca: {
+    id: 'detectarVenenoDoenca', name: 'Detectar Veneno e Doença', level: 1, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 10, concentration: true,
+    desc: 'Por 10 minutos você sente onde há veneno, criatura venenosa e doença num raio de 9 m, e sabe de que tipo é cada um. A barreira de pedra, metal, chumbo ou madeira do livro barra o sentido. No jogo, aponta quem do grupo está envenenado e as criaturas com veneno no bote (a aranha e a aranha-lobo). Concentração. Ritual. (Simplificação: o motor ainda não tem doença nem ração estragada, então a magia não acusa nenhuma das duas; a barreira do livro também não é medida.)',
+  },
+  localizarAnimaisPlantas: {
+    id: 'localizarAnimaisPlantas', name: 'Localizar Animais ou Plantas', level: 2, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 1,
+    desc: 'Você nomeia um animal ou uma planta e sente, num raio de 8 km, onde está o exemplar mais próximo, a direção e a distância dele. Na estrada isso é saber onde está a caça e onde está o que se colhe. Ritual. (Simplificação: o jogo não aponta um bicho nomeado no mapa. Regra da casa: no lugar disso, o teste de Sobrevivência para caçar e colher sai com vantagem no dia em que a magia foi conjurada — a magia do livro é instantânea e só diz direção e distância. Só fora de combate.)',
+  },
+  criarComidaEAgua: {
+    id: 'criarComidaEAgua', name: 'Criar Comida e Água', level: 3, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 0,
+    racoes: 15, agua: 120,
+    desc: 'Surgem no chão comida para quinze pessoas por um dia e 120 litros de água limpa. A comida é sem graça, mas alimenta, e o livro diz que ela estraga em 24 horas. Na estrada, a água enche os cantis do grupo primeiro. (Simplificações: o jogo conta quinze rações e arredonda os 30 galões do livro para 120 litros, a quatro litros por galão. Regra da casa: a água que não cabe em cantil nenhum também se perde no fim do dia, porque não há onde carregá-la. Só fora de combate.)',
+  },
   falarComPlantas: {
     id: 'falarComPlantas', name: 'Falar com Plantas', level: 3, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 10,

@@ -12,6 +12,7 @@
 // escolhas cada herói tem e aplica as que o jogador fizer (ou as sugeridas).
 
 import { ganharXp, subirNivel, XP_POR_NIVEL } from '../rules/progressao.js';
+import { maxHpEfetivo } from '../rules/conditions.js';
 import { abilityMod } from '../rules/abilities.js';
 import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
 import { getSpell } from '../rules/spells.js';
@@ -50,7 +51,9 @@ export function subirUmNivel(c) {
   const conj = def?.conjuracao;
   const conhecidasAntes = conj?.conhecidas?.[c.level] ?? 0;
   const { pendentes } = subirNivel(c);
-  c.hp += c.maxHp - antes.maxHp;
+  // Subir de nível dá o PV máximo CRU; a exaustão é um teto temporário por
+  // cima dele, então a vida atual não pode passar do teto que vale agora.
+  c.hp = Math.min(c.hp + (c.maxHp - antes.maxHp), maxHpEfetivo(c));
   c.dadosDeVidaRestantes = (c.dadosDeVidaRestantes ?? c.level - 1) + 1;
 
   const ganhos = [`${c.level}º nível: +${c.maxHp - antes.maxHp} pontos de vida (agora ${c.maxHp}).`];

@@ -28,6 +28,7 @@
 // A arte é nossa.
 
 import './ficha.css';
+import { maxHpEfetivo } from '../rules/conditions.js';
 
 import { makeFigure, makePortrait } from '../art/sheet.js';
 import { LOOKS } from '../art/looks.js';
@@ -320,7 +321,7 @@ export function criarFicha(root, handlers = {}) {
 
   function blocoDerivados() {
     const ca = acBreakdown(personagem);
-    const pv = Math.max(0, Math.ceil(personagem.hp ?? personagem.maxHp));
+    const pv = Math.max(0, Math.ceil(personagem.hp ?? maxHpEfetivo(personagem)));
     const dex = abilityMod(personagem.abilities.dex);
     const prof = personagem.proficiency ?? 2;
     const desloc = personagem.speedFt ?? 30;
@@ -332,7 +333,7 @@ export function criarFicha(root, handlers = {}) {
           destaque: true,
           dica: { nome: 'Classe de armadura', texto: 'A conta inteira está logo abaixo.' },
         }),
-        numero('PV', `${pv}/${personagem.maxHp}`, personagem.tempHp ? `+${personagem.tempHp} temporários` : null),
+        numero('PV', `${pv}/${maxHpEfetivo(personagem)}`, personagem.tempHp ? `+${personagem.tempHp} temporários` : null),
         numero('Deslocamento', `${desloc}`, `pés · ${Math.floor(desloc / 5)} quadrados`),
         numero('Iniciativa', formatModifier(dex), 'modificador de DES'),
         numero('Proficiência', formatModifier(prof), `nível ${personagem.level}`),
@@ -633,7 +634,7 @@ export function criarFicha(root, handlers = {}) {
    *  responde a um clique. */
   function colunaDerivados() {
     const ca = acBreakdown(personagem);
-    const pv = Math.max(0, Math.ceil(personagem.hp ?? personagem.maxHp));
+    const pv = Math.max(0, Math.ceil(personagem.hp ?? maxHpEfetivo(personagem)));
     const desloc = personagem.speedFt ?? 30;
     const carga = cargaDe(personagem);
 
@@ -646,7 +647,7 @@ export function criarFicha(root, handlers = {}) {
           texto: 'A conta inteira está na aba da ficha.',
         },
       }),
-      numero('Pontos de vida', `${pv}/${personagem.maxHp}`,
+      numero('Pontos de vida', `${pv}/${maxHpEfetivo(personagem)}`,
         personagem.tempHp ? `+${personagem.tempHp} temporários` : null),
       numero('Deslocamento', String(desloc), `pés · ${Math.floor(desloc / 5)} quadrados`),
       numero('Carga', String(carga.peso), `de ${carga.capacidade} lb`));

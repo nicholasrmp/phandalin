@@ -12,6 +12,7 @@
 // hora do que deixar o jogador descobrir no meio da luta.
 
 import { el } from './hud.js';
+import { maxHpEfetivo } from '../rules/conditions.js';
 import { audio } from '../core/audio.js';
 import { nomeDeId } from '../rules/equipment.js';
 import { temArteImportada } from '../art/folhas/index.js';
@@ -93,7 +94,7 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
         el('header', {},
           el('h3', {}, h.name),
           el('p', { class: 'menu-heroi-linha' }, `${h.className}, ${h.raca.toLowerCase()}, nível 1 · ${h.antecedente}`),
-          el('p', { class: 'menu-heroi-numeros' }, `PV ${ficha.maxHp} · CA ${ficha.ac} · Deslocamento ${h.speedFt} pés`)),
+          el('p', { class: 'menu-heroi-numeros' }, `PV ${maxHpEfetivo(ficha)} · CA ${ficha.ac} · Deslocamento ${h.speedFt} pés`)),
         el('p', { class: 'menu-heroi-origem' }, h.origem),
         ...h.historia.map((p) => el('p', {}, p)),
         el('p', { class: 'menu-heroi-motivo' }, el('strong', {}, 'Por que está na estrada. '), h.motivo),
@@ -164,7 +165,7 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
         el('h3', {}, h.name),
         el('p', { class: 'menu-heroi-linha' }, `${h.className}, ${h.raca.toLowerCase()}`),
         el('dl', { class: 'menu-resumo-numeros' },
-          el('dt', {}, 'PV'), el('dd', {}, c.maxHp),
+          el('dt', {}, 'PV'), el('dd', {}, maxHpEfetivo(c)),
           el('dt', {}, 'CA'), el('dd', {}, c.ac),
           el('dt', {}, 'Arma'), el('dd', {}, nomeDeId(c.weapons[0])),
           m && el('dt', {}, 'Magias'), m && el('dd', {}, `${e.truques.length} truques, ${e.magias.length} de 1º`)),

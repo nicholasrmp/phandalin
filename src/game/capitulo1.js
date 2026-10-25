@@ -30,6 +30,7 @@
 // tabuleiro, o HUD e os ganchos de seleção e de menu.
 
 import { narrar } from '../view/narrativa.js';
+import { maxHpEfetivo } from '../rules/conditions.js';
 import { descansoCurto } from '../view/descanso-tela.js';
 import { heroiPorId } from './herois.js';
 import { d20 } from '../core/dice.js';
@@ -348,7 +349,7 @@ export function criarCapitulo1(app, config) {
     }
 
     // Descanso antes de decidir.
-    if (grupo.some((c) => c.hp < c.maxHp)) {
+    if (grupo.some((c) => c.hp < maxHpEfetivo(c))) {
       const pausa = await narrar(root, {
         formato: 'tela',
         paginas: paginas.length ? [...paginas] : [{ titulo: 'Antes de seguir', texto: ['O grupo está ferido.'] }],

@@ -20,7 +20,7 @@ import {
   WEAPONS, weaponAbility, armorClass,
   itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila, garantirInventario, equipar,
 } from './equipment.js';
-import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, caEfetiva, CONDITIONS } from './conditions.js';
+import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, caEfetiva, maxHpEfetivo, nivelDeExaustao, mudarExaustao, CONDITIONS } from './conditions.js';
 
 /**
  * REGRAS DA CASA — nada aqui é SRD.
@@ -2716,7 +2716,7 @@ export class Encounter {
     const fx = conditionEffects(actor);
     const r = d20(this.rng, bonus, {
       advantage: fx.vantagemTeste.includes(hab) || fx.vantagemSoTeste.includes(hab),
-      disadvantage: fx.desvantagemTeste.includes(hab)
+      disadvantage: fx.desvantagemTeste.includes(hab) || fx.desvantagemSoTeste.includes(hab)
         || (!!actor.armorUntrained && (hab === 'str' || hab === 'dex')),
     });
     let total = r.total;
@@ -2772,11 +2772,11 @@ export class Encounter {
         const s = antes + amount;
         this.quedasDaFonte.set(target, s);
         this.onEvent({ type: 'damage', target, amount, source });
-        if (s >= target.maxHp) this.morrer(target, 'dano maciço');
+        if (s >= maxHpEfetivo(target)) this.morrer(target, 'dano maciço');
         return;
       }
       this.onEvent({ type: 'damage', target, amount, source });
-      if (amount >= target.maxHp) { this.morrer(target, 'dano maciço'); return; }
+      if (amount >= maxHpEfetivo(target)) { this.morrer(target, 'dano maciço'); return; }
       target.stable = false;
       target.deathSaves.failures += critical ? 2 : 1;
       this.say('morte', `${target.name} sofre dano caído — ${critical ? 'duas falhas' : 'uma falha'} no teste de morte (${target.deathSaves.failures}/3).`);
@@ -2862,7 +2862,7 @@ export class Encounter {
       removeCondition(target, 'esquivando');
       this.say('morte', `${target.name} cai.`);
       this.onEvent({ type: 'died', target });
-    } else if (sobra >= target.maxHp) {
+    } else if (sobra >= maxHpEfetivo(target)) {
       this.morrer(target, 'dano maciço');
       return;
     } else {
@@ -2897,7 +2897,9 @@ export class Encounter {
     }
     const was = target.hp;
     const revived = hasCondition(target, 'inconsciente');
-    target.hp = Math.min(target.maxHp, target.hp + amount);
+    // `Math.max` porque `hp` pode estar acima do teto efetivo (exaustão nova):
+    // curar jamais pode BAIXAR a vida de alguém.
+    target.hp = Math.max(target.hp, Math.min(maxHpEfetivo(target), target.hp + amount));
     if (revived && target.hp > 0) {
       // Acorda, mas no chão: o `caido` fica até ele gastar o deslocamento
       // para se levantar.
@@ -3600,7 +3602,7 @@ export class Encounter {
         .slice(0, quantos)
       : spell.kind === 'healGrupo'
         // Cura em grupo pega também quem está caído: é para isso que ela existe.
-        ? (targets ?? perto(this.alliesOf(actor).concat([actor])).filter((a) => a.hp < a.maxHp))
+        ? (targets ?? perto(this.alliesOf(actor).concat([actor])).filter((a) => a.hp < maxHpEfetivo(a)))
           .filter((a) => !this.porqueNaoAlvo(actor, spell, a))
           .slice(0, spell.targets)
         : spell.kind === 'debuff'
@@ -3813,14 +3815,21 @@ export class Encounter {
             : {};
           // Arma Mágica (+2 no 4º, +3 no 6º) e Arma Elemental (+2/2d4 no 5º, +3/3d4 no 7º).
           const bonusArma = Object.entries(spell.escalaBonus ?? {}).reduce((b, [c, v]) => (slot >= Number(c) ? v : b), spell.escalaBonus ? 1 : undefined);
+          // O deslocamento do turno ANTES da condição, para saber quanto já andou.
+          const antesDoPasso = this.speedOf(a);
           addCondition(a, spell.condition, {
             source: actor.id, ...duracao, magia: { id: spell.id, circulo: slot },
             data: { dc, pvTemp: mod, n: spell.imagens ?? 0, tipo, circulo: slot, bonusArma, dadosNoAcerto: bonusArma ? `${bonusArma}d4` : undefined },
           });
-          // Passos Largos vale já neste turno, não só no próximo.
-          if (CONDITIONS[spell.condition]?.speedBonusFt && a.side === this.side) a.movementLeftFt += CONDITIONS[spell.condition].speedBonusFt;
-          // Voo vale já neste turno: o deslocamento sobe para 18 m.
-          if (spell.condition === 'voando' && a.side === this.side) a.movementLeftFt += Math.max(0, CONDITIONS.voando.vooFt - a.speedFt);
+          // Passos Largos e Voo valem já neste turno, não só no próximo. O que
+          // sobra do turno é refeito a partir de `speedOf`, que é quem conhece
+          // a metade do 2º degrau de exaustão e o 0 do 5º: somar o bônus cru
+          // devolvia movimento a quem está com deslocamento 0.
+          if (a.side === this.side
+            && (CONDITIONS[spell.condition]?.speedBonusFt || spell.condition === 'voando')) {
+            const gasto = Math.max(0, antesDoPasso - (a.movementLeftFt ?? 0));
+            a.movementLeftFt = Math.max(a.movementLeftFt ?? 0, this.speedOf(a) - gasto);
+          }
           // Velocidade no turno do próprio lado: a ação a mais já vale agora.
           if (spell.condition === 'acelerado' && a.side === this.side) {
             a.acaoVelozDisponivel = true;
@@ -5157,7 +5166,7 @@ export class Encounter {
       // Beber de vida cheia é LEGAL na regra e é sempre um erro de clique.
       // Recusar custa ao jogador um aviso; deixar passar custa a poção que
       // faria falta dois turnos depois.
-      if (target.hp >= target.maxHp) return `${target.name} está com a vida cheia`;
+      if (target.hp >= maxHpEfetivo(target)) return `${target.name} está com a vida cheia`;
     }
     // Curandeiro: o kit cura, não só estabiliza (`talentos.js`).
     const medico = dados.consumivel === 'estabilizar' ? vetoDoMedico(actor, target) : undefined;
@@ -5166,6 +5175,15 @@ export class Encounter {
       if (!hasCondition(target, 'inconsciente')) return `${target.name} não está caindo`;
       if (target.stable) return `${target.name} já está estável`;
       if (target.dead) return `${target.name} já morreu`;
+    }
+    if (dados.consumivel === 'restaurar') {
+      if (target !== actor && !this.field.vizinhos(actor.pos, target.pos)) {
+        return `${target.name} está longe demais — é preciso estar encostado`;
+      }
+      if (target.dead) return `${target.name} já morreu`;
+      if (!nivelDeExaustao(target) && !hasCondition(target, 'envenenado')) {
+        return `${target.name} não está exausto nem envenenado`;
+      }
     }
     if (dados.consumivel === 'arremesso') {
       if (target === actor) return 'não dá para arremessar em si mesmo';
@@ -5194,6 +5212,18 @@ export class Encounter {
         target.stable = true;
         this.say('cura', `${actor.name} estabiliza ${target.name} com o kit de cura.`, 'sem teste: o kit dispensa Medicina');
         this.onEvent({ type: 'stabilized', target, by: actor });
+        break;
+      }
+      case 'restaurar': {
+        // Poção de vitalidade: tira a exaustão inteira e o veneno, e os dados
+        // de vida voltam todos no descanso seguinte.
+        const degraus = nivelDeExaustao(target);
+        mudarExaustao(target, -6);
+        removeCondition(target, 'envenenado');
+        target.maldaAgua = false;
+        target.dadosDeVidaCheios = true;
+        const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
+        this.say('cura', `${actor.name} ${quem} ${degraus ? `o cansaço de ${degraus} degrau(ões) vai embora` : 'o veneno vai embora'}.`);
         break;
       }
       case 'arremesso': {
@@ -5340,13 +5370,13 @@ export class Encounter {
         actor.resources.channelDivinity -= 1;
         let pool = actor.level * 5;
         const wounded = [actor, ...this.alliesOf(actor)]
-          .filter((a) => !a.dead && a.hp < a.maxHp && distanceFt(actor.pos, a.pos) <= 30)
-          .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
+          .filter((a) => !a.dead && a.hp < maxHpEfetivo(a) && distanceFt(actor.pos, a.pos) <= 30)
+          .sort((a, b) => a.hp / maxHpEfetivo(a) - b.hp / maxHpEfetivo(b));
         this.say('recurso', `${actor.name} canaliza Preservar a Vida (${pool} PV para dividir).`);
         for (const a of wounded) {
           if (pool <= 0) break;
-          const cap = Math.floor(a.maxHp / 2); // não pode passar da metade dos PV máximos
-          const want = Math.min(pool, Math.max(0, cap - a.hp), a.maxHp - a.hp);
+          const cap = Math.floor(maxHpEfetivo(a) / 2); // não pode passar da metade dos PV máximos
+          const want = Math.min(pool, Math.max(0, cap - a.hp), maxHpEfetivo(a) - a.hp);
           if (want <= 0) continue;
           pool -= want;
           this.heal(a, want, actor);

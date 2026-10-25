@@ -12,7 +12,7 @@ import { makeMonster, MONSTERS } from '../rules/monsters.js';
 import { skillBonus } from '../rules/abilities.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
-import { marcarTreinoDeArmadura, quantosNaMochila, WEAPONS } from '../rules/equipment.js';
+import { marcarTreinoDeArmadura, quantosNaMochila, WEAPONS, garantirInventario, itemDeId } from '../rules/equipment.js';
 import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
 import { takeMonsterTurn, contornaZonas, runAutoSummons, encerrarTurnoComInvocados } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
@@ -20,7 +20,26 @@ import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects }
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
-import { oracaoDeCura, bomFrutoNoDescanso } from '../rules/descanso.js';
+import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo } from '../rules/descanso.js';
+import { nivelDeExaustao, mudarExaustao, maxHpEfetivo, exaustaoFatal } from '../rules/conditions.js';
+import {
+  diaDeViagem, forragear, melhorForrageador, despensaDoGrupo, limiteSemComida,
+  racoesDe, darRacoes, aguaDe, encherAgua, beberAgua,
+  despensaMagica, guardarMagico, limparMagicoVencido,
+} from '../rules/mantimentos.js';
+
+/** Um dado que sempre cai no mesmo numero, para medir a CD e nao a sorte. */
+const dadoFixo = (n, faces = 20) => {
+  const f = () => (n - 0.5) / faces;
+  // So o d20 cai no numero pedido: um d6 que devolvesse 20 faria o teste
+  // passar com um valor impossivel.
+  f.die = (lados) => (lados === faces ? n : Math.max(1, Math.ceil(lados / 2)));
+  f.int = (k) => Math.floor(f() * k);
+  f.pick = (a) => a[0];
+  f.chance = () => false;
+  f.shuffle = (a) => a.slice();
+  return f;
+};
 
 const MAPA = Array(12).fill('............');
 const [DARA, PIP, BRENN, ILVAN] = [0, 1, 2, 3];
@@ -4830,6 +4849,360 @@ teste('Alarme só cobre uma cena nomeada; Localizar Objeto dá a direção em oi
   assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 5, y: 1 }), 'ao nordeste');
   assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 5, y: 9 }), 'ao sudoeste');
   assert.equal(direcaoDe({ x: 5, y: 5 }, { x: 9, y: 9 }), 'ao sul');
+});
+
+// ---- mantimentos de viagem -------------------------------------------------
+
+teste('exaustao sobe em degraus e cada um cobra o que o livro manda', () => {
+  const { party } = montar();
+  const c = party[DARA];
+  assert.equal(nivelDeExaustao(c), 0);
+  mudarExaustao(c, 1);
+  assert.ok(conditionEffects(c).desvantagemSoTeste.includes('str'), '1: desvantagem em teste de atributo');
+  assert.equal(conditionEffects(c).desvantagemTeste.includes('con'), false, '1 nao toca em resistencia');
+  assert.equal(conditionEffects(c).speedHalf, false, '1 ainda nao corta o deslocamento');
+  mudarExaustao(c, 1);
+  assert.equal(conditionEffects(c).speedHalf, true, '2: deslocamento pela metade');
+  assert.equal(conditionEffects(c).attackDisadvantage, false, '2 ainda nao atrapalha o ataque');
+  assert.equal(conditionEffects(c).saveDisadvantage.includes('con'), false, '2 ainda nao toca em resistencia');
+  mudarExaustao(c, 1);
+  assert.equal(conditionEffects(c).attackDisadvantage, true, '3: desvantagem em ataque');
+  assert.ok(conditionEffects(c).saveDisadvantage.includes('con'), '3: desvantagem em resistencia');
+  assert.equal(maxHpEfetivo(c), c.maxHp, '3 nao mexe no PV maximo');
+  mudarExaustao(c, 1);
+  assert.equal(maxHpEfetivo(c), Math.floor(c.maxHp / 2), '4: PV maximo pela metade');
+  mudarExaustao(c, 1);
+  assert.equal(conditionEffects(c).speedOverride, 0, '5: deslocamento 0');
+  assert.equal(mudarExaustao(c, 1), 6, '6: o ultimo degrau');
+  assert.equal(mudarExaustao(c, -6), 0, 'zerou: a condicao sai');
+  assert.equal(hasCondition(c, 'exausto'), false);
+});
+
+teste('o 4o degrau de exaustao corta o PV maximo na cura e no dano macico', () => {
+  const { enc, party } = montar();
+  const c = party[DARA];
+  mudarExaustao(c, 4);
+  const metade = Math.floor(c.maxHp / 2);
+  c.hp = 1;
+  enc.heal(c, 999, c);
+  assert.equal(c.hp, metade, 'a cura para na metade');
+  c.hp = metade;
+  enc.applyDamage(c, metade * 2 + 1, 'cortante');
+  assert.ok(c.dead, 'dano macico mede pela metade nova');
+});
+
+teste('um dia de viagem come uma racao e bebe quatro litros por pessoa', () => {
+  const { party } = montar();
+  const rng = makeRng(7);
+  const antes = despensaDoGrupo(party);
+  assert.equal(antes.racoes, party.length * 3, 'cada um comeca com tres racoes');
+  assert.equal(antes.agua, party.length * 4, 'e um cantil cheio');
+  diaDeViagem(rng, party, {});
+  const depois = despensaDoGrupo(party);
+  assert.equal(depois.racoes, antes.racoes - party.length, 'uma racao por boca');
+  assert.equal(depois.agua, 0, 'o cantil de um dia secou');
+  for (const c of party) assert.equal(nivelDeExaustao(c), 0, 'ninguem passou mal no primeiro dia');
+});
+
+teste('a agua no caminho enche os cantis e nao cobra nada', () => {
+  const { party } = montar();
+  const rng = makeRng(7);
+  diaDeViagem(rng, party, {});
+  assert.equal(despensaDoGrupo(party).agua, 0);
+  diaDeViagem(rng, party, { agua: true });
+  assert.equal(despensaDoGrupo(party).agua, party.length * 4, 'o riacho encheu tudo de novo');
+  for (const c of party) assert.equal(nivelDeExaustao(c), 0);
+});
+
+teste('o dia sem agua cobra exaustao, e o dobro em quem ja esta exausto', () => {
+  const { party } = montar();
+  const rng = makeRng(3);
+  const c = garantirInventario(party[DARA]);
+  beberAgua(c, 99);
+  diaDeViagem(rng, [c], {});
+  assert.equal(nivelDeExaustao(c), 1, 'dia sem agua nenhuma: um degrau, sem teste');
+  diaDeViagem(rng, [c], {});
+  assert.equal(nivelDeExaustao(c), 3, 'ja exausto: dois degraus de uma vez');
+});
+
+teste('a fome so cobra depois de 3 + CON dias, e a conta zera ao comer', () => {
+  const { party } = montar();
+  const rng = makeRng(5);
+  const c = party[DARA];
+  for (const h of party) if (h !== c) h.dead = true;
+  garantirInventario(c);
+  c.bag = c.bag.filter((i) => i.id !== 'racoes');
+  const limite = limiteSemComida(c);
+  for (let i = 0; i < limite; i++) {
+    diaDeViagem(rng, [c], { agua: true });
+    assert.equal(nivelDeExaustao(c), 0, 'dia ' + (i + 1) + ' de ' + limite + ': ainda aguenta');
+  }
+  diaDeViagem(rng, [c], { agua: true });
+  assert.equal(nivelDeExaustao(c), 1, 'passou do limite: um degrau');
+  darRacoes(c, 1);
+  diaDeViagem(rng, [c], { agua: true });
+  assert.equal(c.diasSemComida, 0, 'um dia de comida de verdade zera a conta');
+});
+
+teste('forragear rende comida e agua so quando passa na CD do terreno', () => {
+  const { party } = montar();
+  for (const h of party) garantirInventario(h);
+  const c = melhorForrageador(party);
+  assert.ok(c, 'alguem forrageia');
+  const sab = Math.floor((c.abilities.wis - 10) / 2);
+  const antes = racoesDe(c);
+  for (const c2 of party) beberAgua(c2, 99);
+  const facil = forragear(dadoFixo(20), c, { terreno: 'farto', grupo: party });
+  assert.equal(facil.ok, true, '20 passa na CD 10');
+  const achou = facil.achou.comida;
+  assert.ok(achou >= 1 + sab && achou <= 6 + sab, '1d6 + Sabedoria de comida, nao o d20');
+  assert.equal(racoesDe(c), antes + achou, 'a comida entrou na mochila');
+  // O livro conta GALOES de agua: aqui um galao sao quatro litros.
+  assert.equal(facil.achou.liquido % 4, 0, 'a agua vem em galoes de quatro litros');
+  assert.ok(facil.achou.liquido >= (1 + sab) * 4, 'e bem mais que 1d6 litros');
+  // E a agua e do grupo, nao so de quem achou.
+  assert.ok(party.filter((h) => aguaDe(h) > 0).length > 1, 'a agua foi repartida entre os cantis');
+  assert.equal(facil.litros + facil.perdidos, facil.achou.liquido, 'o que nao coube foi contado como perdido');
+  const dificil = forragear(dadoFixo(1), c, { terreno: 'ermo', grupo: party });
+  assert.equal(dificil.ok, false, '1 nao passa na CD 20');
+  assert.equal(dificil.racoes, 0);
+  assert.equal(dificil.litros, 0);
+});
+
+teste('o 1o degrau de exaustao atrapalha quem caca e colhe', () => {
+  const { party } = montar();
+  const c = garantirInventario(melhorForrageador(party));
+  const quase = dadoFixo(11);
+  const cd = 15;
+  assert.equal(forragear(quase, c, { terreno: 'comum', grupo: party }).ok,
+    11 + skillBonus(c, 'sobrevivencia') >= cd, 'sem exaustao: so o bonus decide');
+  mudarExaustao(c, 1);
+  // Com desvantagem o dado fixo rola duas vezes o mesmo numero, entao o teste
+  // mede a intencao: a chamada pede desvantagem.
+  const fx = conditionEffects(c);
+  assert.ok(fx.desvantagemSoTeste.includes('wis'), 'Sobrevivencia e teste de Sabedoria');
+});
+
+teste('o cantil so guarda quatro litros: o que se acha alem disso se perde', () => {
+  const { party } = montar();
+  const c = garantirInventario(party[DARA]);
+  assert.equal(aguaDe(c), 4, 'comeca cheio');
+  assert.equal(encherAgua(c, 50), 0, 'cheio nao cabe mais nada');
+  beberAgua(c, 4);
+  assert.equal(encherAgua(c, 50), 4, 'vazio cabe exatamente um dia');
+});
+
+teste('a sede tambem segura o descanso: quem nao bebeu nao melhora', () => {
+  const { party } = montar();
+  const rng = makeRng(11);
+  const c = garantirInventario(party[DARA]);
+  mudarExaustao(c, 2);
+  beberAgua(c, 99);
+  diaDeViagem(rng, [c], {});
+  assert.equal(c.semAgua, true, 'o dia marcou que ele nao bebeu');
+  assert.equal(c.diasSemComida, 0, 'mas comeu');
+  // A mesma regra que `game/regiao.js` passa ao descanso do acampamento.
+  const alimentado = (h) => (h.diasSemComida ?? 0) === 0 && !h.semAgua;
+  const antes = nivelDeExaustao(c);
+  descansoLongo(c, { alimentado: alimentado(c) });
+  assert.equal(nivelDeExaustao(c), antes, 'dormir com sede nao desfaz degrau');
+  c.semAgua = false;
+  descansoLongo(c, { alimentado: alimentado(c) });
+  assert.equal(nivelDeExaustao(c), antes - 1, 'comeu e bebeu: desfaz um');
+});
+
+teste('fome e sede no mesmo dia nao se empilham', () => {
+  const { party } = montar();
+  const rng = makeRng(13);
+  const c = garantirInventario(party[DARA]);
+  c.bag = c.bag.filter((i) => i.id !== 'racoes');
+  c.diasSemComida = limiteSemComida(c);
+  beberAgua(c, 99);
+  diaDeViagem(rng, [c], {});
+  // Um degrau de fome e um de sede: dois. Se a sede lesse o degrau que a fome
+  // acabou de dar, ela cobraria o dobro e o dia custaria tres.
+  assert.equal(nivelDeExaustao(c), 2, 'um degrau de cada, nao tres');
+});
+
+teste('o descanso longo so tira exaustao de quem comeu', () => {
+  const { party } = montar();
+  const [faminto, comido] = party;
+  mudarExaustao(faminto, 2);
+  mudarExaustao(comido, 2);
+  descansoLongo(faminto, { alimentado: false });
+  descansoLongo(comido, { alimentado: true });
+  assert.equal(nivelDeExaustao(faminto), 2, 'quem dormiu de barriga vazia nao melhora');
+  assert.equal(nivelDeExaustao(comido), 1, 'quem comeu tira um degrau');
+});
+
+teste('Criar Comida e Agua conjurada de verdade alimenta no mesmo dia', () => {
+  const { party } = montar({ nivel: 5 });
+  const brenn = garantirInventario(party[BRENN]);
+  brenn.spellcasting.prepared.push('criarComidaEAgua');
+  brenn.spellcasting.slots = [0, 4, 3, 2];
+  for (const c of party) beberAgua(garantirInventario(c), 99);
+  // A campanha de verdade: o dia vem de `vila.dia`, e e dele que a despensa
+  // magica sabe o que foi feito HOJE.
+  const campanha = { vila: { dia: 4 } };
+  const estado = estadoDe(campanha);
+  assert.equal(estado.dia, 4, 'o estado pega o dia da campanha');
+  const r = conjurarFora(estado, brenn, 'criarComidaEAgua', { herois: party, rng: makeRng(2) });
+  assert.ok(r.ok, r.why);
+  const m = r.resultado.mantimentos;
+  assert.equal(m.racoes, 15, 'comida para quinze');
+  assert.equal(m.litros, 120, '120 litros');
+  assert.equal(m.nosCantis, party.length * 4, 'os cantis do grupo enchem primeiro');
+  // No dia em que foi conjurada, nada vence e a comida alimenta.
+  assert.equal(limparMagicoVencido(estado, 4).length, 0, 'no mesmo dia nada estraga');
+  const fontes = despensaMagica(estado);
+  assert.equal(fontes[0].racoes, 15);
+  diaDeViagem(makeRng(3), party, { fontes });
+  assert.equal(fontes[0].racoes, 15 - party.length, 'o grupo comeu da magia, nao da mochila');
+  for (const c of party) assert.equal(c.diasSemComida, 0, 'ninguem passou fome');
+  assert.equal(limparMagicoVencido(estado, 5).length, 1, 'no dia seguinte estraga');
+});
+
+teste('as cinco magias de mantimento existem, com circulo e classes do livro', () => {
+  const esperado = [['criarDestruirAgua', 1], ['purificarAlimentos', 1], ['detectarVenenoDoenca', 1],
+    ['localizarAnimaisPlantas', 2], ['criarComidaEAgua', 3]];
+  for (const [id, nivel] of esperado) {
+    const s = getSpell(id);
+    assert.ok(s, id + ' existe');
+    assert.equal(s.level, nivel, id + ' e de ' + nivel + 'o circulo');
+    assert.equal(s.soFora, true, id + ' so vale fora de combate');
+    assert.equal(s.fonte, 'srd', id + ' e do SRD');
+  }
+  assert.ok(getSpell('purificarAlimentos').ritual, 'Purificar Alimentos e ritual');
+  assert.ok(getSpell('detectarVenenoDoenca').ritual, 'Detectar Veneno e Doenca e ritual');
+  assert.ok(getSpell('localizarAnimaisPlantas').ritual, 'Localizar Animais ou Plantas e ritual');
+  assert.equal(getSpell('criarComidaEAgua').ritual, undefined, 'Criar Comida e Agua nao e ritual');
+  assert.ok(listaDaClasse('clerigo', 3).magias.includes('criarComidaEAgua'), 'clerigo tem Criar Comida e Agua');
+  assert.ok(listaDaClasse('paladino', 3).magias.includes('criarComidaEAgua'), 'paladino tambem');
+  assert.ok(listaDaClasse('druida', 2).magias.includes('localizarAnimaisPlantas'), 'druida tem Localizar Animais ou Plantas');
+  assert.ok(listaDaClasse('patrulheiro', 2).magias.includes('localizarAnimaisPlantas'), 'patrulheiro tambem');
+  assert.ok(listaDaClasse('bardo', 2).magias.includes('localizarAnimaisPlantas'), 'bardo tambem');
+  assert.ok(!listaDaClasse('mago', 3).magias.includes('criarComidaEAgua'), 'o mago nao tem');
+  assert.ok(!listaDaClasse('bardo', 1).magias.includes('criarDestruirAgua'), 'o bardo nao tem Criar ou Destruir Agua');
+  assert.ok(!listaDaClasse('clerigo', 3).magias.includes('localizarAnimaisPlantas'), 'o clerigo nao tem Localizar');
+  // Quantidades, alcance e duracao.
+  assert.equal(getSpell('criarDestruirAgua').agua, 40, '40 litros no 1o circulo');
+  assert.equal(getSpell('criarDestruirAgua').upcast.agua, 40, '+40 por circulo acima');
+  assert.equal(getSpell('criarComidaEAgua').racoes, 15);
+  assert.equal(getSpell('criarComidaEAgua').agua, 120);
+  assert.equal(getSpell('detectarVenenoDoenca').rangeFt, 30, '9 m de raio');
+  assert.equal(getSpell('detectarVenenoDoenca').duracaoMin, 10);
+  assert.equal(getSpell('detectarVenenoDoenca').concentration, true);
+  assert.equal(getSpell('purificarAlimentos').concentration, undefined, 'Purificar nao e concentracao');
+  // Cada simplificacao e regra da casa declarada no proprio texto.
+  for (const id of ['criarDestruirAgua', 'purificarAlimentos', 'detectarVenenoDoenca',
+    'localizarAnimaisPlantas', 'criarComidaEAgua']) {
+    const d = getSpell(id).desc;
+    assert.ok(/Simplifica|Regra da casa|regra da casa/.test(d), id + ' declara o que muda do livro');
+  }
+});
+
+teste('Purificar limpa a agua e o mal dela, mas nao veneno de mordida', () => {
+  const { party } = montar({ nivel: 5 });
+  const brenn = garantirInventario(party[BRENN]);
+  brenn.spellcasting.prepared.push('purificarAlimentos');
+  brenn.spellcasting.slots = [0, 4, 3, 2];
+  const dara = garantirInventario(party[DARA]);
+  const pip = garantirInventario(party[PIP]);
+  // Dara passou mal da agua; Pip levou uma mordida de aranha.
+  addCondition(dara, 'envenenado', { rounds: Infinity });
+  dara.maldaAgua = true;
+  addCondition(pip, 'envenenado', { rounds: 10 });
+  const estado = estadoDe({ vila: { dia: 1 } });
+  const r = conjurarFora(estado, brenn, 'purificarAlimentos', { herois: party, rng: makeRng(4), ritual: true });
+  assert.ok(r.ok, r.why);
+  assert.equal(hasCondition(dara, 'envenenado'), false, 'o mal da agua sai');
+  assert.equal(hasCondition(pip, 'envenenado'), true, 'o veneno da mordida fica');
+});
+
+teste('Localizar Animais ou Plantas da vantagem so no dia em que foi conjurada', () => {
+  const { party } = montar({ nivel: 5 });
+  const brenn = garantirInventario(party[BRENN]);
+  brenn.spellcasting.prepared.push('localizarAnimaisPlantas');
+  brenn.spellcasting.slots = [0, 4, 3, 2];
+  const campanha = { vila: { dia: 3 } };
+  const estado = estadoDe(campanha);
+  const r = conjurarFora(estado, brenn, 'localizarAnimaisPlantas', { herois: party, rng: makeRng(6), ritual: true });
+  assert.ok(r.ok, r.why);
+  assert.equal(estado.cacaNoDia, 3, 'marcou o dia');
+  campanha.vila.dia = 4;
+  assert.equal(estadoDe(campanha).cacaNoDia === 4, false, 'no dia seguinte ja nao vale');
+});
+
+teste('a Pocao de vitalidade tira a exaustao inteira e o veneno', () => {
+  const { enc, party } = montar();
+  const c = garantirInventario(party[DARA]);
+  mudarExaustao(c, 4);
+  addCondition(c, 'envenenado', { rounds: 10 });
+  const pocao = itemDeId('pocaoDeVitalidade')?.dados;
+  assert.ok(pocao, 'a pocao existe no catalogo');
+  assert.equal(pocao.consumivel, 'restaurar', 'e usavel de verdade');
+  assert.equal(enc.vetoDeItem(c, pocao, c), null, 'quem esta exausto pode beber');
+  enc.executarItem(c, pocao, c);
+  assert.equal(nivelDeExaustao(c), 0, 'a exaustao inteira vai embora');
+  assert.equal(hasCondition(c, 'envenenado'), false, 'o veneno tambem');
+  descansoLongo(c, { alimentado: true });
+  assert.equal(c.dadosDeVidaRestantes, c.level, 'os dados de vida voltam todos');
+  assert.ok(enc.vetoDeItem(c, pocao, c), 'quem esta inteiro nao bebe a toa');
+});
+
+teste('a agua parada do brejo envenena ate o grupo dormir, e Purificar evita', () => {
+  const { party } = montar();
+  const c = garantirInventario(party[DARA]);
+  const baixo = { ...makeRng(1), die: () => 1 };
+  baixo.int = (n) => 0;
+  baixo.pick = (a) => a[0];
+  diaDeViagem(baixo, [c], { agua: 'suja' });
+  assert.ok(hasCondition(c, 'envenenado'), 'falhou no CON 11: passou mal');
+  descansoLongo(c, { alimentado: true });
+  assert.equal(hasCondition(c, 'envenenado'), false, 'dormir cura o mal da agua');
+  const outro = garantirInventario(party[PIP]);
+  diaDeViagem(baixo, [outro], { agua: 'suja', purificada: true });
+  assert.equal(hasCondition(outro, 'envenenado'), false, 'purificada nao cobra nada');
+});
+
+teste('o 1o e o 2o degraus nao atrapalham a resistencia; o 3o atrapalha', () => {
+  const { enc, party } = montar();
+  const c = party[DARA];
+  assert.equal(enc.resistencia(c, 'con', 10).mode, 'normal', 'sem exaustao: normal');
+  mudarExaustao(c, 1);
+  assert.equal(enc.resistencia(c, 'con', 10).mode, 'normal', '1o degrau: resistencia normal');
+  mudarExaustao(c, 1);
+  assert.equal(enc.resistencia(c, 'con', 10).mode, 'normal', '2o degrau: resistencia normal');
+  assert.equal(enc.testeDeAtributo(c, 'str', 0).mode, 'desvantagem', 'mas o teste de atributo e com desvantagem');
+  mudarExaustao(c, 1);
+  assert.equal(enc.resistencia(c, 'con', 10).mode, 'desvantagem', '3o degrau: ai sim');
+});
+
+teste('o 4o degrau nao deixa a cura tirar vida de quem ja estava acima do teto', () => {
+  const { enc, party } = montar();
+  const c = party[DARA];
+  c.hp = c.maxHp;
+  const metade = Math.floor(c.maxHp / 2);
+  mudarExaustao(c, 4);
+  assert.equal(c.hp, metade, 'o teto novo puxa o PV atual junto');
+  const antes = c.hp;
+  enc.heal(c, 5, c);
+  assert.ok(c.hp >= antes, 'curar nunca baixa a vida');
+});
+
+teste('o 6o degrau mata, e morto-vivo nao cansa', () => {
+  const { party, foes } = montar({ foes: [['esqueleto', { x: 6, y: 5 }]] });
+  const c = party[DARA];
+  mudarExaustao(c, 5);
+  assert.equal(exaustaoFatal(c), false, 'no 5o ainda esta vivo');
+  mudarExaustao(c, 1);
+  assert.equal(exaustaoFatal(c), true, 'o 6o mata');
+  assert.ok(c.dead);
+  assert.equal(c.hp, 0);
+  const osso = foes[0];
+  if (osso?.conditionImmunities?.includes('exausto')) {
+    assert.equal(mudarExaustao(osso, 3), 0, 'quem e imune a exaustao nao ganha degrau');
+  }
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

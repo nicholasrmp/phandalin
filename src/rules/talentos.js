@@ -17,6 +17,7 @@
 // cada encontro — é como se o grupo tivesse descansado antes de cada luta.
 
 import { abilityMod, proficiencyBonus } from './abilities.js';
+import { maxHpEfetivo } from './conditions.js';
 import { CLASSES } from './classes/index.js';
 import { roll } from '../core/dice.js';
 
@@ -187,7 +188,7 @@ const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
 export function vetoDoMedico(curandeiro, alvo) {
   if (!temTalento(curandeiro, 'curandeiro')) return undefined;   // regra normal do kit
   if (alvo.dead) return `${alvo.name} já morreu`;
-  if (alvo.hp >= alvo.maxHp) return `${alvo.name} está com a vida cheia`;
+  if (alvo.hp >= maxHpEfetivo(alvo)) return `${alvo.name} está com a vida cheia`;
   if (dadosDeVida(alvo) <= 0) return `${alvo.name} não tem mais dado de vida para gastar`;
   return null;
 }

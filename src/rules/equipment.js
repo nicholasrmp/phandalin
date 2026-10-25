@@ -238,6 +238,9 @@ function bagInicial(actor) {
   bag.push({ id: 'pocaoDeCura', tipo: 'item', qtd: 2 });
   bag.push({ id: 'tocha', tipo: 'item', qtd: 2 });
   bag.push({ id: 'racoes', tipo: 'item', qtd: 3 });
+  // O cantil guarda quatro litros, o dia inteiro de uma pessoa: sai cheio, e
+  // `rules/mantimentos.js` esvazia e enche ao longo da estrada.
+  bag.push({ id: 'cantil', tipo: 'item', qtd: 1, litros: 4 });
   // Quem tem a perícia é quem carrega a ferramenta dela: o kit de cura na mão
   // de quem não sabe Medicina é peso morto.
   if (actor.skills?.includes('medicina')) bag.push({ id: 'kitDeCura', tipo: 'item', qtd: 1 });

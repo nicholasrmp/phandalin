@@ -17,7 +17,7 @@ import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc, saveBonus, abilityMod } from '../rules/abilities.js';
 import { iconeDaArma, iconeDeMagia } from '../art/icons.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
-import { hasCondition } from '../rules/conditions.js';
+import { hasCondition, maxHpEfetivo } from '../rules/conditions.js';
 import { distanceFt, isAdjacent } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, visaoNoEscuro } from '../rules/luz.js';
 import { opcoesDeMagia, opcoesDoHeroi, ctxDe } from './magias-fora.js';
@@ -67,7 +67,7 @@ const temTocha = (c) => (c.bag ?? []).some((i) => i.id === 'tocha' && i.qtd > 0)
 export function estadoAparente(c) {
   if (c.dead) return 'morto';
   if (hasCondition(c, 'inconsciente')) return 'caído, inconsciente';
-  const f = c.hp / c.maxHp;
+  const f = c.hp / maxHpEfetivo(c);
   if (f >= 1) return 'ileso';
   if (f > 0.66) return 'arranhado';
   if (f > 0.33) return 'ferido';
@@ -133,7 +133,7 @@ export function opcoesDaCasa(app, tile) {
     // número; do inimigo, só como a ferida parece.
     const alvo = {
       look: occ.look, lado: inimigo ? 'inimigo' : occ.side === 'party' ? 'aliado' : 'neutro',
-      vida: { atual: Math.max(0, occ.hp), max: occ.maxHp, numero: !inimigo },
+      vida: { atual: Math.max(0, occ.hp), max: maxHpEfetivo(occ), numero: !inimigo },
       estado: occ.dead ? 'morto' : estadoAparente(occ),
       etiquetas: [occ.className ?? occ.raca ?? null, `CA ${occ.ac}`,
         c && c !== occ ? `${distanceFt(c.pos, occ.pos)} pés de ${c.name}` : null].filter(Boolean),
