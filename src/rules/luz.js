@@ -106,14 +106,25 @@ export function fontesDeLuz(enc) {
   return fontes;
 }
 
-/** O nível de luz numa casa, com as fontes já calculadas. */
+/**
+ * O nível de luz numa casa, com as fontes já calculadas.
+ *
+ * A luz PARA na parede. Antes a conta era só distância, e uma tocha acendia a
+ * sala do lado através da rocha: pondo braseiros nos cômodos da Mansão
+ * Tresendar, o vigia da caverna passou a ser visto de 106 casas em vez de 1,
+ * com pedra maciça no caminho. Agora cada fonte precisa enxergar a casa.
+ */
 export function nivelDeLuz(field, x, y, fontes) {
   let nivel = field.luz ? field.luz[y * field.w + x] : CLARO;
   for (const f of fontes) {
     if (nivel === CLARO) break;
     const d = distanceFt(f.pos, { x, y });
+    if (d > f.claro + f.penumbra) continue;
+    // `field` nem sempre é um `Battlefield` cheio (há chamada com campo de
+    // teste): sem a função, vale a conta antiga, só de distância.
+    if (d > 0 && field.hasLineOfSight && !field.hasLineOfSight(f.pos, { x, y })) continue;
     if (d <= f.claro) nivel = CLARO;
-    else if (d <= f.claro + f.penumbra) nivel = Math.max(nivel, PENUMBRA);
+    else nivel = Math.max(nivel, PENUMBRA);
   }
   return nivel;
 }

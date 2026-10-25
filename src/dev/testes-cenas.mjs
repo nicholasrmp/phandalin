@@ -21,7 +21,7 @@ import { averageOf } from '../core/dice.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { guardar, totalEmCobre, cobrar } from '../game/comercio.js';
 import { Battlefield, distanceFt } from '../core/grid.js';
-import { visaoNoEscuro } from '../rules/luz.js';
+import { visaoNoEscuro, nivelDeLuz } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
 import { skillBonus } from '../rules/abilities.js';
 import { makeRng } from '../core/rng.js';
@@ -304,6 +304,25 @@ teste('quem o guardião ignora não entra na lista de alvos dele', () => {
   const alvos = enc.enemiesOf(esq);
   assert.equal(alvos.length, party.length - 1);
   assert.ok(!alvos.includes(party[0]), 'quem veste o manto não é alvo');
+});
+
+teste('a luz do mapa para na parede', () => {
+  // Medido nos mapas reais: sem esta regra, 91 casas escuras do castelo e 117
+  // da mansão acendiam através de pedra maciça.
+  const m = mapaDo('mansao');
+  const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+  f.luz = new Uint8Array(f.w * f.h);
+  m.luz.forEach((linha, y) => { for (let x = 0; x < f.w; x++) f.luz[y * f.w + x] = Number(linha[x] ?? 0); });
+  const fontes = (m.luzes ?? []).map((l) => ({ ...l }));
+  assert.ok(fontes.length >= 4, 'a mansão tem braseiros');
+  let vazou = 0;
+  for (let y = 0; y < f.h; y++) {
+    for (let x = 0; x < f.w; x++) {
+      if (f.blocksMove(x, y) || f.luz[y * f.w + x] > 0) continue;
+      if (nivelDeLuz(f, x, y, fontes) > 0) vazou += 1;
+    }
+  }
+  assert.equal(vazou, 0, `${vazou} casas escuras da mansão acenderam através da rocha`);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);
