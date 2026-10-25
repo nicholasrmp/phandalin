@@ -268,7 +268,11 @@ export function subirNivel(c, escolhas = {}) {
   // Ataque Furtivo, dano da Fúria, dado de Artes Marciais.
   for (const [chave, fn] of Object.entries({ ...def.escalas, ...sub?.escalas })) c[chave] = fn(nivel, c);
 
-  // RECURSOS com cargas: o máximo acompanha o nível; ao subir, enchem.
+  // RECURSOS com cargas: o máximo acompanha o nível, e subir SOMA o que o
+  // nível novo acrescenta — não devolve o que já foi gasto. Encher tudo fazia
+  // do nível-up um descanso longo de graça, e era isso que escondia a
+  // dificuldade das masmorras: medido na mansão, a cadeia fechava em 88-95%
+  // com o enchimento e em 75-86% sem ele.
   for (const [chave, fn] of Object.entries({ ...def.recursos, ...sub?.recursos })) {
     const max = fn(nivel, c);
     if (!max) continue;
@@ -281,8 +285,12 @@ export function subirNivel(c, escolhas = {}) {
       delete c.resources[chave];
       continue;
     }
+    const maxAntes = c.resourcesMax[chave];
     c.resourcesMax[chave] = max;
-    c.resources[chave] = max;
+    // Na CRIAÇÃO (sem máximo anterior) o personagem nasce cheio.
+    c.resources[chave] = maxAntes == null
+      ? max
+      : Math.min(max, (c.resources[chave] ?? 0) + Math.max(0, max - maxAntes));
   }
 
   // CONJURAÇÃO.
@@ -294,8 +302,19 @@ export function subirNivel(c, escolhas = {}) {
     c.spellcasting.ability = conj.atributo;
     c.spellcasting.tipo = conj.tipo;
     const espacos = espacosDeMagia(conj.tipo, nivel);
+    const maxAntes = c.spellcasting.slotsMax;
     c.spellcasting.slotsMax = espacos.slice();
-    c.spellcasting.slots = espacos.slice();
+    // Mesma regra dos recursos: subir de nível acrescenta os espaços NOVOS e
+    // não ressuscita os gastos. O livro devolve espaço no descanso longo, não
+    // ao subir.
+    if (!maxAntes) {
+      c.spellcasting.slots = espacos.slice();
+    } else {
+      const atuais = c.spellcasting.slots ?? [];
+      c.spellcasting.slots = espacos.map((m, i) => Math.min(
+        m, (atuais[i] ?? 0) + Math.max(0, m - (maxAntes[i] ?? 0)),
+      ));
+    }
     // A subclasse pode somar: o Círculo da Terra dá um truque a mais, o
     // Colégio do Conhecimento dá duas magias fora do limite no 6º nível.
     c.spellcasting.truquesConhecidos = (conj.truques ? porNivel(conj.truques, nivel) : 0)
