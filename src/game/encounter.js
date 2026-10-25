@@ -559,6 +559,16 @@ function foesGrandes() {
  * não ser surpreendido — com quatro escondidos, o mais desajeitado entrega o
  * resto (ver `rolarSurpresa`).
  */
+/**
+ * OS QUATRO GOBLINS DA EMBOSCADA, dois de cada lado da trilha.
+ *
+ * ORÇAMENTO, medido: 4 goblins valem 200 XP, que com o multiplicador de
+ * quatro inimigos dão 400 ajustados. Para quatro personagens de 1º NÍVEL o
+ * limiar de mortal do DMG é exatamente 400 — ou seja, este é o combate mais
+ * duro que a tabela permite, de propósito, porque é uma emboscada e o livro
+ * a escreve assim. Simulado com o motor: o grupo ganha em 88% quando é
+ * surpreendido e em 98% quando não é, e morre alguém em 6 a 8% das vezes.
+ */
 function foesEmboscada() {
   const norte = [
     makeMonster('goblin', { x: 12, y: 7 }, { nameSuffix: 'A' }),

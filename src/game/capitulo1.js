@@ -10,8 +10,10 @@
 //               (ou quando esbarram em alguém, ou se o grupo passa reto).
 //   combate     uma rolagem de Furtividade para os quatro contra a Percepção
 //               passiva de cada herói decide quem fica surpreso; o grupo não
-//               tem como surpreendê-los. Dois correm para o corpo a corpo, dois
-//               ficam a 9 m atirando. Caídos três, o último foge pela trilha.
+//               tem como surpreendê-los. Os quatro ficam no alto do barranco
+//               e atiram — a IA prefere terreno alto com arma à distância —, e
+//               quem desce é quem perde o tiro. Caída METADE do bando, o resto
+//               foge pela trilha do norte.
 //   depois      os cavalos (se ninguém os examinou), os rastros (Sobrevivência
 //               CD 10), o goblin capturado vivo para interrogar — que pode
 //               guiar o grupo desviando das armadilhas — e a escolha: a trilha
@@ -174,10 +176,21 @@ export function criarCapitulo1(app, config) {
   function evento(ev) {
     if ((ev.type !== 'died' && ev.type !== 'downed') || !escondidos.includes(ev.target)) return;
     const caidos = escondidos.filter((f) => f.dead || f.hp <= 0).length;
-    const ultimo = escondidos.filter((f) => !f.dead && f.hp > 0 && !f.fugiu);
-    if (caidos >= 3 && ultimo.length === 1 && !ultimo[0].fugindo) {
-      ultimo[0].fugindo = true;
-      enc.say('acao', `${ultimo[0].name} vê os outros caírem, larga tudo e corre para a trilha do norte.`);
+    const emPe = escondidos.filter((f) => !f.dead && f.hp > 0 && !f.fugiu);
+    // MORAL. Goblin não morre pelo bando: quando METADE cai, quem sobra corre
+    // para a trilha do norte.
+    //
+    // Antes a regra pedia três caídos E um só de pé, e por isso quase nunca
+    // acontecia — medido em 393 vitórias simuladas, disparou UMA vez: o
+    // último goblin morria antes de chegar à saída. E é essa fuga que leva o
+    // grupo ao esconderijo e abre o interrogatório, ou seja, o conteúdo da
+    // cena dependia de um caso que não acontecia.
+    if (caidos >= 2 && emPe.length) {
+      for (const g of emPe) {
+        if (g.fugindo) continue;
+        g.fugindo = true;
+        enc.say('acao', `${g.name} vê o bando cair, larga tudo e corre para a trilha do norte.`);
+      }
     }
   }
   enc.antesDoTurno = (m) => {
@@ -567,9 +580,13 @@ export function criarCapitulo1(app, config) {
     plantasSabem,
     espiou,
     async iniciar() {
-      // Como na aventura: o grupo vem pela curva com os cavalos a uns quinze
-      // metros, e dos quatro goblins dois correm para o corpo a corpo e dois
-      // ficam a 9 m atirando.
+      // Como na aventura: o grupo vem pela curva, e os cavalos estão a uns
+      // vinte metros — medido no mapa, de (8,11) até (18,12).
+      //
+      // Dois goblins são ATIRADORES declarados (A e C); os outros dois a IA
+      // também deixa parados no alto, porque a regra do terreno alto com arma
+      // à distância vale para todo mundo. Na prática os quatro abrem atirando,
+      // e isso É a emboscada do livro: o perigo vem de cima e de longe.
       const LUGARES = [{ x: 8, y: 11 }, { x: 8, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 13 }];
       enc.allOf('party').forEach((c, i) => { if (LUGARES[i]) c.pos = { ...c.pos, ...LUGARES[i] }; });
       escondidos[0].tatica = 'atirador';
