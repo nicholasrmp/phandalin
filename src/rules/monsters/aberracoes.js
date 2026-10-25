@@ -69,7 +69,7 @@ export const ABERRACOES = {
     // O SRD lista mais condições; aqui só entram as que `conditions.js` tem.
     immuneConditions: ['caido', 'amedrontado'],
     traits: ['amorfo', 'escaladaAracnidea', 'divisao'],
-    blurb: 'Tranca o corredor e cobra pedágio em ácido. Lenta demais para perseguir — e se parte em duas se você a cortar.',
+    blurb: 'Tranca o corredor e cobra pedágio em ácido. Lenta demais para perseguir — e cortá-la só a multiplica: cada metade fica um tamanho menor, com metade dos PV e o mesmo pseudópode.',
   },
 
   // O GRICK do Castelo Dentefino (área 8), o bicho de estimação do Lhupo.
@@ -448,7 +448,9 @@ export const TRAITS = {
   },
   divisao: {
     name: 'Divisão',
-    desc: 'Ao sofrer dano cortante ou elétrico com 10+ PV, parte-se em duas, cada metade com metade dos PV.',
+    // "ATINGIDA por", e não "sofre": a gelatina é imune a cortante e elétrico,
+    // e mesmo assim o golpe a parte. O motor executa (`dividir` em combat.js).
+    desc: 'Sendo Média ou maior e com 10+ PV, ao ser atingida por dano cortante ou elétrico parte-se em duas. Cada metade fica com metade dos PV e um tamanho menor.',
   },
 
   // --- doppelganger (SRD) ---

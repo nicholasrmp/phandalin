@@ -80,3 +80,13 @@ python src/dev/limpar-teia-aranha.py
 # da refacao (`anim-sul-novo`, so as fileiras novas da segunda leva)
 N=$R/nezznar-dcf083b3
 python src/dev/importar-pixellab.py --fonte $N/anim --chave nezznar --nome nezznar --queda-de $N/anim-sul-novo --ataque-de south=$N/anim-sul-novo:1,2 | grep -E "KB" || true
+# a gelatina ocre: a tira e montada aqui (`gelatina-tira.py`), nao girada pelo
+# PixelLab, e o andar usa so os quadros baixos (`andar` no perfil)
+python src/dev/gelatina-tira.py
+python src/dev/importar-pixellab.py --fonte $R/gelatinaOcre-38071cf6/anim --chave gelatinaOcre --nome gelatinaOcre | grep -E "KB" || true
+# o espectro: a vista sul veio do OpenArt (reducao em duas partes), e a pose
+# de chao e o quadro 4 da queda -- o ultimo ja e ar vazio (`quadro_queda`)
+python src/dev/importar-pixellab.py --fonte $R/espectro-04d70e89/anim --chave espectro --nome espectro | grep -E "KB" || true
+# a aparicao (Mormesk): mesma receita do espectro, com a pose de chao no
+# quadro 4 da queda
+python src/dev/importar-pixellab.py --fonte $R/wraith-72e86cb5/anim --chave wraith --nome wraith | grep -E "KB" || true

@@ -1590,6 +1590,124 @@ DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
 
 LIMITES = {'description': 2000, 'edit_description': 1000}
 
+# O WRAITH (Mormesk, a aparicao da Caverna do Eco das Ondas). A VISTA SUL
+# APROVADA PELO DONO veio do `imagem-pixellab.py`, a rota de UMA imagem: a
+# primeira tentativa virou um cavaleiro fantasma de elmo polido e dourado nos
+# bracos, e a imagem que o dono mandou e o oposto -- carvao e cinza, coroa de
+# espinhos, cara virada um buraco com dois olhos amarelos. Julgar o desenho
+# por 1 geracao, e so entao pagar o giro, e o que essa rota resolve.
+PERSONAGENS['wraith'] = {
+    'rota': '/create-character-v3',
+    'referencia': '_referencias/pixellab/wraith-ref/sul.png',
+    'corpo': {
+        'name': 'Wraith',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'enhance_prompt': False,
+        'description': (
+            'A wraith: a tall figure of dark grey and black smoke, a thin crown of '
+            'crooked spikes on its head, the face a black hollow with two small '
+            'glowing yellow eyes, two very long thin arms with long claws, and NO '
+            'legs -- the body trails away downward into ragged smoke. Charcoal grey '
+            'and black only, no colour except the yellow eyes. NEGATIVE: armour, '
+            'metal shine, gold, helmet visor, cloak, robe, legs, feet, weapon.'
+        ),
+    },
+}
+
+# O ESPECTRO (capitulo 4: a Caverna do Eco das Ondas). Medio, quadro de 64.
+# Pelas duas imagens oficiais que o dono mandou, descritas aqui em texto: um
+# morto-vivo de VIOLETA LUMINOSO, cara de caveira gritando, cabelo branco em
+# filamentos abertos em coroa, bracos magros dobrados longe do corpo com
+# dedos em garra, e da cintura para baixo SEM PERNAS -- o corpo se desfaz num
+# sino de nevoa que alarga e nao encosta no chao. As cores sao as do look
+# `specter` (`src/art/looks/mortosvivos.js`), e a descricao da silhueta de la
+# e a mesma daqui. O sprite sai OPACO; quem o faz translucido no tabuleiro e
+# o motor (`incorporeo` no `board.js`), porque pixel art nao tem meio-alfa.
+PERSONAGENS['espectro'] = {
+    'rota': '/create-character-v3',
+    # A VISTA SUL APROVADA PELO DONO. A primeira leva so de texto
+    # (`espectro-ff26541c`) foi recusada -- "parece um esqueleto de peruca e
+    # de saia": o modelo desenhou tres pecas fechadas (tronco com costelas,
+    # cabelo de contorno proprio, saia de lobulos) quando o espectro e UM
+    # vulto de vapor. Duas tentativas baratas pelo `imagem-pixellab.py`
+    # tambem nao prestaram. O OpenArt redesenhou as duas imagens oficiais do
+    # dono e a reducao e em DUAS PARTES
+    # (`_referencias/pixellab/espectro-ref/reduzir3.py`): tronco na escala que
+    # salva o rosto, rastro espremido na vertical. 68 px num quadro de 72 --
+    # mais alto que um humano porque ele flutua acima do chao.
+    'referencia': '_referencias/pixellab/espectro-ref/sul.png',
+    'corpo': {
+        'name': 'Espectro',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'enhance_prompt': False,
+        # Em modo referencia so o texto guia o GIRO: ele diz o que nao pode
+        # voltar a aparecer (costela, saia, pernas) e o que tem de seguir o
+        # corpo em todas as vistas (o rastro de fumaca).
+        'description': (
+            'A pixel art game sprite of a specter: a ghost made entirely of glowing '
+            'violet vapour, floating. A gaunt screaming skull-like face with empty '
+            'glowing eye sockets, pale violet hair streaming up off the head in thin '
+            'flames, a thin hollow chest with NO RIBS, two long thin arms with hooked '
+            'claw fingers, and NO LEGS: below the chest the body frays into ragged '
+            'trailing streamers of smoke of uneven length. NEGATIVE: ribs, skeleton, '
+            'bones, skirt, dress, bell shape, legs, feet, clothes, armour, weapon.'
+        ),
+    },
+}
+
+# A GELATINA OCRE (capitulo 4: a Caverna do Eco das Ondas). Grande, baixa e
+# larga: quadro de 80, como a aranha. Pela imagem oficial que o dono mandou,
+# descrita em texto: uma poca de gosma ocre brilhante, baixa e espalhada, com
+# UM pseudopode erguido num arco e dois fiapos finos do outro lado. Sem rosto,
+# sem olhos, sem membros. Cores do look `gelatinaOcre`.
+# A PRIMEIRA LEVA SO DE TEXTO (`gelatinaOcre-80a82c4a`) saiu um POLVO: cabeca
+# redonda, dois olhos e tentaculos de ventosa. O esqueleto `mannequin` e o
+# unico que existe para quem nao e quadrupede, e ele puxa para uma criatura
+# com cabeca e membros por mais que o texto negue. A saida foi a mesma do
+# grick e do stirge: dar a VISTA SUL pronta e deixar o PixelLab so girar. A
+# vista sul e a imagem oficial que o dono mandou, reduzida a 46 px de altura
+# num quadro de 80 (`_referencias/pixellab/gelatina-ref/reduzir.py`, de graca).
+# A VOLTA 3 (`-1fc7506c`) ainda esticou o toco: o texto nao segura o giro. A
+# tira abaixo e montada aqui (`src/dev/gelatina-tira.py`, de graca) e vai
+# "exatamente como desenhada" -- uma gosma nao tem frente nem costas, entao a
+# mesma figura serve para as oito, espelhada nas tres do oeste.
+PERSONAGENS['gelatinaOcre'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/gelatina-ref/tira.png',
+    'corpo': {
+        'name': 'Gelatina ocre',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 80, 'height': 80},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of an ochre jelly, a big amorphous blob of '
+            'living slime. ' + ESTILO_HEROI +
+            'Slime ramp: ochre yellow-brown, #e8c75a light, #b98a22 mid, #6a4a10 '
+            'deep shadow, with a few pale #f2dd86 glossy highlights on the top of '
+            'the bulges and a darker #4a3208 wet shadow where it meets the ground. '
+            'THE OCHRE JELLY: a low, wide, heavy puddle of thick golden-brown '
+            'slime spread out on the ground, its surface smooth, rounded and '
+            'glossy like honey, with soft lumpy bulges. Drips and runny tongues of '
+            'slime hang off the lower edge. ONE thick PSEUDOPOD rises from the '
+            'back of the mass in a tall curved arc, like a blunt hooked arm, and '
+            'TWO thin slime tendrils rise on the other side. It has NO FACE, NO '
+            'EYES, NO MOUTH, NO HEAD, NO ARMS, NO LEGS and NO BONES: only slime. '
+            'Seen from a slightly high three-quarter view, wider than it is tall. '
+            'Full body in frame. BACKGROUND: plain, empty. No ground, no shadow, '
+            'no scenery, no text. NEGATIVE: anti-aliasing, blur, gradients, '
+            'painted rendering, 3D render, face, eyes, mouth, teeth, arms, hands, '
+            'legs, feet, creature, animal, slug, snail, cube, green slime, cute.'
+        ),
+    },
+}
+
 # O NEZZNAR, a Aranha Negra (capitulo 4: a Caverna do Eco das Ondas). Medio,
 # quadro de 64, do mesmo tamanho da drow. Pelo modelo oficial que o dono
 # mandou, descrito em texto: drow magro de cabelo branco comprido, casaco de

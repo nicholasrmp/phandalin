@@ -515,6 +515,48 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
                         'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
     },
+    # O WRAITH (Mormesk, aprovado pelo dono). Figura CINZA: nao ha pele nem
+    # matiz nenhum para medir, entao o criterio e o do lobo -- qualquer matiz,
+    # saturacao baixa, e um valor minimo que deixa de fora o contorno preto e
+    # a fumaca mais escura. Os olhos amarelos sao poucos pixels e saturados
+    # demais para entrar. `quadro_queda` pelo mesmo motivo do espectro: ele se
+    # desmancha, e o ultimo quadro nao tem mais nada.
+    'wraith': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 0.22, 0.28),
+        'margem': 8, 'quadro_queda': 4,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5],
+                        'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 5],
+                        'west': [3, 5], 'south-west': [3, 5]},
+    },
+    # O ESPECTRO (a vista do OpenArt, aprovada pelo dono). Violeta por inteiro:
+    # o "centro do corpo" e medido pelo proprio violeta (matiz 0,74), com
+    # saturacao minima baixa porque o cabelo e quase branco. `quadro_queda`
+    # existe por causa dele: a morte e um vulto que se desmancha, e o ultimo
+    # quadro nao tem mais nada.
+    'espectro': {
+        'ataque': ['attack-dir'], 'pele': (0.68, 0.80), 'pele_sv': (0.10, 1.0, 0.25),
+        'margem': 8, 'quadro_queda': 4,
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5],
+                        'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 5],
+                        'west': [3, 5], 'south-west': [3, 5]},
+    },
+    # A GELATINA OCRE (a tira montada da imagem do dono). A figura INTEIRA e
+    # da mesma cor, entao o "centro da pele" e o centro da poca: matiz ocre
+    # (0,10-0,15), saturacao alta, qualquer valor acima da sombra do contorno.
+    # Sem `cabeca`: a gelatina nao tem alto nenhum, e contar so os px de cima
+    # pegaria o toco, que e justamente a parte que se mexe.
+    'gelatinaOcre': {
+        'ataque': ['attack-dir'], 'pele': (0.08, 0.17), 'pele_sv': (0.35, 1.0, 0.22),
+        'margem': 8,
+        # O golpe: o toco ERGUIDO e o chicote descendo com os respingos.
+        'quadros': [3, 5],
+        'por_direcao': {'south': [3, 5], 'south-east': [3, 5], 'east': [3, 5],
+                        'north-east': [3, 5], 'north': [3, 5], 'north-west': [3, 4],
+                        'west': [3, 5], 'south-west': [3, 5]},
+        'andar': [0, 1, 1, 0],
+    },
     # O NEZZNAR, a Aranha Negra (aprovado pelo dono). Mago de cajado: o golpe e
     # a bordoada e `conjurar` e o gesto da magia, que o motor usa no lugar do
     # golpe quando ele lanca. A PELE e cinza-ARROXEADA de matiz quase igual ao
@@ -962,6 +1004,14 @@ def main():
     # A MAGIA (`conjurar`), para quem conjura: o gesto proprio do `cast-dir`,
     # CARREGA e SOLTA, que o motor usa nas magias no lugar do golpe. Quem nao
     # tem a animacao conjura com o golpe, como sempre.
+    # O ANDAR, quando os quadros do meio nao servem. Na gelatina o `walk` do
+    # PixelLab faz o toco crescer num talo alto quadro a quadro, em vez de a
+    # massa se arrastar: dos cinco quadros, so os dois primeiros sao a gosma
+    # baixa. `andar` escolhe quais entram e em que ordem, e [0, 1, 1, 0] vira
+    # um pulso que vai e volta -- uma poca que ondula, que e o que ela faz.
+    if 'andar' in perfil:
+        PLANO = [(n, fonte_, perfil['andar'], h) if n == 'walk' else (n, fonte_, q, h)
+                 for n, fonte_, q, h in PLANO]
     if 'conjurar' in perfil:
         PLANO = PLANO + [('conjurar', ('animation', 'cast-dir'), [3, 5], [10, 16])]
         QUADROS_POR_DIRECAO.update({('conjurar', d): q for d, q in perfil['conjurar'].items()})
@@ -1014,7 +1064,12 @@ def main():
     for nome_q, quadro_q in QUEDAS:
         r = porDir_queda.get(nome_q, {}).get('south')
         if r is not None:
-            queda = (r, quadro_q if quadro_q >= 0 else r['frame_count'] - 1)
+            # QUAL QUADRO VIRA A POSE DE CHAO. O padrao e o ULTIMO: um corpo
+            # cai e fica caido. Nao serve para quem se DESMANCHA -- o ultimo
+            # quadro do espectro e o ar vazio, e a figura sumiria do tabuleiro
+            # enquanto ainda esta em jogo a 0 PV. `quadro_queda` escolhe outro.
+            escolha = perfil.get('quadro_queda', quadro_q)
+            queda = (r, escolha if escolha >= 0 else r['frame_count'] - 1)
             print(f'pose de chao: "{nome_q}", quadro {queda[1]}')
             break
     if queda is None:

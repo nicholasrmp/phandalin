@@ -2578,7 +2578,18 @@ export class Board {
       row,
       // O morto esmaece: continua lá para ser visto e saqueado, mas não
       // disputa atenção com quem ainda pode agir.
-      alpha: eter ? 0.5 : c.dead ? 0.72 : (c.acted && ally && !down ? 0.62 : 1),
+      // O INCORPOREO E TRANSLUCIDO, e quem o faz translucido e o motor.
+      //
+      // Pixel art nao tem meio-alfa: a folha do espectro sai opaca como
+      // qualquer outra (e tem de sair, senao o contorno vira franja). A
+      // transparencia e uma propriedade da CRIATURA, nao do desenho dela —
+      // ela atravessa parede, e o tabuleiro aparece por dentro. 0,68 ainda
+      // deixa a caveira e a coroa de cabelo legiveis sobre o chao escuro.
+      //
+      // Multiplica em vez de substituir: um espectro que ja agiu, ou que
+      // caiu, tem de esmaecer MAIS, nao voltar a ficar solido.
+      alpha: (c.incorporeo && !down ? 0.68 : 1)
+        * (eter ? 0.5 : c.dead ? 0.72 : (c.acted && ally && !down ? 0.62 : 1)),
       tint: tinta,
     });
     if (c.flash > 0) c.flash -= 0.08;

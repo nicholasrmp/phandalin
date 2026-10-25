@@ -924,6 +924,69 @@ CRIATURAS['nezznarSul'] = {
              'its crimson lining, the black spider staff fallen on the ground beside him'),
 }
 
+# O WRAITH (Mormesk, aprovado pelo dono). Mesmo caso do espectro: flutua, o
+# golpe e o Dreno de Vida (a garra atravessa, entao e um avanco de mao aberta)
+# e a morte e um desmanche no ar, nao um corpo que cai. O que muda e a
+# LEITURA: ele e carvao, nao violeta, e afina para baixo em vez de alargar.
+_WRAITH = ('a wraith: a tall figure of dark grey and black smoke with a thin crown of '
+           'crooked spikes, a black hollow face with two glowing yellow eyes, two very '
+           'long thin arms with long claws, and no legs -- the body trails away '
+           'downward into ragged smoke')
+CRIATURAS['wraith'] = {
+    'sujeito': _WRAITH,
+    'andar': ('gliding forward through the air without legs, the smoke of the body '
+              'streaming behind, never touching the ground'),
+    'parado': 'hovering in the air, the smoke trailing below, the long arms hanging open',
+    'golpe': ('gliding {para} and thrusting one long clawed hand forward {para} in a slow '
+              'reaching grasp, the arm stretching unnaturally long, then drawing back'),
+    'cair': ('destroyed, the wraith comes apart in the air: the crown falls through the '
+             'smoke, the dark body unravels into thinning black wisps that scatter and '
+             'fade to nothing, leaving NO body on the ground'),
+}
+
+# O ESPECTRO (a vista do OpenArt, aprovada pelo dono). Incorporeo: nao anda,
+# FLUTUA, e a "queda" nao e um corpo caindo -- e um vulto que se desmancha no
+# ar (`cair`). O ataque e o Dreno de Vida do bloco: a garra atravessa o alvo,
+# entao e um avanco de mao aberta, nao uma porrada. Os textos repetem "sem
+# costela, sem saia, sem pernas" porque o pixminimax redesenha a figura a
+# cada quadro e foram esses tres os erros da primeira leva.
+_ESPECTRO = ('a specter: a ghost of glowing violet vapour with a gaunt screaming skull-like '
+             'face, pale violet hair streaming up in thin flames, a hollow chest with no '
+             'ribs, long thin arms with hooked claws, and no legs -- below the chest the '
+             'body frays into ragged trailing streamers of smoke')
+CRIATURAS['espectro'] = {
+    'sujeito': _ESPECTRO,
+    'andar': ('floating forward through the air without legs, the body drifting and the '
+              'smoke streamers trailing behind, never touching the ground'),
+    'parado': 'hovering in the air, the smoke streamers drifting below, arms raised and open',
+    'golpe': ('gliding {para} and thrusting one open clawed hand forward {para} in a slow '
+              'reaching grasp, the arm stretching unnaturally long, then drawing back'),
+    'cair': ('destroyed, the specter comes apart in the air: the face and arms dissolve, '
+             'the violet smoke scatters outward into thinning wisps, and the last shreds '
+             'fade away to nothing, leaving NO body on the ground'),
+}
+
+# A GELATINA OCRE (a tira montada, aprovada pelo dono). Gosma: nao anda, se
+# ARRASTA, e o ataque e o Pseudopode -- o toco se estica e desaba sobre o
+# alvo. A queda nao e um corpo caindo: a massa perde a forma e se espalha no
+# chao numa poca lisa. Os textos repetem "sem rosto, sem olhos, sem membros"
+# porque o pixminimax redesenha a figura a cada quadro e, sem isso, inventa
+# cara e bracos (foi o que aconteceu na primeira leva so de texto).
+_GELATINA = ('an ochre jelly: a low wide puddle of thick golden-brown slime on the ground '
+             'with one short blunt stump of slime rising from it, no face, no eyes, no '
+             'mouth, no head, no arms and no legs')
+CRIATURAS['gelatinaOcre'] = {
+    'sujeito': _GELATINA,
+    'andar': ('oozing slowly forward along the ground, the whole mass stretching forward '
+              'and then pulling its back end along, rippling, never lifting off the floor'),
+    'parado': 'resting on the ground, the slime surface rippling slowly, the short stump leaning',
+    'golpe': ('the short stump of slime stretching up and lashing down {para} in one heavy '
+              'wet slap, splattering drops, then sinking back into the mass'),
+    'cair': ('killed, the ochre jelly loses its shape: the stump melts down into the mass, '
+             'the whole body sags and spreads out flat on the ground into a thin still '
+             'puddle of slime with runny edges'),
+}
+
 # A ARANHA GIGANTE (aprovada pelo dono): anda nas oito patas, a Mordida e o
 # bote com as presas, e a Teia (`aranhaGiganteTeia`, so o golpe, no mesmo
 # personagem) e o jato de seda do abdomen.

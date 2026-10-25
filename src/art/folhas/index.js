@@ -73,6 +73,12 @@ import metaDrowBesta from './drowBesta.json';
 import urlDrowBesta from './drowBesta.png';
 import metaStirge from './stirge.json';
 import urlStirge from './stirge.png';
+import metaWraith from './wraith.json';
+import urlWraith from './wraith.png';
+import metaEspectro from './espectro.json';
+import urlEspectro from './espectro.png';
+import metaGelatinaOcre from './gelatinaOcre.json';
+import urlGelatinaOcre from './gelatinaOcre.png';
 import metaNezznar from './nezznar.json';
 import urlNezznar from './nezznar.png';
 import metaAranhaGigante from './aranhaGigante.json';
@@ -174,6 +180,15 @@ const IMPORTADAS = {
   },
   // o stirge (24 px, escolhido pelo dono)
   stirge: { base: 'stirge', meta: metaStirge, url: urlStirge },
+  // O WRAITH (Mormesk, aprovado pelo dono): a figura mais escura do elenco,
+  // e translucida pelo mesmo caminho do espectro (`c.incorporeo`).
+  wraith: { base: 'wraith', meta: metaWraith, url: urlWraith },
+  // O ESPECTRO (aprovado pelo dono): a folha sai OPACA e quem o faz
+  // translucido no tabuleiro e o motor, por `c.incorporeo` (`board.js`).
+  specter: { base: 'specter', meta: metaEspectro, url: urlEspectro },
+  // A GELATINA OCRE: as oito vistas sao a MESMA figura (a imagem do dono
+  // reduzida), espelhada nas do oeste -- uma gosma nao tem frente nem costas.
+  gelatinaOcre: { base: 'gelatinaOcre', meta: metaGelatinaOcre, url: urlGelatinaOcre },
   // O NEZZNAR, a Aranha Negra (aprovado pelo dono): a unica folha com
   // `conjurar`, o gesto do Cajado Aranha que o motor usa nas magias dele.
   nezznar: { base: 'nezznar', meta: metaNezznar, url: urlNezznar },

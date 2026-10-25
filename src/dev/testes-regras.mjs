@@ -5988,6 +5988,35 @@ teste('drow do Manual: dois golpes de espada curta e Fogo das Fadas em grupo', (
   assert.ok(d.concentrating, 'mantém a concentração');
 });
 
+teste('Gelatina Ocre: cortada, parte-se em duas menores com metade dos PV', () => {
+  const { enc, party, foes } = montar({ foes: [['gelatinaOcre', { x: 8, y: 5 }]] });
+  const g = foes[0];
+  assert.equal(g.size, 'grande');
+  assert.equal(g.pos.f, 2, 'Grande ocupa 2x2');
+  g.hp = 30;
+  // Cortante: ela é IMUNE (não perde PV por isso), mas é atingida — e se parte.
+  enc.applyDamage(g, 8, 'cortante', party[0]);
+  const gelatinas = enc.combatants.filter((c) => c.defId === 'gelatinaOcre');
+  assert.equal(gelatinas.length, 2, 'virou duas');
+  for (const h of gelatinas) {
+    assert.equal(h.hp, 15, 'metade dos PV');
+    assert.equal(h.size, 'médio', 'um tamanho menor');
+    assert.equal(h.pos.f, 1, 'Média ocupa uma casa');
+  }
+  // A metade de 15 PV ainda se divide; abaixo de 10 PV, não.
+  enc.applyDamage(gelatinas[0], 8, 'elétrico', party[0]);
+  assert.equal(enc.combatants.filter((c) => c.defId === 'gelatinaOcre').length, 3);
+  const pequena = enc.combatants.find((c) => c.size === 'pequeno');
+  assert.equal(pequena.hp, 7);
+  enc.applyDamage(pequena, 8, 'cortante', party[0]);
+  assert.equal(enc.combatants.filter((c) => c.defId === 'gelatinaOcre').length, 3, 'com 7 PV não se parte');
+  // E fogo não parte nada.
+  const outra = gelatinas[1];
+  const antes = enc.combatants.length;
+  enc.applyDamage(outra, 4, 'fogo', party[0]);
+  assert.equal(enc.combatants.length, antes, 'só cortante e elétrico partem');
+});
+
 teste('Nezznar: o mago do SRD com os traços de drow por cima', () => {
   const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
   const { enc, foes } = montar({ foes: [['nezznar', { x: 8, y: 5 }]], pos, lado: 'foes' });
