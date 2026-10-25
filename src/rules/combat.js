@@ -10,7 +10,7 @@
 // reescrever nada.
 
 import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDice } from '../core/dice.js';
-import { Battlefield, distanceFt, isAdjacent, key, FEET_PER_SQUARE } from '../core/grid.js';
+import { Battlefield, distanceFt, isAdjacent, key, footprintOf, FEET_PER_SQUARE } from '../core/grid.js';
 import { ARMORS } from './items/index.js';
 import {
   abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
@@ -744,6 +744,57 @@ export class Encounter {
   //    encontro (`dispensarInvocados`), o XP (`xp = 0`) e o Revivificar.
   //  - Para jogá-la sozinha (IA aliada), `takeMonsterTurn` já serve: ela só
   //    pergunta por `enemiesOf`, que olha o lado.
+  /**
+   * DIVISÃO da Gelatina Ocre (SRD).
+   *
+   * Atingida por dano CORTANTE ou ELÉTRICO, com 10 PV ou mais e sendo Média
+   * ou maior, ela se parte em duas. Cada metade fica com METADE dos PV
+   * (arredondando para baixo) e UM TAMANHO MENOR que a original: Grande vira
+   * duas Médias, Média vira duas Pequenas, e uma Pequena já não se divide.
+   *
+   * No motor a original ENCOLHE e uma cópia nasce ao lado, o que dá o mesmo
+   * resultado do livro sem tirar da mesa a criatura que já tem turno e
+   * condições. O tamanho mora em dois campos e os dois mudam: `size` manda na
+   * regra (quem agarra quem, o andar pesado da view) e `pos.f` na pegada, que
+   * é por onde `distanceFt` e `isAdjacent` medem — uma Grande ocupa 2x2.
+   *
+   * Sem casa livre ao lado, não há divisão: a metade nova não tem onde caber.
+   */
+  dividir(alvo, tipo) {
+    if (!alvo?.traits?.includes('divisao') || alvo.dead) return false;
+    if (tipo !== 'cortante' && tipo !== 'elétrico') return false;
+    if (alvo.hp < 10) return false;
+    const menor = { enorme: 'grande', grande: 'médio', 'médio': 'pequeno' }[alvo.size];
+    if (!menor) return false;
+
+    const metade = Math.floor(alvo.hp / 2);
+    const f = footprintOf(menor);
+    // Encolhe ANTES de procurar casa: as casas que a pegada Grande ocupava
+    // acabam de ficar livres, e a metade nova costuma nascer numa delas.
+    alvo.size = menor;
+    alvo.pos.f = f;
+    alvo.hp = metade;
+    alvo.maxHp = metade;
+
+    const casa = this.casaLivreMaisProxima({ x: alvo.pos.x, y: alvo.pos.y, f });
+    if (!casa) {
+      this.say('aviso', `${alvo.name} se parte, mas não há espaço: a metade volta a juntar-se.`);
+      return false;
+    }
+    const nova = makeMonster(alvo.defId, { x: casa.x, y: casa.y }, { rng: this.rng });
+    nova.size = menor;
+    nova.pos.f = f;
+    nova.hp = metade;
+    nova.maxHp = metade;
+    nova.side = alvo.side;
+    nova.name = `${alvo.name.replace(/ \d+$/, '')} ${this.combatants.filter((c) => c.defId === alvo.defId).length + 1}`;
+    // A metade nova não ganha turno de graça: age no próximo turno do lado dela.
+    this.addCombatant(nova);
+    this.say('recurso', `${alvo.name} se parte em duas: cada metade fica ${menor} e com ${metade} PV.`);
+    this.onEvent({ type: 'dividiu', original: alvo, nova });
+    return true;
+  }
+
   invocar(dono, defId, pos, { spellId, sufixo = '' } = {}) {
     const m = makeMonster(defId, pos, { rng: this.rng, nameSuffix: sufixo });
     const casa = this.casaLivreMaisProxima({ x: pos.x, y: pos.y, f: m.pos.f });
@@ -893,6 +944,10 @@ export class Encounter {
   endTurn(actor) {
     actor.acted = true;
     actor.movementLeftFt = 0;
+    // O ki do Ataque Atordoante paga ESTE turno: armar e não acertar perde o
+    // ponto. Aqui, e não só no começo do lado, para que um ataque de
+    // oportunidade entre turnos não gaste um golpe armado na rodada passada.
+    actor.atordoantePronto = false;
     this.onEvent({ type: 'turnEnd', actor });
     this.maybeEndSide();
   }
@@ -944,10 +999,6 @@ export class Encounter {
       // Quem piscou para o Plano Etéreo volta antes de tudo, senão fica lá para sempre.
       for (const c of this.combatants) if (hasCondition(c, 'etereo')) this.voltarDoEtereo(c);
       // As magias de combate acabam com o encontro: Levitação (e a concentração que a segura),
-    // O ki do Ataque Atordoante paga ESTE turno: armar e não acertar perde o
-    // ponto. Aqui, e não só no começo do lado, para que um ataque de
-    // oportunidade entre turnos não gaste um golpe armado na rodada passada.
-    actor.atordoantePronto = false;
       // Piscar e Conjurar Animais. Sem isto o herói ficava com deslocamento 0 até o descanso.
       for (const c of this.combatants) {
         for (const id of ['levitando', 'piscando', 'etereo']) if (hasCondition(c, id)) removeCondition(c, id);
@@ -2667,6 +2718,16 @@ export class Encounter {
     if (p.recarga) (attacker.recarregando ??= {})[p.name] = true;
     depoisDoAcerto(this, attacker, target, p);
 
+    // ATAQUE ATORDOANTE: o monge gastou 1 ki antes do golpe. No primeiro
+    // acerto de arma CORPO A CORPO depois disso, o alvo faz Constituição
+    // contra a CD de ki ou fica atordoado até o fim do próximo turno dele.
+    // Carregar antes é o mesmo contrato da Destruição Divina: o livro deixa
+    // decidir depois do acerto, e perguntar a cada golpe pararia a luta.
+    if (attacker.atordoantePronto && !p.ranged && p.weapon && !target.dead) {
+      attacker.atordoantePronto = false;
+      this.ataqueAtordoante(attacker, target);
+    }
+
     // Efeito extra do ataque (mordida do lobo derruba).
     const imune = p.onHit && (
       p.onHit.imunes?.ancestry?.some((a) => (target.ancestry ?? '').startsWith(a))
@@ -2718,16 +2779,6 @@ export class Encounter {
       explosao: dadosDaMagia(magia, { circulo, notacao: def.explosao }),
       tipo: def.tipo,
     };
-    // ATAQUE ATORDOANTE: o monge gastou 1 ki antes do golpe. No primeiro
-    // acerto de arma CORPO A CORPO depois disso, o alvo faz Constituição
-    // contra a CD de ki ou fica atordoado até o fim do próximo turno dele.
-    // Carregar antes é o mesmo contrato da Destruição Divina: o livro deixa
-    // decidir depois do acerto, e perguntar a cada golpe pararia a luta.
-    if (attacker.atordoantePronto && !p.ranged && p.weapon && !target.dead) {
-      attacker.atordoantePronto = false;
-      this.ataqueAtordoante(attacker, target);
-    }
-
   }
 
   /**
@@ -3096,6 +3147,11 @@ export class Encounter {
       amount = Math.floor(amount / 2);
       this.say('recurso', `${target.name} se desvia: o golpe sai pela metade (${amount}).`);
     }
+    // DIVISÃO (Gelatina Ocre): o livro diz "ao ser ATINGIDA por dano cortante
+    // ou elétrico", não "ao sofrer". A gelatina é imune aos dois, então aqui
+    // `amount` já é 0 — e é exatamente por isso que a chamada vem ANTES do
+    // retorno por imunidade: cortar a gelatina não a fere, parte ela em duas.
+    this.dividir(target, type);
     if (amount <= 0) return;
     // Apanhar também mantém a fúria de pé.
     if (hasCondition(target, 'furia')) target.furiaAgiu = true;
@@ -5773,8 +5829,14 @@ export class Encounter {
         // Os tipos como o bestiário os escreve. Corruptor e celestial ainda
         // não existem no jogo; ficam na lista para quando existirem.
         const TIPOS = new Set(['morto-vivo', 'corruptor', 'celestial']);
+        // O livro diz que a Aura Mágica engana justamente este sentido, e que a
+        // Não Detecção esconde dele. Lê o tipo APARENTE (`auraMagica`) e pula
+        // quem está sob a Não Detecção (`semDeteccao`) — as duas marcas vêm de
+        // `rules/utilidade.js` (`tipoAparente`, `escondidoDaMagia`), copiadas
+        // aqui em linha para o combate não depender do módulo de utilidade.
         const achados = this.combatants.filter(
-          (c) => !c.dead && c !== actor && TIPOS.has(c.tipo) && distanceFt(actor.pos, c.pos) <= 60,
+          (c) => !c.dead && c !== actor && !c.semDeteccao
+            && TIPOS.has(c.auraMagica ?? c.tipo) && distanceFt(actor.pos, c.pos) <= 60,
         );
         this.say('recurso', achados.length
           ? `${actor.name} sente o que não devia estar aqui: ${achados.map((c) => c.name).join(', ')}.`
@@ -5939,6 +6001,55 @@ export class Encounter {
         this.afterAction(actor);
         return true;
       }
+      case 'flurryOfBlows': {
+        // RAJADA DE GOLPES: 1 ki na ação bônus, depois de ATACAR, por DOIS
+        // golpes desarmados. É a Artes Marciais paga: um golpe a mais pelo
+        // ponto de ki, e por isso as duas não podem sair no mesmo turno.
+        if (actor.bonusUsed || !actor.actionUsed) return false;
+        if (!actor.atacouDeMonge || !(actor.resources?.ki > 0)) return false;
+        if (!target || target.dead || !isAdjacent(actor.pos, target.pos)) return false;
+        actor.bonusUsed = true;
+        actor.resources.ki -= 1;
+        this.say('recurso', `${actor.name} gasta 1 ki: Rajada de Golpes (${actor.resources.ki} de ki).`);
+        this.resolveAttack(actor, target, { weaponId: 'punhos' });
+        if (!target.dead) this.resolveAttack(actor, target, { weaponId: 'punhos' });
+        return true;
+      }
+      case 'patientDefense': {
+        // DEFESA PACIENTE: 1 ki na ação bônus para Esquivar.
+        if (actor.bonusUsed || !(actor.resources?.ki > 0)) return false;
+        if (hasCondition(actor, 'esquivando')) return false;
+        actor.bonusUsed = true;
+        actor.resources.ki -= 1;
+        addCondition(actor, 'esquivando', { rounds: 1, quando: 'inicio', lado: actor.side });
+        this.say('recurso', `${actor.name} gasta 1 ki: Defesa Paciente (${actor.resources.ki} de ki).`);
+        return true;
+      }
+      case 'stepOfTheWind': {
+        // PASSO DO VENTO: 1 ki na ação bônus, Disparada OU Desengajar. (O
+        // salto dobrado do livro não tem o que modificar: o motor não pula.)
+        if (actor.bonusUsed || !(actor.resources?.ki > 0)) return false;
+        if (modo !== 'disparada' && modo !== 'desengajar') return false;
+        actor.bonusUsed = true;
+        actor.resources.ki -= 1;
+        if (modo === 'disparada') {
+          actor.movementLeftFt += this.speedOf(actor);
+          this.say('recurso', `${actor.name} gasta 1 ki: Passo do Vento, e corre (${actor.resources.ki} de ki).`);
+        } else {
+          actor.disengaging = true;
+          this.say('recurso', `${actor.name} gasta 1 ki: Passo do Vento, e desengaja (${actor.resources.ki} de ki).`);
+        }
+        return true;
+      }
+      case 'stunningStrike': {
+        // ATAQUE ATORDOANTE: carrega o golpe por 1 ki. O efeito mora no
+        // acerto, em `resolveAttack`; aqui só se paga e se arma.
+        if (!(actor.resources?.ki > 0) || actor.atordoantePronto) return false;
+        actor.resources.ki -= 1;
+        actor.atordoantePronto = true;
+        this.say('recurso', `${actor.name} gasta 1 ki e arma o Ataque Atordoante (${actor.resources.ki} de ki).`);
+        return true;
+      }
       default:
         return false;
     }
@@ -5997,52 +6108,3 @@ export class Encounter {
     this.onLog(entry);
   }
 }
-      case 'flurryOfBlows': {
-        // RAJADA DE GOLPES: 1 ki na ação bônus, depois de ATACAR, por DOIS
-        // golpes desarmados. É a Artes Marciais paga: um golpe a mais pelo
-        // ponto de ki, e por isso as duas não podem sair no mesmo turno.
-        if (actor.bonusUsed || !actor.actionUsed) return false;
-        if (!actor.atacouDeMonge || !(actor.resources?.ki > 0)) return false;
-        if (!target || target.dead || !isAdjacent(actor.pos, target.pos)) return false;
-        actor.bonusUsed = true;
-        actor.resources.ki -= 1;
-        this.say('recurso', `${actor.name} gasta 1 ki: Rajada de Golpes (${actor.resources.ki} de ki).`);
-        this.resolveAttack(actor, target, { weaponId: 'punhos' });
-        if (!target.dead) this.resolveAttack(actor, target, { weaponId: 'punhos' });
-        return true;
-      }
-      case 'patientDefense': {
-        // DEFESA PACIENTE: 1 ki na ação bônus para Esquivar.
-        if (actor.bonusUsed || !(actor.resources?.ki > 0)) return false;
-        if (hasCondition(actor, 'esquivando')) return false;
-        actor.bonusUsed = true;
-        actor.resources.ki -= 1;
-        addCondition(actor, 'esquivando', { rounds: 1, quando: 'inicio', lado: actor.side });
-        this.say('recurso', `${actor.name} gasta 1 ki: Defesa Paciente (${actor.resources.ki} de ki).`);
-        return true;
-      }
-      case 'stepOfTheWind': {
-        // PASSO DO VENTO: 1 ki na ação bônus, Disparada OU Desengajar. (O
-        // salto dobrado do livro não tem o que modificar: o motor não pula.)
-        if (actor.bonusUsed || !(actor.resources?.ki > 0)) return false;
-        if (modo !== 'disparada' && modo !== 'desengajar') return false;
-        actor.bonusUsed = true;
-        actor.resources.ki -= 1;
-        if (modo === 'disparada') {
-          actor.movementLeftFt += this.speedOf(actor);
-          this.say('recurso', `${actor.name} gasta 1 ki: Passo do Vento, e corre (${actor.resources.ki} de ki).`);
-        } else {
-          actor.disengaging = true;
-          this.say('recurso', `${actor.name} gasta 1 ki: Passo do Vento, e desengaja (${actor.resources.ki} de ki).`);
-        }
-        return true;
-      }
-      case 'stunningStrike': {
-        // ATAQUE ATORDOANTE: carrega o golpe por 1 ki. O efeito mora no
-        // acerto, em `resolveAttack`; aqui só se paga e se arma.
-        if (!(actor.resources?.ki > 0) || actor.atordoantePronto) return false;
-        actor.resources.ki -= 1;
-        actor.atordoantePronto = true;
-        this.say('recurso', `${actor.name} gasta 1 ki e arma o Ataque Atordoante (${actor.resources.ki} de ki).`);
-        return true;
-      }
