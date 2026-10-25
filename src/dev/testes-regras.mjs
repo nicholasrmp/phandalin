@@ -34,7 +34,7 @@ import { listaDaClasse } from '../game/criacao.js';
 import {
   sortearEncontro, distanciaInicial, reacaoDe, REACOES, NEGOCIAVEIS, xpDeConversa,
   podeConversar, vantagemDeDistancia, atencaoDoBando, perigoDoBando, escalarBando,
-  XP_POR_PERIGO,
+  XP_POR_PERIGO, auguriumDaSaida,
 } from '../rules/encontros-estrada.js';
 import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo } from '../rules/descanso.js';
 import { nivelDeExaustao, mudarExaustao, maxHpEfetivo, exaustaoFatal } from '../rules/conditions.js';
@@ -4886,6 +4886,7 @@ teste('criatura Grande não fica com a parede de borda no meio do corpo', () => 
 
 import {
   alarmeCobre, falaIdiomas, temMagia, disfarcado, sobZona, estaCativado, eFeraAmansavel, sentidasPorBemMal, ladoBemMal,
+  tipoAparente, ladoAparente, escondidoDaMagia,
 } from '../rules/utilidade.js';
 import { noSobMagia } from '../game/dialogo-magia.js';
 import { entrarNoEncontro, sairDoEncontro, familiarVirtual } from '../rules/familiar.js';
@@ -6706,6 +6707,222 @@ teste('o ritual da Pequena Cabana leva onze minutos, e com espaco um', () => {
   conjurarFora(comEspaco, mago, 'pequenaCabana', { herois: party, rng: makeRng(1) });
   assert.equal(comEspaco.minutos, 1);
   assert.equal(mago.spellcasting.slots[3], 2, 'e gastou o espaco de 3o');
+});
+
+// ---- adivinhacao e servicais -----------------------------------------------
+
+teste('as oito magias de adivinhacao e servico existem, com circulo e classes', () => {
+  const esperado = [
+    ['escritaIlusoria', 1, true], ['discoFlutuante', 1, true], ['servoInvisivel', 1, true],
+    ['augurio', 2, true], ['bocaMagica', 2, true], ['auraMagicaDoArcanista', 2, false],
+    ['mensageiroAnimal', 2, true], ['indetectavel', 3, false],
+  ];
+  for (const [id, nivel, ritual] of esperado) {
+    const e = getSpell(id);
+    assert.ok(e, id + ' existe');
+    assert.equal(e.level, nivel, id + ' e de ' + nivel + 'o circulo');
+    assert.equal(e.soFora, true, id + ' so vale fora de combate');
+    assert.equal(e.fonte, 'srd', id + ' e do SRD');
+    assert.equal(Boolean(e.ritual), ritual, id + ': ritual ' + ritual);
+    assert.ok(/Simplifica|Regra da casa|regra da casa/.test(e.desc), id + ' declara o que muda do livro');
+  }
+  // As de 1o circulo, nas listas de criacao.
+  assert.ok(listaDaClasse('mago').magias.includes('discoFlutuante'), 'o disco e do mago');
+  assert.ok(!listaDaClasse('bardo').magias.includes('discoFlutuante'), 'e so dele');
+  for (const classe of ['bardo', 'bruxo', 'mago']) {
+    assert.ok(listaDaClasse(classe).magias.includes('servoInvisivel'), classe + ' tem o servo');
+    assert.ok(listaDaClasse(classe).magias.includes('escritaIlusoria'), classe + ' tem a escrita');
+  }
+  // As de 2o e 3o.
+  assert.ok(listaDaClasse('clerigo', 2).magias.includes('augurio'), 'o Augurio e do clerigo');
+  assert.ok(!listaDaClasse('mago', 2).magias.includes('augurio'), 'nao do mago');
+  assert.ok(listaDaClasse('mago', 2).magias.includes('auraMagicaDoArcanista'), 'a Aura e do mago');
+  assert.ok(!listaDaClasse('bardo', 2).magias.includes('auraMagicaDoArcanista'), 'so dele');
+  for (const classe of ['bardo', 'mago']) {
+    assert.ok(listaDaClasse(classe, 2).magias.includes('bocaMagica'), classe + ' tem a Boca');
+  }
+  for (const classe of ['bardo', 'druida', 'patrulheiro']) {
+    assert.ok(listaDaClasse(classe, 2).magias.includes('mensageiroAnimal'), classe + ' tem o mensageiro');
+  }
+  for (const classe of ['bardo', 'patrulheiro', 'mago']) {
+    assert.ok(listaDaClasse(classe, 3).magias.includes('indetectavel'), classe + ' tem o Indetectavel');
+  }
+  assert.ok(!listaDaClasse('clerigo', 3).magias.includes('indetectavel'), 'o clerigo nao');
+});
+
+teste('todas as oito viram magia ativa: sem duracao ninguem as le', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  const ids = ['escritaIlusoria', 'discoFlutuante', 'servoInvisivel', 'augurio',
+    'bocaMagica', 'auraMagicaDoArcanista', 'mensageiroAnimal', 'indetectavel'];
+  mago.spellcasting.prepared.push(...ids);
+  mago.spellcasting.slots = [0, 9, 9, 9];
+  for (const id of ids) {
+    const estado = estadoDe({ vila: { dia: 1 } });
+    const alvo = id === 'auraMagicaDoArcanista' || id === 'indetectavel' ? party[PIP] : null;
+    const r = conjurarFora(estado, mago, id, {
+      herois: party, rng: makeRng(3), alvo, opcao: id === 'auraMagicaDoArcanista' ? 'celestial' : null,
+    });
+    assert.ok(r.ok, id + ': ' + (r.why ?? ''));
+    assert.ok(ativaDe(estado, party, id), id + ' tem de ficar ativa, ou ninguem a le');
+  }
+});
+
+teste('a Aura Magica do Arcanista engana o Detectar o Bem e o Mal', () => {
+  const { party } = montar();
+  const corruptor = makeMonster('caveiraCandente', { x: 7, y: 5 });
+  // Sem aura, ele le pelo que e.
+  assert.equal(tipoAparente(corruptor), corruptor.tipo);
+  assert.equal(ladoAparente(corruptor), ladoBemMal(corruptor));
+  assert.equal(ladoAparente(corruptor), 'mal');
+  // Com a aura, le como outra coisa — e a balanca vira junto.
+  corruptor.auraMagica = 'celestial';
+  assert.equal(tipoAparente(corruptor), 'celestial');
+  assert.equal(ladoAparente(corruptor), 'bem', 'o morto-vivo passa por celestial');
+  assert.equal(ladoBemMal(corruptor), 'mal', 'mas o tipo de verdade nao mudou');
+  // E o que a magia ENXERGA e o aparente.
+  const brenn = party[BRENN];
+  brenn.pos = { x: 6, y: 5 };
+  const estado = estadoDe({ vila: { dia: 1 } });
+  brenn.spellcasting.prepared.push('detectarBemMal');
+  brenn.spellcasting.slots = [0, 4, 3, 2];
+  assert.ok(conjurarFora(estado, brenn, 'detectarBemMal', { herois: party, rng: makeRng(2), criaturas: [corruptor] }).ok);
+  const sentidas = sentidasPorBemMal(estado, party, brenn, [corruptor]);
+  assert.equal(sentidas.length, 1, 'ele continua sendo sentido');
+  assert.equal(ladoAparente(sentidas[0]), 'bem', 'mas como celestial');
+});
+
+teste('o Indetectavel some do Detectar o Bem e o Mal', () => {
+  const { party } = montar();
+  const esqueleto = makeMonster('esqueleto', { x: 7, y: 5 });
+  const brenn = party[BRENN];
+  brenn.pos = { x: 6, y: 5 };
+  brenn.spellcasting.prepared.push('detectarBemMal');
+  brenn.spellcasting.slots = [0, 4, 3, 2];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, brenn, 'detectarBemMal', { herois: party, rng: makeRng(2), criaturas: [esqueleto] }).ok);
+  assert.equal(sentidasPorBemMal(estado, party, brenn, [esqueleto]).length, 1, 'sem a magia, aparece');
+  esqueleto.semDeteccao = true;
+  assert.equal(sentidasPorBemMal(estado, party, brenn, [esqueleto]).length, 0, 'sob o Indetectavel, some');
+  assert.equal(escondidoDaMagia(esqueleto), true);
+});
+
+teste('a Aura e o Indetectavel se desfazem quando a magia acaba', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('auraMagicaDoArcanista', 'indetectavel');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const alvo = party[PIP];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, mago, 'auraMagicaDoArcanista', { herois: party, rng: makeRng(4), alvo, opcao: 'morto-vivo' }).ok);
+  assert.equal(alvo.auraMagica, 'morto-vivo');
+  assert.ok(conjurarFora(estado, mago, 'indetectavel', { herois: party, rng: makeRng(5), alvo }).ok);
+  assert.equal(alvo.semDeteccao, true);
+  // A Nao Deteccao sai as oito horas; a Aura so as vinte e quatro.
+  avancar(estado, 480, party);
+  assert.equal(alvo.semDeteccao, undefined, 'as 8h o Indetectavel acabou');
+  assert.equal(alvo.auraMagica, 'morto-vivo', 'a Aura ainda esta la');
+  avancar(estado, 1440 - 480, party);
+  assert.equal(alvo.auraMagica, undefined, 'as 24h a Aura acabou');
+});
+
+teste('o Augurio responde pelo que a escolha renderia', () => {
+  // Encarar: a palavra sai do perigo do bando.
+  assert.equal(auguriumDaSaida('luta', { perigo: 'mortal' }), 'mau');
+  assert.equal(auguriumDaSaida('luta', { perigo: 'dificil' }), 'os dois');
+  assert.equal(auguriumDaSaida('luta', { perigo: 'facil' }), 'bom');
+  // Evitar e conversar: sai da chance, e o perigo pesa quando ela e boa.
+  assert.equal(auguriumDaSaida('evitar', { chance: 0.9, perigo: 'facil' }), 'bom');
+  assert.equal(auguriumDaSaida('evitar', { chance: 0.9, perigo: 'mortal' }), 'os dois',
+    'boa chance, mas falhar seria grave');
+  assert.equal(auguriumDaSaida('falar', { chance: 0.5, perigo: 'facil' }), null,
+    'chance no meio e bando fraco: nem bom nem mau, o livro responde nada');
+  assert.equal(auguriumDaSaida('falar', { chance: 0.5, perigo: 'mortal' }), 'os dois',
+    'a mesma chance com bando mortal ja tem lado');
+  assert.equal(auguriumDaSaida('falar', { chance: 0.2, perigo: 'facil' }), 'mau');
+  // A resposta vale a meia hora de que o livro fala.
+  const u = UTIL_FORA.has('augurio');
+  assert.equal(u, true, 'o Augurio e magia de fora de combate');
+});
+
+teste('a Boca Magica avisa como o Alarme: quem dorme na area nao e surpreendido', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('bocaMagica');
+  mago.spellcasting.slots = [0, 4, 3, 2];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, mago, 'bocaMagica', {
+    herois: party, rng: makeRng(7), dados: { ponto: { x: 8, y: 5 }, cena: 'Acampamento' },
+  }).ok);
+  // O mesmo leitor do Alarme encontra a Boca.
+  assert.ok(alarmeCobre(estado, party, 'Acampamento', { x: 8, y: 5 }), 'a Boca cobre o ponto');
+  assert.equal(alarmeCobre(estado, party, 'Outro lugar', { x: 8, y: 5 }), null, 'so na cena dela');
+  assert.equal(alarmeCobre(estado, party, 'Acampamento', { x: 8, y: 40 }), null, 'so perto da marca');
+  // E dura: o livro diz "ate disparar ou ser dissipada".
+  avancar(estado, 60 * 24 * 30, party);
+  assert.ok(alarmeCobre(estado, party, 'Acampamento', { x: 8, y: 5 }), 'um mes depois ainda espera');
+});
+
+teste('o Indetectavel esconde do Sentido Divino, e a Aura o engana', () => {
+  // O livro cita o Sentido Divino como o exemplo que a Aura Magica do Arcanista engana.
+  const sente = (preparar) => {
+    const { enc, c } = comClasse('paladino', 1);
+    const z = makeMonster('zumbi', { x: c.pos.x + 2, y: c.pos.y });
+    enc.addCombatant(z); z.side = 'foes';
+    preparar(z);
+    assert.ok(enc.useFeature(c, 'divineSense'));
+    return enc.log.some((l) => l.text?.includes(z.name));
+  };
+  assert.equal(sente(() => {}), true, 'sem magia nenhuma, o paladino sente o zumbi');
+  assert.equal(sente((z) => { z.semDeteccao = true; }), false, 'sob o Indetectavel, nao o acha');
+  assert.equal(sente((z) => { z.auraMagica = 'humanoide'; }), false, 'passando por humanoide, tambem nao');
+  assert.equal(sente((z) => { z.auraMagica = 'celestial'; }), true, 'mas como celestial ainda e sentido');
+  // E o tipo de verdade nunca muda.
+  const z = makeMonster('zumbi', { x: 5, y: 5 });
+  z.auraMagica = 'humanoide';
+  assert.equal(z.tipo, 'morto-vivo');
+  assert.equal(tipoAparente(z), 'humanoide');
+});
+teste('reconjurar a Aura nao apaga a conjuracao que ainda esta de pe', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('auraMagicaDoArcanista');
+  mago.spellcasting.slots = [0, 4, 9, 3];
+  const alvo = party[PIP];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, mago, 'auraMagicaDoArcanista', { herois: party, rng: makeRng(8), alvo, opcao: 'celestial' }).ok);
+  // Doze horas depois, conjura de novo no mesmo alvo.
+  avancar(estado, 720, party);
+  assert.ok(conjurarFora(estado, mago, 'auraMagicaDoArcanista', { herois: party, rng: makeRng(9), alvo, opcao: 'morto-vivo' }).ok);
+  assert.equal(alvo.auraMagica, 'morto-vivo');
+  // As 24h a PRIMEIRA vence. A segunda continua, e a marca tem de ficar.
+  avancar(estado, 720, party);
+  assert.equal(alvo.auraMagica, 'morto-vivo', 'a primeira expirou, mas a segunda ainda vale');
+  // As 36h a segunda vence, e so entao a marca sai.
+  avancar(estado, 720, party);
+  assert.equal(alvo.auraMagica, undefined, 'acabada a segunda, a marca sai');
+});
+
+teste('as magias sem efeito no jogo se declaram como narracao', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('discoFlutuante', 'escritaIlusoria', 'mensageiroAnimal', 'servoInvisivel', 'bocaMagica');
+  mago.spellcasting.slots = [0, 9, 9, 9];
+  for (const id of ['discoFlutuante', 'escritaIlusoria', 'mensageiroAnimal']) {
+    const estado = estadoDe({ vila: { dia: 1 } });
+    const r = conjurarFora(estado, mago, id, { herois: party, rng: makeRng(3) });
+    assert.ok(r.ok, id);
+    assert.equal(r.resultado.soNarra, true, id + ' se declara como narracao');
+    assert.ok(/gasta o espaço e o tempo|só é narrad/.test(getSpell(id).desc), id + ' diz isso no desc tambem');
+  }
+  // As duas que FAZEM algo nao se declaram assim.
+  for (const id of ['servoInvisivel', 'bocaMagica']) {
+    const estado = estadoDe({ vila: { dia: 1 } });
+    const extra = id === 'bocaMagica' ? { dados: { ponto: { x: 5, y: 5 }, cena: 'x' } } : {};
+    const r = conjurarFora(estado, mago, id, { herois: party, rng: makeRng(3), ...extra });
+    assert.ok(r.ok, id);
+    assert.ok(!r.resultado.soNarra, id + ' tem efeito de verdade');
+  }
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

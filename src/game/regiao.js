@@ -52,6 +52,7 @@ import {
 import {
   ENCONTROS, sortearEncontro, distanciaInicial, reacaoDe, podeConversar,
   vantagemDeDistancia, atencaoDoBando, xpDeConversa, perigoDoBando, escalarBando,
+  auguriumDaSaida,
 } from '../rules/encontros-estrada.js';
 import { makeMonster } from '../rules/monsters.js';
 import { passivePerception, skillBonus } from '../rules/abilities.js';
@@ -599,6 +600,10 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     // A chance de verdade, não a faixa de bônus: ela conta a desvantagem da
     // armadura pesada, que a faixa escondia. O dado só rola DEPOIS da escolha.
     const chanceDeSumir = chanceDeEsconder(herois, atencaoDeles, porDistancia);
+    // O Augúrio de quem o conjurou vale para esta escolha (meia hora).
+    const ativaAugurio = ativaDe(estadoDeUtilidade(camp), herois, 'augurio');
+    const temAugurio = ativaAugurio ? herois.find((h) => h.id === ativaAugurio.por) : null;
+    const perigo = perigoDoBando(xpDoBando, herois);
 
     // Nenhum botão em destaque: a medição mostrou que o destaque conduzia a
     // escolhas ruins (conversar num bando trivial, fugir de um ogro fácil).
@@ -622,6 +627,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
           : 'Com esses não há conversa: nenhum deles tem o que ganhar em parar para falar.',
         devagar
           ? 'O grupo vem devagar e escondido: encarar pode começar com a emboscada sendo dele.'
+          : null,
+        // O Augúrio pergunta sobre o que o grupo pretende fazer nos próximos
+        // trinta minutos: é exatamente esta escolha.
+        temAugurio
+          ? `Os ossos de ${temAugurio.name} já foram jogados: encarar seria ${auguriumDaSaida('luta', { perigo }) ?? 'nada'}, sair da trilha seria ${auguriumDaSaida('evitar', { chance: chanceDeSumir, perigo }) ?? 'nada'}${podeFalar ? `, e conversar seria ${auguriumDaSaida('falar', { chance: falante.p.chance, perigo }) ?? 'nada'}` : ''}.`
           : null,
         'Regra da casa: a distância do encontro, a cara com que eles chegam, quem aceita conversa, a atenção que o tamanho do bando dá e a metade do XP são nossos — o Livro do Jogador não traz nada disso.',
       ].filter(Boolean) }],

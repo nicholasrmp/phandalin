@@ -66,9 +66,25 @@ export function ctxDe(app, enc = app.enc) {
   };
 }
 
-const horas = (min) => (min >= 120 ? `${Math.round(min / 60)} horas` : min >= 60 ? '1 hora' : min === 1 ? '1 minuto' : `${min} minutos`);
+const UM_ANO = 365 * 24 * 60;
+const horas = (min) => (min >= UM_ANO ? 'até ser dissipada'
+  : min >= 2880 ? `${Math.round(min / 1440)} dias`
+    : min >= 120 ? `${Math.round(min / 60)} horas`
+      : min >= 60 ? '1 hora' : min === 1 ? '1 minuto' : `${min} minutos`);
 const dura = (spellId) => horas(UTIL[spellId]?.min ?? 0);
 const NOME_ESCOLHA = { tocha: 'a tocha' };
+
+/**
+ * Os tipos que a Aura Mágica do Arcanista faz a adivinhação ler. São os três que o
+ * Detectar o Bem e o Mal e o Sentido Divino procuram: fora deles, a magia
+ * não teria o que enganar.
+ */
+const TIPOS_DA_AURA = [
+  { id: 'celestial', rotulo: 'Celestial', detalhe: 'lê como criatura do bem' },
+  { id: 'corruptor', rotulo: 'Corruptor', detalhe: 'lê como criatura do mal' },
+  { id: 'morto-vivo', rotulo: 'Morto-vivo', detalhe: 'lê como morto que anda' },
+  { id: 'humanoide', rotulo: 'Humanoide', detalhe: 'não é sentido por nenhuma das duas magias' },
+];
 
 /** O que a magia fez, em português de mesa, a partir do resultado da regra. */
 function contar(x, c, r, { alvo = null, opcao = null } = {}) {
@@ -135,6 +151,34 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
       t.push(linhas.length
         ? `Por dez minutos ${c.name} sente o veneno e a doença a 9 m — ${linhas.join('; ')}.`
         : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
+      break;
+    }
+    case 'escritaIlusoria':
+      t.push(`${c.name} passa a pena pelo que está escrito e as letras se embaralham para quem não devia ler. Só o grupo continua vendo as palavras de verdade. Dez dias. (Ainda não há nada escrito que alguém leia: a magia foi conjurada e narrada, e não muda nada no jogo.)`);
+      break;
+    case 'discoFlutuante':
+      t.push(`Um disco de luz pálida se abre à altura do joelho e fica ali, parado no ar. Aguenta o peso de um homem e vai atrás do grupo por uma hora. (O jogo não pesa o que o grupo carrega: a magia foi conjurada e narrada, e não muda nada.)`);
+      break;
+    case 'servoInvisivel':
+      t.push(`${c.name} descreve no ar a forma de um criado que ninguém vê. Por uma hora ele busca, puxa e abre o que estiver a até 18 m — longe demais para a mão, e longe demais para a Mão Mágica.`);
+      break;
+    case 'augurio':
+      t.push(`${c.name} joga os ossos entalhados no chão e eles não param quietos. A resposta não vem agora: vem na próxima meia hora, quando houver uma escolha de verdade para fazer — e aí será uma palavra só.`);
+      break;
+    case 'bocaMagica':
+      t.push(`Uma boca de lábios de fumaça se desenha na pedra e fica ali, quieta, esperando. Quem chegar perto vai ouvi-la falar — e o grupo, dormindo ou não, vai ouvir junto. Ninguém é pego de surpresa aqui.`);
+      break;
+    case 'auraMagicaDoArcanista': {
+      const a = res.aura;
+      t.push(`${c.name} passa a mão sobre ${a?.quem?.name ?? 'o alvo'} e a verdade embaça: para qualquer magia que procure saber o que ele é, a resposta agora é ${a?.tipo ?? 'outra coisa'}. Vinte e quatro horas.`);
+      break;
+    }
+    case 'mensageiroAnimal':
+      t.push(`Um pardal pousa na mão de ${c.name}, ouve as palavras com a cabeça torta e sai voando para o oeste. Vai chegar a Phandalin antes do grupo. (Ninguém o espera lá ainda: a magia foi conjurada e narrada, e não muda nada no jogo.)`);
+      break;
+    case 'indetectavel': {
+      const q = res.escondido;
+      t.push(`${q?.name ?? 'O alvo'} some do mundo da adivinhação por oito horas: o Detectar o Bem e o Mal e o Sentido Divino passam por ele sem vê-lo.`);
       break;
     }
     case 'truqueDaCorda':
@@ -352,6 +396,11 @@ export async function escolherEConjurar(app, c, spellId) {
     if (!o) return null;
     opts.opcao = o;
   }
+  if (u.escolhe === 'tipo') {
+    const o = await escolher(app, spell.name, 'Parecer o quê?', TIPOS_DA_AURA.map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));
+    if (!o) return null;
+    opts.opcao = o;
+  }
   return conjurarComTela(app, c, spellId, opts);
 }
 
@@ -434,6 +483,11 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
             const r = await abre();
             if (r?.ok) await app.conversar(occ);
             return;
+          }
+          if (u.escolhe === 'tipo') {
+            const o = await escolher(app, s.name, 'Parecer o quê?', TIPOS_DA_AURA.map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));
+            if (!o) return;
+            opts.opcao = o;
           }
           if (u.escolhe === 'atributo') {
             const o = await escolher(app, s.name, 'Qual atributo?', Object.entries(APRIMORAR).map(([id, k]) => ({ rotulo: k.nome, detalhe: `vantagem em ${NOME_HAB[k.hab]}`, valor: id })));

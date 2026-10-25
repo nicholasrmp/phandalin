@@ -90,6 +90,19 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // Adivinhação e serviçais.
+  escritaIlusoria: { alvo: 'si', min: 14400, efeito: 'escrita', ritual: true, tempo: 1 },
+  discoFlutuante: { alvo: 'si', min: 60, efeito: 'disco', ritual: true },
+  servoInvisivel: { alvo: 'objeto', min: 60, efeito: 'servo', gancho: 'alcance', ritual: true, alcance: 60 },
+  // A resposta do Augúrio vale a meia hora sobre a qual ele perguntou: sem
+  // duração a magia nunca entraria na lista de ativas e ninguém a leria.
+  augurio: { alvo: 'si', min: 30, efeito: 'augurio', ritual: true, tempo: 1 },
+  // A Boca Mágica fica até disparar: como a Chama Contínua, precisa de uma
+  // duração longa para o motor a registrar como ativa.
+  bocaMagica: { alvo: 'area', min: 10 * 365 * 24 * 60, efeito: 'boca', ritual: true, tempo: 1 },
+  auraMagicaDoArcanista: { alvo: 'aliado', min: 1440, efeito: 'aura', escolhe: 'tipo' },
+  mensageiroAnimal: { alvo: 'si', min: 1440, efeito: 'mensageiro', ritual: true },
+  indetectavel: { alvo: 'aliado', min: 480, efeito: 'semDeteccao' },
   // Abrigo da noite (`rules/acampamento.js`).
   truqueDaCorda: { alvo: 'si', min: 60, efeito: 'corda' },
   // A chama não acaba: dez anos de duração é o jeito de dizer "até ser
@@ -192,6 +205,13 @@ export function ativaDe(estado, herois, spellId, { por = null, npc = null, alvo 
 export function encerrar(estado, a, herois, { texto = null } = {}) {
   // Repouso Tranquilo: passados os dez dias, o corpo volta a ser um corpo.
   if (a.spellId === 'repousoTranquilo' && a.corpo) delete a.corpo.repousoTranquilo;
+  // Aura Mágica do Arcanista e Indetectável: a criatura volta a ser o que é, e a ser vista.
+  // Só se não houver OUTRA conjuração viva na mesma criatura: conjurar de novo
+  // antes de a primeira acabar não pode apagar a segunda quando a primeira
+  // vence. `outraViva` é essa checagem.
+  const outraViva = (quem) => estado.ativas.some((x) => x !== a && x.spellId === a.spellId && x.quem === quem);
+  if (a.spellId === 'auraMagicaDoArcanista' && a.quem && !outraViva(a.quem)) delete a.quem.auraMagica;
+  if (a.spellId === 'indetectavel' && a.quem && !outraViva(a.quem)) delete a.quem.semDeteccao;
   estado.ativas = estado.ativas.filter((x) => x !== a);
   const dono = heroiPorId(herois, a.por);
   for (const id of a.alvos) {
@@ -479,6 +499,27 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
         criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
       };
     }
+    // ---- adivinhação e serviçais ----
+    if (u.efeito === 'aura') {
+      // A Aura Mágica troca o tipo que a adivinhação lê, não o tipo de verdade.
+      const quem = alvo ?? c;
+      quem.auraMagica = opcao ?? 'celestial';
+      resultado.aura = { quem, tipo: quem.auraMagica };
+    }
+    if (u.efeito === 'semDeteccao') {
+      const quem = alvo ?? c;
+      quem.semDeteccao = true;
+      resultado.escondido = quem;
+    }
+    // O Servo Invisível alcança pontos da cena a 18 m (`gancho: 'alcance'`) e a
+    // Boca Mágica planta um aviso que `alarmeCobre` lê. O Disco, a Escrita e o
+    // Mensageiro Animal ainda não têm o que mover, o que ler nem a quem
+    // entregar: gastam espaço e tempo, e o jogo só os narra.
+    if (u.efeito === 'disco' || u.efeito === 'servo' || u.efeito === 'escrita'
+      || u.efeito === 'boca' || u.efeito === 'mensageiro') {
+      resultado.servico = u.efeito;
+      resultado.soNarra = u.efeito === 'disco' || u.efeito === 'escrita' || u.efeito === 'mensageiro';
+    }
     // ---- abrigo: o que a noite vai perguntar depois ----
     if (u.efeito === 'repouso') {
       // O corpo guardado não apodrece e não serve para Animar os Mortos.
@@ -544,6 +585,10 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     // Repouso Tranquilo: a magia guarda o corpo para poder devolvê-lo ao fim
     // dos dez dias. Fora do JSON da campanha, como as outras criaturas.
     if (u.efeito === 'repouso' && alvo) Object.defineProperty(ativa, 'corpo', { value: alvo, enumerable: false, writable: true });
+    // Aura Mágica do Arcanista e Indetectável guardam em quem pousaram, para desfazer no fim.
+    if (u.efeito === 'aura' || u.efeito === 'semDeteccao') {
+      Object.defineProperty(ativa, 'quem', { value: alvo ?? c, enumerable: false, writable: true });
+    }
     estado.ativas.push(ativa);
     if (u.conc) {
       c.concentrating = { spellId, condition: u.cond ?? null, targets: aplicados, rounds: duracao * 10, ativaId: ativa.n, fora: true };
@@ -802,17 +847,36 @@ export const eFeraAmansavel = (m) => Boolean(m) && m.tipo === 'fera' && (m.abili
  */
 export function alarmeCobre(estado, herois, lugar, pos) {
   if (lugar == null) return null;
-  return ativasDoGrupo(estado, herois).find((a) => a.spellId === 'alarme' && a.data?.cena === lugar && a.data?.ponto
+  // O Alarme e a Boca Mágica fazem a mesma coisa para quem dorme: avisam.
+  // O Alarme toca um sino que só o grupo ouve; a Boca fala em voz alta, o que
+  // avisa o grupo e também avisa quem chegou de que foi visto. No jogo as
+  // duas protegem da surpresa igual — a diferença fica na narração.
+  const AVISAM = new Set(['alarme', 'bocaMagica']);
+  return ativasDoGrupo(estado, herois).find((a) => AVISAM.has(a.spellId) && a.data?.cena === lugar && a.data?.ponto
     && distanceFt(a.data.ponto, pos) <= RAIO_DO_ALARME) ?? null;
 }
 
 /** O lado da balança de uma criatura para o Detectar o Bem e o Mal: 'bem' | 'mal' | 'neutro' | null (não sente). */
 export const ladoBemMal = (m) => TIPOS_BEM_MAL[m?.tipo] ?? null;
 
+/**
+ * O tipo que a adivinhação LÊ numa criatura. A Aura Mágica troca o tipo
+ * aparente: um corruptor pode ler como celestial, e um herói como morto-vivo.
+ */
+export const tipoAparente = (m) => m?.auraMagica ?? m?.tipo ?? null;
+
+/** O lado da balança pelo tipo APARENTE, que é o que a magia vê. */
+export const ladoAparente = (m) => TIPOS_BEM_MAL[tipoAparente(m)] ?? null;
+
+/** Indetectável: a adivinhação não acha quem está sob ela. */
+export const escondidoDaMagia = (m) => Boolean(m?.semDeteccao);
+
 /** As criaturas que o Detectar o Bem e o Mal de `dono` sente agora, entre `criaturas`. */
 export function sentidasPorBemMal(estado, herois, dono, criaturas) {
   if (!ativaDe(estado, herois, 'detectarBemMal', { por: dono })) return [];
-  return criaturas.filter((m) => !m.dead && m.side !== 'party' && ladoBemMal(m) && m.pos && distanceFt(dono.pos, m.pos) <= ALCANCE_BEM_MAL);
+  // Lê o tipo APARENTE (Aura Mágica do Arcanista) e pula quem o Indetectável esconde.
+  return criaturas.filter((m) => !m.dead && m.side !== 'party' && !escondidoDaMagia(m)
+    && ladoAparente(m) && m.pos && distanceFt(dono.pos, m.pos) <= ALCANCE_BEM_MAL);
 }
 
 /** A Mensagem permite falar com este NPC longe (até 36 m)? */

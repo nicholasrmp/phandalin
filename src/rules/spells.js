@@ -1157,6 +1157,48 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
     desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
   },
+  // ---- adivinhação e serviçais ----
+  escritaIlusoria: {
+    id: 'escritaIlusoria', name: 'Escrita Ilusória', level: 1, school: 'ilusão', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 5, kind: 'utilidade', duracaoMin: 14400,
+    desc: 'Você escreve num pergaminho e a escrita some para todo mundo, menos para você e para quem você escolher. Os outros veem outra coisa — garranchos de uma língua estranha, ou uma mensagem inocente que você inventa. Dez dias. Ritual. (Simplificação: o jogo ainda não tem papel que alguém leia nem revista o que o grupo carrega escrito, então a magia gasta o espaço e o tempo e só é narrada. Fica pronta para quando houver carta, mapa ou ordem na mochila. Só fora de combate.)',
+  },
+  discoFlutuante: {
+    id: 'discoFlutuante', name: 'Disco Flutuante', level: 1, school: 'conjuração', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Um disco de força de 90 cm de diâmetro, flutuando à altura do joelho, segura até 225 kg e vai atrás de você enquanto você não se afastar mais de 6 m. Uma hora. Ritual. (Simplificação: o jogo não pesa o que o grupo carrega nem obriga ninguém a carregar um caído, então o disco gasta o espaço e o tempo e só é narrado. Só fora de combate.)',
+  },
+  servoInvisivel: {
+    id: 'servoInvisivel', name: 'Servo Invisível', level: 1, school: 'conjuração', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 60, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Uma força invisível e sem vontade própria obedece você por uma hora, dentro de 18 m: busca coisas, limpa, remenda, abre porta, puxa alavanca. Tem Força 2 e cai com qualquer dano. Ritual. Alcança o que está longe demais para a mão — e longe demais para a Mão Mágica, que só vai a 9 m. (Simplificação: o jogo usa o servo nos mesmos pontos da cena que a Mão Mágica, de mais longe; ele não faz tarefa de horas, não limpa e não remenda. Nos mapas em que não há ponto a 18 m, a magia só é narrada. Só fora de combate.)',
+  },
+  augurio: {
+    id: 'augurio', name: 'Augúrio', level: 2, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 0, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Você joga os ossos entalhados e pergunta sobre o que pretende fazer na próxima meia hora. A resposta vem em uma palavra: bom, mau, as duas coisas, ou nada — esta última quando o que vem não é nem uma coisa nem outra. Ritual. Na trilha, vale perguntar antes de escolher o que fazer com quem apareceu na frente. (Regra da casa, porque o livro deixa a resposta com o mestre: aqui o Augúrio olha o resultado do que o grupo escolher e devolve a palavra honesta. Simplificação: o jogo não aplica a chance de 25% de leitura falsa quando a magia se repete, e não cobra os 25 po dos ossos entalhados. Só fora de combate.)',
+  },
+  bocaMagica: {
+    id: 'bocaMagica', name: 'Boca Mágica', level: 2, school: 'ilusão', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 30, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Você planta uma mensagem de até 25 palavras num objeto ou num lugar, com a condição que a dispara: quando alguém chegar perto, quando a porta abrir, quando o sol se puser. Na hora, uma boca de lábios de fumaça aparece na superfície e fala. Dura até disparar, ou até ser dissipada. Ritual. Sem os 10 po de favo de mel e pó de jade. No jogo a mensagem fica no ponto onde foi plantada e dispara quando alguém se aproxima: quem dorme na área não é pego de surpresa, como no Alarme. (Simplificação: a condição é sempre a chegada de alguém — o jogo não pergunta qual é, e as 25 palavras são narração. Só fora de combate.)',
+  },
+  auraMagicaDoArcanista: {
+    id: 'auraMagicaDoArcanista', name: 'Aura Mágica do Arcanista', level: 2, school: 'ilusão', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', duracaoMin: 1440,
+    desc: 'Você muda o que a magia de adivinhação enxerga numa criatura ou num objeto que toca: ele passa a parecer mágico quando não é, a não parecer quando é, ou a ser de outro tipo de criatura. Vinte e quatro horas. No jogo, quem está sob a aura engana o Detectar o Bem e o Mal e o Sentido Divino do paladino — que é o exemplo do próprio livro: um corruptor pode ler como celestial, ou um herói como morto-vivo. (Simplificação: o jogo usa só a troca de tipo, que é a que o Detectar o Bem e o Mal lê; a parte que esconde a magia de um item fica para quando houver item que a adivinhação examine. Só fora de combate.)',
+  },
+  mensageiroAnimal: {
+    id: 'mensageiroAnimal', name: 'Mensageiro Animal', level: 2, school: 'encantamento', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1440,
+    desc: 'Um bicho miúdo — pardal, rato, esquilo — ouve de você até 25 palavras, o nome de quem deve receber e onde achá-lo, e parte. Ele viaja até vinte e quatro horas de distância e entrega a mensagem imitando a sua voz. Vinte e quatro horas; com espaço de 3º círculo ou maior, mais quarenta e oito horas por círculo acima do 2º. Ritual. (Simplificação: o jogo ainda não tem a quem entregar o recado fora da cena, então a magia gasta o espaço e o tempo e só é narrada; o aumento de duração por círculo maior também não está no jogo. Só fora de combate.)',
+  },
+  indetectavel: {
+    id: 'indetectavel', name: 'Indetectável', level: 3, school: 'abjuração', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 5, kind: 'utilidade', duracaoMin: 480,
+    desc: 'Por oito horas, quem você toca fica escondido da magia que procura: nenhuma adivinhação o encontra, e nenhum olho mágico o observa. No jogo, quem está sob ela some do Detectar o Bem e o Mal e do Sentido Divino do paladino. (Simplificação: o Localizar Objeto do jogo mira um ponto do cenário, não uma criatura, então o Indetectável não tem o que esconder dele; sem os 25 po de pó de diamante; a parte que barra a observação à distância espera a Clarividência existir. Só fora de combate.)',
+  },
+
   // ---- abrigo da noite (`rules/acampamento.js`) ----
   truqueDaCorda: {
     id: 'truqueDaCorda', name: 'Truque da Corda', level: 2, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,

@@ -24,7 +24,8 @@ import { distanceFt } from '../core/grid.js';
 import { podeVer } from '../rules/luz.js';
 import { hasCondition, removeCondition } from '../rules/conditions.js';
 import {
-  ativaDe, ativasDoGrupo, encerrar, chaveDoNpc, sentidasPorBemMal, eFeraAmansavel, ladoBemMal, FAMILIARES,
+  ativaDe, ativasDoGrupo, encerrar, chaveDoNpc, sentidasPorBemMal, eFeraAmansavel, ladoBemMal,
+  ladoAparente, tipoAparente, FAMILIARES,
   ALCANCE_BEM_MAL,
 } from '../rules/utilidade.js';
 import { familiarDe, familiarVirtual } from '../rules/familiar.js';
@@ -89,7 +90,7 @@ export function preparar(x, c, spellId, opts) {
     if (!perto.length) return { erro: `longe demais — Cativar alcança ${spell.rangeFt} pés` };
     return { opts: { ...opts, criaturas: perto } };
   }
-  if (spellId === 'alarme') {
+  if (spellId === 'alarme' || spellId === 'bocaMagica') {
     return { opts: { ...opts, dados: { ponto: { x: c.pos.x, y: c.pos.y }, cena: app.capitulo?.lugar } } };
   }
   if (spellId === 'localizarObjeto') {
@@ -161,7 +162,9 @@ export function contarNovas(x, c, r, { alvo = null } = {}) {
       const t = [`${c.name} abre uma segunda visão: por 10 minutos, enquanto se concentrar, sente o bem e o mal a até 9 m, mesmo atrás da parede.`];
       if (!s.length) t.push('Por enquanto, nada: só o frio comum da pedra.');
       else {
-        for (const m of s) t.push(`Um ${m.tipo} (${LADO[ladoBemMal(m)]}), a ${metros(distanceFt(c.pos, m.pos))}, ${direcaoDe(c.pos, m.pos)}.`);
+        // O tipo APARENTE: a Aura Mágica engana a adivinhação, e é isso que
+        // o conjurador vê e ouve (`rules/utilidade.js`).
+        for (const m of s) t.push(`Um ${tipoAparente(m)} (${LADO[ladoAparente(m)]}), a ${metros(distanceFt(c.pos, m.pos))}, ${direcaoDe(c.pos, m.pos)}.`);
         t.push('Elas aparecem no mapa, numa coluna de luz.');
       }
       return t;
@@ -232,8 +235,9 @@ export function marcas(x) {
     if (a.spellId === 'detectarBemMal') {
       const dono = herois.find((h) => h.id === a.por);
       if (!dono) continue;
-      for (const m of sentidasPorBemMal(estado, herois, dono, criaturasDaCena(app))) out.push({ x: m.pos.x, y: m.pos.y, cor: COR[ladoBemMal(m)], nome: m.tipo, f: m.pos.f ?? 1 });
+      for (const m of sentidasPorBemMal(estado, herois, dono, criaturasDaCena(app))) out.push({ x: m.pos.x, y: m.pos.y, cor: COR[ladoAparente(m)], nome: tipoAparente(m), f: m.pos.f ?? 1 });
     }
+    // Não Detecção: o que está sob ela some do Localizar Objeto.
     if (a.efeito === 'localizar' && a.data?.ponto) out.push({ x: a.data.ponto.x, y: a.data.ponto.y, cor: 'marca-alvo', nome: a.data.nome });
     // Alterar Aparência: um halo lilás em volta de quem está transformado.
     if (a.spellId === 'alterarAparencia') {

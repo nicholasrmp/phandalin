@@ -5829,9 +5829,10 @@ export class Encounter {
         // Os tipos como o bestiário os escreve. Corruptor e celestial ainda
         // não existem no jogo; ficam na lista para quando existirem.
         const TIPOS = new Set(['morto-vivo', 'corruptor', 'celestial']);
-        // O livro diz que a Aura Mágica engana justamente este sentido, e que a
-        // Não Detecção esconde dele. Lê o tipo APARENTE (`auraMagica`) e pula
-        // quem está sob a Não Detecção (`semDeteccao`) — as duas marcas vêm de
+        // O livro diz que a Aura Mágica do Arcanista engana justamente este
+        // sentido, e que o Indetectável esconde dele. Lê o tipo APARENTE
+        // (`auraMagica`) e pula quem está sob o Indetectável
+        // (`semDeteccao`) — as duas marcas vêm de
         // `rules/utilidade.js` (`tipoAparente`, `escondidoDaMagia`), copiadas
         // aqui em linha para o combate não depender do módulo de utilidade.
         const achados = this.combatants.filter(

@@ -173,6 +173,29 @@ export function escalarBando(qtd, xpDeUm, herois, { teto = 12 } = {}) {
   return { qtd: n, cresceu: n - qtd };
 }
 
+/**
+ * O que o Augúrio responde sobre uma das saídas do encontro: 'bom', 'mau',
+ * 'os dois' ou null (nada). Regra da casa, porque o livro deixa a resposta
+ * com o mestre: aqui a magia olha o que a escolha renderia de verdade.
+ *
+ * `chance` é a de a saída dar certo; `perigo` é o do bando.
+ */
+export function auguriumDaSaida(saida, { chance = 0, perigo = 'facil' } = {}) {
+  if (saida === 'luta') {
+    if (perigo === 'mortal') return 'mau';
+    if (perigo === 'facil') return 'bom';
+    return 'os dois';
+  }
+  // Evitar e conversar: a palavra sai da chance de dar certo, e o risco de
+  // falhar pesa mais quando o bando é perigoso.
+  if (chance >= 0.75) return perigo === 'mortal' ? 'os dois' : 'bom';
+  if (chance <= 0.35) return 'mau';
+  // Chance no meio e bando fraco: o livro manda responder NADA quando o que
+  // vem não é nem bom nem mau o bastante para ter nome. É este caso.
+  if (perigo === 'facil') return null;
+  return 'os dois';
+}
+
 /** Há conversa quando o bando negocia e não chegou decidido a brigar. */
 export function podeConversar(encontroId, reacao) {
   const id = reacao?.id ?? reacao;
