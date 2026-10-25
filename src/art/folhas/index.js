@@ -73,6 +73,10 @@ import metaDrowBesta from './drowBesta.json';
 import urlDrowBesta from './drowBesta.png';
 import metaStirge from './stirge.json';
 import urlStirge from './stirge.png';
+import metaSpectator from './spectator.json';
+import urlSpectator from './spectator.png';
+import metaCaveiraCandente from './caveiraCandente.json';
+import urlCaveiraCandente from './caveiraCandente.png';
 import metaWraith from './wraith.json';
 import urlWraith from './wraith.png';
 import metaEspectro from './espectro.json';
@@ -180,6 +184,11 @@ const IMPORTADAS = {
   },
   // o stirge (24 px, escolhido pelo dono)
   stirge: { base: 'stirge', meta: metaStirge, url: urlStirge },
+  // O SPECTATOR (aprovado pelo dono): a unica folha com PARADO proprio -- a
+  // boca, a lingua e as quatro hastes se mexem sem a figura sair do lugar.
+  spectator: { base: 'spectator', meta: metaSpectator, url: urlSpectator },
+  // A CAVEIRA CANDENTE (aprovada pelo dono): so a cabeca, quadro de 56.
+  caveiraCandente: { base: 'caveiraCandente', meta: metaCaveiraCandente, url: urlCaveiraCandente },
   // O WRAITH (Mormesk, aprovado pelo dono): a figura mais escura do elenco,
   // e translucida pelo mesmo caminho do espectro (`c.incorporeo`).
   wraith: { base: 'wraith', meta: metaWraith, url: urlWraith },

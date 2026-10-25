@@ -242,11 +242,11 @@ export const ABERRACOES = {
     flyFt: 40,
     attacks: [
       {
-        // `art: 'bow'` é PROVISÓRIO: é o único traçado de projétil que
-        // `visuals.js` tem hoje, e um arco invisível atirando fogo passa. O
-        // certo é uma receita `fagulha` — está pedido no relatório.
+        // `art: 'fagulha'`: a receita própria em `visuals.js` — uma brasa
+        // VERDE com rastro, e fogo no impacto. Antes era `bow`, uma flecha
+        // dourada saindo de um arco invisível, marcada como provisória.
         name: 'Fagulha', bonus: 5, damage: '2d6', type: 'fogo',
-        ranged: true, rangeFt: 60, longRangeFt: 60, art: 'bow',
+        ranged: true, rangeFt: 60, longRangeFt: 60, art: 'fagulha',
       },
       {
         name: 'Mordida Ardente', bonus: 5, damage: '1d6+3', type: 'fogo',
@@ -369,8 +369,11 @@ export const ABERRACOES = {
         // `art: 'bow'` é PROVISÓRIO, pelo mesmo motivo da fagulha da caveira:
         // é o único traçado de projétil que `visuals.js` tem hoje. O certo é
         // uma receita `raioOcular` — está pedido no relatório.
+        // `art: 'raioDasHastes'`: um feixe necrótico instantâneo, sem arco —
+        // é o que separa um raio de uma flecha. Antes era `bow`, uma flecha
+        // dourada saindo de um arco invisível.
         name: 'Raio das Hastes', bonus: 5, damage: '2d6', type: 'necrótico',
-        ranged: true, rangeFt: 60, longRangeFt: 60, art: 'bow',
+        ranged: true, rangeFt: 60, longRangeFt: 60, art: 'raioDasHastes',
         // O susto é o que faz o raio valer mais que o dado: amedrontado, o
         // alvo não pode AVANÇAR na direção dele, e o guardião ganha a rodada
         // que precisava sem ter matado ninguém.

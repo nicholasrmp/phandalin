@@ -561,6 +561,8 @@ function foesGrandes() {
     makeMonster('gelatinaOcre', { x: 13, y: 8 }),
     makeMonster('espectro', { x: 9, y: 9 }),
     makeMonster('wraith', { x: 7, y: 9 }),
+    makeMonster('caveiraCandente', { x: 5, y: 9 }),
+    makeMonster('spectator', { x: 12, y: 10 }),
   ];
   for (const f of foes) f.facingVec = { dx: -1, dy: 1 };
   return foes;

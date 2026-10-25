@@ -5988,6 +5988,32 @@ teste('drow do Manual: dois golpes de espada curta e Fogo das Fadas em grupo', (
   assert.ok(d.concentrating, 'mantém a concentração');
 });
 
+teste('Vínculo do Guardião: cura 5 por turno perto do que guarda, e não se afasta', () => {
+  const { enc, foes } = montar({ foes: [['spectator', { x: 8, y: 5 }]], lado: 'foes' });
+  const s = foes[0];
+  s.vinculo = { x: 8, y: 5, raioFt: 30 };
+  s.hp = 20;
+  // Começo do turno dele, em casa: +5.
+  enc.beginSide('foes');
+  assert.equal(s.hp, 25, 'curou 5 perto do objeto');
+  // A cerca: nenhuma casa alcançável passa de 9 m do vínculo.
+  s.movementLeftFt = 60;
+  for (const chave of enc.reachableFor(s).keys()) {
+    const [x, y] = chave.split(',').map(Number);
+    assert.ok(Math.max(Math.abs(x - 8), Math.abs(y - 5)) * 5 <= 30, `casa ${chave} está fora do vínculo`);
+  }
+  // Longe do que guarda, não cura.
+  s.pos = { ...s.pos, x: 1, y: 1 };
+  s.hp = 20;
+  enc.beginSide('foes');
+  assert.equal(s.hp, 20, 'longe do objeto não há cura');
+  // E com os PV cheios a cura não passa do teto.
+  s.pos = { ...s.pos, x: 8, y: 5 };
+  s.hp = s.maxHp;
+  enc.beginSide('foes');
+  assert.equal(s.hp, s.maxHp);
+});
+
 teste('Gelatina Ocre: cortada, parte-se em duas menores com metade dos PV', () => {
   const { enc, party, foes } = montar({ foes: [['gelatinaOcre', { x: 8, y: 5 }]] });
   const g = foes[0];

@@ -436,6 +436,7 @@ export class Encounter {
       c.acted = false;
       c.aurasNoTurno = [];
       c.ataquesRestantes = 0;
+      this.vinculoDoGuardiao(c);
       for (const ativa of Object.values(c.magiasAtivas ?? {})) ativa.usadoNoTurno = false;
       // Velocidade: uma ação a mais por turno, só para atacar (um golpe),
       // correr, desengajar ou usar um objeto.
@@ -751,6 +752,33 @@ export class Encounter {
   //  - Para jogá-la sozinha (IA aliada), `takeMonsterTurn` já serve: ela só
   //    pergunta por `enemiesOf`, que olha o lado.
   /**
+   * VÍNCULO DO GUARDIÃO (o spectator).
+   *
+   * Ele foi amarrado a um objeto: não se afasta dele (a cerca mora em
+   * `reachableFor`, junto com a corrente do canil) e, em troca, recupera 5 PV
+   * no começo de cada turno em que estiver perto.
+   *
+   * A cura é o que faz o encontro ter uma PERGUNTA. Com 39 PV e 5 por turno,
+   * bater nele enquanto ele está em casa é jogar contra a corrente: o grupo
+   * precisa tirá-lo de lá, cercá-lo com dano suficiente para passar da cura,
+   * ou descobrir as ordens dele e negociar — que é o que a ficha quer, já que
+   * ele conversa antes de lutar.
+   *
+   * Sem `vinculo` declarado na cena não há cura nem cerca: um spectator solto
+   * é só um monstro voador, e nenhuma cena existente muda de comportamento.
+   */
+  vinculoDoGuardiao(c) {
+    const v = c.vinculo;
+    if (!v || c.dead || c.hp <= 0 || c.hp >= maxHpEfetivo(c)) return;
+    if (distanceFt(v, c.pos) > v.raioFt) return;
+    const antes = c.hp;
+    this.heal(c, v.cura ?? 5);
+    if (c.hp > antes) {
+      this.say('recurso', `${c.name} se refaz junto do que guarda: +${c.hp - antes} PV.`);
+    }
+  }
+
+  /**
    * DIVISÃO da Gelatina Ocre (SRD).
    *
    * Atingida por dano CORTANTE ou ELÉTRICO, com 10 PV ou mais e sendo Média
@@ -1033,7 +1061,10 @@ export class Encounter {
     const evita = evitarZonas && this.zonas.length && !hostil(actor.pos);
     const cabeNaPegada = this.cabeNaCasa(actor, f);
     // Acorrentado (os lobos do canil): só anda até onde a corrente alcança.
-    const corrente = actor.corrente;
+    // O VÍNCULO DO GUARDIÃO (o spectator) é a mesma cerca com outro nome: ele
+    // foi amarrado a um objeto e não se afasta dele. Uma corrente que ninguém
+    // vê, e por isso os dois campos têm a mesma forma — `{x, y, raioFt}`.
+    const corrente = actor.corrente ?? actor.vinculo;
     const cabeBase = corrente
       ? (x, y) => distanceFt(corrente, { x, y }) <= corrente.raioFt && (!cabeNaPegada || cabeNaPegada(x, y))
       : cabeNaPegada;
@@ -1996,7 +2027,8 @@ export class Encounter {
     const { x: x0, y: y0 } = actor.pos;
     // As mesmas cercas do andar: a corrente do canil e o Duelo Compelido.
     const duelista = this.duelistaDe(actor);
-    const podePousar = (x, y) => (!actor.corrente || distanceFt(actor.corrente, { x, y }) <= actor.corrente.raioFt)
+    const cerca = actor.corrente ?? actor.vinculo;
+    const podePousar = (x, y) => (!cerca || distanceFt(cerca, { x, y }) <= cerca.raioFt)
       && (!duelista || distanceFt(duelista.pos, { x, y }) <= 30 || distanceFt(duelista.pos, { x, y }) <= distanceFt(duelista.pos, actor.pos));
     const h0 = this.field.heightAt(x0, y0);
     // Com a magia Salto o salto pode pousar um nível acima do de partida e passa por cima de buraco

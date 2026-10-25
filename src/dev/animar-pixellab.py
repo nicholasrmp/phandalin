@@ -924,6 +924,51 @@ CRIATURAS['nezznarSul'] = {
              'its crimson lining, the black spider staff fallen on the ground beside him'),
 }
 
+# O SPECTATOR (aprovado pelo dono). A unica criatura com PARADO PROPRIO: ele
+# flutua sem sair do lugar, e o que o jogador ve enquanto ele FALA -- ele
+# conversa antes de lutar -- e a boca e as quatro hastes se mexendo. Um
+# quadro de respirar nao conta essa historia.
+#
+# O golpe e o Raio das Hastes, nao a mordida: e o que ele usa duas vezes por
+# turno. Quem dispara sao as HASTES, e nao a boca.
+_SPECTATOR = ('a floating one-eyed aberration: a round scaly dark olive-green body with '
+              'spikes, one huge narrowed eye, a wide open mouth with long fangs and a '
+              'hanging pink tongue, and four thick tentacles that each end in a small '
+              'yellow eye')
+CRIATURAS['spectator'] = {
+    'sujeito': _SPECTATOR,
+    'andar': ('floating forward through the air, bobbing gently, the four eye '
+              'tentacles trailing and waving, never touching the ground'),
+    'parado': 'hovering in the air, the four eye tentacles spread around the body',
+    'parado_anim': ('hovering in place and bobbing slowly up and down, the mouth opening '
+                    'and closing and the long tongue curling and uncurling below it, '
+                    'while the four eye tentacles sway and the small eyes on their tips '
+                    'look around in different directions'),
+    'golpe': ('the four eye tentacles all swinging to point {para} and their small eyes '
+              'flaring bright, firing thin beams {para}, then the tentacles relaxing back'),
+    'cair': ('destroyed, the spectator stops floating: the tentacles go limp, the big eye '
+             'closes, the body sags and drops to the ground, where it lies deflated and '
+             'still with the tongue spilled out'),
+}
+
+# A CAVEIRA CANDENTE (aprovada pelo dono). Flutua, e o ataque dela e a
+# FAGULHA: a chama verde infla e cospe uma brasa. A morte NAO e um desmanche
+# como a do espectro -- o cranio SOBRA, porque o traco `reacendeNaMorte` diz
+# que ela volta se ninguem queimar os restos. Entao o fogo apaga e o osso cai.
+_CAVEIRA = ('a flaming skull floating in the air: a bare pale human skull with no body '
+            'and no neck, wrapped in bright green fire, with small red-orange embers '
+            'burning inside the empty eye sockets')
+CRIATURAS['caveiraCandente'] = {
+    'sujeito': _CAVEIRA,
+    'andar': ('floating forward through the air, bobbing slightly, the green flames '
+              'streaming back off the skull, never touching the ground'),
+    'parado': 'hovering in the air, the green flames licking slowly upward off the skull',
+    'golpe': ('the green fire swelling and flaring bright, then the skull spitting a small '
+              'bright green-white spark {para}, the flames shrinking back afterwards'),
+    'cair': ('destroyed, the green fire gutters out and dies, and the bare blackened skull '
+             'drops and lands on the ground, lying still with the eye sockets dark'),
+}
+
 # O WRAITH (Mormesk, aprovado pelo dono). Mesmo caso do espectro: flutua, o
 # golpe e o Dreno de Vida (a garra atravessa, entao e um avanco de mao aberta)
 # e a morte e um desmanche no ar, nao um corpo que cai. O que muda e a
@@ -1037,6 +1082,24 @@ def poses_de(chave):
         }))
     # A MAGIA, para quem conjura: um gesto proprio por direcao, que o motor usa
     # nas magias no lugar do golpe de arma (`conjurar`).
+    # O PARADO DE VERDADE (`parado_anim`), por direcao. Quase todo mundo fica
+    # parado com a vista da rotacao mais um quadro de respirar, que o
+    # importador faz de graca. Quem precisa de mais -- o spectator mexe boca,
+    # lingua e as quatro hastes oculares sem sair do lugar -- gera um parado
+    # proprio. Custa uma geracao por direcao, entao so entra onde a figura
+    # parada E a leitura da criatura.
+    if c.get('parado_anim'):
+        for d in OITO:
+            olha, _ = OLHAR[d]
+            poses.append(('idle-dir', [d], {
+                'mode': 'pixminimax',
+                'action_description': (
+                    f'{olha}, ' + c['parado_anim'] + '. The creature stays in the same '
+                    'spot the whole time and never turns around.'),
+                'subject_description': c['sujeito'],
+                'initial_pose': f'{olha}, ' + c['parado'],
+                'frame_count': 8,
+            }))
     if c.get('magia'):
         for d in OITO:
             olha, para = OLHAR[d]

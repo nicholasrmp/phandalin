@@ -66,6 +66,10 @@ const COR = {
   // Paralisia é cinza-aço, não ciano: ciano é frio, e congelar não é travar.
   paralisia: '#9fb0c8',
   teia: '#e6e6ea',
+  // O fogo VERDE da caveira candente: o mesmo `glow` do look dela.
+  fogoVerde: '#cdf262',
+  // O amarelo dos olhos das hastes do spectator (`metal` no look dele).
+  hasteOcular: '#dcd37e',
   // Cor que o stirge rouba. Cinza azulado é o que sobra de uma figura sem sangue.
   semCor: '#9aa3b2',
   osso: '#ded2b4',
@@ -200,6 +204,39 @@ const WEAPON_VISUALS = {
    * entram com uma ponta só, e o `sting` do dicionário de som é exatamente
    * isso (sobe 900→1500 Hz sem corpo nenhum).
    */
+  /**
+   * FAGULHA da caveira candente.
+   *
+   * Antes ela atirava com `bow`: uma flecha dourada saindo de um arco
+   * invisivel, marcada como provisoria na ficha. O que ela cospe e uma BRASA
+   * do fogo que a envolve, e o fogo dela e VERDE -- a mesma inversao que o
+   * look define (chama verde, orbitas vermelhas). Uma flecha amarela
+   * contrariava as duas coisas.
+   *
+   * Sem sprite proprio: a brasa e um `orb` verde com rastro, e no impacto
+   * entram os quadros de fogo que o jogo ja tem mais faiscas verdes. Zero
+   * geracao, e o jogador le "cuspe de fogo" e nao "tiro de arco".
+   */
+  fagulha: (board, { attacker, target }) => {
+    return {
+      delay: 0.3,
+      som: 'castFire',
+      start: () => board.fx.projectile(attacker.pos, target.pos, {
+        style: 'orb', color: COR.fogoVerde, dur: 0.3, arc: 0.35, trail: true,
+      }),
+      onHit: () => {
+        // Os quadros `fogo-impacto` que o jogo ja tem sao LARANJA, e a brasa
+        // que acabou de chegar e verde: visto no jogo, a troca de cor no meio
+        // do golpe le como dois efeitos diferentes. Entao o impacto e todo
+        // verde -- clarao, faiscas e o baque -- e fica coerente com a chama
+        // que o cuspiu.
+        board.fx.smash(target.pos, { color: COR.fogoVerde });
+        board.fx.impact(target.pos, { color: COR.fogoVerde, count: 10, spread: 34 });
+      },
+      faisca: false,
+    };
+  },
+
   sting: (board, { attacker, target }) => {
     const ang = screenAngle(board, attacker.pos, target.pos);
     return {
@@ -299,6 +336,78 @@ const WEAPON_VISUALS = {
    * impacto, não na saída — o espectro atravessa o ar sem nada a anunciar, e o
    * silêncio antes do toque é metade do susto.
    */
+  /**
+   * RAIO DAS HASTES do spectator.
+   *
+   * Como a Fagulha, antes era `bow`: uma flecha dourada de um arco invisivel.
+   * O que ele dispara e um RAIO, e quem dispara sao as quatro hastes
+   * oculares, nao a boca -- a animacao da folha mostra as hastes virando e
+   * acendendo. Aqui vem a parte que a folha nao faz: o feixe atravessando o
+   * tabuleiro ate o alvo.
+   *
+   * `beam` e instantaneo e nao tem arco, que e a diferenca de leitura entre
+   * um RAIO e uma flecha. A cor e a necrotica do jogo, porque o dano e
+   * necrotico, e o `piscar` no alvo e o mesmo sinal do Toque Necrotico: quem
+   * ja viu um reconhece o outro.
+   */
+  raioDasHastes: (board, { attacker, target }) => {
+    return {
+      delay: 0.22,
+      som: 'castNecrotic',
+      somInicio: null,
+      start: () => {
+        // QUATRO FEIXES, UM POR HASTE -- nao um laser.
+        //
+        // A folha mostra as quatro hastes acendendo e disparando ao mesmo
+        // tempo; um unico fio saindo do meio da criatura desmentia o desenho.
+        // Aqui saem quatro, de quatro pontos em volta do corpo, e os quatro
+        // convergem no alvo. As origens sao deslocamentos em CASAS, nao em
+        // pixels: `centerF` aceita fracao, e no isometrico (+d,-d) anda para a
+        // direita na tela, (+d,+d) para baixo -- entao os quatro viram uma
+        // cruz em volta da criatura, que e onde as hastes estao.
+        //
+        // AMARELO na saida, NECROTICO na chegada. Quem dispara sao os olhos
+        // das hastes, que sao amarelos; o violeta fica no alvo, onde o dano
+        // necrotico acontece.
+        //
+        // Cada feixe tem corpo e MIOLO BRANCO: e a mesma leitura do clarao da
+        // folha, branco no centro e amarelo em volta. `jagged: false` porque o
+        // raio dele e reto -- o tremido fica para o Toque Necrotico.
+        // `d` e o quanto as quatro saidas se afastam do centro. Com 0,32 e
+        // feixes de 5 px os quatro encostavam e viravam UMA FAIXA; o leque so
+        // aparecia colado na criatura. Mais abertura e feixes mais finos: as
+        // quatro linhas ficam separadas quase ate o alvo, e la convergem,
+        // porque o alvo e um so.
+        const d = 0.5;
+        const hastes = [
+          { x: attacker.pos.x + d, y: attacker.pos.y - d },
+          { x: attacker.pos.x - d, y: attacker.pos.y + d },
+          { x: attacker.pos.x + d, y: attacker.pos.y + d },
+          { x: attacker.pos.x - d, y: attacker.pos.y - d },
+        ];
+        // O BRILHO DOS OLHOS VEM DAQUI, e nao da folha. A folha mostra so a
+        // criatura virando as hastes; quem acende as quatro pontas e este
+        // clarao, um por haste. Assim a luz e a mesma nas oito direcoes.
+        for (const de of hastes) board.fx.smash(de, { color: COR.hasteOcular });
+        hastes.forEach((de, i) => {
+          // Duracoes levemente diferentes: os quatro apagam fora de compasso,
+          // e isso basta para o olho contar quatro em vez de ver um bloco.
+          board.fx.beam(de, target.pos, { color: COR.hasteOcular, dur: 0.26 + i * 0.015, width: 3, jagged: false });
+          board.fx.beam(de, target.pos, { color: '#fffbe8', dur: 0.22 + i * 0.015, width: 1, jagged: false });
+        });
+        board.fx.impact(attacker.pos, { color: COR.hasteOcular, count: 6, spread: 18, dur: 0.3 });
+      },
+      onHit: () => {
+        // O feixe chega e ESTOURA: o mesmo amarelo da saida, para o jogador
+        // ligar as duas pontas, e so entao o violeta do dano necrotico.
+        board.fx.smash(target.pos, { color: COR.hasteOcular });
+        board.fx.piscar(target, { color: COR.necrotico, dur: 0.4 });
+        board.fx.impact(target.pos, { color: COR.necroticoFundo, count: 8, spread: 20, dur: 0.5 });
+      },
+      faisca: false,
+    };
+  },
+
   necroticTouch: (board, { attacker, target }) => {
     return {
       delay: 0.28,
@@ -514,6 +623,8 @@ const ART_ALIAS = {
   toqueNecrotico: 'necroticTouch', 'toqueNecrótico': 'necroticTouch', toque: 'necroticTouch',
   drenoDeVida: 'lifeDrain', dreno: 'lifeDrain',
   teia: 'web',
+  fagulha: 'fagulha', brasa: 'fagulha',
+  raio: 'raioDasHastes', raioDasHastes: 'raioDasHastes',
   acido: 'acid', 'ácido': 'acid', pseudopode: 'acid', 'pseudópode': 'acid',
   sugar: 'drain', sugada: 'drain', drenoDeSangue: 'drain',
 };
@@ -525,6 +636,8 @@ function guessArt(name = '') {
   if (n.includes('dreno de sangue') || n.includes('sugar')) return 'drain';
   if (n.includes('toque')) return 'necroticTouch';
   if (n.includes('teia')) return 'web';
+  if (n.includes('fagulha') || n.includes('brasa')) return 'fagulha';
+  if (n.includes('raio das hastes')) return 'raioDasHastes';
   if (n.includes('pseudóp') || n.includes('pseudop') || n.includes('ácido') || n.includes('acido')) return 'acid';
   if (n.includes('mordida') || n.includes('presa') || n.includes('bico')) return 'bite';
   if (n.includes('garra') || n.includes('talão') || n.includes('talao')) return 'claw';

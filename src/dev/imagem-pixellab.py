@@ -80,6 +80,68 @@ IMAGENS = {
             'metal shine, no gold, no cloak, no robe.'
         ),
     },
+    # A CAVEIRA CANDENTE (Mormesk guarda uma? nao: ela e a da Caverna do Eco
+    # das Ondas). O look manda a INVERSAO que faz a figura: a chama e VERDE e
+    # as orbitas sao VERMELHO-LARANJA. A versao anterior do projeto tinha
+    # chama laranja com orbita azul, e o olhar caia na fogueira em vez de cair
+    # na cabeca -- que e o que o jogador precisa mirar. Texto curto.
+    'caveiraCandente': {
+        'image_size': {'width': 56, 'height': 56},
+        'outline': 'single color black outline',
+        'detail': 'low detail',
+        'view': 'low top-down',
+        'direction': 'south',
+        'no_background': True,
+        'description': (
+            'A flaming skull floating in the air, facing the viewer: a bare human '
+            'skull of pale bone with no body, no neck and no jawbone attached, '
+            'wrapped in bright GREEN fire that streams upward off the top and sides '
+            'of the skull. Inside the two empty eye sockets burn small RED-ORANGE '
+            'embers. Green flames, pale bone, red eye sockets, black outline.'
+        ),
+    },
+    # O SPECTATOR (capitulo 4: a Caverna do Eco das Ondas). LICENCA: o nome e
+    # o conceito sao conteudo de fa; a ARTE e nossa, e o texto daqui descreve
+    # o que o LOOK do projeto define, nao uma ilustracao oficial. As cores sao
+    # as de la: escama verde-oliva em valor MEDIO (entre o vigia quase preto e
+    # a caveira verde-limao), goela e lingua rosadas como os unicos pontos
+    # quentes, iris azul-acinzentada no olho central e olhos amarelos nas
+    # hastes. O vaivem entre o olho frio em cima e a boca quente embaixo e o
+    # que faz uma bola parecer que tem duas coisas acontecendo nela.
+    'spectator': {
+        # TENTATIVA 4, e a alavanca que faltava: GERAR GRANDE E REDUZIR. As
+        # tres primeiras foram desenhadas direto em 64 px e sairam granuladas,
+        # com as hastes boiando soltas -- a 64 px o modelo nao tem pixels para
+        # separar bola, boca e tentaculos. Em 128 ele tem, e a reducao depois
+        # e nossa, com a paleta travada. O teto da rota e area de 512x512.
+        'image_size': {'width': 128, 'height': 128},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'view': 'low top-down',
+        'direction': 'south',
+        'no_background': True,
+        # TENTATIVA 3. As duas primeiras saíram granuladas e com as hastes
+        # BOIANDO soltas em volta da bola, porque eu as descrevi como "stalks"
+        # finas. Pela imagem que o dono mandou elas sao TENTACULOS grossos e
+        # curvos, presos ao corpo, e a boca e enorme e ABERTA com a lingua
+        # pendurada para fora -- e a boca, nao o olho, que ocupa metade da
+        # figura. A silhueta e o que importa num quadro de 64.
+        'description': (
+            'A cruel, menacing floating monster facing the viewer: a round scaly '
+            'dark olive-green body like a '
+            'ball, bristling with sharp spikes. In the upper half of the body there '
+            'is ONE SINGLE ENORMOUS EYE, one eye only, centred, as wide as a third '
+            'of the whole body, NARROWED into a hateful glare under a heavy bony '
+            'brow -- NOT a pair of eyes, NOT two eyes. Below it a HUGE '
+            'WIDE OPEN MOUTH filling the lower half of the body, crowded with long '
+            'uneven jagged fangs and a deep dark red gullet, with a long pink TONGUE '
+            'hanging down out of it below the body. FOUR thick green TENTACLES grow '
+            'from the body and curve outward and upward, each one ending in a round '
+            'yellow eye. No arms, no legs, no wings: it floats. Green scales, pink '
+            'mouth and tongue, yellow eyes, black outline. NEGATIVE: two eyes, a pair '
+            'of eyes, face with two eyes, nose, eyebrows.'
+        ),
+    },
 }
 
 

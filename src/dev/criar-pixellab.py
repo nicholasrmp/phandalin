@@ -1590,6 +1590,59 @@ DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
 
 LIMITES = {'description': 2000, 'edit_description': 1000}
 
+# O SPECTATOR (capitulo 4: a Caverna do Eco das Ondas). LICENCA: o nome e o
+# conceito sao conteudo de fa; a ARTE e nossa.
+#
+# CINCO TENTATIVAS NO PIXELLAB antes desta, e a licao esta no
+# `imagem-pixellab.py`: desenhar direto em 64 px deixa o corpo granulado e as
+# hastes boiando soltas, porque nesse tamanho o modelo nao tem pixels para
+# separar bola, boca e tentaculos. Em 128 px ele separa. Mesmo assim o dono
+# preferiu o desenho do OpenArt, que ja estava pago, e e dele que sai a vista
+# sul: reduzida a 70 px de largura (a figura e MAIS LARGA QUE ALTA, os quatro
+# tentaculos abrem para os lados) num quadro de 72.
+PERSONAGENS['spectator'] = {
+    'rota': '/create-character-v3',
+    'referencia': '_referencias/pixellab/spectator-ref/sul.png',
+    'corpo': {
+        'name': 'Spectator',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 72, 'height': 72},
+        'enhance_prompt': False,
+        'description': (
+            'A floating one-eyed aberration: a round scaly dark olive-green body '
+            'bristling with spikes, ONE single enormous narrowed eye in the upper '
+            'half, a huge wide open mouth below it with long uneven fangs and a '
+            'dark red gullet, a long pink tongue hanging down out of the mouth, and '
+            'FOUR thick green tentacles curving outward, each ending in a yellow '
+            'eye. It floats. NEGATIVE: two eyes, arms, legs, wings, human face.'
+        ),
+    },
+}
+
+# A CAVEIRA CANDENTE (capitulo 4: a Caverna do Eco das Ondas). A VISTA SUL
+# APROVADA PELO DONO veio do `imagem-pixellab.py`, a rota de UMA imagem, e
+# saiu boa na primeira. Quadro de 56: ela e so a cabeca flutuando, nao tem
+# corpo, entao ocupa menos que um humanoide Medio.
+PERSONAGENS['caveiraCandente'] = {
+    'rota': '/create-character-v3',
+    'referencia': '_referencias/pixellab/caveira-ref/sul.png',
+    'corpo': {
+        'name': 'Caveira candente',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 56, 'height': 56},
+        'enhance_prompt': False,
+        'description': (
+            'A flaming skull floating in the air: a bare pale human skull with no '
+            'body and no neck, wrapped in bright GREEN fire streaming upward off '
+            'the top and sides, with small RED-ORANGE embers burning inside the two '
+            'empty eye sockets. NEGATIVE: body, neck, shoulders, arms, hands, '
+            'orange flames, blue eyes, helmet, hair, candle.'
+        ),
+    },
+}
+
 # O WRAITH (Mormesk, a aparicao da Caverna do Eco das Ondas). A VISTA SUL
 # APROVADA PELO DONO veio do `imagem-pixellab.py`, a rota de UMA imagem: a
 # primeira tentativa virou um cavaleiro fantasma de elmo polido e dourado nos

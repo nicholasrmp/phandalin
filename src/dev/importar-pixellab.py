@@ -515,6 +515,57 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
                         'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
     },
+    # O SPECTATOR (aprovado pelo dono). Centro medido pelo VERDE-OLIVA do
+    # corpo; a lingua rosada e os olhos amarelos ficam de fora.
+    #
+    # `parado`: a unica criatura com parado PROPRIO. Quatro quadros do
+    # `idle-dir` em ciclo -- boca, lingua e as quatro hastes se mexendo sem a
+    # figura sair do lugar.
+    #
+    # OS QUADROS DO GOLPE SAO OS DO CLARAO, NAO OS DO RAIO. O PixelLab desenha
+    # o raio dentro da celula de 72 px, e ele morre cortado na borda: visto no
+    # tabuleiro, seria um toco de luz do tamanho da criatura. Quem atravessa o
+    # mapa e o `beam` do motor (`raioDasHastes` em `visuals.js`). Entao da
+    # folha vale so o que acontece NA criatura -- as hastes acendendo -- e o
+    # resto e desenhado por cima, do tamanho que a distancia pedir.
+    'spectator': {
+        'ataque': ['attack-dir'], 'pele': (0.17, 0.30), 'pele_sv': (0.2, 0.9, 0.2),
+        'margem': 6,
+        'parado': ('idle-dir', [0, 2, 4, 6], [14, 14, 14, 14]),
+        # O SPRITE NAO SOLTA LUZ. Dos nove quadros do golpe, valem os que
+        # mostram SO a criatura virando as hastes para o alvo. Os quadros de
+        # clarao e de raio ficam de fora inteiros: o raio do PixelLab morre
+        # cortado na borda da celula, e mesmo o clarao, que parece inofensivo,
+        # dispara faixas de luz pelo quadro que brigam com o feixe do motor --
+        # dois raios do mesmo bicho, um curto e um longo.
+        #
+        # O brilho dos olhos nao se perde: ele passou para o motor
+        # (`raioDasHastes` em `visuals.js`), que acende as quatro hastes e
+        # dispara os quatro feixes. Assim a luz e IGUAL nas oito direcoes, e
+        # nao refem do que o modelo desenhou em cada uma.
+        'quadros': [1, 2],
+        'por_direcao': {'south': [1, 2], 'south-east': [1, 2], 'east': [2, 3],
+                        'north-east': [1, 7], 'north': [0, 7], 'north-west': [1, 5],
+                        'west': [2, 6], 'south-west': [1, 6]},
+    },
+    # A CAVEIRA CANDENTE (aprovada pelo dono). O centro e medido pelo OSSO
+    # (creme, matiz quente), nao pela chama: a chama se mexe muito e e ela que
+    # mudaria o centro de quadro a quadro.
+    #
+    # OS QUADROS DO GOLPE MUDAM MUITO POR DIRECAO, e por um defeito: nas tres
+    # vistas do NORTE o texto "a chama inflando" virou uma bola verde que
+    # ENGOLE o cranio nos quadros do meio, e a criatura some. Nessas tres o
+    # golpe sai dos quadros em que o cranio ainda aparece -- o primeiro como
+    # carga e um dos ultimos, ja com a fagulha. Nas cinco de frente o quadro
+    # bom e o da mandibula aberta cuspindo.
+    'caveiraCandente': {
+        'ataque': ['attack-dir'], 'pele': (0.06, 0.14), 'pele_sv': (0.15, 0.6, 0.45),
+        'margem': 6,
+        'quadros': [2, 3],
+        'por_direcao': {'south': [2, 3], 'south-east': [3, 4], 'east': [3, 4],
+                        'north-east': [0, 6], 'north': [0, 7], 'north-west': [0, 5],
+                        'west': [4, 5], 'south-west': [3, 4]},
+    },
     # O WRAITH (Mormesk, aprovado pelo dono). Figura CINZA: nao ha pele nem
     # matiz nenhum para medir, entao o criterio e o do lobo -- qualquer matiz,
     # saturacao baixa, e um valor minimo que deixa de fora o contorno preto e
@@ -1012,6 +1063,15 @@ def main():
     if 'andar' in perfil:
         PLANO = [(n, fonte_, perfil['andar'], h) if n == 'walk' else (n, fonte_, q, h)
                  for n, fonte_, q, h in PLANO]
+    # O PARADO DE VERDADE. Por padrao o `idle` e a VISTA PARADA da rotacao
+    # mais um quadro de `respirar` (o tronco estica 1 px): e o suficiente para
+    # quem so precisa nao parecer uma estatua. Quem tem um parado PROPRIO
+    # gerado -- o spectator mexe boca, lingua e as quatro hastes oculares sem
+    # sair do lugar -- troca a fonte aqui, e os quadros vem da animacao.
+    if 'parado' in perfil:
+        nome_p, quadros_p, hold_p = perfil['parado']
+        PLANO = [('idle', ('animation', nome_p), quadros_p, hold_p) if n == 'idle'
+                 else (n, fonte_, q, h) for n, fonte_, q, h in PLANO]
     if 'conjurar' in perfil:
         PLANO = PLANO + [('conjurar', ('animation', 'cast-dir'), [3, 5], [10, 16])]
         QUADROS_POR_DIRECAO.update({('conjurar', d): q for d, q in perfil['conjurar'].items()})

@@ -90,3 +90,10 @@ python src/dev/importar-pixellab.py --fonte $R/espectro-04d70e89/anim --chave es
 # a aparicao (Mormesk): mesma receita do espectro, com a pose de chao no
 # quadro 4 da queda
 python src/dev/importar-pixellab.py --fonte $R/wraith-72e86cb5/anim --chave wraith --nome wraith | grep -E "KB" || true
+# a caveira candente: nas tres vistas do norte a chama engole o cranio nos
+# quadros do meio, entao o golpe de la sai dos quadros das pontas
+python src/dev/importar-pixellab.py --fonte $R/caveiraCandente-68b93c92/anim --chave caveiraCandente --nome caveiraCandente | grep -E "KB" || true
+# o spectator: parado proprio (`idle-dir`) e, no golpe, os quadros do CLARAO
+# -- o raio que o PixelLab desenha morre cortado na borda da celula; quem
+# atravessa o mapa e o `beam` do motor
+python src/dev/importar-pixellab.py --fonte $R/spectator-955a8cd7/anim --chave spectator --nome spectator | grep -E "KB" || true
