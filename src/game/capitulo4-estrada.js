@@ -24,6 +24,7 @@ import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception } from '../rules/abilities.js';
 import { ritmoDe, furtividadeDoGrupo } from '../rules/marcha.js';
+import { montarAcampamento, atencaoDaVigia, vigiaDeTurno } from '../rules/acampamento.js';
 import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
 import { prepararLevas } from './levas.js';
@@ -82,6 +83,12 @@ export function criarEstrada(app, config) {
     if (estado.encerrado) return;
     estado.encerrado = true;
     levas?.limpar();
+    // Quanto a luta tomou da noite, em minutos: seis segundos por rodada. É o
+    // que o descanso longo precisa saber (`rules/acampamento.js`): só uma hora
+    // ou mais de esforço manda recomeçar a noite.
+    if (noite && camp.viagem) {
+      camp.viagem.minutosDaNoite = (camp.viagem.minutosDaNoite ?? 0) + (enc.round ?? 1) * 0.1;
+    }
     const grupo = enc.combatants.filter((c) => c.side === 'party');
     if (outcome !== 'vitoria') {
       await narrar(root, { formato: 'tela', paginas: [{ titulo: 'Na Trilha Triboar', texto: [
@@ -174,30 +181,65 @@ export function criarEstrada(app, config) {
       // Quem chega escondido: de noite, todos; de dia, só os que caçam.
       const escondidos = noite || CACADORES.has(e.id);
       const primeiros = inimigos.slice(0, primeira);
-      // Em ritmo lento o grupo anda escondido (`rules/marcha.js`): ninguém o
-      // pega de surpresa, e se a Furtividade dele passar da Percepção passiva
-      // do bando, quem embosca é o grupo. Regra da casa: o livro só diz que o
-      // ritmo lento "permite usar furtividade" e não detalha o resultado.
-      // De DIA e em ritmo lento o grupo anda escondido (`rules/marcha.js`): se
-      // o teste de grupo de Furtividade passar da Percepção passiva do bando,
-      // quem embosca é o grupo. Falhando, o encontro corre como correria no
-      // passo normal — andar devagar não apaga a emboscada de quem caça.
-      // À noite o grupo está parado na fogueira: ritmo nenhum vale ali.
-      const ritmo = ritmoDe(camp.viagem?.ritmo);
-      const nossa = !noite && ritmo.furtivo
-        ? furtividadeDoGrupo(enc.rng, enc.allOf('party'), primeiros, passivePerception)
-        : null;
-      if (nossa?.furtivo) {
-        // UMA rolagem, a do grupo: `rolarSurpresa` fica com o MENOR valor da
-        // lista, então mandar as quatro faria a pior delas valer por todas e a
-        // emboscada não surpreenderia ninguém.
-        enc.emboscada = { emboscadores: 'party', furtividade: [nossa.rolagem] };
-        enc.say('inicio', `O grupo vinha devagar e em silêncio (Furtividade ${nossa.rolagem} contra ${nossa.atencao}): são eles que são pegos.`);
-      } else {
-        if (nossa) enc.say('inicio', `O grupo vinha devagar, mas foi ouvido (Furtividade ${nossa.rolagem} contra ${nossa.atencao}).`);
-        enc.emboscada = escondidos
-          ? { emboscadores: 'foes', furtividade: primeiros.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total) }
+      const furtividadeDeles = () => primeiros.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+
+      if (noite) {
+        // À NOITE o grupo está parado no acampamento: ritmo nenhum vale, e o
+        // que decide é a vigia (`rules/acampamento.js`). SÓ UMA pessoa está
+        // acordada por vez — o revezamento não põe o grupo inteiro de pé —, e
+        // quem dorme não percebe nada, logo é surpreendido.
+        const acamp = config.acampamento
+          ? montarAcampamento({ ...config.acampamento, herois: enc.allOf('party') })
           : null;
+        const furtivos = furtividadeDeles();
+        const menor = Math.min(...furtivos);
+        const deTurno = acamp ? vigiaDeTurno(enc.rng, acamp) : null;
+        const atencao = deTurno ? atencaoDaVigia(acamp, deTurno) : 0;
+        const margem = atencao - menor;
+        const notou = Boolean(deTurno) && margem >= 0;
+        // Regra da casa: notar cedo (5 ou mais de margem) dá tempo de sacudir
+        // o resto; notar em cima da hora só salva quem estava de pé.
+        const gritouATempo = notou && margem >= 5;
+        const dormem = acamp
+          ? enc.allOf('party').filter((c) => c !== deTurno)
+          : enc.allOf('party');
+        if (notou && gritouATempo) {
+          enc.emboscada = null;
+          enc.say('inicio', `${deTurno.name} estava de vigia e ouve de longe (atenção ${atencao} contra ${menor}): dá tempo de acordar todo mundo.`);
+        } else if (notou) {
+          // Só quem vigiava reage; os outros acordam com a luta em cima.
+          enc.emboscada = { emboscadores: 'foes', furtividade: furtivos };
+          enc.dormindo = (c) => dormem.includes(c);
+          enc.say('inicio', `${deTurno.name} estava de vigia e vê a tempo (atenção ${atencao} contra ${menor}), mas os outros acordam com o barulho já em cima deles.`);
+        } else {
+          enc.emboscada = { emboscadores: 'foes', furtividade: furtivos };
+          enc.dormindo = (c) => dormem.includes(c);
+          enc.say('inicio', deTurno
+            ? `${deTurno.name} estava de vigia e não ouve nada a tempo (atenção ${atencao} contra ${menor}).`
+            : acamp?.vigias.length
+              ? 'Eles chegam justo na hora em que ninguém estava de pé: a vigia não cobria a noite inteira.'
+              : 'Ninguém estava de vigia: o acampamento inteiro dorme quando eles chegam.');
+        }
+      } else {
+        // De DIA e em ritmo lento o grupo anda escondido (`rules/marcha.js`):
+        // se o teste de grupo de Furtividade passar da Percepção passiva do
+        // bando, quem embosca é o grupo. Falhando, o encontro corre como
+        // correria no passo normal — andar devagar não apaga a emboscada de
+        // quem caça.
+        const ritmo = ritmoDe(camp.viagem?.ritmo);
+        const nossa = ritmo.furtivo
+          ? furtividadeDoGrupo(enc.rng, enc.allOf('party'), primeiros, passivePerception)
+          : null;
+        if (nossa?.furtivo) {
+          // UMA rolagem, a do grupo: `rolarSurpresa` fica com o MENOR valor da
+          // lista, então mandar as quatro faria a pior delas valer por todas e
+          // a emboscada não surpreenderia ninguém.
+          enc.emboscada = { emboscadores: 'party', furtividade: [nossa.rolagem] };
+          enc.say('inicio', `O grupo vinha devagar e em silêncio (Furtividade ${nossa.rolagem} contra ${nossa.atencao}): são eles que são pegos.`);
+        } else {
+          if (nossa) enc.say('inicio', `O grupo vinha devagar, mas foi ouvido (Furtividade ${nossa.rolagem} contra ${nossa.atencao}).`);
+          enc.emboscada = escondidos ? { emboscadores: 'foes', furtividade: furtividadeDeles() } : null;
+        }
       }
       app.selected = null;
       enc.start();

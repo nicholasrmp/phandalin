@@ -18,6 +18,11 @@ import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
 import { takeMonsterTurn, contornaZonas, runAutoSummons, encerrarTurnoComInvocados } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
 import {
+  LUGARES, VIGIAS, MINUTOS_QUE_QUEBRAM_O_DESCANSO, HORAS_LEVES, HORAS_DA_NOITE,
+  procurarLugar, montarAcampamento, atencaoDaVigia, ocultacaoDoAcampamento,
+  coberturaDaNoite, vigiaDeTurno, descansou, noiteQuebrada,
+} from '../rules/acampamento.js';
+import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm,
   cobrarMarchaForcada, furtividadeDoGrupo, podeMarchar,
 } from '../rules/marcha.js';
@@ -25,6 +30,7 @@ import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects }
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
+import { sortearEncontro } from '../rules/encontros-estrada.js';
 import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo } from '../rules/descanso.js';
 import { nivelDeExaustao, mudarExaustao, maxHpEfetivo, exaustaoFatal } from '../rules/conditions.js';
 import {
@@ -5404,6 +5410,232 @@ teste('a exaustao da estrada atravessa a luta do caminho', () => {
   c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente' || k.id === 'exausto');
   assert.equal(nivelDeExaustao(c), 2, 'a exaustao fica');
   assert.equal(hasCondition(c, 'abencoado'), false, 'a condicao de combate sai');
+});
+
+// ---- a noite e o acampamento -----------------------------------------------
+
+teste('a vigia vale a MEDIA de quem se reveza, mais o lugar e a fogueira', () => {
+  const { party } = montar();
+  const media = (quem) => Math.floor(quem.reduce((n, c) => n + passivePerception(c), 0) / quem.length);
+  const todos = media(party);
+  const aberto = montarAcampamento({ lugar: 'aberto', fogueira: false, vigia: 'revezam', herois: party });
+  assert.equal(atencaoDaVigia(aberto), todos, 'chao aberto e noite escura: so os olhos');
+  const comFogo = montarAcampamento({ lugar: 'aberto', fogueira: true, vigia: 'revezam', herois: party });
+  assert.equal(atencaoDaVigia(comFogo), todos + 2, 'a fogueira da 2');
+  const arvore = montarAcampamento({ lugar: 'arvore', fogueira: false, vigia: 'revezam', herois: party });
+  assert.equal(atencaoDaVigia(arvore), todos + 3, 'de cima do carvalho se ve a trilha');
+  const matagal = montarAcampamento({ lugar: 'matagal', fogueira: false, vigia: 'revezam', herois: party });
+  assert.equal(atencaoDaVigia(matagal), todos - 2, 'o matagal esconde quem chega tambem');
+  const sem = montarAcampamento({ lugar: 'arvore', fogueira: true, vigia: 'ninguem', herois: party });
+  assert.equal(atencaoDaVigia(sem), 0, 'sem vigia nao ha atencao nenhuma');
+});
+
+teste('deixar os dois melhores de vigia enxerga MAIS que revezar entre todos', () => {
+  const { party } = montar();
+  const revezam = montarAcampamento({ lugar: 'aberto', fogueira: false, vigia: 'revezam', herois: party });
+  const dois = montarAcampamento({ lugar: 'aberto', fogueira: false, vigia: 'dois', herois: party });
+  assert.ok(atencaoDaVigia(dois) > atencaoDaVigia(revezam),
+    'senao a escolha de quem vigia nao seria escolha nenhuma');
+  // E o preco e o descanso dos dois.
+  assert.equal(dois.vigias.filter((c) => !descansou(c, dois)).length, 2);
+  assert.equal(revezam.vigias.filter((c) => !descansou(c, revezam)).length, 0);
+});
+
+teste('meia racao estica a comida e a fome anda na metade da velocidade', () => {
+  const { party } = montar();
+  const rng = makeRng(21);
+  const c = garantirInventario(party[DARA]);
+  for (const h of party) h.dead = h !== c;
+  const antes = racoesDe(c);
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(c.diasSemComida, 0.5, 'meia racao: meio dia sem comer');
+  assert.equal(racoesDe(c), antes - 1, 'uma racao aberta');
+  // No dia seguinte a outra metade e comida, sem gastar racao nova.
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(c.diasSemComida, 1, 'mais meio dia');
+  assert.equal(racoesDe(c), antes - 1, 'a mesma racao deu dois dias');
+  // E comer direito zera a conta.
+  diaDeViagem(rng, [c], { agua: true });
+  assert.equal(c.diasSemComida, 0, 'um dia de comida de verdade zera');
+});
+
+teste('procurar abrigo: a CD do terreno manda, e so o chao aberto nao tem CD', () => {
+  const { party } = montar();
+  const c = party[BRENN];
+  const bonus = skillBonus(c, 'sobrevivencia');
+  // O chao aberto nao tem CD: aparece ate com 1 no dado.
+  const ruim = procurarLugar(dadoFixo(1), c, { terreno: 'comum' });
+  assert.deepEqual(ruim.lugares.map((l) => l.id), ['aberto']);
+  assert.equal(ruim.cd, 12, 'terreno comum');
+  assert.equal(procurarLugar(dadoFixo(1), c, { terreno: 'farto' }).cd, 10);
+  assert.equal(procurarLugar(dadoFixo(1), c, { terreno: 'ermo' }).cd, 15);
+  // Um dado que cai exatamente na CD de um lugar o abre, e um a menos nao.
+  const cdRuina = LUGARES.ruina.cd;
+  const bate = procurarLugar(dadoFixo(cdRuina - bonus), c, { terreno: 'comum' });
+  assert.ok(bate.lugares.some((l) => l.id === 'ruina'), 'o teste igual a CD abre a ruina');
+  const falta = procurarLugar(dadoFixo(cdRuina - bonus - 1), c, { terreno: 'comum' });
+  assert.ok(!falta.lugares.some((l) => l.id === 'ruina'), 'um a menos nao abre');
+  // O terreno filtra: a margem do riacho so existe onde ha agua.
+  const comum = procurarLugar(dadoFixo(20), c, { terreno: 'comum' });
+  assert.ok(!comum.lugares.some((l) => l.id === 'margem'));
+  assert.ok(procurarLugar(dadoFixo(20), c, { terreno: 'farto' }).lugares.some((l) => l.id === 'margem'));
+});
+
+teste('a vigia e de UM por vez: os outros dormem', () => {
+  const { party } = montar();
+  const camp = montarAcampamento({ vigia: 'revezam', fogueira: false, herois: party });
+  assert.equal(camp.vigias.length, party.length, 'todos entram no revezamento');
+  // Mas na hora em que alguma coisa chega, so um esta de pe.
+  const dado = (n) => { const f = () => n; f.die = () => 1; return f; };
+  const deTurno = vigiaDeTurno(dado(0), camp);
+  assert.ok(camp.vigias.includes(deTurno), 'o vigia do turno e um dos quatro');
+  const dormem = party.filter((c) => c !== deTurno);
+  assert.equal(dormem.length, party.length - 1, 'os outros tres dormem');
+  // E a atencao e a DELE, nao a media nem a melhor.
+  assert.equal(atencaoDaVigia(camp, deTurno), passivePerception(deTurno), 'chao aberto, sem fogo');
+});
+
+teste('com menos de quatro, sobra noite sem ninguem de olho', () => {
+  const { party } = montar();
+  const quatro = montarAcampamento({ vigia: 'revezam', herois: party });
+  assert.equal(coberturaDaNoite(quatro), 1, 'quatro de duas horas fecham as oito');
+  const tres = montarAcampamento({ vigia: 'revezam', herois: party.slice(0, 3) });
+  assert.equal(coberturaDaNoite(tres), 6 / 8, 'tres cobrem seis horas');
+  const dois = montarAcampamento({ vigia: 'revezam', herois: party.slice(0, 2) });
+  assert.equal(coberturaDaNoite(dois), 4 / 8);
+  // Os dois mais atentos, de quatro horas cada, fecham a noite inteira.
+  assert.equal(coberturaDaNoite(montarAcampamento({ vigia: 'dois', herois: party })), 1);
+  assert.equal(coberturaDaNoite(montarAcampamento({ vigia: 'ninguem', herois: party })), 0);
+  // E a fresta sem vigia e real: com cobertura 3/4, um dado alto cai nela.
+  const dado = (n) => { const f = () => n; f.die = () => 1; return f; };
+  assert.equal(vigiaDeTurno(dado(0.9), tres), null, 'a visita caiu na fresta');
+  assert.ok(vigiaDeTurno(dado(0.1), tres), 'ou cai numa hora coberta');
+});
+
+teste('duas horas de vigia cabem no descanso longo; quatro nao', () => {
+  const { party } = montar();
+  const revezam = montarAcampamento({ vigia: 'revezam', herois: party });
+  for (const c of party) assert.equal(descansou(c, revezam), true, 'duas horas cabem');
+  assert.equal(revezam.vigia.horas, HORAS_LEVES);
+
+  const dois = montarAcampamento({ vigia: 'dois', herois: party });
+  assert.equal(dois.vigias.length, 2, 'so os dois mais atentos');
+  const porOlho = [...party].sort((a, b) => passivePerception(b) - passivePerception(a));
+  assert.deepEqual(dois.vigias.map((c) => c.name), porOlho.slice(0, 2).map((c) => c.name));
+  for (const c of dois.vigias) assert.equal(descansou(c, dois), false, 'quatro horas nao cabem');
+  for (const c of party.filter((h) => !dois.vigias.includes(h))) {
+    assert.equal(descansou(c, dois), true, 'quem dormiu a noite toda descansou');
+  }
+
+  const ninguem = montarAcampamento({ vigia: 'ninguem', herois: party });
+  assert.equal(ninguem.vigias.length, 0);
+  for (const c of party) assert.equal(descansou(c, ninguem), true, 'sem vigia, todos dormem');
+});
+
+teste('o acampamento muda a chance do encontro, mas nenhum fica imune', () => {
+  const { party } = montar();
+  const ajuste = (lugar, fogueira) => ocultacaoDoAcampamento(montarAcampamento({ lugar, fogueira, herois: party }));
+  assert.equal(ajuste('matagal', false), 3, 'matagal, sem fogo');
+  assert.equal(ajuste('matagal', true), 1, 'a fogueira entrega 2');
+  assert.equal(ajuste('aberto', true), -2, 'no aberto com fogo, pior que nada');
+  const dado = (n) => { const f = () => (n - 0.5) / 20; f.die = () => n; return f; };
+  // Mesmo no melhor esconderijo, um 20 natural acha o acampamento: a barra
+  // para em 20, senao haveria acampamento imune a noite inteira.
+  assert.ok(sortearEncontro(dado(20), 'noite', { ajuste: 9 }), 'nenhum acampamento e imune');
+  assert.equal(sortearEncontro(dado(19), 'noite', { ajuste: 9 }), null, 'mas so o 20 acha');
+  assert.equal(sortearEncontro(dado(16), 'noite', {}), null, 'sem ajuste, 16 nao acha');
+  assert.ok(sortearEncontro(dado(17), 'noite', {}), 'sem ajuste, 17 acha');
+  assert.ok(sortearEncontro(dado(16), 'noite', { ajuste: -2 }), 'entregue pelo fogo, 16 ja acha');
+});
+
+teste('quem dorme e pego mesmo quando acordado notaria', () => {
+  // Furtividade BAIXA: um acordado notaria sem esforco. Quem dorme, nao.
+  const { enc, party } = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  const acordado = party[DARA];
+  enc.emboscada = { emboscadores: 'foes', furtividade: [1] };
+  enc.dormindo = (c) => c !== acordado;
+  const surpresos = enc.rolarSurpresa();
+  assert.equal(surpresos.has(acordado.id), false, 'quem esta de pe nota um 1 de furtividade');
+  for (const c of party.filter((k) => k !== acordado)) {
+    assert.ok(surpresos.has(c.id), c.name + ' dormia e foi pego');
+    assert.equal(c.reactionUsed, true, 'e nem reage');
+  }
+  // Sem o gancho, os mesmos herois notariam todos.
+  const b = montar({ foes: [['goblin', { x: 10, y: 10 }]] });
+  b.enc.emboscada = { emboscadores: 'foes', furtividade: [1] };
+  assert.equal(b.enc.rolarSurpresa().size, 0, 'acordados, ninguem e pego');
+});
+
+teste('so uma hora de esforco recomeca o descanso longo', () => {
+  // Uma luta de dez rodadas e um minuto: longe da hora que o livro pede.
+  const minutosDe = (rodadas) => rodadas * 0.1;
+  assert.equal(minutosDe(10), 1, 'dez rodadas, um minuto');
+  assert.equal(noiteQuebrada(minutosDe(10)), false, 'uma luta normal nao quebra a noite');
+  assert.equal(noiteQuebrada(minutosDe(100)), false, 'nem cem rodadas');
+  assert.equal(noiteQuebrada(minutosDe(600)), true, 'seiscentas rodadas sao uma hora');
+  assert.equal(noiteQuebrada(59.9), false);
+  assert.equal(noiteQuebrada(MINUTOS_QUE_QUEBRAM_O_DESCANSO), true);
+});
+
+teste('de meia racao, o degrau de fome so vem quando fecha o dia', () => {
+  const { party } = montar();
+  const rng = makeRng(22);
+  const c = garantirInventario(party[PIP]);
+  for (const h of party) h.dead = h !== c;
+  const limite = limiteSemComida(c);
+  darRacoes(c, 40);
+  // Cada dia de meia racao vale meio dia sem comer, e o degrau so sai quando
+  // o DIA INTEIRO passa do limite: o primeiro vem no dia (limite+1)*2.
+  const primeiro = (limite + 1) * 2;
+  for (let i = 1; i < primeiro; i++) {
+    diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+    assert.equal(nivelDeExaustao(c), 0, 'dia ' + i + ' de meia racao: ainda aguenta');
+  }
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(c.diasSemComida, primeiro / 2, 'meio dia por dia');
+  assert.equal(nivelDeExaustao(c), 1, 'no dia ' + primeiro + ' fecha o dia alem do limite');
+  // E o degrau seguinte so vem dois dias depois, nao no meio dia seguinte.
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(nivelDeExaustao(c), 1, 'meio dia nao cobra de novo');
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(nivelDeExaustao(c), 2, 'o dia seguinte, sim');
+});
+
+teste('meia racao conta como comida para o descanso longo', () => {
+  const { party } = montar();
+  const rng = makeRng(31);
+  const c = garantirInventario(party[DARA]);
+  for (const h of party) h.dead = h !== c;
+  mudarExaustao(c, 2);
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(c.diasSemComida, 0.5);
+  // A mesma regra que a viagem passa ao descanso do acampamento.
+  const alimentado = (h) => (h.diasSemComida ?? 0) < 1 && !h.semAgua;
+  assert.equal(alimentado(c), true, 'meia racao e "alguma comida"');
+  descansoLongo(c, { alimentado: alimentado(c) });
+  assert.equal(nivelDeExaustao(c), 1, 'e por isso a noite desfaz um degrau');
+  // Um dia inteiro sem nada, nao.
+  const d = garantirInventario(party[PIP]);
+  d.dead = false;
+  d.bag = d.bag.filter((i) => i.id !== 'racoes');
+  mudarExaustao(d, 2);
+  diaDeViagem(rng, [d], { agua: true });
+  assert.equal(alimentado(d), false, 'um dia sem comer nao conta');
+});
+
+teste('a despensa conta a metade ja aberta', () => {
+  const { party } = montar();
+  const rng = makeRng(41);
+  const c = garantirInventario(party[DARA]);
+  for (const h of party) h.dead = h !== c;
+  const antes = despensaDoGrupo([c]).dias;
+  diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+  assert.equal(c.meiaRacaoAberta, true, 'sobrou metade para amanha');
+  const depois = despensaDoGrupo([c]);
+  assert.equal(depois.metades, 1, 'a despensa viu a metade');
+  // Duas racoes inteiras mais uma metade dao dois dias e meio: dois dias cheios.
+  assert.equal(depois.dias, Math.floor((depois.racoes + 0.5) / 1));
+  assert.ok(depois.dias <= antes, 'e nunca mais do que havia antes');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

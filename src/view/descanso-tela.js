@@ -195,10 +195,23 @@ export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curt
  * exaustão de quem descansou COM comida e bebida. Na viagem, quem passou o dia
  * sem comer dorme, mas não se recupera do cansaço.
  */
-export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso longo', texto = null, alimentado = null }) {
+export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso longo', texto = null, alimentado = null, descansou = null }) {
   const vivos = herois.filter((c) => !c.dead);
   const antes = new Map(vivos.map((c) => [c, nivelDeExaustao(c)]));
-  for (const c of vivos) descansoLongo(c, { alimentado: alimentado ? alimentado(c) : true });
+  // `descansou` é a vigia do acampamento (`rules/acampamento.js`): quem passou
+  // quatro horas acordado não teve descanso LONGO. Mas teve horas sem esforço,
+  // então leva o CURTO: os recursos que voltam numa hora de pausa.
+  const dormiram = [];
+  const soCurto = [];
+  for (const c of vivos) {
+    if (descansou && !descansou(c)) {
+      recuperarNoCurto(c);
+      soCurto.push(c);
+      continue;
+    }
+    descansoLongo(c, { alimentado: alimentado ? alimentado(c) : true });
+    dormiram.push(c);
+  }
   const aliviados = vivos.filter((c) => nivelDeExaustao(c) < antes.get(c));
   const cansados = vivos.filter((c) => nivelDeExaustao(c) > 0);
   await narrar(root, {
@@ -207,7 +220,12 @@ export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso lo
       titulo,
       texto: [
         ...(texto ?? ['Oito horas: uma refeição quente, turnos de vigia, sono.']),
-        `${vivos.map((c) => c.name).join(', ')} acordam com a vida cheia, os espaços de magia e os recursos de volta, e metade dos dados de vida gastos.`,
+        dormiram.length
+          ? `${dormiram.map((c) => c.name).join(', ')} ${dormiram.length > 1 ? 'acordam' : 'acorda'} com a vida cheia, os espaços de magia e os recursos de volta, e metade dos dados de vida gastos.`
+          : null,
+        soCurto.length
+          ? `${soCurto.map((c) => c.name).join(' e ')} ${soCurto.length > 1 ? 'passaram' : 'passou'} metade da noite de vigia: quatro horas não cabem nas duas de atividade leve, então ${soCurto.length > 1 ? 'ficam' : 'fica'} só com o que volta num descanso curto.`
+          : null,
         aliviados.length ? `A noite desfaz um degrau de cansaço de ${aliviados.map((c) => c.name).join(', ')}.` : null,
         cansados.length ? `Ainda exausto: ${cansados.map((c) => `${c.name} (${nivelDeExaustao(c)})`).join(', ')}.` : null,
       ].filter(Boolean),

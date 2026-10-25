@@ -5,7 +5,8 @@
 //   - o grupo marcha oito horas por dia, no ritmo que escolher
 //     (`rules/marcha.js`), e acampa à noite — um descanso longo por noite;
 //   - um teste de encontro de dia e outro de noite: d20, 17 a 20 é encontro, e
-//     um d12 na tabela da Trilha Triboar diz o quê (`ENCONTROS`);
+//     um d12 na tabela da Trilha Triboar diz o quê
+//     (`rules/encontros-estrada.js`);
 //   - o XP de um encontro é o dos monstros, dividido pelo grupo.
 // Os MANTIMENTOS são os do livro e moram em `rules/mantimentos.js`: uma ração
 // e quatro litros de água por pessoa por dia, fome e sede cobrando exaustão, e
@@ -39,6 +40,13 @@ import { estadoDe as estadoDeUtilidade, podeConjurarFora } from '../rules/utilid
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm, cobrarMarchaForcada, podeMarchar,
 } from '../rules/marcha.js';
+import {
+  VIGIAS, procurarLugar, montarAcampamento, atencaoDaVigia, coberturaDaNoite,
+  ocultacaoDoAcampamento, descansou, noiteQuebrada, textoDoAcampamento,
+} from '../rules/acampamento.js';
+import { ENCONTROS, sortearEncontro } from '../rules/encontros-estrada.js';
+
+export { ENCONTROS, sortearEncontro };
 
 /**
  * O dado da viagem: semeado pelo trajeto, com o estado guardado em
@@ -96,31 +104,6 @@ export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0 } = {}) {
  * cada período (null: não acontece naquele período). `qtd` é a rolagem do
  * número de criaturas, como [dados, faces, bônus].
  */
-export const ENCONTROS = [
-  { id: 'stirge', nome: 'stirges', dia: [1, 2], noite: [1, 3], qtd: [1, 8, 2] },
-  { id: 'ghoul', nome: 'carniçais', dia: null, noite: [4, 4], qtd: [1, 4, 1] },
-  { id: 'ogro', nome: 'um ogro', dia: [3, 4], noite: null, qtd: [0, 0, 1] },
-  { id: 'goblin', nome: 'goblins', dia: [5, 6], noite: [5, 5], qtd: [1, 6, 3] },
-  { id: 'hobgoblin', nome: 'hobgoblins', dia: [7, 8], noite: [6, 6], qtd: [1, 4, 2] },
-  { id: 'orc', nome: 'orcs', dia: [9, 10], noite: [7, 8], qtd: [1, 4, 2] },
-  { id: 'lobo', nome: 'lobos', dia: [11, 11], noite: [9, 10], qtd: [1, 4, 2] },
-  { id: 'corujaUrso', nome: 'um urso-coruja', dia: [12, 12], noite: [11, 12], qtd: [0, 0, 1] },
-];
-
-const rolar = (rng, faces) => 1 + Math.floor(rng() * faces);
-
-/** O encontro do período, ou null. `rng()` devolve [0, 1). */
-export function sortearEncontro(rng, periodo) {
-  if (rolar(rng, 20) < 17) return null;
-  const d = rolar(rng, 12);
-  const e = ENCONTROS.find((x) => x[periodo] && d >= x[periodo][0] && d <= x[periodo][1]);
-  if (!e) return null;
-  const [n, f, b] = e.qtd;
-  let qtd = b;
-  for (let i = 0; i < n; i++) qtd += rolar(rng, f);
-  return { id: e.id, nome: e.nome, qtd, periodo };
-}
-
 // Um dia de estrada, em poucas palavras. Sorteado, para a viagem não ser
 // sempre a mesma. `agua` diz se houve riacho, poço ou chuva de onde beber;
 // `calor` dobra a água do dia; `terreno` dá a CD de quem vai caçar e colher.
@@ -265,6 +248,8 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     while ((via.kmRestantes ?? 0) > 0 || via.periodo === 'chegou') {
       if (via.periodo === 'dia') {
         const paisagem = rng.pick(PAISAGENS);
+        // A noite acampa no terreno do dia.
+        via.terrenoDoDia = paisagem.terreno ?? 'comum';
         // O dia anda o que o ritmo rende, ou o que falta — o que for menor.
         const kmHoje = Math.min(via.kmRestantes ?? via.porDia, via.porDia);
         const fracao = via.porDia > 0 ? kmHoje / via.porDia : 1;
@@ -284,15 +269,37 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       // virar luta, por isso isto vem ANTES do encontro noturno.
       marcharEm(vivos(), null);
       if (via.periodo === 'noite') {
-        const e = sortearEncontro(rng, 'noite');
+        // Onde armar, com fogo ou sem, e quem fica de vigia. O acampamento
+        // vive em `camp.viagem` para sobreviver a uma luta no meio da noite.
+        via.acampamento = await escolherAcampamento(rng, via);
+        const camp = montarAcampamento({ ...via.acampamento, herois: vivos() });
+        registrar(textoDoAcampamento(camp));
+        // O que esconde o acampamento sobe a barra do encontro; o fogo desce.
+        const e = sortearEncontro(rng, 'noite', { ajuste: ocultacaoDoAcampamento(camp) });
         via.periodo = 'descanso';
         if (e) { await encontro(e); return; }
       }
       // A noite passou (com ou sem luta): o descanso longo do acampamento.
-      // Quem não comeu nem bebeu o dia todo não tira degrau de exaustão.
+      // Quem não comeu nem bebeu o dia todo não tira degrau de exaustão, e
+      // quem passou quatro horas de vigia não descansou de verdade.
+      const campNoite = montarAcampamento({ ...(via.acampamento ?? {}), herois: vivos() });
+      // O livro: só UMA HORA ou mais de esforço manda recomeçar o descanso. A
+      // luta da noite soma os minutos dela em `capitulo4-estrada.js`; uma luta
+      // de rodadas nem chega perto, mas a regra fica onde devia estar.
+      const quebrou = noiteQuebrada(via.minutosDaNoite);
+      if (quebrou) registrar('A noite virou do avesso: passou de uma hora em pé, de armas na mão. O descanso longo não conta.');
+      via.minutosDaNoite = 0;
       for (const t of await descansoLongoDoGrupo(app.root, { herois: vivos(), titulo: 'Acampamento',
-        alimentado: (c) => (c.diasSemComida ?? 0) === 0 && !c.semAgua,
-        texto: [via.semComida ? 'Uma noite de barriga meio vazia, mas de olhos fechados.' : 'Fogueira baixa, um de vigia por vez.'] })) registrar(t);
+        // O livro pede "alguma comida e bebida": meia ração é alguma comida,
+        // então meio dia sem comer (0,5) ainda deixa o descanso desfazer um
+        // degrau. Um dia inteiro sem nada, não.
+        alimentado: (c) => (c.diasSemComida ?? 0) < 1 && !c.semAgua,
+        descansou: (c) => !quebrou && descansou(c, campNoite),
+        texto: [
+          via.acampamento ? `${campNoite.lugar.texto}` : null,
+          via.semComida ? 'Uma noite de barriga meio vazia, mas de olhos fechados.'
+            : campNoite.fogueira ? 'Fogueira baixa, e a noite passa.' : 'Sem fogo, no escuro, e a noite passa.',
+        ].filter(Boolean) })) registrar(t);
       v.dia += 1;
       v.tempo = 0;
       via.dia += 1;
@@ -362,7 +369,10 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       : null;
     if (purifica) linhas.push(`${purifica.name} purifica a água parada antes de o grupo beber (ritual, dez minutos).`);
     const purificada = Boolean(purifica);
-    for (const t of diaDeViagem(rng, herois, { calor: paisagem.calor, agua: paisagem.agua, fontes, purificada })) linhas.push(t);
+    for (const t of diaDeViagem(rng, herois, {
+      calor: paisagem.calor, agua: paisagem.agua, fontes, purificada,
+      meiaRacao: Boolean(camp.viagem?.meiaRacao),
+    })) linhas.push(t);
     if (herois.some((c) => (c.diasSemComida ?? 0) > 0)) camp.viagem.semComida = true;
 
     // As horas a mais da marcha forçada cobram no fim do dia.
@@ -373,6 +383,94 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     return linhas;
   }
 
+  /**
+   * A tela do acampamento: onde armar, fogo ou escuro, e quem fica de vigia.
+   * Devolve { lugar, fogueira, vigia } para `rules/acampamento.js`.
+   */
+  async function escolherAcampamento(rng, via) {
+    const herois = vivos();
+    const terreno = via.terrenoDoDia ?? 'comum';
+    const quem = melhorForrageador(herois);
+    const achou = procurarLugar(rng, quem, { terreno });
+    tela?.esconder?.();
+
+    // Cada lugar com o que ele vale, e a declaração de que a tabela é nossa.
+    const efeitos = (l) => [
+      l.ocultacao ? `esconde ${l.ocultacao > 0 ? `+${l.ocultacao}` : l.ocultacao}` : null,
+      l.vigia ? `vigia ${l.vigia > 0 ? `+${l.vigia}` : l.vigia}` : null,
+      l.abrigo ? 'tem teto' : null,
+    ].filter(Boolean).join(', ') || 'sem vantagem nenhuma';
+    const lugar = achou.lugares.length > 1
+      ? await narrar(app.root, {
+        formato: 'painel',
+        paginas: [{ titulo: 'Onde passar a noite', texto: [
+          `${quem.name} procura abrigo antes de escurecer (Sobrevivência ${achou.teste} contra ${achou.cd}).`,
+          ...achou.lugares.map((l) => `· ${l.nome} (${efeitos(l)}): ${l.texto}`),
+          'Os lugares de acampar são regra da casa: o livro não traz tabela de sítio nem CD para achar um.',
+        ] }],
+        escolhas: achou.lugares.map((l) => ({ rotulo: l.nome, valor: l.id, primaria: l.id !== 'aberto' && l.cd === Math.max(...achou.lugares.map((k) => k.cd)) })),
+      })
+      : 'aberto';
+
+    const fogueira = await narrar(app.root, {
+      formato: 'painel',
+      paginas: [{ titulo: 'Fogueira?', texto: [
+        'O fogo esquenta, cozinha e mostra quem chega perto: mais 2 na vigia.',
+        'E se vê de longe: o que anda pela trilha acha o acampamento com mais facilidade.',
+        'Os dois números são regra da casa. O livro não dá bônus por luz — fala de luz clara, penumbra e escuridão, e o acampamento ainda não usa esse motor.',
+      ] }],
+      escolhas: [
+        { rotulo: 'Acender', valor: 'sim', primaria: true },
+        { rotulo: 'Noite escura', valor: 'nao' },
+      ],
+    }) === 'sim';
+
+    // Cada opção com o número que ela vale, para a escolha ser informada e
+    // não um palpite: a atenção depende de quem é o grupo.
+    const comVigia = Object.values(VIGIAS).map((v) => {
+      const teste = montarAcampamento({ lugar, fogueira, vigia: v.id, herois });
+      return {
+        v,
+        atencao: atencaoDaVigia(teste),
+        cobertura: coberturaDaNoite(teste),
+        perdem: teste.vigias.filter((c) => !descansou(c, teste)),
+      };
+    });
+    const vigia = await narrar(app.root, {
+      formato: 'painel',
+      paginas: [{ titulo: 'Quem fica de vigia', texto: [
+        'Oito horas de noite. O descanso longo pede seis dormindo e no máximo duas de atividade leve — vigiar é atividade leve. Só uma pessoa fica acordada de cada vez.',
+        ...comVigia.map(({ v, atencao, perdem, cobertura }) => `· ${v.nome}: atenção média ${atencao || 'nenhuma'}, ${Math.round(cobertura * 100)}% da noite coberta${perdem.length ? `, e ${perdem.map((c) => c.name).join(' e ')} ficam só com o descanso curto` : ''} — ${v.resumo}.`),
+        'Nosso: o livro não diz em letra que passar das duas horas custa o descanso longo inteiro, nem que quem o perde fica com o curto. É a leitura mais comum, e é a que o jogo usa.',
+      ] }],
+      escolhas: comVigia.map(({ v }) => ({ rotulo: v.nome, valor: v.id, primaria: v.id === 'revezam' })),
+    });
+
+    // Meia ração só vale a pena perguntar quando a comida está curta.
+    const d = despensaDoGrupo(herois);
+    if (d.dias <= 1) {
+      const meia = await narrar(app.root, {
+        formato: 'painel',
+        paginas: [{ titulo: 'A comida está no fim', texto: [
+          `Restam ${d.racoes} ração(ões) para ${d.bocas} bocas.`,
+          'Comendo metade, a comida dura o dobro — e a fome anda na metade da velocidade, como manda o livro. Ninguém fica satisfeito.',
+        ] }],
+        escolhas: [
+          { rotulo: 'Meia ração', valor: 'meia', primaria: true },
+          { rotulo: 'Comer direito', valor: 'cheia' },
+        ],
+      });
+      camp.viagem.meiaRacao = meia === 'meia';
+    } else {
+      // A comida voltou (forragem, magia, compra): ninguém fica de meia ração
+      // sem o jogo perguntar de novo.
+      camp.viagem.meiaRacao = false;
+    }
+
+    tela?.mostrar?.();
+    return { lugar, fogueira, vigia };
+  }
+
   async function encontro(e) {
     const quando = e.periodo === 'dia' ? 'Na trilha' : 'No acampamento, à noite';
     registrar(`${quando}: ${e.qtd > 1 ? `${e.qtd} ` : ''}${e.nome}.`);
@@ -380,7 +478,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     app.newEncounter({
       ...app.config, modo: 'campanha', capitulo: 4,
       cenaDaVila: e.periodo === 'dia' ? 'ermo' : 'ermoNoite',
-      encontro: e, continuarCom: vivos(),
+      encontro: e, acampamento: camp.viagem?.acampamento ?? null, continuarCom: vivos(),
     });
   }
 

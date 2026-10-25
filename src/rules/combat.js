@@ -366,6 +366,13 @@ export class Encounter {
     const menor = Math.min(...furtivos);
     const avisados = [];
     for (const c of this.allOf(alvos)) {
+      // Quem dorme não percebe nada: a cena do acampamento diz quem está
+      // dormindo (`rules/acampamento.js`), e para esses não há teste.
+      if (this.dormindo?.(c)) {
+        surpresos.add(c.id);
+        c.reactionUsed = true;
+        continue;
+      }
       if (passivePerception(c) < menor) {
         // Alarme: o aviso soa antes de os emboscadores chegarem, e quem estava perto da marca se prepara.
         if (lado === 'foes' && this.protegidoDeSurpresa?.(c)) { avisados.push(c.name); continue; }

@@ -1237,7 +1237,10 @@ class App {
       ? await descansoLongoDoGrupo(this.root, {
         herois,
         texto: this.capitulo?.textoDoDescanso?.('longo'),
-        alimentado: (c) => (c.diasSemComida ?? 0) === 0 && !c.semAgua,
+        // O livro pede "alguma comida e bebida": meia ração é alguma comida,
+        // então meio dia sem comer (0,5) ainda deixa o descanso desfazer um
+        // degrau. Um dia inteiro sem nada, não.
+        alimentado: (c) => (c.diasSemComida ?? 0) < 1 && !c.semAgua,
       })
       : await descansoCurto(this.root, { herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto') });
     for (const t of linhas) this.enc.say('cura', t);

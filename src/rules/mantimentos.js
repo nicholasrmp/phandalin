@@ -16,10 +16,17 @@
 // fartura, 15 no comum, 20 no ermo). Quem passa acha 1d6 + Sabedoria de comida
 // e 1d6 + Sabedoria de litros de água.
 //
-// SIMPLIFICAÇÕES, todas declaradas no jogo: a água viaja só no cantil (quatro
-// litros, o dia inteiro), então o que se acha além disso se perde; e o livro
-// permite forragear apenas em ritmo normal ou lento, mas o ritmo de marcha
-// ainda não existe no jogo, então aqui sempre se pode.
+// SIMPLIFICAÇÕES E REGRAS DA CASA, todas declaradas no jogo (no painel de
+// partida da viagem, na tela do acampamento e no texto de cada magia):
+//   - um galão do livro vale QUATRO LITROS aqui, que é o dia de uma pessoa;
+//   - o cantil guarda quatro litros, um dia inteiro. É regra da casa: o odre
+//     do livro guarda quatro pints, metade disso. Com meio dia por cantil, a
+//     sede seria o assunto de toda viagem, e não o tempero dela;
+//   - a água viaja só em cantil, então o que se acha além do que cabe se perde;
+//   - água parada de brejo mata a sede, mas cobra um teste de Constituição
+//     CD 11 de quem bebe sem purificar. O livro não dá número para água ruim;
+//   - caçar e colher só em ritmo normal ou lento (`rules/marcha.js`), e um dia
+//     curto de chegada ainda custa um dia inteiro de comida e água.
 
 import { abilityMod, skillBonus, saveBonus } from './abilities.js';
 import { savingThrow, d20, roll } from '../core/dice.js';
@@ -134,9 +141,49 @@ export function encherCantis(herois) {
  * mochila dela (Bom Fruto, Criar Comida e Água): uma lista de
  * { racoes, nome } que se gasta antes de mexer na mochila dos outros.
  *
+ * Com `meia`, come metade: o livro deixa esticar as provisões assim, e meia
+ * ração conta como MEIO dia sem comer. Duas pessoas de meia ração gastam uma
+ * ração inteira, então a conta corre num saldo do grupo (`meias`).
+ *
  * Devolve { comeu: 'inteiro' | 'metade' | 'nada', de }.
  */
-function comerUmDia(c, herois, fontes) {
+function comerUmDia(c, herois, fontes, { meia = false } = {}) {
+  // Meia ração: a pessoa abre uma ração e guarda a outra metade para amanhã.
+  // É isso que faz a comida durar o dobro.
+  if (meia) {
+    if (c.meiaRacaoAberta) {
+      c.meiaRacaoAberta = false;
+      return { comeu: 'metade', de: null };
+    }
+    // A comida de magia estraga no fim do dia: não dá para guardar metade dela
+    // para amanhã. Quem come dela come o dia inteiro.
+    const fonteM = fontes.find((f) => f.racoes > 0);
+    if (fonteM) {
+      fonteM.racoes -= 1;
+      return { comeu: 'inteiro', de: fonteM.nome };
+    }
+    if (gastarRacoes(c, 1)) {
+      c.meiaRacaoAberta = true;
+      return { comeu: 'metade', de: null };
+    }
+    const vizinho = herois.find((o) => o !== c && racoesDe(o) > 0);
+    if (vizinho && gastarRacoes(vizinho, 1)) {
+      c.meiaRacaoAberta = true;
+      return { comeu: 'metade', de: vizinho.name };
+    }
+    return { comeu: 'nada', de: null };
+  }
+  // Comendo direito, a metade guardada entra no prato: a refeição do dia sai
+  // dela mais metade de uma ração nova, não de uma ração inteira jogada em
+  // cima da outra.
+  if (c.meiaRacaoAberta) {
+    c.meiaRacaoAberta = false;
+    if (gastarRacoes(c, 1)) { c.meiaRacaoAberta = true; return { comeu: 'inteiro', de: null }; }
+    const vizinhoI = herois.find((o) => o !== c && racoesDe(o) > 0);
+    if (vizinhoI && gastarRacoes(vizinhoI, 1)) { c.meiaRacaoAberta = true; return { comeu: 'inteiro', de: vizinhoI.name }; }
+    // Só havia a metade guardada: dá meio dia, não o dia inteiro.
+    return { comeu: 'metade', de: null };
+  }
   const fonte = fontes.find((f) => f.racoes > 0);
   if (fonte) {
     fonte.racoes -= 1;
@@ -165,7 +212,7 @@ function comerUmDia(c, herois, fontes) {
  *   a água do dia: aí ela não cobra nada.
  * - `fontes` são as rações mágicas do dia ({ racoes, nome }).
  */
-export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes = [], purificada = false } = {}) {
+export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes = [], purificada = false, meiaRacao = false } = {}) {
   // A mochila é preguiçosa (`equipment.js`): na estrada ela precisa existir.
   for (const c of herois) garantirInventario(c);
   // I8: fome e sede no mesmo dia não se empilham. O "já estava exausto" que
@@ -179,15 +226,30 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
   const comSede = [];
   const mortos = [];
   const deOutros = {};
+  const aMeia = [];
 
   for (const c of herois) {
     if (c.dead) continue;
     // ---- comida ----
-    const r = comerUmDia(c, herois, fontes);
+    const r = comerUmDia(c, herois, fontes, { meia: meiaRacao });
     if (r.comeu === 'inteiro') {
       c.diasSemComida = 0;
       // Só vale contar de onde veio quando não foi da própria mochila.
       if (r.de) (deOutros[r.de] ??= []).push(c.name);
+    } else if (r.comeu === 'metade') {
+      // Meia ração: meio dia sem comer, e a conta NÃO zera. O degrau só sai
+      // quando um DIA INTEIRO a mais passa do limite — o livro cobra "ao fim
+      // de cada dia além do limite", e meio dia não fecha um dia.
+      const antesM = Math.floor(c.diasSemComida ?? 0);
+      c.diasSemComida = (c.diasSemComida ?? 0) + 0.5;
+      aMeia.push(c.name);
+      const limiteM = limiteSemComida(c);
+      const agoraM = Math.floor(c.diasSemComida);
+      if (agoraM > antesM && agoraM > limiteM) {
+        const n = mudarExaustao(c, 1);
+        comFome.push(`${c.name} (meia ração há ${c.diasSemComida} dias, exaustão ${n})`);
+        if (exaustaoFatal(c)) mortos.push(`${c.name} não acorda: morreu de fome e cansaço`);
+      }
     } else {
       c.diasSemComida = (c.diasSemComida ?? 0) + 1;
       const limite = limiteSemComida(c);
@@ -246,6 +308,7 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
     }
   }
 
+  if (aMeia.length) linhas.push(`Meia ração: ${aMeia.join(', ')} ${aMeia.length > 1 ? 'comem' : 'come'} metade do dia — a comida dura o dobro, a fome anda na metade da velocidade.`);
   for (const [dono, quem] of Object.entries(deOutros)) {
     linhas.push(`${quem.join(', ')} come${quem.length > 1 ? 'm' : ''} do que ${dono} trouxe.`);
   }
@@ -335,13 +398,15 @@ export function despensaDoGrupo(herois, { calor = false } = {}) {
   const vivos = herois.filter((c) => !c.dead);
   for (const c of vivos) garantirInventario(c);
   const bocas = Math.max(1, vivos.length);
+  // A metade já aberta conta: é meio dia de comida que o grupo tem na mão.
   const racoes = vivos.reduce((n, c) => n + racoesDe(c), 0);
+  const metades = vivos.filter((c) => c.meiaRacaoAberta).length;
   const agua = vivos.reduce((n, c) => n + aguaDe(c), 0);
   const capacidade = vivos.reduce((n, c) => n + capacidadeDeAgua(c), 0);
   const precisa = calor ? AGUA_NO_CALOR : AGUA_POR_DIA;
   return {
-    racoes, agua, capacidade, bocas,
-    dias: Math.floor(racoes / bocas),
+    racoes, agua, capacidade, bocas, metades,
+    dias: Math.floor((racoes + metades / 2) / bocas),
     diasDeAgua: Math.floor(agua / (bocas * precisa)),
   };
 }
