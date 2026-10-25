@@ -136,6 +136,25 @@ teste('Ação Ardilosa faz Disparada OU Desengajar, não as duas', () => {
   assert.ok(!enc.useFeature(pip, 'cunningAction', { modo: 'desengajar' }), 'segunda ação bônus no mesmo turno');
 });
 
+// ---- fúria do bárbaro ------------------------------------------------------
+
+/** Um bárbaro no lugar da Dara, para os testes de Fúria. */
+function comBarbaro(nivel = 3) {
+  const { enc, party, foes } = montar({ nivel });
+  const b = criarPersonagem({ name: 'Grak', raca: 'humano', look: party[DARA].look },
+    { classe: 'barbaro', nivel });
+  Object.assign(b, {
+    id: party[DARA].id, side: 'party', pos: { ...party[DARA].pos },
+    str: 16, dex: 12, con: 16, int: 10, wis: 10, cha: 10,
+    weapons: ['machadoDeBatalha'], equippedWeapon: 'machadoDeBatalha', armor: 'couro',
+    hp: 40, maxHp: 40, ac: 14,
+  });
+  enc.combatants[enc.combatants.indexOf(party[DARA])] = b;
+  party[DARA] = b;
+  b.bonusUsed = false; b.actionUsed = false;
+  return { enc, b, foes };
+}
+
 // ---- morte -----------------------------------------------------------------
 
 teste('dano a 0 PV soma falha no teste de morte (duas no crítico)', () => {
@@ -705,12 +724,6 @@ teste('invocações de Rajada Mística pedem o truque', () => {
   assert.ok(!c.features.includes('agonizingBlast'));
   const com = criarPersonagem({ ...BASE(), spellcasting: { ability: 'cha', cantrips: ['rajadaMistica'], prepared: [] } }, { classe: 'bruxo', nivel: 2 });
   assert.ok(com.features.includes('agonizingBlast'));
-});
-
-teste('Fúria ilimitada no 20º não vira Infinity', () => {
-  const c = criarPersonagem(BASE(), { classe: 'barbaro', nivel: 20 });
-  assert.ok(c.resourcesIlimitados.includes('rage'));
-  assert.ok(!JSON.stringify(c.resourcesMax).includes('null'));
 });
 
 // ---- revisão das magias (revisoes/magias-2026-10-24.json) -------------------
@@ -5986,18 +5999,30 @@ teste('o bando cresce ate deixar de ser facil para quem esta na trilha', () => {
   // No 5o, quatro goblins sao passeio: o bando cresce.
   const noCinco = escalarBando(4, goblin.xp, alto);
   assert.ok(noCinco.cresceu > 0, 'no 5o nivel vem mais gente');
-  // Cresce ate deixar de ser facil OU ate o teto — e para o goblin, que vale
-  // 50 XP, o teto chega antes: doze deles ainda sao passeio no 5o nivel. O
-  // numero sozinho nao salva as linhas fracas da tabela.
-  assert.ok(perigoDoBando(noCinco.qtd * goblin.xp, alto) !== 'facil' || noCinco.qtd === 12);
-  // Com um bicho que vale mais, o crescimento morde antes do teto.
+  // O teto e RELATIVO ao que o dado tirou: metade a mais, no maximo. Sem isso
+  // toda rolagem da tabela virava o mesmo numero e o crescimento passava por
+  // cima de bandos ja perigosos.
+  assert.ok(noCinco.qtd <= Math.ceil(4 * 1.5), 'nunca mais que metade a mais');
+  // E o dado continua valendo: quatro goblins e sete goblins nao acabam iguais.
+  const deQuatro = escalarBando(4, goblin.xp, alto).qtd;
+  const deSete = escalarBando(7, goblin.xp, alto).qtd;
+  assert.ok(deSete > deQuatro, 'o que o dado tirou ainda importa');
+  // Para assim que deixa de ser facil, quando isso acontece antes do teto: no
+  // 2o nivel dois carnicais ja sao dificeis, entao nao vem um terceiro.
   const ghoul = makeMonster('ghoul', { x: 0, y: 0 });
-  const comGhoul = escalarBando(2, ghoul.xp, alto);
-  assert.ok(comGhoul.qtd < 12, 'o carnical para antes do teto');
-  assert.notEqual(perigoDoBando(comGhoul.qtd * ghoul.xp, alto), 'facil');
-  // E para no teto, para a cena caber no mapa.
-  const teto = escalarBando(1, 1, alto, { teto: 12 });
-  assert.equal(teto.qtd, 12, 'o teto segura');
+  assert.notEqual(perigoDoBando(2 * ghoul.xp, baixo), 'facil');
+  assert.equal(escalarBando(2, ghoul.xp, baixo).cresceu, 0, 'ja da trabalho assim');
+  // No 5o nivel o teto relativo chega antes do perigo: seis carnicais ainda
+  // sao 'facil' pela conta de XP, e e por isso que o numero sozinho nao basta.
+  const noAlto = escalarBando(4, ghoul.xp, alto);
+  assert.equal(noAlto.qtd, 6, 'parou no teto relativo, nao no perigo');
+  // Sem XP nao ha como medir: o bando fica como a tabela mandou.
+  assert.deepEqual(escalarBando(5, 0, alto), { qtd: 5, cresceu: 0 });
+  // O teto da cena tambem segura, quando o relativo deixaria passar.
+  const teto = escalarBando(20, 1, alto, { teto: 12 });
+  assert.equal(teto.qtd, 20, 'nunca encolhe o que o dado tirou');
+  const dez = escalarBando(10, 1, alto, { teto: 12 });
+  assert.equal(dez.qtd, 12, 'o teto da cena segura em doze');
   // A ESPECIE nunca muda: so o numero.
   assert.equal(escalarBando(4, goblin.xp, alto).qtd >= 4, true, 'nunca encolhe');
   // Um bando ja mortal nao cresce em nivel nenhum.

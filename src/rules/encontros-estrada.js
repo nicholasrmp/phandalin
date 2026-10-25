@@ -33,14 +33,14 @@
 import { XP_POR_NIVEL } from './progressao.js';
 
 export const ENCONTROS = [
-  { id: 'stirge', nome: 'stirges', dia: [1, 2], noite: [1, 3], qtd: [1, 8, 2] },
-  { id: 'ghoul', nome: 'carniçais', dia: null, noite: [4, 4], qtd: [1, 4, 1] },
-  { id: 'ogro', nome: 'um ogro', dia: [3, 4], noite: null, qtd: [0, 0, 1] },
-  { id: 'goblin', nome: 'goblins', dia: [5, 6], noite: [5, 5], qtd: [1, 6, 3] },
-  { id: 'hobgoblin', nome: 'hobgoblins', dia: [7, 8], noite: [6, 6], qtd: [1, 4, 2] },
-  { id: 'orc', nome: 'orcs', dia: [9, 10], noite: [7, 8], qtd: [1, 4, 2] },
-  { id: 'lobo', nome: 'lobos', dia: [11, 11], noite: [9, 10], qtd: [1, 4, 2] },
-  { id: 'corujaUrso', nome: 'um urso-coruja', dia: [12, 12], noite: [11, 12], qtd: [0, 0, 1] },
+  { id: 'stirge', nome: 'stirges', um: 'uma stirge', dia: [1, 2], noite: [1, 3], qtd: [1, 8, 2] },
+  { id: 'ghoul', nome: 'carniçais', um: 'um carniçal', dia: null, noite: [4, 4], qtd: [1, 4, 1] },
+  { id: 'ogro', nome: 'ogros', um: 'um ogro', dia: [3, 4], noite: null, qtd: [0, 0, 1] },
+  { id: 'goblin', nome: 'goblins', um: 'um goblin', dia: [5, 6], noite: [5, 5], qtd: [1, 6, 3] },
+  { id: 'hobgoblin', nome: 'hobgoblins', um: 'um hobgoblin', dia: [7, 8], noite: [6, 6], qtd: [1, 4, 2] },
+  { id: 'orc', nome: 'orcs', um: 'um orc', dia: [9, 10], noite: [7, 8], qtd: [1, 4, 2] },
+  { id: 'lobo', nome: 'lobos', um: 'um lobo', dia: [11, 11], noite: [9, 10], qtd: [1, 4, 2] },
+  { id: 'corujaUrso', nome: 'ursos-coruja', um: 'um urso-coruja', dia: [12, 12], noite: [11, 12], qtd: [0, 0, 1] },
 ];
 
 /** A barra do d20: de 17 para cima é encontro. */
@@ -66,7 +66,7 @@ export function sortearEncontro(rng, periodo, { ajuste = 0 } = {}) {
   const [n, f, b] = e.qtd;
   let qtd = b;
   for (let i = 0; i < n; i++) qtd += rolar(rng, f);
-  return { id: e.id, nome: e.nome, qtd, periodo };
+  return { id: e.id, nome: e.nome, um: e.um ?? e.nome, qtd, periodo };
 }
 
 
@@ -116,6 +116,11 @@ export function reacaoDe(rng, encontroId) {
  * A tabela de XP por nível é do SRD; os cortes são nossos.
  *
  * Devolve 'facil', 'dificil' ou 'mortal'.
+ *
+ * ATÉ ONDE VAI: medido contra o simulador, acerta cerca de três em cada
+ * quatro bandos. Erra porque XP não distingue espécie — um lobo e um goblin
+ * valem os mesmos 50 XP e não dão a mesma luta. Serve para graduar o XP da
+ * conversa e o tamanho do bando, não para prometer dificuldade exata.
  */
 export function perigoDoBando(xpDoBando, herois) {
   const vivos = (herois ?? []).filter((c) => !c.dead);
@@ -124,8 +129,8 @@ export function perigoDoBando(xpDoBando, herois) {
   const degrau = (XP_POR_NIVEL[nivel + 1] ?? XP_POR_NIVEL[XP_POR_NIVEL.length - 1]) - (XP_POR_NIVEL[nivel] ?? 0);
   if (degrau <= 0) return 'facil';
   const fracao = (xpDoBando / vivos.length) / degrau;
-  if (fracao >= 0.15) return 'mortal';
-  if (fracao >= 0.07) return 'dificil';
+  if (fracao >= 0.17) return 'mortal';
+  if (fracao >= 0.065) return 'dificil';
   return 'facil';
 }
 
@@ -147,17 +152,24 @@ export function xpDeConversa(xpDoBando, herois = null) {
  * cresce — nunca a espécie, sempre o número — até deixar de ser uma luta
  * fácil, com teto para a cena caber no mapa.
  *
- * O NÚMERO SOZINHO NÃO SALVA TUDO: medido, no 2º nível nada cresce (a tabela
- * publicada já serve), no 3º quase tudo chega a "difícil", e no 5º as linhas
- * fracas — estirge, goblin, hobgoblin, orc, lobo — batem no teto de doze
- * ainda fáceis. Para o 5º nível valer de verdade faltaria criatura mais dura
- * na tabela, e essa é da aventura: não é nossa para mudar.
+ * O NÚMERO SOZINHO NÃO SALVA TUDO: medido, no 2º nível quase nada cresce (a
+ * tabela publicada já serve), no 3º e no 5º o bando sobe até metade a mais do
+ * que o dado tirou. As linhas fracas — estirge, goblin, lobo — continuam
+ * fáceis no 5º nível mesmo no teto. Para o 5º valer de verdade faltaria
+ * criatura mais dura na tabela, e essa é da aventura: não é nossa para mudar.
  *
  * Devolve { qtd, cresceu }.
  */
 export function escalarBando(qtd, xpDeUm, herois, { teto = 12 } = {}) {
+  // Sem XP não há como medir: o bando fica como a tabela mandou.
+  if (!(xpDeUm > 0)) return { qtd, cresceu: 0 };
+  // O teto é RELATIVO ao que o dado tirou, além do teto da cena. Sem isso
+  // toda rolagem da tabela virava o mesmo número — 4 goblins e 9 goblins
+  // acabavam ambos em 11 — e o crescimento passava por cima de bandos que já
+  // eram perigosos: onze lobos no 3º nível matavam o grupo em 65% das lutas.
+  const limite = Math.min(teto, Math.ceil(qtd * 1.5));
   let n = qtd;
-  while (n < teto && perigoDoBando(n * xpDeUm, herois) === 'facil') n += 1;
+  while (n < limite && perigoDoBando(n * xpDeUm, herois) === 'facil') n += 1;
   return { qtd: n, cresceu: n - qtd };
 }
 

@@ -65,9 +65,11 @@ export function criarEstrada(app, config) {
         const a = (i / n) * Math.PI * 2 + (segunda ? 0.4 + Math.PI / n : 0.4);
         p = { x: Math.round(11 + Math.cos(a) * 10), y: Math.round(7 + Math.sin(a) * 6.2) };
       } else if ((i + (segunda ? 1 : 0)) % 2 === 0) {
-        p = { x: col + (i % 3), y: 3 + Math.floor(i / 6) * 2 + (i % 2) };
+        // A segunda leva vem da BORDA, não de onde a primeira já está: com o
+        // bando perto, ela nascia a 20 pés do grupo, colada na primeira.
+        p = { x: segunda ? 21 - (i % 2) : col + (i % 3), y: 3 + Math.floor(i / 6) * 2 + (i % 2) };
       } else {
-        p = { x: col + 1 + (i % 3), y: 11 + (Math.floor(i / 2) % 3) };
+        p = { x: segunda ? 20 - (i % 2) : col + 1 + (i % 3), y: 11 + (Math.floor(i / 2) % 3) };
       }
       p.x = Math.max(1, Math.min(21, p.x));
       p.y = Math.max(0, Math.min(13, p.y));
@@ -193,6 +195,16 @@ export function criarEstrada(app, config) {
         : 'Na curva da trilha, entre as pedras e o capim alto, vocês não estão sozinhos.';
       await narrar(root, { formato: 'painel', paginas: [{ titulo: noite ? 'Acampamento' : 'Trilha Triboar', texto: [o] }],
         escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
+      // O fogo foi abafado tarde demais (`game/regiao.js`): o acampamento fica
+      // na brasa. Sem isto a tela prometia escuro e o mapa seguia iluminado,
+      // e falhar em apagar não custava nada. Brasa é penumbra, não breu: o
+      // breu total castigava tanto que apagar passava a ser pior que acordar
+      // todo mundo, e metade do grupo não enxerga no escuro.
+      if (config.semFogueira) {
+        enc.field.luzes = (enc.field.luzes ?? []).map((f) => (f.tipo === 'fogueira'
+          ? { ...f, claro: 0, penumbra: 20, tipo: 'brasa' }
+          : f));
+      }
       // De dia o grupo fica no oeste da trilha: é de lá que a distância conta.
       if (!noite) {
         const fila = [{ x: COLUNA_DO_GRUPO, y: 6 }, { x: COLUNA_DO_GRUPO + 1, y: 7 },
