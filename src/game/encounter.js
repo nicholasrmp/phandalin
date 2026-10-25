@@ -363,8 +363,16 @@ export function buildFoes(variante = 'padrao') {
   if (variante === 'esconderijo') return foesEsconderijo();
   if (variante === 'mansao' || variante === 'mansaoTunel') return foesMansao();
   if (variante === 'rua') {
-    // Quatro bandidos Marcarrubra (a aventura), na frente da taverna.
-    const foes = [[17, 4], [18, 5], [17, 6], [19, 5]].map(([x, y], i) => {
+    // Quatro bandidos Marcarrubra, na frente da taverna. Eles ficavam em
+    // x17-19, a 65-80 pés do grupo, e como só têm espada curta levavam dois
+    // turnos para chegar: a briga media 98% de vitória e 13% de PV perdidos,
+    // apesar de 800 de XP ajustado ("mortal" no 2º nível). Cinco casas mais a
+    // oeste dão contato na segunda rodada. Medido depois, já com o bloco novo
+    // (mais fraco que o antigo): a 5 casas a briga ficava em 99% de vitória e
+    // 17% de PV; a 6 casas fica em 95,5%, 3,8% de morte de herói e 25% de PV —
+    // a abertura do capítulo com dentes, sem virar cara ou coroa (a 7 casas
+    // não melhora mais nada: 94% e 26%).
+    const foes = [[11, 4], [12, 5], [11, 6], [13, 5]].map(([x, y], i) => {
       const f = makeMonster('marcarrubra', { x, y }, { nameSuffix: 'ABCD'[i] });
       f.facingVec = { dx: -1, dy: 0 };
       return f;
@@ -482,12 +490,20 @@ function foesMansao() {
     neutro(m('plebeu', 21, 7, 'jaulas'), 'Mirna Dendrar'),
     neutro(m('plebeu', 23, 7, 'jaulas'), 'Nilsa Dendrar'),
   ];
-  for (const p of presos) { p.preso = true; p.attacks = []; }
+  // `refem`: a 0 PV cai desacordado em vez de morrer (ver `applyDamage`). Sem
+  // isso, um plebeu de 4 PV dentro da jaula morria do Mãos Flamejantes do
+  // próprio grupo — medido, a família morria em 4 das 14 posições de onde um
+  // mago pegaria os dois guardas, e o Sono adormecia um deles em 100 de 100.
+  for (const p of presos) { p.preso = true; p.refem = true; p.attacks = []; }
   // Área 9: Mosk, o chefe dos bugbears, com o tapa-olho e a chave.
   const mosk = m('bugbear', 4, 17, 'guardas', '', { dx: 0, dy: -1 });
   mosk.name = 'Mosk';
   mosk.chave = true;
   const droop = neutro(m('droop', 4, 15, 'guardas', '', { dx: 0, dy: 1 }), 'Droop');
+  // O Droop desmaia de medo quando a luta começa, e inconsciente ele falha
+  // sozinho em toda resistência de Destreza: sem `refem`, um Mãos Flamejantes
+  // mirado no Mosk o matava em 182 de 200 lances.
+  droop.refem = true;
   // Área 12: o Cajavidro na escrivaninha, de costas para a passagem secreta;
   // o rato dele vigia a oficina (11). Ninguém sabe o nome dele até ele falar.
   const iarno = makeNpc('iarno', { x: 9, y: 2 }, {});
@@ -525,6 +541,12 @@ function foesMansao() {
     droop,
     ...estar,
     iarno,
+    // Dois guarda-costas no quarto. Sozinho, o chefe do capítulo media 100% de
+    // vitória com 0 a 2,6% de PV perdidos, e morria antes de agir em 40 a 63%
+    // das lutas: 200 de XP ajustado, "abaixo de fácil" no 3º nível. Com estes
+    // dois são 800 ajustados ("médio") e 9 a 19% de PV perdidos.
+    m('marcarrubra', 7, 3, 'cajavidro', 'de guarda', { dx: 0, dy: -1 }),
+    m('marcarrubra', 8, 3, 'cajavidro', 'de guarda', { dx: 0, dy: -1 }),
     rato,
   ];
 }

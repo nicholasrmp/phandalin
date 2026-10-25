@@ -132,6 +132,12 @@ casa(23, 5, 's')                                     # a pilha de roupas
 # --------------------------------------------- 3. Corredor do fosso ----
 pinta(R(21, 28), R(9, 10), '_', 4, 0)
 FOSSO = [(23, 9), (24, 9), (23, 10), (24, 10)]
+# O PARAPEITO. O fosso ocupa as DUAS fileiras do corredor, de parede a parede,
+# e a cena promete em três lugares que "nas beiradas sobra um parapeito
+# estreito". Não sobrava: revelado o fosso, o corredor ficava intransponível em
+# combate (as opções do botão direito só existem fora da luta) e a cripta
+# perdia o recuo. Estas duas casas são o parapeito, em fila indiana, pelo sul.
+casa(23, 11, '_', 4, 0); casa(24, 11, '_', 4, 0)
 casa(27, 11, '_', 4, 1)                              # porta ao pé da escada da área 1
 
 # --------------------------------------------- 1. Porão ----
@@ -140,6 +146,9 @@ pinta(R(21, 27), R(12, 18), '_', 4, 2)
 # desenha a borda de pedra. Entrar nela é escalar a mureta.
 pinta(R(21, 23), R(14, 16), 'W', 5, 2)               # a cisterna
 for x in R(21, 23): casa(x, 12, 's')
+# O parapeito do fosso (23,11)/(24,11) desce para cá: sem esta pilha, ele
+# abriria uma rota nova do corredor direto para o porão.
+casa(24, 12, 's')
 casa(22, 18, 's'); casa(23, 18, 's')
 # Patamar de 1,5 x 4,5 m a leste, com duas escadinhas descendo para o porão.
 pinta([28], R(13, 17), '_', 6, 2)

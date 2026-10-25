@@ -13,8 +13,10 @@
 //             mansinho (surpresa se ninguém os ouvir). No fundo
 //             da cisterna, a bolsa de fuga do Cajavidro (Percepção CD 15, ou
 //             na hora com uma vara).
-//   área 3    o fosso escondido no meio do corredor (Percepção CD 15 acha, e
-//             acha os parapeitos: Acrobacia CD 10). Quem cai: Destreza CD 15
+//   área 3    o fosso escondido no meio do corredor (Percepção CD 15 acha).
+//             Pelo lado sul passa uma faixa de laje, um de cada vez; pela
+//             beirada dá para se espremer com Acrobacia CD 10, mais rápido e
+//             mais arriscado. Quem cai: Destreza CD 15
 //             para se agarrar; senão 2d6 e caído. 100 XP por passar.
 //   área 4    três esqueletos atacam quem chega a 6 m da porta das jaulas ou
 //             da do depósito de armas — menos quem veste o manto vermelho ou
@@ -46,7 +48,7 @@
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod } from '../rules/abilities.js';
-import { distanceFt, SUPERFICIES } from '../core/grid.js';
+import { distanceFt, isAdjacent, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, removeCondition, hasCondition } from '../rules/conditions.js';
 import { darXp } from './nivel.js';
@@ -90,6 +92,12 @@ export function criarMansao(app, config) {
     tregua: false, iarno: null, presosLivres: false, temChave: false, sabeSenha: false,
   });
   salvo.portas ??= [];
+  // Buscas já tentadas: UMA tentativa por herói em cada ponto. Sem isso, as
+  // CDs eram decorativas — dava para clicar na mesma parede, na mesma porta e
+  // no mesmo trecho de corredor até o dado sair. Outro herói pode tentar (são
+  // outros olhos e outros ouvidos); o mesmo, não. Objeto, e não Set, porque
+  // `salvo` sobrevive a sair e voltar da masmorra.
+  salvo.buscas ??= {};
   const grupos = {};
   for (const f of todos) (grupos[f.grupo] ??= { id: f.grupo, membros: [], ativo: false, vencido: false }).membros.push(f);
   for (const g of Object.values(grupos)) {
@@ -231,6 +239,10 @@ export function criarMansao(app, config) {
   function trazer(g) {
     if (g.ativo) return;
     g.ativo = true;
+    // Os esqueletos levam a regra do manto para DENTRO da luta: quem está de
+    // manto vermelho, ou disse a senha, não é alvo deles. Sem isso, bastava um
+    // herói descoberto para os três atacarem o grupo inteiro, de manto e tudo.
+    if (g.id === 'cripta') for (const e of g.membros) e.ignora = (h) => Boolean(g.senha) || vestido(h);
     for (const f of g.membros) {
       if (enc.combatants.includes(f) || f.dead) continue;
       if (enc.occupied(f.pos.x, f.pos.y)) f.pos = { ...f.pos, ...casaPerto(f.pos) };
@@ -250,7 +262,10 @@ export function criarMansao(app, config) {
       droop.stable = true;
     }
     // Bêbados (decisão nossa: o livro só diz que estão distraídos).
-    if (g.id === 'estar') for (const f of hostis(g)) addCondition(f, 'envenenado');
+    // Bêbados: envenenado DURA. Sem duração a condição ficava para sempre, o
+    // que não é regra nenhuma — e a sala media trivial (3 a 14% de PV
+    // perdidos). Três rodadas é o tempo de eles acordarem para a briga.
+    if (g.id === 'estar') for (const f of hostis(g)) addCondition(f, 'envenenado', { rounds: 3, quando: 'fim', lado: f.side });
     enc.emboscada = surpresa === 'deles'
       ? { emboscadores: 'foes', furtividade: g.furtividade }
       : surpresa === 'nossa'
@@ -332,7 +347,7 @@ export function criarMansao(app, config) {
     c.pos = { ...c.pos, x: volta.x, y: volta.y };
     marcarFosso();
     if (estado.explorando) {
-      await painel([texto, 'O buraco fica aberto no meio do corredor. Pelas beiradas norte e sul sobra um parapeito estreito.']);
+      await painel([texto, 'O buraco fica aberto no meio do corredor. Pelo lado sul sobra uma faixa de laje, larga o bastante para um de cada vez.']);
       if (c.side === 'party') await xpDoFosso();
     } else {
       enc.say('acao', texto);
@@ -461,6 +476,18 @@ export function criarMansao(app, config) {
   async function ratoAvisa(c) {
     if (estado.iarnoAvisado || !iarno || iarno.dead || !NA_OFICINA(c.pos)) return false;
     if (grupos.cajavidro.ativo) return false;
+    // O rato é um familiar, não uma câmera: quem entra na oficina sem fazer
+    // barulho pode passar por ele. Antes o aviso saía sempre e sem teste, e
+    // como a oficina está no caminho natural para o quarto, o chefe do
+    // capítulo fugia sozinho na maioria das partidas.
+    if (!estado.ratoFalhou) {
+      const t = teste(c, 'furtividade', 11);        // Percepção passiva do rato
+      if (t.passou) {
+        estado.ratoFalhou = true;
+        await painel(`Um rato marrom levanta a cabeça debaixo da bancada, fareja o ar e volta ao que estava fazendo. ${c.name} passou sem fazer barulho.`, { teste: t });
+        return false;
+      }
+    }
     estado.iarnoAvisado = true;
     salvo.iarno = 'fugiu';
     iarno.fugiu = true;
@@ -483,6 +510,9 @@ export function criarMansao(app, config) {
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
     if (await fosso(c)) return;
+    // Quem atravessa ANDANDO pelo parapeito (23,11)/(24,11) venceu o corredor
+    // do mesmo jeito de quem se espremeu com Acrobacia: vale o mesmo XP.
+    if (salvo.fossoVisto && c.pos.y === 11 && (c.pos.x === 23 || c.pos.x === 24)) await xpDoFosso();
     if (await ponteSul(c)) return;
     if (await secretasPassivas(c)) return;
     if (await ratoAvisa(c)) return;
@@ -549,10 +579,17 @@ export function criarMansao(app, config) {
     if (!iarno || iarno.dead || iarno.side !== 'foes' || iarno.rendido) return false;
     // Derrubado sem morrer (golpe não letal) também fica preso.
     const caido = hasCondition(iarno, 'inconsciente');
+    // Morto não se rende. Sem esta linha, `evento` chamava `rendeSe` no dano
+    // que o matava: a cena narrava "eu me rendo" e ele morria em seguida, em
+    // 1,4 a 7,6% das lutas.
+    if (iarno.hp <= 0 && !caido) return false;
     if (iarno.hp > 8 && !caido) return false;
-    // Ainda tem por onde sumir (Passo Nebuloso num espaço de 2º): tenta antes
-    // de se render (`conjurarNoTurno` em `rules/ai.js`).
-    if (!caido && (iarno.spellcasting?.slots?.[2] ?? 0) > 0) return false;
+    // Ainda tem por onde sumir? Só vale se o Passo Nebuloso for de fato
+    // conjurável: a IA só o usa com inimigo colado (`ai.js`). Longe do grupo,
+    // guardar o espaço não era plano nenhum — era teimosia, e ele morria
+    // conjurando com 5 PV em vez de se render.
+    const colado = enc.combatants.some((h) => h.side === 'party' && !h.dead && isAdjacent(h.pos, iarno.pos));
+    if (!caido && colado && (iarno.spellcasting?.slots?.[2] ?? 0) > 0) return false;
     iarno.side = 'neutro';
     iarno.rendido = true;
     iarno.name = 'Iarno Albrek';
@@ -567,9 +604,13 @@ export function criarMansao(app, config) {
 
   enc.antesDoTurno = (m) => {
     if (m === iarno) return rendeSe();
-    // O bugbear do beliche dorme a primeira rodada.
+    // O bugbear do beliche dorme as TRÊS primeiras rodadas. Com ele entrando
+    // na segunda, a sala media 1200 de XP ajustado — "mortal" no 2º nível, que
+    // é como o grupo chega aqui pela rota do túnel do Carp — com 16 a 26% de
+    // morte de herói. Entrando na quarta, 88 a 97% de vitória e 5 a 7,5% de
+    // morte: continua sendo a pior sala da masmorra, sem ser uma roleta.
     if (m.dormindo) {
-      if (enc.round < 2) return true;
+      if (enc.round < 4) return true;
       m.dormindo = false;
       enc.say('acao', `${m.name} acorda com a barulheira, rosna e pula do beliche.`);
     }
@@ -829,7 +870,7 @@ export function criarMansao(app, config) {
     out.push({
       id: 'fosso', tipo: 'armadilha', x: MANSAO.fosso[0].x, y: MANSAO.fosso[0].y, nome: 'O fosso coberto do corredor',
       semMarca: true, vista: salvo.fossoVisto,
-      texto: 'as lajes do meio do corredor não assentam: por baixo, um fosso fundo, de duas casas de largura. Nas beiradas sobra um parapeito estreito (ou dá para saltar por cima, com a magia Salto).',
+      texto: 'as lajes do meio do corredor não assentam: por baixo, um fosso fundo, de duas casas de largura. Pelo lado sul passa uma faixa de laje, em fila indiana — ou dá para se espremer pela beirada com Acrobacia, ou saltar por cima com a magia Salto.',
       revelar: () => {
         if (salvo.fossoVisto) return false;
         salvo.fossoVisto = true;
@@ -861,13 +902,18 @@ export function criarMansao(app, config) {
     const ops = [];
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
     const f = enc.field;
+    /** Uma tentativa por herói em cada ponto: o motivo, se já tentou. */
+    const jaBuscou = (tipo, onde = tile) => (salvo.buscas[`${c.id}:${tipo}:${onde.x},${onde.y}`]
+      ? `${c.name} já tentou aqui` : null);
+    const marcarBusca = (tipo, onde = tile) => { salvo.buscas[`${c.id}:${tipo}:${onde.x},${onde.y}`] = true; };
 
     // Paredes: procurar porta secreta, e escutar atrás das portas.
     if (sup === 'rocha' || sup === 'alvenaria') {
       ops.push({
         rotulo: 'Procurar porta secreta', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 · paredes a até 3 m',
-        motivo: longe(10),
+        motivo: longe(10) ?? jaBuscou('secreta'),
         fazer: async () => {
+          marcarBusca('secreta');
           const perto = Object.entries(MANSAO.secretas).filter(([n, s]) => !salvo.secretas.includes(n) && distanceFt(tile, s) <= 10);
           const vantagem = perto.some(([n]) => n === 'quarto' && salvo.iarno === 'fugiu');
           const t = teste(c, 'percepcao', 10, vantagem);
@@ -892,8 +938,10 @@ export function criarMansao(app, config) {
         if (ouvidas.has(gid) || distanceFt(tile, porta) > 5 || !grupos[gid] || grupos[gid].vencido) continue;
         ouvidas.add(gid);
         ops.push({
-          rotulo: 'Escutar atrás da porta', icone: 'acao-procurar', detalhe: `Percepção, CD ${cd}`, motivo: longe(5),
+          rotulo: 'Escutar atrás da porta', icone: 'acao-procurar', detalhe: `Percepção, CD ${cd}`,
+          motivo: longe(5) ?? jaBuscou('escuta', porta),
           fazer: async () => {
+            marcarBusca('escuta', porta);
             const t = teste(c, 'percepcao', cd);
             await painel(t.passou ? `${c.name} encosta a orelha na porta: ${som}.` : `${c.name} não ouve nada de útil.`, { teste: t });
           },
@@ -971,8 +1019,10 @@ export function criarMansao(app, config) {
     if (sup === 'cisterna' && NO_PORAO(tile) && !salvo.bolsa) {
       const vara = tem(c, 'vara');
       ops.push({
-        rotulo: 'Sondar a cisterna', icone: 'acao-procurar', detalhe: vara ? 'com a vara: acha na hora' : 'Percepção, CD 15', motivo: longe(5),
+        rotulo: 'Sondar a cisterna', icone: 'acao-procurar', detalhe: vara ? 'com a vara: acha na hora' : 'Percepção, CD 15',
+        motivo: longe(5) ?? (vara ? null : jaBuscou('cisterna', { x: 0, y: 0 })),
         fazer: async () => {
+          if (!vara) marcarBusca('cisterna', { x: 0, y: 0 });
           const t = vara ? null : teste(c, 'percepcao', 15);
           if (vara || t.passou) {
             salvo.bolsa = true;
@@ -988,12 +1038,14 @@ export function criarMansao(app, config) {
     // Área 3: procurar armadilha e o parapeito.
     if (dentro(tile, 21, 9, 28, 10) && !salvo.fossoVisto) {
       ops.push({
-        rotulo: 'Procurar armadilhas', icone: 'acao-procurar', detalhe: 'Percepção, CD 15', motivo: longe(15),
+        rotulo: 'Procurar armadilhas', icone: 'acao-procurar', detalhe: 'Percepção, CD 15',
+        motivo: longe(15) ?? jaBuscou('armadilha', { x: 0, y: 0 }),
         fazer: async () => {
+          marcarBusca('armadilha', { x: 0, y: 0 });
           const t = teste(c, 'percepcao', 15);
           if (t.passou) { salvo.fossoVisto = true; marcarFosso(); app.refresh(); }
           await painel(t.passou
-            ? 'A poeira no meio do corredor tem um desenho estranho: as lajes ali não assentam, estão por cima de tábuas. Um fosso coberto. Nas beiradas norte e sul sobra um parapeito estreito.'
+            ? 'A poeira no meio do corredor tem um desenho estranho: as lajes ali não assentam, estão por cima de tábuas. Um fosso coberto. Pelo lado sul sobra uma faixa de laje por onde se passa, um de cada vez.'
             : 'Poeira grossa, colunas falsas, as portas de cobre no fundo. Nada de estranho.', { teste: t });
         },
       });
@@ -1107,8 +1159,10 @@ export function criarMansao(app, config) {
     // Área 8: a ponte, descer e subir a fenda, o baú.
     if (sup === 'ponte' && !salvo.ponteSulCaiu) {
       ops.push({
-        rotulo: 'Examinar a ponte', icone: 'acao-procurar', detalhe: 'Investigação, CD 15', motivo: longe(10),
+        rotulo: 'Examinar a ponte', icone: 'acao-procurar', detalhe: 'Investigação, CD 15',
+        motivo: longe(10) ?? jaBuscou('ponte'),
         fazer: async () => {
+          marcarBusca('ponte');
           const t = teste(c, 'investigacao', 15);
           const sul = tile.y === MANSAO.pontes.sul;
           await painel(t.passou

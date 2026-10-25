@@ -184,23 +184,31 @@ export const HUMANOIDES = {
     id: 'marcarrubra',
     name: 'Bandido Marcarrubra',
     look: 'marcarrubra',
-    fonte: 'aventura',
+    // NOSSO, derivado do Bandido do SRD (CA 12 de couro, 11 PV, Cimitarra +3
+    // de 1d6+1, ND 1/8). O que mudamos: couro batido no lugar do couro (CA
+    // 13), mais vida (3d8+3) e uma segunda cimitarra, que é o que faz o papel
+    // deles no módulo — valentão que anda em bando e bate dois por turno.
+    // Estava marcado 'aventura', que não é um dos rótulos do projeto e
+    // escondia um bloco de livro. Medido: com estes números a briga da rua
+    // mantém a mesma faixa de antes.
+    fonte: 'propria',
     size: 'médio',
     level: 1,
     cr: '1/2',
     xp: 100,
-    abilities: { str: 11, dex: 14, con: 12, int: 9, wis: 9, cha: 11 },
-    ac: 14,
+    abilities: { str: 11, dex: 14, con: 12, int: 10, wis: 10, cha: 11 },
+    ac: 13,
     acNote: 'couro batido',
     maxHp: 16,
+    hpDice: '3d8+3',
     speedFt: 30,
     skills: ['intimidacao'],
     attacks: [
-      { name: 'Espada curta', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'sword' },
+      { name: 'Cimitarra', bonus: 3, damage: '1d6+1', type: 'cortante', reachFt: 5, art: 'sword' },
     ],
-    multiattack: { count: 2, sequence: ['Espada curta', 'Espada curta'] },
+    multiattack: { count: 2, sequence: ['Cimitarra', 'Cimitarra'] },
     traits: [],
-    blurb: 'Ladrão mesquinho de manto vermelho encardido. Dois golpes de espada curta por turno; vive de intimidar quem não revida.',
+    blurb: 'Ladrão mesquinho de manto vermelho encardido. Dois golpes de cimitarra por turno; vive de intimidar quem não revida.',
   },
 
   batedor: {

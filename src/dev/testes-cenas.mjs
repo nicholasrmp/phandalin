@@ -26,6 +26,8 @@ import { hasCondition } from '../rules/conditions.js';
 import { skillBonus } from '../rules/abilities.js';
 import { makeRng } from '../core/rng.js';
 import { mapaDo, buildFoes } from '../game/encounter.js';
+import { criarPersonagem } from '../rules/progressao.js';
+import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO } from '../game/esconderijo.js';
 
 let total = 0;
@@ -249,6 +251,59 @@ teste('o goblin da ponte atira do que ele tem: arco, não azagaia', () => {
 teste('o bloco do Chefe Goblin está marcado como do Livro dos Monstros', () => {
   assert.equal(MONSTERS.goblinChefe.fonte, 'MM');
   assert.equal(MONSTERS.yeemik.fonte, 'MM');
+});
+
+// ---- a mansão (fase 3) ------------------------------------------------------
+
+teste('subir de nível NÃO devolve espaço de magia gasto', () => {
+  const base = { name: 'M', raca: 'humano', abilities: { str: 8, dex: 14, con: 14, int: 16, wis: 12, cha: 10 }, skills: ['arcanismo'] };
+  const c = criarPersonagem(base, { classe: 'mago', nivel: 2 });
+  assert.deepEqual(c.spellcasting.slots, c.spellcasting.slotsMax, 'recém-criado nasce cheio');
+  c.spellcasting.slots = [0, 0, 0];
+  c.resources.arcaneRecovery = 0;
+  subirUmNivel(c);
+  // Do 2º para o 3º o mago ganha 1 espaço de 1º e 2 de 2º. Só isso.
+  assert.deepEqual(c.spellcasting.slots, [0, 1, 2]);
+  assert.equal(c.resources.arcaneRecovery, 0, 'a carga gasta continua gasta');
+});
+
+teste('os NPCs indefesos da mansão não morrem de dano de área', () => {
+  const neutros = buildFoes('mansao').filter((c) => c.side === 'neutro' && c.maxHp > 1);
+  assert.ok(neutros.length >= 4, 'a família Dendrar e o Droop');
+  for (const n of neutros) assert.equal(n.refem, true, `${n.name} sem refem`);
+});
+
+teste('o parapeito do fosso existe, e cruza o corredor', () => {
+  const m = mapaDo('mansao');
+  const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+  for (const [x, y] of [[23, 11], [24, 11]]) assert.ok(!f.blocksMove(x, y), `o parapeito (${x},${y}) devia ser chão`);
+  // E não pode virar atalho para o porão: a pilha de (24,12) fecha a descida.
+  for (const [x, y] of [[22, 12], [23, 12], [24, 12]]) assert.ok(f.blocksMove(x, y), `(${x},${y}) devia ser cobertura`);
+});
+
+teste('o Marcarrubra é bloco nosso, com dados de vida que batem', () => {
+  const d = MONSTERS.marcarrubra;
+  assert.equal(d.fonte, 'propria');
+  assert.equal(Math.floor(averageOf(d.hpDice)), d.maxHp);
+});
+
+teste('o Cajavidro não luta sozinho', () => {
+  const g = buildFoes('mansao').filter((c) => c.grupo === 'cajavidro');
+  assert.ok(g.length >= 3, `o quarto tem ${g.length} criatura(s): o chefe precisa de guarda-costas`);
+});
+
+teste('quem o guardião ignora não entra na lista de alvos dele', () => {
+  const mapa = Array.from({ length: 12 }, () => '.'.repeat(12));
+  const party = makeParty({ nivel: 2 });
+  party.forEach((c, i) => { c.pos = { x: 1 + i, y: 1 }; });
+  const esq = makeMonster('esqueleto', { x: 5, y: 5 });
+  const enc = new Encounter({ battlefield: new Battlefield(12, 12, mapa), party, foes: [esq], rng: makeRng(1) });
+  assert.equal(enc.enemiesOf(esq).length, party.length);
+  party[0].mantoVermelho = true;
+  esq.ignora = (h) => Boolean(h.mantoVermelho);
+  const alvos = enc.enemiesOf(esq);
+  assert.equal(alvos.length, party.length - 1);
+  assert.ok(!alvos.includes(party[0]), 'quem veste o manto não é alvo');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

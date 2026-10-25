@@ -279,7 +279,13 @@ export class Encounter {
   enemiesOf(actor) {
     // O NPC neutro (o goblin que só quer conversar) não é inimigo de ninguém
     // até a cena mudar o lado dele.
-    const todos = this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro' && !c.dead && !hasCondition(c, 'inconsciente') && !hasCondition(c, 'etereo'));
+    // `ignora`: um guardião pode não ver inimigo em quem traz a senha ou o
+    // sinal certo (os esqueletos da cripta e o manto vermelho). A cena põe o
+    // predicado na criatura; sem ele, nada muda. Antes isso só decidia se a
+    // luta COMEÇAVA — começada, o esqueleto atacava até quem estava de manto.
+    const todos = this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro'
+      && !c.dead && !hasCondition(c, 'inconsciente') && !hasCondition(c, 'etereo')
+      && !actor.ignora?.(c));
     // Quem finge de morto só é ignorado havendo outro alvo; senão a luta travava num impasse.
     const vivos = todos.filter((c) => !hasCondition(c, 'fingeMorto'));
     return vivos.length ? vivos : todos;
