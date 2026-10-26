@@ -1157,6 +1157,39 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
     desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
   },
+  // ---- montaria e travessia (`rules/marcha.js`, `core/grid.js`) ----
+  encontrarMontaria: {
+    id: 'encontrarMontaria', name: 'Encontrar Montaria', level: 2, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 10, rangeFt: 30, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Dez minutos de oração e um espírito atende, com a forma de um cavalo de guerra: deslocamento 18 m, Inteligência 6, e entende um idioma que você fale. Na estrada, o grupo cavalga, e o dia de marcha rende o dobro. (Duas regras da casa: o livro dá UM corcel ao conjurador, e aqui o grupo inteiro viaja no ritmo dele; e o livro só promete uma hora de galope a dobro de velocidade, enquanto aqui o corcel rende a jornada toda. Simplificações: o jogo não põe o corcel no tabuleiro nem tem combate montado, então nada dele aparece na luta; não há ação de dispensá-lo, e ele dura até a magia terminar; e a parte que deixa suas magias de alvo único alcançarem a montaria não está. Só fora de combate.)',
+  },
+  montariaFantasmagorica: {
+    id: 'montariaFantasmagorica', name: 'Montaria Fantasmagórica', level: 3, school: 'ilusão', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 30, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Um cavalo meio transparente aparece ao seu lado, com deslocamento 30 m, e some depois de uma hora. O livro dá o ritmo dele: 16 km numa hora, ou 21 km em passo acelerado. Ritual. Na estrada, essa hora a galope vale por três de caminhada, e as outras sete seguem a pé. (Regra da casa: o livro dá a montaria a UM cavaleiro, e aqui o grupo inteiro viaja no ritmo dela. Simplificações: o jogo não põe a montaria no tabuleiro nem tem combate montado; e a regra de ela sumir ao levar qualquer dano fica sem efeito, porque não há montaria no tabuleiro para ser acertada. Só fora de combate.)',
+  },
+  andarNaAgua: {
+    id: 'andarNaAgua', name: 'Andar na Água', level: 3, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 60,
+    desc: 'Por uma hora, até dez criaturas que você escolher passam a pisar na superfície da água como se fosse chão firme. Ritual. No jogo, a água funda — o poço, a cisterna — deixa de custar o dobro: atravessa-se andando. (Simplificação: o livro cobre qualquer líquido e deixa subir à superfície quem já está submerso; aqui vale a água dos mapas, e nada mais.)',
+  },
+  respirarNaAgua: {
+    id: 'respirarNaAgua', name: 'Respirar na Água', level: 3, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1440,
+    desc: 'Por vinte e quatro horas, até dez criaturas que você escolher respiram debaixo da água — sem perder o ar de cima. Ritual. (Simplificação: o jogo ainda não afoga ninguém, então a magia gasta o espaço e o tempo e só é narrada. Fica pronta para quando a água funda cobrar o ar. Só fora de combate.)',
+  },
+  fundirSeComPedra: {
+    id: 'fundirSeComPedra', name: 'Fundir-se com a Pedra', level: 3, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 480,
+    desc: 'Você entra numa pedra ou numa parede de pedra grande o bastante para caber em você e fica lá dentro por oito horas. De dentro não se vê nada do lado de fora, e ouvir o que acontece em volta é teste de Percepção com desvantagem; o tempo você continua sentindo passar. Ritual. Lá dentro ninguém o alcança, escolhe como alvo nem o afeta, e quem passa a noite na pedra não é achado por quem ronda o acampamento. (Precisa de pedra ao lado: parede, rocha, alvenaria, laje, seteira, sarcófago ou estalagmite. Simplificações: no livro você pode gastar o movimento para sair pela pedra onde entrou, e isso encerra a magia — aqui a saída só vem no fim das oito horas; o livro também deixa você conjurar magias em si mesmo lá dentro, e aqui ninguém conjura de dentro da pedra; a desvantagem em ouvir não é cobrada, porque o jogo não rola Percepção de dentro da pedra; não está a regra de ser expulso com 6d6 contundente se a pedra for destruída; e a figura do herói continua desenhada no mapa, porque o mapa é a vista do próprio jogador. Só fora de combate.)',
+  },
+  formaGasosa: {
+    id: 'formaGasosa', name: 'Forma Gasosa', level: 3, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'gasoso',
+    concentration: true, duracaoRodadas: 600,
+    desc: 'Uma criatura voluntária que você toca vira uma névoa. O voo de 3 m passa a ser o único jeito de ela andar, e com ele ela atravessa qualquer vão estreito — a grade de uma cela, a fenda de uma seteira. Tem resistência a todo dano não mágico e vantagem nas resistências de Força, Destreza e Constituição. Em troca, não ataca, não conjura e não manipula objeto: nem bebe poção, nem saca arma. Concentração, até uma hora. (Simplificações: o livro trata líquido como chão firme e deixa a névoa entrar no espaço de uma criatura hostil; aqui ela não entra na água nem no espaço de quem é hostil. O jogo não tem buraco de fechadura: os vãos são a grade e a seteira dos mapas, e a névoa atravessa o vão mas não para dentro dele.)',
+  },
+
   // ---- adivinhação e serviçais ----
   escritaIlusoria: {
     id: 'escritaIlusoria', name: 'Escrita Ilusória', level: 1, school: 'ilusão', fonte: 'srd', ritual: true, soFora: true, utilidade: true,

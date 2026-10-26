@@ -42,12 +42,13 @@ import {
 } from '../rules/utilidade.js';
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm, cobrarMarchaForcada, podeMarchar,
+  MONTARIAS,
   furtividadeDoGrupo, chanceDeEsconder,
 } from '../rules/marcha.js';
 import {
   VIGIAS, procurarLugar, montarAcampamento, atencaoDaVigia, coberturaDaNoite,
   ocultacaoDoAcampamento, descansou, noiteQuebrada, textoDoAcampamento, oQueAVigiaPercebe,
-  noiteFechada,
+  noiteFechada, aMostraNaNoite,
 } from '../rules/acampamento.js';
 import {
   ENCONTROS, sortearEncontro, distanciaInicial, reacaoDe, podeConversar,
@@ -102,12 +103,13 @@ const KM_POR_PX = 2 * KM_POR_DIA / dist(LOCAL.phandalin, LOCAL.poco);
  * Quilômetros e dias de marcha entre dois lugares, no ritmo escolhido
  * (`rules/marcha.js`). Sem ritmo, o normal: 36 km por dia.
  */
-export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0 } = {}) {
+export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0, montaria = null } = {}) {
   const km = Math.round(dist(LOCAL[de], LOCAL[para]) * KM_POR_PX / 2) * 2;
   return {
     km,
-    dias: diasDeMarcha(km, KM_POR_DIA, ritmo, horasExtras),
-    porDia: kmPorDia(KM_POR_DIA, ritmo, horasExtras),
+    dias: diasDeMarcha(km, KM_POR_DIA, ritmo, horasExtras, { montaria }),
+    porDia: kmPorDia(KM_POR_DIA, ritmo, horasExtras, { montaria }),
+    montaria,
   };
 }
 
@@ -171,7 +173,8 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const encheu = encherCantis(vivos());
     const d = despensaDoGrupo(vivos());
     // Quantos dias em cada ritmo, para a escolha ser informada.
-    const porRitmo = Object.values(RITMOS).map((r) => ({ r, ...trajeto(reg.onde, l.id, { ritmo: r.id }) }));
+    const montaria = montariaDoGrupo();
+    const porRitmo = Object.values(RITMOS).map((r) => ({ r, ...trajeto(reg.onde, l.id, { ritmo: r.id, montaria }) }));
     const normal = porRitmo.find((x) => x.r.id === 'normal');
     tela.esconder();
     const escolha = await narrar(app.root, {
@@ -180,6 +183,9 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         `${km} km de ${LOCAL[reg.onde].nome}, com acampamento a cada noite.`,
         `Rações: o grupo leva ${d.racoes}, e a viagem pede ${normal.dias * vivos().length} em ritmo normal.${d.racoes < normal.dias * vivos().length ? ' O que faltar sai da caça e da colheita — ou da fome.' : ''}`,
         `Água: ${encheu > 0 ? `os cantis foram enchidos aqui (${encheu} litro(s)) e levam ` : 'os cantis levam '}${d.agua} litro(s), um dia para cada um. O resto é riacho, chuva ou magia.`,
+        montaria
+          ? `Montaria: ${MONTARIAS[montaria].nome} — ${MONTARIAS[montaria].resumo}. (Regra da casa: o Livro do Jogador nao casa a tabela de marcha com a ficha da montaria.)`
+          : null,
         'Em que passo?',
         ...porRitmo.map((x) => {
           // Com os dias iguais aos do passo normal, o ritmo só troca risco por
@@ -198,8 +204,8 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
 
     // Marcha forçada: só vale perguntar quando ela encurta a viagem.
     let horasExtras = 0;
-    const comExtras = trajeto(reg.onde, l.id, { ritmo: escolha, horasExtras: EXTRAS_MAX });
-    const semExtras = trajeto(reg.onde, l.id, { ritmo: escolha });
+    const comExtras = trajeto(reg.onde, l.id, { ritmo: escolha, horasExtras: EXTRAS_MAX, montaria });
+    const semExtras = trajeto(reg.onde, l.id, { ritmo: escolha, montaria });
     if (comExtras.dias < semExtras.dias) {
       const forcar = await narrar(app.root, {
         formato: 'painel',
@@ -215,11 +221,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       if (forcar === 'sim') horasExtras = EXTRAS_MAX;
     }
 
-    const rota = trajeto(reg.onde, l.id, { ritmo: escolha, horasExtras });
+    const rota = trajeto(reg.onde, l.id, { ritmo: escolha, horasExtras, montaria });
     marcharEm(vivos(), escolha);
     camp.viagem = {
       de: reg.onde, para: l.id, dias: rota.dias, dia: 1, periodo: 'dia',
-      ritmo: escolha, horasExtras, kmRestantes: rota.km, porDia: rota.porDia,
+      ritmo: escolha, horasExtras, kmRestantes: rota.km, porDia: rota.porDia, montaria,
     };
     await seguirViagem();
   }
@@ -284,7 +290,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         // Onde armar, com fogo ou sem, e quem fica de vigia. O acampamento
         // vive em `camp.viagem` para sobreviver a uma luta no meio da noite.
         via.acampamento = await escolherAcampamento(rng, via);
-        const camp = montarAcampamento({ ...via.acampamento, ...abrigoDoGrupo(), herois: vivos() });
+        const camp = montarAcampamento({ ...via.acampamento, ...abrigoDoGrupo(), herois: naNoite() });
         registrar(textoDoAcampamento(camp));
         // Dentro da Pequena Cabana nada entra: não há encontro para sortear.
         const e = noiteFechada(camp)
@@ -296,7 +302,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       // A noite passou (com ou sem luta): o descanso longo do acampamento.
       // Quem não comeu nem bebeu o dia todo não tira degrau de exaustão, e
       // quem passou quatro horas de vigia não descansou de verdade.
-      const campNoite = montarAcampamento({ ...(via.acampamento ?? {}), ...abrigoDoGrupo(), herois: vivos() });
+      const campNoite = montarAcampamento({ ...(via.acampamento ?? {}), ...abrigoDoGrupo(), herois: naNoite() });
       // O livro: só UMA HORA ou mais de esforço manda recomeçar o descanso. A
       // luta da noite soma os minutos dela em `capitulo4-estrada.js`; uma luta
       // de rodadas nem chega perto, mas a regra fica onde devia estar.
@@ -413,6 +419,32 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
    * noite, a Chama Contínua ilumina sem entregar o acampamento
    * (`rules/acampamento.js`).
    */
+  /**
+   * A montaria que o grupo tem em pé, se tiver: o corcel do paladino, que
+   * fica, ou o fantasma do mago, que dura uma hora. `rules/marcha.js` conta a
+   * distância do dia com ela.
+   */
+  function montariaDoGrupo() {
+    const estado = estadoDeUtilidade(camp);
+    const herois = vivos();
+    if (ativaDe(estado, herois, 'encontrarMontaria')) return 'corcel';
+    if (ativaDe(estado, herois, 'montariaFantasmagorica')) return 'fantasma';
+    return null;
+  }
+
+  /**
+   * Quem a NOITE vê. O Fundir-se com a Pedra dura oito horas, que é a noite
+   * inteira: quem está dentro da pedra não entra na conta da vigia nem na de
+   * quem a ronda pode achar. Se, por absurdo, o grupo inteiro estivesse na
+   * pedra, a noite volta a ser do grupo todo — uma noite sem ninguém seria uma
+   * divisão por zero disfarçada.
+   */
+  function naNoite() {
+    const todos = vivos();
+    const fora = aMostraNaNoite(todos);
+    return fora.length ? fora : todos;
+  }
+
   function abrigoDoGrupo() {
     const estado = estadoDeUtilidade(camp);
     const herois = vivos();
@@ -519,7 +551,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       // Cada noite começa com a fogueira que o grupo escolheu: a brasa de
       // ontem não atravessa para hoje.
       if (camp.viagem) camp.viagem.semFogueira = false;
-      const camp3 = montarAcampamento({ ...(camp.viagem?.acampamento ?? {}), ...abrigoDoGrupo(), herois: vivos() });
+      const camp3 = montarAcampamento({ ...(camp.viagem?.acampamento ?? {}), ...abrigoDoGrupo(), herois: naNoite() });
       const bandoN = Array.from({ length: e.qtd }, () => makeMonster(e.id, { x: 0, y: 0 }));
       // Só a PRIMEIRA leva chega agora, como na cena: rolar a Furtividade do
       // bando inteiro fazia o bando grande ser mais fácil de ouvir, porque o

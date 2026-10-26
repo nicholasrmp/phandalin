@@ -90,6 +90,12 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // Montaria e travessia (`rules/marcha.js`, `core/grid.js`).
+  encontrarMontaria: { alvo: 'si', min: 10 * 365 * 24 * 60, efeito: 'montaria', tempo: 10 },
+  montariaFantasmagorica: { alvo: 'si', min: 60, efeito: 'montaria', ritual: true, tempo: 1 },
+  andarNaAgua: { alvo: 'grupo', cond: 'naAgua', min: 60, ritual: true },
+  respirarNaAgua: { alvo: 'grupo', min: 1440, efeito: 'respirar', ritual: true },
+  fundirSeComPedra: { alvo: 'si', cond: 'naPedra', min: 480, efeito: 'pedra', ritual: true },
   // Adivinhação e serviçais.
   escritaIlusoria: { alvo: 'si', min: 14400, efeito: 'escrita', ritual: true, tempo: 1 },
   discoFlutuante: { alvo: 'si', min: 60, efeito: 'disco', ritual: true },
@@ -205,6 +211,11 @@ export function ativaDe(estado, herois, spellId, { por = null, npc = null, alvo 
 export function encerrar(estado, a, herois, { texto = null } = {}) {
   // Repouso Tranquilo: passados os dez dias, o corpo volta a ser um corpo.
   if (a.spellId === 'repousoTranquilo' && a.corpo) delete a.corpo.repousoTranquilo;
+  // Montaria: o corcel desaparece, e a estrada volta a ser andada a pé.
+  if ((a.spellId === 'encontrarMontaria' || a.spellId === 'montariaFantasmagorica')
+    && !estado.ativas.some((x) => x !== a && (x.spellId === 'encontrarMontaria' || x.spellId === 'montariaFantasmagorica'))) {
+    delete estado.montaria;
+  }
   // Aura Mágica do Arcanista e Indetectável: a criatura volta a ser o que é, e a ser vista.
   // Só se não houver OUTRA conjuração viva na mesma criatura: conjurar de novo
   // antes de a primeira acabar não pode apagar a segunda quando a primeira
@@ -499,6 +510,20 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
         criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
       };
     }
+    // ---- montaria e travessia ----
+    if (u.efeito === 'montaria') {
+      // Qual corcel: o conjurado do paladino, que fica, ou o fantasma do mago,
+      // que vale uma hora. `rules/marcha.js` lê isto para o dia de estrada.
+      const qual = spellId === 'encontrarMontaria' ? 'corcel' : 'fantasma';
+      estado.montaria = qual;
+      resultado.montaria = qual;
+    }
+    if (u.efeito === 'respirar') {
+      // O jogo não afoga ninguém: a magia gasta o espaço e o tempo e narra.
+      resultado.respirar = grupo.filter((h) => !h.dead).slice(0, 10);
+      resultado.soNarra = true;
+    }
+    if (u.efeito === 'pedra') resultado.pedra = c;
     // ---- adivinhação e serviçais ----
     if (u.efeito === 'aura') {
       // A Aura Mágica troca o tipo que a adivinhação lê, não o tipo de verdade.

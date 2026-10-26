@@ -153,6 +153,23 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
         : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
       break;
     }
+    case 'encontrarMontaria': {
+      const m = res.montaria;
+      t.push(`Dez minutos de oração, e o ar se adensa: um cavalo de guerra cinza-claro, de olhos atentos, para ao lado de ${c.name} e espera. Entende o que ele fala${m ? ' — e, na estrada, o grupo cavalga' : ''}.`);
+      break;
+    }
+    case 'montariaFantasmagorica':
+      t.push(`Um cavalo cinzento e meio transparente aparece a passo, sem fazer barulho no chão. Uma hora a galope, e depois ele se desfaz no ar.`);
+      break;
+    case 'andarNaAgua':
+      t.push(`A sola das botas do grupo endurece contra a água: por uma hora, o poço e a cisterna são chão firme, e atravessa-se andando.`);
+      break;
+    case 'respirarNaAgua':
+      t.push(`O grupo respira fundo e a água deixa de ser um problema por um dia inteiro. (Nada no jogo afoga ninguém ainda: a magia foi conjurada e narrada, e não muda nada.)`);
+      break;
+    case 'fundirSeComPedra':
+      t.push(`${c.name} apoia a mão na pedra e afunda nela como quem entra na água. Lá dentro é escuro e surdo: ele sente o tempo passar e ouve o que chega abafado, mas não vê nada. Oito horas, e ninguém o alcança.`);
+      break;
     case 'escritaIlusoria':
       t.push(`${c.name} passa a pena pelo que está escrito e as letras se embaralham para quem não devia ler. Só o grupo continua vendo as palavras de verdade. Dez dias. (Ainda não há nada escrito que alguém leia: a magia foi conjurada e narrada, e não muda nada no jogo.)`);
       break;

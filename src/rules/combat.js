@@ -245,6 +245,8 @@ export class Encounter {
     this.field.dificeisExtra = null;
     this.field.voando = false;
     this.field.escalando = false;
+    this.field.sobreAgua = false;
+    this.field.atravessaVao = false;
     for (const c of this.combatants) {
       c.movementLeftFt = 0;
       c.actionUsed = true;
@@ -287,7 +289,7 @@ export class Encounter {
   at(x, y) {
     return this.combatants.find((c) => {
       // Quem piscou para o Plano Etéreo não ocupa casa: dá para passar por onde estava.
-      if (c.dead || hasCondition(c, 'etereo')) return false;
+      if (c.dead || conditionEffects(c).inalcancavel) return false;
       const f = c.pos.f ?? 1;
       return x >= c.pos.x && x < c.pos.x + f && y >= c.pos.y && y < c.pos.y + f;
     });
@@ -306,7 +308,7 @@ export class Encounter {
     // predicado na criatura; sem ele, nada muda. Antes isso só decidia se a
     // luta COMEÇAVA — começada, o esqueleto atacava até quem estava de manto.
     const todos = this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro'
-      && !c.dead && !hasCondition(c, 'inconsciente') && !hasCondition(c, 'etereo')
+      && !c.dead && !hasCondition(c, 'inconsciente') && !conditionEffects(c).inalcancavel
       && !actor.ignora?.(c));
     // Quem finge de morto só é ignorado havendo outro alvo; senão a luta travava num impasse.
     const vivos = todos.filter((c) => !hasCondition(c, 'fingeMorto'));
@@ -342,7 +344,9 @@ export class Encounter {
     const livre = actor.features?.includes('unarmoredMovement')
       ? semArmadura : ARMORS[actor.armor ?? 'nenhuma']?.categoria !== 'pesada';
     const daClasse = livre ? (actor.bonusDeDeslocamento ?? 0) : 0;
-    const pes = Math.max(0, Math.max(actor.speedFt, fx.vooFt) + daClasse - fx.speedPenaltyFt - pesada);
+    // Forma Gasosa: o voo SUBSTITUI o andar, não se soma a ele.
+    const base = fx.soVoa ? fx.vooFt : Math.max(actor.speedFt, fx.vooFt);
+    const pes = Math.max(0, base + daClasse - fx.speedPenaltyFt - pesada);
     // Lentidão: metade, em casas inteiras.
     const comBonus = (pes + fx.speedBonusFt) * (fx.speedMult ?? 1);
     return fx.speedHalf ? Math.floor(comBonus / 10) * 5 : comBonus;
@@ -689,7 +693,9 @@ export class Encounter {
 
   aplicarCondicao(alvo, id, opcoes = {}) {
     const fonte = typeof opcoes.source === 'string' ? this.combatants.find((c) => c.id === opcoes.source) : null;
-    if (id !== 'etereo' && hasCondition(alvo, 'etereo')) return null;
+    // Fora de alcance (Plano Etéreo, dentro da pedra): nada o afeta. A exceção é
+    // a própria condição que o tirou de alcance.
+    if (id !== 'etereo' && id !== 'naPedra' && conditionEffects(alvo).inalcancavel) return null;
     if (this.imuneACondicao(alvo, id, fonte)) return null;
     const cond = addCondition(alvo, id, opcoes);
     if (CONDITIONS[id]?.incapacitated) this.dropConcentration(alvo);
@@ -1105,6 +1111,10 @@ export class Encounter {
     this.field.dificeisExtra = this.terrenoHostil(actor);
     this.field.voando = this.voaAgora(actor);
     this.field.escalando = this.escalaAgora(actor);
+    // Andar na Água e Forma Gasosa: as duas mexem em POR ONDE se passa, então
+    // viajam no campo como o voo e a escalada.
+    this.field.sobreAgua = conditionEffects(actor).sobreAgua;
+    this.field.atravessaVao = conditionEffects(actor).atravessaVao;
     // Círculo Mágico: o tipo barrado não entra (quem já está dentro anda livre).
     const barras = this.circulosQueBarram(actor);
     const cabeFinal = barras.length
@@ -1132,12 +1142,17 @@ export class Encounter {
       this.field.dificeisExtra = null;
       this.field.voando = false;
       this.field.escalando = false;
+      this.field.sobreAgua = false;
+      this.field.atravessaVao = false;
     }
   }
 
   /** Quem voa não pisa no chão: terreno difícil, degraus e zonas do chão não o pegam. */
   voaAgora(actor) {
-    return hasCondition(actor, 'voando') && !hasCondition(actor, 'caido') && !conditionEffects(actor).incapacitated;
+    // A Forma Gasosa também flutua: o livro diz que a névoa paira, e quem paira
+    // não pisa em terreno difícil nem escala degrau.
+    return (hasCondition(actor, 'voando') || conditionEffects(actor).soVoa)
+      && !hasCondition(actor, 'caido') && !conditionEffects(actor).incapacitated;
   }
 
   /** Patas de Aranha: sobe degraus sem custo de escalada, mas pisa no terreno difícil e nas zonas do chão. */
@@ -1190,11 +1205,15 @@ export class Encounter {
       this.field.dificeisExtra = hostil;
       this.field.voando = this.voaAgora(actor);
       this.field.escalando = this.escalaAgora(actor);
+      this.field.sobreAgua = conditionEffects(actor).sobreAgua;
+      this.field.atravessaVao = conditionEffects(actor).atravessaVao;
       let pes = 0;
       for (let i = 1; i <= fim; i++) pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y);
       this.field.dificeisExtra = null;
       this.field.voando = false;
       this.field.escalando = false;
+      this.field.sobreAgua = false;
+      this.field.atravessaVao = false;
       return pes;
     };
     if (custoAte(path.length - 1) * this.custoDeMovimento(actor) > actor.movementLeftFt) return false;
@@ -2042,6 +2061,7 @@ export class Encounter {
     if (!(actor.weapons ?? []).includes(weaponId)) return { ok: false, why: 'não carrega essa arma' };
     if (actor.equippedWeapon === weaponId) return { ok: false, why: 'essa arma já está na mão' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
+    if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se pega arma' };
     const custo = this.custoDeInteracao(actor);
     if (!custo) return { ok: false, why: 'a interação gratuita e a ação deste turno já foram usadas' };
     const r = equipar(actor, 'maoPrincipal', weaponId);
@@ -2479,12 +2499,20 @@ export class Encounter {
   }
 
   canAttack(actor, target, weaponId) {
+    // Forma Gasosa: a névoa não ataca. Antes da arma na mão, porque névoa não
+    // tem mão — perguntar da arma primeiro daria o motivo errado.
+    if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se ataca' };
+    // Fora de alcance (Plano Etéreo, dentro da pedra): não há o que acertar.
+    if (conditionEffects(target).inalcancavel) {
+      const fxT = conditionEffects(target);
+      return { ok: false, why: `${target.name} ${fxT.motivoInalcancavel ?? 'está fora de alcance'}` };
+    }
     if (!actor.attacks) {
       const id = weaponId ?? actor.equippedWeapon;
       if (!WEAPONS[id]) return { ok: false, why: 'sem arma na mão — saque uma' };
       if (!this.empunha(actor, id)) return { ok: false, why: `${WEAPONS[id].name} não está na mão — saque a arma primeiro` };
     }
-    if (hasCondition(actor, 'etereo') || hasCondition(target, 'etereo')) return { ok: false, why: 'está no Plano Etéreo' };
+    if (conditionEffects(actor).inalcancavel) return { ok: false, why: `quem ${conditionEffects(actor).motivoInalcancavel ?? 'está fora de alcance'} não ataca` };
     const p = this.weaponAttackProfile(actor, weaponId);
     // Acao por teste (o Olhar Apodrecedor) mira 'uma criatura que ele possa ver'.
     if (p.teste && hasCondition(actor, 'cego')) return { ok: false, why: 'cego, não vê o alvo' };
@@ -3094,6 +3122,10 @@ export class Encounter {
       const def = CONDITIONS[c.id];
       if (def?.resisteTudo && !def.resisteTudoExceto?.includes(type)) return true;
       if (def?.resisteTipoDado && c.data?.tipo === type) return true;
+      // Forma Gasosa: o livro dá resistência a TODO dano não mágico — fogo e
+      // ácido de fonte comum inclusive, não só o aço.
+      if (!magico && def?.resisteNaoMagicoTudo) return true;
+      if (!magico && def?.resisteNaoMagico?.includes(type)) return true;
       return def?.resiste?.includes(type) && (!def.soDeArma || deArma);
     });
     if (porCondicao || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
@@ -3220,8 +3252,8 @@ export class Encounter {
 
   applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false } = {}) {
     if (amount <= 0 || target.dead) return;
-    // No Plano Etéreo nada atinge.
-    if (hasCondition(target, 'etereo')) return;
+    // Fora de alcance nada atinge: o Plano Etéreo e quem está dentro da pedra.
+    if (conditionEffects(target).inalcancavel) return;
     const bruto = amount;
     // Elo de Proteção: confere antes — um elo que acaba agora não resiste a este golpe.
     const doElo = this.donoDoElo(target);
@@ -3685,7 +3717,9 @@ export class Encounter {
       return null;
     }
     if (alvo.dead) return 'sem alvo';
-    if (hasCondition(alvo, 'etereo')) return `${alvo.name} está no Plano Etéreo`;
+    if (conditionEffects(alvo).inalcancavel) {
+      return `${alvo.name} ${conditionEffects(alvo).motivoInalcancavel ?? 'está fora de alcance'}`;
+    }
     const aliado = alvo.side === actor.side;
     if (spell.kind === 'levitar') {
       if (!['miúdo', 'pequeno', 'médio'].includes(alvo.size ?? 'médio')) return 'pesado demais: a magia ergue só criatura Pequena ou Média';
@@ -3916,7 +3950,13 @@ export class Encounter {
     const spell = getSpell(spellId);
     if (!actor.spellcasting) return { ok: false, why: 'não conjura magias' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
-    if (hasCondition(actor, 'etereo')) return { ok: false, why: 'está no Plano Etéreo' };
+    // Dentro da pedra e no Plano Etéreo não se conjura para fora.
+    if (conditionEffects(actor).inalcancavel) {
+      return { ok: false, why: `quem ${conditionEffects(actor).motivoInalcancavel ?? 'está fora de alcance'} não conjura` };
+    }
+    // Forma Gasosa: a névoa não conjura — nem para desfazer a própria magia,
+    // que é concentração e se solta sozinha quando o conjurador quiser.
+    if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se conjura' };
     // Silêncio: sem som não há verbal. Quem repete uma magia já em pé (o golpe é
     // só um gesto) passa, e a magia sem componente verbal (Ataque Certeiro) também.
     if (!(spell.reuso && actor.magiasAtivas?.[spellId]) && !spell.semVerbal
@@ -5612,7 +5652,8 @@ export class Encounter {
     // desvantagem nas de FOR e DES.
     const opts = {
       advantage: vantagem || (hab === 'dex' && (hasCondition(actor, 'esquivando') || fx.vantagemDex))
-        || (hab === 'wis' && fx.vantagemSab) || fx.vantagemTeste.includes(hab),
+        || (hab === 'wis' && fx.vantagemSab) || fx.vantagemTeste.includes(hab)
+        || fx.saveAdvantage.includes(hab),
       disadvantage: (!!actor.armorUntrained && (hab === 'str' || hab === 'dex'))
         || fx.saveDisadvantage.includes(hab) || fx.desvantagemTeste.includes(hab),
     };
@@ -5676,6 +5717,9 @@ export class Encounter {
       return { ok: false, why: porBonus ? 'a ação bônus deste turno já foi usada' : 'a ação deste turno já foi usada' };
     }
     if (!quantosNaMochila(actor, itemId)) return { ok: false, why: `${dados.name} não está na mochila` };
+    // Forma Gasosa: o livro diz que a névoa não fala nem manipula objeto, e o
+    // que ela carregava não pode ser soltado nem usado.
+    if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se usa objeto' };
 
     const veto = this.vetoDeItem(actor, dados, target);
     if (veto) return { ok: false, why: veto };

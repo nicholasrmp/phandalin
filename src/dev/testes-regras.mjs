@@ -21,11 +21,12 @@ import {
   LUGARES, VIGIAS, MINUTOS_QUE_QUEBRAM_O_DESCANSO, HORAS_LEVES, HORAS_DA_NOITE,
   procurarLugar, montarAcampamento, atencaoDaVigia, ocultacaoDoAcampamento,
   coberturaDaNoite, vigiaDeTurno, descansou, noiteQuebrada, oQueAVigiaPercebe,
-  textoDoAcampamento, noiteFechada,
+  textoDoAcampamento, noiteFechada, naPedraDaNoite, aMostraNaNoite,
 } from '../rules/acampamento.js';
 import {
   RITMOS, EXTRAS_MAX, ritmoDe, kmPorDia, diasDeMarcha, marcharEm,
   cobrarMarchaForcada, furtividadeDoGrupo, chanceDeEsconder, podeMarchar,
+  MONTARIAS,
 } from '../rules/marcha.js';
 import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
@@ -61,8 +62,8 @@ const MAPA = Array(12).fill('............');
 const [DARA, PIP, BRENN, ILVAN] = [0, 1, 2, 3];
 
 /** Grupo e inimigos num campo 12x12 vazio, já no turno do grupo. */
-function montar({ seed = 1, foes = [['goblin', { x: 6, y: 5 }]], pos = null, lado = 'party', nivel = 2 } = {}) {
-  const field = new Battlefield(12, 12, MAPA);
+function montar({ seed = 1, foes = [['goblin', { x: 6, y: 5 }]], pos = null, lado = 'party', nivel = 2, mapa = null } = {}) {
+  const field = new Battlefield(12, 12, mapa ?? MAPA);
   const party = makeParty({ nivel });
   const pp = pos ?? [{ x: 5, y: 5 }, { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 1, y: 9 }];
   party.forEach((c, i) => { c.pos = { ...pp[i] }; });
@@ -7047,6 +7048,368 @@ teste('as magias sem efeito no jogo se declaram como narracao', () => {
     assert.ok(r.ok, id);
     assert.ok(!r.resultado.soNarra, id + ' tem efeito de verdade');
   }
+});
+
+// ---- montaria e travessia --------------------------------------------------
+
+teste('as seis de montaria e travessia existem, com circulo e classes do livro', () => {
+  const esperado = [
+    ['encontrarMontaria', 2, false, ['paladino']],
+    ['montariaFantasmagorica', 3, true, ['mago']],
+    ['andarNaAgua', 3, true, ['clerigo', 'druida', 'feiticeiro', 'patrulheiro']],
+    ['respirarNaAgua', 3, true, ['druida', 'feiticeiro', 'mago', 'patrulheiro']],
+    ['fundirSeComPedra', 3, true, ['clerigo', 'druida']],
+    ['formaGasosa', 3, false, ['bruxo', 'feiticeiro', 'mago']],
+  ];
+  for (const [id, nivel, ritual, classes] of esperado) {
+    const e = getSpell(id);
+    assert.ok(e, id + ' existe');
+    assert.equal(e.level, nivel, id + ' e de ' + nivel + 'o circulo');
+    assert.equal(e.fonte, 'srd', id + ' e do SRD');
+    assert.equal(Boolean(e.ritual), ritual, id + ': ritual ' + ritual);
+    assert.ok(/Simplifica|Regra da casa|regra da casa/.test(e.desc), id + ' declara o que muda do livro');
+    for (const classe of classes) {
+      assert.ok(listaDaClasse(classe, nivel).magias.includes(id), classe + ' tem ' + id);
+    }
+  }
+  // E quem NAO tem.
+  assert.ok(!listaDaClasse('mago', 2).magias.includes('encontrarMontaria'), 'a montaria e so do paladino');
+  assert.ok(!listaDaClasse('clerigo', 3).magias.includes('formaGasosa'), 'o clerigo nao vira nevoa');
+  assert.ok(!listaDaClasse('bardo', 3).magias.includes('formaGasosa'), 'nem o bardo');
+  assert.ok(!listaDaClasse('paladino', 3).magias.includes('andarNaAgua'), 'o paladino nao anda na agua');
+  // As cinco de fora de combate sao de fora; a Forma Gasosa vale no combate.
+  for (const id of ['encontrarMontaria', 'montariaFantasmagorica', 'andarNaAgua', 'respirarNaAgua', 'fundirSeComPedra']) {
+    assert.equal(getSpell(id).soFora, true, id + ' e so fora de combate');
+  }
+  assert.ok(!getSpell('formaGasosa').soFora, 'a Forma Gasosa vale no combate');
+  assert.equal(getSpell('formaGasosa').concentration, true, 'e e concentracao, no campo que castSpell le');
+  assert.equal(getSpell('formaGasosa').condition, 'gasoso', 'e aplica a condicao certa');
+  assert.equal(getSpell('formaGasosa').targets, 1, 'num alvo');
+  assert.equal(getSpell('formaGasosa').duracaoRodadas, 600, 'uma hora em rodadas');
+});
+
+teste('as cinco de fora viram magia ativa: sem duracao ninguem as le', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  const ids = ['encontrarMontaria', 'montariaFantasmagorica', 'andarNaAgua', 'respirarNaAgua', 'fundirSeComPedra'];
+  mago.spellcasting.prepared.push(...ids);
+  mago.spellcasting.slots = [0, 9, 9, 9];
+  for (const id of ids) {
+    const estado = estadoDe({ vila: { dia: 1 } });
+    const r = conjurarFora(estado, mago, id, { herois: party, rng: makeRng(3) });
+    assert.ok(r.ok, id + ': ' + (r.why ?? ''));
+    assert.ok(ativaDe(estado, party, id), id + ' tem de ficar ativa, ou ninguem a le');
+  }
+});
+
+teste('a montaria dobra o dia de estrada, e o fantasma rende uma hora', () => {
+  // A pe, no ritmo normal: os 36 km do livro.
+  assert.equal(kmPorDia(36, 'normal'), 36);
+  // Corcel conjurado: deslocamento 18 m contra 9 m, o dia inteiro.
+  assert.equal(kmPorDia(36, 'normal', 0, { montaria: 'corcel' }), 72, 'o dobro');
+  // Montaria fantasmagorica: 30 m, mas so uma das oito horas.
+  const fantasma = kmPorDia(36, 'normal', 0, { montaria: 'fantasma' });
+  assert.ok(fantasma > 36 && fantasma < 72, 'entre andar e cavalgar o dia todo: ' + fantasma);
+  assert.equal(fantasma, 47, 'uma hora a 100 pes mais sete a pe');
+  // O ritmo ainda pesa por cima da montaria.
+  assert.ok(kmPorDia(36, 'rapido', 0, { montaria: 'corcel' }) > kmPorDia(36, 'normal', 0, { montaria: 'corcel' }));
+  assert.ok(kmPorDia(36, 'lento', 0, { montaria: 'corcel' }) < kmPorDia(36, 'normal', 0, { montaria: 'corcel' }));
+  // E encurta a viagem de verdade.
+  assert.equal(diasDeMarcha(160, 36), 5, 'a pe, cinco dias');
+  assert.equal(diasDeMarcha(160, 36, 'normal', 0, { montaria: 'corcel' }), 3, 'a cavalo, tres');
+  // A tabela existe e aponta para as magias certas.
+  assert.equal(MONTARIAS.corcel.magia, 'encontrarMontaria');
+  assert.equal(MONTARIAS.fantasma.magia, 'montariaFantasmagorica');
+  assert.equal(MONTARIAS.corcel.pes, 60);
+  assert.equal(MONTARIAS.fantasma.pes, 100);
+});
+
+teste('a montaria vai embora quando a magia acaba', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('montariaFantasmagorica');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, mago, 'montariaFantasmagorica', { herois: party, rng: makeRng(4) }).ok);
+  assert.equal(estado.montaria, 'fantasma');
+  avancar(estado, 59, party);
+  assert.equal(estado.montaria, 'fantasma', 'aos 59 minutos ainda cavalga');
+  avancar(estado, 1, party);
+  assert.equal(estado.montaria, undefined, 'a uma hora o corcel some');
+});
+
+teste('Andar na Agua: a agua funda deixa de custar o dobro', () => {
+  // Um corredor de cisterna entre duas margens.
+  const mapa = [
+    '............',
+    '............',
+    '....VVVV....',
+    '....VVVV....',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+  ];
+  const field = new Battlefield(12, 12, mapa);
+  // A grade sabe que aquelas casas sao agua funda.
+  assert.ok(field.aguas.has('4,2'), 'a cisterna entrou na lista de aguas');
+  assert.ok(!field.aguas.has('0,0'), 'o chao nao');
+  // Nada: custa o dobro.
+  field.sobreAgua = false;
+  assert.equal(field.costOf(4, 2), 10, 'nadando, 1,5 m custa 3 m');
+  // Andando na agua: custa o normal.
+  field.sobreAgua = true;
+  assert.equal(field.costOf(4, 2), 5, 'na superficie, custa o de sempre');
+  // E o mato fechado continua cobrando o dobro: a magia e so da agua.
+  const mato = new Battlefield(12, 12, ['~~~~~~~~~~~~', ...mapa.slice(1)]);
+  mato.sobreAgua = true;
+  assert.equal(mato.costOf(0, 0), 10, 'o mato nao e agua: continua o dobro');
+});
+
+teste('Andar na Agua: a condicao chega no grupo e o alcance cresce no tabuleiro', () => {
+  const mapa = [
+    '............',
+    '............',
+    '...VVVVV....',
+    '...VVVVV....',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+  ];
+  const { enc, party } = montar({ nivel: 5, mapa });
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 1 };
+  clerigo.spellcasting.prepared.push('andarNaAgua');
+  clerigo.spellcasting.slots = [0, 4, 3, 2];
+  const quantas = () => enc.reachableFor(clerigo).size;
+  const antes = quantas();
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, clerigo, 'andarNaAgua', { herois: party, rng: makeRng(6) }).ok);
+  assert.ok(hasCondition(clerigo, 'naAgua'), 'o conjurador tambem anda na agua');
+  assert.ok(hasCondition(party[PIP], 'naAgua'), 'e o grupo todo');
+  const depois = quantas();
+  assert.ok(depois > antes, `com a agua aplainada o grupo alcanca mais: ${antes} -> ${depois}`);
+});
+
+teste('Forma Gasosa: conjurada de verdade, aplica a condicao e gasta o espaco', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const mago = party[ILVAN];
+  const dara = party[DARA];
+  mago.pos = { x: 5, y: 5 };
+  dara.pos = { x: 5, y: 6 };
+  mago.spellcasting.prepared.push('formaGasosa');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const r = enc.castSpell(mago, 'formaGasosa', { targets: [dara] });
+  assert.ok(r.ok, 'conjurou: ' + (r.why ?? ''));
+  assert.ok(hasCondition(dara, 'gasoso'), 'a condicao chegou no alvo — sem isto a magia so gasta o espaco');
+  assert.equal(mago.spellcasting.slots[3], 2, 'e gastou o espaco de 3o');
+  assert.ok(mago.concentrating, 'e e concentracao');
+});
+
+teste('Forma Gasosa: a nevoa anda 3 m, e so por voo', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const c = party[PIP];
+  const aPe = enc.speedOf(c);
+  assert.ok(aPe >= 25, 'a pe o heroi anda: ' + aPe);
+  addCondition(c, 'gasoso', { rounds: 600 });
+  assert.equal(enc.speedOf(c), 10, 'em nevoa, 3 m — e nao zero, nem o deslocamento de andar');
+  // E o turno NOVO tem de comecar com esses 3 m: o defeito antigo so aparecia
+  // aqui, porque `movementLeftFt` ja estava posto quando a condicao entrava.
+  enc.beginSide('party');
+  assert.equal(c.movementLeftFt, 10, 'o turno comeca com 3 m de voo');
+  assert.ok(enc.reachableFor(c).size > 1, 'e ela sai da propria casa');
+  // Voo e voo: terreno dificil nao cobra da nevoa.
+  assert.equal(enc.voaAgora(c), true, 'a nevoa paira');
+  // Contido continua zerando: `soVoa` nao atropela quem nao pode se mexer.
+  addCondition(c, 'contido', { rounds: 2 });
+  assert.equal(enc.speedOf(c), 0, 'contido em nevoa nao anda');
+});
+
+teste('Forma Gasosa: passa pela grade e pela seteira, mas nao pela parede', () => {
+  const mapa = [
+    '############',
+    '#....#.....#',
+    '#....G.....#',
+    '#....#.....#',
+    '#....#.....#',
+    '############',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+  ];
+  const { enc, party } = montar({ nivel: 5, mapa });
+  const mago = party[ILVAN];
+  mago.pos = { x: 3, y: 2 };
+  const field = new Battlefield(12, 12, mapa);
+  // A grade e vao; a parede, nao.
+  assert.ok(field.vaos.has('5,2'), 'a grade entrou na lista de vaos');
+  field.atravessaVao = true;
+  assert.equal(field.blocksMove(5, 2), false, 'a nevoa passa pela grade');
+  assert.equal(field.blocksMove(0, 0), true, 'a parede continua fechada');
+  field.atravessaVao = false;
+  assert.equal(field.blocksMove(5, 2), true, 'e para quem anda a grade fecha');
+  // A seteira de BORDA (a do castelo) tambem e vao.
+  const borda = new Battlefield(4, 4, ['....', '....', '....', '....']);
+  borda.porAresta(1, 1, 2, 1, 4);
+  assert.equal(borda.passa(1, 1, 2, 1), false, 'a seteira barra o passo');
+  borda.atravessaVao = true;
+  assert.equal(borda.passa(1, 1, 2, 1), true, 'menos para a nevoa');
+  borda.porAresta(1, 2, 2, 2, 1);
+  assert.equal(borda.passa(1, 2, 2, 2), false, 'e a parede de borda segue barrando a nevoa');
+  // E ela ATRAVESSA o vao sem PARAR nele: a magia acabando ali, o heroi ficaria
+  // dentro da grade.
+  addCondition(mago, 'gasoso', { rounds: 600 });
+  enc.beginSide('party');
+  mago.movementLeftFt = 60;
+  const alcance = enc.reachableFor(mago);
+  assert.ok([...alcance.values()].some((q) => q.y < 3), 'a nevoa chega do outro lado da grade');
+  assert.equal(alcance.get('5,2')?.parar, false, 'mas nao para dentro da grade');
+});
+
+teste('Forma Gasosa: resiste a TODO dano nao magico, e nao ataca, conjura nem usa objeto', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  addCondition(mago, 'gasoso', { rounds: 600 });
+  // O livro: resistencia a todo dano NAO MAGICO, nao so ao aco.
+  assert.equal(enc.danoPorTipo(mago, 10, 'cortante', false, true), 5, 'o aco comum sai pela metade');
+  assert.equal(enc.danoPorTipo(mago, 10, 'fogo', false, false), 5, 'o fogo comum tambem');
+  assert.equal(enc.danoPorTipo(mago, 10, 'acido', false, false), 5, 'e o acido');
+  assert.equal(enc.danoPorTipo(mago, 10, 'cortante', true, true), 10, 'o aco magico, inteiro');
+  assert.equal(enc.danoPorTipo(mago, 10, 'fogo', true, false), 10, 'e o fogo magico tambem');
+  // Nao ataca, nao conjura, nao usa objeto.
+  const goblin = makeMonster('goblin', { x: 4, y: 5 });
+  enc.addCombatant(goblin); goblin.side = 'foes';
+  mago.pos = { x: 5, y: 5 };
+  const ataque = enc.canAttack(mago, goblin, mago.equippedWeapon);
+  assert.equal(ataque.ok, false, 'a nevoa nao ataca');
+  assert.ok(/Gasosa/.test(ataque.why), 'e diz por que: ' + ataque.why);
+  mago.spellcasting.prepared.push('bolaDeFogo');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const magia = enc.canCast(mago, 'bolaDeFogo', { point: { x: 8, y: 5 } });
+  assert.equal(magia.ok, false, 'nem conjura');
+  // Nem bebe pocao, nem saca arma: o livro diz que ela nao manipula objeto.
+  mago.hp = 3;
+  const pocao = enc.useItem(mago, 'pocaoDeCura');
+  assert.equal(pocao.ok, false, 'nao bebe pocao: ' + JSON.stringify(pocao));
+  assert.equal(mago.hp, 3, 'e nao curou nada');
+  const arma = enc.sacarArma(mago, 'adaga');
+  assert.equal(arma.ok, false, 'nem saca arma');
+});
+teste('Forma Gasosa: vantagem nas resistencias de FOR, DES e CON, e so nelas', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const c = party[PIP];
+  addCondition(c, 'gasoso', { rounds: 600 });
+  const fx = conditionEffects(c);
+  assert.deepEqual(fx.saveAdvantage, ['str', 'dex', 'con']);
+  assert.deepEqual(fx.vantagemTeste, [], 'nao e vantagem em teste de atributo');
+  // O que conta e o dado: com vantagem, a resistencia rola dois d20.
+  assert.equal(enc.resistencia(c, 'con', 10).rolls.length, 2, 'a resistencia de CON rola dois d20');
+  assert.equal(enc.resistencia(c, 'dex', 10).rolls.length, 2, 'a de DES tambem');
+  assert.equal(enc.resistencia(c, 'wis', 10).rolls.length, 1, 'a de SAB rola um so');
+  // E o teste de atributo de Forca segue normal: a magia nao da forca nenhuma.
+  assert.equal(enc.testeDeAtributo(c, 'str', 0).rolls.length, 1, 'o teste de FOR segue com um dado');
+});
+
+teste('Fundir-se com a Pedra: precisa de pedra ao lado, e lá dentro ninguem alcanca', () => {
+  const { party } = montar({ nivel: 5 });
+  const clerigo = party[BRENN];
+  clerigo.spellcasting.prepared.push('fundirSeComPedra');
+  clerigo.spellcasting.slots = [0, 4, 3, 2];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, clerigo, 'fundirSeComPedra', { herois: party, rng: makeRng(2) }).ok);
+  assert.ok(hasCondition(clerigo, 'naPedra'), 'entrou na pedra');
+  assert.equal(conditionEffects(clerigo).inalcancavel, true, 'e lá dentro ninguem o alcanca');
+  assert.equal(conditionEffects(clerigo).motivoInalcancavel, 'está dentro da pedra', 'e a recusa diz por que');
+  // A noite do acampamento nao acha quem esta na pedra.
+  assert.deepEqual(naPedraDaNoite(party).map((c) => c.name), [clerigo.name]);
+  const aMostra = aMostraNaNoite(party).map((c) => c.name);
+  assert.ok(!aMostra.includes(clerigo.name), 'ele sai da lista de quem a noite acha');
+  assert.equal(aMostra.length, party.filter((c) => !c.dead).length - 1, 'e os outros continuam a mostra');
+  // Oito horas, e sai.
+  avancar(estado, 479, party);
+  assert.ok(hasCondition(clerigo, 'naPedra'), 'as 7h59 ainda esta dentro');
+  avancar(estado, 1, party);
+  assert.ok(!hasCondition(clerigo, 'naPedra'), 'as 8h a pedra o devolve');
+});
+
+teste('o corcel cobre a jornada inteira, inclusive as horas forcadas', () => {
+  // O `desc` promete "o dia inteiro a cavalo". Antes, as duas horas de marcha
+  // forcada saiam a pe, e o dia deixava de render o dobro.
+  // Medido contra "duas vezes mais rapido a pe" (o dobro da base), e nao contra
+  // o dobro do numero ja arredondado: com uma hora extra o dia a pe da 40,5 km,
+  // que a tela mostra como 41, e o dobro disso e 81, nao 82.
+  for (const extras of [0, 1, 2]) {
+    const comoSeFosseDuasVezes = kmPorDia(36 * 2, 'normal', extras);
+    const montado = kmPorDia(36, 'normal', extras, { montaria: 'corcel' });
+    assert.equal(montado, comoSeFosseDuasVezes,
+      `com ${extras} hora(s) extra o corcel rende o dobro da estrada: ${montado}`);
+  }
+  // O fantasma cobre UMA hora, e as extras seguem a pe — isso e o esperado.
+  assert.ok(kmPorDia(36, 'normal', 2, { montaria: 'fantasma' }) < kmPorDia(36, 'normal', 2) * 2);
+  assert.equal(MONTARIAS.corcel.horas, Infinity, 'o corcel nao vai embora');
+  assert.equal(MONTARIAS.fantasma.horas, 1, 'o fantasma dura uma hora');
+  // Montaria que nao existe cai no resultado a pe, sem quebrar.
+  assert.equal(kmPorDia(36, 'normal', 0, { montaria: 'pegaso' }), 36);
+});
+
+teste('Fundir-se com a Pedra recusa onde nao ha pedra ao lado', () => {
+  const semPedra = ['............', '............', '............', '............',
+    '............', '............', '............', '............',
+    '............', '............', '............', '............'];
+  const comPedra = ['............', '....M.......', '............', '............',
+    '............', '............', '............', '............',
+    '............', '............', '............', '............'];
+  for (const [mapa, esperado] of [[semPedra, false], [comPedra, true]]) {
+    const { enc, party } = montar({ nivel: 5, mapa });
+    const clerigo = party[BRENN];
+    clerigo.pos = { x: 4, y: 2 };
+    // `preparar` recebe o contexto do jogo, e lê `app` de dentro dele.
+    const r = prepararMagia({ app: { enc, capitulo: { lugar: 'Teste' } } }, clerigo, 'fundirSeComPedra', {});
+    if (esperado) {
+      assert.ok(!r?.erro, 'com alvenaria ao lado, deixa: ' + (r?.erro ?? ''));
+    } else {
+      assert.ok(r?.erro, 'sem pedra ao lado, recusa');
+      assert.ok(/pedra/.test(r.erro), 'e diz por que: ' + r.erro);
+    }
+  }
+});
+
+teste('quem passa a noite na pedra sai da conta da noite', () => {
+  const { party } = montar({ nivel: 5 });
+  const dentro = party[BRENN];
+  addCondition(dentro, 'naPedra', { rounds: 4800 });
+  const fora = aMostraNaNoite(party);
+  assert.ok(!fora.includes(dentro), 'ele sai da lista');
+  // E o acampamento montado sem ele nao conta com ele na vigia.
+  const comTodos = montarAcampamento({ lugar: 'aberto', vigia: 'revezam', herois: party });
+  const semEle = montarAcampamento({ lugar: 'aberto', vigia: 'revezam', herois: fora });
+  assert.equal(comTodos.herois.length, party.length);
+  assert.equal(semEle.herois.length, party.length - 1, 'o acampamento da noite tem um a menos');
+});
+
+teste('Respirar na Agua se declara como narracao: o jogo nao afoga ninguem', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('respirarNaAgua');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  const r = conjurarFora(estado, mago, 'respirarNaAgua', { herois: party, rng: makeRng(3) });
+  assert.ok(r.ok);
+  assert.equal(r.resultado.soNarra, true, 'ela mesma diz que so narra');
+  assert.ok(r.resultado.respirar.length <= 10, 'o livro cobre no maximo dez criaturas');
+  assert.ok(/nao afoga|não afoga/.test(getSpell('respirarNaAgua').desc), 'e o desc diz por que');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

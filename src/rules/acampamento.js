@@ -28,6 +28,7 @@
 //     não existe no motor, então o elfo vigia como todo mundo.
 
 import { skillBonus, passivePerception } from './abilities.js';
+import { hasCondition } from './conditions.js';
 import { d20 } from '../core/dice.js';
 
 /** Uma hora de esforço: menos que isso não recomeça o descanso longo. */
@@ -269,6 +270,21 @@ export function textoDoAcampamento(camp) {
  * Regra da casa: notar com 5 ou mais de folga dá tempo de sacudir o resto do
  * acampamento; notar em cima da hora só salva quem já estava de pé.
  */
+/**
+ * Quem está DENTRO DA PEDRA (Fundir-se com a Pedra) não é achado por quem
+ * ronda o acampamento: a magia dura oito horas, que é a noite inteira, e lá
+ * dentro ninguém o vê nem o alcança. Os outros continuam à mostra — a magia é
+ * de um só.
+ */
+export function naPedraDaNoite(herois) {
+  return (herois ?? []).filter((c) => !c.dead && hasCondition(c, 'naPedra'));
+}
+
+/** Quem a noite pode achar: o grupo menos quem está dentro da pedra. */
+export function aMostraNaNoite(herois) {
+  return (herois ?? []).filter((c) => !c.dead && !hasCondition(c, 'naPedra'));
+}
+
 export function oQueAVigiaPercebe(rng, camp, furtividades) {
   const menor = furtividades.length ? Math.min(...furtividades) : 0;
   const deTurno = camp ? vigiaDeTurno(rng, camp) : null;

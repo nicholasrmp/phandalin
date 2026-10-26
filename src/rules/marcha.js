@@ -73,15 +73,60 @@ export const RITMOS = {
 export const ritmoDe = (id) => RITMOS[id] ?? RITMOS.normal;
 
 /** Quilômetros por dia neste ritmo, com as horas a mais da marcha forçada. */
-export function kmPorDia(base, ritmo = 'normal', horasExtras = 0) {
+export function kmPorDia(base, ritmo = 'normal', horasExtras = 0, { montaria = null } = {}) {
   const r = ritmoDe(ritmo);
   const horas = HORAS_DE_MARCHA + Math.max(0, Math.min(EXTRAS_MAX, horasExtras));
-  return Math.round(base * r.fator * (horas / HORAS_DE_MARCHA));
+  const porHora = (base * r.fator) / HORAS_DE_MARCHA;
+  const m = MONTARIAS[montaria];
+  if (!m) return Math.round(porHora * horas);
+  // As horas montadas rendem pela velocidade do corcel; as outras, a pé.
+  const montadas = Math.min(m.horas, horas);
+  return Math.round(porHora * (montadas * (m.pes / PES_A_PE) + (horas - montadas)));
 }
 
+/**
+ * MONTARIA, para o dia de estrada.
+ *
+ * O QUE É DO LIVRO. A tabela de marcha de quem anda a pé: 9 m de deslocamento,
+ * 36 km por dia no ritmo normal. O ritmo da Montaria Fantasmagórica, que a
+ * própria magia dá: 16 km numa hora, 21 km em passo acelerado. E a regra de
+ * viagem montada, que promete UMA hora de galope a dobro de velocidade.
+ *
+ * O QUE É NOSSO. A conta: a hora montada rende pela velocidade do corcel sobre
+ * os 9 m de quem anda, e as horas restantes seguem a pé. E duas licenças, as
+ * duas declaradas no `desc` das magias: o corcel do paladino rende a jornada
+ * toda, não a hora de galope do livro; e a montaria carrega o grupo inteiro,
+ * quando no livro ela leva um cavaleiro só.
+ *
+ * `horas` é quanto da jornada a montaria cobre: o corcel não vai embora, então
+ * cobre tudo, inclusive as horas de marcha forçada; o fantasma dura uma hora e
+ * cobre uma.
+ */
+/** O deslocamento de quem anda a pé, em pés: a régua da marcha montada. */
+export const PES_A_PE = 30;
+
+export const MONTARIAS = {
+  corcel: {
+    id: 'corcel',
+    nome: 'Corcel conjurado',
+    magia: 'encontrarMontaria',
+    pes: 60,
+    horas: Infinity,
+    resumo: 'o espírito não vai embora: o dia inteiro a cavalo, e a estrada rende o dobro',
+  },
+  fantasma: {
+    id: 'fantasma',
+    nome: 'Montaria fantasmagórica',
+    magia: 'montariaFantasmagorica',
+    pes: 100,
+    horas: 1,
+    resumo: 'uma hora a galope e o resto a pé — mas é ritual, e pode ser conjurada de novo',
+  },
+};
+
 /** Quantos dias de marcha para `km`, neste ritmo. */
-export function diasDeMarcha(km, base, ritmo = 'normal', horasExtras = 0) {
-  return Math.max(1, Math.ceil(km / kmPorDia(base, ritmo, horasExtras)));
+export function diasDeMarcha(km, base, ritmo = 'normal', horasExtras = 0, { montaria = null } = {}) {
+  return Math.max(1, Math.ceil(km / kmPorDia(base, ritmo, horasExtras, { montaria })));
 }
 
 /**

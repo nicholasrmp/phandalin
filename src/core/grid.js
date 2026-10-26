@@ -167,6 +167,21 @@ export const GLIFOS = {
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
 
+/**
+ * ÁGUA FUNDA: onde se nada, e por isso custa o dobro. O riacho de meio metro
+ * fica fora — anda-se nele sem custo extra, então o Andar na Água não tem o
+ * que resolver lá.
+ */
+export const AGUAS_FUNDAS = new Set(['poco', 'cisterna']);
+
+/**
+ * VÃO ESTREITO: a casa que fecha o passo mas tem frestas — a grade de ferro
+ * das celas e a fenda da seteira. A Forma Gasosa passa por estas, e só por
+ * estas: parede e rocha são pedra maciça, e o livro diz que a névoa passa por
+ * fresta, não por matéria sólida.
+ */
+export const VAOS = new Set(['grade', 'seteira']);
+
 // PAREDES DE BORDA. A parede fina fica na aresta ENTRE duas casas, não ocupa
 // casa nenhuma — como nos isométricos pintados, em que a sala é a sala e a
 // parede é o contorno dela. Cada casa guarda a aresta do norte (com a casa de
@@ -182,6 +197,8 @@ export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))]
 export const ARESTA = { nada: 0, parede: 1, porta: 2, aberta: 3, seteira: 4 };
 const ARESTA_DO_CHAR = { '.': 0, '#': 1, '+': 2, '/': 3, J: 4 };
 const BARRA_PASSO = new Set([1, 2, 4]);
+/** O mesmo, sem a seteira: por onde a névoa da Forma Gasosa passa. */
+const BARRA_PASSO_SEM_VAO = new Set([1, 2]);
 const BARRA_VISAO = new Set([1, 2]);
 
 export class Battlefield {
@@ -224,6 +241,10 @@ export class Battlefield {
     this.tiles = new Uint8Array(w * h);   // 0 chão, 1 parede, 2 terreno difícil, 3 cobertura
     this.heights = new Uint8Array(w * h); // nível de elevação; cada nível = 5 pés
     this.surfaces = new Uint8Array(w * h); // índice em SUPERFICIES; só o desenho lê
+    // Estas duas as REGRAS leem: a água funda que o Andar na Água aplaina e o
+    // vão estreito por onde a Forma Gasosa passa.
+    this.aguas = new Set();
+    this.vaos = new Set();
     const chao = SUPERFICIES.indexOf('chao');
     this.surfaces.fill(chao);
     if (rows) {
@@ -238,6 +259,8 @@ export class Battlefield {
             const g = GLIFOS[c] ?? GLIFOS['.'];
             this.tiles[i] = g.kind;
             this.surfaces[i] = SUPERFICIES.indexOf(g.sup);
+            if (AGUAS_FUNDAS.has(g.sup)) this.aguas.add(key(x, y));
+            if (VAOS.has(g.sup)) this.vaos.add(key(x, y));
           }
         }
       }
@@ -272,6 +295,9 @@ export class Battlefield {
   /** Parede bloqueia movimento e linha de visão. Cobertura bloqueia só movimento. */
   blocksMove(x, y) {
     const t = this.tileAt(x, y);
+    // Forma Gasosa: a névoa passa pelo vão estreito (grade, seteira). Parede e
+    // rocha não — são pedra maciça, e o livro só dá fresta à névoa.
+    if (this.atravessaVao && this.vaos.has(key(x, y))) return false;
     return t === 1 || t === 3;
   }
 
@@ -304,7 +330,11 @@ export class Battlefield {
    * parede, nem com o corpo nem com o olho.
    */
   passa(ax, ay, bx, by, tipo = 'passo') {
-    const barra = tipo === 'visao' ? BARRA_VISAO : BARRA_PASSO;
+    // Forma Gasosa: a seteira de BORDA (a do castelo, onde `J` é aresta e não
+    // casa) é fresta do mesmo jeito que a grade. Porta fechada segue barrando:
+    // ali não há fenda, há madeira.
+    const barra = tipo === 'visao' ? BARRA_VISAO
+      : (this.atravessaVao ? BARRA_PASSO_SEM_VAO : BARRA_PASSO);
     if (ax === bx || ay === by) return !barra.has(this.aresta(ax, ay, bx, by));
     return !barra.has(this.aresta(ax, ay, bx, ay)) && !barra.has(this.aresta(bx, ay, bx, by))
       && !barra.has(this.aresta(ax, ay, ax, by)) && !barra.has(this.aresta(ax, by, bx, by));
@@ -363,8 +393,13 @@ export class Battlefield {
   costOf(x, y, fromX = null, fromY = null) {
     // Quem voa não pisa no chão: terreno difícil e degrau não custam nada.
     if (this.voando) return FEET_PER_SQUARE;
+    // Andar na Água: a água funda deixa de ser terreno difícil — e só ela. Uma
+    // Graxa ou um Crescer Plantas lançado sobre a água continua cobrando, e é
+    // por isso que isto entra na conta do `dificil` em vez de sair antes.
+    const naAgua = this.sobreAgua && this.aguas.has(key(x, y));
     // Terreno difícil: o do mapa (2) ou o que uma magia criou (Graxa).
-    const dificil = this.tileAt(x, y) === 2 || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y));
+    const dificil = (this.tileAt(x, y) === 2 && !naAgua)
+      || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y));
     // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
     let cost = this.dificeis4?.has(key(x, y)) ? FEET_PER_SQUARE * 4 : dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
     // Patas de Aranha: sobe sem o custo da escalada, mas pisa em terreno difícil.
@@ -433,7 +468,11 @@ export class Battlefield {
         // de qualquer jeito quando `atravessa` deixa.
         const tomada = occupied(nx, ny);
         const passa = !tomada || atravessa(nx, ny);
-        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada, passar: passa });
+        // Forma Gasosa: o vão estreito é a mesma ideia. A névoa ATRAVESSA a
+        // grade e a seteira, e não PARA dentro delas — se a magia acabasse ali,
+        // o herói ficaria entalado na grade.
+        const soDePassagem = this.atravessaVao && this.vaos.has(nKey);
+        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem, passar: passa });
         if (passa) queue.push({ x: nx, y: ny, cost });
       }
     }

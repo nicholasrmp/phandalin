@@ -564,10 +564,39 @@ export const CONDITIONS = {
     name: 'Piscando',
     desc: 'No fim de cada turno seu, rola 1d20: com 11 ou mais, some para o Plano Etéreo e só volta no começo do seu próximo turno.',
   },
+  gasoso: {
+    name: 'Forma Gasosa',
+    desc: 'Névoa: o voo de 3 m é o único jeito de andar, e passa por vão estreito (grade, seteira). Resistência a todo dano não mágico, e vantagem nas resistências de FOR, DES e CON. Não ataca, não conjura e não usa objeto.',
+    concentrationEffect: true,
+    // O livro: "o único meio de movimento do alvo é um deslocamento de voo de
+    // 3 m". Não é `speed: 0` — esse campo é o último a ganhar no agregador e
+    // atropelaria o zero de `contido` e `agarrado`.
+    soVoa: true,
+    vooFt: 10,
+    // O livro dá resistência a TODO dano não mágico, não só a contundente,
+    // cortante e perfurante (essa é a fórmula dos monstros, não da magia).
+    resisteNaoMagicoTudo: true,
+    saveAdvantage: ['str', 'dex', 'con'],
+    semAtaqueNemMagia: true,
+    atravessaVao: true,
+  },
+  naAgua: {
+    name: 'Andando na Água',
+    desc: 'Pisa na superfície da água como se fosse chão firme: a água funda não custa o dobro.',
+    sobreAgua: true,
+  },
+  naPedra: {
+    name: 'Dentro da Pedra',
+    desc: 'Fundido à pedra: ninguém o alcança, escolhe como alvo nem o afeta. De dentro, ouve o que acontece fora, mas não vê.',
+    inalcancavel: true,
+    motivoInalcancavel: 'está dentro da pedra',
+  },
+
   etereo: {
     name: 'No Plano Etéreo',
     desc: 'Fora do plano material até o começo do próximo turno seu: não pode ser atingido, escolhido como alvo nem afetado, e não ataca nem conjura.',
     inalcancavel: true,
+    motivoInalcancavel: 'está no Plano Etéreo',
   },
 
   // ---- lote 14: utilidade 2 -------------------------------------------------------
@@ -730,6 +759,24 @@ export function conditionEffects(actor) {
     speedPenaltyFt: 0,
     autoFailSaves: [],
     saveDisadvantage: [],
+    // O espelho de `saveDisadvantage`: vantagem SÓ na resistência, sem tocar
+    // no teste de atributo (Forma Gasosa dá isso em FOR, DES e CON).
+    saveAdvantage: [],
+    // Forma Gasosa: a névoa não ataca, não conjura e não usa objeto, mas
+    // continua agindo (anda, foge, passa pelo vão) — por isso não é
+    // `incapacitated`, que tiraria o turno dela inteiro.
+    semAtaqueNemMagia: false,
+    atravessaVao: false,
+    sobreAgua: false,
+    // Fora de alcance: não pode ser atingido, escolhido como alvo nem afetado.
+    // O Plano Etéreo e o Fundir-se com a Pedra, que leem o mesmo campo.
+    inalcancavel: false,
+    // Por que está fora de alcance, para a recusa dizer a razão ao jogador.
+    motivoInalcancavel: null,
+    // Forma Gasosa: o voo é o ÚNICO meio de movimento (o livro), em vez de
+    // somar-se ao deslocamento de andar.
+    soVoa: false,
+    resisteNaoMagicoTudo: false,
     attackBonusDice: [],
     saveBonusDice: [],
     attackPenaltyDice: [],
@@ -794,6 +841,17 @@ export function conditionEffects(actor) {
     if (def.vantagemMorte) out.vantagemMorte = true;
     if (def.curaMaxima) out.curaMaxima = true;
     if (def.vantagemTeste) out.vantagemTeste.push(...def.vantagemTeste);
+    // Forma Gasosa: vantagem só nas RESISTÊNCIAS de FOR, DES e CON — não nos
+    // testes de perícia desses atributos, que é o que `vantagemTeste` faria.
+    // É o espelho de `saveDisadvantage`, que já existia.
+    if (def.saveAdvantage) out.saveAdvantage.push(...def.saveAdvantage);
+    if (def.semAtaqueNemMagia) out.semAtaqueNemMagia = true;
+    if (def.sobreAgua) out.sobreAgua = true;
+    if (def.inalcancavel) out.inalcancavel = true;
+    if (def.motivoInalcancavel && !out.motivoInalcancavel) out.motivoInalcancavel = def.motivoInalcancavel;
+    if (def.soVoa) out.soVoa = true;
+    if (def.resisteNaoMagicoTudo) out.resisteNaoMagicoTudo = true;
+    if (def.atravessaVao) out.atravessaVao = true;
     if (def.vantagemSoTesteDados && c.data?.hab) out.vantagemSoTeste.push(c.data.hab);
     if (def.desvantagemTeste) out.desvantagemTeste.push(...def.desvantagemTeste);
     // Exaustão: os degraus se somam, então cada um lê o nível guardado na
