@@ -193,89 +193,89 @@ export const MAPA_ONDA_ECO = {
  "terreno": [
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<RRRRRRRRRRRRRRRRR`RRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<RRRRRRRRRR``R``````R`````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<<<RRRRRRRR````````````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<<<RR`R``````R``````````````RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<<<``````````````````RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<<<``````````````````RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<`````````R``````R``R`RRRRRRRRR``````R\"RRRRRRRRRRR|RRRRRRRRR",
-  "RRRR<<<<<<<<<<````````RR`````R```R`RRRRRRRRRR`````\"|RR|RRRRRRRR||RRRRRRRR",
-  "RRRR<<<<<<<<<<RRRRRRRRR``````R```R```RRRRRRRRRR```\"\"||||RRRRRR||RRRRRRRRR",
-  "RRRR<<<<<<<<<<RRRRRRRR```````R```RRRR``RRRRRRRRR```\"\"|||RRRRRRRR|RRRRRRRR",
-  "RRRR<<<<<<<<<<RRRRRRRR````````````````````RRRRRRR``\"|RR||RRRRRRR|RRRRRRRR",
-  "RRRR<<<<<<<<<<RRRRRRRR````````````````````RRRRRRRR`\"\"|||RRRRRRR|\"RRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<<<<<<<<<<<<<<RRRRRRRRRRRRRRRRRORRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<$<<^<<<$<<^<<RRRRRRRRRR``ROOOOO`R`````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<<<<<<^<&<<<^<RRRRRRRR```OOOOO````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<<<<<<<<<<<<<<<<RR`R``````ROOOOO`````````RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR&<<<<<<<<^<<<<<&```````````OOOOO``RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<<&<&<^<<<<<<^```````````OOOOO``RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<&<F<<<<`````````R``````ROORORRRRRRRRR``````R\"RRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<<<&<<&<^<````````RR`````R`OORORRRRRRRRRR`````\"|RR|RRRRRRRRRRRRRRRRRR",
+  "RRRR<^<<&<<<^<RRRRRRRRR``````R`OOROO`RRRRRRRRRR```\"\"||||RRRRRRRRRRRRRRRRR",
+  "RRRR<<<<<<<<<<RRRRRRRR```````R`OORRRR``RRRRRRRRR```\"\"|||RRRRRRRR|RRRRRRRR",
+  "RRRR&<<<<<<<$<RRRRRRRR````````````````````RRRRRRR``\"|RR||RRRRRRR|RRRRRRRR",
+  "RRRR<<<<<<<<<<RRRRRRRR````````````````````RRRRRRRR`\"\"|||RRRRRRR||RRRRRRRR",
   "RRRRRRRR``RRRRRRRRRRRR```````R```````R````RRRRRRRRR`\"||||RRRRRR|RRRRRRRRR",
-  "RRRRRRR````RRRRRRRRRRR```````````RRRRRR````RRRRRRRR`\"\"||RRRRRRRRRRRRRRRRR",
-  "RRR`````````````````````````````RRRRRR`````RRRRRRRR\"\"\"|||RRRR|\"RRRRRRRRRR",
-  "RRRR````````````````````````````RRRRR`````````RRRRR|\"\"||||R|||RRRRRRRRRRR",
-  "RRRRRRRRR``RR````````RRR``````RRRRRR``````````RRRRRR\"\"\"|||||\"\"RRRRRRRRRRR",
-  "RRRRRRRRRRRRRRR`RR```RRR`R`````RRRRR``````````RRRRRRR`\"\"|||||\"\"\"RRRRRRRRR",
+  "RRRRRRR`$``RRRRRRRRRRR```````````RRRRRR````RRRRRRRR`\"|||RRRRRRRRRRRRRRRRR",
+  "RRR`````````````````````````````RRRRRR`````RRRRRRRR\"\"||||RRRR||RRRRRRRRRR",
+  "RRRR````````````````````````````RRRRR`````````RRRRR|\"|||||R|||RRRRRRRRRRR",
+  "RRRRRRRRR``RR````````RRR``````RRRRRR``````````RRRRRR\"|||||||||RRRRRRRRRRR",
+  "RRRRRRRRRRRRRRR`RR```RRR`R`````RRRRR``````````RRRRRRR\"\"\"|||||\"\"\"RRRRRRRRR",
   "RRRRRRR|||||||R`RR``RRRRRRR``RRRRRRR`````````RRRRRRRRR\"\"\"\"\"\"\"\"\"|\"\"RRRRRRR",
   "RRRRRRR|||||||\"`RR``RRRRRRRRRRRRRRRR``````````RRRRRRRR|\"`\"\"\"\"\"\"\"\"|RRRRRRR",
   "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````````RRRRRRRRR\"`\"|\"|\"``\"\"\"|RRRRR",
   "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````R```RRRRRRRR```\"RRRRRRRR\"\"RRRRR",
-  "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRRRR<<<<<<<<<<<<RRR````RRRRRRRR```RRRRR",
-  "RRRRRRR||||||\"\"``````R<<<<<<<<<<RRRRRR<<<<<<<<<<<<R`````RRRRRRRRRR``RRRRR",
-  "RRRRRRR||||||\"````````<<<<<<<<<<``````<<<<<<<<<<<<`````RRRRRRRRR````RRRRR",
-  "RRRRRRR||||||\"```````R<<<<<<<<<<R`````<<<<<<<<<<<<````RRRRR`````````RRRRR",
-  "RRRRRRR|||||\"\"``R````R<<<<<<<<<<RR``RR<<<<<<<<<<<<R``RRRRR````R````RRRRRR",
-  "RRRRRRR|||||\"```RR``RR<<<<<<<<<<RRR`RR<<<<<<<<<<<<RRRRRRRR`````````RRRRRR",
+  "RRRRRRR|||||||\"`RR``RR<<<<<<^<<<RRRRRR<<<<<<<<<<<<RRR````RRRRRRRR```RRRRR",
+  "RRRRRRR||||||\"\"``````R<<^<&<<<<<RRRRRR^<<<<<<<^<<<R`````RRRRRRRRRR``RRRRR",
+  "RRRRRRR||||||\"````````<<<<e<<<<<``````<<<<<<<<<&<<`````RRRRRRRRR````RRRRR",
+  "RRRRRRR||||||\"```````R<<<<<<<<<^R`````<<<<<<<<<&<<````RRRRR`````````RRRRR",
+  "RRRRRRR|||||\"\"``R````R<<&<<&<<<<RR``RR<<&<^<<<<<u<R``RRRRR````R````RRRRRR",
+  "RRRRRRR|||||\"```RR``RR<<<<<<<<^<RRR`RR<<^<<<<&^<^^RRRRRRRR`````````RRRRRR",
   "RRRRRRR|||||\"```R```RRRRRRRRRRRRRR``RR<<<[[[[[[<<<``````R````````R<<<<RRR",
-  "RRRRRRR||||\"\"```RR``RRRRRRRRRRRRRR``RR<<<[[[[[[<<<````````````RRRR<<<<RRR",
-  "RRRRR`R||||\"```RRR``RRRRRRRRRRRRRR``RR<<<[[[[[[<<<R``````````R<<<<<<<<RRR",
-  "RRRRR`\"|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<<<<<<<RRR",
+  "RRRRRRR||||\"\"```RR``RRRRRRRRRRRRRR``RR<<<[[[[[[<<<````````````RRRR<<^<RRR",
+  "RRRRR`R||||\"```RRR``RRRRRRRRRRRRRR``RR<<<[[[u^[<<&R``````````R<^<<<<<<RRR",
+  "RRRRR`\"|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<^<<^<<RRR",
   "RRRRRRR\"\"\"\"R`RRRRRRRRRR````````R````RR<<<<<<<<<<<<RRRRRR`````R<<<<<<<<RRR",
   "RRRRRRR`````RRRRRRRRRRR`````````R```RR<<<<<<<<<<<<RRRRRRR`````<<<<<<<<RRR",
-  "RRRRRRR`````RRRRRRRRR`````RR````R````RRRRRRRRR``RRRRRRRR``````<<<<<<<<RRR",
+  "RRRRRRR`````RRRRRRRRR`````RR````R````RRRRRRRRR``RRRRRRRR``````<<<^<<<<RRR",
   "RRRR`RRR````RRRRRRRR`````````````````RRRRRRRRR``RRRRRRRRR`````<<<<<<<<RRR",
-  "RRRR``RR````RRRRRRR``````````````````````RR`````RRRRRRRRRR```R<<<<<<<<RRR",
-  "RRRR``RR```RRR``RR````````````````````````R``````RRRRRRR`R```R<<<<<<<<RRR",
-  "RRRR``RR```RRR`RRRR````````````````````````R```````RRRRR````````RRRRRRRRR",
-  "RRRR``RR```RRR``RRR````````````````````````````````RRRRR``````````````RRR",
-  "RRRR```R```RR```RRRR````````````````````````````````RRRRR``````RR`````RRR",
-  "RRRR```R```RR```RRRRR```````````````````````````````RRRRRR```````R````RRR",
-  "RRRR```R```RR```RRRRRRR````````R```````````````````RRRRRRR```````R`````RR",
-  "RRRR```````RR```````RRRR```R`R`R````````````````````RRRRR`R````````RRR`RR",
-  "RRRR```````RRR````````RR``RRRRRRR``````````````````RRRRR`````````````RRRR",
+  "RRRR``RR````RRRRRRR``````````````````````RR`````RRRRRRRRRR```R<<<<<<^<RRR",
+  "RRRR``RR```RRR``RR````````````````````````R``````RRRRRRR`R```R<<<<<<^<RRR",
+  "RRRR``RR```RRR`RRRR``````````````&```^`````R```````RRRRR````````RRRRRRRRR",
+  "RRRR``RR```RRR``RRR``^`````````````````````````````RRRRR``````````````RRR",
+  "RRRR```R```RR```RRRR`````````````````&``````^```^^``RRRRR``````RR`````RRR",
+  "RRRR```R```RR```RRRRR````````````````^``````````````RRRRRR```````R````RRR",
+  "RRRR```R```RR```RRRRRRR````````R``&&```````````````RRRRRRR^``````R````RRR",
+  "RRRR```````RR```````RRRR```R`R`R```````&````````````RRRRR`R````````RRRRRR",
+  "RRRR```````RRR````````RR``RRRRRRR`````````&````````RRRRR````````````^RRRR",
   "RRRRR``````RRR````````RRRRRRRRRRRRR`R```````R`````RRRRR`````````RRRRRRRRR",
-  "RRRRR``````RR`````````RR``RRRRRRRRRRR````````R`RRRRRRR``````````<<<<<<RRR",
-  "RRRRRRR`````R```RRRR``R```RR``RRRRRRRR```````RRRRRRRR`````R`````<<<<<<RRR",
-  "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<<<<<<RR````R`````<<<<<<RRR",
-  "RRRRRRR``````````R`````````R```RRR<<RRRRRR```R<<<<<<RR```R`R````<<<<<<RRR",
-  "RRRRR``````````````````````````RRR<<<<<<RR``RR<<<<<<RR``````````<<<<<<RRR",
-  "RRRRR``````RRR```````````````````R<<<<<<RR``RR<<<<<<RRR````````R<<<<<<RRR",
+  "RRRRR``````RR`````````RR``RRRRRRRRRRR`&``````R`RRRRRRR``````````<<<^<<RRR",
+  "RRRRRRR`````R```RRRR``R```RR``RRRRRRRR&``````RRRRRRRR`````R`````<<<<<<RRR",
+  "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<u<uu<RR````R`````<<<<^<RRR",
+  "RRRRRRR``````````R`````````R```RRR<<RRRRRR```R<<<<<<RR```R`R````<<<^<<RRR",
+  "RRRRR``````````````````````````RRR<<^<^<RR``RR^<<<<<RR``````````<<<<<<RRR",
+  "RRRRR``````RRR```````````````````R<<<<<&RR``RR<<<<<uRRR````````R<<<<^<RRR",
   "RRRRRRRR```RRR```````````RRR``````<<<<<<RR``RR<<<<<<RRR`R``````R<<<<<<RRR",
-  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<<RR``RR<<<<<<RRRRRR`````R<<<<<<RRR",
+  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<&RR``RR^<<<<uRRRRRR`````R<<<<^<RRR",
   "RRRRRRRRR```RR``RR```````````````R<<<<<<RR``RR``````RRRRRRR````R<<<<<<RRR",
-  "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````````RR```RRR``;`R<<<<<<RRR",
-  "RRRR````RR``RRRRRR```RRRRR``````RR<<<<<<RR`````````RR`;;`RR``;`RRRRRRRRRR",
-  "RRRR`````````RRRRR``RRRRR```RR``RR<<<<<<RR`````````RR`;;;```;;`RRRRRRRRRR",
-  "RRRRRR```````````````R``````R```RR<<<<<<RR````````RRRR;;;;;;;;``RRRRRRRRR",
-  "RRRRRR```````````````R`R````RR``RR<<<<<<RR```R````RRRR`;;;;;;;```RRRRRRRR",
-  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR`RRRR``RRRRRRRRRR`;;;;;;`;;;``RRRRRR",
-  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR```;;;;;;;;;;;`RRRRRR",
+  "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``;`R<<^<^<RRR",
+  "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR`;;^RR``;`RRRRRRRRRR",
+  "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```;;`RRRRRRRRRR",
+  "RRRRRR```````````````R``````R```RR<<<<<<RR````````RRRR;^;^;^;;``RRRRRRRRR",
+  "RRRRRR```````````````R`R````RR``RR<<<<<&RR```R`^^`RRRR`;;;;;;;```RRRRRRRR",
+  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR^RRRR``RRRRRRRRRR`;;;;;;`;;^``RRRRRR",
+  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR```;;;;;;;;;^;`RRRRRR",
   "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR````;;;;;;;;;;`RRRRRR",
-  "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR``;;;;;;;;;;;;;``RRRR",
-  "RRRRRRRRRRRRRRRR`````RRRRRR````````````R``RR`RRRR````;;;;;;;;;;;;;;;``RRR",
+  "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR``;;;;;;^^^;;;;``RRRR",
+  "RRRRRRRRRRRRRRRR`````RRRRRR````````````R``RR`RRRR````;;;;;;;;;;;;;;^``RRR",
   "RRRRRRRRRRRRRRRRRR````RRRRR````RRRRR```RRRRRRRRR`````;``;;;;;;`;;;;;;`RRR",
-  "RRRRRRRRR````````RR```RRRRR````RRRR````RRRRRR````````````;;;;;;;;;;```RRR",
-  "RRRRRRR```````````RR````RRR````RRRR````RRR`````````RRRRR`;;;`;;;;;;`RRRRR",
-  "RRRRRRRR```````````RR`````````RR````````R`````````RRRRRRR`````;;;;;;`RRRR",
+  "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR````````````^;;;;;;;^;```RRR",
+  "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;`;;;;;^`RRRRR",
+  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`^```;;;;;^`RRRR",
   "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR``;;;;`RRRR",
-  "RRRRRRRRR```OO``````RRRR```````````````````RRRRRRRRRRRRRRRRRRRRR`````RRRR",
-  "RRRRRRRRR```OO````````RRRRRRRR```````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRR`````````````RRRRRRRRRR`````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRR```OO``````RRRR`````````````&`````RRRRRRRRRRRRRRRRRRRRR``^``RRRR",
+  "RRRRRRRRR```OO````````RRRRRRRR``````&``&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRR``````````^``RRRRRRRRRR```````&&RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR`````````````RRRRRRRRRRRR``R```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR````````````RRRRR<<<<RRRRRRR```RR<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRR``````````RRRRRR<<<<`RRRRRRR``RR<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRR``````````RRRRRR<<<<<<<<<<RR``RR<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRR`````RRRRRRRRRRR<<<<<<<<<<R```RR<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRR`````RRRRRRRRRRRR<<<<<<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRR`````RRRRRRRRRRRRR<<<<<<<<<<``````<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRR``````````RRRRRR<^<<`RRRRRRR``RR<<^^RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRR``````````RRRRRR<<<<^<^<<^RR``RR<^^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRR`````RRRRRRRRRRR<<<<<<<<<<R```RR<^<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRR`````RRRRRRRRRRRR^<<<^<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRR`````RRRRRRRRRRRRR<<<^<<<<<<``````<<<^RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRR````RRRRRRRRRRRRRRRR<<<<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRR`````RRRRRRRRRRRRRRRRR<<<<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRR`````RRRRRRRRRRRRRRRRR^<^<^<&<R````R^<<^RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRR````RRRRRRRRRRRRRRRRRRRRRRRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRR````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -1211,10 +1211,6 @@ export const ONDA_ECO = {
     "y": 45
    },
    {
-    "x": 70,
-    "y": 45
-   },
-   {
     "x": 57,
     "y": 46
    },
@@ -1248,10 +1244,6 @@ export const ONDA_ECO = {
    },
    {
     "x": 66,
-    "y": 46
-   },
-   {
-    "x": 70,
     "y": 46
    },
    {
@@ -2193,10 +2185,6 @@ export const ONDA_ECO = {
     "y": 14
    },
    {
-    "x": 64,
-    "y": 14
-   },
-   {
     "x": 51,
     "y": 15
    },
@@ -2213,10 +2201,6 @@ export const ONDA_ECO = {
     "y": 16
    },
    {
-    "x": 53,
-    "y": 16
-   },
-   {
     "x": 51,
     "y": 17
    },
@@ -2225,39 +2209,11 @@ export const ONDA_ECO = {
     "y": 17
    },
    {
-    "x": 53,
-    "y": 17
-   },
-   {
-    "x": 62,
-    "y": 17
-   },
-   {
     "x": 52,
     "y": 18
    },
    {
-    "x": 53,
-    "y": 18
-   },
-   {
     "x": 52,
-    "y": 19
-   },
-   {
-    "x": 53,
-    "y": 19
-   },
-   {
-    "x": 54,
-    "y": 19
-   },
-   {
-    "x": 60,
-    "y": 19
-   },
-   {
-    "x": 61,
     "y": 19
    },
    {
@@ -11278,6 +11234,848 @@ export const ONDA_ECO = {
    }
   ]
  },
+ "props": [
+  {
+   "tipo": "prop",
+   "x": 8,
+   "y": 4,
+   "variante": "estatuaDumathoin"
+  },
+  {
+   "tipo": "prop",
+   "x": 5,
+   "y": 5,
+   "variante": "pilarAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 12,
+   "y": 5,
+   "variante": "pilarAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 5,
+   "y": 8,
+   "variante": "pilarAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 12,
+   "y": 8,
+   "variante": "pilarAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 5,
+   "y": 11,
+   "variante": "pilarAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 12,
+   "y": 11,
+   "variante": "pilarAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 8,
+   "y": 8,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 8,
+   "y": 11,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 7,
+   "y": 9,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 7,
+   "y": 10,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 10,
+   "y": 8,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 10,
+   "y": 10,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 4,
+   "y": 7,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 4,
+   "y": 13,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 13,
+   "y": 7,
+   "variante": "banco"
+  },
+  {
+   "tipo": "prop",
+   "x": 12,
+   "y": 10,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 14,
+   "y": 5,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 15,
+   "y": 4,
+   "variante": "cama"
+  },
+  {
+   "tipo": "prop",
+   "x": 18,
+   "y": 5,
+   "variante": "cadeira"
+  },
+  {
+   "tipo": "prop",
+   "x": 19,
+   "y": 7,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 19,
+   "y": 8,
+   "variante": "ferramentas"
+  },
+  {
+   "tipo": "prop",
+   "x": 21,
+   "y": 42,
+   "variante": "estalagmiteAlta"
+  },
+  {
+   "tipo": "prop",
+   "x": 24,
+   "y": 26,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 26,
+   "y": 26,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 28,
+   "y": 25,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 24,
+   "y": 29,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 27,
+   "y": 29,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 31,
+   "y": 28,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 30,
+   "y": 30,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 26,
+   "variante": "ferramentas"
+  },
+  {
+   "tipo": "prop",
+   "x": 40,
+   "y": 30,
+   "variante": "ferramentas"
+  },
+  {
+   "tipo": "prop",
+   "x": 40,
+   "y": 29,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 45,
+   "y": 30,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 47,
+   "y": 27,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 47,
+   "y": 28,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 49,
+   "y": 33,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 46,
+   "y": 26,
+   "variante": "entulhoMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 46,
+   "y": 30,
+   "variante": "mesaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 48,
+   "y": 30,
+   "variante": "mesaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 49,
+   "y": 30,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 41,
+   "variante": "mesaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 44,
+   "variante": "mesaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 43,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 33,
+   "y": 41,
+   "variante": "ossosAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 34,
+   "y": 45,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 48,
+   "y": 43,
+   "variante": "mesaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 49,
+   "y": 43,
+   "variante": "banco"
+  },
+  {
+   "tipo": "prop",
+   "x": 44,
+   "y": 43,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 65,
+   "y": 37,
+   "variante": "braseiroVerde"
+  },
+  {
+   "tipo": "prop",
+   "x": 63,
+   "y": 33,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 64,
+   "y": 34,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 67,
+   "y": 34,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 32,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 40,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 35,
+   "y": 45,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 39,
+   "y": 46,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 42,
+   "y": 47,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 49,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 50,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 36,
+   "y": 53,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 53,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 39,
+   "y": 54,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 39,
+   "y": 56,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 39,
+   "y": 62,
+   "variante": "sacoDeDormir"
+  },
+  {
+   "tipo": "prop",
+   "x": 34,
+   "y": 59,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 34,
+   "y": 60,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 63,
+   "variante": "entulhoMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 46,
+   "y": 53,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 46,
+   "y": 56,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 47,
+   "y": 58,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 48,
+   "y": 60,
+   "variante": "entulhoMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 47,
+   "y": 62,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 48,
+   "y": 62,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 47,
+   "variante": "cristais"
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 45,
+   "variante": "cristais"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 51,
+   "variante": "estante"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 54,
+   "variante": "estante"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 56,
+   "variante": "estante"
+  },
+  {
+   "tipo": "prop",
+   "x": 67,
+   "y": 49,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 67,
+   "y": 52,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 66,
+   "y": 58,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 58,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 55,
+   "y": 61,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 64,
+   "y": 64,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 66,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 57,
+   "y": 70,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 66,
+   "y": 70,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 54,
+   "y": 60,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 57,
+   "y": 69,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 67,
+   "y": 71,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 65,
+   "y": 69,
+   "variante": "bolasBrilhantes"
+  },
+  {
+   "tipo": "prop",
+   "x": 54,
+   "y": 58,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 56,
+   "y": 59,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 57,
+   "y": 61,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 61,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 64,
+   "y": 63,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 61,
+   "y": 66,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 66,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 67,
+   "y": 67,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 66,
+   "y": 73,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 71,
+   "variante": "cogumeloGigante"
+  },
+  {
+   "tipo": "prop",
+   "x": 11,
+   "y": 69,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 9,
+   "y": 70,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 11,
+   "y": 70,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 12,
+   "y": 70,
+   "variante": "estalagmiteAlta"
+  },
+  {
+   "tipo": "prop",
+   "x": 19,
+   "y": 75,
+   "variante": "estalagmiteAlta"
+  },
+  {
+   "tipo": "prop",
+   "x": 27,
+   "y": 78,
+   "variante": "entulhoMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 26,
+   "y": 81,
+   "variante": "entulhoMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 30,
+   "y": 81,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 29,
+   "y": 82,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 30,
+   "y": 79,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 32,
+   "y": 79,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 35,
+   "y": 79,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 28,
+   "y": 84,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 30,
+   "y": 84,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 32,
+   "y": 84,
+   "variante": "camaDePedra"
+  },
+  {
+   "tipo": "prop",
+   "x": 34,
+   "y": 84,
+   "variante": "lanterna"
+  },
+  {
+   "tipo": "prop",
+   "x": 43,
+   "y": 79,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 44,
+   "y": 79,
+   "variante": "mesaPosta"
+  },
+  {
+   "tipo": "prop",
+   "x": 45,
+   "y": 78,
+   "variante": "ferramentas"
+  },
+  {
+   "tipo": "prop",
+   "x": 45,
+   "y": 82,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 42,
+   "y": 84,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 45,
+   "y": 84,
+   "variante": "suprimentos"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 73,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 36,
+   "y": 74,
+   "variante": "ossosAnao"
+  },
+  {
+   "tipo": "prop",
+   "x": 39,
+   "y": 74,
+   "variante": "ossosOrc"
+  },
+  {
+   "tipo": "prop",
+   "x": 39,
+   "y": 75,
+   "variante": "ossos"
+  },
+  {
+   "tipo": "prop",
+   "x": 40,
+   "y": 75,
+   "variante": "lanterna"
+  },
+  {
+   "tipo": "prop",
+   "x": 33,
+   "y": 71,
+   "variante": "lanterna"
+  },
+  {
+   "tipo": "prop",
+   "x": 34,
+   "y": 71,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 71,
+   "variante": "barricada"
+  },
+  {
+   "tipo": "prop",
+   "x": 42,
+   "y": 29,
+   "variante": "fornalha"
+  },
+  {
+   "tipo": "prop",
+   "x": 45,
+   "y": 33,
+   "variante": "rodaDagua"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 39,
+   "variante": "bancadaRunas"
+  },
+  {
+   "tipo": "prop",
+   "x": 5,
+   "y": 9,
+   "variante": "mesaDeGuerra"
+  },
+  {
+   "tipo": "prop",
+   "x": 15,
+   "y": 70,
+   "variante": "estalagmiteCorda"
+  },
+  {
+   "tipo": "prop",
+   "x": 8,
+   "y": 70,
+   "variante": "anaoMorto"
+  },
+  {
+   "tipo": "prop",
+   "x": 44,
+   "y": 78,
+   "variante": "cofreDeFerro"
+  },
+  {
+   "tipo": "prop",
+   "x": 43,
+   "y": 80,
+   "variante": "balcaoAvaliador"
+  }
+ ],
  "salas": {
   "templo": [
    {

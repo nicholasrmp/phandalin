@@ -297,7 +297,7 @@ export function mapaDo(variante = 'padrao') {
     return {
       ...MAPA_ONDA_ECO,
       salas: ONDA_ECO.salas,
-      objetos: [],
+      objetos: ONDA_ECO.props.map((p) => ({ ...p })),
       grupo: ONDA_ECO.grupo.map((p) => ({ ...p })),
       olhar: { dx: 1, dy: -1 },
       cena: 'ondaEco',

@@ -98,7 +98,7 @@ def _componentes(celulas):
 
 # AJUSTES A MAO sobre a leitura automatica (casas que a textura erra), em retangulos x0,y0,x1,y1.
 ACRESCENTA = []
-TIRA = []
+TIRA = [(58, 4, 65, 9), (26, 76, 29, 76), (42, 76, 44, 76), (46, 81, 46, 82), (70, 38, 70, 38), (70, 45, 70, 49), (69, 59, 69, 59)]
 CHAO |= retangulos(ACRESCENTA)
 CHAO -= retangulos(TIRA)
 for _comp in _componentes(CHAO):
@@ -154,8 +154,15 @@ for _y in range(0, 24):
     for _x in range(51, W):
         if (_x, _y) in CHAO and not (COR[_y][_x][0] - COR[_y][_x][2] >= 3 and COR[_y][_x].mean() >= 20):
             AGUA_FUNDA.add((_x, _y))
+# O mar fervente (area 16): o miolo e agua, e as faixas marrons que a textura achava chao sao ilhotas de rocha.
+for _y in range(10, 20):
+    for _x in range(53, 68):
+        if (_x, _y) in CHAO:
+            AGUA_FUNDA.add((_x, _y))
 FOSSO = set()          # o abismo da area 18, o fosso da entrada (area 1)
 FOSSO |= retangulos([(12, 73, 13, 74)])
+# A fenda da caverna desmoronada (area 18): 6 m de fundo, com cordas atadas na borda oeste (27..30, 9..11).
+FOSSO |= {c for c in retangulos([(31, 2, 35, 12)]) if c in CHAO}
 CANAL = retangulos([(41, 31, 46, 34)])    # o canal seco da fundicao, 1,5 m abaixo do piso
 FUNGOS = {(x, y) for (x, y) in CHAO
           if COR[y][x][1] - COR[y][x][2] >= 25 and COR[y][x][1] >= 50 and (x, y) not in SALA_DE}
@@ -241,6 +248,88 @@ def aresta(x1, y1, x2, y2, cod):
 for (x1, y1, x2, y2, cod) in PORTAS:
     aresta(x1, y1, x2, y2, cod)
 
+# ----------------------------------------------------------------- a saida ----
+# O grupo entra pelo sudoeste (area 1): a ponta do tunel que sobe da superficie.
+def _perto(x, y):
+    melhor = None
+    for (cx, cy) in CHAO:
+        d = abs(cx - x) + abs(cy - y)
+        if melhor is None or d < melhor[0]:
+            melhor = (d, cx, cy)
+    return melhor[1], melhor[2]
+
+
+CHEGADA = _perto(2, 89)
+GRUPO = []
+for (_dx, _dy) in ((0, 0), (1, 0), (0, -1), (1, -1), (-1, 0), (2, 0), (0, 1), (-1, -1)):
+    _c = (CHEGADA[0] + _dx, CHEGADA[1] + _dy)
+    if _c in CHAO and _c not in GRUPO and len(GRUPO) < 4:
+        GRUPO.append(_c)
+print('chegada', CHEGADA, 'grupo', GRUPO)
+
+# ---------------------------------------------------------------- os objetos ----
+# As pecas do mapa (mobilia, entulho, fungos, estatuas) vem de `ondaeco-objetos.json`: lidas da imagem a
+# olho (um revisor por regiao, conferido depois) e validadas AQUI: so em chao andavel, uma por casa, e
+# nenhuma que feche o caminho (o chao continua de uma peca so, e toda porta continua ligada).
+PASSA_BAIXO = {'ossos', 'ossosAnao', 'ossosOrc', 'sacoDeDormir', 'anaoMorto', 'conchasPedra', 'tapeteLaranja',
+               'montinhoMinerio', 'lanterna', 'bolaInflada', 'teia'}
+ANDAVEL = set('`<;"[')
+GLIFO_DE = {'braseiro': 'e', 'fogueira': 'F', 'bau': 'K', 'sarcofago': 'Q', 'barril': 'u', 'teia': '$'}
+
+
+def _passa(x1, y1, x2, y2):
+    if x2 == x1 + 1:
+        return PO[y1][x2] not in '#'
+    if x2 == x1 - 1:
+        return PO[y1][x1] not in '#'
+    if y2 == y1 + 1:
+        return PN[y2][x1] not in '#'
+    return PN[y1][x1] not in '#'
+
+
+def _alcanca(bloqueadas):
+    ini = CHEGADA
+    vistas, fila = {ini}, [ini]
+    while fila:
+        x, y = fila.pop()
+        for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n = (x + dx, y + dy)
+            if n in vistas or not (0 <= n[0] < W and 0 <= n[1] < H):
+                continue
+            if T[n[1]][n[0]] in 'R|O' or n in bloqueadas or not _passa(x, y, n[0], n[1]):
+                continue
+            vistas.add(n)
+            fila.append(n)
+    return vistas
+
+
+PROPS = []
+_OBJ = RAIZ / 'src' / 'dev' / 'ondaeco-objetos.json'
+if _OBJ.exists() and 'CHEGADA' in globals():
+    _lista = json.loads(_OBJ.read_text(encoding='utf-8'))['objetos']
+    _base = _alcanca(set())
+    _bloq, _usadas, _recusadas = set(), set(), []
+    for _o in _lista:
+        _c = (_o['x'], _o['y'])
+        if not (0 <= _c[0] < W and 0 <= _c[1] < H) or T[_c[1]][_c[0]] not in ANDAVEL or _c in _usadas:
+            _recusadas.append((_o['v'], _c, 'casa invalida ou ocupada'))
+            continue
+        if _o['v'] not in PASSA_BAIXO and _o['v'] not in ('fogueira', 'teia'):
+            if len(_alcanca(_bloq | {_c})) < len(_base) - len(_bloq) - 1:
+                _recusadas.append((_o['v'], _c, 'fecharia o caminho'))
+                continue
+            _bloq.add(_c)
+        _usadas.add(_c)
+        if _o['v'] in GLIFO_DE:                 # peca que ja tem glifo proprio (braseiro, fogueira, bau...)
+            T[_c[1]][_c[0]] = GLIFO_DE[_o['v']]
+            continue
+        _item = {'tipo': 'prop', 'x': _c[0], 'y': _c[1], 'variante': _o['v']}
+        if _o.get('espelhar'):
+            _item['espelhar'] = True
+        PROPS.append(_item)
+        T[_c[1]][_c[0]] = '&' if _o['v'] in PASSA_BAIXO else '^'
+    print('objetos:', len(PROPS), 'recusados:', len(_recusadas), _recusadas[:12])
+
 # ----------------------------------------------------------------- as areas ----
 # As AREAS DO LIVRO (1 a 20), em retangulos de casas lidos do mapa. Valem so onde ha chao; um retangulo
 # posterior toma a casa de um anterior (as salas pequenas vencem a caverna em que estao).
@@ -277,24 +366,6 @@ for _c, _id in AREA_DE.items():
 for _id in AREAS:
     AREAS[_id].sort(key=lambda c: (c['y'], c['x']))
 
-# ----------------------------------------------------------------- a saida ----
-# O grupo entra pelo sudoeste (area 1): a ponta do tunel que sobe da superficie.
-def _perto(x, y):
-    melhor = None
-    for (cx, cy) in CHAO:
-        d = abs(cx - x) + abs(cy - y)
-        if melhor is None or d < melhor[0]:
-            melhor = (d, cx, cy)
-    return melhor[1], melhor[2]
-
-
-CHEGADA = _perto(2, 89)
-GRUPO = []
-for (_dx, _dy) in ((0, 0), (1, 0), (0, -1), (1, -1), (-1, 0), (2, 0), (0, 1), (-1, -1)):
-    _c = (CHEGADA[0] + _dx, CHEGADA[1] + _dy)
-    if _c in CHAO and _c not in GRUPO and len(GRUPO) < 4:
-        GRUPO.append(_c)
-print('chegada', CHEGADA, 'grupo', GRUPO)
 
 # A LUZ: a mina e escura (luz 0); so ha luz onde o livro a poe (braseiros, o acampamento, as chamas verdes).
 L = [[0] * W for _ in range(H)]
@@ -318,6 +389,7 @@ extra = {
     'chegada': {'x': CHEGADA[0], 'y': CHEGADA[1]},
     'grupo': [{'x': x, 'y': y} for (x, y) in GRUPO],
     'areas': AREAS,
+    'props': PROPS,
     'salas': {n: [{'x': x, 'y': y} for (x, y) in sorted(cs)] for n, cs in INTERIOR.items()},
 }
 saida = RAIZ / 'src' / 'game' / 'ondaeco.js'

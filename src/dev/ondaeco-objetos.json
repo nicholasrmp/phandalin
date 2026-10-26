@@ -1,0 +1,970 @@
+{
+ "objetos": [
+  {
+   "v": "estatuaDumathoin",
+   "x": 8,
+   "y": 4,
+   "n": "nicho do fundo do templo (largura 2: x8-9), olhos verdes"
+  },
+  {
+   "v": "pilarAnao",
+   "x": 5,
+   "y": 5,
+   "n": "pilar octogonal de pedra com base, canto do templo"
+  },
+  {
+   "v": "pilarAnao",
+   "x": 12,
+   "y": 5,
+   "n": "pilar octogonal, canto do templo"
+  },
+  {
+   "v": "pilarAnao",
+   "x": 5,
+   "y": 8,
+   "n": "pilar octogonal, parede oeste do templo"
+  },
+  {
+   "v": "pilarAnao",
+   "x": 12,
+   "y": 8,
+   "n": "pilar octogonal, parede leste do templo; rolos de corda e aneis ao lado"
+  },
+  {
+   "v": "pilarAnao",
+   "x": 5,
+   "y": 11,
+   "n": "pilar octogonal, parede oeste do templo"
+  },
+  {
+   "v": "pilarAnao",
+   "x": 12,
+   "y": 11,
+   "n": "pilar octogonal, parede leste do templo"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 8,
+   "y": 8,
+   "n": "rolo laranja em cruz ao redor do brilho central, vertical, ao norte"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 8,
+   "y": 11,
+   "n": "rolo laranja vertical ao sul do brilho central"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 7,
+   "y": 9,
+   "n": "rolo laranja diagonal, noroeste do centro"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 7,
+   "y": 10,
+   "n": "rolo laranja diagonal, sudoeste do centro"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 10,
+   "y": 8,
+   "n": "rolo laranja diagonal, nordeste do centro"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 10,
+   "y": 10,
+   "n": "rolo laranja diagonal, sudeste do centro"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 4,
+   "y": 7,
+   "n": "corpo com papeis encostado na parede oeste do templo"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 4,
+   "y": 13,
+   "n": "corpo com bacia azul na parede oeste, canto sudoeste do templo"
+  },
+  {
+   "v": "banco",
+   "x": 13,
+   "y": 7,
+   "n": "banco/prancha de madeira vertical na parede leste do templo (13,6-8)"
+  },
+  {
+   "v": "suprimentos",
+   "x": 12,
+   "y": 10,
+   "n": "rolo de corda e cacos, canto sudeste do templo"
+  },
+  {
+   "v": "teia",
+   "x": 5,
+   "y": 4,
+   "n": "teia grande no canto noroeste do templo"
+  },
+  {
+   "v": "teia",
+   "x": 12,
+   "y": 4,
+   "n": "teia no canto nordeste do templo"
+  },
+  {
+   "v": "teia",
+   "x": 12,
+   "y": 13,
+   "n": "teia no canto sudeste do templo"
+  },
+  {
+   "v": "teia",
+   "x": 8,
+   "y": 16,
+   "n": "teias no corredor sul do templo (x8-9, y15-17)"
+  },
+  {
+   "v": "ossos",
+   "x": 14,
+   "y": 5,
+   "n": "restos de pele/ossos marrons na parede oeste da sala leste (x14, y4-6), incerto"
+  },
+  {
+   "v": "cama",
+   "x": 15,
+   "y": 4,
+   "n": "cama/pele marrom rasgada num nicho emoldurado no norte da sala leste (x15-16, y3"
+  },
+  {
+   "v": "cadeira",
+   "x": 18,
+   "y": 5,
+   "n": "cadeira quebrada em meio a entulho, canto da sala leste"
+  },
+  {
+   "v": "ossos",
+   "x": 19,
+   "y": 7,
+   "n": "restos de pele/ossos num nicho da parede leste da sala leste, incerto"
+  },
+  {
+   "v": "ferramentas",
+   "x": 19,
+   "y": 8,
+   "n": "martelo/bigorna pequena e itens perto do muro sul da sala leste, incerto"
+  },
+  {
+   "v": "estalagmitePar",
+   "x": 7,
+   "y": 27,
+   "n": "buraco escuro redondo do lago com rochas em volta"
+  },
+  {
+   "v": "estalagmiteAlta",
+   "x": 8,
+   "y": 25,
+   "n": "anel de rocha na beira do lago, ilhota"
+  },
+  {
+   "v": "estalagmiteAlta",
+   "x": 21,
+   "y": 42,
+   "n": "estalagmite vista de cima (espiral de rocha) no chao da caverna"
+  },
+  {
+   "v": "braseiro",
+   "x": 26,
+   "y": 27,
+   "n": "foco de luz/fogo em circulo no centro da sala iluminada (x24-31,y25-30), aceso; "
+  },
+  {
+   "v": "suprimentos",
+   "x": 24,
+   "y": 26,
+   "n": "tecido/trapos no canto noroeste da sala iluminada"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 26,
+   "y": 26,
+   "n": "manta laranja com corda perto da parede norte da sala iluminada, incerto"
+  },
+  {
+   "v": "barricada",
+   "x": 28,
+   "y": 25,
+   "n": "tabuas quebradas no nicho norte da sala iluminada"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 24,
+   "y": 29,
+   "n": "trapos verdes e marrons no canto sudoeste da sala iluminada"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 27,
+   "y": 29,
+   "n": "manta marrom ao sul do brilho, sala iluminada, incerto"
+  },
+  {
+   "v": "barricada",
+   "x": 31,
+   "y": 28,
+   "n": "tabuas empilhadas na parede leste da sala iluminada (x31,y26-30)"
+  },
+  {
+   "v": "suprimentos",
+   "x": 30,
+   "y": 30,
+   "n": "palha/tecido claro no nicho sul da sala iluminada"
+  },
+  {
+   "v": "ferramentas",
+   "x": 38,
+   "y": 26,
+   "n": "picareta com cabo dourado sobre os trilhos, incerto"
+  },
+  {
+   "v": "ferramentas",
+   "x": 40,
+   "y": 30,
+   "n": "picareta caida junto ao corpo na borda oeste da forja"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 40,
+   "y": 29,
+   "n": "corpo sentado/caido ao oeste da forja"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 45,
+   "y": 30,
+   "n": "corpo ao lado da laje oeste"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 47,
+   "y": 27,
+   "n": "corpo no entulho, nordeste da forja"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 47,
+   "y": 28,
+   "n": "corpo no entulho, nordeste da forja"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 49,
+   "y": 33,
+   "n": "corpo no canto leste, sul das lajes"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 46,
+   "y": 26,
+   "n": "monte de pedras caidas (x45-47,y26)"
+  },
+  {
+   "v": "mesaDePedra",
+   "x": 46,
+   "y": 30,
+   "n": "laje de pedra 1x2 vertical (y30-31) com itens/papeis"
+  },
+  {
+   "v": "mesaDePedra",
+   "x": 48,
+   "y": 30,
+   "n": "segunda laje de pedra 1x2 vertical (y30-31) com itens"
+  },
+  {
+   "v": "barril",
+   "x": 48,
+   "y": 29,
+   "n": "barril/tacho avermelhado ao norte da segunda laje"
+  },
+  {
+   "v": "suprimentos",
+   "x": 49,
+   "y": 30,
+   "n": "caixas empilhadas na borda leste"
+  },
+  {
+   "v": "barril",
+   "x": 44,
+   "y": 33,
+   "n": "aro de madeira/ferro redondo ao sudeste da forja, incerto"
+  },
+  {
+   "v": "mesaDePedra",
+   "x": 37,
+   "y": 41,
+   "n": "mesa comprida de pedra 4x1 (x36-39,y41) com copos, ossos em volta"
+  },
+  {
+   "v": "mesaDePedra",
+   "x": 37,
+   "y": 44,
+   "n": "mesa partida em dois blocos (x36-40,y44) com esqueletos"
+  },
+  {
+   "v": "ossos",
+   "x": 37,
+   "y": 43,
+   "n": "pilha de esqueletos entre as duas mesas"
+  },
+  {
+   "v": "ossosAnao",
+   "x": 33,
+   "y": 41,
+   "n": "esqueleto de armadura a oeste das mesas"
+  },
+  {
+   "v": "ossos",
+   "x": 34,
+   "y": 45,
+   "n": "ossos e barris no chao sul"
+  },
+  {
+   "v": "mesaDePedra",
+   "x": 48,
+   "y": 43,
+   "n": "laje pequena 1x2 com itens ao sul-leste da caverna"
+  },
+  {
+   "v": "banco",
+   "x": 49,
+   "y": 43,
+   "n": "banco pequeno ao lado da laje"
+  },
+  {
+   "v": "barricada",
+   "x": 44,
+   "y": 43,
+   "n": "tabuas/pilares de madeira verticais (x44-45,y43-44), possivelmente portao de min"
+  },
+  {
+   "v": "braseiroVerde",
+   "x": 65,
+   "y": 37,
+   "n": "circulo magico grande com luz verde no centro da forja das magias (sala x62-69,y"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 63,
+   "y": 33,
+   "n": "mesa de madeira junto a parede norte da forja"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 64,
+   "y": 34,
+   "n": "mesa/caixas junto a parede norte da forja"
+  },
+  {
+   "v": "suprimentos",
+   "x": 67,
+   "y": 34,
+   "n": "caixas na antecamara nordeste da forja"
+  },
+  {
+   "v": "suprimentos",
+   "x": 68,
+   "y": 32,
+   "n": "entulho e caixas na antecamara nordeste"
+  },
+  {
+   "v": "suprimentos",
+   "x": 68,
+   "y": 40,
+   "n": "caixa/objeto dourado no chao, borda sul da forja"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 35,
+   "y": 45,
+   "n": "corpo com sangue, caverna ao norte do salao de Dumathoin"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 39,
+   "y": 46,
+   "n": "corpo com sangue"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 42,
+   "y": 47,
+   "n": "corpo com sangue"
+  },
+  {
+   "v": "ossos",
+   "x": 38,
+   "y": 49,
+   "n": "ossos soltos"
+  },
+  {
+   "v": "ossos",
+   "x": 38,
+   "y": 50,
+   "n": "caveira e ossos, borda sul da caverna"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 36,
+   "y": 53,
+   "n": "nicho na parede norte do salao, 4 nichos (x36-39)"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 38,
+   "y": 53,
+   "n": "nicho na parede norte do salao"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 39,
+   "y": 54,
+   "n": "palha/colchonete claro no nicho leste"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 39,
+   "y": 56,
+   "n": "palha/colchonete claro no nicho leste"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 39,
+   "y": 62,
+   "n": "palha/colchonete claro no nicho leste"
+  },
+  {
+   "v": "suprimentos",
+   "x": 34,
+   "y": 59,
+   "n": "trouxas/caixas laranja no nicho oeste"
+  },
+  {
+   "v": "ossos",
+   "x": 34,
+   "y": 60,
+   "n": "ossos/palha no nicho oeste"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 37,
+   "y": 63,
+   "n": "escombros na saida sul do salao"
+  },
+  {
+   "v": "barril",
+   "x": 47,
+   "y": 51,
+   "n": "deposito (x46-51,y51-57): barris na parede norte"
+  },
+  {
+   "v": "barril",
+   "x": 49,
+   "y": 51,
+   "n": "barris na parede norte do deposito"
+  },
+  {
+   "v": "barril",
+   "x": 50,
+   "y": 51,
+   "n": "pote/barril laranja na parede norte"
+  },
+  {
+   "v": "suprimentos",
+   "x": 46,
+   "y": 53,
+   "n": "barris e caixas na parede oeste do deposito"
+  },
+  {
+   "v": "suprimentos",
+   "x": 46,
+   "y": 56,
+   "n": "caixas na parede oeste do deposito"
+  },
+  {
+   "v": "barril",
+   "x": 51,
+   "y": 54,
+   "n": "barris na parede leste do deposito"
+  },
+  {
+   "v": "barril",
+   "x": 51,
+   "y": 56,
+   "n": "barris na parede leste do deposito"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 47,
+   "y": 58,
+   "n": "mesa quebrada na sala sul do deposito"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 48,
+   "y": 60,
+   "n": "entulho e tabuas na sala sul do deposito"
+  },
+  {
+   "v": "suprimentos",
+   "x": 47,
+   "y": 62,
+   "n": "caixas marrons no canto sudoeste"
+  },
+  {
+   "v": "suprimentos",
+   "x": 48,
+   "y": 62,
+   "n": "caixas marrons no canto sudoeste"
+  },
+  {
+   "v": "cristais",
+   "x": 68,
+   "y": 47,
+   "n": "cristal branco-azulado, caverna estrelada"
+  },
+  {
+   "v": "cristais",
+   "x": 56,
+   "y": 46,
+   "n": "brilhos azuis na caverna estrelada (muitos pontos)"
+  },
+  {
+   "v": "cristais",
+   "x": 54,
+   "y": 48,
+   "n": "brilhos azuis na caverna estrelada"
+  },
+  {
+   "v": "cristais",
+   "x": 58,
+   "y": 45,
+   "n": "brilhos azuis na caverna estrelada"
+  },
+  {
+   "v": "estante",
+   "x": 68,
+   "y": 51,
+   "n": "estante/armario escuro na parede leste"
+  },
+  {
+   "v": "estante",
+   "x": 68,
+   "y": 54,
+   "n": "estante escura na parede leste"
+  },
+  {
+   "v": "estante",
+   "x": 68,
+   "y": 56,
+   "n": "estante escura na parede leste"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 67,
+   "y": 49,
+   "n": "mesa de madeira na parede norte dos aposentos"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 67,
+   "y": 52,
+   "n": "mesa/caixa pequena"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 66,
+   "y": 58,
+   "n": "leito escuro na saleta sul dos aposentos, incerto"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 68,
+   "y": 58,
+   "n": "leito escuro na saleta sul, incerto"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 55,
+   "y": 61,
+   "n": "bola amarela grande, caverna dos fungos"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 64,
+   "y": 64,
+   "n": "bola amarela grande"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 60,
+   "y": 66,
+   "n": "bola amarela grande (continua em y66)"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 57,
+   "y": 70,
+   "n": "bola amarela grande"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 66,
+   "y": 70,
+   "n": "bola amarela grande"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 54,
+   "y": 60,
+   "n": "bola verde brilhante"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 57,
+   "y": 69,
+   "n": "bola verde brilhante"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 67,
+   "y": 71,
+   "n": "bola verde brilhante grande"
+  },
+  {
+   "v": "bolasBrilhantes",
+   "x": 65,
+   "y": 69,
+   "n": "bola verde brilhante"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 54,
+   "y": 58,
+   "n": "cogumelo amarelo de chapeu largo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 56,
+   "y": 59,
+   "n": "cogumelo amarelo-verde"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 57,
+   "y": 61,
+   "n": "cogumelo amarelo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 59,
+   "y": 61,
+   "n": "cogumelo amarelo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 64,
+   "y": 63,
+   "n": "cogumelo amarelo grande"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 61,
+   "y": 66,
+   "n": "cogumelo amarelo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 62,
+   "y": 66,
+   "n": "cogumelo amarelo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 67,
+   "y": 67,
+   "n": "cogumelo verde-amarelo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 66,
+   "y": 73,
+   "n": "cogumelo amarelo"
+  },
+  {
+   "v": "cogumeloGigante",
+   "x": 58,
+   "y": 71,
+   "n": "cogumelo verde pequeno"
+  },
+  {
+   "v": "suprimentos",
+   "x": 8,
+   "y": 69,
+   "n": "barril vermelho no acampamento da caverna oeste (x7-12,y69-72)"
+  },
+  {
+   "v": "suprimentos",
+   "x": 11,
+   "y": 69,
+   "n": "bau/caixa de madeira no acampamento"
+  },
+  {
+   "v": "barricada",
+   "x": 9,
+   "y": 70,
+   "n": "madeira e tabuas empilhadas"
+  },
+  {
+   "v": "barricada",
+   "x": 7,
+   "y": 71,
+   "n": "tabuas quebradas"
+  },
+  {
+   "v": "ossos",
+   "x": 11,
+   "y": 70,
+   "n": "ossos junto ao acampamento"
+  },
+  {
+   "v": "estalagmiteAlta",
+   "x": 12,
+   "y": 70,
+   "n": "estalagmite vista de cima"
+  },
+  {
+   "v": "estalagmiteAlta",
+   "x": 19,
+   "y": 75,
+   "n": "estalagmite"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 27,
+   "y": 78,
+   "n": "pedras caidas na ala oeste do alojamento sul (x26-29,y77-82)"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 26,
+   "y": 81,
+   "n": "pedras caidas"
+  },
+  {
+   "v": "barricada",
+   "x": 30,
+   "y": 81,
+   "n": "tabuas quebradas no salao do alojamento sul"
+  },
+  {
+   "v": "barricada",
+   "x": 29,
+   "y": 82,
+   "n": "tabuas e entulho"
+  },
+  {
+   "v": "suprimentos",
+   "x": 30,
+   "y": 79,
+   "n": "caixas na parede norte do alojamento sul"
+  },
+  {
+   "v": "suprimentos",
+   "x": 32,
+   "y": 79,
+   "n": "caixas na parede norte do alojamento sul"
+  },
+  {
+   "v": "suprimentos",
+   "x": 35,
+   "y": 79,
+   "n": "caixas na parede norte do alojamento sul"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 28,
+   "y": 84,
+   "n": "nicho/cama no alinhamento sul do alojamento (y84, x28-35)"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 30,
+   "y": 84,
+   "n": "nicho/cama no alinhamento sul"
+  },
+  {
+   "v": "camaDePedra",
+   "x": 32,
+   "y": 84,
+   "n": "nicho/cama no alinhamento sul"
+  },
+  {
+   "v": "lanterna",
+   "x": 34,
+   "y": 84,
+   "n": "duas luzes laranja (x34-35) no nicho sul"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 43,
+   "y": 79,
+   "n": "mesa com ferramentas, sala leste (x42-45,y77-85)"
+  },
+  {
+   "v": "mesaPosta",
+   "x": 44,
+   "y": 79,
+   "n": "mesa com ferramentas"
+  },
+  {
+   "v": "ferramentas",
+   "x": 45,
+   "y": 78,
+   "n": "armario/suporte de ferramentas na parede leste"
+  },
+  {
+   "v": "suprimentos",
+   "x": 45,
+   "y": 82,
+   "n": "entulho e tabuas laranja"
+  },
+  {
+   "v": "suprimentos",
+   "x": 42,
+   "y": 84,
+   "n": "pote/barril escuro"
+  },
+  {
+   "v": "suprimentos",
+   "x": 45,
+   "y": 84,
+   "n": "caixas no canto sudeste"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 37,
+   "y": 73,
+   "n": "corpos e sangue no cruzamento central dos corredores"
+  },
+  {
+   "v": "ossosAnao",
+   "x": 36,
+   "y": 74,
+   "n": "ossos com armadura, cruzamento"
+  },
+  {
+   "v": "ossosOrc",
+   "x": 39,
+   "y": 74,
+   "n": "ossos com armadura, cruzamento"
+  },
+  {
+   "v": "ossos",
+   "x": 39,
+   "y": 75,
+   "n": "ossos soltos"
+  },
+  {
+   "v": "lanterna",
+   "x": 40,
+   "y": 75,
+   "n": "luz laranja no chao"
+  },
+  {
+   "v": "lanterna",
+   "x": 40,
+   "y": 71,
+   "n": "luz laranja no chao"
+  },
+  {
+   "v": "lanterna",
+   "x": 33,
+   "y": 71,
+   "n": "luz laranja no chao"
+  },
+  {
+   "v": "lanterna",
+   "x": 36,
+   "y": 76,
+   "n": "luz laranja no chao"
+  },
+  {
+   "v": "barricada",
+   "x": 34,
+   "y": 71,
+   "n": "estrutura de madeira atravessando o corredor oeste"
+  },
+  {
+   "v": "barricada",
+   "x": 38,
+   "y": 71,
+   "n": "estrutura de madeira no corredor norte"
+  },
+  {
+   "v": "fogueira",
+   "x": 9,
+   "y": 9,
+   "n": "a fogueira do acampamento de Nezznar, no meio do templo"
+  },
+  {
+   "v": "fornalha",
+   "x": 42,
+   "y": 29,
+   "n": "a fornalha fria da fundicao (area 12), sob a coifa"
+  },
+  {
+   "v": "rodaDagua",
+   "x": 45,
+   "y": 33,
+   "n": "a roda dagua no canal seco (area 12)"
+  },
+  {
+   "v": "bancadaRunas",
+   "x": 68,
+   "y": 39,
+   "n": "a mesa de trabalho do canto sudeste da forja (area 15), onde ficam a maca e o peitoral"
+  },
+  {
+   "v": "mesaDeGuerra",
+   "x": 5,
+   "y": 9,
+   "n": "a mesa de madeira de Nezznar, com notas e mapas (area 19)"
+  },
+  {
+   "v": "estalagmiteCorda",
+   "x": 15,
+   "y": 70,
+   "n": "a estalagmite onde a corda do fosso esta atada (area 1)"
+  },
+  {
+   "v": "anaoMorto",
+   "x": 8,
+   "y": 70,
+   "n": "Tharden Buscapedra, no acampamento (area 1)"
+  },
+  {
+   "v": "cofreDeFerro",
+   "x": 44,
+   "y": 78,
+   "n": "o cofre de pagamento atras do balcao (area 5)"
+  },
+  {
+   "v": "balcaoAvaliador",
+   "x": 43,
+   "y": 80,
+   "n": "o balcao dos avaliadores (area 5)"
+  }
+ ]
+}
