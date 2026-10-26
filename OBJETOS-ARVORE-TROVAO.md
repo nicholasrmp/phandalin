@@ -125,6 +125,8 @@ O que o livro põe em cada lugar e o que o jogador faz. Tudo isto **ainda não e
 Já existem e **não** se pede: `porta_barrada` e a porta reforçada (as folhas de porta do atlas), `ramos_secos` (o `espinheiro`, 7 variantes), `poco_praca` (o `pocoVelho`), `fogueira`, `leito`, `armeiro`, `mesa`.
 Ficam de fora por serem **arquitetura**, não prop (a torre é redonda, de parede alta): escada espiral, vigas, buraco no teto, chaminé. Leem pequenos demais e entram como "tralha" de um sprite só (pilhas de 3 a 5 itens): balança, ferramentas de ferreiro, livros podres, caixa escondida, cacos, armadura enferrujada.
 
+**Examinar (26/10/2026):** toda peça de mobília e cerca tem "Examinar" (texto nosso, em `src/game/arvoretrovao-exames.js`). O casulo do armazém rende a poção de cura e 23 po + 35 pp (uma vez); o altar dá uma pista com Arcanismo CD 10; a estátua, com História CD 15; o alçapão, com Atletismo CD 10; e os móveis de guardar se revistam (Investigação CD 10, achado de cobre ou prata sorteado por casa). Uma tentativa por herói em cada ponto.
+
 ## 6. Conteúdo do livro que a cena ainda não tem
 
 A tabela mostra o que o livro põe em cada lugar e **o que a cena já faz** (✔ ligado, ✖ falta). Ligados: as áreas 1, 2, 3, 5, 8, 9, 11 e 12 (criaturas, tesouros e testes) e a fuga do dragão com metade dos PV. Faltam as áreas 4 (só a conversa), 6, 10 e 13 inteiras, e os detalhes de cada linha marcados com ✖.

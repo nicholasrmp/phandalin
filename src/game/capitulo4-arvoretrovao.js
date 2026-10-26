@@ -99,6 +99,7 @@ import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
 import { addCondition } from '../rules/conditions.js';
 import { criarBuscas } from './buscas.js';
+import { EXAMES, ACOES, ACHADO_DO_CASULO, CONTEINERS, achadoDoRecipiente } from './arvoretrovao-exames.js';
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { darXp } from './nivel.js';
@@ -1001,6 +1002,9 @@ export function criarArvoreTrovao(app, config) {
     return out;
   }
 
+  // A variante de cada peça de mobília do mapa, por casa (o tabuleiro a desenha pelo mesmo nome).
+  const PROP_EM = new Map((ARVORE_TROVAO.props ?? []).map((p) => [`${p.x},${p.y}`, p.variante]));
+
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const ops = [];
@@ -1159,6 +1163,65 @@ export function criarArvoreTrovao(app, config) {
           ]);
         },
       });
+    }
+    // A MOBÍLIA E AS PEÇAS DO LIVRO: toda peça se pode EXAMINAR (texto nosso), e algumas rendem
+    // mais — uma pista por teste, o achado do casulo, umas moedas num móvel (ver
+    // `arvoretrovao-exames.js`). Uma tentativa por herói em cada ponto.
+    if (sup === 'prop' || sup === 'propBaixo') {
+      const variante = PROP_EM.get(`${tile.x},${tile.y}`);
+      const texto = variante && EXAMES[variante];
+      if (texto) {
+        ops.push({
+          rotulo: 'Examinar', icone: 'acao-procurar', motivo: alcance(),
+          fazer: () => painel(texto),
+        });
+        const acao = ACOES[variante];
+        if (acao) {
+          ops.push({
+            rotulo: acao.rotulo, icone: 'acao-procurar', detalhe: `${SKILL_NAME[acao.pericia]} CD ${acao.cd}`,
+            motivo: alcance() ?? buscas.ja(c, acao.chave, tile),
+            fazer: async () => {
+              buscas.marcar(c, acao.chave, tile);
+              const t = teste(c, acao.pericia, acao.cd);
+              if (!t.passou) { await painel(acao.falha, { teste: t }); return; }
+              pista(acao.pista);
+              await painel(acao.sucesso, { teste: t });
+            },
+          });
+        }
+        if (variante === 'casuloElfo' && !salvo.casuloElfo) {
+          ops.push({
+            rotulo: ACHADO_DO_CASULO.rotulo, icone: 'acao-usarObjeto', detalhe: 'poção, ouro e prata do livro',
+            motivo: alcance(),
+            fazer: async () => {
+              salvo.casuloElfo = true;
+              for (const [item, qtd] of ACHADO_DO_CASULO.itens) guardar(c, item, qtd);
+              await painel(ACHADO_DO_CASULO.texto);
+              app.refresh();
+            },
+          });
+        }
+        if (CONTEINERS.has(variante)) {
+          const chave = `${tile.x},${tile.y}`;
+          const jaAberto = (salvo.revistados ??= {})[chave];
+          ops.push({
+            rotulo: 'Revistar', icone: 'acao-procurar', detalhe: 'Investigação CD 10',
+            motivo: alcance() ?? (jaAberto ? 'já revistado' : buscas.ja(c, 'revistar', tile)),
+            fazer: async () => {
+              buscas.marcar(c, 'revistar', tile);
+              const t = teste(c, 'investigacao', 10);
+              if (!t.passou) { await painel(`${c.name} vasculha as frestas e as gavetas, sem achar nada que preste.`, { teste: t }); return; }
+              salvo.revistados[chave] = true;
+              const achado = achadoDoRecipiente(tile.x, tile.y);
+              if (!achado) { await painel('Nada: pó, ferrugem e um cheiro velho. Quem morava aqui levou o que valia.', { teste: t }); return; }
+              guardar(c, achado.item, achado.qtd);
+              const nome = achado.item === 'moedaDePrata' ? 'de prata' : 'de cobre';
+              await painel(`Numa fresta, esquecidas, ${achado.qtd} peças ${nome}. ${c.name} guarda.`, { teste: t });
+              app.refresh();
+            },
+          });
+        }
+      }
     }
     if (sup === 'pocoVelho') {
       ops.push({

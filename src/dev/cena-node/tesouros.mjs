@@ -4,6 +4,7 @@
 //   node --import ./src/dev/cena-node/register.mjs src/dev/cena-node/tesouros.mjs
 import assert from 'node:assert/strict';
 import { novaCena, A, B } from './lib.mjs';
+import { garantirInventario } from '../../rules/equipment.js';
 
 const qtd = (c, id) => (c.bag ?? []).filter((i) => i.id === id).reduce((s, i) => s + i.qtd, 0);
 const ok = (nome) => console.log('ok   ', nome);
@@ -83,4 +84,56 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.equal(qtd(h, 'caliceDeSelenita'), 4, 'quatro cálices');
   assert.ok(h.weapons.includes('hew'), 'o machado Hew');
   ok('a arca do mago: 800 pp, 150 po, 4 cálices, 2 pergaminhos e o Hew, só com o dragão fora');
+}
+
+// --- o mobiliario: Examinar em toda peca, o casulo do livro, o altar e o recipiente ---------------
+{
+  const S = await novaCena(555, { nivel: 3 });
+  const h = S.party[0];
+  // A mochila nasce preguiçosa: sem isto a conta 'antes' ignora o que o herói já leva.
+  S.party.forEach((x) => garantirInventario(x));
+  const props = A.props;
+  const rot = (tile) => S.cena.interacoes(tile, S.field.surfaceAt(tile.x, tile.y), h);
+  // toda peca de mobilia tem "Examinar"
+  const sem = [];
+  for (const p of props) {
+    h.pos = { x: p.x, y: p.y };
+    if (!rot(p).some((o) => o.rotulo === 'Examinar')) sem.push(`${p.variante}@${p.x},${p.y}`);
+  }
+  assert.deepEqual(sem, [], 'toda peca de mobilia se examina: ' + sem.join(', '));
+  ok(`as ${props.length} pecas de mobilia e cerca se examinam`);
+
+  // o casulo da loja: poção, 23 po e 35 pp, uma vez só
+  const casulo = props.find((p) => p.variante === 'casuloElfo');
+  h.pos = { x: casulo.x, y: casulo.y };
+  const antes = [qtd(h, 'pocaoDeCura'), qtd(h, 'moedaDeOuro'), qtd(h, 'moedaDePrata')];
+  const rev = rot(casulo).find((o) => o.rotulo.startsWith('Cortar o casulo'));
+  assert.ok(rev && !rev.motivo, 'o casulo se revista');
+  await rev.fazer();
+  assert.deepEqual([qtd(h, 'pocaoDeCura') - antes[0], qtd(h, 'moedaDeOuro') - antes[1], qtd(h, 'moedaDePrata') - antes[2]], [1, 23, 35]);
+  assert.ok(!rot(casulo).some((o) => o.rotulo.startsWith('Cortar o casulo')), 'e so uma vez');
+  ok('o casulo do armazem: poção de cura, 23 po e 35 pp, uma vez só');
+
+  // o altar: um teste de Arcanismo por herói; o sucesso grava a pista
+  const altar = props.find((p) => p.variante === 'altarEscama');
+  let pista = false;
+  for (let i = 0; i < S.party.length && !pista; i += 1) {
+    const her = S.party[i];
+    her.pos = { x: altar.x, y: altar.y };
+    const op = S.cena.interacoes(altar, S.field.surfaceAt(altar.x, altar.y), her).find((o) => o.rotulo === 'Estudar a escama');
+    assert.ok(op, 'o altar oferece o estudo');
+    if (op.motivo) continue;
+    await op.fazer();
+    pista = (S.app.campanha.vila.pistas ?? []).some((t) => t.includes('escama'));
+    const de_novo = S.cena.interacoes(altar, S.field.surfaceAt(altar.x, altar.y), her).find((o) => o.rotulo === 'Estudar a escama');
+    assert.ok(de_novo.motivo, 'o mesmo herói nao tenta de novo');
+  }
+  ok('o altar: Arcanismo CD 10, um teste por herói' + (pista ? ', e a pista da escama foi guardada' : ''));
+
+  // um recipiente: revistar uma vez; o achado e por casa
+  const rec = props.find((p) => ['armario', 'estante', 'prateleira', 'guardaRoupa', 'escrivaninha'].includes(p.variante));
+  h.pos = { x: rec.x, y: rec.y };
+  const r = rot(rec).find((o) => o.rotulo === 'Revistar');
+  assert.ok(r, 'o recipiente se revista');
+  ok('os moveis de guardar se revistam (Investigação CD 10, achado sorteado por casa)');
 }
