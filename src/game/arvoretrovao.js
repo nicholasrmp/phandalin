@@ -356,7 +356,7 @@ export const MAPA_ARVORE_TROVAO = {
     "TT,,,,,,,,,,TTTTTTTTTTTbTTTTT,,,,,,,bZZ:Tb::::::,,::::,,,TbT,,,,::,,,,,::::ZTT,,,:,,,,,,TTT",
     "TT,,,,,,,,,,,TTTTTTTTTTTTTTT,,,,,,,,b:bZTT,,,,,:,,,,::,,,b,,,b,,::,,,,,,:ZZ:ZZ::::::::::,,,",
     "TT,,,,,,,,,,,TTTTTTTTTTTTbTTbL^LLL,,:,T,TT,^LjLLLLL^b::,LL^,,b,T,:,,,,,,bTTZ,,,:,,,,,::::,:",
-    "TT,,,,,,,,,,,TTTTTTTTTTbbb,,,d^xLL,,:bbTTT,LxjLLL^L$,:,,LL^b,,,T,,,,,,,,,bZ,,,,,,,,,,,,,,TT",
+    "TT,,,,,,,,,,,TTTTTTTTTTbbb,,,d^xLL,,:bbTTT,LxjLLLLL^,:,,LL^b,,,T,,,,,,,,,bZ,,,,,,,,,,,,,,TT",
     ",,,,,,,,,,,,,TTTTTTTTTT,,,,,,LxxLL:::,TTTTbdLLLLLL$j,:,,LLL,,,,TT,,,,,,,,,,,,LLLLdL,,,,,bTT",
     ",,,,,,,,,,,,,bTTTTTTTT,,,,,XXL&xLj::,,TTTTT^xLLLLu^L,::,LdL,,,,,,,,,,LL,,,,,,^LLLLL,,,,,bTT",
     ",,,,,,,,,,,,,,,TTTTTTT,,,,,XXLLLdL:::,,,,bb,x$$$,,,,,:,,,,,,bLbmb,,,,Lxx,,,,,L^^&dL,,,,,TTT",
@@ -699,12 +699,12 @@ export const ARVORE_TROVAO = {
     ],
     "aranhas": [
       {
-        "x": 27,
-        "y": 49
+        "x": 46,
+        "y": 42
       },
       {
-        "x": 25,
-        "y": 49
+        "x": 48,
+        "y": 41
       }
     ],
     "zumbis": [
@@ -1139,22 +1139,23 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
-      "x": 49,
-      "y": 41,
-      "variante": "casuloElfo"
-    },
-    {
-      "tipo": "prop",
       "x": 51,
       "y": 40,
-      "variante": "casuloCorpo",
+      "variante": "casuloElfo",
       "espelhar": true
     },
     {
       "tipo": "prop",
       "x": 43,
       "y": 40,
-      "variante": "prateleira"
+      "variante": "casuloCorpo"
+    },
+    {
+      "tipo": "prop",
+      "x": 51,
+      "y": 41,
+      "variante": "prateleira",
+      "espelhar": true
     },
     {
       "tipo": "prop",

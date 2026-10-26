@@ -848,6 +848,27 @@ GRAU_DE_RUINA = {
 # parte do mobiliário antigo (mesa, caixote, barril, saco, leito) é TROCADA por uma peça
 # do tema da casa, e algumas peças novas entram encostadas na parede. Nada fecha o chão
 # (`_piso_inteiro`) nem entra na boca da porta.
+# O ARMAZEM DAS ARANHAS (area 6 do livro, a `loja`): dois blocos 2 x 2 de piso livre, reservados
+# ANTES da mobilia para as duas aranhas gigantes (Grandes) caberem. Ficam marcados com '?' enquanto
+# a mobilia e o mato escolhem onde pousar, e voltam a ser laje depois.
+_RESERVA_ARANHAS = []
+for (x, y) in sorted(INTERIOR['loja'], key=lambda c: _embaralha(c[0], c[1], 103)):
+    if len(_RESERVA_ARANHAS) >= 2:
+        break
+    _bloco = [(x + i, y + j) for j in (0, 1) for i in (0, 1)]
+    if not all(b in INTERIOR['loja'] and T[b[1]][b[0]] in 'Ldvjmiusxz' for b in _bloco):
+        continue
+    # (perto do vao pode: a aranha esta no armazem inteiro, e o piso do vao e do grupo)
+    if any(abs(x - a) + abs(y - b) < 3 for (a, b) in _RESERVA_ARANHAS):
+        continue
+    _RESERVA_ARANHAS.append((x, y))
+for (x, y) in _RESERVA_ARANHAS:
+    for j in (0, 1):
+        for i in (0, 1):
+            T[y + j][x + i] = '?'
+if len(_RESERVA_ARANHAS) < 2:
+    raise SystemExit('ERRO: o armazem so tem ' + str(len(_RESERVA_ARANHAS)) + ' bloco(s) 2 x 2 para as aranhas')
+
 PROP_BAIXO = {'banquinho', 'baldeBanco', 'trapos', 'saco', 'tabuas', 'camaCampo', 'peles',
               'alcapaoFechado', 'alcapaoAberto', 'tesouroPouco'}
 BARRA_MOVEL.add('^')
@@ -1090,6 +1111,12 @@ for pid, n in MATO_DENTRO.items():
         postos += 1
     _mato[pid] = postos
 print('mato dentro das casas:', _mato)
+
+# As reservas das aranhas voltam a ser piso.
+for (x, y) in _RESERVA_ARANHAS:
+    for j in (0, 1):
+        for i in (0, 1):
+            T[y + j][x + i] = 'L'
 
 # O PISO de cada construcao: assoalho de tabua nas casas de gente, laje rachada nas de pedra.
 PISO_TABUA = {'fazenda', 'estalagem', 'casa7', 'casa9', 'casa10', 'casa12', 'casa15', 'casa19',
@@ -1739,20 +1766,12 @@ _dragao = min(_cabe, key=lambda c: (c[0] - TCX) ** 2 + (c[1] - TCY) ** 2)
 # a terceira medir igual a não existir. Então aqui não vale o espalhador de
 # cima — vale juntar na beira por onde o grupo chega, que é o lado leste,
 # porque a chegada fica no sul da vila e o pomar é o canto sudoeste.
-_boca = (POMAR['x1'], (POMAR['y0'] + POMAR['y1']) // 2)
-_grandes = [c for c in sorted(_vistas)
-            if POMAR['x0'] <= c[0] <= POMAR['x1'] and POMAR['y0'] <= c[1] <= POMAR['y1']
-            and all((c[0] + i, c[1] + j) in _vistas
-                    and _anda(c[0] + i, c[1] + j) for i in (0, 1) for j in (0, 1))]
-_aranhas = []
-for c in sorted(_grandes, key=lambda c: (c[0] - _boca[0]) ** 2 + (c[1] - _boca[1]) ** 2):
-    if len(_aranhas) >= 2:
-        break
-    if all((c[0] - a[0]) ** 2 + (c[1] - a[1]) ** 2 >= 4 for a in _aranhas):
-        _aranhas.append(c)
+# As aranhas moram no ARMAZEM (a `loja`, area 6 do livro), nos dois blocos 2 x 2 reservados la.
+_aranhas = [c for c in _RESERVA_ARANHAS
+            if all((c[0] + i, c[1] + j) in _vistas and _anda(c[0] + i, c[1] + j) for i in (0, 1) for j in (0, 1))]
 if len(_aranhas) < 2:
-    raise SystemExit('ERRO: o pomar so tem ' + str(len(_aranhas))
-                     + ' ancoragem(ns) 2 x 2 para as aranhas, e a cena quer 2')
+    raise SystemExit('ERRO: o armazem so tem ' + str(len(_aranhas))
+                     + ' ancoragem(ns) 2 x 2 alcancaveis para as aranhas, e a cena quer 2')
 
 # OS BANDOS DO LIVRO. Cada um mora na construção que o livro lhe dá (ver
 # `OBJETOS-ARVORE-TROVAO.md`, "Mapa do livro para o nosso mapa"), nas quantidades

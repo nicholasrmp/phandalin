@@ -27,6 +27,7 @@ export const CEN = {
     await S.cena.depoisDaConversa(favric, 'luta');
     return !S.cena.explorando;
   },
+  aranhas: entrarEm('loja', 'aranhas'),
   ramos2: entrarEm(['fazenda', 'celeiro'], 'ramos2'),
   ramos5: entrarEm('casa20', 'ramos5'),
   ramos12: entrarEm('tecelagem', 'ramos12'),

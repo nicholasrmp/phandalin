@@ -18,7 +18,7 @@
 //     avisa duas vezes na aproximação e oferece quatro saídas na porta;
 //   - (o Mormesk, que esta fase já teve no porão da casa do beco, é do capítulo da Mina e saiu
 //     daqui; as medições dele ficam no histórico do repositório);
-//   - as aranhas do pomar, três: alguém no chão em 18 a 23% das lutas, um
+//   - as aranhas do armazém (eram do pomar, três): alguém no chão em 18 a 23% das lutas, um
 //     herói morre em 2 a 5%, 16 a 20% dos PV, quatro rodadas;
 //   - os mortos de cinza da velha guarnição (área 11 do livro): 24% dos PV,
 //     alguém no chão em 25% das lutas, nenhuma morte em 20;
@@ -423,18 +423,18 @@ export function criarArvoreTrovao(app, config) {
     luta(bando, { furt });
   }
 
-  // SÃO DUAS, como no livro. A cena tinha três, e a medição refeita na escala
-  // nova mostrou o porquê de não ficar assim: três aranhas, a 60 pés da chegada
-  // (o primeiro perigo do mapa), deixam alguém no chão em 51% das lutas e matam
-  // um herói em 7% no 3º nível; duas deixam em 27% e matam em 5%, em 2,7
-  // rodadas. O texto sempre disse "duas".
+  // AS DUAS ARANHAS GIGANTES do armazém destruído (área 6 do livro, a loja): a teia no chão da
+  // porta é o aviso, e entrar as acorda. São DUAS, como no livro — a cena já teve três no pomar,
+  // e a medição mostrou o porquê: três a 60 pés da chegada deixam alguém no chão em 51% das lutas.
+  // Elas esperam penduradas na teia, e o teste de Furtividade delas decide quem é surpreendido.
   async function acordarAranhas() {
     salvo.aranhas = 'luta';
+    const furt = furtividadeDe(aranhas);
     await painel([
-      'O pomar morreu de pé: fileiras de árvore seca, de galho preto, sem uma folha. Entre elas, teia — não um fio aqui e outro ali, mas lençol de teia, de tronco a tronco, com casca de bicho pendurada.',
-      'Duas delas descem ao mesmo tempo, de cabeça para baixo, grandes como cão de caça.',
+      'O armazém foi feito para guardar: prateleiras de ponta a ponta, vigas baixas, um piso de tábua que ainda aguenta. Agora é uma caixa de teia. Lençóis grossos de parede a parede, e pendurados deles, em três ou quatro lugares, embrulhos do tamanho de gente.',
+      'Duas coisas descem ao mesmo tempo, de cabeça para baixo, grandes como cão de caça. Estavam ali o tempo todo.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-    luta(aranhas.filter((f) => !f.dead));
+    luta(aranhas.filter((f) => !f.dead), { furt });
   }
 
   // ------------------------------------------------------ o dragão ----
@@ -838,28 +838,20 @@ export function criarArvoreTrovao(app, config) {
       await acordarRamosDoTecelao();
       return;
     }
-    // As aranhas do pomar. Medidas, são o segundo perigo da vila — 8% de
-    // derrota e 18% de um herói morrer no 3º nível —, e eram o único que caía
-    // em cima do grupo sem aviso. A teia é visível de longe: vendo-a, entrar
-    // no pomar passa a ser escolha, como entrar na torre.
-    // POR RETÂNGULO, e não por raio. Medido, o anel de 20 pés em volta de uma
-    // casa do pomar alcançava SETE CASAS DO INTERIOR DO PORÃO: abrir o baú
-    // acordava as aranhas do outro lado de uma parede, sem visão e sem caminho
-    // entre elas e o grupo — a simulação travava no limite de rodadas, com
-    // ninguém conseguindo agir. E o aviso da teia, por raio de 40 pés, pegava
-    // vinte e uma casas da rua e seis do largo do poço, disparando a dois
-    // passos do ponto de chegada. Retângulo não vaza por cima de parede.
+    // O ARMAZÉM DAS ARANHAS. A teia no chão da porta é o aviso, visível de longe: quem pisa nela vê
+    // o que vem; entrar acorda as aranhas. POR CASA (a construção), e não por raio, que vazaria por
+    // cima de parede.
     if (aranhas.length && !salvo.aranhas) {
-      if (herois().some((h) => dentro(h.pos, ARVORE_TROVAO.pomar)) && !salvo.viuTeia) {
+      const naTeia = herois().some((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'loja'));
+      if (naTeia && !salvo.viuTeia) {
         salvo.viuTeia = true;
         await painel([
-          'O pomar do sudoeste morreu de pé: fileira de árvore seca, galho preto, sem uma folha.',
-          'E entre os troncos há teia. Não um fio aqui e outro ali — lençol de teia, de árvore a árvore, com casca de bicho pendurada em três ou quatro lugares. Casca do tamanho de um cão.',
-          'Nada se mexe. Ainda.',
+          'A rua que dá na porta do armazém está coberta de teia: fios grossos de um lado a outro, brancos de poeira, com uma pata de bicho presa aqui e ali.',
+          'Nada se mexe lá dentro. Ainda. Quem entrar vai pisar em mais disso.',
         ]);
         return;
       }
-      if (herois().some((h) => dentro(h.pos, ARVORE_TROVAO.pomarFundo))) { await acordarAranhas(); return; }
+      if (herois().some((h) => naCasa(h.pos, 'loja'))) { await acordarAranhas(); return; }
     }
   }
 
@@ -950,8 +942,8 @@ export function criarArvoreTrovao(app, config) {
       await darXpDaLuta(valeDoBando(zumbis), 'Os mortos da guarnição');
     } else if (bando.some((f) => aranhas.includes(f))) {
       salvo.aranhas = 'limpo';
-      await painel('As duas ficam encolhidas na teia delas, de pernas para dentro. O pomar continua morto, mas agora dá para passar.');
-      await darXpDaLuta(valeDoBando(aranhas), 'As aranhas do pomar');
+      await painel('As duas ficam encolhidas na teia delas, de pernas para dentro. O armazém continua cheio de seda, mas agora ninguém desce dela.');
+      await darXpDaLuta(valeDoBando(aranhas), 'As aranhas do armazém');
     } else if (bando.some((f) => infectados.includes(f))) {
       salvo.infectados = 'limpo';
       await painel('O que sobra deles é graveto quebrado e cipó mole, e nada disso sangra. O espinheiro continua de pé.');
