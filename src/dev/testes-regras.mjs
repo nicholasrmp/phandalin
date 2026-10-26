@@ -28,7 +28,7 @@ import {
   cobrarMarchaForcada, furtividadeDoGrupo, chanceDeEsconder, podeMarchar,
   MONTARIAS,
 } from '../rules/marcha.js';
-import { addCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
+import { addCondition, removeCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
@@ -4887,11 +4887,11 @@ teste('criatura Grande não fica com a parede de borda no meio do corpo', () => 
 
 import {
   alarmeCobre, falaIdiomas, temMagia, disfarcado, sobZona, estaCativado, eFeraAmansavel, sentidasPorBemMal, ladoBemMal,
-  tipoAparente, ladoAparente, escondidoDaMagia,
+  tipoAparente, ladoAparente, escondidoDaMagia, destinoDoNpc, conhecidosDoGrupo,
 } from '../rules/utilidade.js';
 import { noSobMagia } from '../game/dialogo-magia.js';
 import { entrarNoEncontro, sairDoEncontro, familiarVirtual } from '../rules/familiar.js';
-import { direcaoDe, revelarArmadilhas, marcas as marcasDoMapa, preparar as prepararMagia, plantasPerto, ferasAoAlcance } from '../game/magias-fora-nucleo.js';
+import { direcaoDe, revelarArmadilhas, marcas as marcasDoMapa, preparar as prepararMagia, plantasPerto, ferasAoAlcance, oQueOOlhoAcha } from '../game/magias-fora-nucleo.js';
 import { passivePerception } from '../rules/abilities.js';
 
 /** Dá 3º círculo aos conjuradores do grupo de utilidade (nível 3 só tem até o 2º). */
@@ -7410,6 +7410,291 @@ teste('Respirar na Agua se declara como narracao: o jogo nao afoga ninguem', () 
   assert.equal(r.resultado.soNarra, true, 'ela mesma diz que so narra');
   assert.ok(r.resultado.respirar.length <= 10, 'o livro cobre no maximo dez criaturas');
   assert.ok(/nao afoga|não afoga/.test(getSpell('respirarNaAgua').desc), 'e o desc diz por que');
+});
+
+// ---- a palavra e o olho a distancia ---------------------------------------
+
+teste('Enviar Mensagem e Clarividencia existem, com circulo e classes do livro', () => {
+  const esperado = [
+    ['enviarMensagem', 3, 'evocação', ['bardo', 'clerigo', 'mago']],
+    ['clarividencia', 3, 'adivinhação', ['bardo', 'clerigo', 'feiticeiro', 'mago']],
+  ];
+  for (const [id, nivel, escola, classes] of esperado) {
+    const e = getSpell(id);
+    assert.ok(e, id + ' existe');
+    assert.equal(e.level, nivel, id + ' e de 3o circulo');
+    assert.equal(e.school, escola, id + ' e de ' + escola);
+    assert.equal(e.fonte, 'srd', id + ' e do SRD');
+    assert.equal(e.soFora, true, id + ' e so fora de combate');
+    assert.ok(!e.ritual, id + ' NAO e ritual');
+    assert.ok(/Simplifica|Regra da casa/.test(e.desc), id + ' declara o que muda do livro');
+    for (const classe of classes) assert.ok(listaDaClasse(classe, nivel).magias.includes(id), classe + ' tem ' + id);
+  }
+  // E quem nao tem.
+  assert.ok(!listaDaClasse('feiticeiro', 3).magias.includes('enviarMensagem'), 'o feiticeiro nao manda recado');
+  assert.ok(!listaDaClasse('druida', 3).magias.includes('clarividencia'), 'o druida nao tem o olho');
+  assert.ok(!listaDaClasse('patrulheiro', 3).magias.includes('clarividencia'), 'nem o patrulheiro');
+  // A Clarividencia leva dez minutos e e concentracao; o recado, uma acao.
+  assert.equal(getSpell('clarividencia').minutos, 10);
+  assert.equal(getSpell('clarividencia').conc, true);
+  assert.equal(getSpell('enviarMensagem').castTime, 'action');
+  assert.equal(getSpell('enviarMensagem').rangeFt, 0, 'alcance ilimitado');
+});
+
+teste('as duas viram magia ativa, e a Clarividencia dura dez minutos', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('enviarMensagem', 'clarividencia');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  for (const id of ['enviarMensagem', 'clarividencia']) {
+    const estado = estadoDe({ vila: { dia: 1 } });
+    const extra = id === 'enviarMensagem' ? { opcao: 'gundren' } : {};
+    const r = conjurarFora(estado, mago, id, { herois: party, rng: makeRng(3), ...extra });
+    assert.ok(r.ok, id + ': ' + (r.why ?? ''));
+    assert.ok(ativaDe(estado, party, id), id + ' tem de ficar ativa, ou ninguem a le');
+  }
+  // O olho fecha aos dez minutos.
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, mago, 'clarividencia', { herois: party, rng: makeRng(4) }).ok);
+  avancar(estado, 9, party);
+  assert.ok(ativaDe(estado, party, 'clarividencia'), 'aos 9 minutos ainda ve');
+  avancar(estado, 1, party);
+  assert.equal(ativaDe(estado, party, 'clarividencia'), null, 'aos 10 fecha');
+});
+
+teste('Enviar Mensagem le o destino que a partida guarda', () => {
+  const { party } = montar({ nivel: 5 });
+  const mago = garantirInventario(party[ILVAN]);
+  mago.spellcasting.prepared.push('enviarMensagem');
+  mago.spellcasting.slots = [0, 9, 9, 9];
+  // O destino vem dos blocos dos capitulos, por `estadoDe`.
+  // As palavras sao as que os capitulos escrevem: o castelo guarda 'acordado'
+  // ou 'livre' em Gundren, e a mansao guarda 'fugiu' ou 'preso' em Iarno. Um
+  // Iarno preso esta preso PELO GRUPO, que nao e a mesma coisa.
+  const casos = [
+    [{ castelo: { gundren: 'morto' } }, 'gundren', 'morto'],
+    [{ castelo: { gundren: 'livre' } }, 'gundren', 'livre'],
+    [{ castelo: { gundren: 'acordado' } }, 'gundren', 'livre'],
+    [{ castelo: {} }, 'gundren', 'preso'],
+    [{}, 'gundren', 'preso'],
+    [{ mansao: { iarno: 'morto' } }, 'iarno', 'morto'],
+    [{ mansao: { iarno: 'preso' } }, 'iarno', 'nossoPrisioneiro'],
+    [{ mansao: { iarno: 'fugiu' } }, 'iarno', 'livre'],
+    [{}, 'iarno', 'livre'],
+  ];
+  for (const [campanha, quem, esperado] of casos) {
+    const estado = estadoDe({ ...campanha, vila: { dia: 1 } });
+    // O grupo ja tratou com ele: o Iarno nao esta na lista do contrato.
+    estado.npcs[quem] ??= {};
+    mago.spellcasting.slots = [0, 9, 9, 9];
+    assert.equal(destinoDoNpc(estado, quem), esperado, `${quem} com ${JSON.stringify(campanha)}`);
+    const r = conjurarFora(estado, mago, 'enviarMensagem', { herois: party, rng: makeRng(2), opcao: quem });
+    assert.ok(r.ok, r.why);
+    assert.equal(r.resultado.mensagem.destino, esperado, 'e a magia devolve isso');
+    assert.ok(!r.resultado.soNarra, quem + ' tem destino guardado: nao e narracao');
+  }
+  // Quem o grupo conhece mas o jogo nao acompanha: a magia narra e diz isso.
+  const comToblen = estadoDe({ vila: { dia: 1 } });
+  comToblen.npcs.toblen = { sondado: true };
+  assert.equal(destinoDoNpc(comToblen, 'toblen'), 'narrado');
+  const rt = conjurarFora(comToblen, mago, 'enviarMensagem', { herois: party, rng: makeRng(2), opcao: 'toblen' });
+  assert.ok(rt.ok, rt.why);
+  assert.equal(rt.resultado.soNarra, true, 'e se declara como narracao');
+  // E um estranho a regra RECUSA, nao so a tela: o livro pede familiaridade.
+  const semNinguem = estadoDe({ vila: { dia: 1 } });
+  const ruim = conjurarFora(semNinguem, mago, 'enviarMensagem', { herois: party, rng: makeRng(2), opcao: 'agatha' });
+  assert.equal(ruim.ok, false, 'nao manda recado a quem nunca viu');
+  assert.ok(/familiaridade/.test(ruim.why), 'e diz por que: ' + ruim.why);
+});
+
+teste('Enviar Mensagem so alcanca quem o grupo conhece', () => {
+  // O livro pede familiaridade. Os dois do contrato valem desde o comeco.
+  const vazio = estadoDe({ vila: { dia: 1 } });
+  const conhecidos = conhecidosDoGrupo(vazio);
+  assert.ok(conhecidos.includes('gundren'), 'Gundren, que contratou o grupo');
+  assert.ok(conhecidos.includes('sildar'), 'e Sildar, que viajava com ele');
+  assert.ok(!conhecidos.includes('agatha'), 'a banshee que ninguem viu, nao');
+  // Depois de tratar com alguem, ele entra na lista.
+  const estado = estadoDe({ vila: { dia: 1 } });
+  estado.npcs.agatha = { sondado: true };
+  assert.ok(conhecidosDoGrupo(estado).includes('agatha'), 'tratado uma vez, passa a ser alcancavel');
+  // E ninguem aparece duas vezes.
+  const comGundren = estadoDe({ vila: { dia: 1 } });
+  comGundren.npcs.gundren = { sondado: true };
+  const lista = conhecidosDoGrupo(comGundren);
+  assert.equal(lista.filter((k) => k === 'gundren').length, 1, 'Gundren uma vez so');
+});
+
+teste('Clarividencia: VER marca tres e diz o tipo; OUVIR nao marca, conta', () => {
+  const mapa = [
+    '############',
+    '#....#.....#',
+    '#....#.....#',
+    '#....#.....#',
+    '#....#.....#',
+    '############',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+  ];
+  const { enc, party } = montar({ nivel: 5, mapa, foes: [['goblin', { x: 7, y: 1 }], ['goblin', { x: 7, y: 2 }], ['goblin', { x: 7, y: 3 }], ['goblin', { x: 8, y: 4 }]] });
+  const mago = party[ILVAN];
+  mago.pos = { x: 4, y: 2 };
+  mago.spellcasting.prepared.push('clarividencia');
+  const app = { capitulo: { explorando: true, lugar: 'X' }, enc, inimigosEscondidos: [] };
+  const olho = (sentido) => {
+    mago.spellcasting.slots = [0, 9, 9, 9];
+    const e = estadoDe({ vila: { dia: 1 } });
+    const r = conjurarFora(e, mago, 'clarividencia', {
+      herois: party, rng: makeRng(5), opcao: sentido,
+      dados: { ponto: { x: 4, y: 2 }, cena: 'X', sentido, ouviu: oQueOOlhoAcha(app, { x: 4, y: 2 }, sentido).length },
+    });
+    assert.ok(r.ok, r.why);
+    return { marcas: marcasDoMapa({ app, estado: e, herois: () => party }), res: r.resultado };
+  };
+  // Os quatro goblins estao do outro lado da parede, e o grupo nao ve nenhum.
+  for (const m of enc.combatants.filter((c) => c.side !== 'party')) {
+    assert.equal(enc.field.hasLineOfSight(mago.pos, m.pos), false, 'a parede fecha a visao');
+  }
+  // VER: tres marcas, nem mais, e com o TIPO em vez do nome.
+  const ver = olho('ver');
+  assert.equal(ver.marcas.length, 3, 'para em tres, mesmo com quatro ao alcance');
+  assert.ok(ver.marcas.every((k) => k.cor === 'marca-olho'), 'com a cor propria dela, nao a do Localizar Objeto');
+  assert.ok(ver.marcas.every((k) => k.nome === 'humanoide'), 'e diz o tipo, nao o nome: ' + JSON.stringify(ver.marcas.map((k) => k.nome)));
+  // OUVIR: nenhuma marca, e um numero.
+  const ouvir = olho('ouvir');
+  assert.equal(ouvir.marcas.length, 0, 'ouvir nao marca o mapa: isso seria localizar, nao contar');
+  assert.equal(ouvir.res.olho.ouviu, 4, 'e conta os quatro');
+  // A Aura Magica do Arcanista engana o olho, como engana as outras.
+  const disfarcado = enc.combatants.find((c) => c.side !== 'party');
+  disfarcado.auraMagica = 'morto-vivo';
+  const tipos = olho('ver').marcas.map((k) => k.nome);
+  assert.ok(tipos.includes('morto-vivo'), 'o goblin sob a aura le como morto-vivo: ' + JSON.stringify(tipos));
+});
+
+teste('o olho nao acha o invisivel, o emboscado, o neutro nem o caido', () => {
+  const { enc, party } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const mago = party[ILVAN];
+  mago.pos = { x: 5, y: 5 };
+  const goblin = enc.combatants.find((c) => c.side !== 'party');
+  const app = { capitulo: { explorando: true, lugar: 'X' }, enc, inimigosEscondidos: [] };
+  const acha = () => oQueOOlhoAcha(app, mago.pos, 'ver').length;
+  assert.equal(acha(), 1, 'de saida, acha o goblin');
+  // Invisivel: o olho VE, nao adivinha.
+  addCondition(goblin, 'invisivel', { rounds: 10 });
+  assert.equal(acha(), 0, 'nao acha o invisivel');
+  removeCondition(goblin, 'invisivel');
+  // Neutro: prisioneiro, Droop, o rato do mago.
+  goblin.side = 'neutro';
+  assert.equal(acha(), 0, 'nao acha o neutro');
+  goblin.side = 'foes';
+  // Caido a 0 PV sem estar marcado como morto.
+  const hp = goblin.hp; goblin.hp = 0;
+  assert.equal(acha(), 0, 'nao acha quem esta a 0 PV');
+  goblin.hp = hp;
+  // Quem espera FORA do tabuleiro, ao contrario, ele acha: e para isso que a
+  // magia serve. Tirar isso zerava a magia na mansao inteira.
+  const fora = makeMonster('goblin', { x: 7, y: 5 });
+  fora.side = 'foes';
+  const app2 = { capitulo: { explorando: true, lugar: 'X' }, enc, inimigosEscondidos: [fora] };
+  assert.equal(oQueOOlhoAcha(app2, mago.pos, 'ver').length, 2, 'acha o do tabuleiro e o que espera fora dele');
+});
+teste('o olho gasta a emboscada de quem ele pega, em vez de desfaze-la de graca', () => {
+  const { enc, party } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const mago = party[ILVAN];
+  mago.pos = { x: 5, y: 5 };
+  mago.spellcasting.prepared.push('clarividencia');
+  mago.spellcasting.slots = [0, 9, 9, 9];
+  const espiados = [];
+  const app = {
+    capitulo: { explorando: true, lugar: 'X', espiou: (cs) => espiados.push(...cs) },
+    enc, inimigosEscondidos: [],
+  };
+  const r = prepararMagia({ app, estado: estadoDe({ vila: { dia: 1 } }) }, mago, 'clarividencia', { opcao: 'ver' });
+  assert.ok(!r?.erro, 'preparou: ' + (r?.erro ?? ''));
+  assert.equal(espiados.length, 1, 'o capitulo foi avisado de quem o olho pegou');
+  assert.equal(espiados[0].side, 'foes');
+  assert.equal(r.opts.dados.sentido, 'ver');
+  assert.equal(r.opts.dados.ouviu, null, 'o VER nao conta: so o OUVIR da numero');
+  // E o OUVIR devolve o numero.
+  const r2 = prepararMagia({ app, estado: estadoDe({ vila: { dia: 1 } }) }, mago, 'clarividencia', { opcao: 'ouvir' });
+  assert.equal(r2.opts.dados.ouviu, 1, 'o OUVIR conta um');
+});
+
+teste('o olho enxerga UMA parede, nao a planta baixa inteira', () => {
+  // Tres salas em fila, separadas por parede: o olho na primeira ve a segunda,
+  // e nao a terceira.
+  const mapa = [
+    '############',
+    '#..#..#..#.#',
+    '#..#..#..#.#',
+    '#..#..#..#.#',
+    '############',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+    '............',
+  ];
+  const field = new Battlefield(12, 12, mapa);
+  // A contagem de parede e o que separa um quarto do outro.
+  assert.equal(field.paredesEntre({ x: 1, y: 2 }, { x: 2, y: 2 }), 0, 'na mesma sala, nenhuma');
+  assert.equal(field.paredesEntre({ x: 1, y: 2 }, { x: 4, y: 2 }), 1, 'a sala do lado, uma');
+  assert.equal(field.paredesEntre({ x: 1, y: 2 }, { x: 7, y: 2 }), 2, 'a seguinte, duas');
+  assert.equal(field.paredesEntre({ x: 1, y: 2 }, { x: 10, y: 2 }), 3, 'a ultima, tres');
+
+  // E o olho respeita isso: VER passa por uma, OUVIR por duas.
+  const vizinho = makeMonster('goblin', { x: 4, y: 2 });     // uma parede
+  const adiante = makeMonster('goblin', { x: 7, y: 2 });     // duas
+  const longe = makeMonster('goblin', { x: 10, y: 2 });      // tres
+  for (const m of [vizinho, adiante, longe]) m.side = 'foes';
+  const { party } = montar({ nivel: 5, mapa });
+  const mago = party[ILVAN];
+  mago.pos = { x: 1, y: 2 };
+  mago.spellcasting.prepared.push('clarividencia');
+  const app = {
+    capitulo: { explorando: true, lugar: 'X' },
+    enc: { field, combatants: [vizinho, adiante, longe, ...party] },
+    inimigosEscondidos: [],
+  };
+  const quantos = (sentido) => {
+    mago.spellcasting.slots = [0, 9, 9, 9];
+    const e = estadoDe({ vila: { dia: 1 } });
+    assert.ok(conjurarFora(e, mago, 'clarividencia', {
+      herois: party, rng: makeRng(9), opcao: sentido,
+      dados: { ponto: { x: 1, y: 2 }, cena: 'X', sentido },
+    }).ok);
+    return marcasDoMapa({ app, estado: e, herois: () => party }).map((k) => k.x);
+  };
+  assert.deepEqual(quantos('ver'), [4], 'VER atravessa uma parede: so a sala do lado');
+  // OUVIR nao marca mais o mapa; o alcance dele se mede pela contagem.
+  assert.deepEqual(quantos('ouvir'), [], 'ouvir nao marca nada');
+  assert.equal(oQueOOlhoAcha(app, { x: 1, y: 2 }, 'ouvir').map((m) => m.pos.x).join(','), '4,7',
+    'mas ouve duas salas adiante, e nao a terceira');
+});
+
+teste('Clarividencia nao mostra o grupo nem os mortos', () => {
+  const { enc, party } = montar({ nivel: 5, foes: [['goblin', { x: 6, y: 5 }]] });
+  const mago = party[ILVAN];
+  mago.pos = { x: 5, y: 5 };
+  const goblin = enc.combatants.find((c) => c.side !== 'party');
+  mago.spellcasting.prepared.push('clarividencia');
+  mago.spellcasting.slots = [0, 4, 3, 3];
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, mago, 'clarividencia', {
+    herois: party, rng: makeRng(7), opcao: 'ver',
+    dados: { ponto: { x: 5, y: 5 }, cena: 'X', sentido: 'ver' },
+  }).ok);
+  const app = { capitulo: { explorando: true, lugar: 'X' }, enc, inimigosEscondidos: [] };
+  const vivo = marcasDoMapa({ app, estado, herois: () => party });
+  assert.deepEqual(vivo.map((k) => k.nome), ['humanoide'], 'so o inimigo, pelo tipo: o grupo nao vira marca');
+  goblin.dead = true;
+  assert.equal(marcasDoMapa({ app, estado, herois: () => party }).length, 0, 'e morto nao se move');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

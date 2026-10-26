@@ -312,6 +312,7 @@ const LEGENDA_DA_MARCA = {
   'marca-alarme': 'Alarme: a área vigiada',
   'marca-aparencia': 'Alterar Aparência: o corpo está transformado',
   'marca-fingido': 'Fingir de Morto: parece morto',
+  'marca-olho': 'Clarividência: o olho invisível viu algo aqui',
 };
 
 export class Board {

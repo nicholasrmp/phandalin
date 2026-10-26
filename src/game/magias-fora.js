@@ -34,7 +34,9 @@ import { hasCondition } from '../rules/conditions.js';
 import {
   UTIL, TRUQUES, estadoDe, conjurarFora, podeConjurarFora, ativaDe, ativasDoGrupo, avancar, relogioTexto,
   magiasForaDoHeroi, sondarMente, motivoDeMortoMudo, falaPorMensagem, chaveDoNpc, infoDoItem, tempoDeConjuracao,
+  conhecidosDoGrupo,
 } from '../rules/utilidade.js';
+import { NPCS } from '../rules/npcs.js';
 import { PENSAMENTOS, MORTOS, MUDOS, ANIMAIS, eAnimal } from './magias-fora-dados.js';
 import {
   preparar, posConjurar, contarNovas, marcas as marcasDasMagias, acordar, ferasAoAlcance, bichosDisponiveis,
@@ -79,6 +81,12 @@ const NOME_ESCOLHA = { tocha: 'a tocha' };
  * Detectar o Bem e o Mal e o Sentido Divino procuram: fora deles, a magia
  * não teria o que enganar.
  */
+/** Os dois sentidos do olho da Clarividência, como o livro os separa. */
+const SENTIDOS_DO_OLHO = [
+  { id: 'ver', rotulo: 'Ver', detalhe: 'marca até três, a 9 m e atrás de uma parede' },
+  { id: 'ouvir', rotulo: 'Ouvir', detalhe: '18 m e duas paredes, e dá só o número' },
+];
+
 const TIPOS_DA_AURA = [
   { id: 'celestial', rotulo: 'Celestial', detalhe: 'lê como criatura do bem' },
   { id: 'corruptor', rotulo: 'Corruptor', detalhe: 'lê como criatura do mal' },
@@ -151,6 +159,32 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
       t.push(linhas.length
         ? `Por dez minutos ${c.name} sente o veneno e a doença a 9 m — ${linhas.join('; ')}.`
         : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
+      break;
+    }
+    case 'enviarMensagem': {
+      const m = res.mensagem;
+      const nome = NPCS[m?.quem]?.nome ?? 'alguém';
+      if (m?.destino === 'morto') {
+        t.push(`${c.name} fecha os olhos, diz as palavras e espera. Do outro lado não vem nada — nem recusa, nem silêncio de quem não quer falar. ${nome} está morto.`);
+      } else if (m?.destino === 'preso') {
+        t.push(`A resposta de ${nome} chega curta e apressada, como quem fala de lado: está vivo, e não está sozinho. Quem o guarda não o deixa dizer onde.`);
+      } else if (m?.destino === 'nossoPrisioneiro') {
+        t.push(`${nome} responde de onde o próprio grupo o deixou: preso, vivo, e sem nada de novo para contar.`);
+      } else if (m?.destino === 'livre') {
+        t.push(`${nome} responde na mesma hora, inteiro e sem pressa: está vivo e está livre.`);
+      } else {
+        t.push(`${c.name} manda as vinte e cinco palavras, e ${nome} responde. (O jogo não guarda o destino dele: a conversa foi narrada, e não muda nada.)`);
+      }
+      break;
+    }
+    case 'clarividencia': {
+      const o = res.olho;
+      if (o?.sentido === 'ouvir') {
+        const n = o?.ouviu ?? 0;
+        t.push(`${c.name} fecha os olhos e o ouvido dele se descola do corpo. Por dez minutos ele escuta a até 18 m, parede não atrapalha — e conta, agora: ${n === 0 ? 'nada se move por aqui' : n === 1 ? 'uma coisa se move' : `${n} coisas se movem`}. O quê, ele não sabe dizer.`);
+      } else {
+        t.push(`${c.name} abre um olho que ninguém vê. Por dez minutos ele enxerga o que se move a até 9 m, e uma parede não o atrapalha: as três coisas mais próximas aparecem marcadas no mapa.`);
+      }
       break;
     }
     case 'encontrarMontaria': {
@@ -415,6 +449,19 @@ export async function escolherEConjurar(app, c, spellId) {
   }
   if (u.escolhe === 'tipo') {
     const o = await escolher(app, spell.name, 'Parecer o quê?', TIPOS_DA_AURA.map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));
+    if (!o) return null;
+    opts.opcao = o;
+  }
+  if (u.escolhe === 'sentido') {
+    const o = await escolher(app, spell.name, 'Ver ou ouvir?', SENTIDOS_DO_OLHO.map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));
+    if (!o) return null;
+    opts.opcao = o;
+  }
+  if (u.escolhe === 'conhecido') {
+    const quem = conhecidosDoGrupo(x.estado).map((id) => ({ id, nome: NPCS[id]?.nome ?? id })).filter((k) => NPCS[k.id]);
+    if (!quem.length) return null;
+    const o = await escolher(app, spell.name, 'Mandar recado a quem?',
+      quem.map((k) => ({ rotulo: k.nome, detalhe: NPCS[k.id]?.papel ?? null, valor: k.id })));
     if (!o) return null;
     opts.opcao = o;
   }

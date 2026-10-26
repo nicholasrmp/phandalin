@@ -87,6 +87,9 @@ const DOMO_CORES = {
   'marca-alarme': { rgb: [255, 200, 90], borda: [255, 240, 190] }, // Alarme: o anel baixo no chão
   'marca-aparencia': { rgb: [190, 150, 255], borda: [226, 208, 255] }, // Alterar Aparência: o halo lilás de quem está transformado
   'marca-fingido': { rgb: [170, 172, 184], borda: [214, 216, 226] }, // Fingir de Morto: a figura apagada, cinza
+  // Clarividência: azul-gelo. Não pode parecer o turquesa do Localizar
+  // Objeto (a mesma cor, o mesmo glifo e a mesma dica confundiam as duas).
+  'marca-olho': { rgb: [140, 170, 255], borda: [212, 226, 255] },
 };
 // Cada marca tem forma própria (raio, altura) e um glifo no topo: a cor sozinha não distinguia as colunas.
 const MARCA_FORMA = {
@@ -102,6 +105,9 @@ const MARCA_FORMA = {
   // opostas (halo alto com máscara × poça rasa e larga), ou uma vira a outra na tela.
   'marca-aparencia': { raio: 22, altura: 40, glifo: 'mascara' },
   'marca-fingido': { raio: 26, altura: 8, glifo: null },
+  // Coluna alta e fina com o olho no topo: o glifo é o mesmo do Sentidos da
+  // Fera, e o que separa as duas é a altura (46 contra 70) e a cor.
+  'marca-olho': { raio: 12, altura: 70, glifo: 'olho' },
 };
 const GLIFOS = {
   mais: ['...#...', '...#...', '...#...', '#######', '...#...', '...#...', '...#...'],

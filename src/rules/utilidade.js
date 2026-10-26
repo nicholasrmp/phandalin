@@ -90,6 +90,9 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // A palavra e o olho a distância.
+  enviarMensagem: { alvo: 'si', min: 1, efeito: 'mensagem', escolhe: 'conhecido' },
+  clarividencia: { alvo: 'area', min: 10, conc: true, efeito: 'olho', escolhe: 'sentido', tempo: 10 },
   // Montaria e travessia (`rules/marcha.js`, `core/grid.js`).
   encontrarMontaria: { alvo: 'si', min: 10 * 365 * 24 * 60, efeito: 'montaria', tempo: 10 },
   montariaFantasmagorica: { alvo: 'si', min: 60, efeito: 'montaria', ritual: true, tempo: 1 },
@@ -156,6 +159,12 @@ export function estadoDe(campanha) {
   // O dia da campanha mora na vila; a despensa mágica precisa dele para saber
   // o que foi conjurado HOJE e o que estragou ontem (`rules/mantimentos.js`).
   e.dia = campanha.vila?.dia ?? e.dia ?? 0;
+  // O destino dos dois NPCs que a partida guarda, para o Enviar Mensagem saber
+  // se vem resposta. Vem dos blocos dos capítulos, como o dia vem da vila.
+  e.destinos = {
+    gundren: campanha.castelo?.gundren ?? e.destinos?.gundren ?? null,
+    iarno: campanha.mansao?.iarno ?? e.destinos?.iarno ?? null,
+  };
   return e;
 }
 
@@ -168,6 +177,47 @@ export function eVenenosa(m) {
 
 /** A chave de um NPC (criatura ou personagem solto da vila). */
 export const chaveDoNpc = (npc) => npc?.id ?? npc?.defId ?? npc?.name ?? null;
+
+/**
+ * Os dois NPCs cujo DESTINO a partida guarda de verdade, e onde ele mora.
+ *
+ * O resto do elenco não tem registro de morte: `estado.npcs[chave]` guarda o
+ * que o grupo fez com eles (sondado, ressentido), não se estão vivos. Por isso
+ * o Enviar Mensagem só promete resposta de verdade para estes dois, e declara
+ * isso no `desc`.
+ */
+const DESTINO_GUARDADO = ['gundren', 'iarno'];
+
+/**
+ * O que o Enviar Mensagem encontra do outro lado: 'morto' (silêncio), 'preso'
+ * (responde como pode), 'livre' ou 'narrado' (o jogo não guarda o destino
+ * dele, então a resposta é só de mesa).
+ */
+export function destinoDoNpc(estado, id) {
+  if (!DESTINO_GUARDADO.includes(id)) return 'narrado';
+  const v = estado?.destinos?.[id];
+  if (v === 'morto') return 'morto';
+  // Os capítulos guardam palavras próprias: o castelo escreve 'acordado' ou
+  // 'livre' em Gundren, e a mansão escreve 'fugiu' ou 'preso' em Iarno. Um
+  // Iarno 'preso' está preso PELO GRUPO, e isso não é a mesma coisa que o
+  // Gundren que os goblins guardam.
+  if (id === 'gundren') return v === 'livre' || v === 'acordado' ? 'livre' : 'preso';
+  if (v === 'preso') return 'nossoPrisioneiro';
+  // Nada guardado, ou 'fugiu': Iarno está por aí, mandando nos Marcarrubra.
+  return 'livre';
+}
+
+/**
+ * Quem o grupo CONHECE o bastante para o Enviar Mensagem alcançar. O livro
+ * pede familiaridade: aqui são os NPCs com quem o grupo já tratou (é o que
+ * `estado.npcs` guarda) mais os dois do contrato, que o grupo conhece antes
+ * de a aventura começar.
+ */
+export function conhecidosDoGrupo(estado) {
+  const doContrato = ['gundren', 'sildar'];
+  const tratados = Object.keys(estado?.npcs ?? {});
+  return [...new Set([...doContrato, ...tratados])];
+}
 
 /** Texto de um horário: "2h10" desde o começo da cena. */
 export const relogioTexto = (estado) => {
@@ -391,6 +441,12 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     if (c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > spell.rangeFt) return { ok: false, why: `longe demais — ${spell.name} alcança ${spell.rangeFt} pés` };
   }
   if (u.escolhe === 'atributo' && opcao && !APRIMORAR[opcao]) return { ok: false, why: 'opção inválida' };
+  // Enviar Mensagem: o livro pede familiaridade com quem recebe. A tela já
+  // oferece só os conhecidos, mas a regra também cobra — uma chamada direta
+  // não deve poder mandar recado a um estranho.
+  if (u.escolhe === 'conhecido' && !conhecidosDoGrupo(estado).includes(opcao ?? '')) {
+    return { ok: false, why: 'o livro pede familiaridade: o grupo ainda não tratou com essa pessoa' };
+  }
 
   const fim = [];
   // A Oração de Cura e o Bom Fruto já têm a conta feita em `descanso.js`.
@@ -510,6 +566,17 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
         criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
       };
     }
+    // ---- a palavra e o olho a distância ----
+    if (u.efeito === 'mensagem') {
+      const quem = opcao;
+      resultado.mensagem = { quem, destino: destinoDoNpc(estado, quem) };
+      // Só os dois com destino guardado dão resposta de verdade; para o resto
+      // a magia narra, e o `desc` diz isso.
+      resultado.soNarra = resultado.mensagem.destino === 'narrado';
+    }
+    // O `ouviu` e contado pela cena, em `preparar`, e vem junto dos `dados`:
+    // a regra nao enxerga o mapa para contar sozinha.
+    if (u.efeito === 'olho') resultado.olho = { sentido: opcao ?? 'ver', ouviu: dados?.ouviu ?? null };
     // ---- montaria e travessia ----
     if (u.efeito === 'montaria') {
       // Qual corcel: o conjurado do paladino, que fica, ou o fantasma do mago,

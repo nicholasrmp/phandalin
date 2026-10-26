@@ -20,7 +20,7 @@
 //   plantasSabem(c)  o que as plantas contam (Falar com Plantas); o capítulo narra e age
 //   espiou(criaturas)  o bicho viu estas criaturas escondidas (o capítulo tira a surpresa delas)
 
-import { distanceFt } from '../core/grid.js';
+import { distanceFt, squaresOf } from '../core/grid.js';
 import { podeVer } from '../rules/luz.js';
 import { hasCondition, removeCondition } from '../rules/conditions.js';
 import {
@@ -99,6 +99,18 @@ export function preparar(x, c, spellId, opts) {
   }
   if (spellId === 'alarme' || spellId === 'bocaMagica') {
     return { opts: { ...opts, dados: { ponto: { x: c.pos.x, y: c.pos.y }, cena: app.capitulo?.lugar } } };
+  }
+  if (spellId === 'clarividencia') {
+    const sentido = opts.opcao ?? 'ver';
+    const ponto = { x: c.pos.x, y: c.pos.y };
+    // O OUVIR não marca o mapa: ele dá um NÚMERO, contado na hora em que o
+    // olho abre. O `desc` declara que a conta é desse instante.
+    const achados = oQueOOlhoAcha(app, ponto, sentido);
+    const ouviu = sentido === 'ouvir' ? achados.length : null;
+    // Quem o olho pegou perde a emboscada, como no Sentidos da Fera: a magia
+    // gasta a surpresa deles, em vez de anulá-la sem custo nenhum.
+    if (achados.length) app.capitulo?.espiou?.(sentido === 'ouvir' ? achados : achados.slice(0, 3));
+    return { opts: { ...opts, dados: { ponto, cena: app.capitulo?.lugar, sentido, ouviu } } };
   }
   if (spellId === 'localizarObjeto') {
     const g = opts.gancho;
@@ -231,6 +243,40 @@ export function contarNovas(x, c, r, { alvo = null } = {}) {
  * sobre quem o Detectar o Bem e o Mal sente, as armadilhas reveladas, o objeto de Localizar Objeto
  * e as criaturas que o bicho viu. `cor` é uma chave de `fx.js` (DOMO_CORES).
  */
+/**
+ * O QUE O OLHO DA CLARIVIDÊNCIA ACHA, da mais perto para a mais longe.
+ *
+ * VER alcança 9 m e uma parede; OUVIR, 18 m e duas — som dobra esquina.
+ *
+ * O que ele NÃO acha: quem está invisível (o olho vê, não adivinha), quem é
+ * neutro — os prisioneiros dos Marcarrubra, o Droop, o rato do mago — e quem
+ * está a 0 PV sem estar marcado como morto.
+ *
+ * O que ele ACHA, e de propósito: quem ainda não entrou no tabuleiro. Essa é a
+ * razão de ser de uma magia de batedor, e tirá-la zerava a magia — medido, com
+ * esse filtro o olho não achava ninguém na mansão inteira, porque toda criatura
+ * de uma sala que o grupo não alcançou espera fora do tabuleiro. Quem o olho vê
+ * perde a emboscada em troca, pelo `capitulo.espiou`, que é o que o Sentidos da
+ * Fera já faz: a magia gasta a surpresa deles em vez de desfazê-la de graça.
+ */
+export function oQueOOlhoAcha(app, ponto, sentido) {
+  const ouve = sentido === 'ouvir';
+  const raio = ouve ? 60 : 30;
+  const paredes = ouve ? 2 : 1;
+  const campo = app.enc?.field;
+  return criaturasDaCena(app)
+    .filter((m) => {
+      if (m.dead || !m.pos || (m.hp ?? 1) <= 0) return false;
+      if (m.side === 'party' || m.side === 'neutro') return false;
+      if (hasCondition(m, 'invisivel')) return false;
+      if (distanceFt(ponto, m.pos) > raio) return false;
+      // Pegada de 2x2: vale a casa dela que o olho alcança melhor.
+      if (campo && Math.min(...squaresOf(m.pos).map((q) => campo.paredesEntre(ponto, q))) > paredes) return false;
+      return true;
+    })
+    .sort((p, q) => distanceFt(ponto, p.pos) - distanceFt(ponto, q.pos));
+}
+
 export function marcas(x) {
   const { app, estado } = x;
   if (!app.capitulo?.explorando || !app.enc) return [];
@@ -244,8 +290,23 @@ export function marcas(x) {
       if (!dono) continue;
       for (const m of sentidasPorBemMal(estado, herois, dono, criaturasDaCena(app))) out.push({ x: m.pos.x, y: m.pos.y, cor: COR[ladoAparente(m)], nome: tipoAparente(m), f: m.pos.f ?? 1 });
     }
-    // Não Detecção: o que está sob ela some do Localizar Objeto.
     if (a.efeito === 'localizar' && a.data?.ponto) out.push({ x: a.data.ponto.x, y: a.data.ponto.y, cor: 'marca-alvo', nome: a.data.nome });
+    // CLARIVIDÊNCIA: só o VER marca o mapa, e marca no máximo TRÊS.
+    //
+    // O OUVIR não entra aqui de propósito. Ele promete "só conta quantos são",
+    // e marcar a casa exata de cada criatura é localizar, não contar: medido na
+    // mansão, ele acendia 23 das 24 criaturas, cada uma no seu quadrado. O
+    // número que ele dá sai no texto da conjuração (`olhoOuviu`, abaixo).
+    //
+    // E o VER para em três porque o limite de parede não bastava: medido, ele
+    // cortava 14% do alcance, e o olho ainda nomeava dez criaturas de uma vez
+    // no esconderijo e treze no castelo. Três é "o que o olho alcança olhando
+    // para um lado", e está declarado no `desc` como regra da casa.
+    if (a.efeito === 'olho' && a.data?.sentido !== 'ouvir' && a.data?.ponto && a.data?.cena === lugar) {
+      for (const m of oQueOOlhoAcha(app, a.data.ponto, 'ver').slice(0, 3)) {
+        out.push({ x: m.pos.x, y: m.pos.y, cor: 'marca-olho', nome: tipoAparente(m), f: m.pos.f ?? 1 });
+      }
+    }
     // Alterar Aparência: um halo lilás em volta de quem está transformado.
     if (a.spellId === 'alterarAparencia') {
       const dono = herois.find((h) => h.id === a.por);
