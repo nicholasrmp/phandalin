@@ -39,6 +39,7 @@ import { criarFicha, aplicarAparencia } from './view/ficha.js';
 import { criarMenu } from './view/menu.js';
 import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave } from './game/save.js';
 import { jogadorDaAba } from './game/sala-cliente.js';
+import { criarTaverna } from './view/taverna-tela.js';
 import { normalizarCodigo } from './game/sala.js';
 import { aoDarXp } from './game/nivel.js';
 import { audio, passoSoundFor } from './core/audio.js';
@@ -207,6 +208,13 @@ class App {
         jogadorId: jogadorDaAba({ busca: location.search, sessionStorage, jogadorLocal: () => jogadorLocal(armazem) }),
         storage: armazem,
         local: location,
+        // A taverna andável (T-01): o lobby de quem joga com amigos. Fala com o menu só por estes ganchos.
+        taverna: criarTaverna({
+          aoMesa: () => this.menu.abrirMesa(),
+          aoSair: () => this.menu.sairDaTaverna(),
+          enviar: (msg) => this.menu.enviarSala(msg),
+          aoCopiarLink: () => this.menu.linkDaSala(),
+        }),
       },
     });
     // O botão de voltar ao menu mora à esquerda do aviso de turno. O HUD

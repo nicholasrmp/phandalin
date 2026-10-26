@@ -17,6 +17,11 @@
 // O `jogadorId` é um SEGREDO (quem o souber assume o lugar da pessoa, L-03): ele
 // nunca sai daqui. Os clientes veem só o rótulo público `pub` ('p1', 'p2'…).
 
+import { key } from '../core/grid.js';
+import {
+  campoDaTaverna, caminhoNaTaverna, casaLivre, NASCEDOUROS, marcadorLivre, marcadorN, LARGURA, ALTURA,
+} from './taverna.js';
+
 export const VERSAO_DA_SALA = 1;
 
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
@@ -24,6 +29,20 @@ export const HEROIS_JOGAVEIS = [
   'pc-guerreiro', 'pc-ladino', 'pc-clerigo', 'pc-mago', 'pc-barbaro', 'pc-druida',
   'pc-bruxo', 'pc-feiticeira', 'pc-paladino', 'pc-guardiao', 'pc-monja', 'pc-barda',
 ];
+
+/**
+ * Quem tem arte final do PixelLab (as 8 direções e as animações) e por isso pode
+ * ser persona na taverna (T-02). Os outros ganham a vez quando ganharem folha.
+ */
+export const HEROIS_COM_ARTE = ['pc-guerreiro', 'pc-ladino', 'pc-clerigo', 'pc-mago', 'pc-barbaro', 'pc-paladino', 'pc-guardiao'];
+export const PERSONA_PADRAO = 'pc-guerreiro';
+
+/**
+ * Quanto tempo cada casa andada ocupa o avatar (T-11): o servidor só aceita outro `mover` do mesmo
+ * jogador quando o anterior já terminaria de andar, e a tela anda no mesmo ritmo. Sem isto o
+ * servidor aceitaria um trajeto de 20 casas e outro 150 ms depois, e a figura "pularia" nos outros.
+ */
+export const MS_POR_CASA = 200;
 
 export const TAMANHO_DO_GRUPO = 4;
 export const MAX_JOGADORES = 4;
@@ -86,6 +105,51 @@ export const idValido = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{8,64}$
 /** O jogador da sala com esse id SECRETO, só se for dele mesmo (nunca do protótipo). */
 export const jogadorDe = (sala, id) => (typeof id === 'string' && Object.hasOwn(sala.jogadores, id) ? sala.jogadores[id] : undefined);
 
+// ----------------------------------------------------------------- a taverna --
+
+let campoEmCache = null;
+/** O campo da taverna, montado uma vez: o mesmo mapa que o navegador desenha. */
+const campo = () => (campoEmCache ??= campoDaTaverna());
+
+const casasOcupadas = (sala, menos = null) => new Set(Object.entries(sala.avatares)
+  .filter(([id]) => id !== menos).map(([, a]) => key(a.x, a.y)));
+
+/**
+ * T-06: o nome é único por sala. O segundo "Gandalf" vira "Gandalf (2)", e o terceiro "Gandalf (3)".
+ * O corte de um nome longo é por CARACTERE (nunca no meio de um emoji) e sem deixar espaço sobrando.
+ */
+export function nomeUnico(sala, nome) {
+  const usados = new Set(Object.values(sala.jogadores).map((j) => j.nome));
+  if (!usados.has(nome)) return nome;
+  for (let n = 2; n < 1000; n++) {
+    const sufixo = ` (${n})`;
+    const base = [...nome].slice(0, Math.max(1, MAX_NOME - sufixo.length)).join('').trimEnd();
+    const candidato = `${base}${sufixo}`;
+    if (!usados.has(candidato)) return candidato;
+  }
+  return nome;
+}
+
+const personaValida = (h) => (HEROIS_COM_ARTE.includes(h) ? h : PERSONA_PADRAO);
+
+/** Põe o avatar de um jogador na taverna: persona, marcador e uma casa livre perto da porta. */
+function nascer(sala, jogadorId, persona, agora) {
+  const usados = new Set(Object.values(sala.avatares).map((a) => a.marcador));
+  const marcador = marcadorLivre(usados) ?? 0;
+  const casa = casaLivre(campo(), NASCEDOUROS[0], casasOcupadas(sala)) ?? NASCEDOUROS[0];
+  sala.avatares[jogadorId] = { x: casa.x, y: casa.y, persona: personaValida(persona), marcador, livreEm: 0 };
+}
+
+/**
+ * A figura que aparece na taverna (T-03): o PRIMEIRO herói que o jogador pegou, na ordem em que pegou,
+ * entre os que têm arte (T-02: o look pintado por código não aparece na taverna); sem nenhum, a persona.
+ * Pegar um segundo herói não troca a figura, e largar o primeiro passa para o seguinte.
+ */
+export function figuraDe(sala, jogadorId) {
+  const comArte = heroisDe(sala, jogadorId).find((h) => HEROIS_COM_ARTE.includes(h));
+  return comArte ?? sala.avatares?.[jogadorId]?.persona ?? PERSONA_PADRAO;
+}
+
 // ------------------------------------------------------------------- criar --
 
 /**
@@ -93,7 +157,7 @@ export const jogadorDe = (sala, id) => (typeof id === 'string' && Object.hasOwn(
  * `origem` é `{ tipo: 'nova', aventura }` ou `{ tipo: 'save', aventura, resumo }`
  * (a aventura vem do save; o save em si fica com o anfitrião, que roda o jogo).
  */
-export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORES, origem, agora }) {
+export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORES, origem, persona, agora }) {
   if (!normalizarCodigo(codigo)) return { ok: false, erro: 'código inválido' };
   if (!idValido(anfitriao)) return { ok: false, erro: 'jogador inválido' };
   const nomeLimpo = limparNome(nome);
@@ -114,12 +178,15 @@ export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORE
     proximoPub: 2,
     jogadores: { [anfitriao]: { id: anfitriao, pub: 'p1', nome: nomeLimpo, conectado: true, pronto: false, desde: agora } },
     herois: {},
+    // Cada jogador anda na taverna com UM avatar: onde está, a persona e o marcador (T-05).
+    avatares: {},
     // Heróis que o anfitrião mandou para o piloto automático quando o dono estava ausente: quem
     // volta recupera os seus (A-04). Herói posto no piloto de propósito nunca entra aqui.
     cedidos: {},
     removidos: [],
     vaziaDesde: null,
   };
+  nascer(sala, anfitriao, persona, agora);
   return { ok: true, sala };
 }
 
@@ -177,6 +244,7 @@ const heroiValido = (h) => typeof h === 'string' && HEROIS_JOGAVEIS.includes(h);
 export function aplicar(sala, jogadorId, mensagem, agora = 0) {
   if (sala.fase === 'fechada') return recusa('a sala foi fechada');
   if (!mensagem || typeof mensagem !== 'object' || typeof mensagem.tipo !== 'string') return recusa('mensagem inválida');
+  sala.avatares ??= {};   // uma sala guardada antes da taverna
   const eu = jogadorDe(sala, jogadorId);
 
   if (mensagem.tipo === 'entrar') {
@@ -185,10 +253,14 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     if (eu) {
       // Quem volta no mesmo navegador reassume o lugar (L-03), e os heróis que o
       // piloto automático segurou por ele durante a ausência (A-04).
+      // O avatar guardado pode ter ficado numa casa que o mapa de hoje bloqueia (um deploy mudou a mobília).
+      const av = sala.avatares[jogadorId];
+      if (!av || !campo().inside(av.x, av.y) || campo().blocksMove(av.x, av.y)) nascer(sala, jogadorId, mensagem.persona, agora);
       const devolveu = devolverHerois(sala, jogadorId);   // antes do `||`: não pode ser pulado
-      const mudou = devolveu || !eu.conectado || (nome && nome !== eu.nome) || sala.vaziaDesde != null;
+      // O nome NÃO muda na volta: o cliente reenvia o digitado a cada reconexão, e trocá-lo desfaria o
+      // "Gandalf (2)" (T-06) ou deixaria alguém tomar o nome de outro.
+      const mudou = devolveu || !eu.conectado || sala.vaziaDesde != null;
       eu.conectado = true;
-      if (nome) eu.nome = nome;
       sala.vaziaDesde = null;
       return ok({ reentrou: true, igual: !mudou });
     }
@@ -202,8 +274,9 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       return recusa('um jogador está com heróis demais: peça para ele soltar um antes de entrar mais gente');
     }
     sala.ordem.push(jogadorId);
-    sala.jogadores[jogadorId] = { id: jogadorId, pub: `p${sala.proximoPub}`, nome, conectado: true, pronto: false, desde: agora };
+    sala.jogadores[jogadorId] = { id: jogadorId, pub: `p${sala.proximoPub}`, nome: nomeUnico(sala, nome), conectado: true, pronto: false, desde: agora };
     sala.proximoPub += 1;
+    nascer(sala, jogadorId, mensagem.persona, agora);
     sala.vaziaDesde = null;
     desfazerProntos(sala);
     return ok({ reentrou: false });
@@ -217,6 +290,29 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (jogadorId === sala.anfitriao) return recusa('o anfitrião não sai: feche a sala');
       saiu(sala, jogadorId, agora);
       return ok({ saiu: jogadorId });
+    }
+    case 'mover': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      const { x, y } = mensagem;
+      if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= LARGURA || y >= ALTURA) return recusa('casa inexistente');
+      const av = sala.avatares[jogadorId];
+      if (!av) return recusa('você não está na taverna');
+      if (av.x === x && av.y === y) return ok({ igual: true });
+      if (agora < (av.livreEm ?? 0)) return recusa('devagar');
+      const caminho = caminhoNaTaverna(campo(), { x: av.x, y: av.y }, { x, y }, casasOcupadas(sala, jogadorId));
+      if (!caminho.length) return recusa('não dá para chegar lá');
+      av.x = x; av.y = y;
+      av.livreEm = agora + (caminho.length - 1) * MS_POR_CASA;   // só anda de novo quando esta caminhada acabar
+      return ok();
+    }
+    case 'persona': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (!HEROIS_COM_ARTE.includes(mensagem.heroi)) return recusa('esse herói ainda não tem arte para a taverna');
+      const av = sala.avatares[jogadorId];
+      if (!av) return recusa('você não está na taverna');
+      if (av.persona === mensagem.heroi) return ok({ igual: true });
+      av.persona = mensagem.heroi;
+      return ok();
     }
     case 'pegar': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
@@ -323,6 +419,7 @@ function saiu(sala, id, agora) {
   } else {
     for (const h of heroisDe(sala, id)) delete sala.herois[h];
     delete sala.jogadores[id];
+    delete sala.avatares[id];
     sala.ordem = sala.ordem.filter((x) => x !== id);
     desfazerProntos(sala);
   }
@@ -376,5 +473,10 @@ export function visaoDaSala(sala, paraJogador) {
     herois: Object.fromEntries(Object.entries(sala.herois).map(([h, dono]) => [h, pubDe(dono)])),
     limiteDeHerois: limiteDeHerois(sala),
     pendencias: sala.fase === 'lobby' ? pendenciasParaIniciar(sala) : [],
+    // Quem anda na taverna: o rótulo público, onde está, a figura e o marcador (a cor e a forma).
+    avatares: jogadoresPresentes(sala).filter((j) => sala.avatares?.[j.id]).map((j) => {
+      const a = sala.avatares[j.id];
+      return { id: j.pub, nome: j.nome, x: a.x, y: a.y, figura: figuraDe(sala, j.id), persona: a.persona, marcador: marcadorN(a.marcador), conectado: j.conectado };
+    }),
   };
 }

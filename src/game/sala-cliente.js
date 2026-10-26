@@ -169,6 +169,25 @@ export function esquecerSala(storage, codigo) {
   try { storage.setItem(CHAVE_SALAS, JSON.stringify(salasRecentes(storage).filter((s) => s.codigo !== codigo))); } catch { /* sem armazém */ }
 }
 
+const CHAVE_PERSONA = 'phandalin:persona';
+
+/**
+ * A persona deste navegador (T-02): a que o jogador escolheu da última vez, ou, na
+ * primeira vez, uma das que têm arte sorteada (duas pessoas entrando juntas
+ * raramente começam com a mesma figura; o marcador é que garante serem distintas).
+ */
+export function personaLembrada(storage, personas, aleatorio = Math.random) {
+  try {
+    const guardada = storage.getItem(CHAVE_PERSONA);
+    if (guardada && personas.includes(guardada)) return guardada;
+  } catch { /* sem armazém */ }
+  return personas[Math.floor(aleatorio() * personas.length)];
+}
+
+export function lembrarPersona(storage, heroi) {
+  try { storage.setItem(CHAVE_PERSONA, heroi); } catch { /* sem armazém */ }
+}
+
 export function nomeLembrado(storage) {
   try { return storage.getItem(CHAVE_NOME) ?? ''; } catch { return ''; }
 }

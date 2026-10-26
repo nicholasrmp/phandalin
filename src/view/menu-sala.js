@@ -15,15 +15,16 @@ import { audio } from '../core/audio.js';
 import { temArteImportada } from '../art/folhas/index.js';
 import { HEROIS } from '../game/criacao.js';
 import {
-  gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, MAX_NOME, TAMANHO_DO_GRUPO, PILOTO,
+  gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, MAX_NOME, TAMANHO_DO_GRUPO, PILOTO, HEROIS_COM_ARTE,
 } from '../game/sala.js';
 import {
-  criarClienteDeSala, urlDaSala, salasRecentes, lembrarSala, esquecerSala, nomeLembrado, lembrarNome,
+  criarClienteDeSala, urlDaSala, salasRecentes, lembrarSala, esquecerSala, nomeLembrado, lembrarNome, personaLembrada, lembrarPersona,
 } from '../game/sala-cliente.js';
 
 export function criarTelasDeSala({
   botao, voltarBtn, cabecalho, ir, redesenhar, retratoDe,
   jogadorId, storage, local, WebSocketCtor = globalThis.WebSocket,
+  taverna = null, fecharMenu = () => {}, abrirMenuNaTela = () => {},
 }) {
   const estado = {
     cliente: null, codigo: null, nome: '', visao: null, status: 'conectando', aviso: null, fechada: null,
@@ -34,6 +35,7 @@ export function criarTelasDeSala({
   function abrirSala(codigo, primeira) {
     estado.cliente?.sair();
     estado.codigo = codigo; estado.visao = null; estado.aviso = null; estado.fechada = null; estado.status = 'conectando';
+    primeira = { ...primeira, persona: personaLembrada(storage, HEROIS_COM_ARTE) };
     estado.nome = primeira.nome;
     lembrarNome(storage, primeira.nome);
     // Um cliente velho (de uma sala que o jogador já deixou) ainda pode entregar uma mensagem em
@@ -43,16 +45,37 @@ export function criarTelasDeSala({
       WebSocketCtor,
       jogadorId,
       urlDe: (c) => urlDaSala(local, c),
-      aoVisao: atual((v) => { estado.visao = v; lembrarSala(storage, v.codigo); redesenhar('lobby'); }),
+      aoVisao: atual((v) => {
+        const primeira = !estado.visao;
+        estado.visao = v; lembrarSala(storage, v.codigo);
+        if (taverna) {
+          // Na fase de lobby a sala é a taverna; quando a partida começa (ou fecha), volta o painel.
+          if (v.fase === 'lobby') {
+            if (!taverna.aberta()) { taverna.abrir(document.getElementById('app')); fecharMenu(); }
+            taverna.atualizar(v);
+            if (primeira) taverna.avisar(null);
+          } else if (taverna.aberta()) {
+            taverna.fechar();
+            abrirMenuNaTela('lobby');
+          }
+        }
+        redesenhar('lobby');
+      }),
       aoErro: atual((t) => {
         estado.aviso = t;
+        // Na taverna o erro é uma frase embaixo do salão ("devagar", "não dá para chegar lá").
+        if (taverna?.aberta() && estado.visao) { taverna.avisar(t); setTimeout(() => taverna.avisar(null), 2500); estado.aviso = null; return; }
         // Erro antes de a sala existir para este jogador (código que não existe, sala cheia, removido):
         // não há lobby a mostrar, e a conexão aberta não serve de nada.
         if (!estado.visao) { cliente.sair(); estado.status = 'recusada'; }
         else limparAvisoDepois();
         redesenhar('lobby');
       }),
-      aoFechar: atual((motivo) => { estado.fechada = motivo; esquecerSala(storage, codigo); redesenhar('lobby'); }),
+      aoFechar: atual((motivo) => {
+        estado.fechada = motivo; esquecerSala(storage, codigo);
+        if (taverna?.aberta()) { taverna.fechar(); abrirMenuNaTela('lobby'); }
+        redesenhar('lobby');
+      }),
       aoStatus: atual((s) => { if (estado.status !== 'recusada') estado.status = s; redesenhar('lobby'); }),
     });
     estado.cliente = cliente;
@@ -62,6 +85,7 @@ export function criarTelasDeSala({
   function sairDaSala() {
     estado.cliente?.sair();
     estado.cliente = null; estado.visao = null; estado.confirmar = null;
+    taverna?.fechar();
   }
 
   // O aviso some sozinho: uma visão nova (de outro jogador) não deve apagá-lo na hora, nem ele ficar para sempre.
@@ -74,6 +98,7 @@ export function criarTelasDeSala({
   // A mesma mensagem duas vezes em 300 ms é um duplo clique, não duas intenções.
   let ultimoEnvio = { texto: '', quando: 0 };
   const mandar = (msg) => {
+    if (msg.tipo === 'persona') lembrarPersona(storage, msg.heroi);
     const texto = JSON.stringify(msg);
     const agora = Date.now();
     if (texto === ultimoEnvio.texto && agora - ultimoEnvio.quando < 300) return;
@@ -108,7 +133,7 @@ export function criarTelasDeSala({
     multi: (dados) => {
       const recentes = salasRecentes(storage);
       return el('div', {},
-        cabecalho('Multijogador', 'Jogue com amigos: cada um escolhe seus heróis. A taverna andável vem depois.'),
+        cabecalho('Multijogador', 'Jogue com amigos: encontrem-se na taverna e sentem na mesa de grupo para escolher os heróis.'),
         dados?.recado && el('p', { class: 'menu-recado erro', role: 'status' }, dados.recado),
         el('div', { class: 'menu-cartoes' },
           cartao('Criar sala', 'Você é o anfitrião: escolhe quantos jogam e passa o código aos amigos.', () => ir('salaCriar')),
@@ -222,6 +247,7 @@ export function criarTelasDeSala({
       v.pendencias.length > 0 && el('ul', { class: 'menu-pendencias' }, v.pendencias.map((p) => el('li', {}, p))),
       el('div', { class: 'menu-rodape' },
         // O anfitrião não "sai": a sala é dele, e ele a fecha (a F6 trata a troca de anfitrião).
+        taverna?.aberta() && botao('Voltar à taverna', () => fecharMenu(), { chave: 'taverna', primario: true }),
         !souAnfitriao && botao('Sair da sala', sair, { chave: 'sair' }),
         souAnfitriao && botao(estado.confirmar === 'fechar' ? 'Clique de novo: fechar' : 'Fechar sala', () => comConfirmacao('fechar', { tipo: 'fechar' }),
           { chave: 'fechar', desabilitado: sem, dica: 'Encerra a sala para todos' }),
@@ -278,5 +304,9 @@ export function criarTelasDeSala({
     redesenhar('lobby');
   }
 
-  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo };
+  /** Estou numa sala (a taverna, a mesa de grupo ou a partida iniciada)? O menu, por cima dela, não é o título. */
+  const dentroDeSala = () => Boolean(estado.visao) && !estado.fechada && estado.status !== 'recusada';
+  const souAnfitriao = () => Boolean(estado.visao) && estado.visao.voce === estado.visao.anfitriao;
+  function avisar(texto) { estado.aviso = texto; limparAvisoDepois(5000); redesenhar('lobby'); }
+  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo, mandar, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
 }

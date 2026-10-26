@@ -292,6 +292,55 @@ await teste('sair no lobby: o jogador some, os heróis voltam, e a sala continua
   assert.ok(b.fechou === 1000 || b.fechou === 1005 || b.fechou === 1001 || b.fechou !== null, 'a conexão de quem saiu foi fechada');
 });
 
+
+await teste('taverna: o avatar de cada um aparece nos dois lados, com marcadores diferentes, e andar sincroniza', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'Ana', persona: 'pc-mago' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'Beto', persona: 'pc-paladino' });
+  const v = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.length === 2);
+  const [ana, beto] = v.visao.avatares;
+  assert.equal(ana.figura, 'pc-mago'); assert.equal(beto.figura, 'pc-paladino');
+  assert.notDeepEqual(ana.marcador, beto.marcador);
+  assert.notEqual(`${ana.x},${ana.y}`, `${beto.x},${beto.y}`);
+  a.recebidas.length = 0; b.recebidas.length = 0;
+  a.manda({ tipo: 'mover', x: 10, y: 10 });
+  const andou = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.find((q) => q.id === 'p1')?.x === 10);
+  assert.deepEqual(andou.visao.avatares.find((q) => q.id === 'p1'), { ...ana, x: 10, y: 10 });
+  await vez(200);
+  a.manda({ tipo: 'mover', x: 0, y: 99 });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /inexistente/);
+  b.recebidas.length = 0; b.manda({ tipo: 'mover', x: 2, y: 3 });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /chegar/, 'o balcão não se pisa');
+  a.recebidas.length = 0; a.manda({ tipo: 'mover', x: 9, y: 9 });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /devagar/, 'o servidor segura quem ainda está andando');
+});
+
+await teste('taverna: trocar de persona muda a figura para todos; herói que não tem arte é recusado', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'Ana' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'Beto' }); await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.length === 2);
+  a.manda({ tipo: 'persona', heroi: 'pc-barbaro' });
+  const v = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.find((q) => q.id === 'p1')?.figura === 'pc-barbaro');
+  assert.equal(v.visao.avatares.find((q) => q.id === 'p1').persona, 'pc-barbaro');
+  a.recebidas.length = 0; a.manda({ tipo: 'persona', heroi: 'pc-druida' });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /arte/);
+  // pegar um herói na mesa muda a figura (T-03)
+  a.manda({ tipo: 'pegar', heroi: 'pc-ladino' });
+  const pegou = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.find((q) => q.id === 'p1')?.figura === 'pc-ladino');
+  assert.equal(pegou.visao.avatares.find((q) => q.id === 'p1').figura, 'pc-ladino');
+});
+
+await teste('taverna: dois "Gandalf" viram "Gandalf" e "Gandalf (2)"', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'Gandalf' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'Gandalf' });
+  const v = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.length === 2);
+  assert.deepEqual(v.visao.avatares.map((q) => q.nome), ['Gandalf', 'Gandalf (2)']);
+});
+
 await teste('o site em si continua sendo servido (os arquivos estáticos não passam pelo Worker)', async () => {
   const r = await fetch(`${HTTP}/`);
   assert.equal(r.status, 200);

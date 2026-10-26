@@ -9,7 +9,12 @@ import {
   HEROIS_JOGAVEIS, ALFABETO, TAMANHO_DO_CODIGO, PILOTO, MAX_NOME, MINUTOS_VAZIA,
   gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, idValido,
   criarSala, aplicar, desconectar, deveFechar, visaoDaSala, pendenciasParaIniciar, heroisDe, limiteDeHerois, jogadorDe,
+  HEROIS_COM_ARTE, PERSONA_PADRAO, MS_POR_CASA, nomeUnico, figuraDe,
 } from '../game/sala.js';
+import {
+  LARGURA, ALTURA, MAPA_TAVERNA, MESA_DE_GRUPO, NASCEDOUROS, campoDaTaverna, caminhoNaTaverna, casaLivre, ehMesaDeGrupo,
+  marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR,
+} from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import {
@@ -638,7 +643,8 @@ teste('entrar de quem já está, sem mudar nada, não é mudança (nem grava, ne
   assert.ok(r.ok && r.reentrou && r.igual);
   desconectar(s, ANF, 1);
   assert.equal(faz(s, ANF, { tipo: 'entrar', nome: 'Nicholas' }).igual, false, 'voltar de uma queda muda');
-  assert.equal(faz(s, ANF, { tipo: 'entrar', nome: 'Outro Nome' }).igual, false, 'mudar o nome muda');
+  assert.equal(faz(s, ANF, { tipo: 'entrar', nome: 'Outro Nome' }).igual, true, 'voltar com outro nome não renomeia');
+  assert.equal(s.jogadores[ANF].nome, 'Nicholas');
   assert.equal(faz(s, ANF, { tipo: 'pronto', valor: false }).igual, true, 'pronto repetido não muda');
 });
 
@@ -723,6 +729,250 @@ teste('cliente: uma conexão velha não escreve no estado de uma sala nova', () 
   assert.deepEqual(visoes, []);
   WebSocketFalso.todos[1].abre(); WebSocketFalso.todos[1].recebe({ tipo: 'sala', visao: { codigo: 'XYZ789' } });
   assert.deepEqual(visoes, [{ codigo: 'XYZ789' }]);
+});
+
+
+// ---- a taverna: o mapa (game/taverna.js) -------------------------------------------------------------
+
+teste('taverna: o mapa tem o tamanho dito, e cada linha tem a largura certa', () => {
+  assert.equal(MAPA_TAVERNA.terreno.length, ALTURA);
+  assert.ok(MAPA_TAVERNA.terreno.every((l) => l.length === LARGURA));
+});
+
+teste('taverna: toda casa de chão alcança todas as outras (nada de salão partido em dois)', () => {
+  const campo = campoDaTaverna();
+  const alcance = campo.reachable({ ...NASCEDOUROS[0] }, 1000);
+  let livres = 0;
+  for (let y = 0; y < ALTURA; y++) for (let x = 0; x < LARGURA; x++) {
+    if (campo.blocksMove(x, y)) continue;
+    livres += 1;
+    assert.ok(alcance.has(`${x},${y}`), `(${x},${y}) isolada`);
+  }
+  assert.ok(livres > 100, `só ${livres} casas livres`);
+});
+
+teste('taverna: os nascedouros são chão livre, e a mesa de grupo não se pisa mas tem 4 lugares em volta', () => {
+  const campo = campoDaTaverna();
+  for (const n of NASCEDOUROS) assert.equal(campo.blocksMove(n.x, n.y), false, `${n.x},${n.y}`);
+  assert.equal(new Set(NASCEDOUROS.map((n) => `${n.x},${n.y}`)).size, NASCEDOUROS.length);
+  for (const c of MESA_DE_GRUPO) { assert.equal(campo.blocksMove(c.x, c.y), true); assert.ok(ehMesaDeGrupo(c.x, c.y)); }
+  const lugares = new Set();
+  for (const c of MESA_DE_GRUPO) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const x = c.x + dx; const y = c.y + dy;
+    if (!ehMesaDeGrupo(x, y) && !campo.blocksMove(x, y)) lugares.add(`${x},${y}`);
+  }
+  assert.ok(lugares.size >= 4, `só ${lugares.size} lugares livres em volta da mesa`);
+});
+
+teste('taverna: o caminho existe, termina no destino, e recusa parede, mesa, fora do mapa e casa ocupada', () => {
+  const campo = campoDaTaverna();
+  const de = NASCEDOUROS[0];
+  const c = caminhoNaTaverna(campo, de, { x: 10, y: 10 });
+  assert.deepEqual(c[0], de); assert.deepEqual(c.at(-1), { x: 10, y: 10 });
+  for (const alvo of [{ x: 16, y: 0 }, { x: 7, y: 5 }, { x: -1, y: 5 }, { x: 99, y: 5 }, { x: 5, y: 3 }]) assert.deepEqual(caminhoNaTaverna(campo, de, alvo), [], JSON.stringify(alvo));
+  assert.deepEqual(caminhoNaTaverna(campo, de, { x: 10, y: 10 }, new Set(['10,10'])), [], 'destino ocupado');
+  assert.ok(caminhoNaTaverna(campo, de, { x: 10, y: 10 }, new Set(['7,10', '8,10'])).length > 0, 'atravessar quem está no caminho vale');
+});
+
+teste('taverna: casaLivre acha a mais perto que ninguém ocupa', () => {
+  const campo = campoDaTaverna();
+  assert.deepEqual(casaLivre(campo, { x: 5, y: 10 }), { x: 5, y: 10 });
+  const l = casaLivre(campo, { x: 5, y: 10 }, new Set(['5,10']));
+  assert.ok(Math.abs(l.x - 5) <= 1 && Math.abs(l.y - 10) <= 1 && !(l.x === 5 && l.y === 10));
+});
+
+teste('T-05: são 16 marcadores distintos (8 cores × 2 formas), atribuídos sem repetir', () => {
+  const vistos = new Set();
+  for (let n = 0; n < TOTAL_DE_MARCADORES; n++) { const m = marcadorN(n); vistos.add(`${m.cor}/${m.forma}`); }
+  assert.equal(vistos.size, 16);
+  assert.equal(new Set(CORES_DO_MARCADOR).size, 8);
+  const usados = new Set();
+  for (let i = 0; i < 16; i++) { const n = marcadorLivre(usados); assert.ok(!usados.has(n)); usados.add(n); }
+  assert.equal(marcadorLivre(usados), null, 'lotou');
+});
+
+// ---- a taverna: os avatares na sala -------------------------------------------------------------------
+
+teste('T-02: as personas com arte são exatamente heróis jogáveis, e o padrão é uma delas', () => {
+  for (const h of HEROIS_COM_ARTE) assert.ok(HEROIS_JOGAVEIS.includes(h), h);
+  assert.ok(HEROIS_COM_ARTE.includes(PERSONA_PADRAO));
+});
+
+teste('taverna: criar e entrar põem um avatar de cada jogador em casas livres, com marcadores diferentes', () => {
+  const s = nova(); entra(s, BETO, 'Beto'); entra(s, CAIO, 'Caio');
+  const campo = campoDaTaverna();
+  const av = Object.values(s.avatares);
+  assert.equal(av.length, 3);
+  assert.equal(new Set(av.map((a) => `${a.x},${a.y}`)).size, 3, 'nenhum em cima do outro');
+  assert.equal(new Set(av.map((a) => a.marcador)).size, 3, 'marcadores diferentes');
+  for (const a of av) assert.equal(campo.blocksMove(a.x, a.y), false);
+  assert.ok(av.every((a) => a.persona === PERSONA_PADRAO));
+});
+
+teste('T-02: a persona vem da mensagem de entrada, só entre as que têm arte', () => {
+  const s = nova();
+  assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto', persona: 'pc-mago' }).ok);
+  assert.equal(s.avatares[BETO].persona, 'pc-mago');
+  assert.ok(faz(s, CAIO, { tipo: 'entrar', nome: 'Caio', persona: 'pc-druida' }).ok);
+  assert.equal(s.avatares[CAIO].persona, PERSONA_PADRAO, 'a druida ainda não tem arte: cai no padrão');
+  assert.ok(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-paladino' }).ok);
+  assert.equal(s.avatares[CAIO].persona, 'pc-paladino');
+  deve(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-druida' }), /arte/);
+  deve(faz(s, CAIO, { tipo: 'persona', heroi: 'xx' }), /arte/);
+  assert.equal(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-paladino' }).igual, true);
+});
+
+teste('T-06: o nome é único na sala: o segundo "Gandalf" vira "Gandalf (2)"', () => {
+  const s = nova({ nome: 'Gandalf' });
+  entra(s, BETO, 'Gandalf'); entra(s, CAIO, 'Gandalf');
+  assert.deepEqual(visaoDaSala(s, ANF).jogadores.map((j) => j.nome), ['Gandalf', 'Gandalf (2)', 'Gandalf (3)']);
+  assert.ok(nomeUnico(s, 'x'.repeat(24)).length <= 24);
+  assert.ok(nomeUnico(s, 'G'.repeat(24)).length <= 24);
+});
+
+teste('T-11: mover leva o avatar por caminho livre, e recusa o que não vale (sem mudar nada)', () => {
+  const s = nova();
+  const a = s.avatares[ANF];
+  const antes = { x: a.x, y: a.y };
+  for (const m of [{ x: 16, y: 0 }, { x: 7, y: 5 }, { x: -1, y: 2 }, { x: 99, y: 2 }, { x: 1.5, y: 2 }, { x: '3', y: 2 }, { y: 2 }, { x: 5 }]) {
+    assert.equal(faz(s, ANF, { tipo: 'mover', ...m }, 5000).ok, false, JSON.stringify(m));
+    assert.deepEqual({ x: a.x, y: a.y }, antes);
+  }
+  assert.ok(faz(s, ANF, { tipo: 'mover', x: 10, y: 10 }, 5000).ok);
+  assert.deepEqual({ x: a.x, y: a.y }, { x: 10, y: 10 });
+  assert.equal(faz(s, ANF, { tipo: 'mover', x: 10, y: 10 }, 6000).igual, true, 'ir aonde já está não é mudança');
+});
+
+teste('T-11: o ritmo dos passos é limitado, e a casa de outro avatar não vale como destino', () => {
+  const s = nova(); entra(s, BETO, 'Beto');
+  assert.ok(faz(s, ANF, { tipo: 'mover', x: 10, y: 10 }, 5000).ok);       // de (5,10): 5 casas
+  deve(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 5000 + 5 * MS_POR_CASA - 1), /devagar/);
+  assert.ok(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 5000 + 5 * MS_POR_CASA).ok, 'a caminhada acabou: pode andar de novo');
+  const b = s.avatares[BETO];
+  deve(faz(s, ANF, { tipo: 'mover', x: b.x, y: b.y }, 9000), /chegar/);
+});
+
+teste('T-03: o avatar vira o primeiro herói que o jogador pega, e volta à persona ao largar', () => {
+  const s = nova();
+  assert.equal(figuraDe(s, ANF), PERSONA_PADRAO);
+  pega(s, ANF, 'pc-mago', 'pc-ladino');
+  assert.equal(figuraDe(s, ANF), 'pc-mago', 'o primeiro que PEGOU, não o primeiro do elenco');
+  assert.equal(visaoDaSala(s, ANF).avatares[0].figura, 'pc-mago');
+  faz(s, ANF, { tipo: 'largar', heroi: 'pc-mago' });
+  assert.equal(figuraDe(s, ANF), 'pc-ladino', 'largou o primeiro: passa ao seguinte');
+  faz(s, ANF, { tipo: 'largar', heroi: 'pc-ladino' }); pega(s, ANF, 'pc-ladino', 'pc-mago');
+  faz(s, ANF, { tipo: 'largar', heroi: 'pc-mago' }); faz(s, ANF, { tipo: 'largar', heroi: 'pc-ladino' });
+  assert.equal(figuraDe(s, ANF), PERSONA_PADRAO);
+  faz(s, ANF, { tipo: 'piloto', heroi: 'pc-barbaro' });
+  assert.equal(figuraDe(s, ANF), PERSONA_PADRAO, 'herói do piloto não é de ninguém');
+});
+
+teste('a visão traz os avatares com rótulo público, posição, figura e marcador — e nada secreto', () => {
+  const s = nova(); entra(s, BETO, 'Beto');
+  const v = visaoDaSala(s, BETO);
+  assert.equal(v.avatares.length, 2);
+  for (const a of v.avatares) {
+    assert.ok(/^p\d+$/.test(a.id)); assert.ok(Number.isInteger(a.x) && Number.isInteger(a.y));
+    assert.ok(a.marcador.cor >= 0 && a.marcador.cor < 8 && [0, 1].includes(a.marcador.forma));
+  }
+  assert.deepEqual(problemasDeJson(v), []);
+  assert.doesNotMatch(JSON.stringify(v), new RegExp(`${ANF}|${BETO}`));
+});
+
+teste('sair do lobby tira o avatar; voltar de uma queda mantém a casa; sala antiga sem avatares se atualiza', () => {
+  const s = nova(); entra(s, BETO, 'Beto');
+  faz(s, BETO, { tipo: 'mover', x: 8, y: 10 }, 5000);
+  desconectar(s, BETO, 6000);
+  faz(s, BETO, { tipo: 'entrar', nome: 'Beto' });
+  assert.deepEqual({ x: s.avatares[BETO].x, y: s.avatares[BETO].y }, { x: 8, y: 10 });
+  faz(s, BETO, { tipo: 'sair' });
+  assert.equal(s.avatares[BETO], undefined);
+  assert.equal(visaoDaSala(s, ANF).avatares.length, 1);
+  const velha = JSON.parse(JSON.stringify(nova())); delete velha.avatares;
+  assert.ok(aplicar(velha, ANF, { tipo: 'entrar', nome: 'Nicholas' }, 1).ok);
+  assert.ok(velha.avatares[ANF], 'o anfitrião da sala antiga ganhou avatar ao voltar');
+});
+
+
+// ---- o que a revisão da taverna achou -----------------------------------------------------------------
+
+teste('T-06: voltar de uma queda NÃO muda o nome, nem deixa pegar o de outro', () => {
+  const s = nova({ nome: 'Gandalf' });
+  entra(s, BETO, 'Gandalf');
+  assert.equal(s.jogadores[BETO].nome, 'Gandalf (2)');
+  desconectar(s, BETO, 5);
+  faz(s, BETO, { tipo: 'entrar', nome: 'Gandalf' });             // o cliente reenvia o nome digitado
+  assert.equal(s.jogadores[BETO].nome, 'Gandalf (2)');
+  faz(s, BETO, { tipo: 'entrar', nome: 'Nicholas' });
+  assert.equal(s.jogadores[BETO].nome, 'Gandalf (2)');
+});
+
+teste('T-11: o servidor só aceita outro passo quando a caminhada anterior já teria terminado', () => {
+  const s = nova();
+  const longo = faz(s, ANF, { tipo: 'mover', x: 10, y: 10 }, 1000);   // 5 casas = 1000 ms
+  assert.ok(longo.ok);
+  assert.equal(s.avatares[ANF].livreEm, 1000 + 5 * MS_POR_CASA);
+  deve(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 1000), /devagar/);
+  deve(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 1999), /devagar/);
+  assert.ok(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 2000).ok);
+});
+
+teste('mover e persona só valem no lobby: depois de iniciada, a taverna acabou', () => {
+  const s = nova(); entra(s, BETO, 'Beto');
+  pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago', 'pc-clerigo');
+  faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
+  faz(s, ANF, { tipo: 'iniciar' });
+  deve(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 9999), /começou/);
+  deve(faz(s, ANF, { tipo: 'persona', heroi: 'pc-mago' }), /começou/);
+});
+
+teste('T-02/T-03: herói sem arte não vira figura na taverna; vale o primeiro COM arte', () => {
+  const s = nova();
+  pega(s, ANF, 'pc-bruxo');
+  assert.equal(figuraDe(s, ANF), PERSONA_PADRAO, 'o bruxo ainda não tem arte: fica a persona');
+  faz(s, ANF, { tipo: 'pegar', heroi: 'pc-paladino' });
+  assert.equal(figuraDe(s, ANF), 'pc-paladino');
+});
+
+teste('a visão de uma sala guardada antes da taverna não quebra', () => {
+  const s = JSON.parse(JSON.stringify(nova())); delete s.avatares; delete s.cedidos;
+  assert.doesNotThrow(() => visaoDaSala(s, ANF));
+  assert.deepEqual(visaoDaSala(s, ANF).avatares, []);
+});
+
+teste('nome longo e emoji: o sufixo (2) cabe, sem espaço sobrando nem emoji partido', () => {
+  const s = nova({ nome: 'aaaaaaaaaaaaaaaaaaa bbbb' });
+  const n = nomeUnico(s, 'aaaaaaaaaaaaaaaaaaa bbbb');
+  assert.ok([...n].length <= 24); assert.doesNotMatch(n, /\s\s/); assert.match(n, / \(2\)$/);
+  const e = nova({ nome: `a${'😀'.repeat(11)}` });
+  const m = nomeUnico(e, `a${'😀'.repeat(11)}`);
+  assert.ok([...m].length <= 24); assert.doesNotMatch(m, /[\ud800-\udbff](?![\udc00-\udfff])/);
+});
+
+teste('avatar guardado numa casa que o mapa de hoje bloqueia volta a nascer numa casa livre', () => {
+  const s = nova();
+  s.avatares[ANF].x = 7; s.avatares[ANF].y = 5;                    // a mesa de grupo
+  faz(s, ANF, { tipo: 'entrar', nome: 'Nicholas' });
+  const campo = campoDaTaverna();
+  assert.equal(campo.blocksMove(s.avatares[ANF].x, s.avatares[ANF].y), false);
+});
+
+teste('o mapa: a parede do fundo (norte e oeste) está nas duas grades, e a mobília principal existe', () => {
+  const { n, o } = MAPA_TAVERNA.paredes;
+  assert.equal(n.length, ALTURA); assert.equal(o.length, ALTURA);
+  assert.ok(n[0].split('').every((c) => c === '#') && n.slice(1).every((l) => !l.includes('#')));
+  assert.ok(o.every((l) => l[0] === '#' && !l.slice(1).includes('#')));
+  const terreno = MAPA_TAVERNA.terreno.join('');
+  for (const [glifo, minimo] of [['e', 4], ['m', 14], ['s', 3], ['u', 3], ['K', 1]]) {
+    assert.ok([...terreno].filter((c) => c === glifo).length >= minimo, `faltam peças '${glifo}'`);
+  }
+  assert.equal(LARGURA, ALTURA, 'o Board corta a ponta de um mapa muito mais largo que alto');
+});
+
+teste('T-05: dezesseis jogadores não existem aqui, mas o contrato de marcadores cobre 16 sem repetir', () => {
+  const usados = new Set();
+  for (let i = 0; i < 16; i++) { const n = marcadorLivre(usados); assert.notEqual(n, null); usados.add(n); }
+  assert.equal(new Set([...usados].map((n) => JSON.stringify(marcadorN(n)))).size, 16);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

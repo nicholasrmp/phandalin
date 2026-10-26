@@ -6,8 +6,9 @@
 // Worker, e a regra de "o que vale" não pode depender dele.
 //
 // Mensagens do navegador (JSON, no máximo `MAX_BYTES` bytes):
-//   { tipo: 'criar', eu, nome, maxJogadores?, origem? }  a primeira de quem abre a sala
-//   { tipo: 'entrar', eu, nome }                         a primeira de quem chega, ou volta
+//   { tipo: 'criar', eu, nome, persona?, maxJogadores?, origem? }  a primeira de quem abre a sala
+//   { tipo: 'entrar', eu, nome, persona? }                         a primeira de quem chega, ou volta
+//   { tipo: 'mover', x, y }  { tipo: 'persona', heroi }            andar pela taverna, trocar de figura
 //   { tipo: 'ping' }                                     o batimento: a conexão ainda vive?
 //   e as intenções de `game/sala.js` (pegar, largar, pronto, iniciar, ...)
 // `eu` é o id SECRETO do jogador. Vai na primeira mensagem e não na URL: a URL
@@ -74,10 +75,10 @@ export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasCo
   if (msg.tipo === 'criar') {
     if (sala) {
       // O anfitrião que repete o `criar` (a conexão caiu antes de ele ver a resposta) só volta para a sala.
-      if (sala.anfitriao === jogadorId) return tratarMensagem({ sala, jogadorId, bruto: JSON.stringify({ tipo: 'entrar', nome: msg.nome }), codigo, agora, outrasConexoes });
+      if (sala.anfitriao === jogadorId) return tratarMensagem({ sala, jogadorId, bruto: JSON.stringify({ tipo: 'entrar', nome: msg.nome, persona: msg.persona }), codigo, agora, outrasConexoes });
       return { sala, resposta: erro('essa sala já existe: entre com o código'), mudou: false };
     }
-    const r = criarSala({ codigo, anfitriao: jogadorId, nome: msg.nome, maxJogadores: msg.maxJogadores ?? 4, origem: msg.origem, agora });
+    const r = criarSala({ codigo, anfitriao: jogadorId, nome: msg.nome, maxJogadores: msg.maxJogadores ?? 4, origem: msg.origem, persona: msg.persona, agora });
     if (!r.ok) return { sala: null, resposta: erro(r.erro), mudou: false };
     return { sala: r.sala, resposta: null, mudou: true };
   }
@@ -89,7 +90,7 @@ export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasCo
 
   const r = aplicar(sala, jogadorId, msg, agora);
   if (!r.ok) return { sala, resposta: erro(r.erro), mudou: false };
-  return { sala, resposta: null, mudou: !r.igual, removido: r.removido ?? null, saiu: r.saiu ?? null };
+  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null };
 }
 
 /** Janela deslizante: `true` se esta mensagem passa. `registro` é uma lista de instantes. */

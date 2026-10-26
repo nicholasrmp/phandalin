@@ -101,6 +101,8 @@ export function criarMenu(root, {
       // No lobby o Esc não larga a sala sem querer: quem sai usa o botão. Sem sala a proteger
       // (ainda entrando, recusada, encerrada), o Esc sai como em qualquer tela.
       if (pilha[pilha.length - 1][0] === 'lobby') {
+        // A mesa de grupo abriu por cima da taverna: o Esc volta para ela.
+        if (multijogador?.taverna?.aberta()) { fechar(); return; }
         if (sala?.lobbyAtivo()) return;
         sala?.sairDaSala();
         irSala.aoMulti();
@@ -113,8 +115,10 @@ export function criarMenu(root, {
 
   function abrir(tela = 'principal', dados) {
     pilha.length = 0;
-    const naPartida = temPartida();
+    // Na taverna o menu é uma folha por cima dela, como numa partida: nada de fundo animado nem de música do título.
+    const naPartida = temPartida() || Boolean(multijogador?.taverna?.aberta()) || Boolean(sala?.dentroDeSala());
     camada.classList.toggle('na-partida', naPartida);
+    multijogador?.taverna?.bloquear?.(true);   // a taverna fica por baixo: sem foco e sem Tab até o menu fechar
     if (naPartida) {
       fundo?.parar();
       fundoHost.replaceChildren();
@@ -141,6 +145,7 @@ export function criarMenu(root, {
 
   function fechar() {
     if (!aberto) return;
+    if (multijogador?.taverna?.aberta()) { multijogador.taverna.bloquear(false); setTimeout(() => multijogador.taverna.focarMesa(), 0); }
     // Sair do menu — para jogar ou para voltar à partida — encerra a música,
     // com fade, que é o que faz a entrada na aventura não ser um corte seco.
     audio.pararMusica(1.6);
@@ -510,14 +515,35 @@ export function criarMenu(root, {
       if (!p) { p = el('p', { class: 'menu-recado erro', role: 'status' }); (palco.querySelector('.menu-cab') ?? palco.firstChild)?.after(p); }
       p.textContent = texto;
     },
-    aoMulti: () => { while (pilha.length > 1 && pilha[pilha.length - 1][0] !== 'multi') pilha.pop(); desenhar(); },
+    aoMulti: () => {
+      while (pilha.length > 1 && pilha[pilha.length - 1][0] !== 'multi') pilha.pop();
+      // O lobby aberto pela mesa de grupo (ou pela partida iniciada) é a raiz da pilha: não há "Multijogador" para voltar.
+      if (pilha[pilha.length - 1][0] !== 'multi') { pilha.length = 0; pilha.push(['principal', undefined], ['multi', undefined]); }
+      desenhar();
+    },
     raiz: () => { pilha.length = 1; desenhar(); },
   });
   const sala = multijogador && criarTelasDeSala({
     botao, voltarBtn, cabecalho, ir: irSala, voltar, retratoDe, ...multijogador,
+    // O lobby e a taverna se revezam: entrar na sala fecha o menu e mostra a taverna; a mesa de
+    // grupo reabre o lobby por cima; sair (ou a sala acabar) tira a taverna.
+    fecharMenu: fechar, abrirMenuNaTela: (tela) => abrir(tela),
     redesenhar: (tela) => { if (aberto && pilha[pilha.length - 1][0] === tela) desenhar({ semFoco: true }); },
   });
   if (sala) Object.assign(TELAS, sala.TELAS);
 
-  return { abrir, abrirSala, fechar, estaAberto: () => aberto };
+  return {
+    abrir, abrirSala, fechar, estaAberto: () => aberto,
+    // A taverna (`taverna-tela.js`) pede ao menu a mesa de grupo e a saída da sala.
+    abrirMesa: () => { abrir('lobby'); },
+    /** "Sair" da taverna: o anfitrião não sai (a sala é dele), então vai à mesa de grupo, onde fecha com confirmação. */
+    sairDaTaverna: () => {
+      if (sala?.souAnfitriao()) { abrir('lobby'); sala.avisar('O anfitrião fecha a sala em vez de sair: use "Fechar sala".'); return; }
+      sala?.sairDaSala();
+      abrir();
+    },
+    sairDaSala: () => sala?.sairDaSala(),
+    enviarSala: (msg) => sala?.mandar(msg),
+    linkDaSala: () => sala?.copiarLink(),
+  };
 }

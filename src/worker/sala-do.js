@@ -29,11 +29,14 @@ export class SalaDO extends DurableObject {
     this.sala = undefined;       // `undefined`: ainda não lida; `null`: não existe
     this.ritmo = new Map();      // jogador -> instantes das últimas mensagens (some ao hibernar; o limite reinicia)
     this.alarme = undefined;     // o instante do alarme que armamos, para não regravar o mesmo
+    this.ultimaGravacao = 0;
   }
 
   async carregar() {
     if (this.sala !== undefined) return this.sala;
     this.sala = (await this.ctx.storage.get('sala')) ?? null;
+    // Uma sala guardada antes da taverna não tem estes campos, e a visão os lê.
+    if (this.sala) { this.sala.avatares ??= {}; this.sala.cedidos ??= {}; }
     // Depois de hibernar ou de um deploy, jogador marcado como conectado sem nenhuma conexão
     // viva nunca receberia o `close`: sem isto a sala "tem gente" para sempre.
     if (this.sala && this.sala.fase !== 'fechada') {
@@ -48,7 +51,9 @@ export class SalaDO extends DurableObject {
   }
 
   async guardar() {
-    if (this.sala) await this.ctx.storage.put('sala', this.sala);
+    if (!this.sala) return;
+    this.ultimaGravacao = Date.now();
+    await this.ctx.storage.put('sala', this.sala);
   }
 
   async fetch(request) {
@@ -109,7 +114,11 @@ export class SalaDO extends DurableObject {
       return;
     }
 
-    await this.guardar();
+    // Andar e trocar de persona são só de enfeite: gravar a cada passo gastaria a cota de escrita do plano
+    // grátis (100 mil linhas por dia, para a conta inteira). Retransmite na hora e grava no máximo a cada 5 s;
+    // o que sobrar é gravado junto com a próxima mudança de verdade ou na saída de alguém.
+    const enfeite = r.tipo === 'mover' || r.tipo === 'persona';
+    if (!enfeite || agora - this.ultimaGravacao >= 5000) await this.guardar();
     if (r.removido) this.derrubar(r.removido, 4000, 'removido da sala');
     if (r.saiu) this.derrubar(r.saiu, 1000, 'saiu');
     this.retransmitir();
