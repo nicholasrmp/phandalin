@@ -9,6 +9,8 @@
 //   cogumelos    os cogumelos gigantes soltam esporos pálidos pela copa
 //   brasas       braseiro, fogueira e chama verde soltam faíscas que sobem e morrem
 //   brilhos      a água escura cintila (reflexo de um ponto que acende e apaga) e os cristais piscam
+//   marulho      uma ondulação cruza a água funda em faixas claras e rebenta em espuma na margem (o som que dá nome à caverna)
+//   teias        os fios da teia grossa brilham e tremem, e o orvalho pisca
 
 const TOPO_DE = { bolas: 16, cogumelos: 52, brasas: 24, cristais: 22 };
 
@@ -24,12 +26,16 @@ const CACHE = new WeakMap();
 /** Os pontos do mapa que têm vida própria, achados uma vez por mapa. */
 export function emissoresDoAmbiente(field) {
   if (CACHE.has(field)) return CACHE.get(field);
-  const e = { fungos: [], bolas: [], cogumelos: [], brasas: [], agua: [], cristais: [] };
+  const e = { fungos: [], bolas: [], cogumelos: [], brasas: [], agua: [], cristais: [], mar: [], teias: [] };
   for (let y = 0; y < field.h; y += 1) {
     for (let x = 0; x < field.w; x += 1) {
       const sup = field.surfaceAt(x, y);
       if (sup === 'fungos' && sorteio(x, y, 1) < 0.2) e.fungos.push({ x, y });
-      else if (sup === 'aguaEscura' && sorteio(x, y, 2) < 0.14) e.agua.push({ x, y });
+      else if (sup === 'aguaEscura') {
+        if (sorteio(x, y, 2) < 0.14) e.agua.push({ x, y });
+        const margem = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => field.inside(x + dx, y + dy) && field.surfaceAt(x + dx, y + dy) !== 'aguaEscura');
+        e.mar.push({ x, y, margem });
+      } else if (sup === 'teia') e.teias.push({ x, y });
       else if (sup === 'braseiro' || sup === 'fogueira') e.brasas.push({ x, y, cor: '255, 168, 72' });
     }
   }
@@ -114,6 +120,43 @@ export function desenharAmbiente(g, t, centro, e) {
     const y = sy + (sorteio(a.x, a.y, 7) - 0.5) * 8;
     grao(g, x, y, 1, '175, 215, 245', alfa);
     grao(g, x + 1, y, 1, '175, 215, 245', alfa * 0.6);
+  }
+  // O MARULHO: faixas de luz fria que andam na diagonal pela água funda; onde a crista chega na margem, vira espuma.
+  for (const m of e.mar) {
+    const onda = Math.sin((m.x * 0.7 + m.y * 0.5) * 0.42 - t * 0.9);
+    const crista = onda > 0 ? onda ** 6 : 0;
+    if (crista < 0.04) continue;
+    const { sx, sy } = centro(m.x, m.y);
+    g.fillStyle = `rgba(120, 175, 235, ${(crista * 0.075).toFixed(3)})`;
+    g.beginPath();
+    g.moveTo(sx, sy - 14);
+    g.lineTo(sx + 30, sy);
+    g.lineTo(sx, sy + 14);
+    g.lineTo(sx - 30, sy);
+    g.closePath();
+    g.fill();
+    if (m.margem && crista > 0.45) {
+      for (let i = 0; i < 3; i += 1) {
+        grao(g, sx + (sorteio(m.x, m.y, 80 + i) - 0.5) * 40, sy + (sorteio(m.x, m.y, 90 + i) - 0.5) * 16, 2, '225, 240, 255', (crista - 0.3) * 0.8);
+      }
+    }
+  }
+  // As TEIAS: dois fios que cruzam a casa brilham e tremem (cada casa no seu compasso), e o orvalho acende e apaga.
+  for (const w of e.teias) {
+    const { sx, sy } = centro(w.x, w.y);
+    const fase = sorteio(w.x, w.y, 12) * 6.28;
+    const brilho = 0.10 + 0.08 * Math.sin(t * 1.4 + fase);
+    const tremor = Math.sin(t * 2.3 + fase) * 1.2;
+    g.strokeStyle = `rgba(235, 238, 245, ${brilho.toFixed(3)})`;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(sx - 22, sy + tremor);
+    g.lineTo(sx + 22, sy - tremor);
+    g.moveTo(sx - 12 + tremor, sy - 9);
+    g.lineTo(sx + 12 - tremor, sy + 9);
+    g.stroke();
+    const v = Math.sin(t * 1.1 + sorteio(w.x, w.y, 13) * 6.28);
+    if (v > 0.8) grao(g, sx + (sorteio(w.x, w.y, 14) - 0.5) * 30, sy + (sorteio(w.x, w.y, 15) - 0.5) * 12, 1, '255, 255, 255', (v - 0.8) * 3);
   }
   for (const c of e.cristais) {
     const { sx, sy } = centro(c.x, c.y);
