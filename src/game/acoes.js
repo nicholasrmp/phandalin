@@ -39,7 +39,8 @@ export function tilesValidos(tiles) {
   return tiles === undefined || (Array.isArray(tiles) && tiles.length <= 6
     && tiles.every((t) => t && Number.isInteger(t.x) && Number.isInteger(t.y) && t.x >= 0 && t.y >= 0 && t.x <= 400 && t.y <= 400));
 }
-export const circuloValido = (c) => c === undefined || c === null || (Number.isInteger(c) && c >= 1 && c <= 9);
+/** O círculo 0 é o truque (a barra o manda assim): vale. */
+export const circuloValido = (c) => c === undefined || c === null || (Number.isInteger(c) && c >= 0 && c <= 9);
 
 /** A magia sai na hora, sem pedir alvo (Vida Falsa, Borrão, Espíritos Guardiões…). `ativa`: ela já está ativa no conjurador. */
 export const magiaNaHora = (spell, ativa) => spell.kind === 'tempHp' || spell.kind === 'aura' || spell.kind === 'disparada'

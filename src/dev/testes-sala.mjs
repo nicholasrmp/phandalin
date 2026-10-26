@@ -17,7 +17,7 @@ import {
 } from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
-import { fotografar, emTexto, lerVista, aplicarVista, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
+import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
 import { acaoRemotaValida, tilesValidos, circuloValido, magiaNaHora, escolheVarios, mandaNaHora } from '../game/acoes.js';
 import { getSpell } from '../rules/spells.js';
@@ -863,6 +863,31 @@ teste('F4: a vista da partida vai e volta: o espelho fica com os mesmos combaten
   assert.equal(mago.hp, enc.combatants[0].hp);
 });
 
+teste('F5.3: o evento do motor vai como dado (combatentes viram id) e volta apontando para os combatentes do espelho', () => {
+  const enc = encDeTeste();
+  const [mago, guerreiro] = enc.combatants; const goblin = enc.combatants.find((c) => c.side !== 'party'); const gid = goblin.id;
+  const ataque = { type: 'attack', attacker: guerreiro, target: goblin, weaponName: 'Espada longa', art: 'sword', hit: true, damage: 7, nested: { quem: [mago] } };
+  const dado = empacotarEvento(enc, ataque);
+  assert.deepEqual(dado.attacker, { $c: 'pc-guerreiro' }); assert.deepEqual(dado.target, { $c: gid }); assert.deepEqual(dado.nested.quem, [{ $c: 'pc-mago' }]);
+  assert.equal(dado.weaponName, 'Espada longa'); assert.ok(JSON.stringify(dado).length < 400, 'sem copiar o combatente inteiro');
+  // O cliente tem OUTROS objetos com os mesmos ids (o espelho).
+  const espelho = { combatants: [], round: 0, side: null, over: false };
+  aplicarVista(espelho, JSON.parse(emTexto(fotografar({ enc, variante: 'emboscada' }))));
+  const volta = desempacotarEvento(espelho, JSON.parse(JSON.stringify(dado)));
+  assert.equal(volta.attacker, espelho.combatants.find((c) => c.id === 'pc-guerreiro'), 'aponta para o combatente do ESPELHO');
+  assert.equal(volta.target, espelho.combatants.find((c) => c.id === gid));
+  assert.notEqual(volta.attacker, guerreiro);
+  assert.equal(volta.nested.quem[0].id, 'pc-mago');
+  // Quem sumiu do espelho vira null (a tela guarda).
+  espelho.combatants.splice(espelho.combatants.indexOf(volta.target), 1);
+  assert.equal(desempacotarEvento(espelho, dado).target, null);
+  // Só os eventos visuais viajam; o resto do motor, não.
+  assert.equal(empacotarEvento(enc, { type: 'sideStart', side: 'foes' }), null);
+  assert.equal(empacotarEvento(enc, { type: 'damage', target: goblin, amount: 4, grande: 'x'.repeat(5000) }), null, 'evento grande demais fica de fora');
+  assert.ok(['attack', 'spell', 'damage', 'heal', 'moved', 'died'].every((t) => EVENTOS_VISUAIS.has(t)));
+  assert.equal(empacotarEvento(enc, { type: 'damage', target: goblin, amount: 4, cb: () => 1 }).cb, undefined, 'função não viaja');
+});
+
 teste('F4: o invocado que aponta para o dono não quebra a vista (referência circular vira null)', () => {
   const enc = encDeTeste();
   const dono = enc.combatants[0]; const familiar = { id: 'fam-1', name: 'Familiar', side: 'party', pos: { x: 3, y: 3 }, hp: 1, maxHp: 1, dono };
@@ -972,6 +997,8 @@ teste('F5.2: usar: o servidor confere só a FORMA da ação da barra; o direito 
   assert.equal(acaoRemotaValida({ kind: 'item', mira: 'sim' }), false);
   assert.equal(acaoRemotaValida([]), false); assert.equal(acaoRemotaValida(null), false);
   assert.equal(tilesValidos(undefined), true); assert.equal(circuloValido(null), true);
+  assert.equal(circuloValido(0), true, 'o truque é o círculo 0 (a barra o manda assim)'); assert.equal(circuloValido(10), false); assert.equal(circuloValido(-1), false);
+  assert.ok(faz(salaIniciada(), BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'spell', spellId: 'raioDeFogo' }, circulo: 0, tiles: [{ x: 12, y: 7 }] }).ok);
 });
 
 teste('F5.2: o que o convidado manda na hora e o que espera um alvo é a MESMA regra do anfitrião', () => {

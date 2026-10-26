@@ -76,6 +76,8 @@ export function criarTelasDeSala({
       aoIntencao: atual((msg) => partida?.aoIntencao?.(msg)),
       aoAviso: atual((texto) => partida?.aoAviso?.(texto)),
       aoErro: atual((t) => {
+        // Em partida, a recusa do servidor ("esse herói não é seu") é uma frase na tela de quem joga, não no lobby.
+        if (estado.partidaIniciada && partida?.aoAviso) { partida.aoAviso(t); return; }
         estado.aviso = t;
         // Na taverna o erro é uma frase embaixo do salão ("devagar", "não dá para chegar lá").
         if (taverna?.aberta() && estado.visao) { taverna.avisar(t); setTimeout(() => taverna.avisar(null), 2500); estado.aviso = null; return; }

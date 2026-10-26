@@ -18,7 +18,8 @@ import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
-import { lerVista, aplicarVista } from '../game/partida-vista.js';
+import { lerVista, aplicarVista, desempacotarEvento } from '../game/partida-vista.js';
+import { playWeaponVisual, playSpellVisual, andarDe } from './visuals.js';
 
 const CASAS_POR_SEGUNDO = 5;
 const SALTO_MAXIMO = 14;       // mais longe que isto (teletransporte, mapa novo) a figura aparece no destino, sem caminhar
@@ -158,6 +159,70 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     });
   }
 
+  /**
+   * Os eventos do motor que o anfitrião mandou junto da vista (F5.3): o lado visual do `onEvent` dele. Cada golpe ou magia
+   * abre uma janela de impacto, e o dano, a cura e a queda que vêm depois chegam quando o golpe chega. Devolve os ids de quem
+   * já andou por evento (a caminhada exata, com o caminho), para a caminhada por diferença de casa não repetir.
+   */
+  function reproduzir(dados) {
+    const andaram = new Set();
+    let atraso = 0;           // segundos até o impacto do golpe ou da magia em curso
+    let fila = 0;             // um golpe por vez: cada um começa um pouco depois do anterior
+    const noImpacto = (fn) => setTimeout(() => { if (board) fn(); }, (fila + atraso) * 1000);
+    for (const dado of dados) {
+      const ev = desempacotarEvento(enc, dado);
+      try {
+        switch (ev.type) {
+          case 'moved': {
+            if (!ev.actor || !ev.path?.length) break;
+            ev.actor.facingVec = { dx: ev.to.x - ev.from.x, dy: ev.to.y - ev.from.y };
+            board.fx.cancel(ev.actor.id, 'walk');
+            board.fx.walk(ev.actor, ev.path, { andar: ev.voo ? 'voo' : andarDe(ev.actor) });
+            andaram.add(ev.actor.id);
+            break;
+          }
+          case 'attack': {
+            const { attacker: a, target: t } = ev;
+            if (!a || !t) break;
+            a.facingVec = { dx: t.pos.x - a.pos.x, dy: t.pos.y - a.pos.y };
+            fila += 0.35;
+            atraso = playWeaponVisual(board, ev, { startDelay: board.fx.walkTimeLeft ?? 0 }) ?? 0;
+            break;
+          }
+          case 'spell': {
+            if (!ev.caster) break;
+            fila += 0.35;
+            atraso = playSpellVisual(board, ev) ?? 0;
+            break;
+          }
+          case 'damage':
+            if (ev.target) noImpacto(() => { board.floatText(ev.target.pos, `-${Math.round(ev.amount)}`, '#ff6a6a', ev.amount >= 10); board.bump(0.22); });
+            break;
+          case 'heal':
+            if (ev.target && ev.amount > 0) noImpacto(() => { audio.play('heal'); board.floatText(ev.target.pos, `+${Math.round(ev.amount)}`, '#6ee89a'); board.fx.ring(ev.target.pos, { color: '#6ee89a', radius: 28, dur: 0.5, width: 2 }); });
+            break;
+          case 'downed':
+          case 'died':
+            if (ev.target) noImpacto(() => { board.floatText(ev.target.pos, '✖', '#ff4b4b', true); board.fx.impact(ev.target.pos, { color: '#8a2b2b', count: 14, spread: 40, dur: 0.6 }); audio.play('down'); });
+            break;
+          case 'reinforcements':
+            audio.play('down');
+            for (const u of ev.units ?? []) if (u?.pos) { board.fx.ring(u.pos, { color: '#ff6a4b', radius: 44, dur: 0.7 }); board.floatText(u.pos, '!', '#ff6a4b', true); }
+            break;
+          case 'ignite': if (ev.target) { board.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 6, dur: 0.7, scale: 1.2 }); board.floatText(ev.target.pos, 'pegou fogo!', '#ff8a3a'); } break;
+          case 'burn': if (ev.target) board.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 4, dur: 0.45 }); break;
+          case 'redirect': if (ev.from && ev.to) { board.floatText(ev.from.pos, 'empurrado!', '#ffc83a'); board.fx.ring(ev.to.pos, { color: '#ffc83a', radius: 26, dur: 0.4, width: 2 }); } break;
+          case 'invocado': if (ev.criatura?.pos) board.fx.ring(ev.criatura.pos, { color: '#8fe6a8', radius: 46, dur: 0.7, width: 3 }); break;
+          case 'sumiu': if (ev.de) board.fx.ring(ev.de, { color: '#bfe6ff', radius: 40, dur: 0.6, width: 2 }); break;
+          case 'voltou': if (ev.to) board.fx.ring(ev.to, { color: '#bfe6ff', radius: 40, dur: 0.6, width: 2 }); break;
+          case 'iniciativa': audio.play('initiative'); break;
+          default: break;
+        }
+      } catch (e) { console.warn(`o evento ${dado?.type} não se reproduziu na tela de quem assiste`, e); }
+    }
+    return andaram;
+  }
+
   /** Mais de um passo: o caminho que o motor do cliente acha; se não acha, ou é longe demais, a figura aparece no destino. */
   function caminhar(m) {
     const { c, de, para } = m;
@@ -194,8 +259,10 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     if (!enc || variante !== v.variante) { if (board) desmontar(); montar(v); if (aberta) loop(); }
     const { moveram } = aplicarVista(enc, v);
     for (const c of enc.combatants) aplicarAparencia(c);
-    for (const m of moveram) caminhar(m);
-    if (!selecionado || !enc.combatants.includes(selecionado)) selecionado = meus()[0] ?? null;
+    const andaram = reproduzir(v.extras?.eventos ?? []);
+    for (const m of moveram) if (!andaram.has(m.c.id)) caminhar(m);
+    // Herói caído (a 0 PV) não fica na mira: passa para o próximo dos meus que ainda está de pé.
+    if (!selecionado || !meus().includes(selecionado)) selecionado = meus()[0] ?? null;
     if (!board.focoJaEnquadrado) {
       board.focoJaEnquadrado = true;
       const lider = enc.combatants.find((x) => x.side === 'party');

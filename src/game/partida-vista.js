@@ -9,6 +9,47 @@
 
 export const VERSAO_DA_VISTA = 1;
 
+/**
+ * Os eventos do motor que o convidado reproduz (golpes, magias, números, quedas): o lado VISUAL do `onEvent` do
+ * anfitrião. Vão dentro da vista (`extras.eventos`), com os combatentes trocados pelo id (`{ $c: id }`).
+ */
+export const EVENTOS_VISUAIS = new Set([
+  'moved', 'attack', 'spell', 'golpeMagico', 'damage', 'heal', 'downed', 'died', 'reinforcements',
+  'ignite', 'burn', 'redirect', 'invocado', 'dispensado', 'sumiu', 'voltou', 'pousou', 'iniciativa',
+]);
+const MAX_EVENTO = 4000;
+
+/** O evento como dado: combatentes viram `{ $c: id }`. `null` se não é um evento visual, ou se não coube. */
+export function empacotarEvento(enc, ev) {
+  if (!ev || !EVENTOS_VISUAIS.has(ev.type)) return null;
+  const vivos = new Set(enc.combatants);
+  let texto;
+  try {
+    texto = JSON.stringify(ev, (k, v) => {
+      if (typeof v === 'function' || typeof v === 'symbol') return undefined;
+      if (v instanceof Map) return Object.fromEntries(v);
+      if (v instanceof Set) return [...v];
+      if (v && typeof v === 'object' && vivos.has(v)) return { $c: v.id };
+      return v;
+    });
+  } catch { return null; }
+  return texto.length > MAX_EVENTO ? null : JSON.parse(texto);
+}
+
+/** O contrário: os `{ $c: id }` voltam a ser os combatentes do espelho (`null` se o id não existe mais). */
+export function desempacotarEvento(enc, dado) {
+  const porId = new Map(enc.combatants.map((c) => [c.id, c]));
+  const volta = (v) => {
+    if (Array.isArray(v)) return v.map(volta);
+    if (v && typeof v === 'object') {
+      if (typeof v.$c === 'string' && Object.keys(v).length === 1) return porId.get(v.$c) ?? null;
+      return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, volta(x)]));
+    }
+    return v;
+  };
+  return volta(dado);
+}
+
 /** O teto de uma vista, em caracteres. O servidor recusa mais que isto; o anfitrião não publica mais que isto. */
 export const MAX_VISTA = 120_000;
 

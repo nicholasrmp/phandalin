@@ -14,7 +14,7 @@ import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarCampo } from './game/campo.js';
 import { cordaPermite } from './game/corda.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
-import { fotografar, emTexto, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
+import { fotografar, emTexto, empacotarEvento, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarPartidaTela } from './view/partida-tela.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
@@ -427,14 +427,16 @@ class App {
   /** Manda a vista se ela mudou desde a última. Só o que o anfitrião vê, e só enquanto há partida. */
   publicarVista() {
     if (!this.enc || !this.varianteAtual) return;
-    const vista = fotografar({ enc: this.enc, variante: this.varianteAtual });
-    const texto = emTexto(vista);
+    const eventos = this.eventosPendentes ?? [];
+    const vista = fotografar({ enc: this.enc, variante: this.varianteAtual, extras: eventos.length ? { eventos } : null });
+    // O que mudou se mede SEM os eventos (eles já foram dados uma vez): só estado novo, evento novo ou o batimento mandam.
+    const texto = emTexto({ ...vista, extras: null });
     // Sem mudança, só repete de vez em quando: o servidor não guarda a vista (ela some se o Durable Object dormir ou for
     // trocado), e quem entra ou volta fica esperando a próxima. Três segundos de espera no pior caso, 7 KB de custo.
     const agora = Date.now();
-    if (texto === this.ultimaVistaTexto && agora - (this.ultimaVistaEm ?? 0) < BATIMENTO_DA_VISTA_MS) return;
-    if (texto.length > MAX_VISTA) { console.warn('a vista da partida passou do teto e não foi publicada'); return; }
-    if (this.menu.enviarVista(vista)) { this.ultimaVistaTexto = texto; this.ultimaVistaEm = agora; }
+    if (texto === this.ultimaVistaTexto && !eventos.length && agora - (this.ultimaVistaEm ?? 0) < BATIMENTO_DA_VISTA_MS) return;
+    if (emTexto(vista).length > MAX_VISTA) { console.warn('a vista da partida passou do teto e não foi publicada'); this.eventosPendentes = []; return; }
+    if (this.menu.enviarVista(vista)) { this.ultimaVistaTexto = texto; this.ultimaVistaEm = agora; this.eventosPendentes = []; }
   }
 
   /**
@@ -522,6 +524,7 @@ class App {
 
   encerrarPartidaDaSala() {
     this.salaDaPartida = null;
+    this.eventosPendentes = [];
     this.donoDaVisao = null;
     if (this.board) this.board.filtroDeVisao = null;
     definirPorta(null);
@@ -552,6 +555,11 @@ class App {
   }
 
   onEvent(ev) {
+    // Partida de sala (F5.3): o lado visual do evento segue na próxima vista, para o convidado ver o golpe, o número e a queda.
+    if (this.salaDaPartida) {
+      const dado = empacotarEvento(this.enc, ev);
+      if (dado) { (this.eventosPendentes ??= []).push(dado); if (this.eventosPendentes.length > 60) this.eventosPendentes.shift(); }
+    }
     // A cena do capítulo também escuta o combate (mortes, troca de lado).
     this.capitulo?.evento?.(ev);
     const board = this.board;
