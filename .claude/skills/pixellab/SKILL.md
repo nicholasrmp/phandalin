@@ -63,7 +63,7 @@ Câmera/escala de personagem: figuras de 38 a 65 px (halfling 42, goblin 46, hum
 | HERÓI/criatura de 8 direções | `POST /create-character-v3` (de zero ou com `reference_image` sul) ou `create-character-pro` (`method`, `style_character_id`) | v3 de referência: `ceil(w*h*8/65536)`; Pro 10-25. Quadro múltiplo de 4. `style_character_id` mantém a família coerente |
 | Variante do mesmo herói (outra arma/armadura) com 8 vistas | `POST /create-character-state` | CARO: duas edições derrubaram ~80. Preferir `edit-animation-v2` |
 | Animar personagem existente | `POST /characters/animations` (`mode`: `template` 1 ger/dir, `v3` default, `pixminimax`, `pro` legado) | Um JOB por direção. Fila ~20 jobs simultâneos (Tier 3). Ver "Animação" abaixo |
-| Trocar arma/armadura mantendo a pose | `POST /edit-animation-v2` (até 9 quadros de 65-80 px, 16 até 64 px, 4 acima de 80) | 10 gerações por pedido (declarado); `editar-quadros.py` |
+| Trocar arma/armadura mantendo a pose | `POST /edit-animation-v2` (até 9 quadros de 65-80 px, 16 até 64 px, 4 acima de 80) | **O custo depende do tamanho do quadro**: 10 por pedido nos quadros pequenos, mas 4 quadros de 248x160 (o dragão verde) cobraram **25**, declarados na própria resposta. Conte pelo `usage`, não pelos 10. `editar-quadros.py` (animação), `editar-pixellab.py` (as 8 rotações, com `--direcoes` para mandar aos punhados) |
 | Animar uma imagem solta | `POST /animate-with-text-v3` (≤256 px, `w*h*frames ≤ 524288`) | Tipicamente 30-180 s |
 | Animar por esqueleto | `POST /estimate-skeleton` (0,1 ger) + `/animate-with-skeleton-v3` (2-4 ger, 3-15 quadros) | Mantém identidade melhor que v3; não usado no repo |
 | Imagem solta | `/create-image-pixen` (rápido), `/generate-image-v2` (Pro), `/create-image-pro-flash` (5 ger) | Ícones do jogo vêm de conversão, ver `icones_*.py` |
@@ -85,7 +85,12 @@ reskin da base.
 | 1-direção, 16 candidatos a 84 px | 25 (arbusto) |
 | 1-direção pedra (64 cand.) / árvore alta 4 cand. a 168 px | 44 / 74 no delta de saldo (spec: 10-25; delta pode incluir outras sessões) |
 | Pro Flash objeto, 8 vistas | 8 estimado; 13 e 25 em deltas |
-| `edit-animation-v2` | 10 por pedido |
+| `edit-animation-v2`, 4 quadros pequenos | 10 por pedido |
+| `edit-animation-v2`, 4 quadros de 248x160 | **25** (medido no dragão verde) |
+| Animar criatura (walk 8 + attack-dir 8 + queda) a 96 px | 17 (estimado e medido: aranha gigante) |
+| A MESMA leva a 248x160 (célula do dragão verde) | **41** — o plano do script previu 17. **A estimativa do script não escala com o tamanho da célula**: confira o delta do saldo, não o plano. |
+| A MESMA leva a partir de uma tira de 168x168 (o PixelLab devolveu a animação em 232x232) | **41** de novo. |
+| Só golpe + gesto em `pixminimax`, 16 fileiras a 232x232 (garra e sopro do dragão) | **16** — 1 por direção, em QUALQUER tamanho. O que encarece a leva de criatura Grande é o **andar em `v3`** (~25 dos 41), não os golpes. |
 | `characters/animations` template | 1 por direção |
 | `pixminimax` 64x64, 8 quadros | 1 por direção |
 | Animar 6 poses de um guerreiro (walk, attack, hurt em 8 dir + down, sleep, dead em 1) | 27 planejado (hurt acabou não gerado) |
@@ -160,7 +165,38 @@ Duas consequências:
 | `src/dev/pixellab-personagens.json`, `_referencias/pixellab/LEIA.md` | ids criados (não são segredo) e a receita dos goblins |
 
 Agentes de revisão relacionados: `revisor-cenario-iso` (especifica e revisa cenário), `revisor-motor-mapa`, `revisor-mapa-iso`.
-Skills irmãs: `sprite-phandalin` (placar de sprite), `pixel-art` (fundamentos).
+Skills irmãs: `sprite-phandalin` (placar de sprite), `pixel-art` (fundamentos),
+`pixellab-pip` (roteamento genérico de terceiros).
+
+## A skill `pixellab-pip`, de terceiros
+
+Instalada como PLUGIN, não como cópia na pasta:
+`claude plugin marketplace add Shilo/pixellab-pip` e
+`claude plugin install pixellab-pip@pixellab-pip-plugins`. Assim
+`claude plugin update` mantém atualizado e não há duas cópias divergindo.
+É [Shilo/pixellab-pip](https://github.com/Shilo/pixellab-pip), MIT, **não
+oficial** — de um terceiro, não da PixelLab.
+
+Ela traz roteamento genérico (dado um pedido em texto, qual ferramenta usar) e
+44 ajudantes em Python: paleta, remoção de fundo, folha de contato, conserto de
+quadros. Custo declarado: ~420 tokens sempre ligados, ~22 mil quando dispara.
+
+**Quando ela discordar desta skill sobre custo ou sobre o que um modo de
+animação entrega, vale ESTA.** Os números daqui foram medidos neste
+repositório; os dela são genéricos.
+
+**Sobre os ganchos.** O plugin declara
+`"hooks": "./hooks/claude/hooks.json"`, que carrega um módulo registrando um
+painel de revisão. Foi lido antes de instalar: ele não gera nada, não lê
+variável de ambiente, não vai à rede, e confere o SHA-256 de cada imagem
+embutida; a única execução externa é `python panel.py open <caminho>`, e só
+quando alguém clica em abrir a revisão. `claude plugin details` mostra
+`Hooks (0)`, o que parece ser contagem que só enxerga o formato antigo de
+gancho por comando — os arquivos estão instalados e o manifesto os declara.
+
+Outra porta para a MESMA conta e o MESMO saldo: o servidor MCP, em
+[mcp.md](mcp.md). Leva de produção continua indo por script, que roda seco antes
+de gastar; o MCP serve para experimentar, consertar um quadro e tirar dúvida.
 
 ## Antes de gerar, checklist
 
