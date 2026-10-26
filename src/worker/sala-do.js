@@ -21,6 +21,11 @@ import {
   MAX_BYTES, MAX_CONEXOES_POR_SALA, MAX_CONEXOES_POR_JOGADOR,
 } from './sala-servidor.js';
 
+/** O `tipo` da mensagem sem a tratar (para recusar `criar` antes de a sala existir). */
+function tipoDe(texto) {
+  try { return JSON.parse(texto)?.tipo; } catch { return undefined; }
+}
+
 const CODIGO_DE_FECHAMENTO = 4000;   // removido ou sala fechada: o navegador não deve tentar reconectar
 const UMA_HORA = 3_600_000;
 
@@ -82,7 +87,8 @@ export class SalaDO extends DurableObject {
       return new Response(null, { status: 101, webSocket: cliente });
     }
     this.ctx.acceptWebSocket(servidor);
-    servidor.serializeAttachment({ codigo, jogadorId: null });
+    // Com `CODIGO_DO_SERVIDOR`, só abre sala (`criar`) quem veio com um código que o servidor emitiu a este IP.
+    servidor.serializeAttachment({ codigo, jogadorId: null, podeCriar: request.headers.get('x-exigir-emitido') !== '1' || request.headers.get('x-emitido') === '1' });
     return new Response(null, { status: 101, webSocket: cliente });
   }
 
@@ -109,6 +115,8 @@ export class SalaDO extends DurableObject {
     const registro = this.ritmo.get(jogadorId) ?? [];
     this.ritmo.set(jogadorId, registro);
     if (!dentroDoLimite(registro, agora)) { ws.send(JSON.stringify(erro('devagar: mensagens demais'))); return; }
+
+    if (anexo.podeCriar === false && tipoDe(mensagem) === 'criar') { ws.send(JSON.stringify(erro('peça um código de sala ao servidor para criar uma sala'))); return; }
 
     await this.carregar();
     const outrasConexoes = this.ctx.getWebSockets().filter((w) => w !== ws && w.deserializeAttachment()?.jogadorId === jogadorId).length;
@@ -211,7 +219,7 @@ export class SalaDO extends DurableObject {
     if (mensagem.length > teto) { try { ws.close(1009, 'vista grande demais'); } catch { /* já fechado */ } return; }
     const r = tratarVista({ sala: this.sala, jogadorId, bruto: mensagem, agora, ultimaEm: this.ultimaVistaEm });
     if (!r.ok) { if (!r.calado) ws.send(JSON.stringify(erro(r.erro))); return; }
-    this.ultimaVista = r.texto;
+    if (!r.delta) this.ultimaVista = r.texto;     // quem entra agora recebe a última COMPLETA; as diferenças só servem a quem já a tem
     this.ultimaVistaEm = agora;
     for (const outro of this.ctx.getWebSockets()) {
       if (outro === ws || !outro.deserializeAttachment()?.jogadorId) continue;

@@ -29,7 +29,7 @@ const ID_CURTO = (v) => v === undefined || v === null || (typeof v === 'string' 
 export function acaoRemotaValida(a) {
   if (!a || typeof a !== 'object' || Array.isArray(a)) return false;
   if (!KINDS_REMOTOS.includes(a.kind)) return false;
-  for (const k of ['weaponId', 'spellId', 'itemId', 'targetId', 'featureId', 'modo', 'zona']) if (!ID_CURTO(a[k])) return false;
+  for (const k of ['weaponId', 'spellId', 'itemId', 'targetId', 'featureId', 'modo', 'zona', 'opcao']) if (!ID_CURTO(a[k])) return false;
   if (a.mira !== undefined && typeof a.mira !== 'boolean') return false;
   return true;
 }

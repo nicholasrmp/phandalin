@@ -135,3 +135,25 @@ export function subirUmNivel(c) {
 
 /** XP para o próximo nível, para o texto. */
 export const proximoNivelEm = (c) => XP_POR_NIVEL[(c.level ?? 1) + 1] ?? null;
+
+/** O cartão como dado puro (vai pela rede ao dono do herói). */
+export function dadosDoCartao(c, r) {
+  return {
+    heroi: c.id, nome: c.name, className: c.className ?? '', look: c.look ?? null, ganhos: r.ganhos,
+    escolhas: r.escolhas.map((e) => ({
+      id: e.id, rotulo: e.rotulo, quantas: e.quantas, deLivro: Boolean(e.deLivro), sugeridas: e.sugeridas,
+      opcoes: e.opcoes.map((id) => ({ id, nome: nomeDaMagiaJogavel(id) })),
+    })),
+  };
+}
+
+/** As escolhas que chegaram de fora, conferidas: o que não está nas opções (ou falta) volta à sugerida. */
+export function escolhasConferidas(escolhas, enviadas) {
+  const out = {};
+  for (const e of escolhas) {
+    if (e.deLivro) continue;
+    const vindas = Array.isArray(enviadas?.[e.id]) ? enviadas[e.id] : [];
+    out[e.id] = Array.from({ length: e.quantas }, (_, k) => (e.opcoes.includes(vindas[k]) ? vindas[k] : e.sugeridas[k]));
+  }
+  return out;
+}

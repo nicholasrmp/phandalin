@@ -153,6 +153,20 @@ export function criarTelasDeSala({
   };
   const valorDe = (id) => document.getElementById(id)?.value ?? '';
 
+  /**
+   * Pede um código de sala ao servidor (ele limita as salas novas por IP). Sem servidor no ar (desenvolvimento, só o Vite), devolve
+   * `{ codigo: null }` e quem chama sorteia no navegador. `{ erro }`: o servidor recusou (salas demais).
+   */
+  async function pedirCodigo() {
+    try {
+      const r = await fetch('/api/nova-sala', { method: 'POST' });
+      if (r.status === 429) return { erro: 'Você abriu salas demais agora há pouco. Tente de novo daqui a um tempo.' };
+      if (!r.ok) return { codigo: null };
+      const j = await r.json();
+      return { codigo: normalizarCodigo(j?.codigo) };
+    } catch { return { codigo: null }; }
+  }
+
   // ------------------------------------------------------------- telas ----
 
   const TELAS = {
@@ -174,10 +188,13 @@ export function criarTelasDeSala({
     salaCriar: (dados) => {
       const maximo = dados?.maximo ?? 4;
       const trocar = (n) => { audio.play('click'); const nome = valorDe('sala-nome'); ir.trocar({ ...dados, maximo: n, nome }); };
-      const criar = () => {
+      const criar = async () => {
         const nome = limparNome(valorDe('sala-nome'));
         if (!nome) { ir.recado('Escreva o seu nome (até 24 letras).'); return; }
-        const codigo = gerarCodigo((n) => aleatorioSeguro(n));
+        // O código vem do servidor (que limita quantas salas novas cada IP abre); sem servidor de salas no ar, sorteia aqui.
+        const novo = await pedirCodigo();
+        if (novo.erro) { ir.recado(novo.erro); return; }
+        const codigo = novo.codigo ?? gerarCodigo((n) => aleatorioSeguro(n));
         abrirSala(codigo, { tipo: 'criar', nome, maxJogadores: maximo, origem: { tipo: 'nova', aventura: 'mina-perdida' } });
         ir('lobby');
       };

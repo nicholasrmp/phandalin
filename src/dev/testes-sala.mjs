@@ -16,6 +16,11 @@ import {
   marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR, BALCAO, ehBalcao,
 } from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
+import { novoEstado as novoEstadoDeLimites, emitir as emitirCodigo, entrar as entrarNaSala, EMITIR_POR_HORA, TENTATIVAS_POR_MINUTO, VALIDADE_DO_CODIGO_MS } from '../worker/limites.js';
+import { criarEmissor, criarReceptor, lerDelta, COMPLETA_A_CADA } from '../game/partida-delta.js';
+import { heroiQueSobra } from '../game/sala.js';
+import { escolhasConferidas } from '../game/nivel.js';
+import { diarioDe, diarioParaTela } from '../game/diario.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
@@ -249,7 +254,7 @@ teste('L-11: jogador ausente bloqueia, a menos que o anfitrião aceite o piloto;
   assert.equal(s.herois['pc-guerreiro'], ANF);
 });
 
-teste('depois de iniciada, não se pega, não se solta, não se entra gente nova — mas quem estava volta', () => {
+teste('depois de iniciada, não se pega, não se solta; quem estava volta e quem chega assume o que sobrou (ou só assiste)', () => {
   const s = nova(); entra(s, BETO, 'Beto');
   pega(s, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(s, BETO, 'pc-mago');
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
@@ -257,7 +262,16 @@ teste('depois de iniciada, não se pega, não se solta, não se entra gente nova
   deve(faz(s, ANF, { tipo: 'largar', heroi: 'pc-ladino' }), /começou/);
   deve(faz(s, ANF, { tipo: 'pegar', heroi: 'pc-barbaro' }), /começou/);
   deve(faz(s, ANF, { tipo: 'iniciar' }), /começou/);
-  deve(faz(s, CAIO, { tipo: 'entrar', nome: 'Caio' }), /começou/);
+  // Quem chega com a partida em andamento: o anfitrião conduzia três heróis, então o último passa ao recém-chegado.
+  const ent = faz(s, CAIO, { tipo: 'entrar', nome: 'Caio' });
+  assert.ok(ent.ok && ent.entrouNaPartida, 'entra na partida em andamento');
+  assert.equal(s.herois['pc-clerigo'], CAIO, 'fica com o herói que sobrava do anfitrião');
+  assert.equal(s.herois['pc-guerreiro'], ANF, 'o anfitrião fica com o primeiro');
+  const OUTRO = 'jogador-4-aaaaaaaa';
+  assert.ok(faz(s, OUTRO, { tipo: 'entrar', nome: 'Duda' }).ok);
+  assert.equal(s.herois['pc-ladino'], OUTRO, 'o seguinte fica com o outro que sobrava');
+  assert.equal(heroiQueSobra(s), null, 'o anfitrião fica com um só: quem chegar depois só assiste');
+  deve(faz(s, 'jogador-5-bbbbbbbb', { tipo: 'entrar', nome: 'Eva' }), /cheia/);
   desconectar(s, BETO, 9000);
   assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto' }).reentrou);
 });
@@ -1170,7 +1184,9 @@ teste('loja e ficha: cada jogador compra, vende e equipa SÓ para o herói dele;
 
 teste('descanso rápido: qualquer jogador pode PEDIR (o grupo vota); só com a partida em andamento e nunca o anfitrião pelo servidor', () => {
   const s = salaIniciada();
-  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'descanso' }).repassar, { tipo: 'agir', de: 'p2', acao: 'descanso' });
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'descanso' }).repassar, { tipo: 'agir', de: 'p2', acao: 'descanso', descanso: 'curto' });
+  assert.equal(faz(s, BETO, { tipo: 'agir', acao: 'descanso', descanso: 'longo' }).repassar.descanso, 'longo');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'descanso', descanso: 'eterno' }), /descanso inválido/);
   assert.ok(faz(s, BETO, { tipo: 'agir', acao: 'descanso', heroi: 'pc-mago' }).ok, 'sem herói à frente: o pedido é do jogador');
   deve(faz(s, ANF, { tipo: 'agir', acao: 'descanso' }), /própria tela/);
   deve(faz(nova(), BETO, { tipo: 'agir', acao: 'descanso' }), /não está em andamento|não está nesta sala/);
@@ -1435,6 +1451,169 @@ teste('T-05: dezesseis jogadores não existem aqui, mas o contrato de marcadores
   const usados = new Set();
   for (let i = 0; i < 16; i++) { const n = marcadorLivre(usados); assert.notEqual(n, null); usados.add(n); }
   assert.equal(new Set([...usados].map((n) => JSON.stringify(marcadorN(n)))).size, 16);
+});
+
+teste('interagir (botão direito): o convidado pede o menu da casa e escolhe a opção; o menu volta só a ele', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'contexto', heroi: 'pc-mago', x: 4, y: 7 }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'contexto', x: 4, y: 7 });
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'contexto-escolher', heroi: 'pc-mago', idx: 2 }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'contexto-escolher', idx: 2 });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'contexto-escolher', heroi: 'pc-mago', idx: -1 }), /opção inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'contexto', heroi: 'pc-guerreiro', x: 1, y: 1 }), /não é seu/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'contexto', heroi: 'pc-mago', x: 'a', y: 1 }), /casa inexistente/);
+  const menu = JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'contexto-abrir', id: 1, para: 'p2', heroi: 'pc-mago', titulo: 'Elmar', opcoes: [{ rotulo: 'Conversar', i: 0 }] } });
+  assert.equal(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: menu }).ok, true);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: BETO, bruto: menu }).erro, /anfitrião/);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'contexto-abrir', id: 1, para: 'p2', opcoes: 'x' } }) }).erro, /inválida/);
+});
+
+teste('diário: as missões e as pistas viram dado puro e voltam para a tela da vila', () => {
+  const defs = { a: { titulo: 'Achar A', de: 'Sildar', texto: 'x', recompensa: '5 po' }, b: { titulo: 'B', de: 'a vila', texto: 'y' } };
+  const d = diarioDe({ missoes: { a: 'feita', b: 'ativa', zz: 'ativa' }, pistas: ['p1', 7, 'p2'] }, defs);
+  assert.deepEqual(d.missoes.map((m) => [m.id, m.estado]), [['a', 'feita'], ['b', 'ativa']], 'missão fora do catálogo não entra');
+  assert.deepEqual(d.pistas, ['p1', 'p2']);
+  assert.equal(JSON.parse(JSON.stringify(d)).missoes[0].recompensa, '5 po');
+  const t = diarioParaTela(d);
+  assert.equal(t.estado.missoes.a, 'feita');
+  assert.equal(t.defs.b.titulo, 'B');
+  assert.deepEqual(diarioDe(undefined, defs), { missoes: [], pistas: [] });
+});
+
+teste('subir de nível numa sala: o servidor confere a forma das escolhas, e o anfitrião as confere contra as opções', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'nivel', heroi: 'pc-mago', id: 3, selecoes: { aprende: ['luz', 'misselMagico'] } }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'nivel', id: 3, selecoes: { aprende: ['luz', 'misselMagico'] } });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'nivel', heroi: 'pc-mago', id: 3, selecoes: 'x' }), /escolhas inválidas/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'nivel', heroi: 'pc-mago', id: 'a', selecoes: {} }), /escolhas inválidas/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'nivel', heroi: 'pc-mago', id: 3, selecoes: { aprende: [7] } }), /escolhas inválidas/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'nivel', heroi: 'pc-guerreiro', id: 3, selecoes: {} }), /não é seu/);
+  const esc = [{ id: 'aprende', quantas: 2, opcoes: ['a', 'b', 'c'], sugeridas: ['a', 'b'] }, { id: 'prepara', quantas: 1, deLivro: true, opcoes: [], sugeridas: [] }];
+  assert.deepEqual(escolhasConferidas(esc, { aprende: ['c', 'zzz'] }), { aprende: ['c', 'b'] }, 'o que não está nas opções volta à sugerida');
+  assert.deepEqual(escolhasConferidas(esc, null), { aprende: ['a', 'b'] });
+  const msg = JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'nivel-abrir', id: 1, para: 'p2', dados: { escolhas: [] } } });
+  assert.equal(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: msg }).ok, true);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: BETO, bruto: msg }).erro, /anfitrião/);
+});
+
+teste('preparar magias numa sala: o servidor confere a forma da lista e de quem é o herói', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'preparar', heroi: 'pc-mago', lista: ['escudoArcano', 'sono'] }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'preparar', lista: ['escudoArcano', 'sono'] });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'preparar', heroi: 'pc-mago', lista: 'sono' }), /lista inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'preparar', heroi: 'pc-mago', lista: [1] }), /lista inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'preparar', heroi: 'pc-guerreiro', lista: [] }), /não é seu/);
+});
+
+teste('vila e região: qualquer jogador pede um botão da tela (Dormir, Acampar); o servidor só aceita os nomes conhecidos', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'vila-acao', qual: 'dormir' }).repassar, { tipo: 'agir', de: 'p2', acao: 'vila-acao', qual: 'dormir' });
+  assert.equal(faz(s, BETO, { tipo: 'agir', acao: 'vila-acao', qual: 'b0' }).ok, true);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'vila-acao', qual: 'apagar' }), /ação inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'vila-acao', qual: 7 }), /ação inválida/);
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'vila-acao', qual: 'dormir' }), /própria tela/);
+});
+
+teste('limites por IP: poucas salas novas por hora, conexões por minuto, e só vale o código que o servidor emitiu', () => {
+  const est = novoEstadoDeLimites();
+  let n = 0;
+  const sorteio = (m) => (n++ * 7) % m;
+  const t0 = 1_000_000;
+  const emitidos = [];
+  for (let i = 0; i < EMITIR_POR_HORA; i++) {
+    const r = emitirCodigo(est, t0 + i, sorteio);
+    assert.equal(r.ok, true);
+    assert.ok(normalizarCodigo(r.codigo), 'o código emitido é um código válido');
+    emitidos.push(r.codigo);
+  }
+  assert.equal(new Set(emitidos).size, EMITIR_POR_HORA, 'sem repetir');
+  const negado = emitirCodigo(est, t0 + 10, sorteio);
+  assert.equal(negado.ok, false);
+  assert.ok(negado.espera > 0 && negado.espera <= VALIDADE_DO_CODIGO_MS, 'diz quanto esperar');
+  assert.equal(emitirCodigo(est, t0 + VALIDADE_DO_CODIGO_MS + 1, sorteio).ok, true, 'passada uma hora, pode de novo');
+
+  const e2 = novoEstadoDeLimites();
+  const c = emitirCodigo(e2, t0, sorteio).codigo;
+  assert.equal(entrarNaSala(e2, t0 + 1, c).emitido, true, 'o código foi emitido a este IP');
+  assert.equal(entrarNaSala(e2, t0 + 2, 'ZZZZZZ').emitido, false, 'código que o servidor não emitiu');
+  for (let i = 0; i < TENTATIVAS_POR_MINUTO; i++) entrarNaSala(e2, t0 + 100 + i, c);
+  assert.equal(entrarNaSala(e2, t0 + 200, c).ok, false, 'varrer códigos toma o limite');
+  assert.equal(entrarNaSala(e2, t0 + 61_000 + 100, c).ok, true, 'e volta um minuto depois');
+});
+
+teste('alfinete e "pronto para sair": são do jogador (sem herói), com forma conferida pelo servidor', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 4, y: 9 }).repassar, { tipo: 'agir', de: 'p2', acao: 'alfinete', x: 4, y: 9 });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: -1, y: 9 }), /casa inexistente/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 'a', y: 9 }), /casa inexistente/);
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'alfinete', x: 1, y: 1 }), /própria tela/);
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'pronto-cena', valor: true }).repassar, { tipo: 'agir', de: 'p2', acao: 'pronto-cena', valor: true });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'pronto-cena', valor: 'sim' }), /valor inválido/);
+});
+
+teste('vista em diferenças: manda só quem mudou, o convidado reconstrói igual, e sem a base espera a completa', () => {
+  const corpo = (n) => ({ id: `c${n}`, name: `Criatura ${n}`, pos: { x: n, y: 1 }, hp: 10, texto: 'x'.repeat(300) });
+  const vista = (rodada, lista, extras = null) => ({ v: 1, variante: 'emboscada', rodada, lado: 'party', acabou: false, combatentes: lista, extras });
+  const em = criarEmissor();
+  const re = criarReceptor();
+  const lista = [corpo(1), corpo(2), corpo(3), corpo(4)];
+
+  const m1 = em.publicar(vista(1, lista));
+  assert.ok(Number.isInteger(m1.seq) && !m1.delta, 'a primeira é completa');
+  assert.deepEqual(re.receber(m1).combatentes.map((c) => c.id), ['c1', 'c2', 'c3', 'c4']);
+
+  const lista2 = lista.map((c) => ({ ...c, pos: { ...c.pos } }));
+  lista2[1].hp = 3;
+  const m2 = em.publicar(vista(1, lista2, { eventos: [{ type: 'damage' }] }));
+  assert.equal(m2.delta, true);
+  assert.deepEqual(m2.mudaram.map((c) => c.id), ['c2'], 'só o que mudou');
+  assert.ok(JSON.stringify(m2).length < JSON.stringify(vista(1, lista2)).length * 0.5, 'bem menor que a completa');
+  assert.ok(lerDelta(m2), 'o servidor reconhece a forma');
+  const v2 = re.aplicar(JSON.parse(JSON.stringify(m2)));
+  assert.deepEqual(v2.combatentes, lista2, 'o convidado reconstrói a mesma vista');
+  assert.deepEqual(v2.extras, { eventos: [{ type: 'damage' }] });
+
+  // Sai um combatente e entra outro.
+  const lista3 = [lista2[0], lista2[2], lista2[3], corpo(9)];
+  const m3 = em.publicar(vista(2, lista3));
+  assert.deepEqual(m3.removidos, ['c2']);
+  assert.deepEqual(m3.mudaram.map((c) => c.id), ['c9']);
+  assert.deepEqual(re.aplicar(JSON.parse(JSON.stringify(m3))).combatentes.map((c) => c.id), ['c1', 'c3', 'c4', 'c9']);
+
+  // Quem não tem a base (entrou agora) ignora a diferença e volta a acompanhar na próxima completa.
+  const novo = criarReceptor();
+  const m4 = em.publicar(vista(2, lista3.map((c) => ({ ...c, hp: c.hp - 1 }))));
+  assert.equal(novo.aplicar(JSON.parse(JSON.stringify(m4))), null, 'sem completa guardada, não aplica');
+  const m5 = em.publicar(vista(3, lista3), { completa: true });
+  assert.ok(!m5.delta);
+  assert.equal(novo.receber(m5).combatentes.length, 4);
+  // Uma diferença cuja base não é a que o convidado tem (uma se perdeu) também espera.
+  em.publicar(vista(3, lista3.map((c) => ({ ...c, hp: 1 }))));
+  const m7 = em.publicar(vista(3, lista3.map((c) => ({ ...c, hp: 2 }))));
+  assert.equal(novo.aplicar(JSON.parse(JSON.stringify(m7))), null, 'falta uma diferença no meio');
+
+  // Mudou quase tudo: não compensa, sai completa. A cada tanto, também.
+  const tudo = em.publicar(vista(4, lista3.map((c) => ({ ...c, hp: 99, texto: 'y'.repeat(300) }))));
+  assert.ok(!tudo.delta, 'quando a diferença não encolhe, vai a completa');
+  em.publicar(vista(5, lista3), { completa: true });     // a base de que o laço parte
+  for (let i = 0; i < COMPLETA_A_CADA + 1; i++) {
+    const m = em.publicar(vista(5, lista3.map((c, k) => (k === 0 ? { ...c, hp: i } : c))));
+    if (!m.delta) { assert.ok(i >= COMPLETA_A_CADA - 1, 'completa periódica'); return; }
+  }
+  assert.fail('devia ter saído uma completa');
+});
+
+teste('o servidor aceita a diferença e só guarda a completa para quem entra', () => {
+  const s = salaIniciada();
+  const completa = JSON.stringify({ tipo: 'partida', vista: { v: 1, variante: 'emboscada', rodada: 1, lado: 'party', acabou: false, seq: 1, combatentes: [{ id: 'a', pos: { x: 1, y: 1 } }], extras: null } });
+  const delta = JSON.stringify({ tipo: 'partida', vista: { v: 1, delta: true, base: 1, seq: 2, variante: 'emboscada', rodada: 1, lado: 'party', acabou: false, ordem: ['a'], mudaram: [{ id: 'a', pos: { x: 2, y: 1 } }], removidos: [], extras: null } });
+  assert.equal(tratarVista({ sala: s, jogadorId: ANF, bruto: completa, agora: 1000 }).delta, false);
+  const r = tratarVista({ sala: s, jogadorId: ANF, bruto: delta, agora: 1100, ultimaEm: 1000 });
+  assert.ok(r.ok && r.delta, 'a diferença passa, mesmo logo depois');
+  assert.equal(tratarVista({ sala: s, jogadorId: ANF, bruto: completa, agora: 1100, ultimaEm: 1000 }).calado, true, 'a completa segue limitada pelo ritmo');
+  const quebrada = JSON.stringify({ tipo: 'partida', vista: { v: 1, delta: true, base: 'x', seq: 2, variante: 'e', ordem: [], mudaram: [], removidos: [] } });
+  assert.match(tratarVista({ sala: s, jogadorId: ANF, bruto: quebrada, agora: 5000 }).erro, /inválida/);
+  assert.match(tratarVista({ sala: s, jogadorId: BETO, bruto: delta, agora: 5000 }).erro, /anfitrião/);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

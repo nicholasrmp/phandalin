@@ -16,6 +16,7 @@ import { audio } from '../core/audio.js';
 import { makePortrait } from '../art/sheet.js';
 import pintura from '../art/vila/phandalin.webp';
 import { moedas } from '../game/comercio.js';
+import { diarioDe } from '../game/diario.js';
 
 // A PORTA DA VILA (F6.3). Numa partida de sala o anfitrião a põe aqui: o mapa da vila e o da região (que usa a mesma tela) passam a
 // ser VOTAÇÃO: o clique num lugar é um voto, e o grupo vai junto para o mais votado. `escolher(lugar)` recebe o clique;
@@ -103,6 +104,10 @@ export function abrirTelaVila(root, o) {
       })),
       momento: o.momento(),
       dinheiro: o.dinheiro(),
+      diario: diarioDe(o.estado, o.missoes),
+      // Os botões desta tela (Acampar, Dormir…): os outros jogadores os veem e pedem ao anfitrião, que os roda por `api.acao`.
+      acoes: [...(o.botoes ?? []).map((b, i) => ({ id: `b${i}`, rotulo: b.rotulo, dica: b.dica ?? '' })), ...(o.onDormir ? [{ id: 'dormir', rotulo: 'Dormir', dica: 'Onde passar a noite' }] : [])],
+      registro: (o.estado.registro ?? []).slice(-40),
       grupo: o.grupo.filter((c) => !c.dead).map((c) => ({
         id: c.id, name: c.name, className: c.className ?? '', level: c.level ?? 1, titulo: c.titulo ?? null, look: c.look, hp: c.hp, maxHp: maxHpEfetivo(c),
       })),
@@ -120,7 +125,10 @@ export function abrirTelaVila(root, o) {
       pino.dataset.votos = n ? String(n) : '';
       pino.title = n ? `${o.lugares.find((l) => l.id === id)?.nome} — votaram: ${votos[id].join(', ')}` : (o.lugares.find((l) => l.id === id)?.nome ?? '');
     }
-    portaDaVila?.aoAtualizar?.(instantaneo(), { lugares: o.lugares, ir: (l) => o.onLugar(l), atualizar });
+    portaDaVila?.aoAtualizar?.(instantaneo(), {
+      lugares: o.lugares, ir: (l) => o.onLugar(l), atualizar,
+      acao: (id) => (id === 'dormir' ? o.onDormir?.() : o.botoes?.[Number(id.slice(1))]?.fazer?.()),
+    });
     for (const l of o.lugares) {
       // Na região, lugar que o grupo ainda não conhece nem aparece.
       pinos.get(l.id).hidden = o.visivel ? !o.visivel(l) : false;

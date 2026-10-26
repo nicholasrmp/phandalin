@@ -25,9 +25,23 @@ run_worker_first = ["/api/*"]
 name = "SALAS"
 class_name = "SalaDO"
 
+# Um limitador por IP: quantos códigos de sala ele pediu e quantas conexões tentou (src/worker/limites.js).
+[[durable_objects.bindings]]
+name = "LIMITES"
+class_name = "LimitadorDO"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SalaDO"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["LimitadorDO"]
+
+# "1": só abre sala quem pediu o código ao servidor (POST /api/nova-sala). Ligue ao abrir a taverna pública.
+# "0": o navegador sorteia o código (desenvolvimento e testes).
+[vars]
+CODIGO_DO_SERVIDOR = "0"
 
 [observability]
 enabled = true

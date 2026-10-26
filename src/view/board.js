@@ -177,6 +177,9 @@ const SUPERFICIE = {
 const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda',
   'altar', 'banheira', 'mesaBanquete', 'camaRei', 'portaoQuebrado']);
 
+/** Peças de vários quadros e quantos quadros por segundo (o grupo do atlas é o nome). */
+const PROP_ANIMADA = { 'prop-taverna-lareira': 8, 'prop-rodaDagua': 5 };
+
 // Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
 const SOMBRA_DO_BAIXO = {
   arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
@@ -410,7 +413,7 @@ export class Board {
     canvas.addEventListener('click', (e) => {
       if (this.dragMoved) { this.dragMoved = false; return; }  // fim de arrasto não é clique
       const t = this.tileFromEvent(e);
-      if (t) this.onTileClick?.(t);
+      if (t) this.onTileClick?.(t, e);
     });
 
     // ---- botão direito: girar arrastando, menu de ações clicando ----
@@ -1169,8 +1172,9 @@ export class Board {
       return;
     }
     const prop = s.objeto === 'prop' ? this.varianteDaProp(x, y) : null;
-    // A lareira tem quadros do fogo: o tempo escolhe o quadro (8 por segundo), e não o sorteio da casa.
-    const quadroDoFogo = prop?.grupo === 'prop-taverna-lareira' ? Math.floor(this.time * 8) : null;
+    // As peças animadas (a lareira, a roda d'água) têm vários quadros: o tempo escolhe o quadro, e não o sorteio da casa.
+    const fps = PROP_ANIMADA[prop?.grupo];
+    const quadroDoFogo = fps ? Math.floor(this.time * fps) : null;
     const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(prop?.grupo ?? s.objeto, ['todas'], x, y, quadroDoFogo);
     if (baixo && prop?.grupo === 'prop-taverna-nada') { ctx.restore(); return; }   // só ocupa o chão: nada a desenhar nem sombra
     if (baixo) {

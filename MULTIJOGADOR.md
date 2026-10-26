@@ -240,6 +240,17 @@ Menu principal
   **inofensivo** com anfitrião autoritativo (só o anfitrião rola), mas **quebraria**
   um modelo de replay determinístico. Fica anotado para `D2`.
 
+- **A-08 · [feito, 2026-10-26] Vista em diferenças.** O anfitrião manda a vista **completa** de tempos em tempos (a cada 20
+  publicações e a cada batimento de 3 s) e, entre elas, só os combatentes que **mudaram** (`game/partida-delta.js`). O convidado
+  guarda a base; uma diferença que não casa com ela é ignorada até a próxima completa. O servidor guarda só a última completa (é
+  o que quem entra recebe) e deixa passar as diferenças em ritmo mais folgado (50 ms) que as completas (200 ms).
+- **A-09 · [feito, 2026-10-26] Autosave durante a cena.** Além do save na entrada de cena, o anfitrião manda o save a cada 30 s em
+  lugar seguro (explorando, sem texto aberto): se ele cair, quem assume retoma de pouco antes.
+- **A-10 · [feito, 2026-10-26] Pré-requisitos da taverna pública.** O **código da sala é sorteado pelo servidor**
+  (`POST /api/nova-sala`), no máximo 6 por hora por IP, e conexões demais por minuto de um IP tomam 429 (`worker/limites.js`,
+  `LimitadorDO`). Com `CODIGO_DO_SERVIDOR = "1"` (`wrangler.toml`) só abre sala quem pediu o código ao servidor; desligado por
+  padrão (desenvolvimento e testes). **Moderação é humana** (seção 15): nada aqui a substitui.
+
 ---
 
 ## 8. Regras dentro do jogo
@@ -295,6 +306,26 @@ Menu principal
 - **J-07 · [decidido, 2026-10-26] Quem controla quem.** Cada jogador controla **um** herói. O **anfitrião** só
   controla o dele, mais os que **sobram** quando há menos de quatro jogadores (os que nenhum outro pegou). Os heróis de quem
   caiu ficam no piloto automático até a pessoa voltar.
+- **J-09 · [decidido, 2026-10-26] Paridade.** **Tudo o que o anfitrião vê e faz dentro da aventura, os convidados também veem e
+  fazem; nada é exclusivo do anfitrião, exceto SALVAR a aventura.** O anfitrião só roda o jogo (A-01): o que ele tem a mais é
+  técnico, não de poder. Cada funcionalidade nova nasce com o lado do convidado, e o que ainda só o anfitrião faz é dívida
+  (lista na auditoria do final desta seção, a manter).
+- **J-09a · [feito, 2026-10-26] Auditoria da paridade.** O que o convidado já faz, igual ao anfitrião:
+  - **Interagir** (botão direito numa casa): o convidado pede, o anfitrião monta o menu **para o herói dele** (`game/interacoes.js`,
+    `main.js: contextoDeFora`) e o devolve só a ele pela porta da narrativa (`contexto-abrir`); a escolha volta pelo número da opção.
+    Ficha e seleção acontecem na tela de quem clicou (`local`). Magia com escolha de opção vai pela barra.
+  - **Magias de utilidade** (menu, barra de magias) e as perguntas delas: a narrativa vai a todos e responde o dono do herói.
+  - **Subir de nível:** cada jogador escolhe as magias do **seu** herói na própria tela, em paralelo (`view/nivel-tela.js`,
+    `definirPortaDeNivel`); sem resposta em 2 min valem as sugeridas. **Preparar magia** pela ficha (`prepararDeFora`).
+  - **Descanso curto e longo:** qualquer jogador pede, o grupo vota. No curto cada um gasta os dados do **seu** herói numa tabela
+    que todos veem (`telaDoDescansoRemoto`); o anfitrião espera os "prontos" (até 2 min).
+  - **Dormir, Acampar** e os outros botões da vila e da região: o jogador pede (`vila-acao`), o anfitrião roda, as escolhas
+    dele são votadas.
+  - **Páginas de texto:** qualquer jogador vira a última página e a cena segue. **Diário, missões e Registro** (rolagens e
+    acontecimentos) vão na vista. **Alfinete** no mapa (Alt+clique) e **"Pronto para sair"** (a decisão de saída mostra quem está).
+  - **Entrar com a partida em andamento:** fica com o herói que sobrava do anfitrião, ou só assiste (`heroiQueSobra`).
+  - **Dívida que sobra:** a tela dos **mantimentos** da estrada (comer e beber) e a escolha do **acampamento** da região são
+    narrativas votadas, não telas por herói; o **Registro** do convidado guarda só o que chegou depois que ele entrou.
 - **J-08 · [decidido, 2026-10-26] Loja, ficha e descanso.** Na loja cada jogador compra e vende **para o seu herói** (o
   dinheiro é do grupo); na ficha, cada um equipa e usa itens do seu herói. **Qualquer jogador pode pedir um descanso
   rápido**: o grupo vota (e quem não é o anfitrião gasta os dados de vida sugeridos). Feito em `view/loja.js`

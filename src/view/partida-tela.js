@@ -11,10 +11,15 @@ import { Board } from './board.js';
 import { aplicarAparencia } from './ficha.js';
 import { audio } from '../core/audio.js';
 import { narrarLocal } from './narrativa.js';
-import { getSpell } from '../rules/spells.js';
+import { getSpell, opcoesDaMagia } from '../rules/spells.js';
+import { UTIL_FORA } from '../rules/utilidade.js';
 import { mandaNaHora, escolheVarios } from '../game/acoes.js';
 import { possoEscolher } from '../game/decisao.js';
 import { abrirTelaVila } from './vila.js';
+import { abrirMenuContexto } from './menu-contexto.js';
+import { diarioParaTela } from '../game/diario.js';
+import { telaDoCartao } from './nivel-tela.js';
+import { telaDoDescansoRemoto } from './descanso-tela.js';
 import { abrirLojaLocal } from './loja.js';
 import { criarFicha } from './ficha.js';
 import { LOJAS } from '../game/comercio.js';
@@ -25,7 +30,8 @@ import { makeRng } from '../core/rng.js';
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import { lerVista, aplicarVista, desempacotarEvento } from '../game/partida-vista.js';
-import { playWeaponVisual, playSpellVisual, andarDe } from './visuals.js';
+import { criarReceptor, lerDelta } from '../game/partida-delta.js';
+import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, CORES_DOS_JOGADORES } from './visuals.js';
 
 const CASAS_POR_SEGUNDO = 5;
 const SALTO_MAXIMO = 14;       // mais longe que isto (teletransporte, mapa novo) a figura aparece no destino, sem caminhar
@@ -42,9 +48,13 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const terminar = el('button', { class: 'menu-btn primario', hidden: true, onclick: () => { audio.play('click'); if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id }); } }, 'Terminar turno do herói');
   const fichaBtn = el('button', { class: 'menu-btn', hidden: true, title: 'A ficha e o inventário do seu herói', onclick: () => { audio.play('click'); abrirFicha(selecionado); } }, 'Ficha');
   const descanso = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso curto (uma hora): o grupo vota', onclick: () => { audio.play('click'); enviar({ tipo: 'agir', acao: 'descanso' }); } }, 'Descanso rápido');
+  const diarioBtn = el('button', { class: 'menu-btn', title: 'Missões e pistas do grupo', onclick: () => { audio.play('click'); alternarPainel('diario'); } }, 'Diário');
+  const registroBtn = el('button', { class: 'menu-btn', title: 'Rolagens e acontecimentos', onclick: () => { audio.play('click'); alternarPainel('registro'); } }, 'Registro');
+  const descansoLongo = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso longo (oito horas): o grupo vota', onclick: () => { audio.play('click'); enviar({ tipo: 'agir', acao: 'descanso', descanso: 'longo' }); } }, 'Descanso longo');
+  const prontoBtn = el('button', { class: 'menu-btn', title: 'Marca que você não tem mais o que fazer nesta cena; as decisões de saída mostram quem está pronto', onclick: () => { audio.play('click'); prontoDaCena = !prontoDaCena; enviar({ tipo: 'agir', acao: 'pronto-cena', valor: prontoDaCena }); desenharPronto(); } }, 'Pronto');
   const camada = el('div', { class: 'taverna partida', role: 'region', 'aria-label': 'Partida' },
     el('header', { class: 'taverna-topo' }, el('div', { class: 'taverna-sala' }, titulo, fase), grupo,
-      el('div', { class: 'taverna-acoes' }, fichaBtn, descanso, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
+      el('div', { class: 'taverna-acoes' }, prontoBtn, diarioBtn, registroBtn, fichaBtn, descanso, descansoLongo, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
     quadro, lugarDaBarra, aviso);
 
   let aberta = false;
@@ -53,6 +63,12 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   let pendente = null;          // a última vista que chegou antes de a tela abrir
   let visaoDaSala = null;
   let avisoTimer = null;
+  let diario = { missoes: [], pistas: [] };   // o que o anfitrião mostra no Diário (vem na vista)
+  const registro = [];                        // as linhas do registro, as mais novas no fim
+  let painelAberto = null; let painelEl = null;
+  let prontoDaCena = false;     // este jogador marcou "pronto para sair"
+  let prontosDaCena = [];        // quem está pronto (ids públicos), vindo da vista
+  const desenharPronto = () => { prontoBtn.classList.toggle('primario', prontoDaCena); prontoBtn.textContent = prontoDaCena ? 'Pronto ✓' : 'Pronto'; };
   let selecionado = null;
   let emModo = null;            // a ação da barra que espera um clique no tabuleiro (ataque, magia com alvo…)
   const narrativas = new Map(); // id da narrativa aberta -> AbortController (o anfitrião a fecha por fora)
@@ -62,6 +78,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     const mapa = mapaDo(variante);
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
     board = new Board(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
+    board.onTileContext = pedirContexto;
     board.filtroDeVisao = (c) => visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce;   // F4.4: vê o que os SEUS heróis veem
     if (import.meta.env?.DEV) window.__partida = { board, enc };
   }
@@ -87,11 +104,23 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     selecionado = c; emModo = null; audio.play('click'); destacar();
   }
 
-  const limpa = (a) => Object.fromEntries(Object.entries(a).filter(([k, v]) => ['kind', 'weaponId', 'spellId', 'itemId', 'targetId', 'featureId', 'modo', 'zona', 'mira'].includes(k) && v !== undefined && v !== null));
+  const limpa = (a) => Object.fromEntries(Object.entries(a).filter(([k, v]) => ['kind', 'weaponId', 'spellId', 'itemId', 'targetId', 'featureId', 'modo', 'zona', 'mira', 'opcao'].includes(k) && v !== undefined && v !== null));
 
   function usar(action, tiles = []) {
     if (!selecionado) return;
-    enviar({ tipo: 'agir', acao: 'usar', heroi: selecionado.id, action: limpa(action), circulo: emModo?.circulo ?? null, tiles });
+    const heroi = selecionado.id; const circulo = emModo?.circulo ?? null;
+    // Magia que pede uma escolha (Aprimorar Atributo, Glifo de Proteção): quem conjura escolhe aqui, na tela dele.
+    const spell = action.kind === 'spell' ? getSpell(action.spellId) : null;
+    const lista = spell && !action.opcao ? opcoesDaMagia(spell) : null;
+    if (lista) {
+      emModo = null; destacar();
+      abrirMenuContexto(document.getElementById('app'), {
+        x: NaN, y: NaN, titulo: spell.name, subtitulo: 'escolha uma opção',
+        opcoes: lista.map((o) => ({ rotulo: o.rotulo, detalhe: o.detalhe, fazer: () => enviar({ tipo: 'agir', acao: 'usar', heroi, action: limpa({ ...action, opcao: o.id }), circulo, tiles }) })),
+      });
+      return;
+    }
+    enviar({ tipo: 'agir', acao: 'usar', heroi, action: limpa(action), circulo, tiles });
     emModo = null;
     destacar();
   }
@@ -107,6 +136,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       return;
     }
     const spell = a.kind === 'spell' ? getSpell(a.spellId) : null;
+    // Explorando, a magia de utilidade sai na hora: o anfitrião a conjura e pergunta o resto (alvo, ritual) pela narrativa.
+    if (spell && enc.explorando && UTIL_FORA.has(a.spellId)) { usar(a); return; }
     if (mandaNaHora(a, spell, selecionado.magiasAtivas?.[a.spellId])) { usar(a); return; }
     if (a.kind === 'spell' && emModo?.kind === 'spell' && emModo.spellId === a.spellId && emModo.alvos?.length) { usar(emModo, emModo.alvos); return; }
     const igual = emModo && emModo.kind === a.kind && emModo.weaponId === a.weaponId && emModo.spellId === a.spellId && emModo.itemId === a.itemId;
@@ -119,8 +150,10 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   }
 
   /** F4.3: clicar num herói MEU o escolhe; clicar numa casa manda o herói escolhido andar (o anfitrião aplica). */
-  function clicar(t) {
+  function clicar(t, e) {
     if (!enc) return;
+    // Alt+clique: um alfinete no mapa, para todos verem.
+    if (e?.altKey) { enviar({ tipo: 'agir', acao: 'alfinete', x: t.x, y: t.y }); return; }
     const noLugar = enc.at?.(t.x, t.y);
     // Com uma ação da barra na mira, o clique escolhe o ALVO dela (a magia de vários alvos junta casas até completar).
     if (emModo && selecionado) {
@@ -147,8 +180,110 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     enviar({ tipo: 'agir', acao: 'mover', heroi: selecionado.id, x: t.x, y: t.y });
   }
 
+  // ---- o Diário e o Registro: o que o anfitrião lê, o convidado lê igual (J-09) -----------------------------------------------
+
+  function desenharPainel() {
+    if (!painelAberto) return;
+    painelEl ??= el('aside', { class: 'partida-painel', role: 'dialog' });
+    const fechar = el('button', { class: 'menu-btn', onclick: () => alternarPainel(painelAberto) }, 'Fechar');
+    if (painelAberto === 'diario') {
+      painelEl.replaceChildren(
+        el('h3', {}, 'Diário'), el('h4', {}, 'Missões'),
+        diario.missoes.length
+          ? el('ul', {}, ...diario.missoes.map((m) => el('li', { class: m.estado === 'feita' ? 'feita' : '' },
+            el('strong', {}, m.titulo), el('small', {}, ` — de ${m.de}${m.recompensa ? ` · ${m.recompensa}` : ''}`), el('p', {}, m.texto))))
+          : el('p', {}, 'Nenhuma ainda.'),
+        el('h4', {}, 'Pistas'),
+        diario.pistas.length ? el('ul', {}, ...diario.pistas.map((p) => el('li', {}, p))) : el('p', {}, 'Nenhuma ainda.'),
+        fechar);
+    } else {
+      painelEl.replaceChildren(
+        el('h3', {}, 'Registro'),
+        registro.length
+          ? el('ul', { class: 'partida-registro' }, ...registro.slice(-120).map((r) => el('li', { class: `log-${r.kind}` }, r.text, r.detail ? el('small', {}, ` ${r.detail}`) : null)))
+          : el('p', {}, 'Nada ainda.'),
+        fechar);
+      painelEl.querySelector('.partida-registro')?.lastElementChild?.scrollIntoView?.({ block: 'end' });
+    }
+    if (!painelEl.isConnected) camada.append(painelEl);
+  }
+
+  function alternarPainel(qual) {
+    if (painelAberto === qual) { painelAberto = null; painelEl?.remove(); return; }
+    painelAberto = qual;
+    desenharPainel();
+  }
+
+  // ---- o descanso curto: a tabela do anfitrião, com os dados do meu herói na minha mão ------------------------------------------
+
+  let descansoAberto = null;
+  const ehMeuHeroi = (id) => visaoDaSala?.herois?.[id] === visaoDaSala?.voce;
+
+  function descansoRemoto(msg) {
+    if (!aberta) return;
+    if (!descansoAberto) {
+      const ctl = new AbortController();
+      const tela = telaDoDescansoRemoto(document.getElementById('app'), {
+        titulo: msg.titulo, texto: msg.texto, sinal: ctl.signal, narrarFn: narrarLocal,
+        ehMeu: ehMeuHeroi,
+        aoGastar: (heroi) => enviar({ tipo: 'agir', acao: 'descanso-dado', heroi, id: msg.id }),
+        aoMagia: (heroi, spellId, circulo) => enviar({ tipo: 'agir', acao: 'descanso-magia', heroi, id: msg.id, spellId, circulo }),
+      });
+      descansoAberto = { id: msg.id, ctl, tela };
+      // Fechar a página (ou o anfitrião encerrar) é ficar pronto: o jogo só segue quando todos terminam ou o tempo acaba.
+      tela.fim.then(() => {
+        const heroi = Object.keys(visaoDaSala?.herois ?? {}).find(ehMeuHeroi);
+        if (descansoAberto?.id === msg.id && !ctl.signal.aborted && heroi) enviar({ tipo: 'agir', acao: 'descanso-pronto', heroi, id: msg.id });
+        if (descansoAberto?.id === msg.id) descansoAberto = null;
+      });
+    }
+    if (descansoAberto.id === msg.id) descansoAberto.tela.atualizar(msg);
+  }
+
+  // ---- Interagir: o botão direito numa casa (o anfitrião monta o menu do SEU herói e devolve) -----------------------------------
+
+  let ondeAbrir = { x: 200, y: 200 };
+
+  function pedirContexto(t, e) {
+    if (!enc || !selecionado || !meus().includes(selecionado)) selecionado = meus()[0] ?? null;
+    if (!selecionado) return;
+    ondeAbrir = { x: e.clientX, y: e.clientY };
+    emModo = null;
+    enviar({ tipo: 'agir', acao: 'contexto', heroi: selecionado.id, x: t.x, y: t.y });
+  }
+
+  function abrirContextoRemoto(msg) {
+    if (msg.para !== visaoDaSala?.voce || !aberta) return;
+    abrirMenuContexto(document.getElementById('app'), {
+      ...ondeAbrir, titulo: msg.titulo, subtitulo: msg.subtitulo, alvo: msg.alvo,
+      opcoes: msg.opcoes.map((o) => ({
+        ...o,
+        // A ficha e a seleção acontecem na tela de quem clicou, não na do anfitrião.
+        fazer: o.local === 'ficha' ? () => { const c = enc?.combatants.find((x) => x.id === o.alvoId); if (c) abrirFicha(c, true); }
+          : o.local === 'selecionar' ? () => { const c = enc?.combatants.find((x) => x.id === o.alvoId); if (c) selecionar(c); }
+            : () => enviar({ tipo: 'agir', acao: 'contexto-escolher', heroi: msg.heroi, idx: o.i }),
+      })),
+      aoPrevia: (o) => board?.setOverlay({ targets: o?.previa ? [{ pos: o.previa }] : null }),
+    });
+  }
+
   /** A narrativa do anfitrião (A-02): todos leem; só o líder escolhe, e o índice volta ao anfitrião. */
   function narrativa(msg) {
+    if (msg.tipo === 'contexto-abrir') { abrirContextoRemoto(msg); return; }
+    if (msg.tipo === 'descanso-estado') { descansoRemoto(msg); return; }
+    if (msg.tipo === 'descanso-fechar') { descansoAberto?.ctl.abort(); descansoAberto = null; return; }
+    if (msg.tipo === 'nivel-abrir' || msg.tipo === 'nivel-fechar') {
+      if (msg.para !== visaoDaSala?.voce) return;
+      if (msg.tipo === 'nivel-fechar') { narrativas.get(`nivel${msg.id}`)?.abort(); narrativas.delete(`nivel${msg.id}`); return; }
+      if (!aberta) return;
+      const ctl = new AbortController();
+      narrativas.set(`nivel${msg.id}`, ctl);
+      telaDoCartao(document.getElementById('app'), msg.dados, { sinal: ctl.signal, narrarFn: narrarLocal }).then((selecoes) => {
+        if (!narrativas.delete(`nivel${msg.id}`)) return;    // o anfitrião já fechou (acabou o tempo)
+        enviar({ tipo: 'agir', acao: 'nivel', heroi: msg.dados.heroi, id: msg.id, selecoes });
+      });
+      return;
+    }
     if (msg.tipo === 'loja-abrir') { abrirLojaRemota(msg); return; }
     if (msg.tipo === 'loja-fechar') { fecharLojaRemota(); return; }
     if (msg.tipo === 'fechar') { narrativas.get(msg.id)?.abort(); narrativas.delete(msg.id); return; }
@@ -172,6 +307,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       sinal: ctl.signal,
     }).then((r) => {
       narrativas.delete(msg.id);
+      // Texto sem escolha: ao virar a última página, o jogador segue a cena por todos (qualquer um pode, como o anfitrião).
+      if (!p.escolhas && !ctl.signal.aborted) { enviar({ tipo: 'resposta', id: msg.id, indice: null, continuar: true }); return; }
       // Quem decide por ser o dono da cena responde pelo clique (o voto já foi enviado por `aoVotar`).
       if (!escolhe || votando || ctl.signal.aborted) return;
       enviar({ tipo: 'resposta', id: msg.id, indice: Number.isInteger(r) ? r : null });
@@ -192,6 +329,12 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       const ev = desempacotarEvento(enc, dado);
       try {
         switch (ev.type) {
+          case 'alfinete': {
+            const i = Math.max(0, (visaoDaSala?.jogadores ?? []).findIndex((j) => j.id === ev.de));
+            mostrarAlfinete(board, { x: ev.x, y: ev.y }, visaoDaSala?.jogadores?.[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length]);
+            break;
+          }
+          case 'log': registro.push({ kind: ev.kind, text: ev.text, detail: ev.detail }); if (registro.length > 300) registro.shift(); if (painelAberto === 'registro') desenharPainel(); break;
           case 'moved': {
             if (!ev.actor || !ev.path?.length) break;
             ev.actor.facingVec = { dx: ev.to.x - ev.from.x, dy: ev.to.y - ev.from.y };
@@ -252,8 +395,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const meusDaVila = () => [...vilaHerois.values()].filter((c) => !c.dead && ehMeu(c));
 
   /** A ficha do herói do jogador: ver, equipar e beber poção. Quem executa é o anfitrião; a ficha redesenha quando ele responde. */
-  function abrirFicha(c) {
-    const alvo = (c && ehMeu(c) ? c : null) ?? meus()[0] ?? meusDaVila()[0];
+  function abrirFicha(c, qualquerDoGrupo = false) {
+    const alvo = (c && (qualquerDoGrupo || ehMeu(c)) ? c : null) ?? meus()[0] ?? meusDaVila()[0];
     if (!alvo) { aviso.textContent = 'Você não tem herói para abrir a ficha.'; aviso.classList.add('visivel'); return; }
     fichaRemota ??= criarFicha(document.getElementById('app'), {
       podeEquipar: (p, slot, id) => {
@@ -261,7 +404,9 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         return 'Pedido enviado ao anfitrião: a ficha muda quando ele responder.';
       },
       onUsar: (p, id) => { enviar({ tipo: 'agir', acao: 'usar', heroi: p.id, action: { kind: 'item', itemId: id } }); return { ok: true }; },
-      podePreparar: () => 'por enquanto só o anfitrião prepara magias',
+      // Preparar: a ficha troca no espelho na hora e o anfitrião confere (a próxima vista desfaz o que ele recusar).
+      podePreparar: () => (enc && !(enc.side === 'party' && !enc.over) ? 'dá para preparar magias só no turno do grupo' : null),
+      onPreparar: (p) => enviar({ tipo: 'agir', acao: 'preparar', heroi: p.id, lista: [...(p.spellcasting?.prepared ?? [])] }),
     });
     fichaRemota.abrir(alvo, 'inventario');
   }
@@ -326,7 +471,11 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         aberto: (l) => !l.fechado, novidade: (l) => l.novidade,
         onLugar: (l) => { audio.play('click'); enviar({ tipo: 'agir', acao: 'lugar', lugar: l.id }); },
         onMenu: () => aoSair(), onFicha: (c) => abrirFicha(vilaHerois.get(c?.id) ?? c),
-        botoes: [{ rotulo: 'Descanso rápido', dica: 'Pede um descanso curto: o grupo vota', fazer: () => enviar({ tipo: 'agir', acao: 'descanso' }) }],
+        botoes: [
+          { rotulo: 'Descanso rápido', dica: 'Pede um descanso curto: o grupo vota', fazer: () => enviar({ tipo: 'agir', acao: 'descanso' }) },
+          ...(snap.acoes ?? []).filter((a) => a.id !== 'dormir').map((a) => ({ rotulo: a.rotulo, dica: a.dica, fazer: () => enviar({ tipo: 'agir', acao: 'vila-acao', qual: a.id }) })),
+        ],
+        ...((snap.acoes ?? []).some((a) => a.id === 'dormir') ? { onDormir: () => enviar({ tipo: 'agir', acao: 'vila-acao', qual: 'dormir' }) } : {}),
       };
       vilaAssinatura = assinatura;
       vilaObj.__momento = snap.momento; vilaObj.__dinheiro = snap.dinheiro;
@@ -334,6 +483,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       vilaTela = abrirTelaVila(document.getElementById('app'), vilaObj);
     }
     vilaObj.__momento = snap.momento; vilaObj.__dinheiro = snap.dinheiro;
+    if (snap.diario) { const t = diarioParaTela(snap.diario); vilaObj.estado = t.estado; vilaObj.missoes = t.defs; diario = snap.diario; }
     vilaObj.grupo = snap.grupo.map((c) => ({ ...c, conditions: [] }));
     if (snap.herois) espelharHerois(snap.herois);
     vilaObj.lugares.forEach((l, i) => Object.assign(l, snap.lugares[i]));
@@ -374,23 +524,42 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       // Em luta, o herói mostra o que ainda tem no turno: a marca ► é o que o próximo clique move.
       const turno = emLuta && enc.side === 'party' ? (c.acted ? ' · turno encerrado' : ` · ação ${c.actionUsed ? 'usada' : 'livre'}, ${Math.max(0, c.movementLeftFt ?? 0)} ft`) : '';
       return el('li', { class: 'taverna-jogador' },
-        el('span', {}, `${meu && c === selecionado ? '► ' : ''}${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV${meu ? turno : ''}`));
+        el('span', {}, `${meu && c === selecionado ? '► ' : ''}${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''}${prontosDaCena.includes(visaoDaSala?.herois?.[c.id]) ? ' ✓' : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV${meu ? turno : ''}`));
     }));
     terminar.hidden = hud != null || !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
     descanso.hidden = emLuta || !enc;   // só explorando
+    descansoLongo.hidden = descanso.hidden;
     fichaBtn.hidden = !selecionado;
     fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo` : 'Vez dos inimigos') : '';
   }
 
+  const receptor = criarReceptor();
+
   function receber(bruto) {
-    const v = lerVista(bruto);
-    if (!v) return;
+    // Completa (guarda como base) ou diferença (junta à base; sem base, espera a próxima completa).
+    let v = lerVista(bruto);
+    if (v) receptor.receber(v);
+    else {
+      const d = lerDelta(bruto);
+      if (!d) return;
+      v = receptor.aplicar(d);
+      if (!v) return;
+    }
     if (!aberta) { pendente = v; return; }
     if (v.variante === 'vila' && v.extras?.vila) { mostrarVila(v.extras.vila); aviso.classList.remove('visivel'); return; }
     if (vilaTela) { fecharVila(); vilaHerois.clear(); fecharLojaRemota(); }
     if (!enc || variante !== v.variante) { if (board) desmontar(); montar(v); if (aberta) loop(); }
     const { moveram } = aplicarVista(enc, v);
     for (const c of enc.combatants) aplicarAparencia(c);
+    const explorando = Boolean(v.extras?.explorando);
+    if (v.extras?.prontos) {
+      prontosDaCena = v.extras.prontos;
+      prontoDaCena = prontosDaCena.includes(visaoDaSala?.voce);
+      desenharPronto();
+    }
+    enc.explorando = explorando;
+    document.getElementById('app')?.classList.toggle('explorando', explorando);
+    if (v.extras?.diario) { diario = v.extras.diario; if (painelAberto === 'diario') desenharPainel(); }
     const andaram = reproduzir(v.extras?.eventos ?? []);
     for (const m of moveram) if (!andaram.has(m.c.id)) caminhar(m);
     // Herói caído (a 0 PV) não fica na mira: passa para o próximo dos meus que ainda está de pé.
@@ -423,6 +592,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
 
   return {
     aberta: () => aberta,
+    explorando: () => Boolean(enc?.explorando),
     abrir(parent) {
       if (aberta) return;
       parent.append(camada);
@@ -434,6 +604,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       if (!aberta) return;
       aberta = false;
       camada.remove();
+      document.getElementById('app')?.classList.remove('explorando');
+      painelAberto = null; painelEl?.remove(); painelEl = null;
       fecharLojaRemota();
       fichaRemota?.fechar();
       fecharVila();

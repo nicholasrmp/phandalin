@@ -33,7 +33,7 @@ export const VERSAO_DA_SALA = 1;
 export const GRACA_DO_ANFITRIAO_MS = 20_000;
 
 /** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
-export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar', 'descanso', 'comprar', 'vender', 'equipar'];
+export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar', 'descanso', 'comprar', 'vender', 'equipar', 'contexto', 'contexto-escolher', 'nivel', 'preparar', 'vila-acao', 'descanso-dado', 'descanso-magia', 'descanso-pronto', 'alfinete', 'pronto-cena'];
 export const ENCAIXES = ['maoPrincipal', 'maoSecundaria', 'armadura', 'escudo'];
 
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
@@ -300,11 +300,11 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     }
     if (!idValido(jogadorId)) return recusa('jogador inválido');
     if (!nome) return recusa('nome inválido');
-    if (sala.fase !== 'lobby') return recusa('a partida já começou');
+    if (sala.fase !== 'lobby' && sala.fase !== 'iniciada') return recusa('a partida já acabou');
     if (sala.ordem.length >= sala.maxJogadores) return recusa('a sala está cheia');
-    // Um jogador novo diminui o limite de todos: se alguém já segura mais do que sobraria, não cabe.
+    // Um jogador novo diminui o limite de todos: se alguém já segura mais do que sobraria, não cabe (só no lobby: na partida, ninguém perde herói).
     const limiteDepois = TAMANHO_DO_GRUPO - sala.ordem.length;
-    if (jogadoresPresentes(sala).some((j) => heroisDe(sala, j.id).length > limiteDepois)) {
+    if (sala.fase === 'lobby' && jogadoresPresentes(sala).some((j) => heroisDe(sala, j.id).length > limiteDepois)) {
       return recusa('um jogador está com heróis demais: peça para ele soltar um antes de entrar mais gente');
     }
     sala.ordem.push(jogadorId);
@@ -312,6 +312,12 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     sala.proximoPub += 1;
     nascer(sala, jogadorId, mensagem.persona, agora);
     sala.vaziaDesde = null;
+    // Entrar com a partida em andamento: fica com um herói que SOBROU (o anfitrião o conduzia) ou, se não há, só assiste.
+    if (sala.fase === 'iniciada') {
+      const sobra = heroiQueSobra(sala);
+      if (sobra) sala.herois[sobra] = jogadorId;
+      return ok({ reentrou: false, entrouNaPartida: true });
+    }
     desfazerProntos(sala);
     return ok({ reentrou: false });
   }
@@ -357,7 +363,28 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (!ACOES_DA_PARTIDA.includes(mensagem.acao)) return recusa('ação desconhecida');
       // Na vila e na região o grupo vota o destino e vai junto: o voto é do JOGADOR (não de um herói) e leva só o id do lugar.
       // Qualquer jogador pode PEDIR um descanso rápido (uma hora); o grupo vota (a votação é do anfitrião, que roda o jogo).
-      if (mensagem.acao === 'descanso') return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'descanso' } });
+      if (mensagem.acao === 'descanso') {
+        const tipo = mensagem.descanso ?? 'curto';
+        if (tipo !== 'curto' && tipo !== 'longo') return recusa('descanso inválido');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'descanso', descanso: tipo } });
+      }
+      // O alfinete no mapa (Alt+clique): todos veem onde o jogador aponta. Não é de um herói: é do jogador.
+      if (mensagem.acao === 'alfinete') {
+        const { x, y } = mensagem;
+        if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x > 400 || y > 400) return recusa('casa inexistente');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'alfinete', x, y } });
+      }
+      // "Pronto para sair da cena": o jogador marca (ou desmarca) que não tem mais nada a fazer aqui.
+      if (mensagem.acao === 'pronto-cena') {
+        if (typeof mensagem.valor !== 'boolean') return recusa('valor inválido');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'pronto-cena', valor: mensagem.valor } });
+      }
+      // Um botão da tela da vila ou da região (Dormir, Acampar…): o jogador pede, o anfitrião roda.
+      if (mensagem.acao === 'vila-acao') {
+        const { qual } = mensagem;
+        if (typeof qual !== 'string' || !/^(dormir|b\d{1,2})$/.test(qual)) return recusa('ação inválida');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'vila-acao', qual } });
+      }
       if (mensagem.acao === 'lugar') {
         const { lugar } = mensagem;
         if (typeof lugar !== 'string' || !lugar || lugar.length > 40) return recusa('lugar inválido');
@@ -367,6 +394,37 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       const base = { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: mensagem.acao };
       if (mensagem.acao === 'terminar') return ok({ igual: true, repassar: base });
       // Loja e ficha (cada jogador cuida do SEU herói): o servidor confere de quem é o herói e a forma; o anfitrião, o resto.
+      // Interagir (botão direito): 'contexto' pede o menu da casa (x, y, como mover) e 'contexto-escolher' escolhe a opção `idx` dele.
+      if (mensagem.acao === 'contexto-escolher') {
+        const { idx } = mensagem;
+        if (!Number.isInteger(idx) || idx < 0 || idx > 60) return recusa('opção inválida');
+        return ok({ igual: true, repassar: { ...base, idx } });
+      }
+      // O descanso curto em curso: gastar um dado (ou rezar uma cura) do SEU herói, e avisar que terminou. O anfitrião confere o resto.
+      if (mensagem.acao === 'descanso-dado' || mensagem.acao === 'descanso-magia' || mensagem.acao === 'descanso-pronto') {
+        const { id, spellId = null, circulo = null } = mensagem;
+        if (!Number.isInteger(id)) return recusa('descanso inválido');
+        if (mensagem.acao === 'descanso-magia' && (typeof spellId !== 'string' || !spellId || spellId.length > 40 || !Number.isInteger(circulo) || circulo < 1 || circulo > 9)) return recusa('descanso inválido');
+        return ok({ igual: true, repassar: { ...base, id, spellId, circulo } });
+      }
+      // Preparar magias (pela ficha): a lista que o jogador quer; o anfitrião a confere contra as magias que o herói pode preparar.
+      if (mensagem.acao === 'preparar') {
+        const { lista } = mensagem;
+        if (!Array.isArray(lista) || lista.length > 40 || !lista.every((x) => typeof x === 'string' && x.length <= 40)) return recusa('lista inválida');
+        return ok({ igual: true, repassar: { ...base, lista } });
+      }
+      // Subir de nível: o dono do herói devolve as magias que escolheu (o anfitrião as confere contra as opções).
+      if (mensagem.acao === 'nivel') {
+        const { id, selecoes } = mensagem;
+        if (!Number.isInteger(id) || !selecoes || typeof selecoes !== 'object' || Array.isArray(selecoes)) return recusa('escolhas inválidas');
+        const chaves = Object.keys(selecoes);
+        if (chaves.length > 8) return recusa('escolhas inválidas');
+        for (const k of chaves) {
+          const v = selecoes[k];
+          if (k.length > 30 || !Array.isArray(v) || v.length > 8 || !v.every((x) => typeof x === 'string' && x.length <= 40)) return recusa('escolhas inválidas');
+        }
+        return ok({ igual: true, repassar: { ...base, id, selecoes } });
+      }
       if (mensagem.acao === 'comprar' || mensagem.acao === 'vender') {
         const { item } = mensagem;
         if (typeof item !== 'string' || !item || item.length > 40) return recusa('item inválido');
@@ -524,6 +582,18 @@ function devolverHerois(sala, jogadorId) {
     delete sala.cedidos[h];
   }
   return algum;
+}
+
+/**
+ * O herói que um jogador que entra com a partida em andamento pode assumir: um que ficou no piloto de propósito (não os cedidos por
+ * quem estava ausente) ou, se não há, o último dos que o anfitrião conduz além do primeiro. `null`: só assiste.
+ */
+export function heroiQueSobra(sala) {
+  const ids = Object.keys(sala.herois);
+  const noPiloto = ids.find((h) => sala.herois[h] === PILOTO && !(h in sala.cedidos));
+  if (noPiloto) return noPiloto;
+  const doAnfitriao = ids.filter((h) => sala.herois[h] === sala.anfitriao);
+  return doAnfitriao.length > 1 ? doAnfitriao[doAnfitriao.length - 1] : null;
 }
 
 /**

@@ -37,7 +37,34 @@ function retrato(look) {
 
 const nomeDaClasse = (c) => c.className ?? CLASSES[c.classe]?.nome ?? '';
 
-function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: () => {} }) {
+/**
+ * As magias de cura que o herói pode rezar no descanso, como dado: { id, nome, minimo, ganho, descricao }. O mesmo dado desenha a
+ * linha do anfitrião e a dos outros jogadores.
+ */
+export function magiasDoDescanso(c) {
+  if (!c.spellcasting || c.dead) return [];
+  const prontas = magiasProntas(c);
+  const out = [];
+  if (prontas.includes('bomFruto')) {
+    out.push({ id: 'bomFruto', nome: 'Bom Fruto', minimo: SPELLS.bomFruto.level, ganho: `${SPELLS.bomFruto.frutos} PV no total, 1 por fruta, a quem mais precisa`, descricao: 'dez frutinhas, 1 PV cada' });
+  }
+  if (prontas.includes('oracaoDeCura')) {
+    const sp = SPELLS.oracaoDeCura;
+    out.push({ id: 'oracaoDeCura', nome: 'Oração de Cura', minimo: sp.level, ganho: `${dadosDaMagia(sp, { circulo: sp.level, notacao: sp.heal })}+${spellMod(c)} PV em cada um, até ${sp.targets} aliados (10 min)`, descricao: 'cura até 6 aliados' });
+  }
+  return out;
+}
+
+/** A linha de um herói como dado puro (vai pela rede): o que os outros jogadores veem do descanso dele. */
+export function dadosDaLinha(c, ultimo = '') {
+  return {
+    heroi: c.id, nome: c.name, className: nomeDaClasse(c), look: c.look ?? null, caido: hasCondition(c, 'inconsciente'),
+    hp: c.hp, maxHp: maxHpEfetivo(c), restam: dadosDeVida(c), lados: dadoDeVida(c), ultimo,
+    magias: magiasDoDescanso(c).map((m) => ({ ...m, slots: [...(c.spellcasting?.slots ?? [])] })),
+  };
+}
+
+function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: () => {} }, { remoto = false } = {}) {
   const vida = el('div', { class: 'descanso-vida' }, el('i'), el('span'));
   const dados = el('span', { class: 'descanso-dados' });
   const ultimo = el('span', { class: 'descanso-ultimo' });
@@ -50,8 +77,8 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     const restam = dadosDeVida(c);
     dados.textContent = `${restam}× d${dadoDeVida(c)}`;
     dados.title = `${restam} dado${restam === 1 ? '' : 's'} de vida restante${restam === 1 ? '' : 's'}`;
-    botao.disabled = restam <= 0 || c.hp >= maxHpEfetivo(c);
-    botao.title = restam <= 0 ? 'sem dados de vida' : c.hp >= maxHpEfetivo(c) ? 'vida cheia' : '';
+    botao.disabled = remoto || restam <= 0 || c.hp >= maxHpEfetivo(c);
+    botao.title = remoto ? 'a escolha é do dono do herói' : restam <= 0 ? 'sem dados de vida' : c.hp >= maxHpEfetivo(c) ? 'vida cheia' : '';
   };
 
   const gastar = () => {
@@ -64,6 +91,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     ultimo.classList.add('pulso');
     registro.push(`${c.name} gasta um dado de vida: d${r.lados} ${r.rolagem}${con} → +${r.cura} PV (restam ${r.restam}).`);
     atualizar();
+    grupo.aoMudar?.();      // numa sala, os outros jogadores veem o dado gasto
     return r;
   };
   botao.addEventListener('click', () => { audio.play('click'); gastar(); });
@@ -115,7 +143,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
       const b = el('button', {
         class: 'descanso-gastar descanso-orar',
         title: restam > 0 ? `${descricao}; gasta um espaço de ${n}º círculo (restam ${restam})` : `sem espaço de ${n}º círculo`,
-        disabled: restam <= 0,
+        disabled: restam <= 0 || remoto,
         'aria-label': `${nome}, ${n}º círculo, restam ${restam}`,
       }, `${n}º ×${restam}`);
       if (restam > 0) { algum = true; b.addEventListener('click', () => { audio.play('click'); fazer(n); }); }
@@ -140,7 +168,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
         `${dadosDaMagia(sp, { circulo: sp.level, notacao: sp.heal })}+${spellMod(c)} PV em cada um, até ${sp.targets} aliados (10 min)`, rezar, 'cura até 6 aliados'));
     }
   };
-  const atualizarTudo = () => { atualizar(); atualizarOracao(); };
+  const atualizarTudo = () => { atualizar(); atualizarOracao(); grupo.aoMudar?.(); };
 
   atualizarTudo();
   const linha = el('div', { class: 'descanso-linha' },
@@ -149,7 +177,13 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
       el('strong', {}, c.name),
       el('small', {}, [nomeDaClasse(c), hasCondition(c, 'inconsciente') ? 'caído, estável' : ''].filter(Boolean).join(' · '))),
     vida, dados, botao, ultimo, orar);
-  return { linha, atualizar: atualizarTudo, gastarSugerido: () => { for (let n = dadosSugeridos(c); n > 0; n--) if (!gastar()) break; } };
+  return {
+    linha, atualizar: atualizarTudo, gastar,
+    gastarSugerido: () => { for (let n = dadosSugeridos(c); n > 0; n--) if (!gastar()) break; },
+    dados: () => dadosDaLinha(c, ultimo.textContent),
+    // A magia rezada a pedido do dono (que a escolheu na tela dele).
+    magia: (spellId, circulo) => (spellId === 'bomFruto' ? comerFruto(circulo) : spellId === 'oracaoDeCura' ? rezar(circulo) : null),
+  };
 }
 
 /**
@@ -157,11 +191,30 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
  * @param {HTMLElement} root
  * @param {{ herois: object[], rng: object, titulo?: string, texto?: string[] }} o
  */
-export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curto', texto = null, automaticos = null }) {
+export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curto', texto = null, automaticos = null, porta = null }) {
   const vivos = herois.filter((c) => !c.dead);
   const registro = [];
-  const grupo = { vivos, atualizarTodas: () => linhas.forEach((l) => l.atualizar()) };
-  const linhas = vivos.map((c) => linhaDoHeroi(c, rng, registro, grupo));
+  // Numa sala (`porta`): cada jogador gasta os dados do SEU herói na tela dele; a do anfitrião mostra todos e só deixa mexer nos dele.
+  const donos = new Map(vivos.map((c) => [c.id, porta?.dono(c) ?? null]));
+  const remotos = new Set([...donos.values()].filter(Boolean));
+  const prontos = new Set();
+  let agenda = null;
+  const publicar = () => {
+    if (!porta || agenda) return;
+    agenda = setTimeout(() => { agenda = null; porta.estado(vivos.map((c, i) => linhas[i].dados()), [...prontos]); }, 60);
+  };
+  const grupo = { vivos, atualizarTodas: () => linhas.forEach((l) => l.atualizar()), aoMudar: publicar };
+  const linhas = vivos.map((c) => linhaDoHeroi(c, rng, registro, grupo, { remoto: Boolean(donos.get(c.id)) }));
+  let todosProntos = () => {};
+  const esperaProntos = new Promise((resolve) => { todosProntos = resolve; });
+  const checar = () => { if ([...remotos].every((p) => prontos.has(p))) todosProntos(); };
+  porta?.abrir({
+    titulo, texto: texto ?? ['Uma hora de pausa: curar as feridas, beber água, recuperar o fôlego.'],
+    gastar: (heroi, pub) => { const i = vivos.findIndex((c) => c.id === heroi); if (i >= 0 && donos.get(heroi) === pub && !prontos.has(pub)) linhas[i].gastar(); },
+    magia: (heroi, pub, spellId, circulo) => { const i = vivos.findIndex((c) => c.id === heroi); if (i >= 0 && donos.get(heroi) === pub && !prontos.has(pub)) linhas[i].magia(spellId, circulo); },
+    pronto: (pub) => { if (!remotos.has(pub)) return; prontos.add(pub); publicar(); checar(); },
+  });
+  publicar();
   // Numa sala, os heróis de OUTROS jogadores gastam os dados sugeridos por conta própria: a tela é do anfitrião, e só ele a vê.
   if (automaticos?.size) for (const [i, c] of vivos.entries()) if (automaticos.has(c.id)) linhas[i].gastarSugerido();
   const conteudo = el('div', { class: 'descanso' },
@@ -169,11 +222,12 @@ export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curt
       el('span', {}, 'Cada dado cura o que rolar mais a Constituição. Um por vez.'),
       el('button', {
         class: 'descanso-auto',
-        onclick: () => { audio.play('click'); for (const l of linhas) l.gastarSugerido(); },
+        onclick: () => { audio.play('click'); for (const [i, l] of linhas.entries()) if (!donos.get(vivos[i].id)) l.gastarSugerido(); },
       }, 'Gastar o sugerido')),
     ...linhas.map((l) => l.linha));
 
-  await narrar(root, {
+  const tela = porta?.local ?? narrar;    // a tabela do anfitrião NÃO é transmitida: cada jogador tem a sua
+  await tela(root, {
     formato: 'tela',
     paginas: [{
       titulo,
@@ -182,6 +236,22 @@ export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curt
     }],
     escolhas: [{ rotulo: 'Terminar o descanso', valor: 'fim', primaria: true }],
   });
+
+  // Depois do "Terminar" do anfitrião, espera quem ainda está escolhendo (no máximo dois minutos: a vida de cada um fica como está).
+  if (remotos.size && ![...remotos].every((p) => prontos.has(p))) {
+    const ctl = new AbortController();
+    let acabou = false;
+    const fim = Promise.race([esperaProntos, new Promise((r) => setTimeout(r, 120_000))]).then(() => { acabou = true; ctl.abort(); });
+    while (!acabou) {
+      await tela(root, {
+        formato: 'tela', sinal: ctl.signal,
+        paginas: [{ titulo, texto: [`Esperando ${[...remotos].filter((p) => !prontos.has(p)).length} jogador(es) terminar(em) o descanso.`] }],
+      });
+    }
+    await fim;
+  }
+  clearTimeout(agenda);
+  porta?.fechar();
 
   for (const c of vivos) {
     const voltou = recuperarNoCurto(c);
@@ -235,4 +305,45 @@ export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso lo
   });
   return ['O grupo termina um descanso longo: vida, magia e recursos de volta.',
     ...(cansados.length ? [`Exaustão ainda em ${cansados.map((c) => `${c.name} ${nivelDeExaustao(c)}`).join(', ')}.`] : [])];
+}
+
+/**
+ * A tela do descanso curto de quem joga de fora: a mesma tabela do anfitrião, desenhada dos dados que ele manda; só os heróis DESTE
+ * jogador têm botões (gastar um dado, rezar). Fechar a página (o botão "Estou pronto") avisa o anfitrião.
+ * Devolve `{ atualizar(estado), fim }`: `fim` é a promessa da página (resolve quando o jogador fica pronto ou o anfitrião fecha).
+ */
+export function telaDoDescansoRemoto(root, { titulo, texto, ehMeu, aoGastar, aoMagia, sinal = null, narrarFn = narrar }) {
+  const corpo = el('div', { class: 'descanso' });
+  let ultimoEstado = null;
+  const desenhar = (e) => {
+    ultimoEstado = e;
+    corpo.replaceChildren(...e.linhas.map((d) => {
+      const meu = ehMeu(d.heroi);
+      const frac = Math.max(0, Math.min(1, d.hp / (d.maxHp || 1)));
+      const vida = el('div', { class: 'descanso-vida' }, el('i', { style: { width: `${Math.round(frac * 100)}%` } }), el('span', {}, `${Math.max(0, d.hp)}/${d.maxHp} PV`));
+      const botao = el('button', {
+        class: 'descanso-gastar', disabled: !meu || d.restam <= 0 || d.hp >= d.maxHp,
+        title: !meu ? 'a escolha é do dono do herói' : d.restam <= 0 ? 'sem dados de vida' : d.hp >= d.maxHp ? 'vida cheia' : '',
+        onclick: () => { audio.play('click'); aoGastar(d.heroi); },
+      }, 'Gastar 1 dado');
+      const magias = el('span', { class: 'descanso-oracao' }, ...d.magias.map((m) => el('span', { class: 'descanso-magia' },
+        el('strong', {}, m.nome),
+        el('small', {}, m.ganho),
+        ...m.slots.map((restam, n) => (n >= m.minimo ? el('button', {
+          class: 'descanso-gastar descanso-orar', disabled: !meu || restam <= 0,
+          title: restam > 0 ? `${m.descricao}; gasta um espaço de ${n}º círculo (restam ${restam})` : `sem espaço de ${n}º círculo`,
+          onclick: () => { audio.play('click'); aoMagia(d.heroi, m.id, n); },
+        }, `${n}º ×${restam}`) : null)))));
+      return el('div', { class: 'descanso-linha' },
+        el('span', { class: 'descanso-retrato' }, retrato(d.look)),
+        el('div', { class: 'descanso-quem' }, el('strong', {}, d.nome), el('small', {}, [d.className, d.caido ? 'caído, estável' : ''].filter(Boolean).join(' · '))),
+        vida, el('span', { class: 'descanso-dados' }, `${d.restam}× d${d.lados}`), botao, el('span', { class: 'descanso-ultimo' }, d.ultimo), magias);
+    }));
+  };
+  const fim = narrarFn(root, {
+    formato: 'tela', sinal,
+    paginas: [{ titulo, texto: texto ?? ['Uma hora de pausa.'], conteudo: el('div', {}, el('p', { class: 'descanso-topo' }, 'Cada jogador gasta os dados de vida do seu herói. Quando terminar, feche com "Estou pronto".'), corpo) }],
+    escolhas: [{ rotulo: 'Estou pronto', valor: 'ok', primaria: true }],
+  });
+  return { atualizar: desenhar, fim, estado: () => ultimoEstado };
 }

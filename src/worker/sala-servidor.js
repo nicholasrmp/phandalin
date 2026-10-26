@@ -22,11 +22,13 @@
 
 import { criarSala, aplicar, visaoDaSala, idValido } from '../game/sala.js';
 import { MAX_VISTA, MS_ENTRE_VISTAS, lerVista } from '../game/partida-vista.js';
+import { lerDelta } from '../game/partida-delta.js';
 
 export const MAX_BYTES = 2048;
 
 /** Quantas mensagens um jogador pode mandar por janela: sobra para clicar rápido, falta para inundar. */
 export const LIMITE_POR_JANELA = 30;
+export const MS_ENTRE_DELTAS = 50;
 export const JANELA_MS = 10_000;
 
 /** Quantas conexões abertas uma sala aceita, e quantas por jogador (várias abas do mesmo navegador). */
@@ -116,11 +118,14 @@ export function tratarVista({ sala, jogadorId, bruto, agora, ultimaEm = 0 }) {
   if (!sala || sala.fase !== 'iniciada') return { ok: false, erro: 'a partida não está em andamento' };
   if (sala.anfitriao !== jogadorId) return { ok: false, erro: 'só o anfitrião publica a partida' };
   if (typeof bruto !== 'string' || bruto.length > MAX_VISTA + 200) return { ok: false, erro: 'a vista da partida é grande demais' };
-  if (agora - ultimaEm < MS_ENTRE_VISTAS) return { ok: false, erro: 'devagar', calado: true };
   let m;
   try { m = JSON.parse(bruto); } catch { return { ok: false, erro: 'vista inválida' }; }
-  if (!m || m.tipo !== 'partida' || !lerVista(m.vista)) return { ok: false, erro: 'vista inválida' };
-  return { ok: true, texto: JSON.stringify({ tipo: 'partida', vista: m.vista }) };
+  if (!m || m.tipo !== 'partida') return { ok: false, erro: 'vista inválida' };
+  // Uma vista em diferenças (`game/partida-delta.js`) é pequena e a seguinte depende dela: não se descarta por ritmo como a completa.
+  const delta = m.vista?.delta === true;
+  if (agora - ultimaEm < (delta ? MS_ENTRE_DELTAS : MS_ENTRE_VISTAS)) return { ok: false, erro: 'devagar', calado: true };
+  if (!(delta ? lerDelta(m.vista) : lerVista(m.vista))) return { ok: false, erro: 'vista inválida' };
+  return { ok: true, delta, texto: JSON.stringify({ tipo: 'partida', vista: m.vista }) };
 }
 
 /** É uma mensagem de vista? (Olha só o começo, sem ler o resto: ela é grande.) */
@@ -142,10 +147,16 @@ export function tratarNarrativa({ sala, jogadorId, bruto }) {
   let m;
   try { m = JSON.parse(bruto); } catch { return { ok: false, erro: 'narrativa inválida' }; }
   const msg = m?.msg;
-  if (!msg || !['abrir', 'fechar', 'loja-abrir', 'loja-fechar'].includes(msg.tipo) || !Number.isInteger(msg.id)) return { ok: false, erro: 'narrativa inválida' };
+  if (!msg || !['abrir', 'fechar', 'loja-abrir', 'loja-fechar', 'contexto-abrir', 'nivel-abrir', 'nivel-fechar', 'descanso-estado', 'descanso-fechar'].includes(msg.tipo) || !Number.isInteger(msg.id)) return { ok: false, erro: 'narrativa inválida' };
   if (msg.tipo === 'abrir' && (!msg.pedido || !Array.isArray(msg.pedido.paginas))) return { ok: false, erro: 'narrativa inválida' };
   // A loja aberta (cada jogador compra e vende para o seu herói) viaja pela mesma porta: leva só o id da loja e quem a atende.
   if (msg.tipo === 'loja-abrir' && (typeof msg.lojaId !== 'string' || !msg.lojaId || msg.lojaId.length > 40 || !msg.npc || typeof msg.npc.name !== 'string')) return { ok: false, erro: 'narrativa inválida' };
+  // O menu do botão direito de UM jogador (`para`): vai por esta porta por ser maior que 2 KB; os outros ignoram.
+  if (msg.tipo === 'contexto-abrir' && (typeof msg.para !== 'string' || !Array.isArray(msg.opcoes) || msg.opcoes.length > 60)) return { ok: false, erro: 'narrativa inválida' };
+  // A tabela do descanso curto (todos veem; cada um mexe nos dados do próprio herói).
+  if (msg.tipo === 'descanso-estado' && (!Array.isArray(msg.linhas) || msg.linhas.length > 8 || !Array.isArray(msg.prontos))) return { ok: false, erro: 'narrativa inválida' };
+  // O cartão de subir de nível de UM jogador (`para`): as magias do herói dele para escolher.
+  if (msg.tipo === 'nivel-abrir' && (typeof msg.para !== 'string' || !msg.dados || typeof msg.dados !== 'object' || !Array.isArray(msg.dados.escolhas))) return { ok: false, erro: 'narrativa inválida' };
   return { ok: true, texto: JSON.stringify({ tipo: 'narrativa', msg }) };
 }
 

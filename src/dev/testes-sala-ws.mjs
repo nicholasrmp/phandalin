@@ -222,6 +222,97 @@ await teste('F4.3: o passo vai ao anfitrião (só se o herói é de quem mandou)
   assert.deepEqual([resp.id, resp.indice, resp.continuar, resp.de], [7, 0, false, 'p2'], 'o anfitrião recebe a resposta e de quem veio');
 });
 
+/** Sala iniciada com o anfitrião (a) e o Beto (b); o Beto tem o mago. Devolve os dois. */
+async function partidaDeDois() {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) a.manda({ tipo: 'pegar', heroi: h });
+  b.manda({ tipo: 'pegar', heroi: 'pc-mago' });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);
+  a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
+  a.manda({ tipo: 'iniciar' });
+  await b.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  a.recebidas.length = 0; b.recebidas.length = 0;
+  return { codigo, a, b };
+}
+
+await teste('paridade: o convidado pede o menu do botão direito, o alfinete, o descanso longo, o nível e a ficha; o anfitrião os recebe com a identidade certa', async () => {
+  const { a, b } = await partidaDeDois();
+  b.manda({ tipo: 'agir', acao: 'contexto', heroi: 'pc-mago', x: 4, y: 7 });
+  const ctx = await a.esperar((x) => x.tipo === 'agir' && x.acao === 'contexto');
+  assert.deepEqual([ctx.de, ctx.heroi, ctx.x, ctx.y], ['p2', 'pc-mago', 4, 7]);
+  b.manda({ tipo: 'agir', acao: 'alfinete', x: 2, y: 3 });
+  const al = await a.esperar((x) => x.tipo === 'agir' && x.acao === 'alfinete');
+  assert.deepEqual([al.de, al.x, al.y], ['p2', 2, 3]);
+  b.manda({ tipo: 'agir', acao: 'descanso', descanso: 'longo' });
+  assert.equal((await a.esperar((x) => x.tipo === 'agir' && x.acao === 'descanso')).descanso, 'longo');
+  b.manda({ tipo: 'agir', acao: 'nivel', heroi: 'pc-mago', id: 1, selecoes: { aprende: ['luz'] } });
+  assert.deepEqual((await a.esperar((x) => x.tipo === 'agir' && x.acao === 'nivel')).selecoes, { aprende: ['luz'] });
+  b.manda({ tipo: 'agir', acao: 'preparar', heroi: 'pc-mago', lista: ['sono'] });
+  assert.deepEqual((await a.esperar((x) => x.tipo === 'agir' && x.acao === 'preparar')).lista, ['sono']);
+  b.manda({ tipo: 'agir', acao: 'preparar', heroi: 'pc-guerreiro', lista: [] });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /não é seu/, 'só o herói do próprio jogador');
+  b.recebidas.length = 0;
+  // O menu volta pela porta da narrativa (maior que 2 KB) e chega a todos; o anfitrião não recebe a própria.
+  const opcoes = Array.from({ length: 12 }, (_, i) => ({ rotulo: `Opção ${i}`, i, detalhe: 'x'.repeat(300) }));
+  a.manda({ tipo: 'narrativa', msg: { tipo: 'contexto-abrir', id: 1, para: 'p2', heroi: 'pc-mago', titulo: 'Elmar', opcoes } });
+  const menu = await b.esperar((x) => x.tipo === 'narrativa' && x.msg.tipo === 'contexto-abrir');
+  assert.equal(menu.msg.opcoes.length, 12); assert.equal(menu.msg.para, 'p2');
+  b.manda({ tipo: 'narrativa', msg: { tipo: 'contexto-abrir', id: 2, para: 'p1', opcoes: [] } });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /anfitrião/);
+});
+
+await teste('vista em diferenças: a completa é guardada para quem entra; a diferença passa a quem já está', async () => {
+  const { a, b } = await partidaDeDois();
+  const comb = (n, hp) => ({ id: `c${n}`, name: `C${n}`, side: 'party', pos: { x: n, y: 1 }, hp, maxHp: 10 });
+  a.manda({ tipo: 'partida', vista: { v: 1, variante: 'emboscada', rodada: 1, lado: 'party', acabou: false, seq: 1, extras: null, combatentes: [comb(1, 10), comb(2, 10)] } });
+  await b.esperar((x) => x.tipo === 'partida' && x.vista.seq === 1);
+  await vez(60);
+  a.manda({ tipo: 'partida', vista: { v: 1, delta: true, base: 1, seq: 2, variante: 'emboscada', rodada: 1, lado: 'party', acabou: false, ordem: ['c1', 'c2'], mudaram: [comb(2, 3)], removidos: [], extras: null } });
+  const d = await b.esperar((x) => x.tipo === 'partida' && x.vista.delta === true);
+  assert.equal(d.vista.mudaram[0].hp, 3);
+  // Quem entra agora (a sala tem lugar) recebe a última COMPLETA, não a diferença.
+  const c = await cliente(a.codigo, 'caio');
+  c.manda({ tipo: 'entrar', nome: 'Caio' });
+  const completa = await c.esperar((x) => x.tipo === 'partida');
+  assert.equal(completa.vista.seq, 1); assert.ok(!completa.vista.delta);
+  await vez(80);
+  a.manda({ tipo: 'partida', vista: { v: 1, delta: true, base: 'x', seq: 3, variante: 'e', ordem: [], mudaram: [], removidos: [] } });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /inválida/);
+});
+
+await teste('entrar com a partida em andamento: fica com o herói que sobrava do anfitrião (ou só assiste)', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf');
+  a.manda({ tipo: 'criar', nome: 'N', maxJogadores: 3 }); await a.esperar((x) => x.tipo === 'sala');
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo', 'pc-mago']) a.manda({ tipo: 'pegar', heroi: h });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);
+  a.manda({ tipo: 'pronto', valor: true });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
+  a.manda({ tipo: 'iniciar' });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  const b = await cliente(codigo, 'beto');
+  b.manda({ tipo: 'entrar', nome: 'Beto' });
+  const v = await b.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  assert.equal(v.visao.voce, 'p2');
+  assert.equal(v.visao.herois['pc-mago'], 'p2', 'o último herói do anfitrião passou ao recém-chegado');
+  assert.equal(v.visao.herois['pc-guerreiro'], 'p1');
+});
+
+await teste('a rota de código novo: o servidor sorteia o código (o limite por IP está nos testes de regra)', async () => {
+  const pedir = () => fetch(`${HTTP}/api/nova-sala`, { method: 'POST' });
+  const r = await pedir();
+  if (r.status === 404) return;      // servidor antigo, sem a rota
+  assert.equal(r.status, 200);
+  assert.match((await r.json()).codigo, /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.equal((await fetch(`${HTTP}/api/nova-sala`)).status, 405, 'só POST');
+  // O limite por IP e por hora (6) está nos testes de regra; aqui, em desenvolvimento local, o IP é o do próprio computador e não é limitado.
+  for (let i = 0; i < 8; i += 1) assert.equal((await pedir()).status, 200, 'em desenvolvimento local não há limite');
+});
+
 await teste('F4.4: o aviso do anfitrião chega só ao jogador certo, e a corda aparece na visão', async () => {
   const codigo = codigoNovo();
   const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');

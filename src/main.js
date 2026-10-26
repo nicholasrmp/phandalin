@@ -4,7 +4,7 @@ import './view/layout.css';
 import { makeRng, seedFromString } from './core/rng.js';
 import { Battlefield, key, distanceFt } from './core/grid.js';
 import { Encounter } from './rules/combat.js';
-import { makeParty } from './rules/party.js';
+import { makeParty, limiteDePreparacao, fontesDePreparacao } from './rules/party.js';
 import { makeMonster } from './rules/monsters.js';
 import { runMonsterSide, runAutoSummons, encerrarTurnoComInvocados } from './rules/ai.js';
 import { hasCondition, conditionEffects } from './rules/conditions.js';
@@ -17,10 +17,12 @@ import { heroisDoPiloto, jogadaDoPiloto, controlaOHeroi } from './game/piloto.js
 import { quemDecide, apurar, apurarLugar, TEMPO_DA_VOTACAO_MS } from './game/decisao.js';
 import { definirPortaDaVila } from './view/vila.js';
 import { definirPortaDaLoja, abrirLojaLocal } from './view/loja.js';
+import { definirPortaDeNivel } from './view/nivel-tela.js';
 import { LOJAS, comprar as comprarNaLoja, vender as venderNaLoja, vendaveis } from './game/comercio.js';
 import { equipar } from './rules/equipment.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
 import { fotografar, emTexto, empacotarEvento, empacotarLista, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
+import { criarEmissor } from './game/partida-delta.js';
 import { criarPartidaTela } from './view/partida-tela.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
@@ -35,7 +37,8 @@ import { criarCastelo } from './game/capitulo4-castelo.js';
 import { abrirRegiao } from './game/regiao.js';
 import { criarArvoreTrovao } from './game/capitulo4-arvoretrovao.js';
 import { criarOndaEco } from './game/capitulo5-ondaeco.js';
-import { abrirPhandalin } from './game/phandalin.js';
+import { abrirPhandalin, MISSOES } from './game/phandalin.js';
+import { diarioDe } from './game/diario.js';
 import { narrar, narrativaAberta, narrarLocal, definirPorta } from './view/narrativa.js';
 import { criarPortaCompartilhada } from './game/porta-narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
@@ -58,7 +61,7 @@ import { aoDarXp } from './game/nivel.js';
 import { audio, passoSoundFor } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
-  playGlifoVisual, playCordaoVisual, playAnuladaVisual,
+  playGlifoVisual, playCordaoVisual, playAnuladaVisual, mostrarAlfinete, CORES_DOS_JOGADORES,
 } from './view/visuals.js';
 
 
@@ -91,7 +94,7 @@ class App {
       onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
       onAbrirFicha: (c) => this.ficha?.abrir(c, 'ficha'),
       // Explorando, as magias de utilidade saem pelo relógio, não pela rodada.
-      explorando: () => Boolean(this.capitulo?.explorando),
+      explorando: () => (this.partidaRemota?.aberta() ? this.partidaRemota.explorando() : Boolean(this.capitulo?.explorando)),
       // Mesma porta do hover do tabuleiro: um só caminho para "quem é o alvo
       // em consideração", para os dois nunca discordarem.
       onAlvoHover: (alvo) => { if (!this.partidaRemota?.aberta()) this.definirAlvo(alvo); },
@@ -355,11 +358,13 @@ class App {
       // Na campanha, a emboscada é a da aventura: quatro goblins, sem reforço.
       reinforcements: config.modo === 'campanha' ? () => null : (round) => reinforcementsFor(round, variante),
       emboscada: capitulo ? null : (mapa.emboscada ?? null),
-      onLog: (entry) => { this.hud.pushLog(entry); this.contarNovidade?.(); },
+      onLog: (entry) => { this.registrar(entry); this.contarNovidade?.(); },
       onEvent: (ev) => this.onEvent(ev),
     });
     // Ganchos do encontro para as magias de utilidade: o familiar entra na luta e o Alarme avisa o grupo
     // (numa emboscada de quem o Alarme cobre, ninguém é pego de surpresa).
+    this.prontosDaCena = null;     // cena nova: ninguém está pronto para sair ainda
+    this.mostrarProntos?.();
     this.enc.aoComecar = (e) => familiarEntra(e, estadoDeUtilidade(this.campanha ??= {}));
     this.enc.protegidoDeSurpresa = (c) => Boolean(c.pos && alarmeCobre(estadoDeUtilidade(this.campanha ??= {}),
       this.enc.combatants.filter((h) => h.side === 'party' && !h.dead && h.hp > 0), this.capitulo?.lugar, c.pos));
@@ -421,8 +426,19 @@ class App {
     });
     clearInterval(this.publicador);
     this.ultimaVistaTexto = null;
+    this.emissorDeVista = criarEmissor();
     this.publicador = setInterval(() => this.publicarVista(), 250);
+    this.ligarAutosaveDaSala();
     this.publicarVista();
+  }
+
+  /**
+   * O save da cena em que o grupo está, a cada 30 s: se o anfitrião cair, quem assumir retoma de pouco antes e não do começo da cena.
+   * Só em lugar seguro (explorando, sem texto aberto), como o save à mão.
+   */
+  ligarAutosaveDaSala() {
+    clearInterval(this.autosaveDaSala);
+    this.autosaveDaSala = setInterval(() => { if (this.salaDaPartida && this.podeSalvarAgora()) this.autosalvar(); }, 30_000);
   }
 
   /** A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20). */
@@ -431,6 +447,12 @@ class App {
     // A vila e a região: o grupo vota o destino e vai junto (F6.3).
     // A loja que a cena abre vale para todos: cada jogador compra e vende para o SEU herói (F6.4).
     definirPortaDaLoja((root, o) => this.lojaDaSala(root, o));
+    // Subir de nível: cada jogador escolhe as magias do SEU herói; a tela do anfitrião só tem os heróis dele.
+    definirPortaDeNivel({
+      dono: (c) => this.donoRemoto(c),
+      pedir: (c, dados, pub) => this.pedirNivel(c, dados, pub),
+      local: (root, opts) => narrarLocal(root, opts),
+    });
     definirPortaDaVila({
       meu: (c) => this.podeControlar(c),
       escolher: (l) => this.votarLugar(this.salaDaPartida?.visao?.voce, l.id),
@@ -468,8 +490,10 @@ class App {
     const r = this.carregarSave(lido.save);
     if (!r.ok) { this.avisarDeSave(r.erro); return; }
     this.ultimaVistaTexto = null;
+    this.emissorDeVista = criarEmissor();
     clearInterval(this.publicador);
     this.publicador = setInterval(() => this.publicarVista(), 250);
+    this.ligarAutosaveDaSala();
     this.publicarVista();
   }
 
@@ -489,7 +513,7 @@ class App {
     const eventos = naVila ? [] : (this.eventosPendentes ?? []);
     const vista = naVila
       ? { v: 1, variante: 'vila', rodada: 0, lado: 'party', acabou: false, combatentes: [], extras: { vila: { ...this.vilaBase, votos: this.votosDeLugar(), faixa: this.faixaDaVotacao(), herois: empacotarLista((this.grupoDaCampanha ?? []).filter((c) => !c.dead)) } } }
-      : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: eventos.length ? { eventos } : null });
+      : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: { ...(eventos.length ? { eventos } : {}), diario: diarioDe(this.campanha?.vila, MISSOES), explorando: Boolean(this.capitulo?.explorando), prontos: [...(this.prontosDaCena ?? [])] } });
     // O que mudou se mede SEM os eventos (eles já foram dados uma vez): só estado novo, evento novo ou o batimento mandam.
     const texto = naVila ? emTexto(vista) : emTexto({ ...vista, extras: null });
     // Sem mudança, só repete de vez em quando: o servidor não guarda a vista (ela some se o Durable Object dormir ou for
@@ -497,7 +521,11 @@ class App {
     const agora = Date.now();
     if (texto === this.ultimaVistaTexto && !eventos.length && agora - (this.ultimaVistaEm ?? 0) < BATIMENTO_DA_VISTA_MS) return;
     if (emTexto(vista).length > MAX_VISTA) { console.warn('a vista da partida passou do teto e não foi publicada'); this.eventosPendentes = []; return; }
-    if (this.menu.enviarVista(vista)) { this.ultimaVistaTexto = texto; this.ultimaVistaEm = agora; this.eventosPendentes = []; }
+    // Só o que mudou desde a publicação anterior (`game/partida-delta.js`); o batimento sai sempre completo.
+    this.emissorDeVista ??= criarEmissor();
+    const batimento = texto === this.ultimaVistaTexto && !eventos.length;
+    const saida = naVila ? vista : this.emissorDeVista.publicar(vista, { completa: batimento });
+    if (this.menu.enviarVista(saida)) { this.ultimaVistaTexto = texto; this.ultimaVistaEm = agora; this.eventosPendentes = []; } else this.emissorDeVista.reiniciar();
   }
 
   /**
@@ -512,8 +540,14 @@ class App {
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles, lugar, item, slot }) {
-    if (acao === 'descanso') { this.pedirDescanso(de); return; }
+  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles, lugar, item, slot, descanso, qual, id, spellId, valor }) {
+    if (acao === 'alfinete') { this.alfinete(de, x, y); return; }
+    if (acao === 'pronto-cena') { this.marcarPronto(de, valor); return; }
+    if (acao === 'descanso-dado' || acao === 'descanso-magia' || acao === 'descanso-pronto') { this.descansoDeFora({ de, heroi, acao, id, spellId, circulo }); return; }
+    if (acao === 'vila-acao') { this.acaoDaVila(de, qual); return; }
+    if (acao === 'descanso') { this.pedirDescanso(de, descanso === 'longo' ? 'longo' : 'curto'); return; }
+    if (acao === 'preparar') { this.prepararDeFora({ de, heroi, lista: arguments[0].lista }); return; }
+    if (acao === 'nivel') { const e = this._esperasDeNivel?.get(arguments[0].id); if (e && e.pub === de && e.heroi === heroi) e.resolve(arguments[0].selecoes); return; }
     if (acao === 'comprar' || acao === 'vender') { this.negociarDeFora({ de, heroi, acao, item }); return; }
     if (acao === 'equipar') { this.equiparDeFora({ de, heroi, slot: arguments[0].slot, item }); return; }
     if (acao === 'lugar') { this.votarLugar(de, lugar); return; }   // na vila e na região não há herói: o voto é do jogador
@@ -525,6 +559,7 @@ class App {
     const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
     if (!c) return;
     this.marcarAtor(c);   // a cena que este passo ou golpe começar é dele
+    if (acao === 'contexto' || acao === 'contexto-escolher') { this.contextoDeFora(c, { de, acao, x, y, idx: arguments[0].idx }, avisar); return; }
     const emCombate = !this.capitulo?.explorando;
     if (emCombate && c.acted) { avisar(`${c.name} já terminou o turno`); return; }
 
@@ -538,7 +573,18 @@ class App {
           if (!r.ok) avisar(r.why); else { audio.play('click'); this.afterAct(c); }
           return;
         }
-        avisar('em exploração só se anda e se usa item: o resto é com o anfitrião');
+        // Magia de utilidade (Luz, Detectar Magia…): a conjuração e as perguntas dela passam pela narrativa, e quem responde é o dono do herói.
+        if (action?.kind === 'spell' && UTIL_FORA.has(action.spellId)) {
+          if (narrativaAberta()) { avisar('espere a narrativa terminar'); return; }
+          const antes = this.selected;
+          this.selected = null;
+          this._remoto = true;
+          try { this.select(c); } finally { this._remoto = false; }
+          this.chooseAction({ kind: 'spell', spellId: action.spellId });
+          if (antes && antes !== c) this.selected = antes;
+          return;
+        }
+        avisar('em exploração só se anda, se usa item e se conjura magia de utilidade');
         return;
       }
       this.usarDeFora(c, { action, circulo, tiles }, avisar);
@@ -568,6 +614,43 @@ class App {
   }
 
   /**
+   * Interagir, pedido por outro jogador (botão direito numa casa). O anfitrião monta o menu COMO SE `c` estivesse selecionado
+   * (`game/interacoes.js`), guarda as opções (que são funções) e manda ao jogador só a parte que se desenha; a escolha volta pelo
+   * número da opção e roda aqui, com o herói dele. Nada abre na tela do anfitrião além do que a própria ação abriria (uma conversa).
+   */
+  contextoDeFora(c, { de, acao, x, y, idx }, avisar) {
+    this._contextos ??= new Map();
+    const comHeroi = (fn) => {
+      const antes = this.selected;
+      this.selected = c;
+      try { return fn(); } finally { this.selected = antes; }
+    };
+    if (acao === 'contexto-escolher') {
+      const m = this._contextos.get(de);
+      this._contextos.delete(de);
+      const o = m?.heroi === c.id ? m.opcoes[idx] : null;
+      if (!o) { avisar('o menu já não vale: clique de novo'); return; }
+      if (o.motivo) { avisar(o.motivo); return; }
+      if (o.local) return;      // ficha e seleção são da tela de quem pediu: o convidado as faz sozinho
+      comHeroi(() => o.fazer());
+      this.mode = null;         // nada fica pendente na mira do anfitrião
+      this.refresh();
+      return;
+    }
+    const m = comHeroi(() => opcoesDaCasa(this, { x, y }));
+    if (!m?.opcoes.length) { avisar('nada a fazer ali'); return; }
+    // Uma magia que pede uma escolha (Aprimorar Atributo) abriria o seletor na tela do anfitrião: essa o convidado conjura pela barra de magias.
+    for (const o of m.opcoes) if (o.spellId && !o.motivo && opcoesDaMagia(getSpell(o.spellId))) o.motivo = 'pede uma escolha: use a barra de magias';
+    this._contextos.set(de, { heroi: c.id, opcoes: m.opcoes });
+    const opcoes = m.opcoes.map((o, i) => {
+      const { fazer, alvoPrevia, ...resto } = o;
+      return { ...resto, i, previa: alvoPrevia?.pos ? { x: alvoPrevia.pos.x, y: alvoPrevia.pos.y } : null };
+    });
+    const id = (this._seqContexto = (this._seqContexto ?? 0) + 1);
+    this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'contexto-abrir', id, para: de, heroi: c.id, titulo: m.titulo, subtitulo: m.subtitulo ?? null, alvo: m.alvo ?? null, opcoes } });
+  }
+
+  /**
    * F5.2: uma ação da barra pedida por outro jogador. O anfitrião a roda COMO SE o clique fosse dele (escolhe o herói, a
    * ação, as casas) e, no fim, não deixa nada pendente nem mexe na seleção dele. O que abriria uma janela de escolha na
    * tela do anfitrião (uma magia com opção) não passa: seria sequestrar a tela dele.
@@ -576,8 +659,9 @@ class App {
     if (action.kind === 'spell') {
       const spell = getSpell(action.spellId);
       if (!spell) { avisar('magia desconhecida'); return; }
-      if (opcoesDaMagia(spell)) { avisar(`${spell.name} pede uma escolha: por enquanto só o anfitrião a conjura`); return; }
+      if (opcoesDaMagia(spell) && !action.opcao) { avisar(`${spell.name} pede uma escolha`); return; }
     }
+    this._opcaoDeFora = action.opcao ?? null;
     const antes = this.selected;
     this.selected = null;
     this._remoto = true;
@@ -589,6 +673,7 @@ class App {
       if (this.mode?.alvos?.length) this.conjurarEscolhidos();
     }
     this.mode = null;       // nada fica pendente no anfitrião
+    this._opcaoDeFora = null;
     if (antes && antes !== c && !antes.acted && !antes.dead) this.select(antes);   // o do anfitrião, que ele podia controlar
     this.refresh();
   }
@@ -623,6 +708,59 @@ class App {
     } finally {
       this._pilotando = false;
     }
+  }
+
+  // ---- o descanso curto: cada jogador gasta os dados do SEU herói --------------------------------
+
+  /** O que o descanso curto precisa da sala: quem é o dono de cada herói e como falar com a tela dos outros jogadores. */
+  portaDoDescanso() {
+    const id = (this._seqDescanso = (this._seqDescanso ?? 0) + 1);
+    const enviar = (msg) => this.menu.enviarCru({ tipo: 'narrativa', msg: { ...msg, id } });
+    let titulo = ''; let texto = null;
+    return {
+      dono: (c) => this.donoRemoto(c),
+      local: (root, opts) => narrarLocal(root, opts),
+      abrir: (o) => { titulo = o.titulo; texto = o.texto; this._descansoRemoto = { id, ...o }; },
+      estado: (linhas, prontos) => enviar({ tipo: 'descanso-estado', titulo, texto, linhas, prontos }),
+      fechar: () => { enviar({ tipo: 'descanso-fechar' }); this._descansoRemoto = null; },
+    };
+  }
+
+  /** Um jogador gasta um dado, reza ou fica pronto no descanso em curso (o servidor já conferiu de quem é o herói). */
+  descansoDeFora({ de, heroi, acao, id, spellId, circulo }) {
+    const d = this._descansoRemoto;
+    if (!d || d.id !== id) return;
+    if (acao === 'descanso-dado') d.gastar(heroi, de);
+    else if (acao === 'descanso-magia') d.magia(heroi, de, spellId, circulo);
+    else if (acao === 'descanso-pronto') d.pronto(de);
+  }
+
+  // ---- subir de nível: o dono do herói escolhe ---------------------------------------------------
+
+  /** O id público do jogador (de FORA) que controla `c` e está presente; `null` se o herói é desta tela ou está no piloto. */
+  donoRemoto(c) {
+    const v = this.salaDaPartida?.visao;
+    if (!v || this.podeControlar(c)) return null;
+    const dono = v.herois?.[c.id];
+    const j = v.jogadores?.find((x) => x.id === dono);
+    return j?.conectado && dono !== v.voce ? dono : null;
+  }
+
+  /** Manda o cartão de nível ao dono e espera as escolhas dele (até 2 min: depois valem as sugeridas). */
+  pedirNivel(c, dados, pub) {
+    this._esperasDeNivel ??= new Map();
+    const id = (this._seqNivel = (this._seqNivel ?? 0) + 1);
+    return new Promise((resolve) => {
+      const fim = (selecoes) => {
+        clearTimeout(t);
+        if (!this._esperasDeNivel.delete(id)) return;
+        this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'nivel-fechar', id, para: pub } });
+        resolve(selecoes);
+      };
+      const t = setTimeout(() => fim(null), 120_000);
+      this._esperasDeNivel.set(id, { pub, heroi: c.id, resolve: fim });
+      this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'nivel-abrir', id, para: pub, dados } });
+    });
   }
 
   // ---- a loja e a ficha de cada jogador (F6.4) -----------------------------------------
@@ -666,6 +804,63 @@ class App {
     lj.api?.desenhar();   // a loja do anfitrião mostra o dinheiro e a mochila novos
   }
 
+  /** Um jogador prepara as magias do herói DELE, pela ficha; valem as mesmas regras da ficha do anfitrião. */
+  prepararDeFora({ de, heroi, lista }) {
+    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    const todos = this.enc ? this.enc.combatants : (this.grupoDaCampanha ?? []);
+    const c = todos.find((h) => h.id === heroi && !h.dead);
+    const sc = c?.spellcasting;
+    if (!sc) return;
+    if (this.enc && !(this.enc.side === 'party' && !this.enc.over)) { avisar('dá para preparar magias só no turno do grupo'); return; }
+    const fonte = fontesDePreparacao(c).filter((id) => getSpell(id).level > 0);
+    const novas = new Set(lista);
+    if (novas.size !== lista.length || !lista.every((id) => fonte.includes(id))) { avisar('essas magias não podem ser preparadas'); return; }
+    if (novas.size > limiteDePreparacao(c)) { avisar(`${c.name} só prepara ${limiteDePreparacao(c)} magias`); return; }
+    sc.prepared = fonte.filter((id) => novas.has(id));   // a ordem do livro, como na ficha
+    this.refresh();
+  }
+
+  /** Um botão da tela da vila ou da região (Dormir, Acampar), pedido por um jogador: o anfitrião o roda se nada está aberto. */
+  acaoDaVila(de, qual) {
+    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    if (!this.vilaAtual?.acao || this.enc) { avisar('esse botão só vale na vila ou na região'); return; }
+    if (narrativaAberta() || this.ficha?.estaAberta() || this.lojaAberta) { avisar('já há uma decisão em andamento'); return; }
+    this._ator = null;     // pedido do grupo: ninguém "começou" esta cena; as escolhas dela vão a votação
+    this.vilaAtual.acao(qual);
+  }
+
+  /** O alfinete de `pub` na casa (x, y): aparece no mapa do anfitrião e, pela vista, no de todos os outros. */
+  alfinete(pub, x, y) {
+    const v = this.salaDaPartida?.visao;
+    const b = this.board;
+    if (!v || !b || !this.enc || !(x >= 0 && y >= 0)) return;
+    const i = Math.max(0, v.jogadores.findIndex((j) => j.id === pub));
+    mostrarAlfinete(b, { x, y }, v.jogadores[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length]);
+    (this.eventosPendentes ??= []).push({ type: 'alfinete', x, y, de: pub });
+    if (this.eventosPendentes.length > 100) this.eventosPendentes.shift();
+  }
+
+  /** "Pronto para sair da cena": quem já não tem o que fazer marca; a lista vai na vista e nas decisões de saída. */
+  marcarPronto(pub, valor) {
+    const v = this.salaDaPartida?.visao;
+    if (!v || !v.jogadores.some((j) => j.id === pub)) return;
+    this.prontosDaCena ??= new Set();
+    if (valor) this.prontosDaCena.add(pub); else this.prontosDaCena.delete(pub);
+    this.mostrarProntos();
+  }
+
+  /** Quem está pronto, escrito (para a faixa do anfitrião e para o título das decisões). */
+  textoDosProntos() {
+    const v = this.salaDaPartida?.visao;
+    if (!v) return '';
+    return v.jogadores.filter((j) => j.conectado).map((j) => `${j.nome}${this.prontosDaCena?.has(j.id) ? ' ✓' : ''}`).join(' · ');
+  }
+
+  mostrarProntos() {
+    if (this.faixaDosProntos) this.faixaDosProntos.textContent = this.salaDaPartida && this.prontosDaCena?.size ? `Prontos para sair: ${this.textoDosProntos()}` : '';
+    if (this.botaoPronto) this.botaoPronto.classList.toggle('aberto', Boolean(this.prontosDaCena?.has(this.salaDaPartida?.visao?.voce)));
+  }
+
   /** Um jogador troca o equipamento do herói DELE, pela ficha; valem as mesmas regras da ficha do anfitrião. */
   equiparDeFora({ de, heroi, slot, item }) {
     const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
@@ -682,7 +877,7 @@ class App {
     if (this.enc && !this.enc.over && !this.capitulo?.explorando) {
       this.enc.cobrarInteracao(c, slot === 'escudo' ? 'acao' : this.enc.custoDeInteracao(c));
     }
-    this.hud.pushLog({ kind: 'recurso', text: `${c.name} trocou ${slot}: CA ${r.acAntes} → ${r.acDepois}`, round: this.enc?.round ?? 1 });
+    this.registrar({ kind: 'recurso', text: `${c.name} trocou ${slot}: CA ${r.acAntes} → ${r.acDepois}`, round: this.enc?.round ?? 1 });
     this.refresh();
   }
 
@@ -692,7 +887,7 @@ class App {
    * `pub` pede um descanso curto (uma hora). Abre uma votação geral (sem herói à frente: decisão do grupo) com "Descansar" e "Agora
    * não"; se ganha o sim, o descanso roda como sempre, e os heróis dos outros jogadores gastam os dados sugeridos.
    */
-  async pedirDescanso(pub) {
+  async pedirDescanso(pub, tipo = 'curto') {
     const visao = this.salaDaPartida?.visao;
     const avisar = (texto) => { if (pub && visao && pub !== visao.voce) this.menu.enviarCru({ tipo: 'aviso', para: pub, texto }); else this.avisarDeSave(texto); };
     if (!visao) return;
@@ -704,12 +899,14 @@ class App {
     try {
       const r = await narrar(this.root, {
         formato: 'painel',
-        paginas: [{ titulo: 'Descanso rápido', texto: [`${nome} pede um descanso curto: uma hora para recuperar o fôlego e gastar dados de vida. O grupo concorda?`] }],
+        paginas: [{ titulo: tipo === 'longo' ? 'Descanso longo' : 'Descanso rápido', texto: [tipo === 'longo'
+          ? `${nome} pede um descanso longo: oito horas de sono, com a vida, os espaços de magia e os recursos de volta. O grupo concorda?`
+          : `${nome} pede um descanso curto: uma hora para recuperar o fôlego e gastar dados de vida. O grupo concorda?`] }],
         escolhas: [{ rotulo: 'Descansar', valor: 'sim', primaria: true }, { rotulo: 'Agora não', valor: 'nao' }],
       });
       if (r === 'sim' && this.enc && this.capitulo?.explorando) {
         this._descansoAprovado = true;
-        try { await this.descansar('curto'); } finally { this._descansoAprovado = false; }
+        try { await this.descansar(tipo); } finally { this._descansoAprovado = false; }
       } else {
         this.enc?.say('recurso', 'O grupo prefere seguir sem descansar.');
       }
@@ -792,9 +989,11 @@ class App {
     const d = p.paginas.some((pg) => pg.temConteudo) ? { modo: 'ator', pub: visao.anfitriao } : quemDecide({ ator, visao });
     const nome = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
     const heroi = ator ? this.enc?.combatants.find((c) => c.id === ator)?.name : null;
-    const titulo = d.modo === 'ator'
+    let titulo = d.modo === 'ator'
       ? ((d.pub === visao.voce && (visao.jogadores.filter((j) => j.conectado).length <= 1 || p.paginas.some((pg) => pg.temConteudo))) ? '' : `Quem decide: ${nome(d.pub)}${heroi ? ` (${heroi})` : ''}.`)
       : `Decisão do grupo: votação entre ${d.votantes.length} jogadores (${Math.round(TEMPO_DA_VOTACAO_MS / 1000)} s).`;
+    // Uma saída de cena: mostra quem já marcou "pronto" (a decisão é de quem é, mas o grupo vê quem ficou para trás).
+    if (this.prontosDaCena?.size) titulo = `${titulo ? `${titulo} ` : ''}Prontos para sair: ${this.textoDosProntos()}.`;
     this.decisao = {
       id: msg.id, ...d, titulo, votos: new Map(), n: p.escolhas.length, timer: null,
       bloqueadas: new Set(p.escolhas.filter((e) => e.motivo).map((e) => e.indice)),
@@ -849,7 +1048,9 @@ class App {
   /** A resposta de outro jogador a uma narrativa aberta: vale se ele é quem decide, ou como voto na votação. */
   receberResposta({ id, indice, continuar, de }) {
     const d = this.decisao;
-    if (!d || d.id !== id || continuar) return;   // "continuar" (texto sem escolha) é do anfitrião
+    if (!d || d.id !== id) return;
+    // Texto sem escolha: qualquer jogador vira a última página e a cena segue para todos (J-09).
+    if (continuar) { if (d.modo === 'leitura') this.esperasDeResposta?.get(id)?.({ continuar: true }); return; }
     if (d.modo === 'ator') {
       if (de === d.pub && Number.isInteger(indice) && indice >= 0 && indice < d.n && !d.bloqueadas.has(indice)) this.esperasDeResposta?.get(id)?.({ indice });
     } else if (d.modo === 'votacao') {
@@ -860,6 +1061,10 @@ class App {
   encerrarPartidaDaSala() {
     definirPortaDaVila(null);
     definirPortaDaLoja(null);
+    definirPortaDeNivel(null);
+    this._descansoRemoto = null;
+    for (const f of this._esperasDeNivel?.values() ?? []) f.resolve(null);
+    this._esperasDeNivel?.clear();
     this.lojaAberta = null;
     this.vilaBase = null; this.vilaAtual = null;
     this.zerarVotoDeLugar();
@@ -874,7 +1079,19 @@ class App {
     this.esperasDeResposta?.clear();
     clearInterval(this.publicador);
     this.publicador = null;
+    clearInterval(this.autosaveDaSala);
+    this.autosaveDaSala = null;
+    this.prontosDaCena = null;
     this.partidaRemota.fechar();
+  }
+
+  /** Uma linha do registro (as rolagens e o que aconteceu): vai ao log do anfitrião e, numa sala, a todos os convidados. */
+  registrar(entry) {
+    this.hud.pushLog(entry);
+    if (!this.salaDaPartida) return;
+    const dado = { type: 'log', kind: String(entry.kind ?? ''), text: String(entry.text ?? '').slice(0, 300), detail: entry.detail ? String(entry.detail).slice(0, 300) : null, round: entry.round ?? null };
+    (this.eventosPendentes ??= []).push(dado);
+    if (this.eventosPendentes.length > 100) this.eventosPendentes.shift();
   }
 
   // ---- eventos do motor ----------------------------------------------------
@@ -900,7 +1117,7 @@ class App {
     // Partida de sala (F5.3): o lado visual do evento segue na próxima vista, para o convidado ver o golpe, o número e a queda.
     if (this.salaDaPartida) {
       const dado = empacotarEvento(this.enc, ev);
-      if (dado) { (this.eventosPendentes ??= []).push(dado); if (this.eventosPendentes.length > 60) this.eventosPendentes.shift(); }
+      if (dado) { (this.eventosPendentes ??= []).push(dado); if (this.eventosPendentes.length > 100) this.eventosPendentes.shift(); }
     }
     // A cena do capítulo também escuta o combate (mortes, troca de lado).
     this.capitulo?.evento?.(ev);
@@ -1525,6 +1742,7 @@ class App {
     const circulo = this.mode?.kind === 'spell' && this.mode.spellId === spellId ? this.mode.circulo : null;
     // Magia com escolha (Aprimorar Atributo, Glifo de Proteção): pergunta antes
     // de gastar. Esc fecha o seletor e deixa a mira como estava.
+    opcao ??= this._opcaoDeFora ?? null;
     const lista = opcao ? null : opcoesDaMagia(getSpell(spellId));
     if (lista) {
       const sugerida = getSpell(spellId).escolheTipoDoGlifo
@@ -1547,7 +1765,9 @@ class App {
     this.afterAct();
   }
 
-  onTileClick(tile) {
+  onTileClick(tile, ev) {
+    // Alt+clique: um alfinete no mapa, para todos verem (não move ninguém).
+    if (ev?.altKey && this.salaDaPartida) { this.alfinete(this.salaDaPartida.visao?.voce, tile.x, tile.y); return; }
     if (this.ficha?.estaAberta() || narrativaAberta()) return;
     if (this.enc.over || this.enc.side !== 'party' || this.busy) return;
     const occupant = this.enc.at(tile.x, tile.y);
@@ -1846,6 +2066,24 @@ class App {
       novidades.textContent = this.novidadesNoRegistro > 99 ? '99+' : String(this.novidadesNoRegistro);
     };
     topoEsquerda.insertBefore(botao, this.hud.banner);
+
+    // Numa sala: "Pronto" (já não tenho o que fazer aqui) e a faixa de quem está pronto. Só aparecem com uma partida de sala.
+    const pronto = document.createElement('button');
+    pronto.className = 'btn btn-registro';
+    pronto.hidden = true;
+    pronto.title = 'Marca que você não tem mais o que fazer nesta cena; as decisões de saída mostram quem está pronto';
+    pronto.textContent = 'Pronto';
+    pronto.addEventListener('click', () => {
+      audio.play('click');
+      const eu = this.salaDaPartida?.visao?.voce;
+      if (eu) this.marcarPronto(eu, !this.prontosDaCena?.has(eu));
+    });
+    const faixa = document.createElement('span');
+    faixa.className = 'faixa-prontos';
+    topoEsquerda.insertBefore(pronto, this.hud.banner);
+    topoEsquerda.insertBefore(faixa, this.hud.banner);
+    this.botaoPronto = pronto; this.faixaDosProntos = faixa;
+    setInterval(() => { pronto.hidden = !this.salaDaPartida; }, 1000);
   }
 
   // ---- botão direito ---------------------------------------------------------
@@ -1905,8 +2143,8 @@ class App {
   /** Descanso do grupo, pelo menu do botão direito, fora da luta. */
   async descansar(tipo) {
     if (narrativaAberta()) return;
-    // Numa sala o descanso rápido é votado pelo grupo (qualquer jogador pode pedir); o longo continua com quem o escolhe.
-    if (tipo === 'curto' && this.salaDaPartida && !this._descansoAprovado) { this.pedirDescanso(this.salaDaPartida.visao?.voce); return; }
+    // Numa sala o descanso (curto ou longo) é votado pelo grupo: qualquer jogador pode pedir, o anfitrião também.
+    if (this.salaDaPartida && !this._descansoAprovado) { this.pedirDescanso(this.salaDaPartida.visao?.voce, tipo); return; }
     const herois = this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
     const linhas = tipo === 'longo'
       // Na estrada, quem passou o dia sem comer ou sem beber dorme, mas não
@@ -1921,7 +2159,8 @@ class App {
       })
       : await descansoCurto(this.root, {
         herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto'),
-        automaticos: this.salaDaPartida ? new Set(herois.filter((c) => !this.podeControlar(c)).map((c) => c.id)) : null,
+        automaticos: this.salaDaPartida ? new Set(herois.filter((c) => !this.podeControlar(c) && !this.donoRemoto(c)).map((c) => c.id)) : null,
+        porta: this.salaDaPartida ? this.portaDoDescanso() : null,
       });
     for (const t of linhas) this.enc.say('cura', t);
     // O descanso é tempo de verdade: as magias de duração correm (uma hora, oito horas).

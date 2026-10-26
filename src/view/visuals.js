@@ -705,6 +705,17 @@ export const ARTES = Object.freeze(Object.keys(WEAPON_VISUALS));
  * Toca som e animação de um ataque com arma ou ataque natural.
  * @returns {number} atraso até o impacto, em segundos
  */
+/** As cores dos jogadores (pela ordem em que entraram na sala): a do alfinete e a da marca de "pronto". */
+export const CORES_DOS_JOGADORES = ['#ffd24a', '#6ee89a', '#6ab8ff', '#ff8a5c'];
+
+/** Um alfinete no mapa: três anéis na cor do jogador, que se apagam, e o nome dele em cima. */
+export function mostrarAlfinete(board, { x, y }, nome, cor = '#ffd24a') {
+  if (!board?.fx) return;
+  const pos = { x, y };
+  for (let i = 0; i < 3; i += 1) setTimeout(() => { if (board?.fx) board.fx.ring(pos, { color: cor, radius: 22 + i * 12, dur: 0.9, width: 3 }); }, i * 450);
+  board.floatText?.(pos, nome, cor, true);
+}
+
 export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {
   const pedida = ev.art ?? guessArt(ev.weaponName);
   // `hasOwn`, e não `WEAPON_VISUALS[x]`: um `art` chamado "constructor" acha

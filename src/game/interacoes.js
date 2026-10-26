@@ -192,7 +192,7 @@ export function opcoesDaCasa(app, tile) {
           if (s.shape || enc.miraAliados(s)) continue;
           const r = enc.canCast(c, id, { target: occ });
           opcoes.push({
-            grupo: 'Conjurar', rotulo: s.name, motivo: r.ok ? null : r.why, alvoPrevia: occ,
+            grupo: 'Conjurar', rotulo: s.name, spellId: id, motivo: r.ok ? null : r.why, alvoPrevia: occ,
             icone: iconeDeMagia(s), circulo: s.level, ...contaDaMagia(enc, c, occ, s),
             fazer: () => app.tryCast(c, id, { target: occ, point: occ.pos }),
           });
@@ -250,16 +250,16 @@ export function opcoesDaCasa(app, tile) {
     // rituais): vão DEPOIS das poucas opções que estão sempre aqui, ou a ficha,
     // a tocha e o descanso ficam a telas de rolagem de distância.
     if (c !== occ && !app.capitulo?.encerrado) {
-      opcoes.push({ rotulo: 'Selecionar', icone: 'acao-preparar', detalhe: 'passar o comando para ele', fazer: () => app.select(occ) });
+      opcoes.push({ rotulo: 'Selecionar', icone: 'acao-preparar', detalhe: 'passar o comando para ele', local: 'selecionar', alvoId: occ.id, fazer: () => app.select(occ) });
     }
-    opcoes.push({ rotulo: 'Abrir a ficha', icone: 'acao-usarObjeto', detalhe: 'atributos, magias e inventário', fazer: () => app.ficha?.abrir(occ, 'ficha') });
+    opcoes.push({ rotulo: 'Abrir a ficha', icone: 'acao-usarObjeto', detalhe: 'atributos, magias e inventário', local: 'ficha', alvoId: occ.id, fazer: () => app.ficha?.abrir(occ, 'ficha') });
     if (c && vez) {
       for (const id of magiasProntas(c)) {
         const s = getSpell(id);
         if (s.shape || !enc.miraAliados(s)) continue;
         const r = enc.canCast(c, id, { target: occ });
         opcoes.push({
-          grupo: 'Conjurar', rotulo: s.name, motivo: r.ok ? null : r.why, alvoPrevia: occ,
+          grupo: 'Conjurar', rotulo: s.name, spellId: id, motivo: r.ok ? null : r.why, alvoPrevia: occ,
           icone: iconeDeMagia(s), circulo: s.level, ...contaDaMagia(enc, c, occ, s),
           fazer: () => app.tryCast(c, id, { target: occ, point: occ.pos }),
         });
