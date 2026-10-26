@@ -889,7 +889,7 @@ ASSINATURA = {
     'florestal': ['camaCampo', 'fogueiraPanela', 'secadorErvas'],
 }
 ASSINATURA['loja'] = ['casuloElfo', 'casuloCorpo', 'prateleira']
-ASSINATURA['guarda'] = ['beliche', 'beliche', 'alcapaoFechado']
+ASSINATURA['guarda'] = ['alcapaoFechado', 'beliche', 'beliche']
 
 
 # NUNCA DUAS PECAS IGUAIS NA MESMA CASA, e nunca duas iguais viradas para o mesmo lado: a
@@ -935,8 +935,9 @@ for pid, cs in INTERIOR.items():
         _posta = False
         # Do mais rigoroso (encostada, fora da sombra da parede) ao mais frouxo (qualquer piso, ou
         # no lugar de um movel antigo): a assinatura TEM de sair, so o jeito muda.
-        for _rigor in (2, 1, 0):
-            for (x, y) in sorted(cs, key=lambda c: _embaralha(c[0], c[1], 83 + _rigor)):
+        # O alcapao e de chao: fica no MEIO da sala, a vista, nao escondido atras de um beliche.
+        for _rigor in ((1, 0) if _v.startswith('alcapao') else (2, 1, 0)):
+            for (x, y) in sorted(cs, key=lambda c: (_encosta(c[0], c[1]) if _v.startswith('alcapao') else 0, _embaralha(c[0], c[1], 83 + _rigor))):
                 if _junto_de_vao(x, y) or (_rigor >= 1 and _tapado(x, y)) or (_rigor == 2 and not _encosta(x, y)):
                     continue
                 if T[y][x] not in ('Ldvj' if _rigor else 'Ldvjmiusz'):
@@ -1183,6 +1184,23 @@ for y in range(H):
                 tipo = NASCE_NA_PEDRA[int(_embaralha(x, y, 9) * len(NASCE_NA_PEDRA))]
             if _cabe(x, y, lado, pid, tipo):
                 _pendura(x, y, lado, pid, tipo)
+
+# A PLACA DO CAVALO PARDO: uma so, na parede da estalagem perto da porta (o sorteio acima podia
+# nunca a escolher). Pendurada por dentro, como o resto da decoracao.
+if not any(d['tipo'] == 'placaPoney' for d in DECOR):
+    _vaos_est = [v[0] for v in VAOS['estalagem']]
+    _cand = []
+    for (x, y) in sorted(INTERIOR['estalagem']):
+        for lado, grade, (vx, vy) in (('N', PN, (x, y - 1)), ('O', PO, (x - 1, y))):
+            if grade[y][x] == '#' and REG(vx, vy) is None:
+                _d = min(abs(x - a) + abs(y - b) for (a, b) in _vaos_est)
+                _cand.append((_d, x, y, lado))
+    _cand.sort()
+    for (_d, x, y, lado) in _cand:
+        if _d >= 2 and not any((x + i, y + j) in _ocupadas for i in (-1, 0, 1) for j in (-1, 0, 1)):
+            _pendura(x, y, lado, 'estalagem', 'placaPoney')
+            break
+    print('placa do Cavalo Pardo:', [d for d in DECOR if d['tipo'] == 'placaPoney'])
 
 # A TORRE NUNCA SAÍA COM PEÇA: o laço acima compartilha o freio de "duas casas de
 # folga" entre prédios, e o arco da torre, encostado no Salão, perdia todas para
@@ -1803,10 +1821,12 @@ print('arte de chao de fora:', _conta_arte)
 TE[ESTATUA[1]][ESTATUA[0]] = '^'
 PROPS.append({'tipo': 'prop', 'x': ESTATUA[0], 'y': ESTATUA[1], 'variante': 'estatuaPalien'})
 _placa = None
-for _r in range(2, 7):
-    for _dx, _dy in ((_r, -_r), (-_r, -_r), (_r, 0), (-_r, 0), (0, -_r)):
+for _r in range(2, 9):
+    for _dx, _dy in ((_r, -_r), (-_r, -_r), (_r, 0), (-_r, 0), (0, -_r), (-_r, _r)):
         _px, _py = CHEGADA[0] + _dx, CHEGADA[1] + _dy
-        if 0 <= _px < W and 0 <= _py < H and T[_py][_px] == ',' and (_px, _py) not in _dentro:
+        # Em campo aberto: longe de qualquer construcao (4 casas), senao a placa parece estar dentro dela.
+        if 0 <= _px < W and 0 <= _py < H and T[_py][_px] == ',' and all(
+                abs(_px - a) + abs(_py - b) >= 4 for (a, b) in _dentro):
             _placa = (_px, _py)
             break
     if _placa:

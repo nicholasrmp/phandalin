@@ -234,6 +234,8 @@ def main():
         # O campo e a agua ficam em extensao: sem aresta escura e sem tom que pule, ou viram grade.
         if nome in ('lago', 'cinza'):
             desvio, aresta_min = 8.0, -40.0
+        if nome == 'teia':          # o fio claro da teia escurece a aresta antes da limpeza
+            desvio, aresta_min = 14.0, -60.0
         if quais and len(candidatos) <= 2:
             desvio = 99.0
         for i, (t, (m, a)) in enumerate(zip(candidatos, medidas)):

@@ -329,8 +329,8 @@ export const MAPA_ARVORE_TROVAO = {
     "TT,,,,,,,,,,,,,,,T::b,,,::,,::::::,Z,b,bbT,,,,,,,,,,,,,,bbZZZZZZZ,,,,b,,bTTSSSSSSSSyy,,,bTT",
     "TT,,,,,,,,,,,,,,,T,,b,,,:,,,,::::ZZ,,,,,bb,,,:,,,,,,,,,,,ZZZZZZZZZ,,,,b,,,,SSSSSSSSSy,,,TTb",
     "TT,,,,,,,,,,,,,,,,bLLLL,:,,,,,,,,ZZTTTTTTT,,,b:::,,,,,,ZZ,ZZZZZ^ZZ:,^LL,,,,SSSSSSSSS,,,,,bb",
-    "TT,,,,,,,,,,,,,,,,,L^LL,::,,,,,,,,ZZTTTTTTTTbTb::b,,b,&LL,ZZZqZZZZ:,LLLb,,ySSSSSSSSST,,,,TT",
-    "TT,,,,,,,,,,,,,,,,,d&LL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,^LLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
+    "TT,,,,,,,,,,,,,,,,,L&LL,::,,,,,,,,ZZTTTTTTTTbTb::b,,b,&LL,ZZZqZZZZ:,LLLb,,ySSSSSSSSST,,,,TT",
+    "TT,,,,,,,,,,,,,,,,,d^LL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,^LLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
     "TT,,,,,,,,,,,,,,b,,g^Lj,,::,,b,,,,,::,bTbTTTTb:::bTTT,dLLZZZZZ,ZZ:::LL^,,,,TSSSSSSSSSy,,TTT",
     "TT,,,,,,,,,,,,,TTT,,,,,,,LL^^^,LLLLL:,,bTTb,::::TbbTT,,b,,ZZZ&,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
     "TT,,,,,,,,,,,,bTTT,,,,b,,LxxLL,LLLLL::,,TT,:::TTTTTTTb,,b,ZZZLL,,:,,,%%%,,,TSSSSSSSSSb,,TTT",
@@ -361,7 +361,7 @@ export const MAPA_ARVORE_TROVAO = {
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,%LLjL,,,,,,,,,,,,,,,,,,,,TTTTTTTTTTTTTTTT,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LdjLL,,,,,,,,,,,,,,,,,,,,bbTTTTTbbTTTTTTT,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LLLLL,,,,,,,,,,,,,,,,,,,bTbTTTTbTTTTT,,,,,,,,,,,,,,bTT",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,^&LLLL,,,,,,,,,,,,,,,,,,bbTTbbTTbTTTTT,,,,,,,,,,,,,,TTb",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,^:,,,&LLLL,,,,,,,,,,,,,,,,,,bbTTbbTTbTTTTT,,,,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,&LbLL,,,,,,,,,,,,,,,,,bTTTTTTTTbbTTTTTb,,,,,,,,,,,bTTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,%LjLm,,,,,,,,,,,,,,,,,,TTTTTTTTbTTTTTTTb,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,,,,,,,,,,,,,,TTTbTTTTTTTTTTTT,,,,,,,,,,,,TTT",
@@ -948,7 +948,7 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 20,
       "y": 27,
-      "variante": "beliche"
+      "variante": "alcapaoFechado"
     },
     {
       "tipo": "prop",
@@ -961,7 +961,7 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 20,
       "y": 28,
-      "variante": "alcapaoFechado",
+      "variante": "beliche",
       "espelhar": true
     },
     {
@@ -1580,7 +1580,7 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
-      "x": 36,
+      "x": 32,
       "y": 59,
       "variante": "placaCaveira"
     }
@@ -4145,6 +4145,12 @@ export const ARVORE_TROVAO = {
       "y": 59,
       "lado": "O",
       "tipo": "musgo"
+    },
+    {
+      "x": 63,
+      "y": 21,
+      "lado": "O",
+      "tipo": "placaPoney"
     },
     {
       "x": 51,
