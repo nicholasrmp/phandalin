@@ -74,6 +74,7 @@ export function criarTelasDeSala({
       aoPartida: atual((vista) => partida?.aoVista(vista)),
       aoNarrativa: atual((msg) => partida?.aoNarrativa?.(msg)),
       aoIntencao: atual((msg) => partida?.aoIntencao?.(msg)),
+      aoAviso: atual((texto) => partida?.aoAviso?.(texto)),
       aoErro: atual((t) => {
         estado.aviso = t;
         // Na taverna o erro é uma frase embaixo do salão ("devagar", "não dá para chegar lá").
@@ -258,6 +259,14 @@ export function criarTelasDeSala({
       el('section', {}, el('h3', {}, `Heróis (${Object.keys(v.herois).length} de ${TAMANHO_DO_GRUPO})`),
         v.limiteDeHerois < TAMANHO_DO_GRUPO && el('p', { class: 'menu-nota' }, `Com ${v.jogadores.length} jogadores, cada um pode ter até ${v.limiteDeHerois} herói${v.limiteDeHerois > 1 ? 's' : ''}.`),
         el('div', { class: 'menu-herois-sala' }, HEROIS.map((h) => cartaoDeHeroi(h, v, { eu, souAnfitriao, meusHerois, nomeDe, sem })))),
+
+      // D4: a corda do grupo. Só o anfitrião muda; os outros veem o que ficou.
+      el('section', { class: 'menu-lobby-corda' }, el('h3', {}, 'Corda do grupo'),
+        el('p', { class: 'menu-nota' }, v.corda === 'livre'
+          ? 'Livre: cada herói vai aonde quiser, mesmo longe dos outros.'
+          : 'Unido: um herói não se afasta mais de 12 casas dos outros, para ninguém começar a luta sozinho.'),
+        souAnfitriao && botao(v.corda === 'livre' ? 'Mudar para Unido' : 'Mudar para Livre', () => mandar({ tipo: 'corda', valor: v.corda === 'livre' ? 'unido' : 'livre' }),
+          { chave: 'corda', desabilitado: sem })),
 
       v.pendencias.length > 0 && el('ul', { class: 'menu-pendencias' }, v.pendencias.map((p) => el('li', {}, p))),
       el('div', { class: 'menu-rodape' },

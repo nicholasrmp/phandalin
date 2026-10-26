@@ -92,7 +92,7 @@ export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasCo
 
   const r = aplicar(sala, jogadorId, msg, agora);
   if (!r.ok) return { sala, resposta: erro(r.erro), mudou: false };
-  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null, repassar: r.repassar ?? null };
+  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null, repassar: r.repassar ?? null, repassarA: r.repassarA ?? null };
 }
 
 /** Janela deslizante: `true` se esta mensagem passa. `registro` é uma lista de instantes. */

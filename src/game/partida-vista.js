@@ -15,6 +15,9 @@ export const MAX_VISTA = 120_000;
 /** Quantas vistas por segundo o anfitrião pode publicar (o servidor segura o resto). */
 export const MS_ENTRE_VISTAS = 200;
 
+/** Mesmo sem mudança, o anfitrião repete a vista a cada tanto: o servidor não a guarda, e quem entra precisa de uma. */
+export const BATIMENTO_DA_VISTA_MS = 3000;
+
 /** JSON que não quebra com referência circular (um invocado aponta para o dono): o ciclo vira `null`. */
 function seguro(valor) {
   const caminho = [];

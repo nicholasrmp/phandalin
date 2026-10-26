@@ -223,6 +223,28 @@ await teste('F4.3: o passo vai ao anfitrião (só se o herói é de quem mandou)
   assert.deepEqual([resp.id, resp.indice, resp.continuar], [7, 0, false]);
 });
 
+await teste('F4.4: o aviso do anfitrião chega só ao jogador certo, e a corda aparece na visão', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'N' }); const c1 = await a.esperar((x) => x.tipo === 'sala');
+  assert.equal(c1.visao.corda, 'unido');
+  b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
+  a.manda({ tipo: 'corda', valor: 'livre' });
+  assert.equal((await b.esperar((x) => x.tipo === 'sala' && x.visao.corda === 'livre')).visao.corda, 'livre');
+  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
+  a.manda({ tipo: 'iniciar' });
+  await b.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  a.recebidas.length = 0; b.recebidas.length = 0;
+  a.manda({ tipo: 'aviso', para: 'p2', texto: 'o grupo se separaria demais' });
+  assert.equal((await b.esperar((x) => x.tipo === 'aviso')).texto, 'o grupo se separaria demais');
+  assert.equal(a.recebidas.some((x) => x.tipo === 'aviso'), false, 'o anfitrião não recebe o próprio aviso');
+  b.manda({ tipo: 'aviso', para: 'p1', texto: 'x' });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /anfitrião/);
+});
+
 await teste('outro navegador (id diferente) não age como o jogador de outro', async () => {
   const codigo = codigoNovo();
   const a = await cliente(codigo, 'anf'); const intruso = await cliente(codigo, 'intruso');

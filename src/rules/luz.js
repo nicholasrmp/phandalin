@@ -188,14 +188,20 @@ export function modificadoresDeLuz(enc, atacante, alvo, mods, fonte) {
  * Casa ausente = ninguém do grupo vê. Guardado enquanto nada que importa
  * muda (posições, tochas), porque o tabuleiro pergunta a cada quadro.
  */
-export function visaoDoGrupo(enc) {
-  const grupo = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+export function visaoDoGrupo(enc, quem = null) {
+  // `quem` (F4.4, D3): só os heróis para quem ele devolve `true` olham. Num jogo de sala cada jogador vê o que os SEUS heróis
+  // enxergam; sem nenhum deles em campo, vale o grupo todo (ninguém fica olhando o escuro). O resultado filtrado tem o seu
+  // próprio guardado: o motor, que pergunta pelo grupo todo, e o tabuleiro, que pergunta pelo filtro, não se atropelam.
+  let grupo = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+  const proprios = quem ? grupo.filter(quem) : null;
+  if (proprios?.length) grupo = proprios;
+  const guarda = proprios?.length ? '_visaoDoFiltro' : '_visao';
   const chave = grupo.map((c) => `${c.pos.x},${c.pos.y},${emiteLuz(c) ? 1 : 0}`).join('|')
     + `#${(enc.field.luzes ?? []).length}#${casasEscondidas(enc)?.chave ?? ''}`
     + `#${(enc.zonas ?? []).filter((z) => z.luz).map((z) => z.id).join('.')}`
     // A cena que abre porta ou cava buraco no mapa sobe a versão.
     + `#${enc.field.versao ?? 0}`;
-  if (enc._visao?.chave === chave) return enc._visao.mapa;
+  if (enc[guarda]?.chave === chave) return enc[guarda].mapa;
   const fontes = fontesDeLuz(enc);
   const mapa = new Map();
   const { w, h } = enc.field;
@@ -212,6 +218,6 @@ export function visaoDoGrupo(enc) {
   // A VISTA DO ALTO (a cena do telhado da guarnicao): casas que o grupo enxerga por cima de tudo,
   // dadas pela cena em `field.vistaExtra` (conjunto de 'x,y'). Quem a muda sobe `field.versao`.
   for (const k of enc.field.vistaExtra ?? []) if (!mapa.has(k)) mapa.set(k, CLARO);
-  enc._visao = { chave, mapa };
+  enc[guarda] = { chave, mapa };
   return mapa;
 }

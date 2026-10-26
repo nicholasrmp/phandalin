@@ -12,7 +12,8 @@ import { getSpell, opcoesDaMagia } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarCampo } from './game/campo.js';
-import { fotografar, emTexto, MAX_VISTA } from './game/partida-vista.js';
+import { cordaPermite } from './game/corda.js';
+import { fotografar, emTexto, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarPartidaTela } from './view/partida-tela.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
@@ -221,6 +222,7 @@ class App {
           aoSala: (v) => this.partidaRemota.atualizarSala(v),
           aoNarrativa: (msg) => this.partidaRemota.narrativa(msg),
           aoIntencao: (m) => (m.tipo === 'agir' ? this.aplicarIntencao(m) : this.receberResposta(m)),
+          aoAviso: (texto) => this.partidaRemota.avisar(texto),
           aoEncerrar: () => this.encerrarPartidaDaSala(),
         },
         // A taverna andável (T-01): o lobby de quem joga com amigos. Fala com o menu só por estes ganchos.
@@ -361,6 +363,7 @@ class App {
       onTileHover: (t) => { this.onTileHover(t); this.board?.render(0); },
     });
     this.board.onCameraChange = () => this.refresh();
+    this.board.filtroDeVisao = this.donoDaVisao ?? null;     // partida de sala: o anfitrião vê o que os SEUS heróis veem
     // Mapa grande (Árvore Trovão, 91 x 68): começa perto do grupo, e não com o
     // tabuleiro inteiro encaixado, onde cada herói tem 15% do tamanho.
     {
@@ -394,6 +397,8 @@ class App {
    */
   comecarPartidaDaSala(v) {
     const ids = Object.keys(v.herois);
+    this.salaDaPartida = { corda: v.corda ?? 'unido' };
+    this.donoDaVisao = (c) => v.herois[c.id] === v.voce;
     // A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20).
     this.esperasDeResposta = new Map();
     definirPorta(criarPortaCompartilhada({
@@ -420,16 +425,27 @@ class App {
     if (!this.enc || !this.varianteAtual) return;
     const vista = fotografar({ enc: this.enc, variante: this.varianteAtual });
     const texto = emTexto(vista);
-    if (texto === this.ultimaVistaTexto) return;
+    // Sem mudança, só repete de vez em quando: o servidor não guarda a vista (ela some se o Durable Object dormir ou for
+    // trocado), e quem entra ou volta fica esperando a próxima. Três segundos de espera no pior caso, 7 KB de custo.
+    const agora = Date.now();
+    if (texto === this.ultimaVistaTexto && agora - (this.ultimaVistaEm ?? 0) < BATIMENTO_DA_VISTA_MS) return;
     if (texto.length > MAX_VISTA) { console.warn('a vista da partida passou do teto e não foi publicada'); return; }
-    if (this.menu.enviarVista(vista)) this.ultimaVistaTexto = texto;
+    if (this.menu.enviarVista(vista)) { this.ultimaVistaTexto = texto; this.ultimaVistaEm = agora; }
   }
 
   /**
    * Uma intenção de outro jogador (F4.3). O servidor já conferiu de quem é o herói; aqui vale o que só o jogo sabe:
    * narrativa aberta pausa todos (J-06), e fora da exploração (combate, F5) ainda não há o que fazer.
    */
-  aplicarIntencao({ heroi, acao, x, y }) {
+  /** A corda do grupo (J-03): o porquê, se o herói não pode ir para lá; `null` se pode. Só vale em partida de sala. */
+  cordaImpede(c, destino) {
+    if (!this.salaDaPartida) return null;
+    const grupo = this.enc.combatants.filter((h) => h.side === 'party' && !h.dead && h.hp > 0);
+    const r = cordaPermite({ heroi: c, destino, grupo, modo: this.salaDaPartida.corda });
+    return r.ok ? null : r.why;
+  }
+
+  aplicarIntencao({ de, heroi, acao, x, y }) {
     if (!this.enc || this.enc.over || this.busy || this.enc.side !== 'party') return;
     if (this.ficha?.estaAberta() || narrativaAberta() || !this.capitulo?.explorando) return;
     const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
@@ -437,6 +453,8 @@ class App {
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(x, y));
     if (!node || node.cost === 0) return;
+    const corda = this.cordaImpede(c, { x, y });
+    if (corda) { this.menu.enviarCru({ tipo: 'aviso', para: de, texto: corda }); return; }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, { x, y }));
     this.afterWalk(() => this.capitulo?.depoisDeMover(c));
     this.refresh();
@@ -448,6 +466,9 @@ class App {
   }
 
   encerrarPartidaDaSala() {
+    this.salaDaPartida = null;
+    this.donoDaVisao = null;
+    if (this.board) this.board.filtroDeVisao = null;
     definirPorta(null);
     for (const resolve of this.esperasDeResposta?.values() ?? []) resolve(null);
     this.esperasDeResposta?.clear();
@@ -1184,6 +1205,8 @@ class App {
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(tile.x, tile.y));
     if (!node || node.cost === 0) return;
+    const corda = this.cordaImpede(c, tile);
+    if (corda) { this.refuse(c, corda); return; }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
     this.board?.seguir(c.pos);
     // Explorando: depois do passo, a cena vê se a armadilha dispara.

@@ -18,6 +18,9 @@ import {
 import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
+import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
+import { visaoDoGrupo } from '../rules/luz.js';
+import { Battlefield } from '../core/grid.js';
 import { buildFoes } from '../game/encounter.js';
 import { montarHeroi, escolhaAutomatica } from '../game/criacao.js';
 import {
@@ -938,6 +941,67 @@ teste('F4.3: a narrativa do anfitrião: só dele, com a partida iniciada, e no f
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 'x' } }) }).erro, /inválida/);
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 1 } }) }).erro, /inválida/);
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: 'x'.repeat(70_000) }).erro, /grande/);
+});
+
+teste('F4.4: a corda: só se vai para perto de ALGUM outro herói; o grupo estica em fila, mas não se parte', () => {
+  const h = (id, x, y) => ({ id, pos: { x, y } });
+  const a = h('a', 0, 0); const b = h('b', 10, 0); const c = h('c', 20, 0);
+  const grupo = [a, b, c];
+  assert.ok(LIMITE_DA_CORDA >= 8 && LIMITE_DA_CORDA <= 16, 'a doc diz ~12');
+  assert.equal(cordaPermite({ heroi: b, destino: { x: 12, y: 3 }, grupo }).ok, true, 'perto dos dois lados');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 9, y: 9 }, grupo }).ok, true, 'a diagonal conta como uma casa');
+  const longe = cordaPermite({ heroi: a, destino: { x: -5, y: 40 }, grupo });
+  assert.equal(longe.ok, false); assert.match(longe.why, /separaria demais/);
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 0, y: 12 }, grupo }).ok, true, 'exatamente no limite vale');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 0, y: 13 }, grupo: [a, h('z', 0, 30)] }).ok, false);
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 99, y: 99 }, grupo, modo: 'livre' }).ok, true, 'livre: sem corda');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 99, y: 99 }, grupo: [a] }).ok, true, 'sozinho em campo não tem de quem se afastar');
+});
+
+teste('F4.4: a corda é escolha do anfitrião, no lobby; o aviso do anfitrião vai a UM jogador só', () => {
+  const s = nova();
+  entra(s, BETO, 'Beto');
+  assert.equal(visaoDaSala(s, ANF).corda, 'unido', 'o padrão é Unido');
+  deve(faz(s, BETO, { tipo: 'corda', valor: 'livre' }), /anfitrião/);
+  deve(faz(s, ANF, { tipo: 'corda', valor: 'solta' }), /inexistente/);
+  assert.equal(faz(s, ANF, { tipo: 'corda', valor: 'unido' }).igual, true);
+  assert.ok(faz(s, ANF, { tipo: 'corda', valor: 'livre' }).ok);
+  assert.equal(visaoDaSala(s, BETO).corda, 'livre');
+  for (const h of ['pc-guerreiro', 'pc-ladino']) faz(s, ANF, { tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago', 'pc-clerigo']) faz(s, BETO, { tipo: 'pegar', heroi: h });
+  faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
+  deve(faz(s, ANF, { tipo: 'aviso', para: 'p2', texto: 'oi' }), /não está em andamento/);
+  assert.ok(faz(s, ANF, { tipo: 'iniciar' }).ok);
+  deve(faz(s, ANF, { tipo: 'corda', valor: 'unido' }), /começou/);
+  const r = faz(s, ANF, { tipo: 'aviso', para: 'p2', texto: ' o grupo se separaria demais ' });
+  assert.deepEqual(r.repassarA, { id: BETO, msg: { tipo: 'aviso', texto: 'o grupo se separaria demais' } });
+  assert.equal(r.igual, true);
+  deve(faz(s, BETO, { tipo: 'aviso', para: 'p1', texto: 'x' }), /anfitrião/);
+  deve(faz(s, ANF, { tipo: 'aviso', para: 'p9', texto: 'x' }), /inexistente/);
+  deve(faz(s, ANF, { tipo: 'aviso', para: 'p1', texto: 'x' }), /inexistente/);
+  deve(faz(s, ANF, { tipo: 'aviso', para: 'p2', texto: 'x'.repeat(200) }), /inválido/);
+  const t = tratarMensagem({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'aviso', para: 'p2', texto: 'devagar' }), codigo: s.codigo, agora: 5000 });
+  assert.equal(t.repassarA.id, BETO); assert.equal(t.mudou, false);
+});
+
+teste('F4.4: a visão própria: cada jogador vê o que os SEUS heróis enxergam, e sem herói em campo vale o grupo todo', () => {
+  // Um salão escuro de 30 x 3 e sem nenhuma luz: só a visão no escuro do herói A (18 m) enxerga, e só perto dele.
+  // (Luz é do mundo, não de quem olha: uma tocha acesa por um herói ilumina para todos. O que muda por jogador é a visão.)
+  const campo = new Battlefield(30, 3, ['.'.repeat(30), '.'.repeat(30), '.'.repeat(30)]);
+  campo.luz = new Uint8Array(30 * 3);
+  const heroi = (id, x, visao) => ({ id, side: 'party', name: id, dead: false, hp: 5, pos: { x, y: 1 }, conditions: [], senses: visao ? { darkvisionFt: visao } : {} });
+  const a = heroi('a', 2, 60); const b = heroi('b', 27, 0);
+  const enc = { field: campo, combatants: [a, b], zonas: [] };
+  const todos = visaoDoGrupo(enc);
+  const soA = visaoDoGrupo(enc, (c) => c.id === 'a');
+  const soB = visaoDoGrupo(enc, (c) => c.id === 'b');
+  assert.ok(todos.has('4,1') && soA.has('4,1'), 'o A enxerga perto de si');
+  assert.ok(!soB.has('4,1'), 'quem só tem o B no escuro não vê o que só o A enxerga');
+  assert.equal(visaoDoGrupo(enc, () => false).has('4,1'), true, 'sem nenhum herói próprio em campo, vale o grupo todo');
+  assert.equal(visaoDoGrupo(enc), todos, 'o resultado do grupo todo não foi atropelado pelos filtrados');
+  b.senses = { darkvisionFt: 60 }; b.pos = { x: 15, y: 1 };
+  assert.ok(visaoDoGrupo(enc).has('15,1'), 'o grupo todo vê onde o B chegou');
+  assert.equal(visaoDoGrupo(enc, (c) => c.id === 'a').has('15,1'), false, 'o filtro do A não vê o que é do B');
 });
 
 teste('T-09: o balcão do Toblen é o menu: todas as casas dele são mobília (ninguém anda até lá) e a mesa de grupo não é balcão', () => {

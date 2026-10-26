@@ -37,6 +37,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
   let quadroDeAnimacao = 0; let ultimo = 0;
   let pendente = null;          // a última vista que chegou antes de a tela abrir
   let visaoDaSala = null;
+  let avisoTimer = null;
   let selecionado = null;       // o herói MEU que o próximo clique move
   const narrativas = new Map(); // id da narrativa aberta -> AbortController (o anfitrião a fecha por fora)
 
@@ -45,6 +46,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
     const mapa = mapaDo(variante);
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
     board = new Board(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
+    board.filtroDeVisao = (c) => visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce;   // F4.4: vê o que os SEUS heróis veem
     if (import.meta.env?.DEV) window.__partida = { board, enc };
   }
 
@@ -99,7 +101,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
     board.fx.cancel(c.id, 'walk');
     const d = Math.max(Math.abs(de.x - para.x), Math.abs(de.y - para.y));
     if (d > SALTO_MAXIMO) return;
-    const alcancados = enc.battlefield.reachable(de, 600, () => false);
+    const alcancados = enc.field.reachable(de, 600, () => false);
     const caminho = Battlefield.pathFrom(alcancados, para);
     if (caminho.length > 1) board.fx.walk(c, caminho, { andar: 'passo', tilesPerSecond: CASAS_POR_SEGUNDO });
   }
@@ -169,6 +171,13 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
     vista: receber,
     /** Uma página da narrativa (ou o fim dela). */
     narrativa,
+    /** O anfitrião explicou por que o passo foi ignorado. */
+    avisar(texto) {
+      aviso.textContent = texto;
+      aviso.classList.add('visivel');
+      clearTimeout(avisoTimer);
+      avisoTimer = setTimeout(() => aviso.classList.remove('visivel'), 3500);
+    },
     /** O estado da sala mudou: quem joga com quem, o nome do anfitrião. */
     atualizarSala(v) {
       visaoDaSala = v;

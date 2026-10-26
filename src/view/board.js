@@ -2507,7 +2507,8 @@ export class Board {
     }
 
     // O que o grupo enxerga, num mapa com escuridão (null no mapa claro).
-    this._visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc) : null;
+    // `filtroDeVisao` (F4.4): numa partida de sala o jogador vê o que os SEUS heróis enxergam (`rules/luz.js`).
+    this._visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc, this.filtroDeVisao ?? null) : null;
 
     const reach = this.overlay.reachable;
     const targetSet = new Set((this.overlay.targets ?? []).map((t) => `${t.pos.x},${t.pos.y}`));

@@ -115,6 +115,8 @@ export class SalaDO extends DurableObject {
     if (r.resposta) ws.send(JSON.stringify(r.resposta));
     // Intenção de quem não roda a partida (F4.3): vai ao anfitrião, que a aplica. Não muda o estado da sala.
     if (r.repassar) { this.enviarAoAnfitriao(r.repassar); return; }
+    // O anfitrião fala com UM jogador (o aviso de um passo ignorado): todas as conexões dele, e mais ninguém.
+    if (r.repassarA) { this.enviarAoJogador(r.repassarA.id, r.repassarA.msg); return; }
     if (r.soEsta) { try { ws.close(1000, 'saiu'); } catch { /* já fechado */ } return; }
     if (!r.mudou) {
       // Quem acabou de entrar recebe o estado mesmo sem mudança (a aba que reabre).
@@ -141,6 +143,15 @@ export class SalaDO extends DurableObject {
     const texto = JSON.stringify(msg);
     for (const w of this.ctx.getWebSockets()) {
       if (w.deserializeAttachment()?.jogadorId !== this.sala?.anfitriao) continue;
+      try { w.send(texto); } catch { /* conexão caindo */ }
+    }
+  }
+
+  /** Manda uma mensagem a todas as conexões de UM jogador (pelo id secreto, que nunca sai daqui). */
+  enviarAoJogador(jogadorId, msg) {
+    const texto = JSON.stringify(msg);
+    for (const w of this.ctx.getWebSockets()) {
+      if (w.deserializeAttachment()?.jogadorId !== jogadorId) continue;
       try { w.send(texto); } catch { /* conexão caindo */ }
     }
   }

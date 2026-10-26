@@ -17,6 +17,7 @@
 // O `jogadorId` é um SEGREDO (quem o souber assume o lugar da pessoa, L-03): ele
 // nunca sai daqui. Os clientes veem só o rótulo público `pub` ('p1', 'p2'…).
 
+import { PADRAO_DA_CORDA, MODOS_DA_CORDA } from './corda.js';
 import { key } from '../core/grid.js';
 import {
   campoDaTaverna, caminhoNaTaverna, casaLivre, NASCEDOUROS, marcadorLivre, marcadorN, LARGURA, ALTURA,
@@ -189,6 +190,8 @@ export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORE
     maxJogadores,
     anfitriao,
     lider: anfitriao,
+    // A corda do grupo (J-03, D4): `unido` ou `livre`, escolha do anfitrião no lobby (`game/corda.js`).
+    corda: PADRAO_DA_CORDA,
     ordem: [anfitriao],
     proximoPub: 2,
     jogadores: { [anfitriao]: { id: anfitriao, pub: 'p1', nome: nomeLimpo, conectado: true, pronto: false, desde: agora } },
@@ -398,6 +401,23 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       eu.pronto = mensagem.valor;
       return ok();
     }
+    case 'corda': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (!MODOS_DA_CORDA.includes(mensagem.valor)) return recusa('modo de corda inexistente');
+      if ((sala.corda ?? PADRAO_DA_CORDA) === mensagem.valor) return ok({ igual: true });
+      sala.corda = mensagem.valor;
+      return ok();
+    }
+    // F4.4: o anfitrião diz a UM jogador por que o passo dele foi ignorado ("o grupo se separaria demais").
+    case 'aviso': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');
+      const alvo = idPorPub(sala, mensagem.para);
+      if (!alvo || alvo === jogadorId) return recusa('jogador inexistente');
+      if (typeof mensagem.texto !== 'string' || !mensagem.texto.trim() || mensagem.texto.length > 120) return recusa('aviso inválido');
+      return ok({ igual: true, repassarA: { id: alvo, msg: { tipo: 'aviso', texto: mensagem.texto.trim() } } });
+    }
     case 'lider': {
       const f = soAnfitriao(sala, jogadorId); if (f) return f;
       const alvo = idPorPub(sala, mensagem.jogador);
@@ -511,6 +531,7 @@ export function visaoDaSala(sala, paraJogador) {
     maxJogadores: sala.maxJogadores,
     anfitriao: pubDe(sala.anfitriao),
     lider: pubDe(sala.lider),
+    corda: sala.corda ?? PADRAO_DA_CORDA,
     voce: jogadorDe(sala, paraJogador)?.pub ?? null,
     jogadores: jogadoresPresentes(sala).map((j) => ({
       id: j.pub, nome: j.nome, conectado: j.conectado, pronto: j.pronto, herois: heroisDe(sala, j.id),
