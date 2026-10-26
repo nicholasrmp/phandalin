@@ -31,6 +31,7 @@ import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt, ARESTA } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, CLARO } from '../rules/luz.js';
+import { emissoresDoAmbiente, desenharAmbiente } from './ambiente.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct, MAGIAS_DE_ATAQUE } from '../rules/odds.js';
 import { SPELLS, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc } from '../rules/abilities.js';
@@ -2789,7 +2790,9 @@ export class Board {
     // Sem fogo em cena não há o que acender: um mapa ao ar livre não paga
     // duas passadas de tela cheia nem os 10 MB do canvas à toa.
     const fontes = fontesDeLuz(this.enc);
-    if (!fontes.length) return;
+    // O AMBIENTE (esporos, brasas, cintilar da água) vai na mesma tela: furado pela mesma máscara, só se vê onde se enxerga.
+    const ambiente = emissoresDoAmbiente(this.field);
+    if (!fontes.length && ambiente.vazio) return;
     const brilho = this._brilho ?? (this._brilho = document.createElement('canvas'));
     if (brilho.width !== w) brilho.width = w;
     if (brilho.height !== h) brilho.height = h;
@@ -2800,7 +2803,8 @@ export class Board {
     for (const f of fontes) {
       const { sx, sy } = this.center(f.pos.x, f.pos.y);
       const r = (Math.max(f.claro, 5) / 5) * TW * 0.55;
-      const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02;
+      // Duas ondas que não casam: o fogo treme sem repetir o compasso.
+      const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02 + Math.sin(this.time * 14.3 + f.pos.y * 2.9) * 0.012;
       for (const [esc, forca, cor] of [[1, 0.26, '255, 186, 96'], [1.9, 0.10, '255, 136, 52']]) {
         const g = bg.createRadialGradient(sx, sy - 20, 3, sx, sy, r * esc);
         g.addColorStop(0, `rgba(${cor}, ${forca + pulso})`);
@@ -2812,6 +2816,7 @@ export class Board {
         bg.fill();
       }
     }
+    desenharAmbiente(bg, this.time, (x, y) => this.center(x, y), ambiente);
     // UMA passada. O véu da escuridão é de 80%, de propósito: o que já foi
     // visto continua se enxergando de leve. O brilho segue a mesma conta e
     // sobra a 20% no escuro, o que é o fogo longe, não um holofote.
