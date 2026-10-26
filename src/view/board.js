@@ -276,7 +276,7 @@ const COR_DA_ZONA = {
   // Lote 11: a imagem quase não pinta o chão (o volume é que conta); a luz é um calor leve; o mato, um verde fraco.
   ilusaoMenor: { fill: 'rgba(199,180,255,.10)', stroke: 'rgba(199,180,255,.45)' },
   luzDoDia: { fill: 'rgba(255,240,170,.05)', stroke: 'rgba(255,244,190,.18)' },
-  crescerPlantas: { fill: 'rgba(70,130,60,.16)', stroke: 'rgba(110,200,100,.22)' },
+  crescimentoDePlantas: { fill: 'rgba(70,130,60,.16)', stroke: 'rgba(110,200,100,.22)' },
   // Lote 12: as imagens e as flechas têm volume em 2.5D (`zonas25d.js`), então o chão mal se pinta;
   // a runa do Glifo paira sobre a casa e não pinta o chão (para o inimigo ela nem existe).
   imagemSilenciosa: { fill: 'rgba(199,180,255,.07)', stroke: 'rgba(199,180,255,.38)' },

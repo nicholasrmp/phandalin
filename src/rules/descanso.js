@@ -17,7 +17,7 @@
 
 import { abilityMod } from './abilities.js';
 import { CLASSES } from './classes/index.js';
-import { removeCondition, maxHpEfetivo, mudarExaustao, nivelDeExaustao } from './conditions.js';
+import { removeCondition, getCondition, maxHpEfetivo, mudarExaustao, nivelDeExaustao } from './conditions.js';
 import { SPELLS, magiasProntas, dadosDaMagia } from './spells.js';
 import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
@@ -164,6 +164,13 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
   acordar(c);
   if (nivelDeExaustao(c) > 0 && alimentado) mudarExaustao(c, -1);
+  // Reviver os Mortos: a penalidade de quem voltou cai de 1 por descanso longo.
+  const volta = getCondition(c, 'revivido');
+  if (volta) {
+    volta.data ??= {};
+    volta.data.penalidade = (volta.data.penalidade ?? 0) - 1;
+    if (volta.data.penalidade <= 0) removeCondition(c, 'revivido');
+  }
   // O mal da água parada (`rules/mantimentos.js`) passa dormindo. Regra da
   // casa: o livro não dá duração para água ruim.
   if (c.maldaAgua) { removeCondition(c, 'envenenado'); c.maldaAgua = false; }

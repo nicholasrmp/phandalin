@@ -39,9 +39,21 @@ export function skillBonus(actor, skill) {
   const prof = proficiencyBonus(actor.level);
   // Passo sem Rastro: +10 em Furtividade (`conditions.js`, `semRastro`).
   const rastro = skill === 'furtividade' && actor.conditions?.some((c) => c.id === 'semRastro') ? 10 : 0;
-  if (actor.expertise?.includes(skill)) return base + prof * 2 + rastro;
-  if (actor.skills?.includes(skill)) return base + prof + rastro;
-  return base + rastro;
+  // Reviver os Mortos: a conta de quem voltou pesa em TODO teste de perícia, e
+  // por isso mora aqui — é por este ponto que passam a iniciativa, a
+  // Furtividade, a Sobrevivência, os testes dos capítulos e as previsões.
+  const volta = -(penalidadeDeQuemVoltou(actor));
+  if (actor.expertise?.includes(skill)) return base + prof * 2 + rastro + volta;
+  if (actor.skills?.includes(skill)) return base + prof + rastro + volta;
+  return base + rastro + volta;
+}
+
+/**
+ * A penalidade de quem voltou dos mortos, em número positivo (0 se não voltou).
+ * Lida direto de `actor.conditions` para este módulo não importar nada.
+ */
+export function penalidadeDeQuemVoltou(actor) {
+  return actor?.conditions?.find((c) => c.id === 'revivido')?.data?.penalidade ?? 0;
 }
 
 /** Bônus de um teste de resistência. */

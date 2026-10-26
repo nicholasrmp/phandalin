@@ -257,9 +257,12 @@ class App {
       this.xpPendente = null;
     }
     if (config.continuarCom) {
-      // A exaustão não é condição de combate: ela vem da estrada (fome, sede,
-      // marcha forçada) e tem de atravessar a luta e o capítulo seguinte.
-      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => k.id === 'inconsciente' || k.id === 'exausto'); c.concentrating = null; }
+      // O que NÃO é condição de combate atravessa a luta e o capítulo: a
+      // exaustão, que vem da estrada (fome, sede, marcha forçada); a conta de
+      // quem voltou dos mortos, que o livro faz cair por descanso longo e não
+      // por cena; e a Proteção contra a Morte, que dura oito horas.
+      const DE_FORA = new Set(['inconsciente', 'exausto', 'revivido', 'protegidoDaMorte']);
+      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => DE_FORA.has(k.id)); c.concentrating = null; }
       // As magias de utilidade da cena anterior ficaram para trás (o relógio segue).
       if (this.campanha?.utilidade) this.campanha.utilidade.ativas = [];
     }

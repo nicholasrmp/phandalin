@@ -111,7 +111,7 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
     case 'luz': t.push(`${alvo.name} passa a brilhar como uma tocha, sem fogo: luz clara em 6 m e penumbra por mais 6, por ${dura(id)}.`); break;
     case 'orientacao': t.push(`${c.name} toca ${alvo.name}. No próximo teste de perícia dele soma 1d4, e a magia acaba (ou em 1 minuto).`); break;
     case 'visaoNoEscuro': t.push(`Os olhos de ${alvo.name} ganham um brilho: enxerga no escuro até 18 m por ${dura(id)}.`); break;
-    case 'passoSemRastro': t.push(`Um véu de sombra e silêncio acompanha o grupo: +10 em Furtividade por ${dura(id)}, enquanto ficarem juntos (a até 9 m de ${c.name}).`); break;
+    case 'passosSemPegadas': t.push(`Um véu de sombra e silêncio acompanha o grupo: +10 em Furtividade por ${dura(id)}, enquanto ficarem juntos (a até 9 m de ${c.name}).`); break;
     case 'aprimorarAtributo': {
       const o = APRIMORAR[res.opcao ?? 'urso'];
       t.push(`${o.nome}: ${alvo.name} tem vantagem nos testes de ${NOME_HAB[o.hab]} por ${dura(id)}.${o.pv ? ' Ganha PV temporários.' : ''}`);
@@ -134,7 +134,7 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
     case 'bomFruto':
       t.push(`Dez frutinhas surgem e são comidas no ato.${res.curas.length ? ` ${res.curas.map((k) => `${k.alvo.name} +${k.cura} PV`).join('; ')}.` : ''}`);
       break;
-    case 'criarDestruirAgua': case 'criarComidaEAgua': {
+    case 'criarDestruirAgua': case 'criarAlimentoAgua': {
       const m = res.mantimentos ?? {};
       const partes = [];
       if (m.racoes) partes.push(`comida para ${m.racoes} pessoas por um dia`);
@@ -159,6 +159,11 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
       t.push(linhas.length
         ? `Por dez minutos ${c.name} sente o veneno e a doença a 9 m — ${linhas.join('; ')}.`
         : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
+      break;
+    }
+    case 'reviverOsMortos': {
+      const q = res.revivido;
+      t.push(`Uma hora de reza sobre o corpo, e ${q?.name ?? 'ele'} abre os olhos. Volta com um fio de vida — 1 PV — e com a conta de ter ido: por um tempo a mão falha e a cabeça atrasa. Cada noite de descanso devolve um pouco.`);
       break;
     }
     case 'enviarMensagem': {
@@ -394,8 +399,15 @@ export async function escolherEConjurar(app, c, spellId) {
     if (!a) return null;
     opts.alvo = a;
   } else if (u.alvo === 'morto') {
-    const cand = (app.enc?.combatants ?? []).filter((m) => m.dead && distanceFt(c.pos, m.pos) <= spell.rangeFt && !motivoDeMortoMudo(m));
-    if (!cand.length) { app.refuse?.(c, 'nenhum cadáver ao alcance (3 m) que ainda possa responder'); return null; }
+    // Reviver os Mortos quer um corpo do GRUPO, e não precisa que ele possa
+    // falar — isso é exigência do Falar com os Mortos, não desta.
+    const reviver = spellId === 'reviverOsMortos';
+    const cand = (app.enc?.combatants ?? []).filter((m) => m.dead && distanceFt(c.pos, m.pos) <= spell.rangeFt
+      && (reviver ? m.side === 'party' : !motivoDeMortoMudo(m)));
+    if (!cand.length) {
+      app.refuse?.(c, reviver ? 'nenhum companheiro caído ao alcance (1,5 m)' : 'nenhum cadáver ao alcance (3 m) que ainda possa responder');
+      return null;
+    }
     const a = await escolher(app, spell.name, 'Qual corpo?', cand.map((m) => ({ rotulo: m.name, valor: m })));
     if (!a) return null;
     opts.alvo = a;

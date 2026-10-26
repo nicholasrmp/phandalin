@@ -14,7 +14,7 @@
 //   ativaDe / ativasDoGrupo        o que está de pé agora
 //
 // As condições de combate (Luz, Visão no Escuro, Orientação, Aprimorar
-// Atributo, Passo sem Rastro) continuam sendo condições do herói, para a luta
+// Atributo, Passos sem Pegadas) continuam sendo condições do herói, para a luta
 // as enxergar: aqui só se acrescenta o relógio, que as tira quando vencem.
 //
 // REGRA DA CASA, dita aqui para não parecer regra do livro: o livro dá a
@@ -25,7 +25,7 @@
 // aqui só há regra, para dar para testar sem tela.
 
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from './spells.js';
-import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
+import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, nivelDeExaustao, mudarExaustao, CONDITIONS } from './conditions.js';
 import { d20, roll } from '../core/dice.js';
 import { skillBonus, SKILLS, SKILL_NAME, saveBonus, spellSaveDc, abilityMod } from './abilities.js';
 import { distanceFt } from '../core/grid.js';
@@ -50,7 +50,7 @@ export const UTIL = {
   luz: { alvo: 'aliado', cond: 'luzMagica', min: 60, umaPorVez: true },
   orientacao: { alvo: 'aliado', cond: 'orientado', min: 1, conc: true, dialogo: true },
   visaoNoEscuro: { alvo: 'aliado', cond: 'visaoNoEscuro', min: 480 },
-  passoSemRastro: { alvo: 'grupo', cond: 'semRastro', min: 60, conc: true },
+  passosSemPegadas: { alvo: 'grupo', cond: 'semRastro', min: 60, conc: true },
   aprimorarAtributo: { alvo: 'aliado', cond: 'aprimorado', min: 60, conc: true, escolhe: 'atributo', dialogo: true },
   sugestao: { alvo: 'criatura', min: 480, conc: true, efeito: 'sugestao', save: 'wis', dialogo: true },
   enfeiticarPessoa: { alvo: 'criatura', min: 60, efeito: 'enfeiticar', save: 'wis', dialogo: true, soHumanoide: true },
@@ -90,6 +90,8 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // O Domínio da Vida: o ritual que traz de volta.
+  reviverOsMortos: { alvo: 'morto', efeito: 'reviver', tempo: 60 },
   // A palavra e o olho a distância.
   enviarMensagem: { alvo: 'si', min: 1, efeito: 'mensagem', escolhe: 'conhecido' },
   clarividencia: { alvo: 'area', min: 10, conc: true, efeito: 'olho', escolhe: 'sentido', tempo: 10 },
@@ -122,7 +124,7 @@ export const UTIL = {
   pequenaCabana: { alvo: 'si', min: 480, efeito: 'cabana', ritual: true, tempo: 1 },
   // Mantimentos de viagem (`rules/mantimentos.js`).
   criarDestruirAgua: { alvo: 'si', efeito: 'agua' },
-  criarComidaEAgua: { alvo: 'si', efeito: 'banquete' },
+  criarAlimentoAgua: { alvo: 'si', efeito: 'banquete' },
   purificarAlimentos: { alvo: 'si', efeito: 'purificar', ritual: true },
   detectarVenenoDoenca: { alvo: 'area', min: 10, conc: true, efeito: 'venenos', ritual: true },
   localizarAnimaisPlantas: { alvo: 'si', min: 1, efeito: 'caca', ritual: true },
@@ -434,10 +436,18 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
   if (u.alvo === 'item' && !alvo) return { ok: false, why: 'escolha um item' };
   if (u.alvo === 'morto') {
     if (!alvo?.dead) return { ok: false, why: 'precisa de um cadáver' };
-    const motivoMorto = motivoDeMortoMudo(alvo);
-    if (motivoMorto) return { ok: false, why: motivoMorto };
-    const antigo = estado.mortosFalados.find((m) => (m.id ?? m) === chaveDoNpc(alvo));
-    if (antigo && (typeof antigo === 'string' || estado.minutos - antigo.minutos < DEZ_DIAS)) return { ok: false, why: 'este corpo já falou: a magia falha nos 10 dias seguintes' };
+    // As duas magias de corpo pedem coisas diferentes. O Falar com os Mortos
+    // precisa de um corpo que ainda possa FALAR, e não repete no mesmo corpo
+    // por dez dias. O Reviver os Mortos não precisa de boca nenhuma: precisa
+    // de um companheiro, porque um inimigo revivido voltaria hostil.
+    if (u.efeito === 'reviver') {
+      if (alvo.side !== 'party') return { ok: false, why: 'o ritual devolve companheiro, não inimigo' };
+    } else {
+      const motivoMorto = motivoDeMortoMudo(alvo);
+      if (motivoMorto) return { ok: false, why: motivoMorto };
+      const antigo = estado.mortosFalados.find((m) => (m.id ?? m) === chaveDoNpc(alvo));
+      if (antigo && (typeof antigo === 'string' || estado.minutos - antigo.minutos < DEZ_DIAS)) return { ok: false, why: 'este corpo já falou: a magia falha nos 10 dias seguintes' };
+    }
     if (c.pos && alvo.pos && distanceFt(c.pos, alvo.pos) > spell.rangeFt) return { ok: false, why: `longe demais — ${spell.name} alcança ${spell.rangeFt} pés` };
   }
   if (u.escolhe === 'atributo' && opcao && !APRIMORAR[opcao]) return { ok: false, why: 'opção inválida' };
@@ -565,6 +575,30 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
         // aranha e a aranha-lobo mordem com veneno em `extraDamage`.
         criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
       };
+    }
+    // ---- o ritual que traz de volta ----
+    if (u.efeito === 'reviver') {
+      // Volta com 1 PV e com a conta de ter voltado: −4 que cai de 1 por
+      // descanso longo (`rules/descanso.js`).
+      alvo.dead = false;
+      alvo.hp = 1;
+      alvo.tempHp = 0;
+      removeCondition(alvo, 'inconsciente');
+      // De pé, e não caído: o corpo estava no chão, e quem levanta da morte
+      // levanta. E o que a morte deixou para trás sai junto — as chaves são
+      // `successes`/`failures`, que é o que o motor e o HUD leem.
+      removeCondition(alvo, 'caido');
+      alvo.deathSaves = { successes: 0, failures: 0 };
+      alvo.stable = false;
+      alvo.morreuNaRodada = null;
+      // Como no livro: voltar neutraliza o veneno que o afligia.
+      removeCondition(alvo, 'envenenado');
+      // Regra da casa, declarada no `desc`: quem morreu DE EXAUSTÃO voltaria no
+      // degrau 6, que mata, e morreria outra vez no primeiro teste de fome ou
+      // de marcha. Volta no 5 — o pior degrau que não mata.
+      if (nivelDeExaustao(alvo) >= 6) mudarExaustao(alvo, 5 - nivelDeExaustao(alvo));
+      addCondition(alvo, 'revivido', { data: { penalidade: 4 } });
+      resultado.revivido = alvo;
     }
     // ---- a palavra e o olho a distância ----
     if (u.efeito === 'mensagem') {
@@ -843,7 +877,10 @@ export function rolarTeste(estado, herois, rng, quem, pericia, cd, { npc = null,
   const m = modificadores(estado, herois, quem, pericia, { npc });
   const adv = vantagem || m.vantagem;
   const dis = desvantagem || m.desvantagem;
-  const r = d20(rng, skillBonus(quem, pericia), { advantage: adv, disadvantage: dis });
+  // O modificador fixo das condições (Reviver os Mortos) pesa aqui também: um
+  // teste de perícia fora de combate é teste de atributo com perícia.
+  const fixo = conditionEffects(quem).testeFixo;
+  const r = d20(rng, skillBonus(quem, pericia) + fixo, { advantage: adv, disadvantage: dis });
   let total = r.total;
   const extras = [];
   for (const cond of [...(quem.conditions ?? [])]) {

@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { makeMonster, MONSTERS } from '../rules/monsters.js';
-import { skillBonus, saveBonus } from '../rules/abilities.js';
+import { skillBonus, saveBonus, penalidadeDeQuemVoltou } from '../rules/abilities.js';
+import { previsaoDeAtaque } from '../rules/odds.js';
 import { ARMORS } from '../rules/items/armors.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
@@ -3381,7 +3382,7 @@ teste('Elo de Proteção: o teste de resistência mostra "Elo de Proteção" (+1
 
 
 // ---- lote 11: Ilusão Menor, Visão no Escuro, Aprimorar Atributo, Força Fantasmagórica, Sugestão,
-//      Luz do Dia, Remover Maldição, Crescer Plantas, Voo ----
+//      Luz do Dia, Remover Maldição, Crescimento de Plantas, Voo ----
 
 /** Mago de 5º nível com as magias dadas, ao lado da Dara, para magias de toque. */
 function magoDoLote({ magias = [], truques = [], foes = [['bandidoMachadeiro', { x: 10, y: 10 }]] } = {}) {
@@ -3573,10 +3574,10 @@ teste('Remover Maldição: tira Rogar Maldição e Bruxaria de uma vez, e solta 
   assert.match(r.why, /amaldiçoado/);
 });
 
-teste('Crescer Plantas: o terreno custa 4×, poupa as casas dos aliados e o chão que não é natural', () => {
-  const { enc, ilvan, foes } = magoDoLote({ magias: ['crescerPlantas'], foes: [['bandidoMachadeiro', { x: 9, y: 9 }]] });
+teste('Crescimento de Plantas: o terreno custa 4×, poupa as casas dos aliados e o chão que não é natural', () => {
+  const { enc, ilvan, foes } = magoDoLote({ magias: ['crescimentoDePlantas'], foes: [['bandidoMachadeiro', { x: 9, y: 9 }]] });
   enc.field.surfaces[5 * 12 + 3] = SUPERFICIES.indexOf('estrada'); // (3,5) é estrada
-  assert.ok(enc.castSpell(ilvan, 'crescerPlantas', { point: { x: 5, y: 5 } }).ok);
+  assert.ok(enc.castSpell(ilvan, 'crescimentoDePlantas', { point: { x: 5, y: 5 } }).ok);
   const z = enc.zonas.find((q) => q.dificil4);
   assert.ok(z && z.casas.size > 100, 'o raio de 30 m cobre o mapa');
   assert.ok(!z.casas.has('3,5'), 'estrada não vira mato');
@@ -3619,12 +3620,12 @@ teste('Voo: 18 m, ignora terreno difícil e degraus, e as zonas do chão; ao cai
 
 
 
-teste('Lote 11 (revisão): prévia de zona inofensiva vazia; prévia do Crescer Plantas sem as casas dos aliados', () => {
-  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['luzDoDia', 'crescerPlantas'], foes: [['bandidoMachadeiro', { x: 8, y: 8 }]] });
+teste('Lote 11 (revisão): prévia de zona inofensiva vazia; prévia do Crescimento de Plantas sem as casas dos aliados', () => {
+  const { enc, ilvan, dara, foes } = magoDoLote({ magias: ['luzDoDia', 'crescimentoDePlantas'], foes: [['bandidoMachadeiro', { x: 8, y: 8 }]] });
   const area = enc.areaDaMagia(ilvan, getSpell('luzDoDia'), { x: 8, y: 8 }) ?? [];
   assert.ok(area.length > 0);
   assert.deepEqual(enc.afetadosPelaArea(ilvan, getSpell('luzDoDia'), area, 3), [], 'luz não "afeta" ninguém');
-  const cp = getSpell('crescerPlantas');
+  const cp = getSpell('crescimentoDePlantas');
   const casas = enc.casasDaZona(ilvan, cp, enc.areaDaMagia(ilvan, cp, { x: 5, y: 5 }) ?? []);
   assert.ok(casas.length > 50);
   const tem = (x, y) => casas.some((t) => t.x === x && t.y === y);
@@ -3655,7 +3656,7 @@ teste('Dissipar Magia em Aprimorar Atributo (Urso) tira os PV temporários', () 
   assert.equal(dara.tempHp, 0, 'os PV temporários vão junto');
 });
 
-// ---- lote 12: Queda Suave, Bom Fruto, Imagem Silenciosa/Maior, Cordão de Flechas, Passo sem Rastro,
+// ---- lote 12: Queda Suave, Bom Fruto, Imagem Silenciosa/Maior, Cordão de Flechas, Passos sem Pegadas,
 //      Patas de Aranha, Contramágica, Glifo de Proteção ----
 
 teste('Queda Suave: quando o Voo acaba, a reação de um aliado faz o voador descer sem dano e de pé', () => {
@@ -3823,14 +3824,14 @@ teste('Cordão de Flechas: círculo acima do 2º dá +2 flechas', () => {
   assert.equal(enc.zonas.find((x) => x.spellId === 'cordaoDeFlechas').cordao.flechas, 6);
 });
 
-teste('Passo sem Rastro: +10 em Furtividade para quem está a 9 m; ao se afastar, perde', () => {
-  const { enc: e2, ilvan, dara, party } = magoDoLote({ magias: ['passoSemRastro'] });
+teste('Passos sem Pegadas: +10 em Furtividade para quem está a 9 m; ao se afastar, perde', () => {
+  const { enc: e2, ilvan, dara, party } = magoDoLote({ magias: ['passosSemPegadas'] });
   ilvan.pos = { x: 6, y: 1 };
   dara.pos = { x: 6, y: 4 };
   party[PIP].pos = { x: 6, y: 11 };
   const furt = (c) => skillBonus(c, 'furtividade');
   const [d0, p0, i0] = [furt(dara), furt(party[PIP]), furt(ilvan)];
-  assert.ok(e2.castSpell(ilvan, 'passoSemRastro').ok);
+  assert.ok(e2.castSpell(ilvan, 'passosSemPegadas').ok);
   assert.equal(furt(dara), d0 + 10, 'a 6 m');
   assert.equal(furt(ilvan), i0 + 10, 'o conjurador também');
   assert.equal(furt(party[PIP]), p0, 'a 15 m, não');
@@ -3845,11 +3846,11 @@ teste('Passo sem Rastro: +10 em Furtividade para quem está a 9 m; ao se afastar
   assert.equal(furt(dara), d0, 'sem concentração, acaba');
 });
 
-teste('Passo sem Rastro: quem foi dissipado não ganha o véu de volta ao renová-lo', () => {
-  const { enc: e2, ilvan, dara } = magoDoLote({ magias: ['passoSemRastro', 'dissiparMagia'] });
+teste('Passos sem Pegadas: quem foi dissipado não ganha o véu de volta ao renová-lo', () => {
+  const { enc: e2, ilvan, dara } = magoDoLote({ magias: ['passosSemPegadas', 'dissiparMagia'] });
   ilvan.pos = { x: 6, y: 1 };
   dara.pos = { x: 6, y: 4 };
-  assert.ok(e2.castSpell(ilvan, 'passoSemRastro').ok);
+  assert.ok(e2.castSpell(ilvan, 'passosSemPegadas').ok);
   assert.ok(dara.conditions.some((c) => c.id === 'semRastro'));
   const conc = ilvan.concentrating;
   conc.dissipados = [dara.id];
@@ -3859,9 +3860,9 @@ teste('Passo sem Rastro: quem foi dissipado não ganha o véu de volta ao renov�
   assert.ok(ilvan.conditions.some((c) => c.id === 'semRastro'), 'o conjurador segue com o véu');
 });
 
-teste('Passo sem Rastro: a Furtividade de surpresa do combate soma o +10', () => {
-  const { enc, ilvan, dara, party } = magoDoLote({ magias: ['passoSemRastro'] });
-  assert.ok(enc.castSpell(ilvan, 'passoSemRastro').ok);
+teste('Passos sem Pegadas: a Furtividade de surpresa do combate soma o +10', () => {
+  const { enc, ilvan, dara, party } = magoDoLote({ magias: ['passosSemPegadas'] });
+  assert.ok(enc.castSpell(ilvan, 'passosSemPegadas').ok);
   assert.ok(party.every((c) => c.pos && distanceFt(c.pos, ilvan.pos) <= 30 ? hasCondition(c, 'semRastro') : true));
   assert.ok(hasCondition(dara, 'semRastro'));
 });
@@ -4205,13 +4206,13 @@ teste('Luz fora do combate: vira condição do alvo, passa a luz para outro e ac
   assert.ok(!hasCondition(g.pip, 'luzMagica'));
 });
 
-teste('Visão no Escuro, Passo sem Rastro e Aprimorar Atributo fora do combate: condições com relógio', () => {
-  const g = grupoDeUtilidade({ prepared: ['visaoNoEscuro', 'passoSemRastro', 'aprimorarAtributo'] });
+teste('Visão no Escuro, Passos sem Pegadas e Aprimorar Atributo fora do combate: condições com relógio', () => {
+  const g = grupoDeUtilidade({ prepared: ['visaoNoEscuro', 'passosSemPegadas', 'aprimorarAtributo'] });
   g.ilvan.spellcasting.slots[2] = 4;
   assert.ok(conjurarFora(g.estado, g.ilvan, 'visaoNoEscuro', { ...g.ctx, alvo: g.dara }).ok);
   assert.ok(visaoNoEscuro(g.dara) >= 60);
   const bonusAntes = skillBonus(g.pip, 'furtividade');
-  const rastro = conjurarFora(g.estado, g.ilvan, 'passoSemRastro', g.ctx);
+  const rastro = conjurarFora(g.estado, g.ilvan, 'passosSemPegadas', g.ctx);
   assert.ok(rastro.ok, rastro.why);
   assert.ok(hasCondition(g.pip, 'semRastro'));
   assert.equal(skillBonus(g.pip, 'furtividade'), bonusAntes + 10);
@@ -5579,7 +5580,7 @@ teste('o descanso longo so tira exaustao de quem comeu', () => {
 teste('Criar Comida e Agua conjurada de verdade alimenta no mesmo dia', () => {
   const { party } = montar({ nivel: 5 });
   const brenn = garantirInventario(party[BRENN]);
-  brenn.spellcasting.prepared.push('criarComidaEAgua');
+  brenn.spellcasting.prepared.push('criarAlimentoAgua');
   brenn.spellcasting.slots = [0, 4, 3, 2];
   for (const c of party) beberAgua(garantirInventario(c), 99);
   // A campanha de verdade: o dia vem de `vila.dia`, e e dele que a despensa
@@ -5587,7 +5588,7 @@ teste('Criar Comida e Agua conjurada de verdade alimenta no mesmo dia', () => {
   const campanha = { vila: { dia: 4 } };
   const estado = estadoDe(campanha);
   assert.equal(estado.dia, 4, 'o estado pega o dia da campanha');
-  const r = conjurarFora(estado, brenn, 'criarComidaEAgua', { herois: party, rng: makeRng(2) });
+  const r = conjurarFora(estado, brenn, 'criarAlimentoAgua', { herois: party, rng: makeRng(2) });
   assert.ok(r.ok, r.why);
   const m = r.resultado.mantimentos;
   assert.equal(m.racoes, 15, 'comida para quinze');
@@ -5605,7 +5606,7 @@ teste('Criar Comida e Agua conjurada de verdade alimenta no mesmo dia', () => {
 
 teste('as cinco magias de mantimento existem, com circulo e classes do livro', () => {
   const esperado = [['criarDestruirAgua', 1], ['purificarAlimentos', 1], ['detectarVenenoDoenca', 1],
-    ['localizarAnimaisPlantas', 2], ['criarComidaEAgua', 3]];
+    ['localizarAnimaisPlantas', 2], ['criarAlimentoAgua', 3]];
   for (const [id, nivel] of esperado) {
     const s = getSpell(id);
     assert.ok(s, id + ' existe');
@@ -5616,27 +5617,27 @@ teste('as cinco magias de mantimento existem, com circulo e classes do livro', (
   assert.ok(getSpell('purificarAlimentos').ritual, 'Purificar Alimentos e ritual');
   assert.ok(getSpell('detectarVenenoDoenca').ritual, 'Detectar Veneno e Doenca e ritual');
   assert.ok(getSpell('localizarAnimaisPlantas').ritual, 'Localizar Animais ou Plantas e ritual');
-  assert.equal(getSpell('criarComidaEAgua').ritual, undefined, 'Criar Comida e Agua nao e ritual');
-  assert.ok(listaDaClasse('clerigo', 3).magias.includes('criarComidaEAgua'), 'clerigo tem Criar Comida e Agua');
-  assert.ok(listaDaClasse('paladino', 3).magias.includes('criarComidaEAgua'), 'paladino tambem');
+  assert.equal(getSpell('criarAlimentoAgua').ritual, undefined, 'Criar Comida e Agua nao e ritual');
+  assert.ok(listaDaClasse('clerigo', 3).magias.includes('criarAlimentoAgua'), 'clerigo tem Criar Comida e Agua');
+  assert.ok(listaDaClasse('paladino', 3).magias.includes('criarAlimentoAgua'), 'paladino tambem');
   assert.ok(listaDaClasse('druida', 2).magias.includes('localizarAnimaisPlantas'), 'druida tem Localizar Animais ou Plantas');
   assert.ok(listaDaClasse('patrulheiro', 2).magias.includes('localizarAnimaisPlantas'), 'patrulheiro tambem');
   assert.ok(listaDaClasse('bardo', 2).magias.includes('localizarAnimaisPlantas'), 'bardo tambem');
-  assert.ok(!listaDaClasse('mago', 3).magias.includes('criarComidaEAgua'), 'o mago nao tem');
+  assert.ok(!listaDaClasse('mago', 3).magias.includes('criarAlimentoAgua'), 'o mago nao tem');
   assert.ok(!listaDaClasse('bardo', 1).magias.includes('criarDestruirAgua'), 'o bardo nao tem Criar ou Destruir Agua');
   assert.ok(!listaDaClasse('clerigo', 3).magias.includes('localizarAnimaisPlantas'), 'o clerigo nao tem Localizar');
   // Quantidades, alcance e duracao.
   assert.equal(getSpell('criarDestruirAgua').agua, 40, '40 litros no 1o circulo');
   assert.equal(getSpell('criarDestruirAgua').upcast.agua, 40, '+40 por circulo acima');
-  assert.equal(getSpell('criarComidaEAgua').racoes, 15);
-  assert.equal(getSpell('criarComidaEAgua').agua, 120);
+  assert.equal(getSpell('criarAlimentoAgua').racoes, 15);
+  assert.equal(getSpell('criarAlimentoAgua').agua, 120);
   assert.equal(getSpell('detectarVenenoDoenca').rangeFt, 30, '9 m de raio');
   assert.equal(getSpell('detectarVenenoDoenca').duracaoMin, 10);
   assert.equal(getSpell('detectarVenenoDoenca').concentration, true);
   assert.equal(getSpell('purificarAlimentos').concentration, undefined, 'Purificar nao e concentracao');
   // Cada simplificacao e regra da casa declarada no proprio texto.
   for (const id of ['criarDestruirAgua', 'purificarAlimentos', 'detectarVenenoDoenca',
-    'localizarAnimaisPlantas', 'criarComidaEAgua']) {
+    'localizarAnimaisPlantas', 'criarAlimentoAgua']) {
     const d = getSpell(id).desc;
     assert.ok(/Simplifica|Regra da casa|regra da casa/.test(d), id + ' declara o que muda do livro');
   }
@@ -7695,6 +7696,352 @@ teste('Clarividencia nao mostra o grupo nem os mortos', () => {
   assert.deepEqual(vivo.map((k) => k.nome), ['humanoide'], 'so o inimigo, pelo tipo: o grupo nao vira marca');
   goblin.dead = true;
   assert.equal(marcasDoMapa({ app, estado, herois: () => party }).length, 0, 'e morto nao se move');
+});
+
+// ---- o Dominio da Vida ----------------------------------------------------
+
+teste('as quatro do Dominio da Vida existem, com circulo e classes do livro', () => {
+  const esperado = [
+    ['protecaoContraAMorte', 4, 'abjuração', ['clerigo', 'paladino']],
+    ['guardiaoDaFe', 4, 'conjuração', ['clerigo']],
+    ['curarFerimentosEmMassa', 5, 'evocação', ['bardo', 'clerigo', 'druida']],
+    ['reviverOsMortos', 5, 'necromancia', ['bardo', 'clerigo', 'paladino']],
+  ];
+  for (const [id, nivel, escola, classes] of esperado) {
+    const e = getSpell(id);
+    assert.ok(e, id + ' existe');
+    assert.equal(e.level, nivel, id + ' e de ' + nivel + 'o circulo');
+    assert.equal(e.school, escola, id + ' e de ' + escola);
+    assert.equal(e.fonte, 'srd', id + ' e do SRD');
+    assert.ok(/Simplifica|Regra da casa/.test(e.desc), id + ' declara o que muda do livro');
+    for (const classe of classes) assert.ok(listaDaClasse(classe, nivel).magias.includes(id), classe + ' tem ' + id);
+  }
+  assert.ok(!listaDaClasse('mago', 4).magias.includes('guardiaoDaFe'), 'o mago nao tem o guardiao');
+  assert.ok(!listaDaClasse('druida', 5).magias.includes('reviverOsMortos'), 'o druida nao revive');
+  // E a lista do Dominio da Vida nao tem mais id solto.
+  const vida = CLASSES.clerigo.subclasse.opcoes.vida.magiasDoDominio;
+  for (const [nivel, magias] of Object.entries(vida)) {
+    for (const id of magias) {
+      assert.ok(SPELLS[id], `o dominio da Vida promete ${id} no ${nivel}o nivel, e ela tem de existir`);
+    }
+  }
+});
+
+teste('Protecao contra a Morte segura a primeira queda, e so a primeira', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const alvo = party[PIP];
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 5 };
+  alvo.pos = { x: 5, y: 6 };
+  clerigo.spellcasting.prepared.push('protecaoContraAMorte');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  const r = enc.castSpell(clerigo, 'protecaoContraAMorte', { targets: [alvo] });
+  assert.ok(r.ok, 'conjurou: ' + (r.why ?? ''));
+  assert.ok(hasCondition(alvo, 'protegidoDaMorte'), 'a condicao chegou — sem isso a magia so gasta o espaco');
+  // Dano que zeraria: ele fica com 1 PV.
+  alvo.hp = 6;
+  enc.applyDamage(alvo, 20, 'cortante', party[DARA]);
+  assert.equal(alvo.hp, 1, 'a magia o segura de pe com 1 PV');
+  assert.ok(!alvo.dead, 'e nao morreu de dano em excesso');
+  assert.ok(!hasCondition(alvo, 'protegidoDaMorte'), 'e a magia acabou ali');
+  // A SEGUNDA queda e normal.
+  enc.applyDamage(alvo, 5, 'cortante', party[DARA]);
+  assert.equal(alvo.hp, 0, 'da segunda vez ele cai');
+});
+
+teste('Protecao contra a Morte tambem vale contra a morte por dano em excesso', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const alvo = party[PIP];
+  alvo.hp = 4;
+  addCondition(alvo, 'protegidoDaMorte', { rounds: 4800 });
+  // Dano maior que os PV MAIS o maximo: no livro isso mata na hora.
+  enc.applyDamage(alvo, 4 + maxHpEfetivo(alvo) + 5, 'cortante', party[DARA]);
+  assert.equal(alvo.hp, 1, 'e ainda assim ele fica de pe');
+  assert.ok(!alvo.dead, 'nao morreu');
+});
+
+teste('Guardiao da Fe fere quem entra e some depois de 60 de dano', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 9, y: 5 }]] });
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 5 };
+  clerigo.spellcasting.prepared.push('guardiaoDaFe');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  const r = enc.castSpell(clerigo, 'guardiaoDaFe', { point: { x: 7, y: 5 } });
+  assert.ok(r.ok, 'conjurou: ' + (r.why ?? ''));
+  const zona = enc.zonas.find((z) => z.orcamento);
+  assert.ok(zona, 'a zona do guardiao existe');
+  assert.equal(zona.orcamento, 60, 'com os 60 de dano do livro');
+  assert.equal(zona.gasto, 0, 'e nada gasto ainda');
+  // O dano e exatamente 20, sem dado: '0d0+20'.
+  assert.equal(zona.dano.dados, '0d0+20');
+  assert.equal(zona.dano.tipo, 'radiante');
+  assert.equal(zona.dano.save, 'dex');
+  assert.equal(zona.dano.metade, true);
+  // O dano e CONTADO, inclusive a metade de quem passa na resistencia — o
+  // livro diz "ate ter causado 60 no total", nao "ate tres acertos".
+  const goblin = foes[0];
+  goblin.hp = 400; goblin.maxHp = 400;
+  enc.resistirAZona(goblin, zona, 'entra');
+  const primeiro = zona.gasto;
+  assert.ok(primeiro === 10 || primeiro === 20, 'contou 20, ou 10 se ele se desviou: ' + primeiro);
+  // UMA VEZ POR TURNO, que e o livro: entrar de novo no mesmo turno nao cobra.
+  enc.resistirAZona(goblin, zona, 'entra');
+  assert.equal(zona.gasto, primeiro, 'no mesmo turno, so paga uma vez');
+  // No turno seguinte, paga outra vez.
+  goblin.aurasNoTurno = [];
+  enc.resistirAZona(goblin, zona, 'entra');
+  assert.ok(zona.gasto > primeiro, 'no turno novo, soma: ' + zona.gasto);
+  // Cheio o orcamento, ele se desfaz.
+  zona.gasto = 55;
+  goblin.aurasNoTurno = [];
+  enc.resistirAZona(goblin, zona, 'entra');
+  assert.ok(!enc.zonas.includes(zona), 'passados os 60, o guardiao se desfaz');
+});
+
+teste('Curar Ferimentos em Massa cura varios de uma vez', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const clerigo = party[BRENN];
+  clerigo.spellcasting.prepared.push('curarFerimentosEmMassa');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  for (const c of party) { c.hp = 4; c.pos = { x: 5, y: 5 + party.indexOf(c) }; }
+  clerigo.pos = { x: 5, y: 5 };
+  const antes = party.map((c) => c.hp);
+  const r = enc.castSpell(clerigo, 'curarFerimentosEmMassa', { targets: party.slice(0, 4) });
+  assert.ok(r.ok, 'conjurou: ' + (r.why ?? ''));
+  const curados = party.filter((c, i) => c.hp > antes[i]).length;
+  assert.ok(curados >= 2, 'curou mais de um: ' + curados);
+  assert.equal(getSpell('curarFerimentosEmMassa').targets, 6, 'e pega seis, como o livro');
+  assert.equal(getSpell('curarFerimentosEmMassa').heal, '3d8');
+});
+
+teste('Reviver os Mortos devolve o companheiro com 1 PV e a conta de ter ido', () => {
+  const { party } = montar({ nivel: 5 });
+  const clerigo = party[BRENN];
+  const morto = party[PIP];
+  clerigo.spellcasting.prepared.push('reviverOsMortos');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  morto.dead = true; morto.hp = 0;
+  clerigo.pos = { x: 5, y: 5 };
+  morto.pos = { x: 5, y: 5 };
+  addCondition(morto, 'inconsciente');
+  const estado = estadoDe({ vila: { dia: 1 } });
+  const r = conjurarFora(estado, clerigo, 'reviverOsMortos', { herois: party, rng: makeRng(3), alvo: morto });
+  assert.ok(r.ok, r.why);
+  assert.equal(morto.dead, false, 'voltou');
+  assert.equal(morto.hp, 1, 'com 1 PV, como o livro manda');
+  assert.ok(!hasCondition(morto, 'inconsciente'), 'e acordado');
+  // A conta: −4 em ataque, resistencia e teste.
+  const fx = conditionEffects(morto);
+  assert.equal(fx.ataqueFixo, -4, 'erra mais no ataque');
+  assert.equal(fx.testeFixo, -4, 'e no teste de atributo');
+  assert.equal(fx.saveFixo.con, -4, 'e na resistencia');
+  assert.equal(fx.saveFixo.cha, -4, 'em todas elas');
+  // E a conta cai de 1 por descanso longo, ate sumir.
+  for (const esperado of [3, 2, 1]) {
+    descansoLongo(morto);
+    assert.equal(getCondition(morto, 'revivido').data.penalidade, esperado, 'cai de 1 por noite');
+    assert.equal(conditionEffects(morto).ataqueFixo, -esperado);
+  }
+  descansoLongo(morto);
+  assert.ok(!hasCondition(morto, 'revivido'), 'na quarta noite a conta esta paga');
+  assert.equal(conditionEffects(morto).ataqueFixo, 0);
+});
+
+teste('a penalidade de quem voltou pesa em todo teste de pericia, e na previsao', () => {
+  const { party } = montar({ nivel: 5 });
+  const c = party[DARA];
+  const antes = skillBonus(c, 'atletismo');
+  const antesFurtivo = skillBonus(c, 'furtividade');
+  addCondition(c, 'revivido', { data: { penalidade: 4 } });
+  assert.equal(skillBonus(c, 'atletismo'), antes - 4, 'Atletismo paga a conta');
+  assert.equal(skillBonus(c, 'furtividade'), antesFurtivo - 4, 'Furtividade tambem');
+  assert.equal(penalidadeDeQuemVoltou(c), 4);
+  // E por isso a PREVISAO que o jogador le bate com o dado: o defeito era a
+  // tela prometer 0,75 onde o dado dava 0,55.
+  const estado = estadoDe({ vila: { dia: 1 } });
+  const p = previsaoDeTeste(estado, party, c, 'atletismo', 15);
+  assert.equal(p.bonus, antes - 4, 'a previsao mostra o bonus com a conta');
+  // A conta cai de 1 por noite, e a pericia acompanha.
+  descansoLongo(c);
+  assert.equal(skillBonus(c, 'atletismo'), antes - 3);
+});
+
+teste('e pesa no ataque e na resistencia, com a parcela dizendo de onde vem', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const c = party[DARA];
+  addCondition(c, 'revivido', { data: { penalidade: 4 } });
+  // Ataque: a conta aparece nas parcelas.
+  const d = enc.dadosDeAtaque(c, 7);
+  assert.equal(d.bonus, 3, '+7 vira +3');
+  assert.ok(d.partes.some((k) => k.valor === -4), 'e a parcela diz de onde vem');
+  // Resistencia: o defeito era o registro dizer "+7" e o dado somar +3.
+  const r = enc.resistencia(c, 'con', 10);
+  assert.ok(r.partes.some((k) => k.valor === -4), 'a parcela da resistencia tambem: ' + JSON.stringify(r.partes));
+  assert.equal(conditionEffects(c).saveFixo.con, -4);
+});
+
+teste('o Guardiao da Fe nao fere os aliados de quem o conjurou', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 9, y: 5 }]] });
+  const clerigo = party[BRENN];
+  const aliada = party[DARA];
+  clerigo.pos = { x: 5, y: 5 };
+  clerigo.spellcasting.prepared.push('guardiaoDaFe');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  assert.ok(enc.castSpell(clerigo, 'guardiaoDaFe', { point: { x: 3, y: 3 } }).ok);
+  const zona = enc.zonas.find((z) => z.orcamento);
+  assert.equal(zona.soHostis, true, 'a zona sabe que so pega hostil');
+  // A aliada entra: nao rola nada, nao perde PV, e nao gasta o orcamento.
+  aliada.hp = 40;
+  aliada.aurasNoTurno = [];
+  enc.resistirAZona(aliada, zona, 'entra');
+  assert.equal(aliada.hp, 40, 'a aliada passa inteira');
+  assert.equal(zona.gasto, 0, 'e nao gasta o orcamento do guardiao');
+  // O inimigo entra: paga.
+  const goblin = foes[0];
+  goblin.hp = 200; goblin.maxHp = 200;
+  goblin.aurasNoTurno = [];
+  enc.resistirAZona(goblin, zona, 'entra');
+  assert.ok(goblin.hp < 200, 'o inimigo paga');
+  assert.ok(zona.gasto > 0, 'e gasta o orcamento: ' + zona.gasto);
+});
+
+teste('Protecao contra a Morte: oito horas, e nao para sempre', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const alvo = party[PIP];
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 5 }; alvo.pos = { x: 5, y: 6 };
+  clerigo.spellcasting.prepared.push('protecaoContraAMorte');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 2];
+  assert.ok(enc.castSpell(clerigo, 'protecaoContraAMorte', { targets: [alvo] }).ok);
+  const cond = getCondition(alvo, 'protegidoDaMorte');
+  assert.ok(cond, 'a condicao chegou');
+  // O defeito era `duracaoRodadas`, que o ramo de buff nao le: a condicao
+  // nascia com duracao infinita e atravessava descansos.
+  assert.ok(Number.isFinite(cond.rounds), 'com duracao finita, nao infinita: ' + cond.rounds);
+  assert.equal(cond.rounds, 4800, 'oito horas em rodadas de seis segundos');
+});
+
+teste('quem a Protecao segura ainda faz o teste de concentracao e acorda do Sono', () => {
+  // O defeito era um `return` que pulava o ramo de quem continua de pe: com a
+  // magia o alvo mantinha a concentracao 40 de 40 (sem ela, 3 de 40).
+  const concentrou = (comMagia) => {
+    let manteve = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const { enc, party } = montar({ nivel: 5, seed });
+      const alvo = party[ILVAN];
+      alvo.spellcasting.prepared.push('bencao');
+      alvo.spellcasting.slots = [0, 4, 3, 3];
+      alvo.pos = { x: 5, y: 5 };
+      assert.ok(enc.castSpell(alvo, 'bencao', { targets: [alvo] }).ok, 'conjurou a Bencao');
+      assert.ok(alvo.concentrating, 'e esta concentrando');
+      alvo.hp = comMagia ? 5 : 60;
+      if (comMagia) addCondition(alvo, 'protegidoDaMorte', { rounds: 4800 });
+      enc.applyDamage(alvo, 40, 'cortante', party[DARA]);
+      if (alvo.concentrating) manteve += 1;
+    }
+    return manteve;
+  };
+  const comMagia = concentrou(true);
+  assert.ok(comMagia < 20, 'com a magia ele fica de pe, mas rola a concentracao: manteve ' + comMagia + ' de 20');
+  // E o Sono: o golpe acorda, mesmo quem a magia segurou.
+  const { enc, party } = montar({ nivel: 5 });
+  const alvo = party[PIP];
+  alvo.hp = 5;
+  addCondition(alvo, 'protegidoDaMorte', { rounds: 4800 });
+  addCondition(alvo, 'inconsciente', { source: 'sono' });
+  enc.applyDamage(alvo, 40, 'cortante', party[DARA]);
+  assert.equal(alvo.hp, 1, 'a magia o segurou');
+  assert.ok(!hasCondition(alvo, 'inconsciente'), 'e o golpe o acordou');
+});
+
+teste('a Protecao segura o golpe inteiro, nao so a primeira parcela dele', () => {
+  // A aranha da perfurante e veneno no mesmo golpe. A primeira parcela gastava
+  // a magia e a segunda derrubava o heroi: a magia paga e o heroi no chao.
+  const { enc, party } = montar({ nivel: 5 });
+  const alvo = party[PIP];
+  alvo.hp = 5;
+  addCondition(alvo, 'protegidoDaMorte', { rounds: 4800 });
+  enc.umaFonteDeDano(() => {
+    enc.applyDamage(alvo, 10, 'cortante', party[DARA]);
+    enc.applyDamage(alvo, 5, 'veneno', party[DARA]);
+  });
+  assert.equal(alvo.hp, 1, 'as duas parcelas do mesmo golpe nao o derrubam');
+  assert.ok(!alvo.dead);
+  assert.ok(!hasCondition(alvo, 'inconsciente'), 'e ele nao cai');
+});
+
+teste('a conta de quem voltou atravessa a troca de cena', () => {
+  // O mesmo defeito que pegou a exaustao: o filtro de `continuarCom` guardava
+  // uma lista curta, e o que nao estava nela sumia entre capitulos.
+  const { party } = montar({ nivel: 5 });
+  const c = party[DARA];
+  addCondition(c, 'revivido', { data: { penalidade: 4 } });
+  addCondition(c, 'protegidoDaMorte', { rounds: 4800 });
+  addCondition(c, 'enfeiticado', { rounds: 10 });
+  // O filtro, como `main.js` o faz.
+  const DE_FORA = new Set(['inconsciente', 'exausto', 'revivido', 'protegidoDaMorte']);
+  c.conditions = c.conditions.filter((k) => DE_FORA.has(k.id));
+  assert.ok(hasCondition(c, 'revivido'), 'a conta de quem voltou fica');
+  assert.ok(hasCondition(c, 'protegidoDaMorte'), 'e a Protecao, que dura oito horas, tambem');
+  assert.ok(!hasCondition(c, 'enfeiticado'), 'o encanto da cena, nao');
+});
+
+teste('Reviver os Mortos nao herda as travas do Falar com os Mortos', () => {
+  const { party } = montar({ nivel: 5 });
+  const clerigo = party[BRENN];
+  const morto = party[PIP];
+  clerigo.spellcasting.prepared.push('reviverOsMortos');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  clerigo.pos = { x: 5, y: 5 }; morto.pos = { x: 5, y: 5 };
+  morto.dead = true; morto.hp = 0;
+  addCondition(morto, 'inconsciente');
+  addCondition(morto, 'caido');
+  addCondition(morto, 'envenenado', { rounds: 10 });
+  morto.stable = true;
+  morto.morreuNaRodada = 3;
+  const estado = estadoDe({ vila: { dia: 1 } });
+  // A trava dos dez dias e do Falar com os Mortos, nao desta.
+  estado.mortosFalados = [{ id: chaveDoNpc(morto), minutos: estado.minutos }];
+  const r = conjurarFora(estado, clerigo, 'reviverOsMortos', { herois: party, rng: makeRng(3), alvo: morto });
+  assert.ok(r.ok, 'o corpo que ja falou ainda pode voltar: ' + (r.why ?? ''));
+  // E volta INTEIRO: nada do que a morte deixou fica para tras.
+  assert.equal(morto.hp, 1);
+  assert.deepEqual(morto.deathSaves, { successes: 0, failures: 0 }, 'com as chaves que o motor e o HUD leem');
+  assert.equal(morto.stable, false);
+  assert.equal(morto.morreuNaRodada, null);
+  assert.ok(!hasCondition(morto, 'caido'), 'levanta');
+  assert.ok(!hasCondition(morto, 'envenenado'), 'e o veneno que o afligia foi neutralizado, como no livro');
+});
+
+teste('quem morreu de exaustao nao volta para morrer de novo', () => {
+  const { party } = montar({ nivel: 5 });
+  const clerigo = party[BRENN];
+  const morto = party[PIP];
+  clerigo.spellcasting.prepared.push('reviverOsMortos');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  clerigo.pos = { x: 5, y: 5 }; morto.pos = { x: 5, y: 5 };
+  // Morreu de exaustao: o 6o degrau mata.
+  mudarExaustao(morto, 6);
+  morto.dead = true; morto.hp = 0;
+  const estado = estadoDe({ vila: { dia: 1 } });
+  assert.ok(conjurarFora(estado, clerigo, 'reviverOsMortos', { herois: party, rng: makeRng(3), alvo: morto }).ok);
+  assert.equal(nivelDeExaustao(morto), 5, 'volta no 5o: no 6o morreria no primeiro teste de fome');
+  assert.equal(morto.hp, 1);
+  assert.ok(!exaustaoFatal(morto), 'e nao esta fadado a morrer de novo');
+});
+
+teste('a previsao de ataque mostra a conta de quem voltou, e nao o numero de antes', () => {
+  const { enc, party, foes } = montar({ nivel: 5 });
+  const c = party[DARA];
+  const alvo = foes[0];
+  c.pos = { x: 5, y: 5 }; alvo.pos = { x: 6, y: 5 };
+  const antes = previsaoDeAtaque(enc, c, alvo).chance;
+  addCondition(c, 'revivido', { data: { penalidade: 4 } });
+  const depois = previsaoDeAtaque(enc, c, alvo).chance;
+  assert.ok(depois < antes - 0.1, `a tela tem de cair com a conta: ${antes.toFixed(2)} -> ${depois.toFixed(2)}`);
+  // E bate com o dado: o bonus de ataque caiu 4.
+  const perfil = enc.weaponAttackProfile(c);
+  assert.equal(enc.dadosDeAtaque(c, perfil.bonus).bonus, perfil.bonus - 4);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

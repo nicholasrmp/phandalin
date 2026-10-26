@@ -347,7 +347,9 @@ export class Hud {
     return el('div', { class: `conds${mini ? ' mini' : ''}` }, lista.map((x) => {
       const def = CONDITIONS[x.id];
       // Exaustão: o degrau faz parte do nome, porque é ele que diz o que dói.
-      const nome = def?.porNivel && x.data?.nivel ? `${def.name} ${x.data.nivel}` : (def?.name ?? x.id);
+      const nome = def?.porNivel && x.data?.nivel ? `${def.name} ${x.data.nivel}`
+        : def?.penalidadeDaData && x.data?.penalidade ? `${def.name} −${x.data.penalidade}`
+          : (def?.name ?? x.id);
       // O ícone de 32 px entra onde cabe. Na ordem de turno (`mini`) o
       // azulejo tem 36 px de largura: ali a condição continua sendo um ponto
       // colorido, e a sigla fica no DOM para a leitura de tela.

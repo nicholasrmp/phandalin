@@ -580,6 +580,16 @@ export const CONDITIONS = {
     semAtaqueNemMagia: true,
     atravessaVao: true,
   },
+  protegidoDaMorte: {
+    name: 'Proteção contra a Morte',
+    desc: 'A primeira queda a 0 PV deixa você de pé com 1 PV, e a magia acaba.',
+  },
+  revivido: {
+    name: 'Voltou dos Mortos',
+    desc: 'Voltar custa: a penalidade em ataques, resistências e testes cai de 1 a cada descanso longo.',
+    // A penalidade mora em `data.penalidade` e vale para as três coisas.
+    penalidadeDaData: true,
+  },
   naAgua: {
     name: 'Andando na Água',
     desc: 'Pisa na superfície da água como se fosse chão firme: a água funda não custa o dobro.',
@@ -768,6 +778,10 @@ export function conditionEffects(actor) {
     semAtaqueNemMagia: false,
     atravessaVao: false,
     sobreAgua: false,
+    // Modificador FIXO (não dado) em ataque e em teste de atributo. O de
+    // resistência já tinha casa: `saveFixo`, por atributo.
+    ataqueFixo: 0,
+    testeFixo: 0,
     // Fora de alcance: não pode ser atingido, escolhido como alvo nem afetado.
     // O Plano Etéreo e o Fundir-se com a Pedra, que leem o mesmo campo.
     inalcancavel: false,
@@ -847,6 +861,14 @@ export function conditionEffects(actor) {
     if (def.saveAdvantage) out.saveAdvantage.push(...def.saveAdvantage);
     if (def.semAtaqueNemMagia) out.semAtaqueNemMagia = true;
     if (def.sobreAgua) out.sobreAgua = true;
+    // Reviver os Mortos: −4 que cai de 1 por descanso longo, e que pesa em
+    // ataque, resistência e teste de atributo ao mesmo tempo.
+    if (def.penalidadeDaData && c.data?.penalidade) {
+      const p = c.data.penalidade;
+      out.ataqueFixo -= p;
+      out.testeFixo -= p;
+      for (const hab of HABILIDADES) out.saveFixo[hab] = (out.saveFixo[hab] ?? 0) - p;
+    }
     if (def.inalcancavel) out.inalcancavel = true;
     if (def.motivoInalcancavel && !out.motivoInalcancavel) out.motivoInalcancavel = def.motivoInalcancavel;
     if (def.soVoa) out.soVoa = true;

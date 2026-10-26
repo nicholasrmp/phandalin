@@ -90,7 +90,10 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
 
   // Acao por teste (o Olhar Apodrecedor): a chance e a de o ALVO falhar.
   const falha = perfil.teste ? chanceDeFalhar(target, perfil.teste.save, perfil.teste.dc) : null;
-  const chance = foraDeAlcance || semVisao ? 0 : falha ?? chanceD20(perfil.bonus, caAlvo, mods);
+  // A conta de quem voltou dos mortos entra na PREVISÃO também: ela já pesava
+  // no dado (`dadosDeAtaque`), e a tela prometia o número de antes.
+  const fixo = conditionEffects(attacker).ataqueFixo;
+  const chance = foraDeAlcance || semVisao ? 0 : falha ?? chanceD20(perfil.bonus + fixo, caAlvo, mods);
   const critico = foraDeAlcance || semVisao || perfil.teste ? 0 : chanceCritico(mods);
   // ATAQUE FURTIVO na conta. Ele é a maior parte do dano de um ladino — no
   // 3º nível, 2d6 contra 1d6+3 de espada curta, ou seja, mais que dobra o

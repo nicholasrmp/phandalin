@@ -1647,8 +1647,8 @@ const SPELL_VISUALS = {
     }
     return 0;
   },
-  // Crescer Plantas: o verde corre do ponto para fora, casa a casa (as moitas são a zona, em 2.5D).
-  crescerPlantas: (board, { dest, areaTiles }) => {
+  // Crescimento de Plantas: o verde corre do ponto para fora, casa a casa (as moitas são a zona, em 2.5D).
+  crescimentoDePlantas: (board, { dest, areaTiles }) => {
     const casas = (areaTiles ?? [dest]).slice().sort((a, b) => Math.hypot(a.x - dest.x, a.y - dest.y) - Math.hypot(b.x - dest.x, b.y - dest.y));
     board.fx.ring(dest, { color: '#6ee89a', radius: 70, dur: 0.9, width: 3 });
     board.fx.motes(dest, { color: '#9ff0b8', count: 8, rise: 50, spread: 40, dur: 0.9 });
@@ -1712,8 +1712,8 @@ const SPELL_VISUALS = {
     board.fx.motes(caster.pos, { color: '#d8c49a', count: 5, rise: 20, spread: 12 });
     return 0.5;
   },
-  // Passo sem Rastro: um véu de sombra se abre num anel grande em torno de quem conjurou.
-  passoSemRastro: (board, { caster }) => {
+  // Passos sem Pegadas: um véu de sombra se abre num anel grande em torno de quem conjurou.
+  passosSemPegadas: (board, { caster }) => {
     board.fx.ring(caster.pos, { color: '#9f9be0', radius: 110, dur: 1.0, width: 4 });
     board.fx.quadros(caster.pos, 'rastro-nevoa', { fps: 8, altura: 12, sumir: 0.3 });
     board.fx.motes(caster.pos, { color: '#8a86b8', count: 8, rise: 34, spread: 60, dur: 1.0 });

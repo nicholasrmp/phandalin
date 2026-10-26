@@ -62,7 +62,7 @@
 //
 // `zona.ilusao`: a zona é a imagem de um objeto (Ilusão Menor): tira a visão do outro lado.
 // `zona.luz`: fonte de luz num ponto, `{claro, penumbra}` em pés (Luz do Dia).
-// `zona.dificil4`: terreno que custa 4x (Crescer Plantas); `soVegetal` e `poupaAliados`
+// `zona.dificil4`: terreno que custa 4x (Crescimento de Plantas); `soVegetal` e `poupaAliados`
 // recortam a área (só chão natural; sem as casas dos aliados).
 // `escolheAtributo`: o jogador (ou o jogo) escolhe o atributo (Aprimorar Atributo).
 //
@@ -880,8 +880,8 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['rogado', 'bruxaria'], todas: true,
     desc: 'Toque num aliado: toda maldição que pese sobre ele acaba — Rogar Maldição e Bruxaria, as duas que existem no jogo. (Objetos amaldiçoados e a sintonia com itens malditos ainda não existem no jogo.)',
   },
-  crescerPlantas: {
-    id: 'crescerPlantas', name: 'Crescer Plantas', level: 3, school: 'transmutação', fonte: 'srd',
+  crescimentoDePlantas: {
+    id: 'crescimentoDePlantas', name: 'Crescimento de Plantas', level: 3, school: 'transmutação', fonte: 'srd',
     castTime: 'action', rangeFt: 150, shape: 'sphere', areaFt: 100, kind: 'save', soZona: true,
     zona: {
       rodadas: 4800, quando: 'nunca', aoEntrar: false, dificil: false, dificil4: true, semTeste: true,
@@ -921,8 +921,8 @@ export const SPELLS = {
     zona: { rodadas: 4800, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ocupaCasa: true, cordao: { flechas: 4, raioFt: 30, dano: '1d6', tipo: 'perfurante' } },
     desc: 'Você finca quatro flechas no chão ao seu alcance. Quando um inimigo seu entra a até 9 m delas pela primeira vez no turno, ou termina o turno ali, uma flecha o atinge: ele faz uma resistência de Destreza contra a CD da sua magia e, se falhar, sofre 1d6 de dano perfurante; se passar, nada. Cada tiro gasta uma flecha; sem flechas, a magia acaba. Dura 8 horas. +2 flechas por círculo acima do 2º. (No jogo, o tiro sai do ponto das flechas, sem consumir munição e sem jogada de ataque, e quem a magia não "designa" é todo mundo do seu lado. Sem concentração.)',
   },
-  passoSemRastro: {
-    id: 'passoSemRastro', name: 'Passo sem Rastro', level: 2, school: 'abjuração', fonte: 'srd',
+  passosSemPegadas: {
+    id: 'passosSemPegadas', name: 'Passos sem Pegadas', level: 2, school: 'abjuração', fonte: 'srd',
     castTime: 'action', rangeFt: 0, kind: 'rastro', raioFt: 30,
     concentration: true, duracaoRodadas: 600,
     desc: 'Um véu de sombra e silêncio acompanha você: você e os aliados a até 9 m de você ganham +10 em Furtividade (e, no livro, não deixam rastro). Concentração, até 1 hora. (No jogo, o bônus vale enquanto o aliado fica a 9 m de você — o jogo confere no começo de cada turno e quando alguém se move — e vale nas jogadas de Furtividade do combate e das cenas de exploração; o rastro não existe.)',
@@ -1157,6 +1157,30 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
     desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
   },
+  // ---- o Domínio da Vida (`rules/classes/clerigo.js`) ----
+  protecaoContraAMorte: {
+    id: 'protecaoContraAMorte', name: 'Proteção contra a Morte', level: 4, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'protegidoDaMorte', rodadasProprias: 4800,
+    desc: 'Toque num aliado: por oito horas, a primeira vez que ele cairia a 0 PV por dano, ele fica de pé com 1 PV e a magia acaba ali. (Simplificação: no livro ela também anula um efeito que mate na hora sem causar dano; no jogo o único jeito de morrer na hora é o excesso de dano, e contra esse ela vale. Sem acúmulo: conjurar de novo em quem já está protegido não guarda duas.)',
+  },
+  guardiaoDaFe: {
+    id: 'guardiaoDaFe', name: 'Guardião da Fé', level: 4, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 30, shape: 'sphere', areaFt: 10, kind: 'save', soZona: true,
+    zona: { em: 'no', rodadas: 4800, quando: 'nunca', aoEntrar: true, dificil: false, orcamento: 60, soHostis: true,
+      dano: { dados: '0d0+20', tipo: 'radiante', save: 'dex', metade: true } },
+    desc: 'Um guardião espectral de espada e escudo para numa casa a até 9 m e fica oito horas. Quem é hostil a você e entra a até 3 m dele faz resistência de Destreza: 20 de dano radiante, metade se passar. Ele some depois de causar 60 de dano no total. O livro diz "a primeira vez num turno", e é isso: quem entra, sai e entra de novo no mesmo turno só paga uma vez. (Simplificações: o guardião não ocupa a casa, então ninguém tem de desviar dele; a área é um quadrado de 5 por 5 casas em volta do ponto, enquanto no livro ele é Grande e os 3 m em volta dariam 6 por 6; e ele se desfaz quando o combate acaba, porque é zona de encontro e não do relógio das oito horas. O dano é exatamente 20, sem dado, como no livro.)',
+  },
+  curarFerimentosEmMassa: {
+    id: 'curarFerimentosEmMassa', name: 'Curar Ferimentos em Massa', level: 5, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'healGrupo', targets: 6, heal: '3d8', addSpellMod: true, upcast: { dados: 1 },
+    desc: 'Até 6 criaturas a até 18 m recuperam 3d8 + o modificador de conjuração. +1d8 por círculo acima do 5º. (Simplificação: o livro escolhe as seis dentro de uma esfera de 9 m de raio; aqui, quando o jogador não escolhe, valem as seis feridas mais próximas dentro dos 18 m. Não cura morto-vivo nem constructo, como no livro.)',
+  },
+  reviverOsMortos: {
+    id: 'reviverOsMortos', name: 'Reviver os Mortos', level: 5, school: 'necromancia', fonte: 'srd', soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 60, rangeFt: 5, kind: 'utilidade', duracaoMin: 0,
+    desc: 'Uma hora de ritual sobre um corpo que morreu há no máximo dez dias, e a alma volta: ele acorda com 1 PV. Voltar custa — por um tempo ele erra mais: −4 em ataques, resistências e testes de atributo, e essa penalidade cai de 1 a cada descanso longo, até sumir. Como no livro, voltar também neutraliza o veneno que o afligia. (Simplificações: sem o diamante de 500 po; o jogo não conta os dez dias, porque não guarda a hora em que cada um morreu; e só devolve quem é do grupo, porque um corpo inimigo revivido voltaria hostil e o livro não trata disso; e não devolve membro que faltou, não cura doença mágica nem maldição, e não fecha o ferimento que matou a pessoa. Quem morreu de exaustão volta no 6º degrau, que mata: por isso aqui ele volta no 5º, senão morreria de novo no primeiro teste de fome. A conta de −4 pesa em toda resistência e em todo teste de perícia, mas não na iniciativa, que o jogo rola uma vez para o grupo inteiro, nem nos testes de resistência contra a morte. Só fora de combate.)',
+  },
+
   // ---- a palavra e o olho a distância ----
   enviarMensagem: {
     id: 'enviarMensagem', name: 'Enviar Mensagem', level: 3, school: 'evocação', fonte: 'srd', soFora: true, utilidade: true,
@@ -1288,8 +1312,8 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 1,
     desc: 'Você nomeia um animal ou uma planta e sente, num raio de 8 km, onde está o exemplar mais próximo, a direção e a distância dele. Na estrada isso é saber onde está a caça e onde está o que se colhe. Ritual. (Simplificação: o jogo não aponta um bicho nomeado no mapa. Regra da casa: no lugar disso, o teste de Sobrevivência para caçar e colher sai com vantagem no dia em que a magia foi conjurada — a magia do livro é instantânea e só diz direção e distância. Só fora de combate.)',
   },
-  criarComidaEAgua: {
-    id: 'criarComidaEAgua', name: 'Criar Comida e Água', level: 3, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
+  criarAlimentoAgua: {
+    id: 'criarAlimentoAgua', name: 'Criar Alimento e Água', level: 3, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 0,
     racoes: 15, agua: 120,
     desc: 'Surgem no chão comida para quinze pessoas por um dia e 120 litros de água limpa. A comida é sem graça, mas alimenta, e o livro diz que ela estraga em 24 horas. Na estrada, a água enche os cantis do grupo primeiro. (Simplificações: o jogo conta quinze rações e arredonda os 30 galões do livro para 120 litros, a quatro litros por galão. Regra da casa: a água que não cabe em cantil nenhum também se perde no fim do dia, porque não há onde carregá-la. Só fora de combate.)',
@@ -1297,7 +1321,7 @@ export const SPELLS = {
   falarComPlantas: {
     id: 'falarComPlantas', name: 'Falar com Plantas', level: 3, school: 'transmutação', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 10,
-    desc: 'Por 10 minutos você conversa com as plantas num raio de 9 m. Elas contam o que passou por ali (quem pisou, quem se escondeu). No jogo, onde há mato, árvore ou espinheiro, a opção "Perguntar às plantas" (clicando em você) revela quem está escondido por perto. (Simplificações: as plantas só dizem o que viram de gente e bicho; o pedido do livro de mudar o terreno (atrapalhar ou abrir caminho) fica para o Crescer Plantas. Só fora de combate.)',
+    desc: 'Por 10 minutos você conversa com as plantas num raio de 9 m. Elas contam o que passou por ali (quem pisou, quem se escondeu). No jogo, onde há mato, árvore ou espinheiro, a opção "Perguntar às plantas" (clicando em você) revela quem está escondido por perto. (Simplificações: as plantas só dizem o que viram de gente e bicho; o pedido do livro de mudar o terreno (atrapalhar ou abrir caminho) fica para o Crescimento de Plantas. Só fora de combate.)',
   },
   encontrarFamiliar: {
     id: 'encontrarFamiliar', name: 'Convocar Familiar', level: 1, school: 'conjuração', fonte: 'srd', ritual: true, soFora: true, utilidade: true,

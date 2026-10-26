@@ -217,7 +217,7 @@ const PLANTAS_CONSTRITORAS = {
 // Recargas que não são de ataque: traço de criatura com "Recarga 5–6".
 const RECARGA_DE_TRACO = { 'Plantas Constritoras': [5, 6] };
 
-// Crescer Plantas: o chão que não é natural (pedra, estrada, caverna, água, obra) não vira mato.
+// Crescimento de Plantas: o chão que não é natural (pedra, estrada, caverna, água, obra) não vira mato.
 const SEM_PLANTAS = new Set(['estrada', 'caverna', 'ponte', 'leito', 'poco', 'riacho', 'entulho', 'fogueira', 'rocha', 'parede']);
 
 export class Encounter {
@@ -494,7 +494,7 @@ export class Encounter {
       for (const zona of this.zonasEm(c.pos)) if (zona.quando === 'inicio') this.resistirAZona(c, zona, 'começa o turno');
       for (const aura of this.aurasHostisEm(c, c.pos)) this.golpeDaAura(aura, c, 'começa o turno');
     }
-    // Passo sem Rastro: quem ficou perto de quem o conjurou leva o véu.
+    // Passos sem Pegadas: quem ficou perto de quem o conjurou leva o véu.
     this.renovarRastro();
     this.say('turno', side === 'party' ? `— Turno do grupo (rodada ${this.round}) —` : `— Turno dos inimigos (rodada ${this.round}) —`);
     this.onEvent({ type: 'sideStart', side });
@@ -1287,7 +1287,7 @@ export class Encounter {
     // A corrida antes do salto: a DISTÂNCIA andada desde a última coisa que
     // não foi andar (`afterAction` e o próprio salto zeram).
     actor.corridaFt = (actor.corridaFt ?? 0) + ate * 5;
-    // Passo sem Rastro: o véu anda com quem o conjurou.
+    // Passos sem Pegadas: o véu anda com quem o conjurou.
     this.renovarRastro();
     // `from` deixa a camada de desenho calcular para onde a figura está virada,
     // sem o motor precisar conhecer o conceito de "frente" (o 5e não tem).
@@ -1380,7 +1380,7 @@ export class Encounter {
     this.field.dificeis4 = new Set(this.zonas.filter((z) => z.dificil4).flatMap((z) => [...z.casas]));
   }
 
-  /** As casas que a zona de fato cobre (Crescer Plantas: só chão natural, sem os aliados). A prévia usa a mesma conta. */
+  /** As casas que a zona de fato cobre (Crescimento de Plantas: só chão natural, sem os aliados). A prévia usa a mesma conta. */
   casasDaZona(actor, spell, casas) {
     if (spell.zona?.soVegetal) casas = casas.filter((t) => !SEM_PLANTAS.has(this.field.surfaceAt(t.x, t.y)) && !this.field.blocksMove(t.x, t.y));
     if (spell.zona?.poupaAliados) casas = casas.filter((t) => { const c = this.at(t.x, t.y); return !(c && c.side === actor.side); });
@@ -1389,7 +1389,7 @@ export class Encounter {
 
   criarZona(actor, spell, casas, cd, { centro = null, circulo = spell.level, tipo = null } = {}) {
     const dano = spell.zona.dano;
-    // Crescer Plantas: só o chão natural vira mato, e as casas dos aliados ficam de fora.
+    // Crescimento de Plantas: só o chão natural vira mato, e as casas dos aliados ficam de fora.
     casas = this.casasDaZona(actor, spell, casas);
     const zona = {
       id: this.proximaZona(),
@@ -1400,6 +1400,12 @@ export class Encounter {
       dono: actor.id,
       quando: spell.zona.quando ?? 'fim',
       aoEntrar: spell.zona.aoEntrar ?? true,
+      // Guardião da Fé: a zona acaba quando tiver causado `orcamento` de dano,
+      // e só fere quem é HOSTIL a quem a conjurou — é o que o livro diz, e a
+      // primeira versão desta zona feria a aliada que passava por ela.
+      orcamento: spell.zona.orcamento ?? null,
+      gasto: 0,
+      soHostis: !!spell.zona.soHostis,
       em: spell.zona.em ?? (spell.zona.cordao || spell.zona.glifo ? 'no' : 'na'),
       danoPorPasso: spell.zona.danoPorPasso ?? null,
       // Fome de Hadar: o dano de fim de turno, com os dados do círculo.
@@ -1646,15 +1652,15 @@ export class Encounter {
   }
 
   /**
-   * Passo sem Rastro: o véu anda com quem o conjurou. Dá a condição a quem está a
+   * Passos sem Pegadas: o véu anda com quem o conjurou. Dá a condição a quem está a
    * até 9 m dele e tira de quem se afastou. Roda no começo do turno, depois de
    * qualquer movimento e na conjuração.
    */
   renovarRastro() {
     for (const dono of this.combatants) {
       const conc = dono.concentrating;
-      if (!conc || conc.spellId !== 'passoSemRastro') continue;
-      const raio = getSpell('passoSemRastro').raioFt;
+      if (!conc || conc.spellId !== 'passosSemPegadas') continue;
+      const raio = getSpell('passosSemPegadas').raioFt;
       const com = [];
       for (const c of this.combatants) {
         if (c.side !== dono.side || c.dead) continue;
@@ -1662,11 +1668,11 @@ export class Encounter {
         const tem = getCondition(c, 'semRastro')?.source === dono.id;
         if (perto) {
           if (conc.dissipados?.includes(c.id)) continue;
-          if (!tem) addCondition(c, 'semRastro', { source: dono.id, magia: { id: 'passoSemRastro', circulo: conc.circulo ?? 2 } });
+          if (!tem) addCondition(c, 'semRastro', { source: dono.id, magia: { id: 'passosSemPegadas', circulo: conc.circulo ?? 2 } });
           com.push(c);
         } else if (tem) {
           removeCondition(c, 'semRastro');
-          this.say('condicao', `${c.name} se afasta demais de ${dono.name} e perde o Passo sem Rastro.`);
+          this.say('condicao', `${c.name} se afasta demais de ${dono.name} e perde os Passos sem Pegadas.`);
         }
       }
       conc.targets = com;
@@ -1839,6 +1845,12 @@ export class Encounter {
   /** Teste contra a zona. Devolve true se ficou de pé. */
   resistirAZona(c, zona, porque) {
     if (zona.noChao && this.voaAgora(c)) return true;
+    // Guardião da Fé: "qualquer criatura HOSTIL A VOCÊ". O aliado passa por ela
+    // sem nem rolar — e sem gastar o orçamento dela.
+    if (zona.soHostis) {
+      const dono = this.combatants.find((x) => x.id === zona.dono);
+      if (dono && c.side === dono.side) return true;
+    }
     if (zona.dano) return this.danoDaZona(c, zona, porque);
     if (!zona.condition) return true;
     if (c.dead || hasCondition(c, 'inconsciente') || hasCondition(c, zona.condition)) return true;
@@ -1886,6 +1898,16 @@ export class Encounter {
     }
     this.say('magia', `${c.name} ${porque} ${zona.em} ${zona.nome} e sofre ${total}${zona.dano.tipo ? ` de ${zona.dano.tipo}` : ''}.`, conta);
     this.applyDamage(c, total, zona.dano.tipo, dono ?? null, { magico: true });
+    // Guardião da Fé: contado o dano, se o orçamento acabou, ele desaparece. O
+    // livro conta o dano CAUSADO, então vale o que sobrou de resistência e
+    // imunidade (`ultimoDano`), não o número nominal.
+    if (zona.orcamento) {
+      zona.gasto = (zona.gasto ?? 0) + Math.max(0, this.ultimoDano ?? total);
+      if (zona.gasto >= zona.orcamento) {
+        this.say('magia', `${zona.nome} causou ${zona.gasto} de dano e se desfaz.`);
+        this.desfazerZona(zona);
+      }
+    }
     return true;
   }
 
@@ -2978,6 +3000,15 @@ export class Encounter {
       bonus -= r.total;
       partes.push({ rotulo: `perdição −${dice}[${r.rolls.join('+')}]`, valor: -r.total });
     }
+    // Modificador fixo, não dado: a conta de quem voltou dos mortos.
+    if (fx.ataqueFixo) {
+      bonus += fx.ataqueFixo;
+      for (const c of attacker.conditions ?? []) {
+        if (CONDITIONS[c.id]?.penalidadeDaData && c.data?.penalidade) {
+          partes.push({ rotulo: CONDITIONS[c.id].name.toLowerCase(), valor: -c.data.penalidade });
+        }
+      }
+    }
     return { bonus, partes };
   }
 
@@ -3327,6 +3358,26 @@ export class Encounter {
     target.hp -= left;
     this.onEvent({ type: 'damage', target, amount, source });
 
+    // PROTEÇÃO CONTRA A MORTE (SRD): a PRIMEIRA vez que o alvo cairia a 0 PV
+    // por dano, ele fica de pé com 1 PV e a magia acaba.
+    //
+    // Põe o PV e NÃO retorna: quem fica de pé com 1 PV sofreu dano como
+    // qualquer um, e tudo o que o dano cobra de quem continua de pé vale para
+    // ele. A primeira versão disto retornava aqui, e com isso o alvo mantinha a
+    // concentração nas 40 medições de 40 (sem a magia, 3 de 40) e não acordava
+    // do Sono. Deixar o fluxo cair no ramo de baixo resolve os dois de uma vez.
+    if (target.hp <= 0 && hasCondition(target, 'protegidoDaMorte')) {
+      target.hp = 1;
+      removeCondition(target, 'protegidoDaMorte');
+      // UMA fonte de dano pode ter várias parcelas (a aranha: perfurante mais
+      // veneno). Sem esta marca, a primeira parcela gastava a magia e a segunda
+      // derrubava o alvo no mesmo golpe — a magia paga e o herói no chão.
+      this.salvosDaFonte?.add(target);
+      this.say('recurso', `${target.name} devia cair, e a Proteção contra a Morte o segura de pé com 1 PV. A magia acaba aqui.`);
+    } else if (target.hp <= 0 && this.salvosDaFonte?.has(target)) {
+      target.hp = 1;
+    }
+
     if (target.hp > 0) {
       if (target.concentrating) {
         if (this.danoDaFonte) this.danoDaFonte.set(target, (this.danoDaFonte.get(target) ?? 0) + amount);
@@ -3534,16 +3585,21 @@ export class Encounter {
     const fora = this.danoDaFonte;
     const foraRiso = this.risoDaFonte;
     const foraQuedas = this.quedasDaFonte;
+    const foraSalvos = this.salvosDaFonte;
     const soma = new Map();
     const riso = new Set();
     this.danoDaFonte = soma;
     this.risoDaFonte = riso;
     // Quem cai neste golpe, com a sobra do dano (para o dano maciço).
     this.quedasDaFonte = fora ? foraQuedas : new Map();
+    // Quem a Proteção contra a Morte segurou DENTRO deste golpe: as parcelas
+    // seguintes da mesma fonte não o derrubam (a aranha dá perfurante e veneno).
+    this.salvosDaFonte = fora ? foraSalvos : new Set();
     try { fn(); } finally {
       this.danoDaFonte = fora;
       this.risoDaFonte = foraRiso;
       this.quedasDaFonte = foraQuedas;
+      this.salvosDaFonte = foraSalvos;
     }
     for (const [alvo, dano] of soma) {
       if (!alvo.concentrating || alvo.dead || alvo.hp <= 0) continue;
@@ -3904,7 +3960,7 @@ export class Encounter {
    * - Sono: só quem dorme (acordado, não morto-vivo, não elfo), em ordem de PV.
    */
   afetadosPelaArea(actor, spell, casas, circulo = spell.level) {
-    // Zona inofensiva (Luz do Dia, Ilusão Menor, Crescer Plantas, Névoa, Escuridão): ninguém é "afetado".
+    // Zona inofensiva (Luz do Dia, Ilusão Menor, Crescimento de Plantas, Névoa, Escuridão): ninguém é "afetado".
     if (spell.soZona && spell.zona?.semTeste && !spell.dano && !spell.fimDano && !spell.danoPorPasso) return [];
     const vistos = [...new Set((casas ?? []).map((s) => this.at(s.x, s.y)))]
       .filter((c) => c && !c.dead && !(spell.centradoEmSi && c === actor));
@@ -4681,7 +4737,7 @@ export class Encounter {
         break;
       }
 
-      // Passo sem Rastro: um véu que anda com o conjurador (a condição é dada a quem fica a 9 m).
+      // Passos sem Pegadas: um véu que anda com o conjurador (a condição é dada a quem fica a 9 m).
       case 'rastro': {
         actor.concentrating = { spellId: spell.id, condition: 'semRastro', targets: [], rounds: spell.duracaoRodadas, circulo: slot };
         this.renovarRastro();
@@ -4843,7 +4899,7 @@ export class Encounter {
         const conc = dono.concentrating;
         if (!conc || conc.spellId !== cond.magia.id || !conc.targets.includes(target)) continue;
         conc.targets = conc.targets.filter((t) => t !== target);
-        // Passo sem Rastro: quem foi dissipado não ganha o véu de volta ao renová-lo.
+        // Passos sem Pegadas: quem foi dissipado não ganha o véu de volta ao renová-lo.
         (conc.dissipados ??= []).push(target.id);
         if (!conc.targets.length && !conc.zona && !conc.aura) this.dropConcentration(dono);
       }
@@ -5665,6 +5721,12 @@ export class Encounter {
       for (const c of actor.conditions ?? []) {
         const v = CONDITIONS[c.id]?.saveFixo?.[hab];
         if (v) partes.push({ rotulo: CONDITIONS[c.id].name ?? c.id, valor: v });
+        // Reviver os Mortos: a penalidade vem da `data`, não da tabela, e sem
+        // isto ela entrava no dado sem aparecer na conta — o registro dizia
+        // "+7" e o dado somava +3.
+        if (CONDITIONS[c.id]?.penalidadeDaData && c.data?.penalidade) {
+          partes.push({ rotulo: CONDITIONS[c.id].name.toLowerCase(), valor: -c.data.penalidade });
+        }
       }
     }
     for (const dice of fx.saveBonusDice) {
