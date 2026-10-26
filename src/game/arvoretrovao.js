@@ -321,20 +321,20 @@ export const MAPA_ARVORE_TROVAO = {
     "TTb,,,,,,,,,,,,,,,,,,,,^^^&^^^^::^^^^^TTTTTTTb,,,,TTTTTTTb:ZZZZZZLLL^,,,,T,,,,,,,,,,,,,,Tbb",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,,,,,,,TTTb,,,,,bTTTTTT::ZZZZZZLLLL,,,,T,,,,,,,,,,,,,,,TT",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLLLL%jL,,,,Tbb,,,,,,,,,,b,,::ZZZ,,,LLLL,,,,TT,,,,,,,,,,,,,bTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjLLpLb,,,,TbLmL^,LLLi,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
-    "TT::,::,,,,::,,,,,,,,,,,,,,,,^LbLLLLbb,,,TTL^LLLLxtLL,,,,:,Z::,LLL^LLb,,,TT,,,,b,,,,,,,,bTb",
-    ",:::::::::::::::,,,,,,,,,,,,,L%^bLLL^,,,,TT,LLLLLxLLL,,b,,,::::,LL^LL,,,,TT,bbTTTT,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjLLpLb,,,,TbLmL^,LL^i,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
+    "TT::,::,,,,::,,,,,,,,,,,,,,,,^LbLLLLbb,,,TTL^LLLLxt^&,,,,:,Z::,LLL^LLb,,,TT,,,,b,,,,,,,,bTb",
+    ",:::::::::::::::,,,,,,,,,,,,,L%^bLLL^,,,,TT,LLLLLx^LL,,b,,,::::,LL^LL,,,,TT,bbTTTT,,,,,,TTT",
     "TT,,,,,,,,,,,,:::,,,,,,,,,,,,,,,,,,,,,,,,TbLLLLLLLL,i,bb,:::::::,LLLL,,,,TTbTSSSTTb,,,,,TTT",
     "bTb,,,,,,,,,,,,,,,T,,,,:::,,,,,,,,,,,,bb,T,,,,,,LLLLbbb,,ZZZZZZZZLLL^,,,,TTTSSSSSbT,,,,,TTb",
     "TT,,,,,,,,,,,,,,,T::b,,,::,,::::::,Z,b,bbT,,,,,,,,,,,,,,bbZZZZZZZ,,,,b,,bTTSSSSSSSSyy,,,bTT",
     "TT,,,,,,,,,,,,,,,T,,b,,,:,,,,::::ZZ,,,,,bb,,,:,,,,,,,,,,,ZZZZZZZZZ,,,,b,,,,SSSSSSSSSy,,,TTb",
-    "TT,,,,,,,,,,,,,,,,bLLLL,:,,,,,,,,ZZTTTTTTT,,,b:::,,,,,,ZZ,ZZZZZAZZ:,^LL,,,,SSSSSSSSS,,,,,bb",
+    "TT,,,,,,,,,,,,,,,,bLLLL,:,,,,,,,,ZZTTTTTTT,,,b:::,,,,,,ZZ,ZZZZZ^ZZ:,^LL,,,,SSSSSSSSS,,,,,bb",
     "TT,,,,,,,,,,,,,,,,,L^LL,::,,,,,,,,ZZTTTTTTTTbTb::b,,b,&LL,ZZZqZZZZ:,LLLb,,ySSSSSSSSST,,,,TT",
-    "TT,,,,,,,,,,,,,,,,,dLLL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,^LLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
+    "TT,,,,,,,,,,,,,,,,,d&LL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,^LLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
     "TT,,,,,,,,,,,,,,b,,g^Lj,,::,,b,,,,,::,bTbTTTTb:::bTTT,dLLZZZZZ,ZZ:::LL^,,,,TSSSSSSSSSy,,TTT",
-    "TT,,,,,,,,,,,,,TTT,,,,,,,LL^^^,LLLLL:,,bTTb,::::TbbTT,,b,,ZZZL,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
+    "TT,,,,,,,,,,,,,TTT,,,,,,,LL^^^,LLLLL:,,bTTb,::::TbbTT,,b,,ZZZ&,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
     "TT,,,,,,,,,,,,bTTT,,,,b,,LxxLL,LLLLL::,,TT,:::TTTTTTTb,,b,ZZZLL,,:,,,%%%,,,TSSSSSSSSSb,,TTT",
-    "bT,,,,,,,,,,,bTTTT,,,,,,,LLLLj,L^&jL::,,TTT,::Tb,TTTb,,,b:::,LdLL:%,bb%%,,,TSSSSSSSSTb,,TTT",
+    "bT,,,,,,,,,,,bTTTT,,,,,,,LLLLj,L^&jL::,,TTT,::Tb,TTTb,,,b:::,LdL&:%,bb%%,,,TSSSSSSSSTb,,TTT",
     "TT,,,,,,,,,,,TTTTT,,,,,,,LLLLj,L^zjL::,,TTTTT,:::::TT,,b,::,,LL^^:%Z%%%%,,,TSSSSSSSST,,,TTT",
     "TTb,,,,,,,,,,TTTTTTTTTTbb,,,,,,uLLdL,:,,TTTTbTTT:::,TT,:::,,,jL,,:ZZZ:%Tb,,,ySSSSSS,Tb,,bbT",
     "TT,,,,,,,,,,,TTTTTTTTTTT,,,,,,,LdLL^,::,TTTTTTTTT,:,Tb:::,bbb^L,:,:%%::TT,,,yyyyyyyyb,,,bTT",
@@ -342,26 +342,26 @@ export const MAPA_ARVORE_TROVAO = {
     "bTT,,,,,,,,,bTTTTTTTTTTT,,,,b,,,,,b,,ZZ:Z::::::,:::,::,,bTTb,,,,,:,,,,,::,,bTT,,::,,,,,,TTT",
     "TT,,,,,,,,,,TTTTTTTTTTTbTTTTT,,,,,,,bZZ:Tb::::::,,::::,,,TbT,,,,::,,,,,::::ZTT,,,:,,,,,,TTT",
     "TT,,,,,,,,,,,TTTTTTTTTTTTTTT,,,,,,,,b:bZTT,,,,,:,,,,::,,,b,,,b,,::,,,,,,:ZZ:ZZ::::::::::,,,",
-    "TT,,,,,,,,,,,TTTTTTTTTTTTbTTbL^LLL,,:,T,TT,jLjLLLLLLb::,LL^,,b,T,:,,,,,,bTTZ,,,:,,,,,::::,:",
-    "TT,,,,,,,,,,,TTTTTTTTTTbbb,,,d^xLL,,:bbTTT,LxjLLL^LL,:,,LL^b,,,T,,,,,,,,,bZ,,,,,,,,,,,,,,TT",
-    ",,,,,,,,,,,,,TTTTTTTTTT,,,,,,LxxLL:::,TTTTbdLLLLLLLj,:,,LLL,,,,TT,,,,,,,,,,,,LLLLdL,,,,,bTT",
+    "TT,,,,,,,,,,,TTTTTTTTTTTTbTTbL^LLL,,:,T,TT,^LjLLLLL^b::,LL^,,b,T,:,,,,,,bTTZ,,,:,,,,,::::,:",
+    "TT,,,,,,,,,,,TTTTTTTTTTbbb,,,d^xLL,,:bbTTT,LxjLLL^L$,:,,LL^b,,,T,,,,,,,,,bZ,,,,,,,,,,,,,,TT",
+    ",,,,,,,,,,,,,TTTTTTTTTT,,,,,,LxxLL:::,TTTTbdLLLLLL$j,:,,LLL,,,,TT,,,,,,,,,,,,LLLLdL,,,,,bTT",
     ",,,,,,,,,,,,,bTTTTTTTT,,,,,XXL&xLj::,,TTTTT^LLLLLu^L,::,LdL,,,,,,,,,,LL,,,,,,^LLLLL,,,,,bTT",
-    ",,,,,,,,,,,,,,,TTTTTTT,,,,,XXLLLdL:::,,,,bb,,,,,,,,,,:,,,,,,bLbmb,,,,LL,,,,,,L^^&dL,,,,,TTT",
-    ",,,,,,,,,,,,,,,TTTTT,,,,,,,X,LLs^L:::j^djL&,b,ZZ,,,,,,,,,,,,,LLLL,b,,Lj,,,,,,LLLLL&,,,,,bTT",
-    ",,,,,,,,,,,,,,,TTTTT,,,,,TT,,,,,,,:,,LLxKLL,b,ZZL^LjL,:,,,,,,LLd^bbLmLL,ZZ,,,L&jLLj,,,,,TTT",
-    ",,,,,,,,,,,,,,,TTTT,,,,,,,T,,,,,,,:,,LL^xLLb,b,,L^^LL,::,,,,,LLL%,,L^LLZ,,Z,,,,,,,,,,,,,TTb",
+    ",,,,,,,,,,,,,,,TTTTTTT,,,,,XXLLLdL:::,,,,bb,$$$$,,,,,:,,,,,,bLbmb,,,,LL,,,,,,L^^&dL,,,,,TTT",
+    ",,,,,,,,,,,,,,,TTTTT,,,,,,,X,LLs^L:::j^djL&$b,ZZ$,$,,,,,,,,,,LLLL,b,,Lj,,,,,,LLLLL&,,,,,bTT",
+    ",,,,,,,,,,,,,,,TTTTT,,,,,TT,,,,,,,:,,LLxKLL,b$ZZL^LjL,:,,,,,,LLd^bbLmLL,ZZ,,,L&jLLj,,,,,TTT",
+    ",,,,,,,,,,,,,,,TTTT,,,,,,,T,,,,,,,:,,LL^xLLb,b,$L^^LL,::,,,,,LLL%,,L^LLZ,,Z,,,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,TTT,,,,,,,,T,,,,,,::,,LLLLLLb,,,,dxxLd,::,,bT,,,,,,,LLL^:,,Z,,,,,,,,,,,,,bTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,LLL^LL,,,,,LLLLL,,:,bTT,,,,,,bdLjL,,,Z,,,,,,,,,,,,,,Tb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,beL&LL,,:,TTT,,,b,,,,,,,:,,b,,,,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,T,,,TT,,,,,TT,,,,,,:,,,,,,,,,,,,b,,,,,,,,,b,,,,,,,b,,,,,,b,b,,,,,,,,,,,,,,TTb",
-    ",,,,,,,,,,,,,,T,,,TT,,,,,TT,,,,,,:,,,,,,,,,,,b,b,,b&LLjLL&,,,,TTTTb,,,,,,b,,,,,,,,,,,,,bTbT",
-    ",,,,,,,,,,,,,,T,,,TT,,,,,TT,dLL,,:,,,,,,,,,,,,,,,,,L^LLLLL,b,,bTbTbbb,,,bb,b,,,,,,,,,,,,,TT",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,^LL,,:,,,,,,,,,,,,,,,,,^LLLLLL,,,,TbTbTbTTTTTTTTTb,,,,,,,,,,,TT",
+    ",,,,,,,,,,,,,,T,,,TT,,,,,TT,,,,,,:,,,,,,,,,,,b,b,,b&LLjLL^,,,,TTTTb,,,,,,b,,,,,,,,,,,,,bTbT",
+    ",,,,,,,,,,,,,,T,,,TT,,,,,TT,dLL,,:,,,,,,,,,,,,,,,,,L&LLLLL,b,,bTbTbbb,,,bb,b,,,,,,,,,,,,,TT",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,^LL,,:,,,,,,,,,,,,,,,,,^LLLLL^,,,,TbTbTbTTTTTTTTTb,,,,,,,,,,,TT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,LLL,::,,,LLLbL,,,,,,,,,LdjLLjL,,,,,TTTbbTTTTTTTbTT,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,%LLjL,,,,,,,,,,,,,,,,,,,,TTTTTTTTTTTTTTTT,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LdjLL,,,,,,,,,,,,,,,,,,,,bbTTTTTbbTTTTTTT,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LLLLL,,,,,,,,,,,,,,,,,,,bTbTTTTbTTTTT,,,,,,,,,,,,,,bTT",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,&LLLL,,,,,,,,,,,,,,,,,,bbTTbbTTbTTTTT,,,,,,,,,,,,,,TTb",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,^&LLLL,,,,,,,,,,,,,,,,,,bbTTbbTTbTTTTT,,,,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,&LbLL,,,,,,,,,,,,,,,,,bTTTTTTTTbbTTTTTb,,,,,,,,,,,bTTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,%LjLm,,,,,,,,,,,,,,,,,,TTTTTTTTbTTTTTTTb,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,,,,,,,,,,,,,,TTTbTTTTTTTTTTTT,,,,,,,,,,,,TTT",
@@ -651,7 +651,7 @@ export const ARVORE_TROVAO = {
   },
   "reidoth": {
     "x": 54,
-    "y": 55
+    "y": 54
   },
   "ninhos": {
     "infectados": [
@@ -697,7 +697,7 @@ export const ARVORE_TROVAO = {
     "zumbis": [
       {
         "x": 21,
-        "y": 27
+        "y": 28
       },
       {
         "x": 19,
@@ -705,7 +705,7 @@ export const ARVORE_TROVAO = {
       },
       {
         "x": 22,
-        "y": 29
+        "y": 26
       },
       {
         "x": 19,
@@ -713,7 +713,7 @@ export const ARVORE_TROVAO = {
       },
       {
         "x": 22,
-        "y": 26
+        "y": 29
       }
     ],
     "zumbisCavalo": [
@@ -851,11 +851,11 @@ export const ARVORE_TROVAO = {
       },
       {
         "x": 43,
-        "y": 40
+        "y": 42
       },
       {
-        "x": 44,
-        "y": 43
+        "x": 50,
+        "y": 40
       }
     ],
     "mormesk": [
@@ -867,12 +867,12 @@ export const ARVORE_TROVAO = {
     "reidoth": [
       {
         "x": 54,
-        "y": 55
+        "y": 54
       }
     ],
     "dragao": [
       {
-        "x": 49,
+        "x": 48,
         "y": 21
       }
     ]
@@ -959,6 +959,13 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
+      "x": 20,
+      "y": 28,
+      "variante": "alcapaoFechado",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
       "x": 27,
       "y": 30,
       "variante": "lousa"
@@ -1016,20 +1023,35 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 64,
       "y": 33,
-      "variante": "mesaPosta",
+      "variante": "altarEscama",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 63,
+      "y": 33,
+      "variante": "candelabro",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 61,
+      "y": 30,
+      "variante": "camaCampo"
+    },
+    {
+      "tipo": "prop",
+      "x": 64,
+      "y": 32,
+      "variante": "camaCampo",
       "espelhar": true
     },
     {
       "tipo": "prop",
       "x": 61,
       "y": 35,
-      "variante": "banco"
-    },
-    {
-      "tipo": "prop",
-      "x": 63,
-      "y": 33,
-      "variante": "cadeira"
+      "variante": "mesaPosta",
+      "espelhar": true
     },
     {
       "tipo": "prop",
@@ -1099,6 +1121,19 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 49,
       "y": 41,
+      "variante": "casuloElfo"
+    },
+    {
+      "tipo": "prop",
+      "x": 51,
+      "y": 40,
+      "variante": "casuloCorpo",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 43,
+      "y": 40,
       "variante": "prateleira"
     },
     {
@@ -1227,6 +1262,25 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
+      "x": 52,
+      "y": 53,
+      "variante": "camaCampo",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 57,
+      "y": 54,
+      "variante": "fogueiraPanela"
+    },
+    {
+      "tipo": "prop",
+      "x": 57,
+      "y": 52,
+      "variante": "secadorErvas"
+    },
+    {
+      "tipo": "prop",
       "x": 51,
       "y": 52,
       "variante": "trapos",
@@ -1238,18 +1292,6 @@ export const ARVORE_TROVAO = {
       "y": 54,
       "variante": "mesaFerramentas",
       "espelhar": true
-    },
-    {
-      "tipo": "prop",
-      "x": 57,
-      "y": 52,
-      "variante": "saco"
-    },
-    {
-      "tipo": "prop",
-      "x": 52,
-      "y": 53,
-      "variante": "machadoTora"
     },
     {
       "tipo": "prop",
@@ -1504,6 +1546,43 @@ export const ARVORE_TROVAO = {
       "y": 15,
       "variante": "cerca",
       "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 50,
+      "y": 19,
+      "variante": "tesouroDragao"
+    },
+    {
+      "tipo": "prop",
+      "x": 51,
+      "y": 20,
+      "variante": "aranhaMorta"
+    },
+    {
+      "tipo": "prop",
+      "x": 50,
+      "y": 21,
+      "variante": "aranhaMorta",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 52,
+      "y": 20,
+      "variante": "tesouroPouco"
+    },
+    {
+      "tipo": "prop",
+      "x": 63,
+      "y": 26,
+      "variante": "estatuaPalien"
+    },
+    {
+      "tipo": "prop",
+      "x": 36,
+      "y": 59,
+      "variante": "placaCaveira"
     }
   ],
   "pisos": {
@@ -3807,7 +3886,7 @@ export const ARVORE_TROVAO = {
       "x": 65,
       "y": 15,
       "lado": "O",
-      "tipo": "bandeira"
+      "tipo": "ferradura"
     },
     {
       "x": 29,
@@ -3831,7 +3910,7 @@ export const ARVORE_TROVAO = {
       "x": 43,
       "y": 19,
       "lado": "N",
-      "tipo": "moldura"
+      "tipo": "janela"
     },
     {
       "x": 46,
@@ -3843,7 +3922,7 @@ export const ARVORE_TROVAO = {
       "x": 63,
       "y": 19,
       "lado": "N",
-      "tipo": "moldura"
+      "tipo": "tapecaria"
     },
     {
       "x": 33,
@@ -3858,10 +3937,16 @@ export const ARVORE_TROVAO = {
       "tipo": "bandeira"
     },
     {
+      "x": 65,
+      "y": 22,
+      "lado": "O",
+      "tipo": "janela"
+    },
+    {
       "x": 19,
       "y": 26,
       "lado": "N",
-      "tipo": "aviso"
+      "tipo": "avisoPapeis"
     },
     {
       "x": 68,
@@ -3874,12 +3959,6 @@ export const ARVORE_TROVAO = {
       "y": 27,
       "lado": "N",
       "tipo": "reboco"
-    },
-    {
-      "x": 19,
-      "y": 29,
-      "lado": "O",
-      "tipo": "escudo"
     },
     {
       "x": 68,
@@ -3915,7 +3994,7 @@ export const ARVORE_TROVAO = {
       "x": 64,
       "y": 32,
       "lado": "N",
-      "tipo": "tapecaria"
+      "tipo": "lanterna"
     },
     {
       "x": 25,
@@ -4035,7 +4114,7 @@ export const ARVORE_TROVAO = {
       "x": 67,
       "y": 49,
       "lado": "O",
-      "tipo": "bandeira"
+      "tipo": "escudo"
     },
     {
       "x": 48,

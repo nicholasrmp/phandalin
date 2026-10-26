@@ -699,6 +699,78 @@ CONJUNTOS = {
         ],
         'target_palette': {'colors': MADEIRA + FERRO + ['#4a4640', '#7c776c']},
     },
+    # ARVORE TROVAO, o que o livro pede e a arte ainda nao tinha (ver `OBJETOS-ARVORE-TROVAO.md`,
+    # secao 5): o armazem das aranhas, o altar dos cultistas, as camas de campo do reduto do
+    # druida, o tesouro do dragao, o alcapao da guarnicao e a placa do aviso.
+    'livroRuina': {
+        'description': (
+            'Single prop for an isometric tactical RPG, from the ruined village of Thundertree '
+            'buried in volcanic ash thirty years ago: old, dusty, grim. About 40 px wide and 36 px '
+            'tall, sitting on the bottom of the canvas, seen from the front-left. Lit from the '
+            'upper left. Dark brown selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'upright spider-silk cocoon wrapped around a dead elf in studded leather, grey web strands',
+            'fat spider-silk cocoon lying wrapped around a body, thick grey web',
+            'dead giant spider on its back with curled legs, dark brown and black',
+            'dead giant spider curled up, legs folded, grey with dust',
+            'bedroll with a ragged brown blanket laid flat',
+            'bedroll with a pillow and a rolled blanket laid flat',
+            'pile of animal furs laid as a bed',
+            'small campfire ring of stones with a black iron cooking pot, glowing embers',
+            'wooden herb drying rack with bundles of hanging herbs',
+            'low stone altar with a huge green dragon scale the size of a plate on top',
+            'iron candle stand with melted candles and dripping wax',
+            'heap of gold coins, silver goblets and a dagger, a dragon hoard',
+            'small scatter of gold coins and one silver goblet',
+            'closed wooden trapdoor with an iron ring handle set flat in the floor',
+            'open wooden trapdoor leaning back, a dark hole beneath, set flat in the floor',
+            'wooden signpost with a board and a painted skull as a warning',
+        ],
+        'target_palette': {'colors': MADEIRA + LONA + FERRO + GRANITO + [
+            '#4a4640', '#cfc6ae', '#2f4a2c', '#33572e', '#4a7236', '#8a1e1e', '#d0a030', '#f0d060',
+            '#7c776c', '#2e2b27']},
+    },
+    # A estatua de Palien na praca (o livro a poe no centro): de madeira, num pedestal baixo.
+    'estatuaPalien': {
+        'description': (
+            'Weathered wooden statue of a warrior holding a spear and a round shield, standing on a '
+            'low stone pedestal, for an isometric tactical RPG village square. About 40 px wide and '
+            '90 px tall including the pedestal, sitting on the bottom of the canvas, seen from the '
+            'front-left. Old grey wood, cracks, ivy on the legs, grey ash. Lit from the upper left. '
+            'Dark brown selective outline, not black. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'upright statue with spear and shield, ivy on the legs',
+            'statue leaning slightly, spear broken, moss on the pedestal',
+            'statue with a cracked shield and a green patina, weeds at the pedestal',
+            'statue with its head tilted, charred on one side, ash on the shoulders',
+        ],
+        'target_palette': {'colors': MADEIRA + GRANITO + ['#4a4640', '#7c776c', '#33572e', '#4a7236', '#2e2b27']},
+    },
+    # Janelas e placas, no plano da parede (como a decoracao de parede).
+    'janelaRuina': {
+        'description': (
+            'Wall fixture for an isometric tactical RPG, mounted flat ON a stone wall face that '
+            'runs down to the right at 27 degrees, seen from the front-left. The piece lies in the '
+            'plane of that wall. No wall behind it, no floor, no shadow on the ground. Old, '
+            'weathered, ruined. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 32,
+        'view': 'top-down',
+        'item_descriptions': [
+            'narrow stone window frame with closed wooden shutters',
+            'narrow stone window frame with shutters hanging half open',
+            'narrow stone window frame with one shutter broken and fallen',
+            'narrow stone window frame, empty, dark inside',
+            'narrow stone window frame with rotten boards nailed across',
+            'narrow stone window frame with a cracked pane of glass',
+            'hanging tavern sign with a painted pony and a mug, on an iron bracket',
+            'wooden notice board with torn papers',
+        ],
+        'target_palette': {'colors': GRANITO + MADEIRA + FERRO + ['#4a4640', '#cfc6ae', '#8a1e1e', '#d0a030', '#2e2b27']},
+    },
     'paredeDecor': {
         'description': (
             'Wall fixture for an isometric tactical RPG castle, mounted flat ON a stone wall '

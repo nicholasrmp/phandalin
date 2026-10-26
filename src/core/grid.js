@@ -171,6 +171,7 @@ export const GLIFOS = {
   'Z': { kind: 0, sup: 'cinza' },
   'S': { kind: 0, sup: 'lago' },
   'y': { kind: 0, sup: 'margem' },
+  '$': { kind: 2, sup: 'teia' },           // teia grossa no chao: terreno dificil
   '^': { kind: 3, sup: 'prop' },
   '&': { kind: 0, sup: 'propBaixo' },
 };

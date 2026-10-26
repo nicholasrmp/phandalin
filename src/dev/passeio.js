@@ -29,7 +29,7 @@ const GLIFOS = {
   x: 'entulho', '%': 'espinheiro', A: 'estátua', F: 'fogueira', z: 'leito',
   u: 'barris', i: 'caixotes', K: 'baú', t: 'arca', m: 'mesa', s: 'mantimentos',
   q: 'poço', a: 'altar', c: 'ossos', p: 'palha',
-  X: 'trigo', Z: 'cinza', S: 'lago', y: 'margem', '^': 'mobília', '&': 'mobília baixa',
+  X: 'trigo', Z: 'cinza', $: 'teia', S: 'lago', y: 'margem', '^': 'mobília', '&': 'mobília baixa',
 };
 
 // W A S D movem a CÂMERA (abaixo). Os passos do herói ficam nas setas e em Q E Z C.

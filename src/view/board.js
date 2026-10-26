@@ -110,6 +110,7 @@ const SUPERFICIE = {
   cinza: { topo: ['#66625a', '#625e56'], lado: TERRA, chao: 'cinza' },
   lago: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'lago' },
   margem: { topo: ['#c2b48f', '#bcae88'], lado: TERRA, chao: 'margem' },
+  teia: { topo: ['#8a8478', '#847e72'], lado: TERRA, chao: 'teia' },
   prop: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   propBaixo: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   poco: { topo: ['#22465e', '#204259'], lado: ROCHA_LADO, chao: 'poco' },
@@ -191,7 +192,7 @@ const ARESTA_QUE_ESCONDE = new Set([1, 2]);
 // aresta é a parede da FRENTE de uma sala: sai só um toco, para se ver dentro.
 // `mancha` (a cinza do vulcão fora das casas) também: sem ela, a casa de fora
 // que a cinza cobria virava "dentro" e deixava pilares de 66 px num muro de 22.
-const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho', 'mancha', 'trigo', 'cinza', 'lago', 'margem']);
+const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho', 'mancha', 'trigo', 'cinza', 'lago', 'margem', 'teia']);
 // Altura da parede de borda, em níveis de 22 px. Três é o bastante para ela
 // ler como muro sem engolir meia sala atrás dela.
 // A TINTA DE CADA SALA, por cima da laje (ver `drawTile`). Fraca de
@@ -2209,7 +2210,8 @@ export class Board {
   desenharDecor(ctx, tipo, lado, sx, sy, x, y, alto = ALTURA_PAREDE * LIFT) {
     // As peças das ruínas (`decorRuina`) vêm primeiro: teia, musgo, tapeçaria, mancha
     // e o resto de uma casa abandonada. O que elas não têm cai nas do castelo.
-    const d = spriteCenario('decorRuina', [tipo], x, y) ?? spriteCenario('decorParede', [tipo], x, y);
+    const d = spriteCenario('decorRuina', [tipo], x, y) ?? spriteCenario('janelaRuina', [tipo], x, y)
+      ?? spriteCenario('decorParede', [tipo], x, y);
     if (!d) return;
     // O meio da aresta, na altura do peito de quem passa — uma FRAÇÃO da
     // parede, não 32 px fixos: na torre de 88 px a tocha ficava rente ao

@@ -270,6 +270,25 @@ for _n, _qs in (('cerca', [3, 4, 5, 6, 9, 11, 13]), ('cercaCaida', [8]),
                 ('portaoFechado', [0, 7]), ('portaoAberto', [1]), ('portaoCaido', [2])):
     GRUPOS[f'prop-{_n}'] = {'pasta': _CERCA, 'quadros': {'todas': _qs}, 'ancora': 'chao'}
 
+# ARVORE TROVAO, as pecas do livro (`livroRuina`, `estatuaPalien`, `janelaRuina`): o casulo do
+# elfo e as aranhas mortas do armazem, as camas de campo e a fogueira do reduto do druida, o
+# altar com a escama dos cultistas, o tesouro do dragao, o alcapao da guarnicao e a placa de
+# perigo; a estatua de Palien; e as janelas e a placa do Cavalo Pardo, no plano da parede.
+_LIVRO = 'livroRuina/3750fd5e-4f56-461f-b3a9-1fdcf47cde6f'
+for _n, _qs in (('casuloElfo', [0]), ('casuloCorpo', [1]), ('aranhaMorta', [2, 3]), ('camaCampo', [4, 5]),
+                ('peles', [6]), ('fogueiraPanela', [7]), ('secadorErvas', [8]), ('altarEscama', [9]),
+                ('candelabro', [10]), ('tesouroDragao', [11]), ('tesouroPouco', [12]),
+                ('alcapaoFechado', [13]), ('alcapaoAberto', [14]), ('placaCaveira', [15])):
+    GRUPOS[f'prop-{_n}'] = {'pasta': _LIVRO, 'quadros': {'todas': _qs}, 'ancora': 'chao'}
+GRUPOS['prop-estatuaPalien'] = {'pasta': 'estatuaPalien/26922d55-c8cd-425b-8852-7b61fb9acf5a',
+                                'quadros': {'todas': [0]}, 'ancora': 'chao'}
+GRUPOS['janelaRuina'] = {
+    'pasta': 'janelaRuina/287d96ee-8294-4901-bad7-9290c93f4e34',
+    'quadros': {'janela': [0, 1, 2, 3, 4, 5, 8, 9, 10], 'lanterna': [14, 15, 59], 'placaPoney': [6],
+                'avisoPapeis': [7]},
+    'ancora': 'centro',
+}
+
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
             'north', 'north-west', 'west', 'south-west']
 DIAGONAIS = ['south-east', 'north-east', 'north-west', 'south-west']

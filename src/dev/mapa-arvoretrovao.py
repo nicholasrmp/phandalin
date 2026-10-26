@@ -846,7 +846,8 @@ GRAU_DE_RUINA = {
 # parte do mobiliário antigo (mesa, caixote, barril, saco, leito) é TROCADA por uma peça
 # do tema da casa, e algumas peças novas entram encostadas na parede. Nada fecha o chão
 # (`_piso_inteiro`) nem entra na boca da porta.
-PROP_BAIXO = {'banquinho', 'baldeBanco', 'trapos', 'saco', 'tabuas'}
+PROP_BAIXO = {'banquinho', 'baldeBanco', 'trapos', 'saco', 'tabuas', 'camaCampo', 'peles',
+              'alcapaoFechado', 'alcapaoAberto', 'tesouroPouco'}
 BARRA_MOVEL.add('^')
 _GERAL = ['banco', 'banquinho', 'armario', 'cama', 'cadeira', 'estante', 'tina', 'berco',
           'guardaRoupa', 'roca', 'prateleira', 'escrivaninha', 'baldeBanco', 'trapos', 'mesaPosta']
@@ -880,8 +881,15 @@ ASSINATURA = {
     'tecelagem': ['tear'], 'guarda': ['beliche', 'beliche'], 'escola': ['lousa'], 'moinho': ['mo'],
     'estalagem': ['cubaCerveja', 'barrisRack'], 'ferraria': ['bigorna', 'fole'],
     'pescaria': ['redes'], 'prefeito': ['escrivaninha'], 'loja': ['prateleira'],
-    'ervas': ['prateleira'], 'casa9': ['mesaPosta'],
+    'ervas': ['prateleira'],
+    # O QUE O LIVRO PEDE: o altar com a escama e as camas dos cultistas (area 13), as camas de
+    # campo, a fogueira e as ervas do reduto do druida (area 4), o casulo do elfo (area 6) e o
+    # alcapao da guarnicao (area 11).
+    'casa9': ['altarEscama', 'candelabro', 'camaCampo', 'camaCampo', 'mesaPosta'],
+    'florestal': ['camaCampo', 'fogueiraPanela', 'secadorErvas'],
 }
+ASSINATURA['loja'] = ['casuloElfo', 'casuloCorpo', 'prateleira']
+ASSINATURA['guarda'] = ['beliche', 'beliche', 'alcapaoFechado']
 
 
 # NUNCA DUAS PECAS IGUAIS NA MESMA CASA, e nunca duas iguais viradas para o mesmo lado: a
@@ -1031,6 +1039,30 @@ for _trigo in _CAMPOS_DE_TRIGO:
             _CERCAS[_tipo] += 1
 print('cercas:', _CERCAS, '| campos cercados:', len(_CAMPOS_DE_TRIGO))
 
+# A TORRE DO DRAGAO (area 7): o tesouro empilhado ao lado da arca, as aranhas mortas e as
+# moedas soltas no chao. Perto da arca, sem fechar o chao.
+_tcs = INTERIOR['torre']
+_arca = next((c for c in sorted(_tcs) if T[c[1]][c[0]] == 't'), None)
+_torre_props = []
+for _v in ('tesouroDragao', 'aranhaMorta', 'aranhaMorta', 'tesouroPouco'):
+    for _rigor in (1, 0):
+        _ok = False
+        _cands = sorted(_tcs, key=lambda c: (abs(c[0] - _arca[0]) + abs(c[1] - _arca[1]) if _arca else 0,
+                                             _embaralha(c[0], c[1], 91)))
+        for (x, y) in _cands:
+            if T[y][x] not in 'Ldvjc' or _junto_de_vao(x, y) or (_rigor and _tapado(x, y)):
+                continue
+            _antes = T[y][x]
+            _prop(x, y, _v, _v in _torre_props, 'torre')
+            if _piso_inteiro(_tcs):
+                _torre_props.append(_v)
+                _ok = True
+                break
+            _desfaz(x, y, _antes)
+        if _ok:
+            break
+print('torre (props):', _torre_props)
+
 # O MATO QUE CRESCE DENTRO (o livro, areas 2, 5 e 12: "o mato cresce por dentro das fundacoes",
 # e e onde os ramos secos se escondem). Arbustos (cobertura) e espinheiro (terreno dificil)
 # nas casas de ramos, sem fechar o chao nem a porta. Chao de tabua por baixo.
@@ -1082,16 +1114,29 @@ GOSTO = {
     'florestal': (['armas', 'cranio', 'peles', 'ervas'], 0.45),
     'torre': (['corrente', 'cranio', 'teia'], 0.5),
 }
+# Janelas, a placa do Cavalo Pardo e o aviso da guarnicao (PixelLab, `janelaRuina`).
+GOSTO.update({
+    'estalagem': (['placaPoney', 'janela', 'tapecaria', 'moldura', 'teia', 'ferradura'], 0.55),
+    'guarda': (['armas', 'escudo', 'avisoPapeis', 'janela', 'musgo'], 0.55),
+    'prefeito': (['bandeira', 'tapecaria', 'janela', 'moldura', 'musgo'], 0.6),
+    'embaixada': (['bandeira', 'escudo', 'janela', 'moldura'], 0.6),
+    'casa12': (['teia', 'janela', 'moldura', 'fuligem'], 0.5),
+    'casa9': (['musgo', 'janela', 'tapecaria', 'lanterna'], 0.45),
+    'ervas': (['ervas', 'janela', 'musgo', 'prateleira'], 0.55),
+    'escola': (['moldura', 'janela', 'aviso', 'teia', 'pergaminho'], 0.5),
+})
 # O que nasce NA pedra: o que sobra numa parede baixa, onde nada fica pendurado.
 NASCE_NA_PEDRA = ['musgo', 'teia', 'liquen', 'mancha', 'fuligem', 'reboco']
 # A estalagem é onde o culto se abriga, e a torre é o covil: lá há fogo aceso.
 COM_FOGO = {'estalagem'}
 PENDURA = {'tochaAcesa', 'tochaApagada', 'quadro', 'bandeira', 'armas', 'escudo', 'cranio', 'corrente',
-           'tapecaria', 'moldura', 'ferradura', 'chaves', 'aviso', 'pergaminho', 'prateleira', 'peles', 'ervas'}
+           'tapecaria', 'moldura', 'ferradura', 'chaves', 'aviso', 'pergaminho', 'prateleira', 'peles', 'ervas',
+           'janela', 'lanterna', 'placaPoney', 'avisoPapeis'}
 LIMITE = {'tochaAcesa': 3, 'escudo': 1, 'armas': 1, 'bandeira': 1, 'cranio': 1,
           'quadro': 1, 'corrente': 1, 'musgo': 2, 'teia': 2,
           # Pecas de poucos desenhos: uma por construcao, para nao repetir a mesma duas vezes.
-          'moldura': 1, 'ervas': 1, 'ferradura': 1, 'chaves': 1, 'peles': 1, 'aviso': 1}
+          'moldura': 1, 'ervas': 1, 'ferradura': 1, 'chaves': 1, 'peles': 1, 'aviso': 1,
+          'placaPoney': 1, 'avisoPapeis': 1, 'lanterna': 1}
 TETO_PREDIO = 4
 DECOR = []
 _ocupadas, _quantas, _fiadas, _total = set(), {}, set(), {}
@@ -1752,6 +1797,41 @@ for _y in range(H):
             TE[_y][_x] = _novo
             _conta_arte[_novo] += 1
 print('arte de chao de fora:', _conta_arte)
+
+# A ESTATUA DE PALIEN no centro da praca (era um espeto de pedra), e a PLACA DE PERIGO na
+# chegada. As duas bloqueiam como cobertura (`^`), como a estalagmite que a estatua substitui.
+TE[ESTATUA[1]][ESTATUA[0]] = '^'
+PROPS.append({'tipo': 'prop', 'x': ESTATUA[0], 'y': ESTATUA[1], 'variante': 'estatuaPalien'})
+_placa = None
+for _r in range(2, 7):
+    for _dx, _dy in ((_r, -_r), (-_r, -_r), (_r, 0), (-_r, 0), (0, -_r)):
+        _px, _py = CHEGADA[0] + _dx, CHEGADA[1] + _dy
+        if 0 <= _px < W and 0 <= _py < H and T[_py][_px] == ',' and (_px, _py) not in _dentro:
+            _placa = (_px, _py)
+            break
+    if _placa:
+        break
+if _placa:
+    TE[_placa[1]][_placa[0]] = '^'
+    PROPS.append({'tipo': 'prop', 'x': _placa[0], 'y': _placa[1], 'variante': 'placaCaveira'})
+print('estatua e placa:', ESTATUA, _placa)
+
+# A TEIA NO CHAO do armazem (area 6, `loja`): parte do piso por dentro e a rua na frente da porta.
+# Terreno dificil: so custa andar, nunca fecha.
+_teia = 0
+for (_x, _y) in INTERIOR['loja']:
+    if TE[_y][_x] == 'L' and not _junto_de_vao(_x, _y) and _embaralha(_x, _y, 97) < 0.30:
+        TE[_y][_x] = '$'
+        _teia += 1
+for (_di, _fo, _l) in VAOS['loja']:
+    for _j in range(-3, 4):
+        for _i in range(-3, 4):
+            _x, _y = _fo[0] + _i, _fo[1] + _j
+            if 0 <= _x < W and 0 <= _y < H and (_x, _y) not in _dentro and TE[_y][_x] in ',:' \
+                    and _embaralha(_x, _y, 99) < 0.55:
+                TE[_y][_x] = '$'
+                _teia += 1
+print('teia no chao:', _teia)
 
 dados = {
     'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO],

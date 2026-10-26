@@ -176,6 +176,15 @@ CONJUNTOS = {
             '4). deeper dark water. 5). water with a reflection streak. '
             '6). water with floating dead leaves. 7). sandy shore meeting dark water, sand on the upper-left. '
             '8). shore tile with reeds. 9). wet sand. 10). dry sand.',
+    # A TEIA NO CHAO do armazem destruido e da rua ao lado (area 6 do livro): terreno dificil.
+    'teiaChao': ESTILO + ' Ground inside and beside a ruined warehouse, daylight. '
+                'Every tile is thick spider web, opaque 1-pixel white-grey strands with sticky knots. '
+                '1). dirt road covered by thick spider web. 2). dirt road with web strands and a few knots. '
+                '3). grey flagstones covered by thick spider web. 4). flagstones with web in the corner. '
+                '5). dirt road with a dense web and a few dead leaves caught in it. '
+                '6). flagstones with a web and small white egg sacs. '
+                '7). dirt road with web strands crossing it diagonally. '
+                '8). flagstones with a torn web hanging over them.',
     # Faces laterais do porao (montar-faces.py): BLOCOS com face, todos numa
     # chamada para sairem no mesmo tom. Pedidos um a um, os de alvenaria
     # vieram creme, roxo e rosa.
@@ -226,6 +235,7 @@ PALETAS = {
                        '#cfc6ae', '#5a3a28', '#2f4a2c', '#7a5a3a', '#141311', '#b89a52'],
     'lajeRuina': ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b', '#4a4640', '#4a7236', '#33572e', '#2e2b27'],
     'tabuaRuina': ['#22160e', '#3e2a1b', '#5e4029', '#85603d', '#4a4640', '#2e2b27', '#4a7236'],
+    'teiaChao': ['#4a4640', '#7c776c', '#cfc6ae', '#e6e1d4', '#3e2a1b', '#5e4029', '#85603d', '#56575a', '#77766f'],
     'trigo': ['#4c3e1f', '#66572c', '#85733f', '#a68a4a', '#2a3a21', '#36492c'],
     'cinza': ['#4a4640', '#66625a', '#7c776c', '#9a948a', '#2e2b27', '#36492c', '#2a3a21', '#7d5d40'],
     'lago': ['#1b393f', '#17313a', '#35647d', '#4a8099', '#c2b48f', '#968a6c', '#6b6350', '#36492c'],

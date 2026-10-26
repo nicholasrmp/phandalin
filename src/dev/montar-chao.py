@@ -80,6 +80,8 @@ FILEIRAS = [
     ('cinza', 'ladrilhos-pro/d02cf792-6777-4089-998c-201fa5ebe524', [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15]),
     ('lago', 'ladrilhos-pro/1dace23a-dade-40f8-a183-e4ebd344d5e2', [0, 1, 2, 3]),
     ('margem', 'ladrilhos-pro/1dace23a-dade-40f8-a183-e4ebd344d5e2', [15]),
+    # A teia no chao do armazem e da rua ao lado (terreno dificil).
+    ('teia', 'ladrilhos-pro/aa8ebdee-8a44-4b02-b864-6b9b14004d8b', [0, 2, 3, 4, 5, 8, 10, 11, 13]),
 ]
 
 
