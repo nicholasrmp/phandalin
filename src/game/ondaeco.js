@@ -247,23 +247,23 @@ export const MAPA_ONDA_ECO = {
   "RRRRR``````````````````````````RRR<<^<^<RR``RR^<<<<<RR``````````<<<<<<RRR",
   "RRRRR``````RRR```````````````````R<<<<<&RR``RR<<<<<^RRR````````R<<<<^<RRR",
   "RRRRRRRR```RRR```````````RRR``````<<<<<<RR``RR<<<<<<RRR`R``````R<<<<<<RRR",
-  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<&RR``RR^<<<<^RRRRRR`````R<<<<^<RRR",
-  "RRRRRRRRR```RR``RR```````````````R<<<<<<RR``RR``````RRRRRRR````R<<<<<<RRR",
-  "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``;`R<<^<^<RRR",
-  "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR`;;^RR``;`RRRRRRRRRR",
-  "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```;;`RRRRRRRRRR",
-  "RRRRRR```````````````R``````R```RR<<<<<<RR````````RRRR;^;^;^;;``RRRRRRRRR",
-  "RRRRRR```````````````R`R````RR``RR<<<<<&RR```R`^^`RRRR`;;;;;;;```RRRRRRRR",
-  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR^RRRR``RRRRRRRRRR`;;;;;;`;;^``RRRRRR",
-  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR```;;;;;;;;;^;`RRRRRR",
-  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR````;;;;;;;;;;`RRRRRR",
-  "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR``;;;;;;^^^;;;;``RRRR",
-  "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR````;;;;;;;;;;;;;;^``RRR",
-  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR`````;``;;;;;;`;;;;;;`RRR",
-  "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR````````````^;;;;;;;^;```RRR",
-  "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;`;;;;;^`RRRRR",
-  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`^```;;;;;^`RRRR",
-  "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR``;;;;`RRRR",
+  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<&RR``RR^<<<<^RRRRRR`^```R<<<<^<RRR",
+  "RRRRRRRRR```RR``RR```````````````R<<<<<<RR``RR``````RRRRRRR`&`^R<<<<<<RRR",
+  "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``^`R<<^<^<RRR",
+  "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR&;;^RR^`;`RRRRRRRRRR",
+  "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```&;`RRRRRRRRRR",
+  "RRRRRR```````````````R``````R```RR<<<<<<RR````````RRRR;^;^;^;^`^RRRRRRRRR",
+  "RRRRRR```````````````R`R````RR``RR<<<<<&RR```R`^^`RRRR`;;;^;&;^``RRRRRRRR",
+  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR^RRRR``RRRRRRRRRR`;;^;^;`;;^`&RRRRRR",
+  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR^``;&;&;&;;;^;`RRRRRR",
+  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR`^`^;;;^;;;;;;`RRRRRR",
+  "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR^`;;^;&;^^^;^;;``RRRR",
+  "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR``&`;;;;&;^;;;;;;;^`^RRR",
+  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR`````;`&;;^;;;`;;;&;^`RRR",
+  "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR```````^`^``^;^;;^;;^;```RRR",
+  "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;`;;^;;^`RRRRR",
+  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`^`^`;;^;;^`RRRR",
+  "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR^`;^;;`RRRR",
   "RRRRRRRRR```OO``````RRRR`````````````&`````RRRRRRRRRRRRRRRRRRRRR``^``RRRR",
   "RRRRRRRRR```OO````````RRRRRRRR``````&``&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR``````````^``RRRRRRRRRR```````&&RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -12624,6 +12624,307 @@ export const ONDA_ECO = {
    "y": 80,
    "variante": "balcaoAvaliador",
    "piso": "lajeMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 51,
+   "y": 67,
+   "variante": "coralAmarelo",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 52,
+   "y": 64,
+   "variante": "fungoPrateleira",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 52,
+   "y": 66,
+   "variante": "hastesVioleta",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 52,
+   "y": 69,
+   "variante": "fungoLaranja",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 53,
+   "y": 59,
+   "variante": "fungoCerebro",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 53,
+   "y": 65,
+   "variante": "hastesVioleta",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 54,
+   "y": 69,
+   "variante": "fungoLaranja",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 55,
+   "y": 65,
+   "variante": "fungoPrateleira",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 55,
+   "y": 68,
+   "variante": "aneloDeCogumelos",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 56,
+   "y": 64,
+   "variante": "coralAmarelo",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 56,
+   "y": 66,
+   "variante": "hastesVioleta",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 57,
+   "y": 63,
+   "variante": "bolaRachada",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 57,
+   "y": 67,
+   "variante": "coralAmarelo",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 62,
+   "variante": "cogumeloChato",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 64,
+   "variante": "coralAmarelo",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 66,
+   "variante": "fungoCerebro",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 68,
+   "variante": "cogumeloChato",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 56,
+   "variante": "fungoLaranja",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 59,
+   "variante": "fungoEspinhoso",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 63,
+   "variante": "pedraDeLiquen",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 65,
+   "variante": "pedraDeLiquen",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 67,
+   "variante": "estalagmiteAzul",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 69,
+   "variante": "pedraDeLiquen",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 57,
+   "variante": "coralAmarelo",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 60,
+   "variante": "fungoCerebro",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 62,
+   "variante": "coralAmarelo",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 64,
+   "variante": "tapeteAzul",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 71,
+   "variante": "hastesVioleta",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 61,
+   "y": 58,
+   "variante": "fungoEspinhoso",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 61,
+   "y": 61,
+   "variante": "cogumeloChato",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 57,
+   "variante": "fungoLaranja",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 62,
+   "variante": "cogumeloChato",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 69,
+   "variante": "hastesVioleta",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 72,
+   "variante": "pedraDeLiquen",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 63,
+   "y": 61,
+   "variante": "fungoEspinhoso",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 63,
+   "y": 70,
+   "variante": "cogumeloChato",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 64,
+   "y": 66,
+   "variante": "fungoLaranja",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 64,
+   "y": 71,
+   "variante": "cogumeloChato",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 65,
+   "y": 72,
+   "variante": "cogumeloTurquesa",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 66,
+   "y": 63,
+   "variante": "coralAmarelo",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 66,
+   "y": 68,
+   "variante": "fungoCerebro",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
+   "y": 68,
+   "variante": "pedraDeLiquen",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 69,
+   "y": 67,
+   "variante": "cogumeloVermelho",
+   "piso": "mina"
   }
  ],
  "ninhos": {

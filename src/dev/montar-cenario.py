@@ -297,6 +297,17 @@ _MINA = {
 for _pasta, _nomes in _MINA.items():
     for _i, _n in enumerate(_nomes):
         GRUPOS[f'prop-{_n}'] = {'pasta': _pasta, 'quadros': {'todas': [_i]}, 'ancora': 'chao'}
+# A RODA D'AGUA ANIMADA (`animar-objeto.py`, pixminimax): o mesmo desenho girando, 9 quadros (o 0 e a arte original).
+# `bbox_comum`: todos os quadros saem do mesmo recorte, senao a roda andaria na tela de um quadro para o outro.
+GRUPOS['prop-rodaDagua'] = {'pasta': 'minaRoda/anim1', 'quadros': {'todas': list(range(9))}, 'ancora': 'chao',
+                            'bbox_comum': True}
+# OS FUNGOS NOVOS DA ONDA ECO (`objetos-pixellab.py --conjunto minaFungos`, 16 pecas).
+_FUNGOS = 'minaFungos/4c28fd79-c23b-41e8-8ec4-ccb968ee15b3'
+for _i, _n in enumerate(['fungoCiano', 'cogumeloTurquesa', 'fungoPrateleira', 'cogumeloVermelho', 'aneloDeCogumelos',
+                         'bolaRachada', 'coralAmarelo', 'cogumeloChato', 'fungoLaranja', 'pedraDeLiquen',
+                         'hastesVioleta', 'tapeteAzul', 'fungoCerebro', 'fungoEspinhoso', 'estalagmiteAzul',
+                         'cogumeloRoxo']):
+    GRUPOS[f'prop-{_n}'] = {'pasta': _FUNGOS, 'quadros': {'todas': [_i]}, 'ancora': 'chao'}
 GRUPOS['janelaRuina'] = {
     'pasta': 'janelaRuina/287d96ee-8294-4901-bad7-9290c93f4e34',
     'quadros': {'janela': [0, 1, 2, 3, 4, 5, 8, 9, 10], 'lanterna': [14, 15, 59], 'placaPoney': [6],
@@ -451,10 +462,16 @@ def main():
         if not pasta.exists():
             print(f'  ({nome}: pasta ainda nao existe, pulando)')
             continue
+        caixa = None
+        if g.get('bbox_comum'):
+            for idxs in g['quadros'].values():
+                for i in idxs:
+                    b = Image.open(pasta / f'frame_urls_{i}.png').convert('RGBA').getbbox()
+                    caixa = b if caixa is None else (min(caixa[0], b[0]), min(caixa[1], b[1]), max(caixa[2], b[2]), max(caixa[3], b[3]))
         for papel, idxs in g['quadros'].items():
             for i in idxs:
                 im = Image.open(pasta / f'frame_urls_{i}.png').convert('RGBA')
-                im = corta_texto(im) if g.get('corta_texto') else im.crop(im.getbbox())
+                im = corta_texto(im) if g.get('corta_texto') else im.crop(caixa or im.getbbox())
                 if g.get('espelhar'):
                     im = im.transpose(Image.FLIP_LEFT_RIGHT)
                 if 'cores' in g:

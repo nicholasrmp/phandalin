@@ -895,6 +895,37 @@ CONJUNTOS = {
         ],
         'target_palette': {'colors': PEDRA_MINA + ['#3d5a2a', '#6f9a3a', '#b8d63c', '#c9c3b0', '#7a4a2a']},
     },
+    # OS FUNGOS DA ONDA ECO, mais variedade (o tapete e as bolas brilhantes eram so verde e branco): azuis e roxos
+    # luminosos, vermelhos de pinta, corais e prateleiras. Mesma tela e mesmo tamanho do `minaCenario`.
+    'minaFungos': {
+        'description': (
+            'Single piece of cave fungus scenery for an isometric tactical RPG, in a damp underground cavern: '
+            'bioluminescent and strange. About 40 px wide and 40 px tall, sitting on the bottom of the canvas, '
+            'seen from the front-left. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'cluster of glowing cyan-blue bioluminescent mushrooms',
+            'tall slender mushroom with a glowing teal umbrella cap',
+            'purple shelf fungus growing in layers on a grey rock',
+            'small group of red mushrooms with white spots',
+            'ring of tiny pale mushrooms',
+            'cracked grey giant puffball spilling spores',
+            'glowing yellow-green coral-like fungus',
+            'wide flat-capped brown-grey mushroom',
+            'stack of orange bracket fungus on a dead stump',
+            'grey rock covered with glowing green lichen',
+            'pair of twisted tall stalks with glowing violet tips',
+            'low patch of tiny glowing blue mushrooms',
+            'pink brain-shaped fungus',
+            'spiky black fungus with glowing red dots',
+            'short stalagmite wrapped in glowing blue fungus',
+            'big mushroom with a violet cap and pale gills',
+        ],
+        'target_palette': {'colors': PEDRA_MINA + ['#3d5a2a', '#6f9a3a', '#b8d63c', '#c9c3b0', '#7a4a2a',
+                                                   '#1f6f8f', '#47c4d6', '#9be8ee', '#5a3a7a', '#9a6ac8',
+                                                   '#a02a2a', '#d8553d', '#e0a040', '#c87a9a']},
+    },
     'minaGrandes': {
         'description': (
             'One large prop for an isometric tactical RPG, from an abandoned dwarven silver mine under a '

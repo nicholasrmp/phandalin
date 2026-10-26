@@ -7,10 +7,29 @@
 //   fungos       o tapete pulsa devagar num verde-azulado, e solta esporos que sobem
 //   bolas        as bolas brilhantes respiram (pulso mais forte) e soltam esporos
 //   cogumelos    os cogumelos gigantes soltam esporos pálidos pela copa
+//   espécies     cada fungo novo brilha e solta esporos na sua cor (azul, violeta, verde-limão...); o negro pisca em brasa
 //   brasas       braseiro, fogueira e chama verde soltam faíscas que sobem e morrem
 //   brilhos      a água escura cintila (reflexo de um ponto que acende e apaga) e os cristais piscam
 //   marulho      uma ondulação cruza a água funda em faixas claras e rebenta em espuma na margem (o som que dá nome à caverna)
 //   teias        os fios da teia grossa brilham e tremem, e o orvalho pisca
+
+// Os fungos novos: cada espécie brilha e solta esporos na sua cor. `raio` e `alfa` (0 = sem brilho) são da poça de luz,
+// `n` é quantos esporos, `topo` a altura de onde eles saem e `piscar` faz pontinhos acenderem e apagarem (brasas do fungo negro).
+const ESPECIES = {
+  fungoCiano: { cor: '90, 215, 255', esp: '175, 238, 255', raio: 26, alfa: 0.09, n: 3, topo: 30 },
+  cogumeloTurquesa: { cor: '80, 225, 215', esp: '170, 245, 235', raio: 24, alfa: 0.075, n: 2, topo: 46 },
+  tapeteAzul: { cor: '80, 190, 255', esp: '165, 220, 255', raio: 22, alfa: 0.08, n: 2, topo: 14 },
+  estalagmiteAzul: { cor: '80, 190, 255', esp: '165, 220, 255', raio: 20, alfa: 0.06, n: 2, topo: 40 },
+  cogumeloRoxo: { cor: '170, 110, 235', esp: '215, 180, 255', raio: 18, alfa: 0.04, n: 2, topo: 44 },
+  hastesVioleta: { cor: '175, 105, 245', esp: '220, 175, 255', raio: 22, alfa: 0.075, n: 3, topo: 46 },
+  coralAmarelo: { cor: '190, 240, 80', esp: '225, 250, 150', raio: 20, alfa: 0.06, n: 2, topo: 26 },
+  pedraDeLiquen: { cor: '170, 235, 90', esp: '215, 250, 150', raio: 22, alfa: 0.07, n: 1, topo: 22 },
+  fungoCerebro: { cor: '255, 150, 175', esp: '255, 200, 215', raio: 16, alfa: 0.035, n: 0, topo: 22 },
+  fungoEspinhoso: { cor: '255, 70, 50', esp: '255, 110, 80', raio: 0, alfa: 0, n: 0, topo: 22, piscar: 4 },
+  bolaRachada: { cor: '200, 200, 190', esp: '205, 205, 195', raio: 0, alfa: 0, n: 3, topo: 30 },
+  aneloDeCogumelos: { cor: '230, 230, 215', esp: '225, 225, 210', raio: 0, alfa: 0, n: 1, topo: 8 },
+  fungoLaranja: { cor: '255, 150, 60', esp: '255, 190, 110', raio: 0, alfa: 0, n: 1, topo: 28 },
+};
 
 const TOPO_DE = { bolas: 16, cogumelos: 52, brasas: 24, cristais: 22 };
 
@@ -26,7 +45,7 @@ const CACHE = new WeakMap();
 /** Os pontos do mapa que têm vida própria, achados uma vez por mapa. */
 export function emissoresDoAmbiente(field) {
   if (CACHE.has(field)) return CACHE.get(field);
-  const e = { fungos: [], bolas: [], cogumelos: [], brasas: [], agua: [], cristais: [], mar: [], teias: [] };
+  const e = { fungos: [], bolas: [], cogumelos: [], brasas: [], agua: [], cristais: [], mar: [], teias: [], especies: [] };
   for (let y = 0; y < field.h; y += 1) {
     for (let x = 0; x < field.w; x += 1) {
       const sup = field.surfaceAt(x, y);
@@ -43,6 +62,7 @@ export function emissoresDoAmbiente(field) {
     if (o.tipo !== 'prop') continue;
     if (o.variante === 'bolasBrilhantes') e.bolas.push({ x: o.x, y: o.y });
     else if (o.variante === 'cogumeloGigante') e.cogumelos.push({ x: o.x, y: o.y });
+    else if (ESPECIES[o.variante]) e.especies.push({ x: o.x, y: o.y, ...ESPECIES[o.variante] });
     else if (o.variante === 'cristais') e.cristais.push({ x: o.x, y: o.y });
     else if (o.variante === 'braseiroVerde') e.brasas.push({ x: o.x, y: o.y, cor: '150, 255, 150' });
   }
@@ -96,6 +116,16 @@ export function desenharAmbiente(g, t, centro, e) {
     const fase = sorteio(b.x, b.y, 4) * 6.28;
     poca(g, sx, sy, 34, '110, 255, 150', 0.11 + 0.07 * Math.sin(t * 1.3 + fase));
     esporos(g, t, sx, sy, b, 3, TOPO_DE.bolas, '190, 255, 170', 36);
+  }
+  for (const s of e.especies) {
+    const { sx, sy } = centro(s.x, s.y);
+    const fase = sorteio(s.x, s.y, 16) * 6.28;
+    if (s.alfa) poca(g, sx, sy - 6, s.raio, s.cor, s.alfa * (0.75 + 0.25 * Math.sin(t * 1.1 + fase)) * 1.0);
+    if (s.n) esporos(g, t, sx, sy, s, s.n, s.topo, s.esp, 34);
+    for (let i = 0; i < (s.piscar ?? 0); i += 1) {
+      const v = Math.sin(t * (1.6 + i * 0.5) + sorteio(s.x, s.y, 100 + i) * 6.28);
+      if (v > 0.2) grao(g, sx + (sorteio(s.x, s.y, 110 + i) - 0.5) * 26, sy - 6 - sorteio(s.x, s.y, 120 + i) * 22, 1, s.cor, (v - 0.2) * 1.1);
+    }
   }
   for (const c of e.cogumelos) {
     const { sx, sy } = centro(c.x, c.y);

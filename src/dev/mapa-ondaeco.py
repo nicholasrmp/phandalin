@@ -22,6 +22,7 @@
 # ondaeco.js`) as usa para os gatilhos, sem escrever coordenada.
 
 import json
+import random
 import math
 from pathlib import Path
 
@@ -299,7 +300,8 @@ print('chegada', CHEGADA, 'grupo', GRUPO)
 # olho (um revisor por regiao, conferido depois) e validadas AQUI: so em chao andavel, uma por casa, e
 # nenhuma que feche o caminho (o chao continua de uma peca so, e toda porta continua ligada).
 PASSA_BAIXO = {'ossos', 'ossosAnao', 'ossosOrc', 'sacoDeDormir', 'anaoMorto', 'conchasPedra', 'tapeteLaranja',
-               'montinhoMinerio', 'lanterna', 'bolaInflada', 'teia'}
+               'montinhoMinerio', 'lanterna', 'bolaInflada', 'teia', 'tapeteAzul', 'aneloDeCogumelos', 'coralAmarelo',
+               'fungoCerebro'}
 ANDAVEL = set('`<;"[')
 GLIFO_DE = {'braseiro': 'e', 'fogueira': 'F', 'bau': 'K', 'sarcofago': 'Q', 'teia': '$'}
 
@@ -339,6 +341,29 @@ if _OBJ.exists() and 'CHEGADA' in globals():
     for _o in _lista:
         if _o['v'] == 'barril':
             _o['v'] = 'suprimentos'          # barril solto: a peca de suprimentos (sem grama por baixo)
+    # OS FUNGOS NOVOS (16 desenhos do `minaFungos`) sobre o tapete: manchas por regiao, cada uma de uma "familia" de cor
+    # (azul, roxa, quente, verde), com uma ou outra peca de fora para quebrar a mancha. Sorteio com semente fixa, de
+    # modo que o mapa sai igual toda vez; o laco de baixo recusa o que fecharia o caminho.
+    _FAMILIAS = [
+        ['fungoCiano', 'cogumeloTurquesa', 'tapeteAzul', 'estalagmiteAzul'],
+        ['cogumeloRoxo', 'fungoPrateleira', 'hastesVioleta', 'cogumeloRoxo'],
+        ['cogumeloVermelho', 'fungoLaranja', 'aneloDeCogumelos', 'fungoEspinhoso'],
+        ['coralAmarelo', 'pedraDeLiquen', 'fungoCerebro', 'bolaRachada', 'cogumeloChato'],
+    ]
+    _TODAS = [v for f in _FAMILIAS for v in f]
+    _sorteio = random.Random(20260427)
+    _ocupadas = {(_o['x'], _o['y']) for _o in _lista}
+    # O tapete e as casas a duas de distancia dele (a franja de chao onde o fungo tambem cresce).
+    _franja = {(_x + _i, _y + _j) for (_x, _y) in FUNGOS for _i in range(-2, 3) for _j in range(-2, 3)}
+    for _c in sorted(_franja):
+        if not (0 <= _c[0] < W and 0 <= _c[1] < H) or _c in _ocupadas or T[_c[1]][_c[0]] not in ANDAVEL                 or _sorteio.random() > 0.62:
+            continue
+        if any((_c[0] + _i, _c[1] + _j) in _ocupadas for (_i, _j) in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            continue
+        _fam = _FAMILIAS[random.Random(_c[0] // 4 * 131 + _c[1] // 4 * 17).randrange(len(_FAMILIAS))]
+        _lista.append({'v': _sorteio.choice(_fam if _sorteio.random() < 0.75 else _TODAS), 'x': _c[0], 'y': _c[1],
+                       'n': 'fungo novo do tapete'})
+        _ocupadas.add(_c)
     _base = _alcanca(set())
     _bloq, _usadas, _recusadas = set(), set(), []
     for _o in _lista:
