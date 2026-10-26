@@ -27,6 +27,7 @@ import {
   ativaDe, ativasDoGrupo, encerrar, chaveDoNpc, sentidasPorBemMal, eFeraAmansavel, ladoBemMal,
   ladoAparente, tipoAparente, FAMILIARES,
   ALCANCE_BEM_MAL,
+  destinoDoNpc,
 } from '../rules/utilidade.js';
 import { familiarDe, familiarVirtual } from '../rules/familiar.js';
 import { getSpell } from '../rules/spells.js';
@@ -99,6 +100,14 @@ export function preparar(x, c, spellId, opts) {
   }
   if (spellId === 'alarme' || spellId === 'bocaMagica') {
     return { opts: { ...opts, dados: { ponto: { x: c.pos.x, y: c.pos.y }, cena: app.capitulo?.lugar } } };
+  }
+  if (spellId === 'comunhao') {
+    // As respostas são computadas aqui, onde a cena existe: a regra não
+    // enxerga o mapa nem os ganchos do capítulo.
+    const todas = perguntasDaComunhao(app, x.estado, x.herois());
+    const escolhidas = (opts.opcao ?? []).slice(0, 3);
+    const respostas = todas.filter((q) => escolhidas.includes(q.id)).map((q) => ({ pergunta: q.pergunta, sim: q.sim }));
+    return { opts: { ...opts, dados: { respostas } } };
   }
   if (spellId === 'clarividencia') {
     const sentido = opts.opcao ?? 'ver';
@@ -259,6 +268,36 @@ export function contarNovas(x, c, r, { alvo = null } = {}) {
  * perde a emboscada em troca, pelo `capitulo.espiou`, que é o que o Sentidos da
  * Fera já faz: a magia gasta a surpresa deles em vez de desfazê-la de graça.
  */
+/**
+ * AS PERGUNTAS DA COMUNHÃO, e as respostas que o motor sabe de verdade.
+ *
+ * O livro deixa perguntar qualquer coisa e o mestre responde. Aqui a lista é
+ * fechada, e de propósito: uma resposta inventada por uma magia que o livro
+ * garante ser CERTA seria pior que não ter a magia. Cada pergunta aqui tem a
+ * resposta num estado que o jogo guarda.
+ */
+export function perguntasDaComunhao(app, estado, herois) {
+  // ESPERA: inimigo de verdade que o grupo ainda NÃO viu. O neutro (o
+  // prisioneiro dos Marcarrubra, o Droop, o rato do mago) não espera ninguém, e
+  // quem já está no tabuleiro não é surpresa — contá-los respondia "sim" onde a
+  // resposta honesta é "não".
+  const noTabuleiro = new Set(app.enc?.combatants ?? []);
+  const esperando = (app.inimigosEscondidos ?? [])
+    .filter((m) => !m.dead && m.side === 'foes' && !noTabuleiro.has(m));
+  const armadilhas = (app.capitulo?.ganchosMagicos?.(herois[0]) ?? []).filter((g) => g.tipo === 'armadilha' && !g.vista);
+  const vivo = (id) => destinoDoNpc(estado, id) !== 'morto';
+  return [
+    { id: 'espera', pergunta: 'Alguém espera o grupo neste lugar?', sim: esperando.length > 0 },
+    { id: 'armadilha', pergunta: 'Há armadilha escondida por aqui?', sim: armadilhas.length > 0 },
+    { id: 'gundren', pergunta: 'Gundren Rockseeker ainda vive?', sim: vivo('gundren') },
+    { id: 'iarno', pergunta: 'Iarno Albrek ainda vive?', sim: vivo('iarno') },
+    // A quinta pergunta vem de estado guardado, como as duas de cima. A que
+    // estava aqui antes — "o grupo está onde pensa que está?" — era tautologia
+    // dentro de um capítulo e, fora dele, respondia NÃO a uma verdade.
+    { id: 'iarnoPreso', pergunta: 'Iarno Albrek está preso?', sim: destinoDoNpc(estado, 'iarno') === 'nossoPrisioneiro' },
+  ];
+}
+
 export function oQueOOlhoAcha(app, ponto, sentido) {
   const ouve = sentido === 'ouvir';
   const raio = ouve ? 60 : 30;

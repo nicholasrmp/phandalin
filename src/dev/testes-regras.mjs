@@ -4892,7 +4892,7 @@ import {
 } from '../rules/utilidade.js';
 import { noSobMagia } from '../game/dialogo-magia.js';
 import { entrarNoEncontro, sairDoEncontro, familiarVirtual } from '../rules/familiar.js';
-import { direcaoDe, revelarArmadilhas, marcas as marcasDoMapa, preparar as prepararMagia, plantasPerto, ferasAoAlcance, oQueOOlhoAcha } from '../game/magias-fora-nucleo.js';
+import { direcaoDe, revelarArmadilhas, marcas as marcasDoMapa, preparar as prepararMagia, plantasPerto, ferasAoAlcance, oQueOOlhoAcha, perguntasDaComunhao } from '../game/magias-fora-nucleo.js';
 import { passivePerception } from '../rules/abilities.js';
 
 /** Dá 3º círculo aos conjuradores do grupo de utilidade (nível 3 só tem até o 2º). */
@@ -8042,6 +8042,267 @@ teste('a previsao de ataque mostra a conta de quem voltou, e nao o numero de ant
   // E bate com o dado: o bonus de ataque caiu 4.
   const perfil = enc.weaponAttackProfile(c);
   assert.equal(enc.dadosDeAtaque(c, perfil.bonus).bonus, perfil.bonus - 4);
+});
+
+// ---- o Juramento da Devocao ----------------------------------------------
+
+teste('as tres da Devocao existem, com circulo e classes do livro', () => {
+  const esperado = [
+    ['liberdadeDeMovimento', 4, 'abjuração', ['bardo', 'clerigo', 'druida', 'patrulheiro']],
+    ['golpeDeChama', 5, 'evocação', ['clerigo']],
+    ['comunhao', 5, 'divinação', ['clerigo']],
+  ];
+  for (const [id, nivel, escola, classes] of esperado) {
+    const e = getSpell(id);
+    assert.ok(e, id + ' existe');
+    assert.equal(e.level, nivel, id + ' e de ' + nivel + 'o circulo');
+    assert.equal(e.school, escola, id + ' e de ' + escola);
+    assert.equal(e.fonte, 'srd');
+    assert.ok(/Simplifica|Regra da casa|Os dois tipos/.test(e.desc), id + ' declara o que muda do livro');
+    for (const classe of classes) assert.ok(listaDaClasse(classe, nivel).magias.includes(id), classe + ' tem ' + id);
+  }
+  assert.ok(!listaDaClasse('mago', 5).magias.includes('golpeDeChama'), 'o mago nao tem o Golpe de Chama');
+  assert.ok(!listaDaClasse('bardo', 5).magias.includes('comunhao'), 'nem o bardo a Comunhao');
+  // O paladino NAO tem a Liberdade na lista de classe: ela chega so ao da
+  // Devocao, pelo juramento, que usa `sempreProntas` e nao passa pela lista.
+  assert.ok(!listaDaClasse('paladino', 4).magias.includes('liberdadeDeMovimento'),
+    'um paladino de outro juramento nao aprende a Liberdade');
+  assert.ok(CLASSES.paladino.subclasse.opcoes.devocao.magiasDoDominio[13].includes('liberdadeDeMovimento'),
+    'mas o da Devocao a recebe no 13o nivel');
+  // E a lista do Juramento da Devocao nao tem mais id solto.
+  const dev = CLASSES.paladino.subclasse.opcoes.devocao.magiasDoDominio;
+  for (const [nivel, magias] of Object.entries(dev)) {
+    for (const id of magias) assert.ok(SPELLS[id], 'a Devocao promete ' + id + ' no ' + nivel + 'o nivel');
+  }
+});
+
+teste('Liberdade de Movimento: o terreno dificil nao atrasa e nada reduz o passo', () => {
+  const mapa = [
+    '~~~~~~~~~~~~', '~~~~~~~~~~~~', '~~~~~~~~~~~~', '~~~~~~~~~~~~',
+    '~~~~~~~~~~~~', '~~~~~~~~~~~~', '~~~~~~~~~~~~', '~~~~~~~~~~~~',
+    '~~~~~~~~~~~~', '~~~~~~~~~~~~', '~~~~~~~~~~~~', '~~~~~~~~~~~~',
+  ];
+  const { enc, party } = montar({ nivel: 9, mapa });
+  const c = party[DARA];
+  c.pos = { x: 5, y: 5 };
+  enc.beginSide('party');
+  const antes = enc.reachableFor(c).size;
+  addCondition(c, 'livreDeMovimento', { rounds: 600 });
+  const depois = enc.reachableFor(c).size;
+  assert.ok(depois > antes, 'sem o atraso do mato ela alcanca mais: ' + antes + ' -> ' + depois);
+  assert.equal(conditionEffects(c).semTerrenoDificil, true);
+  // E nada reduz o passo: a Lentidao deixa de cortar metade.
+  const cheio = enc.speedOf(c);
+  addCondition(c, 'lento', { rounds: 10 });
+  assert.equal(enc.speedOf(c), cheio, 'a Lentidao nao pega quem esta livre');
+  removeCondition(c, 'livreDeMovimento');
+  assert.ok(enc.speedOf(c) < cheio, 'sem a magia, a Lentidao corta');
+});
+
+teste('Liberdade de Movimento solta o contido e nao deixa prender de novo', () => {
+  const { enc, party } = montar({ nivel: 9 });
+  const c = party[DARA];
+  addCondition(c, 'contido', { rounds: 10 });
+  assert.ok(hasCondition(c, 'contido'));
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 5 }; c.pos = { x: 5, y: 6 };
+  clerigo.spellcasting.prepared.push('liberdadeDeMovimento');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  assert.ok(enc.castSpell(clerigo, 'liberdadeDeMovimento', { targets: [c] }).ok);
+  assert.ok(!hasCondition(c, 'contido'), 'o que prendia se solta na hora');
+  enc.aplicarCondicao(c, 'contido', { rounds: 10 });
+  assert.ok(!hasCondition(c, 'contido'), 'e nao prende mais');
+  enc.aplicarCondicao(c, 'paralisado', { rounds: 10 });
+  assert.ok(!hasCondition(c, 'paralisado'), 'nem paralisa');
+  enc.aplicarCondicao(c, 'envenenado', { rounds: 10 });
+  assert.ok(hasCondition(c, 'envenenado'), 'veneno nao e prisao: continua pegando');
+});
+
+teste('Liberdade de Movimento: do agarrao se sai com 1,5 m, sem teste e sem a acao', () => {
+  const { enc, party } = montar({ nivel: 9 });
+  const c = party[DARA];
+  enc.beginSide('party');
+  const mov = c.movementLeftFt;
+  addCondition(c, 'agarrado', { rounds: 10, data: { escape: 30 } });
+  addCondition(c, 'livreDeMovimento', { rounds: 600 });
+  const r = enc.escapar(c);
+  assert.ok(r.ok, 'sai: ' + (r.why ?? ''));
+  assert.ok(!hasCondition(c, 'agarrado'), 'solto');
+  assert.equal(c.movementLeftFt, mov - 5, 'custou 1,5 m de deslocamento');
+  assert.ok(!c.actionUsed, 'e nao custou a acao');
+});
+
+teste('Golpe de Chama bate com dois tipos, e resistir a um nao livra do outro', () => {
+  const { enc, party, foes } = montar({ nivel: 9, foes: [['goblin', { x: 8, y: 5 }]] });
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 5 };
+  clerigo.spellcasting.prepared.push('golpeDeChama');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  const alvo = foes[0];
+  alvo.hp = 400; alvo.maxHp = 400;
+  const antes = alvo.hp;
+  const r = enc.castSpell(clerigo, 'golpeDeChama', { point: { x: 8, y: 5 } });
+  assert.ok(r.ok, 'conjurou: ' + (r.why ?? ''));
+  assert.ok(alvo.hp < antes, 'o alvo levou dano: ' + (antes - alvo.hp));
+  const e = getSpell('golpeDeChama');
+  assert.equal(e.damage, '4d6');
+  assert.equal(e.damageType, 'fogo');
+  assert.equal(e.damage2, '4d6');
+  assert.equal(e.damageType2, 'radiante');
+  assert.ok(enc.log.some((l) => /fogo/.test(l.text ?? '') && /radiante/.test(l.text ?? '')),
+    'o registro conta as duas parcelas');
+  // E quem resiste a fogo ainda leva o radiante inteiro.
+  const dois = montar({ nivel: 9, foes: [['goblin', { x: 8, y: 5 }]] });
+  const duro = dois.foes[0];
+  duro.hp = 400; duro.maxHp = 400;
+  duro.resist = ['fogo'];
+  const cl2 = dois.party[BRENN];
+  cl2.pos = { x: 5, y: 5 };
+  cl2.spellcasting.prepared.push('golpeDeChama');
+  cl2.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  assert.ok(dois.enc.castSpell(cl2, 'golpeDeChama', { point: { x: 8, y: 5 } }).ok);
+  assert.ok(duro.hp < 400, 'resistente a fogo ainda leva o radiante: ' + (400 - duro.hp));
+});
+
+teste('Comunhao responde tres vezes sim ou nao, com o que o jogo sabe', () => {
+  const { enc, party } = montar({ nivel: 9, foes: [['goblin', { x: 8, y: 5 }]] });
+  const clerigo = party[BRENN];
+  clerigo.spellcasting.prepared.push('comunhao');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  const escondido = makeMonster('goblin', { x: 11, y: 11 });
+  escondido.side = 'foes';
+  const app = { capitulo: { explorando: true, lugar: 'X' }, enc, inimigosEscondidos: [escondido] };
+  const estado = estadoDe({ castelo: { gundren: 'morto' }, vila: { dia: 1 } });
+  const todas = perguntasDaComunhao(app, estado, party);
+  assert.equal(todas.length, 5, 'cinco perguntas na lista fechada');
+  const porId = Object.fromEntries(todas.map((q) => [q.id, q.sim]));
+  assert.equal(porId.espera, true, 'ha alguem esperando: o goblin escondido');
+  assert.equal(porId.gundren, false, 'e Gundren morreu nesta partida');
+  assert.equal(porId.iarno, true, 'Iarno nao: esta solto');
+  // Conjurada, devolve so as escolhidas, no maximo tres.
+  const r = prepararMagia({ app, estado, herois: () => party }, clerigo, 'comunhao', { opcao: ['espera', 'gundren', 'iarno', 'cena'] });
+  assert.equal(r.opts.dados.respostas.length, 3, 'tres, e nao quatro');
+  const rr = conjurarFora(estado, clerigo, 'comunhao', { herois: party, rng: makeRng(2), dados: r.opts.dados });
+  assert.ok(rr.ok, rr.why);
+  assert.equal(rr.resultado.comunhao.length, 3);
+  assert.equal(rr.resultado.comunhao[0].sim, true, 'e as respostas sao as de verdade');
+  assert.ok(!rr.resultado.soNarra, 'com pergunta respondida, nao e narracao');
+});
+
+teste('Golpe de Chama no circulo maior: o dado a mais entra uma vez, nao duas', () => {
+  // Antes, o `upcast` escalava as DUAS parcelas: o 6o circulo dava 10d6 onde o
+  // livro da 9d6, e o 9o dava 16d6 onde o livro da 12d6.
+  const e = getSpell('golpeDeChama');
+  assert.equal(dadosDaMagia(e, { circulo: 5 }), '4d6', 'no 5o, 4d6 de fogo');
+  assert.equal(dadosDaMagia(e, { circulo: 6 }), '5d6', 'no 6o, 5d6');
+  assert.equal(dadosDaMagia(e, { circulo: 9 }), '8d6', 'no 9o, 8d6');
+  assert.equal(e.damage2, '4d6', 'e o radiante nao escala: o dado a mais entra no fogo');
+});
+
+teste('Golpe de Chama rola o radiante UMA vez para a area, como o fogo', () => {
+  const { enc, party, foes } = montar({ nivel: 17,
+    foes: [['goblin', { x: 7, y: 4 }], ['goblin', { x: 7, y: 5 }], ['goblin', { x: 7, y: 6 }]] });
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 6, y: 5 };
+  clerigo.spellcasting.prepared.push('golpeDeChama');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  for (const f of foes) { f.hp = 400; f.maxHp = 400; }
+  assert.ok(enc.castSpell(clerigo, 'golpeDeChama', { point: { x: 7, y: 5 } }).ok);
+  // Antes, o fogo era igual para todos e o radiante variava por alvo.
+  const levaram = foes.map((f) => 400 - f.hp).filter((d) => d > 0);
+  assert.ok(levaram.length >= 2, 'pegou mais de um: ' + JSON.stringify(levaram));
+  // Um valor para quem falha e um para quem passa (metade): no maximo dois.
+  assert.ok(new Set(levaram).size <= 2, 'o dano e o mesmo para quem teve a mesma sorte: ' + JSON.stringify(levaram));
+});
+
+teste('Liberdade de Movimento tira o freio de MAGIA, e so dele', () => {
+  const { enc, party } = montar({ nivel: 17 });
+  const c = party[DARA];
+  const cheio = enc.speedOf(c);
+  // A Velocidade DOBRA, e a magia nao pode desfazer isso: o defeito era ela
+  // zerar o multiplicador e deixar o heroi MAIS LENTO do que sem ela.
+  addCondition(c, 'acelerado', { rounds: 10 });
+  const dobrado = enc.speedOf(c);
+  assert.equal(dobrado, cheio * 2, 'a Velocidade dobra');
+  addCondition(c, 'livreDeMovimento', { rounds: 600 });
+  assert.equal(enc.speedOf(c), dobrado, 'e a Liberdade nao tira o dobro');
+  removeCondition(c, 'acelerado');
+  // A Lentidao e magia: sai.
+  addCondition(c, 'lento', { rounds: 10 });
+  assert.equal(enc.speedOf(c), cheio, 'os 3 m da Lentidao nao pesam');
+  removeCondition(c, 'lento');
+  // A exaustao NAO e magia: continua pesando.
+  mudarExaustao(c, 2);
+  assert.ok(enc.speedOf(c) < cheio, 'o 2o degrau de exaustao continua cortando metade');
+  mudarExaustao(c, -2);
+  // E o 5o degrau PARA: a magia nao devolve o passo de quem nao anda.
+  mudarExaustao(c, 5);
+  assert.equal(enc.speedOf(c), 0, 'quem esta no 5o degrau nao anda, nem livre');
+});
+
+teste('a saida livre do agarrao vale mesmo com a acao gasta', () => {
+  const { enc, party } = montar({ nivel: 17 });
+  const c = party[DARA];
+  enc.beginSide('party');
+  addCondition(c, 'agarrado', { rounds: 10, data: { escape: 30 } });
+  addCondition(c, 'livreDeMovimento', { rounds: 600 });
+  c.actionUsed = true;
+  const r = enc.escapar(c);
+  assert.ok(r.ok, 'a magia solta de graca, e a acao gasta nao atrapalha: ' + (r.why ?? ''));
+  assert.ok(!hasCondition(c, 'agarrado'));
+  // As vinhas tambem sao prisao: a magia nao deixa prender.
+  enc.aplicarCondicao(c, 'presoPorVinhas', { rounds: 10 });
+  assert.ok(!hasCondition(c, 'presoPorVinhas'), 'as vinhas nao pegam quem esta livre');
+});
+
+teste('a zona nao diz que prendeu quem ela nao prende, nem come o passo dele', () => {
+  const { enc, party } = montar({ nivel: 17 });
+  const c = party[DARA];
+  addCondition(c, 'livreDeMovimento', { rounds: 600 });
+  // Uma zona que contem, como a Teia.
+  const zona = { id: 99, nome: 'Teia', dono: 'x', condition: 'contido', save: 'dex', cd: 15, em: 'na' };
+  const antes = enc.log.length;
+  const passou = enc.resistirAZona(c, zona, 'entra');
+  assert.equal(passou, true, 'ela passa reto: nem rola, nem para');
+  assert.ok(!hasCondition(c, 'contido'));
+  // E nao escreve que ficou presa — o defeito media 33 de 40 vezes dizendo isso.
+  const novas = enc.log.slice(antes).map((l) => l.text ?? '').join(' ');
+  assert.ok(!/contid/i.test(novas), 'e o registro nao mente: ' + novas);
+});
+
+teste('a vegetacao cerrada tambem nao atrasa quem esta livre', () => {
+  const field = new Battlefield(12, 12, ['............', '............', '............',
+    '............', '............', '............', '............', '............',
+    '............', '............', '............', '............']);
+  field.dificeis4 = new Set(['5,5']);
+  assert.equal(field.costOf(5, 5), 20, 'a vegetacao cerrada custa quatro vezes');
+  field.semTerrenoDificil = true;
+  assert.equal(field.costOf(5, 5), 5, 'e nada, para quem esta livre');
+  field.semTerrenoDificil = false;
+  // E a escalada continua cobrando: a magia tira o terreno, nao a subida.
+  const comDegrau = new Battlefield(12, 12, ['............', '............', '............',
+    '............', '............', '............', '............', '............',
+    '............', '............', '............', '............'],
+  { alturas: null });
+  comDegrau.heights[5 * 12 + 6] = 1;
+  comDegrau.semTerrenoDificil = true;
+  assert.equal(comDegrau.costOf(6, 5, 5, 5), 10, 'subir um degrau continua custando o dobro');
+});
+
+teste('Liberdade de Movimento devolve o passo no turno em que solta', () => {
+  const { enc, party } = montar({ nivel: 17 });
+  const c = party[PIP];
+  const clerigo = party[BRENN];
+  clerigo.pos = { x: 5, y: 5 }; c.pos = { x: 5, y: 6 };
+  clerigo.spellcasting.prepared.push('liberdadeDeMovimento');
+  clerigo.spellcasting.slots = [0, 4, 3, 3, 3, 2];
+  // Contida desde o comeco do turno: deslocamento zero.
+  addCondition(c, 'contido', { rounds: 10 });
+  enc.beginSide('party');
+  assert.equal(c.movementLeftFt, 0, 'presa, nao anda');
+  assert.ok(enc.castSpell(clerigo, 'liberdadeDeMovimento', { targets: [c] }).ok);
+  assert.ok(!hasCondition(c, 'contido'), 'solta');
+  assert.ok(c.movementLeftFt > 0, 'e anda JA neste turno: ' + c.movementLeftFt);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

@@ -1157,6 +1157,24 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'fingeMorto', rodadasProprias: 600,
     desc: 'Toque numa criatura disposta: por 1 hora ela parece morta para quem a olha. Fica cega e incapacitada, deslocamento 0, com resistência a todo dano menos psíquico (o livro suspende também veneno e doença; isso ficou de fora). No jogo, os inimigos a ignoram enquanto houver outro alvo (se só sobrar ela, passam a atacá-la); só quem conjurou a desfaz, tocando o amigo ao lado, com uma ação, também em combate. Pode ser ritual. (Simplificação: não há como passar andando por inimigos, porque o alvo não anda.)',
   },
+  // ---- o Juramento da Devoção (`rules/classes/paladino.js`) ----
+  liberdadeDeMovimento: {
+    id: 'liberdadeDeMovimento', name: 'Liberdade de Movimento', level: 4, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'livreDeMovimento', rodadasProprias: 600,
+    desc: 'Toque num aliado: por uma hora o terreno difícil não o atrasa, nenhuma magia reduz o deslocamento dele, e ele não fica paralisado nem contido — o que já o prendia se solta na hora. Agarrado, ele se solta gastando 1,5 m de deslocamento, sem teste. (Simplificações: o livro também tira as penalidades de lutar debaixo da água, e o jogo não tem nenhuma; a imunidade aqui vale para qualquer paralisia ou prisão, não só a mágica, porque o motor não guarda de onde veio cada condição; e a saída do agarrão não cobra os 1,5 m de quem já está sem deslocamento, senão a magia não o soltaria nunca — quem está agarrado tem deslocamento zero, e exigir o custo deixaria essa metade da magia sem efeito.)',
+  },
+  golpeDeChama: {
+    id: 'golpeDeChama', name: 'Golpe de Chama', level: 5, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, shape: 'sphere', areaFt: 10, kind: 'save', save: 'dex',
+    damage: '4d6', damageType: 'fogo', damage2: '4d6', damageType2: 'radiante', halfOnSave: true, upcast: { dados: 1 },
+    desc: 'Uma coluna de fogo divino cai do alto num ponto a até 18 m. CD de DES: 4d6 de fogo MAIS 4d6 de radiante, metade de cada se passar. +1d6 por círculo acima do 5º. (Os dois tipos valem separado: quem resiste a fogo ainda leva o radiante inteiro. Simplificações: o livro faz um cilindro de 3 m de raio e 12 m de altura, e aqui a altura não conta — o que pega é o quadrado de 5 por 5 casas em volta do ponto; e o dado a mais por círculo maior entra só no fogo, que é uma escolha nossa onde o livro deixa escolher entre os dois tipos.)',
+  },
+  comunhao: {
+    id: 'comunhao', name: 'Comunhão', level: 5, school: 'divinação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    castTime: 'minutos', minutos: 1, rangeFt: 0, kind: 'utilidade', duracaoMin: 1,
+    desc: 'Você fala com o seu deus e recebe resposta certa para até três perguntas de sim ou não. Ritual para quem conjura ritual — o paladino da Devoção a recebe pelo juramento e gasta espaço. No jogo as perguntas saem de uma lista do que o motor sabe de verdade — se há inimigo que o grupo ainda não viu esperando na cena, se há armadilha marcada escondida, e o destino de Gundren e de Iarno — e a resposta é o que está acontecendo mesmo, sem engano. (Simplificações: o livro deixa perguntar qualquer coisa e o mestre responde; aqui a lista é fechada, porque uma resposta inventada seria pior que nenhuma. E não está a chance de o deus se calar quando a magia se repete no mesmo dia. A pergunta da armadilha só vê as armadilhas que o capítulo registrou como gancho — hoje o fosso da mansão e o fio do castelo —, então em cena sem gancho ela responde que não há. Só fora de combate.)',
+  },
+
   // ---- o Domínio da Vida (`rules/classes/clerigo.js`) ----
   protecaoContraAMorte: {
     id: 'protecaoContraAMorte', name: 'Proteção contra a Morte', level: 4, school: 'abjuração', fonte: 'srd',

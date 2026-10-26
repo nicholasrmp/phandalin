@@ -247,6 +247,7 @@ export class Encounter {
     this.field.escalando = false;
     this.field.sobreAgua = false;
     this.field.atravessaVao = false;
+    this.field.semTerrenoDificil = false;
     for (const c of this.combatants) {
       c.movementLeftFt = 0;
       c.actionUsed = true;
@@ -346,10 +347,19 @@ export class Encounter {
     const daClasse = livre ? (actor.bonusDeDeslocamento ?? 0) : 0;
     // Forma Gasosa: o voo SUBSTITUI o andar, não se soma a ele.
     const base = fx.soVoa ? fx.vooFt : Math.max(actor.speedFt, fx.vooFt);
-    const pes = Math.max(0, base + daClasse - fx.speedPenaltyFt - pesada);
-    // Lentidão: metade, em casas inteiras.
+    // Liberdade de Movimento: "nenhuma MAGIA reduz o deslocamento" — e só
+    // magia. A primeira versão disto tirava toda redução e, pior, zerava o
+    // multiplicador: medido, um herói sob Velocidade ia de 18 m para 9 m, ou
+    // seja, a magia o deixava MAIS LENTO. Agora ela tira os 3 m da Lentidão
+    // (`speedPenaltyFt`, cuja única fonte é mágica) e a metade que vem de
+    // magia (`speedHalfMagico`). Ficam de pé, porque não são magia: a armadura
+    // pesada sem Força, a metade do 2º degrau de exaustão e o `speedOverride`
+    // que PARA (paralisia, 5º degrau). E o dobro da Velocidade, que é bônus.
+    const semFreio = fx.semReducaoDeDeslocamento;
+    const pes = Math.max(0, base + daClasse - (semFreio ? 0 : fx.speedPenaltyFt) - pesada);
     const comBonus = (pes + fx.speedBonusFt) * (fx.speedMult ?? 1);
-    return fx.speedHalf ? Math.floor(comBonus / 10) * 5 : comBonus;
+    const metade = fx.speedHalf || (fx.speedHalfMagico && !semFreio);
+    return metade ? Math.floor(comBonus / 10) * 5 : comBonus;
   }
 
   // ---- ciclo de turnos -----------------------------------------------------
@@ -1115,6 +1125,7 @@ export class Encounter {
     // viajam no campo como o voo e a escalada.
     this.field.sobreAgua = conditionEffects(actor).sobreAgua;
     this.field.atravessaVao = conditionEffects(actor).atravessaVao;
+    this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil;
     // Círculo Mágico: o tipo barrado não entra (quem já está dentro anda livre).
     const barras = this.circulosQueBarram(actor);
     const cabeFinal = barras.length
@@ -1144,6 +1155,7 @@ export class Encounter {
       this.field.escalando = false;
       this.field.sobreAgua = false;
       this.field.atravessaVao = false;
+      this.field.semTerrenoDificil = false;
     }
   }
 
@@ -1207,6 +1219,7 @@ export class Encounter {
       this.field.escalando = this.escalaAgora(actor);
       this.field.sobreAgua = conditionEffects(actor).sobreAgua;
       this.field.atravessaVao = conditionEffects(actor).atravessaVao;
+      this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil;
       let pes = 0;
       for (let i = 1; i <= fim; i++) pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y);
       this.field.dificeisExtra = null;
@@ -1214,6 +1227,7 @@ export class Encounter {
       this.field.escalando = false;
       this.field.sobreAgua = false;
       this.field.atravessaVao = false;
+      this.field.semTerrenoDificil = false;
       return pes;
     };
     if (custoAte(path.length - 1) * this.custoDeMovimento(actor) > actor.movementLeftFt) return false;
@@ -1854,6 +1868,11 @@ export class Encounter {
     if (zona.dano) return this.danoDaZona(c, zona, porque);
     if (!zona.condition) return true;
     if (c.dead || hasCondition(c, 'inconsciente') || hasCondition(c, zona.condition)) return true;
+    // Quem é IMUNE à condição da zona passa reto: nem rola, nem para, nem lê
+    // que "ficou". Sem isto, a Liberdade de Movimento barrava o contido da Teia
+    // mas o herói perdia o resto do passo e o log afirmava que ele tinha ficado
+    // preso — uma mensagem falsa e um movimento comido.
+    if (this.imuneACondicao(c, zona.condition)) return true;
     // Nuvem Fétida: quem é imune a veneno passa direto.
     if (zona.imuneSe && (c.immune?.includes(zona.imuneSe) || this.imuneACondicao(c, 'envenenado'))) return true;
     const save = this.resistencia(c, zona.save, zona.cd);
@@ -2235,9 +2254,21 @@ export class Encounter {
   escapar(actor) {
     const preso = getCondition(actor, 'agarrado') ?? getCondition(actor, 'contido') ?? getCondition(actor, 'presoPorVinhas');
     if (!preso) return { ok: false, why: 'não está preso' };
+    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado' };
+    // LIBERDADE DE MOVIMENTO: o livro deixa gastar 1,5 m de deslocamento para
+    // sair de prisão, sem teste e sem a ação. Vem antes das guardas da AÇÃO,
+    // senão a saída de graça era recusada por uma ação que ela não gasta —
+    // medido, com a ação já usada ela respondia "a ação deste turno já foi
+    // usada".
+    if (conditionEffects(actor).soltaDoAgarrao) {
+      removeCondition(actor, preso.id);
+      actor.movementLeftFt = Math.max(0, (actor.movementLeftFt ?? 0) - 5);
+      this.say('acao', `${actor.name} escorrega da prisão sem esforço: a Liberdade de Movimento não deixa nada segurá-lo.`);
+      if (preso.data?.vinhas) this.soltouDaConcentracao(actor, preso.id);
+      return { ok: true };
+    }
     if (actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
     if (actor.acaoLimitada) return { ok: false, why: 'a ação da Velocidade não serve para escapar' };
-    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado' };
     actor.actionUsed = true;
     const cd = preso.data?.escape ?? preso.data?.dc ?? 10;
     const atl = skillBonus(actor, 'atletismo');
@@ -4442,6 +4473,12 @@ export class Encounter {
           // Proteção contra Energia e Arma Elemental: o jogo escolhe o tipo.
           const tipo = spell.escolheTipo ? this.tipoParaEscolher(actor, spell) : null;
           if (tipo) this.say('magia', `${spell.name} em ${a.name}: ${tipo}.`);
+          // O deslocamento do turno ANTES de a magia soltar o que prendia. A
+          // ordem importa: medido depois do `removeAoReceber`, o alvo já
+          // aparecia com o passo cheio, a conta do reembolso achava que ele
+          // tinha gasto o turno inteiro, e a Liberdade de Movimento soltava a
+          // heroína contida para deixá-la parada até o turno seguinte.
+          const antesDoPasso = this.speedOf(a);
           for (const id of CONDITIONS[spell.condition]?.removeAoReceber ?? []) removeCondition(a, id);
           // Duração sem concentração, contada no turno de quem conjurou.
           const duracao = spell.rodadasProprias
@@ -4449,8 +4486,6 @@ export class Encounter {
             : {};
           // Arma Mágica (+2 no 4º, +3 no 6º) e Arma Elemental (+2/2d4 no 5º, +3/3d4 no 7º).
           const bonusArma = Object.entries(spell.escalaBonus ?? {}).reduce((b, [c, v]) => (slot >= Number(c) ? v : b), spell.escalaBonus ? 1 : undefined);
-          // O deslocamento do turno ANTES da condição, para saber quanto já andou.
-          const antesDoPasso = this.speedOf(a);
           addCondition(a, spell.condition, {
             source: actor.id, ...duracao, magia: { id: spell.id, circulo: slot },
             data: { dc, pvTemp: mod, n: spell.imagens ?? 0, tipo, circulo: slot, bonusArma, dadosNoAcerto: bonusArma ? `${bonusArma}d4` : undefined },
@@ -4459,8 +4494,12 @@ export class Encounter {
           // sobra do turno é refeito a partir de `speedOf`, que é quem conhece
           // a metade do 2º degrau de exaustão e o 0 do 5º: somar o bônus cru
           // devolvia movimento a quem está com deslocamento 0.
+          // A Liberdade de Movimento entra na mesma conta: ela solta o contido na
+          // hora, e sem isto o herói ficava livre com o deslocamento do turno
+          // ainda zerado — solto, e parado até o turno seguinte.
           if (a.side === this.side
-            && (CONDITIONS[spell.condition]?.speedBonusFt || spell.condition === 'voando')) {
+            && (CONDITIONS[spell.condition]?.speedBonusFt || spell.condition === 'voando'
+              || CONDITIONS[spell.condition]?.removeAoReceber?.length)) {
             const gasto = Math.max(0, antesDoPasso - (a.movementLeftFt ?? 0));
             a.movementLeftFt = Math.max(a.movementLeftFt ?? 0, this.speedOf(a) - gasto);
           }
@@ -4938,6 +4977,12 @@ export class Encounter {
         : target ? [{ c: target, papel: 'inimigo' }] : [];
     // O dano de uma magia de área é rolado UMA vez para todos os alvos.
     const dmg = dano ? damageRoll(this.rng, dano) : null;
+    // GOLPE DE CHAMA: a segunda parcela, de OUTRO tipo. Rolada UMA vez para a
+    // área, como a primeira — rolá-la dentro do laço de alvos dava um radiante
+    // diferente para cada um, e o fogo igual para todos. E SEM o dado a mais do
+    // círculo maior, que o livro soma uma vez ao total e não a cada tipo: com ele
+    // nas duas, o 6º círculo dava 10d6 onde o livro dá 9d6.
+    const dmg2 = spell.damage2 ? damageRoll(this.rng, spell.damage2) : null;
     // A teia nasce antes dos testes: quem fica contido fica preso A ELA.
     const zona = !reuso && spell.zona && areaTiles ? this.criarZona(actor, spell, areaTiles, dc, { centro: point ?? target?.pos, circulo: slot, tipo: spell.escolheTipoDoGlifo ? this.tipoDoGlifo(opcao, actor) : spell.escolheTipoDoCirculo ? this.tipoDoCirculo(opcao, actor) : null }) : null;
     // Raio Lunar e Esfera Flamejante: a zona anda com a ação (ou bônus).
@@ -4957,6 +5002,7 @@ export class Encounter {
         ? { total: 0, success: false, rolls: [0] }
         : this.resistencia(t, spell.save, dc);
       const amount = !dmg ? 0 : save.success ? (spell.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+      const amount2 = !dmg2 ? 0 : save.success ? (spell.halfOnSave ? Math.floor(dmg2.total / 2) : 0) : dmg2.total;
       // O que o sucesso compra é a decisão inteira: metade do dano ainda
       // vale conjurar numa multidão, nenhum dano não vale contra um alvo só.
       // Qual condição travou o teste: "falha automática" sem culpado deixa
@@ -4972,22 +5018,55 @@ export class Encounter {
         motivoAutomatico: culpada ? (CONDITIONS[culpada.id]?.name ?? culpada.id) : null,
       });
       const verbo = auto ? 'falha automaticamente' : save.success ? 'resiste' : 'falha';
+      let danoPartes = [];
       if (dmg) {
-        const danoPartes = [parcelaDeDano('dano', dmg)];
+        // Fora do `if`: a linha das duas parcelas é montada depois do dano, e
+        // precisa delas lá embaixo.
+        danoPartes = [parcelaDeDano(dmg2 ? spell.damageType : 'dano', dmg)];
+        if (dmg2) danoPartes.push(parcelaDeDano(spell.damageType2, dmg2));
         r.danoPartes = danoPartes;
-        r.danoAplicado = amount;
-        this.say(
-          'magia',
-          `${t.name} ${verbo} contra ${spell.name} e sofre ${amount}.`,
-          `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && spell.halfOnSave ? ` → metade = ${amount}` : ''}`,
-          { rolagem: r },
-        );
+        r.danoAplicado = amount + amount2;
+        // Com dois tipos, o parêntese diz o que o alvo LEVOU de cada um, e não
+        // o que foi rolado: resistência a fogo muda a divisão, e afirmar a
+        // divisão rolada era afirmar o que não aconteceu. Por isso a linha é
+        // montada depois do dano, mais abaixo.
+        if (!dmg2) {
+          this.say(
+            'magia',
+            `${t.name} ${verbo} contra ${spell.name} e sofre ${amount}.`,
+            `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && spell.halfOnSave ? ` → metade = ${amount}` : ''}`,
+            { rolagem: r },
+          );
+        }
       } else {
         this.say('magia', `${t.name} ${verbo} contra ${spell.name}.`, r.conta, { rolagem: r });
       }
-      if (amount > 0) {
-        this.applyDamage(t, amount, spell.damageType, actor, { magico: true });
-        this.maybeIgnite(t, spell.damageType);
+      if (amount > 0 || amount2 > 0) {
+        // As duas parcelas no MESMO golpe: um teste de concentração, não dois.
+        // E o que foi APLICADO de cada uma (depois de resistência e imunidade)
+        // volta para o registro: o texto dizia "19 (10 de fogo e 9 de
+        // radiante)" onde o alvo resistente levou 14.
+        this.umaFonteDeDano(() => {
+          if (amount > 0) {
+            this.applyDamage(t, amount, spell.damageType, actor, { magico: true });
+            r.aplicadoTipo1 = this.ultimoDano;
+          }
+          if (amount2 > 0) {
+            this.applyDamage(t, amount2, spell.damageType2, actor, { magico: true });
+            r.aplicadoTipo2 = this.ultimoDano;
+          }
+        });
+        if (amount > 0) this.maybeIgnite(t, spell.damageType);
+        if (dmg2) {
+          const a1 = r.aplicadoTipo1 ?? 0;
+          const a2 = r.aplicadoTipo2 ?? 0;
+          this.say(
+            'magia',
+            `${t.name} ${verbo} contra ${spell.name} e sofre ${a1 + a2} (${a1} de ${spell.damageType} e ${a2} de ${spell.damageType2}).`,
+            `${r.conta} · ${danoPartes.map((q) => contaDeDano(q)).join(' · ')}${save.success && spell.halfOnSave ? ' → metade de cada' : ''}`,
+            { rolagem: r },
+          );
+        }
       }
       if (!save.success && !t.dead) {
         // Braços de Hadar: sem reação até o próximo turno dele.

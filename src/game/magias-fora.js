@@ -40,6 +40,7 @@ import { NPCS } from '../rules/npcs.js';
 import { PENSAMENTOS, MORTOS, MUDOS, ANIMAIS, eAnimal } from './magias-fora-dados.js';
 import {
   preparar, posConjurar, contarNovas, marcas as marcasDasMagias, acordar, ferasAoAlcance, bichosDisponiveis,
+  perguntasDaComunhao,
 } from './magias-fora-nucleo.js';
 import { espiar, perguntarAsPlantas } from './magias-fora-extra.js';
 import { eFeraAmansavel } from '../rules/utilidade.js';
@@ -159,6 +160,12 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
       t.push(linhas.length
         ? `Por dez minutos ${c.name} sente o veneno e a doença a 9 m — ${linhas.join('; ')}.`
         : `Por dez minutos ${c.name} sente o veneno e a doença a 9 m. Nada: a comida presta, a água presta e ninguém está doente.`);
+      break;
+    }
+    case 'comunhao': {
+      const qs = res.comunhao ?? [];
+      t.push(`${c.name} ajoelha, fecha os olhos e pergunta. A resposta não vem em palavras: vem como certeza.`);
+      for (const q of qs) t.push(`— ${q.pergunta} ${q.sim ? 'Sim.' : 'Não.'}`);
       break;
     }
     case 'reviverOsMortos': {
@@ -463,6 +470,22 @@ export async function escolherEConjurar(app, c, spellId) {
     const o = await escolher(app, spell.name, 'Parecer o quê?', TIPOS_DA_AURA.map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));
     if (!o) return null;
     opts.opcao = o;
+  }
+  if (u.escolhe === 'perguntas') {
+    // Até três, uma por vez: o livro dá três perguntas de sim ou não.
+    const todas = perguntasDaComunhao(app, x.estado, herois);
+    const feitas = [];
+    for (let i = 0; i < 3; i++) {
+      const restam = todas.filter((q) => !feitas.includes(q.id));
+      if (!restam.length) break;
+      const o = await escolher(app, spell.name,
+        feitas.length ? `Mais uma? (${3 - feitas.length} restante(s))` : 'Pergunte — três, de sim ou não.',
+        [...restam.map((q) => ({ rotulo: q.pergunta, valor: q.id })), ...(feitas.length ? [{ rotulo: 'Basta', valor: '' }] : [])]);
+      if (!o) { if (!feitas.length) return null; break; }
+      feitas.push(o);
+    }
+    if (!feitas.length) return null;
+    opts.opcao = feitas;
   }
   if (u.escolhe === 'sentido') {
     const o = await escolher(app, spell.name, 'Ver ou ouvir?', SENTIDOS_DO_OLHO.map((k) => ({ rotulo: k.rotulo, detalhe: k.detalhe, valor: k.id })));

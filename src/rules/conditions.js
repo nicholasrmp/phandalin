@@ -185,7 +185,9 @@ export const CONDITIONS = {
     desc: '−2 na CA e nas resistências de DES, metade do deslocamento, sem reações, só um ataque, e no turno usa a ação OU a ação bônus.',
     acBonus: -2,
     saveFixo: { dex: -2 },
-    speedHalf: true,
+    // MÁGICO, e por isso num campo próprio: a Liberdade de Movimento barra a
+    // metade que vem de magia, e não a que vem da exaustão.
+    speedHalfMagico: true,
     semReacao: true,
     acaoOuBonus: true,
     umAtaque: true,
@@ -580,6 +582,15 @@ export const CONDITIONS = {
     semAtaqueNemMagia: true,
     atravessaVao: true,
   },
+  livreDeMovimento: {
+    name: 'Liberdade de Movimento',
+    desc: 'O terreno difícil não atrasa, nada reduz o deslocamento, e não fica paralisado nem contido. Agarrado, solta-se com 1,5 m.',
+    imuneA: ['paralisado', 'contido', 'presoPorVinhas'],
+    removeAoReceber: ['paralisado', 'contido', 'presoPorVinhas'],
+    semTerrenoDificil: true,
+    semReducaoDeDeslocamento: true,
+    soltaDoAgarrao: true,
+  },
   protegidoDaMorte: {
     name: 'Proteção contra a Morte',
     desc: 'A primeira queda a 0 PV deixa você de pé com 1 PV, e a magia acaba.',
@@ -782,6 +793,11 @@ export function conditionEffects(actor) {
     // resistência já tinha casa: `saveFixo`, por atributo.
     ataqueFixo: 0,
     testeFixo: 0,
+    // Liberdade de Movimento: o terreno difícil não atrasa, nada reduz o
+    // deslocamento, e o agarrão se solta sem teste.
+    semTerrenoDificil: false,
+    semReducaoDeDeslocamento: false,
+    soltaDoAgarrao: false,
     // Fora de alcance: não pode ser atingido, escolhido como alvo nem afetado.
     // O Plano Etéreo e o Fundir-se com a Pedra, que leem o mesmo campo.
     inalcancavel: false,
@@ -798,6 +814,9 @@ export function conditionEffects(actor) {
     acBonus: 0,
     saveFixo: {},
     speedHalf: false,
+    // A metade do deslocamento que vem de MAGIA (a Lentidão), separada da que
+    // vem da exaustão: a Liberdade de Movimento barra só a primeira.
+    speedHalfMagico: false,
     semReacao: false,
     acaoOuBonus: false,
     umAtaque: false,
@@ -844,6 +863,7 @@ export function conditionEffects(actor) {
     if (def.acBonus) out.acBonus += def.acBonus;
     for (const [hab, v] of Object.entries(def.saveFixo ?? {})) out.saveFixo[hab] = (out.saveFixo[hab] ?? 0) + v;
     if (def.speedHalf) out.speedHalf = true;
+    if (def.speedHalfMagico) out.speedHalfMagico = true;
     if (def.semReacao) out.semReacao = true;
     if (def.acaoOuBonus) out.acaoOuBonus = true;
     if (def.umAtaque) out.umAtaque = true;
@@ -861,6 +881,9 @@ export function conditionEffects(actor) {
     if (def.saveAdvantage) out.saveAdvantage.push(...def.saveAdvantage);
     if (def.semAtaqueNemMagia) out.semAtaqueNemMagia = true;
     if (def.sobreAgua) out.sobreAgua = true;
+    if (def.semTerrenoDificil) out.semTerrenoDificil = true;
+    if (def.semReducaoDeDeslocamento) out.semReducaoDeDeslocamento = true;
+    if (def.soltaDoAgarrao) out.soltaDoAgarrao = true;
     // Reviver os Mortos: −4 que cai de 1 por descanso longo, e que pesa em
     // ataque, resistência e teste de atributo ao mesmo tempo.
     if (def.penalidadeDaData && c.data?.penalidade) {

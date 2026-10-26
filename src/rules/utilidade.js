@@ -90,6 +90,8 @@ export const UTIL = {
   fingirDeMorto: { alvo: 'aliado', cond: 'fingeMorto', min: 60, ritual: true },
   falarComPlantas: { alvo: 'si', min: 10, efeito: 'plantas' },
   encontrarFamiliar: { alvo: 'escolha', efeito: 'familiar', ritual: true },
+  // O Juramento da Devoção: as três perguntas de sim ou não.
+  comunhao: { alvo: 'si', min: 1, efeito: 'comunhao', ritual: true, tempo: 1, escolhe: 'perguntas' },
   // O Domínio da Vida: o ritual que traz de volta.
   reviverOsMortos: { alvo: 'morto', efeito: 'reviver', tempo: 60 },
   // A palavra e o olho a distância.
@@ -575,6 +577,13 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
         // aranha e a aranha-lobo mordem com veneno em `extraDamage`.
         criaturas: criaturas.filter((m) => !m.dead && eVenenosa(m)),
       };
+    }
+    // ---- as três perguntas ----
+    if (u.efeito === 'comunhao') {
+      // As respostas vêm prontas da cena (`game/magias-fora-nucleo.js`): a
+      // regra não enxerga o mapa para saber quem espera atrás da porta.
+      resultado.comunhao = dados?.respostas ?? [];
+      resultado.soNarra = !resultado.comunhao.length;
     }
     // ---- o ritual que traz de volta ----
     if (u.efeito === 'reviver') {
