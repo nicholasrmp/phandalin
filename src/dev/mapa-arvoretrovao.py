@@ -875,14 +875,37 @@ PROPS = []
 _pecas_por_predio = {}
 
 
-def _prop(x, y, v):
+# NUNCA DUAS PECAS IGUAIS NA MESMA CASA, e nunca duas iguais viradas para o mesmo lado: a
+# escolha tira da lista do tema o que ja esta posto naquela construcao, e so repete quando o
+# tema acaba -- e ai a repetida entra ESPELHADA. Fora isso, 40% das pecas entram espelhadas
+# por sorteio (a luz do desenho muda de lado, o que no mobiliario de casa nao pesa).
+_USADAS = {}
+
+
+def _escolhe(pid, tema, x, y, sal):
+    usadas = _USADAS.setdefault(pid, {})
+    livres = [v for v in tema if usadas.get(v, 0) == 0]
+    v = (livres or tema)[int(_embaralha(x, y, sal) * len(livres or tema))]
+    repetida = usadas.get(v, 0) > 0
+    return v, repetida or _embaralha(x, y, sal + 7) < 0.4
+
+
+def _prop(x, y, v, espelhar=False, pid=None):
     T[y][x] = '&' if v in PROP_BAIXO else '^'
-    PROPS.append({'tipo': 'prop', 'x': x, 'y': y, 'variante': v})
+    item = {'tipo': 'prop', 'x': x, 'y': y, 'variante': v}
+    if espelhar:
+        item['espelhar'] = True
+    if pid:
+        _USADAS.setdefault(pid, {})[v] = _USADAS.get(pid, {}).get(v, 0) + 1
+        item['_pid'] = pid
+    PROPS.append(item)
 
 
 def _desfaz(x, y, antigo):
     T[y][x] = antigo
-    PROPS.pop()
+    item = PROPS.pop()
+    if item.get('_pid'):
+        _USADAS[item['_pid']][item['variante']] -= 1
 
 
 # O que cada glifo antigo vira, e com que chance. `g` fica como estava no resto.
@@ -896,7 +919,8 @@ for pid, cs in INTERIOR.items():
         if chance is None or _embaralha(x, y, 41) >= chance:
             continue
         antigo = T[y][x]
-        _prop(x, y, tema[int(_embaralha(x, y, 43) * len(tema))])
+        _v, _esp = _escolhe(pid, tema, x, y, 43)
+        _prop(x, y, _v, _esp, pid)
         if not _piso_inteiro(cs):
             _desfaz(x, y, antigo)
     # Pecas novas, encostadas na parede, longe do vao, fora da sombra da parede da frente.
@@ -910,7 +934,8 @@ for pid, cs in INTERIOR.items():
         if T[y][x] not in 'Ldvj' or _junto_de_vao(x, y) or _tapado(x, y) or (rigor and not _encosta(x, y)):
             continue
         antigo = T[y][x]
-        _prop(x, y, tema[int(_embaralha(x, y, 49) * len(tema))])
+        _v, _esp = _escolhe(pid, tema, x, y, 49)
+        _prop(x, y, _v, _esp, pid)
         if not _piso_inteiro(cs):
             _desfaz(x, y, antigo)
             continue
@@ -1011,7 +1036,9 @@ COM_FOGO = {'estalagem'}
 PENDURA = {'tochaAcesa', 'tochaApagada', 'quadro', 'bandeira', 'armas', 'escudo', 'cranio', 'corrente',
            'tapecaria', 'moldura', 'ferradura', 'chaves', 'aviso', 'pergaminho', 'prateleira', 'peles', 'ervas'}
 LIMITE = {'tochaAcesa': 3, 'escudo': 1, 'armas': 1, 'bandeira': 1, 'cranio': 1,
-          'quadro': 1, 'corrente': 1, 'musgo': 2, 'teia': 2}
+          'quadro': 1, 'corrente': 1, 'musgo': 2, 'teia': 2,
+          # Pecas de poucos desenhos: uma por construcao, para nao repetir a mesma duas vezes.
+          'moldura': 1, 'ervas': 1, 'ferradura': 1, 'chaves': 1, 'peles': 1, 'aviso': 1}
 TETO_PREDIO = 4
 DECOR = []
 _ocupadas, _quantas, _fiadas, _total = set(), {}, set(), {}
@@ -1698,7 +1725,7 @@ extra = {
     'zumbis': {k: CAIXAS['embaixada'][k] for k in ('x0', 'y0', 'x1', 'y1')},
     'reidoth': NINHOS['reidoth'][0],
     'ninhos': NINHOS,
-    'props': PROPS,
+    'props': [{k: v for k, v in p.items() if k != '_pid'} for p in PROPS],
     'pisos': PISOS,
     'objetos': {**OBJETOS_ESCONDIDOS, 'bauMormesk': BAU_MORMESK},
     'zonas': {'matoLeste': _ZONA_MATO_LESTE, 'tecelagemSul': _ZONA_TECELAGEM_SUL},
