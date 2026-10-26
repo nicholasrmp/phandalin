@@ -57,7 +57,12 @@ function retratoDe(look) {
   }
 }
 
-export function narrar(root, { formato = 'tela', paginas, escolhas = null, pular = false, lista = false }) {
+/**
+ * A tela local: o que `narrar` sempre foi. `sinal` (um AbortSignal) fecha a
+ * tela por fora, sem escolha — é como a porta compartilhada tira o painel da
+ * frente de quem não decidiu quando outro respondeu primeiro.
+ */
+export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, pular = false, lista = false, sinal = null }) {
   return new Promise((resolve) => {
     let i = 0;
     const caixa = el('div', { class: `narrativa ${formato}`, role: 'dialog', 'aria-modal': 'true' });
@@ -65,8 +70,10 @@ export function narrar(root, { formato = 'tela', paginas, escolhas = null, pular
     caixa.append(folha);
     root.append(caixa);
 
+    const aoAbortar = () => fechar(undefined);
     function fechar(valor) {
-      aberta = null;
+      sinal?.removeEventListener('abort', aoAbortar);
+      if (aberta?.caixa === caixa) aberta = null;
       caixa.classList.add('saindo');
       setTimeout(() => caixa.remove(), 180);
       resolve(valor);
@@ -138,6 +145,7 @@ export function narrar(root, { formato = 'tela', paginas, escolhas = null, pular
     }
 
     aberta = {
+      caixa,
       avancar: () => {
         // Enter na última página com escolhas não decide pelo jogador.
         if (i === paginas.length - 1 && escolhas?.length) return;
@@ -146,5 +154,20 @@ export function narrar(root, { formato = 'tela', paginas, escolhas = null, pular
       escolherNumero: (n) => folha.querySelector(`.narrativa-opcao[data-numero="${n}"]`)?.click(),
     };
     desenhar();
+    if (sinal) {
+      if (sinal.aborted) fechar(undefined);
+      else sinal.addEventListener('abort', aoAbortar, { once: true });
+    }
   });
 }
+
+// A PORTA (MULTIJOGADOR.md, A-02): as cenas chamam `narrar`, e quem decide como
+// a narrativa aparece é a porta. Sozinho, é a tela local; numa sala, o anfitrião
+// põe `criarPortaCompartilhada` aqui e a mesma chamada passa a transmitir.
+let porta = narrarLocal;
+
+/** Troca a implementação de `narrar`; sem argumento, volta à tela local. */
+export const definirPorta = (nova = null) => { porta = nova ?? narrarLocal; };
+
+/** Assinatura que as cenas conhecem: `narrar(root, { formato, paginas, escolhas, pular, lista })`. */
+export const narrar = (root, opts) => porta(root, opts);
