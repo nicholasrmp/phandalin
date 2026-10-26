@@ -1157,16 +1157,21 @@ export class Board {
       return;
     }
     const prop = s.objeto === 'prop' ? this.varianteDaProp(x, y) : null;
-    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(prop?.grupo ?? s.objeto, ['todas'], x, y);
+    // A lareira tem quadros do fogo: o tempo escolhe o quadro (8 por segundo), e não o sorteio da casa.
+    const quadroDoFogo = prop?.grupo === 'prop-taverna-lareira' ? Math.floor(this.time * 8) : null;
+    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(prop?.grupo ?? s.objeto, ['todas'], x, y, quadroDoFogo);
     if (baixo && prop?.grupo === 'prop-taverna-nada') { ctx.restore(); return; }   // só ocupa o chão: nada a desenhar nem sombra
     if (baixo) {
       // Moita, pedra, estalagmite, mantimentos ou espinheiro do PixelLab, 1:1,
       // com o centro da base no centro da casa. A sombra acompanha a largura.
       const r = SOMBRA_DO_BAIXO[s.objeto];
-      ctx.fillStyle = 'rgba(0,0,0,.25)';
-      ctx.beginPath();
-      ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // Peça de parede, balcão e escada já trazem a sombra no desenho: a elipse seria uma mancha.
+      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)/.test(prop?.grupo ?? '')) {
+        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        ctx.beginPath();
+        ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.imageSmoothingEnabled = false;
       if (prop?.espelhar) {
         // De lado: o ponto de ancoragem da peça continua caindo no centro da casa.

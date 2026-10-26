@@ -769,7 +769,7 @@ teste('taverna: o caminho existe, termina no destino, e recusa parede, mesa, for
   const de = NASCEDOUROS[0];
   const c = caminhoNaTaverna(campo, de, { x: 10, y: 10 });
   assert.deepEqual(c[0], de); assert.deepEqual(c.at(-1), { x: 10, y: 10 });
-  for (const alvo of [{ x: 16, y: 0 }, { x: 7, y: 5 }, { x: -1, y: 5 }, { x: 99, y: 5 }, { x: 5, y: 3 }]) assert.deepEqual(caminhoNaTaverna(campo, de, alvo), [], JSON.stringify(alvo));
+  for (const alvo of [{ x: 16, y: 0 }, { x: 8, y: 6 }, { x: -1, y: 5 }, { x: 99, y: 5 }, { x: 5, y: 2 }]) assert.deepEqual(caminhoNaTaverna(campo, de, alvo), [], JSON.stringify(alvo));
   assert.deepEqual(caminhoNaTaverna(campo, de, { x: 10, y: 10 }, new Set(['10,10'])), [], 'destino ocupado');
   assert.ok(caminhoNaTaverna(campo, de, { x: 10, y: 10 }, new Set(['7,10', '8,10'])).length > 0, 'atravessar quem está no caminho vale');
 });
@@ -834,7 +834,7 @@ teste('T-11: mover leva o avatar por caminho livre, e recusa o que não vale (se
   const s = nova();
   const a = s.avatares[ANF];
   const antes = { x: a.x, y: a.y };
-  for (const m of [{ x: 16, y: 0 }, { x: 7, y: 5 }, { x: -1, y: 2 }, { x: 99, y: 2 }, { x: 1.5, y: 2 }, { x: '3', y: 2 }, { y: 2 }, { x: 5 }]) {
+  for (const m of [{ x: 16, y: 0 }, { x: 8, y: 6 }, { x: -1, y: 2 }, { x: 99, y: 2 }, { x: 1.5, y: 2 }, { x: '3', y: 2 }, { y: 2 }, { x: 5 }]) {
     assert.equal(faz(s, ANF, { tipo: 'mover', ...m }, 5000).ok, false, JSON.stringify(m));
     assert.deepEqual({ x: a.x, y: a.y }, antes);
   }
@@ -962,10 +962,15 @@ teste('o mapa: a parede do fundo (norte e oeste) está nas duas grades, e a mob�
   assert.equal(n.length, ALTURA); assert.equal(o.length, ALTURA);
   assert.ok(n[0].split('').every((c) => c === '#') && n.slice(1).every((l) => !l.includes('#')));
   assert.ok(o.every((l) => l[0] === '#' && !l.slice(1).includes('#')));
-  const terreno = MAPA_TAVERNA.terreno.join('');
-  for (const [glifo, minimo] of [['e', 4], ['m', 14], ['s', 3], ['u', 3], ['K', 1]]) {
-    assert.ok([...terreno].filter((c) => c === glifo).length >= minimo, `faltam peças '${glifo}'`);
+  const variantes = MAPA_TAVERNA.objetos.filter((o) => o.variante !== 'taverna-nada').map((o) => o.variante);
+  const quantas = (v) => variantes.filter((x) => x === `taverna-${v}`).length;
+  for (const [peca, minimo] of [['lareira', 1], ['balcao', 1], ['prateleira', 1], ['prateleiraB', 1], ['prateleiraO', 1], ['toblen', 1], ['escada', 1], ['mesaRedonda', 1], ['mesaCartas', 1], ['mesaVela', 1], ['banquinho', 4], ['barrilCerveja', 1], ['caixote', 1], ['lampiao', 2]]) {
+    assert.ok(quantas(peca) >= minimo, `faltam peças '${peca}' (${quantas(peca)})`);
   }
+  // Todo `^` do mapa tem uma anotação, e toda anotação está num `^`.
+  const caretas = new Set(); MAPA_TAVERNA.terreno.forEach((l, y) => [...l].forEach((c, x) => { if (c === '^') caretas.add(`${x},${y}`); }));
+  assert.deepEqual([...caretas].sort(), MAPA_TAVERNA.objetos.map((o) => `${o.x},${o.y}`).sort());
+  assert.equal(new Set(MAPA_TAVERNA.objetos.map((o) => `${o.x},${o.y}`)).size, MAPA_TAVERNA.objetos.length, 'nenhuma casa tem duas peças');
   assert.equal(LARGURA, ALTURA, 'o Board corta a ponta de um mapa muito mais largo que alto');
 });
 

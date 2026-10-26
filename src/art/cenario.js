@@ -37,16 +37,20 @@ img.src = urlCenario;
 // a emenda de uma casa com a vizinha.
 const SEM_BALANCO = new Set(['grade']);
 
-export function spriteCenario(grupo, papeis, x, y) {
+// A taverna é desenhada à mão numa grade só: nenhuma peça dela balança.
+const semBalanco = (grupo) => SEM_BALANCO.has(grupo) || grupo.startsWith('prop-taverna-');
+
+/** `quadro`: escolhe esse quadro (módulo o total) em vez de sortear por casa, para as peças animadas. */
+export function spriteCenario(grupo, papeis, x, y, quadro = null) {
   const g = meta[grupo];
   if (!pronto || !g) return null;
   const quadros = papeis.flatMap((p) => g[p] ?? []);
   if (!quadros.length) return null;
-  const q = quadros[sorteio(x, y, quadros.length)];
+  const q = quadros[quadro == null ? sorteio(x, y, quadros.length) : quadro % quadros.length];
   return {
     img,
     ...q,
-    dx: SEM_BALANCO.has(grupo) ? 0 : sorteio(x + 101, y, 7) - 3,
-    dy: SEM_BALANCO.has(grupo) ? 0 : sorteio(x, y + 211, 5) - 2,
+    dx: semBalanco(grupo) ? 0 : sorteio(x + 101, y, 7) - 3,
+    dy: semBalanco(grupo) ? 0 : sorteio(x, y + 211, 5) - 2,
   };
 }

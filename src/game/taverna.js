@@ -19,37 +19,74 @@ import { Battlefield, key } from '../core/grid.js';
 // altura-1 a altura+1 cabe inteiro, com folga só no que sobra do PAD; 12 x 12 é o caso sem nenhuma.
 export const LARGURA = 12;
 export const ALTURA = 12;
+const ALTURA_DO_MURO = 5;
 
-// O chão é de laje (a que o jogo tem); as paredes são as de BORDA do fundo, como nos outros
-// mapas fechados: a do norte e a do oeste, inteiras, e a frente aberta para quem olha (a
-// câmera é fixa: "paredes inteiras no fundo, cortadas na frente").
+// O chão é de tábuas (`prop`s e piso vêm do atlas, ver `dev/acrescentar-taverna.py`); as paredes são as
+// de BORDA do fundo, como nos outros mapas fechados: a do norte e a do oeste, inteiras, e a frente
+// aberta para quem olha (a câmera é fixa: "paredes inteiras no fundo, cortadas na frente").
 const linhas = Array.from({ length: ALTURA }, () => Array(LARGURA).fill('L'));
-const poe = (x, y, c) => { linhas[y][x] = c; };
 
-// A lareira, no meio da parede do fundo, com os braseiros em fila.
-for (const x of [4, 5, 6, 7]) poe(x, 0, 'e');
-// O balcão do bar: uma fileira de mesas, com o espaço do Toblen atrás.
-for (let x = 2; x <= 6; x++) poe(x, 3, 'm');
-// Barris e estantes na quina do bar; os barris de cerveja e o baú da casa no canto oposto.
-for (const [x, y] of [[1, 0], [2, 0], [1, 1]]) poe(x, y, 's');
-for (const [x, y] of [[10, 0], [11, 0], [11, 1]]) poe(x, y, 'u');
-poe(11, 5, 'K');
-// Mesas de conversa, soltas pelo salão.
-for (const [x, y] of [[2, 6], [2, 7], [4, 8], [5, 8], [9, 2], [9, 3]]) poe(x, y, 'm');
+/**
+ * A MOBÍLIA e os frequentadores: cada um é uma anotação `prop` do mapa (`board.varianteDaProp`), e a
+ * casa onde ela está vira um `^` (bloqueia o passo). Peça de várias casas desenha na casa da FRENTE da
+ * pegada e leva `nada` nas outras, só para ocupar o chão. `de` e `ate` são o canto de trás e o da
+ * frente da pegada (inclusive).
+ */
+const objetos = [];
+function peca(variante, de, ate = de) {
+  for (let y = de.y; y <= ate.y; y++) {
+    for (let x = de.x; x <= ate.x; x++) {
+      linhas[y][x] = '^';
+      objetos.push({ tipo: 'prop', x, y, variante: x === ate.x && y === ate.y ? `taverna-${variante}` : 'taverna-nada' });
+    }
+  }
+}
 
-/** A mesa de grupo: 2 x 2 casas, com quatro lugares em volta (T-07). Clicar nela abre o lobby do grupo. */
-export const MESA_DE_GRUPO = [{ x: 7, y: 5 }, { x: 8, y: 5 }, { x: 7, y: 6 }, { x: 8, y: 6 }];
-for (const { x, y } of MESA_DE_GRUPO) poe(x, y, 'm');
+// A parede do FUNDO, a do norte: a estante de garrafas atrás do balcão, a lareira, os barris de cerveja.
+peca('prateleira', { x: 2, y: 0 }, { x: 3, y: 0 });
+peca('prateleiraB', { x: 4, y: 0 }, { x: 5, y: 0 });
+peca('lareira', { x: 8, y: 0 }, { x: 9, y: 0 });
+peca('barrilCerveja', { x: 11, y: 0 });
+peca('caixote', { x: 11, y: 1 });
+// O balcão do bar, de quatro casas, com o Toblen atrás dele.
+// Uma peça só de quatro casas, ao longo de +x: a ponta redonda é a do leste.
+peca('balcao', { x: 2, y: 2 }, { x: 5, y: 2 });
+peca('toblen', { x: 3, y: 1 });
+// A parede do OESTE: a escada para o andar de cima, a estante, o lampião.
+// A escada: uma casa de largura, colada ao muro do oeste, subindo para o canto do fundo (o andar de cima).
+peca('escada', { x: 0, y: 1 }, { x: 0, y: 3 });
+peca('prateleiraO', { x: 0, y: 9 }, { x: 0, y: 10 });
+peca('lampiao', { x: 1, y: 5 });
+peca('lampiao', { x: 10, y: 9 });
+// A mesa de grupo (T-07): uma mesa redonda com quatro banquinhos. Clicar nela, ou num banquinho, abre o lobby.
+peca('mesaRedonda', { x: 8, y: 6 });
+for (const [x, y] of [[7, 6], [9, 6], [8, 5], [8, 7]]) peca('banquinho', { x, y });
+// Uma mesa de cartas à esquerda, com o lenhador e a jogadora mascarada; outra à direita, com o corsário e o aventureiro.
+peca('mesaCartas', { x: 4, y: 7 });
+peca('banquinho', { x: 4, y: 8 });
+peca('banquinho', { x: 5, y: 7 });
+peca('lenhador', { x: 4, y: 6 });
+peca('mascarada', { x: 3, y: 7 });
+peca('mesaVela', { x: 10, y: 3 });
+peca('corsario', { x: 10, y: 2 });
+peca('chapeuRoxo', { x: 9, y: 3 });
+// O mago de chapéu vermelho, ao lado da lareira.
+peca('magoVermelho', { x: 7, y: 1 });
+
+/** A mesa de grupo: a mesa redonda e os quatro banquinhos em volta. Clicar em qualquer parte abre o lobby do grupo. */
+export const MESA_DE_GRUPO = [{ x: 8, y: 6 }, { x: 7, y: 6 }, { x: 9, y: 6 }, { x: 8, y: 5 }, { x: 8, y: 7 }];
 
 export const MAPA_TAVERNA = {
   terreno: linhas.map((l) => l.join('')),
   altura: null,
-  objetos: [],
+  objetos,
   // Duas grades de arestas (ver `core/grid.js`): a parede do norte de cada casa da primeira
   // fileira e a do oeste de cada casa da primeira coluna.
   paredes: {
     n: Array.from({ length: ALTURA }, (_, y) => (y === 0 ? '#'.repeat(LARGURA) : '.'.repeat(LARGURA))),
     o: Array.from({ length: ALTURA }, () => `#${'.'.repeat(LARGURA - 1)}`),
+    // Muro alto: 5 níveis (110 px) em vez dos 3 de sempre, para a sala ter pé-direito.
+    alt: Array.from({ length: ALTURA }, () => String(ALTURA_DO_MURO).repeat(LARGURA)),
   },
   // Onde os grupos aparecem e para onde olham: a entrada, ao sul.
   olhar: { dx: 0, dy: -1 },
@@ -58,7 +95,14 @@ export const MAPA_TAVERNA = {
 /** O campo de regras da taverna (o mesmo que o `Board` desenha). */
 export function campoDaTaverna() {
   const m = MAPA_TAVERNA;
-  return new Battlefield(LARGURA, ALTURA, m.terreno, m.altura, m.objetos, m.paredes);
+  const campo = new Battlefield(LARGURA, ALTURA, m.terreno, m.altura, m.objetos, m.paredes);
+  // O salão inteiro é UMA sala, com piso de tábuas e parede de tijolo: o tabuleiro pinta o chão de toda
+  // casa da sala com o piso dela (por baixo da mobília também) e as paredes com o material dela.
+  campo.sala = new Map();
+  for (let y = 0; y < ALTURA; y++) for (let x = 0; x < LARGURA; x++) campo.sala.set(`${x},${y}`, 'taverna');
+  campo.pisoDeSala = new Map([['taverna', 'tabuasTaverna']]);
+  campo.materialDaParede = 'tijolo';
+  return campo;
 }
 
 /** Casas onde os avatares nascem, da mais perto da porta para fora. */
