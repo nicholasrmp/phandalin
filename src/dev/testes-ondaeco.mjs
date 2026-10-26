@@ -54,7 +54,7 @@ teste('cada bando nasce em casa livre e alcançável, e as Grandes têm as quatr
   const alc = f.reachable(ONDA_ECO.chegada, 100000, () => false);
   const TIPOS = {
     stirges: 'stirge', esqueletos: 'esqueleto', ghoulsSul: 'ghoul', ghoulsGrande: 'ghoul', gosma: 'gelatinaOcre',
-    bugbearsNorte: 'bugbear', zumbis: 'zumbi', caveira: 'caveiraCandente', mormesk: 'wraith', espectador: 'spectator',
+    bugbearsNorte: 'bugbear', zumbis: 'zumbi', caveira: 'caveiraCandente', mormesk: 'mormesk', espectador: 'spectator',
     bugbearsFenda: 'bugbear', bugbearGuarda: 'bugbear', vhalak: 'doppelganger', nezznar: 'nezznar', bugbearsTemplo: 'bugbear',
     aranhasTemplo: 'aranhaGigante', nundro: 'plebeu',
   };

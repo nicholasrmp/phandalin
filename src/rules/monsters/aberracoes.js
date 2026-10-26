@@ -235,15 +235,15 @@ export const ABERRACOES = {
     fonte: 'propria',
     size: 'pequeno',
     level: 4,
-    cr: '3',
-    xp: 700,
+    cr: '4',
+    xp: 1100,
     // FOR 1 não é piada: é o que impede que ela seja usada como peça de corpo
     // a corpo. Qualquer agarrão, empurrão ou derrubada que dependa de FOR ela
     // perde — e ela compensa não precisando encostar em ninguém.
     abilities: { str: 1, dex: 17, con: 14, int: 16, wis: 10, cha: 11 },
     ac: 13,
     acNote: 'nada que se possa agarrar',
-    maxHp: 34,
+    maxHp: 40,
     // Deslocamento 0 no chão: ela não anda, ela flutua. Enquanto a grade só
     // souber de `speedFt`, deixar 0 aqui a prenderia no lugar e quebraria o
     // papel dela, então o valor de voo é o que vai no campo que o motor lê, e
@@ -257,7 +257,7 @@ export const ABERRACOES = {
         // `art: 'fagulha'`: a receita própria em `visuals.js` — uma brasa
         // VERDE com rastro, e fogo no impacto. Antes era `bow`, uma flecha
         // dourada saindo de um arco invisível, marcada como provisória.
-        name: 'Fagulha', bonus: 5, damage: '2d6', type: 'fogo',
+        name: 'Fagulha', bonus: 5, damage: '3d6', type: 'fogo',
         ranged: true, rangeFt: 60, longRangeFt: 60, art: 'fagulha',
       },
       {

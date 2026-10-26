@@ -358,37 +358,42 @@ export const HUMANOIDES = {
     id: 'nezznar',
     name: 'Nezznar',
     look: 'nezznar',
-    fonte: 'SRD',
+    // OS NÚMEROS SÃO OS DO LIVRO (A Mina Perdida de Phandelver, apêndice B): ND 2, 450 XP, 27 PV. Já foi o mago do
+    // SRD com os traços de drow por cima (ND 6): era o que a ficha de monstro mais parecia, e não o que a
+    // aventura diz. O que faz da luta final um desafio é a companhia (dois bugbears e quatro aranhas gigantes),
+    // não ele.
+    fonte: 'propria',
     size: 'médio',
-    level: 6,
-    cr: '6',
-    xp: 2300,
-    abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 11 },
-    // A CA DO BLOCO JÁ CONTA A ARMADURA ARCANA, como a do Hamun Kost: a
-    // magia dura 8 horas, então um mago entra na luta com ela de pé, e o
-    // próprio bloco do SRD diz "15 com armadura arcana". O espaço gasto nela
-    // sai dos de 1º (quatro no bloco, três aqui).
-    ac: 15,
-    acNote: 'Armadura Arcana (13 + DES)',
-    maxHp: 40,
+    level: 4,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 9, dex: 13, con: 10, int: 16, wis: 14, cha: 13 },
+    // A CA do bloco já conta a Armadura Arcana (11 + DES 1 = 14 com ela): a magia dura 8 horas, então um mago entra na
+    // luta com ela de pé; o espaço gasto nela sai dos de 1º (quatro no bloco, três aqui).
+    ac: 14,
+    acNote: 'Armadura Arcana (11 sem ela)',
+    maxHp: 27,
     speedFt: 30,
     saves: ['int', 'wis'],
-    skills: ['arcanismo', 'historia'],
-    senses: { darkvisionFt: 120, passivePerception: 11 },
+    skills: ['arcanismo', 'furtividade', 'percepcao'],
+    senses: { darkvisionFt: 120, passivePerception: 14 },
     attacks: [
-      { name: 'Adaga', bonus: 5, damage: '1d4+2', type: 'perfurante', reachFt: 5, art: 'dagger' },
+      // O Cajado da Aranha: o bordão que ele carrega, com mais 1d6 de veneno em cada acerto.
+      { name: 'Cajado da Aranha', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff',
+        danoExtra: { damage: '1d6', type: 'veneno' } },
     ],
     spellcasting: {
       ability: 'int',
-      cantrips: ['raioDeFogo', 'raioDeGelo'],
-      prepared: ['armaduraArcana', 'misselMagico', 'maosFlamejantes', 'sono', 'contramagia', 'fogoDasFadas'],
-      slots: [0, 3, 3, 3, 3, 1],
+      cantrips: ['raioDeGelo', 'toqueChocante'],
+      // Armadura Arcana, Escudo Arcano e Mísseis Mágicos (1º); Invisibilidade e Sugestão (2º); e o Fogo das Fadas, da
+      // conjuração inata do drow (uma vez por dia).
+      prepared: ['armaduraArcana', 'escudoArcano', 'misselMagico', 'invisibilidade', 'sugestao', 'fogoDasFadas'],
+      slots: [0, 3, 3],
       noMotor: true,
-      // A IA conjura no turno dele, como a do Hamun Kost.
       conjuraNoTurno: true,
     },
     traits: ['conjuracao', 'ascendenciaFeerica', 'sensibilidadeALuzSolar'],
-    blurb: 'Drow mago de CA 15 pela Armadura Arcana: abre com Fogo das Fadas para acender o grupo, depois Sono e Mãos Flamejantes em quem se amontoar. Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
+    blurb: 'Drow mago de CA 14: abre com Fogo das Fadas para acender o grupo, e some com Invisibilidade para atacar de onde ninguém vê. Bate com o Cajado da Aranha (1d6 de veneno a mais). Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
   },
 
   // BRUGHOR MACHADO-MORDEDOR, chefe do bando orc do Cume da Wyvern (Parte 3).

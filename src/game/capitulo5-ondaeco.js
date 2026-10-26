@@ -87,7 +87,7 @@ export function criarOndaEco(app) {
   const nezznar = salvo.templo ? null : nasce('nezznar', ninho.nezznar[0], null, 'Nezznar');
   const bugbearsTemplo = bando('templo', 'bugbear', ninho.bugbearsTemplo);
   const aranhasTemplo = bando('templo', 'aranhaGigante', ninho.aranhasTemplo);
-  const mormesk = salvo.mormesk === 'morto' ? null : nasce('wraith', ninho.mormesk[0], null, 'Mormesk');
+  const mormesk = salvo.mormesk === 'morto' ? null : nasce('mormesk', ninho.mormesk[0]);
   const espectador = ['dispensado', 'morto'].includes(salvo.espectador) ? null : nasce('spectator', ninho.espectador[0], null, 'Espectador');
   const nundro = makeNpc('gundren', { ...ninho.nundro[0] });
   nundro.name = 'Nundro';
@@ -218,8 +218,10 @@ export function criarOndaEco(app) {
     await painel(TEXTOS.ghoulsGrande, { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     luta(ghoulsGrande.filter((f) => !f.dead));
   }
-  async function acordarGosma() {
+  async function acordarGosma(sozinho) {
     salvo.gosma = 'luta';
+    // Ela vinha seguindo o grupo desde que entrou nos túneis: sai da parede a poucas casas de quem ficou para trás.
+    if (sozinho && gosma[0]) gosma[0].pos = { ...gosma[0].pos, ...(enc.casaLivreMaisProxima({ x: sozinho.pos.x + 3, y: sozinho.pos.y, f: 2 }) ?? sozinho.pos) };
     await painel(TEXTOS.gosma, { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     luta(gosma.filter((f) => !f.dead));
   }
@@ -302,7 +304,8 @@ export function criarOndaEco(app) {
       salvo.nundro = 'livre';
       feitos.nundroResgatado = true;
       await painel(TEXTOS.nundroLivre);
-      await darXpDaLuta(200, 'Nundro resgatado');
+      // 200 XP se ele sobreviver à aventura: já pagos se Nezznar caiu; senão, na queda dele.
+      if (salvo.templo === 'limpo') { salvo.nundroPago = true; await darXpDaLuta(200, 'Nundro resgatado'); }
     }
   }
   async function conversaDe(npc, olhaPara) {
@@ -374,11 +377,15 @@ export function criarOndaEco(app) {
     // A gosma ocre dos túneis segue o grupo e ataca quem fica sozinho.
     if (gosma.length && !salvo.gosma && aqui('2')) {
       const sozinho = herois().find((h) => naArea(h.pos, '2') && herois().every((o) => o === h || distanceFt(o.pos, h.pos) > 20));
-      if (sozinho) { await acordarGosma(); return; }
+      if (sozinho) { await acordarGosma(sozinho); return; }
     }
     if (mormesk && !salvo.mormeskVisto && aqui('14')) { await conversaDeMormesk(); return; }
     if (espectador && !salvo.espectadorVisto && aqui('15')) { await conversaDoEspectador(); return; }
     if (nezznar && !salvo.temploVisto && salvo.templo !== 'luta' && aqui('19')) { await conversaDeNezznar(); return; }
+    // O TEXTO DE ENTRADA de cada área que não tem encontro: uma vez só.
+    for (const a of Object.keys(TEXTOS.entrada)) {
+      if (!salvo.vista?.[a] && aqui(a)) { (salvo.vista ??= {})[a] = true; await painel(TEXTOS.entrada[a]); }
+    }
     if (!salvo.sonsDaOnda && (aqui('16') || aqui('17'))) {
       salvo.sonsDaOnda = true;
       await painel(TEXTOS.ondas);
@@ -418,6 +425,7 @@ export function criarOndaEco(app) {
         salvo[b.chave] = 'limpo';
         await painel(b.fim);
         if (b.chave === 'templo') await fimDoTemplo();
+        if (b.chave === 'bugbearsNorte') await bolsaDoBugbearMaior();
         await darXpDaLuta(total(b.lista), b.xp);
         // os bugbears da fenda que vieram de reforço contam como limpos também
         if (b.chave === 'templo' && [...bugbearsFenda, ...vhalak].every((f) => f.dead)) salvo.fenda = 'limpo';
@@ -425,6 +433,14 @@ export function criarOndaEco(app) {
       }
     }
     prepararExploracao();
+  }
+
+  // O bugbear maior leva uma bolsa: 15 pc, 13 pe (65 pp) e uma poção da vitalidade.
+  async function bolsaDoBugbearMaior() {
+    const quem = herois()[0];
+    if (!quem) return;
+    guardar(quem, 'moedaDeCobre', 15); guardar(quem, 'moedaDePrata', 65); guardar(quem, 'pocaoDeVitalidade', 1);
+    await painel(TEXTOS.bolsaDoBugbear);
   }
 
   // A QUEDA DE NEZZNAR: o que ele carregava, e o que a aventura fecha.
@@ -436,6 +452,7 @@ export function criarOndaEco(app) {
       guardar(quem, 'chaveDoAranhaNegra', 1);
     }
     feitos.nezznarDerrotado = true;
+    if (salvo.nundro === 'livre' && !salvo.nundroPago) { salvo.nundroPago = true; await darXpDaLuta(200, 'Nundro resgatado'); }
     pista('Nezznar, o Aranha Negra, caiu no templo de Dumathoin. A mina está livre, e Nundro está nos aposentos do sacerdote, trancado.');
     await painel(TEXTOS.despojosDeNezznar);
   }
@@ -764,7 +781,7 @@ export function criarOndaEco(app) {
     depoisDaConversa: resolver,
     // Só o depósito (7) e os aposentos do sacerdote, depois de Nezznar, são lugar de dormir: "nenhum monstro vem aqui".
     // Descansar é gastar tempo no mesmo lugar: a mina cobra (monstros vagando).
-    depoisDoDescanso: async () => { if (estado.explorando) await monstroVagando(); },
+    depoisDoDescanso: async () => { if (estado.explorando && !herois().every((h) => naArea(h.pos, '7'))) await monstroVagando(); },
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
       if (tipo !== 'longo') return null;

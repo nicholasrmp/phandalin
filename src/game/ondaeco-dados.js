@@ -17,13 +17,13 @@ export const EXAMES = {
   carrinhoVazio: 'Um carrinho de mina vazio, o fundo ainda sujo de pó de minério. Os trilhos dele correm até onde a luz alcança.',
   montinhoMinerio: 'Um monte de minério bruto e de carvão preto, do jeito que saiu da rocha. A prata ainda não foi tirada dele.',
   ferramentas: 'Um suporte de ferramentas de mineiro: picaretas, pás e uma marreta, o cabo escurecido pelas mãos. Estão ali como se alguém fosse voltar do turno.',
-  suprimentos: 'Sacos de farinha, bolsas de sal, barris de carne salgada, lanternas e frascos de óleo. É o estoque de um acampamento que contava ficar semanas.',
-  lanterna: 'Uma lanterna de cobre grande, apagada, pendurada ou pousada, com o óleo seco no fundo. Alguém quis que a mina desse boas-vindas a quem chegasse.',
+  suprimentos: 'Provisões de quem pretendia ficar uma temporada: farinha, sal, carne em barril, frascos de óleo, picaretas e pás. O acampamento dos irmãos Buscapedra, deixado de qualquer jeito.',
+  lanterna: 'Uma lanterna grande de cobre, apagada e sem óleo, pendurada para dar luz a quem entrasse. Faz séculos que ninguém a acende.',
   ossosAnao: 'Ossos de anão dentro de uma armadura de placas enferrujada, caídos de bruços, a mão ainda fechada. Morreu defendendo alguma coisa.',
   ossosOrc: 'Ossos de orc numa armadura tosca de couro e ferro, os dentes à mostra no crânio largo. Quem o matou não o enterrou.',
   ossos: 'Ossos soltos e um crânio rachado no meio do chão. Faz tanto tempo que nem os ratos mexem mais neles.',
   sacoDeDormir: 'Um colchonete de acampamento enrolado numa trouxa, com uma mochila pequena ao lado. Quem o usou cuidava das próprias coisas.',
-  anaoMorto: 'O corpo de um anão deitado de costas, a barba endurecida e as botas ainda nos pés. Morreu há pouco: nada de osso aparente, só a cara de cera.',
+  anaoMorto: 'O corpo de um anão deitado de costas, de barba trançada e botas nos pés. Quem o deixou assim não se deu ao trabalho de revistá-lo.',
   cogumeloGigante: 'Um cogumelo pálido da altura de um homem, com a copa larga como um escudo. A carne dele é fria e firme ao toque, e não cheira a nada.',
   bolasBrilhantes: 'Um cacho de bolas de fungo inchadas que brilham num verde-limão fosco. A luz delas dá para ler o rosto de quem está perto.',
   bolaInflada: 'Uma bola de fungo cinzenta, esticada como bexiga. Toca-la faz sair uma poeirinha, e nada mais.',
@@ -64,31 +64,31 @@ export const TEXTOS = {
     'O tapete de fungos aperta sob a bota e solta uma baforada que se espalha na altura do joelho: doce, pesada, de fruta passada. A maior parte dos fungos desta caverna não faz mal nenhum. Este faz.',
   ],
   stirges: [
-    'A caverna é larga, de teto alto, com relevos de anões e gnomos trabalhando na rocha. Embaixo deles, esqueletos de anões e de orcs deitados em pedaços de armadura enferrujada. Seis lanternas de cobre grandes pendem dos cantos, todas apagadas.',
-    'Um farfalhar seco, vindo de cima. Dez corpinhos de asa de couro se soltam do teto ao mesmo tempo, famintos, com o bico em riste.',
+    'Uma caverna larga, de teto tão alto que a luz não chega lá. As gravuras nas paredes mostram anões e gnomos de picareta ao ombro, e embaixo delas o chão está coberto de ossos de uns vinte combatentes, anões e orcs, ainda vestidos de ferro velho.',
+    'Lanternas de cobre pendem dos cantos, apagadas: um convite, e dos bons, porque quem olha para os ossos não vê o teto. Dez corpos de asa de couro se desprendem de lá de cima, famintos.',
   ],
   esqueletos: [
-    'A guarita que guardava a entrada foi tomada na invasão: bancos de pedra em cacos, beliches, prateleiras de armas caídas, e o teto meio desabado sobre tudo. No chão, ossos de anões e de orcs, misturados.',
-    'No instante seguinte ao da primeira bota, os ossos começam a se arrastar uns para os outros. Nove esqueletos se levantam, armados com o que acharam no chão.',
+    'A guarita que vigiava a entrada foi tomada à força. Sobraram entulho de teto, bancos de pedra partidos, beliches e armas caídas das prateleiras, e no meio de tudo ossos de anões e de orcs, misturados.',
+    'Basta uma bota para o chão responder: os ossos se arrastam uns para os outros, se encaixam, e nove esqueletos se erguem com o que acharam à mão.',
   ],
   ghoulsSul: [
-    'Pela porta entreaberta chega um som de mastigação e de couro rasgando. Dentro, beliches de pedra em fila, um braseiro de ferro cheio de carvão, e três figuras cinzentas e arqueadas entre os ossos, quebrando-os para chupar o tutano que não existe.',
-    'Eles levantam a cabeça ao mesmo tempo. Sentiram carne viva.',
+    'Da porta entreaberta vem um ranger de dentes em osso e de couro sendo rasgado. O alojamento tem beliches de pedra em fila e um braseiro de ferro enferrujado, com carvão, no meio; entre os ossos dos mineiros, três vultos cinzentos e curvados roem as armaduras atrás de tutano.',
+    'Eles param e viram o rosto para a porta. Sentiram cheiro de carne.',
   ],
   ghoulsGrande: [
-    'Esta caverna foi salão de banquetes dos mineiros: um nível baixo no meio, com duas mesas grandes e um par de braseiros velhos, e dois patamares mais altos, de cada lado, ligados por escadas lavradas na pedra. Uma dúzia de guerreiros mortos — anões, gnomos, orcs, ogros — jazem onde caíram.',
-    'Do patamar do oeste, na sombra, sete vultos magros se debruçam e descem sem pressa, como quem sabe que o jantar não foge.',
+    'O salão onde os mineiros bebiam e se reuniam tem três níveis: uma parte baixa no centro, com duas mesas grandes e dois braseiros velhos, e um patamar de cada lado, que se alcança por escadas talhadas na pedra. Pelo chão, os restos de uns doze guerreiros de raças diversas, ogros entre eles.',
+    'Do patamar oeste, no escuro, sete vultos esguios se inclinam e começam a descer, sem pressa: sabem que o jantar não foge.',
   ],
   gosma: [
     'O túnel é baixo e as paredes minam água. Atrás do último grupo, uma coisa amarela e lisa se solta do teto e escorre pela rocha: faz dias que acompanha vocês, esperando alguém que se afaste.',
   ],
   bugbearsNorte: [
-    'A porta se abre sobre um alojamento aquecido e iluminado por um braseiro de ferro no meio. Beliches de pedra pelas paredes, uma barricada de mesa quebrada do outro lado, e cinco bugbears de pé, todos de olhos em vocês. Um é maior que os outros e leva uma bolsa na cintura.',
-    'Eles falam em goblin, rindo baixinho, e já estão pegando as armas.',
+    'A porta se abre sobre um alojamento quente, iluminado por um braseiro de ferro aceso no centro. Beliches de pedra pelas paredes e, do outro lado, uma mesa quebrada atravessada na outra porta. Cinco bugbears estão de pé, e um deles é maior que os outros e leva uma bolsa pesada na cintura.',
+    'Falam goblin entre risadas curtas, e já estão pegando as armas.',
   ],
   zumbis: [
-    'Uma fornalha enorme domina a sala, fria e escura, com o fole de ferro e o canal seco da roda d\'água cortando o chão. Corpos secos de anões e de orcs, com restos de armadura, espalhados em volta. Acima deles flutua uma caveira envolta em chama verde.',
-    'Oito dos anões caídos se levantam, rígidos, e vêm em linha. A caveira inclina-se, sem pressa, como quem cumpre uma ordem que ninguém lhe tirou em séculos.',
+    'No meio do salão ergue-se uma fornalha enorme, apagada, com foles de ferro e carrinhos de minério por refinar; um canal seco, fundo na pedra, corta o piso. Corpos ressecados de anões e de orcs jazem em volta, ainda de armadura, e sobre eles paira uma caveira cercada de chama verde.',
+    'Oito dos anões caídos se levantam de uma vez, duros, e vêm em fila. A caveira se volta, sem pressa, e cumpre a ordem que ninguém cancelou em séculos.',
   ],
   fenda: [
     'Uma fenda enorme parte ao meio esta caverna. Um fio de água escorre da parede do oeste e cai nela, e de dentro vêm o raspar de pedra e vozes de gente cansada. Dois vultos grandes remexem os escombros lá embaixo, e um terceiro está de guarda na beira, ao lado de um drow de manto escuro.',
@@ -132,14 +132,14 @@ export const TEXTOS = {
   braseiroNada: 'A chama verde estala e nada mais. Se há ciência por trás, ela não se mostra.',
   braseiroBanho: (nome, horas) => `${nome} segura a arma nas chamas por um minuto inteiro, sem se queimar. Quando a tira, o metal brilha de leve, e continua assim por ${horas} ${horas === 1 ? 'hora' : 'horas'}: mais uma pontinha de gume.`,
   espectadorAtaca: 'O braseiro estala, e a esfera de olhos muda de cor, todos de uma vez. — Isso não é de vocês — diz, dentro de cada cabeça. Os olhos em haste se erguem.',
-  itensForja: 'Sobre a mesa de trabalho do canto, uma maça de cabeça de bronze maciço esculpida como o sol nascente, e um peitoral de aço com um dragão de ouro trabalhado. A maça brilha como tocha a quem ordenar; o peitoral foi feito para um herói humano chamado Tergon, e protege contra sopro de dragão. Vão para quem os pegou.',
+  itensForja: 'Na bancada do canto, lado a lado: uma maça de cabeça de bronze, forjada como um sol que sai do horizonte, feita para um clérigo de Lathander, e uma couraça de aço com um dragão dourado repuxado no peito, encomendada por um herói de Neverwinter chamado Tergon. A maça brilha como tocha quando se manda, e contra os mortos-vivos bate com mais fogo; a couraça dá vantagem contra o sopro dos dragões. Vão para quem as pegou.',
   mormeskVigia: 'O frio dos aposentos aperta: o espectro está de olho em quem mexe nos livros dele.',
   tomosNada: 'Poeira e histórias de aventureiros e reis. Se há segredo aqui, está bem escondido.',
   mapaMormesk: 'Um dos tomos tem a capa mais grossa que as outras. Descosturada com jeito, solta um mapa fino dobrado em quatro: uma masmorra desenhada à mão, com um nome em letras de mago. Mormesk construiu essa masmorra, e agora alguém a procura.',
   bauMago: 'No baú chamuscado: mil e cem peças de cobre, cento e sessenta de prata, cinquenta de electro — em prata, duzentas e cinquenta —, três diamantes lapidados e um cachimbo de madeira escura com filigrana de platina. É o que um mago acumulou em vida, e que a morte não lhe deixou levar.',
   bauMagoPago: 'No baú chamuscado: mil e cem peças de cobre, cento e sessenta de prata, cinquenta de electro — em prata, duzentas e cinquenta — e três diamantes lapidados. O cachimbo de platina não está: Mormesk o guardou para si.',
   lagoFalha: 'A água escura engole a luz da tocha logo na primeira braçada, e o frio faz o peito apertar. Não dá para descer mais.',
-  lagoAcha: 'No fundo do lago, três metros longe da margem e três abaixo da água, deitado de lado, há um esqueleto humano com flechas de orc presas entre as costelas. No dedo dele, dois anéis de platina; entre os ossos da mão, uma varinha fina. Um mago que morreu defendendo as minas.',
+  lagoAcha: 'No fundo do lago, a três metros da margem e a três de profundidade, está deitado um esqueleto humano com pontas de flecha de orc ainda cravadas nas costelas. Dois anéis de platina, e uma varinha entre os dedos: era um mago da antiga Phandalin, e a mina foi a última coisa que ele defendeu.',
   fendaFalha: 'Entre as pedras e a escuridão, nada que brilhe. Se houver alguma coisa aqui, não se deixa achar agora.',
   fendaAcha: 'Debaixo de um bloco enorme, o esqueleto esmagado de uma anã ainda leva nas mãos um par de manoplas de ferro escurecido, de dedos grossos. É o que a fenda guardava.',
   conclusao: [
@@ -150,6 +150,16 @@ export const TEXTOS = {
   ondaPerto: 'O estrondo vem de perto agora, tão alto que a poeira se solta do teto. A água em algum lugar adiante bate na rocha, fica no ar e desaba.',
   vagando: (nome) => ['O barulho chegou antes: passos, arrastar de pedra, respiração.', `Pela escuridão, ${nome} vêm direto para o grupo.`],
   fimVagando: 'O que vagava pela mina fica no chão. Ela, no entanto, é grande, e não está vazia.',
+  bolsaDoBugbear: 'Na bolsa do bugbear maior: quinze peças de cobre, treze de electro (em prata, sessenta e cinco) e um frasco de poção da vitalidade.',
+  entrada: {
+    5: 'Um balcão de pedra divide a sala, com três balanças de ferro cobertas de pó. Nos nichos da parede norte, papéis velhos que se desfazem ao toque, e pelo chão corpos antigos de gnomos e de orcs. Atrás do balcão, um cofre de ferro.',
+    7: 'O depósito sobreviveu em parte: a parede leste virou um monte de entulho, mas ao norte a porta está inteira e dá para trancar por dentro. Barris rachados jazem contra a parede, vazios há séculos. Não é confortável, mas aqui nada ronda: é um bom lugar para dormir.',
+    8: 'Um tapete grosso de fungos de formas estranhas cobre o chão: bolas inchadas, crostas sobre as estalagmites, cogumelos da altura de um homem. Algumas bolas brilham num verde fosco, e a luz delas basta para ver a caverna toda.',
+    10: 'Um lago escuro ocupa quase toda a caverna, com a margem forrada de conchas quebradas de um mexilhão claro e um cheiro de peixe no ar. A água tem uns seis metros de fundo no meio, e uma corrente lenta sai dela para o nordeste, por um túnel baixo.',
+    13: 'O teto desta caverna larga tem minerais que pegam a luz e a devolvem como estrelas. Pelo chão, dúzias de esqueletos, muitos esmagados por pedra caída. Duas construções de pedra escura, em escala de gente, se erguem de cada lado, de portas duplas rachadas e queimadas.',
+    17: 'Uma passagem baixa, de pouco mais de um metro de teto, entulhada de pedras redondas: o leito de um córrego que secou. Dá para seguir agachado, e é um caminho que contorna os mortos da fundição.',
+    20: 'Cortinas empoeiradas nas paredes, uma cama, um braseiro frio e chão de pedra: o quarto do sacerdote do templo, servindo agora de cela.',
+  },
   portaResiste: 'A porta de pedra aguenta, e o ombro dói.',
   chaveAbre: 'A chave entra na fechadura de primeira, como se tivesse nascido para ela. A porta se abre.',
   escutaNada: 'Pedra grossa, e só. Se há alguém do outro lado, está quieto.',
@@ -222,7 +232,7 @@ export function arvoreDoEspectador() {
     inicio: 'oi',
     nos: {
       oi: {
-        narra: 'Uma esfera de uns três palmos de largura flutua atrás do braseiro de chama verde, e dela saem quatro olhos em hastes finas e um olho grande no centro. Todos olham para vocês, e na cabeça de cada um uma voz diz, muito cortês: Olá.',
+        narra: 'Atrás do braseiro de chama verde flutua uma esfera do tamanho de uma cabeça grande, com um olho enorme no centro e quatro menores na ponta de hastes curtas. Os cinco se voltam para vocês, e uma voz educada soa dentro da cabeça de cada um: Bom dia.',
         fala: 'Que bom ter gente. Os mineiros sumiram faz tempo, e eu continuo aqui, guardando. Ninguém leva nada da forja sem a ordem de quem me chamou.',
         opcoes: [
           { texto: 'Viemos em nome dos donos da mina, para dispensá-lo.',
@@ -246,7 +256,7 @@ export function arvoreDeNezznar() {
     inicio: 'oi',
     nos: {
       oi: {
-        narra: 'No meio do templo, em frente à estátua do anão sentado, há uma fogueira rústica cercada de colchonetes, e na ponta de uma mesa de madeira um drow de armadura de couro negra e manto, com um cajado preto cuja ponta é uma aranha entalhada. Dois bugbears se levantam. O drow sorri sem pressa.',
+        narra: 'Ao fundo do templo, junto da estátua, há um acampamento: colchonetes em volta de uma fogueira rústica e, numa mesa de madeira, um drow de couro escuro e capa lê mapas, apoiado num cajado negro com uma aranha na ponta. Dois bugbears se levantam da mesa. O drow franze a testa, e depois sorri sem calor.',
         fala: 'Que decepção. Contava que as criaturas da mina os segurassem mais tempo. Mas já que estão aqui: quem os mandou, e o que sabem?',
         opcoes: [
           { texto: 'Você é o Aranha Negra.', vai: 'admite' },

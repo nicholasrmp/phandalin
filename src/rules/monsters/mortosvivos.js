@@ -221,6 +221,40 @@ export const MORTOS_VIVOS = {
     blurb: 'Atravessa a parede, arranca 4d8+3 do PV máximo de um alvo por turno e ergue espectros de quem cai.',
   },
 
+  // MORMESK, a aparição dos aposentos dos magos (Caverna Onda Eco). Os números são os do livro (apêndice B): ND 3,
+  // 700 XP, 45 PV, Drenar Vida +5 com 3d8+3. Ele NÃO ergue espectros: prefere deixar os mortos mortos.
+  mormesk: {
+    id: 'mormesk',
+    name: 'Mormesk',
+    look: 'wraith',
+    fonte: 'propria',
+    size: 'médio',
+    level: 4,
+    cr: '3',
+    xp: 700,
+    abilities: { str: 6, dex: 16, con: 16, int: 12, wis: 14, cha: 15 },
+    voice: 'wailSpectre',
+    ac: 13,
+    acNote: 'manto que a arma atravessa',
+    maxHp: 45,
+    speedFt: 60,
+    flyFt: 60,
+    hover: true,
+    attacks: [
+      {
+        name: 'Drenar Vida', bonus: 5, damage: '3d8+3', type: 'necrótico', reachFt: 5, art: 'claw',
+        maxHpDrain: { save: 'con', dc: 14 },
+      },
+    ],
+    damageResistances: ['ácido', 'frio', 'fogo', 'elétrico', 'trovejante', 'cortante', 'perfurante', 'concussão'],
+    damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas e não prateadas',
+    damageImmunities: ['necrótico', 'veneno'],
+    conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'agarrado', 'paralisado', 'petrificado', 'envenenado', 'caido', 'imobilizado'],
+    incorporeo: true,
+    traits: ['incorporealMovement', 'lifeDrain', 'sunlightSensitivity'],
+    blurb: 'Atravessa a parede e arranca 3d8+3 do PV máximo de um alvo por turno. Fala, e prefere negociar a lutar.',
+  },
+
 };
 
 // O ZUMBI DAS CINZAS: criado pela explosão do Monte Hotenow, há trinta anos. É o

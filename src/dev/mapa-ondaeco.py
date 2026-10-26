@@ -340,7 +340,7 @@ AREAS_RET = [
     ('16', [(51, 0, 72, 23)]),                  # a caverna barulhenta (o mar fervente do nordeste)
     ('10', [(5, 20, 16, 36)]),                  # o lago escuro
     ('2', [(0, 40, 30, 72)]),                   # os tuneis da mina
-    ('9', [(24, 34, 50, 52)]),                  # a grande caverna
+    ('9', [(17, 34, 50, 50)]),                  # a grande caverna (o lobo oeste, a elevacao dos ghouls, inclusive)
     ('1', [(3, 66, 22, 90)]),                   # a entrada da caverna
     ('3', [(30, 64, 42, 90)]),                  # a velha entrada (o tunel do sul)
     ('8', [(52, 57, 72, 74)]),                  # a caverna dos fungos
@@ -358,7 +358,7 @@ AREAS_RET = [
 AREA_DE = {}
 for _id, _rs in AREAS_RET:
     for _c in retangulos(_rs):
-        if T[_c[1]][_c[0]] not in 'R|':
+        if T[_c[1]][_c[0]] != 'R' and (T[_c[1]][_c[0]] != '|' or _id == '10'):     # so o lago (10) leva a agua funda
             AREA_DE[_c] = _id
 AREAS = {}
 for _c, _id in AREA_DE.items():
@@ -399,12 +399,16 @@ def _espalha(cels, n, ancora=None):
     return esc
 
 
+_USADAS = set()
+
+
 def _perto(ancora, n, raio=6):
     cs = [(ancora[0] + i, ancora[1] + j) for i in range(-raio, raio + 1) for j in range(-raio, raio + 1)]
-    cs = _livres(cs)
+    cs = [c for c in _livres(cs) if c not in _USADAS]
     cs.sort(key=lambda c: ((c[0] - ancora[0]) ** 2 + (c[1] - ancora[1]) ** 2, c))
     if len(cs) < n:
         raise SystemExit('ERRO: nada livre perto de ' + str(ancora))
+    _USADAS.update(cs[:n])
     return cs[:n]
 
 
@@ -413,7 +417,7 @@ def _grandes(cels, n, ancora):
     ok = []
     for (x, y) in sorted(cels):
         bl = [(x + i, y + j) for j in (0, 1) for i in (0, 1)]
-        if not all(b in _LIVRE and b in _ALC for b in bl):
+        if not all(b in _LIVRE and b in _ALC and b in cels for b in bl):
             continue
         if not (_passa(x, y, x + 1, y) and _passa(x, y + 1, x + 1, y + 1) and _passa(x, y, x, y + 1) and _passa(x + 1, y, x + 1, y + 1)):
             continue
@@ -457,7 +461,7 @@ NINHOS = {
     'vhalak': _perto((26, 13), 1),                                  # area 18: o doppelganger, de drow
     'nezznar': _perto((7, 9), 1),                                   # area 19
     'bugbearsTemplo': _perto((6, 9), 2),
-    'aranhasTemplo': _grandes(INTERIOR['templo'], 4, (9, 5)),
+    'aranhasTemplo': _grandes(INTERIOR['templo'] - set(_USADAS), 4, (9, 5)),
     'nundro': _perto((15, 6), 1),                                   # area 20
 }
 for _k, _v in NINHOS.items():

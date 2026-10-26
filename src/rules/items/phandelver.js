@@ -30,20 +30,20 @@ export const PHANDELVER_ITEMS = {
     { tipo: 'arma mágica', art: 'espada', peso: 3, bonusAtaque: 1, bonusDano: 1, base: 'espadaLonga' }),
 
   lightbringer: nomeado('lightbringer', 'Lightbringer', 'incomum',
-    'Maça +1 consagrada ao deus da aurora. Uma palavra e a cabeça pega fogo: mais 1d6 de radiante, e luz plena em 6 m.',
-    { tipo: 'arma mágica', art: 'maca', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'maca', danoExtra: '1d6', tipoExtra: 'radiante' }),
+    'Maça +1 consagrada ao deus da aurora. Uma palavra e a cabeça brilha como tocha; brilhando, bate com mais 1d6 de radiante, mas só em morto-vivo.',
+    { tipo: 'arma mágica', art: 'maca', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'maca', danoExtra: '1d6', tipoExtra: 'radiante', contra: 'morto-vivo' }),
 
   hew: nomeado('hew', 'Hew', 'incomum',
     'Machado de batalha +1 que corta madeira como quem corta pão. Contra criatura vegetal ou coisa de madeira, cada dado de dano sai no valor máximo.',
     { tipo: 'arma mágica', art: 'machado', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'machadoDeBatalha', danoMaximoContra: 'planta' }),
 
   dragonguard: nomeado('dragonguard', 'Dragonguard', 'raro',
-    'Peitoral +1 lavrado com escamas. Resistência ao sopro de dragão, e vantagem para não se abalar com a presença de um.',
-    { tipo: 'armadura mágica', art: 'escudo', peso: 20, sintonia: true, acBonusArmadura: 1, base: 'peitoral' }),
+    'Peitoral de aço +1 com um dragão dourado lavrado no peito. Quem o veste tem vantagem nas salvaguardas contra o sopro de dragão. Não pede sintonia.',
+    { tipo: 'armadura mágica', art: 'escudo', peso: 20, acBonusArmadura: 1, base: 'peitoral' }),
 
   cajadoAranha: nomeado('cajadoAranha', 'Cajado Aranha', 'raro',
-    'Bordão +1 de madeira negra com uma aranha esculpida no topo. Dez cargas: Teia, Caminhar em Paredes e Nuvem de Aranhas.',
-    { tipo: 'cajado', art: 'cajado', peso: 4, sintonia: true, bonusAtaque: 1, bonusDano: 1, base: 'bordao', cargas: 10 }),
+    'Bordão de adamante negro com uma aranha esculpida na ponta. Bate com mais 1d6 de veneno. Dez cargas gastam Patas de Aranha (1) e Teia (2, CD 15); recupera 1d6 + 4 ao anoitecer, e se a última carga acaba, um 1 no d20 o desfaz em pó.',
+    { tipo: 'cajado', art: 'cajado', peso: 5, sintonia: true, base: 'bordao', danoExtra: '1d6', tipoExtra: 'veneno', cargas: 10 }),
 
   cajadoDeDefesa: nomeado('cajadoDeDefesa', 'Cajado de Defesa', 'incomum',
     'Bordão de ponta recurvada com seis cargas. Gasta uma para Armadura Arcana, uma para Escudo. Recarrega ao amanhecer.',
