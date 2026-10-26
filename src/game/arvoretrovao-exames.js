@@ -8,8 +8,8 @@
 //
 // O QUE O LIVRO DÁ, e por isso está aqui com número: o casulo do armazém (área 6)
 // guarda um elfo morto com uma poção de cura e uma bolsa de 23 po e 35 pp. O resto —
-// a escama do altar, o nome no pedestal, o telhado da guarnição — são pistas e
-// ambientação, sem item de valor, de propósito: a economia da fase é a do livro.
+// a estátua de Palien, o telhado da guarnição — são pistas e ambientação, sem item
+// de valor, de propósito: a economia da fase é a do livro.
 //
 // Uma tentativa por herói em cada ponto (`game/buscas.js`).
 
@@ -47,7 +47,7 @@ export const EXAMES = {
   cubaCerveja: 'Uma cuba grande de carvalho com arcos de ferro, onde se fazia a cerveja do Cavalo Pardo. Por baixo da casca de cinza ainda azeda um cheiro de fermento.',
   barrisRack: 'Dois barris deitados num cavalete. Um está furado; o outro, quando se bate, soa cheio de alguma coisa que não se quer provar.',
   tear: 'Um tear de pé, quebrado ao meio, com os fios soltos pendendo do quadro. A lançadeira ficou caída debaixo, ainda enrolada em lã.',
-  beliche: 'Um beliche de duas camas, feito para soldados: tábua, palha e um gancho para o cinto. Cinco deles dormiam nesta casa de serviço.',
+  beliche: 'Um beliche de duas camas: tábua, palha e um gancho para o cinto. Feito para quem dorme pouco e acorda de uma vez.',
   bigorna: 'Uma bigorna fincada num toco, o gume lascado de tanto malhar. Trinta anos de ferrugem não tiraram o brilho do topo, onde o martelo batia.',
   fole: 'Um fole de couro rachado, com o bico de ferro enegrecido. Ainda tem um fio de ar quando se aperta.',
   lousa: 'Uma lousa rachada num cavalete, ainda com contas de criança em giz, cobertas de cinza — e uma delas errada, com a correção ao lado.',
@@ -67,13 +67,11 @@ export const EXAMES = {
   peles: 'Peles de animal curtidas, empilhadas para dormir. O cheiro é de fumaça de lenha, e a pelagem é recente: o dono da cama ainda passa por aqui.',
   fogueiraPanela: 'Um círculo de pedras com brasa fraca e uma panela de ferro enegrecida. Alguém cozinha aqui, devagar, de um jeito que não se vê mais.',
   secadorErvas: 'Um varal de ervas penduradas para secar, amarradas com barbante em maços que se reconhecem pelo cheiro: trevo, losna, casca de salgueiro.',
-  altarEscama: 'Um altar baixo de pedra empilhada, e em cima dele uma escama verde do tamanho de um prato, brilhando de óleo e de devoção. Foi limpa hoje.',
-  candelabro: 'Um candelabro de ferro com velas derretidas em camadas. A cera nova cobre a velha, e a velha ainda tem a forma de um dedo.',
   tesouroDragao: 'Uma pilha de moedas, cálices e uma adaga caída de lado. O dragão dormiu em cima dela por trinta dias e quase não olhou para ela: sabe exatamente quanto tem.',
   tesouroPouco: 'Algumas moedas e um cálice, soltos no chão, onde um corpo pesado se virou. O que vale de verdade está na arca.',
   alcapaoFechado: 'Um alçapão de tábua, com uma argola de ferro. Por baixo da poeira ele abre bem: alguém o usou há pouco, e uma escada leva ao telhado e ao parapeito.',
-  placaCaveira: 'Uma tábua pregada num poste, com uma caveira pintada e, embaixo, um aviso em letras tortas, de quem escrevia com pressa: VOLTEM.',
-  estatuaPalien: 'Uma estátua de guerreiro com lança e escudo redondo, numa base de pedra rachada. O rosto está gasto pelas chuvas; no pedestal, sob a hera, há um nome gravado.',
+  placaCaveira: 'Uma tábua pregada num poste, com uma caveira pintada e, embaixo, um aviso em letras tortas: PERIGO — PLANTAS ASSASSINAS E MORTOS DE CINZA — VOLTEM AGORA. Quem o pregou fez questão de ser claro.',
+  estatuaPalien: 'Uma estátua de guerreiro com lança e escudo redondo, no meio da praça, inclinada sobre uma base rachada. O rosto está gasto pelas chuvas, e não há nome nem inscrição em lugar nenhum.',
   // ------------------------------------------------------- cercas e portões
   cerca: 'Uma cerca de estacas, parte em pé, parte caída. Ainda marca onde o campo acabava e a estrada começava.',
   cercaCaida: 'Um trecho de cerca caído, as estacas por cima umas das outras. Dá para passar por cima.',
@@ -85,17 +83,11 @@ export const EXAMES = {
 // `acao`: um teste por herói em cada ponto; o sucesso rende uma pista (texto que a
 // campanha guarda) e o fracasso só o texto. `achado`: o que o casulo entrega, uma vez.
 export const ACOES = {
-  altarEscama: {
-    chave: 'altarEscama', rotulo: 'Estudar a escama', pericia: 'arcanismo', cd: 10,
-    sucesso: 'A escama é de dragão verde, e é nova: a borda ainda tem a luz de quem a perdeu há semanas, não há anos. O animal que a trocou está vivo, e perto.',
-    falha: 'É uma escama enorme, e só isso. Nada que se tire dela além do medo.',
-    pista: 'O altar dos cultistas guarda uma escama fresca de dragão verde: o dragão da torre troca de pele aqui perto.',
-  },
   estatuaPalien: {
-    chave: 'estatuaPalien', rotulo: 'Ler o pedestal', pericia: 'historia', cd: 15,
-    sucesso: 'O nome gravado sob a hera é Palien. Quem ele foi, as letras já não contam; mas a estátua foi feita para ser vista da praça inteira, e ainda é.',
-    falha: 'Há um nome sob a hera, mas o musgo comeu as letras. Podia ser qualquer um.',
-    pista: 'A estátua da praça é de alguém chamado Palien.',
+    chave: 'estatuaPalien', rotulo: 'Reconhecer a estátua', pericia: 'historia', cd: 15,
+    sucesso: 'Sem nome para ler, mas o conjunto é conhecido: a lança, o escudo redondo, a postura de quem segura a linha. É Palien, o herói de Neverwinter que fez frente aos monstros da Floresta de Neverwinter, e a vila lhe ergueu isto na praça.',
+    falha: 'Um guerreiro de pedra, como mil outros. Sem inscrição, não dá para dizer quem foi.',
+    pista: 'A estátua da praça é de Palien, o herói de Neverwinter que enfrentou os monstros da Floresta de Neverwinter.',
   },
   alcapaoFechado: {
     chave: 'alcapao', rotulo: 'Abrir o alçapão', pericia: 'atletismo', cd: 10,

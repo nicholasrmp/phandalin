@@ -286,13 +286,13 @@ export const NPCS = {
     fonte: 'SRD',
     blocoSubstituto: 'acolito',
     notaDoSubstituto: 'o bloco de druida espera as magias dele em spells.js',
-    atitude: 'arredio',
+    atitude: 'cordial',
     personalidade: {
-      quer: 'Que a ruína volte a ser mato e que ninguém mais suba aquela colina, incluindo o grupo.',
+      quer: 'Que a ruína volte a ser mato e que o dragão saia da torre; ajuda quem se dispõe a isso.',
       esconde: 'Que fica ali por culpa: viu o que se instalou nas pedras e demorou anos para agir.',
-      fala: 'Áspero no primeiro minuto, exato no segundo. Mede ajuda como quem mede remédio e sempre pede algo em troca.',
+      fala: 'Hospitaleiro e franco: recebe visita em casa, avisa de tudo antes que perguntem e conta o que sabe sem cobrar.',
     },
-    frase: 'Eu não guio ninguém. Eu digo por onde não ir, e o resto é problema de quem anda.',
+    frase: 'Entrem, sentem. Esta vila tem mais dentes do que parece, e eu conto todos.',
     blurb: 'Prende o alvo no mato e cura à distância; nunca troca golpe na linha da frente.',
   },
 

@@ -22,6 +22,9 @@ export const CEN = {
   // O CULTO: a luta que Favric começa quando a conversa azeda (ou a porta cede): o grupo junto da
   // casa de esquina, e `depoisDaConversa` dispara a luta como na cena de verdade.
   culto: async (S, o) => {
+    // A porta do culto nasce trancada (duas folhas): para o grupo chegar, abre as duas (3 = aberta).
+    const naCasa = (p) => A.celulas.casa9.some((q) => q.x === p.x && q.y === p.y);
+    for (const [u, v] of A.folhas.filter(([u, v]) => naCasa(u) !== naCasa(v))) S.field.porAresta(u.x, u.y, v.x, v.y, 3);
     colocar(S, { goal: c(A.ninhos.culto[0]), rect: A.predios.casa9, margem: o.margem ?? 4 });
     const favric = S.enc.combatants.find((x) => x.name === 'Favric');
     await S.cena.depoisDaConversa(favric, 'luta');

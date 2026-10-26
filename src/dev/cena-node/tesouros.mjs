@@ -114,21 +114,21 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.ok(!rot(casulo).some((o) => o.rotulo.startsWith('Cortar o casulo')), 'e so uma vez');
   ok('o casulo do armazem: poção de cura, 23 po e 35 pp, uma vez só');
 
-  // o altar: um teste de Arcanismo por herói; o sucesso grava a pista
-  const altar = props.find((p) => p.variante === 'altarEscama');
+  // a estátua: sem inscrição; História CD 15 reconhece Palien, um teste por herói
+  const estatua = props.find((p) => p.variante === 'estatuaPalien');
   let pista = false;
   for (let i = 0; i < S.party.length && !pista; i += 1) {
     const her = S.party[i];
-    her.pos = { x: altar.x, y: altar.y };
-    const op = S.cena.interacoes(altar, S.field.surfaceAt(altar.x, altar.y), her).find((o) => o.rotulo === 'Estudar a escama');
-    assert.ok(op, 'o altar oferece o estudo');
+    her.pos = { x: estatua.x, y: estatua.y + 1 };
+    const op = S.cena.interacoes(estatua, S.field.surfaceAt(estatua.x, estatua.y), her).find((o) => o.rotulo === 'Reconhecer a estátua');
+    assert.ok(op, 'a estátua oferece o teste de História');
     if (op.motivo) continue;
     await op.fazer();
-    pista = (S.app.campanha.vila.pistas ?? []).some((t) => t.includes('escama'));
-    const de_novo = S.cena.interacoes(altar, S.field.surfaceAt(altar.x, altar.y), her).find((o) => o.rotulo === 'Estudar a escama');
+    pista = (S.app.campanha.vila.pistas ?? []).some((t) => t.includes('Palien'));
+    const de_novo = S.cena.interacoes(estatua, S.field.surfaceAt(estatua.x, estatua.y), her).find((o) => o.rotulo === 'Reconhecer a estátua');
     assert.ok(de_novo.motivo, 'o mesmo herói nao tenta de novo');
   }
-  ok('o altar: Arcanismo CD 10, um teste por herói' + (pista ? ', e a pista da escama foi guardada' : ''));
+  ok('a estátua: História CD 15, um teste por herói' + (pista ? ', e a pista de Palien foi guardada' : ''));
 
   // um recipiente: revistar uma vez; o achado e por casa
   const rec = props.find((p) => ['armario', 'estante', 'prateleira', 'guardaRoupa', 'escrivaninha'].includes(p.variante));
@@ -209,17 +209,18 @@ const ok = (nome) => console.log('ok   ', nome);
   const favric = S.enc.combatants.find((c) => c.name === 'Favric');
   assert.ok(favric, 'Favric está em cena');
   assert.equal(S.enc.combatants.filter((c) => c.side === 'neutro' && c !== favric && /cultista|acólito|acolito|Acólito/i.test(`${c.id} ${c.name}`)).length + 1, 6, 'o culto tem seis');
-  // a porta de fora: fechada e trancada
-  const par = A.folhas.find(([a, b]) => A.celulas.casa9.some((c) => c.x === a.x && c.y === a.y) !== A.celulas.casa9.some((c) => c.x === b.x && c.y === b.y));
+  // a porta de fora: DUAS folhas (o vão é largo), as duas fechadas e trancadas
+  const pares = A.folhas.filter(([a, b]) => A.celulas.casa9.some((c) => c.x === a.x && c.y === a.y) !== A.celulas.casa9.some((c) => c.x === b.x && c.y === b.y));
+  assert.ok(pares.length >= 2, 'a porta do culto tem duas folhas: ' + pares.length);
+  for (const [a, b] of pares) assert.equal(S.field.aresta(a.x, a.y, b.x, b.y), 2, 'cada folha da porta do culto começa fechada');
+  const par = pares[0];
   const fora = A.celulas.casa9.some((c) => c.x === par[0].x && c.y === par[0].y) ? par[1] : par[0];
-  const dentro = fora === par[0] ? par[1] : par[0];
-  assert.equal(S.field.aresta(fora.x, fora.y, dentro.x, dentro.y), 2, 'a porta do culto começa fechada');
   const h = S.party[0];
   h.pos = { ...fora };
   const ops = S.cena.interacoes(fora, S.field.surfaceAt(fora.x, fora.y), h).map((o) => o.rotulo);
-  assert.ok(ops.includes('Arrombar a porta') && ops.includes('Bater e falar') && ops.includes('Escutar à porta'), 'as três saídas na porta: ' + ops.join(', '));
+  assert.ok(ops.includes('Forçar a porta') && !ops.includes('Bater e falar') && !ops.includes('Escutar à porta'), 'só a saída do livro na porta: ' + ops.join(', '));
   assert.ok(!ops.includes('Abrir a porta'), 'trancada: não se abre de graça');
-  ok('o culto: Favric e mais cinco, a porta trancada por dentro com três saídas (arrombar CD 20, bater CD 15, escutar CD 15)');
+  ok('o culto: Favric e mais cinco, a porta de duas folhas trancada por dentro (forçar: Atletismo CD 20)');
 
   // o cofre: três diamantes e a poção de voo, só sem os cultistas olhando
   const bau = A.objetos.bauCulto;
@@ -232,32 +233,31 @@ const ok = (nome) => console.log('ok   ', nome);
   void cult;
 }
 
-// --- Reidoth: a Onda Eco e uma troca; as pistas abrem opcoes -------------------------------------------
+// --- Reidoth: hospitaleiro; a Onda Eco só com o dragão fora da torre ---------------------------------------
 {
   const S = await novaCena(77, { nivel: 3 });
   const reidoth = S.enc.combatants.find((c) => c.name === 'Reidoth' || /reidoth/i.test(c.id ?? ''));
   assert.ok(reidoth, 'Reidoth em cena');
   const arvore = () => S.cena.dialogoDe(reidoth);
-  const no = (a, id) => a.nos[id];
-  const temOpcao = (a, trecho) => {
-    const o = a.nos.oi.opcoes.find((x) => x.texto.includes(trecho));
-    return Boolean(o) && !(o.requer?.() ?? null);
-  };
-  // sem favor: a Onda Eco volta sem a resposta
   const camp = S.app.campanha;
+  // com o dragão na torre: ele guia só depois
   let a = arvore();
   a.nos.ondaEco.ao();
-  assert.ok(!camp.feitos?.sabeOndaEco, 'sem favor feito, ele não conta onde fica a Onda Eco');
-  // com um favor: conta, e o Enclave os tem por amigos
-  camp.arvoreTrovao.zumbisFerraria = 'limpo';
+  assert.ok(!camp.feitos?.sabeOndaEco, 'com o dragão na torre, ele não guia o grupo à Onda Eco');
+  // o castelo ele conta de graça
+  a.nos.castelo.ao();
+  assert.ok(camp.feitos?.sabeOCastelo, 'o castelo vem de graça');
+  // dragão expulso: guia, e o Enclave os tem por amigos
+  camp.arvoreTrovao.dragao = 'expulso';
   a = arvore();
   a.nos.ondaEco.ao();
-  assert.ok(camp.feitos?.sabeOndaEco && camp.feitos?.amigoDoEnclave, 'com um favor feito ele conta e os chama de amigos');
-  // as pistas abrem as opcoes
-  assert.ok(!temOpcao(arvore(), 'escama'), 'sem pista, sem a opção da escama');
-  camp.vila.pistas = [...(camp.vila.pistas ?? []), 'O altar dos cultistas guarda uma escama fresca de dragão verde: o dragão da torre troca de pele aqui perto.'];
-  assert.ok(temOpcao(arvore(), 'escama'), 'com a pista, a opção da escama aparece');
-  ok('Reidoth: a Onda Eco só depois de um favor (e o Enclave os tem por amigos), e as pistas abrem opções');
+  assert.ok(camp.feitos?.sabeOndaEco && camp.feitos?.amigoDoEnclave, 'com o dragão fora ele guia e os chama de amigos');
+  // o título de Guardião da Primavera só com druida/patrulheiro no grupo
+  const tem = !!S.party.find((x) => ['druida', 'patrulheiro'].includes(x.classe));
+  const o = a.nos.oi.opcoes.find((x) => x.texto.includes('título'));
+  assert.ok(o, 'a opção do título existe (oculta até valer)');
+  assert.equal(!(o.requer?.() ?? null), tem, 'o título aparece só se há druida ou patrulheiro');
+  ok('Reidoth: hospitaleiro; a Onda Eco só com o dragão fora da torre; o título, só para quem ama a natureza');
 }
 
 // --- o telhado da guarnição: abrir o alçapão e subir dá a vista do alto, até o herói sair do lugar -------

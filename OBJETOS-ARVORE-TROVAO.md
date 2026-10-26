@@ -125,7 +125,7 @@ O que o livro põe em cada lugar e o que o jogador faz. Tudo isto **ainda não e
 Já existem e **não** se pede: `porta_barrada` e a porta reforçada (as folhas de porta do atlas), `ramos_secos` (o `espinheiro`, 7 variantes), `poco_praca` (o `pocoVelho`), `fogueira`, `leito`, `armeiro`, `mesa`.
 Ficam de fora por serem **arquitetura**, não prop (a torre é redonda, de parede alta): escada espiral, vigas, buraco no teto, chaminé. Leem pequenos demais e entram como "tralha" de um sprite só (pilhas de 3 a 5 itens): balança, ferramentas de ferreiro, livros podres, caixa escondida, cacos, armadura enferrujada.
 
-**Examinar (26/10/2026):** toda peça de mobília e cerca tem "Examinar" (texto nosso, em `src/game/arvoretrovao-exames.js`). O casulo do armazém rende a poção de cura e 23 po + 35 pp (uma vez); o altar dá uma pista com Arcanismo CD 10; a estátua, com História CD 15; o alçapão, com Atletismo CD 10; e os móveis de guardar se revistam (Investigação CD 10, achado de cobre ou prata sorteado por casa). A estátua também se derruba (Atletismo CD 20): vira um monte de pedra que barra o passo e fica caída ao reabrir a cena. Uma tentativa por herói em cada ponto.
+**Examinar (26/10/2026):** toda peça de mobília e cerca tem "Examinar" (texto nosso, em `src/game/arvoretrovao-exames.js`). O casulo do armazém rende a poção de cura e 23 po + 35 pp (uma vez); a estátua (sem inscrição, como no livro) é reconhecida com História CD 15; o alçapão, com Atletismo CD 10; e os móveis de guardar se revistam (Investigação CD 10, achado de cobre ou prata sorteado por casa). A estátua também se derruba (Atletismo CD 20): vira um monte de pedra que barra o passo e fica caída ao reabrir a cena. Uma tentativa por herói em cada ponto.
 
 ## 6. Conteúdo do livro que a cena ainda não tem
 
@@ -138,14 +138,14 @@ A tabela mostra o que o livro põe em cada lugar e **o que a cena já faz** (✔
 | 3 | O Cavalo Pardo (taverna) | `estalagem` | ✔ 4 zumbis das cinzas deitados (Brisa das Cinzas); ✖ tanques de cerveja (arte) |
 | 4 | Reduto do Druida | `florestal` | porta reforçada; Reidoth |
 | 5 | Fazenda de Ramos | `casa20` | ✔ 8 ramos em duas levas (4 + 4 na rodada seguinte) |
-| 6 | Armazém Destruído | `loja` | 2 aranhas, teia, casulo com poção, 23 po e 35 pp |
-| 7 | Torre do Dragão + cabana anexa | `torre` + `prefeito` | ✔ o baú (800 pp, 150 po, 4 cálices, Passo Nebuloso, Relâmpago, Hew); ✔ **o dragão foge com metade dos PV (2.000 XP por expulsá-lo, 3.900 por matá-lo)**; ✖ aranhas mortas |
+| 6 | Armazém Destruído | `loja` | ✔ 2 aranhas (a teia da rua as acorda; Percepção passiva < 17 é surpreendida; a teia gruda: Atletismo CD 10, Força CD 12 para soltar); ✔ casulo na metade oeste com poção, 23 po e 35 pp |
+| 7 | Torre do Dragão + cabana anexa | `torre` + `prefeito` | ✔ o baú (800 pp, 150 po, 4 cálices, Passo Nebuloso, Relâmpago, Hew); ✔ **o dragão foge com metade dos PV (2.000 XP por expulsá-lo, 3.900 por matá-lo)**; ✔ duas aranhas mortas no canto oeste; ✔ Hew rola o dano no máximo contra planta |
 | 8 | Velha Ferraria | `ferraria` | ✔ 2 zumbis das cinzas deitados |
 | 9 | Loja do Herborista | `ervas` | ✔ caixa escondida (Percepção CD 15, automática com a missão da Mirna): colar com esmeralda; ✔ devolvê-lo à Mirna em Phandalin vale 200 XP |
-| 10 | Praça | a praça | estátua de Palien |
+| 10 | Praça | a praça | ✔ estátua de Palien (sem inscrição; História CD 15 a reconhece; Atletismo CD 20 a derruba) |
 | 11 | Velha Guarnição | `guarda` | ✔ 5 zumbis das cinzas deitados; ✖ alçapão, beliches |
 | 12 | Cabana do Tecelão | `tecelagem` | ✔ 6 ramos nos arbustos ao sul (o barulho alerta o culto); ✖ tear quebrado (arte) |
-| 13 | Cultistas do Dragão | `casa9` | 6 cultistas com Favric, casa trancada por dentro (Força CD 20 / CD 15), cofre com 3 diamantes e poção de voo |
+| 13 | Cultistas do Dragão | `casa9` | ✔ 6 cultistas do SRD (25 XP cada) com Favric, porta de duas folhas trancada por dentro (Atletismo CD 20); ✔ Favric oferece aliança e trai no dragão; ✔ o resto foge se ele cai; ✔ cofre com 3 diamantes de 100 po, e a poção de voo no pescoço de Favric; ✖ persianas (Força CD 15, cobertura 3/4) |
 
 Escola, moinho, casa10, casa12, casa15, casa19, embaixada e pescaria o livro não descreve: o conteúdo é nosso (ideias: lousa rachada com contas de criança; mó partida com farinha virada pedra de cinza; mesa posta com pratos cobertos de cinza; cama de viúva e um bilhete de despedida; machado cravado no cepo; redes duras de sal).
 

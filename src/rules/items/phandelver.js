@@ -34,8 +34,8 @@ export const PHANDELVER_ITEMS = {
     { tipo: 'arma mágica', art: 'maca', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'maca', danoExtra: '1d6', tipoExtra: 'radiante' }),
 
   hew: nomeado('hew', 'Hew', 'incomum',
-    'Machado de batalha +1 que corta madeira como quem corta pão. Contra criatura vegetal, mais 1d8 e o golpe não fecha.',
-    { tipo: 'arma mágica', art: 'machado', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'machadoDeBatalha', danoExtra: '1d8', contra: 'planta' }),
+    'Machado de batalha +1 que corta madeira como quem corta pão. Contra criatura vegetal ou coisa de madeira, cada dado de dano sai no valor máximo.',
+    { tipo: 'arma mágica', art: 'machado', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'machadoDeBatalha', danoMaximoContra: 'planta' }),
 
   dragonguard: nomeado('dragonguard', 'Dragonguard', 'raro',
     'Peitoral +1 lavrado com escamas. Resistência ao sopro de dragão, e vantagem para não se abalar com a presença de um.',
@@ -68,10 +68,10 @@ export const PHANDELVER_ITEMS = {
   colarDeMirna: nomeado('colarDeMirna', 'Colar de esmeralda', 'incomum',
     'Colar de ouro fino com um pingente de esmeralda. Foi da família Dendrar, e a Mirna o escondeu numa caixa quando a vila morreu.',
     { tipo: 'maravilhoso', peso: 0, valor: 200 }),
-  // O cofre dos cultistas (área 13 do livro): três diamantes e uma poção de voo. 50 po cada.
+  // O cofre dos cultistas (área 13 do livro): três diamantes (100 po cada) e uma poção de voo.
   diamante: nomeado('diamante', 'Diamante', 'incomum',
     'Pedra clara e dura, lapidada com capricho. Quem a deixou no cofre sabia o que valia.',
-    { tipo: 'tesouro', pilha: true, peso: 0, valor: 50 }),
+    { tipo: 'tesouro', pilha: true, peso: 0, valor: 100 }),
   // Os cálices do mago morto, no baú da torre (60 po cada).
   caliceDeSelenita: nomeado('caliceDeSelenita', 'Cálice de prata com selenita', 'comum',
     'Cálice de prata com uma pedra leitosa engastada na base. O mago que morreu na torre colecionava.',

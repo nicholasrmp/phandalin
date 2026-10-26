@@ -488,6 +488,30 @@ export const HUMANOIDES = {
     blurb: 'Cura 1d8+2 num aliado em vez de atacar: enquanto estiver de pé, o inimigo ao lado dele volta de 1 PV duas vezes. Nove PV — derrube-o primeiro.',
   },
 
+  // O CULTISTA do SRD (CR 1/8, 25 XP): o de Árvore Trovão (área 13). Reusa o desenho do acólito (mesmo manto).
+  cultista: {
+    id: 'cultista',
+    name: 'Cultista',
+    look: 'acolito',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 1,
+    cr: '1/8',
+    xp: 25,
+    abilities: { str: 11, dex: 12, con: 10, int: 10, wis: 11, cha: 10 },
+    ac: 12,
+    acNote: 'armadura de couro',
+    maxHp: 9,
+    hpDice: '2d8',
+    speedFt: 30,
+    skills: ['enganacao', 'religiao'],
+    attacks: [
+      { name: 'Cimitarra', bonus: 3, damage: '1d6+1', type: 'cortante', reachFt: 5, art: 'sword' },
+    ],
+    traits: ['devocaoSombria'],
+    blurb: 'Nove PV, CA 12 e uma cimitarra: cai de um golpe ou dois, mas fanático (vantagem contra medo e encanto) e sempre em bando.',
+  },
+
   sacerdote: {
     id: 'sacerdote',
     name: 'Sacerdote',
@@ -741,6 +765,10 @@ export const TRAITS = {
   aparar: {
     name: 'Aparar',
     desc: 'Reação: sabendo que o ataque vem, soma +2 à CA contra um ataque corpo a corpo por rodada.',
+  },
+  devocaoSombria: {
+    name: 'Devoção Sombria',
+    desc: 'Vantagem em resistências contra ficar amedrontado ou enfeitiçado.',
   },
   bravura: {
     name: 'Bravura',

@@ -53,6 +53,8 @@ function armaNomeada(item) {
     danoExtra: item.danoExtra
       ? { damage: item.danoExtra, type: item.tipoExtra ?? base.type, contra: item.contra ?? null }
       : null,
+    // Dano MÁXIMO (todos os dados no lado maior) contra um tipo de criatura: o de Hew, em planta.
+    danoMaximoContra: item.danoMaximoContra ?? null,
   };
 }
 

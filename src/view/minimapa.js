@@ -44,6 +44,15 @@ const CORES_SUP = {
   cavalo: '#3d3540',
   pedra: '#77787f',
   arbusto: '#3d6338',
+  // Árvore Trovão: o que a vila soterrada tem de chão.
+  lago: '#3f6a86',
+  margem: '#b3a67a',
+  trigo: '#b39d5c',
+  cinza: '#7c776c',
+  teia: '#c9c7bd',
+  lajeRuina: '#77716a',
+  lajeEntulho: '#6a645c',
+  tabua: '#7a5d3a',
 };
 
 /** Altura vira clareamento: o platô fica mais claro que o chão à volta. */

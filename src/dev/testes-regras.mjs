@@ -283,6 +283,30 @@ teste('Destruição Divina gasta o espaço e carrega o próximo golpe', () => {
   assert.equal(c.smitePronto, null, 'descarregou');
 });
 
+teste('Hew: contra planta cada dado de dano sai no máximo; contra o resto, dado normal', () => {
+  const { enc, c, foes } = comClasse('guerreiro', 3, { weapons: ['hew'], equippedWeapon: 'hew' });
+  const planta = makeMonster('galhoInfectado', { x: c.pos.x + 1, y: c.pos.y });
+  planta.hp = planta.maxHp = 5000; planta.ac = -5;
+  enc.addCombatant(planta); planta.side = 'foes';
+  const outro = foes[0];
+  outro.pos = { x: c.pos.x, y: c.pos.y + 1 };
+  outro.hp = outro.maxHp = 5000; outro.ac = -5;
+  const dados = (alvo) => {
+    const todos = [];
+    for (let i = 0; i < 25; i++) {
+      c.actionUsed = false; c.attacksMade = 0; c.attacksLeft = 1;
+      const r = enc.resolveAttack(c, alvo, { weaponId: 'hew' });
+      const d = (r.danoPartes ?? []).find((x) => x.rotulo === 'dano');
+      if (d) todos.push(...d.dados);
+    }
+    return todos;
+  };
+  const dp = dados(planta);
+  assert.ok(dp.length > 10 && dp.every((v) => v === dp[0]), 'contra planta o dado é sempre o mesmo (o máximo): ' + [...new Set(dp)]);
+  const dn = dados(outro);
+  assert.ok(new Set(dn).size > 1, 'contra o resto o dado varia: ' + [...new Set(dn)]);
+});
+
 // ---- estilos de luta -------------------------------------------------------
 
 /** Um guerreiro com o estilo pedido, no lugar da Dara. */

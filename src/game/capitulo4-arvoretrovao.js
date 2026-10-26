@@ -18,13 +18,14 @@
 //     avisa duas vezes na aproximação e oferece quatro saídas na porta;
 //   - (o Mormesk, que esta fase já teve no porão da casa do beco, é do capítulo da Mina e saiu
 //     daqui; as medições dele ficam no histórico do repositório);
-//   - as aranhas do armazém (eram do pomar, três): alguém no chão em 18 a 23% das lutas, um
-//     herói morre em 2 a 5%, 16 a 20% dos PV, quatro rodadas;
+//   - as aranhas do armazém (eram do pomar, três): 11% dos PV, quatro rodadas. Quem pisa a teia
+//     da rua ou entra as acorda, e quem tem Percepção passiva abaixo de 17 é pego de surpresa (o
+//     livro): na medição, os quatro heróis; alguém vai ao chão em 38% das lutas, ninguém morre;
 //   - os mortos de cinza da velha guarnição (área 11 do livro): 24% dos PV,
 //     alguém no chão em 25% das lutas, nenhuma morte em 20;
-//   - o mato dos infectados, a leste: 12% dos PV, 5,2 rodadas;
-//   - o culto do dragão, na casa de pedra: 5% dos PV, 2,5 rodadas. É FÁCIL,
-//     e a conversa com eles existe por outro motivo (ver abaixo).
+//   - o culto do dragão, na casa de esquina: seis cultistas do SRD (CR 1/8, 25 XP cada, Favric entre
+//     eles): 7% dos PV no 3º nível, menos de duas rodadas. É FÁCIL, e a conversa com eles existe
+//     por outro motivo (ver abaixo);
 //
 // AS ÁREAS DO LIVRO (1, 2, 3, 5, 8, 9, 11, 12), ligadas à construção em que o
 // livro as põe, com as quantidades dele: ramos secos (Galho Infectado, 25 XP)
@@ -37,12 +38,10 @@
 // a missão da Mirna), e a arca da torre só abre com o dragão morto ou expulso.
 // Devolver o colar à Mirna, em Phandalin, vale 200 XP (ver `phandalin.js`).
 //
-// O QUE O ORÇAMENTO DO DMG DIRIA, e por que ele erra aqui: ele chama o culto e
-// os infectados de "difícil" no 3º nível, e os dois medem fácil. No culto o
-// erro é do motor — as magias deles não rodam, ver a nota do XP —; nos
-// infectados é que sete criaturas de 4 a 26 PV somam pouco dano real. O DMG
-// também subestima os mortos de cinza. Onde a tabela e a medição discordam, a
-// medição manda, porque é este motor que joga a luta.
+// O QUE O ORÇAMENTO DO DMG DIRIA, e por que ele erra aqui: seis criaturas
+// somam XP de sobra para chamar o culto de "difícil" no 3º nível, e ele mede fácil: são nove
+// PV cada e um golpe de 1d6+1. O DMG também subestima os mortos de cinza. Onde a tabela e
+// a medição discordam, a medição manda, porque é este motor que joga a luta.
 //
 // TRÊS AVISOS PARA QUEM VIER MEDIR DEPOIS, cada um um erro que já aconteceu:
 //
@@ -65,24 +64,16 @@
 //    mexer: 10% de derrota e 8,3 rodadas, porque uma aranha escapa e a outra
 //    continua presa.
 //
-// O CULTO MERECE UMA NOTA. A primeira versão deste cabeçalho o chamava de
-// "duro" e a medição desmentiu: o grupo os desmonta em duas rodadas e meia
-// perdendo 5% dos PV. A conversa com eles NÃO existe para evitar uma luta
+// O CULTO MERECE UMA NOTA. A conversa com eles NÃO existe para evitar uma luta
 // perigosa — existe porque matá-los é fácil e eles são gente, errada sobre um
-// dragão. Por isso convencê-los paga o XP INTEIRO: pagar três quartos, como a
-// primeira versão fazia, deixava a conversa pior nos dois eixos (menos XP E
-// nenhum risco evitado) enquanto o texto a chamava de melhor saída.
-//
-// PARTE DO "fácil" É DEFEITO DO MOTOR, e fica registrado: `acolito` e
-// `sacerdote` têm `spellcasting` no bloco sem a marca `noMotor`, então
-// `makeMonster` não o copia e eles NUNCA conjuram — em mil e duzentas lutas
-// simuladas deram só maça e clava. O blurb deles, que promete Bênção no
-// primeiro turno, está mentindo. Ligar a magia foi medido e muda pouco (5%
-// para 6% dos PV), então isto não é o que segura o encontro; mas é mentira no
-// catálogo, e não é desta fase para consertar.
+// dragão. Por isso convencê-los (ou botá-los para correr) paga o XP INTEIRO, os 150
+// do livro: pagar menos deixava a conversa pior nos dois eixos (menos XP E nenhum
+// risco evitado). O perigo está na ALIANÇA: Favric é ambicioso, oferece servir ao dragão
+// junto com o grupo e pretende entregá-lo a ele; quem aceita e entra na torre luta contra
+// o dragão com os seis cultistas ao lado dele. Se Favric cai, o resto foge.
 //
 // O PRÊMIO da fase não é nenhum dos seis: é o Reidoth, que diz onde fica o
-// Castelo Dentefino e a Caverna Onda Eco. Dá para entrar, falar com ele e sair
+// Castelo Dentefino e, se o dragão sair da torre, guia o grupo até a Caverna Onda Eco. Dá para entrar, falar com ele e sair
 // sem desembainhar nada — e isso é uma vitória, não uma fuga.
 //
 // AS REGRAS são do livro; o TEXTO é nosso. Os FATOS que ficam: a vila morreu
@@ -123,8 +114,8 @@ export function criarArvoreTrovao(app, config) {
   const feitos = (camp.feitos ??= {});
   const vila = (camp.vila ??= { pistas: [], missoes: {} });
   const salvo = (camp.arvoreTrovao ??= {
-    infectados: false, zumbis: false, aranhas: false, culto: null,
-    mormesk: null, dragao: null, arca: false, bau: false, avisos: 0,
+    zumbis: false, aranhas: false, culto: null,
+    dragao: null, arca: false, bau: false, avisos: 0,
     // As áreas do livro (1, 2, 3, 5, 8, 12 e os dois tesouros escondidos).
     ramos1: false, ramos2: false, ramos5: false, ramos12: false,
     zumbisCavalo: false, zumbisFerraria: false,
@@ -164,11 +155,6 @@ export function criarArvoreTrovao(app, config) {
   const nasce = (tipo, pos, sufixo) =>
     makeMonster(tipo, { ...pos }, sufixo ? { nameSuffix: sufixo } : {});
 
-  const infectados = salvo.infectados ? [] : [
-    ...ninho.infectados.slice(0, 3).map((p, i) => nasce('galhoInfectado', p, 'ABC'[i])),
-    ...ninho.infectados.slice(3, 5).map((p, i) => nasce('espetoInfectado', p, 'AB'[i])),
-    ...ninho.infectados.slice(5, 7).map((p, i) => nasce('vinhaInfectada', p, 'AB'[i])),
-  ];
   // OS BANDOS DO LIVRO, nas construções e nas quantidades dele (ver o mapa
   // `OBJETOS-ARVORE-TROVAO.md`). RAMOS SECOS são os Galhos Infectados: 25 XP e 4 PV
   // cada, o bloco do livro (2 na cabana ocidental, 6 na cabana com ramos, 8 na
@@ -190,11 +176,11 @@ export function criarArvoreTrovao(app, config) {
   // ver `acordarAranhas` para a medição que decidiu.
   const aranhas = salvo.aranhas ? []
     : ninho.aranhas.map((p, i) => nasce('aranhaGigante', p, 'ABC'[i]));
-  // O CULTO (área 13 do livro): Favric, que fala por eles, e mais cinco. Moram na casa de
-  // esquina, de porta trancada por dentro.
+  // O CULTO (área 13 do livro): seis cultistas do SRD, Favric entre eles (quem fala por todos).
+  // Moram na casa de esquina, de porta trancada por dentro.
   const cultistas = salvo.culto ? [] : [
-    nasce('sacerdote', ninho.culto[0]),
-    ...ninho.culto.slice(1).map((p, i) => nasce('acolito', p, 'ABCDE'[i])),
+    nasce('cultista', ninho.culto[0]),
+    ...ninho.culto.slice(1).map((p, i) => nasce('cultista', p, 'ABCDE'[i])),
   ];
   const chefeDoCulto = cultistas[0];
   if (chefeDoCulto) chefeDoCulto.name = 'Favric';
@@ -202,7 +188,7 @@ export function criarArvoreTrovao(app, config) {
   if (dragao) dragao.name = 'Presa Peçonhenta';
   const reidoth = makeNpc('reidoth', { ...ARVORE_TROVAO.reidoth });
 
-  const todosOsBandos = () => [infectados, zumbis, aranhas, cultistas,
+  const todosOsBandos = () => [zumbis, aranhas, cultistas,
     dragao ? [dragao] : [],
     ramos1, ramos2, ramos5, ramos12, zumbisCavalo, zumbisFerraria];
 
@@ -299,15 +285,6 @@ export function criarArvoreTrovao(app, config) {
   // Cada um acorda quando o grupo chega perto o bastante, e cada um tem uma
   // cara própria de acordar. Nenhum persegue o grupo pelo mapa inteiro: isto
   // é uma vila, não um corredor.
-  async function acordarInfectados() {
-    salvo.infectados = 'luta';
-    await painel([
-      'O mato do lado leste não é mato. Entre as sarças há galhos que se mexem contra o vento, e troncos baixos com a casca rachada em alguma coisa parecida com uma boca.',
-      'Três coisinhas de graveto saem andando do espinheiro, de pernas tortas. Atrás delas, duas mais altas, cheias de agulhas. E, no fundo, uma massa de cipó que se desenrola devagar, sem pressa nenhuma.',
-    ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-    luta(infectados.filter((f) => !f.dead));
-  }
-
   // OS MORTOS DE CINZA estão DEITADOS: quem fica de pé gasta metade do
   // deslocamento para se levantar, como no livro. Cada zumbi nasce caído, e o
   // motor cobra o levantar dele (`standUp`).
@@ -427,14 +404,27 @@ export function criarArvoreTrovao(app, config) {
   // porta é o aviso, e entrar as acorda. São DUAS, como no livro — a cena já teve três no pomar,
   // e a medição mostrou o porquê: três a 60 pés da chegada deixam alguém no chão em 51% das lutas.
   // Elas esperam penduradas na teia, e o teste de Furtividade delas decide quem é surpreendido.
-  async function acordarAranhas() {
+  async function acordarAranhas(naTeia = []) {
     salvo.aranhas = 'luta';
-    const furt = furtividadeDe(aranhas);
+    // A teia da rua é o aviso DELAS: quem a pisa balança os fios que chegam às paredes de dentro.
+    // Terreno difícil, e quem pisou tenta não se grudar (Atletismo CD 10); o que falha fica contido
+    // (Força CD 12 para se soltar, como no livro).
+    const presos = [];
+    for (const h of naTeia) {
+      const t = teste(h, 'atletismo', 10);
+      if (t.passou) continue;
+      addCondition(h, 'contido', { source: 'teia', data: { escape: 12, soForca: true } });
+      presos.push(h.name);
+    }
     await painel([
-      'O armazém foi feito para guardar: prateleiras de ponta a ponta, vigas baixas, um piso de tábua que ainda aguenta. Agora é uma caixa de teia. Lençóis grossos de parede a parede, e pendurados deles, em três ou quatro lugares, embrulhos do tamanho de gente.',
-      'Duas coisas descem ao mesmo tempo, de cabeça para baixo, grandes como cão de caça. Estavam ali o tempo todo.',
+      naTeia.length
+        ? 'Os fios da rua não estão soltos: cada um corre pela poeira até uma fresta do armazém, e o pé que pisa um deles puxa todos. Lá dentro, algo acorda.'
+        : 'O armazém foi feito para guardar: prateleiras de ponta a ponta, vigas baixas, um piso de tábua que ainda aguenta. Agora é uma caixa de teia, e cada fio que se toca avisa quem mora nela.',
+      'Das frestas das paredes de dentro saem duas formas ao mesmo tempo, de cabeça para baixo, grandes como cão de caça. Estavam ali o tempo todo.',
+      ...(presos.length ? [`${presos.join(' e ')} ficam grudados na teia da rua.`] : []),
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-    luta(aranhas.filter((f) => !f.dead), { furt });
+    // Quem tem Percepção passiva abaixo de 17 é pego de surpresa (o livro).
+    luta(aranhas.filter((f) => !f.dead), { furt: aranhas.map(() => 17) });
   }
 
   // ------------------------------------------------------ o dragão ----
@@ -616,34 +606,60 @@ export function criarArvoreTrovao(app, config) {
       return;
     }
     salvo.dragao = 'luta';
+    // QUEM ACEITOU A ALIANÇA DE FAVRIC: os seis entram atrás do grupo e lutam ao lado do dragão.
+    if (salvo.culto === 'aliado') {
+      const traidores = cultistas.filter((f) => !f.dead);
+      for (const f of traidores) {
+        f.pos = { ...ARVORE_TROVAO.portaDaTorre };
+        const i = enc.combatants.indexOf(f);
+        if (i >= 0) enc.combatants.splice(i, 1);
+      }
+      if (traidores.length) {
+        prepararReforcos({ 2: { bando: traidores, aviso: 'Favric e os seus entram atrás do grupo, e as cimitarras se viram para o lado errado.' } });
+      }
+    }
     luta([dragao]);
   }
 
-  // AS PISTAS QUE O GRUPO ACHOU EXAMINANDO (`arvoretrovao-exames.js`) valem nas conversas: quem
-  // tem a pista de que a escama do altar é fresca, de que há seis atrás da porta ou de que o
-  // telhado da guarnição vê a torre tem o que dizer a Favric e a Reidoth.
-  const temPista = (trecho) => (vila.pistas ?? []).some((p) => p.includes(trecho));
   // O FAVOR que Reidoth pede ("que essa vila fique em paz"): qualquer bando da vila resolvido.
-  const favorFeito = () => ['zumbis', 'zumbisCavalo', 'zumbisFerraria', 'ramos1', 'ramos2', 'ramos5', 'ramos12', 'infectados']
-    .some((k) => salvo[k] === 'limpo') || ['morto', 'desistiu'].includes(salvo.culto);
+  // O dragão saiu da torre (morto ou expulso): é a condição de Reidoth para guiar o grupo.
+  const dragaoSaiu = () => ['morto', 'expulso'].includes(salvo.dragao);
+  // A POÇÃO DE VOO está no pescoço de Favric (o livro): sai com ele, não do cofre.
+  async function saquearFavric() {
+    if (salvo.pocaoDeVoo || !chefeDoCulto) return;
+    salvo.pocaoDeVoo = true;
+    const quem = herois()[0];
+    if (!quem) return;
+    guardar(quem, 'pocaoDeVoo', 1);
+    await painel(`No pescoço de Favric, num cordão: um frasco de vidro grosso com um líquido que sobe em vez de assentar. ${quem.name} guarda.`);
+  }
 
   // ------------------------------------------------- o culto do dragão ----
+  // A CASA DE ESQUINA (área 13): Favric é ambicioso. Se o grupo não ataca de saída, ele tenta uma
+  // aliança — servir ao dragão juntos — e pretende entregar o grupo a ele. Se ele cai, o resto foge.
   function arvoreDoCulto() {
     return {
       inicio: 'oi',
       nos: {
         oi: {
-          narra: 'A casa de pedra é a mais inteira da vila, com lona nova esticada onde o telhado faltava. Dentro, seis pessoas de manto verde em volta de uma fogueira, e um altar de pedra empilhada com uma escama do tamanho de um prato em cima.',
-          fala: 'Vocês não deviam estar aqui. Este chão é dele agora, e ele não divide.',
+          narra: 'Seis pessoas de manto com a barra recortada em asas e máscara de couro com chifres. Quatro de pé, armadas, junto da mesa; duas encolhidas perto do fogareiro. Poeira em tudo, teia nos cantos, e o cheiro de gente que não sai de lá há dias.',
+          fala: 'Gente de fora. — O que está à frente tira a máscara: um rosto novo e esperto. — Eu sou Favric. A torre tem um senhor, e quem o serve é lembrado. Vocês parecem capazes. Querem servir?',
           opcoes: [
-            { texto: 'A escama do seu altar é nova, Favric. Ele troca de pele, e vocês não têm nada de especial.', vai: 'duvida',
-              requer: () => (temPista('escama fresca') ? null : 'sem pista'), oculta: true },
+            { texto: 'Servir a ele junto com vocês.', vai: 'alianca' },
             { texto: 'Vocês sabem que ele vai comer vocês, não sabem?',
               teste: { pericia: 'persuasao', cd: 13 }, sucesso: 'duvida', falha: 'raiva' },
             { texto: 'Só estamos de passagem. Procuramos um druida.',
               teste: { pericia: 'enganacao', cd: 12 }, sucesso: 'passagem', falha: 'raiva' },
             { texto: 'Saiam da vila. Agora.', fim: 'luta' },
             { texto: 'Então fiquem com ele. Até mais.', fim: 'sai' },
+          ],
+        },
+        alianca: {
+          narra: 'Ele sorri largo demais. Atrás dele, dois dos outros trocam um olhar curto, de quem guarda um segredo.',
+          fala: 'Sábia escolha. Fiquem à vontade: ao amanhecer eu mesmo os levo à torre e os apresento. Ele gosta de conhecer quem vai trabalhar para ele.',
+          opcoes: [
+            { texto: 'Combinado.', fim: 'aliado' },
+            { texto: 'Pensando melhor, não.', fim: 'luta' },
           ],
         },
         duvida: {
@@ -656,11 +672,11 @@ export function criarArvoreTrovao(app, config) {
         },
         passagem: {
           fala: 'O velho das peles? Anda por aí, falando com mato. Não nos atrapalha, nós não atrapalhamos ele. Sigam, e não entrem na torre.',
-          narra: 'Ele volta a olhar a fogueira, e os outros cinco fazem o mesmo. A conversa acabou para eles.',
+          narra: 'Ele volta a olhar o fogareiro, e os outros cinco fazem o mesmo. A conversa acabou para eles.',
           opcoes: [{ texto: '…', fim: 'sai' }],
         },
         raiva: {
-          fala: 'Chega. — Ele levanta o bordão. — Vocês vão virar oferenda.',
+          fala: 'Chega. — Ele ergue a mão, e as cimitarras saem das bainhas. — Vocês vão virar oferenda.',
           opcoes: [{ texto: '…', fim: 'luta' }],
         },
       },
@@ -682,7 +698,6 @@ export function criarArvoreTrovao(app, config) {
   }
 
   function arvoreDoReidoth() {
-    const matouInfectados = salvo.infectados === 'limpo';
     // QUEM FECHOU ACORDO COM O DRAGÃO perde o prêmio da fase. O dragão faz
     // questão de contar — é o tipo de coisa que diverte um dragão verde —, e o
     // druida não é tolo. Quem falou com o Reidoth ANTES de entrar na torre sai
@@ -713,29 +728,30 @@ export function criarArvoreTrovao(app, config) {
         },
       };
     }
+    // O Reidoth do livro é hospitaleiro: recebe, avisa de tudo e dá o caminho do castelo sem
+    // cobrar nada. O que ele guarda para depois do dragão é a Caverna Onda Eco (ele guia o grupo
+    // até lá se a torre ficar livre) e, em particular, o título de Guardião da Primavera.
+    const ideaisDaNatureza = () => herois().find((h) => ['druida', 'patrulheiro'].includes(h.classe));
     return {
       inicio: 'oi',
       nos: {
         oi: {
           ao: () => acharReidoth(),
-          narra: 'Diante do posto há um homem de costas, de peles e barba branca, parado de um jeito que o faz parecer parte do chão. Ele fala antes de se virar.',
-          fala: matouInfectados
-            ? 'Vocês mataram o mato do leste. Aquilo brotou porque a terra aqui está doente, e matar o que brota não cura terra nenhuma. Mas vocês não sabiam. Falem.'
-            : 'Mais gente de espada. Da última vez que vieram em quatro, sobraram três — e o quarto está ali dentro, se quiserem ver. Falem logo, que eu tenho o que fazer.',
+          narra: 'Diante do posto há um homem de peles e barba branca, sentado numa pedra. Ele se levanta devagar e abre as mãos, como quem recebe visita em casa.',
+          fala: salvo.dragao === 'expulso' || salvo.dragao === 'morto'
+            ? 'Vocês tiraram aquilo da torre. Entrem, sentem, não reparem na cinza. O que quiserem saber, eu conto.'
+            : 'Gente viva! Entrem, sentem, não reparem na cinza. Faz tempo que ninguém vem por bem. O que quiserem saber, eu conto — e conto antes que perguntem, porque esta vila tem mais dentes do que parece.',
           opcoes: [
             { texto: 'Procuramos o Castelo Dentefino.', vai: 'castelo',
               requer: () => (feitos.sabeOCastelo ? 'ele já disse' : null), oculta: true },
             { texto: 'E a Caverna Onda Eco?', vai: 'ondaEco',
               requer: () => (feitos.sabeOndaEco ? 'ele já disse' : null), oculta: true },
-            { texto: 'A escama no altar dos cultistas é fresca. Ele troca de pele aqui perto.', vai: 'escama',
-              requer: () => (temPista('escama fresca') && !salvo.contouEscama ? null : 'nada a contar'), oculta: true },
-            { texto: 'Do telhado da guarnição se vê a rua inteira, até a torre.', vai: 'telhado',
-              requer: () => (temPista('telhado da guarnição') && !salvo.contouTelhado ? null : 'nada a contar'), oculta: true },
-            { texto: 'Há seis rezando atrás da porta da casa de esquina.', vai: 'seis',
-              requer: () => (temPista('Seis pessoas rezam') && !salvo.contouSeis ? null : 'nada a contar'), oculta: true },
+            { texto: 'O senhor guarda um título para quem ama a natureza, não é?', vai: 'guardiao',
+              requer: () => (dragaoSaiu() && ideaisDaNatureza() && !feitos.guardiaoDaPrimavera ? null : 'nada a oferecer'), oculta: true },
+            { texto: 'O que há de perigoso por aqui?', vai: 'avisos' },
             { texto: 'O que é aquilo na torre?', vai: 'dragao' },
-            { texto: 'E essa gente de manto verde?', vai: 'culto' },
-            { texto: 'Precisa de alguma coisa, senhor?', vai: 'pedido' },
+            { texto: 'E essa gente que se esconde na casa de esquina?', vai: 'culto' },
+            { texto: 'A placa na entrada é sua?', vai: 'placa' },
             { texto: 'Boa sorte com o mato.', fim: 'sai' },
           ],
         },
@@ -748,20 +764,35 @@ export function criarArvoreTrovao(app, config) {
           narra: 'Ele risca o chão de cinza com o pé: uma linha para a trilha, um quadrado para o castelo, e um traço do quadrado até a linha.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
-        // A ONDA ECO É UMA TROCA: ele a diz a quem já fez alguma coisa pela vila ("se vocês derem
-        // conta de alguma dessas coisas, eu fico devendo"). Sem favor, ele manda voltar depois.
+        // A ONDA ECO: ele só guia o grupo até lá com a torre livre ("tirem o dragão e eu os levo").
         ondaEco: {
           ao: () => {
-            if (!favorFeito()) return;
+            if (!dragaoSaiu()) return;
             feitos.sabeOndaEco = true;
             feitos.amigoDoEnclave = true;
-            pista('Reidoth disse onde fica a Caverna Onda Eco: nos morros a leste de Phandalin, ao pé das Montanhas Espada, onde o mar antigo secou.');
-            pista('Reidoth, que fala pelo Enclave Esmeralda, os tem por amigos: quem resolveu o que ele pediu na vila.');
+            pista('Reidoth guiou o grupo até a Caverna Onda Eco: nos morros a leste de Phandalin, ao pé das Montanhas Espada, onde o mar antigo secou.');
+            pista('Reidoth, que fala pelo Enclave Esmeralda, tem o grupo por amigo: tirou o dragão da torre.');
           },
-          fala: !favorFeito()
-            ? 'Sei onde é. Mas não se dá de graça uma coisa que me custou trinta anos de caminho. Façam por esta vila o que eu pedi — mato, mortos de cinza, qualquer um deles — e voltem. Aí eu falo.'
-            : 'A caverna do mar que secou. Fica nos morros a leste da vila nova de vocês, onde o chão começa a virar montanha. Anões e gente escavaram lá por gerações, e um dia pararam todos no mesmo dia.',
-          narra: 'Pela primeira vez ele parece interessado em vocês.',
+          fala: dragaoSaiu()
+            ? 'A caverna do mar que secou. Eu levo vocês: fica nos morros a leste da vila nova de vocês, onde o chão começa a virar montanha. Anões e gnomos escavaram lá por gerações, e um dia pararam todos no mesmo dia.'
+            : 'Sei o caminho, e levaria vocês. Mas não saio daqui com aquilo de olho aberto na torre. Tirem o dragão de lá — de pé ou deitado — e eu os levo.',
+          narra: dragaoSaiu() ? 'Pela primeira vez ele parece animado com alguma coisa.' : 'Ele olha para a torre e depois para o grupo, e faz as contas.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        guardiao: {
+          ao: () => {
+            const h = ideaisDaNatureza();
+            if (!h) return;
+            feitos.guardiaoDaPrimavera = h.name;
+            pista(`Reidoth ofereceu a ${h.name}, em particular, o título de Guardião da Primavera, do Enclave Esmeralda.`);
+          },
+          narra: 'Ele chama um de vocês de lado, longe dos outros, e fala baixo.',
+          fala: 'Eu falo por gente que cuida do que nasce e do que morre, e vi como você olhou esta vila. Há um título entre nós, Guardião da Primavera, para quem guarda o ciclo. Não paga nada. Obriga a muito. Pense nele.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        avisos: {
+          fala: 'Quase tudo. O dragão na torre. Seis de máscara na casa de esquina, que o adoram. Mortos de cinza na velha guarnição, na taverna e na ferraria, deitados e de mau humor. Galhos secos que andam, nas cabanas. E duas aranhas do tamanho de cão no armazém do sul: a teia na rua é o aviso delas, e é bom aviso.',
+          narra: 'Ele conta nos dedos, e acaba com as duas mãos abertas.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         dragao: {
@@ -773,35 +804,17 @@ export function criarArvoreTrovao(app, config) {
           ],
         },
         matarDragao: {
-          fala: 'Por vocês? Não. Por alguém, algum dia, sim. Se entrarem naquela torre hoje, eu não vou atrás buscar o que sobrar.',
+          fala: 'Por vocês, hoje? Não. Por alguém, algum dia, sim. Se entrarem naquela torre, eu não vou atrás buscar o que sobrar — mas se tirarem ele de lá, eu fico em dívida.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         culto: {
-          fala: 'Vieram atrás dele, acham que ele é um deus e levam comida para a porta da torre. Ele come a comida. Um dia vai comer quem leva, e aí o problema deles acaba.',
+          fala: 'Vieram atrás dele, acham que ele é um deus e levam comida para a porta da torre. Ele come a comida. Um dia vai comer quem leva, e aí o problema deles acaba. Fiquem de olho no que fala por eles: é ambicioso, e ambição mente.',
           narra: 'Um canto da boca dele se mexe, e é o mais perto de um sorriso que ele vai chegar.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
-        escama: {
-          ao: () => { salvo.contouEscama = true; },
-          fala: 'Fresca. Então a escama é de agora, e ele a perde aqui perto, a duas portas dos meus pés, sem que ninguém me avisasse. Alguém a limpa e a guarda: eles a tratam como relíquia.',
-          narra: 'Ele fica quieto um tempo, olhando a torre, como quem refaz uma conta.',
+        placa: {
+          fala: 'Fui eu. Plantas que andam, mortos que andam. Pregar aviso é o que se faz quando não se pode fazer mais. Nunca vi um aviso que fizesse recuar quem já decidiu entrar.',
           opcoes: [{ texto: '…', vai: 'oi' }],
-        },
-        telhado: {
-          ao: () => { salvo.contouTelhado = true; },
-          fala: 'A guarnição. De lá se vê a rua e a torre, e os guardas sabiam disso. Se vão tentar alguma coisa, olhem de lá antes de tentar na porta.',
-          opcoes: [{ texto: '…', vai: 'oi' }],
-        },
-        seis: {
-          ao: () => { salvo.contouSeis = true; },
-          fala: 'Seis. Quem fala por eles se chama Favric. É o único que ainda acha que o dragão responde.',
-          opcoes: [{ texto: '…', vai: 'oi' }],
-        },
-        pedido: {
-          ao: () => { salvo.pedido = true; },
-          fala: 'Preciso que essa vila fique em paz para eu poder ir embora dela. O dragão eu não resolvo, nem os mortos de cinza — da guarnição, da taverna, da ferraria: já estavam andando quando eu cheguei. E o mato, que não para de brotar. Se vocês derem conta de alguma dessas coisas, eu fico devendo.',
-          narra: 'Ele aponta, com o queixo, a casa de pedra mais inteira da vila, a de esquina, junto da praça.',
-          opcoes: [{ texto: 'Vamos ver.', vai: 'oi' }],
         },
       },
     };
@@ -834,16 +847,6 @@ export function criarArvoreTrovao(app, config) {
         && enc.field.hasLineOfSight(h.pos, porta));
       if (vePorta(35) && salvo.avisos < 1) { await avisoDaTorre(1); return; }
       if (vePorta(15) && salvo.avisos === 1) { await avisoDaTorre(2); return; }
-    }
-    // O mato dos infectados, a leste.
-    // Só pelo retângulo do espinheiro. O raio de 15 pés que estava aqui
-    // alcançava três casas DENTRO da casa do culto, por trás da alvenaria, e a
-    // aproximação da porta dela: quem entrasse na casa depois de resolver o
-    // culto acordava os infectados através da parede.
-    if (infectados.length && !salvo.infectados
-      && herois().some((h) => dentro(h.pos, ARVORE_TROVAO.jardim) && !naCasa(h.pos, 'casa9'))) {
-      await acordarInfectados();
-      return;
     }
     // A VELHA GUARNIÇÃO (área 11): os cinco da farda.
     if (zumbis.length && !salvo.zumbis && herois().some((h) => naCasa(h.pos, 'guarda'))) {
@@ -879,20 +882,11 @@ export function criarArvoreTrovao(app, config) {
       await acordarRamosDoTecelao();
       return;
     }
-    // O ARMAZÉM DAS ARANHAS. A teia no chão da porta é o aviso, visível de longe: quem pisa nela vê
-    // o que vem; entrar acorda as aranhas. POR CASA (a construção), e não por raio, que vazaria por
-    // cima de parede.
+    // O ARMAZÉM DAS ARANHAS (área 6). A teia da rua é o ALARME: pisá-la acorda as duas; entrar no
+    // armazém também. POR CASA (a construção), e não por raio, que vazaria por cima de parede.
     if (aranhas.length && !salvo.aranhas) {
-      const naTeia = herois().some((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'loja'));
-      if (naTeia && !salvo.viuTeia) {
-        salvo.viuTeia = true;
-        await painel([
-          'A rua que dá na porta do armazém está coberta de teia: fios grossos de um lado a outro, brancos de poeira, com uma pata de bicho presa aqui e ali.',
-          'Nada se mexe lá dentro. Ainda. Quem entrar vai pisar em mais disso.',
-        ]);
-        return;
-      }
-      if (herois().some((h) => naCasa(h.pos, 'loja'))) { await acordarAranhas(); return; }
+      const naTeia = herois().filter((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'loja'));
+      if (naTeia.length || herois().some((h) => naCasa(h.pos, 'loja'))) { await acordarAranhas(naTeia); return; }
     }
   }
 
@@ -947,6 +941,12 @@ export function criarArvoreTrovao(app, config) {
         ]);
         await darXpDaLuta(valeDoBando([dragao]), 'O Presa Peçonhenta');
       }
+      if (salvo.culto === 'aliado') {
+        // Quem aceitou a aliança lutou contra o dragão E os seis. Os que caíram (ou fugiram com Favric) pagam o XP deles.
+        salvo.culto = 'morto';
+        await saquearFavric();
+        await darXpDaLuta(valeDoBando(cultistas), 'O culto traidor');
+      }
     } else if (dos(ramos2)) {
       salvo.ramos2 = 'limpo';
       // Os dois da cabana ocidental só contam se vieram e caíram junto.
@@ -963,8 +963,14 @@ export function criarArvoreTrovao(app, config) {
       await darXpDaLuta(total(ramos5), 'Os ramos da fazenda');
     } else if (dos(ramos12)) {
       salvo.ramos12 = 'limpo';
-      await painel('Os arbustos ao sul da cabana do tecelão ficam quietos. Lá do lado da casa de pedra, bem longe, alguém assobia baixo e para.');
+      await painel('Os arbustos ao sul da cabana do tecelão ficam quietos. Lá do lado da casa de esquina, bem longe, alguém assobia baixo e para.');
       await darXpDaLuta(total(ramos12), 'Os ramos do tecelão');
+      // O barulho chegou aos cultistas (o livro): eles vêm ver, com cuidado. A trave da porta sai.
+      if (salvo.cultoAlertado && cultistas.length && !salvo.culto && salvo.portaCulto === 'trancada') {
+        salvo.portaCulto = 'aberta';
+        fecharPortaDoCulto();
+        await painel('Pela rua, uma tábua raspa: a porta da casa de esquina se entreabre, e um vulto de manto espia o largo o tempo de contar o estrago. Depois a porta fica como está, sem a trave.');
+      }
     } else if (dos(zumbisCavalo)) {
       salvo.zumbisCavalo = 'limpo';
       await painel('O último dos quatro cai de costas entre os tanques, e a cinza do corpo dele vira cinza de chão. O cheiro de fermento azedo fica.');
@@ -975,7 +981,10 @@ export function criarArvoreTrovao(app, config) {
       await darXpDaLuta(total(zumbisFerraria), 'Os mortos da ferraria');
     } else if (bando.some((f) => cultistas.includes(f))) {
       salvo.culto = 'morto';
-      await painel('Os mantos verdes ficam no chão da casa de pedra. A escama no altar continua ali, e continua sendo só uma escama.');
+      await painel(salvo.cultoFugiu
+        ? 'Os que sobraram desaparecem rua abaixo, de máscara na mão. Na casa de esquina ficam um fogareiro frio, uma mesa e a poeira.'
+        : 'Os mantos ficam no chão da casa de esquina, entre a mesa, as cadeiras e o fogareiro apagado.');
+      await saquearFavric();
       await darXpDaLuta(valeDoBando(cultistas), 'O culto do dragão');
     } else if (bando.some((f) => zumbis.includes(f))) {
       salvo.zumbis = 'limpo';
@@ -985,10 +994,6 @@ export function criarArvoreTrovao(app, config) {
       salvo.aranhas = 'limpo';
       await painel('As duas ficam encolhidas na teia delas, de pernas para dentro. O armazém continua cheio de seda, mas agora ninguém desce dela.');
       await darXpDaLuta(valeDoBando(aranhas), 'As aranhas do armazém');
-    } else if (bando.some((f) => infectados.includes(f))) {
-      salvo.infectados = 'limpo';
-      await painel('O que sobra deles é graveto quebrado e cipó mole, e nada disso sangra. O espinheiro continua de pé.');
-      await darXpDaLuta(valeDoBando(infectados), 'O mato do leste');
     }
     prepararExploracao();
   }
@@ -1002,16 +1007,16 @@ export function criarArvoreTrovao(app, config) {
   const COM_FOLHA = new Set((ARVORE_TROVAO.folhas ?? []).flatMap(([a, b]) => [CHAVE_DE(a, b), CHAVE_DE(b, a)]));
   enc.field.folha = COM_FOLHA;
 
-  // A PORTA DO CULTO (o livro: trancada por dentro). De fora só se entra arrombando (Atletismo
-  // CD 20: a luta começa) ou convencendo Favric a abrir (Persuasão CD 15); escutar à porta (Percepção
-  // CD 15) conta o que há lá dentro. Aberta, vira uma porta como as outras.
-  const PORTA_DO_CULTO = (ARVORE_TROVAO.folhas ?? []).find(([a, b]) => naCasa(a, 'casa9') !== naCasa(b, 'casa9'));
-  const ehPortaDoCulto = (a, b) => Boolean(PORTA_DO_CULTO)
-    && PORTA_DO_CULTO.some((p) => (p.x === a.x && p.y === a.y)) && PORTA_DO_CULTO.some((p) => (p.x === b.x && p.y === b.y));
+  // A PORTA DO CULTO (o livro: trancada por dentro, e larga: são DUAS casas de vão). De fora só se
+  // entra forçando a porta (Atletismo CD 20, no lugar do teste de Força do livro). Aberta, vira uma
+  // porta como as outras.
+  const FOLHAS_DO_CULTO = (ARVORE_TROVAO.folhas ?? []).filter(([a, b]) => naCasa(a, 'casa9') !== naCasa(b, 'casa9'));
+  const ehPortaDoCulto = (a, b) => FOLHAS_DO_CULTO.some(([u, v]) => (u.x === a.x && u.y === a.y && v.x === b.x && v.y === b.y)
+    || (u.x === b.x && u.y === b.y && v.x === a.x && v.y === a.y));
   const fecharPortaDoCulto = () => {
-    if (!PORTA_DO_CULTO) return;
-    const [a, b] = PORTA_DO_CULTO;
-    enc.field.porAresta(a.x, a.y, b.x, b.y, salvo.portaCulto === 'trancada' ? ARESTA.porta : ARESTA.aberta);
+    for (const [a, b] of FOLHAS_DO_CULTO) {
+      enc.field.porAresta(a.x, a.y, b.x, b.y, salvo.portaCulto === 'trancada' ? ARESTA.porta : ARESTA.aberta);
+    }
     enc.field.versao = (enc.field.versao ?? 0) + 1;
   };
   if (!salvo.portaCulto) salvo.portaCulto = salvo.culto ? 'aberta' : 'trancada';
@@ -1072,6 +1077,24 @@ export function criarArvoreTrovao(app, config) {
     app.refresh();
   }
 
+  // OS DOIS OBJETOS ESCONDIDOS DO LIVRO. Nenhum está desenhado até uma busca passar: a cena troca
+  // a casa por um baú.
+  const OBJ = ARVORE_TROVAO.objetos;
+  const mesmo = (a, b) => a && b && a.x === b.x && a.y === b.y;
+  const revelar = (pos) => {
+    const f = enc.field;
+    const i = pos.y * f.w + pos.x;
+    f.tiles[i] = GLIFOS.K.kind;
+    f.surfaces[i] = SUPERFICIES.indexOf(GLIFOS.K.sup);
+    f.versao = (f.versao ?? 0) + 1;
+    app.refresh();
+  };
+  // Ao reabrir a cena num jogo salvo, o que já foi achado volta ao chão (na criação, e não no
+  // primeiro clique: senão o baú só aparecia depois de o jogador clicar em alguma coisa).
+  for (const [chave, pos] of [['bauMercador', OBJ.bauMercador], ['caixaMirna', OBJ.caixaMirna]]) {
+    if (salvo[chave] && enc.field.surfaceAt(pos.x, pos.y) !== 'bau') revelar(pos);
+  }
+
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const ops = [];
@@ -1084,50 +1107,22 @@ export function criarArvoreTrovao(app, config) {
 
     for (const { a: ca, b: cb, cod } of portasDaCasa(tile)) {
       if (salvo.portaCulto === 'trancada' && ehPortaDoCulto(ca, cb)) {
-        // Arrombar: a trave cede, e do outro lado seis mantos verdes se viram.
+        // Forçar a porta: a trave cede, e do outro lado seis cultistas se viram (e Favric fala).
         ops.push({
-          rotulo: 'Arrombar a porta', icone: 'acao-empurrar', detalhe: 'Atletismo CD 20',
+          rotulo: 'Forçar a porta', icone: 'acao-empurrar', detalhe: 'Atletismo CD 20',
           motivo: longe(5) ?? buscas.ja(c, 'arrombarCulto', ca),
           fazer: async () => {
             buscas.marcar(c, 'arrombarCulto', ca);
             const t = teste(c, 'atletismo', 20);
             if (!t.passou) {
-              await painel('Do outro lado, uma trave de verdade. A porta treme no batente e não cede; lá dentro alguém para de rezar.', { teste: t });
+              salvo.cultoAlertado = true;
+              await painel('Do outro lado, uma trave de verdade. A porta treme nos dois batentes e não cede; lá dentro alguém para de falar.', { teste: t });
               return;
             }
             salvo.portaCulto = 'arrombada';
             fecharPortaDoCulto();
-            await painel('A trave parte com um estalo seco e a porta bate na parede. Dentro, seis mantos verdes em volta de uma fogueira se viram ao mesmo tempo, e Favric ergue o bordão.', { teste: t });
-            salvo.culto = null;
-            luta(cultistas.filter((f) => !f.dead));
-          },
-        });
-        // Bater e falar: Favric decide se abre.
-        ops.push({
-          rotulo: 'Bater e falar', icone: 'acao-ajudar', detalhe: 'Persuasão CD 15',
-          motivo: longe(5) ?? buscas.ja(c, 'baterCulto', ca),
-          fazer: async () => {
-            buscas.marcar(c, 'baterCulto', ca);
-            const t = teste(c, 'persuasao', 15);
-            if (!t.passou) {
-              await painel('— Não — diz uma voz, abafada pela madeira. — Aqui dentro não há nada para vocês. Vão embora enquanto podem.', { teste: t });
-              return;
-            }
-            salvo.portaCulto = 'aberta';
-            fecharPortaDoCulto();
-            await painel('Silêncio. Depois a trave raspa, e a porta se abre uma mão. Um olho cansado de quem vigiou a noite toda. — Fale baixo — diz Favric. — Ele escuta.', { teste: t });
+            await painel('A trave parte com um estalo seco e as duas folhas batem na parede. Dentro, seis mantos com máscara de chifre se viram ao mesmo tempo. Ninguém ataca ainda: quem os comanda ergue a mão.', { teste: t });
             app.refresh();
-          },
-        });
-        ops.push({
-          rotulo: 'Escutar à porta', icone: 'acao-procurar', detalhe: 'Percepção CD 15',
-          motivo: longe(5) ?? buscas.ja(c, 'escutarCulto', ca),
-          fazer: async () => {
-            buscas.marcar(c, 'escutarCulto', ca);
-            const t = teste(c, 'percepcao', 15);
-            if (!t.passou) { await painel('Madeira grossa, e só. Se há alguém ali, está quieto.', { teste: t }); return; }
-            pista('Seis pessoas rezam juntas atrás da porta da casa de esquina, e uma delas fala por todas.');
-            await painel('Vozes baixas, em uníssono, repetindo a mesma frase. Contando pelas respirações, seis; e uma delas, mais firme, conduz as outras. A reza é para algo que mora na torre.', { teste: t });
           },
         });
         continue;
@@ -1150,23 +1145,8 @@ export function criarArvoreTrovao(app, config) {
       });
     }
 
-    // OS DOIS OBJETOS ESCONDIDOS DO LIVRO. Nenhum está desenhado até uma busca
-    // passar: a cena troca a casa por um baú.
-    const OBJ = ARVORE_TROVAO.objetos;
-    const mesmo = (a, b) => a && b && a.x === b.x && a.y === b.y;
-    const revelar = (pos) => {
-      const f = enc.field;
-      const i = pos.y * f.w + pos.x;
-      f.tiles[i] = GLIFOS.K.kind;
-      f.surfaces[i] = SUPERFICIES.indexOf(GLIFOS.K.sup);
-      f.versao = (f.versao ?? 0) + 1;
-      app.refresh();
-    };
-    // Ao reabrir a cena num jogo salvo, o que já foi achado volta ao chão.
-    for (const [chave, pos] of [['bauMercador', OBJ.bauMercador], ['caixaMirna', OBJ.caixaMirna]]) {
-      if (salvo[chave] && enc.field.surfaceAt(pos.x, pos.y) !== 'bau') revelar(pos);
-    }
-
+    // OS DOIS OBJETOS ESCONDIDOS DO LIVRO (`OBJ`, `revelar` e `mesmo`, no topo da cena): nenhum
+    // está desenhado até uma busca passar.
     if (naCasa(tile, 'casa7') && !salvo.bauMercador) {
       ops.push({
         rotulo: 'Revistar a cabana', icone: 'acao-procurar', detalhe: 'Percepção CD 12',
@@ -1243,7 +1223,7 @@ export function criarArvoreTrovao(app, config) {
       });
     }
 
-    // O COFRE DOS CULTISTAS (o livro): três diamantes e uma poção de voo. Os cultistas não o largam
+    // O COFRE DOS CULTISTAS (o livro): três diamantes de 100 po (a poção de voo está com Favric). Os cultistas não o largam
     // enquanto estão ali: só abre com eles mortos, convencidos a ir ou fora da casa.
     if (sup === 'bau' && mesmo(tile, OBJ.bauCulto) && !salvo.bauCulto) {
       const vigiam = cultistas.some((f) => !f.dead && enc.combatants.includes(f));
@@ -1253,8 +1233,7 @@ export function criarArvoreTrovao(app, config) {
         fazer: async () => {
           salvo.bauCulto = true;
           guardar(c, 'diamante', 3);
-          guardar(c, 'pocaoDeVoo', 1);
-          await painel(`Dentro do cofre, num pano limpo: três diamantes do tamanho de uma unha e um frasco com um líquido que não assenta, sempre subindo. ${c.name} guarda.`);
+          await painel(`Dentro do cofre, num pano limpo: três diamantes do tamanho de uma unha, cem peças de ouro cada um. ${c.name} guarda.`);
           app.refresh();
         },
       });
@@ -1406,6 +1385,20 @@ export function criarArvoreTrovao(app, config) {
     // com o PV descontado; o dragão sai do tabuleiro ali mesmo e a luta acaba por
     // falta de inimigo (`fimDoCombate` paga 2.000 XP em vez de 3.900).
     evento: (ev) => {
+      // O CULTO SEM FAVRIC: caído ele, o resto larga as armas e foge (o livro).
+      if (ev.type === 'damage' && chefeDoCulto && ev.target === chefeDoCulto && (chefeDoCulto.dead || chefeDoCulto.hp <= 0)
+        && !salvo.cultoFugiu && enc.combatants.includes(chefeDoCulto)) {
+        salvo.cultoFugiu = true;
+        for (const f of cultistas) {
+          if (f === chefeDoCulto || f.dead) continue;
+          const i = enc.combatants.indexOf(f);
+          if (i >= 0) enc.combatants.splice(i, 1);
+        }
+        enc.say('fim', 'Favric cai, e o que sobra do culto larga as armas e foge pela rua, sem olhar para trás.');
+        app.refresh();
+        enc.checkEnd();
+        return;
+      }
       if (ev.type !== 'damage' || !dragao || ev.target !== dragao) return;
       if (salvo.dragaoFugiu || dragao.dead || dragao.hp <= 0) return;
       if (dragao.hp > dragao.maxHp / 2) return;
@@ -1426,15 +1419,20 @@ export function criarArvoreTrovao(app, config) {
       if (npc === chefeDoCulto) {
         if (fim === 'luta') {
           salvo.culto = null;
-          await painel('Os seis mantos verdes se abrem ao mesmo tempo, e Favric começa a rezar alto.');
+          await painel('Os seis mantos se abrem ao mesmo tempo, as máscaras de chifre descem, e Favric começa a rezar alto.');
           luta(cultistas.filter((f) => !f.dead));
+        } else if (fim === 'aliado') {
+          // Combinado, e traição: ao entrar na torre, os seis lutam ao lado do dragão.
+          salvo.culto = 'aliado';
+          feitos.aliadoDoCulto = true;
+          await painel('Favric aperta a mão de quem estiver mais perto, e a aperta com força demais. — Descansem. Amanhã vão ver o senhor da torre de perto.');
         } else if (fim === 'desiste') {
           salvo.culto = 'desistiu';
           for (const f of cultistas) {
             const i = enc.combatants.indexOf(f);
             if (i >= 0) enc.combatants.splice(i, 1);
           }
-          await painel('Eles juntam o que cabe num saco e saem pela rua, para o sul, sem olhar a torre. O que fala por eles é o último a sair, e leva a escama debaixo do braço.');
+          await painel('Eles juntam o que cabe num saco e saem pela rua, para o sul, sem olhar a torre. O que fala por eles é o último a sair, e nem olha o cofre: tem pressa.');
           // CEM POR CENTO, e não três quartos. Medido, a luta contra eles
           // custa 5% dos PV do grupo: pagar 450 por convencer e 600 por matar
           // fazia da conversa a escolha pior nos dois eixos, e o cabeçalho

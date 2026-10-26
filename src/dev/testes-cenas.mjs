@@ -533,8 +533,6 @@ teste('cada criatura de Árvore Trovão nasce em casa livre e alcançável', () 
   // jogo vai pôr no tabuleiro nasce em chão livre, alcançável, e com as quatro
   // casas que um Grande precisa.
   const DE_CADA = {
-    infectados: ['galhoInfectado', 'galhoInfectado', 'galhoInfectado',
-      'espetoInfectado', 'espetoInfectado', 'vinhaInfectada', 'vinhaInfectada'],
     // Os bandos do livro, nas quantidades dele: zumbis das cinzas 4 / 2 / 5 (áreas
     // 3, 8, 11) e ramos secos 2 / 6 / 8 / 6 (áreas 1, 2, 5, 12).
     zumbis: Array(5).fill('zumbiDasCinzas'),
@@ -545,7 +543,7 @@ teste('cada criatura de Árvore Trovão nasce em casa livre e alcançável', () 
     ramos5: Array(8).fill('galhoInfectado'),
     ramos12: Array(6).fill('galhoInfectado'),
     aranhas: ['aranhaGigante', 'aranhaGigante'],
-    culto: ['sacerdote', 'acolito', 'acolito', 'acolito', 'acolito', 'acolito'],
+    culto: Array(6).fill('cultista'),
     dragao: ['dragaoVerdeJovem'],
   };
   const postos = [];

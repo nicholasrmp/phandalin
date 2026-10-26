@@ -2948,6 +2948,13 @@ export class Encounter {
         critical, rerolarAte: estilo === 'greatWeaponFighting' ? 2 : 0,
       }))
       : null;
+    // Arma que, contra um tipo de criatura, rola o dano no MÁXIMO (Hew, em planta): cada dado vai ao
+    // lado maior, e o bônus fixo segue o mesmo.
+    if (dmg && p.weapon?.danoMaximoContra && target.tipo === p.weapon.danoMaximoContra && dmg.rolls?.length) {
+      const { sides } = parseDice(damageNotation);
+      dmg.total += dmg.rolls.reduce((s, v) => s + (sides - v), 0);
+      dmg.rolls = dmg.rolls.map(() => sides);
+    }
     // Raio do Enfraquecimento: golpe de Força causa metade.
     const deForca = attacker.attacks ? !p.ranged : (p.weapon && weaponAbility(attacker, p.weapon) === 'str');
     if (dmg && deForca && hasCondition(attacker, 'enfraquecido')) {

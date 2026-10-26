@@ -627,8 +627,7 @@ for _ in range(2):
 for y in range(1, H - 1):
     for x in range(1, W - 1):
         if T[y][x] in ',v' and REG(x, y) is None and any(T[y + j][x + i] == 'w' for j in (-1, 0, 1) for i in (-1, 0, 1)):
-            if _ruido(x * 3 + 1, y * 5 + 2) < 0.7:
-                T[y][x] = ':'
+            T[y][x] = ':'      # a margem e COMPLETA: toda casa de capim junto da agua vira areia
 
 # O lago, a praça e a estátua: o que a cena publica deles.
 _agua = [(x, y) for y in range(H) for x in range(W) if T[y][x] == 'w']
@@ -858,6 +857,10 @@ for (x, y) in sorted(INTERIOR['loja'], key=lambda c: _embaralha(c[0], c[1], 103)
     _bloco = [(x + i, y + j) for j in (0, 1) for i in (0, 1)]
     if not all(b in INTERIOR['loja'] and T[b[1]][b[0]] in 'Ldvjmiusxz' for b in _bloco):
         continue
+    # Nenhuma aresta de parede (ou porta, arco, brecha) CORTA o bloco: a aranha e Grande, e uma parede
+    # no meio da pegada a poria meio dentro de outro cômodo.
+    if any(PO[y + j][x + 1] in '#+J/' for j in (0, 1)) or any(PN[y + 1][x + i] in '#+J/' for i in (0, 1)):
+        continue
     # (perto do vao pode: a aranha esta no armazem inteiro, e o piso do vao e do grupo)
     if any(abs(x - a) + abs(y - b) < 3 for (a, b) in _RESERVA_ARANHAS):
         continue
@@ -872,28 +875,28 @@ if len(_RESERVA_ARANHAS) < 2:
 PROP_BAIXO = {'banquinho', 'baldeBanco', 'trapos', 'saco', 'tabuas', 'camaCampo', 'peles',
               'alcapaoFechado', 'alcapaoAberto', 'tesouroPouco'}
 BARRA_MOVEL.add('^')
-_GERAL = ['banco', 'banquinho', 'armario', 'cama', 'cadeira', 'estante', 'tina', 'berco',
+_GERAL = ['banco', 'banquinho', 'armario', 'cama', 'cadeira', 'estante', 'berco',
           'guardaRoupa', 'roca', 'prateleira', 'escrivaninha', 'baldeBanco', 'trapos', 'mesaPosta']
 TEMA_PROP = {
     'casa': _GERAL,
-    'fazenda': ['cocho', 'saco', 'tabuas', 'tina', 'machadoTora', 'banco', 'cama', 'baldeBanco'],
-    'celeiro': ['cocho', 'saco', 'saco', 'tabuas', 'tina', 'machadoTora', 'trapos'],
-    'casa20': ['cocho', 'saco', 'tabuas', 'tina', 'banco', 'baldeBanco', 'trapos'],
+    'fazenda': ['cocho', 'saco', 'tabuas', 'machadoTora', 'banco', 'cama', 'baldeBanco'],
+    'celeiro': ['cocho', 'saco', 'saco', 'tabuas', 'machadoTora', 'trapos'],
+    'casa20': ['cocho', 'saco', 'tabuas', 'banco', 'baldeBanco', 'trapos'],
     'estalagem': ['cubaCerveja', 'barrisRack', 'mesaPosta', 'banco', 'banquinho', 'cadeira',
                   'prateleira', 'beliche', 'fogao', 'cubaCerveja'],
     'ferraria': ['bigorna', 'fole', 'mesaFerramentas', 'tabuas', 'saco', 'baldeBanco', 'fogao'],
     'tecelagem': ['tear', 'roca', 'banquinho', 'trapos', 'estante', 'tear', 'cadeira'],
     'escola': ['lousa', 'banco', 'banco', 'escrivaninha', 'estante', 'cadeira', 'tabuas'],
-    'moinho': ['mo', 'saco', 'saco', 'tabuas', 'cocho', 'tina', 'baldeBanco'],
-    'pescaria': ['redes', 'tina', 'baldeBanco', 'saco', 'tabuas', 'mesaFerramentas'],
-    'loja': ['prateleira', 'estante', 'mesaFerramentas', 'armario', 'saco', 'guardaRoupa', 'tina'],
-    'ervas': ['prateleira', 'estante', 'prateleira', 'armario', 'saco', 'tina', 'banquinho'],
+    'moinho': ['mo', 'saco', 'saco', 'tabuas', 'cocho', 'baldeBanco'],
+    'pescaria': ['redes', 'baldeBanco', 'saco', 'tabuas', 'mesaFerramentas'],
+    'loja': ['prateleira', 'estante', 'mesaFerramentas', 'armario', 'saco', 'guardaRoupa'],
+    'ervas': ['prateleira', 'estante', 'prateleira', 'armario', 'saco', 'banquinho'],
     'guarda': ['beliche', 'beliche', 'mesaFerramentas', 'banco', 'armario', 'cofreVazio'],
     'prefeito': ['escrivaninha', 'estante', 'cadeira', 'mesaPosta', 'armario', 'camaViuva'],
     'embaixada': ['escrivaninha', 'estante', 'cadeira', 'armario', 'banco', 'mesaPosta'],
     'florestal': ['mesaFerramentas', 'banco', 'estante', 'saco', 'machadoTora', 'trapos'],
-    'casa7': ['cama', 'banco', 'armario', 'trapos', 'banquinho', 'tina'],
-    'casa9': ['banco', 'mesaPosta', 'trapos', 'banquinho', 'cama', 'cadeira'],
+    'casa7': ['cama', 'banco', 'armario', 'trapos', 'banquinho'],
+    'casa9': ['banco', 'trapos', 'banquinho'],
 }
 PROPS = []
 _pecas_por_predio = {}
@@ -905,10 +908,10 @@ ASSINATURA = {
     'estalagem': ['cubaCerveja', 'barrisRack'], 'ferraria': ['bigorna', 'fole'],
     'pescaria': ['redes'], 'prefeito': ['escrivaninha'], 'loja': ['prateleira'],
     'ervas': ['prateleira'],
-    # O QUE O LIVRO PEDE: o altar com a escama e as camas dos cultistas (area 13), as camas de
-    # campo, a fogueira e as ervas do reduto do druida (area 4), o casulo do elfo (area 6) e o
-    # alcapao da guarnicao (area 11).
-    'casa9': ['altarEscama', 'candelabro', 'camaCampo', 'camaCampo', 'mesaPosta'],
+    # O QUE O LIVRO PEDE: a casa dos cultistas (area 13) tem so um fogareiro, uma mesa, duas
+    # cadeiras e um beliche, e muita poeira; as camas de campo, a fogueira e as ervas do reduto
+    # do druida (area 4), o casulo do elfo (area 6) e o alcapao da guarnicao (area 11).
+    'casa9': ['fogao', 'mesaPosta', 'cadeira', 'cadeira', 'beliche'],
     'florestal': ['camaCampo', 'fogueiraPanela', 'secadorErvas'],
 }
 ASSINATURA['loja'] = ['casuloElfo', 'casuloCorpo', 'prateleira']
@@ -950,9 +953,13 @@ def _desfaz(x, y, antigo):
 
 # O que cada glifo antigo vira, e com que chance. `g` fica como estava no resto.
 TROCA_PROP = {'m': 0.8, 'i': 0.75, 'u': 0.75, 's': 0.75, 'z': 0.7}
+# O livro: as construcoes caidas estao VAZIAS (entulho e poeira); so as inteiras tem cadeira e mesa.
+# Quanto mais caida, menos mobilia sobra (e a assinatura da casa, que o livro cita, sai sempre).
+_SOBRA = {0: 1.0, 1: 1.0, 2: 0.55, 3: 0.3}
 for pid, cs in INTERIOR.items():
     if pid == 'torre':
         continue
+    _sobra = _SOBRA[GRAU_DE_RUINA.get(pid, 2)]
     tema = TEMA_PROP.get(pid, TEMA_PROP['casa'])
     for _v in ASSINATURA.get(pid, []):
         _posta = False
@@ -960,7 +967,8 @@ for pid, cs in INTERIOR.items():
         # no lugar de um movel antigo): a assinatura TEM de sair, so o jeito muda.
         # O alcapao e de chao: fica no MEIO da sala, a vista, nao escondido atras de um beliche.
         for _rigor in ((1, 0) if _v.startswith('alcapao') else (2, 1, 0)):
-            for (x, y) in sorted(cs, key=lambda c: (_encosta(c[0], c[1]) if _v.startswith('alcapao') else 0, _embaralha(c[0], c[1], 83 + _rigor))):
+            # (o casulo do elfo fica na metade OESTE do armazem, como no livro)
+            for (x, y) in sorted(cs, key=lambda c: ((_encosta(c[0], c[1]) if _v.startswith('alcapao') else (c[0] if _v == 'casuloElfo' else 0)), _embaralha(c[0], c[1], 83 + _rigor))):
                 if _junto_de_vao(x, y) or (_rigor >= 1 and _tapado(x, y)) or (_rigor == 2 and not _encosta(x, y)):
                     continue
                 if T[y][x] not in ('Ldvj' if _rigor else 'Ldvjmiusz'):
@@ -976,7 +984,7 @@ for pid, cs in INTERIOR.items():
                 break
     for (x, y) in sorted(cs):
         chance = TROCA_PROP.get(T[y][x])
-        if chance is None or _embaralha(x, y, 41) >= chance:
+        if chance is None or _embaralha(x, y, 41) >= chance * _sobra:
             continue
         antigo = T[y][x]
         _v, _esp = _escolhe(pid, tema, x, y, 43)
@@ -984,7 +992,7 @@ for pid, cs in INTERIOR.items():
         if not _piso_inteiro(cs):
             _desfaz(x, y, antigo)
     # Pecas novas, encostadas na parede, longe do vao, fora da sombra da parede da frente.
-    alvo = max(2, int(len(cs) * 0.20))
+    alvo = max(2 if _sobra == 1.0 else 1, int(len(cs) * 0.20 * _sobra))
     postas = sum(1 for p in PROPS if (p['x'], p['y']) in cs)
     # Duas passadas: a primeira so encostado na parede; a segunda aceita o meio da sala.
     for rigor in (1, 0):
@@ -1071,8 +1079,10 @@ _torre_props = []
 for _v in ('tesouroDragao', 'aranhaMorta', 'aranhaMorta', 'tesouroPouco'):
     for _rigor in (1, 0):
         _ok = False
-        _cands = sorted(_tcs, key=lambda c: (abs(c[0] - _arca[0]) + abs(c[1] - _arca[1]) if _arca else 0,
-                                             _embaralha(c[0], c[1], 91)))
+        # (as duas aranhas mortas ficam perto do canto OESTE da torre, como no livro)
+        _cands = sorted(_tcs, key=(lambda c: (c[0], _embaralha(c[0], c[1], 91))) if _v == 'aranhaMorta' else
+                        (lambda c: (abs(c[0] - _arca[0]) + abs(c[1] - _arca[1]) if _arca else 0,
+                                    _embaralha(c[0], c[1], 91))))
         for (x, y) in _cands:
             if T[y][x] not in 'Ldvjc' or _junto_de_vao(x, y) or (_rigor and _tapado(x, y)):
                 continue
@@ -1117,6 +1127,22 @@ for (x, y) in _RESERVA_ARANHAS:
     for j in (0, 1):
         for i in (0, 1):
             T[y + j][x + i] = 'L'
+
+# O ENTULHO das casas caidas: o teto e a parede de cima moram no chao (terreno dificil, glifo `x`).
+# Nao entra na boca do vao, no bloco das aranhas nem em peca posta.
+_ENTULHO = {2: 0.10, 3: 0.20}
+_reservado = {(x + i, y + j) for (x, y) in _RESERVA_ARANHAS for i in (0, 1) for j in (0, 1)}
+_entulho_posto = {}
+for pid, cs in INTERIOR.items():
+    quanto = _ENTULHO.get(GRAU_DE_RUINA.get(pid, 2), 0)
+    if not quanto:
+        continue
+    livres = sorted((c for c in cs if T[c[1]][c[0]] in 'Ldvj' and not _junto_de_vao(*c) and c not in _reservado),
+                    key=lambda c: _embaralha(c[0], c[1], 113))
+    for (x, y) in livres[:int(len(livres) * quanto)]:
+        T[y][x] = 'x'
+    _entulho_posto[pid] = min(len(livres), int(len(livres) * quanto))
+print('entulho dentro das casas:', _entulho_posto)
 
 # O PISO de cada construcao: assoalho de tabua nas casas de gente, laje rachada nas de pedra.
 PISO_TABUA = {'fazenda', 'estalagem', 'casa7', 'casa9', 'casa10', 'casa12', 'casa15', 'casa19',
@@ -1205,7 +1231,7 @@ GOSTO.update({
 # O que nasce NA pedra: o que sobra numa parede baixa, onde nada fica pendurado.
 NASCE_NA_PEDRA = ['musgo', 'teia', 'liquen', 'mancha', 'fuligem', 'reboco']
 # A estalagem é onde o culto se abriga, e a torre é o covil: lá há fogo aceso.
-COM_FOGO = {'estalagem'}
+COM_FOGO = set()     # o livro: as casas estao abandonadas; nenhuma tocha acesa
 PENDURA = {'tochaAcesa', 'tochaApagada', 'quadro', 'bandeira', 'armas', 'escudo', 'cranio', 'corrente',
            'tapecaria', 'moldura', 'ferradura', 'chaves', 'aviso', 'pergaminho', 'prateleira', 'peles', 'ervas',
            'janela', 'lanterna', 'placaPoney', 'avisoPapeis'}
@@ -1788,7 +1814,6 @@ _ZONA_MATO_LESTE = _franja('casa20', 3, -1, 9, 1)      # o mato a leste da fazen
 _ZONA_TECELAGEM_SUL = _franja('tecelagem', -2, 2, 3, 6)    # os arbustos ao sul da tecelagem
 
 NINHOS = {
-    'infectados': _vagas(JARDIM, 7, 'o espinheirado a leste'),
     'aranhas': [{'x': x, 'y': y} for (x, y) in _aranhas],
     'zumbis': _vagas(None, 5, 'a velha guarnição (área 11)', dentro_de=CORPOS['guarda']),
     'zumbisCavalo': _vagas(None, 4, 'o Cavalo Pardo (área 3)', dentro_de=CORPOS['estalagem']),

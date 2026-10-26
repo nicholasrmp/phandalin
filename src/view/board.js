@@ -371,11 +371,15 @@ export class Board {
       }
     }
     // Muro mais alto que o de sempre sobe acima da casa do fundo: o canvas reserva o que passa dos 3 níveis.
-    if (this.field.paredeAlt) copa += Math.max(0, Math.max(...this.field.paredeAlt) - ALTURA_PAREDE) * LIFT;
+    // (só nos mapas de vila: o enquadramento do castelo e dos encontros padrão não muda)
+    if (this.field.paredeAlt && this.field.fachadaFechada) copa += Math.max(0, Math.max(...this.field.paredeAlt) - ALTURA_PAREDE) * LIFT;
     // Dimensionado para o pior caso, para não redimensionar ao girar.
     canvas.width = span * (TW / 2) + PAD * 2;
     canvas.height = span * (TH / 2) + this.maxHeight * LIFT + PAD * 2 + 40 + copa;
     this.ox = PAD + (wide - 1) * (TW / 2) + (span - 2 * wide + 2) * (TW / 4);
+    // CÂMERA FIXA (rot 0): o canto de trás da vista fica à esquerda em h*TW/2; a fórmula acima era para as 4 rotações.
+    // (só nos mapas de vila: os outros mapas mantêm o enquadramento de sempre)
+    if (this.rot === 0 && w !== h && this.field.fachadaFechada) this.ox = PAD + h * (TW / 2);
     this.oy = PAD + this.maxHeight * LIFT + copa;
 
     this.rebuildOrder();
@@ -930,7 +934,7 @@ export class Board {
       }
       // OS TUFOS: detalhes de capim (flor, cogumelo, pedrinha, graveto) espalhados por sorteio de casa
       // no gramado liso. Só desenho: nenhuma regra do chão muda, e a casa com objeto não leva tufo.
-      if (s.chao === 'grama' && !s.objeto && !this.field.sala?.has(`${x},${y}`)
+      if (this.field.fachadaFechada && s.chao === 'grama' && !s.objeto && !this.field.sala?.has(`${x},${y}`)
         && sorteio(x * 7 + 3, y * 11 + 5, 100) < 16) {
         const tufo = spriteCenario('tufo', ['todas'], x, y);
         if (tufo) {
@@ -1831,7 +1835,15 @@ export class Board {
         // translucidez pela parede errada e a tocha ficava baixa demais.
         // E a da RUÍNA, quando a construção está caída: a peça não fica no ar acima do toco.
         const grauAqui = f.paredeRuina?.[i] || 0;
-        const alto = (grauAqui ? this.niveisEmRuina(niveis, grauAqui, x, y, lado) : niveis) * LIFT;
+        let alto = (grauAqui ? this.niveisEmRuina(niveis, grauAqui, x, y, lado) : niveis) * LIFT;
+        if (grauAqui) {
+          // O topo da ruína é quebrado: a peça se ancora no ponto MAIS BAIXO do meio da aresta, e
+          // não pendura no ar onde o muro caiu. Na brecha, ou onde sobra pouco muro, não entra.
+          if (f.brechas?.has(`${x},${y},${lado}`)) continue;
+          const perf = this.perfilDeRuina(lado, x, y, grauAqui, alto);
+          alto -= Math.max(perf[1], perf[2], perf[3]);
+          if (alto < LIFT * 1.5) continue;
+        }
         const [ax, ay] = lado === 'O' ? [x - 1, y] : [x, y - 1];
         ctx.save();
         if (this._salasOcupadas?.has(f.sala?.get(`${ax},${ay}`))
@@ -1900,6 +1912,9 @@ export class Board {
     const eBrecha = brechaAberta || cod === ARESTA.seteira;
     if (brechaAberta) cod = ARESTA.parede;     // desenha como parede, com o entalhe
     // Vão de uma construção que não se vê por dentro: a porta aparece FECHADA, aberta ou não.
+    // O corrido do vão (portão de duas casas) é medido pelo código ORIGINAL: depois da troca, o
+    // vizinho aberto não bate com a porta e o portão virava duas portinhas.
+    const codDoCorrido = cod;
     if (fechar) cod = ARESTA.porta;
     const f = this.field;
     const ESP = 7;            // espessura da parede, em px de tela
@@ -1917,7 +1932,7 @@ export class Board {
     // por ali se vê o que já foi desenhado atrás — o chão da outra sala, os
     // móveis, quem estiver lá. Pintar o vão de preto fechava a passagem com
     // tinta e matava a profundidade.
-    const vao = this.vaoDaAresta(lado, A, B, alto, cod, x, y);
+    const vao = this.vaoDaAresta(lado, A, B, alto, cod, x, y, codDoCorrido);
     // A SOMBRA DE CONTATO no pé: uma faixa escura caindo da parede para
     // dentro da sala. Sem ela a parede parece apoiada no chão sem tocá-lo, e
     // o olho não acha onde uma acaba e o outro começa. É a mesma coisa que
@@ -2030,8 +2045,22 @@ export class Board {
     ctx.strokeStyle = 'rgba(22,20,18,.85)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(topoA.x, topoA.y); ctx.lineTo(topoB.x, topoB.y);
-    ctx.moveTo(topoA.x + dx, topoA.y + ESP / 2); ctx.lineTo(topoB.x + dx, topoB.y + ESP / 2);
+    if (quebra) {
+      // Topo quebrado: o fio acompanha o perfil (brecha, seteira, degrau), e não a corda reta entre as pontas.
+      for (let k = 0; k <= 4; k++) {
+        const px = A.x + (B.x - A.x) * (k / 4);
+        const py = A.y + (B.y - A.y) * (k / 4) - alturaEm(k);
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      for (let k = 0; k <= 4; k++) {
+        const px = A.x + (B.x - A.x) * (k / 4) + dx;
+        const py = A.y + (B.y - A.y) * (k / 4) - alturaEm(k) + ESP / 2;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+    } else {
+      ctx.moveTo(topoA.x, topoA.y); ctx.lineTo(topoB.x, topoB.y);
+      ctx.moveTo(topoA.x + dx, topoA.y + ESP / 2); ctx.lineTo(topoB.x + dx, topoB.y + ESP / 2);
+    }
     ctx.stroke();
     // O fio escuro no pé, do lado de dentro: dá o assentamento. Ele PARA no
     // vão — atravessando o limiar, punha uma faixa escura no meio da
@@ -2101,12 +2130,12 @@ export class Board {
    * coordenadas de tela — o canvas guarda o caminho depois da transformação,
    * então o recorte feito aqui continua valendo fora dela.
    */
-  vaoDaAresta(lado, A, B, alto, cod, x, y) {
+  vaoDaAresta(lado, A, B, alto, cod, x, y, codDoCorrido = cod) {
     if (cod !== ARESTA.porta && cod !== ARESTA.aberta) return null;
     const f = this.field;
     const mesma = (ax, ay) => (lado === 'N'
-      ? f.inside(ax, ay) && f.paredeN[ay * f.w + ax] === cod
-      : f.inside(ax, ay) && f.paredeO[ay * f.w + ax] === cod);
+      ? f.inside(ax, ay) && f.paredeN[ay * f.w + ax] === codDoCorrido
+      : f.inside(ax, ay) && f.paredeO[ay * f.w + ax] === codDoCorrido);
     // Recua até a primeira casa do corrido e mede o comprimento dele.
     let atras = 0;
     while (mesma(lado === 'N' ? x - atras - 1 : x, lado === 'N' ? y : y - atras - 1)) atras += 1;
@@ -2277,6 +2306,8 @@ export class Board {
     const out = [];
     for (const c of this.enc.combatants) {
       if (!c.pos) continue;
+      // Quem o grupo não vê (dentro de uma construção fechada) não faz a parede ficar translúcida.
+      if (c.side !== 'party' && !this.figuraVisivel(c)) continue;
       const v = this.toView(c.pos.x, c.pos.y);
       const { sx, sy } = this.center(c.pos.x, c.pos.y);
       // Uma criatura Média ocupa uns 40 x 48 px acima do centro da casa.
@@ -2510,9 +2541,9 @@ export class Board {
     // A metade de trás da roda dos Espíritos Guardiões vem antes das figuras.
     this.drawMagiasAtivas(ctx, 'tras');
 
-    this._figuras = this.figurasNaTela();
     this._salasOcupadas = this.salasDoGrupo();
     this._salasReveladas = this.calcularSalasReveladas();
+    this._figuras = this.figurasNaTela();
     // Árvores que esmaecem neste quadro: as que escondem a casa sob o cursor
     // ou o destino do caminho. Sem isso o jogador mira uma casa que não vê.
     this._copas = this.coberturaDasCopas();
