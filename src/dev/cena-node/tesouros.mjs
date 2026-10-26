@@ -231,3 +231,31 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.ok(!op2.motivo || /parede|longe/.test(op2.motivo) === false, 'sem cultistas o cofre abre: ' + op2.motivo);
   void cult;
 }
+
+// --- Reidoth: a Onda Eco e uma troca; as pistas abrem opcoes -------------------------------------------
+{
+  const S = await novaCena(77, { nivel: 3 });
+  const reidoth = S.enc.combatants.find((c) => c.name === 'Reidoth' || /reidoth/i.test(c.id ?? ''));
+  assert.ok(reidoth, 'Reidoth em cena');
+  const arvore = () => S.cena.dialogoDe(reidoth);
+  const no = (a, id) => a.nos[id];
+  const temOpcao = (a, trecho) => {
+    const o = a.nos.oi.opcoes.find((x) => x.texto.includes(trecho));
+    return Boolean(o) && !(o.requer?.() ?? null);
+  };
+  // sem favor: a Onda Eco volta sem a resposta
+  const camp = S.app.campanha;
+  let a = arvore();
+  a.nos.ondaEco.ao();
+  assert.ok(!camp.feitos?.sabeOndaEco, 'sem favor feito, ele não conta onde fica a Onda Eco');
+  // com um favor: conta, e o Enclave os tem por amigos
+  camp.arvoreTrovao.zumbisFerraria = 'limpo';
+  a = arvore();
+  a.nos.ondaEco.ao();
+  assert.ok(camp.feitos?.sabeOndaEco && camp.feitos?.amigoDoEnclave, 'com um favor feito ele conta e os chama de amigos');
+  // as pistas abrem as opcoes
+  assert.ok(!temOpcao(arvore(), 'escama'), 'sem pista, sem a opção da escama');
+  camp.vila.pistas = [...(camp.vila.pistas ?? []), 'O altar dos cultistas guarda uma escama fresca de dragão verde: o dragão da torre troca de pele aqui perto.'];
+  assert.ok(temOpcao(arvore(), 'escama'), 'com a pista, a opção da escama aparece');
+  ok('Reidoth: a Onda Eco só depois de um favor (e o Enclave os tem por amigos), e as pistas abrem opções');
+}

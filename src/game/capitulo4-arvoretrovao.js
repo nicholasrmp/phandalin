@@ -619,6 +619,14 @@ export function criarArvoreTrovao(app, config) {
     luta([dragao]);
   }
 
+  // AS PISTAS QUE O GRUPO ACHOU EXAMINANDO (`arvoretrovao-exames.js`) valem nas conversas: quem
+  // tem a pista de que a escama do altar é fresca, de que há seis atrás da porta ou de que o
+  // telhado da guarnição vê a torre tem o que dizer a Favric e a Reidoth.
+  const temPista = (trecho) => (vila.pistas ?? []).some((p) => p.includes(trecho));
+  // O FAVOR que Reidoth pede ("que essa vila fique em paz"): qualquer bando da vila resolvido.
+  const favorFeito = () => ['zumbis', 'zumbisCavalo', 'zumbisFerraria', 'ramos1', 'ramos2', 'ramos5', 'ramos12', 'infectados']
+    .some((k) => salvo[k] === 'limpo') || ['morto', 'desistiu'].includes(salvo.culto);
+
   // ------------------------------------------------- o culto do dragão ----
   function arvoreDoCulto() {
     return {
@@ -628,6 +636,8 @@ export function criarArvoreTrovao(app, config) {
           narra: 'A casa de pedra é a mais inteira da vila, com lona nova esticada onde o telhado faltava. Dentro, seis pessoas de manto verde em volta de uma fogueira, e um altar de pedra empilhada com uma escama do tamanho de um prato em cima.',
           fala: 'Vocês não deviam estar aqui. Este chão é dele agora, e ele não divide.',
           opcoes: [
+            { texto: 'A escama do seu altar é nova, Favric. Ele troca de pele, e vocês não têm nada de especial.', vai: 'duvida',
+              requer: () => (temPista('escama fresca') ? null : 'sem pista'), oculta: true },
             { texto: 'Vocês sabem que ele vai comer vocês, não sabem?',
               teste: { pericia: 'persuasao', cd: 13 }, sucesso: 'duvida', falha: 'raiva' },
             { texto: 'Só estamos de passagem. Procuramos um druida.',
@@ -715,8 +725,14 @@ export function criarArvoreTrovao(app, config) {
           opcoes: [
             { texto: 'Procuramos o Castelo Dentefino.', vai: 'castelo',
               requer: () => (feitos.sabeOCastelo ? 'ele já disse' : null), oculta: true },
-            { texto: 'Já sabemos do castelo. E a Caverna Onda Eco?', vai: 'ondaEco',
+            { texto: 'E a Caverna Onda Eco?', vai: 'ondaEco',
               requer: () => (feitos.sabeOndaEco ? 'ele já disse' : null), oculta: true },
+            { texto: 'A escama no altar dos cultistas é fresca. Ele troca de pele aqui perto.', vai: 'escama',
+              requer: () => (temPista('escama fresca') && !salvo.contouEscama ? null : 'nada a contar'), oculta: true },
+            { texto: 'Do telhado da guarnição se vê a rua inteira, até a torre.', vai: 'telhado',
+              requer: () => (temPista('telhado da guarnição') && !salvo.contouTelhado ? null : 'nada a contar'), oculta: true },
+            { texto: 'Há seis rezando atrás da porta da casa de esquina.', vai: 'seis',
+              requer: () => (temPista('Seis pessoas rezam') && !salvo.contouSeis ? null : 'nada a contar'), oculta: true },
             { texto: 'O que é aquilo na torre?', vai: 'dragao' },
             { texto: 'E essa gente de manto verde?', vai: 'culto' },
             { texto: 'Precisa de alguma coisa, senhor?', vai: 'pedido' },
@@ -732,12 +748,19 @@ export function criarArvoreTrovao(app, config) {
           narra: 'Ele risca o chão de cinza com o pé: uma linha para a trilha, um quadrado para o castelo, e um traço do quadrado até a linha.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
+        // A ONDA ECO É UMA TROCA: ele a diz a quem já fez alguma coisa pela vila ("se vocês derem
+        // conta de alguma dessas coisas, eu fico devendo"). Sem favor, ele manda voltar depois.
         ondaEco: {
           ao: () => {
+            if (!favorFeito()) return;
             feitos.sabeOndaEco = true;
+            feitos.amigoDoEnclave = true;
             pista('Reidoth disse onde fica a Caverna Onda Eco: nos morros a leste de Phandalin, ao pé das Montanhas Espada, onde o mar antigo secou.');
+            pista('Reidoth, que fala pelo Enclave Esmeralda, os tem por amigos: quem resolveu o que ele pediu na vila.');
           },
-          fala: 'A caverna do mar que secou. Fica nos morros a leste da vila nova de vocês, onde o chão começa a virar montanha. Anões e gente escavaram lá por gerações, e um dia pararam todos no mesmo dia.',
+          fala: !favorFeito()
+            ? 'Sei onde é. Mas não se dá de graça uma coisa que me custou trinta anos de caminho. Façam por esta vila o que eu pedi — mato, mortos de cinza, qualquer um deles — e voltem. Aí eu falo.'
+            : 'A caverna do mar que secou. Fica nos morros a leste da vila nova de vocês, onde o chão começa a virar montanha. Anões e gente escavaram lá por gerações, e um dia pararam todos no mesmo dia.',
           narra: 'Pela primeira vez ele parece interessado em vocês.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
@@ -758,10 +781,26 @@ export function criarArvoreTrovao(app, config) {
           narra: 'Um canto da boca dele se mexe, e é o mais perto de um sorriso que ele vai chegar.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
+        escama: {
+          ao: () => { salvo.contouEscama = true; },
+          fala: 'Fresca. Então a escama é de agora, e ele a perde aqui perto, a duas portas dos meus pés, sem que ninguém me avisasse. Alguém a limpa e a guarda: eles a tratam como relíquia.',
+          narra: 'Ele fica quieto um tempo, olhando a torre, como quem refaz uma conta.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        telhado: {
+          ao: () => { salvo.contouTelhado = true; },
+          fala: 'A guarnição. De lá se vê a rua e a torre, e os guardas sabiam disso. Se vão tentar alguma coisa, olhem de lá antes de tentar na porta.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        seis: {
+          ao: () => { salvo.contouSeis = true; },
+          fala: 'Seis. Quem fala por eles se chama Favric. É o único que ainda acha que o dragão responde.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
         pedido: {
           ao: () => { salvo.pedido = true; },
           fala: 'Preciso que essa vila fique em paz para eu poder ir embora dela. O dragão eu não resolvo, nem os mortos de cinza — da guarnição, da taverna, da ferraria: já estavam andando quando eu cheguei. E o mato, que não para de brotar. Se vocês derem conta de alguma dessas coisas, eu fico devendo.',
-          narra: 'Ele aponta, com o queixo, a casa de pedra mais inteira da vila, a oeste.',
+          narra: 'Ele aponta, com o queixo, a casa de pedra mais inteira da vila, a de esquina, junto da praça.',
           opcoes: [{ texto: 'Vamos ver.', vai: 'oi' }],
         },
       },
