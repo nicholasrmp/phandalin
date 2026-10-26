@@ -783,6 +783,8 @@ export const SPELLS = {
   // ---- lote 10: luz, silêncio, tamanho, elo, loucura, calma, cura em grupo, vento ----
 
   luz: {
+    // Familia do som de conjurar (`rules/familias-de-magia.js`): buff cuja condicao nao declara campo mecanico nenhum: e luz, nao reforco.
+    familiaSonora: 'utilidade',
     id: 'luz', name: 'Luz', level: 0, school: 'evocação', fonte: 'srd',
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'luzMagica', umaPorVez: true,
     desc: 'Toque num aliado (ou em si): ele passa a brilhar como uma tocha, com luz clara num raio de 6 m e penumbra por mais 6 m, por 1 hora. Conjurar de novo em outro passa a luz para ele. (No jogo, só em aliado ou em si; o livro também deixa mirar um inimigo, que resiste com DES.)',
@@ -847,6 +849,8 @@ export const SPELLS = {
     desc: 'Uma imagem de um objeto (um caixote, uma pedra) numa casa vazia a até 9 m, por 1 minuto. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles, e eles atacam e são atacados como no escuro. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. (Simplificação: o jogo ignora o som, e só o outro lado é enganado — seus aliados sempre sabem. Uma vez desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar. Fora do combate, como regra da casa, dá vantagem em Enganação por 1 minuto.)',
   },
   visaoNoEscuro: {
+    // Familia do som de conjurar (`rules/familias-de-magia.js`): buff cuja condicao so declara um alcance de sentido: e utilidade, nao reforco.
+    familiaSonora: 'utilidade',
     id: 'visaoNoEscuro', name: 'Visão no Escuro', level: 2, school: 'transmutação', fonte: 'srd',
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'visaoNoEscuro',
     desc: 'Toque num aliado (ou em si): por 8 horas ele enxerga no escuro até 18 m, como se fosse penumbra. Quem já tem visão no escuro mais longa mantém a sua. (A escuridão mágica, como a da magia Escuridão, continua opaca.) Sem concentração.',
@@ -1194,6 +1198,8 @@ export const SPELLS = {
     desc: 'Até 6 criaturas a até 18 m recuperam 3d8 + o modificador de conjuração. +1d8 por círculo acima do 5º. (Simplificação: o livro escolhe as seis dentro de uma esfera de 9 m de raio; aqui, quando o jogador não escolhe, valem as seis feridas mais próximas dentro dos 18 m. Não cura morto-vivo nem constructo, como no livro.)',
   },
   reviverOsMortos: {
+    // Familia do som de conjurar (`rules/familias-de-magia.js`): o `kind` e `utilidade` porque o motor a trata em `rules/utilidade.js`, mas o que ela FAZ e o que Revivificar faz.
+    familiaSonora: 'cura',
     id: 'reviverOsMortos', name: 'Reviver os Mortos', level: 5, school: 'necromancia', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'minutos', minutos: 60, rangeFt: 5, kind: 'utilidade', duracaoMin: 0,
     desc: 'Uma hora de ritual sobre um corpo que morreu há no máximo dez dias, e a alma volta: ele acorda com 1 PV. Voltar custa — por um tempo ele erra mais: −4 em ataques, resistências e testes de atributo, e essa penalidade cai de 1 a cada descanso longo, até sumir. Como no livro, voltar também neutraliza o veneno que o afligia. (Simplificações: sem o diamante de 500 po; o jogo não conta os dez dias, porque não guarda a hora em que cada um morreu; e só devolve quem é do grupo, porque um corpo inimigo revivido voltaria hostil e o livro não trata disso; e não devolve membro que faltou, não cura doença mágica nem maldição, e não fecha o ferimento que matou a pessoa. Quem morreu de exaustão volta no 6º degrau, que mata: por isso aqui ele volta no 5º, senão morreria de novo no primeiro teste de fome. A conta de −4 pesa em toda resistência e em todo teste de perícia, mas não na iniciativa, que o jogo rola uma vez para o grupo inteiro, nem nos testes de resistência contra a morte. Só fora de combate.)',
@@ -1218,6 +1224,8 @@ export const SPELLS = {
     desc: 'Dez minutos de oração e um espírito atende, com a forma de um cavalo de guerra: deslocamento 18 m, Inteligência 6, e entende um idioma que você fale. Na estrada, o grupo cavalga, e o dia de marcha rende o dobro. (Duas regras da casa: o livro dá UM corcel ao conjurador, e aqui o grupo inteiro viaja no ritmo dele; e o livro só promete uma hora de galope a dobro de velocidade, enquanto aqui o corcel rende a jornada toda. Simplificações: o jogo não põe o corcel no tabuleiro nem tem combate montado, então nada dele aparece na luta; não há ação de dispensá-lo, e ele dura até a magia terminar; e a parte que deixa suas magias de alvo único alcançarem a montaria não está. Só fora de combate.)',
   },
   montariaFantasmagorica: {
+    // Familia do som de conjurar (`rules/familias-de-magia.js`): traz uma criatura que nao estava, e a escola (ilusao) nao a distingue de uma imagem.
+    familiaSonora: 'invocacao',
     id: 'montariaFantasmagorica', name: 'Montaria Fantasmagórica', level: 3, school: 'ilusão', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'minutos', minutos: 1, rangeFt: 30, kind: 'utilidade', duracaoMin: 60,
     desc: 'Um cavalo meio transparente aparece ao seu lado, com deslocamento 30 m, e some depois de uma hora. O livro dá o ritmo dele: 16 km numa hora, ou 21 km em passo acelerado. Ritual. Na estrada, essa hora a galope vale por três de caminhada, e as outras sete seguem a pé. (Regra da casa: o livro dá a montaria a UM cavaleiro, e aqui o grupo inteiro viaja no ritmo dela. Simplificações: o jogo não põe a montaria no tabuleiro nem tem combate montado; e a regra de ela sumir ao levar qualquer dano fica sem efeito, porque não há montaria no tabuleiro para ser acertada. Só fora de combate.)',

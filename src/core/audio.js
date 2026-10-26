@@ -246,7 +246,7 @@ class Audio {
     if (!this.ctx || this.muted) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     const fn = SOUNDS[name];
-    if (fn) fn(this, opts);
+    if (fn) fn(this, opts ?? {});
   }
 }
 
@@ -257,6 +257,65 @@ const vary = (base, amount = 0.12) => base * (1 + (Math.random() - 0.5) * 2 * am
 // Atraso irregular. Grade regular de cliques soa como metrônomo; é a irregularidade
 // que faz o ouvido ouvir osso solto, casco e cascata em vez de sequenciador.
 const jitter = (amount) => Math.random() * amount;
+
+// A COR de cada escola na utilidade. É uma TABELA e não um `switch` de propósito:
+// um `switch` com `default` engole em silêncio a escola escrita errada (cai no
+// sino neutro e ninguém repara), e a tabela se pode exportar e CONFERIR. O teste
+// exige que toda escola que existe em `spells.js` tenha uma entrada aqui.
+//
+// A chave é a escola sem acento, como `rules/familias-de-magia.js` a normaliza.
+const COR_DA_ESCOLA = {
+  // O olho que vê: sino alto com um parcial inarmônico e vibrato lento.
+  adivinhacao: (a) => {
+    a.tone({ dur: 0.75, type: 'sine', from: vary(1319), gain: 0.09, attack: 0.02, vibrato: { rate: 5, depth: 8 } });
+    a.tone({ dur: 0.5, type: 'sine', from: vary(1319) * 2.01, gain: 0.04, attack: 0.02 });
+  },
+  // A coisa que MUDA: um glissando de uma sexta, subindo.
+  transmutacao: (a) => {
+    a.tone({ dur: 0.34, type: 'sine', from: vary(600), to: 900, gain: 0.11, attack: 0.03 });
+    a.tone({ delay: 0.06, dur: 0.3, type: 'triangle', from: vary(900), to: 1350, gain: 0.05, attack: 0.03 });
+  },
+  // O que não está lá: duas senoides a 10 Hz uma da outra, ocas.
+  ilusao: (a) => {
+    a.tone({ dur: 0.7, type: 'sine', from: vary(1046), gain: 0.08, attack: 0.1 });
+    a.tone({ dur: 0.7, type: 'sine', from: vary(1046) + 10, gain: 0.08, attack: 0.1 });
+  },
+  // A vontade que cede: uma terça maior, macia.
+  encantamento: (a) => {
+    a.tone({ dur: 0.6, type: 'sine', from: vary(659), gain: 0.09, attack: 0.08 });
+    a.tone({ delay: 0.05, dur: 0.55, type: 'sine', from: vary(830), gain: 0.07, attack: 0.08 });
+  },
+  // Algo aparece: um estalo e um grave curto.
+  conjuracao: (a) => {
+    a.noise({ dur: 0.07, type: 'bandpass', freq: vary(1500), q: 2, gain: 0.14 });
+    a.tone({ dur: 0.22, type: 'sine', from: vary(300), to: 600, gain: 0.1, attack: 0.01 });
+  },
+  // A morte que fala: dois graves a um semitom, baixos.
+  necromancia: (a) => {
+    a.tone({ dur: 0.7, type: 'sine', from: vary(196), gain: 0.1, attack: 0.1 });
+    a.tone({ dur: 0.7, type: 'sine', from: vary(208), gain: 0.08, attack: 0.1 });
+  },
+  // A proteção em voz baixa: o toque da Ward, sem o baque.
+  abjuracao: (a) => {
+    a.tone({ dur: 0.5, type: 'triangle', from: vary(523), gain: 0.09, attack: 0.005 });
+    a.tone({ dur: 0.6, type: 'sine', from: vary(784), gain: 0.05, attack: 0.005 });
+  },
+  // A fagulha: um chiado agudo e um tom que sobe depressa.
+  evocacao: (a) => {
+    a.noise({ dur: 0.08, type: 'highpass', freq: 4000, gain: 0.12 });
+    a.tone({ dur: 0.22, type: 'sine', from: vary(1000), to: 1400, gain: 0.09, attack: 0.01 });
+  },
+  // Escola que não conheço: o sino neutro, e não o silêncio. Fica FORA de
+  // `ESCOLAS_COM_COR`: não é escola, é a rede. Se o teste a vir pedida por uma
+  // magia do jogo, é erro de grafia.
+  neutra: (a) => {
+    a.tone({ dur: 0.5, type: 'sine', from: vary(988), gain: 0.1, attack: 0.02 });
+    a.tone({ dur: 0.4, type: 'sine', from: vary(1319), gain: 0.05, attack: 0.02 });
+  },
+};
+
+/** As escolas que têm cor própria. O teste exige que cubra todas as do jogo. */
+export const ESCOLAS_COM_COR = Object.freeze(Object.keys(COR_DA_ESCOLA).filter((k) => k !== 'neutra'));
 
 const SOUNDS = {
   // --- combate corpo a corpo ---
@@ -312,6 +371,105 @@ const SOUNDS = {
   castGeneric: (a) => {
     a.tone({ dur: 0.3, type: 'triangle', from: vary(520), to: 780, gain: 0.12 });
     a.noise({ dur: 0.2, type: 'bandpass', freq: vary(1800), q: 1.5, gain: 0.1 });
+  },
+
+  // --- magia, por FAMÍLIA (o que ela faz, não o dano que causa) ---------------
+  //
+  // O ouvido separa famílias pelo FORMATO — quanto o som demora a chegar, quanto
+  // dura, se sobe ou desce — muito mais do que pela altura. Por isso cada uma
+  // tem um envelope próprio, e as alturas só ajudam:
+  //   cura       floresce devagar        proteção   bate e ressoa
+  //   reforço    dois toques, um salto   movimento  sopro que atravessa
+  //   maldição   desafina e cai          calma      desce, macia
+  //   invocação  incha e cai de peso     utilidade  sino, colorido pela escola
+  //
+  // O nível alvo é o dos golpes (0,12 a 0,34 por camada): lançar uma magia de
+  // apoio não pode soar mais alto que levar um golpe. Medido em
+  // OfflineAudioContext, o RMS fica entre -44 e -34 dB; o trovão e a invocação
+  // são os mais cheios, de propósito — um estrondo e algo que chega pesam —, e
+  // nenhum chega ao `hitSlash` (0,70 somado).
+
+  // CURA: ataque lento (0,18 s) e nenhum transiente. É o contrário do `heal`,
+  // que é o arpejo seco do RESULTADO e continua tocando quando a cura chega.
+  castHeal: (a) => {
+    a.tone({ dur: 0.75, type: 'sine', from: vary(392), to: 523, gain: 0.13, attack: 0.18 });
+    a.tone({ delay: 0.12, dur: 0.65, type: 'triangle', from: vary(587), to: 784, gain: 0.07, attack: 0.2 });
+    a.noise({ dur: 0.55, type: 'lowpass', freq: 900, gain: 0.04, attack: 0.25 });
+  },
+  // PROTEÇÃO: transiente imediato e cauda que ressoa. Uma quinta (330 e 495) e a
+  // oitava dela por cima: soa como metal que encaixa, e o baque embaixo dá peso.
+  castWard: (a) => {
+    a.tone({ dur: 0.55, type: 'triangle', from: vary(330), gain: 0.09, attack: 0.005 });
+    a.tone({ dur: 0.7, type: 'sine', from: vary(495), gain: 0.065, attack: 0.005 });
+    a.tone({ dur: 0.8, type: 'sine', from: vary(990), gain: 0.03, attack: 0.005 });
+    a.tone({ dur: 0.2, type: 'sine', from: vary(110), to: 80, gain: 0.07 });
+    a.noise({ dur: 0.04, type: 'highpass', freq: 4500, gain: 0.07 });
+  },
+  // REFORÇO: dois toques curtos e secos, o segundo uma quinta acima. O SALTO é
+  // a leitura de "ficou mais forte"; a cauda de bênção ficaria parecida com a
+  // cura, e o `castRadiant` já ocupa a subida lenta.
+  castBoon: (a) => {
+    a.tone({ dur: 0.14, type: 'triangle', from: vary(523), gain: 0.12, attack: 0.008 });
+    a.tone({ delay: 0.1, dur: 0.24, type: 'triangle', from: vary(784), gain: 0.12, attack: 0.008 });
+    a.tone({ delay: 0.1, dur: 0.2, type: 'sine', from: vary(1568), gain: 0.04, attack: 0.008 });
+  },
+  // MOVIMENTO: um sopro que SOBE atravessando, e um estalo que desce no fim.
+  castAir: (a) => {
+    a.noise({ dur: 0.36, type: 'bandpass', freq: vary(420), q: 1.2, gain: 0.3, attack: 0.08, sweepTo: 2400 });
+    a.tone({ delay: 0.2, dur: 0.18, type: 'sine', from: vary(1200), to: 300, gain: 0.1, attack: 0.01 });
+  },
+  // MALDIÇÃO: duas serras a um semitom de distância, que BATEM uma na outra, e o
+  // conjunto cai. Intervalo que o ouvido lê como errado, e não como música.
+  castHex: (a) => {
+    a.tone({ dur: 0.55, type: 'sawtooth', from: vary(233), to: 175, gain: 0.1, vibrato: { rate: 9, depth: 10 } });
+    a.tone({ dur: 0.55, type: 'sawtooth', from: vary(247), to: 185, gain: 0.08, vibrato: { rate: 9, depth: 10 } });
+    a.noise({ dur: 0.45, type: 'bandpass', freq: vary(1400), q: 2, gain: 0.08, sweepTo: 300 });
+  },
+  // CALMA: a maldição ao contrário no ânimo — duas senoides que DESCEM devagar,
+  // sem aresta nenhuma. O Sono e o Acalmar Emoções.
+  castLull: (a) => {
+    a.tone({ dur: 0.9, type: 'sine', from: vary(523), to: 392, gain: 0.1, attack: 0.2 });
+    a.tone({ delay: 0.25, dur: 0.8, type: 'sine', from: vary(392), to: 294, gain: 0.08, attack: 0.2 });
+    a.noise({ dur: 0.8, type: 'lowpass', freq: 400, gain: 0.03, attack: 0.3 });
+  },
+  // INVOCAÇÃO: um grave que INCHA em 0,3 s e cai de peso no fim. Algo chega.
+  castSummon: (a) => {
+    a.tone({ dur: 0.7, type: 'sine', from: vary(70), to: 140, gain: 0.13, attack: 0.3 });
+    a.noise({ dur: 0.7, type: 'lowpass', freq: 300, gain: 0.09, attack: 0.3, sweepTo: 900 });
+    a.tone({ delay: 0.62, dur: 0.25, type: 'sine', from: vary(90), to: 40, gain: 0.16 });
+    a.noise({ delay: 0.62, dur: 0.15, type: 'lowpass', freq: 500, gain: 0.12 });
+  },
+  // UTILIDADE: um sino, e é a família mais numerosa (60 magias) — por isso ela é a única
+  // que muda com a ESCOLA. Detectar Magia (adivinhação) e Abrir (transmutação)
+  // são o mesmo gênero de coisa e não podem ser o mesmo som.
+  // `hasOwn`, e nao `COR_DA_ESCOLA[escola]`: uma escola chamada 'constructor'
+  // acharia a funcao do `Object.prototype` e a chamaria, em silencio.
+  castUtility: (a, { escola = '' } = {}) => (Object.hasOwn(COR_DA_ESCOLA, escola) ? COR_DA_ESCOLA[escola] : COR_DA_ESCOLA.neutra)(a),
+
+  // --- dano que faltava: três tipos que conjuravam o som genérico -------------
+  // TROVEJANTE: o estrondo que ROLA (grave longo) com o estalo na frente.
+  castThunder: (a) => {
+    a.noise({ dur: 0.8, type: 'lowpass', freq: 160, gain: 0.2, attack: 0.01, sweepTo: 60 });
+    a.noise({ dur: 0.08, type: 'bandpass', freq: vary(900), q: 1.5, gain: 0.14 });
+    a.tone({ dur: 0.7, type: 'sine', from: vary(55), to: 35, gain: 0.14 });
+  },
+  // PSÍQUICO: duas senoides agudas a 16 Hz uma da outra e um tom que treme.
+  // Parente do lamento do espectro (que também bate), mas duas oitavas acima,
+  // e rápido: aquele é medo que se arrasta, este é pressão na cabeça.
+  castPsychic: (a) => {
+    a.tone({ dur: 0.7, type: 'sine', from: vary(960), gain: 0.08, attack: 0.04 });
+    a.tone({ dur: 0.7, type: 'sine', from: vary(960) + 16, gain: 0.08, attack: 0.04 });
+    a.tone({ dur: 0.7, type: 'sine', from: vary(480), to: 510, gain: 0.07, attack: 0.06, vibrato: { rate: 11, depth: 20 } });
+    a.noise({ delay: 0.3, dur: 0.2, type: 'bandpass', freq: 3500, q: 1, gain: 0.025 });
+  },
+  // CORTANTE E PERFURANTE, conjurados: três estalos metálicos em fila, o gesto
+  // de uma saraivada ou de uma nuvem de lâminas. Não é o golpe (`hitSlash`):
+  // aqui o aço é conjurado, e por isso é agudo e cai depressa.
+  castSteel: (a) => {
+    for (let i = 0; i < 3; i++) {
+      a.noise({ delay: i * 0.06, dur: 0.1, type: 'highpass', freq: vary(3200), gain: 0.09 });
+      a.tone({ delay: i * 0.06, dur: 0.16, type: 'triangle', from: vary(1800), to: 900, gain: 0.08 });
+    }
   },
 
   // --- resultado ---
@@ -652,7 +810,36 @@ export function spellSoundFor(damageType, { origem = 'magia' } = {}) {
     case 'ácido': return 'castAcid';
     case 'necrótico': return 'castNecrotic';
     case 'veneno': return 'castPoison';
+    // Os que conjuravam o genérico: o estrondo, a pressão na cabeça, o aço
+    // conjurado. A concussão é o vento (a Muralha de Vento é a única).
+    case 'trovejante': return 'castThunder';
+    case 'psíquico': return 'castPsychic';
+    case 'cortante': case 'perfurante': return 'castSteel';
+    case 'concussão': return 'castAir';
     default: return 'castGeneric';
+  }
+}
+
+/**
+ * O som de CONJURAR uma magia, a partir da família que `rules/familias-de-magia.js`
+ * decidiu. Devolve `{ nome, opts }`: a utilidade leva a escola, que a colore.
+ *
+ * Esta função só traduz família em timbre; quem decide a família é a regra, e
+ * por isso `audio.js` continua sem importar nada.
+ */
+export function conjuracaoSoundFor({ familia, tipo = null, escola = '', origem = null } = {}) {
+  if (origem === 'sopro') return { nome: 'breathDragon', opts: {} };
+  switch (familia) {
+    case 'dano': return { nome: spellSoundFor(tipo, { origem: origem ?? 'magia' }), opts: {} };
+    case 'cura': return { nome: 'castHeal', opts: {} };
+    case 'protecao': return { nome: 'castWard', opts: {} };
+    case 'reforco': return { nome: 'castBoon', opts: {} };
+    case 'movimento': return { nome: 'castAir', opts: {} };
+    case 'maldicao': return { nome: 'castHex', opts: {} };
+    case 'calma': return { nome: 'castLull', opts: {} };
+    case 'invocacao': return { nome: 'castSummon', opts: {} };
+    case 'utilidade': return { nome: 'castUtility', opts: { escola } };
+    default: return { nome: 'castGeneric', opts: {} };
   }
 }
 

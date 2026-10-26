@@ -24,8 +24,9 @@
 
 import { EFEITOS } from '../art/efeitos.js';
 import {
-  audio, hitSoundFor, spellSoundFor, naturalAttackSoundFor, deathSoundFor, vozDa,
+  audio, hitSoundFor, spellSoundFor, naturalAttackSoundFor, deathSoundFor, vozDa, conjuracaoSoundFor,
 } from '../core/audio.js';
+import { familiaDaMagia } from '../rules/familias-de-magia.js';
 import { LOOKS } from '../art/looks.js';
 
 /** Ângulo na TELA entre dois quadrados — já leva a rotação da câmera em conta. */
@@ -2031,7 +2032,11 @@ export function playSpellVisual(board, ev) {
   const dest = target?.pos ?? point ?? caster.pos;
   // `origem` é o que separa o jato de pressão do frasco de veneno estourando:
   // os dois causam dano de veneno e não podem soar igual.
-  audio.play(spellSoundFor(spell.damageType, { origem: spell.origem ?? 'magia' }));
+  // O som de conjurar vem da FAMÍLIA da magia (o que ela faz), e não só do tipo
+  // de dano: 175 das 204 magias soavam todas iguais.
+  // `origem` ainda separa o jato de pressão do frasco de veneno estourando.
+  const { nome, opts } = conjuracaoSoundFor(familiaDaMagia(spell));
+  audio.play(nome, opts);
 
   // Sopro não precisa de identificador conhecido: quem declara `origem: 'sopro'`
   // ganha o cone. Isto existe para o bloco do dragão não ficar refém de um nome

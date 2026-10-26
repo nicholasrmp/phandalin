@@ -13,6 +13,8 @@ import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { TIPOS_DE_DANO, DANOS_FISICOS, SEM_DANO } from '../rules/tipos-de-dano.js';
 import { makeMonster, MONSTERS } from '../rules/monsters.js';
+import { conjuracaoSoundFor, ESCOLAS_COM_COR } from '../core/audio.js';
+import { familiaDaMagia, FAMILIAS, ESCOLAS, escolaDe, KINDS_COM_RAMO, KINDS_DE_UTILIDADE, KINDS_DE_DANO } from '../rules/familias-de-magia.js';
 import { SOUND_NAMES, VOICE_SOUNDS, vozDa, esquecerVozes, passoSoundFor, spellSoundFor, deathSoundFor, naturalAttackSoundFor, hitSoundFor } from '../core/audio.js';
 import { skillBonus, saveBonus, penalidadeDeQuemVoltou } from '../rules/abilities.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
@@ -8914,6 +8916,121 @@ teste('o dreno do stirge grudado e PERDA DE PV, nao dano: nenhuma resistencia in
     for (let i = 0; i < 40; i++) com.push(drenar());
     removeCondition(alvo, cond);
     assert.ok(Math.min(...com) >= 4, cond + ' cortou o dreno: minimo ' + Math.min(...com));
+  }
+});
+
+teste('toda magia soa pela FAMILIA do que faz: nenhuma conjura o som generico, e a familia certa pega a magia certa', () => {
+  // O DEFEITO: o som de conjurar vinha so do tipo de dano. Oito timbres, e as
+  // 175 das 204 magias soavam todas iguais — Bencao,
+  // Invisibilidade, Detectar Magia e Voo eram o mesmo som.
+  const conhecidos = new Set(SOUND_NAMES);
+  const porFamilia = {};
+  for (const [id, sp] of Object.entries(SPELLS)) {
+    const f = familiaDaMagia(sp);
+    assert.ok(FAMILIAS.includes(f.familia), id + ' sem familia valida: ' + f.familia);
+    const { nome } = conjuracaoSoundFor(f);
+    assert.ok(conhecidos.has(nome), id + ' pede som que nao existe: ' + nome);
+    assert.notEqual(nome, 'castGeneric', id + ' ainda conjura o som generico (' + f.familia + ')');
+    (porFamilia[f.familia] ??= []).push(id);
+  }
+
+  // Cada familia tem de ser REAL: uma classificacao que despeja tudo numa so,
+  // ou deixa uma vazia, e a regressao ao som unico com outro nome.
+  const total = Object.keys(SPELLS).length;
+  for (const fam of FAMILIAS) {
+    if (fam === 'sopro') continue; // so o sopro do dragao, que nao e magia do catalogo
+    assert.ok((porFamilia[fam]?.length ?? 0) >= 2, fam + ' ficou quase vazia: ' + (porFamilia[fam]?.length ?? 0));
+    assert.ok(porFamilia[fam].length / total < 0.5, fam + ' engoliu ' + porFamilia[fam].length + ' de ' + total);
+  }
+
+  // Quem e de quem. Escolhidas para cobrir as fronteiras onde a regra decide,
+  // nao as obvias: Velocidade tem bonus de CA e e velocidade; Medo e uma
+  // ilusao que age sobre criaturas e nao uma imagem; Voo e transmutacao.
+  const esperado = {
+    bencao: 'reforco', heroismo: 'reforco', golpeAbrasador: 'reforco',
+    escudoArcano: 'protecao', protecaoContraLaminas: 'protecao', invisibilidade: 'protecao', imagemEspelhada: 'protecao',
+    curarFerimentos: 'cura', palavraCurativa: 'cura', revivificar: 'cura', removerMaldicao: 'cura',
+    voo: 'movimento', velocidade: 'movimento', passoNebuloso: 'movimento', piscar: 'movimento', patasDeAranha: 'movimento', formaGasosa: 'movimento',
+    sono: 'calma', acalmarEmocoes: 'calma',
+    medo: 'maldicao', padraoHipnotico: 'maldicao', enfeiticarPessoa: 'maldicao', rogarMaldicao: 'maldicao',
+    teia: 'invocacao', graxa: 'invocacao', conjurarAnimais: 'invocacao', animarMortos: 'invocacao',
+    detectarMagia: 'utilidade', abrir: 'utilidade', ilusaoMenor: 'utilidade', silencio: 'utilidade',
+    ondaTrovejante: 'dano', esferaFlamejante: 'dano', raioLunar: 'dano',
+    // Fogo das Fadas e Medo: `onFail.condition` e nenhuma `zona` — agem sobre
+    // criaturas, de qualquer escola. Graxa e Teia tem `zona`: sao terreno.
+    fogoDasFadas: 'maldicao', escuridao: 'utilidade', lufadaDeVento: 'utilidade',
+    // Utilidade da escola de conjuracao TRAZ algo: o `kind` e generico e a escola decide.
+    encontrarFamiliar: 'invocacao', encontrarMontaria: 'invocacao', servoInvisivel: 'invocacao', discoFlutuante: 'invocacao',
+    // Liberdade de Movimento e abjuracao e e movimento; Resistencia e abjuracao e e o +1d4 da Bencao;
+    // Circulo Magico e uma zona de abjuracao.
+    liberdadeDeMovimento: 'movimento', resistencia: 'reforco', circuloMagico: 'protecao', ajuda: 'protecao',
+    // O campo `familiaSonora` da propria magia, para os quatro que os dados nao distinguem.
+    reviverOsMortos: 'cura', montariaFantasmagorica: 'invocacao', luz: 'utilidade', visaoNoEscuro: 'utilidade',
+    // Shillelagh nao declara campo mecanico, e NAO e utilidade: o motor le a condicao pelo nome.
+    shillelagh: 'reforco',
+    // O dano que mora fora de `damageType`: o cordao de flechas guarda o tipo em `zona.cordao.tipo`.
+    cordaoDeFlechas: 'dano',
+  };
+  for (const [id, fam] of Object.entries(esperado)) {
+    assert.ok(SPELLS[id], id + ' nao existe mais');
+    assert.equal(familiaDaMagia(SPELLS[id]).familia, fam, id);
+  }
+
+  // As cinco magias de zona cujo dano mora em `zona.dano.tipo`: o jogo nunca
+  // passava esse tipo ao seletor, e elas soavam genericas mesmo causando fogo
+  // ou luz. Agora pedem o timbre do tipo que causam.
+  assert.equal(conjuracaoSoundFor(familiaDaMagia(SPELLS.esferaFlamejante)).nome, 'castFire');
+  assert.equal(conjuracaoSoundFor(familiaDaMagia(SPELLS.raioLunar)).nome, 'castRadiant');
+  assert.equal(conjuracaoSoundFor(familiaDaMagia(SPELLS.fomeDeHadar)).nome, 'castCold');
+  assert.equal(conjuracaoSoundFor(familiaDaMagia(SPELLS.ondaTrovejante)).nome, 'castThunder');
+  assert.equal(conjuracaoSoundFor(familiaDaMagia(SPELLS.zombariaViciosa)).nome, 'castPsychic');
+  // O sopro continua sendo o sopro.
+  assert.equal(conjuracaoSoundFor({ familia: 'sopro', origem: 'sopro' }).nome, 'breathDragon');
+});
+
+teste('a utilidade tem cor por escola, e toda escola do jogo tem a sua: nenhuma cai no sino neutro por erro de grafia', () => {
+  // A utilidade e a familia com 71 magias, e por isso a unica que muda com a
+  // escola. A cor mora numa TABELA exportada, e nao num `switch` com `default`,
+  // porque o `default` engole em silencio a escola escrita errada.
+  const doJogo = new Set(Object.values(SPELLS).map((sp) => escolaDe(sp)));
+  assert.deepEqual([...doJogo].sort(), [...ESCOLAS].sort(), 'as escolas do jogo, normalizadas, sao as oito');
+  assert.deepEqual([...ESCOLAS_COM_COR].sort(), [...ESCOLAS].sort(), 'toda escola tem cor, e nenhuma cor sobra');
+  // Comunhao esta escrita `divinação` em vez de `adivinhação`: e a mesma escola.
+  assert.equal(escolaDe(SPELLS.comunhao), 'adivinhacao');
+  // E a escola chega ao timbre.
+  assert.deepEqual(conjuracaoSoundFor(familiaDaMagia(SPELLS.detectarMagia)), { nome: 'castUtility', opts: { escola: 'adivinhacao' } });
+  assert.deepEqual(conjuracaoSoundFor(familiaDaMagia(SPELLS.abrir)), { nome: 'castUtility', opts: { escola: 'transmutacao' } });
+});
+
+teste('o catalogo nao deixa a classificacao calar: todo kind e todo `familiaSonora` e toda condicao de buff existem', () => {
+  // TRES silencios que o classificador tem e que ninguem veria:
+  //  1. um `kind` NOVO cai em utilidade por omissao, sem aviso;
+  //  2. uma `condition` escrita errada cai em reforco (ou em protecao, se a
+  //     magia for de abjuracao), porque `CONDITIONS[x]` volta `undefined` e
+  //     nenhum campo e encontrado;
+  //  3. um `familiaSonora` com erro de digitacao ia para uma familia inexistente.
+  // O teste torna os tres um erro na hora de ADICIONAR a magia.
+  const conhecidos = new Set([...KINDS_COM_RAMO, ...KINDS_DE_UTILIDADE, ...KINDS_DE_DANO]);
+  const kindsNovos = [...new Set(Object.values(SPELLS).map((sp) => sp.kind))].filter((k) => !conhecidos.has(k));
+  assert.deepEqual(kindsNovos, [], 'kind sem decisao em `rules/familias-de-magia.js`: ' + kindsNovos.join(', '));
+
+  const semCondicao = Object.values(SPELLS)
+    .filter((sp) => ['buff', 'debuff', 'marca'].includes(sp.kind) && sp.condition && !CONDITIONS[sp.condition])
+    .map((sp) => sp.id + '[' + sp.condition + ']');
+  assert.deepEqual(semCondicao, [], 'magia aplica condicao que nao existe: ' + semCondicao.join(', '));
+
+  const familiaInvalida = Object.values(SPELLS).filter((sp) => sp.familiaSonora && !FAMILIAS.includes(sp.familiaSonora)).map((sp) => sp.id);
+  assert.deepEqual(familiaInvalida, [], 'familiaSonora fora de FAMILIAS: ' + familiaInvalida.join(', '));
+  // As quatro que dependem do campo: se ele sumir, caem na familia errada.
+  assert.deepEqual(Object.values(SPELLS).filter((sp) => sp.familiaSonora).map((sp) => sp.id).sort(),
+    ['luz', 'montariaFantasmagorica', 'reviverOsMortos', 'visaoNoEscuro']);
+
+  // Magia de dano que perder o `damageType` NAO pode cair em utilidade calada.
+  // (Hoje todos os kinds de dano tem tipo; este e o que impede o proximo erro.)
+  for (const sp of Object.values(SPELLS)) {
+    if (KINDS_DE_DANO.includes(sp.kind)) {
+      assert.equal(familiaDaMagia(sp).familia, 'dano', sp.id + ' (' + sp.kind + ') perdeu o tipo e saiu da familia dano');
+    }
   }
 });
 
