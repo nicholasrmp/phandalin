@@ -324,8 +324,9 @@ Menu principal
   - **Páginas de texto:** qualquer jogador vira a última página e a cena segue. **Diário, missões e Registro** (rolagens e
     acontecimentos) vão na vista. **Alfinete** no mapa (Alt+clique) e **"Pronto para sair"** (a decisão de saída mostra quem está).
   - **Entrar com a partida em andamento:** fica com o herói que sobrava do anfitrião, ou só assiste (`heroiQueSobra`).
-  - **Dívida que sobra:** a tela dos **mantimentos** da estrada (comer e beber) e a escolha do **acampamento** da região são
-    narrativas votadas, não telas por herói; o **Registro** do convidado guarda só o que chegou depois que ele entrou.
+  - **Sem dívida de paridade.** Os mantimentos da estrada (meia ração) e a escolha do acampamento (lugar, fogo, vigia) são decisões
+    **do grupo**, não de um herói: no solo já são uma tela só, e na sala vão a votação (J-20), igual para todos. O Registro do
+    convidado guarda só o que chegou depois que ele entrou.
 - **J-08 · [decidido, 2026-10-26] Loja, ficha e descanso.** Na loja cada jogador compra e vende **para o seu herói** (o
   dinheiro é do grupo); na ficha, cada um equipa e usa itens do seu herói. **Qualquer jogador pode pedir um descanso
   rápido**: o grupo vota (e quem não é o anfitrião gasta os dados de vida sugeridos). Feito em `view/loja.js`
