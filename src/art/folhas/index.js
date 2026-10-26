@@ -67,6 +67,8 @@ import metaHamunKost from './hamunKost.json';
 import urlHamunKost from './hamunKost.png';
 import metaAcolito from './acolito.json';
 import urlAcolito from './acolito.png';
+import metaCultista from './cultista.json';
+import urlCultista from './cultista.png';
 import metaSacerdote from './sacerdote.json';
 import urlSacerdote from './sacerdote.png';
 import metaSildar from './sildar.json';
@@ -207,6 +209,8 @@ const IMPORTADAS = {
   // clava, e o sacerdote, de marreta. Humanos de manto verde; o sacerdote se
   // le de longe pela barra dourada e pela arma.
   acolito: { base: 'acolito', meta: metaAcolito, url: urlAcolito },
+  // O cultista do SRD: o mesmo desenho do acólito, com o manto PRETO do livro (troca de paleta, sem PixelLab).
+  cultista: { base: 'cultista', meta: metaCultista, url: urlCultista },
   sacerdote: { base: 'sacerdote', meta: metaSacerdote, url: urlSacerdote },
   // OS TRES DA ESTRADA (aprovados pelo dono, pelas imagens dele): Sildar, o
   // refem do covil; Gundren, o anao desacordado do castelo; Reidoth, o druida

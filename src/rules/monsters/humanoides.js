@@ -488,11 +488,11 @@ export const HUMANOIDES = {
     blurb: 'Cura 1d8+2 num aliado em vez de atacar: enquanto estiver de pé, o inimigo ao lado dele volta de 1 PV duas vezes. Nove PV — derrube-o primeiro.',
   },
 
-  // O CULTISTA do SRD (CR 1/8, 25 XP): o de Árvore Trovão (área 13). Reusa o desenho do acólito (mesmo manto).
+  // O CULTISTA do SRD (CR 1/8, 25 XP): o de Árvore Trovão (área 13). Desenho do acólito com o manto preto do livro.
   cultista: {
     id: 'cultista',
     name: 'Cultista',
-    look: 'acolito',
+    look: 'cultista',
     fonte: 'SRD',
     size: 'médio',
     level: 1,
