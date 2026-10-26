@@ -1295,7 +1295,11 @@ export class Hud {
             ? 'Ninguém caído ao seu lado'
             : semEconomia
               ? (porBonus ? 'A ação bônus deste turno já foi usada' : 'A ação deste turno já foi usada')
-              : arremesso ? 'Clique num inimigo para arremessar' : null,
+              : arremesso ? 'Clique num inimigo para arremessar'
+                // A poção de cura se joga pelo menu do aliado, não pela barra:
+                // o clique aqui bebe, e quem não soubesse disso procuraria o
+                // arremesso na barra e não acharia.
+                : dados.jogavel ? 'Clique bebe. Para jogar num companheiro longe, clique nele.' : null,
         },
       });
     });

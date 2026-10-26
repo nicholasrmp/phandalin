@@ -8305,5 +8305,203 @@ teste('Liberdade de Movimento devolve o passo no turno em que solta', () => {
   assert.ok(c.movementLeftFt > 0, 'e anda JA neste turno: ' + c.movementLeftFt);
 });
 
+// ---- jogar a pocao de cura (regra da casa) --------------------------------
+
+teste('jogar a pocao num aliado longe cura METADE, e o frasco se gasta', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 5, y: 5 };
+  pip.pos = { x: 8, y: 5 };          // 15 pes: longe do toque, dentro do arremesso
+  pip.hp = 4;
+  dara.bag.push({ id: 'pocaoDeCura', qtd: 2 });
+  dara.actionUsed = false;
+  const antes = pip.hp;
+  const r = enc.useItem(dara, 'pocaoDeCura', { target: pip, jogando: true });
+  assert.ok(r.ok, 'jogou: ' + (r.why ?? ''));
+  const curou = pip.hp - antes;
+  assert.ok(curou >= 2 && curou <= 5, 'curou metade de 2d4+2 (4 a 10), ou seja 2 a 5: ' + curou);
+  assert.equal(dara.bag.find((i) => i.id === 'pocaoDeCura').qtd, 1, 'e gastou o frasco');
+  assert.ok(dara.actionUsed, 'e a acao');
+  // O registro conta a conta: o rolado e a metade.
+  const linha = enc.log.filter((l) => /joga/.test(l.text ?? '')).slice(-1)[0];
+  assert.ok(linha, 'o registro diz que jogou');
+  assert.ok(/frasco se quebra/.test(linha.text), linha.text);
+  assert.ok(/metade por ter molhado/.test(linha.detail ?? ''), 'e mostra a conta: ' + linha.detail);
+});
+
+teste('dar a pocao encostado continua curando INTEIRO', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 5, y: 5 };
+  pip.pos = { x: 5, y: 6 };
+  pip.hp = 4;
+  dara.bag.push({ id: 'pocaoDeCura', qtd: 2 });
+  dara.actionUsed = false;
+  const r = enc.useItem(dara, 'pocaoDeCura', { target: pip });
+  assert.ok(r.ok, r.why);
+  assert.ok(pip.hp - 4 >= 4, 'cura cheia de 2d4+2: ' + (pip.hp - 4));
+});
+
+teste('o arremesso de pocao tem alcance, linha de visao e lado', () => {
+  const mapa = [
+    '............', '............', '............', '............',
+    '............', '#####.######', '............', '............',
+    '............', '............', '............', '............',
+  ];
+  const { enc, party, foes } = montar({ nivel: 5, mapa, foes: [['goblin', { x: 8, y: 2 }]] });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 2, y: 2 };
+  dara.bag.push({ id: 'pocaoDeCura', qtd: 9 });
+  const jogar = (alvo) => {
+    dara.actionUsed = false;
+    return enc.useItem(dara, 'pocaoDeCura', { target: alvo, jogando: true });
+  };
+  // Longe demais.
+  pip.pos = { x: 11, y: 2 }; pip.hp = 4;
+  const longe = jogar(pip);
+  assert.equal(longe.ok, false);
+  assert.ok(/longe demais para jogar/.test(longe.why), longe.why);
+  // Parede no meio, e DENTRO do alcance: 4 casas, com a parede em (2,5).
+  pip.pos = { x: 2, y: 6 }; pip.hp = 4;
+  const cego = jogar(pip);
+  assert.equal(cego.ok, false);
+  assert.ok(/linha de visão/.test(cego.why), cego.why);
+  // No inimigo, nunca: a pocao curaria ele.
+  const goblin = foes[0];
+  goblin.hp = 2;
+  const noInimigo = jogar(goblin);
+  assert.equal(noInimigo.ok, false);
+  assert.ok(/em inimigo/.test(noInimigo.why), noInimigo.why);
+  // Em si mesmo e beber.
+  const emSi = enc.useItem(dara, 'pocaoDeCura', { target: dara, jogando: true });
+  assert.equal(emSi.ok, false);
+  assert.ok(/beber/.test(emSi.why), emSi.why);
+  // E com a vida cheia o frasco nao se quebra a toa.
+  pip.pos = { x: 4, y: 2 }; pip.hp = maxHpEfetivo(pip);
+  const cheio = jogar(pip);
+  assert.equal(cheio.ok, false);
+  assert.ok(/vida cheia/.test(cheio.why), cheio.why);
+});
+
+teste('so o frasco se joga: a fruta conjurada e o unguento, nao', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 5, y: 5 }; pip.pos = { x: 7, y: 5 }; pip.hp = 4;
+  dara.bag.push({ id: 'bomFruto', qtd: 5 }, { id: 'unguentoRestaurador', qtd: 1 }, { id: 'pocaoDeCuraMaior', qtd: 1 });
+  for (const id of ['bomFruto', 'unguentoRestaurador']) {
+    dara.actionUsed = false;
+    const r = enc.useItem(dara, id, { target: pip, jogando: true });
+    assert.equal(r.ok, false, id + ' nao se joga');
+    assert.ok(/frasco que se jogue/.test(r.why), id + ': ' + r.why);
+  }
+  // As quatro pocoes de cura em frasco, sim.
+  dara.actionUsed = false;
+  assert.ok(enc.useItem(dara, 'pocaoDeCuraMaior', { target: pip, jogando: true }).ok, 'a maior se joga');
+  // E a regra da casa esta declarada no texto que o jogador le.
+  for (const id of ['pocaoDeCura', 'pocaoDeCuraMaior', 'pocaoDeCuraSuperior', 'pocaoDeCuraSuprema']) {
+    const d = itemDeId(id)?.dados;
+    assert.equal(d.jogavel, true, id + ' e jogavel');
+    assert.ok(/regra da casa/i.test(d.desc), id + ' declara a regra da casa');
+    assert.ok(/METADE/.test(d.desc), id + ' diz que jogada cura metade');
+    assert.ok(/à vista/.test(d.desc), id + ' diz que precisa ver o alvo');
+    assert.ok(/nunca menos de 1/.test(d.desc), id + ' diz o minimo');
+  }
+  assert.ok(!itemDeId('bomFruto').dados.jogavel, 'a fruta nao');
+  assert.ok(!itemDeId('unguentoRestaurador').dados.jogavel, 'nem o unguento');
+});
+
+teste('a pocao jogada levanta quem esta caido', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 5, y: 5 }; pip.pos = { x: 8, y: 5 };
+  dara.bag.push({ id: 'pocaoDeCura', qtd: 1 });
+  // Caido e morrendo: e para isso que o arremesso serve.
+  pip.hp = 0;
+  addCondition(pip, 'inconsciente');
+  pip.deathSaves = { successes: 1, failures: 2 };
+  dara.actionUsed = false;
+  const r = enc.useItem(dara, 'pocaoDeCura', { target: pip, jogando: true });
+  assert.ok(r.ok, 'alcanca quem caiu longe: ' + (r.why ?? ''));
+  assert.ok(pip.hp > 0, 'e o levanta: ' + pip.hp);
+  assert.ok(!hasCondition(pip, 'inconsciente'), 'acordado');
+});
+
+teste('o arremesso cura o neutro, nega o inimigo e manda dar na mao de quem esta ao lado', () => {
+  const { enc, party, foes } = montar({ nivel: 5, foes: [['goblin', { x: 8, y: 5 }]] });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 5, y: 5 };
+  dara.bag.push({ id: 'pocaoDeCura', qtd: 9 });
+  const jogar = (alvo) => { dara.actionUsed = false; return enc.useItem(dara, 'pocaoDeCura', { target: alvo, jogando: true }); };
+  // O NEUTRO — o prisioneiro, o Droop, o rato do mago — se cura.
+  const neutro = foes[0];
+  neutro.side = 'neutro';
+  neutro.hp = 2;
+  const antes = neutro.hp;
+  const r = jogar(neutro);
+  assert.ok(r.ok, 'o neutro se cura: ' + (r.why ?? ''));
+  assert.ok(neutro.hp > antes, 'e curou: ' + (neutro.hp - antes));
+  // O inimigo de verdade, nao.
+  neutro.side = 'foes';
+  neutro.hp = 2;
+  const inimigo = jogar(neutro);
+  assert.equal(inimigo.ok, false);
+  assert.ok(/em inimigo/.test(inimigo.why), inimigo.why);
+  // E quem esta ao lado recebe na mao, com a cura inteira: jogar nele seria
+  // desperdicio, e o motor manda dar.
+  pip.pos = { x: 5, y: 6 }; pip.hp = 4;
+  const colado = jogar(pip);
+  assert.equal(colado.ok, false);
+  assert.ok(/dê a poção na mão/.test(colado.why), colado.why);
+  dara.actionUsed = false;
+  assert.ok(enc.useItem(dara, 'pocaoDeCura', { target: pip }).ok, 'dar na mao vale');
+});
+
+teste('nem morto nem incapacitado usa pocao, e o Toque Arrepiante nao desperdica o frasco', () => {
+  const { enc, party } = montar({ nivel: 5 });
+  const dara = garantirInventario(party[DARA]);
+  const pip = party[PIP];
+  dara.pos = { x: 5, y: 5 }; pip.pos = { x: 7, y: 5 }; pip.hp = 4;
+  dara.bag.push({ id: 'pocaoDeCura', qtd: 9 });
+  const quantas = () => dara.bag.find((i) => i.id === 'pocaoDeCura').qtd;
+  // Incapacitado: nao age. O defeito era mais velho que o arremesso — valia
+  // para beber —, e o arremesso o piorava: um paralisado curava a 6 m.
+  for (const cond of ['paralisado', 'atordoado', 'inconsciente']) {
+    dara.actionUsed = false;
+    addCondition(dara, cond, { rounds: 10 });
+    const antes = quantas();
+    const r = enc.useItem(dara, 'pocaoDeCura', { target: pip, jogando: true });
+    assert.equal(r.ok, false, cond + ' nao joga');
+    assert.ok(/incapacitado/.test(r.why), cond + ': ' + r.why);
+    assert.equal(quantas(), antes, 'e a recusa nao gasta o frasco');
+    removeCondition(dara, cond);
+  }
+  // Morto, tambem nao.
+  dara.dead = true; dara.actionUsed = false;
+  const morto = enc.useItem(dara, 'pocaoDeCura', { target: pip, jogando: true });
+  assert.equal(morto.ok, false);
+  assert.ok(/morto/.test(morto.why), morto.why);
+  dara.dead = false;
+  // Toque Arrepiante: `heal` devolve 0, e sem a guarda o frasco ia embora.
+  addCondition(pip, 'semCura', { rounds: 10 });
+  dara.actionUsed = false;
+  const antes = quantas();
+  const r = enc.useItem(dara, 'pocaoDeCura', { target: pip, jogando: true });
+  assert.equal(r.ok, false, 'nao joga em quem nao pode ser curado');
+  assert.ok(/não recupera PV/.test(r.why), r.why);
+  assert.equal(quantas(), antes, 'e o frasco fica na mochila');
+  // O mesmo vale para dar na mao.
+  pip.pos = { x: 5, y: 6 };
+  dara.actionUsed = false;
+  const dando = enc.useItem(dara, 'pocaoDeCura', { target: pip });
+  assert.equal(dando.ok, false, 'nem dando');
+  assert.ok(/não recupera PV/.test(dando.why), dando.why);
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 if (falhas) process.exit(1);

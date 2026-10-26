@@ -217,6 +217,14 @@ const PLANTAS_CONSTRITORAS = {
 // Recargas que não são de ataque: traço de criatura com "Recarga 5–6".
 const RECARGA_DE_TRACO = { 'Plantas Constritoras': [5, 6] };
 
+/**
+ * Até onde se JOGA uma poção de cura, em pés. Regra da casa: o livro não tem
+ * arremesso de poção, só o ato de DAR a poção a quem está ao alcance do toque.
+ * Os 6 m são os mesmos do arremesso de frasco (água benta, ácido, fogo
+ * alquímico), para a mão do herói ter um alcance só.
+ */
+const ARREMESSO_DE_POCAO_FT = 20;
+
 // Crescimento de Plantas: o chão que não é natural (pedra, estrada, caverna, água, obra) não vira mato.
 const SEM_PLANTAS = new Set(['estrada', 'caverna', 'ponte', 'leito', 'poco', 'riacho', 'entulho', 'fogueira', 'rocha', 'parede']);
 
@@ -534,9 +542,11 @@ export class Encounter {
       const atk = c.attacks?.find((a) => a.name === nome);
       const r = this.rng.die(6);
       // Traço com recarga (Plantas Constritoras) não está em `attacks`: o nome
-      // vem da tabela. Sem ela, `recargaMinima(undefined)` dava null e o d6
-      // recarregava sempre.
-      if (r >= (recargaMinima(atk?.recharge ?? RECARGA_DE_TRACO[nome]) ?? 6)) {
+      // vem da tabela. A arma de sopro mora no bloco `breath`, fora de
+      // `attacks` também. Sem isso, `recargaMinima(undefined)` dava null e o
+      // d6 recarregava sempre.
+      const sopro = c.breath?.name === nome ? c.breath.recharge : null;
+      if (r >= (recargaMinima(atk?.recharge ?? sopro ?? RECARGA_DE_TRACO[nome]) ?? 6)) {
         c.recarregando[nome] = false;
         this.say('recurso', `${c.name}: ${nome} recarregou (d6 = ${r}).`);
       }
@@ -1512,6 +1522,64 @@ export class Encounter {
     (actor.recarregando ??= {})['Plantas Constritoras'] = true;
     actor.actionUsed = true;
     return true;
+  }
+
+  // ---- arma de sopro (o Sopro Venenoso do dragão verde) ---------------------
+
+  /**
+   * A arma de sopro da ficha (`breath`), que até aqui estava DECLARADA e nunca
+   * acontecia: o bloco existia desde que o dragão foi escrito, com cone, CD,
+   * dados e recarga, e nada no motor o lia. O chefe do jogo nunca soprou.
+   *
+   * Reusa as peças do caminho de magia em área, que é o que o comentário do
+   * bloco sempre pediu: `areaDaMagia` desenha o cone, `resistencia` e
+   * `explicarResistencia` fazem o teste com a conta na tela, `applyDamage`
+   * cobra. O que ele NÃO reusa é o `castSpell` inteiro — aquilo carrega espaço
+   * de magia, concentração e preparação, e sopro de dragão não tem nada disso.
+   *
+   * O evento sai no formato de magia de propósito: `playSpellVisual` já conhece
+   * `soproVenenoso` (apelido do cone verde em `visuals.js`), e o `conjurar` cai
+   * no `attack` quando a folha não tem gesto próprio. Zero arte nova.
+   *
+   * Sopro de dragão NÃO é mágico: quem resiste a dano mágico não se beneficia.
+   */
+  sopro(actor, alvo) {
+    const b = actor.breath;
+    if (!b || actor.actionUsed || actor.dead) return false;
+    if (actor.recarregando?.[b.name]) return false;
+    const casas = this.areaDaMagia(actor, { shape: b.shape, areaFt: b.areaFt, level: 0 }, alvo) ?? [];
+    if (!casas.length) return false;
+    const dentro = new Set(casas.map((t) => key(t.x, t.y)));
+    const pegos = this.combatants.filter((c) => !c.dead && this.pegadaEmAlgumaCasa(c, dentro));
+    this.say('recurso', `${actor.name} enche o peito e solta ${b.name.toLowerCase()} num cone de ${b.areaFt / 5 * 1.5} m.`);
+    this.onEvent({ type: 'spell', caster: actor, spell: { id: b.id ?? 'soproVenenoso', name: b.name, origem: b.origem ?? 'sopro' }, point: alvo, areaTiles: casas });
+    for (const t of pegos) {
+      const save = this.resistencia(t, b.save, b.dc);
+      const dmg = damageRoll(this.rng, b.damage);
+      const total = save.success ? (b.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+      const r = this.explicarResistencia(t, b.save, b.dc, save, {
+        contra: `${b.name} (cone de ${b.areaFt / 5 * 1.5} m)`,
+        seSucesso: b.halfOnSave ? 'metade do dano' : 'nenhum dano',
+      });
+      this.say('magia', `${t.name} ${save.success ? 'resiste' : 'falha'} contra ${b.name} e sofre ${total}.`,
+        `${r.conta} · ${b.damage}[${dmg.rolls.join('+')}]${save.success && b.halfOnSave ? ` → metade = ${total}` : ''}`,
+        { rolagem: r });
+      this.applyDamage(t, total, b.damageType, actor);
+    }
+    (actor.recarregando ??= {})[b.name] = true;
+    actor.actionUsed = true;
+    return true;
+  }
+
+  /** A pegada da criatura toca alguma das casas? (Grande ocupa 2x2.) */
+  pegadaEmAlgumaCasa(c, casas) {
+    const f = footprintOf(c);
+    for (let dy = 0; dy < f; dy++) {
+      for (let dx = 0; dx < f; dx++) {
+        if (casas.has(key(c.pos.x + dx, c.pos.y + dy))) return true;
+      }
+    }
+    return false;
   }
 
   // ---- ilusões (Ilusão Menor, Força Fantasmagórica) -------------------------
@@ -5849,10 +5917,14 @@ export class Encounter {
    *
    * @returns {{ok: boolean, why?: string}}
    */
-  useItem(actor, itemId, { target = actor } = {}) {
+  useItem(actor, itemId, { target = actor, jogando = false } = {}) {
     const dados = itemDeId(itemId)?.dados;
     if (!dados?.consumivel) return { ok: false, why: `${nomeDeId(itemId)} não é item de usar` };
 
+    // Quem nao age, nao usa item. Vale para beber, dar e jogar: o livro diz
+    // que incapacitado nao toma acao nenhuma, e usar poção é uma ação.
+    if (actor.dead) return { ok: false, why: 'morto não usa item' };
+    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
     const porBonus = dados.acao === 'bonus';
     if (porBonus ? actor.bonusUsed : actor.actionUsed) {
       return { ok: false, why: porBonus ? 'a ação bônus deste turno já foi usada' : 'a ação deste turno já foi usada' };
@@ -5862,7 +5934,7 @@ export class Encounter {
     // que ela carregava não pode ser soltado nem usado.
     if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se usa objeto' };
 
-    const veto = this.vetoDeItem(actor, dados, target);
+    const veto = this.vetoDeItem(actor, dados, target, { jogando });
     if (veto) return { ok: false, why: veto };
 
     // Daqui para baixo nada mais recusa: pode cobrar.
@@ -5870,7 +5942,7 @@ export class Encounter {
     if (!gasto) return { ok: false, why: `${dados.name} não está na mochila` };
     if (porBonus) actor.bonusUsed = true; else this.gastarAcaoSimples(actor);
 
-    this.executarItem(actor, dados, target);
+    this.executarItem(actor, dados, target, { jogando });
 
     if (gasto.acabou) this.say('recurso', `${actor.name} usou o último ${dados.name.toLowerCase()}.`);
     else if (dados.usos) this.say('recurso', `${dados.name}: restam ${gasto.restam} usos.`);
@@ -5882,7 +5954,33 @@ export class Encounter {
   }
 
   /** O que impede ESTE item neste alvo. `null` = pode. */
-  vetoDeItem(actor, dados, target) {
+  vetoDeItem(actor, dados, target, { jogando = false } = {}) {
+    // JOGAR A POÇÃO (regra da casa). O livro não tem arremesso de poção de
+    // cura: ele tem DAR a poção a outra criatura, que gasta uma ação e pede
+    // alcance de toque. O arremesso é nosso, e cobra o preço de molhar em vez
+    // de beber — metade da cura, em `executarItem`.
+    if (jogando) {
+      if (!dados.cura || !dados.jogavel) return `${dados.name} não é frasco que se jogue`;
+      if (target === actor) return 'jogar em si mesmo é beber: use a poção normalmente';
+      // O neutro — o prisioneiro dos Marcarrubra, o Droop, o rato do mago — não
+      // é inimigo, e curá-lo é gesto legítimo que custa a ação e o frasco. O
+      // inimigo de verdade, não: a poção o levantaria.
+      if (target.side !== actor.side && target.side !== 'neutro') {
+        return 'não se joga poção de cura em inimigo';
+      }
+      if (target.dead) return `${target.name} já morreu`;
+      // Ao alcance do toque não se joga: dá-se, e aí a cura é inteira.
+      if (this.field.vizinhos(actor.pos, target.pos)) return 'está ao alcance: dê a poção na mão';
+      const dist = distanceFt(actor.pos, target.pos);
+      if (dist > ARREMESSO_DE_POCAO_FT) return `longe demais para jogar — ${dist} pés, alcança ${ARREMESSO_DE_POCAO_FT}`;
+      if (!this.field.hasLineOfSight(actor.pos, target.pos)) return 'sem linha de visão';
+      // Quem está com a vida cheia não precisa, e o frasco quebraria à toa.
+      if (target.hp >= maxHpEfetivo(target)) return `${target.name} está com a vida cheia`;
+      if ((target.conditions ?? []).some((k) => CONDITIONS[k.id]?.semCura)) {
+        return `${target.name} não recupera PV agora`;
+      }
+      return null;
+    }
     if (dados.consumivel === 'curar' || dados.consumivel === 'estabilizar') {
       if (target !== actor && !this.field.vizinhos(actor.pos, target.pos)) {
         return `${target.name} está longe demais — é preciso estar encostado`;
@@ -5890,6 +5988,11 @@ export class Encounter {
     }
     if (dados.consumivel === 'curar') {
       if (target.dead) return `${target.name} já morreu`;
+      // Toque Arrepiante: `heal` devolve 0 para quem está sob ele, e sem esta
+      // guarda a ação e o frasco iam embora por nada.
+      if ((target.conditions ?? []).some((k) => CONDITIONS[k.id]?.semCura)) {
+        return `${target.name} não recupera PV agora`;
+      }
       // Beber de vida cheia é LEGAL na regra e é sempre um erro de clique.
       // Recusar custa ao jogador um aviso; deixar passar custa a poção que
       // faria falta dois turnos depois.
@@ -5921,13 +6024,20 @@ export class Encounter {
     return null;
   }
 
-  executarItem(actor, dados, target) {
+  executarItem(actor, dados, target, { jogando = false } = {}) {
     switch (dados.consumivel) {
       case 'curar': {
         const r = /^\d+$/.test(dados.cura) ? { total: Number(dados.cura), rolls: [dados.cura] } : roll(this.rng, dados.cura);
-        const curado = this.heal(target, r.total, dados.name);
-        const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
-        this.say('cura', `${actor.name} ${quem} ${curado} PV.`, `${dados.cura} = ${r.total}`);
+        // Jogada, a poção se quebra no aliado e só MOLHA: metade da cura,
+        // arredondada para baixo, e nunca menos de 1. É o preço da distância,
+        // e é regra da casa — o livro não joga poção.
+        const total = jogando ? Math.max(1, Math.floor(r.total / 2)) : r.total;
+        const curado = this.heal(target, total, dados.name);
+        const quem = jogando
+          ? `joga ${dados.name.toLowerCase()} em ${target.name}, e o frasco se quebra:`
+          : target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
+        this.say('cura', `${actor.name} ${quem} ${curado} PV.`,
+          jogando ? `${dados.cura} = ${r.total}, metade por ter molhado = ${total}` : `${dados.cura} = ${r.total}`);
         break;
       }
       case 'estabilizar': {

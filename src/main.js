@@ -1321,8 +1321,8 @@ class App {
   }
 
   /** Usar item pelo menu: a mesma porta do clique na barra. */
-  usarItem(c, itemId, alvo) {
-    const r = this.enc.useItem(c, itemId, { target: alvo });
+  usarItem(c, itemId, alvo, { jogando = false } = {}) {
+    const r = this.enc.useItem(c, itemId, { target: alvo, jogando });
     if (!r.ok) { this.refuse(c, r.why); return; }
     this.afterAct();
   }

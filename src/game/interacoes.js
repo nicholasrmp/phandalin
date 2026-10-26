@@ -266,13 +266,27 @@ export function opcoesDaCasa(app, tile) {
       }
       for (const it of consumiveisDe(c)) {
         if (it.dados.consumivel === 'arremesso') continue;
-        const veto = c.actionUsed && it.dados.acao !== 'bonus' ? 'a ação deste turno já foi usada' : enc.vetoDeItem(c, it.dados, occ);
+        // JOGAR A POÇÃO (regra da casa). Num aliado que está longe do toque,
+        // a poção de cura deixa de ser "dar" e passa a ser "jogar": o frasco
+        // se quebra nele e cura metade. É a mesma linha do menu, trocando de
+        // verbo quando a mão não alcança — quem está ao lado continua
+        // recebendo a poção inteira.
+        const longe = occ !== c && !enc.field.vizinhos(c.pos, occ.pos);
+        const jogando = longe && Boolean(it.dados.jogavel) && it.dados.consumivel === 'curar';
+        const semAcao = c.actionUsed && it.dados.acao !== 'bonus' ? 'a ação deste turno já foi usada' : null;
+        const veto = semAcao ?? enc.vetoDeItem(c, it.dados, occ, { jogando });
+        const cura = it.dados.cura
+          ? (jogando ? `cura metade de ${it.dados.cura}` : `cura ${it.dados.cura}`)
+          : null;
         opcoes.push({
-          grupo: 'Usar item', rotulo: occ === c ? it.dados.name : `${it.dados.name} em ${occ.name}`,
+          grupo: 'Usar item',
+          rotulo: occ === c ? it.dados.name
+            : jogando ? `Jogar ${it.dados.name.toLowerCase()} em ${occ.name}`
+              : `${it.dados.name} em ${occ.name}`,
           motivo: veto, alvoPrevia: occ,
-          detalhe: [it.dados.cura ? `cura ${it.dados.cura}` : null, `tem ${it.qtd}`].filter(Boolean).join(' · '),
+          detalhe: [cura, `tem ${it.qtd}`].filter(Boolean).join(' · '),
           icone: it.dados.consumivel === 'estabilizar' ? 'acao-estabilizar' : 'acao-usarObjeto',
-          fazer: () => app.usarItem(c, it.id, occ),
+          fazer: () => app.usarItem(c, it.id, occ, { jogando }),
         });
       }
       if (occ !== c && hasCondition(occ, 'inconsciente') && !occ.stable) {

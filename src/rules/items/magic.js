@@ -20,6 +20,9 @@
 // SINTONIA é contabilidade de ficha: três itens por personagem. Não há nada
 // no motor que conte, e não inventei um contador que o jogo não respeitaria.
 
+// A frase que declara o arremesso mora em `gear.js`, com a poção comum.
+import { CASA_DO_ARREMESSO } from './gear.js';
+
 const RARIDADE = {
   comum: 'comum', incomum: 'incomum', raro: 'raro',
   muitoRaro: 'muito raro', lendario: 'lendário', artefato: 'artefato',
@@ -34,13 +37,24 @@ const magico = (id, name, raridade, desc, extra = {}) => ({
 const pocao = (id, name, raridade, desc, extra = {}) =>
   magico(id, name, raridade, desc, { tipo: 'poção', art: 'cura', pilha: true, peso: 0.5, ...extra });
 
+
+/**
+ * A frase que declara o ARREMESSO DE POÇÃO nas poções de cura.
+ *
+ * Regra da casa. O livro tem o ato de DAR a poção a outra criatura — uma ação,
+ * ao alcance do toque — e não tem arremesso de poção de cura. O jogo deixa
+ * jogar o frasco a até 6 m, e cobra o preço de molhar em vez de beber: metade
+ * da cura. O alcance é o mesmo do frasco de ácido e da água benta, para a mão
+ * do herói ter um alcance só.
+ */
+
 export const POTIONS = {
   pocaoDeCuraMaior: pocao('pocaoDeCuraMaior', 'Poção de cura maior', RARIDADE.incomum,
-    'Uma ação para beber: 4d4+4 pontos de vida.', { consumivel: 'curar', cura: '4d4+4', acao: 'acao' }),
+    'Uma ação para beber: 4d4+4 pontos de vida.' + CASA_DO_ARREMESSO, { consumivel: 'curar', cura: '4d4+4', acao: 'acao', jogavel: true }),
   pocaoDeCuraSuperior: pocao('pocaoDeCuraSuperior', 'Poção de cura superior', RARIDADE.raro,
-    'Uma ação para beber: 8d4+8 pontos de vida.', { consumivel: 'curar', cura: '8d4+8', acao: 'acao' }),
+    'Uma ação para beber: 8d4+8 pontos de vida.' + CASA_DO_ARREMESSO, { consumivel: 'curar', cura: '8d4+8', acao: 'acao', jogavel: true }),
   pocaoDeCuraSuprema: pocao('pocaoDeCuraSuprema', 'Poção de cura suprema', RARIDADE.muitoRaro,
-    'Uma ação para beber: 10d4+20 pontos de vida.', { consumivel: 'curar', cura: '10d4+20', acao: 'acao' }),
+    'Uma ação para beber: 10d4+20 pontos de vida.' + CASA_DO_ARREMESSO, { consumivel: 'curar', cura: '10d4+20', acao: 'acao', jogavel: true }),
   pocaoDeVitalidade: pocao('pocaoDeVitalidade', 'Poção de vitalidade', RARIDADE.muitoRaro,
     'Uma ação para beber: tira a exaustão inteira e o veneno, e no descanso longo seguinte os dados de vida voltam todos. (O motor ainda não tem doença, então essa parte do item não faz nada.)',
     { consumivel: 'restaurar', acao: 'acao' }),

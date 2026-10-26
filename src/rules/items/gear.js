@@ -24,6 +24,19 @@ const item = (id, name, custo, peso, desc, extra = {}) => ({
 const pilha = (id, name, custo, peso, desc, extra = {}) =>
   item(id, name, custo, peso, desc, { pilha: true, ...extra });
 
+
+/**
+ * A frase que declara o ARREMESSO DE POÇÃO nas poções de cura. Mora aqui e é
+ * importada por `items/magic.js`: escrita duas vezes, as duas divergiriam.
+ *
+ * Regra da casa. O livro prevê beber a poção ou administrá-la a outra criatura,
+ * as duas coisas por uma ação, e não tem arremesso de poção de cura. O jogo
+ * deixa jogar o frasco a até 6 m e cobra o preço de molhar em vez de beber:
+ * metade da cura. O alcance é o mesmo do frasco de ácido e da água benta, para
+ * a mão do herói ter um alcance só.
+ */
+export const CASA_DO_ARREMESSO = ' Dar a um companheiro ao lado custa a ação e cura o mesmo. Jogar o frasco nele cura METADE, arredondada para baixo (nunca menos de 1): precisa de um aliado ferido a até 6 m e à vista, e o frasco se quebra. (Regra da casa: o livro prevê beber ou dar a poção, as duas por uma ação, e não fala de jogar.)';
+
 export const GEAR = {
   // ------------------------------------------------ mochila e recipientes ----
   mochila: item('mochila', 'Mochila', 2, 5, 'Trinta libras de espaço, ou um pé cúbico.', { art: 'mochila' }),
@@ -126,8 +139,8 @@ export const GEAR = {
 
   // ---------------------------------------------------------- consumíveis ----
   // Estes cinco TÊM efeito em jogo: `consumivel.js` os executa.
-  pocaoDeCura: pilha('pocaoDeCura', 'Poção de cura', 50, 0.5, 'Uma ação para beber: recupera 2d4+2 pontos de vida.', {
-    tipo: 'poção', art: 'cura', consumivel: 'curar', cura: '2d4+2', acao: 'acao',
+  pocaoDeCura: pilha('pocaoDeCura', 'Poção de cura', 50, 0.5, 'Uma ação para beber: recupera 2d4+2 pontos de vida.' + CASA_DO_ARREMESSO, {
+    tipo: 'poção', art: 'cura', consumivel: 'curar', cura: '2d4+2', acao: 'acao', jogavel: true,
   }),
   kitDeCura: item('kitDeCura', 'Kit de cura', 5, 3, 'Dez usos. Uma ação para estabilizar quem está morrendo, sem teste de Medicina.', {
     tipo: 'ferramenta', art: 'estabilizar', consumivel: 'estabilizar', usos: 10, acao: 'acao',
