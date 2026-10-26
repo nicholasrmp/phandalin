@@ -46,7 +46,7 @@ export function criarOndaEco(app) {
   salvo.buscas ??= {};
   salvo.gas ??= {};
   const buscas = criarBuscas(salvo.buscas);
-  const estado = { explorando: false, encerrado: false, lutando: null, reforcos: [] };
+  const estado = { explorando: false, encerrado: false, lutando: null, reforcos: [], vagando: null };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
@@ -322,11 +322,47 @@ export function criarOndaEco(app) {
     luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo].filter((f) => !f.dead), { furt });
   }
 
+  // MONSTROS VAGANDO (o livro): nenhuma parte da mina é segura. Quem gasta muito tempo num lugar (um descanso)
+  // rola um d20, e 17 a 20 é um encontro: um d12 diz quem. Eles chegam de uns 30 pés, pelo lado que o mapa
+  // deixar, e sempre à vista de quem estiver acordado.
+  const TABELA_VAGANDO = [
+    [3, 'stirge', '2d4', 'stirges'], [5, 'ghoul', '1d4', 'ghouls'], [6, 'grick', '1d4', 'gricks'], [8, 'bugbear', '1d4', 'bugbears'],
+    [9, 'esqueleto', '1d6', 'esqueletos'], [10, 'zumbi', '1d6', 'zumbis'], [12, 'gelatinaOcre', '1', 'uma gosma ocre'],
+  ];
+  async function monstroVagando() {
+    const dado = (n) => 1 + Math.floor(enc.rng() * n);
+    if (dado(20) < 17) return false;
+    const r = dado(12);
+    const [, tipo, qtd, nome] = TABELA_VAGANDO.find(([ate]) => r <= ate);
+    const [n, faces] = qtd.includes('d') ? qtd.split('d').map(Number) : [Number(qtd), 1];
+    let quantos = 0;
+    for (let i = 0; i < n; i += 1) quantos += faces > 1 ? dado(faces) : 1;
+    const centro = herois()[0].pos;
+    const volta = [];
+    for (let k = 0; k < 400 && volta.length < quantos; k += 1) {
+      const x = centro.x + Math.round((enc.rng() - 0.5) * 16);
+      const y = centro.y + Math.round((enc.rng() - 0.5) * 16);
+      if (!enc.field.inside(x, y) || enc.field.blocksMove(x, y) || Math.abs(x - centro.x) + Math.abs(y - centro.y) < 5) continue;
+      if (areaDe({ x, y }) === null || volta.some((v) => v.x === x && v.y === y)) continue;
+      if ((tipo === 'gelatinaOcre') && enc.field.paredeNaPegada?.(x, y, 2)) continue;
+      volta.push({ x, y });
+    }
+    if (!volta.length) return false;
+    const bando = volta.map((p, i) => nasce(tipo, p, volta.length > 1 ? letras[i] : null));
+    estado.vagando = bando;
+    await painel(TEXTOS.vagando(nome));
+    luta(bando);
+    return true;
+  }
+
   // ------------------------------------------------------ a aproximação ----
   async function depoisDeMover(c) {
     if (!estado.explorando || !c) return;
     c.movementLeftFt = MOVIMENTO;
     const aqui = (id) => herois().some((h) => naArea(h.pos, id));
+    // AS ONDAS ESTRONDOSAS: de tempos em tempos o estrondo chega pela pedra, mais forte para o nordeste.
+    salvo.passos = (salvo.passos ?? 0) + 1;
+    if (salvo.passos % 30 === 0) enc.say('acao', c.pos.x > 48 && c.pos.y < 30 ? TEXTOS.ondaPerto : TEXTOS.ondaLonge);
     if (aqui('8')) { await gasDosFungos(!salvo.gasEntrou); salvo.gasEntrou = true; } else if (salvo.gasEntrou) { salvo.gasEntrou = false; salvo.gas = {}; }
     if (stirges.length && !salvo.stirges && aqui('3')) { await acordarStirges(); return; }
     if (esqueletos.length && !salvo.esqueletos && aqui('4')) { await acordarEsqueletos(); return; }
@@ -362,8 +398,12 @@ export function criarOndaEco(app) {
     const todos = [...new Set([...lutou, ...reforcos])];
     const dos = (lista) => todos.some((f) => lista.includes(f));
     const total = (lista) => valeDoBando([...new Set([...lista, ...reforcos.filter((f) => f.dead)])].filter((f) => f.dead));
-    // Mormesk e o espectador não são "bando": cada um tem o seu fim.
-    if (mormesk && lutou.includes(mormesk)) {
+    if (estado.vagando && dos(estado.vagando)) {
+      const xp = valeDoBando(estado.vagando);
+      estado.vagando = null;
+      await painel(TEXTOS.fimVagando);
+      await darXpDaLuta(xp, 'Os que vagavam pela mina');
+    } else if (mormesk && lutou.includes(mormesk)) {
       salvo.mormesk = 'morto';
       await painel(TEXTOS.fimMormesk);
       await darXpDaLuta(valeDoBando([mormesk]), 'Mormesk');
@@ -723,6 +763,8 @@ export function criarOndaEco(app) {
     dialogoDe: (npc) => (estado.lutando ? null : arvoreDe(npc)),
     depoisDaConversa: resolver,
     // Só o depósito (7) e os aposentos do sacerdote, depois de Nezznar, são lugar de dormir: "nenhum monstro vem aqui".
+    // Descansar é gastar tempo no mesmo lugar: a mina cobra (monstros vagando).
+    depoisDoDescanso: async () => { if (estado.explorando) await monstroVagando(); },
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
       if (tipo !== 'longo') return null;
