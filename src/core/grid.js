@@ -174,6 +174,14 @@ export const GLIFOS = {
   '$': { kind: 2, sup: 'teia' },           // teia grossa no chao: terreno dificil
   '^': { kind: 3, sup: 'prop' },
   '&': { kind: 0, sup: 'propBaixo' },
+  // A CAVERNA ONDA ECO: o chao da mina, a laje lavrada, os fungos (o tapete solta gas: a cena cobra),
+  // a margem de conchas do lago, o canal seco da fundicao (1,5 m abaixo do piso: desce-se sem teste) e a agua escura.
+  '`': { kind: 0, sup: 'mina' },
+  '<': { kind: 0, sup: 'lajeMina' },
+  ';': { kind: 0, sup: 'fungos' },
+  '"': { kind: 0, sup: 'conchas' },
+  '[': { kind: 0, sup: 'canal' },
+  '|': { kind: 2, sup: 'aguaEscura' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
@@ -183,7 +191,7 @@ export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))]
  * fica fora — anda-se nele sem custo extra, então o Andar na Água não tem o
  * que resolver lá.
  */
-export const AGUAS_FUNDAS = new Set(['poco', 'cisterna']);
+export const AGUAS_FUNDAS = new Set(['poco', 'cisterna', 'aguaEscura']);
 
 /**
  * VÃO ESTREITO: a casa que fecha o passo mas tem frestas — a grade de ferro

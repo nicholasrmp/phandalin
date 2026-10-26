@@ -82,6 +82,14 @@ FILEIRAS = [
     ('margem', 'ladrilhos-pro/1dace23a-dade-40f8-a183-e4ebd344d5e2', [15]),
     # A teia no chao do armazem e da rua ao lado (terreno dificil).
     ('teia', 'ladrilhos-pro/aa8ebdee-8a44-4b02-b864-6b9b14004d8b', [0, 2, 3, 4, 5, 8, 10, 11, 13]),
+    # CAVERNA ONDA ECO (`ladrilhos-pro.py --conjunto ondaEcoChao`): chao de mina, laje lavrada, canal seco,
+    # margem de conchas, tapete de fungos e agua escura, todos da MESMA leva (o mesmo pintor).
+    ('mina', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [0, 1, 2, 3]),
+    ('lajeMina', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [4, 5, 6]),
+    ('canal', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [7, 8]),
+    ('conchas', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [9, 10]),
+    ('fungos', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [11, 12, 13]),
+    ('aguaEscura', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [14, 15]),
 ]
 
 
@@ -92,7 +100,7 @@ FILEIRAS = [
 # `laje`, e no tabuleiro cada marca lia como um losango PALIDO posto por
 # cima do chao, em vez de uma marca NO chao. Medido: 0,86 poe a laje no tom
 # do kit de construcao, e 0,74 poe os decalques no tom da laje.
-ESCURECER = {'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
+ESCURECER = {'mina': 0.8, 'lajeMina': 0.88, 'canal': 0.86, 'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
 
 
 def escurecer(t, f):

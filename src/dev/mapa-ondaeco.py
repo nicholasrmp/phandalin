@@ -166,17 +166,22 @@ for (x, y) in AGUA_FUNDA:
 # --------------------------------------------------------------- o terreno ----
 T = [['R'] * W for _ in range(H)]
 for (x, y) in CHAO:
-    T[y][x] = '_'
+    T[y][x] = '`'
 for (x, y), nome in SALA_DE.items():
-    T[y][x] = 'L'
+    T[y][x] = '<'
 for (x, y) in AGUA_FUNDA:
-    T[y][x] = 'W'
+    T[y][x] = '|'
 for (x, y) in FOSSO:
     T[y][x] = 'O'
 for (x, y) in CANAL:
-    T[y][x] = 'x'
+    T[y][x] = '['
 for (x, y) in FUNGOS:
     T[y][x] = ';'
+# A margem de conchas (o livro: camadas de conchas quebradas de mexilhao junto do lago escuro): o chao
+# que encosta na agua do lago oeste e do mar do nordeste.
+for (x, y) in list(CHAO):
+    if T[y][x] == '`' and any((x + i, y + j) in AGUA_FUNDA for i in (-1, 0, 1) for j in (-1, 0, 1)):
+        T[y][x] = '"'
 
 # ---------------------------------------------------------------- as paredes ----
 PN = [['.'] * W for _ in range(H)]
@@ -184,7 +189,7 @@ PO = [['.'] * W for _ in range(H)]
 
 
 def anda(x, y):
-    return 0 <= x < W and 0 <= y < H and T[y][x] not in 'RW'
+    return 0 <= x < W and 0 <= y < H and T[y][x] not in 'R|'
 
 
 for y in range(H):
@@ -264,7 +269,7 @@ AREAS_RET = [
 AREA_DE = {}
 for _id, _rs in AREAS_RET:
     for _c in retangulos(_rs):
-        if T[_c[1]][_c[0]] not in 'RW':
+        if T[_c[1]][_c[0]] not in 'R|':
             AREA_DE[_c] = _id
 AREAS = {}
 for _c, _id in AREA_DE.items():

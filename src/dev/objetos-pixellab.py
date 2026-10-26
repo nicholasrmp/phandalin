@@ -41,6 +41,7 @@ FOLHA = ['#101a12', '#1a2c1c', '#243f24', '#33572e', '#4a7236', '#6b8f43', '#93a
 TRONCO = ['#24170f', '#3d2819', '#5a3d26', '#7a5838']
 GRANITO = ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b']
 
+PEDRA_MINA = ['#2a2724', '#4a4640', '#6e665a', '#8f8574']
 PIXEL = ('Native pixel art at final size, hard pixels, no anti-aliasing, no gradients, '
          'no semi-transparent pixels, transparent background, no ground, no grass, '
          'no cast shadow. Light from the upper left.')
@@ -835,6 +836,96 @@ CONJUNTOS = {
             'thistle', 'pebble with moss', 'short reeds',
         ],
         'target_palette': {'colors': FOLHA + ['#cfc6ae', '#b39d5c', '#6b6350', '#8a1e1e', '#7a4a8a', '#c2b48f']},
+    },
+    # CAVERNA ONDA ECO (Parte 4): o que a mina dos anoes tem de movel, de entulho, de fungo e de pedra.
+    # Tela de 64 = 16 candidatos; tela de 128 = 4. Luz de tocha, de cima a esquerda.
+    'minaPecas': {
+        'description': (
+            'Single prop for an isometric tactical RPG, from an abandoned dwarven silver mine under a '
+            'mountain, five hundred years old: stone and iron and rotten wood, covered in dust. About 36 px '
+            'wide and 32 px tall, sitting on the bottom of the canvas, seen from the front-left. Lit from the '
+            'upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'dwarven stone bunk bed carved from the rock with a rotten straw mat',
+            'long stone assayer counter with three iron balance scales',
+            'heavy stone dwarven table with a stone bench',
+            'iron-bound strongbox with a rusted lock, closed',
+            'barricade made of a broken wooden table and planks piled up',
+            'wooden mine cart loaded with raw silver ore',
+            'empty wooden mine cart on small iron wheels',
+            'pile of raw ore chunks and black coal',
+            'rack of old pickaxes and shovels',
+            'pile of sacks, small barrels and supplies of a mining camp',
+            'unlit copper lantern standing on the floor',
+            'pile of rusted dwarven plate armor over a dwarf skeleton',
+            'pile of rusted crude orc armor over an orc skeleton',
+            'heap of scattered bones and a cracked skull',
+            'miner bedroll with a small camp pack and a mug',
+            'dead bearded dwarf miner lying on his back in leather, boots on',
+        ],
+        'target_palette': {'colors': PEDRA_MINA + MADEIRA + FERRO + ['#7a4a2a', '#a8683a', '#c9c3b0']},
+    },
+    'minaCenario': {
+        'description': (
+            'Single piece of natural cave scenery for an isometric tactical RPG, in an abandoned dwarven '
+            'mine under a mountain: pale stone, fungi and rubble. About 40 px wide and 40 px tall, sitting on '
+            'the bottom of the canvas, seen from the front-left. Lit from the upper left. Dark selective '
+            'outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'giant pale mushroom about five feet tall with a wide cap',
+            'cluster of glowing green puffball fungi',
+            'single inflated grey-green puffball fungus',
+            'tall stalagmite crusted with pale fungus',
+            'low mound of orange fungal mat with tiny caps',
+            'tall pale limestone stalagmite',
+            'pair of short stalagmites growing together',
+            'pile of fallen rock rubble',
+            'big fallen square stone block',
+            'natural rock column from floor to ceiling',
+            'dressed dwarven stone pillar with a plain capital',
+            'broken dwarven stone pillar, half fallen',
+            'coil of thick hemp rope tied to a stalagmite',
+            'small heap of glowing mineral crystals in the rock',
+            'cluster of tall slender cave mushrooms',
+            'cluster of pale shells beside a rock',
+        ],
+        'target_palette': {'colors': PEDRA_MINA + ['#3d5a2a', '#6f9a3a', '#b8d63c', '#c9c3b0', '#7a4a2a']},
+    },
+    'minaGrandes': {
+        'description': (
+            'One large prop for an isometric tactical RPG, from an abandoned dwarven silver mine under a '
+            'mountain: carved stone, iron and old wood. About 100 px wide and 100 px tall, sitting on the bottom '
+            'of the canvas, seen from the front-left. Lit from the upper left. Dark selective outline, not '
+            'black. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'carved stone statue of a stern bearded dwarf god in a mountain-shaped helm holding a pickaxe, on an octagonal stone base',
+            'cold iron smelting furnace with a tall chimney, a heap of coal and mechanical bellows beside it',
+            'old wooden water wheel with an iron rim mounted over a stone channel',
+            'ornate iron brazier on a stone base burning with bright magical green flame',
+        ],
+        'target_palette': {'colors': PEDRA_MINA + MADEIRA + FERRO + ['#7a4a2a', '#a8683a', '#3fa34d', '#9be07a']},
+    },
+    'minaGrandes2': {
+        'description': (
+            'One large prop for an isometric tactical RPG, from an abandoned dwarven silver mine under a '
+            'mountain: carved stone, iron and old wood. About 100 px wide and 90 px tall, sitting on the bottom '
+            'of the canvas, seen from the front-left. Lit from the upper left. Dark selective outline, not '
+            'black. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'long dwarven stone altar with carved reliefs and an iron offering bowl',
+            'enchanter workbench with an anvil, tools and faintly glowing blue runes',
+            'war table with unrolled maps, candles and a carved black spider ornament',
+            'large wooden mine hoist frame with a rope and an iron bucket over a dark shaft',
+        ],
+        'target_palette': {'colors': PEDRA_MINA + MADEIRA + FERRO + ['#7a4a2a', '#a8683a', '#3a5fa0', '#6fa0d8']},
     },
     'paredeDecor': {
         'description': (

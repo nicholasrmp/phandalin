@@ -53,6 +53,13 @@ const CORES_SUP = {
   lajeRuina: '#77716a',
   lajeEntulho: '#6a645c',
   tabua: '#7a5d3a',
+  // Caverna Onda Eco.
+  mina: '#7d725f',
+  lajeMina: '#8a8070',
+  fungos: '#6a8a3a',
+  conchas: '#6f6a5c',
+  canal: '#4a4640',
+  aguaEscura: '#1a2a3a',
 };
 
 /** Altura vira clareamento: o platô fica mais claro que o chão à volta. */

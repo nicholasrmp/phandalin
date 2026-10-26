@@ -111,6 +111,13 @@ const SUPERFICIE = {
   lago: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'lago' },
   margem: { topo: ['#c2b48f', '#bcae88'], lado: TERRA, chao: 'margem' },
   teia: { topo: ['#8a8478', '#847e72'], lado: TERRA, chao: 'teia' },
+  // Caverna Onda Eco.
+  mina: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'mina', face: 'penhasco' },
+  lajeMina: { topo: ['#6e665a', '#686054'], lado: ROCHA_LADO, chao: 'lajeMina', face: 'alvenaria' },
+  fungos: { topo: ['#4a5a2a', '#465426'], lado: ROCHA_LADO, chao: 'fungos', face: 'penhasco' },
+  conchas: { topo: ['#2a2724', '#26231f'], lado: ROCHA_LADO, chao: 'conchas', face: 'penhasco' },
+  canal: { topo: ['#4a4640', '#46423c'], lado: ROCHA_LADO, chao: 'canal', face: 'penhasco' },
+  aguaEscura: { topo: ['#0f1a26', '#0d1722'], lado: ROCHA_LADO, chao: 'aguaEscura' },
   prop: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   propBaixo: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   poco: { topo: ['#22465e', '#204259'], lado: ROCHA_LADO, chao: 'poco' },

@@ -136,6 +136,26 @@ CONJUNTOS = {
                       '6). with a shallow puddle of dark still water. '
                       '7). with loose dry yellow straw scattered over it. '
                       '8). with fallen grey plaster dust and small rubble.',
+    # CAVERNA ONDA ECO (Parte 4): a mina dos anoes. Chao de mina, lajes lavradas, canal seco, margem de
+    # conchas, tapete de fungos e agua escura NA MESMA LEVA (o mesmo pintor: lado a lado no mapa, tres
+    # pintores fariam costura de paleta). Luz fria e fraca, de tocha.
+    'ondaEcoChao': ESTILO + ' Abandoned dwarven silver mine under a mountain, cold and dim, seen by torchlight. '
+                   '1). packed tan-grey mine floor of flat stone and compacted dust, uniform. '
+                   '2). packed tan-grey mine floor with a few tiny loose pebbles. '
+                   '3). packed tan-grey mine floor with a faint darker damp patch. '
+                   '4). packed tan-grey mine floor with a thin crack and a little grit. '
+                   '5). large square warm grey dressed flagstones with thin dark joints, worn smooth, uniform. '
+                   '6). large square warm grey dressed flagstones with a few tiny chips. '
+                   '7). large square warm grey dressed flagstones, two slabs a shade darker. '
+                   '8). dry stone channel bed of dark grey stone with a thin layer of dried sediment, uniform. '
+                   '9). dry stone channel bed of dark grey stone with a few rounded pebbles. '
+                   '10). dark damp sand strewn with small pale broken mussel shells, uniform. '
+                   '11). dark damp sand strewn with a few larger pale broken shells. '
+                   '12). dense carpet of olive-green fungal mat with tiny pale grey fungi, uniform. '
+                   '13). dense carpet of olive-green fungal mat with a few small orange caps. '
+                   '14). dense carpet of fungal mat with soft glowing green-yellow patches. '
+                   '15). deep still dark blue-black cave water, flat, a few pale highlight pixels. '
+                   '16). deep still dark blue-black cave water with one faint ring.',
     # ARVORE TROVAO. Os pisos que o mapa de verdade pede (ver
     # `OBJETOS-ARVORE-TROVAO.md`). Chao, nunca objeto: o motor pinta a sombra.
     'lajeRuina': ESTILO + ' Floor inside an abandoned burnt village house, cool grey stone, daylight. '

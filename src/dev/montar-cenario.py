@@ -282,6 +282,21 @@ for _n, _qs in (('casuloElfo', [0]), ('casuloCorpo', [1]), ('aranhaMorta', [2, 3
     GRUPOS[f'prop-{_n}'] = {'pasta': _LIVRO, 'quadros': {'todas': _qs}, 'ancora': 'chao'}
 GRUPOS['prop-estatuaPalien'] = {'pasta': 'estatuaPalien/26922d55-c8cd-425b-8852-7b61fb9acf5a',
                                 'quadros': {'todas': [0]}, 'ancora': 'chao'}
+# CAVERNA ONDA ECO (`objetos-pixellab.py --conjunto minaPecas|minaCenario|minaGrandes|minaGrandes2`): a mobilia, o
+# entulho, os fungos e as pecas grandes da mina dos anoes. Cada peca e um grupo `prop-<nome>` de um quadro.
+_MINA = {
+    'minaPecas/9ea0707a-114c-4460-8f62-142b6ffe6d5b': ['camaDePedra', 'balcaoAvaliador', 'mesaDePedra', 'cofreDeFerro',
+        'barricada', 'carrinhoMinerio', 'carrinhoVazio', 'montinhoMinerio', 'ferramentas', 'suprimentos', 'lanterna',
+        'ossosAnao', 'ossosOrc', 'ossos', 'sacoDeDormir', 'anaoMorto'],
+    'minaCenario/88d631ef-198b-47c8-9464-578fb94916de': ['cogumeloGigante', 'bolasBrilhantes', 'bolaInflada',
+        'estalagmiteFungo', 'tapeteLaranja', 'estalagmiteAlta', 'estalagmitePar', 'entulhoMina', 'blocoCaido',
+        'colunaNatural', 'pilarAnao', 'pilarQuebrado', 'estalagmiteCorda', 'cristais', 'cogumelosFinos', 'conchasPedra'],
+    'minaGrandes/570f086f-dcf0-4a99-925e-0fd117ff6260': ['estatuaDumathoin', 'fornalha', 'rodaDagua', 'braseiroVerde'],
+    'minaGrandes2/8aefd553-24ce-4150-8f89-934620c93646': ['altarDumathoin', 'bancadaRunas', 'mesaDeGuerra', 'guinchoPoco'],
+}
+for _pasta, _nomes in _MINA.items():
+    for _i, _n in enumerate(_nomes):
+        GRUPOS[f'prop-{_n}'] = {'pasta': _pasta, 'quadros': {'todas': [_i]}, 'ancora': 'chao'}
 GRUPOS['janelaRuina'] = {
     'pasta': 'janelaRuina/287d96ee-8294-4901-bad7-9290c93f4e34',
     'quadros': {'janela': [0, 1, 2, 3, 4, 5, 8, 9, 10], 'lanterna': [14, 15, 59], 'placaPoney': [6],
