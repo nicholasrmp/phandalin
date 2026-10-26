@@ -11,6 +11,8 @@ import { Board } from './board.js';
 import { aplicarAparencia } from './ficha.js';
 import { audio } from '../core/audio.js';
 import { narrarLocal } from './narrativa.js';
+import { getSpell } from '../rules/spells.js';
+import { mandaNaHora, escolheVarios } from '../game/acoes.js';
 import { Encounter } from '../rules/combat.js';
 import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
@@ -21,18 +23,20 @@ import { lerVista, aplicarVista } from '../game/partida-vista.js';
 const CASAS_POR_SEGUNDO = 5;
 const SALTO_MAXIMO = 14;       // mais longe que isto (teletransporte, mapa novo) a figura aparece no destino, sem caminhar
 
-export function criarPartidaTela({ aoSair, enviar = () => false }) {
+export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const canvas = el('canvas', { class: 'board', 'aria-label': 'A partida' });
   const quadro = el('div', { class: 'board-wrap taverna-quadro' }, canvas);
   const titulo = el('span', { class: 'partida-titulo' }, 'Partida');
   const fase = el('span', { class: 'partida-fase' });
   const aviso = el('p', { class: 'taverna-aviso visivel', role: 'status' }, 'Esperando o anfitrião mostrar a partida…');
   const grupo = el('ul', { class: 'taverna-jogadores', 'aria-label': 'Quem joga com quem' });
+  const barraEm = hud?.barra?.parentNode ?? null;   // onde a barra de ações mora quando não há partida de sala
+  const lugarDaBarra = el('div', { class: 'partida-barra' });
   const terminar = el('button', { class: 'menu-btn primario', hidden: true, onclick: () => { audio.play('click'); if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id }); } }, 'Terminar turno do herói');
   const camada = el('div', { class: 'taverna partida', role: 'region', 'aria-label': 'Partida' },
     el('header', { class: 'taverna-topo' }, el('div', { class: 'taverna-sala' }, titulo, fase), grupo,
       el('div', { class: 'taverna-acoes' }, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
-    quadro, aviso);
+    quadro, lugarDaBarra, aviso);
 
   let aberta = false;
   let enc = null; let board = null; let variante = null;
@@ -40,7 +44,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
   let pendente = null;          // a última vista que chegou antes de a tela abrir
   let visaoDaSala = null;
   let avisoTimer = null;
-  let selecionado = null;       // o herói MEU que o próximo clique move
+  let selecionado = null;
+  let emModo = null;            // a ação da barra que espera um clique no tabuleiro (ataque, magia com alvo…)
   const narrativas = new Map(); // id da narrativa aberta -> AbortController (o anfitrião a fecha por fora)
 
   function montar(v) {
@@ -63,12 +68,63 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
   function destacar() {
     board?.setOverlay?.({ selected: selecionado });
     desenharGrupo();
+    // A barra de ações é a do anfitrião, com o mesmo código (`view/hud.js`), desenhada com o espelho da partida.
+    if (hud && enc) { try { hud.update(enc, selecionado, emModo); } catch (e) { console.warn('a barra de ações não desenhou o espelho', e); } }
+  }
+
+  /** Só se escolhe herói MEU (a barra mostra o grupo todo, mas o resto é do dono). */
+  function selecionar(c) {
+    if (!meus().includes(c)) return;
+    selecionado = c; emModo = null; audio.play('click'); destacar();
+  }
+
+  const limpa = (a) => Object.fromEntries(Object.entries(a).filter(([k, v]) => ['kind', 'weaponId', 'spellId', 'itemId', 'targetId', 'featureId', 'modo', 'zona', 'mira'].includes(k) && v !== undefined && v !== null));
+
+  function usar(action, tiles = []) {
+    if (!selecionado) return;
+    enviar({ tipo: 'agir', acao: 'usar', heroi: selecionado.id, action: limpa(action), circulo: emModo?.circulo ?? null, tiles });
+    emModo = null;
+    destacar();
+  }
+
+  /** Uma ação da barra: manda na hora (correr, esquivar, magia sem alvo) ou entra em modo de alvo, como no jogo do anfitrião. */
+  function acao(a) {
+    if (!enc || enc.side !== 'party') return;
+    if (!selecionado || !meus().includes(selecionado)) { selecionado = meus()[0] ?? null; if (!selecionado) return; }
+    if (a.kind === 'circulo') {
+      if (emModo?.kind !== 'spell') return;
+      emModo = { ...emModo, circulo: a.lvl, alvos: (emModo.alvos ?? []).slice(0, enc.alvosDaMagia(getSpell(emModo.spellId), a.lvl, selecionado)) };
+      destacar();
+      return;
+    }
+    const spell = a.kind === 'spell' ? getSpell(a.spellId) : null;
+    if (mandaNaHora(a, spell, selecionado.magiasAtivas?.[a.spellId])) { usar(a); return; }
+    if (a.kind === 'spell' && emModo?.kind === 'spell' && emModo.spellId === a.spellId && emModo.alvos?.length) { usar(emModo, emModo.alvos); return; }
+    const igual = emModo && emModo.kind === a.kind && emModo.weaponId === a.weaponId && emModo.spellId === a.spellId && emModo.itemId === a.itemId;
+    emModo = igual ? null : { ...a, circulo: spell ? enc.circuloDeConjuracao(selecionado, spell) : undefined, alvos: [] };
+    destacar();
+  }
+
+  function terminarHeroi() {
+    if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id });
   }
 
   /** F4.3: clicar num herói MEU o escolhe; clicar numa casa manda o herói escolhido andar (o anfitrião aplica). */
   function clicar(t) {
     if (!enc) return;
     const noLugar = enc.at?.(t.x, t.y);
+    // Com uma ação da barra na mira, o clique escolhe o ALVO dela (a magia de vários alvos junta casas até completar).
+    if (emModo && selecionado) {
+      const spell = emModo.kind === 'spell' ? getSpell(emModo.spellId) : null;
+      if (spell && escolheVarios(spell)) {
+        emModo = { ...emModo, alvos: [...(emModo.alvos ?? []), { x: t.x, y: t.y }] };
+        const quantos = enc.alvosDaMagia(spell, emModo.circulo ?? enc.circuloDeConjuracao(selecionado, spell), selecionado);
+        if (emModo.alvos.length >= quantos) usar(emModo, emModo.alvos); else destacar();
+        return;
+      }
+      usar(emModo, [{ x: t.x, y: t.y }]);
+      return;
+    }
     if (noLugar && meus().includes(noLugar)) { selecionado = noLugar; audio.play('click'); destacar(); return; }
     if (!selecionado || !meus().includes(selecionado)) { selecionado = meus()[0] ?? null; destacar(); }
     if (!selecionado) { aviso.textContent = 'Você não tem nenhum herói em campo.'; aviso.classList.add('visivel'); return; }
@@ -127,7 +183,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
       return el('li', { class: 'taverna-jogador' },
         el('span', {}, `${meu && c === selecionado ? '► ' : ''}${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV${meu ? turno : ''}`));
     }));
-    terminar.hidden = !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
+    terminar.hidden = hud != null || !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
     fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo` : 'Vez dos inimigos') : '';
   }
 
@@ -147,7 +203,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
       requestAnimationFrame(() => board?.enquadrarGrande?.(board.focoInicial));
     }
     aviso.classList.remove('visivel');
-    desenharGrupo();
+    destacar();
   }
 
   function quadroDaTela(agora) {
@@ -168,6 +224,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
     abrir(parent) {
       if (aberta) return;
       parent.append(camada);
+      if (hud) lugarDaBarra.append(hud.barra);
       aberta = true;
       if (pendente) { const v = pendente; pendente = null; receber(v); }
     },
@@ -175,9 +232,10 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
       if (!aberta) return;
       aberta = false;
       camada.remove();
+      if (hud && barraEm) barraEm.append(hud.barra);
       for (const ctl of narrativas.values()) ctl.abort();
       narrativas.clear();
-      selecionado = null;
+      selecionado = null; emModo = null;
       desmontar();
       pendente = null;
       aviso.classList.add('visivel');
@@ -186,6 +244,10 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
     vista: receber,
     /** Uma página da narrativa (ou o fim dela). */
     narrativa,
+    /** A barra de ações do HUD, vista de fora: escolher herói, usar ação, terminar o turno do herói. */
+    selecionar,
+    acao,
+    terminar: terminarHeroi,
     /** O anfitrião explicou por que o passo foi ignorado. */
     avisar(texto) {
       aviso.textContent = texto;

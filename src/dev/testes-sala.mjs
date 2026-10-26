@@ -19,6 +19,8 @@ import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
+import { acaoRemotaValida, tilesValidos, circuloValido, magiaNaHora, escolheVarios, mandaNaHora } from '../game/acoes.js';
+import { getSpell } from '../rules/spells.js';
 import { visaoDoGrupo } from '../rules/luz.js';
 import { Battlefield } from '../core/grid.js';
 import { buildFoes } from '../game/encounter.js';
@@ -951,6 +953,42 @@ teste('F4.3: a narrativa do anfitrião: só dele, com a partida iniciada, e no f
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 'x' } }) }).erro, /inválida/);
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 1 } }) }).erro, /inválida/);
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: 'x'.repeat(70_000) }).erro, /grande/);
+});
+
+teste('F5.2: usar: o servidor confere só a FORMA da ação da barra; o direito de fazê-la é do motor do anfitrião', () => {
+  const s = salaIniciada();
+  const r = faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'spell', spellId: 'misselMagico' }, circulo: 2, tiles: [{ x: 5, y: 6 }] });
+  assert.ok(r.ok); assert.deepEqual(r.repassar, { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'usar', action: { kind: 'spell', spellId: 'misselMagico' }, circulo: 2, tiles: [{ x: 5, y: 6 }] });
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'dash' } }).repassar.tiles, [], 'sem casas: lista vazia');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'hackear' } }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago' }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'spell', spellId: 'x'.repeat(50) } }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'dash' }, tiles: Array(7).fill({ x: 1, y: 1 }) }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'dash' }, tiles: [{ x: 1.5, y: 1 }] }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'dash' }, circulo: 12 }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-guerreiro', action: { kind: 'dash' } }), /não é seu/);
+  assert.equal(acaoRemotaValida({ kind: 'attack', weaponId: 'cajado' }), true);
+  assert.equal(acaoRemotaValida({ kind: 'item', itemId: 'pocaoCura', mira: false }), true);
+  assert.equal(acaoRemotaValida({ kind: 'item', mira: 'sim' }), false);
+  assert.equal(acaoRemotaValida([]), false); assert.equal(acaoRemotaValida(null), false);
+  assert.equal(tilesValidos(undefined), true); assert.equal(circuloValido(null), true);
+});
+
+teste('F5.2: o que o convidado manda na hora e o que espera um alvo é a MESMA regra do anfitrião', () => {
+  const fogo = getSpell('misselMagico');
+  assert.ok(fogo, 'a magia de teste existe');
+  assert.equal(mandaNaHora({ kind: 'dash' }), true);
+  assert.equal(mandaNaHora({ kind: 'dodge' }), true);
+  assert.equal(mandaNaHora({ kind: 'attack', weaponId: 'cajado' }), false, 'ataque espera o alvo');
+  assert.equal(mandaNaHora({ kind: 'salto' }), false);
+  assert.equal(mandaNaHora({ kind: 'item', itemId: 'pocaoCura' }), true, 'poção bebida na hora');
+  assert.equal(mandaNaHora({ kind: 'item', itemId: 'frascoDeAcido', mira: true }), false, 'item arremessado espera o alvo');
+  assert.equal(mandaNaHora({ kind: 'spell', spellId: fogo.id }, fogo, false), magiaNaHora(fogo, false));
+  assert.equal(magiaNaHora({ kind: 'tempHp' }, false), true);
+  assert.equal(magiaNaHora({ kind: 'buff', rangeFt: 0 }, false), true);
+  assert.equal(magiaNaHora({ kind: 'buff', rangeFt: 30 }, false), false);
+  assert.equal(magiaNaHora({ kind: 'lamina' }, false), true); assert.equal(magiaNaHora({ kind: 'lamina' }, true), false, 'lâmina já ativa pede alvo');
+  assert.equal(escolheVarios({ kind: 'raios' }), true); assert.equal(escolheVarios({ kind: 'save', alvos: 3 }), true); assert.equal(escolheVarios({ kind: 'save' }), false);
 });
 
 teste('F4.4: a corda: só se vai para perto de ALGUM outro herói; o grupo estica em fila, mas não se parte', () => {

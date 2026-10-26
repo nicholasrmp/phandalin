@@ -13,6 +13,7 @@ import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarCampo } from './game/campo.js';
 import { cordaPermite } from './game/corda.js';
+import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
 import { fotografar, emTexto, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarPartidaTela } from './view/partida-tela.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
@@ -72,9 +73,10 @@ class App {
   constructor(root) {
     this.root = root;
     this.hud = new Hud(root, {
-      onSelect: (c) => this.select(c),
-      onAction: (a) => this.chooseAction(a),
-      onEndTurn: () => this.endTurn(),
+      // Partida de sala vista de fora (F5.2): a barra é a mesma, mas quem age é o anfitrião; a tela de quem assiste a traduz em intenções.
+      onSelect: (c) => (this.partidaRemota?.aberta() ? this.partidaRemota.selecionar(c) : this.select(c)),
+      onAction: (a) => (this.partidaRemota?.aberta() ? this.partidaRemota.acao(a) : this.chooseAction(a)),
+      onEndTurn: () => (this.partidaRemota?.aberta() ? this.partidaRemota.terminar() : this.endTurn()),
       // Invocados: "Controlar" x "Agir sozinho", por criatura ou para todas de um dono.
       onAutoInvocado: (c) => this.alternarAuto(c),
       onAutoDosInvocados: (dono) => this.alternarAutoDoDono(dono),
@@ -86,7 +88,7 @@ class App {
       explorando: () => Boolean(this.capitulo?.explorando),
       // Mesma porta do hover do tabuleiro: um só caminho para "quem é o alvo
       // em consideração", para os dois nunca discordarem.
-      onAlvoHover: (alvo) => this.definirAlvo(alvo),
+      onAlvoHover: (alvo) => { if (!this.partidaRemota?.aberta()) this.definirAlvo(alvo); },
     });
 
     // A ficha pendura o próprio véu em `root` e cuida do teclado dela enquanto
@@ -203,7 +205,7 @@ class App {
     this.inicioDaSessao = Date.now();
     aoDarXp(() => this.autosalvar());
     // Quem não roda a partida da sala a vê aqui. Sair leva de volta ao menu.
-    this.partidaRemota = criarPartidaTela({ enviar: (msg) => this.menu.enviarCru(msg), aoSair: () => { this.menu.sairDaSala(); this.partidaRemota.fechar(); this.menu.abrir(); } });
+    this.partidaRemota = criarPartidaTela({ hud: this.hud, enviar: (msg) => this.menu.enviarCru(msg), aoSair: () => { this.menu.sairDaSala(); this.partidaRemota.fechar(); this.menu.abrir(); } });
     this.menu = criarMenu(root, {
       onIniciar: (config) => this.newEncounter(config),
       temPartida: () => Boolean(this.enc),
@@ -447,7 +449,7 @@ class App {
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma }) {
+  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles }) {
     const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
     if (!this.enc || this.enc.over) return;
     if (this.ficha?.estaAberta() || narrativaAberta()) { avisar('espere a narrativa terminar'); return; }
@@ -460,6 +462,11 @@ class App {
 
     // F5: a fase do grupo é simultânea. Cada jogador age com os SEUS heróis, em qualquer ordem, e o motor já aceita isso:
     // cada herói termina o turno sozinho, e a vez passa aos inimigos quando o último termina.
+    if (acao === 'usar') {
+      if (!emCombate) { avisar('em exploração só se anda: o resto é com o anfitrião'); return; }
+      this.usarDeFora(c, { action, circulo, tiles }, avisar);
+      return;
+    }
     if (acao === 'terminar') {
       if (!emCombate) { avisar('só se termina o turno numa luta'); return; }
       this.terminarTurnoDe(c);
@@ -480,6 +487,31 @@ class App {
     if (corda) { avisar(corda); return; }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, { x, y }));
     if (!emCombate) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+    this.refresh();
+  }
+
+  /**
+   * F5.2: uma ação da barra pedida por outro jogador. O anfitrião a roda COMO SE o clique fosse dele (escolhe o herói, a
+   * ação, as casas) e, no fim, não deixa nada pendente nem mexe na seleção dele. O que abriria uma janela de escolha na
+   * tela do anfitrião (uma magia com opção) não passa: seria sequestrar a tela dele.
+   */
+  usarDeFora(c, { action, circulo, tiles }, avisar) {
+    if (action.kind === 'spell') {
+      const spell = getSpell(action.spellId);
+      if (!spell) { avisar('magia desconhecida'); return; }
+      if (opcoesDaMagia(spell)) { avisar(`${spell.name} pede uma escolha: por enquanto só o anfitrião a conjura`); return; }
+    }
+    const antes = this.selected;
+    this.selected = null;
+    this.select(c);
+    this.chooseAction(action);
+    if (circulo && this.mode?.kind === 'spell') this.chooseAction({ kind: 'circulo', lvl: circulo });
+    if (this.mode) {
+      for (const t of tiles ?? []) { if (!this.mode) break; this.onTileClick(t); }
+      if (this.mode?.alvos?.length) this.conjurarEscolhidos();
+    }
+    this.mode = null;       // nada fica pendente no anfitrião
+    if (antes && antes !== c && !antes.acted && !antes.dead) this.select(antes);
     this.refresh();
   }
 
@@ -962,11 +994,7 @@ class App {
       const spell = getSpell(action.spellId);
       // Magia só em si mesmo (Vida Falsa, Borrão, Espíritos Guardiões)
       // resolve na hora.
-      const ativa = c.magiasAtivas?.[spell.id];
-      if (spell.kind === 'tempHp' || spell.kind === 'aura' || spell.kind === 'disparada' || spell.kind === 'reacao'
-        || spell.kind === 'frutos' || spell.kind === 'rastro' || spell.kind === 'invocar'
-        || (spell.kind === 'buff' && spell.rangeFt === 0)
-        || (['lamina', 'curaReuso'].includes(spell.kind) && !ativa)) {
+      if (magiaNaHora(spell, c.magiasAtivas?.[spell.id])) {
         this.tryCast(c, action.spellId);
         return;
       }
@@ -991,7 +1019,7 @@ class App {
 
   /** A magia de vários alvos (Bênção, Míssil Mágico) escolhe um por clique. */
   escolheVarios(spell) {
-    return ['buff', 'debuff', 'auto', 'raios', 'healGrupo'].includes(spell.kind) || (spell.kind === 'save' && !!spell.alvos);
+    return magiaDeVariosAlvos(spell);
   }
 
   /**

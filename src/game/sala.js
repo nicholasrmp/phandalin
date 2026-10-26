@@ -18,6 +18,7 @@
 // nunca sai daqui. Os clientes veem só o rótulo público `pub` ('p1', 'p2'…).
 
 import { PADRAO_DA_CORDA, MODOS_DA_CORDA } from './corda.js';
+import { acaoRemotaValida, tilesValidos, circuloValido } from './acoes.js';
 import { key } from '../core/grid.js';
 import {
   campoDaTaverna, caminhoNaTaverna, casaLivre, NASCEDOUROS, marcadorLivre, marcadorN, LARGURA, ALTURA,
@@ -26,7 +27,7 @@ import {
 export const VERSAO_DA_SALA = 1;
 
 /** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
-export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar'];
+export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar'];
 
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
 export const HEROIS_JOGAVEIS = [
@@ -345,6 +346,13 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (!heroiValido(mensagem.heroi) || sala.herois[mensagem.heroi] !== jogadorId) return recusa('esse herói não é seu');
       const base = { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: mensagem.acao };
       if (mensagem.acao === 'terminar') return ok({ igual: true, repassar: base });
+      if (mensagem.acao === 'usar') {
+        // F5.2: qualquer ação da barra (magia, item, correr, esquivar…): a forma é conferida aqui, o direito de fazê-la é do motor do anfitrião.
+        const { action, circulo, tiles } = mensagem;
+        if (!acaoRemotaValida(action)) return recusa('ação inválida');
+        if (!tilesValidos(tiles) || !circuloValido(circulo)) return recusa('ação inválida');
+        return ok({ igual: true, repassar: { ...base, action, circulo: circulo ?? null, tiles: tiles ?? [] } });
+      }
       if (mensagem.acao === 'atacar') {
         // F5: o alvo vai pelo id do combatente, e a arma (opcional) pelo id dela; o anfitrião confere o resto (alcance, ação).
         const { alvo, arma = null } = mensagem;
