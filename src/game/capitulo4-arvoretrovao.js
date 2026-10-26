@@ -18,9 +18,11 @@
 //     avisa duas vezes na aproximação e oferece quatro saídas na porta;
 //   - (o Mormesk, que esta fase já teve no porão da casa do beco, é do capítulo da Mina e saiu
 //     daqui; as medições dele ficam no histórico do repositório);
-//   - as aranhas do armazém (eram do pomar, três): 11% dos PV, quatro rodadas. Quem pisa a teia
-//     da rua ou entra as acorda, e quem tem Percepção passiva abaixo de 17 é pego de surpresa (o
-//     livro): na medição, os quatro heróis; alguém vai ao chão em 38% das lutas, ninguém morre;
+//   - as aranhas do armazém (eram do pomar, três): quem pisa a teia da rua ou entra as acorda, e
+//     quem tem Percepção passiva abaixo de 17 é pego de surpresa (o livro: os quatro heróis do
+//     grupo pronto, sempre). Com os arcos da loja alargados (as aranhas são Grandes e ficavam
+//     presas lá dentro, e a luta virava abate de graça), no 3º nível: 18% dos PV, alguém no
+//     chão em 55% das lutas, um herói morre em 9%. É a luta de um grupo de 4º nível do livro;
 //   - os mortos de cinza da velha guarnição (área 11 do livro): 24% dos PV,
 //     alguém no chão em 25% das lutas, nenhuma morte em 20;
 //   - o culto do dragão, na casa de esquina: seis cultistas do SRD (CR 1/8, 25 XP cada, Favric entre
@@ -365,6 +367,11 @@ export function criarArvoreTrovao(app, config) {
     // Os dois da cabana ocidental correm em ajuda um turno depois.
     const vizinhos = ramos1.filter((f) => !f.dead);
     if (vizinhos.length && salvo.ramos1 !== 'limpo') {
+      // Eles correm: na rodada 2 já estão a meio caminho (nasciam a ~40 pés e quase nunca chegavam a atacar).
+      const alvo = ninho.ramos2[0];
+      for (const f of vizinhos) {
+        f.pos = { ...f.pos, x: f.pos.x + Math.round((alvo.x - f.pos.x) * 0.7), y: f.pos.y + Math.round((alvo.y - f.pos.y) * 0.7) };
+      }
       prepararReforcos({ 2: { bando: vizinhos, aviso: 'Dois galhos secos da cabana ocidental chegam correndo, um turno atrás dos outros.' } });
     }
     luta(bando, { furt });
@@ -878,7 +885,7 @@ export function criarArvoreTrovao(app, config) {
       return;
     }
     if (ramos12.length && !salvo.ramos12
-      && herois().some((h) => naCasa(h.pos, 'tecelagem') || dentro(h.pos, ARVORE_TROVAO.zonas.tecelagemSul))) {
+      && herois().some((h) => naCasa(h.pos, 'tecelagem') || (dentro(h.pos, ARVORE_TROVAO.zonas.tecelagemSul) && !naCasa(h.pos, 'embaixada')))) {
       await acordarRamosDoTecelao();
       return;
     }
@@ -1413,6 +1420,20 @@ export function criarArvoreTrovao(app, config) {
       if (estado.lutando) return null;
       if (npc === reidoth) return arvoreDoReidoth();
       if (npc === chefeDoCulto && !salvo.culto) return arvoreDoCulto();
+      // Quem aceitou a aliança ainda pode romper com ele (senão o cofre e a poção ficariam trancados até a torre).
+      if (npc === chefeDoCulto && salvo.culto === 'aliado') {
+        return {
+          inicio: 'oi',
+          nos: { oi: {
+            narra: 'Favric sorri do mesmo jeito de antes, e os outros cinco não tiram os olhos do grupo.',
+            fala: 'Descansem. Ao amanhecer, a torre.',
+            opcoes: [
+              { texto: 'Mudei de ideia: não vou servir ao dragão.', fim: 'luta' },
+              { texto: 'Ainda não. Descansem vocês também.', fim: 'sai' },
+            ],
+          } },
+        };
+      }
       return null;
     },
     depoisDaConversa: async (npc, fim) => {
@@ -1450,7 +1471,7 @@ export function criarArvoreTrovao(app, config) {
     },
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
-      if (tipo === 'longo' && dragao && salvo.dragao !== 'morto' && salvo.dragao !== 'evitado') {
+      if (tipo === 'longo' && dragao && !['morto', 'evitado', 'expulso'].includes(salvo.dragao)) {
         return 'dormir à sombra de um dragão? Não';
       }
       return null;
@@ -1475,7 +1496,7 @@ export function criarArvoreTrovao(app, config) {
       if (cultistas.length && !salvo.culto) {
         for (const f of cultistas) {
           f.side = 'neutro';
-          f.facingVec = { dx: 0, dy: 1 };
+          f.facingVec = { dx: -1, dy: 0 };      // a porta é a oeste
           if (!enc.combatants.includes(f)) enc.addCombatant(f);
         }
       }

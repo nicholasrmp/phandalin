@@ -1193,6 +1193,27 @@ for _pid, _grau in GRAU_DE_RUINA.items():
             T[cy][cx] = 'x'
         _b['passavel'] = True
         break
+# O ARMAZEM DAS ARANHAS: as aranhas sao GRANDES (2 x 2) e os arcos da loja tem uma casa. Medido por um revisor,
+# elas ficavam presas lá dentro (7 ancoras dentro, 0 fora) e a luta virava abate de graça. Cada arco da loja
+# ganha uma BRECHA-entrada ao lado (parede caida), para a pegada de 2 x 2 passar.
+for (_di, _fo, _l) in VAOS['loja']:
+    if _l not in 'ns':
+        continue
+    _gx, _gy = (_fo[0], _fo[1] if _l == 'n' else _fo[1]) if False else (None, None)
+    _gy = _di[1] + 1 if _l == 's' else _di[1]
+    _gx = _di[0]
+    for _dx in (-1, 1):
+        _nx = _gx + _dx
+        if not (0 <= _nx < W) or PN[_gy][_nx] != '#':
+            continue
+        _cel = [(_nx, _gy - 1), (_nx, _gy)]
+        if not all(T[cy][cx] in 'Ldvj,:' for (cx, cy) in _cel):
+            continue
+        PN[_gy][_nx] = '/'
+        for (cx, cy) in _cel:
+            T[cy][cx] = 'x'          # entulho nos dois lados, como nas outras brechas-entrada
+        BRECHAS.append({'x': _nx, 'y': _gy, 'lado': 'N', 'predio': 'loja', 'passavel': True})
+        break
 print('brechas que sao entrada:', sum(1 for b in BRECHAS if b['passavel']), 'de', len(BRECHAS))
 print('brechas de visao:', len(BRECHAS), {p: sum(1 for b in BRECHAS if b['predio'] == p) for p in GRAU_DE_RUINA if any(b['predio'] == p for b in BRECHAS)})
 
@@ -1765,6 +1786,8 @@ def _vagas(regiao, quantas, onde, dentro_de=None):
         cands = [(x, y) for y in R(regiao['y0'], regiao['y1'])
                  for x in R(regiao['x0'], regiao['x1'])]
     cands = [c for c in cands if _anda(*c) and c in _vistas]
+    if dentro_de is None:
+        cands = [c for c in cands if c not in _DENTRO_DE_CASA]     # bando de FORA nao nasce dentro de predio
     if len(cands) < quantas:
         raise SystemExit('ERRO: ' + onde + ' tem ' + str(len(cands))
                          + ' vaga(s) alcancavel(is), e a cena precisa de ' + str(quantas))
