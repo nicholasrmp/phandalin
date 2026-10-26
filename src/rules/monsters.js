@@ -110,6 +110,16 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     ...(def.pairaNoAr ? { pairaNoAr: true } : {}),
     // A folha de cada arma, para quem troca (o hobgoblin pega o arco).
     ...(def.aparencias ? { aparencias: { ...def.aparencias } } : {}),
+    // ARMA DE SOPRO. Sem esta linha o bloco `breath` morria na definição: o
+    // dragão verde carregava cone, CD, dados e recarga desde que foi escrito,
+    // e nada disso chegava ao combate. Medido: o chefe do jogo nunca soprou.
+    ...(def.breath ? { breath: { ...def.breath } } : {}),
+    // DESLOCAMENTO DE VOO. Mesma história do sopro: `flyFt` estava escrito em
+    // seis fichas e morria na definição. Agora `voaPelaFicha` no combate o lê.
+    ...(def.flyFt ? { flyFt: def.flyFt } : {}),
+    // PAIRAR (`hover`). Quem paira fica no ar o tempo todo e o tabuleiro o
+    // desenha erguido; quem so VOA (o dragao) atravessa pelo ar e pousa.
+    ...(def.hover ? { hover: true } : {}),
     tipo: def.tipo ?? TIPO_DA_FAMILIA.get(id) ?? null,
     // Tipos de dano. As famílias escreveram com dois vocabulários (`resist` e
     // `damageResistances`); aqui viram um só. Resistência física "só de armas

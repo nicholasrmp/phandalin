@@ -1,0 +1,113 @@
+{
+  "cell": [
+    360,
+    357
+  ],
+  "s": 3,
+  "ground": 0,
+  "w": 1896,
+  "h": 10152,
+  "dirs": [
+    "south",
+    "south-east",
+    "east",
+    "north-east",
+    "north",
+    "north-west",
+    "west",
+    "south-west"
+  ],
+  "anims": {
+    "idle": {
+      "y": 3192,
+      "fw": 360,
+      "fh": 357,
+      "frames": 2,
+      "hold": [
+        40,
+        40
+      ],
+      "total": 80,
+      "x": 924,
+      "ground": 0
+    },
+    "walk": {
+      "y": 0,
+      "fw": 474,
+      "fh": 399,
+      "frames": 4,
+      "hold": [
+        9,
+        9,
+        9,
+        9
+      ],
+      "total": 36,
+      "x": 0,
+      "ground": 9
+    },
+    "attack": {
+      "y": 6144,
+      "fw": 498,
+      "fh": 354,
+      "frames": 2,
+      "hold": [
+        8,
+        14
+      ],
+      "total": 22,
+      "x": 0,
+      "ground": 0
+    },
+    "down": {
+      "y": 8976,
+      "fw": 390,
+      "fh": 147,
+      "frames": 1,
+      "hold": [
+        60
+      ],
+      "total": 60,
+      "x": 0,
+      "ground": -1
+    },
+    "sleep": {
+      "y": 6144,
+      "fw": 390,
+      "fh": 150,
+      "frames": 2,
+      "hold": [
+        50,
+        50
+      ],
+      "total": 100,
+      "x": 996,
+      "ground": -1
+    },
+    "dead": {
+      "y": 8976,
+      "fw": 390,
+      "fh": 147,
+      "frames": 1,
+      "hold": [
+        60
+      ],
+      "total": 60,
+      "x": 390,
+      "ground": -1
+    },
+    "conjurar": {
+      "y": 3192,
+      "fw": 462,
+      "fh": 369,
+      "frames": 2,
+      "hold": [
+        10,
+        16
+      ],
+      "total": 26,
+      "x": 0,
+      "ground": 3
+    }
+  }
+}

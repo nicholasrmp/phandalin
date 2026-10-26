@@ -45,6 +45,36 @@ _DARA_MANTEM = (
 
 # As seis armaduras do jogo em seis desenhos. A Dara ja nasceu de placas.
 EDICOES = {
+    # O DRAGAO VERDE: a rotacao encolheu as garras dianteiras.
+    #
+    # RECUSADA PELO DONO -- a folha boa e a ORIGINAL, sem esta edicao. Fica
+    # aqui para ninguem gastar as 25 geracoes de novo. O conserto funcionou
+    # tecnicamente (silhueta 90,6-95,8% preservada, massa +2,7 a +8,5%, zero
+    # pixel solto), mas as garras que ele desenha sao grandes e estendidas, e
+    # ai quem passa a destoar e a vista SUL -- a aprovada --, cujas garras sao
+    # pequenas e recolhidas, mais as tres de costas, que nao tem garra nenhuma.
+    # Um bando coerente de membro dianteiro discreto ficou melhor que quatro
+    # vistas com garra grande e quatro sem. Saida em
+    # `_referencias/pixellab/edicoes/dragao-garras-RECUSADA`.
+    #
+    # A vista sul aprovada tem duas garras dianteiras erguidas junto ao peito,
+    # com dedos. Nas sete rotacoes elas viraram tocos no ombro, e na south-west
+    # sumiram: o peito ficou liso. E a mesma falha ja vista no draconato (cauda
+    # inventada) e no guerreiro (escudo sumido no ataque) -- a rotacao perde
+    # peca pequena. O segundo ataque do bicho na ficha e Garra, 2d6+4, duas por
+    # turno; sem garra visivel a animacao de ataque nao teria o que mover.
+    'dragao-garras': (
+        'Give this dragon back its two FRONT LIMBS. It must have two muscular '
+        'front legs that come out of its chest and shoulders, each bent at the '
+        'elbow and ending in a hand of four long curved claws, held up in front '
+        'of the chest. They are real limbs, thick as the hind legs, not small '
+        'stubs and not hidden. Keep the direction each frame faces exactly as '
+        'it is. Keep everything else exactly the same: the two hind legs, the '
+        'two spread wings and their pale yellow-green membranes, the long tail, '
+        'the backswept crest of spikes on the head, the row of spines down the '
+        'neck and back, the olive green scales, the pale belly, the pose, the '
+        'size and the position in the frame.'
+    ),
     'dara-malha': ('Replace the polished steel plate armor with a full chain mail '
                    'hauberk of small riveted steel rings, with long mail sleeves, '
                    'worn over a padded gambeson.' + _DARA_MANTEM),
@@ -345,6 +375,8 @@ def main():
     p.add_argument('--fonte', help='pasta do personagem baixado')
     p.add_argument('--tira', help='ou uma tira de 8 vistas lado a lado (sul primeiro)')
     p.add_argument('--de', type=int, default=0, help='a primeira direcao da tira (0 = sul)')
+    p.add_argument('--direcoes', help='com --fonte: so estas direcoes, separadas por virgula '
+                                     '(acima de 80 px o pedido aceita 4 por vez)')
     p.add_argument('--go', action='store_true')
     a = p.parse_args()
 
@@ -359,6 +391,15 @@ def main():
         cw, ch = lado, tira.height
     elif a.fonte:
         quadros, (cw, ch) = rotacoes(RAIZ / a.fonte)
+        # Acima de 80 px o pedido aceita so 4 quadros, e a celula do dragao
+        # verde e 248x160. Entao da para mandar as direcoes aos punhados, em
+        # vez de fatiar uma tira -- a tira so sabe recortar quadro QUADRADO.
+        if a.direcoes:
+            querem = [d.strip() for d in a.direcoes.split(',')]
+            faltam = [d for d in querem if d not in dict(quadros)]
+            if faltam:
+                raise SystemExit(f'direcao desconhecida: {", ".join(faltam)}')
+            quadros = [(d, img) for d, img in quadros if d in querem]
     else:
         raise SystemExit('passe --fonte ou --tira')
     corpo = {

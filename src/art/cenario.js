@@ -32,6 +32,11 @@ img.src = urlCenario;
  * O deslocamento de até 3 px quebra a grade — 233 árvores alinhadas pelo
  * centro de casa leem como pomar plantado, não como mata.
  */
+// Objetos que formam FILEIRA e precisam emendar: sem o deslocamento aleatorio.
+// Nas arvores o balanco quebra a grade do pomar; numa grade de cela ele quebraria
+// a emenda de uma casa com a vizinha.
+const SEM_BALANCO = new Set(['grade']);
+
 export function spriteCenario(grupo, papeis, x, y) {
   const g = meta[grupo];
   if (!pronto || !g) return null;
@@ -41,7 +46,7 @@ export function spriteCenario(grupo, papeis, x, y) {
   return {
     img,
     ...q,
-    dx: sorteio(x + 101, y, 7) - 3,
-    dy: sorteio(x, y + 211, 5) - 2,
+    dx: SEM_BALANCO.has(grupo) ? 0 : sorteio(x + 101, y, 7) - 3,
+    dy: SEM_BALANCO.has(grupo) ? 0 : sorteio(x, y + 211, 5) - 2,
   };
 }

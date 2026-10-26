@@ -1175,6 +1175,334 @@ for _chave in ('drowEspada', 'drowTiro'):
         },
     }
 
+# LICAO DO PRIMEIRO TENTATIVO DO ACOLITO: a descricao dizia "dragon cultist" e
+# "dragon scale", e o gerador desenhou um DRACONATO -- focinho verde, chifres e
+# cauda --, mesmo com "horns, tail" na lista negativa. Palavra de dragao na
+# descricao puxa o desenho para dragao. Aqui o culto e "a hooded cult" e a
+# escama e um pingente oval; o rosto e HUMANO por extenso.
+# O CULTO DO DRAGAO de Arvore Trovao: o ACOLITO (os tres que rezam em volta
+# da fogueira) e o SACERDOTE (o que fala por eles). Desenho NOSSO, a partir do
+# que a cena diz -- mantos verdes e uma escama de dragao no altar --, e nada do
+# livro. Medios, quadro de 64. Os dois sao da mesma familia (manto verde-floresta,
+# escama pendurada no pescoco); o sacerdote se le de longe: cabeca de fora,
+# barra dourada, malha de aco por baixo e a maca de cabeca de flanges.
+_CULTO_ESTILO = (
+    'Cloak ramp: deep forest green, #4f8a3c light, #2f5c2a mid, #183a1c deep. '
+    'Pendant: pale cream-green #d8e8b0 light, #a0b878 mid, #566e3c deep. '
+    'Cloth: dirty cream-grey #b8ae98 light, #8a8270 mid, #5a5448 deep. Wood: '
+    '#a06a38 light, #6e4422 mid, #3e2412 deep. '
+)
+_CULTO_FIM = (
+    'POSE: standing facing the viewer. Full body in frame. BACKGROUND: plain, '
+    'empty. No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+    'blur, gradients, painted rendering, 3D render, multiple characters, '
+    'wings, tail, horns, snout, reptile, lizard, dragon, dragonborn, scaly '
+    'skin, green skin, fire, glow, shield, armor plates, helmet.'
+)
+PERSONAGENS['acolito'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Acolito do Culto do Dragao',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a lowly hooded cultist, a young HUMAN '
+            'acolyte. ' + ESTILO_HEROI + _CULTO_ESTILO +
+            'Skin ramp: warm tan, #e8b888 light, #c08a5c mid, #7a5034 deep. '
+            'THE ACOLYTE: a lean young HUMAN man with a normal human face, tan '
+            'skin, small round ears, a thin worried face half in shadow under a '
+            'pulled-up HOOD. CLOTHES: a plain long deep forest '
+            'green hooded CLOAK hanging to the shins, open at the front over a '
+            'dirty cream-grey tunic, a frayed rope belt, simple brown cloth '
+            'boots. A single small pale oval PENDANT hangs on a cord at the '
+            'chest. WEAPON: a short plain wooden CLUB held low in the right '
+            'hand. ' + _CULTO_FIM
+        ),
+    },
+}
+PERSONAGENS['sacerdote'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Sacerdote do Culto do Dragao',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of the leader of a hooded cult, a stern '
+            'middle-aged HUMAN man. ' + ESTILO_HEROI + _CULTO_ESTILO +
+            'Skin ramp: ruddy, #e8b080 light, #b87a50 mid, #744428 deep. Gold '
+            'trim: #e0b83c light, #a07c20 mid, #5a4210 deep. Mail: steel '
+            '#9a9aa4 light, #686872 mid, #3a3a44 deep. THE PRIEST: a broad, '
+            'imposing HUMAN man with a normal human face, ruddy skin, a bald head, a short grey beard and a hard '
+            'unblinking stare, HEAD BARE (no hood). CLOTHES: a long heavy deep '
+            'forest green CLOAK with a high stiff collar and a wide GOLD border '
+            'down the front and along the hem, open over a steel chain MAIL '
+            'shirt and a cream-grey tunic, a thick black belt with a gold '
+            'buckle, dark boots. A large pale oval PENDANT hangs on a gold '
+            'chain over the mail. WEAPON: a heavy flanged iron MACE with a '
+            'wooden haft held upright in the right hand. ' + _CULTO_FIM
+        ),
+    },
+}
+
+# OS TRES DA ESTRADA, pelas imagens que o dono mandou, descritas em texto: SILDAR
+# HALLWINTER (refem no covil), GUNDREN ROCKSEEKER (o anao desacordado do
+# castelo) e REIDOTH (o druida de Arvore Trovao). Nenhum luta no tabuleiro:
+# so as oito vistas e a pose de queda. Mao: de frente, a mao ESQUERDA do
+# personagem fica a DIREITA da imagem.
+_FIM_ESTRADA = (
+    'POSE: standing facing the viewer. Full body in frame. BACKGROUND: plain, '
+    'empty. No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+    'blur, gradients, painted rendering, 3D render, multiple characters, '
+    'wings, tail, fire, glow, '
+)
+PERSONAGENS['sildar'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Sildar Hallwinter',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a weary veteran human knight in full steel '
+            'armor. ' + ESTILO_HEROI +
+            'Skin ramp: weathered, #e8b890 light, #c08a68 mid, #7a5038 deep. Hair: '
+            'short swept-back grey-white #d8d8dc with #9a9aa2 shadow, black thick '
+            'moustache. Steel ramp: #d4d8dc light, #98a0a8 mid, #5a6068 deep. '
+            'Cloak: crimson #b03038 light, #7a1e28 mid, #4a1018 deep, with a gold '
+            'trim #d8b04a. Leather: brown #8a5a30. THE KNIGHT: a lean stern '
+            'middle-aged man with a lined face, grey-white hair and a thick black '
+            'moustache. ARMOR: polished silver plate harness, big rounded '
+            'pauldrons, a breastplate with a small gold gorget crest, steel arm '
+            'and leg guards, gauntlets, chain mail showing at the waist, a '
+            'broad brown belt with a sheathed sword on the hip, brown leather '
+            'boots with steel greaves. A crimson cloak hangs from his shoulders '
+            'down his back. EQUIPMENT: a long narrow steel kite SHIELD with a '
+            'red stripe and dark blood stains on his LEFT arm, resting on the '
+            'ground at his side; a dented steel HELMET held in his RIGHT hand '
+            'down by his thigh. ' + _FIM_ESTRADA + 'helmet on head, hood, horns.'
+        ),
+    },
+}
+PERSONAGENS['gundren'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Gundren Rockseeker',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a cheerful dwarf prospector and merchant. '
+            + ESTILO_HEROI +
+            'Skin ramp: dark brown, #a06a48 light, #7a4a30 mid, #4a2a1a deep. '
+            'Beard and moustache: black #2a2a30 with #4a4a54 highlights, gold '
+            'beads #d8b04a. Coat: pale grey-cream #d8d4cc light, #a8a49c mid, '
+            '#686460 deep, with brown shoulder straps. Tunic tan #b8a888. Leather: '
+            'brown #8a5a30. THE DWARF: a short, very stout, broad dwarf with a '
+            'wide-brimmed pale grey-cream HAT with a brown band and a small metal '
+            'badge, a friendly smiling face, and a long black BEARD braided in '
+            'two plaits with gold beads, reaching his chest. CLOTHES: a long '
+            'pale grey-cream travelling coat with brown shoulder straps and '
+            'white trim, a tan tunic, a brown belt with two leather pouches, '
+            'dark grey trousers, brown boots with steel toe-caps and grey '
+            'spats, gold rings on his fingers. His RIGHT hand is held out open, '
+            'palm up, as if offering a deal; his left arm hangs relaxed. '
+            + _FIM_ESTRADA + 'tall, slim, armor, weapon, helmet.'
+        ),
+    },
+}
+PERSONAGENS['reidoth'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Reidoth',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a very old human druid, a hermit of the '
+            'wilds. ' + ESTILO_HEROI +
+            'Skin ramp: weathered tan, #e0b890 light, #b88a64 mid, #70503a deep. '
+            'Hair and beard: white #f0eee8 with #b8b6b0 shadow. Robe: olive-ochre '
+            '#b8a040 light, #8a7428 mid, #564814 deep, with gold-embroidered '
+            'trim #d8b04a. Sash: deep purple #4a3060. Bracers: green-bronze '
+            '#6a8a58. Wood: #8a6a3a light, #5a4020 mid, #342210 deep. THE DRUID: '
+            'a tall, thin, very old man, bald on top, with long white hair '
+            'falling past his shoulders and a very long white beard to his '
+            'belt, a deeply lined face with bushy white eyebrows. CLOTHES: a long '
+            'loose olive-ochre robe with wide sleeves, a tattered hem and '
+            'gold embroidered edges, a purple sash belt with a leather pouch '
+            'and an iron ring hanging from it, green-bronze bracers on both '
+            'forearms, bare feet in leather sandals. A small brown HAWK perches '
+            'on his RIGHT forearm. In his LEFT hand he holds a tall twisted '
+            'wooden STAFF taller than himself, topped with a carved wooden '
+            'animal skull with two curved pale bone horns (the horns are on the '
+            'staff only, his own head has none), red cloth wrapped around it, '
+            'with feathers and small charms hanging. ' + _FIM_ESTRADA +
+            'armor, helmet, hood, hat.'
+        ),
+    },
+}
+
+# A FAMILIA DENDRAR, presa nas jaulas do esconderijo dos Marcarrubra (capitulo 3).
+# MIRNA e a mae, viuva de Thel; NARS e NILSA sao os filhos (o dialogo da cena
+# diz "segura os dois filhos pelos ombros"). Desenho NOSSO, sem imagem do dono:
+# a mesma pele e o mesmo cabelo escuro para o parentesco ler, e roupa diferente
+# para cada um. Presos e sujos, sem arma. A tela da crianca e menor (figura
+# menor): Mirna 64, Nars 56, Nilsa 48.
+_DENDRAR_ESTILO = (
+    'Skin ramp: warm tan, #e0b088 light, #b88458 mid, #7a5232 deep. Hair: dark '
+    'brown, #6a4a34 light, #46301f mid, #2a1c12 deep. '
+)
+_DENDRAR_FIM = (
+    'POSE: standing facing the viewer, shoulders slumped. Full body in frame. '
+    'BACKGROUND: plain, empty. No ground, no shadow, no scenery, no text. '
+    'NEGATIVE: anti-aliasing, blur, gradients, painted rendering, 3D render, '
+    'multiple characters, weapon, armor, helmet, hat, wings, tail, horns, '
+    'pointed ears, elf, glow, fire.'
+)
+PERSONAGENS['mirna'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Mirna Dendrar',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 64, 'height': 64},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a weary human woman, a captive mother. '
+            + ESTILO_HEROI + _DENDRAR_ESTILO +
+            'Dress: faded blue-grey wool, #7a869a light, #56627a mid, #343e50 '
+            'deep. Shawl: brown wool #8a6a48 light, #5e4630 mid. Apron: dirty '
+            'cream #c8bca0. THE WOMAN: a thin human woman of about forty with a '
+            'tired, worried face with dark circles under her eyes, long dark '
+            'brown hair tied back in a loose bun with strands escaping. CLOTHES: '
+            'a long faded blue-grey woolen dress with a patched dirty cream apron, '
+            'a brown wool shawl over her shoulders, a frayed rope belt, scuffed '
+            'brown boots. Her hands are clasped in front of her. ' + _DENDRAR_FIM
+        ),
+    },
+}
+PERSONAGENS['nars'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Nars Dendrar',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 56, 'height': 56},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a thin human teenage boy, a captive. '
+            + ESTILO_HEROI + _DENDRAR_ESTILO +
+            'Shirt: torn cream linen, #d8ccae light, #b0a484 mid, #766c52 deep. '
+            'Vest: worn brown leather #8a5a30 light, #5e3c20 mid. Trousers: '
+            'patched dark brown #6a4a34. THE BOY: a skinny human boy of about '
+            'fifteen with messy dark brown hair and a smudged, tired, frightened '
+            'face. CLOTHES: a torn cream linen shirt with rolled sleeves, a worn '
+            'brown leather vest, patched dark brown trousers with frayed hems, '
+            'scuffed brown boots. His arms hang at his sides. ' + _DENDRAR_FIM
+        ),
+    },
+}
+PERSONAGENS['nilsa'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Nilsa Dendrar',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 48, 'height': 48},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a small human girl, a captive child. '
+            + ESTILO_HEROI + _DENDRAR_ESTILO +
+            'Smock: faded green-grey wool, #8a9a78 light, #647454 mid, #3e4a34 '
+            'deep. Shawl: small brown knitted #8a6a48. THE GIRL: a small human '
+            'girl of about ten with dark brown hair in two messy braids and a '
+            'dirty, frightened face with big eyes. CLOTHES: a faded green-grey '
+            'smock dress with a torn hem, a small brown knitted shawl, bare '
+            'feet. Her hands hold the shawl closed in front of her. '
+            + _DENDRAR_FIM
+        ),
+    },
+}
+# OS FAMILIARES do mago (Convocar Familiar): o RATO e o MORCEGO, miudos. O rato e
+# menor e mais limpo que o rato gigante (32 contra 40); o morcego voa de asas
+# abertas, como o stirge (mannequin: o `cat`/`dog` poe a figura de quatro).
+PERSONAGENS['familiarRat'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Rato familiar',
+        'template_id': 'cat',
+        'view': 'low top-down',
+        'image_size': {'width': 32, 'height': 32},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a small pet rat, tidy and bright-eyed. '
+            + ESTILO_HEROI +
+            'Fur ramp: warm rust-brown, #b88a60 light, #8a6440 mid, #583c24 deep, '
+            'with a cream belly #e8dcc0. Bare skin: pink #e0a0a0 on the round ears, '
+            'the long thin tail, the paws and the nose. Eyes: bright black with a '
+            'white glint. THE RAT: a small clean rat on all four legs, alert, a '
+            'pointed snout with whiskers, big round pink ears, a long thin pink '
+            'tail curving behind, neat sleek fur. Side-on three-quarter body, the '
+            'whole animal readable. Full body in frame. BACKGROUND: plain, empty. '
+            'No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, painted rendering, 3D render, multiple animals, '
+            'giant, filthy, cartoon mouse, cheese.'
+        ),
+    },
+}
+PERSONAGENS['familiarBat'] = {
+    'rota': '/create-character-v3',
+    'corpo': {
+        'name': 'Morcego familiar',
+        'template_id': 'mannequin',
+        'view': 'low top-down',
+        'image_size': {'width': 40, 'height': 40},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'enhance_prompt': False,
+        'description': (
+            'A pixel art game sprite of a small bat hovering in the air. '
+            + ESTILO_HEROI +
+            'Fur ramp: dark brown, #7a6048 light, #54402e mid, #30241a deep. Wing '
+            'membranes: warm brown #8a6c52 light, #5e4632 mid, with darker finger '
+            'bones #30241a. Ears and nose: pink-brown #a07068. Eyes: tiny bright '
+            'black with a white glint. THE BAT: a small round furry body, a '
+            'little face with big pointed ears and a tiny nose, two wide '
+            'leathery WINGS spread open with visible finger bones, tiny feet '
+            'tucked under the body. POSE: hovering in the air, wings spread wide, '
+            'seen from the front. Full body in frame. BACKGROUND: plain, empty. '
+            'No ground, no shadow, no scenery, no text. NEGATIVE: anti-aliasing, '
+            'blur, gradients, painted rendering, 3D render, multiple animals, '
+            'vampire, human, cloak, fangs dripping, red eyes, bird, feathers.'
+        ),
+    },
+}
+
 # O STIRGE (a estrada da regiao). Miudo e voador: quadro de 48, esqueleto
 # `dog` (nao ha esqueleto de bicho voador). Pela imagem que o dono mandou,
 # descrita em texto: morcego cruzado com mosquito, asas de membrana creme com
@@ -1637,6 +1965,63 @@ for _id, (_nome, _lado, _desc) in _INFECTADOS.items():
                                    'animal, beast, leaves, flowers, person in a costume.',
         },
     }
+
+# VENOMFANG, o DRAGAO VERDE JOVEM de Thundertree. O chefe do jogo.
+#
+# A VISTA SUL E O DESENHO DO DONO. Antes dela vieram sete tentativas -- cinco
+# no OpenArt (perfil em vez de frente, chifres, pata fantasma, o decalque
+# empinado de asas abertas) e duas no PixelLab (a empinada girada, e uma de
+# quatro patas pelo esqueleto `dog`, que saiu boa mas com dois chifres). O dono
+# descartou todas e trouxe o dele: ereto nas patas traseiras, asas meio abertas
+# caindo dos lados, cabeca virada a direita, crista de espinhos, dois chifres
+# pequenos e claros, olho vermelho. Os chifres e a pose ereta sao ESCOLHA dele.
+#
+# O desenho veio de um gerador de imagem no ESTILO pixel art: 53.368 cores e o
+# "pixel" variando de 2 a 6 px de tela. Convertido sem gerar nada pelo
+# `_referencias/pixellab/dragaoVerde-ref/reduzir.py`: fundo branco tirado por
+# saturacao e brilho, alfa duro, 20 cores com o olho vermelho e o dourado das
+# garras guardados a parte (o corte por mediana os afogava nos verdes).
+# 151x160, alinhado a 152x160.
+#
+# Proporcao 0,94: cabe na celula como as outras criaturas, ao contrario do
+# decalque empinado, que tinha 1,54 e passava as asas pelas casas vizinhas.
+#
+# A VERSAO FINAL e a que o dono passou pelo conversor do proprio site do
+# PixelLab (340x340, pixel de 1 px, 245 cores) e mandou dizendo "esse e o
+# dragao que eu quero animar". Mesmo desenho da conversao anterior, mais vivo
+# e de mais contraste. Reduzida igual (160 de altura) e alinhada a 160x160.
+# Antes disso o dono pediu bracos visiveis; o editor do Pixen falhou duas
+# vezes (ver `imagem-pixellab.py`), e o dono ficou com o desenho como e.
+#
+# Custo da rotacao: ceil(160*160*8/65536) = 4 geracoes.
+# A VERSAO DE QUATRO PATAS, e e a que vale. O dono apontou duas vezes que o
+# dragao em pe lia como wyvern -- de lado e de costas sobravam duas pernas -- e
+# que o rabo parecia colado na perna. As duas coisas vinham da pose ereta: os
+# bracos ficam pequenos no peito e o rabo desce por tras das pernas. De quatro,
+# as patas se abrem sob o corpo e o rabo sai reto do quadril.
+#
+# O dono gerou numa ferramenta dele uma folha de oito vistas de quatro patas.
+# Cinco vieram certas; tres (oeste, noroeste, sudoeste) eram a mesma imagem de
+# frente repetida, e saem por ESPELHO das boas. A tira e montada sem geracao
+# pelo `src/dev/dragao-tira.py`: uma escala so, uma paleta so, os pes na mesma
+# linha, e o olho vermelho repintado (na reducao ele sumia). Registrada pela
+# rota de tira: as oito vao prontas e o PixelLab nao desenha nenhuma.
+#
+# Esqueleto `dog`: e ele que da o andar de quadrupede na animacao, como no
+# lobo atroz.
+PERSONAGENS['dragaoVerdeJovem'] = {
+    'rota': '/create-character-v3',
+    'tira': '_referencias/pixellab/edicoes/dragao-dono-oito/tira.png',
+    'corpo': {
+        'name': 'Dragao Verde Jovem',
+        'template_id': 'dog',
+        'view': 'low top-down',
+        'n_directions': 8,
+        'description': ('A pixel art game sprite of a young green dragon standing on all four '
+                        'legs, wings folded on its back, a crest of spikes, two small pale '
+                        'horns, a red eye, a pale yellow-green belly and a long tail.'),
+    },
+}
 
 # O SPECTATOR (capitulo 4: a Caverna do Eco das Ondas). LICENCA: o nome e o
 # conceito sao conteudo de fa; a ARTE e nossa.

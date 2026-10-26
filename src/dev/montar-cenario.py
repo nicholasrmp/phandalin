@@ -213,6 +213,15 @@ GRUPOS = {
     # a grade, o arco e o estandarte).
     'desabamento': {'pasta': 'desabamento/cb5332a0-ec17-42b9-9cc3-1ef3d9e8fe25',
                     'quadros': {'todas': [1, 2, 3, 4, 5, 9, 11, 15]}, 'ancora': 'deitado'},
+    # A GRADE DE CELA das jaulas do esconderijo (a #2 dos 16: barras com uma
+    # travessa no meio, trilho em cima e embaixo, um poste em cada ponta). O
+    # PixelLab a desenhou subindo para a direita; as fileiras de cela correm no
+    # eixo x, que na tela DESCE para a direita, entao ela entra ESPELHADA. A
+    # ancora e o meio do trilho de baixo (`painel`), para as tres casas da cela
+    # emendarem. Fora: 0 (lisa), 1 (pontas de lanca, le como portao), 3 (rodape
+    # de pedra acobreado, destoa) e as de corrente, teia ou tabua.
+    'grade': {'pasta': 'grade/cfc11aa5-3d2e-4300-a864-473829596d73',
+              'quadros': {'todas': [2]}, 'ancora': 'painel', 'espelhar': True},
 }
 
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
@@ -309,6 +318,10 @@ def ancora(im, modo):
             xs = [x for x in range(w) if px[x, y][3] > 0]
             if xs:
                 return xs[len(xs) // 2], y
+    if modo == 'painel':
+        # Peca no plano de uma linha que desce a 27 graus (2:1): o meio do
+        # trilho de baixo fica a um quarto da largura acima do ponto mais baixo.
+        return w // 2, h - int(w * 0.25) - 2
     fracao = {'chao': 0.10, 'deitado': 0.45}.get(modo, 0.25)
     return w // 2, h - 1 - int(h * fracao)
 
@@ -336,6 +349,8 @@ def main():
             for i in idxs:
                 im = Image.open(pasta / f'frame_urls_{i}.png').convert('RGBA')
                 im = corta_texto(im) if g.get('corta_texto') else im.crop(im.getbbox())
+                if g.get('espelhar'):
+                    im = im.transpose(Image.FLIP_LEFT_RIGHT)
                 if 'cores' in g:
                     im = recolorir(im, g['cores'])
                 quadros.append((nome, papel, i, im, ancora(im, g['ancora'])))

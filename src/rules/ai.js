@@ -174,6 +174,36 @@ export function takeMonsterTurn(enc, monster) {
     return;
   }
 
+  // ARMA DE SOPRO (o Sopro Venenoso do dragão verde). Recarga 5-6: quando está
+  // carregada, é quase sempre a melhor ação que ele tem — 12d6 num cone de 9 m
+  // contra 2d10+4 de uma mordida. A regra de quando usar é o que torna o
+  // encontro jogável: soprar em DOIS ou mais é o que pune o grupo amontoado, e
+  // é por isso que a recarga existe. Em um alvo só, a mordida vale mais, a não
+  // ser que ele não consiga encostar em ninguém e fosse perder o turno.
+  //
+  // A mira é escolhida medindo: para cada inimigo, monta o cone naquela direção
+  // e conta quem cai dentro. Aliado dentro do cone pesa o dobro contra, porque
+  // o sopro não poupa ninguém.
+  if (monster.breath && !monster.recarregando?.[monster.breath.name] && !monster.actionUsed) {
+    let melhor = null;
+    for (const e of enemies) {
+      const casas = enc.areaDaMagia(monster, { shape: monster.breath.shape, areaFt: monster.breath.areaFt, level: 0 }, e.pos);
+      if (!casas?.length) continue;
+      const dentro = new Set(casas.map((t) => key(t.x, t.y)));
+      const pegos = enc.combatants.filter((c) => !c.dead && enc.pegadaEmAlgumaCasa(c, dentro));
+      const inimigos = pegos.filter((c) => c.side !== monster.side).length;
+      const aliados = pegos.filter((c) => c.side === monster.side && c !== monster).length;
+      const nota = inimigos - 2 * aliados;
+      if (!melhor || nota > melhor.nota) melhor = { alvo: e.pos, nota, inimigos };
+    }
+    const semCorpoACorpo = !planApproach(enc, monster, enemies, { meleeOnly: true })
+      && !pickReachableTarget(enc, monster, enemies);
+    if (melhor && melhor.nota > 0 && (melhor.inimigos >= 2 || semCorpoACorpo) && enc.sopro(monster, melhor.alvo)) {
+      enc.endTurn(monster);
+      return;
+    }
+  }
+
   // Plantas Constritoras (a vinha infectada): com alguém a 4,5 m que as raízes
   // ainda não prenderam, a ação é sempre esta. A vinha anda 3 m por turno — ela
   // não persegue ninguém; ela prende e depois constringe quem não sai.

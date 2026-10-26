@@ -2426,7 +2426,16 @@ export class Board {
     // Levitação: o dobro da altura do voo, e a figura balança devagar (6 m do chão).
     const levita = !down && hasCondition(c, 'levitando') && !hasCondition(c, 'caido');
     // `pairaNoAr` (o stirge): a figura e sempre desenhada no ar, sem a regra de voo.
-    const voa = !down && (levita || hasCondition(c, 'voando') || c.pairaNoAr) && !hasCondition(c, 'caido');
+    // Voo de ficha: so quem PAIRA (`hover`) e desenhado no ar. No livro o espectro,
+    // a aparicao, a caveira candente e o spectator pairam -- flutuam sempre. O
+    // dragao verde nao: ele voa batendo as asas e POUSA, entao atravessa o
+    // terreno pelo ar (`voaPelaFicha` no combate) mas fica de quatro no chao.
+    // A primeira versao erguia tudo que tinha `flyFt`, e o dragao de quatro
+    // patas boiava 26 px acima do proprio quadrado.
+    const voaPorFicha = !!c.flyFt && !!c.hover && !this.enc?.tetoBaixo;
+    // `vooVisual`: o trecho voado do dragao (`main.js` liga no `moved` e desliga
+    // quando o passo termina) -- ele sobe, cruza no ar e pousa.
+    const voa = !down && (levita || hasCondition(c, 'voando') || c.pairaNoAr || voaPorFicha || c.vooVisual) && !hasCondition(c, 'caido');
     if (voa) sy -= (levita ? 46 : 26) + Math.round(Math.sin(this.time * 2.4 + c.pos.x * 0.9 + c.pos.y * 0.55) * 3);
 
     // Círculo Mágico: o inimigo barrado que parou na borda leva um contorno vermelho tracejado piscando.
@@ -2492,7 +2501,9 @@ export class Board {
     // Caído usa a mesma pose de quem está no chão, mas sem o esmaecido:
     // continua consciente, só derrubado.
     const prone = !down && hasCondition(c, 'caido');
-    const sheet = getSheet(c.look);
+    // No trecho voado, a folha no estado `~voo` (asas abertas). Sem essa folha,
+    // `folhaImportada` devolve a normal, entao a regra vale antes da arte.
+    const sheet = getSheet(c.vooVisual ? `${String(c.look).split('~')[0]}~voo` : c.look);
 
     // QUAL ANIMAÇÃO MOSTRAR.
     //

@@ -161,7 +161,7 @@ function caixaDo(lookKey) {
   // A célula é a DA FOLHA: a pintada tem 156x240, a importada do PixelLab
   // 288x288. Medir a importada pela célula pintada cortava a figura.
   const { fw, fh } = sheet.anims.idle;
-  const d = pixelsDaFolha(sheet, sheet.anims.idle.y, fw, fh);
+  const d = pixelsDaFolha(sheet, sheet.anims.idle, fw, fh);
   let x0 = fw; let y0 = fh; let x1 = -1; let y1 = -1;
   for (let y = 0; y < fh; y++) {
     for (let x = 0; x < fw; x++) {
@@ -184,16 +184,31 @@ function caixaDo(lookKey) {
  * importada é um `Image`, que não tem `getContext` -- passa por um canvas de
  * rascunho do tamanho da faixa.
  */
-function pixelsDaFolha(sheet, y, w, h) {
-  if (sheet.image.getContext) {
-    return sheet.image.getContext('2d', { willReadFrequently: true }).getImageData(0, y, w, h).data;
+function pixelsDaFolha(sheet, anim, w, h) {
+  const { y } = anim;
+  const x = anim.x ?? 0;
+  const image = imagemDa(sheet, anim);
+  if (image.getContext) {
+    return image.getContext('2d', { willReadFrequently: true }).getImageData(x, y, w, h).data;
   }
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   const ctx = c.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(sheet.image, 0, y, w, h, 0, 0, w, h);
+  ctx.drawImage(image, x, y, w, h, 0, 0, w, h);
   return ctx.getImageData(0, 0, w, h).data;
+}
+
+/**
+ * A imagem de onde sai esta animacao. Numa FOLHA PARCIAL (a garra e o voo do
+ * dragao) cada animacao pode morar num PNG diferente: a folha so traz o que
+ * muda, e o resto vem da base (`folhas/index.js`, `juntarComABase`).
+ *
+ * E na folha ENXUGADA (`enxugar_folha` no importador) cada animacao tem a sua
+ * celula e a sua coluna de partida (`x`): elas vao lado a lado na folha.
+ */
+function imagemDa(sheet, anim) {
+  return anim.image ?? sheet.image;
 }
 
 /**
@@ -230,8 +245,8 @@ export function makePortrait(lookKey, lado = 40) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
-    sheet.image,
-    sx, sheet.anims.idle.y + sy, w, h,
+    imagemDa(sheet, sheet.anims.idle),
+    (sheet.anims.idle.x ?? 0) + sx, sheet.anims.idle.y + sy, w, h,
     Math.floor((p - w) / 2), Math.floor((p - h) / 2), w, h,
   );
 
@@ -285,7 +300,8 @@ export function makeFigure(lookKey, escala = 3) {
   canvas.style.imageRendering = 'pixelated';
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(sheet.image, b.x0, sheet.anims.idle.y + b.y0, w, h, 0, 0, w, h);
+  const idle = sheet.anims.idle;
+  ctx.drawImage(imagemDa(sheet, idle), (idle.x ?? 0) + b.x0, idle.y + b.y0, w, h, 0, 0, w, h);
   return canvas;
 }
 
@@ -332,7 +348,7 @@ const CHAO_PADRAO = 5;
 
 export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip = false, row = 0, alpha = 1, tint = null }) {
   const anim = animDaFolha(sheet, animName);
-  const sx = Math.min(frame, anim.frames - 1) * anim.fw;
+  const sx = (anim.x ?? 0) + Math.min(frame, anim.frames - 1) * anim.fw;
   const sy = anim.y + row * anim.fh;
   // `fw/fh` são físicos; o tabuleiro raciocina em lógicos. Dividir por S é o
   // que mantém a criatura do mesmo TAMANHO na tela e só muda a densidade.
@@ -341,10 +357,15 @@ export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip 
   // em px logicos acima da base; o padrao e 5): a figura desce o tanto que
   // ele subiu, e o pe continua no mesmo lugar do tabuleiro.
   const h = (anim.fh / S) * scale;
-  const topo = -h + ((sheet.ground ?? CHAO_PADRAO) - CHAO_PADRAO) * scale;
+  // Na folha enxugada o chao e da animacao: cada uma foi aparada no seu tamanho.
+  const topo = -h + ((anim.ground ?? sheet.ground ?? CHAO_PADRAO) - CHAO_PADRAO) * scale;
+  const image = imagemDa(sheet, anim);
 
   ctx.save();
-  ctx.globalAlpha = alpha;
+  // Multiplica o alfa de quem chamou em vez de substituí-lo: a silhueta de quem
+  // está atrás de uma parede liga um alfa de 0,66 por fora, e a atribuição
+  // direta o apagava (o sprite saía opaco).
+  ctx.globalAlpha *= alpha;
   ctx.imageSmoothingEnabled = false;
   ctx.translate(x, y);
   if (flip) ctx.scale(-1, 1);
@@ -365,7 +386,7 @@ export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip 
     const b = buf.getContext('2d');
     b.clearRect(0, 0, anim.fw, anim.fh);
     b.imageSmoothingEnabled = false;
-    b.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, 0, 0, anim.fw, anim.fh);
+    b.drawImage(image, sx, sy, anim.fw, anim.fh, 0, 0, anim.fw, anim.fh);
     b.globalCompositeOperation = 'source-atop';
     b.globalAlpha = tint.strength;
     b.fillStyle = tint.color;
@@ -374,7 +395,7 @@ export function drawSprite(ctx, sheet, animName, frame, { x, y, scale = 1, flip 
     b.globalAlpha = 1;
     ctx.drawImage(buf, 0, 0, anim.fw, anim.fh, -w / 2, topo, w, h);
   } else {
-    ctx.drawImage(sheet.image, sx, sy, anim.fw, anim.fh, -w / 2, topo, w, h);
+    ctx.drawImage(image, sx, sy, anim.fw, anim.fh, -w / 2, topo, w, h);
   }
   ctx.restore();
 }

@@ -750,6 +750,34 @@ CONJUNTOS = {
                               'heap of small blocks', 'heap of blocks with a broken column piece'],
         'target_palette': {'colors': GRANITO + MADEIRA[:3]},
     },
+    # A GRADE DE CELA do esconderijo dos Marcarrubra (as jaulas da familia Dendrar).
+    # Hoje o tabuleiro desenha sete barras em codigo (`board.js`, `objeto ===
+    # 'grade'`), porque o atlas nao tem o grupo `grade` -- e `SOMBRA_DO_BAIXO` ja
+    # o espera. As tres casas de cada cela formam uma FILEIRA no eixo x, que na
+    # tela DESCE PARA A DIREITA a 27 graus: a peca vive no plano dessa linha (a
+    # mesma geometria do `vaoDeParede`) e leva um poste em cada ponta, para as
+    # casas emendarem. 32 px de largura = de meio de aresta a meio de aresta.
+    'grade': {
+        'description': (
+            'Section of iron prison cell bars for an isometric tactical RPG dungeon, seen flat '
+            'ON a vertical plane that runs down to the right at 27 degrees, like a short stretch '
+            'of fence: a row of thick vertical iron bars set in a heavy horizontal iron rail at '
+            'the bottom and another at the top, with a stout vertical iron post at the left end '
+            'and at the right end so that several pieces placed in a row join into one long '
+            'barred wall. See-through between the bars. About 34 px wide and 40 px tall, a '
+            'little taller than a person is wide, sitting on the bottom of the canvas. No wall '
+            'behind, no floor, no shadow on the ground. Old, dark and rusty. Lit from the upper '
+            'left. Dark selective outline, not black. ' + PIXEL),
+        'size': 48,
+        'view': 'top-down',
+        'item_descriptions': [
+            'plain dark iron bars with round tips, top and bottom rail',
+            'rusty iron bars with pointed spear tips sticking up above the top rail',
+            'iron bars with one horizontal cross bar in the middle, top and bottom rail',
+            'thick iron bars on a low rough stone curb at the bottom, top rail',
+        ],
+        'target_palette': {'colors': GRANITO + FERRO + ['#6a4a30', '#8a5a30']},
+    },
 }
 
 ESTILOS = AQUI / '_referencias' / 'pixellab' / 'objetos' / 'estilo'

@@ -354,7 +354,11 @@ export class Encounter {
       ? semArmadura : ARMORS[actor.armor ?? 'nenhuma']?.categoria !== 'pesada';
     const daClasse = livre ? (actor.bonusDeDeslocamento ?? 0) : 0;
     // Forma Gasosa: o voo SUBSTITUI o andar, não se soma a ele.
-    const base = fx.soVoa ? fx.vooFt : Math.max(actor.speedFt, fx.vooFt);
+    // Voo de ficha (o dragão): enquanto está no ar, ele usa o deslocamento de
+    // VOO no lugar do de andar -- 24 m contra 12 m no verde jovem. Era o
+    // `flyFt` que a ficha declarava e ninguém lia.
+    const vooDaFicha = this.voaPelaFicha(actor) ? (actor.flyFt ?? 0) : 0;
+    const base = fx.soVoa ? fx.vooFt : Math.max(actor.speedFt, fx.vooFt, vooDaFicha);
     // Liberdade de Movimento: "nenhuma MAGIA reduz o deslocamento" — e só
     // magia. A primeira versão disto tirava toda redução e, pior, zerava o
     // multiplicador: medido, um herói sob Velocidade ia de 18 m para 9 m, ou
@@ -1139,7 +1143,9 @@ export class Encounter {
       }
       : cabeBase;
     this.field.dificeisExtra = this.terrenoHostil(actor);
-    this.field.voando = this.voaAgora(actor);
+    // Planeja com o que ele PODE: o dragao no chao ainda pode decolar (`moveAlong`
+    // decide, trecho a trecho, se andou ou voou).
+    this.field.voando = this.voaAgora(actor) || this.voaPelaFicha(actor);
     this.field.escalando = this.escalaAgora(actor);
     // Andar na Água e Forma Gasosa: as duas mexem em POR ONDE se passa, então
     // viajam no campo como o voo e a escalada.
@@ -1183,8 +1189,37 @@ export class Encounter {
   voaAgora(actor) {
     // A Forma Gasosa também flutua: o livro diz que a névoa paira, e quem paira
     // não pisa em terreno difícil nem escala degrau.
-    return (hasCondition(actor, 'voando') || conditionEffects(actor).soVoa)
+    // Voo de ficha so conta como "no ar" para quem PAIRA (`hover`) ou durante
+    // um trecho voado (`emVoo`, que `moveAlong` liga). O dragao parado esta no
+    // CHAO: a Graxa e os Espinhos o pegam. Para PLANEJAR o caminho, quem chama
+    // pergunta `voaPelaFicha` a parte.
+    const fichaNoAr = this.voaPelaFicha(actor) && (actor.hover || actor.emVoo);
+    return (hasCondition(actor, 'voando') || conditionEffects(actor).soVoa || fichaNoAr)
       && !hasCondition(actor, 'caido') && !conditionEffects(actor).incapacitated;
+  }
+
+  /**
+   * Voo que vem do BLOCO da criatura (`flyFt`), e não de magia.
+   *
+   * Até aqui `flyFt` era enfeite: o comentário em `monsters/aberracoes.js` diz
+   * na letra que "a grade só conhece `speedFt`", e o dragão verde, o spectator
+   * e o stirge carregavam deslocamento de voo que nunca saía do papel.
+   *
+   * TETO BAIXO. O traço Voo do dragão promete que em teto baixo ele perde o ar
+   * -- é o que faz da caverna o lugar de enfrentá-lo. `enc.tetoBaixo` é essa
+   * chave, e quem monta o encontro a liga. Nenhum mapa a liga ainda: por fora
+   * está céu aberto, e isso está dito na descrição do traço.
+   *
+   * O QUE ISTO NÃO FAZ: a grade é plana. Voar não tira a criatura do alcance de
+   * quem bate no chão, nem a põe numa altura que exija alcance para acertar --
+   * ela continua num quadrado, e quem está colado a acerta. O que o voo muda é
+   * por ONDE ela passa (sem terreno difícil, sem degrau, sem zona do chão), a
+   * QUANTO ela anda (`flyFt`) e como ela é desenhada (no ar, com a sombra
+   * menor). Dizer mais que isso seria mentira.
+   */
+  voaPelaFicha(actor) {
+    if (!actor.flyFt || this.tetoBaixo) return false;
+    return !hasCondition(actor, 'caido') && !conditionEffects(actor).incapacitated;
   }
 
   /** Patas de Aranha: sobe degraus sem custo de escalada, mas pisa no terreno difícil e nas zonas do chão. */
@@ -1233,9 +1268,9 @@ export class Encounter {
     // O que se cobra é o caminho ANDADO: um desvio (a IA contornando a Graxa)
     // custa mais que o caminho mais curto até a mesma casa.
     const hostil = this.terrenoHostil(actor);
-    const custoAte = (fim) => {
+    const custoAte = (fim, noAr = this.voaAgora(actor)) => {
       this.field.dificeisExtra = hostil;
-      this.field.voando = this.voaAgora(actor);
+      this.field.voando = noAr;
       this.field.escalando = this.escalaAgora(actor);
       this.field.sobreAgua = conditionEffects(actor).sobreAgua;
       this.field.atravessaVao = conditionEffects(actor).atravessaVao;
@@ -1250,7 +1285,22 @@ export class Encounter {
       this.field.semTerrenoDificil = false;
       return pes;
     };
-    if (custoAte(path.length - 1) * this.custoDeMovimento(actor) > actor.movementLeftFt) return false;
+    // ANDA OU VOA? Quem voa pela ficha e nao paira (o dragao) anda de quatro no
+    // chao e so DECOLA quando o movimento pede: passar do deslocamento de andar,
+    // ou atravessar o que trava quem anda -- terreno dificil ou desnivel, que
+    // deixam o caminho a pe mais caro que pelo ar (ou impossivel). Nesse trecho
+    // ele esta no ar (`emVoo`): as zonas do chao nao o pegam, e o desenho mostra
+    // o voo e o pouso no fim. Regra pedida pelo dono.
+    const decideVoo = this.voaPelaFicha(actor) && !actor.hover && !this.voaAgora(actor);
+    let voou = false;
+    if (decideVoo) {
+      const aPe = custoAte(path.length - 1, false);
+      const peloAr = custoAte(path.length - 1, true);
+      voou = !Number.isFinite(aPe) || aPe > peloAr || aPe > actor.speedFt;
+    }
+    const noAr = voou || this.voaAgora(actor);
+    if (custoAte(path.length - 1, noAr) * this.custoDeMovimento(actor) > actor.movementLeftFt) return false;
+    actor.emVoo = voou;
     const origin = { ...actor.pos };
     // O custo de rastejar vale o que era ao sair: cair no meio do caminho não
     // cobra em dobro os passos já dados de pé.
@@ -1317,7 +1367,9 @@ export class Encounter {
       }
       if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i; break; }
     }
-    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - custoAte(ate) * custo);
+    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - custoAte(ate, noAr) * custo);
+    // Pousou: o trecho voado acabou, e ele volta a estar no chao.
+    actor.emVoo = false;
     // A corrida antes do salto: a DISTÂNCIA andada desde a última coisa que
     // não foi andar (`afterAction` e o próprio salto zeram).
     actor.corridaFt = (actor.corridaFt ?? 0) + ate * 5;
@@ -1325,7 +1377,7 @@ export class Encounter {
     this.renovarRastro();
     // `from` deixa a camada de desenho calcular para onde a figura está virada,
     // sem o motor precisar conhecer o conceito de "frente" (o 5e não tem).
-    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: path.slice(0, ate + 1).map((p) => ({ ...p })) });
+    this.onEvent({ type: 'moved', actor, from: origin, to: { ...actor.pos }, path: path.slice(0, ate + 1).map((p) => ({ ...p })), voo: voou });
     // Quem tem stirge grudado leva o stirge junto.
     this.levarGrudados(actor);
     return true;

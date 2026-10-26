@@ -1,0 +1,38 @@
+{
+  "cell": [
+    504,
+    450
+  ],
+  "s": 3,
+  "ground": 9,
+  "w": 2016,
+  "h": 3600,
+  "dirs": [
+    "south",
+    "south-east",
+    "east",
+    "north-east",
+    "north",
+    "north-west",
+    "west",
+    "south-west"
+  ],
+  "anims": {
+    "walk": {
+      "y": 0,
+      "fw": 504,
+      "fh": 450,
+      "frames": 4,
+      "hold": [
+        9,
+        9,
+        9,
+        9
+      ],
+      "total": 36,
+      "x": 0,
+      "ground": 9
+    }
+  },
+  "parcial": true
+}

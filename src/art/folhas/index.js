@@ -65,6 +65,26 @@ import metaCarnical from './carnical.json';
 import urlCarnical from './carnical.png';
 import metaHamunKost from './hamunKost.json';
 import urlHamunKost from './hamunKost.png';
+import metaAcolito from './acolito.json';
+import urlAcolito from './acolito.png';
+import metaSacerdote from './sacerdote.json';
+import urlSacerdote from './sacerdote.png';
+import metaSildar from './sildar.json';
+import urlSildar from './sildar.png';
+import metaGundren from './gundren.json';
+import urlGundren from './gundren.png';
+import metaReidoth from './reidoth.json';
+import urlReidoth from './reidoth.png';
+import metaMirna from './mirna.json';
+import urlMirna from './mirna.png';
+import metaNars from './nars.json';
+import urlNars from './nars.png';
+import metaNilsa from './nilsa.json';
+import urlNilsa from './nilsa.png';
+import metaFamiliarRat from './familiarRat.json';
+import urlFamiliarRat from './familiarRat.png';
+import metaFamiliarBat from './familiarBat.json';
+import urlFamiliarBat from './familiarBat.png';
 import metaDoppelganger from './doppelganger.json';
 import urlDoppelganger from './doppelganger.png';
 import metaDrow from './drow.json';
@@ -81,6 +101,12 @@ import metaEspetoInfectadoGarra from './espetoInfectadoGarra.json';
 import urlEspetoInfectadoGarra from './espetoInfectadoGarra.png';
 import metaVinhaInfectada from './vinhaInfectada.json';
 import urlVinhaInfectada from './vinhaInfectada.png';
+import metaDragaoVerdeJovem from './dragaoVerdeJovem.json';
+import urlDragaoVerdeJovem from './dragaoVerdeJovem.png';
+import metaDragaoVerdeJovemGarra from './dragaoVerdeJovemGarra.json';
+import urlDragaoVerdeJovemGarra from './dragaoVerdeJovemGarra.png';
+import metaDragaoVerdeJovemVoo from './dragaoVerdeJovem~voo.json';
+import urlDragaoVerdeJovemVoo from './dragaoVerdeJovem~voo.png';
 import metaSpectator from './spectator.json';
 import urlSpectator from './spectator.png';
 import metaCaveiraCandente from './caveiraCandente.json';
@@ -177,6 +203,29 @@ const IMPORTADAS = {
   ghoul: { base: 'ghoul', meta: metaCarnical, url: urlCarnical },
   // Hamun Kost, o Mago Vermelho do Poco da Coruja Velha (pela imagem do dono)
   hamunKost: { base: 'hamunKost', meta: metaHamunKost, url: urlHamunKost },
+  // O CULTO DO DRAGAO de Arvore Trovao (aprovados pelo dono): o acolito, de
+  // clava, e o sacerdote, de marreta. Humanos de manto verde; o sacerdote se
+  // le de longe pela barra dourada e pela arma.
+  acolito: { base: 'acolito', meta: metaAcolito, url: urlAcolito },
+  sacerdote: { base: 'sacerdote', meta: metaSacerdote, url: urlSacerdote },
+  // OS TRES DA ESTRADA (aprovados pelo dono, pelas imagens dele): Sildar, o
+  // refem do covil; Gundren, o anao desacordado do castelo; Reidoth, o druida
+  // de Arvore Trovao. Figuras PARADAS: o andar e o golpe repetem o parado
+  // (perfil `estatico` do importador), e so a queda e desenhada.
+  sildar: { base: 'sildar', meta: metaSildar, url: urlSildar },
+  gundren: { base: 'gundren', meta: metaGundren, url: urlGundren },
+  reidoth: { base: 'reidoth', meta: metaReidoth, url: urlReidoth },
+  // A FAMILIA DENDRAR, presa nas jaulas do esconderijo (desenho nosso): Mirna, a
+  // mae, e os filhos Nars e Nilsa. Figuras PARADAS, como as tres de cima. A cena
+  // (`game/encounter.js`, `foesMansao`) troca o `look` do plebeu por estes.
+  mirna: { base: 'mirna', meta: metaMirna, url: urlMirna },
+  nars: { base: 'nars', meta: metaNars, url: urlNars },
+  nilsa: { base: 'nilsa', meta: metaNilsa, url: urlNilsa },
+  // OS FAMILIARES do mago (Convocar Familiar): o rato anda, o morcego voa; os
+  // dois nao atacam, entao o golpe repete o parado (perfil `ataque_parado`). O
+  // `look` do bloco (`familiarRat`, `familiarBat`) e a chave.
+  familiarRat: { base: 'familiarRat', meta: metaFamiliarRat, url: urlFamiliarRat },
+  familiarBat: { base: 'familiarBat', meta: metaFamiliarBat, url: urlFamiliarBat },
   // o doppelganger na forma verdadeira (pela imagem do dono)
   doppelganger: { base: 'doppelganger', meta: metaDoppelganger, url: urlDoppelganger },
   // A DROW (aprovada pelo dono), duas folhas como o hobgoblin: a espada curta
@@ -211,6 +260,28 @@ const IMPORTADAS = {
   vinhaInfectada: { base: 'vinhaInfectada', meta: metaVinhaInfectada, url: urlVinhaInfectada },
   // O SPECTATOR (aprovado pelo dono): a unica folha com PARADO proprio -- a
   // boca, a lingua e as quatro hastes se mexem sem a figura sair do lugar.
+  // VENOMFANG, o dragao verde jovem de Thundertree: o chefe, DE QUATRO PATAS.
+  // O desenho e do dono -- uma folha de oito vistas que ele gerou, cinco
+  // aproveitadas e tres espelhadas, montada sem geracao (`dragao-tira.py`). O
+  // golpe da folha e a MORDIDA; a garrada fica com o efeito `claw` do motor, e
+  // o sopro com o cone `soproVenenoso`.
+  // Duas folhas, como o espeto: a MORDIDA (padrao) e a GARRA, que ele usa
+  // duas vezes por turno (`aparencias` do bloco, chave
+  // `dragaoVerdeJovem@nenhuma-garra`). As duas trazem o gesto do sopro.
+  dragaoVerdeJovem: {
+    base: 'dragaoVerdeJovem', meta: metaDragaoVerdeJovem, url: urlDragaoVerdeJovem,
+    postura: 'umaMao', familia: 'mordida', armadura: 'roupa', padrao: true,
+  },
+  'dragaoVerdeJovem-garra': {
+    base: 'dragaoVerdeJovem', meta: metaDragaoVerdeJovemGarra, url: urlDragaoVerdeJovemGarra,
+    postura: 'umaMao', familia: 'garra', armadura: 'roupa',
+  },
+  // NO AR: o estado `~voo`, que o tabuleiro pede no trecho VOADO (`vooVisual`)
+  // e larga quando ele pousa. O andar dela e o ciclo de asas.
+  'dragaoVerdeJovem~voo': {
+    base: 'dragaoVerdeJovem', meta: metaDragaoVerdeJovemVoo, url: urlDragaoVerdeJovemVoo,
+    postura: 'umaMao', familia: 'mordida', armadura: 'roupa', padrao: true, estado: 'voo',
+  },
   spectator: { base: 'spectator', meta: metaSpectator, url: urlSpectator },
   // A CAVEIRA CANDENTE (aprovada pelo dono): so a cabeca, quadro de 56.
   caveiraCandente: { base: 'caveiraCandente', meta: metaCaveiraCandente, url: urlCaveiraCandente },
@@ -416,7 +487,7 @@ function carregar(key) {
   image.onload = () => {
     prontas.set(key, {
       key, base, image, w: meta.w, h: meta.h, anims: meta.anims, dirs: meta.dirs, ground: meta.ground,
-      postura, familia, armadura,
+      postura, familia, armadura, parcial: !!meta.parcial,
     });
     aoCarregarFolha?.(base);
   };
@@ -477,10 +548,44 @@ export function folhaImportada(key) {
     }
   }
   carregar(escolhida);
-  if (prontas.has(escolhida)) return prontas.get(escolhida);
+  if (prontas.get(escolhida)?.parcial) carregar(quer.base);
+  const pronta = completa(escolhida, quer.base);
+  if (pronta) return pronta;
   // ainda carregando: qualquer folha pronta da figura, a padrao primeiro
   carregar(quer.base);
-  return prontas.get(quer.base) ?? daFigura.map(([k]) => prontas.get(k)).find(Boolean) ?? null;
+  return completa(quer.base, quer.base)
+    ?? daFigura.map(([k]) => completa(k, quer.base)).find(Boolean) ?? null;
+}
+
+/**
+ * FOLHA PARCIAL. A garra e o voo do dragao repetiam a folha inteira -- parado,
+ * andar, queda, sono -- para trocar UMA animacao, e cada folha dele aberta na
+ * memoria passava de 400 MB. Agora a folha variante traz so o que muda
+ * (`parcial` no JSON, `so_anims` no importador) e o resto vem da folha BASE da
+ * figura (a de chave igual ao look). Cada animacao leva a propria imagem e o
+ * proprio chao, porque cada PNG foi aparado no seu tamanho (`drawSprite`).
+ *
+ * Enquanto a base nao chegou, a parcial nao serve: sem o parado ela nao
+ * desenharia nada. Devolve null e quem chamou procura outra.
+ */
+const juntas = new Map();
+function completa(key, base) {
+  const folha = prontas.get(key);
+  if (!folha?.parcial) return folha ?? null;
+  const daBase = prontas.get(base);
+  if (!daBase || daBase.parcial) return null;
+  if (!juntas.has(key)) juntas.set(key, juntarComABase(folha, daBase));
+  return juntas.get(key);
+}
+
+function juntarComABase(parcial, base) {
+  const comImagem = (f) => Object.fromEntries(Object.entries(f.anims)
+    .map(([nome, a]) => [nome, { ...a, image: f.image, ground: a.ground ?? f.ground }]));
+  return {
+    ...parcial,
+    image: base.image, w: base.w, h: base.h, ground: base.ground, parcial: false,
+    anims: { ...comImagem(base), ...comImagem(parcial) },
+  };
 }
 
 /** Esta figura tem arte importada? Quem monta a chave de look precisa saber. */

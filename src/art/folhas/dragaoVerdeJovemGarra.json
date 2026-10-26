@@ -1,0 +1,36 @@
+{
+  "cell": [
+    402,
+    363
+  ],
+  "s": 3,
+  "ground": 2,
+  "w": 804,
+  "h": 2904,
+  "dirs": [
+    "south",
+    "south-east",
+    "east",
+    "north-east",
+    "north",
+    "north-west",
+    "west",
+    "south-west"
+  ],
+  "anims": {
+    "attack": {
+      "y": 0,
+      "fw": 402,
+      "fh": 363,
+      "frames": 2,
+      "hold": [
+        8,
+        14
+      ],
+      "total": 22,
+      "x": 0,
+      "ground": 2
+    }
+  },
+  "parcial": true
+}

@@ -835,6 +835,108 @@ CRIATURAS.update({
     },
 })
 
+# O CULTO (Arvore Trovao, aprovados pelo dono): o ACOLITO e o SACERDOTE. Os dois
+# seguram a arma na mao ESQUERDA do personagem (a da direita da imagem, de
+# frente). O `sujeito` diz HUMANO por extenso: a primeira descricao do acolito
+# falava em "dragao" e o modelo desenhou um draconato.
+CRIATURAS['acolito'] = {
+    'sujeito': ('a lean young HUMAN cultist with brown hair and a human face under a pulled-up '
+                'deep forest green hooded cloak, a cream-grey tunic, leather bracers, a rope '
+                'belt, a small pale oval pendant, brown boots, a rough wooden club in his left hand'),
+    'parado': 'standing upright, the wooden club held low at his side',
+    'golpe': ('swinging the wooden club in one overhead strike {para}, a short step in that '
+              'direction, then recovering'),
+    'chao': 'the wooden club dropped on the ground beside his hand, the green cloak spread around him',
+}
+CRIATURAS['sacerdote'] = {
+    'sujeito': ('a broad stern elderly HUMAN priest with a short grey beard and a human face under a '
+                'pulled-up forest green hooded cloak with gold trim, steel mail sleeves, a black '
+                'belt with a gold buckle, a pale oval pendant, a heavy two-faced steel war hammer '
+                'on a long wooden haft in his left hand'),
+    'parado': 'standing upright, the heavy war hammer held upright at his side',
+    'golpe': ('raising the heavy war hammer and bringing it down in one overhead blow {para}, a '
+              'short step in that direction, then recovering'),
+    'chao': 'the heavy war hammer dropped beside him, the green gold-trimmed cloak spread around him',
+}
+
+# OS TRES DA ESTRADA (aprovados pelo dono): SILDAR, GUNDREN e REIDOTH. Nenhum
+# luta no tabuleiro -- so ficam parados, e caem --, entao so a `queda-pix` e
+# gerada (1 geracao cada, `--somente queda-pix`). O `golpe` e o `parado` abaixo
+# existem so porque a receita os exige; o importador usa o perfil `estatico`.
+CRIATURAS['sildar'] = {
+    'sujeito': ('a lean middle-aged human knight with grey-white swept-back hair, a thick black '
+                'moustache and a short grey beard, polished silver plate armor, a red scarf, a long '
+                'crimson cloak, a sword at the belt, a long steel kite shield with a red stripe on '
+                'his right arm and a dented steel helmet in his left hand'),
+    'parado': 'standing upright, the long shield at his side, the helmet held down by his thigh',
+    'golpe': 'standing still {para}',
+    'chao': 'the long steel shield and the dented helmet dropped beside him, the crimson cloak spread on the ground',
+}
+CRIATURAS['gundren'] = {
+    'sujeito': ('a short stout dark-skinned dwarf with a wide-brimmed pale hat with a brown band, a long '
+                'black beard braided with gold beads, a long pale grey-cream travelling coat over a '
+                'tan tunic, brown leather pouches, brown boots with steel toe-caps, gold rings'),
+    'parado': 'standing upright, the right hand held out open, the left arm relaxed',
+    'golpe': 'standing still {para}',
+    'chao': 'the wide-brimmed hat fallen beside his head, the pale coat spread on the ground',
+}
+CRIATURAS['reidoth'] = {
+    'sujeito': ('a very old bald human druid with long white hair and a long white beard, an olive-ochre '
+                'robe with gold trim, a purple cloak, a small brown hawk on his forearm, a tall twisted '
+                'wooden staff topped with a horned animal skull'),
+    'parado': 'standing upright, the tall staff held at his side, the hawk on his forearm',
+    'golpe': 'standing still {para}',
+    'chao': 'the tall staff dropped beside him, the robe and the purple cloak spread on the ground',
+}
+
+# A FAMILIA DENDRAR (presa nas jaulas) e os FAMILIARES do mago (aprovados pelo
+# dono). Os tres Dendrar so ficam parados e caem: so a `queda-pix` e gerada
+# (`--somente queda-pix`), como Sildar e os outros. Os familiares ANDAM (o
+# invocado se move com o grupo) e caem, e nao atacam: so `walk` e `queda-pix`
+# (`--somente walk,queda-pix`); o golpe do perfil e o parado (`ataque_parado`).
+CRIATURAS['mirna'] = {
+    'sujeito': ('a weary thin human woman of about forty with long dark brown hair, a faded blue-grey '
+                'wool dress with a patched dirty cream apron, a brown wool shawl over her shoulders, '
+                'a rope belt and scuffed brown boots, hands clasped in front of her'),
+    'parado': 'standing upright, the hands clasped in front of her, shoulders slumped',
+    'golpe': 'standing still {para}',
+    'chao': 'the brown shawl spread on the ground around her, her hands limp',
+}
+CRIATURAS['nars'] = {
+    'sujeito': ('a skinny human teenage boy of about fifteen with messy dark brown hair, a torn cream '
+                'linen shirt with rolled sleeves, a worn brown leather vest, patched dark brown '
+                'trousers and scuffed brown boots'),
+    'parado': 'standing upright, the arms hanging at his sides, shoulders slumped',
+    'golpe': 'standing still {para}',
+    'chao': 'the arms flung out, the brown vest open',
+}
+CRIATURAS['nilsa'] = {
+    'sujeito': ('a small human girl of about ten with dark brown hair in two messy braids, a faded '
+                'green-grey smock dress with a torn hem, a small brown knitted shawl and bare feet'),
+    'parado': 'standing upright, the hands holding the shawl closed in front of her',
+    'golpe': 'standing still {para}',
+    'chao': 'the small brown shawl spread on the ground around her, the braids loose',
+}
+CRIATURAS['familiarRat'] = {
+    'sujeito': ('a small tidy rust-brown pet rat with a cream belly, big round pink ears, whiskers, '
+                'bright black eyes and a long thin pink tail'),
+    'andar': ('scurrying forward on four legs in quick little steps, the long thin tail swishing '
+              'behind it'),
+    'parado': 'standing alert on all four legs, whiskers twitching, the tail curved behind',
+    'golpe': 'standing still {para}',
+    'cair': ('struck down, the rat falls onto its side and lies still, the four legs limp and the '
+             'tail slack on the ground'),
+}
+CRIATURAS['familiarBat'] = {
+    'sujeito': ('a small round dark-brown bat with big pointed ears, a tiny pink-brown nose and '
+                'wide leathery brown wings with copper membranes'),
+    'andar': 'flying forward, flapping the wide wings steadily, hovering in the air',
+    'parado': 'hovering in the air, the wide wings spread open',
+    'golpe': 'standing still {para}',
+    'cair': ('struck down, the bat falls out of the air and lies on the ground on its back, the '
+             'wings crumpled and splayed, and lies still'),
+}
+
 # O STIRGE (aprovado pelo dono, 24 px): voa batendo as quatro asas, o ataque e
 # o Drenar Sangue (o mergulho e a tromba cravando), e cai de asas abertas.
 CRIATURAS['stirge'] = {
@@ -973,6 +1075,56 @@ _INFECTADOS_ANIM = {
     },
 }
 CRIATURAS.update(_INFECTADOS_ANIM)
+
+# VENOMFANG, o DRAGAO VERDE JOVEM, DE QUATRO PATAS -- o desenho do dono, oito
+# vistas montadas sem geracao (`dragao-tira.py`) e registradas pela rota de
+# tira com esqueleto `dog`, como o lobo atroz. A receita e a do lobo atroz pelo
+# mesmo motivo: quadrupede grande, mordida com o corpo inteiro.
+#
+# O GOLPE E A MORDIDA. Ele tem Mordida (2d10+4 + 2d6 de veneno) e Garra
+# (2d6+4, duas por turno) na ficha; a folha faz o bote do pescoco, que e o que
+# mais le de longe. As patas da frente saem POUCO do chao e voltam: pedir que
+# ele empinasse puxaria de volta a pose ereta, a que o dono descartou porque
+# lia como wyvern.
+#
+# O SOPRO fica com o motor (`sopro()` em `combat.js`, que ja dispara o cone
+# `soproVenenoso` de `visuals.js`): da folha so sairia o gesto de abrir a boca.
+CRIATURAS['dragaoVerdeJovem'] = {
+    'sujeito': ('a young green dragon standing on all four legs, emerald green scales, a '
+                'pale yellow-green belly, two bat-like wings folded on its back, a crest '
+                'of spikes and two small pale horns on the head, a red eye and a long tail'),
+    'andar': ('walking forward on all four legs in a heavy lizard-like stride, the body '
+              'low, the long neck swaying, the folded wings shifting, the long tail '
+              'sweeping behind'),
+    'parado': ('standing on all four legs, the long neck raised, breathing slowly, the '
+               'wings folded on its back'),
+    'golpe': ('lunging its long neck forward {para} and snapping its jaws shut in one '
+              'fast bite, the front claws lifting a little off the ground, then landing '
+              'back on all four legs'),
+    'cair': ('killed, the dragon collapses onto its side and lies still: the body lying '
+             'sideways on the ground, all four legs limp with the claws visible, the '
+             'wings folded and crumpled, the long neck and the head resting on the '
+             'ground in profile, eyes closed, the tail lying flat behind'),
+    # A GARRA: o golpe que ele mais usa (mordida + garra + garra por turno). As
+    # patas de tras ficam no chao -- empinar puxaria a pose ereta de volta.
+    'golpe2': ('raking {para} with one clawed front leg in a fast downward swipe, the '
+               'chest rising a little while the hind legs stay on the ground, then '
+               'the front leg landing back so it stands on all four legs again'),
+    # O SOPRO e so o GESTO. O cone de veneno atravessa o mapa e e do motor
+    # (`soproVenenoso` em `visuals.js`): gas desenhado no sprite morreria cortado
+    # na borda da celula, a mesma licao dos raios do spectator.
+    # O VOO: as asas, dobradas no desenho do dono, tem de ABRIR. E a geracao de
+    # mais risco do dragao -- mudar a pose foi o que deu errado em quase toda
+    # tentativa --, por isso se testa uma direcao antes de pagar as oito.
+    'voo': ('spreading its two folded wings wide open and flying {para} in the air, '
+            'the wings beating up and down in strong strokes, the four legs tucked '
+            'under the body, the long neck stretched forward and the long tail '
+            'streaming behind'),
+    'magia': ('drawing its head back and filling its chest, then thrusting the long '
+              'neck forward {para} with the jaws opened wide as if breathing out, '
+              'holding it, then closing the mouth. No breath, gas, smoke or particles '
+              'leave the mouth'),
+}
 # A GARRA DO ESPETO, numa folha propria. Ele tem DOIS ataques no livro --
 # agulhas de longe e garras de perto -- e uma animacao so mostrava o chicote
 # das agulhas tambem quando ele batia colado. E o mesmo caso do hobgoblin com
@@ -1140,6 +1292,37 @@ def poses_de(chave):
             'initial_pose': f'standing in a ready stance {olha}, ' + c['parado'],
             'frame_count': 8,
         }))
+    # O SEGUNDO GOLPE (`golpe2`), com nome de grupo PROPRIO (`attack2-dir`). O
+    # espeto infectado teve a garra gerada como mais um `attack-dir`, e as 16
+    # fileiras de golpe vieram misturadas e com os nomes trocados -- foi preciso
+    # separa-las comparando pixel a pixel. Com nome proprio, nao se misturam.
+    if c.get('golpe2'):
+        for d in OITO:
+            olha, para = OLHAR[d]
+            poses.append(('attack2-dir', [d], {
+                'mode': 'pixminimax',
+                'action_description': (
+                    f'{olha}, ' + c['golpe2'].format(para=para) + '. The body keeps '
+                    'facing the same way the whole time and never turns around.'),
+                'subject_description': c['sujeito'],
+                'initial_pose': f'standing in a ready stance {olha}, ' + c['parado'],
+                'frame_count': 8,
+            }))
+    # O VOO (`voo`), um ciclo de asas por direcao, em grupo proprio (`fly-dir`).
+    # E o andar do trecho VOADO: o motor troca para a folha `~voo` enquanto a
+    # criatura cruza pelo ar e volta a folha normal quando ela pousa.
+    if c.get('voo'):
+        for d in OITO:
+            olha, para = OLHAR[d]
+            poses.append(('fly-dir', [d], {
+                'mode': 'pixminimax',
+                'action_description': (
+                    f'{olha}, ' + c['voo'].format(para=para) + '. The body keeps '
+                    'facing the same way the whole time and never turns around.'),
+                'subject_description': c['sujeito'],
+                'initial_pose': f'{olha}, ' + c['parado'],
+                'frame_count': 8,
+            }))
     # A MAGIA, para quem conjura: um gesto proprio por direcao, que o motor usa
     # nas magias no lugar do golpe de arma (`conjurar`).
     # O PARADO DE VERDADE (`parado_anim`), por direcao. Quase todo mundo fica

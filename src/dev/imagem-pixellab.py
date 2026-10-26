@@ -13,12 +13,21 @@ Uso:
 Seco sem `--go`: imprime o plano e o saldo. As descricoes vivem em `IMAGENS`,
 e a aprovada vira a vista sul de um personagem em `criar-pixellab.py`
 (`'referencia'`), que e o mesmo caminho do grick e do stirge.
+
+EDITAR UMA IMAGEM QUE JA EXISTE (`--editar`): `/edit-image-pixen` recebe a
+imagem e uma frase e devolve a MESMA figura com so o pedido mudado -- pose,
+composicao e pixel preservados. Serve para consertar a vista sul ANTES do
+giro: consertada uma vez ali, o giro leva o conserto as oito vistas. Editar as
+oito depois do giro custou 25 geracoes por 4 quadros no dragao, e saiu tosco.
+
+    PIXELLAB_TOKEN=... python src/dev/imagem-pixellab.py --editar dragao-bracos --go
 """
 import argparse
 import base64
 import importlib.util
 import json
 import os
+import time
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
@@ -26,6 +35,9 @@ RAIZ = AQUI.parents[1]
 _spec = importlib.util.spec_from_file_location('cp', AQUI / 'criar-pixellab.py')
 cp = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cp)
+_spec2 = importlib.util.spec_from_file_location('ep', AQUI / 'editar-pixellab.py')
+ep = importlib.util.module_from_spec(_spec2)
+_spec2.loader.exec_module(ep)
 
 # O ESPECTRO, tentativa 2. A primeira (`espectro-ff26541c`) foi recusada pelo
 # dono: "parece um esqueleto de peruca e de saia". O modelo desenhou TRES
@@ -228,16 +240,120 @@ IMAGENS = {
 }
 
 
+# AS EDICOES: uma imagem que ja existe mais uma frase (ate 500 caracteres).
+#
+# AS DUAS DO DRAGAO FALHARAM, e ficam aqui para ninguem pagar de novo pela mesma
+# aposta. O editor do Pixen preserva pose e estilo quando o pedido TROCA uma
+# coisa (cor, roupa); quando o pedido ACRESCENTA anatomia, ele reinterpreta o
+# bicho inteiro. A 1a tirou as asas e fez um homem-lagarto de academia; a 2a
+# manteve as asas mas desenhou um LAGARTINHO agarrado no peito, lendo "como as
+# patas de um lagarto" ao pe da letra. Silhueta igual so 45,7% e 63,0% -- uma
+# edicao que so acrescenta bracos fica acima de 90%. Duas geracoes no total.
+# Membro novo se resolve no DESENHO de origem, nao no editor.
+EDICOES = {
+    # O DRAGAO DO DONO lia como wyvern. No desenho dele as patas da frente sao
+    # duas garrinhas penduradas na altura do joelho, quase confundidas com a
+    # asa e a perna; o giro foi fiel e, de lado e de costas, sobraram duas
+    # pernas e duas asas. A frase pede bracos de verdade -- grossos como as
+    # pernas, dobrados no cotovelo, para a frente da barriga -- e manda manter
+    # o resto, que o dono desenhou e aprovou.
+    'dragao-bracos': {
+        'fonte': '_referencias/pixellab/dragaoVerde-ref/dono-sul.png',
+        'description': (
+            'Give this dragon two clearly visible front arms. Two thick muscular '
+            'front legs come out of its chest and shoulders, bent at the elbow '
+            'and held forward in front of the belly, each ending in a hand of '
+            'curved orange-gold claws. They are as thick as the hind legs and '
+            'clearly separate from the wings. Keep everything else exactly the '
+            'same: the pose, the two hind legs, the wings, the head, the horns, '
+            'the crest, the red eye, the colours and the size.'
+        ),
+    },
+    # TENTATIVA 2. A primeira (1 geracao) arrancou as asas e fez um homem-lagarto
+    # de academia: peitoral, abdomen, bracos pendendo como os de uma pessoa. Dois
+    # gatilhos no pedido: "muscular" puxou o tronco humano, e "mantenha as asas"
+    # veio no FIM, depois de tres frases sobre bracos. Aqui a ordem inverte -- o
+    # que fica vem primeiro --, as patas sao de REPTIL, e o peito humano e
+    # proibido na letra.
+    'dragao-bracos-2': {
+        'fonte': '_referencias/pixellab/dragaoVerde-ref/dono-sul.png',
+        'description': (
+            'This is a winged dragon. Keep its two big wings exactly as they are, '
+            'hanging down at its sides. Keep the long neck, the head, the horns, '
+            'the crest, the red eye, the hind legs, the tail and the colours exactly '
+            'the same. Only add two small scaly reptile forelegs, like the front legs '
+            'of a lizard, coming out of the chest under the neck and bent forward in '
+            'front of the belly, with orange-gold claws. Not a person: no human '
+            'chest, no abs.'
+        ),
+    },
+}
+
+
+def editar(token, chave, go, saida):
+    """Uma edicao de imagem: manda, espera o trabalho, grava o resultado."""
+    from PIL import Image
+    ed = EDICOES[chave]
+    fonte = RAIZ / ed['fonte']
+    w, h = Image.open(fonte).size
+    if w > 256 or h > 256 or w % 4 or h % 4:
+        raise SystemExit(f'{fonte.name}: {w}x{h} -- a rota quer lados <= 256 e multiplos de 4')
+    corpo = {
+        'image': {'type': 'base64', 'base64': base64.b64encode(fonte.read_bytes()).decode(), 'format': 'png'},
+        'description': ed['description'],
+        'width': w, 'height': h,
+        'no_background': True,
+    }
+    saldo = cp.chamar(token, 'GET', '/balance')['subscription']
+    print(f'{chave}: POST /edit-image-pixen  {fonte.name} {w}x{h}  ({len(ed["description"])} caracteres)')
+    print(f'saldo: {saldo["generations"]:.0f}')
+    if not go:
+        print('\n(seco: nada foi gerado. use --go)')
+        return
+    r = cp.chamar(token, 'POST', '/edit-image-pixen', corpo)
+    if '_erro' in r:
+        raise SystemExit(f'{r["_erro"]}: {r["_detalhe"]}')
+    job = r.get('background_job_id')
+    print(f'trabalho {job}  usage={json.dumps(r.get("usage"))}')
+    inicio = time.time()
+    while True:
+        j = cp.chamar(token, 'GET', f'/background-jobs/{job}')
+        estado = j.get('status') if isinstance(j, dict) else None
+        if estado == 'completed':
+            break
+        if estado in ('failed', 'error') or (isinstance(j, dict) and j.get('_erro') not in (None, 423)):
+            raise SystemExit(f'falhou: {json.dumps(j)[:600]}')
+        if time.time() - inicio > 900:
+            raise SystemExit('demorou mais de 15 minutos')
+        time.sleep(6)
+    imgs = ep.imagens_em(j)
+    if not imgs:
+        raise SystemExit(f'concluido, mas sem imagem: {json.dumps(j)[:600]}')
+    destino = Path(saida or RAIZ / '_referencias' / 'pixellab' / 'edicoes' / chave / 'editada.png')
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_bytes(base64.b64decode(imgs[0]))
+    print(f'pronto em {time.time() - inicio:.0f}s -> {destino}')
+    depois = cp.chamar(token, 'GET', '/balance')['subscription']
+    print(f'saldo depois: {depois["generations"]:.0f}  '
+          f'(gastou {saldo["generations"] - depois["generations"]:.0f})')
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--chave', required=True, choices=sorted(IMAGENS))
+    p.add_argument('--chave', choices=sorted(IMAGENS))
+    p.add_argument('--editar', choices=sorted(EDICOES), help='edita uma imagem que ja existe')
     p.add_argument('--go', action='store_true')
     p.add_argument('--saida', default=None)
     a = p.parse_args()
+    if not a.chave and not a.editar:
+        raise SystemExit('passe --chave ou --editar')
 
     token = os.environ.get('PIXELLAB_TOKEN')
     if not token:
         raise SystemExit('defina PIXELLAB_TOKEN no ambiente')
+    if a.editar:
+        editar(token, a.editar, a.go, a.saida)
+        return
     corpo = dict(IMAGENS[a.chave])
     saldo = cp.chamar(token, 'GET', '/balance')['subscription']
     print(f'{a.chave}: POST /create-image-pixen  ({len(corpo["description"])} caracteres)')

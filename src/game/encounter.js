@@ -485,12 +485,13 @@ function foesMansao() {
     f.facingVec = olha;
     return f;
   };
-  const neutro = (f, nome) => Object.assign(f, { side: 'neutro', name: nome });
+  // `look`: cada um dos Dendrar tem o PROPRIO desenho (o bloco e o do plebeu).
+  const neutro = (f, nome, look = null) => Object.assign(f, { side: 'neutro', name: nome, ...(look ? { look } : {}) });
   // Área 5: a família Dendrar presa nas jaulas.
   const presos = [
-    neutro(m('plebeu', 22, 2, 'jaulas'), 'Nars Dendrar'),
-    neutro(m('plebeu', 21, 7, 'jaulas'), 'Mirna Dendrar'),
-    neutro(m('plebeu', 23, 7, 'jaulas'), 'Nilsa Dendrar'),
+    neutro(m('plebeu', 22, 2, 'jaulas'), 'Nars Dendrar', 'nars'),
+    neutro(m('plebeu', 21, 7, 'jaulas'), 'Mirna Dendrar', 'mirna'),
+    neutro(m('plebeu', 23, 7, 'jaulas'), 'Nilsa Dendrar', 'nilsa'),
   ];
   // `refem`: a 0 PV cai desacordado em vez de morrer (ver `applyDamage`). Sem
   // isso, um plebeu de 4 PV dentro da jaula morria do Mãos Flamejantes do
@@ -568,6 +569,9 @@ function foesGrandes() {
     makeMonster('galhoInfectado', { x: 3, y: 2 }),
     makeMonster('espetoInfectado', { x: 5, y: 2 }),
     makeMonster('vinhaInfectada', { x: 7, y: 2 }),
+    makeMonster('dragaoVerdeJovem', { x: 10, y: 6 }),
+    makeMonster('acolito', { x: 3, y: 5 }),
+    makeMonster('sacerdote', { x: 6, y: 7 }),
   ];
   for (const f of foes) f.facingVec = { dx: -1, dy: 1 };
   return foes;

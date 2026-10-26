@@ -286,6 +286,8 @@ export const FERAS = {
     hpDice: '1d4-1',
     speedFt: 30,
     speeds: { walkFt: 5, flyFt: 30 },
+    // So o desenho, como o stirge: o morcego e figura que paira (o tabuleiro o ergue do chao).
+    pairaNoAr: true,
     senses: { blindsightFt: 60, passivePerception: 11 },
     attacks: [],
     traits: ['echolocation', 'keenHearing'],

@@ -176,6 +176,9 @@ export const ABERRACOES = {
     ],
     // Uma mordida e duas garradas.
     multiattack: { count: 3, pattern: ['Mordida', 'Garra', 'Garra'] },
+    // Duas folhas: a mordida e a garra. Sem isto, dois dos tres golpes por
+    // turno repetiam a animacao da mordida.
+    aparencias: { Garra: 'dragaoVerdeJovem@nenhuma-garra' },
     // SOPRO. Modelado com a mesma forma de dado que `spells.js` usa em
     // `kind: 'save'`, para que `combat.js` possa reaproveitar o caminho de
     // magia em área em vez de ganhar um segundo. `origem: 'sopro'` é o que
@@ -247,6 +250,8 @@ export const ABERRACOES = {
     // `flyFt` fica declarado para quando houver voo de verdade.
     speedFt: 40,
     flyFt: 40,
+    // Paira: no livro o voo dela e 'pairando', e o tabuleiro a desenha no ar.
+    hover: true,
     attacks: [
       {
         // `art: 'fagulha'`: a receita própria em `visuals.js` — uma brasa
@@ -370,6 +375,8 @@ export const ABERRACOES = {
     // vai no campo que o motor lê — mesma solução da caveira candente.
     speedFt: 30,
     flyFt: 30,
+    // Paira, como no livro: o tabuleiro o desenha no ar.
+    hover: true,
     skills: ['percepcao', 'intuicao'],
     attacks: [
       {
@@ -560,7 +567,7 @@ export const TRAITS = {
   },
   vooDeDragao: {
     name: 'Voo',
-    desc: 'Desloca 24 m voando e 12 m nadando. Em teto baixo, perde o voo — e é o que torna a caverna o lugar de enfrentá-lo.',
+    desc: 'Voa de verdade: 24 m por turno no ar, em vez dos 12 m andando, e no ar não o seguram terreno difícil, degrau nem o que está no chão. Derrubado, cai e perde o ar. (Nadar ainda não está no motor, e nenhum mapa tem teto baixo: por enquanto ele voa em qualquer lugar. A grade é plana — voar não o tira do alcance de quem bate no chão.)',
   },
 
   // --- nossas ---

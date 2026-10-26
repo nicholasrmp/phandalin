@@ -6027,6 +6027,108 @@ teste('Os três infectados: os números do livro, e só o galho queima fácil', 
   assert.equal(vinha.hp, antes - 4, 'a vinha verde leva o dano cheio, sem dobrar');
 });
 
+teste('Voo do dragão: 24 m no ar, sem terreno difícil, e derrubado ele cai', () => {
+  const { enc, foes } = montar({ foes: [['dragaoVerdeJovem', { x: 8, y: 5 }]], lado: 'foes' });
+  const d = foes[0];
+  // A ficha declara 80 pés de voo contra 40 de andar; agora isso chega ao motor.
+  assert.equal(d.flyFt, 80, 'o bloco `flyFt` chega à instância');
+  assert.ok(enc.voaPelaFicha(d), 'o dragão PODE voar pela ficha');
+  // Mas parado ele esta no CHAO: nao paira. A Graxa e os Espinhos o pegam.
+  assert.ok(!enc.voaAgora(d), 'parado, ele esta no chao, nao no ar');
+  assert.equal(enc.speedOf(d), 80, 'o deslocamento conta o voo: ele pode decolar');
+  // Derrubado, perde o ar e volta ao deslocamento de chão.
+  enc.aplicarCondicao(d, 'caido', {});
+  assert.ok(!enc.voaPelaFicha(d), 'caído não voa');
+  assert.equal(enc.speedOf(d), 40, 'no chão, o deslocamento é o de andar');
+  removeCondition(d, 'caido');
+  // Teto baixo: a chave que o traço promete, e que o encontro liga.
+  enc.tetoBaixo = true;
+  assert.ok(!enc.voaPelaFicha(d), 'sob teto baixo ele não voa');
+  assert.equal(enc.speedOf(d), 40);
+  enc.tetoBaixo = false;
+  // VOAR nao e PAIRAR. O dragao voa para se mover mas pousa: nao paira, e o
+  // tabuleiro o desenha de quatro no chao. Os quatro que pairam no livro --
+  // espectro, aparicao, caveira candente, spectator -- ficam no ar.
+  assert.ok(!d.hover, 'o dragao nao paira: atravessa pelo ar e pousa');
+  for (const id of ['espectro', 'wraith', 'caveiraCandente', 'spectator']) {
+    assert.ok(makeMonster(id, { x: 1, y: 1 }).hover, `${id} paira`);
+  }
+});
+
+teste('Voo do dragão: anda de quatro no chão e decola quando o caminho pede', () => {
+  // Campo aberto e largo: nada no caminho alem do que o teste poe.
+  const montarVoo = () => {
+    const d = makeMonster('dragaoVerdeJovem', { x: 2, y: 4 });
+    const h = makeMonster('guarda', { x: 18, y: 10 });
+    h.side = 'party';
+    const ev = [];
+    const enc = new Encounter({ battlefield: new Battlefield(20, 12), party: [h], foes: [d], rng: makeRng(1), onEvent: (e) => ev.push(e) });
+    enc.firstSide = 'foes'; enc.round = 1; enc.beginSide('foes');
+    return { enc, d, ev };
+  };
+  const reto = (x0, x1) => Array.from({ length: x1 - x0 + 1 }, (_, i) => ({ x: x0 + i, y: 4 }));
+  const movido = (ev) => ev.filter((e) => e.type === 'moved').pop();
+
+  // 1. Curto e plano (3 casas, 4,5 m): ANDA.
+  let { enc, d, ev } = montarVoo();
+  assert.ok(enc.moveAlong(d, reto(2, 5)));
+  assert.equal(movido(ev).voo, false, 'trecho curto e plano: anda de quatro');
+  assert.ok(!d.emVoo, 'e termina no chao');
+
+  // 2. Longo (10 casas, 15 m, mais que os 12 m de andar): VOA, e pousa.
+  ({ enc, d, ev } = montarVoo());
+  assert.ok(enc.moveAlong(d, reto(2, 12)));
+  assert.equal(movido(ev).voo, true, 'mais longe que o andar: decola');
+  assert.ok(!d.emVoo, 'e pousa no fim do trecho');
+
+  // 3. Curto mas por cima de terreno dificil: VOA, porque a pe sai mais caro.
+  ({ enc, d, ev } = montarVoo());
+  enc.field.dificeis = new Set(['3,4', '4,4', '3,5', '4,5']);
+  assert.ok(enc.moveAlong(d, reto(2, 5)));
+  assert.equal(movido(ev).voo, true, 'terreno dificil no caminho: atravessa pelo ar');
+});
+
+teste('Sopro Venenoso: o cone de 9 m acontece, cobra CON CD 14 e recarrega 5-6', () => {
+  const { enc, party, foes } = montar({ foes: [['dragaoVerdeJovem', { x: 8, y: 5 }]], lado: 'foes' });
+  const dragao = foes[0];
+  // Três vítimas em fila a leste, dentro do cone.
+  party[0].pos = { x: 10, y: 5 };
+  party[1].pos = { x: 11, y: 5 };
+  party[2].pos = { x: 11, y: 6 };
+  const cheios = party.slice(0, 3).map((c) => c.hp);
+  const preso = (valor) => Object.assign(() => 0, {
+    die: () => valor, int: () => 0, chance: () => false, pick: (a) => a[0], shuffle: (a) => a.slice(),
+  });
+  // d20 = 1 em tudo: as três falham a resistência e levam o dano cheio (12d6 com
+  // todos os dados em 1 = 12).
+  enc.rng = preso(1);
+  assert.ok(enc.sopro(dragao, { x: 11, y: 5 }), 'o dragão sopra');
+  for (let i = 0; i < 3; i++) {
+    assert.equal(party[i].hp, cheios[i] - 12, `${party[i].name} levou o dano cheio`);
+  }
+  // Gasta a ação e trava a recarga.
+  assert.ok(dragao.actionUsed);
+  assert.ok(dragao.recarregando['Sopro Venenoso']);
+  assert.ok(!enc.sopro(dragao, { x: 11, y: 5 }), 'recarregando, não sopra de novo');
+  // Recarga 5-6: d6 = 4 não devolve, d6 = 5 devolve.
+  enc.rng = preso(4);
+  enc.rolarRecarga(dragao);
+  assert.ok(dragao.recarregando['Sopro Venenoso'], 'd6 = 4 não recarrega');
+  enc.rng = preso(5);
+  enc.rolarRecarga(dragao);
+  assert.ok(!dragao.recarregando['Sopro Venenoso'], 'd6 = 5 recarrega');
+  // Quem PASSA leva METADE. Com todo dado preso em 6, 12d6 = 72 e o d20 = 6
+  // falha a CD 14; com todo dado em 20, o d20 passa e os 12 dados de dano
+  // valem 20 cada (240), metade 120. Por isso a vítima ganha PV de sobra: o
+  // que se mede aqui é a divisão por dois, não a morte.
+  dragao.actionUsed = false;
+  party[0].maxHp = 400;
+  party[0].hp = 400;
+  enc.rng = preso(20);
+  enc.sopro(dragao, { x: 11, y: 5 });
+  assert.equal(party[0].hp, 400 - 120, 'passou na resistência: metade dos 240');
+});
+
 teste('Plantas Constritoras: raízes num raio de 4,5 m, terreno difícil e quem falha fica contido', () => {
   const { enc, party, foes } = montar({ foes: [['vinhaInfectada', { x: 8, y: 5 }]], lado: 'foes' });
   const vinha = foes[0];

@@ -124,6 +124,12 @@ ESPELHO = {'west': 'east', 'south-west': 'south-east', 'north-west': 'north-east
 BOTE = 3        # px logicos que o golpe pode avancar no sentido da direcao
 
 
+# O SOPRO DO DRAGAO VERDE, quadro a quadro (preparar, soltar): os mesmos nas
+# duas folhas dele. Ver o perfil `dragaoVerdeJovem`.
+_DRAGAO_SOPRO = {'south': [3, 6], 'south-east': [3, 5], 'east': [2, 5], 'north-east': [4, 6],
+                 'north': [2, 4], 'north-west': [4, 6], 'west': [2, 5], 'south-west': [1, 6]}
+
+
 # PERFIS POR CRIATURA.
 #
 # `PLANO` e `QUADROS_POR_DIRECAO` acima sao o guerreiro, com a historia dele
@@ -507,6 +513,44 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [1, 5], 'north-east': [3, 4],
                         'north': [1, 3], 'north-west': [3, 5], 'west': [5, 6], 'south-west': [4, 6]},
     },
+    # O CULTO DO DRAGAO de Arvore Trovao (aprovados pelo dono). O golpe sai do
+    # `pixminimax`, que de COSTAS vira o personagem de frente no meio do golpe
+    # (nordeste, norte e noroeste do acolito; nordeste, norte e noroeste do
+    # sacerdote), e ainda deixa arcos de movimento riscados no ar. Os quadros
+    # abaixo foram escolhidos olhando a grade das nove: so entram os que mantem o
+    # rosto para o lado certo e sem arco. Onde nenhum serve, o lado da frente
+    # vem do ESPELHO do outro (acolito: noroeste do nordeste; sacerdote: nordeste
+    # do noroeste). CENTRO PELO MANTO verde (matiz 0,30-0,50): o corpo todo esta
+    # sob ele em qualquer vista. Pela pele nao deu -- o brilho da clava tem o
+    # mesmo tom da pele, e de costas o corpo escorregava 26 a 33 px de lado.
+    'acolito': {
+        'ataque': ['attack-dir'], 'pele': (0.30, 0.50), 'pele_sv': (0.2, 1.0, 0.2), 'margem': 8,
+        'quadros': [3, 4],
+        'espelhar_ataque': {'north-west': 'north-east'},
+        'por_direcao': {'south': [3, 4], 'south-east': [3, 5], 'east': [3, 4], 'north-east': [6, 5],
+                        'north': [1, 7], 'north-west': [6, 5], 'west': [4, 5], 'south-west': [4, 5]},
+    },
+    'sacerdote': {
+        'ataque': ['attack-dir'], 'pele': (0.30, 0.50), 'pele_sv': (0.2, 1.0, 0.2), 'margem': 8,
+        'quadros': [4, 6],
+        'espelhar_ataque': {'north-east': 'north-west'},
+        'por_direcao': {'south': [4, 6], 'south-east': [4, 6], 'east': [3, 5], 'north-east': [1, 2],
+                        'north': [2, 7], 'north-west': [1, 2], 'west': [4, 6], 'south-west': [3, 5]},
+    },
+    # OS TRES DA ESTRADA (aprovados pelo dono): figuras paradas, so as vistas e a
+    # queda. Centro irrelevante (sem golpe a recentrar).
+    'sildar': {'estatico': True, 'margem': 8},
+    'gundren': {'estatico': True, 'margem': 8},
+    'reidoth': {'estatico': True, 'margem': 8},
+    # A FAMILIA DENDRAR (parada, so a queda) e os FAMILIARES (andam, nao atacam).
+    'mirna': {'estatico': True, 'margem': 8},
+    'nars': {'estatico': True, 'margem': 8},
+    'nilsa': {'estatico': True, 'margem': 8},
+    # O RATO sai do PixelLab do tamanho do rato gigante (31 px) e e MIUDO: depois de
+    # importar, `reduzir-folha.py --fator 0.8` (o original fica em
+    # `_referencias/pixellab/familiares-tamanho-original`).
+    'familiarRat': {'ataque_parado': True, 'margem': 8},
+    'familiarBat': {'ataque_parado': True, 'margem': 8},
     # O STIRGE (aprovado pelo dono, 24 px): as asas recolhidas e o MERGULHO da
     # tromba (o Drenar Sangue). Centro pelo corpo ferrugem.
     'stirge': {
@@ -547,6 +591,87 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4],
                         'north-east': [2, 4], 'north': [2, 4], 'north-west': [2, 4],
                         'west': [2, 4], 'south-west': [2, 4]},
+    },
+    # VENOMFANG, o DRAGAO VERDE JOVEM, de QUATRO PATAS -- o desenho do dono.
+    #
+    # Centro pela massa inteira (como o espeto): as asas aqui estao DOBRADAS nas
+    # costas, e nao abertas para os lados como no empinado descartado, entao nao
+    # arrastam a mediana. So o contorno quase preto fica de fora.
+    #
+    # Os quadros do golpe foram escolhidos MEDINDO: o bote e o quadro que mais se
+    # afasta da pose do quadro 0, e o recolhido e o ultimo antes do salto. Os
+    # indices mudam muito entre direcoes (o bote e o 3 ao sul e o 6 ao norte).
+    #
+    # NORDESTE ESPELHADO DO NOROESTE. A mordida gerada para nordeste e a unica
+    # suja da folha: 25 pixels soltos flutuando em volta da figura, e no meio do
+    # golpe o corpo gira de lado em vez de morder para a frente. As vistas do lado
+    # oeste da tira sao espelho das do leste -- o dragao e simetrico --, entao a
+    # mordida do noroeste, limpa, espelhada vira a do nordeste.
+    # TAMANHO. O que o PixelLab devolve tem o tamanho de um dragao ADULTO (figura
+    # de 155x160 px logicos, para 3x3 casas, Enorme): o jovem e Grande (2x2) e
+    # sai REDUZIDO a 0,726 -- ~112x116, ao lado do ogro (87x82). Depois de
+    # reimportar, rode `reduzir-folha.py --fator 0.726` e so entao `--enxugar`.
+    # O tamanho grande fica em `_referencias/pixellab/dragaoVerde-ref/
+    # folhas-tamanho-grande`, para o adulto.
+    'dragaoVerdeJovem': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 1.0, 0.2),
+        'margem': 8, 'quadros': [2, 3],
+        'espelhar_ataque': {'north-east': 'north-west'},
+        'por_direcao': {'south': [2, 3], 'south-east': [2, 3], 'east': [2, 3],
+                        'north-east': [3, 5], 'north': [4, 6], 'north-west': [3, 5],
+                        'west': [3, 5], 'south-west': [3, 4]},
+        # O SOPRO (`conjurar`), o gesto que o motor toca no Sopro Venenoso. O
+        # modelo desenhou fagulhas e gas saindo da boca apesar do pedido; os
+        # quadros foram escolhidos onde a boca esta aberta e a fagulha nao esta.
+        # Ao sul a fagulha vai colada na boca do 4 ao 7 e quase some no 6; ao
+        # norte a nuvem so aparece no 3. O oeste vem espelhado do leste (cone
+        # branco desenhado). O resto da sujeira e solta e sai com `limpar_soltos`.
+        'conjurar': _DRAGAO_SOPRO,
+        'espelhar_conjurar': {'west': 'east'},
+        'limpar_soltos': True,
+        # A celula de 744 px tinha folga de sobra em volta do dragao: aparada
+        # (`enxugar_folha`), a folha aberta cai de quase 500 MB.
+        'aparar': True,
+    },
+    # A GARRA do dragao, a segunda folha: o golpe que ele mais usa (mordida +
+    # garra + garra). Gerada como `attack2-dir`, nome PROPRIO, para nao se
+    # misturar com a mordida (a licao do espeto). Leva o sopro tambem: depois de
+    # uma garrada o motor segue nesta folha, e o sopro tocaria a garra.
+    'dragaoVerdeJovemGarra': {
+        'ataque': ['attack2-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 1.0, 0.2),
+        'margem': 8, 'quadros': [1, 4],
+        'por_direcao': {'south': [3, 5], 'south-east': [1, 3], 'east': [1, 4],
+                        'north-east': [2, 4], 'north': [1, 5], 'north-west': [2, 5],
+                        'west': [1, 4], 'south-west': [1, 4]},
+        'conjurar': _DRAGAO_SOPRO,
+        'espelhar_conjurar': {'west': 'east'},
+        'limpar_soltos': True,
+        # FOLHA PARCIAL: so o golpe e dela. Parado, andar, queda e o sopro vem
+        # da folha base no jogo (`folhas/index.js`); repeti-los aqui custava
+        # outra folha inteira aberta na memoria.
+        'so_anims': ['attack'],
+        'aparar': True,
+    },
+    # O DRAGAO NO AR: a folha `~voo`, que o tabuleiro pede no trecho VOADO e
+    # larga quando ele pousa. O "andar" dela e o ciclo de asas do `fly-dir`
+    # (`andar_de`), ancorado pelo grupo e nao pelo pe (o pe de quem voa e a
+    # ponta da asa). A decolagem cai em quadros diferentes em cada direcao --
+    # ao sul ele so sai do chao no 5, no sudeste ja no 3 --, entao os quatro sao
+    # escolhidos por direcao, ja no ar, alternando asa erguida e abaixada. O 8
+    # do sul fica de fora: ali o dragao ENCOLHE, como se fosse embora da camera.
+    'dragaoVerdeJovemVoo': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 1.0, 0.2),
+        'margem': 8, 'quadros': [2, 3],
+        'andar_de': 'fly-dir',
+        'andar_por_direcao': {'south': [6, 7, 5, 7], 'south-east': [3, 4, 6, 8],
+                              'east': [5, 7, 6, 8], 'north-east': [5, 7, 6, 8],
+                              'north': [4, 7, 5, 8], 'north-west': [4, 6, 5, 7],
+                              'west': [5, 6, 8, 7], 'south-west': [5, 7, 6, 8]},
+        'limpar_soltos': True,
+        # FOLHA PARCIAL: so o andar (o ciclo de asas) e dela; ela so e pedida
+        # enquanto ele cruza o tabuleiro no ar.
+        'so_anims': ['walk'],
+        'aparar': True,
     },
     'vinhaInfectada': {
         'ataque': ['attack-dir'], 'pele': (0.42, 0.58), 'pele_sv': (0.25, 1.0, 0.2),
@@ -756,6 +881,45 @@ PELE_SV = (0.35, 1.01, 0.35)
 # Na Dara o modelo SOBE a figura no golpe a noroeste (5 px) e a nordeste
 # (3 px), e com a ancora do grupo ela golpeava flutuando sobre a sombra.
 PE_NO_ATAQUE = set()
+
+
+APAGADOS = {'px': 0}
+
+
+def sem_soltos(cel, minimo=40):
+    """
+    Apaga os pedacos SOLTOS do quadro: manchas opacas desligadas do corpo e
+    menores que `minimo` px (vizinhanca de 8).
+
+    Opcional, por criatura (`limpar_soltos` no perfil), e nao para todas: numa
+    figura de traco fino, uma ponta de garra separada do corpo por um pixel
+    transparente seria apagada por engano. No dragao verde o modelo desenhou
+    fagulhas saindo da boca no sopro e pontinhos flutuando em volta da mordida
+    -- coisas que no tabuleiro viram poeira voando ao lado do bicho.
+    """
+    from collections import deque
+    px = cel.load()
+    W, H = cel.size
+    vis = set()
+    for y in range(H):
+        for x in range(W):
+            if px[x, y][3] and (x, y) not in vis:
+                bloco, fila = [], deque([(x, y)])
+                vis.add((x, y))
+                while fila:
+                    cx, cy = fila.popleft()
+                    bloco.append((cx, cy))
+                    for dy in (-1, 0, 1):
+                        for dx in (-1, 0, 1):
+                            nx, ny = cx + dx, cy + dy
+                            if 0 <= nx < W and 0 <= ny < H and px[nx, ny][3] and (nx, ny) not in vis:
+                                vis.add((nx, ny))
+                                fila.append((nx, ny))
+                if len(bloco) < minimo:
+                    for q in bloco:
+                        px[q] = (0, 0, 0, 0)
+                    APAGADOS['px'] += len(bloco)
+    return cel
 
 
 def e_pele(c):
@@ -1061,9 +1225,102 @@ def base_do_quadro(cel):
     return None if bb is None else bb[3] - 1
 
 
+def enxugar_folha(folha, meta, so_anims=None, aparar=True):
+    """
+    A folha PRONTA, com menos memoria: so as animacoes que a figura precisa
+    desta folha (`so_anims`) e cada animacao aparada ate o que tem pixel
+    (`aparar`).
+
+    POR QUE. O navegador guarda a folha aberta, 4 bytes por pixel, e a do
+    dragao (8 direcoes x 7 animacoes, celula de 744 px) passava de 470 MB. Eram
+    TRES iguais -- a mordida, a garra e o voo -- para trocar uma animacao em
+    cada. Com `so_anims` a garra traz so o golpe e o voo so o andar; o resto o
+    jogo pega da folha base (`folhas/index.js`, folha parcial).
+
+    O CORTE E POR ANIMACAO. Uma celula so para todas seguia a mais larga (o
+    andar abre as patas, o golpe estica o pescoco) e o parado carregava o vazio
+    dela. Cada animacao ganha a sua celula (`fw`, `fh`) e o seu chao
+    (`ground`), e a figura continua no mesmo lugar do tabuleiro porque:
+    dos lados o corte e SIMETRICO em volta da coluna do meio (que e onde
+    `drawSprite` centra); em cima e livre; embaixo, o chao sobe na conta do que
+    saiu. Tudo em multiplos de S, para nao partir um bloco 3x3.
+
+    O ENCAIXE. Celulas de tamanhos diferentes empilhadas deixariam a folha da
+    largura do andar (4 quadros) com metade vazia nas de 2. Entao as animacoes
+    vao em PRATELEIRAS, da mais alta para a mais baixa, lado a lado enquanto
+    couberem na largura -- cada uma com a sua coluna de partida (`x`).
+    """
+    if aparar and meta.get('armas'):
+        raise SystemExit('aparar mexe na celula, e as medidas de arma sao dentro dela: falta converter')
+    nomes = [n for n in meta['anims'] if not so_anims or n in so_anims]
+    faltam = set(so_anims or []) - set(nomes)
+    if faltam:
+        raise SystemExit(f'a folha nao tem {sorted(faltam)}')
+    nd = len(meta['dirs'])
+    alfa = folha.getchannel('A')
+    corte = {}
+    for n in nomes:
+        an = meta['anims'][n]
+        fw, fh, ax = an['fw'], an['fh'], an.get('x', 0)
+        chao = an.get('ground', meta['ground'])
+        x0, y0, x1, y1 = fw, fh, 0, 0
+        for linha in range(nd):
+            for f in range(an['frames']):
+                bb = alfa.crop((ax + f * fw, an['y'] + linha * fh,
+                                ax + (f + 1) * fw, an['y'] + (linha + 1) * fh)).getbbox()
+                if bb:
+                    x0, y0, x1, y1 = min(x0, bb[0]), min(y0, bb[1]), max(x1, bb[2]), max(y1, bb[3])
+        if not aparar or x1 == 0:
+            x0, y0, x1, y1 = 0, 0, fw, fh
+        meio = fw // 2
+        meia = -(-max(meio - x0, x1 - meio) // S) * S
+        topo, fundo = y0 // S * S, -(-y1 // S) * S
+        corte[n] = {'esq': meio - meia, 'topo': topo, 'fw': 2 * meia, 'fh': fundo - topo,
+                    'ground': chao - (fh - fundo) // S}
+    # as prateleiras: a mais alta primeiro, e ao lado dela o que couber
+    largura = max(meta['anims'][n]['frames'] * corte[n]['fw'] for n in nomes)
+    lugar, prateleiras = {}, []           # prateleira: [y, altura, x livre]
+    for n in sorted(nomes, key=lambda n: -corte[n]['fh']):
+        w = meta['anims'][n]['frames'] * corte[n]['fw']
+        p = next((p for p in prateleiras if p[2] + w <= largura), None)
+        if p is None:
+            p = [sum(q[1] for q in prateleiras), corte[n]['fh'] * nd, 0]
+            prateleiras.append(p)
+        lugar[n] = (p[2], p[0])
+        p[2] += w
+    altura = sum(p[1] for p in prateleiras)
+    nova = Image.new('RGBA', (largura, altura), (0, 0, 0, 0))
+    anims = {}
+    for n in nomes:                       # a ordem do JSON continua a de antes
+        an, c = meta['anims'][n], corte[n]
+        x, y = lugar[n]
+        anims[n] = dict(an, x=x, y=y, fw=c['fw'], fh=c['fh'], ground=c['ground'])
+        for linha in range(nd):
+            for f in range(an['frames']):
+                sx = an.get('x', 0) + f * an['fw'] + c['esq']
+                sy = an['y'] + linha * an['fh'] + c['topo']
+                nova.paste(folha.crop((sx, sy, sx + c['fw'], sy + c['fh'])),
+                           (x + f * c['fw'], y + linha * c['fh']))
+        print(f'  {n:9} celula {an["fw"]}x{an["fh"]} -> {c["fw"]}x{c["fh"]}  chao {c["ground"]}')
+    saida = dict(meta, w=largura, h=altura, anims=anims)
+    # `cell` e `ground` da folha ficam como os da primeira animacao (o parado):
+    # quem le a folha inteira por eles continua achando um valor que existe.
+    primeira = anims[nomes[0]]
+    saida['cell'], saida['ground'] = [primeira['fw'], primeira['fh']], primeira['ground']
+    if so_anims:
+        saida['parcial'] = True
+    antes, depois = folha.width * folha.height * 4, largura * altura * 4
+    print(f'enxugada: {len(meta["anims"])} -> {len(nomes)} animacoes, folha {folha.width}x{folha.height} '
+          f'-> {largura}x{altura}, {antes / 2**20:.0f} -> {depois / 2**20:.0f} MB aberta')
+    return nova, saida
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--fonte', required=True, help='pasta com o PNG e o JSON do PixelLab')
+    p.add_argument('--fonte', help='pasta com o PNG e o JSON do PixelLab')
+    p.add_argument('--enxugar', metavar='NOME',
+                   help='so enxuga uma folha ja importada (src/art/folhas/NOME), pelo perfil de --chave; '
+                        'nao precisa de --fonte nem gera nada')
     p.add_argument('--chave', default='goblin')
     p.add_argument('--nome', help='nome do arquivo de saida (padrao: a chave)')
     p.add_argument('--espelho', action='store_true',
@@ -1076,6 +1333,17 @@ def main():
     a = p.parse_args()
     global PLANO, QUADROS_POR_DIRECAO, PELE, PELE_SV, CABECA, PE_NO_ATAQUE
     perfil = dict(PERFIS.get(a.chave, {}))
+    if a.enxugar:
+        png, js = SAIDA / f'{a.enxugar}.png', SAIDA / f'{a.enxugar}.json'
+        Image.MAX_IMAGE_PIXELS = None   # a folha e nossa; o limite e contra imagem de fora
+        folha, meta = enxugar_folha(Image.open(png).convert('RGBA'), json.loads(js.read_text(encoding='utf-8')),
+                                    perfil.get('so_anims'), perfil.get('aparar', False))
+        folha.save(png, optimize=True)
+        js.write_text(json.dumps(meta, indent=2), encoding='utf-8')
+        print(f'{png}  {folha.width}x{folha.height}  {png.stat().st_size/1024:.0f} KB')
+        return
+    if not a.fonte:
+        p.error('--fonte e obrigatorio (fora do --enxugar)')
     if a.espelho:
         perfil['espelho'] = True
     if a.verde:
@@ -1092,6 +1360,19 @@ def main():
                  for n, fonte_, q, h in PLANO]
         QUADROS_POR_DIRECAO = {('attack', d): q
                                for d, q in perfil.get('por_direcao', {}).items()}
+    # FIGURA PARADA (`estatico`): quem so fica de pe e cai, sem andar nem golpe
+    # (Sildar, Gundren e Reidoth). O andar e o golpe repetem o PARADO (a vista
+    # da rotacao), e o motor so ve uma folha completa. Gerar as duas animacoes
+    # custaria 16 geracoes por figura para um movimento que nunca acontece.
+    if perfil.get('estatico'):
+        PLANO = [(n, ('rotations', None), [0], h) if n in ('walk', 'attack') else (n, fonte_, q, h)
+                 for n, fonte_, q, h in PLANO]
+    # SO O GOLPE PARADO (`ataque_parado`): quem anda mas nao ataca (o familiar do
+    # mago: a ficha dele nao tem ataques). O andar vem da animacao, o golpe
+    # repete o parado.
+    if perfil.get('ataque_parado'):
+        PLANO = [(n, ('rotations', None), [0], h) if n == 'attack' else (n, fonte_, q, h)
+                 for n, fonte_, q, h in PLANO]
     # A MAGIA (`conjurar`), para quem conjura: o gesto proprio do `cast-dir`,
     # CARREGA e SOLTA, que o motor usa nas magias no lugar do golpe. Quem nao
     # tem a animacao conjura com o golpe, como sempre.
@@ -1103,6 +1384,14 @@ def main():
     if 'andar' in perfil:
         PLANO = [(n, fonte_, perfil['andar'], h) if n == 'walk' else (n, fonte_, q, h)
                  for n, fonte_, q, h in PLANO]
+    # O ANDAR DE OUTRO GRUPO (`andar_de`): a folha de VOO do dragao, em que o
+    # "andar" -- o que toca enquanto ele cruza o tabuleiro -- e o ciclo de asas
+    # do `fly-dir`, e nao o passo de quatro patas. Os quadros sao por direcao
+    # (`andar_por_direcao`), porque a batida cai em indices diferentes.
+    if 'andar_de' in perfil:
+        PLANO = [(n, ('animation', perfil['andar_de']), q, h) if n == 'walk' else (n, fonte_, q, h)
+                 for n, fonte_, q, h in PLANO]
+        QUADROS_POR_DIRECAO.update({('walk', d): q for d, q in perfil.get('andar_por_direcao', {}).items()})
     # O PARADO DE VERDADE. Por padrao o `idle` e a VISTA PARADA da rotacao
     # mais um quadro de `respirar` (o tronco estica 1 px): e o suficiente para
     # quem so precisa nao parecer uma estatua. Quem tem um parado PROPRIO
@@ -1240,6 +1529,12 @@ def main():
         if fonte_[0] == 'animation' and fonte_[1] == perfil.get('ataque')                 and dir_ in perfil.get('espelhar_ataque', {}):
             outra = perfil['espelhar_ataque'][dir_]
             return quadro(fonte_, idx, outra).transpose(Image.FLIP_LEFT_RIGHT)
+        # O mesmo para o GESTO DE CONJURAR (`espelhar_conjurar`). No sopro do
+        # dragao, o oeste desenhou um cone branco saindo da boca -- o sopro que
+        # e do motor -- e o leste veio limpo; a figura e simetrica.
+        if fonte_ == ('animation', 'cast-dir') and dir_ in perfil.get('espelhar_conjurar', {}):
+            outra = perfil['espelhar_conjurar'][dir_]
+            return quadro(fonte_, idx, outra).transpose(Image.FLIP_LEFT_RIGHT)
         if fonte_[0] == 'animation' and fonte_[1] == perfil.get('ataque') and dir_ in remendos:
             imr, row = remendos[dir_]
             return recorte(row, idx, fonte_im=imr)
@@ -1302,6 +1597,8 @@ def main():
             for f in range(nq):
                 idx = escolha[f] if f < len(escolha) else escolha[-1]
                 cel = quadro(fonte_, idx, dir_)
+                if perfil.get('limpar_soltos'):
+                    cel = sem_soltos(cel.copy())
                 # Respirar: o segundo quadro de `idle` e `sleep`, que usam um
                 # desenho so. Estica o tronco em vez de subir a figura.
                 if len(escolha) == 1 and nq > 1 and f % 2:
@@ -1314,7 +1611,10 @@ def main():
                 # o pe de apoio. No resto, a ancora do grupo.
                 if desloca is None:
                     dy = alvo - base_do_quadro(cel)
-                elif nome == 'walk' or (nome, dir_) in PE_NO_ATAQUE:
+                # No VOO nao: o "pe" de quem voa e a ponta da asa, e ancorar por
+                # ele jogaria o corpo para cima a cada batida para baixo. O voo
+                # usa a ancora do grupo, a mesma em todos os quadros.
+                elif (nome == 'walk' and not perfil.get('andar_de')) or (nome, dir_) in PE_NO_ATAQUE:
                     dy = alvo - pe_no_centro(cel)
                 else:
                     dy = desloca
@@ -1353,11 +1653,16 @@ def main():
     SAIDA.mkdir(parents=True, exist_ok=True)
     nome_saida = a.nome or a.chave
     png = SAIDA / f'{nome_saida}.png'
-    folha.save(png, optimize=True)
     saida = {
         'cell': [CW * S, CH * S], 's': S, 'ground': CHAO,
         'w': largura, 'h': altura, 'dirs': DIRECOES, 'anims': anims,
     }
+    if perfil.get('aparar') and armas:
+        raise SystemExit('aparar mexe na celula, e as medidas de arma sao dentro dela: falta converter')
+    if perfil.get('so_anims') or perfil.get('aparar'):
+        folha, saida = enxugar_folha(folha, saida, perfil.get('so_anims'), perfil.get('aparar', False))
+        largura, altura = folha.width, folha.height
+    folha.save(png, optimize=True)
     # As medidas da arma, em px LOGICOS dentro da celula: armas[anim][dir][quadro].
     # `null` onde o quadro nao tem arma (no chao, ou o extrator nao achou).
     if armas:

@@ -364,9 +364,13 @@ class App {
         // O motor já moveu a peça; isto conta a viagem quadrado a quadrado.
         // O andar vem da criatura: a gelatina escorre, a aranha treme, o
         // zumbi arrasta uma perna, o ogro parte e para seco.
-        const andar = andarDe(ev.actor);
+        // Trecho VOADO (o dragao decolou): a trajetoria de voo, a folha no
+        // estado `~voo` e a figura no ar ate o fim do trecho, quando pousa.
+        const andar = ev.voo ? 'voo' : andarDe(ev.actor);
+        if (ev.voo) ev.actor.vooVisual = true;
         board?.fx.walk(ev.actor, ev.path, {
           andar,
+          onDone: ev.voo ? () => { ev.actor.vooVisual = false; } : null,
           // `onStep` sempre deu o índice da casa no caminho; quem chamava o
           // jogava fora e tocava o mesmo passo em qualquer piso.
           onStep: (i) => {
