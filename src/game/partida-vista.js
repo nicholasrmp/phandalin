@@ -92,6 +92,9 @@ export function fotografar({ enc, variante, extras = null }) {
   };
 }
 
+/** Uma lista de combatentes como dado (sem ciclos nem funções): os heróis da vila, que não estão num encontro. */
+export const empacotarLista = (lista) => JSON.parse(seguro(lista));
+
 /** A vista como texto, para comparar com a anterior (só publica o que mudou) e medir. */
 export const emTexto = (vista) => seguro(vista);
 

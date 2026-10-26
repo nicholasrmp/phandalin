@@ -83,7 +83,7 @@ export function abrirTelaVila(root, o) {
       el('div', { class: 'vila-acoes' },
         ...(o.botoes ?? []).map((b) => el('button', { class: 'vila-btn', title: b.dica ?? '', onclick: b.fazer }, b.rotulo)),
         el('button', { class: 'vila-btn', onclick: abrirDiario }, 'Diário'),
-        el('button', { class: 'vila-btn', title: 'Ficha e inventário (vestir, guardar)', onclick: () => o.onFicha?.(o.grupo.find((c) => !c.dead)) }, 'Ficha'),
+        el('button', { class: 'vila-btn', title: 'Ficha e inventário (vestir, guardar)', onclick: () => o.onFicha?.(o.grupo.find((c) => !c.dead && (portaDaVila?.meu ? portaDaVila.meu(c) : true)) ?? o.grupo.find((c) => !c.dead)) }, 'Ficha'),
         ...(o.onDormir ? [el('button', { class: 'vila-btn', onclick: () => o.onDormir() }, 'Dormir')] : []),
         el('button', { class: 'vila-btn discreto', onclick: () => o.onMenu() }, 'Menu'))),
     el('div', { class: 'vila-corpo' }, mapa, el('aside', { class: 'vila-lado' }, grupo, log)),

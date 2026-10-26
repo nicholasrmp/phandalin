@@ -15,6 +15,9 @@ import { getSpell } from '../rules/spells.js';
 import { mandaNaHora, escolheVarios } from '../game/acoes.js';
 import { possoEscolher } from '../game/decisao.js';
 import { abrirTelaVila } from './vila.js';
+import { abrirLojaLocal } from './loja.js';
+import { criarFicha } from './ficha.js';
+import { LOJAS } from '../game/comercio.js';
 import pinturaDaRegiao from '../art/vila/regiao.webp';
 import { Encounter } from '../rules/combat.js';
 import { Battlefield } from '../core/grid.js';
@@ -37,9 +40,11 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const barraEm = hud?.barra?.parentNode ?? null;   // onde a barra de ações mora quando não há partida de sala
   const lugarDaBarra = el('div', { class: 'partida-barra' });
   const terminar = el('button', { class: 'menu-btn primario', hidden: true, onclick: () => { audio.play('click'); if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id }); } }, 'Terminar turno do herói');
+  const fichaBtn = el('button', { class: 'menu-btn', hidden: true, title: 'A ficha e o inventário do seu herói', onclick: () => { audio.play('click'); abrirFicha(selecionado); } }, 'Ficha');
+  const descanso = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso curto (uma hora): o grupo vota', onclick: () => { audio.play('click'); enviar({ tipo: 'agir', acao: 'descanso' }); } }, 'Descanso rápido');
   const camada = el('div', { class: 'taverna partida', role: 'region', 'aria-label': 'Partida' },
     el('header', { class: 'taverna-topo' }, el('div', { class: 'taverna-sala' }, titulo, fase), grupo,
-      el('div', { class: 'taverna-acoes' }, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
+      el('div', { class: 'taverna-acoes' }, fichaBtn, descanso, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
     quadro, lugarDaBarra, aviso);
 
   let aberta = false;
@@ -144,6 +149,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
 
   /** A narrativa do anfitrião (A-02): todos leem; só o líder escolhe, e o índice volta ao anfitrião. */
   function narrativa(msg) {
+    if (msg.tipo === 'loja-abrir') { abrirLojaRemota(msg); return; }
+    if (msg.tipo === 'loja-fechar') { fecharLojaRemota(); return; }
     if (msg.tipo === 'fechar') { narrativas.get(msg.id)?.abort(); narrativas.delete(msg.id); return; }
     if (msg.tipo !== 'abrir' || !aberta) return;
     const p = msg.pedido;
@@ -235,6 +242,66 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     return andaram;
   }
 
+  // ---- a loja e a ficha do SEU herói (F6.4) -------------------------------------------------
+
+  const vilaHerois = new Map();     // os heróis da vila (a vila não tem encontro): objetos que o anfitrião atualiza a cada vista
+  let lojaApi = null;
+  let fichaRemota = null;
+
+  const ehMeu = (c) => Boolean(c) && visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce;
+  const meusDaVila = () => [...vilaHerois.values()].filter((c) => !c.dead && ehMeu(c));
+
+  /** A ficha do herói do jogador: ver, equipar e beber poção. Quem executa é o anfitrião; a ficha redesenha quando ele responde. */
+  function abrirFicha(c) {
+    const alvo = (c && ehMeu(c) ? c : null) ?? meus()[0] ?? meusDaVila()[0];
+    if (!alvo) { aviso.textContent = 'Você não tem herói para abrir a ficha.'; aviso.classList.add('visivel'); return; }
+    fichaRemota ??= criarFicha(document.getElementById('app'), {
+      podeEquipar: (p, slot, id) => {
+        enviar({ tipo: 'agir', acao: 'equipar', heroi: p.id, slot, item: id ?? null });
+        return 'Pedido enviado ao anfitrião: a ficha muda quando ele responder.';
+      },
+      onUsar: (p, id) => { enviar({ tipo: 'agir', acao: 'usar', heroi: p.id, action: { kind: 'item', itemId: id } }); return { ok: true }; },
+      podePreparar: () => 'por enquanto só o anfitrião prepara magias',
+    });
+    fichaRemota.abrir(alvo, 'inventario');
+  }
+
+  /** O anfitrião abriu uma loja: este jogador compra e vende só para o herói DELE (o dinheiro é do grupo). */
+  function abrirLojaRemota(msg) {
+    fecharLojaRemota();
+    const def = LOJAS[msg.lojaId];
+    const grupoDaLoja = vilaHerois.size ? [...vilaHerois.values()] : (enc?.combatants.filter((c) => c.side === 'party') ?? []);
+    if (!def || !grupoDaLoja.length) return;
+    abrirLojaLocal(document.getElementById('app'), {
+      loja: def, npc: msg.npc, grupo: grupoDaLoja, aoMudar: () => {},
+      podeUsar: ehMeu,
+      acoes: {
+        comprar: (heroi, l) => { enviar({ tipo: 'agir', acao: 'comprar', heroi: heroi.id, item: l.id }); return { ok: true, pendente: true }; },
+        vender: (heroi, v) => { enviar({ tipo: 'agir', acao: 'vender', heroi: heroi.id, item: v.id }); return { ok: true, pendente: true }; },
+      },
+      onFicha: (c) => abrirFicha(c),
+      ligar: (api) => { lojaApi = api; },
+    }).then(() => { lojaApi = null; });
+  }
+
+  function fecharLojaRemota() { lojaApi?.fechar(); lojaApi = null; }
+
+  /** O anfitrião mandou os heróis da vila: põe no espelho (os mesmos objetos) e redesenha o que está aberto. */
+  function espelharHerois(lista) {
+    const vistos = new Set();
+    for (const nova of lista) {
+      vistos.add(nova.id);
+      const c = vilaHerois.get(nova.id);
+      if (!c) { vilaHerois.set(nova.id, nova); continue; }
+      for (const k of Object.keys(c)) if (!(k in nova)) delete c[k];
+      Object.assign(c, nova);
+    }
+    for (const id of [...vilaHerois.keys()]) if (!vistos.has(id)) vilaHerois.delete(id);
+    for (const c of vilaHerois.values()) aplicarAparencia(c);
+    lojaApi?.desenhar();
+    fichaRemota?.atualizar();
+  }
+
   // ---- a vila e a região, vistas de fora (F6.3) ------------------------------------------
 
   let vilaTela = null;
@@ -258,7 +325,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         grupo: [], momento: () => vilaObj.__momento, dinheiro: () => vilaObj.__dinheiro,
         aberto: (l) => !l.fechado, novidade: (l) => l.novidade,
         onLugar: (l) => { audio.play('click'); enviar({ tipo: 'agir', acao: 'lugar', lugar: l.id }); },
-        onMenu: () => aoSair(), onFicha: null, botoes: [],
+        onMenu: () => aoSair(), onFicha: (c) => abrirFicha(vilaHerois.get(c?.id) ?? c),
+        botoes: [{ rotulo: 'Descanso rápido', dica: 'Pede um descanso curto: o grupo vota', fazer: () => enviar({ tipo: 'agir', acao: 'descanso' }) }],
       };
       vilaAssinatura = assinatura;
       vilaObj.__momento = snap.momento; vilaObj.__dinheiro = snap.dinheiro;
@@ -267,6 +335,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     }
     vilaObj.__momento = snap.momento; vilaObj.__dinheiro = snap.dinheiro;
     vilaObj.grupo = snap.grupo.map((c) => ({ ...c, conditions: [] }));
+    if (snap.herois) espelharHerois(snap.herois);
     vilaObj.lugares.forEach((l, i) => Object.assign(l, snap.lugares[i]));
     // O que o anfitrião diz da votação (quem votou em quê) fica nos pinos e na frase do alto.
     const porId = snap.votos ?? {};
@@ -308,6 +377,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         el('span', {}, `${meu && c === selecionado ? '► ' : ''}${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV${meu ? turno : ''}`));
     }));
     terminar.hidden = hud != null || !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
+    descanso.hidden = emLuta || !enc;   // só explorando
+    fichaBtn.hidden = !selecionado;
     fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo` : 'Vez dos inimigos') : '';
   }
 
@@ -316,7 +387,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     if (!v) return;
     if (!aberta) { pendente = v; return; }
     if (v.variante === 'vila' && v.extras?.vila) { mostrarVila(v.extras.vila); aviso.classList.remove('visivel'); return; }
-    if (vilaTela) fecharVila();
+    if (vilaTela) { fecharVila(); vilaHerois.clear(); fecharLojaRemota(); }
     if (!enc || variante !== v.variante) { if (board) desmontar(); montar(v); if (aberta) loop(); }
     const { moveram } = aplicarVista(enc, v);
     for (const c of enc.combatants) aplicarAparencia(c);
@@ -332,6 +403,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     }
     aviso.classList.remove('visivel');
     destacar();
+    fichaRemota?.atualizar();
     // Cada jogador vai aonde quiser e a tela dele segue o herói dele (só recentra quando ele sai do miolo do quadro).
     if (selecionado?.pos) board.seguir?.(selecionado.pos);
   }
@@ -362,6 +434,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       if (!aberta) return;
       aberta = false;
       camada.remove();
+      fecharLojaRemota();
+      fichaRemota?.fechar();
       fecharVila();
       if (hud && barraEm) barraEm.append(hud.barra);
       for (const ctl of narrativas.values()) ctl.abort();

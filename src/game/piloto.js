@@ -15,10 +15,25 @@ import { PILOTO } from './sala.js';
 export function heroisDoPiloto(v) {
   if (!v?.herois || !v.jogadores) return new Set();
   const ausentes = new Set(v.jogadores.filter((j) => !j.conectado).map((j) => j.id));
+  const cedidos = new Set(v.cedidos ?? []);
+  // O herói "no piloto" que SOBROU (o anfitrião o pôs lá no lobby) é do anfitrião, que o controla; o que o piloto joga é o de
+  // quem estava ausente no começo (cedido) e o de quem caiu durante a partida.
   const ids = Object.entries(v.herois)
-    .filter(([, dono]) => dono !== v.voce && (dono === PILOTO || ausentes.has(dono)))
+    .filter(([heroi, dono]) => dono !== v.voce && ((dono === PILOTO && cedidos.has(heroi)) || ausentes.has(dono)))
     .map(([heroi]) => heroi);
   return new Set(ids);
+}
+
+/**
+ * Este navegador (o do anfitrião ou de um jogador) controla `heroi`? O seu, sempre; e, no anfitrião, os que sobraram (postos no
+ * piloto de propósito, não os cedidos por quem estava ausente). `v` é a visão da sala.
+ */
+export function controlaOHeroi(v, heroi) {
+  if (!v?.herois) return true;
+  const dono = v.herois[heroi];
+  if (dono === undefined) return true;
+  if (dono === v.voce) return true;
+  return v.voce === v.anfitriao && dono === PILOTO && !(v.cedidos ?? []).includes(heroi);
 }
 
 const casas = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));

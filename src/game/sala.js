@@ -33,7 +33,8 @@ export const VERSAO_DA_SALA = 1;
 export const GRACA_DO_ANFITRIAO_MS = 20_000;
 
 /** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
-export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar'];
+export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar', 'descanso', 'comprar', 'vender', 'equipar'];
+export const ENCAIXES = ['maoPrincipal', 'maoSecundaria', 'armadura', 'escudo'];
 
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
 export const HEROIS_JOGAVEIS = [
@@ -230,7 +231,11 @@ const conectados = (sala) => jogadoresPresentes(sala).filter((j) => j.conectado)
  * L-07: o grupo é sempre de 4 e cada jogador tem pelo menos 1 herói. Quantos um
  * jogador pode segurar para os outros ainda caberem: 4 menos um para cada outro.
  */
-export const limiteDeHerois = (sala) => TAMANHO_DO_GRUPO - (sala.ordem.length - 1);
+/**
+ * Quantos heróis `jogadorId` pode segurar. Cada jogador controla UM herói (regra do autor); o anfitrião fica também com os que
+ * SOBRAM (com menos de quatro jogadores): os que nenhum outro pegou. Ele nunca segura tantos que um jogador fique sem o dele.
+ */
+export const limiteDeHerois = (sala, jogadorId = sala.anfitriao) => (jogadorId === sala.anfitriao ? TAMANHO_DO_GRUPO - (sala.ordem.length - 1) : 1);
 
 /**
  * O que falta para iniciar (L-11), em frases para o anfitrião. Lista vazia =
@@ -351,6 +356,8 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (jogadorId === sala.anfitriao) return recusa('o anfitrião age pela própria tela');
       if (!ACOES_DA_PARTIDA.includes(mensagem.acao)) return recusa('ação desconhecida');
       // Na vila e na região o grupo vota o destino e vai junto: o voto é do JOGADOR (não de um herói) e leva só o id do lugar.
+      // Qualquer jogador pode PEDIR um descanso rápido (uma hora); o grupo vota (a votação é do anfitrião, que roda o jogo).
+      if (mensagem.acao === 'descanso') return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'descanso' } });
       if (mensagem.acao === 'lugar') {
         const { lugar } = mensagem;
         if (typeof lugar !== 'string' || !lugar || lugar.length > 40) return recusa('lugar inválido');
@@ -359,6 +366,18 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (!heroiValido(mensagem.heroi) || sala.herois[mensagem.heroi] !== jogadorId) return recusa('esse herói não é seu');
       const base = { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: mensagem.acao };
       if (mensagem.acao === 'terminar') return ok({ igual: true, repassar: base });
+      // Loja e ficha (cada jogador cuida do SEU herói): o servidor confere de quem é o herói e a forma; o anfitrião, o resto.
+      if (mensagem.acao === 'comprar' || mensagem.acao === 'vender') {
+        const { item } = mensagem;
+        if (typeof item !== 'string' || !item || item.length > 40) return recusa('item inválido');
+        return ok({ igual: true, repassar: { ...base, item } });
+      }
+      if (mensagem.acao === 'equipar') {
+        const { slot, item = null } = mensagem;
+        if (!ENCAIXES.includes(slot)) return recusa('encaixe inexistente');
+        if (item !== null && (typeof item !== 'string' || !item || item.length > 40)) return recusa('item inválido');
+        return ok({ igual: true, repassar: { ...base, slot, item } });
+      }
       if (mensagem.acao === 'usar') {
         // F5.2: qualquer ação da barra (magia, item, correr, esquivar…): a forma é conferida aqui, o direito de fazê-la é do motor do anfitrião.
         const { action, circulo, tiles } = mensagem;
@@ -401,7 +420,9 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (!heroiValido(mensagem.heroi)) return recusa('herói inexistente');
       if (sala.herois[mensagem.heroi]) return recusa('esse herói já tem dono');
       if (Object.keys(sala.herois).length >= TAMANHO_DO_GRUPO) return recusa('o grupo já tem quatro heróis');
-      if (heroisDe(sala, jogadorId).length >= limiteDeHerois(sala)) return recusa('os outros jogadores ficariam sem herói');
+      if (heroisDe(sala, jogadorId).length >= limiteDeHerois(sala, jogadorId)) {
+        return recusa(jogadorId === sala.anfitriao ? 'os outros jogadores ficariam sem herói' : 'cada jogador controla um herói: o anfitrião fica com os que sobram');
+      }
       sala.herois[mensagem.heroi] = jogadorId;
       desfazerProntos(sala);
       return ok();
@@ -590,7 +611,9 @@ export function visaoDaSala(sala, paraJogador) {
       id: j.pub, nome: j.nome, conectado: j.conectado, pronto: j.pronto, herois: heroisDe(sala, j.id),
     })),
     herois: Object.fromEntries(Object.entries(sala.herois).map(([h, dono]) => [h, pubDe(dono)])),
-    limiteDeHerois: limiteDeHerois(sala),
+    limiteDeHerois: limiteDeHerois(sala, paraJogador),
+    // Heróis que o piloto automático segura porque o dono estava ausente quando a partida começou (vão de volta ao dono se ele reaparece).
+    cedidos: Object.keys(sala.cedidos ?? {}).filter((h) => sala.herois[h] === PILOTO),
     pendencias: sala.fase === 'lobby' ? pendenciasParaIniciar(sala) : [],
     // Quem anda na taverna: o rótulo público, onde está, a figura e o marcador (a cor e a forma).
     avatares: jogadoresPresentes(sala).filter((j) => sala.avatares?.[j.id]).map((j) => {

@@ -126,8 +126,9 @@ await teste('grupo completo, todos prontos: o anfitrião inicia e todos veem a p
   const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
   a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
   b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) b.manda({ tipo: 'pegar', heroi: h });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);   // as quatro escolhas chegam antes de alguém ficar pronto
   a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
   await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
   b.manda({ tipo: 'iniciar' });
@@ -167,8 +168,9 @@ await teste('F4: o anfitrião publica a vista da partida e só os outros a receb
     combatentes: [{ id: 'pc-mago', name: 'Ilvan', side: 'party', pos: { x: 1, y: 2 }, hp: 8, maxHp: 8, blob: 'x'.repeat(5000) }] };
   a.manda({ tipo: 'partida', vista });
   assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /não está em andamento/, 'no lobby ninguém publica partida');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) b.manda({ tipo: 'pegar', heroi: h });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);   // as quatro escolhas chegam antes de alguém ficar pronto
   a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
   await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
   a.manda({ tipo: 'iniciar' });
@@ -193,8 +195,9 @@ await teste('F4.3: o passo vai ao anfitrião (só se o herói é de quem mandou)
   const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
   a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
   b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) b.manda({ tipo: 'pegar', heroi: h });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);   // as quatro escolhas chegam antes de alguém ficar pronto
   a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
   await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
   a.manda({ tipo: 'iniciar' });
@@ -227,8 +230,9 @@ await teste('F4.4: o aviso do anfitrião chega só ao jogador certo, e a corda a
   b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
   a.manda({ tipo: 'corda', valor: 'unido' });
   assert.equal((await b.esperar((x) => x.tipo === 'sala' && x.visao.corda === 'unido')).visao.corda, 'unido');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) b.manda({ tipo: 'pegar', heroi: h });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);   // as quatro escolhas chegam antes de alguém ficar pronto
   a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
   await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
   a.manda({ tipo: 'iniciar' });
@@ -246,8 +250,9 @@ await teste('F6: o anfitrião cai, e depois da graça o servidor passa o posto a
   const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
   a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
   b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) b.manda({ tipo: 'pegar', heroi: h });
+  await a.esperar((x) => x.tipo === 'sala' && Object.keys(x.visao.herois).length === 4); await vez(150);   // as quatro escolhas chegam antes de alguém ficar pronto
   a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
   await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
   a.manda({ tipo: 'iniciar' });

@@ -157,11 +157,13 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
  * @param {HTMLElement} root
  * @param {{ herois: object[], rng: object, titulo?: string, texto?: string[] }} o
  */
-export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curto', texto = null }) {
+export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curto', texto = null, automaticos = null }) {
   const vivos = herois.filter((c) => !c.dead);
   const registro = [];
   const grupo = { vivos, atualizarTodas: () => linhas.forEach((l) => l.atualizar()) };
   const linhas = vivos.map((c) => linhaDoHeroi(c, rng, registro, grupo));
+  // Numa sala, os heróis de OUTROS jogadores gastam os dados sugeridos por conta própria: a tela é do anfitrião, e só ele a vê.
+  if (automaticos?.size) for (const [i, c] of vivos.entries()) if (automaticos.has(c.id)) linhas[i].gastarSugerido();
   const conteudo = el('div', { class: 'descanso' },
     el('div', { class: 'descanso-topo' },
       el('span', {}, 'Cada dado cura o que rolar mais a Constituição. Um por vez.'),

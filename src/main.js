@@ -13,11 +13,14 @@ import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarCampo } from './game/campo.js';
 import { cordaPermite } from './game/corda.js';
-import { heroisDoPiloto, jogadaDoPiloto } from './game/piloto.js';
+import { heroisDoPiloto, jogadaDoPiloto, controlaOHeroi } from './game/piloto.js';
 import { quemDecide, apurar, apurarLugar, TEMPO_DA_VOTACAO_MS } from './game/decisao.js';
 import { definirPortaDaVila } from './view/vila.js';
+import { definirPortaDaLoja, abrirLojaLocal } from './view/loja.js';
+import { LOJAS, comprar as comprarNaLoja, vender as venderNaLoja, vendaveis } from './game/comercio.js';
+import { equipar } from './rules/equipment.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
-import { fotografar, emTexto, empacotarEvento, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
+import { fotografar, emTexto, empacotarEvento, empacotarLista, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarPartidaTela } from './view/partida-tela.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
@@ -106,15 +109,7 @@ class App {
       // Em combate, o Livro do Jogador cobra: sacar ou guardar arma é a
       // interação gratuita do turno (a segunda gasta a ação), o escudo gasta a
       // ação e armadura leva minutos.
-      podeEquipar: (p, slot) => {
-        const enc = this.enc;
-        if (!enc || enc.over || this.capitulo?.explorando) return null;
-        if (enc.side !== 'party') return 'dá para trocar equipamento só no turno do grupo';
-        if (p.hp <= 0 || conditionEffects(p).incapacitated) return 'incapacitado não troca de arma';
-        if (slot === 'armadura') return 'vestir ou tirar armadura leva minutos: só fora do combate';
-        if (slot === 'escudo') return p.actionUsed ? 'pôr ou tirar o escudo gasta a ação, e ela já foi usada' : null;
-        return enc.custoDeInteracao(p) ? null : 'a interação gratuita e a ação deste turno já foram usadas';
-      },
+      podeEquipar: (p, slot) => this.vetoDeEquipar(p, slot),
       onEquipar: (p, troca) => {
         const enc = this.enc;
         if (enc && !enc.over && !this.capitulo?.explorando) {
@@ -434,7 +429,10 @@ class App {
   prepararPortaDaSala() {
     this.esperasDeResposta = new Map();
     // A vila e a região: o grupo vota o destino e vai junto (F6.3).
+    // A loja que a cena abre vale para todos: cada jogador compra e vende para o SEU herói (F6.4).
+    definirPortaDaLoja((root, o) => this.lojaDaSala(root, o));
     definirPortaDaVila({
+      meu: (c) => this.podeControlar(c),
       escolher: (l) => this.votarLugar(this.salaDaPartida?.visao?.voce, l.id),
       aoAtualizar: (snap, api) => { this.vilaBase = snap; this.vilaAtual = api; },
       aoFechar: () => { this.vilaBase = null; this.vilaAtual = null; this.zerarVotoDeLugar(); },
@@ -490,7 +488,7 @@ class App {
     if (!naVila && (!this.enc || !this.varianteAtual)) return;
     const eventos = naVila ? [] : (this.eventosPendentes ?? []);
     const vista = naVila
-      ? { v: 1, variante: 'vila', rodada: 0, lado: 'party', acabou: false, combatentes: [], extras: { vila: { ...this.vilaBase, votos: this.votosDeLugar(), faixa: this.faixaDaVotacao() } } }
+      ? { v: 1, variante: 'vila', rodada: 0, lado: 'party', acabou: false, combatentes: [], extras: { vila: { ...this.vilaBase, votos: this.votosDeLugar(), faixa: this.faixaDaVotacao(), herois: empacotarLista((this.grupoDaCampanha ?? []).filter((c) => !c.dead)) } } }
       : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: eventos.length ? { eventos } : null });
     // O que mudou se mede SEM os eventos (eles já foram dados uma vez): só estado novo, evento novo ou o batimento mandam.
     const texto = naVila ? emTexto(vista) : emTexto({ ...vista, extras: null });
@@ -514,7 +512,10 @@ class App {
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles, lugar }) {
+  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles, lugar, item, slot }) {
+    if (acao === 'descanso') { this.pedirDescanso(de); return; }
+    if (acao === 'comprar' || acao === 'vender') { this.negociarDeFora({ de, heroi, acao, item }); return; }
+    if (acao === 'equipar') { this.equiparDeFora({ de, heroi, slot: arguments[0].slot, item }); return; }
     if (acao === 'lugar') { this.votarLugar(de, lugar); return; }   // na vila e na região não há herói: o voto é do jogador
     const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
     if (!this.enc || this.enc.over) return;
@@ -530,7 +531,16 @@ class App {
     // F5: a fase do grupo é simultânea. Cada jogador age com os SEUS heróis, em qualquer ordem, e o motor já aceita isso:
     // cada herói termina o turno sozinho, e a vez passa aos inimigos quando o último termina.
     if (acao === 'usar') {
-      if (!emCombate) { avisar('em exploração só se anda: o resto é com o anfitrião'); return; }
+      if (!emCombate) {
+        // Explorando, o que se faz pela ficha: beber uma poção. O resto da barra é de luta.
+        if (action?.kind === 'item' && !action.mira) {
+          const r = this.enc.useItem(c, action.itemId, { target: c });
+          if (!r.ok) avisar(r.why); else { audio.play('click'); this.afterAct(c); }
+          return;
+        }
+        avisar('em exploração só se anda e se usa item: o resto é com o anfitrião');
+        return;
+      }
       this.usarDeFora(c, { action, circulo, tiles }, avisar);
       return;
     }
@@ -570,7 +580,8 @@ class App {
     }
     const antes = this.selected;
     this.selected = null;
-    this.select(c);
+    this._remoto = true;
+    try { this.select(c); } finally { this._remoto = false; }
     this.chooseAction(action);
     if (circulo && this.mode?.kind === 'spell') this.chooseAction({ kind: 'circulo', lvl: circulo });
     if (this.mode) {
@@ -578,7 +589,7 @@ class App {
       if (this.mode?.alvos?.length) this.conjurarEscolhidos();
     }
     this.mode = null;       // nada fica pendente no anfitrião
-    if (antes && antes !== c && !antes.acted && !antes.dead) this.select(antes);
+    if (antes && antes !== c && !antes.acted && !antes.dead) this.select(antes);   // o do anfitrião, que ele podia controlar
     this.refresh();
   }
 
@@ -611,6 +622,99 @@ class App {
       }
     } finally {
       this._pilotando = false;
+    }
+  }
+
+  // ---- a loja e a ficha de cada jogador (F6.4) -----------------------------------------
+
+  /** A loja abre para TODOS: o anfitrião a mostra só com os heróis dele, e os outros jogadores a abrem com os deles. */
+  async lojaDaSala(root, o) {
+    const lojaId = Object.keys(LOJAS).find((k) => LOJAS[k] === o.loja);
+    const id = (this._seqLoja = (this._seqLoja ?? 0) + 1);
+    this.lojaAberta = { id, lojaId, loja: o.loja, grupo: o.grupo, aoMudar: o.aoMudar };
+    if (lojaId) this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'loja-abrir', id, lojaId, npc: { name: o.npc?.name ?? '', look: o.npc?.look ?? null } } });
+    try {
+      await abrirLojaLocal(root, { ...o, podeUsar: (c) => this.podeControlar(c), ligar: (api) => { this.lojaAberta.api = api; } });
+    } finally {
+      if (lojaId) this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'loja-fechar', id } });
+      this.lojaAberta = null;
+    }
+  }
+
+  /** Um jogador compra ou vende, na loja aberta, para o herói DELE (o servidor já conferiu de quem é). */
+  negociarDeFora({ de, heroi, acao, item }) {
+    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    const lj = this.lojaAberta;
+    if (!lj) { avisar('a loja não está aberta'); return; }
+    const vivos = lj.grupo.filter((c) => !c.dead);
+    const c = vivos.find((h) => h.id === heroi);
+    if (!c) return;
+    if (acao === 'comprar') {
+      const l = lj.loja.estoque().find((x) => x.id === item);
+      if (!l) { avisar('a loja não vende isso'); return; }
+      const r = comprarNaLoja(c, l, vivos);
+      if (!r.ok) { avisar(r.why); return; }
+      lj.aoMudar?.(`${c.name} leva ${l.lote > 1 ? `${l.lote} ` : ''}${l.dados.name}.`);
+    } else {
+      const v = vendaveis(c, lj.loja).find((x) => x.id === item);
+      if (!v) { avisar('a loja não compra isso de você'); return; }
+      const r = venderNaLoja(c, v);
+      if (!r.ok) { avisar(r.why); return; }
+      lj.aoMudar?.(`${c.name} vende ${v.lote > 1 ? `${v.lote} ` : ''}${v.dados.name}.`);
+    }
+    audio.play('coin');
+    lj.api?.desenhar();   // a loja do anfitrião mostra o dinheiro e a mochila novos
+  }
+
+  /** Um jogador troca o equipamento do herói DELE, pela ficha; valem as mesmas regras da ficha do anfitrião. */
+  equiparDeFora({ de, heroi, slot, item }) {
+    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    const lista = this.enc ? this.enc.combatants : (this.grupoDaCampanha ?? []);
+    const c = lista.find((h) => h.id === heroi && !h.dead);
+    if (!c) return;
+    this._remoto = true;
+    let veto;
+    try { veto = this.vetoDeEquipar(c, slot); } finally { this._remoto = false; }
+    if (veto) { avisar(veto); return; }
+    const r = equipar(c, slot, item);
+    if (!r.ok) { avisar(r.why); return; }
+    aplicarAparencia(c);
+    if (this.enc && !this.enc.over && !this.capitulo?.explorando) {
+      this.enc.cobrarInteracao(c, slot === 'escudo' ? 'acao' : this.enc.custoDeInteracao(c));
+    }
+    this.hud.pushLog({ kind: 'recurso', text: `${c.name} trocou ${slot}: CA ${r.acAntes} → ${r.acDepois}`, round: this.enc?.round ?? 1 });
+    this.refresh();
+  }
+
+  // ---- o descanso rápido: qualquer jogador pede, o grupo vota ---------------------------------
+
+  /**
+   * `pub` pede um descanso curto (uma hora). Abre uma votação geral (sem herói à frente: decisão do grupo) com "Descansar" e "Agora
+   * não"; se ganha o sim, o descanso roda como sempre, e os heróis dos outros jogadores gastam os dados sugeridos.
+   */
+  async pedirDescanso(pub) {
+    const visao = this.salaDaPartida?.visao;
+    const avisar = (texto) => { if (pub && visao && pub !== visao.voce) this.menu.enviarCru({ tipo: 'aviso', para: pub, texto }); else this.avisarDeSave(texto); };
+    if (!visao) return;
+    if (!this.enc || !this.capitulo?.explorando) { avisar('só dá para descansar explorando, sem luta e fora da vila'); return; }
+    if (this._descansoEmVotacao || narrativaAberta() || this.ficha?.estaAberta()) { avisar('já há uma decisão em andamento'); return; }
+    this._descansoEmVotacao = true;
+    this._ator = null;     // decisão do grupo: ninguém "começou" esta cena
+    const nome = visao.jogadores.find((j) => j.id === pub)?.nome ?? 'Alguém';
+    try {
+      const r = await narrar(this.root, {
+        formato: 'painel',
+        paginas: [{ titulo: 'Descanso rápido', texto: [`${nome} pede um descanso curto: uma hora para recuperar o fôlego e gastar dados de vida. O grupo concorda?`] }],
+        escolhas: [{ rotulo: 'Descansar', valor: 'sim', primaria: true }, { rotulo: 'Agora não', valor: 'nao' }],
+      });
+      if (r === 'sim' && this.enc && this.capitulo?.explorando) {
+        this._descansoAprovado = true;
+        try { await this.descansar('curto'); } finally { this._descansoAprovado = false; }
+      } else {
+        this.enc?.say('recurso', 'O grupo prefere seguir sem descansar.');
+      }
+    } finally {
+      this._descansoEmVotacao = false;
     }
   }
 
@@ -684,11 +788,12 @@ class App {
     clearTimeout(this.decisao?.timer);
     if (!p.escolhas?.length || !visao) { this.decisao = { id: msg.id, modo: 'leitura' }; p.decide = { modo: 'leitura' }; return; }
     const ator = this.atorAtual();
-    const d = quemDecide({ ator, visao });
+    // Página com tela interativa do anfitrião (o descanso, subir de nível): quem a conduz é ele, sem votação.
+    const d = p.paginas.some((pg) => pg.temConteudo) ? { modo: 'ator', pub: visao.anfitriao } : quemDecide({ ator, visao });
     const nome = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
     const heroi = ator ? this.enc?.combatants.find((c) => c.id === ator)?.name : null;
     const titulo = d.modo === 'ator'
-      ? (d.pub === visao.voce && visao.jogadores.filter((j) => j.conectado).length <= 1 ? '' : `Quem decide: ${nome(d.pub)}${heroi ? ` (${heroi})` : ''}.`)
+      ? ((d.pub === visao.voce && (visao.jogadores.filter((j) => j.conectado).length <= 1 || p.paginas.some((pg) => pg.temConteudo))) ? '' : `Quem decide: ${nome(d.pub)}${heroi ? ` (${heroi})` : ''}.`)
       : `Decisão do grupo: votação entre ${d.votantes.length} jogadores (${Math.round(TEMPO_DA_VOTACAO_MS / 1000)} s).`;
     this.decisao = {
       id: msg.id, ...d, titulo, votos: new Map(), n: p.escolhas.length, timer: null,
@@ -754,6 +859,8 @@ class App {
 
   encerrarPartidaDaSala() {
     definirPortaDaVila(null);
+    definirPortaDaLoja(null);
+    this.lojaAberta = null;
     this.vilaBase = null; this.vilaAtual = null;
     this.zerarVotoDeLugar();
     clearTimeout(this.decisao?.timer);
@@ -1125,11 +1232,28 @@ class App {
     // A cena pode ter fechado o tabuleiro (fim da luta, ida para a vila ou a
     // região) com o turno dos inimigos ainda terminando.
     if (!this.enc) return null;
-    return this.enc.allOf('party').find((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto) ?? null;
+    return this.enc.allOf('party').find((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto && this.podeControlar(c)) ?? null;
+  }
+
+  /** Por que `p` não pode trocar o encaixe `slot` agora (`null` = pode). Em sala, também: o herói tem de ser deste jogador. */
+  vetoDeEquipar(p, slot) {
+    if (this.salaDaPartida && !this._remoto && !this.podeControlar(p)) return 'esse herói é de outro jogador';
+    const enc = this.enc;
+    if (!enc || enc.over || this.capitulo?.explorando) return null;
+    if (enc.side !== 'party') return 'dá para trocar equipamento só no turno do grupo';
+    if (p.hp <= 0 || conditionEffects(p).incapacitated) return 'incapacitado não troca de arma';
+    if (slot === 'armadura') return 'vestir ou tirar armadura leva minutos: só fora do combate';
+    if (slot === 'escudo') return p.actionUsed ? 'pôr ou tirar o escudo gasta a ação, e ela já foi usada' : null;
+    return enc.custoDeInteracao(p) ? null : 'a interação gratuita e a ação deste turno já foram usadas';
+  }
+
+  /** Este navegador controla `c`? Fora de sala, sim; em sala, o próprio herói (e os que sobraram, se este é o anfitrião). */
+  podeControlar(c) {
+    return !this.salaDaPartida || controlaOHeroi(this.salaDaPartida.visao, c.id);
   }
 
   cycleSelection() {
-    const list = this.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto);
+    const list = this.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto && this.podeControlar(c));
     if (list.length === 0) return;
     const i = list.indexOf(this.selected);
     this.select(list[(i + 1) % list.length]);
@@ -1137,6 +1261,8 @@ class App {
 
   select(c) {
     if (c && (c.dead || hasCondition(c, 'inconsciente') || c.side !== 'party')) return;
+    // Partida de sala: cada um controla o SEU herói (o anfitrião, também os que sobraram). O pedido de outro jogador passa por `_remoto`.
+    if (c && !this._remoto && !this.podeControlar(c)) return;
     this.selected = c;
     if (c && this.salaDaPartida) this.marcarAtor(c);
     this.mode = null;
@@ -1779,6 +1905,8 @@ class App {
   /** Descanso do grupo, pelo menu do botão direito, fora da luta. */
   async descansar(tipo) {
     if (narrativaAberta()) return;
+    // Numa sala o descanso rápido é votado pelo grupo (qualquer jogador pode pedir); o longo continua com quem o escolhe.
+    if (tipo === 'curto' && this.salaDaPartida && !this._descansoAprovado) { this.pedirDescanso(this.salaDaPartida.visao?.voce); return; }
     const herois = this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
     const linhas = tipo === 'longo'
       // Na estrada, quem passou o dia sem comer ou sem beber dorme, mas não
@@ -1791,7 +1919,10 @@ class App {
         // degrau. Um dia inteiro sem nada, não.
         alimentado: (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true),
       })
-      : await descansoCurto(this.root, { herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto') });
+      : await descansoCurto(this.root, {
+        herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto'),
+        automaticos: this.salaDaPartida ? new Set(herois.filter((c) => !this.podeControlar(c)).map((c) => c.id)) : null,
+      });
     for (const t of linhas) this.enc.say('cura', t);
     // O descanso é tempo de verdade: as magias de duração correm (uma hora, oito horas).
     for (const t of avancarTempo(estadoDeUtilidade(this.campanha ??= {}), tipo === 'longo' ? 480 : 60, herois)) this.enc.say('magia', t);

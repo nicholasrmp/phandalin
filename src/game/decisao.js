@@ -21,6 +21,8 @@ export function quemDecide({ ator, visao }) {
   if (presentes.length <= 1) return { modo: 'ator', pub: presentes[0]?.id ?? visao?.anfitriao ?? null };
   const dono = ator ? visao.herois?.[ator] : null;
   if (dono && dono !== PILOTO && presentes.some((j) => j.id === dono)) return { modo: 'ator', pub: dono };
+  // O herói que sobrou (posto no piloto no lobby) é do anfitrião: quem o conduz decide por ele.
+  if (dono === PILOTO && !(visao.cedidos ?? []).includes(ator) && presentes.some((j) => j.id === visao.anfitriao)) return { modo: 'ator', pub: visao.anfitriao };
   const desempate = presentes.some((j) => j.id === visao.lider) ? visao.lider : presentes[0].id;
   return { modo: 'votacao', votantes: presentes.map((j) => j.id), desempate };
 }

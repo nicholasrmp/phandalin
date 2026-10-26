@@ -267,7 +267,9 @@ export function criarTelasDeSala({
         el('ul', {}, v.jogadores.map((j) => linhaDeJogador(j, v, souAnfitriao)))),
 
       el('section', {}, el('h3', {}, `Heróis (${Object.keys(v.herois).length} de ${TAMANHO_DO_GRUPO})`),
-        v.limiteDeHerois < TAMANHO_DO_GRUPO && el('p', { class: 'menu-nota' }, `Com ${v.jogadores.length} jogadores, cada um pode ter até ${v.limiteDeHerois} herói${v.limiteDeHerois > 1 ? 's' : ''}.`),
+        el('p', { class: 'menu-nota' }, souAnfitriao
+          ? `Cada jogador controla um herói. Você, anfitrião, fica também com os que sobrarem (até ${v.limiteDeHerois}).`
+          : 'Cada jogador controla um herói; o anfitrião fica com os que sobrarem.'),
         el('div', { class: 'menu-herois-sala' }, HEROIS.map((h) => cartaoDeHeroi(h, v, { eu, souAnfitriao, meusHerois, nomeDe, sem })))),
 
       // D4: a corda do grupo. Só o anfitrião muda; os outros veem o que ficou.

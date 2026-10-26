@@ -857,7 +857,7 @@ export function criarFicha(root, handlers = {}) {
   // ---- troca de equipamento -----------------------------------------------
 
   function trocar(slot, id) {
-    const veto = handlers.podeEquipar?.(personagem, slot);
+    const veto = handlers.podeEquipar?.(personagem, slot, id);
     if (veto) { aviso = veto; render(); return; }
 
     const r = equipar(personagem, slot, id);

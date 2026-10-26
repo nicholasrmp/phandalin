@@ -50,9 +50,21 @@ const GRUPOS = {
  * @param {{ loja: object, npc: {name: string, look: string}, grupo: object[], aoMudar?: (t: string) => void,
  *           onFicha?: (heroi: object, depois: () => void) => void }} o
  */
-export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
+// A PORTA DA LOJA (sala, F6.4). Numa partida de sala o anfitrião a põe aqui: a loja que a cena abre passa a ser aberta para TODOS
+// os jogadores (cada um compra e vende para o seu herói). Sem porta, é a tela de sempre.
+let portaDaLoja = null;
+export const definirPortaDaLoja = (p = null) => { portaDaLoja = p; };
+export const abrirLoja = (root, o) => (portaDaLoja ? portaDaLoja(root, o) : abrirLojaLocal(root, o));
+
+/**
+ * `podeUsar(c)`: quais heróis ESTE jogador pode escolher (o dinheiro continua sendo do grupo todo); `acoes`: no lugar de mexer nos
+ * heróis daqui, pede ao anfitrião (`{ comprar(heroi, l), vender(heroi, v) }`, devolvendo `{ ok: true, pendente: true }`); `ligar`
+ * recebe `{ desenhar, fechar }` para a tela de fora redesenhar quando o anfitrião responde.
+ */
+export function abrirLojaLocal(root, { loja, npc, grupo, aoMudar, onFicha, podeUsar = () => true, acoes = null, ligar = null }) {
   return new Promise((resolve) => {
-    const vivos = () => grupo.filter((c) => !c.dead);
+    const todos = () => grupo.filter((c) => !c.dead);
+    const vivos = () => todos().filter(podeUsar);
     const podeComprar = loja.estoque().length > 0;
     let aba = podeComprar ? 'comprar' : 'vender';
     let heroi = vivos()[0];
@@ -90,7 +102,7 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
         lista, rodape));
 
     function desenharTopo() {
-      dinheiro.textContent = moedas(totalEmCobre(vivos()));
+      dinheiro.textContent = moedas(totalEmCobre(todos()));
       fala.textContent = `— ${loja.fala[aba] ?? ''}`;
       abas.replaceChildren(...['comprar', 'vender']
         .filter((a) => a === 'vender' || podeComprar)
@@ -114,7 +126,7 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
     const confere = (l) => !filtro || l.dados.name.toLowerCase().includes(filtro);
 
     function linhaDeCompra(l) {
-      const motivo = motivoParaNaoComprar(heroi, l, vivos());
+      const motivo = motivoParaNaoComprar(heroi, l, todos());
       const treino = avisoDeTreino(heroi, l);
       return el('div', { class: 'loja-item' },
         el('span', { class: 'loja-icone' }, iconeDeItem(l.id, 32)),
@@ -126,8 +138,9 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
         el('button', {
           class: 'vila-btn', disabled: motivo ? true : false, title: motivo ?? `Comprar para ${heroi.name}`,
           onclick: () => {
-            const r = comprar(heroi, l, vivos());
+            const r = (acoes?.comprar ?? comprar)(heroi, l, todos());
             if (!r.ok) { aviso = r.why; desenhar(); return; }
+            if (r.pendente) { aviso = `Pedido enviado: ${heroi.name} leva ${l.dados.name}.`; desenhar(); return; }
             audio.play('coin');
             aviso = `${heroi.name} leva ${l.lote > 1 ? `${l.lote} ` : ''}${l.dados.name} por ${moedas(l.preco)}.`;
             aoMudar?.(aviso);
@@ -146,8 +159,9 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
         el('button', {
           class: 'vila-btn',
           onclick: () => {
-            const r = vender(heroi, v);
+            const r = (acoes?.vender ?? vender)(heroi, v);
             if (!r.ok) { aviso = r.why; desenhar(); return; }
+            if (r.pendente) { aviso = `Pedido enviado: ${heroi.name} vende ${v.dados.name}.`; desenhar(); return; }
             audio.play('coin');
             aviso = `${heroi.name} vende ${v.lote > 1 ? `${v.lote} ` : ''}${v.dados.name} por ${moedas(v.paga)}.`;
             aoMudar?.(aviso);
@@ -184,5 +198,6 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
     root.append(caixa);
     desenhar();
     busca.focus();
+    ligar?.({ desenhar, fechar });
   });
 }

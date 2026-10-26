@@ -292,6 +292,13 @@ Menu principal
 
 ### Narrativa
 
+- **J-07 · [decidido, 2026-10-26] Quem controla quem.** Cada jogador controla **um** herói. O **anfitrião** só
+  controla o dele, mais os que **sobram** quando há menos de quatro jogadores (os que nenhum outro pegou). Os heróis de quem
+  caiu ficam no piloto automático até a pessoa voltar.
+- **J-08 · [decidido, 2026-10-26] Loja, ficha e descanso.** Na loja cada jogador compra e vende **para o seu herói** (o
+  dinheiro é do grupo); na ficha, cada um equipa e usa itens do seu herói. **Qualquer jogador pode pedir um descanso
+  rápido**: o grupo vota (e quem não é o anfitrião gasta os dados de vida sugeridos). Feito em `view/loja.js`
+  (`definirPortaDaLoja`), `main.js` (`lojaDaSala`, `negociarDeFora`, `equiparDeFora`, `pedirDescanso`).
 - **J-20 · [decidido, 2026-10-26] Quem decide (`D5`), como no Baldur's Gate 3.** O diálogo
   ou a cena que um **personagem** começou é decidido pelo **jogador que controla esse
   personagem**; os outros leem as mesmas escolhas, sem poder clicar. Uma **decisão geral**,

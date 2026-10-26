@@ -19,7 +19,7 @@ import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
-import { heroisDoPiloto, inimigoMaisPerto, jogadaDoPiloto } from '../game/piloto.js';
+import { heroisDoPiloto, inimigoMaisPerto, jogadaDoPiloto, controlaOHeroi } from '../game/piloto.js';
 import { quemDecide, apurar, apurarLugar, possoEscolher } from '../game/decisao.js';
 import { acaoRemotaValida, tilesValidos, circuloValido, magiaNaHora, escolheVarios, mandaNaHora } from '../game/acoes.js';
 import { getSpell } from '../rules/spells.js';
@@ -220,7 +220,8 @@ teste('L-11: só inicia com 4 heróis, todos com herói e todos prontos; só o a
   pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago');
   deve(faz(s, BETO, { tipo: 'iniciar' }), /anfitrião/);
   deve(faz(s, ANF, { tipo: 'iniciar' }), /faltam 1 herói/);
-  pega(s, BETO, 'pc-clerigo');
+  deve(faz(s, BETO, { tipo: 'pegar', heroi: 'pc-clerigo' }), /cada jogador controla um herói/);   // o que sobra é do anfitrião
+  pega(s, ANF, 'pc-clerigo');
   deve(faz(s, ANF, { tipo: 'iniciar' }), /não está pronto/);
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   assert.deepEqual(pendenciasParaIniciar(s), []);
@@ -239,18 +240,18 @@ teste('L-11/L-08: o anfitrião põe heróis no piloto para completar o grupo, e 
 
 teste('L-11: jogador ausente bloqueia, a menos que o anfitrião aceite o piloto; aí os heróis dele vão ao piloto', () => {
   const s = nova(); entra(s, BETO, 'Beto');
-  pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago', 'pc-clerigo');
+  pega(s, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(s, BETO, 'pc-mago');
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   desconectar(s, BETO, 3000);
   deve(faz(s, ANF, { tipo: 'iniciar' }), /desconectado/);
   assert.ok(faz(s, ANF, { tipo: 'iniciar', aceitarPiloto: true }).ok);
-  assert.equal(s.herois['pc-mago'], PILOTO); assert.equal(s.herois['pc-clerigo'], PILOTO);
+  assert.equal(s.herois['pc-mago'], PILOTO); assert.equal(s.herois['pc-clerigo'], ANF, 'o que sobrou é do anfitrião');
   assert.equal(s.herois['pc-guerreiro'], ANF);
 });
 
 teste('depois de iniciada, não se pega, não se solta, não se entra gente nova — mas quem estava volta', () => {
   const s = nova(); entra(s, BETO, 'Beto');
-  pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago', 'pc-clerigo');
+  pega(s, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(s, BETO, 'pc-mago');
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   faz(s, ANF, { tipo: 'iniciar' });
   deve(faz(s, ANF, { tipo: 'largar', heroi: 'pc-ladino' }), /começou/);
@@ -570,16 +571,16 @@ teste('anfitrião não sai (fecha a sala); quem sai no lobby solta os heróis e 
 
 teste('sair ou ser removido com a partida em curso: os heróis vão ao piloto, o grupo segue de 4', () => {
   const s = nova(); entra(s, BETO, 'Beto');
-  pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago', 'pc-clerigo');
+  pega(s, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(s, BETO, 'pc-mago');
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   faz(s, ANF, { tipo: 'iniciar' });
   assert.ok(faz(s, BETO, { tipo: 'sair' }).ok);
   assert.equal(Object.keys(s.herois).length, 4);
-  assert.equal(s.herois['pc-mago'], PILOTO); assert.equal(s.herois['pc-clerigo'], PILOTO);
+  assert.equal(s.herois['pc-mago'], PILOTO); assert.equal(s.herois['pc-clerigo'], ANF);
   assert.ok(s.jogadores[BETO], 'continua no registro (desconectado)');
   assert.equal(s.jogadores[BETO].conectado, false);
   const t = nova(); entra(t, BETO, 'Beto');
-  pega(t, ANF, 'pc-guerreiro', 'pc-ladino'); pega(t, BETO, 'pc-mago', 'pc-clerigo');
+  pega(t, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(t, BETO, 'pc-mago');
   faz(t, ANF, { tipo: 'pronto', valor: true }); faz(t, BETO, { tipo: 'pronto', valor: true }); faz(t, ANF, { tipo: 'iniciar' });
   assert.ok(faz(t, ANF, { tipo: 'remover', jogador: 'p2' }).ok);
   assert.equal(Object.keys(t.herois).length, 4); assert.equal(t.herois['pc-mago'], PILOTO);
@@ -588,14 +589,14 @@ teste('sair ou ser removido com a partida em curso: os heróis vão ao piloto, o
 
 teste('A-04: quem volta depois do piloto automático recupera os heróis que eram dele (só esses)', () => {
   const s = nova(); entra(s, BETO, 'Beto');
-  pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago', 'pc-clerigo');
+  pega(s, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(s, BETO, 'pc-mago');
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   desconectar(s, BETO, 3000);
   assert.ok(faz(s, ANF, { tipo: 'iniciar', aceitarPiloto: true }).ok);
   assert.equal(s.herois['pc-mago'], PILOTO);
   const r = faz(s, BETO, { tipo: 'entrar', nome: 'Beto' });
   assert.ok(r.reentrou); assert.equal(r.igual, false, 'houve mudança: a sala precisa retransmitir');
-  assert.deepEqual(heroisDe(s, BETO).sort(), ['pc-clerigo', 'pc-mago']);
+  assert.deepEqual(heroisDe(s, BETO).sort(), ['pc-mago']);
   assert.deepEqual(s.cedidos, {});
 });
 
@@ -836,8 +837,8 @@ teste('T-02: a persona vem da mensagem de entrada, só entre as que têm arte', 
 function salaIniciada() {
   const s = nova();
   entra(s, BETO, 'Beto');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) faz(s, ANF, { tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) faz(s, BETO, { tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) faz(s, ANF, { tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) faz(s, BETO, { tipo: 'pegar', heroi: h });
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   assert.ok(faz(s, ANF, { tipo: 'iniciar' }).ok);
   return s;
@@ -944,7 +945,7 @@ teste('F4.3: agir: o servidor só repassa o passo de quem é DONO do herói, com
   deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', alvo: 7 }), /alvo inválido/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', alvo: 'g', arma: 7 }), /arma inválida/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-guerreiro', alvo: 'goblin-1' }), /não é seu/);
-  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'terminar', heroi: 'pc-clerigo' }).repassar, { tipo: 'agir', de: 'p2', heroi: 'pc-clerigo', acao: 'terminar' });
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'terminar', heroi: 'pc-mago' }).repassar, { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'terminar' });
   deve(faz(s, BETO, { tipo: 'agir', acao: 'terminar', heroi: 'pc-guerreiro' }), /não é seu/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: -1, y: 9 }), /inexistente/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 1.5, y: 9 }), /inexistente/);
@@ -979,7 +980,9 @@ teste('J-20: quem decide a narrativa: o jogador do herói que a começou; decis�
   assert.deepEqual(quemDecide({ ator: null, visao: v() }), { modo: 'ator', pub: 'p1' }, 'sozinho não há votação');
   assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto' }, 2000).ok);
   s.herois['pc-clerigo'] = 'piloto';
-  assert.equal(quemDecide({ ator: 'pc-clerigo', visao: v() }).modo, 'votacao', 'herói no piloto não tem jogador: vota o grupo');
+  assert.deepEqual(quemDecide({ ator: 'pc-clerigo', visao: v() }), { modo: 'ator', pub: 'p1' }, 'o herói que sobrou é do anfitrião: ele decide por ele');
+  s.cedidos['pc-clerigo'] = BETO;
+  assert.equal(quemDecide({ ator: 'pc-clerigo', visao: v() }).modo, 'votacao', 'herói cedido pelo dono ausente não tem jogador: vota o grupo');
   assert.equal(quemDecide({ ator: 'pc-mago', visao: null }).modo, 'ator');
   assert.equal(possoEscolher({ modo: 'ator', pub: 'p2' }, 'p2'), true); assert.equal(possoEscolher({ modo: 'ator', pub: 'p2' }, 'p1'), false);
   assert.equal(possoEscolher({ modo: 'votacao', votantes: ['p1', 'p2'] }, 'p1'), true); assert.equal(possoEscolher({ modo: 'leitura' }, 'p1'), false); assert.equal(possoEscolher(null, 'p1'), false);
@@ -1054,13 +1057,33 @@ teste('F6.2: o piloto joga os heróis de quem caiu e os postos no piloto, nunca 
   const eu = (para) => visaoDaSala(s, para);
   assert.deepEqual([...heroisDoPiloto(eu(ANF))], [], 'todos presentes: nada para o piloto');
   desconectar(s, BETO, 5000);
-  assert.deepEqual([...heroisDoPiloto(eu(ANF))].sort(), ['pc-clerigo', 'pc-mago'], 'os dois do Beto');
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))], ['pc-mago'], 'o herói do Beto');
   assert.deepEqual([...heroisDoPiloto(eu(BETO))], [], 'os heróis do anfitrião presente não vão para o piloto, de onde quer que se olhe')
   assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto' }, 9000).ok);
   assert.deepEqual([...heroisDoPiloto(eu(ANF))], [], 'o dono voltou: os heróis são dele de novo');
   s.herois['pc-ladino'] = 'piloto';
-  assert.deepEqual([...heroisDoPiloto(eu(ANF))], ['pc-ladino'], 'o que o anfitrião mandou para o piloto também');
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))], [], 'o herói que SOBROU (posto no piloto no lobby) é do anfitrião: ele o controla, o piloto não joga');
+  s.cedidos['pc-ladino'] = BETO;
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))], ['pc-ladino'], 'o cedido por quem estava ausente no começo é do piloto');
+  delete s.cedidos['pc-ladino'];
   assert.deepEqual([...heroisDoPiloto(null)], []);
+});
+
+teste('controle: cada jogador controla o seu herói; o anfitrião, também os que sobraram — e só ele', () => {
+  const s = salaIniciada();
+  const v = (de) => visaoDaSala(s, de);
+  assert.equal(controlaOHeroi(v(ANF), 'pc-guerreiro'), true); assert.equal(controlaOHeroi(v(ANF), 'pc-mago'), false, 'o do Beto não');
+  assert.equal(controlaOHeroi(v(BETO), 'pc-mago'), true); assert.equal(controlaOHeroi(v(BETO), 'pc-guerreiro'), false);
+  s.herois['pc-clerigo'] = 'piloto';
+  assert.equal(controlaOHeroi(v(ANF), 'pc-clerigo'), true, 'o que sobrou é do anfitrião');
+  assert.equal(controlaOHeroi(v(BETO), 'pc-clerigo'), false, 'e de mais ninguém');
+  s.cedidos['pc-clerigo'] = BETO;
+  assert.equal(controlaOHeroi(v(ANF), 'pc-clerigo'), false, 'o cedido por ausência é do piloto, não do anfitrião');
+  assert.equal(controlaOHeroi(null, 'pc-mago'), true, 'fora de sala (solo) controla tudo');
+  assert.deepEqual(visaoDaSala(s, ANF).cedidos, ['pc-clerigo']);
+  assert.equal(limiteDeHerois(nova(), ANF), 4);
+  const t = nova(); entra(t, BETO, 'Beto');
+  assert.equal(limiteDeHerois(t, ANF), 3, 'o anfitrião deixa um para o outro jogador'); assert.equal(limiteDeHerois(t, BETO), 1, 'cada convidado tem um');
 });
 
 teste('F6.2: a jogada do piloto: ataca o inimigo vivo mais perto com a arma na mão; sem alvo, arma ou ação, só termina o turno', () => {
@@ -1124,6 +1147,35 @@ teste('F6: o servidor guarda o save que SÓ o anfitrião manda, com a partida in
   }
 });
 
+teste('loja e ficha: cada jogador compra, vende e equipa SÓ para o herói dele; o servidor confere a forma', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'comprar', heroi: 'pc-mago', item: 'adaga' }).repassar, { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'comprar', item: 'adaga' });
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'vender', heroi: 'pc-mago', item: 'corda' }).repassar.acao, 'vender');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'comprar', heroi: 'pc-guerreiro', item: 'adaga' }), /não é seu/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'comprar', heroi: 'pc-mago' }), /item inválido/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'vender', heroi: 'pc-mago', item: 'x'.repeat(41) }), /item inválido/);
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'comprar', heroi: 'pc-guerreiro', item: 'adaga' }), /própria tela/);
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'equipar', heroi: 'pc-mago', slot: 'armadura', item: 'couro' }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'equipar', slot: 'armadura', item: 'couro' });
+  assert.equal(faz(s, BETO, { tipo: 'agir', acao: 'equipar', heroi: 'pc-mago', slot: 'escudo' }).repassar.item, null, 'sem item: guarda o encaixe');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'equipar', heroi: 'pc-mago', slot: 'capacete', item: 'x' }), /encaixe inexistente/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'equipar', heroi: 'pc-mago', slot: 'armadura', item: 7 }), /item inválido/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'equipar', heroi: 'pc-guerreiro', slot: 'armadura', item: 'couro' }), /não é seu/);
+  const abrir = JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'loja-abrir', id: 4, lojaId: 'barthen', npc: { name: 'Elmar', look: null } } });
+  assert.equal(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: abrir }).ok, true);
+  assert.equal(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'loja-fechar', id: 4 } }) }).ok, true);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: BETO, bruto: abrir }).erro, /anfitrião/);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'loja-abrir', id: 4 } }) }).erro, /inválida/);
+});
+
+teste('descanso rápido: qualquer jogador pode PEDIR (o grupo vota); só com a partida em andamento e nunca o anfitrião pelo servidor', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'descanso' }).repassar, { tipo: 'agir', de: 'p2', acao: 'descanso' });
+  assert.ok(faz(s, BETO, { tipo: 'agir', acao: 'descanso', heroi: 'pc-mago' }).ok, 'sem herói à frente: o pedido é do jogador');
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'descanso' }), /própria tela/);
+  deve(faz(nova(), BETO, { tipo: 'agir', acao: 'descanso' }), /não está em andamento|não está nesta sala/);
+});
+
 teste('J-20/vila: o destino é votação do JOGADOR (não de herói): maioria, empate pelo líder, sem voto nada', () => {
   const votos = (o) => new Map(Object.entries(o));
   assert.equal(apurarLugar({ votos: votos({ p1: 'taverna', p2: 'loja', p3: 'loja' }) }), 'loja');
@@ -1167,8 +1219,8 @@ teste('F4.4: a corda é escolha do anfitrião, no lobby; o aviso do anfitrião v
   assert.equal(faz(s, ANF, { tipo: 'corda', valor: 'livre' }).igual, true);
   assert.ok(faz(s, ANF, { tipo: 'corda', valor: 'unido' }).ok);
   assert.equal(visaoDaSala(s, BETO).corda, 'unido');
-  for (const h of ['pc-guerreiro', 'pc-ladino']) faz(s, ANF, { tipo: 'pegar', heroi: h });
-  for (const h of ['pc-mago', 'pc-clerigo']) faz(s, BETO, { tipo: 'pegar', heroi: h });
+  for (const h of ['pc-guerreiro', 'pc-ladino', 'pc-clerigo']) faz(s, ANF, { tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago']) faz(s, BETO, { tipo: 'pegar', heroi: h });
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   deve(faz(s, ANF, { tipo: 'aviso', para: 'p2', texto: 'oi' }), /não está em andamento/);
   assert.ok(faz(s, ANF, { tipo: 'iniciar' }).ok);
@@ -1324,7 +1376,7 @@ teste('T-11: o servidor só aceita outro passo quando a caminhada anterior já t
 
 teste('mover e persona só valem no lobby: depois de iniciada, a taverna acabou', () => {
   const s = nova(); entra(s, BETO, 'Beto');
-  pega(s, ANF, 'pc-guerreiro', 'pc-ladino'); pega(s, BETO, 'pc-mago', 'pc-clerigo');
+  pega(s, ANF, 'pc-guerreiro', 'pc-ladino', 'pc-clerigo'); pega(s, BETO, 'pc-mago');
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   faz(s, ANF, { tipo: 'iniciar' });
   deve(faz(s, ANF, { tipo: 'mover', x: 9, y: 10 }, 9999), /começou/);
