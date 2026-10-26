@@ -190,6 +190,37 @@ for (x, y) in list(CHAO):
     if T[y][x] == '`' and any((x + i, y + j) in AGUA_FUNDA for i in (-1, 0, 1) for j in (-1, 0, 1)):
         T[y][x] = '"'
 
+# ------------------------------------------------------------ os desniveis ----
+# Um nivel de altura = 1,5 m (5 pes). O motor deixa subir um nivel por passo (custa 5 pes a mais) e barra o degrau de
+# dois ou mais: um paredao de 3 m (dois niveis) so se sobe pela ESCADA (casas de rampa, 2 -> 1 -> 0) ou escalando
+# (Atletismo CD 12, na cena). Os desniveis do livro:
+#   - a GRANDE CAVERNA (area 9) tem uma elevacao de 3 m de cada lado e uma parte baixa no meio, com escadas
+#     lavradas na pedra (a oeste, a elevacao dos ghouls);
+#   - o CANAL SECO da fundicao (area 12) fica 1,5 m abaixo do piso: o piso da sala sobe um nivel, o canal fica no 0.
+ALT = {}
+
+
+def _sobe(rects, nivel):
+    for (x, y) in retangulos(rects):
+        if T[y][x] not in 'R|O':
+            ALT[(x, y)] = nivel
+
+
+_sobe([(17, 34, 28, 46)], 2)                        # a elevacao oeste da grande caverna
+_sobe([(45, 39, 50, 51)], 2)                        # a elevacao leste
+for (_x, _n) in ((28, 2), (29, 1), (30, 0)):        # a escada oeste desce para o meio (3 casas, 3 de largura)
+    _sobe([(_x, 41, _x, 43)], _n)
+_sobe([(44, 43, 44, 45)], 1)                        # a escada leste: o degrau antes da elevacao
+_sobe([(24, 47, 25, 47)], 1)                        # a rampa de trilhos que desce da elevacao oeste para o tunel
+_sobe([(38, 25, 49, 36)], 1)                        # o piso da fundicao, um nivel acima do canal...
+for (_x, _y) in CANAL:
+    ALT[(_x, _y)] = 0                               # ...que fica no nivel 0
+
+
+def alt(x, y):
+    return ALT.get((x, y), 0)
+
+
 # ---------------------------------------------------------------- as paredes ----
 PN = [['.'] * W for _ in range(H)]
 PO = [['.'] * W for _ in range(H)]
@@ -293,6 +324,8 @@ def _alcanca(bloqueadas):
             if n in vistas or not (0 <= n[0] < W and 0 <= n[1] < H):
                 continue
             if T[n[1]][n[0]] in 'R|O' or n in bloqueadas or not _passa(x, y, n[0], n[1]):
+                continue
+            if abs(alt(n[0], n[1]) - alt(x, y)) > 1:     # degrau de dois niveis e parede
                 continue
             vistas.add(n)
             fila.append(n)
@@ -483,15 +516,18 @@ for (_x, _y) in FUNGOS:
 for (_x, _y, _tipo) in ((26, 27, 'braseiro'), (9, 9, 'fogueira'), (65, 37, 'chama verde')):
     LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': 30, 'penumbra': 30, 'tipo': 'fogueira'})
 
-# A ROCHA TEM VOLUME: as casas de rocha junto de chao sobem um nivel (um paredao, com a face de penhasco), em vez de
-# um piso azul chapado; o resto da rocha, que ninguem ve, fica no nivel 0.
+# A ROCHA TEM VOLUME: as casas de rocha junto de chao sobem UM nivel acima do chao mais alto que tocam (um paredao, com a
+# face de penhasco), em vez de um piso azul chapado; o resto da rocha, que ninguem ve, fica no nivel 0.
 ALTURA = []
 for _y in range(H):
     _l = ''
     for _x in range(W):
-        _perto = T[_y][_x] == 'R' and any(0 <= _x + _i < W and 0 <= _y + _j < H and T[_y + _j][_x + _i] not in 'R'
-                                           for _i in (-1, 0, 1) for _j in (-1, 0, 1))
-        _l += '1' if _perto else '0'
+        if T[_y][_x] == 'R':
+            _viz = [alt(_x + _i, _y + _j) for _i in (-1, 0, 1) for _j in (-1, 0, 1)
+                    if 0 <= _x + _i < W and 0 <= _y + _j < H and T[_y + _j][_x + _i] != 'R']
+            _l += str(max(_viz) + 1) if _viz else '0'
+        else:
+            _l += str(alt(_x, _y))
     ALTURA.append(_l)
 
 dados = {

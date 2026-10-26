@@ -161,6 +161,8 @@ export const TEXTOS = {
     17: 'Uma passagem baixa, de pouco mais de um metro de teto, entulhada de pedras redondas: o leito de um córrego que secou. Dá para seguir agachado, e é um caminho que contorna os mortos da fundição.',
     20: 'Cortinas empoeiradas nas paredes, uma cama, um braseiro frio e chão de pedra: o quarto do sacerdote do templo, servindo agora de cela.',
   },
+  paredaoNaoSobe: 'A pedra é lisa de baixo a cima, e as mãos não acham onde agarrar. Não é por aqui que se sobe: a escada fica ali ao lado.',
+  paredaoCai: (nome, dano) => `${nome} perde a mão no meio da subida e cai de costas no pé do paredão: ${dano} de pedra no corpo, e o ar some do peito.`,
   portaResiste: 'A porta de pedra aguenta, e o ombro dói.',
   chaveAbre: 'A chave entra na fechadura de primeira, como se tivesse nascido para ela. A porta se abre.',
   escutaNada: 'Pedra grossa, e só. Se há alguém do outro lado, está quieto.',

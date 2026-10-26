@@ -753,6 +753,36 @@ export function criarOndaEco(app) {
         },
       });
     }
+    // O PAREDÃO da grande caverna (área 9): 3 m de elevação, que se sobe pela escada ou escalando (Atletismo CD 12). Quem falha por
+    // 5 ou mais cai: 1d6 de pedra e fica caído, ao pé do paredão.
+    const aqui = enc.field.heightAt(c.pos.x, c.pos.y);
+    const la = enc.field.heightAt(tile.x, tile.y);
+    if (naArea(tile, '9') && la - aqui >= 2 && distanceFt(c.pos, tile) <= 5 && !enc.field.blocksMove(tile.x, tile.y)) {
+      ops.push({
+        rotulo: 'Escalar o paredão', icone: 'acao-saltar', detalhe: 'Atletismo CD 12',
+        motivo: enc.occupied(tile.x, tile.y, c) ? 'tem alguém lá em cima' : buscas.ja(c, 'escalar', tile),
+        fazer: async () => {
+          buscas.marcar(c, 'escalar', tile);
+          const r = teste(c, 'atletismo', 12);
+          if (r.passou) {
+            c.pos = { ...c.pos, x: tile.x, y: tile.y };
+            enc.say('acao', `${c.name} escala o paredão de pedra.`);
+            app.refresh();
+            await depoisDeMover(c);
+            return;
+          }
+          if (r.total <= 12 - 5) {
+            const dano = damageRoll(enc.rng, '1d6').total;
+            enc.applyDamage(c, dano, 'concussão', null, {});
+            addCondition(c, 'caido');
+            await painel(TEXTOS.paredaoCai(c.name, dano), { teste: r });
+          } else {
+            await painel(TEXTOS.paredaoNaoSobe, { teste: r });
+          }
+          app.refresh();
+        },
+      });
+    }
     // O lago escuro (área 10): o mago afogado no fundo.
     if (sup === 'aguaEscura' && naArea(tile, '10') && !salvo.lago) {
       ops.push({
