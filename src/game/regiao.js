@@ -90,6 +90,8 @@ export const LOCAIS = [
   { id: 'conyberry', nome: 'Ruínas de Conyberry', x: 91.5, y: 22.0, missao: 'agatha', jogavel: true },
   { id: 'arvoreTrovao', nome: 'Árvore Trovão', x: 32.4, y: 38.3, missao: 'reidoth', jogavel: true },
   { id: 'castelo', nome: 'Castelo Dentefino', x: 51.9, y: 43.3, feito: 'sabeOCastelo', jogavel: true },
+  // A Caverna Onda Eco: a 25 km a leste de Phandalin, nos vales das Montanhas Espada. Aparece quando alguém conta onde fica.
+  { id: 'ondaEco', nome: 'Caverna Onda Eco', x: 74.0, y: 69.5, feito: 'sabeOndaEco', jogavel: true },
   { id: 'neverwinter', nome: 'Neverwinter', x: 14.5, y: 30.8, sempre: true, cidade: true },
   { id: 'leilon', nome: 'Leilon', x: 39.0, y: 89.0, sempre: true, cidade: true },
 ];
@@ -249,6 +251,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (l.id === 'arvoreTrovao') {
       feitos.visitou_arvoreTrovao = true;
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'arvoreTrovao', continuarCom: vivos() });
+      return;
+    }
+    if (l.id === 'ondaEco') {
+      feitos.visitou_ondaEco = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'ondaEco', continuarCom: vivos() });
       return;
     }
     if (l.id === 'cume') {

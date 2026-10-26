@@ -97,7 +97,7 @@ def _componentes(celulas):
 
 
 # AJUSTES A MAO sobre a leitura automatica (casas que a textura erra), em retangulos x0,y0,x1,y1.
-ACRESCENTA = []
+ACRESCENTA = [(15, 67, 18, 68), (52, 19, 53, 20), (30, 3, 30, 5)]
 TIRA = [(58, 4, 65, 9), (26, 76, 29, 76), (42, 76, 44, 76), (46, 81, 46, 82), (70, 38, 70, 38), (70, 45, 70, 49), (69, 59, 69, 59)]
 CHAO |= retangulos(ACRESCENTA)
 CHAO -= retangulos(TIRA)
@@ -162,7 +162,7 @@ for _y in range(10, 20):
 FOSSO = set()          # o abismo da area 18, o fosso da entrada (area 1)
 FOSSO |= retangulos([(12, 73, 13, 74)])
 # A fenda da caverna desmoronada (area 18): 6 m de fundo, com cordas atadas na borda oeste (27..30, 9..11).
-FOSSO |= {c for c in retangulos([(31, 2, 35, 12)]) if c in CHAO}
+FOSSO |= {c for c in retangulos([(31, 5, 35, 12)]) if c in CHAO}
 CANAL = retangulos([(41, 31, 46, 34)])    # o canal seco da fundicao, 1,5 m abaixo do piso
 FUNGOS = {(x, y) for (x, y) in CHAO
           if COR[y][x][1] - COR[y][x][2] >= 25 and COR[y][x][1] >= 50 and (x, y) not in SALA_DE}
@@ -366,6 +366,105 @@ for _c, _id in AREA_DE.items():
 for _id in AREAS:
     AREAS[_id].sort(key=lambda c: (c['y'], c['x']))
 
+# ---------------------------------------------------------------- os bandos ----
+# Onde cada bando nasce. Toda vaga e chao livre (sem peca) e ALCANCAVEL do grupo; as Grandes (aranhas, gosma)
+# tem as quatro casas de que precisam, sem aresta de parede cortando a pegada.
+_LIVRE = {(x, y) for y in range(H) for x in range(W) if T[y][x] in '`<"[;'}
+_ALC = _alcanca(set())
+_pequena = [c for c in _componentes(set(CHAO)) if len(c) < 2000 and len(c) > 100]
+if _pequena:
+    _ps = sorted(_pequena[0])
+    print('componente solto: de', _ps[0], 'a', _ps[-1], '| quadro y', min(c[1] for c in _ps), max(c[1] for c in _ps), 'x', min(c[0] for c in _ps), max(c[0] for c in _ps))
+    _grande = [c for c in _componentes(set(CHAO)) if len(c) > 2000][0]
+    _melhor = min(((abs(a[0] - b[0]) + abs(a[1] - b[1]), a, b) for a in _ps for b in _grande))
+    print('mais perto do resto:', _melhor)
+print('alcancaveis a partir da chegada:', len(_ALC), 'de', len(_LIVRE), '| componentes do chao:', sorted((len(c) for c in _componentes(set(CHAO))), reverse=True)[:8])
+
+
+def _livres(cels):
+    return sorted(c for c in cels if c in _LIVRE and c in _ALC)
+
+
+def _espalha(cels, n, ancora=None):
+    """`n` casas espalhadas (a cada passo, a mais longe das ja escolhidas); a primeira e a mais perto da ancora."""
+    cands = _livres(cels)
+    if len(cands) < n:
+        raise SystemExit('ERRO: so ha ' + str(len(cands)) + ' vaga(s) para ' + str(n))
+    if ancora is None:
+        ancora = cands[len(cands) // 2]
+    esc = [min(cands, key=lambda c: (c[0] - ancora[0]) ** 2 + (c[1] - ancora[1]) ** 2)]
+    while len(esc) < n:
+        esc.append(max((c for c in cands if c not in esc),
+                       key=lambda c: min((c[0] - e[0]) ** 2 + (c[1] - e[1]) ** 2 for e in esc)))
+    return esc
+
+
+def _perto(ancora, n, raio=6):
+    cs = [(ancora[0] + i, ancora[1] + j) for i in range(-raio, raio + 1) for j in range(-raio, raio + 1)]
+    cs = _livres(cs)
+    cs.sort(key=lambda c: ((c[0] - ancora[0]) ** 2 + (c[1] - ancora[1]) ** 2, c))
+    if len(cs) < n:
+        raise SystemExit('ERRO: nada livre perto de ' + str(ancora))
+    return cs[:n]
+
+
+def _grandes(cels, n, ancora):
+    """`n` blocos 2 x 2 livres (e sem parede no meio), o primeiro perto da ancora."""
+    ok = []
+    for (x, y) in sorted(cels):
+        bl = [(x + i, y + j) for j in (0, 1) for i in (0, 1)]
+        if not all(b in _LIVRE and b in _ALC for b in bl):
+            continue
+        if not (_passa(x, y, x + 1, y) and _passa(x, y + 1, x + 1, y + 1) and _passa(x, y, x, y + 1) and _passa(x + 1, y, x + 1, y + 1)):
+            continue
+        ok.append((x, y))
+    if len(ok) < n:
+        raise SystemExit('ERRO: so ha ' + str(len(ok)) + ' bloco(s) 2 x 2')
+    ok.sort(key=lambda c: (c[0] - ancora[0]) ** 2 + (c[1] - ancora[1]) ** 2)
+    esc = [ok[0]]
+    while len(esc) < n:
+        esc.append(max((c for c in ok if c not in esc and all(abs(c[0] - e[0]) + abs(c[1] - e[1]) >= 3 for e in esc)),
+                       key=lambda c: min((c[0] - e[0]) ** 2 + (c[1] - e[1]) ** 2 for e in esc)))
+    return esc
+
+
+def _area(i):
+    return {(c['x'], c['y']) for c in AREAS[i]}
+
+
+print('areas alcancaveis:', {k: str(len([c for c in v if (c['x'], c['y']) in _ALC])) + '/' + str(len(v)) for k, v in sorted(AREAS.items(), key=lambda kv: int(kv[0]))})
+_isoladas = _componentes({c for c in _LIVRE if c not in _ALC})
+for _comp in sorted(_isoladas, key=len, reverse=True)[:3]:
+    if len(_comp) < 8:
+        continue
+    _m = min(((abs(a[0] - b[0]) + abs(a[1] - b[1]), a, b) for a in _comp for b in _ALC))
+    print('ilha de', len(_comp), 'casas, x', min(c[0] for c in _comp), max(c[0] for c in _comp), 'y', min(c[1] for c in _comp), max(c[1] for c in _comp), '| a mais perto do resto:', _m)
+_a3 = _area('3')
+_a9_oeste = {c for c in _area('9') if c[0] <= 31}
+NINHOS = {
+    'stirges': _espalha(_a3, 10),                                   # area 3: pendurados no teto
+    'esqueletos': _espalha(_area('4'), 9),                          # area 4: os ossos da guarita
+    'ghoulsSul': _espalha(_area('6'), 3),                           # area 6: roendo ossos
+    'ghoulsGrande': _espalha(_a9_oeste, 7),                         # area 9: na elevacao oeste
+    'gosma': _grandes(_area('2'), 1, (12, 56)),                     # area 2: nos tuneis
+    'bugbearsNorte': _espalha(INTERIOR['alojNorte'], 5),            # area 11
+    'zumbis': _espalha(_area('12'), 8),                             # area 12
+    'caveira': _perto((44, 29), 1),                                 # area 12: a caveira flamejante, sobre os mortos
+    'mormesk': _perto((67, 54), 1),                                 # area 14: surge do chao
+    'espectador': _perto((66, 38), 1),                              # area 15: atras do braseiro
+    'bugbearsFenda': _perto((30, 7), 1) + _perto((30, 14), 1),      # area 18: sobem pelas cordas
+    'bugbearGuarda': _perto((24, 10), 1),
+    'vhalak': _perto((26, 13), 1),                                  # area 18: o doppelganger, de drow
+    'nezznar': _perto((7, 9), 1),                                   # area 19
+    'bugbearsTemplo': _perto((6, 9), 2),
+    'aranhasTemplo': _grandes(INTERIOR['templo'], 4, (9, 5)),
+    'nundro': _perto((15, 6), 1),                                   # area 20
+}
+for _k, _v in NINHOS.items():
+    NINHOS[_k] = [{'x': x, 'y': y} for (x, y) in _v]
+print('bandos:', {k: len(v) for k, v in NINHOS.items()})
+
+
 
 # A LUZ: a mina e escura (luz 0); so ha luz onde o livro a poe (braseiros, o acampamento, as chamas verdes).
 L = [[0] * W for _ in range(H)]
@@ -390,6 +489,9 @@ extra = {
     'grupo': [{'x': x, 'y': y} for (x, y) in GRUPO],
     'areas': AREAS,
     'props': PROPS,
+    'ninhos': NINHOS,
+    'folhas': [[{'x': x1, 'y': y1}, {'x': x2, 'y': y2}] for (x1, y1, x2, y2, cod) in PORTAS if cod == '+'],
+    'saida': [{'x': x, 'y': y} for (x, y) in sorted(CHAO) if y >= 87 and x <= 8],
     'salas': {n: [{'x': x, 'y': y} for (x, y) in sorted(cs)] for n, cs in INTERIOR.items()},
 }
 saida = RAIZ / 'src' / 'game' / 'ondaeco.js'

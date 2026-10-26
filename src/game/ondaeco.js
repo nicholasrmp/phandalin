@@ -193,9 +193,9 @@ export const MAPA_ONDA_ECO = {
  "terreno": [
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<<<<<<<<<<<<RRRRRRRRRRRRRRRRRORRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<$<<^<<<$<<^<<RRRRRRRRRR``ROOOOO`R`````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<<<<<<<<<<<<<<RRRRRRRRRRRR`RRRR`RRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<$<<^<<<$<<^<<RRRRRRRRRR`````````R`````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<^<<<<<<^<&<<<^<RRRRRRRR```OOOOO````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<<<<<<<RR`R``````ROOOOO`````````RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR&<<<<<<<<^<<<<<&```````````OOOOO``RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -211,7 +211,7 @@ export const MAPA_ONDA_ECO = {
   "RRR`````````````````````````````RRRRRR`````RRRRRRRR\"\"||||RRRR||RRRRRRRRRR",
   "RRRR````````````````````````````RRRRR`````````RRRRR|\"|||||R|||RRRRRRRRRRR",
   "RRRRRRRRR``RR````````RRR``````RRRRRR``````````RRRRRR\"|||||||||RRRRRRRRRRR",
-  "RRRRRRRRRRRRRRR`RR```RRR`R`````RRRRR``````````RRRRRRR\"\"\"|||||\"\"\"RRRRRRRRR",
+  "RRRRRRRRRRRRRRR`RR```RRR`R`````RRRRR``````````RRRRRR|\"\"\"|||||\"\"\"RRRRRRRRR",
   "RRRRRRR|||||||R`RR``RRRRRRR``RRRRRRR`````````RRRRRRRRR\"\"\"\"\"\"\"\"\"|\"\"RRRRRRR",
   "RRRRRRR|||||||\"`RR``RRRRRRRRRRRRRRRR``````````RRRRRRRR|\"`\"\"\"\"\"\"\"\"|RRRRRRR",
   "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````````RRRRRRRRR\"`\"|\"|\"``\"\"\"|RRRRR",
@@ -242,7 +242,7 @@ export const MAPA_ONDA_ECO = {
   "RRRRR``````RRR````````RRRRRRRRRRRRR`R```````R`````RRRRR`````````RRRRRRRRR",
   "RRRRR``````RR`````````RR``RRRRRRRRRRR`&``````R`RRRRRRR``````````<<<^<<RRR",
   "RRRRRRR`````R```RRRR``R```RR``RRRRRRRR&``````RRRRRRRR`````R`````<<<<<<RRR",
-  "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<u<uu<RR````R`````<<<<^<RRR",
+  "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<u<uu<RR````R`````<<<<K<RRR",
   "RRRRRRR``````````R`````````R```RRR<<RRRRRR```R<<<<<<RR```R`R````<<<^<<RRR",
   "RRRRR``````````````````````````RRR<<^<^<RR``RR^<<<<<RR``````````<<<<<<RRR",
   "RRRRR``````RRR```````````````````R<<<<<&RR``RR<<<<<uRRR````````R<<<<^<RRR",
@@ -258,11 +258,11 @@ export const MAPA_ONDA_ECO = {
   "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR```;;;;;;;;;^;`RRRRRR",
   "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR````;;;;;;;;;;`RRRRRR",
   "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR``;;;;;;^^^;;;;``RRRR",
-  "RRRRRRRRRRRRRRRR`````RRRRRR````````````R``RR`RRRR````;;;;;;;;;;;;;;^``RRR",
-  "RRRRRRRRRRRRRRRRRR````RRRRR````RRRRR```RRRRRRRRR`````;``;;;;;;`;;;;;;`RRR",
+  "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR````;;;;;;;;;;;;;;^``RRR",
+  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR`````;``;;;;;;`;;;;;;`RRR",
   "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR````````````^;;;;;;;^;```RRR",
   "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;`;;;;;^`RRRRR",
-  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`^```;;;;;^`RRRR",
+  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`````;;;;;^`RRRR",
   "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR``;;;;`RRRR",
   "RRRRRRRRR```OO``````RRRR`````````````&`````RRRRRRRRRRRRRRRRRRRRR``^``RRRR",
   "RRRRRRRRR```OO````````RRRRRRRR``````&``&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -3539,11 +3539,19 @@ export const ONDA_ECO = {
   ],
   "18": [
    {
+    "x": 30,
+    "y": 3
+   },
+   {
     "x": 28,
     "y": 4
    },
    {
     "x": 29,
+    "y": 4
+   },
+   {
+    "x": 30,
     "y": 4
    },
    {
@@ -6145,6 +6153,10 @@ export const ONDA_ECO = {
     "y": 66
    },
    {
+    "x": 15,
+    "y": 67
+   },
+   {
     "x": 16,
     "y": 67
    },
@@ -6163,6 +6175,18 @@ export const ONDA_ECO = {
    {
     "x": 20,
     "y": 67
+   },
+   {
+    "x": 15,
+    "y": 68
+   },
+   {
+    "x": 16,
+    "y": 68
+   },
+   {
+    "x": 17,
+    "y": 68
    },
    {
     "x": 18,
@@ -11694,12 +11718,6 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 68,
-   "y": 51,
-   "variante": "estante"
-  },
-  {
-   "tipo": "prop",
-   "x": 68,
    "y": 54,
    "variante": "estante"
   },
@@ -11839,12 +11857,6 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 66,
    "y": 73,
-   "variante": "cogumeloGigante"
-  },
-  {
-   "tipo": "prop",
-   "x": 58,
-   "y": 71,
    "variante": "cogumeloGigante"
   },
   {
@@ -12074,6 +12086,494 @@ export const ONDA_ECO = {
    "x": 43,
    "y": 80,
    "variante": "balcaoAvaliador"
+  }
+ ],
+ "ninhos": {
+  "stirges": [
+   {
+    "x": 37,
+    "y": 71
+   },
+   {
+    "x": 39,
+    "y": 85
+   },
+   {
+    "x": 30,
+    "y": 64
+   },
+   {
+    "x": 42,
+    "y": 64
+   },
+   {
+    "x": 30,
+    "y": 74
+   },
+   {
+    "x": 38,
+    "y": 78
+   },
+   {
+    "x": 36,
+    "y": 65
+   },
+   {
+    "x": 42,
+    "y": 73
+   },
+   {
+    "x": 30,
+    "y": 69
+   },
+   {
+    "x": 34,
+    "y": 76
+   }
+  ],
+  "esqueletos": [
+   {
+    "x": 30,
+    "y": 83
+   },
+   {
+    "x": 26,
+    "y": 77
+   },
+   {
+    "x": 35,
+    "y": 80
+   },
+   {
+    "x": 26,
+    "y": 82
+   },
+   {
+    "x": 31,
+    "y": 79
+   },
+   {
+    "x": 35,
+    "y": 84
+   },
+   {
+    "x": 28,
+    "y": 79
+   },
+   {
+    "x": 33,
+    "y": 82
+   },
+   {
+    "x": 29,
+    "y": 77
+   }
+  ],
+  "ghoulsSul": [
+   {
+    "x": 36,
+    "y": 60
+   },
+   {
+    "x": 34,
+    "y": 51
+   },
+   {
+    "x": 39,
+    "y": 55
+   }
+  ],
+  "ghoulsGrande": [
+   {
+    "x": 27,
+    "y": 41
+   },
+   {
+    "x": 24,
+    "y": 52
+   },
+   {
+    "x": 24,
+    "y": 34
+   },
+   {
+    "x": 31,
+    "y": 36
+   },
+   {
+    "x": 30,
+    "y": 52
+   },
+   {
+    "x": 24,
+    "y": 46
+   },
+   {
+    "x": 30,
+    "y": 46
+   }
+  ],
+  "gosma": [
+   {
+    "x": 10,
+    "y": 56
+   }
+  ],
+  "bugbearsNorte": [
+   {
+    "x": 27,
+    "y": 23
+   },
+   {
+    "x": 22,
+    "y": 30
+   },
+   {
+    "x": 31,
+    "y": 30
+   },
+   {
+    "x": 22,
+    "y": 24
+   },
+   {
+    "x": 26,
+    "y": 28
+   }
+  ],
+  "zumbis": [
+   {
+    "x": 43,
+    "y": 33
+   },
+   {
+    "x": 49,
+    "y": 25
+   },
+   {
+    "x": 38,
+    "y": 25
+   },
+   {
+    "x": 49,
+    "y": 36
+   },
+   {
+    "x": 38,
+    "y": 36
+   },
+   {
+    "x": 43,
+    "y": 27
+   },
+   {
+    "x": 48,
+    "y": 31
+   },
+   {
+    "x": 38,
+    "y": 30
+   }
+  ],
+  "caveira": [
+   {
+    "x": 44,
+    "y": 29
+   }
+  ],
+  "mormesk": [
+   {
+    "x": 67,
+    "y": 54
+   }
+  ],
+  "espectador": [
+   {
+    "x": 66,
+    "y": 38
+   }
+  ],
+  "bugbearsFenda": [
+   {
+    "x": 30,
+    "y": 7
+   },
+   {
+    "x": 30,
+    "y": 14
+   }
+  ],
+  "bugbearGuarda": [
+   {
+    "x": 24,
+    "y": 10
+   }
+  ],
+  "vhalak": [
+   {
+    "x": 26,
+    "y": 13
+   }
+  ],
+  "nezznar": [
+   {
+    "x": 6,
+    "y": 9
+   }
+  ],
+  "bugbearsTemplo": [
+   {
+    "x": 6,
+    "y": 9
+   },
+   {
+    "x": 6,
+    "y": 8
+   }
+  ],
+  "aranhasTemplo": [
+   {
+    "x": 9,
+    "y": 5
+   },
+   {
+    "x": 8,
+    "y": 14
+   },
+   {
+    "x": 13,
+    "y": 9
+   },
+   {
+    "x": 5,
+    "y": 6
+   }
+  ],
+  "nundro": [
+   {
+    "x": 15,
+    "y": 6
+   }
+  ]
+ },
+ "folhas": [
+  [
+   {
+    "x": 8,
+    "y": 14
+   },
+   {
+    "x": 8,
+    "y": 15
+   }
+  ],
+  [
+   {
+    "x": 9,
+    "y": 14
+   },
+   {
+    "x": 9,
+    "y": 15
+   }
+  ],
+  [
+   {
+    "x": 15,
+    "y": 8
+   },
+   {
+    "x": 15,
+    "y": 9
+   }
+  ],
+  [
+   {
+    "x": 16,
+    "y": 8
+   },
+   {
+    "x": 16,
+    "y": 9
+   }
+  ],
+  [
+   {
+    "x": 21,
+    "y": 27
+   },
+   {
+    "x": 22,
+    "y": 27
+   }
+  ],
+  [
+   {
+    "x": 31,
+    "y": 27
+   },
+   {
+    "x": 32,
+    "y": 27
+   }
+  ],
+  [
+   {
+    "x": 67,
+    "y": 34
+   },
+   {
+    "x": 67,
+    "y": 35
+   }
+  ],
+  [
+   {
+    "x": 68,
+    "y": 34
+   },
+   {
+    "x": 68,
+    "y": 35
+   }
+  ],
+  [
+   {
+    "x": 65,
+    "y": 32
+   },
+   {
+    "x": 66,
+    "y": 32
+   }
+  ],
+  [
+   {
+    "x": 63,
+    "y": 51
+   },
+   {
+    "x": 64,
+    "y": 51
+   }
+  ],
+  [
+   {
+    "x": 63,
+    "y": 52
+   },
+   {
+    "x": 64,
+    "y": 52
+   }
+  ],
+  [
+   {
+    "x": 65,
+    "y": 52
+   },
+   {
+    "x": 65,
+    "y": 53
+   }
+  ],
+  [
+   {
+    "x": 33,
+    "y": 55
+   },
+   {
+    "x": 34,
+    "y": 55
+   }
+  ],
+  [
+   {
+    "x": 37,
+    "y": 62
+   },
+   {
+    "x": 37,
+    "y": 63
+   }
+  ],
+  [
+   {
+    "x": 48,
+    "y": 56
+   },
+   {
+    "x": 48,
+    "y": 57
+   }
+  ],
+  [
+   {
+    "x": 35,
+    "y": 81
+   },
+   {
+    "x": 36,
+    "y": 81
+   }
+  ],
+  [
+   {
+    "x": 35,
+    "y": 82
+   },
+   {
+    "x": 36,
+    "y": 82
+   }
+  ],
+  [
+   {
+    "x": 41,
+    "y": 82
+   },
+   {
+    "x": 42,
+    "y": 82
+   }
+  ]
+ ],
+ "saida": [
+  {
+   "x": 4,
+   "y": 89
+  },
+  {
+   "x": 5,
+   "y": 87
+  },
+  {
+   "x": 5,
+   "y": 88
+  },
+  {
+   "x": 5,
+   "y": 89
+  },
+  {
+   "x": 6,
+   "y": 87
+  },
+  {
+   "x": 6,
+   "y": 88
+  },
+  {
+   "x": 6,
+   "y": 89
+  },
+  {
+   "x": 7,
+   "y": 87
+  },
+  {
+   "x": 8,
+   "y": 87
   }
  ],
  "salas": {

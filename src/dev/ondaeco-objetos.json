@@ -555,12 +555,6 @@
   {
    "v": "estante",
    "x": 68,
-   "y": 51,
-   "n": "estante/armario escuro na parede leste"
-  },
-  {
-   "v": "estante",
-   "x": 68,
    "y": 54,
    "n": "estante escura na parede leste"
   },
@@ -965,6 +959,12 @@
    "x": 43,
    "y": 80,
    "n": "o balcao dos avaliadores (area 5)"
+  },
+  {
+   "v": "bau",
+   "x": 68,
+   "y": 51,
+   "n": "o bau de ferro chamuscado dos aposentos dos magos (area 14)"
   }
  ]
 }

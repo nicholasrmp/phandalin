@@ -15,9 +15,9 @@ import * as B from './base.mjs';
 import { paineis } from './stub-narrativa.mjs';
 import { jogador } from './jogador.mjs';
 const P = new URL('../../', import.meta.url).href;
-const { criarArvoreTrovao } = await import(P + 'game/capitulo4-arvoretrovao.js');
+const { criarArvoreTrovao } = B.ONDA ? { criarArvoreTrovao: (await import(P + 'game/capitulo5-ondaeco.js')).criarOndaEco } : await import(P + 'game/capitulo4-arvoretrovao.js');
 const { Battlefield, distanceFt } = B;
-const A = B.ARVORE_TROVAO;
+const A = B.ONDA ? B.ONDA_ECO : B.ARVORE_TROVAO;
 export { B, A, paineis };
 globalThis.__preferir = 'luta';
 

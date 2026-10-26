@@ -25,10 +25,13 @@ export const Luz = await import(P + 'rules/luz.js');
 export const { mapaDo } = await import(P + 'game/encounter.js');
 export const { playCharacter } = await import(P + 'dev/balance.js');
 export const { ARVORE_TROVAO, MAPA_ARVORE_TROVAO } = await import(P + 'game/arvoretrovao.js');
+// ALVO=ondaEco: o mesmo harness mede a Caverna Onda Eco (`game/ondaeco.js`).
+export const ONDA = process.env.ALVO === 'ondaEco';
+export const { ONDA_ECO } = await import(P + 'game/ondaeco.js');
 export const { passivePerception } = await import(P + 'rules/abilities.js');
 
 export function montarCampo() {
-  const mapa = mapaDo('arvoreTrovao');
+  const mapa = mapaDo(ONDA ? 'ondaEco' : 'arvoreTrovao');
   const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
     mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
   if (mapa.luz) {
@@ -40,6 +43,6 @@ export function montarCampo() {
   }
   // a cena faz isto:
   const CH = (a, b) => `${a.x},${a.y},${b.x},${b.y}`;
-  field.folha = new Set((ARVORE_TROVAO.folhas ?? []).flatMap(([a, b]) => [CH(a, b), CH(b, a)]));
+  field.folha = new Set(((ONDA ? ONDA_ECO : ARVORE_TROVAO).folhas ?? []).flatMap(([a, b]) => [CH(a, b), CH(b, a)]));
   return { mapa, field };
 }
