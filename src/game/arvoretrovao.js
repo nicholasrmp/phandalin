@@ -330,12 +330,12 @@ export const MAPA_ARVORE_TROVAO = {
     "TT,,,,,,,,,,,,,,,T,,b,,,:,,,,::::ZZ,,,,,bb,,,:,,,,,,,,,,,ZZZZZZZZZ,,,,b,,,,SSSSSSSSSy,,,TTb",
     "TT,,,,,,,,,,,,,,,,bLLLL,:,,,,,,,,ZZTTTTTTT,,,b:::,,,,,,ZZ,ZZZZZAZZ:,^LL,,,,SSSSSSSSS,,,,,bb",
     "TT,,,,,,,,,,,,,,,,,L^LL,::,,,,,,,,ZZTTTTTTTTbTb::b,,b,&LL,ZZZqZZZZ:,LLLb,,ySSSSSSSSST,,,,TT",
-    "TT,,,,,,,,,,,,,,,,,dLLL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,LLLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
+    "TT,,,,,,,,,,,,,,,,,dLLL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,^LLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
     "TT,,,,,,,,,,,,,,b,,g^Lj,,::,,b,,,,,::,bTbTTTTb:::bTTT,dLLZZZZZ,ZZ:::LL^,,,,TSSSSSSSSSy,,TTT",
-    "TT,,,,,,,,,,,,,TTT,,,,,,,LLL^^,LLLLL:,,bTTb,::::TbbTT,,b,,ZZZL,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
+    "TT,,,,,,,,,,,,,TTT,,,,,,,LL^^^,LLLLL:,,bTTb,::::TbbTT,,b,,ZZZL,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
     "TT,,,,,,,,,,,,bTTT,,,,b,,LxxLL,LLLLL::,,TT,:::TTTTTTTb,,b,ZZZLL,,:,,,%%%,,,TSSSSSSSSSb,,TTT",
     "bT,,,,,,,,,,,bTTTT,,,,,,,LLLLj,L^&jL::,,TTT,::Tb,TTTb,,,b:::,LdLL:%,bb%%,,,TSSSSSSSSTb,,TTT",
-    "TT,,,,,,,,,,,TTTTT,,,,,,,LLLLj,L^zjL::,,TTTTT,:::::TT,,b,::,,LL^L:%Z%%%%,,,TSSSSSSSST,,,TTT",
+    "TT,,,,,,,,,,,TTTTT,,,,,,,LLLLj,L^zjL::,,TTTTT,:::::TT,,b,::,,LL^^:%Z%%%%,,,TSSSSSSSST,,,TTT",
     "TTb,,,,,,,,,,TTTTTTTTTTbb,,,,,,uLLdL,:,,TTTTbTTT:::,TT,:::,,,jL,,:ZZZ:%Tb,,,ySSSSSS,Tb,,bbT",
     "TT,,,,,,,,,,,TTTTTTTTTTT,,,,,,,LdLL^,::,TTTTTTTTT,:,Tb:::,bbb^L,:,:%%::TT,,,yyyyyyyyb,,,bTT",
     "TTT,,,,,,,,,,TTTTTTTTTTTb,,,,,,,,,,,b::ZZb,TTT,T::,Tb:::,bTb,,bb,:%%%%::,,,,,,::::,,,,,,bTT",
@@ -656,19 +656,15 @@ export const ARVORE_TROVAO = {
   "ninhos": {
     "infectados": [
       {
-        "x": 67,
+        "x": 68,
         "y": 33
       },
       {
-        "x": 72,
+        "x": 64,
         "y": 30
       },
       {
         "x": 72,
-        "y": 36
-      },
-      {
-        "x": 64,
         "y": 30
       },
       {
@@ -676,11 +672,15 @@ export const ARVORE_TROVAO = {
         "y": 36
       },
       {
-        "x": 68,
+        "x": 72,
+        "y": 36
+      },
+      {
+        "x": 67,
         "y": 30
       },
       {
-        "x": 71,
+        "x": 65,
         "y": 33
       }
     ],
@@ -914,15 +914,15 @@ export const ARVORE_TROVAO = {
     {
       "tipo": "prop",
       "x": 66,
-      "y": 15,
-      "variante": "cubaCerveja",
-      "espelhar": true
+      "y": 21,
+      "variante": "cubaCerveja"
     },
     {
       "tipo": "prop",
       "x": 66,
-      "y": 21,
-      "variante": "barrisRack"
+      "y": 20,
+      "variante": "barrisRack",
+      "espelhar": true
     },
     {
       "tipo": "prop",
@@ -940,8 +940,8 @@ export const ARVORE_TROVAO = {
     {
       "tipo": "prop",
       "x": 66,
-      "y": 20,
-      "variante": "beliche",
+      "y": 15,
+      "variante": "prateleira",
       "espelhar": true
     },
     {
@@ -954,8 +954,14 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 20,
       "y": 29,
-      "variante": "armario",
+      "variante": "beliche",
       "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 27,
+      "y": 30,
+      "variante": "lousa"
     },
     {
       "tipo": "prop",
@@ -997,8 +1003,21 @@ export const ARVORE_TROVAO = {
     {
       "tipo": "prop",
       "x": 54,
+      "y": 28,
+      "variante": "mo"
+    },
+    {
+      "tipo": "prop",
+      "x": 54,
       "y": 27,
       "variante": "baldeBanco"
+    },
+    {
+      "tipo": "prop",
+      "x": 64,
+      "y": 33,
+      "variante": "mesaPosta",
+      "espelhar": true
     },
     {
       "tipo": "prop",
@@ -1136,7 +1155,7 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 64,
       "y": 46,
-      "variante": "roca"
+      "variante": "tear"
     },
     {
       "tipo": "prop",

@@ -925,9 +925,13 @@ for pid, cs in INTERIOR.items():
     tema = TEMA_PROP.get(pid, TEMA_PROP['casa'])
     for _v in ASSINATURA.get(pid, []):
         _posta = False
-        for _rigor in (1, 0):
+        # Do mais rigoroso (encostada, fora da sombra da parede) ao mais frouxo (qualquer piso, ou
+        # no lugar de um movel antigo): a assinatura TEM de sair, so o jeito muda.
+        for _rigor in (2, 1, 0):
             for (x, y) in sorted(cs, key=lambda c: _embaralha(c[0], c[1], 83 + _rigor)):
-                if T[y][x] not in 'Ldvj' or _junto_de_vao(x, y) or _tapado(x, y) or (_rigor and not _encosta(x, y)):
+                if _junto_de_vao(x, y) or (_rigor >= 1 and _tapado(x, y)) or (_rigor == 2 and not _encosta(x, y)):
+                    continue
+                if T[y][x] not in ('Ldvj' if _rigor else 'Ldvjmiusz'):
                     continue
                 _antes = T[y][x]
                 _jatem = _USADAS.get(pid, {}).get(_v, 0) > 0
