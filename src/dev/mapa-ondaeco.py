@@ -1,0 +1,326 @@
+# Gera `src/game/ondaeco.js`: a Caverna Onda Eco (Parte 4 da aventura).
+#
+#   python src/dev/mapa-ondaeco.py
+#
+# O MAPA VEM PRONTO, e na nossa grade: `WaveEchoCave_Grid_73x90_200ppi.jpg` tem 73 x 90
+# quadrados de 5 pes a 200 px cada, exatamente as casas do jogo (a Arvore Trovao tinha
+# quadrados de 10 pes e foi preciso medir a escala). A imagem fica em `_referencias/ondaeco/`
+# (pasta ignorada pelo git), junto com as variantes por sala (portas, braseiros, o acampamento).
+#
+# COMO O TERRENO SAI DA IMAGEM:
+#   - o CHAO DA CAVERNA e lido da textura: o fundo da rocha e preto liso, o chao tem pedra
+#     e rachadura. Uma casa e chao se 50% ou mais dos blocos de 25 px dela tem textura;
+#   - as SALAS de pedra lavrada (templo, alojamentos, fundicao, guarita...) estao declaradas
+#     aqui, em casas, lidas da imagem e conferidas contra os recortes `Grid/*.jpg` (cada
+#     recorte tem o nome da sala e cai numa posicao exata da grade, achada por correlacao);
+#   - a AGUA, o abismo, o canal e os fungos sao regioes declaradas aqui (a cor sozinha
+#     confunde agua escura com chao escuro).
+#   - as PAREDES sao de borda (como no castelo e em Arvore Trovao): toda aresta entre uma sala
+#     e o que nao e dela vira parede, e as PORTAS e ARCOS abrem nela onde o recorte mostra.
+#
+# AS AREAS DO LIVRO (1 a 20) estao em `AREAS`, em retangulos de casas: a cena (`game/capitulo5-
+# ondaeco.js`) as usa para os gatilhos, sem escrever coordenada.
+
+import json
+import math
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+
+Image.MAX_IMAGE_PIXELS = None
+RAIZ = Path(__file__).resolve().parents[2]
+IMG = RAIZ / '_referencias' / 'ondaeco' / 'WaveEchoCave_Grid_73x90_200ppi.jpg'
+CACHE = RAIZ / '_trabalho' / 'oe_tex.npy'
+W, H = 73, 90
+
+
+def textura():
+    """Por casa, a fracao de blocos de 25 px com textura e luz: o chao (1) contra o vazio (0)."""
+    if CACHE.exists():
+        return np.load(CACHE)
+    g = np.asarray(Image.open(IMG).convert('L')).astype(np.float32)
+    b = 25
+    h, w = g.shape
+    blk = g.reshape(h // b, b, w // b, b)
+    tex = (blk.std(axis=(1, 3)) >= 5) & (blk.mean(axis=(1, 3)) >= 14)
+    t = tex.reshape(H, 8, W, 8).mean(axis=(1, 3))
+    CACHE.parent.mkdir(exist_ok=True)
+    np.save(CACHE, t)
+    return t
+
+
+def cores():
+    """Cor media por casa (para separar a agua da rocha nas margens do lago do nordeste)."""
+    cache = RAIZ / '_trabalho' / 'oe_mean.npy'
+    if cache.exists():
+        return np.load(cache)
+    a = np.asarray(Image.open(IMG).convert('RGB')).astype(np.float32)
+    m = a.reshape(H, 200, W, 200, 3).mean(axis=(1, 3))
+    np.save(cache, m)
+    return m
+
+
+TEX = textura()
+COR = cores()
+
+
+def retangulos(lista):
+    out = set()
+    for (x0, y0, x1, y1) in lista:
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if 0 <= x < W and 0 <= y < H:
+                    out.add((x, y))
+    return out
+
+
+# ------------------------------------------------------------ o chao da caverna ----
+CHAO = {(x, y) for y in range(H) for x in range(W) if TEX[y][x] >= 0.5}
+
+
+def _componentes(celulas):
+    resto, saida = set(celulas), []
+    while resto:
+        c = resto.pop()
+        fila, comp = [c], {c}
+        while fila:
+            x, y = fila.pop()
+            for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if n in resto:
+                    resto.discard(n)
+                    comp.add(n)
+                    fila.append(n)
+        saida.append(comp)
+    return saida
+
+
+# AJUSTES A MAO sobre a leitura automatica (casas que a textura erra), em retangulos x0,y0,x1,y1.
+ACRESCENTA = []
+TIRA = []
+CHAO |= retangulos(ACRESCENTA)
+CHAO -= retangulos(TIRA)
+for _comp in _componentes(CHAO):
+    if len(_comp) < 5:
+        CHAO -= _comp
+
+# ------------------------------------------------------------------ as salas ----
+# Interior de cada sala, em retangulos (x0, y0, x1, y1) inclusivos, menos `tira`.
+SALAS = {
+    'templo': {'r': [(4, 3, 13, 14)]},
+    'sacerdote': {'r': [(14, 3, 19, 8)], 'tira': [(18, 3, 19, 4)]},
+    'alojNorte': {'r': [(22, 23, 31, 30)]},
+    'fundicao': {'r': [(38, 25, 49, 36)]},
+    'forjaOficina': {'r': [(66, 31, 69, 34)]},
+    'forja': {'r': [(62, 35, 69, 40), (62, 33, 65, 34)]},
+    'magoA': {'r': [(64, 49, 69, 52)]},
+    'magoB': {'r': [(64, 53, 69, 56)]},
+    'magoC': {'r': [(64, 57, 69, 58)]},
+    'alojSul': {'r': [(34, 53, 39, 62), (34, 51, 35, 52)]},
+    'deposito': {'r': [(46, 51, 51, 56)]},
+    'guarita': {'r': [(26, 77, 29, 82), (30, 79, 35, 84), (28, 83, 29, 84)]},
+    'avaliadores': {'r': [(42, 77, 45, 84)]},
+}
+INTERIOR = {}
+for _nome, _d in SALAS.items():
+    INTERIOR[_nome] = retangulos(_d['r']) - retangulos(_d.get('tira', []))
+SALA_DE = {}
+for _nome, _cs in INTERIOR.items():
+    for _c in _cs:
+        SALA_DE[_c] = _nome
+CHAO |= set(SALA_DE)
+# O brilho que contorna cada parede (o "halo" do desenho) tem textura e virava chao em volta das salas:
+# junto de uma sala so conta como chao a casa de textura forte (corredor de verdade).
+for (_x, _y) in list(CHAO):
+    if (_x, _y) in SALA_DE:
+        continue
+    if any((_x + _i, _y + _j) in SALA_DE for _i in (-1, 0, 1) for _j in (-1, 0, 1)) and TEX[_y][_x] < 0.8:
+        CHAO.discard((_x, _y))
+for _comp in _componentes(CHAO):
+    if len(_comp) < 5:
+        CHAO -= _comp
+# Salas sem parede propria: cavernas de piso lavrado, abertas para os lados (a fundicao).
+LIVRES = {'fundicao'}
+
+# -------------------------------------------------- agua, abismo, canal, fungos ----
+AGUA_FUNDA = set()     # lago, poco, mar do nordeste
+# O lago escuro do oeste (area 10): do alto, a margem desce na diagonal para o sul.
+for _y, _xr in zip(range(21, 35), (13, 13, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10, 9)):
+    for _x in range(7, _xr + 1):
+        AGUA_FUNDA.add((_x, _y))
+# O mar do nordeste (area 16): so ficam de chao as margens (a rocha marrom); o resto e agua.
+for _y in range(0, 24):
+    for _x in range(51, W):
+        if (_x, _y) in CHAO and not (COR[_y][_x][0] - COR[_y][_x][2] >= 3 and COR[_y][_x].mean() >= 20):
+            AGUA_FUNDA.add((_x, _y))
+FOSSO = set()          # o abismo da area 18, o fosso da entrada (area 1)
+FOSSO |= retangulos([(12, 73, 13, 74)])
+CANAL = retangulos([(41, 31, 46, 34)])    # o canal seco da fundicao, 1,5 m abaixo do piso
+FUNGOS = {(x, y) for (x, y) in CHAO
+          if COR[y][x][1] - COR[y][x][2] >= 25 and COR[y][x][1] >= 50 and (x, y) not in SALA_DE}
+
+for (x, y) in AGUA_FUNDA:
+    CHAO.discard((x, y))
+
+# --------------------------------------------------------------- o terreno ----
+T = [['R'] * W for _ in range(H)]
+for (x, y) in CHAO:
+    T[y][x] = '_'
+for (x, y), nome in SALA_DE.items():
+    T[y][x] = 'L'
+for (x, y) in AGUA_FUNDA:
+    T[y][x] = 'W'
+for (x, y) in FOSSO:
+    T[y][x] = 'O'
+for (x, y) in CANAL:
+    T[y][x] = 'x'
+for (x, y) in FUNGOS:
+    T[y][x] = ';'
+
+# ---------------------------------------------------------------- as paredes ----
+PN = [['.'] * W for _ in range(H)]
+PO = [['.'] * W for _ in range(H)]
+
+
+def anda(x, y):
+    return 0 <= x < W and 0 <= y < H and T[y][x] not in 'RW'
+
+
+for y in range(H):
+    for x in range(W):
+        a = SALA_DE.get((x, y))
+        for (vx, vy, grade) in ((x, y - 1, PN), (x - 1, y, PO)):
+            b = SALA_DE.get((vx, vy))
+            if a == b or a in LIVRES or b in LIVRES:
+                continue
+            # parede so onde ha chao dos dois lados (contra a rocha a propria rocha ja fecha)
+            if (a is not None and not (0 <= vx < W and 0 <= vy < H and T[vy][vx] != 'R')) or \
+               (b is not None and T[y][x] == 'R'):
+                continue
+            grade[y][x] = '#'
+
+# PORTAS (+ fechada, / aberta ou arco), por aresta entre duas casas vizinhas: (x1, y1, x2, y2, codigo).
+PORTAS = [
+    # O templo (19): as portas do sul (duas casas), e o arco do leste para o corredor das escadas.
+    (8, 14, 8, 15, '+'), (9, 14, 9, 15, '+'), (13, 9, 14, 9, '/'), (13, 10, 14, 10, '/'),
+    # Os aposentos do sacerdote (20): a porta do sul.
+    (15, 8, 15, 9, '+'), (16, 8, 16, 9, '+'),
+    # O alojamento norte (11): a porta do oeste e a do leste (trancada por dentro, com barricada).
+    (21, 27, 22, 27, '+'), (31, 27, 32, 27, '+'),
+    # A Forja das Magias (15): as portas duplas do oeste (rachadas, abertas) e a da oficina.
+    (61, 37, 62, 37, '/'), (61, 38, 62, 38, '/'), (67, 34, 67, 35, '+'), (68, 34, 68, 35, '+'),
+    (65, 32, 66, 32, '+'),
+    # Os aposentos dos magos (14): a porta do oeste, a de dentro e as duas do fundo.
+    (63, 51, 64, 51, '+'), (63, 52, 64, 52, '+'), (65, 52, 65, 53, '+'), (64, 56, 64, 57, '/'), (68, 56, 68, 57, '/'),
+    # O alojamento sul (6): a porta do norte (oeste) e a do sul.
+    (33, 55, 34, 55, '+'), (37, 62, 37, 63, '+'),
+    # O deposito (7): a porta entreaberta.
+    (48, 56, 48, 57, '+'),
+    # A guarita (4) e o escritorio dos avaliadores (5).
+    (35, 81, 36, 81, '+'), (35, 82, 36, 82, '+'), (41, 82, 42, 82, '+'),
+]
+
+
+def aresta(x1, y1, x2, y2, cod):
+    if x2 == x1 + 1:
+        PO[y1][x2] = cod
+    elif x2 == x1 - 1:
+        PO[y1][x1] = cod
+    elif y2 == y1 + 1:
+        PN[y2][x1] = cod
+    else:
+        PN[y1][x1] = cod
+
+
+for (x1, y1, x2, y2, cod) in PORTAS:
+    aresta(x1, y1, x2, y2, cod)
+
+# ----------------------------------------------------------------- as areas ----
+# As AREAS DO LIVRO (1 a 20), em retangulos de casas lidos do mapa. Valem so onde ha chao; um retangulo
+# posterior toma a casa de um anterior (as salas pequenas vencem a caverna em que estao).
+AREAS_RET = [
+    ('13', [(52, 22, 72, 58)]),                 # a caverna estrelada (as duas construcoes leste, 14 e 15, estao nela)
+    ('18', [(22, 2, 36, 21)]),                  # a caverna desmoronada, com a fenda a leste
+    ('17', [(34, 0, 52, 14)]),                  # o velho corrego, a passagem baixa ate o mar
+    ('16', [(51, 0, 72, 23)]),                  # a caverna barulhenta (o mar fervente do nordeste)
+    ('10', [(5, 20, 16, 36)]),                  # o lago escuro
+    ('2', [(0, 40, 30, 72)]),                   # os tuneis da mina
+    ('9', [(24, 34, 50, 52)]),                  # a grande caverna
+    ('1', [(3, 66, 22, 90)]),                   # a entrada da caverna
+    ('3', [(30, 64, 42, 90)]),                  # a velha entrada (o tunel do sul)
+    ('8', [(52, 57, 72, 74)]),                  # a caverna dos fungos
+    ('12', [(38, 25, 49, 36)]),                 # a caverna de fundicao
+    ('15', [(62, 31, 69, 41)]),                 # a forja das magias
+    ('14', [(64, 49, 69, 58)]),                 # os aposentos dos magos
+    ('11', [(22, 23, 31, 30)]),                 # o alojamento norte
+    ('6', [(34, 51, 39, 62)]),                  # o alojamento sul
+    ('7', [(46, 51, 51, 62)]),                  # o deposito desmoronado
+    ('4', [(26, 77, 35, 84)]),                  # a velha guarita
+    ('5', [(42, 77, 45, 84)]),                  # o escritorio dos avaliadores
+    ('20', [(14, 3, 19, 8)]),                   # os aposentos do sacerdote
+    ('19', [(4, 3, 13, 14)]),                   # o templo de Dumathoin
+]
+AREA_DE = {}
+for _id, _rs in AREAS_RET:
+    for _c in retangulos(_rs):
+        if T[_c[1]][_c[0]] not in 'RW':
+            AREA_DE[_c] = _id
+AREAS = {}
+for _c, _id in AREA_DE.items():
+    AREAS.setdefault(_id, []).append({'x': _c[0], 'y': _c[1]})
+for _id in AREAS:
+    AREAS[_id].sort(key=lambda c: (c['y'], c['x']))
+
+# ----------------------------------------------------------------- a saida ----
+# O grupo entra pelo sudoeste (area 1): a ponta do tunel que sobe da superficie.
+def _perto(x, y):
+    melhor = None
+    for (cx, cy) in CHAO:
+        d = abs(cx - x) + abs(cy - y)
+        if melhor is None or d < melhor[0]:
+            melhor = (d, cx, cy)
+    return melhor[1], melhor[2]
+
+
+CHEGADA = _perto(2, 89)
+GRUPO = []
+for (_dx, _dy) in ((0, 0), (1, 0), (0, -1), (1, -1), (-1, 0), (2, 0), (0, 1), (-1, -1)):
+    _c = (CHEGADA[0] + _dx, CHEGADA[1] + _dy)
+    if _c in CHAO and _c not in GRUPO and len(GRUPO) < 4:
+        GRUPO.append(_c)
+print('chegada', CHEGADA, 'grupo', GRUPO)
+
+# A LUZ: a mina e escura (luz 0); so ha luz onde o livro a poe (braseiros, o acampamento, as chamas verdes).
+L = [[0] * W for _ in range(H)]
+LUZES = []
+for (_x, _y), _n in SALA_DE.items():
+    if _n in ('alojNorte', 'templo', 'forja', 'forjaOficina'):
+        L[_y][_x] = 2
+for (_x, _y) in FUNGOS:
+    L[_y][_x] = 1
+for (_x, _y, _tipo) in ((27, 28, 'braseiro'), (9, 9, 'fogueira'), (66, 38, 'chama verde')):
+    LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': 20, 'penumbra': 20, 'tipo': 'fogueira'})
+
+dados = {
+    'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO]},
+    'terreno': [''.join(l) for l in T],
+    'altura': ['0' * W for _ in range(H)],
+    'luz': [''.join(str(v) for v in l) for l in L],
+    'luzes': LUZES,
+}
+extra = {
+    'chegada': {'x': CHEGADA[0], 'y': CHEGADA[1]},
+    'grupo': [{'x': x, 'y': y} for (x, y) in GRUPO],
+    'areas': AREAS,
+    'salas': {n: [{'x': x, 'y': y} for (x, y) in sorted(cs)] for n, cs in INTERIOR.items()},
+}
+saida = RAIZ / 'src' / 'game' / 'ondaeco.js'
+CAB = ('// A CAVERNA ONDA ECO (Parte 4): a mina perdida do Pacto de Phandelver.\n//\n'
+       '// Gerado por `src/dev/mapa-ondaeco.py` - mude la e rode de novo.\n'
+       '// Glifos: R rocha - _ chao da caverna - L laje - W agua funda - O fosso - x canal - ; fungos.\n')
+saida.write_text(CAB + '\nexport const MAPA_ONDA_ECO = ' + json.dumps(dados, indent=1, ensure_ascii=False)
+                 + ';\n\nexport const ONDA_ECO = ' + json.dumps(extra, indent=1, ensure_ascii=False) + ';\n',
+                 encoding='utf-8', newline='\n')
+print('escrito:', saida.name, '| chao', sum(r.count('_') + r.count('L') for r in dados['terreno']),
+      '| agua', len(AGUA_FUNDA), '| fungos', len(FUNGOS), '| areas', {k: len(v) for k, v in AREAS.items()})

@@ -27,6 +27,7 @@ import { criarCume } from './game/capitulo4-cume.js';
 import { criarCastelo } from './game/capitulo4-castelo.js';
 import { abrirRegiao } from './game/regiao.js';
 import { criarArvoreTrovao } from './game/capitulo4-arvoretrovao.js';
+import { criarOndaEco } from './game/capitulo5-ondaeco.js';
 import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta, narrarLocal, definirPorta } from './view/narrativa.js';
 import { criarPortaCompartilhada } from './game/porta-narrativa.js';
@@ -327,6 +328,7 @@ class App {
       : mapa.cena === 'poco' ? criarPoco
       : mapa.cena === 'cume' ? criarCume
       : mapa.cena === 'arvoreTrovao' ? criarArvoreTrovao
+      : mapa.cena === 'ondaEco' ? criarOndaEco
       : mapa.cena === 'castelo' ? criarCastelo
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
@@ -1514,7 +1516,7 @@ class App {
         // O livro pede "alguma comida e bebida": meia ração é alguma comida,
         // então meio dia sem comer (0,5) ainda deixa o descanso desfazer um
         // degrau. Um dia inteiro sem nada, não.
-        alimentado: (c) => (c.diasSemComida ?? 0) < 1 && !c.semAgua,
+        alimentado: (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true),
       })
       : await descansoCurto(this.root, { herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto') });
     for (const t of linhas) this.enc.say('cura', t);
