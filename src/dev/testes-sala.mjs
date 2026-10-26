@@ -20,6 +20,7 @@ import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tra
 import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
 import { heroisDoPiloto, inimigoMaisPerto, jogadaDoPiloto } from '../game/piloto.js';
+import { quemDecide, apurar, apurarLugar, possoEscolher } from '../game/decisao.js';
 import { acaoRemotaValida, tilesValidos, circuloValido, magiaNaHora, escolheVarios, mandaNaHora } from '../game/acoes.js';
 import { getSpell } from '../rules/spells.js';
 import { visaoDoGrupo } from '../rules/luz.js';
@@ -954,17 +955,46 @@ teste('F4.3: agir: o servidor só repassa o passo de quem é DONO do herói, com
   assert.equal(t.mudou, false); assert.equal(t.repassar.heroi, 'pc-mago');
 });
 
-teste('F4.3: resposta: só o líder responde à narrativa, e só com índice e id válidos', () => {
+teste('F4.3/J-20: a resposta é de qualquer jogador que não é o anfitrião, com id e índice válidos, e diz de quem veio (quem decide é o jogo)', () => {
   const s = salaIniciada();
-  deve(faz(s, BETO, { tipo: 'resposta', id: 1, indice: 0 }), /líder/);
-  s.lider = BETO;
   const r = faz(s, BETO, { tipo: 'resposta', id: 3, indice: 2 });
-  assert.deepEqual(r.repassar, { tipo: 'resposta', id: 3, indice: 2, continuar: false });
-  assert.deepEqual(faz(s, BETO, { tipo: 'resposta', id: 4, continuar: true }).repassar, { tipo: 'resposta', id: 4, indice: null, continuar: true });
+  assert.deepEqual(r.repassar, { tipo: 'resposta', id: 3, indice: 2, continuar: false, de: 'p2' });
+  assert.deepEqual(faz(s, BETO, { tipo: 'resposta', id: 4, continuar: true }).repassar, { tipo: 'resposta', id: 4, indice: null, continuar: true, de: 'p2' });
   deve(faz(s, BETO, { tipo: 'resposta', id: 0, indice: 0 }), /inválida/);
   deve(faz(s, BETO, { tipo: 'resposta', id: 1, indice: -1 }), /inválida/);
   deve(faz(s, BETO, { tipo: 'resposta', id: 1, indice: 'a' }), /inválida/);
   deve(faz(s, ANF, { tipo: 'resposta', id: 1, indice: 0 }), /própria tela/);
+  deve(faz(nova(), BETO, { tipo: 'resposta', id: 1, indice: 0 }), /não está em andamento|não está nesta sala/);
+});
+
+teste('J-20: quem decide a narrativa: o jogador do herói que a começou; decisão geral, votação; sozinho, quem sobrou', () => {
+  const s = salaIniciada();
+  const v = () => visaoDaSala(s, ANF);
+  assert.deepEqual(quemDecide({ ator: 'pc-mago', visao: v() }), { modo: 'ator', pub: 'p2' }, 'o mago é do Beto');
+  assert.deepEqual(quemDecide({ ator: 'pc-guerreiro', visao: v() }), { modo: 'ator', pub: 'p1' });
+  const geral = quemDecide({ ator: null, visao: v() });
+  assert.equal(geral.modo, 'votacao'); assert.deepEqual(geral.votantes, ['p1', 'p2']); assert.equal(geral.desempate, 'p1', 'o líder desempata');
+  desconectar(s, BETO, 1000);
+  assert.deepEqual(quemDecide({ ator: 'pc-mago', visao: v() }), { modo: 'ator', pub: 'p1' }, 'o dono caiu e só sobrou o anfitrião: ele decide');
+  assert.deepEqual(quemDecide({ ator: null, visao: v() }), { modo: 'ator', pub: 'p1' }, 'sozinho não há votação');
+  assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto' }, 2000).ok);
+  s.herois['pc-clerigo'] = 'piloto';
+  assert.equal(quemDecide({ ator: 'pc-clerigo', visao: v() }).modo, 'votacao', 'herói no piloto não tem jogador: vota o grupo');
+  assert.equal(quemDecide({ ator: 'pc-mago', visao: null }).modo, 'ator');
+  assert.equal(possoEscolher({ modo: 'ator', pub: 'p2' }, 'p2'), true); assert.equal(possoEscolher({ modo: 'ator', pub: 'p2' }, 'p1'), false);
+  assert.equal(possoEscolher({ modo: 'votacao', votantes: ['p1', 'p2'] }, 'p1'), true); assert.equal(possoEscolher({ modo: 'leitura' }, 'p1'), false); assert.equal(possoEscolher(null, 'p1'), false);
+});
+
+teste('J-20: a apuração da votação: maioria, empate pelo líder, bloqueadas fora, sem voto a primeira livre', () => {
+  const votos = (o) => new Map(Object.entries(o));
+  assert.equal(apurar({ votos: votos({ p1: 1, p2: 1, p3: 0 }), nEscolhas: 3 }), 1, 'maioria');
+  assert.equal(apurar({ votos: votos({ p1: 2, p2: 0 }), nEscolhas: 3, desempate: 'p1' }), 2, 'empate: o voto do líder');
+  assert.equal(apurar({ votos: votos({ p1: 2, p2: 0 }), nEscolhas: 3, desempate: 'p2' }), 0);
+  assert.equal(apurar({ votos: votos({ p1: 2, p2: 0, p3: 1 }), nEscolhas: 3, desempate: 'p9' }), 0, 'líder fora do empate: menor índice');
+  assert.equal(apurar({ votos: votos({ p1: 1, p2: 1 }), nEscolhas: 3, bloqueadas: new Set([1]) }), 0, 'voto em escolha cinza não conta');
+  assert.equal(apurar({ votos: votos({}), nEscolhas: 3, bloqueadas: new Set([0]) }), 1, 'sem voto: a primeira livre');
+  assert.equal(apurar({ votos: votos({}), nEscolhas: 2, bloqueadas: new Set([0, 1]) }), null, 'tudo bloqueado');
+  assert.equal(apurar({ votos: votos({ p1: 9 }), nEscolhas: 2 }), 0, 'índice fora da lista não conta');
 });
 
 teste('F4.3: a narrativa do anfitrião: só dele, com a partida iniciada, e no formato abrir/fechar', () => {
@@ -1094,36 +1124,55 @@ teste('F6: o servidor guarda o save que SÓ o anfitrião manda, com a partida in
   }
 });
 
+teste('J-20/vila: o destino é votação do JOGADOR (não de herói): maioria, empate pelo líder, sem voto nada', () => {
+  const votos = (o) => new Map(Object.entries(o));
+  assert.equal(apurarLugar({ votos: votos({ p1: 'taverna', p2: 'loja', p3: 'loja' }) }), 'loja');
+  assert.equal(apurarLugar({ votos: votos({ p1: 'taverna', p2: 'loja' }), desempate: 'p2' }), 'loja', 'o líder desempata');
+  assert.equal(apurarLugar({ votos: votos({ p1: 'taverna', p2: 'loja' }), desempate: 'p1' }), 'taverna');
+  assert.equal(apurarLugar({ votos: votos({ p1: 'taverna', p2: 'loja' }), desempate: 'p9' }), 'loja', 'fora do empate: ordem alfabética, previsível');
+  assert.equal(apurarLugar({ votos: votos({}) }), null);
+  const s = salaIniciada();
+  const r = faz(s, BETO, { tipo: 'agir', acao: 'lugar', lugar: 'ferraria' });
+  assert.deepEqual(r.repassar, { tipo: 'agir', de: 'p2', acao: 'lugar', lugar: 'ferraria' });
+  assert.ok(faz(s, BETO, { tipo: 'agir', acao: 'lugar', lugar: 'ferraria', heroi: 'pc-guerreiro' }).ok, 'o voto não depende de herói');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'lugar' }), /lugar inválido/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'lugar', lugar: 7 }), /lugar inválido/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'lugar', lugar: 'x'.repeat(41) }), /lugar inválido/);
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'lugar', lugar: 'loja' }), /própria tela/);
+  deve(faz(nova(), BETO, { tipo: 'agir', acao: 'lugar', lugar: 'loja' }), /não está em andamento|não está nesta sala/);
+});
+
 teste('F4.4: a corda: só se vai para perto de ALGUM outro herói; o grupo estica em fila, mas não se parte', () => {
   const h = (id, x, y) => ({ id, pos: { x, y } });
   const a = h('a', 0, 0); const b = h('b', 10, 0); const c = h('c', 20, 0);
   const grupo = [a, b, c];
   assert.ok(LIMITE_DA_CORDA >= 8 && LIMITE_DA_CORDA <= 16, 'a doc diz ~12');
-  assert.equal(cordaPermite({ heroi: b, destino: { x: 12, y: 3 }, grupo }).ok, true, 'perto dos dois lados');
-  assert.equal(cordaPermite({ heroi: a, destino: { x: 9, y: 9 }, grupo }).ok, true, 'a diagonal conta como uma casa');
-  const longe = cordaPermite({ heroi: a, destino: { x: -5, y: 40 }, grupo });
+  assert.equal(cordaPermite({ heroi: b, destino: { x: 12, y: 3 }, grupo, modo: 'unido' }).ok, true, 'perto dos dois lados');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 9, y: 9 }, grupo, modo: 'unido' }).ok, true, 'a diagonal conta como uma casa');
+  const longe = cordaPermite({ heroi: a, destino: { x: -5, y: 40 }, grupo, modo: 'unido' });
   assert.equal(longe.ok, false); assert.match(longe.why, /separaria demais/);
-  assert.equal(cordaPermite({ heroi: a, destino: { x: 0, y: 12 }, grupo }).ok, true, 'exatamente no limite vale');
-  assert.equal(cordaPermite({ heroi: a, destino: { x: 0, y: 13 }, grupo: [a, h('z', 0, 30)] }).ok, false);
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 0, y: 12 }, grupo, modo: 'unido' }).ok, true, 'exatamente no limite vale');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 0, y: 13 }, grupo: [a, h('z', 0, 30)], modo: 'unido' }).ok, false);
   assert.equal(cordaPermite({ heroi: a, destino: { x: 99, y: 99 }, grupo, modo: 'livre' }).ok, true, 'livre: sem corda');
-  assert.equal(cordaPermite({ heroi: a, destino: { x: 99, y: 99 }, grupo: [a] }).ok, true, 'sozinho em campo não tem de quem se afastar');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 99, y: 99 }, grupo }).ok, true, 'o padrão é livre');
+  assert.equal(cordaPermite({ heroi: a, destino: { x: 99, y: 99 }, grupo: [a], modo: 'unido' }).ok, true, 'sozinho em campo não tem de quem se afastar');
 });
 
 teste('F4.4: a corda é escolha do anfitrião, no lobby; o aviso do anfitrião vai a UM jogador só', () => {
   const s = nova();
   entra(s, BETO, 'Beto');
-  assert.equal(visaoDaSala(s, ANF).corda, 'unido', 'o padrão é Unido');
+  assert.equal(visaoDaSala(s, ANF).corda, 'livre', 'o padrão é Livre: cada um vai aonde quiser');
   deve(faz(s, BETO, { tipo: 'corda', valor: 'livre' }), /anfitrião/);
   deve(faz(s, ANF, { tipo: 'corda', valor: 'solta' }), /inexistente/);
-  assert.equal(faz(s, ANF, { tipo: 'corda', valor: 'unido' }).igual, true);
-  assert.ok(faz(s, ANF, { tipo: 'corda', valor: 'livre' }).ok);
-  assert.equal(visaoDaSala(s, BETO).corda, 'livre');
+  assert.equal(faz(s, ANF, { tipo: 'corda', valor: 'livre' }).igual, true);
+  assert.ok(faz(s, ANF, { tipo: 'corda', valor: 'unido' }).ok);
+  assert.equal(visaoDaSala(s, BETO).corda, 'unido');
   for (const h of ['pc-guerreiro', 'pc-ladino']) faz(s, ANF, { tipo: 'pegar', heroi: h });
   for (const h of ['pc-mago', 'pc-clerigo']) faz(s, BETO, { tipo: 'pegar', heroi: h });
   faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
   deve(faz(s, ANF, { tipo: 'aviso', para: 'p2', texto: 'oi' }), /não está em andamento/);
   assert.ok(faz(s, ANF, { tipo: 'iniciar' }).ok);
-  deve(faz(s, ANF, { tipo: 'corda', valor: 'unido' }), /começou/);
+  deve(faz(s, ANF, { tipo: 'corda', valor: 'livre' }), /começou/);
   const r = faz(s, ANF, { tipo: 'aviso', para: 'p2', texto: ' o grupo se separaria demais ' });
   assert.deepEqual(r.repassarA, { id: BETO, msg: { tipo: 'aviso', texto: 'o grupo se separaria demais' } });
   assert.equal(r.igual, true);

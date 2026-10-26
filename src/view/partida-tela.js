@@ -13,6 +13,9 @@ import { audio } from '../core/audio.js';
 import { narrarLocal } from './narrativa.js';
 import { getSpell } from '../rules/spells.js';
 import { mandaNaHora, escolheVarios } from '../game/acoes.js';
+import { possoEscolher } from '../game/decisao.js';
+import { abrirTelaVila } from './vila.js';
+import pinturaDaRegiao from '../art/vila/regiao.webp';
 import { Encounter } from '../rules/combat.js';
 import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
@@ -146,16 +149,25 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     const p = msg.pedido;
     const ctl = new AbortController();
     narrativas.set(msg.id, ctl);
-    const lider = souLider();
+    // J-20 (como no Baldur's Gate 3): o jogador do personagem que começou a cena escolhe; numa decisão geral todos votam; quem não
+    // decide lê as mesmas escolhas, sem poder clicar. O anfitrião diz quem é quem no pedido (`decide`).
+    const eu = visaoDaSala?.voce;
+    const decide = p.decide ?? null;
+    const escolhe = Boolean(p.escolhas) && possoEscolher(decide, eu);
+    const votando = decide?.modo === 'votacao';
     narrarLocal(document.getElementById('app'), {
-      formato: p.formato, lista: p.lista, pular: p.pular && lider,
+      formato: p.formato, lista: p.lista, pular: false,
       paginas: p.paginas.map((pg) => ({ titulo: pg.titulo, texto: pg.texto, teste: pg.teste, retrato: pg.retrato })),
-      escolhas: lider && p.escolhas ? p.escolhas.map((e) => ({ rotulo: e.rotulo, detalhe: e.detalhe, motivo: e.motivo, primaria: e.primaria, valor: e.indice })) : null,
+      escolhas: p.escolhas ? p.escolhas.map((e) => ({ rotulo: e.rotulo, detalhe: e.detalhe, motivo: e.motivo, primaria: e.primaria, valor: e.indice })) : null,
+      nota: decide?.titulo || null,
+      soLeitura: Boolean(p.escolhas) && !escolhe,
+      aoVotar: escolhe && votando ? (indice) => enviar({ tipo: 'resposta', id: msg.id, indice }) : null,
       sinal: ctl.signal,
     }).then((r) => {
       narrativas.delete(msg.id);
-      if (!lider || ctl.signal.aborted) return;
-      enviar(p.escolhas ? { tipo: 'resposta', id: msg.id, indice: Number.isInteger(r) ? r : null } : { tipo: 'resposta', id: msg.id, continuar: true });
+      // Quem decide por ser o dono da cena responde pelo clique (o voto já foi enviado por `aoVotar`).
+      if (!escolhe || votando || ctl.signal.aborted) return;
+      enviar({ tipo: 'resposta', id: msg.id, indice: Number.isInteger(r) ? r : null });
     });
   }
 
@@ -223,6 +235,53 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     return andaram;
   }
 
+  // ---- a vila e a região, vistas de fora (F6.3) ------------------------------------------
+
+  let vilaTela = null;
+  let vilaObj = null;
+  let vilaAssinatura = null;
+
+  function fecharVila() {
+    vilaTela?.fechar();
+    vilaTela = null; vilaObj = null; vilaAssinatura = null;
+  }
+
+  /** O mapa que o anfitrião mostra: a mesma tela da vila (`view/vila.js`), com o clique virando VOTO no destino. */
+  function mostrarVila(snap) {
+    const assinatura = `${snap.chave}|${snap.lugares.map((l) => l.id).join(',')}`;
+    if (vilaTela && assinatura !== vilaAssinatura) fecharVila();
+    if (!vilaTela) {
+      vilaObj = {
+        titulo: snap.titulo, classe: snap.classe, proporcao: snap.proporcao,
+        pintura: snap.chave === 'regiao' ? pinturaDaRegiao : undefined,
+        lugares: snap.lugares, estado: { missoes: {}, pistas: [], registro: [] }, missoes: {},
+        grupo: [], momento: () => vilaObj.__momento, dinheiro: () => vilaObj.__dinheiro,
+        aberto: (l) => !l.fechado, novidade: (l) => l.novidade,
+        onLugar: (l) => { audio.play('click'); enviar({ tipo: 'agir', acao: 'lugar', lugar: l.id }); },
+        onMenu: () => aoSair(), onFicha: null, botoes: [],
+      };
+      vilaAssinatura = assinatura;
+      vilaObj.__momento = snap.momento; vilaObj.__dinheiro = snap.dinheiro;
+      vilaObj.grupo = snap.grupo.map((c) => ({ ...c, maxHp: c.maxHp, conditions: [] }));
+      vilaTela = abrirTelaVila(document.getElementById('app'), vilaObj);
+    }
+    vilaObj.__momento = snap.momento; vilaObj.__dinheiro = snap.dinheiro;
+    vilaObj.grupo = snap.grupo.map((c) => ({ ...c, conditions: [] }));
+    vilaObj.lugares.forEach((l, i) => Object.assign(l, snap.lugares[i]));
+    // O que o anfitrião diz da votação (quem votou em quê) fica nos pinos e na frase do alto.
+    const porId = snap.votos ?? {};
+    vilaObj.__votos = porId;
+    vilaTela.atualizar();
+    const faixaEl = document.querySelector('.vila .vila-votacao');
+    if (faixaEl) faixaEl.textContent = snap.faixa ?? '';
+    for (const pino of document.querySelectorAll('.vila .vila-pino')) {
+      const id = [...snap.lugares].find((l) => l.nome === pino.querySelector('span')?.textContent)?.id;
+      const n = porId[id]?.length ?? 0;
+      pino.dataset.votos = n ? String(n) : '';
+      if (n) pino.title = `${pino.querySelector('span')?.textContent} — votaram: ${porId[id].join(', ')}`;
+    }
+  }
+
   /** Mais de um passo: o caminho que o motor do cliente acha; se não acha, ou é longe demais, a figura aparece no destino. */
   function caminhar(m) {
     const { c, de, para } = m;
@@ -256,6 +315,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     const v = lerVista(bruto);
     if (!v) return;
     if (!aberta) { pendente = v; return; }
+    if (v.variante === 'vila' && v.extras?.vila) { mostrarVila(v.extras.vila); aviso.classList.remove('visivel'); return; }
+    if (vilaTela) fecharVila();
     if (!enc || variante !== v.variante) { if (board) desmontar(); montar(v); if (aberta) loop(); }
     const { moveram } = aplicarVista(enc, v);
     for (const c of enc.combatants) aplicarAparencia(c);
@@ -265,12 +326,14 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     if (!selecionado || !meus().includes(selecionado)) selecionado = meus()[0] ?? null;
     if (!board.focoJaEnquadrado) {
       board.focoJaEnquadrado = true;
-      const lider = enc.combatants.find((x) => x.side === 'party');
+      const lider = meus()[0] ?? enc.combatants.find((x) => x.side === 'party');   // a tela de cada jogador começa no herói DELE
       board.focoInicial = lider?.pos ? { ...lider.pos } : null;
       requestAnimationFrame(() => board?.enquadrarGrande?.(board.focoInicial));
     }
     aviso.classList.remove('visivel');
     destacar();
+    // Cada jogador vai aonde quiser e a tela dele segue o herói dele (só recentra quando ele sai do miolo do quadro).
+    if (selecionado?.pos) board.seguir?.(selecionado.pos);
   }
 
   function quadroDaTela(agora) {
@@ -299,6 +362,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       if (!aberta) return;
       aberta = false;
       camada.remove();
+      fecharVila();
       if (hud && barraEm) barraEm.append(hud.barra);
       for (const ctl of narrativas.values()) ctl.abort();
       narrativas.clear();

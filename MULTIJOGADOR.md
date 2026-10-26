@@ -251,10 +251,10 @@ Menu principal
 - **J-02 · [proposta]** Nada de teletransporte: um clique gera um **caminho**, e o herói
   anda nele na velocidade da animação. Duas pessoas não ocupam a mesma casa; quem
   chegou depois recebe recusa.
-- **J-03 · [aberta] Corda (`D4`).** Heróis não se afastam mais que ~12 casas uns dos
-  outros: além disso o herói desacelera e para ("o grupo se separou demais"). Evita
-  que a luta comece com um herói do outro lado do mapa. Configurável pelo anfitrião:
-  *Grupo unido* ou *Livre*.
+- **J-03 · [decidido, 2026-10-26] Corda (`D4`).** Na exploração **cada jogador vai com o
+  personagem aonde quiser, e a tela dele o segue**: o padrão é *Livre*. O anfitrião pode
+  escolher *Grupo unido* no lobby: um herói só vai para uma casa a até 12 casas de algum
+  outro herói ("o grupo se separaria demais"). Feito em `game/corda.js`.
 - **J-04 · [proposta]** Os gatilhos da cena (`depoisDeMover`: armadilha, descoberta,
   aviso) disparam **para quem pisou**. O que se descobre (porta secreta, baú) vale
   **para todos**.
@@ -292,9 +292,15 @@ Menu principal
 
 ### Narrativa
 
-- **J-20 · [aberta] Quem decide (`D5`).** Recomendação: o **líder** decide as escolhas de
-  diálogo e de cena, e os outros **leem em tempo real**. Alternativa: votação com
-  desempate do líder.
+- **J-20 · [decidido, 2026-10-26] Quem decide (`D5`), como no Baldur's Gate 3.** O diálogo
+  ou a cena que um **personagem** começou é decidido pelo **jogador que controla esse
+  personagem**; os outros leem as mesmas escolhas, sem poder clicar. Uma **decisão geral**,
+  que não é de nenhum personagem, vai a **votação** entre os jogadores presentes: vence a
+  maioria; no empate vale o voto do líder; sem voto, a primeira opção livre. Quem sobrou
+  sozinho decide sem votar, e se o dono do personagem não responde o anfitrião pode decidir
+  no lugar dele (após 60 s). Na **vila e na região**, o destino também é votado e o grupo vai
+  **junto**. Feito em `game/decisao.js`, `main.js` (`abrirDecisao`, `votarLugar`) e
+  `view/partida-tela.js`.
 - **J-21 · [proposta]** Teste de perícia: rola o **herói que interagiu**.
 - **J-22 · [proposta]** *Ajudar* (a ação do livro) entre jogadores: um herói dá vantagem
   ao teste de outro. Fase tardia.
@@ -362,8 +368,8 @@ do jogador A* (`P2`).
 | **D1** | **Autoridade.** (a) anfitrião roda o jogo e o Cloudflare retransmite; (b) servidor roda o jogo, como diz o README | **(a)**, com a porta de narrativa (`A-02`). (b) pede reescrever ~10 mil linhas de cenas; (a) deixa (b) possível depois sem refazer as cenas. Perde-se a garantia "sem trapaça por construção", o que importa pouco em jogo cooperativo entre amigos |
 | **D2** | **Como o cliente sabe o estado.** (a) visão da partida + eventos; (b) todos rodam o jogo com a mesma semente e as mesmas intenções (replay) | **(a)**. O RNG semeado torna (b) tentador, mas o replay exige determinismo total e `A-07` mostra duas exceções |
 | **D3** | **Visão.** (a) só o que os seus heróis veem; (b) o grupo todo vê tudo; (c) própria + memória compartilhada + aliados sempre visíveis | **(c)**, com o aviso de que ao ar livre é funcionalidade nova |
-| **D4** | **Corda.** *Unido*, *Livre* ou escolha do anfitrião | **Escolha do anfitrião**, padrão *Unido* |
-| **D5** | **Narrativa.** Líder decide, ou votação | **Líder**; votação fica para depois |
+| **D4** | **Corda.** *Unido*, *Livre* ou escolha do anfitrião | **Decidido:** padrão *Livre* (cada um vai aonde quiser, e a tela o segue); *Unido* por escolha do anfitrião |
+| **D5** | **Narrativa.** Líder decide, ou votação | **Decidido (como no Baldur's Gate 3):** o jogador do personagem que começou a cena decide; decisão geral, votação; vila e região, votação e o grupo vai junto |
 | **D6** | **Tempo da fase do grupo** e heróis por jogador | **120 s**, desligável; **grupo de 4** com a distribuição de `L-07` |
 | **D7** | **Os degraus B1 e B2 são obrigatórios?** (a) sim, como portões; (b) pular o B1 e ir ao B3 **enxuto**: quadro de grupos abertos sem andar, sem texto livre, só opções prontas, anfitrião aprova quem entra | **(a)**. O B1 custa pouco depois do B0 e responde se alguém vem, quanto custa e que abuso aparece, **antes** de aceitar contas e moderação. (b) existe como atalho para o "chamar outros", com limite: sem conta, quem é expulso volta com outro navegador, e o quadro **fica vazio** quando há pouca gente |
 | **D8** | **Login.** (a) Google e Discord; (b) só Google; (c) e-mail sem senha (link mágico); (d) senha própria | **(a)**. Discord combina com quem joga RPG, e nenhum guarda senha sua. **(d) não**: ver `C-02` |

@@ -272,10 +272,10 @@ export function criarTelasDeSala({
 
       // D4: a corda do grupo. Só o anfitrião muda; os outros veem o que ficou.
       el('section', { class: 'menu-lobby-corda' }, el('h3', {}, 'Corda do grupo'),
-        el('p', { class: 'menu-nota' }, v.corda === 'livre'
-          ? 'Livre: cada herói vai aonde quiser, mesmo longe dos outros.'
-          : 'Unido: um herói não se afasta mais de 12 casas dos outros, para ninguém começar a luta sozinho.'),
-        souAnfitriao && botao(v.corda === 'livre' ? 'Mudar para Unido' : 'Mudar para Livre', () => mandar({ tipo: 'corda', valor: v.corda === 'livre' ? 'unido' : 'livre' }),
+        el('p', { class: 'menu-nota' }, v.corda === 'unido'
+          ? 'Unido: um herói não se afasta mais de 12 casas dos outros, para ninguém começar a luta sozinho.'
+          : 'Livre: cada jogador vai com o seu herói aonde quiser, e a tela dele o segue.'),
+        souAnfitriao && botao(v.corda === 'unido' ? 'Mudar para Livre' : 'Mudar para Unido', () => mandar({ tipo: 'corda', valor: v.corda === 'unido' ? 'livre' : 'unido' }),
           { chave: 'corda', desabilitado: sem })),
 
       v.pendencias.length > 0 && el('ul', { class: 'menu-pendencias' }, v.pendencias.map((p) => el('li', {}, p))),

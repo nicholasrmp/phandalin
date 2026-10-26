@@ -14,6 +14,8 @@ import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarCampo } from './game/campo.js';
 import { cordaPermite } from './game/corda.js';
 import { heroisDoPiloto, jogadaDoPiloto } from './game/piloto.js';
+import { quemDecide, apurar, apurarLugar, TEMPO_DA_VOTACAO_MS } from './game/decisao.js';
+import { definirPortaDaVila } from './view/vila.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
 import { fotografar, emTexto, empacotarEvento, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarPartidaTela } from './view/partida-tela.js';
@@ -229,6 +231,8 @@ class App {
             if (this.salaDaPartida && v.voce === v.anfitriao) {
               this.salaDaPartida.visao = v;
               this.salaDaPartida.herois = v.herois;
+              this.revisarVotacao(v);
+              this.revisarVotoDeLugar(v);
               this.pilotoDaSala();
             }
           },
@@ -382,7 +386,8 @@ class App {
     // Mapa grande (Árvore Trovão, 91 x 68): começa perto do grupo, e não com o
     // tabuleiro inteiro encaixado, onde cada herói tem 15% do tamanho.
     {
-      const lider = this.enc.combatants.find((x) => x.side === 'party');
+      // Numa partida de sala a tela do anfitrião começa no herói DELE, não no de outro jogador.
+      const lider = this.enc.combatants.find((x) => x.side === 'party' && (!this.donoDaVisao || this.donoDaVisao(x))) ?? this.enc.combatants.find((x) => x.side === 'party');
       this.board.focoInicial = lider?.pos ? { ...lider.pos } : null;
       requestAnimationFrame(() => this.board?.enquadrarGrande(this.board.focoInicial));
     }
@@ -412,7 +417,7 @@ class App {
    */
   comecarPartidaDaSala(v) {
     const ids = Object.keys(v.herois);
-    this.salaDaPartida = { corda: v.corda ?? 'unido', herois: v.herois, voce: v.voce };
+    this.salaDaPartida = { corda: v.corda ?? 'livre', herois: v.herois, voce: v.voce };
     this.donoDaVisao = (c) => v.herois[c.id] === v.voce;
     this.prepararPortaDaSala();
     this.newEncounter({
@@ -428,9 +433,18 @@ class App {
   /** A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20). */
   prepararPortaDaSala() {
     this.esperasDeResposta = new Map();
+    // A vila e a região: o grupo vota o destino e vai junto (F6.3).
+    definirPortaDaVila({
+      escolher: (l) => this.votarLugar(this.salaDaPartida?.visao?.voce, l.id),
+      aoAtualizar: (snap, api) => { this.vilaBase = snap; this.vilaAtual = api; },
+      aoFechar: () => { this.vilaBase = null; this.vilaAtual = null; this.zerarVotoDeLugar(); },
+      votos: () => this.votosDeLugar(),
+      faixa: () => this.faixaDaVotacao(),
+    });
     definirPorta(criarPortaCompartilhada({
-      local: narrarLocal,
-      transmitir: (msg) => this.menu.enviarCru({ tipo: 'narrativa', msg }),
+      // A tela do anfitrião também obedece a quem decide (J-20): pode ser só leitura, ou um voto.
+      local: (root, opts) => narrarLocal(root, { ...opts, ...this.opcoesLocaisDaDecisao() }),
+      transmitir: (msg) => { if (msg.tipo === 'abrir') this.abrirDecisao(msg); this.menu.enviarCru({ tipo: 'narrativa', msg }); },
       esperarResposta: (id, sinal) => new Promise((resolve) => {
         this.esperasDeResposta.set(id, resolve);
         sinal?.addEventListener('abort', () => { this.esperasDeResposta.delete(id); resolve(null); }, { once: true });
@@ -450,7 +464,7 @@ class App {
       this.avisarDeSave(`Você assumiu a sala, mas não deu para retomar a partida: ${lido.erro}`);
       return;
     }
-    this.salaDaPartida = { corda: v?.corda ?? 'unido', herois: v?.herois ?? {}, voce: v?.voce };
+    this.salaDaPartida = { corda: v?.corda ?? 'livre', herois: v?.herois ?? {}, voce: v?.voce };
     this.donoDaVisao = (c) => v?.herois?.[c.id] === v?.voce;
     this.prepararPortaDaSala();
     const r = this.carregarSave(lido.save);
@@ -471,11 +485,15 @@ class App {
 
   /** Manda a vista se ela mudou desde a última. Só o que o anfitrião vê, e só enquanto há partida. */
   publicarVista() {
-    if (!this.enc || !this.varianteAtual) return;
-    const eventos = this.eventosPendentes ?? [];
-    const vista = fotografar({ enc: this.enc, variante: this.varianteAtual, extras: eventos.length ? { eventos } : null });
+    // Na vila e na região não há tabuleiro: a vista leva o que a tela da vila mostra e como vai a votação do destino (F6.3).
+    const naVila = !this.enc && this.vilaBase;
+    if (!naVila && (!this.enc || !this.varianteAtual)) return;
+    const eventos = naVila ? [] : (this.eventosPendentes ?? []);
+    const vista = naVila
+      ? { v: 1, variante: 'vila', rodada: 0, lado: 'party', acabou: false, combatentes: [], extras: { vila: { ...this.vilaBase, votos: this.votosDeLugar(), faixa: this.faixaDaVotacao() } } }
+      : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: eventos.length ? { eventos } : null });
     // O que mudou se mede SEM os eventos (eles já foram dados uma vez): só estado novo, evento novo ou o batimento mandam.
-    const texto = emTexto({ ...vista, extras: null });
+    const texto = naVila ? emTexto(vista) : emTexto({ ...vista, extras: null });
     // Sem mudança, só repete de vez em quando: o servidor não guarda a vista (ela some se o Durable Object dormir ou for
     // trocado), e quem entra ou volta fica esperando a próxima. Três segundos de espera no pior caso, 7 KB de custo.
     const agora = Date.now();
@@ -496,7 +514,8 @@ class App {
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles }) {
+  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles, lugar }) {
+    if (acao === 'lugar') { this.votarLugar(de, lugar); return; }   // na vila e na região não há herói: o voto é do jogador
     const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
     if (!this.enc || this.enc.over) return;
     if (this.ficha?.estaAberta() || narrativaAberta()) { avisar('espere a narrativa terminar'); return; }
@@ -504,6 +523,7 @@ class App {
     if (this.enc.side !== 'party') { avisar('não é a vez do grupo'); return; }
     const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
     if (!c) return;
+    this.marcarAtor(c);   // a cena que este passo ou golpe começar é dele
     const emCombate = !this.capitulo?.explorando;
     if (emCombate && c.acted) { avisar(`${c.name} já terminou o turno`); return; }
 
@@ -594,12 +614,150 @@ class App {
     }
   }
 
-  /** A resposta do líder a uma narrativa aberta: acorda a porta compartilhada que esperava por ela. */
-  receberResposta({ id, indice, continuar }) {
-    this.esperasDeResposta?.get(id)?.(continuar ? { continuar: true } : { indice });
+  // ---- o destino na vila e na região: votação, e o grupo vai JUNTO ------------------------
+
+  votosDeLugar() {
+    const v = this.votoDeLugar;
+    const visao = this.salaDaPartida?.visao;
+    if (!v || !visao) return {};
+    const nome = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
+    const por = {};
+    for (const [pub, id] of v.votos) (por[id] ??= []).push(nome(pub));
+    return por;
+  }
+
+  faixaDaVotacao() {
+    const v = this.votoDeLugar;
+    if (!v) return this.salaDaPartida && (this.salaDaPartida.visao?.jogadores?.filter((j) => j.conectado).length ?? 1) > 1 ? 'Votem no destino: o grupo vai junto.' : '';
+    return `Votação do destino: ${v.votos.size} de ${v.votantes.length} votos.`;
+  }
+
+  /** O voto de `pub` no lugar `id`. Sozinho na sala (os outros caíram), o clique já decide. */
+  votarLugar(pub, id) {
+    const visao = this.salaDaPartida?.visao;
+    const api = this.vilaAtual;
+    if (!visao || !api || typeof id !== 'string') return;
+    const lugar = api.lugares.find((l) => l.id === id);
+    if (!lugar) return;
+    const presentes = visao.jogadores.filter((j) => j.conectado).map((j) => j.id);
+    if (!presentes.includes(pub)) return;
+    if (presentes.length <= 1) { this.zerarVotoDeLugar(); api.ir(lugar); return; }
+    const v = this.votoDeLugar ??= { votos: new Map(), votantes: presentes, timer: setTimeout(() => this.fecharVotoDeLugar(), TEMPO_DA_VOTACAO_MS) };
+    v.votos.set(pub, id);
+    if (v.votantes.every((p) => v.votos.has(p))) this.fecharVotoDeLugar();
+    else api.atualizar?.();
+  }
+
+  fecharVotoDeLugar() {
+    const v = this.votoDeLugar;
+    const api = this.vilaAtual;
+    if (!v || !api) { this.zerarVotoDeLugar(); return; }
+    const id = apurarLugar({ votos: v.votos, desempate: this.salaDaPartida?.visao?.lider });
+    const lugar = id ? api.lugares.find((l) => l.id === id) : null;
+    this.zerarVotoDeLugar();
+    if (lugar) api.ir(lugar); else api.atualizar?.();
+  }
+
+  zerarVotoDeLugar() {
+    clearTimeout(this.votoDeLugar?.timer);
+    this.votoDeLugar = null;
+  }
+
+  // ---- quem decide na narrativa (J-20, como no Baldur's Gate 3) ---------------------------
+
+  /** O herói que acabou de agir: de quem é a cena que ele começar. Vale por 10 s (a caminhada e o gatilho acontecem logo depois). */
+  marcarAtor(c) {
+    if (c?.id) this._ator = { id: c.id, ate: Date.now() + 10_000 };
+  }
+
+  atorAtual() {
+    return this._ator && this._ator.ate > Date.now() && this.enc?.side === 'party' ? this._ator.id : null;
+  }
+
+  /**
+   * Uma narrativa com escolhas abre: se foi um herói que a começou, quem escolhe é o jogador dele; senão (decisão geral), todos
+   * votam. O pedido leva isso (`decide`) para as telas dos outros, que mostram quem decide e deixam escolher só a quem cabe.
+   */
+  abrirDecisao(msg) {
+    const p = msg.pedido;
+    const visao = this.salaDaPartida?.visao;
+    clearTimeout(this.decisao?.timer);
+    if (!p.escolhas?.length || !visao) { this.decisao = { id: msg.id, modo: 'leitura' }; p.decide = { modo: 'leitura' }; return; }
+    const ator = this.atorAtual();
+    const d = quemDecide({ ator, visao });
+    const nome = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
+    const heroi = ator ? this.enc?.combatants.find((c) => c.id === ator)?.name : null;
+    const titulo = d.modo === 'ator'
+      ? (d.pub === visao.voce && visao.jogadores.filter((j) => j.conectado).length <= 1 ? '' : `Quem decide: ${nome(d.pub)}${heroi ? ` (${heroi})` : ''}.`)
+      : `Decisão do grupo: votação entre ${d.votantes.length} jogadores (${Math.round(TEMPO_DA_VOTACAO_MS / 1000)} s).`;
+    this.decisao = {
+      id: msg.id, ...d, titulo, votos: new Map(), n: p.escolhas.length, timer: null,
+      bloqueadas: new Set(p.escolhas.filter((e) => e.motivo).map((e) => e.indice)),
+    };
+    if (d.modo === 'votacao') this.decisao.timer = setTimeout(() => this.fecharVotacao(), TEMPO_DA_VOTACAO_MS);
+    p.decide = { modo: d.modo, pub: d.pub, votantes: d.votantes, titulo, ate: d.modo === 'votacao' ? TEMPO_DA_VOTACAO_MS : null };
+  }
+
+  /** O que a tela do anfitrião faz com a decisão em curso: decidir (é dele), só ler (é de outro) ou votar. */
+  opcoesLocaisDaDecisao() {
+    const d = this.decisao;
+    const v = this.salaDaPartida?.visao;
+    if (!d || d.modo === 'leitura' || !v) return {};
+    const nota = d.titulo || null;
+    if (d.modo === 'ator') return d.pub === v.voce ? { nota } : { nota, soLeitura: true, assumirApos: 60_000 };
+    return { nota, aoVotar: (indice) => this.registrarVoto(v.voce, indice) };
+  }
+
+  registrarVoto(pub, indice) {
+    const d = this.decisao;
+    if (!d || d.modo !== 'votacao' || !d.votantes.includes(pub)) return;
+    if (!Number.isInteger(indice) || indice < 0 || indice >= d.n || d.bloqueadas.has(indice)) return;
+    d.votos.set(pub, indice);
+    if (d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
+  }
+
+  fecharVotacao() {
+    const d = this.decisao;
+    if (!d || d.modo !== 'votacao') return;
+    clearTimeout(d.timer);
+    const indice = apurar({ votos: d.votos, nEscolhas: d.n, bloqueadas: d.bloqueadas, desempate: d.desempate });
+    this.esperasDeResposta?.get(d.id)?.({ indice });
+  }
+
+  revisarVotoDeLugar(visao) {
+    const vt = this.votoDeLugar;
+    if (!vt) return;
+    const presentes = new Set(visao.jogadores.filter((j) => j.conectado).map((j) => j.id));
+    vt.votantes = vt.votantes.filter((p) => presentes.has(p));
+    if (!vt.votantes.length || vt.votantes.every((p) => vt.votos.has(p))) this.fecharVotoDeLugar();
+  }
+
+  /** Quem caiu no meio da votação deixa de ser esperado; se os que sobraram já votaram, apura. */
+  revisarVotacao(visao) {
+    const d = this.decisao;
+    if (!d || d.modo !== 'votacao') return;
+    const presentes = new Set(visao.jogadores.filter((j) => j.conectado).map((j) => j.id));
+    d.votantes = d.votantes.filter((p) => presentes.has(p));
+    if (!d.votantes.length || d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
+  }
+
+  /** A resposta de outro jogador a uma narrativa aberta: vale se ele é quem decide, ou como voto na votação. */
+  receberResposta({ id, indice, continuar, de }) {
+    const d = this.decisao;
+    if (!d || d.id !== id || continuar) return;   // "continuar" (texto sem escolha) é do anfitrião
+    if (d.modo === 'ator') {
+      if (de === d.pub && Number.isInteger(indice) && indice >= 0 && indice < d.n && !d.bloqueadas.has(indice)) this.esperasDeResposta?.get(id)?.({ indice });
+    } else if (d.modo === 'votacao') {
+      this.registrarVoto(de, indice);
+    }
   }
 
   encerrarPartidaDaSala() {
+    definirPortaDaVila(null);
+    this.vilaBase = null; this.vilaAtual = null;
+    this.zerarVotoDeLugar();
+    clearTimeout(this.decisao?.timer);
+    this.decisao = null;
     this.salaDaPartida = null;
     this.eventosPendentes = [];
     this.donoDaVisao = null;
@@ -980,6 +1138,7 @@ class App {
   select(c) {
     if (c && (c.dead || hasCondition(c, 'inconsciente') || c.side !== 'party')) return;
     this.selected = c;
+    if (c && this.salaDaPartida) this.marcarAtor(c);
     this.mode = null;
     this.refresh();
   }

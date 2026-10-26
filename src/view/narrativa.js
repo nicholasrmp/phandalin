@@ -62,9 +62,16 @@ function retratoDe(look) {
  * tela por fora, sem escolha — é como a porta compartilhada tira o painel da
  * frente de quem não decidiu quando outro respondeu primeiro.
  */
-export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, pular = false, lista = false, sinal = null }) {
+export function narrarLocal(root, {
+  formato = 'tela', paginas, escolhas = null, pular = false, lista = false, sinal = null,
+  // Numa sala (J-20): `nota` diz quem decide; `soLeitura` mostra as escolhas sem deixar clicar (decide outro jogador); `aoVotar`
+  // faz do clique um VOTO: a escolha fica marcada e o painel espera a apuração (quem o fecha é o `sinal`).
+  nota = null, soLeitura = false, aoVotar = null, assumirApos = null,
+}) {
   return new Promise((resolve) => {
     let i = 0;
+    let leitura = soLeitura;
+    let relogioDaSubstituicao = null;
     const caixa = el('div', { class: `narrativa ${formato}`, role: 'dialog', 'aria-modal': 'true' });
     const folha = el('article', { class: 'narrativa-folha' });
     caixa.append(folha);
@@ -73,6 +80,7 @@ export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, 
     const aoAbortar = () => fechar(undefined);
     function fechar(valor) {
       sinal?.removeEventListener('abort', aoAbortar);
+      clearTimeout(relogioDaSubstituicao);
       if (aberta?.caixa === caixa) aberta = null;
       caixa.classList.add('saindo');
       setTimeout(() => caixa.remove(), 180);
@@ -87,16 +95,27 @@ export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, 
         botoes.push(el('button', { class: 'narrativa-btn discreto', onclick: () => { audio.play('click'); i = paginas.length - 1; desenhar(); } }, 'Pular'));
       }
       let opcoes = null;
+      let votei = false;
+      const clicar = (esc, el_) => {
+        audio.play('click');
+        if (!aoVotar) { fechar(esc.valor); return; }
+        if (votei) return;
+        votei = true;
+        aoVotar(esc.valor);
+        for (const b of folha.querySelectorAll('.narrativa-opcao, .narrativa-btn')) b.disabled = true;
+        el_?.classList.add('votada');
+        folha.querySelector('.narrativa-nota')?.append(' Seu voto está dado: esperando os outros.');
+      };
       if (ultima && escolhas?.length && lista) {
         let n = 0;
         opcoes = el('ol', { class: 'narrativa-opcoes' }, ...escolhas.map((esc) => {
           const numero = esc.motivo ? null : ++n;
           return el('li', {}, el('button', {
             class: `narrativa-opcao${esc.motivo ? ' recusada' : ''}`,
-            disabled: Boolean(esc.motivo),
+            disabled: Boolean(esc.motivo) || leitura,
             title: esc.motivo ?? null,
             'data-numero': numero,
-            onclick: () => { audio.play('click'); fechar(esc.valor); },
+            onclick: (e) => clicar(esc, e.currentTarget),
           },
           el('span', { class: 'narrativa-opcao-num' }, numero ?? '–'),
           el('span', {}, esc.detalhe && el('em', { class: 'narrativa-etiqueta' }, `[${esc.detalhe}] `), esc.rotulo,
@@ -106,9 +125,9 @@ export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, 
         for (const esc of escolhas) {
           botoes.push(el('button', {
             class: `narrativa-btn${esc.primaria ? ' primario' : ''}`,
-            disabled: Boolean(esc.motivo),
+            disabled: Boolean(esc.motivo) || leitura,
             title: esc.motivo ?? null,
-            onclick: () => { audio.play('click'); fechar(esc.valor); },
+            onclick: (e) => clicar(esc, e.currentTarget),
           }, esc.detalhe ? `${esc.rotulo} [${esc.detalhe}]` : esc.rotulo));
         }
       } else {
@@ -133,6 +152,7 @@ export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, 
       const retrato = p.retrato && retratoDe(p.retrato);
       folha.replaceChildren(...[
         p.titulo && el('h2', { class: 'narrativa-titulo' }, p.titulo),
+        nota && ultima && escolhas?.length && el('p', { class: 'narrativa-nota' }, nota),
         retrato
           ? el('div', { class: 'narrativa-com-retrato' }, el('span', { class: 'narrativa-retrato' }, retrato), el('div', {}, ...corpo))
           : corpo,
@@ -154,6 +174,10 @@ export function narrarLocal(root, { formato = 'tela', paginas, escolhas = null, 
       escolherNumero: (n) => folha.querySelector(`.narrativa-opcao[data-numero="${n}"]`)?.click(),
     };
     desenhar();
+    // Quem decide sumiu ou não responde: depois deste tempo o anfitrião pode decidir no lugar dele (a sala não trava).
+    if (leitura && assumirApos) {
+      relogioDaSubstituicao = setTimeout(() => { leitura = false; nota = `${nota ?? ''} O tempo acabou: você pode decidir.`.trim(); desenhar(); }, assumirApos);
+    }
     if (sinal) {
       if (sinal.aborted) fechar(undefined);
       else sinal.addEventListener('abort', aoAbortar, { once: true });

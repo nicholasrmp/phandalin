@@ -17,6 +17,12 @@ import { makePortrait } from '../art/sheet.js';
 import pintura from '../art/vila/phandalin.webp';
 import { moedas } from '../game/comercio.js';
 
+// A PORTA DA VILA (F6.3). Numa partida de sala o anfitrião a põe aqui: o mapa da vila e o da região (que usa a mesma tela) passam a
+// ser VOTAÇÃO: o clique num lugar é um voto, e o grupo vai junto para o mais votado. `escolher(lugar)` recebe o clique;
+// `aoAtualizar(instantaneo, api)` entrega o que os outros jogadores veem; `votos()` e `faixa()` dizem como vai a votação.
+let portaDaVila = null;
+export const definirPortaDaVila = (p = null) => { portaDaVila = p; };
+
 function retrato(look) {
   try {
     const cv = makePortrait(look, 36);
@@ -33,6 +39,7 @@ export function abrirTelaVila(root, o) {
   const momento = el('span', { class: 'vila-momento' });
   const dinheiro = el('span', { class: 'vila-dinheiro' });
   const grupo = el('div', { class: 'vila-grupo' });
+  const faixa = el('span', { class: 'vila-votacao' });
 
   // A pintura e os marcadores dentro de uma moldura com a proporção dela, para
   // a % dos marcadores cair sempre no mesmo prédio, qualquer que seja a tela.
@@ -45,7 +52,7 @@ export function abrirTelaVila(root, o) {
       class: `vila-pino${l.cidade ? ' cidade' : ''}`,
       style: { left: `${l.x}%`, top: `${l.y}%` },
       title: l.nome,
-      onclick: () => { audio.play('click'); o.onLugar(l); },
+      onclick: () => { audio.play('click'); if (portaDaVila?.escolher) portaDaVila.escolher(l); else o.onLugar(l); },
     }, el('i'), el('span', {}, l.nome));
     pinos.set(l.id, b);
     quadro.append(b);
@@ -72,7 +79,7 @@ export function abrirTelaVila(root, o) {
 
   const caixa = el('div', { class: `vila${o.classe ? ` ${o.classe}` : ''}` },
     el('header', { class: 'vila-topo' },
-      el('h2', {}, o.titulo ?? 'Phandalin'), momento, dinheiro,
+      el('h2', {}, o.titulo ?? 'Phandalin'), momento, dinheiro, faixa,
       el('div', { class: 'vila-acoes' },
         ...(o.botoes ?? []).map((b) => el('button', { class: 'vila-btn', title: b.dica ?? '', onclick: b.fazer }, b.rotulo)),
         el('button', { class: 'vila-btn', onclick: abrirDiario }, 'Diário'),
@@ -84,9 +91,36 @@ export function abrirTelaVila(root, o) {
   root.append(caixa);
   for (const t of o.estado.registro ?? []) log.prepend(el('li', {}, t));
 
+  /** O que os outros jogadores veem desta tela (F6.3): os lugares, a hora, o dinheiro e o grupo. */
+  function instantaneo() {
+    return {
+      titulo: o.titulo ?? 'Phandalin',
+      chave: o.pintura ? 'regiao' : 'phandalin',
+      proporcao: o.proporcao ?? null,
+      classe: o.classe ?? null,
+      lugares: o.lugares.filter((l) => (o.visivel ? o.visivel(l) : true)).map((l) => ({
+        id: l.id, nome: l.nome, x: l.x, y: l.y, cidade: Boolean(l.cidade), fechado: !o.aberto(l), novidade: Boolean(o.novidade?.(l)),
+      })),
+      momento: o.momento(),
+      dinheiro: o.dinheiro(),
+      grupo: o.grupo.filter((c) => !c.dead).map((c) => ({
+        id: c.id, name: c.name, className: c.className ?? '', level: c.level ?? 1, titulo: c.titulo ?? null, look: c.look, hp: c.hp, maxHp: maxHpEfetivo(c),
+      })),
+    };
+  }
+
   function atualizar() {
     momento.textContent = o.momento();
     dinheiro.textContent = moedas(o.dinheiro());
+    // Votação do destino: uma insígnia com o número de votos em cada lugar e uma frase com o andamento.
+    const votos = portaDaVila?.votos?.() ?? {};
+    faixa.textContent = portaDaVila?.faixa?.() ?? '';
+    for (const [id, pino] of pinos) {
+      const n = votos[id]?.length ?? 0;
+      pino.dataset.votos = n ? String(n) : '';
+      pino.title = n ? `${o.lugares.find((l) => l.id === id)?.nome} — votaram: ${votos[id].join(', ')}` : (o.lugares.find((l) => l.id === id)?.nome ?? '');
+    }
+    portaDaVila?.aoAtualizar?.(instantaneo(), { lugares: o.lugares, ir: (l) => o.onLugar(l), atualizar });
     for (const l of o.lugares) {
       // Na região, lugar que o grupo ainda não conhece nem aparece.
       pinos.get(l.id).hidden = o.visivel ? !o.visivel(l) : false;
@@ -116,7 +150,7 @@ export function abrirTelaVila(root, o) {
     // fechar. Esconder de vez deixava à mostra o tabuleiro da última luta.
     esconder: () => { caixa.inert = true; caixa.classList.add('em-cena'); },
     mostrar: () => { caixa.inert = false; caixa.classList.remove('em-cena'); },
-    fechar: () => caixa.remove(),
+    fechar: () => { caixa.remove(); portaDaVila?.aoFechar?.(); },
     get aberta() { return caixa.isConnected && !caixa.inert; },
   };
 }

@@ -173,3 +173,13 @@
 }
 .regiao .vila-pino.fechado span::after { content: ' · em breve'; }
 .regiao .vila-pino.cidade span::after { content: ''; }
+
+/* A votação do destino (F6.3): o número de votos em cada lugar, e a frase com o andamento. */
+.vila-pino[data-votos]:not([data-votos=""])::after {
+  content: attr(data-votos);
+  position: absolute; top: -10px; right: -10px; min-width: 18px; height: 18px; padding: 0 4px;
+  display: grid; place-items: center; border-radius: 9px;
+  font: 700 12px var(--font); color: #2b1d07; background: var(--gold); border: 1px solid var(--gold-escuro);
+}
+.vila-votacao { font-size: 13px; color: #6b4a14; font-style: italic; }
+.vila-votacao:empty { display: none; }

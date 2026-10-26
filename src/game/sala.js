@@ -33,7 +33,7 @@ export const VERSAO_DA_SALA = 1;
 export const GRACA_DO_ANFITRIAO_MS = 20_000;
 
 /** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
-export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar'];
+export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar'];
 
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
 export const HEROIS_JOGAVEIS = [
@@ -350,6 +350,12 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');
       if (jogadorId === sala.anfitriao) return recusa('o anfitrião age pela própria tela');
       if (!ACOES_DA_PARTIDA.includes(mensagem.acao)) return recusa('ação desconhecida');
+      // Na vila e na região o grupo vota o destino e vai junto: o voto é do JOGADOR (não de um herói) e leva só o id do lugar.
+      if (mensagem.acao === 'lugar') {
+        const { lugar } = mensagem;
+        if (typeof lugar !== 'string' || !lugar || lugar.length > 40) return recusa('lugar inválido');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'lugar', lugar } });
+      }
       if (!heroiValido(mensagem.heroi) || sala.herois[mensagem.heroi] !== jogadorId) return recusa('esse herói não é seu');
       const base = { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: mensagem.acao };
       if (mensagem.acao === 'terminar') return ok({ igual: true, repassar: base });
@@ -374,11 +380,12 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     case 'resposta': {
       if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');
       if (jogadorId === sala.anfitriao) return recusa('o anfitrião responde pela própria tela');
-      if (jogadorId !== sala.lider) return recusa('quem decide é o líder');
+      // J-20 (como no Baldur's Gate 3): quem decide é o jogador do personagem que começou a cena, ou todos, em votação. O servidor
+      // não sabe qual é o caso (isso é do jogo): confere só a forma e diz de quem veio; o anfitrião aceita ou ignora.
       const { id, indice = null } = mensagem;
       if (!Number.isInteger(id) || id < 1) return recusa('resposta inválida');
       if (indice !== null && (!Number.isInteger(indice) || indice < 0 || indice > 50)) return recusa('resposta inválida');
-      return ok({ igual: true, repassar: { tipo: 'resposta', id, indice, continuar: mensagem.continuar === true } });
+      return ok({ igual: true, repassar: { tipo: 'resposta', id, indice, continuar: mensagem.continuar === true, de: eu.pub } });
     }
     case 'persona': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
