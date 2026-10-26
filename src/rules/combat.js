@@ -3457,6 +3457,28 @@ export class Encounter {
     return { ...r, total, conta };
   }
 
+  /**
+   * A Brisa das Cinzas: toda criatura VIVA a 1,5 m de `zumbi` faz resistência de
+   * CON CD 10 ou fica com desvantagem em ataques, resistências e testes por 1
+   * minuto. Mortos-vivos e construtos não respiram a cinza. Parede de borda no
+   * meio protege: a cinza não atravessa (`contato`).
+   */
+  brisaDasCinzas(zumbi) {
+    for (const c of this.combatants) {
+      if (c === zumbi || c.dead || !c.pos || !zumbi.pos) continue;
+      if (c.tipo === 'morto-vivo' || c.tipo === 'constructo' || c.traits?.includes('undeadFortitude')) continue;
+      if (distanceFt(c.pos, zumbi.pos) > 5 || !this.field.contato(c.pos, zumbi.pos)) continue;
+      const save = this.resistencia(c, 'con', 10);
+      this.explicarResistencia(c, 'con', 10, save, {
+        contra: 'Brisa das Cinzas',
+        seSucesso: 'respira fundo e não engole a cinza',
+      });
+      if (save.success) continue;
+      addCondition(c, 'brisaDasCinzas', { rounds: 10, source: zumbi.id, data: { repete: 'sempre', save: 'con', dc: 10 } });
+      this.say('condicao', `${c.name} engole a cinza e fica tonto: desvantagem em tudo por um minuto.`);
+    }
+  }
+
   applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false } = {}) {
     if (amount <= 0 || target.dead) return;
     // Fora de alcance nada atinge: o Plano Etéreo e quem está dentro da pedra.
@@ -3466,6 +3488,13 @@ export class Encounter {
     const doElo = this.donoDoElo(target);
     amount = this.danoPorTipo(target, amount, type, magico, deArma);
     this.ultimoDano = Math.max(0, amount);
+    // BRISA DAS CINZAS (zumbi das cinzas): a primeira vez que ele leva dano, a
+    // cinza solta do corpo. Conta no dano que CHEGA (já descontada a resistência),
+    // e dispara mesmo no golpe que o derruba.
+    if (amount > 0 && target.traits?.includes('brisaDasCinzas') && !target.brisaDasCinzasUsada) {
+      target.brisaDasCinzasUsada = true;
+      this.brisaDasCinzas(target);
+    }
     if (amount !== bruto) {
       const como = amount === 0 ? 'imune' : amount < bruto ? 'resistente' : 'vulnerável';
       this.say('dano', `${target.name} é ${como} a ${type}: ${bruto} vira ${amount}.`);

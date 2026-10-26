@@ -14,6 +14,7 @@ import { MAPA_MANSAO, MANSAO } from './mansao.js';
 import { MAPA_POCO } from './poco.js';
 import { MAPA_CUME } from './cume.js';
 import { MAPA_CASTELO, CASTELO } from './castelo.js';
+import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from './arvoretrovao.js';
 
 // '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura · '1'..'9' elevação
 //
@@ -268,6 +269,24 @@ export function mapaDo(variante = 'padrao') {
       cena: 'cume',
     };
   }
+  if (variante === 'arvoreTrovao') {
+    // As ruínas de Árvore Trovão: o grupo entra pela rua, vindo do sul, com a
+    // torre do dragão no fim dela.
+    return {
+      ...MAPA_ARVORE_TROVAO,
+      // Como no castelo: as casas de cada cômodo (o tabuleiro dissolve a parede
+      // do cômodo em que o grupo entrou) e a decoração pendurada nas paredes.
+      salas: ARVORE_TROVAO.celulas,
+      decor: ARVORE_TROVAO.decor,
+      avisosDeVista: true,
+      objetos: [],
+      // Do mapa, e não escrito aqui: estas casas já foram as do mapa antigo, e
+      // quando ele cresceu o grupo passou a nascer dentro de uma construção.
+      grupo: ARVORE_TROVAO.grupo.map((p) => ({ ...p })),
+      olhar: { dx: 0, dy: -1 },
+      cena: 'arvoreTrovao',
+    };
+  }
   if (variante === 'poco') {
     // O Poço da Coruja Velha: o grupo sobe a encosta pelo caminho antigo, do sul.
     return {
@@ -359,7 +378,7 @@ export function mapaDo(variante = 'padrao') {
  */
 export function buildFoes(variante = 'padrao') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao'].includes(variante)) return [];
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
@@ -665,7 +684,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo'].includes(variante)) return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

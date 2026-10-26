@@ -62,6 +62,17 @@ export const PHANDELVER_ITEMS = {
     'Estatueta de jade do tamanho de um punho, com olhos de pedra dourada. Vale mais pelo lapidário que pelo peso.',
     { tipo: 'maravilhoso', peso: 1, valor: 40 }),
 
+  // ---------------------------------------- tesouro de Árvore Trovão ----
+  // O colar que a família Dendrar escondeu na loja de ervas (200 po). Devolvê-lo
+  // à Mirna fecha a missão e rende o XP; ficar com ele rende o preço dele.
+  colarDeMirna: nomeado('colarDeMirna', 'Colar de esmeralda', 'incomum',
+    'Colar de ouro fino com um pingente de esmeralda. Foi da família Dendrar, e a Mirna o escondeu numa caixa quando a vila morreu.',
+    { tipo: 'maravilhoso', peso: 0, valor: 200 }),
+  // Os cálices do mago morto, no baú da torre (60 po cada).
+  caliceDeSelenita: nomeado('caliceDeSelenita', 'Cálice de prata com selenita', 'comum',
+    'Cálice de prata com uma pedra leitosa engastada na base. O mago que morreu na torre colecionava.',
+    { tipo: 'tesouro', pilha: true, peso: 0.5, valor: 60 }),
+
   // ----------------------------------------------------- pergaminhos de magia ----
   // A aventura espalha vários. Entram como um item por magia, porque é assim
   // que um pergaminho funciona: ele é a magia, e some ao ser lido.
@@ -71,6 +82,12 @@ export const PHANDELVER_ITEMS = {
   // Os três do esconderijo dos Marcarrubra. Ainda não se leem em combate (o
   // motor não conjura de pergaminho): por ora são tesouro, e o Câmbio de
   // Minério paga o preço de tabela.
+  pergaminhoDePassoNebuloso: nomeado('pergaminhoDePassoNebuloso', 'Pergaminho de Passo Nebuloso', 'incomum',
+    'Passo Nebuloso, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 100, magia: 'passoNebuloso' }),
+  pergaminhoDeRelampago: nomeado('pergaminhoDeRelampago', 'Pergaminho de Relâmpago', 'incomum',
+    'Relâmpago, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 150, magia: 'relampago' }),
   pergaminhoDeAuguro: nomeado('pergaminhoDeAuguro', 'Pergaminho de Augúrio', 'incomum',
     'Augúrio, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
     { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 50, magia: 'augurio' }),

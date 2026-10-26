@@ -31,6 +31,7 @@ import { criarBuscas } from '../game/buscas.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO } from '../game/esconderijo.js';
+import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from '../game/arvoretrovao.js';
 
 let total = 0;
 let falhas = 0;
@@ -463,12 +464,265 @@ teste('o Cume não desenha chão que ninguém alcança', () => {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= f.w || ny >= f.h || f.stepBlocked(x, y, nx, ny)) continue;
+      // A parede de BORDA: o passo não cruza aresta. É a pergunta do motor
+      // (`passa`), e não uma lista nossa de casas.
+      if (!f.passa(x, y, nx, ny)) continue;
+      // Regra de quina, como em `reachable`: o `stepBlocked` não a tem.
+      if (dx !== 0 && dy !== 0 && f.blocksMove(x + dx, y) && f.blocksMove(x, y + dy)) continue;
       fila.push([nx, ny]);
     }
   }
   let chao = 0;
   for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (!f.blocksMove(x, y)) chao += 1;
   assert.equal(chao, vistas.size, `${chao - vistas.size} casas de chão fora de alcance`);
+});
+
+// ------------------------------------------------- Árvore Trovão ----
+
+const campoDeArvoreTrovao = () => {
+  const m = MAPA_ARVORE_TROVAO;
+  return new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, null, m.paredes);
+};
+
+const alcancaveisDe = (f, inicio) => {
+  const vistas = new Set();
+  const fila = [inicio];
+  while (fila.length) {
+    const [x, y] = fila.pop();
+    const k = `${x},${y}`;
+    if (vistas.has(k) || x < 0 || y < 0 || x >= f.w || y >= f.h || f.blocksMove(x, y)) continue;
+    vistas.add(k);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= f.w || ny >= f.h || f.stepBlocked(x, y, nx, ny)) continue;
+      // A parede de BORDA: o passo não cruza aresta. É a pergunta do motor
+      // (`passa`), e não uma lista nossa de casas.
+      if (!f.passa(x, y, nx, ny)) continue;
+      // REGRA DE QUINA, como `reachable` faz (`core/grid.js`: "Não corta quina
+      // entre duas paredes"). O `stepBlocked` NÃO a tem — só mede o degrau —,
+      // e sem ela esta busca achava casas que o jogador não alcança: duas
+      // casas de cinza cercadas de mata passaram por aqui e pelo selo do
+      // gerador, as duas com a mesma cegueira.
+      if (dx !== 0 && dy !== 0 && f.blocksMove(x + dx, y) && f.blocksMove(x, y + dy)) continue;
+      fila.push([nx, ny]);
+    }
+  }
+  return vistas;
+};
+
+teste('Árvore Trovão não desenha chão que ninguém alcança', () => {
+  const f = campoDeArvoreTrovao();
+  const vistas = alcancaveisDe(f, [ARVORE_TROVAO.chegada.x, ARVORE_TROVAO.chegada.y]);
+  let chao = 0;
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (!f.blocksMove(x, y)) chao += 1;
+  assert.equal(chao, vistas.size, `${chao - vistas.size} casas de chão fora de alcance`);
+});
+
+teste('cada criatura de Árvore Trovão nasce em casa livre e alcançável', () => {
+  const f = campoDeArvoreTrovao();
+  const vistas = alcancaveisDe(f, [ARVORE_TROVAO.chegada.x, ARVORE_TROVAO.chegada.y]);
+  // OS POSTOS VÊM DO MAPA. Esta lista já esteve escrita aqui, à mão, com um
+  // comentário dizendo que eram "as mesmas casas que a cena usa" — e eram, até
+  // o dia em que o mapa mudou de tamanho. Aí passaram a existir TRÊS cópias da
+  // mesma lista: a do gerador, a da cena e esta. O teste então comparava a sua
+  // cópia com o mapa novo e acusava casas que a cena nem usava mais, enquanto
+  // as casas que ela de fato usava ninguém conferia.
+  //
+  // Lendo do mapa, o teste volta a perguntar o que importa: TODO bando que o
+  // jogo vai pôr no tabuleiro nasce em chão livre, alcançável, e com as quatro
+  // casas que um Grande precisa.
+  const DE_CADA = {
+    infectados: ['galhoInfectado', 'galhoInfectado', 'galhoInfectado',
+      'espetoInfectado', 'espetoInfectado', 'vinhaInfectada', 'vinhaInfectada'],
+    // Os bandos do livro, nas quantidades dele: zumbis das cinzas 4 / 2 / 5 (áreas
+    // 3, 8, 11) e ramos secos 2 / 6 / 8 / 6 (áreas 1, 2, 5, 12).
+    zumbis: Array(5).fill('zumbiDasCinzas'),
+    zumbisCavalo: Array(4).fill('zumbiDasCinzas'),
+    zumbisFerraria: Array(2).fill('zumbiDasCinzas'),
+    ramos1: Array(2).fill('galhoInfectado'),
+    ramos2: Array(6).fill('galhoInfectado'),
+    ramos5: Array(8).fill('galhoInfectado'),
+    ramos12: Array(6).fill('galhoInfectado'),
+    aranhas: ['aranhaGigante', 'aranhaGigante'],
+    culto: ['sacerdote', 'acolito', 'acolito', 'acolito'],
+    mormesk: ['wraith'],
+    dragao: ['dragaoVerdeJovem'],
+  };
+  const postos = [];
+  for (const [bando, ids] of Object.entries(DE_CADA)) {
+    const vagas = ARVORE_TROVAO.ninhos[bando] ?? [];
+    assert.equal(vagas.length, ids.length,
+      `o mapa dá ${vagas.length} vaga(s) para "${bando}" e a cena põe ${ids.length} criatura(s)`);
+    vagas.forEach((p, i) => postos.push([ids[i], [p.x, p.y]]));
+  }
+  for (const [id, [x, y]] of postos) {
+    assert.ok(!f.blocksMove(x, y), `${id} nasce em casa bloqueada (${x},${y})`);
+    assert.ok(vistas.has(`${x},${y}`), `${id} nasce onde não se chega (${x},${y})`);
+    // As criaturas Grandes ocupam 2 x 2: as quatro casas têm de estar livres.
+    const m = MONSTERS[id];
+    if (m.size === 'grande' || m.tamanho === 'grande') {
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+        assert.ok(!f.blocksMove(x + dx, y + dy),
+          `${id} é Grande e (${x + dx},${y + dy}) não está livre`);
+      }
+    }
+  }
+});
+
+teste('cada bando do livro nasce DENTRO do prédio que o livro lhe dá, ou na franja dele', () => {
+  const dentroDe = (id) => new Set(ARVORE_TROVAO.celulas[id].map((c) => `${c.x},${c.y}`));
+  const cada = (chave, ids) => {
+    const cels = ids.map(dentroDe);
+    for (const p of ARVORE_TROVAO.ninhos[chave]) {
+      assert.ok(cels.some((s) => s.has(`${p.x},${p.y}`)), `${chave} nasce fora de ${ids.join('/')}: (${p.x},${p.y})`);
+    }
+  };
+  cada('zumbis', ['guarda']);
+  cada('zumbisCavalo', ['estalagem']);
+  cada('zumbisFerraria', ['ferraria']);
+  cada('ramos1', ['casa7']);
+  cada('ramos2', ['fazenda', 'celeiro']);
+  // O mato (áreas 5 e 12) nasce na franja de fora, não dentro da casa: o livro os
+  // põe "no mato a leste" e "nos arbustos ao sul".
+  const z5 = ARVORE_TROVAO.zonas.matoLeste;
+  for (const p of ARVORE_TROVAO.ninhos.ramos5) {
+    assert.ok(p.x >= z5.x0 && p.x <= z5.x1 && p.y >= z5.y0 && p.y <= z5.y1, `ramos5 fora do mato leste (${p.x},${p.y})`);
+  }
+  const z12 = ARVORE_TROVAO.zonas.tecelagemSul;
+  for (const p of ARVORE_TROVAO.ninhos.ramos12) {
+    assert.ok(p.x >= z12.x0 && p.x <= z12.x1 && p.y >= z12.y0 && p.y <= z12.y1, `ramos12 fora dos arbustos do tecelão (${p.x},${p.y})`);
+  }
+});
+
+teste('os dois objetos escondidos (baú da cabana, caixa da herborista) têm casa de piso livre e não dividem com bando', () => {
+  const f = campoDeArvoreTrovao();
+  const O = ARVORE_TROVAO.objetos;
+  const ocupadas = new Set(Object.values(ARVORE_TROVAO.ninhos).flat().map((p) => `${p.x},${p.y}`));
+  const noPredio = (pos, id) => ARVORE_TROVAO.celulas[id].some((c) => c.x === pos.x && c.y === pos.y);
+  assert.ok(noPredio(O.bauMercador, 'casa7'), 'o baú do comerciante fica na cabana ocidental');
+  assert.ok(noPredio(O.caixaMirna, 'ervas'), 'a caixa da Mirna fica na loja do herborista');
+  for (const pos of [O.bauMercador, O.caixaMirna]) {
+    assert.ok(!f.blocksMove(pos.x, pos.y), `casa escondida bloqueada (${pos.x},${pos.y})`);
+    assert.ok(!ocupadas.has(`${pos.x},${pos.y}`), `um bando nasce em cima do objeto escondido (${pos.x},${pos.y})`);
+  }
+  // O baú de Mormesk é o ÚNICO baú desenhado: a cena abre qualquer `bau` pela coordenada.
+  const baus = [];
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (f.surfaceAt(x, y) === 'bau') baus.push(`${x},${y}`);
+  assert.deepEqual(baus, [`${O.bauMormesk.x},${O.bauMormesk.y}`], 'só o baú de Mormesk está desenhado no começo');
+});
+
+teste('o grupo de Árvore Trovão nasce em casa livre, alcançável, e longe da saída', () => {
+  const f = campoDeArvoreTrovao();
+  const vistas = alcancaveisDe(f, [ARVORE_TROVAO.chegada.x, ARVORE_TROVAO.chegada.y]);
+  // `encounter.js` já teve estas casas escritas à mão, na escala do mapa
+  // antigo: quando o mapa cresceu, o grupo passou a nascer dentro de uma casa.
+  assert.equal(ARVORE_TROVAO.grupo.length, 4, 'a cena espera quatro heróis');
+  for (const p of ARVORE_TROVAO.grupo) {
+    assert.ok(!f.blocksMove(p.x, p.y), `um herói nasce em casa bloqueada (${p.x},${p.y})`);
+    assert.ok(vistas.has(`${p.x},${p.y}`), `um herói nasce onde não se chega (${p.x},${p.y})`);
+    assert.ok(!ARVORE_TROVAO.saida.some((s) => s.x === p.x && s.y === p.y),
+      `um herói nasce em cima da saída (${p.x},${p.y})`);
+  }
+});
+
+teste('a torre só se vê pela porta, e a porta cabe o dragão', () => {
+  const f = campoDeArvoreTrovao();
+  const { torre, portaDaTorre: porta } = ARVORE_TROVAO;
+  const salao = ARVORE_TROVAO.celulas.torre;
+  assert.ok(salao.length >= 20, `a torre tem ${salao.length} casa(s) de salão`);
+  const dentro = new Set(salao.map((c) => `${c.x},${c.y}`));
+  // A PAREDE É DE BORDA (castelo): a torre fecha a vista pelas arestas, e o vão
+  // é uma aresta aberta. O teste pergunta ao MOTOR (`passa`, `hasLineOfSight`)
+  // e não a uma lista de casas: foi a lista de casas de parede que ficou velha
+  // quando a parede deixou de ser casa.
+  //
+  // O FUNDO É A CASA DO SALÃO MAIS LONGE DA PORTA: de fora, por qualquer lado
+  // que não seja o vão, não pode ser visto.
+  const longe = (p) => (p.x - porta.x) ** 2 + (p.y - porta.y) ** 2;
+  const fundo = salao.reduce((a, b) => (longe(b) > longe(a) ? b : a));
+  const fora = [
+    { x: torre.x0 - 2, y: fundo.y }, { x: torre.x1 + 2, y: fundo.y },
+    { x: fundo.x, y: torre.y0 - 2 }, { x: torre.x1 + 2, y: torre.y0 - 2 },
+  ];
+  for (const p of fora) {
+    if (!f.inside(p.x, p.y)) continue;
+    assert.ok(!f.hasLineOfSight(p, fundo),
+      `de (${p.x},${p.y}) dá para ver o fundo da torre sem passar pela porta`);
+  }
+  // O vão: as arestas da borda da torre que o motor deixa passar. Duas, lado a
+  // lado, porque o bicho é Grande e sai por ele se quiser.
+  const vaos = [];
+  for (const c of salao) {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const v = { x: c.x + dx, y: c.y + dy };
+      if (dentro.has(`${v.x},${v.y}`)) continue;
+      if (f.passa(c.x, c.y, v.x, v.y)) vaos.push({ de: c, para: v });
+    }
+  }
+  // A torre tem DUAS saídas: a porta de fora (duas casas, onde o dragão passa) e
+  // a porta interna para o Salão do Prefeito, na parede que os dois dividem —
+  // como na referência. A de fora é a que o teste mede.
+  const noSalao = new Set(ARVORE_TROVAO.celulas.prefeito.map((c) => `${c.x},${c.y}`));
+  const deFora = vaos.filter((v) => !noSalao.has(`${v.para.x},${v.para.y}`));
+  const paraOSalao = vaos.filter((v) => noSalao.has(`${v.para.x},${v.para.y}`));
+  assert.equal(paraOSalao.length, 1, `a porta interna da torre para o Salão tem ${paraOSalao.length} aresta(s)`);
+  assert.equal(deFora.length, 2, `a torre tem ${deFora.length} vão(s) para fora, e o dragão precisa de 2`);
+  assert.ok(deFora.some((v) => v.para.x === porta.x && v.para.y === porta.y),
+    'a porta publicada não é um dos vãos da torre');
+  const [a, b] = deFora;
+  assert.ok(Math.abs(a.para.x - b.para.x) + Math.abs(a.para.y - b.para.y) === 1,
+    'os dois vãos da torre não são vizinhos');
+});
+
+teste('o dragão (Grande, 2 x 2) sai da torre pela porta e alcança a rua', () => {
+  const f = campoDeArvoreTrovao();
+  const salao = new Set(ARVORE_TROVAO.celulas.torre.map((c) => `${c.x},${c.y}`));
+  const cabe = (x, y) => [0, 1].every((j) => [0, 1].every((i) => f.inside(x + i, y + j) && !f.blocksMove(x + i, y + j)));
+  const ini = ARVORE_TROVAO.ninhos.dragao[0];
+  // 5000 pés: a pergunta é se HÁ caminho, não quanto custa. A porta de duas
+  // casas deixava passar, mas a mata a uma casa dela fechava o pátio: o
+  // dragão alcançava 13 âncoras, todas dentro, e a luta do cume virava uma
+  // torre de tiro fixa. O teste anterior só olhava as arestas da porta.
+  const alcance = f.reachable({ x: ini.x, y: ini.y }, 5000, () => false, cabe, 2);
+  let fora = 0;
+  for (const n of alcance.values()) if (![0, 1].some((j) => [0, 1].some((i) => salao.has(`${n.x + i},${n.y + j}`)))) fora += 1;
+  // Antes da correção eram 0, e depois do pátio da porta eram 22, numa bolsa
+  // fechada por três árvores: o dragão seguia sendo uma torre de tiro. Agora o
+  // gerador abre, pelo menor número de casas de mata, um caminho de 2 x 2 da
+  // chegada até a porta da torre, e o dragão alcança a vila inteira.
+  assert.ok(fora >= 1000, `o dragão alcança só ${fora} âncora(s) fora da torre (o mínimo é 1000)`);
+  // E a rede de Grande que PARTE DA CHEGADA toca a porta da torre: é o que
+  // garante que quem foge dele pela vila é perseguido.
+  const rede = f.reachable({ x: ARVORE_TROVAO.chegada.x, y: ARVORE_TROVAO.chegada.y }, 5000, () => false, cabe, 2);
+  const p = ARVORE_TROVAO.portaDaTorre;
+  assert.ok([...rede.keys()].some((k) => { const [x, y] = k.split(',').map(Number); return Math.abs(x - p.x) <= 1 && Math.abs(y - p.y) <= 1; }),
+    'um 2 x 2 que sai da chegada não alcança a porta da torre');
+});
+
+teste('toda construção admite uma criatura Grande no pátio da porta', () => {
+  const f = campoDeArvoreTrovao();
+  const cabe = (x, y) => [0, 1].every((j) => [0, 1].every((i) => f.inside(x + i, y + j) && !f.blocksMove(x + i, y + j)));
+  // O avental da porta (3 de fundo, 4 de largura) existe para isto: 9 das 22
+  // construções tinham o pátio da porta vedado a Grande.
+  const semPatio = [];
+  for (const [id, cs] of Object.entries(ARVORE_TROVAO.celulas)) {
+    const dentro = new Set(cs.map((c) => `${c.x},${c.y}`));
+    let achou = false;
+    for (const c of cs) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const v = { x: c.x + dx, y: c.y + dy };
+        if (dentro.has(`${v.x},${v.y}`) || !f.passa(c.x, c.y, v.x, v.y)) continue;
+        for (let ax = v.x - 1; ax <= v.x + 1; ax += 1) {
+          for (let ay = v.y - 1; ay <= v.y + 1; ay += 1) {
+            if (cabe(ax, ay) && ![0, 1].some((j) => [0, 1].some((i) => dentro.has(`${ax + i},${ay + j}`)))) achou = true;
+          }
+        }
+      }
+    }
+    if (!achou) semPatio.push(id);
+  }
+  assert.deepEqual(semPatio, [], `sem pátio para Grande na porta: ${semPatio.join(', ')}`);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

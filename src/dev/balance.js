@@ -113,18 +113,57 @@ export function playCharacter(enc, c) {
   // gratuita do turno; `sacarArma` cobra a ação se ela já foi gasta).
   const naMao = (w) => enc.empunha(c, w) || enc.sacarArma(c, w).ok;
 
-  if (!c.actionUsed && melee && distanceFt(c.pos, nearest.pos) <= 5 && naMao(melee)) {
+  // TOCAR, e não só estar a 5 pés: encostado na quina de uma parede de borda,
+  // a 5 pés em diagonal, o herói "atacava a parede" por rodadas — o motor recusa
+  // o golpe, e o turno acabava assim mesmo. Isso inflou as medições de zumbi
+  // de 5,3 para 9 rodadas em mapa de parede de borda.
+  if (!c.actionUsed && melee && distanceFt(c.pos, nearest.pos) <= 5 && enc.field.contato(c.pos, nearest.pos) && naMao(melee)) {
     enc.attackAction(c, nearest, melee);
     enc.endTurn(c);
     return;
   }
 
+  /*
+   * ANDAR PARA ONDE SE ENXERGA, e não só para perto.
+   *
+   * A conta antiga escolhia a casa de MENOR DISTÂNCIA EM LINHA RETA até o
+   * inimigo. Num mapa com parede isso trava o herói: encostado nela, com o
+   * inimigo do outro lado, ele JÁ está na casa mais próxima — então não anda,
+   * e o ataque à distância falha por falta de visão. Fica parado, turno após
+   * turno. Foi assim que um mago passou onze rodadas atrás da parede de um
+   * porão, e toda medição feita em mapa de parede herdou isso.
+   *
+   * Agora a casa com linha de visão ganha da casa mais perto. E quando
+   * nenhuma casa DESTE turno enxerga, a busca abre o orçamento para achar a
+   * mais próxima que enxergue e anda o que der nessa direção — é o que
+   * desencosta o herói da parede em vez de o deixar ali.
+   */
   const reached = enc.reachableFor(c);
+  const enxerga = (p) => enc.field.hasLineOfSight(p, nearest.pos);
   let best = null;
   for (const node of reached.values()) {
     if (enc.occupied(node.x, node.y, c)) continue;
+    const cego = enxerga(node) ? 0 : 1;
+    // Quem só tem arma de perto prefere a casa de ONDE TOCA o alvo à casa que
+    // apenas está perto em linha reta (a diagonal da quina de uma parede).
+    const semContato = (melee && !ranged && !cego && !enc.field.contato({ x: node.x, y: node.y }, nearest.pos)) ? 1 : 0;
     const d = distanceFt({ x: node.x, y: node.y }, nearest.pos);
-    if (!best || d < best.d) best = { d, node };
+    const nota = cego * 2 + semContato;
+    if (!best || nota < best.nota || (nota === best.nota && d < best.d)) best = { cego, nota, d, node };
+  }
+  if (best && best.cego === 1) {
+    const longe = enc.field.reachable(c.pos, 300, (x, y) => enc.occupied(x, y, c));
+    let mira = null;
+    for (const node of longe.values()) {
+      if (node.parar === false || !enxerga(node)) continue;
+      if (!mira || node.cost < mira.cost) mira = node;
+    }
+    if (mira) {
+      // O caminho até lá, cortado no que cabe neste turno.
+      const passos = BF.pathFrom(longe, mira).filter((p) => reached.has(`${p.x},${p.y}`));
+      const ate = passos.length ? reached.get(`${passos[passos.length - 1].x},${passos[passos.length - 1].y}`) : null;
+      if (ate && ate.cost > 0 && !enc.occupied(ate.x, ate.y, c)) best = { cego: 1, d: 0, node: ate };
+    }
   }
   if (best && best.node.cost > 0) enc.moveAlong(c, BF.pathFrom(reached, best.node));
 

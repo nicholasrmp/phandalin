@@ -5,6 +5,9 @@ ou som lê isto primeiro e segue à risca. Se algo aqui conflitar com o código
 existente, o código existente ganha e você reporta o conflito em vez de o
 resolver sozinho.
 
+> **O estado de cada criatura** (ficha, folha desenhada, animação, onde aparece) e o
+> roteiro para criar uma nova estão em [`CRIATURAS.md`](CRIATURAS.md).
+
 ---
 
 ## 1. Licença — a regra que não se negocia

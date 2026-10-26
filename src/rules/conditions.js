@@ -11,6 +11,15 @@ export const CONDITIONS = {
     attackedAdvantageMelee: true,
     attackedDisadvantageRanged: true,
   },
+  // A BRISA DAS CINZAS (zumbi das cinzas, Árvore Trovão): a cinza que escorre do
+  // corpo quando ele leva o primeiro golpe. 1 minuto, nova resistência de CON a
+  // cada turno (`data.repete`, `combat.js` `fimDoTurnoDoLado`).
+  brisaDasCinzas: {
+    name: 'Brisa das Cinzas',
+    desc: 'Desvantagem em ataques, resistências e testes de atributo por 1 minuto. Repete a resistência de CON (CD 10) no fim de cada turno seu.',
+    attackDisadvantage: true,
+    desvantagemTeste: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
   agarrado: {
     name: 'Agarrado',
     desc: 'Deslocamento 0.',

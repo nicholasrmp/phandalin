@@ -717,8 +717,39 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   }
   const conviteDe = (l) => FACCOES.find((f) => f.lugar === l.id && !v.faccoes?.[f.id] && f.quando(feitos, v));
 
+  // O COLAR DA MIRNA (Árvore Trovão, área 9): quem o achou pode devolvê-lo à dona
+  // — fecha a missão e rende 200 XP ao grupo, como no livro — ou ficar com ele e
+  // vendê-lo (200 po, numa loja). A Mirna só recebe em casa, depois do resgate.
+  async function colarParaMirna() {
+    const dono = vivos().find((c) => garantirInventario(c).bag.some((i) => i.id === 'colarDeMirna'));
+    if (!dono || !v.feito.dendrarEmCasa || v.feito.colarDevolvido) return;
+    const r = await narrar(app.root, {
+      formato: 'painel',
+      paginas: [{ titulo: 'Marcenaria Dendrar', texto: [
+        `${dono.name} tira o colar do embrulho. Mirna para a vassoura no meio do gesto e fica olhando o pingente, sem estender a mão.`,
+        '— Eu escondi isso num dia em que achei que ninguém voltaria — diz, por fim. — Era da minha mãe.',
+      ] }],
+      escolhas: [
+        { rotulo: 'Devolver à Mirna', valor: 'devolve', primaria: true },
+        { rotulo: 'Ficar com o colar', valor: 'fica' },
+      ],
+    });
+    if (r !== 'devolve') return;
+    const b = garantirInventario(dono).bag.find((i) => i.id === 'colarDeMirna');
+    b.qtd = (b.qtd ?? 1) - 1;
+    if (b.qtd <= 0) dono.bag.splice(dono.bag.indexOf(b), 1);
+    v.feito.colarDevolvido = true;
+    if (v.missoes.mirna) concluir('mirna');
+    registro.push('Mirna Dendrar recebe o colar de volta, de olhos molhados.');
+    const cada = Math.floor(200 / vivos().length);
+    const sobem = darXp(vivos(), cada);
+    registro.push(`A herança devolvida: ${cada} XP para cada um.`);
+    if (sobem.length) for (const t of await telaDeSubirNivel(app.root, sobem)) registro.push(t);
+  }
+
   async function semNpc(l) {
     if (l.id === 'marcenaria') {
+      await colarParaMirna();
       await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: v.feito.dendrarEmCasa
         ? ['A porta está aberta de novo. Mirna varre a serragem devagar enquanto os filhos separam as tábuas boas das ruins. Ninguém fala muito. Quando veem vocês, param e acenam.']
         : ['A oficina de Thel Dendrar está fechada, a porta escorada com uma tábua. Lá dentro, cadeiras pela metade e serragem no chão. Ninguém mexe nisso há dias.'] }] });

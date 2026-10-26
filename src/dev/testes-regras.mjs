@@ -9136,5 +9136,36 @@ teste('o catalogo nao deixa a classificacao calar: todo kind e todo `familiaSono
   }
 });
 
+teste('Brisa das Cinzas: o primeiro dano ao zumbi das cinzas faz os vivos colados nele rolar CON CD 10; o segundo não', () => {
+  const { enc, party, foes } = montar({ nivel: 3, foes: [['zumbiDasCinzas', { x: 5, y: 5 }]] });
+  const zumbi = foes[0];
+  assert.ok(zumbi.traits.includes('brisaDasCinzas'), 'o bloco carrega o traço');
+  assert.equal(MONSTERS.zumbiDasCinzas.xp, MONSTERS.zumbi.xp, 'é o zumbi do SRD, com o mesmo XP');
+  const colado = party[0];
+  const longe = party[1];
+  colado.pos = { x: 4, y: 5 };
+  longe.pos = { x: 9, y: 9 };
+  // Falha garantida (CON 1 nunca chega a 10 num d20 de 1..) — força o d20 por tentativas
+  // determinísticas: roda até ver o efeito, e confere que SÓ o colado foi tocado.
+  let tonto = false;
+  for (let i = 0; i < 40 && !tonto; i += 1) {
+    zumbi.brisaDasCinzasUsada = false;
+    zumbi.hp = zumbi.maxHp;
+    colado.conditions = [];
+    enc.applyDamage(zumbi, 3, 'cortante', colado);
+    tonto = hasCondition(colado, 'brisaDasCinzas');
+  }
+  assert.ok(tonto, 'em 40 tentativas ao menos uma resistência de CON CD 10 falha');
+  assert.ok(!hasCondition(longe, 'brisaDasCinzas'), 'quem está longe não respira a cinza');
+  assert.ok(conditionEffects(colado).attackDisadvantage, 'desvantagem em ataques');
+  assert.ok(conditionEffects(colado).desvantagemTeste.includes('con'), 'e em resistências e testes');
+  // Só a PRIMEIRA vez que ele leva dano.
+  const cond = getCondition(colado, 'brisaDasCinzas');
+  assert.ok(cond.data.repete, 'repete a resistência no fim do turno');
+  removeCondition(colado, 'brisaDasCinzas');
+  enc.applyDamage(zumbi, 3, 'cortante', colado);
+  assert.ok(!hasCondition(colado, 'brisaDasCinzas'), 'o segundo golpe não solta a brisa de novo');
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 if (falhas) process.exit(1);

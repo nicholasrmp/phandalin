@@ -22,13 +22,14 @@ import { criarPoco } from './game/capitulo4-poco.js';
 import { criarCume } from './game/capitulo4-cume.js';
 import { criarCastelo } from './game/capitulo4-castelo.js';
 import { abrirRegiao } from './game/regiao.js';
+import { criarArvoreTrovao } from './game/capitulo4-arvoretrovao.js';
 import { abrirPhandalin } from './game/phandalin.js';
 import { narrar, narrativaAberta } from './view/narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
 import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
-import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
+import { descansoCurto, descansoLongoDoGrupo, aoDescansar } from './view/descanso-tela.js';
 import { UTIL_FORA, estadoDe as estadoDeUtilidade, avancar as avancarTempo, ativasDoGrupo, alarmeCobre } from './rules/utilidade.js';
 import { entrarNoEncontro as familiarEntra, sairDoEncontro as familiarSai } from './rules/familiar.js';
 import { escolherEConjurar, conjurarComTela, esperar as esperarTempo, auras as aurasDoDetectarMagia, marcasDoJogo } from './game/magias-fora.js';
@@ -36,12 +37,27 @@ import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { criarFicha, aplicarAparencia } from './view/ficha.js';
 import { criarMenu } from './view/menu.js';
+import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave } from './game/save.js';
+import { aoDarXp } from './game/nivel.js';
 import { audio, passoSoundFor } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
   playGlifoVisual, playCordaoVisual, playAnuladaVisual,
 } from './view/visuals.js';
 
+
+/** O `localStorage`, ou um armazém em memória onde ele é bloqueado (aba anônima): o jogo roda, só não guarda. */
+function armazemDoNavegador() {
+  try {
+    const t = globalThis.localStorage;
+    t.setItem('phandalin:teste', '1');
+    t.removeItem('phandalin:teste');
+    return t;
+  } catch {
+    const m = new Map();
+    return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
+  }
+}
 
 class App {
   constructor(root) {
@@ -169,9 +185,22 @@ class App {
     // teclado de cima de propósito: enquanto aberto, ele segura as teclas na
     // fase de captura, e o desbloqueio de som (também de captura) precisa
     // continuar recebendo o primeiro gesto.
+    // Save e carregar no solo (MULTIJOGADOR.md, S-01…S-12): `game/save.js` cuida
+    // do formato e do armazém; aqui entram os pontos em que o jogo salva.
+    const armazem = armazemDoNavegador();
+    this.saves = criarArmazenamento(armazem);
+    this.jogadorId = jogadorLocal(armazem);
+    this.tempoBase = 0;
+    this.inicioDaSessao = Date.now();
+    aoDarXp(() => this.autosalvar());
+    aoDescansar(() => this.autosalvar());
     this.menu = criarMenu(root, {
       onIniciar: (config) => this.newEncounter(config),
       temPartida: () => Boolean(this.enc),
+      saves: this.saves,
+      onCarregar: (save) => this.carregarSave(save),
+      podeSalvar: () => this.podeSalvarAgora(),
+      onSalvar: (slot) => this.salvarManual(slot),
     });
     // O botão de voltar ao menu mora à esquerda do aviso de turno. O HUD
     // guarda a referência do aviso, então embrulhá-lo não o desliga.

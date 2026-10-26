@@ -88,7 +88,7 @@ export const LOCAIS = [
   { id: 'poco', nome: 'Poço da Coruja Velha', x: 84.3, y: 41.7, missao: 'coruja', jogavel: true },
   { id: 'cume', nome: 'Cume da Wyvern', x: 88.2, y: 60.0, missao: 'orcs', jogavel: true },
   { id: 'conyberry', nome: 'Ruínas de Conyberry', x: 91.5, y: 22.0, missao: 'agatha', jogavel: true },
-  { id: 'arvoreTrovao', nome: 'Árvore Trovão', x: 32.4, y: 38.3, missao: 'reidoth' },
+  { id: 'arvoreTrovao', nome: 'Árvore Trovão', x: 32.4, y: 38.3, missao: 'reidoth', jogavel: true },
   { id: 'castelo', nome: 'Castelo Dentefino', x: 51.9, y: 43.3, feito: 'sabeOCastelo', jogavel: true },
   { id: 'neverwinter', nome: 'Neverwinter', x: 14.5, y: 30.8, sempre: true, cidade: true },
   { id: 'leilon', nome: 'Leilon', x: 39.0, y: 89.0, sempre: true, cidade: true },
@@ -244,6 +244,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (l.id === 'castelo') {
       feitos.visitou_castelo = true;
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'castelo', continuarCom: vivos() });
+      return;
+    }
+    if (l.id === 'arvoreTrovao') {
+      feitos.visitou_arvoreTrovao = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'arvoreTrovao', continuarCom: vivos() });
       return;
     }
     if (l.id === 'cume') {

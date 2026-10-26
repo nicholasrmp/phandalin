@@ -223,6 +223,19 @@ export const MORTOS_VIVOS = {
 
 };
 
+// O ZUMBI DAS CINZAS: criado pela explosão do Monte Hotenow, há trinta anos. É o
+// zumbi do SRD, bloco por bloco, com a Brisa das Cinzas a mais. Mora aqui, e não
+// no meio do dicionário, para sair da mesma definição do zumbi e nunca divergir
+// dela.
+MORTOS_VIVOS.zumbiDasCinzas = {
+  ...MORTOS_VIVOS.zumbi,
+  id: 'zumbiDasCinzas',
+  name: 'Zumbi das Cinzas',
+  fonte: 'livro',
+  traits: [...MORTOS_VIVOS.zumbi.traits, 'brisaDasCinzas'],
+  blurb: 'Um zumbi comum de cinza: quando leva o primeiro golpe, a cinza solta do corpo cega e entorpece quem está colado nele.',
+};
+
 /** Traços novos desta família, somados ao dicionário geral. */
 export const TRAITS = {
   // SRD. SEM GANCHO NO MOTOR: `applyDamage` marca `dead = true` assim que os PV
@@ -231,6 +244,13 @@ export const TRAITS = {
   undeadFortitude: {
     name: 'Tenacidade Mortoviva',
     desc: 'Ao cair a 0 PV, faz resistência de CON (CD 5 + dano sofrido): se passar, fica com 1 PV em vez de cair. Dano radiante ou acerto crítico não deixam.',
+  },
+
+  // Do livro de Árvore Trovão: o zumbi das cinzas é o zumbi do SRD com este traço
+  // a mais. TEM GANCHO: `applyDamage`, na primeira vez que ele leva dano.
+  brisaDasCinzas: {
+    name: 'Brisa das Cinzas',
+    desc: 'A primeira vez que leva dano, toda criatura viva a até 1,5 m faz resistência de CON (CD 10) ou fica com desvantagem em ataques, resistências e testes de atributo por 1 minuto, repetindo a resistência no fim de cada turno seu.',
   },
 
   // SRD. SEM GANCHO NO MOTOR: `Battlefield.reachable` não aceita regra de

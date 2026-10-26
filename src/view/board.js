@@ -170,6 +170,8 @@ const SOMBRA_DO_BAIXO = {
 // criatura ali. Ver `transparenciaDaCasa`.
 const ESMAECE = new Set(['copa', 'carroca', 'casa', 'taverna', 'altar', 'mesaBanquete', 'camaRei', 'banheira']);
 const TRANSLUCIDO = 0.42;
+// Parede (1) e porta fechada (2) escondem quem está atrás; arco e seteira, não.
+const ARESTA_QUE_ESCONDE = new Set([1, 2]);
 
 // PAREDES DE BORDA (`core/grid.js`): a parede fina entre duas casas. A arte
 // vem do kit de construção do PixelLab (`art/paredes.js`): uma peça por tipo
@@ -178,7 +180,9 @@ const TRANSLUCIDO = 0.42;
 // depois do próprio chão: assim a parede cobre quem está do outro lado e é
 // coberta por quem está na casa. Do lado de fora (capim, estrada) a mesma
 // aresta é a parede da FRENTE de uma sala: sai só um toco, para se ver dentro.
-const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho']);
+// `mancha` (a cinza do vulcão fora das casas) também: sem ela, a casa de fora
+// que a cinza cobria virava "dentro" e deixava pilares de 66 px num muro de 22.
+const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho', 'mancha']);
 // Altura da parede de borda, em níveis de 22 px. Três é o bastante para ela
 // ler como muro sem engolir meia sala atrás dela.
 // A TINTA DE CADA SALA, por cima da laje (ver `drawTile`). Fraca de
@@ -454,7 +458,11 @@ export class Board {
     const fx = ancora && antes.width ? (ancora.x - antes.left) / antes.width : 0.5;
     const fy = ancora && antes.height ? (ancora.y - antes.top) / antes.height : 0.5;
 
-    this.zoom = Math.max(0.55, Math.min(3, z));
+    // O teto de 3x serve para o mapa que cabe na tela. Num mapa grande o canvas
+    // é encaixado a 15% do tamanho nativo, e 3x disso é 46%: os heróis ficam
+    // do tamanho de um selo. Aí o teto sobe até o tamanho nativo (1:1).
+    this.fitWidth ??= antes.width || el.width;
+    this.zoom = Math.max(0.55, Math.min(Math.max(3, el.width / this.fitWidth), z));
     if (Math.abs(this.zoom - 1) < 0.02) {
       this.zoom = 1;
       el.style.width = '';
@@ -483,9 +491,76 @@ export class Board {
     this.setZoom(this.zoom * factor);
   }
 
+  /** Quantas vezes o canvas é maior que o espaço onde ele é encaixado. */
+  get fatorDeMapa() {
+    const el = this.canvas;
+    this.fitWidth ??= el.getBoundingClientRect().width || el.width;
+    return el.width / this.fitWidth;
+  }
+
+  /** Mapa grande o bastante para precisar de câmera que segue (o padrão cabe inteiro). */
+  get mapaGrande() {
+    // POR PROPRIEDADE DO MAPA, e não pela tela: o fator dependia da largura da
+    // janela, então o Castelo e o Esconderijo viravam "grandes" numa janela de
+    // 1000 px, e a própria Árvore Trovão deixava de ser numa tela de 2560.
+    return this.field.w + this.field.h >= 140;
+  }
+
+  /** Rola o quadro até `pos` ficar no meio do que se vê. */
+  focarEm(pos) {
+    const el = this.canvas;
+    const quadro = el.parentElement;
+    if (!quadro || !pos) return;
+    const { sx, sy } = this.iso(pos.x, pos.y, this.field.heightAt(pos.x, pos.y));
+    const r = el.getBoundingClientRect();
+    const q = quadro.getBoundingClientRect();
+    const k = r.width / el.width;
+    quadro.scrollLeft += (r.left + sx * k) - (q.left + q.width / 2);
+    quadro.scrollTop += (r.top + sy * k) - (q.top + q.height / 2);
+  }
+
+  /**
+   * Em mapa grande a vista é um pedaço dele, então a câmera acompanha: se `pos`
+   * saiu do miolo do quadro (os 60% do meio), recentra. Dentro do miolo não mexe,
+   * senão a tela balança a cada passo.
+   */
+  seguir(pos) {
+    if (!this.mapaGrande || !pos) return;
+    const el = this.canvas;
+    const quadro = el.parentElement;
+    if (!quadro) return;
+    const { sx, sy } = this.iso(pos.x, pos.y, this.field.heightAt(pos.x, pos.y));
+    const r = el.getBoundingClientRect();
+    const q = quadro.getBoundingClientRect();
+    const k = r.width / el.width;
+    const px = r.left + sx * k;
+    const py = r.top + sy * k;
+    const mx = q.width * 0.2;
+    const my = q.height * 0.2;
+    if (px < q.left + mx || px > q.right - mx || py < q.top + my || py > q.bottom - my) this.focarEm(pos);
+  }
+
+  /**
+   * Enquadramento inicial de mapa grande: a 55% do tamanho nativo e centrado no
+   * grupo. Encaixado inteiro, o mapa de 91 x 68 deixa cada herói com 15% do
+   * tamanho dele — dá para ver que há uma vila e nada além.
+   */
+  enquadrarGrande(pos) {
+    if (!this.mapaGrande) return;
+    // Remede o encaixe a cada uso: guardado uma vez só, ele ficava com a
+    // largura de quando o quadro estava oculto (0) ou da janela antiga.
+    this.setZoom(1);
+    this.fitWidth = null;
+    this.setZoom(this.fatorDeMapa * 0.55);
+    this.focarEm(pos);
+  }
+
   resetCamera() {
     this.setZoom(1);
     this.setRotation(0);
+    // Em mapa grande "o enquadramento inicial" é o do grupo, não o do mapa
+    // inteiro a 15%.
+    if (this.mapaGrande && this.focoInicial) this.enquadrarGrande(this.focoInicial);
   }
 
   disposeCamera() {
@@ -811,7 +886,12 @@ export class Board {
     // motor, e o canto da célula fica meia largura à esquerda do vértice de
     // cima. A grade NÃO vem da arte — o montador limpa a aresta de cada
     // ladrilho — e sim do traço abaixo, igual em toda superfície.
-    const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (s.chao && ladrilhoChao(s.chao, x, y));
+    // O chão de uma casa de SALA é laje, mesmo quando o objeto que está nela
+    // pinta grama ou caverna por baixo (barril, leito, baú): era o remendo de
+    // capim no meio do piso de uma casa de pedra.
+    const chaoDe = (this.field.sala?.has(`${x},${y}`) && (s.chao === 'grama' || s.chao === 'caverna'))
+      ? 'laje' : s.chao;
+    const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
       // ESPELHAR POR CASA dobra a variação sem arte nova: o losango é
@@ -1238,6 +1318,106 @@ export class Board {
   }
 
   /**
+   * A SILHUETA de quem o desenho esconde.
+   *
+   * A parede e a copa esmaecem quando cobrem uma criatura, mas só até duas
+   * casas de profundidade e só no que o `transparenciaDaCasa` conhece. Quem
+   * fica atrás de uma parede alta, de uma copa grande ou de uma fileira de
+   * árvores some inteiro no desenho, embora o grupo o ENXERGUE pela regra —
+   * é a pergunta que o dono fez: "como vou ver o inimigo atrás da parede?".
+   *
+   * A resposta do gênero (Baldur's Gate, Diablo, Pillars): redesenhar a figura
+   * POR CIMA de tudo, translúcida e com um contorno da cor do lado dela
+   * (vermelho para inimigo, azul para aliado). Só para quem o grupo vê — quem
+   * está fora da linha de visão continua não sendo desenhado — e só para quem
+   * está de fato coberto, senão o tabuleiro inteiro ficaria cheio de contorno.
+   */
+  figuraCoberta(c) {
+    if (!c.pos || c.dead) return false;
+    const f = this.field;
+    const { x, y } = c.pos;
+    const pegada = c.pos.f ?? 1;
+    // A COPA: a única regra que acertou quase sempre (99%) é a da casa de TRÁS
+    // (a diagonal acima na tela), onde fica o corpo da figura. A fração de
+    // chão coberto na própria casa acertou 30% das vezes, porque mede o losango
+    // do pé e não o corpo de 60 px.
+    const copas = this.coberturaDasCopas();
+    const atras = copas.get(`${x - 1},${y - 1}`);
+    if (atras && atras.frac > 0.3) return true;
+    const propria = copas.get(`${x},${y}`);
+    if (propria && propria.frac > 0.45) return true;
+    // A PAREDE: só a de 66 px, a que o tabuleiro desenha ALTA. A aresta que
+    // pertence a uma casa de fora é o murete de 22 px da frente, e esse não
+    // esconde ninguém — o grupo dentro de uma casa levava o contorno por causa
+    // dele. E só a de uma casa de distância: a de duas não toca o corpo.
+    const xx = x + pegada - 1;
+    const yy = y + pegada - 1;
+    const sul = f.aresta(xx, yy, xx, yy + 1);
+    if (ARESTA_QUE_ESCONDE.has(sul) && !this.casaDeFora(xx, yy + 1)) return true;
+    const leste = f.aresta(xx, yy, xx + 1, yy);
+    if (ARESTA_QUE_ESCONDE.has(leste) && !this.casaDeFora(xx + 1, yy)) return true;
+    return false;
+  }
+
+  /**
+   * O CONTATO PERDIDO. Quem o grupo viu e saiu da vista (atrás de uma parede,
+   * no meio da mata) deixa de ser desenhado — é a regra da linha de visão —, e
+   * o jogador fica sem saber onde ele estava. A última casa em que o grupo o
+   * viu ganha uma marca fraca com "?": é o que um personagem de verdade sabe,
+   * "ele estava ali", sem dizer para onde foi. A marca some quando a criatura
+   * é vista de novo ou morre.
+   */
+  desenharContatosPerdidos(ctx) {
+    this.ultimaVista ??= new Map();
+    if (!this._visao || !this.field.avisosDeVista) { this.ultimaVista.clear(); return; }
+    for (const c of this.enc.combatants) {
+      if (c.side !== 'foes' || !c.pos) { this.ultimaVista.delete(c.id); continue; }
+      // Morreu fora da vista: a marca só SOME quando alguém vê o corpo. Apagá-la
+      // na hora diria ao jogador que o bicho morreu.
+      if (c.dead) { if (this.figuraVisivel(c)) this.ultimaVista.delete(c.id); continue; }
+      if (this.figuraVisivel(c)) this.ultimaVista.set(c.id, { x: c.pos.x, y: c.pos.y });
+    }
+    for (const [id, pos] of this.ultimaVista) {
+      const c = this.enc.combatants.find((x) => x.id === id);
+      if (!c || c.side !== 'foes') { this.ultimaVista.delete(id); continue; }
+      if (c.dead) continue;
+      // A casa da marca voltou a ser vista e o bicho não está lá: a marca era
+      // de um lugar que o grupo já conferiu. Sem isto o "?" ficava para sempre
+      // sobre uma casa vazia e visível.
+      if (this._visao.has(`${pos.x},${pos.y}`) && !this.figuraVisivel(c)) { this.ultimaVista.delete(id); continue; }
+      if (this.figuraVisivel(c)) continue;
+      const { sx, sy } = this.iso(pos.x, pos.y);
+      this.fillDiamond(ctx, pos.x, pos.y, 'rgba(255,106,85,.16)', 'rgba(255,106,85,.55)');
+      ctx.save();
+      ctx.font = 'bold 15px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,.8)';
+      ctx.fillStyle = 'rgba(255,150,130,.95)';
+      ctx.strokeText('?', sx, sy - 6);
+      ctx.fillText('?', sx, sy - 6);
+      ctx.restore();
+    }
+  }
+
+  desenharSilhuetas(ctx) {
+    if (this.soCenario || !this.field.avisosDeVista) return;
+    for (const c of this.enc.combatants) {
+      if (!c.pos || c.dead || !this.figuraVisivel(c)) continue;
+      if (!this.figuraCoberta(c)) continue;
+      // Azul para o grupo, vermelho para quem luta contra ele, âmbar para quem
+      // ainda não escolheu lado (o culto, Reidoth).
+      const cor = c.side === 'party' ? '#7fd0ff' : c.side === 'foes' ? '#ff6a55' : '#ffd24a';
+      ctx.save();
+      ctx.globalAlpha = 0.66;
+      ctx.filter = `drop-shadow(1.5px 0 0 ${cor}) drop-shadow(-1.5px 0 0 ${cor}) drop-shadow(0 1.5px 0 ${cor}) drop-shadow(0 -1.5px 0 ${cor})`;
+      this.drawCombatant(ctx, c, true);
+      ctx.restore();
+    }
+  }
+
+  /**
    * Que árvores altas escondem cada casa, na rotação atual.
    *
    * Medido em pixel: a máscara de alfa do sprite contra o losango da casa,
@@ -1473,6 +1653,12 @@ export class Board {
   /** A casa é de fora (capim, estrada) — a parede ao norte/oeste dela é a da frente de alguma sala? */
   casaDeFora(x, y) {
     if (!this.field.inside(x, y)) return true;
+    // UMA CASA DE SALA É DE DENTRO, qualquer que seja o chão que a superfície
+    // dela pinta. Antes só o chão decidia: um barril (chão de grama) ou uma
+    // mancha dentro de uma casa a transformava em "fora", e a parede em volta
+    // caía de 66 para 22 px — nove buracos e dez pilares medidos no mapa de
+    // Árvore Trovão.
+    if (this.field.sala?.has(`${x},${y}`)) return false;
     const s = SUPERFICIE[this.field.surfaceAt(x, y)];
     return !s || CHAO_DE_FORA.has(s.chao);
   }
@@ -1487,9 +1673,13 @@ export class Board {
     for (const lado of ['N', 'O']) {
       const cod = lado === 'N' ? f.paredeN[i] : f.paredeO[i];
       if (!cod) continue;
-      if (cod === ARESTA.aberta && fora) continue;
       // A casa que a parede esconde: a de trás dela, na tela.
       const [ax, ay] = lado === 'O' ? [x - 1, y] : [x, y - 1];
+      // Arco aberto numa aresta de FORA era pulado — a parede da frente é
+      // baixa, e um vão nela não tinha o que desenhar. Mas quando a casa de trás
+      // é uma SALA, o vão é a porta da frente dela: sem ombreira nem folha, 14
+      // das 22 portas do mapa de Árvore Trovão saíam como um buraco no murete.
+      if (cod === ARESTA.aberta && fora && !(f.inside(ax, ay) && !this.casaDeFora(ax, ay))) continue;
       // PORTÃO NA MURALHA. A altura vem da casa de FORA quando a aresta é
       // dela — e aí um portão que dá para o capim saía num muro de 22 px,
       // uma porta de 17 px de altura, um cotoco. Mas a parede é do castelo,
@@ -2198,6 +2388,8 @@ export class Board {
     }
     this.desenharRaioX(ctx);
     if (this._visao) this.desenharEscuridao(ctx, byView);
+    this.desenharSilhuetas(ctx);
+    this.desenharContatosPerdidos(ctx);
 
     // O número de dardos (ou a ordem) por cima de cada alvo escolhido.
     for (const [k, n] of escolhidos) {
@@ -2252,7 +2444,15 @@ export class Board {
   figuraVisivel(c) {
     // Piscar: quem está no Plano Etéreo não aparece no tabuleiro.
     if (hasCondition(c, 'etereo')) return false;
-    return !this._visao || c.side === 'party' || this._visao.has(`${c.pos.x},${c.pos.y}`);
+    if (!this._visao || c.side === 'party') return true;
+    // Criatura Grande (2 x 2): vista se QUALQUER casa da pegada está à vista.
+    // Só a âncora decidia, e o dragão sumia mesmo com três das quatro casas
+    // dele no campo de visão.
+    const p = c.pos.f ?? 1;
+    for (let j = 0; j < p; j++) {
+      for (let i = 0; i < p; i++) if (this._visao.has(`${c.pos.x + i},${c.pos.y + j}`)) return true;
+    }
+    return false;
   }
 
   /**
@@ -2393,7 +2593,7 @@ export class Board {
     return false;
   }
 
-  drawCombatant(ctx, c) {
+  drawCombatant(ctx, c, fantasma = false) {
     const walking = this.fx.positionFor(c.id);
     const here = walking ?? c.pos;
     // Criatura Grande ocupa 2x2 e Enorme 3x3. A âncora continua sendo o canto,
@@ -2439,7 +2639,7 @@ export class Board {
     if (voa) sy -= (levita ? 46 : 26) + Math.round(Math.sin(this.time * 2.4 + c.pos.x * 0.9 + c.pos.y * 0.55) * 3);
 
     // Círculo Mágico: o inimigo barrado que parou na borda leva um contorno vermelho tracejado piscando.
-    if (!down && !this.soCenario && this.barradoPeloCirculo(c)) {
+    if (!fantasma && !down && !this.soCenario && this.barradoPeloCirculo(c)) {
       const p = 0.55 + 0.35 * Math.sin(this.time * 5);
       for (let dy = 0; dy < pegada; dy++) for (let dx = 0; dx < pegada; dx++) {
         this.fillDiamond(ctx, here.x + dx, here.y + dy, `rgba(255,50,40,${0.16 * p})`, 'rgba(0,0,0,0)');
@@ -2448,13 +2648,13 @@ export class Board {
     }
     // Piscar: no Plano Etéreo a figura é um fantasma azul-pálido, ~50% de alfa, sem sombra, anel nem barra.
     const eter = hasCondition(c, 'etereo');
-    if (!eter) {
+    if (!eter && !fantasma) {
       ctx.fillStyle = voa ? 'rgba(0,0,0,.26)' : 'rgba(0,0,0,.42)';
       ctx.beginPath();
       ctx.ellipse(baseX, baseY, voa ? 13 : 17, voa ? 6 : 8, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (voa && !eter) {
+    if (voa && !eter && !fantasma) {
       // Segunda elipse tracejada sob a figura: marca a altura do voo.
       ctx.save();
       ctx.strokeStyle = 'rgba(223,243,255,.55)';
@@ -2470,7 +2670,7 @@ export class Board {
     // personagem de cena, não peça de jogo — sem anel de lado, sem barra.
     // O INVOCADO leva anel próprio: verde-limão e pontilhado, para não se confundir
     // com o ciano contínuo dos heróis nem com o vermelho dos inimigos.
-    if (!down && !this.soCenario && !eter) {
+    if (!fantasma && !down && !this.soCenario && !eter) {
       ctx.save();
       if (c.invocado && !c.familiar) {
         ctx.strokeStyle = 'rgba(190,240,90,.95)';
@@ -2489,7 +2689,7 @@ export class Board {
       ctx.lineWidth = 1;
     }
 
-    if (this.overlay.selected === c) {
+    if (!fantasma && this.overlay.selected === c) {
       ctx.strokeStyle = '#ffd24a';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -2619,6 +2819,7 @@ export class Board {
         * (eter ? 0.5 : c.dead ? 0.72 : (c.acted && ally && !down ? 0.62 : 1)),
       tint: tinta,
     });
+    if (fantasma) return;      // a silhueta é só o sprite: sem clarão, barra nem ícones
     if (c.flash > 0) c.flash -= 0.08;
 
     if (eter) return;

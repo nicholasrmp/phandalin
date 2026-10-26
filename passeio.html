@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Passeio livre — Phandalin</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- O jogo abre direto em Árvore Trovão: `main.js` lê `?encontro=` da URL. -->
+    <script>
+      if (!new URLSearchParams(location.search).get('encontro')) {
+        history.replaceState(null, '', '?encontro=arvoreTrovao&nivel=3');
+      }
+    </script>
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/dev/passeio.js"></script>
+  </body>
+</html>
