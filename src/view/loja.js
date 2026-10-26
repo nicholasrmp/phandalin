@@ -128,7 +128,7 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
           onclick: () => {
             const r = comprar(heroi, l, vivos());
             if (!r.ok) { aviso = r.why; desenhar(); return; }
-            audio.play('click');
+            audio.play('coin');
             aviso = `${heroi.name} leva ${l.lote > 1 ? `${l.lote} ` : ''}${l.dados.name} por ${moedas(l.preco)}.`;
             aoMudar?.(aviso);
             desenhar();
@@ -148,7 +148,7 @@ export function abrirLoja(root, { loja, npc, grupo, aoMudar, onFicha }) {
           onclick: () => {
             const r = vender(heroi, v);
             if (!r.ok) { aviso = r.why; desenhar(); return; }
-            audio.play('click');
+            audio.play('coin');
             aviso = `${heroi.name} vende ${v.lote > 1 ? `${v.lote} ` : ''}${v.dados.name} por ${moedas(v.paga)}.`;
             aoMudar?.(aviso);
             desenhar();

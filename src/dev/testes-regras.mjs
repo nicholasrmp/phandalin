@@ -6,9 +6,14 @@
 // defeito corrigido: se algum voltar a falhar, a regra regrediu.
 
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join, dirname, sep } from 'node:path';
 import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
+import { TIPOS_DE_DANO, DANOS_FISICOS, SEM_DANO } from '../rules/tipos-de-dano.js';
 import { makeMonster, MONSTERS } from '../rules/monsters.js';
+import { SOUND_NAMES, VOICE_SOUNDS, vozDa, esquecerVozes, passoSoundFor, spellSoundFor, deathSoundFor, naturalAttackSoundFor, hitSoundFor } from '../core/audio.js';
 import { skillBonus, saveBonus, penalidadeDeQuemVoltou } from '../rules/abilities.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
 import { ARMORS } from '../rules/items/armors.js';
@@ -29,7 +34,7 @@ import {
   cobrarMarchaForcada, furtividadeDoGrupo, chanceDeEsconder, podeMarchar,
   MONTARIAS,
 } from '../rules/marcha.js';
-import { addCondition, removeCondition, hasCondition, getCondition, caEfetiva, conditionEffects } from '../rules/conditions.js';
+import { addCondition, removeCondition, hasCondition, getCondition, caEfetiva, conditionEffects, CONDITIONS } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
@@ -1677,7 +1682,7 @@ teste('Bruxaria: +1d6 necrótico nos acertos; só passa para outro quando o marc
   enc.beginSide('foes');
   enc.beginSide('party');
   assert.match(enc.canCast(h, 'bruxaria', { target: foes[1] }).why, /só passa para outro quando ele cair/);
-  enc.applyDamage(foes[0], 500, 'contundente', h);
+  enc.applyDamage(foes[0], 500, 'concussão', h);
   const espacos = h.spellcasting.slots.slice();
   assert.ok(enc.castSpell(h, 'bruxaria', { target: foes[1] }).ok);
   assert.deepEqual(h.spellcasting.slots, espacos, 'sem gastar espaço');
@@ -4502,7 +4507,7 @@ teste('Conjurar Animais: pacotes e círculo alto (5º dobra); a concentração q
   const urso = enc.combatants.find((c) => c.invocado);
   assert.equal(urso.defId, 'tigreDenteDeSabre');
   // Dano que derruba o conjurador desfaz a magia.
-  enc.applyDamage(ilvan, 999, 'contundente');
+  enc.applyDamage(ilvan, 999, 'concussão');
   assert.equal(enc.combatants.filter((c) => c.invocado).length, 0);
 });
 
@@ -4517,7 +4522,7 @@ teste('Conjurar Animais: não segura a derrota, não vale XP e some quando o enc
   // Vitória: matar o único inimigo basta; as feras não contam para nada.
   const m = magoDoLote({ magias: ['conjurarAnimais'] });
   m.enc.castSpell(m.ilvan, 'conjurarAnimais', { opcao: 'nd1' });
-  m.enc.applyDamage(m.foes[0], 999, 'contundente');
+  m.enc.applyDamage(m.foes[0], 999, 'concussão');
   assert.equal(m.enc.outcome, 'vitoria');
   assert.equal(m.enc.combatants.filter((c) => c.invocado).length, 0);
   assert.ok(lobos.every((l) => l.xp === 0));
@@ -4542,7 +4547,7 @@ teste('Animar os Mortos: ergue um esqueleto ou zumbi do cadáver humanoide, uma 
   const { enc, party, ilvan, foes } = magoDoLote({ magias: ['animarMortos'], foes: [['goblin', { x: 7, y: 6 }], ['bandidoMachadeiro', { x: 11, y: 11 }]] });
   const cadaver = foes[0];
   assert.match(enc.porqueNaoAlvo(ilvan, getSpell('animarMortos'), cadaver) ?? '', /não é um cadáver/);
-  enc.applyDamage(cadaver, 999, 'contundente');
+  enc.applyDamage(cadaver, 999, 'concussão');
   assert.ok(cadaver.dead);
   assert.equal(enc.castSpell(ilvan, 'animarMortos', { target: party[DARA] }).ok, false);
   const r = enc.castSpell(ilvan, 'animarMortos', { target: cadaver, opcao: 'zumbi' });
@@ -4563,7 +4568,7 @@ teste('Animar os Mortos: ergue um esqueleto ou zumbi do cadáver humanoide, uma 
 
 teste('Animar os Mortos: círculo alto ergue mais mortos dos corpos próximos', () => {
   const { enc, ilvan, foes } = magoDoLote({ magias: ['animarMortos'], foes: [['goblin', { x: 7, y: 6 }], ['goblin', { x: 7, y: 7 }], ['goblin', { x: 6, y: 7 }], ['bandidoMachadeiro', { x: 11, y: 11 }]] });
-  for (const f of foes.slice(0, 3)) enc.applyDamage(f, 999, 'contundente');
+  for (const f of foes.slice(0, 3)) enc.applyDamage(f, 999, 'concussão');
   ilvan.spellcasting.slots[4] = 1;
   const r = enc.castSpell(ilvan, 'animarMortos', { target: foes[0], opcao: 'esqueleto', circulo: 4 });
   assert.ok(r.ok, r.why);
@@ -7286,7 +7291,7 @@ teste('Forma Gasosa: resiste a TODO dano nao magico, e nao ataca, conjura nem us
   // O livro: resistencia a todo dano NAO MAGICO, nao so ao aco.
   assert.equal(enc.danoPorTipo(mago, 10, 'cortante', false, true), 5, 'o aco comum sai pela metade');
   assert.equal(enc.danoPorTipo(mago, 10, 'fogo', false, false), 5, 'o fogo comum tambem');
-  assert.equal(enc.danoPorTipo(mago, 10, 'acido', false, false), 5, 'e o acido');
+  assert.equal(enc.danoPorTipo(mago, 10, 'ácido', false, false), 5, 'e o acido');
   assert.equal(enc.danoPorTipo(mago, 10, 'cortante', true, true), 10, 'o aco magico, inteiro');
   assert.equal(enc.danoPorTipo(mago, 10, 'fogo', true, false), 10, 'e o fogo magico tambem');
   // Nao ataca, nao conjura, nao usa objeto.
@@ -8501,6 +8506,415 @@ teste('nem morto nem incapacitado usa pocao, e o Toque Arrepiante nao desperdica
   const dando = enc.useItem(dara, 'pocaoDeCura', { target: pip });
   assert.equal(dando.ok, false, 'nem dando');
   assert.ok(/não recupera PV/.test(dando.why), dando.why);
+});
+
+teste('nenhum som declarado e mudo: voz de ficha, voz do catalogo e os seletores todos caem num nome que existe', () => {
+  const conhecidos = new Set(SOUND_NAMES);
+  // O DEFEITO QUE ISTO PEGA: `audio.play` ignora nome desconhecido em silencio.
+  // Nove criaturas passaram meses com `voice:` declarado e mudo porque nada
+  // lia o campo, e um nome com erro de digitacao teria o mesmo efeito — sem
+  // erro no console, sem som, sem ninguem notar.
+  for (const voz of VOICE_SOUNDS) {
+    assert.ok(conhecidos.has(voz), 'voz do catalogo sem som: ' + voz);
+  }
+  const comVoz = [];
+  for (const [id, def] of Object.entries(MONSTERS)) {
+    if (!def.voice) continue;
+    comVoz.push(id);
+    assert.ok(conhecidos.has(def.voice), id + ' tem voz que nao existe: ' + def.voice);
+    assert.ok(VOICE_SOUNDS.includes(def.voice), id + ' usa som que nao e voz: ' + def.voice);
+    // E a ficha tem de CHEGAR na instancia, senao o campo volta a ser enfeite.
+    assert.equal(makeMonster(id, { x: 2, y: 2 }).voice, def.voice, id + ': a voz nao chega na instancia');
+  }
+  assert.ok(comVoz.length >= 17, 'poucas criaturas com voz: ' + comVoz.length);
+  // Por NOME, e nao so por contagem: um `>= N` nao pega a omissao de UMA
+  // criatura, e foi assim que o ogro — o bicho para o qual `gruntOgre` foi
+  // escrito — ficou sendo o unico do grupo sem a propria voz.
+  for (const [id, voz] of [['ogro', 'gruntOgre'], ['lobo', 'growlWolf'], ['goblin', 'yellGoblin'],
+    ['esqueleto', 'rattleSkeleton'], ['zumbi', 'moanZombie'], ['dragaoVerdeJovem', 'roarDragon'],
+    ['corujaUrso', 'screechOwlbear']]) {
+    assert.equal(MONSTERS[id].voice, voz, id + ' perdeu a voz');
+  }
+  // O rugido do dragao e EXCLUSIVO dele: era dividido com a coruja-urso, que e
+  // ND 3, e o jogador aprendia a voz do chefe final num bicho do caminho.
+  const rugem = Object.entries(MONSTERS).filter(([, d]) => d.voice === 'roarDragon').map(([id]) => id);
+  assert.deepEqual(rugem, ['dragaoVerdeJovem'], 'o rugido do dragao vazou para: ' + rugem.join(', '));
+  // Os seletores: cada ramo tem de devolver nome que existe, inclusive o
+  // sopro do dragao (`origem: 'sopro'`), que nao aparece em nenhum `play()`.
+  for (const tipo of ['cortante', 'concussão', 'perfurante']) {
+    assert.ok(conhecidos.has(hitSoundFor(tipo)), 'hitSoundFor ' + tipo);
+  }
+  // Sem 'raio': nao e tipo de dano do jogo (ninguem causa nem recebe), e o
+  // ramo que o atendia saiu do seletor junto com a chave morta de `visuals.js`.
+  for (const tipo of ['fogo', 'elétrico', 'radiante', 'energético', 'frio', 'ácido', 'necrótico', 'veneno', 'trovejante', 'psíquico', undefined]) {
+    assert.ok(conhecidos.has(spellSoundFor(tipo)), 'spellSoundFor ' + tipo);
+  }
+  assert.equal(spellSoundFor('veneno', { origem: 'sopro' }), 'breathDragon');
+  for (const nome of ['Mordida', 'Garras', 'Picada', 'Coice', 'Investida']) {
+    assert.ok(conhecidos.has(naturalAttackSoundFor(nome)), 'naturalAttackSoundFor ' + nome);
+  }
+  assert.equal(naturalAttackSoundFor('Espada longa'), null, 'arma empunhada nao e ataque natural');
+  for (const op of [{}, { incorporeo: true }, { carne: true }]) {
+    for (const tipo of ['morto-vivo', 'limo', 'aberração', 'fera']) {
+      assert.ok(conhecidos.has(deathSoundFor(tipo, op)), 'deathSoundFor ' + tipo);
+    }
+  }
+});
+
+teste('o freio da voz: a mesma criatura nao rosna a cada golpe, duas nao rosnam juntas, e quem nao tem voz fica calado', () => {
+  // Sem isto o teste passa ou falha pela ORDEM dos testes: `vozDa` guarda o
+  // relogio num `let` de modulo, e qualquer voz que tenha tocado antes no
+  // mesmo processo (com o relogio real, bilhoes) cala tudo o que vier com um
+  // `agora` de mentira.
+  esquecerVozes();
+  const lobo = makeMonster('lobo', { x: 2, y: 2 });
+  const outro = makeMonster('lobo', { x: 3, y: 2 });
+  const esqueleto = makeMonster('esqueleto', { x: 4, y: 2 });
+  assert.equal(lobo.voice, 'growlWolf');
+  assert.equal(esqueleto.voice, 'rattleSkeleton');
+  // `agora` entra por parametro de proposito: o freio e por TEMPO, nao por
+  // rodada (uma criatura ataca tres vezes numa rodada), e tempo so se testa
+  // com o relogio na mao.
+  const t0 = 1_000_000;
+  assert.equal(vozDa(lobo, { agora: t0 }), 'growlWolf', 'o primeiro rosna');
+  // O MESMO lobo, golpe seguinte do multiataque: calado.
+  assert.equal(vozDa(lobo, { agora: t0 + 300 }), null, 'nao rosna duas vezes no mesmo turno');
+  // OUTRO lobo no mesmo instante: calado tambem, senao o bando vira coro.
+  assert.equal(vozDa(outro, { agora: t0 + 300 }), null, 'duas vozes empilhadas');
+  // Passado o freio global, mas nao o da criatura: o outro lobo pode.
+  assert.equal(vozDa(outro, { agora: t0 + 800 }), 'growlWolf', 'o segundo lobo, depois da pausa');
+  assert.equal(vozDa(lobo, { agora: t0 + 2000 }), null, 'o primeiro ainda esta no proprio freio');
+  // Cinco segundos depois ele volta a rosnar.
+  assert.equal(vozDa(lobo, { agora: t0 + 6000 }), 'growlWolf', 'volta depois de 5 s');
+  // Quem nao tem voz na ficha fica calado, e e a maioria do elenco.
+  const goblin = makeMonster('goblin', { x: 5, y: 2 });
+  const hobgoblin = makeMonster('hobgoblin', { x: 6, y: 2 });
+  assert.equal(goblin.voice, 'yellGoblin');
+  assert.equal(hobgoblin.voice, null, 'o hobgoblin fica mudo: soldado medio nao cabe no guincho do goblin nem no grunhido de ogro');
+  assert.equal(vozDa(hobgoblin, { agora: t0 + 60_000 }), null);
+  assert.equal(vozDa({}, { agora: t0 + 60_000 }), null);
+  assert.equal(vozDa(null, { agora: t0 + 60_000 }), null);
+});
+
+teste('o passo pela superficie: pedra, terra e o chao que nao diz de que e feito', () => {
+  // So dois pisos tem som proprio. O terceiro caso e o importante: nome de
+  // superficie que NAO diz o material cai no passo genérico em vez de chutar.
+  assert.equal(passoSoundFor('laje'), 'stepStone');
+  assert.equal(passoSoundFor('caverna'), 'stepStone');
+  assert.equal(passoSoundFor('grama'), 'stepDirt');
+  assert.equal(passoSoundFor('estrada'), 'stepDirt');
+  assert.equal(passoSoundFor('chao'), 'step', 'chao e tabua na casa e laje no porao');
+  for (const decalque of ['mancha', 'musgoChao', 'ossos', 'cacos']) {
+    assert.equal(passoSoundFor(decalque), 'step', decalque + ' e marca POR CIMA do piso, nao um piso');
+  }
+  assert.equal(passoSoundFor('ponte'), 'step');
+  assert.equal(passoSoundFor(undefined), 'step');
+  // E todo nome que o seletor devolve tem de existir no despachante.
+  const conhecidos = new Set(SOUND_NAMES);
+  for (const sup of SUPERFICIES) {
+    assert.ok(conhecidos.has(passoSoundFor(sup)), sup + ' cai num som que nao existe');
+  }
+});
+
+teste('nenhum som pedido por nome erra o nome: varre o src inteiro atras do erro de digitacao que seria silencio para sempre', () => {
+  // O DESPACHANTE IGNORA NOME DESCONHECIDO EM SILENCIO (`audio.play`: `const
+  // fn = SOUNDS[name]; if (fn) fn(...)`). Um `audio.play('stepStonne')` nao
+  // quebra nada, nao aparece no console e nunca mais toca. O teste das vozes
+  // cobre o campo `voice:` das fichas; este cobre os outros dois jeitos de
+  // pedir um som: a chamada literal e o `som:`/`somInicio:` das receitas de
+  // ataque em `view/visuals.js`.
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const arquivos = [];
+  const anda = (dir) => {
+    for (const f of readdirSync(dir)) {
+      if (f === 'dev' || f === 'folhas' || f === 'node_modules') continue;
+      const q = join(dir, f);
+      if (statSync(q).isDirectory()) anda(q);
+      else if (f.endsWith('.js')) arquivos.push(q);
+    }
+  };
+  anda(raiz);
+  assert.ok(arquivos.length > 40, 'varredura vazia: ' + arquivos.length);
+
+  const conhecidos = new Set(SOUND_NAMES);
+  const erros = [];
+  let pedidos = 0;
+  for (const q of arquivos) {
+    const txt = readFileSync(q, 'utf8');
+    const curto = q.slice(raiz.length + 1).split(sep).join('/');
+    // `audio.play('nome')` — só o literal; o que vem de variável está coberto
+    // pelos seletores, que o teste de cima confere ramo por ramo.
+    for (const m of txt.matchAll(/audio\.play\(\s*'([^']+)'/g)) {
+      pedidos += 1;
+      if (!conhecidos.has(m[1])) erros.push(curto + ": audio.play('" + m[1] + "')");
+    }
+    // `som:` e `somInicio:` das receitas. `null` e proposital ("cale a boca").
+    for (const m of txt.matchAll(/\bsom(?:Inicio)?:\s*'([^']+)'/g)) {
+      pedidos += 1;
+      if (!conhecidos.has(m[1])) erros.push(curto + ': ' + m[0]);
+    }
+  }
+  assert.equal(erros.join(' | '), '', 'som pedido com nome que nao existe');
+  assert.ok(pedidos > 50, 'poucos pedidos de som encontrados: ' + pedidos);
+});
+
+teste('a Furia resiste aos tres tipos fisicos MEDINDO o dano, e era o vocabulario que a quebrava', () => {
+  // O DEFEITO: `furia.resiste` dizia 'contundente' e toda arma do jogo causa
+  // 'concussão'. A comparacao em `danoPorTipo` e de string crua, entao a
+  // resistencia nunca disparava — sem erro e sem aviso. O barbaro em Furia
+  // tomava dano INTEIRO de maca, clava, martelo e da clava do ogro.
+  //
+  // Este teste mede o DANO SOFRIDO, nao a grafia da lista: trocar a grafia de
+  // volta em qualquer um dos dois lados o quebra.
+  // O elenco pronto de `party.js` nao tem barbaro, entao ele e montado e posto
+  // no lugar da Dara, que e o jeito que os outros testes daqui usam.
+  const { enc, party } = montar({ nivel: 3, foes: [['ogro', { x: 7, y: 5 }]] });
+  const abilities = { str: 16, dex: 14, con: 15, int: 10, wis: 12, cha: 8 };
+  const grask = criarPersonagem({ name: 'Grask', raca: 'humano', abilities }, { classe: 'barbaro', nivel: 3 });
+  Object.assign(grask, { id: party[DARA].id, side: 'party', pos: { ...party[DARA].pos }, abilities, hp: 200, maxHp: 200, ac: 14 });
+  enc.combatants[enc.combatants.indexOf(party[DARA])] = grask;
+  for (const [tipo, esperado] of [['concussão', 10], ['perfurante', 10], ['cortante', 10], ['fogo', 20], ['necrótico', 20], ['veneno', 20]]) {
+    grask.hp = grask.maxHp;
+    addCondition(grask, 'furia', { rounds: 10 });
+    enc.applyDamage(grask, 20, tipo, null);
+    assert.equal(grask.maxHp - grask.hp, esperado, 'Furia contra ' + tipo);
+    removeCondition(grask, 'furia');
+  }
+  // Sem Furia tudo entra inteiro: e isso que garante que o teste acima mediu a
+  // Furia e nao outra resistencia do barbaro.
+  grask.hp = grask.maxHp;
+  enc.applyDamage(grask, 20, 'concussão', null);
+  assert.equal(grask.maxHp - grask.hp, 20, 'sem Furia o dano entra inteiro');
+  // O ELO QUE FALTAVA: o tipo que a arma de pancada CAUSA tem de estar na
+  // lista que a Furia resiste. Era aqui que os dois vocabularios se perdiam.
+  for (const id of ['clava', 'clavaGrande', 'marteloLeve', 'punhos']) {
+    assert.ok(DANOS_FISICOS.includes(WEAPONS[id].type), id + ' causa tipo que a Furia nao resiste: ' + WEAPONS[id].type);
+  }
+  assert.ok(DANOS_FISICOS.includes(MONSTERS.ogro.attacks[0].type), 'a clava do ogro');
+});
+
+teste('o outro lado do mesmo defeito: a vulnerabilidade do esqueleto a concussao agora pega a chifrada e a Muralha de Vento', () => {
+  // A Chifrada da cabra gigante e a Muralha de Vento causavam 'contundente', e
+  // por isso NAO acionavam a unica vulnerabilidade do elenco: o esqueleto, que
+  // existe para dar ao clerigo o momento em que a maca e a arma certa.
+  //
+  // O espectro e o wraith NAO entram nessa conta, e dizer que entravam era
+  // mentira minha: a resistencia deles e so contra dano NAO magico, e a
+  // Muralha de Vento e magia. Medido abaixo: 12 de 12 nela, e metade so quando
+  // a fonte nao e magica.
+  assert.equal(MONSTERS.cabraGigante.attacks[0].type, 'concussão', 'a Chifrada');
+  assert.equal(getSpell('muralhaDeVento').damageType, 'concussão', 'a Muralha de Vento');
+  const { enc, foes } = montar({ foes: [['esqueleto', { x: 6, y: 5 }], ['espectro', { x: 7, y: 5 }]] });
+  const [esq, esp] = foes;
+  esq.maxHp = 200; esq.hp = 200;
+  enc.applyDamage(esq, 20, 'concussão', null);
+  assert.equal(200 - esq.hp, 40, 'o esqueleto leva o dobro de concussao');
+  esp.maxHp = 200; esp.hp = 200;
+  enc.applyDamage(esp, 20, 'concussão', null);
+  assert.equal(200 - esp.hp, 10, 'o espectro resiste a arma nao magica');
+  // E com fonte magica o espectro NAO resiste: a resistencia dele e "so de
+  // armas nao magicas", e e isso que faz a magia valer a pena contra ele.
+  esp.hp = 200;
+  enc.applyDamage(esp, 20, 'concussão', null, { magico: true });
+  assert.equal(200 - esp.hp, 20, 'magia passa pela resistencia do espectro');
+});
+
+teste('o vocabulario de tipo de dano e UM: quem causa e quem resiste escrevem igual', () => {
+  // O teste que a grafia partida pede. Junta, dos DADOS carregados, todo tipo
+  // que alguma arma, ficha, magia ou cena CAUSA e todo tipo que alguma ficha
+  // ou condicao RESISTE, e exige que toda grafia esteja em `TIPOS_DE_DANO`.
+  //
+  // Uma grafia que aparece so num dos dois lados e uma regra que nunca
+  // dispara, e foi exatamente assim que a Furia perdeu metade do que o livro
+  // da: nada no jogo reclama, o numero so sai errado.
+  const validos = new Set([...TIPOS_DE_DANO, SEM_DANO]);
+
+  // CAMINHADA EM PROFUNDIDADE, e nao uma lista de campos escrita a mao. A
+  // primeira versao deste teste olhava `resist`/`resistNaoMagico`/`immune`/
+  // `vulnerable` nas fichas cruas — e as fichas escrevem
+  // `damageResistances`/`damageImmunities`/`damageVulnerabilities`, enquanto
+  // `resistNaoMagico` so nasce em `makeMonster`. Conferia 9 das 36 entradas, e
+  // o revisor provou isso por MUTACAO: pos 'contundente' de volta no esqueleto
+  // e no espectro, justamente o par consertado, e o teste passou verde.
+  //
+  // Lista de campos envelhece junto com o dado; caminhada em profundidade, nao.
+  const LISTAS_DE_TIPO = /^(resiste(NaoMagico|TudoExceto)?|resist(NaoMagico)?|damage(Resistances|Immunities|Vulnerabilities)|immune|vulnerable|vulnerabilidade|resistencias?|tiposAEscolher)$/;
+  const erros = [];
+  let conferidas = 0;
+  const ver = (tipo, onde) => {
+    if (typeof tipo !== 'string') return;
+    conferidas += 1;
+    if (!validos.has(tipo)) erros.push(onde + ': ' + JSON.stringify(tipo));
+  };
+  const andaNoDado = (v, onde, chavePai) => {
+    if (v == null || typeof v !== 'object') return;
+    if (Array.isArray(v)) { v.forEach((x, k) => andaNoDado(x, onde + '[' + k + ']', chavePai)); return; }
+    for (const [k, x] of Object.entries(v)) {
+      const aqui = onde + '.' + k;
+      if (LISTAS_DE_TIPO.test(k)) { for (const t of [].concat(x)) ver(t, aqui); continue; }
+      if (k === 'damageType' || k === 'damageType2') { ver(x, aqui); continue; }
+      // `type` e tipo de DANO na arma e no ataque de ficha. `tipo` e CATEGORIA
+      // (poção, escudo, morto-vivo) em todo lugar menos dentro de um bloco de
+      // dano, onde e o tipo do dano da zona.
+      if (k === 'type') { ver(x, aqui); continue; }
+      if (k === 'tipo' && /dano/i.test(chavePai ?? '')) { ver(x, aqui); continue; }
+      andaNoDado(x, aqui, k);
+    }
+  };
+  andaNoDado(WEAPONS, 'WEAPONS');
+  andaNoDado(MONSTERS, 'MONSTERS');
+  andaNoDado(SPELLS, 'SPELLS');
+  andaNoDado(CONDITIONS, 'CONDITIONS');
+  assert.equal(erros.join(' | '), '', 'tipo de dano com grafia fora do vocabulario');
+  // 250 hoje. O piso existe porque uma caminhada que para de descer passa
+  // calada: a versao rasa conferia 9 e passava.
+  assert.ok(conferidas >= 200, 'a caminhada conferiu pouco: ' + conferidas);
+
+  // Os EMISSORES que nao estao em nenhum catalogo: as quedas e os
+  // desabamentos, que chamam `applyDamage` com o tipo escrito na mao. Eram
+  // seis, todos em 'contundente', e nenhum deles aparece em WEAPONS, MONSTERS
+  // ou SPELLS — foi por isso que a grafia partida passou tanto tempo de pe.
+  //
+  // A varredura e por POSICAO, nao por palavra: o terceiro argumento de
+  // `applyDamage` e um tipo de dano, e nada mais. Procurar a palavra antiga em
+  // qualquer lugar acusaria `'psiquico'` e `'eletrico'` em `view/visuals.js`,
+  // que sao nomes de folha de animacao (ASCII por convencao de arquivo) e
+  // estao certos.
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const naMao = [];
+  let quantos = 0;
+  const anda = (dir) => {
+    for (const f of readdirSync(dir)) {
+      if (f === 'folhas' || f === 'node_modules' || f === 'dev') continue;
+      const q = join(dir, f);
+      if (statSync(q).isDirectory()) { anda(q); continue; }
+      if (!f.endsWith('.js')) continue;
+      const txt = readFileSync(q, 'utf8');
+      const curto = q.slice(raiz.length + 1).split(sep).join('/');
+      for (const m of txt.matchAll(/applyDamage\([^,]+,[^,]+,\s*'([^']+)'/g)) {
+        quantos += 1;
+        if (!validos.has(m[1])) naMao.push(curto + ": applyDamage(..., '" + m[1] + "')");
+      }
+      for (const m of txt.matchAll(/\bdamageType2?:\s*'([^']+)'/g)) {
+        quantos += 1;
+        if (!validos.has(m[1])) naMao.push(curto + ': ' + m[0]);
+      }
+      // `danoPorTipo(alvo, quanto, 'tipo')`: era por aqui que um teste passava
+      // verde com `'acido'` sem acento, grafia que nao existe no jogo.
+      for (const m of txt.matchAll(/danoPorTipo\([^,]+,[^,]+,\s*'([^']+)'/g)) {
+        quantos += 1;
+        if (!validos.has(m[1])) naMao.push(curto + ": danoPorTipo(..., '" + m[1] + "')");
+      }
+    }
+  };
+  anda(raiz);
+  assert.equal(naMao.join(' | '), '', 'tipo de dano escrito na mao, fora do vocabulario');
+  // 66 hoje, em sete arquivos (magias, combate, duas cenas, o catalogo de
+  // itens, uma ficha). O piso existe para a varredura nao passar calada se a
+  // expressao parar de casar: um teste que varre zero arquivo passa sempre.
+  assert.ok(quantos >= 50, 'poucos tipos escritos na mao encontrados: ' + quantos);
+});
+
+teste('a Furia acaba de tres jeitos que o livro manda e o motor nao fazia: fim do combate, nocaute e descanso longo', () => {
+  // Enquanto a resistencia da Furia estava quebrada, ela nunca acabar era
+  // inofensivo. Com a resistencia funcionando virou resistencia de graca:
+  // medido antes, o barbaro saia vitorioso ainda em Furia e caia no fosso da
+  // trilha levando 3 de 6.
+  const comBarbaro = () => {
+    const { enc, party, foes } = montar({ nivel: 3, foes: [['goblin', { x: 6, y: 5 }]] });
+    const abilities = { str: 16, dex: 14, con: 15, int: 10, wis: 12, cha: 8 };
+    const b = criarPersonagem({ name: 'Grask', raca: 'humano', abilities }, { classe: 'barbaro', nivel: 3 });
+    Object.assign(b, { id: party[DARA].id, side: 'party', pos: { ...party[DARA].pos }, abilities, hp: 60, maxHp: 60, ac: 14 });
+    enc.combatants[enc.combatants.indexOf(party[DARA])] = b;
+    addCondition(b, 'furia', { rounds: 10, quando: 'fim' });
+    b.furiaAgiu = true;
+    return { enc, b, foes };
+  };
+
+  // 1. FIM DO COMBATE.
+  {
+    const { enc, b, foes } = comBarbaro();
+    assert.ok(hasCondition(b, 'furia'), 'entrou em furia');
+    for (const f of foes) { f.hp = 0; f.dead = true; }
+    enc.checkEnd();
+    assert.ok(enc.over, 'o combate acabou');
+    assert.equal(hasCondition(b, 'furia'), false, 'a furia sai com o combate');
+    assert.equal(b.furiaAgiu, false, 'e o contador zera');
+    // E agora a queda fora da luta cobra inteiro, como deve.
+    b.hp = 60;
+    enc.applyDamage(b, 20, 'concussão', null);
+    assert.equal(60 - b.hp, 20, 'sem furia a queda cobra inteiro');
+  }
+
+  // 2. NOCAUTE. Sem isto, o barbaro no chao seguia resistindo: 1 de cortante
+  // dava 0 falha de morte em vez de 1, e 40 contra 30 de maximo nao matavam
+  // por dano macico, porque viravam 20 antes da checagem.
+  {
+    const { enc, b } = comBarbaro();
+    b.maxHp = 30;
+    b.hp = 3;
+    enc.applyDamage(b, 4, 'fogo', null);
+    assert.equal(b.hp, 0, 'caiu');
+    assert.ok(hasCondition(b, 'inconsciente'), 'inconsciente');
+    assert.equal(hasCondition(b, 'furia'), false, 'a furia sai no nocaute');
+    // No chao, o cortante cobra inteiro: 1 de dano vale 1 falha.
+    const antes = b.deathSaves?.failures ?? 0;
+    enc.applyDamage(b, 1, 'cortante', null);
+    assert.equal((b.deathSaves?.failures ?? 0) - antes, 1, 'o golpe no chao conta falha');
+  }
+
+  // 3. DESCANSO LONGO. Ninguem dorme oito horas em Furia.
+  {
+    const { b } = comBarbaro();
+    descansoLongo(b);
+    assert.equal(hasCondition(b, 'furia'), false, 'a furia sai no descanso longo');
+    assert.equal(b.furiaAgiu, false);
+  }
+});
+
+teste('o dreno do stirge grudado e PERDA DE PV, nao dano: nenhuma resistencia incide', () => {
+  // O livro separa as duas coisas, e e facil confundir: o acerto que GRUDA
+  // causa dano perfurante (esta na ficha), e o dreno de cada turno seguinte e
+  // "o alvo PERDE 1d4+3 pontos de vida por perda de sangue".
+  //
+  // O campo dizia `'perda de sangue'`, um tipo inventado, e eu o troquei por
+  // `'perfurante'` por achar que era o mesmo dano do acerto. Medido: assim o
+  // barbaro em Furia levava cada dreno pela METADE. Resistencia que o livro
+  // nao da, e que nenhum teste pegava.
+  const { enc, party, foes } = montar({ nivel: 3, foes: [['stirge', { x: 6, y: 5 }]] });
+  const stirge = foes[0];
+  const alvo = party[DARA];
+  alvo.maxHp = 400;
+  stirge.grudadoEm = alvo.id;
+  stirge.drenado = 0;
+  stirge.pos = { ...alvo.pos };
+
+  // O stirge se solta quando enche (o Manual manda), e aí as chamadas
+  // seguintes não drenam nada. Para medir só o dreno, ele volta a grudar
+  // com a barriga vazia antes de cada um.
+  const drenar = () => {
+    alvo.hp = alvo.maxHp;
+    stirge.grudadoEm = alvo.id; stirge.drenado = 0; stirge.saciado = false;
+    enc.drenarSangue(stirge);
+    return alvo.maxHp - alvo.hp;
+  };
+  // 1d4+3 sem resistencia nenhuma: de 4 a 7, nunca menos.
+  const semNada = [];
+  for (let i = 0; i < 40; i++) semNada.push(drenar());
+  assert.ok(Math.min(...semNada) >= 4, 'piso do dreno: ' + Math.min(...semNada));
+
+  // As tres defesas que mordiam o dreno. As duas ultimas nem olham o tipo
+  // (`resisteTudo`, `resisteNaoMagicoTudo`), entao elas cortavam o dreno mesmo
+  // quando o tipo era o inventado — e e por isso que o meu comentario antigo,
+  // que dizia que o tipo inventado "furava toda defesa", era falso.
+  for (const cond of ['furia', 'fingeMorto', 'gasoso']) {
+    if (!CONDITIONS[cond]) continue;
+    addCondition(alvo, cond, { rounds: 20 });
+    const com = [];
+    for (let i = 0; i < 40; i++) com.push(drenar());
+    removeCondition(alvo, cond);
+    assert.ok(Math.min(...com) >= 4, cond + ' cortou o dreno: minimo ' + Math.min(...com));
+  }
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

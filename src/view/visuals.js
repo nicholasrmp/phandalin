@@ -24,7 +24,7 @@
 
 import { EFEITOS } from '../art/efeitos.js';
 import {
-  audio, hitSoundFor, spellSoundFor, naturalAttackSoundFor, deathSoundFor,
+  audio, hitSoundFor, spellSoundFor, naturalAttackSoundFor, deathSoundFor, vozDa,
 } from '../core/audio.js';
 import { LOOKS } from '../art/looks.js';
 
@@ -720,6 +720,22 @@ export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {
     // que a gelatina e o espectro pedem.
     const abertura = somInicio === undefined ? 'swing' : somInicio;
     if (abertura) audio.play(abertura);
+    // A VOZ, e só de quem tem voz na ficha: o lobo rosna e então morde.
+    // `vozDa` tem o freio que impede o coro (`core/audio.js`).
+    //
+    // Ela entra SÓ onde a receita não opinou sobre a abertura: quem pediu
+    // silêncio com `somInicio: null` ou pôs som próprio já decidiu o que se
+    // ouve na saída do golpe, e a voz por cima desfaz a decisão.
+    //
+    // Hoje isso só muda a Teia da aranha, e a razão é um defeito que não é
+    // deste arquivo: das receitas que opinam, as únicas que alguma ficha
+    // escolhe são `charge` e `web`. `necroticTouch`, `lifeDrain`, `acid`,
+    // `clawGhoul`, `drain`, `sting`, `kick` e `tail` foram escritas para
+    // criaturas que apontam para outra receita no `art` da ficha — o espectro
+    // ataca com `claw`, a gelatina com `mace`. A guarda fica porque está certa
+    // no dia em que o `art` das fichas for corrigido.
+    const voz = somInicio === undefined ? vozDa(ev.attacker) : null;
+    if (voz) audio.play(voz);
     start?.();
   }, startDelay * 1000);
 
@@ -1979,7 +1995,10 @@ const IMPACT_BY_TYPE = {
   frio: (board, tile) => board.fx.shards(tile, { color: '#bfe9ff', count: 9 }),
   radiante: (board, tile) => board.fx.motes(tile, { color: '#ffe9a8', count: 8, rise: 30, dur: 0.45 }),
   'energético': (board, tile) => board.fx.impact(tile, { color: '#b98cff', count: 8, spread: 36 }),
-  raio: (board, tile) => board.fx.impact(tile, { color: '#bfe6ff', count: 10, spread: 50 }),
+  // `'elétrico'`, e não `raio`: o tipo de dano do jogo é `elétrico`, e com a
+  // chave velha esta receita nunca era achada — o Raio de Bruxa estourava
+  // genérico, com a receita de relâmpago escrita ao lado e sem dono.
+  'elétrico': (board, tile) => board.fx.impact(tile, { color: '#bfe6ff', count: 10, spread: 50 }),
   // Veneno não estoura: fica. Argola baixa e bolhas subindo devagar.
   veneno: (board, tile) => {
     board.fx.ring(tile, { color: COR.veneno, radius: 26, dur: 0.7, width: 2 });
@@ -1999,7 +2018,7 @@ const IMPACT_BY_TYPE = {
 
 const FALLBACK_COLOR = {
   fogo: '#ff7a3a', frio: '#8fd8ff', radiante: '#ffe9a8',
-  'energético': '#b98cff', raio: '#bfe6ff', 'elétrico': '#bfe6ff', trovejante: '#e8eef5', 'psíquico': '#a579d8',
+  'energético': '#b98cff', 'elétrico': '#bfe6ff', trovejante: '#e8eef5', 'psíquico': '#a579d8',
   veneno: COR.veneno, 'ácido': COR.acido, 'necrótico': COR.necrotico,
 };
 

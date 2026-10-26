@@ -380,6 +380,11 @@ export class Encounter {
     const partyInit = d20(this.rng, this.bestDex('party'), { disadvantage: this.iniciativaRuim === 'party' });
     const foeInit = d20(this.rng, this.bestDex('foes'), { disadvantage: this.iniciativaRuim === 'foes' });
     this.say('inicio', `Iniciativa — Grupo ${partyInit.total} × ${foeInit.total} Inimigos`);
+    // O aviso de que a exploração virou combate. Sai como EVENTO, e não como
+    // som daqui, porque o motor não toca nada: quem ouve é a vista. E sai de
+    // `start()` porque são doze os lugares que começam um combate (um por
+    // capítulo, mais o encontro solto) — avisar em cada um é esquecer em um.
+    this.onEvent({ type: 'iniciativa', party: partyInit.total, foes: foeInit.total });
     this.round = 1;
     // Guarda quem abriu: a rodada só vira quando a vez volta para esse lado.
     this.firstSide = partyInit.total >= foeInit.total ? 'party' : 'foes';
@@ -1086,6 +1091,11 @@ export class Encounter {
       // As magias de combate acabam com o encontro: Levitação (e a concentração que a segura),
       // Piscar e Conjurar Animais. Sem isto o herói ficava com deslocamento 0 até o descanso.
       for (const c of this.combatants) {
+        // A FÚRIA ACABA COM O COMBATE, que é o que o livro diz. Ela ficava, e
+        // isso era inofensivo enquanto a resistência dela não funcionava:
+        // medido, o bárbaro saía vitorioso ainda em Fúria e caía no fosso da
+        // trilha levando 3 de 6. Resistência de graça, de uma luta anterior.
+        if (hasCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
         for (const id of ['levitando', 'piscando', 'etereo']) if (hasCondition(c, id)) removeCondition(c, id);
         const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
         if (k === 'levitar' || k === 'invocar') c.concentrating = null;
@@ -1352,7 +1362,22 @@ export class Encounter {
     if (!isAdjacent(m.pos, alvo.pos)) this.levarGrudados(alvo);
     const r = damageRoll(this.rng, '1d4+3');
     const antes = alvo.hp;
-    this.applyDamage(alvo, r.total, 'perda de sangue', m);
+    // SEM TIPO, de propósito. O livro separa duas coisas que são fáceis de
+    // confundir: o acerto que GRUDA o stirge causa dano perfurante (está na
+    // ficha, `monsters/feras.js`), e o dreno de cada turno seguinte é "o alvo
+    // PERDE 1d4+3 pontos de vida por perda de sangue". Perda de PV não é dano,
+    // e nenhuma resistência incide sobre ela — `danoPorTipo` devolve o valor
+    // inteiro quando o tipo é nulo, que é exatamente o que se quer.
+    //
+    // O campo dizia `'perda de sangue'`, um tipo inventado, e eu o troquei por
+    // `'perfurante'` por achar que era o mesmo dano do acerto. Medido: assim o
+    // bárbaro em Fúria levava cada dreno pela metade e o stirge demorava 4,30
+    // turnos em vez de 2,18 para se saciar — resistência que o livro não dá.
+    //
+    // SIMPLIFICAÇÃO DECLARADA: isto continua passando por `applyDamage`, então
+    // ainda conta como "apanhou" para sustentar a Fúria e ainda pede teste de
+    // concentração. Perda de PV de verdade não faria nenhum dos dois.
+    this.applyDamage(alvo, r.total, null, m);
     m.drenado += Math.max(0, antes - alvo.hp) || r.total;
     this.say('dano', `${m.name} drena o sangue de ${alvo.name}: ${r.total} PV.`, `1d4+3 = ${r.total}`);
     if (alvo.dead || m.drenado >= 10) {
@@ -1856,7 +1881,7 @@ export class Encounter {
 
   // ---- voo --------------------------------------------------------------------
 
-  /** O voador perde o voo: cai (1d6 contundente, o jogo supõe ~3 m) e fica caído. */
+  /** O voador perde o voo: cai (1d6 concussão, o jogo supõe ~3 m) e fica caído. */
   cair(c, dados = '1d6') {
     if (c.dead) return;
     const gato = getCondition(c, 'aprimorado')?.data?.opcao === 'gato';
@@ -1865,8 +1890,8 @@ export class Encounter {
       return;
     }
     const r = damageRoll(this.rng, dados);
-    this.say('condicao', `${c.name} deixa de ${dados === '1d6' ? 'voar' : 'levitar'} e cai: ${r.total} contundente.`, `${dados}[${r.rolls.join('+')}]`);
-    this.applyDamage(c, r.total, 'contundente', null);
+    this.say('condicao', `${c.name} deixa de ${dados === '1d6' ? 'voar' : 'levitar'} e cai: ${r.total} concussão.`, `${dados}[${r.rolls.join('+')}]`);
+    this.applyDamage(c, r.total, 'concussão', null);
     if (!c.dead && !hasCondition(c, 'inconsciente')) addCondition(c, 'caido');
     this.onEvent({ type: 'caiu', target: c });
   }
@@ -3561,6 +3586,11 @@ export class Encounter {
       this.morrer(target, 'dano maciço');
       return;
     } else {
+      // A FÚRIA ACABA AO CAIR, como o livro manda. Medido sem isto: o bárbaro
+      // no chão seguia em Fúria, e então 1 de cortante dava 0 falha de morte
+      // em vez de 1, e 40 de cortante contra 30 de máximo não o matavam por
+      // dano maciço, porque viravam 20 antes da checagem.
+      if (hasCondition(target, 'furia')) { removeCondition(target, 'furia'); target.furiaAgiu = false; }
       addCondition(target, 'inconsciente');
       addCondition(target, 'caido');
       target.stable = false;
@@ -4663,6 +4693,8 @@ export class Encounter {
             this.say('condicao', `${c.name} fica cego pelas cores.`);
             continue;
           }
+          // Adormecer é cair inconsciente, e a Fúria acaba aí também.
+          if (hasCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
           this.aplicarCondicao(c, 'inconsciente', { rounds: 10, source: 'sono', magia: { id: spell.id, circulo: slot } });
           addCondition(c, 'caido');
           c.acted = true;

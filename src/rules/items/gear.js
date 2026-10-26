@@ -84,8 +84,8 @@ export const GEAR = {
 
   // ---------------------------------------------------------- armadilhas ----
   bolasDeRolamento: pilha('bolasDeRolamento', 'Bolas de rolamento', 1, 2, 'Mil numa bolsa. Cobrem um quadrado de 3 m: CD 10 de Destreza ou cai no chão.'),
-  estrepes: pilha('estrepes', 'Estrepes', 1, 2, 'Vinte numa bolsa. Cobrem 1,5 m: CD 15 de Destreza ou 1 de perfuração e metade do deslocamento.'),
-  armadilhaDeCaca: item('armadilhaDeCaca', 'Armadilha de caça', 5, 25, 'Dente de aço. Quem pisa toma 1d4 de perfuração e fica preso; CD 13 de Força para abrir.'),
+  estrepes: pilha('estrepes', 'Estrepes', 1, 2, 'Vinte numa bolsa. Cobrem 1,5 m: CD 15 de Destreza ou 1 de dano perfurante e metade do deslocamento.'),
+  armadilhaDeCaca: item('armadilhaDeCaca', 'Armadilha de caça', 5, 25, 'Dente de aço. Quem pisa toma 1d4 de dano perfurante e fica preso; CD 13 de Força para abrir.'),
   espigoesDeFerro: pilha('espigoesDeFerro', 'Espigões de ferro', 1, 5, 'Dez numa saca. Para travar porta ou prender corda.'),
 
   // ---------------------------------------------------- escrita e estudo ----

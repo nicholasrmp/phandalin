@@ -36,7 +36,7 @@ import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { criarFicha, aplicarAparencia } from './view/ficha.js';
 import { criarMenu } from './view/menu.js';
-import { audio } from './core/audio.js';
+import { audio, passoSoundFor } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
   playGlifoVisual, playCordaoVisual, playAnuladaVisual,
@@ -364,12 +364,31 @@ class App {
         // O motor já moveu a peça; isto conta a viagem quadrado a quadrado.
         // O andar vem da criatura: a gelatina escorre, a aranha treme, o
         // zumbi arrasta uma perna, o ogro parte e para seco.
+        const andar = andarDe(ev.actor);
         board?.fx.walk(ev.actor, ev.path, {
-          andar: andarDe(ev.actor),
-          onStep: () => audio.play('step'),
+          andar,
+          // `onStep` sempre deu o índice da casa no caminho; quem chamava o
+          // jogava fora e tocava o mesmo passo em qualquer piso.
+          onStep: (i) => {
+            // Quem voa não pisa. O espectro, o stirge e a caveira flamejante
+            // atravessam a sala sem tocar o chão, e um passo de pedra embaixo
+            // deles desmente o desenho que os mostra no ar.
+            if (andar === 'voo' || andar === 'rastejar') return;
+            // O aviso chega no COMEÇO do segmento, então `path[i]` é a casa que
+            // ele DEIXA. O som é do chão onde ele põe o pé: o seguinte.
+            const p = ev.path[i + 1] ?? ev.path[i];
+            audio.play(passoSoundFor(this.enc?.field?.surfaceAt?.(p.x, p.y)));
+          },
         });
         break;
       }
+
+      // As três notas da iniciativa, que existiam e nunca tocavam: o único
+      // aviso sonoro de que a exploração virou combate. Vem do motor por evento
+      // para valer nos capítulos também, não só no encontro solto.
+      case 'iniciativa':
+        audio.play('initiative');
+        break;
 
       case 'attack': {
         const a = ev.attacker;
@@ -543,6 +562,10 @@ class App {
         if (ev.amount > 0) {
           const { target, amount } = ev;
           this.atImpact(() => {
+            // O som estava composto e o caso já desenhava o número e o anel:
+            // só faltava pedir. Serve à magia, à poção e ao dado de vida, que
+            // todos passam por aqui.
+            audio.play('heal');
             board?.floatText(target.pos, `+${Math.round(amount)}`, '#6ee89a');
             board?.fx.ring(target.pos, { color: '#6ee89a', radius: 28, dur: 0.5, width: 2 });
           });

@@ -107,9 +107,15 @@ export function narrar(root, { formato = 'tela', paginas, escolhas = null, pular
       } else {
         botoes.push(el('button', {
           class: 'narrativa-btn primario',
-          onclick: () => { audio.play('click'); if (ultima) fechar('fim'); else { i += 1; desenhar(); } },
+          // Virar a pagina soa como papel; fechar o painel e um clique de
+          // interface, porque ai nao ha pagina nenhuma virando.
+          onclick: () => { audio.play(ultima ? 'click' : 'pageWhisper'); if (ultima) fechar('fim'); else { i += 1; desenhar(); } },
         }, ultima ? 'Continuar' : 'Seguir'));
       }
+      // Quatro estalos: a unica rolagem do jogo que o jogador para para ler
+      // e a do teste de pericia na pagina. O combate rola dez vezes por turno
+      // e um dado a cada rolagem viraria matraca.
+      if (p.teste) audio.play('dice');
       const corpo = [
         p.teste && el('p', { class: `narrativa-teste ${p.teste.passou ? 'passou' : 'falhou'}` },
           `${p.teste.quem} · ${p.teste.pericia}: ${p.teste.total} contra CD ${p.teste.cd} — ${p.teste.passou ? 'sucesso' : 'falha'}${p.teste.fontes?.length ? ` (${p.teste.fontes.join('; ')})` : ''}`),

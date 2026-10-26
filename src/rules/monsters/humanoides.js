@@ -702,6 +702,7 @@ export const HUMANOIDES = {
     cr: '2',
     xp: 450,
     abilities: { str: 19, dex: 8, con: 16, int: 5, wis: 7, cha: 7 },
+    voice: 'gruntOgre',
     ac: 11,
     acNote: 'armadura de peles',
     maxHp: 59,

@@ -163,6 +163,9 @@ export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
 export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
   acordar(c);
+  // Ninguém dorme oito horas em Fúria. O combate já a encerra (`checkEnd`),
+  // mas uma Fúria entrada fora de luta ficaria até o fim dos tempos.
+  if (getCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
   if (nivelDeExaustao(c) > 0 && alimentado) mudarExaustao(c, -1);
   // Reviver os Mortos: a penalidade de quem voltou cai de 1 por descanso longo.
   const volta = getCondition(c, 'revivido');

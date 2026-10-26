@@ -163,6 +163,7 @@ export const ABERRACOES = {
     swimFt: 40,
     saves: ['dex', 'con', 'wis', 'cha'],
     skills: ['enganacao', 'percepcao', 'furtividade'],
+    voice: 'roarDragon',
     attacks: [
       {
         name: 'Mordida', bonus: 7, damage: '2d10+4', type: 'perfurante',

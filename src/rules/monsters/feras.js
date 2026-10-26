@@ -446,7 +446,7 @@ export const FERAS = {
     speedFt: 40,
     senses: { passivePerception: 11 },
     attacks: [
-      { name: 'Chifrada', bonus: 5, damage: '2d4+3', type: 'contundente', reachFt: 5, art: 'bite' },
+      { name: 'Chifrada', bonus: 5, damage: '2d4+3', type: 'concussão', reachFt: 5, art: 'bite' },
     ],
     traits: ['chargeGoat'],
     blurb: 'Corre e marra: depois de 6 m em linha reta a chifrada ganha +2d4 e o alvo, se falhar em FOR CD 13, cai no chão.',
@@ -526,7 +526,7 @@ export const FERAS = {
     speedFt: 40,
     skills: ['percepcao'],
     senses: { darkvisionFt: 60, passivePerception: 13 },
-    voice: 'roarDragon',
+    voice: 'screechOwlbear',
     attacks: [
       { name: 'Bico', bonus: 7, damage: '1d10+5', type: 'perfurante', reachFt: 5, art: 'bite' },
       { name: 'Garras', bonus: 7, damage: '2d8+5', type: 'cortante', reachFt: 5, art: 'claw' },
@@ -582,11 +582,11 @@ export const TRAITS = {
   },
   chargeGoat: {
     name: 'Investida',
-    desc: 'Movendo-se 6 m em linha reta antes de acertar a chifrada: +2d4 de dano contundente e resistência de FOR CD 13 ou cai no chão.',
+    desc: 'Movendo-se 6 m em linha reta antes de acertar a chifrada: +2d4 de dano de concussão e resistência de FOR CD 13 ou cai no chão. (O jogo ainda não aplica: a chifrada causa só os 2d4+3 da ficha.)',
   },
   chargeGiantBoar: {
     name: 'Investida',
-    desc: 'Movendo-se 6 m em linha reta antes de acertar as presas: +2d6 de dano cortante e resistência de FOR CD 13 ou cai no chão.',
+    desc: 'Movendo-se 6 m em linha reta antes de acertar as presas: +2d6 de dano cortante e resistência de FOR CD 13 ou cai no chão. (O jogo ainda não aplica: as presas causam só o dado da ficha.)',
   },
   relentlessGiant: {
     name: 'Implacável',

@@ -52,6 +52,7 @@ import { distanceFt, isAdjacent, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, removeCondition, hasCondition } from '../rules/conditions.js';
 import { darXp } from './nivel.js';
+import { audio } from '../core/audio.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
 import { criarBuscas } from './buscas.js';
@@ -141,7 +142,12 @@ export function criarMansao(app, config) {
 
   // ------------------------------------------------------------- o mapa ----
   const chao = SUPERFICIES.indexOf('laje');
-  function abrirCasa(x, y, h) {
+  function abrirCasa(x, y, h, { som = true } = {}) {
+    // Pedra arrastando por 1,2 s. O padrao e TOCAR, e so as tres chamadas que
+    // repoem o que ja estava aberto passam `som: false`: com o padrao
+    // invertido, uma porta nova esquecida entraria muda, e o erro silencioso
+    // e o que nao se descobre jogando.
+    if (som) audio.play('doorStone');
     const f = enc.field;
     const i = y * f.w + x;
     f.tiles[i] = 0;
@@ -149,19 +155,19 @@ export function criarMansao(app, config) {
     f.heights[i] = h;
     f.versao = (f.versao ?? 0) + 1;     // a visão do grupo recalcula
   }
-  function abrirPorta(nome) {
+  function abrirPorta(nome, opcoes) {
     const p = MANSAO.portas[nome];
-    abrirCasa(p.x, p.y, p.h);
+    abrirCasa(p.x, p.y, p.h, opcoes);
     if (!salvo.portas.includes(nome)) salvo.portas.push(nome);
   }
-  function abrirSecreta(nome) {
+  function abrirSecreta(nome, opcoes) {
     const s = MANSAO.secretas[nome];
-    abrirCasa(s.x, s.y, s.h);
+    abrirCasa(s.x, s.y, s.h, opcoes);
     if (!salvo.secretas.includes(nome)) salvo.secretas.push(nome);
   }
-  function abrirTrancada() {
+  function abrirTrancada(opcoes) {
     const t = MANSAO.trancada;
-    abrirCasa(t.x, t.y, t.h);
+    abrirCasa(t.x, t.y, t.h, opcoes);
     salvo.trancadaAberta = true;
   }
   /**
@@ -193,11 +199,11 @@ export function criarMansao(app, config) {
     salvo.ponteSulCaiu = true;
   }
   // O que já estava aberto de outra visita.
-  for (const nome of salvo.secretas) abrirSecreta(nome);
-  if (salvo.trancadaAberta) abrirTrancada();
+  for (const nome of salvo.secretas) abrirSecreta(nome, { som: false });
+  if (salvo.trancadaAberta) abrirTrancada({ som: false });
   if (salvo.fossoVisto) marcarFosso();
   if (salvo.ponteSulCaiu) quebrarPonteSul();
-  for (const nome of salvo.portas) abrirPorta(nome);
+  for (const nome of salvo.portas) abrirPorta(nome, { som: false });
 
   // ------------------------------------------------- armadilhas no caminho ----
   const noFosso = (p) => !salvo.fossoVisto && MANSAO.fosso.some((q) => q.x === p.x && q.y === p.y);
@@ -258,7 +264,9 @@ export function criarMansao(app, config) {
     estado.lutando = g;
     root.classList.remove('explorando');
     if (g.id === 'cripta') salvo.jaulasAvisadas = true;    // a luta na cripta se ouve nas jaulas
-    if (g.id === 'alojamento') abrirPorta('alojamento');
+    // `som` só se ela ainda não estava aberta: quem abriu a porta e depois
+    // revirou os barris chamava isto com a porta já aberta, e ela rangia duas vezes.
+    if (g.id === 'alojamento') abrirPorta('alojamento', { som: !salvo.portas.includes('alojamento') });
     if (g.id === 'guardas' && droop && !droop.dead) {
       addCondition(droop, 'inconsciente');
       droop.stable = true;
@@ -919,7 +927,9 @@ export function criarMansao(app, config) {
           const vantagem = perto.some(([n]) => n === 'quarto' && salvo.iarno === 'fugiu');
           const t = teste(c, 'percepcao', 10, vantagem);
           if (t.passou && perto.length) {
-            for (const [n] of perto) abrirSecreta(n);
+            // As duas secretas do quarto ficam a uma casa uma da outra, então o
+            // mesmo teste abre as duas: um rangido para o par, não dois empilhados.
+            perto.forEach(([n], i) => abrirSecreta(n, { som: i === 0 }));
             await painel(`${c.name} corre os dedos pelas juntas e acha: uma laje que gira para o lado sobre dobradiças escondidas.`, { teste: t });
             app.refresh();
           } else {
@@ -1185,6 +1195,7 @@ export function criarMansao(app, config) {
       ops.push({
         rotulo: 'Puxar o baú escondido', icone: 'acao-usarObjeto', detalhe: 'debaixo da ponte do norte',
         fazer: async () => {
+          audio.play('chestOpen');
           salvo.bauVigia = true;
           guardar(c, 'moedaDePrata', 160); guardar(c, 'moedaDeOuro', 120); guardar(c, 'malaquita', 5);
           guardar(c, 'pocaoDeCura', 2); guardar(c, 'pergaminhoDeAuguro', 1);
@@ -1233,6 +1244,7 @@ export function criarMansao(app, config) {
         rotulo: 'Abrir o baú', icone: 'acao-usarObjeto',
         motivo: longe(5) ?? (grupos.cajavidro && pendentes().includes(grupos.cajavidro) ? 'o dono ainda está aqui' : null),
         fazer: async () => {
+          audio.play('chestOpen');
           salvo.bauIarno = true;
           guardar(c, 'moedaDePrata', 180); guardar(c, 'moedaDeOuro', 130); guardar(c, 'cornalina', 5);
           guardar(c, 'peridoto', 2); guardar(c, 'perola', 1); guardar(c, 'pergaminhoDeEnfeiticar', 1); guardar(c, 'pergaminhoDeBolaDeFogo', 1);

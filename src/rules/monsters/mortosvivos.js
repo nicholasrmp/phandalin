@@ -43,6 +43,7 @@ export const MORTOS_VIVOS = {
     cr: '1/4',
     xp: 50,
     abilities: { str: 10, dex: 14, con: 15, int: 6, wis: 8, cha: 5 },
+    voice: 'rattleSkeleton',
     ac: 13,
     acNote: 'restos de armadura',
     maxHp: 13,
@@ -75,6 +76,7 @@ export const MORTOS_VIVOS = {
     cr: '1/4',
     xp: 50,
     abilities: { str: 13, dex: 6, con: 16, int: 3, wis: 6, cha: 5 },
+    voice: 'moanZombie',
     ac: 8,
     acNote: 'sem armadura, carne mole',
     maxHp: 22,
@@ -108,6 +110,7 @@ export const MORTOS_VIVOS = {
     cr: '1',
     xp: 200,
     abilities: { str: 13, dex: 15, con: 10, int: 7, wis: 10, cha: 6 },
+    voice: 'moanZombie',
     ac: 12,
     acNote: 'agilidade de bicho',
     maxHp: 22,
@@ -145,6 +148,7 @@ export const MORTOS_VIVOS = {
     cr: '1',
     xp: 200,
     abilities: { str: 1, dex: 14, con: 11, int: 10, wis: 10, cha: 11 },
+    voice: 'wailSpectre',
     ac: 12,
     acNote: 'corpo que a arma atravessa',
     maxHp: 22,
@@ -195,6 +199,7 @@ export const MORTOS_VIVOS = {
     cr: '5',
     xp: 1800,
     abilities: { str: 6, dex: 16, con: 16, int: 12, wis: 14, cha: 15 },
+    voice: 'wailSpectre',
     ac: 13,
     acNote: 'manto que a arma atravessa',
     maxHp: 67,
@@ -232,7 +237,7 @@ export const TRAITS = {
   // passagem por ator, então hoje a parede para o espectro como para todos.
   incorporealMovement: {
     name: 'Movimento Incorpóreo',
-    desc: 'Atravessa criaturas e objetos como terreno difícil (custo dobrado). Sofre 1d10 de dano de força se terminar o turno dentro de um objeto.',
+    desc: 'Atravessa criaturas e objetos como terreno difícil (custo dobrado). Sofre 1d10 de dano energético se terminar o turno dentro de um objeto.',
   },
 
   // SRD. PARCIAL: o dano necrótico acontece; a redução de PV máximo não,

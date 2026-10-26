@@ -13,6 +13,7 @@ import { HUMANOIDES, TRAITS as T_HUM } from './monsters/humanoides.js';
 import { FERAS, TRAITS as T_FER } from './monsters/feras.js';
 import { MORTOS_VIVOS, TRAITS as T_MOR } from './monsters/mortosvivos.js';
 import { ABERRACOES, TRAITS as T_ABE } from './monsters/aberracoes.js';
+import { DANOS_FISICOS } from './tipos-de-dano.js';
 
 export const MONSTERS = {
   ...GOBLINOIDES,
@@ -22,7 +23,9 @@ export const MONSTERS = {
   ...ABERRACOES,
 };
 
-const FISICOS = ['cortante', 'perfurante', 'concussão'];
+// Os tres fisicos vem de `tipos-de-dano.js`: era uma copia local, e copia de
+// vocabulario e como a divergencia que custou a Furia comecou.
+const FISICOS = DANOS_FISICOS;
 
 // Tipo de criatura pela família, quando o bloco não diz. Regra precisa dele:
 // Sono não pega morto-vivo, cura não funciona em constructo.

@@ -102,7 +102,7 @@ const TALENTOS = {
   divineSense: ['Sentido Divino', 'Ação: sente mortos-vivos, corruptores e celestiais a até 18 m — inclusive os que ninguém está vendo.'],
   arcaneRecovery: ['Recuperação Arcana', 'Fora da luta, uma vez por dia: recupera espaços de magia somando metade do seu nível.'],
   martialArts: ['Artes Marciais', 'O punho e a arma de monge usam Destreza, e rolam o dado da classe quando ele é maior. Depois de atacar com eles, um golpe desarmado de ação bônus.'],
-  rage: ['Fúria', 'Ação bônus: vantagem em testes e resistências de Força, bônus no dano corpo a corpo com Força e metade do dano de contundente, perfurante e cortante. Um minuto, e acaba antes se você passar um turno sem atacar ninguém nem apanhar. Não entra de armadura pesada.'],
+  rage: ['Fúria', 'Ação bônus: vantagem em testes e resistências de Força, bônus no dano corpo a corpo com Força e resistência a dano de concussão, perfurante e cortante — metade do dano, de qualquer fonte. Um minuto, e acaba antes se você passar um turno sem atacar ninguém nem apanhar, se cair inconsciente, ou quando o combate termina. Não entra de armadura pesada.'],
 };
 
 /** Iniciais para o soquete de um item que ainda não tem ícone desenhado. */

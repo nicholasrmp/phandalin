@@ -230,7 +230,7 @@ export const SPELLS = {
     id: 'rajadaMistica', name: 'Rajada Mística', level: 0, school: 'evocação', fonte: 'srd',
     castTime: 'action', rangeFt: 120, kind: 'raios', raios: 1, raiosPorNivel: true, semEscala: true,
     damage: '1d10', damageType: 'energético',
-    desc: 'Um raio de energia crepitante: ataque mágico à distância, 1d10 de energia. Dois raios no 5º nível, três no 11º e quatro no 17º, cada um com o seu ataque.',
+    desc: 'Um raio de energia crepitante: ataque mágico à distância, 1d10 de dano energético. Dois raios no 5º nível, três no 11º e quatro no 17º, cada um com o seu ataque.',
   },
   zombariaViciosa: {
     id: 'zombariaViciosa', name: 'Zombaria Viciosa', level: 0, school: 'encantamento', fonte: 'srd',
@@ -499,7 +499,7 @@ export const SPELLS = {
     id: 'armaEspiritual', name: 'Arma Espiritual', level: 2, school: 'evocação', fonte: 'srd',
     castTime: 'bonus', rangeFt: 60, kind: 'arma', melee: true, reuso: 'bonus', alcanceDaArmaFt: 25,
     damage: '1d8', addSpellMod: true, damageType: 'energético', duracaoRodadas: 10, upcast: { dadosACada2: 1 },
-    desc: 'Ação bônus. Uma arma espectral surge e golpeia: ataque mágico corpo a corpo, 1d8 + modificador de energia. Por 1 minuto, a cada turno, a ação bônus a move 6 m e golpeia de novo, sem gastar espaço. +1d8 a cada 2 círculos acima do 2º.',
+    desc: 'Ação bônus. Uma arma espectral surge e golpeia: ataque mágico corpo a corpo, 1d8 + modificador, de dano energético. Por 1 minuto, a cada turno, a ação bônus a move 6 m e golpeia de novo, sem gastar espaço. +1d8 a cada 2 círculos acima do 2º.',
   },
 
   invisibilidade: {
@@ -832,10 +832,10 @@ export const SPELLS = {
   muralhaDeVento: {
     id: 'muralhaDeVento', name: 'Muralha de Vento', level: 3, school: 'evocação', fonte: 'srd',
     castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 50, kind: 'save', save: 'str',
-    damage: '3d8', damageType: 'contundente', halfOnSave: true,
+    damage: '3d8', damageType: 'concussão', halfOnSave: true,
     zona: { rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, barraProjetil: true },
     concentration: true, duracaoRodadas: 10,
-    desc: 'Uma muralha de vento forte, em linha reta de 15 m (10 casas; na diagonal a linha tem mais casas), centrada no ponto que você mira e de través para você. Ao surgir, quem está nela faz CD de FOR ou sofre 3d8 contundente, metade se passar. Enquanto durar, todo ataque à distância com arma (flecha, virote, pedra) que cruze a muralha erra sozinho. Concentração, até 1 minuto. (No jogo, só os projéteis de arma são barrados: magias, criaturas Grandes e gás atravessam; o livro também sopra névoa e voadores, o que o jogo não faz.)',
+    desc: 'Uma muralha de vento forte, em linha reta de 15 m (10 casas; na diagonal a linha tem mais casas), centrada no ponto que você mira e de través para você. Ao surgir, quem está nela faz CD de FOR ou sofre 3d8 concussão, metade se passar. Enquanto durar, todo ataque à distância com arma (flecha, virote, pedra) que cruze a muralha erra sozinho. Concentração, até 1 minuto. (No jogo, só os projéteis de arma são barrados: magias, criaturas Grandes e gás atravessam; o livro também sopra névoa e voadores, o que o jogo não faz.)',
   },
 
   // ---- lote 11: ilusão, visão, atributo, sugestão, luz do dia, maldição, plantas, voo ----
@@ -893,7 +893,7 @@ export const SPELLS = {
     id: 'voo', name: 'Voo', level: 3, school: 'transmutação', fonte: 'srd',
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'voando',
     concentration: true, duracaoRodadas: 100, upcast: { alvos: 1 },
-    desc: 'Toque num aliado: por 10 minutos ele ganha deslocamento de voo de 18 m. (No jogo ele voa por cima do terreno difícil e dos degraus de elevação, e as zonas do chão — Graxa, Espinhos — não o pegam; a Teia e o resto ainda pegam. Obstáculos e criaturas continuam barrando o caminho, e o voador ainda pode ser alcançado em combate corpo a corpo.) Se a concentração cair, ele cai: 1d6 contundente (o jogo supõe uns 3 m de altura) e fica caído. +1 alvo por círculo acima do 3º.',
+    desc: 'Toque num aliado: por 10 minutos ele ganha deslocamento de voo de 18 m. (No jogo ele voa por cima do terreno difícil e dos degraus de elevação, e as zonas do chão — Graxa, Espinhos — não o pegam; a Teia e o resto ainda pegam. Obstáculos e criaturas continuam barrando o caminho, e o voador ainda pode ser alcançado em combate corpo a corpo.) Se a concentração cair, ele cai: 1d6 concussão (o jogo supõe uns 3 m de altura) e fica caído. +1 alvo por círculo acima do 3º.',
   },
 
   // ---- lote 12: queda, frutos, imagens, flechas, rastro, aranha, contramágica, glifo ----
@@ -1078,7 +1078,7 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 60, kind: 'levitar', ambosLados: true, save: 'con',
     concentration: true, duracaoRodadas: 100, reuso: 'acao',
     pesoMaximo: 'médio',
-    desc: 'Uma criatura Pequena ou Média a até 18 m sobe 6 m e fica no ar, até 10 minutos, enquanto você concentrar. Aliado aceita; inimigo faz CD de CON e, se passar, nada acontece. Quem levita não anda sozinho (deslocamento 0); você, com a ação, o move até 6 m para qualquer casa livre que veja. Quem está no chão não alcança o levitante em corpo a corpo, e ele não alcança quem está no chão (só ataques à distância). Se a concentração cair, ele cai: 2d6 de dano contundente e fica caído. (Simplificações: o livro move o alvo em 6 m na vertical; no jogo a altura é fixa e o movimento é na horizontal. Objetos não são alvo, e o limite de 225 kg vira "criatura Pequena ou Média".)',
+    desc: 'Uma criatura Pequena ou Média a até 18 m sobe 6 m e fica no ar, até 10 minutos, enquanto você concentrar. Aliado aceita; inimigo faz CD de CON e, se passar, nada acontece. Quem levita não anda sozinho (deslocamento 0); você, com a ação, o move até 6 m para qualquer casa livre que veja. Quem está no chão não alcança o levitante em corpo a corpo, e ele não alcança quem está no chão (só ataques à distância). Se a concentração cair, ele cai: 2d6 de dano concussão e fica caído. (Simplificações: o livro move o alvo em 6 m na vertical; no jogo a altura é fixa e o movimento é na horizontal. Objetos não são alvo, e o limite de 225 kg vira "criatura Pequena ou Média".)',
   },
   circuloMagico: {
     id: 'circuloMagico', name: 'Círculo Mágico', level: 3, school: 'abjuração', fonte: 'srd',
@@ -1235,7 +1235,7 @@ export const SPELLS = {
   fundirSeComPedra: {
     id: 'fundirSeComPedra', name: 'Fundir-se com a Pedra', level: 3, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 0, kind: 'utilidade', duracaoMin: 480,
-    desc: 'Você entra numa pedra ou numa parede de pedra grande o bastante para caber em você e fica lá dentro por oito horas. De dentro não se vê nada do lado de fora, e ouvir o que acontece em volta é teste de Percepção com desvantagem; o tempo você continua sentindo passar. Ritual. Lá dentro ninguém o alcança, escolhe como alvo nem o afeta, e quem passa a noite na pedra não é achado por quem ronda o acampamento. (Precisa de pedra ao lado: parede, rocha, alvenaria, laje, seteira, sarcófago ou estalagmite. Simplificações: no livro você pode gastar o movimento para sair pela pedra onde entrou, e isso encerra a magia — aqui a saída só vem no fim das oito horas; o livro também deixa você conjurar magias em si mesmo lá dentro, e aqui ninguém conjura de dentro da pedra; a desvantagem em ouvir não é cobrada, porque o jogo não rola Percepção de dentro da pedra; não está a regra de ser expulso com 6d6 contundente se a pedra for destruída; e a figura do herói continua desenhada no mapa, porque o mapa é a vista do próprio jogador. Só fora de combate.)',
+    desc: 'Você entra numa pedra ou numa parede de pedra grande o bastante para caber em você e fica lá dentro por oito horas. De dentro não se vê nada do lado de fora, e ouvir o que acontece em volta é teste de Percepção com desvantagem; o tempo você continua sentindo passar. Ritual. Lá dentro ninguém o alcança, escolhe como alvo nem o afeta, e quem passa a noite na pedra não é achado por quem ronda o acampamento. (Precisa de pedra ao lado: parede, rocha, alvenaria, laje, seteira, sarcófago ou estalagmite. Simplificações: no livro você pode gastar o movimento para sair pela pedra onde entrou, e isso encerra a magia — aqui a saída só vem no fim das oito horas; o livro também deixa você conjurar magias em si mesmo lá dentro, e aqui ninguém conjura de dentro da pedra; a desvantagem em ouvir não é cobrada, porque o jogo não rola Percepção de dentro da pedra; não está a regra de ser expulso com 6d6 concussão se a pedra for destruída; e a figura do herói continua desenhada no mapa, porque o mapa é a vista do próprio jogador. Só fora de combate.)',
   },
   formaGasosa: {
     id: 'formaGasosa', name: 'Forma Gasosa', level: 3, school: 'transmutação', fonte: 'srd',

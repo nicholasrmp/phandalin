@@ -376,6 +376,16 @@ const SOUNDS = {
   },
   // Serra de 80 Hz com vibrato de 30 Hz dá o grão do rugido; a camada uma oitava
   // acima existe só para o dragão continuar audível por cima da mixagem cheia.
+  // Coruja em cima, urso embaixo: guincho de 760 a 520 Hz com vibrato rápido
+  // sobre um grunhido de 112 Hz. Meio segundo, porque ela ataca duas vezes no
+  // mesmo turno e 1,3 s de rugido se atropelariam.
+  screechOwlbear: (a) => {
+    a.tone({ dur: 0.42, type: 'sawtooth', from: vary(760, 0.07), to: 520, gain: 0.15, attack: 0.03, vibrato: { rate: 22, depth: 40 } });
+    a.tone({ dur: 0.5, type: 'sawtooth', from: vary(112, 0.07), to: 92, gain: 0.14, attack: 0.05, vibrato: { rate: 14, depth: 10 } });
+    a.noise({ dur: 0.3, type: 'bandpass', freq: vary(2100), q: 2, gain: 0.09, attack: 0.04 });
+  },
+  // O rugido é EXCLUSIVO do dragão: é o único chefe final do jogo, e uma voz
+  // que o jogador já ouviu em outro bicho não anuncia mais nada.
   roarDragon: (a) => {
     a.tone({ dur: 1.3, type: 'sawtooth', from: vary(80, 0.06), to: 62, gain: 0.26, attack: 0.09, vibrato: { rate: 30, depth: 22 } });
     a.tone({ delay: 0.04, dur: 1.1, type: 'sawtooth', from: vary(160, 0.06), to: 118, gain: 0.12, attack: 0.13, vibrato: { rate: 17, depth: 30 } });
@@ -488,9 +498,10 @@ const SOUNDS = {
     });
     a.noise({ dur: 0.05, type: 'highpass', freq: 4000, gain: 0.08 });
   },
-  // Notas de 0,9 s entrando a cada 0,07 s: elas se SOBREPÕEM e viram acorde.
-  // É o único som do jogo que soa simultâneo em vez de sequencial, e essa
-  // diferença estrutural é o que marca progresso permanente.
+  // Notas de 0,9 s entrando a cada 0,07 s: elas se SOBREPÕEM e viram ACORDE.
+  // A iniciativa também empilha notas, mas em 0,26 s cada: aqui a cauda é três
+  // vezes mais longa que o intervalo, e é isso que soa como harmonia em vez de
+  // arpejo — a diferença que marca progresso permanente.
   levelUp: (a) => {
     [523, 659, 784, 1047].forEach((f, i) => {
       a.tone({ delay: i * 0.07, dur: 0.9, type: 'triangle', from: f, gain: 0.11 });
@@ -499,7 +510,34 @@ const SOUNDS = {
   },
 };
 
+/**
+ * Os nomes que o despachante conhece. Existe para o TESTE: `play` ignora nome
+ * desconhecido em silencio — e foi assim que nove criaturas ficaram com voz
+ * declarada e muda sem ninguem notar. Um nome errado agora quebra o teste.
+ */
+export const SOUND_NAMES = Object.freeze(Object.keys(SOUNDS));
+
 export const audio = new Audio();
+
+/**
+ * Som do passo conforme o chao.
+ *
+ * So dois pisos tem som proprio, e de proposito: pedra devolve o transiente,
+ * terra o engole. O resto fica no `step` genérico porque o NOME da superficie
+ * nao diz do que ela e feita — `chao` e tabua na casa da vila e laje no porao
+ * da mansao, e inventar um som para os dois seria errar metade das vezes.
+ *
+ * Classificar mal aqui e pior que nao classificar: o ouvido aprende o piso em
+ * duas telas e estranha na terceira.
+ */
+const CHAO_DE_PEDRA = new Set(['laje', 'pedra', 'alvenaria', 'caverna', 'escada', 'rocha', 'pedregal', 'sarcofago']);
+const CHAO_DE_TERRA = new Set(['grama', 'mato', 'estrada', 'palha']);
+
+export function passoSoundFor(sup) {
+  if (CHAO_DE_PEDRA.has(sup)) return 'stepStone';
+  if (CHAO_DE_TERRA.has(sup)) return 'stepDirt';
+  return 'step';
+}
 
 /** Som de impacto conforme o tipo de dano da arma. */
 export function hitSoundFor(damageType) {
@@ -519,7 +557,7 @@ export function spellSoundFor(damageType, { origem = 'magia' } = {}) {
   if (origem === 'sopro') return 'breathDragon';
   switch (damageType) {
     case 'fogo': return 'castFire';
-    case 'elétrico': case 'raio': return 'castLightning';
+    case 'elétrico': return 'castLightning';
     case 'radiante': return 'castRadiant';
     case 'energético': return 'castForce';
     case 'frio': return 'castCold';
@@ -570,6 +608,48 @@ export function deathSoundFor(tipo, { incorporeo = false, carne = false } = {}) 
 }
 
 /**
+ * A VOZ DA CRIATURA, com freio.
+ *
+ * Som de bicho é o que mais rápido vira piada: quatro lobos atacando no mesmo
+ * turno rosnariam juntos, e o mesmo lobo rosnaria a cada golpe por seis
+ * rodadas. Dois relógios resolvem isso sem precisar saber de rodada nenhuma:
+ *
+ * - um por CRIATURA, para a mesma dar voz de vez em quando e não a cada golpe;
+ * - um GLOBAL, curto, para duas vozes não saírem empilhadas no mesmo instante.
+ *
+ * Quem não tem `voice` na ficha continua calado, e isso é a maioria: a voz é
+ * sotaque de quem tem, não enfeite de todo mundo.
+ */
+const ESPERA_DA_VOZ_MS = 5000;
+const ESPERA_ENTRE_VOZES_MS = 700;
+let ultimaVozDe = new WeakMap();
+let ultimaVozQualquer = -Infinity;
+
+// `performance.now()`, e não `Date.now()`: o relógio do sistema pode ANDAR
+// PARA TRÁS (troca de fuso, ajuste de NTP), e aí a última voz fica no futuro,
+// a conta dá negativo e o jogo inteiro emudece até o tempo alcançar. O relógio
+// do navegador só anda para frente, e existe no Node também.
+export function vozDa(criatura, { agora = performance.now() } = {}) {
+  const voz = criatura?.voice;
+  if (!voz) return null;
+  if (agora - ultimaVozQualquer < ESPERA_ENTRE_VOZES_MS) return null;
+  if (agora - (ultimaVozDe.get(criatura) ?? -Infinity) < ESPERA_DA_VOZ_MS) return null;
+  ultimaVozDe.set(criatura, agora);
+  ultimaVozQualquer = agora;
+  return voz;
+}
+
+/**
+ * Zera os dois relógios da voz. É do TESTE: sem isto, um teste que passa
+ * `agora` na mão depende de nenhuma voz ter tocado antes no mesmo processo, e
+ * passa ou falha pela ordem dos testes.
+ */
+export function esquecerVozes() {
+  ultimaVozQualquer = -Infinity;
+  ultimaVozDe = new WeakMap();
+}
+
+/**
  * Vozes disponíveis. Exportado para que o bloco de monstro possa guardar o nome
  * da voz e para que o revisor veja de uma vez o que existe — sem tabela de
  * espécie aqui dentro, que é informação do bestiário e não do sintetizador.
@@ -577,4 +657,5 @@ export function deathSoundFor(tipo, { incorporeo = false, carne = false } = {}) 
 export const VOICE_SOUNDS = Object.freeze([
   'growlWolf', 'howlWolf', 'yellGoblin', 'gruntOgre', 'moanZombie',
   'rattleSkeleton', 'wailSpectre', 'screechStirge', 'hissSpider', 'roarDragon',
+  'screechOwlbear',
 ]);

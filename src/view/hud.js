@@ -1156,7 +1156,7 @@ export class Hud {
       actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0, 'actionSurge'],
       preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
       rage: ['furia', 'Fúria',
-        `Vantagem em testes e resistências de Força, +${c.danoDeFuria ?? 2} de dano corpo a corpo com Força e resistência a contundente, perfurante e cortante. Um minuto; acaba antes se você passar um turno sem atacar nem apanhar.`,
+        `Vantagem em testes e resistências de Força, +${c.danoDeFuria ?? 2} de dano corpo a corpo com Força e resistência a dano de concussão, perfurante e cortante, de qualquer fonte. Um minuto; acaba antes se você passar um turno sem atacar nem apanhar, se cair inconsciente, ou quando o combate termina. Não se entra de Fúria com armadura pesada.`,
         'Ação bônus',
         () => !c.bonusUsed && c.resources?.rage > 0 && !hasCondition(c, 'furia')
           && ARMORS[c.armor]?.categoria !== 'pesada',

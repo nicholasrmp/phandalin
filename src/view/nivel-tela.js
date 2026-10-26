@@ -9,6 +9,7 @@ import { el } from './hud.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
 import { subirUmNivel, nomeDaMagiaJogavel } from '../game/nivel.js';
+import { audio } from '../core/audio.js';
 
 function retrato(look) {
   try {
@@ -22,6 +23,10 @@ function retrato(look) {
 
 /** Sobe um nível de cada herói da lista, com a tela. Devolve as linhas do registro. */
 export async function telaDeSubirNivel(root, herois) {
+  // O acorde de subir de nivel: quatro notas que se SOBREPOEM, o unico som
+  // simultaneo do jogo. Toca UMA vez para a tela toda, nao por heroi — quatro
+  // acordes empilhados viram barulho e tiram justamente o peso que ele tem.
+  audio.play('levelUp');
   const registro = [];
   const cartoes = [];
   const aplicacoes = [];

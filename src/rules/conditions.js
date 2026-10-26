@@ -1,6 +1,8 @@
 // SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 // Condições. Cada uma descreve, em dados, o que muda mecanicamente.
 
+import { DANOS_FISICOS } from './tipos-de-dano.js';
+
 export const CONDITIONS = {
   caido: {
     name: 'Caído',
@@ -111,9 +113,12 @@ export const CONDITIONS = {
   // com Força — isso o combate resolve, em `resolveAttack`.
   furia: {
     name: 'Fúria',
-    desc: 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a contundente, perfurante e cortante. Não pode conjurar nem se concentrar.',
+    desc: 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a dano de concussão, perfurante e cortante — de qualquer fonte, inclusive queda e magia. Um minuto; acaba antes se você passar um turno sem atacar nem apanhar, se cair inconsciente ou quando o combate termina. Entrar em Fúria derruba a concentração, e não se entra de armadura pesada. (O jogo ainda não BLOQUEIA conjurar em Fúria: nenhum bárbaro do elenco conjura, então a regra não tem como aparecer.)',
     vantagemTeste: ['str'],
-    resiste: ['contundente', 'perfurante', 'cortante'],
+    // A lista canonica, nao uma copia: a Furia resistia a 'contundente'
+    // enquanto as armas causavam 'concussão', e por isso nao resistia a nada
+    // que uma arma de pancada fizesse.
+    resiste: DANOS_FISICOS,
   },
   lento: {
     name: 'Lento',
@@ -323,7 +328,7 @@ export const CONDITIONS = {
   contraLaminas: {
     name: 'Proteção contra Lâminas',
     desc: 'Resistência a dano cortante, perfurante e de concussão de ataques com arma.',
-    resiste: ['cortante', 'perfurante', 'concussão'],
+    resiste: DANOS_FISICOS,
     soDeArma: true,
   },
   bruxaria: {
@@ -575,7 +580,7 @@ export const CONDITIONS = {
     // atropelaria o zero de `contido` e `agarrado`.
     soVoa: true,
     vooFt: 10,
-    // O livro dá resistência a TODO dano não mágico, não só a contundente,
+    // O livro dá resistência a TODO dano não mágico, não só a concussão,
     // cortante e perfurante (essa é a fórmula dos monstros, não da magia).
     resisteNaoMagicoTudo: true,
     saveAdvantage: ['str', 'dex', 'con'],
@@ -645,7 +650,9 @@ export const CONDITIONS = {
     attackDisadvantage: true,
     attackedAdvantage: true,
     resisteTudo: true,
-    resisteTudoExceto: ['psíquico', 'psiquico'],
+    // Era `['psíquico', 'psiquico']`, as duas grafias, por desconfianca do
+    // vocabulario. Nada no jogo causa 'psiquico' sem acento (medido).
+    resisteTudoExceto: ['psíquico'],
   },
 
   queimando: {

@@ -35,7 +35,7 @@ export const CARACTERISTICAS = {
   twoWeaponFighting: C('Estilo: Duas Armas', 'passiva', 'Soma o atributo ao dano do ataque com a segunda arma.', { motor: true }),
 
   // ---- bárbaro -------------------------------------------------------------
-  rage: C('Fúria', 'bonus', 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a dano físico, por 1 minuto; sem conjurar nem manter concentração.', { motor: true }),
+  rage: C('Fúria', 'bonus', 'Vantagem em testes e resistências de FOR, bônus no dano corpo a corpo com FOR e resistência a dano de concussão, perfurante e cortante, por 1 minuto. Entrar em Fúria derruba a concentração, e não se entra de armadura pesada.', { motor: true }),
   recklessAttack: C('Ataque Descuidado', 'livre', 'Vantagem nos ataques corpo a corpo com FOR neste turno; até o seu próximo, ataques contra você também têm.', { motor: true }),
   dangerSense: C('Sentido de Perigo', 'passiva', 'Vantagem em resistências de DES contra o que você consegue ver.', { motor: true }),
   fastMovement: C('Movimento Rápido', 'passiva', '+10 pés de deslocamento sem armadura pesada.', { motor: true }),

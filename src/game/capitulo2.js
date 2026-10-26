@@ -51,6 +51,7 @@ import { distanceFt, Battlefield, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, hasCondition } from '../rules/conditions.js';
 import { darXp, proximoNivelEm } from './nivel.js';
+import { audio } from '../core/audio.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste, ativaDe } from '../rules/utilidade.js';
@@ -214,7 +215,7 @@ export function criarCapitulo2(app, config) {
         paginas.push({ texto: [`As folhas cedem sob ${frente.name}: um fosso! ${frente.name} se agarra na beirada e sai.`] });
       } else {
         const dano = enc.rng.die(6);
-        enc.applyDamage(frente, dano, 'contundente');
+        enc.applyDamage(frente, dano, 'concussão');
         enc.say('dano', `${frente.name} cai no fosso da trilha: ${dano} de dano.`);
         paginas.push({ texto: [`As folhas cedem e ${frente.name} despenca num fosso de três metros (${dano} de dano). As paredes não são íngremes; sair dá só trabalho.`] });
       }
@@ -436,7 +437,7 @@ export function criarCapitulo2(app, config) {
       await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [`${c.name} não acha onde segurar e não sai do lugar.`] }] });
     } else {
       const dano = enc.rng.die(6);
-      enc.applyDamage(c, dano, 'contundente');
+      enc.applyDamage(c, dano, 'concussão');
       if (!c.dead) addCondition(c, 'caido');
       await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [`A pedra solta escorrega e ${c.name} cai no fundo da chaminé: ${dano} de dano.`] }] });
     }
@@ -464,7 +465,7 @@ export function criarCapitulo2(app, config) {
     const r = enc.resistencia(c, 'dex', 10);
     const dano = enc.rng.die(6) + enc.rng.die(6);
     const levou = r.success ? Math.floor(dano / 2) : dano;
-    enc.applyDamage(c, levou, 'contundente');
+    enc.applyDamage(c, levou, 'concussão');
     if (!r.success && !c.dead) addCondition(c, 'caido');
     const baixo = casaPerto({ x: 13, y: 6 });
     c.pos = { ...c.pos, x: baixo.x, y: baixo.y };
@@ -510,7 +511,7 @@ export function criarCapitulo2(app, config) {
       const f = enc.resistencia(c, 'str', 15);
       if (f.success) { linhas.push(`${c.name} se agarra na pedra e aguenta (Força ${f.total}).`); continue; }
       const dano = enc.rng.die(6);
-      enc.applyDamage(c, dano, 'contundente');
+      enc.applyDamage(c, dano, 'concussão');
       if (!c.dead) {
         addCondition(c, 'caido');
         const fora = casaPerto({ x: 16, y: 19 });
@@ -741,6 +742,11 @@ export function criarCapitulo2(app, config) {
   }
 
   function achouOBau(c) {
+    // A trava seca e a tampa girando, um som que estava composto desde sempre
+    // sem ninguém o pedir. Este e os dois da mansão (`capitulo3-mansao.js`) o
+    // tocam; a arca do dragão, a do castelo e o baú do cume continuam calados,
+    // porque os arquivos deles estão em obra de outra frente.
+    audio.play('chestOpen');
     estado.bauAchado = true;
     for (const [id, qtd] of [['moedaDeCobre', 600], ['moedaDePrata', 110], ['pocaoDeCura', 2], ['estatuetaDeSapo', 1]]) guardar(c, id, qtd);
     return narrar(root, { formato: 'painel', paginas: [{ texto: [
@@ -988,7 +994,7 @@ export function criarCapitulo2(app, config) {
           const linhas = [`${c.name} serra o cabo de apoio até ele arrebentar. A ponte tomba para um lado e fica pendurada por um cabo só.`];
           if (emCima) {
             const dano = enc.rng.die(6) + enc.rng.die(6);
-            enc.applyDamage(emCima, dano, 'contundente');
+            enc.applyDamage(emCima, dano, 'concussão');
             if (!emCima.dead) {
               addCondition(emCima, 'caido');
               const agua = casaPerto({ x: 19, y: 6 });
