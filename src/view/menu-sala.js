@@ -24,7 +24,7 @@ import {
 export function criarTelasDeSala({
   botao, voltarBtn, cabecalho, ir, redesenhar, retratoDe,
   jogadorId, storage, local, WebSocketCtor = globalThis.WebSocket,
-  taverna = null, fecharMenu = () => {}, abrirMenuNaTela = () => {},
+  taverna = null, partida = null, fecharMenu = () => {}, abrirMenuNaTela = () => {},
 }) {
   const estado = {
     cliente: null, codigo: null, nome: '', visao: null, status: 'conectando', aviso: null, fechada: null,
@@ -35,6 +35,7 @@ export function criarTelasDeSala({
   function abrirSala(codigo, primeira) {
     estado.cliente?.sair();
     estado.codigo = codigo; estado.visao = null; estado.aviso = null; estado.fechada = null; estado.status = 'conectando';
+    estado.partidaIniciada = false;
     primeira = { ...primeira, persona: personaLembrada(storage, HEROIS_COM_ARTE) };
     estado.nome = primeira.nome;
     lembrarNome(storage, primeira.nome);
@@ -56,11 +57,21 @@ export function criarTelasDeSala({
             if (primeira) taverna.avisar(null);
           } else if (taverna.aberta()) {
             taverna.fechar();
-            abrirMenuNaTela('lobby');
+            if (!partida || v.fase !== 'iniciada') abrirMenuNaTela('lobby');
           }
+        }
+        // F4: a partida começou. O anfitrião a roda, os outros a veem; o painel "A partida começou" some.
+        if (partida && v.fase === 'iniciada') {
+          if (!estado.partidaIniciada) {
+            estado.partidaIniciada = true;
+            fecharMenu();
+            partida.aoComecar(v, { souAnfitriao: v.voce === v.anfitriao });
+          }
+          partida.aoSala?.(v);
         }
         redesenhar('lobby');
       }),
+      aoPartida: atual((vista) => partida?.aoVista(vista)),
       aoErro: atual((t) => {
         estado.aviso = t;
         // Na taverna o erro é uma frase embaixo do salão ("devagar", "não dá para chegar lá").
@@ -74,6 +85,7 @@ export function criarTelasDeSala({
       aoFechar: atual((motivo) => {
         estado.fechada = motivo; esquecerSala(storage, codigo);
         if (taverna?.aberta()) { taverna.fechar(); abrirMenuNaTela('lobby'); }
+        if (estado.partidaIniciada) { estado.partidaIniciada = false; partida?.aoEncerrar(); abrirMenuNaTela('lobby'); }
         redesenhar('lobby');
       }),
       aoStatus: atual((s) => { if (estado.status !== 'recusada') estado.status = s; redesenhar('lobby'); }),
@@ -86,6 +98,7 @@ export function criarTelasDeSala({
     estado.cliente?.sair();
     estado.cliente = null; estado.visao = null; estado.confirmar = null;
     taverna?.fechar();
+    if (estado.partidaIniciada) { estado.partidaIniciada = false; partida?.aoEncerrar(); }
   }
 
   // O aviso some sozinho: uma visão nova (de outro jogador) não deve apagá-lo na hora, nem ele ficar para sempre.
@@ -308,5 +321,7 @@ export function criarTelasDeSala({
   const dentroDeSala = () => Boolean(estado.visao) && !estado.fechada && estado.status !== 'recusada';
   const souAnfitriao = () => Boolean(estado.visao) && estado.visao.voce === estado.visao.anfitriao;
   function avisar(texto) { estado.aviso = texto; limparAvisoDepois(5000); redesenhar('lobby'); }
-  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo, mandar, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
+  /** A vista da partida (F4): vai direto, sem a trava de mensagem repetida de `mandar`, e só o anfitrião a envia. */
+  const mandarVista = (vista) => estado.cliente?.enviar({ tipo: 'partida', vista }) ?? false;
+  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo, mandar, mandarVista, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
 }

@@ -11,7 +11,10 @@ import { hasCondition, conditionEffects } from './rules/conditions.js';
 import { getSpell, opcoesDaMagia } from './rules/spells.js';
 import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
-import { montarHeroi } from './game/criacao.js';
+import { montarCampo } from './game/campo.js';
+import { fotografar, emTexto, MAX_VISTA } from './game/partida-vista.js';
+import { criarPartidaTela } from './view/partida-tela.js';
+import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
 import { criarCenaCaverna } from './game/cena-caverna.js';
 import { criarCapitulo2 } from './game/capitulo2.js';
@@ -196,6 +199,8 @@ class App {
     this.tempoBase = 0;
     this.inicioDaSessao = Date.now();
     aoDarXp(() => this.autosalvar());
+    // Quem não roda a partida da sala a vê aqui. Sair leva de volta ao menu.
+    this.partidaRemota = criarPartidaTela({ aoSair: () => { this.menu.sairDaSala(); this.partidaRemota.fechar(); this.menu.abrir(); } });
     this.menu = criarMenu(root, {
       onIniciar: (config) => this.newEncounter(config),
       temPartida: () => Boolean(this.enc),
@@ -208,6 +213,13 @@ class App {
         jogadorId: jogadorDaAba({ busca: location.search, sessionStorage, jogadorLocal: () => jogadorLocal(armazem) }),
         storage: armazem,
         local: location,
+        // F4: a partida da sala. O anfitrião a roda e publica a vista; os outros a veem (`view/partida-tela.js`).
+        partida: {
+          aoComecar: (v, { souAnfitriao }) => (souAnfitriao ? this.comecarPartidaDaSala(v) : this.partidaRemota.abrir(document.getElementById('app'))),
+          aoVista: (vista) => this.partidaRemota.vista(vista),
+          aoSala: (v) => this.partidaRemota.atualizarSala(v),
+          aoEncerrar: () => this.encerrarPartidaDaSala(),
+        },
         // A taverna andável (T-01): o lobby de quem joga com amigos. Fala com o menu só por estes ganchos.
         taverna: criarTaverna({
           aoMesa: () => this.menu.abrirMesa(),
@@ -261,40 +273,8 @@ class App {
         : config.capitulo === 4 ? config.cenaDaVila
         : (config.variante ?? 'emboscada');
     const mapa = mapaDo(variante);
-    const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
-      mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
-    // As ajudas de visão (silhueta de quem a parede cobre, marca de contato
-    // perdido, anel de barulho) só valem nos mapas que as pedem: ligadas em
-    // todos, o encontro padrão e o Poço ganharam contorno em quem não estava
-    // coberto por nada.
-    field.avisosDeVista = Boolean(mapa.avisosDeVista);
-    // As salas do mapa, por casa: o tabuleiro usa para apagar a parede da
-    // sala em que o grupo está (ver `board.desenharParedes`).
-    // A decoração pendurada nas paredes, por aresta ('x,y,N' ou 'x,y,O').
-    if (mapa.decor) {
-      field.decor = new Map(mapa.decor.map((d) => [`${d.x},${d.y},${d.lado}`, d.tipo]));
-    }
-    // O piso de dentro de cada construcao (Arvore Trovao): laje rachada ou tabua.
-    if (mapa.pisos) field.pisoDeSala = new Map(Object.entries(mapa.pisos));
-    // As construções só se abrem à vista quando o grupo está dentro ou enxerga dentro (`board.calcularSalasReveladas`).
-    field.fachadaFechada = Boolean(mapa.fachadaFechada);
-    // O quanto o que o grupo não enxerga escurece (0 a 1; padrão 0,8). Árvore Trovão pede 1: preto.
-    if (mapa.veuDaEscuridao != null) field.veuDaEscuridao = mapa.veuDaEscuridao;
-    if (mapa.salas) {
-      field.sala = new Map();
-      for (const [nome, casas] of Object.entries(mapa.salas)) {
-        for (const c of casas) field.sala.set(`${c.x},${c.y}`, nome);
-      }
-    }
-    // Mapa com escuridão: breu por padrão, mais as fontes de luz dele (`rules/luz.js`).
-    // `luz` é 'escuro' (breu inteiro) ou uma grade de dígitos 0-2 por casa.
-    if (mapa.luz) {
-      field.luz = new Uint8Array(field.w * field.h);
-      if (Array.isArray(mapa.luz)) {
-        mapa.luz.forEach((linha, y) => { for (let x = 0; x < field.w; x++) field.luz[y * field.w + x] = Number(linha[x] ?? 0); });
-      }
-      field.luzes = (mapa.luzes ?? []).map((f) => ({ ...f }));
-    }
+    const field = montarCampo(mapa);
+    this.varianteAtual = variante;     // a partida da sala (F4) diz aos outros navegadores qual mapa montar
 
     // Campanha: os quatro heróis escolhidos, montados com o que o jogador
     // marcou na preparação (ou com a escolha automática). Arena: o grupo
@@ -401,6 +381,40 @@ class App {
     this.enc.start();
     if (this.enc.side === 'party') this.select(this.firstActive());
     this.refresh();
+  }
+
+  // ---- a partida da sala (F4) -----------------------------------------------
+
+  /**
+   * A sala iniciou e este navegador é o do anfitrião: monta a campanha com os heróis que o grupo pegou e começa a
+   * publicar a vista (`game/partida-vista.js`) a cada mudança. Os outros jogadores só desenham.
+   */
+  comecarPartidaDaSala(v) {
+    const ids = Object.keys(v.herois);
+    this.newEncounter({
+      modo: 'campanha', aventura: v.origem?.aventura ?? 'mina-perdida', variante: 'emboscada', nivel: 1,
+      herois: ids.map((id) => ({ id, escolha: escolhaAutomatica(id) })),
+    });
+    clearInterval(this.publicador);
+    this.ultimaVistaTexto = null;
+    this.publicador = setInterval(() => this.publicarVista(), 250);
+    this.publicarVista();
+  }
+
+  /** Manda a vista se ela mudou desde a última. Só o que o anfitrião vê, e só enquanto há partida. */
+  publicarVista() {
+    if (!this.enc || !this.varianteAtual) return;
+    const vista = fotografar({ enc: this.enc, variante: this.varianteAtual });
+    const texto = emTexto(vista);
+    if (texto === this.ultimaVistaTexto) return;
+    if (texto.length > MAX_VISTA) { console.warn('a vista da partida passou do teto e não foi publicada'); return; }
+    if (this.menu.enviarVista(vista)) this.ultimaVistaTexto = texto;
+  }
+
+  encerrarPartidaDaSala() {
+    clearInterval(this.publicador);
+    this.publicador = null;
+    this.partidaRemota.fechar();
   }
 
   // ---- eventos do motor ----------------------------------------------------

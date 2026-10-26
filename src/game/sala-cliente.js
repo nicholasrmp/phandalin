@@ -32,12 +32,13 @@ export function urlDaSala(local, codigo) {
  * @param {string} o.jogadorId                          o id secreto deste navegador (ou aba)
  * @param {(codigo: string) => string} o.urlDe          o endereço do WebSocket de uma sala
  * @param {(visao: object) => void} o.aoVisao           o estado inteiro da sala, depois de cada mudança
+ * @param {(vista: object) => void} o.aoPartida         a vista da partida que o anfitrião publica (F4); só chega a quem não é ele
  * @param {(texto: string) => void} o.aoErro            a intenção foi recusada
  * @param {(motivo: string) => void} o.aoFechar         o servidor encerrou: removido, ou sala fechada (sem volta)
  * @param {(status: 'conectando'|'conectado'|'reconectando'|'caiu') => void} o.aoStatus
  */
 export function criarClienteDeSala({
-  WebSocketCtor, jogadorId, urlDe, aoVisao = () => {}, aoErro = () => {}, aoFechar = () => {}, aoStatus = () => {},
+  WebSocketCtor, jogadorId, urlDe, aoVisao = () => {}, aoPartida = () => {}, aoErro = () => {}, aoFechar = () => {}, aoStatus = () => {},
   agendar = (fn, ms) => setTimeout(fn, ms), cancelar = (id) => clearTimeout(id),
   repetir = (fn, ms) => setInterval(fn, ms), parar = (id) => clearInterval(id), relogio = () => Date.now(),
 }) {
@@ -80,6 +81,7 @@ export function criarClienteDeSala({
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
       if (m?.tipo === 'sala') { confirmado = true; aoVisao(m.visao); }
+      else if (m?.tipo === 'partida') aoPartida(m.vista);
       else if (m?.tipo === 'erro') { confirmado = true; aoErro(m.erro); }
       else if (m?.tipo === 'fechada') { encerrado = true; pararBatimento(); aoFechar(m.motivo ?? 'a sala foi fechada'); }
     });

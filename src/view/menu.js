@@ -544,6 +544,8 @@ export function criarMenu(root, {
     },
     sairDaSala: () => sala?.sairDaSala(),
     enviarSala: (msg) => sala?.mandar(msg),
+    /** F4: o anfitrião publica a vista da partida para os outros jogadores. */
+    enviarVista: (vista) => sala?.mandarVista(vista) ?? false,
     linkDaSala: () => sala?.copiarLink(),
   };
 }

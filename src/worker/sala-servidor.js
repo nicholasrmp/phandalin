@@ -21,6 +21,7 @@
 //   { tipo: 'fechada' }       a sala acabou
 
 import { criarSala, aplicar, visaoDaSala, idValido } from '../game/sala.js';
+import { MAX_VISTA, MS_ENTRE_VISTAS, lerVista } from '../game/partida-vista.js';
 
 export const MAX_BYTES = 2048;
 
@@ -101,6 +102,29 @@ export function dentroDoLimite(registro, agora) {
   registro.push(agora);
   return true;
 }
+
+/**
+ * F4: o anfitrião publica a VISTA da partida (`game/partida-vista.js`) e o servidor só a repassa. Não é
+ * uma mensagem comum: passa de 2 KB (o teto das outras), então tem a sua porta, com as suas regras.
+ *   - só o anfitrião, e só com a partida iniciada;
+ *   - até `MAX_VISTA` caracteres, e uma a cada `MS_ENTRE_VISTAS`;
+ *   - tem de ser uma vista de verdade (versão, mapa por nome, combatentes com id e casa).
+ * `ultimaEm` é o instante da última vista aceita. Devolve `{ ok }` ou `{ ok: false, erro, calado }`
+ * (`calado`: não vale responder, é só excesso de ritmo).
+ */
+export function tratarVista({ sala, jogadorId, bruto, agora, ultimaEm = 0 }) {
+  if (!sala || sala.fase !== 'iniciada') return { ok: false, erro: 'a partida não está em andamento' };
+  if (sala.anfitriao !== jogadorId) return { ok: false, erro: 'só o anfitrião publica a partida' };
+  if (typeof bruto !== 'string' || bruto.length > MAX_VISTA + 200) return { ok: false, erro: 'a vista da partida é grande demais' };
+  if (agora - ultimaEm < MS_ENTRE_VISTAS) return { ok: false, erro: 'devagar', calado: true };
+  let m;
+  try { m = JSON.parse(bruto); } catch { return { ok: false, erro: 'vista inválida' }; }
+  if (!m || m.tipo !== 'partida' || !lerVista(m.vista)) return { ok: false, erro: 'vista inválida' };
+  return { ok: true, texto: JSON.stringify({ tipo: 'partida', vista: m.vista }) };
+}
+
+/** É uma mensagem de vista? (Olha só o começo, sem ler o resto: ela é grande.) */
+export const ehVista = (bruto) => typeof bruto === 'string' && /^\s*\{\s*"tipo"\s*:\s*"partida"/.test(bruto.slice(0, 40));
 
 /** A mensagem de visão que um jogador recebe (cada um recebe a SUA, com o `voce` dele). */
 export const mensagemDeSala = (sala, jogadorId) => ({ tipo: 'sala', visao: visaoDaSala(sala, jogadorId) });

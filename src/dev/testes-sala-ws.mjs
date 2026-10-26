@@ -158,6 +158,36 @@ await teste('cair e voltar: o jogador reassume o lugar e o herói; o outro vê o
   assert.equal((await b.esperar((x) => x.tipo === 'sala')).visao.voce, 'p2');
 });
 
+await teste('F4: o anfitrião publica a vista da partida e só os outros a recebem; quem entra depois recebe a última', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const idB = idNovo('beto'); let b = await new Cliente(codigo, idB).abrir(); abertos.push(b);
+  a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
+  const vista = { v: 1, variante: 'emboscada', rodada: 1, lado: 'party', acabou: false, extras: null,
+    combatentes: [{ id: 'pc-mago', name: 'Ilvan', side: 'party', pos: { x: 1, y: 2 }, hp: 8, maxHp: 8, blob: 'x'.repeat(5000) }] };
+  a.manda({ tipo: 'partida', vista });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /não está em andamento/, 'no lobby ninguém publica partida');
+  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
+  a.manda({ tipo: 'iniciar' });
+  await b.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  b.recebidas.length = 0; a.recebidas.length = 0;
+  b.manda({ tipo: 'partida', vista: { ...vista, combatentes: [{ ...vista.combatentes[0], blob: 'x' }] } });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /anfitrião/, 'quem não é o anfitrião não publica');
+  a.manda({ tipo: 'partida', vista });
+  const chegou = await b.esperar((x) => x.tipo === 'partida');
+  assert.equal(chegou.vista.combatentes[0].id, 'pc-mago'); assert.equal(chegou.vista.combatentes[0].blob.length, 5000, 'vista maior que 2 KB passa');
+  assert.equal(a.recebidas.some((x) => x.tipo === 'partida'), false, 'o anfitrião não recebe a própria vista');
+  b.fechar();
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.find((j) => j.id === 'p2')?.conectado === false);
+  b = await new Cliente(codigo, idB).abrir(); abertos.push(b);
+  b.manda({ tipo: 'entrar', nome: 'B' });
+  const voltou = await b.esperar((x) => x.tipo === 'partida');
+  assert.equal(voltou.vista.combatentes[0].id, 'pc-mago', 'quem volta recebe a última vista sem esperar a próxima');
+});
+
 await teste('outro navegador (id diferente) não age como o jogador de outro', async () => {
   const codigo = codigoNovo();
   const a = await cliente(codigo, 'anf'); const intruso = await cliente(codigo, 'intruso');

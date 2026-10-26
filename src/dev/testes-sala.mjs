@@ -16,7 +16,10 @@ import {
   marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR, BALCAO, ehBalcao,
 } from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
-import { tratarMensagem, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
+import { tratarMensagem, tratarVista, ehVista, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
+import { fotografar, emTexto, lerVista, aplicarVista, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
+import { buildFoes } from '../game/encounter.js';
+import { montarHeroi, escolhaAutomatica } from '../game/criacao.js';
 import {
   criarClienteDeSala, urlDaSala, jogadorDaAba, salasRecentes, lembrarSala, esquecerSala, nomeLembrado, ESPERAS_DE_RECONEXAO,
   INTERVALO_DO_PING, SILENCIO_MAXIMO,
@@ -820,6 +823,75 @@ teste('T-02: a persona vem da mensagem de entrada, só entre as que têm arte', 
   deve(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-druida' }), /arte/);
   deve(faz(s, CAIO, { tipo: 'persona', heroi: 'xx' }), /arte/);
   assert.equal(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-paladino' }).igual, true);
+});
+
+/** Uma sala com a partida iniciada: o anfitrião ANF e o Beto, quatro heróis. */
+function salaIniciada() {
+  const s = nova();
+  entra(s, BETO, 'Beto');
+  for (const h of ['pc-guerreiro', 'pc-ladino']) faz(s, ANF, { tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago', 'pc-clerigo']) faz(s, BETO, { tipo: 'pegar', heroi: h });
+  faz(s, ANF, { tipo: 'pronto', valor: true }); faz(s, BETO, { tipo: 'pronto', valor: true });
+  assert.ok(faz(s, ANF, { tipo: 'iniciar' }).ok);
+  return s;
+}
+const encDeTeste = () => {
+  const herois = ['pc-mago', 'pc-guerreiro'].map((id, i) => { const h = montarHeroi(id, escolhaAutomatica(id)); h.pos = { x: 1 + i, y: 2 }; return h; });
+  return { combatants: [...herois, ...buildFoes('emboscada')], round: 1, side: 'party', over: false };
+};
+
+teste('F4: a vista da partida vai e volta: o espelho fica com os mesmos combatentes, e dá o que mudou para animar', () => {
+  const enc = encDeTeste();
+  const v1 = fotografar({ enc, variante: 'emboscada' });
+  assert.ok(lerVista(JSON.parse(emTexto(v1))), 'sobrevive ao JSON');
+  assert.ok(emTexto(v1).length < MAX_VISTA / 4, 'uma partida de quatro heróis e quatro goblins é bem menor que o teto');
+  const espelho = { combatants: [], round: 0, side: null, over: false };
+  const r1 = aplicarVista(espelho, JSON.parse(emTexto(v1)));
+  assert.equal(r1.entraram.length, enc.combatants.length);
+  assert.deepEqual(espelho.combatants.map((c) => [c.id, c.pos.x, c.pos.y, c.hp]), enc.combatants.map((c) => [c.id, c.pos.x, c.pos.y, c.hp]));
+  const mago = espelho.combatants.find((c) => c.id === 'pc-mago');
+  enc.combatants[0].pos = { x: 4, y: 3 }; enc.combatants[0].hp -= 3; enc.combatants.pop(); enc.round = 2;
+  const r2 = aplicarVista(espelho, JSON.parse(emTexto(fotografar({ enc, variante: 'emboscada' }))));
+  assert.equal(espelho.combatants.find((c) => c.id === 'pc-mago'), mago, 'o MESMO objeto: o desenho guarda a animação de cada um');
+  assert.deepEqual(r2.moveram.map((m) => [m.c.id, m.de, m.para]), [['pc-mago', { x: 1, y: 2 }, { x: 4, y: 3 }]]);
+  assert.equal(r2.sairam.length, 1); assert.equal(espelho.combatants.length, enc.combatants.length); assert.equal(espelho.round, 2);
+  assert.equal(mago.hp, enc.combatants[0].hp);
+});
+
+teste('F4: o invocado que aponta para o dono não quebra a vista (referência circular vira null)', () => {
+  const enc = encDeTeste();
+  const dono = enc.combatants[0]; const familiar = { id: 'fam-1', name: 'Familiar', side: 'party', pos: { x: 3, y: 3 }, hp: 1, maxHp: 1, dono };
+  dono.familiar = familiar;
+  enc.combatants.push(familiar);
+  assert.ok(lerVista(JSON.parse(emTexto(fotografar({ enc, variante: 'emboscada' })))));
+});
+
+teste('F4: lerVista recusa o que não é vista (versão, mapa, combatente sem casa)', () => {
+  const boa = fotografar({ enc: encDeTeste(), variante: 'emboscada' });
+  assert.ok(lerVista(boa));
+  assert.equal(lerVista(null), null); assert.equal(lerVista('não é json'), null);
+  assert.equal(lerVista({ ...boa, v: 99 }), null);
+  assert.equal(lerVista({ ...boa, variante: 7 }), null);
+  assert.equal(lerVista({ ...boa, combatentes: [{ id: 'x' }] }), null);
+  assert.equal(lerVista({ ...boa, combatentes: [{ id: 'x', pos: { x: 1.5, y: 2 } }] }), null);
+});
+
+teste('F4: o servidor só repassa a vista do anfitrião, com a partida iniciada, dentro do teto e do ritmo', () => {
+  const s = salaIniciada();
+  const vista = fotografar({ enc: encDeTeste(), variante: 'emboscada' });
+  const bruto = JSON.stringify({ tipo: 'partida', vista });
+  assert.equal(ehVista(bruto), true); assert.equal(ehVista('{"tipo":"mover","x":1,"y":2}'), false);
+  const ok = tratarVista({ sala: s, jogadorId: ANF, bruto, agora: 10_000, ultimaEm: 0 });
+  assert.equal(ok.ok, true); assert.deepEqual(JSON.parse(ok.texto).vista.combatentes.length, vista.combatentes.length);
+  assert.match(tratarVista({ sala: s, jogadorId: BETO, bruto, agora: 10_000 }).erro, /anfitrião/);
+  const dev = tratarVista({ sala: s, jogadorId: ANF, bruto, agora: 10_000 + MS_ENTRE_VISTAS - 1, ultimaEm: 10_000 });
+  assert.equal(dev.ok, false); assert.equal(dev.calado, true);
+  assert.equal(tratarVista({ sala: s, jogadorId: ANF, bruto, agora: 10_000 + MS_ENTRE_VISTAS, ultimaEm: 10_000 }).ok, true);
+  assert.match(tratarVista({ sala: s, jogadorId: ANF, bruto: 'x'.repeat(MAX_VISTA + 300), agora: 99_000 }).erro, /grande/);
+  assert.match(tratarVista({ sala: s, jogadorId: ANF, bruto: '{"tipo":"partida","vista":{"v":1}}', agora: 99_000 }).erro, /inválida/);
+  assert.match(tratarVista({ sala: s, jogadorId: ANF, bruto: 'não é json', agora: 99_000 }).erro, /inválida/);
+  const lobby = nova();
+  assert.match(tratarVista({ sala: lobby, jogadorId: ANF, bruto, agora: 99_000 }).erro, /não está em andamento/);
 });
 
 teste('T-09: o balcão do Toblen é o menu: todas as casas dele são mobília (ninguém anda até lá) e a mesa de grupo não é balcão', () => {
