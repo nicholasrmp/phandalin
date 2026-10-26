@@ -1616,6 +1616,27 @@ export class Board {
   }
 
   /**
+   * AS CONSTRUÇÕES QUE O GRUPO PODE VER POR DENTRO (mapa com `fachadaFechada`, Árvore
+   * Trovão). Uma construção só se abre à vista quando o grupo está dentro dela ou
+   * enxerga alguma casa dela (por um vão aberto). De fora, sem ver dentro, ela é um
+   * bloco FECHADO: o muro da frente na altura inteira e a porta fechada. `verTudo`
+   * (a página de passeio) abre todas. Devolve 'todas', o conjunto de nomes ou null.
+   */
+  calcularSalasReveladas() {
+    const f = this.field;
+    if (!f.fachadaFechada || !f.sala) return null;
+    if (this.verTudo) return 'todas';
+    const rev = new Set(this._salasOcupadas ?? []);
+    if (this._visao) {
+      for (const k of this._visao.keys()) {
+        const nome = f.sala.get(k);
+        if (nome) rev.add(nome);
+      }
+    }
+    return rev;
+  }
+
+  /**
    * As salas onde há alguém do grupo. A parede que esconde uma delas fica
    * translúcida: entrar numa sala é ver a sala inteira, e não o muro de
    * 87 px que fica entre ela e a câmera.
@@ -1739,7 +1760,11 @@ export class Board {
       // dela — e aí um portão que dá para o capim saía num muro de 22 px,
       // uma porta de 17 px de altura, um cotoco. Mas a parede é do castelo,
       // não do jardim: numa passagem, a altura é a da sala que ela serve.
-      const niveisAqui = (fora && (cod === ARESTA.porta || cod === ARESTA.aberta)
+      // A FACHADA FECHADA: de fora, sem ver dentro, o muro da frente sobe inteiro.
+      const salaTras = fora && f.inside(ax, ay) ? f.sala?.get(`${ax},${ay}`) : null;
+      const fachadaFechada = Boolean(salaTras) && f.fachadaFechada
+        && this._salasReveladas !== 'todas' && !this._salasReveladas?.has(salaTras);
+      const niveisAqui = (fora && (cod === ARESTA.porta || cod === ARESTA.aberta || fachadaFechada)
         && f.inside(ax, ay) && !this.casaDeFora(ax, ay))
         ? (f.paredeAlt?.[ay * f.w + ax] || ALTURA_PAREDE)
         : niveis;
@@ -1763,7 +1788,7 @@ export class Board {
         || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, this.hover)))) {
         ctx.globalAlpha = TRANSLUCIDO;
       }
-      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y, emRuina ? grau : 0, passagem ? grau : 0);
+      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y, emRuina ? grau : 0, passagem ? grau : 0, fachadaFechada && passagem);
       ctx.restore();
     }
     // O que está pendurado nas paredes desta casa, por último — e com o
@@ -1840,7 +1865,9 @@ export class Board {
    * A face usa as faixas de alvenaria do atlas (`art/faces.js`, 22 px por
    * nível), recortadas no paralelogramo da aresta.
    */
-  faceDaParede(ctx, lado, A, B, alto, cod, x, y, grau = 0, grauVao = 0) {
+  faceDaParede(ctx, lado, A, B, alto, cod, x, y, grau = 0, grauVao = 0, fechar = false) {
+    // Vão de uma construção que não se vê por dentro: a porta aparece FECHADA, aberta ou não.
+    if (fechar) cod = ARESTA.porta;
     const f = this.field;
     const ESP = 7;            // espessura da parede, em px de tela
     // A FAIXA NÃO SE TROCA: ela carrega a PERSPECTIVA, não só o tom. A arte
@@ -2447,6 +2474,7 @@ export class Board {
 
     this._figuras = this.figurasNaTela();
     this._salasOcupadas = this.salasDoGrupo();
+    this._salasReveladas = this.calcularSalasReveladas();
     // Árvores que esmaecem neste quadro: as que escondem a casa sob o cursor
     // ou o destino do caminho. Sem isso o jogador mira uma casa que não vê.
     this._copas = this.coberturaDasCopas();
@@ -2469,7 +2497,13 @@ export class Board {
 
       const { x, y, vx, vy } = cell;
       const transp = this.transparenciaDaCasa(x, y, vx, vy, byView);
-      this.drawTile(ctx, x, y, transp.chao, transp.objeto);
+      // O INTERIOR DE UMA CONSTRUÇÃO QUE O GRUPO NÃO VÊ fica coberto: sem móvel nem objeto, e o
+      // piso no escuro. Com a fachada fechada (muro inteiro, porta fechada) o prédio lê como um
+      // bloco, mesmo onde a parede arruinada é baixa demais para esconder o que há dentro.
+      const salaDaCasa = this.field.fachadaFechada ? this.field.sala?.get(`${x},${y}`) : null;
+      const oculta = Boolean(salaDaCasa) && this._salasReveladas !== 'todas' && !this._salasReveladas?.has(salaDaCasa);
+      this.drawTile(ctx, x, y, transp.chao, oculta ? 0 : transp.objeto);
+      if (oculta) this.fillDiamond(ctx, x, y, 'rgba(7, 6, 9, .88)');
       this.desenharParedes(ctx, x, y, cell.d);
 
       const k = `${x},${y}`;
@@ -2570,6 +2604,11 @@ export class Board {
   figuraVisivel(c) {
     // Piscar: quem está no Plano Etéreo não aparece no tabuleiro.
     if (hasCondition(c, 'etereo')) return false;
+    // Quem está numa construção que o grupo não vê por dentro não aparece (mesmo sem neblina).
+    if (c.side !== 'party' && this.field.fachadaFechada && this._salasReveladas !== 'todas' && c.pos) {
+      const sala = this.field.sala?.get(`${c.pos.x},${c.pos.y}`);
+      if (sala && !this._salasReveladas?.has(sala)) return false;
+    }
     if (!this._visao || c.side === 'party') return true;
     // Criatura Grande (2 x 2): vista se QUALQUER casa da pegada está à vista.
     // Só a âncora decidia, e o dragão sumia mesmo com três das quatro casas
@@ -2608,7 +2647,9 @@ export class Board {
       const m = nitida.getContext('2d');
       m.globalCompositeOperation = 'source-over';
       m.clearRect(0, 0, w, h);
-      m.fillStyle = 'rgba(5, 4, 10, .8)';
+      // O véu do que o grupo não enxerga: 80% por padrão (o já visto se adivinha); o mapa pode
+      // pedir PRETO (`veuDaEscuridao: 1`, Árvore Trovão): só se vê o que o personagem vê.
+      m.fillStyle = `rgba(5, 4, 10, ${this.field.veuDaEscuridao ?? 0.8})`;
       m.fillRect(0, 0, w, h);
       m.globalCompositeOperation = 'destination-out';
       m.fillStyle = '#000';
@@ -2780,6 +2821,8 @@ export class Board {
       ctx.ellipse(baseX, baseY, voa ? 13 : 17, voa ? 6 : 8, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+    // Gancho de quem desenha por baixo da figura (a taverna põe o marcador do jogador aqui).
+    if (!eter && !fantasma) this.aoPes?.(ctx, c, baseX, baseY);
     if (voa && !eter && !fantasma) {
       // Segunda elipse tracejada sob a figura: marca a altura do voo.
       ctx.save();
@@ -2974,6 +3017,8 @@ export class Board {
       ctx.drawImage(iconeTab(nome), Math.round(baseX - 16), Math.round(baseY - 56));
       return;
     }
+    // Gancho de quem desenha por cima da figura (a placa do nome, na taverna).
+    this.aoCima?.(ctx, c, baseX, baseY);
     if (this.soCenario) return;
 
     // Barra de vida com transição suave: o número do motor é instantâneo, mas a

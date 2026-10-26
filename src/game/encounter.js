@@ -279,6 +279,8 @@ export function mapaDo(variante = 'padrao') {
       salas: ARVORE_TROVAO.celulas,
       decor: ARVORE_TROVAO.decor,
       pisos: ARVORE_TROVAO.pisos,
+      fachadaFechada: true,
+      veuDaEscuridao: 1,
       avisosDeVista: true,
       // A mobilia: cada casa de `prop` diz qual peca do atlas e (`variante`).
       objetos: ARVORE_TROVAO.props.map((p) => ({ ...p })),

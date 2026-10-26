@@ -325,6 +325,16 @@ botaoNeblina.addEventListener('click', () => {
   app.refresh();
 });
 
+// VER DENTRO DAS CASAS: no jogo, uma construção só se abre à vista quando o grupo está dentro
+// dela ou enxerga dentro (`board.calcularSalasReveladas`); de fora ela é um bloco fechado. O
+// passeio começa assim, como o jogo; este botão abre todas para validar o interior.
+const botaoDentro = el('button', { textContent: 'Ver dentro das casas: desligado' });
+botaoDentro.addEventListener('click', () => {
+  board.verTudo = !board.verTudo;
+  botaoDentro.textContent = `Ver dentro das casas: ${board.verTudo ? 'ligado' : 'desligado'}`;
+  app.refresh();
+});
+
 const painel = el('div', { id: 'passeio' },
   el('div', { className: 'topo' },
     el('h2', { textContent: `Passeio livre · ${field.w} × ${field.h} casas` }),
@@ -334,6 +344,7 @@ const painel = el('div', { id: 'passeio' },
     el('button', { textContent: 'Juntar o grupo', onclick: juntarGrupo }),
     el('button', { textContent: 'Centrar no herói', onclick: () => board.focarEm(heroi()?.pos) }),
     botaoNeblina,
+    botaoDentro,
     el('details', {},
       el('summary', { textContent: 'Controles' }),
       el('div', { innerHTML: 'W A S D: movem a câmera (Shift acelera).<br>Botão direito arrastado: empurra a câmera.<br>Roda do mouse: zoom.<br>Clique no chão: o herói anda até lá.<br>Setas: um passo na direção da tela · Q E Z C: nas outras quatro.<br>Clique noutro herói para trocar de quem anda.' }))));
