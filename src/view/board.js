@@ -2505,7 +2505,8 @@ export class Board {
       const salaDaCasa = this.field.fachadaFechada ? this.field.sala?.get(`${x},${y}`) : null;
       const oculta = Boolean(salaDaCasa) && this._salasReveladas !== 'todas' && !this._salasReveladas?.has(salaDaCasa);
       this.drawTile(ctx, x, y, transp.chao, oculta ? 0 : transp.objeto);
-      if (oculta) this.fillDiamond(ctx, x, y, 'rgba(7, 6, 9, .88)');
+      // PRETO INTEIRO, com o traço da mesma cor: o piso e a grade não aparecem, só as paredes, as portas e as janelas.
+      if (oculta) this.fillDiamond(ctx, x, y, '#06050a', '#06050a');
       this.desenharParedes(ctx, x, y, cell.d);
 
       const k = `${x},${y}`;
