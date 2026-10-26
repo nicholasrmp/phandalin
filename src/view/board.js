@@ -906,7 +906,9 @@ export class Board {
     const MARCA_DE_LAJE = ['ossos', 'mancha', 'cacos', 'musgoChao'];
     const chaoDe = (salaDaCasa && (s.chao === 'grama' || s.chao === 'caverna' || s.chao === 'laje'
       || (pisoDaSala === 'tabua' && MARCA_DE_LAJE.includes(s.chao))))
-      ? (pisoDaSala && ladrilhoChao(pisoDaSala, 0, 0) ? this.pisoSorteado(pisoDaSala, x, y) : 'laje') : s.chao;
+      ? (pisoDaSala && ladrilhoChao(pisoDaSala, 0, 0) ? this.pisoSorteado(pisoDaSala, x, y) : 'laje')
+      // Mobília fora de casa (a cerca do campo) pisa em capim, não na laje do castelo.
+      : (s.objeto === 'prop' && !salaDaCasa ? 'grama' : s.chao);
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
@@ -1139,8 +1141,8 @@ export class Board {
       ctx.restore();
       return;
     }
-    const grupoProp = s.objeto === 'prop' ? this.varianteDaProp(x, y) : null;
-    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(grupoProp ?? s.objeto, ['todas'], x, y);
+    const prop = s.objeto === 'prop' ? this.varianteDaProp(x, y) : null;
+    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(prop?.grupo ?? s.objeto, ['todas'], x, y);
     if (baixo) {
       // Moita, pedra, estalagmite, mantimentos ou espinheiro do PixelLab, 1:1,
       // com o centro da base no centro da casa. A sombra acompanha a largura.
@@ -1150,8 +1152,16 @@ export class Board {
       ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h,
-        Math.round(cx - baixo.ax + baixo.dx), Math.round(cy - baixo.ay + baixo.dy), baixo.w, baixo.h);
+      if (prop?.espelhar) {
+        // De lado: o ponto de ancoragem da peça continua caindo no centro da casa.
+        ctx.translate(cx, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h,
+          Math.round(-baixo.ax - baixo.dx), Math.round(cy - baixo.ay + baixo.dy), baixo.w, baixo.h);
+      } else {
+        ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h,
+          Math.round(cx - baixo.ax + baixo.dx), Math.round(cy - baixo.ay + baixo.dy), baixo.w, baixo.h);
+      }
       ctx.restore();
       return;
     }
@@ -1681,15 +1691,16 @@ export class Board {
   }
 
   /**
-   * A mobília desta casa: a variante que o mapa anotou (`objetos`, tipo 'prop'),
-   * como nome de grupo do atlas do cenário, ou null.
+   * A mobília desta casa: a variante que o mapa anotou (`objetos`, tipo 'prop'), como
+   * { grupo (do atlas do cenário), espelhar }, ou null. `espelhar` vira a peça de lado: a
+   * cerca desenhada no eixo x serve ao eixo y.
    */
   varianteDaProp(x, y) {
     if (this._propsDe !== this.field) {
       this._propsDe = this.field;
       this._props = new Map();
       for (const o of this.field.objetos ?? []) {
-        if (o.tipo === 'prop') this._props.set(`${o.x},${o.y}`, `prop-${o.variante}`);
+        if (o.tipo === 'prop') this._props.set(`${o.x},${o.y}`, { grupo: `prop-${o.variante}`, espelhar: Boolean(o.espelhar) });
       }
     }
     return this._props.get(`${x},${y}`) ?? null;

@@ -261,12 +261,14 @@ GRUPOS['vaoRuina'] = {
     'quadros': {'porta': [0, 4, 5, 7, 12, 13, 15], 'arco': [3, 6, 14]},
     'ancora': 'centro',
 }
-# Cercas e portoes soltos.
-GRUPOS['cercaRuina'] = {
-    'pasta': 'cercaRuina/b34ec5c9-e599-4ba1-9659-b419fc4c14d0',
-    'quadros': {'portao': [0, 1, 2, 14], 'cerca': [3, 4, 5, 6, 9, 11, 13, 15], 'caida': [8, 12]},
-    'ancora': 'chao',
-}
+# Cercas e portoes: pecas de mobilia (`prop-*`), como as outras. Quase todos os quadros correm
+# para a DIREITA (descem para a direita, o eixo x do tabuleiro); o mapa espelha a peca nas
+# cercas que correm no eixo y. Fora o 15 (corre para o outro lado), o 12 (monte sem
+# direcao), o 10 (rede de galhos que le como mato) e o 14 (tabuas pregadas, le como porta).
+_CERCA = 'cercaRuina/b34ec5c9-e599-4ba1-9659-b419fc4c14d0'
+for _n, _qs in (('cerca', [3, 4, 5, 6, 9, 11, 13]), ('cercaCaida', [8]),
+                ('portaoFechado', [0, 7]), ('portaoAberto', [1]), ('portaoCaido', [2])):
+    GRUPOS[f'prop-{_n}'] = {'pasta': _CERCA, 'quadros': {'todas': _qs}, 'ancora': 'chao'}
 
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
             'north', 'north-west', 'west', 'south-west']

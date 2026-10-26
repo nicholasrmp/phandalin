@@ -309,16 +309,16 @@ export const MAPA_ARVORE_TROVAO = {
     "TTb,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bT:,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TTb",
     "TT,,,,,,,,,,,,,,,,,,,,,TTT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,TT::,,,,,,,,,,,,,,,,,,,,,,,,,,,,bTT",
     "bT,,,,,,,,,,,,,,,,,,,,TTTb,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,bbbb,,,,,,,,,,,,,,,TTT",
-    "TT,,,,,,,,,,,,,,,,,,,,Tbb,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,,,,,,,,TTTTb,,,,,,,,,,,,,,TTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,XXXXXXXXXXXXX,,,,,,,bTTb,,,,,,,,,,:,,,,,,,ZZZTTTTb,,,,,,,,,,,,,,TTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,:XXXXXXXXXXXXX,,,,,,,,TTb,,,,,bb,,,:,,,,,,ZZZZTTTTb,,,,,,,,,,,,,,TTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,:XXXXXXXXXXXXX,,,,,,,,,TTT,,,,TTbbT:TTTTbTTTTTTTTTb,,,,,,,,,,,,,,TTb",
-    "TT,,,,,,,,,,,,,,,,,,,,,,XXXXXXXXXXXXX,,,,,,,,,TTb,,,TTTTTT:TbT,,,,,,,,,,,T,,,,,,,,,,,,,,bTb",
-    "bT,,,,,,,,,,,,,,,,,,,,,,XXXXXXXXXXXXX,,,,,,,,,,,,,,,TTTTTT:::::,bLLL,,,,,b,,,,,,,,,,,,,,TTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,XXXXXXXXXXXX,,,,,,,,,,,,,,,,TTTTTT:::::,,mLLL,,,,T,,,,,,,,,,,,,,TTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,XXXXXXX::XXX:,,,,,,,,,,,,,,bTTTTTT:::,::,LxLL,,,,T,,,,,,,,,,,,,,TTT",
-    "TTb,,,,,,,,,,,,,,,,,,,,,XXXXXX:::::::,,TTTTTT,,,,,bTTTTTT:::::::,L^LL,,,,T,,,,,,,,,,,,,bTTb",
-    "TTb,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,,,,TTTTTTTb,,,,TTTTTTTb:ZZZZZZLLL^,,,,T,,,,,,,,,,,,,,Tbb",
+    "TT,,,,,,,,,,,,,,,,,,,,Tbb^^^&^&^^^^&^^,,,,,,,,,,,,,,,,,,,,::,,,,,,,,,TTTTb,,,,,,,,,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,^XXXXXXXXXXXXX^,,,,,,bTTb,,,,,,,,,,:,,,,,,,ZZZTTTTb,,,,,,,,,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,:XXXXXXXXXXXXX^,,,,,,,TTb,,,,,bb,,,:,,,,,,ZZZZTTTTb,,,,,,,,,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,:XXXXXXXXXXXXX^,,,,,,,,TTT,,,,TTbbT:TTTTbTTTTTTTTTb,,,,,,,,,,,,,,TTb",
+    "TT,,,,,,,,,,,,,,,,,,,,,^XXXXXXXXXXXXX^,,,,,,,,TTb,,,TTTTTT:TbT,,,,,,,,,,,T,,,,,,,,,,,,,,bTb",
+    "bT,,,,,,,,,,,,,,,,,,,,,^XXXXXXXXXXXXX&,,,,,,,,,,,,,,TTTTTT:::::,bLLL,,,,,b,,,,,,,,,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,^XXXXXXXXXXXX,^,,,,,,,,,,,,,,TTTTTT:::::,,mLLL,,,,T,,,,,,,,,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,&XXXXXXX::XXX:^,,,,,,,,,,,,,bTTTTTT:::,::,LxLL,,,,T,,,,,,,,,,,,,,TTT",
+    "TTb,,,,,,,,,,,,,,,,,,,,^XXXXXX:::::::^,TTTTTT,,,,,bTTTTTT:::::::,L^LL,,,,T,,,,,,,,,,,,,bTTb",
+    "TTb,,,,,,,,,,,,,,,,,,,,^^^&^^^^::^^^^^TTTTTTTb,,,,TTTTTTTb:ZZZZZZLLL^,,,,T,,,,,,,,,,,,,,Tbb",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,,,,,,,TTTb,,,,,bTTTTTT::ZZZZZZLLLL,,,,T,,,,,,,,,,,,,,,TT",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLLLLLjL,,,,Tbb,,,,,,,,,,b,,::ZZZ,,,LLLL,,,,TT,,,,,,,,,,,,,bTT",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjLLpLL,,,,TbLmL^,LLLi,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
@@ -1213,6 +1213,260 @@ export const ARVORE_TROVAO = {
       "x": 52,
       "y": 53,
       "variante": "trapos"
+    },
+    {
+      "tipo": "prop",
+      "x": 25,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 26,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 27,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 28,
+      "y": 7,
+      "variante": "cercaCaida"
+    },
+    {
+      "tipo": "prop",
+      "x": 29,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 30,
+      "y": 7,
+      "variante": "portaoAberto"
+    },
+    {
+      "tipo": "prop",
+      "x": 31,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 32,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 33,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 34,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 35,
+      "y": 7,
+      "variante": "cercaCaida"
+    },
+    {
+      "tipo": "prop",
+      "x": 36,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 7,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 24,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 25,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 26,
+      "y": 16,
+      "variante": "cercaCaida"
+    },
+    {
+      "tipo": "prop",
+      "x": 27,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 28,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 29,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 30,
+      "y": 16,
+      "variante": "portaoFechado"
+    },
+    {
+      "tipo": "prop",
+      "x": 33,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 34,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 35,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 36,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 16,
+      "variante": "cerca"
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 8,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 11,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 12,
+      "variante": "portaoFechado",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 13,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 14,
+      "variante": "cercaCaida",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 15,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 8,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 9,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 10,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 11,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 12,
+      "variante": "portaoAberto",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 13,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 14,
+      "variante": "cerca",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 37,
+      "y": 15,
+      "variante": "cerca",
+      "espelhar": true
     }
   ],
   "pisos": {

@@ -918,6 +918,66 @@ for pid, cs in INTERIOR.items():
     _pecas_por_predio[pid] = sum(1 for p in PROPS if (p['x'], p['y']) in cs)
 print('mobilia (props):', len(PROPS), '| por predio:', _pecas_por_predio)
 
+# AS CERCAS E OS PORTOES do campo de trigo (PixelLab, `objetos-pixellab.py --conjunto
+# cercaRuina`): uma cerca velha em volta do maior campo, de capim para fora, com um portao
+# no meio de cada lado e alguns trechos caidos. A cerca BARRA (`^`); o portao aberto e o
+# trecho caido sao chao de passar (`&`), entao nunca fecham o campo. As que correm no eixo y
+# entram espelhadas (as pecas foram desenhadas no eixo x).
+def _componentes_de(glifo):
+    vistas, saida = set(), []
+    for y0 in range(H):
+        for x0 in range(W):
+            if T[y0][x0] != glifo or (x0, y0) in vistas or (x0, y0) in _DENTRO_DE_CASA:
+                continue
+            fila, comp = [(x0, y0)], []
+            vistas.add((x0, y0))
+            while fila:
+                a, b = fila.pop()
+                comp.append((a, b))
+                for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    n = (a + dx, b + dy)
+                    if 0 <= n[0] < W and 0 <= n[1] < H and n not in vistas and T[n[1]][n[0]] == glifo \
+                            and n not in _DENTRO_DE_CASA:
+                        vistas.add(n)
+                        fila.append(n)
+            saida.append(comp)
+    return saida
+
+
+_DENTRO_DE_CASA = set().union(*INTERIOR.values())
+_CAMPOS_DE_TRIGO = [c for c in _componentes_de('p') if len(c) >= 40]
+_CERCAS = {'cerca': 0, 'portao': 0, 'caida': 0}
+for _trigo in _CAMPOS_DE_TRIGO:
+    _x0 = min(c[0] for c in _trigo) - 1
+    _x1 = max(c[0] for c in _trigo) + 1
+    _y0 = min(c[1] for c in _trigo) - 1
+    _y1 = max(c[1] for c in _trigo) + 1
+    _lados = (
+        ([(x, _y0) for x in range(_x0, _x1 + 1)], False),
+        ([(x, _y1) for x in range(_x0, _x1 + 1)], False),
+        ([(_x0, y) for y in range(_y0 + 1, _y1)], True),
+        ([(_x1, y) for y in range(_y0 + 1, _y1)], True),
+    )
+    for _celulas, _espelha in _lados:
+        _meio = len(_celulas) // 2
+        for _i, (x, y) in enumerate(_celulas):
+            if not (0 <= x < W and 0 <= y < H) or T[y][x] != ',' or (x, y) in _DENTRO_DE_CASA:
+                continue
+            if _i == _meio:
+                _v = 'portaoAberto' if _embaralha(x, y, 71) < 0.5 else 'portaoFechado'
+                _tipo = 'portao'
+            elif _embaralha(x, y, 73) < 0.16:
+                _v, _tipo = 'cercaCaida', 'caida'
+            else:
+                _v, _tipo = 'cerca', 'cerca'
+            _prop(x, y, _v)
+            if _v in ('portaoAberto', 'cercaCaida', 'portaoCaido'):
+                T[y][x] = '&'
+            if _espelha:
+                PROPS[-1]['espelhar'] = True
+            _CERCAS[_tipo] += 1
+print('cercas:', _CERCAS, '| campos cercados:', len(_CAMPOS_DE_TRIGO))
+
 # O PISO de cada construcao: assoalho de tabua nas casas de gente, laje rachada nas de pedra.
 PISO_TABUA = {'fazenda', 'estalagem', 'casa7', 'casa9', 'casa10', 'casa12', 'casa15', 'casa19',
               'casa20', 'ervas', 'loja', 'pescaria', 'tecelagem', 'florestal', 'escola', 'embaixada'}
