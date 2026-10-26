@@ -320,10 +320,10 @@ export const MAPA_ARVORE_TROVAO = {
     "TTb,,,,,,,,,,,,,,,,,,,,^XXXXXX:::::::^,TTTTTT,,,,,bTTTTTT:::::::,L^LL,,,,T,,,,,,,,,,,,,bTTb",
     "TTb,,,,,,,,,,,,,,,,,,,,^^^&^^^^::^^^^^TTTTTTTb,,,,TTTTTTTb:ZZZZZZLLL^,,,,T,,,,,,,,,,,,,,Tbb",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,,,,,,,TTTb,,,,,bTTTTTT::ZZZZZZLLLL,,,,T,,,,,,,,,,,,,,,TT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLLLLLjL,,,,Tbb,,,,,,,,,,b,,::ZZZ,,,LLLL,,,,TT,,,,,,,,,,,,,bTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjLLpLL,,,,TbLmL^,LLLi,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
-    "TT::,::,,,,::,,,,,,,,,,,,,,,,^LjLLLLjb,,,TTL^LLLLxtLL,,,,:,Z::,LLL^LLb,,,TT,,,,b,,,,,,,,bTb",
-    ",:::::::::::::::,,,,,,,,,,,,,LL^LLLL^,,,,TT,LLLLLxLLL,,b,,,::::,LL^LL,,,,TT,bbTTTT,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLLLL%jL,,,,Tbb,,,,,,,,,,b,,::ZZZ,,,LLLL,,,,TT,,,,,,,,,,,,,bTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjLLpLb,,,,TbLmL^,LLLi,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
+    "TT::,::,,,,::,,,,,,,,,,,,,,,,^LbLLLLbb,,,TTL^LLLLxtLL,,,,:,Z::,LLL^LLb,,,TT,,,,b,,,,,,,,bTb",
+    ",:::::::::::::::,,,,,,,,,,,,,L%^bLLL^,,,,TT,LLLLLxLLL,,b,,,::::,LL^LL,,,,TT,bbTTTT,,,,,,TTT",
     "TT,,,,,,,,,,,,:::,,,,,,,,,,,,,,,,,,,,,,,,TbLLLLLLLL,i,bb,:::::::,LLLL,,,,TTbTSSSTTb,,,,,TTT",
     "bTb,,,,,,,,,,,,,,,T,,,,:::,,,,,,,,,,,,bb,T,,,,,,LLLLbbb,,ZZZZZZZZLLL^,,,,TTTSSSSSbT,,,,,TTb",
     "TT,,,,,,,,,,,,,,,T::b,,,::,,::::::,Z,b,bbT,,,,,,,,,,,,,,bbZZZZZZZ,,,,b,,bTTSSSSSSSSyy,,,bTT",
@@ -346,24 +346,24 @@ export const MAPA_ARVORE_TROVAO = {
     "TT,,,,,,,,,,,TTTTTTTTTTbbb,,,d^xLL,,:bbTTT,LxjLLL^LL,:,,LL^b,,,T,,,,,,,,,bZ,,,,,,,,,,,,,,TT",
     ",,,,,,,,,,,,,TTTTTTTTTT,,,,,,LxxLL:::,TTTTbdLLLLLLLj,:,,LLL,,,,TT,,,,,,,,,,,,LLLLdL,,,,,bTT",
     ",,,,,,,,,,,,,bTTTTTTTT,,,,,XXL&xLj::,,TTTTT^LLLLLu^L,::,LdL,,,,,,,,,,LL,,,,,,^LLLLL,,,,,bTT",
-    ",,,,,,,,,,,,,,,TTTTTTT,,,,,XXLLLdL:::,,,,bb,,,,,,,,,,:,,,,,,bLLmL,,,,LL,,,,,,L^&&dL,,,,,TTT",
+    ",,,,,,,,,,,,,,,TTTTTTT,,,,,XXLLLdL:::,,,,bb,,,,,,,,,,:,,,,,,bLbmb,,,,LL,,,,,,L^^&dL,,,,,TTT",
     ",,,,,,,,,,,,,,,TTTTT,,,,,,,X,LLs^L:::j^djL&,b,ZZ,,,,,,,,,,,,,LLLL,b,,Lj,,,,,,LLLLL&,,,,,bTT",
-    ",,,,,,,,,,,,,,,TTTTT,,,,,TT,,,,,,,:,,LLxKLL,b,ZZL^LjL,:,,,,,,LLd^bbLmLL,ZZ,,,L^jLLj,,,,,TTT",
-    ",,,,,,,,,,,,,,,TTTT,,,,,,,T,,,,,,,:,,LL^xLLb,b,,L&&LL,::,,,,,LLLj,,L^LLZ,,Z,,,,,,,,,,,,,TTb",
+    ",,,,,,,,,,,,,,,TTTTT,,,,,TT,,,,,,,:,,LLxKLL,b,ZZL^LjL,:,,,,,,LLd^bbLmLL,ZZ,,,L&jLLj,,,,,TTT",
+    ",,,,,,,,,,,,,,,TTTT,,,,,,,T,,,,,,,:,,LL^xLLb,b,,L^^LL,::,,,,,LLL%,,L^LLZ,,Z,,,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,TTT,,,,,,,,T,,,,,,::,,LLLLLLb,,,,dxxLd,::,,bT,,,,,,,LLL^:,,Z,,,,,,,,,,,,,bTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,LLL^LL,,,,,LLLLL,,:,bTT,,,,,,bdLjL,,,Z,,,,,,,,,,,,,,Tb",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,beL^LL,,:,TTT,,,b,,,,,,,:,,b,,,,,,,,,,,,,TTT",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,beL&LL,,:,TTT,,,b,,,,,,,:,,b,,,,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,T,,,TT,,,,,TT,,,,,,:,,,,,,,,,,,,b,,,,,,,,,b,,,,,,,b,,,,,,b,b,,,,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,T,,,TT,,,,,TT,,,,,,:,,,,,,,,,,,b,b,,b&LLjLL&,,,,TTTTb,,,,,,b,,,,,,,,,,,,,bTbT",
     ",,,,,,,,,,,,,,T,,,TT,,,,,TT,dLL,,:,,,,,,,,,,,,,,,,,L^LLLLL,b,,bTbTbbb,,,bb,b,,,,,,,,,,,,,TT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,^LL,,:,,,,,,,,,,,,,,,,,^LLLLLL,,,,TbTbTbTTTTTTTTTb,,,,,,,,,,,TT",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,LLL,::,,,LLLjL,,,,,,,,,LdjLLjL,,,,,TTTbbTTTTTTTbTT,,,,,,,,,,TTT",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LLLjL,,,,,,,,,,,,,,,,,,,,TTTTTTTTTTTTTTTT,,,,,,,,,,TTT",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,LLL,::,,,LLLbL,,,,,,,,,LdjLLjL,,,,,TTTbbTTTTTTTbTT,,,,,,,,,,TTT",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,%LLjL,,,,,,,,,,,,,,,,,,,,TTTTTTTTTTTTTTTT,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LdjLL,,,,,,,,,,,,,,,,,,,,bbTTTTTbbTTTTTTT,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LLLLL,,,,,,,,,,,,,,,,,,,bTbTTTTbTTTTT,,,,,,,,,,,,,,bTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,&LLLL,,,,,,,,,,,,,,,,,,bbTTbbTTbTTTTT,,,,,,,,,,,,,,TTb",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,&LLLL,,,,,,,,,,,,,,,,,bTTTTTTTTbbTTTTTb,,,,,,,,,,,bTTT",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,LLjLm,,,,,,,,,,,,,,,,,,TTTTTTTTbTTTTTTTb,,,,,,,,,,,TTb",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,&LbLL,,,,,,,,,,,,,,,,,bTTTTTTTTbbTTTTTb,,,,,,,,,,,bTTT",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,%LjLm,,,,,,,,,,,,,,,,,,TTTTTTTTbTTTTTTTb,,,,,,,,,,,TTb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,,,,,,,,,,,,,,TTTbTTTTTTTTTTTT,,,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,,,,,,,,,,,,,,bTbbTTTTbTTTTTT,,,,,,,,,,,,,bTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,,,,,,,,,,,,,,,,,,,TbTTTTbTTTTTb,,,,,,,,,,,,,,TTb",
@@ -772,12 +772,12 @@ export const ARVORE_TROVAO = {
         "y": 18
       },
       {
-        "x": 32,
-        "y": 21
-      },
-      {
         "x": 36,
         "y": 18
+      },
+      {
+        "x": 31,
+        "y": 19
       }
     ],
     "ramos5": [
@@ -899,6 +899,13 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
+      "x": 44,
+      "y": 20,
+      "variante": "escrivaninha",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
       "x": 46,
       "y": 19,
       "variante": "camaViuva",
@@ -906,56 +913,48 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
-      "x": 44,
-      "y": 20,
-      "variante": "estante"
-    },
-    {
-      "tipo": "prop",
-      "x": 68,
-      "y": 16,
-      "variante": "barrisRack",
-      "espelhar": true
-    },
-    {
-      "tipo": "prop",
-      "x": 68,
-      "y": 23,
-      "variante": "cubaCerveja"
-    },
-    {
-      "tipo": "prop",
       "x": 66,
       "y": 15,
-      "variante": "beliche",
-      "espelhar": true
-    },
-    {
-      "tipo": "prop",
-      "x": 66,
-      "y": 20,
-      "variante": "fogao",
+      "variante": "cubaCerveja",
       "espelhar": true
     },
     {
       "tipo": "prop",
       "x": 66,
       "y": 21,
-      "variante": "cadeira",
+      "variante": "barrisRack"
+    },
+    {
+      "tipo": "prop",
+      "x": 68,
+      "y": 16,
+      "variante": "banco",
       "espelhar": true
     },
     {
       "tipo": "prop",
-      "x": 20,
-      "y": 29,
-      "variante": "armario",
+      "x": 68,
+      "y": 23,
+      "variante": "fogao"
+    },
+    {
+      "tipo": "prop",
+      "x": 66,
+      "y": 20,
+      "variante": "beliche",
       "espelhar": true
     },
     {
       "tipo": "prop",
       "x": 20,
       "y": 27,
-      "variante": "banco",
+      "variante": "beliche"
+    },
+    {
+      "tipo": "prop",
+      "x": 20,
+      "y": 29,
+      "variante": "armario",
       "espelhar": true
     },
     {
@@ -1029,20 +1028,21 @@ export const ARVORE_TROVAO = {
     {
       "tipo": "prop",
       "x": 30,
+      "y": 41,
+      "variante": "prateleira",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 30,
       "y": 40,
-      "variante": "estante"
+      "variante": "armario"
     },
     {
       "tipo": "prop",
       "x": 32,
       "y": 45,
       "variante": "tina"
-    },
-    {
-      "tipo": "prop",
-      "x": 30,
-      "y": 41,
-      "variante": "prateleira"
     },
     {
       "tipo": "prop",
@@ -1078,6 +1078,12 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
+      "x": 49,
+      "y": 41,
+      "variante": "prateleira"
+    },
+    {
+      "tipo": "prop",
       "x": 43,
       "y": 43,
       "variante": "guardaRoupa"
@@ -1086,39 +1092,32 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 50,
       "y": 43,
-      "variante": "estante"
+      "variante": "mesaFerramentas"
     },
     {
       "tipo": "prop",
       "x": 49,
-      "y": 41,
-      "variante": "prateleira"
-    },
-    {
-      "tipo": "prop",
-      "x": 49,
-      "y": 46,
+      "y": 47,
       "variante": "bigorna"
     },
     {
       "tipo": "prop",
       "x": 50,
-      "y": 50,
-      "variante": "fole",
-      "espelhar": true
-    },
-    {
-      "tipo": "prop",
-      "x": 50,
       "y": 47,
-      "variante": "saco",
-      "espelhar": true
+      "variante": "fole"
     },
     {
       "tipo": "prop",
       "x": 49,
-      "y": 47,
-      "variante": "baldeBanco"
+      "y": 46,
+      "variante": "mesaFerramentas"
+    },
+    {
+      "tipo": "prop",
+      "x": 50,
+      "y": 50,
+      "variante": "tabuas",
+      "espelhar": true
     },
     {
       "tipo": "prop",
@@ -1153,21 +1152,28 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
+      "x": 79,
+      "y": 44,
+      "variante": "redes",
+      "espelhar": true
+    },
+    {
+      "tipo": "prop",
       "x": 77,
       "y": 43,
-      "variante": "redes"
+      "variante": "tina"
     },
     {
       "tipo": "prop",
       "x": 78,
       "y": 46,
-      "variante": "tina"
+      "variante": "baldeBanco"
     },
     {
       "tipo": "prop",
       "x": 82,
       "y": 45,
-      "variante": "saco"
+      "variante": "tabuas"
     },
     {
       "tipo": "prop",
@@ -1180,14 +1186,7 @@ export const ARVORE_TROVAO = {
       "tipo": "prop",
       "x": 80,
       "y": 44,
-      "variante": "tabuas"
-    },
-    {
-      "tipo": "prop",
-      "x": 79,
-      "y": 44,
-      "variante": "baldeBanco",
-      "espelhar": true
+      "variante": "saco"
     },
     {
       "tipo": "prop",

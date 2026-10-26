@@ -873,6 +873,15 @@ TEMA_PROP = {
 }
 PROPS = []
 _pecas_por_predio = {}
+# A PECA-ASSINATURA de cada construcao: a que o livro (ou o nome da casa) diz que tem de haver.
+# Sai ANTES do sorteio, para nao depender da sorte: a tecelagem sem tear e a guarnicao sem
+# beliche eram erros reais. Repetida (os beliches), a segunda entra espelhada.
+ASSINATURA = {
+    'tecelagem': ['tear'], 'guarda': ['beliche', 'beliche'], 'escola': ['lousa'], 'moinho': ['mo'],
+    'estalagem': ['cubaCerveja', 'barrisRack'], 'ferraria': ['bigorna', 'fole'],
+    'pescaria': ['redes'], 'prefeito': ['escrivaninha'], 'loja': ['prateleira'],
+    'ervas': ['prateleira'], 'casa9': ['mesaPosta'],
+}
 
 
 # NUNCA DUAS PECAS IGUAIS NA MESMA CASA, e nunca duas iguais viradas para o mesmo lado: a
@@ -914,6 +923,21 @@ for pid, cs in INTERIOR.items():
     if pid == 'torre':
         continue
     tema = TEMA_PROP.get(pid, TEMA_PROP['casa'])
+    for _v in ASSINATURA.get(pid, []):
+        _posta = False
+        for _rigor in (1, 0):
+            for (x, y) in sorted(cs, key=lambda c: _embaralha(c[0], c[1], 83 + _rigor)):
+                if T[y][x] not in 'Ldvj' or _junto_de_vao(x, y) or _tapado(x, y) or (_rigor and not _encosta(x, y)):
+                    continue
+                _antes = T[y][x]
+                _jatem = _USADAS.get(pid, {}).get(_v, 0) > 0
+                _prop(x, y, _v, _jatem or _embaralha(x, y, 85) < 0.4, pid)
+                if _piso_inteiro(cs):
+                    _posta = True
+                    break
+                _desfaz(x, y, _antes)
+            if _posta:
+                break
     for (x, y) in sorted(cs):
         chance = TROCA_PROP.get(T[y][x])
         if chance is None or _embaralha(x, y, 41) >= chance:
@@ -1002,6 +1026,31 @@ for _trigo in _CAMPOS_DE_TRIGO:
                 PROPS[-1]['espelhar'] = True
             _CERCAS[_tipo] += 1
 print('cercas:', _CERCAS, '| campos cercados:', len(_CAMPOS_DE_TRIGO))
+
+# O MATO QUE CRESCE DENTRO (o livro, areas 2, 5 e 12: "o mato cresce por dentro das fundacoes",
+# e e onde os ramos secos se escondem). Arbustos (cobertura) e espinheiro (terreno dificil)
+# nas casas de ramos, sem fechar o chao nem a porta. Chao de tabua por baixo.
+MATO_DENTRO = {'fazenda': 3, 'celeiro': 3, 'casa20': 4, 'tecelagem': 3}
+_mato = {}
+for pid, n in MATO_DENTRO.items():
+    cs = INTERIOR[pid]
+    postos = 0
+    for (x, y) in sorted(cs, key=lambda c: _embaralha(c[0], c[1], 89)):
+        if postos >= n:
+            break
+        # A parede baixa (grau 3) nao esconde o mato; a alta sim, e nao ha porque pintar o que ninguem ve.
+        if T[y][x] not in 'Ldvj' or _junto_de_vao(x, y) or (_tapado(x, y) and GRAU_DE_RUINA.get(pid, 2) < 3):
+            continue
+        _antes = T[y][x]
+        T[y][x] = 'b' if postos % 2 == 0 else '%'
+        if T[y][x] == 'b':
+            BARRA_MOVEL.add('b')
+        if not _piso_inteiro(cs):
+            T[y][x] = _antes
+            continue
+        postos += 1
+    _mato[pid] = postos
+print('mato dentro das casas:', _mato)
 
 # O PISO de cada construcao: assoalho de tabua nas casas de gente, laje rachada nas de pedra.
 PISO_TABUA = {'fazenda', 'estalagem', 'casa7', 'casa9', 'casa10', 'casa12', 'casa15', 'casa19',
