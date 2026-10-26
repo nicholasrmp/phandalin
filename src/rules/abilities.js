@@ -54,8 +54,18 @@ export function saveBonus(actor, ability) {
 // Cativar: desvantagem em Percepção vale −5 na passiva (SRD, passiva = 10 + bônus, vantagem/desvantagem ±5).
 // A Percepção passiva perde 5 com Cativar e outros 5 em marcha depressa
 // (`rules/marcha.js`): quem corre pela trilha não repara no capim alto.
+// SENTIDOS AGUÇADOS (SRD): vantagem em Percepção que dependa de audição e
+// olfato. Em passiva, vantagem são +5. Simplificação assumida: vale para toda
+// a passiva da criatura, e não só para o que ela ouve ou cheira — no lobo e na
+// coruja-urso é quase tudo, e separar os sentidos pediria um contexto que o
+// motor não carrega. Sem isto os traços eram só texto: o blurb do lobo prometia
+// que "Furtividade não esconde o grupo dela" e a conta usava 13, não 18 — o
+// grupo passava escondido em 48% das vezes em vez de 12%.
+const SENTIDOS_AGUCADOS = ['keenHearingSmell', 'keenSmell', 'keenHearing', 'keenSightSmell'];
+
 export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao')
   - (actor.conditions?.some((c) => c.id === 'cativado') ? 5 : 0)
+  + (actor.traits?.some((t) => SENTIDOS_AGUCADOS.includes(t)) ? 5 : 0)
   + (actor.percepcaoMarcha ?? 0);
 
 /** CD de magia = 8 + proficiência + modificador de conjuração. */

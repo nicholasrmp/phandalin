@@ -231,7 +231,14 @@ export const GOBLINOIDES = {
     // sem reforço nosso: já tentamos um chefe inventado (duas machadadas e um
     // grito de guerra) e isso levava o quarto de 1.900 para 2.900 de XP
     // ajustado, pagando os 950 do livro.
-    fonte: 'SRD',
+    //
+    // Por isso NÃO é 'SRD', como estava: o bugbear do SRD tem 27 PV e clava
+    // perfurante, e este tem 45 e machado cortante. Dois números mudados é
+    // bloco nosso pela regra do próprio arquivo, e o cabeçalho já dizia isso
+    // — era o campo que contradizia. Os 45 PV não fecham com dado nenhum
+    // (d8 com Constituição 13 rende 5,5 por dado), então é número escolhido e
+    // fica sem `hpDice`, como o Brughor.
+    fonte: 'propria',
     size: 'médio',
     level: 3,
     cr: '1',

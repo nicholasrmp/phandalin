@@ -48,6 +48,7 @@ export const HUMANOIDES = {
     ac: 13,
     acNote: 'armadura de couro cru',
     maxHp: 15,
+    hpDice: '2d8+6',
     speedFt: 30,
     senses: { darkvisionFt: 60 },
     skills: ['intimidacao'],
@@ -704,6 +705,7 @@ export const HUMANOIDES = {
     ac: 11,
     acNote: 'armadura de peles',
     maxHp: 59,
+    hpDice: '7d10+21',
     speedFt: 40,
     senses: { darkvisionFt: 60 },
     attacks: [

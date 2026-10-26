@@ -580,7 +580,7 @@ export function criarCastelo(app, config) {
     enc.combatants.splice(enc.combatants.indexOf(mensageiro), 1);
     enc.say('acao', `${mensageiro.name} vira as costas e corre pela porta do norte, gritando pelo rei.`);
     mensageiro.pos = { ...mensageiro.pos, ...J(25, 9) };
-    levas?.adicionar({ rodada: enc.round + 2, units: [mensageiro], aviso: `${mensageiro.name} volta correndo, de machado na mão.` });
+    levas?.adicionar({ rodada: enc.round + 2, fixa: true, units: [mensageiro], aviso: `${mensageiro.name} volta correndo, de machado na mão.` });
     enc.checkEnd();
     app.refresh();
     return true;

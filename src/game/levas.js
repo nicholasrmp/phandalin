@@ -19,7 +19,16 @@ export function prepararLevas(enc, levas) {
     for (const l of prontas) fila.splice(fila.indexOf(l), 1);
     return { units: prontas.flatMap((l) => l.units), aviso: prontas.map((l) => l.aviso).filter(Boolean).join(' ') || null };
   };
-  enc.lotePendente = () => fila.shift() ?? null;
+  // Campo vazio antes da hora: o motor puxa a próxima leva para a luta não
+  // acabar sem ela. Uma leva marcada `fixa` NÃO se antecipa — é a que tem hora
+  // combinada na narrativa, como o mensageiro do castelo, que a cena promete
+  // de volta "duas rodadas depois" e que chegava na mesma rodada em até 57%
+  // das lutas. Se só sobrarem levas fixas, a luta acaba: quem venceu antes de
+  // o mensageiro voltar venceu mesmo.
+  enc.lotePendente = () => {
+    const i = fila.findIndex((l) => !l.fixa);
+    return i < 0 ? null : fila.splice(i, 1)[0];
+  };
   return {
     atrasar(n) { for (const l of fila) l.rodada += n; },
     get restantes() { return fila.reduce((s, l) => s + l.units.length, 0); },

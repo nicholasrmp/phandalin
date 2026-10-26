@@ -78,6 +78,7 @@ export const MORTOS_VIVOS = {
     ac: 8,
     acNote: 'sem armadura, carne mole',
     maxHp: 22,
+    hpDice: '3d8+9',
     speedFt: 20,
     // Resistência de SAB +0 do Livro dos Monstros: a proficiência (+2) sobre SAB 6.
     saves: ['wis'],

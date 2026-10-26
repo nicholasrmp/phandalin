@@ -23,7 +23,7 @@ import { guardar, totalEmCobre, cobrar } from '../game/comercio.js';
 import { Battlefield, distanceFt } from '../core/grid.js';
 import { visaoNoEscuro, nivelDeLuz } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
-import { skillBonus } from '../rules/abilities.js';
+import { skillBonus, passivePerception } from '../rules/abilities.js';
 import { makeRng } from '../core/rng.js';
 import { takeMonsterTurn } from '../rules/ai.js';
 import { mapaDo, buildFoes } from '../game/encounter.js';
@@ -415,6 +415,60 @@ teste('o Gundren não morre do dano de área do próprio grupo', () => {
   enc.applyDamage(anao, 24, 'fogo');
   assert.equal(anao.dead, false);
   assert.equal(hasCondition(anao, 'inconsciente'), true);
+});
+
+// ---- as sobras da fase 4 --------------------------------------------------
+
+teste('os blocos da fase 4 batem com o SRD nos números que estavam tortos', () => {
+  const dop = makeMonster('doppelganger', { x: 0, y: 0 });
+  assert.equal(skillBonus(dop, 'enganacao'), 6, 'Enganação em dobro, como no SRD');
+  const gr = makeMonster('grick', { x: 0, y: 0 });
+  assert.equal(skillBonus(gr, 'furtividade'), 2, 'o grick do SRD não tem perícia');
+  assert.equal(passivePerception(gr), 12);
+  for (const [id, dado] of [['orc', '2d8+6'], ['ogro', '7d10+21'], ['zumbi', '3d8+9']]) {
+    assert.equal(MONSTERS[id].hpDice, dado);
+    assert.equal(Math.floor(averageOf(dado)), MONSTERS[id].maxHp, `${id}: ${dado} não dá ${MONSTERS[id].maxHp}`);
+  }
+});
+
+teste('Sentidos Aguçados somam 5 na passiva de quem os tem', () => {
+  // Vantagem em passiva são +5. Sem isto o traço era só texto, e o blurb do
+  // lobo prometia que "Furtividade não esconde o grupo dela".
+  const lobo = makeMonster('lobo', { x: 0, y: 0 });
+  assert.ok(lobo.traits.includes('keenHearingSmell'));
+  assert.equal(passivePerception(lobo), 18);
+  assert.equal(passivePerception(makeMonster('corujaUrso', { x: 0, y: 0 })), 18);
+  // Quem não tem o traço continua como estava.
+  assert.equal(passivePerception(makeMonster('goblin', { x: 0, y: 0 })), 9);
+});
+
+teste('o Rei Grol não se diz do SRD: tem 45 PV e machado cortante', () => {
+  assert.equal(MONSTERS.reiGrol.fonte, 'propria');
+  assert.equal(MONSTERS.bugbear.fonte, 'SRD');
+  assert.notEqual(MONSTERS.reiGrol.maxHp, MONSTERS.bugbear.maxHp);
+  assert.equal(MONSTERS.reiGrol.hpDice, undefined, '45 PV não fecham com dado nenhum');
+});
+
+teste('o Cume não desenha chão que ninguém alcança', () => {
+  const m = mapaDo('cume');
+  const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+  const vistas = new Set();
+  const fila = [[25, 18]];
+  while (fila.length) {
+    const [x, y] = fila.pop();
+    const k = `${x},${y}`;
+    if (vistas.has(k) || x < 0 || y < 0 || x >= f.w || y >= f.h || f.blocksMove(x, y)) continue;
+    vistas.add(k);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= f.w || ny >= f.h || f.stepBlocked(x, y, nx, ny)) continue;
+      fila.push([nx, ny]);
+    }
+  }
+  let chao = 0;
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (!f.blocksMove(x, y)) chao += 1;
+  assert.equal(chao, vistas.size, `${chao - vistas.size} casas de chão fora de alcance`);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

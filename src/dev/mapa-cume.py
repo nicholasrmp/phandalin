@@ -137,6 +137,46 @@ casa(16, 3, 'F'); casa(22, 3, 'F')        # fogueiras
 casa(18, 1, 'u'); casa(19, 1, 'u'); casa(21, 1, 'u')
 
 # ---------------------------------------------------------------- saida ----
+# CHÃO PARTIDO. O mapa desenhava 122 casas pisáveis que ninguém alcança — 22%
+# das andáveis —, entre elas um anel de planalto que é um mirante sobre o
+# acampamento. O jogador vê terreno e não consegue ir; pior, um teleporte podia
+# largar alguém lá sem volta. Aqui elas viram rocha, pela mesma regra de passo
+# do motor: degrau de mais de um nível é parede.
+BLOQUEIA = set('RT')
+PARTIDA = (25, 18)      # onde o grupo chega
+
+
+def _anda(x, y):
+    return 0 <= x < W and 0 <= y < H and T[y][x] not in BLOQUEIA
+
+
+def _passo(x, y, nx, ny):
+    return _anda(nx, ny) and abs(A[ny][nx] - A[y][x]) <= 1
+
+
+_vistas = {PARTIDA}
+_fila = [PARTIDA]
+while _fila:
+    cx, cy = _fila.pop()
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            if not dx and not dy:
+                continue
+            nx, ny = cx + dx, cy + dy
+            if (nx, ny) in _vistas or not _passo(cx, cy, nx, ny):
+                continue
+            _vistas.add((nx, ny))
+            _fila.append((nx, ny))
+
+_seladas = 0
+for y in range(H):
+    for x in range(W):
+        if _anda(x, y) and (x, y) not in _vistas:
+            T[y][x] = 'R'
+            A[y][x] = 2
+            _seladas += 1
+print('casas de chao inalcancaveis seladas:', _seladas)
+
 import json
 from pathlib import Path
 

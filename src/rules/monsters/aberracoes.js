@@ -93,8 +93,11 @@ export const ABERRACOES = {
     hpDice: '6d8',
     speedFt: 30,
     speeds: { climbFt: 30 },
+    // O grick do SRD não tem perícia nenhuma: a Percepção passiva 12 sai de
+    // Sabedoria 14 sozinha, e a Furtividade dele é +2 com VANTAGEM em terreno
+    // rochoso (Camuflagem de Pedra), não +4 fixo. Tinha `skills` e por isso
+    // escondia melhor do que devia na rolagem de surpresa do salão escuro.
     senses: { darkvisionFt: 60, passivePerception: 12 },
-    skills: ['furtividade', 'percepcao'],
     damageResistances: ['cortante', 'perfurante', 'concussão'],
     damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas',
     attacks: [
@@ -125,6 +128,9 @@ export const ABERRACOES = {
     speedFt: 30,
     senses: { darkvisionFt: 60, passivePerception: 11 },
     skills: ['enganacao', 'intuicao'],
+    // Enganação em dobro, como no SRD: sem isto o disfarce dele rolava +4 em
+    // vez de +6, e a lábia é o traço todo da criatura.
+    expertise: ['enganacao'],
     conditionImmunities: ['enfeitiçado'],
     attacks: [
       { name: 'Golpe', bonus: 6, damage: '1d6+4', type: 'concussão', reachFt: 5, art: 'mace' },
