@@ -57,13 +57,13 @@ class Cliente {
   }
 
   /** A próxima mensagem (já recebida ou futura) que satisfaz `pred`; falha em 4 s. */
-  esperar(pred, rotulo = 'mensagem') {
+  esperar(pred, rotulo = 'mensagem', ms = 4000) {
     const ja = this.recebidas.find(pred);
     if (ja) return Promise.resolve(ja);
     return new Promise((resolve, reject) => {
       const w = { pred, resolve };
       this.espera.push(w);
-      setTimeout(() => { if (this.espera.includes(w)) { this.espera.splice(this.espera.indexOf(w), 1); reject(new Error(`esperei ${rotulo} e não veio`)); } }, 4000);
+      setTimeout(() => { if (this.espera.includes(w)) { this.espera.splice(this.espera.indexOf(w), 1); reject(new Error(`esperei ${rotulo} e não veio`)); } }, ms);
     });
   }
 
@@ -243,6 +243,35 @@ await teste('F4.4: o aviso do anfitrião chega só ao jogador certo, e a corda a
   assert.equal(a.recebidas.some((x) => x.tipo === 'aviso'), false, 'o anfitrião não recebe o próprio aviso');
   b.manda({ tipo: 'aviso', para: 'p1', texto: 'x' });
   assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /anfitrião/);
+});
+
+await teste('F6: o anfitrião cai, e depois da graça o servidor passa o posto a quem está conectado, com o último save', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
+  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
+  a.manda({ tipo: 'iniciar' });
+  await b.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  const save = { versao: 1, herois: [{ id: 'pc-mago', name: 'Ilvan' }], config: { modo: 'campanha' }, campanha: { marca: 'cena-3' } };
+  b.manda({ tipo: 'salvar', save });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /anfitrião/, 'quem não é o anfitrião não guarda o jogo');
+  a.manda({ tipo: 'salvar', save });
+  await vez(500);
+  b.recebidas.length = 0;
+  a.fechar();
+  const t0 = Date.now();
+  const caiu = await b.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.find((j) => j.id === 'p1')?.conectado === false);
+  assert.equal(caiu.visao.anfitriao, 'p1', 'dentro da graça o posto continua dele');
+  const novo = await b.esperar((x) => x.tipo === 'sala' && x.visao.anfitriao === 'p2', 'o posto passar', 40_000);
+  assert.equal(novo.visao.voce, 'p2');
+  const passou = Date.now() - t0;
+  assert.ok(passou >= 15_000 && passou < 35_000, `o posto passou depois da graça (${passou} ms)`);
+  const assumir = await b.esperar((x) => x.tipo === 'assumir', 'o save de quem assume');
+  assert.deepEqual(JSON.parse(assumir.save), save, 'o save que o antigo anfitrião mandou (em texto, para quem assume validar e migrar)');
 });
 
 await teste('outro navegador (id diferente) não age como o jogador de outro', async () => {

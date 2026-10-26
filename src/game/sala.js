@@ -26,6 +26,12 @@ import {
 
 export const VERSAO_DA_SALA = 1;
 
+/**
+ * F6, A-04: o anfitrião roda o jogo, então se ele cai a partida para. Passado este tempo sem ele (a aba que recarrega volta
+ * antes), o servidor passa o posto a quem está conectado, que retoma do último save que o anfitrião mandou.
+ */
+export const GRACA_DO_ANFITRIAO_MS = 20_000;
+
 /** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
 export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar'];
 
@@ -284,6 +290,7 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       const mudou = devolveu || !eu.conectado || sala.vaziaDesde != null;
       eu.conectado = true;
       sala.vaziaDesde = null;
+      if (jogadorId === sala.anfitriao) sala.anfitriaoAusenteDesde = null;
       return ok({ reentrou: true, igual: !mudou });
     }
     if (!idValido(jogadorId)) return recusa('jogador inválido');
@@ -512,6 +519,24 @@ function saiu(sala, id, agora) {
   atualizarVazia(sala, agora);
 }
 
+/**
+ * O anfitrião está fora há mais que a graça? Então o posto passa ao primeiro jogador CONECTADO, na ordem de entrada (e o
+ * líder da narrativa vai junto, se era ele). Devolve `{ ok, novo, antigo }` (ids secretos) ou `{ ok: false }`.
+ * Quando é o antigo anfitrião que volta, entra como jogador comum: o posto é de quem o tem.
+ */
+export function promoverAnfitriao(sala, agora) {
+  if (sala.fase !== 'iniciada' || sala.anfitriaoAusenteDesde == null) return { ok: false };
+  if (agora - sala.anfitriaoAusenteDesde < GRACA_DO_ANFITRIAO_MS) return { ok: false };
+  const novo = jogadoresPresentes(sala).find((j) => j.conectado && j.id !== sala.anfitriao);
+  if (!novo) return { ok: false };
+  const antigo = sala.anfitriao;
+  sala.anfitriao = novo.id;
+  if (sala.lider === antigo) sala.lider = novo.id;
+  sala.anfitriaoAusenteDesde = null;
+  sala.trocasDeAnfitriao = (sala.trocasDeAnfitriao ?? 0) + 1;
+  return { ok: true, novo: novo.id, antigo };
+}
+
 /** Marca (ou desmarca) o instante em que a sala ficou sem ninguém conectado. */
 export function atualizarVazia(sala, agora) {
   if (conectados(sala).length === 0) sala.vaziaDesde ??= agora;
@@ -527,6 +552,7 @@ export function atualizarVazia(sala, agora) {
 export function desconectar(sala, jogadorId, agora) {
   const j = jogadorDe(sala, jogadorId);
   if (j) { j.conectado = false; j.pronto = false; }
+  if (jogadorId === sala.anfitriao && sala.fase === 'iniciada') sala.anfitriaoAusenteDesde ??= agora;
   atualizarVazia(sala, agora);
 }
 

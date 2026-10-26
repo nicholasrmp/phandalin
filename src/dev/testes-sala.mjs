@@ -9,14 +9,14 @@ import {
   HEROIS_JOGAVEIS, ALFABETO, TAMANHO_DO_CODIGO, PILOTO, MAX_NOME, MINUTOS_VAZIA,
   gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, idValido,
   criarSala, aplicar, desconectar, deveFechar, visaoDaSala, pendenciasParaIniciar, heroisDe, limiteDeHerois, jogadorDe,
-  HEROIS_COM_ARTE, PERSONA_PADRAO, MS_POR_CASA, nomeUnico, figuraDe, EMOTES,
+  HEROIS_COM_ARTE, PERSONA_PADRAO, MS_POR_CASA, nomeUnico, figuraDe, EMOTES, promoverAnfitriao, GRACA_DO_ANFITRIAO_MS,
 } from '../game/sala.js';
 import {
   LARGURA, ALTURA, MAPA_TAVERNA, MESA_DE_GRUPO, NASCEDOUROS, campoDaTaverna, caminhoNaTaverna, casaLivre, ehMesaDeGrupo,
   marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR, BALCAO, ehBalcao,
 } from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
-import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
+import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
 import { acaoRemotaValida, tilesValidos, circuloValido, magiaNaHora, escolheVarios, mandaNaHora } from '../game/acoes.js';
@@ -1016,6 +1016,52 @@ teste('F5.2: o que o convidado manda na hora e o que espera um alvo é a MESMA r
   assert.equal(magiaNaHora({ kind: 'buff', rangeFt: 30 }, false), false);
   assert.equal(magiaNaHora({ kind: 'lamina' }, false), true); assert.equal(magiaNaHora({ kind: 'lamina' }, true), false, 'lâmina já ativa pede alvo');
   assert.equal(escolheVarios({ kind: 'raios' }), true); assert.equal(escolheVarios({ kind: 'save', alvos: 3 }), true); assert.equal(escolheVarios({ kind: 'save' }), false);
+});
+
+teste('F6: o anfitrião caído passa o posto, depois da graça, ao primeiro conectado; quem volta antes não perde nada', () => {
+  const s = salaIniciada();
+  const t0 = 100_000;
+  assert.equal(promoverAnfitriao(s, t0).ok, false, 'anfitrião presente: nada a passar');
+  desconectar(s, ANF, t0);
+  assert.equal(s.anfitriaoAusenteDesde, t0);
+  assert.equal(promoverAnfitriao(s, t0 + GRACA_DO_ANFITRIAO_MS - 1).ok, false, 'dentro da graça espera');
+  // A aba que recarrega volta a tempo: o posto continua dele e a contagem zera.
+  assert.ok(faz(s, ANF, { tipo: 'entrar', nome: 'N' }, t0 + 5000).ok);
+  assert.equal(s.anfitriaoAusenteDesde, null);
+  assert.equal(promoverAnfitriao(s, t0 + 60_000).ok, false);
+  // Cai de verdade: passada a graça, o posto vai ao Beto, e o líder da narrativa vai junto (era o anfitrião).
+  desconectar(s, ANF, t0 + 70_000);
+  const r = promoverAnfitriao(s, t0 + 70_000 + GRACA_DO_ANFITRIAO_MS);
+  assert.ok(r.ok); assert.equal(r.novo, BETO); assert.equal(r.antigo, ANF);
+  assert.equal(s.anfitriao, BETO); assert.equal(s.lider, BETO); assert.equal(s.trocasDeAnfitriao, 1);
+  assert.equal(visaoDaSala(s, BETO).anfitriao, 'p2'); assert.equal(visaoDaSala(s, BETO).voce, 'p2');
+  // Os heróis continuam de quem eram; o antigo anfitrião, ao voltar, entra como jogador comum.
+  assert.equal(s.herois['pc-guerreiro'], ANF);
+  assert.ok(faz(s, ANF, { tipo: 'entrar', nome: 'N' }, t0 + 200_000).ok);
+  assert.equal(s.anfitriao, BETO); assert.equal(s.anfitriaoAusenteDesde, null);
+  deve(faz(s, ANF, { tipo: 'iniciar' }), /anfitrião/);
+  deve(faz(s, ANF, { tipo: 'corda', valor: 'livre' }), /anfitrião/);
+  // Sem ninguém conectado para assumir, o posto não passa.
+  const so = salaIniciada(); desconectar(so, ANF, t0); desconectar(so, BETO, t0);
+  assert.equal(promoverAnfitriao(so, t0 + 10 * GRACA_DO_ANFITRIAO_MS).ok, false);
+  // No lobby não há partida a retomar.
+  assert.equal(promoverAnfitriao(nova(), t0).ok, false);
+});
+
+teste('F6: o servidor guarda o save que SÓ o anfitrião manda, com a partida iniciada, e só com a cara de um save', () => {
+  const s = salaIniciada();
+  const save = { versao: 1, herois: [{ id: 'pc-mago' }], config: { modo: 'campanha' }, campanha: {} };
+  const bruto = JSON.stringify({ tipo: 'salvar', save });
+  assert.equal(ehSave(bruto), true); assert.equal(ehSave('{"tipo":"partida"}'), false);
+  const ok1 = tratarSave({ sala: s, jogadorId: ANF, bruto });
+  assert.equal(ok1.ok, true); assert.deepEqual(JSON.parse(ok1.texto), save);
+  assert.match(tratarSave({ sala: s, jogadorId: BETO, bruto }).erro, /anfitrião/);
+  assert.match(tratarSave({ sala: nova(), jogadorId: ANF, bruto }).erro, /não está em andamento/);
+  assert.match(tratarSave({ sala: s, jogadorId: ANF, bruto: 'x'.repeat(MAX_SAVE + 10) }).erro, /grande/);
+  assert.match(tratarSave({ sala: s, jogadorId: ANF, bruto: 'não é json' }).erro, /inválido/);
+  for (const ruim of [{ herois: [], config: {} }, { herois: 'x', config: {} }, { herois: [{}] }, null]) {
+    assert.match(tratarSave({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'salvar', save: ruim }) }).erro, /inválido/);
+  }
 });
 
 teste('F4.4: a corda: só se vai para perto de ALGUM outro herói; o grupo estica em fila, mas não se parte', () => {

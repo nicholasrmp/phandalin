@@ -34,6 +34,7 @@ export function urlDaSala(local, codigo) {
  * @param {(visao: object) => void} o.aoVisao           o estado inteiro da sala, depois de cada mudança
  * @param {(vista: object) => void} o.aoPartida         a vista da partida que o anfitrião publica (F4); só chega a quem não é ele
  * @param {(msg: object) => void} o.aoNarrativa         uma página da narrativa que o anfitrião transmite (F4.3)
+ * @param {(save: string|null) => void} o.aoAssumir     o servidor passou a você o posto de anfitrião (F6): o save da partida, em texto
  * @param {(texto: string) => void} o.aoAviso           o anfitrião diz por que o seu passo foi ignorado (F4.4)
  * @param {(msg: object) => void} o.aoIntencao          uma intenção de outro jogador (`agir`, `resposta`); só chega ao anfitrião (F4.3)
  * @param {(texto: string) => void} o.aoErro            a intenção foi recusada
@@ -41,7 +42,7 @@ export function urlDaSala(local, codigo) {
  * @param {(status: 'conectando'|'conectado'|'reconectando'|'caiu') => void} o.aoStatus
  */
 export function criarClienteDeSala({
-  WebSocketCtor, jogadorId, urlDe, aoVisao = () => {}, aoPartida = () => {}, aoNarrativa = () => {}, aoIntencao = () => {}, aoAviso = () => {}, aoErro = () => {}, aoFechar = () => {}, aoStatus = () => {},
+  WebSocketCtor, jogadorId, urlDe, aoVisao = () => {}, aoPartida = () => {}, aoNarrativa = () => {}, aoIntencao = () => {}, aoAviso = () => {}, aoAssumir = () => {}, aoErro = () => {}, aoFechar = () => {}, aoStatus = () => {},
   agendar = (fn, ms) => setTimeout(fn, ms), cancelar = (id) => clearTimeout(id),
   repetir = (fn, ms) => setInterval(fn, ms), parar = (id) => clearInterval(id), relogio = () => Date.now(),
 }) {
@@ -87,6 +88,7 @@ export function criarClienteDeSala({
       else if (m?.tipo === 'partida') aoPartida(m.vista);
       else if (m?.tipo === 'narrativa') aoNarrativa(m.msg);
       else if (m?.tipo === 'aviso') aoAviso(m.texto);
+      else if (m?.tipo === 'assumir') aoAssumir(m.save ?? null);
       else if (m?.tipo === 'agir' || m?.tipo === 'resposta') aoIntencao(m);
       else if (m?.tipo === 'erro') { confirmado = true; aoErro(m.erro); }
       else if (m?.tipo === 'fechada') { encerrado = true; pararBatimento(); aoFechar(m.motivo ?? 'a sala foi fechada'); }

@@ -44,7 +44,7 @@ import { Board } from './view/board.js';
 import { Hud } from './view/hud.js';
 import { criarFicha, aplicarAparencia } from './view/ficha.js';
 import { criarMenu } from './view/menu.js';
-import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave } from './game/save.js';
+import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave, deArquivo } from './game/save.js';
 import { jogadorDaAba } from './game/sala-cliente.js';
 import { criarTaverna } from './view/taverna-tela.js';
 import { normalizarCodigo } from './game/sala.js';
@@ -226,6 +226,8 @@ class App {
           aoNarrativa: (msg) => this.partidaRemota.narrativa(msg),
           aoIntencao: (m) => (m.tipo === 'agir' ? this.aplicarIntencao(m) : this.receberResposta(m)),
           aoAviso: (texto) => this.partidaRemota.avisar(texto),
+          aoAssumir: (save, v) => this.assumirPartidaDaSala(save, v),
+          aoPerderOPosto: (v) => this.perderOPostoDaSala(v),
           aoEncerrar: () => this.encerrarPartidaDaSala(),
         },
         // A taverna andável (T-01): o lobby de quem joga com amigos. Fala com o menu só por estes ganchos.
@@ -403,7 +405,19 @@ class App {
     const ids = Object.keys(v.herois);
     this.salaDaPartida = { corda: v.corda ?? 'unido', herois: v.herois, voce: v.voce };
     this.donoDaVisao = (c) => v.herois[c.id] === v.voce;
-    // A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20).
+    this.prepararPortaDaSala();
+    this.newEncounter({
+      modo: 'campanha', aventura: v.origem?.aventura ?? 'mina-perdida', variante: 'emboscada', nivel: 1,
+      herois: ids.map((id) => ({ id, escolha: escolhaAutomatica(id) })),
+    });
+    clearInterval(this.publicador);
+    this.ultimaVistaTexto = null;
+    this.publicador = setInterval(() => this.publicarVista(), 250);
+    this.publicarVista();
+  }
+
+  /** A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20). */
+  prepararPortaDaSala() {
     this.esperasDeResposta = new Map();
     definirPorta(criarPortaCompartilhada({
       local: narrarLocal,
@@ -414,14 +428,36 @@ class App {
       }),
       aoFalhar: (e) => console.warn('a narrativa compartilhada falhou; segue só neste navegador', e),
     }));
-    this.newEncounter({
-      modo: 'campanha', aventura: v.origem?.aventura ?? 'mina-perdida', variante: 'emboscada', nivel: 1,
-      herois: ids.map((id) => ({ id, escolha: escolhaAutomatica(id) })),
-    });
-    clearInterval(this.publicador);
+  }
+
+  /**
+   * F6: o anfitrião caiu e o servidor passou o posto a ESTE navegador, com o último save da partida. Retoma dele (o ponto de
+   * entrada da última cena) e passa a publicar a vista; os outros jogadores seguem na tela de quem assiste e voltam a ver a partida.
+   */
+  assumirPartidaDaSala(texto, v) {
+    this.partidaRemota.fechar();
+    const lido = texto ? deArquivo(texto) : { ok: false, erro: 'o servidor não tem um save desta partida' };
+    if (!lido.ok) {
+      this.avisarDeSave(`Você assumiu a sala, mas não deu para retomar a partida: ${lido.erro}`);
+      return;
+    }
+    this.salaDaPartida = { corda: v?.corda ?? 'unido', herois: v?.herois ?? {}, voce: v?.voce };
+    this.donoDaVisao = (c) => v?.herois?.[c.id] === v?.voce;
+    this.prepararPortaDaSala();
+    const r = this.carregarSave(lido.save);
+    if (!r.ok) { this.avisarDeSave(r.erro); return; }
     this.ultimaVistaTexto = null;
+    clearInterval(this.publicador);
     this.publicador = setInterval(() => this.publicarVista(), 250);
     this.publicarVista();
+  }
+
+  /** F6: o posto passou a outro enquanto este navegador estava fora; ele deixa de rodar a partida e passa a assistir. */
+  perderOPostoDaSala(v) {
+    this.encerrarPartidaDaSala();
+    this.menu.fechar();
+    this.partidaRemota.abrir(document.getElementById('app'));
+    this.partidaRemota.atualizarSala(v);
   }
 
   /** Manda a vista se ela mudou desde a última. Só o que o anfitrião vê, e só enquanto há partida. */
@@ -1691,6 +1727,8 @@ class App {
       const r = this.montarSaveAtual({ tipo: 'auto', ...ov });
       const g = r.ok ? this.saves.autosalvar(r.save) : r;
       if (!g.ok) this.avisarDeSave(g.erro);
+      // F6: numa partida de sala o save também vai ao servidor, para quem assumir o posto (se o anfitrião cair) retomar dele.
+      else if (r.ok && this.salaDaPartida) this.menu.enviarCru({ tipo: 'salvar', save: r.save });
       return g;
     } catch (e) {
       this.avisarDeSave(`Não consegui salvar: ${e.message}`);

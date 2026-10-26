@@ -147,5 +147,23 @@ export function tratarNarrativa({ sala, jogadorId, bruto }) {
   return { ok: true, texto: JSON.stringify({ tipo: 'narrativa', msg }) };
 }
 
+/**
+ * F6: o anfitrião manda o SAVE da cena em que está (o autosave de entrada de cena, `game/save.js`), e o servidor o guarda: se o
+ * anfitrião cair, quem assumir retoma dele. `{ tipo: 'salvar', save }`. Só o anfitrião, com a partida iniciada, até `MAX_SAVE`.
+ * O servidor não interpreta o save (quem o abre valida e migra); só confere que tem a cara de um.
+ */
+export const ehSave = (bruto) => typeof bruto === 'string' && /^\s*\{\s*"tipo"\s*:\s*"salvar"/.test(bruto.slice(0, 40));
+export const MAX_SAVE = 400_000;
+export function tratarSave({ sala, jogadorId, bruto }) {
+  if (!sala || sala.fase !== 'iniciada') return { ok: false, erro: 'a partida não está em andamento' };
+  if (sala.anfitriao !== jogadorId) return { ok: false, erro: 'só o anfitrião guarda o jogo da sala' };
+  if (typeof bruto !== 'string' || bruto.length > MAX_SAVE) return { ok: false, erro: 'o save é grande demais' };
+  let m;
+  try { m = JSON.parse(bruto); } catch { return { ok: false, erro: 'save inválido' }; }
+  const s = m?.save;
+  if (!s || typeof s !== 'object' || Array.isArray(s.herois) !== true || !s.herois.length || typeof s.config !== 'object') return { ok: false, erro: 'save inválido' };
+  return { ok: true, texto: JSON.stringify(s) };
+}
+
 /** A mensagem de visão que um jogador recebe (cada um recebe a SUA, com o `voce` dele). */
 export const mensagemDeSala = (sala, jogadorId) => ({ tipo: 'sala', visao: visaoDaSala(sala, jogadorId) });

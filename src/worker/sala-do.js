@@ -14,10 +14,10 @@
 // conexão não recebe nada.
 
 import { DurableObject } from 'cloudflare:workers';
-import { deveFechar, desconectar, MINUTOS_VAZIA } from '../game/sala.js';
+import { deveFechar, desconectar, promoverAnfitriao, GRACA_DO_ANFITRIAO_MS, MINUTOS_VAZIA } from '../game/sala.js';
 import { MAX_VISTA } from '../game/partida-vista.js';
 import {
-  tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, MAX_NARRATIVA, dentroDoLimite, mensagemDeSala, identidade, erro,
+  tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, MAX_NARRATIVA, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, mensagemDeSala, identidade, erro,
   MAX_BYTES, MAX_CONEXOES_POR_SALA, MAX_CONEXOES_POR_JOGADOR,
 } from './sala-servidor.js';
 
@@ -33,6 +33,7 @@ export class SalaDO extends DurableObject {
     this.ultimaGravacao = 0;
     this.ultimaVista = null;     // o texto da última vista da partida (F4); fica só em memória: o anfitrião a refaz em segundos
     this.ultimaVistaEm = 0;
+    this.ultimoSaveEm = 0;
   }
 
   async carregar() {
@@ -91,6 +92,7 @@ export class SalaDO extends DurableObject {
     // A vista da partida (F4) é grande de propósito: tem a sua porta e o seu teto, antes do teto das outras mensagens.
     if (ehVista(mensagem)) { await this.receberVista(ws, anexo, mensagem, agora); return; }
     if (ehNarrativa(mensagem)) { await this.receberNarrativa(ws, anexo, mensagem); return; }
+    if (ehSave(mensagem)) { await this.receberSave(ws, anexo, mensagem, agora); return; }
     if (typeof mensagem !== 'string' || mensagem.length > MAX_BYTES * 2) { try { ws.close(1009, 'mensagem grande demais'); } catch { /* já fechado */ } return; }
 
     // A primeira mensagem diz quem é a conexão; até lá nada mais vale.
@@ -169,6 +171,28 @@ export class SalaDO extends DurableObject {
       if (outro === ws || !outro.deserializeAttachment()?.jogadorId) continue;
       try { outro.send(r.texto); } catch { /* conexão caindo */ }
     }
+  }
+
+  /** O anfitrião mandou o save da cena: guarda o último (sobrevive a o objeto dormir) e, no máximo, um a cada 3 s. */
+  async receberSave(ws, anexo, mensagem, agora) {
+    const jogadorId = anexo.jogadorId;
+    if (!jogadorId) { ws.send(JSON.stringify(erro('identifique-se na primeira mensagem'))); return; }
+    await this.carregar();
+    const teto = this.sala?.anfitriao === jogadorId ? MAX_SAVE + 200 : MAX_BYTES * 2;
+    if (mensagem.length > teto) { try { ws.close(1009, 'save grande demais'); } catch { /* já fechado */ } return; }
+    if (agora - this.ultimoSaveEm < 3000) return;    // um autosave por cena; mais que isso é excesso
+    const r = tratarSave({ sala: this.sala, jogadorId, bruto: mensagem });
+    if (!r.ok) { ws.send(JSON.stringify(erro(r.erro))); return; }
+    this.ultimoSaveEm = agora;
+    await this.ctx.storage.put('saveDaSala', r.texto);
+  }
+
+  /** O posto de anfitrião passou a outro (o antigo caiu): avisa todos com a visão nova e entrega o save a quem assume. */
+  async passarOPosto(novoId) {
+    this.retransmitir();
+    const save = (await this.ctx.storage.get('saveDaSala')) ?? null;
+    this.ultimaVista = null;      // a vista velha é do jogo velho
+    this.enviarAoJogador(novoId, { tipo: 'assumir', save });
   }
 
   /** Quem acaba de entrar (ou voltar) numa partida em andamento recebe a última vista, sem esperar a próxima. */
@@ -256,8 +280,11 @@ export class SalaDO extends DurableObject {
   /** L-12: com a sala vazia, acorda daqui a 30 minutos para fechá-la; com gente, cancela. */
   async reagendar() {
     if (this.sala?.fase === 'fechada') return;
-    const quando = this.sala?.vaziaDesde != null ? this.sala.vaziaDesde + MINUTOS_VAZIA * 60_000 : null;
-    await this.agendar(quando);
+    const prazos = [];
+    if (this.sala?.vaziaDesde != null) prazos.push(this.sala.vaziaDesde + MINUTOS_VAZIA * 60_000);
+    // F6: o anfitrião caído tem uma graça; passada ela, o alarme passa o posto.
+    if (this.sala?.fase === 'iniciada' && this.sala.anfitriaoAusenteDesde != null) prazos.push(this.sala.anfitriaoAusenteDesde + GRACA_DO_ANFITRIAO_MS);
+    await this.agendar(prazos.length ? Math.min(...prazos) : null);
   }
 
   async alarm() {
@@ -270,6 +297,14 @@ export class SalaDO extends DurableObject {
       this.sala = null;
       return;
     }
+    const troca = promoverAnfitriao(this.sala, Date.now());
+    if (troca.ok) {
+      await this.guardar();
+      await this.passarOPosto(troca.novo);
+      await this.reagendar();
+      return;
+    }
+    // Ninguém conectado para assumir: o alarme volta quando a graça tiver passado de novo (ou a sala fecha por vazia).
     if (deveFechar(this.sala, Date.now())) {
       this.sala.fase = 'fechada';
       await this.guardar();

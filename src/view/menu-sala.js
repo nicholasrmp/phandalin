@@ -60,10 +60,17 @@ export function criarTelasDeSala({
             if (!partida || v.fase !== 'iniciada') abrirMenuNaTela('lobby');
           }
         }
+        // F6: o posto de anfitrião mudou de mãos. Quem o PERDEU (voltou depois de cair) passa a só assistir; quem o ganha espera
+        // o `assumir` do servidor, com o save.
+        if (partida && v.fase === 'iniciada' && estado.souAnfitriaoDaPartida === true && v.voce !== v.anfitriao) {
+          estado.souAnfitriaoDaPartida = false;
+          partida.aoPerderOPosto?.(v);
+        }
         // F4: a partida começou. O anfitrião a roda, os outros a veem; o painel "A partida começou" some.
         if (partida && v.fase === 'iniciada') {
           if (!estado.partidaIniciada) {
             estado.partidaIniciada = true;
+            estado.souAnfitriaoDaPartida = v.voce === v.anfitriao;
             fecharMenu();
             partida.aoComecar(v, { souAnfitriao: v.voce === v.anfitriao });
           }
@@ -75,6 +82,7 @@ export function criarTelasDeSala({
       aoNarrativa: atual((msg) => partida?.aoNarrativa?.(msg)),
       aoIntencao: atual((msg) => partida?.aoIntencao?.(msg)),
       aoAviso: atual((texto) => partida?.aoAviso?.(texto)),
+      aoAssumir: atual((save) => { estado.souAnfitriaoDaPartida = true; partida?.aoAssumir?.(save, estado.visao); }),
       aoErro: atual((t) => {
         // Em partida, a recusa do servidor ("esse herói não é seu") é uma frase na tela de quem joga, não no lobby.
         if (estado.partidaIniciada && partida?.aoAviso) { partida.aoAviso(t); return; }
