@@ -1779,7 +1779,9 @@ export class Board {
       // aresta é a fachada de fora. Porta e arco ficam inteiros (o vão precisa de
       // altura para ser vão); o resto perde altura e ganha o topo quebrado.
       const grau = f.paredeRuina?.[i] || (f.inside(ax, ay) ? f.paredeRuina?.[ay * f.w + ax] || 0 : 0);
-      const passagem = cod === ARESTA.porta || cod === ARESTA.aberta;
+      // Uma BRECHA que é entrada é aresta aberta para o motor, mas parede caída para o desenho.
+      const ehBrecha = Boolean(f.brechas?.has(`${x},${y},${lado}`));
+      const passagem = !ehBrecha && (cod === ARESTA.porta || cod === ARESTA.aberta);
       const emRuina = grau > 0 && !passagem;
       const alto = (emRuina ? this.niveisEmRuina(niveisAqui, grau, x, y, lado) : niveisAqui) * LIFT;
       ctx.save();
@@ -1789,7 +1791,7 @@ export class Board {
         || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, this.hover)))) {
         ctx.globalAlpha = TRANSLUCIDO;
       }
-      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y, emRuina ? grau : 0, passagem ? grau : 0, fachadaFechada && passagem);
+      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y, emRuina ? grau : 0, passagem ? grau : 0, fachadaFechada && passagem, ehBrecha);
       ctx.restore();
     }
     // O que está pendurado nas paredes desta casa, por último — e com o
@@ -1843,7 +1845,7 @@ export class Board {
    * (a mesma conta nas duas arestas que o dividem), para a quebra emendar na
    * quina; o do meio é da aresta.
    */
-  perfilDeRuina(lado, x, y, grau, alto, brecha = false) {
+  perfilDeRuina(lado, x, y, grau, alto, brecha = false, total = false) {
     const max = Math.min(alto - 6, [0, 6, 12, 18][grau]);
     const canto = (cx, cy) => (sorteio(cx * 31 + 7, cy * 17 + 3, 5) / 4) * max;
     const [x1, y1] = lado === 'N' ? [x + 1, y] : [x, y + 1];
@@ -1854,6 +1856,8 @@ export class Board {
       // A BRECHA DE VISÃO: o perfil despenca no meio da aresta, até um pé de entulho. Quem está de
       // um lado vê o outro por ali; a regra continua sendo parede (seteira): não se passa.
       const fundo = (k) => Math.round(alto * (0.68 + (sorteio(x * 23 + k * 3, y * 31 + k, 100) / 100) * 0.2));
+      // Entrada (se passa por cima do entulho): o entalhe vai até o chão.
+      if (total) return [Math.round(a), alto - 3, alto - 3, alto - 3, Math.round(b)];
       return [Math.round(a), fundo(1), fundo(2), fundo(3), Math.round(b)];
     }
     return [a, (a + meio(1)) / 2, meio(2), (b + meio(3)) / 2, b].map((v) => Math.round(v));
@@ -1872,7 +1876,9 @@ export class Board {
    * A face usa as faixas de alvenaria do atlas (`art/faces.js`, 22 px por
    * nível), recortadas no paralelogramo da aresta.
    */
-  faceDaParede(ctx, lado, A, B, alto, cod, x, y, grau = 0, grauVao = 0, fechar = false) {
+  faceDaParede(ctx, lado, A, B, alto, cod, x, y, grau = 0, grauVao = 0, fechar = false, brechaAberta = false) {
+    const eBrecha = brechaAberta || cod === ARESTA.seteira;
+    if (brechaAberta) cod = ARESTA.parede;     // desenha como parede, com o entalhe
     // Vão de uma construção que não se vê por dentro: a porta aparece FECHADA, aberta ou não.
     if (fechar) cod = ARESTA.porta;
     const f = this.field;
@@ -1914,7 +1920,7 @@ export class Board {
     ctx.beginPath();
     ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
     // O perfil do alto: reto, ou quebrado quando a parede está em ruína.
-    const quebra = grau ? this.perfilDeRuina(lado, x, y, grau, alto, cod === ARESTA.seteira) : null;
+    const quebra = grau ? this.perfilDeRuina(lado, x, y, grau, alto, eBrecha, brechaAberta) : null;
     const alturaEm = (k) => alto - (quebra ? quebra[k] : 0);
     for (let k = 4; k >= 0; k--) {
       ctx.lineTo(A.x + (B.x - A.x) * (k / 4), A.y + (B.y - A.y) * (k / 4) - alturaEm(k));

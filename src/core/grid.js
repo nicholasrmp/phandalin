@@ -244,6 +244,9 @@ export class Battlefield {
         }
       });
     }
+    // As BRECHAS que são entrada ('x,y,N' ou 'x,y,O'): arestas abertas que o tabuleiro desenha
+    // como parede caída (e não como arco). Só o desenho lê: para o motor são arestas abertas.
+    this.brechas = new Set(paredes?.brechas ?? []);
     // O GRAU DE RUÍNA da construção de cada casa (0 inteira, 1 a 3 cada vez mais
     // caída). Só o tabuleiro lê: troca a pedra da parede e quebra o topo dela.
     if (paredes?.ruina) {

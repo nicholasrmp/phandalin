@@ -1123,8 +1123,22 @@ for _pid, _grau in GRAU_DE_RUINA.items():
         if any(abs(gx - b['x']) + abs(gy - b['y']) < 4 for b in BRECHAS):
             continue
         grade[gy][gx] = 'J'
-        BRECHAS.append({'x': gx, 'y': gy, 'lado': lado, 'predio': _pid})
+        BRECHAS.append({'x': gx, 'y': gy, 'lado': lado, 'predio': _pid, 'passavel': False})
         _feitas += 1
+    # UMA DAS BRECHAS DE CADA CASA VIRA ENTRADA: o trecho caiu inteiro, e se passa por cima do
+    # entulho (terreno dificil nas duas casas do vao: custa o dobro, mas nao fecha). O motor ve uma
+    # aresta aberta; o tabuleiro a desenha como brecha (nao como arco) pelo conjunto `brechas`.
+    for _b in [b for b in BRECHAS if b['predio'] == _pid]:
+        _gx, _gy, _l = _b['x'], _b['y'], _b['lado']
+        _celulas = [(_gx, _gy - 1), (_gx, _gy)] if _l == 'N' else [(_gx - 1, _gy), (_gx, _gy)]
+        if not all(0 <= cx < W and 0 <= cy < H and T[cy][cx] in 'Ldvj,:' for (cx, cy) in _celulas):
+            continue
+        (PN if _l == 'N' else PO)[_gy][_gx] = '/'
+        for (cx, cy) in _celulas:
+            T[cy][cx] = 'x'
+        _b['passavel'] = True
+        break
+print('brechas que sao entrada:', sum(1 for b in BRECHAS if b['passavel']), 'de', len(BRECHAS))
 print('brechas de visao:', len(BRECHAS), {p: sum(1 for b in BRECHAS if b['predio'] == p) for p in GRAU_DE_RUINA if any(b['predio'] == p for b in BRECHAS)})
 
 # -------------------------------------------- decoração pendurada na parede ----
@@ -1889,7 +1903,8 @@ print('teia no chao:', _teia)
 dados = {
     'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO],
                 'alt': [''.join(str(v) for v in l) for l in PA],
-                'ruina': [''.join(str(v) for v in l) for l in PR]},
+                'ruina': [''.join(str(v) for v in l) for l in PR],
+                'brechas': [f"{b['x']},{b['y']},{b['lado']}" for b in BRECHAS if b['passavel']]},
     'terreno': [''.join(l) for l in TE],
     'altura': [''.join(str(v) for v in l) for l in A],
     'luz': [''.join(str(v) for v in l) for l in L],

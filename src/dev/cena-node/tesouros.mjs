@@ -181,3 +181,22 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.equal(naoVeem, 0, 'toda brecha deixa ver');
   ok(`${n} brechas de visão: não se passa por nenhuma, e se vê por todas`);
 }
+
+// --- as brechas que sao ENTRADA: aresta aberta, entulho (terreno dificil) dos dois lados --------------
+{
+  const S = await novaCena(11, { nivel: 3 });
+  const f = S.field;
+  const lista = f.brechas ? [...f.brechas] : [];
+  assert.ok(lista.length >= 8, `ha entradas por brecha (${lista.length})`);
+  let ruins = [];
+  for (const k of lista) {
+    const [x, y, lado] = k.split(',');
+    const X = Number(x), Y = Number(y);
+    const [ox, oy] = lado === 'N' ? [X, Y - 1] : [X - 1, Y];
+    if (!f.passa(X, Y, ox, oy)) ruins.push(`${k}: nao passa`);
+    if (!f.hasLineOfSight({ x: X, y: Y }, { x: ox, y: oy })) ruins.push(`${k}: nao ve`);
+    if (f.tileAt(X, Y) !== 2 || f.tileAt(ox, oy) !== 2) ruins.push(`${k}: sem terreno dificil`);
+  }
+  assert.deepEqual(ruins, [], ruins.join('; '));
+  ok(`${lista.length} brechas-entrada: passam, deixam ver e são entulho (terreno difícil) dos dois lados`);
+}
