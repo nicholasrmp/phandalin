@@ -345,12 +345,12 @@ export const MAPA_ARVORE_TROVAO = {
     "TT,,,,,,,,,,,,,,,,,L&LL,::,,,,,,,,ZZTTTTTTTTbTb::b,,b,&LL,ZZZqZZZZ:,LLLb,,ySSSSSSSSST,,,,TT",
     "TT,,,,,,,,,,,,,,,,,d^LL:::,,,,,,,,,ZTTTbTTTTTTb::,bbT,^LLZZZZZZZZ:::LLd,,,,ySSSSSSSS,y,,TTT",
     "TT,,,,,,,,,,,,,,b,,g^Lj,,::,,b,,,,,::,bTbTTTTb:::bTTT,dLLZZZZZ,ZZ:::LL^,,,,TSSSSSSSSSy,,TTT",
-    "TT,,,,,,,,,,,,,TTT,,,,,,,LL^^^,LLLLxx,,bTTb,::::TbbTT,,b,,ZZZ&,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
+    "TT,,,,,,,,,,,,,TTT,,,,,,,LL^^^,LLLLxx,,bTTb,::::TbbTT,,b,,ZZZK,,::%%%%%%,,bTSSSSSSSSSy,,TTT",
     "TT,,,,,,,,,,,,bTTT,,,,b,,LxxLL,LLLLL::,,TT,:::TTTTTTTb,,b,ZZZLL,,:,,,%%%,,,TSSSSSSSSSb,,TTT",
-    "bT,,,,,,,,,,,bTTTT,,,,,,,LLLLj,L^&jL::,,TTT,::Tb,TTTb,,,b:::,LdL&:%,bb%%,,,TSSSSSSSSTb,,TTT",
+    "bT,,,,,,,,,,,bTTTT,,,,,,,LLLLj,L^&jL::,,TTT,::Tb,TTTb,,,b:::,LLL&:%,bb%%,,,TSSSSSSSSTb,,TTT",
     "TT,,,,,,,,,,,TTTTT,,,,,,,LLLLj,L^zjL::,,TTTTT,:::::TT,,b,::,,LL^^:%Z%%%%,,,TSSSSSSSST,,,TTT",
     "TTb,,,,,,,,,,TTTTTTTTTTbb,,,,,,uLLdL,:,,TTTTbTTT:::,TT,:::,,,jL,,:ZZZ:%Tb,,,ySSSSSS,Tb,,bbT",
-    "TT,,,,,,,,,,,TTTTTTTTTTT,,,,,,,LdLL^,::,TTTTTTTTT,:,Tb:::,bbb^L,:,:%%::TT,,,yyyyyyyyb,,,bTT",
+    "TT,,,,,,,,,,,TTTTTTTTTTT,,,,,,,LdLL^,::,TTTTTTTTT,:,Tb:::,bbb&^,:,:%%::TT,,,yyyyyyyyb,,,bTT",
     "TTT,,,,,,,,,,TTTTTTTTTTTb,,,,,,,,,,,b::ZZb,TTT,T::,Tb:::,bTb,,bb,:%%%%::,,,,,,::::,,,,,,bTT",
     "bTT,,,,,,,,,bTTTTTTTTTTT,,,,b,,,,,b,,ZZ:Z::::::,:::,::,,bTTb,,,,,:,,,,,::,,bTT,,::,,,,,,TTT",
     "TT,,,,,,,,,,TTTTTTTTTTTbTTTTT,,,,,,,bZZ:Tb::::::,,::::,,,TbT,,,,::,,,,,::::ZTT,,,:,,,,,,TTT",
@@ -361,9 +361,9 @@ export const MAPA_ARVORE_TROVAO = {
     ",,,,,,,,,,,,,bTTTTTTTT,,,,,XXL&xLj::,,TTTTT^xLLLLu^L,::,LdL,,,,,,,,,,LL,,,,,,^LLLLL,,,,,bTT",
     ",,,,,,,,,,,,,,,TTTTTTT,,,,,XXLLLdL:::,,,,bb,x$$$,,,,,:,,,,,,bLbmb,,,,Lxx,,,,,L^^&dL,,,,,TTT",
     ",,,,,,,,,,,,,,,TTTTT,,,,,,,X,Lxs^L:::j^djL&$b,ZZ$,$,,,,,,,,,,LLLxxb,,Lj,,,,,,LLLLL&,,,,,bTT",
-    ",,,,,,,,,,,,,,,TTTTT,,,,,TT,,,x,,,:,,LLxKLL,b$ZZL^Ljxx:,,,,,,LLd^bbLmLL,ZZ,,,L&jxLj,,,,,TTT",
+    ",,,,,,,,,,,,,,,TTTTT,,,,,TT,,,x,,,:,,LLx&LL,b$ZZL^Ljxx:,,,,,,LLd^bbLmLL,ZZ,,,L&jxLj,,,,,TTT",
     ",,,,,,,,,,,,,,,TTTT,,,,,,,T,,,,,,,:,,LL^xLLb,b,$L^^LL,::,,,,,LLL%,,L^LLZ,,Z,,,,,x,,,,,,,TTb",
-    ",,,,,,,,,,,,,,,TTT,,,,,,,,T,,,,,,::,,LLLLLLb,,,,dxxLd,::,,bT,,,,,,,LLL^b,,Z,,,,,,,,,,,,,bTT",
+    ",,,,,,,,,,,,,,,TTT,,,,,,,,T,,,,,,::,,LLLLdLb,,,,dxxLd,::,,bT,,,,,,,LLL^b,,Z,,,,,,,,,,,,,bTT",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,LLL^xL,,,,,LLLLL,,:,bTT,,,,,,bdLjL,,,Z,,,,,,,,,,,,,,Tb",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,x,,,,,beL&LL,,:,TTT,,,b,,,,,,,,,,b,,,,,,,,,,,,,TTT",
     ",,,,,,,,,,,,,,T,,,TT,,,,,TT,,,,,,:,,,,,,,,,,,,b,,,,,,,,,b,,,,,,,b,,,,,,b,b,,,,,,,,,,,,,,TTb",
@@ -855,26 +855,28 @@ export const ARVORE_TROVAO = {
     ],
     "culto": [
       {
-        "x": 47,
-        "y": 41
+        "x": 62,
+        "y": 31
       },
       {
-        "x": 51,
-        "y": 43
+        "x": 61,
+        "y": 34
       },
       {
-        "x": 43,
-        "y": 42
+        "x": 61,
+        "y": 32
       },
       {
-        "x": 50,
-        "y": 40
-      }
-    ],
-    "mormesk": [
+        "x": 62,
+        "y": 33
+      },
       {
-        "x": 39,
-        "y": 49
+        "x": 63,
+        "y": 32
+      },
+      {
+        "x": 61,
+        "y": 31
       }
     ],
     "reidoth": [
@@ -1048,23 +1050,22 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
-      "x": 61,
-      "y": 30,
-      "variante": "camaCampo"
-    },
-    {
-      "tipo": "prop",
       "x": 64,
       "y": 32,
-      "variante": "camaCampo",
-      "espelhar": true
+      "variante": "camaCampo"
     },
     {
       "tipo": "prop",
       "x": 61,
       "y": 35,
-      "variante": "mesaPosta",
+      "variante": "camaCampo",
       "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 62,
+      "y": 35,
+      "variante": "mesaPosta"
     },
     {
       "tipo": "prop",
@@ -1129,6 +1130,12 @@ export const ARVORE_TROVAO = {
       "y": 47,
       "variante": "guardaRoupa",
       "espelhar": true
+    },
+    {
+      "tipo": "prop",
+      "x": 40,
+      "y": 46,
+      "variante": "baldeBanco"
     },
     {
       "tipo": "prop",
@@ -1631,9 +1638,9 @@ export const ARVORE_TROVAO = {
       "x": 33,
       "y": 40
     },
-    "bauMormesk": {
-      "x": 40,
-      "y": 46
+    "bauCulto": {
+      "x": 61,
+      "y": 30
     }
   },
   "zonas": {

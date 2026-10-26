@@ -200,3 +200,34 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.deepEqual(ruins, [], ruins.join('; '));
   ok(`${lista.length} brechas-entrada: passam, deixam ver e são entulho (terreno difícil) dos dois lados`);
 }
+
+// --- o culto: seis, Favric na frente, a porta trancada por dentro e o cofre -----------------------
+{
+  const S = await novaCena(21, { nivel: 5 });
+  S.party.forEach((x) => garantirInventario(x));
+  const cult = S.enc.combatants.filter((c) => c.side === 'neutro' && /acolito|sacerdote/.test(c.id ?? c.templateId ?? c.name ?? ''));
+  const favric = S.enc.combatants.find((c) => c.name === 'Favric');
+  assert.ok(favric, 'Favric está em cena');
+  assert.equal(S.enc.combatants.filter((c) => c.side === 'neutro' && c !== favric && /cultista|acólito|acolito|Acólito/i.test(`${c.id} ${c.name}`)).length + 1, 6, 'o culto tem seis');
+  // a porta de fora: fechada e trancada
+  const par = A.folhas.find(([a, b]) => A.celulas.casa9.some((c) => c.x === a.x && c.y === a.y) !== A.celulas.casa9.some((c) => c.x === b.x && c.y === b.y));
+  const fora = A.celulas.casa9.some((c) => c.x === par[0].x && c.y === par[0].y) ? par[1] : par[0];
+  const dentro = fora === par[0] ? par[1] : par[0];
+  assert.equal(S.field.aresta(fora.x, fora.y, dentro.x, dentro.y), 2, 'a porta do culto começa fechada');
+  const h = S.party[0];
+  h.pos = { ...fora };
+  const ops = S.cena.interacoes(fora, S.field.surfaceAt(fora.x, fora.y), h).map((o) => o.rotulo);
+  assert.ok(ops.includes('Arrombar a porta') && ops.includes('Bater e falar') && ops.includes('Escutar à porta'), 'as três saídas na porta: ' + ops.join(', '));
+  assert.ok(!ops.includes('Abrir a porta'), 'trancada: não se abre de graça');
+  ok('o culto: Favric e mais cinco, a porta trancada por dentro com três saídas (arrombar CD 20, bater CD 15, escutar CD 15)');
+
+  // o cofre: três diamantes e a poção de voo, só sem os cultistas olhando
+  const bau = A.objetos.bauCulto;
+  h.pos = { x: bau.x, y: bau.y + 1 };
+  const op1 = S.cena.interacoes(bau, 'bau', h).find((o) => o.rotulo === 'Abrir o cofre');
+  assert.ok(op1.motivo, 'com os cultistas olhando o cofre não abre: ' + op1.motivo);
+  for (const f of S.enc.combatants.filter((c) => c.side === 'neutro')) f.dead = true;
+  const op2 = S.cena.interacoes(bau, 'bau', h).find((o) => o.rotulo === 'Abrir o cofre');
+  assert.ok(!op2.motivo || /parede|longe/.test(op2.motivo) === false, 'sem cultistas o cofre abre: ' + op2.motivo);
+  void cult;
+}

@@ -16,9 +16,8 @@
 //     grupo o expulsa em 8% das lutas no 3º, 20% no 4º e 53% no 5º (morte de
 //     herói: 85%, 57%, 53%). Não é luta difícil, é luta perdida no 3º. A cena
 //     avisa duas vezes na aproximação e oferece quatro saídas na porta;
-//   - o Mormesk, no porão: 0% de derrota, mas um herói morre em 13 a 17% das
-//     lutas. O risco dele não é o grupo, é a pessoa — e é o segundo maior da
-//     vila. Só acorda se mexerem no baú;
+//   - (o Mormesk, que esta fase já teve no porão da casa do beco, é do capítulo da Mina e saiu
+//     daqui; as medições dele ficam no histórico do repositório);
 //   - as aranhas do pomar, três: alguém no chão em 18 a 23% das lutas, um
 //     herói morre em 2 a 5%, 16 a 20% dos PV, quatro rodadas;
 //   - os mortos de cinza da velha guarnição (área 11 do livro): 24% dos PV,
@@ -191,19 +190,20 @@ export function criarArvoreTrovao(app, config) {
   // ver `acordarAranhas` para a medição que decidiu.
   const aranhas = salvo.aranhas ? []
     : ninho.aranhas.map((p, i) => nasce('aranhaGigante', p, 'ABC'[i]));
+  // O CULTO (área 13 do livro): Favric, que fala por eles, e mais cinco. Moram na casa de
+  // esquina, de porta trancada por dentro.
   const cultistas = salvo.culto ? [] : [
-    nasce('sacerdote', ninho.culto[0], 'do culto'),
-    ...ninho.culto.slice(1).map((p, i) => nasce('acolito', p, 'ABC'[i])),
+    nasce('sacerdote', ninho.culto[0]),
+    ...ninho.culto.slice(1).map((p, i) => nasce('acolito', p, 'ABCDE'[i])),
   ];
   const chefeDoCulto = cultistas[0];
-  const mormesk = salvo.mormesk ? null : nasce('wraith', ninho.mormesk[0]);
-  if (mormesk) mormesk.name = 'Mormesk';
+  if (chefeDoCulto) chefeDoCulto.name = 'Favric';
   const dragao = salvo.dragao ? null : nasce('dragaoVerdeJovem', ninho.dragao[0]);
   if (dragao) dragao.name = 'Presa Peçonhenta';
   const reidoth = makeNpc('reidoth', { ...ARVORE_TROVAO.reidoth });
 
   const todosOsBandos = () => [infectados, zumbis, aranhas, cultistas,
-    mormesk ? [mormesk] : [], dragao ? [dragao] : [],
+    dragao ? [dragao] : [],
     ramos1, ramos2, ramos5, ramos12, zumbisCavalo, zumbisFerraria];
 
   // REFORÇOS DO LIVRO: a fazenda de ramos manda dois ramos por cada porta a cada
@@ -437,21 +437,6 @@ export function criarArvoreTrovao(app, config) {
     luta(aranhas.filter((f) => !f.dead));
   }
 
-  /** O Mormesk: só acorda se mexerem no baú. E avisa antes. */
-  async function acordarMormesk() {
-    salvo.mormesk = 'luta';
-    await painel([
-      'O frio não vem do porão: vem do baú. Quando a tampa cede, a penumbra do canto engrossa, junta-se e fica de pé — alto, de ombros largos, vestido num sobretudo que não existe mais.',
-      '— Isto é meu. — A voz sai de baixo d\'água. — Faz trinta anos que é meu.',
-    ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-    // A SURPRESA É DO GRUPO. O frio sai do baú antes de ele se levantar, e
-    // quem está ali tem tempo de recuar um passo e sacar. Medido, sem isso ele
-    // mata um herói em 25% das lutas no 3º nível (até 39% quando o grupo está
-    // todo dentro do porão); com a surpresa, 13 a 17%. Ele continua sendo o
-    // segundo perigo da vila — só deixou de ser uma roleta.
-    luta([mormesk], 'nossa');
-  }
-
   // ------------------------------------------------------ o dragão ----
   // TRÊS AVISOS antes de deixar entrar, e a porta continua aberta para sair.
   // Um dragão verde jovem é 3.900 de XP contra um grupo de 4º nível: não é um
@@ -640,7 +625,7 @@ export function criarArvoreTrovao(app, config) {
       inicio: 'oi',
       nos: {
         oi: {
-          narra: 'A casa de pedra é a mais inteira da vila, com lona nova esticada onde o telhado faltava. Dentro, quatro pessoas de manto verde em volta de uma fogueira, e um altar de pedra empilhada com uma escama do tamanho de um prato em cima.',
+          narra: 'A casa de pedra é a mais inteira da vila, com lona nova esticada onde o telhado faltava. Dentro, seis pessoas de manto verde em volta de uma fogueira, e um altar de pedra empilhada com uma escama do tamanho de um prato em cima.',
           fala: 'Vocês não deviam estar aqui. Este chão é dele agora, e ele não divide.',
           opcoes: [
             { texto: 'Vocês sabem que ele vai comer vocês, não sabem?',
@@ -661,7 +646,7 @@ export function criarArvoreTrovao(app, config) {
         },
         passagem: {
           fala: 'O velho das peles? Anda por aí, falando com mato. Não nos atrapalha, nós não atrapalhamos ele. Sigam, e não entrem na torre.',
-          narra: 'Ele volta a olhar a fogueira, e os outros três fazem o mesmo. A conversa acabou para eles.',
+          narra: 'Ele volta a olhar a fogueira, e os outros cinco fazem o mesmo. A conversa acabou para eles.',
           opcoes: [{ texto: '…', fim: 'sai' }],
         },
         raiva: {
@@ -955,10 +940,6 @@ export function criarArvoreTrovao(app, config) {
       salvo.zumbisFerraria = 'limpo';
       await painel('Os dois caem entre as pinças e o fole furado. Ninguém vai bater ferro nesta bigorna.');
       await darXpDaLuta(total(zumbisFerraria), 'Os mortos da ferraria');
-    } else if (bando.includes(mormesk)) {
-      salvo.mormesk = 'morto';
-      await painel('A coisa se desfaz no meio de um grito que não faz som, e o frio sai do porão de uma vez, como água que escoa.');
-      await darXpDaLuta(valeDoBando([mormesk]), 'O Mormesk');
     } else if (bando.some((f) => cultistas.includes(f))) {
       salvo.culto = 'morto';
       await painel('Os mantos verdes ficam no chão da casa de pedra. A escama no altar continua ali, e continua sendo só uma escama.');
@@ -987,6 +968,21 @@ export function criarArvoreTrovao(app, config) {
   const CHAVE_DE = (a, b) => `${a.x},${a.y},${b.x},${b.y}`;
   const COM_FOLHA = new Set((ARVORE_TROVAO.folhas ?? []).flatMap(([a, b]) => [CHAVE_DE(a, b), CHAVE_DE(b, a)]));
   enc.field.folha = COM_FOLHA;
+
+  // A PORTA DO CULTO (o livro: trancada por dentro). De fora só se entra arrombando (Atletismo
+  // CD 20: a luta começa) ou convencendo Favric a abrir (Persuasão CD 15); escutar à porta (Percepção
+  // CD 15) conta o que há lá dentro. Aberta, vira uma porta como as outras.
+  const PORTA_DO_CULTO = (ARVORE_TROVAO.folhas ?? []).find(([a, b]) => naCasa(a, 'casa9') !== naCasa(b, 'casa9'));
+  const ehPortaDoCulto = (a, b) => Boolean(PORTA_DO_CULTO)
+    && PORTA_DO_CULTO.some((p) => (p.x === a.x && p.y === a.y)) && PORTA_DO_CULTO.some((p) => (p.x === b.x && p.y === b.y));
+  const fecharPortaDoCulto = () => {
+    if (!PORTA_DO_CULTO) return;
+    const [a, b] = PORTA_DO_CULTO;
+    enc.field.porAresta(a.x, a.y, b.x, b.y, salvo.portaCulto === 'trancada' ? ARESTA.porta : ARESTA.aberta);
+    enc.field.versao = (enc.field.versao ?? 0) + 1;
+  };
+  if (!salvo.portaCulto) salvo.portaCulto = salvo.culto ? 'aberta' : 'trancada';
+  if (salvo.portaCulto === 'trancada') fecharPortaDoCulto();
 
   function portasDaCasa(tile) {
     const f = enc.field;
@@ -1031,6 +1027,55 @@ export function criarArvoreTrovao(app, config) {
       : (enc.field.contato(c.pos, tile) ? null : 'tem uma parede no meio'));
 
     for (const { a: ca, b: cb, cod } of portasDaCasa(tile)) {
+      if (salvo.portaCulto === 'trancada' && ehPortaDoCulto(ca, cb)) {
+        // Arrombar: a trave cede, e do outro lado seis mantos verdes se viram.
+        ops.push({
+          rotulo: 'Arrombar a porta', icone: 'acao-empurrar', detalhe: 'Atletismo CD 20',
+          motivo: longe(5) ?? buscas.ja(c, 'arrombarCulto', ca),
+          fazer: async () => {
+            buscas.marcar(c, 'arrombarCulto', ca);
+            const t = teste(c, 'atletismo', 20);
+            if (!t.passou) {
+              await painel('Do outro lado, uma trave de verdade. A porta treme no batente e não cede; lá dentro alguém para de rezar.', { teste: t });
+              return;
+            }
+            salvo.portaCulto = 'arrombada';
+            fecharPortaDoCulto();
+            await painel('A trave parte com um estalo seco e a porta bate na parede. Dentro, seis mantos verdes em volta de uma fogueira se viram ao mesmo tempo, e Favric ergue o bordão.', { teste: t });
+            salvo.culto = null;
+            luta(cultistas.filter((f) => !f.dead));
+          },
+        });
+        // Bater e falar: Favric decide se abre.
+        ops.push({
+          rotulo: 'Bater e falar', icone: 'acao-ajudar', detalhe: 'Persuasão CD 15',
+          motivo: longe(5) ?? buscas.ja(c, 'baterCulto', ca),
+          fazer: async () => {
+            buscas.marcar(c, 'baterCulto', ca);
+            const t = teste(c, 'persuasao', 15);
+            if (!t.passou) {
+              await painel('— Não — diz uma voz, abafada pela madeira. — Aqui dentro não há nada para vocês. Vão embora enquanto podem.', { teste: t });
+              return;
+            }
+            salvo.portaCulto = 'aberta';
+            fecharPortaDoCulto();
+            await painel('Silêncio. Depois a trave raspa, e a porta se abre uma mão. Um olho cansado de quem vigiou a noite toda. — Fale baixo — diz Favric. — Ele escuta.', { teste: t });
+            app.refresh();
+          },
+        });
+        ops.push({
+          rotulo: 'Escutar à porta', icone: 'acao-procurar', detalhe: 'Percepção CD 15',
+          motivo: longe(5) ?? buscas.ja(c, 'escutarCulto', ca),
+          fazer: async () => {
+            buscas.marcar(c, 'escutarCulto', ca);
+            const t = teste(c, 'percepcao', 15);
+            if (!t.passou) { await painel('Madeira grossa, e só. Se há alguém ali, está quieto.', { teste: t }); return; }
+            pista('Seis pessoas rezam juntas atrás da porta da casa de esquina, e uma delas fala por todas.');
+            await painel('Vozes baixas, em uníssono, repetindo a mesma frase. Contando pelas respirações, seis; e uma delas, mais firme, conduz as outras. A reza é para algo que mora na torre.', { teste: t });
+          },
+        });
+        continue;
+      }
       const fechada = cod === ARESTA.porta;
       ops.push({
         rotulo: fechada ? 'Abrir a porta' : 'Fechar a porta',
@@ -1142,16 +1187,19 @@ export function criarArvoreTrovao(app, config) {
       });
     }
 
-    if (sup === 'bau' && mesmo(tile, OBJ.bauMormesk) && !salvo.bau) {
+    // O COFRE DOS CULTISTAS (o livro): três diamantes e uma poção de voo. Os cultistas não o largam
+    // enquanto estão ali: só abre com eles mortos, convencidos a ir ou fora da casa.
+    if (sup === 'bau' && mesmo(tile, OBJ.bauCulto) && !salvo.bauCulto) {
+      const vigiam = cultistas.some((f) => !f.dead && enc.combatants.includes(f));
       ops.push({
-        rotulo: 'Abrir o baú', icone: 'acao-usarObjeto', detalhe: 'o frio vem dele',
-        motivo: alcance(),
+        rotulo: 'Abrir o cofre', icone: 'acao-usarObjeto', detalhe: 'o cofre dos cultistas',
+        motivo: alcance() ?? (vigiam ? 'os cultistas estão olhando' : null),
         fazer: async () => {
-          salvo.bau = true;
-          guardar(c, 'moedaDeOuro', 120);
-          guardar(c, 'moedaDePrata', 300);
-          await painel(`Dentro do baú: ouro (120), prata (300) e um maço de escrituras de terra que não valem nada desde que a vila morreu. ${c.name} guarda o que vale.`);
-          if (mormesk && !salvo.mormesk) await acordarMormesk();
+          salvo.bauCulto = true;
+          guardar(c, 'diamante', 3);
+          guardar(c, 'pocaoDeVoo', 1);
+          await painel(`Dentro do cofre, num pano limpo: três diamantes do tamanho de uma unha e um frasco com um líquido que não assenta, sempre subindo. ${c.name} guarda.`);
+          app.refresh();
         },
       });
     }
@@ -1306,7 +1354,7 @@ export function criarArvoreTrovao(app, config) {
       if (npc === chefeDoCulto) {
         if (fim === 'luta') {
           salvo.culto = null;
-          await painel('Os quatro mantos verdes se abrem ao mesmo tempo, e o que fala por eles começa a rezar alto.');
+          await painel('Os seis mantos verdes se abrem ao mesmo tempo, e Favric começa a rezar alto.');
           luta(cultistas.filter((f) => !f.dead));
         } else if (fim === 'desiste') {
           salvo.culto = 'desistiu';

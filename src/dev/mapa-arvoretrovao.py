@@ -790,12 +790,14 @@ for pid, (solto, parede, _teto) in FUNCAO.items():
             continue
         postos += 1
 
-# O baú de Mormesk, na casa do beco, e o único baú do mapa. A primeira escolha
-# é encostado na parede, longe da porta e fora da sombra da parede da frente; se
-# a casa não tiver tal lugar (a porta mudou de lado), relaxa uma regra de cada vez.
+# O COFRE DOS CULTISTAS (area 13 do livro), na casa de esquina: tres diamantes e uma pocao de voo.
+# E o unico bau desenhado do mapa: a cena abre qualquer `bau` pela coordenada. A primeira escolha
+# e encostado na parede, longe da porta e fora da sombra da parede da frente; se a casa nao tiver
+# tal lugar, relaxa uma regra de cada vez. (O Mormesk, que morava no bau da casa do beco, e do
+# capitulo da Mina: saiu desta fase.)
 _bau_ok = False
 for _rigor in (3, 2, 1, 0):
-    for (x, y) in sorted(INTERIOR['casa12'], key=lambda c: _embaralha(c[0], c[1], 29)):
+    for (x, y) in sorted(INTERIOR['casa9'], key=lambda c: _embaralha(c[0], c[1], 29)):
         if T[y][x] != 'L':
             continue
         if _rigor >= 3 and not _encosta(x, y):
@@ -805,15 +807,15 @@ for _rigor in (3, 2, 1, 0):
         if _rigor >= 1 and _tapado(x, y):
             continue
         T[y][x] = 'K'
-        if _piso_inteiro(INTERIOR['casa12']):
+        if _piso_inteiro(INTERIOR['casa9']):
             _bau_ok = True
-            BAU_MORMESK = {'x': x, 'y': y}
+            BAU_CULTO = {'x': x, 'y': y}
             break
         T[y][x] = 'L'
     if _bau_ok:
         break
 if not _bau_ok:
-    raise SystemExit('ERRO: nao achei onde pôr o baú de Mormesk na casa12')
+    raise SystemExit('ERRO: nao achei onde pôr o cofre dos cultistas na casa9')
 
 # DECALQUES NO CHÃO: o que o abandono deixou. O piso liso só preenche; o
 # decalque conta — cacos dizem que o lugar foi saqueado, musgo que a chuva
@@ -1777,9 +1779,8 @@ NINHOS = {
                      dentro_de=CORPOS['fazenda'] | CORPOS['celeiro']),
     'ramos5': _vagas(_ZONA_MATO_LESTE, 8, 'o mato a leste da fazenda de ramos (área 5)'),
     'ramos12': _vagas(_ZONA_TECELAGEM_SUL, 6, 'os arbustos ao sul da tecelagem (área 12)'),
-    'culto': _vagas(None, 4, 'a loja onde o culto se abriga', dentro_de=CORPOS['loja']),
-    'mormesk': _vagas(None, 1, 'a casa do beco, onde Mormesk ronda',
-                      dentro_de=CORPOS['casa12']),
+    # O livro: Favric e mais cinco, na casa de esquina (a mais inteira da vila, com lona nova no teto).
+    'culto': _vagas(None, 6, 'a casa de esquina, onde o culto se abriga', dentro_de=CORPOS['casa9']),
     'reidoth': _vagas(None, 1, 'o posto do Guarda-Florestal',
                       dentro_de=CORPOS['florestal']),
     'dragao': [{'x': _dragao[0], 'y': _dragao[1]}],
@@ -1928,7 +1929,7 @@ extra = {
     'ninhos': NINHOS,
     'props': [{k: v for k, v in p.items() if k != '_pid'} for p in PROPS],
     'pisos': PISOS,
-    'objetos': {**OBJETOS_ESCONDIDOS, 'bauMormesk': BAU_MORMESK},
+    'objetos': {**OBJETOS_ESCONDIDOS, 'bauCulto': BAU_CULTO},
     'zonas': {'matoLeste': _ZONA_MATO_LESTE, 'tecelagemSul': _ZONA_TECELAGEM_SUL},
     'predios': CAIXAS,
     # As casas de cada cômodo: o tabuleiro dissolve a parede da sala em que o

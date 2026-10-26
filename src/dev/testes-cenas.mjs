@@ -545,8 +545,7 @@ teste('cada criatura de Árvore Trovão nasce em casa livre e alcançável', () 
     ramos5: Array(8).fill('galhoInfectado'),
     ramos12: Array(6).fill('galhoInfectado'),
     aranhas: ['aranhaGigante', 'aranhaGigante'],
-    culto: ['sacerdote', 'acolito', 'acolito', 'acolito'],
-    mormesk: ['wraith'],
+    culto: ['sacerdote', 'acolito', 'acolito', 'acolito', 'acolito', 'acolito'],
     dragao: ['dragaoVerdeJovem'],
   };
   const postos = [];
@@ -581,6 +580,7 @@ teste('cada bando do livro nasce DENTRO do prédio que o livro lhe dá, ou na fr
   cada('zumbis', ['guarda']);
   cada('zumbisCavalo', ['estalagem']);
   cada('zumbisFerraria', ['ferraria']);
+  cada('culto', ['casa9']);
   cada('ramos1', ['casa7']);
   cada('ramos2', ['fazenda', 'celeiro']);
   // O mato (áreas 5 e 12) nasce na franja de fora, não dentro da casa: o livro os
@@ -606,10 +606,11 @@ teste('os dois objetos escondidos (baú da cabana, caixa da herborista) têm cas
     assert.ok(!f.blocksMove(pos.x, pos.y), `casa escondida bloqueada (${pos.x},${pos.y})`);
     assert.ok(!ocupadas.has(`${pos.x},${pos.y}`), `um bando nasce em cima do objeto escondido (${pos.x},${pos.y})`);
   }
-  // O baú de Mormesk é o ÚNICO baú desenhado: a cena abre qualquer `bau` pela coordenada.
+  // O cofre dos cultistas é o ÚNICO baú desenhado: a cena abre qualquer `bau` pela coordenada.
   const baus = [];
   for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (f.surfaceAt(x, y) === 'bau') baus.push(`${x},${y}`);
-  assert.deepEqual(baus, [`${O.bauMormesk.x},${O.bauMormesk.y}`], 'só o baú de Mormesk está desenhado no começo');
+  assert.deepEqual(baus, [`${O.bauCulto.x},${O.bauCulto.y}`], 'só o cofre dos cultistas está desenhado no começo');
+  assert.ok(noPredio(O.bauCulto, 'casa9'), 'o cofre fica na casa de esquina, com os cultistas');
 });
 
 teste('o grupo de Árvore Trovão nasce em casa livre, alcançável, e longe da saída', () => {

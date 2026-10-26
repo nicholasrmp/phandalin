@@ -19,6 +19,14 @@ export const CEN = {
   zumbis: entrarEm('guarda', 'zumbis'),
   zumbisCavalo: entrarEm('estalagem', 'zumbisCavalo'),
   zumbisFerraria: entrarEm('ferraria', 'zumbisFerraria'),
+  // O CULTO: a luta que Favric começa quando a conversa azeda (ou a porta cede): o grupo junto da
+  // casa de esquina, e `depoisDaConversa` dispara a luta como na cena de verdade.
+  culto: async (S, o) => {
+    colocar(S, { goal: c(A.ninhos.culto[0]), rect: A.predios.casa9, margem: o.margem ?? 4 });
+    const favric = S.enc.combatants.find((x) => x.name === 'Favric');
+    await S.cena.depoisDaConversa(favric, 'luta');
+    return !S.cena.explorando;
+  },
   ramos2: entrarEm(['fazenda', 'celeiro'], 'ramos2'),
   ramos5: entrarEm('casa20', 'ramos5'),
   ramos12: entrarEm('tecelagem', 'ramos12'),

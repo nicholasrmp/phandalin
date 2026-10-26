@@ -68,6 +68,10 @@ export const PHANDELVER_ITEMS = {
   colarDeMirna: nomeado('colarDeMirna', 'Colar de esmeralda', 'incomum',
     'Colar de ouro fino com um pingente de esmeralda. Foi da família Dendrar, e a Mirna o escondeu numa caixa quando a vila morreu.',
     { tipo: 'maravilhoso', peso: 0, valor: 200 }),
+  // O cofre dos cultistas (área 13 do livro): três diamantes e uma poção de voo. 50 po cada.
+  diamante: nomeado('diamante', 'Diamante', 'incomum',
+    'Pedra clara e dura, lapidada com capricho. Quem a deixou no cofre sabia o que valia.',
+    { tipo: 'tesouro', pilha: true, peso: 0, valor: 50 }),
   // Os cálices do mago morto, no baú da torre (60 po cada).
   caliceDeSelenita: nomeado('caliceDeSelenita', 'Cálice de prata com selenita', 'comum',
     'Cálice de prata com uma pedra leitosa engastada na base. O mago que morreu na torre colecionava.',
