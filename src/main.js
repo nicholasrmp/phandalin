@@ -13,6 +13,7 @@ import { WEAPONS } from './rules/equipment.js';
 import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
 import { montarCampo } from './game/campo.js';
 import { cordaPermite } from './game/corda.js';
+import { heroisDoPiloto, jogadaDoPiloto } from './game/piloto.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
 import { fotografar, emTexto, empacotarEvento, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarPartidaTela } from './view/partida-tela.js';
@@ -222,7 +223,15 @@ class App {
         partida: {
           aoComecar: (v, { souAnfitriao }) => (souAnfitriao ? this.comecarPartidaDaSala(v) : this.partidaRemota.abrir(document.getElementById('app'))),
           aoVista: (vista) => this.partidaRemota.vista(vista),
-          aoSala: (v) => this.partidaRemota.atualizarSala(v),
+          aoSala: (v) => {
+            this.partidaRemota.atualizarSala(v);
+            // F6.2: quem roda a partida acompanha quem está presente; se o dono de um herói caiu, o piloto joga por ele.
+            if (this.salaDaPartida && v.voce === v.anfitriao) {
+              this.salaDaPartida.visao = v;
+              this.salaDaPartida.herois = v.herois;
+              this.pilotoDaSala();
+            }
+          },
           aoNarrativa: (msg) => this.partidaRemota.narrativa(msg),
           aoIntencao: (m) => (m.tipo === 'agir' ? this.aplicarIntencao(m) : this.receberResposta(m)),
           aoAviso: (texto) => this.partidaRemota.avisar(texto),
@@ -553,6 +562,38 @@ class App {
     this.refresh();
   }
 
+  /**
+   * F6.2: o piloto automático da sala. Os heróis de quem caiu (e os que o anfitrião pôs no piloto) atacam o inimigo mais perto
+   * com a arma na mão e terminam o turno, para o grupo não esperar por quem não está. Só na vez do grupo, em luta; quando o dono
+   * volta, o herói é dele de novo na hora (a visão da sala decide a cada passo, não uma lista guardada).
+   */
+  async pilotoDaSala() {
+    if (this._pilotando || !this.salaDaPartida?.visao) return;
+    const enc = this.enc;
+    if (!enc || enc.over || enc.side !== 'party' || this.capitulo?.explorando) return;
+    if (!heroisDoPiloto(this.salaDaPartida.visao).size) return;
+    this._pilotando = true;
+    const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    const continua = () => this.enc === enc && !enc.over && enc.side === 'party' && !this.capitulo?.explorando && this.salaDaPartida;
+    try {
+      for (const id of [...heroisDoPiloto(this.salaDaPartida.visao)]) {
+        // Narrativa aberta ou cena andando: espera um pouco, sem prender o piloto para sempre.
+        for (let i = 0; i < 40 && continua() && (narrativaAberta() || this.busy); i++) await espera(300);
+        if (!continua() || !heroisDoPiloto(this.salaDaPartida.visao).has(id)) continue;
+        const c = enc.combatants.find((h) => h.id === id && h.side === 'party');
+        if (!c) continue;
+        const jogada = jogadaDoPiloto(c, enc.combatants);
+        if (jogada.tipo === 'atacar') {
+          this.tryAttack(c, jogada.alvo, jogada.arma);
+          await espera(this.walkWaitMs + 900);
+        }
+        if (continua() && !c.acted && !c.dead && c.hp > 0) { this.terminarTurnoDe(c); await espera(700); }
+      }
+    } finally {
+      this._pilotando = false;
+    }
+  }
+
   /** A resposta do líder a uma narrativa aberta: acorda a porta compartilhada que esperava por ela. */
   receberResposta({ id, indice, continuar }) {
     this.esperasDeResposta?.get(id)?.(continuar ? { continuar: true } : { indice });
@@ -864,6 +905,7 @@ class App {
           queueMicrotask(() => this.runFoes());
         } else {
           this.select(this.firstActive());
+          queueMicrotask(() => this.pilotoDaSala());
           // Invocados em "agir sozinho" jogam o turno deles, sem pedir nada.
           if (this.enc.combatants.some((x) => x.invocado?.auto && x.side === 'party' && !x.acted)) queueMicrotask(() => this.runInvocadosAuto());
         }

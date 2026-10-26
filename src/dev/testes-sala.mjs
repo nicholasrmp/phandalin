@@ -19,6 +19,7 @@ import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
+import { heroisDoPiloto, inimigoMaisPerto, jogadaDoPiloto } from '../game/piloto.js';
 import { acaoRemotaValida, tilesValidos, circuloValido, magiaNaHora, escolheVarios, mandaNaHora } from '../game/acoes.js';
 import { getSpell } from '../rules/spells.js';
 import { visaoDoGrupo } from '../rules/luz.js';
@@ -1016,6 +1017,35 @@ teste('F5.2: o que o convidado manda na hora e o que espera um alvo é a MESMA r
   assert.equal(magiaNaHora({ kind: 'buff', rangeFt: 30 }, false), false);
   assert.equal(magiaNaHora({ kind: 'lamina' }, false), true); assert.equal(magiaNaHora({ kind: 'lamina' }, true), false, 'lâmina já ativa pede alvo');
   assert.equal(escolheVarios({ kind: 'raios' }), true); assert.equal(escolheVarios({ kind: 'save', alvos: 3 }), true); assert.equal(escolheVarios({ kind: 'save' }), false);
+});
+
+teste('F6.2: o piloto joga os heróis de quem caiu e os postos no piloto, nunca os do anfitrião nem os de quem está presente', () => {
+  const s = salaIniciada();
+  const eu = (para) => visaoDaSala(s, para);
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))], [], 'todos presentes: nada para o piloto');
+  desconectar(s, BETO, 5000);
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))].sort(), ['pc-clerigo', 'pc-mago'], 'os dois do Beto');
+  assert.deepEqual([...heroisDoPiloto(eu(BETO))], [], 'os heróis do anfitrião presente não vão para o piloto, de onde quer que se olhe')
+  assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto' }, 9000).ok);
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))], [], 'o dono voltou: os heróis são dele de novo');
+  s.herois['pc-ladino'] = 'piloto';
+  assert.deepEqual([...heroisDoPiloto(eu(ANF))], ['pc-ladino'], 'o que o anfitrião mandou para o piloto também');
+  assert.deepEqual([...heroisDoPiloto(null)], []);
+});
+
+teste('F6.2: a jogada do piloto: ataca o inimigo vivo mais perto com a arma na mão; sem alvo, arma ou ação, só termina o turno', () => {
+  const h = (id, x, y, extra = {}) => ({ id, side: 'party', pos: { x, y }, hp: 8, dead: false, acted: false, actionUsed: false, equippedWeapon: 'espadaLonga', ...extra });
+  const g = (id, x, y, extra = {}) => ({ id, side: 'foes', pos: { x, y }, hp: 7, dead: false, ...extra });
+  const heroi = h('pc-guerreiro', 5, 5);
+  const todos = [heroi, g('goblin-2', 9, 5), g('goblin-1', 7, 5), g('goblin-3', 7, 5), g('morto', 6, 5, { dead: true, hp: 0 })];
+  assert.equal(inimigoMaisPerto(heroi, todos).id, 'goblin-1', 'o mais perto; no empate, o de menor id; o morto não conta');
+  assert.deepEqual(jogadaDoPiloto(heroi, todos), { tipo: 'atacar', alvo: todos[2], arma: 'espadaLonga' });
+  assert.equal(jogadaDoPiloto(h('x', 0, 0, { equippedWeapon: null }), todos).tipo, 'terminar', 'sem arma na mão');
+  assert.equal(jogadaDoPiloto(h('x', 0, 0, { actionUsed: true }), todos).tipo, 'terminar', 'a ação já foi usada');
+  assert.equal(jogadaDoPiloto(heroi, [heroi]).tipo, 'terminar', 'sem inimigo');
+  assert.equal(jogadaDoPiloto(h('x', 0, 0, { acted: true }), todos).tipo, 'nada', 'já terminou o turno');
+  assert.equal(jogadaDoPiloto(h('x', 0, 0, { hp: 0 }), todos).tipo, 'nada', 'caído não joga');
+  assert.equal(inimigoMaisPerto(heroi, [heroi]), null);
 });
 
 teste('F6: o anfitrião caído passa o posto, depois da graça, ao primeiro conectado; quem volta antes não perde nada', () => {
