@@ -25,11 +25,13 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
   const canvas = el('canvas', { class: 'board', 'aria-label': 'A partida' });
   const quadro = el('div', { class: 'board-wrap taverna-quadro' }, canvas);
   const titulo = el('span', { class: 'partida-titulo' }, 'Partida');
+  const fase = el('span', { class: 'partida-fase' });
   const aviso = el('p', { class: 'taverna-aviso visivel', role: 'status' }, 'Esperando o anfitrião mostrar a partida…');
   const grupo = el('ul', { class: 'taverna-jogadores', 'aria-label': 'Quem joga com quem' });
+  const terminar = el('button', { class: 'menu-btn primario', hidden: true, onclick: () => { audio.play('click'); if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id }); } }, 'Terminar turno do herói');
   const camada = el('div', { class: 'taverna partida', role: 'region', 'aria-label': 'Partida' },
-    el('header', { class: 'taverna-topo' }, el('div', { class: 'taverna-sala' }, titulo), grupo,
-      el('div', { class: 'taverna-acoes' }, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
+    el('header', { class: 'taverna-topo' }, el('div', { class: 'taverna-sala' }, titulo, fase), grupo,
+      el('div', { class: 'taverna-acoes' }, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
     quadro, aviso);
 
   let aberta = false;
@@ -70,8 +72,13 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
     if (noLugar && meus().includes(noLugar)) { selecionado = noLugar; audio.play('click'); destacar(); return; }
     if (!selecionado || !meus().includes(selecionado)) { selecionado = meus()[0] ?? null; destacar(); }
     if (!selecionado) { aviso.textContent = 'Você não tem nenhum herói em campo.'; aviso.classList.add('visivel'); return; }
-    if (noLugar) return;
     aviso.classList.remove('visivel');
+    // F5: clicar num inimigo é atacar com a arma na mão; o anfitrião confere alcance e ação e diz por que não deu.
+    if (noLugar && noLugar.side !== 'party' && !noLugar.dead && noLugar.hp > 0) {
+      enviar({ tipo: 'agir', acao: 'atacar', heroi: selecionado.id, alvo: noLugar.id, arma: selecionado.equippedWeapon ?? null });
+      return;
+    }
+    if (noLugar) return;
     enviar({ tipo: 'agir', acao: 'mover', heroi: selecionado.id, x: t.x, y: t.y });
   }
 
@@ -112,8 +119,16 @@ export function criarPartidaTela({ aoSair, enviar = () => false }) {
       const pub = visaoDaSala?.herois?.[id];
       return visaoDaSala?.jogadores?.find((j) => j.id === pub)?.nome ?? (pub ? 'Piloto automático' : '');
     };
-    grupo.replaceChildren(...herois.map((c) => el('li', { class: 'taverna-jogador' },
-      el('span', {}, `${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV`))));
+    const emLuta = Boolean(enc) && !enc.combatants.every((c) => c.side === 'party');
+    grupo.replaceChildren(...herois.map((c) => {
+      const meu = dono(c.id) && visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce;
+      // Em luta, o herói mostra o que ainda tem no turno: a marca ► é o que o próximo clique move.
+      const turno = emLuta && enc.side === 'party' ? (c.acted ? ' · turno encerrado' : ` · ação ${c.actionUsed ? 'usada' : 'livre'}, ${Math.max(0, c.movementLeftFt ?? 0)} ft`) : '';
+      return el('li', { class: 'taverna-jogador' },
+        el('span', {}, `${meu && c === selecionado ? '► ' : ''}${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV${meu ? turno : ''}`));
+    }));
+    terminar.hidden = !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
+    fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo` : 'Vez dos inimigos') : '';
   }
 
   function receber(bruto) {

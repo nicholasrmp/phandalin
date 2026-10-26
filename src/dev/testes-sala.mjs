@@ -906,7 +906,17 @@ teste('F4.3: agir: o servidor só repassa o passo de quem é DONO do herói, com
   assert.equal(JSON.stringify(visaoDaSala(s, ANF)), antes, 'agir não mexe no estado da sala');
   deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-guerreiro', x: 7, y: 9 }), /não é seu/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'xx', x: 7, y: 9 }), /não é seu/);
-  deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', x: 7, y: 9 }), /desconhecida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'dancar', heroi: 'pc-mago', x: 7, y: 9 }), /desconhecida/);
+  // F5: atacar leva o id do alvo (e a arma, se houver); terminar só o herói.
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', alvo: 'goblin-1', arma: 'cajado' }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'atacar', alvo: 'goblin-1', arma: 'cajado' });
+  assert.equal(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', alvo: 'goblin-1' }).repassar.arma, null);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago' }), /alvo inválido/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', alvo: 7 }), /alvo inválido/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', alvo: 'g', arma: 7 }), /arma inválida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-guerreiro', alvo: 'goblin-1' }), /não é seu/);
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'terminar', heroi: 'pc-clerigo' }).repassar, { tipo: 'agir', de: 'p2', heroi: 'pc-clerigo', acao: 'terminar' });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'terminar', heroi: 'pc-guerreiro' }), /não é seu/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: -1, y: 9 }), /inexistente/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 1.5, y: 9 }), /inexistente/);
   deve(faz(s, ANF, { tipo: 'agir', acao: 'mover', heroi: 'pc-guerreiro', x: 7, y: 9 }), /própria tela/);

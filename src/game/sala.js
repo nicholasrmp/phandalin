@@ -25,6 +25,9 @@ import {
 
 export const VERSAO_DA_SALA = 1;
 
+/** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
+export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar'];
+
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
 export const HEROIS_JOGAVEIS = [
   'pc-guerreiro', 'pc-ladino', 'pc-clerigo', 'pc-mago', 'pc-barbaro', 'pc-druida',
@@ -338,11 +341,20 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     case 'agir': {
       if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');
       if (jogadorId === sala.anfitriao) return recusa('o anfitrião age pela própria tela');
-      if (mensagem.acao !== 'mover') return recusa('ação desconhecida');
+      if (!ACOES_DA_PARTIDA.includes(mensagem.acao)) return recusa('ação desconhecida');
       if (!heroiValido(mensagem.heroi) || sala.herois[mensagem.heroi] !== jogadorId) return recusa('esse herói não é seu');
+      const base = { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: mensagem.acao };
+      if (mensagem.acao === 'terminar') return ok({ igual: true, repassar: base });
+      if (mensagem.acao === 'atacar') {
+        // F5: o alvo vai pelo id do combatente, e a arma (opcional) pelo id dela; o anfitrião confere o resto (alcance, ação).
+        const { alvo, arma = null } = mensagem;
+        if (typeof alvo !== 'string' || !alvo || alvo.length > 40) return recusa('alvo inválido');
+        if (arma !== null && (typeof arma !== 'string' || !arma || arma.length > 40)) return recusa('arma inválida');
+        return ok({ igual: true, repassar: { ...base, alvo, arma } });
+      }
       const { x, y } = mensagem;
       if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x > 400 || y > 400) return recusa('casa inexistente');
-      return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: 'mover', x, y } });
+      return ok({ igual: true, repassar: { ...base, x, y } });
     }
     case 'resposta': {
       if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');

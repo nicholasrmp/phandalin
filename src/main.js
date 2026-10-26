@@ -397,7 +397,7 @@ class App {
    */
   comecarPartidaDaSala(v) {
     const ids = Object.keys(v.herois);
-    this.salaDaPartida = { corda: v.corda ?? 'unido' };
+    this.salaDaPartida = { corda: v.corda ?? 'unido', herois: v.herois, voce: v.voce };
     this.donoDaVisao = (c) => v.herois[c.id] === v.voce;
     // A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20).
     this.esperasDeResposta = new Map();
@@ -445,18 +445,39 @@ class App {
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, x, y }) {
-    if (!this.enc || this.enc.over || this.busy || this.enc.side !== 'party') return;
-    if (this.ficha?.estaAberta() || narrativaAberta() || !this.capitulo?.explorando) return;
+  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma }) {
+    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    if (!this.enc || this.enc.over) return;
+    if (this.ficha?.estaAberta() || narrativaAberta()) { avisar('espere a narrativa terminar'); return; }
+    if (this.busy) { avisar('um instante: a cena ainda está se mexendo'); return; }
+    if (this.enc.side !== 'party') { avisar('não é a vez do grupo'); return; }
     const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
-    if (!c || acao !== 'mover') return;
+    if (!c) return;
+    const emCombate = !this.capitulo?.explorando;
+    if (emCombate && c.acted) { avisar(`${c.name} já terminou o turno`); return; }
+
+    // F5: a fase do grupo é simultânea. Cada jogador age com os SEUS heróis, em qualquer ordem, e o motor já aceita isso:
+    // cada herói termina o turno sozinho, e a vez passa aos inimigos quando o último termina.
+    if (acao === 'terminar') {
+      if (!emCombate) { avisar('só se termina o turno numa luta'); return; }
+      this.terminarTurnoDe(c);
+      return;
+    }
+    if (acao === 'atacar') {
+      if (!emCombate) { avisar('não há ninguém para atacar'); return; }
+      const t = this.enc.combatants.find((h) => h.id === alvo && h.side !== 'party' && !h.dead && h.hp > 0);
+      if (!t) { avisar('esse alvo não está mais lá'); return; }
+      this.tryAttack(c, t, arma ?? c.equippedWeapon);   // recusa pelo `refuse`, que avisa o dono do herói
+      return;
+    }
+    if (acao !== 'mover') return;
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(x, y));
-    if (!node || node.cost === 0) return;
+    if (!node || node.cost === 0) { if (emCombate) avisar('não dá para chegar lá com o movimento que sobra'); return; }
     const corda = this.cordaImpede(c, { x, y });
-    if (corda) { this.menu.enviarCru({ tipo: 'aviso', para: de, texto: corda }); return; }
+    if (corda) { avisar(corda); return; }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, { x, y }));
-    this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+    if (!emCombate) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
     this.refresh();
   }
 
@@ -1021,6 +1042,9 @@ class App {
    */
   refuse(actor, why) {
     this.recusa = why;
+    // F5: o herói é de outro jogador: ele também precisa saber por que não deu.
+    const dono = this.salaDaPartida?.herois?.[actor.id];
+    if (dono && dono !== this.salaDaPartida.voce) this.menu.enviarCru({ tipo: 'aviso', para: dono, texto: why });
     this.board?.floatText(actor.pos, '✖', '#ffb04a');
     audio.play('deny');
     this.refresh();
@@ -1054,7 +1078,7 @@ class App {
       const r = enc.attackAction(c, target, weaponId);
       this.mode = null;
       if (!r.ok) { this.refuse(c, r.why); return; }
-      this.afterAct();
+      this.afterAct(c);
       return;
     }
 
@@ -1080,7 +1104,7 @@ class App {
       this.afterWalk(() => {
         const r = enc.attackAction(c, target, weaponId);
         if (!r.ok) this.refuse(c, r.why);
-        else this.afterAct();
+        else this.afterAct(c);
       });
       return;
     }
@@ -1294,21 +1318,30 @@ class App {
     return `${s.name}${circ} — clique no ${this.enc.miraAliados(s) ? 'aliado' : 'alvo'}`;
   }
 
-  afterAct() {
-    const c = this.selected;
+  /** `quem`: o herói que agiu (F5: pode ser de outro jogador, e então não é o selecionado do anfitrião). */
+  afterAct(quem = this.selected) {
+    const c = quem;
     // Terminou tudo que podia? passa para o próximo automaticamente.
     if (c && c.actionUsed && c.bonusUsed && c.movementLeftFt <= 0) this.enc.endTurn(c);
-    if (c?.acted) this.select(this.firstActive());
+    if (c?.acted && c === this.selected) this.select(this.firstActive());
     this.refresh();
   }
 
   endTurn() {
     const c = this.selected;
     if (!c || this.enc.side !== 'party' || this.capitulo?.explorando) return;
-    // Terminar o turno do dono encerra também os invocados dele (os "sozinhos" jogam antes).
     this.selected = null;
+    this.terminarTurnoDe(c);
+  }
+
+  /**
+   * Termina o turno de UM herói (o do clique do anfitrião, ou o pedido de outro jogador, F5). Terminar o turno do dono
+   * encerra também os invocados dele (os "sozinhos" jogam antes). Quando o último do grupo termina, o motor passa a vez.
+   */
+  terminarTurnoDe(c) {
+    if (!c || this.enc.side !== 'party' || this.capitulo?.explorando) return;
     encerrarTurnoComInvocados(this.enc, c, { delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() }).then(() => {
-      if (this.enc.side === 'party') this.select(this.firstActive());
+      if (this.enc.side === 'party' && (!this.selected || this.selected.acted)) this.select(this.firstActive());
       this.refresh();
     });
   }
