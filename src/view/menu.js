@@ -1,7 +1,10 @@
 // O menu: a primeira coisa que o jogador vê, e o caminho até o tabuleiro.
 //
-//   principal  Continuar (se há partida) · Jogar solo · Multijogador (em
-//              breve) · Opções · Créditos · Sair
+//   principal  Continuar (a partida, ou o save mais recente) · Jogar solo ·
+//              Carregar jogo · Salvar jogo (só em lugar seguro) · Multijogador
+//              (em breve) · Opções · Créditos · Sair
+//   carregar   os slots guardados, abrir arquivo, exportar, apagar
+//   salvar     os três slots manuais
 //   jogar      Campanha ou Arena de testes
 //   campanha   as aventuras publicadas; só a Mina Perdida de Phandelver joga
 //   grupo      quem vai na carroça: quatro dos doze heróis prontos
@@ -24,6 +27,7 @@ import { AVENTURAS } from '../game/aventuras.js';
 import { criarTelasDeHerois } from './menu-herois.js';
 import { audio } from '../core/audio.js';
 import { criarFundo } from './menu-fundo.js';
+import { SLOTS_MANUAIS, resumoDoSave, paraArquivo, nomeDoArquivo, deArquivo } from '../game/save.js';
 // O logotipo: gerado no OpenArt (Nano Banana Pro) sobre magenta e recortado
 // por `dev/recortar-logo.py`. Ganhou do candidato do Ideogram por ler melhor
 // sobre o fundo escuro: ouro quente em vez de latão oliva.
@@ -53,7 +57,11 @@ const ARENA = [
 // (ver `audio.tocarMusica`): sem ele o menu abre calado, como sempre abriu.
 const MUSICA_DO_TITULO = `${import.meta.env?.BASE_URL ?? '/'}musica/vincere-vel-mori.mp3`;
 
-export function criarMenu(root, { onIniciar, temPartida }) {
+export function criarMenu(root, {
+  onIniciar, temPartida,
+  // Save e carregar (`game/save.js`): sem `saves`, o menu é o de antes.
+  saves = null, onCarregar = null, podeSalvar = () => false, onSalvar = null,
+}) {
   const camada = el('div', { class: 'menu', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Menu' });
   const fundoHost = el('div', { class: 'menu-fundo' });
   const palco = el('div', { class: 'menu-palco' });
@@ -140,13 +148,14 @@ export function criarMenu(root, { onIniciar, temPartida }) {
     const conteudo = TELAS[tela](dados);
     palco.replaceChildren(titulo ? conteudo : el('div', { class: 'menu-quadro' }, conteudo));
     // Foco no primeiro botão: o menu inteiro anda no teclado.
-    palco.querySelector('button:not([disabled])')?.focus();
+    (palco.querySelector('button[data-foco]') ?? palco.querySelector('button:not([disabled])'))?.focus();
   }
 
-  const botao = (rotulo, onclick, { primario = false, desabilitado = false, dica = null } = {}) => el('button', {
+  const botao = (rotulo, onclick, { primario = false, desabilitado = false, dica = null, foco = false } = {}) => el('button', {
     class: `menu-btn${primario ? ' primario' : ''}`,
     disabled: desabilitado,
     title: dica,
+    'data-foco': foco ? '1' : null,
     onclick: () => { audio.play('click'); onclick(); },
   }, rotulo);
 
@@ -172,16 +181,25 @@ export function criarMenu(root, { onIniciar, temPartida }) {
     el('h2', {}, titulo), sub && el('p', {}, sub));
 
   const TELAS = {
-    principal: () => el('div', { class: 'menu-coluna' },
+    principal: () => {
+      const guardados = saves ? saves.listar() : [];
+      const recente = guardados.find((r) => r.save) ?? null;
+      return el('div', { class: 'menu-coluna' },
       logo(),
       el('nav', { class: 'menu-itens', 'aria-label': 'Menu principal' },
         temPartida() && item('Continuar', fechar, { destaque: true }),
-        item('Jogar solo', () => ir('jogar'), { destaque: !temPartida() }),
+        // S-01: sem partida na memória, "Continuar" abre o save mais recente.
+        !temPartida() && recente && item('Continuar', () => carregarSlot(recente.slot),
+          { destaque: true, etiqueta: resumoDoSave(recente.save) }),
+        item('Jogar solo', () => ir('jogar'), { destaque: !temPartida() && !recente }),
+        saves && item('Carregar jogo', () => ir('carregar'), { desabilitado: !guardados.length }),
+        saves && temPartida() && podeSalvar() && item('Salvar jogo', () => ir('salvar')),
         item('Multijogador', () => {}, { desabilitado: true, etiqueta: 'em breve' }),
         item('Opções', () => ir('opcoes')),
         item('Créditos', () => ir('creditos')),
         item('Sair', () => ir('sair'))),
-      el('p', { class: 'menu-versao' }, 'Protótipo · regras da 5ª edição')),
+      el('p', { class: 'menu-versao' }, 'Protótipo · regras da 5ª edição'));
+    },
 
     jogar: () => el('div', {},
       cabecalho('Jogar solo', 'Você controla o grupo inteiro.'),
@@ -227,6 +245,23 @@ export function criarMenu(root, { onIniciar, temPartida }) {
         el('div', { class: 'menu-rodape' }, voltarBtn()));
     },
 
+    carregar: (dados) => {
+      const lista = saves.listar();
+      return el('div', {},
+        cabecalho('Carregar jogo', 'Guardado neste navegador. O combate não se guarda: cada save volta ao começo da cena.'),
+        recadoDe(dados),
+        el('ul', { class: 'menu-saves' },
+          lista.length ? lista.map(linhaDeSave) : el('li', { class: 'menu-save vazio' }, 'Nenhum jogo guardado ainda.')),
+        el('div', { class: 'menu-rodape' }, voltarBtn(), botao('Abrir arquivo…', escolherArquivo,
+          { dica: 'Um arquivo .phandalin.json exportado antes' })));
+    },
+
+    salvar: (dados) => el('div', {},
+      cabecalho('Salvar jogo', 'Três espaços à mão. O jogo também salva sozinho a cada cena, descanso e marco da aventura.'),
+      recadoDe(dados),
+      el('ul', { class: 'menu-saves' }, SLOTS_MANUAIS.map((slot) => linhaDeSlotManual(slot, dados))),
+      el('div', { class: 'menu-rodape' }, voltarBtn())),
+
     opcoes: () => telaOpcoes(),
 
     creditos: () => el('div', { class: 'menu-texto' },
@@ -250,6 +285,141 @@ export function criarMenu(root, { onIniciar, temPartida }) {
         el('nav', { class: 'menu-itens' }, item('Voltar ao menu', voltar, { destaque: true })));
     },
   };
+
+  // ---- save e carregar ------------------------------------------------------
+
+  const ultimoSave = () => saves?.maisRecente() ?? null;
+
+  /** Reescreve a tela de cima da pilha com um recado e a desenha de novo. */
+  function recado(texto, erro = false, extra = {}) {
+    pilha[pilha.length - 1][1] = { ...extra, recado: { texto, erro } };
+    desenhar();
+  }
+
+  const recadoDe = (dados) => dados?.recado
+    && el('p', { class: `menu-recado${dados.recado.erro ? ' erro' : ''}`, role: 'status' }, dados.recado.texto);
+
+  const quando = (t) => new Date(t).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  const duracao = (s) => `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
+  const nomeDoSlot = (slot) => (slot.startsWith('auto') ? `Automático ${slot.slice(-1)}` : `Manual ${slot.slice(-1)}`);
+
+  function falhouAoCarregar(texto) {
+    if (pilha[pilha.length - 1][0] === 'carregar') { recado(texto, true); return; }
+    // Veio do "Continuar" da tela principal: a lista, com o motivo, em cima do principal.
+    ir('carregar');
+    recado(texto, true);
+  }
+
+  function carregarSlot(slot) {
+    const c = saves.carregar(slot);
+    if (!c.ok) { falhouAoCarregar(c.erro); return; }
+    let r;
+    try { r = onCarregar(c.save); } catch (e) { console.error(e); r = { ok: false, erro: `Não consegui abrir este save: ${e?.message ?? e}` }; }
+    if (r?.ok === false) { falhouAoCarregar(r.erro); return; }
+    // Só agora o menu sai: sem isto, um save que não monta deixaria o jogador sem tela.
+    fechar();
+  }
+
+  function linhaDeSave(r) {
+    if (r.erro) {
+      return el('li', { class: 'menu-save quebrado' },
+        el('div', { class: 'menu-save-info' }, el('strong', {}, nomeDoSlot(r.slot)), el('span', {}, r.erro)),
+        botao('Apagar', () => apagarAgora(r.slot)));
+    }
+    const s = r.save;
+    return el('li', { class: 'menu-save' },
+      el('div', { class: 'menu-save-info' },
+        el('strong', {}, `${nomeDoSlot(r.slot)} · ${s.nome}`),
+        el('span', {}, `${resumoDoSave(s)} · ${duracao(s.tempoDeJogo ?? 0)} de jogo`),
+        el('small', {}, quando(s.atualizadoEm))),
+      el('div', { class: 'menu-save-acoes' },
+        botao('Carregar', () => carregarSlot(r.slot), { primario: true }),
+        botao('Exportar', () => exportar(s), { dica: 'Baixa um arquivo .phandalin.json' }),
+        botao('Apagar', () => apagarComConfirmacao(r.slot))));
+  }
+
+  /** Apagar pede um segundo clique: o primeiro só troca o rótulo da tela. */
+  function apagarAgora(slot) {
+    if (saves.apagar(slot)) recado('Save apagado.');
+    else recado('Não consegui apagar: o navegador não deixou.', true);
+  }
+
+  // Um duplo clique não confirma: o segundo clique só vale depois de o jogador ter lido o recado.
+  const PAUSA_DA_CONFIRMACAO = 400;
+  const confirmou = (dados, campo, slot) => dados?.[campo] === slot && Date.now() - (dados.pedidoEm ?? 0) > PAUSA_DA_CONFIRMACAO;
+
+  function apagarComConfirmacao(slot) {
+    const dados = pilha[pilha.length - 1][1];
+    if (confirmou(dados, 'apagar', slot)) { apagarAgora(slot); return; }
+    if (dados?.apagar === slot) return;
+    recado(`Clique em Apagar de novo para apagar ${nomeDoSlot(slot)}.`, false, { apagar: slot, pedidoEm: Date.now() });
+  }
+
+  function linhaDeSlotManual(slot, dados) {
+    const r = saves.ler(slot);
+    const confirmando = dados?.confirmar === slot;
+    const ocupado = Boolean(r?.save);
+    const guardar = () => {
+      let g;
+      try { g = onSalvar(slot); } catch (e) { console.error(e); g = { ok: false, erro: `Não consegui salvar: ${e?.message ?? e}` }; }
+      recado(g.ok ? 'Jogo salvo.' : g.erro, !g.ok);
+    };
+    return el('li', { class: 'menu-save' },
+      el('div', { class: 'menu-save-info' },
+        el('strong', {}, nomeDoSlot(slot)),
+        ocupado
+          ? el('span', {}, `${r.save.nome} · ${resumoDoSave(r.save)} · ${quando(r.save.atualizadoEm)}`)
+          : el('span', {}, r?.erro ?? 'Vazio')),
+      botao(confirmando ? 'Sobrescrever?' : ocupado ? 'Salvar por cima' : 'Salvar aqui', () => {
+        if (ocupado && !confirmou(dados, 'confirmar', slot)) {
+          if (dados?.confirmar === slot) return;
+          recado(`${nomeDoSlot(slot)} já tem um jogo. Clique de novo para sobrescrever.`, false, { confirmar: slot, pedidoEm: Date.now() });
+          return;
+        }
+        guardar();
+      }, { primario: !ocupado || confirmando, foco: confirmando }));
+  }
+
+  /** S-09: baixa o save como arquivo; é o backup e o jeito de mudar de navegador. */
+  function exportar(save) {
+    const url = URL.createObjectURL(new Blob([paraArquivo(save)], { type: 'application/json' }));
+    const a = el('a', { href: url, download: nomeDoArquivo(save) });
+    root.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  /** S-09: importa um arquivo para o rodízio de autosaves, sem tocar no jogo atual. */
+  let campoDeArquivo = null;
+  function escolherArquivo() {
+    // Guardado no módulo: um `input` solto pode ser coletado antes do `change`.
+    campoDeArquivo = el('input', { type: 'file', accept: '.json,application/json' });
+    const alvo = pilha[pilha.length - 1];
+    campoDeArquivo.addEventListener('change', async () => {
+      const arq = campoDeArquivo?.files?.[0];
+      campoDeArquivo = null;
+      if (!arq) return;
+      // Se o jogador saiu desta tela enquanto o arquivo lia, o recado não tem onde cair.
+      const aqui = () => aberto && pilha[pilha.length - 1] === alvo;
+      let r;
+      try {
+        if (arq.size > 1_600_000) { if (aqui()) recado('O arquivo é grande demais para ser um save.', true); return; }
+        r = deArquivo(await arq.text());
+      } catch (e) {
+        if (aqui()) recado(`Não consegui ler o arquivo: ${e?.message ?? e}`, true);
+        return;
+      }
+      if (!aqui()) return;
+      if (!r.ok) { recado(r.erro, true); return; }
+      // Entra num slot MANUAL livre: um autosave bom nunca é trocado por um arquivo, e a data é a de agora.
+      const livre = SLOTS_MANUAIS.find((s) => !saves.ler(s));
+      if (!livre) { recado('Os três espaços manuais estão ocupados: apague um para importar.', true); return; }
+      const g = saves.gravar(livre, { ...r.save, atualizadoEm: Date.now() });
+      recado(g.ok ? `Importado em ${nomeDoSlot(livre)}: ${r.save.nome}.` : g.erro, !g.ok);
+    });
+    campoDeArquivo.click();
+  }
 
   function cartaoEscolha(titulo, texto, onclick) {
     return el('button', { class: 'menu-cartao', onclick: () => { audio.play('click'); onclick(); } },

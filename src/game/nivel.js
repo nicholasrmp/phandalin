@@ -30,9 +30,22 @@ const ordenar = (ids) => [...ids].sort((a, b) => {
 
 export const nomeDaMagiaJogavel = (id) => getSpell(id)?.name ?? id;
 
+// Cada XP dado é um marco da aventura e um ponto de save (MULTIJOGADOR.md,
+// S-02c). Os ~10 lugares que chamam `darXp` não precisam saber disso: quem
+// salva se registra aqui, uma vez.
+let aoGanharXpFn = null;
+export const aoDarXp = (fn) => { aoGanharXpFn = fn; };
+
+/** Quem salva também guarda o grupo DEPOIS de a tela de subir de nível aplicar as escolhas. */
+export function depoisDeSubirNivel() {
+  try { aoGanharXpFn?.([]); } catch { /* salvar nunca derruba a aventura */ }
+}
+
 /** Dá XP a cada herói e devolve quem já pode subir. */
 export function darXp(herois, xp) {
-  return herois.filter((c) => ganharXp(c, xp) > 0);
+  const sobem = herois.filter((c) => ganharXp(c, xp) > 0);
+  try { aoGanharXpFn?.(herois); } catch { /* salvar nunca derruba a aventura */ }
+  return sobem;
 }
 
 /**

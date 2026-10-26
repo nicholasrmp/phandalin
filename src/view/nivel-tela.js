@@ -8,7 +8,7 @@ import './nivel-tela.css';
 import { el } from './hud.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
-import { subirUmNivel, nomeDaMagiaJogavel } from '../game/nivel.js';
+import { subirUmNivel, nomeDaMagiaJogavel, depoisDeSubirNivel } from '../game/nivel.js';
 import { audio } from '../core/audio.js';
 
 function retrato(look) {
@@ -67,5 +67,6 @@ export async function telaDeSubirNivel(root, herois) {
     escolhas: [{ rotulo: 'Seguir', valor: 'ok', primaria: true }],
   });
   for (const f of aplicacoes) f();
+  depoisDeSubirNivel();
   return registro;
 }

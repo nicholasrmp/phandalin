@@ -29,7 +29,7 @@ import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
 import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
-import { descansoCurto, descansoLongoDoGrupo, aoDescansar } from './view/descanso-tela.js';
+import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
 import { UTIL_FORA, estadoDe as estadoDeUtilidade, avancar as avancarTempo, ativasDoGrupo, alarmeCobre } from './rules/utilidade.js';
 import { entrarNoEncontro as familiarEntra, sairDoEncontro as familiarSai } from './rules/familiar.js';
 import { escolherEConjurar, conjurarComTela, esperar as esperarTempo, auras as aurasDoDetectarMagia, marcasDoJogo } from './game/magias-fora.js';
@@ -193,7 +193,6 @@ class App {
     this.tempoBase = 0;
     this.inicioDaSessao = Date.now();
     aoDarXp(() => this.autosalvar());
-    aoDescansar(() => this.autosalvar());
     this.menu = criarMenu(root, {
       onIniciar: (config) => this.newEncounter(config),
       temPartida: () => Boolean(this.enc),
@@ -295,6 +294,10 @@ class App {
       // As magias de utilidade da cena anterior ficaram para trás (o relógio segue).
       if (this.campanha?.utilidade) this.campanha.utilidade.ativas = [];
     }
+    // S-02a: entrar numa cena é um ponto de save. Carregar um save também
+    // reentra aqui, e aí não há o que salvar de novo.
+    this.localAtual = null;
+    if (!this.carregando) this.autosalvar({ herois: party, config });
     party.forEach((c, i) => {
       c.pos = { ...mapa.grupo[i] };
       c.facingVec = { ...mapa.olhar };
@@ -1353,6 +1356,8 @@ class App {
     for (const t of avancarTempo(estadoDeUtilidade(this.campanha ??= {}), tipo === 'longo' ? 480 : 60, herois)) this.enc.say('magia', t);
     this.capitulo?.depoisDoDescanso?.(tipo);
     this.refresh();
+    // S-02d: depois do relógio andar, para o save não guardar o descanso feito e o dia velho.
+    this.autosalvar();
   }
 
   /** Conjura uma magia de utilidade fora do combate (menu, barra de magias, conversa). */
@@ -1389,6 +1394,8 @@ class App {
    * as lutas.
    */
   irParaVila(grupo, { chegando = false } = {}) {
+    this.grupoDaCampanha = grupo;
+    this.localAtual = { tipo: 'vila', chegando };
     fecharMenuContexto();
     this.capitulo = null;
     this.enc = null;
@@ -1396,11 +1403,17 @@ class App {
     this.selected = null;
     this.mode = null;
     this.root.classList.remove('explorando');
+    // S-02: entrar na vila é um ponto de save. Depois de zerar `enc`, para o save dizer "vila".
+    if (!this.carregando) this.autosalvar({ herois: grupo });
+    // `chegando` (a cena da chegada) só vale para o save de entrada: os da visita reabrem a vila já aberta.
+    this.localAtual.chegando = false;
     return abrirPhandalin(this, { grupo, chegando });
   }
 
   /** Sai do tabuleiro para o mapa da região, com o grupo parado em `onde`. */
   irParaRegiao(grupo, onde = 'phandalin') {
+    this.grupoDaCampanha = grupo;
+    this.localAtual = { tipo: 'regiao', onde };
     fecharMenuContexto();
     this.capitulo = null;
     this.enc = null;
@@ -1408,6 +1421,9 @@ class App {
     this.selected = null;
     this.mode = null;
     this.root.classList.remove('explorando');
+    // `abrirRegiao` grava `regiao.onde` ao abrir; o save de entrada precisa do lugar novo, não do velho.
+    if (this.campanha?.regiao) this.campanha.regiao.onde = onde;
+    if (!this.carregando) this.autosalvar({ herois: grupo });
     return abrirRegiao(this, { grupo, onde });
   }
 
@@ -1417,6 +1433,116 @@ class App {
     this._aoFecharFicha = aoFechar;
     this.ficha.abrir(heroi, 'inventario');
     document.querySelector('.ficha-overlay')?.classList.add('na-vila');
+  }
+
+  // ---- save e carregar (S-01…S-12) -----------------------------------------
+
+  /** Os heróis vivos agora: no tabuleiro, os do encontro; na vila e na região, os que a tela guarda. */
+  grupoAtual() {
+    if (this.enc) return this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+    return (this.grupoDaCampanha ?? []).filter((c) => !c.dead);
+  }
+
+  /** Onde o grupo está, no formato do save (`game/save.js`). */
+  lugarAtual() {
+    if (this.enc) return { tipo: 'cena' };
+    // Sem Encounter e sem tela marcada: o grupo voltou de uma luta da estrada e a região
+    // reabriu sozinha (`regiao.continuarViagem` chama `abrirRegiao` sem passar por `irParaRegiao`).
+    if (!this.localAtual) return this.campanha?.regiao ? { tipo: 'regiao', onde: this.campanha.regiao.onde } : { tipo: 'cena' };
+    if (this.localAtual.tipo === 'regiao') return { tipo: 'regiao', onde: this.campanha?.regiao?.onde ?? this.localAtual.onde };
+    return { ...this.localAtual };
+  }
+
+  /** S-03: salvar à mão só em lugar seguro. Combate, narrativa aberta e cena em luta não. */
+  podeSalvarAgora() {
+    if (narrativaAberta()) return false;
+    if (this.config?.modo !== 'campanha') return false;
+    if (!this.enc) return false;
+    return Boolean(this.capitulo?.explorando);
+  }
+
+  montarSaveAtual({ tipo, slot, nome, herois, config } = {}) {
+    const grupo = (herois ?? this.grupoAtual()).map((h) => ({ ...h, jogadorId: h.jogadorId ?? this.jogadorId }));
+    if (!grupo.length) return { ok: false, erro: 'Não há heróis para salvar.' };
+    const agora = Date.now();
+    return montarSave({
+      id: slot ?? 'auto-1',
+      nome: nome ?? `${grupo.map((h) => h.name).join(', ')}`,
+      tipo,
+      agora,
+      tempoDeJogo: this.tempoBase + (agora - this.inicioDaSessao) / 1000,
+      config: config ?? this.config,
+      local: this.lugarAtual(),
+      campanha: this.campanha ?? {},
+      herois: grupo,
+      xpPendente: this.xpPendente ?? null,
+      jogadores: [{ jogadorId: this.jogadorId, nome: 'Jogador' }],
+    });
+  }
+
+  /** S-02: o autosave. Só da campanha (a arena de testes não guarda nada). Falha em voz alta, mas nunca derruba o jogo. */
+  autosalvar(ov = {}) {
+    if ((ov.config ?? this.config)?.modo !== 'campanha') return null;
+    try {
+      const r = this.montarSaveAtual({ tipo: 'auto', ...ov });
+      const g = r.ok ? this.saves.autosalvar(r.save) : r;
+      if (!g.ok) this.avisarDeSave(g.erro);
+      return g;
+    } catch (e) {
+      this.avisarDeSave(`Não consegui salvar: ${e.message}`);
+      return null;
+    }
+  }
+
+  salvarManual(slot) {
+    if (!this.podeSalvarAgora()) return { ok: false, erro: 'Só dá para salvar à mão explorando, sem combate e sem texto aberto.' };
+    const r = this.montarSaveAtual({ tipo: 'manual', slot });
+    const g = r.ok ? this.saves.gravar(slot, r.save) : r;
+    if (!g.ok) this.avisarDeSave(g.erro);
+    return g;
+  }
+
+  /** S-10: o save já chega validado e migrado; carregar nunca é parcial. */
+  carregarSave(save) {
+    // Um painel de texto aberto é de uma cena que continuaria viva por baixo da nova.
+    if (narrativaAberta()) return { ok: false, erro: 'Feche o texto aberto na tela antes de carregar um jogo.' };
+    // S-10: nunca parcial. Se a cena nova não monta, o jogo volta ao que era.
+    const antes = {
+      campanha: this.campanha, xpPendente: this.xpPendente, tempoBase: this.tempoBase,
+      inicioDaSessao: this.inicioDaSessao, config: this.config, localAtual: this.localAtual,
+      grupoDaCampanha: this.grupoDaCampanha,
+    };
+    this.carregando = true;
+    try {
+      this.ficha?.fechar();
+      this.campanha = save.campanha;
+      this.xpPendente = save.xpPendente ?? null;
+      this.tempoBase = save.tempoDeJogo ?? 0;
+      this.inicioDaSessao = Date.now();
+      this.config = save.config;
+      const lugar = save.local ?? { tipo: 'cena' };
+      if (lugar.tipo === 'vila') this.irParaVila(save.herois, { chegando: Boolean(lugar.chegando) });
+      else if (lugar.tipo === 'regiao') this.irParaRegiao(save.herois, lugar.onde);
+      else this.newEncounter({ ...save.config, continuarCom: save.herois });
+    } catch (e) {
+      Object.assign(this, antes);
+      console.error(e);
+      return { ok: false, erro: `Não consegui abrir este save: ${e?.message ?? e}` };
+    } finally {
+      this.carregando = false;
+    }
+    return { ok: true, resumo: resumoDoSave(save) };
+  }
+
+  /** Aviso curto sobre o save, fora de qualquer tela: o jogador precisa saber que não salvou. */
+  avisarDeSave(texto) {
+    console.warn(`[save] ${texto}`);
+    const aviso = document.createElement('div');
+    aviso.className = 'aviso-de-save';
+    aviso.setAttribute('role', 'alert');
+    aviso.textContent = texto;
+    this.root.append(aviso);
+    setTimeout(() => aviso.remove(), 6000);
   }
 
   encerrarPartida() {

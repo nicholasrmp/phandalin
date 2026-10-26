@@ -508,3 +508,48 @@
   .menu-preparo-corpo { grid-template-columns: 1fr; }
   .menu-preparo { max-height: none; }
 }
+
+/* ---- salvar e carregar --------------------------------------------------- */
+.menu-saves { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.menu-save {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--gold-escuro);
+  background: linear-gradient(170deg, #f6e3b0, var(--gold-claro));
+  color: var(--ink);
+}
+.menu-save.vazio { display: block; color: var(--muted); border-style: dashed; background: transparent; }
+.menu-save.quebrado { border-color: #8a3a2a; background: linear-gradient(170deg, #ecd0c6, #dcb7ab); }
+.menu-save-info { display: grid; gap: 2px; min-width: 0; }
+.menu-save-info strong { font-family: var(--serif); font-size: 15px; overflow-wrap: anywhere; }
+.menu-save-info span, .menu-save-info small { font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.menu-save-info small { color: var(--muted); }
+.menu-save-acoes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.menu-recado { margin: 0 0 10px; padding: 7px 10px; border-radius: 6px; font-size: 14px; background: #e3ecd0; border: 1px solid #7d9a52; color: #2e4513; }
+.menu-recado.erro { background: #f1d4cb; border-color: #8a3a2a; color: #5a1f13; }
+@media (max-width: 640px) {
+  .menu-save { grid-template-columns: 1fr; }
+  .menu-save-acoes { justify-content: flex-start; }
+}
+
+/* O aviso de que o jogo NÃO salvou: fora de qualquer tela, para ninguém perder o progresso sem saber. */
+.aviso-de-save {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: min(520px, 92vw);
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: #5a1f13;
+  border: 1px solid #d9a08f;
+  color: #fbe9e3;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 45%);
+}

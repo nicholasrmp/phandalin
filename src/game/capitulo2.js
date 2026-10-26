@@ -866,7 +866,10 @@ export function criarCapitulo2(app, config) {
     const vivo = sildar && !sildar.dead;
     // O marco do livro: 275 XP para cada um ao limpar o esconderijo.
     const grupo = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
-    const sobem = darXp(grupo, 275);
+    // O 275 só se paga uma vez por herói: carregar um save feito depois dele reentra o esconderijo.
+    const aPagar = grupo.filter((c) => !c.marcos?.includes('esconderijoLimpo'));
+    for (const c of aPagar) (c.marcos ??= []).push('esconderijoLimpo');
+    const sobem = darXp(aPagar, 275);
     texto = [...texto, `Cada herói ganha 275 XP pelo esconderijo (agora ${grupo[0]?.xp ?? 0}).`];
     await narrar(root, { formato: 'tela', paginas: [{ titulo: 'O esconderijo caiu', texto }] });
     if (sobem.length) for (const t of await telaDeSubirNivel(root, sobem)) enc.say('cura', t);
