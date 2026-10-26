@@ -72,6 +72,8 @@ export function criarTelasDeSala({
         redesenhar('lobby');
       }),
       aoPartida: atual((vista) => partida?.aoVista(vista)),
+      aoNarrativa: atual((msg) => partida?.aoNarrativa?.(msg)),
+      aoIntencao: atual((msg) => partida?.aoIntencao?.(msg)),
       aoErro: atual((t) => {
         estado.aviso = t;
         // Na taverna o erro é uma frase embaixo do salão ("devagar", "não dá para chegar lá").
@@ -323,5 +325,7 @@ export function criarTelasDeSala({
   function avisar(texto) { estado.aviso = texto; limparAvisoDepois(5000); redesenhar('lobby'); }
   /** A vista da partida (F4): vai direto, sem a trava de mensagem repetida de `mandar`, e só o anfitrião a envia. */
   const mandarVista = (vista) => estado.cliente?.enviar({ tipo: 'partida', vista }) ?? false;
-  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo, mandar, mandarVista, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
+  /** Uma mensagem da partida (F4.3): a narrativa do anfitrião, a intenção de quem joga, a resposta do líder. Sem a trava de repetição. */
+  const mandarCru = (msg) => estado.cliente?.enviar(msg) ?? false;
+  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo, mandar, mandarVista, mandarCru, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
 }

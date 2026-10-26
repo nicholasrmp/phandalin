@@ -17,7 +17,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { deveFechar, desconectar, MINUTOS_VAZIA } from '../game/sala.js';
 import { MAX_VISTA } from '../game/partida-vista.js';
 import {
-  tratarMensagem, tratarVista, ehVista, dentroDoLimite, mensagemDeSala, identidade, erro,
+  tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, MAX_NARRATIVA, dentroDoLimite, mensagemDeSala, identidade, erro,
   MAX_BYTES, MAX_CONEXOES_POR_SALA, MAX_CONEXOES_POR_JOGADOR,
 } from './sala-servidor.js';
 
@@ -90,6 +90,7 @@ export class SalaDO extends DurableObject {
     const agora = Date.now();
     // A vista da partida (F4) é grande de propósito: tem a sua porta e o seu teto, antes do teto das outras mensagens.
     if (ehVista(mensagem)) { await this.receberVista(ws, anexo, mensagem, agora); return; }
+    if (ehNarrativa(mensagem)) { await this.receberNarrativa(ws, anexo, mensagem); return; }
     if (typeof mensagem !== 'string' || mensagem.length > MAX_BYTES * 2) { try { ws.close(1009, 'mensagem grande demais'); } catch { /* já fechado */ } return; }
 
     // A primeira mensagem diz quem é a conexão; até lá nada mais vale.
@@ -112,6 +113,8 @@ export class SalaDO extends DurableObject {
     const r = tratarMensagem({ sala: this.sala, jogadorId, bruto: mensagem, codigo: anexo.codigo, agora, outrasConexoes });
     if (r.sala !== this.sala) this.sala = r.sala;
     if (r.resposta) ws.send(JSON.stringify(r.resposta));
+    // Intenção de quem não roda a partida (F4.3): vai ao anfitrião, que a aplica. Não muda o estado da sala.
+    if (r.repassar) { this.enviarAoAnfitriao(r.repassar); return; }
     if (r.soEsta) { try { ws.close(1000, 'saiu'); } catch { /* já fechado */ } return; }
     if (!r.mudou) {
       // Quem acabou de entrar recebe o estado mesmo sem mudança (a aba que reabre).
@@ -131,6 +134,30 @@ export class SalaDO extends DurableObject {
     this.entregarUltimaVista(ws, jogadorId, r.tipo);
     if (this.sala.fase === 'fechada') await this.encerrar();
     else await this.reagendar();
+  }
+
+  /** Manda uma mensagem a todas as conexões do anfitrião (ele pode ter mais de uma aba). */
+  enviarAoAnfitriao(msg) {
+    const texto = JSON.stringify(msg);
+    for (const w of this.ctx.getWebSockets()) {
+      if (w.deserializeAttachment()?.jogadorId !== this.sala?.anfitriao) continue;
+      try { w.send(texto); } catch { /* conexão caindo */ }
+    }
+  }
+
+  /** O anfitrião transmitiu uma página de narrativa (ou o fim dela): confere e repassa aos outros. */
+  async receberNarrativa(ws, anexo, mensagem) {
+    const jogadorId = anexo.jogadorId;
+    if (!jogadorId) { ws.send(JSON.stringify(erro('identifique-se na primeira mensagem'))); return; }
+    await this.carregar();
+    const teto = this.sala?.anfitriao === jogadorId ? MAX_NARRATIVA : MAX_BYTES * 2;
+    if (mensagem.length > teto) { try { ws.close(1009, 'narrativa grande demais'); } catch { /* já fechado */ } return; }
+    const r = tratarNarrativa({ sala: this.sala, jogadorId, bruto: mensagem });
+    if (!r.ok) { ws.send(JSON.stringify(erro(r.erro))); return; }
+    for (const outro of this.ctx.getWebSockets()) {
+      if (outro === ws || !outro.deserializeAttachment()?.jogadorId) continue;
+      try { outro.send(r.texto); } catch { /* conexão caindo */ }
+    }
   }
 
   /** Quem acaba de entrar (ou voltar) numa partida em andamento recebe a última vista, sem esperar a próxima. */

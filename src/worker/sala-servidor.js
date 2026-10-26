@@ -92,7 +92,7 @@ export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasCo
 
   const r = aplicar(sala, jogadorId, msg, agora);
   if (!r.ok) return { sala, resposta: erro(r.erro), mudou: false };
-  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null };
+  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null, repassar: r.repassar ?? null };
 }
 
 /** Janela deslizante: `true` se esta mensagem passa. `registro` é uma lista de instantes. */
@@ -125,6 +125,27 @@ export function tratarVista({ sala, jogadorId, bruto, agora, ultimaEm = 0 }) {
 
 /** É uma mensagem de vista? (Olha só o começo, sem ler o resto: ela é grande.) */
 export const ehVista = (bruto) => typeof bruto === 'string' && /^\s*\{\s*"tipo"\s*:\s*"partida"/.test(bruto.slice(0, 40));
+
+/** É uma narrativa do anfitrião? Também passa por porta própria (maior que 2 KB: páginas de texto). */
+export const ehNarrativa = (bruto) => typeof bruto === 'string' && /^\s*\{\s*"tipo"\s*:\s*"narrativa"/.test(bruto.slice(0, 40));
+export const MAX_NARRATIVA = 60_000;
+
+/**
+ * F4.3: o anfitrião transmite a narrativa (A-02, `game/porta-narrativa.js`): `{ tipo: 'narrativa', msg }`, com
+ * `msg` sendo `{ tipo: 'abrir', id, pedido }` ou `{ tipo: 'fechar', id, indice }`. Só o anfitrião, com a partida
+ * iniciada; o servidor confere a forma e repassa a todos os outros.
+ */
+export function tratarNarrativa({ sala, jogadorId, bruto }) {
+  if (!sala || sala.fase !== 'iniciada') return { ok: false, erro: 'a partida não está em andamento' };
+  if (sala.anfitriao !== jogadorId) return { ok: false, erro: 'só o anfitrião conta a narrativa' };
+  if (typeof bruto !== 'string' || bruto.length > MAX_NARRATIVA) return { ok: false, erro: 'a narrativa é grande demais' };
+  let m;
+  try { m = JSON.parse(bruto); } catch { return { ok: false, erro: 'narrativa inválida' }; }
+  const msg = m?.msg;
+  if (!msg || !['abrir', 'fechar'].includes(msg.tipo) || !Number.isInteger(msg.id)) return { ok: false, erro: 'narrativa inválida' };
+  if (msg.tipo === 'abrir' && (!msg.pedido || !Array.isArray(msg.pedido.paginas))) return { ok: false, erro: 'narrativa inválida' };
+  return { ok: true, texto: JSON.stringify({ tipo: 'narrativa', msg }) };
+}
 
 /** A mensagem de visão que um jogador recebe (cada um recebe a SUA, com o `voce` dele). */
 export const mensagemDeSala = (sala, jogadorId) => ({ tipo: 'sala', visao: visaoDaSala(sala, jogadorId) });

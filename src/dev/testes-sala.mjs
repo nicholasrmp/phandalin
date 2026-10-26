@@ -16,7 +16,7 @@ import {
   marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR, BALCAO, ehBalcao,
 } from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
-import { tratarMensagem, tratarVista, ehVista, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
+import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { fotografar, emTexto, lerVista, aplicarVista, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { buildFoes } from '../game/encounter.js';
 import { montarHeroi, escolhaAutomatica } from '../game/criacao.js';
@@ -892,6 +892,52 @@ teste('F4: o servidor só repassa a vista do anfitrião, com a partida iniciada,
   assert.match(tratarVista({ sala: s, jogadorId: ANF, bruto: 'não é json', agora: 99_000 }).erro, /inválida/);
   const lobby = nova();
   assert.match(tratarVista({ sala: lobby, jogadorId: ANF, bruto, agora: 99_000 }).erro, /não está em andamento/);
+});
+
+teste('F4.3: agir: o servidor só repassa o passo de quem é DONO do herói, com a partida iniciada, e não muda a sala', () => {
+  const s = salaIniciada();
+  const antes = JSON.stringify(visaoDaSala(s, ANF));
+  const r = faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 7, y: 9 });
+  assert.ok(r.ok); assert.equal(r.igual, true);
+  assert.deepEqual(r.repassar, { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'mover', x: 7, y: 9 });
+  assert.equal(JSON.stringify(visaoDaSala(s, ANF)), antes, 'agir não mexe no estado da sala');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-guerreiro', x: 7, y: 9 }), /não é seu/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'xx', x: 7, y: 9 }), /não é seu/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'atacar', heroi: 'pc-mago', x: 7, y: 9 }), /desconhecida/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: -1, y: 9 }), /inexistente/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 1.5, y: 9 }), /inexistente/);
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'mover', heroi: 'pc-guerreiro', x: 7, y: 9 }), /própria tela/);
+  deve(faz(nova(), ANF, { tipo: 'agir', acao: 'mover', heroi: 'pc-guerreiro', x: 7, y: 9 }), /não está em andamento/);
+  const bruto = JSON.stringify({ tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 3, y: 4 });
+  const t = tratarMensagem({ sala: s, jogadorId: BETO, bruto, codigo: s.codigo, agora: 5000 });
+  assert.equal(t.mudou, false); assert.equal(t.repassar.heroi, 'pc-mago');
+});
+
+teste('F4.3: resposta: só o líder responde à narrativa, e só com índice e id válidos', () => {
+  const s = salaIniciada();
+  deve(faz(s, BETO, { tipo: 'resposta', id: 1, indice: 0 }), /líder/);
+  s.lider = BETO;
+  const r = faz(s, BETO, { tipo: 'resposta', id: 3, indice: 2 });
+  assert.deepEqual(r.repassar, { tipo: 'resposta', id: 3, indice: 2, continuar: false });
+  assert.deepEqual(faz(s, BETO, { tipo: 'resposta', id: 4, continuar: true }).repassar, { tipo: 'resposta', id: 4, indice: null, continuar: true });
+  deve(faz(s, BETO, { tipo: 'resposta', id: 0, indice: 0 }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'resposta', id: 1, indice: -1 }), /inválida/);
+  deve(faz(s, BETO, { tipo: 'resposta', id: 1, indice: 'a' }), /inválida/);
+  deve(faz(s, ANF, { tipo: 'resposta', id: 1, indice: 0 }), /própria tela/);
+});
+
+teste('F4.3: a narrativa do anfitrião: só dele, com a partida iniciada, e no formato abrir/fechar', () => {
+  const s = salaIniciada();
+  const abrir = JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 1, pedido: { formato: 'tela', paginas: [{ texto: ['oi'] }], escolhas: null } } });
+  assert.equal(ehNarrativa(abrir), true); assert.equal(ehNarrativa('{"tipo":"partida"}'), false);
+  const ok1 = tratarNarrativa({ sala: s, jogadorId: ANF, bruto: abrir });
+  assert.equal(ok1.ok, true); assert.equal(JSON.parse(ok1.texto).msg.id, 1);
+  assert.equal(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'fechar', id: 1, indice: null } }) }).ok, true);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: BETO, bruto: abrir }).erro, /anfitrião/);
+  assert.match(tratarNarrativa({ sala: nova(), jogadorId: ANF, bruto: abrir }).erro, /não está em andamento/);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 'x' } }) }).erro, /inválida/);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: JSON.stringify({ tipo: 'narrativa', msg: { tipo: 'abrir', id: 1 } }) }).erro, /inválida/);
+  assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: 'x'.repeat(70_000) }).erro, /grande/);
 });
 
 teste('T-09: o balcão do Toblen é o menu: todas as casas dele são mobília (ninguém anda até lá) e a mesa de grupo não é balcão', () => {

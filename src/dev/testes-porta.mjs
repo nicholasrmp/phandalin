@@ -329,6 +329,9 @@ await teste('nenhuma cena chama a tela local direto: tudo passa por `narrar`', (
       if (statSync(caminho).isDirectory()) { if (nome !== 'node_modules') ler(caminho); continue; }
       if (!/\.(js|mjs)$/.test(nome)) continue;
       if (/narrativa\.js$|testes-porta\.mjs$/.test(nome)) continue;
+      // A infraestrutura da sala (F4.3) usa a tela local de propósito: `main.js` a entrega como `local` da porta
+      // compartilhada, e `partida-tela.js` é a leitura de quem assiste. Nenhuma CENA entra nesta lista.
+      if (/[\\/]main\.js$|partida-tela\.js$/.test(caminho)) continue;
       if (readFileSync(caminho, 'utf8').includes('narrarLocal')) achados.push(caminho.replace(raiz, 'src'));
     }
   };

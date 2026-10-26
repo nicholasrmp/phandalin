@@ -27,7 +27,8 @@ import { criarCastelo } from './game/capitulo4-castelo.js';
 import { abrirRegiao } from './game/regiao.js';
 import { criarArvoreTrovao } from './game/capitulo4-arvoretrovao.js';
 import { abrirPhandalin } from './game/phandalin.js';
-import { narrar, narrativaAberta } from './view/narrativa.js';
+import { narrar, narrativaAberta, narrarLocal, definirPorta } from './view/narrativa.js';
+import { criarPortaCompartilhada } from './game/porta-narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
@@ -200,7 +201,7 @@ class App {
     this.inicioDaSessao = Date.now();
     aoDarXp(() => this.autosalvar());
     // Quem não roda a partida da sala a vê aqui. Sair leva de volta ao menu.
-    this.partidaRemota = criarPartidaTela({ aoSair: () => { this.menu.sairDaSala(); this.partidaRemota.fechar(); this.menu.abrir(); } });
+    this.partidaRemota = criarPartidaTela({ enviar: (msg) => this.menu.enviarCru(msg), aoSair: () => { this.menu.sairDaSala(); this.partidaRemota.fechar(); this.menu.abrir(); } });
     this.menu = criarMenu(root, {
       onIniciar: (config) => this.newEncounter(config),
       temPartida: () => Boolean(this.enc),
@@ -218,6 +219,8 @@ class App {
           aoComecar: (v, { souAnfitriao }) => (souAnfitriao ? this.comecarPartidaDaSala(v) : this.partidaRemota.abrir(document.getElementById('app'))),
           aoVista: (vista) => this.partidaRemota.vista(vista),
           aoSala: (v) => this.partidaRemota.atualizarSala(v),
+          aoNarrativa: (msg) => this.partidaRemota.narrativa(msg),
+          aoIntencao: (m) => (m.tipo === 'agir' ? this.aplicarIntencao(m) : this.receberResposta(m)),
           aoEncerrar: () => this.encerrarPartidaDaSala(),
         },
         // A taverna andável (T-01): o lobby de quem joga com amigos. Fala com o menu só por estes ganchos.
@@ -391,6 +394,17 @@ class App {
    */
   comecarPartidaDaSala(v) {
     const ids = Object.keys(v.herois);
+    // A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20).
+    this.esperasDeResposta = new Map();
+    definirPorta(criarPortaCompartilhada({
+      local: narrarLocal,
+      transmitir: (msg) => this.menu.enviarCru({ tipo: 'narrativa', msg }),
+      esperarResposta: (id, sinal) => new Promise((resolve) => {
+        this.esperasDeResposta.set(id, resolve);
+        sinal?.addEventListener('abort', () => { this.esperasDeResposta.delete(id); resolve(null); }, { once: true });
+      }),
+      aoFalhar: (e) => console.warn('a narrativa compartilhada falhou; segue só neste navegador', e),
+    }));
     this.newEncounter({
       modo: 'campanha', aventura: v.origem?.aventura ?? 'mina-perdida', variante: 'emboscada', nivel: 1,
       herois: ids.map((id) => ({ id, escolha: escolhaAutomatica(id) })),
@@ -411,7 +425,32 @@ class App {
     if (this.menu.enviarVista(vista)) this.ultimaVistaTexto = texto;
   }
 
+  /**
+   * Uma intenção de outro jogador (F4.3). O servidor já conferiu de quem é o herói; aqui vale o que só o jogo sabe:
+   * narrativa aberta pausa todos (J-06), e fora da exploração (combate, F5) ainda não há o que fazer.
+   */
+  aplicarIntencao({ heroi, acao, x, y }) {
+    if (!this.enc || this.enc.over || this.busy || this.enc.side !== 'party') return;
+    if (this.ficha?.estaAberta() || narrativaAberta() || !this.capitulo?.explorando) return;
+    const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
+    if (!c || acao !== 'mover') return;
+    const reached = this.enc.reachableFor(c);
+    const node = reached.get(key(x, y));
+    if (!node || node.cost === 0) return;
+    this.enc.moveAlong(c, Battlefield.pathFrom(reached, { x, y }));
+    this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+    this.refresh();
+  }
+
+  /** A resposta do líder a uma narrativa aberta: acorda a porta compartilhada que esperava por ela. */
+  receberResposta({ id, indice, continuar }) {
+    this.esperasDeResposta?.get(id)?.(continuar ? { continuar: true } : { indice });
+  }
+
   encerrarPartidaDaSala() {
+    definirPorta(null);
+    for (const resolve of this.esperasDeResposta?.values() ?? []) resolve(null);
+    this.esperasDeResposta?.clear();
     clearInterval(this.publicador);
     this.publicador = null;
     this.partidaRemota.fechar();

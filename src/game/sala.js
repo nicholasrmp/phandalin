@@ -330,6 +330,26 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       av.emoteLivreEm = agora + MS_ENTRE_EMOTES;
       return ok();
     }
+    // F4.3: as intenções de quem NÃO roda a partida. O servidor confere o que pode conferir (de quem é o herói, quem
+    // é o líder) e repassa ao anfitrião, que é quem aplica (A-01); o estado da sala não muda (`igual`).
+    case 'agir': {
+      if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');
+      if (jogadorId === sala.anfitriao) return recusa('o anfitrião age pela própria tela');
+      if (mensagem.acao !== 'mover') return recusa('ação desconhecida');
+      if (!heroiValido(mensagem.heroi) || sala.herois[mensagem.heroi] !== jogadorId) return recusa('esse herói não é seu');
+      const { x, y } = mensagem;
+      if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x > 400 || y > 400) return recusa('casa inexistente');
+      return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, heroi: mensagem.heroi, acao: 'mover', x, y } });
+    }
+    case 'resposta': {
+      if (sala.fase !== 'iniciada') return recusa('a partida não está em andamento');
+      if (jogadorId === sala.anfitriao) return recusa('o anfitrião responde pela própria tela');
+      if (jogadorId !== sala.lider) return recusa('quem decide é o líder');
+      const { id, indice = null } = mensagem;
+      if (!Number.isInteger(id) || id < 1) return recusa('resposta inválida');
+      if (indice !== null && (!Number.isInteger(indice) || indice < 0 || indice > 50)) return recusa('resposta inválida');
+      return ok({ igual: true, repassar: { tipo: 'resposta', id, indice, continuar: mensagem.continuar === true } });
+    }
     case 'persona': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
       if (!HEROIS_COM_ARTE.includes(mensagem.heroi)) return recusa('esse herói ainda não tem arte para a taverna');

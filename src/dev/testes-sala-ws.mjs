@@ -188,6 +188,41 @@ await teste('F4: o anfitrião publica a vista da partida e só os outros a receb
   assert.equal(voltou.vista.combatentes[0].id, 'pc-mago', 'quem volta recebe a última vista sem esperar a próxima');
 });
 
+await teste('F4.3: o passo vai ao anfitrião (só se o herói é de quem mandou); a narrativa vai aos outros; a resposta é do líder', async () => {
+  const codigo = codigoNovo();
+  const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');
+  a.manda({ tipo: 'criar', nome: 'N' }); await a.esperar((x) => x.tipo === 'sala');
+  b.manda({ tipo: 'entrar', nome: 'B' }); await b.esperar((x) => x.tipo === 'sala');
+  for (const h of ['pc-guerreiro', 'pc-ladino']) a.manda({ tipo: 'pegar', heroi: h });
+  for (const h of ['pc-mago', 'pc-clerigo']) b.manda({ tipo: 'pegar', heroi: h });
+  a.manda({ tipo: 'pronto', valor: true }); b.manda({ tipo: 'pronto', valor: true });
+  await a.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.every((j) => j.pronto));
+  a.manda({ tipo: 'iniciar' });
+  await b.esperar((x) => x.tipo === 'sala' && x.visao.fase === 'iniciada');
+  a.recebidas.length = 0; b.recebidas.length = 0;
+  b.manda({ tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 5, y: 6 });
+  const passo = await a.esperar((x) => x.tipo === 'agir');
+  assert.deepEqual([passo.de, passo.heroi, passo.x, passo.y], ['p2', 'pc-mago', 5, 6]);
+  b.manda({ tipo: 'agir', acao: 'mover', heroi: 'pc-guerreiro', x: 5, y: 6 });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /não é seu/);
+  b.recebidas.length = 0;
+  const abrir = { tipo: 'abrir', id: 7, pedido: { formato: 'tela', pular: false, lista: false, paginas: [{ titulo: null, texto: ['Era uma vez'], teste: null, retrato: null, temConteudo: false }], escolhas: [{ indice: 0, rotulo: 'Seguir', detalhe: null, motivo: null, primaria: true }] } };
+  a.manda({ tipo: 'narrativa', msg: abrir });
+  const viu = await b.esperar((x) => x.tipo === 'narrativa');
+  assert.equal(viu.msg.id, 7); assert.equal(viu.msg.pedido.paginas[0].texto[0], 'Era uma vez');
+  assert.equal(a.recebidas.some((x) => x.tipo === 'narrativa'), false, 'o anfitrião não recebe a própria narrativa');
+  b.manda({ tipo: 'narrativa', msg: abrir });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /anfitrião/, 'quem não é o anfitrião não conta a narrativa');
+  b.manda({ tipo: 'resposta', id: 7, indice: 0 });
+  assert.match((await b.esperar((x) => x.tipo === 'erro' && /líder/.test(x.erro))).erro, /líder/);
+  a.manda({ tipo: 'lider', jogador: 'p2' });
+  await b.esperar((x) => x.tipo === 'sala' && x.visao.lider === 'p2');
+  a.recebidas.length = 0;
+  b.manda({ tipo: 'resposta', id: 7, indice: 0 });
+  const resp = await a.esperar((x) => x.tipo === 'resposta');
+  assert.deepEqual([resp.id, resp.indice, resp.continuar], [7, 0, false]);
+});
+
 await teste('outro navegador (id diferente) não age como o jogador de outro', async () => {
   const codigo = codigoNovo();
   const a = await cliente(codigo, 'anf'); const intruso = await cliente(codigo, 'intruso');

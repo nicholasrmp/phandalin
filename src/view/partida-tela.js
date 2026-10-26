@@ -10,6 +10,7 @@ import { el } from './hud.js';
 import { Board } from './board.js';
 import { aplicarAparencia } from './ficha.js';
 import { audio } from '../core/audio.js';
+import { narrarLocal } from './narrativa.js';
 import { Encounter } from '../rules/combat.js';
 import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
@@ -20,7 +21,7 @@ import { lerVista, aplicarVista } from '../game/partida-vista.js';
 const CASAS_POR_SEGUNDO = 5;
 const SALTO_MAXIMO = 14;       // mais longe que isto (teletransporte, mapa novo) a figura aparece no destino, sem caminhar
 
-export function criarPartidaTela({ aoSair }) {
+export function criarPartidaTela({ aoSair, enviar = () => false }) {
   const canvas = el('canvas', { class: 'board', 'aria-label': 'A partida' });
   const quadro = el('div', { class: 'board-wrap taverna-quadro' }, canvas);
   const titulo = el('span', { class: 'partida-titulo' }, 'Partida');
@@ -36,18 +37,60 @@ export function criarPartidaTela({ aoSair }) {
   let quadroDeAnimacao = 0; let ultimo = 0;
   let pendente = null;          // a última vista que chegou antes de a tela abrir
   let visaoDaSala = null;
+  let selecionado = null;       // o herói MEU que o próximo clique move
+  const narrativas = new Map(); // id da narrativa aberta -> AbortController (o anfitrião a fecha por fora)
 
   function montar(v) {
     variante = v.variante;
     const mapa = mapaDo(variante);
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
-    board = new Board(canvas, { encounter: enc, onTileClick: () => {}, onTileHover: () => {} });
+    board = new Board(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
     if (import.meta.env?.DEV) window.__partida = { board, enc };
   }
 
   function desmontar() {
     cancelAnimationFrame(quadroDeAnimacao);
     enc = null; board = null; variante = null;
+  }
+
+  const souLider = () => Boolean(visaoDaSala) && visaoDaSala.lider === visaoDaSala.voce;
+  const meus = () => (enc?.combatants ?? []).filter((c) => c.side === 'party' && !c.dead && c.hp > 0 && visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce);
+
+  function destacar() {
+    board?.setOverlay?.({ selected: selecionado });
+    desenharGrupo();
+  }
+
+  /** F4.3: clicar num herói MEU o escolhe; clicar numa casa manda o herói escolhido andar (o anfitrião aplica). */
+  function clicar(t) {
+    if (!enc) return;
+    const noLugar = enc.at?.(t.x, t.y);
+    if (noLugar && meus().includes(noLugar)) { selecionado = noLugar; audio.play('click'); destacar(); return; }
+    if (!selecionado || !meus().includes(selecionado)) { selecionado = meus()[0] ?? null; destacar(); }
+    if (!selecionado) { aviso.textContent = 'Você não tem nenhum herói em campo.'; aviso.classList.add('visivel'); return; }
+    if (noLugar) return;
+    aviso.classList.remove('visivel');
+    enviar({ tipo: 'agir', acao: 'mover', heroi: selecionado.id, x: t.x, y: t.y });
+  }
+
+  /** A narrativa do anfitrião (A-02): todos leem; só o líder escolhe, e o índice volta ao anfitrião. */
+  function narrativa(msg) {
+    if (msg.tipo === 'fechar') { narrativas.get(msg.id)?.abort(); narrativas.delete(msg.id); return; }
+    if (msg.tipo !== 'abrir' || !aberta) return;
+    const p = msg.pedido;
+    const ctl = new AbortController();
+    narrativas.set(msg.id, ctl);
+    const lider = souLider();
+    narrarLocal(document.getElementById('app'), {
+      formato: p.formato, lista: p.lista, pular: p.pular && lider,
+      paginas: p.paginas.map((pg) => ({ titulo: pg.titulo, texto: pg.texto, teste: pg.teste, retrato: pg.retrato })),
+      escolhas: lider && p.escolhas ? p.escolhas.map((e) => ({ rotulo: e.rotulo, detalhe: e.detalhe, motivo: e.motivo, primaria: e.primaria, valor: e.indice })) : null,
+      sinal: ctl.signal,
+    }).then((r) => {
+      narrativas.delete(msg.id);
+      if (!lider || ctl.signal.aborted) return;
+      enviar(p.escolhas ? { tipo: 'resposta', id: msg.id, indice: Number.isInteger(r) ? r : null } : { tipo: 'resposta', id: msg.id, continuar: true });
+    });
   }
 
   /** Mais de um passo: o caminho que o motor do cliente acha; se não acha, ou é longe demais, a figura aparece no destino. */
@@ -79,6 +122,7 @@ export function criarPartidaTela({ aoSair }) {
     const { moveram } = aplicarVista(enc, v);
     for (const c of enc.combatants) aplicarAparencia(c);
     for (const m of moveram) caminhar(m);
+    if (!selecionado || !enc.combatants.includes(selecionado)) selecionado = meus()[0] ?? null;
     if (!board.focoJaEnquadrado) {
       board.focoJaEnquadrado = true;
       const lider = enc.combatants.find((x) => x.side === 'party');
@@ -114,12 +158,17 @@ export function criarPartidaTela({ aoSair }) {
       if (!aberta) return;
       aberta = false;
       camada.remove();
+      for (const ctl of narrativas.values()) ctl.abort();
+      narrativas.clear();
+      selecionado = null;
       desmontar();
       pendente = null;
       aviso.classList.add('visivel');
     },
     /** A vista da partida chegou (o anfitrião publicou). */
     vista: receber,
+    /** Uma página da narrativa (ou o fim dela). */
+    narrativa,
     /** O estado da sala mudou: quem joga com quem, o nome do anfitrião. */
     atualizarSala(v) {
       visaoDaSala = v;
