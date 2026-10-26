@@ -169,7 +169,16 @@ export function escalarBando(qtd, xpDeUm, herois, { teto = 12 } = {}) {
   // eram perigosos: onze lobos no 3º nível matavam o grupo em 65% das lutas.
   const limite = Math.min(teto, Math.ceil(qtd * 1.5));
   let n = qtd;
-  while (n < limite && perigoDoBando(n * xpDeUm, herois) === 'facil') n += 1;
+  // Cresce enquanto o bando É fácil E o passo seguinte não vira difícil ou
+  // mortal. Olhar só o estado atual fazia um passo pular a faixa inteira: um
+  // urso-coruja sozinho (700 de XP) é fácil no 4º nível, e o segundo leva o
+  // bando a 2.100 ajustados — mortal, com 61% de vitória de noite e 27% de
+  // morte de herói. Um encontro de estrada é imprevisto, não emboscada.
+  while (n < limite && perigoDoBando(n * xpDeUm, herois) === 'facil') {
+    const depois = perigoDoBando((n + 1) * xpDeUm, herois);
+    if (depois === 'dificil' || depois === 'mortal') break;
+    n += 1;
+  }
   return { qtd: n, cresceu: n - qtd };
 }
 

@@ -1,7 +1,8 @@
 // O POÇO DA CORUJA VELHA (Parte 3 da aventura). Mapa em `game/poco.js`.
 //
 // As REGRAS seguem o livro; o TEXTO é nosso:
-//   - doze zumbis esperam dentro da base da torre, sem ser vistos de fora.
+//   - seis zumbis esperam dentro da base da torre, sem ser vistos de fora
+//     (eram doze, antes de a Tenacidade Mortoviva existir no motor).
 //     Saem pela porta, que tem uma casa de largura: três de início e mais
 //     dois a cada três rodadas (decisão nossa, medida pelo revisor de
 //     encontro: os doze de uma vez matavam o grupo inteiro de nível 3 em uma
@@ -56,11 +57,16 @@ export function criarPoco(app, config) {
 
   // ------------------------------------------------- o mago e os zumbis ----
   // Ficam fora do tabuleiro até despertarem; os já vencidos não voltam.
+  // Quantos mortos a torre tem. Eram doze, e eram doze de quando a Tenacidade
+  // Mortoviva não existia no motor: com ela, cada zumbi leva quase o dobro de
+  // golpes, e o Poço media 44% de vitória e 24% de morte de herói no 3º nível
+  // — que é o nível em que o grupo chega aqui.
+  const ZUMBIS = 6;
   const zumbis = [];
   const vagas = [];
   for (let y = POCO.torre.y0; y <= POCO.torre.y1; y++) for (let x = POCO.torre.x0; x <= POCO.torre.x1; x++) vagas.push({ x, y });
   if (salvo.kost !== 'morto' && salvo.kost !== 'preso') {
-    for (let i = 0; i < 12 - (salvo.zumbisMortos ?? 0); i++) {
+    for (let i = 0; i < ZUMBIS - (salvo.zumbisMortos ?? 0); i++) {
       const z = makeMonster('zumbi', { ...vagas[(i * 2) % vagas.length] }, { nameSuffix: String(i + 1) });
       z.facingVec = { dx: -1, dy: 0 };
       zumbis.push(z);
@@ -332,7 +338,8 @@ export function criarPoco(app, config) {
 
   /** Falou com o Kost no meio da luta: a próxima leva demora mais duas rodadas. */
   function segurar() {
-    if (!levas) return;
+    if (!levas || estado.seguraUsada) return;
+    estado.seguraUsada = true;
     levas.atrasar(2);
     enc.say('acao', 'Hamun Kost ergue a mão: os mortos na porta da torre param, esperando.');
   }
@@ -408,7 +415,11 @@ export function criarPoco(app, config) {
     // curta que segura a próxima leva de mortos por duas rodadas.
     dialogoDe: (npc) => {
       if (npc !== kost) return null;
-      if (estado.lutando) return arvoreEmLuta();
+      // UMA vez por luta. A conversa segura as levas por duas rodadas e não
+      // custava ação nem tinha limite: repetindo, a vitória no 3º nível subia
+      // de 73% para 95%. Falar com o mago no meio da briga é um truque, não
+      // uma torneira.
+      if (estado.lutando) return estado.seguraUsada ? null : arvoreEmLuta();
       if (salvo.despertou && !['morto', 'preso'].includes(salvo.kost)) { esquecerUsadas(); return arvoreKost(); }
       return null;
     },

@@ -25,7 +25,9 @@ import { visaoNoEscuro, nivelDeLuz } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
 import { skillBonus } from '../rules/abilities.js';
 import { makeRng } from '../core/rng.js';
+import { takeMonsterTurn } from '../rules/ai.js';
 import { mapaDo, buildFoes } from '../game/encounter.js';
+import { criarBuscas } from '../game/buscas.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO } from '../game/esconderijo.js';
@@ -323,6 +325,96 @@ teste('a luz do mapa para na parede', () => {
     }
   }
   assert.equal(vazou, 0, `${vazou} casas escuras da mansão acenderam através da rocha`);
+});
+
+teste('uma tentativa por herói em cada ponto, e o registro sobrevive', () => {
+  const registro = {};
+  const b = criarBuscas(registro);
+  const [dara, pip] = makeParty({ nivel: 2 });
+  const porta = { x: 7, y: 3 };
+  assert.equal(b.ja(dara, 'escuta', porta), null);
+  b.marcar(dara, 'escuta', porta);
+  assert.ok(b.ja(dara, 'escuta', porta), 'o mesmo herói não tenta duas vezes');
+  assert.equal(b.ja(pip, 'escuta', porta), null, 'outro herói tem outros ouvidos');
+  assert.equal(b.ja(dara, 'escuta', { x: 9, y: 3 }), null, 'outra porta é outro ponto');
+  assert.equal(b.ja(dara, 'espia', porta), null, 'escutar e espiar são tentativas diferentes');
+  // Precisa ser JSON puro: as cenas guardam isto em `app.campanha`.
+  assert.deepEqual(JSON.parse(JSON.stringify(registro)), registro);
+  b.limpar('escuta');
+  assert.equal(b.ja(dara, 'escuta', porta), null, 'limpar devolve o ponto');
+});
+
+// ---- os defeitos de motor que a fase 4 revelou ---------------------------
+
+teste('Tenacidade Mortoviva: o zumbi fica de pé com 1 PV, menos no radiante', () => {
+  const mapa = Array.from({ length: 12 }, () => '.'.repeat(12));
+  const deUmLance = (tipo, semente) => {
+    const party = makeParty({ nivel: 3 }).slice(0, 1);
+    party[0].pos = { x: 1, y: 1 };
+    const z = makeMonster('zumbi', { x: 5, y: 5 });
+    z.hp = 3;
+    const enc = new Encounter({ battlefield: new Battlefield(12, 12, mapa), party, foes: [z], rng: makeRng(semente) });
+    enc.applyDamage(z, 4, tipo);
+    return z;
+  };
+  // CD 5 + 4 = 9, Constituição +3: passa em 75% dos lances.
+  let vivos = 0;
+  for (let i = 0; i < 200; i += 1) if (deUmLance('cortante', i).hp === 1) vivos += 1;
+  assert.ok(vivos > 120 && vivos < 180, `sobreviveu ${vivos} de 200, esperado perto de 150`);
+  for (let i = 0; i < 20; i += 1) assert.equal(deUmLance('radiante', i).dead, true, 'radiante não deixa levantar');
+});
+
+teste('o monstro de corpo a corpo fecha a distância em vez de arremessar', () => {
+  const mapa = Array.from({ length: 30 }, () => '.'.repeat(30));
+  const turno = (id, casas) => {
+    const party = makeParty({ nivel: 3 });
+    party.forEach((c, i) => { c.pos = { x: 2 + i, y: 2 }; });
+    const m = makeMonster(id, { x: 2, y: 2 + casas });
+    const enc = new Encounter({ battlefield: new Battlefield(30, 30, mapa), party, foes: [m], rng: makeRng(7) });
+    enc.start();
+    enc.side = 'foes';
+    Object.assign(m, { acted: false, actionUsed: false, movementLeftFt: enc.speedOf(m) });
+    const antes = { ...m.pos };
+    takeMonsterTurn(enc, m);
+    return Math.max(Math.abs(antes.x - m.pos.x), Math.abs(antes.y - m.pos.y));
+  };
+  // A azagaia do bugbear alcança 120 pés: a 60 ele tem de andar, não atirar.
+  assert.ok(turno('bugbear', 12) > 0, 'o bugbear ficou parado jogando azagaia');
+  assert.ok(turno('ogro', 12) > 0, 'o ogro ficou parado jogando azagaia');
+  // Quem é atirador de verdade, ou está em alcance normal, continua atirando.
+  assert.equal(turno('goblinArqueiro', 12), 0, 'o arqueiro não devia sair do lugar');
+});
+
+teste('o monstro contorna a quina em vez de travar na parede de borda', () => {
+  // Parede no norte E no oeste de (2,2): (1,1) fica na diagonal, sem contato.
+  const linhas = Array.from({ length: 6 }, () => '.'.repeat(6));
+  const quina = ['......', '......', '..#...', '......', '......', '......'];
+  const f = new Battlefield(6, 6, linhas, null, null, { n: quina, o: quina });
+  assert.equal(f.contato({ x: 1, y: 1 }, { x: 2, y: 2 }), false, 'a quina corta o contato');
+  const party = makeParty({ nivel: 3 }).slice(0, 1);
+  party[0].pos = { x: 1, y: 1 };
+  const m = makeMonster('hobgoblin', { x: 2, y: 2 });
+  const enc = new Encounter({ battlefield: f, party, foes: [m], rng: makeRng(3) });
+  enc.start();
+  enc.side = 'foes';
+  Object.assign(m, { acted: false, actionUsed: false, movementLeftFt: enc.speedOf(m) });
+  takeMonsterTurn(enc, m);
+  assert.ok(m.pos.x !== 2 || m.pos.y !== 2, 'ficou parado na quina');
+  assert.equal(m.actionUsed, true, 'contornou mas não atacou');
+});
+
+teste('o Gundren não morre do dano de área do próprio grupo', () => {
+  // O capítulo inteiro é resgatá-lo, e ele fica deitado ao lado do Grol.
+  // `refem` faz um NPC a 0 PV cair desacordado em vez de morrer.
+  const mapa = Array.from({ length: 12 }, () => '.'.repeat(12));
+  const party = makeParty({ nivel: 5 }).slice(0, 1);
+  party[0].pos = { x: 1, y: 1 };
+  const anao = makeNpc('gundren', { x: 5, y: 5 }, {});
+  Object.assign(anao, { side: 'neutro', hp: 0, stable: true, preso: true, refem: true, attacks: [] });
+  const enc = new Encounter({ battlefield: new Battlefield(12, 12, mapa), party, foes: [anao], rng: makeRng(1) });
+  enc.applyDamage(anao, 24, 'fogo');
+  assert.equal(anao.dead, false);
+  assert.equal(hasCondition(anao, 'inconsciente'), true);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

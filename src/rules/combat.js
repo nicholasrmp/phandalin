@@ -3341,6 +3341,29 @@ export class Encounter {
     target.hp = 0;
     this.dropConcentration(target);
     this.say('morte', `${target.name} morre${motivo ? ` (${motivo})` : ''}.`);
+    // TENACIDADE MORTOVIVA (SRD): o zumbi que cai a 0 PV faz resistência de
+    // Constituição CD 5 + o dano levado e, passando, fica de pé com 1 PV. Não
+    // vale contra dano radiante nem contra crítico.
+    //
+    // O traço estava declarado no bloco e descrito no jogo, mas não existia
+    // aqui: medido, um zumbi de 3 PV levando 4 de cortante, que deveria
+    // sobreviver 75% das vezes, sobreviveu 0 vezes em 200. São 12 zumbis no
+    // Poço da Coruja Velha.
+    if (target.traits?.includes('undeadFortitude') && type !== 'radiante' && !critical) {
+      const cd = 5 + amount;
+      const save = this.resistencia(target, 'con', cd);
+      this.explicarResistencia(target, 'con', cd, save, {
+        contra: `Tenacidade Mortoviva (CD 5 + ${amount} de dano)`,
+        seSucesso: 'fica de pé com 1 PV',
+      });
+      if (save.success) {
+        target.hp = 1;
+        this.quedasDaFonte?.delete(target);
+        this.say('recurso', `${target.name} devia cair, e não cai: a carne morta se fecha e ele fica de pé com 1 PV.`);
+        return;
+      }
+    }
+
     this.onEvent({ type: 'died', target });
     this.checkEnd();
   }

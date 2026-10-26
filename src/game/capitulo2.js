@@ -56,6 +56,7 @@ import { ctxDe } from './magias-fora.js';
 import { rolarTeste, ativaDe } from '../rules/utilidade.js';
 import { guardar, totalEmCobre, cobrar } from './comercio.js';
 import { garantirInventario } from '../rules/equipment.js';
+import { criarBuscas } from './buscas.js';
 
 const MOVIMENTO = 60;
 
@@ -107,9 +108,12 @@ export function criarCapitulo2(app, config) {
     acordo: false, sildarLivre: false, tregua: false, tregaFeita: false,
     enchente: null, enchentes: 0, klargAvisado: false, subiuChamine: false,
     lobosRosnaram: false, ponteCortada: false, diqueRompido: false,
-    escutaram: new Set(),
+    // Uma tentativa por herói em cada ponto (`game/buscas.js`).
+    buscas: {},
     ressaltoQuebrado: false, bauAchado: false, klargFugiu: false,
   };
+
+  const buscas = criarBuscas(estado.buscas);
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const hostis = (g) => g.membros.filter((f) => f.side === 'foes' && !f.dead && !f.fugiu);
@@ -925,10 +929,9 @@ export function criarCapitulo2(app, config) {
         // custava nada, não marcava nada e não tinha alcance: dava para clicar
         // na mesma rocha até passar na CD 15, o que é o mesmo que não ter CD.
         // Outro herói pode tentar — são outros ouvidos —, o mesmo não.
-        motivo: longe(5) ?? (estado.escutaram.has(`${c.id}:${tile.x},${tile.y}`)
-          ? `${c.name} já encostou o ouvido aqui` : null),
+        motivo: longe(5) ?? buscas.ja(c, 'escuta', tile),
         fazer: async () => {
-          estado.escutaram.add(`${c.id}:${tile.x},${tile.y}`);
+          buscas.marcar(c, 'escuta', tile);
           const t = teste(c, 'percepcao', 15);
           const perto = pendentes().filter((g) => hostis(g).some((f) => distanceFt(f.pos, c.pos) <= 50));
           await narrar(root, { formato: 'painel', paginas: [{ teste: t, texto: [t.passou

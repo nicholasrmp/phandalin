@@ -56,6 +56,7 @@ import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { prepararLevas } from './levas.js';
 import { CASTELO } from './castelo.js';
 import { guardar } from './comercio.js';
+import { criarBuscas } from './buscas.js';
 import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;
@@ -100,6 +101,13 @@ export function criarCastelo(app, config) {
     ursoSolto: false, ursoCalmo: false, bauUrso: false, despensa: false, armas: false, braseiro: false,
     altar: false, cama: false, gundren: null, mapa: null, reiAvisado: false, escorada: false,
   });
+  salvo.buscas ??= {};
+  // Uma tentativa por herói em cada ponto (`game/buscas.js`). O castelo era o
+  // único capítulo sem esse limite: escutar à porta, espiar pela fresta e
+  // procurar armadilha podiam ser repetidos até o dado sair, e aí a CD não
+  // queria dizer nada. Os capítulos 2 e 3 já jogam assim.
+  const buscas = criarBuscas(salvo.buscas);
+
   const estado = { explorando: false, encerrado: false, lutando: null, terraco: !!salvo.terracoVisto };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
@@ -128,7 +136,9 @@ export function criarCastelo(app, config) {
   m('goblinArqueiro', 5, 13, 'postoSul', 'do posto sul', { dx: 0, dy: -1 });
   m('goblinArqueiro', 7, 13, 'postoSul', 'do posto sul B', { dx: 0, dy: -1 });
   ['A', 'B', 'C'].forEach((s, i) => m('goblin', [5, 6, 6][i], [16, 17, 18][i], 'torreSul', `da torre ${s}`));
-  [[4, 2], [5, 3], [7, 2], [7, 3]].forEach(([x, y], i) => m('hobgoblin', x, y, i < 2 ? 'hobgoblins' : 'hobgoblins2', 'ABCD'[i], { dx: 1, dy: 0 }));
+  // O C ficava em (7,2), que no mapa é (9,5) — a casa do armeiro, que bloqueia
+  // passo. `occupied` não consulta `blocksMove`, então ele nascia em cima dela.
+  [[4, 2], [5, 3], [6, 2], [7, 3]].forEach(([x, y], i) => m('hobgoblin', x, y, i < 2 ? 'hobgoblins' : 'hobgoblins2', 'ABCD'[i], { dx: 1, dy: 0 }));
   // O banquete fica longe da porta do salão 2: pela porta aberta eles viam
   // o salão inteiro.
   const yegg = m('goblin', 16, 14, 'cozinha', '', { dx: -1, dy: 0 });
@@ -157,7 +167,10 @@ export function criarCastelo(app, config) {
   // Gundren: desacordado, estável, a 0 PV, perto da mesa.
   const gundren = salvo.gundren === 'morto' || salvo.gundren === 'livre' ? null : makeNpc('gundren', J(30, 8), {});
   if (gundren) {
-    Object.assign(gundren, { side: 'neutro', hp: 0, stable: true, preso: true, attacks: [] });
+    // `refem`: a 0 PV cai desacordado em vez de morrer (ver `applyDamage`). O
+    // anão é o motivo do capítulo e está deitado ao lado do Grol: sem isto, a
+    // Bola de Fogo do próprio grupo o matava — medido, 40 lances em 40.
+    Object.assign(gundren, { side: 'neutro', hp: 0, stable: true, preso: true, refem: true, attacks: [] });
     addCondition(gundren, 'inconsciente');
   }
   for (const g of Object.values(grupos)) {
@@ -522,8 +535,17 @@ export function criarCastelo(app, config) {
         : visaoNoEscuro(quem) && !emiteLuz(quem)
           ? `No cinza da visão no escuro, ${quem.name} vê movimento em ${g.nome}.`
           : `${quem.name} dá de cara com ${g.nome} — e eles com vocês.`);
-      // Quem divide a sala vem junto (o alojamento, o banquete).
-      combate(pendentes().filter((x) => x.sala === g.sala), surpresa);
+      // Quem divide a sala vem junto (o alojamento, o banquete) — MENOS a
+      // cozinha, que entra como leva na rodada 3. Oito goblins de uma vez
+      // mediam 71% de vitória no 3º nível, e era onde 36% das cadeias do
+      // castelo morriam; escalonado fica em 85%, sem perder goblin nem XP.
+      const juntos = pendentes().filter((x) => x.sala === g.sala);
+      // No salão de banquete são DOIS grupos na mesma sala, oito goblins. O
+      // outro vem na rodada 3, não de uma vez: quem está na mesa briga, quem
+      // está na cozinha larga a panela e chega depois.
+      const atrasado = g.sala === 'banquete' && juntos.length > 1 ? juntos.find((x) => x !== g) : null;
+      combate(juntos.filter((x) => x !== atrasado), surpresa,
+        atrasado ? [leva(atrasado, 2, J(16, 16), 'Da porta da cozinha chegam os outros, de colher e faca na mão.')] : []);
       return;
     }
     // Os aposentos do rei.
@@ -595,9 +617,11 @@ export function criarCastelo(app, config) {
         'Lá dentro, couro de bicho forrando o chão e cabeças secas na parede. O rei Grol é um bugbear grisalho, de costas tortas; o lobo dele se levanta num canto. Do outro lado da mesa, uma elfa de pele escura e cabelo branco olha para vocês como quem já esperava visita. Encostado na parede, um anão desacordado.',
       ]);
     }
-    // O lobo estava no canto: chega na segunda rodada.
+    // O lobo estava no canto: chega na TERCEIRA rodada. Chegando na segunda,
+    // o quarto media 82% de vitória no 3º nível — e o grupo chega aqui no 3º,
+    // não no 4º, porque a campanha inteira paga 1.125 XP até esta porta.
     rosnado.correndo = true;
-    combate([g], null, [{ rodada: 2, units: rosnado.dead ? [] : [Object.assign(rosnado, { side: 'foes', pos: { ...rosnado.pos, ...J(29, 6) } })], aviso: 'Rosnado pula de trás da cama, de dentes à mostra.' }]);
+    combate([g], null, [{ rodada: 3, units: rosnado.dead ? [] : [Object.assign(rosnado, { side: 'foes', pos: { ...rosnado.pos, ...J(29, 6) } })], aviso: 'Rosnado pula de trás da cama, de dentes à mostra.' }]);
   }
 
   // --------------------------------------------------- turnos da cena ----
@@ -611,10 +635,16 @@ export function criarCastelo(app, config) {
       if (grol.hp <= grol.maxHp / 2) {
         estado.refem = false;
         enc.say('acao', 'Sangrando, Grol tira o machado do pescoço do anão: agora a briga é pela própria pele.');
-      } else if (!herois().some((h) => distanceFt(h.pos, gundren.pos) <= 5)) {
-        if (!estado.refemTurnos) {
-          estado.refemTurnos = 1;
-          enc.say('acao', '— Última chance — diz Grol, e encosta o fio do machado na nuca do anão. — Na próxima, eu não aviso.');
+      // Chegar perto do anão basta: 10 pés, e não 5. Com um aviso só e 5 pés,
+      // o Gundren morria em 98% das lutas — e com ele os 200 XP de levá-lo a
+      // Phandalin. Agora são DOIS turnos de aviso, que é o tempo de alguém
+      // atravessar o aposento.
+      } else if (!herois().some((h) => distanceFt(h.pos, gundren.pos) <= 10)) {
+        if ((estado.refemTurnos ?? 0) < 2) {
+          estado.refemTurnos = (estado.refemTurnos ?? 0) + 1;
+          enc.say('acao', estado.refemTurnos === 1
+            ? '— Para aí — diz Grol, e encosta o fio do machado na nuca do anão. — Mais um passo e ele dorme para sempre.'
+            : '— Última chance. Na próxima, eu não aviso.');
           return true;
         }
         estado.refem = false;
@@ -783,8 +813,9 @@ export function criarCastelo(app, config) {
       const vizinhos = () => moradoresEm(sala);
       ops.push({
         rotulo: 'Escutar à porta', icone: 'acao-procurar', detalhe: 'Percepção, CD 10',
-        motivo: longe(5),
+        motivo: longe(5) ?? buscas.ja(c, 'escuta', tile),
         fazer: async () => {
+          buscas.marcar(c, 'escuta', tile);
           const t = teste(c, 'percepcao', 10);
           const quem = vizinhos();
           if (!t.passou) {
@@ -802,8 +833,9 @@ export function criarCastelo(app, config) {
       });
       ops.push({
         rotulo: 'Espiar pela fresta', icone: 'acao-procurar', detalhe: 'Percepção, CD 12',
-        motivo: longe(5),
+        motivo: longe(5) ?? buscas.ja(c, 'espia', tile),
         fazer: async () => {
+          buscas.marcar(c, 'espia', tile);
           const t = teste(c, 'percepcao', 12);
           if (!t.passou) {
             await painel('A fresta é um fio de luz, e o olho não acostuma a tempo. Só vultos.', { teste: t });
@@ -818,8 +850,9 @@ export function criarCastelo(app, config) {
       });
       ops.push({
         rotulo: 'Procurar armadilhas na porta', icone: 'acao-procurar', detalhe: 'Investigação, CD 12',
-        motivo: longe(5),
+        motivo: longe(5) ?? buscas.ja(c, 'armadilhaPorta', tile),
         fazer: async () => {
+          buscas.marcar(c, 'armadilhaPorta', tile);
           const t = teste(c, 'investigacao', 12);
           // O castelo tem UMA armadilha, e ela não é de porta: é o fio no
           // entulho do salão. Procurar na porta errada não acha nada, e
@@ -838,8 +871,10 @@ export function criarCastelo(app, config) {
     }
     // O fio do salão.
     if (!salvo.armadilha && em('salaoArmadilha')) {
-      ops.push({ rotulo: 'Procurar armadilhas', icone: 'acao-procurar', detalhe: 'Percepção, CD 10', motivo: longe(15),
+      ops.push({ rotulo: 'Procurar armadilhas', icone: 'acao-procurar', detalhe: 'Percepção, CD 10',
+        motivo: longe(15) ?? buscas.ja(c, 'armadilhaChao'),
         fazer: async () => {
+          buscas.marcar(c, 'armadilhaChao');
           const t = teste(c, 'percepcao', 10);
           if (t.passou) salvo.armadilha = 'vista';
           await painel(t.passou ? 'No entulho diante da porta leste, um fio de cobre na altura do tornozelo, amarrado a pinos no teto. Dá para passar por cima, com cuidado.' : 'Entulho, poeira, argamassa caída. Nada de mais.', { teste: t });
@@ -878,10 +913,11 @@ export function criarCastelo(app, config) {
         } });
     }
     if (em('salaoEscuro') && sup === 'laje' && !salvo.religiao) {
-      ops.push({ rotulo: 'Examinar os entalhes', icone: 'acao-procurar', detalhe: 'Religião, CD 10', motivo: longe(10),
+      ops.push({ rotulo: 'Examinar os entalhes', icone: 'acao-procurar', detalhe: 'Religião, CD 10',
+        motivo: longe(10) ?? buscas.ja(c, 'entalhes', tile),
         fazer: async () => {
+          buscas.marcar(c, 'entalhes', tile);
           const t = teste(c, 'religiao', 10);
-          // Só marca quando alguém acerta: o livro não limita a uma tentativa.
           if (t.passou) salvo.religiao = true;
           await painel(t.passou ? 'As figuras seguram livro, estrela, sol e moeda — a gente deste castelo rezava a um panteão que não é goblin nenhum. Quem ergueu estas paredes morreu há muito, e os que moram aqui agora não fazem ideia de quem era.' : 'Figuras de asas, gastas pelo tempo. Quem são, não dá para dizer.', { teste: t });
         } });
@@ -911,18 +947,24 @@ export function criarCastelo(app, config) {
           if (t.passou) { salvo.portaoAberto = true; abrir('portaoTraseiro'); }
           await painel(t.passou ? 'O portão de ferro cede de uma vez, com um barulho que o castelo inteiro escuta.' : 'O ferro aguenta. O barulho, não: lá dentro, pratos param de bater.', { teste: t });
           app.refresh();
-          // O barulho acorda o castelo: os de dentro vêm em ondas.
+          // O barulho acorda QUEM ESTÁ PERTO — o portão fica no fundo, ao lado
+          // do banquete. Antes somava também o alarme dos arqueiros da frente,
+          // e a conta dava VINTE criaturas em ondas: medido, 0% de vitória no
+          // 3º nível, 1% no 4º. Agora são as mesmas onze do fio, que medem 88%.
           if (!salvo.alarme && !salvo.disfarce) {
-            await asArmas('Pelas seteiras acima do portão, cabeças de goblin aparecem — e somem gritando.');
-            const ondas = [...ondasDoBarulho(J(18, 16)), ...alarmeDosArqueiros()];
-            combate([grupos.postoNorte, grupos.postoSul].filter((g) => !g.vencido), null, ondas);
+            await asArmas('Do outro lado do portão, pratos param de bater e bancos arrastam no chão.');
+            const [primeira, ...resto] = ondasDoBarulho(J(18, 16));
+            void primeira;
+            combate([grupos.banquete].filter((g) => !g.vencido), null, resto);
           }
         } });
     }
     // A lona da torre em ruínas, vista de fora.
     if (!salvo.lonaAchada && junto(tile, 'lona') && dentro(tile, { x0: 0, y0: 0, x1: 99, y1: CASTELO.lona.y - 1 })) {
-      ops.push({ rotulo: 'Procurar uma entrada', icone: 'acao-procurar', detalhe: 'Percepção, CD 10', motivo: longe(10),
+      ops.push({ rotulo: 'Procurar uma entrada', icone: 'acao-procurar', detalhe: 'Percepção, CD 10',
+        motivo: longe(10) ?? buscas.ja(c, 'entradaLona'),
         fazer: async () => {
+          buscas.marcar(c, 'entradaLona');
           const t = teste(c, 'percepcao', 10);
           if (t.passou) { salvo.lonaAchada = true; abrir('lona'); }
           await painel(t.passou ? 'Uma trilha de pegadas some nos escombros da torre do norte — e some porque passa por baixo de uma lona velha, pintada da cor da pedra.' : 'Pedra caída, mato, mais pedra.', { teste: t });
@@ -969,8 +1011,10 @@ export function criarCastelo(app, config) {
         } });
     }
     if (sup === 'arca' && em('torreUrso') && !salvo.bauUrso && (grupos.urso.vencido)) {
-      ops.push({ rotulo: 'Procurar no alto', icone: 'acao-procurar', detalhe: 'Percepção, CD 15', motivo: longe(10),
+      ops.push({ rotulo: 'Procurar no alto', icone: 'acao-procurar', detalhe: 'Percepção, CD 15',
+        motivo: longe(10) ?? buscas.ja(c, 'bauUrso'),
         fazer: async () => {
+          buscas.marcar(c, 'bauUrso');
           const t = teste(c, 'percepcao', 15);
           if (t.passou) {
             salvo.bauUrso = true;
@@ -1127,10 +1171,21 @@ export function criarCastelo(app, config) {
     depoisDaConversa: () => {},
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
-      if (tipo === 'longo' && !grupos.rei.vencido) return 'dentro do castelo do rei goblin? Não';
+      // A TORRE EM RUÍNAS, depois que a frente cai, é lugar de dormir. O grupo
+      // chega ao castelo no 3º nível — a campanha inteira paga 1.125 XP até
+      // esta porta — e a proibição era de fachada, porque "Voltar à trilha"
+      // sempre esteve ali e lá fora o descanso longo é livre. Medido: a cadeia
+      // completa quebrava em 38% das vezes no quarto do rei, com o grupo
+      // chegando lá com dois terços da vida.
+      const frenteLimpa = [grupos.postoNorte, grupos.postoSul, grupos.torreSul].every((g) => g.vencido);
+      if (tipo === 'longo' && !grupos.rei.vencido && !frenteLimpa) {
+        return 'com os arqueiros nas seteiras, ninguém dorme aqui';
+      }
       return null;
     },
-    textoDoDescanso: () => ['Um descanso num canto de torre caída, com alguém de guarda na porta.'],
+    textoDoDescanso: (tipo) => (tipo === 'curto'
+      ? ['Um descanso num canto de torre caída, com alguém de guarda na porta.']
+      : ['Oito horas na torre em ruínas, com a lona puxada sobre a entrada e dois de vocês acordados por vez. O castelo range a noite inteira, e ninguém vem.']),
     async iniciar() {
       prepararExploracao();
       if (gundren && !enc.combatants.includes(gundren)) enc.addCombatant(gundren);

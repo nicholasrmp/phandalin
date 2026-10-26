@@ -317,7 +317,15 @@ export function takeMonsterTurn(enc, monster) {
   }
 
   // 3: não dá para encostar neste turno — aí sim usa o que tiver à distância.
-  const shot = pickReachableTarget(enc, monster, ordered);
+  //
+  // Só vale o tiro em alcance NORMAL, a não ser que a criatura seja atiradora
+  // de verdade (`tatica: 'atirador'`). Antes bastava "consigo atacar daqui?",
+  // e a azagaia do bugbear alcança 120 pés: medido, Grol ficava a 60 pés
+  // jogando azagaia de 1d6+2 — e com desvantagem de alcance longo — por três
+  // rodadas seguidas, em vez de fechar para o machado de 2d8+2. Valia também
+  // para Klarg, Mosk, o ogro, os orcs, hobgoblins e goblins. Sem tiro em
+  // alcance normal, cai na regra 4, que anda e ataca.
+  const shot = pickReachableTarget(enc, monster, ordered, { normalOnly: monster.tatica !== 'atirador' });
   if (shot) {
     enc.attackAction(monster, shot.target, shot.weaponName);
     enc.endTurn(monster);
@@ -381,7 +389,16 @@ function planApproachEm(enc, monster, targets, reached, { meleeOnly = false } = 
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
       const d = distanceFt(spot, t.pos);
-      const canHit = d <= meleeReach
+      // O corpo a corpo precisa de CONTATO, não só de distância: `distanceFt`
+      // não sabe de parede de borda, e o castelo é todo feito delas. Sem isto,
+      // o monstro na diagonal do herói, do outro lado de uma quina, se dava
+      // por posicionado — não andava — e depois `canAttack` recusava o golpe
+      // pela parede. Medido: hobgoblins parados mais de 20 rodadas, e 15 de 40
+      // lutas de terraço travadas.
+      const naReach = meleeReach <= 5
+        ? enc.field.contato(spot, t.pos)
+        : d <= meleeReach && enc.field.hasLineOfSight(spot, t.pos);
+      const canHit = naReach
         || (!meleeOnly && monster.attacks?.some((a) => a.ranged && d <= a.rangeFt) && enc.field.hasLineOfSight(spot, t.pos));
       if (!canHit) continue;
       // Prefere o alvo melhor pontuado e, entre iguais, o caminho mais curto.

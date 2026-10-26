@@ -235,7 +235,11 @@ casa(21, 12, 'e')                         # 12: braseiro
 # para o urso, que e Grande.
 # 13: o livro diz que a torre foi livraria e sala de trabalho, e que nada
 # dela restou inteiro -- entulho e caixotes encostados na parede.
-casa(21, 17, 'i'); casa(24, 16, 'i'); casa(20, 18, 'E'); casa(26, 18, 'E')
+# O caixote de (21,17) — jogo (25,20) — travava o urso-coruja na torre: ele é
+# Grande (2x2) e a pegada da ancora ao lado do vao caia em cima dele. Medido:
+# 27 ancoras alcancaveis, TODAS dentro da torre, e dos 39 pontos de fora com
+# linha de visao ele alcancava um. Movido para (24,19), jogo (28,22).
+casa(24, 19, 'i'); casa(24, 16, 'i'); casa(20, 18, 'E'); casa(26, 18, 'E')
 BAU_URSO = (25, 16)
 casa(*BAU_URSO, 't')                      # 13: o bau na borda do andar caido
 movel('D', [(27, 2), (28, 2), (27, 3), (28, 3)], (0, 1))   # 14: a cama grande

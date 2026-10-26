@@ -289,7 +289,10 @@ export function criarCume(app, config) {
       'O acampamento é de vocês. E, no fundo da caverna, um baú que ninguém se deu ao trabalho de fechar.',
       camp.poco?.kost === 'acordo' ? '(O Hamun Kost, no Poço da Coruja Velha, vai querer saber disto.)' : null,
     ].filter(Boolean));
-    await darXpDoLivro(1250, 'O Cume da Wyvern');
+    // 1.600, que é a soma dos blocos (vigia, seis orcs, Brughor e o ogro). O
+    // número antigo, 1.250, pagava 350 a menos do que o bando vale — e a
+    // campanha inteira já entrega o grupo no 3º nível para a fase toda.
+    await darXpDoLivro(1600, 'O Cume da Wyvern');
     prepararExploracao();
   }
 

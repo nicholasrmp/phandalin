@@ -54,6 +54,7 @@ import { addCondition, removeCondition, hasCondition } from '../rules/conditions
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
+import { criarBuscas } from './buscas.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste, disfarcado, disfarceDe, ativaDe } from '../rules/utilidade.js';
 import { guardar } from './comercio.js';
@@ -98,6 +99,7 @@ export function criarMansao(app, config) {
   // outros olhos e outros ouvidos); o mesmo, não. Objeto, e não Set, porque
   // `salvo` sobrevive a sair e voltar da masmorra.
   salvo.buscas ??= {};
+  const buscas = criarBuscas(salvo.buscas);
   const grupos = {};
   for (const f of todos) (grupos[f.grupo] ??= { id: f.grupo, membros: [], ativo: false, vencido: false }).membros.push(f);
   for (const g of Object.values(grupos)) {
@@ -902,10 +904,9 @@ export function criarMansao(app, config) {
     const ops = [];
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
     const f = enc.field;
-    /** Uma tentativa por herói em cada ponto: o motivo, se já tentou. */
-    const jaBuscou = (tipo, onde = tile) => (salvo.buscas[`${c.id}:${tipo}:${onde.x},${onde.y}`]
-      ? `${c.name} já tentou aqui` : null);
-    const marcarBusca = (tipo, onde = tile) => { salvo.buscas[`${c.id}:${tipo}:${onde.x},${onde.y}`] = true; };
+    // Uma tentativa por herói em cada ponto (`game/buscas.js`).
+    const jaBuscou = (tipo, onde = tile) => buscas.ja(c, tipo, onde);
+    const marcarBusca = (tipo, onde = tile) => buscas.marcar(c, tipo, onde);
 
     // Paredes: procurar porta secreta, e escutar atrás das portas.
     if (sup === 'rocha' || sup === 'alvenaria') {
