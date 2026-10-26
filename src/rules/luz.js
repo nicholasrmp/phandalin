@@ -209,6 +209,9 @@ export function visaoDoGrupo(enc) {
       if (melhor > ESCURO) mapa.set(`${x},${y}`, melhor);
     }
   }
+  // A VISTA DO ALTO (a cena do telhado da guarnicao): casas que o grupo enxerga por cima de tudo,
+  // dadas pela cena em `field.vistaExtra` (conjunto de 'x,y'). Quem a muda sobe `field.versao`.
+  for (const k of enc.field.vistaExtra ?? []) if (!mapa.has(k)) mapa.set(k, CLARO);
   enc._visao = { chave, mapa };
   return mapa;
 }

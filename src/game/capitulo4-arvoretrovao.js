@@ -809,6 +809,8 @@ export function criarArvoreTrovao(app, config) {
 
   // ------------------------------------------------------ aproximação ----
   async function depoisDeMover(c) {
+    // Quem estava no telhado e saiu do lugar desceu: a vista do alto acaba.
+    if (estado.vigia && c.id === estado.vigia.id && (c.pos.x !== estado.vigia.x || c.pos.y !== estado.vigia.y)) descerDoTelhado();
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
     // Nenhum gatilho desta cena usa raio sozinho: os de bando vão por
@@ -1047,6 +1049,29 @@ export function criarArvoreTrovao(app, config) {
     if (est) { PROP_EM.delete(`${est.x},${est.y}`); derrubarEstatua(est); }
   }
 
+  // A VISTA DO ALTO: todas as casas de FORA das construções num raio de 40 casas (200 pés) do alçapão: dali a praça e a torre (de cima
+  // se vê por cima das árvores). O motor soma `field.vistaExtra` à visão do grupo (`rules/luz.js`).
+  function subirAoTelhado(c, tile) {
+    const f = enc.field;
+    const vista = new Set();
+    for (let y = Math.max(0, tile.y - 40); y <= Math.min(f.h - 1, tile.y + 40); y++) {
+      for (let x = Math.max(0, tile.x - 40); x <= Math.min(f.w - 1, tile.x + 40); x++) {
+        if (!f.sala?.has(`${x},${y}`)) vista.add(`${x},${y}`);
+      }
+    }
+    f.vistaExtra = vista;
+    f.versao = (f.versao ?? 0) + 1;
+    estado.vigia = { id: c.id, x: tile.x, y: tile.y };
+    app.refresh();
+  }
+  function descerDoTelhado() {
+    if (!estado.vigia) return;
+    enc.field.vistaExtra = null;
+    enc.field.versao = (enc.field.versao ?? 0) + 1;
+    estado.vigia = null;
+    app.refresh();
+  }
+
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const ops = [];
@@ -1279,6 +1304,7 @@ export function criarArvoreTrovao(app, config) {
               const t = teste(c, acao.pericia, acao.cd);
               if (!t.passou) { await painel(acao.falha, { teste: t }); return; }
               pista(acao.pista);
+              if (acao.chave === 'alcapao') salvo.alcapaoAberto = true;
               await painel(acao.sucesso, { teste: t });
             },
           });
@@ -1299,6 +1325,21 @@ export function criarArvoreTrovao(app, config) {
               await painel(e.sucesso, { teste: t });
             },
           });
+        }
+        // O TELHADO DA GUARNIÇÃO: com o alçapão aberto, um herói sobe e o grupo ENXERGA a rua de cima
+        // (a praça, a torre, o largo) enquanto ele estiver lá. Basta ele sair do lugar para descer.
+        if (variante === 'alcapaoFechado' && salvo.alcapaoAberto) {
+          const em = estado.vigia;
+          ops.push(em && em.id === c.id
+            ? { rotulo: 'Descer do telhado', icone: 'acao-levantarSe', motivo: null, fazer: () => descerDoTelhado() }
+            : {
+              rotulo: 'Subir ao telhado', icone: 'acao-saltar', detalhe: 'vê a rua inteira, de cima',
+              motivo: alcance() ?? (em ? 'já há alguém lá em cima' : null),
+              fazer: async () => {
+                subirAoTelhado(c, tile);
+                await painel('A escada range, mas aguenta. No alto, um parapeito de pedra baixa e a cinza em volta: de lá se vê a rua inteira, a praça, o largo do poço e, no fim dela, a torre. Ninguém olha para cima.');
+              },
+            });
         }
         if (variante === 'casuloElfo' && !salvo.casuloElfo) {
           ops.push({

@@ -259,3 +259,33 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.ok(temOpcao(arvore(), 'escama'), 'com a pista, a opção da escama aparece');
   ok('Reidoth: a Onda Eco só depois de um favor (e o Enclave os tem por amigos), e as pistas abrem opções');
 }
+
+// --- o telhado da guarnição: abrir o alçapão e subir dá a vista do alto, até o herói sair do lugar -------
+{
+  const { visaoDoGrupo } = await import('../../rules/luz.js');
+  const alc = A.props.find((p) => p.variante === 'alcapaoFechado');
+  let achou = null;
+  for (let seed = 1; seed < 120 && !achou; seed += 1) {
+    const S = await novaCena(seed * 17, { nivel: 5 });
+    S.party.forEach((x) => garantirInventario(x));
+    for (const her of S.party) {
+      her.pos = { x: alc.x, y: alc.y };
+      const op = S.cena.interacoes(alc, S.field.surfaceAt(alc.x, alc.y), her).find((o) => o.rotulo === 'Abrir o alçapão');
+      if (!op || op.motivo) continue;
+      await op.fazer();
+      if (S.app.campanha.arvoreTrovao.alcapaoAberto) { achou = { S, her }; break; }
+    }
+  }
+  assert.ok(achou, 'alguém abre o alçapão');
+  const { S, her } = achou;
+  const sobe = S.cena.interacoes(alc, S.field.surfaceAt(alc.x, alc.y), her).find((o) => o.rotulo === 'Subir ao telhado');
+  assert.ok(sobe && !sobe.motivo, 'com o alçapão aberto dá para subir');
+  const longe = { x: A.praca.x0 + 2, y: A.praca.y0 + 2 };      // um ponto da praça, longe do herói
+  const vistoAntes = visaoDoGrupo(S.enc).has(`${longe.x},${longe.y}`);
+  await sobe.fazer();
+  assert.ok(visaoDoGrupo(S.enc).has(`${longe.x},${longe.y}`), 'do telhado se vê a praça');
+  her.pos = { x: alc.x + 1, y: alc.y };
+  await S.cena.depoisDeMover(her);
+  assert.equal(S.field.vistaExtra ?? null, null, 'saiu do lugar: a vista do alto acaba');
+  ok(`o telhado da guarnição: vê a praça de cima (antes: ${vistoAntes ? 'já via' : 'não via'}), e acaba quando o herói sai`);
+}
