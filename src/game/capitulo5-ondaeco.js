@@ -14,14 +14,14 @@
 // O estado mora em `app.campanha.ondaEco` e sobrevive a sair e voltar.
 
 import { narrar } from '../view/narrativa.js';
-import { distanceFt, ARESTA, GLIFOS, SUPERFICIES } from '../core/grid.js';
+import { distanceFt, ARESTA, Battlefield } from '../core/grid.js';
 import { d20, damageRoll } from '../core/dice.js';
 import { skillBonus, passivePerception, saveBonus, SKILL_NAME } from '../rules/abilities.js';
 import { addCondition } from '../rules/conditions.js';
 import { criarBuscas } from './buscas.js';
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
-import { itemDeId } from '../rules/equipment.js';
+import { itemDeId, garantirInventario } from '../rules/equipment.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { ONDA_ECO } from './ondaeco.js';
@@ -246,15 +246,15 @@ export function criarOndaEco(app) {
   // O GÁS DOS FUNGOS (área 8): quem atravessa a caverna solta o gás do tapete. Salvaguarda de Constituição
   // CD 11 de todos que estão lá; falhou, 3d6 de veneno e envenenado por dez minutos. O gás some em um minuto, e
   // quem termina o turno lá dentro repete — aqui, a cada quatro passos dentro da caverna.
-  async function gasDosFungos(entrou) {
+  async function gasDosFungos(quemAndou) {
     const dentro = herois().filter((h) => naArea(h.pos, '8'));
     if (!dentro.length) { salvo.gas = {}; return; }
-    for (const h of dentro) {
-      salvo.gas[h.id] = (salvo.gas[h.id] ?? -1) + 1;
-      if (!(entrou && salvo.gas[h.id] === 0) && salvo.gas[h.id] % 4 !== 0) continue;
-    }
-    const alvos = dentro.filter((h) => salvo.gas[h.id] % 4 === 0);
-    if (!alvos.length) return;
+    // O tapete solta o gás quando ALGUÉM anda por cima dele: no primeiro passo dentro da caverna, e depois a cada
+    // dois movimentos de quem está lá. Todos os que estão na caverna fazem a salvaguarda.
+    if (!naArea(quemAndou.pos, '8')) return;
+    salvo.gas.passos = (salvo.gas.passos ?? -1) + 1;
+    if (salvo.gas.passos % 2 !== 0) return;
+    const alvos = dentro;
     const falharam = [];
     for (const h of alvos) {
       const s = salvaguarda(h, 'con', 11);
@@ -341,13 +341,18 @@ export function criarOndaEco(app) {
     let quantos = 0;
     for (let i = 0; i < n; i += 1) quantos += faces > 1 ? dado(faces) : 1;
     const centro = herois()[0].pos;
+    // Só onde o grupo ALCANÇA (portas no estado de agora: a IA não abre porta) e onde a pegada cabe.
+    const alc = enc.field.reachable(centro, 100000, () => false);
+    const grande = tipo === 'gelatinaOcre';
+    const cabe = (x, y) => (grande ? [[0, 0], [1, 0], [0, 1], [1, 1]] : [[0, 0]]).every(([dx, dy]) => (
+      enc.field.inside(x + dx, y + dy) && !enc.field.blocksMove(x + dx, y + dy) && alc.has(`${x + dx},${y + dy}`) && !enc.occupied(x + dx, y + dy)));
     const volta = [];
-    for (let k = 0; k < 400 && volta.length < quantos; k += 1) {
+    for (let k = 0; k < 600 && volta.length < quantos; k += 1) {
       const x = centro.x + Math.round((enc.rng() - 0.5) * 16);
       const y = centro.y + Math.round((enc.rng() - 0.5) * 16);
-      if (!enc.field.inside(x, y) || enc.field.blocksMove(x, y) || Math.abs(x - centro.x) + Math.abs(y - centro.y) < 5) continue;
-      if (areaDe({ x, y }) === null || volta.some((v) => v.x === x && v.y === y)) continue;
-      if ((tipo === 'gelatinaOcre') && enc.field.paredeNaPegada?.(x, y, 2)) continue;
+      if (Math.abs(x - centro.x) + Math.abs(y - centro.y) < 5 || areaDe({ x, y }) === null) continue;
+      if (volta.some((v) => Math.abs(v.x - x) < 2 && Math.abs(v.y - y) < 2)) continue;
+      if (!cabe(x, y) || (grande && enc.field.paredeNaPegada?.(x, y, 2))) continue;
       volta.push({ x, y });
     }
     if (!volta.length) return false;
@@ -362,11 +367,20 @@ export function criarOndaEco(app) {
   async function depoisDeMover(c) {
     if (!estado.explorando || !c) return;
     c.movementLeftFt = MOVIMENTO;
-    const aqui = (id) => herois().some((h) => naArea(h.pos, id));
+    // Um movimento de 60 pés pode atravessar uma área e terminar fora dela: vale o caminho inteiro (da casa onde o
+    // herói estava até onde parou), e não só o ponto final.
+    const antes = (estado.ultima ??= {})[c.id];
+    estado.ultima[c.id] = { x: c.pos.x, y: c.pos.y };
+    let rota = [];
+    if (antes && (antes.x !== c.pos.x || antes.y !== c.pos.y)) {
+      const alc = enc.field.reachable(antes, 100000, () => false);
+      rota = Battlefield.pathFrom(alc, { x: c.pos.x, y: c.pos.y }) ?? [];
+    }
+    const aqui = (id) => herois().some((h) => naArea(h.pos, id)) || rota.some((p) => areaDe(p) === id);
     // AS ONDAS ESTRONDOSAS: de tempos em tempos o estrondo chega pela pedra, mais forte para o nordeste.
     salvo.passos = (salvo.passos ?? 0) + 1;
     if (salvo.passos % 30 === 0) enc.say('acao', c.pos.x > 48 && c.pos.y < 30 ? TEXTOS.ondaPerto : TEXTOS.ondaLonge);
-    if (aqui('8')) { await gasDosFungos(!salvo.gasEntrou); salvo.gasEntrou = true; } else if (salvo.gasEntrou) { salvo.gasEntrou = false; salvo.gas = {}; }
+    if (aqui('8')) await gasDosFungos(c); else salvo.gas = {};
     if (stirges.length && !salvo.stirges && aqui('3')) { await acordarStirges(); return; }
     if (esqueletos.length && !salvo.esqueletos && aqui('4')) { await acordarEsqueletos(); return; }
     if (ghoulsSul.length && !salvo.ghoulsSul && aqui('6')) { await acordarGhoulsSul(); return; }
@@ -403,7 +417,7 @@ export function criarOndaEco(app) {
     const lutou = estado.lutando ?? [];
     const reforcos = estado.reforcos ?? [];
     const todos = [...new Set([...lutou, ...reforcos])];
-    const dos = (lista) => todos.some((f) => lista.includes(f));
+    const dos = (lista) => lutou.some((f) => lista.includes(f));
     const total = (lista) => valeDoBando([...new Set([...lista, ...reforcos.filter((f) => f.dead)])].filter((f) => f.dead));
     if (estado.vagando && dos(estado.vagando)) {
       const xp = valeDoBando(estado.vagando);
@@ -448,7 +462,7 @@ export function criarOndaEco(app) {
     const quem = herois()[0];
     if (quem) {
       guardar(quem, 'pocaoDeCura', 1);
-      guardar(quem, 'cajadoAranha', 1);
+      (quem.weapons ??= []).push('cajadoAranha');
       guardar(quem, 'chaveDoAranhaNegra', 1);
     }
     feitos.nezznarDerrotado = true;
@@ -681,7 +695,7 @@ export function criarOndaEco(app) {
           }
           salvo.itensForja = true;
           (c.weapons ??= []).push('lightbringer');
-          guardar(c, 'dragonguard', 1);
+          garantirInventario(c).bag.push({ id: 'dragonguard', tipo: 'armadura', qtd: 1 });
           feitos.temLightbringer = true;
           await painel(TEXTOS.itensForja);
           app.refresh();
@@ -689,9 +703,10 @@ export function criarOndaEco(app) {
       });
     }
     if (v === 'estante' && naArea(tile, '14') && !salvo.mapaMormesk) {
-      lin('Procurar o mapa nos tomos', 'investigacao', 12, 'tomosMormesk', async (r) => {
-        const livre = ['pago', 'morto'].includes(salvo.mormesk);
-        if (!livre) { await painel(TEXTOS.mormeskVigia); return; }
+      const livre = ['pago', 'morto'].includes(salvo.mormesk) || !mormesk;
+      if (!livre) {
+        ops.push({ rotulo: 'Procurar o mapa nos tomos', icone: 'acao-procurar', motivo: alcance() ?? 'Mormesk vigia os livros', fazer: () => painel(TEXTOS.mormeskVigia) });
+      } else lin('Procurar o mapa nos tomos', 'investigacao', 12, 'tomosMormesk', async (r) => {
         if (!r.passou) { await painel(TEXTOS.tomosNada, { teste: r }); return; }
         salvo.mapaMormesk = true;
         guardar(c, 'mapaDeMormesk', 1);
@@ -794,6 +809,11 @@ export function criarOndaEco(app) {
       await painel(TEXTOS.chegada);
       // Nundro está preso nos aposentos do sacerdote (área 20): neutro, inconsciente, visível só pela porta aberta.
       if (!enc.combatants.includes(nundro)) { nundro.side = 'neutro'; nundro.facingVec = { dx: 0, dy: 1 }; enc.addCombatant(nundro); }
+      // Quem o grupo já encontrou e deixou para trás (a conversa acabou em "sair" ou em acordo) volta ao seu lugar:
+      // sem isso, ao sair e voltar não haveria mais como falar com eles, e a aventura não fecharia.
+      if (mormesk && salvo.mormeskVisto && salvo.mormesk !== 'luta') entrarNeutro(mormesk, { dx: 0, dy: 1 });
+      if (espectador && salvo.espectadorVisto && salvo.espectador !== 'luta') entrarNeutro(espectador, { dx: -1, dy: 0 });
+      if (nezznar && salvo.temploVisto && salvo.templo !== 'luta') entrarNeutro(nezznar, { dx: 1, dy: 0 });
       app.refresh();
     },
   };

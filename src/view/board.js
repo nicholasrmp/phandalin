@@ -379,14 +379,14 @@ export class Board {
     }
     // Muro mais alto que o de sempre sobe acima da casa do fundo: o canvas reserva o que passa dos 3 níveis.
     // (só nos mapas de vila: o enquadramento do castelo e dos encontros padrão não muda)
-    if (this.field.paredeAlt && this.field.fachadaFechada) copa += Math.max(0, Math.max(...this.field.paredeAlt) - ALTURA_PAREDE) * LIFT;
+    if (this.field.paredeAlt && (this.field.fachadaFechada || Math.max(w, h) >= 60)) copa += Math.max(0, Math.max(...this.field.paredeAlt) - ALTURA_PAREDE) * LIFT;
     // Dimensionado para o pior caso, para não redimensionar ao girar.
     canvas.width = span * (TW / 2) + PAD * 2;
     canvas.height = span * (TH / 2) + this.maxHeight * LIFT + PAD * 2 + 40 + copa;
     this.ox = PAD + (wide - 1) * (TW / 2) + (span - 2 * wide + 2) * (TW / 4);
     // CÂMERA FIXA (rot 0): o canto de trás da vista fica à esquerda em h*TW/2; a fórmula acima era para as 4 rotações.
     // (só nos mapas de vila: os outros mapas mantêm o enquadramento de sempre)
-    if (this.rot === 0 && w !== h && this.field.fachadaFechada) this.ox = PAD + h * (TW / 2);
+    if (this.rot === 0 && w !== h && (this.field.fachadaFechada || Math.max(w, h) >= 60)) this.ox = PAD + h * (TW / 2);
     this.oy = PAD + this.maxHeight * LIFT + copa;
 
     this.rebuildOrder();
@@ -922,7 +922,7 @@ export class Board {
       || (pisoDaSala === 'tabua' && MARCA_DE_LAJE.includes(s.chao))))
       ? (pisoDaSala && ladrilhoChao(pisoDaSala, 0, 0) ? this.pisoSorteado(pisoDaSala, x, y) : 'laje')
       // Mobília fora de casa (a cerca do campo) pisa em capim, não na laje do castelo.
-      : (s.objeto === 'prop' && !salaDaCasa ? 'grama' : s.chao);
+      : (s.objeto === 'prop' && !salaDaCasa ? (this.varianteDaProp(x, y)?.piso ?? 'grama') : s.chao);
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
@@ -1753,7 +1753,7 @@ export class Board {
       this._propsDe = this.field;
       this._props = new Map();
       for (const o of this.field.objetos ?? []) {
-        if (o.tipo === 'prop') this._props.set(`${o.x},${o.y}`, { grupo: `prop-${o.variante}`, espelhar: Boolean(o.espelhar) });
+        if (o.tipo === 'prop') this._props.set(`${o.x},${o.y}`, { grupo: `prop-${o.variante}`, espelhar: Boolean(o.espelhar), piso: o.piso ?? null });
       }
     }
     return this._props.get(`${x},${y}`) ?? null;

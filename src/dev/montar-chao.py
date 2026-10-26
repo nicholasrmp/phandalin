@@ -100,7 +100,7 @@ FILEIRAS = [
 # `laje`, e no tabuleiro cada marca lia como um losango PALIDO posto por
 # cima do chao, em vez de uma marca NO chao. Medido: 0,86 poe a laje no tom
 # do kit de construcao, e 0,74 poe os decalques no tom da laje.
-ESCURECER = {'mina': 0.8, 'lajeMina': 0.88, 'canal': 0.86, 'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
+ESCURECER = {'fungos': 1.3, 'mina': 0.8, 'lajeMina': 0.88, 'canal': 0.86, 'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
 
 
 def escurecer(t, f):

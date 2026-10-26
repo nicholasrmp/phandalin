@@ -206,10 +206,6 @@ for y in range(H):
             b = SALA_DE.get((vx, vy))
             if a == b or a in LIVRES or b in LIVRES:
                 continue
-            # parede so onde ha chao dos dois lados (contra a rocha a propria rocha ja fecha)
-            if (a is not None and not (0 <= vx < W and 0 <= vy < H and T[vy][vx] != 'R')) or \
-               (b is not None and T[y][x] == 'R'):
-                continue
             grade[y][x] = '#'
 
 # PORTAS (+ fechada, / aberta ou arco), por aresta entre duas casas vizinhas: (x1, y1, x2, y2, codigo).
@@ -274,7 +270,7 @@ print('chegada', CHEGADA, 'grupo', GRUPO)
 PASSA_BAIXO = {'ossos', 'ossosAnao', 'ossosOrc', 'sacoDeDormir', 'anaoMorto', 'conchasPedra', 'tapeteLaranja',
                'montinhoMinerio', 'lanterna', 'bolaInflada', 'teia'}
 ANDAVEL = set('`<;"[')
-GLIFO_DE = {'braseiro': 'e', 'fogueira': 'F', 'bau': 'K', 'sarcofago': 'Q', 'barril': 'u', 'teia': '$'}
+GLIFO_DE = {'braseiro': 'e', 'fogueira': 'F', 'bau': 'K', 'sarcofago': 'Q', 'teia': '$'}
 
 
 def _passa(x1, y1, x2, y2):
@@ -307,6 +303,9 @@ PROPS = []
 _OBJ = RAIZ / 'src' / 'dev' / 'ondaeco-objetos.json'
 if _OBJ.exists() and 'CHEGADA' in globals():
     _lista = json.loads(_OBJ.read_text(encoding='utf-8'))['objetos']
+    for _o in _lista:
+        if _o['v'] == 'barril':
+            _o['v'] = 'suprimentos'          # barril solto: a peca de suprimentos (sem grama por baixo)
     _base = _alcanca(set())
     _bloq, _usadas, _recusadas = set(), set(), []
     for _o in _lista:
@@ -324,6 +323,9 @@ if _OBJ.exists() and 'CHEGADA' in globals():
             T[_c[1]][_c[0]] = GLIFO_DE[_o['v']]
             continue
         _item = {'tipo': 'prop', 'x': _c[0], 'y': _c[1], 'variante': _o['v']}
+        _piso = {'`': 'mina', '<': 'lajeMina', ';': 'fungos', '"': 'conchas', '[': 'canal'}.get(T[_c[1]][_c[0]])
+        if _piso:
+            _item['piso'] = _piso
         if _o.get('espelhar'):
             _item['espelhar'] = True
         PROPS.append(_item)
@@ -335,8 +337,8 @@ if _OBJ.exists() and 'CHEGADA' in globals():
 # posterior toma a casa de um anterior (as salas pequenas vencem a caverna em que estao).
 AREAS_RET = [
     ('13', [(52, 22, 72, 58)]),                 # a caverna estrelada (as duas construcoes leste, 14 e 15, estao nela)
-    ('18', [(22, 2, 36, 21)]),                  # a caverna desmoronada, com a fenda a leste
     ('17', [(34, 0, 52, 14)]),                  # o velho corrego, a passagem baixa ate o mar
+    ('18', [(22, 2, 36, 21)]),                  # a caverna desmoronada, com a fenda a leste (vence a 17 onde se sobrepoem)
     ('16', [(51, 0, 72, 23)]),                  # a caverna barulhenta (o mar fervente do nordeste)
     ('10', [(5, 20, 16, 36)]),                  # o lago escuro
     ('2', [(0, 40, 30, 72)]),                   # os tuneis da mina
@@ -478,13 +480,24 @@ for (_x, _y), _n in SALA_DE.items():
         L[_y][_x] = 2
 for (_x, _y) in FUNGOS:
     L[_y][_x] = 1
-for (_x, _y, _tipo) in ((27, 28, 'braseiro'), (9, 9, 'fogueira'), (66, 38, 'chama verde')):
-    LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': 20, 'penumbra': 20, 'tipo': 'fogueira'})
+for (_x, _y, _tipo) in ((26, 27, 'braseiro'), (9, 9, 'fogueira'), (65, 37, 'chama verde')):
+    LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': 30, 'penumbra': 30, 'tipo': 'fogueira'})
+
+# A ROCHA TEM VOLUME: as casas de rocha junto de chao sobem um nivel (um paredao, com a face de penhasco), em vez de
+# um piso azul chapado; o resto da rocha, que ninguem ve, fica no nivel 0.
+ALTURA = []
+for _y in range(H):
+    _l = ''
+    for _x in range(W):
+        _perto = T[_y][_x] == 'R' and any(0 <= _x + _i < W and 0 <= _y + _j < H and T[_y + _j][_x + _i] not in 'R'
+                                           for _i in (-1, 0, 1) for _j in (-1, 0, 1))
+        _l += '1' if _perto else '0'
+    ALTURA.append(_l)
 
 dados = {
     'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO]},
     'terreno': [''.join(l) for l in T],
-    'altura': ['0' * W for _ in range(H)],
+    'altura': ALTURA,
     'luz': [''.join(str(v) for v in l) for l in L],
     'luzes': LUZES,
 }

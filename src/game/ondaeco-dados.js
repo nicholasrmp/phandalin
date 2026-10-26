@@ -300,7 +300,6 @@ export function arvoreDeNundro({ salvo }) {
         ],
       },
       livre: {
-        ao: () => { salvo.nundro = 'livre'; },
         narra: 'Os olhos se abrem devagar, procuram o rosto de quem está por cima e encontram.',
         fala: 'Vocês são… de Phandalin? Gundren disse que mandaria ajuda. Tharden… vocês viram o Tharden?',
         opcoes: [{ texto: 'Sinto muito.', fim: 'resgatado' }],

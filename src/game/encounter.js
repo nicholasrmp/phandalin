@@ -297,6 +297,9 @@ export function mapaDo(variante = 'padrao') {
     return {
       ...MAPA_ONDA_ECO,
       salas: ONDA_ECO.salas,
+      // O piso de dentro das salas de pedra (a laje lavrada da mina) e o breu: o que o grupo não vê fica PRETO.
+      pisos: Object.fromEntries(Object.keys(ONDA_ECO.salas).map((k) => [k, 'lajeMina'])),
+      veuDaEscuridao: 1,
       objetos: ONDA_ECO.props.map((p) => ({ ...p })),
       grupo: ONDA_ECO.grupo.map((p) => ({ ...p })),
       olhar: { dx: 1, dy: -1 },
