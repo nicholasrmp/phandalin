@@ -170,6 +170,50 @@ def limpar_aresta(t):
     return out
 
 
+# Os chaos da Onda Eco (ladrilhos-pro `ondaEcoChao`) vieram com uma FAIXA escura de 4 px nas duas bordas de cima do
+# losango (o PixelLab pinta ali a "quina" do bloco). `limpar_aresta` so refaz o pixel da aresta; a faixa, de 4 px,
+# virava no tabuleiro um vao escuro entre uma casa e outra, como se fossem lajotas soltas. A faixa e refeita a partir do
+# miolo do proprio ladrilho, sem inventar cor.
+FAIXA_ESCURA = {'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura'}
+LARGURA_FAIXA = 10
+
+
+def limpar_faixa(t):
+    """Refaz a faixa espelhando o miolo logo abaixo dela; onde o espelho cairia num veio escuro (o rejunte), usa o tom
+    mediano do miolo. Assim o ladrilho fica liso nas bordas de cima e a casa ao lado emenda sem vao."""
+    from losango import no_losango
+
+    def dist(x, y):               # quantos pixels do losango ha acima, seguidos
+        k = 0
+        while y - k - 1 >= 0 and no_losango(x, y - k - 1):
+            k += 1
+        return k
+
+    out = t.copy()
+    s, d = t.load(), out.load()
+    miolo = [s[x, y] for y in range(TH) for x in range(TW) if no_losango(x, y) and dist(x, y) >= LARGURA_FAIXA]
+    miolo.sort(key=_lum)
+    mediano = miolo[len(miolo) // 2]
+    claro = _lum(mediano) * 0.85
+    for x in range(TW):
+        ys = [y for y in range(TH) if no_losango(x, y)]
+        if not ys:
+            continue
+        limpo = next((y for y in ys if dist(x, y) >= LARGURA_FAIXA), None)
+        if limpo is None:               # as pontas esquerda e direita: so ha faixa, sem miolo por baixo
+            for y in ys:
+                if _lum(s[x, y]) < claro:
+                    d[x, y] = mediano
+            continue
+        for y in ys:
+            if dist(x, y) >= LARGURA_FAIXA or _lum(s[x, y]) >= claro:
+                continue
+            fonte = limpo + (limpo - 1 - y)
+            ok = fonte in ys and dist(x, fonte) >= LARGURA_FAIXA and _lum(s[x, fonte]) >= claro
+            d[x, y] = s[x, fonte] if ok else mediano
+    return out
+
+
 def tapar_furos(t):
     """
     Pinta os furos do losango com a cor mais escura do proprio ladrilho.
@@ -227,6 +271,8 @@ def main():
             t = recortar_topo(im, 0, base - TH)
             if quais:
                 t = tapar_furos(t)
+            if nome in FAIXA_ESCURA:
+                t = limpar_faixa(t)
             if nome in ESCURECER:
                 t = escurecer(t, ESCURECER[nome])
             candidatos.append(t)

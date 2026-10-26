@@ -348,6 +348,10 @@ const painel = el('div', { id: 'passeio' },
     el('details', {},
       el('summary', { textContent: 'Controles' }),
       el('div', { innerHTML: 'W A S D: movem a câmera (Shift acelera).<br>Botão direito arrastado: empurra a câmera.<br>Roda do mouse: zoom.<br>Clique no chão: o herói anda até lá.<br>Setas: um passo na direção da tela · Q E Z C: nas outras quatro.<br>Clique noutro herói para trocar de quem anda.' }))));
+// O painel fica ESCONDIDO: o passeio mostra só o mapa. `?painel` na URL (ou `window.__painel()`) o traz de volta.
+const mostrarPainel = (ligado) => { painel.style.display = ligado ? '' : 'none'; };
+mostrarPainel(new URLSearchParams(location.search).has('painel'));
+window.__painel = () => mostrarPainel(painel.style.display === 'none');
 document.body.append(painel);
 
 let timer = 0;
