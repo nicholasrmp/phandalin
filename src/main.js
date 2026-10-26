@@ -255,6 +255,11 @@ class App {
     const mapa = mapaDo(variante);
     const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
       mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
+    // As ajudas de visão (silhueta de quem a parede cobre, marca de contato
+    // perdido, anel de barulho) só valem nos mapas que as pedem: ligadas em
+    // todos, o encontro padrão e o Poço ganharam contorno em quem não estava
+    // coberto por nada.
+    field.avisosDeVista = Boolean(mapa.avisosDeVista);
     // As salas do mapa, por casa: o tabuleiro usa para apagar a parede da
     // sala em que o grupo está (ver `board.desenharParedes`).
     // A decoração pendurada nas paredes, por aresta ('x,y,N' ou 'x,y,O').
@@ -324,6 +329,7 @@ class App {
       : mapa.cena === 'ermo' ? criarEstrada
       : mapa.cena === 'poco' ? criarPoco
       : mapa.cena === 'cume' ? criarCume
+      : mapa.cena === 'arvoreTrovao' ? criarArvoreTrovao
       : mapa.cena === 'castelo' ? criarCastelo
       : config.modo === 'campanha' ? criarCapitulo1
         : mapa.cena === 'caverna' ? criarCenaCaverna : null;
@@ -360,6 +366,13 @@ class App {
       onTileHover: (t) => { this.onTileHover(t); this.board?.render(0); },
     });
     this.board.onCameraChange = () => this.refresh();
+    // Mapa grande (Árvore Trovão, 91 x 68): começa perto do grupo, e não com o
+    // tabuleiro inteiro encaixado, onde cada herói tem 15% do tamanho.
+    {
+      const lider = this.enc.combatants.find((x) => x.side === 'party');
+      this.board.focoInicial = lider?.pos ? { ...lider.pos } : null;
+      requestAnimationFrame(() => this.board?.enquadrarGrande(this.board.focoInicial));
+    }
     // Botão direito sem arrastar: o menu de ações da casa.
     this.board.onTileContext = (tile, e) => this.abrirContexto(tile, e);
     fecharMenuContexto();
@@ -404,6 +417,26 @@ class App {
     switch (ev.type) {
       case 'moved': {
         ev.actor.facingVec = { dx: ev.to.x - ev.from.x, dy: ev.to.y - ev.from.y };
+        // BARULHO FORA DA VISTA: um inimigo que anda onde o grupo não o enxerga
+        // não aparece no tabuleiro, mas o grupo OUVE. O anel âmbar com "?" cai
+        // numa casa PERTO do ponto de chegada (a até duas casas, sorteada de
+        // forma fixa por criatura e rodada), e não nele: o comentário antigo
+        // prometia "sem dizer para onde foi" e o anel entregava a casa exata, a
+        // cada passo, através da parede. Só a até 60 pés de alguém do grupo, e
+        // nunca para quem está no Plano Etéreo (que também não é desenhado).
+        if (board?.field.avisosDeVista && ev.actor.side === 'foes' && !hasCondition(ev.actor, 'etereo')
+          && board.figuraVisivel(ev.actor) === false) {
+          const perto = this.enc.allOf('party').some((h) => !h.dead && h.pos && distanceFt(h.pos, ev.to) <= 60);
+          if (perto) {
+            const h = ((ev.to.x * 73856093) ^ (ev.to.y * 19349663) ^ ((this.enc.round ?? 0) * 83492791)) >>> 0;
+            const ponto = {
+              x: Math.max(0, Math.min(this.enc.field.w - 1, ev.to.x + (h % 5) - 2)),
+              y: Math.max(0, Math.min(this.enc.field.h - 1, ev.to.y + ((h >> 4) % 5) - 2)),
+            };
+            board.fx.ring(ponto, { color: '#ffb04a', radius: 36, dur: 1.1, width: 2 });
+            board.floatText(ponto, '?', '#ffb04a');
+          }
+        }
         // O motor já moveu a peça; isto conta a viagem quadrado a quadrado.
         // O andar vem da criatura: a gelatina escorre, a aranha treme, o
         // zumbi arrasta uma perna, o ogro parte e para seco.
@@ -1087,6 +1120,7 @@ class App {
     const node = reached.get(key(tile.x, tile.y));
     if (!node || node.cost === 0) return;
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
+    this.board?.seguir(c.pos);
     // Explorando: depois do passo, a cena vê se a armadilha dispara.
     if (this.capitulo?.explorando) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
     this.refresh();

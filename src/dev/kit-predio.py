@@ -64,6 +64,78 @@ KITS = {
         'building_floor2_description': 'broken top of a ruined wall',
         'paleta': GRANITO + ['#4a7236', '#33572e'],
     },
+    # ARVORE TROVAO, ruina LEVE: a casa que ainda se sustenta, com a pedra
+    # manchada de cinza do vulcao, rachada, com algumas pedras faltando no topo.
+    'trovaoLeve': {
+        'description': ('Abandoned frontier village house walls for a grounded fantasy tactical '
+                        'RPG, a village buried in volcanic ash thirty years ago, weathered and '
+                        'neglected, open to the sky, no furniture, no people.'),
+        'building_wall_description': ('walls of grey fieldstone and rough mortar, stained with grey '
+                                      'volcanic ash, long cracks, a few stones missing from the top, '
+                                      'ivy and moss creeping up the base'),
+        'building_floor_description': 'cracked grey flagstone floor with ash dust in the cracks and weeds',
+        'building_floor2_description': 'uneven top of an old fieldstone wall with a few missing stones',
+        'paleta': GRANITO + ['#4a4640', '#4a7236', '#33572e'],
+    },
+    # ARVORE TROVAO, ruina PESADA: a crista quebrada em alturas diferentes, vaos
+    # abertos, entulho no pe. Um andar so (parede baixa), para a vila nao ficar
+    # toda do mesmo tamanho.
+    'trovaoPesada': {
+        'description': ('Heavily collapsed frontier village house walls for a grounded fantasy '
+                        'tactical RPG, burned and buried in volcanic ash thirty years ago, '
+                        'crumbled, open to the sky, no furniture, no people.'),
+        'building_wall_description': ('collapsed fieldstone wall, jagged broken top at uneven heights, '
+                                      'large holes where stones fell, rubble piled at the base, '
+                                      'scorched black beam stumps, ash and weeds'),
+        'building_floor_description': 'broken flagstones half buried in grey ash and rubble, weeds growing through',
+        'building_floor2_description': 'jagged broken crest of a collapsed fieldstone wall',
+        'paleta': GRANITO + ['#4a4640', '#2a2724', '#4a7236'],
+    },
+    # ARVORE TROVAO, ruina EM ESCOMBROS: o que sobrou de uma casa queimada. Um
+    # andar so, pedra espalhada, tocos de parede na altura da cintura e montes
+    # de entulho: a altura MENOR do conjunto.
+    'trovaoEscombros': {
+        'description': ('Almost completely collapsed frontier village house walls for a grounded '
+                        'fantasy tactical RPG, burned and buried in volcanic ash thirty years ago, '
+                        'only stumps and rubble remain, open to the sky, no furniture, no people.'),
+        'building_wall_description': ('waist-high stump of a fieldstone wall, mostly collapsed, '
+                                      'big heaps of fallen stones and rubble piled against it, '
+                                      'very uneven jagged top, charred wooden beam ends, ash'),
+        'building_floor_description': 'ash-covered ground with scattered fallen stones, charred planks and weeds',
+        'building_floor2_description': 'jagged broken stumps of a collapsed fieldstone wall',
+        'paleta': GRANITO + ['#4a4640', '#2a2724', '#7d5d40'],
+    },
+    # ARVORE TROVAO, ruina REMANESCENTE: um pano de parede alto que o tempo e o
+    # fogo deixaram de pe pela metade, com a crista em escada e vaos grandes. Dois
+    # andares: a altura MAIOR do conjunto.
+    'trovaoRemanescente': {
+        'description': ('Tall fragments of broken frontier village house walls for a grounded '
+                        'fantasy tactical RPG, burned and buried in volcanic ash thirty years ago, '
+                        'half-standing ruin, open to the sky, no furniture, no people.'),
+        'building_wall_description': ('tall fieldstone wall standing only in part, top edge broken '
+                                      'in a stepped diagonal, large jagged gaps where whole sections '
+                                      'fell, exposed charred roof beam stubs, rubble at the foot, ash'),
+        'building_floor_description': 'cracked flagstones with ash drifts, fallen stones and weeds',
+        'building_floor2_description': 'stepped broken crest of a half-standing fieldstone wall',
+        'paleta': GRANITO + ['#4a4640', '#2a2724', '#4a7236'],
+    },
+    # ARVORE TROVAO, ruina ALTA (segunda tentativa): a primeira ('trovaoRemanescente')
+    # saiu com cara de ameia de castelo porque o texto falava em "crista em
+    # escada". Aqui a quebra e DIAGONAL e IRREGULAR, com buracos arrancados e
+    # viga caida, e nunca se pede dente regular no topo.
+    'trovaoAlta': {
+        'description': ('Tall fragments of ruined two-storey village house walls for a grounded '
+                        'fantasy tactical RPG, burned and buried in volcanic ash thirty years ago, '
+                        'violently collapsed, open to the sky, no furniture, no people.'),
+        'building_wall_description': ('tall fieldstone house wall torn apart: the top edge broken '
+                                      'along an irregular diagonal fracture, never regular teeth, '
+                                      'large irregular holes ripped through the wall, a charred roof '
+                                      'beam jutting out of the break, loose stones and rubble at the '
+                                      'foot, black soot stains, weeds'),
+        'building_floor_description': 'broken flagstones under ash drifts and fallen stones, weeds',
+        'building_floor2_description': 'irregular fractured top edge of a torn fieldstone wall',
+        'paleta': GRANITO + ['#4a4640', '#2a2724', '#4a7236'],
+    },
 }
 
 

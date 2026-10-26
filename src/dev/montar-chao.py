@@ -67,6 +67,19 @@ FILEIRAS = [
     # grande, repete), 4 e 12 (escuros), 6 e 14 (buraco), 9 (racha funda),
     # 13 (manchas brancas).
     ('planalto', 'e2f1ffc5-6074-4aa7-9000-48c7ae76ff34', [1, 2, 5, 7, 8, 10, 15]),
+    # ARVORE TROVAO (`ladrilhos-pro.py --conjunto lajeRuina|tabuaRuina|trigo|cinza|lago`).
+    # O piso de dentro das casas: laje miuda com cinza nas juntas, e tabua
+    # apodrecida. As marcas fortes da laje (buraco de terra, fuligem, entulho) saem
+    # numa fileira a parte, para o gerador pingar com parcimonia.
+    ('lajeRuina', 'ladrilhos-pro/4bb891ba-77be-4803-abd4-2d4802a1f42f', [0, 1, 2, 5, 7, 9, 10, 11, 15]),
+    ('lajeEntulho', 'ladrilhos-pro/4bb891ba-77be-4803-abd4-2d4802a1f42f', [3, 8, 12, 14]),
+    ('tabua', 'ladrilhos-pro/d514fb2f-7648-4354-9717-61f1b09df41d', [0, 1, 4, 5, 7, 9, 11, 12, 13, 15]),
+    # O trigo do campo (era um colchao de palha sobre laje), a cinza do vulcao (era
+    # uma mancha de sangue) e o lago (dois ladrilhos de riacho, sem margem).
+    ('trigo', 'ladrilhos-pro/c5a7b816-6242-4e0a-a6ae-57c0826a0be6', [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14]),
+    ('cinza', 'ladrilhos-pro/d02cf792-6777-4089-998c-201fa5ebe524', [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15]),
+    ('lago', 'ladrilhos-pro/1dace23a-dade-40f8-a183-e4ebd344d5e2', [0, 1, 2, 3]),
+    ('margem', 'ladrilhos-pro/1dace23a-dade-40f8-a183-e4ebd344d5e2', [15]),
 ]
 
 
@@ -77,7 +90,7 @@ FILEIRAS = [
 # `laje`, e no tabuleiro cada marca lia como um losango PALIDO posto por
 # cima do chao, em vez de uma marca NO chao. Medido: 0,86 poe a laje no tom
 # do kit de construcao, e 0,74 poe os decalques no tom da laje.
-ESCURECER = {'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
+ESCURECER = {'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
 
 
 def escurecer(t, f):
@@ -216,11 +229,17 @@ def main():
         # aresta mais que a grama (ate -19; a ponte, -26), e a limpeza tira a fileira de
         # fora de qualquer jeito; com dois ladrilhos so, nao ha mediana.
         desvio, aresta_min = (9.0, -30.0) if quais else (DESVIO_MAX, ARESTA_MIN)
+        # O campo e a agua ficam em extensao: sem aresta escura e sem tom que pule, ou viram grade.
+        if nome in ('lago', 'cinza'):
+            desvio, aresta_min = 8.0, -40.0
         if quais and len(candidatos) <= 2:
             desvio = 99.0
         for i, (t, (m, a)) in enumerate(zip(candidatos, medidas)):
             if abs(m - mediana) <= desvio and a >= aresta_min:
                 t = limpar_aresta(t)
+                if nome in ('lago', 'cinza') and tom_e_aresta(t)[1] < -9.0:
+                    fora.append(f'{i} (aresta depois da limpeza {tom_e_aresta(t)[1]:+.1f})')
+                    continue
                 atlas.alpha_composite(t, (len(topos) * TW, linha * TH))
                 topos.append(t)
             else:

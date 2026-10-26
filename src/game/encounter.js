@@ -278,8 +278,10 @@ export function mapaDo(variante = 'padrao') {
       // do cômodo em que o grupo entrou) e a decoração pendurada nas paredes.
       salas: ARVORE_TROVAO.celulas,
       decor: ARVORE_TROVAO.decor,
+      pisos: ARVORE_TROVAO.pisos,
       avisosDeVista: true,
-      objetos: [],
+      // A mobilia: cada casa de `prop` diz qual peca do atlas e (`variante`).
+      objetos: ARVORE_TROVAO.props.map((p) => ({ ...p })),
       // Do mapa, e não escrito aqui: estas casas já foram as do mapa antigo, e
       // quando ele cresceu o grupo passou a nascer dentro de uma construção.
       grupo: ARVORE_TROVAO.grupo.map((p) => ({ ...p })),

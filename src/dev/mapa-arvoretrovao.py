@@ -828,30 +828,131 @@ for (x, y) in INTERIOR['torre']:        # o covil do dragão: osso
     if T[y][x] == 'L' and _embaralha(x, y, 31) < 0.12:
         T[y][x] = 'c'
 
+# O GRAU DE RUINA (0 inteira ... 3 toco) de cada construcao, lido pela decoracao e emitido
+# no fim para o tabuleiro.
+GRAU_DE_RUINA = {
+    'torre': 0, 'prefeito': 1, 'estalagem': 1, 'guarda': 1, 'casa9': 1, 'florestal': 1,
+    'escola': 2, 'casa7': 2, 'moinho': 2, 'casa10': 2, 'ervas': 2, 'ferraria': 2,
+    'casa15': 2, 'embaixada': 2,
+    'fazenda': 3, 'celeiro': 3, 'casa12': 3, 'loja': 3, 'tecelagem': 3, 'pescaria': 3,
+    'casa19': 3, 'casa20': 3,
+}
+
+# ---------------------------------------------- mobília de casa abandonada ----
+# O que sobrou de quem morava ou trabalhava em cada casa, desenhado de verdade (PixelLab,
+# `objetos-pixellab.py --conjunto moveisRuina|cenaRuina`). Um glifo por regra
+# (`^` barra, `&` é chão de passar) e a PEÇA vai na anotação `objetos` (tipo 'prop',
+# variante = nome do grupo do atlas do cenário, `montar-cenario.py`). Duas coisas:
+# parte do mobiliário antigo (mesa, caixote, barril, saco, leito) é TROCADA por uma peça
+# do tema da casa, e algumas peças novas entram encostadas na parede. Nada fecha o chão
+# (`_piso_inteiro`) nem entra na boca da porta.
+PROP_BAIXO = {'banquinho', 'baldeBanco', 'trapos', 'saco', 'tabuas'}
+BARRA_MOVEL.add('^')
+_GERAL = ['banco', 'banquinho', 'armario', 'cama', 'cadeira', 'estante', 'tina', 'berco',
+          'guardaRoupa', 'roca', 'prateleira', 'escrivaninha', 'baldeBanco', 'trapos', 'mesaPosta']
+TEMA_PROP = {
+    'casa': _GERAL,
+    'fazenda': ['cocho', 'saco', 'tabuas', 'tina', 'machadoTora', 'banco', 'cama', 'baldeBanco'],
+    'celeiro': ['cocho', 'saco', 'saco', 'tabuas', 'tina', 'machadoTora', 'trapos'],
+    'casa20': ['cocho', 'saco', 'tabuas', 'tina', 'banco', 'baldeBanco', 'trapos'],
+    'estalagem': ['cubaCerveja', 'barrisRack', 'mesaPosta', 'banco', 'banquinho', 'cadeira',
+                  'prateleira', 'beliche', 'fogao', 'cubaCerveja'],
+    'ferraria': ['bigorna', 'fole', 'mesaFerramentas', 'tabuas', 'saco', 'baldeBanco', 'fogao'],
+    'tecelagem': ['tear', 'roca', 'banquinho', 'trapos', 'estante', 'tear', 'cadeira'],
+    'escola': ['lousa', 'banco', 'banco', 'escrivaninha', 'estante', 'cadeira', 'tabuas'],
+    'moinho': ['mo', 'saco', 'saco', 'tabuas', 'cocho', 'tina', 'baldeBanco'],
+    'pescaria': ['redes', 'tina', 'baldeBanco', 'saco', 'tabuas', 'mesaFerramentas'],
+    'loja': ['prateleira', 'estante', 'mesaFerramentas', 'armario', 'saco', 'guardaRoupa', 'tina'],
+    'ervas': ['prateleira', 'estante', 'prateleira', 'armario', 'saco', 'tina', 'banquinho'],
+    'guarda': ['beliche', 'beliche', 'mesaFerramentas', 'banco', 'armario', 'cofreVazio'],
+    'prefeito': ['escrivaninha', 'estante', 'cadeira', 'mesaPosta', 'armario', 'camaViuva'],
+    'embaixada': ['escrivaninha', 'estante', 'cadeira', 'armario', 'banco', 'mesaPosta'],
+    'florestal': ['mesaFerramentas', 'banco', 'estante', 'saco', 'machadoTora', 'trapos'],
+    'casa7': ['cama', 'banco', 'armario', 'trapos', 'banquinho', 'tina'],
+    'casa9': ['banco', 'mesaPosta', 'trapos', 'banquinho', 'cama', 'cadeira'],
+}
+PROPS = []
+_pecas_por_predio = {}
+
+
+def _prop(x, y, v):
+    T[y][x] = '&' if v in PROP_BAIXO else '^'
+    PROPS.append({'tipo': 'prop', 'x': x, 'y': y, 'variante': v})
+
+
+def _desfaz(x, y, antigo):
+    T[y][x] = antigo
+    PROPS.pop()
+
+
+# O que cada glifo antigo vira, e com que chance. `g` fica como estava no resto.
+TROCA_PROP = {'m': 0.8, 'i': 0.75, 'u': 0.75, 's': 0.75, 'z': 0.7}
+for pid, cs in INTERIOR.items():
+    if pid == 'torre':
+        continue
+    tema = TEMA_PROP.get(pid, TEMA_PROP['casa'])
+    for (x, y) in sorted(cs):
+        chance = TROCA_PROP.get(T[y][x])
+        if chance is None or _embaralha(x, y, 41) >= chance:
+            continue
+        antigo = T[y][x]
+        _prop(x, y, tema[int(_embaralha(x, y, 43) * len(tema))])
+        if not _piso_inteiro(cs):
+            _desfaz(x, y, antigo)
+    # Pecas novas, encostadas na parede, longe do vao, fora da sombra da parede da frente.
+    alvo = max(2, int(len(cs) * 0.20))
+    postas = sum(1 for p in PROPS if (p['x'], p['y']) in cs)
+    # Duas passadas: a primeira so encostado na parede; a segunda aceita o meio da sala.
+    for rigor in (1, 0):
+      for (x, y) in sorted(cs, key=lambda c: _embaralha(c[0], c[1], 47 + rigor)):
+        if postas >= alvo:
+            break
+        if T[y][x] not in 'Ldvj' or _junto_de_vao(x, y) or _tapado(x, y) or (rigor and not _encosta(x, y)):
+            continue
+        antigo = T[y][x]
+        _prop(x, y, tema[int(_embaralha(x, y, 49) * len(tema))])
+        if not _piso_inteiro(cs):
+            _desfaz(x, y, antigo)
+            continue
+        postas += 1
+    _pecas_por_predio[pid] = sum(1 for p in PROPS if (p['x'], p['y']) in cs)
+print('mobilia (props):', len(PROPS), '| por predio:', _pecas_por_predio)
+
+# O PISO de cada construcao: assoalho de tabua nas casas de gente, laje rachada nas de pedra.
+PISO_TABUA = {'fazenda', 'estalagem', 'casa7', 'casa9', 'casa10', 'casa12', 'casa15', 'casa19',
+              'casa20', 'ervas', 'loja', 'pescaria', 'tecelagem', 'florestal', 'escola', 'embaixada'}
+PISOS = {pid: ('tabua' if pid in PISO_TABUA else 'lajeRuina') for pid in INTERIOR}
+
 # -------------------------------------------- decoração pendurada na parede ----
 # Pouca e espaçada, com os mesmos freios do castelo: duas casas de folga entre
 # uma peça e a seguinte, um teto por tipo e por prédio, e o mesmo tipo nunca duas
 # vezes na mesma fiada. Parede de ruína (2 níveis) só leva musgo e teia — o que
 # nasce NA pedra; o resto ficaria pendurado no ar.
 GOSTO = {
-    'fazenda': (['musgo', 'teia'], 0.45), 'celeiro': (['teia', 'musgo'], 0.45),
-    'prefeito': (['bandeira', 'quadro', 'musgo'], 0.5), 'estalagem': (['bandeira', 'quadro', 'teia'], 0.45),
-    'guarda': (['armas', 'escudo', 'musgo'], 0.45), 'escola': (['quadro', 'teia'], 0.4),
-    'casa7': (['musgo', 'teia'], 0.35), 'moinho': (['teia'], 0.4), 'casa9': (['musgo', 'quadro'], 0.35),
-    'casa10': (['teia', 'musgo'], 0.35), 'ervas': (['musgo'], 0.5), 'casa12': (['teia', 'quadro'], 0.4),
-    'loja': (['quadro', 'teia'], 0.4), 'ferraria': (['musgo', 'teia'], 0.4),
-    'casa15': (['teia'], 0.4), 'tecelagem': (['quadro', 'teia'], 0.4),
-    'embaixada': (['bandeira', 'escudo'], 0.5), 'pescaria': (['corrente', 'teia', 'musgo'], 0.4),
-    'casa19': (['musgo', 'teia'], 0.35), 'casa20': (['teia', 'musgo'], 0.35),
-    'florestal': (['armas', 'cranio', 'musgo'], 0.4),
+    'fazenda': (['musgo', 'teia', 'mancha', 'ervas'], 0.5), 'celeiro': (['teia', 'mancha', 'reboco', 'musgo'], 0.5),
+    'prefeito': (['bandeira', 'tapecaria', 'moldura', 'musgo'], 0.55),
+    'estalagem': (['tapecaria', 'moldura', 'teia', 'ferradura', 'bandeira'], 0.5),
+    'guarda': (['armas', 'escudo', 'aviso', 'musgo'], 0.5), 'escola': (['moldura', 'aviso', 'teia', 'pergaminho'], 0.45),
+    'casa7': (['musgo', 'teia', 'ervas', 'mancha'], 0.4), 'moinho': (['teia', 'mancha', 'reboco'], 0.45),
+    'casa9': (['musgo', 'moldura', 'tapecaria'], 0.4),
+    'casa10': (['teia', 'musgo', 'mancha'], 0.4), 'ervas': (['ervas', 'ervas', 'musgo', 'prateleira'], 0.55),
+    'casa12': (['teia', 'moldura', 'fuligem'], 0.45),
+    'loja': (['moldura', 'teia', 'chaves', 'prateleira'], 0.45), 'ferraria': (['fuligem', 'ferradura', 'teia', 'corrente'], 0.45),
+    'casa15': (['teia', 'liquen', 'mancha'], 0.45), 'tecelagem': (['tapecaria', 'teia', 'moldura'], 0.45),
+    'embaixada': (['bandeira', 'escudo', 'moldura'], 0.55), 'pescaria': (['corrente', 'teia', 'musgo', 'mancha'], 0.45),
+    'casa19': (['musgo', 'mancha', 'liquen'], 0.4), 'casa20': (['teia', 'musgo', 'ervas'], 0.4),
+    'florestal': (['armas', 'cranio', 'peles', 'ervas'], 0.45),
     'torre': (['corrente', 'cranio', 'teia'], 0.5),
 }
+# O que nasce NA pedra: o que sobra numa parede baixa, onde nada fica pendurado.
+NASCE_NA_PEDRA = ['musgo', 'teia', 'liquen', 'mancha', 'fuligem', 'reboco']
 # A estalagem é onde o culto se abriga, e a torre é o covil: lá há fogo aceso.
 COM_FOGO = {'estalagem'}
-PENDURA = {'tochaAcesa', 'tochaApagada', 'quadro', 'bandeira', 'armas', 'escudo', 'cranio', 'corrente'}
+PENDURA = {'tochaAcesa', 'tochaApagada', 'quadro', 'bandeira', 'armas', 'escudo', 'cranio', 'corrente',
+           'tapecaria', 'moldura', 'ferradura', 'chaves', 'aviso', 'pergaminho', 'prateleira', 'peles', 'ervas'}
 LIMITE = {'tochaAcesa': 3, 'escudo': 1, 'armas': 1, 'bandeira': 1, 'cranio': 1,
           'quadro': 1, 'corrente': 1, 'musgo': 2, 'teia': 2}
-TETO_PREDIO = 3
+TETO_PREDIO = 4
 DECOR = []
 _ocupadas, _quantas, _fiadas, _total = set(), {}, set(), {}
 
@@ -893,8 +994,8 @@ for y in range(H):
             if _embaralha(x, y, 1 if lado == 'N' else 2) > cheia:
                 continue
             tipo = tipos[int(_embaralha(x, y, 7) * len(tipos))]
-            if tipo in PENDURA and PA[y][x] < 3 and TIPOS.get(pid) == 'ruina':
-                tipo = 'musgo' if _embaralha(x, y, 9) < 0.5 else 'teia'
+            if tipo in PENDURA and (PA[y][x] < 3 or GRAU_DE_RUINA.get(pid, 2) >= 3):
+                tipo = NASCE_NA_PEDRA[int(_embaralha(x, y, 9) * len(NASCE_NA_PEDRA))]
             if _cabe(x, y, lado, pid, tipo):
                 _pendura(x, y, lado, pid, tipo)
 
@@ -927,6 +1028,8 @@ LUZES = [{'pos': {'x': d['x'], 'y': d['y']}, 'claro': 15, 'penumbra': 15, 'tipo'
 # mapa: o passeio e a IA andam por ele, e fechar é escolha de quem joga.
 FOLHAS = []
 for pid, vaos in VAOS.items():
+    if GRAU_DE_RUINA.get(pid, 2) >= 3:      # a porta apodreceu e caiu: o vao ficou aberto
+        continue
     for (dentro_, fora, _lado) in vaos:
         FOLHAS.append([{'x': fora[0], 'y': fora[1]}, {'x': dentro_[0], 'y': dentro_[1]}])
 FOLHAS += FOLHAS_EXTRA
@@ -1478,10 +1581,43 @@ CABECALHO = (
     '// - q poco - A estatua - z leito - u barris - i caixotes - K bau - t arca -\n'
     '// m mesa - s mantimentos - g armeiro.\n'
 )
+# O GRAU DE RUINA de cada construcao (0 inteira, 1 de pe, 2 perdeu o alto, 3 toco).
+# O tabuleiro troca a pedra (kits `trovao*` do PixelLab, `montar-ruinas.py`) e
+# recorta o topo por aresta. O livro diz quais ainda se sustentam: a casa de pedra
+# dos cultistas ("a mais inteira da vila"), a guarnicao, a estalagem, a torre e o
+# reduto do druida; as duas casas da area 2 ("paredes meio caidas"), o armazem e a
+# tecelagem (entulho no joelho) estao no outro extremo.
+PR = [[0] * W for _ in range(H)]
+for _pid, _cs in INTERIOR.items():
+    for (_x, _y) in _cs:
+        PR[_y][_x] = GRAU_DE_RUINA.get(_pid, 2)
+print('ruina por grau:', {g: sum(1 for l in PR for v in l if v == g) for g in (0, 1, 2, 3)})
+
+# O TERRENO EMITIDO: o chao de fora ganha a arte nova (trigo, cinza, lago e a margem de
+# areia). A logica acima usa os glifos de sempre; so aqui eles viram os glifos da arte,
+# e so FORA das construcoes (dentro delas 'p' e palha, 'v' e mancha).
+_dentro = set().union(*INTERIOR.values())
+TE = [row[:] for row in T]
+_conta_arte = {'X': 0, 'Z': 0, 'S': 0, 'y': 0}
+for _y in range(H):
+    for _x in range(W):
+        _g = T[_y][_x]
+        if (_x, _y) in _dentro:
+            continue
+        _novo = {'p': 'X', 'v': 'Z', 'w': 'S'}.get(_g)
+        if _g == ':' and any(0 <= _x + _i < W and 0 <= _y + _j < H and T[_y + _j][_x + _i] == 'w'
+                             for _i in (-1, 0, 1) for _j in (-1, 0, 1)):
+            _novo = 'y'
+        if _novo:
+            TE[_y][_x] = _novo
+            _conta_arte[_novo] += 1
+print('arte de chao de fora:', _conta_arte)
+
 dados = {
     'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO],
-                'alt': [''.join(str(v) for v in l) for l in PA]},
-    'terreno': [''.join(l) for l in T],
+                'alt': [''.join(str(v) for v in l) for l in PA],
+                'ruina': [''.join(str(v) for v in l) for l in PR]},
+    'terreno': [''.join(l) for l in TE],
     'altura': [''.join(str(v) for v in l) for l in A],
     'luz': [''.join(str(v) for v in l) for l in L],
     'luzes': LUZES,
@@ -1502,6 +1638,8 @@ extra = {
     'zumbis': {k: CAIXAS['embaixada'][k] for k in ('x0', 'y0', 'x1', 'y1')},
     'reidoth': NINHOS['reidoth'][0],
     'ninhos': NINHOS,
+    'props': PROPS,
+    'pisos': PISOS,
     'objetos': {**OBJETOS_ESCONDIDOS, 'bauMormesk': BAU_MORMESK},
     'zonas': {'matoLeste': _ZONA_MATO_LESTE, 'tecelagemSul': _ZONA_TECELAGEM_SUL},
     'predios': CAIXAS,

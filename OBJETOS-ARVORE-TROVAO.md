@@ -1,6 +1,8 @@
 # Arte de cenário para as Ruínas de Árvore Trovão — o que gerar no PixelLab
 
-**Nada foi gerado e nenhum crédito foi gasto.** Este arquivo é o pedido, revisado por um diretor de arte de cenário depois de contar o que o mapa realmente desenha. A primeira versão tinha 54 objetos; esta tem 8 pedidos prioritários e uma lista curta de objetos de cena, porque a maior parte da repetição que você viu **não vem de objeto**.
+**ATUALIZAÇÃO (26/10/2026): foi gerado e importado.** Gastaram-se ~220 gerações no PixelLab (saldo 3.537 → 3.317): cinco kits de parede em ruína (`trovao*`, só as faces entraram no atlas `ruinas`), pisos (`lajeRuina`, `tabuaRuina`, `trigo`, `cinza`, `lago`), 32 peças de mobília (`moveisRuina`, `cenaRuina`, grupos `prop-*`), 64 peças de decoração de parede (`decorRuina`), 16 vãos quebrados (`vaoRuina`, usados na porta fechada das casas arruinadas) e 16 cercas e portões (`cercaRuina`, geradas e ainda sem uso no mapa). Os 8 pedidos prioritários abaixo (árvores novas, arbustos, tufos) seguem em aberto. O texto original do pedido, abaixo, fica como histórico.
+
+Este arquivo é o pedido, revisado por um diretor de arte de cenário depois de contar o que o mapa realmente desenha. A primeira versão tinha 54 objetos; esta tem 8 pedidos prioritários e uma lista curta de objetos de cena, porque a maior parte da repetição que você viu **não vem de objeto**.
 
 Fonte do conteúdo de cada lugar: *A Mina Perdida de Phandelver*, parte 3, "Ruinas Árvore Trovão" (pp. 30–34), áreas 1 a 13. O texto é nosso: o livro dá os fatos (o que existe, onde, que teste, que tesouro), não as frases.
 

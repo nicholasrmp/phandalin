@@ -591,6 +591,114 @@ CONJUNTOS = {
     # pede a peca JA na face isometrica, descendo para a direita; o tabuleiro
     # espelha para a outra face. Tela de 32: peca pequena, do tamanho de um
     # braco, que e o que uma tocha tem.
+    # ARVORE TROVAO (ver `OBJETOS-ARVORE-TROVAO.md`). Mobilia de casa abandonada
+    # de uma vila soterrada pela cinza: tudo velho, empoeirado e quebrado, do
+    # tamanho de uma casa do tabuleiro (uns 36 px).
+    'moveisRuina': {
+        'description': (
+            'Single piece of furniture for an isometric tactical RPG, from an abandoned frontier '
+            'village house buried in volcanic ash thirty years ago: weathered, dusty, partly '
+            'broken, covered in grey ash. About 36 px wide and 32 px tall, sitting on the bottom '
+            'of the canvas, seen from the front-left. Lit from the upper left. Dark brown '
+            'selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'rough wooden bench', 'three-legged stool', 'small cupboard with open doors',
+            'narrow bed with a straw mattress', 'cast iron stove with a short pipe',
+            'wooden chair with one leg broken', 'empty bent bookshelf', 'washing tub',
+            'small wooden cradle', 'wooden wardrobe with doors ajar', 'spinning wheel',
+            'hay-filled feeding trough', 'crooked shelf with cracked jars',
+            'writing desk with an inkpot', 'water bucket on a stool',
+            'pile of rags and broken pottery',
+        ],
+        'target_palette': {'colors': MADEIRA + LONA + FERRO + ['#4a4640', '#7c776c']},
+    },
+    # A mobilia que o livro e o mapa pedem por lugar: taverna, tecelagem, escola,
+    # moinho, ferraria, mesa posta, cama de viuva, rede de pesca.
+    'cenaRuina': {
+        'description': (
+            'Single large prop for an isometric tactical RPG, from an abandoned frontier village '
+            'buried in volcanic ash thirty years ago: old, dusty, broken, covered in grey ash. '
+            'About 40 px wide and 36 px tall, sitting on the bottom of the canvas, seen from the '
+            'front-left. Lit from the upper left. Dark brown selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'big oak brewing vat with iron hoops', 'row of two small beer barrels on a rack',
+            'broken weaving loom with tangled thread', 'two-level wooden bunk bed',
+            'blacksmith anvil on a tree stump', 'large leather forge bellows',
+            'cracked slate blackboard on an easel', 'broken millstone half buried in flour dust',
+            'set table with ash-covered plates and cups', 'wide bed with a faded patchwork quilt',
+            'axe stuck in a chopping block', 'stiff fishing nets hung on a frame',
+            'rotten sack of grain split open', 'stack of broken planks and a ladder',
+            'wooden table with a few tools', 'small iron-bound strongbox, lid open and empty',
+        ],
+        'target_palette': {'colors': MADEIRA + LONA + FERRO + ['#4a4640', '#7c776c', '#8a1e1e']},
+    },
+    # Decoracao de parede em plano, para as casas arruinadas. Teia de fio opaco.
+    'decorRuina': {
+        'description': (
+            'Wall fixture for an isometric tactical RPG, mounted flat ON a stone wall face that '
+            'runs down to the right at 27 degrees, seen from the front-left. The piece lies in the '
+            'plane of that wall. No wall behind it, no floor, no shadow on the ground. Old, '
+            'weathered, ruined. Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 32,
+        'view': 'top-down',
+        'item_descriptions': [
+            'spider web filling a wall corner, thin 1-pixel opaque strands',
+            'torn web with dangling strands', 'dense web with a trapped dead fly',
+            'small web between two stones', 'green moss creeping up from the bottom',
+            'dark moss with wet streaks', 'lichen on stone, pale green circles',
+            'ivy vine climbing', 'torn faded tapestry hanging by one corner',
+            'crooked empty picture frame', 'dark water stain running down the wall',
+            'hole in the plaster showing bare stones', 'bundle of dry hanging herbs',
+            'cracked wooden shield on a nail', 'rusty horseshoe on a nail',
+            'scorch mark of black soot',
+        ],
+        'target_palette': {'colors': GRANITO + MADEIRA[:3] + FERRO
+                           + ['#33572e', '#4a7236', '#b39d5c', '#8a1e1e', '#cfc6ae', '#2e2b27']},
+    },
+    # Portas quebradas, no plano da parede, como o `vaoDeParede`.
+    'vaoRuina': {
+        'description': (
+            'Doorway piece for an isometric tactical RPG, seen flat ON a stone wall face that runs '
+            'down to the right at 27 degrees. Only the opening and its frame. The piece lies in '
+            'the plane of that wall. No wall beyond the frame, no floor, no shadow on the ground. '
+            'Tall and narrow, about 30 px wide and 46 px tall. Ruined, old, covered in grey ash. '
+            'Lit from the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 48,
+        'view': 'top-down',
+        'item_descriptions': [
+            'broken wooden door hanging from one hinge, in a cracked stone frame',
+            'rotten wooden door fallen halfway inward, in a stone frame',
+            'burnt door, charred black planks, in a stone frame',
+            'open stone archway with a collapsed corner, rubble at the base',
+            'door boarded up with rough planks nailed across, in a stone frame',
+            'door ajar by a hand, dark gap, in a worn stone frame',
+            'empty stone doorway with a bent iron hinge, no door',
+            'door with a thick timber bar across and a cracked lintel',
+        ],
+        'target_palette': {'colors': GRANITO + MADEIRA + FERRO + ['#4a4640', '#2e2b27', '#4a7236']},
+    },
+    # Cercas e portoes soltos (o jardim, o pomar, a fazenda).
+    'cercaRuina': {
+        'description': (
+            'Single piece of wooden fencing for an isometric tactical RPG village, old and '
+            'broken: about 52 px wide and 34 px tall, sitting on the bottom of the canvas, seen '
+            'from the front-left, running along the diagonal of the ground. Weathered grey-brown '
+            'wood, grey ash. Lit from the upper left. Dark brown selective outline, not black. '
+            + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'closed wooden farm gate with a crossbar, sagging', 'open wooden farm gate swung wide',
+            'broken gate hanging from one hinge', 'section of sharpened stake fence',
+            'section of fence with two stakes missing', 'low section of stone and plank fence collapsed',
+            'two fence posts with rotten rails fallen', 'wooden gate posts with a rope tied across',
+        ],
+        'target_palette': {'colors': MADEIRA + FERRO + ['#4a4640', '#7c776c']},
+    },
     'paredeDecor': {
         'description': (
             'Wall fixture for an isometric tactical RPG castle, mounted flat ON a stone wall '

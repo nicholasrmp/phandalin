@@ -26,6 +26,7 @@ import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
 import { ladrilhoChao, sorteio } from '../art/chao.js';
 import { faixaDaFace, topoDoBloco } from '../art/faces.js';
 import { pecaDaParede } from '../art/paredes.js';
+import { faixaDaRuina } from '../art/ruinas.js';
 import { spriteCenario } from '../art/cenario.js';
 import { hasCondition, CONDITIONS } from '../rules/conditions.js';
 import { distanceFt, ARESTA } from '../core/grid.js';
@@ -103,6 +104,14 @@ const SUPERFICIE = {
   rocha: { topo: ROCHA_TOPO, lado: ROCHA_LADO, chao: 'rocha', face: 'penhasco' },
   caverna: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'caverna', face: 'penhasco' },
   riacho: { topo: ['#35647d', '#315d75'], lado: ROCHA_LADO, chao: 'riacho' },
+  // Arvore Trovao: trigo, cinza e lago de verdade, e a mobilia (a variante vem da
+  // anotacao do mapa: `varianteDaProp`).
+  trigo: { topo: ['#8a7a3f', '#85733f'], lado: TERRA, chao: 'trigo' },
+  cinza: { topo: ['#66625a', '#625e56'], lado: TERRA, chao: 'cinza' },
+  lago: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'lago' },
+  margem: { topo: ['#c2b48f', '#bcae88'], lado: TERRA, chao: 'margem' },
+  prop: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
+  propBaixo: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   poco: { topo: ['#22465e', '#204259'], lado: ROCHA_LADO, chao: 'poco' },
   ponte: { topo: ['#7a5a36', '#6d5030'], lado: ['#3f2c19', '#53391f'], chao: 'ponte', objeto: 'ponte' },
   entulho: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'entulho', face: 'penhasco' },
@@ -163,7 +172,7 @@ const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda',
 const SOMBRA_DO_BAIXO = {
   arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
   tocaia: 20, mesa: 22, sarcofago: 24, grade: 20, pocoVelho: 22,
-  braseiro: 14, braseiroFrio: 14, armeiro: 20, palha: 20, desabamento: 22,
+  braseiro: 14, braseiroFrio: 14, armeiro: 20, palha: 20, desabamento: 22, prop: 17,
 };
 
 // Objetos altos o bastante para esconder alguém atrás: esmaecem quando há
@@ -182,7 +191,7 @@ const ARESTA_QUE_ESCONDE = new Set([1, 2]);
 // aresta é a parede da FRENTE de uma sala: sai só um toco, para se ver dentro.
 // `mancha` (a cinza do vulcão fora das casas) também: sem ela, a casa de fora
 // que a cinza cobria virava "dentro" e deixava pilares de 66 px num muro de 22.
-const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho', 'mancha']);
+const CHAO_DE_FORA = new Set(['grama', 'estrada', 'planalto', 'riacho', 'mancha', 'trigo', 'cinza', 'lago', 'margem']);
 // Altura da parede de borda, em níveis de 22 px. Três é o bastante para ela
 // ler como muro sem engolir meia sala atrás dela.
 // A TINTA DE CADA SALA, por cima da laje (ver `drawTile`). Fraca de
@@ -889,8 +898,15 @@ export class Board {
     // O chão de uma casa de SALA é laje, mesmo quando o objeto que está nela
     // pinta grama ou caverna por baixo (barril, leito, baú): era o remendo de
     // capim no meio do piso de uma casa de pedra.
-    const chaoDe = (this.field.sala?.has(`${x},${y}`) && (s.chao === 'grama' || s.chao === 'caverna'))
-      ? 'laje' : s.chao;
+    // O piso de DENTRO de cada construcao vem do mapa (`pisoDeSala`: laje rachada ou
+    // tabua apodrecida), e vale por baixo de tudo o que estiver na casa.
+    const salaDaCasa = this.field.sala?.get(`${x},${y}`);
+    const pisoDaSala = salaDaCasa && this.field.pisoDeSala?.get(salaDaCasa);
+    // Em casa de tabua, as marcas de laje (cacos, musgo) saem: ficariam um remendo de pedra no assoalho.
+    const MARCA_DE_LAJE = ['ossos', 'mancha', 'cacos', 'musgoChao'];
+    const chaoDe = (salaDaCasa && (s.chao === 'grama' || s.chao === 'caverna' || s.chao === 'laje'
+      || (pisoDaSala === 'tabua' && MARCA_DE_LAJE.includes(s.chao))))
+      ? (pisoDaSala && ladrilhoChao(pisoDaSala, 0, 0) ? this.pisoSorteado(pisoDaSala, x, y) : 'laje') : s.chao;
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
@@ -1123,7 +1139,8 @@ export class Board {
       ctx.restore();
       return;
     }
-    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(s.objeto, ['todas'], x, y);
+    const grupoProp = s.objeto === 'prop' ? this.varianteDaProp(x, y) : null;
+    const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(grupoProp ?? s.objeto, ['todas'], x, y);
     if (baixo) {
       // Moita, pedra, estalagmite, mantimentos ou espinheiro do PixelLab, 1:1,
       // com o centro da base no centro da casa. A sombra acompanha a largura.
@@ -1663,6 +1680,33 @@ export class Board {
     return !s || CHAO_DE_FORA.has(s.chao);
   }
 
+  /**
+   * A mobília desta casa: a variante que o mapa anotou (`objetos`, tipo 'prop'),
+   * como nome de grupo do atlas do cenário, ou null.
+   */
+  varianteDaProp(x, y) {
+    if (this._propsDe !== this.field) {
+      this._propsDe = this.field;
+      this._props = new Map();
+      for (const o of this.field.objetos ?? []) {
+        if (o.tipo === 'prop') this._props.set(`${o.x},${o.y}`, `prop-${o.variante}`);
+      }
+    }
+    return this._props.get(`${x},${y}`) ?? null;
+  }
+
+  /**
+   * Um piso de sala com uma pitada de marca: de vez em quando a laje rachada cede
+   * lugar à laje com entulho (`lajeEntulho`), sorteada por casa. Devolve o NOME da
+   * fileira do atlas do chão.
+   */
+  pisoSorteado(piso, x, y) {
+    if (piso === 'lajeRuina' && sorteio(x * 11 + 3, y * 13 + 1, 100) < 9 && ladrilhoChao('lajeEntulho', x, y)) {
+      return 'lajeEntulho';
+    }
+    return piso;
+  }
+
   /** As paredes de borda do norte e do oeste da casa (x, y). */
   desenharParedes(ctx, x, y, d) {
     const f = this.field;
@@ -1694,7 +1738,13 @@ export class Board {
       // vértice de cima ao da direita) e a do OESTE é a de cima à esquerda.
       const A = { x: sx, y: sy };
       const B = lado === 'N' ? { x: sx + TW / 2, y: sy + TH / 2 } : { x: sx - TW / 2, y: sy + TH / 2 };
-      const alto = niveisAqui * LIFT;
+      // A RUÍNA da construção: a da casa da aresta, ou a da casa de trás quando a
+      // aresta é a fachada de fora. Porta e arco ficam inteiros (o vão precisa de
+      // altura para ser vão); o resto perde altura e ganha o topo quebrado.
+      const grau = f.paredeRuina?.[i] || (f.inside(ax, ay) ? f.paredeRuina?.[ay * f.w + ax] || 0 : 0);
+      const passagem = cod === ARESTA.porta || cod === ARESTA.aberta;
+      const emRuina = grau > 0 && !passagem;
+      const alto = (emRuina ? this.niveisEmRuina(niveisAqui, grau, x, y, lado) : niveisAqui) * LIFT;
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       if (!fora && (escondeSala
@@ -1702,7 +1752,7 @@ export class Board {
         || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, this.hover)))) {
         ctx.globalAlpha = TRANSLUCIDO;
       }
-      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y);
+      this.faceDaParede(ctx, lado, A, B, alto, cod, x, y, emRuina ? grau : 0, passagem ? grau : 0);
       ctx.restore();
     }
     // O que está pendurado nas paredes desta casa, por último — e com o
@@ -1720,7 +1770,9 @@ export class Board {
         // A ALTURA É A DESTA CASA, não a padrão: a torre tem 4 níveis e a
         // ruína 2. Com 66 px fixos, o quadro de uma torre decidia a
         // translucidez pela parede errada e a tocha ficava baixa demais.
-        const alto = niveis * LIFT;
+        // E a da RUÍNA, quando a construção está caída: a peça não fica no ar acima do toco.
+        const grauAqui = f.paredeRuina?.[i] || 0;
+        const alto = (grauAqui ? this.niveisEmRuina(niveis, grauAqui, x, y, lado) : niveis) * LIFT;
         const [ax, ay] = lado === 'O' ? [x - 1, y] : [x, y - 1];
         ctx.save();
         if (this._salasOcupadas?.has(f.sala?.get(`${ax},${ay}`))
@@ -1732,6 +1784,36 @@ export class Board {
         ctx.restore();
       }
     }
+  }
+
+  /**
+   * Quantos níveis a parede de uma construção em ruína ainda tem. O grau 1 é a
+   * casa que se sustenta (altura inteira); o 2, a que perdeu parte do alto; o 3,
+   * a que virou toco. O sorteio é por casa e lado, para a altura variar ao longo
+   * do muro em vez de cair num patamar só.
+   */
+  niveisEmRuina(n, grau, x, y, lado) {
+    if (n <= 1) return 1;
+    const h = sorteio(x * 13 + (lado === 'N' ? 1 : 5), y * 7 + 2, 6);
+    if (grau === 1) return n;
+    if (grau === 2) return h < 2 ? n : n - 1;
+    return h < 3 ? 1 : Math.min(2, n);
+  }
+
+  /**
+   * O PERFIL do alto de uma parede em ruína: cinco deslocamentos (px, para
+   * baixo) ao longo da aresta, de uma ponta à outra. O das pontas vem do CANTO
+   * (a mesma conta nas duas arestas que o dividem), para a quebra emendar na
+   * quina; o do meio é da aresta.
+   */
+  perfilDeRuina(lado, x, y, grau, alto) {
+    const max = Math.min(alto - 6, [0, 6, 12, 18][grau]);
+    const canto = (cx, cy) => (sorteio(cx * 31 + 7, cy * 17 + 3, 5) / 4) * max;
+    const [x1, y1] = lado === 'N' ? [x + 1, y] : [x, y + 1];
+    const meio = (k) => (sorteio(x * 19 + k * 7 + (lado === 'N' ? 0 : 3), y * 23 + k, 5) / 4) * max;
+    const a = canto(x, y);
+    const b = canto(x1, y1);
+    return [a, (a + meio(1)) / 2, meio(2), (b + meio(3)) / 2, b].map((v) => Math.round(v));
   }
 
   /**
@@ -1747,7 +1829,7 @@ export class Board {
    * A face usa as faixas de alvenaria do atlas (`art/faces.js`, 22 px por
    * nível), recortadas no paralelogramo da aresta.
    */
-  faceDaParede(ctx, lado, A, B, alto, cod, x, y) {
+  faceDaParede(ctx, lado, A, B, alto, cod, x, y, grau = 0, grauVao = 0) {
     const f = this.field;
     const ESP = 7;            // espessura da parede, em px de tela
     // A FAIXA NÃO SE TROCA: ela carrega a PERSPECTIVA, não só o tom. A arte
@@ -1786,14 +1868,25 @@ export class Board {
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
-    ctx.lineTo(B.x, B.y - alto); ctx.lineTo(A.x, A.y - alto);
+    // O perfil do alto: reto, ou quebrado quando a parede está em ruína.
+    const quebra = grau ? this.perfilDeRuina(lado, x, y, grau, alto) : null;
+    const alturaEm = (k) => alto - (quebra ? quebra[k] : 0);
+    for (let k = 4; k >= 0; k--) {
+      ctx.lineTo(A.x + (B.x - A.x) * (k / 4), A.y + (B.y - A.y) * (k / 4) - alturaEm(k));
+    }
     ctx.closePath();
     // Porta fechada tapa a passagem com a folha de madeira; arco aberto não.
     if (vao && cod === ARESTA.aberta) vao.contorno(ctx);
     ctx.clip('evenodd');
     let pintou = false;
-    for (let n = 0; n < Math.ceil(alto / LIFT); n++) {
-      const fx = faixaDaFace('alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
+    const niveisDaFace = Math.ceil(alto / LIFT);
+    // A pedra da ruína: o material sai do grau (e, no 1, alterna entre as duas).
+    const pedra = grau === 1 ? (sorteio(x * 3 + 1, y * 5 + 2, 2) ? 'alta' : 'leve') : grau === 2 ? 'pesada' : 'escombros';
+    for (let n = 0; n < niveisDaFace; n++) {
+      const fx = (grau
+        ? faixaDaRuina(pedra, face, n === niveisDaFace - 1 ? 'base' : (n === 0 && niveisDaFace > 1 ? 'topo' : 'meio'),
+          x * 7 + (lado === 'N' ? 0 : 3), y * 5, n)
+        : null) ?? faixaDaFace('alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
       if (!fx) break;
       pintou = true;
       ctx.drawImage(fx.img, fx.sx, fx.sy, fx.w, fx.h,
@@ -1831,17 +1924,30 @@ export class Board {
     }
     // O TOPO: a espessura da parede, vista de cima. É ele que faz a quina
     // virar sem emenda — o topo de uma aresta encosta no da outra.
-    const topoA = { x: A.x, y: A.y - alto };
-    const topoB = { x: B.x, y: B.y - alto };
+    const topoA = { x: A.x, y: A.y - alturaEm(0) };
+    const topoB = { x: B.x, y: B.y - alturaEm(4) };
     const dx = lado === 'N' ? -ESP : ESP;
     ctx.beginPath();
-    ctx.moveTo(topoA.x, topoA.y); ctx.lineTo(topoB.x, topoB.y);
-    ctx.lineTo(topoB.x + dx, topoB.y + ESP / 2); ctx.lineTo(topoA.x + dx, topoA.y + ESP / 2);
+    if (quebra) {
+      // A capa acompanha o perfil quebrado: uma faixa de espessura ESP que sobe e
+      // desce com ele, e não a tira reta que o resto das paredes tem.
+      for (let k = 0; k <= 4; k++) {
+        const px = A.x + (B.x - A.x) * (k / 4);
+        const py = A.y + (B.y - A.y) * (k / 4) - alturaEm(k);
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      for (let k = 4; k >= 0; k--) {
+        ctx.lineTo(A.x + (B.x - A.x) * (k / 4) + dx, A.y + (B.y - A.y) * (k / 4) - alturaEm(k) + ESP / 2);
+      }
+    } else {
+      ctx.moveTo(topoA.x, topoA.y); ctx.lineTo(topoB.x, topoB.y);
+      ctx.lineTo(topoB.x + dx, topoB.y + ESP / 2); ctx.lineTo(topoA.x + dx, topoA.y + ESP / 2);
+    }
     ctx.closePath();
     // Menos claro do que era. A capa branca saltava mais que a própria
     // parede, e onde um muro baixo passa na frente de uma torre ela lia como
     // prateleira pregada na pedra.
-    ctx.fillStyle = lado === 'N' ? '#8d8878' : '#7a7568';
+    ctx.fillStyle = quebra ? (lado === 'N' ? '#6f6a5f' : '#5f5a50') : (lado === 'N' ? '#8d8878' : '#7a7568');
     ctx.fill();
     // O contorno vai só nas arestas LIVRES do topo (a de fora e a de
     // dentro). Contornar também as laterais punha um entalhe escuro na
@@ -1883,8 +1989,9 @@ export class Board {
       ctx.beginPath();
       ctx.moveTo(ponto.x, ponto.y);
       ctx.lineTo(ponto.x + dx, ponto.y + ESP / 2);
-      ctx.lineTo(ponto.x + dx, ponto.y + ESP / 2 - alto);
-      ctx.lineTo(ponto.x, ponto.y - alto);
+      const altoPonto = ponto === A ? alturaEm(0) : alturaEm(4);
+      ctx.lineTo(ponto.x + dx, ponto.y + ESP / 2 - altoPonto);
+      ctx.lineTo(ponto.x, ponto.y - altoPonto);
       ctx.closePath();
       ctx.fillStyle = lado === 'N' ? '#4b453c' : '#3c372f';
       ctx.fill();
@@ -1905,7 +2012,7 @@ export class Board {
       // lista, todo vão é arcada, que é como os outros mapas se comportam.
       const [bx, by] = lado === 'N' ? [x, y - 1] : [x - 1, y];
       const temFolha = f.folha?.has(`${x},${y},${bx},${by}`) ?? false;
-      this.acabamentoDoVao(ctx, vao, lado, cod, temFolha);
+      this.acabamentoDoVao(ctx, vao, lado, cod, temFolha, grauVao, x, y);
     }
   }
 
@@ -1980,7 +2087,7 @@ export class Board {
   }
 
   /** A moldura de aduelas e, se a porta está fechada, a folha de madeira. */
-  acabamentoDoVao(ctx, vao, lado, cod, temFolha = false) {
+  acabamentoDoVao(ctx, vao, lado, cod, temFolha = false, grauVao = 0, x = 0, y = 0) {
     const { raio, altura } = vao;
     // A FOLHA ENCOSTADA, quando a porta está aberta. Sem ela o vão aberto
     // fica igual a uma arcada, e o jogador não tem como saber o que pode
@@ -2014,7 +2121,13 @@ export class Board {
       ctx.beginPath();
       vao.contorno(ctx);
       ctx.clip();
-      vao.noPlano(ctx, () => {
+      // Em construção arruinada a folha é uma porta velha de verdade (`vaoRuina`: quebrada,
+      // escorada, queimada, entreaberta), esticada para o vão. Na inteira, a de tábuas.
+      const velha = grauVao ? spriteCenario('vaoRuina', ['porta'], x, y) : null;
+      vao.noPlano(ctx, velha ? () => {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(velha.img, velha.x, velha.y, velha.w, velha.h, -raio, -altura, raio * 2, altura);
+      } : () => {
         ctx.fillStyle = '#4a3524';
         ctx.fillRect(-raio, -altura, raio * 2, altura);
         ctx.strokeStyle = 'rgba(22,16,10,.75)';
@@ -2056,7 +2169,9 @@ export class Board {
    * usa o espelho dele.
    */
   desenharDecor(ctx, tipo, lado, sx, sy, x, y, alto = ALTURA_PAREDE * LIFT) {
-    const d = spriteCenario('decorParede', [tipo], x, y);
+    // As peças das ruínas (`decorRuina`) vêm primeiro: teia, musgo, tapeçaria, mancha
+    // e o resto de uma casa abandonada. O que elas não têm cai nas do castelo.
+    const d = spriteCenario('decorRuina', [tipo], x, y) ?? spriteCenario('decorParede', [tipo], x, y);
     if (!d) return;
     // O meio da aresta, na altura do peito de quem passa — uma FRAÇÃO da
     // parede, não 32 px fixos: na torre de 88 px a tocha ficava rente ao

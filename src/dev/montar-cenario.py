@@ -224,6 +224,50 @@ GRUPOS = {
               'quadros': {'todas': [2]}, 'ancora': 'painel', 'espelhar': True},
 }
 
+# ARVORE TROVAO. A MOBILIA e a DECORACAO das casas abandonadas (PixelLab, levas
+# `moveisRuina`, `cenaRuina` e `decorRuina`; ver `OBJETOS-ARVORE-TROVAO.md`). Cada peca
+# de mobilia e um grupo `prop-<nome>` de um quadro so: o mapa anota qual peca vai em
+# cada casa (`objetos`, tipo 'prop') e o tabuleiro a busca pelo nome. Ancora no chao,
+# como o bau e o armeiro: uma peca de mesa nao pode subir e colar na parede de tras.
+_MOVEIS = 'moveisRuina/c7710a23-87d7-420d-a981-995be9a5438c'
+_CENA = 'cenaRuina/59d01a89-9c53-42ee-a60a-db65e5082732'
+for _pasta, _nomes in ((_MOVEIS, ['banco', 'banquinho', 'armario', 'cama', 'fogao', 'cadeira', 'estante',
+                                  'tina', 'berco', 'guardaRoupa', 'roca', 'cocho', 'prateleira',
+                                  'escrivaninha', 'baldeBanco', 'trapos']),
+                       (_CENA, ['cubaCerveja', 'barrisRack', 'tear', 'beliche', 'bigorna', 'fole', 'lousa',
+                                'mo', 'mesaPosta', 'camaViuva', 'machadoTora', 'redes', 'saco', 'tabuas',
+                                'mesaFerramentas', 'cofreVazio'])):
+    for _i, _n in enumerate(_nomes):
+        GRUPOS[f'prop-{_n}'] = {'pasta': _pasta, 'quadros': {'todas': [_i]}, 'ancora': 'chao'}
+
+# A decoracao de parede das ruinas. Os papeis dizem o que cada coisa E; o gerador do
+# mapa escolhe pelo papel. Fora as que leem como outra coisa na parede (sino, relogio
+# redondo, o cartaz de runas) e as quase pretas.
+GRUPOS['decorRuina'] = {
+    'pasta': 'decorRuina/9149d2db-ab60-458c-93d6-de1526a61108',
+    'quadros': {
+        'teia': [0, 1, 2, 3, 63], 'musgo': [4, 5, 7, 29], 'liquen': [6],
+        'tapecaria': [8, 27, 59, 60], 'moldura': [9, 62], 'mancha': [10, 38, 51],
+        'fuligem': [15], 'reboco': [11, 30], 'ervas': [12, 32, 54],
+        'escudo': [13, 33, 39], 'ferradura': [14], 'corrente': [17, 41],
+        'chaves': [21], 'cranio': [22], 'aviso': [48], 'pergaminho': [37],
+        'prateleira': [25, 19], 'peles': [40], 'lanterna': [24, 49],
+    },
+    'ancora': 'centro',
+}
+# Os vaos quebrados (portas e arcos), no plano da parede, para as casas arruinadas.
+GRUPOS['vaoRuina'] = {
+    'pasta': 'vaoRuina/1d88c8ef-52f5-4b42-aeee-b27222bf6dac',
+    'quadros': {'porta': [0, 4, 5, 7, 12, 13, 15], 'arco': [3, 6, 14]},
+    'ancora': 'centro',
+}
+# Cercas e portoes soltos.
+GRUPOS['cercaRuina'] = {
+    'pasta': 'cercaRuina/b34ec5c9-e599-4ba1-9659-b419fc4c14d0',
+    'quadros': {'portao': [0, 1, 2, 14], 'cerca': [3, 4, 5, 6, 9, 11, 13, 15], 'caida': [8, 12]},
+    'ancora': 'chao',
+}
+
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
             'north', 'north-west', 'west', 'south-west']
 DIAGONAIS = ['south-east', 'north-east', 'north-west', 'south-west']

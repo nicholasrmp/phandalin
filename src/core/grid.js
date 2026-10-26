@@ -163,6 +163,16 @@ export const GLIFOS = {
   'd': { kind: 0, sup: 'cacos' },        // cacos, poeira, reboco caido
   'j': { kind: 0, sup: 'musgoChao' },    // musgo nas juntas, poca parada
   't': { kind: 3, sup: 'arca' },
+  // ARVORE TROVAO: o campo de trigo, a cinza do vulcao e o lago (chao), e a
+  // mobilia de casa abandonada. A mobilia e UM glifo por regra e a variante vem
+  // da anotacao do mapa (`objetos`, tipo 'prop'): `^` barra (cobertura) e `&` e
+  // chao de passar (trapos, balde, banquinho).
+  'X': { kind: 0, sup: 'trigo' },
+  'Z': { kind: 0, sup: 'cinza' },
+  'S': { kind: 0, sup: 'lago' },
+  'y': { kind: 0, sup: 'margem' },
+  '^': { kind: 3, sup: 'prop' },
+  '&': { kind: 0, sup: 'propBaixo' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
@@ -230,6 +240,16 @@ export class Battlefield {
       paredes.alt.forEach((linha, y) => {
         for (let x = 0; x < Math.min(w, linha.length); x++) {
           this.paredeAlt[y * w + x] = Number(linha[x]) || 0;
+        }
+      });
+    }
+    // O GRAU DE RUÍNA da construção de cada casa (0 inteira, 1 a 3 cada vez mais
+    // caída). Só o tabuleiro lê: troca a pedra da parede e quebra o topo dela.
+    if (paredes?.ruina) {
+      this.paredeRuina = new Uint8Array(w * h);
+      paredes.ruina.forEach((linha, y) => {
+        for (let x = 0; x < Math.min(w, linha.length); x++) {
+          this.paredeRuina[y * w + x] = Number(linha[x]) || 0;
         }
       });
     }

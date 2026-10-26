@@ -136,6 +136,46 @@ CONJUNTOS = {
                       '6). with a shallow puddle of dark still water. '
                       '7). with loose dry yellow straw scattered over it. '
                       '8). with fallen grey plaster dust and small rubble.',
+    # ARVORE TROVAO. Os pisos que o mapa de verdade pede (ver
+    # `OBJETOS-ARVORE-TROVAO.md`). Chao, nunca objeto: o motor pinta a sombra.
+    'lajeRuina': ESTILO + ' Floor inside an abandoned burnt village house, cool grey stone, daylight. '
+                 '1). small grey flagstones with ash dust in the joints, uniform. '
+                 '2). small grey flagstones with a thin hairline crack and ash dust. '
+                 '3). small grey flagstones with a few tiny green weeds in the joints. '
+                 '4). small grey flagstones with scattered grey ash, one stone missing showing dark earth. '
+                 '5). small grey flagstones with a black soot stain. '
+                 '6). small grey flagstones with a few tiny fallen pebbles. '
+                 '7). small grey flagstones, slightly darker and worn smooth. '
+                 '8). small grey flagstones with a patch of dry moss. '
+                 '9). broken flagstones sunk in packed dark earth with weeds. '
+                 '10). flagstones half covered by drifted grey ash.',
+    'tabuaRuina': ESTILO + ' Wooden floor inside an abandoned village house, rotten and dry. '
+                  '1). dark grey-brown wooden planks laid side by side, weathered, uniform. '
+                  '2). weathered planks with a long split crack. '
+                  '3). weathered planks with a rotten dark patch. '
+                  '4). weathered planks with a missing plank showing dark earth. '
+                  '5). weathered planks with a few old iron nails. '
+                  '6). weathered planks with ash dust and a few weeds in the gaps. '
+                  '7). weathered planks, one plank charred black. '
+                  '8). weathered planks, slightly lighter and bleached.',
+    'trigo': ESTILO + ' Open farmland, daylight. '
+             '1). ripe golden wheat field, dense upright stalks. 2). wheat with a few bent stalks. '
+             '3). wheat with a thin dirt gap. 4). trampled wheat, stalks lying flat. '
+             '5). thin wheat with dry stubble. 6). wheat with a few green weeds. '
+             '7). dense wheat, taller heads. 8). wheat with a small bare patch. '
+             '9). old harvested stubble. 10). wheat leaning one way. '
+             'Full diamond covered edge to edge.',
+    'cinza': ESTILO + ' Open ground in a village buried by volcanic ash, daylight. '
+             '1). volcanic ash drift on grass, grey-brown powder with grass blades poking through. '
+             '2). thin ash layer on grass. 3). ash with a few small dark pebbles. '
+             '4). thick smooth ash drift. 5). ash with footprints. '
+             '6). ash with a few charred twigs. 7). ash mixed into a dirt road. '
+             '8). ash with wind ripples. Warm grey, no red, no blood, no stone paving.',
+    'lago': ESTILO + ' Lake and shore, daylight. '
+            '1). calm dark lake water. 2). water with small ripples. 3). water with a lily pad. '
+            '4). deeper dark water. 5). water with a reflection streak. '
+            '6). water with floating dead leaves. 7). sandy shore meeting dark water, sand on the upper-left. '
+            '8). shore tile with reeds. 9). wet sand. 10). dry sand.',
     # Faces laterais do porao (montar-faces.py): BLOCOS com face, todos numa
     # chamada para sairem no mesmo tom. Pedidos um a um, os de alvenaria
     # vieram creme, roxo e rosa.
@@ -184,6 +224,11 @@ PALETAS = {
     # decalque some no proprio chao.
     'sujeiraCastelo': ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b', '#b4afa2',
                        '#cfc6ae', '#5a3a28', '#2f4a2c', '#7a5a3a', '#141311', '#b89a52'],
+    'lajeRuina': ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b', '#4a4640', '#4a7236', '#33572e', '#2e2b27'],
+    'tabuaRuina': ['#22160e', '#3e2a1b', '#5e4029', '#85603d', '#4a4640', '#2e2b27', '#4a7236'],
+    'trigo': ['#4c3e1f', '#66572c', '#85733f', '#a68a4a', '#2a3a21', '#36492c'],
+    'cinza': ['#4a4640', '#66625a', '#7c776c', '#9a948a', '#2e2b27', '#36492c', '#2a3a21', '#7d5d40'],
+    'lago': ['#1b393f', '#17313a', '#35647d', '#4a8099', '#c2b48f', '#968a6c', '#6b6350', '#36492c'],
     'paredes': ['#1e1c1a', '#2a2724', '#3d3a35', '#57534b', '#6e695d', '#8d8878', '#a39e8c',
                 '#1f2428', '#2c3035', '#3b3f44', '#4d5156', '#62666a'],
 }
