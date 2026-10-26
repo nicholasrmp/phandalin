@@ -1,0 +1,380 @@
+// A sala do multijogador: a máquina de estados do lobby (MULTIJOGADOR.md, seção 6,
+// L-01…L-12, Fase 2).
+//
+// Este arquivo é PURO: sem tela, sem rede, sem relógio próprio. O Durable Object
+// (`worker/sala-do.js`) guarda o estado e retransmite; o navegador desenha. As
+// regras moram aqui para serem testadas em Node e para o cliente e o servidor
+// nunca discordarem sobre o que é uma jogada válida.
+//
+// O que a sala é: quem está nela, qual herói é de quem, quem está pronto e se a
+// partida começou. NÃO é o jogo: a Fase 2 entrega "dois jogadores, cada um pega
+// um herói", sem sincronizar nada do tabuleiro (isso é a F4 em diante).
+//
+// Toda mudança entra por `aplicar(sala, jogadorId, mensagem)`. Ela confere TUDO
+// (quem manda, o tipo de cada campo, o limite de cada lista): a mensagem vem de
+// um navegador, e um navegador é entrada hostil.
+//
+// O `jogadorId` é um SEGREDO (quem o souber assume o lugar da pessoa, L-03): ele
+// nunca sai daqui. Os clientes veem só o rótulo público `pub` ('p1', 'p2'…).
+
+export const VERSAO_DA_SALA = 1;
+
+/** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
+export const HEROIS_JOGAVEIS = [
+  'pc-guerreiro', 'pc-ladino', 'pc-clerigo', 'pc-mago', 'pc-barbaro', 'pc-druida',
+  'pc-bruxo', 'pc-feiticeira', 'pc-paladino', 'pc-guardiao', 'pc-monja', 'pc-barda',
+];
+
+export const TAMANHO_DO_GRUPO = 4;
+export const MAX_JOGADORES = 4;
+export const MAX_NOME = 24;
+export const MAX_REMOVIDOS = 32;
+export const PILOTO = 'piloto';
+
+/** L-12: sala sem ninguém conectado por 30 minutos fecha (o save permanece). */
+export const MINUTOS_VAZIA = 30;
+
+// L-02: seis caracteres de um alfabeto sem ambíguos (sem 0/O, 1/I/L). São 31
+// símbolos, não 32: tirando só esses cinco do alfabeto de letras e dígitos, é o
+// que sobra. 31^6 ≈ 8,9 × 10^8 combinações.
+export const ALFABETO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const TAMANHO_DO_CODIGO = 6;
+
+/**
+ * Um código novo. `aleatorio(n)` devolve um inteiro de 0 a n-1 (no navegador e no
+ * Worker, `crypto.getRandomValues`; nos testes, uma semente).
+ */
+export function gerarCodigo(aleatorio) {
+  let c = '';
+  for (let i = 0; i < TAMANHO_DO_CODIGO; i += 1) c += ALFABETO[aleatorio(ALFABETO.length)];
+  return c;
+}
+
+/** Sorteio sem viés por `crypto.getRandomValues` (rejeita o resto que enviesaria). */
+export function aleatorioSeguro(n, cripto = globalThis.crypto) {
+  const limite = Math.floor(0x100000000 / n) * n;
+  const buf = new Uint32Array(1);
+  for (;;) {
+    cripto.getRandomValues(buf);
+    if (buf[0] < limite) return buf[0] % n;
+  }
+}
+
+/** O código como o jogador o digita: maiúsculas, sem espaços; `null` se não for um código. */
+export function normalizarCodigo(texto) {
+  if (typeof texto !== 'string') return null;
+  const c = texto.trim().toUpperCase();
+  if (c.length !== TAMANHO_DO_CODIGO) return null;
+  return [...c].every((ch) => ALFABETO.includes(ch)) ? c : null;
+}
+
+/** Um nome de exibição limpo, ou `null`: sem controle, sem espaço dobrado, 1 a 24 caracteres. */
+export function limparNome(texto) {
+  if (typeof texto !== 'string') return null;
+  // eslint-disable-next-line no-control-regex
+  const n = texto.normalize('NFC').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, '').replace(/\s+/g, ' ').trim();
+  return n.length >= 1 && n.length <= MAX_NOME ? n : null;
+}
+
+/**
+ * Um id de jogador aceitável: o UUID do `localStorage`, ou algo do mesmo feitio.
+ * Exige um hífen: sem isso `constructor`, `toString` e afins passariam, e com um
+ * objeto comum no lugar de mapa eles apareceriam "dentro" da sala pelo protótipo.
+ */
+export const idValido = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(id) && id.includes('-');
+
+/** O jogador da sala com esse id SECRETO, só se for dele mesmo (nunca do protótipo). */
+export const jogadorDe = (sala, id) => (typeof id === 'string' && Object.hasOwn(sala.jogadores, id) ? sala.jogadores[id] : undefined);
+
+// ------------------------------------------------------------------- criar --
+
+/**
+ * L-01. O anfitrião cria a sala escolhendo o que se joga e quantos jogadores.
+ * `origem` é `{ tipo: 'nova', aventura }` ou `{ tipo: 'save', aventura, resumo }`
+ * (a aventura vem do save; o save em si fica com o anfitrião, que roda o jogo).
+ */
+export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORES, origem, agora }) {
+  if (!normalizarCodigo(codigo)) return { ok: false, erro: 'código inválido' };
+  if (!idValido(anfitriao)) return { ok: false, erro: 'jogador inválido' };
+  const nomeLimpo = limparNome(nome);
+  if (!nomeLimpo) return { ok: false, erro: 'nome inválido' };
+  if (!Number.isInteger(maxJogadores) || maxJogadores < 1 || maxJogadores > MAX_JOGADORES) return { ok: false, erro: 'número de jogadores inválido' };
+  const o = origem ?? { tipo: 'nova', aventura: 'mina-perdida' };
+  if (!['nova', 'save'].includes(o.tipo) || typeof o.aventura !== 'string' || o.aventura.length > 40) return { ok: false, erro: 'aventura inválida' };
+  const sala = {
+    versao: VERSAO_DA_SALA,
+    codigo,
+    criadaEm: agora,
+    fase: 'lobby',
+    origem: { tipo: o.tipo, aventura: o.aventura, resumo: o.tipo === 'save' && typeof o.resumo === 'string' ? o.resumo.slice(0, 120) : null },
+    maxJogadores,
+    anfitriao,
+    lider: anfitriao,
+    ordem: [anfitriao],
+    proximoPub: 2,
+    jogadores: { [anfitriao]: { id: anfitriao, pub: 'p1', nome: nomeLimpo, conectado: true, pronto: false, desde: agora } },
+    herois: {},
+    // Heróis que o anfitrião mandou para o piloto automático quando o dono estava ausente: quem
+    // volta recupera os seus (A-04). Herói posto no piloto de propósito nunca entra aqui.
+    cedidos: {},
+    removidos: [],
+    vaziaDesde: null,
+  };
+  return { ok: true, sala };
+}
+
+// ----------------------------------------------------------------- consultas --
+
+export const heroisDe = (sala, jogadorId) => Object.entries(sala.herois).filter(([, dono]) => dono === jogadorId).map(([h]) => h);
+export const jogadoresPresentes = (sala) => sala.ordem.map((id) => jogadorDe(sala, id)).filter(Boolean);
+/** O id secreto de quem tem o rótulo público `pub` (o que os clientes veem). */
+export const idPorPub = (sala, pub) => (typeof pub === 'string' ? Object.values(sala.jogadores).find((j) => j.pub === pub)?.id ?? null : null);
+const conectados = (sala) => jogadoresPresentes(sala).filter((j) => j.conectado);
+
+/**
+ * L-07: o grupo é sempre de 4 e cada jogador tem pelo menos 1 herói. Quantos um
+ * jogador pode segurar para os outros ainda caberem: 4 menos um para cada outro.
+ */
+export const limiteDeHerois = (sala) => TAMANHO_DO_GRUPO - (sala.ordem.length - 1);
+
+/**
+ * O que falta para iniciar (L-11), em frases para o anfitrião. Lista vazia =
+ * pode iniciar. Ausentes não bloqueiam se o anfitrião aceitar o piloto, e
+ * essa opção aparece como `aceitarPiloto` na tela.
+ */
+export function pendenciasParaIniciar(sala, { aceitarPiloto = false } = {}) {
+  const faltas = [];
+  if (sala.fase !== 'lobby') return ['a partida já começou'];
+  const escolhidos = Object.keys(sala.herois).length;
+  if (escolhidos < TAMANHO_DO_GRUPO) faltas.push(`faltam ${TAMANHO_DO_GRUPO - escolhidos} herói${TAMANHO_DO_GRUPO - escolhidos > 1 ? 's' : ''} no grupo`);
+  for (const j of jogadoresPresentes(sala)) {
+    if (heroisDe(sala, j.id).length === 0) faltas.push(`${j.nome} ainda não pegou um herói`);
+    else if (j.conectado && !j.pronto) faltas.push(`${j.nome} não está pronto`);
+    else if (!j.conectado && !aceitarPiloto) faltas.push(`${j.nome} está desconectado (remova ou aceite o piloto automático)`);
+  }
+  return faltas;
+}
+
+// -------------------------------------------------------------------- aplicar --
+
+const ok = (extra = {}) => ({ ok: true, ...extra });
+const recusa = (erro) => ({ ok: false, erro });
+
+/**
+ * Mudar o grupo desfaz o "pronto" de TODOS: o que cada um aprovou já não é o que
+ * está na tela (alguém pegou, largou, saiu ou foi removido).
+ */
+const desfazerProntos = (sala) => { for (const j of jogadoresPresentes(sala)) j.pronto = false; };
+
+const soAnfitriao = (sala, id) => (id === sala.anfitriao ? null : recusa('só o anfitrião pode fazer isso'));
+const heroiValido = (h) => typeof h === 'string' && HEROIS_JOGAVEIS.includes(h);
+
+/**
+ * Aplica UMA intenção de `jogadorId`. Muta `sala` só quando dá certo. Devolve
+ * `{ ok: true, ... }` ou `{ ok: false, erro }`. O transporte diz QUEM mandou
+ * (`jogadorId`); a mensagem nunca carrega essa informação.
+ */
+export function aplicar(sala, jogadorId, mensagem, agora = 0) {
+  if (sala.fase === 'fechada') return recusa('a sala foi fechada');
+  if (!mensagem || typeof mensagem !== 'object' || typeof mensagem.tipo !== 'string') return recusa('mensagem inválida');
+  const eu = jogadorDe(sala, jogadorId);
+
+  if (mensagem.tipo === 'entrar') {
+    if (sala.removidos.includes(jogadorId)) return recusa('você foi removido desta sala');
+    const nome = limparNome(mensagem.nome);
+    if (eu) {
+      // Quem volta no mesmo navegador reassume o lugar (L-03), e os heróis que o
+      // piloto automático segurou por ele durante a ausência (A-04).
+      const devolveu = devolverHerois(sala, jogadorId);   // antes do `||`: não pode ser pulado
+      const mudou = devolveu || !eu.conectado || (nome && nome !== eu.nome) || sala.vaziaDesde != null;
+      eu.conectado = true;
+      if (nome) eu.nome = nome;
+      sala.vaziaDesde = null;
+      return ok({ reentrou: true, igual: !mudou });
+    }
+    if (!idValido(jogadorId)) return recusa('jogador inválido');
+    if (!nome) return recusa('nome inválido');
+    if (sala.fase !== 'lobby') return recusa('a partida já começou');
+    if (sala.ordem.length >= sala.maxJogadores) return recusa('a sala está cheia');
+    // Um jogador novo diminui o limite de todos: se alguém já segura mais do que sobraria, não cabe.
+    const limiteDepois = TAMANHO_DO_GRUPO - sala.ordem.length;
+    if (jogadoresPresentes(sala).some((j) => heroisDe(sala, j.id).length > limiteDepois)) {
+      return recusa('um jogador está com heróis demais: peça para ele soltar um antes de entrar mais gente');
+    }
+    sala.ordem.push(jogadorId);
+    sala.jogadores[jogadorId] = { id: jogadorId, pub: `p${sala.proximoPub}`, nome, conectado: true, pronto: false, desde: agora };
+    sala.proximoPub += 1;
+    sala.vaziaDesde = null;
+    desfazerProntos(sala);
+    return ok({ reentrou: false });
+  }
+
+  if (!eu) return recusa('você não está nesta sala');
+
+  switch (mensagem.tipo) {
+    case 'sair': {
+      // O anfitrião é a sala: se for embora, ela fecha (ou ele passa o posto... o que a F6 resolve).
+      if (jogadorId === sala.anfitriao) return recusa('o anfitrião não sai: feche a sala');
+      saiu(sala, jogadorId, agora);
+      return ok({ saiu: jogadorId });
+    }
+    case 'pegar': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (!heroiValido(mensagem.heroi)) return recusa('herói inexistente');
+      if (sala.herois[mensagem.heroi]) return recusa('esse herói já tem dono');
+      if (Object.keys(sala.herois).length >= TAMANHO_DO_GRUPO) return recusa('o grupo já tem quatro heróis');
+      if (heroisDe(sala, jogadorId).length >= limiteDeHerois(sala)) return recusa('os outros jogadores ficariam sem herói');
+      sala.herois[mensagem.heroi] = jogadorId;
+      desfazerProntos(sala);
+      return ok();
+    }
+    case 'largar': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (!heroiValido(mensagem.heroi)) return recusa('herói inexistente');
+      const dono = sala.herois[mensagem.heroi];
+      if (!dono) return recusa('esse herói não tem dono');
+      // P2: ninguém mexe no herói de outro. O anfitrião só solta os do piloto automático.
+      if (dono === PILOTO ? jogadorId !== sala.anfitriao : dono !== jogadorId) return recusa('esse herói não é seu');
+      delete sala.herois[mensagem.heroi];
+      desfazerProntos(sala);
+      return ok();
+    }
+    case 'piloto': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (!heroiValido(mensagem.heroi)) return recusa('herói inexistente');
+      if (sala.herois[mensagem.heroi]) return recusa('esse herói já tem dono');
+      if (Object.keys(sala.herois).length >= TAMANHO_DO_GRUPO) return recusa('o grupo já tem quatro heróis');
+      sala.herois[mensagem.heroi] = PILOTO;
+      desfazerProntos(sala);
+      return ok();
+    }
+    case 'pronto': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (typeof mensagem.valor !== 'boolean') return recusa('mensagem inválida');
+      if (mensagem.valor && heroisDe(sala, jogadorId).length === 0) return recusa('pegue um herói antes de ficar pronto');
+      if (eu.pronto === mensagem.valor) return ok({ igual: true });
+      eu.pronto = mensagem.valor;
+      return ok();
+    }
+    case 'lider': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      const alvo = idPorPub(sala, mensagem.jogador);
+      if (!alvo) return recusa('jogador inexistente');
+      sala.lider = alvo;
+      return ok();
+    }
+    case 'remover': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      const alvo = idPorPub(sala, mensagem.jogador);
+      if (!alvo) return recusa('jogador inexistente');
+      if (alvo === sala.anfitriao) return recusa('o anfitrião não se remove: feche a sala');
+      saiu(sala, alvo, agora);
+      sala.removidos.push(alvo);
+      if (sala.removidos.length > MAX_REMOVIDOS) sala.removidos.shift();
+      return ok({ removido: alvo });   // o id SECRETO: só o transporte o usa, para derrubar a conexão
+    }
+    case 'iniciar': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      const aceitarPiloto = mensagem.aceitarPiloto === true;
+      const faltas = pendenciasParaIniciar(sala, { aceitarPiloto });
+      if (faltas.length) return recusa(faltas[0]);
+      // Quem não está aqui entrega os heróis ao piloto automático (L-08), e a partida começa.
+      // Os heróis ficam anotados em `cedidos`: se o dono voltar, recupera os seus.
+      for (const j of jogadoresPresentes(sala)) {
+        if (j.conectado) continue;
+        for (const h of heroisDe(sala, j.id)) { sala.herois[h] = PILOTO; sala.cedidos[h] = j.id; }
+      }
+      sala.fase = 'iniciada';
+      sala.iniciadaEm = agora;
+      return ok();
+    }
+    case 'fechar': {
+      const f = soAnfitriao(sala, jogadorId); if (f) return f;
+      sala.fase = 'fechada';
+      return ok();
+    }
+    default:
+      return recusa('mensagem desconhecida');
+  }
+}
+
+/** Devolve a `jogadorId` os heróis que o piloto segurou por ele. `true` se devolveu algum. */
+function devolverHerois(sala, jogadorId) {
+  let algum = false;
+  for (const [h, dono] of Object.entries(sala.cedidos)) {
+    if (dono !== jogadorId) continue;
+    if (sala.herois[h] === PILOTO) { sala.herois[h] = jogadorId; algum = true; }
+    delete sala.cedidos[h];
+  }
+  return algum;
+}
+
+/**
+ * Tira o jogador (saiu ou foi removido). No lobby ele some e solta os heróis; na
+ * partida em curso o grupo precisa continuar de 4, então os heróis vão para o
+ * piloto automático e o jogador continua no registro, desconectado.
+ */
+function saiu(sala, id, agora) {
+  if (sala.fase === 'iniciada') {
+    for (const h of heroisDe(sala, id)) sala.herois[h] = PILOTO;
+    const j = jogadorDe(sala, id);
+    if (j) { j.conectado = false; j.pronto = false; }
+  } else {
+    for (const h of heroisDe(sala, id)) delete sala.herois[h];
+    delete sala.jogadores[id];
+    sala.ordem = sala.ordem.filter((x) => x !== id);
+    desfazerProntos(sala);
+  }
+  if (sala.lider === id) sala.lider = sala.anfitriao;
+  atualizarVazia(sala, agora);
+}
+
+/** Marca (ou desmarca) o instante em que a sala ficou sem ninguém conectado. */
+export function atualizarVazia(sala, agora) {
+  if (conectados(sala).length === 0) sala.vaziaDesde ??= agora;
+  else sala.vaziaDesde = null;
+}
+
+/**
+ * O transporte avisa que a conexão de `jogadorId` caiu. No lobby o jogador
+ * continua na sala (volta reassumindo o lugar); a aba que recarrega não perde o
+ * herói. Funciona mesmo se o id não está mais na sala (quem saiu e fechou a
+ * aba): a conta de "sala vazia" é refeita de qualquer jeito.
+ */
+export function desconectar(sala, jogadorId, agora) {
+  const j = jogadorDe(sala, jogadorId);
+  if (j) { j.conectado = false; j.pronto = false; }
+  atualizarVazia(sala, agora);
+}
+
+/** L-12: a sala vazia há `MINUTOS_VAZIA` minutos deve fechar. */
+export const deveFechar = (sala, agora) => sala.fase !== 'fechada' && sala.vaziaDesde != null
+  && agora - sala.vaziaDesde >= MINUTOS_VAZIA * 60_000;
+
+// ------------------------------------------------------------------- a visão --
+
+/**
+ * O que um cliente recebe: a sala inteira (não há segredo no jogo) mais quem
+ * ele é. O id do jogador é um SEGREDO (quem o souber assume o lugar dele,
+ * L-03), então a visão só traz o rótulo público `pub` ('p1', 'p2'…).
+ */
+export function visaoDaSala(sala, paraJogador) {
+  const pubDe = (id) => (id === PILOTO ? PILOTO : jogadorDe(sala, id)?.pub ?? null);
+  return {
+    versao: sala.versao,
+    codigo: sala.codigo,
+    fase: sala.fase,
+    origem: sala.origem,
+    maxJogadores: sala.maxJogadores,
+    anfitriao: pubDe(sala.anfitriao),
+    lider: pubDe(sala.lider),
+    voce: jogadorDe(sala, paraJogador)?.pub ?? null,
+    jogadores: jogadoresPresentes(sala).map((j) => ({
+      id: j.pub, nome: j.nome, conectado: j.conectado, pronto: j.pronto, herois: heroisDe(sala, j.id),
+    })),
+    herois: Object.fromEntries(Object.entries(sala.herois).map(([h, dono]) => [h, pubDe(dono)])),
+    limiteDeHerois: limiteDeHerois(sala),
+    pendencias: sala.fase === 'lobby' ? pendenciasParaIniciar(sala) : [],
+  };
+}

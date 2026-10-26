@@ -1,21 +1,33 @@
-# Deploy na Cloudflare, como Worker com assets estáticos.
+# Deploy na Cloudflare, como Worker com assets estáticos e o servidor de salas.
 #
-# Por que Worker e não Pages: o próprio wrangler já recomenda Workers para
-# projetos novos, e aqui a razão é concreta — quando entrar o multiplayer, o
-# Durable Object de cada grupo vai viver NESTE MESMO Worker. Site e servidor de
-# salas no mesmo domínio: um só deploy, sem CORS, sem dois lugares para manter.
+# Por que Worker e não Pages: o Durable Object de cada sala vive NESTE MESMO
+# Worker. Site e servidor de salas no mesmo domínio: um só deploy, sem CORS, sem
+# dois lugares para manter.
 #
-# Hoje não existe `main`: é um Worker só de assets, que serve o build do Vite.
-# Quando o servidor de salas entrar, basta adicionar `main` e o bloco
-# [[durable_objects.bindings]] aqui embaixo.
+# O site são arquivos estáticos (o build do Vite). `run_worker_first` manda para
+# o código SÓ o que começa com /api/ (o WebSocket da sala); o resto é servido
+# direto dos assets, sem acordar o Worker e sem contar nas 100 mil requisições
+# por dia do plano grátis.
 
 name = "phandalin"
+main = "src/worker/index.js"
 compatibility_date = "2026-10-22"
 
 [assets]
 directory = "./dist"
 # Sem rotas de SPA: o site tem arquivos reais (index.html, estilos.html).
 not_found_handling = "404-page"
+run_worker_first = ["/api/*"]
+
+# Uma sala por código. O plano grátis só aceita Durable Object com armazenamento
+# SQLite, por isso `new_sqlite_classes` na migração.
+[[durable_objects.bindings]]
+name = "SALAS"
+class_name = "SalaDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SalaDO"]
 
 [observability]
 enabled = true

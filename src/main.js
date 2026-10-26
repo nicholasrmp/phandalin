@@ -38,6 +38,8 @@ import { Hud } from './view/hud.js';
 import { criarFicha, aplicarAparencia } from './view/ficha.js';
 import { criarMenu } from './view/menu.js';
 import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave } from './game/save.js';
+import { jogadorDaAba } from './game/sala-cliente.js';
+import { normalizarCodigo } from './game/sala.js';
 import { aoDarXp } from './game/nivel.js';
 import { audio, passoSoundFor } from './core/audio.js';
 import {
@@ -200,6 +202,12 @@ class App {
       onCarregar: (save) => this.carregarSave(save),
       podeSalvar: () => this.podeSalvarAgora(),
       onSalvar: (slot) => this.salvarManual(slot),
+      // O multijogador (Fase 2): a sala, o lobby. `?como=Beto` dá um id por ABA, para testar com duas abas.
+      multijogador: {
+        jogadorId: jogadorDaAba({ busca: location.search, sessionStorage, jogadorLocal: () => jogadorLocal(armazem) }),
+        storage: armazem,
+        local: location,
+      },
     });
     // O botão de voltar ao menu mora à esquerda do aviso de turno. O HUD
     // guarda a referência do aviso, então embrulhá-lo não o desliga.
@@ -218,6 +226,7 @@ class App {
     const busca = new URLSearchParams(location.search);
     const direto = busca.get('encontro');
     if (direto) this.newEncounter({ modo: 'arena', variante: direto, nivel: Number(busca.get('nivel')) || 2 });
+    else if (busca.get('sala')) this.menu.abrirSala(normalizarCodigo(busca.get('sala')) ?? '');
     else this.menu.abrir();
   }
 
@@ -252,6 +261,8 @@ class App {
     if (mapa.decor) {
       field.decor = new Map(mapa.decor.map((d) => [`${d.x},${d.y},${d.lado}`, d.tipo]));
     }
+    // O piso de dentro de cada construcao (Arvore Trovao): laje rachada ou tabua.
+    if (mapa.pisos) field.pisoDeSala = new Map(Object.entries(mapa.pisos));
     if (mapa.salas) {
       field.sala = new Map();
       for (const [nome, casas] of Object.entries(mapa.salas)) {

@@ -2,7 +2,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
-  server: { port: 5190, open: false },
+  // O servidor de salas é o Worker (`src/worker`), não o Vite: em desenvolvimento,
+  // `/api` vai para o `wrangler dev` (npx wrangler dev --port 8787 --local).
+  server: { port: 5190, open: false, proxy: { '/api': { target: 'http://127.0.0.1:8787', ws: true, changeOrigin: false } } },
   build: {
     target: 'es2020',
     sourcemap: 'hidden',

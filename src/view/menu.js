@@ -5,6 +5,7 @@
 //              (em breve) · Opções · Créditos · Sair
 //   carregar   os slots guardados, abrir arquivo, exportar, apagar
 //   salvar     os três slots manuais
+//   multi, salaCriar, salaEntrar, lobby   o multijogador (`menu-sala.js`)
 //   jogar      Campanha ou Arena de testes
 //   campanha   as aventuras publicadas; só a Mina Perdida de Phandelver joga
 //   grupo      quem vai na carroça: quatro dos doze heróis prontos
@@ -25,6 +26,7 @@ import { el } from './hud.js';
 import { makePortrait } from '../art/sheet.js';
 import { AVENTURAS } from '../game/aventuras.js';
 import { criarTelasDeHerois } from './menu-herois.js';
+import { criarTelasDeSala } from './menu-sala.js';
 import { audio } from '../core/audio.js';
 import { criarFundo } from './menu-fundo.js';
 import { SLOTS_MANUAIS, resumoDoSave, paraArquivo, nomeDoArquivo, deArquivo } from '../game/save.js';
@@ -61,6 +63,8 @@ export function criarMenu(root, {
   onIniciar, temPartida,
   // Save e carregar (`game/save.js`): sem `saves`, o menu é o de antes.
   saves = null, onCarregar = null, podeSalvar = () => false, onSalvar = null,
+  // Multijogador (`menu-sala.js`): sem isto, "Multijogador" continua "em breve".
+  multijogador = null,
 }) {
   const camada = el('div', { class: 'menu', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Menu' });
   const fundoHost = el('div', { class: 'menu-fundo' });
@@ -94,12 +98,20 @@ export function criarMenu(root, {
     }
     if (e.key === 'Escape') {
       e.preventDefault();
+      // No lobby o Esc não larga a sala sem querer: quem sai usa o botão. Sem sala a proteger
+      // (ainda entrando, recusada, encerrada), o Esc sai como em qualquer tela.
+      if (pilha[pilha.length - 1][0] === 'lobby') {
+        if (sala?.lobbyAtivo()) return;
+        sala?.sairDaSala();
+        irSala.aoMulti();
+        return;
+      }
       if (pilha.length > 1) voltar();
       else if (temPartida()) fechar();
     }
   }, { capture: true });
 
-  function abrir(tela = 'principal') {
+  function abrir(tela = 'principal', dados) {
     pilha.length = 0;
     const naPartida = temPartida();
     camada.classList.toggle('na-partida', naPartida);
@@ -117,7 +129,14 @@ export function criarMenu(root, {
       audio.tocarMusica(MUSICA_DO_TITULO);
     }
     if (!aberto) { root.append(camada); aberto = true; }
-    ir(tela);
+    ir(tela, dados);
+  }
+
+  /** O link `?sala=ABC234`: o menu abre direto na tela de entrar, com o código posto e o Voltar funcionando. */
+  function abrirSala(codigo) {
+    abrir();
+    ir('multi');
+    ir('salaEntrar', { codigo });
   }
 
   function fechar() {
@@ -141,21 +160,28 @@ export function criarMenu(root, {
     audio.play('click');
   }
 
-  function desenhar() {
+  function desenhar({ semFoco = false } = {}) {
     const [tela, dados] = pilha[pilha.length - 1];
+    // Uma tela que se redesenha sozinha leva o foco do teclado junto: o botão focado volta a ser o mesmo.
+    const chaveFocada = semFoco ? document.activeElement?.dataset?.chave : null;
     const titulo = tela === 'principal' || tela === 'sair';
     camada.dataset.tela = titulo ? 'titulo' : 'quadro';
     const conteudo = TELAS[tela](dados);
     palco.replaceChildren(titulo ? conteudo : el('div', { class: 'menu-quadro' }, conteudo));
-    // Foco no primeiro botão: o menu inteiro anda no teclado.
-    (palco.querySelector('button[data-foco]') ?? palco.querySelector('button:not([disabled])'))?.focus();
+    // Foco no primeiro botão: o menu inteiro anda no teclado. Uma tela que muda sozinha
+    // (o lobby, quando chega gente) não rouba o foco de quem está no meio de um clique.
+    if (!semFoco) (palco.querySelector('button[data-foco]') ?? palco.querySelector('input') ?? palco.querySelector('button:not([disabled])'))?.focus();
+    else if (chaveFocada) palco.querySelector(`button[data-chave="${CSS.escape(chaveFocada)}"]:not([disabled])`)?.focus();
   }
 
-  const botao = (rotulo, onclick, { primario = false, desabilitado = false, dica = null, foco = false } = {}) => el('button', {
+  const botao = (rotulo, onclick, { primario = false, desabilitado = false, dica = null, foco = false, chave = null, aria = null } = {}) => el('button', {
     class: `menu-btn${primario ? ' primario' : ''}`,
     disabled: desabilitado,
     title: dica,
     'data-foco': foco ? '1' : null,
+    // `chave` identifica o botão entre um redesenho e outro (o foco do teclado volta a ele).
+    'data-chave': chave,
+    'aria-label': aria,
     onclick: () => { audio.play('click'); onclick(); },
   }, rotulo);
 
@@ -194,7 +220,9 @@ export function criarMenu(root, {
         item('Jogar solo', () => ir('jogar'), { destaque: !temPartida() && !recente }),
         saves && item('Carregar jogo', () => ir('carregar'), { desabilitado: !guardados.length }),
         saves && temPartida() && podeSalvar() && item('Salvar jogo', () => ir('salvar')),
-        item('Multijogador', () => {}, { desabilitado: true, etiqueta: 'em breve' }),
+        multijogador
+          ? item('Multijogador', () => ir('multi'))
+          : item('Multijogador', () => {}, { desabilitado: true, etiqueta: 'em breve' }),
         item('Opções', () => ir('opcoes')),
         item('Créditos', () => ir('creditos')),
         item('Sair', () => ir('sair'))),
@@ -472,5 +500,24 @@ export function criarMenu(root, {
 
   const herois = criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, retratoDe });
 
-  return { abrir, fechar, estaAberto: () => aberto };
+  // As telas do multijogador pedem ao menu quatro coisas além de `ir`:
+  // trocar os dados da tela de cima, avisar sem redesenhar (para não perder o que o
+  // jogador digitou), voltar até "Multijogador" e voltar ao título.
+  const irSala = Object.assign((tela, dados) => ir(tela, dados), {
+    trocar: (dados) => { pilha[pilha.length - 1][1] = dados; desenhar(); },
+    recado: (texto) => {
+      let p = palco.querySelector('.menu-recado.erro');
+      if (!p) { p = el('p', { class: 'menu-recado erro', role: 'status' }); (palco.querySelector('.menu-cab') ?? palco.firstChild)?.after(p); }
+      p.textContent = texto;
+    },
+    aoMulti: () => { while (pilha.length > 1 && pilha[pilha.length - 1][0] !== 'multi') pilha.pop(); desenhar(); },
+    raiz: () => { pilha.length = 1; desenhar(); },
+  });
+  const sala = multijogador && criarTelasDeSala({
+    botao, voltarBtn, cabecalho, ir: irSala, voltar, retratoDe, ...multijogador,
+    redesenhar: (tela) => { if (aberto && pilha[pilha.length - 1][0] === tela) desenhar({ semFoco: true }); },
+  });
+  if (sala) Object.assign(TELAS, sala.TELAS);
+
+  return { abrir, abrirSala, fechar, estaAberto: () => aberto };
 }
