@@ -451,7 +451,7 @@ NINHOS = {
     'stirges': _espalha(_a3, 10),                                   # area 3: pendurados no teto
     'esqueletos': _espalha(_area('4'), 9),                          # area 4: os ossos da guarita
     'ghoulsSul': _espalha(_area('6'), 3),                           # area 6: roendo ossos
-    'ghoulsGrande': _espalha(_a9_oeste, 7),                         # area 9: na elevacao oeste
+    'ghoulsGrande': _espalha(_a9_oeste, 4),                         # area 9: na elevacao oeste (o livro diz 7 ghouls ao todo: 3 na area 6)
     'gosma': _grandes(_area('2'), 1, (12, 56)),                     # area 2: nos tuneis
     'bugbearsNorte': _espalha(INTERIOR['alojNorte'], 5),            # area 11
     'zumbis': _espalha(_area('12'), 8),                             # area 12

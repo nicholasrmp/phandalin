@@ -56,6 +56,7 @@ export const TEXTOS = {
   chegada: [
     'A trilha acaba num túnel estreito, escondido nos pés da montanha, e do túnel sobe um vento frio que cheira a pedra molhada. Mais adiante, a escuridão é completa.',
     'É a Caverna Onda Eco: a mina perdida do Pacto de Phandelver. Em algum lugar lá dentro, longe, alguma coisa bate na rocha em intervalos regulares, como o mar.',
+    'Quem entra sabe que a mina cobra caro de grupo pequeno e cansado: os primeiros salões são os mais mansos, o depósito é o único canto seguro para dormir, e o templo, no fundo, não perdoa.',
   ],
   ondas: [
     'O estrondo está mais perto agora. Vem de baixo, de muito longe: um jato de água que bate na pedra, fica um instante no ar e desaba. O chão estremece junto, e depois tudo volta ao silêncio.',

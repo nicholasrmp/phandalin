@@ -342,18 +342,10 @@ export const HUMANOIDES = {
     blurb: 'Prende o mais forte com Imobilizar Pessoa, solta Mísseis Mágicos de longe, some com Passo Nebuloso quando encurralado e ergue o Escudo Arcano pelo cajado. Sem fuga e com 8 PV ou menos, se rende.',
   },
 
-  // NEZZNAR, A ARANHA NEGRA (Parte 4: a Caverna do Eco das Ondas). O bloco e
-  // o MAGO do SRD inteiro -- os mesmos numeros, nenhum inventado -- com o que
-  // o faz DROW por cima, e nada mais:
-  //   . visao no escuro de 36 m (a do drow, nao a de 18 m do mago);
-  //   . Ascendencia Feerica e Sensibilidade a Luz Solar;
-  //   . Fogo das Fadas entre as magias preparadas, que e a conjuracao inata
-  //     do drow e a unica dela que o motor executa (a IA abre com ela,
-  //     `fogoDasFadasNoTurno` em `rules/ai.js`). Luzes Dancantes e Escuridao
-  //     ficam de fora porque o motor nao as tem.
-  // O ND continua 6 (2.300 PX): os tracos de drow nao mudam os numeros da
-  // luta, so o lado em que ela e travada -- no escuro ele enxerga 36 m, e sob
-  // o sol ataca com desvantagem.
+  // NEZZNAR, A ARANHA NEGRA (Parte 4: a Caverna Onda Eco). O bloco é o do LIVRO (apêndice B): ND 2, 450 XP, 27 PV,
+  // com o Cajado da Aranha e os traços de drow (visão no escuro de 36 m, Ascendência Feérica, Sensibilidade à Luz
+  // Solar). O motor executa a conjuração dele pela lista abaixo (a IA abre com o Fogo das Fadas); Invisibilidade e
+  // Sugestão estão no bloco, mas a IA ainda não as usa.
   nezznar: {
     id: 'nezznar',
     name: 'Nezznar',
@@ -393,7 +385,7 @@ export const HUMANOIDES = {
       conjuraNoTurno: true,
     },
     traits: ['conjuracao', 'ascendenciaFeerica', 'sensibilidadeALuzSolar'],
-    blurb: 'Drow mago de CA 14: abre com Fogo das Fadas para acender o grupo, e some com Invisibilidade para atacar de onde ninguém vê. Bate com o Cajado da Aranha (1d6 de veneno a mais). Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
+    blurb: 'Drow mago de CA 14: abre com Fogo das Fadas para acender o grupo e depois solta mísseis e toques chocantes. Bate com o Cajado da Aranha (1d6 de veneno a mais). Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
   },
 
   // BRUGHOR MACHADO-MORDEDOR, chefe do bando orc do Cume da Wyvern (Parte 3).

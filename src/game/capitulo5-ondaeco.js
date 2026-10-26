@@ -47,6 +47,7 @@ export function criarOndaEco(app) {
   salvo.gas ??= {};
   const buscas = criarBuscas(salvo.buscas);
   const estado = { explorando: false, encerrado: false, lutando: null, reforcos: [], vagando: null };
+  let rotaDoMovimento = [];
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
@@ -206,7 +207,8 @@ export function criarOndaEco(app) {
   async function acordarEsqueletos() {
     salvo.esqueletos = 'luta';
     await painel(TEXTOS.esqueletos, { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-    luta(esqueletos.filter((f) => !f.dead));
+    // O livro: os ossos só se juntam no turno DEPOIS da entrada, então o grupo age primeiro (os esqueletos perdem a rodada 1).
+    luta(esqueletos.filter((f) => !f.dead), 'nossa');
   }
   async function acordarGhoulsSul() {
     salvo.ghoulsSul = 'luta';
@@ -252,8 +254,14 @@ export function criarOndaEco(app) {
     // O tapete solta o gás quando ALGUÉM anda por cima dele: no primeiro passo dentro da caverna, e depois a cada
     // dois movimentos de quem está lá. Todos os que estão na caverna fazem a salvaguarda.
     if (!naArea(quemAndou.pos, '8')) return;
-    salvo.gas.passos = (salvo.gas.passos ?? -1) + 1;
-    if (salvo.gas.passos % 2 !== 0) return;
+    // O tapete solta o gás na ENTRADA e depois a cada 30 pés andados lá dentro (uma rodada de marcha): o número de
+    // cliques não importa, só a distância. Todos os que estão na caverna fazem a salvaguarda.
+    const pes = 5 * (rotaDoMovimento.filter((p) => areaDe(p) === '8').length || 1);
+    const antes = salvo.gas[quemAndou.id] ?? null;
+    const depois = (antes ?? -30) + pes;
+    salvo.gas[quemAndou.id] = depois;
+    const eventos = antes === null ? 1 : Math.floor(depois / 30) - Math.floor(antes / 30);
+    if (eventos <= 0) return;
     const alvos = dentro;
     const falharam = [];
     for (const h of alvos) {
@@ -261,7 +269,7 @@ export function criarOndaEco(app) {
       if (s.passou) continue;
       const dano = damageRoll(enc.rng, '3d6');
       enc.applyDamage(h, dano.total, 'veneno', null, {});
-      addCondition(h, 'envenenado', { rounds: 100 });
+      addCondition(h, 'envenenado', { rounds: 100, source: 'gas' });
       falharam.push(`${h.name} (${dano.total})`);
     }
     if (!salvo.viuGas) {
@@ -320,8 +328,17 @@ export function criarOndaEco(app) {
   function iniciarTemplo() {
     salvo.templo = 'luta';
     const furt = furtividadeDe(aranhasTemplo);
-    const reforco = [...bugbearsFenda, ...vhalak].filter((f) => !f.dead);
+    // Do corredor chegam os DOIS bugbears que escalam as cordas da fenda (o guarda e o doppelganger ficam lá: o livro faz o
+    // doppelganger recuar para avisar Nezznar, e não lutar).
+    const reforco = bugbearsFenda.slice(0, 2).filter((f) => !f.dead);
+    for (const [i, f] of reforco.entries()) f.name = `Bugbear da fenda ${letras[i]}`;
     if (reforco.length) prepararReforcos({ 3: { bando: reforco, aviso: 'Do corredor chegam passos pesados: o que sobrou da caverna desmoronada ouviu a luta.' } });
+    // O grupo entra JUNTO: quem ficou no corredor de duas casas é puxado para a entrada do templo (a luta é de todos).
+    const ref = herois().find((h) => naArea(h.pos, '19')) ?? herois()[0];
+    for (const h of herois()) {
+      if (naArea(h.pos, '19') || distanceFt(h.pos, ref.pos) <= 15) continue;
+      h.pos = { ...h.pos, ...casaPerto(ref.pos) };
+    }
     luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo].filter((f) => !f.dead), { furt });
   }
 
@@ -380,6 +397,7 @@ export function criarOndaEco(app) {
     // AS ONDAS ESTRONDOSAS: de tempos em tempos o estrondo chega pela pedra, mais forte para o nordeste.
     salvo.passos = (salvo.passos ?? 0) + 1;
     if (salvo.passos % 30 === 0) enc.say('acao', c.pos.x > 48 && c.pos.y < 30 ? TEXTOS.ondaPerto : TEXTOS.ondaLonge);
+    rotaDoMovimento = rota;
     if (aqui('8')) await gasDosFungos(c); else salvo.gas = {};
     if (stirges.length && !salvo.stirges && aqui('3')) { await acordarStirges(); return; }
     if (esqueletos.length && !salvo.esqueletos && aqui('4')) { await acordarEsqueletos(); return; }
@@ -796,7 +814,11 @@ export function criarOndaEco(app) {
     depoisDaConversa: resolver,
     // Só o depósito (7) e os aposentos do sacerdote, depois de Nezznar, são lugar de dormir: "nenhum monstro vem aqui".
     // Descansar é gastar tempo no mesmo lugar: a mina cobra (monstros vagando).
-    depoisDoDescanso: async () => { if (estado.explorando && !herois().every((h) => naArea(h.pos, '7'))) await monstroVagando(); },
+    depoisDoDescanso: async () => {
+      // O veneno do gás dura dez minutos (o livro): um descanso o leva embora.
+      for (const h of herois()) h.conditions = (h.conditions ?? []).filter((k) => !(k.id === 'envenenado' && k.source === 'gas'));
+      if (estado.explorando && !herois().every((h) => naArea(h.pos, '7'))) await monstroVagando();
+    },
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
       if (tipo !== 'longo') return null;

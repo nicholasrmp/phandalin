@@ -58,7 +58,7 @@ teste('cada bando nasce em casa livre e alcançável, e as Grandes têm as quatr
     bugbearsFenda: 'bugbear', bugbearGuarda: 'bugbear', vhalak: 'doppelganger', nezznar: 'nezznar', bugbearsTemplo: 'bugbear',
     aranhasTemplo: 'aranhaGigante', nundro: 'plebeu',
   };
-  const QUANTOS = { stirges: 10, esqueletos: 9, ghoulsSul: 3, ghoulsGrande: 7, gosma: 1, bugbearsNorte: 5, zumbis: 8, caveira: 1, bugbearsTemplo: 2, aranhasTemplo: 4, bugbearsFenda: 2 };
+  const QUANTOS = { stirges: 10, esqueletos: 9, ghoulsSul: 3, ghoulsGrande: 4, gosma: 1, bugbearsNorte: 5, zumbis: 8, caveira: 1, bugbearsTemplo: 2, aranhasTemplo: 4, bugbearsFenda: 2 };
   for (const [chave, n] of Object.entries(QUANTOS)) assert.equal(ONDA_ECO.ninhos[chave].length, n, `${chave}: o livro põe ${n}`);
   for (const [chave, vagas] of Object.entries(ONDA_ECO.ninhos)) {
     const tipo = TIPOS[chave];
