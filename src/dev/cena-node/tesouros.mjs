@@ -162,3 +162,22 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.ok(!depois.includes('Empurrar a estátua') && !depois.includes('Examinar'), 'caida, nao se empurra nem se examina');
   ok('a estatua de Palien: Atletismo CD 20, cai num monte de pedra que barra o passo');
 }
+
+// --- as brechas de visao das ruinas: seteira de borda (barra o passo, nao a visao) ----------------
+{
+  const S = await novaCena(9, { nivel: 3 });
+  const f = S.field;
+  let n = 0, passam = 0, naoVeem = 0;
+  for (let y = 1; y < f.h; y++) for (let x = 1; x < f.w; x++) {
+    for (const [cod, ox, oy] of [[f.paredeN[y * f.w + x], x, y - 1], [f.paredeO[y * f.w + x], x - 1, y]]) {
+      if (cod !== 4) continue;               // ARESTA.seteira
+      n++;
+      if (f.passa(x, y, ox, oy)) passam++;
+      if (!f.hasLineOfSight({ x, y }, { x: ox, y: oy })) naoVeem++;
+    }
+  }
+  assert.ok(n >= 20, `ha brechas nas ruinas (${n})`);
+  assert.equal(passam, 0, 'nenhuma brecha deixa passar');
+  assert.equal(naoVeem, 0, 'toda brecha deixa ver');
+  ok(`${n} brechas de visão: não se passa por nenhuma, e se vê por todas`);
+}

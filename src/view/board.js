@@ -1843,13 +1843,19 @@ export class Board {
    * (a mesma conta nas duas arestas que o dividem), para a quebra emendar na
    * quina; o do meio é da aresta.
    */
-  perfilDeRuina(lado, x, y, grau, alto) {
+  perfilDeRuina(lado, x, y, grau, alto, brecha = false) {
     const max = Math.min(alto - 6, [0, 6, 12, 18][grau]);
     const canto = (cx, cy) => (sorteio(cx * 31 + 7, cy * 17 + 3, 5) / 4) * max;
     const [x1, y1] = lado === 'N' ? [x + 1, y] : [x, y + 1];
     const meio = (k) => (sorteio(x * 19 + k * 7 + (lado === 'N' ? 0 : 3), y * 23 + k, 5) / 4) * max;
     const a = canto(x, y);
     const b = canto(x1, y1);
+    if (brecha) {
+      // A BRECHA DE VISÃO: o perfil despenca no meio da aresta, até um pé de entulho. Quem está de
+      // um lado vê o outro por ali; a regra continua sendo parede (seteira): não se passa.
+      const fundo = (k) => Math.round(alto * (0.68 + (sorteio(x * 23 + k * 3, y * 31 + k, 100) / 100) * 0.2));
+      return [Math.round(a), fundo(1), fundo(2), fundo(3), Math.round(b)];
+    }
     return [a, (a + meio(1)) / 2, meio(2), (b + meio(3)) / 2, b].map((v) => Math.round(v));
   }
 
@@ -1908,7 +1914,7 @@ export class Board {
     ctx.beginPath();
     ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
     // O perfil do alto: reto, ou quebrado quando a parede está em ruína.
-    const quebra = grau ? this.perfilDeRuina(lado, x, y, grau, alto) : null;
+    const quebra = grau ? this.perfilDeRuina(lado, x, y, grau, alto, cod === ARESTA.seteira) : null;
     const alturaEm = (k) => alto - (quebra ? quebra[k] : 0);
     for (let k = 4; k >= 0; k--) {
       ctx.lineTo(A.x + (B.x - A.x) * (k / 4), A.y + (B.y - A.y) * (k / 4) - alturaEm(k));
@@ -1948,7 +1954,8 @@ export class Board {
     ctx.fill();
     ctx.restore();
     // A SETEIRA: a fenda estreita, aberta na pedra na altura do peito.
-    if (cod === ARESTA.seteira) {
+    // (a fenda estreita só vale na parede inteira: na ruína a seteira é a brecha, desenhada no perfil)
+    if (cod === ARESTA.seteira && !grau) {
       const q0 = em(0.42);
       const q1 = em(0.58);
       ctx.beginPath();

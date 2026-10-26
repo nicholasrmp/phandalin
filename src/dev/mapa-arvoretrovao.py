@@ -1094,6 +1094,39 @@ PISO_TABUA = {'fazenda', 'estalagem', 'casa7', 'casa9', 'casa10', 'casa12', 'cas
               'casa20', 'ervas', 'loja', 'pescaria', 'tecelagem', 'florestal', 'escola', 'embaixada'}
 PISOS = {pid: ('tabua' if pid in PISO_TABUA else 'lajeRuina') for pid in INTERIOR}
 
+# AS BRECHAS DE VISAO: onde a parede de uma construcao arruinada desabou o bastante para se ver
+# POR ELA, mas nao para passar. Sao arestas de seteira (`J`: barra o passo, nao a visao, e da
+# cobertura a quem esta atras), desenhadas como um buraco irregular na pedra (`board.js`). Quem
+# espia de fora ve o interior; quem esta dentro ve a rua. So nas casas de grau 2 e 3 (a de pe nao
+# tem brecha), longe do vao, e nunca duas juntas.
+BRECHAS = []
+for _pid, _grau in GRAU_DE_RUINA.items():
+    if _grau < 2:
+        continue
+    _quer = 3 if _grau == 3 else 1
+    if len(INTERIOR[_pid]) >= 25:
+        _quer += 1
+    _cand = []
+    for (x, y) in INTERIOR[_pid]:
+        if _junto_de_vao(x, y):
+            continue
+        for (nx, ny, grade, gx, gy, lado) in ((x, y - 1, PN, x, y, 'N'), (x - 1, y, PO, x, y, 'O'),
+                                              (x, y + 1, PN, x, y + 1, 'N'), (x + 1, y, PO, x + 1, y, 'O')):
+            if 0 <= nx < W and 0 <= ny < H and REG(nx, ny) != _pid and grade[gy][gx] == '#':
+                # a fachada (sul e leste) aparece mais: entra primeiro
+                _cand.append((0 if (ny > y or nx > x) else 1, _embaralha(gx, gy, 101), gx, gy, lado, grade))
+    _cand.sort(key=lambda c: (c[0], c[1]))
+    _feitas = 0
+    for (_f, _h, gx, gy, lado, grade) in _cand:
+        if _feitas >= _quer:
+            break
+        if any(abs(gx - b['x']) + abs(gy - b['y']) < 4 for b in BRECHAS):
+            continue
+        grade[gy][gx] = 'J'
+        BRECHAS.append({'x': gx, 'y': gy, 'lado': lado, 'predio': _pid})
+        _feitas += 1
+print('brechas de visao:', len(BRECHAS), {p: sum(1 for b in BRECHAS if b['predio'] == p) for p in GRAU_DE_RUINA if any(b['predio'] == p for b in BRECHAS)})
+
 # -------------------------------------------- decoração pendurada na parede ----
 # Pouca e espaçada, com os mesmos freios do castelo: duas casas de folga entre
 # uma peça e a seguinte, um teto por tipo e por prédio, e o mesmo tipo nunca duas
