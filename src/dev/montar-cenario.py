@@ -289,6 +289,26 @@ GRUPOS['janelaRuina'] = {
     'ancora': 'centro',
 }
 
+# ARVORE TROVAO, a vegetacao nova (PixelLab, `arvoresMortas`, `arvoresVivas`, `arbustosRuina`,
+# `tufosRuina`): o que um vulcao deixa. Entra nos grupos que o tabuleiro ja usa, como frames extras:
+# as mortas e a birch no miolo da mata, os pinheiros, a azinheira oca e a meio queimada na borda.
+_MORTAS = 'arvoresMortas/80b8db80-3e63-4b7a-9cc1-0a776e32c5a0'
+_VIVAS = 'arvoresVivas/7e49785b-4d18-4333-9127-3586ab39cfd2'
+GRUPOS['arvore']['extras'] = [
+    (_VIVAS, 'borda', [0, 1, 3]), (_MORTAS, 'borda', [2]),
+    (_MORTAS, 'miolo', [0, 1, 3]), (_VIVAS, 'miolo', [2]),
+]
+# A MATA que se ve de verdade e a de `arvore-alta` (uma a cada quatro casas, num quincunce): as
+# novas entram la tambem, para a mata deixar de ser so carvalho.
+GRUPOS['arvore-alta']['extras'] = [(_VIVAS, 'todas', [0, 1, 2, 3]), (_MORTAS, 'todas', [0, 1, 2, 3])]
+GRUPOS['arbusto']['extras'] = [('arbustosRuina/b9a2e5b7-2239-4124-bd05-5ec66e886bfd', 'todas',
+                                [0, 1, 2, 4, 5, 6, 10, 11, 12, 15])]
+GRUPOS['tufo'] = {
+    'pasta': 'tufosRuina/737eef2d-7269-4d00-9986-1d1d4774a1b3',
+    'quadros': {'todas': [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 16, 18, 20, 24, 26]},
+    'ancora': 'base',
+}
+
 DIRECOES = ['south', 'south-east', 'east', 'north-east',
             'north', 'north-west', 'west', 'south-west']
 DIAGONAIS = ['south-east', 'north-east', 'north-west', 'south-west']
@@ -405,6 +425,12 @@ def main():
                     im = Image.open(pasta / f'frame_urls_{i}.png').convert('RGBA')
                     im = im.crop(im.getbbox())
                     quadros.append((nome, g['papel'], f'{sub.split("/")[0]}:{i}', im, ancora(im, g['ancora'])))
+            # (e os extras de outras levas, no mesmo papel)
+            for sub, papel, idxs in g.get('extras', []):
+                for i in idxs:
+                    im = Image.open(OBJ / sub / f'frame_urls_{i}.png').convert('RGBA')
+                    im = im.crop(im.getbbox())
+                    quadros.append((nome, g['papel'], f'{sub.split("/")[0]}:{i}', im, ancora(im, g['ancora'])))
             continue
         pasta = OBJ / g['pasta']
         if not pasta.exists():
@@ -419,6 +445,12 @@ def main():
                 if 'cores' in g:
                     im = recolorir(im, g['cores'])
                 quadros.append((nome, papel, i, im, ancora(im, g['ancora'])))
+        # QUADROS EXTRAS de outras levas, no mesmo grupo e com a mesma ancora: (pasta, papel, indices).
+        for sub, papel, idxs in g.get('extras', []):
+            for i in idxs:
+                im = Image.open(OBJ / sub / f'frame_urls_{i}.png').convert('RGBA')
+                im = im.crop(im.getbbox())
+                quadros.append((nome, papel, f'{sub.split("/")[0]}:{i}', im, ancora(im, g['ancora'])))
     for nome, g in DIRIGIDOS.items():
         pasta = OBJ / g['pasta']
         if not pasta.exists():

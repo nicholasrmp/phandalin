@@ -370,6 +370,8 @@ export class Board {
         if (this.field.surfaceAt?.(x, y) === 'arvore') { copa = 112; break; }
       }
     }
+    // Muro mais alto que o de sempre sobe acima da casa do fundo: o canvas reserva o que passa dos 3 níveis.
+    if (this.field.paredeAlt) copa += Math.max(0, Math.max(...this.field.paredeAlt) - ALTURA_PAREDE) * LIFT;
     // Dimensionado para o pior caso, para não redimensionar ao girar.
     canvas.width = span * (TW / 2) + PAD * 2;
     canvas.height = span * (TH / 2) + this.maxHeight * LIFT + PAD * 2 + 40 + copa;
@@ -926,6 +928,18 @@ export class Board {
       } else {
         ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy, lad.w, lad.h);
       }
+      // OS TUFOS: detalhes de capim (flor, cogumelo, pedrinha, graveto) espalhados por sorteio de casa
+      // no gramado liso. Só desenho: nenhuma regra do chão muda, e a casa com objeto não leva tufo.
+      if (s.chao === 'grama' && !s.objeto && !this.field.sala?.has(`${x},${y}`)
+        && sorteio(x * 7 + 3, y * 11 + 5, 100) < 16) {
+        const tufo = spriteCenario('tufo', ['todas'], x, y);
+        if (tufo) {
+          const tx = sx + (sorteio(x + 11, y + 23, 25) - 12);
+          const ty = sy + TH / 2 + (sorteio(x + 31, y + 7, 9) - 4);
+          ctx.drawImage(tufo.img, tufo.x, tufo.y, tufo.w, tufo.h,
+            Math.round(tx - tufo.ax), Math.round(ty - tufo.ay), tufo.w, tufo.h);
+        }
+      }
       // A TINTA DA SALA. O castelo inteiro é a mesma laje, e sala igual de
       // ponta a ponta lê como papel de parede. Em vez de um piso novo por
       // sala — que é arte nova para cada uma — cada sala puxa a MESMA laje
@@ -1144,6 +1158,7 @@ export class Board {
     }
     const prop = s.objeto === 'prop' ? this.varianteDaProp(x, y) : null;
     const baixo = SOMBRA_DO_BAIXO[s.objeto] && spriteCenario(prop?.grupo ?? s.objeto, ['todas'], x, y);
+    if (baixo && prop?.grupo === 'prop-taverna-nada') { ctx.restore(); return; }   // só ocupa o chão: nada a desenhar nem sombra
     if (baixo) {
       // Moita, pedra, estalagmite, mantimentos ou espinheiro do PixelLab, 1:1,
       // com o centro da base no centro da casa. A sombra acompanha a largura.
@@ -1937,7 +1952,7 @@ export class Board {
       const fx = (grau
         ? faixaDaRuina(pedra, face, n === niveisDaFace - 1 ? 'base' : (n === 0 && niveisDaFace > 1 ? 'topo' : 'meio'),
           x * 7 + (lado === 'N' ? 0 : 3), y * 5, n)
-        : null) ?? faixaDaFace('alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
+        : null) ?? faixaDaFace(f.materialDaParede ?? 'alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
       if (!fx) break;
       pintou = true;
       ctx.drawImage(fx.img, fx.sx, fx.sy, fx.w, fx.h,
@@ -1956,7 +1971,8 @@ export class Board {
     // com a pedra mole: a diferença entre bloco e junta encolhe junto com o
     // tom, e a alvenaria vira massa. Um véu menos pesado nos dois lados
     // guarda a mesma leitura de volume sem apagar o desenho da pedra.
-    ctx.fillStyle = lado === 'N' ? 'rgba(255,246,224,.15)' : 'rgba(14,16,28,.30)';
+    // A taverna é quente e fechada: a face na sombra escurece menos, senão o tijolo vira breu.
+    ctx.fillStyle = lado === 'N' ? 'rgba(255,246,224,.15)' : (f.materialDaParede === 'tijolo' ? 'rgba(14,16,28,.14)' : 'rgba(14,16,28,.30)');
     ctx.fill();
     ctx.restore();
     // A SETEIRA: a fenda estreita, aberta na pedra na altura do peito.
@@ -1999,7 +2015,9 @@ export class Board {
     // Menos claro do que era. A capa branca saltava mais que a própria
     // parede, e onde um muro baixo passa na frente de uma torre ela lia como
     // prateleira pregada na pedra.
-    ctx.fillStyle = quebra ? (lado === 'N' ? '#6f6a5f' : '#5f5a50') : (lado === 'N' ? '#8d8878' : '#7a7568');
+    ctx.fillStyle = quebra ? (lado === 'N' ? '#6f6a5f' : '#5f5a50')
+      : f.materialDaParede === 'tijolo' ? (lado === 'N' ? '#a8692f' : '#85501f')   // capa de tábua, não de pedra
+        : (lado === 'N' ? '#8d8878' : '#7a7568');
     ctx.fill();
     // O contorno vai só nas arestas LIVRES do topo (a de fora e a de
     // dentro). Contornar também as laterais punha um entalhe escuro na

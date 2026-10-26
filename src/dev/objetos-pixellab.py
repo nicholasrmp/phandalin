@@ -771,6 +771,71 @@ CONJUNTOS = {
         ],
         'target_palette': {'colors': GRANITO + MADEIRA + FERRO + ['#4a4640', '#cfc6ae', '#8a1e1e', '#d0a030', '#2e2b27']},
     },
+    # ARVORE TROVAO, a vegetacao que faltava (ver `OBJETOS-ARVORE-TROVAO.md`, secao 4): a mata era
+    # a mesma meia duzia de copas. Aqui, o que um vulcao deixa: arvore morta, queimada, coberta de
+    # cinza, e as que escaparam. Tela de 128: uns 100 px de altura, como as outras.
+    'arvoresMortas': {
+        'description': (
+            'Single tree for an isometric tactical RPG forest in a village buried in volcanic ash '
+            'thirty years ago, TALL: about 100 px tall and 80 px wide, two and a half times the '
+            'height of a person, with a visible trunk, sitting on the bottom of the canvas. Lit from '
+            'the upper left. Dark selective outline, not black. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'charred dead tree with bare black branches, no leaves',
+            'grey ash-covered dead tree with a few brown leaves clinging',
+            'old oak with half of its crown burned away, the rest still green',
+            'dead leaning oak with ivy climbing the trunk',
+        ],
+        'target_palette': {'colors': FOLHA + TRONCO + ['#1a1a1a', '#2e2b27', '#4a4640', '#7c776c']},
+    },
+    'arvoresVivas': {
+        'description': (
+            'Single tree for an isometric tactical RPG forest, TALL: about 100 px tall and 80 px '
+            'wide, two and a half times the height of a person, with a visible trunk, sitting on the '
+            'bottom of the canvas. Lit from the upper left. Dark selective outline, not black. '
+            + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'tall dark pine with drooping branches',
+            'old twisted oak with a hollow trunk',
+            'sparse birch with yellowing leaves',
+            'dark dense triangular spruce',
+        ],
+        'target_palette': {'colors': FOLHA + TRONCO + ['#c2b48f', '#968a6c', '#b39d5c']},
+    },
+    'arbustosRuina': {
+        'description': (
+            'Low ground cover for an isometric tactical RPG village buried in volcanic ash: about '
+            '44 px wide and 30 px tall, sitting on the bottom of the canvas. Lit from the upper '
+            'left. Dark brown or dark green selective outline, not black. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'dry brown bush with bare twigs', 'ash-grey withered shrub', 'fern clump with arching fronds',
+            'tall wild grass tuft, drying', 'nettle and weed clump', 'bush with small white flowers',
+            'half-dead green shrub', 'low bramble with red berries',
+        ],
+        'target_palette': {'colors': FOLHA + TRONCO + ['#4a4640', '#7c776c', '#cfc6ae', '#8a1e1e']},
+    },
+    # Detalhes de capim: tufos pequenos (uns 16 x 12 px) que o tabuleiro espalha no gramado, por
+    # sorteio de casa, sem mudar nenhuma regra do chao.
+    'tufosRuina': {
+        'description': (
+            'Tiny ground detail for an isometric tactical RPG grass field: about 16 px wide and '
+            '12 px tall, sitting on the bottom of the canvas. Lit from the upper left. No outline '
+            'or a very thin dark green one. ' + PIXEL),
+        'size': 32,
+        'view': 'top-down',
+        'item_descriptions': [
+            'tuft of tall grass', 'two small white flowers', 'yellow dandelions', 'small stone cluster',
+            'clover patch', 'dry grass tuft', 'mushroom pair', 'fallen twig', 'purple wildflower',
+            'thistle', 'pebble with moss', 'short reeds',
+        ],
+        'target_palette': {'colors': FOLHA + ['#cfc6ae', '#b39d5c', '#6b6350', '#8a1e1e', '#7a4a8a', '#c2b48f']},
+    },
     'paredeDecor': {
         'description': (
             'Wall fixture for an isometric tactical RPG castle, mounted flat ON a stone wall '
