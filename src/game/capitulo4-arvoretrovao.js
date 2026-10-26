@@ -99,7 +99,7 @@ import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
 import { addCondition } from '../rules/conditions.js';
 import { criarBuscas } from './buscas.js';
-import { EXAMES, ACOES, ACHADO_DO_CASULO, CONTEINERS, achadoDoRecipiente } from './arvoretrovao-exames.js';
+import { EXAMES, ACOES, ACHADO_DO_CASULO, EMPURRAR_ESTATUA, CONTEINERS, achadoDoRecipiente } from './arvoretrovao-exames.js';
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { darXp } from './nivel.js';
@@ -1005,6 +1005,21 @@ export function criarArvoreTrovao(app, config) {
   // A variante de cada peça de mobília do mapa, por casa (o tabuleiro a desenha pelo mesmo nome).
   const PROP_EM = new Map((ARVORE_TROVAO.props ?? []).map((p) => [`${p.x},${p.y}`, p.variante]));
 
+  // A estátua derrubada vira um monte de pedra (`desabamento`: barra o passo, não a visão).
+  function derrubarEstatua(pos) {
+    const f = enc.field;
+    const i = pos.y * f.w + pos.x;
+    f.tiles[i] = GLIFOS.E.kind;
+    f.surfaces[i] = SUPERFICIES.indexOf(GLIFOS.E.sup);
+    f.versao = (f.versao ?? 0) + 1;
+    app.refresh();
+  }
+  // Ao reabrir a cena num jogo salvo, a estátua que já caiu continua caída.
+  if (salvo.estatuaCaiu) {
+    const est = ARVORE_TROVAO.estatua;
+    if (est) { PROP_EM.delete(`${est.x},${est.y}`); derrubarEstatua(est); }
+  }
+
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const ops = [];
@@ -1186,6 +1201,23 @@ export function criarArvoreTrovao(app, config) {
               if (!t.passou) { await painel(acao.falha, { teste: t }); return; }
               pista(acao.pista);
               await painel(acao.sucesso, { teste: t });
+            },
+          });
+        }
+        if (variante === 'estatuaPalien') {
+          const e = EMPURRAR_ESTATUA;
+          ops.push({
+            rotulo: e.rotulo, icone: 'acao-empurrar', detalhe: `${SKILL_NAME[e.pericia]} CD ${e.cd}`,
+            motivo: alcance() ?? buscas.ja(c, e.chave, tile),
+            fazer: async () => {
+              buscas.marcar(c, e.chave, tile);
+              const t = teste(c, e.pericia, e.cd);
+              if (!t.passou) { await painel(e.falha, { teste: t }); return; }
+              salvo.estatuaCaiu = true;
+              PROP_EM.delete(`${tile.x},${tile.y}`);
+              derrubarEstatua(tile);
+              enc.say('acao', `${c.name} derruba a estátua da praça.`);
+              await painel(e.sucesso, { teste: t });
             },
           });
         }

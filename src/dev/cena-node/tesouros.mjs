@@ -137,3 +137,28 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.ok(r, 'o recipiente se revista');
   ok('os moveis de guardar se revistam (Investigação CD 10, achado sorteado por casa)');
 }
+
+// --- a estatua de Palien: derruba com Atletismo CD 20, vira monte de pedra e fica caida --------------
+{
+  const est = A.estatua;
+  let caiu = null;
+  for (let seed = 1; seed < 200 && !caiu; seed += 1) {
+    const S = await novaCena(seed * 31, { nivel: 5 });
+    S.party.forEach((x) => garantirInventario(x));
+    for (const her of S.party) {
+      her.pos = { x: est.x - 1, y: est.y };
+      const op = S.cena.interacoes(est, S.field.surfaceAt(est.x, est.y), her).find((o) => o.rotulo === 'Empurrar a estátua');
+      assert.ok(op, 'a estatua oferece empurrar');
+      if (op.motivo) continue;
+      await op.fazer();
+      if (S.app.campanha.arvoreTrovao.estatuaCaiu) { caiu = { S, her }; break; }
+    }
+  }
+  assert.ok(caiu, 'em 200 jogos alguem derruba a estatua');
+  const { S, her } = caiu;
+  assert.equal(S.field.surfaceAt(est.x, est.y), 'desabamento', 'a estatua vira um monte de pedra');
+  assert.ok(S.field.blocksMove(est.x, est.y), 'e o monte barra o passo');
+  const depois = S.cena.interacoes(est, S.field.surfaceAt(est.x, est.y), her).map((o) => o.rotulo);
+  assert.ok(!depois.includes('Empurrar a estátua') && !depois.includes('Examinar'), 'caida, nao se empurra nem se examina');
+  ok('a estatua de Palien: Atletismo CD 20, cai num monte de pedra que barra o passo');
+}

@@ -105,6 +105,15 @@ export const ACOES = {
   },
 };
 
+// A ESTÁTUA DE PALIEN pode ser derrubada: Atletismo CD 20, um herói por vez, uma tentativa por
+// herói. Cai num monte de pedra (`desabamento`), que barra o passo e não a visão; o que ela
+// escondia, o livro não diz: nada.
+export const EMPURRAR_ESTATUA = {
+  chave: 'estatuaEmpurrar', rotulo: 'Empurrar a estátua', pericia: 'atletismo', cd: 20,
+  sucesso: 'O ombro de um e o peso de todos: a estátua balança, resiste, e vai. Cai de lado com um estrondo que corre a praça e as ruas, e a lança parte em três. Onde ela estava sobra um monte de pedra e madeira velha. Não havia nada por baixo.',
+  falha: 'A base não cede: a estátua balança um dedo e volta. É mais pesada do que parece, e mais bem plantada.',
+};
+
 export const ACHADO_DO_CASULO = {
   chave: 'casuloElfo',
   rotulo: 'Cortar o casulo e revistar',
