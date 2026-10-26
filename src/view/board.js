@@ -255,6 +255,8 @@ const COR_DA_ZONA = {
   teia: { fill: 'rgba(244,240,228,.46)', stroke: 'rgba(255,255,255,.95)' },
   aura: { fill: 'rgba(232,195,90,.06)', stroke: 'rgba(255,224,138,.38)' },
   emaranhar: { fill: 'rgba(80,150,70,.34)', stroke: 'rgba(110,232,154,.6)' },
+  // Plantas Constritoras (a vinha infectada): raiz e cipó, mais terroso que a magia de druida.
+  plantasConstritoras: { fill: 'rgba(72,104,52,.32)', stroke: 'rgba(132,176,88,.6)' },
   nuvemFetida: { fill: 'rgba(196,200,80,.34)', stroke: 'rgba(212,224,74,.6)' },
   crescimentoDeEspinhos: { fill: 'rgba(110,90,50,.38)', stroke: 'rgba(176,135,90,.65)' },
   raioLunar: { fill: 'rgba(110,168,232,.20)', stroke: 'rgba(170,200,240,.6)' },

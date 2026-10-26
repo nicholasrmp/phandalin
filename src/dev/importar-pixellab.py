@@ -515,6 +515,46 @@ PERFIS = {
         'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4], 'north-east': [2, 4],
                         'north': [2, 4], 'north-west': [2, 4], 'west': [2, 4], 'south-west': [2, 4]},
     },
+    # OS TRES INFECTADOS (aprovados pelo dono). O "centro do corpo" de cada um
+    # e medido pela cor que ele TEM, e os tres sao casos diferentes:
+    #   . o GALHO e madeira morna (matiz ~0,11) de saturacao baixa;
+    #   . o ESPETO e QUASE PRETO: nao da para medir por matiz nenhum, entao o
+    #     criterio e so o valor -- qualquer pixel acima do contorno conta;
+    #   . a VINHA e azul-esverdeada (matiz ~0,5), a unica fria do trio.
+    # Os quadros do golpe sao escolhidos depois de olhar; aqui fica o padrao.
+    'galhoInfectado': {
+        'ataque': ['attack-dir'], 'pele': (0.05, 0.16), 'pele_sv': (0.12, 0.6, 0.3),
+        'margem': 6, 'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4],
+                        'north-east': [2, 4], 'north': [2, 4], 'north-west': [2, 4],
+                        'west': [2, 4], 'south-west': [2, 4]},
+    },
+    'espetoInfectado': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 1.0, 0.07),
+        'margem': 6, 'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4],
+                        'north-east': [2, 4], 'north': [2, 4], 'north-west': [2, 4],
+                        'west': [2, 4], 'south-west': [2, 4]},
+    },
+    # A GARRA do espeto, a segunda folha dele. Ele tem DOIS ataques no livro --
+    # agulhas de 9 m e garras de perto -- e uma folha so fazia o chicote das
+    # agulhas tambem quando ele batia colado. Mesmo caso do hobgoblin com a
+    # espada e o arco: duas folhas, e `aparencias` troca pelo nome do ataque.
+    # O andar e a queda vem da folha do chicote (--queda-de), que sao os mesmos.
+    'espetoInfectadoGarra': {
+        'ataque': ['attack-dir'], 'pele': (0.0, 1.0), 'pele_sv': (-0.01, 1.0, 0.07),
+        'margem': 6, 'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4],
+                        'north-east': [2, 4], 'north': [2, 4], 'north-west': [2, 4],
+                        'west': [2, 4], 'south-west': [2, 4]},
+    },
+    'vinhaInfectada': {
+        'ataque': ['attack-dir'], 'pele': (0.42, 0.58), 'pele_sv': (0.25, 1.0, 0.2),
+        'margem': 6, 'quadros': [2, 4],
+        'por_direcao': {'south': [2, 4], 'south-east': [2, 4], 'east': [2, 4],
+                        'north-east': [2, 4], 'north': [2, 4], 'north-west': [2, 4],
+                        'west': [2, 4], 'south-west': [2, 4]},
+    },
     # O SPECTATOR (aprovado pelo dono). Centro medido pelo VERDE-OLIVA do
     # corpo; a lingua rosada e os olhos amarelos ficam de fora.
     #

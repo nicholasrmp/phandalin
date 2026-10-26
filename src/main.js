@@ -432,6 +432,22 @@ class App {
         playCordaoVisual(board, ev);
         break;
       }
+      // Plantas Constritoras: o verde corre da vinha para fora e as raízes
+      // sobem casa a casa (o emaranhado que FICA é a zona, pintada no chão).
+      case 'plantasConstritoras': {
+        const casas = [...ev.zona.casas].map((k) => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+        board?.fx.ring(ev.actor.pos, { color: '#84b058', radius: 20 * 3, dur: 0.55, width: 4 });
+        board?.fx.area(casas, { color: 'rgba(132,176,88,.5)', dur: 0.6 });
+        for (const t of casas) {
+          const atraso = Math.max(Math.abs(t.x - ev.actor.pos.x), Math.abs(t.y - ev.actor.pos.y)) * 90;
+          setTimeout(() => {
+            board?.fx.quadros(t, 'vinhas', { fps: 12, altura: 16 });
+            board?.fx.motes(t, { color: '#9ec45e', count: 3, rise: 16, spread: 14, dur: 0.6 });
+          }, atraso);
+        }
+        board?.bump(0.3);
+        break;
+      }
       case 'pousou': {
         board?.fx.motes(ev.target.pos, { color: '#dff3ff', count: 8, rise: 18, spread: 18, dur: 0.6 });
         break;

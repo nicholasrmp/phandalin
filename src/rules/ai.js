@@ -174,6 +174,18 @@ export function takeMonsterTurn(enc, monster) {
     return;
   }
 
+  // Plantas Constritoras (a vinha infectada): com alguém a 4,5 m que as raízes
+  // ainda não prenderam, a ação é sempre esta. A vinha anda 3 m por turno — ela
+  // não persegue ninguém; ela prende e depois constringe quem não sai.
+  if (
+    monster.traits?.includes('plantasConstritoras')
+    && enemies.some((e) => !hasCondition(e, 'contido') && distanceFt(e.pos, monster.pos) <= 15)
+    && enc.plantasConstritoras(monster)
+  ) {
+    enc.endTurn(monster);
+    return;
+  }
+
   const ranged = monster.attacks?.some((a) => a.ranged);
   const melee = monster.attacks?.find((a) => !a.ranged);
   const adjacentFoes = enemies.filter((e) => enc.field.vizinhos(e.pos, monster.pos));

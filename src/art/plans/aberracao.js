@@ -4,7 +4,7 @@
 //   'gosma'            gelatina ocre — SRD
 //   'cranioFlamejante' criatura NOSSA (o monstro do módulo não está no SRD)
 //   'olhoVigia'        criatura NOSSA, no papel que o nothic ocupa no encontro
-//   'brotoEspinhoso'   criatura NOSSA, no papel dos blights
+//   'brotoEspinhoso'   os tres INFECTADOS do livro (galho, espeto e vinha)
 //   'spectator'        nome e conceito de CONTEÚDO DE FÃ, arte e números nossos
 //
 // POR QUE AS CINCO NUM ARQUIVO

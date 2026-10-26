@@ -73,6 +73,14 @@ import metaDrowBesta from './drowBesta.json';
 import urlDrowBesta from './drowBesta.png';
 import metaStirge from './stirge.json';
 import urlStirge from './stirge.png';
+import metaGalhoInfectado from './galhoInfectado.json';
+import urlGalhoInfectado from './galhoInfectado.png';
+import metaEspetoInfectado from './espetoInfectado.json';
+import urlEspetoInfectado from './espetoInfectado.png';
+import metaEspetoInfectadoGarra from './espetoInfectadoGarra.json';
+import urlEspetoInfectadoGarra from './espetoInfectadoGarra.png';
+import metaVinhaInfectada from './vinhaInfectada.json';
+import urlVinhaInfectada from './vinhaInfectada.png';
 import metaSpectator from './spectator.json';
 import urlSpectator from './spectator.png';
 import metaCaveiraCandente from './caveiraCandente.json';
@@ -184,6 +192,23 @@ const IMPORTADAS = {
   },
   // o stirge (24 px, escolhido pelo dono)
   stirge: { base: 'stirge', meta: metaStirge, url: urlStirge },
+  // OS TRES INFECTADOS de Thundertree (aprovados pelo dono). As vistas sul
+  // vieram de UMA geracao do OpenArt com os tres lado a lado, pelas imagens
+  // oficiais: por isso eles parecem parentes -- mesmo pintor, mesma luz.
+  galhoInfectado: { base: 'galhoInfectado', meta: metaGalhoInfectado, url: urlGalhoInfectado },
+  // O espeto tem DUAS folhas, como o hobgoblin: o chicote do corpo, que ele da
+  // quando atira as agulhas a 9 m (a padrao), e a garra, de perto
+  // (`aparencias` do bloco em `rules/monsters/aberracoes.js`, chave
+  // `espetoInfectado@nenhuma-garra`).
+  espetoInfectado: {
+    base: 'espetoInfectado', meta: metaEspetoInfectado, url: urlEspetoInfectado,
+    postura: 'arco', familia: 'agulhas', armadura: 'roupa', padrao: true,
+  },
+  'espetoInfectado-garra': {
+    base: 'espetoInfectado', meta: metaEspetoInfectadoGarra, url: urlEspetoInfectadoGarra,
+    postura: 'umaMao', familia: 'garra', armadura: 'roupa',
+  },
+  vinhaInfectada: { base: 'vinhaInfectada', meta: metaVinhaInfectada, url: urlVinhaInfectada },
   // O SPECTATOR (aprovado pelo dono): a unica folha com PARADO proprio -- a
   // boca, a lingua e as quatro hastes se mexem sem a figura sair do lugar.
   spectator: { base: 'spectator', meta: metaSpectator, url: urlSpectator },

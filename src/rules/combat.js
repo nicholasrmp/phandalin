@@ -195,6 +195,28 @@ function recargaMinima(recharge) {
   return Number(String(recharge).split('-')[0]) || 6;
 }
 
+// Plantas Constritoras (o vine blight): a zona que o TRAÇO cria, escrita no
+// formato que `criarZona` já entende. Não é magia — é traço de criatura — mas a
+// zona é a mesma máquina da Teia e da Graxa, e reusá-la é mais honesto que
+// escrever um segundo motor de área só para uma criatura.
+const PLANTAS_CONSTRITORAS = {
+  id: 'plantasConstritoras',
+  name: 'Plantas Constritoras',
+  level: 0,
+  shape: 'sphere',
+  areaFt: 15,
+  centradoEmSi: true,
+  save: 'str',
+  // Contido até se soltar: FOR CD 12 com a ação (`escape` sai da CD da zona).
+  onFail: { condition: 'contido', rounds: Infinity },
+  // 1 minuto = 10 rodadas. Quem entra DEPOIS só pega o terreno difícil: no
+  // livro o teste é "quando as plantas aparecem", e só.
+  zona: { rodadas: 10, dificil: true, quando: 'nenhum', aoEntrar: false, em: 'nas' },
+};
+
+// Recargas que não são de ataque: traço de criatura com "Recarga 5–6".
+const RECARGA_DE_TRACO = { 'Plantas Constritoras': [5, 6] };
+
 // Crescer Plantas: o chão que não é natural (pedra, estrada, caverna, água, obra) não vira mato.
 const SEM_PLANTAS = new Set(['estrada', 'caverna', 'ponte', 'leito', 'poco', 'riacho', 'entulho', 'fogueira', 'rocha', 'parede']);
 
@@ -497,7 +519,10 @@ export class Encounter {
       if (!c.recarregando[nome]) continue;
       const atk = c.attacks?.find((a) => a.name === nome);
       const r = this.rng.die(6);
-      if (r >= recargaMinima(atk?.recharge)) {
+      // Traço com recarga (Plantas Constritoras) não está em `attacks`: o nome
+      // vem da tabela. Sem ela, `recargaMinima(undefined)` dava null e o d6
+      // recarregava sempre.
+      if (r >= (recargaMinima(atk?.recharge ?? RECARGA_DE_TRACO[nome]) ?? 6)) {
         c.recarregando[nome] = false;
         this.say('recurso', `${c.name}: ${nome} recarregou (d6 = ${r}).`);
       }
@@ -1416,6 +1441,38 @@ export class Encounter {
       const dono = this.combatants.find((c) => c.concentrating?.zona === z);
       if (dono) this.dropConcentration(dono); else this.desfazerZona(z);
     }
+  }
+
+  // ---- Plantas Constritoras (o vine blight) --------------------------------
+
+  /**
+   * Plantas Constritoras (Recarga 5–6): raízes e vinhas brotam do chão num raio
+   * de 4,5 m da vinha e secam depois de 1 minuto. A área é terreno difícil, e
+   * cada criatura À ESCOLHA da vinha que estiver dentro quando as plantas
+   * aparecem faz FOR CD 12 ou fica contida; soltar-se (ou soltar outro ao
+   * alcance) é uma ação e um teste de FOR CD 12.
+   *
+   * Duas coisas são nossas, e ditas na cara: a "escolha" da vinha é sempre o
+   * lado de quem a enfrenta, porque é o que ela faria; e o terreno difícil do
+   * motor é por CASA, não por criatura, então aqui ele atrapalha planta também,
+   * enquanto o livro deixa as plantas andarem livres.
+   */
+  plantasConstritoras(actor) {
+    if (!actor.traits?.includes('plantasConstritoras') || actor.actionUsed) return false;
+    if (actor.recarregando?.['Plantas Constritoras']) return false;
+    const dentro = this.enemiesOf(actor).filter((c) => !c.dead && distanceFt(c.pos, actor.pos) <= 15);
+    if (!dentro.length) return false;
+    const casas = this.areaDaMagia(actor, PLANTAS_CONSTRITORAS, actor.pos) ?? [];
+    if (!casas.length) return false;
+    this.say('recurso', `${actor.name} abre os cipós: raízes e vinhas brotam do chão num raio de 4,5 m.`);
+    const zona = this.criarZona(actor, PLANTAS_CONSTRITORAS, casas, 12, { centro: actor.pos });
+    this.onEvent({ type: 'plantasConstritoras', actor, zona });
+    for (const c of dentro) {
+      if (zona.casas.has(key(c.pos.x, c.pos.y))) this.resistirAZona(c, zona, 'está');
+    }
+    (actor.recarregando ??= {})['Plantas Constritoras'] = true;
+    actor.actionUsed = true;
+    return true;
   }
 
   // ---- ilusões (Ilusão Menor, Força Fantasmagórica) -------------------------

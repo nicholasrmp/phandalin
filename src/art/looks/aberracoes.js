@@ -251,7 +251,7 @@ export const ABERRACOES_LOOKS = {
     skin: '#e2d9b6', eyes: '#8ea6c4', metal: '#dcd37e', trim: '#d99ba8',
   },
 
-  // BROTO ESPINHOSO — plano `aberracao`, variante `brotoEspinhoso`.
+  // OS INFECTADOS — plano `aberracao`, variante `brotoEspinhoso`.
   //   outfit=casca · outfitDark=casca na sombra · trim=seiva · glow=brasa
   //
   // Esta é a criatura mais DESSATURADA do elenco, e tem de ser: ela aparece em
@@ -259,9 +259,29 @@ export const ABERRACOES_LOOKS = {
   // tabuleiro apagariam tudo o que estivesse em volta. A saturação toda do
   // look está concentrada num único ponto de brasa no meio do feixe — é o que
   // separa "criatura" de "arbusto morto" a 55 px.
-  espinheiroRastejante: {
+  //
+  // OS TRÊS SE LEEM PELA ESCADA DE VALOR, e não pelo matiz: os três são
+  // madeira, e o que muda é quanto de vida sobrou.
+  //   . o GALHO é pau seco, marrom morto, brasa laranja;
+  //   . o ESPETO é mais claro e mais cinza, madeira ressecada ao sol, e a
+  //     brasa dele é AMARELA — de longe, a cor do ponto aceso é o que diz
+  //     qual dos dois está atirando;
+  //   . a VINHA é VERDE, a única viva das três, e por isso a única que o fogo
+  //     não resolve. A brasa dela é clara e fria, quase branca: a voz.
+  galhoInfectado: {
     plan: 'aberracao', aberracao: 'brotoEspinhoso',
     outfit: '#4e3a22', outfitDark: '#2b1d0c', trim: '#7d8c32',
     glow: '#d05a18',
   },
+  espetoInfectado: {
+    plan: 'aberracao', aberracao: 'brotoEspinhoso',
+    outfit: '#6b5436', outfitDark: '#3a2c18', trim: '#9aa84a',
+    glow: '#e8c23a',
+  },
+  vinhaInfectada: {
+    plan: 'aberracao', aberracao: 'brotoEspinhoso',
+    outfit: '#3f5a2a', outfitDark: '#20331a', trim: '#8fbf4a',
+    glow: '#dff0b0',
+  },
+
 };

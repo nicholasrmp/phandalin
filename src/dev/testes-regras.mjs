@@ -1032,7 +1032,7 @@ teste('dardo mandado para alvo inválido (aliado) é descartado', () => {
 // ---- monstros --------------------------------------------------------------
 
 teste('resistência, imunidade e vulnerabilidade a dano', () => {
-  const { enc } = montar({ foes: [['esqueleto', { x: 6, y: 5 }], ['espinheiroRastejante', { x: 8, y: 5 }]] });
+  const { enc } = montar({ foes: [['esqueleto', { x: 6, y: 5 }], ['galhoInfectado', { x: 8, y: 5 }]] });
   const [esq, esp] = enc.combatants.filter((c) => c.side === 'foes');
   assert.equal(enc.danoPorTipo(esq, 10, 'veneno'), 0);
   assert.equal(enc.danoPorTipo(esq, 10, 'concussão'), 20);
@@ -5290,7 +5290,7 @@ teste('o hobgoblin mostra o arco quando atira e a espada quando golpeia', () => 
 
 teste('tipos das aberrações: cada bloco tem o do livro, e o Detectar o Bem e o Mal só acende as certas', () => {
   const tipos = { gelatinaOcre: 'gosma', grick: 'monstruosidade', doppelganger: 'monstruosidade', dragaoVerdeJovem: 'dragão',
-    caveiraCandente: 'morto-vivo', espinheiroRastejante: 'planta', vigiaCiclopico: 'aberração', spectator: 'aberração' };
+    caveiraCandente: 'morto-vivo', galhoInfectado: 'planta', espetoInfectado: 'planta', vinhaInfectada: 'planta', vigiaCiclopico: 'aberração', spectator: 'aberração' };
   for (const [id, t] of Object.entries(tipos)) assert.equal(makeMonster(id, { x: 1, y: 1 }).tipo, t, id);
   assert.equal(ladoBemMal(makeMonster('grick', { x: 1, y: 1 })), null, 'grick não é aberração');
   assert.equal(ladoBemMal(makeMonster('dragaoVerdeJovem', { x: 1, y: 1 })), null);
@@ -5986,6 +5986,75 @@ teste('drow do Manual: dois golpes de espada curta e Fogo das Fadas em grupo', (
   takeMonsterTurn(enc, d);
   assert.equal(d.spellcasting.slots[1], 2, 'gastou um uso do Fogo das Fadas');
   assert.ok(d.concentrating, 'mantém a concentração');
+});
+
+teste('Os três infectados: os números do livro, e só o galho queima fácil', () => {
+  const { enc, party, foes } = montar({ foes: [
+    ['galhoInfectado', { x: 8, y: 5 }], ['espetoInfectado', { x: 9, y: 5 }], ['vinhaInfectada', { x: 10, y: 5 }],
+  ], lado: 'foes' });
+  const [galho, espeto, vinha] = foes;
+  // Galho: Pequeno, CA 13, 4 PV, ND 1/8.
+  assert.equal(galho.size, 'pequeno');
+  assert.equal(galho.ac, 13);
+  assert.equal(galho.maxHp, 4);
+  assert.equal(MONSTERS.galhoInfectado.cr, '1/8');
+  // Espeto: Médio, 11 PV, agulhas de 9 m e garras de 2d4+1.
+  assert.equal(espeto.maxHp, 11);
+  const agulhas = espeto.attacks.find((a) => a.name === 'Agulhas');
+  assert.equal(agulhas.rangeFt, 30);
+  assert.ok(espeto.attacks.some((a) => a.name === 'Garras' && a.damage === '2d4+1'));
+  // Vinha: 26 PV, alcance 3 m, e PRENDE (impedido) em vez de só machucar.
+  assert.equal(vinha.maxHp, 26);
+  const constricao = vinha.attacks[0];
+  assert.equal(constricao.reachFt, 10);
+  assert.equal(constricao.onHit.condition, 'contido');
+  // Os três enxergam às cegas a 18 m e nenhum é surpreendido pelo escuro.
+  for (const c of foes) assert.equal(c.senses.blindsightFt, 60);
+  // SÓ O GALHO é vulnerável a fogo: a tocha limpa o bando, não a líder.
+  enc.applyDamage(galho, 4, 'fogo', party[0]);
+  assert.ok(galho.hp <= 0, 'o galho seco dobra o dano de fogo');
+  const antes = vinha.hp;
+  enc.applyDamage(vinha, 4, 'fogo', party[0]);
+  assert.equal(vinha.hp, antes - 4, 'a vinha verde leva o dano cheio, sem dobrar');
+});
+
+teste('Plantas Constritoras: raízes num raio de 4,5 m, terreno difícil e quem falha fica contido', () => {
+  const { enc, party, foes } = montar({ foes: [['vinhaInfectada', { x: 8, y: 5 }]], lado: 'foes' });
+  const vinha = foes[0];
+  const vitima = party[0];
+  vitima.pos = { x: 9, y: 5 };
+  // Um dado preso, para medir sem sorte: todo dado sai no valor pedido.
+  const preso = (valor) => Object.assign(() => 0, {
+    die: () => valor, int: () => 0, chance: () => false, pick: (a) => a[0], shuffle: (a) => a.slice(),
+  });
+  // d20 = 1: a vítima falha o FOR CD 12.
+  enc.rng = preso(1);
+  assert.ok(enc.plantasConstritoras(vinha), 'a vinha abre os cipós');
+  const zona = enc.zonas.find((z) => z.spellId === 'plantasConstritoras');
+  assert.ok(zona, 'a zona existe');
+  assert.equal(zona.rodadas, 10, '1 minuto');
+  assert.equal(zona.cd, 12);
+  // Raio de 4,5 m = 3 casas: a casa a 3 de distância entra, a 4 não.
+  assert.ok(zona.casas.has('11,5'), 'a casa a 4,5 m entra');
+  assert.ok(!zona.casas.has('12,5'), 'a casa a 6 m fica fora');
+  // Terreno difícil de verdade, e não só no papel.
+  assert.ok(enc.field.dificeis.has('9,5'), 'a área é terreno difícil');
+  // Quem falhou está contido, e se solta com FOR CD 12.
+  const cond = getCondition(vitima, 'contido');
+  assert.ok(cond, 'quem falhou fica contido');
+  assert.equal(cond.data.escape, 12);
+  // Gasta a ação e trava a recarga: não sai duas vezes no mesmo turno.
+  assert.ok(vinha.actionUsed);
+  assert.ok(vinha.recarregando['Plantas Constritoras']);
+  assert.ok(!enc.plantasConstritoras(vinha), 'recarregando, não sai de novo');
+  // A recarga é 5-6: um d6 de 4 não devolve o traço, um de 5 devolve.
+  vinha.actionUsed = false;
+  enc.rng = preso(4);
+  enc.rolarRecarga(vinha);
+  assert.ok(vinha.recarregando['Plantas Constritoras'], 'd6 = 4 não recarrega');
+  enc.rng = preso(5);
+  enc.rolarRecarga(vinha);
+  assert.ok(!vinha.recarregando['Plantas Constritoras'], 'd6 = 5 recarrega');
 });
 
 teste('Vínculo do Guardião: cura 5 por turno perto do que guarda, e não se afasta', () => {

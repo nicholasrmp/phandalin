@@ -97,3 +97,13 @@ python src/dev/importar-pixellab.py --fonte $R/caveiraCandente-68b93c92/anim --c
 # -- o raio que o PixelLab desenha morre cortado na borda da celula; quem
 # atravessa o mapa e o `beam` do motor
 python src/dev/importar-pixellab.py --fonte $R/spectator-955a8cd7/anim --chave spectator --nome spectator | grep -E "KB" || true
+# os tres infectados de Thundertree: a vista sul de cada um sai de UMA folha
+# do OpenArt com os tres juntos (`infectados-ref/reduzir.py`), e o galho e
+# reduzido a 34 px -- Pequeno e metade de um humano, nao quase do tamanho
+python _referencias/pixellab/infectados-ref/reduzir.py 14
+python src/dev/importar-pixellab.py --fonte $R/galhoInfectado-1a18521a/anim --chave galhoInfectado --nome galhoInfectado | grep -E "KB" || true
+python src/dev/importar-pixellab.py --fonte $R/espetoInfectado-f68ee855/anim --chave espetoInfectado --nome espetoInfectado | grep -E "KB" || true
+# A garra do espeto, a segunda folha dele: so as 8 fileiras do ataque de garra
+# (as do chicote das agulhas sao descartadas em anim-garra-limpa).
+python src/dev/importar-pixellab.py --fonte $R/espetoInfectado-f68ee855/anim-garra-limpa --chave espetoInfectadoGarra --nome espetoInfectadoGarra | grep -E "KB" || true
+python src/dev/importar-pixellab.py --fonte $R/vinhaInfectada-8d7499b7/anim --chave vinhaInfectada --nome vinhaInfectada | grep -E "KB" || true

@@ -1590,6 +1590,54 @@ DIRECOES = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west',
 
 LIMITES = {'description': 2000, 'edit_description': 1000}
 
+# OS TRES INFECTADOS DE THUNDERTREE (aprovados pelo dono). As vistas sul vem
+# de UMA geracao do OpenArt com os tres lado a lado (15 creditos, e nao 45) a
+# partir das imagens oficiais que o dono mandou; `infectados-ref/reduzir.py`
+# corta a folha em tres e reduz cada um na ALTURA DA FICHA -- o galho e
+# Pequeno e sai menor que os outros dois, que sao Medios.
+#
+# Antes disso foram NOVE geracoes no PixelLab so de texto, todas descartadas:
+# sem a arte oficial eu desenhei o espeto como bicho de quatro patas duas
+# vezes, e puz uma brasa no peito dos tres que nao existe no original. A
+# licao: criatura com arte conhecida comeca pela arte, nao pela descricao.
+_INFECTADOS = {
+    # 48 de quadro, e nao 64: Pequeno e cerca de METADE de um humano (61 px),
+    # entao a figura tem 34. Na primeira leva ele saiu com 48 e ficou quase
+    # do tamanho de gente -- o bando tem de ler como bichinhos de joelho.
+    'galhoInfectado': (
+        'Galho Infectado', 48,
+        'A walking plant shaped like a person, woven from twisted strips of '
+        'grey-brown bark and small branches, with loose bark strands hanging from '
+        'the arms and a tuft of broken twigs on its head, and two dark hollows '
+        'where eyes would be. No face, no mouth.'),
+    'espetoInfectado': (
+        'Espeto Infectado', 72,
+        'A walking plant shaped like a person, made of almost black bark and '
+        'covered all over with short pointed thorns standing out from the head, '
+        'shoulders, back and arms, with two tiny red points of light where eyes '
+        'would be. No face, no mouth.'),
+    'vinhaInfectada': (
+        'Vinha Infectada', 72,
+        'A walking plant shaped like a person, made of long hanging teal-green '
+        'vine strands draped over the body and down from the arms, trailing to the '
+        'ground so the feet are hidden, the head bowed under hanging tendrils. No '
+        'face, no mouth.'),
+}
+for _id, (_nome, _lado, _desc) in _INFECTADOS.items():
+    PERSONAGENS[_id] = {
+        'rota': '/create-character-v3',
+        'referencia': f'_referencias/pixellab/infectados-ref/{_id}-sul.png',
+        'corpo': {
+            'name': _nome,
+            'template_id': 'mannequin',
+            'view': 'low top-down',
+            'image_size': {'width': _lado, 'height': _lado},
+            'enhance_prompt': False,
+            'description': _desc + ' NEGATIVE: face, mouth, teeth, eyes, four legs, '
+                                   'animal, beast, leaves, flowers, person in a costume.',
+        },
+    }
+
 # O SPECTATOR (capitulo 4: a Caverna do Eco das Ondas). LICENCA: o nome e o
 # conceito sao conteudo de fa; a ARTE e nossa.
 #

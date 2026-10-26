@@ -390,45 +390,117 @@ export const ABERRACOES = {
     blurb: 'Manda dois raios por turno que metem medo, e se cura enquanto estiver perto do que guarda — ou negocie, ou tire-o de lá.',
   },
 
-  // CAPANGA DE BANDO. A vaga que o ELENCO.md chama de "broto espinhoso".
+  // OS INFECTADOS DE THUNDERTREE, os tres do Livro dos Monstros. Numeros do
+  // livro; o texto e nosso.
   //
-  // O papel é o de quatro a seis peças fracas que PRENDEM o grupo no lugar —
-  // o encontro não é vencido matando-as, é vencido escapando delas. Números de
-  // nível 1 a 2: 18 PV, morre num golpe bom, e o perigo é a soma.
+  // O QUE SEPARA OS TRES e a DISTANCIA em que eles cobram:
+  //   . o GALHO morre de um golpe e vem em bando -> o perigo e a soma;
+  //   . o ESPETO atira agulhas de 9 m -> cobra para o grupo ficar parado;
+  //   . a VINHA agarra, prende e FALA -> trava o grupo e abre a negociacao.
   //
-  // A vulnerabilidade a fogo é intencional e é a graça do encontro: o grupo que
-  // traz uma tocha resolve seis delas em duas rodadas, e descobrir isso é a
-  // recompensa.
-  espinheiroRastejante: {
-    id: 'espinheiroRastejante',
+  // OS TRES SAO CEGOS alem de 18 m e nao enxergam cor nenhuma: `blindsightFt`
+  // diz o alcance, e a cegueira fora dele fica declarada aqui ate a grade
+  // saber distinguir "ve" de "percebe".
+  //
+  // SO O GALHO QUEIMA FACIL. O livro e explicito: ele e seco. A vinha e verde
+  // e nao tem vulnerabilidade -- a tocha que limpa o bando nao limpa ela.
+
+  // O BANDO. Quatro PV: morre de um golpe bom, e e assim que tem de ser --
+  // o encontro nao e vencido matando um, e vencido atravessando seis.
+  galhoInfectado: {
+    id: 'galhoInfectado',
     tipo: 'planta',
-    name: 'Espinheiro Rastejante',
-    look: 'espinheiroRastejante',
-    fonte: 'propria',
+    name: 'Galho Infectado',
+    look: 'galhoInfectado',
+    fonte: 'livro',
     size: 'pequeno',
     level: 1,
-    cr: '1/2',
-    xp: 100,
-    abilities: { str: 13, dex: 8, con: 14, int: 3, wis: 8, cha: 4 },
+    cr: '1/8',
+    xp: 25,
+    abilities: { str: 6, dex: 13, con: 12, int: 4, wis: 8, cha: 3 },
     ac: 13,
-    acNote: 'casca lenhosa',
-    maxHp: 18,
-    // 6 m: ele arrasta raiz. Não dá para fugir dele andando devagar, mas dá
-    // para fugir correndo — é a válvula de escape que o encontro precisa ter.
+    acNote: 'armadura natural',
+    maxHp: 4,
+    hpDice: '1d6+1',
     speedFt: 20,
     skills: ['furtividade'],
+    vulnerable: ['fogo'],
+    immuneConditions: ['cego'],
+    senses: { blindsightFt: 60, passivePerception: 9 },
+    attacks: [
+      { name: 'Garras', bonus: 3, damage: '1d4+1', type: 'perfurante', reachFt: 5, art: 'claw' },
+    ],
+    traits: ['falsoArbusto'],
+    blurb: 'Morre de um golpe e vem de seis: o problema não é ele, é o corredor cheio deles — e uma tocha resolve o corredor.',
+  },
+
+  // O ATIRADOR. Sem Aparencia Falsa, ao contrario dos outros dois: ele nao se
+  // esconde, ele fica longe. E o unico do bando que fere de verdade de perto.
+  espetoInfectado: {
+    id: 'espetoInfectado',
+    tipo: 'planta',
+    name: 'Espeto Infectado',
+    look: 'espetoInfectado',
+    fonte: 'livro',
+    size: 'médio',
+    level: 1,
+    cr: '1/4',
+    xp: 50,
+    abilities: { str: 12, dex: 12, con: 13, int: 4, wis: 8, cha: 3 },
+    ac: 12,
+    acNote: 'armadura natural',
+    maxHp: 11,
+    hpDice: '2d8+2',
+    speedFt: 30,
+    immuneConditions: ['cego'],
+    senses: { blindsightFt: 60, passivePerception: 9 },
     attacks: [
       {
-        name: 'Farpas', bonus: 3, damage: '1d6+1', type: 'perfurante',
-        reachFt: 5, art: 'dagger',
-        // O dano é irrelevante; o AGARRADO é o ataque. Seis destes num
-        // corredor transformam "recuar" em "testar FOR seis vezes".
-        onHit: { save: 'str', dc: 11, condition: 'agarrado', note: 'fica preso nos espinhos' },
+        name: 'Agulhas', bonus: 3, damage: '2d6+1', type: 'perfurante',
+        ranged: true, rangeFt: 30, longRangeFt: 60, art: 'farpa',
+      },
+      { name: 'Garras', bonus: 3, damage: '2d4+1', type: 'perfurante', reachFt: 5, art: 'claw' },
+    ],
+    // Dois ataques, duas folhas (como o hobgoblin com a espada e o arco): o
+    // chicote do corpo e das agulhas é a folha padrão, e de perto ele troca
+    // para a garra. Sem isto, bater colado repetia o chicote das agulhas.
+    aparencias: { Garras: 'espetoInfectado@nenhuma-garra' },
+    blurb: 'Cospe agulhas de 9 m e bate forte de perto: é o que castiga quem fica no aberto, e o único do bando que não se disfarça.',
+  },
+
+  // A QUE FALA. Agarra e PRENDE: enquanto segura um, nao pega outro -- entao
+  // ela escolhe quem fica parado, e o grupo escolhe se tenta soltar.
+  vinhaInfectada: {
+    id: 'vinhaInfectada',
+    tipo: 'planta',
+    name: 'Vinha Infectada',
+    look: 'vinhaInfectada',
+    fonte: 'livro',
+    size: 'médio',
+    level: 2,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 15, dex: 8, con: 14, int: 5, wis: 10, cha: 3 },
+    ac: 12,
+    acNote: 'armadura natural',
+    maxHp: 26,
+    hpDice: '4d8+8',
+    // 3 m: ela nao persegue ninguem. Quem anda, escapa; quem fica, e pego.
+    speedFt: 10,
+    skills: ['furtividade'],
+    immuneConditions: ['cego'],
+    senses: { blindsightFt: 60, passivePerception: 10 },
+    attacks: [
+      {
+        name: 'Constrição', bonus: 4, damage: '2d6+2', type: 'concussão', reachFt: 10, art: 'grab',
+        // AGARRADO e IMPEDIDO, os dois: o livro diz que o alvo fica agarrado
+        // (CD 12) e, ate o agarrao acabar, impedido. No motor, `contido` e o
+        // impedido, e e a condicao que importa -- a que tira o movimento.
+        onHit: { save: 'str', dc: 12, condition: 'contido', escape: 12, note: 'as vinhas se fecham' },
       },
     ],
-    vulnerable: ['fogo'],
-    traits: ['falsoArbusto', 'espinhoDeRetorno'],
-    blurb: 'Agarra quem passa e não solta, então o grupo para de andar; queima fácil, e é assim que se resolve o bando.',
+    traits: ['falsoArbusto', 'vozDaRaiz', 'plantasConstritoras'],
+    blurb: 'Prende um de cada vez e não solta, e FALA: é a única do bando com quem dá para negociar a passagem.',
   },
 
 };
@@ -515,11 +587,15 @@ export const TRAITS = {
   },
 
   falsoArbusto: {
-    name: 'Falso Arbusto',
-    desc: 'Parado, não se distingue de mato seco: vantagem em Furtividade e, se não tiver se movido, o grupo o vê surpreso.',
+    name: 'Aparência Falsa',
+    desc: 'Enquanto fica imóvel, não se distingue de um arbusto morto (ou de um emaranhado de vinhas): quem não o examinar de perto passa ao lado sem vê-lo.',
   },
-  espinhoDeRetorno: {
-    name: 'Espinho de Retorno',
-    desc: 'Quem o acerta com ataque corpo a corpo sofre 2 de dano perfurante.',
+  plantasConstritoras: {
+    name: 'Plantas Constritoras',
+    desc: 'Recarrega 5-6: raízes brotam num raio de 4,5 m e viram terreno difícil por 1 minuto; quem a vinha escolher faz FOR CD 12 ou fica contido, e sai gastando a ação num teste de FOR CD 12. (O terreno difícil aqui atrapalha planta também: o motor conta terreno por casa, não por criatura.)',
+  },
+  vozDaRaiz: {
+    name: 'Voz da Raiz',
+    desc: 'Fala, com a voz de quem a árvore engoliu. Um grupo que responde pode negociar a passagem sem rolar iniciativa.',
   },
 };

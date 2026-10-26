@@ -924,6 +924,66 @@ CRIATURAS['nezznarSul'] = {
              'its crimson lining, the black spider staff fallen on the ground beside him'),
 }
 
+# OS TRES INFECTADOS (aprovados pelo dono). Os tres andam igual, porque sao a
+# mesma coisa com materiais diferentes: madeira que aprendeu a ficar em pe,
+# rigida e desengoncada, sem o balanco de quem tem quadril.
+#
+# O ATAQUE DO ESPETO NAO DESENHA AGULHA NENHUMA. A licao do spectator: o que
+# o modelo desenha dentro da celula morre cortado na borda e briga com o
+# efeito do motor. Entao a folha mostra so o corpo CHICOTEANDO, e as farpas
+# que atravessam o mapa sao do `visuals.js`.
+_INFECTADOS_ANIM = {
+    'galhoInfectado': {
+        'sujeito': ('a walking plant shaped like a person, woven from twisted strips of '
+                    'grey-brown bark and twigs, with loose bark strands hanging from the '
+                    'arms and a tuft of broken twigs on its head, and no face'),
+        'andar': ('walking forward stiffly on two wooden legs, jerky and unbalanced, the '
+                  'loose bark strands swinging, twigs creaking'),
+        'parado': 'standing still like a dead bush, the loose bark strands hanging',
+        'golpe': ('raking {para} with one clawed hand of sharp twigs in a fast swipe, the '
+                  'whole dry body leaning into it, then pulling back'),
+        'cair': ('destroyed, the plant comes apart: the bark strips unravel and the body '
+                 'collapses into a loose pile of sticks and bark on the ground'),
+    },
+    'espetoInfectado': {
+        'sujeito': ('a walking plant shaped like a person, made of almost black bark '
+                    'covered all over with short pointed thorns, with two tiny red points '
+                    'of light for eyes and no face'),
+        'andar': ('walking forward stiffly on two dark wooden legs, hunching, the thorns '
+                  'bristling and shivering'),
+        'parado': 'standing still, the thorns lying flat against the dark body',
+        # Sem agulha voando: o corpo chicoteia e as farpas sao do motor.
+        'golpe': ('snapping its body and both arms forward {para} in one hard whipping '
+                  'motion, every thorn on it flaring outward at once, then settling back. '
+                  'No needles or projectiles leave the body'),
+        'cair': ('destroyed, the dark plant comes apart: the thorns fall loose and the '
+                 'body collapses into a black heap of brambles on the ground'),
+    },
+    'vinhaInfectada': {
+        'sujeito': ('a walking plant shaped like a person, made of long hanging teal-green '
+                    'vine strands draped over the body and trailing on the ground, the '
+                    'head bowed under hanging tendrils, with no face'),
+        'andar': ('dragging itself forward slowly, the hanging vine strands sweeping the '
+                  'ground behind it, the body swaying heavily'),
+        'parado': 'standing still, the hanging vines swaying slowly, the head bowed',
+        'golpe': ('throwing both arms of vines forward {para} and closing them in a '
+                  'squeezing grip, the loose strands whipping around, then drawing back'),
+        'cair': ('destroyed, the vines go slack: the whole tangle sags, unravels and '
+                 'collapses into a wet heap of loose green strands on the ground'),
+    },
+}
+CRIATURAS.update(_INFECTADOS_ANIM)
+# A GARRA DO ESPETO, numa folha propria. Ele tem DOIS ataques no livro --
+# agulhas de longe e garras de perto -- e uma animacao so mostrava o chicote
+# das agulhas tambem quando ele batia colado. E o mesmo caso do hobgoblin com
+# a espada e o arco: duas folhas, e `aparencias` troca pelo nome do ataque.
+CRIATURAS['espetoInfectadoGarra'] = {
+    **_INFECTADOS_ANIM['espetoInfectado'],
+    'golpe': ('raking {para} with one clawed hand of thorns in a fast downward swipe, '
+              'the dark body leaning into it, then pulling back'),
+}
+
+
 # O SPECTATOR (aprovado pelo dono). A unica criatura com PARADO PROPRIO: ele
 # flutua sem sair do lugar, e o que o jogador ve enquanto ele FALA -- ele
 # conversa antes de lutar -- e a boca e as quatro hastes se mexendo. Um

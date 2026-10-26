@@ -142,6 +142,89 @@ IMAGENS = {
             'of eyes, face with two eyes, nose, eyebrows.'
         ),
     },
+    # OS TRES INFECTADOS de Thundertree. Gerados em 128 px e reduzidos depois,
+    # que foi a licao do spectator: em 64 o modelo nao separa as partes.
+    #
+    # A FAMILIA SE LE PELA MADEIRA, e o que muda e quanto de vida sobrou --
+    # galho morto marrom, espeto ressecado cinza, vinha verde. Cada texto diz
+    # a mesma silhueta de base (um vulto vagamente humanoide feito de planta)
+    # e UMA coisa que so aquele tem: os galhos retorcidos, as agulhas, as
+    # vinhas. E assim que os tres parecem parentes sem parecerem o mesmo.
+    # A PRIMEIRA LEVA SAIU DA DESCRICAO ESCRITA do livro e da paleta do
+    # projeto, sem a arte oficial -- eu nao a tinha. O dono mandou as tres
+    # imagens depois, e elas desmentem o que eu tinha desenhado em tres
+    # pontos: a cor (o espeto e QUASE PRETO, nao madeira clara), o material
+    # (o galho e TIRA DE CASCA trancada, nao graveto solto) e a brasa (nao
+    # existe brasa no peito de nenhum dos tres; a luz, quando ha, e um OLHO).
+    # Os textos abaixo descrevem as imagens oficiais; a arte continua sendo
+    # nossa, desenhada do zero a partir dessa descricao.
+    'galhoInfectado': {
+        'image_size': {'width': 128, 'height': 128},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'view': 'low top-down',
+        'direction': 'south',
+        'no_background': True,
+        'description': (
+            'A plant creature standing upright and facing the viewer, made entirely '
+            'of long twisted STRIPS OF GREY-BROWN BARK and dry twigs woven and '
+            'braided together into a tall gaunt humanoid: braided bark legs, a '
+            'braided bark chest, long thin arms with loose frayed bark strands '
+            'hanging off them like rags. Its head is a crown of jagged splintered '
+            'twigs pointing upward, with two small dark hollows where eyes would '
+            'be and a faint orange glint deep inside them. Weathered grey and brown '
+            'bark, pale grey highlights, black outline. NEGATIVE: leaves, flowers, '
+            'green, glowing chest, face, mouth, teeth, muscles, person in a costume.'
+        ),
+    },
+    'espetoInfectado': {
+        'image_size': {'width': 128, 'height': 128},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'view': 'low top-down',
+        'direction': 'south',
+        'no_background': True,
+        'description': (
+            # TRES TENTATIVAS ERRADAS ate o dono dizer a frase que resolve: o
+            # espeto e "um GALHO HUMANOIDE ESPINHOSO". Ou seja, e o MESMO ser do
+            # galho infectado -- madeira trancada em forma de gente --, so que
+            # eriçado de espinhos e mais escuro. Eu vinha descrevendo um bicho
+            # coberto de agulhas, e o modelo entregava bicho; descrevi um homem
+            # coberto de agulhas, e ele entregou homem. Faltava dizer MADEIRA.
+            'A plant creature shaped like a person, facing the viewer: a tall gaunt '
+            'humanoid built entirely of dark twisted BRANCHES AND BARK woven '
+            'together -- branch legs, a braided branch chest, long thin branch arms '
+            'hanging at its sides, and a head made of a knot of twigs. It is the '
+            'same kind of wooden creature as a walking dead bush. Its whole body '
+            'BRISTLES WITH LONG SHARP THORNS AND NEEDLES standing out from the '
+            'head, shoulders, back, arms and legs. The wood is very dark, almost '
+            'black-brown. NO FACE: no mouth, no nose, no snout -- only TWO SMALL '
+            'RED GLOWING POINTS deep in the twigs of the head. Dark wood with '
+            'grey highlights on the thorn tips, black outline. NEGATIVE: four '
+            'legs, quadruped, animal, beast, fur, skin, flesh, bare chest, snout, '
+            'muzzle, tail, leaves, flowers, green, glowing chest, person in a '
+            'costume.'
+        ),
+    },
+    'vinhaInfectada': {
+        'image_size': {'width': 128, 'height': 128},
+        'outline': 'single color black outline',
+        'detail': 'medium detail',
+        'view': 'low top-down',
+        'direction': 'south',
+        'no_background': True,
+        'description': (
+            'A plant creature standing and facing the viewer, built from HANGING '
+            'TEAL-GREEN VINES: hundreds of long wet strands of vine draped over a '
+            'humanoid shape, hanging down off the arms and from the shoulders like '
+            'a curtain and trailing on the ground, so the figure has no clear feet. '
+            'The head is bowed, covered by hanging tendrils, with two small dark '
+            'hollows for eyes. Dark teal and blue-green vines, pale yellow-green at '
+            'the tips, black outline. NEGATIVE: brown wood, bark, dry twigs, '
+            'needles, leaves, flowers, glowing chest, mouth, teeth, person in a '
+            'costume.'
+        ),
+    },
 }
 
 

@@ -165,8 +165,8 @@ Gelatina ocre (**SRD**, plano `gosma`) · Doppelganger (**SRD**, plano
 `humanoide`) · Dragão verde jovem (**SRD**, plano `dragao`) ·
 **Crânio flamejante → criatura própria** (plano `aberracao`) ·
 **Vigia de um olho só → criatura própria**, no lugar do nothic (plano
-`aberracao`) · **Broto espinhoso → criatura própria**, no lugar dos blights
-(plano `aberracao`).
+`aberracao`) · **Infectados** — galho, espeto e vinha, os três do Livro dos Monstros
+(plano `aberracao`, variante `brotoEspinhoso`).
 
 ### NPCs — plano `humanoide`, bloco SRD
 

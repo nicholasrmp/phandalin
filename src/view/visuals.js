@@ -70,6 +70,8 @@ const COR = {
   fogoVerde: '#cdf262',
   // O amarelo dos olhos das hastes do spectator (`metal` no look dele).
   hasteOcular: '#dcd37e',
+  // A madeira seca das farpas do espinheiro.
+  farpa: '#9aa84a',
   // Cor que o stirge rouba. Cinza azulado é o que sobra de uma figura sem sangue.
   semCor: '#9aa3b2',
   osso: '#ded2b4',
@@ -233,6 +235,31 @@ const WEAPON_VISUALS = {
         board.fx.smash(target.pos, { color: COR.fogoVerde });
         board.fx.impact(target.pos, { color: COR.fogoVerde, count: 10, spread: 34 });
       },
+      faisca: false,
+    };
+  },
+
+  /**
+   * SALVA DE FARPAS do espinheiro farpado.
+   *
+   * Nao e flecha: e um punhado de espinhos de madeira seca cuspidos de uma
+   * vez. Dai TRES estilhacos com atrasos diferentes, em vez de um projetil
+   * -- a salva e o nome do ataque, e e ela que o jogador tem de reconhecer.
+   * `shard` ja desenha uma lasca pontuda; a cor vem do `trim` do look, o
+   * verde-amarelado da madeira viva que ainda sobra no galho.
+   */
+  farpa: (board, { attacker, target }) => {
+    return {
+      delay: 0.3,
+      som: 'swing',
+      start: () => {
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => board.fx.projectile(attacker.pos, target.pos, {
+            style: 'shard', color: COR.farpa, dur: 0.26, arc: 0.25 + i * 0.12,
+          }), i * 55);
+        }
+      },
+      onHit: () => board.fx.impact(target.pos, { color: COR.farpa, count: 7, spread: 26 }),
       faisca: false,
     };
   },
@@ -624,6 +651,7 @@ const ART_ALIAS = {
   drenoDeVida: 'lifeDrain', dreno: 'lifeDrain',
   teia: 'web',
   fagulha: 'fagulha', brasa: 'fagulha',
+  farpa: 'farpa', farpas: 'farpa', espinho: 'farpa',
   raio: 'raioDasHastes', raioDasHastes: 'raioDasHastes',
   acido: 'acid', 'ácido': 'acid', pseudopode: 'acid', 'pseudópode': 'acid',
   sugar: 'drain', sugada: 'drain', drenoDeSangue: 'drain',
@@ -637,6 +665,7 @@ function guessArt(name = '') {
   if (n.includes('toque')) return 'necroticTouch';
   if (n.includes('teia')) return 'web';
   if (n.includes('fagulha') || n.includes('brasa')) return 'fagulha';
+  if (n.includes('farpa') || n.includes('espinho')) return 'farpa';
   if (n.includes('raio das hastes')) return 'raioDasHastes';
   if (n.includes('pseudóp') || n.includes('pseudop') || n.includes('ácido') || n.includes('acido')) return 'acid';
   if (n.includes('mordida') || n.includes('presa') || n.includes('bico')) return 'bite';
