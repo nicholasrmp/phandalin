@@ -46,6 +46,24 @@
 .taverna-persona:hover, .taverna-persona:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .taverna-persona canvas { image-rendering: pixelated; width: 40px; height: 40px; }
 .taverna-quadro { flex: 1; min-height: 0; }
+.taverna-frases { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.taverna-frase {
+  font: inherit; font-size: 13px; color: inherit; padding: 5px 10px; cursor: pointer;
+  background: rgb(255 255 255 / 6%); border: 1px solid #5d5545; border-radius: 14px;
+}
+.taverna-frase:hover, .taverna-frase:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.taverna-quadro { position: relative; }
+.taverna-toblen {
+  position: absolute; inset: 8% 12%; overflow: auto; padding: 14px 18px; border-radius: 12px;
+  background: rgb(18 14 10 / 94%); border: 2px solid var(--gold-escuro); color: #f1e6c8; font-size: 14px;
+}
+.taverna-toblen[hidden] { display: none; }
+.taverna-toblen h2 { margin: 0 0 6px; font-size: 20px; color: var(--gold); }
+.taverna-toblen h3 { margin: 10px 0 2px; font-size: 14px; color: #d7c9a4; }
+.taverna-toblen p, .taverna-toblen ul { margin: 2px 0; }
+.taverna-toblen ul { padding-left: 18px; }
+.taverna-toblen-fala { font-style: italic; }
+.taverna-toblen .menu-btn { margin-top: 12px; }
 .taverna-aviso {
   min-height: 20px; margin: 0; text-align: center; font-size: 13px; color: #d7c9a4; opacity: 0; transition: opacity .2s;
 }

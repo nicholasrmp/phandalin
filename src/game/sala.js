@@ -130,6 +130,21 @@ export function nomeUnico(sala, nome) {
   return nome;
 }
 
+/**
+ * T-14: a conversa do B0/B1 são FRASES PRONTAS, nunca texto livre (isso é do B2, com moderação). O servidor
+ * só aceita um destes ids; o texto é do cliente, que o mostra num balão sobre a cabeça por alguns segundos.
+ */
+export const EMOTES = [
+  { id: 'ola', texto: 'Olá!' },
+  { id: 'brinde', texto: 'Um brinde!' },
+  { id: 'risada', texto: 'Ha ha ha!' },
+  { id: 'duvida', texto: 'Hmm…' },
+  { id: 'jogar', texto: 'Bora jogar?' },
+  { id: 'valeu', texto: 'Valeu!' },
+  { id: 'tchau', texto: 'Até mais!' },
+];
+export const MS_ENTRE_EMOTES = 2000;
+
 const personaValida = (h) => (HEROIS_COM_ARTE.includes(h) ? h : PERSONA_PADRAO);
 
 /** Põe o avatar de um jogador na taverna: persona, marcador e uma casa livre perto da porta. */
@@ -305,6 +320,16 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       av.livreEm = agora + (caminho.length - 1) * MS_POR_CASA;   // só anda de novo quando esta caminhada acabar
       return ok();
     }
+    case 'emote': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      if (!EMOTES.some((e) => e.id === mensagem.id)) return recusa('essa frase não existe');
+      const av = sala.avatares[jogadorId];
+      if (!av) return recusa('você não está na taverna');
+      if (agora < (av.emoteLivreEm ?? 0)) return recusa('devagar');
+      av.emote = { id: mensagem.id, n: (av.emote?.n ?? 0) + 1 };   // `n` faz a MESMA frase de novo valer como nova
+      av.emoteLivreEm = agora + MS_ENTRE_EMOTES;
+      return ok();
+    }
     case 'persona': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
       if (!HEROIS_COM_ARTE.includes(mensagem.heroi)) return recusa('esse herói ainda não tem arte para a taverna');
@@ -476,7 +501,7 @@ export function visaoDaSala(sala, paraJogador) {
     // Quem anda na taverna: o rótulo público, onde está, a figura e o marcador (a cor e a forma).
     avatares: jogadoresPresentes(sala).filter((j) => sala.avatares?.[j.id]).map((j) => {
       const a = sala.avatares[j.id];
-      return { id: j.pub, nome: j.nome, x: a.x, y: a.y, figura: figuraDe(sala, j.id), persona: a.persona, marcador: marcadorN(a.marcador), conectado: j.conectado };
+      return { id: j.pub, nome: j.nome, x: a.x, y: a.y, figura: figuraDe(sala, j.id), persona: a.persona, marcador: marcadorN(a.marcador), conectado: j.conectado, emote: a.emote?.id ?? null, emoteN: a.emote?.n ?? 0 };
     }),
   };
 }

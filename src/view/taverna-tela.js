@@ -18,10 +18,11 @@ import { makePortrait } from '../art/sheet.js';
 import { audio } from '../core/audio.js';
 import { Encounter } from '../rules/combat.js';
 import { makeRng } from '../core/rng.js';
-import { HEROIS_COM_ARTE, MS_POR_CASA } from '../game/sala.js';
-import { campoDaTaverna, caminhoNaTaverna, ehMesaDeGrupo, CORES_DO_MARCADOR, FORMAS_DO_MARCADOR } from '../game/taverna.js';
+import { HEROIS_COM_ARTE, MS_POR_CASA, EMOTES } from '../game/sala.js';
+import { campoDaTaverna, caminhoNaTaverna, ehMesaDeGrupo, ehBalcao, CORES_DO_MARCADOR, FORMAS_DO_MARCADOR } from '../game/taverna.js';
 import { HEROIS, montarHeroi, escolhaAutomatica } from '../game/criacao.js';
 
+const MS_DO_BALAO = 4500;       // quanto tempo uma frase pronta fica sobre a cabeça
 const ALTURA_DA_PLACA = 78;   // do pé da figura até a placa do nome, em pixels do canvas
 const CASAS_POR_SEGUNDO = 1000 / MS_POR_CASA;
 
@@ -41,7 +42,36 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
     jogadores,
     el('div', { class: 'taverna-acoes' }, botaoPersona, botaoMesa,
       el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair')));
-  const camada = el('div', { class: 'taverna', role: 'region', 'aria-label': 'Taverna' }, topo, personas, quadro, aviso);
+  // As frases prontas (T-14): botões embaixo do quadro; o balão aparece sobre a cabeça de quem falou.
+  const frases = el('div', { class: 'taverna-frases', role: 'group', 'aria-label': 'Frases prontas' },
+    ...EMOTES.map((e) => el('button', {
+      class: 'taverna-frase', 'data-emote': e.id,
+      onclick: () => { audio.play('click'); enviar({ tipo: 'emote', id: e.id }); },
+    }, e.texto)));
+  // O Toblen é o menu em forma de personagem (T-09): clicar nele ou no balcão abre este painel.
+  const fecharToblen = () => { toblen.hidden = true; quadro.focus?.(); };
+  const nomeDaAventura = el('strong', {}, 'A Mina Perdida de Phandelver');
+  const toblen = el('div', { class: 'taverna-toblen', role: 'dialog', 'aria-label': 'Toblen Stonehill', hidden: true,
+    onkeydown: (e) => { if (e.key === 'Escape') { e.stopPropagation(); fecharToblen(); } } },
+    el('h2', {}, 'Toblen Stonehill'),
+    el('p', { class: 'taverna-toblen-fala' }, '“Bem-vindos à Estalagem Stonehill! Sentem-se, a casa é de vocês.”'),
+    el('section', {}, el('h3', {}, 'Quadro de aventuras'),
+      el('p', {}, 'A campanha desta sala: ', nomeDaAventura, '. Quem abriu a sala escolhe a aventura; é a única que existe por enquanto.')),
+    el('section', {}, el('h3', {}, 'Livro de saves'),
+      el('p', {}, 'Cada anfitrião guarda a própria campanha. Para continuar uma, abra a sala a partir do save, pelo menu inicial.')),
+    el('section', {}, el('h3', {}, 'No balcão, a ajuda'),
+      el('ul', {},
+        el('li', {}, 'Clique no chão para andar.'),
+        el('li', {}, 'Clique na mesa redonda do centro para formar o grupo e escolher os heróis.'),
+        el('li', {}, 'As frases de baixo aparecem em balão sobre a sua cabeça.'))),
+    el('button', { class: 'menu-btn primario', onclick: () => { audio.play('click'); fecharToblen(); } }, 'Fechar'));
+  function abrirToblen() {
+    audio.play('click');
+    toblen.hidden = false;
+    toblen.querySelector('button')?.focus();
+  }
+  quadro.append(toblen);
+  const camada = el('div', { class: 'taverna', role: 'region', 'aria-label': 'Taverna' }, topo, personas, quadro, frases, aviso);
 
   // O encontro que nunca começa: só serve para o `Board` ter o que desenhar.
   const enc = new Encounter({ battlefield: campo, party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
@@ -49,7 +79,8 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
 
   const semMovimento = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const avatares = new Map();       // rótulo público -> personagem desenhado
-  const dados = new Map();          // id do personagem -> { nome, marcador, souEu, conectado }
+  const dados = new Map();          // id do personagem -> { nome, marcador, souEu, conectado, emote?: { texto, ate } }
+  const emotesVistos = new Map();   // rótulo público -> o `emoteN` que já foi mostrado (ou ignorado)
   const retratos = new Map();       // herói -> retrato já desenhado (o painel de personas se refaz, os retratos não)
   let aberta = false;
   let quadroDeAnimacao = 0;
@@ -80,6 +111,31 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
     ctx.restore();
   }
 
+  /** O balão da frase pronta, logo acima da placa do nome. */
+  function balaoDaFrase(ctx, c, bx, by, k) {
+    const d = dados.get(c.id);
+    if (!d?.emote) return;
+    if (performance.now() > d.emote.ate) { d.emote = null; return; }
+    ctx.save();
+    ctx.font = `600 ${Math.round(14 * k)}px Georgia, serif`;
+    ctx.textAlign = 'center';
+    const w = Math.ceil(ctx.measureText(d.emote.texto).width) + 18 * k;
+    const h = 24 * k;
+    const x = Math.round(bx - w / 2);
+    const y = Math.round(by - ALTURA_DA_PLACA - (k - 1) * 10 - 20 * k - h);
+    ctx.fillStyle = '#f7efd8';
+    ctx.strokeStyle = '#3a2f22';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8 * k);
+    ctx.moveTo(bx - 5 * k, y + h); ctx.lineTo(bx, y + h + 7 * k); ctx.lineTo(bx + 5 * k, y + h);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#2a2118';
+    ctx.fillText(d.emote.texto, bx, y + h * 0.7);
+    ctx.restore();
+  }
+
   /** A placa do nome (e a seta, em quem é seu). Cresce quando o canvas é encolhido na tela, para o nome continuar legível. */
   function placaDoNome(ctx, c, bx, by) {
     const d = dados.get(c.id);
@@ -88,6 +144,7 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
     const largura = canvas.getBoundingClientRect().width || canvas.width;
     const k = Math.max(1, Math.min(2.2, canvas.width / largura));
     const texto = d.conectado ? d.nome : `${d.nome} (ausente)`;
+    balaoDaFrase(ctx, c, bx, by, k);
     ctx.save();
     if (!d.conectado) ctx.globalAlpha = 0.6;
     ctx.font = `600 ${Math.round(13 * k)}px Georgia, serif`;
@@ -125,6 +182,7 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
       onTileClick: (t) => {
         if (!visao || visao.fase !== 'lobby') return;
         if (ehMesaDeGrupo(t.x, t.y)) { aoMesa(); return; }
+        if (ehBalcao(t.x, t.y)) { abrirToblen(); return; }
         enviar({ tipo: 'mover', x: t.x, y: t.y });
       },
       onTileHover: () => {},
@@ -206,7 +264,17 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
           c.facingVec = { dx: Math.sign(a.x - de.x), dy: Math.sign(a.y - de.y) };
         }
       }
-      dados.set(c.id, { nome: a.nome, marcador: a.marcador, souEu: a.id === visao.voce, conectado: a.conectado });
+      // Uma frase nova (o contador subiu): abre o balão. A primeira vez que se vê um avatar só anota o contador,
+      // para quem entra não ver a frase velha de quem já estava falando.
+      const antes = dados.get(c.id);
+      let emote = antes?.emote ?? null;
+      const visto = emotesVistos.get(a.id);
+      if (visto !== undefined && a.emote && a.emoteN > visto) {
+        const e = EMOTES.find((x) => x.id === a.emote);
+        if (e) emote = { texto: e.texto, ate: performance.now() + MS_DO_BALAO };
+      }
+      emotesVistos.set(a.id, a.emoteN ?? 0);
+      dados.set(c.id, { nome: a.nome, marcador: a.marcador, souEu: a.id === visao.voce, conectado: a.conectado, emote });
     }
     for (const [id, c] of [...avatares]) {
       if (presentes.has(id)) continue;
@@ -272,7 +340,7 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
       cancelAnimationFrame(quadroDeAnimacao);
       camada.remove();
       for (const c of [...avatares.values()]) tirar(c);
-      avatares.clear(); dados.clear();
+      avatares.clear(); dados.clear(); emotesVistos.clear();
       visao = null;
       personas.hidden = true;
     },

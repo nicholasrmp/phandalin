@@ -310,10 +310,17 @@ await teste('taverna: o avatar de cada um aparece nos dois lados, com marcadores
   await vez(200);
   a.manda({ tipo: 'mover', x: 0, y: 99 });
   assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /inexistente/);
-  b.recebidas.length = 0; b.manda({ tipo: 'mover', x: 2, y: 3 });
+  b.recebidas.length = 0; b.manda({ tipo: 'mover', x: 2, y: 2 });
   assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /chegar/, 'o balcão não se pisa');
   a.recebidas.length = 0; a.manda({ tipo: 'mover', x: 9, y: 9 });
   assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /devagar/, 'o servidor segura quem ainda está andando');
+  // T-14: a frase pronta chega aos dois, e texto que não é frase é recusado.
+  b.recebidas.length = 0; a.recebidas.length = 0;
+  a.manda({ tipo: 'emote', id: 'brinde' });
+  const fala = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.find((q) => q.id === 'p1')?.emote === 'brinde');
+  assert.equal(fala.visao.avatares.find((q) => q.id === 'p1').emoteN, 1);
+  b.recebidas.length = 0; b.manda({ tipo: 'emote', id: 'qualquer coisa que eu escrevi' });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /não existe/);
 });
 
 await teste('taverna: trocar de persona muda a figura para todos; herói que não tem arte é recusado', async () => {

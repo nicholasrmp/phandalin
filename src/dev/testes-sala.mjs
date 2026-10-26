@@ -9,11 +9,11 @@ import {
   HEROIS_JOGAVEIS, ALFABETO, TAMANHO_DO_CODIGO, PILOTO, MAX_NOME, MINUTOS_VAZIA,
   gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, idValido,
   criarSala, aplicar, desconectar, deveFechar, visaoDaSala, pendenciasParaIniciar, heroisDe, limiteDeHerois, jogadorDe,
-  HEROIS_COM_ARTE, PERSONA_PADRAO, MS_POR_CASA, nomeUnico, figuraDe,
+  HEROIS_COM_ARTE, PERSONA_PADRAO, MS_POR_CASA, nomeUnico, figuraDe, EMOTES,
 } from '../game/sala.js';
 import {
   LARGURA, ALTURA, MAPA_TAVERNA, MESA_DE_GRUPO, NASCEDOUROS, campoDaTaverna, caminhoNaTaverna, casaLivre, ehMesaDeGrupo,
-  marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR,
+  marcadorLivre, marcadorN, TOTAL_DE_MARCADORES, CORES_DO_MARCADOR, BALCAO, ehBalcao,
 } from '../game/taverna.js';
 import { problemasDeJson } from '../game/save.js';
 import { tratarMensagem, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
@@ -820,6 +820,29 @@ teste('T-02: a persona vem da mensagem de entrada, só entre as que têm arte', 
   deve(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-druida' }), /arte/);
   deve(faz(s, CAIO, { tipo: 'persona', heroi: 'xx' }), /arte/);
   assert.equal(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-paladino' }).igual, true);
+});
+
+teste('T-09: o balcão do Toblen é o menu: todas as casas dele são mobília (ninguém anda até lá) e a mesa de grupo não é balcão', () => {
+  const campo = campoDaTaverna();
+  for (const c of BALCAO) { assert.equal(ehBalcao(c.x, c.y), true); assert.equal(campo.blocksMove(c.x, c.y), true, `${c.x},${c.y}`); }
+  assert.equal(ehBalcao(8, 6), false); assert.equal(ehBalcao(5, 10), false);
+  assert.equal(MAPA_TAVERNA.objetos.filter((o) => o.variante === 'taverna-toblen').length, 1);
+  assert.ok(MAPA_TAVERNA.objetos.some((o) => o.variante === 'taverna-toblen' && ehBalcao(o.x, o.y)), 'o Toblen está no balcão');
+});
+
+teste('T-14: a conversa é de frases prontas: só ids conhecidos, devagar, e o contador faz a mesma frase valer de novo', () => {
+  const s = nova();
+  entra(s, BETO, 'Beto');
+  assert.ok(faz(s, BETO, { tipo: 'emote', id: 'brinde' }, 5000).ok);
+  const av = () => visaoDaSala(s, ANF).avatares.find((a) => a.nome === 'Beto');
+  assert.equal(av().emote, 'brinde'); assert.equal(av().emoteN, 1);
+  deve(faz(s, BETO, { tipo: 'emote', id: 'ola' }, 5500), /devagar/);
+  deve(faz(s, BETO, { tipo: 'emote', id: 'texto livre qualquer' }, 9000), /não existe/);
+  deve(faz(s, BETO, { tipo: 'emote' }, 9000), /não existe/);
+  assert.ok(faz(s, BETO, { tipo: 'emote', id: 'brinde' }, 9000).ok);
+  assert.equal(av().emoteN, 2, 'a mesma frase de novo é outra frase');
+  deve(faz(s, 'ninguem', { tipo: 'emote', id: 'ola' }, 9000));
+  assert.ok(EMOTES.length >= 5 && EMOTES.every((e) => e.texto.length <= 16), 'frases curtas, para caber no balão');
 });
 
 teste('T-06: o nome é único na sala: o segundo "Gandalf" vira "Gandalf (2)"', () => {

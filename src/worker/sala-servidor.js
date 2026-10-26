@@ -9,6 +9,7 @@
 //   { tipo: 'criar', eu, nome, persona?, maxJogadores?, origem? }  a primeira de quem abre a sala
 //   { tipo: 'entrar', eu, nome, persona? }                         a primeira de quem chega, ou volta
 //   { tipo: 'mover', x, y }  { tipo: 'persona', heroi }            andar pela taverna, trocar de figura
+//   { tipo: 'emote', id }                                          uma frase pronta em balão (T-14)
 //   { tipo: 'ping' }                                     o batimento: a conexão ainda vive?
 //   e as intenções de `game/sala.js` (pegar, largar, pronto, iniciar, ...)
 // `eu` é o id SECRETO do jogador. Vai na primeira mensagem e não na URL: a URL

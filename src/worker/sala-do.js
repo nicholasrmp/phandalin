@@ -117,7 +117,7 @@ export class SalaDO extends DurableObject {
     // Andar e trocar de persona são só de enfeite: gravar a cada passo gastaria a cota de escrita do plano
     // grátis (100 mil linhas por dia, para a conta inteira). Retransmite na hora e grava no máximo a cada 5 s;
     // o que sobrar é gravado junto com a próxima mudança de verdade ou na saída de alguém.
-    const enfeite = r.tipo === 'mover' || r.tipo === 'persona';
+    const enfeite = r.tipo === 'mover' || r.tipo === 'persona' || r.tipo === 'emote';
     if (!enfeite || agora - this.ultimaGravacao >= 5000) await this.guardar();
     if (r.removido) this.derrubar(r.removido, 4000, 'removido da sala');
     if (r.saiu) this.derrubar(r.saiu, 1000, 'saiu');
