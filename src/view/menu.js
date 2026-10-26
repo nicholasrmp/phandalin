@@ -49,6 +49,10 @@ const ARENA = [
 //   véu     o degradê que escurece o fundo: forte à esquerda na tela de
 //           título, onde mora o menu, e por igual nas telas de pergaminho
 //   palco   o conteúdo: a coluna do título, ou o quadro de pergaminho
+// A música da tela de título. O arquivo mora em `public/musica/` e pode faltar
+// (ver `audio.tocarMusica`): sem ele o menu abre calado, como sempre abriu.
+const MUSICA_DO_TITULO = `${import.meta.env?.BASE_URL ?? '/'}musica/vincere-vel-mori.mp3`;
+
 export function criarMenu(root, { onIniciar, temPartida }) {
   const camada = el('div', { class: 'menu', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Menu' });
   const fundoHost = el('div', { class: 'menu-fundo' });
@@ -94,10 +98,15 @@ export function criarMenu(root, { onIniciar, temPartida }) {
     if (naPartida) {
       fundo?.parar();
       fundoHost.replaceChildren();
+      // Em partida o menu é uma pausa, não a tela de título: nada de música.
+      audio.pararMusica(0.6);
     } else {
       fundo ??= criarFundo();
       fundoHost.replaceChildren(fundo.canvas);
       fundo.iniciar();
+      // Antes do primeiro clique isto só GUARDA o pedido; o navegador não deixa
+      // tocar sem gesto, e `audio.unlock()` o cumpre no primeiro toque.
+      audio.tocarMusica(MUSICA_DO_TITULO);
     }
     if (!aberto) { root.append(camada); aberto = true; }
     ir(tela);
@@ -105,6 +114,9 @@ export function criarMenu(root, { onIniciar, temPartida }) {
 
   function fechar() {
     if (!aberto) return;
+    // Sair do menu — para jogar ou para voltar à partida — encerra a música,
+    // com fade, que é o que faz a entrada na aventura não ser um corte seco.
+    audio.pararMusica(1.6);
     fundo?.parar();
     camada.remove();
     aberto = false;

@@ -1,9 +1,13 @@
-// Som gerado por código, no mesmo espírito da arte: nenhum arquivo de áudio
-// no repositório. Tudo sai de osciladores e ruído da Web Audio API.
+// Os EFEITOS são gerados por código, no mesmo espírito da arte: nenhum arquivo
+// de áudio para eles. Tudo sai de osciladores e ruído da Web Audio API.
 //
 // Vantagens que valem a pena aqui: zero peso de download, nenhuma licença de
 // sample para checar, e variação de graça — cada golpe sai com um tom levemente
 // diferente, então repetir 40 ataques não vira metralhadora de um som só.
+//
+// A MÚSICA é a exceção, e a única: um arquivo tocado em laço (`tocarMusica`),
+// que passa por fora do compressor dos efeitos. Ela depende de a licença do
+// arquivo estar resolvida, e o jogo funciona calado sem ele (ver abaixo).
 //
 // O AudioContext só nasce depois de um gesto do usuário (política de autoplay
 // dos navegadores). Até lá, `play()` é um no-op silencioso.
@@ -16,6 +20,11 @@ class Audio {
     this.master = null;
     this.volume = 0.7;
     this.muted = false;
+    // A música pedida, mesmo antes de haver `ctx`: o navegador só deixa tocar
+    // depois de um gesto, e o pedido fica guardado até lá.
+    this.musicaUrl = null;
+    this.musicaOpcoes = null;
+    this.musica = null;
     this.load();
   }
 
@@ -53,20 +62,99 @@ class Audio {
     comp.threshold.value = -12;
     comp.ratio.value = 6;
     this.master.connect(comp).connect(this.ctx.destination);
+    // A música tem a SUA barra de volume, que segue o mesmo controle do jogo
+    // (volume e mudo), mas liga direto na saída: se passasse pelo compressor
+    // dos efeitos, cada golpe e cada grito faria a música abaixar e subir.
+    this.musicaMestre = this.ctx.createGain();
+    this.musicaMestre.gain.value = this.muted ? 0 : this.volume;
+    this.musicaMestre.connect(this.ctx.destination);
+    // Se o menu pediu música antes do primeiro clique, é agora que ela nasce.
+    if (this.musicaUrl) this.tocarMusica(this.musicaUrl, this.musicaOpcoes ?? {});
   }
 
   setVolume(v) {
     this.volume = Math.max(0, Math.min(1, v));
     this.muted = false;
     if (this.master) this.master.gain.value = this.volume;
+    if (this.musicaMestre) this.musicaMestre.gain.value = this.volume;
     this.save();
   }
 
   toggleMute() {
     this.muted = !this.muted;
     if (this.master) this.master.gain.value = this.muted ? 0 : this.volume;
+    if (this.musicaMestre) this.musicaMestre.gain.value = this.muted ? 0 : this.volume;
     this.save();
     return this.muted;
+  }
+
+  // ---- música -------------------------------------------------------------
+
+  /**
+   * Toca um arquivo em laço, entrando em fade.
+   *
+   * Pode ser chamado ANTES do primeiro clique: o pedido fica guardado e
+   * `unlock()` o cumpre. Chamar de novo com a mesma URL não recomeça a faixa.
+   *
+   * Arquivo ausente ou ilegível NÃO é erro: o jogo roda calado. A música é o
+   * único áudio que vem de arquivo e o único que pode faltar (licença,
+   * tamanho do repositório), então a falta dela não pode derrubar o menu.
+   */
+  tocarMusica(url, { ganho = 0.55, fade = 2 } = {}) {
+    this.musicaUrl = url;
+    this.musicaOpcoes = { ganho, fade };
+    if (!this.ctx) return; // sem gesto ainda: `unlock()` volta aqui
+    if (this.musica?.url === url) {
+      // Da altura em que o fade-out do menu a deixou, e não de uma fixa: voltar
+      // ao título no meio de um fade não pode dar salto de volume.
+      this.rampa(this.musica.g.gain.value, ganho, fade);
+      this.musica.ganho = ganho;
+      this.musica.el.play().catch(() => {});
+      return;
+    }
+    this.pararMusica(0.4);
+    this.musicaUrl = url; // `pararMusica` limpou o pedido
+    this.musicaOpcoes = { ganho, fade };
+    let el;
+    try {
+      el = document.createElement('audio');
+      el.src = url;
+      el.loop = true;
+      el.preload = 'auto';
+      const no = this.ctx.createMediaElementSource(el);
+      const g = this.ctx.createGain();
+      g.gain.value = 0;
+      no.connect(g).connect(this.musicaMestre);
+      this.musica = { url, el, no, g, ganho };
+      // Faixa que não carrega (404, formato): some em silêncio e libera o pedido.
+      el.addEventListener('error', () => { if (this.musica?.el === el) { this.musica = null; this.musicaUrl = null; } });
+      el.play().catch(() => {});
+      this.rampa(0, ganho, fade);
+    } catch {
+      this.musica = null;
+    }
+  }
+
+  /** Fade-out e fim. Esquece o pedido: `unlock()` não a traz de volta. */
+  pararMusica(fade = 1.4) {
+    this.musicaUrl = null;
+    this.musicaOpcoes = null;
+    const m = this.musica;
+    if (!m) return;
+    this.musica = null;
+    this.rampa(m.g.gain.value, 0, fade, m.g);
+    setTimeout(() => {
+      try { m.el.pause(); m.el.removeAttribute('src'); m.el.load(); m.no.disconnect(); m.g.disconnect(); } catch { /* já solto */ }
+    }, fade * 1000 + 120);
+  }
+
+  /** Rampa linear do ganho da faixa, de `de` até `ate` em `seg` segundos. */
+  rampa(de, ate, seg, g = this.musica?.g) {
+    if (!g || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(de, t);
+    g.gain.linearRampToValueAtTime(ate, t + Math.max(0.05, seg));
   }
 
   get now() {

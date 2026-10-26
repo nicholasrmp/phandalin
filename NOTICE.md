@@ -78,3 +78,21 @@ do zero para este projeto.
 O código deste repositório é MIT — veja `LICENSE`. A licença MIT cobre **apenas
 o código**; o conteúdo de regras segue CC-BY-4.0 e o de cenário segue a política
 de fã, conforme as seções acima.
+
+---
+
+## 5. Música
+
+A faixa da tela de título (`public/musica/vincere-vel-mori.mp3`, "Vincere vel
+mori") foi criada pelo autor do projeto com um gerador de música por IA. Não é
+de terceiros e não vem de nenhum jogo, álbum ou biblioteca de som.
+
+**A licença MIT não cobre este arquivo.** Ela vale só para o código (seção 4).
+O que se pode fazer com a música depende dos termos do serviço que a gerou
+**no plano em que foi gerada** — alguns serviços reservam uso comercial aos
+planos pagos, e o direito autoral sobre obra gerada por IA é incerto na maioria
+das jurisdições. Enquanto o jogo for gratuito e sem fins comerciais, o risco é
+pequeno; se isso mudar, a faixa precisa ser reconferida antes.
+
+Os efeitos sonoros, ao contrário, não são arquivos: são sintetizados em código
+(`src/core/audio.js`) e entram na licença do código.
