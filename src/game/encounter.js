@@ -352,6 +352,7 @@ export function mapaDo(variante = 'padrao') {
       // Cada cômodo com a sua tinta no tabuleiro, como no castelo; a parede fina (de borda) do cômodo onde o grupo está se dissolve.
       salas: MANSAO.salas,
       paredeDeCaverna: true,      // a pedra em volta é parede de caverna (3 níveis), e não um degrau
+      cliqueNoObjeto: true,       // o botão direito no corpo de um objeto (barril, baú, estante) acha o objeto, e não a casa de trás
       rochaEmCorte: true,         // ... exceto a que fica na frente de uma sala: essa fica baixa, para se ver dentro
       decor: MANSAO.decor,        // candeeiros nas arestas das paredes de trás
       folhas: MANSAO.folhas,      // as portas que têm folha de madeira

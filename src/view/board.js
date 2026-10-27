@@ -493,7 +493,7 @@ export class Board {
         // A PORTA primeiro: ela é uma aresta, e a folha desenhada em pé cobre casas de trás da porta; sem isto, clicar nela
         // acertava uma casa longe dela e o menu de abrir e fechar nunca saía.
         const porta = this.portaDoPonto(e);
-        const t = porta ? this.casaParaAPorta(porta) : this.tileFromEvent(e);
+        const t = porta ? this.casaParaAPorta(porta) : (this.objetoDoPonto(e) ?? this.tileFromEvent(e));
         if (t) this.onTileContext?.(t, e);
       }
       this.dragMoved = false;
@@ -779,6 +779,40 @@ export class Board {
       const t0 = (px - A.x) / (B.x - A.x || 1);
       const yPe = A.y + (B.y - A.y) * Math.max(0, Math.min(1, t0));
       if (py <= yPe + 4 && py >= yPe - ALTO) return { a: { x: ax, y: ay }, b: { x: bx, y: by } };
+    }
+    return null;
+  }
+
+  /**
+   * O OBJETO (barril, baú, mesa, estante...) debaixo do ponteiro, ou null. O sprite é desenhado em pé sobre a casa dele; clicar
+   * no corpo dele (acima da base) caía numa casa de trás. Só nos mapas que pedem (`field.cliqueNoObjeto`): procura, entre a casa
+   * achada e as três da frente dela, a mais à frente cujo sprite cobre o ponto.
+   */
+  objetoDoPonto(e) {
+    const f = this.field;
+    if (!f.cliqueNoObjeto || this.rot !== 0) return null;
+    this.tileFromEvent(e);                                  // guarda o ponteiro em pixel interno do canvas
+    const { px, py } = this.pointer;
+    // As casas candidatas: a que o ponteiro acerta no chão, em cada altura possível, e as três da frente de cada uma.
+    const achadas = new Map();
+    for (let hgt = this.maxHeight; hgt >= 0; hgt--) {
+      const cx = px - this.ox;
+      const cy = py - this.oy - TH / 2 + hgt * LIFT;
+      const vx = Math.round(cx / TW + cy / TH);
+      const vy = Math.round(cy / TH - cx / TW);
+      for (const [dx, dy] of [[1, 1], [1, 0], [0, 1], [0, 0]]) {
+        const p = this.fromView(vx + dx, vy + dy);
+        if (f.inside(p.x, p.y)) achadas.set(`${p.x},${p.y}`, { x: p.x, y: p.y, d: vx + dx + vy + dy });
+      }
+    }
+    const ordem = [...achadas.values()].sort((m, n) => n.d - m.d);          // a mais à frente primeiro
+    for (const n of ordem) {
+      if (f.tileAt(n.x, n.y) === 1) continue;
+      const s = SUPERFICIE[f.surfaceAt(n.x, n.y)];
+      if (!s?.objeto || MULTICASA.has(s.objeto) || s.objeto === 'copa') continue;
+      const c = this.center(n.x, n.y);
+      const alto = s.objeto === 'prop' ? 62 : 46;
+      if (Math.abs(px - c.sx) <= 24 && py <= c.sy + 8 && py >= c.sy - alto) return { x: n.x, y: n.y };
     }
     return null;
   }
