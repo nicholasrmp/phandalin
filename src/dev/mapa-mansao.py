@@ -69,7 +69,7 @@ pinta(R(7, 10), [5], '_', 4, 1)                      # corredor de cima, para a 
 pinta(R(2, 6), R(8, 11), '_', 3, 2)
 casa(6, 7, '_', 3, 2)                                # porta, desencontrada da do 11
 casa(3, 8, 'm'); casa(4, 8, 'm')                     # a mesa do jogo
-casa(2, 11, 's'); casa(5, 11, 's'); casa(6, 11, 's') # barris de cerveja
+casa(2, 10, 's'); casa(4, 10, 's'); casa(5, 10, 's') # barris de cerveja (longe da parede da frente, que os esconderia)
 casa(3, 12, '_', 3, 2)                               # porta para o sul
 casa(3, 13, '_', 3, 1)
 pinta(R(4, 6), [13], '_', 3, 1)                      # passagem para a caverna
@@ -78,7 +78,7 @@ casa(7, 13, '_', 4, 1)                               # degrau acima
 # --------------------------------------------- 9. Alojamento dos guardas ----
 casa(3, 14, '_', 3, 2)                               # porta
 pinta(R(2, 6), R(15, 18), '_', 3, 2)
-for (x, y) in [(2, 15), (6, 15), (2, 18), (6, 18)]: casa(x, y, 'z')
+for (x, y) in [(2, 15), (5, 15), (2, 17), (5, 17)]: casa(x, y, 'z')     # beliches, longe da parede sul e leste
 
 # --------------------------------------------- 8. A caverna da fenda ----
 caverna = [
@@ -179,9 +179,9 @@ pinta(R(15, 19), [17], '_', 4, 0)
 LUZES = []
 for (x, y, claro, penumbra, tipo, braseiro) in [
     (5, 2, 20, 20, 'fogueira', True),    # 11 oficina: o alambique aceso
-    (6, 8, 20, 20, 'fogueira', True),    # 10 sala de estar: o braseiro do jogo
-    (6, 16, 20, 20, 'fogueira', True),   # 9 alojamento dos bugbears
-    (19, 12, 20, 20, 'fogueira', True),  # 2 alojamento dos Marcarrubra
+    (5, 9, 20, 20, 'fogueira', True),    # 10 sala de estar: o braseiro do jogo
+    (4, 16, 20, 20, 'fogueira', True),   # 9 alojamento dos bugbears
+    (18, 13, 20, 20, 'fogueira', True),  # 2 alojamento dos Marcarrubra
     (8, 2, 15, 15, 'tocha', False),      # 12 quarto: a vela da escrivaninha
     (23, 5, 15, 15, 'tocha', False),     # 5 jaulas: a lanterna na pilha
 ]:

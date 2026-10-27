@@ -26,8 +26,8 @@ export const MAPA_MANSAO = {
     },
     {
       "pos": {
-        "x": 6,
-        "y": 8
+        "x": 5,
+        "y": 9
       },
       "claro": 20,
       "penumbra": 20,
@@ -35,7 +35,7 @@ export const MAPA_MANSAO = {
     },
     {
       "pos": {
-        "x": 6,
+        "x": 4,
         "y": 16
       },
       "claro": 20,
@@ -44,8 +44,8 @@ export const MAPA_MANSAO = {
     },
     {
       "pos": {
-        "x": 19,
-        "y": 12
+        "x": 18,
+        "y": 13
       },
       "claro": 20,
       "penumbra": 20,
@@ -79,17 +79,17 @@ export const MAPA_MANSAO = {
     "RMMMLMMLLL_xx__MLLLLLLLsMRRRRRR",
     "RRRMLLLL___xx__MQLLQMGGGMRRRRRR",
     "RMMMMMLM__xxx__MLLLLMLLLMRRRRRR",
-    "RMLmmLeM__===__MLLLLMMMMMMMMMMR",
-    "RMLLLLLM___xxA_MQLLLMLLLLLLLLMR",
-    "RMLLLLLM___xx__MLLLLLLLLLLLLLMR",
-    "RMsLLssM__xx___MMMMMMMMLLMMLMMR",
-    "RMMLMMMM__xx___MzLzeMssssLLLMMR",
-    "RRMLLLL__Axxx__MLLLLMLLLLLLLLMR",
+    "RMLmmLLM__===__MLLLLMMMMMMMMMMR",
+    "RMLLLeLM___xxA_MQLLLMLLLLLLLLMR",
+    "RMsLssLM___xx__MLLLLLLLLLLLLLMR",
+    "RMLLLLLM__xx___MMMMMMMMLLMMLMMR",
+    "RMMLMMMM__xx___MzLzLMssssLLLMMR",
+    "RRMLLLL__Axxx__MLLeLMLLLLLLLLMR",
     "RMMLMMMM__===__MLLLsMVVVLLLMLMM",
-    "RMzLLLzM___xx__MsssLMVVVLLLMLLM",
-    "RMLLLLeM___xx__MMMMMMVVVLLLMLMM",
-    "RMLLLLLMR__xx_______MLLLLLLLLMR",
-    "RMzLLLzMRR__xx_RRRRRMLssLLLLMMR",
+    "RMzLLzLM___xx__MsssLMVVVLLLMLLM",
+    "RMLLeLLM___xx__MMMMMMVVVLLLMLMM",
+    "RMzLLzLMR__xx_______MLLLLLLLLMR",
+    "RMLLLLLMRR__xx_RRRRRMLssLLLLMMR",
     "RMMMMMMMRR__RRRRRRRRMMMMMMMMMRR",
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
   ],
