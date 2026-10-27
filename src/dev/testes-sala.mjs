@@ -20,6 +20,7 @@ import { problemasDeJson } from '../game/save.js';
 import { novoEstado as novoEstadoDeLimites, emitir as emitirCodigo, entrar as entrarNaSala, EMITIR_POR_HORA, TENTATIVAS_POR_MINUTO, VALIDADE_DO_CODIGO_MS } from '../worker/limites.js';
 import { criarEmissor, criarReceptor, lerDelta, COMPLETA_A_CADA } from '../game/partida-delta.js';
 import { novoDiretorio, escolher as escolherInstancia, registrar as registrarPopulacao, ehPublica as ehPublicaNoDiretorio, LOTACAO_PARA_NOVOS } from '../worker/diretorio.js';
+import { AMBIENTES, ambienteDaVariante, temCamadas } from '../core/ambiente.js';
 import { DICAS, GATILHOS, dicasDoGatilho, lerDicas, guardarDicas } from '../game/tutorial.js';
 import { faltamDaTaverna } from './verificar-taverna.mjs';
 import { heroiQueSobra } from '../game/sala.js';
@@ -1738,6 +1739,16 @@ teste('dicas contextuais: cada gatilho chama as suas dicas, uma vez, e dá para 
   const lido = lerDicas(st);
   assert.deepEqual([[...lido.vistas], lido.ligado], [['golpe'], false]);
   assert.deepEqual([[...lerDicas({ getItem: () => 'lixo' }).vistas], lerDicas({ getItem: () => 'lixo' }).ligado], [[], true], 'armazém estragado: começa do zero');
+});
+
+teste('ambiente sonoro: toda variante de mapa aponta para um ambiente que existe', () => {
+  const variantes = ['emboscada', 'rua', 'castelo', 'cume', 'arvoreTrovao', 'ondaEco', 'poco', 'ermo', 'ermoNoite', 'mansao', 'mansaoTunel', 'esconderijo', 'caverna', 'padrao', 'grandes'];
+  for (const v of variantes) assert.ok(AMBIENTES.includes(ambienteDaVariante(v)) && temCamadas(ambienteDaVariante(v)), `${v} -> ${ambienteDaVariante(v)}`);
+  assert.equal(ambienteDaVariante('ondaEco'), 'caverna');
+  assert.equal(ambienteDaVariante('rua'), 'vila');
+  assert.equal(ambienteDaVariante('ermoNoite'), 'noite');
+  assert.equal(ambienteDaVariante('emboscada'), 'floresta');
+  for (const n of AMBIENTES) assert.ok(temCamadas(n), `camadas de ${n}`);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

@@ -12,6 +12,8 @@
 // O AudioContext só nasce depois de um gesto do usuário (política de autoplay
 // dos navegadores). Até lá, `play()` é um no-op silencioso.
 
+import { Ambiente } from './ambiente.js';
+
 const STORAGE_KEY = 'phandalin:audio';
 
 class Audio {
@@ -25,6 +27,7 @@ class Audio {
     this.musicaUrl = null;
     this.musicaOpcoes = null;
     this.musica = null;
+    this.amb = new Ambiente(this);      // o som de fundo de cada lugar e a tensão da luta (core/ambiente.js)
     this.load();
   }
 
@@ -70,13 +73,21 @@ class Audio {
     this.musicaMestre.connect(this.ctx.destination);
     // Se o menu pediu música antes do primeiro clique, é agora que ela nasce.
     if (this.musicaUrl) this.tocarMusica(this.musicaUrl, this.musicaOpcoes ?? {});
+    this.amb.destravar();
   }
+
+  /** O som de fundo do lugar (`'floresta'`, `'noite'`, `'vila'`, `'caverna'`, `'taverna'`), ou `null` para silenciar. */
+  ambiente(nome, opcoes) { this.amb.tocar(nome, opcoes); }
+
+  /** O pulso grave da luta. */
+  tensao(ligar) { this.amb.tensao(ligar); }
 
   setVolume(v) {
     this.volume = Math.max(0, Math.min(1, v));
     this.muted = false;
     if (this.master) this.master.gain.value = this.volume;
     if (this.musicaMestre) this.musicaMestre.gain.value = this.volume;
+    this.amb.seguirVolume();
     this.save();
   }
 
@@ -84,6 +95,7 @@ class Audio {
     this.muted = !this.muted;
     if (this.master) this.master.gain.value = this.muted ? 0 : this.volume;
     if (this.musicaMestre) this.musicaMestre.gain.value = this.muted ? 0 : this.volume;
+    this.amb.seguirVolume();
     this.save();
     return this.muted;
   }

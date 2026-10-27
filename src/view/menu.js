@@ -131,6 +131,8 @@ export function criarMenu(root, {
       // Antes do primeiro clique isto só GUARDA o pedido; o navegador não deixa
       // tocar sem gesto, e `audio.unlock()` o cumpre no primeiro toque.
       audio.tocarMusica(MUSICA_DO_TITULO);
+      audio.ambiente(null, { fade: 1 });      // no título só a música
+      audio.tensao(false);
     }
     if (!aberto) { root.append(camada); aberto = true; }
     ir(tela, dados);

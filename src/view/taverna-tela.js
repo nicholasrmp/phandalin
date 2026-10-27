@@ -356,6 +356,7 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
       if (aberta) return;
       parent.append(camada);
       aberta = true;
+      audio.ambiente('taverna');      // burburinho, lareira e canecas
       assinaturaDoPainel = '';
       if (!board) criarBoard();
       ultimo = performance.now();
@@ -365,6 +366,7 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
     fechar() {
       if (!aberta) return;
       aberta = false;
+      audio.ambiente(null);
       cancelAnimationFrame(quadroDeAnimacao);
       camada.remove();
       for (const c of [...avatares.values()]) tirar(c);

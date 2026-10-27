@@ -19,6 +19,7 @@ import { abrirTelaVila } from './vila.js';
 import { abrirMenuContexto } from './menu-contexto.js';
 import { diarioParaTela } from '../game/diario.js';
 import { makePortrait } from '../art/sheet.js';
+import { ambienteDaVariante } from '../core/ambiente.js';
 import { estadoAparente } from '../game/interacoes.js';
 import { temEscuridaoEm, visaoDoGrupo } from '../rules/luz.js';
 import { telaDoCartao } from './nivel-tela.js';
@@ -91,6 +92,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
 
   function montar(v) {
     variante = v.variante;
+    audio.ambiente(ambienteDaVariante(variante));
     const mapa = mapaDo(variante);
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
     board = new Board(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
@@ -551,6 +553,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       return visaoDaSala?.jogadores?.find((j) => j.id === pub)?.nome ?? (pub ? 'Piloto automático' : '');
     };
     const emLuta = Boolean(enc) && !enc.combatants.every((c) => c.side === 'party');
+    audio.tensao(emLuta);      // o pulso grave da luta, também para quem só assiste
     const corDe = (pub) => CORES_DOS_JOGADORES[Math.max(0, (visaoDaSala?.jogadores ?? []).findIndex((j) => j.id === pub)) % CORES_DOS_JOGADORES.length];
     // Quem está na sala: a cor de cada um (a mesma do alfinete), o nome, e ✓ de quem já está pronto para sair da cena.
     jogadoresEl.replaceChildren(...(visaoDaSala?.jogadores ?? []).map((j) => el('li', {
@@ -668,6 +671,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     fechar() {
       if (!aberta) return;
       aberta = false;
+      audio.ambiente(null); audio.tensao(false);
       camada.remove();
       document.getElementById('app')?.classList.remove('explorando');
       painelAberto = null; painelEl?.remove(); painelEl = null;
