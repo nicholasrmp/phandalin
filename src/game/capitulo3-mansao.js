@@ -75,7 +75,7 @@ const SALAS = {
 
 const dentro = (p, x0, y0, x1, y1) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
 const NA_OFICINA = (p) => dentro(p, 2, 2, 5, 4);
-const NO_QUARTO = (p) => dentro(p, 7, 2, 9, 3);
+const NO_QUARTO = (p) => dentro(p, 7, 2, 9, 4);
 const NA_ESTAR = (p) => dentro(p, 2, 8, 6, 11);
 const NO_PORAO = (p) => dentro(p, 21, 12, 28, 18);
 const PORTAS_DA_CRIPTA = [{ x: 20, y: 5 }, { x: 16, y: 4 }];       // para o 5 e para o 6
@@ -153,6 +153,7 @@ export function criarMansao(app, config) {
     f.tiles[i] = 0;
     f.surfaces[i] = SUPERFICIES.indexOf(sup);
     f.heights[i] = h;
+    f.vaos?.delete(`${x},${y}`);          // a grade que virou chão deixa de ser vão (Forma Gasosa não pode mais atravessá-la)
     f.versao = (f.versao ?? 0) + 1;     // a visão do grupo recalcula
   }
   /** As celas soltas (áreas 5): as grades `G` viram chão, e a família sai (o texto dizia que as portas arrancavam e o mapa não mudava). */

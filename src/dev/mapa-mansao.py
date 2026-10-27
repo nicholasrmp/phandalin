@@ -53,9 +53,10 @@ casa(6, 3, '_', 3, 2)                                # porta para 12
 casa(4, 5, '_', 3, 2)                                # porta para o corredor
 
 # ------------------------------------------------- 12. Quarto do Cajavidro ----
-pinta(R(7, 9), R(2, 3), '_', 3, 2)
+# Três por três: a referência dá ao quarto uns 4 x 3, e o corredor que havia ao sul dele não existe lá (é rocha).
+pinta(R(7, 9), R(2, 4), '_', 3, 2)
 casa(8, 2, 'm')                                      # escrivaninha (a carta)
-casa(9, 3, 'z'); casa(7, 2, 'K')                     # cama e o baú, longe da porta
+casa(9, 4, 'z'); casa(7, 4, 'K')                     # cama e baú ao pé dela, no fundo do quarto
 SECRETAS['quarto'] = (10, 2, 3)                      # nordeste do quarto
 casa(11, 2, '_', 3, 1)                               # o vão da passagem
 SECRETAS['passagem'] = (11, 3, 4)                    # e a segunda porta, para o 7
@@ -63,7 +64,7 @@ SECRETAS['passagem'] = (11, 3, 4)                    # e a segunda porta, para o
 # --------------------------------------- corredor oeste e as escadas ----
 pinta(R(4, 6), [6], '_', 3, 1)                      # antecâmara entre 11 e 10
 casa(7, 6, '_', 3, 1)                                # pé da escada
-pinta(R(7, 10), [5], '_', 4, 1)                      # corredor de cima, para a caverna
+# (O corredor de cima, em 7..9,5, saiu: o quarto do mago ocupa essas casas até a fileira 4.)
 
 # ------------------------------------------------- 10. Sala de estar ----
 pinta(R(2, 6), R(8, 11), '_', 3, 2)
@@ -82,8 +83,8 @@ for (x, y) in [(2, 15), (5, 15), (2, 17), (5, 17)]: casa(x, y, 'z')     # belich
 
 # --------------------------------------------- 8. A caverna da fenda ----
 caverna = [
-    # (y, x0, x1) — a caverna é irregular; a fenda corta pelo meio
-    (5, 10, 14), (6, 8, 14), (7, 8, 14), (8, 8, 14), (9, 8, 14), (10, 8, 14),
+    # (y, x0, x1) — a caverna é irregular; a fenda corta pelo meio (a fileira 5 começa em 11: em 10 haveria uma pinça diagonal com o canto do quarto do mago)
+    (5, 11, 14), (6, 8, 14), (7, 8, 14), (8, 8, 14), (9, 8, 14), (10, 8, 14),
     (11, 8, 14), (12, 8, 14), (13, 7, 14), (14, 8, 14), (15, 8, 14), (16, 8, 14),
     (17, 9, 19), (18, 10, 14), (19, 10, 11),
 ]
@@ -138,17 +139,20 @@ FOSSO = [(23, 9), (24, 9), (23, 10), (24, 10)]
 # combate (as opções do botão direito só existem fora da luta) e a cripta
 # perdia o recuo. Estas duas casas são o parapeito, em fila indiana, pelo sul.
 casa(23, 11, '_', 4, 0); casa(24, 11, '_', 4, 0)
+# As pontas (22,11) e (25,11) também são chão: sem elas, o passo diagonal do corredor para o parapeito é barrado pela regra
+# de quina do motor (o fosso de um lado, a parede do outro) e a faixa ficava uma ilha que ninguém alcançava a pé.
+casa(22, 11, '_', 4, 0); casa(25, 11, '_', 4, 0)
 casa(27, 11, '_', 4, 1)                              # porta ao pé da escada da área 1
 
 # --------------------------------------------- 1. Porão ----
 pinta(R(21, 27), R(12, 18), '_', 4, 2)
-# A cisterna tem mureta: a água fica um nível acima do piso, e o motor
-# desenha a borda de pedra. Entrar nela é escalar a mureta.
-pinta(R(21, 23), R(14, 16), 'W', 5, 2)               # a cisterna
+# A cisterna é um poço: a água fica um nível ABAIXO do piso, e a laje em volta mostra a borda. (Um nível acima, ela era
+# um tanque elevado que cortava a visão do porão em duas metades.)
+pinta(R(21, 23), R(14, 16), 'W', 3, 2)               # a cisterna
 for x in R(21, 23): casa(x, 12, 's')
 # O parapeito do fosso (23,11)/(24,11) desce para cá: sem esta pilha, ele
 # abriria uma rota nova do corredor direto para o porão.
-casa(24, 12, 's')
+casa(24, 12, 's'); casa(25, 12, 's')
 casa(22, 18, 's'); casa(23, 18, 's')
 # Patamar de 1,5 x 4,5 m a leste, com duas escadinhas descendo para o porão.
 pinta([28], R(13, 17), '_', 6, 2)
@@ -161,7 +165,7 @@ SECRETAS['cisterna'] = (20, 17, 4)                   # canto sudoeste
 # --------------------------------------------- 2. Alojamento ----
 pinta(R(16, 19), R(12, 15), '_', 4, 2)
 casa(16, 12, 'z'); casa(18, 12, 'z')
-for (x, y) in [(16, 15), (17, 15), (18, 15), (19, 14)]: casa(x, y, 's')
+for (x, y) in [(16, 15), (17, 15), (18, 15), (19, 14), (19, 15)]: casa(x, y, 's')   # (19,15) fecha a pilha: sozinha, ficava uma casa ilhada
 
 # Túnel da porta secreta da cisterna até a caverna (a passagem sul).
 pinta(R(15, 19), [17], '_', 4, 0)
@@ -193,7 +197,7 @@ for (x, y, claro, penumbra, tipo, braseiro) in [
 # tinta (`TINTA_DE_SALA` em `view/board.js`) — o mesmo que o castelo faz. Só
 # aparência: não mexe em passo, visão nem luz.
 SALAS = {
-    'oficina': (2, 2, 5, 4), 'quartoMago': (7, 2, 9, 3),
+    'oficina': (2, 2, 5, 4), 'quartoMago': (7, 2, 9, 4),
     'deposito': (12, 2, 14, 4), 'armas': (18, 2, 19, 3),
     'jaulas': (21, 2, 23, 7), 'cripta': (16, 5, 19, 10),
     'estarRubro': (2, 8, 6, 11), 'guardasBugbear': (2, 15, 6, 18),
@@ -253,6 +257,7 @@ for y in range(H):
 # vão da parede. As secretas ficam alvenaria até serem achadas: aí viram `@`, uma laje deslizada para o lado.
 for (x, y) in [TRANCADA] + [(x, y) for (x, y, _) in PORTAS.values()]:
     T[y][x] = '!'
+    A[y][x] += 1          # a porta é mais alta que a parede em corte: um nível a mais, para a folha ler como porta
 
 # ---------------------------------------------------------------- saída ----
 import json

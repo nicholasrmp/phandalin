@@ -28,7 +28,8 @@ import { escolhasConferidas } from '../game/nivel.js';
 import { diarioDe, diarioParaTela } from '../game/diario.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
 import { MAPA_MANSAO as MAPA_MANSAO_DADOS, MANSAO as MANSAO_DADOS } from '../game/mansao.js';
-import { SUPERFICIES as SUPERFICIES_GRID, GLIFOS as GLIFOS_GRID } from '../core/grid.js';
+import { SUPERFICIES as SUPERFICIES_GRID, GLIFOS as GLIFOS_GRID, Battlefield as CampoDeBatalha } from '../core/grid.js';
+import { mapaDo as mapaDoEncontro, buildFoes as inimigosDoEncontro } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import { mapaDo } from '../game/encounter.js';
 import { diferencasDoCampo, aplicarDiferencas, diferencaValida } from '../game/campo-delta.js';
@@ -1789,6 +1790,48 @@ teste('mansão: as portas de casa inteira têm superfície própria (a trancada 
   assert.equal(GLIFOS_GRID['@'].kind, 0);
   for (const c of [MANSAO_DADOS.trancada, ...Object.values(MANSAO_DADOS.portas)]) assert.equal(MAPA_MANSAO_DADOS.terreno[c.y][c.x], '!', `porta de madeira em ${c.x},${c.y}`);
   for (const c of Object.values(MANSAO_DADOS.secretas)) assert.equal(MAPA_MANSAO_DADOS.terreno[c.y][c.x], 'M', `a secreta em ${c.x},${c.y} é parede até ser achada`);
+});
+
+const campoDaMansao = () => {
+  const m = mapaDoEncontro('mansao');
+  return new CampoDeBatalha(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+};
+
+teste('mansão: com o fosso revelado, o parapeito ainda é uma rota a pé de um lado do corredor ao outro', () => {
+  const f = campoDaMansao();
+  const fosso = SUPERFICIES_GRID.indexOf('fosso');
+  for (const [x, y] of [[23, 9], [24, 9], [23, 10], [24, 10]]) { const i = y * f.w + x; f.tiles[i] = 2; f.surfaces[i] = fosso; f.heights[i] = 2; }
+  const alcance = f.reachable({ x: 22, y: 10 }, 100000, () => false);
+  for (const [x, y] of [[23, 11], [24, 11], [25, 10]]) assert.ok(alcance.has(`${x},${y}`), `(${x},${y}) alcançável a pé pelo parapeito`);
+  for (const [x, y] of [[22, 12], [23, 12], [24, 12], [25, 12]]) assert.ok(f.blocksMove(x, y), `(${x},${y}) fecha a descida para o porão`);
+});
+
+teste('mansão: ninguém nasce em casa que barra o passo, e nenhuma casa de piso fica ilhada', () => {
+  const f = campoDaMansao();
+  for (const c of inimigosDoEncontro('mansao')) {
+    if (!c.pos || c.side === 'party') continue;
+    assert.ok(!f.blocksMove(c.pos.x, c.pos.y), `${c.name} em ${c.pos.x},${c.pos.y} (${f.surfaceAt(c.pos.x, c.pos.y)})`);
+  }
+  // Com todas as portas abertas, toda casa andável fora da fenda é alcançável de um dos dois acessos.
+  const m = mapaDoEncontro('mansao');
+  const a = campoDaMansao();
+  for (const cs of [...Object.values(MANSAO_DADOS.secretas), MANSAO_DADOS.trancada, ...Object.values(MANSAO_DADOS.portas)]) { const i = cs.y * a.w + cs.x; a.tiles[i] = 0; a.surfaces[i] = SUPERFICIES_GRID.indexOf('portaAberta'); a.heights[i] = 4; }
+  const grade = SUPERFICIES_GRID.indexOf('grade');
+  for (let i = 0; i < a.surfaces.length; i++) if (a.surfaces[i] === grade) a.tiles[i] = 0;
+  const vistas = new Set([...a.reachable({ x: 29, y: 15 }, 1e6, () => false).keys(), ...a.reachable({ x: 10, y: 19 }, 1e6, () => false).keys()]);
+  const ilhadas = [];
+  for (let y = 0; y < a.h; y++) for (let x = 0; x < a.w; x++) {
+    if (a.blocksMove(x, y) || a.heightAt(x, y) === 0 || vistas.has(`${x},${y}`)) continue;
+    ilhadas.push(`${x},${y}`);
+  }
+  assert.deepEqual(ilhadas, [], `casas de piso que ninguém alcança: ${ilhadas.join(' ')}`);
+  void m;
+});
+
+teste('mansão: o quarto do Cajavidro tem 3 x 3 e a cisterna fica abaixo do piso', () => {
+  const t = MAPA_MANSAO_DADOS.terreno;
+  for (const y of [2, 3, 4]) for (const x of [7, 8, 9]) assert.notEqual(t[y][x], 'M', `(${x},${y}) é do quarto`);
+  assert.ok(MAPA_MANSAO_DADOS.altura[15][22] < MAPA_MANSAO_DADOS.altura[13][22], 'a água da cisterna fica abaixo do piso do porão');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

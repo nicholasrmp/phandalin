@@ -577,7 +577,7 @@ function foesMansao() {
     // Área 2: três Marcarrubra de folga no alojamento.
     m('marcarrubra', 17, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
     m('marcarrubra', 17, 14, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
-    m('marcarrubra', 18, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    m('marcarrubra', 17, 12, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),   // (18,13) é o braseiro
     // Área 4: três esqueletos diante dos sarcófagos.
     m('esqueleto', 17, 6, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
     m('esqueleto', 17, 9, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
@@ -594,7 +594,7 @@ function foesMansao() {
     // encontro, 300 lutas); com um dormindo, em menos de uma em dez.
     mosk,
     m('bugbear', 3, 16, 'guardas', 'da porta', { dx: 0, dy: -1 }),
-    Object.assign(m('bugbear', 6, 18, 'guardas', 'do beliche', { dx: -1, dy: -1 }), { dormindo: true }),
+    Object.assign(m('bugbear', 5, 17, 'guardas', 'do beliche', { dx: -1, dy: -1 }), { dormindo: true }),
     droop,
     ...estar,
     iarno,

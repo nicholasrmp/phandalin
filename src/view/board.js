@@ -1655,10 +1655,7 @@ export class Board {
     };
     ctx.imageSmoothingEnabled = false;
     if (tipo === 'portaMadeira') {
-      // O topo do bloco: tábuas na direção do vão e a cinta de ferro atravessada.
-      poligono([ponto(-0.44, -0.44), ponto(0.44, -0.44), ponto(0.44, 0.44), ponto(-0.44, 0.44)], '#5b4028');
-      for (let k = -0.3; k <= 0.31; k += 0.2) risco(ponto(k, -0.44), ponto(k, 0.44), 'rgba(22,16,10,.7)');
-      risco(ponto(-0.44, 0), ponto(0.44, 0), '#2b2622', 2);
+      // O topo fica de pedra (o bloco já o pintou): com tampo de tábuas a porta lia como caixote.
       // As faces que aparecem: a folha cobre a altura toda da parede.
       const v = this.toView(x, y);
       for (const [lado, dvx, dvy] of [['dir', 1, 0], ['esq', 0, 1]]) {
@@ -1669,14 +1666,17 @@ export class Board {
         const A = { x: cx + (lado === 'dir' ? TW / 2 : -TW / 2), y: cy };
         const B = { x: cx, y: cy + TH / 2 };
         const P = (u, w) => ({ x: A.x + (B.x - A.x) * u, y: A.y + (B.y - A.y) * u + w });
-        poligono([P(0.06, 0), P(0.94, 0), P(0.94, dh), P(0.06, dh)], lado === 'dir' ? '#4a3321' : '#5b4028');
-        for (let u = 0.2; u < 0.9; u += 0.17) risco(P(u, 0), P(u, dh), 'rgba(22,16,10,.7)');
-        risco(P(0.06, dh * 0.28), P(0.94, dh * 0.28), '#2b2622', 2);
-        risco(P(0.06, dh * 0.76), P(0.94, dh * 0.76), '#2b2622', 2);
+        // A moldura de pedra mais escura em volta, e a folha com verga em arco baixo.
+        poligono([P(0.04, 0), P(0.96, 0), P(0.96, dh), P(0.04, dh)], '#3a352f');
+        poligono([P(0.12, dh * 0.12), P(0.88, dh * 0.12), P(0.88, dh), P(0.12, dh)], lado === 'dir' ? '#4a3321' : '#5b4028');
+        for (let u = 0.24; u < 0.86; u += 0.15) risco(P(u, dh * 0.12), P(u, dh), 'rgba(22,16,10,.7)');
+        risco(P(0.12, dh * 0.36), P(0.88, dh * 0.36), '#2b2622', 2);
+        risco(P(0.12, dh * 0.78), P(0.88, dh * 0.78), '#2b2622', 2);
+        risco(P(0.04, dh * 0.12), P(0.96, dh * 0.12), '#8d8778', 2);
         ctx.strokeStyle = '#8a7648';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        const an = P(0.72, dh * 0.5);
+        const an = P(0.7, dh * 0.55);
         ctx.arc(an.x, an.y, 2.5, 0, Math.PI * 2);
         ctx.stroke();
       }
