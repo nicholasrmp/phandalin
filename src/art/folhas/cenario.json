@@ -4238,5 +4238,313 @@
     "origem": "south-west"
    }
   ]
+ },
+ "prop-taverna-lareira": {
+  "todas": [
+   {
+    "x": 0,
+    "y": 2041,
+    "w": 79,
+    "h": 122,
+    "ax": 48,
+    "ay": 109,
+    "origem": "taverna"
+   },
+   {
+    "x": 81,
+    "y": 2041,
+    "w": 79,
+    "h": 122,
+    "ax": 48,
+    "ay": 109,
+    "origem": "taverna"
+   },
+   {
+    "x": 162,
+    "y": 2041,
+    "w": 79,
+    "h": 122,
+    "ax": 48,
+    "ay": 109,
+    "origem": "taverna"
+   },
+   {
+    "x": 243,
+    "y": 2041,
+    "w": 79,
+    "h": 122,
+    "ax": 48,
+    "ay": 109,
+    "origem": "taverna"
+   },
+   {
+    "x": 324,
+    "y": 2041,
+    "w": 79,
+    "h": 122,
+    "ax": 48,
+    "ay": 109,
+    "origem": "taverna"
+   },
+   {
+    "x": 405,
+    "y": 2041,
+    "w": 79,
+    "h": 122,
+    "ax": 48,
+    "ay": 109,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-prateleira": {
+  "todas": [
+   {
+    "x": 486,
+    "y": 2041,
+    "w": 72,
+    "h": 121,
+    "ax": 52,
+    "ay": 116,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-prateleiraB": {
+  "todas": [
+   {
+    "x": 560,
+    "y": 2041,
+    "w": 73,
+    "h": 122,
+    "ax": 52,
+    "ay": 117,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-prateleiraO": {
+  "todas": [
+   {
+    "x": 635,
+    "y": 2041,
+    "w": 72,
+    "h": 121,
+    "ax": 19,
+    "ay": 116,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-caixote": {
+  "todas": [
+   {
+    "x": 709,
+    "y": 2041,
+    "w": 46,
+    "h": 55,
+    "ax": 22,
+    "ay": 44,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-escada": {
+  "todas": [
+   {
+    "x": 757,
+    "y": 2041,
+    "w": 106,
+    "h": 116,
+    "ax": 34,
+    "ay": 101,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-balcao": {
+  "todas": [
+   {
+    "x": 865,
+    "y": 2041,
+    "w": 145,
+    "h": 115,
+    "ax": 124,
+    "ay": 100,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-mesaRedonda": {
+  "todas": [
+   {
+    "x": 0,
+    "y": 2165,
+    "w": 59,
+    "h": 57,
+    "ax": 28,
+    "ay": 49,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-mesaCartas": {
+  "todas": [
+   {
+    "x": 61,
+    "y": 2165,
+    "w": 59,
+    "h": 52,
+    "ax": 28,
+    "ay": 44,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-mesaVela": {
+  "todas": [
+   {
+    "x": 122,
+    "y": 2165,
+    "w": 59,
+    "h": 52,
+    "ax": 28,
+    "ay": 44,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-banquinho": {
+  "todas": [
+   {
+    "x": 183,
+    "y": 2165,
+    "w": 22,
+    "h": 27,
+    "ax": 10,
+    "ay": 17,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-barrilCerveja": {
+  "todas": [
+   {
+    "x": 207,
+    "y": 2165,
+    "w": 57,
+    "h": 59,
+    "ax": 30,
+    "ay": 48,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-lampiao": {
+  "todas": [
+   {
+    "x": 266,
+    "y": 2165,
+    "w": 30,
+    "h": 62,
+    "ax": 14,
+    "ay": 54,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-toblen": {
+  "todas": [
+   {
+    "x": 298,
+    "y": 2165,
+    "w": 37,
+    "h": 62,
+    "ax": 18,
+    "ay": 57,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-magoVermelho": {
+  "todas": [
+   {
+    "x": 337,
+    "y": 2165,
+    "w": 39,
+    "h": 59,
+    "ax": 19,
+    "ay": 54,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-chapeuRoxo": {
+  "todas": [
+   {
+    "x": 378,
+    "y": 2165,
+    "w": 40,
+    "h": 62,
+    "ax": 20,
+    "ay": 57,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-lenhador": {
+  "todas": [
+   {
+    "x": 420,
+    "y": 2165,
+    "w": 37,
+    "h": 62,
+    "ax": 18,
+    "ay": 57,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-corsario": {
+  "todas": [
+   {
+    "x": 459,
+    "y": 2165,
+    "w": 34,
+    "h": 60,
+    "ax": 17,
+    "ay": 55,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-mascarada": {
+  "todas": [
+   {
+    "x": 495,
+    "y": 2165,
+    "w": 40,
+    "h": 62,
+    "ax": 20,
+    "ay": 57,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "prop-taverna-nada": {
+  "todas": [
+   {
+    "x": 537,
+    "y": 2165,
+    "w": 1,
+    "h": 1,
+    "ax": 0,
+    "ay": 0,
+    "origem": "taverna"
+   }
+  ]
+ },
+ "_taverna": {
+  "y0": 2041
  }
 }

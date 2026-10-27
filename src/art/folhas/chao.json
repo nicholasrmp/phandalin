@@ -121,6 +121,13 @@
     "aguaEscura": {
       "y": 928,
       "n": 4
+    },
+    "tabuasTaverna": {
+      "y": 960,
+      "n": 4
     }
+  },
+  "_taverna": {
+    "y0": 960
   }
 }

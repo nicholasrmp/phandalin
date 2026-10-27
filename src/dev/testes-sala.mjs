@@ -4,6 +4,7 @@
 // `game/sala.js` é puro: aqui ele é jogado como o Durable Object o jogaria,
 // uma mensagem de cada vez, e confere-se o estado depois de cada uma.
 
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
   HEROIS_JOGAVEIS, ALFABETO, TAMANHO_DO_CODIGO, PILOTO, MAX_NOME, MINUTOS_VAZIA,
@@ -1712,6 +1713,18 @@ teste('diretório: manda para a instância mais cheia com vaga, abre outra quand
   registrarPopulacao(est, 9000, a.codigo, 0); registrarPopulacao(est, 9000, c.codigo, 0);
   escolherInstancia(est, 9000 + 700_000, sorteio);
   assert.equal(ehPublicaNoDiretorio(est, a.codigo), false, 'instância vazia há muito tempo é esquecida');
+});
+
+teste('a arte da taverna está nos atlas (quem regera um atlas apaga a taverna: rode `python -P src/dev/acrescentar-taverna.py`)', () => {
+  const ler = (f) => readFileSync(new URL(`../art/folhas/${f}`, import.meta.url), 'utf8');
+  const cenario = ler('cenario.json');
+  const fonte = readFileSync(new URL('../game/taverna.js', import.meta.url), 'utf8');
+  const pecas = [...new Set([...fonte.matchAll(/peca\('([a-zA-Z0-9]+)'/g)].map((m) => m[1]))];
+  assert.ok(pecas.length >= 15, 'a mobília da taverna foi lida do mapa');
+  const faltam = pecas.filter((p) => !cenario.includes(`"prop-taverna-${p}"`));
+  assert.deepEqual(faltam, [], `peças da taverna que sumiram do atlas de cenário: ${faltam.join(', ')}`);
+  assert.ok(ler('chao.json').includes('tabuasTaverna'), 'o piso de tábuas está no atlas do chão');
+  assert.ok(ler('faces.json').includes('tijolo'), 'a parede de tijolo está no atlas das faces');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);
