@@ -20,6 +20,7 @@ import { problemasDeJson } from '../game/save.js';
 import { novoEstado as novoEstadoDeLimites, emitir as emitirCodigo, entrar as entrarNaSala, EMITIR_POR_HORA, TENTATIVAS_POR_MINUTO, VALIDADE_DO_CODIGO_MS } from '../worker/limites.js';
 import { criarEmissor, criarReceptor, lerDelta, COMPLETA_A_CADA } from '../game/partida-delta.js';
 import { novoDiretorio, escolher as escolherInstancia, registrar as registrarPopulacao, ehPublica as ehPublicaNoDiretorio, LOTACAO_PARA_NOVOS } from '../worker/diretorio.js';
+import { faltamDaTaverna } from './verificar-taverna.mjs';
 import { heroiQueSobra } from '../game/sala.js';
 import { escolhasConferidas } from '../game/nivel.js';
 import { diarioDe, diarioParaTela } from '../game/diario.js';
@@ -1715,16 +1716,10 @@ teste('diretório: manda para a instância mais cheia com vaga, abre outra quand
   assert.equal(ehPublicaNoDiretorio(est, a.codigo), false, 'instância vazia há muito tempo é esquecida');
 });
 
-teste('a arte da taverna está nos atlas (quem regera um atlas apaga a taverna: rode `python -P src/dev/acrescentar-taverna.py`)', () => {
-  const ler = (f) => readFileSync(new URL(`../art/folhas/${f}`, import.meta.url), 'utf8');
-  const cenario = ler('cenario.json');
-  const fonte = readFileSync(new URL('../game/taverna.js', import.meta.url), 'utf8');
-  const pecas = [...new Set([...fonte.matchAll(/peca\('([a-zA-Z0-9]+)'/g)].map((m) => m[1]))];
-  assert.ok(pecas.length >= 15, 'a mobília da taverna foi lida do mapa');
-  const faltam = pecas.filter((p) => !cenario.includes(`"prop-taverna-${p}"`));
-  assert.deepEqual(faltam, [], `peças da taverna que sumiram do atlas de cenário: ${faltam.join(', ')}`);
-  assert.ok(ler('chao.json').includes('tabuasTaverna'), 'o piso de tábuas está no atlas do chão');
-  assert.ok(ler('faces.json').includes('tijolo'), 'a parede de tijolo está no atlas das faces');
+teste('a arte da taverna está nos atlas (quem regera um atlas a apaga: os montadores a refazem; veja verificar-taverna.mjs)', () => {
+  const { pecas, faltas } = faltamDaTaverna();
+  assert.ok(pecas >= 15, 'a mobília da taverna foi lida do mapa');
+  assert.deepEqual(faltas, [], `falta na arte da taverna: ${faltas.join('; ')}`);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

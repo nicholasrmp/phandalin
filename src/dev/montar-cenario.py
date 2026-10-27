@@ -530,3 +530,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # A arte da taverna entra DEPOIS dos atlas (e regerar um atlas a apaga): refaz sozinho, sem gastar geração.
+    import subprocess
+    import sys
+    from pathlib import Path
+    subprocess.run([sys.executable, '-P', str(Path(__file__).with_name('acrescentar-taverna.py'))], check=True)

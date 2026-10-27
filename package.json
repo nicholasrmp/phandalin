@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node src/dev/verificar-taverna.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
