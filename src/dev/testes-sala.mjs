@@ -1544,7 +1544,12 @@ teste('limites por IP: poucas salas novas por hora, conexões por minuto, e só 
 
 teste('alfinete e "pronto para sair": são do jogador (sem herói), com forma conferida pelo servidor', () => {
   const s = salaIniciada();
-  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 4, y: 9 }).repassar, { tipo: 'agir', de: 'p2', acao: 'alfinete', x: 4, y: 9 });
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 4, y: 9 }).repassar, { tipo: 'agir', de: 'p2', acao: 'alfinete', x: 4, y: 9, marca: 'aqui' });
+  assert.equal(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 4, y: 9, marca: 'atacar' }).repassar.marca, 'atacar');
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 4, y: 9, marca: 'bomba' }), /marca inexistente/);
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'frase', id: 'cura' }).repassar, { tipo: 'agir', de: 'p2', acao: 'frase', id: 'cura' });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'frase', id: 'xingar' }), /não existe/);
+  deve(faz(s, ANF, { tipo: 'agir', acao: 'frase', id: 'cura' }), /própria tela/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: -1, y: 9 }), /casa inexistente/);
   deve(faz(s, BETO, { tipo: 'agir', acao: 'alfinete', x: 'a', y: 9 }), /casa inexistente/);
   deve(faz(s, ANF, { tipo: 'agir', acao: 'alfinete', x: 1, y: 1 }), /própria tela/);

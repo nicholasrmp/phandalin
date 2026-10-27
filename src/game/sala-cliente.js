@@ -176,6 +176,22 @@ export function lembrarSala(storage, codigo, agora = Date.now()) {
   } catch { /* sem armazém: não lembra */ }
 }
 
+const CHAVE_ATIVA = 'phandalin:sala-ativa';
+/** A sala em que este navegador estava quando a aba foi fechada ou recarregada (para voltar sem passar pelo menu). `null` se não há. */
+export function salaAtiva(storage, jogadorId, agora = Date.now()) {
+  try {
+    const a = JSON.parse(storage.getItem(`${CHAVE_ATIVA}:${jogadorId}`) ?? 'null');
+    if (!a || typeof a.codigo !== 'string' || typeof a.nome !== 'string' || typeof a.quando !== 'number') return null;
+    return agora - a.quando < 3 * 3_600_000 ? a : null;     // três horas: depois disso a sala já fechou
+  } catch { return null; }
+}
+export function lembrarAtiva(storage, jogadorId, codigo, nome, agora = Date.now()) {
+  try { storage.setItem(`${CHAVE_ATIVA}:${jogadorId}`, JSON.stringify({ codigo, nome, quando: agora })); } catch { /* sem armazém */ }
+}
+export function esquecerAtiva(storage, jogadorId) {
+  try { storage.removeItem(`${CHAVE_ATIVA}:${jogadorId}`); } catch { /* sem armazém */ }
+}
+
 export function esquecerSala(storage, codigo) {
   try { storage.setItem(CHAVE_SALAS, JSON.stringify(salasRecentes(storage).filter((s) => s.codigo !== codigo))); } catch { /* sem armazém */ }
 }

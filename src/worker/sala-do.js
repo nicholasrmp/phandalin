@@ -197,6 +197,8 @@ export class SalaDO extends DurableObject {
     if (!r.ok) { ws.send(JSON.stringify(erro(r.erro))); return; }
     this.ultimoSaveEm = agora;
     await this.ctx.storage.put('saveDaSala', r.texto);
+    // A visão passa a dizer que há um save: o anfitrião que voltar retoma dele em vez de recomeçar a campanha.
+    if (this.sala && !this.sala.temSave) { this.sala.temSave = true; await this.guardar(); this.retransmitir(); }
   }
 
   /** O posto de anfitrião passou a outro (o antigo caiu): avisa todos com a visão nova e entrega o save a quem assume. */
@@ -208,7 +210,13 @@ export class SalaDO extends DurableObject {
   }
 
   /** Quem acaba de entrar (ou voltar) numa partida em andamento recebe a última vista, sem esperar a próxima. */
-  entregarUltimaVista(ws, jogadorId, tipo) {
+  async entregarUltimaVista(ws, jogadorId, tipo) {
+    // O anfitrião que voltou (aba recarregada) recebe o último save para retomar a partida de onde parou.
+    if (tipo === 'entrar' && this.sala?.fase === 'iniciada' && this.sala.anfitriao === jogadorId && this.sala.temSave) {
+      const save = (await this.ctx.storage.get('saveDaSala')) ?? null;
+      if (save) { try { ws.send(JSON.stringify({ tipo: 'assumir', save })); } catch { /* conexão caindo */ } }
+      return;
+    }
     if (tipo !== 'entrar' || !this.ultimaVista || this.sala?.fase !== 'iniciada' || this.sala.anfitriao === jogadorId) return;
     try { ws.send(this.ultimaVista); } catch { /* conexão caindo */ }
   }

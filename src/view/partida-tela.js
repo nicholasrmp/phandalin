@@ -10,7 +10,7 @@ import { el } from './hud.js';
 import { Board } from './board.js';
 import { aplicarAparencia } from './ficha.js';
 import { audio } from '../core/audio.js';
-import { narrarLocal } from './narrativa.js';
+import { narrarLocal, definirVoto } from './narrativa.js';
 import { getSpell, opcoesDaMagia } from '../rules/spells.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
 import { mandaNaHora, escolheVarios } from '../game/acoes.js';
@@ -19,6 +19,8 @@ import { abrirTelaVila } from './vila.js';
 import { abrirMenuContexto } from './menu-contexto.js';
 import { diarioParaTela } from '../game/diario.js';
 import { makePortrait } from '../art/sheet.js';
+import { estadoAparente } from '../game/interacoes.js';
+import { temEscuridaoEm, visaoDoGrupo } from '../rules/luz.js';
 import { telaDoCartao } from './nivel-tela.js';
 import { telaDoDescansoRemoto } from './descanso-tela.js';
 import { abrirLojaLocal } from './loja.js';
@@ -32,7 +34,8 @@ import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import { lerVista, aplicarVista, desempacotarEvento } from '../game/partida-vista.js';
 import { criarReceptor, lerDelta } from '../game/partida-delta.js';
-import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, CORES_DOS_JOGADORES } from './visuals.js';
+import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, mostrarFrase, CORES_DOS_JOGADORES } from './visuals.js';
+import { FRASES_DA_PARTIDA, MARCAS_DO_MAPA } from '../game/sala.js';
 
 const CASAS_POR_SEGUNDO = 5;
 const SALTO_MAXIMO = 14;       // mais longe que isto (teletransporte, mapa novo) a figura aparece no destino, sem caminhar
@@ -42,8 +45,10 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const quadro = el('div', { class: 'board-wrap taverna-quadro' }, canvas);
   const titulo = el('span', { class: 'partida-titulo' }, 'Partida');
   const fase = el('span', { class: 'partida-fase' });
+  const conexao = el('span', { class: 'conexao-ruim', hidden: true, role: 'status' });
   const aviso = el('p', { class: 'taverna-aviso visivel', role: 'status' }, 'Esperando o anfitrião mostrar a partida…');
   const grupo = el('ul', { class: 'partida-herois', 'aria-label': 'Os heróis do grupo' });
+  const inimigosEl = el('ul', { class: 'partida-inimigos', 'aria-label': 'Os inimigos à vista', hidden: true });
   const jogadoresEl = el('ul', { class: 'partida-jogadores', 'aria-label': 'Quem está na sala' });
   const retratos = new Map();    // look -> endereço da imagem (o retrato é desenhado uma vez)
   const barraEm = hud?.barra?.parentNode ?? null;   // onde a barra de ações mora quando não há partida de sala
@@ -58,11 +63,15 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const menuDescanso = el('div', { class: 'partida-menu-descanso', hidden: true }, descanso, descansoLongo);
   const botaoDescanso = el('button', { class: 'menu-btn', hidden: true, 'aria-haspopup': 'true', title: 'Pede um descanso: o grupo vota', onclick: () => { audio.play('click'); menuDescanso.hidden = !menuDescanso.hidden; descanso.hidden = false; descansoLongo.hidden = false; } }, 'Descanso ▾');
   const caixaDescanso = el('span', { class: 'partida-descanso' }, botaoDescanso, menuDescanso);
+  // Frases prontas (sem texto livre): um balão sobre o seu herói, para todos.
+  const menuFrases = el('div', { class: 'partida-menu-descanso', hidden: true }, ...FRASES_DA_PARTIDA.map((f) => el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); menuFrases.hidden = true; enviar({ tipo: 'agir', acao: 'frase', id: f.id }); } }, f.texto)));
+  const botaoFrases = el('button', { class: 'menu-btn', 'aria-haspopup': 'true', title: 'Frases prontas (aparecem sobre o seu herói)', onclick: () => { audio.play('click'); menuFrases.hidden = !menuFrases.hidden; } }, 'Frases ▾');
+  const caixaFrases = el('span', { class: 'partida-descanso' }, botaoFrases, menuFrases);
   const prontoBtn = el('button', { class: 'menu-btn', title: 'Marca que você não tem mais o que fazer nesta cena; as decisões de saída mostram quem está pronto', onclick: () => { audio.play('click'); prontoDaCena = !prontoDaCena; enviar({ tipo: 'agir', acao: 'pronto-cena', valor: prontoDaCena }); desenharPronto(); } }, 'Pronto');
   const camada = el('div', { class: 'taverna partida', role: 'region', 'aria-label': 'Partida' },
     el('header', { class: 'taverna-topo partida-topo' },
-      el('div', { class: 'partida-linha' }, el('div', { class: 'taverna-sala' }, titulo, fase), jogadoresEl,
-        el('div', { class: 'taverna-acoes' }, prontoBtn, diarioBtn, registroBtn, fichaBtn, caixaDescanso, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))), grupo),
+      el('div', { class: 'partida-linha' }, el('div', { class: 'taverna-sala' }, titulo, fase, conexao), jogadoresEl,
+        el('div', { class: 'taverna-acoes' }, prontoBtn, caixaFrases, diarioBtn, registroBtn, fichaBtn, caixaDescanso, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))), grupo, inimigosEl),
     quadro, lugarDaBarra, aviso);
 
   let aberta = false;
@@ -161,7 +170,13 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   function clicar(t, e) {
     if (!enc) return;
     // Alt+clique: um alfinete no mapa, para todos verem.
-    if (e?.altKey) { enviar({ tipo: 'agir', acao: 'alfinete', x: t.x, y: t.y }); return; }
+    if (e?.altKey) {
+      abrirMenuContexto(document.getElementById('app'), {
+        x: e.clientX, y: e.clientY, titulo: 'Marcar no mapa', subtitulo: 'todos veem',
+        opcoes: MARCAS_DO_MAPA.map((m) => ({ rotulo: m.texto, icone: 'acao-procurar', fazer: () => enviar({ tipo: 'agir', acao: 'alfinete', x: t.x, y: t.y, marca: m.id }) })),
+      });
+      return;
+    }
     const noLugar = enc.at?.(t.x, t.y);
     // Com uma ação da barra na mira, o clique escolhe o ALVO dela (a magia de vários alvos junta casas até completar).
     if (emModo && selecionado) {
@@ -294,7 +309,9 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     }
     if (msg.tipo === 'loja-abrir') { abrirLojaRemota(msg); return; }
     if (msg.tipo === 'loja-fechar') { fecharLojaRemota(); return; }
-    if (msg.tipo === 'fechar') { narrativas.get(msg.id)?.abort(); narrativas.delete(msg.id); return; }
+    // O placar da votação: o relógio do anfitrião não é o meu, então conta-se o que RESTA a partir de agora.
+    if (msg.tipo === 'voto') { definirVoto({ nomes: msg.nomes, votaram: msg.votaram, fim: msg.restam != null ? Date.now() + msg.restam : null }); return; }
+    if (msg.tipo === 'fechar') { definirVoto(null); narrativas.get(msg.id)?.abort(); narrativas.delete(msg.id); return; }
     if (msg.tipo !== 'abrir' || !aberta) return;
     const p = msg.pedido;
     const ctl = new AbortController();
@@ -339,7 +356,14 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         switch (ev.type) {
           case 'alfinete': {
             const i = Math.max(0, (visaoDaSala?.jogadores ?? []).findIndex((j) => j.id === ev.de));
-            mostrarAlfinete(board, { x: ev.x, y: ev.y }, visaoDaSala?.jogadores?.[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length]);
+            mostrarAlfinete(board, { x: ev.x, y: ev.y }, visaoDaSala?.jogadores?.[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length], ev.marca);
+            break;
+          }
+          case 'frase': {
+            const f = FRASES_DA_PARTIDA.find((x) => x.id === ev.id);
+            const h = enc.combatants.find((c) => visaoDaSala?.herois?.[c.id] === ev.de && !c.dead && c.hp > 0);
+            const k = Math.max(0, (visaoDaSala?.jogadores ?? []).findIndex((j) => j.id === ev.de));
+            if (f && h?.pos) mostrarFrase(board, h.pos, f.texto, CORES_DOS_JOGADORES[k % CORES_DOS_JOGADORES.length]);
             break;
           }
           case 'log': registro.push({ kind: ev.kind, text: ev.text, detail: ev.detail }); if (registro.length > 300) registro.shift(); if (painelAberto === 'registro') desenharPainel(); break;
@@ -553,11 +577,22 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         turno && meu ? el('small', {}, turno) : null),
       el('span', { class: 'partida-pv' }, `${Math.max(0, c.hp)}/${c.maxHp}`));
     }));
+    // Em luta: quem é o inimigo à vista e como ele parece (do inimigo só a palavra, como no jogo do anfitrião), e de quem é a vez.
+    const noEscuro = Boolean(enc) && temEscuridaoEm(enc);
+    const vistas = noEscuro ? visaoDoGrupo(enc) : null;
+    const inimigos = emLuta ? enc.combatants.filter((c) => c.side !== 'party' && c.side !== 'neutro' && !c.dead && c.hp > 0 && (!vistas || vistas.has(`${c.pos.x},${c.pos.y}`))) : [];
+    inimigosEl.hidden = !inimigos.length;
+    inimigosEl.replaceChildren(...inimigos.map((c) => {
+      const estado = estadoAparente(c);
+      return el('li', { class: `partida-inimigo estado-${String(estado).toLowerCase().replace(/\s+/g, '-')}`, title: `${c.name}: ${estado}` },
+        el('strong', {}, c.name), el('small', {}, estado));
+    }));
     terminar.hidden = hud != null || !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
     botaoDescanso.hidden = emLuta || !enc;   // só explorando
     if (botaoDescanso.hidden) menuDescanso.hidden = true;
     fichaBtn.hidden = !selecionado;
-    fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo` : 'Vez dos inimigos') : '';
+    const faltam = emLuta && enc.side === 'party' ? herois.filter((c) => c.hp > 0 && !c.acted).length : 0;
+    fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo${faltam ? ` · faltam ${faltam} herói${faltam > 1 ? 's' : ''}` : ''}` : `Rodada ${enc.round}: vez dos inimigos`) : '';
   }
 
   const receptor = criarReceptor();
@@ -660,6 +695,12 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       avisoTimer = setTimeout(() => aviso.classList.remove('visivel'), 3500);
     },
     /** O estado da sala mudou: quem joga com quem, o nome do anfitrião. */
+    /** A conexão deste navegador com a sala: só aparece quando algo vai mal. */
+    status(s) {
+      const texto = { reconectando: 'Reconectando…', caiu: 'Sem conexão com a sala', conectando: 'Conectando…' }[s] ?? '';
+      conexao.textContent = texto;
+      conexao.hidden = !texto;
+    },
     atualizarSala(v) {
       visaoDaSala = v;
       const anf = v.jogadores.find((j) => j.id === v.anfitriao);

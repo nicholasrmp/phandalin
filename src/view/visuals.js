@@ -709,11 +709,17 @@ export const ARTES = Object.freeze(Object.keys(WEAPON_VISUALS));
 export const CORES_DOS_JOGADORES = ['#ffd24a', '#6ee89a', '#6ab8ff', '#ff8a5c'];
 
 /** Um alfinete no mapa: três anéis na cor do jogador, que se apagam, e o nome dele em cima. */
-export function mostrarAlfinete(board, { x, y }, nome, cor = '#ffd24a') {
+export function mostrarAlfinete(board, { x, y }, nome, cor = '#ffd24a', marca = 'aqui') {
   if (!board?.fx) return;
   const pos = { x, y };
   for (let i = 0; i < 3; i += 1) setTimeout(() => { if (board?.fx) board.fx.ring(pos, { color: cor, radius: 22 + i * 12, dur: 0.9, width: 3 }); }, i * 450);
-  board.floatText?.(pos, nome, cor, true);
+  const rotulo = { atacar: 'Atacar este', ir: 'Vamos para lá', esperar: 'Esperem aqui' }[marca];
+  board.floatText?.(pos, rotulo ? `${nome}: ${rotulo}` : nome, cor, true);
+}
+
+/** Uma frase pronta sobre a cabeça de um herói. */
+export function mostrarFrase(board, pos, texto, cor = '#ffd24a') {
+  if (pos) board?.floatText?.(pos, texto, cor, true);
 }
 
 export function playWeaponVisual(board, ev, { startDelay = 0 } = {}) {

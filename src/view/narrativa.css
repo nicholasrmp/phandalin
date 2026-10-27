@@ -136,6 +136,8 @@
 .narrativa-btn[disabled] { opacity: .5; cursor: not-allowed; }
 
 /* Quem decide, ou a votação: uma faixa que se lê de relance, no pé do pergaminho. */
+.narrativa-voto { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+.narrativa-voto span { flex: 1; }
 .narrativa-nota {
   margin: 8px 0 0; padding: 6px 10px; font-size: 13px; font-weight: 600; color: var(--ink);
   background: rgb(214 170 70 / 20%); border-left: 4px solid var(--gold); border-radius: 0 8px 8px 0;

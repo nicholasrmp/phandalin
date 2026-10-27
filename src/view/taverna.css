@@ -127,3 +127,21 @@
 .partida-menu-descanso[hidden] { display: none; }
 .partida-menu-descanso .menu-btn { width: 100%; text-align: left; }
 @media (max-width: 720px) { .partida-herois { grid-template-columns: repeat(2, 1fr); } }
+
+.partida-inimigos { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px 6px; flex-wrap: wrap; }
+.partida-inimigos[hidden] { display: none; }
+.partida-inimigo { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; padding: 1px 9px; border-radius: 999px; background: rgb(138 43 43 / 30%); border: 1px solid #8a2b2b; }
+.partida-inimigo small { color: #e0b8a8; }
+.partida-fase { font-size: 12px; color: #d9cfb8; }
+.taverna-mesa-info { flex-basis: 100%; color: #d9cfb8; font-size: 11px; }
+.partida-topo .menu-btn { padding: 4px 10px; font-size: 13px; }
+.partida-topo .taverna-acoes { gap: 4px; }
+
+/* Telas estreitas (celular): a partida rola em vez de espremer o tabuleiro; os cartões dos heróis crescem com o texto. */
+@media (max-width: 720px) {
+  .taverna.partida { overflow-y: auto; }
+  .taverna.partida .taverna-quadro { flex: none; height: 58vh; min-height: 300px; }
+  .partida-herois { grid-auto-rows: auto; }
+  .partida-heroi { height: auto; min-height: 46px; overflow: visible; }
+  .partida-linha .taverna-acoes { margin-left: 0; width: 100%; }
+}

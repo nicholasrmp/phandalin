@@ -39,7 +39,7 @@ import { criarArvoreTrovao } from './game/capitulo4-arvoretrovao.js';
 import { criarOndaEco } from './game/capitulo5-ondaeco.js';
 import { abrirPhandalin, MISSOES } from './game/phandalin.js';
 import { diarioDe } from './game/diario.js';
-import { narrar, narrativaAberta, narrarLocal, definirPorta } from './view/narrativa.js';
+import { narrar, narrativaAberta, narrarLocal, definirPorta, definirVoto } from './view/narrativa.js';
 import { criarPortaCompartilhada } from './game/porta-narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
@@ -56,12 +56,12 @@ import { criarMenu } from './view/menu.js';
 import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave, deArquivo } from './game/save.js';
 import { jogadorDaAba } from './game/sala-cliente.js';
 import { criarTaverna } from './view/taverna-tela.js';
-import { normalizarCodigo } from './game/sala.js';
+import { normalizarCodigo, FRASES_DA_PARTIDA, MARCAS_DO_MAPA } from './game/sala.js';
 import { aoDarXp } from './game/nivel.js';
 import { audio, passoSoundFor } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
-  playGlifoVisual, playCordaoVisual, playAnuladaVisual, mostrarAlfinete, CORES_DOS_JOGADORES,
+  playGlifoVisual, playCordaoVisual, playAnuladaVisual, mostrarAlfinete, mostrarFrase, CORES_DOS_JOGADORES,
 } from './view/visuals.js';
 
 
@@ -229,6 +229,7 @@ class App {
             if (this.salaDaPartida && v.voce === v.anfitriao) {
               this.salaDaPartida.visao = v;
               this.salaDaPartida.herois = v.herois;
+              this.avisarPresenca(v);
               this.revisarVotacao(v);
               this.revisarVotoDeLugar(v);
               this.pilotoDaSala();
@@ -237,6 +238,7 @@ class App {
           aoNarrativa: (msg) => this.partidaRemota.narrativa(msg),
           aoIntencao: (m) => (m.tipo === 'agir' ? this.aplicarIntencao(m) : this.receberResposta(m)),
           aoAviso: (texto) => this.partidaRemota.avisar(texto),
+          aoStatus: (s) => { this.partidaRemota.status(s); this.mostrarConexao(s); },
           aoAssumir: (save, v) => this.assumirPartidaDaSala(save, v),
           aoPerderOPosto: (v) => this.perderOPostoDaSala(v),
           aoEncerrar: () => this.encerrarPartidaDaSala(),
@@ -269,7 +271,7 @@ class App {
     const direto = busca.get('encontro');
     if (direto) this.newEncounter({ modo: 'arena', variante: direto, nivel: Number(busca.get('nivel')) || 2 });
     else if (busca.get('sala')) this.menu.abrirSala(normalizarCodigo(busca.get('sala')) ?? '');
-    else this.menu.abrir();
+    else { this.menu.abrir(); this.menu.retomarSalaAtiva(); }
   }
 
   /**
@@ -465,7 +467,12 @@ class App {
     definirPorta(criarPortaCompartilhada({
       // A tela do anfitrião também obedece a quem decide (J-20): pode ser só leitura, ou um voto.
       local: (root, opts) => narrarLocal(root, { ...opts, ...this.opcoesLocaisDaDecisao() }),
-      transmitir: (msg) => { if (msg.tipo === 'abrir') this.abrirDecisao(msg); this.menu.enviarCru({ tipo: 'narrativa', msg }); },
+      transmitir: (msg) => {
+        if (msg.tipo === 'abrir') this.abrirDecisao(msg);
+        if (msg.tipo === 'fechar') definirVoto(null);
+        this.menu.enviarCru({ tipo: 'narrativa', msg });
+        if (msg.tipo === 'abrir') setTimeout(() => this.publicarVoto(), 80);
+      },
       esperarResposta: (id, sinal) => new Promise((resolve) => {
         this.esperasDeResposta.set(id, resolve);
         sinal?.addEventListener('abort', () => { this.esperasDeResposta.delete(id); resolve(null); }, { once: true });
@@ -541,8 +548,9 @@ class App {
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, x, y, alvo, arma, action, circulo, tiles, lugar, item, slot, descanso, qual, id, spellId, valor }) {
-    if (acao === 'alfinete') { this.alfinete(de, x, y); return; }
+  aplicarIntencao({ de, heroi, acao, marca, id: idDaFrase, x, y, alvo, arma, action, circulo, tiles, lugar, item, slot, descanso, qual, id, spellId, valor }) {
+    if (acao === 'alfinete') { this.alfinete(de, x, y, marca); return; }
+    if (acao === 'frase') { this.falar(de, idDaFrase); return; }
     if (acao === 'pronto-cena') { this.marcarPronto(de, valor); return; }
     if (acao === 'descanso-dado' || acao === 'descanso-magia' || acao === 'descanso-pronto') { this.descansoDeFora({ de, heroi, acao, id, spellId, circulo }); return; }
     if (acao === 'vila-acao') { this.acaoDaVila(de, qual); return; }
@@ -831,14 +839,29 @@ class App {
   }
 
   /** O alfinete de `pub` na casa (x, y): aparece no mapa do anfitrião e, pela vista, no de todos os outros. */
-  alfinete(pub, x, y) {
+  alfinete(pub, x, y, marca = 'aqui') {
     const v = this.salaDaPartida?.visao;
     const b = this.board;
     if (!v || !b || !this.enc || !(x >= 0 && y >= 0)) return;
     const i = Math.max(0, v.jogadores.findIndex((j) => j.id === pub));
-    mostrarAlfinete(b, { x, y }, v.jogadores[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length]);
-    (this.eventosPendentes ??= []).push({ type: 'alfinete', x, y, de: pub });
+    mostrarAlfinete(b, { x, y }, v.jogadores[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length], marca);
+    (this.eventosPendentes ??= []).push({ type: 'alfinete', x, y, de: pub, marca });
     if (this.eventosPendentes.length > 100) this.eventosPendentes.shift();
+  }
+
+  /** Uma frase pronta de `pub`: um balão sobre o primeiro herói de pé dele, para todos. Uma por 1,5 s por jogador. */
+  falar(pub, id) {
+    const v = this.salaDaPartida?.visao;
+    const frase = FRASES_DA_PARTIDA.find((f) => f.id === id);
+    if (!v || !frase || !this.enc) return;
+    this._falouEm ??= {};
+    if (Date.now() - (this._falouEm[pub] ?? 0) < 1500) return;
+    this._falouEm[pub] = Date.now();
+    const c = this.enc.combatants.find((h) => v.herois[h.id] === pub && !h.dead && h.hp > 0);
+    if (!c?.pos) return;
+    const i = Math.max(0, v.jogadores.findIndex((j) => j.id === pub));
+    mostrarFrase(this.board, c.pos, frase.texto, CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length]);
+    (this.eventosPendentes ??= []).push({ type: 'frase', de: pub, id });
   }
 
   /** "Pronto para sair da cena": quem já não tem o que fazer marca; a lista vai na vista e nas decisões de saída. */
@@ -1014,8 +1037,49 @@ class App {
       id: msg.id, ...d, titulo, votos: new Map(), n: p.escolhas.length, timer: null,
       bloqueadas: new Set(p.escolhas.filter((e) => e.motivo).map((e) => e.indice)),
     };
-    if (d.modo === 'votacao') this.decisao.timer = setTimeout(() => this.fecharVotacao(), TEMPO_DA_VOTACAO_MS);
+    if (d.modo === 'votacao') { this.decisao.fim = Date.now() + TEMPO_DA_VOTACAO_MS; this.decisao.timer = setTimeout(() => this.fecharVotacao(), TEMPO_DA_VOTACAO_MS); }
     p.decide = { modo: d.modo, pub: d.pub, votantes: d.votantes, titulo, ate: d.modo === 'votacao' ? TEMPO_DA_VOTACAO_MS : null };
+  }
+
+  /** O anfitrião vê a própria conexão (a dos outros está na faixa de jogadores): só aparece quando algo vai mal. */
+  mostrarConexao(s) {
+    if (!this.pilulaDeConexao) return;
+    const texto = { reconectando: 'Reconectando…', caiu: 'Sem conexão com a sala', conectando: 'Conectando…' }[s] ?? '';
+    this.pilulaDeConexao.textContent = texto;
+    this.pilulaDeConexao.hidden = !texto;
+  }
+
+  /**
+   * Quem caiu ou voltou: o grupo vê no Registro e numa frase na tela, e fica claro que o herói dele joga sozinho (piloto automático)
+   * até a pessoa voltar. Só avisa as MUDANÇAS, não o estado de sempre.
+   */
+  avisarPresenca(v) {
+    const antes = this._presenca;
+    this._presenca = Object.fromEntries(v.jogadores.map((j) => [j.id, j.conectado]));
+    if (!antes) return;
+    const heroisDe = (pub) => Object.entries(v.herois).filter(([, d]) => d === pub || (d === 'piloto' && (v.cedidos ?? []).includes(pub))).map(([h]) => this.enc?.combatants.find((c) => c.id === h)?.name).filter(Boolean);
+    for (const j of v.jogadores) {
+      if (j.id === v.voce || antes[j.id] === undefined || antes[j.id] === j.conectado) continue;
+      const nomes = heroisDe(j.id).join(', ');
+      const texto = j.conectado
+        ? `${j.nome} voltou${nomes ? ` e retoma ${nomes}` : ''}.`
+        : `${j.nome} caiu${nomes ? `: ${nomes} joga sozinho (piloto automático) até ele voltar` : ''}.`;
+      this.registrar({ kind: 'aviso', text: texto, round: this.enc?.round ?? 1 });
+      this.avisarDeSave?.(texto);
+    }
+  }
+
+  /** Quem já votou e quanto falta: o anfitrião vê no próprio pergaminho e manda aos outros (que mostram o mesmo placar). */
+  publicarVoto() {
+    const d = this.decisao;
+    const v = this.salaDaPartida?.visao;
+    if (!v || !d || d.modo !== 'votacao') { definirVoto(null); return; }
+    const nome = (pub) => v.jogadores.find((j) => j.id === pub)?.nome ?? '?';
+    const nomes = d.votantes.map(nome);
+    const votaram = [...d.votos.keys()].filter((p) => d.votantes.includes(p)).map(nome);
+    const fim = Date.now() + Math.max(0, (d.fim ?? Date.now()) - Date.now());
+    definirVoto({ nomes, votaram, fim: d.fim ?? null, aoEncerrar: () => this.fecharVotacao() });
+    this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'voto', id: d.id, nomes, votaram, fim: d.fim ?? null, restam: Math.max(0, fim - Date.now()) } });
   }
 
   /** O que a tela do anfitrião faz com a decisão em curso: decidir (é dele), só ler (é de outro) ou votar. */
@@ -1033,6 +1097,7 @@ class App {
     if (!d || d.modo !== 'votacao' || !d.votantes.includes(pub)) return;
     if (!Number.isInteger(indice) || indice < 0 || indice >= d.n || d.bloqueadas.has(indice)) return;
     d.votos.set(pub, indice);
+    this.publicarVoto();
     if (d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
   }
 
@@ -1783,7 +1848,13 @@ class App {
 
   onTileClick(tile, ev) {
     // Alt+clique: um alfinete no mapa, para todos verem (não move ninguém).
-    if (ev?.altKey && this.salaDaPartida) { this.alfinete(this.salaDaPartida.visao?.voce, tile.x, tile.y); return; }
+    if (ev?.altKey && this.salaDaPartida) {
+      abrirMenuContexto(this.root, {
+        x: ev.clientX, y: ev.clientY, titulo: 'Marcar no mapa', subtitulo: 'todos veem',
+        opcoes: MARCAS_DO_MAPA.map((m) => ({ rotulo: m.texto, icone: 'acao-procurar', fazer: () => this.alfinete(this.salaDaPartida?.visao?.voce, tile.x, tile.y, m.id) })),
+      });
+      return;
+    }
     if (this.ficha?.estaAberta() || narrativaAberta()) return;
     if (this.enc.over || this.enc.side !== 'party' || this.busy) return;
     const occupant = this.enc.at(tile.x, tile.y);
@@ -2098,6 +2169,11 @@ class App {
     faixa.className = 'faixa-prontos';
     topoEsquerda.insertBefore(pronto, this.hud.banner);
     topoEsquerda.insertBefore(faixa, this.hud.banner);
+    const conexao = document.createElement('span');
+    conexao.className = 'conexao-ruim';
+    conexao.hidden = true;
+    topoEsquerda.insertBefore(conexao, this.hud.banner);
+    this.pilulaDeConexao = conexao;
     this.botaoPronto = pronto; this.faixaDosProntos = faixa;
     setInterval(() => { pronto.hidden = !this.salaDaPartida; faixa.hidden = !this.salaDaPartida; this.mostrarProntos(); }, 1000);
   }

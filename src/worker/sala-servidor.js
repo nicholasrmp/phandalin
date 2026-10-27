@@ -149,7 +149,7 @@ export function tratarNarrativa({ sala, jogadorId, bruto }) {
   let m;
   try { m = JSON.parse(bruto); } catch { return { ok: false, erro: 'narrativa inválida' }; }
   const msg = m?.msg;
-  if (!msg || !['abrir', 'fechar', 'loja-abrir', 'loja-fechar', 'contexto-abrir', 'nivel-abrir', 'nivel-fechar', 'descanso-estado', 'descanso-fechar'].includes(msg.tipo) || !Number.isInteger(msg.id)) return { ok: false, erro: 'narrativa inválida' };
+  if (!msg || !['abrir', 'fechar', 'loja-abrir', 'loja-fechar', 'contexto-abrir', 'nivel-abrir', 'nivel-fechar', 'descanso-estado', 'descanso-fechar', 'voto'].includes(msg.tipo) || !Number.isInteger(msg.id)) return { ok: false, erro: 'narrativa inválida' };
   if (msg.tipo === 'abrir' && (!msg.pedido || !Array.isArray(msg.pedido.paginas))) return { ok: false, erro: 'narrativa inválida' };
   // A loja aberta (cada jogador compra e vende para o seu herói) viaja pela mesma porta: leva só o id da loja e quem a atende.
   if (msg.tipo === 'loja-abrir' && (typeof msg.lojaId !== 'string' || !msg.lojaId || msg.lojaId.length > 40 || !msg.npc || typeof msg.npc.name !== 'string')) return { ok: false, erro: 'narrativa inválida' };

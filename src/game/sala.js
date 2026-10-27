@@ -33,8 +33,18 @@ export const VERSAO_DA_SALA = 1;
 export const GRACA_DO_ANFITRIAO_MS = 20_000;
 
 /** O que um jogador de fora pode pedir ao anfitrião durante a partida (F4.3 andar; F5 atacar e terminar o turno do herói). */
-export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar', 'descanso', 'comprar', 'vender', 'equipar', 'contexto', 'contexto-escolher', 'nivel', 'preparar', 'vila-acao', 'descanso-dado', 'descanso-magia', 'descanso-pronto', 'alfinete', 'pronto-cena'];
+export const ACOES_DA_PARTIDA = ['mover', 'atacar', 'terminar', 'usar', 'lugar', 'descanso', 'comprar', 'vender', 'equipar', 'contexto', 'contexto-escolher', 'nivel', 'preparar', 'vila-acao', 'descanso-dado', 'descanso-magia', 'descanso-pronto', 'alfinete', 'pronto-cena', 'frase'];
 export const ENCAIXES = ['maoPrincipal', 'maoSecundaria', 'armadura', 'escudo'];
+
+/** As frases prontas da partida (balão sobre o herói; sem texto livre, `X-01`) e as marcas do mapa (a roda do Alt+clique). */
+export const FRASES_DA_PARTIDA = [
+  { id: 'esperem', texto: 'Esperem!' }, { id: 'vamos', texto: 'Vamos!' }, { id: 'cura', texto: 'Preciso de cura!' },
+  { id: 'cuidado', texto: 'Cuidado!' }, { id: 'atacar', texto: 'Atacar!' }, { id: 'recuar', texto: 'Recuar!' },
+  { id: 'boa', texto: 'Boa!' }, { id: 'obrigado', texto: 'Obrigado!' },
+];
+export const MARCAS_DO_MAPA = [
+  { id: 'aqui', texto: 'Aqui!' }, { id: 'atacar', texto: 'Atacar este' }, { id: 'ir', texto: 'Vamos para lá' }, { id: 'esperar', texto: 'Esperem aqui' },
+];
 
 /** Os doze heróis prontos (`game/criacao.js: HEROIS`). O teste confere que não saíram do lugar. */
 export const HEROIS_JOGAVEIS = [
@@ -410,7 +420,14 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       if (mensagem.acao === 'alfinete') {
         const { x, y } = mensagem;
         if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x > 400 || y > 400) return recusa('casa inexistente');
-        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'alfinete', x, y } });
+        const marca = mensagem.marca ?? 'aqui';
+        if (!MARCAS_DO_MAPA.some((m) => m.id === marca)) return recusa('marca inexistente');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'alfinete', x, y, marca } });
+      }
+      // Uma frase pronta sobre o herói do jogador.
+      if (mensagem.acao === 'frase') {
+        if (!FRASES_DA_PARTIDA.some((f) => f.id === mensagem.id)) return recusa('essa frase não existe');
+        return ok({ igual: true, repassar: { tipo: 'agir', de: eu.pub, acao: 'frase', id: mensagem.id } });
       }
       // "Pronto para sair da cena": o jogador marca (ou desmarca) que não tem mais nada a fazer aqui.
       if (mensagem.acao === 'pronto-cena') {
@@ -720,6 +737,7 @@ export function visaoDaSala(sala, paraJogador) {
     lider: pubDe(sala.lider),
     corda: sala.corda ?? PADRAO_DA_CORDA,
     publica: Boolean(sala.publica),
+    temSave: Boolean(sala.temSave),
     mesas: sala.publica ? sala.mesas.map((m) => ({ lugares: m.lugares.map((id) => jogadorDe(sala, id)?.pub).filter(Boolean) })) : null,
     voce: jogadorDe(sala, paraJogador)?.pub ?? null,
     jogadores: jogadoresPresentes(sala).map((j) => ({

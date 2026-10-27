@@ -543,6 +543,8 @@ export function criarMenu(root, {
       abrir();
     },
     sairDaSala: () => sala?.sairDaSala(),
+    /** Reabrir a página no meio de uma sala: volta a ela sem passar pelo menu. */
+    retomarSalaAtiva: () => Boolean(sala?.retomarSalaAtiva()),
     /** B1: o dono de uma mesa da taverna pública abre a sala do grupo. */
     abrirMesaPublica: () => sala?.abrirMesaPublica(),
     enviarSala: (msg) => sala?.mandar(msg),

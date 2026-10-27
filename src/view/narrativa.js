@@ -62,6 +62,35 @@ function retratoDe(look) {
  * tela por fora, sem escolha — é como a porta compartilhada tira o painel da
  * frente de quem não decidiu quando outro respondeu primeiro.
  */
+// ---- o placar da votação (J-20): quem já votou e quanto tempo falta, em todas as telas abertas ---------------------------------
+let placar = null;           // { nomes, votaram, fim, aoEncerrar }
+let relogioDoPlacar = null;
+
+function textoDoPlacar() {
+  if (!placar) return '';
+  const falta = placar.fim ? Math.max(0, Math.ceil((placar.fim - Date.now()) / 1000)) : null;
+  const quem = placar.nomes.map((n) => `${n}${placar.votaram.includes(n) ? ' ✓' : ''}`).join(' · ');
+  return `Votaram ${placar.votaram.length} de ${placar.nomes.length} — ${quem}${falta != null ? ` · ${falta} s` : ''}`;
+}
+
+function desenharPlacar() {
+  for (const p of document.querySelectorAll('.narrativa-voto')) {
+    p.querySelector('span').textContent = textoDoPlacar();
+    const btn = p.querySelector('button');
+    if (btn) btn.hidden = !placar?.aoEncerrar;
+  }
+  if (!placar || !document.querySelector('.narrativa-voto')) { clearInterval(relogioDoPlacar); relogioDoPlacar = null; }
+}
+
+/** O anfitrião (ou a mensagem dele) atualiza o placar; `null` o apaga. `aoEncerrar` (só no anfitrião) mostra o botão "Encerrar votação". */
+export function definirVoto(estado) {
+  placar = estado;
+  // O placar chega depois de a página abrir: se ela ainda não o mostra, redesenha uma vez.
+  if (placar && !document.querySelector('.narrativa-voto')) aberta?.redesenhar?.();
+  desenharPlacar();
+  if (placar && !relogioDoPlacar) relogioDoPlacar = setInterval(desenharPlacar, 500);
+}
+
 export function narrarLocal(root, {
   formato = 'tela', paginas, escolhas = null, pular = false, lista = false, sinal = null,
   // Numa sala (J-20): `nota` diz quem decide; `soLeitura` mostra as escolhas sem deixar clicar (decide outro jogador); `aoVotar`
@@ -71,6 +100,7 @@ export function narrarLocal(root, {
   return new Promise((resolve) => {
     let i = 0;
     let leitura = soLeitura;
+    let votei = false;
     let relogioDaSubstituicao = null;
     const caixa = el('div', { class: `narrativa ${formato}`, role: 'dialog', 'aria-modal': 'true' });
     const folha = el('article', { class: 'narrativa-folha' });
@@ -95,7 +125,6 @@ export function narrarLocal(root, {
         botoes.push(el('button', { class: 'narrativa-btn discreto', onclick: () => { audio.play('click'); i = paginas.length - 1; desenhar(); } }, 'Pular'));
       }
       let opcoes = null;
-      let votei = false;
       const clicar = (esc, el_) => {
         audio.play('click');
         if (!aoVotar) { fechar(esc.valor); return; }
@@ -153,6 +182,8 @@ export function narrarLocal(root, {
       folha.replaceChildren(...[
         p.titulo && el('h2', { class: 'narrativa-titulo' }, p.titulo),
         nota && ultima && escolhas?.length && el('p', { class: 'narrativa-nota' }, nota),
+        placar && ultima && escolhas?.length && el('p', { class: 'narrativa-voto' }, el('span', {}, textoDoPlacar()),
+          el('button', { class: 'narrativa-btn discreto', hidden: !placar.aoEncerrar, onclick: () => placar?.aoEncerrar?.() }, 'Encerrar votação')),
         retrato
           ? el('div', { class: 'narrativa-com-retrato' }, el('span', { class: 'narrativa-retrato' }, retrato), el('div', {}, ...corpo))
           : corpo,
@@ -161,11 +192,13 @@ export function narrarLocal(root, {
         paginas.length > 1 && el('p', { class: 'narrativa-pagina' }, `${i + 1} de ${paginas.length}`),
         botoes.length && el('div', { class: 'narrativa-botoes' }, ...botoes),
       ].flat().filter(Boolean));
+      if (votei) for (const b of folha.querySelectorAll('.narrativa-opcao, .narrativa-btn')) if (!b.closest('.narrativa-voto')) b.disabled = true;
       (folha.querySelector('.narrativa-btn.primario') ?? folha.querySelector('.narrativa-opcao:not([disabled])'))?.focus();
     }
 
     aberta = {
       caixa,
+      redesenhar: desenhar,
       avancar: () => {
         // Enter na última página com escolhas não decide pelo jogador.
         if (i === paginas.length - 1 && escolhas?.length) return;
@@ -174,6 +207,7 @@ export function narrarLocal(root, {
       escolherNumero: (n) => folha.querySelector(`.narrativa-opcao[data-numero="${n}"]`)?.click(),
     };
     desenhar();
+    if (placar && !relogioDoPlacar) relogioDoPlacar = setInterval(desenharPlacar, 500);
     // Quem decide sumiu ou não responde: depois deste tempo o anfitrião pode decidir no lugar dele (a sala não trava).
     if (leitura && assumirApos) {
       relogioDaSubstituicao = setTimeout(() => { leitura = false; nota = `${nota ?? ''} O tempo acabou: você pode decidir.`.trim(); desenhar(); }, assumirApos);

@@ -304,6 +304,7 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
       const dono = m.lugares[0] === visao.voce;
       return el('div', { class: `taverna-mesa${sou ? ' minha' : ''}` },
         el('strong', {}, `Mesa ${i + 1}`),
+        m.lugares.length ? el('small', { class: 'taverna-mesa-info' }, `A Mina Perdida · mesa de ${nomeDe(m.lugares[0])}${m.lugares.length >= 4 ? ' · cheia' : ' · aberta'}`) : null,
         el('span', { class: 'taverna-lugares' }, m.lugares.length ? m.lugares.map((p, k) => `${nomeDe(p)}${k === 0 ? ' ★' : ''}`).join(', ') : 'vazia', el('small', {}, ` ${m.lugares.length}/4`)),
         sou
           ? el('span', { class: 'taverna-mesa-acoes' },

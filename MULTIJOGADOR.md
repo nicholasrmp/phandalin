@@ -267,6 +267,21 @@ Menu principal
   decisão ("quem decide" ou votação) é uma faixa no pé do pergaminho. O lobby da sala privada usa **duas colunas** (jogadores,
   corda e pendências à esquerda; heróis à direita), e o que falta para iniciar fica à vista.
 
+- **A-13 · [feito, 2026-10-26] Conforto da partida em sala.**
+  - **Votação visível:** o pergaminho de uma decisão geral mostra quem já votou, o tempo que falta e, só para o anfitrião, o botão
+    "Encerrar votação" (`view/narrativa.js: definirVoto`, mensagem `voto`).
+  - **Conexão:** quem perde a conexão vê "Reconectando…" / "Sem conexão"; quando outro jogador cai ou volta, o Registro e uma frase
+    dizem quem e qual herói fica no piloto automático (`main.js: avisarPresenca`).
+  - **Convidado em luta:** vê de quem é a vez e quantos heróis faltam, o que resta do turno de cada herói e os inimigos à vista
+    (só a palavra do estado, como no jogo do anfitrião).
+  - **Conversa sem texto livre:** 8 **frases prontas** (balão sobre o herói, para todos) e a **roda de marcas** do Alt+clique
+    (Aqui, Atacar este, Vamos para lá, Esperem aqui). Tudo validado pelo servidor.
+  - **Voltar sem perder o lugar:** recarregar a aba no meio de uma sala volta à sala sozinho (`sala-ativa` por jogador); o
+    anfitrião que volta recebe o último save do servidor (`temSave`) e retoma de onde estava, em vez de recomeçar a campanha.
+  - **Vistas menores:** medido, a vista inteira de 4 heróis tem ~8 KB e a diferença de um combatante ~2 KB; já com as diferenças
+    (A-08) o que sobra é pequeno, e não houve campo a cortar sem quebrar a ficha do convidado.
+  - **Celular:** em telas estreitas a partida rola e o tabuleiro mantém altura própria.
+
 ---
 
 ## 8. Regras dentro do jogo

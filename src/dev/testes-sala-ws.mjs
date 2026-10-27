@@ -362,6 +362,27 @@ await teste('B1: só o servidor abre uma taverna pública, e uma sala comum não
   assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /taverna pública|já existe/);
 });
 
+await teste('o anfitrião que recarrega a aba recebe o último save (e a visão avisa que há um); os convidados não', async () => {
+  const { codigo, a, b } = await partidaDeDois();
+  a.manda({ tipo: 'salvar', save: { herois: [{ id: 'pc-guerreiro' }], config: { modo: 'campanha' } } });
+  const comSave = await b.esperar((x) => x.tipo === 'sala' && x.visao.temSave === true);
+  assert.equal(comSave.visao.temSave, true);
+  const idA = a.jogadorId;
+  a.fechar();
+  await vez(300);
+  const a2 = await new Cliente(codigo, idA).abrir(); abertos.push(a2);
+  a2.manda({ tipo: 'entrar', nome: 'N' });
+  const volta = await a2.esperar((x) => x.tipo === 'assumir');
+  assert.equal(JSON.parse(volta.save).herois[0].id, 'pc-guerreiro');
+  b.recebidas.length = 0;
+  b.fechar(); await vez(200);
+  const b2 = await new Cliente(codigo, b.jogadorId).abrir(); abertos.push(b2);
+  b2.manda({ tipo: 'entrar', nome: 'B' });
+  await b2.esperar((x) => x.tipo === 'sala');
+  await vez(300);
+  assert.equal(b2.recebidas.some((x) => x.tipo === 'assumir'), false, 'quem não é o anfitrião não recebe o save');
+});
+
 await teste('F4.4: o aviso do anfitrião chega só ao jogador certo, e a corda aparece na visão', async () => {
   const codigo = codigoNovo();
   const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');

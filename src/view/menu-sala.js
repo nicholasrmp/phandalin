@@ -18,7 +18,7 @@ import {
   gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, MAX_NOME, TAMANHO_DO_GRUPO, PILOTO, HEROIS_COM_ARTE,
 } from '../game/sala.js';
 import {
-  criarClienteDeSala, urlDaSala, salasRecentes, lembrarSala, esquecerSala, nomeLembrado, lembrarNome, personaLembrada, lembrarPersona,
+  criarClienteDeSala, urlDaSala, salasRecentes, lembrarSala, esquecerSala, salaAtiva, lembrarAtiva, esquecerAtiva, nomeLembrado, lembrarNome, personaLembrada, lembrarPersona,
 } from '../game/sala-cliente.js';
 
 export function criarTelasDeSala({
@@ -51,7 +51,7 @@ export function criarTelasDeSala({
       urlDe: (c) => urlDaSala(local, c),
       aoVisao: atual((v) => {
         const primeira = !estado.visao;
-        estado.visao = v; lembrarSala(storage, v.codigo);
+        estado.visao = v; lembrarSala(storage, v.codigo); lembrarAtiva(storage, jogadorId, v.codigo, estado.nome);
         if (taverna) {
           // Na fase de lobby a sala é a taverna; quando a partida começa (ou fecha), volta o painel.
           if (v.fase === 'lobby') {
@@ -75,7 +75,8 @@ export function criarTelasDeSala({
             estado.partidaIniciada = true;
             estado.souAnfitriaoDaPartida = v.voce === v.anfitriao;
             fecharMenu();
-            partida.aoComecar(v, { souAnfitriao: v.voce === v.anfitriao });
+            // O anfitrião que VOLTA (recarregou a aba) não recomeça a campanha: o servidor tem o último save e o manda em seguida.
+            if (v.voce === v.anfitriao && v.temSave) { /* espera o `assumir` */ } else partida.aoComecar(v, { souAnfitriao: v.voce === v.anfitriao });
           }
           partida.aoSala?.(v);
         }
@@ -116,12 +117,12 @@ export function criarTelasDeSala({
         redesenhar('lobby');
       }),
       aoFechar: atual((motivo) => {
-        estado.fechada = motivo; esquecerSala(storage, codigo);
+        estado.fechada = motivo; esquecerSala(storage, codigo); esquecerAtiva(storage, jogadorId);
         if (taverna?.aberta()) { taverna.fechar(); abrirMenuNaTela('lobby'); }
         if (estado.partidaIniciada) { estado.partidaIniciada = false; partida?.aoEncerrar(); abrirMenuNaTela('lobby'); }
         redesenhar('lobby');
       }),
-      aoStatus: atual((s) => { if (estado.status !== 'recusada') estado.status = s; redesenhar('lobby'); }),
+      aoStatus: atual((s) => { if (estado.status !== 'recusada') estado.status = s; partida?.aoStatus?.(s); redesenhar('lobby'); }),
     });
     estado.cliente = cliente;
     cliente.abrir(codigo, primeira);
@@ -167,6 +168,7 @@ export function criarTelasDeSala({
   }
 
   function sairDaSala() {
+    esquecerAtiva(storage, jogadorId);
     estado.cliente?.sair();
     estado.cliente = null; estado.visao = null; estado.confirmar = null;
     taverna?.fechar();
@@ -434,5 +436,14 @@ export function criarTelasDeSala({
   const mandarVista = (vista) => estado.cliente?.enviar({ tipo: 'partida', vista }) ?? false;
   /** Uma mensagem da partida (F4.3): a narrativa do anfitrião, a intenção de quem joga, a resposta do líder. Sem a trava de repetição. */
   const mandarCru = (msg) => estado.cliente?.enviar(msg) ?? false;
-  return { TELAS, abrirSala, abrirMesaPublica, ehPublica: () => Boolean(estado.visao?.publica), sairDaSala, estado, lobbyAtivo, mandar, mandarVista, mandarCru, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
+  /** Ao abrir a página: se este navegador estava numa sala, volta para ela (a partida em curso continua de onde parou). */
+  function retomarSalaAtiva() {
+    const a = salaAtiva(storage, jogadorId);
+    if (!a || estado.cliente) return false;
+    abrirSala(a.codigo, { tipo: 'entrar', nome: a.nome });
+    ir('lobby');
+    return true;
+  }
+
+  return { TELAS, abrirSala, abrirMesaPublica, retomarSalaAtiva, ehPublica: () => Boolean(estado.visao?.publica), sairDaSala, estado, lobbyAtivo, mandar, mandarVista, mandarCru, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
 }
