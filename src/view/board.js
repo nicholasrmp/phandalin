@@ -490,7 +490,10 @@ export class Board {
       this.drag = null;
       canvas.style.cursor = '';
       if (!this.dragMoved && e?.button === 2) {
-        const t = this.tileFromEvent(e);
+        // A PORTA primeiro: ela é uma aresta, e a folha desenhada em pé cobre casas de trás da porta; sem isto, clicar nela
+        // acertava uma casa longe dela e o menu de abrir e fechar nunca saía.
+        const porta = this.portaDoPonto(e);
+        const t = porta ? this.casaParaAPorta(porta) : this.tileFromEvent(e);
         if (t) this.onTileContext?.(t, e);
       }
       this.dragMoved = false;
@@ -748,6 +751,45 @@ export class Board {
       if (this.field.inside(x, y) && this.alturaVisual(x, y) === hgt) return { x, y };
     }
     return null;
+  }
+
+  /**
+   * A porta de madeira (aresta com folha, `field.folha`) debaixo do ponteiro, ou null. As portas são arestas e a folha é
+   * desenhada em pé sobre ela: o ponto da folha cai, no mapeamento do chão, em casas de trás. Vale com a câmera fixa (rot 0).
+   */
+  portaDoPonto(e) {
+    const f = this.field;
+    if (!f.folha?.size || this.rot !== 0) return null;
+    const r = this.canvas.getBoundingClientRect();
+    const px = (e.clientX - r.left) * (this.canvas.width / r.width);
+    const py = (e.clientY - r.top) * (this.canvas.height / r.height);
+    const ALTO = 48;
+    for (const k of f.folha) {
+      const [ax, ay, bx, by] = k.split(',').map(Number);
+      if (bx < ax || by < ay) continue;                               // a chave vem nos dois sentidos: uma vez só
+      const vertical = ax === bx;                                       // casas uma sobre a outra: aresta do NORTE da de baixo
+      const dono = { x: bx, y: by };
+      const { sx, sy } = this.iso(dono.x, dono.y);
+      const A = { x: sx, y: sy };
+      const B = vertical ? { x: sx + TW / 2, y: sy + TH / 2 } : { x: sx - TW / 2, y: sy + TH / 2 };
+      // O quadrilátero da folha: do pé da aresta até ALTO acima, com uma folga de 5 px nos lados.
+      const xmin = Math.min(A.x, B.x) - 5;
+      const xmax = Math.max(A.x, B.x) + 5;
+      if (px < xmin || px > xmax) continue;
+      const t0 = (px - A.x) / (B.x - A.x || 1);
+      const yPe = A.y + (B.y - A.y) * Math.max(0, Math.min(1, t0));
+      if (py <= yPe + 4 && py >= yPe - ALTO) return { a: { x: ax, y: ay }, b: { x: bx, y: by } };
+    }
+    return null;
+  }
+
+  /** A casa do menu de uma porta: a que o grupo vê e não está ocupada, de preferência (é onde o menu de abrir e fechar aparece). */
+  casaParaAPorta(porta) {
+    const livre = (c) => !this.enc.at(c.x, c.y);
+    const vista = (c) => !this._visao || this._visao.has(`${c.x},${c.y}`);
+    const perto = (c) => Math.min(...this.enc.combatants.filter((o) => o.side === 'party' && o.pos).map((o) => Math.abs(o.pos.x - c.x) + Math.abs(o.pos.y - c.y)), 99);
+    const lado = [porta.a, porta.b].sort((p, q) => ((vista(q) - vista(p)) || (livre(q) - livre(p)) || (perto(p) - perto(q))));
+    return lado[0];
   }
 
   setOverlay(patch) {
