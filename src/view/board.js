@@ -809,6 +809,21 @@ export class Board {
     }
   }
 
+  /** A construção está em ruína (alguma parede dela perdeu altura)? Guardado por sala: `paredeRuina` é por casa dona da aresta. */
+  salaEmRuina(sala) {
+    if (!this._ruinaDaSala) {
+      this._ruinaDaSala = new Set();
+      const f = this.field;
+      if (f.paredeRuina && f.sala) {
+        for (const [k, nome] of f.sala) {
+          const [cx, cy] = k.split(',').map(Number);
+          if (f.paredeRuina[cy * f.w + cx] > 0) this._ruinaDaSala.add(nome);
+        }
+      }
+    }
+    return this._ruinaDaSala.has(sala);
+  }
+
   /**
    * DEGRAUS numa casa de escada (`field.degraus`, eixo 'x' ou 'y' = o sentido em que a escada sobe): linhas claras e
    * escuras atravessadas na casa, como o focinho de cada degrau lavrado na pedra. Só desenho.
@@ -2107,7 +2122,9 @@ export class Board {
       // um lado vê o outro por ali; a regra continua sendo parede (seteira): não se passa.
       const fundo = (k) => Math.round(alto * (0.68 + (sorteio(x * 23 + k * 3, y * 31 + k, 100) / 100) * 0.2));
       // Entrada (se passa por cima do entulho): o entalhe vai até o chão.
-      if (total) return [Math.round(a), alto - 3, alto - 3, alto - 3, Math.round(b)];
+      // O entalhe é um V que desce até o chão no meio, e não um retângulo de três quartos da aresta: as duas pontas
+      // guardam metade da altura, como o muro que desmoronou e deixou dois cotocos, e não dois postes finos.
+      if (total) return [Math.round(a), Math.round(alto * 0.5), alto - 3, Math.round(alto * 0.5), Math.round(b)];
       return [Math.round(a), fundo(1), fundo(2), fundo(3), Math.round(b)];
     }
     return [a, (a + meio(1)) / 2, meio(2), (b + meio(3)) / 2, b].map((v) => Math.round(v));
@@ -2795,7 +2812,11 @@ export class Board {
       const oculta = Boolean(salaDaCasa) && this._salasReveladas !== 'todas' && !this._salasReveladas?.has(salaDaCasa);
       this.drawTile(ctx, x, y, transp.chao, oculta ? 0 : transp.objeto);
       // PRETO INTEIRO, com o traço da mesma cor: o piso e a grade não aparecem, só as paredes, as portas e as janelas.
-      if (oculta) this.fillDiamond(ctx, x, y, '#06050a', '#06050a');
+      // Em ruína (sem telhado, com a parede caída) o interior fechado não é um poço preto: o piso aparece, bem escuro.
+      if (oculta) {
+        if (this.salaEmRuina(salaDaCasa)) this.fillDiamond(ctx, x, y, 'rgba(8,6,12,.5)', 'rgba(8,6,12,.5)');
+        else this.fillDiamond(ctx, x, y, '#06050a', '#06050a');
+      }
       this.desenharParedes(ctx, x, y, cell.d);
 
       const k = `${x},${y}`;
