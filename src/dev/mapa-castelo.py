@@ -844,6 +844,10 @@ PAREDES_BAIXAS = {
     (4, 24): 1,
     (5, 25): 1,
     (24, 25): 1,
+    # A revisao dos mapas: o muro de seteiras do terraco (66 px) escondia as tres fileiras do fundo, onde o grupo chega, e a
+    # parede oeste da torre do urso (88 px) escondia o portao dos fundos, que e a saida do castelo.
+    (5, 16): 2, (6, 16): 2, (7, 16): 2, (8, 16): 2, (9, 16): 2, (10, 16): 2,
+    (23, 22): 2, (23, 23): 2, (23, 24): 2, (23, 25): 2,
 }
 for (X, Y), niveis in PAREDES_BAIXAS.items():
     PA[Y][X] = niveis
