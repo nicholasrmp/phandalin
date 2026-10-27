@@ -174,6 +174,7 @@ export const TEXTOS = {
       + (mapa ? ' O mapa que saiu dos tomos de Mormesk aponta para lugares que a região ainda não viu.' : '')
       + ' Há muita coisa por fazer, mas isso é outra aventura.',
   ],
+  avisoDeNivel: 'Quem já desceu aqui conta que o fundo da mina é para gente mais calejada: o templo, no fim, cobra caro de quem chega verde. Nada obriga a ir até lá agora, e há muito o que fazer antes.',
   vhalakChega: 'Do fundo do templo chega, atrasado e de adaga na mão, o drow franzino que fugiu da caverna desmoronada.',
   vhalakRecua: 'Vhalak, o drow franzino, vê os bugbears caírem, dá meia-volta e some pelo corredor, depressa, na direção do templo.',
   refemNarra: 'Junto da mesa, sentado no chão, está um anão de barba curta, lisa e castanha, amarrado e amordaçado, olhando para vocês com olhos grandes.',

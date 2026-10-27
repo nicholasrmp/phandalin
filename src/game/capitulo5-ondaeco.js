@@ -383,7 +383,9 @@ export function criarOndaEco(app) {
     const furt = (salvo.aranhasAvisadas || surpresa === 'alerta') ? null : furtividadeDe(aranhasTemplo);
     // Do corredor chegam os DOIS bugbears que escalam as cordas da fenda (o guarda fica de vigia). O doppelganger, se recuou
     // da 18, já está aqui: faz-se passar por Nundro e só tira a máscara quando a luta começa (`revelarVhalak`).
-    const reforco = bugbearsFenda.slice(0, 2).filter((f) => !f.dead);
+    const nivel = herois().reduce((s, h) => s + h.level, 0) / Math.max(1, herois().length);
+    const quantas = nivel >= 4.5 ? { aranhas: 4, bugbears: 2, reforco: 2 } : { aranhas: 2, bugbears: 1, reforco: 0 };
+    const reforco = bugbearsFenda.slice(0, quantas.reforco).filter((f) => !f.dead);
     for (const [i, f] of reforco.entries()) f.name = `Bugbear da fenda ${letras[i]}`;
     const ondas = {};
     if (reforco.length) ondas[3] = { bando: reforco, aviso: 'Do corredor chegam passos pesados: o que sobrou da caverna desmoronada ouviu a luta.' };
@@ -402,7 +404,12 @@ export function criarOndaEco(app) {
       if (naArea(h.pos, '19') || distanceFt(h.pos, ref.pos) <= 15) continue;
       h.pos = { ...h.pos, ...casaPerto(ref.pos) };
     }
-    luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo, ...extras].filter((f) => !f.dead), surpresa === 'nossa' ? 'nossa' : (furt ? { furt } : null));
+    // O LIVRO é para o 5º nível. Um grupo mais verde que isso chega ao templo e perde sempre (medido: 0% de vitória nos níveis 3 e
+    // 4), então o DMG manda ajustar: menos aranhas e bugbears para quem chega mais fraco, e nada de Vhalak extra no nível 3.
+    const aranhas = aranhasTemplo.slice(0, quantas.aranhas);
+    const bugbears = bugbearsTemplo.slice(0, quantas.bugbears);
+    if (nivel < 3.5) extras = [];          // no nível 3 o doppelganger não entra: o resto já pesa
+    luta([nezznar, ...bugbears, ...aranhas, ...extras].filter((f) => !f.dead), surpresa === 'nossa' ? 'nossa' : (furt ? { furt } : null));
   }
 
   // MONSTROS VAGANDO (o livro): nenhuma parte da mina é segura. Quem gasta muito tempo num lugar (um descanso)
@@ -965,6 +972,11 @@ export function criarOndaEco(app) {
     async iniciar() {
       prepararExploracao();
       await painel(TEXTOS.chegada);
+      // Grupo abaixo do 5º nível: o livro avisa que a mina é para quem já passou por muita coisa.
+      if (!salvo.avisoDeNivel && herois().reduce((s, h) => s + h.level, 0) / Math.max(1, herois().length) < 4.5) {
+        salvo.avisoDeNivel = true;
+        await painel(TEXTOS.avisoDeNivel);
+      }
       // Nundro está preso nos aposentos do sacerdote (área 20): neutro, inconsciente, visível só pela porta aberta.
       if (!enc.combatants.includes(nundro)) { nundro.side = 'neutro'; nundro.facingVec = { dx: 0, dy: 1 }; enc.addCombatant(nundro); }
       // Quem o grupo já encontrou e deixou para trás (a conversa acabou em "sair" ou em acordo) volta ao seu lugar:
