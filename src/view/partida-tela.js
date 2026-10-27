@@ -34,6 +34,7 @@ import { makeRng } from '../core/rng.js';
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import { lerVista, aplicarVista, desempacotarEvento } from '../game/partida-vista.js';
+import { aplicarDiferencas } from '../game/campo-delta.js';
 import { criarReceptor, lerDelta } from '../game/partida-delta.js';
 import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, mostrarFrase, impactoDeDano, CORES_DOS_JOGADORES } from './visuals.js';
 import { FRASES_DA_PARTIDA, MARCAS_DO_MAPA } from '../game/sala.js';
@@ -87,6 +88,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   let prontosDaCena = [];        // quem está pronto (ids públicos), vindo da vista
   const desenharPronto = () => { prontoBtn.classList.toggle('primario', prontoDaCena); prontoBtn.textContent = prontoDaCena ? 'Pronto ✓' : 'Pronto'; };
   let selecionado = null;
+  let baseCampo = null;
   let emModo = null;            // a ação da barra que espera um clique no tabuleiro (ataque, magia com alvo…)
   const narrativas = new Map(); // id da narrativa aberta -> AbortController (o anfitrião a fecha por fora)
 
@@ -94,6 +96,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     variante = v.variante;
     audio.ambiente(ambienteDaVariante(variante));
     const mapa = mapaDo(variante);
+    baseCampo = montarCampo(mapa);      // o mapa como nasceu, para desfazer o que o anfitrião reverteu
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
     board = new Board(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
     board.onTileContext = pedirContexto;
@@ -103,7 +106,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
 
   function desmontar() {
     cancelAnimationFrame(quadroDeAnimacao);
-    enc = null; board = null; variante = null;
+    enc = null; board = null; variante = null; baseCampo = null;
   }
 
   const souLider = () => Boolean(visaoDaSala) && visaoDaSala.lider === visaoDaSala.voce;
@@ -618,6 +621,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     if (vilaTela) { fecharVila(); vilaHerois.clear(); fecharLojaRemota(); }
     if (!enc || variante !== v.variante) { if (board) desmontar(); montar(v); if (aberta) loop(); }
     const { moveram } = aplicarVista(enc, v);
+    // Portas, passagens e grades que a cena do anfitrião mudou (e a visão do espelho recalcula com elas).
+    if (v.extras && 'campo' in v.extras && baseCampo) aplicarDiferencas(enc.field, baseCampo, v.extras.campo);
     for (const c of enc.combatants) aplicarAparencia(c);
     const explorando = Boolean(v.extras?.explorando);
     if (v.extras?.prontos) {

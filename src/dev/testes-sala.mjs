@@ -27,6 +27,9 @@ import { heroiQueSobra } from '../game/sala.js';
 import { escolhasConferidas } from '../game/nivel.js';
 import { diarioDe, diarioParaTela } from '../game/diario.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
+import { montarCampo } from '../game/campo.js';
+import { mapaDo } from '../game/encounter.js';
+import { diferencasDoCampo, aplicarDiferencas, diferencaValida } from '../game/campo-delta.js';
 import { fotografar, emTexto, lerVista, aplicarVista, empacotarEvento, desempacotarEvento, EVENTOS_VISUAIS, MAX_VISTA, MS_ENTRE_VISTAS } from '../game/partida-vista.js';
 import { cordaPermite, LIMITE_DA_CORDA } from '../game/corda.js';
 import { heroisDoPiloto, inimigoMaisPerto, jogadaDoPiloto, controlaOHeroi } from '../game/piloto.js';
@@ -1749,6 +1752,32 @@ teste('ambiente sonoro: toda variante de mapa aponta para um ambiente que existe
   assert.equal(ambienteDaVariante('ermoNoite'), 'noite');
   assert.equal(ambienteDaVariante('emboscada'), 'floresta');
   for (const n of AMBIENTES) assert.ok(temCamadas(n), `camadas de ${n}`);
+});
+
+teste('campo em diferenças: porta aberta e casa mudada chegam ao espelho do convidado, e voltam quando o anfitrião desfaz', () => {
+  const mapa = mapaDo('castelo');
+  const anf = montarCampo(mapa);
+  const base = montarCampo(mapa);
+  const conv = montarCampo(mapa);
+  assert.equal(diferencasDoCampo(anf, base), null, 'sem mudança, sem diferença');
+  const [a, b] = mapa.folhas?.[0] ?? [{ x: 10, y: 13 }, { x: 11, y: 13 }];
+  const antes = conv.aresta(a.x, a.y, b.x, b.y);
+  anf.porAresta(a.x, a.y, b.x, b.y, antes === 3 ? 2 : 3);
+  const i = 5 * anf.w + 5;
+  anf.tiles[i] = 0; anf.heights[i] = 2;
+  const d = diferencasDoCampo(anf, base);
+  assert.ok(d && d.a.length === 1 && d.c.length === 1, 'uma aresta e uma casa');
+  assert.ok(diferencaValida(JSON.parse(JSON.stringify(d)), anf.w * anf.h), 'o que vai pela rede é válido');
+  assert.equal(aplicarDiferencas(conv, base, JSON.parse(JSON.stringify(d))), true);
+  assert.equal(conv.aresta(a.x, a.y, b.x, b.y), anf.aresta(a.x, a.y, b.x, b.y), 'a aresta chegou');
+  assert.equal(conv.heights[i], 2, 'a casa chegou');
+  anf.porAresta(a.x, a.y, b.x, b.y, antes);
+  anf.tiles[i] = base.tiles[i]; anf.heights[i] = base.heights[i];
+  assert.equal(diferencasDoCampo(anf, base), null);
+  assert.equal(aplicarDiferencas(conv, base, null), true);
+  assert.equal(conv.aresta(a.x, a.y, b.x, b.y), antes, 'a aresta voltou');
+  assert.equal(conv.heights[i], base.heights[i], 'a casa voltou');
+  assert.equal(aplicarDiferencas(conv, base, { a: [[0, 999999, 1]], c: [] }), false, 'diferença fora do mapa é recusada');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

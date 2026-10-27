@@ -21,6 +21,7 @@ import { definirPortaDeNivel } from './view/nivel-tela.js';
 import { LOJAS, comprar as comprarNaLoja, vender as venderNaLoja, vendaveis } from './game/comercio.js';
 import { equipar } from './rules/equipment.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
+import { diferencasDoCampo } from './game/campo-delta.js';
 import { fotografar, emTexto, empacotarEvento, empacotarLista, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarEmissor } from './game/partida-delta.js';
 import { criarPartidaTela } from './view/partida-tela.js';
@@ -301,6 +302,7 @@ class App {
         : (config.variante ?? 'emboscada');
     const mapa = mapaDo(variante);
     const field = montarCampo(mapa);
+    this.campoBase = montarCampo(mapa);    // o mapa como nasceu: o que as cenas mudam depois vai ao convidado (`campo-delta.js`)
     this.varianteAtual = variante;     // a partida da sala (F4) diz aos outros navegadores qual mapa montar
     audio.ambiente(ambienteDaVariante(variante));      // o som de fundo do lugar (core/ambiente.js)
     audio.tensao(false);
@@ -526,9 +528,9 @@ class App {
     const eventos = naVila ? [] : (this.eventosPendentes ?? []);
     const vista = naVila
       ? { v: 1, variante: 'vila', rodada: 0, lado: 'party', acabou: false, combatentes: [], extras: { vila: { ...this.vilaBase, votos: this.votosDeLugar(), faixa: this.faixaDaVotacao(), herois: empacotarLista((this.grupoDaCampanha ?? []).filter((c) => !c.dead)) } } }
-      : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: { ...(eventos.length ? { eventos } : {}), diario: diarioDe(this.campanha?.vila, MISSOES), explorando: Boolean(this.capitulo?.explorando), prontos: [...(this.prontosDaCena ?? [])] } });
+      : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: { ...(eventos.length ? { eventos } : {}), campo: diferencasDoCampo(this.enc.field, this.campoBase), diario: diarioDe(this.campanha?.vila, MISSOES), explorando: Boolean(this.capitulo?.explorando), prontos: [...(this.prontosDaCena ?? [])] } });
     // O que mudou se mede SEM os eventos (eles já foram dados uma vez): só estado novo, evento novo ou o batimento mandam.
-    const texto = naVila ? emTexto(vista) : emTexto({ ...vista, extras: null });
+    const texto = naVila ? emTexto(vista) : emTexto({ ...vista, extras: { campo: vista.extras?.campo ?? null } });
     // Sem mudança, só repete de vez em quando: o servidor não guarda a vista (ela some se o Durable Object dormir ou for
     // trocado), e quem entra ou volta fica esperando a próxima. Três segundos de espera no pior caso, 7 KB de custo.
     const agora = Date.now();
