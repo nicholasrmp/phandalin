@@ -1,8 +1,9 @@
 // Experiência e subida de nível na campanha, como a aventura dá.
 //
 // A PRIMEIRA PARTE da aventura usa marcos, não XP por monstro: 75 XP para
-// cada personagem ao achar o esconderijo e 275 ao limpá-lo — 350 no total,
-// o bastante para o 2º nível (300). Daí em diante a aventura dá XP por
+// cada personagem ao achar o esconderijo e 275 ao limpá-lo (pagos conforme as
+// salas caem: vigias, poços, e o resto no fim) — 350 no total, o bastante para
+// o 2º nível (300), que chega antes do covil e do Klarg. Daí em diante a aventura dá XP por
 // monstro, armadilha, conversa e objetivo; quando chegar, entra aqui também.
 //
 // SUBIR é `subirNivel` (`rules/progressao.js`): vida, proficiência,

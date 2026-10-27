@@ -142,6 +142,7 @@ export const PHANDELVER_ITEMS = {
 export const TESOURO_POR_INIMIGO = {
   nezznar: ['cajadoAranha', 'esmeraldaDoAranhaNegra'],
   iarno: ['cajadoDeDefesa', 'pocaoDeCura'],
-  chefeGoblin: ['pocaoDeCura'],
+  // (Sem entrada para o chefe goblin: as duas poções de Klarg estão no BAÚ do covil, não no corpo — `capitulo2.js` as
+  // entrega. A chave antiga `chefeGoblin` não casava com id de monstro nenhum, e ligá-la a Klarg as daria em dobro.)
   hobgoblin: ['moedaDeOuro'],
 };

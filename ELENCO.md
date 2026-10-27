@@ -149,9 +149,10 @@ Goblin · Chefe goblin · Hobgoblin · Bugbear · Ogro · Bandido · Capitão ba
 Rufião · Batedor · Veterano · Mago · Acólito · Espião · Plebeu · Guarda · Nobre ·
 Cavaleiro · Drow — todos **SRD**.
 
-**Goblin arqueiro → criatura própria.** Não por faltar no SRD, mas por ser o
-goblin do SRD com um número mudado: sem escudo, a CA cai de 15 para 13 (couro
-mais Destreza). O resto da ficha é a do goblin.
+**Goblin único, com duas armas.** O goblin guerreiro e o arqueiro são um só, o
+bloco do SRD sem um número mudado (CA 15, cimitarra e arco curto). A figura
+troca de folha com a arma do golpe (espada e escudo ou arco), e trocar de arma
+é a interação gratuita do turno, uma por turno.
 
 ### Bestas — plano `quadrupede` ou `feras`
 

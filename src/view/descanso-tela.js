@@ -70,6 +70,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
   const dados = el('span', { class: 'descanso-dados' });
   const ultimo = el('span', { class: 'descanso-ultimo' });
   const botao = el('button', { class: 'descanso-gastar' }, 'Gastar 1 dado');
+  const todos = el('button', { class: 'descanso-gastar' }, 'Gastar todos');
 
   const atualizar = () => {
     const frac = Math.max(0, Math.min(1, c.hp / maxHpEfetivo(c)));
@@ -80,6 +81,9 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     dados.title = `${restam} dado${restam === 1 ? '' : 's'} de vida restante${restam === 1 ? '' : 's'}`;
     botao.disabled = remoto || restam <= 0 || c.hp >= maxHpEfetivo(c);
     botao.title = remoto ? 'a escolha é do dono do herói' : restam <= 0 ? 'sem dados de vida' : c.hp >= maxHpEfetivo(c) ? 'vida cheia' : '';
+    botao.textContent = restam > 1 ? `Gastar 1 dado (restam ${restam})` : 'Gastar 1 dado';
+    todos.disabled = remoto || restam <= 1 || c.hp >= maxHpEfetivo(c);
+    todos.title = remoto ? 'a escolha é do dono do herói' : 'gasta um dado após o outro até a vida encher ou os dados acabarem';
   };
 
   const gastar = () => {
@@ -96,6 +100,8 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     return r;
   };
   botao.addEventListener('click', () => { audio.play('click'); gastar(); });
+  // Quantos quiser, até o total que o herói tem: um após o outro, parando quando a vida enche (não desperdiça dado).
+  todos.addEventListener('click', () => { audio.play('click'); for (let n = dadosDeVida(c); n > 0; n--) if (!gastar()) break; });
 
   // Oração de Cura (10 minutos): quem a tem pronta e espaço de 2º círculo ou
   // mais reza pelos aliados vivos (até 6, os mais feridos primeiro).
@@ -177,7 +183,7 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
     el('div', { class: 'descanso-quem' },
       el('strong', {}, c.name),
       el('small', {}, [nomeDaClasse(c), hasCondition(c, 'inconsciente') ? 'caído, estável' : ''].filter(Boolean).join(' · '))),
-    vida, dados, botao, ultimo, orar);
+    vida, dados, botao, todos, ultimo, orar);
   return {
     linha, atualizar: atualizarTudo, gastar,
     gastarSugerido: () => { for (let n = dadosSugeridos(c); n > 0; n--) if (!gastar()) break; },
@@ -224,7 +230,7 @@ async function descansoCurtoSemMusica(root, { herois, rng, titulo = 'Descanso cu
   if (automaticos?.size) for (const [i, c] of vivos.entries()) if (automaticos.has(c.id)) linhas[i].gastarSugerido();
   const conteudo = el('div', { class: 'descanso' },
     el('div', { class: 'descanso-topo' },
-      el('span', {}, 'Cada dado cura o que rolar mais a Constituição. Um por vez.'),
+      el('span', {}, 'Cada dado cura o que rolar mais a Constituição. Gaste quantos quiser, até o total de dados do herói.'),
       el('button', {
         class: 'descanso-auto',
         onclick: () => { audio.play('click'); for (const [i, l] of linhas.entries()) if (!donos.get(vivos[i].id)) l.gastarSugerido(); },
@@ -334,7 +340,12 @@ export function telaDoDescansoRemoto(root, { titulo, texto, ehMeu, aoGastar, aoM
         class: 'descanso-gastar', disabled: !meu || d.restam <= 0 || d.hp >= d.maxHp,
         title: !meu ? 'a escolha é do dono do herói' : d.restam <= 0 ? 'sem dados de vida' : d.hp >= d.maxHp ? 'vida cheia' : '',
         onclick: () => { audio.play('click'); aoGastar(d.heroi); },
-      }, 'Gastar 1 dado');
+      }, d.restam > 1 ? `Gastar 1 dado (restam ${d.restam})` : 'Gastar 1 dado');
+      const todos = el('button', {
+        class: 'descanso-gastar', disabled: !meu || d.restam <= 1 || d.hp >= d.maxHp,
+        title: !meu ? 'a escolha é do dono do herói' : 'gasta um dado após o outro até a vida encher ou os dados acabarem',
+        onclick: () => { audio.play('click'); for (let i = 0; i < d.restam; i++) aoGastar(d.heroi); },
+      }, 'Gastar todos');
       const magias = el('span', { class: 'descanso-oracao' }, ...d.magias.map((m) => el('span', { class: 'descanso-magia' },
         el('strong', {}, m.nome),
         el('small', {}, m.ganho),
@@ -346,7 +357,7 @@ export function telaDoDescansoRemoto(root, { titulo, texto, ehMeu, aoGastar, aoM
       return el('div', { class: 'descanso-linha' },
         el('span', { class: 'descanso-retrato' }, retrato(d.look)),
         el('div', { class: 'descanso-quem' }, el('strong', {}, d.nome), el('small', {}, [d.className, d.caido ? 'caído, estável' : ''].filter(Boolean).join(' · '))),
-        vida, el('span', { class: 'descanso-dados' }, `${d.restam}× d${d.lados}`), botao, el('span', { class: 'descanso-ultimo' }, d.ultimo), magias);
+        vida, el('span', { class: 'descanso-dados' }, `${d.restam}× d${d.lados}`), botao, todos, el('span', { class: 'descanso-ultimo' }, d.ultimo), magias);
     }));
   };
   const fim = narrarFn(root, {

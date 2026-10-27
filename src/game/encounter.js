@@ -449,7 +449,7 @@ export function buildFoes(variante = 'padrao') {
     // Os dois guardas, cada um atrás da curva do seu corredor, e Droop.
     const foes = [
       makeMonster('goblin', { x: 4, y: 3 }, { nameSuffix: 'da esquerda' }),
-      makeMonster('goblinArqueiro', { x: 14, y: 3 }, { nameSuffix: 'da direita' }),
+      makeMonster('goblin', { x: 14, y: 3 }, { nameSuffix: 'da direita', tatica: 'atirador', arma: 'Arco curto' }),
       makeMonster('droop', { x: 8, y: 1 }),
     ];
     for (const f of foes) f.facingVec = { dx: 0, dy: 1 };
@@ -485,8 +485,8 @@ export function buildFoes(variante = 'padrao') {
  * estava, esperando.
  */
 function foesEsconderijo() {
-  const m = (id, x, y, grupo, sufixo = '', olha = { dx: 0, dy: 1 }) => {
-    const f = makeMonster(id, { x, y }, { nameSuffix: sufixo });
+  const m = (id, x, y, grupo, sufixo = '', olha = { dx: 0, dy: 1 }, opcoes = {}) => {
+    const f = makeMonster(id, { x, y }, { nameSuffix: sufixo, ...opcoes });
     f.grupo = grupo;
     f.facingVec = olha;
     return f;
@@ -504,15 +504,15 @@ function foesEsconderijo() {
   klargLobo.name = 'Serrote';
   return [
     // Área 2: dois vigias no posto de ripas, no meio do mato.
-    m('goblin', 20, 22, 'vigias', 'vigia', { dx: -1, dy: 1 }),
-    m('goblin', 22, 23, 'vigias', 'vigia', { dx: -1, dy: 1 }),
+    m('goblin', 20, 22, 'vigias', 'vigia', { dx: -1, dy: 1 }, { arma: 'Arco curto' }),
+    m('goblin', 22, 23, 'vigias', 'vigia', { dx: -1, dy: 1 }, { arma: 'Arco curto' }),
     // Área 3: três lobos acorrentados à estalagmite do meio do canil. A
     // corrente não deixa nenhum chegar aos degraus da entrada.
     ...[[21, 11], [24, 13], [22, 13]].map(([x, y]) => Object.assign(
       m('lobo', x, y, 'canil', 'do canil', { dx: -1, dy: 0 }),
       { corrente: { x: 23, y: 12, raioFt: 10 } })),
     // Área 5: um goblin escondido na ponte, vigiando o riacho lá embaixo.
-    m('goblin', 21, 5, 'ponte', 'da ponte', { dx: 0, dy: 1 }),
+    m('goblin', 21, 5, 'ponte', 'da ponte', { dx: 0, dy: 1 }, { arma: 'Arco curto' }),
     // Área 6: quatro goblins junto ao fogo, na parte de baixo; Yeemik em cima.
     // Eram cinco, e com o bloco de ND 1 do Yeemik isso dava 900 de XP
     // ajustado — "mortal" para quatro de 2º nível, com 18% de derrota medida
@@ -525,7 +525,7 @@ function foesEsconderijo() {
     sildar,
     // Área 7: três goblins guardam os poços.
     m('goblin', 29, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
-    m('goblinArqueiro', 34, 9, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    m('goblin', 34, 9, 'pocos', 'dos poços', { dx: -1, dy: 0 }, { tatica: 'atirador', arma: 'Arco curto' }),
     m('goblin', 36, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
     // Área 8: Klarg, o lobo Serrote e dois goblins.
     // Klarg fica ATRÁS da estalagmite de (30,18), como a cena narra: de
@@ -675,15 +675,18 @@ function foesGrandes() {
  * surpreendido e em 98% quando não é, e morre alguém em 6 a 8% das vezes.
  */
 function foesEmboscada() {
+  // Os quatro esperam de arco na mão, no alto do barranco. A e C são atiradores
+  // declarados; B e D a IA também deixa atirando, pela regra do terreno alto.
+  const arco = { arma: 'Arco curto' };
   const norte = [
-    makeMonster('goblin', { x: 12, y: 7 }, { nameSuffix: 'A' }),
+    makeMonster('goblin', { x: 12, y: 7 }, { nameSuffix: 'A', tatica: 'atirador', ...arco }),
     // Colado nos arbustos da boca da trilha.
-    makeMonster('goblin', { x: 16, y: 7 }, { nameSuffix: 'B' }),
+    makeMonster('goblin', { x: 16, y: 7 }, { nameSuffix: 'B', ...arco }),
   ];
   const sul = [
-    makeMonster('goblin', { x: 14, y: 17 }, { nameSuffix: 'C' }),
+    makeMonster('goblin', { x: 14, y: 17 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
     // Na borda do barranco sul, ao lado do arbusto em (17,16).
-    makeMonster('goblin', { x: 18, y: 16 }, { nameSuffix: 'D' }),
+    makeMonster('goblin', { x: 18, y: 16 }, { nameSuffix: 'D', ...arco }),
   ];
   // Cada lado olha para a estrada.
   for (const f of norte) f.facingVec = { dx: 0, dy: 1 };

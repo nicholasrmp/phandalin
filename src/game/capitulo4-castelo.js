@@ -122,8 +122,8 @@ export function criarCastelo(app, config) {
 
   // ------------------------------------------------------ os moradores ----
   const grupos = {};
-  const m = (id, x, y, g, sufixo = '', olha = { dx: -1, dy: 0 }) => {
-    const f = makeMonster(id, J(x, y), { nameSuffix: sufixo });
+  const m = (id, x, y, g, sufixo = '', olha = { dx: -1, dy: 0 }, opcoes = {}) => {
+    const f = makeMonster(id, J(x, y), { nameSuffix: sufixo, ...opcoes });
     f.grupo = g;
     f.facingVec = olha;
     (grupos[g] ??= { id: g, membros: [], ...GRUPOS[g] }).membros.push(f);
@@ -131,10 +131,11 @@ export function criarCastelo(app, config) {
   };
   // Colados na seteira: a cobertura de três quartos só vale com a fenda
   // entre o arqueiro e o alvo (`coverBetween`).
-  m('goblinArqueiro', 5, 7, 'postoNorte', 'do posto norte', { dx: 0, dy: 1 });
-  m('goblinArqueiro', 7, 7, 'postoNorte', 'do posto norte B', { dx: 0, dy: 1 });
-  m('goblinArqueiro', 5, 13, 'postoSul', 'do posto sul', { dx: 0, dy: -1 });
-  m('goblinArqueiro', 7, 13, 'postoSul', 'do posto sul B', { dx: 0, dy: -1 });
+  const atirador = { tatica: 'atirador', arma: 'Arco curto' };
+  m('goblin', 5, 7, 'postoNorte', 'do posto norte', { dx: 0, dy: 1 }, atirador);
+  m('goblin', 7, 7, 'postoNorte', 'do posto norte B', { dx: 0, dy: 1 }, atirador);
+  m('goblin', 5, 13, 'postoSul', 'do posto sul', { dx: 0, dy: -1 }, atirador);
+  m('goblin', 7, 13, 'postoSul', 'do posto sul B', { dx: 0, dy: -1 }, atirador);
   ['A', 'B', 'C'].forEach((s, i) => m('goblin', [5, 6, 6][i], [16, 17, 18][i], 'torreSul', `da torre ${s}`));
   // O C ficava em (7,2), que no mapa é (9,5) — a casa do armeiro, que bloqueia
   // passo. `occupied` não consulta `blocksMove`, então ele nascia em cima dela.

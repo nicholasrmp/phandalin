@@ -118,7 +118,7 @@ export const CARACTERISTICAS = {
 
   // ---- paladino ------------------------------------------------------------
   divineSense: C('Sentido Divino', 'acao', 'Sente celestiais, corruptores e mortos-vivos por perto.', { motor: true }),
-  layOnHands: C('Cura pelas Mãos', 'acao', 'Uma reserva de 5 × nível de PV para curar ou tirar doença e veneno.', { motor: true }),
+  layOnHands: C('Cura pelas Mãos', 'acao', 'Uma reserva de 5 × nível de PV para curar ao toque ou, gastando 5, tirar o veneno. Não vale em mortos-vivos nem constructos.', { motor: true }),
   divineSmite: C('Destruição Divina', 'livre', 'Num acerto corpo a corpo com arma, gasta um espaço: 2d8 radiante + 1d8 por círculo acima do 1º (máximo 5d8), +1d8 contra mortos-vivos e corruptores.', { motor: true }),
   divineHealth: C('Saúde Divina', 'passiva', 'Imune a doenças.'),
   auraOfProtection: C('Aura de Proteção', 'passiva', 'Você e aliados por perto somam seu CAR às resistências.'),

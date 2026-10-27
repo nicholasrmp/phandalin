@@ -83,12 +83,13 @@ export const BESTIARIO_LOOKS = {
     armorStyle: 'leather', helm: false, shield: true, weapon: 'scimitar',
   },
 
-  // O ARQUEIRO é o mesmo goblin com o arco na mão. O desenho que o jogador vê
+  // O GOBLIN DE ARCO é o mesmo goblin com o arco na mão (chave de folha do
+  // `aparencias` do goblin; ver `resolveLook`). O desenho que o jogador vê
   // vem do PixelLab (`src/art/folhas/`), criado como EDIÇÃO do guerreiro —
   // mesmo corpo, mesmo rosto — com arco de madeira clara e ombreira de couro.
   // Este look é o que o pintor procedural desenha enquanto o PNG não chega, e
   // por isso só precisa ler como o mesmo goblin, sem escudo, de arco.
-  goblinArqueiro: {
+  'goblin@couro-arcoCurto': {
     species: 'goblin', build: 'magro',
     stance: 'agachado', marca: ['corcunda'],
     skin: '#c0a046', hair: '#21201b', hairStyle: 'juba',

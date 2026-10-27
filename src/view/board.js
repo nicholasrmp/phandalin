@@ -443,28 +443,32 @@ export class Board {
     this.zoom = 1;
     this.drag = null;
 
+    // Todos os ouvintes saem juntos (`disposeCamera`): o canvas é um só para todos os encontros, e um Board antigo que ficasse
+    // ouvindo clicava com a geometria do mapa anterior (o herói ia para outra casa) e limpava o realce a cada rolagem.
+    this._abort = new AbortController();
+    const { signal } = this._abort;
     canvas.addEventListener('mousemove', (e) => {
       if (this.drag) return;   // arrastando a câmera: não realça quadrado
-      const t = this.tileFromEvent(e);
-      const changed = !this.hover || !t || this.hover.x !== t.x || this.hover.y !== t.y;
-      this.hover = t;
-      if (changed) this.onTileHover?.(t);
-    });
+      this.atualizarHover(e);
+    }, { signal });
+    // A rolagem do quadro (e a câmera que segue o herói) move o tabuleiro debaixo do mouse parado: o realce acompanha.
+    canvas.parentElement?.addEventListener('scroll', () => this.atualizarHover(), { passive: true, signal });
     canvas.addEventListener('mouseleave', () => {
+      this._ultimoMouse = null;
       this.hover = null;
       this.pointer = null;
       this.onTileHover?.(null);
-    });
+    }, { signal });
     canvas.addEventListener('click', (e) => {
       if (this.dragMoved) { this.dragMoved = false; return; }  // fim de arrasto não é clique
       const t = this.tileFromEvent(e);
       if (t) this.onTileClick?.(t, e);
-    });
+    }, { signal });
 
     // ---- botão direito: girar arrastando, menu de ações clicando ----
     // Botão direito: soltar sem arrastar abre o menu de contexto da casa
     // (a câmera não gira mais: arrastar não faz nada) (`onTileContext`: inspecionar, atacar, conversar...).
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 2) return;
       this.drag = { x: e.clientX, acc: 0 };
@@ -473,7 +477,7 @@ export class Board {
       this.pointer = null;
       canvas.style.cursor = 'grabbing';
       e.preventDefault();
-    });
+    }, { signal });
     this._onDragMove = (e) => {
       if (!this.drag) return;
       const dx = e.clientX - this.drag.x;
@@ -498,8 +502,8 @@ export class Board {
       }
       this.dragMoved = false;
     };
-    addEventListener('mousemove', this._onDragMove);
-    addEventListener('mouseup', this._onDragEnd);
+    addEventListener('mousemove', this._onDragMove, { signal });
+    addEventListener('mouseup', this._onDragEnd, { signal });
 
     // ---- zoom com a roda ----
     canvas.addEventListener('wheel', (e) => {
@@ -507,7 +511,7 @@ export class Board {
       // O zoom vai para onde o ponteiro está, não para o canto.
       this.setZoom(this.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), { x: e.clientX, y: e.clientY });
       this.onCameraChange?.();
-    }, { passive: false });
+    }, { passive: false, signal });
   }
 
   /**
@@ -560,6 +564,7 @@ export class Board {
       quadro.scrollLeft += depois.left + fx * depois.width - ancora.x;
       quadro.scrollTop += depois.top + fy * depois.height - ancora.y;
     }
+    this.atualizarHover();
   }
 
   zoomBy(factor) {
@@ -592,6 +597,7 @@ export class Board {
     const k = r.width / el.width;
     quadro.scrollLeft += (r.left + sx * k) - (q.left + q.width / 2);
     quadro.scrollTop += (r.top + sy * k) - (q.top + q.height / 2);
+    this.atualizarHover();
   }
 
   /**
@@ -639,6 +645,7 @@ export class Board {
   }
 
   disposeCamera() {
+    this._abort?.abort();
     removeEventListener('mousemove', this._onDragMove);
     removeEventListener('mouseup', this._onDragEnd);
   }
@@ -735,22 +742,85 @@ export class Board {
     };
   }
 
+  /** Refaz a casa sob o cursor (o mouse parado debaixo de uma câmera que anda, de um zoom ou de uma rolagem). */
+  atualizarHover(e = this._ultimoMouse) {
+    if (!e) return;
+    let t = this.tileFromEvent(e);
+    if (t && this.field.tileAt(t.x, t.y) === 1 && !this.modoDeAlvo?.()) t = null;     // parede: sem realce, a não ser que se mire nela (área de magia)
+    const mudou = !this.hover || !t || this.hover.x !== t.x || this.hover.y !== t.y;
+    this.hover = t;
+    if (mudou) this.onTileHover?.(t);
+  }
+
+  /** O ponto do evento em pixel interno do canvas, pela caixa de CONTEÚDO (o retângulo medido inclui a borda de 2 px do CSS). */
+  pontoDoEvento(e) {
+    const c = this.canvas;
+    const r = c.getBoundingClientRect();
+    return {
+      px: (e.clientX - r.left - c.clientLeft) * (c.width / c.clientWidth),
+      py: (e.clientY - r.top - c.clientTop) * (c.height / c.clientHeight),
+    };
+  }
+
   tileFromEvent(e) {
-    const r = this.canvas.getBoundingClientRect();
-    const px = (e.clientX - r.left) * (this.canvas.width / r.width);
-    const py = (e.clientY - r.top) * (this.canvas.height / r.height);
+    const { px, py } = this.pontoDoEvento(e);
     // Guardado em pixel interno do canvas (não de tela) porque é nele que o
     // cartão é desenhado — assim o cartão segue o cursor em qualquer zoom.
     this.pointer = { px, py };
-    for (let hgt = this.maxHeight; hgt >= 0; hgt--) {
-      const cx = px - this.ox;
-      const cy = py - this.oy - TH / 2 + hgt * LIFT;
-      const vx = Math.round(cx / TW + cy / TH);
-      const vy = Math.round(cy / TH - cx / TW);
-      const { x, y } = this.fromView(vx, vy);
-      if (this.field.inside(x, y) && this.alturaVisual(x, y) === hgt) return { x, y };
+    this._ultimoMouse = e;
+    const t = this.casaNoPonto(px, py);
+    return this.casaDaFigura(px, py, t) ?? t;
+  }
+
+  /**
+   * O CORPO de uma criatura é desenhado em pé sobre a casa dela, mas a conversão do chão joga o clique no corpo para a casa de
+   * trás. Se o ponto está sobre uma figura que o grupo vê e a casa achada está ATRÁS dela (nunca na frente: uma parede à frente
+   * a esconde), vale a casa da criatura.
+   */
+  casaDaFigura(px, py, t) {
+    const figs = this._figuras;
+    if (!figs?.length) return null;
+    const dT = t ? (() => { const v = this.toView(t.x, t.y); return v.vx + v.vy; })() : -Infinity;
+    let melhor = null;
+    for (const f of figs) {
+      if (px < f.x0 || px > f.x1 || py < f.y0 || py > f.y1) continue;
+      if (f.d <= dT) continue;                     // a casa achada é a da figura ou está na frente dela
+      if (!melhor || f.d > melhor.d) melhor = f;
     }
-    return null;
+    return melhor ? { x: melhor.pos.x, y: melhor.pos.y } : null;
+  }
+
+  /**
+   * A casa que se VÊ no ponto: o prisma de cada casa (o topo e as faces até o chão), a mais à frente na ordem de desenho.
+   * Antes só se invertia a projeção do chão em cada altura, e apontar para uma rocha alta devolvia a casa escondida atrás dela.
+   */
+  casaNoPonto(px, py) {
+    let melhor = null;
+    for (let k = 0; k <= this.maxHeight; k++) {
+      const cx = px - this.ox;
+      const cy = py - this.oy - TH / 2 + k * LIFT;
+      const vx0 = Math.round(cx / TW + cy / TH);
+      const vy0 = Math.round(cy / TH - cx / TW);
+      for (let j = -1; j <= 1; j++) {
+        for (let i = -1; i <= 1; i++) {
+          const vx = vx0 + i;
+          const vy = vy0 + j;
+          const p = this.fromView(vx, vy);
+          if (!this.field.inside(p.x, p.y)) continue;
+          if (this._murosTransp?.has(`${p.x},${p.y}`)) continue;     // parede que esmaece: o clique vai para o que se vê através dela
+          const H = this.alturaVisual(p.x, p.y);
+          const sx = this.ox + (vx - vy) * (TW / 2);
+          const sy = this.oy + (vx + vy) * (TH / 2) - H * LIFT;
+          const dxp = Math.abs(px - sx);
+          if (dxp > TW / 2) continue;
+          const meia = (TH / 2) * (1 - dxp / (TW / 2));                 // meia altura do losango nesta coluna
+          if (py < sy + TH / 2 - meia || py > sy + TH / 2 + meia + H * LIFT) continue;   // fora do prisma
+          const d = vx + vy;                                              // a mesma regra de rebuildOrder: d, depois vx
+          if (!melhor || d > melhor.d || (d === melhor.d && vx > melhor.vx)) melhor = { x: p.x, y: p.y, d, vx };
+        }
+      }
+    }
+    return melhor && { x: melhor.x, y: melhor.y };
   }
 
   /**
@@ -760,9 +830,7 @@ export class Board {
   portaDoPonto(e) {
     const f = this.field;
     if (!f.folha?.size || this.rot !== 0) return null;
-    const r = this.canvas.getBoundingClientRect();
-    const px = (e.clientX - r.left) * (this.canvas.width / r.width);
-    const py = (e.clientY - r.top) * (this.canvas.height / r.height);
+    const { px, py } = this.pontoDoEvento(e);
     const ALTO = 48;
     for (const k of f.folha) {
       const [ax, ay, bx, by] = k.split(',').map(Number);
@@ -2861,7 +2929,7 @@ export class Board {
       const v = this.toView(c.pos.x, c.pos.y);
       const { sx, sy } = this.center(c.pos.x, c.pos.y);
       // Uma criatura Média ocupa uns 40 x 48 px acima do centro da casa.
-      out.push({ d: v.vx + v.vy, x0: sx - 20, x1: sx + 20, y0: sy - 48, y1: sy + 4 });
+      out.push({ d: v.vx + v.vy, x0: sx - 20, x1: sx + 20, y0: sy - 48, y1: sy + 4, pos: c.pos });
     }
     return out;
   }
@@ -3102,6 +3170,7 @@ export class Board {
     // ou o destino do caminho. Sem isso o jogador mira uma casa que não vê.
     this._copas = this.coberturaDasCopas();
     this._esmaecer = new Set();
+    this._murosTransp = new Set();
     const fim = this.overlay.path?.[this.overlay.path.length - 1];
     for (const t of [this.hover, fim]) {
       const c = t && this._copas.get(`${t.x},${t.y}`);
@@ -3120,6 +3189,8 @@ export class Board {
 
       const { x, y, vx, vy } = cell;
       const transp = this.transparenciaDaCasa(x, y, vx, vy, byView);
+      // Parede translúcida (há alguém atrás dela): o clique atravessa, ou o herói que se vê não seria alcançável.
+      if ((transp.chao < 1 || transp.objeto < 1) && this.field.tileAt(x, y) === 1) this._murosTransp.add(`${x},${y}`);
       // O INTERIOR DE UMA CONSTRUÇÃO QUE O GRUPO NÃO VÊ fica coberto: sem móvel nem objeto, e o
       // piso no escuro. Com a fachada fechada (muro inteiro, porta fechada) o prédio lê como um
       // bloco, mesmo onde a parede arruinada é baixa demais para esconder o que há dentro.

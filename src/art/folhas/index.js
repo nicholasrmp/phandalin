@@ -165,8 +165,18 @@ const HEROIS = {
 // sao carregadas so quando pedidas: a Dara completa tem dezenas, e ninguem
 // precisa de todas.
 const IMPORTADAS = {
-  goblin: { base: 'goblin', meta: metaGoblin, url: urlGoblin },
-  goblinArqueiro: { base: 'goblinArqueiro', meta: metaGoblinArqueiro, url: urlGoblinArqueiro },
+  // O GOBLIN, de duas folhas como o hobgoblin: espada e escudo (a padrao) e o
+  // arco, que ele pega quando atira (`aparencias` do bloco em
+  // `rules/monsters/goblinoides.js`; chave `goblin@couro-arcoCurto`). A folha
+  // do arco e a do antigo goblin arqueiro, no mesmo corpo (135 px de altura).
+  goblin: {
+    base: 'goblin', meta: metaGoblin, url: urlGoblin,
+    postura: 'umaMaoEscudo', familia: 'espada', armadura: 'couro', padrao: true,
+  },
+  'goblin-arco': {
+    base: 'goblin', meta: metaGoblinArqueiro, url: urlGoblinArqueiro,
+    postura: 'arco', familia: 'arco', armadura: 'couro',
+  },
   goblinBoss: { base: 'goblinBoss', meta: metaGoblinBoss, url: urlGoblinBoss },
   // o lobo do PixelLab (esqueleto de quadrupede) no look `wolf`
   wolf: { base: 'wolf', meta: metaLobo, url: urlLobo },

@@ -49,55 +49,21 @@ export const GOBLINOIDES = {
       { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
     ],
     traits: ['nimbleEscape'],
+    // UM GOBLIN SÓ, com as duas armas do bloco do SRD. A IA escolhe o ataque
+    // pela situação (`ai.js`: terreno alto e à distância atira, colado bate) e
+    // a figura troca de folha com a arma do golpe: espada e escudo (a padrão)
+    // ou arco (`aparencias`, lido em `resolveAttack`). A CA é 15 nas duas: o
+    // bloco do SRD não muda com a arma, e vestir ou tirar escudo custa uma
+    // ação no livro. Trocar de arma é a interação gratuita do turno, uma por
+    // turno (`armaNaMao`, em `combat.js`). Quem nasce atirador leva
+    // `{ tatica: 'atirador', arma: 'Arco curto' }` em `makeMonster`.
+    aparencias: { 'Arco curto': 'goblin@couro-arcoCurto' },
+    // Só o goblin troca de arma como interação gratuita: o dragão e o hobgoblin
+    // também têm `aparencias`, mas golpeiam com mais de um ataque por turno.
+    trocaDeArma: true,
     // O blurb diz o que a criatura FAZ no turno, não o que ela é: é por ele
     // que o jogador decide se persegue ou se ignora.
-    blurb: 'Bate e desaparece: com Escapada Ágil se esconde ou desengaja na mesma rodada, sem dar ataque de oportunidade. Sete PV — morre de um golpe bom.',
-  },
-
-  // O ARQUEIRO É O GOBLIN SEM O ESCUDO — e por isso já não é o bloco do SRD.
-  //
-  // Os números são os do goblin do SRD, com uma diferença só: a CA. A do
-  // goblin é 15, couro mais escudo; o arqueiro tem as duas mãos no arco e não
-  // carrega escudo, então fica com 13, couro (11) mais Destreza (+2). Um número
-  // mudado é o que separa "variante de look" de "criatura nossa" neste
-  // arquivo — o bandido e o bugbear que trocam só o desenho continuam SRD,
-  // marcados "sem um número mudado". Este mudou um, então é `'propria'`,
-  // derivado do goblin do SRD e documentado aqui.
-  //
-  // COMO ELE JOGA: `tatica: 'atirador'`. Atira de onde estiver, no alto ou no
-  // plano, e só usa a cimitarra com inimigo colado — que é também o que a
-  // regra pede, porque atirar com inimigo adjacente dá desvantagem. Sem a
-  // tática, a IA o trataria como qualquer goblin e o faria descer para
-  // brigar. A cimitarra não aparece no desenho: a família divide o
-  // equipamento da ficha entre as variantes, e o guerreiro também não carrega
-  // o arco. O golpe colado se lê pelo efeito da lâmina — bote e corte branco.
-  goblinArqueiro: {
-    id: 'goblinArqueiro',
-    name: 'Goblin arqueiro',
-    look: 'goblinArqueiro',
-    fonte: 'propria',             // goblin do SRD sem o escudo: CA 15 -> 13
-    size: 'pequeno',
-    level: 1,
-    cr: '1/4',
-    xp: 50,
-    abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
-    voice: 'yellGoblin',
-    ac: 13,
-    acNote: 'armadura de couro',
-    maxHp: 7,
-    hpDice: '2d6',
-    speedFt: 30,
-    senses: { darkvisionFt: 60 },
-    skills: ['furtividade'],
-    // Mesma Furtividade do goblin do SRD (+6): só a CA muda nesta variação.
-    expertise: ['furtividade'],
-    attacks: [
-      { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
-      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
-    ],
-    traits: ['nimbleEscape'],
-    tatica: 'atirador',
-    blurb: 'Atira de onde estiver e não vem brigar: só puxa a cimitarra se você encostar. Com Escapada Ágil se afasta sem dar ataque de oportunidade. Sete PV — morre de um golpe bom.',
+    blurb: 'Espada e escudo de perto, arco de longe: troca de arma de graça, uma vez por turno. Com Escapada Ágil se afasta sem dar ataque de oportunidade. Sete PV — morre de um golpe bom.',
   },
 
   goblinChefe: {

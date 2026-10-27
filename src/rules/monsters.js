@@ -50,9 +50,14 @@ export const TRAIT_INFO = { ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_M
 let serial = 0;
 
 /** Instancia um monstro como combatente. */
-export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
+export function makeMonster(id, pos, { rng = null, nameSuffix = '', tatica = null, arma = null } = {}) {
   const def = MONSTERS[id];
   if (!def) throw new Error(`Monstro desconhecido: "${id}"`);
+  // `arma` (o nome de um ataque do bloco): a que ele já tem na mão ao nascer.
+  // Só vale para quem tem `aparencias` — a figura nasce com aquela folha. O
+  // `lookBase` precisa nascer junto com o look padrão: `resolveAttack` faz
+  // `lookBase ??= look`, e sem isto o primeiro golpe de espada voltaria ao arco.
+  const comArma = arma && def.aparencias?.[arma] ? arma : null;
   // PV podem ser fixos (médio do SRD) ou rolados, se vier um rng.
   const maxHp = def.maxHp;
   return {
@@ -61,7 +66,8 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     kind: 'npc',
     side: 'foes',
     name: def.name + (nameSuffix ? ` ${nameSuffix}` : ''),
-    look: def.look,
+    look: comArma ? def.aparencias[comArma] : def.look,
+    ...(comArma ? { lookBase: def.look } : {}),
     level: def.level,
     abilities: { ...def.abilities },
     proficiency: proficiencyBonus(def.level),
@@ -83,7 +89,9 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '' } = {}) {
     // 'atirador': atira de onde estiver e só usa a lâmina com inimigo colado.
     // Sem copiar o campo aqui, `ai.js` nunca o veria — o combatente não
     // carrega a ficha, só o que esta função passa adiante.
-    tatica: def.tatica ?? null,
+    tatica: tatica ?? def.tatica ?? null,
+    // A arma que o goblin tem na mão: troca-la e a interacao gratuita do turno.
+    ...(def.trocaDeArma ? { trocaDeArma: true, armaNaMao: comArma ?? def.attacks[0].name } : {}),
     conditions: [],
     // A pegada viaja DENTRO da posição: assim `distanceFt` e `isAdjacent`
     // medem contra a caixa da criatura sem que nenhum chamador saiba disso.

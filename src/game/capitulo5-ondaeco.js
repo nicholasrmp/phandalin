@@ -26,6 +26,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { ONDA_ECO } from './ondaeco.js';
 import { guardar } from './comercio.js';
+import { grupoTem } from './saque.js';
 import { paginasDoEpilogo } from './epilogo.js';
 import { TEXTOS, EXAMES, arvoreDeMormesk, arvoreDoEspectador, arvoreDeNezznar, arvoreDeNundro } from './ondaeco-dados.js';
 
@@ -577,7 +578,8 @@ export function criarOndaEco(app) {
     const quem = herois()[0];
     if (quem) {
       guardar(quem, 'pocaoDeCura', 1);
-      (quem.weapons ??= []).push('cajadoAranha');
+      // Peça única: se o saque do corpo (`game/saque.js`) já a deu a alguém do grupo, vivo ou morto, não se entrega de novo.
+      if (!grupoTem(enc.combatants.filter((x) => x.side === 'party'), 'cajadoAranha')) (quem.weapons ??= []).push('cajadoAranha');
       guardar(quem, 'chaveDoAranhaNegra', 1);
     }
     feitos.nezznarDerrotado = true;

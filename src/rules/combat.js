@@ -18,7 +18,7 @@ import {
 } from './abilities.js';
 import {
   WEAPONS, weaponAbility, armorClass,
-  itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila, garantirInventario, equipar,
+  itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila, garantirInventario, equipar, transferirItem,
 } from './equipment.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, caEfetiva, maxHpEfetivo, nivelDeExaustao, mudarExaustao, CONDITIONS } from './conditions.js';
 
@@ -512,7 +512,8 @@ export class Encounter {
       this.burnTick(c);
       this.vinhasTick(c);
       this.ilusaoTick(c);
-      if (hasCondition(c, 'inconsciente') && c.kind === 'pc' && !c.stable) this.deathSave(c);
+      // Só quem está a 0 PV rola teste de morte: quem dorme por Sono (inconsciente com PV) não.
+      if (hasCondition(c, 'inconsciente') && c.kind === 'pc' && !c.stable && c.hp <= 0) this.deathSave(c);
     }
     // Teia: quem começa o turno nela testa. Espíritos Guardiões: o inimigo
     // que começa o turno na aura sofre.
@@ -2490,7 +2491,12 @@ export class Encounter {
    * tiver nenhum; `null` quer dizer "a arma equipada" (personagem).
    */
   armaDeOportunidade(c) {
-    if (c.attacks) return c.attacks.find((a) => !a.ranged)?.name;
+    if (c.attacks) {
+      const perto = c.attacks.find((a) => !a.ranged)?.name;
+      // Com o arco na mão (o goblin) a cimitarra está embainhada, e trocar de
+      // arma é a interação do turno dele, não da reação: sem brecha.
+      return c.trocaDeArma && c.armaNaMao !== perto ? undefined : perto;
+    }
     const w = WEAPONS[c.equippedWeapon];
     if (w && !w.ranged) return null;
     // Só com o que está na mão (ou os punhos de quem treinou): o arqueiro de
@@ -2712,6 +2718,11 @@ export class Encounter {
     }
     if (conditionEffects(actor).inalcancavel) return { ok: false, why: `quem ${conditionEffects(actor).motivoInalcancavel ?? 'está fora de alcance'} não ataca` };
     const p = this.weaponAttackProfile(actor, weaponId);
+    // TROCAR DE ARMA (o goblin): sacar a outra é a interação gratuita do turno,
+    // e só há uma. Com ela gasta, só se ataca com a arma que já está na mão.
+    if (actor.trocaDeArma && actor.interacaoUsada && actor.armaNaMao && p.name !== actor.armaNaMao) {
+      return { ok: false, why: `já trocou de arma neste turno (${actor.armaNaMao} na mão)` };
+    }
     // Acao por teste (o Olhar Apodrecedor) mira 'uma criatura que ele possa ver'.
     if (p.teste && hasCondition(actor, 'cego')) return { ok: false, why: 'cego, não vê o alvo' };
     if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
@@ -2775,6 +2786,12 @@ export class Encounter {
       attacker.lookBase ??= attacker.look;
       attacker.look = attacker.aparencias[p.name] ?? attacker.lookBase;
     }
+    // O goblin troca a arma da mão: a interação gratuita do turno (uma só).
+    if (attacker.trocaDeArma && attacker.armaNaMao && attacker.armaNaMao !== p.name) {
+      this.say('acao', `${attacker.name} troca ${attacker.armaNaMao} por ${p.name} (interação gratuita).`);
+      attacker.interacaoUsada = true;
+    }
+    if (attacker.trocaDeArma) attacker.armaNaMao = p.name;
     if (getCondition(attacker, 'enfeiticado')?.source === target.id) {
       this.say('aviso', `${attacker.name} está encantado por ${target.name} e não o ataca.`);
       return null;
@@ -3636,6 +3653,29 @@ export class Encounter {
     // Concentração não sobrevive à queda: inconsciente é incapacitado.
     this.dropConcentration(target);
 
+    // TENACIDADE MORTOVIVA (SRD): o zumbi que cai a 0 PV faz resistência de
+    // Constituição CD 5 + o dano levado e, passando, fica de pé com 1 PV. Não
+    // vale contra dano radiante nem contra crítico.
+    //
+    // O traço estava declarado no bloco e descrito no jogo, mas não existia
+    // aqui: medido, um zumbi de 3 PV levando 4 de cortante, que deveria
+    // sobreviver 75% das vezes, sobreviveu 0 vezes em 200. São 12 zumbis no
+    // Poço da Coruja Velha.
+    if (target.traits?.includes('undeadFortitude') && type !== 'radiante' && !critical) {
+      const cd = 5 + amount;
+      const save = this.resistencia(target, 'con', cd);
+      this.explicarResistencia(target, 'con', cd, save, {
+        contra: `Tenacidade Mortoviva (CD 5 + ${amount} de dano)`,
+        seSucesso: 'fica de pé com 1 PV',
+      });
+      if (save.success) {
+        target.hp = 1;
+        this.quedasDaFonte?.delete(target);
+        this.say('recurso', `${target.name} devia cair, e não cai: a carne morta se fecha e ele fica de pé com 1 PV.`);
+        return;
+      }
+    }
+
     // GOLPE NÃO LETAL (Livro do Jogador): quem zera a vida de alguém com um
     // ataque corpo a corpo pode deixá-lo desacordado em vez de morto. O herói
     // escolhe isso antes (`naoLetal`, no menu do botão direito).
@@ -3698,29 +3738,6 @@ export class Encounter {
     target.hp = 0;
     this.dropConcentration(target);
     this.say('morte', `${target.name} morre${motivo ? ` (${motivo})` : ''}.`);
-    // TENACIDADE MORTOVIVA (SRD): o zumbi que cai a 0 PV faz resistência de
-    // Constituição CD 5 + o dano levado e, passando, fica de pé com 1 PV. Não
-    // vale contra dano radiante nem contra crítico.
-    //
-    // O traço estava declarado no bloco e descrito no jogo, mas não existia
-    // aqui: medido, um zumbi de 3 PV levando 4 de cortante, que deveria
-    // sobreviver 75% das vezes, sobreviveu 0 vezes em 200. São 12 zumbis no
-    // Poço da Coruja Velha.
-    if (target.traits?.includes('undeadFortitude') && type !== 'radiante' && !critical) {
-      const cd = 5 + amount;
-      const save = this.resistencia(target, 'con', cd);
-      this.explicarResistencia(target, 'con', cd, save, {
-        contra: `Tenacidade Mortoviva (CD 5 + ${amount} de dano)`,
-        seSucesso: 'fica de pé com 1 PV',
-      });
-      if (save.success) {
-        target.hp = 1;
-        this.quedasDaFonte?.delete(target);
-        this.say('recurso', `${target.name} devia cair, e não cai: a carne morta se fecha e ele fica de pé com 1 PV.`);
-        return;
-      }
-    }
-
     this.onEvent({ type: 'died', target });
     this.checkEnd();
   }
@@ -3732,7 +3749,8 @@ export class Encounter {
       return 0;
     }
     const was = target.hp;
-    const revived = hasCondition(target, 'inconsciente');
+    // Cura acorda quem caiu a 0 PV, não quem dorme por Sono (esse acorda por dano ou com um tapa).
+    const revived = hasCondition(target, 'inconsciente') && target.hp <= 0;
     // `Math.max` porque `hp` pode estar acima do teto efetivo (exaustão nova):
     // curar jamais pode BAIXAR a vida de alguém.
     target.hp = Math.max(target.hp, Math.min(maxHpEfetivo(target), target.hp + amount));
@@ -3743,7 +3761,10 @@ export class Encounter {
       target.stable = false;
       target.deathSaves = { successes: 0, failures: 0 };
       this.say('cura', `${target.name} volta a si com ${target.hp} PV.`);
-      if (this.over) this.levantarForaDoCombate(target);
+      // Fora da luta (acabou, ou explorando): de pé de graça. Na luta, o deslocamento zerado de quem estava
+      // inconsciente volta (senão não sobra o meio deslocamento que levantar custa).
+      if (this.over || this.explorando) this.levantarForaDoCombate(target);
+      else if (!target.acted && this.side === target.side) target.movementLeftFt = this.speedOf(target);
     }
     this.onEvent({ type: 'heal', target, amount: target.hp - was, source });
     return target.hp - was;
@@ -6046,7 +6067,10 @@ export class Encounter {
     if (actor.dead) return { ok: false, why: 'morto não usa item' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
     const porBonus = dados.acao === 'bonus';
-    if (porBonus ? actor.bonusUsed : actor.actionUsed) {
+    // Fora da luta (explorando, ou depois dela) não há turno: a exploração marca a ação como usada
+    // para travar o combate, e isso não pode impedir de beber uma poção nem de dá-la a um aliado.
+    const fora = Boolean(this.over || this.explorando);
+    if (!fora && (porBonus ? actor.bonusUsed : actor.actionUsed)) {
       return { ok: false, why: porBonus ? 'a ação bônus deste turno já foi usada' : 'a ação deste turno já foi usada' };
     }
     if (!quantosNaMochila(actor, itemId)) return { ok: false, why: `${dados.name} não está na mochila` };
@@ -6060,7 +6084,7 @@ export class Encounter {
     // Daqui para baixo nada mais recusa: pode cobrar.
     const gasto = consumirDaMochila(actor, itemId);
     if (!gasto) return { ok: false, why: `${dados.name} não está na mochila` };
-    if (porBonus) actor.bonusUsed = true; else this.gastarAcaoSimples(actor);
+    if (!fora) { if (porBonus) actor.bonusUsed = true; else this.gastarAcaoSimples(actor); }
 
     this.executarItem(actor, dados, target, { jogando });
 
@@ -6068,8 +6092,28 @@ export class Encounter {
     else if (dados.usos) this.say('recurso', `${dados.name}: restam ${gasto.restam} usos.`);
 
     this.onEvent({ type: 'item', actor, item: dados, target });
-    this.afterAction(actor);
-    this.checkEnd();
+    // `afterAction` termina em `checkEnd`: explorando, com todos os inimigos mortos, ele reencerraria a cena.
+    if (!fora) { this.afterAction(actor); this.checkEnd(); }
+    return { ok: true };
+  }
+
+  /**
+   * DAR UM ITEM a um aliado (SRD: interação com objeto, ao alcance do toque). Fora da luta é de graça; na luta
+   * gasta a interação gratuita do turno (a segunda gasta a ação), como sacar a arma.
+   */
+  darItem(actor, target, itemId) {
+    if (actor.dead || target.dead) return { ok: false, why: 'morto não recebe item' };
+    if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
+    if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se usa objeto' };
+    if (target.side !== actor.side || target === actor) return { ok: false, why: 'escolha um aliado' };
+    if (!this.field.vizinhos(actor.pos, target.pos)) return { ok: false, why: `${target.name} está longe: encoste nele (1,5 m)` };
+    const custo = this.custoDeInteracao(actor);
+    if (!custo) return { ok: false, why: 'a interação gratuita e a ação deste turno já foram usadas' };
+    const r = transferirItem(actor, target, itemId);
+    if (!r.ok) return r;
+    this.cobrarInteracao(actor, custo);
+    this.say('acao', `${actor.name} entrega ${nomeDeId(itemId).toLowerCase()} a ${target.name}.`);
+    this.onEvent({ type: 'item-dado', actor, target, itemId });
     return { ok: true };
   }
 
@@ -6107,6 +6151,8 @@ export class Encounter {
       }
     }
     if (dados.consumivel === 'curar') {
+      // O ramo `jogando` já recusa inimigo; beber ou dar na mão também (a poção o levantaria).
+      if (target.side !== actor.side && target.side !== 'neutro') return 'não se dá poção de cura a inimigo';
       if (target.dead) return `${target.name} já morreu`;
       // Toque Arrepiante: `heal` devolve 0 para quem está sob ele, e sem esta
       // guarda a ação e o frasco iam embora por nada.
@@ -6137,6 +6183,7 @@ export class Encounter {
     }
     if (dados.consumivel === 'arremesso') {
       if (target === actor) return 'não dá para arremessar em si mesmo';
+      if ((this.over || this.explorando) && target.side !== actor.side) return 'jogar item em inimigo é ação de combate';
       const dist = distanceFt(actor.pos, target.pos);
       if (dist > (dados.rangeFt ?? 20)) return `fora de alcance — ${dist} pés, alcança ${dados.rangeFt ?? 20}`;
       if (!this.field.hasLineOfSight(actor.pos, target.pos)) return 'sem linha de visão';
@@ -6259,9 +6306,12 @@ export class Encounter {
    * haver espaço de magia sobrando morre, e o grupo não tem o que fazer.
    */
   stabilize(actor, target) {
-    if (actor.actionUsed || actor.acaoLimitada || !this.field.vizinhos(actor.pos, target.pos)) return false;
+    // Fora da luta (explorando, ou depois dela) não há turno: a ação "usada" da exploração é só a trava do combate.
+    const fora = Boolean(this.over || this.explorando);
+    if (actor.dead || conditionEffects(actor).incapacitated || conditionEffects(actor).semAtaqueNemMagia) return false;
+    if ((!fora && (actor.actionUsed || actor.acaoLimitada)) || !this.field.vizinhos(actor.pos, target.pos)) return false;
     if (!hasCondition(target, 'inconsciente') || target.stable || target.dead) return false;
-    actor.actionUsed = true;
+    if (!fora) actor.actionUsed = true;
 
     const check = this.testeDeAtributo(actor, 'wis', skillBonus(actor, 'medicina'), 'Medicina');
     if (check.total >= 10) {
@@ -6271,7 +6321,7 @@ export class Encounter {
     } else {
       this.say('aviso', `${actor.name} não consegue estancar o sangramento de ${target.name}.`, `Medicina ${check.total} vs CD 10`);
     }
-    this.afterAction(actor);
+    if (!fora) this.afterAction(actor);
     return true;
   }
 
@@ -6294,7 +6344,7 @@ export class Encounter {
     return true;
   }
 
-  useFeature(actor, featureId, { target = null, modo = null } = {}) {
+  useFeature(actor, featureId, { target = null, modo = null, valor = null } = {}) {
     switch (featureId) {
       case 'secondWind': {
         if (actor.bonusUsed || !actor.resources.secondWind) return false;
@@ -6338,15 +6388,31 @@ export class Encounter {
         return true;
       }
       case 'layOnHands': {
-        // CURA PELAS MÃOS: ação, encosta e tira da reserva o que mandar —
-        // aqui, o que faltar ao ferido, até acabar a reserva.
+        // CURA PELAS MÃOS (SRD): ação, toque, e tira da reserva o que o paladino mandar (`valor`; sem ele, o que faltar
+        // ao ferido, até acabar a reserva). Com `modo: 'veneno'`, 5 PV da reserva tiram o veneno (sem curar). Não
+        // vale em morto-vivo nem constructo, nem em quem a necromancia impede de curar (`semCura`): a recusa vem
+        // ANTES de cobrar reserva ou ação. Fora do combate (explorando, ou a luta acabada) só gasta a reserva.
+        const semTurno = this.over || this.explorando;
         const alvo = target ?? actor;
-        if (actor.actionUsed || !actor.resources?.layOnHands) return false;
-        if (!alvo || alvo.dead || !isAdjacent(actor.pos, alvo.pos) && alvo !== actor) return false;
+        if ((actor.actionUsed && !semTurno) || !actor.resources?.layOnHands) return false;
+        if (actor.dead || conditionEffects(actor).incapacitated) return false;
+        if (!alvo || alvo.dead || alvo.side !== actor.side) return false;
+        if (alvo !== actor && !this.field.vizinhos(actor.pos, alvo.pos)) return false;
+        if (['morto-vivo', 'constructo'].includes(alvo.tipo)) return false;
+        if ((alvo.conditions ?? []).some((k) => CONDITIONS[k.id]?.semCura)) return false;
+        if (modo === 'veneno') {
+          if (!hasCondition(alvo, 'envenenado') || actor.resources.layOnHands < 5) return false;
+          if (!semTurno) actor.actionUsed = true;
+          actor.resources.layOnHands -= 5;
+          removeCondition(alvo, 'envenenado');
+          this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name} e tira o veneno (5 PV da reserva; restam ${actor.resources.layOnHands}).`);
+          return true;
+        }
         const falta = maxHpEfetivo(alvo) - alvo.hp;
         if (falta <= 0) return false;
-        const quanto = Math.min(falta, actor.resources.layOnHands);
-        actor.actionUsed = true;
+        const quanto = Math.floor(Math.min(valor ?? Infinity, falta, actor.resources.layOnHands));
+        if (!(quanto >= 1)) return false;
+        if (!semTurno) actor.actionUsed = true;
         actor.resources.layOnHands -= quanto;
         this.heal(alvo, quanto, actor);
         this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name}: ${quanto} PV (restam ${actor.resources.layOnHands} na reserva).`);

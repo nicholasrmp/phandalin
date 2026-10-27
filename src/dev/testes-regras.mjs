@@ -3299,7 +3299,7 @@ teste('Oração de Cura: o combate recusa; no descanso cura até 6 com 2d8 + mod
 teste('Muralha de Vento: dano ao surgir, e o projétil de arma que a cruza erra sozinho', () => {
   const { enc, h, foes } = comHeroi('druida', 5, {
     magias: ['muralhaDeVento'], pos: { x: 2, y: 5 },
-    foes: [['goblin', { x: 4, y: 6 }], ['goblinArqueiro', { x: 8, y: 5 }]],
+    foes: [['goblin', { x: 4, y: 6 }], ['goblin', { x: 8, y: 5 }]],
   });
   const [no_muro, arqueiro] = foes;
   no_muro.maxHp = no_muro.hp = 200;

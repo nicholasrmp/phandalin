@@ -677,14 +677,13 @@ export function criarCapitulo1(app, config) {
       // Como na aventura: o grupo vem pela curva, e os cavalos estão a uns
       // vinte metros — medido no mapa, de (8,11) até (18,12).
       //
-      // Dois goblins são ATIRADORES declarados (A e C); os outros dois a IA
-      // também deixa parados no alto, porque a regra do terreno alto com arma
-      // à distância vale para todo mundo. Na prática os quatro abrem atirando,
-      // e isso É a emboscada do livro: o perigo vem de cima e de longe.
+      // Dois goblins são ATIRADORES declarados (A e C, em `foesEmboscada`); os
+      // outros dois a IA também deixa parados no alto, porque a regra do
+      // terreno alto com arma à distância vale para todo mundo. Na prática os
+      // quatro abrem atirando, e isso É a emboscada do livro: o perigo vem de
+      // cima e de longe.
       const LUGARES = [{ x: 8, y: 11 }, { x: 8, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 13 }];
       enc.allOf('party').forEach((c, i) => { if (LUGARES[i]) c.pos = { ...c.pos, ...LUGARES[i] }; });
-      escondidos[0].tatica = 'atirador';
-      escondidos[2].tatica = 'atirador';
       if (!config.pularAbertura) await abertura();
       prepararExploracao();
       await chegada();

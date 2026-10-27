@@ -252,7 +252,6 @@ export function takeMonsterTurn(enc, monster) {
     && adjacentFoes.length > 0
     && monster.hp <= monster.maxHp * 0.4
     && !monster.bonusUsed
-    && ranged
   ) {
     enc.disengage(monster, { bonus: true });
     retreat(enc, monster, adjacentFoes);

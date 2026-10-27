@@ -18,8 +18,9 @@ import { quemDecide, apurar, apurarLugar, TEMPO_DA_VOTACAO_MS } from './game/dec
 import { definirPortaDaVila } from './view/vila.js';
 import { definirPortaDaLoja, abrirLojaLocal } from './view/loja.js';
 import { definirPortaDeNivel } from './view/nivel-tela.js';
+import { saquearCorpo } from './game/saque.js';
 import { LOJAS, comprar as comprarNaLoja, vender as venderNaLoja, vendaveis } from './game/comercio.js';
-import { equipar } from './rules/equipment.js';
+import { equipar, nomeDeId } from './rules/equipment.js';
 import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
 import { diferencasDoCampo } from './game/campo-delta.js';
 import { fotografar, emTexto, empacotarEvento, empacotarLista, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
@@ -136,7 +137,9 @@ class App {
       // que curasse sem cobrar nada seria um jeito de o jogador curar de
       // graça só por ter a janela aberta.
       onUsar: (p, id) => {
-        if (this.enc?.side !== 'party' || this.enc.over) {
+        // Explorando (ou depois da luta) não há turno: beber não custa ação (`useItem`).
+        const fora = Boolean(this.capitulo?.explorando || this.enc?.over);
+        if (!this.enc || (!fora && this.enc.side !== 'party')) {
           return { ok: false, why: 'dá para usar item só no turno do grupo' };
         }
         const r = this.enc.useItem(p, id, { target: p });
@@ -388,6 +391,7 @@ class App {
     this.selected = null;
     this.mode = null;
 
+    this.board?.disposeCamera?.();      // o canvas é um só: o Board do encontro anterior solta os ouvintes dele
     this.board = new Board(this.canvas, {
       encounter: this.enc,
       onTileClick: (t) => this.onTileClick(t),
@@ -577,9 +581,10 @@ class App {
     const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
     if (!c) return;
     this.marcarAtor(c);   // a cena que este passo ou golpe começar é dele
-    if (acao === 'contexto' || acao === 'contexto-escolher') { this.contextoDeFora(c, { de, acao, x, y, idx: arguments[0].idx }, avisar); return; }
     const emCombate = !this.capitulo?.explorando;
+    // Quem já terminou o turno não age: vale também para o menu do botão direito (as opções que ele escolhe rodam aqui).
     if (emCombate && c.acted) { avisar(`${c.name} já terminou o turno`); return; }
+    if (acao === 'contexto' || acao === 'contexto-escolher') { this.contextoDeFora(c, { de, acao, x, y, idx: arguments[0].idx }, avisar); return; }
 
     // F5: a fase do grupo é simultânea. Cada jogador age com os SEUS heróis, em qualquer ordem, e o motor já aceita isso:
     // cada herói termina o turno sozinho, e a vez passa aos inimigos quando o último termina.
@@ -1965,7 +1970,12 @@ class App {
     if (!c) return;
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(tile.x, tile.y));
-    if (!node || node.cost === 0) return;
+    if (node?.cost === 0) return;
+    if (!node) {
+      // O clique que não anda não pode parecer ignorado: diz por quê.
+      this.refuse(c, this.enc.field.blocksMove(tile.x, tile.y) ? 'não dá para andar até lá' : `fora do alcance (restam ${c.movementLeftFt ?? 0} pés de deslocamento)`);
+      return;
+    }
     const corda = this.cordaImpede(c, tile);
     if (corda) { this.refuse(c, corda); return; }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
@@ -1997,6 +2007,7 @@ class App {
 
   onTileHover(tile) {
     const c = this.selected;
+    if (!tile) this.hud.setHint('');          // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
     this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
 
     if (!c || this.enc.side !== 'party' || this.mode) {
@@ -2228,8 +2239,8 @@ class App {
    * golpe de ação bônus do monge). O azulejo da barra não serve para eles:
    * lá não há onde escolher em quem.
    */
-  usarFeature(c, featureId, { target = null } = {}) {
-    if (!this.enc.useFeature(c, featureId, { target })) return;
+  usarFeature(c, featureId, { target = null, valor = null, modo = null } = {}) {
+    if (!this.enc.useFeature(c, featureId, { target, valor, modo })) return;
     this.afterAct();
   }
 
@@ -2311,6 +2322,20 @@ class App {
       ? `${c.name} acende uma tocha: luz em 20 pés ao redor, e quem está no escuro agora vê de onde ela vem.`
       : `${c.name} apaga a tocha.`);
     this.refresh();
+  }
+
+  /**
+   * Revistar um corpo pelo menu (`game/saque.js`): o tesouro da tabela, de graça fora da luta, uma ação na luta, uma vez por corpo.
+   * A mensagem fica no painel de texto, como o Olhar.
+   */
+  saquear(c, corpo) {
+    const r = saquearCorpo(this.enc, c, corpo, this.enc.combatants.filter((x) => x.side === 'party'));
+    if (!r.ok) { this.refuse(c, r.why); return; }
+    audio.play('click');
+    this.mostrarTexto(corpo.name, r.achados.length
+      ? [`${c.name} revista o corpo e leva o que ele carregava.`, ...r.achados.map((id) => `· ${nomeDeId(id)}`)]
+      : `${c.name} revista o corpo e não acha nada que valha.`);
+    this.afterAct(c);
   }
 
   /** Usar item pelo menu: a mesma porta do clique na barra. */

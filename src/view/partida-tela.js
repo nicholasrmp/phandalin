@@ -117,7 +117,12 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const meus = () => (enc?.combatants ?? []).filter((c) => c.side === 'party' && !c.dead && c.hp > 0 && visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce);
 
   function destacar() {
-    board?.setOverlay?.({ selected: selecionado });
+    // `mode`: a mira do convidado acende a prévia da área, o chão de alcance e a cruz de alvo impossível
+    // (sem ele o tabuleiro dele nunca desenha nada). Aqui os `alvos` são casas {x,y}; o tabuleiro lê `.pos`.
+    board?.setOverlay?.({
+      selected: selecionado,
+      mode: emModo ? { ...emModo, alvos: (emModo.alvos ?? []).map((t) => ({ pos: t })) } : null,
+    });
     desenharGrupo();
     // A barra de ações é a do anfitrião, com o mesmo código (`view/hud.js`), desenhada com o espelho da partida.
     if (hud && enc) { try { hud.update(enc, selecionado, emModo); } catch (e) { console.warn('a barra de ações não desenhou o espelho', e); } }

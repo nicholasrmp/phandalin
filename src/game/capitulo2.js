@@ -60,6 +60,10 @@ import { garantirInventario } from '../rules/equipment.js';
 import { criarBuscas } from './buscas.js';
 
 const MOVIMENTO = 60;
+// Os 275 XP do esconderijo (o marco do livro) pagos conforme as salas caem; o que sobra sai ao limpar tudo (`fimDoCapitulo`).
+// Os vigias e a ponte ficam no caminho do covil: 75 + 100 + 125 = 300, o 2º nível, antes do covil e do Klarg. Quem pula uma
+// sala (a chaminé do canil, a boca do túnel) recebe o que faltou no fim (`fimDoCapitulo`): o total segue 350 para todos.
+const PARCELAS_DO_ESCONDERIJO = { vigias: 100, ponte: 125, pocos: 50 };
 
 const SALAS = {
   vigias: { nome: 'o posto dos vigias', em: 'no mato' },
@@ -826,12 +830,23 @@ export function criarCapitulo2(app, config) {
     // A enchente já estava a caminho: desce mesmo que a luta tenha acabado.
     if (estado.enchente) await enchente();
     const texto = [];
+    let subiram = [];     // quem passou de nível com a parcela de XP desta sala (a tela vem depois do texto que explica o XP)
     if (g?.tregua) {
       texto.push(estado.sildarLivre
         ? 'A trégua vale. Sildar está livre, e Yeemik ainda quer a cabeça de Klarg.'
         : 'A trégua vale: os goblins do covil abaixam as armas. Yeemik espera a cabeça de Klarg, com Sildar amarrado ao lado.');
     } else {
       if (g) g.vencido = true;
+      // Os 275 do esconderijo chegam aos poucos, na ordem em que o grupo o limpa: sem isso o 2º nível (300) só vinha com o
+      // chefe morto, e o covil e o Klarg eram lutados por heróis de 1º nível, os dois encontros que derrotavam o grupo.
+      const parcela = PARCELAS_DO_ESCONDERIJO[g?.id];
+      if (parcela) {
+        const aPagar = enc.combatants.filter((c) => c.side === 'party' && !c.dead && !c.marcos?.includes(`esconderijo-${g.id}`));
+        for (const c of aPagar) (c.marcos ??= []).push(`esconderijo-${g.id}`);
+        const sobem = darXp(aPagar, parcela);
+        if (aPagar.length) texto.push(`Cada herói ganha ${parcela} XP por limpar ${SALAS[g.id]?.nome ?? 'a sala'} (agora ${aPagar[0].xp}).`);
+        subiram = sobem;
+      }
       if (g?.id === 'covil') {
         if (yeemik?.dead) {
           const quem = herois()[0];
@@ -853,11 +868,13 @@ export function criarCapitulo2(app, config) {
       }
     }
     if (podeEncerrar()) {
+      for (const tx of subiram.length ? await telaDeSubirNivel(root, subiram) : []) enc.say('cura', tx);
       await fimDoCapitulo(texto);
       return;
     }
     texto.push('Dá para descansar agora (botão direito num herói) antes de seguir.');
     await narrar(root, { formato: 'painel', paginas: [{ texto }] });
+    if (subiram.length) for (const tx of await telaDeSubirNivel(root, subiram)) enc.say('cura', tx);
     prepararExploracao();
   }
 
@@ -867,10 +884,14 @@ export function criarCapitulo2(app, config) {
     // O marco do livro: 275 XP para cada um ao limpar o esconderijo.
     const grupo = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
     // O 275 só se paga uma vez por herói: carregar um save feito depois dele reentra o esconderijo.
+    // O que cada um ainda não recebeu das salas (as que o grupo pulou, ou em que ele estava caído) sai daqui.
+    const restoDe = (c) => 275 - Object.entries(PARCELAS_DO_ESCONDERIJO).reduce((n, [id, x]) => n + (c.marcos?.includes(`esconderijo-${id}`) ? x : 0), 0);
     const aPagar = grupo.filter((c) => !c.marcos?.includes('esconderijoLimpo'));
     for (const c of aPagar) (c.marcos ??= []).push('esconderijoLimpo');
-    const sobem = darXp(aPagar, 275);
-    texto = [...texto, `Cada herói ganha 275 XP pelo esconderijo (agora ${grupo[0]?.xp ?? 0}).`];
+    const sobem = [];
+    for (const c of aPagar) sobem.push(...darXp([c], restoDe(c)));
+    const resto = aPagar.length ? Math.max(...aPagar.map(restoDe)) : 0;
+    texto = [...texto, resto ? `Cada herói ganha o que faltava dos 275 XP do esconderijo (agora ${grupo[0]?.xp ?? 0}).` : `Os 275 XP do esconderijo já estão com todos (agora ${grupo[0]?.xp ?? 0}).`];
     await narrar(root, { formato: 'tela', paginas: [{ titulo: 'O esconderijo caiu', texto }] });
     if (sobem.length) for (const t of await telaDeSubirNivel(root, sobem)) enc.say('cura', t);
     app.campanha = {

@@ -66,6 +66,7 @@ import { ctxDe } from './magias-fora.js';
 import { rolarTeste, disfarcado, disfarceDe, ativaDe } from '../rules/utilidade.js';
 import { guardar } from './comercio.js';
 import { garantirInventario } from '../rules/equipment.js';
+import { grupoTem } from './saque.js';
 
 const MOVIMENTO = 60;
 
@@ -914,7 +915,8 @@ export function criarMansao(app, config) {
       if (quem) salvo.temChave = true;
       if (salvo.iarno === 'preso') texto.push('O Cajavidro está rendido, com as mãos amarradas. Ele sorri como quem espera um jantar, não uma cela.');
       else texto.push('O Cajavidro está morto. O cajado de vidro rola pelo chão sem quebrar.');
-      if (quem && !(quem.weapons ?? []).includes('cajadoDeDefesa')) (quem.weapons ??= []).push('cajadoDeDefesa');
+      // O saque do corpo (`game/saque.js`) pode já ter dado o cajado a alguém do grupo, vivo ou morto: peça única, uma vez só.
+      if (quem && !grupoTem(enc.combatants.filter((x) => x.side === 'party'), 'cajadoDeDefesa')) (quem.weapons ??= []).push('cajadoDeDefesa');
     } else if (g) {
       texto.push(`Silêncio ${SALAS[g.id]?.em ?? 'na sala'}.`);
     }

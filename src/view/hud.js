@@ -1057,6 +1057,10 @@ export class Hud {
         linhas.push([`Contra ${alvo.name}`, rot.aoChegar ? `${rot.texto} ao encostar` : rot.texto]);
         if (!prev.foraDeAlcance && !prev.semVisao) linhas.push(['Dano esperado', prev.esperado.toFixed(1)]);
       }
+      // O Ataque Furtivo é passivo e não tem botão: sem esta linha o ladino
+      // só o via no menu do botão direito.
+      if (prev?.furtivo) linhas.push(['Ataque Furtivo', `+${prev.furtivo} neste golpe`]);
+      else if (c.sneakAttack && !alvo) linhas.push(['Ataque Furtivo', `+${c.sneakAttack} com vantagem ou aliado colado no alvo`]);
 
       return this.tile(iconeDaArma(wid, w), {
         tecla,

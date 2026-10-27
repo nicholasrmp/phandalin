@@ -16,12 +16,17 @@ import { previsaoDeAtaque, previsaoDeMagia, chanceD20 } from '../rules/odds.js';
 import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc, saveBonus, abilityMod } from '../rules/abilities.js';
 import { iconeDaArma, iconeDeMagia } from '../art/icons.js';
-import { WEAPONS, consumiveisDe, garantirInventario } from '../rules/equipment.js';
+import { WEAPONS, consumiveisDe, garantirInventario, conteudoDaMochila, nomeDeId, itemDeId } from '../rules/equipment.js';
 import { hasCondition, maxHpEfetivo } from '../rules/conditions.js';
 import { distanceFt, isAdjacent } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, visaoNoEscuro } from '../rules/luz.js';
 import { opcoesDeMagia, opcoesDoHeroi, ctxDe } from './magias-fora.js';
 import { falaPorMensagem } from '../rules/utilidade.js';
+import { chaveDoTesouro, porqueNaoSaquear } from './saque.js';
+import { opcoesDeClasse } from './interacoes-classe.js';
+
+/** Linhas "Dar item" por aliado no menu (o servidor da sala aceita escolha de menu até 60). */
+const MAX_DAR = 16;
 
 /** O que se vê de longe, por superfície do mapa. Texto nosso. */
 export const OLHAR = {
@@ -173,6 +178,8 @@ export function opcoesDaCasa(app, tile) {
   const sup = enc.field.surfaceAt(tile.x, tile.y);
   const explorando = Boolean(app.capitulo?.explorando);
   const vez = !explorando && enc.side === 'party' && !enc.over && !app.busy;
+  // Fora da luta (explorando, ou depois dela) não há turno: item, socorro e entrega não custam ação.
+  const fora = explorando || Boolean(enc.over);
   const opcoes = [];
   const olhar = (titulo, texto) => ({ rotulo: 'Olhar', icone: 'acao-procurar', detalhe: 'de graça', fazer: () => app.mostrarTexto(titulo, texto) });
 
@@ -320,6 +327,10 @@ export function opcoesDaCasa(app, tile) {
           fazer: () => app.tryCast(c, id, { target: occ, point: occ.pos }),
         });
       }
+    }
+    // Poderes de classe que pedem alvo (Cura pelas Mãos, Inspiração Bárdica): o azulejo da barra não escolhe em quem.
+    if (c) opcoes.push(...opcoesDeClasse(app, c, occ, { enc, vez, explorando }));
+    if (c && (vez || fora)) {
       for (const it of consumiveisDe(c)) {
         if (it.dados.consumivel === 'arremesso') continue;
         // JOGAR A POÇÃO (regra da casa). Num aliado que está longe do toque,
@@ -329,7 +340,7 @@ export function opcoesDaCasa(app, tile) {
         // recebendo a poção inteira.
         const longe = occ !== c && !enc.field.vizinhos(c.pos, occ.pos);
         const jogando = longe && Boolean(it.dados.jogavel) && it.dados.consumivel === 'curar';
-        const semAcao = c.actionUsed && it.dados.acao !== 'bonus' ? 'a ação deste turno já foi usada' : null;
+        const semAcao = !fora && c.actionUsed && it.dados.acao !== 'bonus' ? 'a ação deste turno já foi usada' : null;
         const veto = semAcao ?? enc.vetoDeItem(c, it.dados, occ, { jogando });
         const cura = it.dados.cura
           ? (jogando ? `cura metade de ${it.dados.cura}` : `cura ${it.dados.cura}`)
@@ -346,11 +357,32 @@ export function opcoesDaCasa(app, tile) {
         });
       }
       if (occ !== c && hasCondition(occ, 'inconsciente') && !occ.stable) {
-        const motivo = c.actionUsed ? 'a ação deste turno já foi usada' : !enc.field.vizinhos(c.pos, occ.pos) ? 'encoste nele primeiro' : null;
+        const motivo = !fora && c.actionUsed ? 'a ação deste turno já foi usada' : !enc.field.vizinhos(c.pos, occ.pos) ? 'encoste nele primeiro' : null;
         opcoes.push({
           grupo: 'Socorrer', rotulo: 'Estabilizar', detalhe: 'Medicina, CD 10', icone: 'acao-estabilizar', motivo, alvoPrevia: occ,
           fazer: () => { app.enc.stabilize(c, occ); app.afterAct(); },
         });
+      }
+      // DAR UM ITEM (SRD: interação com objeto, ao alcance do toque). Pelo menu, e não pela ficha, para valer
+      // também numa sala: o convidado pede o menu pelo anfitrião, com o herói dele e o aliado que clicou.
+      // Só a aliado vivo e de carne (invocado não carrega mochila), uma linha por item DISTINTO e no máximo
+      // `MAX_DAR` delas: o servidor da sala recusa escolha de menu acima de 60 (`worker/sala-servidor.js`).
+      if (occ !== c && occ.side === c.side && !occ.dead && !occ.invocado) {
+        const longe = !enc.field.vizinhos(c.pos, occ.pos);
+        const semInteracao = !fora && !enc.custoDeInteracao(c) ? 'a interação gratuita e a ação deste turno já foram usadas' : null;
+        const distintos = [...new Map(conteudoDaMochila(c)
+          .filter((e) => !itemDeId(e.id)?.dados.props?.includes('desarmado'))
+          .map((e) => [e.id, e])).values()];
+        // O que se usa (poção, kit) vem primeiro: é o que se passa no meio da aventura.
+        distintos.sort((a, b) => Number(Boolean(itemDeId(b.id)?.dados.consumivel)) - Number(Boolean(itemDeId(a.id)?.dados.consumivel)));
+        for (const e of distintos.slice(0, MAX_DAR)) {
+          opcoes.push({
+            grupo: 'Dar item', rotulo: `${nomeDeId(e.id)} a ${occ.name}`, icone: 'acao-usarObjeto',
+            detalhe: `tem ${e.qtd}${fora ? ' · de graça' : ' · interação'}`,
+            motivo: longe ? 'encoste nele primeiro' : semInteracao, alvoPrevia: occ,
+            fazer: () => { const r = enc.darItem(c, occ, e.id); if (r.ok) app.refresh(); else app.refuse(c, r.why); },
+          });
+        }
       }
     }
     // Golpe não letal: escolhido antes de bater, vale para o corpo a corpo.
@@ -396,6 +428,41 @@ export function opcoesDaCasa(app, tile) {
     return { titulo, subtitulo: `${estadoAparente(occ)} · aliado`, alvo, opcoes };
   }
 
+  // ----------------------------------------------------------------- corpo ----
+  // `enc.at` não devolve quem morreu (morto não ocupa casa), então o menu nunca via o cadáver: era só o "Olhar" do chão.
+  // As opções de CADA corpo da casa entram na frente e as do chão/objeto seguem (Olhar o chão, ilusão, gancho da cena,
+  // magias de utilidade da casa): o corpo soma, não engole.
+  const corpos = enc.combatants.filter((m) => m.dead && m.pos && !m.invocado
+    && tile.x >= m.pos.x && tile.x < m.pos.x + (m.pos.f ?? 1) && tile.y >= m.pos.y && tile.y < m.pos.y + (m.pos.f ?? 1));
+  const opcoesDosCorpos = [];
+  for (const corpo of corpos) {
+    const aliado = corpo.side === 'party';
+    const nome = corpos.length > 1 ? ` de ${corpo.name}` : '';
+    opcoesDosCorpos.push({ ...olhar(corpo.name, `${corpo.name} está morto. ${corpo.blurb ?? ''}`.trim()), rotulo: `Olhar o corpo${nome}` });
+    // Revistar: só o que a tabela de tesouro diz que ele carrega; de graça fora da luta, uma ação na luta.
+    if (!aliado && chaveDoTesouro(corpo)) {
+      opcoesDosCorpos.push({
+        grupo: 'Corpo', rotulo: `Revistar o corpo${nome}`, icone: 'acao-procurar', alvoPrevia: corpo,
+        detalhe: fora ? 'de graça' : 'gasta a ação', motivo: porqueNaoSaquear(enc, c, corpo), fazer: () => app.saquear(c, corpo),
+      });
+    }
+    // Trazer de volta (Revivificar) ou erguer (Animar os Mortos): o mesmo `tryCast` do clique no corpo com a magia na
+    // mira. Na luta e depois dela; explorando a trava de ação da cena recusaria, e a exploração tem as magias de utilidade.
+    if (c && (vez || enc.over)) {
+      for (const id of magiasProntas(c)) {
+        const s = getSpell(id);
+        if (!((s.kind === 'reviver' && aliado) || (s.kind === 'animarMortos' && !aliado))) continue;
+        const r = enc.canCast(c, id, { target: corpo });
+        opcoesDosCorpos.push({
+          grupo: 'Conjurar', rotulo: `${s.name}${nome}`, spellId: id, motivo: r.ok ? enc.porqueNaoAlvo(c, s, corpo) : r.why, alvoPrevia: corpo,
+          icone: iconeDeMagia(s), circulo: s.level, fazer: () => app.tryCast(c, id, { target: corpo, point: corpo.pos }),
+        });
+      }
+    }
+    // Falar com os Mortos, Reviver os Mortos (explorando).
+    if (explorando) opcoesDosCorpos.push(...opcoesDeMagia(app, c, { occ: corpo }));
+  }
+
   // ------------------------------------------------------- objeto / chão ----
   // A mobília de arte própria diz o que é (a variante vem da anotação do mapa); sem texto próprio, vale o da superfície.
   const variante = sup === 'prop' || sup === 'propBaixo'
@@ -415,6 +482,13 @@ export function opcoesDaCasa(app, tile) {
   for (const o of app.capitulo?.interacoes?.(tile, sup, c) ?? []) opcoes.push(o);
   if (explorando) opcoes.push(...opcoesDeMagia(app, c, { tile }));
   const dist = c ? distanceFt(c.pos, tile) : null;
+  if (corpos.length) {
+    const corpo = corpos[0];
+    return {
+      titulo: corpos.length > 1 ? `${corpos.length} corpos` : corpo.name, subtitulo: 'morto', opcoes: [...opcoesDosCorpos, ...opcoes],
+      alvo: { look: corpos.length > 1 ? null : corpo.look, icone: 'acao-procurar', lado: 'objeto', estado: 'morto', etiquetas: dist != null ? [`${dist} pés de ${c.name}`] : [] },
+    };
+  }
   return {
     titulo: nome, subtitulo: null, opcoes,
     alvo: { icone: 'acao-procurar', lado: 'objeto', etiquetas: c ? [`${dist} pés de ${c.name}`] : [] },

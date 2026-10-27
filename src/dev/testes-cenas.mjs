@@ -219,15 +219,18 @@ teste('o covil tem quatro goblins e Yeemik, e Sildar amarrado com 1 PV', () => {
   assert.equal(sildar.side, 'neutro');
 });
 
-teste('o goblin arqueiro esconde-se tão bem quanto o goblin do SRD', () => {
+teste('o goblin atirador é o goblin do SRD: mesma CA 15 e mesma Furtividade, só a arma na mão muda', () => {
   const g = makeMonster('goblin', { x: 0, y: 0 });
-  const a = makeMonster('goblinArqueiro', { x: 0, y: 0 });
+  const a = makeMonster('goblin', { x: 0, y: 0 }, { tatica: 'atirador', arma: 'Arco curto' });
   assert.equal(skillBonus(a, 'furtividade'), skillBonus(g, 'furtividade'));
-  assert.ok(a.ac < g.ac, 'o arqueiro é o goblin sem escudo: só a CA muda');
+  assert.equal(a.ac, 15, 'o bloco do SRD não muda a CA com a arma');
+  assert.equal(a.tatica, 'atirador');
+  assert.equal(MONSTERS.goblinArqueiro, undefined, 'o arqueiro é o goblin: não há mais bloco próprio');
+  assert.equal(MONSTERS.goblin.fonte, 'SRD');
 });
 
 teste('a visão no escuro dos goblinoides vem do bloco, não do nome', () => {
-  for (const id of ['goblin', 'goblinArqueiro', 'goblinChefe', 'yeemik', 'klarg', 'bugbear', 'hobgoblin']) {
+  for (const id of ['goblin', 'goblinChefe', 'yeemik', 'klarg', 'bugbear', 'hobgoblin']) {
     assert.equal(MONSTERS[id].senses?.darkvisionFt, 60, `${id} sem senses.darkvisionFt`);
   }
   // E um nome inventado não ganha visão no escuro de brinde.
@@ -236,7 +239,7 @@ teste('a visão no escuro dos goblinoides vem do bloco, não do nome', () => {
 });
 
 teste('os dados de vida dos goblinoides batem com os PV do bloco', () => {
-  for (const id of ['goblin', 'goblinArqueiro', 'goblinChefe', 'hobgoblin', 'bugbear', 'klarg', 'yeemik', 'droop']) {
+  for (const id of ['goblin', 'goblinChefe', 'hobgoblin', 'bugbear', 'klarg', 'yeemik', 'droop']) {
     const m = MONSTERS[id];
     assert.ok(m.hpDice, `${id} sem hpDice`);
     assert.equal(Math.floor(averageOf(m.hpDice)), m.maxHp, `${id}: ${m.hpDice} não dá ${m.maxHp}`);
@@ -362,10 +365,10 @@ teste('Tenacidade Mortoviva: o zumbi fica de pé com 1 PV, menos no radiante', (
 
 teste('o monstro de corpo a corpo fecha a distância em vez de arremessar', () => {
   const mapa = Array.from({ length: 30 }, () => '.'.repeat(30));
-  const turno = (id, casas) => {
+  const turno = (id, casas, opcoes = {}) => {
     const party = makeParty({ nivel: 3 });
     party.forEach((c, i) => { c.pos = { x: 2 + i, y: 2 }; });
-    const m = makeMonster(id, { x: 2, y: 2 + casas });
+    const m = makeMonster(id, { x: 2, y: 2 + casas }, opcoes);
     const enc = new Encounter({ battlefield: new Battlefield(30, 30, mapa), party, foes: [m], rng: makeRng(7) });
     enc.start();
     enc.side = 'foes';
@@ -378,7 +381,7 @@ teste('o monstro de corpo a corpo fecha a distância em vez de arremessar', () =
   assert.ok(turno('bugbear', 12) > 0, 'o bugbear ficou parado jogando azagaia');
   assert.ok(turno('ogro', 12) > 0, 'o ogro ficou parado jogando azagaia');
   // Quem é atirador de verdade, ou está em alcance normal, continua atirando.
-  assert.equal(turno('goblinArqueiro', 12), 0, 'o arqueiro não devia sair do lugar');
+  assert.equal(turno('goblin', 12, { tatica: 'atirador', arma: 'Arco curto' }), 0, 'o arqueiro não devia sair do lugar');
 });
 
 teste('o monstro contorna a quina em vez de travar na parede de borda', () => {

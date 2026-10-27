@@ -435,6 +435,42 @@ export function consumirDaMochila(actor, id) {
   return { restam: 0, acabou: true };
 }
 
+/**
+ * Passa UMA unidade de `id` da mochila de `de` para a de `para` (a regra de quem pode e o que custa é de
+ * `Encounter.darItem`). A arma guardada vive em `weapons`, não em `bag`; o que está nas mãos ou no corpo
+ * (arma empunhada, armadura e escudo vestidos) se desequipa antes.
+ */
+export function transferirItem(de, para, id) {
+  garantirInventario(de);
+  garantirInventario(para);
+  const dados = itemDeId(id)?.dados;
+  if (!dados) return { ok: false, why: 'item desconhecido' };
+  const i = de.bag.findIndex((e) => e.id === id);
+  if (i < 0) {
+    if (dados.props?.includes('desarmado')) return { ok: false, why: `${dados.name} não se dá: são as próprias mãos` };
+    // Arma guardada: conta as cópias contra as que estão nas mãos (a adaga de reserva passa; a que se empunha, não).
+    const maos = [noEncaixe(de, 'maoPrincipal'), noEncaixe(de, 'maoSecundaria')];
+    const copias = (de.weapons ?? []).filter((w) => w === id).length;
+    if (copias <= maos.filter((m) => m === id).length) {
+      return { ok: false, why: `${dados.name} não está na mochila (o que está em uso se desequipa antes)` };
+    }
+    if ((para.weapons ?? []).includes(id)) return { ok: false, why: `${para.name ?? 'o outro'} já tem ${dados.name.toLowerCase()}` };
+    de.weapons.splice(de.weapons.indexOf(id), 1);
+    (para.weapons ??= []).push(id);
+    return { ok: true };
+  }
+  const e = de.bag[i];
+  let doado;
+  if (e.qtd > 1) { e.qtd -= 1; doado = { id, tipo: e.tipo, qtd: 1 }; }
+  else { de.bag.splice(i, 1); doado = e; }   // a entrada inteira leva `usosRestantes` e `litros` junto
+  const jaTem = para.bag.find((x) => x.id === id);
+  if (jaTem && dados.pilha) jaTem.qtd += doado.qtd;
+  else para.bag.push(doado);
+  // Deu a última tocha com ela acesa: a luz vai junto com a tocha.
+  if (id === 'tocha' && de.tochaAcesa && !de.bag.some((x) => x.id === 'tocha' && x.qtd > 0)) de.tochaAcesa = false;
+  return { ok: true };
+}
+
 /** O que dá para usar agora, já separado do resto da mochila. */
 export function consumiveisDe(actor) {
   garantirInventario(actor);

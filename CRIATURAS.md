@@ -48,8 +48,7 @@ escrito à mão e fica como está.
 
 | id | nome | tamanho | ND | folha | animação | aparece em |
 |---|---|---|---|:-:|---|---|
-| `goblin` | Goblin | pequeno | 1/4 | ✅ | completa | castelo, encounter, estrada (sorteio) |
-| `goblinArqueiro` | Goblin arqueiro | pequeno | 1/4 | ✅ | completa | castelo, encounter |
+| `goblin` | Goblin | pequeno | 1/4 | ✅ | completa · 2 armas/aparências | castelo, encounter, estrada (sorteio) |
 | `goblinChefe` | Chefe Goblin | pequeno | 1 | ✅ | completa | encounter |
 | `hobgoblin` | Hobgoblin | médio | 1/2 | ✅ | completa · 2 armas/aparências | castelo, encounter, estrada (sorteio) |
 | `bugbear` | Bugbear | médio | 1 | ✅ | completa | encounter |

@@ -69,10 +69,6 @@ export const MORTOS = {
     ['Quem fez isto?', 'Os de capa vermelha. Riam.'],
     ['Alguém mais sobreviveu?', 'A família. Eles estão nas jaulas. Tirem eles.'],
   ],
-  goblinArqueiro: [
-    ['Quem mandou vocês?', 'Klarg. E o recado veio do castelo.'],
-    ['Onde estão os outros?', 'Mato, rio, caverna. Um de cada lado.'],
-  ],
   _muda: 'O corpo não aprendeu língua nenhuma em vida. A magia só lhe arranca um suspiro, e mais nada.',
   _geral: [
     ['Quem foi a última pessoa que você viu?', 'Um rosto. O escuro veio depressa.'],
