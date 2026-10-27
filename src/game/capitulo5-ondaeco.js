@@ -62,6 +62,8 @@ export function criarOndaEco(app) {
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
   const pista = (t) => { if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t); };
   const tem = (id) => herois().some((h) => (h.bag ?? []).some((i) => i.id === id && i.qtd > 0));
+  // O livro pede FERRAMENTAS DE LADRÃO para arrombar o cofre dos avaliadores e a porta dos aposentos do sacerdote.
+  const semFerramentas = (c) => (garantirInventario(c).bag.some((i) => i.id === 'ferramentasDeLadrao' && i.qtd > 0) ? null : `${c.name} não tem ferramentas de ladrão`);
 
   // ------------------------------------------------------- o elenco ----
   // AS CASAS VÊM DO MAPA (`ONDA_ECO.ninhos`), escolhidas pelo gerador depois de selar o mapa: toda vaga é
@@ -117,6 +119,7 @@ export function criarOndaEco(app) {
         const l = porRodada[k];
         const units = l.bando.filter((f) => !f.dead && !enc.combatants.includes(f));
         if (!units.length) continue;
+        l.antes?.();
         for (const f of units) f.side = 'foes';
         estado.reforcos.push(...units);
         return { units, aviso: l.aviso };
@@ -242,8 +245,51 @@ export function criarOndaEco(app) {
   async function acordarFenda() {
     salvo.fenda = 'luta';
     await painel(TEXTOS.fenda, { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
+    // O livro: com dois ou mais bugbears mortos, o doppelganger recua para o templo para avisar Nezznar. Ele sai do campo
+    // vivo (não dá XP agora) e espera no templo, onde se faz passar por Nundro.
+    enc.antesDoTurno = (m) => {
+      if (!vhalak[0] || m !== vhalak[0] || m.dead || m.recuou) return false;
+      if (bugbearsFenda.filter((f) => f.dead).length < 2) return false;
+      m.recuou = true;
+      salvo.vhalakRecuou = true;
+      salvo.aranhasAvisadas = true;           // ele corre para avisar Nezznar: as aranhas já estão de pé quando o grupo chegar
+      tirarDoTabuleiro(m);
+      enc.say('acao', TEXTOS.vhalakRecua);
+      enc.checkEnd();
+      app.refresh();
+      return true;
+    };
     luta([...bugbearsFenda, ...vhalak].filter((f) => !f.dead));
   }
+
+  // O DOPPELGANGER NO TEMPLO: se recuou, faz-se passar por Nundro amarrado ao lado de Nezznar (barganha para o grupo se
+  // render). Se o Nundro de verdade já foi libertado o truque não vale, e Vhalak só se junta à luta como drow.
+  let vhalakNoTemplo = null;
+  let refemFalso = null;
+  const vhalakDoTemplo = () => vhalak[0] ?? (vhalakNoTemplo ??= nasce('doppelganger', ninho.vhalak[0], null, 'Vhalak (drow)'));
+  const haRefem = () => Boolean(salvo.vhalakRecuou && !salvo.templo && salvo.nundro !== 'livre');
+  function posicionarRefem() {
+    if (!haRefem() || !nezznar || refemFalso) return;
+    refemFalso = makeNpc('gundren', casaPerto({ x: nezznar.pos.x + 1, y: nezznar.pos.y + 1 }), { side: 'neutro' });
+    refemFalso.name = 'Nundro';
+    refemFalso.refem = true;
+    refemFalso.falas = ['Por trás do pano, ele geme e olha de vocês para o drow, depressa, como quem pede ajuda.'];
+    refemFalso.facingVec = { dx: 0, dy: 1 };
+    enc.addCombatant(refemFalso);
+  }
+  /**
+   * O doppelganger na luta do templo. Revelado pela Intuição ele entra já (`'revelado'`); senão o "Nundro" continua
+   * amarrado na rodada 1 e a máscara cai na rodada 2 (o livro o põe como barganha, não como combatente de abertura).
+   */
+  function vhalakDaLuta() {
+    if (!salvo.vhalakRecuou || salvo.templo) return null;
+    const v = vhalakDoTemplo();
+    if (v.dead) return null;
+    v.pos = refemFalso ? { ...refemFalso.pos } : { ...casaPerto({ x: nezznar.pos.x, y: nezznar.pos.y + 1 }) };
+    v.facingVec = refemFalso?.facingVec ?? { dx: 1, dy: 0 };
+    return v;
+  }
+  const tirarRefem = () => { if (refemFalso) { tirarDoTabuleiro(refemFalso); refemFalso = null; } };
 
   // O GÁS DOS FUNGOS (área 8): quem atravessa a caverna solta o gás do tapete. Salvaguarda de Constituição
   // CD 11 de todos que estão lá; falhou, 3d6 de veneno e envenenado por dez minutos. O gás some em um minuto, e
@@ -285,7 +331,7 @@ export function criarOndaEco(app) {
   const arvoreDe = (npc) => {
     if (mormesk && npc === mormesk) return arvoreDeMormesk({ salvo, tem: temOferta });
     if (espectador && npc === espectador) return arvoreDoEspectador({ salvo });
-    if (nezznar && npc === nezznar) return arvoreDeNezznar();
+    if (nezznar && npc === nezznar) return arvoreDeNezznar({ refem: Boolean(refemFalso) });
     if (npc === nundro) return arvoreDeNundro({ salvo });
     return null;
   };
@@ -307,8 +353,13 @@ export function criarOndaEco(app) {
         app.refresh();
       }
     } else if (nezznar && npc === nezznar) {
-      if (fim === 'luta') iniciarTemplo();
-      else if (fim === 'luta-surpresa') iniciarTemplo('nossa');
+      if (['luta', 'luta-surpresa', 'luta-revelado'].includes(fim)) {
+        // Revelado pela Intuição: a máscara cai agora, o grupo está alerta e as aranhas não pegam ninguém de surpresa.
+        if (fim === 'luta-revelado') {
+          if (refemFalso) await painel(TEXTOS.refemRevela);
+          iniciarTemplo('alerta', 'revelado');
+        } else iniciarTemplo(fim === 'luta-surpresa' ? 'nossa' : null, 'tarde');
+      }
     } else if (npc === nundro && fim === 'resgatado') {
       salvo.nundro = 'livre';
       feitos.nundroResgatado = true;
@@ -324,24 +375,34 @@ export function criarOndaEco(app) {
   }
   const conversaDeMormesk = () => { salvo.mormeskVisto = true; return conversaDe(mormesk, { dx: 0, dy: 1 }); };
   const conversaDoEspectador = () => { salvo.espectadorVisto = true; return conversaDe(espectador, { dx: -1, dy: 0 }); };
-  const conversaDeNezznar = async () => { salvo.temploVisto = true; await conversaDe(nezznar, { dx: 1, dy: 0 }); };
+  const conversaDeNezznar = async () => { salvo.temploVisto = true; posicionarRefem(); await conversaDe(nezznar, { dx: 1, dy: 0 }); };
   // A luta final: Nezznar, os dois bugbears da mesa e as quatro aranhas (que se escondem atrás dos pilares).
-  function iniciarTemplo(surpresa = null) {
+  function iniciarTemplo(surpresa = null, vhalakQuando = null) {
     salvo.templo = 'luta';
     // As aranhas se escondem atrás dos pilares; mexer na porta do sacerdote (arrombar) as avisou, e elas já estão de pé.
-    const furt = salvo.aranhasAvisadas ? null : furtividadeDe(aranhasTemplo);
-    // Do corredor chegam os DOIS bugbears que escalam as cordas da fenda (o guarda e o doppelganger ficam lá: o livro faz o
-    // doppelganger recuar para avisar Nezznar, e não lutar).
+    const furt = (salvo.aranhasAvisadas || surpresa === 'alerta') ? null : furtividadeDe(aranhasTemplo);
+    // Do corredor chegam os DOIS bugbears que escalam as cordas da fenda (o guarda fica de vigia). O doppelganger, se recuou
+    // da 18, já está aqui: faz-se passar por Nundro e só tira a máscara quando a luta começa (`revelarVhalak`).
     const reforco = bugbearsFenda.slice(0, 2).filter((f) => !f.dead);
     for (const [i, f] of reforco.entries()) f.name = `Bugbear da fenda ${letras[i]}`;
-    if (reforco.length) prepararReforcos({ 3: { bando: reforco, aviso: 'Do corredor chegam passos pesados: o que sobrou da caverna desmoronada ouviu a luta.' } });
+    const ondas = {};
+    if (reforco.length) ondas[3] = { bando: reforco, aviso: 'Do corredor chegam passos pesados: o que sobrou da caverna desmoronada ouviu a luta.' };
+    const vhalakAgora = vhalakQuando ? vhalakDaLuta() : null;
+    let extras = [];
+    if (vhalakAgora && vhalakQuando === 'revelado') { tirarRefem(); extras = [vhalakAgora]; }
+    else if (vhalakAgora) {
+      // Na rodada 2: se havia "Nundro" amarrado, ele se livra das cordas e tira a máscara; senão, o drow franzino chega atrasado.
+      const mascara = Boolean(refemFalso);
+      ondas[2] = { bando: [vhalakAgora], antes: tirarRefem, aviso: mascara ? TEXTOS.refemRevela : TEXTOS.vhalakChega };
+    }
+    if (Object.keys(ondas).length) prepararReforcos(ondas);
     // O grupo entra JUNTO: quem ficou no corredor de duas casas é puxado para a entrada do templo (a luta é de todos).
     const ref = herois().find((h) => naArea(h.pos, '19')) ?? herois()[0];
     for (const h of herois()) {
       if (naArea(h.pos, '19') || distanceFt(h.pos, ref.pos) <= 15) continue;
       h.pos = { ...h.pos, ...casaPerto(ref.pos) };
     }
-    luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo].filter((f) => !f.dead), surpresa === 'nossa' ? 'nossa' : (furt ? { furt } : null));
+    luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo, ...extras].filter((f) => !f.dead), surpresa === 'nossa' ? 'nossa' : (furt ? { furt } : null));
   }
 
   // MONSTROS VAGANDO (o livro): nenhuma parte da mina é segura. Quem gasta muito tempo num lugar (um descanso)
@@ -438,7 +499,7 @@ export function criarOndaEco(app) {
     const reforcos = estado.reforcos ?? [];
     const todos = [...new Set([...lutou, ...reforcos])];
     const dos = (lista) => lutou.some((f) => lista.includes(f));
-    const total = (lista) => valeDoBando([...new Set([...lista, ...reforcos.filter((f) => f.dead)])].filter((f) => f.dead));
+    const total = (lista) => valeDoBando([...new Set([...lista, ...reforcos.filter((f) => f.dead), ...lutou.filter((f) => f.defId === 'doppelganger')])].filter((f) => f.dead || f.capturado));
     if (estado.vagando && dos(estado.vagando)) {
       const xp = valeDoBando(estado.vagando);
       estado.vagando = null;
@@ -454,7 +515,8 @@ export function criarOndaEco(app) {
       await painel(TEXTOS.fimEspectador);
       await darXpDaLuta(valeDoBando([espectador]), 'O espectador');
     } else {
-      for (const b of BANDOS) {
+      // O templo vem primeiro: Vhalak está na lista da fenda e, se recuou, luta aqui; a luta é do templo.
+      for (const b of [...BANDOS].sort((x, y) => (y.chave === 'templo') - (x.chave === 'templo'))) {
         if (!dos(b.lista)) continue;
         salvo[b.chave] = 'limpo';
         await painel(b.fim);
@@ -477,6 +539,31 @@ export function criarOndaEco(app) {
     await painel(TEXTOS.bolsaDoBugbear);
   }
 
+  // NEZZNAR VIVO, DE VOLTA A PHANDALIN: entregue a Sildar ou ao chefe da vila, o livro paga o dobro do XP dele. A menos que o
+  // grupo guarde a cela, Halia Thornton o solta e o entrega aos Zhentarim (o que acontece depois é do mestre).
+  async function entregarNezznar() {
+    salvo.nezznarEntregue = true;
+    // Se Nezznar foi morto depois de caído (um golpe letal no chão), não há o que entregar.
+    if (nezznar?.dead) { salvo.nezznar = 'morto'; feitos.nezznarCapturado = false; return; }
+    const escolha = await narrar(root, {
+      formato: 'painel',
+      paginas: [{ texto: TEXTOS.nezznarEntrega }],
+      escolhas: [
+        { rotulo: 'Passar a noite à porta da cela', valor: 'guarda', primaria: true },
+        { rotulo: 'Deixar a cela fechada à chave e ir dormir', valor: 'cela' },
+      ],
+    });
+    await darXpDaLuta(nezznar?.xp ?? 450, 'Nezznar entregue vivo (XP em dobro)');
+    if (escolha === 'cela') {
+      feitos.nezznarFugiu = true;
+      pista('Nezznar sumiu da cela do salão do chefe da vila: a fechadura estava aberta, e Halia Thornton não sabe de nada.');
+      await painel(TEXTOS.nezznarSolto);
+    } else {
+      pista('Nezznar espera na cela do salão do chefe da vila, sob guarda, até a Aliança dos Lordes escoltá-lo a Neverwinter.');
+      await painel(TEXTOS.nezznarGuarda);
+    }
+  }
+
   // A QUEDA DE NEZZNAR: o que ele carregava, e o que a aventura fecha.
   async function fimDoTemplo() {
     const quem = herois()[0];
@@ -486,6 +573,12 @@ export function criarOndaEco(app) {
       guardar(quem, 'chaveDoAranhaNegra', 1);
     }
     feitos.nezznarDerrotado = true;
+    // PEGO VIVO (golpe não letal): o livro paga o DOBRO do XP dele se for entregue em Phandalin (`entregarNezznar`, na saída).
+    if (nezznar?.capturado && !nezznar.dead) {
+      salvo.nezznar = 'preso';
+      feitos.nezznarCapturado = true;
+      await painel(TEXTOS.nezznarPreso);
+    }
     if (salvo.nundro === 'livre' && !salvo.nundroPago) { salvo.nundroPago = true; await darXpDaLuta(200, 'Nundro resgatado'); }
     pista('Nezznar, o Aranha Negra, caiu no templo de Dumathoin. A mina está livre, e Nundro está nos aposentos do sacerdote, trancado.');
     await painel(TEXTOS.despojosDeNezznar);
@@ -547,7 +640,7 @@ export function criarOndaEco(app) {
         const preciso = t.pericia === 'prestidigitacao' ? 'Destreza (ferramentas de ladrão)' : SKILL_NAME[t.pericia];
         ops.push({
           rotulo: t.rotulo, icone: 'acao-empurrar', detalhe: `${preciso} CD ${t.cd}`,
-          motivo: longe(5) ?? buscas.ja(c, `porta-${t.id}`, ca),
+          motivo: longe(5) ?? (t.pericia === 'prestidigitacao' ? semFerramentas(c) : null) ?? buscas.ja(c, `porta-${t.id}`, ca),
           fazer: async () => {
             buscas.marcar(c, `porta-${t.id}`, ca);
             const r = teste(c, t.pericia, t.cd);
@@ -636,7 +729,7 @@ export function criarOndaEco(app) {
         guardar(c, 'moedaDeCobre', 600); guardar(c, 'moedaDePrata', 180 + 450); guardar(c, 'moedaDeOuro', 60);
         await painel(TEXTOS.cofreAvaliadores, { teste: r });
         app.refresh();
-      });
+      }, { motivo: semFerramentas(c) });
     }
     if (v === 'estatuaDumathoin') {
       lin('Reconhecer a estátua', 'religiao', 10, 'estatuaReligiao', async (r) => {
@@ -828,9 +921,11 @@ export function criarOndaEco(app) {
       ops.push({
         rotulo: 'Voltar à trilha', icone: 'acao-disparada', detalhe: 'o mapa da região', motivo: longe(10),
         fazer: async () => {
+          if (salvo.nezznar === 'preso' && !salvo.nezznarEntregue) await entregarNezznar();
           if (feitos.nezznarDerrotado && !salvo.fimContado) {
             salvo.fimContado = true;
-            await narrar(root, { formato: 'tela', paginas: [{ titulo: 'A Mina Perdida', texto: TEXTOS.conclusao }] });
+            await narrar(root, { formato: 'tela', paginas: [{ titulo: 'A Mina Perdida', texto: TEXTOS.conclusao({
+              capturado: Boolean(feitos.nezznarCapturado), fugiu: Boolean(feitos.nezznarFugiu), mapa: Boolean(salvo.mapaMormesk) }) }] });
           }
           estado.encerrado = true;
           app.irParaRegiao(enc.combatants.filter((x) => x.side === 'party' && !x.dead), 'ondaEco');
@@ -872,7 +967,7 @@ export function criarOndaEco(app) {
       // sem isso, ao sair e voltar não haveria mais como falar com eles, e a aventura não fecharia.
       if (mormesk && salvo.mormeskVisto && salvo.mormesk !== 'luta') entrarNeutro(mormesk, { dx: 0, dy: 1 });
       if (espectador && salvo.espectadorVisto && salvo.espectador !== 'luta') entrarNeutro(espectador, { dx: -1, dy: 0 });
-      if (nezznar && salvo.temploVisto && salvo.templo !== 'luta') entrarNeutro(nezznar, { dx: 1, dy: 0 });
+      if (nezznar && salvo.temploVisto && salvo.templo !== 'luta') { entrarNeutro(nezznar, { dx: 1, dy: 0 }); posicionarRefem(); }
       app.refresh();
     },
   };

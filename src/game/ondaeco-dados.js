@@ -129,7 +129,7 @@ export const TEXTOS = {
     'O silêncio que fica no templo é o de quem ainda tem muito a fazer na mina, mas não agora.',
   ],
   despojosDeNezznar: [
-    'No cinto de Nezznar: um frasco de poção de cura, o cajado de madeira negra com a aranha entalhada e uma chave de ferro cuja ponta tem a forma de uma bigorna. Tudo vai para a bolsa do primeiro de vocês que se abaixa para pegar.',
+    'No cinto de Nezznar: um frasco de poção de cura, o cajado de madeira negra com a aranha entalhada e uma chave de ferro rematada numa bigorninha. Tudo vai para a bolsa do primeiro de vocês que se abaixa para pegar.',
     'Atrás, na porta dos aposentos do sacerdote, a fechadura espera por essa chave.',
   ],
   derrota: 'A mina engole o grupo sem pressa. As ondas continuam batendo ao longe, em intervalos regulares, e ninguém as escuta.',
@@ -159,10 +159,29 @@ export const TEXTOS = {
   lagoAcha: 'A uns três metros da margem, no fundo, jaz um esqueleto humano com os restos de uma túnica e pontas de flecha orc cravadas entre as costelas. Duas alianças de platina e uma varinha ainda estão com ele: era um mago da velha Phandalin, e a mina foi a última coisa que defendeu.',
   fendaFalha: 'Entre as pedras e a escuridão, nada que brilhe. Se houver alguma coisa aqui, não se deixa achar agora.',
   fendaAcha: 'Debaixo de um bloco enorme, o esqueleto esmagado de uma anã ainda leva nas mãos um par de manoplas de ferro escurecido, de dedos grossos. É o que a fenda guardava.',
-  conclusao: [
-    'Nezznar caiu, e com ele o plano do Aranha Negra. A Forja das Magias, que ele procurou até o fim, continua no mesmo lugar, silenciosa, esperando quem a acorde com mais cuidado.',
-    'Gundren e Nundro vão administrar a nova mina e dividir os lucros com quem a libertou, e Phandalin, enfim sem os Marcarrubra, respira. Há uma casa vazia na colina, um mapa costurado na capa de um livro e muita coisa por fazer. Mas isso é outra aventura.',
+  // O fecho da aventura depende do que o grupo fez de Nezznar (caído, preso e vigiado, ou preso e solto por Halia) e de ter ou
+  // não achado o mapa de Mormesk.
+  conclusao: ({ capturado = false, fugiu = false, mapa = false } = {}) => [
+    capturado
+      ? (fugiu
+        ? 'Na manhã seguinte a cela do salão está vazia, a fechadura aberta por dentro e por fora, e Halia Thornton, quando perguntada, só ergue as sobrancelhas. O Aranha Negra está nas mãos dos Zhentarim, e o que ele sabe da mina foi junto com ele.'
+        : 'Nezznar não vai a lugar nenhum: a Aliança dos Lordes manda recado a Neverwinter, e o drow espera na cela do salão, sob guarda, para ser interrogado e julgado. A Forja das Magias que ele procurou até o fim continua onde estava, em silêncio.')
+      : 'Nezznar caiu, e com ele o plano do Aranha Negra. A Forja das Magias, que ele procurou até o fim, continua onde estava, silenciosa, esperando quem a acorde com mais cuidado.',
+    'Gundren e Nundro vão tocar a mina restaurada e repartir com quem a libertou dez por cento dos lucros, e Phandalin, enfim sem os Marcarrubra, respira.'
+      + (mapa ? ' O mapa que saiu dos tomos de Mormesk aponta para lugares que a região ainda não viu.' : '')
+      + ' Há muita coisa por fazer, mas isso é outra aventura.',
   ],
+  vhalakChega: 'Do fundo do templo chega, atrasado e de adaga na mão, o drow franzino que fugiu da caverna desmoronada.',
+  vhalakRecua: 'Vhalak, o drow franzino, vê os bugbears caírem, dá meia-volta e some pelo corredor, depressa, na direção do templo.',
+  refemNarra: 'Junto da mesa, sentado no chão, está um anão de barba curta, lisa e castanha, amarrado e amordaçado, olhando para vocês com olhos grandes.',
+  refemRevela: 'O anão sorri, e os dentes não são de anão. A barba escorre como cera, o rosto afina, e em dois segundos o prisioneiro é um drow de olhar vazio, que se levanta com as cordas soltas nas mãos.',
+  nezznarPreso: 'Nezznar está no chão, desacordado, com a respiração curta e as mãos já presas atrás das costas. Vivo. Vale mais assim: o Aranha Negra tem muito a dizer a quem souber perguntar.',
+  nezznarEntrega: [
+    'A Aliança dos Lordes não perdoaria o Aranha Negra enterrado na própria mina: o drow tem de chegar vivo a Phandalin, ao salão do chefe da vila, onde ela cuida do resto.',
+    'Só que o salão tem uma cela e muitas portas. Quem deixar o prisioneiro sozinho de noite não garante quem aparece com a chave.',
+  ],
+  nezznarGuarda: 'Vocês levam Nezznar ao salão do chefe da vila, e dois de vocês se sentam à porta da cela até alguém da Aliança chegar com o selo de Neverwinter. Passa a noite inteira sem uma sombra no corredor.',
+  nezznarSolto: 'Vocês o deixam na cela, trancam a porta e vão dormir. Quem ouve falar da prisão, de manhã, ouve também que a fechadura estava aberta.',
   ondaLonge: 'De muito longe, pela pedra, chega o estrondo de uma onda que bate e recua. O chão estremece um instante e depois assenta.',
   ondaPerto: 'O estrondo vem de perto agora, tão alto que a poeira se solta do teto. A água em algum lugar adiante bate na rocha, fica no ar e desaba.',
   vagando: (nome) => ['O barulho chegou antes: passos, arrastar de pedra, respiração.', `Pela escuridão, ${nome} vêm direto para o grupo.`],
@@ -277,14 +296,19 @@ export function arvoreDoEspectador({ salvo = {} } = {}) {
 }
 
 /** Nezznar, no templo: educado, vaidoso e traiçoeiro. */
-export function arvoreDeNezznar() {
+export function arvoreDeNezznar({ refem = false } = {}) {
   return {
     inicio: 'oi',
     nos: {
       oi: {
-        narra: 'No fundo do templo, ao pé da estátua, alguém montou pouso: esteiras em volta de uma fogueira de pedras soltas e uma mesa onde um drow de capa e couro negro estuda um mapa, com o cajado preto de aranha de ferro no ombro. Dois bugbears erguem os olhos da mesa. O drow franze a testa, depois sorri sem calor.',
-        fala: 'Que decepção. Contava que as criaturas da mina os segurassem mais tempo. Mas já que estão aqui: quem os mandou, e o que sabem?',
+        narra: refem
+          ? 'No fundo do templo, ao pé da estátua, alguém montou pouso: esteiras em volta de uma fogueira de pedras soltas e uma mesa onde um drow de capa e couro negro estuda um mapa, com o cajado preto de aranha de ferro no ombro. Junto da mesa, sentado no chão, um anão de barba curta, lisa e castanha, amarrado e amordaçado, olha para vocês com olhos grandes. Dois bugbears erguem os olhos da mesa. O drow franze a testa, depois sorri sem calor.'
+          : 'No fundo do templo, ao pé da estátua, alguém montou pouso: esteiras em volta de uma fogueira de pedras soltas e uma mesa onde um drow de capa e couro negro estuda um mapa, com o cajado preto de aranha de ferro no ombro. Dois bugbears erguem os olhos da mesa. O drow franze a testa, depois sorri sem calor.',
+        fala: refem
+          ? 'Que decepção. Contava que as criaturas da mina os segurassem mais tempo. E já que vieram, olhem: este anão aqui tem família. Armas no chão, e ele fica inteiro; quem os mandou, e o que sabem?'
+          : 'Que decepção. Contava que as criaturas da mina os segurassem mais tempo. Mas já que estão aqui: quem os mandou, e o que sabem?',
         opcoes: [
+          ...(refem ? [{ texto: 'Observar o anão com atenção.', teste: { pericia: 'intuicao', cd: 15 }, sucesso: 'revela', falha: 'traicao', oculta: false }] : []),
           { texto: 'Você é o Aranha Negra.', vai: 'admite' },
           { texto: 'Viemos buscar Nundro Rubirrocha e o mapa da mina.', vai: 'franqueza' },
           { texto: 'Ninguém nos mandou. Somos aventureiros e nos perdemos.', teste: { pericia: 'enganacao', cd: 15 }, sucesso: 'curioso', falha: 'descoberto' },
@@ -319,9 +343,14 @@ export function arvoreDeNezznar() {
         narra: 'Ele sorri, e os bugbears, atrás, trocam um olhar de quem já conhece o fim da conversa.',
         fala: 'Deixem as armas aqui, e eu mostro a saída. — A voz é macia como uma lâmina bem oleada. — Ou fiquem com elas, e eu lhes mostro outra coisa.',
         opcoes: [
-          { texto: 'Fingir que aceitam e atacar de surpresa.', teste: { pericia: 'enganacao', cd: 17 }, sucesso: 'surpresa', falha: 'desmascarado', oculta: false },
+          { texto: 'Fingir que aceitam e atacar de surpresa.', teste: { pericia: 'enganacao', cd: 18 }, sucesso: 'surpresa', falha: 'desmascarado', oculta: false },
           { texto: 'Recusar.', fim: 'luta' },
         ],
+      },
+      revela: {
+        narra: 'O anão não pisca quando a tocha estala, e a barba dele é lisa demais, sem uma ponta queimada, como a de quem acabou de a vestir.',
+        fala: 'Olho bom. Vhalak, acabou o teatro.',
+        opcoes: [{ texto: '…', fim: 'luta-revelado' }],
       },
       desmascarado: {
         fala: 'Acharam que eu não via a mão na empunhadura? Peguem-nos.',

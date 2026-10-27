@@ -115,6 +115,7 @@ teste('as conversas: todo "vai" existe, todo nó tem saída, e o espectador só 
     ['Mormesk', arvoreDeMormesk({ salvo: {}, tem: () => true })],
     ['espectador', arvoreDoEspectador({ salvo: {} })],
     ['Nezznar', arvoreDeNezznar()],
+    ['Nezznar com refém', arvoreDeNezznar({ refem: true })],
     ['Nundro', arvoreDeNundro({ salvo: {} })],
   ];
   for (const [nome, a] of arvores) {
@@ -127,6 +128,9 @@ teste('as conversas: todo "vai" existe, todo nó tem saída, e o espectador só 
       }
     }
   }
+  for (const o of arvoreDeNezznar({ refem: true }).nos.oi.opcoes) assert.ok(o.texto, 'opção sem texto');
+  assert.ok(arvoreDeNezznar({ refem: true }).nos.oi.opcoes.some((o) => o.teste?.pericia === 'intuicao'), 'com refém, há a Intuição para ver o disfarce');
+  assert.ok(!arvoreDeNezznar().nos.oi.opcoes.some((o) => o.teste?.pericia === 'intuicao'), 'sem refém, não há');
   const jaTentou = arvoreDoEspectador({ salvo: { espectadorEnganou: true } });
   assert.ok(jaTentou.nos.oi.opcoes.find((o) => o.teste).requer(), 'depois de uma tentativa, a Enganação não pode se repetir');
 });
