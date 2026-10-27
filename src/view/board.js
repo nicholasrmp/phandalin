@@ -1030,13 +1030,13 @@ export class Board {
       }
     }
     if (piso < 0) return h;
-    // A PEDRA NA FRENTE DE UMA SALA (mansão): a casa de pedra que fica, na vista da câmera, na frente de um piso construído (a
-    // de sul e a de leste de uma sala) fica baixa; a de trás e a que só toca a caverna sobem. Sem isto a pedra de 3 níveis
+    // A PEDRA NA FRENTE DE UM PISO (mansão): a casa de pedra que fica, na vista da câmera, na frente de uma casa de piso (a
+    // de sul e a de leste de uma sala, da caverna e da fenda) fica baixa; a de trás sobe. Sem isto a pedra de 3 níveis
     // cobria as salas do sul e do leste inteiras.
     if (caverna && this.field.rochaEmCorte) {
       const v = this.toView(x, y);
-      const sala = (i, j) => { const p = this.fromView(v.vx + i, v.vy + j); return this.field.inside(p.x, p.y) && this.field.sala?.has(`${p.x},${p.y}`) && this.field.tileAt(p.x, p.y) !== 1; };
-      if (sala(-1, 0) || sala(0, -1) || sala(-1, -1)) return piso + 1;
+      const aberta = (i, j) => { const p = this.fromView(v.vx + i, v.vy + j); return this.field.inside(p.x, p.y) && this.field.tileAt(p.x, p.y) !== 1; };
+      if (aberta(-1, 0) || aberta(0, -1)) return piso + 1;
     }
     return piso + Math.max(h - piso, caverna ? PAREDE_ALTURA : this.field.paredeAlta);
   }
@@ -1181,7 +1181,7 @@ export class Board {
 
     // A PAREDE DE CAVERNA ganha veios de minério, musgo e manchas, por sorteio da casa: sem isso a rocha são quatro
     // faces repetidas em fileira.
-    if (this.field.paredeDeCaverna && s.chao === 'rocha' && hgt > 0 && this.field.tileAt(x, y) === 1) this.decorarParedeDeCaverna(ctx, x, y, sx, sy, hgt);
+    if (this.field.paredeDeCaverna && !this.field.rochaEmCorte && s.chao === 'rocha' && hgt > 0 && this.field.tileAt(x, y) === 1) this.decorarParedeDeCaverna(ctx, x, y, sx, sy, hgt);
 
     // O ladrilho desenhado, 1:1: o losango do atlas tem os mesmos 64 x 32 do
     // motor, e o canto da célula fica meia largura à esquerda do vértice de
@@ -2303,6 +2303,8 @@ export class Board {
    * nível), recortadas no paralelogramo da aresta.
    */
   faceDaParede(ctx, lado, A, B, alto, cod, x, y, grau = 0, grauVao = 0, fechar = false, brechaAberta = false) {
+    // A GRADE DE FERRO de uma cela (aresta de barra marcada em `field.grades`): não é parede nem seteira, são barras que deixam ver.
+    if (cod === ARESTA.seteira && this.field.grades?.has(`${x},${y},${lado}`)) { this.desenharGrade(ctx, lado, A, B, alto); return; }
     const eBrecha = brechaAberta || cod === ARESTA.seteira;
     if (brechaAberta) cod = ARESTA.parede;     // desenha como parede, com o entalhe
     // Vão de uma construção que não se vê por dentro: a porta aparece FECHADA, aberta ou não.
@@ -2582,6 +2584,39 @@ export class Board {
         ctx.restore();
       },
     };
+  }
+
+  /** Barras verticais de ferro entre dois trilhos, no plano da aresta (de A a B, no pé): vê-se a cela por entre elas. */
+  desenharGrade(ctx, lado, A, B, alto) {
+    const H = Math.min(alto, LIFT * 2);
+    const ponto = (t, up) => ({ x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t - up });
+    ctx.save();
+    ctx.fillStyle = 'rgba(16,16,20,.16)';
+    ctx.beginPath();
+    for (const [t, up] of [[0, 0], [1, 0], [1, H], [0, H]]) { const q = ponto(t, up); if (t === 0 && up === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y); }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#2b2c32';
+    ctx.lineWidth = 2;
+    const n = 7;
+    for (let i = 0; i <= n; i += 1) {
+      const t = i / n;
+      const p0 = ponto(t, 0);
+      const p1 = ponto(t, H);
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    ctx.lineWidth = 3;
+    for (const up of [H, Math.round(H * 0.5), 1]) {
+      const p0 = ponto(0, up);
+      const p1 = ponto(1, up);
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    ctx.strokeStyle = '#5a5b63';
+    ctx.lineWidth = 1;
+    const q0 = ponto(0, H);
+    const q1 = ponto(1, H);
+    ctx.beginPath(); ctx.moveTo(q0.x, q0.y - 1); ctx.lineTo(q1.x, q1.y - 1); ctx.stroke();
+    ctx.restore();
   }
 
   /** A moldura de aduelas e, se a porta está fechada, a folha de madeira. */

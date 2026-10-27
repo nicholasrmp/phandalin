@@ -236,5 +236,43 @@ await teste('as paredes são arestas e não se clicam: junto de uma secreta o me
   assert.ok(!S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Procurar porta secreta'), 'longe de qualquer secreta o menu não oferece procurar');
 });
 
+await teste('o herói que cai no fosso volta para fora do buraco, mesmo com a casa de volta ocupada', async () => {
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const S = await nova(seed);
+    const [a, b] = S.party;
+    poe(a, 25, 10);                                        // um aliado ocupa a casa de volta
+    poe(b, 24, 10);                                        // quem pisa no fosso
+    await S.cena.depoisDeMover(b);
+    const fosso = new Set(['23,9', '24,9', '23,10', '24,10']);
+    assert.ok(!fosso.has(`${b.pos.x},${b.pos.y}`), `seed ${seed}: ${b.name} em ${b.pos.x},${b.pos.y}`);
+  }
+});
+
+await teste('a cripta tem três sarcófagos (de duas casas) e um anel de platina por sarcófago', async () => {
+  assert.equal(MANSAO.sarcofagos.length, 3);
+  for (const s of MANSAO.sarcofagos) assert.equal(s.length, 2);
+});
+
+await teste('porta secreta só se acha do lado dela: de dentro do depósito não se acha a do quarto através da parede', async () => {
+  const S = await nova();
+  const h = S.party[0];
+  poe(h, 12, 3);                                         // no depósito
+  const quarto = MANSAO.secretas.quarto;
+  const k = quarto.a;                                    // (9,2), dentro do quarto
+  assert.equal(S.field.hasLineOfSight(h.pos, k), false, 'a parede do quarto está no meio');
+  assert.ok(!S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Procurar porta secreta' && /quarto/.test(o.detalhe ?? '')), 'sem oferta enganosa');
+});
+
+await teste('escutar atrás da porta só vale com a porta fechada e o herói encostado nela', async () => {
+  const S = await nova();
+  const h = S.party[0];
+  poe(h, 3, 14);                                         // no corredor, junto da porta dos bugbears (fechada)
+  assert.ok(S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Escutar atrás da porta'));
+  S.field.porAresta(3, 14, 3, 15, 3);                    // aberta: já não há o que escutar
+  assert.ok(!S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Escutar atrás da porta'));
+  poe(h, 2, 8);                                          // longe de qualquer porta
+  assert.ok(!S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Escutar atrás da porta'));
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);
 process.exit(falhas ? 1 : 0);

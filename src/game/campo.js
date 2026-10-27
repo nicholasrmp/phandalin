@@ -35,6 +35,8 @@ export function montarCampo(mapa) {
   }
   // Decoração na face de uma casa de PAREDE (a mansão, onde a parede é casa inteira e não aresta): 'x,y' → tipo.
   if (mapa.decorCasa) field.decorCasa = new Map(mapa.decorCasa.map((d) => [`${d.x},${d.y}`, d.tipo]));
+  // As arestas de barra que são GRADE de ferro (a cela), e não seteira: o tabuleiro desenha barras em vez de parede.
+  if (mapa.grades) field.grades = new Set(mapa.grades);
   if (mapa.degraus) field.degraus = new Map(mapa.degraus.map((d) => [`${d.x},${d.y}`, d.eixo]));
   // O quanto o que o grupo não enxerga escurece (0 a 1; padrão 0,8). Árvore Trovão pede 1: preto.
   if (mapa.veuDaEscuridao != null) field.veuDaEscuridao = mapa.veuDaEscuridao;

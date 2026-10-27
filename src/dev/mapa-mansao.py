@@ -99,16 +99,15 @@ for y in R(12, 17):
     for x in R(20, 27):
         if (x, y) in {(23, 12), (24, 12), (23, 17), (24, 17)}:
             continue                                          # os entalhes de pedra (a planta tem dois, de cada lado)
-        cinza = (x, y) in {(25, 12), (26, 12), (27, 12), (26, 13), (26, 14), (26, 15), (26, 16), (27, 14), (27, 15),
-                           (25, 17), (26, 17), (27, 17)}
+        cinza = y in (12, 17) and x >= 25          # o patamar de pedra: só as fileiras 12 e 17; as quatro escadinhas descem dele
         casa(x, y, 'poraoCisterna', 'L', 5 if cinza else 4, 2)
 retang('poraoCisterna', 20, 14, 22, 15, 'V', 3, 2)            # a cisterna (3 x 2), um nível abaixo do piso
 DEGRAUS += [{'x': 25, 'y': 13, 'eixo': 'y'}, {'x': 25, 'y': 16, 'eixo': 'y'},
             {'x': 27, 'y': 13, 'eixo': 'y'}, {'x': 27, 'y': 16, 'eixo': 'y'}]
 for (x, y) in [(25, 13), (25, 16), (27, 13), (27, 16)]:
     A[y][x] = 4
-casa(28, 14, 'entrada', 'L', 5, 1)                            # a porta da escada da cozinha, a leste
-casa(29, 14, 'entrada', 'L', 5, 1)
+casa(28, 14, 'entrada', 'L', 4, 1)                            # a porta da escada da cozinha, a leste
+casa(29, 14, 'entrada', 'L', 4, 1)
 
 # 2 O alojamento dos Marcarrubra (3 x 4 e o vestíbulo da porta) e o túnel da secreta da cisterna.
 retang('alojamentoRubro', 16, 12, 18, 15, 'L', 4, 2)
@@ -122,19 +121,19 @@ CHAO_CAVERNA = {
     5: [12, 13],
     6: [12, 13, 14],
     7: [9, 12, 13, 14],
-    8: [9, 13, 14],
+    8: [9, 12, 13, 14],
     9: [9, 12, 13, 14],
     10: [9, 12, 13],
     11: [8, 9, 12, 13],
     12: [8, 9, 12, 13],
     13: [8, 9, 12, 13],
-    14: [7, 8, 9, 13],
+    14: [7, 8, 9, 12, 13],
     15: [8, 9, 12, 13],
     16: [9, 10],
     17: [10], 18: [10], 19: [10],
 }
-fenda = {6: (10, 11), 7: (10, 11), 8: (10, 12), 9: (10, 11), 10: (10, 11), 11: (10, 11), 12: (10, 11), 13: (10, 11),
-         14: (10, 12), 15: (10, 11), 16: (11, 11), 17: (11, 11), 18: (11, 11), 19: (11, 11)}
+fenda = {6: (10, 11), 7: (10, 11), 8: (10, 11), 9: (10, 11), 10: (10, 11), 11: (10, 11), 12: (10, 11), 13: (10, 11),
+         14: (10, 11), 15: (10, 11)}      # a fenda tem 2 casas de largura e some em y=15; as pontes têm 2 casas, como as tábuas da planta
 for y, xs in CHAO_CAVERNA.items():
     for x in xs:
         casa(x, y, 'caverna', '_', 4, 0)
@@ -258,8 +257,10 @@ prop(11, 2, 'tabuas'); prop(11, 3, 'cubaCerveja'); glifo(12, 2, 's'); prop(14, 3
 # 6 depósito de armas: o cabide de armas e a prateleira de garrafas.
 glifo(18, 2, 'g'); glifo(18, 3, 'g'); prop(18, 4, 'prateleira')
 # 4 cripta: três sarcófagos de duas casas cada, um pilar caído, ossos e a tocha da parede leste.
-for (x, y) in [(16, 6), (16, 7), (16, 8), (16, 9), (19, 6), (19, 7)]:
-    glifo(x, y, 'Q')
+SARCOFAGOS = [[(16, 6), (16, 7)], [(16, 8), (16, 9)], [(19, 6), (19, 7)]]
+for s in SARCOFAGOS:
+    for (x, y) in s:
+        glifo(x, y, 'Q')
 prop(18, 9, 'ossos', bloqueia=False); prop(18, 10, 'pilarQuebrado')
 glifo(19, 8, 'e')
 # 5 jaulas: palha nas duas celas, a pilha de roupa e a lanterna.
@@ -295,7 +296,7 @@ for (x, y, claro, penumbra, tipo) in [
     LUZES.append({'pos': {'x': x, 'y': y}, 'claro': claro, 'penumbra': penumbra, 'tipo': tipo})
 
 # Candeeiros nas paredes de TRÁS de cada sala (as arestas N e O, que ficam atrás da casa na câmera). Só nas salas com luz.
-for (x, y, lado) in [(4, 2, 'N'), (8, 2, 'N'), (13, 2, 'N'), (17, 2, 'N'), (21, 2, 'N'), (3, 7, 'N'), (5, 15, 'N'),
+for (x, y, lado) in [(4, 2, 'N'), (8, 2, 'N'), (13, 2, 'N'), (17, 2, 'N'), (21, 2, 'N'), (3, 7, 'N'), (4, 15, 'N'),
                      (17, 12, 'N'), (24, 13, 'N'), (16, 7, 'O'), (2, 3, 'O'), (2, 9, 'O'), (2, 16, 'O')]:
     DECOR.append({'x': x, 'y': y, 'lado': lado, 'tipo': 'tochaAcesa'})
 
@@ -356,6 +357,10 @@ extra = {
     'fosso': [{'x': x, 'y': y} for (x, y) in FOSSO],
     'entradas': {'cozinha': {'x': 29, 'y': 14}, 'tunel': {'x': 10, 'y': 19}},
     'portasComuns': [par(p) for p in PORTAS_ABERTAS],
+    # Os três sarcófagos da cripta, cada um de duas casas (um anel de platina por sarcófago, e não por casa).
+    'sarcofagos': [[ponto(c) for c in s] for s in SARCOFAGOS],
+    # As grades das celas (aresta de barra): a chave 'x,y,N' é a aresta do NORTE da casa de baixo.
+    'grades': [f'{b[0]},{b[1]},N' for pares in CELAS.values() for (a, b) in pares],
     'props': PROPS, 'decor': DECOR, 'degraus': DEGRAUS, 'folhas': FOLHAS,
 }
 saida = Path(__file__).resolve().parents[1] / 'game' / 'mansao.js'

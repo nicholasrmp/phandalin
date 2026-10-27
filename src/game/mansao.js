@@ -89,18 +89,18 @@ export const MAPA_MANSAO = {
     "RR^LL^RRRRRR__RRLLLLLLsRRRRRRR",
     "RRRRLLLLLRxx___RQLLQLLLRRRRRRR",
     "RR^LLLsRL_xx___RQLLQpLLRRRRRRR",
-    "RRLmmLLRR_===__RQLLeLppRRRRRRR",
+    "RRLmmLLRR_==___RQLLeLppRRRRRRR",
     "RRLLLLLRR_xxA__RQL&LLL^LLL^LRR",
     "RR^LLmLRR_xx__RRLL^LLLLLLLLLRR",
     "RRLLLLeR__xx__RRRRRRRRRRRRLRRR",
     "RRRLRRRR__xx__RRzLzRsssRRLLLRR",
     "RRRLRRRR_Axx__RRLLLLLLLLLLLLRR",
-    "RRRLLLL___===_RRLLsRVVVLLLLLLL",
+    "RRRLLLL___==__RRLLsRVVVLLLLLLL",
     "RRzLLzLR__xx__LL^ssRVVVLLLLLRR",
-    "RRLLLLLRR__xRRRLRRRRLLLLLLLLRR",
-    "RRzLLzLRRR_xRRRLLLLLLs^RRLLLRR",
-    "RRRRRRRRRR_xRRRRRRRRRRRRRRRRRR",
-    "RRRRRRRRRR_xRRRRRRRRRRRRRRRRRR"
+    "RRLLLLLRR__RRRRLRRRRLLLLLLLLRR",
+    "RRzLLzLRRR_RRRRLLLLLLs^RRLLLRR",
+    "RRRRRRRRRR_RRRRRRRRRRRRRRRRRRR",
+    "RRRRRRRRRR_RRRRRRRRRRRRRRRRRRR"
   ],
   "altura": [
     "333333333333333333333333333333",
@@ -116,13 +116,13 @@ export const MAPA_MANSAO = {
     "333333333400443344444444444433",
     "333333334400443333333333334333",
     "333333334400443344434443355533",
-    "333333334400443344444444445433",
-    "333334444444443344433334445555",
-    "333333334400444444433334445533",
-    "333333333440333433334444445433",
-    "333333333340333444444443355533",
-    "333333333340333333333333333333",
-    "333333333340333333333333333333"
+    "333333334400443344444444444433",
+    "333334444444443344433334444444",
+    "333333334400444444433334444433",
+    "333333333443333433334444444433",
+    "333333333343333444444443355533",
+    "333333333343333333333333333333",
+    "333333333343333333333333333333"
   ],
   "luz": [
     "000000000000000000000000000000",
@@ -1336,7 +1336,7 @@ export const MANSAO = {
     ],
     "8": [
       10,
-      12
+      11
     ],
     "9": [
       10,
@@ -1360,26 +1360,10 @@ export const MANSAO = {
     ],
     "14": [
       10,
-      12
+      11
     ],
     "15": [
       10,
-      11
-    ],
-    "16": [
-      11,
-      11
-    ],
-    "17": [
-      11,
-      11
-    ],
-    "18": [
-      11,
-      11
-    ],
-    "19": [
-      11,
       11
     ]
   },
@@ -1512,6 +1496,46 @@ export const MANSAO = {
         "y": 14
       }
     }
+  ],
+  "sarcofagos": [
+    [
+      {
+        "x": 16,
+        "y": 6
+      },
+      {
+        "x": 16,
+        "y": 7
+      }
+    ],
+    [
+      {
+        "x": 16,
+        "y": 8
+      },
+      {
+        "x": 16,
+        "y": 9
+      }
+    ],
+    [
+      {
+        "x": 19,
+        "y": 6
+      },
+      {
+        "x": 19,
+        "y": 7
+      }
+    ]
+  ],
+  "grades": [
+    "20,4,N",
+    "21,4,N",
+    "22,4,N",
+    "20,7,N",
+    "21,7,N",
+    "22,7,N"
   ],
   "props": [
     {
@@ -1685,7 +1709,7 @@ export const MANSAO = {
       "tipo": "tochaAcesa"
     },
     {
-      "x": 5,
+      "x": 4,
       "y": 15,
       "lado": "N",
       "tipo": "tochaAcesa"

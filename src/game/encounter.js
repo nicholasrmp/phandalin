@@ -355,6 +355,7 @@ export function mapaDo(variante = 'padrao') {
       rochaEmCorte: true,         // ... exceto a que fica na frente de uma sala: essa fica baixa, para se ver dentro
       decor: MANSAO.decor,        // candeeiros nas arestas das paredes de trás
       folhas: MANSAO.folhas,      // as portas que têm folha de madeira
+      grades: MANSAO.grades,      // as arestas de barra que são grade de ferro (as celas)
       // As duas pontes cruzam a fenda de leste a oeste.
       objetos: [
         ...Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),

@@ -195,6 +195,24 @@ export function criarMansao(app, config) {
   const naPorta = (par, tile) => [par.a, par.b].some((q) => q.x === tile.x && q.y === tile.y);
   /** A casa de uma porta mais perto de `p`, para medir alcance e distância. */
   const casaDaPorta = (par, p) => (distanceFt(p, par.a) <= distanceFt(p, par.b) ? par.a : par.b);
+  /** O herói em `p` pode mexer na porta: está numa das duas casas dela, ou encostado numa delas sem parede no meio. */
+  const alcancaPorta = (par, p) => {
+    const k = casaDaPorta(par, p);
+    return (k.x === p.x && k.y === p.y) || (distanceFt(p, k) <= 5 && enc.field.passa(p.x, p.y, k.x, k.y));
+  };
+  /** A secreta está ao alcance de quem está em `p`: a 3 m da casa dela E com a casa à vista (não através de parede). */
+  const secretaAoAlcance = (s, p) => {
+    const k = casaDaPorta(s, p);
+    return distanceFt(p, k) <= 10 && ((k.x === p.x && k.y === p.y) || enc.field.hasLineOfSight(p, k));
+  };
+  /** O nome da sala de uma casa, para o menu das portas ("para a oficina"). */
+  const NOME_DA_SALA = {
+    oficina: 'a oficina', quartoMago: 'o quarto do Cajavidro', estarRubro: 'a sala de estar', guardasBugbear: 'o alojamento dos bugbears',
+    corredorNorte: 'o corredor de cima', corredorSul: 'o corredor do sul', corredorArmas: 'o corredor do depósito de armas', armas: 'o depósito de armas',
+    cripta: 'a cripta', jaulas: 'as jaulas', corredorFosso: 'o corredor do fosso', poraoCisterna: 'o porão', entrada: 'a escada da cozinha',
+    alojamentoRubro: 'o alojamento', deposito: 'o depósito', escadaSecreta: 'a escadinha',
+  };
+  const nomeDaSala = (p) => NOME_DA_SALA[Object.keys(MANSAO.salas).find((n) => MANSAO.salas[n].some((q) => q.x === p.x && q.y === p.y))] ?? 'a outra sala';
 
   // As PORTAS COMUNS da planta (as das salas e dos corredores) nascem fechadas e abrem e fecham de graça, como as do castelo: a
   // porta fechada corta a visão, e é assim que o grupo some de um corredor ou segura um bando numa sala.
@@ -209,13 +227,14 @@ export function criarMansao(app, config) {
     const ops = [];
     for (const par of MANSAO.portasComuns) {
       if (!naPorta(par, tile)) continue;
+      const outro = par.a.x === tile.x && par.a.y === tile.y ? par.b : par.a;
       const fechada = enc.field.aresta(par.a.x, par.a.y, par.b.x, par.b.y) === ARESTA.porta;
       const alguemNaPassagem = enc.combatants.some((o) => !o.dead && o !== c && o.pos && naPorta(par, o.pos));
       ops.push({
         rotulo: fechada ? 'Abrir a porta' : 'Fechar a porta',
         icone: fechada ? 'acao-usarObjeto' : 'acao-empurrar',
-        detalhe: fechada ? 'de graça' : 'corta a visão',
-        motivo: (distanceFt(c.pos, tile) > 5 ? 'longe demais — chegue a 5 pés' : null) ?? (!fechada && alguemNaPassagem ? 'tem alguém na passagem' : null),
+        detalhe: `${fechada ? 'de graça' : 'corta a visão'} · para ${nomeDaSala(outro)}`,
+        motivo: (alcancaPorta(par, c.pos) ? null : 'longe demais — chegue à porta') ?? (!fechada && alguemNaPassagem ? 'tem alguém na passagem' : null),
         fazer: async () => {
           salvo.portasComuns[chaveDoPar(par)] = fechada;
           mudarAresta(par, fechada ? ARESTA.aberta : ARESTA.porta, { som: false });
@@ -237,7 +256,7 @@ export function criarMansao(app, config) {
       const i = p.y * f.w + p.x;
       f.tiles[i] = 2;
       f.surfaces[i] = SUPERFICIES.indexOf('fosso');
-      f.heights[i] = 2;
+      f.heights[i] = 0;                   // seis metros abaixo do corredor (o texto da cena diz isso)
     }
     f.versao = (f.versao ?? 0) + 1;
   }
@@ -419,7 +438,7 @@ export function criarMansao(app, config) {
   async function secretasPassivas(c) {
     for (const [nome, s] of Object.entries(MANSAO.secretas)) {
       if (salvo.secretas.includes(nome)) continue;
-      if (distanceFt(c.pos, casaDaPorta(s, c.pos)) > 10) continue;
+      if (!secretaAoAlcance(s, c.pos)) continue;
       // A do quarto ficou mal fechada quando o Cajavidro fugiu: fica fácil.
       const limite = nome === 'quarto' && salvo.iarno === 'fugiu' ? 10 : 15;
       if (passivePerception(c) < limite) continue;
@@ -446,10 +465,11 @@ export function criarMansao(app, config) {
       texto = `As lajes cedem e ${c.name} despenca seis metros num fosso de terra (${dano} de dano). Sair dali leva um tempo, mas as paredes têm onde segurar.`;
     }
     // Volta para o lado de onde veio: cair não é atravessar.
+    // O buraco já está marcado: a casa de volta nunca cai dentro dele.
+    marcarFosso();
     const de = estado.de.get(c) ?? { x: 27 };
     const volta = casaPerto({ x: de.x > 24 ? 25 : 22, y: c.pos.y });
     c.pos = { ...c.pos, x: volta.x, y: volta.y };
-    marcarFosso();
     if (estado.explorando) {
       await painel([texto, 'O buraco fica aberto no meio do corredor, de parede a parede: só se passa colado na beirada (Acrobacia) ou saltando por cima.']);
       if (c.side === 'party') await xpDoFosso();
@@ -1193,17 +1213,19 @@ export function criarMansao(app, config) {
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
     const jaBuscou = (tipo, onde = tile) => buscas.ja(c, tipo, onde);
     const marcarBusca = (tipo, onde = tile) => buscas.marcar(c, tipo, onde);
+    // As secretas ao alcance de QUEM procura (a 3 m e à vista, não através de parede). Uma tentativa por herói em cada secreta.
+    const secretasPerto = () => Object.entries(MANSAO.secretas).filter(([n, s]) => !salvo.secretas.includes(n) && secretaAoAlcance(s, c.pos));
+    const chaveDaBusca = () => { const alvo = secretasPerto()[0]; return alvo ? casaDaPorta(alvo[1], c.pos) : { x: 0, y: 0 }; };
       if (procurar) ops.push({
         rotulo: 'Procurar porta secreta', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 · paredes a até 3 m',
-        motivo: longe(10) ?? jaBuscou('secreta'),
+        motivo: longe(10) ?? jaBuscou('secreta', chaveDaBusca()),
         fazer: async () => {
-          marcarBusca('secreta');
-          const perto = Object.entries(MANSAO.secretas).filter(([n, s]) => !salvo.secretas.includes(n) && distanceFt(tile, casaDaPorta(s, tile)) <= 10);
+          marcarBusca('secreta', chaveDaBusca());
+          const perto = secretasPerto();
           const vantagem = perto.some(([n]) => n === 'quarto' && salvo.iarno === 'fugiu');
           const t = teste(c, 'percepcao', 10, vantagem);
           if (t.passou && perto.length) {
-            // As duas secretas do quarto ficam a uma casa uma da outra, então o
-            // mesmo teste abre as duas: um rangido para o par, não dois empilhados.
+            // Quem acha uma secreta acha as que estão ao alcance dela: um rangido só, e não dois empilhados.
             perto.forEach(([n], i) => abrirSecreta(n, { som: i === 0 }));
             await painel(`${c.name} corre os dedos pelas juntas e acha: uma laje que gira para o lado sobre dobradiças escondidas.`, { teste: t });
             app.refresh();
@@ -1213,21 +1235,22 @@ export function criarMansao(app, config) {
         },
       });
       const escuta = [
-        ['guardas', { x: 3, y: 14 }, 10, 'vozes grossas, em goblin, mandando alguém carregar, buscar, ficar quieto — e o estalo de um tapa, seguido de risada'],
-        ['estar', { x: 3, y: 12 }, 10, 'pedrinhas chacoalhando num copo, um grito, um palavrão e moedas trocando de mão'],
-        ['estar', { x: 4, y: 6 }, 10, 'pedrinhas chacoalhando num copo, um grito, um palavrão e moedas trocando de mão'],
-        ['cajavidro', { x: 4, y: 5 }, 15, 'um chiado de vapor e gotas pingando, como de alambique'],
-        ['cajavidro', { x: 5, y: 3 }, 15, 'um chiado de vapor e gotas pingando, como de alambique'],
+        ['guardas', { a: { x: 3, y: 14 }, b: { x: 3, y: 15 } }, 10, 'vozes grossas, em goblin, mandando alguém carregar, buscar, ficar quieto — e o estalo de um tapa, seguido de risada'],
+        ['estar', { a: { x: 3, y: 11 }, b: { x: 3, y: 12 } }, 10, 'pedrinhas chacoalhando num copo, um grito, um palavrão e moedas trocando de mão'],
+        ['estar', { a: { x: 4, y: 6 }, b: { x: 4, y: 7 } }, 10, 'pedrinhas chacoalhando num copo, um grito, um palavrão e moedas trocando de mão'],
+        ['cajavidro', { a: { x: 4, y: 5 }, b: { x: 4, y: 6 } }, 15, 'um chiado de vapor e gotas pingando, como de alambique'],
+        ['cajavidro', { a: { x: 5, y: 3 }, b: { x: 6, y: 3 } }, 15, 'um chiado de vapor e gotas pingando, como de alambique'],
       ];
       const ouvidas = new Set();
       for (const [gid, porta, cd, som] of escuta) {
-        if (ouvidas.has(gid) || distanceFt(tile, porta) > 5 || !grupos[gid] || grupos[gid].vencido) continue;
+        // Só se escuta atrás de uma porta FECHADA, de um dos lados dela (o herói encostado nela, sem parede no meio).
+        if (ouvidas.has(gid) || !alcancaPorta(porta, c.pos) || enc.field.aresta(porta.a.x, porta.a.y, porta.b.x, porta.b.y) !== ARESTA.porta || !grupos[gid] || grupos[gid].vencido) continue;
         ouvidas.add(gid);
         ops.push({
           rotulo: 'Escutar atrás da porta', icone: 'acao-procurar', detalhe: `Percepção, CD ${cd}`,
-          motivo: longe(5) ?? jaBuscou('escuta', porta),
+          motivo: jaBuscou('escuta', porta.a),
           fazer: async () => {
-            marcarBusca('escuta', porta);
+            marcarBusca('escuta', porta.a);
             const t = teste(c, 'percepcao', cd);
             await painel(t.passou ? `${c.name} encosta a orelha na porta: ${som}.` : `${c.name} não ouve nada de útil.`, { teste: t });
           },
@@ -1304,7 +1327,9 @@ export function criarMansao(app, config) {
           const g = grupos.alojamento;
           if (g && pendentes().includes(g)) {
             // Eles vêm de mansinho: quem tiver ouvido os passos não é surpreendido.
-            for (const [i, fm] of g.membros.entries()) { const p = casaPerto({ x: 21 + i, y: 13 }); fm.pos = { ...fm.pos, x: p.x, y: p.y }; }
+            const porta = MANSAO.portas.alojamento;
+            const entrada = [porta.a, { x: porta.a.x - 1, y: porta.a.y }, porta.b];     // o vestíbulo, a casa de trás e a do lado do porão
+            for (const [i, fm] of g.membros.entries()) { const p = casaPerto(entrada[i % entrada.length]); fm.pos = { ...fm.pos, x: p.x, y: p.y }; }
             const ouviu = herois().find((h) => passivePerception(h) >= Math.min(...g.furtividade));
             // Alarme: o aviso toca na cabeça de todos antes de os passos chegarem.
             const alarme = !ouviu && herois().some((h) => enc.protegidoDeSurpresa?.(h));
@@ -1381,14 +1406,15 @@ export function criarMansao(app, config) {
     }
 
     // Área 4: a senha, o manto e os sarcófagos.
-    if (grupos.cripta && pendentes().includes(grupos.cripta) && salvo.sabeSenha && dentro(tile, 15, 4, 21, 11)) {
+    if (grupos.cripta && pendentes().includes(grupos.cripta) && salvo.sabeSenha && dentro(tile, 16, 5, 19, 10)) {
       ops.push({
         rotulo: `Dizer "${SENHA}"`, icone: 'acao-ajudar', detalhe: 'a senha dos esqueletos',
         fazer: async () => { grupos.cripta.senha = true; await painel(`— ${SENHA}. Os esqueletos ficam onde estão, olhando para lugar nenhum.`); },
       });
     }
     if (sup === 'sarcofago' && dentro(tile, 16, 5, 19, 10)) {
-      const chave = `${tile.x},${tile.y}`;
+      // Um anel por SARCÓFAGO (de duas casas), e não por casa.
+      const chave = String(MANSAO.sarcofagos.findIndex((s) => s.some((q) => q.x === tile.x && q.y === tile.y)));
       if (!salvo.aneis.includes(chave)) {
         ops.push({
           rotulo: 'Abrir o sarcófago', icone: 'acao-usarObjeto', motivo: longe(5) ?? (grupos.cripta && pendentes().includes(grupos.cripta) && !grupos.cripta.senha ? 'os esqueletos ainda estão de pé' : null),
@@ -1628,9 +1654,10 @@ export function criarMansao(app, config) {
         fazer: async () => { c.mantoVermelho = true; await painel(`${c.name} joga o manto vermelho encardido nos ombros.`); } });
     }
     // As paredes são arestas e não se clicam: junto de uma porta secreta ainda não achada, ou de uma porta que se escuta, o menu vem no herói.
-    const pertoDeSecreta = Object.entries(MANSAO.secretas).some(([n, s]) => !salvo.secretas.includes(n) && distanceFt(c.pos, casaDaPorta(s, c.pos)) <= 10);
+    const pertoDeSecreta = Object.entries(MANSAO.secretas).some(([n, s]) => !salvo.secretas.includes(n) && secretaAoAlcance(s, c.pos));
     ops.push(...opsDeParede(c, c.pos, { procurar: pertoDeSecreta }));
-    ops.push(...opsDePortaComum(c, c.pos));
+    // As portas, a trancada, a do alojamento, as grades e a saída moram no menu da casa onde o herói está.
+    ops.push(...interacoes(c.pos, enc.field.surfaceAt(c.pos.x, c.pos.y), c));
     return ops;
   }
 
