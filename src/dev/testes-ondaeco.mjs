@@ -100,7 +100,7 @@ teste('toda peça do mapa tem texto de Examinar, e os itens da cena existem', ()
 
 teste('o mapa não tem glifo desconhecido; a água é funda (nada-se) e o fosso barra o passo', () => {
   const { f } = campo();
-  const GL = new Set([...'`<;"[|ROx^&FKQeu$']);
+  const GL = new Set([...'`<;"[|ROx^&FKQeuf$']);
   for (const linha of MAPA_ONDA_ECO.terreno) for (const g of linha) assert.ok(GL.has(g), `glifo inesperado: ${g}`);
   const agua = MAPA_ONDA_ECO.terreno.flatMap((l, y) => [...l].map((g, x) => [g, x, y])).find(([g]) => g === '|');
   assert.ok(agua, 'o mapa devia ter água escura');

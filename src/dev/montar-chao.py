@@ -220,6 +220,26 @@ def limpar_faixa(t):
 VARIANTES_EXTRA = {'mina', 'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura'}
 
 
+def reencaixar(t):
+    """A particao exata do losango (fileiras de 4, 8 .. 64 e de volta a 0) e simetrica em x mas NAO em y: virado de cabeca
+    para baixo, 64 pixels caem fora e 64 ficam vazios. Os de fora saem, e os vazios copiam o vizinho de dentro mais perto."""
+    from losango import no_losango
+    out = t.copy()
+    s, d = t.load(), out.load()
+    for y in range(TH):
+        for x in range(TW):
+            if not no_losango(x, y):
+                d[x, y] = (0, 0, 0, 0)
+            elif s[x, y][3] == 0:
+                for r in range(1, 4):
+                    viz = [s[x + i, y + j] for i in range(-r, r + 1) for j in range(-r, r + 1)
+                           if 0 <= x + i < TW and 0 <= y + j < TH and no_losango(x + i, y + j) and s[x + i, y + j][3]]
+                    if viz:
+                        d[x, y] = viz[0]
+                        break
+    return out
+
+
 def sem_rejunte(t):
     from losango import no_losango
     out = t.copy()
@@ -329,14 +349,19 @@ def main():
                 fora.append(f'{i} (tom {m - mediana:+.1f}, aresta {a:+.1f})')
         if nome in VARIANTES_EXTRA:
             for k, base in enumerate(list(topos)):
-                if nome == 'mina':             # o chao de terra batida nao tem rejunte: a cruz e defeito
+                if nome in ('mina', 'rocha'):  # terra batida e rocha nao tem rejunte: a cruz e defeito
                     base = sem_rejunte(base)
                     atlas.alpha_composite(base, (k * TW, linha * TH))
                     topos[k] = base
-                extras = [base.transpose(Image.FLIP_LEFT_RIGHT)]
-                if nome == 'lajeMina':         # as juntas ficam so nos originais: 1/3 das casas, nao todas
+                # O losango e simetrico nos dois eixos: o espelho em x, em y e a volta de 180 graus tambem encaixam, e o
+                # "carimbo" (a mancha, o cogumelo) cai num canto diferente em cada um.
+                def giros(im):
+                    return [im.transpose(Image.FLIP_LEFT_RIGHT), reencaixar(im.transpose(Image.FLIP_TOP_BOTTOM)),
+                            reencaixar(im.transpose(Image.ROTATE_180))]
+                extras = giros(base)
+                if nome == 'lajeMina':         # as juntas ficam so nos originais: poucas casas, nao todas
                     solta = sem_rejunte(base)
-                    extras = [solta, solta.transpose(Image.FLIP_LEFT_RIGHT)]
+                    extras = [solta, *giros(solta)]
                 for e in extras:
                     atlas.alpha_composite(e, (len(topos) * TW, linha * TH))
                     topos.append(e)

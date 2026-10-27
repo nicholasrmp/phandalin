@@ -213,10 +213,9 @@ def _sobe(rects, nivel):
 
 
 _sobe([(17, 34, 28, 45)], 2)                        # a elevacao oeste da grande caverna
-_sobe([(45, 39, 51, 50)], 2)                        # a elevacao leste
+_sobe([(45, 39, 51, 50)], 1)                        # a elevacao leste (um nivel: a vista da camera esconderia uma escada que sobe para longe dela)
 for (_x, _n) in ((28, 2), (29, 1), (30, 0)):        # a escada oeste desce para o meio (3 casas, 3 de largura)
     _sobe([(_x, 41, _x, 43)], _n)
-_sobe([(44, 43, 44, 45)], 1)                        # a escada leste: o degrau antes da elevacao
 _sobe([(24, 46, 25, 46)], 1)
 _sobe([(28, 46, 28, 46)], 2)                        # a ponta da elevacao oeste, junto da escada                        # a rampa de trilhos que desce da elevacao oeste para o tunel
 _sobe([(38, 25, 49, 36)], 1)                        # o piso da fundicao, um nivel acima do canal...
@@ -226,6 +225,11 @@ for (_x, _y) in CANAL:
 
 def alt(x, y):
     return ALT.get((x, y), 0)
+
+
+# AS CASAS DE ESCADA (so o desenho dos degraus: `board.desenharDegraus`); o eixo diz em que sentido a escada sobe.
+DEGRAUS = [{'x': _x, 'y': _y, 'eixo': 'x'} for _x in (28, 29, 30) for _y in (41, 42, 43)]       # a escada oeste
+DEGRAUS += [{'x': _x, 'y': 46, 'eixo': 'y'} for _x in (24, 25)]                               # a rampa de trilhos
 
 
 # ---------------------------------------------------------------- as paredes ----
@@ -309,7 +313,7 @@ PASSA_BAIXO = {'ossos', 'ossosAnao', 'ossosOrc', 'sacoDeDormir', 'anaoMorto', 'c
                'montinhoMinerio', 'lanterna', 'bolaInflada', 'teia', 'tapeteAzul', 'aneloDeCogumelos', 'coralAmarelo',
                'fungoCerebro'}
 ANDAVEL = set('`<;"[')
-GLIFO_DE = {'braseiro': 'e', 'fogueira': 'F', 'bau': 'K', 'sarcofago': 'Q', 'teia': '$'}
+GLIFO_DE = {'braseiro': 'e', 'braseiroFrio': 'f', 'fogueira': 'F', 'bau': 'K', 'sarcofago': 'Q', 'teia': '$'}
 
 
 def _passa(x1, y1, x2, y2):
@@ -367,9 +371,66 @@ if _OBJ.exists() and 'CHEGADA' in globals():
         if any((_c[0] + _i, _c[1] + _j) in _ocupadas for (_i, _j) in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             continue
         _fam = _FAMILIAS[random.Random(_c[0] // 4 * 131 + _c[1] // 4 * 17).randrange(len(_FAMILIAS))]
-        _lista.append({'v': _sorteio.choice(_fam if _sorteio.random() < 0.75 else _TODAS), 'x': _c[0], 'y': _c[1],
-                       'n': 'fungo novo do tapete'})
+        _vizinhas = {_o['v'] for _o in _lista if max(abs(_o['x'] - _c[0]), abs(_o['y'] - _c[1])) <= 1}
+        _opcoes = [v for v in (_fam if _sorteio.random() < 0.75 else _TODAS) if v not in _vizinhas] or _fam
+        _lista.append({'v': _sorteio.choice(_opcoes), 'x': _c[0], 'y': _c[1], 'n': 'fungo novo do tapete'})
         _ocupadas.add(_c)
+    # AS PECAS QUE O LIVRO PEDE e o mapa original nao tinha: os braseiros apagados (area 6, os dois da 9, a 20), os carrinhos de
+    # minerio e o monte de minerio da fundicao (12), e os ossos esmagados sob pedra caida da caverna estrelada (13). Cada uma vai
+    # para a casa livre mais proxima do ponto pedido; a validacao de baixo recusa o que fecharia caminho.
+    def _perto_livre(x, y, raio=5):
+        usadas = {(_o['x'], _o['y']) for _o in _lista}
+        altas = {(_o['x'], _o['y']) for _o in _lista if _o['v'] in ('fornalha', 'rodaDagua', 'estatuaDumathoin', 'braseiroVerde', 'mesaDeGuerra', 'bancadaRunas', 'pilarAnao', 'cogumeloGigante', 'altarDumathoin')}
+        for r in range(raio + 1):
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    c = (x + dx, y + dy)
+                    if max(abs(dx), abs(dy)) != r or not (0 <= c[0] < W and 0 <= c[1] < H):
+                        continue
+                    if T[c[1]][c[0]] in ANDAVEL and c not in usadas and not any(
+                            (c[0] + i, c[1] + j) in usadas for (i, j) in ((1, 0), (-1, 0), (0, 1), (0, -1))) and not any(
+                            (c[0] + i, c[1] + j) in altas for (i, j) in ((1, 0), (0, 1), (1, 1))):
+                        return c
+        return None
+    for (_v, _x, _y) in [('braseiroFrio', 36, 57), ('braseiroFrio', 16, 5), ('braseiroFrio', 34, 41), ('braseiroFrio', 40, 46),
+                         ('carrinhoMinerio', 41, 28), ('carrinhoVazio', 45, 33), ('montinhoMinerio', 44, 27),
+                         ('ossos', 57, 30), ('ossos', 61, 36), ('ossos', 64, 27), ('ossos', 58, 43), ('blocoCaido', 59, 31),
+                         ('blocoCaido', 62, 40)]:
+        _c = _perto_livre(_x, _y)
+        if _c:
+            _lista.append({'v': _v, 'x': _c[0], 'y': _c[1], 'n': 'peca do livro'})
+    # Uma barricada so (a da porta leste do alojamento norte, area 11); as outras viram entulho de mina (ou somem, se caem numa
+    # casa de escada).
+    _ESCADA = {(d['x'], d['y']) for d in DEGRAUS}
+    for _o in list(_lista):
+        if _o['v'] == 'barricada' and (_o['x'], _o['y']) != (31, 28):
+            if (_o['x'], _o['y']) in _ESCADA:
+                _lista.remove(_o)
+            else:
+                _o['v'] = 'entulhoMina'
+    # PECA ESCONDIDA PELA FRENTE: com a camera fixa, o que fica ATRAS (norte/oeste) de uma parede de sala ou de uma rocha de
+    # caverna (3 niveis) some atras dela. A peca sai uma casa para o lado de dentro, sem ir para o batente de uma porta nem para a
+    # casa em frente dele.
+    _BAT = {(_a, _b) for (_a, _b, _c2, _d, _k) in PORTAS for (_a, _b) in ((_a, _b), (_c2, _d))}
+    _BAT_PERTO = _BAT | {(_x + _i, _y + _j) for (_x, _y) in _BAT for (_i, _j) in ((1, 0), (-1, 0), (0, 1), (0, -1))}
+
+    def _contra_frente(c):
+        x, y = c
+        if y + 1 < H and (PN[y + 1][x] in '#J+' or T[y + 1][x] == 'R'):
+            return True
+        return x + 1 < W and (PO[y][x + 1] in '#J+' or T[y][x + 1] == 'R')
+    _ocup = {(_o['x'], _o['y']) for _o in _lista}
+    for _o in _lista:
+        _c = (_o['x'], _o['y'])
+        if _o['v'] in ('barricada', 'braseiro', 'braseiroFrio', 'fogueira', 'teia') or not _contra_frente(_c):
+            continue
+        for (_dx, _dy) in ((0, -1), (-1, 0), (-1, -1), (0, -2), (-2, 0), (1, -1), (-1, 1), (-2, -1), (-1, -2)):
+            _n = (_c[0] + _dx, _c[1] + _dy)
+            if (0 <= _n[0] < W and 0 <= _n[1] < H and _n not in _ocup and SALA_DE.get(_n) == SALA_DE.get(_c)
+                    and T[_n[1]][_n[0]] in ANDAVEL and not _contra_frente(_n) and _n not in _BAT_PERTO):
+                _ocup.discard(_c); _ocup.add(_n)
+                _o['x'], _o['y'] = _n
+                break
     _base = _alcanca(set())
     _BATENTES = {(_a, _b) for (_a, _b, _c2, _d, _k) in PORTAS for (_a, _b) in ((_a, _b), (_c2, _d))}
     _bloq, _usadas, _recusadas = set(), set(), []
@@ -600,6 +661,7 @@ extra = {
     'areas': AREAS,
     'props': PROPS,
     'ninhos': NINHOS,
+    'degraus': DEGRAUS,
     'folhas': [[{'x': x1, 'y': y1}, {'x': x2, 'y': y2}] for (x1, y1, x2, y2, cod) in PORTAS if cod == '+'],
     'saida': [{'x': x, 'y': y} for (x, y) in sorted(CHAO) if y >= 87 and x <= 8],
     'salas': {n: [{'x': x, 'y': y} for (x, y) in sorted(cs)] for n, cs in INTERIOR.items()},

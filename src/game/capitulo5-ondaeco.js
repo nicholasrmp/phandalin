@@ -696,6 +696,10 @@ export function criarOndaEco(app) {
       if (texto) ops.push({ rotulo: 'Examinar', icone: 'acao-procurar', motivo: alcance(), fazer: () => painel(texto) });
       ops.push(...interacoesDePeca(v, tile, c, { alcance, longe }));
     }
+    // Braseiros e fogueira não são peças (têm glifo próprio), mas têm o que examinar.
+    if (['braseiro', 'braseiroFrio', 'fogueira'].includes(sup) && EXAMES[sup]) {
+      ops.push({ rotulo: 'Examinar', icone: 'acao-procurar', motivo: alcance(), fazer: () => painel(EXAMES[sup]) });
+    }
     ops.push(...interacoesDeLugar(tile, sup, c, { alcance, longe }));
     return ops;
   }

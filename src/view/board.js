@@ -705,7 +705,7 @@ export class Board {
       const vx = Math.round(cx / TW + cy / TH);
       const vy = Math.round(cy / TH - cx / TW);
       const { x, y } = this.fromView(vx, vy);
-      if (this.field.inside(x, y) && this.field.heightAt(x, y) === hgt) return { x, y };
+      if (this.field.inside(x, y) && this.alturaVisual(x, y) === hgt) return { x, y };
     }
     return null;
   }
@@ -786,6 +786,97 @@ export class Board {
   }
 
   /**
+   * DEGRAUS numa casa de escada (`field.degraus`, eixo 'x' ou 'y' = o sentido em que a escada sobe): linhas claras e
+   * escuras atravessadas na casa, como o focinho de cada degrau lavrado na pedra. Só desenho.
+   */
+  desenharDegraus(ctx, sx, sy, eixo) {
+    const T = { x: sx, y: sy };
+    const R = { x: sx + TW / 2, y: sy + TH / 2 };
+    const L = { x: sx - TW / 2, y: sy + TH / 2 };
+    // 'x': as linhas ficam paralelas ao eixo y (de T+a(R-T) até L+a(R-T)); 'y': paralelas ao eixo x.
+    const ao = eixo === 'y' ? { x: L.x - T.x, y: L.y - T.y } : { x: R.x - T.x, y: R.y - T.y };
+    const ao2 = eixo === 'y' ? { x: R.x - T.x, y: R.y - T.y } : { x: L.x - T.x, y: L.y - T.y };
+    ctx.save();
+    this.diamond(ctx, sx, sy);
+    ctx.clip();
+    // Cinco degraus: cada faixa um pouco mais escura que a de cima (a sombra do degrau acima), um sulco escuro e um fio claro.
+    for (let k = 0; k < 5; k += 1) {
+      const f0 = k / 5, f1 = (k + 1) / 5;
+      ctx.fillStyle = `rgba(10,8,6,${(0.05 + 0.06 * k).toFixed(2)})`;
+      ctx.beginPath();
+      ctx.moveTo(T.x + ao.x * f0, T.y + ao.y * f0);
+      ctx.lineTo(T.x + ao.x * f0 + ao2.x, T.y + ao.y * f0 + ao2.y);
+      ctx.lineTo(T.x + ao.x * f1 + ao2.x, T.y + ao.y * f1 + ao2.y);
+      ctx.lineTo(T.x + ao.x * f1, T.y + ao.y * f1);
+      ctx.closePath();
+      ctx.fill();
+    }
+    for (const f of [0.2, 0.4, 0.6, 0.8]) {
+      const ax = T.x + ao.x * f, ay = T.y + ao.y * f;
+      ctx.strokeStyle = 'rgba(10,8,6,.75)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax + ao2.x, ay + ao2.y); ctx.stroke();
+      ctx.strokeStyle = 'rgba(214,200,168,.6)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ax, ay - 2); ctx.lineTo(ax + ao2.x, ay + ao2.y - 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Veios de minério (ouro, prata azulada), musgo e manchas de umidade nas faces da parede de caverna. Sorteio fixo da casa:
+   * a mesma parede sai igual toda vez. Os veios descem em zigue-zague e só entram no pedaço da face que aparece (a vizinha da
+   * frente mais baixa).
+   */
+  decorarParedeDeCaverna(ctx, x, y, sx, sy, hgt) {
+    const sorte = sorteio(x * 13 + 7, y * 17 + 3, 100);
+    if (sorte >= 30) return;
+    const v = this.toView(x, y);
+    const frente = (dvx, dvy) => {
+      const p = this.fromView(v.vx + dvx, v.vy + dvy);
+      return this.field.inside(p.x, p.y) ? this.alturaVisual(p.x, p.y) : 0;
+    };
+    const esq = sorteio(x * 5 + 1, y * 3 + 9, 2) === 0;
+    const aparece = (esq ? hgt - frente(0, 1) : hgt - frente(1, 0)) * LIFT;
+    if (aparece < 8) return;
+    const ponto = (u, dv) => (esq
+      ? { px: sx - TW / 2 + (TW / 2) * u, py: sy + TH / 2 + (TH / 2) * u + dv }
+      : { px: sx + (TW / 2) * u, py: sy + TH - (TH / 2) * u + dv });
+    ctx.save();
+    // Pixel duro (sem antisserrilhado): cada ponto é um quadrado de 1 ou 2 px, como o resto da arte.
+    const pixel = (px, py, lado, cor) => { ctx.fillStyle = cor; ctx.fillRect(Math.round(px), Math.round(py), lado, lado); };
+    const linha = (a, b, cor) => {
+      const n = Math.max(Math.abs(b.px - a.px), Math.abs(b.py - a.py), 1);
+      for (let k = 0; k <= n; k += 1) pixel(a.px + (b.px - a.px) * k / n, a.py + (b.py - a.py) * k / n, 1, cor);
+    };
+    if (sorte < 22) {
+      // veio: ouro (7%), prata azulada (5%), cobre (10%): um zigue-zague curto que desce
+      const cor = sorte < 7 ? '#d8b24a' : sorte < 12 ? '#9fc4dc' : '#b8754a';
+      let u = 0.2 + sorteio(x + 3, y * 7, 60) / 100;
+      let dv = 2 + sorteio(x * 3, y + 5, Math.max(4, Math.round(aparece * 0.4)));
+      let a = ponto(u, dv);
+      for (let i = 0; i < 3; i += 1) {
+        u = Math.min(0.92, Math.max(0.08, u + (sorteio(x + i * 11, y + i * 5, 3) - 1) * 0.13));
+        dv = Math.min(aparece - 2, dv + 4 + sorteio(x * 2 + i, y * 2 + i * 3, 5));
+        const b = ponto(u, dv);
+        linha(a, b, cor);
+        a = b;
+      }
+      pixel(a.px - 1, a.py - 1, 2, '#fff4cf');           // o brilho na ponta do veio
+    } else {
+      // musgo (e umidade): tufos de 2 a 4 px no pé da face
+      for (let i = 0; i < 4; i += 1) {
+        const q = ponto(0.12 + sorteio(x + i * 5, y * 9, 74) / 100, Math.max(3, aparece - 3 - sorteio(x * 4 + i, y + i, 6)));
+        const cor = i % 2 ? '#3a542c' : '#223420';
+        pixel(q.px, q.py, 2, cor);
+        pixel(q.px + 2, q.py + 1, 2, cor);
+        pixel(q.px - 1, q.py + 1, 1, cor);
+      }
+    }
+    ctx.restore();
+  }
+
+  /**
    * A PROFUNDIDADE do buraco: o losango preto sozinho lê como textura faltando. Nas bordas de trás (as que ficam contra o
    * chão de cima, à esquerda e à direita do vértice de cima) desce uma parede interna que escurece até o breu, e nas
    * bordas da frente corre um fio claro, o lábio. Só entra onde a vizinha NÃO é buraco, então um fosso de várias casas
@@ -797,24 +888,24 @@ export class Board {
     this.diamond(ctx, sx, sy);
     ctx.clip();
     const parede = (ax, ay, bx, by) => {
-      const g = ctx.createLinearGradient(0, Math.min(ay, by), 0, Math.min(ay, by) + 17);
-      g.addColorStop(0, 'rgba(74,66,54,.95)');
-      g.addColorStop(0.45, 'rgba(30,26,22,.9)');
-      g.addColorStop(1, 'rgba(6,5,4,0)');
+      const g = ctx.createLinearGradient(0, Math.min(ay, by), 0, Math.min(ay, by) + 26);
+      g.addColorStop(0, 'rgba(96,86,70,.98)');
+      g.addColorStop(0.5, 'rgba(34,29,24,.95)');
+      g.addColorStop(1, 'rgba(4,3,2,0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(ax, ay);
       ctx.lineTo(bx, by);
-      ctx.lineTo(bx, by + 17);
-      ctx.lineTo(ax, ay + 17);
+      ctx.lineTo(bx, by + 26);
+      ctx.lineTo(ax, ay + 26);
       ctx.closePath();
       ctx.fill();
     };
     if (!ehFosso(-1, 0)) parede(sx - TW / 2, sy + TH / 2, sx, sy);        // borda de cima à esquerda
     if (!ehFosso(0, -1)) parede(sx, sy, sx + TW / 2, sy + TH / 2);        // borda de cima à direita
     ctx.restore();
-    ctx.strokeStyle = 'rgba(176,160,132,.5)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(206,190,158,.85)';
+    ctx.lineWidth = 1.5;
     if (!ehFosso(0, 1)) { ctx.beginPath(); ctx.moveTo(sx - TW / 2, sy + TH / 2); ctx.lineTo(sx, sy + TH); ctx.stroke(); }
     if (!ehFosso(1, 0)) { ctx.beginPath(); ctx.moveTo(sx, sy + TH); ctx.lineTo(sx + TW / 2, sy + TH / 2); ctx.stroke(); }
   }
@@ -959,6 +1050,10 @@ export class Board {
       ctx.fill();
     }
 
+    // A PAREDE DE CAVERNA ganha veios de minério, musgo e manchas, por sorteio da casa: sem isso a rocha são quatro
+    // faces repetidas em fileira.
+    if (this.field.paredeDeCaverna && s.chao === 'rocha' && hgt > 0 && this.field.tileAt(x, y) === 1) this.decorarParedeDeCaverna(ctx, x, y, sx, sy, hgt);
+
     // O ladrilho desenhado, 1:1: o losango do atlas tem os mesmos 64 x 32 do
     // motor, e o canto da célula fica meia largura à esquerda do vértice de
     // cima. A grade NÃO vem da arte — o montador limpa a aresta de cada
@@ -976,7 +1071,9 @@ export class Board {
       || (pisoDaSala === 'tabua' && MARCA_DE_LAJE.includes(s.chao))))
       ? (pisoDaSala && ladrilhoChao(pisoDaSala, 0, 0) ? this.pisoSorteado(pisoDaSala, x, y) : 'laje')
       // Mobília fora de casa (a cerca do campo) pisa em capim, não na laje do castelo.
-      : (s.objeto === 'prop' && !salaDaCasa ? (this.varianteDaProp(x, y)?.piso ?? 'grama') : s.chao);
+      : (s.objeto === 'prop' && !salaDaCasa ? (this.varianteDaProp(x, y)?.piso ?? 'grama')
+        // braseiro de caverna fora de sala pisa no chão da mina, não na laje de castelo
+        : (this.field.paredeDeCaverna && !salaDaCasa && (s.objeto === 'braseiro' || s.objeto === 'braseiroFrio') ? 'mina' : s.chao));
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
@@ -1034,6 +1131,8 @@ export class Board {
     ctx.strokeStyle = 'rgba(0,0,0,.16)';
     ctx.stroke();
     if (s.chao === 'fosso') this.profundidadeDoFosso(ctx, x, y, sx, sy);
+    const degrau = this.field.degraus?.get(`${x},${y}`);
+    if (degrau) this.desenharDegraus(ctx, sx, sy, degrau);
     ctx.restore();
 
     // O OBJETO NÃO É DESENHADO AGORA.

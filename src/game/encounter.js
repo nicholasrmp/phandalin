@@ -301,6 +301,7 @@ export function mapaDo(variante = 'padrao') {
       pisos: Object.fromEntries(Object.keys(ONDA_ECO.salas).map((k) => [k, 'lajeMina'])),
       veuDaEscuridao: 1,
       paredeDeCaverna: true,
+      degraus: ONDA_ECO.degraus,
       objetos: ONDA_ECO.props.map((p) => ({ ...p })),
       grupo: ONDA_ECO.grupo.map((p) => ({ ...p })),
       olhar: { dx: 1, dy: -1 },

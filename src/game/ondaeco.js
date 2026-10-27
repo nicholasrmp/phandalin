@@ -196,10 +196,10 @@ export const MAPA_ONDA_ECO = {
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<<<<<RRRRRRRRRRRR`RRRR`RRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<$<<^<<<$<<^<<RRRRRRRRRR`````````R`````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<^<<<<<<^<&<<<^<RRRRRRRR```OOOOO````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<<<<<<^<&<f<^<RRRRRRRR```OOOOO````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<<<<<<<RR`R``````ROOOOO`````````RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR&<<<<<<<<^<<<<<&```````````OOOOO``RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<^<<&<&<^<<<<<<^```````````OOOOO``RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR&<<<<<<<^<<<<^&<```````````OOOOO``RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<<&<&<^<<<<<<<```````````OOOOO``RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<^<&<F<<<<`````````R``````ROOOORRRRRRRRR``````R\"RRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<&<<&<^<````````RR`````R`OOOORRRRRRRRRR`````\"|RR|RRRRRRRRRRRRRRRRRR",
   "RRRR<^<<&<<<^<RRRRRRRRR``````R`OOROO`RRRRRRRRRR```\"\"||||RRRRRRRRRRRRRRRRR",
@@ -218,64 +218,64 @@ export const MAPA_ONDA_ECO = {
   "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````R```RRRRRRRR```\"RRRRRRRR\"\"RRRRR",
   "RRRRRRR|||||||\"`RR``RR<<<<<<^<<<RRRRRR<<<<<<<<<<<<RRR````RRRRRRRR```RRRRR",
   "RRRRRRR||||||\"\"``````R<<^<&<<<<<RRRRRR^<<<<<<<^<<<R`````RRRRRRRRRR``RRRRR",
-  "RRRRRRR||||||\"````````<<<<e<<<<<``````<<<<<<<<<&<<`````RRRRRRRRR````RRRRR",
-  "RRRRRRR||||||\"```````R<<<<<<<<<^R`````<<<<<<<<<&<<````RRRRR`````````RRRRR",
-  "RRRRRRR|||||\"\"``R````R<<&<<&<<<<RR``RR<<&<^<<<<<^<R``RRRRR````R````RRRRRR",
-  "RRRRRRR|||||\"```RR``RR<<<<<<<<^<RRR`RR<<^<<<<&^<^^RRRRRRRR`````````RRRRRR",
-  "RRRRRRR|||||\"```R```RRRRRRRRRRRRRR``RR<<<[[[[[[<<<``````R````````R<<<<RRR",
-  "RRRRRRR||||\"\"```RR``RRRRRRRRRRRRRR``RR<<<[[[[[[<<<````````````RRRR<<^<RRR",
-  "RRRRR`R||||\"```RRR``RRRRRRRRRRRRRR``RR<<<[[[^^[<<&R``````````R<^<<<<<<RRR",
+  "RRRRRRR||||||\"````````<<<<e<<<<<``````<<^<<<&<<&<<`````RRRRRRRRR&```RRRRR",
+  "RRRRRRR||||||\"```````R<<<<<<<<<^R`````<<<<<<<<<&<^````RRRRR`````````RRRRR",
+  "RRRRRRR|||||\"\"``R````R<<&<<&<<^<RR``RR<<&<^<<<<<^<R``RRRRR&```R````RRRRRR",
+  "RRRRRRR|||||\"```RR``RR<<<<<<<<<<RRR`RR<<^<<<<&^<^<RRRRRRRR`````````RRRRRR",
+  "RRRRRRR|||||\"```R```RRRRRRRRRRRRRR``RR<<<[[[[[[<<<``````R``^`````R<<<<RRR",
+  "RRRRRRR||||\"\"```RR``RRRRRRRRRRRRRR``RR<<<[[[[[^<<&````````````RRRR<^^<RRR",
+  "RRRRR`R||||\"```RRR``RRRRRRRRRRRRRR``RR<<<[[[^^[<<<R``````````R<^<<<<<<RRR",
   "RRRRR`\"|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<^<<<<<RRR",
   "RRRRRRR\"\"\"\"R`RRRRRRRRRR````````R````RR<<<<<<<<<<<<RRRRRR`````R<<<<<<<<RRR",
-  "RRRRRRR`````RRRRRRRRRRR`````````R```RR<<<<<<<<<<<<RRRRRRR`````<<<<<<<<RRR",
+  "RRRRRRR`````RRRRRRRRRRR`````````R```RR<<<<<<<<<<<<RRRRRRR```&`<<<<<<<<RRR",
   "RRRRRRR`````RRRRRRRRR`````RR````R````RRRRRRRRR``RRRRRRRR``````<<<^<<<<RRR",
   "RRRR`RRR````RRRRRRRR`````````````````RRRRRRRRR``RRRRRRRRR`````<<<<<<<<RRR",
-  "RRRR``RR````RRRRRRR``````````````````````RR`````RRRRRRRRRR```R<<<<<<^<RRR",
-  "RRRR``RR```RRR``RR````````````````````````R``````RRRRRRR`R```R<<<<<<^<RRR",
+  "RRRR``RR````RRRRRRR``````````````````````RR`````RRRRRRRRRR```R<^<<<^^<RRR",
+  "RRRR``RR```RRR``RR````````````````f```````R``````RRRRRRR`R```R<<<<<<<<RRR",
   "RRRR``RR```RRR`RRRR``````````````&```^`````R```````RRRRR````````RRRRRRRRR",
   "RRRR``RR```RRR``RRR``^`````````````````````````````RRRRR``````````````RRR",
-  "RRRR```R```RR```RRRR`````````````````&``````^```^^``RRRRR``````RR`````RRR",
-  "RRRR```R```RR```RRRRR````````````````^``````````````RRRRRR```````R````RRR",
-  "RRRR```R```RR```RRRRRRR````````R``&&```````````````RRRRRRR^``````R````RRR",
+  "RRRR```R```RR```RRRR`````````````````&``````^```^^``RRRRR`&````RR`````RRR",
+  "RRRR```R```RR```RRRRR````````````````^``````````````RRRRRR^``````R````RRR",
+  "RRRR```R```RR```RRRRRRR````````R``&&````f``````````RRRRRRR```````R````RRR",
   "RRRR```````RR```````RRRR```R`R`R```````&````````````RRRRR`R````````RRRRRR",
   "RRRR```````RRR````````RR``RRRRRRR`````````&````````RRRRR````````````^RRRR",
-  "RRRRR``````RRR````````RRRRRRRRRRRRR`R```````R`````RRRRR`````````RRRRRRRRR",
+  "RRRRR``````RRR````````RRRRRRRRRRRRR`R`&`````R`````RRRRR`````````RRRRRRRRR",
   "RRRRR``````RR`````````RR``RRRRRRRRRRR`&``````R`RRRRRRR``````````<<<^<<RRR",
-  "RRRRRRR`````R```RRRR``R```RR``RRRRRRRR&``````RRRRRRRR`````R`````<<<<<<RRR",
-  "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<^<^^<RR````R`````<<<<K<RRR",
-  "RRRRRRR``````````R`````````R```RRR<<RRRRRR```R<<<<<<RR```R`R````<<<^<<RRR",
+  "RRRRRRR`````R```RRRR``R```RR``RRRRRRRR```````RRRRRRRR`````R`````<<<<<<RRR",
+  "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<^<^^<RR````R`````<<<^K<RRR",
+  "RRRRRRR``````````R`````````R```RRR<<RRRRRR```R<<<<<<RR```R`R````<<<<<<RRR",
   "RRRRR``````````````````````````RRR<<^<^<RR``RR^<<<<<RR``````````<<<<<<RRR",
-  "RRRRR``````RRR```````````````````R<<<<<&RR``RR<<<<<^RRR````````R<<<<^<RRR",
-  "RRRRRRRR```RRR```````````RRR``````<<<<<<RR``RR<<<<<<RRR`R``````R<<<<<<RRR",
-  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<&RR``RR^<<<<^RRRRRR`^```R<<<<<<RRR",
-  "RRRRRRRRR```RR``RR```````````````R<<<<<<RR``RR``````RRRRRRR`&`^R<<<<<<RRR",
-  "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``^`R<<^<^<RRR",
-  "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR&;;^RR^`;`RRRRRRRRRR",
-  "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```&;`RRRRRRRRRR",
-  "RRRRRR```````````````R``````R```RR<<<<<<RR````````RRRR;^;^;^;^`^RRRRRRRRR",
-  "RRRRRR```````````````R`R````RR``RR<<<<<&RR```R`^^`RRRR`;;;^;&;^``RRRRRRRR",
-  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR`RRRR``RRRRRRRRRR`;;^;^;`;;^`&RRRRRR",
-  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR^``;&;&;&;;;^;`RRRRRR",
-  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR```^;;;^;;;;;;`RRRRRR",
-  "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR^`;;^;&;^^^;^;;``RRRR",
-  "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR``&`;;;;&;^;;;;;;;^`^RRR",
-  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR`````;`&;;^;;;`;;;&;^`RRR",
-  "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR```````^`^``^;^;;^;;^;```RRR",
-  "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;`;;^;;^`RRRRR",
-  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR```^`;;^;;^`RRRR",
-  "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR^`;^;;`RRRR",
-  "RRRRRRRRR```OO``````RRRR`````````````&`````RRRRRRRRRRRRRRRRRRRRR``^``RRRR",
+  "RRRRR``````RRR```````````````````R<<<<&<RR``RR<<<<^<RRR````````R<<<<^<RRR",
+  "RRRRRRRR```RRR```````````RRR``````<<<<<<RR``RR^<<<^<RRR`R``````R<<<<<<RRR",
+  "RRRRRRRR````RR``RR```R```RRRR`````<<<<&<RR``RR<<<<<<RRRRRR```&`R<<<<<<RRR",
+  "RRRRRRRRR```RR``RR```````````````R<<f<<<RR``RR``````RRRRRRR````R<<^<<<RRR",
+  "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``^`R<<<<^<RRR",
+  "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR&;;`RR^`;`RRRRRRRRRR",
+  "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```^;`RRRRRRRRRR",
+  "RRRRRR```````````````R``````R```RR<<<<&<RR`````^^`RRRR;^;^;^;&&`RRRRRRRRR",
+  "RRRRRR```````````````R`R````RR``RR<<<<<<RR```R````RRRR`;;;^;^;^``RRRRRRRR",
+  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR`RRRR``RRRRRRRRRR`;;^;&;^;;^``RRRRRR",
+  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR^``RRR```RRRRRRR^``;&;;;^;^;^;`RRRRRR",
+  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR```^;;^;;;;&;^`RRRRRR",
+  "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR^`;;^;;;^^^;^;;``RRRR",
+  "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR``&`;;;;&;^;;;^;&;^^`RRR",
+  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR````^;^&;;;;;;`;;;;^&`RRR",
+  "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR````````````^;^;;^;;^;```RRR",
+  "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;^;;;;;^`RRRRR",
+  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`````^^;;;^`RRRR",
+  "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR``;;^^`RRRR",
+  "RRRRRRRRR```OO``````RRRR`````````````&``&``RRRRRRRRRRRRRRRRRRRRR`````RRRR",
   "RRRRRRRRR```OO````````RRRRRRRR``````&``&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRR``````````^``RRRRRRRRRR```````&&RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRR``````````^``RRRRRRRRRR```&```&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR`````````````RRRRRRRRRRRR``R```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRR````````````RRRRR<<<<RRRRRRR```RR<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRR``````````RRRRRR<^<<`RRRRRRR``RR<<^^RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRR``````````RRRRRR<<<<^<^<<^RR``RR<^^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRR````````````RRRRR<<<<RRRRRRR```RR<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRR``````````RRRRRR<^<<`RRRRRRR``RR<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRR``````````RRRRRR<<<<^<^<^<RR``RR<^^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRR`````RRRRRRRRRRR<<<<<<<<<<R```RR<^<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR`````RRRRRRRRRRRR^<<<^<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRR`````RRRRRRRRRRRRR<<<^<<<<<<``````<<<^RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRR````RRRRRRRRRRRRRRRR<<<<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRR`````RRRRRRRRRRRRRRRRR^<^<^<&<R````R^<<^RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRR`````RRRRRRRRRRRRR<<<^<<<<<<``````<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRR````RRRRRRRRRRRRRRRR^<^<^<&<R````R<^^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRR`````RRRRRRRRRRRRRRRRR<<<<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRR````RRRRRRRRRRRRRRRRRRRRRRRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRR````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -321,19 +321,19 @@ export const MAPA_ONDA_ECO = {
   "0000111000010100000000322222200100001211111111111120111100000100000000100",
   "0000001000001100000033322222200010001211111111111120000110000000000000100",
   "0001111000001000000332222233200010000222222222002220000100000000000000100",
-  "0001011100001000003322222222200000000111111133003000000110000000000000100",
-  "0001001100001111133222222222200000000000011002223300000111000100000000100",
-  "0001001100011100132222222222200000000000001002222333000101000100000000100",
-  "0001001100010101133222222222210000000000000102222223000100000000111111100",
-  "0001001100011100103222222222210000000000000002222223300100000000000000100",
-  "0001000100011000103322222222210000000000000012222222300110000001100000100",
-  "0001000100011000100332222222200000000000000012222222300011000000010000100",
-  "0001000100011000111133322222200100000000000012222223300011000000010000100",
-  "0001000000011000000011331103230100000000000002222222300110100000000111100",
-  "0001000000011100000000120023331110000000000002222223301100000000000001000",
-  "0001100000011100000000111110000011101000000032222233011000000000111111100",
-  "0000100000011000000000110011111000111000000003233330110000000000000000100",
-  "0000111000001000111100100011001001111100000003331111100000100000000000100",
+  "0001011100001000003322222222200000000111111122002000000110000000000000100",
+  "0001001100001111133222222222200000000000011001112200000111000100000000100",
+  "0001001100011100132222222222200000000000001001111222000101000100000000100",
+  "0001001100010101133222222222210000000000000101111112000100000000111111100",
+  "0001001100011100103222222222210000000000000001111112200100000000000000100",
+  "0001000100011000103322222222210000000000000001111111200110000001100000100",
+  "0001000100011000100332222222200000000000000001111111200011000000010000100",
+  "0001000100011000111133322222200100000000000001111112200011000000010000100",
+  "0001000000011000000011331103230100000000000001111111200110100000000111100",
+  "0001000000011100000000120023331110000000000001111112201100000000000001000",
+  "0001100000011100000000111110000011101000000021111122011000000000111111100",
+  "0000100000011000000000110011111000111000000002122220110000000000000000100",
+  "0000111000001000111100100011001001111100000002221111100000100000000000100",
   "0000001000000000011100110001001101001111100001000000110000100000000000100",
   "0000111000000000010000000001000101001111110001000000110001010000000000100",
   "0000100000000000000000000000000111000000110011000000110000000000000000100",
@@ -11724,7 +11724,7 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 13,
+   "x": 12,
    "y": 7,
    "variante": "banco",
    "piso": "lajeMina"
@@ -11760,18 +11760,18 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 19,
+   "x": 18,
    "y": 7,
    "variante": "ossos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
-   "x": 19,
-   "y": 8,
+   "x": 17,
+   "y": 7,
    "variante": "ferramentas",
-   "piso": "lajeMina",
-   "espelhar": true
+   "piso": "lajeMina"
   },
   {
    "tipo": "prop",
@@ -11799,8 +11799,9 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 28,
    "y": 25,
-   "variante": "barricada",
-   "piso": "lajeMina"
+   "variante": "entulhoMina",
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11827,9 +11828,10 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 30,
-   "y": 30,
+   "y": 29,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11878,9 +11880,10 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 49,
-   "y": 33,
+   "y": 32,
    "variante": "anaoMorto",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11908,15 +11911,15 @@ export const ONDA_ECO = {
    "x": 48,
    "y": 29,
    "variante": "suprimentos",
-   "piso": "lajeMina",
-   "espelhar": true
+   "piso": "lajeMina"
   },
   {
    "tipo": "prop",
    "x": 49,
-   "y": 30,
+   "y": 28,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11980,8 +11983,9 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 44,
    "y": 43,
-   "variante": "barricada",
-   "piso": "mina"
+   "variante": "entulhoMina",
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12006,6 +12010,14 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
+   "x": 67,
+   "y": 32,
+   "variante": "suprimentos",
+   "piso": "lajeMina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
    "x": 68,
    "y": 32,
    "variante": "suprimentos",
@@ -12013,8 +12025,8 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 68,
-   "y": 40,
+   "x": 67,
+   "y": 39,
    "variante": "suprimentos",
    "piso": "lajeMina"
   },
@@ -12052,7 +12064,7 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 38,
-   "y": 50,
+   "y": 48,
    "variante": "ossos",
    "piso": "mina"
   },
@@ -12072,23 +12084,23 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 39,
+   "x": 38,
    "y": 54,
+   "variante": "sacoDeDormir",
+   "piso": "lajeMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 56,
    "variante": "sacoDeDormir",
    "piso": "lajeMina",
    "espelhar": true
   },
   {
    "tipo": "prop",
-   "x": 39,
-   "y": 56,
-   "variante": "sacoDeDormir",
-   "piso": "lajeMina"
-  },
-  {
-   "tipo": "prop",
-   "x": 39,
-   "y": 62,
+   "x": 38,
+   "y": 61,
    "variante": "sacoDeDormir",
    "piso": "lajeMina",
    "espelhar": true
@@ -12107,6 +12119,13 @@ export const ONDA_ECO = {
    "y": 60,
    "variante": "ossos",
    "piso": "lajeMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 36,
+   "y": 64,
+   "variante": "entulhoMina",
+   "piso": "mina"
   },
   {
    "tipo": "prop",
@@ -12141,24 +12160,24 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 46,
-   "y": 56,
+   "y": 55,
    "variante": "suprimentos",
    "piso": "lajeMina"
   },
   {
    "tipo": "prop",
-   "x": 51,
+   "x": 50,
    "y": 54,
+   "variante": "suprimentos",
+   "piso": "lajeMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 50,
+   "y": 55,
    "variante": "suprimentos",
    "piso": "lajeMina",
    "espelhar": true
-  },
-  {
-   "tipo": "prop",
-   "x": 51,
-   "y": 56,
-   "variante": "suprimentos",
-   "piso": "lajeMina"
   },
   {
    "tipo": "prop",
@@ -12177,17 +12196,17 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 47,
-   "y": 62,
+   "y": 61,
    "variante": "suprimentos",
-   "piso": "mina",
-   "espelhar": true
+   "piso": "mina"
   },
   {
    "tipo": "prop",
    "x": 48,
-   "y": 62,
+   "y": 61,
    "variante": "suprimentos",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12200,10 +12219,9 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 58,
-   "y": 45,
+   "y": 44,
    "variante": "cristais",
-   "piso": "mina",
-   "espelhar": true
+   "piso": "mina"
   },
   {
    "tipo": "prop",
@@ -12222,14 +12240,14 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 67,
-   "y": 52,
+   "y": 51,
    "variante": "mesaPosta",
    "piso": "lajeMina"
   },
   {
    "tipo": "prop",
    "x": 66,
-   "y": 58,
+   "y": 57,
    "variante": "camaDePedra",
    "piso": "lajeMina"
   },
@@ -12315,14 +12333,6 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 56,
-   "y": 59,
-   "variante": "cogumeloGigante",
-   "piso": "mina",
-   "espelhar": true
-  },
-  {
-   "tipo": "prop",
    "x": 57,
    "y": 61,
    "variante": "cogumeloGigante",
@@ -12369,10 +12379,9 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 66,
-   "y": 73,
+   "y": 72,
    "variante": "cogumeloGigante",
-   "piso": "mina",
-   "espelhar": true
+   "piso": "fungos"
   },
   {
    "tipo": "prop",
@@ -12385,8 +12394,9 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 9,
    "y": 70,
-   "variante": "barricada",
-   "piso": "mina"
+   "variante": "entulhoMina",
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12430,14 +12440,15 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 30,
    "y": 81,
-   "variante": "barricada",
-   "piso": "lajeMina"
+   "variante": "entulhoMina",
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 29,
    "y": 82,
-   "variante": "barricada",
+   "variante": "entulhoMina",
    "piso": "lajeMina"
   },
   {
@@ -12457,36 +12468,37 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 35,
+   "x": 34,
    "y": 79,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 28,
-   "y": 84,
+   "y": 83,
    "variante": "camaDePedra",
    "piso": "lajeMina"
   },
   {
    "tipo": "prop",
    "x": 30,
-   "y": 84,
+   "y": 83,
    "variante": "camaDePedra",
    "piso": "lajeMina"
   },
   {
    "tipo": "prop",
    "x": 32,
-   "y": 84,
+   "y": 83,
    "variante": "camaDePedra",
    "piso": "lajeMina"
   },
   {
    "tipo": "prop",
    "x": 34,
-   "y": 84,
+   "y": 83,
    "variante": "lanterna",
    "piso": "lajeMina"
   },
@@ -12506,33 +12518,34 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 45,
-   "y": 78,
+   "x": 44,
+   "y": 77,
    "variante": "ferramentas",
    "piso": "lajeMina",
    "espelhar": true
   },
   {
    "tipo": "prop",
-   "x": 45,
+   "x": 44,
    "y": 82,
+   "variante": "suprimentos",
+   "piso": "lajeMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 43,
+   "y": 83,
    "variante": "suprimentos",
    "piso": "lajeMina",
    "espelhar": true
   },
   {
    "tipo": "prop",
-   "x": 42,
-   "y": 84,
+   "x": 44,
+   "y": 83,
    "variante": "suprimentos",
-   "piso": "lajeMina"
-  },
-  {
-   "tipo": "prop",
-   "x": 45,
-   "y": 84,
-   "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12566,7 +12579,7 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 40,
-   "y": 75,
+   "y": 73,
    "variante": "lanterna",
    "piso": "mina"
   },
@@ -12579,17 +12592,26 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
+   "x": 35,
+   "y": 75,
+   "variante": "lanterna",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
    "x": 34,
    "y": 71,
-   "variante": "barricada",
-   "piso": "mina"
+   "variante": "entulhoMina",
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 38,
    "y": 71,
-   "variante": "barricada",
-   "piso": "mina"
+   "variante": "entulhoMina",
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12671,10 +12693,9 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 52,
-   "y": 69,
+   "y": 68,
    "variante": "fungoLaranja",
-   "piso": "mina",
-   "espelhar": true
+   "piso": "mina"
   },
   {
    "tipo": "prop",
@@ -12686,9 +12707,10 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 54,
-   "y": 69,
+   "y": 68,
    "variante": "fungoLaranja",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12716,14 +12738,14 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 56,
    "y": 66,
-   "variante": "hastesVioleta",
+   "variante": "cogumeloRoxo",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 57,
    "y": 63,
-   "variante": "bolaRachada",
+   "variante": "cogumeloChato",
    "piso": "fungos"
   },
   {
@@ -12737,66 +12759,36 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 58,
    "y": 62,
-   "variante": "cogumeloChato",
+   "variante": "pedraDeLiquen",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 58,
-   "y": 64,
-   "variante": "coralAmarelo",
+   "y": 65,
+   "variante": "cogumeloChato",
    "piso": "fungos",
-   "espelhar": true
-  },
-  {
-   "tipo": "prop",
-   "x": 58,
-   "y": 66,
-   "variante": "fungoCerebro",
-   "piso": "fungos"
-  },
-  {
-   "tipo": "prop",
-   "x": 58,
-   "y": 68,
-   "variante": "cogumeloChato",
-   "piso": "fungos"
-  },
-  {
-   "tipo": "prop",
-   "x": 59,
-   "y": 56,
-   "variante": "fungoLaranja",
-   "piso": "mina",
    "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 59,
    "y": 59,
-   "variante": "fungoEspinhoso",
+   "variante": "cogumeloVermelho",
    "piso": "mina"
   },
   {
    "tipo": "prop",
    "x": 59,
    "y": 63,
-   "variante": "pedraDeLiquen",
+   "variante": "coralAmarelo",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 59,
-   "y": 65,
-   "variante": "pedraDeLiquen",
-   "piso": "fungos",
-   "espelhar": true
-  },
-  {
-   "tipo": "prop",
-   "x": 59,
    "y": 67,
-   "variante": "estalagmiteAzul",
+   "variante": "pedraDeLiquen",
    "piso": "fungos"
   },
   {
@@ -12804,43 +12796,45 @@ export const ONDA_ECO = {
    "x": 59,
    "y": 69,
    "variante": "pedraDeLiquen",
-   "piso": "fungos"
-  },
-  {
-   "tipo": "prop",
-   "x": 60,
-   "y": 57,
-   "variante": "coralAmarelo",
-   "piso": "mina",
+   "piso": "fungos",
    "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 60,
    "y": 60,
-   "variante": "fungoCerebro",
+   "variante": "hastesVioleta",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 60,
    "y": 62,
-   "variante": "coralAmarelo",
+   "variante": "cogumeloChato",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 60,
    "y": 64,
-   "variante": "tapeteAzul",
-   "piso": "fungos"
+   "variante": "cogumeloTurquesa",
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 60,
-   "y": 71,
-   "variante": "hastesVioleta",
+   "y": 70,
+   "variante": "fungoPrateleira",
    "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 61,
+   "y": 56,
+   "variante": "aneloDeCogumelos",
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12854,29 +12848,42 @@ export const ONDA_ECO = {
    "tipo": "prop",
    "x": 61,
    "y": 61,
-   "variante": "cogumeloChato",
+   "variante": "fungoCerebro",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
-   "x": 62,
-   "y": 57,
-   "variante": "fungoLaranja",
-   "piso": "mina",
-   "espelhar": true
+   "x": 61,
+   "y": 63,
+   "variante": "bolaRachada",
+   "piso": "mina"
   },
   {
    "tipo": "prop",
    "x": 62,
    "y": 62,
-   "variante": "cogumeloChato",
-   "piso": "mina",
-   "espelhar": true
+   "variante": "cogumeloTurquesa",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 64,
+   "variante": "fungoPrateleira",
+   "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 62,
    "y": 69,
+   "variante": "fungoPrateleira",
+   "piso": "fungos",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 62,
+   "y": 71,
    "variante": "hastesVioleta",
    "piso": "fungos",
    "espelhar": true
@@ -12884,24 +12891,31 @@ export const ONDA_ECO = {
   {
    "tipo": "prop",
    "x": 62,
-   "y": 72,
-   "variante": "pedraDeLiquen",
-   "piso": "mina"
-  },
-  {
-   "tipo": "prop",
-   "x": 63,
    "y": 61,
-   "variante": "fungoEspinhoso",
-   "piso": "mina"
+   "variante": "fungoCerebro",
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 63,
-   "y": 70,
-   "variante": "cogumeloChato",
-   "piso": "fungos",
-   "espelhar": true
+   "y": 65,
+   "variante": "tapeteAzul",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 63,
+   "y": 67,
+   "variante": "pedraDeLiquen",
+   "piso": "fungos"
+  },
+  {
+   "tipo": "prop",
+   "x": 63,
+   "y": 71,
+   "variante": "cogumeloTurquesa",
+   "piso": "fungos"
   },
   {
    "tipo": "prop",
@@ -12912,54 +12926,122 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 64,
-   "y": 71,
-   "variante": "cogumeloChato",
+   "x": 65,
+   "y": 67,
+   "variante": "aneloDeCogumelos",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 65,
-   "y": 72,
-   "variante": "cogumeloTurquesa",
-   "piso": "fungos",
-   "espelhar": true
-  },
-  {
-   "tipo": "prop",
-   "x": 66,
-   "y": 63,
-   "variante": "coralAmarelo",
-   "piso": "mina",
-   "espelhar": true
-  },
-  {
-   "tipo": "prop",
-   "x": 66,
-   "y": 68,
-   "variante": "fungoCerebro",
+   "y": 65,
+   "variante": "hastesVioleta",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
    "x": 68,
    "y": 68,
-   "variante": "pedraDeLiquen",
+   "variante": "fungoCerebro",
    "piso": "fungos"
   },
   {
    "tipo": "prop",
-   "x": 69,
+   "x": 67,
+   "y": 72,
+   "variante": "fungoCiano",
+   "piso": "fungos",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 68,
    "y": 67,
    "variante": "cogumeloVermelho",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 67,
+   "y": 68,
+   "variante": "fungoEspinhoso",
+   "piso": "fungos",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 40,
+   "y": 27,
+   "variante": "carrinhoMinerio",
+   "piso": "lajeMina"
+  },
+  {
+   "tipo": "prop",
+   "x": 46,
+   "y": 32,
+   "variante": "carrinhoVazio",
+   "piso": "canal"
+  },
+  {
+   "tipo": "prop",
+   "x": 44,
+   "y": 27,
+   "variante": "montinhoMinerio",
+   "piso": "lajeMina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 29,
+   "variante": "ossos",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 60,
+   "y": 36,
+   "variante": "ossos",
    "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 64,
+   "y": 27,
+   "variante": "ossos",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 58,
+   "y": 43,
+   "variante": "ossos",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 31,
+   "variante": "blocoCaido",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 63,
+   "y": 39,
+   "variante": "blocoCaido",
+   "piso": "lajeMina"
   }
  ],
  "ninhos": {
   "stirges": [
    {
     "x": 37,
-    "y": 71
+    "y": 72
    },
    {
     "x": 39,
@@ -12978,7 +13060,7 @@ export const ONDA_ECO = {
     "y": 74
    },
    {
-    "x": 38,
+    "x": 39,
     "y": 78
    },
    {
@@ -12987,7 +13069,7 @@ export const ONDA_ECO = {
    },
    {
     "x": 42,
-    "y": 73
+    "y": 70
    },
    {
     "x": 30,
@@ -13001,7 +13083,7 @@ export const ONDA_ECO = {
   "esqueletos": [
    {
     "x": 30,
-    "y": 83
+    "y": 84
    },
    {
     "x": 26,
@@ -13009,14 +13091,6 @@ export const ONDA_ECO = {
    },
    {
     "x": 35,
-    "y": 80
-   },
-   {
-    "x": 26,
-    "y": 82
-   },
-   {
-    "x": 31,
     "y": 79
    },
    {
@@ -13024,22 +13098,30 @@ export const ONDA_ECO = {
     "y": 84
    },
    {
-    "x": 28,
-    "y": 79
+    "x": 26,
+    "y": 82
    },
    {
-    "x": 33,
-    "y": 82
+    "x": 31,
+    "y": 80
    },
    {
     "x": 29,
     "y": 77
+   },
+   {
+    "x": 28,
+    "y": 80
+   },
+   {
+    "x": 33,
+    "y": 82
    }
   ],
   "ghoulsSul": [
    {
     "x": 36,
-    "y": 60
+    "y": 61
    },
    {
     "x": 34,
@@ -13211,6 +13293,63 @@ export const ONDA_ECO = {
    }
   ]
  },
+ "degraus": [
+  {
+   "x": 28,
+   "y": 41,
+   "eixo": "x"
+  },
+  {
+   "x": 28,
+   "y": 42,
+   "eixo": "x"
+  },
+  {
+   "x": 28,
+   "y": 43,
+   "eixo": "x"
+  },
+  {
+   "x": 29,
+   "y": 41,
+   "eixo": "x"
+  },
+  {
+   "x": 29,
+   "y": 42,
+   "eixo": "x"
+  },
+  {
+   "x": 29,
+   "y": 43,
+   "eixo": "x"
+  },
+  {
+   "x": 30,
+   "y": 41,
+   "eixo": "x"
+  },
+  {
+   "x": 30,
+   "y": 42,
+   "eixo": "x"
+  },
+  {
+   "x": 30,
+   "y": 43,
+   "eixo": "x"
+  },
+  {
+   "x": 24,
+   "y": 46,
+   "eixo": "y"
+  },
+  {
+   "x": 25,
+   "y": 46,
+   "eixo": "y"
+  }
+ ],
  "folhas": [
   [
    {
