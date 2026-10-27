@@ -174,7 +174,7 @@ def limpar_aresta(t):
 # losango (o PixelLab pinta ali a "quina" do bloco). `limpar_aresta` so refaz o pixel da aresta; a faixa, de 4 px,
 # virava no tabuleiro um vao escuro entre uma casa e outra, como se fossem lajotas soltas. A faixa e refeita a partir do
 # miolo do proprio ladrilho, sem inventar cor.
-FAIXA_ESCURA = {'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura'}
+FAIXA_ESCURA = {'mina', 'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura'}
 LARGURA_FAIXA = 10
 
 
@@ -211,6 +211,31 @@ def limpar_faixa(t):
             fonte = limpo + (limpo - 1 - y)
             ok = fonte in ys and dist(x, fonte) >= LARGURA_FAIXA and _lum(s[x, fonte]) >= claro
             d[x, y] = s[x, fonte] if ok else mediano
+    return out
+
+
+# MAIS VARIACAO nos chaos da Onda Eco: uma superficie com 2 ladrilhos vira papel de parede (a mesma cruz de rejunte, os
+# mesmos pontinhos no mesmo canto em cada casa). Cada ladrilho ganha o seu espelho (o losango e simetrico) e, na laje, uma
+# versao sem o rejunte em cruz (as lajes de verdade ora tem junta, ora nao).
+VARIANTES_EXTRA = {'mina', 'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura'}
+
+
+def sem_rejunte(t):
+    from losango import no_losango
+    out = t.copy()
+    s, d = t.load(), out.load()
+    vivos = sorted(_lum(s[x, y]) for y in range(TH) for x in range(TW) if no_losango(x, y) and s[x, y][3])
+    limite = vivos[len(vivos) // 2] * 0.86
+    for y in range(TH):
+        for x in range(TW):
+            if not (no_losango(x, y) and s[x, y][3]) or _lum(s[x, y]) >= limite:
+                continue
+            claros = [s[x + i, y + j] for i in range(-2, 3) for j in range(-2, 3)
+                      if 0 <= x + i < TW and 0 <= y + j < TH and no_losango(x + i, y + j) and s[x + i, y + j][3]
+                      and _lum(s[x + i, y + j]) >= limite]
+            if claros:
+                claros.sort(key=_lum)
+                d[x, y] = claros[len(claros) // 2]
     return out
 
 
@@ -302,6 +327,19 @@ def main():
                 topos.append(t)
             else:
                 fora.append(f'{i} (tom {m - mediana:+.1f}, aresta {a:+.1f})')
+        if nome in VARIANTES_EXTRA:
+            for k, base in enumerate(list(topos)):
+                if nome == 'mina':             # o chao de terra batida nao tem rejunte: a cruz e defeito
+                    base = sem_rejunte(base)
+                    atlas.alpha_composite(base, (k * TW, linha * TH))
+                    topos[k] = base
+                extras = [base.transpose(Image.FLIP_LEFT_RIGHT)]
+                if nome == 'lajeMina':         # as juntas ficam so nos originais: 1/3 das casas, nao todas
+                    solta = sem_rejunte(base)
+                    extras = [solta, solta.transpose(Image.FLIP_LEFT_RIGHT)]
+                for e in extras:
+                    atlas.alpha_composite(e, (len(topos) * TW, linha * TH))
+                    topos.append(e)
         tons = [tom_e_aresta(t)[0] for t in topos]
         arestas = [tom_e_aresta(t)[1] for t in topos]
         print(f'{nome:8} entram {len(topos)}/16, amplitude de tom {max(tons) - min(tons):.1f}, '

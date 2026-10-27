@@ -284,7 +284,7 @@ export function criarOndaEco(app) {
   const temOferta = () => herois().some((h) => (h.bag ?? []).some((i) => (itemDeId(i.id)?.dados.raridade ?? null) && i.qtd > 0));
   const arvoreDe = (npc) => {
     if (mormesk && npc === mormesk) return arvoreDeMormesk({ salvo, tem: temOferta });
-    if (espectador && npc === espectador) return arvoreDoEspectador();
+    if (espectador && npc === espectador) return arvoreDoEspectador({ salvo });
     if (nezznar && npc === nezznar) return arvoreDeNezznar();
     if (npc === nundro) return arvoreDeNundro({ salvo });
     return null;
@@ -308,6 +308,7 @@ export function criarOndaEco(app) {
       }
     } else if (nezznar && npc === nezznar) {
       if (fim === 'luta') iniciarTemplo();
+      else if (fim === 'luta-surpresa') iniciarTemplo('nossa');
     } else if (npc === nundro && fim === 'resgatado') {
       salvo.nundro = 'livre';
       feitos.nundroResgatado = true;
@@ -325,9 +326,10 @@ export function criarOndaEco(app) {
   const conversaDoEspectador = () => { salvo.espectadorVisto = true; return conversaDe(espectador, { dx: -1, dy: 0 }); };
   const conversaDeNezznar = async () => { salvo.temploVisto = true; await conversaDe(nezznar, { dx: 1, dy: 0 }); };
   // A luta final: Nezznar, os dois bugbears da mesa e as quatro aranhas (que se escondem atrás dos pilares).
-  function iniciarTemplo() {
+  function iniciarTemplo(surpresa = null) {
     salvo.templo = 'luta';
-    const furt = furtividadeDe(aranhasTemplo);
+    // As aranhas se escondem atrás dos pilares; mexer na porta do sacerdote (arrombar) as avisou, e elas já estão de pé.
+    const furt = salvo.aranhasAvisadas ? null : furtividadeDe(aranhasTemplo);
     // Do corredor chegam os DOIS bugbears que escalam as cordas da fenda (o guarda e o doppelganger ficam lá: o livro faz o
     // doppelganger recuar para avisar Nezznar, e não lutar).
     const reforco = bugbearsFenda.slice(0, 2).filter((f) => !f.dead);
@@ -339,7 +341,7 @@ export function criarOndaEco(app) {
       if (naArea(h.pos, '19') || distanceFt(h.pos, ref.pos) <= 15) continue;
       h.pos = { ...h.pos, ...casaPerto(ref.pos) };
     }
-    luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo].filter((f) => !f.dead), { furt });
+    luta([nezznar, ...bugbearsTemplo, ...aranhasTemplo].filter((f) => !f.dead), surpresa === 'nossa' ? 'nossa' : (furt ? { furt } : null));
   }
 
   // MONSTROS VAGANDO (o livro): nenhuma parte da mina é segura. Quem gasta muito tempo num lugar (um descanso)
@@ -552,6 +554,11 @@ export function criarOndaEco(app) {
             if (!r.passou) { await painel(TEXTOS.portaResiste, { teste: r }); return; }
             abrirTranca(t);
             await painel(t.texto, { teste: r });
+            // Mexer na tranca da porta do sacerdote faz barulho: as aranhas do templo ouvem e deixam o esconderijo.
+            if (t.id === 'sacerdote' && !salvo.aranhasAvisadas) {
+              salvo.aranhasAvisadas = true;
+              await painel(TEXTOS.portaAvisa);
+            }
             app.refresh();
           },
         });

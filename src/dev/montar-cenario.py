@@ -297,6 +297,9 @@ _MINA = {
 for _pasta, _nomes in _MINA.items():
     for _i, _n in enumerate(_nomes):
         GRUPOS[f'prop-{_n}'] = {'pasta': _pasta, 'quadros': {'todas': [_i]}, 'ancora': 'chao'}
+# A cama de pedra saiu num laranja vivo demais para um beliche de rocha: as tres cores quentes descem para o tom da
+# madeira velha da mina (cor por cor, sem gerar nada).
+GRUPOS['prop-camaDePedra']['cores'] = {'#a8683a': '#8a6a4c', '#85603d': '#6f5a42', '#7a4a2a': '#634a36'}
 # A RODA D'AGUA ANIMADA (`animar-objeto.py`, pixminimax): o mesmo desenho girando, 9 quadros (o 0 e a arte original).
 # `bbox_comum`: todos os quadros saem do mesmo recorte, senao a roda andaria na tela de um quadro para o outro.
 GRUPOS['prop-rodaDagua'] = {'pasta': 'minaRoda/anim1', 'quadros': {'todas': list(range(9))}, 'ancora': 'chao',

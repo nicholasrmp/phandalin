@@ -164,6 +164,11 @@ FOSSO = set()          # o abismo da area 18, o fosso da entrada (area 1)
 FOSSO |= retangulos([(12, 73, 13, 74)])
 # A fenda da caverna desmoronada (area 18): 6 m de fundo, com cordas atadas na borda oeste (27..30, 9..11).
 FOSSO |= {c for c in retangulos([(31, 5, 35, 12)]) if c in CHAO}
+# As ilhas de rocha no meio da fenda (restos do desenho original) boiariam no vazio: a casa de pedra cercada de fenda por
+# tres lados ou mais entra no buraco tambem.
+for _ in range(2):
+    FOSSO |= {(x, y) for (x, y) in retangulos([(31, 5, 35, 12)]) if (x, y) not in FOSSO
+              and sum((x + i, y + j) in FOSSO for (i, j) in ((1, 0), (-1, 0), (0, 1), (0, -1))) >= 3}
 CANAL = retangulos([(41, 31, 46, 34)])    # o canal seco da fundicao, 1,5 m abaixo do piso
 FUNGOS = {(x, y) for (x, y) in CHAO
           if COR[y][x][1] - COR[y][x][2] >= 25 and COR[y][x][1] >= 50 and (x, y) not in SALA_DE}
@@ -207,12 +212,13 @@ def _sobe(rects, nivel):
             ALT[(x, y)] = nivel
 
 
-_sobe([(17, 34, 28, 46)], 2)                        # a elevacao oeste da grande caverna
-_sobe([(45, 39, 50, 51)], 2)                        # a elevacao leste
+_sobe([(17, 34, 28, 45)], 2)                        # a elevacao oeste da grande caverna
+_sobe([(45, 39, 51, 50)], 2)                        # a elevacao leste
 for (_x, _n) in ((28, 2), (29, 1), (30, 0)):        # a escada oeste desce para o meio (3 casas, 3 de largura)
     _sobe([(_x, 41, _x, 43)], _n)
 _sobe([(44, 43, 44, 45)], 1)                        # a escada leste: o degrau antes da elevacao
-_sobe([(24, 47, 25, 47)], 1)                        # a rampa de trilhos que desce da elevacao oeste para o tunel
+_sobe([(24, 46, 25, 46)], 1)
+_sobe([(28, 46, 28, 46)], 2)                        # a ponta da elevacao oeste, junto da escada                        # a rampa de trilhos que desce da elevacao oeste para o tunel
 _sobe([(38, 25, 49, 36)], 1)                        # o piso da fundicao, um nivel acima do canal...
 for (_x, _y) in CANAL:
     ALT[(_x, _y)] = 0                               # ...que fica no nivel 0
@@ -250,7 +256,7 @@ PORTAS = [
     (21, 27, 22, 27, '+'), (31, 27, 32, 27, '+'),
     # A Forja das Magias (15): as portas duplas do oeste (rachadas, abertas) e a da oficina.
     (61, 37, 62, 37, '/'), (61, 38, 62, 38, '/'), (67, 34, 67, 35, '+'), (68, 34, 68, 35, '+'),
-    (65, 32, 66, 32, '+'),
+    (65, 33, 66, 33, '+'),
     # Os aposentos dos magos (14): a porta do oeste, a de dentro e as duas do fundo.
     (63, 51, 64, 51, '+'), (63, 52, 64, 52, '+'), (65, 52, 65, 53, '+'), (64, 56, 64, 57, '/'), (68, 56, 68, 57, '/'),
     # O alojamento sul (6): a porta do norte (oeste) e a do sul.
@@ -258,7 +264,7 @@ PORTAS = [
     # O deposito (7): a porta entreaberta.
     (48, 56, 48, 57, '+'),
     # A guarita (4) e o escritorio dos avaliadores (5).
-    (35, 81, 36, 81, '+'), (35, 82, 36, 82, '+'), (41, 82, 42, 82, '+'),
+    (35, 82, 36, 82, '+'), (41, 82, 42, 82, '+'),
 ]
 
 
@@ -365,6 +371,7 @@ if _OBJ.exists() and 'CHEGADA' in globals():
                        'n': 'fungo novo do tapete'})
         _ocupadas.add(_c)
     _base = _alcanca(set())
+    _BATENTES = {(_a, _b) for (_a, _b, _c2, _d, _k) in PORTAS for (_a, _b) in ((_a, _b), (_c2, _d))}
     _bloq, _usadas, _recusadas = set(), set(), []
     for _o in _lista:
         _c = (_o['x'], _o['y'])
@@ -372,7 +379,12 @@ if _OBJ.exists() and 'CHEGADA' in globals():
             _recusadas.append((_o['v'], _c, 'casa invalida ou ocupada'))
             continue
         if _o['v'] not in PASSA_BAIXO and _o['v'] not in ('fogueira', 'teia'):
-            if len(_alcanca(_bloq | {_c})) < len(_base) - len(_bloq) - 1:
+            # peca solida nao pode ficar no batente de uma porta (a porta ficaria selada) ...
+            if _c in _BATENTES:
+                _recusadas.append((_o['v'], _c, 'no batente de uma porta'))
+                continue
+            # ... nem isolar casa nenhuma: toda casa livre de antes continua alcancavel (conta por CONJUNTO)
+            if (_base - _bloq - {_c}) - _alcanca(_bloq | {_c}):
                 _recusadas.append((_o['v'], _c, 'fecharia o caminho'))
                 continue
             _bloq.add(_c)
@@ -388,7 +400,25 @@ if _OBJ.exists() and 'CHEGADA' in globals():
             _item['espelhar'] = True
         PROPS.append(_item)
         T[_c[1]][_c[0]] = '&' if _o['v'] in PASSA_BAIXO else '^'
-    print('objetos:', len(PROPS), 'recusados:', len(_recusadas), _recusadas[:12])
+    # O ESPELHO: o sprite e de uma vista so; pecas soltas iguais, perto uma da outra, apontariam todas para a mesma
+    # face (fileira de sacos de dormir, corpos de anao em serie). As soltas se alternam: cada uma vira o espelho da
+    # vizinha da mesma especie (a menos de 3 casas); sem vizinha, o sorteio da casa decide. Moveis encostados na parede
+    # (cama, banco, estante, mesa) ficam como estao, porque o lado deles depende da parede.
+    _SOLTAS = {'sacoDeDormir', 'anaoMorto', 'ossos', 'ossosAnao', 'ossosOrc', 'suprimentos', 'cogumeloGigante',
+               'bolasBrilhantes', 'entulhoMina', 'estalagmiteAlta', 'estalagmitePar', 'cristais', 'ferramentas',
+               'montinhoMinerio', 'fungoCiano', 'cogumeloTurquesa', 'fungoPrateleira', 'cogumeloVermelho',
+               'aneloDeCogumelos', 'bolaRachada', 'coralAmarelo', 'cogumeloChato', 'fungoLaranja', 'pedraDeLiquen',
+               'hastesVioleta', 'tapeteAzul', 'fungoCerebro', 'fungoEspinhoso', 'estalagmiteAzul', 'cogumeloRoxo'}
+    for _p in sorted(PROPS, key=lambda q: (q['y'], q['x'])):
+        if _p['variante'] not in _SOLTAS:
+            continue
+        _viz = [q for q in PROPS if q is not _p and q['variante'] == _p['variante'] and 'esp' in q
+                and abs(q['x'] - _p['x']) < 3 and abs(q['y'] - _p['y']) < 3]
+        _p['esp'] = (not _viz[0]['esp']) if _viz else bool((_p['x'] * 7 + _p['y'] * 13) % 2)
+    for _p in PROPS:
+        if _p.pop('esp', False):
+            _p['espelhar'] = True
+    print('objetos:', len(PROPS), 'recusados:', len(_recusadas), _recusadas[:20], '| espelhados:', sum(1 for q in PROPS if q.get('espelhar')))
 
 # ----------------------------------------------------------------- as areas ----
 # As AREAS DO LIVRO (1 a 20), em retangulos de casas lidos do mapa. Valem so onde ha chao; um retangulo
@@ -496,6 +526,8 @@ def _area(i):
     return {(c['x'], c['y']) for c in AREAS[i]}
 
 
+_ISOLADAS = sorted((c['x'], c['y']) for v in AREAS.values() for c in v if (c['x'], c['y']) not in _ALC and T[c['y']][c['x']] not in 'R|O')
+print('casas de area sem alcance (fora agua e fosso):', len(_ISOLADAS), _ISOLADAS[:30])
 print('areas alcancaveis:', {k: str(len([c for c in v if (c['x'], c['y']) in _ALC])) + '/' + str(len(v)) for k, v in sorted(AREAS.items(), key=lambda kv: int(kv[0]))})
 _isoladas = _componentes({c for c in _LIVRE if c not in _ALC})
 for _comp in sorted(_isoladas, key=len, reverse=True)[:3]:

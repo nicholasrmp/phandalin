@@ -11,7 +11,7 @@ import { makeMonster } from '../rules/monsters.js';
 import { mapaDo } from '../game/encounter.js';
 import { MAPA_ONDA_ECO, ONDA_ECO } from '../game/ondaeco.js';
 import { itemDeId } from '../rules/equipment.js';
-import { EXAMES } from '../game/ondaeco-dados.js';
+import { EXAMES, arvoreDeMormesk, arvoreDoEspectador, arvoreDeNezznar, arvoreDeNundro } from '../game/ondaeco-dados.js';
 
 let falhas = 0;
 let total = 0;
@@ -98,13 +98,37 @@ teste('toda peça do mapa tem texto de Examinar, e os itens da cena existem', ()
   }
 });
 
-teste('o mapa não tem glifo desconhecido, e a água funda barra o passo', () => {
+teste('o mapa não tem glifo desconhecido; a água é funda (nada-se) e o fosso barra o passo', () => {
   const { f } = campo();
   const GL = new Set([...'`<;"[|ROx^&FKQeu$']);
   for (const linha of MAPA_ONDA_ECO.terreno) for (const g of linha) assert.ok(GL.has(g), `glifo inesperado: ${g}`);
   const agua = MAPA_ONDA_ECO.terreno.flatMap((l, y) => [...l].map((g, x) => [g, x, y])).find(([g]) => g === '|');
   assert.ok(agua, 'o mapa devia ter água escura');
   assert.ok(f.aguas?.has(`${agua[1]},${agua[2]}`), 'água escura é água funda');
+  const fosso = MAPA_ONDA_ECO.terreno.flatMap((l, y) => [...l].map((g, x) => [g, x, y])).filter(([g]) => g === 'O');
+  assert.ok(fosso.length, 'o mapa devia ter fosso');
+  for (const [, x, y] of fosso) assert.ok(f.blocksMove(x, y), `o fosso em ${x},${y} devia barrar o passo`);
+});
+
+teste('as conversas: todo "vai" existe, todo nó tem saída, e o espectador só se engana uma vez', () => {
+  const arvores = [
+    ['Mormesk', arvoreDeMormesk({ salvo: {}, tem: () => true })],
+    ['espectador', arvoreDoEspectador({ salvo: {} })],
+    ['Nezznar', arvoreDeNezznar()],
+    ['Nundro', arvoreDeNundro({ salvo: {} })],
+  ];
+  for (const [nome, a] of arvores) {
+    assert.ok(a.nos[a.inicio], `${nome}: nó inicial`);
+    for (const [id, no] of Object.entries(a.nos)) {
+      assert.ok(no.opcoes?.length, `${nome}.${id}: sem opções`);
+      for (const o of no.opcoes) {
+        for (const alvo of [o.vai, o.sucesso, o.falha].filter(Boolean)) assert.ok(a.nos[alvo], `${nome}.${id}: "${alvo}" não existe`);
+        assert.ok(o.vai || o.fim || (o.sucesso && o.falha), `${nome}.${id}: opção sem destino`);
+      }
+    }
+  }
+  const jaTentou = arvoreDoEspectador({ salvo: { espectadorEnganou: true } });
+  assert.ok(jaTentou.nos.oi.opcoes.find((o) => o.teste).requer(), 'depois de uma tentativa, a Enganação não pode se repetir');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

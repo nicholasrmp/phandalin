@@ -330,6 +330,8 @@ export class Battlefield {
     // Forma Gasosa: a névoa passa pelo vão estreito (grade, seteira). Parede e
     // rocha não — são pedra maciça, e o livro só dá fresta à névoa.
     if (this.atravessaVao && this.vaos.has(key(x, y))) return false;
+    // O buraco aberto (o fosso): não se anda nele, só se voa por cima; visão e flecha passam.
+    if (t === 2 && !this.voando && this.surfaceAt(x, y) === 'fosso') return true;
     return t === 1 || t === 3;
   }
 

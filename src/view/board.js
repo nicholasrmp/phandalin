@@ -775,6 +775,40 @@ export class Board {
     return { chao, objeto };
   }
 
+  /**
+   * A PROFUNDIDADE do buraco: o losango preto sozinho lê como textura faltando. Nas bordas de trás (as que ficam contra o
+   * chão de cima, à esquerda e à direita do vértice de cima) desce uma parede interna que escurece até o breu, e nas
+   * bordas da frente corre um fio claro, o lábio. Só entra onde a vizinha NÃO é buraco, então um fosso de várias casas
+   * é uma bacia só, sem emenda.
+   */
+  profundidadeDoFosso(ctx, x, y, sx, sy) {
+    const ehFosso = (i, j) => this.field.surfaceAt(x + i, y + j) === 'fosso';
+    ctx.save();
+    this.diamond(ctx, sx, sy);
+    ctx.clip();
+    const parede = (ax, ay, bx, by) => {
+      const g = ctx.createLinearGradient(0, Math.min(ay, by), 0, Math.min(ay, by) + 17);
+      g.addColorStop(0, 'rgba(74,66,54,.95)');
+      g.addColorStop(0.45, 'rgba(30,26,22,.9)');
+      g.addColorStop(1, 'rgba(6,5,4,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(bx, by + 17);
+      ctx.lineTo(ax, ay + 17);
+      ctx.closePath();
+      ctx.fill();
+    };
+    if (!ehFosso(-1, 0)) parede(sx - TW / 2, sy + TH / 2, sx, sy);        // borda de cima à esquerda
+    if (!ehFosso(0, -1)) parede(sx, sy, sx + TW / 2, sy + TH / 2);        // borda de cima à direita
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(176,160,132,.5)';
+    ctx.lineWidth = 1;
+    if (!ehFosso(0, 1)) { ctx.beginPath(); ctx.moveTo(sx - TW / 2, sy + TH / 2); ctx.lineTo(sx, sy + TH); ctx.stroke(); }
+    if (!ehFosso(1, 0)) { ctx.beginPath(); ctx.moveTo(sx, sy + TH); ctx.lineTo(sx + TW / 2, sy + TH / 2); ctx.stroke(); }
+  }
+
   drawTile(ctx, x, y, alphaChao = 1, alphaObjeto = alphaChao) {
     // As superfícies novas têm desenho próprio; as antigas seguem pelo código
     // de sempre.
@@ -983,6 +1017,7 @@ export class Board {
     this.diamond(ctx, sx, sy);
     ctx.strokeStyle = 'rgba(0,0,0,.16)';
     ctx.stroke();
+    if (s.chao === 'fosso') this.profundidadeDoFosso(ctx, x, y, sx, sy);
     ctx.restore();
 
     // O OBJETO NÃO É DESENHADO AGORA.

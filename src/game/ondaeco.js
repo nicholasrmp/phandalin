@@ -130,8 +130,8 @@ export const MAPA_ONDA_ECO = {
    "......................#.........#........................................",
    "......................#.........#........................................",
    "..................................................................#...#..",
-   "..................................................................+...#..",
-   "..............................................................#...#...#..",
+   "..................................................................#...#..",
+   "..............................................................#...+...#..",
    "..............................................................#...#...#..",
    "..............................................................#.......#..",
    "..............................................................#.......#..",
@@ -179,7 +179,7 @@ export const MAPA_ONDA_ECO = {
    "..........................#...#...........#...#..........................",
    "..........................#.........#.....#...#..........................",
    "..........................#.........#.....#...#..........................",
-   "..........................#.........+.....#...#..........................",
+   "..........................#.........#.....#...#..........................",
    "..........................#.........+.....+...#..........................",
    "............................#.......#.....#...#..........................",
    "............................#.......#.....#...#..........................",
@@ -200,8 +200,8 @@ export const MAPA_ONDA_ECO = {
   "RRRR<<<<<<<<<<<<<<<<RR`R``````ROOOOO`````````RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR&<<<<<<<<^<<<<<&```````````OOOOO``RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<^<<&<&<^<<<<<<^```````````OOOOO``RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<^<&<F<<<<`````````R``````ROORORRRRRRRRR``````R\"RRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<<<&<<&<^<````````RR`````R`OORORRRRRRRRRR`````\"|RR|RRRRRRRRRRRRRRRRRR",
+  "RRRR<^<&<F<<<<`````````R``````ROOOORRRRRRRRR``````R\"RRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<<<&<<&<^<````````RR`````R`OOOORRRRRRRRRR`````\"|RR|RRRRRRRRRRRRRRRRRR",
   "RRRR<^<<&<<<^<RRRRRRRRR``````R`OOROO`RRRRRRRRRR```\"\"||||RRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<RRRRRRRR```````R`OORRRR``RRRRRRRRR```\"\"|||RRRRRRRR|RRRRRRRR",
   "RRRR&<<<<<<<$<RRRRRRRR````````````````````RRRRRRR``\"|RR||RRRRRRR|RRRRRRRR",
@@ -225,7 +225,7 @@ export const MAPA_ONDA_ECO = {
   "RRRRRRR|||||\"```R```RRRRRRRRRRRRRR``RR<<<[[[[[[<<<``````R````````R<<<<RRR",
   "RRRRRRR||||\"\"```RR``RRRRRRRRRRRRRR``RR<<<[[[[[[<<<````````````RRRR<<^<RRR",
   "RRRRR`R||||\"```RRR``RRRRRRRRRRRRRR``RR<<<[[[^^[<<&R``````````R<^<<<<<<RRR",
-  "RRRRR`\"|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<^<<^<<RRR",
+  "RRRRR`\"|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<^<<<<<RRR",
   "RRRRRRR\"\"\"\"R`RRRRRRRRRR````````R````RR<<<<<<<<<<<<RRRRRR`````R<<<<<<<<RRR",
   "RRRRRRR`````RRRRRRRRRRR`````````R```RR<<<<<<<<<<<<RRRRRRR`````<<<<<<<<RRR",
   "RRRRRRR`````RRRRRRRRR`````RR````R````RRRRRRRRR``RRRRRRRR``````<<<^<<<<RRR",
@@ -247,22 +247,22 @@ export const MAPA_ONDA_ECO = {
   "RRRRR``````````````````````````RRR<<^<^<RR``RR^<<<<<RR``````````<<<<<<RRR",
   "RRRRR``````RRR```````````````````R<<<<<&RR``RR<<<<<^RRR````````R<<<<^<RRR",
   "RRRRRRRR```RRR```````````RRR``````<<<<<<RR``RR<<<<<<RRR`R``````R<<<<<<RRR",
-  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<&RR``RR^<<<<^RRRRRR`^```R<<<<^<RRR",
+  "RRRRRRRR````RR``RR```R```RRRR`````<<<<<&RR``RR^<<<<^RRRRRR`^```R<<<<<<RRR",
   "RRRRRRRRR```RR``RR```````````````R<<<<<<RR``RR``````RRRRRRR`&`^R<<<<<<RRR",
   "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``^`R<<^<^<RRR",
   "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR&;;^RR^`;`RRRRRRRRRR",
   "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```&;`RRRRRRRRRR",
   "RRRRRR```````````````R``````R```RR<<<<<<RR````````RRRR;^;^;^;^`^RRRRRRRRR",
   "RRRRRR```````````````R`R````RR``RR<<<<<&RR```R`^^`RRRR`;;;^;&;^``RRRRRRRR",
-  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR^RRRR``RRRRRRRRRR`;;^;^;`;;^`&RRRRRR",
+  "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR`RRRR``RRRRRRRRRR`;;^;^;`;;^`&RRRRRR",
   "RRRRRR```RRRR````RRRRRRRRRRRR````RRR```RRR```RRRRRRR^``;&;&;&;;;^;`RRRRRR",
-  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR`^`^;;;^;;;;;;`RRRRRR",
+  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR```^;;;^;;;;;;`RRRRRR",
   "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR^`;;^;&;^^^;^;;``RRRR",
   "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR``&`;;;;&;^;;;;;;;^`^RRR",
   "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR`````;`&;;^;;;`;;;&;^`RRR",
   "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR```````^`^``^;^;;^;;^;```RRR",
   "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;`;;^;;^`RRRRR",
-  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`^`^`;;^;;^`RRRR",
+  "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR```^`;;^;;^`RRRR",
   "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR^`;^;;`RRRR",
   "RRRRRRRRR```OO``````RRRR`````````````&`````RRRRRRRRRRRRRRRRRRRRR``^``RRRR",
   "RRRRRRRRR```OO````````RRRRRRRR``````&``&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -292,8 +292,8 @@ export const MAPA_ONDA_ECO = {
   "0001000000000000000011010000001000000000000001100000000000000000000000000",
   "0001000000000000000000000000000000000011111000110000000000000000000000000",
   "0001000000000000000000000000000000000010001100011111100000000000000000000",
-  "0001000000000000000000010000001001011110000100000010111100000000000000000",
-  "0001000000000000000000110000010001011100000110000000110110000000000000000",
+  "0001000000000000000000010000001000011110000100000010111100000000000000000",
+  "0001000000000000000000110000010000011100000110000000110110000000000000000",
   "0001000000000011111111100000010001000111000011100000000010000001110000000",
   "0001000000000010000001000000010001111001111000110000000011000001010000000",
   "0001000000000010000001000000000000000000001000011000011001000011010000000",
@@ -325,17 +325,17 @@ export const MAPA_ONDA_ECO = {
   "0001001100001111133222222222200000000000011002223300000111000100000000100",
   "0001001100011100132222222222200000000000001002222333000101000100000000100",
   "0001001100010101133222222222210000000000000102222223000100000000111111100",
-  "0001001100011100103222222222210000000000000002222223100100000000000000100",
-  "0001000100011000103322222222210000000000000012222220100110000001100000100",
-  "0001000100011000100332222222200000000000000012222220100011000000010000100",
-  "0001000100011000333333322222200100000000000012222223100011000000010000100",
-  "0001000000011000022231332223230100000000000002222220100110100000000111100",
-  "0001000000011100000000131133331110000000000002222223101100000000000001000",
-  "0001100000011100000000122220000011101000000032222233011000000000111111100",
+  "0001001100011100103222222222210000000000000002222223300100000000000000100",
+  "0001000100011000103322222222210000000000000012222222300110000001100000100",
+  "0001000100011000100332222222200000000000000012222222300011000000010000100",
+  "0001000100011000111133322222200100000000000012222223300011000000010000100",
+  "0001000000011000000011331103230100000000000002222222300110100000000111100",
+  "0001000000011100000000120023331110000000000002222223301100000000000001000",
+  "0001100000011100000000111110000011101000000032222233011000000000111111100",
   "0000100000011000000000110011111000111000000003233330110000000000000000100",
-  "0000111000001000111100100011001001111100000003333333100000100000000000100",
-  "0000001000000000011100110001001101001111100003222220110000100000000000100",
-  "0000111000000000010000000001000101001111110003000000110001010000000000100",
+  "0000111000001000111100100011001001111100000003331111100000100000000000100",
+  "0000001000000000011100110001001101001111100001000000110000100000000000100",
+  "0000111000000000010000000001000101001111110001000000110001010000000000100",
   "0000100000000000000000000000000111000000110011000000110000000000000000100",
   "0000100000011100000000000000000001000000110011000000111000000001000000100",
   "0000111100011100000000000111000000000000110011000000101010000001000000100",
@@ -3465,6 +3465,10 @@ export const ONDA_ECO = {
     "y": 9
    },
    {
+    "x": 33,
+    "y": 9
+   },
+   {
     "x": 34,
     "y": 9
    },
@@ -3498,6 +3502,10 @@ export const ONDA_ECO = {
    },
    {
     "x": 32,
+    "y": 10
+   },
+   {
+    "x": 33,
     "y": 10
    },
    {
@@ -11671,42 +11679,48 @@ export const ONDA_ECO = {
    "x": 7,
    "y": 9,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 7,
    "y": 10,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 10,
    "y": 8,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 10,
    "y": 10,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 4,
    "y": 7,
    "variante": "anaoMorto",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 4,
    "y": 13,
    "variante": "anaoMorto",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11727,7 +11741,8 @@ export const ONDA_ECO = {
    "x": 14,
    "y": 5,
    "variante": "ossos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11755,14 +11770,16 @@ export const ONDA_ECO = {
    "x": 19,
    "y": 8,
    "variante": "ferramentas",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 21,
    "y": 42,
    "variante": "estalagmiteAlta",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11790,7 +11807,8 @@ export const ONDA_ECO = {
    "x": 24,
    "y": 29,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11832,7 +11850,8 @@ export const ONDA_ECO = {
    "x": 40,
    "y": 29,
    "variante": "anaoMorto",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11853,7 +11872,8 @@ export const ONDA_ECO = {
    "x": 47,
    "y": 28,
    "variante": "anaoMorto",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11888,7 +11908,8 @@ export const ONDA_ECO = {
    "x": 48,
    "y": 29,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11902,7 +11923,8 @@ export const ONDA_ECO = {
    "x": 44,
    "y": 33,
    "variante": "suprimentos",
-   "piso": "canal"
+   "piso": "canal",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11937,7 +11959,8 @@ export const ONDA_ECO = {
    "x": 34,
    "y": 45,
    "variante": "ossos",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -11983,13 +12006,6 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
-   "x": 67,
-   "y": 34,
-   "variante": "suprimentos",
-   "piso": "lajeMina"
-  },
-  {
-   "tipo": "prop",
    "x": 68,
    "y": 32,
    "variante": "suprimentos",
@@ -12014,21 +12030,24 @@ export const ONDA_ECO = {
    "x": 39,
    "y": 46,
    "variante": "anaoMorto",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 42,
    "y": 47,
    "variante": "anaoMorto",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 38,
    "y": 49,
    "variante": "ossos",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12056,7 +12075,8 @@ export const ONDA_ECO = {
    "x": 39,
    "y": 54,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12070,14 +12090,16 @@ export const ONDA_ECO = {
    "x": 39,
    "y": 62,
    "variante": "sacoDeDormir",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 34,
    "y": 59,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12085,13 +12107,6 @@ export const ONDA_ECO = {
    "y": 60,
    "variante": "ossos",
    "piso": "lajeMina"
-  },
-  {
-   "tipo": "prop",
-   "x": 37,
-   "y": 63,
-   "variante": "entulhoMina",
-   "piso": "mina"
   },
   {
    "tipo": "prop",
@@ -12105,7 +12120,8 @@ export const ONDA_ECO = {
    "x": 49,
    "y": 51,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12119,7 +12135,8 @@ export const ONDA_ECO = {
    "x": 46,
    "y": 53,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12133,7 +12150,8 @@ export const ONDA_ECO = {
    "x": 51,
    "y": 54,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12161,7 +12179,8 @@ export const ONDA_ECO = {
    "x": 47,
    "y": 62,
    "variante": "suprimentos",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12175,26 +12194,21 @@ export const ONDA_ECO = {
    "x": 68,
    "y": 47,
    "variante": "cristais",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 58,
    "y": 45,
    "variante": "cristais",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 68,
    "y": 54,
-   "variante": "estante",
-   "piso": "lajeMina"
-  },
-  {
-   "tipo": "prop",
-   "x": 68,
-   "y": 56,
    "variante": "estante",
    "piso": "lajeMina"
   },
@@ -12231,7 +12245,8 @@ export const ONDA_ECO = {
    "x": 55,
    "y": 61,
    "variante": "bolasBrilhantes",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12252,14 +12267,16 @@ export const ONDA_ECO = {
    "x": 57,
    "y": 70,
    "variante": "bolasBrilhantes",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 66,
    "y": 70,
    "variante": "bolasBrilhantes",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12301,7 +12318,8 @@ export const ONDA_ECO = {
    "x": 56,
    "y": 59,
    "variante": "cogumeloGigante",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12315,21 +12333,24 @@ export const ONDA_ECO = {
    "x": 59,
    "y": 61,
    "variante": "cogumeloGigante",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 64,
    "y": 63,
    "variante": "cogumeloGigante",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 61,
    "y": 66,
    "variante": "cogumeloGigante",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12350,14 +12371,8 @@ export const ONDA_ECO = {
    "x": 66,
    "y": 73,
    "variante": "cogumeloGigante",
-   "piso": "mina"
-  },
-  {
-   "tipo": "prop",
-   "x": 58,
-   "y": 71,
-   "variante": "cogumeloGigante",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12378,7 +12393,8 @@ export const ONDA_ECO = {
    "x": 11,
    "y": 70,
    "variante": "ossos",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12399,14 +12415,16 @@ export const ONDA_ECO = {
    "x": 27,
    "y": 78,
    "variante": "entulhoMina",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 26,
    "y": 81,
    "variante": "entulhoMina",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12427,7 +12445,8 @@ export const ONDA_ECO = {
    "x": 30,
    "y": 79,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12490,14 +12509,16 @@ export const ONDA_ECO = {
    "x": 45,
    "y": 78,
    "variante": "ferramentas",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 45,
    "y": 82,
    "variante": "suprimentos",
-   "piso": "lajeMina"
+   "piso": "lajeMina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12532,7 +12553,8 @@ export const ONDA_ECO = {
    "x": 39,
    "y": 74,
    "variante": "ossosOrc",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12651,20 +12673,14 @@ export const ONDA_ECO = {
    "x": 52,
    "y": 69,
    "variante": "fungoLaranja",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 53,
    "y": 59,
    "variante": "fungoCerebro",
-   "piso": "mina"
-  },
-  {
-   "tipo": "prop",
-   "x": 53,
-   "y": 65,
-   "variante": "hastesVioleta",
    "piso": "mina"
   },
   {
@@ -12686,7 +12702,8 @@ export const ONDA_ECO = {
    "x": 55,
    "y": 68,
    "variante": "aneloDeCogumelos",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12728,7 +12745,8 @@ export const ONDA_ECO = {
    "x": 58,
    "y": 64,
    "variante": "coralAmarelo",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12749,7 +12767,8 @@ export const ONDA_ECO = {
    "x": 59,
    "y": 56,
    "variante": "fungoLaranja",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12770,7 +12789,8 @@ export const ONDA_ECO = {
    "x": 59,
    "y": 65,
    "variante": "pedraDeLiquen",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12791,7 +12811,8 @@ export const ONDA_ECO = {
    "x": 60,
    "y": 57,
    "variante": "coralAmarelo",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12826,7 +12847,8 @@ export const ONDA_ECO = {
    "x": 61,
    "y": 58,
    "variante": "fungoEspinhoso",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12840,21 +12862,24 @@ export const ONDA_ECO = {
    "x": 62,
    "y": 57,
    "variante": "fungoLaranja",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 62,
    "y": 62,
    "variante": "cogumeloChato",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 62,
    "y": 69,
    "variante": "hastesVioleta",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12875,7 +12900,8 @@ export const ONDA_ECO = {
    "x": 63,
    "y": 70,
    "variante": "cogumeloChato",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -12896,14 +12922,16 @@ export const ONDA_ECO = {
    "x": 65,
    "y": 72,
    "variante": "cogumeloTurquesa",
-   "piso": "fungos"
+   "piso": "fungos",
+   "espelhar": true
   },
   {
    "tipo": "prop",
    "x": 66,
    "y": 63,
    "variante": "coralAmarelo",
-   "piso": "mina"
+   "piso": "mina",
+   "espelhar": true
   },
   {
    "tipo": "prop",
@@ -13025,7 +13053,7 @@ export const ONDA_ECO = {
   "ghoulsGrande": [
    {
     "x": 25,
-    "y": 41
+    "y": 40
    },
    {
     "x": 17,
@@ -13036,8 +13064,8 @@ export const ONDA_ECO = {
     "y": 50
    },
    {
-    "x": 30,
-    "y": 35
+    "x": 31,
+    "y": 36
    }
   ],
   "gosma": [
@@ -13267,11 +13295,11 @@ export const ONDA_ECO = {
   [
    {
     "x": 65,
-    "y": 32
+    "y": 33
    },
    {
     "x": 66,
-    "y": 32
+    "y": 33
    }
   ],
   [
@@ -13332,16 +13360,6 @@ export const ONDA_ECO = {
    {
     "x": 48,
     "y": 57
-   }
-  ],
-  [
-   {
-    "x": 35,
-    "y": 81
-   },
-   {
-    "x": 36,
-    "y": 81
    }
   ],
   [
