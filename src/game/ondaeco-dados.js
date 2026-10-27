@@ -164,13 +164,18 @@ export const TEXTOS = {
   fendaAcha: 'Debaixo de um bloco enorme, o esqueleto esmagado de uma anã ainda leva nas mãos um par de manoplas de ferro escurecido, de dedos grossos. É o que a fenda guardava.',
   // O fecho da aventura depende do que o grupo fez de Nezznar (caído, preso e vigiado, ou preso e solto por Halia) e de ter ou
   // não achado o mapa de Mormesk.
-  conclusao: ({ capturado = false, fugiu = false, mapa = false } = {}) => [
+  conclusao: ({ capturado = false, fugiu = false, mapa = false, gundren = false, nundro = false } = {}) => [
     capturado
       ? (fugiu
         ? 'Na manhã seguinte a cela do salão está vazia, a fechadura aberta por dentro e por fora, e Halia Thornton, quando perguntada, só ergue as sobrancelhas. O Aranha Negra está nas mãos dos Zhentarim, e o que ele sabe da mina foi junto com ele.'
         : 'Nezznar não vai a lugar nenhum: a Aliança dos Lordes manda recado a Neverwinter, e o drow espera na cela do salão, sob guarda, para ser interrogado e julgado. A Forja das Magias que ele procurou até o fim continua onde estava, em silêncio.')
       : 'Nezznar caiu, e com ele o plano do Aranha Negra. A Forja das Magias, que ele procurou até o fim, continua onde estava, silenciosa, esperando quem a acorde com mais cuidado.',
-    'Gundren e Nundro vão tocar a mina restaurada e repartir com quem a libertou dez por cento dos lucros, e Phandalin, enfim sem os Marcarrubra, respira.'
+    // O fecho depende de quem sobrou da família Buscapedra para tocar a mina.
+    (gundren && nundro
+      ? 'Gundren e Nundro Buscapedra reabrem a mina e dão ao grupo dez por cento do que ela render.'
+      : gundren || nundro
+        ? `${gundren ? 'Gundren' : 'Nundro'} Buscapedra reabre a mina com os irmãos que restam e guarda ao grupo dez por cento do que ela render.`
+        : 'Sem os Buscapedra por perto, a mina fica com quem a libertou, e o Pacto de Phandelver terá de achar outros herdeiros.')
       + (mapa ? ' O mapa que saiu dos tomos de Mormesk aponta para lugares que a região ainda não viu.' : '')
       + ' Há muita coisa por fazer, mas isso é outra aventura.',
   ],
@@ -314,7 +319,7 @@ export function arvoreDeNezznar({ refem = false } = {}) {
         opcoes: [
           ...(refem ? [{ texto: 'Observar o anão com atenção.', teste: { pericia: 'intuicao', cd: 15 }, sucesso: 'revela', falha: 'traicao', oculta: false }] : []),
           { texto: 'Você é o Aranha Negra.', vai: 'admite' },
-          { texto: 'Viemos buscar Nundro Rubirrocha e o mapa da mina.', vai: 'franqueza' },
+          { texto: 'Viemos buscar Nundro Buscapedra e o mapa da mina.', vai: 'franqueza' },
           { texto: 'Ninguém nos mandou. Somos aventureiros e nos perdemos.', teste: { pericia: 'enganacao', cd: 15 }, sucesso: 'curioso', falha: 'descoberto' },
           { texto: 'Entregue Nundro e renda-se.', vai: 'recusa' },
           { texto: 'Ainda não. Vamos embora.', fim: 'sai' },
