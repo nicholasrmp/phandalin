@@ -180,6 +180,39 @@ const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda',
 /** Peças de vários quadros e quantos quadros por segundo (o grupo do atlas é o nome). */
 const PROP_ANIMADA = { 'prop-taverna-lareira': 8, 'prop-rodaDagua': 5 };
 
+// A CHAMA QUE BALANÇA. As fogueiras, os braseiros e as tochas do atlas são um quadro só; em vez de gerar quadros novos, o
+// motor refaz a parte de cima do desenho a cada instante, fileira por fileira, com um desvio lateral que cresce para a ponta
+// da chama (o pé dela, junto das achas, fica parado). `alto` é a fração de cima que balança, `amp` o desvio máximo em px,
+// `janela` as colunas que balançam (as achas que apontam para cima na fogueira de lenha solta ficam de fora).
+const CHAMA = {
+  fogueira: { alto: 0.62, amp: 1.8, janelas: { 6: [0.3, 0.7] } },
+  braseiro: { alto: 0.5, amp: 1.3 },
+  'prop-fogueiraPanela': { alto: 0.55, amp: 1.5 },
+  'prop-braseiroVerde': { alto: 0.4, amp: 1.8 },
+  'decorParede-tochaAcesa': { alto: 0.5, amp: 1.2, janelas: { 0: [0, 1], 55: [0.1, 0.9] }, so: [0, 55] },
+};
+
+/**
+ * Desenha `q` (uma peça do atlas) com `x, y` no canto de cima à esquerda, balançando a chama de `cfg`. `t` é o tempo do
+ * tabuleiro; `fase` desencontra duas chamas vizinhas. O tempo é quantizado em 12 quadros por segundo: pixel art treme em
+ * degraus, não deslizando.
+ */
+function desenharChama(ctx, q, x, y, t, cfg, fase = 0) {
+  const corte = Math.round(q.h * cfg.alto);
+  const tq = Math.floor(t * 12) / 12;
+  const [j0, j1] = cfg.janelas?.[q.origem] ?? [0, 1];
+  const c0 = Math.round(q.w * j0);
+  const c1 = Math.round(q.w * j1);
+  ctx.drawImage(q.img, q.x, q.y + corte, q.w, q.h - corte, x, y + corte, q.w, q.h - corte);
+  for (let r = 0; r < corte; r += 1) {
+    const u = (corte - r) / corte;
+    const desvio = Math.round((Math.sin(tq * 9 + r * 0.31 + fase) * 0.7 + Math.sin(tq * 3.1 + fase * 2) * 0.5) * cfg.amp * u);
+    if (c0 > 0) ctx.drawImage(q.img, q.x, q.y + r, c0, 1, x, y + r, c0, 1);
+    if (c1 < q.w) ctx.drawImage(q.img, q.x + c1, q.y + r, q.w - c1, 1, x + c1, y + r, q.w - c1, 1);
+    ctx.drawImage(q.img, q.x + c0, q.y + r, c1 - c0, 1, x + c0 + desvio, y + r, c1 - c0, 1);
+  }
+}
+
 // Objetos de uma casa só desenhados pelo atlas, com o raio da sombra de cada um.
 const SOMBRA_DO_BAIXO = {
   arbusto: 24, pedra: 17, estalagmite: 13, mantimentos: 22, espinheiro: 22, leito: 20, fogueira: 15, bau: 16,
@@ -1406,15 +1439,21 @@ export class Board {
         ctx.fill();
       }
       ctx.imageSmoothingEnabled = false;
+      const chama = CHAMA[prop?.grupo ?? s.objeto];
+      const fase = (x * 1.7 + y * 2.9) % 6.28;
       if (prop?.espelhar) {
         // De lado: o ponto de ancoragem da peça continua caindo no centro da casa.
         ctx.translate(cx, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h,
-          Math.round(-baixo.ax - baixo.dx), Math.round(cy - baixo.ay + baixo.dy), baixo.w, baixo.h);
+        const px = Math.round(-baixo.ax - baixo.dx);
+        const py = Math.round(cy - baixo.ay + baixo.dy);
+        if (chama) desenharChama(ctx, baixo, px, py, this.time, chama, fase);
+        else ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h, px, py, baixo.w, baixo.h);
       } else {
-        ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h,
-          Math.round(cx - baixo.ax + baixo.dx), Math.round(cy - baixo.ay + baixo.dy), baixo.w, baixo.h);
+        const px = Math.round(cx - baixo.ax + baixo.dx);
+        const py = Math.round(cy - baixo.ay + baixo.dy);
+        if (chama) desenharChama(ctx, baixo, px, py, this.time, chama, fase);
+        else ctx.drawImage(baixo.img, baixo.x, baixo.y, baixo.w, baixo.h, px, py, baixo.w, baixo.h);
       }
       ctx.restore();
       return;
@@ -2525,8 +2564,18 @@ export class Board {
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(mx), Math.round(my));
     ctx.transform(lado === 'N' ? 1 : -1, 0.5, 0, 1, 0, 0);
-    ctx.drawImage(d.img, d.x, d.y, d.w, d.h,
-      Math.round(-d.ax), Math.round(-d.ay), d.w, d.h);
+    const chama = tipo === 'tochaAcesa' && CHAMA['decorParede-tochaAcesa'].so.includes(d.origem) ? CHAMA['decorParede-tochaAcesa'] : null;
+    if (chama) desenharChama(ctx, d, Math.round(-d.ax), Math.round(-d.ay), this.time, chama, (x * 1.7 + y * 2.9) % 6.28);
+    else {
+      ctx.drawImage(d.img, d.x, d.y, d.w, d.h,
+        Math.round(-d.ax), Math.round(-d.ay), d.w, d.h);
+      // A lanterna não balança: a vela dentro dela respira (um clarão que vai e vem sobre o vidro).
+      if (tipo === 'tochaAcesa') {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.1 + 0.07 * Math.sin(Math.floor(this.time * 12) / 12 * 7 + x * 1.7 + y * 2.9);
+        ctx.drawImage(d.img, d.x, d.y, d.w, d.h, Math.round(-d.ax), Math.round(-d.ay), d.w, d.h);
+      }
+    }
     ctx.restore();
   }
 
