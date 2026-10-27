@@ -48,6 +48,7 @@ import { narrar, narrativaAberta, narrarLocal, definirPorta, definirVoto } from 
 import { criarPortaCompartilhada } from './game/porta-narrativa.js';
 import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
 import { opcoesDaCasa } from './game/interacoes.js';
+import { alvosDaHabilidade, vetoDaHabilidade, previaDaHabilidade, HABILIDADES_DE_ALVO } from './rules/habilidades-alvo.js';
 import { conversar as conversarComArvore } from './game/dialogo.js';
 import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
 import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
@@ -607,6 +608,8 @@ class App {
           if (antes && antes !== c) this.selected = antes;
           return;
         }
+        // A Cura pelas Mãos entre as lutas: o clique no aliado corre em `onTileClick`, como em combate.
+        if (action?.kind === 'featureAlvo' && action.featureId === 'layOnHands') { this.usarDeFora(c, { action, circulo, tiles }, avisar); return; }
         avisar('em exploração só se anda, se usa item e se conjura magia de utilidade');
         return;
       }
@@ -1659,6 +1662,14 @@ class App {
       this.afterAct();
       return;
     }
+    // Cura pelas Mãos, Inspiração Bárdica: pedem um ALIADO. O azulejo entra no
+    // modo de mira (de novo, sai); o clique no aliado executa (`onTileClick`).
+    if (action.kind === 'featureAlvo') {
+      this.mode = this.mode?.kind === 'featureAlvo' && this.mode.featureId === action.featureId
+        ? null : { kind: 'featureAlvo', featureId: action.featureId };
+      this.refresh();
+      return;
+    }
     if (action.kind === 'feature') {
       this.enc.useFeature(c, action.featureId, { modo: action.modo });
       this.afterAct();
@@ -1825,7 +1836,7 @@ class App {
     let encosta = null;
     let maisPerto = null;
     for (const node of reached.values()) {
-      if (enc.occupied(node.x, node.y, c)) continue;
+      if (node.parar === false) continue;   // tomada por outra criatura (aliado que se atravessa): não serve de destino
       const d = distanceFt({ x: node.x, y: node.y }, target.pos);
       if (d <= prof.reachFt && (!encosta || node.cost < encosta.node.cost)) encosta = { node, d };
       if (!maisPerto || d < maisPerto.d || (d === maisPerto.d && node.cost < maisPerto.node.cost)) maisPerto = { node, d };
@@ -1902,6 +1913,19 @@ class App {
         this.mode = null;
         // Explorando: a cena vê o pouso como vê um passo (vigias, armadilhas).
         if (this.capitulo?.explorando) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+        this.afterAct();
+        return;
+      }
+      // Habilidade de classe com alvo aliado: o motor recusa antes de cobrar, e
+      // o veto (`rules/habilidades-alvo.js`) já traz o motivo para o jogador.
+      if (this.mode.kind === 'featureAlvo') {
+        const id = this.mode.featureId;
+        if (!occupant) { this.refuse(c, `${HABILIDADES_DE_ALVO[id]?.nome ?? 'a habilidade'}: clique num aliado`); return; }
+        const veto = vetoDaHabilidade(this.enc, c, id, occupant);
+        if (veto) { this.refuse(c, veto); return; }
+        const ok = this.enc.useFeature(c, id, { target: occupant });
+        this.mode = null;
+        if (!ok) { this.refuse(c, 'não deu'); return; }
         this.afterAct();
         return;
       }
@@ -2007,7 +2031,7 @@ class App {
 
   onTileHover(tile) {
     const c = this.selected;
-    if (!tile) this.hud.setHint('');          // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
+    if (!tile && this.mode?.kind !== 'featureAlvo') this.hud.setHint('');          // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
     this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
 
     if (!c || this.enc.side !== 'party' || this.mode) {
@@ -2018,7 +2042,7 @@ class App {
     if (!tile) { this.board?.setOverlay({ path: null }); return; }
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(tile.x, tile.y));
-    if (!node || this.enc.occupied(tile.x, tile.y, c)) {
+    if (!node || node.parar === false) {
       this.board?.setOverlay({ path: null });
       this.hud.setHint('');
       return;
@@ -2027,9 +2051,24 @@ class App {
     this.hud.setHint(`Mover ${node.cost} pés (restam ${c.movementLeftFt - node.cost})`);
   }
 
+  /**
+   * A dica da mira de Cura pelas Mãos / Inspiração Bárdica: quem serve e o que o
+   * clique faria, e "Esc cancela". Fica na tela também sobre o chão vazio.
+   */
+  dicaDaHabilidadeAlvo(c) {
+    const id = this.mode.featureId;
+    const quem = alvosDaHabilidade(this.enc, c, id);
+    const nome = HABILIDADES_DE_ALVO[id]?.nome ?? 'Habilidade';
+    return quem.length
+      ? `${nome}: clique num aliado aceso (${quem.map((a) => `${a === c ? 'você' : a.name} — ${previaDaHabilidade(this.enc, c, id, a).texto}`).join('; ')}). Esc cancela.`
+      : `${nome}: ninguém serve agora. Esc cancela.`;
+  }
+
   updateHint(tile) {
     const c = this.selected;
     const target = this.enc.at(tile.x, tile.y);
+    // A mira de habilidade com alvo aliado não limpa a dica sobre o chão vazio.
+    if (c && this.mode?.kind === 'featureAlvo') { this.hud.setHint(this.dicaDaHabilidadeAlvo(c)); return; }
     if (!c || !target || !this.mode) { this.hud.setHint(''); return; }
     if (this.mode.kind === 'attack') {
       const check = this.enc.canAttack(c, target, this.mode.weaponId);
@@ -2102,9 +2141,11 @@ class App {
     // ninguém, quem mostra o que ela pega é a prévia da área.
     const magia = this.mode?.kind === 'spell' ? getSpell(this.mode.spellId) : null;
     const salto = this.mode?.kind === 'salto';
+    const aliado = this.mode?.kind === 'featureAlvo';
     const targets = this.mode && c && !salto
-      ? magia
-        ? (magia.shape ? [] : this.enc.combatants.filter((t) => !this.enc.porqueNaoAlvo(c, magia, t)))
+      ? aliado ? alvosDaHabilidade(this.enc, c, this.mode.featureId)
+        : magia
+          ? (magia.shape ? [] : this.enc.combatants.filter((t) => !this.enc.porqueNaoAlvo(c, magia, t)))
         : this.enc.combatants.filter((t) => !t.dead && t.side !== c.side
           && (this.mode.kind !== 'attack' || this.enc.canAttack(c, t, this.mode.weaponId).ok))
       : null;
@@ -2141,11 +2182,13 @@ class App {
       this.hud.setHint(c ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.` : '');
     } else if (magia && c) {
       this.hud.setHint(this.dicaDaMagia(c, magia));
+    } else if (aliado && c) {
+      this.hud.setHint(this.dicaDaHabilidadeAlvo(c));
     }
     // Explorando a estrada: não há turno nem rodada, há um grupo andando.
     if (this.capitulo?.explorando) {
       this.hud.banner.textContent = `Exploração · ${this.capitulo.lugar ?? 'Trilha de Triboar'}`;
-      if (!this.recusa) this.hud.setHint(c ? `${c.name} — clique no chão para andar. Clique em outro herói para trocar.` : '');
+      if (!this.recusa && !aliado) this.hud.setHint(c ? `${c.name} — clique no chão para andar. Clique em outro herói para trocar.` : '');
     }
   }
 

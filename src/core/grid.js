@@ -429,9 +429,10 @@ export class Battlefield {
    * Terreno difícil custa o dobro (SRD). Subir um nível é escalada: no SRD,
    * cada pé escalado custa 1 pé extra, então o degrau de 5 pés sai por 10.
    */
-  costOf(x, y, fromX = null, fromY = null) {
-    // Quem voa não pisa no chão: terreno difícil e degrau não custam nada.
-    if (this.voando) return FEET_PER_SQUARE;
+  costOf(x, y, fromX = null, fromY = null, espacoDeOutro = false) {
+    // SRD, "Moving Around Other Creatures": o espaço de outra criatura é TERRENO DIFÍCIL para quem passa por ele.
+    // Vale também no ar (o chão não tem a ver com isso), e não soma com o terreno difícil do próprio chão.
+    if (this.voando) return espacoDeOutro && !this.semTerrenoDificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
     // Andar na Água: a água funda deixa de ser terreno difícil — e só ela. Uma
     // Graxa ou um Crescimento de Plantas lançado sobre a água continua
     // cobrando, e é por isso que isto entra na conta do `dificil` em vez de
@@ -440,7 +441,7 @@ export class Battlefield {
     // Terreno difícil: o do mapa (2) ou o que uma magia criou (Graxa).
     // Liberdade de Movimento tira TODO terreno difícil, do mapa e de magia —
     // é o que a magia promete, ao contrário do Andar na Água, que é só da água.
-    const dificil = !this.semTerrenoDificil && ((this.tileAt(x, y) === 2 && !naAgua)
+    const dificil = !this.semTerrenoDificil && (espacoDeOutro || (this.tileAt(x, y) === 2 && !naAgua)
       || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y)));
     // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
     const cerrado = this.dificeis4?.has(key(x, y)) && !this.semTerrenoDificil;
@@ -450,6 +451,8 @@ export class Battlefield {
       const climb = this.heightAt(x, y) - this.heightAt(fromX, fromY);
       if (climb > 0) cost += climb * FEET_PER_SQUARE;
     }
+    // Rastejar (caído): +1 pé por pé, somado (terreno difícil rastejando = 3 pés por pé, como no SRD).
+    if (this.rastejando) cost += FEET_PER_SQUARE;
     return cost;
   }
 
@@ -475,15 +478,16 @@ export class Battlefield {
    */
   reachable(from, budgetFt, occupied = () => false, cabe = () => true, f = 1, atravessa = () => false) {
     const seen = new Map();
-    seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null, parar: true, passar: true });
+    seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null, parar: true, passar: true, ord: 0 });
     // Fila simples ordenada por custo: a grade é pequena, não precisa de heap.
-    const queue = [{ x: from.x, y: from.y, cost: 0 }];
+    // `ord` desempata o custo igual: o caminho que atravessa MENOS criaturas vence (o livre é o preferido).
+    const queue = [{ x: from.x, y: from.y, cost: 0, ord: 0 }];
 
     while (queue.length) {
-      queue.sort((a, b) => a.cost - b.cost);
+      queue.sort((a, b) => a.ord - b.ord);
       const cur = queue.shift();
       const curKey = key(cur.x, cur.y);
-      if (seen.get(curKey).cost < cur.cost) continue;
+      if (seen.get(curKey).ord < cur.ord) continue;
 
       for (const { dx, dy } of NEIGHBORS) {
         const nx = cur.x + dx;
@@ -496,11 +500,16 @@ export class Battlefield {
         if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
         if (!this.voando && !this.escalando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
 
-        const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y);
+        // O ESPAÇO DE OUTRA CRIATURA É TERRENO DIFÍCIL (SRD): atravessar um aliado custa o dobro por casa.
+        // Só cobra quando se PASSA por ele; o inimigo que barra a passagem não entra na conta.
+        const tomada = occupied(nx, ny);
+        const passa = !tomada || atravessa(nx, ny);
+        const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y, tomada && passa);
         if (cost > budgetFt) continue;
         const nKey = key(nx, ny);
         const prev = seen.get(nKey);
-        if (prev && prev.cost <= cost) continue;
+        const ord = cost * 1000 + ((cur.ord % 1000) + (tomada ? 1 : 0));
+        if (prev && prev.ord <= ord) continue;
         // PASSAR E PARAR SÃO COISAS DIFERENTES. Pelo livro, atravessa-se o
         // quadrado de um ALIADO à vontade; o que não se pode é terminar o
         // movimento em cima dele. Antes, a busca simplesmente não seguia por
@@ -509,14 +518,12 @@ export class Battlefield {
         //
         // `parar` diz se a casa serve de DESTINO; a busca continua por ela
         // de qualquer jeito quando `atravessa` deixa.
-        const tomada = occupied(nx, ny);
-        const passa = !tomada || atravessa(nx, ny);
         // Forma Gasosa: o vão estreito é a mesma ideia. A névoa ATRAVESSA a
         // grade e a seteira, e não PARA dentro delas — se a magia acabasse ali,
         // o herói ficaria entalado na grade.
         const soDePassagem = this.atravessaVao && this.vaos.has(nKey);
-        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem, passar: passa });
-        if (passa) queue.push({ x: nx, y: ny, cost });
+        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem, passar: passa, ord });
+        if (passa) queue.push({ x: nx, y: ny, cost, ord });
       }
     }
     return seen;

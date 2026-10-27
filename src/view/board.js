@@ -22,6 +22,8 @@
 //   losango para cima, os platôs são testados do mais alto para o mais baixo.
 
 import { getSheet, drawSprite, frameAt, animDaFolha } from '../art/sheet.js';
+import { aparenciaDaFigura, tintaDaAura } from '../art/estado-visual.js';
+import { temFolhaNoEstado } from '../art/folhas/index.js';
 import { linhaDaDirecao, DIRECOES_8 } from '../art/direcoes.js';
 import { ladrilhoChao, sorteio } from '../art/chao.js';
 import { faixaDaFace, topoDoBloco } from '../art/faces.js';
@@ -33,6 +35,7 @@ import { distanceFt, ARESTA } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, CLARO } from '../rules/luz.js';
 import { emissoresDoAmbiente, desenharAmbiente } from './ambiente.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct, MAGIAS_DE_ATAQUE } from '../rules/odds.js';
+import { HABILIDADES_DE_ALVO, vetoDaHabilidade, previaDaHabilidade, estadoDoFurtivo } from '../rules/habilidades-alvo.js';
 import { SPELLS, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc } from '../rules/abilities.js';
 import { Fx, quadro } from './fx.js';
@@ -3157,7 +3160,7 @@ export class Board {
       }
     }
     for (const a of this.overlay.auras ?? []) zonas.set(`${a.x},${a.y}`, COR_DA_ZONA.auraMagica);
-    const miraAliados = this.modo?.kind === 'spell' && this.enc.miraAliados(this.modo.spell);
+    const miraAliados = (this.modo?.kind === 'spell' && this.enc.miraAliados(this.modo.spell)) || this.modo?.kind === 'featureAlvo';
 
     this.fx.drawGround(ctx, this);
     // A metade de trás da roda dos Espíritos Guardiões vem antes das figuras.
@@ -3208,7 +3211,9 @@ export class Board {
       const k = `${x},${y}`;
       if (reach) {
         const node = reach.get(k);
-        if (node && node.cost > 0 && !this.enc.occupied(x, y, this.overlay.selected)) {
+        // `parar === false`: a casa está tomada por outra criatura (o aliado que se atravessa não é destino): não acende.
+        // As casas ATRÁS dele acendem, com o custo dobrado de atravessá-lo.
+        if (node && node.cost > 0 && node.parar !== false) {
           this.marcar(ctx, x, y, 'rgba(96,168,255,.26)', 'rgba(140,200,255,.45)');
         }
       }
@@ -3576,7 +3581,19 @@ export class Board {
     const prone = !down && hasCondition(c, 'caido');
     // No trecho voado, a folha no estado `~voo` (asas abertas). Sem essa folha,
     // `folhaImportada` devolve a normal, entao a regra vale antes da arte.
-    const sheet = getSheet(c.vooVisual ? `${String(c.look).split('~')[0]}~voo` : c.look);
+    // O ESTADO QUE SE VÊ: enfurecido, a figura troca para a folha da Fúria (a
+    // aura vermelha do Grask) e volta sozinha quando a condição cai; sem folha
+    // do estado, a aura é a tinta procedural (`art/estado-visual.js`).
+    let figura = aparenciaDaFigura(c, temFolhaNoEstado);
+    let sheet = getSheet(c.vooVisual ? `${String(c.look).split('~')[0]}~voo` : figura.look);
+    // A folha da Fúria existe mas o PNG ainda carrega: `folhaImportada` cairia na folha padrão da
+    // figura (outra arma, outra armadura) por alguns quadros. Enquanto isso fica a folha que já
+    // estava na tela, o look limpo, com a aura procedural; a folha `~furia` entra quando chegar
+    // (o cache é limpo a cada PNG que chega) e o pedido dela já foi feito pelo `getSheet` acima.
+    if (figura.aura === 'folha' && !c.vooVisual && !String(sheet.key ?? '').endsWith(`~${figura.estado}`)) {
+      figura = { ...figura, look: String(c.look).split('~')[0], aura: 'procedural' };
+      sheet = getSheet(figura.look);
+    }
 
     // QUAL ANIMAÇÃO MOSTRAR.
     //
@@ -3662,7 +3679,7 @@ export class Board {
     const tinta = eter ? { color: '#a8d8ff', strength: 0.6 }
       : c.flash > 0.35 ? branco(c.flash)
         : danoSemQuadro ? { color: '#c03028', strength: 0.45 }
-          : c.flash > 0 ? branco(c.flash) : erguido;
+          : c.flash > 0 ? branco(c.flash) : erguido ?? (down ? null : tintaDaAura(figura, this.time));
 
     drawSprite(ctx, sheet, animName, frame, {
       x: sx + tremor,
@@ -3789,6 +3806,25 @@ export class Board {
     if (conds.length === 0 && !prone) return;
     const t = this.time;
     const has = (id) => conds.some((x) => x.id === id);
+
+    // Em Fúria: o chão sob o bárbaro esquenta em vermelho, pulsando. Vale para
+    // todo enfurecido, com folha própria do estado ou sem ela.
+    if (has('furia') && !c.dead) {
+      ctx.save();
+      const pulso = 0.5 + 0.5 * Math.sin(t * 7);
+      ctx.globalAlpha = 0.16 + 0.12 * pulso;
+      ctx.fillStyle = '#d62820';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 20, 9.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.45 + 0.3 * pulso;
+      ctx.strokeStyle = '#ff5a3c';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 20 + pulso * 2.5, 9.5 + pulso * 1.2, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Queimando: línguas de fogo lambendo a figura.
     if (has('queimando')) {
@@ -4043,6 +4079,12 @@ export class Board {
         limite: spell.rangeFt,
       };
     }
+    // Cura pelas Mãos, Inspiração Bárdica: a mira pede um ALIADO (verde).
+    if (modo.kind === 'featureAlvo') {
+      const h = HABILIDADES_DE_ALVO[modo.featureId];
+      if (!h) return null;
+      return { kind: 'featureAlvo', actor, featureId: modo.featureId, rotulo: h.nome, alcance: h.alcanceFt, limite: h.alcanceFt };
+    }
     return null;
   }
 
@@ -4065,6 +4107,7 @@ export class Board {
   preverContra(modo, alvo) {
     if (modo.kind === 'attack') {
       const p = previsaoDeAtaque(this.enc, modo.actor, alvo, modo.weaponId);
+      const fu = estadoDoFurtivo(this.enc, modo.actor, p);
       return {
         tipo: 'ataque',
         chance: p.chance,
@@ -4077,10 +4120,16 @@ export class Board {
         semVisao: p.semVisao,
         vantagem: p.mods.advantage && !p.mods.disadvantage,
         desvantagem: p.mods.disadvantage && !p.mods.advantage,
+        // Vantagem e desvantagem juntas se anulam, e o jogador precisa ler isso.
+        anulados: Boolean(p.mods.advantage && p.mods.disadvantage),
         motivos: p.motivos,
         dc: null,
         dano: p.perfil.damage,
         danoTipo: p.perfil.type,
+        // O Ataque Furtivo (automático): se este golpe o leva, ou por que não.
+        // Sem linha de visão ou fora de alcance (à distância) não há golpe, logo não há furtivo.
+        furtivo: fu?.aplica ? p.furtivo : null,
+        estadoFurtivo: fu,
       };
     }
     if (modo.kind === 'spell') {
@@ -4240,6 +4289,30 @@ export class Board {
     const linhas = [];
     const avisos = [];
 
+    // Cura pelas Mãos / Inspiração Bárdica: o cartão diz o que o clique faria
+    // no aliado sob o cursor (quanto cura, quanto sobra da reserva) ou por que não.
+    if (modo.kind === 'featureAlvo') {
+      const id = modo.featureId;
+      if (!quem || quem.side !== modo.actor.side || !alvo) {
+        avisos.push({ texto: 'clique num aliado aceso', cor: CARTAO.muted });
+        return { titulo: modo.rotulo, subtitulo: null, destaque: null, linhas, avisos };
+      }
+      const veto = vetoDaHabilidade(this.enc, modo.actor, id, quem);
+      const p = previaDaHabilidade(this.enc, modo.actor, id, quem);
+      let destaque = null;
+      if (id === 'layOnHands') {
+        destaque = { rotulo: 'cura', valor: `+${p.cura} PV`, cor: veto ? CARTAO.muted : CARTAO.green };
+        linhas.push({ rotulo: 'faltam', valor: `${p.falta} PV` });
+        linhas.push({ rotulo: 'reserva', valor: `${p.reserva} → ${p.restaria}`, cor: CARTAO.gold });
+        linhas.push({ rotulo: 'PV', valor: `${Math.max(0, quem.hp)}/${quem.maxHp}` });
+      } else {
+        destaque = { rotulo: 'dado', valor: p.dado ?? '', cor: veto ? CARTAO.muted : CARTAO.green };
+        linhas.push({ rotulo: 'cargas', valor: `${p.cargas} → ${p.restaria}`, cor: CARTAO.gold });
+      }
+      if (veto) avisos.push({ texto: `não dá: ${veto}`, cor: CARTAO.red });
+      return { titulo: quem.name, subtitulo: `${modo.rotulo} · ${distanceFt(modo.actor.pos, quem.pos)} pés`, destaque, linhas, avisos };
+    }
+
     // Quadrado vazio (ou aliado): o que o jogador precisa ali é só saber se a
     // ação alcança aquele ponto.
     if (!alvo || alvo.side === modo.actor.side || this.areaMirada) {
@@ -4280,7 +4353,8 @@ export class Board {
       destaque = { rotulo: pv.danoMedio > 0 ? 'acerta sempre' : 'sem jogada', valor: null, cor: CARTAO.gold };
     }
 
-    if (pv.dano) linhas.push({ rotulo: 'dano', valor: `${pv.dano} ${pv.danoTipo ?? ''}`.trim() });
+    // O dano médio e o esperado já somam o furtivo (`previsaoDeAtaque`); a linha de dano o mostra.
+    if (pv.dano) linhas.push({ rotulo: 'dano', valor: `${pv.dano} ${pv.danoTipo ?? ''}${pv.furtivo ? ` + ${pv.furtivo} furtivo` : ''}`.trim() });
     if (pv.danoMedio > 0) {
       linhas.push({ rotulo: 'dano médio', valor: umaCasa(pv.danoMedio) });
       // O esperado é o número que escolhe o alvo: o dano médio já descontada a
@@ -4299,6 +4373,12 @@ export class Board {
     const motivos = pv.motivos?.length ? ` — ${pv.motivos.join(', ')}` : '';
     if (pv.vantagem) avisos.push({ texto: `vantagem${motivos}`, cor: CARTAO.green });
     if (pv.desvantagem) avisos.push({ texto: `desvantagem${motivos}`, cor: CARTAO.amber });
+    if (pv.anulados) avisos.push({ texto: `vantagem e desvantagem se anulam${motivos}`, cor: CARTAO.amber });
+    // Ataque Furtivo: automático, mas o jogador precisa VER que vale (ou por que não).
+    if (pv.estadoFurtivo) {
+      const fu = pv.estadoFurtivo;
+      avisos.push({ texto: fu.aplica ? `Ataque Furtivo +${fu.dado} neste golpe` : fu.texto, cor: fu.aplica ? CARTAO.gold : CARTAO.muted });
+    }
 
     return {
       titulo: alvo.name,

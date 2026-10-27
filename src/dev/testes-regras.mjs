@@ -177,9 +177,11 @@ teste('a distância pesa mais que o apetite: não atravessa a linha para pegar o
 // ---- passar por aliado -----------------------------------------------------
 
 teste('passa pelo aliado no corredor, mas não para em cima dele', () => {
-  const { enc, party } = montar();
+  const { enc, party, foes } = montar();
   const [dara, pip] = party;
-  // Fila indiana: Dara, Pip, e o chão livre depois.
+  // Fila indiana: Dara, Pip, e o chão livre depois. O goblin do campo padrão sai da casa do Pip (dois na mesma casa
+  // não é uma situação válida; a regra de atravessar é tratada em testes-movimento-aliados.mjs).
+  foes[0].pos = { x: 11, y: 11 };
   dara.pos = { x: 5, y: 5 };
   pip.pos = { x: 6, y: 5 };
   dara.movementLeftFt = 30;
@@ -216,8 +218,12 @@ teste('Ataque Descuidado: vantagem para ele, e vantagem contra ele', () => {
   const gob = foes[0];
   gob.pos = { x: c.pos.x + 1, y: c.pos.y };
   assert.equal(enc.attackModifiers(c, gob, { ranged: false }).advantage, false);
+  // INTERRUPTOR: ligar não cobra nada; o primeiro golpe do turno cria o preço.
   assert.ok(enc.useFeature(c, 'recklessAttack'));
   assert.ok(enc.attackModifiers(c, gob, { ranged: false }).advantage, 'ele ataca com vantagem');
+  assert.equal(enc.attackModifiers(gob, c, { ranged: false }).advantage, false, 'sem golpe ainda, sem preço');
+  gob.hp = gob.maxHp = 200;   // a luta não pode acabar no golpe: o fim do combate limpa a condição
+  enc.resolveAttack(c, gob);
   assert.ok(enc.attackModifiers(gob, c, { ranged: false }).advantage, 'e apanha com vantagem');
 });
 
@@ -723,10 +729,13 @@ teste('levantar-se custa metade do deslocamento e tira o caído', () => {
 teste('caído rasteja: alcance cai pela metade', () => {
   const { enc, party } = montar();
   const dara = party[DARA];
-  const longe = (m) => Math.max(...[...m.values()].map((n) => n.cost));
+  // Mede o quanto ele ALCANÇA (a distância), não o custo: rastejar soma +5 por casa ao custo (`costOf`), e o orçamento é o mesmo.
+  const longe = (m) => Math.max(...[...m.values()].map((n) => distanceFt(dara.pos, n)));
   const dePe = longe(enc.reachableFor(dara));
   addCondition(dara, 'caido');
   assert.ok(longe(enc.reachableFor(dara)) <= dePe / 2);
+  // SRD: rastejar custa +1 pé por pé, e o terreno difícil +1 pé por pé; somam (3 pés por pé), e não multiplicam (4).
+  assert.equal(enc.reachableFor(dara).get(`${dara.pos.x + 1},${dara.pos.y}`).cost, 10, 'caído, uma casa de chão livre custa 10');
 });
 
 teste('ataque contra caído: vantagem a 5 pés mesmo de arco, desvantagem de longe', () => {

@@ -223,6 +223,16 @@ const RECARGA_DE_TRACO = { 'Plantas Constritoras': [5, 6] };
  * Os 6 m são os mesmos do arremesso de frasco (água benta, ácido, fogo
  * alquímico), para a mão do herói ter um alcance só.
  */
+/** A categoria de tamanho do SRD como número (Miúdo 0 ... Imenso/Colossal 5), para a regra de passar pelo espaço de outro. */
+const CATEGORIAS_DE_TAMANHO = { miudo: 0, pequeno: 1, medio: 2, grande: 3, enorme: 4, imenso: 5, colossal: 5 };
+const TOMADAS_NENHUMA = { tomada: () => false, atravessa: () => true };
+function categoriaDeTamanho(c) {
+  // Os heróis não trazem `size`: halfling e gnomo são Pequenos (a mesma dedução de `capitulo2.js` e `visuals.js`).
+  const padrao = /halfling|pequenin|gnom/i.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 'pequeno' : 'médio';
+  const t = `${c.size ?? padrao}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return CATEGORIAS_DE_TAMANHO[t] ?? 2;
+}
+
 const ARREMESSO_DE_POCAO_FT = 20;
 
 // Crescimento de Plantas: o chão que não é natural (pedra, estrada, caverna, água, obra) não vira mato.
@@ -307,6 +317,76 @@ export class Encounter {
   occupied(x, y, except = null) {
     const c = this.at(x, y);
     return !!c && c !== except;
+  }
+
+  /**
+   * As criaturas (fora `actor`) cujo corpo cobre a pegada f x f com canto em (x, y). É O conceito único de "casa tomada" do
+   * caminho: `reachableFor`, `moveAlong`, a IA e o clique do tabuleiro passam por aqui, e a pegada Grande entra na conta.
+   */
+  outrosNaPegada(x, y, f = 1, actor = null) {
+    return this.combatants.filter((c) => {
+      if (c === actor || c.dead || conditionEffects(c).inalcancavel) return false;
+      const g = c.pos.f ?? 1;
+      return x < c.pos.x + g && x + f > c.pos.x && y < c.pos.y + g && y + f > c.pos.y;
+    });
+  }
+
+  /**
+   * SRD 5.1, "Moving Around Other Creatures": passa-se pelo espaço de uma criatura NÃO hostil (aliado e neutro); pelo de uma
+   * hostil só se ela for duas categorias de tamanho maior ou menor. Caído e inconsciente não mudam a regra. Terminar o
+   * movimento no espaço dela continua proibido (a busca marca `parar: false`), e o espaço dela é terreno difícil (`costOf`).
+   */
+  podeAtravessar(actor, outro) {
+    // Forma Gasosa (`atravessaVao`): o SRD deixa a névoa entrar no espaço de OUTRA criatura, hostil ou não. Aqui ela atravessa
+    // qualquer um, mas NÃO termina dentro (`parar` segue falso): duas criaturas na mesma casa o tabuleiro e o clique não
+    // representam. Simplificação declarada.
+    if (conditionEffects(actor).atravessaVao) return true;
+    const hostis = actor.side !== outro.side && actor.side !== 'neutro' && outro.side !== 'neutro';
+    if (!hostis) return true;
+    return Math.abs(categoriaDeTamanho(actor) - categoriaDeTamanho(outro)) >= 2;
+  }
+
+  /**
+   * As casas tomadas por OUTRAS criaturas, montadas UMA vez por busca (`reachableFor`, `moveAlong`): casa -> quem a cobre, já
+   * com "atravessa?" resolvido por criatura. A busca pergunta isto por vizinho, e varrer o bando a cada pergunta custava 2x.
+   * `tomada(x, y, f)`: alguém cobre a pegada f x f com canto em (x, y). `atravessa(x, y, f)`: todos eles se atravessam.
+   */
+  casasTomadas(actor) {
+    const celulas = new Map();
+    for (const c of this.combatants) {
+      if (c === actor || c.dead || conditionEffects(c).inalcancavel) continue;
+      const passa = this.podeAtravessar(actor, c);
+      const g = c.pos.f ?? 1;
+      for (let dy = 0; dy < g; dy++) {
+        for (let dx = 0; dx < g; dx++) {
+          const k = (c.pos.y + dy) * 4096 + c.pos.x + dx;
+          const lista = celulas.get(k);
+          if (lista) lista.push(passa); else celulas.set(k, [passa]);
+        }
+      }
+    }
+    if (!celulas.size) return TOMADAS_NENHUMA;
+    return {
+      tomada(x, y, f = 1) {
+        for (let dy = 0; dy < f; dy++) for (let dx = 0; dx < f; dx++) if (celulas.has((y + dy) * 4096 + x + dx)) return true;
+        return false;
+      },
+      atravessa(x, y, f = 1) {
+        for (let dy = 0; dy < f; dy++) {
+          for (let dx = 0; dx < f; dx++) {
+            const lista = celulas.get((y + dy) * 4096 + x + dx);
+            if (lista && lista.includes(false)) return false;
+          }
+        }
+        return true;
+      },
+    };
+  }
+
+  /** O predicado que a busca do caminho (`Battlefield.reachable`) usa para saber se atravessa o que ocupa a casa. */
+  atravessaPara(actor, f = actor.pos?.f ?? 1) {
+    const t = this.casasTomadas(actor);
+    return (x, y) => t.atravessa(x, y, f);
   }
 
   enemiesOf(actor) {
@@ -472,6 +552,10 @@ export class Encounter {
     if (side === this.firstSide) this.spawnReinforcements();
 
     this.side = side;
+    // O Furtivo e a Vantagem Marcial são UM por turno, e turno é de qualquer
+    // um: o ladino que dá ataque de oportunidade no turno do inimigo tem o
+    // furtivo de volta quando o turno do outro lado começa.
+    for (const c of this.combatants) { c.sneakUsedThisTurn = false; c.martialUsedThisTurn = false; }
     // Efeitos que duram "até o começo do próximo turno" do conjurador.
     this.contarDuracoes((cond) => cond.lado === side && cond.quando === 'inicio');
     // Piscar: quem sumiu no fim do turno anterior volta antes de qualquer outra coisa.
@@ -498,6 +582,7 @@ export class Encounter {
       this.comecoDoTurnoMagico(c);
       c.sneakUsedThisTurn = false;
       c.martialUsedThisTurn = false;
+      c.atacouNoTurno = false;
       c.extraActions = 0;
       c.disengaging = false;
       c.magiasNoTurno = [];
@@ -789,6 +874,7 @@ export class Encounter {
     c.acted = true;
     c.sneakUsedThisTurn = false;
     c.martialUsedThisTurn = false;
+    c.atacouNoTurno = false;
     c.extraActions = 0;
     c.concentrating = null;
     this.combatants.push(c);
@@ -1101,7 +1187,7 @@ export class Encounter {
         // medido, o bárbaro saía vitorioso ainda em Fúria e caía no fosso da
         // trilha levando 3 de 6. Resistência de graça, de uma luta anterior.
         if (hasCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
-        for (const id of ['levitando', 'piscando', 'etereo']) if (hasCondition(c, id)) removeCondition(c, id);
+        for (const id of ['levitando', 'piscando', 'etereo', 'descuidado']) if (hasCondition(c, id)) removeCondition(c, id);
         const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
         if (k === 'levitar' || k === 'invocar') c.concentrating = null;
       }
@@ -1125,7 +1211,8 @@ export class Encounter {
     // Só as zonas que ferem ou prendem: ninguém desvia de uma névoa.
     const hostil = (pos) => this.zonasEm(pos).some((z) => !z.inofensiva);
     const evita = evitarZonas && this.zonas.length && !hostil(actor.pos);
-    const cabeNaPegada = this.cabeNaCasa(actor, f);
+    const tomadas = this.casasTomadas(actor);
+    const cabeNaPegada = this.cabeNaCasa(actor, f, tomadas);
     // Acorrentado (os lobos do canil): só anda até onde a corrente alcança.
     // O VÍNCULO DO GUARDIÃO (o spectator) é a mesma cerca com outro nome: ele
     // foi amarrado a um objeto e não se afasta dele. Uma corrente que ninguém
@@ -1153,6 +1240,7 @@ export class Encounter {
     this.field.sobreAgua = conditionEffects(actor).sobreAgua;
     this.field.atravessaVao = conditionEffects(actor).atravessaVao;
     this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil;
+    this.field.rastejando = this.rastejando(actor);
     // Círculo Mágico: o tipo barrado não entra (quem já está dentro anda livre).
     const barras = this.circulosQueBarram(actor);
     const cabeFinal = barras.length
@@ -1161,20 +1249,17 @@ export class Encounter {
     try {
       return this.field.reachable(
       actor.pos,
-      // Caído só rasteja: cada metro custa o dobro.
-      Math.floor(actor.movementLeftFt / this.custoDeMovimento(actor)),
-      (x, y) => this.occupied(x, y, actor),
+      // Caído rasteja: +1 pé por pé, SOMADO ao terreno difícil (`costOf`), então o orçamento é o que sobra, sem dividir.
+      actor.movementLeftFt,
+      // Tomada = alguma criatura (fora ele) cobre a PEGADA inteira dele naquela âncora (Grande ocupa 2x2).
+      (x, y) => tomadas.tomada(x, y, f),
       // Quem ocupa 2x2 só pisa onde os quatro quadrados existem e estão livres
       // de parede. Sem isto o ogro para com metade do corpo dentro da pedra.
       evita ? (x, y) => !hostil({ x, y, f }) && (!cabeFinal || cabeFinal(x, y)) : cabeFinal,
       f,
-      // POR QUEM SE PASSA: o aliado e o neutro, sim; o inimigo, não. É o que
-      // o livro diz — atravessa-se o espaço de uma criatura amiga, e o de uma
-      // hostil só com dois tamanhos de diferença (que o motor ainda não faz).
-      (x, y) => {
-        const quem = this.at(x, y);
-        return !!quem && (quem.side === actor.side || quem.side === 'neutro');
-      },
+      // POR QUEM SE PASSA (SRD): o não hostil (aliado e neutro), sim; o hostil só com duas categorias de tamanho de diferença.
+      // Passar custa o dobro (o espaço dele é terreno difícil, `costOf`) e parar em cima dele nunca vale.
+      (x, y) => tomadas.atravessa(x, y, f),
       );
     } finally {
       this.field.dificeisExtra = null;
@@ -1183,6 +1268,7 @@ export class Encounter {
       this.field.sobreAgua = false;
       this.field.atravessaVao = false;
       this.field.semTerrenoDificil = false;
+      this.field.rastejando = false;
     }
   }
 
@@ -1235,7 +1321,7 @@ export class Encounter {
   }
 
   /** Quem ocupa 2x2 só pisa onde as quatro casas existem e estão livres. */
-  cabeNaCasa(actor, f) {
+  cabeNaCasa(actor, f, tomadas = this.casasTomadas(actor)) {
     if (f === 1) return undefined;
     return (x, y) => {
       for (let dy = 0; dy < f; dy++) {
@@ -1243,10 +1329,11 @@ export class Encounter {
           if (!this.field.inside(x + dx, y + dy)) return false;
           if (this.field.blocksMove(x + dx, y + dy)) return false;
           if (this.field.paredeNaPegada(x, y, f)) return false;
-          if (this.occupied(x + dx, y + dy, actor)) return false;
         }
       }
-      return true;
+      // Quem ocupa a pegada só barra se NÃO se atravessa (hostil sem 2 tamanhos de diferença): o aliado deixa passar, e a busca
+      // (`reachable`) é quem proíbe PARAR em cima dele.
+      return tomadas.atravessa(x, y, f);
     };
   }
 
@@ -1263,12 +1350,17 @@ export class Encounter {
     if (node.parar === false) return false;
     // E nenhum passo do meio pode ser por cima de quem não se atravessa: o
     // caminho pode ter vindo de fora (a cena, a IA), não só de `pathFrom`.
+    // (Quem não cabe ali nem entra em `reached`: um Grande por cima de um herói. Sem nó, também recusa.)
     for (let i = 1; i < path.length - 1; i++) {
-      if (reached.get(key(path[i].x, path[i].y))?.passar === false) return false;
+      const passo = reached.get(key(path[i].x, path[i].y));
+      if (!passo || passo.passar === false) return false;
     }
     // O que se cobra é o caminho ANDADO: um desvio (a IA contornando a Graxa)
     // custa mais que o caminho mais curto até a mesma casa.
     const hostil = this.terrenoHostil(actor);
+    const tomadas = this.casasTomadas(actor);
+    // Caído rasteja desde a saída até o fim do passo: o custo de rastejar vale o que era ao sair.
+    const rasteja = this.rastejando(actor);
     const custoAte = (fim, noAr = this.voaAgora(actor)) => {
       this.field.dificeisExtra = hostil;
       this.field.voando = noAr;
@@ -1276,14 +1368,18 @@ export class Encounter {
       this.field.sobreAgua = conditionEffects(actor).sobreAgua;
       this.field.atravessaVao = conditionEffects(actor).atravessaVao;
       this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil;
+      this.field.rastejando = rasteja;
       let pes = 0;
-      for (let i = 1; i <= fim; i++) pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y);
+      // O espaço de outra criatura é terreno difícil: atravessar o aliado custa o dobro (a mesma conta de `reachable`).
+      const f = actor.pos.f ?? 1;
+      for (let i = 1; i <= fim; i++) pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y, tomadas.tomada(path[i].x, path[i].y, f));
       this.field.dificeisExtra = null;
       this.field.voando = false;
       this.field.escalando = false;
       this.field.sobreAgua = false;
       this.field.atravessaVao = false;
       this.field.semTerrenoDificil = false;
+      this.field.rastejando = false;
       return pes;
     };
     // ANDA OU VOA? Quem voa pela ficha e nao paira (o dragao) anda de quatro no
@@ -1300,12 +1396,9 @@ export class Encounter {
       voou = !Number.isFinite(aPe) || aPe > peloAr || aPe > actor.speedFt;
     }
     const noAr = voou || this.voaAgora(actor);
-    if (custoAte(path.length - 1, noAr) * this.custoDeMovimento(actor) > actor.movementLeftFt) return false;
+    if (custoAte(path.length - 1, noAr) > actor.movementLeftFt) return false;
     actor.emVoo = voou;
     const origin = { ...actor.pos };
-    // O custo de rastejar vale o que era ao sair: cair no meio do caminho não
-    // cobra em dobro os passos já dados de pé.
-    const custo = this.custoDeMovimento(actor);
     let ate = path.length - 1;
 
     for (let i = 1; i < path.length; i++) {
@@ -1368,7 +1461,14 @@ export class Encounter {
       }
       if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i; break; }
     }
-    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - custoAte(ate, noAr) * custo);
+    // Parado no meio do caminho (zona, armadilha, queda) DENTRO do espaço de um aliado que atravessava: não se termina o
+    // movimento em cima de outra criatura. Recua pelo caminho até a última casa livre (a de partida é sempre livre).
+    if (!actor.dead && ate > 0) {
+      let j = ate;
+      while (j > 0 && this.outrosNaPegada(path[j].x, path[j].y, actor.pos.f ?? 1, actor).length) j--;
+      if (j !== ate) { actor.pos = { x: path[j].x, y: path[j].y, f: actor.pos.f ?? 1 }; ate = j; }
+    }
+    actor.movementLeftFt = Math.max(0, actor.movementLeftFt - custoAte(ate, noAr));
     // Pousou: o trecho voado acabou, e ele volta a estar no chao.
     actor.emVoo = false;
     // A corrida antes do salto: a DISTÂNCIA andada desde a última coisa que
@@ -2167,9 +2267,12 @@ export class Encounter {
     return porMagia || lista.includes(id) || lista.includes(APELIDOS[id]);
   }
 
-  /** Multiplicador do custo de andar: 2 para quem está caído (rastejando). */
-  custoDeMovimento(actor) {
-    return hasCondition(actor, 'caido') ? 2 : 1;
+  /**
+   * Quem está caído rasteja: SRD, +1 pé por pé andado. Soma com o terreno difícil (+1 pé por pé) em vez de multiplicar: rastejar
+   * num terreno difícil custa 3 pés por pé, e não 4 (`Battlefield.costOf` cobra os +5 por casa).
+   */
+  rastejando(actor) {
+    return hasCondition(actor, 'caido');
   }
 
   /**
@@ -2513,6 +2616,38 @@ export class Encounter {
 
   // ---- vantagem / desvantagem ---------------------------------------------
 
+  /** O golpe é corpo a corpo com Força? (a metade boa do Ataque Descuidado) */
+  golpeDeForca(attacker, ranged) {
+    if (ranged) return false;
+    return !attacker.attacks ? weaponAbility(attacker, WEAPONS[attacker.equippedWeapon] ?? {}) === 'str' : true;
+  }
+
+  /**
+   * ATAQUE DESCUIDADO como INTERRUPTOR. O SRD deixa decidir no primeiro
+   * ataque do turno; o jogo guarda a decisão em `descuidadoLigado` (a barra
+   * liga e desliga, e o estado vale para os próximos ataques até desligar). O
+   * golpe de oportunidade não conta: é fora do turno dele. O ataque à
+   * distância também não: ele não ganharia nada e pagaria o preço, então o
+   * interruptor espera o primeiro golpe corpo a corpo com Força.
+   * Só vale se o herói TEM a característica (2º nível do bárbaro).
+   * A decisão é no PRIMEIRO ataque do turno (`atacouNoTurno`): ligar depois
+   * que ele já atacou (o 1º golpe do Ataque Extra, o 1º tiro) só vale a
+   * partir do próximo turno.
+   */
+  descuidadoPendente(attacker, { ranged = false, opportunity = false } = {}) {
+    return Boolean(attacker.descuidadoLigado && attacker.features?.includes('recklessAttack')
+      && !opportunity && !attacker.atacouNoTurno
+      && !hasCondition(attacker, 'descuidado') && this.golpeDeForca(attacker, ranged));
+  }
+
+  /** O primeiro golpe do turno com o interruptor ligado: a condição nasce aqui (até o começo do próximo turno dele). */
+  aplicarDescuidado(attacker, { ranged = false, opportunity = false } = {}) {
+    if (!this.descuidadoPendente(attacker, { ranged, opportunity })) return false;
+    addCondition(attacker, 'descuidado', { rounds: 1, quando: 'inicio', lado: attacker.side });
+    this.say('recurso', `${attacker.name} ataca sem se proteger.`);
+    return true;
+  }
+
   attackModifiers(attacker, target, { ranged = false, opportunity = false } = {}) {
     const atkFx = conditionEffects(attacker);
     const tgtFx = conditionEffects(target);
@@ -2523,9 +2658,15 @@ export class Encounter {
 
     if (atkFx.attackDisadvantage) fonte(mods, 'desvantagem', 'atacante prejudicado');
     // ATAQUE DESCUIDADO: vantagem no corpo a corpo com Força, que é a metade
-    // boa do negócio; a metade ruim está na condição.
-    if (hasCondition(attacker, 'descuidado') && !ranged
-      && (!attacker.attacks ? weaponAbility(attacker, WEAPONS[attacker.equippedWeapon] ?? {}) === 'str' : true)) {
+    // boa do negócio; a metade ruim está na condição. Com o interruptor
+    // LIGADO e o primeiro golpe do turno ainda por fazer, a vantagem já vale
+    // na previsão e na rolagem (`descuidadoPendente`): a condição, e o preço
+    // dela, só nascem no golpe (`aplicarDescuidado`).
+    // A vantagem é do turno dele: o golpe de oportunidade (fora do turno) não
+    // a tem, mesmo com a condição ainda de pé. Só o preço (ataques CONTRA ele)
+    // dura até o começo do próximo turno.
+    if ((hasCondition(attacker, 'descuidado') && !opportunity && this.golpeDeForca(attacker, ranged))
+      || this.descuidadoPendente(attacker, { ranged, opportunity })) {
       fonte(mods, 'vantagem', 'ataque descuidado');
     }
     // Toque Arrepiante: desvantagem só contra quem conjurou.
@@ -2551,7 +2692,12 @@ export class Encounter {
     // nada desequipava, a promessa nunca era testada — o inventário novo a
     // testa, então o preço passa a existir.
     if (attacker.armorUntrained) fonte(mods, 'desvantagem', 'armadura sem treino');
-    if (tgtFx.attackedAdvantage) fonte(mods, 'vantagem', 'alvo indefeso');
+    if (tgtFx.attackedAdvantage) {
+      // Quem apanha com vantagem só por ter atacado sem cuidado não está
+      // "indefeso": o registro diz o porquê verdadeiro.
+      const porQue = (target.conditions ?? []).filter((x) => CONDITIONS[x.id]?.attackedAdvantage);
+      fonte(mods, 'vantagem', porQue.length && porQue.every((x) => x.id === 'descuidado') ? 'alvo descuidado' : 'alvo indefeso');
+    }
     if (tgtFx.attackedDisadvantage) fonte(mods, 'desvantagem', 'alvo esquivando');
 
     const close = distanceFt(attacker.pos, target.pos) <= 5;
@@ -2584,9 +2730,13 @@ export class Encounter {
     if (!attacker.features?.includes('sneakAttack') || attacker.sneakUsedThisTurn) return false;
     const usable = weapon?.ranged || weapon?.finesse;
     if (!usable) return false;
-    if (mods.advantage && !mods.disadvantage) return true;
-    if (mods.disadvantage) return false;
-    return this.alliesOf(attacker).some((a) => this.field.vizinhos(a.pos, target.pos) && !hasCondition(a, 'inconsciente'));
+    // Vantagem e desvantagem que se anulam valem NENHUMA das duas: o aliado
+    // colado no alvo ainda serve.
+    const vant = Boolean(mods.advantage) && !mods.disadvantage;
+    const desv = Boolean(mods.disadvantage) && !mods.advantage;
+    if (vant) return true;
+    if (desv) return false;
+    return this.alliesOf(attacker).some((a) => a !== attacker && !a.dead && this.field.vizinhos(a.pos, target.pos) && !conditionEffects(a).incapacitated);
   }
 
   // ---- ataques -------------------------------------------------------------
@@ -2836,6 +2986,9 @@ export class Encounter {
       });
       return { hit: false, muralha: true };
     }
+    this.aplicarDescuidado(attacker, { ranged: p.ranged, opportunity });
+    // o primeiro ataque do turno já foi (o golpe de oportunidade é de outro turno)
+    if (!opportunity) attacker.atacouNoTurno = true;
     const mods = this.attackModifiers(attacker, target, { ranged: p.ranged, opportunity });
     // ESTILO: PROTEÇÃO. Um aliado de escudo ao lado de quem vai apanhar gasta
     // a REAÇÃO para atrapalhar o golpe. É automático de propósito: perguntar
@@ -5756,7 +5909,7 @@ export class Encounter {
     const alcance = this.reachableFor(c);
     let melhor = null;
     for (const node of alcance.values()) {
-      if (this.occupied(node.x, node.y, c)) continue;
+      if (node.parar === false) continue;
       const d = distanceFt({ x: node.x, y: node.y }, de);
       if (!melhor || d > melhor.d) melhor = { d, node };
     }
@@ -6345,6 +6498,9 @@ export class Encounter {
   }
 
   useFeature(actor, featureId, { target = null, modo = null, valor = null } = {}) {
+    // Incapacitado não faz ação, ação bônus nem reação; o interruptor do Ataque
+    // Descuidado é de graça (uma escolha, não uma ação).
+    if (actor.dead || (featureId !== 'recklessAttack' && conditionEffects(actor).incapacitated)) return false;
     switch (featureId) {
       case 'secondWind': {
         if (actor.bonusUsed || !actor.resources.secondWind) return false;
@@ -6394,7 +6550,8 @@ export class Encounter {
         // ANTES de cobrar reserva ou ação. Fora do combate (explorando, ou a luta acabada) só gasta a reserva.
         const semTurno = this.over || this.explorando;
         const alvo = target ?? actor;
-        if ((actor.actionUsed && !semTurno) || !actor.resources?.layOnHands) return false;
+        // a ação extra da Velocidade só vale para atacar, correr, desengajar, esconder e usar objeto
+        if (((actor.actionUsed || actor.acaoLimitada) && !semTurno) || !actor.resources?.layOnHands) return false;
         if (actor.dead || conditionEffects(actor).incapacitated) return false;
         if (!alvo || alvo.dead || alvo.side !== actor.side) return false;
         if (alvo !== actor && !this.field.vizinhos(actor.pos, alvo.pos)) return false;
@@ -6465,11 +6622,19 @@ export class Encounter {
         return true;
       }
       case 'recklessAttack': {
-        // ATAQUE DESCUIDADO: de graça, no começo do turno, e vale o turno
-        // inteiro. A condição cai no começo do PRÓXIMO turno dele.
-        if (hasCondition(actor, 'descuidado')) return false;
-        addCondition(actor, 'descuidado', { rounds: 1, quando: 'inicio', lado: actor.side });
-        this.say('recurso', `${actor.name} ataca sem se proteger.`);
+        // ATAQUE DESCUIDADO é um INTERRUPTOR, de graça: ligado, o primeiro
+        // golpe corpo a corpo com Força de cada turno é descuidado
+        // (`aplicarDescuidado`), e continua assim nos turnos seguintes até
+        // desligar. `modo` 'ligar' ou 'desligar' fixa o estado (a rede repete
+        // pedidos); sem modo, inverte. Desligar no meio do turno não desfaz o
+        // que já foi feito: a condição segue até o começo do próximo turno.
+        if (!actor.features?.includes('recklessAttack')) return false;
+        const liga = modo === 'ligar' ? true : modo === 'desligar' ? false : !actor.descuidadoLigado;
+        if (liga === Boolean(actor.descuidadoLigado)) return true;
+        actor.descuidadoLigado = liga;
+        this.say('recurso', liga
+          ? `${actor.name} decide atacar sem se proteger daqui em diante.`
+          : `${actor.name} volta a se guardar nos ataques.`);
         return true;
       }
       case 'turnUndead': {

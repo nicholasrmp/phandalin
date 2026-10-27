@@ -129,6 +129,7 @@ import metaHobgoblin from './hobgoblin.json';
 import urlHobgoblin from './hobgoblin.png';
 import metaHobgoblinArco from './hobgoblinArco.json';
 import urlHobgoblinArco from './hobgoblinArco.png';
+import { comEstado } from '../estado-visual.js';
 // As folhas dos herois seguem um nome: `<heroi>-<armadura>-<arma>.json/.png`
 // (`dara-malha-maca-escudo`, `brenn-escamas-besta`). O registro se monta
 // sozinho a partir dos nomes (abaixo), porque sao dezenas de combinacoes e
@@ -626,7 +627,14 @@ export function carregarFolhas(aoCarregar) {
  * true)`. Quem marca o estado nas regras (a Furia do barbaro) troca o `look`
  * do personagem por esta chave; a folha daquele estado aparece se existir.
  */
-export function comEstado(look, estado, ligado) {
-  const semEstado = String(look).split('~')[0];
-  return ligado ? `${semEstado}~${estado}` : semEstado;
+export { comEstado };
+
+/**
+ * A figura tem folha NESTE estado? (`temFolhaNoEstado('barbarian@...', 'furia')`)
+ * Quem desenha pergunta antes de pedir a chave com o estado: sem arte do
+ * estado, o tabuleiro cobre com a aura procedural (`art/estado-visual.js`).
+ */
+export function temFolhaNoEstado(look, estado) {
+  const { base } = lerChave(String(look));
+  return Object.values(IMPORTADAS).some((e) => e.base === base && e.estado === estado);
 }

@@ -47,6 +47,7 @@ import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
 import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
+import { HABILIDADES_DE_ALVO, temHabilidadeDeAlvo, descritorDaHabilidade, estadoDoFurtivo } from '../rules/habilidades-alvo.js';
 import { formatModifier } from '../core/dice.js';
 import { audio } from '../core/audio.js';
 
@@ -908,9 +909,12 @@ export class Hud {
     // barra fica só com as magias de utilidade (`.explorando .hud-baixo` em
     // `narrativa.css` apaga o resto e deixa a bandeja viva).
     const explorando = Boolean(this.handlers.explorando?.());
-    const fixas = explorando ? [] : [
+    // Exceção: a Cura pelas Mãos entre as lutas é o uso normal do paladino, e
+    // ela não cobra ação fora do combate; o azulejo fica também aqui.
+    const fixas = explorando ? this.tilesDeAlvoAliado(enc, c, mode) : [
       ...this.tilesAtaques(enc, c, mode, alvo),
       ...this.tilesComuns(enc, c, mode),
+      ...this.tilesDeAlvoAliado(enc, c, mode),
       ...this.tilesItens(enc, c, mode),
     ];
     const magias = c.spellcasting ? this.magiasDe(c, mode) : [];
@@ -1057,10 +1061,18 @@ export class Hud {
         linhas.push([`Contra ${alvo.name}`, rot.aoChegar ? `${rot.texto} ao encostar` : rot.texto]);
         if (!prev.foraDeAlcance && !prev.semVisao) linhas.push(['Dano esperado', prev.esperado.toFixed(1)]);
       }
-      // O Ataque Furtivo é passivo e não tem botão: sem esta linha o ladino
-      // só o via no menu do botão direito.
-      if (prev?.furtivo) linhas.push(['Ataque Furtivo', `+${prev.furtivo} neste golpe`]);
-      else if (c.sneakAttack && !alvo) linhas.push(['Ataque Furtivo', `+${c.sneakAttack} com vantagem ou aliado colado no alvo`]);
+      // O Ataque Furtivo é passivo e não tem botão: a dica diz se ESTE golpe
+      // o leva (e, se não, por quê); o selo "Furtivo" do bloco do turno diz se
+      // ele ainda está de pé. Vantagem e desvantagem, que decidem, também.
+      const fur = estadoDoFurtivo(enc, c, prev, w);
+      if (fur) {
+        if (prev) {
+          if (fur.vantagem) linhas.push(['Vantagem', fur.motivos.join(', ') || 'sim']);
+          else if (fur.desvantagem) linhas.push(['Desvantagem', fur.motivos.join(', ') || 'sim']);
+          else if (fur.anulados) linhas.push(['Vantagem e desvantagem', 'se anulam']);
+        }
+        linhas.push(['Furtivo', fur.detalhe]);
+      }
 
       return this.tile(iconeDaArma(wid, w), {
         tecla,
@@ -1068,7 +1080,7 @@ export class Hud {
         desabilitado: !enc.podeAtacar(c),
         onClick: run,
         selo: rot?.texto ?? null,
-        classe: rot ? `chance-${rot.classe}` : '',
+        classe: [rot ? `chance-${rot.classe}` : '', fur?.aplica ? 'furtivo-vale' : ''].filter(Boolean).join(' '),
         dica: {
           nome: w.name,
           tipo: w.ranged ? 'ataque à distância' : 'ataque corpo a corpo',
@@ -1085,12 +1097,15 @@ export class Hud {
   tilesComuns(enc, c, mode) {
     const tiles = [];
     let proximaExtra = 0;
-    const comum = (icone, nome, texto, custo, acao, desabilitado, carga = null, motivo = null) => {
+    // `extra`: `ativo` acende o azulejo (um INTERRUPTOR ligado, como a arma
+    // empunhada), `classe` e `selo` o enfeitam, `linhas` entram na dica, e
+    // `semTecla` deixa o azulejo travado sem gastar uma letra do pote.
+    const comum = (icone, nome, texto, custo, acao, desabilitado, carga = null, motivo = null, extra = {}) => {
       const run = () => this.handlers.onAction?.(acao);
       // Ação comum tem letra fixa (R, X, C, T) e habilidade de classe pega a
       // próxima do pote: fixar V para "Retomar o Fôlego" e V para "Ação
       // Ardilosa" quebraria em quem tivesse as duas.
-      const tecla = this.reservarTecla(
+      const tecla = extra.semTecla ? null : this.reservarTecla(
         TECLAS_ACAO[acao.kind] ?? TECLAS_FEATURE[proximaExtra++],
         run,
         desabilitado,
@@ -1103,12 +1118,14 @@ export class Hud {
       const total = carga ? (c.resourcesMax?.[carga] ?? restam) : null;
       tiles.push(this.tile(iconeDeAcao(icone), {
         tecla,
+        ativo: Boolean(extra.ativo),
+        classe: extra.classe ?? '',
         desabilitado,
         onClick: run,
-        selo: carga ? restam : null,
+        selo: extra.selo ?? (carga ? restam : null),
         dica: {
           nome, texto, custo,
-          linhas: carga ? [['Cargas', `${restam} de ${total}`]] : null,
+          linhas: extra.linhas ?? (carga ? [['Cargas', `${restam} de ${total}`]] : null),
           aviso: desabilitado ? (motivo ?? 'Indisponível agora') : null,
         },
       }));
@@ -1166,9 +1183,7 @@ export class Hud {
           && ARMORS[c.armor]?.categoria !== 'pesada',
         'rage'],
       // Sentido Divino e Recuperação Arcana não pedem alvo: azulejo simples.
-      recklessAttack: ['descuidado', 'Ataque Descuidado',
-        'Vantagem nos seus ataques corpo a corpo com Força neste turno — e quem te atacar também tem vantagem, até o seu próximo turno.',
-        'Livre', () => !hasCondition(c, 'descuidado')],
+      // (O Ataque Descuidado é um INTERRUPTOR, e tem o seu azulejo abaixo.)
       turnUndead: ['expulsar', 'Expulsar Mortos-Vivos',
         'Canalizar Divindade: todo morto-vivo a 9 m testa Sabedoria ou foge por um minuto. Do 5º nível, o mais fraco vira pó.',
         'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
@@ -1207,9 +1222,26 @@ export class Hud {
           { kind: 'feature', featureId: f, modo: 'desengajar' }, c.bonusUsed);
         continue;
       }
+      // ATAQUE DESCUIDADO: interruptor. Ligado (azulejo aceso), o primeiro
+      // golpe corpo a corpo com Força de cada turno é descuidado, até o
+      // jogador desligar; o estado fica no herói (`descuidadoLigado`).
+      if (f === 'recklessAttack') {
+        const ligado = Boolean(c.descuidadoLigado);
+        comum('descuidado', 'Ataque Descuidado', 'Interruptor: ligado, o primeiro ataque corpo a corpo com Força de cada turno é descuidado — vantagem nos seus ataques corpo a corpo com Força neste turno, e quem te atacar também tem vantagem, até o seu próximo turno. Fica ligado (ou desligado) nos turnos seguintes até você trocar.',
+          'Livre', { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, null, null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
       const e = feats[f];
       if (!e) continue;
       comum(e[0], e[1], e[2], e[3], { kind: 'feature', featureId: f }, !e[4](), e[5]);
+    }
+    // O Ataque Descuidado ainda não chegou ao bárbaro de 1º nível: o azulejo
+    // fica à vista, travado, para o jogador ver onde ela vai estar.
+    if (c.classe === 'barbaro' && !(c.features ?? []).includes('recklessAttack')) {
+      comum('descuidado', 'Ataque Descuidado — 2º nível', 'Interruptor: ligado, o primeiro ataque corpo a corpo com Força de cada turno é descuidado — vantagem nos seus ataques, e vantagem para quem te atacar até o seu próximo turno. O bárbaro aprende no 2º nível.',
+        'Livre', { kind: 'feature', featureId: 'recklessAttack' }, true, null, 'Ataque Descuidado — 2º nível',
+        { classe: 'interruptor', selo: '2º', semTecla: true });
     }
 
     const caido = enc.alliesOf(c).find(
@@ -1238,6 +1270,39 @@ export class Hud {
         { kind: 'despertar', targetId: fingido.id }, c.actionUsed);
     }
 
+    return tiles;
+  }
+
+  /**
+   * As habilidades de classe que pedem um ALIADO por alvo (Cura pelas Mãos,
+   * Inspiração Bárdica). O azulejo não age: ENTRA NO MODO DE MIRA
+   * (`{ kind: 'featureAlvo', featureId }`), e o clique no aliado executa
+   * (`main.js`). A cura mostra a reserva restante no selo, como o Sentido
+   * Divino mostra as cargas. Tudo vem de `rules/habilidades-alvo.js`, a mesma
+   * fonte do menu do botão direito.
+   */
+  tilesDeAlvoAliado(enc, c, mode) {
+    const tiles = [];
+    for (const f of Object.keys(HABILIDADES_DE_ALVO)) {
+      if (!temHabilidadeDeAlvo(c, f)) continue;
+      const d = descritorDaHabilidade(enc, c, f);
+      // Explorando só a Cura pelas Mãos faz sentido (a Inspiração é de luta).
+      if (this.handlers.explorando?.() && d.desabilitado && d.motivo === 'só em combate') continue;
+      const run = () => this.handlers.onAction?.(d.acao);
+      const tecla = this.reservarTecla(d.tecla, run, d.desabilitado);
+      tiles.push(this.tile(iconeDeAcao(d.icone), {
+        tecla,
+        ativo: mode?.kind === 'featureAlvo' && mode.featureId === f,
+        desabilitado: d.desabilitado,
+        onClick: run,
+        selo: d.restam,
+        dica: {
+          nome: d.nome, texto: d.texto, custo: d.custo,
+          linhas: [[f === 'layOnHands' ? 'Reserva' : 'Cargas', f === 'layOnHands' ? `${d.restam} de ${d.total} PV` : `${d.restam} de ${d.total}`]],
+          aviso: d.desabilitado ? (d.motivo ?? 'Indisponível agora') : null,
+        },
+      }));
+    }
     return tiles;
   }
 
@@ -1394,6 +1459,15 @@ export class Hud {
           'Uma por turno, e só quando alguma habilidade a oferece.', 'Bônus'),
         linha('reacao', 'Reação', c.reactionUsed ? 0 : 1, 'fora do seu turno',
           'Ataque de oportunidade: quando um inimigo adjacente se afasta, você ataca de graça, sem clicar. Uma por rodada.')),
+      // O Furtivo é automático, mas precisa SER VISÍVEL: pronto ou já usado
+      // neste turno (é uma vez por turno). Quando vale em cada golpe, a dica
+      // da arma e o cartão do alvo dizem.
+      c.features?.includes('sneakAttack') && c.sneakAttack
+        ? el('div', { class: 'economia economia-furtivo' },
+          linha('furtivo', 'Ataque Furtivo', c.sneakUsedThisTurn ? 0 : 1, 'uma vez por turno',
+            `+${c.sneakAttack} no primeiro golpe do turno com arma de acuidade ou à distância, quando você tem vantagem ou um aliado está colado no alvo (sem desvantagem). É automático: não tem botão.`,
+            c.sneakUsedThisTurn ? 'Furtivo usado' : `Furtivo pronto +${c.sneakAttack}`))
+        : null,
       this.espacosDeMagia(c, mode),
       mov,
       this.botaoAutoDoDono(c),

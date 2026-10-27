@@ -189,7 +189,7 @@ export function jogador(enc, c) {
     if (!best || cego < best.cego || (cego === best.cego && d < best.d)) best = { cego, d, node };
   }
   if (best && best.cego === 1) {
-    const longe = enc.field.reachable(c.pos, 300, (x, y) => enc.occupied(x, y, c));
+    const longe = enc.field.reachable(c.pos, 300, (x, y) => enc.occupied(x, y, c), () => true, c.pos.f ?? 1, enc.atravessaPara(c));
     let mira = null;
     for (const node of longe.values()) {
       if (node.parar === false || !enxerga(node)) continue;

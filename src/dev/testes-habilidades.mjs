@@ -12,6 +12,11 @@ import { makeMonster } from '../rules/monsters.js';
 import { makeRng } from '../core/rng.js';
 import { hasCondition, addCondition } from '../rules/conditions.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
+import { KINDS_REMOTOS, acaoRemotaValida, mandaNaHora } from '../game/acoes.js';
+import { WEAPONS } from '../rules/equipment.js';
+import {
+  HABILIDADES_DE_ALVO, descritorDaHabilidade, alvosDaHabilidade, vetoDaHabilidade, previaDaHabilidade, estadoDoFurtivo, textoDeVantagem, vetoGeral,
+} from '../rules/habilidades-alvo.js';
 
 const MAPA = Array(12).fill('............');
 
@@ -340,6 +345,330 @@ teste('Ataque Furtivo: a previsão (que o HUD agora mostra) traz o dado com alia
   assert.equal(p.furtivo, lad.sneakAttack);
   assert.equal(lad.sneakAttack, '1d6');
 });
+
+// ---- o azulejo da barra (Cura pelas Mãos / Inspiração Bárdica) -----------------
+
+const goblin = (enc) => enc.combatants.find((x) => x.side !== 'party');
+
+teste('azulejo: Cura pelas Mãos do paladino de 1º nível, com a reserva no selo, entra no modo de mira', () => {
+  const { enc, party: [pal, ali] } = montar(['pc-paladino', 'pc-guerreiro']);
+  ali.hp = ali.maxHp - 4;
+  const d = descritorDaHabilidade(enc, pal, 'layOnHands');
+  assert.equal(d.icone, 'classe-layOnHands');
+  assert.equal(d.nome, 'Cura pelas Mãos');
+  assert.equal(d.restam, 5, 'o selo mostra a reserva restante');
+  assert.equal(d.total, 5);
+  assert.equal(d.carga, 'layOnHands');
+  assert.equal(d.custo, 'Ação');
+  assert.equal(d.desabilitado, false);
+  assert.deepEqual(d.acao, { kind: 'featureAlvo', featureId: 'layOnHands' }, 'entra na mira, não age direto');
+});
+
+teste('azulejo: apagado, com o motivo, sem ferido ao alcance, sem reserva ou sem ação', () => {
+  const { enc, party: [pal, ali] } = montar(['pc-paladino', 'pc-guerreiro']);
+  assert.match(descritorDaHabilidade(enc, pal, 'layOnHands').motivo, /ninguém ferido/);
+  ali.hp = ali.maxHp - 4;
+  ali.pos = { x: 9, y: 9 }; // longe: a mão tem de encostar
+  assert.match(descritorDaHabilidade(enc, pal, 'layOnHands').motivo, /ninguém ferido/);
+  ali.pos = { x: 4, y: 3 };
+  assert.equal(descritorDaHabilidade(enc, pal, 'layOnHands').desabilitado, false);
+  pal.actionUsed = true;
+  assert.match(descritorDaHabilidade(enc, pal, 'layOnHands').motivo, /ação/);
+  pal.actionUsed = false;
+  pal.resources.layOnHands = 0;
+  const d = descritorDaHabilidade(enc, pal, 'layOnHands');
+  assert.equal(d.desabilitado, true);
+  assert.match(d.motivo, /reserva/);
+  assert.equal(d.restam, 0);
+});
+
+teste('azulejo: o próprio paladino ferido basta para acender (Torvik 1/15 sozinho)', () => {
+  const { enc, party: [pal] } = montar(['pc-paladino']);
+  pal.hp = 1;
+  const d = descritorDaHabilidade(enc, pal, 'layOnHands');
+  assert.equal(d.desabilitado, false);
+  assert.deepEqual(alvosDaHabilidade(enc, pal, 'layOnHands'), [pal]);
+});
+
+teste('mira: acendem só os aliados feridos e encostados (o morto-vivo e o longe não)', () => {
+  const { enc, party: [pal, ali, longe] } = montar(['pc-paladino', 'pc-guerreiro', 'pc-ladino']);
+  pal.hp = pal.maxHp - 1; ali.hp = ali.maxHp - 3; longe.hp = longe.maxHp - 3;
+  longe.pos = { x: 10, y: 10 };
+  assert.deepEqual(alvosDaHabilidade(enc, pal, 'layOnHands').map((x) => x.id).sort(), [pal.id, ali.id].sort());
+  ali.tipo = 'morto-vivo';
+  assert.ok(!alvosDaHabilidade(enc, pal, 'layOnHands').includes(ali), 'a cura não funciona em morto-vivo');
+});
+
+teste('mira: a prévia diz quanto cura e como fica a reserva', () => {
+  const { enc, party: [pal, ali] } = montar(['pc-paladino', 'pc-guerreiro']);
+  ali.hp = ali.maxHp - 2;
+  const p1 = previaDaHabilidade(enc, pal, 'layOnHands', ali);
+  assert.deepEqual([p1.cura, p1.restaria], [2, 3]);
+  ali.hp = ali.maxHp - 9;
+  const p = previaDaHabilidade(enc, pal, 'layOnHands', ali);
+  assert.equal(p.cura, 5, 'a reserva é o teto');
+  assert.equal(p.restaria, 0);
+  assert.match(p.texto, /cura 5 de 9 PV · reserva 5 → 0/);
+});
+
+teste('mira: o clique executa pelo motor e a reserva fica como a prévia disse', () => {
+  const { enc, party: [pal, ali] } = montar(['pc-paladino', 'pc-guerreiro']);
+  ali.hp = ali.maxHp - 3;
+  assert.equal(vetoDaHabilidade(enc, pal, 'layOnHands', ali), null);
+  const restaria = previaDaHabilidade(enc, pal, 'layOnHands', ali).restaria;
+  assert.ok(enc.useFeature(pal, 'layOnHands', { target: ali }));
+  assert.equal(ali.hp, ali.maxHp);
+  assert.equal(pal.resources.layOnHands, restaria);
+});
+
+teste('exploração: o azulejo aparece mesmo com a ação "usada" e a Inspiração Bárdica não', () => {
+  const { enc, party: [pal, ali] } = montar(['pc-paladino', 'pc-guerreiro']);
+  enc.explorando = true;
+  pal.actionUsed = true;
+  ali.hp = ali.maxHp - 4;
+  assert.equal(vetoGeral(enc, pal, 'layOnHands'), null);
+  assert.equal(descritorDaHabilidade(enc, pal, 'layOnHands').desabilitado, false);
+  assert.ok(enc.useFeature(pal, 'layOnHands', { target: ali }));
+  assert.equal(pal.actionUsed, true, 'fora da luta a ação não é cobrada nem devolvida');
+  const { enc: e2, party: [barda] } = montar(['pc-barda', 'pc-guerreiro']);
+  e2.explorando = true;
+  const d = descritorDaHabilidade(e2, barda, 'bardicInspiration');
+  assert.equal(d.desabilitado, true);
+  assert.equal(d.motivo, 'só em combate');
+});
+
+teste('azulejo: Inspiração Bárdica mostra as cargas e entra na mira de aliado', () => {
+  const { enc, party: [barda, ali] } = montar(['pc-barda', 'pc-guerreiro']);
+  const d = descritorDaHabilidade(enc, barda, 'bardicInspiration');
+  assert.equal(d.icone, 'classe-bardicInspiration');
+  assert.equal(d.restam, barda.resources.bardicInspiration);
+  assert.equal(d.custo, 'Ação bônus');
+  assert.equal(d.desabilitado, false);
+  assert.deepEqual(d.acao, { kind: 'featureAlvo', featureId: 'bardicInspiration' });
+  assert.deepEqual(alvosDaHabilidade(enc, barda, 'bardicInspiration'), [ali], 'não em si mesma');
+  barda.resources.bardicInspiration = 0;
+  assert.match(descritorDaHabilidade(enc, barda, 'bardicInspiration').motivo, /cargas/);
+});
+
+teste('azulejo: só as habilidades de alvo aliado têm descritor (o guerreiro não)', () => {
+  const { enc, party: [gue] } = montar(['pc-guerreiro']);
+  assert.equal(descritorDaHabilidade(enc, gue, 'secondWind'), null);
+});
+
+// ---- Ataque Furtivo e vantagem visíveis (cartão do alvo e dica da arma) --------
+
+/** Pip ladino colado no goblin; o guerreiro do outro lado do goblin, ou longe. */
+function furtivoEm({ aliadoColado }) {
+  const { enc, party: [lad, gue] } = montar(['pc-ladino', 'pc-guerreiro']);
+  const g = goblin(enc);
+  g.pos = { x: 6, y: 6 };
+  lad.pos = { x: 5, y: 6 };
+  gue.pos = aliadoColado ? { x: 7, y: 6 } : { x: 1, y: 1 };
+  return { enc, lad, gue, g };
+}
+
+teste('furtivo: com aliado colado no alvo, a previsão e o estado dizem "+1d6 neste golpe" e o dano médio o inclui', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: true });
+  const p = previsaoDeAtaque(enc, lad, g, 'espadaCurta');
+  const e = estadoDoFurtivo(enc, lad, p);
+  assert.equal(e.aplica, true);
+  assert.equal(e.dado, '1d6');
+  assert.equal(e.texto, 'Ataque Furtivo +1d6 neste golpe');
+  const { enc: e2, lad: l2, g: g2 } = furtivoEm({ aliadoColado: false });
+  const p2 = previsaoDeAtaque(e2, l2, g2, 'espadaCurta');
+  assert.ok(Math.abs(p.danoMedio - p2.danoMedio - 3.5) < 1e-9, `o furtivo soma 3,5 ao dano médio (${p.danoMedio} vs ${p2.danoMedio})`);
+  assert.ok(p.esperado > p2.esperado);
+});
+
+teste('furtivo: sem vantagem nem aliado colado, diz o que falta', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: false });
+  const e = estadoDoFurtivo(enc, lad, previsaoDeAtaque(enc, lad, g, 'espadaCurta'));
+  assert.equal(e.aplica, false);
+  assert.match(e.texto, /precisa de vantagem ou de um aliado colado/);
+  assert.equal(e.vantagem, false);
+});
+
+teste('furtivo: vantagem (alvo caído) liga o furtivo e a vantagem aparece com o motivo', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: false });
+  addCondition(g, 'caido', { rounds: 3 });
+  const p = previsaoDeAtaque(enc, lad, g, 'espadaCurta');
+  const e = estadoDoFurtivo(enc, lad, p);
+  assert.equal(e.vantagem, true);
+  assert.equal(e.aplica, true);
+  const v = textoDeVantagem(p);
+  assert.equal(v.tipo, 'vantagem');
+  assert.match(v.texto, /^vantagem — /);
+  assert.ok(e.motivos.length > 0);
+});
+
+teste('furtivo: atirar colado no inimigo dá desvantagem e o furtivo não vale (mesmo com aliado)', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: true });
+  const p = previsaoDeAtaque(enc, lad, g, 'arcoCurto');
+  const v = textoDeVantagem(p);
+  assert.equal(v.tipo, 'desvantagem');
+  assert.match(v.texto, /^desvantagem — .*adjacente/);
+  const e = estadoDoFurtivo(enc, lad, p);
+  assert.equal(e.aplica, false);
+  assert.equal(e.desvantagem, true);
+  assert.equal(e.texto, 'Furtivo não vale com desvantagem');
+});
+
+teste('furtivo: uma vez por turno — depois de usado o estado diz "já usado" e o selo apaga', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: true });
+  assert.equal(estadoDoFurtivo(enc, lad).usado, false);
+  assert.match(estadoDoFurtivo(enc, lad).texto, /pronto: \+1d6/);
+  lad.sneakUsedThisTurn = true; // o motor marca ao acertar com furtivo (testes-regras cobre o dado)
+  const e = estadoDoFurtivo(enc, lad, previsaoDeAtaque(enc, lad, g, 'espadaCurta'));
+  assert.equal(e.usado, true);
+  assert.equal(e.aplica, false);
+  assert.equal(e.texto, 'Furtivo já usado neste turno');
+  assert.equal(estadoDoFurtivo(enc, lad).texto, 'Furtivo já usado neste turno');
+});
+
+teste('furtivo: quem não é ladino não tem estado de furtivo', () => {
+  const { enc: e2, party: [gue] } = montar(['pc-guerreiro']);
+  assert.equal(estadoDoFurtivo(e2, gue), null);
+});
+
+teste('vantagem e desvantagem juntas se anulam e o cartão diz isso', () => {
+  assert.equal(textoDeVantagem({ mods: { advantage: true, disadvantage: true }, motivos: ['a', 'b'] }).tipo, 'anulado');
+  assert.equal(textoDeVantagem({ mods: { advantage: false, disadvantage: false }, motivos: [] }), null);
+});
+
+
+// ---- correções da revisão 2: furtivo, incapacitado, proteção ------------------
+
+teste('furtivo: aliado incapacitado (atordoado, não só inconsciente) colado no alvo NÃO vale', () => {
+  const { enc, lad, gue, g } = furtivoEm({ aliadoColado: true });
+  assert.ok(previsaoDeAtaque(enc, lad, g, 'espadaCurta').furtivo, 'com o aliado de pé vale');
+  addCondition(gue, 'atordoado', { rounds: 3 });
+  assert.ok(!previsaoDeAtaque(enc, lad, g, 'espadaCurta').furtivo, 'atordoado é incapacitado');
+});
+
+teste('furtivo: vantagem e desvantagem que se anulam valem nenhuma — o aliado colado ainda liga o furtivo', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: true });
+  addCondition(g, 'caido');                                // vantagem a 1,5 m
+  const p = previsaoDeAtaque(enc, lad, g, 'arcoCurto');    // e desvantagem por atirar colado
+  assert.ok(p.mods.advantage && p.mods.disadvantage, 'as duas estão no cartão');
+  assert.ok(p.furtivo, 'anuladas, o aliado colado vale');
+  assert.equal(estadoDoFurtivo(enc, lad, p).aplica, true);
+  // sem o aliado: anulado não é vantagem, e o motivo NÃO é "desvantagem"
+  const { enc: e2, lad: l2, g: g2 } = furtivoEm({ aliadoColado: false });
+  addCondition(g2, 'caido');
+  const p2 = previsaoDeAtaque(e2, l2, g2, 'arcoCurto');
+  assert.ok(!p2.furtivo);
+  assert.notEqual(estadoDoFurtivo(e2, l2, p2).motivo, 'desvantagem');
+});
+
+teste('furtivo: é UM por turno, e o turno do outro lado devolve o furtivo (ataque de oportunidade)', () => {
+  const { enc, lad, gue } = furtivoEm({ aliadoColado: true });
+  lad.sneakUsedThisTurn = true;
+  gue.martialUsedThisTurn = true;
+  enc.endTurn(lad); enc.endTurn(gue);
+  assert.equal(enc.side, 'foes');
+  assert.equal(lad.sneakUsedThisTurn, false, 'o turno dos inimigos começou: o furtivo voltou');
+  assert.equal(gue.martialUsedThisTurn, false);
+});
+
+teste('Proteção: o aliado de escudo ao lado do alvo dá desvantagem na previsão do cartão (sem gastar a reação)', () => {
+  const { enc, party: [heroi] } = montar(['pc-ladino']);
+  const alvo = goblin(enc);
+  alvo.pos = { x: 6, y: 6 };
+  heroi.pos = { x: 5, y: 6 };
+  assert.ok(!previsaoDeAtaque(enc, heroi, alvo, 'espadaCurta').mods.disadvantage, 'sem protetor, nada');
+  const escudeiro = makeMonster('goblin', { x: 7, y: 6 });
+  escudeiro.features = ['protection'];
+  escudeiro.shield = true;
+  escudeiro.reactionUsed = false;
+  enc.addCombatant(escudeiro);
+  escudeiro.reactionUsed = false;
+  const p = previsaoDeAtaque(enc, heroi, alvo, 'espadaCurta');
+  assert.ok(p.mods.disadvantage, 'a Proteção entra como desvantagem');
+  assert.ok(p.motivos.some((m) => m.startsWith('proteção de')));
+  assert.equal(escudeiro.reactionUsed, false, 'só olhou: a reação não foi gasta');
+});
+
+teste('incapacitado não usa poder nenhum (Retomar o Fôlego, Inspiração); a Inspiração recusa no veto', () => {
+  const { enc, party: [gue] } = montar(['pc-guerreiro']);
+  addCondition(gue, 'inconsciente', { rounds: 3 });
+  const antes = gue.resources.secondWind;
+  assert.equal(enc.useFeature(gue, 'secondWind'), false);
+  assert.equal(gue.resources.secondWind, antes, 'não gastou a carga');
+  assert.equal(gue.bonusUsed, false);
+  const { enc: e2, party: [barda, ali] } = montar(['pc-barda', 'pc-guerreiro']);
+  assert.equal(vetoGeral(e2, barda, 'bardicInspiration'), null);
+  addCondition(barda, 'atordoado', { rounds: 2 });
+  assert.match(vetoGeral(e2, barda, 'bardicInspiration'), /incapacitado/);
+  assert.equal(e2.useFeature(barda, 'bardicInspiration', { target: ali }), false);
+});
+
+teste('Cura pelas Mãos: a ação extra da Velocidade (acaoLimitada) não serve', () => {
+  const { enc, party: [pal, ali] } = montar(['pc-paladino', 'pc-guerreiro']);
+  ali.hp = ali.maxHp - 3;
+  pal.acaoLimitada = true;
+  assert.match(vetoGeral(enc, pal, 'layOnHands'), /Velocidade/);
+  assert.equal(enc.useFeature(pal, 'layOnHands', { target: ali }), false);
+  assert.equal(pal.resources.layOnHands, 5);
+  pal.acaoLimitada = false;
+  assert.ok(enc.useFeature(pal, 'layOnHands', { target: ali }));
+});
+
+// ---- teclas, rede e furtivo sem golpe possível ---------------------------------
+
+teste('teclas: a Inspiração Bárdica não usa `i` (inventário) nem `p` (ficha); as teclas das habilidades de alvo são distintas e livres', () => {
+  const usadas = new Set(['f', 'g', 'h', 'r', 'x', 'c', 't', 'z', 'y', 'j', 'v', 'b', 'n', 'k', 'm', 'i', 'p', 'q', 'e']);
+  const teclas = Object.values(HABILIDADES_DE_ALVO).map((h) => h.tecla);
+  assert.equal(new Set(teclas).size, teclas.length, 'sem repetir');
+  for (const t of teclas) assert.ok(t && !usadas.has(t), `a tecla ${t} está livre`);
+  const { enc, party: [barda] } = montar(['pc-barda', 'pc-guerreiro']);
+  assert.equal(descritorDaHabilidade(enc, barda, 'bardicInspiration').tecla, 'u');
+  assert.equal(descritorDaHabilidade(enc, barda, 'layOnHands')?.tecla ?? 'l', 'l');
+});
+
+teste('rede: featureAlvo é ação remota válida, mas NÃO sai na hora (precisa do clique no alvo)', () => {
+  assert.ok(KINDS_REMOTOS.includes('featureAlvo'));
+  assert.ok(acaoRemotaValida({ kind: 'featureAlvo', featureId: 'layOnHands' }));
+  assert.ok(!acaoRemotaValida({ kind: 'featureAlvo', featureId: 'x'.repeat(50) }));
+  assert.equal(mandaNaHora({ kind: 'featureAlvo', featureId: 'layOnHands' }), false, 'o convidado entra na mira e clica no aliado');
+});
+
+teste('furtivo: sem linha de visão ou à distância e fora de alcance não promete furtivo', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: true });
+  const p = previsaoDeAtaque(enc, lad, g, 'espadaCurta');
+  assert.equal(estadoDoFurtivo(enc, lad, p).aplica, true, 'base: vale');
+  const semVisao = { ...p, semVisao: true };
+  const e1 = estadoDoFurtivo(enc, lad, semVisao);
+  assert.equal(e1.aplica, false);
+  assert.equal(e1.texto, 'Furtivo: sem linha de visão');
+  // arco longe demais: fora de alcance
+  g.pos = { x: 6, y: 6 };
+  lad.pos = { x: 5, y: 6 };
+  const pa = previsaoDeAtaque(enc, lad, g, 'arcoCurto');
+  const longe = { ...pa, foraDeAlcance: true, furtivo: '1d6' };
+  const e2 = estadoDoFurtivo(enc, lad, longe);
+  assert.equal(e2.aplica, false);
+  assert.equal(e2.texto, 'Furtivo: fora de alcance');
+});
+
+teste('furtivo: o corpo a corpo longe, que anda até o alvo, continua valendo', () => {
+  const { enc, lad, g } = furtivoEm({ aliadoColado: true });
+  const p = previsaoDeAtaque(enc, lad, g, 'espadaCurta');
+  const longe = { ...p, foraDeAlcance: true, furtivo: '1d6' };
+  assert.equal(estadoDoFurtivo(enc, lad, longe).aplica, true);
+});
+
+teste('furtivo: sem alvo, só se promete para arma de acuidade ou à distância', () => {
+  const { enc, party: [lad] } = montar(['pc-ladino']);
+  assert.match(estadoDoFurtivo(enc, lad, null, WEAPONS.espadaCurta).texto, /pronto: \+1d6/, 'acuidade');
+  assert.match(estadoDoFurtivo(enc, lad, null, WEAPONS.arcoCurto).texto, /pronto: \+1d6/, 'distância');
+  const m = estadoDoFurtivo(enc, lad, null, WEAPONS.maca);
+  assert.equal(m.texto, 'Furtivo: só com acuidade ou à distância');
+  assert.equal(m.detalhe, 'só com acuidade ou à distância');
+  assert.match(estadoDoFurtivo(enc, lad, null).texto, /pronto/, 'sem arma informada: a promessa geral');
+  lad.sneakUsedThisTurn = true;
+  assert.equal(estadoDoFurtivo(enc, lad, null, WEAPONS.maca).texto, 'Furtivo já usado neste turno', 'o uso vence');
+});
+
 
 console.log(`\n${total - falhas}/${total} passaram`);
 process.exit(falhas ? 1 : 0);

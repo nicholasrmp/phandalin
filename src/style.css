@@ -615,6 +615,10 @@ h2 {
 }
 .tile:hover:not(.off) { filter: brightness(1.12); }
 .tile.on { box-shadow: 0 0 0 1px var(--gold-claro), 0 0 14px rgba(161, 112, 42, .6); }
+/* INTERRUPTOR (Ataque Descuidado): aceso em vermelho enquanto ligado; o selo diz LIG ou DESL. */
+.tile.interruptor.on { box-shadow: 0 0 0 1px #ff7a5c, 0 0 14px rgba(214, 40, 30, .7); }
+.tile.interruptor .tile-selo { right: -2px; min-width: 24px; padding: 0 3px; border-radius: 7px; font-size: 8px; }
+.tile.interruptor.on .tile-selo { background: linear-gradient(180deg, #ffb09c, #e0503a); border-color: #7a1810; color: #3a0905; }
 .tile.item { background-image: url('./art/hud/slot.png'); }
 .tile.off { opacity: .34; cursor: not-allowed; filter: grayscale(.8); }
 /* arma na bainha: o azulejo saca, não ataca */
@@ -795,6 +799,16 @@ h2 {
 .gema-luz.reacao { background-image: url('./art/hud/gema-rubi.png'); }
 .economia-linha.gasta .gema-luz { background-image: url('./art/hud/gema-apagada.png'); }
 .economia-linha.gasta { color: var(--muted); }
+/* O Ataque Furtivo é automático, mas visível: uma gema dourada acesa (pronto) ou apagada (já usado neste turno). */
+.economia-furtivo { justify-content: flex-start; }
+.gema-luz.furtivo {
+  width: 12px; height: 12px; margin: 2px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff1b8, #e0b040 55%, #8a5f12);
+  border: 1px solid #4a3208; image-rendering: auto;
+}
+.economia-linha.gasta .gema-luz.furtivo { background: radial-gradient(circle at 35% 30%, #6b6258, #3a342e); border-color: #26211c; }
+/* A arma cujo golpe, contra o alvo sob o cursor, leva o Furtivo. */
+.tile.furtivo-vale { box-shadow: 0 0 0 2px rgba(232, 195, 90, .9), 0 0 8px rgba(232, 195, 90, .55); }
 .economia-estado { font-size: 10px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
 
 /* ---- magias: a cor de cada círculo ----

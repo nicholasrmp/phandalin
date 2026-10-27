@@ -1039,6 +1039,17 @@ teste('F4.3: a narrativa do anfitrião: só dele, com a partida iniciada, e no f
   assert.match(tratarNarrativa({ sala: s, jogadorId: ANF, bruto: 'x'.repeat(70_000) }).erro, /grande/);
 });
 
+teste('featureAlvo (Cura pelas Mãos, Inspiração Bárdica): o convidado manda a mira com o clique no alvo, e a forma é aceita', () => {
+  const s = salaIniciada();
+  for (const featureId of ['layOnHands', 'bardicInspiration']) {
+    const r = faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'featureAlvo', featureId }, tiles: [{ x: 5, y: 6 }] });
+    assert.ok(r.ok, `${featureId} aceita`);
+    assert.deepEqual(r.repassar.action, { kind: 'featureAlvo', featureId });
+    assert.deepEqual(r.repassar.tiles, [{ x: 5, y: 6 }], 'o clique no aliado vai junto');
+  }
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'featureAlvo', featureId: 'x'.repeat(50) } }), /inválida/);
+});
+
 teste('F5.2: usar: o servidor confere só a FORMA da ação da barra; o direito de fazê-la é do motor do anfitrião', () => {
   const s = salaIniciada();
   const r = faz(s, BETO, { tipo: 'agir', acao: 'usar', heroi: 'pc-mago', action: { kind: 'spell', spellId: 'misselMagico' }, circulo: 2, tiles: [{ x: 5, y: 6 }] });

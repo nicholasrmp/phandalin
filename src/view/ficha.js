@@ -84,7 +84,7 @@ const TALENTOS = {
   discipleOfLife: ['Discípulo da Vida', 'Toda cura de magia de 1º círculo ou mais rende 2 + o círculo da magia a mais.'],
   preserveLife: ['Preservar a Vida', 'Canalizar Divindade: 5 × nível de PV para dividir entre os feridos a até 9 m, até metade dos PV máximos de cada um.'],
   sculptSpells: ['Esculpir Magias', 'Escolhe 1 + o círculo da magia de aliados dentro da área: eles não sofrem nada.'],
-  recklessAttack: ['Ataque Descuidado', 'De graça, uma vez por turno: vantagem nos seus ataques corpo a corpo com Força — e quem te atacar também tem vantagem, até o seu próximo turno.'],
+  recklessAttack: ['Ataque Descuidado', 'De graça, um interruptor na barra: ligado, o primeiro ataque corpo a corpo com Força de cada turno é descuidado — vantagem nos seus ataques corpo a corpo com Força, e quem te atacar também tem vantagem, até o seu próximo turno. Fica ligado até você desligar.'],
   dangerSense: ['Sentido de Perigo', 'Vantagem nos testes de resistência de Destreza contra o que você consegue ver.'],
   uncannyDodge: ['Esquiva Sobrenatural', 'Reação: o golpe de arma que você vê chegar sai pela metade. Uma por rodada.'],
   fastMovement: ['Movimento Rápido', '+3 m de deslocamento, desde que não esteja de armadura pesada.'],

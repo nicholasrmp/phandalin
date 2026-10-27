@@ -14,7 +14,7 @@
 /** Os `kind` que o jogador de fora pode pedir. O resto da barra (salto de exploração, círculo isolado…) é do anfitrião. */
 export const KINDS_REMOTOS = [
   'attack', 'spell', 'item', 'dash', 'dodge', 'disengage', 'sacar', 'standUp', 'escape', 'stabilize',
-  'despertar', 'feature', 'salto', 'examinar', 'investigar', 'arrancarGrudado',
+  'despertar', 'feature', 'featureAlvo', 'salto', 'examinar', 'investigar', 'arrancarGrudado',
 ];
 
 /** Ações que o convidado manda no ato, sem escolher alvo (quem as executa é o anfitrião). */

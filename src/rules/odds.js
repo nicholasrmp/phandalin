@@ -82,10 +82,15 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
   const cobertura = perfil.ranged ? enc.field.coverBetween(attacker.pos, target.pos) : 0;
   const caAlvo = caEfetiva(target) + cobertura;
   const base = enc.attackModifiers(attacker, target, { ranged: perfil.ranged });
+  // ESTILO: PROTEÇÃO. O aliado de escudo ao lado do alvo gasta a reação e dá
+  // desvantagem ao golpe (`resolveAttack`); `protecaoDeAliado` só olha, não
+  // gasta a reação. Sem somá-la aqui, o cartão (e o furtivo) prometiam o que
+  // o dado não paga.
+  const protetor = enc.protecaoDeAliado?.(attacker, target) ?? null;
   const mods = {
     advantage: base.advantage,
-    disadvantage: base.disadvantage || alcanceLongo,
-    reasons: alcanceLongo ? [...base.reasons, 'alcance longo'] : base.reasons,
+    disadvantage: base.disadvantage || alcanceLongo || Boolean(protetor),
+    reasons: [...base.reasons, ...(alcanceLongo ? ['alcance longo'] : []), ...(protetor ? [`proteção de ${protetor.name}`] : [])],
   };
 
   // Acao por teste (o Olhar Apodrecedor): a chance e a de o ALVO falhar.

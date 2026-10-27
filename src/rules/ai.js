@@ -382,7 +382,7 @@ export function takeMonsterTurn(enc, monster) {
   const passo = comDesvio(enc, monster, (reached) => {
     let best = null;
     for (const node of reached.values()) {
-      if (enc.occupied(node.x, node.y, monster)) continue;
+      if (node.parar === false) continue;   // casa tomada por outra criatura (aliada que se atravessa): não serve de destino
       const d = ateOAlvo.get(key(node.x, node.y))?.cost ?? (5000 + distanceFt({ x: node.x, y: node.y }, closest.pos));
       if (!best || d < best.d) best = { d, node };
     }
@@ -425,7 +425,7 @@ function planApproachEm(enc, monster, targets, reached, { meleeOnly = false } = 
 
   let best = null;
   for (const node of reached.values()) {
-    if (enc.occupied(node.x, node.y, monster)) continue;
+    if (node.parar === false) continue;   // casa tomada por outra criatura (aliada que se atravessa): não serve de destino
     const spot = { x: node.x, y: node.y };
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
@@ -469,7 +469,7 @@ function planShotEm(enc, monster, targets, enemies, reached) {
   if (!arco) return null;
   let best = null;
   for (const node of reached.values()) {
-    if (enc.occupied(node.x, node.y, monster)) continue;
+    if (node.parar === false) continue;   // casa tomada por outra criatura (aliada que se atravessa): não serve de destino
     const spot = { x: node.x, y: node.y, f: monster.pos.f };
     if (enemies.some((e) => enc.field.vizinhos(spot, e.pos))) continue;
     for (let i = 0; i < targets.length; i++) {
@@ -503,7 +503,7 @@ function retreat(enc, monster, threats) {
   const escolher = (reached, evitarColado) => {
     let best = null;
     for (const node of reached.values()) {
-      if (enc.occupied(node.x, node.y, monster)) continue;
+      if (node.parar === false) continue;   // casa tomada por outra criatura (aliada que se atravessa): não serve de destino
       const spot = { x: node.x, y: node.y };
       if (evitarColado && inimigos.some((c) => isAdjacent(spot, c.pos))) continue;
       const deQuemAmeaca = Math.min(...threats.map((t) => distanceFt(spot, t.pos)));
@@ -647,7 +647,7 @@ function conjurarNoTurno(enc, m, enemies) {
     const reach = enc.reachableFor(m);
     let melhor = null;
     for (const n of reach.values()) {
-      if (enc.occupied(n.x, n.y, m) || !enc.field.vizinhos({ x: n.x, y: n.y }, alvo.pos)) continue;
+      if (n.parar === false || !enc.field.vizinhos({ x: n.x, y: n.y }, alvo.pos)) continue;
       if (!melhor || n.cost < melhor.cost) melhor = n;
     }
     if (melhor) {

@@ -14,6 +14,7 @@ import { narrarLocal, definirVoto } from './narrativa.js';
 import { getSpell, opcoesDaMagia } from '../rules/spells.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
 import { mandaNaHora, escolheVarios } from '../game/acoes.js';
+import { alvosDaHabilidade } from '../rules/habilidades-alvo.js';
 import { possoEscolher } from '../game/decisao.js';
 import { abrirTelaVila } from './vila.js';
 import { abrirMenuContexto } from './menu-contexto.js';
@@ -122,6 +123,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     board?.setOverlay?.({
       selected: selecionado,
       mode: emModo ? { ...emModo, alvos: (emModo.alvos ?? []).map((t) => ({ pos: t })) } : null,
+      // Cura pelas Mãos, Inspiração Bárdica: os aliados que a mira serve acendem em verde, como no anfitrião.
+      targets: emModo?.kind === 'featureAlvo' && selecionado ? alvosDaHabilidade(enc, selecionado, emModo.featureId) : null,
     });
     desenharGrupo();
     // A barra de ações é a do anfitrião, com o mesmo código (`view/hud.js`), desenhada com o espelho da partida.
