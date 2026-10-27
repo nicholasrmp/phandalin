@@ -393,9 +393,9 @@ export class Board {
     canvas.width = span * (TW / 2) + PAD * 2;
     canvas.height = span * (TH / 2) + this.maxHeight * LIFT + PAD * 2 + 40 + copa;
     this.ox = PAD + (wide - 1) * (TW / 2) + (span - 2 * wide + 2) * (TW / 4);
-    // CÂMERA FIXA (rot 0): o canto de trás da vista fica à esquerda em h*TW/2; a fórmula acima era para as 4 rotações.
-    // (só nos mapas de vila: os outros mapas mantêm o enquadramento de sempre)
-    if (this.rot === 0 && w !== h && (this.field.fachadaFechada || Math.max(w, h) >= 60)) this.ox = PAD + h * (TW / 2);
+    // CÂMERA FIXA (rot 0): o canto de trás da vista fica à esquerda em h*TW/2; a fórmula acima era para as 4 rotações, e em
+    // mapa mais largo que alto empurrava o mapa para a direita e cortava o canto leste (as árvores e as casas do canto de cima).
+    if (this.rot === 0 && w !== h) this.ox = PAD + h * (TW / 2);
     this.oy = PAD + this.maxHeight * LIFT + copa;
 
     this.rebuildOrder();
@@ -896,6 +896,19 @@ export class Board {
         pixel(q.px - 1, q.py + 1, 1, cor);
       }
     }
+    ctx.restore();
+  }
+
+  /**
+   * O AMBIENTE de um mapa SEM escuridão (de dia): as faíscas das fogueiras e dos braseiros e o reflexo da água, direto no
+   * tabuleiro (nos mapas escuros eles vão na tela do brilho, furada pela máscara). Sem fogo nem água não há o que desenhar.
+   */
+  desenharAmbienteAoLuz(ctx) {
+    const amb = emissoresDoAmbiente(this.field);
+    if (amb.vazio) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    desenharAmbiente(ctx, this.time, (x, y) => this.center(x, y), amb);
     ctx.restore();
   }
 
@@ -1544,8 +1557,12 @@ export class Board {
    * copa de ~140 px fecha a massa sem alinhar as árvores em grade.
    */
   temArvoreAlta(x, y) {
-    if (y % 2 !== 0) return false;
-    return (x + (y % 4 === 2 ? 1 : 0)) % 2 === 0;
+    if (y % 2 === 0 && (x + (y % 4 === 2 ? 1 : 0)) % 2 === 0) return true;
+    // A FRENTE DA MATA (a borda sul e leste, e a do mapa): a copa sobe para trás, então a casa da frente ficava só com o chão
+    // escurecido, sem tronco. Nela a árvore entra também fora do quincunce, de duas em duas casas.
+    const f = this.field;
+    const frente = f.surfaceAt(x + 1, y) !== 'arvore' || f.surfaceAt(x, y + 1) !== 'arvore';
+    return frente && (x + y) % 2 === 0;
   }
 
   /** Canto de cima à esquerda da árvore alta da casa, na tela. */
@@ -1977,7 +1994,7 @@ export class Board {
       const salaTras = fora && f.inside(ax, ay) ? f.sala?.get(`${ax},${ay}`) : null;
       const fachadaFechada = Boolean(salaTras) && f.fachadaFechada
         && this._salasReveladas !== 'todas' && !this._salasReveladas?.has(salaTras);
-      const niveisAqui = (fora && (cod === ARESTA.porta || cod === ARESTA.aberta || fachadaFechada)
+      const niveisAqui = (fora && (cod === ARESTA.porta || cod === ARESTA.aberta || cod === ARESTA.seteira || fachadaFechada)
         && f.inside(ax, ay) && !this.casaDeFora(ax, ay))
         ? (f.paredeAlt?.[ay * f.w + ax] || ALTURA_PAREDE)
         : niveis;
@@ -2810,6 +2827,7 @@ export class Board {
     }
     this.desenharRaioX(ctx);
     if (this._visao) this.desenharEscuridao(ctx, byView);
+    else this.desenharAmbienteAoLuz(ctx);
     this.desenharSilhuetas(ctx);
     this.desenharContatosPerdidos(ctx);
 

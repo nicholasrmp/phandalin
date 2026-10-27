@@ -57,6 +57,9 @@ export function criarEstrada(app, config) {
   // colinas do sudeste; de noite, em roda, saindo do escuro — longe da
   // fogueira o bastante para a vigia ter tempo de gritar.
   const tomadas = new Set();
+  // Criatura Grande (ogro, urso-coruja) ocupa 2 x 2: a casa tem de caber a pegada inteira, e a coluna e a linha máximas recuam uma.
+  const amostra = makeMonster(e.id, { x: 0, y: 0 });
+  const PEGADA = (amostra.size ?? amostra.tamanho) === 'grande' ? 2 : 1;
   function lugares(n, segunda = false) {
     const col = colunaDoBando();
     const out = [];
@@ -72,11 +75,12 @@ export function criarEstrada(app, config) {
       } else {
         p = { x: segunda ? 20 - (i % 2) : col + 1 + (i % 3), y: 11 + (Math.floor(i / 2) % 3) };
       }
-      p.x = Math.max(1, Math.min(21, p.x));
-      p.y = Math.max(0, Math.min(13, p.y));
-      // Casa livre de verdade: nem herói, nem outro da mesma leva.
-      let q = enc.casaLivreMaisProxima(p) ?? p;
-      for (let r = 1; tomadas.has(`${q.x},${q.y}`) && r < 6; r++) q = enc.casaLivreMaisProxima({ x: p.x - r, y: p.y }) ?? q;
+      p.x = Math.max(1, Math.min(21 - (PEGADA - 1), p.x));
+      p.y = Math.max(0, Math.min(13 - (PEGADA - 1), p.y));
+      // Casa livre de verdade: nem herói, nem outro da mesma leva (e, para o Grande, as quatro casas da pegada).
+      const livre = (c) => enc.casaLivreMaisProxima(PEGADA > 1 ? { ...c, f: PEGADA } : c);
+      let q = livre(p) ?? p;
+      for (let r = 1; tomadas.has(`${q.x},${q.y}`) && r < 6; r++) q = livre({ x: p.x - r, y: p.y }) ?? q;
       tomadas.add(`${q.x},${q.y}`);
       out.push(q);
     }

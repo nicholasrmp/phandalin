@@ -41,6 +41,7 @@ function sorteio(x, y, k = 0) {
 }
 
 const CACHE = new WeakMap();
+const AGUA_DE_FORA = new Set(['riacho', 'lago', 'poco', 'cisterna', 'agua']);
 
 /** Os pontos do mapa que têm vida própria, achados uma vez por mapa. */
 export function emissoresDoAmbiente(field) {
@@ -50,7 +51,10 @@ export function emissoresDoAmbiente(field) {
     for (let x = 0; x < field.w; x += 1) {
       const sup = field.surfaceAt(x, y);
       if (sup === 'fungos' && sorteio(x, y, 1) < 0.2) e.fungos.push({ x, y });
-      else if (sup === 'aguaEscura') {
+      else if (AGUA_DE_FORA.has(sup)) {
+        // Riacho, lago, poço e cisterna dos outros mapas: só o reflexo que acende e apaga (sem o marulho da água funda).
+        if (sorteio(x, y, 2) < 0.14) e.agua.push({ x, y });
+      } else if (sup === 'aguaEscura') {
         if (sorteio(x, y, 2) < 0.14) e.agua.push({ x, y });
         const margem = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => field.inside(x + dx, y + dy) && field.surfaceAt(x + dx, y + dy) !== 'aguaEscura');
         e.mar.push({ x, y, margem });

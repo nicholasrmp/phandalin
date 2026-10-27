@@ -12,10 +12,10 @@ export const MAPA_CUME = {
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRTT",
     "R:::uuRRRRRRR:zzzzuu:u::RRRRRT",
     "R:::zz::RRRRR:::::::::::RRRRRR",
-    "RCC:::::::::::::F:::::F:RRRRRR",
+    "RCC:::::::::::::F:::F:::RRRRRR",
     "RCC:::::::::::::::::::::RRRRRR",
     "RR:::kkkkkkklkkk::RRR__RRRRRRT",
-    "RR:::kkkkkkkkkkk::RR_____K_RTT",
+    "RR:::kkkkkkkkkkk::RR___K___RTT",
     "RR:::kkkkkkkkkkk::RR_______R,,",
     "RR:::kkkkkkkkkkk::RR___F___R,,",
     "RR:::kkkkkkkkkkk::,Rz_z___zR,,",
@@ -85,7 +85,7 @@ export const CUME = {
     "y": 5
   },
   "bau": {
-    "x": 25,
+    "x": 23,
     "y": 6
   },
   "pedraDoVigia": {

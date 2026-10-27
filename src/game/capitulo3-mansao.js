@@ -155,6 +155,15 @@ export function criarMansao(app, config) {
     f.heights[i] = h;
     f.versao = (f.versao ?? 0) + 1;     // a visão do grupo recalcula
   }
+  /** As celas soltas (áreas 5): as grades `G` viram chão, e a família sai (o texto dizia que as portas arrancavam e o mapa não mudava). */
+  function abrirCelas({ som = true } = {}) {
+    const f = enc.field;
+    const grade = SUPERFICIES.indexOf('grade');
+    for (let i = 0; i < f.surfaces.length; i++) {
+      if (f.surfaces[i] === grade) abrirCasa(i % f.w, Math.floor(i / f.w), f.heights[i], { som: som && false });
+    }
+    if (som) audio.play('doorStone');
+  }
   function abrirPorta(nome, opcoes) {
     const p = MANSAO.portas[nome];
     abrirCasa(p.x, p.y, p.h, opcoes);
@@ -204,6 +213,7 @@ export function criarMansao(app, config) {
   if (salvo.fossoVisto) marcarFosso();
   if (salvo.ponteSulCaiu) quebrarPonteSul();
   for (const nome of salvo.portas) abrirPorta(nome, { som: false });
+  if (salvo.celas) abrirCelas({ som: false });
 
   // ------------------------------------------------- armadilhas no caminho ----
   const noFosso = (p) => !salvo.fossoVisto && MANSAO.fosso.some((q) => q.x === p.x && q.y === p.y);
@@ -1116,6 +1126,8 @@ export function criarMansao(app, config) {
       const libertar = async (texto, t) => {
         salvo.celas = true;
         salvo.presosLivres = true;
+        abrirCelas();
+        app.refresh();
         await painel(texto, t ? { teste: t } : {});
         const fim = await app.conversarCom(presos[1] ?? presos[0], arvoreDendrar);
         void fim;

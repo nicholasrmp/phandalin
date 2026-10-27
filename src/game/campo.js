@@ -25,6 +25,12 @@ export function montarCampo(mapa) {
   field.fachadaFechada = Boolean(mapa.fachadaFechada);
   // A rocha junto de chão é desenhada como PAREDE de caverna (mais alta que um degrau): ver `board.alturaVisual`.
   field.paredeDeCaverna = Boolean(mapa.paredeDeCaverna);
+  // As portas que têm FOLHA de madeira (o tabuleiro desenha a folha encostada quando aberta). As cenas do anfitrião refazem
+  // isto; o espelho do convidado só tem o mapa, e sem esta lista nunca desenhava a folha.
+  if (mapa.folhas) {
+    const k = (a, b) => `${a.x},${a.y},${b.x},${b.y}`;
+    field.folha = new Set(mapa.folhas.flatMap(([a, b]) => [k(a, b), k(b, a)]));
+  }
   if (mapa.degraus) field.degraus = new Map(mapa.degraus.map((d) => [`${d.x},${d.y}`, d.eixo]));
   // O quanto o que o grupo não enxerga escurece (0 a 1; padrão 0,8). Árvore Trovão pede 1: preto.
   if (mapa.veuDaEscuridao != null) field.veuDaEscuridao = mapa.veuDaEscuridao;

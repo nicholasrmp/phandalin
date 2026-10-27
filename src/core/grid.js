@@ -555,6 +555,9 @@ export class Battlefield {
    * corta a visão — é isso que faz o terreno alto importar de verdade.
    */
   hasLineOfSight(a, b) {
+    // SIMÉTRICA: o Bresenham de `line` não é (a reta de A a B pode cruzar casas que a de B a A não cruza), e em cerca de 1% dos
+    // pares um via o outro sem ser visto. A reta é sempre traçada do extremo "menor" (y, depois x) para o outro.
+    if (a.y > b.y || (a.y === b.y && a.x > b.x)) [a, b] = [b, a];
     const eye = Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     const pts = this.line(a, b);
     for (let i = 1; i < pts.length; i++) {

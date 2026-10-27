@@ -254,6 +254,7 @@ export function mapaDo(variante = 'padrao') {
       // grupo entrou (`board.desenharParedes`).
       salas: CASTELO.celulas,
       decor: CASTELO.decor,
+      folhas: CASTELO.folhas,
       grupo: [[0, 9], [0, 10], [1, 9], [0, 11]].map(([x, y]) => ({ x: x + CASTELO.desloc.x, y: y + CASTELO.desloc.y })),
       olhar: { dx: 1, dy: 0 },
       cena: 'castelo',
@@ -265,7 +266,7 @@ export function mapaDo(variante = 'padrao') {
     return {
       ...MAPA_CUME,
       objetos: [],
-      grupo: [{ x: 25, y: 18 }, { x: 26, y: 18 }, { x: 25, y: 19 }, { x: 26, y: 19 }],
+      grupo: [{ x: 25, y: 18 }, { x: 26, y: 18 }, { x: 25, y: 19 }, { x: 27, y: 18 }],       // (26,19) é uma moita
       olhar: { dx: -1, dy: -1 },
       cena: 'cume',
     };
@@ -280,6 +281,7 @@ export function mapaDo(variante = 'padrao') {
       salas: ARVORE_TROVAO.celulas,
       decor: ARVORE_TROVAO.decor,
       pisos: ARVORE_TROVAO.pisos,
+      folhas: ARVORE_TROVAO.folhas,
       fachadaFechada: true,
       veuDaEscuridao: 1,
       avisosDeVista: true,
@@ -302,6 +304,7 @@ export function mapaDo(variante = 'padrao') {
       veuDaEscuridao: 1,
       paredeDeCaverna: true,
       degraus: ONDA_ECO.degraus,
+      folhas: ONDA_ECO.folhas,
       objetos: ONDA_ECO.props.map((p) => ({ ...p })),
       grupo: ONDA_ECO.grupo.map((p) => ({ ...p })),
       olhar: { dx: 1, dy: -1 },
@@ -327,7 +330,7 @@ export function mapaDo(variante = 'padrao') {
       altura: null,
       objetos: [],
       grupo: noite
-        ? [{ x: 10, y: 6 }, { x: 12, y: 6 }, { x: 10, y: 8 }, { x: 12, y: 8 }]
+        ? [{ x: 10, y: 7 }, { x: 12, y: 7 }, { x: 9, y: 6 }, { x: 13, y: 8 }]      // fora da diagonal da fogueira (11,7): nenhum herói a esconde
         : [{ x: 9, y: 6 }, { x: 10, y: 7 }, { x: 8, y: 7 }, { x: 11, y: 6 }],
       olhar: { dx: 1, dy: 0 },
       cena: 'ermo',

@@ -111,7 +111,7 @@ for y in R(6, 9):
         L[y][x] = 1
 L[5][21] = L[5][22] = 1
 casa(23, 8, 'F', 0)
-BAU = (25, 6)
+BAU = (23, 6)
 casa(*BAU, 'K', 0)
 casa(20, 9, 'z'); casa(22, 9, 'z'); casa(26, 9, 'z')
 # O campo a leste da caverna fica de fora da rocha: refaz a borda.
@@ -131,7 +131,7 @@ casa(4, 2, 'z'); casa(5, 2, 'z')          # palha e peles
 casa(4, 1, 'u'); casa(5, 1, 'u')          # barris
 for x in (14, 15, 16, 17):
     casa(x, 1, 'z')                       # camas de palha ao longo do paredao
-casa(16, 3, 'F'); casa(22, 3, 'F')        # fogueiras
+casa(16, 3, 'F'); casa(20, 3, 'F')        # fogueiras
 # Barris e caixote encostados no paredao norte, fora do caminho: o ogro
 # precisa de duas casas livres para ir da caverna ao corredor.
 casa(18, 1, 'u'); casa(19, 1, 'u'); casa(21, 1, 'u')
