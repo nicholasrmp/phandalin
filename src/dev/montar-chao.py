@@ -243,6 +243,23 @@ def reencaixar(t):
     return out
 
 
+def atenuar(t, k):
+    """Puxa cada pixel para o tom MEDIANO do ladrilho (k de 0 a 1): tira o "confete" de alto contraste (as conchas brancas
+    sobre o chao escuro) sem inventar cor, so aproximando as que ja existem."""
+    from losango import no_losango
+    out = t.copy()
+    s, d = t.load(), out.load()
+    vivos = [s[x, y] for y in range(TH) for x in range(TW) if no_losango(x, y) and s[x, y][3]]
+    vivos.sort(key=_lum)
+    m = vivos[len(vivos) // 2]
+    for y in range(TH):
+        for x in range(TW):
+            if no_losango(x, y) and s[x, y][3]:
+                r, g, b, al = s[x, y]
+                d[x, y] = (int(r + (m[0] - r) * k), int(g + (m[1] - g) * k), int(b + (m[2] - b) * k), al)
+    return out
+
+
 def sem_rejunte(t):
     from losango import no_losango
     out = t.copy()
@@ -321,6 +338,8 @@ def main():
                 t = tapar_furos(t)
             if nome in FAIXA_ESCURA:
                 t = limpar_faixa(t)
+            if nome == 'conchas':
+                t = atenuar(t, 0.55)
             if nome in ESCURECER:
                 t = escurecer(t, ESCURECER[nome])
             candidatos.append(t)

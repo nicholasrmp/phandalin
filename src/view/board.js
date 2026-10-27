@@ -786,6 +786,29 @@ export class Board {
   }
 
   /**
+   * A TEIA desenhada por cima do chão da casa (fios que saem do centro e dois anéis), em vez do ladrilho opaco de teia, que lia
+   * como tapete marrom. Pixel duro, claro e translúcido: o chão aparece por baixo.
+   */
+  desenharTeia(ctx, sx, sy, x, y) {
+    const cx = sx, cy = sy + TH / 2;
+    const pontas = [[0, -16], [16, -8], [32, 0], [16, 8], [0, 16], [-16, 8], [-32, 0], [-16, -8]].map(([dx, dy]) => ({ x: cx + dx * 0.96, y: cy + dy * 0.96 }));
+    const pixel = (px, py, a) => { ctx.fillStyle = `rgba(232,234,242,${a})`; ctx.fillRect(Math.round(px), Math.round(py), 1, 1); };
+    const linha = (a, b, alfa) => {
+      const n = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y), 1);
+      for (let k = 0; k <= n; k += 1) pixel(a.x + (b.x - a.x) * k / n, a.y + (b.y - a.y) * k / n, alfa);
+    };
+    const meio = { x: cx + (sorteio(x, y, 5) - 2), y: cy + (sorteio(y, x, 3) - 1) };
+    for (const pt of pontas) linha(meio, pt, 0.5);
+    for (const r of [0.38, 0.7]) {
+      for (let i = 0; i < pontas.length; i += 1) {
+        const a = pontas[i], b = pontas[(i + 1) % pontas.length];
+        linha({ x: meio.x + (a.x - meio.x) * r, y: meio.y + (a.y - meio.y) * r },
+          { x: meio.x + (b.x - meio.x) * r, y: meio.y + (b.y - meio.y) * r }, 0.42);
+      }
+    }
+  }
+
+  /**
    * DEGRAUS numa casa de escada (`field.degraus`, eixo 'x' ou 'y' = o sentido em que a escada sobe): linhas claras e
    * escuras atravessadas na casa, como o focinho de cada degrau lavrado na pedra. Só desenho.
    */
@@ -1074,7 +1097,8 @@ export class Board {
       : (s.objeto === 'prop' && !salaDaCasa ? (this.varianteDaProp(x, y)?.piso ?? 'grama')
         // braseiro de caverna fora de sala pisa no chão da mina, não na laje de castelo
         : (this.field.paredeDeCaverna && !salaDaCasa && (s.objeto === 'braseiro' || s.objeto === 'braseiroFrio') ? 'mina'
-          : (this.field.paredeDeCaverna && s.chao === 'rocha' ? 'rochaMina' : s.chao)));
+          : (this.field.paredeDeCaverna && s.chao === 'rocha' ? 'rochaMina'
+            : (this.field.paredeDeCaverna && s.chao === 'teia' ? (salaDaCasa ? 'lajeMina' : 'mina') : s.chao))));
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
@@ -1132,6 +1156,7 @@ export class Board {
     ctx.strokeStyle = 'rgba(0,0,0,.16)';
     ctx.stroke();
     if (s.chao === 'fosso') this.profundidadeDoFosso(ctx, x, y, sx, sy);
+    if (this.field.paredeDeCaverna && s.chao === 'teia') this.desenharTeia(ctx, sx, sy, x, y);
     const degrau = this.field.degraus?.get(`${x},${y}`);
     if (degrau) this.desenharDegraus(ctx, sx, sy, degrau);
     ctx.restore();
@@ -2624,8 +2649,9 @@ export class Board {
     }
 
     const sky = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    sky.addColorStop(0, '#231d33');
-    sky.addColorStop(1, '#13111b');
+    // Caverna: o vazio fora do mapa é breu, e não o roxo do céu (a parede translúcida mostrava um fundo roxo).
+    sky.addColorStop(0, this.field.paredeDeCaverna ? '#0b0a10' : '#231d33');
+    sky.addColorStop(1, this.field.paredeDeCaverna ? '#06050a' : '#13111b');
     ctx.fillStyle = sky;
     ctx.fillRect(-60, -60, this.canvas.width + 120, this.canvas.height + 120);
 
