@@ -717,6 +717,20 @@ export function mostrarAlfinete(board, { x, y }, nome, cor = '#ffd24a', marca = 
   board.floatText?.(pos, rotulo ? `${nome}: ${rotulo}` : nome, cor, true);
 }
 
+/**
+ * O IMPACTO de um dano, em todas as telas (a do anfitrião e a dos convidados): o número (maior quanto mais pesado o golpe), o tremor,
+ * a pausa de impacto e, no crítico, o "CRÍTICO!" em dourado. Golpe leve quase não pára; golpe grande e crítico, sim.
+ */
+export function impactoDeDano(board, alvo, amount, critico = false) {
+  if (!board || !alvo?.pos) return;
+  const total = Math.round(amount);
+  const peso = total >= 20 ? 3 : total >= 10 ? 2 : 1;
+  board.floatText(alvo.pos, `-${total}`, critico ? '#ffd24a' : '#ff6a6a', peso >= 2 || critico, { peso: critico ? Math.max(peso, 2) : peso });
+  if (critico) board.floatText(alvo.pos, 'CRÍTICO!', '#ffd24a', true, { peso: 2, dy: -24 });
+  board.bump(Math.min(0.75, 0.16 + total / 45 + (critico ? 0.22 : 0)));
+  board.hitStop?.(critico ? 150 : peso >= 3 ? 110 : peso === 2 ? 70 : 30);
+}
+
 /** Uma frase pronta sobre a cabeça de um herói. */
 export function mostrarFrase(board, pos, texto, cor = '#ffd24a') {
   if (pos) board?.floatText?.(pos, texto, cor, true);

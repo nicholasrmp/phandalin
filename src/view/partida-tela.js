@@ -34,7 +34,7 @@ import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import { lerVista, aplicarVista, desempacotarEvento } from '../game/partida-vista.js';
 import { criarReceptor, lerDelta } from '../game/partida-delta.js';
-import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, mostrarFrase, CORES_DOS_JOGADORES } from './visuals.js';
+import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, mostrarFrase, impactoDeDano, CORES_DOS_JOGADORES } from './visuals.js';
 import { FRASES_DA_PARTIDA, MARCAS_DO_MAPA } from '../game/sala.js';
 
 const CASAS_POR_SEGUNDO = 5;
@@ -378,6 +378,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
             const { attacker: a, target: t } = ev;
             if (!a || !t) break;
             a.facingVec = { dx: t.pos.x - a.pos.x, dy: t.pos.y - a.pos.y };
+            criticoEm = ev.critical ? { alvo: t.id, ate: Date.now() + 2500 } : null;
             fila += 0.35;
             atraso = playWeaponVisual(board, ev, { startDelay: board.fx.walkTimeLeft ?? 0 }) ?? 0;
             break;
@@ -389,14 +390,14 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
             break;
           }
           case 'damage':
-            if (ev.target) noImpacto(() => { board.floatText(ev.target.pos, `-${Math.round(ev.amount)}`, '#ff6a6a', ev.amount >= 10); board.bump(0.22); });
+            if (ev.target) { const crit = criticoEm?.alvo === ev.target.id && Date.now() < criticoEm.ate; noImpacto(() => impactoDeDano(board, ev.target, ev.amount, crit)); }
             break;
           case 'heal':
             if (ev.target && ev.amount > 0) noImpacto(() => { audio.play('heal'); board.floatText(ev.target.pos, `+${Math.round(ev.amount)}`, '#6ee89a'); board.fx.ring(ev.target.pos, { color: '#6ee89a', radius: 28, dur: 0.5, width: 2 }); });
             break;
           case 'downed':
           case 'died':
-            if (ev.target) noImpacto(() => { board.floatText(ev.target.pos, '✖', '#ff4b4b', true); board.fx.impact(ev.target.pos, { color: '#8a2b2b', count: 14, spread: 40, dur: 0.6 }); audio.play('down'); });
+            if (ev.target) noImpacto(() => { board.floatText(ev.target.pos, '✖', '#ff4b4b', true, { peso: 3 }); board.bump(0.55); board.hitStop(170); board.fx.impact(ev.target.pos, { color: '#8a2b2b', count: 14, spread: 40, dur: 0.6 }); audio.play('down'); });
             break;
           case 'reinforcements':
             audio.play('down');
@@ -596,6 +597,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo${faltam ? ` · faltam ${faltam} herói${faltam > 1 ? 's' : ''}` : ''}` : `Rodada ${enc.round}: vez dos inimigos`) : '';
   }
 
+  let criticoEm = null;      // o golpe crítico que acabou de acertar: o dano dele chega em seguida
   const receptor = criarReceptor();
 
   function receber(bruto) {

@@ -1,0 +1,20 @@
+/* O cartão das dicas contextuais: no canto de baixo à esquerda, por cima do tabuleiro e sem bloquear o clique no resto. */
+.dicas-cartao {
+  position: fixed; right: 16px; bottom: 150px; z-index: 80; width: min(340px, calc(100vw - 32px));
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--papelada, #f3e9cf); color: var(--ink, #2a2118);
+  border: 1px solid var(--gold-escuro, #8a6a1f); border-left: 5px solid var(--gold, #d6aa46);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .55);
+  font-size: 13.5px; line-height: 1.4;
+  animation: dicas-entra .22s ease-out;
+}
+.dicas-titulo { display: block; margin-bottom: 4px; font-family: var(--serif, Georgia, serif); font-size: 15px; color: var(--gold-escuro, #8a6a1f); }
+.dicas-cartao p { margin: 4px 0; }
+.dicas-botoes { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.dicas-btn {
+  font: 600 12.5px var(--font, system-ui, sans-serif); padding: 4px 12px; border-radius: 7px; cursor: pointer;
+  color: var(--ink, #2a2118); background: rgba(255, 248, 228, .55); border: 1px solid var(--gold-escuro, #8a6a1f);
+}
+.dicas-btn.primario { background: linear-gradient(180deg, var(--gold-claro, #f1d98a), var(--gold, #d6aa46)); color: #2b1d07; }
+@keyframes dicas-entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dicas-cartao { animation: none; } }

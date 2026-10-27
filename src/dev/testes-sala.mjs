@@ -20,6 +20,7 @@ import { problemasDeJson } from '../game/save.js';
 import { novoEstado as novoEstadoDeLimites, emitir as emitirCodigo, entrar as entrarNaSala, EMITIR_POR_HORA, TENTATIVAS_POR_MINUTO, VALIDADE_DO_CODIGO_MS } from '../worker/limites.js';
 import { criarEmissor, criarReceptor, lerDelta, COMPLETA_A_CADA } from '../game/partida-delta.js';
 import { novoDiretorio, escolher as escolherInstancia, registrar as registrarPopulacao, ehPublica as ehPublicaNoDiretorio, LOTACAO_PARA_NOVOS } from '../worker/diretorio.js';
+import { DICAS, GATILHOS, dicasDoGatilho, lerDicas, guardarDicas } from '../game/tutorial.js';
 import { faltamDaTaverna } from './verificar-taverna.mjs';
 import { heroiQueSobra } from '../game/sala.js';
 import { escolhasConferidas } from '../game/nivel.js';
@@ -1720,6 +1721,23 @@ teste('a arte da taverna está nos atlas (quem regera um atlas a apaga: os monta
   const { pecas, faltas } = faltamDaTaverna();
   assert.ok(pecas >= 15, 'a mobília da taverna foi lida do mapa');
   assert.deepEqual(faltas, [], `falta na arte da taverna: ${faltas.join('; ')}`);
+});
+
+teste('dicas contextuais: cada gatilho chama as suas dicas, uma vez, e dá para desligar tudo', () => {
+  const vistas = new Set();
+  assert.deepEqual(dicasDoGatilho('combate', vistas).map((d) => d.id), ['combate', 'acoes']);
+  vistas.add('combate');
+  assert.deepEqual(dicasDoGatilho('combate', vistas).map((d) => d.id), ['acoes'], 'o que já foi visto não volta');
+  assert.deepEqual(dicasDoGatilho('combate', vistas, { ligado: false }), [], 'desligadas: nenhuma');
+  assert.deepEqual(dicasDoGatilho('inexistente', vistas), []);
+  for (const d of Object.values(DICAS)) assert.ok(d.titulo && d.texto.length >= 1 && d.texto.every((t) => typeof t === 'string'));
+  for (const ids of Object.values(GATILHOS)) for (const id of ids) assert.ok(DICAS[id], `dica ${id} existe`);
+  const guarda = new Map();
+  const st = { getItem: (k) => guarda.get(k) ?? null, setItem: (k, v) => guarda.set(k, v) };
+  guardarDicas(st, { vistas: new Set(['golpe']), ligado: false });
+  const lido = lerDicas(st);
+  assert.deepEqual([[...lido.vistas], lido.ligado], [['golpe'], false]);
+  assert.deepEqual([[...lerDicas({ getItem: () => 'lixo' }).vistas], lerDicas({ getItem: () => 'lixo' }).ligado], [[], true], 'armazém estragado: começa do zero');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

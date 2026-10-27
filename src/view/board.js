@@ -714,7 +714,7 @@ export class Board {
     Object.assign(this.overlay, patch);
   }
 
-  floatText(pos, text, color, big = false) {
+  floatText(pos, text, color, big = false, { peso = 1, dy = 0 } = {}) {
     // Danos que chegam juntos na mesma casa (os dardos do Míssil, o golpe e a
     // chuva da Saraivada) viram um número só, somado — e não três empilhados.
     const m = /^-(\d+)$/.exec(text);
@@ -725,11 +725,16 @@ export class Board {
       junto.big = junto.big || big || total >= 10;
       return;
     }
-    this.floaters.push({ x: pos.x, y: pos.y, text, color, big, t: 0 });
+    this.floaters.push({ x: pos.x, y: pos.y, text, color, big, t: 0, peso, dy });
   }
 
   bump(strength = 0.35) {
     this.shake = Math.max(this.shake, strength);
+  }
+
+  /** A PAUSA DE IMPACTO: o jogo quase para por `ms` milissegundos quando um golpe pesado acerta (o tremor segue). Não acumula: vale o maior. */
+  hitStop(ms) {
+    this.congela = Math.max(this.congela ?? 0, ms / 1000);
   }
 
   // ---- primitivas ----------------------------------------------------------
@@ -2505,6 +2510,8 @@ export class Board {
   render(dt) {
     // Sem `dt` (um render pedido à mão, de fora do laço) o relógio viraria
     // NaN para sempre, e com ele todo o balanço, o tremor e o pulso da luz.
+    // Pausa de impacto: com o jogo congelado, o tempo de tudo (animações, efeitos, números) anda a 5%.
+    if (this.congela > 0 && Number.isFinite(dt)) { this.congela = Math.max(0, this.congela - dt); dt *= 0.05; }
     this.time += Number.isFinite(dt) ? dt : 0;
     this.fx.update(dt);
     const ctx = this.ctx;
@@ -3949,13 +3956,16 @@ export class Board {
       const { sx, sy } = this.center(f.x, f.y);
       ctx.save();
       ctx.globalAlpha = 1 - k * k;
-      ctx.font = `700 ${f.big ? 23 : 17}px ui-monospace, monospace`;
+      // O número "estoura" ao nascer (cresce e assenta em 0,12 s) e é maior quanto mais pesado o golpe; nos primeiros instantes é branco.
+      const pop = 1 + 0.55 * Math.max(0, 1 - f.t / 0.12);
+      const base = (f.big ? 23 : 17) + (f.peso - 1) * 4;
+      ctx.font = `700 ${Math.round(base * pop)}px ui-monospace, monospace`;
       ctx.textAlign = 'center';
-      ctx.lineWidth = 3.5;
-      ctx.strokeStyle = 'rgba(0,0,0,.8)';
-      const ty = sy - 56 - k * 28;
+      ctx.lineWidth = 3.5 + (f.peso - 1);
+      ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      const ty = sy - 56 - k * 28 + f.dy;
       ctx.strokeText(f.text, sx, ty);
-      ctx.fillStyle = f.color;
+      ctx.fillStyle = f.t < 0.06 ? '#ffffff' : f.color;
       ctx.fillText(f.text, sx, ty);
       ctx.restore();
     }

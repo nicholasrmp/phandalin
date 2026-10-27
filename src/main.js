@@ -24,6 +24,7 @@ import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.j
 import { fotografar, emTexto, empacotarEvento, empacotarLista, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
 import { criarEmissor } from './game/partida-delta.js';
 import { criarPartidaTela } from './view/partida-tela.js';
+import { criarDicas } from './view/dicas.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
 import { criarCenaCaverna } from './game/cena-caverna.js';
@@ -61,7 +62,7 @@ import { aoDarXp } from './game/nivel.js';
 import { audio, passoSoundFor } from './core/audio.js';
 import {
   playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
-  playGlifoVisual, playCordaoVisual, playAnuladaVisual, mostrarAlfinete, mostrarFrase, CORES_DOS_JOGADORES,
+  playGlifoVisual, playCordaoVisual, playAnuladaVisual, mostrarAlfinete, mostrarFrase, impactoDeDano, CORES_DOS_JOGADORES,
 } from './view/visuals.js';
 
 
@@ -200,6 +201,7 @@ class App {
     // Save e carregar no solo (MULTIJOGADOR.md, S-01…S-12): `game/save.js` cuida
     // do formato e do armazém; aqui entram os pontos em que o jogo salva.
     const armazem = armazemDoNavegador();
+    this.dicas = criarDicas(root, armazem);      // as dicas contextuais do primeiro combate (game/tutorial.js)
     this.saves = criarArmazenamento(armazem);
     this.jogadorId = jogadorLocal(armazem);
     this.tempoBase = 0;
@@ -1194,7 +1196,17 @@ class App {
     else fn();
   }
 
+  /** Uma dica contextual, um instante depois (para não cobrir o que acabou de acontecer). Só em quem joga solo ou roda a sala. */
+  dicar(gatilho, ms = 900) {
+    if (this._dicaPendente?.[gatilho]) return;
+    (this._dicaPendente ??= {})[gatilho] = setTimeout(() => { delete this._dicaPendente[gatilho]; this.dicas?.gatilho(gatilho); }, ms);
+  }
+
   onEvent(ev) {
+    if (ev.type === 'iniciativa') this.dicar('combate', 1200);
+    else if (ev.type === 'attack' && ev.attacker?.side === 'party') this.dicar('golpe', 2200);
+    else if (ev.type === 'spell' && ev.caster?.side === 'party') this.dicar('magia', 2200);
+    else if (ev.type === 'downed' && ev.target?.side === 'party') this.dicar('queda', 1400);
     // Partida de sala (F5.3): o lado visual do evento segue na próxima vista, para o convidado ver o golpe, o número e a queda.
     if (this.salaDaPartida) {
       const dado = empacotarEvento(this.enc, ev);
@@ -1265,6 +1277,7 @@ class App {
         a.facingVec = { dx: t.pos.x - a.pos.x, dy: t.pos.y - a.pos.y };
         a.anim = { name: 'attack', frame: 1 };
         setTimeout(() => { a.anim = null; }, 280);
+        this._critico = ev.critical ? { alvo: t, ate: Date.now() + 2500 } : null;     // o dano deste golpe chega logo depois
         // A receita da arma toca som, anima e devolve quando o golpe chega.
         // Se quem ataca ainda está andando, o golpe espera a chegada.
         const espera = (board?.fx.walkTimeLeft ?? 0);
@@ -1421,8 +1434,7 @@ class App {
               if (target.anim?.name === 'hurt') target.anim = null;
             }, 220);
           }
-          board?.floatText(target.pos, `-${Math.round(amount)}`, '#ff6a6a', amount >= 10);
-          board?.bump(0.22);
+          impactoDeDano(board, target, amount, this._critico?.alvo === target && Date.now() < this._critico.ate);
         });
         break;
       }
@@ -1446,7 +1458,9 @@ class App {
       case 'died': {
         const { target } = ev;
         this.atImpact(() => {
-          board?.floatText(target.pos, '✖', '#ff4b4b', true);
+          board?.floatText(target.pos, '✖', '#ff4b4b', true, { peso: 3 });
+          board?.bump(0.55);
+          board?.hitStop?.(170);
           // Esqueleto desmonta, gelatina derrete, espectro se dissipa. Um
           // respingo de sangue para os três joga fora metade do que o
           // bestiário conquistou — e esqueleto não sangra.
