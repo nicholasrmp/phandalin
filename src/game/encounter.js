@@ -137,7 +137,7 @@ export const MAPA_EMBOSCADA = {
 // é enxergado do outro lado dele.
 //
 // Mapa nosso, de teste: não é o esconderijo da aventura.
-export const MAPA_CAVERNA = [
+const CAVERNA_ASCII = [
   '###################',
   '#####........######',
   '####..........#####',
@@ -154,6 +154,11 @@ export const MAPA_CAVERNA = [
   '#####..........####',
   '###################',
 ];
+// Com os glifos de caverna (rocha, chão de caverna, estalagmite no lugar dos caixotes, entulho no lugar do mato) e a fogueira de
+// Droop de verdade, no nicho do norte. Antes era o ASCII de teste: chão verde, paredão roxo e a luz sem fogo.
+export const MAPA_CAVERNA = CAVERNA_ASCII.map((l, y) => [...l].map((c, x) => (
+  y === 1 && x === 10 ? 'F' : ({ '#': 'R', '.': '_', o: 'A', '~': 'x' }[c] ?? c))).join(''));
+
 
 // A RUA DE PHANDALIN (capítulo 3): a briga com os Marcarrubra. Uma rua de
 // terra entre casas de pedra e reboco; a taverna Gigante Adormecido fica ao
@@ -377,7 +382,12 @@ export function mapaDo(variante = 'padrao') {
   if (variante === 'caverna') {
     return {
       terreno: MAPA_CAVERNA,
-      altura: null,
+      // A rocha junto do chão sobe um nível (e a flag a desenha como parede de 3): sem altura, o paredão central era um piso roxo.
+      altura: MAPA_CAVERNA.map((l, y) => [...l].map((c, x) => (c !== 'R' ? '0' : [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => {
+        const v = MAPA_CAVERNA[y + dy]?.[x + dx];
+        return v && v !== 'R';
+      })) ? '1' : '0')).join('')),
+      paredeDeCaverna: true,
       grupo: [{ x: 7, y: 13 }, { x: 8, y: 13 }, { x: 6, y: 12 }, { x: 9, y: 12 }],
       olhar: { dx: 0, dy: -1 },
       luz: 'escuro',
