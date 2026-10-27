@@ -92,5 +92,8 @@
 #app.layout-livre .board-wrap { place-items: start; }
 #app.layout-livre .board-wrap > .board { margin: auto; }
 
-.faixa-prontos { font-size: 12px; color: var(--muted); align-self: center; }
-.faixa-prontos { white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.faixa-prontos { display: flex; gap: 4px 8px; flex-wrap: wrap; align-self: center; max-width: 340px; }
+.faixa-jogador { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: rgb(255 248 228 / 55%); border: 1px solid var(--gold-escuro); color: var(--ink); white-space: nowrap; }
+.faixa-jogador i, .partida-jogador i, .partida-heroi small i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1px solid rgb(0 0 0 / 45%); }
+.faixa-jogador.pronto { background: rgb(140 214 150 / 55%); }
+.faixa-jogador.ausente { opacity: .5; }

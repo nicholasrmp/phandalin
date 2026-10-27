@@ -134,3 +134,9 @@
 .narrativa-opcao.recusada { cursor: not-allowed; color: #8a8478; }
 .narrativa-opcao.recusada small { color: #9b4a3a; font-family: var(--font); font-size: 12px; }
 .narrativa-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* Quem decide, ou a votação: uma faixa que se lê de relance, no pé do pergaminho. */
+.narrativa-nota {
+  margin: 8px 0 0; padding: 6px 10px; font-size: 13px; font-weight: 600; color: var(--ink);
+  background: rgb(214 170 70 / 20%); border-left: 4px solid var(--gold); border-radius: 0 8px 8px 0;
+}

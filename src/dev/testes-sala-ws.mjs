@@ -313,6 +313,55 @@ await teste('a rota de código novo: o servidor sorteia o código (o limite por 
   for (let i = 0; i < 8; i += 1) assert.equal((await pedir()).status, 200, 'em desenvolvimento local não há limite');
 });
 
+await teste('B1: a taverna pública — o diretório indica a instância, os jogadores se encontram, sentam e o dono da mesa manda o convite', async () => {
+  const r = await fetch(`${HTTP}/api/taverna`);
+  if (r.status === 404) return;      // servidor antigo
+  assert.equal(r.status, 200);
+  const { codigo, nova } = await r.json();
+  assert.match(codigo, /^[A-HJKMNP-Z2-9]{6}$/);
+  // (Se uma execução anterior deixou a instância aberta, o diretório a indica de novo: então se entra em vez de criar.)
+  const a = await cliente(codigo, 'ana'); const b = await cliente(codigo, 'beto');
+  a.manda(nova ? { tipo: 'criar', nome: 'Ana', publica: true } : { tipo: 'entrar', nome: 'Ana' });
+  const va = await a.esperar((x) => x.tipo === 'sala');
+  assert.equal(va.visao.publica, true); assert.equal(va.visao.maxJogadores, 16); assert.equal(va.visao.mesas.length, 4);
+  await vez(200);
+  // Quem aperta o botão logo depois cai na MESMA instância.
+  const r2 = await (await fetch(`${HTTP}/api/taverna`)).json();
+  assert.equal(r2.codigo, codigo); assert.equal(r2.nova, false);
+  b.manda({ tipo: 'entrar', nome: 'Beto' });
+  const vb = await b.esperar((x) => x.tipo === 'sala' && x.visao.jogadores.some((j) => j.nome === 'Beto'));
+  b.manda({ tipo: 'sentar', mesa: 0 }); await vez(80); a.manda({ tipo: 'sentar', mesa: 0 });
+  const mesa = await a.esperar((x) => x.tipo === 'sala' && x.visao.mesas[0].lugares.length === 2);
+  assert.deepEqual(mesa.visao.mesas[0].lugares, [vb.visao.voce, va.visao.voce], 'o Beto sentou primeiro: é o dono');
+  a.manda({ tipo: 'abrir-mesa', codigo: 'ABC234' });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /dono da mesa/);
+  a.recebidas.length = 0;
+  b.manda({ tipo: 'abrir-mesa', codigo: 'ABC234' });
+  const conv = await a.esperar((x) => x.tipo === 'convite');
+  assert.deepEqual([conv.codigo, conv.de], ['ABC234', 'Beto']);
+  assert.equal(b.recebidas.some((x) => x.tipo === 'convite'), false, 'o dono não convida a si mesmo');
+  // Na taverna pública não há heróis nem partida.
+  a.manda({ tipo: 'pegar', heroi: 'pc-mago' });
+  assert.match((await a.esperar((x) => x.tipo === 'erro' && /taverna/.test(x.erro))).erro, /taverna pública/);
+  // Quem fecha a aba some da taverna.
+  b.fechar();
+  const saiu = await a.esperar((x) => x.tipo === 'sala' && !x.visao.jogadores.some((j) => j.nome === 'Beto'));
+  assert.ok(saiu.visao.jogadores.some((j) => j.nome === 'Ana'));
+});
+
+await teste('B1: só o servidor abre uma taverna pública, e uma sala comum não vira pública', async () => {
+  const comum = codigoNovo();
+  const a = await cliente(comum, 'ana');
+  a.manda({ tipo: 'criar', nome: 'Ana', publica: true });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /só o servidor/);
+  const r = await fetch(`${HTTP}/api/taverna`);
+  if (r.status === 404) return;
+  const { codigo } = await r.json();
+  const b = await cliente(codigo, 'beto');
+  b.manda({ tipo: 'criar', nome: 'Beto' });
+  assert.match((await b.esperar((x) => x.tipo === 'erro')).erro, /taverna pública|já existe/);
+});
+
 await teste('F4.4: o aviso do anfitrião chega só ao jogador certo, e a corda aparece na visão', async () => {
   const codigo = codigoNovo();
   const a = await cliente(codigo, 'anf'); const b = await cliente(codigo, 'beto');

@@ -68,7 +68,7 @@ export function identidade(bruto) {
  *   saiu      o id secreto de quem saiu por conta própria: fechar as conexões dele
  *   soEsta    "sair" de uma aba quando há outra aberta: só esta conexão fecha, o jogador fica
  */
-export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasConexoes = 0 }) {
+export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasConexoes = 0, podePublica = false }) {
   if (typeof bruto !== 'string') return { sala, resposta: erro('mensagem inválida'), mudou: false };
   if (tamanho(bruto) > MAX_BYTES) return { sala, resposta: erro('mensagem grande demais'), mudou: false };
   const msg = lerMensagem(bruto);
@@ -82,7 +82,9 @@ export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasCo
       if (sala.anfitriao === jogadorId) return tratarMensagem({ sala, jogadorId, bruto: JSON.stringify({ tipo: 'entrar', nome: msg.nome, persona: msg.persona }), codigo, agora, outrasConexoes });
       return { sala, resposta: erro('essa sala já existe: entre com o código'), mudou: false };
     }
-    const r = criarSala({ codigo, anfitriao: jogadorId, nome: msg.nome, maxJogadores: msg.maxJogadores ?? 4, origem: msg.origem, persona: msg.persona, agora });
+    // Só o servidor abre uma taverna pública (o diretório emitiu o código); e um código dele só abre taverna pública.
+    if (Boolean(msg.publica) !== podePublica) return { sala: null, resposta: erro(podePublica ? 'este código é de uma taverna pública' : 'só o servidor abre uma taverna pública'), mudou: false };
+    const r = criarSala({ codigo, anfitriao: jogadorId, nome: msg.nome, maxJogadores: msg.maxJogadores ?? 4, origem: msg.origem, persona: msg.persona, agora, publica: podePublica });
     if (!r.ok) return { sala: null, resposta: erro(r.erro), mudou: false };
     return { sala: r.sala, resposta: null, mudou: true };
   }
@@ -94,7 +96,7 @@ export function tratarMensagem({ sala, jogadorId, bruto, codigo, agora, outrasCo
 
   const r = aplicar(sala, jogadorId, msg, agora);
   if (!r.ok) return { sala, resposta: erro(r.erro), mudou: false };
-  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null, repassar: r.repassar ?? null, repassarA: r.repassarA ?? null };
+  return { sala, resposta: null, mudou: !r.igual, tipo: msg.tipo, removido: r.removido ?? null, saiu: r.saiu ?? null, repassar: r.repassar ?? null, repassarA: r.repassarA ?? null, convidar: r.convidar ?? null };
 }
 
 /** Janela deslizante: `true` se esta mensagem passa. `registro` é uma lista de instantes. */

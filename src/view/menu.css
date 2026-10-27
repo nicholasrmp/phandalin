@@ -609,3 +609,15 @@
   .menu-lobby .menu-rodape { margin: 0 -16px -16px; padding: 8px 16px 12px; }
   .menu-lobby .menu-rodape .menu-btn { flex: 1 1 40%; }
 }
+
+/* O lobby em duas colunas quando cabe: jogadores, corda e pendências à esquerda, os heróis à direita. */
+@media (min-width: 760px) {
+  .menu-quadro:has(.menu-lobby) { max-width: min(980px, 94vw); }
+  .menu-lobby { grid-template-columns: 270px minmax(0, 1fr); column-gap: 18px; align-items: start; }
+  .menu-lobby > * { grid-column: 1 / -1; }
+  .menu-lobby > .menu-lobby-jogadores, .menu-lobby > .menu-lobby-corda, .menu-lobby > .menu-pendencias { grid-column: 1; }
+  .menu-lobby > section:has(.menu-herois-sala) { grid-column: 2; grid-row: 3 / span 4; }
+  .menu-lobby > .menu-lobby-topo { grid-column: 1; }
+  .menu-lobby .menu-herois-sala { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+}
+.menu-pendencias { color: #8a4b2a; font-weight: 600; }

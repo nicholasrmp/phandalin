@@ -13,9 +13,17 @@ import { normalizarCodigo } from '../game/sala.js';
 
 export { SalaDO } from './sala-do.js';
 export { LimitadorDO } from './limitador-do.js';
+export { DiretorioDO } from './diretorio-do.js';
 
 const PREFIXO = '/api/sala/';
 const NOVA_SALA = '/api/nova-sala';
+const TAVERNA = '/api/taverna';
+
+const diretorio = (env) => env.DIRETORIO.get(env.DIRETORIO.idFromName('unico'));
+async function perguntarAoDiretorio(env, corpo) {
+  const r = await diretorio(env).fetch('https://diretorio/', { method: 'POST', body: JSON.stringify(corpo) });
+  return r.json();
+}
 
 /** O IP é do próprio computador (desenvolvimento)? Lá todos os jogadores de teste são o mesmo IP. */
 const ehLocal = (ip) => ip === 'local' || ip === '127.0.0.1' || ip === '::1';
@@ -47,6 +55,17 @@ export default {
       if (r.status === 429) return Response.json({ erro: 'salas novas demais; tente mais tarde' }, { status: 429, headers: { 'Retry-After': String(Math.ceil((r.dados.espera ?? 60_000) / 1000)) } });
       return r.dados.ok ? Response.json({ codigo: r.dados.codigo }) : new Response('erro', { status: 500 });
     }
+    // A taverna pública: a instância mais cheia que ainda tem vaga, ou uma nova (o diretório sorteia o código).
+    if (url.pathname === TAVERNA) {
+      if (request.method !== 'GET') return new Response('use GET', { status: 405 });
+      if (!origemPermitida(request, url)) return new Response('origem não permitida', { status: 403 });
+      try {
+        const lim = await perguntar(env, request, { op: 'entrar', codigo: 'TAVERN', contar: !ehLocal(ipDe(request)) });
+        if (lim.status === 429) return Response.json({ erro: 'devagar' }, { status: 429, headers: { 'Retry-After': String(Math.ceil((lim.dados.espera ?? 60_000) / 1000)) } });
+        const r = await perguntarAoDiretorio(env, { op: 'escolher' });
+        return Response.json({ codigo: r.codigo, nova: r.nova });
+      } catch { return new Response('erro', { status: 500 }); }
+    }
     if (!url.pathname.startsWith(PREFIXO)) return new Response('não encontrado', { status: 404 });
 
     let bruto;
@@ -66,10 +85,15 @@ export default {
     try { r = await perguntar(env, request, { op: 'entrar', codigo, contar: !ehLocal(ipDe(request)) }); } catch { r = { status: 200, dados: { ok: true, emitido: env.CODIGO_DO_SERVIDOR !== '1' } }; }
     if (r.status === 429) return new Response('devagar: conexões demais', { status: 429, headers: { 'Retry-After': String(Math.ceil((r.dados.espera ?? 60_000) / 1000)) } });
 
+    // Este código é de uma taverna pública que o diretório abriu? (A sala só aceita `criar` com `publica` se for.)
+    let publica = false;
+    try { publica = (await perguntarAoDiretorio(env, { op: 'conferir', codigo })).publica === true; } catch { /* sem diretório, é sala comum */ }
+
     const id = env.SALAS.idFromName(codigo);
     const pedido = new Request(request, { headers: new Headers(request.headers) });
     pedido.headers.set('x-sala', codigo);
     pedido.headers.set('x-emitido', r.dados.emitido ? '1' : '0');
+    pedido.headers.set('x-publica', publica ? '1' : '0');
     pedido.headers.set('x-exigir-emitido', env.CODIGO_DO_SERVIDOR === '1' ? '1' : '0');
     return env.SALAS.get(id).fetch(pedido);
   },

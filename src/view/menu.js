@@ -538,11 +538,13 @@ export function criarMenu(root, {
     abrirMesa: () => { abrir('lobby'); },
     /** "Sair" da taverna: o anfitrião não sai (a sala é dele), então vai à mesa de grupo, onde fecha com confirmação. */
     sairDaTaverna: () => {
-      if (sala?.souAnfitriao()) { abrir('lobby'); sala.avisar('O anfitrião fecha a sala em vez de sair: use "Fechar sala".'); return; }
+      if (sala?.souAnfitriao() && !sala.ehPublica()) { abrir('lobby'); sala.avisar('O anfitrião fecha a sala em vez de sair: use "Fechar sala".'); return; }
       sala?.sairDaSala();
       abrir();
     },
     sairDaSala: () => sala?.sairDaSala(),
+    /** B1: o dono de uma mesa da taverna pública abre a sala do grupo. */
+    abrirMesaPublica: () => sala?.abrirMesaPublica(),
     enviarSala: (msg) => sala?.mandar(msg),
     /** F4: o anfitrião publica a vista da partida para os outros jogadores. */
     enviarVista: (vista) => sala?.mandarVista(vista) ?? false,

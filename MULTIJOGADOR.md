@@ -251,6 +251,22 @@ Menu principal
   `LimitadorDO`). Com `CODIGO_DO_SERVIDOR = "1"` (`wrangler.toml`) só abre sala quem pediu o código ao servidor; desligado por
   padrão (desenvolvimento e testes). **Moderação é humana** (seção 15): nada aqui a substitui.
 
+- **A-11 · [feito, 2026-10-26] B1, a taverna pública.** Menu → Multijogador → **Taverna pública** (nome, sem código). O diretório
+  (`worker/diretorio.js`, `DiretorioDO`) manda o jogador para a instância **mais cheia que ainda tem vaga** (até 14 para quem chega;
+  a lotação é de 16: 8 cores × 2 formas de marcador), ou abre uma nova com código sorteado no servidor (`GET /api/taverna`). Só o
+  servidor abre uma taverna pública (`criar` com `publica`, e só com código do diretório). Nela só se anda, fala por **frases
+  prontas**, troca de persona e **senta nas 4 mesas de 4 lugares**; herói, pronto e partida são das salas privadas. Quem cai ou
+  sai some (as vagas não ficam presas) e o posto de anfitrião passa adiante, sem poderes. O **dono da mesa** (o primeiro a sentar)
+  aperta "Abrir a sala": pede um código ao servidor (`POST /api/nova-sala`, 6 por hora por IP), manda `abrir-mesa`, e a mesa toda
+  recebe um `convite` e entra sozinha na sala privada, que o dono cria (quem chega antes da sala abrir tenta de novo, 8 vezes).
+  Cada instância informa ao diretório quantos jogadores tem. **Não é o degrau B2:** não há contas, texto livre nem moderação.
+  Em `game/sala.js` (`publica`, `mesas`, `sentar`, `levantar`, `abrir-mesa`), `worker/*`, `view/taverna-tela.js`, `view/menu-sala.js`.
+- **A-12 · [feito, 2026-10-26] Layout da partida em sala.** A barra de cima do convidado tem uma linha (sala, **jogadores** com a
+  cor de cada um e ✓ de quem está pronto, e os botões, com os dois descansos num só "Descanso ▾") e uma de **cartões de herói**
+  (retrato, dono, vida, o que resta do turno; clicar no seu o seleciona). O anfitrião tem a mesma faixa de jogadores no topo. A
+  decisão ("quem decide" ou votação) é uma faixa no pé do pergaminho. O lobby da sala privada usa **duas colunas** (jogadores,
+  corda e pendências à esquerda; heróis à direita), e o que falta para iniciar fica à vista.
+
 ---
 
 ## 8. Regras dentro do jogo

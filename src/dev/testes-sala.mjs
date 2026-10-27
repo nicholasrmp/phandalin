@@ -18,6 +18,7 @@ import {
 import { problemasDeJson } from '../game/save.js';
 import { novoEstado as novoEstadoDeLimites, emitir as emitirCodigo, entrar as entrarNaSala, EMITIR_POR_HORA, TENTATIVAS_POR_MINUTO, VALIDADE_DO_CODIGO_MS } from '../worker/limites.js';
 import { criarEmissor, criarReceptor, lerDelta, COMPLETA_A_CADA } from '../game/partida-delta.js';
+import { novoDiretorio, escolher as escolherInstancia, registrar as registrarPopulacao, ehPublica as ehPublicaNoDiretorio, LOTACAO_PARA_NOVOS } from '../worker/diretorio.js';
 import { heroiQueSobra } from '../game/sala.js';
 import { escolhasConferidas } from '../game/nivel.js';
 import { diarioDe, diarioParaTela } from '../game/diario.js';
@@ -1614,6 +1615,98 @@ teste('o servidor aceita a diferença e só guarda a completa para quem entra', 
   const quebrada = JSON.stringify({ tipo: 'partida', vista: { v: 1, delta: true, base: 'x', seq: 2, variante: 'e', ordem: [], mudaram: [], removidos: [] } });
   assert.match(tratarVista({ sala: s, jogadorId: ANF, bruto: quebrada, agora: 5000 }).erro, /inválida/);
   assert.match(tratarVista({ sala: s, jogadorId: BETO, bruto: delta, agora: 5000 }).erro, /anfitrião/);
+});
+
+// ---- B1: a taverna pública -----------------------------------------------------------------------
+
+const publica = () => {
+  const r = criarSala({ codigo: 'PUBM22', anfitriao: ANF, nome: 'Ana', publica: true, agora: 0 });
+  assert.ok(r.ok);
+  return r.sala;
+};
+const IDS = Array.from({ length: 16 }, (_, i) => `jogador-pub-${String(i).padStart(3, '0')}`);
+
+teste('B1: a taverna pública comporta 16 avatares com marcadores diferentes, e a 17ª pessoa não entra', () => {
+  const s = publica();
+  assert.equal(s.maxJogadores, 16);
+  for (let i = 1; i < 16; i++) assert.ok(faz(s, IDS[i], { tipo: 'entrar', nome: `Jog ${i}` }).ok, `entrou ${i}`);
+  assert.equal(new Set(Object.values(s.avatares).map((a) => `${a.marcador}`)).size, 16, 'cada um com o seu marcador');
+  deve(faz(s, 'jogador-extra-017', { tipo: 'entrar', nome: 'Demais' }), /cheia/);
+  const v = visaoDaSala(s, IDS[3]);
+  assert.equal(v.publica, true);
+  assert.equal(v.mesas.length, 4);
+});
+
+teste('B1: na taverna pública só se anda, fala por emote, troca de persona e senta; herói e partida são de sala privada', () => {
+  const s = publica(); faz(s, BETO, { tipo: 'entrar', nome: 'Beto' });
+  for (const m of [{ tipo: 'pegar', heroi: 'pc-mago' }, { tipo: 'pronto', valor: true }, { tipo: 'iniciar' }, { tipo: 'corda', valor: 'unido' }, { tipo: 'remover', jogador: 'p2' }]) {
+    deve(faz(s, ANF, m), /taverna pública/);
+  }
+  assert.ok(faz(s, BETO, { tipo: 'emote', id: EMOTES[0].id }).ok);
+  assert.ok(faz(s, BETO, { tipo: 'persona', heroi: 'pc-mago' }).ok);
+});
+
+teste('B1: sentar, levantar e abrir a mesa: o dono manda o código e a mesa toda é convidada', () => {
+  const s = publica();
+  for (const id of [BETO, CAIO]) faz(s, id, { tipo: 'entrar', nome: id === BETO ? 'Beto' : 'Caio' });
+  assert.ok(faz(s, BETO, { tipo: 'sentar', mesa: 1 }).ok);
+  assert.ok(faz(s, CAIO, { tipo: 'sentar', mesa: 1 }).ok);
+  assert.ok(faz(s, ANF, { tipo: 'sentar', mesa: 1 }).ok);
+  assert.deepEqual(visaoDaSala(s, ANF).mesas[1].lugares, ['p2', 'p3', 'p1'], 'o primeiro a sentar é o dono');
+  deve(faz(s, ANF, { tipo: 'sentar', mesa: 9 }), /não existe/);
+  deve(faz(s, CAIO, { tipo: 'abrir-mesa', codigo: 'ABC234' }), /dono da mesa/);
+  deve(faz(s, BETO, { tipo: 'abrir-mesa', codigo: 'xx' }), /código inválido/);
+  // Sentar noutra mesa tira da primeira.
+  assert.ok(faz(s, ANF, { tipo: 'sentar', mesa: 2 }).ok);
+  assert.deepEqual(visaoDaSala(s, ANF).mesas[1].lugares, ['p2', 'p3']);
+  const r = faz(s, BETO, { tipo: 'abrir-mesa', codigo: 'abc234' });
+  assert.ok(r.ok);
+  assert.deepEqual(r.convidar, { codigo: 'ABC234', de: 'Beto', para: [CAIO] });
+  assert.deepEqual(visaoDaSala(s, ANF).mesas[1].lugares, [], 'a mesa esvazia');
+  // Mesa cheia.
+  const s2 = publica();
+  for (let i = 1; i < 5; i++) faz(s2, IDS[i], { tipo: 'entrar', nome: `J${i}` });
+  for (let i = 1; i < 5; i++) assert.ok(faz(s2, IDS[i], { tipo: 'sentar', mesa: 0 }).ok);
+  deve(faz(s2, ANF, { tipo: 'sentar', mesa: 0 }), /cheia/);
+});
+
+teste('B1: quem cai ou sai some da taverna pública (as vagas não ficam presas), e o posto de anfitrião passa adiante', () => {
+  const s = publica(); faz(s, BETO, { tipo: 'entrar', nome: 'Beto' });
+  faz(s, ANF, { tipo: 'sentar', mesa: 0 });
+  desconectar(s, ANF, 1000);
+  assert.equal(s.jogadores[ANF], undefined, 'saiu de vez');
+  assert.equal(s.anfitriao, BETO, 'o posto passou');
+  assert.deepEqual(visaoDaSala(s, BETO).mesas[0].lugares, []);
+  assert.ok(faz(s, ANF, { tipo: 'entrar', nome: 'Ana' }).ok, 'volta como um jogador novo');
+});
+
+teste('B1: criar uma taverna pública só vale com o código que o servidor abriu, e o código dele só abre taverna pública', () => {
+  const msg = (publicaMsg) => JSON.stringify({ tipo: 'criar', nome: 'Ana', ...(publicaMsg ? { publica: true } : {}) });
+  assert.ok(tratarMensagem({ sala: null, jogadorId: ANF, bruto: msg(true), codigo: 'PUBM22', agora: 0, podePublica: true }).sala.publica);
+  assert.match(tratarMensagem({ sala: null, jogadorId: ANF, bruto: msg(true), codigo: 'PUBM22', agora: 0 }).resposta.erro, /só o servidor/);
+  assert.match(tratarMensagem({ sala: null, jogadorId: ANF, bruto: msg(false), codigo: 'PUBM22', agora: 0, podePublica: true }).resposta.erro, /taverna pública/);
+});
+
+teste('diretório: manda para a instância mais cheia com vaga, abre outra quando enche, e só conhece o que abriu', () => {
+  const est = novoDiretorio();
+  let n = 0; const sorteio = (m) => (n++ * 5) % m;
+  const a = escolherInstancia(est, 1000, sorteio);
+  assert.ok(a.nova && normalizarCodigo(a.codigo));
+  assert.equal(escolherInstancia(est, 1500, sorteio).codigo, a.codigo, 'quem chega logo depois cai na mesma (recém-aberta)');
+  assert.ok(registrarPopulacao(est, 2000, a.codigo, 5));
+  const b = escolherInstancia(est, 3000, sorteio);
+  assert.equal(b.codigo, a.codigo); assert.equal(b.nova, false);
+  registrarPopulacao(est, 4000, a.codigo, LOTACAO_PARA_NOVOS);
+  const c = escolherInstancia(est, 5000, sorteio);
+  assert.ok(c.nova && c.codigo !== a.codigo, 'cheia: abre outra');
+  registrarPopulacao(est, 6000, c.codigo, 3);
+  registrarPopulacao(est, 6000, a.codigo, 10);
+  assert.equal(escolherInstancia(est, 7000, sorteio).codigo, a.codigo, 'a mais cheia que ainda cabe');
+  assert.ok(ehPublicaNoDiretorio(est, a.codigo) && !ehPublicaNoDiretorio(est, 'ZZZZZZ'));
+  assert.equal(registrarPopulacao(est, 8000, 'ZZZZZZ', 3), false, 'o diretório não aceita código que não abriu');
+  registrarPopulacao(est, 9000, a.codigo, 0); registrarPopulacao(est, 9000, c.codigo, 0);
+  escolherInstancia(est, 9000 + 700_000, sorteio);
+  assert.equal(ehPublicaNoDiretorio(est, a.codigo), false, 'instância vazia há muito tempo é esquecida');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

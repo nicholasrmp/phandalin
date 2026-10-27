@@ -42,7 +42,7 @@ export function urlDaSala(local, codigo) {
  * @param {(status: 'conectando'|'conectado'|'reconectando'|'caiu') => void} o.aoStatus
  */
 export function criarClienteDeSala({
-  WebSocketCtor, jogadorId, urlDe, aoVisao = () => {}, aoPartida = () => {}, aoNarrativa = () => {}, aoIntencao = () => {}, aoAviso = () => {}, aoAssumir = () => {}, aoErro = () => {}, aoFechar = () => {}, aoStatus = () => {},
+  WebSocketCtor, jogadorId, urlDe, aoVisao = () => {}, aoPartida = () => {}, aoNarrativa = () => {}, aoIntencao = () => {}, aoAviso = () => {}, aoConvite = () => {}, aoAssumir = () => {}, aoErro = () => {}, aoFechar = () => {}, aoStatus = () => {},
   agendar = (fn, ms) => setTimeout(fn, ms), cancelar = (id) => clearTimeout(id),
   repetir = (fn, ms) => setInterval(fn, ms), parar = (id) => clearInterval(id), relogio = () => Date.now(),
 }) {
@@ -89,6 +89,7 @@ export function criarClienteDeSala({
       else if (m?.tipo === 'narrativa') aoNarrativa(m.msg);
       else if (m?.tipo === 'aviso') aoAviso(m.texto);
       else if (m?.tipo === 'assumir') aoAssumir(m.save ?? null);
+      else if (m?.tipo === 'convite') aoConvite({ codigo: m.codigo, de: m.de });
       else if (m?.tipo === 'agir' || m?.tipo === 'resposta') aoIntencao(m);
       else if (m?.tipo === 'erro') { confirmado = true; aoErro(m.erro); }
       else if (m?.tipo === 'fechada') { encerrado = true; pararBatimento(); aoFechar(m.motivo ?? 'a sala foi fechada'); }

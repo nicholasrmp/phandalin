@@ -244,6 +244,7 @@ class App {
         // A taverna andável (T-01): o lobby de quem joga com amigos. Fala com o menu só por estes ganchos.
         taverna: criarTaverna({
           aoMesa: () => this.menu.abrirMesa(),
+          aoAbrirMesa: () => this.menu.abrirMesaPublica(),
           aoSair: () => this.menu.sairDaTaverna(),
           enviar: (msg) => this.menu.enviarSala(msg),
           aoCopiarLink: () => this.menu.linkDaSala(),
@@ -857,7 +858,22 @@ class App {
   }
 
   mostrarProntos() {
-    if (this.faixaDosProntos) this.faixaDosProntos.textContent = this.salaDaPartida && this.prontosDaCena?.size ? `Prontos para sair: ${this.textoDosProntos()}` : '';
+    // A faixa de jogadores do anfitrião: a cor de cada um (a do alfinete), o nome e ✓ de quem já está pronto para sair da cena.
+    const v = this.salaDaPartida?.visao;
+    const assin = JSON.stringify([v?.jogadores?.map((j) => [j.id, j.nome, j.conectado]), [...(this.prontosDaCena ?? [])], v?.voce]);
+    if (assin === this._assinProntos && this.faixaDosProntos?.childElementCount !== undefined) { if (this.botaoPronto) this.botaoPronto.classList.toggle('aberto', Boolean(this.prontosDaCena?.has(v?.voce))); return; }
+    this._assinProntos = assin;
+    if (this.faixaDosProntos) {
+      this.faixaDosProntos.replaceChildren(...(v?.jogadores ?? []).map((j, i) => {
+        const li = document.createElement('span');
+        li.className = `faixa-jogador${j.conectado ? '' : ' ausente'}${this.prontosDaCena?.has(j.id) ? ' pronto' : ''}`;
+        li.title = `${j.nome}${j.id === v.voce ? ' (você)' : ''}${this.prontosDaCena?.has(j.id) ? ' — pronto para sair' : ''}`;
+        const ponto = document.createElement('i');
+        ponto.style.background = CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length];
+        li.append(ponto, `${j.nome}${this.prontosDaCena?.has(j.id) ? ' ✓' : ''}`);
+        return li;
+      }));
+    }
     if (this.botaoPronto) this.botaoPronto.classList.toggle('aberto', Boolean(this.prontosDaCena?.has(this.salaDaPartida?.visao?.voce)));
   }
 
@@ -2083,7 +2099,7 @@ class App {
     topoEsquerda.insertBefore(pronto, this.hud.banner);
     topoEsquerda.insertBefore(faixa, this.hud.banner);
     this.botaoPronto = pronto; this.faixaDosProntos = faixa;
-    setInterval(() => { pronto.hidden = !this.salaDaPartida; }, 1000);
+    setInterval(() => { pronto.hidden = !this.salaDaPartida; faixa.hidden = !this.salaDaPartida; this.mostrarProntos(); }, 1000);
   }
 
   // ---- botão direito ---------------------------------------------------------

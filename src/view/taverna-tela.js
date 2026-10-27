@@ -26,7 +26,7 @@ const MS_DO_BALAO = 4500;       // quanto tempo uma frase pronta fica sobre a ca
 const ALTURA_DA_PLACA = 78;   // do pé da figura até a placa do nome, em pixels do canvas
 const CASAS_POR_SEGUNDO = 1000 / MS_POR_CASA;
 
-export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
+export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, aoCopiarLink }) {
   const campo = campoDaTaverna();
   const canvas = el('canvas', { class: 'board', 'aria-label': 'A taverna' });
   const quadro = el('div', { class: 'board-wrap taverna-quadro' }, canvas);
@@ -42,6 +42,8 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
     jogadores,
     el('div', { class: 'taverna-acoes' }, botaoPersona, botaoMesa,
       el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair')));
+  // B1, a taverna pública: as mesas de quatro lugares. Sentar não vale nada além de formar o grupo; o dono da mesa a abre.
+  const mesas = el('div', { class: 'taverna-mesas', role: 'group', 'aria-label': 'Mesas', hidden: true });
   // As frases prontas (T-14): botões embaixo do quadro; o balão aparece sobre a cabeça de quem falou.
   const frases = el('div', { class: 'taverna-frases', role: 'group', 'aria-label': 'Frases prontas' },
     ...EMOTES.map((e) => el('button', {
@@ -71,7 +73,7 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
     toblen.querySelector('button')?.focus();
   }
   quadro.append(toblen);
-  const camada = el('div', { class: 'taverna', role: 'region', 'aria-label': 'Taverna' }, topo, personas, quadro, frases, aviso);
+  const camada = el('div', { class: 'taverna', role: 'region', 'aria-label': 'Taverna' }, topo, personas, quadro, mesas, frases, aviso);
 
   // O encontro que nunca começa: só serve para o `Board` ter o que desenhar.
   const enc = new Encounter({ battlefield: campo, party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
@@ -181,7 +183,7 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
       encounter: enc,
       onTileClick: (t) => {
         if (!visao || visao.fase !== 'lobby') return;
-        if (ehMesaDeGrupo(t.x, t.y)) { aoMesa(); return; }
+        if (ehMesaDeGrupo(t.x, t.y)) { if (visao.publica) { mesas.scrollIntoView?.({ block: 'nearest' }); return; } aoMesa(); return; }
         if (ehBalcao(t.x, t.y)) { abrirToblen(); return; }
         enviar({ tipo: 'mover', x: t.x, y: t.y });
       },
@@ -291,18 +293,43 @@ export function criarTaverna({ aoMesa, aoSair, enviar, aoCopiarLink }) {
     return rosto;
   }
 
+  /** As mesas da taverna pública: quem está sentado (o primeiro é o dono), sentar, levantar e abrir a sala do grupo. */
+  function desenharMesas() {
+    mesas.hidden = !visao.publica;
+    if (!visao.publica) { mesas.replaceChildren(); return; }
+    const nomeDe = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
+    const minhaMesa = visao.mesas.findIndex((m) => m.lugares.includes(visao.voce));
+    mesas.replaceChildren(...visao.mesas.map((m, i) => {
+      const sou = minhaMesa === i;
+      const dono = m.lugares[0] === visao.voce;
+      return el('div', { class: `taverna-mesa${sou ? ' minha' : ''}` },
+        el('strong', {}, `Mesa ${i + 1}`),
+        el('span', { class: 'taverna-lugares' }, m.lugares.length ? m.lugares.map((p, k) => `${nomeDe(p)}${k === 0 ? ' ★' : ''}`).join(', ') : 'vazia', el('small', {}, ` ${m.lugares.length}/4`)),
+        sou
+          ? el('span', { class: 'taverna-mesa-acoes' },
+            dono ? el('button', { class: 'menu-btn primario', title: 'Abre a sala privada do grupo e leva a mesa toda', onclick: () => { audio.play('click'); aoAbrirMesa(); } }, 'Abrir a sala') : null,
+            el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); enviar({ tipo: 'levantar' }); } }, 'Levantar'))
+          : el('button', { class: 'menu-btn', disabled: m.lugares.length >= 4, onclick: () => { audio.play('click'); enviar({ tipo: 'sentar', mesa: i }); } }, m.lugares.length >= 4 ? 'Cheia' : 'Sentar'));
+    }));
+  }
+
   function desenharPainel() {
-    codigo.textContent = visao.codigo;
+    codigo.textContent = visao.publica ? 'pública' : visao.codigo;
+    botaoMesa.hidden = Boolean(visao.publica);
     const minha = visao.avatares.find((a) => a.id === visao.voce);
     // O cabeçalho e o seletor só se refazem quando algo que eles mostram mudou: refazer a cada passo de
     // qualquer jogador jogava o foco do teclado para fora do botão e redesenhava os retratos à toa.
-    const assinatura = JSON.stringify([visao.avatares.map((a) => [a.id, a.nome, a.conectado, a.marcador]), visao.voce, minha?.persona]);
+    const assinatura = JSON.stringify([visao.avatares.map((a) => [a.id, a.nome, a.conectado, a.marcador]), visao.voce, minha?.persona, visao.mesas]);
     if (assinatura === assinaturaDoPainel) return;
     assinaturaDoPainel = assinatura;
-    jogadores.replaceChildren(...visao.avatares.map((a) => el('li', { class: `taverna-jogador${a.conectado ? '' : ' ausente'}` },
+    // Uma taverna pública tem até 16 pessoas: a faixa mostra só quantas, e os nomes aparecem nas placas do salão.
+    if (visao.publica) {
+      jogadores.replaceChildren(el('li', { class: 'taverna-jogador', title: visao.avatares.map((a) => a.nome).join(', ') }, `${visao.avatares.length} na taverna`));
+    } else jogadores.replaceChildren(...visao.avatares.map((a) => el('li', { class: `taverna-jogador${a.conectado ? '' : ' ausente'}` },
       el('span', { class: `taverna-marca forma-${FORMAS_DO_MARCADOR[a.marcador.forma]}`, style: { background: CORES_DO_MARCADOR[a.marcador.cor] }, 'aria-hidden': 'true' }),
       el('span', {}, a.nome, a.id === visao.voce ? ' (você)' : ''),
       a.conectado ? null : el('small', {}, 'desconectado'))));
+    desenharMesas();
     const foco = document.activeElement?.dataset?.persona;
     personas.replaceChildren(...HEROIS_COM_ARTE.map((id) => {
       const h = HEROIS.find((x) => x.id === id);

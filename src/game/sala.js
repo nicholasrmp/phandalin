@@ -58,6 +58,12 @@ export const MS_POR_CASA = 200;
 
 export const TAMANHO_DO_GRUPO = 4;
 export const MAX_JOGADORES = 4;
+/** B1, a taverna pública: uma instância comporta até 16 avatares (8 cores × 2 formas de marcador), sentados em mesas de 4. */
+export const MAX_PUBLICA = 16;
+export const MESAS_DA_TAVERNA = 4;
+export const LUGARES_DA_MESA = 4;
+/** O que se faz numa taverna pública: andar, falar por emote, trocar de persona e sentar nas mesas. Herói, grupo e partida são das salas privadas. */
+export const TIPOS_DA_PUBLICA = ['entrar', 'sair', 'mover', 'emote', 'persona', 'sentar', 'levantar', 'abrir-mesa'];
 export const MAX_NOME = 24;
 export const MAX_REMOVIDOS = 32;
 export const PILOTO = 'piloto';
@@ -184,12 +190,13 @@ export function figuraDe(sala, jogadorId) {
  * `origem` é `{ tipo: 'nova', aventura }` ou `{ tipo: 'save', aventura, resumo }`
  * (a aventura vem do save; o save em si fica com o anfitrião, que roda o jogo).
  */
-export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORES, origem, persona, agora }) {
+export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORES, origem, persona, agora, publica = false }) {
+  if (publica) maxJogadores = MAX_PUBLICA;
   if (!normalizarCodigo(codigo)) return { ok: false, erro: 'código inválido' };
   if (!idValido(anfitriao)) return { ok: false, erro: 'jogador inválido' };
   const nomeLimpo = limparNome(nome);
   if (!nomeLimpo) return { ok: false, erro: 'nome inválido' };
-  if (!Number.isInteger(maxJogadores) || maxJogadores < 1 || maxJogadores > MAX_JOGADORES) return { ok: false, erro: 'número de jogadores inválido' };
+  if (!Number.isInteger(maxJogadores) || maxJogadores < 1 || maxJogadores > (publica ? MAX_PUBLICA : MAX_JOGADORES)) return { ok: false, erro: 'número de jogadores inválido' };
   const o = origem ?? { tipo: 'nova', aventura: 'mina-perdida' };
   if (!['nova', 'save'].includes(o.tipo) || typeof o.aventura !== 'string' || o.aventura.length > 40) return { ok: false, erro: 'aventura inválida' };
   const sala = {
@@ -215,6 +222,11 @@ export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORE
     removidos: [],
     vaziaDesde: null,
   };
+  if (publica) {
+    sala.publica = true;
+    // As mesas: quem se senta, em ordem; o primeiro é o dono da mesa e a abre quando o grupo está pronto.
+    sala.mesas = Array.from({ length: MESAS_DA_TAVERNA }, () => ({ lugares: [] }));
+  }
   nascer(sala, anfitriao, persona, agora);
   return { ok: true, sala };
 }
@@ -304,7 +316,7 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     if (sala.ordem.length >= sala.maxJogadores) return recusa('a sala está cheia');
     // Um jogador novo diminui o limite de todos: se alguém já segura mais do que sobraria, não cabe (só no lobby: na partida, ninguém perde herói).
     const limiteDepois = TAMANHO_DO_GRUPO - sala.ordem.length;
-    if (sala.fase === 'lobby' && jogadoresPresentes(sala).some((j) => heroisDe(sala, j.id).length > limiteDepois)) {
+    if (sala.fase === 'lobby' && !sala.publica && jogadoresPresentes(sala).some((j) => heroisDe(sala, j.id).length > limiteDepois)) {
       return recusa('um jogador está com heróis demais: peça para ele soltar um antes de entrar mais gente');
     }
     sala.ordem.push(jogadorId);
@@ -323,11 +335,12 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
   }
 
   if (!eu) return recusa('você não está nesta sala');
+  if (sala.publica && !TIPOS_DA_PUBLICA.includes(mensagem.tipo)) return recusa('isso não vale na taverna pública: sente numa mesa e abra uma sala');
 
   switch (mensagem.tipo) {
     case 'sair': {
       // O anfitrião é a sala: se for embora, ela fecha (ou ele passa o posto... o que a F6 resolve).
-      if (jogadorId === sala.anfitriao) return recusa('o anfitrião não sai: feche a sala');
+      if (jogadorId === sala.anfitriao && !sala.publica) return recusa('o anfitrião não sai: feche a sala');
       saiu(sala, jogadorId, agora);
       return ok({ saiu: jogadorId });
     }
@@ -344,6 +357,31 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       av.x = x; av.y = y;
       av.livreEm = agora + (caminho.length - 1) * MS_POR_CASA;   // só anda de novo quando esta caminhada acabar
       return ok();
+    }
+    // As mesas da taverna pública: sentar, levantar e abrir a mesa (o dono dela manda o código da sala privada, que o servidor emitiu).
+    case 'sentar': {
+      const m = sala.mesas?.[mensagem.mesa];
+      if (!m) return recusa('essa mesa não existe');
+      if (m.lugares.includes(jogadorId)) return ok({ igual: true });
+      if (m.lugares.length >= LUGARES_DA_MESA) return recusa('a mesa está cheia');
+      for (const outra of sala.mesas) outra.lugares = outra.lugares.filter((x) => x !== jogadorId);
+      m.lugares.push(jogadorId);
+      return ok();
+    }
+    case 'levantar': {
+      const m = sala.mesas?.find((x) => x.lugares.includes(jogadorId));
+      if (!m) return ok({ igual: true });
+      m.lugares = m.lugares.filter((x) => x !== jogadorId);
+      return ok();
+    }
+    case 'abrir-mesa': {
+      const m = sala.mesas?.find((x) => x.lugares[0] === jogadorId);
+      if (!m) return recusa('só o dono da mesa a abre');
+      const codigo = normalizarCodigo(mensagem.codigo);
+      if (!codigo) return recusa('código inválido');
+      const para = m.lugares.filter((x) => x !== jogadorId);
+      m.lugares = [];
+      return ok({ convidar: { codigo, de: eu.nome, para } });
     }
     case 'emote': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
@@ -612,8 +650,11 @@ function saiu(sala, id, agora) {
     delete sala.avatares[id];
     sala.ordem = sala.ordem.filter((x) => x !== id);
     desfazerProntos(sala);
+    for (const m of sala.mesas ?? []) m.lugares = m.lugares.filter((x) => x !== id);
+    // Numa taverna pública ninguém é dono: o posto passa a quem está há mais tempo.
+    if (sala.publica && sala.anfitriao === id && sala.ordem.length) sala.anfitriao = sala.ordem[0];
   }
-  if (sala.lider === id) sala.lider = sala.anfitriao;
+  if (sala.lider === id || !jogadorDe(sala, sala.lider)) sala.lider = sala.anfitriao;
   atualizarVazia(sala, agora);
 }
 
@@ -648,6 +689,8 @@ export function atualizarVazia(sala, agora) {
  * aba): a conta de "sala vazia" é refeita de qualquer jeito.
  */
 export function desconectar(sala, jogadorId, agora) {
+  // Taverna pública: quem cai some (as 16 vagas não ficam presas a abas fechadas); ao voltar, entra de novo.
+  if (sala.publica && jogadorDe(sala, jogadorId)) { saiu(sala, jogadorId, agora); return; }
   const j = jogadorDe(sala, jogadorId);
   if (j) { j.conectado = false; j.pronto = false; }
   if (jogadorId === sala.anfitriao && sala.fase === 'iniciada') sala.anfitriaoAusenteDesde ??= agora;
@@ -676,6 +719,8 @@ export function visaoDaSala(sala, paraJogador) {
     anfitriao: pubDe(sala.anfitriao),
     lider: pubDe(sala.lider),
     corda: sala.corda ?? PADRAO_DA_CORDA,
+    publica: Boolean(sala.publica),
+    mesas: sala.publica ? sala.mesas.map((m) => ({ lugares: m.lugares.map((id) => jogadorDe(sala, id)?.pub).filter(Boolean) })) : null,
     voce: jogadorDe(sala, paraJogador)?.pub ?? null,
     jogadores: jogadoresPresentes(sala).map((j) => ({
       id: j.pub, nome: j.nome, conectado: j.conectado, pronto: j.pronto, herois: heroisDe(sala, j.id),

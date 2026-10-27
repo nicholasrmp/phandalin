@@ -18,6 +18,7 @@ import { possoEscolher } from '../game/decisao.js';
 import { abrirTelaVila } from './vila.js';
 import { abrirMenuContexto } from './menu-contexto.js';
 import { diarioParaTela } from '../game/diario.js';
+import { makePortrait } from '../art/sheet.js';
 import { telaDoCartao } from './nivel-tela.js';
 import { telaDoDescansoRemoto } from './descanso-tela.js';
 import { abrirLojaLocal } from './loja.js';
@@ -42,19 +43,26 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const titulo = el('span', { class: 'partida-titulo' }, 'Partida');
   const fase = el('span', { class: 'partida-fase' });
   const aviso = el('p', { class: 'taverna-aviso visivel', role: 'status' }, 'Esperando o anfitrião mostrar a partida…');
-  const grupo = el('ul', { class: 'taverna-jogadores', 'aria-label': 'Quem joga com quem' });
+  const grupo = el('ul', { class: 'partida-herois', 'aria-label': 'Os heróis do grupo' });
+  const jogadoresEl = el('ul', { class: 'partida-jogadores', 'aria-label': 'Quem está na sala' });
+  const retratos = new Map();    // look -> endereço da imagem (o retrato é desenhado uma vez)
   const barraEm = hud?.barra?.parentNode ?? null;   // onde a barra de ações mora quando não há partida de sala
   const lugarDaBarra = el('div', { class: 'partida-barra' });
   const terminar = el('button', { class: 'menu-btn primario', hidden: true, onclick: () => { audio.play('click'); if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id }); } }, 'Terminar turno do herói');
   const fichaBtn = el('button', { class: 'menu-btn', hidden: true, title: 'A ficha e o inventário do seu herói', onclick: () => { audio.play('click'); abrirFicha(selecionado); } }, 'Ficha');
-  const descanso = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso curto (uma hora): o grupo vota', onclick: () => { audio.play('click'); enviar({ tipo: 'agir', acao: 'descanso' }); } }, 'Descanso rápido');
+  const descanso = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso curto (uma hora): o grupo vota', onclick: () => { audio.play('click'); menuDescanso.hidden = true; enviar({ tipo: 'agir', acao: 'descanso' }); } }, 'Descanso rápido');
   const diarioBtn = el('button', { class: 'menu-btn', title: 'Missões e pistas do grupo', onclick: () => { audio.play('click'); alternarPainel('diario'); } }, 'Diário');
   const registroBtn = el('button', { class: 'menu-btn', title: 'Rolagens e acontecimentos', onclick: () => { audio.play('click'); alternarPainel('registro'); } }, 'Registro');
-  const descansoLongo = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso longo (oito horas): o grupo vota', onclick: () => { audio.play('click'); enviar({ tipo: 'agir', acao: 'descanso', descanso: 'longo' }); } }, 'Descanso longo');
+  const descansoLongo = el('button', { class: 'menu-btn', hidden: true, title: 'Pede um descanso longo (oito horas): o grupo vota', onclick: () => { audio.play('click'); menuDescanso.hidden = true; enviar({ tipo: 'agir', acao: 'descanso', descanso: 'longo' }); } }, 'Descanso longo');
+  // Os dois descansos moram num só botão ("Descanso ▾"): a barra de cima fica curta.
+  const menuDescanso = el('div', { class: 'partida-menu-descanso', hidden: true }, descanso, descansoLongo);
+  const botaoDescanso = el('button', { class: 'menu-btn', hidden: true, 'aria-haspopup': 'true', title: 'Pede um descanso: o grupo vota', onclick: () => { audio.play('click'); menuDescanso.hidden = !menuDescanso.hidden; descanso.hidden = false; descansoLongo.hidden = false; } }, 'Descanso ▾');
+  const caixaDescanso = el('span', { class: 'partida-descanso' }, botaoDescanso, menuDescanso);
   const prontoBtn = el('button', { class: 'menu-btn', title: 'Marca que você não tem mais o que fazer nesta cena; as decisões de saída mostram quem está pronto', onclick: () => { audio.play('click'); prontoDaCena = !prontoDaCena; enviar({ tipo: 'agir', acao: 'pronto-cena', valor: prontoDaCena }); desenharPronto(); } }, 'Pronto');
   const camada = el('div', { class: 'taverna partida', role: 'region', 'aria-label': 'Partida' },
-    el('header', { class: 'taverna-topo' }, el('div', { class: 'taverna-sala' }, titulo, fase), grupo,
-      el('div', { class: 'taverna-acoes' }, prontoBtn, diarioBtn, registroBtn, fichaBtn, descanso, descansoLongo, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))),
+    el('header', { class: 'taverna-topo partida-topo' },
+      el('div', { class: 'partida-linha' }, el('div', { class: 'taverna-sala' }, titulo, fase), jogadoresEl,
+        el('div', { class: 'taverna-acoes' }, prontoBtn, diarioBtn, registroBtn, fichaBtn, caixaDescanso, terminar, el('button', { class: 'menu-btn', onclick: () => { audio.play('click'); aoSair(); } }, 'Sair'))), grupo),
     quadro, lugarDaBarra, aviso);
 
   let aberta = false;
@@ -519,16 +527,35 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       return visaoDaSala?.jogadores?.find((j) => j.id === pub)?.nome ?? (pub ? 'Piloto automático' : '');
     };
     const emLuta = Boolean(enc) && !enc.combatants.every((c) => c.side === 'party');
+    const corDe = (pub) => CORES_DOS_JOGADORES[Math.max(0, (visaoDaSala?.jogadores ?? []).findIndex((j) => j.id === pub)) % CORES_DOS_JOGADORES.length];
+    // Quem está na sala: a cor de cada um (a mesma do alfinete), o nome, e ✓ de quem já está pronto para sair da cena.
+    jogadoresEl.replaceChildren(...(visaoDaSala?.jogadores ?? []).map((j) => el('li', {
+      class: `partida-jogador${j.conectado ? '' : ' ausente'}${prontosDaCena.includes(j.id) ? ' pronto' : ''}`,
+      title: `${j.nome}${j.id === visaoDaSala.voce ? ' (você)' : ''}${j.conectado ? '' : ' — desconectado'}${prontosDaCena.includes(j.id) ? ' — pronto para sair' : ''}`,
+    }, el('i', { style: { background: corDe(j.id) } }), el('span', {}, j.nome), prontosDaCena.includes(j.id) ? el('b', {}, '✓') : null)));
     grupo.replaceChildren(...herois.map((c) => {
-      const meu = dono(c.id) && visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce;
-      // Em luta, o herói mostra o que ainda tem no turno: a marca ► é o que o próximo clique move.
-      const turno = emLuta && enc.side === 'party' ? (c.acted ? ' · turno encerrado' : ` · ação ${c.actionUsed ? 'usada' : 'livre'}, ${Math.max(0, c.movementLeftFt ?? 0)} ft`) : '';
-      return el('li', { class: 'taverna-jogador' },
-        el('span', {}, `${meu && c === selecionado ? '► ' : ''}${c.name}${dono(c.id) ? ` — ${dono(c.id)}` : ''}${prontosDaCena.includes(visaoDaSala?.herois?.[c.id]) ? ' ✓' : ''} · ${Math.max(0, c.hp)}/${c.maxHp} PV${meu ? turno : ''}`));
+      const pub = visaoDaSala?.herois?.[c.id];
+      const meu = Boolean(pub) && pub === visaoDaSala?.voce;
+      // Em luta, o herói mostra o que ainda tem no turno.
+      const turno = emLuta && enc.side === 'party' ? (c.acted ? 'turno encerrado' : `ação ${c.actionUsed ? 'usada' : 'livre'} · ${Math.max(0, c.movementLeftFt ?? 0)} ft`) : '';
+      if (!retratos.has(c.look)) { try { retratos.set(c.look, makePortrait(c.look, 28).toDataURL()); } catch { retratos.set(c.look, null); } }
+      const frac = Math.max(0, Math.min(1, c.hp / (c.maxHp || 1)));
+      return el('li', {
+        class: `partida-heroi${meu ? ' meu' : ''}${meu && c === selecionado ? ' selecionado' : ''}${c.hp <= 0 ? ' caido' : ''}`,
+        title: `${c.name}: ${Math.max(0, c.hp)}/${c.maxHp} PV${pub ? ` · ${dono(c.id)}` : ''}`,
+        onclick: meu ? () => selecionar(c) : null,
+      },
+      retratos.get(c.look) ? el('img', { src: retratos.get(c.look), alt: '', class: 'pixel' }) : el('span', { class: 'sem-retrato' }),
+      el('span', { class: 'partida-heroi-dados' },
+        el('strong', {}, c.name),
+        el('small', {}, pub ? el('i', { style: { background: corDe(pub) } }) : null, dono(c.id) || 'sem dono'),
+        el('span', { class: 'partida-vida' }, el('i', { style: { width: `${Math.round(frac * 100)}%` } })),
+        turno && meu ? el('small', {}, turno) : null),
+      el('span', { class: 'partida-pv' }, `${Math.max(0, c.hp)}/${c.maxHp}`));
     }));
     terminar.hidden = hud != null || !(emLuta && enc.side === 'party' && selecionado && !selecionado.acted);
-    descanso.hidden = emLuta || !enc;   // só explorando
-    descansoLongo.hidden = descanso.hidden;
+    botaoDescanso.hidden = emLuta || !enc;   // só explorando
+    if (botaoDescanso.hidden) menuDescanso.hidden = true;
     fichaBtn.hidden = !selecionado;
     fase.textContent = emLuta ? (enc.side === 'party' ? `Rodada ${enc.round}: vez do grupo` : 'Vez dos inimigos') : '';
   }

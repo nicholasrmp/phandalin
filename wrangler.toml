@@ -30,6 +30,11 @@ class_name = "SalaDO"
 name = "LIMITES"
 class_name = "LimitadorDO"
 
+# O diretório das tavernas públicas (B1): quais instâncias existem e quantos jogadores há em cada (src/worker/diretorio.js).
+[[durable_objects.bindings]]
+name = "DIRETORIO"
+class_name = "DiretorioDO"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SalaDO"]
@@ -40,6 +45,10 @@ new_sqlite_classes = ["LimitadorDO"]
 
 # "1": só abre sala quem pediu o código ao servidor (POST /api/nova-sala). Ligue ao abrir a taverna pública.
 # "0": o navegador sorteia o código (desenvolvimento e testes).
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["DiretorioDO"]
+
 [vars]
 CODIGO_DO_SERVIDOR = "0"
 

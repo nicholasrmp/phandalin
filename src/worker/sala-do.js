@@ -88,7 +88,8 @@ export class SalaDO extends DurableObject {
     }
     this.ctx.acceptWebSocket(servidor);
     // Com `CODIGO_DO_SERVIDOR`, só abre sala (`criar`) quem veio com um código que o servidor emitiu a este IP.
-    servidor.serializeAttachment({ codigo, jogadorId: null, podeCriar: request.headers.get('x-exigir-emitido') !== '1' || request.headers.get('x-emitido') === '1' });
+    const publica = request.headers.get('x-publica') === '1';
+    servidor.serializeAttachment({ codigo, jogadorId: null, publica, podeCriar: publica || request.headers.get('x-exigir-emitido') !== '1' || request.headers.get('x-emitido') === '1' });
     return new Response(null, { status: 101, webSocket: cliente });
   }
 
@@ -120,7 +121,7 @@ export class SalaDO extends DurableObject {
 
     await this.carregar();
     const outrasConexoes = this.ctx.getWebSockets().filter((w) => w !== ws && w.deserializeAttachment()?.jogadorId === jogadorId).length;
-    const r = tratarMensagem({ sala: this.sala, jogadorId, bruto: mensagem, codigo: anexo.codigo, agora, outrasConexoes });
+    const r = tratarMensagem({ sala: this.sala, jogadorId, bruto: mensagem, codigo: anexo.codigo, agora, outrasConexoes, podePublica: anexo.publica === true });
     if (r.sala !== this.sala) this.sala = r.sala;
     if (r.resposta) ws.send(JSON.stringify(r.resposta));
     // Intenção de quem não roda a partida (F4.3): vai ao anfitrião, que a aplica. Não muda o estado da sala.
@@ -143,6 +144,9 @@ export class SalaDO extends DurableObject {
     if (r.removido) this.derrubar(r.removido, 4000, 'removido da sala');
     if (r.saiu) this.derrubar(r.saiu, 1000, 'saiu');
     this.retransmitir();
+    // Abriu-se uma mesa da taverna pública: o dono mandou o código da sala privada, e a mesa toda é convidada.
+    for (const id of r.convidar?.para ?? []) this.enviarAoJogador(id, { tipo: 'convite', codigo: r.convidar.codigo, de: r.convidar.de });
+    this.informarPopulacao();
     this.entregarUltimaVista(ws, jogadorId, r.tipo);
     if (this.sala.fase === 'fechada') await this.encerrar();
     else await this.reagendar();
@@ -248,7 +252,16 @@ export class SalaDO extends DurableObject {
     desconectar(this.sala, jogadorId, Date.now());
     await this.guardar();
     this.retransmitir();
+    this.informarPopulacao();
     await this.reagendar();
+  }
+
+  /** Taverna pública: diz ao diretório quantos jogadores há (é o que o põe na fila de quem aperta "Taverna pública"). */
+  informarPopulacao() {
+    if (!this.sala?.publica || !this.env?.DIRETORIO) return;
+    const n = this.sala.fase === 'fechada' ? 0 : this.sala.ordem.length;
+    const d = this.env.DIRETORIO.get(this.env.DIRETORIO.idFromName('unico'));
+    this.ctx.waitUntil(d.fetch('https://diretorio/', { method: 'POST', body: JSON.stringify({ op: 'registrar', codigo: this.sala.codigo, n }) }).catch(() => {}));
   }
 
   /** Manda a cada conexão IDENTIFICADA a visão DELA (o `voce` muda de um para outro). */
@@ -272,6 +285,7 @@ export class SalaDO extends DurableObject {
 
   /** A sala fechou: avisa todos, e agenda a limpeza do armazenamento (o código volta a ficar livre). */
   async encerrar() {
+    this.informarPopulacao();      // taverna pública fechada: sai da fila do diretório
     for (const ws of this.ctx.getWebSockets()) {
       try { ws.send(JSON.stringify({ tipo: 'fechada', motivo: 'o anfitrião fechou a sala' })); ws.close(CODIGO_DE_FECHAMENTO, 'sala fechada'); } catch { /* já fechado */ }
     }

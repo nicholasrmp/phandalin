@@ -32,8 +32,11 @@ export function criarTelasDeSala({
 
   const link = (codigo) => `${local.origin}${local.pathname}?sala=${codigo}`;
 
-  function abrirSala(codigo, primeira) {
+  function abrirSala(codigo, primeira, { convite = null } = {}) {
     estado.cliente?.sair();
+    estado.convite = convite;
+    estado.reentrada = primeira.publica ? { codigo, nome: primeira.nome, criando: true, publica: true } : (reentradaPublica ? { codigo, nome: primeira.nome, criando: false, publica: true } : null);
+    reentradaPublica = false;
     estado.codigo = codigo; estado.visao = null; estado.aviso = null; estado.fechada = null; estado.status = 'conectando';
     estado.partidaIniciada = false;
     primeira = { ...primeira, persona: personaLembrada(storage, HEROIS_COM_ARTE) };
@@ -82,6 +85,13 @@ export function criarTelasDeSala({
       aoNarrativa: atual((msg) => partida?.aoNarrativa?.(msg)),
       aoIntencao: atual((msg) => partida?.aoIntencao?.(msg)),
       aoAviso: atual((texto) => partida?.aoAviso?.(texto)),
+      // B1: o dono da mesa abriu uma sala privada e convidou a mesa toda: vai-se para lá (a sala ainda pode estar abrindo: tenta de novo).
+      aoConvite: atual(({ codigo: novo, de }) => {
+        if (!estado.visao?.publica) return;
+        const nome = estado.nome;
+        sairDaSala();
+        entrarComTentativas(novo, nome, 8, `${de} abriu a mesa: entrando na sala dele…`);
+      }),
       aoAssumir: atual((save) => { estado.souAnfitriaoDaPartida = true; partida?.aoAssumir?.(save, estado.visao); }),
       aoErro: atual((t) => {
         // Em partida, a recusa do servidor ("esse herói não é seu") é uma frase na tela de quem joga, não no lobby.
@@ -89,6 +99,16 @@ export function criarTelasDeSala({
         estado.aviso = t;
         // Na taverna o erro é uma frase embaixo do salão ("devagar", "não dá para chegar lá").
         if (taverna?.aberta() && estado.visao) { taverna.avisar(t); setTimeout(() => taverna.avisar(null), 2500); estado.aviso = null; return; }
+        // B1: quem criou a taverna na mesma hora que outro (a instância já existe) simplesmente entra; quem foi convidado e chegou
+        // antes de a sala abrir tenta de novo.
+        // B1: o diretório indicou uma taverna que já não existe (dormiu e fechou): quem chegou a abre de novo.
+        if (!estado.visao && estado.reentrada && /não existe/.test(t) && !estado.reentrada.criando && estado.reentrada.publica) { const { codigo: c, nome } = estado.reentrada; abrirSala(c, { tipo: 'criar', nome, publica: true }); return; }
+        if (!estado.visao && estado.reentrada && /já existe/.test(t) && estado.reentrada.criando) { const { codigo: c, nome } = estado.reentrada; abrirSala(c, { tipo: 'entrar', nome }); return; }
+        if (!estado.visao && estado.convite && /não existe/.test(t) && estado.convite.restam > 0) {
+          const { codigo: c, nome } = estado.convite; estado.convite.restam -= 1;
+          setTimeout(() => { if (estado.convite && estado.codigo === c) abrirSala(c, { tipo: 'entrar', nome }, { convite: estado.convite }); }, 1000);
+          return;
+        }
         // Erro antes de a sala existir para este jogador (código que não existe, sala cheia, removido):
         // não há lobby a mostrar, e a conexão aberta não serve de nada.
         if (!estado.visao) { cliente.sair(); estado.status = 'recusada'; }
@@ -105,6 +125,45 @@ export function criarTelasDeSala({
     });
     estado.cliente = cliente;
     cliente.abrir(codigo, primeira);
+  }
+
+  /** Entra numa sala que talvez ainda esteja abrindo (o dono da mesa a cria ao mesmo tempo): tenta algumas vezes. */
+  function entrarComTentativas(codigo, nome, restam, frase) {
+    abrirSala(codigo, { tipo: 'entrar', nome }, { convite: { codigo, nome, restam } });
+    estado.aviso = frase;
+    ir('lobby');
+  }
+
+  /** B1: aperta "Taverna pública": o servidor indica a instância (a mais cheia com vaga) e se é preciso criá-la. */
+  let reentradaPublica = false;
+  async function entrarNaPublica() {
+    const nome = limparNome(valorDe('sala-nome'));
+    if (!nome) { ir.recado('Escreva o seu nome (até 24 letras).'); return; }
+    let r;
+    try { r = await fetch('/api/taverna'); } catch { r = null; }
+    if (!r || !r.ok) { ir.recado(r?.status === 429 ? 'Muita gente tentando ao mesmo tempo. Tente de novo em instantes.' : 'A taverna pública não está no ar agora.'); return; }
+    const { codigo, nova } = await r.json();
+    reentradaPublica = !nova;
+    abrirSala(codigo, nova ? { tipo: 'criar', nome, publica: true } : { tipo: 'entrar', nome });
+    ir('lobby');
+  }
+
+  /**
+   * B1: o dono da mesa abre a sala privada. O servidor emite o código (e limita quantas por IP); a mesa toda é convidada pela taverna
+   * e o dono cria a sala e sai da taverna.
+   */
+  async function abrirMesaPublica() {
+    const nome = estado.nome;
+    const novo = await pedirCodigo();
+    if (novo.erro) { estado.aviso = novo.erro; limparAvisoDepois(); redesenhar('lobby'); return; }
+    const codigo = novo.codigo ?? gerarCodigo((n) => aleatorioSeguro(n));
+    mandar({ tipo: 'abrir-mesa', codigo });
+    // O convite sai pela conexão da taverna: dá um instante para ele partir antes de a deixar.
+    setTimeout(() => {
+      sairDaSala();
+      abrirSala(codigo, { tipo: 'criar', nome, maxJogadores: 4, origem: { tipo: 'nova', aventura: 'mina-perdida' } });
+      ir('lobby');
+    }, 400);
   }
 
   function sairDaSala() {
@@ -176,6 +235,7 @@ export function criarTelasDeSala({
         cabecalho('Multijogador', 'Jogue com amigos: encontrem-se na taverna e sentem na mesa de grupo para escolher os heróis.'),
         dados?.recado && el('p', { class: 'menu-recado erro', role: 'status' }, dados.recado),
         el('div', { class: 'menu-cartoes' },
+          cartao('Taverna pública', 'Sem código: entre numa taverna com outros jogadores, sente numa mesa e abra a sala do grupo. Só frases prontas, sem texto livre.', () => ir('publicaEntrar')),
           cartao('Criar sala', 'Você é o anfitrião: escolhe quantos jogam e passa o código aos amigos.', () => ir('salaCriar')),
           cartao('Entrar numa sala', 'Com o código de seis letras ou o link que o anfitrião mandou.', () => ir('salaEntrar'))),
         recentes.length > 0 && el('section', { class: 'menu-recentes' },
@@ -225,6 +285,15 @@ export function criarTelasDeSala({
         campoDeTexto('Código da sala', { id: 'sala-codigo', valor: dados?.codigo ?? '', maximo: 6, dica: 'ABC234', maiusculo: true, aoEnter: entrar }),
         campoDeTexto('Seu nome', { id: 'sala-nome', valor: dados?.nome ?? nomeLembrado(storage), dica: 'Como os outros vão ver você', aoEnter: entrar }),
         el('div', { class: 'menu-rodape' }, voltarBtn(), botao('Entrar', entrar, { primario: true })));
+    },
+
+    publicaEntrar: (dados) => {
+      return el('div', {},
+        cabecalho('Taverna pública', 'Você aparece como o herói que escolher, com o seu nome e uma cor só sua. Não há texto livre: só as frases prontas.'),
+        dados?.recado && el('p', { class: 'menu-recado erro', role: 'status' }, dados.recado),
+        campoDeTexto('Seu nome', { id: 'sala-nome', valor: dados?.nome ?? nomeLembrado(storage), dica: 'Como os outros vão ver você', aoEnter: entrarNaPublica }),
+        el('p', { class: 'menu-nota' }, 'Você entra na taverna que já tem gente (até 16 por taverna). Na mesa de quatro lugares, o primeiro a sentar abre a sala do grupo.'),
+        el('div', { class: 'menu-rodape' }, voltarBtn(), botao('Entrar na taverna', entrarNaPublica, { primario: true })));
     },
 
     lobby: () => telaDoLobby(),
@@ -365,5 +434,5 @@ export function criarTelasDeSala({
   const mandarVista = (vista) => estado.cliente?.enviar({ tipo: 'partida', vista }) ?? false;
   /** Uma mensagem da partida (F4.3): a narrativa do anfitrião, a intenção de quem joga, a resposta do líder. Sem a trava de repetição. */
   const mandarCru = (msg) => estado.cliente?.enviar(msg) ?? false;
-  return { TELAS, abrirSala, sairDaSala, estado, lobbyAtivo, mandar, mandarVista, mandarCru, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
+  return { TELAS, abrirSala, abrirMesaPublica, ehPublica: () => Boolean(estado.visao?.publica), sairDaSala, estado, lobbyAtivo, mandar, mandarVista, mandarCru, dentroDeSala, souAnfitriao, avisar, copiarLink: () => copiar(link(estado.codigo)) };
 }
