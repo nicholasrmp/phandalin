@@ -27,6 +27,8 @@ class Audio {
     this.musicaUrl = null;
     this.musicaOpcoes = null;
     this.musica = null;
+    this.volumeMusica = 1;      // a música tem a SUA barra (Opções), multiplicada pelo volume geral
+    this.abafada = false;       // o menu aberto por cima da partida abaixa a música em vez de a parar
     this.amb = new Ambiente(this);      // o som de fundo de cada lugar e a tensão da luta (core/ambiente.js)
     this.load();
   }
@@ -36,6 +38,7 @@ class Audio {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
       if (typeof saved.volume === 'number') this.volume = saved.volume;
       if (typeof saved.muted === 'boolean') this.muted = saved.muted;
+      if (typeof saved.volumeMusica === 'number') this.volumeMusica = Math.max(0, Math.min(1, saved.volumeMusica));
     } catch {
       /* storage bloqueado: segue com o padrão */
     }
@@ -43,7 +46,7 @@ class Audio {
 
   save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ volume: this.volume, muted: this.muted }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ volume: this.volume, muted: this.muted, volumeMusica: this.volumeMusica }));
     } catch {
       /* sem storage, sem drama */
     }
@@ -69,7 +72,7 @@ class Audio {
     // (volume e mudo), mas liga direto na saída: se passasse pelo compressor
     // dos efeitos, cada golpe e cada grito faria a música abaixar e subir.
     this.musicaMestre = this.ctx.createGain();
-    this.musicaMestre.gain.value = this.muted ? 0 : this.volume;
+    this.musicaMestre.gain.value = this.muted ? 0 : this.volume * this.volumeMusica;
     this.musicaMestre.connect(this.ctx.destination);
     // Se o menu pediu música antes do primeiro clique, é agora que ela nasce.
     if (this.musicaUrl) this.tocarMusica(this.musicaUrl, this.musicaOpcoes ?? {});
@@ -86,7 +89,7 @@ class Audio {
     this.volume = Math.max(0, Math.min(1, v));
     this.muted = false;
     if (this.master) this.master.gain.value = this.volume;
-    if (this.musicaMestre) this.musicaMestre.gain.value = this.volume;
+    if (this.musicaMestre) this.musicaMestre.gain.value = this.volume * this.volumeMusica;
     this.amb.seguirVolume();
     this.save();
   }
@@ -94,10 +97,50 @@ class Audio {
   toggleMute() {
     this.muted = !this.muted;
     if (this.master) this.master.gain.value = this.muted ? 0 : this.volume;
-    if (this.musicaMestre) this.musicaMestre.gain.value = this.muted ? 0 : this.volume;
+    if (this.musicaMestre) this.musicaMestre.gain.value = this.muted ? 0 : this.volume * this.volumeMusica;
     this.amb.seguirVolume();
     this.save();
     return this.muted;
+  }
+
+  /** A barra de volume da MÚSICA (0 a 1), à parte do volume geral e dos efeitos. */
+  setVolumeMusica(v) {
+    this.volumeMusica = Math.max(0, Math.min(1, v));
+    if (this.musicaMestre) this.musicaMestre.gain.value = this.muted ? 0 : this.volume * this.volumeMusica;
+    this.save();
+  }
+
+  /** O menu por cima da partida: a música abaixa (e volta ao fechar), em vez de parar. */
+  abafarMusica(ligar) {
+    this.abafada = ligar;
+    const m = this.musica;
+    if (m) this.rampa(m.g.gain.value, ligar ? m.ganho * 0.2 : m.ganho, ligar ? 0.4 : 1.2);
+  }
+
+  /**
+   * Um TOQUE (vitória, derrota): um arquivo curto, uma vez só, por cima da música, que abaixa enquanto ele soa e volta depois.
+   * Sem arquivo ou sem `ctx` (nenhum gesto ainda), não faz nada.
+   */
+  toque(url, { ganho = 0.9 } = {}) {
+    if (!this.ctx || this.muted) return;
+    try {
+      const el = document.createElement('audio');
+      el.src = url;
+      el.preload = 'auto';
+      const no = this.ctx.createMediaElementSource(el);
+      const g = this.ctx.createGain();
+      g.gain.value = ganho;
+      no.connect(g).connect(this.musicaMestre);
+      const m = this.musica;
+      if (m) this.rampa(m.g.gain.value, m.ganho * 0.15, 0.3);
+      const fim = () => {
+        if (this.musica === m && m) this.rampa(m.g.gain.value, this.abafada ? m.ganho * 0.2 : m.ganho, 2.5);
+        setTimeout(() => { try { no.disconnect(); g.disconnect(); el.removeAttribute('src'); el.load(); } catch { /* já solto */ } }, 300);
+      };
+      el.addEventListener('ended', fim, { once: true });
+      el.addEventListener('error', fim, { once: true });
+      el.play().catch(fim);
+    } catch { /* o toque é enfeite: nunca derruba nada */ }
   }
 
   // ---- música -------------------------------------------------------------

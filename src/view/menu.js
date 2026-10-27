@@ -122,14 +122,15 @@ export function criarMenu(root, {
     if (naPartida) {
       fundo?.parar();
       fundoHost.replaceChildren();
-      // Em partida o menu é uma pausa, não a tela de título: nada de música.
-      audio.pararMusica(0.6);
+      // Em partida o menu é uma pausa, não a tela de título: a música da cena abaixa (e volta ao fechar).
+      audio.abafarMusica(true);
     } else {
       fundo ??= criarFundo();
       fundoHost.replaceChildren(fundo.canvas);
       fundo.iniciar();
       // Antes do primeiro clique isto só GUARDA o pedido; o navegador não deixa
       // tocar sem gesto, e `audio.unlock()` o cumpre no primeiro toque.
+      audio.abafarMusica(false);
       audio.tocarMusica(MUSICA_DO_TITULO);
       audio.ambiente(null, { fade: 1 });      // no título só a música
       audio.tensao(false);
@@ -150,7 +151,8 @@ export function criarMenu(root, {
     if (multijogador?.taverna?.aberta()) { multijogador.taverna.bloquear(false); setTimeout(() => multijogador.taverna.focarMesa(), 0); }
     // Sair do menu — para jogar ou para voltar à partida — encerra a música,
     // com fade, que é o que faz a entrada na aventura não ser um corte seco.
-    audio.pararMusica(1.6);
+    // Saiu do título para jogar: a música dele acaba. Voltando à partida, a da cena volta ao volume.
+    if (audio.abafada) audio.abafarMusica(false); else audio.pararMusica(1.6);
     fundo?.parar();
     camada.remove();
     aberto = false;
@@ -471,6 +473,13 @@ export function criarMenu(root, {
       type: 'range', min: 0, max: 100, step: 5, value: Math.round(audio.volume * 100),
       'aria-label': 'Volume',
     });
+    // A música tem a sua barra: o jogo é mais agradável com ela mais baixa que os efeitos.
+    const valorMusica = el('span', { class: 'menu-valor' });
+    const barraMusica = el('input', {
+      type: 'range', min: 0, max: 100, step: 5, value: Math.round(audio.volumeMusica * 100), 'aria-label': 'Volume da música',
+    });
+    barraMusica.addEventListener('input', () => { audio.setVolumeMusica(barraMusica.value / 100); valorMusica.textContent = `${barraMusica.value}%`; });
+    valorMusica.textContent = `${barraMusica.value}%`;
     const mudo = el('input', { type: 'checkbox' });
     mudo.checked = audio.muted;
     const atualizar = () => { valor.textContent = `${barra.value}%`; };
@@ -482,6 +491,7 @@ export function criarMenu(root, {
       cabecalho('Opções', 'Guardadas neste navegador.'),
       el('div', { class: 'menu-opcoes' },
         el('label', { class: 'menu-opcao' }, el('span', {}, 'Volume'), barra, valor),
+        el('label', { class: 'menu-opcao' }, el('span', {}, 'Música'), barraMusica, valorMusica),
         el('label', { class: 'menu-opcao' }, el('span', {}, 'Sem som'), mudo, el('span', { class: 'menu-valor' }, 'tecla M no jogo'))),
       el('div', { class: 'menu-rodape' }, voltarBtn()));
   }

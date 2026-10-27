@@ -16,6 +16,7 @@ import { Board } from './board.js';
 import { aplicarAparencia } from './ficha.js';
 import { makePortrait } from '../art/sheet.js';
 import { audio } from '../core/audio.js';
+import { tocarFaixa } from '../core/musica.js';
 import { Encounter } from '../rules/combat.js';
 import { makeRng } from '../core/rng.js';
 import { HEROIS_COM_ARTE, MS_POR_CASA, EMOTES } from '../game/sala.js';
@@ -357,6 +358,7 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
       parent.append(camada);
       aberta = true;
       audio.ambiente('taverna');      // burburinho, lareira e canecas
+      tocarFaixa(audio, 'taverna');
       assinaturaDoPainel = '';
       if (!board) criarBoard();
       ultimo = performance.now();
@@ -367,6 +369,7 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
       if (!aberta) return;
       aberta = false;
       audio.ambiente(null);
+      audio.pararMusica(1.5);
       cancelAnimationFrame(quadroDeAnimacao);
       camada.remove();
       for (const c of [...avatares.values()]) tirar(c);

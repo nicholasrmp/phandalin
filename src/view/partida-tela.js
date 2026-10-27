@@ -20,6 +20,7 @@ import { abrirMenuContexto } from './menu-contexto.js';
 import { diarioParaTela } from '../game/diario.js';
 import { makePortrait } from '../art/sheet.js';
 import { ambienteDaVariante } from '../core/ambiente.js';
+import { faixaAgora, tocarFaixa, tocarToque } from '../core/musica.js';
 import { estadoAparente } from '../game/interacoes.js';
 import { temEscuridaoEm, visaoDoGrupo } from '../rules/luz.js';
 import { telaDoCartao } from './nivel-tela.js';
@@ -90,11 +91,14 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   let selecionado = null;
   let baseCampo = null;
   let emModo = null;            // a ação da barra que espera um clique no tabuleiro (ataque, magia com alvo…)
+  let faixaTocando = null;        // a faixa de música que esta tela mandou tocar (para só trocar quando muda)
   const narrativas = new Map(); // id da narrativa aberta -> AbortController (o anfitrião a fecha por fora)
 
   function montar(v) {
     variante = v.variante;
     audio.ambiente(ambienteDaVariante(variante));
+    faixaTocando = faixaAgora({ variante });
+    tocarFaixa(audio, faixaTocando);
     const mapa = mapaDo(variante);
     baseCampo = montarCampo(mapa);      // o mapa como nasceu, para desfazer o que o anfitrião reverteu
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
@@ -557,6 +561,14 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     };
     const emLuta = Boolean(enc) && !enc.combatants.every((c) => c.side === 'party');
     audio.tensao(emLuta);      // o pulso grave da luta, também para quem só assiste
+    // A música acompanha: a de luta quando começa, a do mapa quando acaba (com o toque de vitória ou derrota, como para o anfitrião).
+    const faixa = faixaAgora({ variante, emLuta, combatentes: enc?.combatants });
+    if (faixa !== faixaTocando) {
+      const eraLuta = faixaTocando === 'luta' || faixaTocando === 'luta-chefe';
+      faixaTocando = faixa;
+      tocarFaixa(audio, faixa, { fade: emLuta ? 1.2 : 3 });
+      if (eraLuta && !emLuta) tocarToque(audio, herois.some((h) => !h.dead && h.hp > 0) ? 'vitoria' : 'derrota');
+    }
     const corDe = (pub) => CORES_DOS_JOGADORES[Math.max(0, (visaoDaSala?.jogadores ?? []).findIndex((j) => j.id === pub)) % CORES_DOS_JOGADORES.length];
     // Quem está na sala: a cor de cada um (a mesma do alfinete), o nome, e ✓ de quem já está pronto para sair da cena.
     jogadoresEl.replaceChildren(...(visaoDaSala?.jogadores ?? []).map((j) => el('li', {
@@ -676,7 +688,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     fechar() {
       if (!aberta) return;
       aberta = false;
-      audio.ambiente(null); audio.tensao(false);
+      audio.ambiente(null); audio.tensao(false); audio.pararMusica(1.2); faixaTocando = null;
       camada.remove();
       document.getElementById('app')?.classList.remove('explorando');
       painelAberto = null; painelEl?.remove(); painelEl = null;

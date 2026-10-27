@@ -15,6 +15,7 @@
 import './descanso-tela.css';
 import { el } from './hud.js';
 import { audio } from '../core/audio.js';
+import { comAcampamento } from '../core/musica.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
 import {
@@ -191,7 +192,11 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
  * @param {HTMLElement} root
  * @param {{ herois: object[], rng: object, titulo?: string, texto?: string[] }} o
  */
-export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curto', texto = null, automaticos = null, porta = null }) {
+export function descansoCurto(root, opcoes) {
+  return comAcampamento(audio, () => descansoCurtoSemMusica(root, opcoes));
+}
+
+async function descansoCurtoSemMusica(root, { herois, rng, titulo = 'Descanso curto', texto = null, automaticos = null, porta = null }) {
   const vivos = herois.filter((c) => !c.dead);
   const registro = [];
   // Numa sala (`porta`): cada jogador gasta os dados do SEU herói na tela dele; a do anfitrião mostra todos e só deixa mexer nos dele.
@@ -267,7 +272,11 @@ export async function descansoCurto(root, { herois, rng, titulo = 'Descanso curt
  * exaustão de quem descansou COM comida e bebida. Na viagem, quem passou o dia
  * sem comer dorme, mas não se recupera do cansaço.
  */
-export async function descansoLongoDoGrupo(root, { herois, titulo = 'Descanso longo', texto = null, alimentado = null, descansou = null }) {
+export function descansoLongoDoGrupo(root, opcoes) {
+  return comAcampamento(audio, () => descansoLongoSemMusica(root, opcoes));
+}
+
+async function descansoLongoSemMusica(root, { herois, titulo = 'Descanso longo', texto = null, alimentado = null, descansou = null }) {
   const vivos = herois.filter((c) => !c.dead);
   const antes = new Map(vivos.map((c) => [c, nivelDeExaustao(c)]));
   // `descansou` é a vigia do acampamento (`rules/acampamento.js`): quem passou

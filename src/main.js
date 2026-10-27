@@ -27,6 +27,7 @@ import { criarEmissor } from './game/partida-delta.js';
 import { criarPartidaTela } from './view/partida-tela.js';
 import { criarDicas } from './view/dicas.js';
 import { ambienteDaVariante } from './core/ambiente.js';
+import { faixaAgora, tocarFaixa, tocarToque } from './core/musica.js';
 import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
 import { criarCapitulo1 } from './game/capitulo1.js';
 import { criarCenaCaverna } from './game/cena-caverna.js';
@@ -306,6 +307,7 @@ class App {
     this.varianteAtual = variante;     // a partida da sala (F4) diz aos outros navegadores qual mapa montar
     audio.ambiente(ambienteDaVariante(variante));      // o som de fundo do lugar (core/ambiente.js)
     audio.tensao(false);
+    tocarFaixa(audio, faixaAgora({ variante }));        // a música do mapa (core/musica.js)
 
     // Campanha: os quatro heróis escolhidos, montados com o que o jogador
     // marcou na preparação (ou com a escolha automática). Arena: o grupo
@@ -1208,7 +1210,10 @@ class App {
   }
 
   onEvent(ev) {
-    if (ev.type === 'iniciativa') { this.dicar('combate', 1200); audio.tensao(true); }
+    if (ev.type === 'iniciativa') {
+      this.dicar('combate', 1200); audio.tensao(true);
+      tocarFaixa(audio, faixaAgora({ variante: this.varianteAtual, emLuta: true, combatentes: this.enc?.combatants }), { fade: 1.2 });
+    }
     else if (ev.type === 'attack' && ev.attacker?.side === 'party') this.dicar('golpe', 2200);
     else if (ev.type === 'spell' && ev.caster?.side === 'party') this.dicar('magia', 2200);
     else if (ev.type === 'downed' && ev.target?.side === 'party') this.dicar('queda', 1400);
@@ -1500,6 +1505,10 @@ class App {
         const outcome = ev.outcome;
         audio.tensao(false);
         setTimeout(() => audio.play(outcome === 'vitoria' ? 'victory' : 'defeat'), 500);
+        // A música da luta cede: a vitória volta à faixa do mapa (com o toque por cima); a derrota deixa só o toque.
+        if (outcome === 'vitoria') tocarFaixa(audio, faixaAgora({ variante: this.varianteAtual }), { fade: 3 });
+        else audio.pararMusica(2);
+        tocarToque(audio, outcome === 'vitoria' ? 'vitoria' : 'derrota');
         // Na campanha, o fim da luta é a próxima cena, não o fim do jogo.
         if (this.capitulo) setTimeout(() => this.capitulo?.fimDoCombate(outcome), 1400);
         break;
