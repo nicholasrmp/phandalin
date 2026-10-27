@@ -67,16 +67,43 @@ import { SKILL_NAME } from '../rules/abilities.js';
 import { previsaoDeTeste, melhorParaTeste, rolarTeste, ativaDe, entendeIdiomas, temMagia, sobZona, estaCativado, falaIdiomas } from '../rules/utilidade.js';
 import { noSobMagia } from './dialogo-magia.js';
 import { ctxDe, magiasNaConversa, conjurarNaConversa, sondar } from './magias-fora.js';
+import { opcoesComPerfil, textoDaOpcao } from './dialogo-perfil.js';
+import { extrasDoNpc } from './dialogos-extras.js';
 
 const comoLista = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const sinal = (n) => (n >= 0 ? `+${n}` : `${n}`);
 /** Chance de um teste: sem o 20 natural automático, que é só do ataque. */
 const chanceDoTeste = (bonus, cd) => Math.max(0, Math.min(1, (21 - (cd - bonus)) / 20));
 
+/**
+ * O que a OPÇÃO acrescenta ao teste, além do que o estado do grupo já dá.
+ *
+ * Existe porque isto não era repassado: a rolagem recebia `o.teste.vantagem` e
+ * a previsão da tela não, então em `capitulo2.js` e em `cena-caverna.js` — as
+ * duas opções do jogo com vantagem escrita na árvore — a etiqueta mostrava uma
+ * chance menor do que o dado de verdade tinha. Um ajudante só para os dois
+ * lugares não voltarem a divergir.
+ */
+const extraDoTeste = (teste) => ({
+  vantagem: Boolean(teste?.vantagem),
+  desvantagem: Boolean(teste?.desvantagem),
+});
+
 /** Quem rola o teste: o selecionado, ou o de melhor chance (com as magias) naquela perícia. */
 function quemRola(ctx, teste) {
+  if (teste.heroi) return teste.heroi;          // a opção por perfil: quem atende o perfil (e rola melhor) é quem fala
   if (teste.quem === 'selecionado' && ctx.falante) return ctx.falante;
-  return melhorParaTeste(ctx.estado, ctx.herois, teste.pericia, teste.cd, { npc: ctx.npc }).quem;
+  return melhorParaTeste(ctx.estado, ctx.herois, teste.pericia, teste.cd, { npc: ctx.npc, extra: extraDoTeste(teste) }).quem;
+}
+
+/** O melhor, entre `candidatos`, para o teste (quem tem a melhor chance). */
+function melhorEntre(ctx, candidatos, tst) {
+  let melhor = null;
+  for (const h of candidatos) {
+    const p = previsaoDeTeste(ctx.estado, ctx.herois, h, tst.pericia, tst.cd, { npc: ctx.npc, extra: extraDoTeste(tst) });
+    if (!melhor || p.chance > melhor.p.chance + 1e-9 || (Math.abs(p.chance - melhor.p.chance) < 1e-9 && p.bonus > melhor.p.bonus)) melhor = { h, p };
+  }
+  return melhor.h;
 }
 
 /** O contexto que as funções da árvore recebem. */
@@ -113,13 +140,16 @@ export async function conversar(app, npc, arvore, fora = null) {
   const ctx = contexto(app, npc, fora);
   const usadas = (ctx.flags[`dialogo:${npc.defId ?? npc.id ?? npc.name}:usadas`] ??= []);
   let id = arvore.inicio;
+  // As FALAS POR PERFIL (`dialogos-extras.js`): nós e opções acrescentados por NPC, sem mexer na árvore da cena.
+  const extras = extrasDoNpc(npc);
+  const nos = { ...arvore.nos, ...(extras.nos ?? {}) };
   let teste = null;
   // Depois de conjurar ou sondar, o mesmo nó volta: sem repetir a fala nem o `ao`.
   let repetindo = false;
   let extra = [];
 
   for (let passos = 0; passos < 200; passos++) {
-    const no0 = arvore.nos[id];
+    const no0 = nos[id];
     if (!no0) throw new Error(`diálogo: nó "${id}" não existe`);
     // As magias mudam o nó: a Zona da Verdade vira a mentira em verdade, o Cativar cala o grito.
     const no = noSobMagia(no0, { zona: ctx.zona(), cativado: ctx.cativado() });
@@ -143,8 +173,12 @@ export async function conversar(app, npc, arvore, fora = null) {
     }
 
     const visiveis = [];
-    no.opcoes.forEach((o, i) => {
-      const chave = `${id}:${i}`;
+    // As opções da árvore e as acrescentadas para este nó; as por perfil só valem para quem tem a raça, a classe ou o atributo.
+    const daArvore = no.opcoes.map((o, i) => ({ ...o, _i: i }));
+    const acrescentadas = (extras.porNo?.[id] ?? []).map((o, i) => ({ ...o, _i: `x${i}` }));   // a chave `uma` da acrescentada é a posição dela no `porNo`, não o tamanho da árvore (que muda de cena para cena)
+    const escolheMelhor = (candidatos, tst) => melhorEntre(ctx, candidatos, tst);
+    opcoesComPerfil([...daArvore, ...acrescentadas], ctx.herois, escolheMelhor).forEach((o) => {
+      const chave = `${id}:${o._i}`;
       if (o.uma && usadas.includes(chave)) return;
       const motivo = (o.zona && !ctx.zona() ? 'só sob a Zona da Verdade' : null) ?? o.requer?.(ctx) ?? null;
       if (motivo && o.oculta) return;
@@ -153,12 +187,12 @@ export async function conversar(app, npc, arvore, fora = null) {
       if (semMagia && o.oculta) return;
       if (o.teste) {
         const quem = quemRola(ctx, o.teste);
-        const p = previsaoDeTeste(ctx.estado, ctx.herois, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc });
+        const p = previsaoDeTeste(ctx.estado, ctx.herois, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc, extra: extraDoTeste(o.teste) });
         const marca = p.auto ? ' · cumprido' : p.vantagem ? ' · vantagem' : p.desvantagem ? ' · desvantagem' : '';
         detalhe = [detalhe, `${SKILL_NAME[o.teste.pericia]} CD ${o.teste.cd} · ${quem.name} ${sinal(p.bonus)}${marca} · ${Math.round(p.chance * 100)}%`]
           .filter(Boolean).join('] [');
       }
-      visiveis.push({ rotulo: o.texto, detalhe, motivo: motivo ?? (semMagia ? `precisa de ${o.magiaNome ?? o.magia}` : null), valor: { o, chave } });
+      visiveis.push({ rotulo: textoDaOpcao(o, { ...ctx, quem: o._falante ?? ctx.falante }), detalhe, motivo: motivo ?? (semMagia ? `precisa de ${o.magiaNome ?? o.magia}` : null), valor: { o, chave } });
     });
 
     // As magias de utilidade: conjurar na conversa e sondar a mente.
@@ -183,12 +217,13 @@ export async function conversar(app, npc, arvore, fora = null) {
     }
     if (!escolha?.o) return 'saiu';
     const { o, chave } = escolha;
+    ctx.quem = o._falante ?? ctx.falante;            // quem falou (a opção por perfil) vale nas falas seguintes (`ctx.quem.name`)
     if (o.uma) usadas.push(chave);
     o.efeito?.(ctx);
 
     if (o.teste) {
       const quem = quemRola(ctx, o.teste);
-      const r = rolarTeste(ctx.estado, ctx.herois, ctx.enc.rng, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc, vantagem: Boolean(o.teste.vantagem) });
+      const r = rolarTeste(ctx.estado, ctx.herois, ctx.enc.rng, quem, o.teste.pericia, o.teste.cd, { npc: ctx.npc, ...extraDoTeste(o.teste) });
       const passou = r.passou;
       teste = { quem: quem.name, pericia: SKILL_NAME[o.teste.pericia], total: r.total, cd: o.teste.cd, passou, fontes: r.fontes };
       ctx.enc.say('acao', `${quem.name} · ${SKILL_NAME[o.teste.pericia]}: ${r.total} contra CD ${o.teste.cd} — ${passou ? 'sucesso' : 'falha'}${r.fontes.length ? ` (${r.fontes.join('; ')})` : ''}`);

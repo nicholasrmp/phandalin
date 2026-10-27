@@ -551,6 +551,12 @@ export function criarMansao(app, config) {
           fala: '…um aqui mente com a boca… outro mente com as mãos… o olho sabe o que cada um guarda e não conta. Ainda. Dá comida e o olho esquece.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
+        // A ameaça que não pegou: a conversa acaba e a luta começa (a opção apontava para um nó que não existia).
+        luta: {
+          narra: 'O olho se estreita, e o corpo magro se desenrola de trás da coluna.',
+          fala: '…ameaça… o olho não gosta de ameaça…',
+          fim: 'luta',
+        },
         desconfia: {
           fala: '…promessa não enche barriga… o mago também prometeu…',
           opcoes: [
@@ -948,7 +954,11 @@ export function criarMansao(app, config) {
         opcoes: [{ texto: '…', vai: 'oi' }],
       },
       castelo: {
-        ao: () => { (camp.vila?.pistas ?? []).push('Droop não sabe o caminho do Castelo Dentefino — sempre andou atrás dos outros —, mas jura que goblins de lá rondam Phandalin, e que um deles, pego vivo, saberia. Fica para o norte, mata adentro.'); },
+        ao: () => {
+          const pistas = camp.vila?.pistas ?? [];
+          const t = 'Droop não sabe o caminho do Castelo Dentefino — sempre andou atrás dos outros —, mas jura que goblins de lá rondam Phandalin, e que um deles, pego vivo, saberia. Fica para o norte, mata adentro.';
+          if (!pistas.includes(t)) pistas.push(t);
+        },
         fala: 'Droop andava atrás, sempre atrás, olhando o chão! Droop não sabe o caminho. Mas os Dentefino vêm farejar a vila, Droop viu. Pega um, aperta, ele fala. É para cima, para onde a mata fica escura.',
         opcoes: [{ texto: '…', vai: 'oi' }],
       },
