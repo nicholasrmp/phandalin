@@ -90,6 +90,9 @@ FILEIRAS = [
     ('conchas', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [9, 10]),
     ('fungos', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [11, 12, 13]),
     ('aguaEscura', 'ladrilhos-pro/3f925c44-c4d6-476e-bc04-8efae0ade1fa', [14, 15]),
+    # O TOPO DA PAREDE DE CAVERNA da Onda Eco: a rocha do resto do jogo, sem a cruz de rejunte e mais escura, em 4 giros por
+    # ladrilho (`board.js`: `rochaMina`, so com `field.paredeDeCaverna`).
+    ('rochaMina', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [0, 1, 2, 3]),
 ]
 
 
@@ -100,7 +103,7 @@ FILEIRAS = [
 # `laje`, e no tabuleiro cada marca lia como um losango PALIDO posto por
 # cima do chao, em vez de uma marca NO chao. Medido: 0,86 poe a laje no tom
 # do kit de construcao, e 0,74 poe os decalques no tom da laje.
-ESCURECER = {'fungos': 1.3, 'mina': 0.8, 'lajeMina': 0.88, 'canal': 0.86, 'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
+ESCURECER = {'rochaMina': 0.82, 'fungos': 1.3, 'mina': 0.8, 'lajeMina': 0.88, 'canal': 0.86, 'cinza': 0.72, 'margem': 0.8, 'lajeRuina': 0.92, 'lajeEntulho': 0.92, 'laje': 0.86, 'ossos': 0.74, 'mancha': 0.74, 'cacos': 0.74, 'musgoChao': 0.74}
 
 
 def escurecer(t, f):
@@ -217,7 +220,7 @@ def limpar_faixa(t):
 # MAIS VARIACAO nos chaos da Onda Eco: uma superficie com 2 ladrilhos vira papel de parede (a mesma cruz de rejunte, os
 # mesmos pontinhos no mesmo canto em cada casa). Cada ladrilho ganha o seu espelho (o losango e simetrico) e, na laje, uma
 # versao sem o rejunte em cruz (as lajes de verdade ora tem junta, ora nao).
-VARIANTES_EXTRA = {'mina', 'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura'}
+VARIANTES_EXTRA = {'mina', 'lajeMina', 'canal', 'conchas', 'fungos', 'aguaEscura', 'rochaMina'}
 
 
 def reencaixar(t):
@@ -349,7 +352,7 @@ def main():
                 fora.append(f'{i} (tom {m - mediana:+.1f}, aresta {a:+.1f})')
         if nome in VARIANTES_EXTRA:
             for k, base in enumerate(list(topos)):
-                if nome in ('mina', 'rocha'):  # terra batida e rocha nao tem rejunte: a cruz e defeito
+                if nome in ('mina', 'rochaMina'):  # terra batida e rocha nao tem rejunte: a cruz e defeito
                     base = sem_rejunte(base)
                     atlas.alpha_composite(base, (k * TW, linha * TH))
                     topos[k] = base

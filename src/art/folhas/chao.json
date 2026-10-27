@@ -122,12 +122,16 @@
       "y": 928,
       "n": 8
     },
-    "tabuasTaverna": {
+    "rochaMina": {
       "y": 960,
+      "n": 12
+    },
+    "tabuasTaverna": {
+      "y": 992,
       "n": 4
     }
   },
   "_taverna": {
-    "y0": 960
+    "y0": 992
   }
 }

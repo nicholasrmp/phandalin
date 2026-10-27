@@ -1073,7 +1073,8 @@ export class Board {
       // Mobília fora de casa (a cerca do campo) pisa em capim, não na laje do castelo.
       : (s.objeto === 'prop' && !salaDaCasa ? (this.varianteDaProp(x, y)?.piso ?? 'grama')
         // braseiro de caverna fora de sala pisa no chão da mina, não na laje de castelo
-        : (this.field.paredeDeCaverna && !salaDaCasa && (s.objeto === 'braseiro' || s.objeto === 'braseiroFrio') ? 'mina' : s.chao));
+        : (this.field.paredeDeCaverna && !salaDaCasa && (s.objeto === 'braseiro' || s.objeto === 'braseiroFrio') ? 'mina'
+          : (this.field.paredeDeCaverna && s.chao === 'rocha' ? 'rochaMina' : s.chao)));
     const lad = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || (chaoDe && ladrilhoChao(chaoDe, x, y));
     if (lad) {
       ctx.imageSmoothingEnabled = false;
