@@ -1834,5 +1834,24 @@ teste('mansão: o quarto do Cajavidro tem 3 x 3 e a cisterna fica abaixo do piso
   assert.ok(MAPA_MANSAO_DADOS.altura[15][22] < MAPA_MANSAO_DADOS.altura[13][22], 'a água da cisterna fica abaixo do piso do porão');
 });
 
+teste('mansão: a mobília, os candeeiros e os degraus apontam para casas e peças que existem', () => {
+  const atlas = JSON.parse(readFileSync(new URL('../art/folhas/cenario.json', import.meta.url), 'utf8'));
+  const t = MAPA_MANSAO_DADOS.terreno;
+  assert.ok(MANSAO_DADOS.props.length >= 12, 'a planta tem mobília');
+  for (const p of MANSAO_DADOS.props) {
+    assert.ok(atlas[`prop-${p.variante}`], `a peça ${p.variante} existe no atlas`);
+    assert.ok('^&'.includes(t[p.y][p.x]), `${p.variante} em ${p.x},${p.y} está num glifo de peça`);
+  }
+  for (const d of MANSAO_DADOS.decor) {
+    assert.ok('MR'.includes(t[d.y][d.x]), `o candeeiro em ${d.x},${d.y} está numa parede`);
+    const aberta = (x, y) => t[y]?.[x] !== undefined && !'MR!'.includes(t[y][x]);
+    assert.ok(aberta(d.x, d.y + 1) || aberta(d.x + 1, d.y), `o candeeiro em ${d.x},${d.y} dá para uma casa aberta que a câmera vê`);
+  }
+  for (const d of MANSAO_DADOS.degraus) {
+    const secreta = Object.values(MANSAO_DADOS.secretas).some((s) => s.x === d.x && s.y === d.y);   // a secreta vira escada quando achada
+    assert.ok(secreta || !'MR'.includes(t[d.y][d.x]), `a escada em ${d.x},${d.y} é chão`);
+  }
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);
 process.exit(falhas ? 1 : 0);

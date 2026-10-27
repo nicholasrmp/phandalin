@@ -1403,7 +1403,7 @@ export function criarMansao(app, config) {
     }
 
     // Área 6 e 7: o que se leva.
-    if (sup === 'mantimentos' && dentro(tile, 18, 2, 19, 3) && salvo.trancadaAberta && salvo.mantos < 12) {
+    if ((sup === 'mantimentos' || sup === 'armeiro') && dentro(tile, 18, 2, 19, 3) && salvo.trancadaAberta && salvo.mantos < 12) {
       ops.push({
         rotulo: 'Pegar mantos vermelhos', icone: 'acao-usarObjeto', detalhe: 'uma dúzia pendurada na porta', motivo: longe(5),
         fazer: async () => {
@@ -1414,7 +1414,7 @@ export function criarMansao(app, config) {
         },
       });
     }
-    if (sup === 'mantimentos' && dentro(tile, 12, 2, 14, 4) && !salvo.peles) {
+    if ((sup === 'mantimentos' || sup === 'prop') && dentro(tile, 12, 2, 14, 4) && !salvo.peles) {
       ops.push({
         rotulo: 'Revirar o depósito', icone: 'acao-procurar', motivo: longe(5),
         fazer: async () => {
@@ -1503,7 +1503,7 @@ export function criarMansao(app, config) {
     }
 
     // Área 11: os livros e os reagentes.
-    if ((sup === 'mesa' || sup === 'mantimentos') && NA_OFICINA(tile) && !salvo.reagentes) {
+    if ((sup === 'mesa' || sup === 'mantimentos' || sup === 'prop') && NA_OFICINA(tile) && !salvo.reagentes) {
       ops.push({
         rotulo: 'Vasculhar a oficina', icone: 'acao-procurar', motivo: longe(5),
         fazer: async () => {

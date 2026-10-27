@@ -43,6 +43,20 @@ def casa(x, y, g, h=None, luz=None):
         L[y][x] = luz
 
 
+PROPS = []        # a mobília de arte própria (atlas do cenário): {tipo 'prop', x, y, variante, espelhar?}
+DECOR = []        # candeeiros pendurados na face de uma casa de parede: {x, y, tipo}
+DEGRAUS = []      # casas de escada (só o desenho dos degraus): {x, y, eixo}
+
+
+def prop(x, y, variante, bloqueia=True, espelhar=False):
+    """Uma peça do atlas: `^` barra o passo e dá cobertura; `&` é chão de passar (a variante vem da anotação)."""
+    T[y][x] = '^' if bloqueia else '&'
+    item = {'tipo': 'prop', 'x': x, 'y': y, 'variante': variante}
+    if espelhar:
+        item['espelhar'] = True
+    PROPS.append(item)
+
+
 SECRETAS = {}     # nome -> (x, y, altura do chão quando aberta)
 
 # --------------------------------------------------------- 11. Oficina ----
@@ -243,7 +257,7 @@ for y in range(H):
 # (`M`); a que só encosta na caverna e na fenda é rocha natural (`R`). As
 # portas secretas e a trancada ficam no corpo da alvenaria: abertas, viram
 # laje (a cena troca a casa).
-CONSTRUIDO = set('LVmQGsKz')
+CONSTRUIDO = set('LVmQGsKz^&gp')
 for y in range(H):
     for x in range(W):
         if T[y][x] != 'R':
@@ -252,6 +266,33 @@ for y in range(H):
                if 0 <= a < W and 0 <= b < H and (a, b) != (x, y)]
         if any(v in CONSTRUIDO for v in viz):
             T[y][x] = 'M'
+
+# ------------------------------------------------- mobília e candeeiros ----
+# A planta de referência mostra salas MOBILIADAS: a oficina é de alquimista (estantes de frascos, bancada de ferramentas,
+# uma tina), o depósito de armas tem cabides de verdade, a cripta tem ossos e um pilar caído. As peças saem do atlas do
+# cenário (as mesmas da mobília de Árvore Trovão). Regra de colocação: nenhuma peça fecha a passagem (o teste
+# `testes-sala.mjs` mede que nenhuma casa de piso fica ilhada) nem pisa nas casas de gente ou de porta.
+for (x, y) in [(2, 2), (2, 4)]: prop(x, y, 'estante')                 # 11 oficina: estantes de livros e frascos
+prop(2, 3, 'prateleira')
+prop(3, 3, 'mesaFerramentas'); prop(3, 4, 'tina'); prop(5, 4, 'saco')  # a bancada, a tina de lavar vidraria, o saco de pó
+prop(7, 2, 'estante')                                                  # 12 quarto: os livros do mago
+prop(12, 2, 'ferramentas'); prop(13, 2, 'tabuas')                      # 7 depósito: martelos, pés de cabra, tábuas
+casa(19, 2, 'g'); casa(19, 3, 'g')                                     # 6 depósito de armas: os cabides de armas
+prop(19, 9, 'pilarQuebrado'); prop(18, 9, 'ossos', bloqueia=False)      # 4 cripta: um pilar caído e ossos roídos
+prop(22, 9, 'pilarQuebrado'); prop(26, 9, 'pilarQuebrado')              # 3 corredor do fosso: as colunas falsas
+prop(2, 11, 'cubaCerveja')                                             # 10 sala de estar: a cuba de cerveja
+prop(22, 18, 'cubaCerveja'); prop(23, 18, 'barrisRack')                # 1 porão: a bebida e os barris no suporte
+for (x, y) in [(21, 2), (23, 2), (21, 7), (23, 7)]: casa(x, y, 'p')    # 5 jaulas: palha no chão das celas
+
+# Candeeiros nas faces das paredes de trás (norte e oeste de cada sala: são as faces que a câmera vê por dentro). Só nas
+# salas habitadas e nas de penumbra: o corredor do fosso e a caverna são breu, e lá não há lamparina acesa.
+for (x, y) in [(4, 1), (8, 1), (13, 1), (18, 1), (18, 4), (15, 7), (22, 1), (20, 4), (4, 7), (1, 9), (5, 14), (1, 16),
+               (17, 11), (15, 13), (21, 11), (20, 15)]:
+    DECOR.append({'x': x, 'y': y, 'tipo': 'tochaAcesa'})
+
+# Casas de escada: o desenho dos degraus (a regra é o desnível de um nível, que o motor já aplica).
+for (x, y, eixo) in [(27, 13, 'x'), (27, 17, 'x'), (7, 6, 'x'), (7, 13, 'x'), (11, 3, 'y')]:
+    DEGRAUS.append({'x': x, 'y': y, 'eixo': eixo})
 
 # As portas que se VEEM (a trancada do depósito de armas e a do alojamento): `!` é a folha de madeira com ferragens no
 # vão da parede. As secretas ficam alvenaria até serem achadas: aí viram `@`, uma laje deslizada para o lado.
@@ -298,6 +339,7 @@ extra = {
     'fosso': [{'x': x, 'y': y} for (x, y) in FOSSO],
     'jaulas': {k: {'x': x, 'y': y} for k, (x, y) in JAULAS.items()},
     'entradas': {'cozinha': {'x': 29, 'y': 15}, 'tunel': {'x': 10, 'y': 19}},
+    'props': PROPS, 'decor': DECOR, 'degraus': DEGRAUS,
 }
 saida = Path(__file__).resolve().parents[1] / 'game' / 'mansao.js'
 saida.write_text(

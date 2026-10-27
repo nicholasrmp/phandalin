@@ -101,6 +101,22 @@ export const OLHAR = {
   escuro: ['Escuridão', 'Breu. Daqui não se enxerga nada ali — nem chão, nem parede, nem quem estiver parado nela.'],
 };
 
+/** O que cada peça de mobília de arte própria diz ao ser olhada (a variante vem da anotação `objetos` do mapa). */
+const OLHAR_PROP = {
+  estante: ['Estante', 'Tábuas empenadas cheias de livros com lombada de couro e frascos tampados com cera. Alguém aqui lê à noite.'],
+  prateleira: ['Prateleira de frascos', 'Potes de vidro com pós, ervas secas e líquidos que não têm cor de coisa boa. Cada um tem uma etiqueta em letra miúda.'],
+  mesaFerramentas: ['Bancada de ferramentas', 'Pinças, um pilão, balanças de latão e manchas de ácido na madeira. Trabalho fino, feito por quem tem paciência.'],
+  tina: ['Tina de lavar', 'Uma tina de aduelas com água turva e vidraria suja boiando. A água tem um brilho prateado.'],
+  saco: ['Saco de pó', 'Um saco de aniagem amarrado com barbante, cheio de pó cinzento que arde no nariz.'],
+  ferramentas: ['Ferramentas de mineiro', 'Martelos, pés de cabra e uma pá, encostados num suporte de madeira. Estão limpos: alguém os usa.'],
+  tabuas: ['Tábuas empilhadas', 'Tábuas de caixote desmontadas, com pregos tortos para fora. Ninguém jogou nada fora aqui.'],
+  pilarQuebrado: ['Pilar quebrado', 'Um pilar de pedra lavrada partido ao meio, o toco ainda de pé. Dá para se abrigar atrás dele.'],
+  cubaCerveja: ['Cuba de cerveja', 'Uma cuba grande de aduelas, com um dedo de cerveja choca no fundo e moscas em volta.'],
+  barrisRack: ['Barris no suporte', 'Dois barris deitados num cavalete de madeira, com a torneira pingando no chão de pedra.'],
+  ossos: ['Ossos', 'Ossos velhos, roídos, com um crânio no meio. Alguém os varreu para o canto e esqueceu.'],
+};
+
+
 // `garantirInventario`: a mochila nasce preguiçosa, e ler `c.bag` cru dizia
 // que ninguém tinha tocha — some a opção de acender, e os heróis sem visão
 // no escuro entravam no esconderijo às cegas com duas tochas na mochila.
@@ -381,7 +397,10 @@ export function opcoesDaCasa(app, tile) {
   }
 
   // ------------------------------------------------------- objeto / chão ----
-  const [nome, texto] = OLHAR[sup] ?? OLHAR.chao;
+  // A mobília de arte própria diz o que é (a variante vem da anotação do mapa); sem texto próprio, vale o da superfície.
+  const variante = sup === 'prop' || sup === 'propBaixo'
+    ? app.enc?.field?.objetos?.find((o) => o.tipo === 'prop' && o.x === tile.x && o.y === tile.y)?.variante : null;
+  const [nome, texto] = OLHAR_PROP[variante] ?? OLHAR[sup] ?? OLHAR.chao;
   opcoes.push(olhar(nome, texto));
   // Uma imagem ilusória do outro lado nesta casa: examinar gasta a ação.
   const imagem = (app.enc?.zonas ?? []).find((z) => z.ilusao && z.lado !== c?.side && z.casas.has(`${tile.x},${tile.y}`));

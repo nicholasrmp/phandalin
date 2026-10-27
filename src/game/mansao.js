@@ -73,23 +73,23 @@ export const MAPA_MANSAO = {
   "terreno": [
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     "RMMMMMMMMMMMMMMMMMMMMMMMMRRRRRR",
-    "RMsLLeMLmLMLssLML!LsMLLLMRRRRRR",
-    "RMsmLLLLLLMMLLLMLMLsMGGGMRRRRRR",
-    "RMsmLLMKLzMMLLsMLMMMMLLLMRRRRRR",
+    "RM^LLeM^mLML^^LML!LgMpLpMRRRRRR",
+    "RM^^LLLLLLMMLLLMLMLgMGGGMRRRRRR",
+    "RM^^L^MKLzMMLLsMLMMMMLLLMRRRRRR",
     "RMMMLMMMMMMxx__MLLLLLLLsMRRRRRR",
     "RRRMLLLL___xx__MQLLQMGGGMRRRRRR",
-    "RMMMMMLM__xxx__MLLLLMLLLMRRRRRR",
+    "RMMMMMLM__xxx__MLLLLMpLpMRRRRRR",
     "RMLmmLLM__===__MLLLLMMMMMMMMMMR",
-    "RMLLLeLM___xxA_MQLLLMLLLLLLLLMR",
+    "RMLLLeLM___xxA_MQL&^ML^LLL^LLMR",
     "RMsLssLM___xx__MLLLLLLLLLLLLLMR",
-    "RMLLLLLM__xx___MMMMMMMLLLLMLMMR",
+    "RM^LLLLM__xx___MMMMMMMLLLLMLMMR",
     "RMMLMMMM__xx___MzLzLMsssssLLMMR",
     "RRMLLLL__Axxx__MLLeL!LLLLLLLLMR",
     "RMMLMMMM__===__MLLLsMVVVLLLMLMM",
     "RMzLLzLM___xx__MssssMVVVLLLMLLM",
     "RMLLeLLM___xx__MMMMMMVVVLLLMLMM",
     "RMzLLzLMR__xx_______MLLLLLLLLMR",
-    "RMLLLLLMRR__xx_RRRRRMLssLLLLMMR",
+    "RMLLLLLMRR__xx_RRRRRML^^LLLLMMR",
     "RMMMMMMMRR__RRRRRRRRMMMMMMMMMRR",
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
   ],
@@ -1063,5 +1063,212 @@ export const MANSAO = {
       "x": 10,
       "y": 19
     }
-  }
+  },
+  "props": [
+    {
+      "tipo": "prop",
+      "x": 2,
+      "y": 2,
+      "variante": "estante"
+    },
+    {
+      "tipo": "prop",
+      "x": 2,
+      "y": 4,
+      "variante": "estante"
+    },
+    {
+      "tipo": "prop",
+      "x": 2,
+      "y": 3,
+      "variante": "prateleira"
+    },
+    {
+      "tipo": "prop",
+      "x": 3,
+      "y": 3,
+      "variante": "mesaFerramentas"
+    },
+    {
+      "tipo": "prop",
+      "x": 3,
+      "y": 4,
+      "variante": "tina"
+    },
+    {
+      "tipo": "prop",
+      "x": 5,
+      "y": 4,
+      "variante": "saco"
+    },
+    {
+      "tipo": "prop",
+      "x": 7,
+      "y": 2,
+      "variante": "estante"
+    },
+    {
+      "tipo": "prop",
+      "x": 12,
+      "y": 2,
+      "variante": "ferramentas"
+    },
+    {
+      "tipo": "prop",
+      "x": 13,
+      "y": 2,
+      "variante": "tabuas"
+    },
+    {
+      "tipo": "prop",
+      "x": 19,
+      "y": 9,
+      "variante": "pilarQuebrado"
+    },
+    {
+      "tipo": "prop",
+      "x": 18,
+      "y": 9,
+      "variante": "ossos"
+    },
+    {
+      "tipo": "prop",
+      "x": 22,
+      "y": 9,
+      "variante": "pilarQuebrado"
+    },
+    {
+      "tipo": "prop",
+      "x": 26,
+      "y": 9,
+      "variante": "pilarQuebrado"
+    },
+    {
+      "tipo": "prop",
+      "x": 2,
+      "y": 11,
+      "variante": "cubaCerveja"
+    },
+    {
+      "tipo": "prop",
+      "x": 22,
+      "y": 18,
+      "variante": "cubaCerveja"
+    },
+    {
+      "tipo": "prop",
+      "x": 23,
+      "y": 18,
+      "variante": "barrisRack"
+    }
+  ],
+  "decor": [
+    {
+      "x": 4,
+      "y": 1,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 8,
+      "y": 1,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 13,
+      "y": 1,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 18,
+      "y": 1,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 18,
+      "y": 4,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 15,
+      "y": 7,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 22,
+      "y": 1,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 20,
+      "y": 4,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 4,
+      "y": 7,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 1,
+      "y": 9,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 5,
+      "y": 14,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 1,
+      "y": 16,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 17,
+      "y": 11,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 15,
+      "y": 13,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 21,
+      "y": 11,
+      "tipo": "tochaAcesa"
+    },
+    {
+      "x": 20,
+      "y": 15,
+      "tipo": "tochaAcesa"
+    }
+  ],
+  "degraus": [
+    {
+      "x": 27,
+      "y": 13,
+      "eixo": "x"
+    },
+    {
+      "x": 27,
+      "y": 17,
+      "eixo": "x"
+    },
+    {
+      "x": 7,
+      "y": 6,
+      "eixo": "x"
+    },
+    {
+      "x": 7,
+      "y": 13,
+      "eixo": "x"
+    },
+    {
+      "x": 11,
+      "y": 3,
+      "eixo": "y"
+    }
+  ]
 };

@@ -1012,6 +1012,14 @@ export class Board {
     const caverna = this.field.paredeDeCaverna && sup === 'rocha';
     const alta = this.field.paredeAlta > 0 && PAREDES_ALTAS.has(sup);
     if (!(h > 0 && this.field.tileAt(x, y) === 1 && (caverna || alta))) return h;
+    // PAREDE EM CORTE: a parede que fica NA FRENTE de uma casa aberta (a de sul e a de leste de uma sala, vistas pela câmera) fica
+    // baixa, como a do castelo, para não cobrir a mobília e quem está atrás; as de trás (norte e oeste) sobem, e são as que se veem
+    // por dentro. Sem isto, com 2 níveis, 17 peças da mansão (cama, mesa, baús) ficavam escondidas atrás do muro da frente.
+    if (alta) {
+      const v = this.toView(x, y);
+      const aberta = (i, j) => { const p = this.fromView(v.vx + i, v.vy + j); return this.field.inside(p.x, p.y) && this.field.tileAt(p.x, p.y) !== 1; };
+      if (aberta(-1, 0) || aberta(0, -1) || aberta(-1, -1)) return h;
+    }
     let piso = -1;
     for (let j = -1; j <= 1; j += 1) {
       for (let i = -1; i <= 1; i += 1) {
@@ -1156,6 +1164,10 @@ export class Board {
       ctx.fill();
     }
 
+    // O candeeiro (ou outra peça) pendurado na face de uma casa inteira de parede: nas faces que a câmera vê e que dão para casa aberta.
+    const decorDaCasa = this.field.decorCasa?.get(`${x},${y}`);
+    if (decorDaCasa && lift > 0) this.desenharDecorDeCasa(ctx, x, y, hgt, decorDaCasa);
+
     // A PAREDE DE CAVERNA ganha veios de minério, musgo e manchas, por sorteio da casa: sem isso a rocha são quatro
     // faces repetidas em fileira.
     if (this.field.paredeDeCaverna && s.chao === 'rocha' && hgt > 0 && this.field.tileAt(x, y) === 1) this.decorarParedeDeCaverna(ctx, x, y, sx, sy, hgt);
@@ -1242,6 +1254,7 @@ export class Board {
     if (this.field.paredeDeCaverna && s.chao === 'teia') this.desenharTeia(ctx, sx, sy, x, y);
     const degrau = this.field.degraus?.get(`${x},${y}`);
     if (degrau) this.desenharDegraus(ctx, sx, sy, degrau);
+    if (s.chao === 'entulho' && hgt === 0) this.salpicarFundoDaFenda(ctx, sx, sy, x, y);
     ctx.restore();
 
     // O OBJETO NÃO É DESENHADO AGORA.
@@ -2632,6 +2645,41 @@ export class Board {
     ctx.strokeStyle = 'rgba(16,14,12,.8)';
     ctx.lineWidth = 1;
     ctx.stroke();
+  }
+
+  /**
+   * O FUNDO DE UMA FENDA (entulho a seis metros do piso): o ladrilho é de uma cor só e, repetido, vira um tapete chapado. Pedras
+   * claras e escuras, em pixels duros e de lugar sorteado por casa, quebram a mancha.
+   */
+  salpicarFundoDaFenda(ctx, sx, sy, x, y) {
+    for (let k = 0; k < 9; k += 1) {
+      const a = sorteio(x * 31 + k, y * 17 + 5, 1000) / 1000;
+      const b = sorteio(x * 13 + 7, y * 29 + k, 1000) / 1000;
+      const px = (a - 0.5) * TW * 0.72;
+      const py = (b - 0.5) * TH * 0.72;
+      if (Math.abs(px) / (TW / 2) + Math.abs(py) / (TH / 2) > 0.8) continue;
+      const claro = sorteio(x + k * 5, y * 3 + k, 100) < 45;
+      ctx.fillStyle = claro ? 'rgba(112,100,86,.55)' : 'rgba(14,12,10,.55)';
+      const w = 2 + (k % 3);
+      ctx.fillRect(Math.round(sx + px), Math.round(sy + TH / 2 + py), w, claro ? 2 : 1);
+    }
+  }
+
+  /**
+   * A decoração numa casa de parede (a parede é a casa inteira): a face da ESQUERDA da casa é a aresta de norte da vizinha de
+   * baixo, e a da DIREITA é a aresta de oeste da vizinha da direita (em coordenadas de tela, então vale em qualquer rotação).
+   */
+  desenharDecorDeCasa(ctx, x, y, hgt, tipo) {
+    const v = this.toView(x, y);
+    for (const [lado, dvx, dvy] of [['N', 0, 1], ['O', 1, 0]]) {
+      const n = this.fromView(v.vx + dvx, v.vy + dvy);
+      if (!this.field.inside(n.x, n.y) || this.field.tileAt(n.x, n.y) === 1) continue;
+      const nh = this.alturaVisual(n.x, n.y);
+      const alto = (hgt - nh) * LIFT;
+      if (alto < LIFT * 0.9) continue;
+      const { sx, sy } = this.iso(n.x, n.y, nh);
+      this.desenharDecor(ctx, tipo, lado, sx, sy, x, y, alto);
+    }
   }
 
   /**

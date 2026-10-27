@@ -351,9 +351,14 @@ export function mapaDo(variante = 'padrao') {
       ...MAPA_MANSAO,
       // Cada cômodo com a sua tinta no tabuleiro, como no castelo.
       salas: MANSAO.salas,
-      paredeAlta: 2,          // as paredes do porão se desenham com 2 níveis acima do chão (eram 1: degraus, e não paredes; com 3 escondiam as salas)
+      paredeAlta: 3,          // as paredes de TRÁS do porão se desenham com 3 níveis acima do chão; as da frente ficam em corte (1 nível)
       // As duas pontes cruzam a fenda de leste a oeste.
-      objetos: Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),
+      objetos: [
+        ...Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),
+        ...MANSAO.props,           // a mobília de arte própria (estantes, bancada, cabides...), por casa
+      ],
+      decorCasa: MANSAO.decor,     // candeeiros nas faces das paredes de trás
+      degraus: MANSAO.degraus,     // as casas de escada
       grupo: tunel
         ? [{ x: 10, y: 19 }, { x: 11, y: 19 }, { x: 10, y: 18 }, { x: 11, y: 18 }]
         : [{ x: 28, y: 15 }, { x: 28, y: 14 }, { x: 28, y: 16 }, { x: 29, y: 15 }],

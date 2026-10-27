@@ -32,6 +32,8 @@ export function montarCampo(mapa) {
     const k = (a, b) => `${a.x},${a.y},${b.x},${b.y}`;
     field.folha = new Set(mapa.folhas.flatMap(([a, b]) => [k(a, b), k(b, a)]));
   }
+  // Decoração na face de uma casa de PAREDE (a mansão, onde a parede é casa inteira e não aresta): 'x,y' → tipo.
+  if (mapa.decorCasa) field.decorCasa = new Map(mapa.decorCasa.map((d) => [`${d.x},${d.y}`, d.tipo]));
   if (mapa.degraus) field.degraus = new Map(mapa.degraus.map((d) => [`${d.x},${d.y}`, d.eixo]));
   // O quanto o que o grupo não enxerga escurece (0 a 1; padrão 0,8). Árvore Trovão pede 1: preto.
   if (mapa.veuDaEscuridao != null) field.veuDaEscuridao = mapa.veuDaEscuridao;
