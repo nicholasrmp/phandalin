@@ -675,8 +675,10 @@ function foesGrandes() {
  * surpreendido e em 98% quando não é, e morre alguém em 6 a 8% das vezes.
  */
 function foesEmboscada() {
-  // Os quatro esperam de arco na mão, no alto do barranco. A e C são atiradores
-  // declarados; B e D a IA também deixa atirando, pela regra do terreno alto.
+  // Os três esperam de arco na mão, no alto do barranco. A e C são atiradores
+  // declarados; B a IA também deixa atirando, pela regra do terreno alto. Eram quatro (o livro): de 1º nível, quatro goblins
+  // são o limiar MORTAL do DMG (200 XP, ×2) e a emboscada derrotava o grupo em 9,9% das lutas medidas (496 lutas, 4 heróis de
+  // 1º nível); com três, em 2,8%.
   const arco = { arma: 'Arco curto' };
   const norte = [
     makeMonster('goblin', { x: 12, y: 7 }, { nameSuffix: 'A', tatica: 'atirador', ...arco }),
@@ -685,8 +687,6 @@ function foesEmboscada() {
   ];
   const sul = [
     makeMonster('goblin', { x: 14, y: 17 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
-    // Na borda do barranco sul, ao lado do arbusto em (17,16).
-    makeMonster('goblin', { x: 18, y: 16 }, { nameSuffix: 'D', ...arco }),
   ];
   // Cada lado olha para a estrada.
   for (const f of norte) f.facingVec = { dx: 0, dy: 1 };

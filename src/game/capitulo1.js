@@ -5,12 +5,12 @@
 //               Cada herói escolhido ganha a sua linha (o "porquê" da
 //               história dele), então a abertura muda com o grupo.
 //   exploração  o grupo anda livre pela estrada, sem iniciativa. Depois da
-//               curva, a quinze metros, os cavalos mortos. Quatro goblins,
-//               dois de cada lado, esperam alguém chegar aos cavalos e atacam
+//               curva, a quinze metros, os cavalos mortos. Três goblins,
+//               dois ao norte e um ao sul, esperam alguém chegar aos cavalos e atacam
 //               (ou quando esbarram em alguém, ou se o grupo passa reto).
-//   combate     uma rolagem de Furtividade para os quatro contra a Percepção
+//   combate     uma rolagem de Furtividade para os três contra a Percepção
 //               passiva de cada herói decide quem fica surpreso; o grupo não
-//               tem como surpreendê-los. Os quatro ficam no alto do barranco
+//               tem como surpreendê-los. Os três ficam no alto do barranco
 //               e atiram — a IA prefere terreno alto com arma à distância —, e
 //               quem desce é quem perde o tiro. Caída METADE do bando, o resto
 //               foge pela trilha do norte.
@@ -58,7 +58,7 @@ export function criarCapitulo1(app, config) {
   const root = app.root;
   // Os goblins ficam fora do tabuleiro até a armadilha disparar.
   const escondidos = app.inimigosEscondidos;
-  // Como na aventura: UMA rolagem de Furtividade para os quatro goblins.
+  // Como na aventura: UMA rolagem de Furtividade para os goblins.
   const rolagemDeGrupo = d20(enc.rng, skillBonus(escondidos[0], 'furtividade')).total;
   const furtividade = escondidos.map(() => rolagemDeGrupo);
   const cavalos = [];
@@ -677,10 +677,10 @@ export function criarCapitulo1(app, config) {
       // Como na aventura: o grupo vem pela curva, e os cavalos estão a uns
       // vinte metros — medido no mapa, de (8,11) até (18,12).
       //
-      // Dois goblins são ATIRADORES declarados (A e C, em `foesEmboscada`); os
-      // outros dois a IA também deixa parados no alto, porque a regra do
+      // Dois goblins são ATIRADORES declarados (A e C, em `foesEmboscada`); o
+      // outro a IA também deixa parado no alto, porque a regra do
       // terreno alto com arma à distância vale para todo mundo. Na prática os
-      // quatro abrem atirando, e isso É a emboscada do livro: o perigo vem de
+      // três abrem atirando, e isso É a emboscada do livro: o perigo vem de
       // cima e de longe.
       const LUGARES = [{ x: 8, y: 11 }, { x: 8, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 13 }];
       enc.allOf('party').forEach((c, i) => { if (LUGARES[i]) c.pos = { ...c.pos, ...LUGARES[i] }; });
