@@ -29,12 +29,18 @@
 //             baú do vigia, com a espada Talon.
 //   área 9    três bugbears e Droop, o goblin, que desmaia quando o grupo
 //             entra. Mosk carrega a chave. O terceiro bugbear dorme e só
-//             levanta na segunda rodada (decisão nossa, de equilíbrio).
+//             levanta na quarta rodada (decisão nossa, de equilíbrio). Quem
+//             veste o manto vermelho pode tentar enganá-los (Enganação CD 15,
+//             "o Cajavidro nos mandou") e apertar um deles (Intimidação CD 15).
 //   área 10   quatro Marcarrubra bêbados no jogo de pedrinhas: quem entra os
-//             pega de surpresa.
-//   área 11   o rato do Cajavidro: viu intruso, avisou o dono, e ele foge
-//             pela porta secreta do quarto (deixando a carta e a porta mal
-//             fechada). Só pela passagem secreta do 7 dá para pegá-lo de
+//             pega de surpresa (sem teste). De manto vermelho, dá para se
+//             passar por recruta (Enganação CD 10) e conversar antes.
+//   área 11   o rato do Cajavidro AVISA SEMPRE o dono. Ele foge, no tabuleiro,
+//             pela porta secreta do quarto, pelo depósito (7) e pela caverna (8)
+//             até a porta secreta da cisterna (1), seis casas por vez que o
+//             grupo anda; os dois guarda-costas ficam no quarto. Quem o alcança
+//             o vê beber um frasco e sumir (invisível): a luta é dele. Só pela
+//             passagem secreta do 7, antes do aviso, dá para pegá-lo de
 //             surpresa. Com 8 PV ou menos, ele se rende. O rato não entra no
 //             tabuleiro (simplificação nossa).
 //
@@ -48,7 +54,7 @@
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod } from '../rules/abilities.js';
-import { distanceFt, isAdjacent, SUPERFICIES } from '../core/grid.js';
+import { Battlefield, distanceFt, isAdjacent, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, removeCondition, hasCondition } from '../rules/conditions.js';
 import { darXp } from './nivel.js';
@@ -115,16 +121,34 @@ export function criarMansao(app, config) {
   const vigia = grupos.fenda?.membros[0];
   const droop = grupos.guardas?.membros.find((f) => f.defId === 'droop');
   const mosk = grupos.guardas?.membros.find((f) => f.name === 'Mosk');
+  /**
+   * O Cajavidro sai do grupo do quarto quando foge: os dois guarda-costas ficam no quarto como grupo próprio
+   * (`guardaCostas`, sem XP), e o grupo `cajavidro` passa a ser só ele, o que o grupo alcança na fuga.
+   */
+  function separarGuardas() {
+    const g = grupos.cajavidro;
+    if (!g || grupos.guardaCostas || !iarno) return;
+    const guardas = g.membros.filter((m) => m !== iarno);
+    if (!guardas.length) return;
+    g.membros = [iarno];
+    for (const m of guardas) m.grupo = 'guardaCostas';
+    grupos.guardaCostas = {
+      id: 'guardaCostas', membros: guardas, ativo: false, vencido: salvo.vencidos.includes('guardaCostas'),
+      furtividade: guardas.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total),
+    };
+  }
+  if (salvo.iarno === 'fugiu') separarGuardas();
   const presos = (grupos.jaulas?.membros ?? []).filter((f) => f.preso);
   const estado = {
     explorando: false, encerrado: false, lutando: null,
+    fuga: null,               // a fuga do Cajavidro em curso: { rota, i }
     iarnoAvisado: Boolean(salvo.iarno), alojamentoVem: false,
     de: new Map(),            // de onde cada um veio no último passo
   };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const hostis = (g) => (g?.membros ?? []).filter((f) => f.side === 'foes' && !f.dead && !f.fugiu);
-  const pendentes = () => Object.values(grupos).filter((g) => g.id !== 'rato' && !g.ativo && !g.vencido && !g.tregua && hostis(g).length);
+  const pendentes = () => Object.values(grupos).filter((g) => g.id !== 'rato' && !g.ativo && !g.vencido && !g.tregua && !g.fuga && hostis(g).length);
   const tem = (c, id) => garantirInventario(c).bag.some((i) => i.id === id && i.qtd > 0);
   // Os testes passam pelas magias de utilidade (Orientação soma 1d4, Aprimorar Atributo dá vantagem...).
   const teste = (c, pericia, cd, vantagem = false) => {
@@ -194,9 +218,11 @@ export function criarMansao(app, config) {
     }
     f.versao = (f.versao ?? 0) + 1;
   }
-  function quebrarPonteSul() {
+  const FLAG_PONTE = { sul: 'ponteSulCaiu', norte: 'ponteNorteCaiu' };
+  function quebrarPonteSul() { quebrarPonte('sul'); }
+  function quebrarPonte(lado) {
     const f = enc.field;
-    const y = MANSAO.pontes.sul;
+    const y = MANSAO.pontes[lado];
     const [x0, x1] = MANSAO.fenda[y];
     for (let x = x0; x <= x1; x++) {
       const i = y * f.w + x;
@@ -206,13 +232,14 @@ export function criarMansao(app, config) {
     }
     f.objetos = (f.objetos ?? []).filter((o) => !(o.tipo === 'ponte' && o.y === y));
     f.versao = (f.versao ?? 0) + 1;
-    salvo.ponteSulCaiu = true;
+    salvo[FLAG_PONTE[lado]] = true;
   }
   // O que já estava aberto de outra visita.
   for (const nome of salvo.secretas) abrirSecreta(nome, { som: false });
   if (salvo.trancadaAberta) abrirTrancada({ som: false });
   if (salvo.fossoVisto) marcarFosso();
   if (salvo.ponteSulCaiu) quebrarPonteSul();
+  if (salvo.ponteNorteCaiu) quebrarPonte('norte');
   for (const nome of salvo.portas) abrirPorta(nome, { som: false });
   if (salvo.celas) abrirCelas({ som: false });
 
@@ -289,7 +316,9 @@ export function criarMansao(app, config) {
     if (g.id === 'estar') for (const f of hostis(g)) addCondition(f, 'envenenado', { rounds: 3, quando: 'fim', lado: f.side });
     enc.emboscada = surpresa === 'deles'
       ? { emboscadores: 'foes', furtividade: g.furtividade }
-      : surpresa === 'nossa'
+      : surpresa === 'nossa!'       // surpresa AUTOMÁTICA (os bêbados, que não olham para a porta): sem teste de Furtividade
+        ? { emboscadores: 'party', furtividade: herois().map(() => 99) }
+        : surpresa === 'nossa'
         ? { emboscadores: 'party', furtividade: testeDeGrupo(herois()) }
         : null;
     app.selected = null;
@@ -330,6 +359,37 @@ export function criarMansao(app, config) {
     }
     return exame.get(a.n);
   };
+
+  // ------------------------------------------------- o manto vermelho ----
+  /** Os heróis que o grupo `g` vê ou ouve agora. */
+  const testemunhasDe = (g) => herois().filter((h) => hostis(g).some((f) => podeVer(enc, h, f) || nota(f, h)));
+  /** Todos de manto (ou disfarçados), e pelo menos um: só então vale a conversa. Quem está sem manto estraga o disfarce dos outros. */
+  const disfarcados = (gente) => gente.length > 0 && gente.every(vestido);
+
+  /** A paz: os do grupo ficam no tabuleiro, de pé e neutros (não são mais inimigos), e a cena segue sem eles. */
+  function fazerPaz(g) {
+    g.tregua = true;
+    for (const f of g.membros) {
+      if (f.dead || f.preso || f.side !== 'foes') continue;
+      f.side = 'neutro';
+      if (!enc.combatants.includes(f)) {
+        if (enc.occupied(f.pos.x, f.pos.y)) f.pos = { ...f.pos, ...casaPerto(f.pos) };
+        enc.addCombatant(f);
+      }
+    }
+    if (g.id === 'guardas' && droop && !droop.dead && !enc.combatants.includes(droop)) enc.addCombatant(droop);
+    app.refresh();
+  }
+
+  /** Conversa com quem vê o manto, ANTES da luta. A árvore devolve 'luta', 'surpresa' ou 'paz'. */
+  async function conversaDeManto(g, gente) {
+    g.conversou = true;
+    const quem = gente.find((h) => h.mantoVermelho) ?? gente[0];
+    const npc = (g.id === 'guardas' ? mosk : null) ?? hostis(g)[0];
+    const fim = await app.conversarCom(npc, g.id === 'estar' ? arvoreDosBebados(quem) : arvoreDosBugbears(quem));
+    if (fim === 'paz') { fazerPaz(g); return; }
+    await combate(g, fim === 'surpresa' ? (g.id === 'estar' ? 'nossa!' : 'nossa') : null);
+  }
 
   // --------------------------------------------------- portas secretas ----
   /** Quem tem Percepção passiva 15 nota a porta secreta a 3 m sem procurar. */
@@ -435,12 +495,19 @@ export function criarMansao(app, config) {
             : 'Nada se mexe. Mas um pensamento que não é de vocês aparece, molhado e baixinho, dentro da cabeça.',
           fala: '…carne nova… cheiro de estrada, de sol… o mago dá pouca. Pouca. O que vocês dão?',
           opcoes: [
+            { texto: 'Encarar o olho.', vai: 'intuicao', uma: true },
             { texto: 'Comida, se você deixar a gente passar.', vai: 'trato',
               requer: (ctx) => (ctx.algum((h) => tem(h, 'racoes')) ? null : 'ninguém tem rações'), },
             { texto: 'Prometo carne fresca quando o mago cair.', teste: { pericia: 'persuasao', cd: 10 }, sucesso: 'trato', falha: 'desconfia' },
             { texto: 'Sai da frente ou morre.', teste: { pericia: 'intimidacao', cd: 13 }, sucesso: 'medo', falha: 'luta' },
             { texto: 'Atacar.', fim: 'luta' },
           ],
+        },
+        intuicao: {
+          // A Estranha Intuição do vigia: ele lê o que cada um esconde, e diz em voz alta, só para mostrar que pode.
+          narra: 'O olho enorme se fixa em cada um, um por vez, e uma coceira fria passa por dentro da cabeça.',
+          fala: '…um aqui mente com a boca… outro mente com as mãos… o olho sabe o que cada um guarda e não conta. Ainda. Dá comida e o olho esquece.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
         },
         desconfia: {
           fala: '…promessa não enche barriga… o mago também prometeu…',
@@ -476,9 +543,15 @@ export function criarMansao(app, config) {
   /** A ponte do sul: quebra com qualquer um em cima. */
   async function ponteSul(c) {
     if (!naPonteSul(c.pos)) return false;
-    // Todo mundo que estiver em cima vai junto.
-    const emCima = enc.combatants.filter((o) => !o.dead && naPonteSul(o.pos));
-    quebrarPonteSul();
+    return derrubarPonte('sul', 'As tábuas estalam, racham e caem, seis metros abaixo, num monte de pedras soltas — e levam junto');
+  }
+
+  /** A ponte cai (rota podre ou amarras soltas): todo mundo em cima vai junto, 2d6 de dano e caído. */
+  async function derrubarPonte(lado, abertura) {
+    const y = MANSAO.pontes[lado];
+    const [x0, x1] = MANSAO.fenda[y];
+    const emCima = enc.combatants.filter((o) => !o.dead && o.pos.y === y && o.pos.x >= x0 && o.pos.x <= x1);
+    quebrarPonte(lado);
     const partes = [];
     for (const o of emCima) {
       const dano = enc.rng.die(6) + enc.rng.die(6);
@@ -486,43 +559,115 @@ export function criarMansao(app, config) {
       if (!o.dead) addCondition(o, 'caido');
       partes.push(`${o.name} (${dano} de dano)`);
     }
-    const texto = `As tábuas estalam, racham e caem, seis metros abaixo, num monte de pedras soltas — e levam junto ${partes.join(', ')}.`;
+    const texto = partes.length ? `${abertura} ${partes.join(', ')}.` : `${abertura.replace(/ — e levam junto$/, '')}.`;
     if (estado.explorando) await painel(texto); else enc.say('acao', texto);
     app.refresh();
     return true;
   }
 
   // ----------------------------------------------------- o Cajavidro ----
-  /** O rato viu alguém na oficina: o mestre já sabe, e foge. */
+  /** O rato viu alguém na oficina: o mestre já sabe, e foge. O rato AVISA SEMPRE (o livro não dá chance de passar por ele). */
   async function ratoAvisa(c) {
     if (estado.iarnoAvisado || !iarno || iarno.dead || !NA_OFICINA(c.pos)) return false;
     if (grupos.cajavidro.ativo) return false;
-    // O rato é um familiar, não uma câmera: quem entra na oficina sem fazer
-    // barulho pode passar por ele. Antes o aviso saía sempre e sem teste, e
-    // como a oficina está no caminho natural para o quarto, o chefe do
-    // capítulo fugia sozinho na maioria das partidas.
-    if (!estado.ratoFalhou) {
-      const t = teste(c, 'furtividade', 11);        // Percepção passiva do rato
-      if (t.passou) {
-        estado.ratoFalhou = true;
-        await painel(`Um rato marrom levanta a cabeça debaixo da bancada, fareja o ar e volta ao que estava fazendo. ${c.name} passou sem fazer barulho.`, { teste: t });
-        return false;
-      }
-    }
     estado.iarnoAvisado = true;
     salvo.iarno = 'fugiu';
-    iarno.fugiu = true;
-    grupos.cajavidro.vencido = true;
-    // Foge para a cisterna e leva a bolsa, se ela ainda estiver lá.
-    const bolsa = !salvo.bolsa;
-    salvo.bolsa = true;
+    iarno.fugiu = false;
+    separarGuardas();
+    grupos.cajavidro.fuga = true;
     // O vigia, se ainda está lá, recebe ordem de emboscar quem vier atrás.
     if (grupos.fenda && pendentes().includes(grupos.fenda)) { grupos.fenda.tregua = false; grupos.fenda.emboscada = true; }
+    // Ele sai pelo quarto e já está dois passos à frente: abre a porta secreta e vai.
+    estado.fuga = { rota: rotaDeFuga(), i: 0 };
+    if (!enc.combatants.includes(iarno)) enc.addCombatant(iarno);
+    iarno.facingVec = { dx: 1, dy: 0 };
+    avancarIarno(2);
     await painel([
       'Um rato marrom corre por baixo da bancada, para, olha direto para vocês — olha demais, como gente — e some por uma fresta.',
-      'Do outro lado da parede, uma cadeira arrasta, alguém pragueja baixinho, e uma pedra raspa em pedra. Depois, silêncio.',
-      bolsa ? '(O Cajavidro sabe que vocês estão aqui.)' : null,
-    ].filter(Boolean));
+      'Do outro lado da parede, uma cadeira arrasta, alguém pragueja baixinho, e uma pedra raspa em pedra. Passos apressados, que se afastam.',
+      '(O Cajavidro sabe que vocês estão aqui, e está fugindo.)',
+    ]);
+    app.refresh();
+    return true;
+  }
+
+  // ------------------------------------------------- a fuga do Cajavidro ----
+  const SECRETAS_DA_FUGA = ['quarto', 'passagem', 'cisterna'];
+  /**
+   * O caminho dele: do quarto, pela secreta do nordeste e pela do depósito (7), pela margem leste da caverna (8) e pelo túnel
+   * até a secreta da cisterna (1). Medido com as três portas abertas (e fechadas de novo em seguida: ele as abre andando).
+   */
+  function rotaDeFuga() {
+    const f = enc.field;
+    const portas = SECRETAS_DA_FUGA.map((n) => MANSAO.secretas[n]);
+    const guardado = portas.map((q) => { const i = q.y * f.w + q.x; return [i, f.tiles[i], f.surfaces[i], f.heights[i]]; });
+    for (const q of portas) { const i = q.y * f.w + q.x; f.tiles[i] = 0; f.surfaces[i] = SUPERFICIES.indexOf('passagemAberta'); f.heights[i] = q.h; }
+    const alcance = f.reachable({ x: iarno.pos.x, y: iarno.pos.y }, 100000);
+    const rota = Battlefield.pathFrom(alcance, { x: 21, y: 17 });
+    for (const [i, tl, sf, h] of guardado) { f.tiles[i] = tl; f.surfaces[i] = sf; f.heights[i] = h; }
+    return rota;
+  }
+
+  /** Anda `passos` casas pela rota, abrindo as secretas por onde passa. */
+  function avancarIarno(passos) {
+    const fg = estado.fuga;
+    if (!fg) return;
+    for (let k = 0; k < passos && fg.i < fg.rota.length - 1; k += 1) {
+      const q = fg.rota[fg.i + 1];
+      if (enc.occupied(q.x, q.y, iarno)) break;                      // um herói na frente: ele não passa
+      const porta = Object.entries(MANSAO.secretas).find(([n, s]) => SECRETAS_DA_FUGA.includes(n) && s.x === q.x && s.y === q.y && !salvo.secretas.includes(n));
+      if (porta) abrirSecreta(porta[0]);
+      const de = fg.rota[fg.i];
+      iarno.facingVec = { dx: Math.sign(q.x - de.x), dy: Math.sign(q.y - de.y) };
+      iarno.pos = { ...iarno.pos, x: q.x, y: q.y };
+      fg.i += 1;
+    }
+  }
+
+  /** Alguém do grupo, a 3 m dele, ou que o enxerga a 9 m. */
+  const alcancado = () => herois().some((h) => distanceFt(h.pos, iarno.pos) <= 10 || (distanceFt(h.pos, iarno.pos) <= 30 && podeVer(enc, h, iarno)));
+
+  /** Cada vez que o grupo anda, ele anda seis casas. Devolve `true` quando a cena tomou o turno (luta ou fuga completa). */
+  async function iarnoFoge() {
+    const fg = estado.fuga;
+    if (!fg || !iarno || iarno.dead) return false;
+    if (!alcancado()) {
+      avancarIarno(6);
+      app.refresh();
+    }
+    if (alcancado()) return iarnoAlcancado();
+    if (fg.i >= fg.rota.length - 1) return iarnoEscapa();
+    return false;
+  }
+
+  async function iarnoAlcancado() {
+    estado.fuga = null;
+    salvo.iarno = null;
+    const g = grupos.cajavidro;
+    g.fuga = false;
+    addCondition(iarno, 'invisivel', { rounds: 10, quando: 'fim', lado: 'foes' });
+    await asArmas([
+      'O Cajavidro olha por cima do ombro, vê quem o segue e solta um palavrão elegante. Tira um frasco do cinto, bebe de um gole — e o corpo dele some, como tinta na água. Só o cajado de vidro denuncia onde ele está.',
+      '— Eu avisei que um cavalheiro sabe quando partir. Mas não disse que ia partir sozinho.',
+    ]);
+    await combate(g, null);
+    return true;
+  }
+
+  async function iarnoEscapa() {
+    const visto = herois().some((h) => podeVer(enc, h, iarno));
+    estado.fuga = null;
+    iarno.fugiu = true;
+    const i = enc.combatants.indexOf(iarno);
+    if (i >= 0) enc.combatants.splice(i, 1);
+    // A bolsa de fuga dele, no fundo da cisterna, vai junto.
+    const bolsa = !salvo.bolsa;
+    salvo.bolsa = true;
+    const texto = bolsa
+      ? 'Uma laje gira, uma bolsa de couro encerado sai do fundo da cisterna e passos sobem a escada da cozinha, de dois em dois. Quando vocês chegarem lá, o Cajavidro já estará longe.'
+      : 'A laje do canto da cisterna gira, passos sobem a escada da cozinha, de dois em dois. Quando vocês chegarem lá, o Cajavidro já estará longe.';
+    if (visto) await painel(texto); else enc.say('acao', texto);
+    app.refresh();
     return true;
   }
 
@@ -536,6 +681,7 @@ export function criarMansao(app, config) {
     if (salvo.fossoVisto && c.pos.y === 11 && (c.pos.x === 23 || c.pos.x === 24)) await xpDoFosso();
     if (await ponteSul(c)) return;
     if (await secretasPassivas(c)) return;
+    if (await iarnoFoge()) return;
     if (await ratoAvisa(c)) return;
     if (await cripta(c)) return;
     if (await oVigia(c)) return;
@@ -552,12 +698,27 @@ export function criarMansao(app, config) {
         await combate(g, 'nossa');
         return;
       }
+      if (g.id === 'guardaCostas') {
+        if (!herois().some((h) => NO_QUARTO(h.pos))) continue;
+        await asArmas([
+          'O quarto está vazio de dono. Dois Marcarrubra, de pé junto da cama, não parecem surpresos: foram deixados ali para segurar a porta.',
+          '— O mestre mandou ficar. Quem passar, não passa.',
+        ]);
+        await combate(g, null);
+        return;
+      }
       if (g.id === 'estar') {
         const entrou = herois().find((h) => NA_ESTAR(h.pos));
         if (!entrou) continue;
+        const gente = herois().filter((h) => NA_ESTAR(h.pos));
+        if (!g.conversou && disfarcados(gente)) { await conversaDeManto(g, gente); return; }
         await asArmas('Uma aposta acaba de dar errado: um Marcarrubra bate o copo e os outros riem dele. Cheiro de cerveja derramada, gritaria, pedrinhas rolando — vocês estão no meio da sala antes de alguém notar que a porta abriu.');
-        await combate(g, 'nossa');
+        await combate(g, 'nossa!');
         return;
+      }
+      if (g.id === 'guardas' && !g.conversou) {
+        const gente = testemunhasDe(g);
+        if (disfarcados(gente)) { await conversaDeManto(g, gente); return; }
       }
       const visto = hostis(g).find((f) => herois().some((h) => podeVer(enc, h, f)));
       if (visto) {
@@ -753,6 +914,86 @@ export function criarMansao(app, config) {
     },
   };
 
+  /** A sala 10, com todo o grupo de manto: eles tomam os heróis por recrutas (Enganação CD 10). */
+  function arvoreDosBebados(quem) {
+    return {
+      inicio: 'oi',
+      nos: {
+        oi: {
+          narra: `Quatro rostos vermelhos erguem os olhos da mesa. Um deles aponta, com o copo, para o manto de ${quem.name}.`,
+          fala: '— Gente nova? O chefe não avisou de gente nova.',
+          opcoes: [
+            { texto: 'Foi o chefe que mandou. Somos recrutas.', teste: { pericia: 'enganacao', cd: 10 }, sucesso: 'aceitam', falha: 'desconfiam' },
+            { texto: 'Atacar.', fim: 'surpresa' },
+          ],
+        },
+        aceitam: {
+          narra: 'O riso volta à sala, mais alto. Alguém empurra um banco com o pé.',
+          fala: '— Senta aí, recruta! Paga uma rodada que a gente fala do chefe.',
+          opcoes: [
+            { texto: 'O que vocês sabem do chefe?', vai: 'chefe', uma: true },
+            { texto: 'Atacar enquanto estão distraídos.', fim: 'surpresa' },
+            { texto: 'Sair sem briga.', fim: 'paz' },
+          ],
+        },
+        chefe: {
+          fala: [
+            '— O mago do cajado de vidro? Mora do lado de lá, passando a oficina. Nunca come com a gente.',
+            '— E tem um bicho no fundo da caverna, de um olho só. A gente joga resto de comida de longe e não olha.',
+          ],
+          opcoes: [{ texto: '…', vai: 'aceitam' }],
+        },
+        desconfiam: {
+          fala: '— Recruta, é? Recruta chega com aviso. Pega eles!',
+          opcoes: [{ texto: '…', fim: 'luta' }],
+        },
+      },
+    };
+  }
+
+  /** A sala 9, com todo o grupo de manto: os bugbears os tomam por servos do Cajavidro (Enganação CD 15). */
+  function arvoreDosBugbears(quem) {
+    return {
+      inicio: 'oi',
+      nos: {
+        oi: {
+          narra: `Os três bugbears se levantam devagar, com o chão rangendo. O de tapa-olho cheira o ar, olha o manto de ${quem.name} e franze o focinho achatado.`,
+          fala: '— Gente do mago? O mago não avisou. Fala logo.',
+          opcoes: [
+            { texto: 'O Cajavidro nos mandou. Deixem passar.', teste: { pericia: 'enganacao', cd: 15 }, sucesso: 'servos', falha: 'desconfiam' },
+            { texto: 'Atacar.', fim: 'luta' },
+          ],
+        },
+        servos: {
+          narra: 'O bugbear de tapa-olho dá de ombros e volta a sentar. No canto, o goblin encolhe os ombros ainda mais.',
+          fala: '— O mago manda sempre uns peixes pequenos. Pergunta logo e vai.',
+          opcoes: [
+            { texto: 'O que vocês sabem dos Marcarrubra?', vai: 'sabem', uma: true },
+            { texto: 'Apertar um deles: "Fala tudo, agora."', teste: { pericia: 'intimidacao', cd: 15 }, sucesso: 'confessa', falha: 'desconfiam', uma: true },
+            { texto: 'Atacar de surpresa.', fim: 'surpresa' },
+            { texto: 'Sair sem briga.', fim: 'paz' },
+          ],
+        },
+        sabem: {
+          fala: '— O mago paga mal e fala demais. Manda a gente ficar aqui e vigiar o goblin. O chefe do mago é outro, mais acima, que a gente nunca viu.',
+          opcoes: [{ texto: '…', vai: 'servos' }],
+        },
+        confessa: {
+          narra: `O bugbear encosta na parede, apertado pelo olhar de ${quem.name}.`,
+          fala: [
+            '— Tá bom, tá bom! A chave de tudo fica com o de tapa-olho.',
+            '— O mago dorme do outro lado, passando a oficina. O rato dele vê tudo por lá. E tem uma porta atrás do quarto, que dá no depósito.',
+          ],
+          opcoes: [{ texto: '…', vai: 'servos' }],
+        },
+        desconfiam: {
+          fala: '— Peraí. O mago nunca mandou ninguém assim. Esmaga eles!',
+          opcoes: [{ texto: '…', fim: 'luta' }],
+        },
+      },
+    };
+  }
+
   const arvoreDendrar = {
     inicio: 'oi',
     nos: {
@@ -809,7 +1050,7 @@ export function criarMansao(app, config) {
 
   function dialogoDe(npc) {
     if (hasCondition(npc, 'inconsciente')) return null;
-    if (npc === droop && grupos.guardas?.vencido) return arvoreDroop;
+    if (npc === droop && (grupos.guardas?.vencido || grupos.guardas?.tregua)) return arvoreDroop;
     if (presos.includes(npc)) return arvoreDendrar;
     if (npc === iarno && salvo.iarno === 'preso') return arvoreIarno;
     return null;
@@ -835,6 +1076,10 @@ export function criarMansao(app, config) {
         },
       });
     }
+    out.push({
+      id: 'fenda-aura', tipo: 'magico', x: MANSAO.fenda[MANSAO.pontes.norte][0] + 1, y: MANSAO.pontes.norte + 1, nome: 'O fundo da fenda',
+      aura: { escola: 'necromancia', texto: 'Uma aura fraca e velha de necromancia paira sobre o fundo da fenda: algo morreu ali de um jeito que a magia ainda lembra.' },
+    });
     const pa = MANSAO.portas.alojamento;
     if (!salvo.portas.includes('alojamento')) {
       out.push({
@@ -1203,6 +1448,28 @@ export function criarMansao(app, config) {
     if (naFenda && f.surfaceAt(tile.x, tile.y) === 'caverna' && distanceFt(c.pos, tile) <= 5) {
       ops.push({ rotulo: 'Subir da fenda', icone: 'acao-levantarSe', detalhe: 'parede fácil · sem teste',
         fazer: async () => { const p = casaPerto(tile); c.pos = { ...c.pos, x: p.x, y: p.y }; app.refresh(); await depoisDeMover(c); } });
+    }
+    // Soltar as amarras da ponte: uma ação, do chão da caverna, junto de uma das pontas. Quem estiver em cima cai.
+    if (sup === 'ponte' && !naFenda && distanceFt(c.pos, tile) <= 10) {
+      const lado = tile.y === MANSAO.pontes.norte ? 'norte' : 'sul';
+      if (!salvo[FLAG_PONTE[lado]]) {
+        ops.push({
+          rotulo: 'Soltar as amarras da ponte', icone: 'acao-empurrar', detalhe: 'uma ação · a ponte cai e leva quem estiver nela',
+          fazer: async () => {
+            await derrubarPonte(lado, `${c.name} corta as amarras da ponta com uma só ação e a ponte tomba para dentro do escuro, seis metros abaixo`);
+            app.refresh();
+          },
+        });
+      }
+    }
+    if (naFenda && !salvo.thelVisto && Math.abs(c.pos.y - MANSAO.pontes.norte) <= 2) {
+      ops.push({
+        rotulo: 'Olhar o corpo', icone: 'acao-procurar', detalhe: 'meio coberto de pedra, junto da parede',
+        fazer: async () => {
+          salvo.thelVisto = true;
+          await painel('Meio coberto de pedra solta, o corpo de um homem de meia-idade, com roupa de lavrador, encolhido ao pé da parede; as mãos ainda erguidas protegem o rosto. Ninguém o enterrou. Deve ser Thel Dendrar, de quem a família na jaula ainda pergunta.');
+        },
+      });
     }
     if (naFenda && !salvo.bauVigia && Math.abs(c.pos.y - MANSAO.pontes.norte) <= 1) {
       ops.push({

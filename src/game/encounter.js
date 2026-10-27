@@ -590,7 +590,7 @@ function foesMansao() {
     // Área 8: o vigia de um olho só, encolhido junto da coluna do oeste.
     m('vigiaCiclopico', 9, 12, 'fenda', '', { dx: 1, dy: 0 }),
     // Área 9: três bugbears e o goblin Droop. O terceiro bugbear dorme no
-    // beliche e só levanta na segunda rodada: os três de pé ao mesmo tempo
+    // beliche e só levanta na quarta rodada: os três de pé ao mesmo tempo
     // matavam um herói de nível 2 em uma luta de cada quatro (revisor de
     // encontro, 300 lutas); com um dormindo, em menos de uma em dez.
     mosk,
