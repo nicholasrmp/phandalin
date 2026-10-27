@@ -1012,13 +1012,16 @@ export class Board {
     const caverna = this.field.paredeDeCaverna && sup === 'rocha';
     const alta = this.field.paredeAlta > 0 && PAREDES_ALTAS.has(sup);
     if (!(h > 0 && this.field.tileAt(x, y) === 1 && (caverna || alta))) return h;
-    // PAREDE EM CORTE: a parede que fica NA FRENTE de uma casa aberta (a de sul e a de leste de uma sala, vistas pela câmera) fica
-    // baixa, como a do castelo, para não cobrir a mobília e quem está atrás; as de trás (norte e oeste) sobem, e são as que se veem
-    // por dentro. Sem isto, com 2 níveis, 17 peças da mansão (cama, mesa, baús) ficavam escondidas atrás do muro da frente.
+    // PAREDE EM CORTE: a parede é ALTA (`paredeAlta` níveis), exceto quando fica NA FRENTE de uma peça de mobília (a casa de trás,
+    // na vista da câmera, tem objeto): aí fica baixa, em 1 nível, para não escondê-la. Quem anda atrás de uma parede alta não some:
+    // a parede esmaece (`transparenciaDaCasa`). Sem a exceção, 17 peças da mansão (cama, mesa, baús) ficavam atrás do muro.
     if (alta) {
       const v = this.toView(x, y);
-      const aberta = (i, j) => { const p = this.fromView(v.vx + i, v.vy + j); return this.field.inside(p.x, p.y) && this.field.tileAt(p.x, p.y) !== 1; };
-      if (aberta(-1, 0) || aberta(0, -1) || aberta(-1, -1)) return h;
+      const comPeca = (i, j) => {
+        const p = this.fromView(v.vx + i, v.vy + j);
+        return this.field.inside(p.x, p.y) && this.field.tileAt(p.x, p.y) !== 1 && Boolean(SUPERFICIE[this.field.surfaceAt(p.x, p.y)]?.objeto);
+      };
+      if (comPeca(-1, 0) || comPeca(0, -1) || comPeca(-1, -1)) return h;
     }
     let piso = -1;
     for (let j = -1; j <= 1; j += 1) {
