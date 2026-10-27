@@ -1076,6 +1076,7 @@ print('cercas:', _CERCAS, '| campos cercados:', len(_CAMPOS_DE_TRIGO))
 _tcs = INTERIOR['torre']
 _arca = next((c for c in sorted(_tcs) if T[c[1]][c[0]] == 't'), None)
 _torre_props = []
+_aranhas_mortas = []
 for _v in ('tesouroDragao', 'aranhaMorta', 'aranhaMorta', 'tesouroPouco'):
     for _rigor in (1, 0):
         _ok = False
@@ -1086,10 +1087,15 @@ for _v in ('tesouroDragao', 'aranhaMorta', 'aranhaMorta', 'tesouroPouco'):
         for (x, y) in _cands:
             if T[y][x] not in 'Ldvjc' or _junto_de_vao(x, y) or (_rigor and _tapado(x, y)):
                 continue
+            # duas aranhas mortas coladas (pernas misturadas) leem como um bicho so: a segunda fica a duas casas da primeira
+            if _v == 'aranhaMorta' and any(max(abs(x - ax), abs(y - ay)) < 2 for (ax, ay) in _aranhas_mortas):
+                continue
             _antes = T[y][x]
             _prop(x, y, _v, _v in _torre_props, 'torre')
             if _piso_inteiro(_tcs):
                 _torre_props.append(_v)
+                if _v == 'aranhaMorta':
+                    _aranhas_mortas.append((x, y))
                 _ok = True
                 break
             _desfaz(x, y, _antes)

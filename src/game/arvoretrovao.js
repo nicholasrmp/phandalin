@@ -336,9 +336,9 @@ export const MAPA_ARVORE_TROVAO = {
     "TTb,,,,,,,,,,,,,,,,,,,,^^^&^^^^::^^^^^TTTTTTTb,,,,TTTTTTTb:ZZZZZZLLL^,,,,T,,,,,,,,,,,,,,Tbb",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,::,,,,,,,,TTTb,,,,,bTTTTTT::ZZZZZZLLLL,,,,T,,,,,,,,,,,,,,,TT",
     "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLLLx%jL,,,,Tbb,,,,,,,,,,b,,::ZZZ,,,LLLL,,,,TT,,,,,,,,,,,,,bTT",
-    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjxxpLb,,,,TbLmL^,^^^i,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
+    "TT,,,,,,,,,,,,,,,,,,,,,,,,,,,LLjxxpLb,,,,TbLmL^,^L^i,,,,,:,ZZZ,LLLLL,b,,,TT,,,,,,,,,,,,,TTT",
     "TT::,::,,,,::,,,,,,,,,,,,,,,,iLbxLLLbb,,,TTL^LLLLxt&L,,,,:,Z::,LLL^LLb,,,TT,,,,b,,,,,,,,bTb",
-    ",:::::::::::::::,,,,,,,,,,,,,L%^bLLLs,,,,TT,LLLLLxLLL,,b,,,::::,LL^LL,,,,TT,bbTTTT,,,,,,TTT",
+    ",:::::::::::::::,,,,,,,,,,,,,L%^bLLLs,,,,TT,LLLLLx^LL,,b,,,::::,LL^LL,,,,TT,bbTTTT,,,,,,TTT",
     "TT,,,,,,,,,,,,:::,,,,,,,,,,,,,,,,,,,,,,,,TbLLLLLLLL,i,bb,:::::::,LLLL,,,,TTbTSSSTTb,,,,,TTT",
     "bTb,,,,,,,,,,,,,,,T,,,,:::,,,,,,,,,,,,bb,T,,,,,,LLLLbbb,,ZZZZZZZZLLL^,,,,TTTSSSSSbT,,,,,TTb",
     "TT,,,,,,,,,,,,,,,T::b,,,::,,::::::,Z,b,bbT,,,,,,,,,,,,,,bbZZZZZZZ,,,,b,,bTTSSSSSSSSyy,,,bTT",
@@ -840,7 +840,7 @@ export const ARVORE_TROVAO = {
     ],
     "dragao": [
       {
-        "x": 49,
+        "x": 48,
         "y": 21
       }
     ]
@@ -1417,8 +1417,8 @@ export const ARVORE_TROVAO = {
     },
     {
       "tipo": "prop",
-      "x": 49,
-      "y": 19,
+      "x": 50,
+      "y": 21,
       "variante": "aranhaMorta",
       "espelhar": true
     },
