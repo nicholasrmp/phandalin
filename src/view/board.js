@@ -236,6 +236,11 @@ const TINTA_DE_SALA = {
 };
 
 const ALTURA_PAREDE = 3;
+// A PAREDE DE CAVERNA: a rocha junto de chao anda no dado a UM nível acima do chão vizinho (é o que a linha de visão e a
+// translucidez conhecem), mas era desenhada só com essa altura, igual a um degrau, e lia como degrau. No desenho ela sobe
+// mais `PAREDE_EXTRA` níveis, e fica com a mesma altura das paredes de construção (3 níveis). Só desenho: a regra
+// (altura, visão, passo) não muda.
+const PAREDE_EXTRA = 2;
 // Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
 const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
 
@@ -363,7 +368,7 @@ export class Board {
 
     this.maxHeight = 0;
     for (let i = 0; i < this.field.heights.length; i++) {
-      this.maxHeight = Math.max(this.maxHeight, this.field.heights[i]);
+      this.maxHeight = Math.max(this.maxHeight, this.alturaVisual(i % this.field.w, Math.floor(i / this.field.w)));
     }
 
     const { w, h } = this.field;
@@ -809,6 +814,12 @@ export class Board {
     if (!ehFosso(1, 0)) { ctx.beginPath(); ctx.moveTo(sx, sy + TH); ctx.lineTo(sx + TW / 2, sy + TH / 2); ctx.stroke(); }
   }
 
+  /** A altura com que a casa é DESENHADA: a rocha junto de chão sobe `PAREDE_EXTRA` níveis além da altura do dado. */
+  alturaVisual(x, y) {
+    const h = this.field.heightAt(x, y);
+    return h > 0 && this.field.paredeDeCaverna && this.field.tileAt(x, y) === 1 && this.field.surfaceAt(x, y) === 'rocha' ? h + PAREDE_EXTRA : h;
+  }
+
   drawTile(ctx, x, y, alphaChao = 1, alphaObjeto = alphaChao) {
     // As superfícies novas têm desenho próprio; as antigas seguem pelo código
     // de sempre.
@@ -887,7 +898,7 @@ export class Board {
    * geração em arte. Errar o traçado depois da arte pronta custa a arte.
    */
   drawSuperficie(ctx, x, y, alphaChao, alphaObjeto, s) {
-    const hgt = this.field.heightAt(x, y);
+    const hgt = this.alturaVisual(x, y);
     const { sx, sy } = this.iso(x, y, hgt);
     const lift = hgt * LIFT;
     ctx.save();
@@ -911,7 +922,7 @@ export class Board {
       const v = this.toView(x, y);
       const frente = (dvx, dvy) => {
         const p = this.fromView(v.vx + dvx, v.vy + dvy);
-        return this.field.inside(p.x, p.y) ? this.field.heightAt(p.x, p.y) : 0;
+        return this.field.inside(p.x, p.y) ? this.alturaVisual(p.x, p.y) : 0;
       };
       const visiveis = { esq: hgt - frente(0, 1), dir: hgt - frente(1, 0) };
       for (let n = 0; n < hgt; n++) {
@@ -2772,7 +2783,7 @@ export class Board {
       m.globalCompositeOperation = 'destination-out';
       m.fillStyle = '#000';
       const recortar = (x, y, alto) => {
-        const hgt = this.field.heightAt(x, y);
+        const hgt = this.alturaVisual(x, y);
         const { sx, sy } = this.iso(x, y, hgt);
         // A face lateral desce do topo: a do degrau (altura) ou a da parede antiga.
         const paredeAntiga = this.field.tileAt(x, y) === 1 && !SUPERFICIE[this.field.surfaceAt(x, y)];

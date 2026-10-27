@@ -23,6 +23,8 @@ export function montarCampo(mapa) {
   if (mapa.pisos) field.pisoDeSala = new Map(Object.entries(mapa.pisos));
   // As construções só se abrem à vista quando o grupo está dentro ou enxerga dentro (`board.calcularSalasReveladas`).
   field.fachadaFechada = Boolean(mapa.fachadaFechada);
+  // A rocha junto de chão é desenhada como PAREDE de caverna (mais alta que um degrau): ver `board.alturaVisual`.
+  field.paredeDeCaverna = Boolean(mapa.paredeDeCaverna);
   // O quanto o que o grupo não enxerga escurece (0 a 1; padrão 0,8). Árvore Trovão pede 1: preto.
   if (mapa.veuDaEscuridao != null) field.veuDaEscuridao = mapa.veuDaEscuridao;
   if (mapa.salas) {
