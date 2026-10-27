@@ -115,7 +115,7 @@
 .partida-heroi.meu { cursor: pointer; border-color: var(--gold-escuro); }
 .partida-heroi.selecionado { background: rgb(255 210 74 / 16%); border-color: var(--gold); }
 .partida-heroi.caido { opacity: .5; }
-.partida-heroi img, .partida-heroi .sem-retrato { width: 28px; height: 28px; flex: none; image-rendering: pixelated; }
+.partida-heroi canvas, .partida-heroi .sem-retrato { width: 28px; height: 28px; flex: none; image-rendering: pixelated; }
 .partida-heroi-dados { display: grid; gap: 1px; min-width: 0; flex: 1; line-height: 1.15; }
 .partida-heroi-dados strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .partida-heroi-dados small { font-size: 11px; color: #b9ae96; display: flex; align-items: center; gap: 4px; }

@@ -50,7 +50,6 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   const grupo = el('ul', { class: 'partida-herois', 'aria-label': 'Os heróis do grupo' });
   const inimigosEl = el('ul', { class: 'partida-inimigos', 'aria-label': 'Os inimigos à vista', hidden: true });
   const jogadoresEl = el('ul', { class: 'partida-jogadores', 'aria-label': 'Quem está na sala' });
-  const retratos = new Map();    // look -> endereço da imagem (o retrato é desenhado uma vez)
   const barraEm = hud?.barra?.parentNode ?? null;   // onde a barra de ações mora quando não há partida de sala
   const lugarDaBarra = el('div', { class: 'partida-barra' });
   const terminar = el('button', { class: 'menu-btn primario', hidden: true, onclick: () => { audio.play('click'); if (selecionado) enviar({ tipo: 'agir', acao: 'terminar', heroi: selecionado.id }); } }, 'Terminar turno do herói');
@@ -562,14 +561,16 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       const meu = Boolean(pub) && pub === visaoDaSala?.voce;
       // Em luta, o herói mostra o que ainda tem no turno.
       const turno = emLuta && enc.side === 'party' ? (c.acted ? 'turno encerrado' : `ação ${c.actionUsed ? 'usada' : 'livre'} · ${Math.max(0, c.movementLeftFt ?? 0)} ft`) : '';
-      if (!retratos.has(c.look)) { try { retratos.set(c.look, makePortrait(c.look, 28).toDataURL()); } catch { retratos.set(c.look, null); } }
+      // Desenhado a cada vez, como no HUD: a arte nova (a folha do PixelLab) chega depois, e um retrato guardado cedo ficaria o antigo.
+      let retrato = null;
+      try { retrato = makePortrait(c.look, 28); retrato.className = 'pixel'; } catch { retrato = null; }
       const frac = Math.max(0, Math.min(1, c.hp / (c.maxHp || 1)));
       return el('li', {
         class: `partida-heroi${meu ? ' meu' : ''}${meu && c === selecionado ? ' selecionado' : ''}${c.hp <= 0 ? ' caido' : ''}`,
         title: `${c.name}: ${Math.max(0, c.hp)}/${c.maxHp} PV${pub ? ` · ${dono(c.id)}` : ''}`,
         onclick: meu ? () => selecionar(c) : null,
       },
-      retratos.get(c.look) ? el('img', { src: retratos.get(c.look), alt: '', class: 'pixel' }) : el('span', { class: 'sem-retrato' }),
+      retrato ?? el('span', { class: 'sem-retrato' }),
       el('span', { class: 'partida-heroi-dados' },
         el('strong', {}, c.name),
         el('small', {}, pub ? el('i', { style: { background: corDe(pub) } }) : null, dono(c.id) || 'sem dono'),
