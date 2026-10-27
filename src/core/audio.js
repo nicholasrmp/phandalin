@@ -788,7 +788,7 @@ export const audio = new Audio();
  * Classificar mal aqui e pior que nao classificar: o ouvido aprende o piso em
  * duas telas e estranha na terceira.
  */
-const CHAO_DE_PEDRA = new Set(['laje', 'pedra', 'alvenaria', 'caverna', 'escada', 'rocha', 'pedregal', 'sarcofago']);
+const CHAO_DE_PEDRA = new Set(['laje', 'portaAberta', 'passagemAberta', 'pedra', 'alvenaria', 'caverna', 'escada', 'rocha', 'pedregal', 'sarcofago']);
 const CHAO_DE_TERRA = new Set(['grama', 'mato', 'estrada', 'palha']);
 
 export function passoSoundFor(sup) {

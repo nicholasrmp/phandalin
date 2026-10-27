@@ -10,7 +10,7 @@
 //
 // Glifos: R parede · _ chão · W cisterna · = ponte · x fundo da fenda ·
 // A coluna · s barris e estantes · z beliche · K baú · m mesa · Q sarcófago ·
-// G grade. Alturas em dígitos (um nível = 1,5 m). Luz: 2 claro, 1 penumbra,
+// G grade · ! porta de madeira · M parede de pedra lavrada. Alturas em dígitos (um nível = 1,5 m). Luz: 2 claro, 1 penumbra,
 // 0 breu.
 
 export const MAPA_MANSAO = {
@@ -73,7 +73,7 @@ export const MAPA_MANSAO = {
   "terreno": [
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     "RMMMMMMMMMMMMMMMMMMMMMMMMRRRRRR",
-    "RMsLLeMKmLMLssLMLMLsMLLLMRRRRRR",
+    "RMsLLeMKmLMLssLML!LsMLLLMRRRRRR",
     "RMsmLLLLLzMMLLLMLMLsMGGGMRRRRRR",
     "RMsmLLMMMMMMLLsMLMMMMLLLMRRRRRR",
     "RMMMLMMLLL_xx__MLLLLLLLsMRRRRRR",
@@ -84,7 +84,7 @@ export const MAPA_MANSAO = {
     "RMsLssLM___xx__MLLLLLLLLLLLLLMR",
     "RMLLLLLM__xx___MMMMMMMMLLMMLMMR",
     "RMMLMMMM__xx___MzLzLMssssLLLMMR",
-    "RRMLLLL__Axxx__MLLeLMLLLLLLLLMR",
+    "RRMLLLL__Axxx__MLLeL!LLLLLLLLMR",
     "RMMLMMMM__===__MLLLsMVVVLLLMLMM",
     "RMzLLzLM___xx__MsssLMVVVLLLMLLM",
     "RMLLeLLM___xx__MMMMMMVVVLLLMLMM",

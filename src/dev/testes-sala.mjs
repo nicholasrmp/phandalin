@@ -27,6 +27,8 @@ import { heroiQueSobra } from '../game/sala.js';
 import { escolhasConferidas } from '../game/nivel.js';
 import { diarioDe, diarioParaTela } from '../game/diario.js';
 import { tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, identidade, LIMITE_POR_JANELA, JANELA_MS } from '../worker/sala-servidor.js';
+import { MAPA_MANSAO as MAPA_MANSAO_DADOS, MANSAO as MANSAO_DADOS } from '../game/mansao.js';
+import { SUPERFICIES as SUPERFICIES_GRID, GLIFOS as GLIFOS_GRID } from '../core/grid.js';
 import { montarCampo } from '../game/campo.js';
 import { mapaDo } from '../game/encounter.js';
 import { diferencasDoCampo, aplicarDiferencas, diferencaValida } from '../game/campo-delta.js';
@@ -1778,6 +1780,15 @@ teste('campo em diferenças: porta aberta e casa mudada chegam ao espelho do con
   assert.equal(conv.aresta(a.x, a.y, b.x, b.y), antes, 'a aresta voltou');
   assert.equal(conv.heights[i], base.heights[i], 'a casa voltou');
   assert.equal(aplicarDiferencas(conv, base, { a: [[0, 999999, 1]], c: [] }), false, 'diferença fora do mapa é recusada');
+});
+
+teste('mansão: as portas de casa inteira têm superfície própria (a trancada e a do alojamento são madeira; a secreta achada vira laje girada)', () => {
+  for (const s of ['portaMadeira', 'portaAberta', 'passagemAberta']) assert.ok(SUPERFICIES_GRID.includes(s), `${s} existe`);
+  assert.equal(GLIFOS_GRID['!'].kind, 1, 'a porta fechada é parede (barra o passo e a vista)');
+  assert.equal(GLIFOS_GRID['?'].kind, 0);
+  assert.equal(GLIFOS_GRID['@'].kind, 0);
+  for (const c of [MANSAO_DADOS.trancada, ...Object.values(MANSAO_DADOS.portas)]) assert.equal(MAPA_MANSAO_DADOS.terreno[c.y][c.x], '!', `porta de madeira em ${c.x},${c.y}`);
+  for (const c of Object.values(MANSAO_DADOS.secretas)) assert.equal(MAPA_MANSAO_DADOS.terreno[c.y][c.x], 'M', `a secreta em ${c.x},${c.y} é parede até ser achada`);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

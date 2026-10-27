@@ -165,6 +165,10 @@ const SUPERFICIE = {
   palha: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'palha' },
   desabamento: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'desabamento' },
   caixotes: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'mantimentos' },
+  // As portas de casa inteira da mansão: a de madeira que fecha o vão (parede), a mesma aberta e a laje que gira (secreta achada).
+  portaMadeira: { topo: ROCHA_TOPO, lado: ROCHA_LADO, topoBloco: 'alvenaria', face: 'alvenaria', objeto: 'portaMadeira' },
+  portaAberta: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'portaAberta' },
+  passagemAberta: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'passagemAberta' },
   arca: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'bau' },
 };
 
@@ -1600,6 +1604,8 @@ export class Board {
         ctx.stroke();
       }
       ctx.lineWidth = 1;
+    } else if (s.objeto === 'portaMadeira' || s.objeto === 'portaAberta' || s.objeto === 'passagemAberta') {
+      this.desenharPortaDeCasa(ctx, x, y, cx, cy, hgt, s.objeto);
     } else if (s.objeto === 'espinheiro') {
       // Galhos baixos e emaranhados, com espinho: terreno difícil, não cobertura.
       ctx.strokeStyle = '#3c4a26';
@@ -1613,6 +1619,91 @@ export class Board {
       ctx.lineWidth = 1;
     }
     ctx.restore();
+  }
+
+  /**
+   * A PORTA QUE É A CASA INTEIRA (a mansão: a porta trancada, a do alojamento e as secretas): não há aresta para pôr o arco,
+   * então o desenho vai na casa. Fechada, é a folha de madeira com ferragens: no topo do bloco e nas faces que o grupo vê
+   * (a vizinha livre, mais baixa). Aberta, a folha fica encostada na parede de trás; a secreta achada é uma laje de pedra
+   * girada para o lado. O eixo da passagem sai dos vizinhos livres, e o desenho acompanha a rotação da câmera.
+   */
+  desenharPortaDeCasa(ctx, x, y, cx, cy, hgt, tipo) {
+    const f = this.field;
+    const livre = (nx, ny) => f.inside(nx, ny) && f.tileAt(nx, ny) !== 1;
+    const noX = livre(x - 1, y) && livre(x + 1, y);
+    const eixo = noX ? [1, 0] : [0, 1];
+    const plano = noX ? [0, 1] : [1, 0];
+    const o = this.iso(x, y, 0);
+    const passo = ([dx, dy]) => { const p = this.iso(x + dx, y + dy, 0); return { x: p.sx - o.sx, y: p.sy - o.sy }; };
+    const ex = passo(eixo);
+    const ep = passo(plano);
+    const ponto = (a, b, c0 = { x: cx, y: cy }) => ({ x: c0.x + ex.x * a + ep.x * b, y: c0.y + ex.y * a + ep.y * b });
+    const poligono = (pts, cor) => {
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)));
+      ctx.closePath();
+      ctx.fill();
+    };
+    const risco = (a, b, cor, larg = 1) => {
+      ctx.strokeStyle = cor;
+      ctx.lineWidth = larg;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    };
+    ctx.imageSmoothingEnabled = false;
+    if (tipo === 'portaMadeira') {
+      // O topo do bloco: tábuas na direção do vão e a cinta de ferro atravessada.
+      poligono([ponto(-0.44, -0.44), ponto(0.44, -0.44), ponto(0.44, 0.44), ponto(-0.44, 0.44)], '#5b4028');
+      for (let k = -0.3; k <= 0.31; k += 0.2) risco(ponto(k, -0.44), ponto(k, 0.44), 'rgba(22,16,10,.7)');
+      risco(ponto(-0.44, 0), ponto(0.44, 0), '#2b2622', 2);
+      // As faces que aparecem: a folha cobre a altura toda da parede.
+      const v = this.toView(x, y);
+      for (const [lado, dvx, dvy] of [['dir', 1, 0], ['esq', 0, 1]]) {
+        const n = this.fromView(v.vx + dvx, v.vy + dvy);
+        if (!livre(n.x, n.y)) continue;
+        const dh = (hgt - this.alturaVisual(n.x, n.y)) * LIFT;
+        if (dh <= 2) continue;
+        const A = { x: cx + (lado === 'dir' ? TW / 2 : -TW / 2), y: cy };
+        const B = { x: cx, y: cy + TH / 2 };
+        const P = (u, w) => ({ x: A.x + (B.x - A.x) * u, y: A.y + (B.y - A.y) * u + w });
+        poligono([P(0.06, 0), P(0.94, 0), P(0.94, dh), P(0.06, dh)], lado === 'dir' ? '#4a3321' : '#5b4028');
+        for (let u = 0.2; u < 0.9; u += 0.17) risco(P(u, 0), P(u, dh), 'rgba(22,16,10,.7)');
+        risco(P(0.06, dh * 0.28), P(0.94, dh * 0.28), '#2b2622', 2);
+        risco(P(0.06, dh * 0.76), P(0.94, dh * 0.76), '#2b2622', 2);
+        ctx.strokeStyle = '#8a7648';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const an = P(0.72, dh * 0.5);
+        ctx.arc(an.x, an.y, 2.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      return;
+    }
+    // Aberta: a folha encostada na parede de TRÁS (a de menor y na tela), pela metade do vão.
+    const lado = ep.y > 0 ? -1 : 1;
+    const base = (a) => ponto(a, lado * 0.4);
+    const alt = LIFT - 3;
+    const sobe = (q) => ({ x: q.x, y: q.y - alt });
+    const a0 = base(-0.42);
+    const a1 = base(0.12);
+    // A sombra da folha no chão, e depois a folha.
+    poligono([a0, a1, { x: a1.x - ep.x * lado * 0.18, y: a1.y - ep.y * lado * 0.18 }, { x: a0.x - ep.x * lado * 0.18, y: a0.y - ep.y * lado * 0.18 }], 'rgba(0,0,0,.28)');
+    if (tipo === 'portaAberta') {
+      poligono([a0, a1, sobe(a1), sobe(a0)], '#4f3825');
+      for (let k = 0.14; k < 0.95; k += 0.2) risco({ x: a0.x + (a1.x - a0.x) * k, y: a0.y + (a1.y - a0.y) * k }, sobe({ x: a0.x + (a1.x - a0.x) * k, y: a0.y + (a1.y - a0.y) * k }), 'rgba(22,16,10,.7)');
+      risco(sobe(a0), sobe(a1), '#7a5b38', 1);
+      risco({ x: a0.x, y: a0.y - alt * 0.25 }, { x: a1.x, y: a1.y - alt * 0.25 }, '#2b2622', 2);
+      risco({ x: a0.x, y: a0.y - alt * 0.75 }, { x: a1.x, y: a1.y - alt * 0.75 }, '#2b2622', 2);
+    } else {
+      // A laje girada: pedra lisa com o fio de cima claro e uma rachadura.
+      poligono([a0, a1, sobe(a1), sobe(a0)], '#6d6a62');
+      poligono([sobe(a0), sobe(a1), { x: sobe(a1).x, y: sobe(a1).y + 2 }, { x: sobe(a0).x, y: sobe(a0).y + 2 }], '#a39f92');
+      risco({ x: a0.x + (a1.x - a0.x) * 0.3, y: a0.y + (a1.y - a0.y) * 0.3 - alt * 0.9 }, { x: a0.x + (a1.x - a0.x) * 0.55, y: a0.y + (a1.y - a0.y) * 0.55 - alt * 0.35 }, 'rgba(20,18,16,.7)');
+      risco(a0, a1, 'rgba(20,18,16,.6)');
+    }
   }
 
   /**

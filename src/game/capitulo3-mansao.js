@@ -141,8 +141,8 @@ export function criarMansao(app, config) {
   });
 
   // ------------------------------------------------------------- o mapa ----
-  const chao = SUPERFICIES.indexOf('laje');
-  function abrirCasa(x, y, h, { som = true } = {}) {
+  /** A casa que era porta vira chão, com o desenho de quem a abriu: `portaAberta` (a de madeira) ou `passagemAberta` (a laje que gira). */
+  function abrirCasa(x, y, h, { som = true, sup = 'portaAberta' } = {}) {
     // Pedra arrastando por 1,2 s. O padrao e TOCAR, e so as tres chamadas que
     // repoem o que ja estava aberto passam `som: false`: com o padrao
     // invertido, uma porta nova esquecida entraria muda, e o erro silencioso
@@ -151,7 +151,7 @@ export function criarMansao(app, config) {
     const f = enc.field;
     const i = y * f.w + x;
     f.tiles[i] = 0;
-    f.surfaces[i] = chao;
+    f.surfaces[i] = SUPERFICIES.indexOf(sup);
     f.heights[i] = h;
     f.versao = (f.versao ?? 0) + 1;     // a visão do grupo recalcula
   }
@@ -160,7 +160,7 @@ export function criarMansao(app, config) {
     const f = enc.field;
     const grade = SUPERFICIES.indexOf('grade');
     for (let i = 0; i < f.surfaces.length; i++) {
-      if (f.surfaces[i] === grade) abrirCasa(i % f.w, Math.floor(i / f.w), f.heights[i], { som: som && false });
+      if (f.surfaces[i] === grade) abrirCasa(i % f.w, Math.floor(i / f.w), f.heights[i], { som: false, sup: 'laje' });
     }
     if (som) audio.play('doorStone');
   }
@@ -171,7 +171,7 @@ export function criarMansao(app, config) {
   }
   function abrirSecreta(nome, opcoes) {
     const s = MANSAO.secretas[nome];
-    abrirCasa(s.x, s.y, s.h, opcoes);
+    abrirCasa(s.x, s.y, s.h, { ...opcoes, sup: 'passagemAberta' });
     if (!salvo.secretas.includes(nome)) salvo.secretas.push(nome);
   }
   function abrirTrancada(opcoes) {

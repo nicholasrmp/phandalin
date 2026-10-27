@@ -93,7 +93,7 @@ export function preparar(x, c, spellId, opts) {
   }
   if (spellId === 'fundirSeComPedra') {
     // Precisa de pedra do lado: parede, rocha, alvenaria ou laje de pedra.
-    const PEDRAS = new Set(['parede', 'rocha', 'alvenaria', 'laje', 'seteira', 'sarcofago', 'estalagmite']);
+    const PEDRAS = new Set(['parede', 'rocha', 'alvenaria', 'portaAberta', 'passagemAberta', 'laje', 'seteira', 'sarcofago', 'estalagmite']);
     const f = app.enc?.field;
     const perto = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => PEDRAS.has(f?.surfaceAt(c.pos.x + dx, c.pos.y + dy)));
     if (!perto) return { erro: 'não há pedra ao lado em que se fundir' };

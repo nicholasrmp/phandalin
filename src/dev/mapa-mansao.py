@@ -249,6 +249,11 @@ for y in range(H):
         if any(v in CONSTRUIDO for v in viz):
             T[y][x] = 'M'
 
+# As portas que se VEEM (a trancada do depósito de armas e a do alojamento): `!` é a folha de madeira com ferragens no
+# vão da parede. As secretas ficam alvenaria até serem achadas: aí viram `@`, uma laje deslizada para o lado.
+for (x, y) in [TRANCADA] + [(x, y) for (x, y, _) in PORTAS.values()]:
+    T[y][x] = '!'
+
 # ---------------------------------------------------------------- saída ----
 import json
 from pathlib import Path
@@ -266,7 +271,7 @@ cab = '''// O ESCONDERIJO DOS MARCARRUBRA (Parte 2): os porões da Mansão Trese
 //
 // Glifos: R parede · _ chão · W cisterna · = ponte · x fundo da fenda ·
 // A coluna · s barris e estantes · z beliche · K baú · m mesa · Q sarcófago ·
-// G grade. Alturas em dígitos (um nível = 1,5 m). Luz: 2 claro, 1 penumbra,
+// G grade · ! porta de madeira · M parede de pedra lavrada. Alturas em dígitos (um nível = 1,5 m). Luz: 2 claro, 1 penumbra,
 // 0 breu.
 '''
 dados = {

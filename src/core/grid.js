@@ -182,6 +182,11 @@ export const GLIFOS = {
   '"': { kind: 0, sup: 'conchas' },
   '[': { kind: 0, sup: 'canal' },
   '|': { kind: 2, sup: 'aguaEscura' },
+  // AS PORTAS DE CASA INTEIRA do porão da mansão (a porta é a casa, não uma aresta): a folha de madeira que fecha o vão (parede),
+  // a mesma porta depois de aberta e a laje que gira (a porta secreta, uma vez achada). O desenho é do tabuleiro.
+  '!': { kind: 1, sup: 'portaMadeira' },
+  '?': { kind: 0, sup: 'portaAberta' },
+  '@': { kind: 0, sup: 'passagemAberta' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
