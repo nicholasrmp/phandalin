@@ -9,6 +9,12 @@ O site e o servidor de salas são **um só Worker** (`wrangler.toml`): os arquiv
   migrações de uma vez (`v1` SalaDO, `v2` LimitadorDO, `v3` DiretorioDO), todas com armazenamento SQLite (o plano grátis exige).
 - Login do `wrangler`: conta `nicholas.rmpimentel@gmail.com`. O ensaio (`wrangler deploy --dry-run`) passou, com os quatro bindings.
 
+## Publicado (2026-10-26)
+
+No ar com o servidor de salas: versão `8666975d` do Worker, do commit `5027ad6`, com `CODIGO_DO_SERVIDOR:1`. Teste de fumaça contra o
+endereço de verdade (taverna pública, mesa, convite, sala privada com código do servidor, código inventado recusado): passou.
+Falta o teste com 4 pessoas e a medida do consumo.
+
 ## Passo a passo
 
 1. **Publique de um checkout limpo**, não da pasta de trabalho: ela pode ter arquivos de outras sessões pela metade.
