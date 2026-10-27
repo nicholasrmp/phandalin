@@ -349,19 +349,21 @@ export function mapaDo(variante = 'padrao') {
     const tunel = variante === 'mansaoTunel';
     return {
       ...MAPA_MANSAO,
-      // Cada cômodo com a sua tinta no tabuleiro, como no castelo.
+      // Cada cômodo com a sua tinta no tabuleiro, como no castelo; a parede fina (de borda) do cômodo onde o grupo está se dissolve.
       salas: MANSAO.salas,
-      paredeAlta: 3,          // as paredes de TRÁS do porão se desenham com 3 níveis acima do chão; as da frente ficam em corte (1 nível)
+      paredeDeCaverna: true,      // a pedra em volta é parede de caverna (3 níveis), e não um degrau
+      rochaEmCorte: true,         // ... exceto a que fica na frente de uma sala: essa fica baixa, para se ver dentro
+      decor: MANSAO.decor,        // candeeiros nas arestas das paredes de trás
+      folhas: MANSAO.folhas,      // as portas que têm folha de madeira
       // As duas pontes cruzam a fenda de leste a oeste.
       objetos: [
         ...Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),
         ...MANSAO.props,           // a mobília de arte própria (estantes, bancada, cabides...), por casa
       ],
-      decorCasa: MANSAO.decor,     // candeeiros nas faces das paredes de trás
       degraus: MANSAO.degraus,     // as casas de escada
       grupo: tunel
-        ? [{ x: 10, y: 19 }, { x: 11, y: 19 }, { x: 10, y: 18 }, { x: 11, y: 18 }]
-        : [{ x: 28, y: 15 }, { x: 28, y: 14 }, { x: 28, y: 16 }, { x: 29, y: 15 }],
+        ? [{ x: 10, y: 19 }, { x: 10, y: 18 }, { x: 10, y: 17 }, { x: 10, y: 16 }]
+        : [{ x: 29, y: 14 }, { x: 28, y: 14 }, { x: 27, y: 14 }, { x: 27, y: 15 }],
       olhar: tunel ? { dx: 0, dy: -1 } : { dx: -1, dy: 0 },
       cena: 'mansao',
       entrada: tunel ? 'tunel' : 'cozinha',
@@ -551,7 +553,7 @@ function foesMansao() {
   const presos = [
     neutro(m('plebeu', 22, 2, 'jaulas'), 'Nars Dendrar', 'nars'),
     neutro(m('plebeu', 21, 7, 'jaulas'), 'Mirna Dendrar', 'mirna'),
-    neutro(m('plebeu', 23, 7, 'jaulas'), 'Nilsa Dendrar', 'nilsa'),
+    neutro(m('plebeu', 22, 7, 'jaulas'), 'Nilsa Dendrar', 'nilsa'),
   ];
   // `refem`: a 0 PV cai desacordado em vez de morrer (ver `applyDamage`). Sem
   // isso, um plebeu de 4 PV dentro da jaula morria do Mãos Flamejantes do
@@ -569,10 +571,10 @@ function foesMansao() {
   droop.refem = true;
   // Área 12: o Cajavidro na escrivaninha, de costas para a passagem secreta;
   // o rato dele vigia a oficina (11). Ninguém sabe o nome dele até ele falar.
-  const iarno = makeNpc('iarno', { x: 9, y: 2 }, {});
+  const iarno = makeNpc('iarno', { x: 8, y: 2 }, {});
   iarno.grupo = 'cajavidro';
   iarno.name = 'Cajavidro';
-  iarno.facingVec = { dx: -1, dy: 1 };
+  iarno.facingVec = { dx: -1, dy: 0 };
   iarno.chave = true;
   const rato = neutro(m('ratoGigante', 4, 4, 'rato', '', { dx: 1, dy: 0 }), 'Rato do mago');
   Object.assign(rato, { maxHp: 1, hp: 1, ac: 10, attacks: [], familiar: true });
@@ -583,14 +585,14 @@ function foesMansao() {
     // Área 2: três Marcarrubra de folga no alojamento.
     m('marcarrubra', 17, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
     m('marcarrubra', 17, 14, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
-    m('marcarrubra', 17, 12, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),   // (18,13) é o braseiro
+    m('marcarrubra', 17, 12, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
     // Área 4: três esqueletos diante dos sarcófagos.
     m('esqueleto', 17, 6, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
     m('esqueleto', 17, 9, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
     m('esqueleto', 18, 7, 'cripta', 'da cripta', { dx: -1, dy: 0 }),
     // Área 5: dois Marcarrubra de guarda nas jaulas.
     m('marcarrubra', 21, 4, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
-    m('marcarrubra', 22, 5, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
+    m('marcarrubra', 21, 5, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
     ...presos,
     // Área 8: o vigia de um olho só, encolhido junto da coluna do oeste.
     m('vigiaCiclopico', 9, 12, 'fenda', '', { dx: 1, dy: 0 }),

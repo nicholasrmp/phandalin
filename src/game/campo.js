@@ -25,6 +25,7 @@ export function montarCampo(mapa) {
   field.fachadaFechada = Boolean(mapa.fachadaFechada);
   // A rocha junto de chão é desenhada como PAREDE de caverna (mais alta que um degrau): ver `board.alturaVisual`.
   field.paredeDeCaverna = Boolean(mapa.paredeDeCaverna);
+  field.rochaEmCorte = Boolean(mapa.rochaEmCorte);   // a pedra na frente de uma sala fica baixa (a mansão)
   field.paredeAlta = Number(mapa.paredeAlta) || 0;   // níveis de parede ACIMA do chão, só no desenho (a regra segue a altura do mapa)
   // As portas que têm FOLHA de madeira (o tabuleiro desenha a folha encostada quando aberta). As cenas do anfitrião refazem
   // isto; o espelho do convidado só tem o mapa, e sem esta lista nunca desenhava a folha.

@@ -1,51 +1,55 @@
-# Gera `src/game/mansao.js`: terreno, altura e luz do esconderijo dos
+# Gera `src/game/mansao.js`: terreno, paredes, altura e luz do esconderijo dos
 # Marcarrubra, embaixo da Mansão Tresendar (Parte 2 da aventura, áreas 1-12).
 #
 #   python src/dev/mapa-mansao.py
 #
-# A ORGANIZAÇÃO segue o mapa da aventura (a imagem fica em `_referencias/`,
-# fora do repositório): 1 casa = 1,5 m, como lá. O DESENHO da grade é nosso:
-# paredes viram casas inteiras, e algumas salas encolhem uma casa para caber
-# a parede entre elas. Os FATOS do livro ficam: o que liga com o quê, onde
-# estão as portas secretas, a cisterna, a fenda com duas pontes e duas
-# colunas, as jaulas, os sarcófagos, o corredor do fosso.
+# A GRADE É A DA PLANTA DE REFERÊNCIA, casa por casa: 30 x 20, 1 casa = 1,5 m, sem
+# deslocamento (a casa (x, y) daqui é o quadrado (x, y) da imagem). A imagem fica em
+# `_referencias/` (fora do repositório) e só dá a ORGANIZAÇÃO: nós não copiamos a arte.
+# As paredes são FINAS, de borda (`paredes.n` e `paredes.o`, como no castelo): a parede fica
+# na aresta entre duas casas e não come casa nenhuma, então toda sala tem o tamanho da planta.
 #
-# Alturas (um nível = 1,5 m): o oeste é mais baixo que o leste, como o livro
-# diz. Leste e caverna no nível 4; oeste (salas 9-12) no 3; a fenda no 0 (seis
-# metros abaixo); o patamar da entrada da área 1 no 6, com degraus.
+# COMO SE LÊ. Cada casa de piso pertence a uma REGIÃO (sala, corredor, caverna). Onde duas
+# regiões se encostam há parede (`#`), salvo onde a planta abre uma passagem (ABERTURAS). Entre
+# a caverna e a pedra não há parede: a pedra é a casa `R`. Entre uma sala construída e a pedra
+# há parede de alvenaria. Portas, as secretas, a trancada e as grades das celas são arestas.
 #
-# Glifos de hoje (arte própria vem depois, no PixelLab): R parede · _ chão ·
-# W cisterna · = ponte · x fundo da fenda (pedregulho) · A coluna de pedra ·
-# s barris, caixas e prateleiras · z beliche · K baú · m mesa · Q sarcófago · G grade das
-# jaulas · S porta secreta (parede até ser achada; a cena abre).
-W, H = 31, 21
-T = [['R'] * W for _ in range(H)]
-A = [[0] * W for _ in range(H)]
-L = [[0] * W for _ in range(H)]          # luz: 2 claro, 1 penumbra, 0 breu
+# Alturas (um nível = 1,5 m): o oeste é mais baixo que o leste, como o livro diz. Leste e
+# caverna no nível 4; oeste (salas 9-12) no 3; a fenda no 0 (seis metros abaixo); o anel de
+# pedra do porão no 5, com as escadinhas entre os dois pisos.
+import json
+from collections import deque
+from pathlib import Path
 
+W, H = 30, 20
 R = lambda a, b: range(a, b + 1)
 
+T = [['R'] * W for _ in range(H)]            # glifo de cada casa (R = pedra, fora do esconderijo)
+A = [[3] * W for _ in range(H)]              # altura (a pedra longe de tudo fica no 3)
+L = [[0] * W for _ in range(H)]              # luz: 2 claro, 1 penumbra, 0 breu
+REG = [[None] * W for _ in range(H)]         # região de cada casa de piso
+CAVERNA = {'caverna', 'fenda'}               # regiões que se abrem umas para as outras sem parede
 
-def pinta(xs, ys, g, h, luz=None):
-    for y in ys:
-        for x in xs:
-            T[y][x] = g
-            A[y][x] = h
-            if luz is not None:
-                L[y][x] = luz
+PROPS = []                                   # mobília de arte própria: {tipo 'prop', x, y, variante, espelhar?}
+DECOR = []                                   # candeeiros nas paredes: {x, y, lado 'N'|'O', tipo}
+DEGRAUS = []                                 # casas de escada (só o desenho dos degraus)
 
 
-def casa(x, y, g, h=None, luz=None):
+def casa(x, y, reg, g='L', h=4, luz=1):
     T[y][x] = g
-    if h is not None:
-        A[y][x] = h
-    if luz is not None:
-        L[y][x] = luz
+    A[y][x] = h
+    L[y][x] = luz
+    REG[y][x] = reg
 
 
-PROPS = []        # a mobília de arte própria (atlas do cenário): {tipo 'prop', x, y, variante, espelhar?}
-DECOR = []        # candeeiros pendurados na face de uma casa de parede: {x, y, tipo}
-DEGRAUS = []      # casas de escada (só o desenho dos degraus): {x, y, eixo}
+def retang(reg, x0, y0, x1, y1, g='L', h=4, luz=1):
+    for y in R(y0, y1):
+        for x in R(x0, x1):
+            casa(x, y, reg, g, h, luz)
+
+
+def glifo(x, y, g):
+    T[y][x] = g
 
 
 def prop(x, y, variante, bloqueia=True, espelhar=False):
@@ -57,289 +61,302 @@ def prop(x, y, variante, bloqueia=True, espelhar=False):
     PROPS.append(item)
 
 
-SECRETAS = {}     # nome -> (x, y, altura do chão quando aberta)
+# ------------------------------------------------------------ o oeste (nível 3) ----
+retang('oficina', 2, 2, 5, 5, 'L', 3, 2)                      # 11 a oficina do mago (4 x 4)
+retang('quartoMago', 6, 2, 9, 4, 'L', 3, 2)                   # 12 o quarto do Cajavidro (4 x 3)
+retang('estarRubro', 2, 7, 6, 11, 'L', 3, 2)                  # 10 a sala de estar (5 x 5)
+retang('guardasBugbear', 2, 15, 6, 17, 'L', 3, 2)             # 9 o alojamento dos bugbears (5 x 3)
 
-# --------------------------------------------------------- 11. Oficina ----
-pinta(R(2, 5), R(2, 4), '_', 3, 2)
-for y in R(2, 4): casa(2, y, 's')                     # prateleiras de livros
-casa(3, 3, 'm'); casa(3, 4, 'm')                     # bancada de trabalho
-casa(6, 3, '_', 3, 2)                                # porta para 12
-casa(4, 5, '_', 3, 2)                                # porta para o corredor
+# O corredor de cima: do pé da oficina até a caverna, com a escada de dois lances.
+for (x, h) in [(4, 3), (5, 3), (6, 3), (7, 4), (8, 4)]:
+    casa(x, 6, 'corredorNorte', 'L', h, 1)
+casa(8, 7, 'corredorNorte', 'L', 4, 1)
+DEGRAUS += [{'x': 6, 'y': 6, 'eixo': 'x'}, {'x': 7, 'y': 6, 'eixo': 'x'}]
 
-# ------------------------------------------------- 12. Quarto do Cajavidro ----
-# Três por três: a referência dá ao quarto uns 4 x 3, e o corredor que havia ao sul dele não existe lá (é rocha).
-pinta(R(7, 9), R(2, 4), '_', 3, 2)
-casa(8, 2, 'm')                                      # escrivaninha (a carta)
-casa(9, 4, 'z'); casa(7, 4, 'K')                     # cama e baú ao pé dela, no fundo do quarto
-SECRETAS['quarto'] = (10, 2, 3)                      # nordeste do quarto
-casa(11, 2, '_', 3, 1)                               # o vão da passagem
-SECRETAS['passagem'] = (11, 3, 4)                    # e a segunda porta, para o 7
+# O corredor do sul: da sala de estar até o alojamento dos bugbears, e o lance que sobe à caverna.
+for (x, y, h) in [(3, 12, 3), (3, 13, 3), (3, 14, 3), (4, 14, 3), (5, 14, 4), (6, 14, 4)]:
+    casa(x, y, 'corredorSul', 'L', h, 1)
+DEGRAUS += [{'x': 4, 'y': 14, 'eixo': 'x'}, {'x': 5, 'y': 14, 'eixo': 'x'}]
 
-# --------------------------------------- corredor oeste e as escadas ----
-pinta(R(4, 6), [6], '_', 3, 1)                      # antecâmara entre 11 e 10
-casa(7, 6, '_', 3, 1)                                # pé da escada
-# (O corredor de cima, em 7..9,5, saiu: o quarto do mago ocupa essas casas até a fileira 4.)
+# A escadinha secreta entre o quarto (12) e o depósito (7): 1 casa de largura, três de comprimento.
+casa(10, 2, 'escadaSecreta', 'L', 3, 1)
+casa(10, 3, 'escadaSecreta', 'L', 4, 1)
+casa(10, 4, 'escadaSecreta', 'L', 4, 1)
+DEGRAUS += [{'x': 10, 'y': 3, 'eixo': 'y'}]
 
-# ------------------------------------------------- 10. Sala de estar ----
-pinta(R(2, 6), R(8, 11), '_', 3, 2)
-casa(6, 7, '_', 3, 2)                                # porta, desencontrada da do 11
-casa(3, 8, 'm'); casa(4, 8, 'm')                     # a mesa do jogo
-casa(2, 10, 's'); casa(4, 10, 's'); casa(5, 10, 's') # barris de cerveja (longe da parede da frente, que os esconderia)
-casa(3, 12, '_', 3, 2)                               # porta para o sul
-casa(3, 13, '_', 3, 1)
-pinta(R(4, 6), [13], '_', 3, 1)                      # passagem para a caverna
-casa(7, 13, '_', 4, 1)                               # degrau acima
+# ------------------------------------------------------------ o leste (nível 4) ----
+retang('deposito', 11, 2, 14, 4, 'L', 4, 1)                   # 7 o depósito (4 x 3) ...
+casa(15, 2, 'deposito', 'L', 4, 1)                            # ... e o nicho de trás da porta secreta
+retang('corredorArmas', 16, 2, 16, 4, 'L', 4, 1)              # o corredor do depósito de armas
+retang('armas', 17, 2, 18, 4, 'L', 4, 1)                      # 6 o depósito de armas (2 x 3), trancado
+retang('cripta', 16, 5, 19, 10, 'L', 4, 1)                    # 4 as criptas (4 x 6)
+retang('jaulas', 20, 2, 22, 8, 'L', 4, 2)                     # 5 as jaulas (3 x 7)
+retang('corredorFosso', 20, 9, 27, 10, 'L', 4, 0)             # 3 o corredor do fosso (8 x 2)
+casa(26, 11, 'passagemPorao', 'L', 4, 1)                      # a passagem entre o corredor e o porão
 
-# --------------------------------------------- 9. Alojamento dos guardas ----
-casa(3, 14, '_', 3, 2)                               # porta
-pinta(R(2, 6), R(15, 18), '_', 3, 2)
-for (x, y) in [(2, 15), (5, 15), (2, 17), (5, 17)]: casa(x, y, 'z')     # beliches, longe da parede sul e leste
+# 1 O porão com a cisterna (8 x 6, com dois entalhes de pedra); a parte clara no 4, o anel de pedra no 5.
+for y in R(12, 17):
+    for x in R(20, 27):
+        if (x, y) in {(23, 12), (24, 12), (23, 17), (24, 17)}:
+            continue                                          # os entalhes de pedra (a planta tem dois, de cada lado)
+        cinza = (x, y) in {(25, 12), (26, 12), (27, 12), (26, 13), (26, 14), (26, 15), (26, 16), (27, 14), (27, 15),
+                           (25, 17), (26, 17), (27, 17)}
+        casa(x, y, 'poraoCisterna', 'L', 5 if cinza else 4, 2)
+retang('poraoCisterna', 20, 14, 22, 15, 'V', 3, 2)            # a cisterna (3 x 2), um nível abaixo do piso
+DEGRAUS += [{'x': 25, 'y': 13, 'eixo': 'y'}, {'x': 25, 'y': 16, 'eixo': 'y'},
+            {'x': 27, 'y': 13, 'eixo': 'y'}, {'x': 27, 'y': 16, 'eixo': 'y'}]
+for (x, y) in [(25, 13), (25, 16), (27, 13), (27, 16)]:
+    A[y][x] = 4
+casa(28, 14, 'entrada', 'L', 5, 1)                            # a porta da escada da cozinha, a leste
+casa(29, 14, 'entrada', 'L', 5, 1)
 
-# --------------------------------------------- 8. A caverna da fenda ----
-caverna = [
-    # (y, x0, x1) — a caverna é irregular; a fenda corta pelo meio (a fileira 5 começa em 11: em 10 haveria uma pinça diagonal com o canto do quarto do mago)
-    (5, 11, 14), (6, 8, 14), (7, 8, 14), (8, 8, 14), (9, 8, 14), (10, 8, 14),
-    (11, 8, 14), (12, 8, 14), (13, 7, 14), (14, 8, 14), (15, 8, 14), (16, 8, 14),
-    (17, 9, 19), (18, 10, 14), (19, 10, 11),
-]
-for (y, x0, x1) in caverna:
-    pinta(R(x0, x1), [y], '_', 4, 0)
-# A fenda: encosta na rocha ao norte (linha 5) e ao sul (linha 18) — só se
-# cruza pelas pontes. Duas casas de largura, seis metros para baixo, pedregulho no fundo.
-fenda = {5: (11, 12), 6: (11, 12), 7: (10, 12), 8: (10, 12), 9: (11, 12), 10: (11, 12), 11: (10, 11),
-         12: (10, 11), 13: (10, 12), 14: (10, 12), 15: (11, 12), 16: (11, 12), 17: (11, 12), 18: (12, 13)}
+# 2 O alojamento dos Marcarrubra (3 x 4 e o vestíbulo da porta) e o túnel da secreta da cisterna.
+retang('alojamentoRubro', 16, 12, 18, 15, 'L', 4, 2)
+casa(19, 13, 'alojamentoRubro', 'L', 4, 2)
+for (x, y) in [(14, 15), (15, 15), (15, 16), (15, 17), (16, 17), (17, 17), (18, 17), (19, 17)]:
+    casa(x, y, 'tunelCisterna', 'L', 4, 0)
+
+# 8 A caverna da fenda. A margem de cada fileira (as casas de chão de caverna) e a fenda no meio, que só se cruza
+# pelas duas pontes. A pedra em volta é `R`.
+CHAO_CAVERNA = {
+    5: [12, 13],
+    6: [12, 13, 14],
+    7: [9, 12, 13, 14],
+    8: [9, 13, 14],
+    9: [9, 12, 13, 14],
+    10: [9, 12, 13],
+    11: [8, 9, 12, 13],
+    12: [8, 9, 12, 13],
+    13: [8, 9, 12, 13],
+    14: [7, 8, 9, 13],
+    15: [8, 9, 12, 13],
+    16: [9, 10],
+    17: [10], 18: [10], 19: [10],
+}
+fenda = {6: (10, 11), 7: (10, 11), 8: (10, 12), 9: (10, 11), 10: (10, 11), 11: (10, 11), 12: (10, 11), 13: (10, 11),
+         14: (10, 12), 15: (10, 11), 16: (11, 11), 17: (11, 11), 18: (11, 11), 19: (11, 11)}
+for y, xs in CHAO_CAVERNA.items():
+    for x in xs:
+        casa(x, y, 'caverna', '_', 4, 0)
 for y, (x0, x1) in fenda.items():
-    pinta(R(x0, x1), [y], 'x', 0, 0)
+    for x in R(x0, x1):
+        casa(x, y, 'fenda', 'x', 0, 0)
 # As duas pontes, de leste a oeste, no nível da caverna. A do sul é a podre.
 PONTES = {'norte': 8, 'sul': 14}
 for y in PONTES.values():
     for x in R(*fenda[y]):
-        casa(x, y, '=', 4, 0)
-# As duas colunas grossas que seguram o teto.
-casa(13, 9, 'A', 4); casa(9, 13, 'A', 4)
+        casa(x, y, 'fenda', '=', 4, 0)
+# As duas colunas grossas da caverna: nas bordas da fenda, uma em cada lado.
+glifo(12, 9, 'A'); glifo(9, 13, 'A')
 
-# ------------------------------------------------- 7. Depósito ----
-pinta(R(12, 14), R(2, 3), '_', 4, 1)
-pinta(R(12, 14), [4], '_', 4, 1)                     # abre para a caverna
-casa(12, 2, 's'); casa(13, 2, 's'); casa(14, 4, 's')
-SECRETAS['deposito'] = (15, 2, 4)                    # para o corredor do 6
+# ------------------------------------------------------------ paredes de borda ----
+PN = [['.'] * W for _ in range(H)]           # a aresta do NORTE de cada casa (com a casa de cima)
+PO = [['.'] * W for _ in range(H)]           # a aresta do OESTE de cada casa (com a casa da esquerda)
 
-# --------------------------------------- corredor do 6 e o 6, trancado ----
-pinta([16], R(2, 3), '_', 4, 1)
-casa(16, 4, '_', 4, 2)                               # porta para a cripta
-TRANCADA = (17, 2)                                   # porta do depósito de armas
-pinta(R(18, 19), R(2, 3), '_', 4, 1)
-casa(19, 2, 's'); casa(19, 3, 's')                   # estantes de armas
 
-# --------------------------------------------- 4. Criptas ----
-pinta(R(16, 19), R(5, 10), '_', 4, 1)
-for (x, y) in [(16, 6), (16, 9), (19, 6)]: casa(x, y, 'Q')   # sarcófagos
-casa(20, 5, '_', 4, 1)                               # porta para as jaulas
-casa(20, 10, '_', 4, 1)                              # porta para o corredor 3
+def aresta(a, b):
+    """A grade e o índice da aresta entre as casas vizinhas `a` e `b`."""
+    (ax, ay), (bx, by) = a, b
+    if bx == ax + 1:
+        return PO, bx, by
+    if bx == ax - 1:
+        return PO, ax, ay
+    if by == ay + 1:
+        return PN, bx, by
+    return PN, ax, ay
 
-# --------------------------------------------- 5. Jaulas ----
-pinta(R(21, 23), R(2, 7), '_', 4, 2)
-for x in R(21, 23):
-    casa(x, 3, 'G'); casa(x, 6, 'G')                 # as grades
-JAULAS = {'norte': (22, 3), 'sul': (22, 6)}          # portas das celas (na grade)
-casa(23, 5, 's')                                     # a pilha de roupas
 
-# --------------------------------------------- 3. Corredor do fosso ----
-pinta(R(21, 28), R(9, 10), '_', 4, 0)
+def poe(a, b, cod):
+    g, x, y = aresta(a, b)
+    g[y][x] = cod
+
+
+def grupo(reg):
+    return 'cave' if reg in CAVERNA else reg
+
+
+for Y in range(H):
+    for X in range(W):
+        for (VX, VY), g in (((X, Y - 1), PN), ((X - 1, Y), PO)):
+            if VX < 0 or VY < 0:
+                continue
+            a, b = REG[Y][X], REG[VY][VX]
+            if a is None and b is None:
+                continue
+            if a is None or b is None:
+                # A pedra: parede de alvenaria só para sala construída; a caverna tem a própria rocha.
+                if grupo(a or b) == 'cave':
+                    continue
+                g[Y][X] = '#'
+            elif grupo(a) != grupo(b):
+                g[Y][X] = '#'
+
+# As aberturas da planta: passagens sem parede nem porta (o depósito abre para a caverna; as escadas dão na caverna).
+ABERTURAS = [
+    ((12, 4), (12, 5)), ((13, 4), (13, 5)),        # o depósito, de pedra quebrada, abre para a caverna
+    ((8, 7), (9, 7)),                              # o patamar do corredor de cima dá na margem oeste
+    ((6, 14), (7, 14)),                            # o lance do corredor do sul dá na caverna
+    ((13, 15), (14, 15)),                          # a margem leste dá no túnel de pedra
+    ((26, 10), (26, 11)), ((26, 11), (26, 12)),    # a passagem do corredor do fosso para o porão
+    ((3, 14), (4, 14)),                            # o corredor do sul dobra para a escada
+]
+for (a, b) in ABERTURAS:
+    if a != b:
+        poe(a, b, '.')
+
+# As portas comuns da planta: nascem FECHADAS (`+`, a planta as desenha com folha) e abrem e fecham de graça (a cena). Só a
+# da escada da cozinha nasce aberta: o grupo chega pelos dois lados dela.
+PORTAS_ABERTAS = [
+    ((5, 3), (6, 3)),        # oficina - quarto
+    ((4, 5), (4, 6)),        # oficina - corredor de cima
+    ((4, 6), (4, 7)),        # corredor de cima - sala de estar
+    ((3, 11), (3, 12)),      # sala de estar - corredor do sul
+    ((3, 14), (3, 15)),      # corredor do sul - alojamento dos bugbears
+    ((16, 4), (16, 5)),      # corredor do depósito de armas - cripta
+    ((19, 5), (20, 5)),      # cripta - jaulas
+    ((19, 9), (20, 9)),      # cripta - corredor do fosso (as duas folhas de cobre)
+    ((19, 10), (20, 10)),
+    ((27, 14), (28, 14)),    # porão - escada da cozinha
+]
+for (a, b) in PORTAS_ABERTAS:
+    poe(a, b, '/' if (a, b) == ((27, 14), (28, 14)) else '+')
+TRANCADA = ((16, 2), (17, 2))                       # a porta do depósito de armas: trancada
+PORTAS = {'alojamento': ((19, 13), (20, 13))}       # a porta do alojamento: fechada
+for (a, b) in [TRANCADA] + list(PORTAS.values()):
+    poe(a, b, '+')
+# As PORTAS SECRETAS são parede (`#`) até a cena achar; guardadas aqui só para a cena saber onde ficam.
+SECRETAS = {
+    'quarto': ((9, 2), (10, 2)),                    # o nordeste do quarto, para a escadinha
+    'passagem': ((10, 4), (11, 4)),                 # a escadinha, para o depósito
+    'deposito': ((15, 2), (16, 2)),                 # o nicho do depósito, para o corredor das armas
+    'cisterna': ((19, 17), (20, 17)),               # o túnel, para o porão
+}
+# As grades das celas: arestas de seteira (barram o passo, não a visão). Duas fileiras, três casas cada.
+CELAS = {'norte': [((x, 3), (x, 4)) for x in R(20, 22)], 'sul': [((x, 6), (x, 7)) for x in R(20, 22)]}
+for pares in CELAS.values():
+    for (a, b) in pares:
+        poe(a, b, 'J')
+
+# O fosso escondido, no meio do corredor 3: duas casas de comprimento, nas duas fileiras.
 FOSSO = [(23, 9), (24, 9), (23, 10), (24, 10)]
-# O PARAPEITO. O fosso ocupa as DUAS fileiras do corredor, de parede a parede,
-# e a cena promete em três lugares que "nas beiradas sobra um parapeito
-# estreito". Não sobrava: revelado o fosso, o corredor ficava intransponível em
-# combate (as opções do botão direito só existem fora da luta) e a cripta
-# perdia o recuo. Estas duas casas são o parapeito, em fila indiana, pelo sul.
-casa(23, 11, '_', 4, 0); casa(24, 11, '_', 4, 0)
-# As pontas (22,11) e (25,11) também são chão: sem elas, o passo diagonal do corredor para o parapeito é barrado pela regra
-# de quina do motor (o fosso de um lado, a parede do outro) e a faixa ficava uma ilha que ninguém alcançava a pé.
-casa(22, 11, '_', 4, 0); casa(25, 11, '_', 4, 0)
-casa(27, 11, '_', 4, 1)                              # porta ao pé da escada da área 1
 
-# --------------------------------------------- 1. Porão ----
-pinta(R(21, 27), R(12, 18), '_', 4, 2)
-# A cisterna é um poço: a água fica um nível ABAIXO do piso, e a laje em volta mostra a borda. (Um nível acima, ela era
-# um tanque elevado que cortava a visão do porão em duas metades.)
-pinta(R(21, 23), R(14, 16), 'W', 3, 2)               # a cisterna
-for x in R(21, 23): casa(x, 12, 's')
-# O parapeito do fosso (23,11)/(24,11) desce para cá: sem esta pilha, ele
-# abriria uma rota nova do corredor direto para o porão.
-casa(24, 12, 's'); casa(25, 12, 's')
-casa(22, 18, 's'); casa(23, 18, 's')
-# Patamar de 1,5 x 4,5 m a leste, com duas escadinhas descendo para o porão.
-pinta([28], R(13, 17), '_', 6, 2)
-casa(27, 13, '_', 5, 2); casa(27, 17, '_', 5, 2)
-for y in R(14, 16): casa(27, y, 'R')                 # parede de baixo do patamar
-casa(29, 15, '_', 6, 2)                              # porta: escada da cozinha
-PORTAS = {'alojamento': (20, 13, 4)}                 # porta para o 2: fechada
-SECRETAS['cisterna'] = (20, 17, 4)                   # canto sudoeste
+# ------------------------------------------------------------ mobília ----
+# A planta de referência mostra salas MOBILIADAS. As peças saem do atlas do cenário (as mesmas da mobília de Árvore
+# Trovão). Regra: nenhuma peça fecha a passagem (o teste `testes-sala.mjs` mede que nenhuma casa de piso fica ilhada),
+# nem pisa onde nasce gente ou onde há porta.
+# 11 oficina: estantes ao longo da parede oeste, a bancada do alquimista, um balcão ao norte, barril e cesto.
+prop(2, 2, 'estante'); prop(2, 3, 'prateleira'); prop(2, 4, 'estante'); prop(2, 5, 'prateleira')
+prop(3, 2, 'prateleira')
+prop(3, 3, 'mesaFerramentas'); prop(3, 4, 'tina')
+prop(5, 5, 'saco')
+glifo(5, 2, 'e')                                              # o alambique aceso (braseiro)
+# 12 quarto: a escrivaninha da carta, o baú (um barril de ferragens) e a cama; a planta tem tapete e jarro.
+glifo(7, 2, 'm'); glifo(7, 4, 'K'); glifo(9, 4, 'z')
+prop(6, 2, 'candelabro')
+# 7 depósito: palha e tábuas, um barril, caixotes e a mesa de ferramentas com corda.
+prop(11, 2, 'tabuas'); prop(11, 3, 'cubaCerveja'); glifo(12, 2, 's'); prop(14, 3, 'ferramentas'); glifo(14, 4, 's')
+# 6 depósito de armas: o cabide de armas e a prateleira de garrafas.
+glifo(18, 2, 'g'); glifo(18, 3, 'g'); prop(18, 4, 'prateleira')
+# 4 cripta: três sarcófagos de duas casas cada, um pilar caído, ossos e a tocha da parede leste.
+for (x, y) in [(16, 6), (16, 7), (16, 8), (16, 9), (19, 6), (19, 7)]:
+    glifo(x, y, 'Q')
+prop(18, 9, 'ossos', bloqueia=False); prop(18, 10, 'pilarQuebrado')
+glifo(19, 8, 'e')
+# 5 jaulas: palha nas duas celas, a pilha de roupa e a lanterna.
+for (x, y) in [(20, 2), (22, 2), (21, 3), (20, 7), (22, 8), (21, 8)]:
+    glifo(x, y, 'p')
+glifo(22, 5, 's'); prop(22, 4, 'lanterna', bloqueia=False)
+# 3 corredor do fosso: as duas colunas falsas junto da parede norte.
+prop(22, 9, 'pilarQuebrado'); prop(26, 9, 'pilarQuebrado')
+# 1 porão: barris no entalhe do norte, a cuba e os barris do sul, a cisterna no meio.
+for x in R(20, 22):
+    glifo(x, 12, 's')
+glifo(21, 17, 's'); prop(22, 17, 'cubaCerveja')
+# 2 alojamento dos Marcarrubra: dois beliches, a mesa, a bancada e a pilha de caixotes.
+glifo(16, 12, 'z'); glifo(18, 12, 'z'); glifo(17, 15, 's'); glifo(18, 15, 's'); glifo(18, 14, 's'); prop(16, 15, 'banco')
+# 10 sala de estar: duas mesas, a cuba de cerveja, um banco e as estantes da parede oeste.
+glifo(3, 8, 'm'); glifo(4, 8, 'm'); glifo(5, 10, 'm')
+glifo(6, 7, 's'); prop(2, 7, 'banco'); prop(2, 10, 'estante'); glifo(6, 11, 'e')
+# 9 alojamento dos bugbears: quatro beliches, um em cada canto.
+for (x, y) in [(2, 15), (5, 15), (2, 17), (5, 17)]:
+    glifo(x, y, 'z')
 
-# --------------------------------------------- 2. Alojamento ----
-pinta(R(16, 19), R(12, 15), '_', 4, 2)
-casa(16, 12, 'z'); casa(18, 12, 'z')
-for (x, y) in [(16, 15), (17, 15), (18, 15), (19, 14), (19, 15)]: casa(x, y, 's')   # (19,15) fecha a pilha: sozinha, ficava uma casa ilhada
-
-# Túnel da porta secreta da cisterna até a caverna (a passagem sul).
-pinta(R(15, 19), [17], '_', 4, 0)
-
-# A LUZ. O castelo tem braseiros acesos e poças de luz quente; a mansão era
-# breu de ponta a ponta, e por isso a tinta das salas não aparecia. Os
-# Marcarrubra MORAM aqui: as salas que eles ocupam têm fogo. As que não ocupam
-# — a cripta, o depósito, os corredores, a caverna e a entrada do porão —
-# continuam no escuro, que é o contraste.
-#
-# Os braseiros são casas de verdade (bloqueiam, como no castelo) e ficam em
-# canto onde ninguém pisa nem nasce. Onde não sobrou canto livre, a luz sai de
-# um objeto que já estava lá — a escrivaninha do mago, a pilha de roupas das
-# jaulas — e aí nada no terreno muda.
+# ------------------------------------------------------------ luz ----
 LUZES = []
-for (x, y, claro, penumbra, tipo, braseiro) in [
-    (5, 2, 20, 20, 'fogueira', True),    # 11 oficina: o alambique aceso
-    (5, 9, 20, 20, 'fogueira', True),    # 10 sala de estar: o braseiro do jogo
-    (4, 16, 20, 20, 'fogueira', True),   # 9 alojamento dos bugbears
-    (18, 13, 20, 20, 'fogueira', True),  # 2 alojamento dos Marcarrubra
-    (8, 2, 15, 15, 'tocha', False),      # 12 quarto: a vela da escrivaninha
-    (23, 5, 15, 15, 'tocha', False),     # 5 jaulas: a lanterna na pilha
+for (x, y, claro, penumbra, tipo) in [
+    (5, 2, 20, 20, 'fogueira'),      # 11 oficina: o alambique aceso
+    (6, 11, 20, 20, 'fogueira'),     # 10 sala de estar: o braseiro do jogo
+    (19, 8, 15, 15, 'fogueira'),     # 4 cripta: a tocha da parede leste
+    (7, 2, 15, 15, 'tocha'),         # 12 quarto: a vela da escrivaninha
+    (22, 4, 15, 15, 'tocha'),        # 5 jaulas: a lanterna
+    (4, 16, 15, 15, 'tocha'),        # 9 alojamento dos bugbears: a lamparina do teto
+    (24, 13, 15, 15, 'tocha'),       # 1 porão: a lamparina de parede
 ]:
-    if braseiro:
-        casa(x, y, 'e')
     LUZES.append({'pos': {'x': x, 'y': y}, 'claro': claro, 'penumbra': penumbra, 'tipo': tipo})
 
-# AS SALAS, por casa. É o que o tabuleiro usa para dar a cada cômodo a sua
-# tinta (`TINTA_DE_SALA` em `view/board.js`) — o mesmo que o castelo faz. Só
-# aparência: não mexe em passo, visão nem luz.
-SALAS = {
-    'oficina': (2, 2, 5, 4), 'quartoMago': (7, 2, 9, 4),
-    'deposito': (12, 2, 14, 4), 'armas': (18, 2, 19, 3),
-    'jaulas': (21, 2, 23, 7), 'cripta': (16, 5, 19, 10),
-    'estarRubro': (2, 8, 6, 11), 'guardasBugbear': (2, 15, 6, 18),
-    'alojamentoRubro': (16, 12, 19, 15), 'corredorFosso': (21, 9, 28, 10),
-    'poraoCisterna': (21, 12, 27, 18),
-}
+# Candeeiros nas paredes de TRÁS de cada sala (as arestas N e O, que ficam atrás da casa na câmera). Só nas salas com luz.
+for (x, y, lado) in [(4, 2, 'N'), (8, 2, 'N'), (13, 2, 'N'), (17, 2, 'N'), (21, 2, 'N'), (3, 7, 'N'), (5, 15, 'N'),
+                     (17, 12, 'N'), (24, 13, 'N'), (16, 7, 'O'), (2, 3, 'O'), (2, 9, 'O'), (2, 16, 'O')]:
+    DECOR.append({'x': x, 'y': y, 'lado': lado, 'tipo': 'tochaAcesa'})
 
-# O que é caverna natural (a 8, o túnel e a saída) fica chão de terra; o
-# resto do porão, que foi construído, é piso de lajes (`L`).
-NATURAL = {(x, y) for (y, x0, x1) in caverna for x in R(x0, x1)} | {(x, 17) for x in R(15, 19)}
-for y in range(H):
-    for x in range(W):
-        if T[y][x] == '_' and (x, y) not in NATURAL:
-            T[y][x] = 'L'
-        if T[y][x] == 'W':
-            T[y][x] = 'V'
+# ------------------------------------------------------------ altura das paredes ----
+# Cada casa guarda os níveis das paredes do norte e do oeste dela (3 por padrão). A parede que fica na FRENTE de uma
+# peça de mobília (a casa de trás, na vista da câmera, tem objeto) fica baixa, em 1 nível, para não escondê-la.
+OBJETO = set('sKzmQeAgp^')
+PA = [[3] * W for _ in range(H)]
+for Y in range(H):
+    for X in range(W):
+        for (VX, VY), g in (((X, Y - 1), PN), ((X - 1, Y), PO)):
+            if g[Y][X] not in '#+/J':
+                continue
+            if VX >= 0 and VY >= 0 and T[VY][VX] in OBJETO:
+                PA[Y][X] = 1
+# A decoração só fica em parede alta.
+DECOR[:] = [d for d in DECOR if PA[d['y']][d['x']] >= 3]
 
-# Portas secretas: parede até alguém achar.
-for (x, y, _) in SECRETAS.values():
-    T[y][x] = 'R'
-T[TRANCADA[1]][TRANCADA[0]] = 'R'
-for (x, y, _) in PORTAS.values():
-    T[y][x] = 'R'
-
-# ------------------------------------------------- paredes em corte ----
-# A parede fica um nível acima do chão mais alto que ela toca: dá para ver o
-# corredor de trás sem que a parede suma.
-for y in range(H):
-    for x in range(W):
-        if T[y][x] == 'R':
-            viz = [A[b][a] for a, b in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1),
-                                        (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1), (x + 1, y + 1))
-                   if 0 <= a < W and 0 <= b < H and T[b][a] != 'R']
-            A[y][x] = (max(viz) + 1) if viz else 5
-            # A parede pega a luz da sala que ela fecha: numa sala clara, ela
-            # aparece clara, e a porta achada acende com o resto.
-            luzes = [L[b][a] for a, b in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))
-                     if 0 <= a < W and 0 <= b < H and T[b][a] != 'R']
-            L[y][x] = max(luzes) if luzes else 0
-
-# ------------------------------------------------- alvenaria e rocha ----
-# Parede que encosta em sala construída (laje, cisterna, mesa…) é alvenaria
-# (`M`); a que só encosta na caverna e na fenda é rocha natural (`R`). As
-# portas secretas e a trancada ficam no corpo da alvenaria: abertas, viram
-# laje (a cena troca a casa).
-CONSTRUIDO = set('LVmQGsKz^&gp')
-for y in range(H):
-    for x in range(W):
-        if T[y][x] != 'R':
-            continue
-        viz = [T[b][a] for a in (x - 1, x, x + 1) for b in (y - 1, y, y + 1)
-               if 0 <= a < W and 0 <= b < H and (a, b) != (x, y)]
-        if any(v in CONSTRUIDO for v in viz):
-            T[y][x] = 'M'
-
-# ------------------------------------------------- mobília e candeeiros ----
-# A planta de referência mostra salas MOBILIADAS: a oficina é de alquimista (estantes de frascos, bancada de ferramentas,
-# uma tina), o depósito de armas tem cabides de verdade, a cripta tem ossos e um pilar caído. As peças saem do atlas do
-# cenário (as mesmas da mobília de Árvore Trovão). Regra de colocação: nenhuma peça fecha a passagem (o teste
-# `testes-sala.mjs` mede que nenhuma casa de piso fica ilhada) nem pisa nas casas de gente ou de porta.
-for (x, y) in [(2, 2), (2, 4)]: prop(x, y, 'estante')                 # 11 oficina: estantes de livros e frascos
-prop(2, 3, 'prateleira')
-prop(3, 3, 'mesaFerramentas'); prop(3, 4, 'tina'); prop(5, 4, 'saco')  # a bancada, a tina de lavar vidraria, o saco de pó
-prop(7, 2, 'estante')                                                  # 12 quarto: os livros do mago
-prop(12, 2, 'ferramentas'); prop(13, 2, 'tabuas')                      # 7 depósito: martelos, pés de cabra, tábuas
-casa(19, 2, 'g'); casa(19, 3, 'g')                                     # 6 depósito de armas: os cabides de armas
-prop(19, 9, 'pilarQuebrado'); prop(18, 9, 'ossos', bloqueia=False)      # 4 cripta: um pilar caído e ossos roídos
-prop(22, 9, 'pilarQuebrado'); prop(26, 9, 'pilarQuebrado')              # 3 corredor do fosso: as colunas falsas
-prop(2, 11, 'cubaCerveja')                                             # 10 sala de estar: a cuba de cerveja
-prop(22, 18, 'cubaCerveja'); prop(23, 18, 'barrisRack')                # 1 porão: a bebida e os barris no suporte
-for (x, y) in [(21, 2), (23, 2), (21, 7), (23, 7)]: casa(x, y, 'p')    # 5 jaulas: palha no chão das celas
-
-# Candeeiros nas faces das paredes de trás (norte e oeste de cada sala: são as faces que a câmera vê por dentro). Só nas
-# salas habitadas e nas de penumbra: o corredor do fosso e a caverna são breu, e lá não há lamparina acesa.
-for (x, y) in [(4, 1), (8, 1), (13, 1), (18, 1), (18, 4), (15, 7), (22, 1), (20, 4), (4, 7), (1, 9), (5, 14), (1, 16),
-               (17, 11), (15, 13), (21, 11), (20, 15)]:
-    DECOR.append({'x': x, 'y': y, 'tipo': 'tochaAcesa'})
-
-# Casas de escada: o desenho dos degraus (a regra é o desnível de um nível, que o motor já aplica).
-for (x, y, eixo) in [(27, 13, 'x'), (27, 17, 'x'), (7, 6, 'x'), (7, 13, 'x'), (11, 3, 'y')]:
-    DEGRAUS.append({'x': x, 'y': y, 'eixo': eixo})
-
-# As portas que se VEEM (a trancada do depósito de armas e a do alojamento): `!` é a folha de madeira com ferragens no
-# vão da parede. As secretas ficam alvenaria até serem achadas: aí viram `@`, uma laje deslizada para o lado.
-for (x, y) in [TRANCADA] + [(x, y) for (x, y, _) in PORTAS.values()]:
-    T[y][x] = '!'
+# As folhas de porta (arco com folha de madeira): as portas comuns, a trancada e a do alojamento.
+FOLHAS = [[{'x': a[0], 'y': a[1]}, {'x': b[0], 'y': b[1]}] for (a, b) in PORTAS_ABERTAS + [TRANCADA] + list(PORTAS.values())]
 
 # ---------------------------------------------------------------- saída ----
-import json
-from pathlib import Path
-
 alt = lambda v: str(v) if v < 10 else 'abcdefghij'[v - 10]
 cab = '''// O ESCONDERIJO DOS MARCARRUBRA (Parte 2): os porões da Mansão Tresendar.
 //
 // Gerado por `src/dev/mapa-mansao.py` — mude lá e rode de novo.
 //
+// A grade é a da planta de referência, casa por casa (30 x 20), com paredes finas de borda.
 // Áreas do livro: 1 porão com a cisterna (entrada pela escada da cozinha, a
 // leste) · 2 alojamento · 3 corredor do fosso · 4 criptas · 5 jaulas ·
 // 6 depósito de armas (trancado) · 7 depósito · 8 caverna da fenda (entrada
 // pelo túnel do Carp, ao sul) · 9 alojamento dos bugbears · 10 sala de estar ·
 // 11 oficina do mago · 12 quarto do Cajavidro.
 //
-// Glifos: R parede · _ chão · W cisterna · = ponte · x fundo da fenda ·
-// A coluna · s barris e estantes · z beliche · K baú · m mesa · Q sarcófago ·
-// G grade · ! porta de madeira · M parede de pedra lavrada. Alturas em dígitos (um nível = 1,5 m). Luz: 2 claro, 1 penumbra,
-// 0 breu.
+// Glifos: R pedra · L laje · _ chão de caverna · V cisterna · = ponte · x fundo da fenda ·
+// A coluna · s barris e caixotes · z beliche · K baú · m mesa · Q sarcófago · e braseiro ·
+// g cabide de armas · p palha · ^ & mobília de arte própria. Alturas em dígitos (um nível = 1,5 m).
+// Luz: 2 claro, 1 penumbra, 0 breu.
 '''
+ponto = lambda p: {'x': p[0], 'y': p[1]}
+par = lambda p: {'a': ponto(p[0]), 'b': ponto(p[1])}
 dados = {
     'luzes': LUZES,
     'terreno': [''.join(l) for l in T],
     'altura': [''.join(alt(v) for v in l) for l in A],
     'luz': [''.join(str(v) for v in l) for l in L],
+    'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO],
+                'alt': [''.join(str(v) for v in l) for l in PA]},
 }
-# As casas de cada sala, já com o piso decidido: parede e grade ficam de fora.
-CELULAS = {nome: [{'x': x, 'y': y} for y in R(y0, y1) for x in R(x0, x1)
-                  if T[y][x] not in 'RG']
-           for nome, (x0, y0, x1, y1) in SALAS.items()}
-
+nomes = sorted({r for linha in REG for r in linha if r and r not in CAVERNA})   # a caverna não é sala: o piso dela é de terra
 extra = {
-    'salas': CELULAS,
-    'secretas': {k: {'x': x, 'y': y, 'h': h} for k, (x, y, h) in SECRETAS.items()},
-    'trancada': {'x': TRANCADA[0], 'y': TRANCADA[1], 'h': 4},
-    'portas': {k: {'x': x, 'y': y, 'h': h} for k, (x, y, h) in PORTAS.items()},
+    'salas': {n: [{'x': x, 'y': y} for y in range(H) for x in range(W) if REG[y][x] == n] for n in nomes},
+    'secretas': {k: par(v) for k, v in SECRETAS.items()},
+    'trancada': par(TRANCADA),
+    'portas': {k: par(v) for k, v in PORTAS.items()},
+    'celas': {k: [par(p) for p in v] for k, v in CELAS.items()},
     'pontes': PONTES, 'fenda': {str(k): v for k, v in fenda.items()},
     'fosso': [{'x': x, 'y': y} for (x, y) in FOSSO],
-    'jaulas': {k: {'x': x, 'y': y} for k, (x, y) in JAULAS.items()},
-    'entradas': {'cozinha': {'x': 29, 'y': 15}, 'tunel': {'x': 10, 'y': 19}},
-    'props': PROPS, 'decor': DECOR, 'degraus': DEGRAUS,
+    'entradas': {'cozinha': {'x': 29, 'y': 14}, 'tunel': {'x': 10, 'y': 19}},
+    'portasComuns': [par(p) for p in PORTAS_ABERTAS],
+    'props': PROPS, 'decor': DECOR, 'degraus': DEGRAUS, 'folhas': FOLHAS,
 }
 saida = Path(__file__).resolve().parents[1] / 'game' / 'mansao.js'
 saida.write_text(
@@ -349,3 +366,7 @@ saida.write_text(
 print('\n'.join(dados['terreno']))
 print()
 print('\n'.join(dados['altura']))
+print()
+print('\n'.join(dados['paredes']['n']))
+print()
+print('\n'.join(dados['paredes']['o']))

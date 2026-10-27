@@ -276,13 +276,8 @@ teste('os NPCs indefesos da mansão não morrem de dano de área', () => {
   for (const n of neutros) assert.equal(n.refem, true, `${n.name} sem refem`);
 });
 
-teste('o parapeito do fosso existe, e cruza o corredor', () => {
-  const m = mapaDo('mansao');
-  const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
-  for (const [x, y] of [[23, 11], [24, 11]]) assert.ok(!f.blocksMove(x, y), `o parapeito (${x},${y}) devia ser chão`);
-  // E não pode virar atalho para o porão: a pilha de (24,12) fecha a descida.
-  for (const [x, y] of [[22, 12], [23, 12], [24, 12]]) assert.ok(f.blocksMove(x, y), `(${x},${y}) devia ser cobertura`);
-});
+// (O parapeito do fosso saiu com a planta de 30 x 20: o corredor tem 2 de largura e o fosso ocupa as duas fileiras; a travessia é a
+// Acrobacia ou o salto. As medidas da mansão moram em `testes-sala.mjs`.)
 
 teste('o Marcarrubra é bloco nosso, com dados de vida que batem', () => {
   const d = MONSTERS.marcarrubra;

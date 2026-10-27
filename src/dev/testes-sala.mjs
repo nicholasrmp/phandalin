@@ -1783,27 +1783,58 @@ teste('campo em diferenças: porta aberta e casa mudada chegam ao espelho do con
   assert.equal(aplicarDiferencas(conv, base, { a: [[0, 999999, 1]], c: [] }), false, 'diferença fora do mapa é recusada');
 });
 
-teste('mansão: as portas de casa inteira têm superfície própria (a trancada e a do alojamento são madeira; a secreta achada vira laje girada)', () => {
-  for (const s of ['portaMadeira', 'portaAberta', 'passagemAberta']) assert.ok(SUPERFICIES_GRID.includes(s), `${s} existe`);
-  assert.equal(GLIFOS_GRID['!'].kind, 1, 'a porta fechada é parede (barra o passo e a vista)');
-  assert.equal(GLIFOS_GRID['?'].kind, 0);
-  assert.equal(GLIFOS_GRID['@'].kind, 0);
-  for (const c of [MANSAO_DADOS.trancada, ...Object.values(MANSAO_DADOS.portas)]) assert.equal(MAPA_MANSAO_DADOS.terreno[c.y][c.x], '!', `porta de madeira em ${c.x},${c.y}`);
-  for (const c of Object.values(MANSAO_DADOS.secretas)) assert.equal(MAPA_MANSAO_DADOS.terreno[c.y][c.x], 'M', `a secreta em ${c.x},${c.y} é parede até ser achada`);
-});
-
 const campoDaMansao = () => {
   const m = mapaDoEncontro('mansao');
   return new CampoDeBatalha(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
 };
+const chaveDe = (c) => `${c.x},${c.y}`;
+const casasDe = (nome) => new Set((MANSAO_DADOS.salas[nome] ?? []).map(chaveDe));
+const retangulo = (x0, y0, x1, y1) => { const s = new Set(); for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) s.add(`${x},${y}`); return s; };
 
-teste('mansão: com o fosso revelado, o parapeito ainda é uma rota a pé de um lado do corredor ao outro', () => {
+teste('mansão: a grade é a da planta de referência (30 x 20) e as salas têm o tamanho dela, casa por casa', () => {
+  assert.equal(MAPA_MANSAO_DADOS.terreno.length, 20);
+  assert.equal(MAPA_MANSAO_DADOS.terreno[0].length, 30);
+  // O que se mediu na planta (quadrados): cada sala é o retângulo abaixo, sem parede ocupando casa.
+  const PLANTA = {
+    oficina: [2, 2, 5, 5], quartoMago: [6, 2, 9, 4], estarRubro: [2, 7, 6, 11], guardasBugbear: [2, 15, 6, 17],
+    armas: [17, 2, 18, 4], cripta: [16, 5, 19, 10], jaulas: [20, 2, 22, 8], corredorFosso: [20, 9, 27, 10],
+    corredorArmas: [16, 2, 16, 4],
+  };
+  for (const [nome, [x0, y0, x1, y1]] of Object.entries(PLANTA)) {
+    const quer = retangulo(x0, y0, x1, y1);
+    const tem = casasDe(nome);
+    assert.deepEqual([...tem].sort(), [...quer].sort(), `${nome} tem o tamanho da planta`);
+  }
+  // As que têm um recorte: o depósito (4 x 3 e o nicho), o alojamento (3 x 4 e o vestíbulo), o porão (8 x 6 sem 4 entalhes).
+  assert.equal(casasDe('deposito').size, 4 * 3 + 1);
+  assert.equal(casasDe('alojamentoRubro').size, 3 * 4 + 1);
+  assert.equal(casasDe('poraoCisterna').size, 8 * 6 - 4);
+});
+
+teste('mansão: as paredes são arestas (nenhuma casa de parede), e as portas, a trancada, as secretas e as grades estão onde a planta põe', () => {
   const f = campoDaMansao();
-  const fosso = SUPERFICIES_GRID.indexOf('fosso');
-  for (const [x, y] of [[23, 9], [24, 9], [23, 10], [24, 10]]) { const i = y * f.w + x; f.tiles[i] = 2; f.surfaces[i] = fosso; f.heights[i] = 2; }
-  const alcance = f.reachable({ x: 22, y: 10 }, 100000, () => false);
-  for (const [x, y] of [[23, 11], [24, 11], [25, 10]]) assert.ok(alcance.has(`${x},${y}`), `(${x},${y}) alcançável a pé pelo parapeito`);
-  for (const [x, y] of [[22, 12], [23, 12], [24, 12], [25, 12]]) assert.ok(f.blocksMove(x, y), `(${x},${y}) fecha a descida para o porão`);
+  for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) {
+    const g = MAPA_MANSAO_DADOS.terreno[y][x];
+    assert.ok(!'MJ!'.includes(g), `a casa ${x},${y} não é parede-casa (${g})`);
+  }
+  const cod = (par) => f.aresta(par.a.x, par.a.y, par.b.x, par.b.y);
+  assert.equal(cod(MANSAO_DADOS.trancada), 2, 'a porta do depósito de armas está fechada');
+  assert.equal(cod(MANSAO_DADOS.portas.alojamento), 2, 'a porta do alojamento está fechada');
+  for (const [nome, par] of Object.entries(MANSAO_DADOS.secretas)) assert.equal(cod(par), 1, `a secreta ${nome} é parede até ser achada`);
+  for (const [lado, pares] of Object.entries(MANSAO_DADOS.celas)) {
+    assert.equal(pares.length, 3, `a grade da cela ${lado} tem três casas`);
+    for (const par of pares) assert.equal(cod(par), 4, 'a grade barra o passo e não a visão');
+  }
+  // As paredes da planta separam as salas: oficina e quarto só se ligam pela porta (5,3)-(6,3), que nasce fechada.
+  assert.equal(f.passa(5, 2, 6, 2), false);
+  assert.equal(f.passa(5, 3, 6, 3), false, 'fechada');
+  f.porAresta(5, 3, 6, 3, 3);
+  assert.equal(f.passa(5, 3, 6, 3), true, 'aberta');
+  const g = campoDaMansao();
+  for (const par of MANSAO_DADOS.portasComuns) {
+    const entrada = par.a.x === 27 && par.a.y === 14;
+    assert.equal(g.aresta(par.a.x, par.a.y, par.b.x, par.b.y), entrada ? 3 : 2, `a porta ${par.a.x},${par.a.y} nasce ${entrada ? 'aberta' : 'fechada'}`);
+  }
 });
 
 teste('mansão: ninguém nasce em casa que barra o passo, e nenhuma casa de piso fica ilhada', () => {
@@ -1812,45 +1843,59 @@ teste('mansão: ninguém nasce em casa que barra o passo, e nenhuma casa de piso
     if (!c.pos || c.side === 'party') continue;
     assert.ok(!f.blocksMove(c.pos.x, c.pos.y), `${c.name} em ${c.pos.x},${c.pos.y} (${f.surfaceAt(c.pos.x, c.pos.y)})`);
   }
-  // Com todas as portas abertas, toda casa andável fora da fenda é alcançável de um dos dois acessos.
-  const m = mapaDoEncontro('mansao');
+  // Com todas as portas, secretas e grades abertas, toda casa andável fora da fenda é alcançável de um dos dois acessos.
   const a = campoDaMansao();
-  for (const cs of [...Object.values(MANSAO_DADOS.secretas), MANSAO_DADOS.trancada, ...Object.values(MANSAO_DADOS.portas)]) { const i = cs.y * a.w + cs.x; a.tiles[i] = 0; a.surfaces[i] = SUPERFICIES_GRID.indexOf('portaAberta'); a.heights[i] = 4; }
-  const grade = SUPERFICIES_GRID.indexOf('grade');
-  for (let i = 0; i < a.surfaces.length; i++) if (a.surfaces[i] === grade) a.tiles[i] = 0;
-  const vistas = new Set([...a.reachable({ x: 29, y: 15 }, 1e6, () => false).keys(), ...a.reachable({ x: 10, y: 19 }, 1e6, () => false).keys()]);
+  const abre = (par) => a.porAresta(par.a.x, par.a.y, par.b.x, par.b.y, 3);
+  for (const par of [...Object.values(MANSAO_DADOS.secretas), MANSAO_DADOS.trancada, ...Object.values(MANSAO_DADOS.portas), ...MANSAO_DADOS.portasComuns, ...Object.values(MANSAO_DADOS.celas).flat()]) abre(par);
+  const vistas = new Set([...a.reachable({ x: 29, y: 14 }, 1e6, () => false).keys(), ...a.reachable({ x: 10, y: 19 }, 1e6, () => false).keys()]);
   const ilhadas = [];
   for (let y = 0; y < a.h; y++) for (let x = 0; x < a.w; x++) {
     if (a.blocksMove(x, y) || a.heightAt(x, y) === 0 || vistas.has(`${x},${y}`)) continue;
     ilhadas.push(`${x},${y}`);
   }
   assert.deepEqual(ilhadas, [], `casas de piso que ninguém alcança: ${ilhadas.join(' ')}`);
-  void m;
 });
 
-teste('mansão: o quarto do Cajavidro tem 3 x 3 e a cisterna fica abaixo do piso', () => {
-  const t = MAPA_MANSAO_DADOS.terreno;
-  for (const y of [2, 3, 4]) for (const x of [7, 8, 9]) assert.notEqual(t[y][x], 'M', `(${x},${y}) é do quarto`);
-  assert.ok(MAPA_MANSAO_DADOS.altura[15][22] < MAPA_MANSAO_DADOS.altura[13][22], 'a água da cisterna fica abaixo do piso do porão');
+teste('mansão: o fosso do corredor tem 2 x 2 e fica no meio dele; a cisterna é de 3 x 2 e fica abaixo do piso', () => {
+  const fosso = MANSAO_DADOS.fosso.map(chaveDe).sort();
+  assert.deepEqual(fosso, ['23,10', '23,9', '24,10', '24,9']);
+  for (const c of MANSAO_DADOS.fosso) assert.ok(casasDe('corredorFosso').has(chaveDe(c)), 'o fosso está no corredor');
+  const f = campoDaMansao();
+  for (const [x, y] of [[20, 14], [21, 14], [22, 14], [20, 15], [21, 15], [22, 15]]) {
+    assert.equal(f.surfaceAt(x, y), 'cisterna', `${x},${y} é água`);
+    assert.ok(f.heightAt(x, y) < f.heightAt(x, 13), 'a água fica abaixo do piso');
+  }
+  assert.notEqual(f.surfaceAt(23, 14), 'cisterna', 'a cisterna não passa de 3 de largura');
+});
+
+teste('mansão: as duas pontes e as duas colunas da caverna estão onde a planta as põe', () => {
+  const f = campoDaMansao();
+  assert.deepEqual(MANSAO_DADOS.pontes, { norte: 8, sul: 14 });
+  for (const [lado, y] of Object.entries(MANSAO_DADOS.pontes)) {
+    const [x0, x1] = MANSAO_DADOS.fenda[y];
+    for (let x = x0; x <= x1; x++) assert.equal(f.surfaceAt(x, y), 'ponte', `ponte ${lado} em ${x},${y}`);
+  }
+  assert.equal(f.surfaceAt(12, 9), 'estalagmite');
+  assert.equal(f.surfaceAt(9, 13), 'estalagmite');
+  assert.equal(f.heightAt(10, 10), 0, 'a fenda fica seis metros abaixo');
 });
 
 teste('mansão: a mobília, os candeeiros e os degraus apontam para casas e peças que existem', () => {
   const atlas = JSON.parse(readFileSync(new URL('../art/folhas/cenario.json', import.meta.url), 'utf8'));
   const t = MAPA_MANSAO_DADOS.terreno;
+  const n = MAPA_MANSAO_DADOS.paredes.n;
+  const o = MAPA_MANSAO_DADOS.paredes.o;
   assert.ok(MANSAO_DADOS.props.length >= 12, 'a planta tem mobília');
   for (const p of MANSAO_DADOS.props) {
     assert.ok(atlas[`prop-${p.variante}`], `a peça ${p.variante} existe no atlas`);
     assert.ok('^&'.includes(t[p.y][p.x]), `${p.variante} em ${p.x},${p.y} está num glifo de peça`);
   }
   for (const d of MANSAO_DADOS.decor) {
-    assert.ok('MR'.includes(t[d.y][d.x]), `o candeeiro em ${d.x},${d.y} está numa parede`);
-    const aberta = (x, y) => t[y]?.[x] !== undefined && !'MR!'.includes(t[y][x]);
-    assert.ok(aberta(d.x, d.y + 1) || aberta(d.x + 1, d.y), `o candeeiro em ${d.x},${d.y} dá para uma casa aberta que a câmera vê`);
+    assert.ok('#'.includes((d.lado === 'N' ? n : o)[d.y][d.x]), `o candeeiro em ${d.x},${d.y},${d.lado} está numa parede`);
+    assert.notEqual(t[d.y][d.x], 'R', `o candeeiro em ${d.x},${d.y} dá para uma casa de piso`);
   }
-  for (const d of MANSAO_DADOS.degraus) {
-    const secreta = Object.values(MANSAO_DADOS.secretas).some((s) => s.x === d.x && s.y === d.y);   // a secreta vira escada quando achada
-    assert.ok(secreta || !'MR'.includes(t[d.y][d.x]), `a escada em ${d.x},${d.y} é chão`);
-  }
+  for (const d of MANSAO_DADOS.degraus) assert.notEqual(t[d.y][d.x], 'R', `a escada em ${d.x},${d.y} é chão`);
+  for (const [a, b] of MANSAO_DADOS.folhas.map((p) => [p[0], p[1]])) assert.ok(a && b);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

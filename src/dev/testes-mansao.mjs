@@ -74,7 +74,7 @@ await teste('quem o alcança o vê beber o frasco: luta com Iarno invisível, e 
   const iarno = iarnoDe(S);
   espalhar(S, [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 4 }]);
   await S.cena.depoisDeMover(S.party[0]);                         // o rato avisa
-  espalhar(S, [{ x: 11, y: 2 }, { x: 12, y: 3 }, { x: 12, y: 2 }, { x: 13, y: 2 }]);   // o grupo o alcança na passagem
+  espalhar(S, [{ x: 11, y: 4 }, { x: 12, y: 3 }, { x: 12, y: 4 }, { x: 13, y: 4 }]);   // o grupo o alcança na escadinha
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(!S.cena.explorando, 'a luta começou');
   assert.ok(hasCondition(iarno, 'invisivel'), 'ele bebeu o frasco');
@@ -106,7 +106,7 @@ await teste('os guarda-costas ficam no quarto e lutam sem XP próprio; Iarno nã
   const guardas = S.foes.filter((f) => f.grupo === 'guardaCostas');
   assert.equal(guardas.length, 2, 'dois guarda-costas separados do chefe');
   for (let i = 0; i < 2; i += 1) await S.cena.depoisDeMover(S.party[0]);   // ele se afasta, longe do quarto
-  espalhar(S, [{ x: 8, y: 4 }, { x: 7, y: 4 }, { x: 9, y: 4 }, { x: 8, y: 3 }]);
+  espalhar(S, [{ x: 8, y: 4 }, { x: 6, y: 4 }, { x: 9, y: 3 }, { x: 6, y: 3 }]);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(!S.cena.explorando, 'entrar no quarto abre a luta com eles');
   assert.ok(guardas.every((g) => S.enc.combatants.includes(g)));
@@ -204,6 +204,36 @@ await teste('as árvores de conversa do manto não têm beco: todo destino exist
       }
     }
   }
+});
+
+await teste('as portas comuns da planta nascem fechadas, cortam a visão e abrem e fecham de graça; a da escada da cozinha nasce aberta', async () => {
+  const S = await nova();
+  const cod = (a, b) => S.field.aresta(a.x, a.y, b.x, b.y);
+  assert.equal(cod({ x: 5, y: 3 }, { x: 6, y: 3 }), 2, 'a porta da oficina para o quarto nasce fechada');
+  assert.equal(cod({ x: 27, y: 14 }, { x: 28, y: 14 }), 3, 'a da escada nasce aberta');
+  assert.equal(S.field.hasLineOfSight({ x: 4, y: 3 }, { x: 8, y: 3 }), false, 'fechada, ela corta a visão');
+  const h = S.party[0];
+  poe(h, 5, 3);
+  const abrir = S.cena.interacoes({ x: 5, y: 3 }, 'laje', h).find((o) => o.rotulo === 'Abrir a porta');
+  assert.ok(abrir, 'o menu da casa junto da porta oferece abrir');
+  await abrir.fazer();
+  assert.equal(cod({ x: 5, y: 3 }, { x: 6, y: 3 }), 3);
+  assert.equal(S.field.hasLineOfSight({ x: 4, y: 3 }, { x: 8, y: 3 }), true, 'aberta, deixa ver');
+  const fechar = S.cena.interacoes({ x: 5, y: 3 }, 'laje', h).find((o) => o.rotulo === 'Fechar a porta');
+  assert.ok(fechar, 'e oferece fechar');
+  assert.equal(S.app.campanha.mansao.portasComuns['5,3,6,3'], true, 'o estado fica salvo');
+});
+
+await teste('as paredes são arestas e não se clicam: junto de uma secreta o menu vem no próprio herói, e achar a secreta abre a aresta', async () => {
+  const S = await nova();
+  const h = S.party[0];
+  poe(h, 9, 3);                                              // no quarto, junto da secreta (9,2)|(10,2)
+  const menu = S.cena.interacoesDoHeroi(h);
+  const procurar = menu.find((o) => o.rotulo === 'Procurar porta secreta');
+  assert.ok(procurar, 'o herói perto da secreta pode procurar');
+  assert.equal(S.field.aresta(9, 2, 10, 2), 1, 'a secreta é parede até ser achada');
+  poe(h, 2, 3);
+  assert.ok(!S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Procurar porta secreta'), 'longe de qualquer secreta o menu não oferece procurar');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

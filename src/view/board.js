@@ -1030,6 +1030,14 @@ export class Board {
       }
     }
     if (piso < 0) return h;
+    // A PEDRA NA FRENTE DE UMA SALA (mansão): a casa de pedra que fica, na vista da câmera, na frente de um piso construído (a
+    // de sul e a de leste de uma sala) fica baixa; a de trás e a que só toca a caverna sobem. Sem isto a pedra de 3 níveis
+    // cobria as salas do sul e do leste inteiras.
+    if (caverna && this.field.rochaEmCorte) {
+      const v = this.toView(x, y);
+      const sala = (i, j) => { const p = this.fromView(v.vx + i, v.vy + j); return this.field.inside(p.x, p.y) && this.field.sala?.has(`${p.x},${p.y}`) && this.field.tileAt(p.x, p.y) !== 1; };
+      if (sala(-1, 0) || sala(0, -1) || sala(-1, -1)) return piso + 1;
+    }
     return piso + Math.max(h - piso, caverna ? PAREDE_ALTURA : this.field.paredeAlta);
   }
 
