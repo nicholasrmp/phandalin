@@ -257,7 +257,6 @@ for y in range(H):
 # vão da parede. As secretas ficam alvenaria até serem achadas: aí viram `@`, uma laje deslizada para o lado.
 for (x, y) in [TRANCADA] + [(x, y) for (x, y, _) in PORTAS.values()]:
     T[y][x] = '!'
-    A[y][x] += 1          # a porta é mais alta que a parede em corte: um nível a mais, para a folha ler como porta
 
 # ---------------------------------------------------------------- saída ----
 import json

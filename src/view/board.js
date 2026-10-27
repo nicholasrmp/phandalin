@@ -279,6 +279,8 @@ const ALTURA_PAREDE = 3;
 // (altura, visão, passo) não muda.
 const PAREDE_EXTRA = 2;
 const PAREDE_ALTURA = 3;      // níveis de parede acima do chão que ela toca
+// As superfícies de parede que `field.paredeAlta` levanta no desenho (a mansão).
+const PAREDES_ALTAS = new Set(['alvenaria', 'portaMadeira', 'rocha']);
 // Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
 const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
 
@@ -1006,7 +1008,10 @@ export class Board {
    */
   alturaVisual(x, y) {
     const h = this.field.heightAt(x, y);
-    if (!(h > 0 && this.field.paredeDeCaverna && this.field.tileAt(x, y) === 1 && this.field.surfaceAt(x, y) === 'rocha')) return h;
+    const sup = this.field.surfaceAt(x, y);
+    const caverna = this.field.paredeDeCaverna && sup === 'rocha';
+    const alta = this.field.paredeAlta > 0 && PAREDES_ALTAS.has(sup);
+    if (!(h > 0 && this.field.tileAt(x, y) === 1 && (caverna || alta))) return h;
     let piso = -1;
     for (let j = -1; j <= 1; j += 1) {
       for (let i = -1; i <= 1; i += 1) {
@@ -1014,7 +1019,7 @@ export class Board {
       }
     }
     if (piso < 0) return h;
-    return piso + Math.max(h - piso, PAREDE_ALTURA);
+    return piso + Math.max(h - piso, caverna ? PAREDE_ALTURA : this.field.paredeAlta);
   }
 
   drawTile(ctx, x, y, alphaChao = 1, alphaObjeto = alphaChao) {
@@ -1350,7 +1355,7 @@ export class Board {
 
   /** O objeto de uma casa de superfície nova, com a transparência dele. */
   desenharObjeto(ctx, x, y, alphaObjeto, s) {
-    const hgt = this.field.heightAt(x, y);
+    const hgt = this.alturaVisual(x, y);
     const { sx, sy } = this.iso(x, y, hgt);
     ctx.save();
     ctx.globalAlpha = alphaObjeto;

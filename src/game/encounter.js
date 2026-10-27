@@ -351,6 +351,7 @@ export function mapaDo(variante = 'padrao') {
       ...MAPA_MANSAO,
       // Cada cômodo com a sua tinta no tabuleiro, como no castelo.
       salas: MANSAO.salas,
+      paredeAlta: 2,          // as paredes do porão se desenham com 2 níveis acima do chão (eram 1: degraus, e não paredes; com 3 escondiam as salas)
       // As duas pontes cruzam a fenda de leste a oeste.
       objetos: Object.values(MANSAO.pontes).map((y) => ({ tipo: 'ponte', x: MANSAO.fenda[y][0], y, olha: { dx: 1, dy: 0 }, fundo: 'entulho' })),
       grupo: tunel
