@@ -359,6 +359,7 @@ export function mapaDo(variante = 'padrao') {
   if (variante === 'esconderijo') {
     return {
       ...MAPA_ESCONDERIJO,
+      paredeDeCaverna: true,          // a rocha junto do chão é parede de verdade (3 níveis), e não um degrau de 22 px
       // A ponte cruza o canal de norte a sul: o corrimão corre nesse eixo.
       objetos: [{ tipo: 'ponte', x: 20, y: 5, olha: { dx: 0, dy: 1 } }],
       // O grupo chega pela trilha dos goblins, no canto sudoeste do campo.

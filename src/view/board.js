@@ -241,6 +241,7 @@ const ALTURA_PAREDE = 3;
 // mais `PAREDE_EXTRA` níveis, e fica com a mesma altura das paredes de construção (3 níveis). Só desenho: a regra
 // (altura, visão, passo) não muda.
 const PAREDE_EXTRA = 2;
+const PAREDE_ALTURA = 3;      // níveis de parede acima do chão que ela toca
 // Casas de vista que ficam "atrás" desta, onde uma criatura pode ser coberta.
 const ATRAS = [[-1, 0], [0, -1], [-1, -1], [-2, 0], [0, -2], [-1, -2], [-2, -1], [-2, -2]];
 
@@ -946,10 +947,22 @@ export class Board {
     if (!ehFosso(1, 0)) { ctx.beginPath(); ctx.moveTo(sx, sy + TH); ctx.lineTo(sx + TW / 2, sy + TH / 2); ctx.stroke(); }
   }
 
-  /** A altura com que a casa é DESENHADA: a rocha junto de chão sobe `PAREDE_EXTRA` níveis além da altura do dado. */
+  /**
+   * A altura com que a casa é DESENHADA: a rocha junto de chão ganha a altura que falta para ser PAREDE (`PAREDE_EXTRA`
+   * níveis, no máximo, de modo que ela tenha ao menos `PAREDE_ALTURA` níveis acima do chão mais alto que toca). Rocha que já é
+   * alta (a do esconderijo, em cima de um planalto) não sobe mais.
+   */
   alturaVisual(x, y) {
     const h = this.field.heightAt(x, y);
-    return h > 0 && this.field.paredeDeCaverna && this.field.tileAt(x, y) === 1 && this.field.surfaceAt(x, y) === 'rocha' ? h + PAREDE_EXTRA : h;
+    if (!(h > 0 && this.field.paredeDeCaverna && this.field.tileAt(x, y) === 1 && this.field.surfaceAt(x, y) === 'rocha')) return h;
+    let piso = -1;
+    for (let j = -1; j <= 1; j += 1) {
+      for (let i = -1; i <= 1; i += 1) {
+        if ((i || j) && this.field.inside(x + i, y + j) && this.field.tileAt(x + i, y + j) !== 1) piso = Math.max(piso, this.field.heightAt(x + i, y + j));
+      }
+    }
+    if (piso < 0) return h;
+    return piso + Math.max(h - piso, PAREDE_ALTURA);
   }
 
   drawTile(ctx, x, y, alphaChao = 1, alphaObjeto = alphaChao) {
