@@ -936,14 +936,14 @@ export function criarOndaEco(app) {
           if (salvo.nezznar === 'preso' && !salvo.nezznarEntregue) await entregarNezznar();
           if (feitos.nezznarDerrotado && !salvo.fimContado) {
             salvo.fimContado = true;
-            // O fecho do livro, o que a campanha deixou para trás e quem saiu da mina. Marca a aventura como concluída: a região
+            // O fecho do livro e quem saiu da mina. Marca a aventura como concluída: a região
             // segue aberta, mas o jogo sabe que a Mina Perdida foi achada.
             camp.aventuraConcluida = true;
             const grupoFinal = enc.combatants.filter((x) => x.side === 'party');
             await narrar(root, { formato: 'tela', paginas: paginasDoEpilogo({
-              conclusao: TEXTOS.conclusao({ capturado: Boolean(feitos.nezznarCapturado), fugiu: Boolean(feitos.nezznarFugiu), mapa: Boolean(salvo.mapaMormesk),
+              conclusao: TEXTOS.conclusao({ capturado: Boolean(feitos.nezznarCapturado), fugiu: Boolean(feitos.nezznarFugiu),
                 gundren: Boolean(feitos.gundrenResgatado), nundro: Boolean(feitos.nundroResgatado) }),
-              feitos, grupo: grupoFinal }) });
+              grupo: grupoFinal }) });
           }
           estado.encerrado = true;
           app.irParaRegiao(enc.combatants.filter((x) => x.side === 'party' && !x.dead), 'ondaEco');

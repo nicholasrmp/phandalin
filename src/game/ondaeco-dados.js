@@ -162,22 +162,19 @@ export const TEXTOS = {
   lagoAcha: 'A uns três metros da margem, no fundo, jaz um esqueleto humano com os restos de uma túnica e pontas de flecha orc cravadas entre as costelas. Duas alianças de platina e uma varinha ainda estão com ele: era um mago da velha Phandalin, e a mina foi a última coisa que defendeu.',
   fendaFalha: 'Entre as pedras e a escuridão, nada que brilhe. Se houver alguma coisa aqui, não se deixa achar agora.',
   fendaAcha: 'Debaixo de um bloco enorme, o esqueleto esmagado de uma anã ainda leva nas mãos um par de manoplas de ferro escurecido, de dedos grossos. É o que a fenda guardava.',
-  // O fecho da aventura depende do que o grupo fez de Nezznar (caído, preso e vigiado, ou preso e solto por Halia) e de ter ou
-  // não achado o mapa de Mormesk.
-  conclusao: ({ capturado = false, fugiu = false, mapa = false, gundren = false, nundro = false } = {}) => [
+  // O FECHO é o do livro e nada além dele: o destino de Nezznar, Phandalin livre, a mina de Gundren e Nundro com dez por cento dos
+  // lucros para o grupo, e a vila de braços abertos. Sem ganchos para outras aventuras.
+  conclusao: ({ capturado = false, fugiu = false, gundren = false, nundro = false } = {}) => [
     capturado
       ? (fugiu
-        ? 'Na manhã seguinte a cela do salão está vazia, a fechadura aberta por dentro e por fora, e Halia Thornton, quando perguntada, só ergue as sobrancelhas. O Aranha Negra está nas mãos dos Zhentarim, e o que ele sabe da mina foi junto com ele.'
-        : 'Nezznar não vai a lugar nenhum: a Aliança dos Lordes manda recado a Neverwinter, e o drow espera na cela do salão, sob guarda, para ser interrogado e julgado. A Forja das Magias que ele procurou até o fim continua onde estava, em silêncio.')
-      : 'Nezznar caiu, e com ele o plano do Aranha Negra. A Forja das Magias, que ele procurou até o fim, continua onde estava, silenciosa, esperando quem a acorde com mais cuidado.',
-    // O fecho depende de quem sobrou da família Buscapedra para tocar a mina.
+        ? 'O Aranha Negra sumiu da cela do salão: Halia Thornton o tirou de Phandalin às escondidas e o entregou aos Zhentarim.'
+        : 'O Aranha Negra espera na cela do salão, sob guarda, até a Aliança dos Lordes escoltá-lo a Neverwinter para ser interrogado e julgado.')
+      : 'O Aranha Negra caiu, e com ele o plano que o trouxe à Caverna Onda Eco.',
+    'Phandalin está livre dos marginais que a ameaçavam, e a mina perdida voltou a quem a procurou por tanto tempo. Os feitos do grupo vão ser contados pela Costa da Espada por muito tempo, e as minas restauradas do Pacto de Phandelver vão trazer riqueza e paz à região.',
     (gundren && nundro
-      ? 'Gundren e Nundro Buscapedra reabrem a mina e dão ao grupo dez por cento do que ela render.'
-      : gundren || nundro
-        ? `${gundren ? 'Gundren' : 'Nundro'} Buscapedra reabre a mina com os irmãos que restam e guarda ao grupo dez por cento do que ela render.`
-        : 'Sem os Buscapedra por perto, a mina fica com quem a libertou, e o Pacto de Phandelver terá de achar outros herdeiros.')
-      + (mapa ? ' O mapa que saiu dos tomos de Mormesk aponta para lugares que a região ainda não viu.' : '')
-      + ' Há muita coisa por fazer, mas isso é outra aventura.',
+      ? 'Gundren e Nundro Buscapedra ficam à frente da mina nova e, em agradecimento, dão ao grupo dez por cento dos lucros.'
+      : 'Os Buscapedra que restam ficam à frente da mina nova e, em agradecimento, dão ao grupo dez por cento dos lucros.'),
+    'Quem quiser ficar em Phandalin, restaurar a Mansão Tresendar ou levantar casa própria será bem-vindo; e quem seguir adiante terá sempre uma recepção calorosa na vila.',
   ],
   avisoDeNivel: 'Quem já desceu aqui conta que o fundo da mina é para gente mais calejada: o templo, no fim, cobra caro de quem chega verde. Nada obriga a ir até lá agora, e há muito o que fazer antes.',
   vhalakChega: 'Do fundo do templo chega, atrasado e de adaga na mão, o drow franzino que fugiu da caverna desmoronada.',

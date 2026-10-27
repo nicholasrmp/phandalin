@@ -11,7 +11,8 @@ import { makeMonster } from '../rules/monsters.js';
 import { mapaDo } from '../game/encounter.js';
 import { MAPA_ONDA_ECO, ONDA_ECO } from '../game/ondaeco.js';
 import { itemDeId } from '../rules/equipment.js';
-import { linhasDoEpilogo, paginasDoEpilogo } from '../game/epilogo.js';
+import { paginasDoEpilogo } from '../game/epilogo.js';
+import { TEXTOS } from '../game/ondaeco-dados.js';
 import { EXAMES, arvoreDeMormesk, arvoreDoEspectador, arvoreDeNezznar, arvoreDeNundro } from '../game/ondaeco-dados.js';
 
 let falhas = 0;
@@ -136,15 +137,17 @@ teste('as conversas: todo "vai" existe, todo nó tem saída, e o espectador só 
   assert.ok(jaTentou.nos.oi.opcoes.find((o) => o.teste).requer(), 'depois de uma tentativa, a Enganação não pode se repetir');
 });
 
-teste('o epílogo só cita o que o grupo fez, e fecha com o grupo', () => {
-  assert.deepEqual(linhasDoEpilogo({}), [], 'sem feitos, sem linhas');
-  const l = linhasDoEpilogo({ cajavidro: true, grolMorto: true, casteloDentefino: true, expulsouODragao: true, dragaoDeArvoreTrovao: true });
-  assert.equal(l.length, 3, 'Grol morto vale mais que o castelo, e o dragão expulso mais que o dragão caído');
-  const paginas = paginasDoEpilogo({ conclusao: ['a', 'b'], feitos: { cajavidro: true }, grupo: [{ name: 'Dara', level: 5, hp: 10 }, { name: 'Pip', level: 5, hp: 0 }, { name: 'Lobo', hp: 5 }] });
-  assert.equal(paginas.length, 3);
+teste('o epílogo segue o livro (sem ganchos) e fecha com quem saiu vivo', () => {
+  const grupo = [{ name: 'Dara', level: 5, hp: 10 }, { name: 'Pip', level: 5, hp: 0 }, { name: 'Lobo', hp: 5 }];
+  const paginas = paginasDoEpilogo({ conclusao: TEXTOS.conclusao({ gundren: true, nundro: true }), grupo });
+  assert.equal(paginas.length, 2);
   assert.ok(paginas.at(-1).texto[0].includes('Dara: nível 5') && !paginas.at(-1).texto[0].includes('Pip'), 'só quem saiu vivo');
-  assert.equal(paginasDoEpilogo({ conclusao: ['a'], feitos: {}, grupo: [] }).length, 2, 'sem rastro, sem a página do meio');
+  for (const v of [{}, { capturado: true }, { capturado: true, fugiu: true }, { gundren: true, nundro: true }]) {
+    const txt = TEXTOS.conclusao(v).join(' ');
+    assert.ok(/dez por cento/.test(txt) && /Phandalin/.test(txt), 'a conclusão traz a parte dos lucros e a vila');
+    assert.ok(!/outra aventura|mapa|gancho|voltar|ainda vai/i.test(txt), 'sem ganchos');
+  }
+  assert.ok(TEXTOS.conclusao({ gundren: true, nundro: true }).join(' ').includes('Gundren e Nundro'), 'com os dois vivos, os dois');
 });
-
 console.log(`\n${total - falhas}/${total} passaram`);
 process.exit(falhas ? 1 : 0);
