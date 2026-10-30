@@ -15,15 +15,15 @@
 // Os dados de vida restantes moram em `dadosDeVidaRestantes` (começa com um
 // por nível) — o mesmo campo que o talento Curandeiro já gasta.
 
-import { abilityMod } from './abilities.js';
+import { abilityMod, proficiencyBonus } from './abilities.js';
 import { CLASSES } from './classes/index.js';
-import { removeCondition, getCondition, maxHpEfetivo, mudarExaustao, nivelDeExaustao } from './conditions.js';
+import { addCondition, removeCondition, getCondition, maxHpEfetivo, mudarExaustao, nivelDeExaustao } from './conditions.js';
 import { SPELLS, magiasProntas, dadosDaMagia } from './spells.js';
 import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
-const VOLTAM_NO_CURTO = new Set(['secondWind', 'actionSurge', 'channelDivinity', 'ki', 'wildShape']);
+const VOLTAM_NO_CURTO = new Set(['secondWind', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon']);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
@@ -32,17 +32,33 @@ export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
  * Gasta UM dado de vida e cura. Devolve { rolagem, cura, restam } ou null
  * se não há dado, o personagem está com a vida cheia ou morto.
  */
-export function gastarDadoDeVida(rng, c) {
+/**
+ * O dado da CANÇÃO DE DESCANSO (bardo, 2º) que vale para o grupo num descanso curto: o do melhor bardo ACORDADO e vivo
+ * (d6; d8 no 9º, d10 no 13º, d12 no 17º). 0 se não há bardo com a característica. Não soma entre bardos.
+ */
+export function dadoDaCancaoDeDescanso(grupo) {
+  let melhor = 0;
+  for (const b of grupo ?? []) {
+    if (b.dead || b.hp <= 0 || !b.features?.includes('songOfRest') || getCondition(b, 'inconsciente')) continue;
+    const n = b.level ?? 1;
+    melhor = Math.max(melhor, n >= 17 ? 12 : n >= 13 ? 10 : n >= 9 ? 8 : 6);
+  }
+  return melhor;
+}
+
+export function gastarDadoDeVida(rng, c, { cancao = 0 } = {}) {
   if (c.dead || c.hp >= maxHpEfetivo(c) || dadosDeVida(c) <= 0) return null;
   const lados = dadoDeVida(c);
   const rolagem = rng.die(lados);
   const con = abilityMod(c.abilities.con);
-  const cura = Math.max(0, rolagem + con);
+  // CANÇÃO DE DESCANSO: quem gasta um dado de vida ouvindo a canção cura um dado extra.
+  const extra = cancao ? rng.die(cancao) : 0;
+  const cura = Math.max(0, rolagem + con) + extra;
   c.dadosDeVidaRestantes -= 1;
   const antes = Math.max(0, c.hp);
   c.hp = Math.max(antes, Math.min(maxHpEfetivo(c), antes + cura));
   if (c.hp > 0) acordar(c);
-  return { lados, rolagem, con, cura: c.hp - antes, restam: c.dadosDeVidaRestantes };
+  return { lados, rolagem, con, cura: c.hp - antes, restam: c.dadosDeVidaRestantes, cancao: extra, cancaoLados: cancao };
 }
 
 /** Quem estava caído e estável volta a si e, depois de uma hora, de pé. */
@@ -61,10 +77,30 @@ export function dadosSugeridos(c) {
 }
 
 /** O que volta no curto, sem os dados de vida. Devolve frases para o registro. */
+/**
+ * RESILIÊNCIA INFERNAL (bruxo Corruptor, 10º): depois de um descanso, a criatura escolhe um tipo de dano e resiste a ele
+ * até o descanso seguinte. O jogo ainda não tem tela para a escolha, então escolhe o tipo que mais a MACHUCOU desde o
+ * último descanso (o que um jogador atento faria); sem dano nenhum, mantém a que tinha.
+ * `tipo` força a escolha (a tela, quando existir, chama assim).
+ */
+export function escolherResistenciaInfernal(c, tipo = null) {
+  if (!c.features?.includes('fiendishResilience')) return null;
+  const escolhido = tipo ?? Object.entries(c.danoPorTipo ?? {}).sort((a, b) => b[1] - a[1])[0]?.[0] ?? c.resistenciaInfernal ?? null;
+  c.resistenciaInfernal = escolhido;
+  c.danoPorTipo = {};
+  return escolhido;
+}
+
 export function recuperarNoCurto(c) {
   const frases = [];
+  c.furiaImplacavelCD = 10; // Fúria Implacável: a CD volta a 10 depois de um descanso curto ou longo
+  const infernal = escolherResistenciaInfernal(c);
+  if (infernal) frases.push(`resistência infernal a ${infernal}`);
   for (const [id, max] of Object.entries(c.resourcesMax ?? {})) {
-    if (VOLTAM_NO_CURTO.has(id) && (c.resources[id] ?? 0) < max) {
+    // As Magias de Assinatura do mago (20º) voltam no descanso curto; as outras magias raciais, só no longo.
+    // FONTE DE INSPIRAÇÃO (bardo, 5º): a Inspiração Bárdica volta também no descanso curto.
+    const fonte = id === 'bardicInspiration' && c.features?.includes('fontOfInspiration');
+    if ((VOLTAM_NO_CURTO.has(id) || id.startsWith('assinatura_') || fonte) && (c.resources[id] ?? 0) < max) {
       c.resources[id] = max;
       frases.push(id);
     }
@@ -73,6 +109,24 @@ export function recuperarNoCurto(c) {
   if (sc?.tipo === 'pacto' && sc.slotsMax) {
     if (sc.slots.some((n, i) => n < sc.slotsMax[i])) frases.push('espaços de pacto');
     sc.slots = sc.slotsMax.slice();
+  }
+  // RESTAURAÇÃO FEITICEIRA (feiticeiro, 20º): num descanso curto, recupera 4 pontos de feitiçaria.
+  if (c.features?.includes('sorcerousRestoration') && (c.resourcesMax?.sorceryPoints ?? 0) > 0) {
+    const antes = c.resources.sorceryPoints ?? 0;
+    c.resources.sorceryPoints = Math.min(c.resourcesMax.sorceryPoints, antes + 4);
+    if (c.resources.sorceryPoints > antes) frases.push(`${c.resources.sorceryPoints - antes} pontos de feitiçaria`);
+  }
+  // RECUPERAÇÃO NATURAL (druida da Terra, 2º): os mesmos espaços da Recuperação Arcana, com a metade do nível (para cima).
+  if ((c.resources?.naturalRecovery ?? 0) > 0 && c.features?.includes('naturalRecovery') && sc?.slotsMax) {
+    let orcamento = Math.ceil((c.level ?? 1) / 2);
+    let recuperou = 0;
+    for (let circ = Math.min(5, sc.slotsMax.length - 1); circ >= 1 && orcamento > 0; circ--) {
+      while (sc.slots[circ] < sc.slotsMax[circ] && circ <= orcamento) { sc.slots[circ] += 1; orcamento -= circ; recuperou += 1; }
+    }
+    if (recuperou) {
+      c.resources.naturalRecovery -= 1;
+      frases.push(`Recuperação Natural (${recuperou} espaço${recuperou > 1 ? 's' : ''})`);
+    }
   }
   // Recuperação Arcana: os espaços mais altos primeiro, até o orçamento.
   if ((c.resources?.arcaneRecovery ?? 0) > 0 && sc?.slotsMax) {
@@ -188,4 +242,11 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   for (const [id, max] of Object.entries(c.resourcesMax ?? {})) c.resources[id] = max;
   if (c.spellcasting?.slotsMax) c.spellcasting.slots = c.spellcasting.slotsMax.slice();
   if (c.magiaGratis) c.magiaGratis.usada = false;
+  c.furiaImplacavelCD = 10;
+  escolherResistenciaInfernal(c);
+  // TRANQUILIDADE (monge da Mão Aberta, 11º): depois de um descanso longo, fica sob um Santuário (CD 8 + SAB + proficiência)
+  // até o descanso longo seguinte. Acaba antes se ele atacar ou conjurar contra um inimigo (a regra do próprio Santuário).
+  if (c.features?.includes('tranquility')) {
+    addCondition(c, 'santuario', { source: c.id, data: { dc: 8 + abilityMod(c.abilities.wis) + proficiencyBonus(c.level ?? 1) } });
+  }
 }

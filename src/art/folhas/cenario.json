@@ -4239,6 +4239,9 @@
    }
   ]
  },
+ "_taverna": {
+  "y0": 2041
+ },
  "prop-taverna-lareira": {
   "todas": [
    {
@@ -4543,8 +4546,5 @@
     "origem": "taverna"
    }
   ]
- },
- "_taverna": {
-  "y0": 2041
  }
 }

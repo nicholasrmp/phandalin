@@ -53,7 +53,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod, rolarPericia } from '../rules/abilities.js';
 import { Battlefield, ARESTA, distanceFt, isAdjacent, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, removeCondition, hasCondition } from '../rules/conditions.js';
@@ -111,7 +111,7 @@ export function criarMansao(app, config) {
   const grupos = {};
   for (const f of todos) (grupos[f.grupo] ??= { id: f.grupo, membros: [], ativo: false, vencido: false }).membros.push(f);
   for (const g of Object.values(grupos)) {
-    g.furtividade = g.membros.filter((f) => f.side === 'foes').map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+    g.furtividade = g.membros.filter((f) => f.side === 'foes').map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
     if (salvo.vencidos.includes(g.id)) g.vencido = true;
   }
   if (salvo.tregua && grupos.fenda) grupos.fenda.tregua = true;
@@ -135,7 +135,7 @@ export function criarMansao(app, config) {
     for (const m of guardas) m.grupo = 'guardaCostas';
     grupos.guardaCostas = {
       id: 'guardaCostas', membros: guardas, ativo: false, vencido: salvo.vencidos.includes('guardaCostas'),
-      furtividade: guardas.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total),
+      furtividade: guardas.map((f) => rolarPericia(enc.rng, f, 'furtividade').total),
     };
   }
   if (salvo.iarno === 'fugiu') separarGuardas();
@@ -376,7 +376,7 @@ export function criarMansao(app, config) {
    * dar a todos a mediana alta (a segunda melhor de quatro) dá o mesmo efeito.
    */
   function testeDeGrupo(gente) {
-    const r = gente.map((h) => d20(enc.rng, skillBonus(h, 'furtividade')).total).sort((a, b) => b - a);
+    const r = gente.map((h) => rolarPericia(enc.rng, h, 'furtividade').total).sort((a, b) => b - a);
     const meio = r[Math.max(0, Math.ceil(r.length / 2) - 1)] ?? 0;
     return r.map(() => meio);
   }

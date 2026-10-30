@@ -15,6 +15,7 @@ import { saveBonus } from './abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { averageOf } from '../core/dice.js';
 import { dadosDaMagia } from './spells.js';
+import { margemDeCritico } from './passivas.js';
 
 /**
  * Chance de um d20 + bônus alcançar a CA.
@@ -23,8 +24,9 @@ import { dadosDaMagia } from './spells.js';
  * preso entre 2 e 20 — é por isso que não existe inimigo impossível nem
  * ataque garantido em 5e, e a conta tem de respeitar isso.
  */
-export function chanceD20(bonus, ca, { advantage = false, disadvantage = false } = {}) {
-  const precisa = Math.max(2, Math.min(20, ca - bonus));
+export function chanceD20(bonus, ca, { advantage = false, disadvantage = false, critMin = 20 } = {}) {
+  // O crítico acerta sempre: com Crítico Aprimorado o teto do "precisa de" cai de 20 para 19.
+  const precisa = Math.max(2, Math.min(critMin, ca - bonus));
   const p = (21 - precisa) / 20;
   if (advantage && !disadvantage) return 1 - (1 - p) ** 2;
   if (disadvantage && !advantage) return p * p;
@@ -32,10 +34,11 @@ export function chanceD20(bonus, ca, { advantage = false, disadvantage = false }
 }
 
 /** Chance de crítico: 20 natural, e com vantagem são duas chances. */
-export function chanceCritico({ advantage = false, disadvantage = false } = {}) {
-  if (advantage && !disadvantage) return 1 - (19 / 20) ** 2;
-  if (disadvantage && !advantage) return (1 / 20) ** 2;
-  return 1 / 20;
+export function chanceCritico({ advantage = false, disadvantage = false, critMin = 20 } = {}) {
+  const p = (21 - critMin) / 20;
+  if (advantage && !disadvantage) return 1 - (1 - p) ** 2;
+  if (disadvantage && !advantage) return p * p;
+  return p;
 }
 
 /**
@@ -89,6 +92,7 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
   const protetor = enc.protecaoDeAliado?.(attacker, target) ?? null;
   const mods = {
     advantage: base.advantage,
+    critMin: margemDeCritico(attacker),
     disadvantage: base.disadvantage || alcanceLongo || Boolean(protetor),
     reasons: [...base.reasons, ...(alcanceLongo ? ['alcance longo'] : []), ...(protetor ? [`proteção de ${protetor.name}`] : [])],
   };
@@ -98,7 +102,12 @@ export function previsaoDeAtaque(enc, attacker, target, weaponId = null) {
   // A conta de quem voltou dos mortos entra na PREVISÃO também: ela já pesava
   // no dado (`dadosDeAtaque`), e a tela prometia o número de antes.
   const fixo = conditionEffects(attacker).ataqueFixo;
-  const chance = foraDeAlcance || semVisao ? 0 : falha ?? chanceD20(perfil.bonus + fixo, caAlvo, mods);
+  let chance = foraDeAlcance || semVisao ? 0 : falha ?? chanceD20(perfil.bonus + fixo, caAlvo, mods);
+  // SORTE (halfling): um 1 natural é rolado de novo, e o 1 que ERRAVA por regra ganha uma segunda chance de acertar.
+  if (chance > 0 && falha == null && attacker.features?.includes('lucky')) {
+    const p1 = mods.advantage && !mods.disadvantage ? 1 / 400 : mods.disadvantage && !mods.advantage ? 39 / 400 : 1 / 20;
+    chance += p1 * chanceD20(perfil.bonus + fixo, caAlvo, { critMin: mods.critMin });
+  }
   const critico = foraDeAlcance || semVisao || perfil.teste ? 0 : chanceCritico(mods);
   // ATAQUE FURTIVO na conta. Ele é a maior parte do dano de um ladino — no
   // 3º nível, 2d6 contra 1d6+3 de espada curta, ou seja, mais que dobra o

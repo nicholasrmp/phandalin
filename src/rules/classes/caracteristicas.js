@@ -11,6 +11,8 @@
 
 const C = (nome, tipo, desc, extra = {}) => ({ nome, tipo, desc, ...extra });
 
+import { TRACOS_RACIAIS } from '../racas.js';
+
 export const CARACTERISTICAS = {
   // ---- comuns a várias classes --------------------------------------------
   spellcasting: C('Conjuração', 'passiva', 'Conjura magias da lista da classe com os espaços da tabela do nível.', { motor: true }),
@@ -256,6 +258,57 @@ export const CARACTERISTICAS = {
   sorcerousOrigin: C('Origem Feiticeira', 'passiva', 'A subclasse do feiticeiro.'),
   otherworldlyPatron: C('Patrono Transcendental', 'passiva', 'A subclasse do bruxo.'),
   arcaneTradition: C('Tradição Arcana', 'passiva', 'A subclasse do mago.'),
+};
+
+// Os traços da raça vivem em `rules/racas.js` e entram no mesmo catálogo: a ficha e a tela de nível os leem daqui.
+Object.assign(CARACTERISTICAS, TRACOS_RACIAIS);
+
+// ---- O QUE O MOTOR FAZ DE VERDADE ------------------------------------------------------------------------------------
+// Cada característica cai em UM destes grupos, e a ficha diz qual ao jogador em vez de prometer:
+//   motor      o motor aplica (e há teste em `dev/testes-passivas.mjs` ou `dev/testes-regras.mjs`)
+//   estrutural é uma escolha ou um agrupador (a subclasse, o pacto, o estilo de caça): o que ela escolhe é que tem efeito
+//   semEfeito  o jogo não tem onde aplicar (idioma, doença, sintonização de item): o texto do livro fica na ficha
+//   pendente   é do livro e ainda não tem regra nem botão no jogo (as ações ativas que faltam)
+// As passivas e os traços raciais estão todos nos três primeiros; `pendente` é o que a próxima fase cobre.
+const FEITO = [
+  'abilityScoreImprovement', 'asi', 'additionalFightingStyle', 'evasion', 'feralInstinct', 'brutalCritical', 'relentlessRage',
+  'persistentRage', 'mindlessRage', 'indomitableMight', 'primalChampion', 'jackOfAllTrades', 'songOfRest', 'fontOfInspiration', 'superiorInspiration',
+  'bonusProficiencies', 'magicalSecrets', 'additionalMagicalSecrets', 'blessedHealer', 'divineStrike', 'supremeHealing',
+  'bonusCantrip', 'circleSpells', 'naturalRecovery', 'landsStride', 'naturesWard', 'naturesSanctuary', 'improvedCritical',
+  'remarkableAthlete', 'superiorCritical', 'survivor', 'indomitable', 'kiEmpoweredStrikes', 'purityOfBody', 'diamondSoul',
+  'perfectSelf', 'openHandTechnique', 'tranquility', 'auraOfProtection', 'auraOfCourage', 'improvedDivineSmite', 'auraOfDevotion',
+  'purityOfSpirit', 'favoredEnemy', 'naturalExplorer', 'feralSenses', 'foeSlayer', 'colossusSlayer', 'giantKiller', 'hordeBreaker',
+  'escapeTheHorde', 'multiattackDefense', 'steelWill', 'reliableTalent', 'slipperyMind', 'elusive', 'secondStoryWork', 'supremeSneak',
+  'thiefsReflexes', 'draconicResilience', 'elementalAffinity', 'pactMagic', 'eldritchMaster', 'darkOnesBlessing', 'fiendishResilience',
+  'agonizingBlast', 'spellMastery', 'signatureSpells', 'potentCantrip', 'empoweredEvocation',
+];
+const ESTRUTURAIS = [
+  'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
+  'roguishArchetype', 'sorcerousOrigin', 'otherworldlyPatron', 'arcaneTradition', 'sacredOath', 'huntersPrey', 'defensiveTactics',
+  'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic',
+];
+const SEM_EFEITO = {
+  timelessBody: 'o jogo não conta a idade dos heróis',
+  druidic: 'o jogo não tem idiomas',
+  thievesCant: 'o jogo não tem idiomas',
+  tongueOfSunAndMoon: 'o jogo não tem idiomas',
+  divineHealth: 'o jogo não tem doenças',
+  useMagicDevice: 'o jogo não tem sintonização nem exigências de classe nos itens',
+  hideInPlainSight: 'o jogo não tem camuflagem nem a ação de se pintar',
+  evocationSavant: 'o jogo não copia magias para o grimório',
+  blindsense: 'a percepção às cegas ainda não muda a linha de visão',
+  beastSpells: 'depende da Forma Selvagem, que ainda não existe',
+  archdruid: 'depende da Forma Selvagem, que ainda não existe',
+};
+for (const id of FEITO) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].motor = true;
+for (const id of ESTRUTURAIS) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].estrutural = true;
+for (const [id, motivo] of Object.entries(SEM_EFEITO)) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].semEfeito = motivo;
+for (const c of Object.values(CARACTERISTICAS)) if (!c.motor && !c.estrutural && !c.semEfeito) c.pendente = true;
+
+/** Em que pé está a característica: 'motor' · 'estrutural' · 'semEfeito' · 'pendente'. */
+export const estadoDaCaracteristica = (id) => {
+  const c = CARACTERISTICAS[id];
+  return !c ? 'pendente' : c.motor ? 'motor' : c.estrutural ? 'estrutural' : c.semEfeito ? 'semEfeito' : 'pendente';
 };
 
 /** Nome legível de uma característica, ou o próprio id se faltar no catálogo. */

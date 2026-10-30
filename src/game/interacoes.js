@@ -302,8 +302,21 @@ export function opcoesDaCasa(app, tile) {
             : !(c.resources?.ki > 0) ? 'sem pontos de ki'
               : !c.atacouDeMonge ? 'só depois de atacar com o punho ou arma de monge'
                 : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
-          fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ }),
+          fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ, modo: 'derrubar' }),
         });
+        // TÉCNICA DA MÃO ABERTA: a mesma Rajada, com outro efeito a cada golpe que acerta.
+        if (c.features.includes('openHandTechnique')) {
+          const motivoRajada = opcoes[opcoes.length - 1].motivo;
+          for (const [modo, rotulo, detalhe] of [
+            ['empurrar', 'Rajada: empurrar', 'cada golpe que acerta empurra 4,5 m (FOR)'],
+            ['semReacao', 'Rajada: sem reações', 'cada golpe que acerta tira a reação até o fim do seu próximo turno'],
+          ]) {
+            opcoes.push({
+              grupo: 'Atacar', rotulo, icone: 'classe-openHandTechnique', detalhe: `ação bônus · 1 ki · ${detalhe}`,
+              motivo: motivoRajada, fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ, modo }),
+            });
+          }
+        }
       }
       opcoes.push(...magias);
       return { titulo, subtitulo, alvo, opcoes };

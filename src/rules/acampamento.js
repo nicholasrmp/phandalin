@@ -24,10 +24,11 @@
 //     horas sem esforço, e o livro não manda tirar isso dele. O livro também
 //     não diz em letra que passar das duas horas custa o descanso inteiro —
 //     é a leitura mais comum, e é a nossa;
-//   - o Transe do elfo (quatro horas de meditação valendo oito de sono) ainda
-//     não existe no motor, então o elfo vigia como todo mundo.
+//   - o Transe do elfo (quatro horas de meditação valendo oito de sono): quem o
+//     tem aguenta as quatro horas de vigia da escolha "os dois mais atentos" sem
+//     perder o descanso longo (`descansou`).
 
-import { skillBonus, passivePerception } from './abilities.js';
+import { skillBonus, passivePerception, rolarPericia } from './abilities.js';
 import { hasCondition } from './conditions.js';
 import { d20 } from '../core/dice.js';
 
@@ -147,7 +148,7 @@ const CD_DO_TERRENO = { farto: 10, comum: 12, ermo: 15 };
  */
 export function procurarLugar(rng, quem, { terreno = 'comum', vantagem = false } = {}) {
   const cd = CD_DO_TERRENO[terreno] ?? CD_DO_TERRENO.comum;
-  const teste = quem ? d20(rng, skillBonus(quem, 'sobrevivencia'), { advantage: vantagem }) : { total: 0 };
+  const teste = quem ? rolarPericia(rng, quem, 'sobrevivencia', { advantage: vantagem }) : { total: 0 };
   const lugares = Object.values(LUGARES)
     .filter((l) => l.terrenos.includes(terreno) && l.cd <= teste.total)
     .sort((a, b) => a.cd - b.cd);
@@ -232,7 +233,10 @@ export function descansou(c, camp) {
   // Dentro da cabana ninguém precisa ficar de olho: todos dormem a noite toda.
   if (noiteFechada(camp)) return true;
   const deVigia = camp.vigias.includes(c);
-  return !deVigia || camp.vigia.horas <= HORAS_LEVES;
+  // TRANSE (elfo): quatro horas de meditação valem o descanso longo, então sobram quatro horas para a vigia — em vez
+  // das duas horas de atividade leve que o descanso longo comum tolera.
+  const limite = c.features?.includes('trance') ? HORAS_DA_NOITE / 2 : HORAS_LEVES;
+  return !deVigia || camp.vigia.horas <= limite;
 }
 
 /**

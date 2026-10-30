@@ -13,8 +13,8 @@ import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDi
 import { Battlefield, distanceFt, isAdjacent, key, footprintOf, FEET_PER_SQUARE } from '../core/grid.js';
 import { ARMORS } from './items/index.js';
 import {
-  abilityMod, saveBonus, skillBonus, spellSaveDc, spellAttackBonus,
-  proficiencyBonus, ABILITY_NAME, passivePerception,
+  abilityMod, saveBonus, skillBonus, rolarPericia, spellSaveDc, spellAttackBonus,
+  proficiencyBonus, ABILITY_NAME, passivePerception, ajustarTeste, treinadoEm,
 } from './abilities.js';
 import {
   WEAPONS, weaponAbility, armorClass,
@@ -42,6 +42,10 @@ import {
 } from './talentos.js';
 import { spellMod } from './party.js';
 import { modificadoresDeLuz } from './luz.js';
+import {
+  vantagemPorTraco, contraDaMagia, margemDeCritico, dadosExtraDeCritico, danoPorResistencia, TIPOS_DA_PUREZA, CONDICOES_DE_ENCANTO,
+  bonusDeDanoPorTraco, usoLivreDe, PLANTAS_QUE_PRENDEM, ehInimigoFavorito,
+} from './passivas.js';
 
 // ---- rolagens que se explicam ---------------------------------------------
 //
@@ -182,7 +186,7 @@ function contaDeResistencia(r) {
     `contra ${r.contra}`,
     `resistência ${explicarBonus(r.bonus, r.bonusPartes)}`,
     `d20[${r.d20Rolls.join('/')}] = ${r.total} vs CD ${r.cd}`,
-    r.modo && r.modo !== 'normal' ? MODO_TEXTO[r.modo] : null,
+    r.modo && r.modo !== 'normal' ? MODO_TEXTO[r.modo] + (r.vantagemPor?.length ? ` (${r.vantagemPor.join(', ')})` : '') : null,
     r.sucesso ? 'passou' : 'falhou',
     `se passar: ${r.seSucesso}`,
   ].filter(Boolean).join(' · ');
@@ -266,6 +270,8 @@ export class Encounter {
     this.field.sobreAgua = false;
     this.field.atravessaVao = false;
     this.field.semTerrenoDificil = false;
+    this.field.passoDaTerra = false;
+    this.field.escalaSemCusto = false;
     for (const c of this.combatants) {
       c.movementLeftFt = 0;
       c.actionUsed = true;
@@ -276,7 +282,7 @@ export class Encounter {
       // ela até o fim do turno que perde (`rolarSurpresa`).
       c.reactionUsed = false;
       c.acted = true;
-      c.sneakUsedThisTurn = false;
+      c.sneakUsedThisTurn = false; c.golpeDivinoNoTurno = false; c.presaNoTurno = false;
       c.extraActions = 0;
       c.concentrating = null;
     }
@@ -343,6 +349,8 @@ export class Encounter {
     if (conditionEffects(actor).atravessaVao) return true;
     const hostis = actor.side !== outro.side && actor.side !== 'neutro' && outro.side !== 'neutro';
     if (!hostis) return true;
+    // AGILIDADE HALFLING: atravessa o espaço de QUALQUER criatura de tamanho maior que o seu, hostil ou não.
+    if (actor.features?.includes('halflingNimbleness') && categoriaDeTamanho(outro) > categoriaDeTamanho(actor)) return true;
     return Math.abs(categoriaDeTamanho(actor) - categoriaDeTamanho(outro)) >= 2;
   }
 
@@ -461,9 +469,23 @@ export class Encounter {
     // `iniciativaRuim` é o lado que foi pego fora de posição: ele VIU o outro,
     // então não há surpresa, mas rola a iniciativa com desvantagem. É o castigo
     // de quem tentou se esconder e foi notado (`game/regiao.js`).
-    const partyInit = d20(this.rng, this.bestDex('party'), { disadvantage: this.iniciativaRuim === 'party' });
-    const foeInit = d20(this.rng, this.bestDex('foes'), { disadvantage: this.iniciativaRuim === 'foes' });
+    const partyInit = d20(this.rng, this.bestDex('party'), { advantage: this.instintoSelvagem('party'), disadvantage: this.iniciativaRuim === 'party' });
+    const foeInit = d20(this.rng, this.bestDex('foes'), { advantage: this.instintoSelvagem('foes'), disadvantage: this.iniciativaRuim === 'foes' });
     this.say('inicio', `Iniciativa — Grupo ${partyInit.total} × ${foeInit.total} Inimigos`);
+    // INSPIRAÇÃO SUPERIOR (bardo, 20º): ao rolar iniciativa SEM Inspiração Bárdica, recupera uma.
+    for (const c of this.combatants) {
+      if (!c.dead && c.features?.includes('superiorInspiration') && (c.resources?.bardicInspiration ?? 0) === 0 && (c.resourcesMax?.bardicInspiration ?? 0) > 0) {
+        c.resources.bardicInspiration = 1;
+        this.say('recurso', `${c.name} entra na luta já inspirado: recupera uma Inspiração Bárdica (Inspiração Superior).`);
+      }
+    }
+    // EU PERFEITO (monge, 20º): ao rolar iniciativa SEM pontos de ki, recupera 4.
+    for (const c of this.combatants) {
+      if (!c.dead && c.features?.includes('perfectSelf') && (c.resources?.ki ?? 0) === 0 && (c.resourcesMax?.ki ?? 0) > 0) {
+        c.resources.ki = Math.min(4, c.resourcesMax.ki);
+        this.say('recurso', `${c.name} se centra no começo da luta: recupera ${c.resources.ki} pontos de ki (Eu Perfeito).`);
+      }
+    }
     // O aviso de que a exploração virou combate. Sai como EVENTO, e não como
     // som daqui, porque o motor não toca nada: quem ouve é a vista. E sai de
     // `start()` porque são doze os lugares que começam um combate (um por
@@ -515,7 +537,7 @@ export class Encounter {
     // A cena pode trazer os testes já rolados (a chegada da exploração usa
     // os mesmos para ver quem nota os emboscadores antes da luta).
     const furtivos = this.emboscada.furtividade
-      ?? this.allOf(lado).map((c) => d20(this.rng, skillBonus(c, 'furtividade')).total);
+      ?? this.allOf(lado).map((c) => rolarPericia(this.rng, c, 'furtividade').total);
     if (!furtivos.length) return surpresos;
     const menor = Math.min(...furtivos);
     const avisados = [];
@@ -528,6 +550,12 @@ export class Encounter {
         continue;
       }
       if (passivePerception(c) < menor) {
+        // INSTINTO SELVAGEM (bárbaro, 7º): surpreendido e acordado, age normalmente no primeiro turno — o livro pede que entre
+        // em fúria antes de qualquer outra coisa; o jogo não cobra a ordem.
+        if (c.features?.includes('feralInstinct') && !conditionEffects(c).incapacitated) {
+          this.say('recurso', `${c.name} foi pego de surpresa, mas o Instinto Selvagem o põe de pé: age normalmente (entre em fúria antes de tudo).`);
+          continue;
+        }
         // Alarme: o aviso soa antes de os emboscadores chegarem, e quem estava perto da marca se prepara.
         if (lado === 'foes' && this.protegidoDeSurpresa?.(c)) { avisados.push(c.name); continue; }
         surpresos.add(c.id);
@@ -539,6 +567,14 @@ export class Encounter {
     this.say('inicio', `Furtividade dos emboscadores: ${furtivos.join(', ')} — `
       + (nomes.length ? `surpreendidos: ${nomes.join(', ')}.` : 'ninguém foi surpreendido.'));
     return surpresos;
+  }
+
+  /**
+   * INSTINTO SELVAGEM (bárbaro, 7º): vantagem na iniciativa. O jogo rola UMA iniciativa por lado, então um bárbaro vivo e
+   * consciente dá a vantagem ao lado inteiro: é a leitura mais simples de "o lado age junto", e a declaro aqui.
+   */
+  instintoSelvagem(side) {
+    return this.allOf(side).some((c) => !c.dead && c.features?.includes('feralInstinct') && !conditionEffects(c).incapacitated);
   }
 
   bestDex(side) {
@@ -555,7 +591,7 @@ export class Encounter {
     // O Furtivo e a Vantagem Marcial são UM por turno, e turno é de qualquer
     // um: o ladino que dá ataque de oportunidade no turno do inimigo tem o
     // furtivo de volta quando o turno do outro lado começa.
-    for (const c of this.combatants) { c.sneakUsedThisTurn = false; c.martialUsedThisTurn = false; }
+    for (const c of this.combatants) { c.sneakUsedThisTurn = false; c.golpeDivinoNoTurno = false; c.presaNoTurno = false; c.martialUsedThisTurn = false; }
     // Efeitos que duram "até o começo do próximo turno" do conjurador.
     this.contarDuracoes((cond) => cond.lado === side && cond.quando === 'inicio');
     // Piscar: quem sumiu no fim do turno anterior volta antes de qualquer outra coisa.
@@ -580,7 +616,8 @@ export class Encounter {
       c.acaoLimitada = false;
       c.acaoVelozDisponivel = hasCondition(c, 'acelerado');
       this.comecoDoTurnoMagico(c);
-      c.sneakUsedThisTurn = false;
+      this.comecoDoTurnoPassivo(c);
+      c.sneakUsedThisTurn = false; c.golpeDivinoNoTurno = false; c.presaNoTurno = false;
       c.martialUsedThisTurn = false;
       c.atacouNoTurno = false;
       c.extraActions = 0;
@@ -700,7 +737,7 @@ export class Encounter {
           const fonteDoMedo = this.combatants.find((x) => x.id === cond.source && !x.dead);
           if (fonteDoMedo && this.field.hasLineOfSight(c.pos, fonteDoMedo.pos)) continue;
         }
-        const save = this.resistencia(c, cond.data.save, cond.data.dc);
+        const save = this.resistencia(c, cond.data.save, cond.data.dc, { contra: { condicao: cond.id } });
         const nome = CONDITIONS[cond.id]?.name ?? cond.id;
         const r = this.explicarResistencia(c, cond.data.save, cond.data.dc, save, {
           contra: `${nome} (nova resistência no fim do turno)`,
@@ -789,6 +826,30 @@ export class Encounter {
     return 8 + proficiencyBonus(monge.level ?? 1) + abilityMod(monge.abilities?.wis ?? 10);
   }
 
+  /** A TÉCNICA DA MÃO ABERTA depois de um golpe da Rajada que acertou. */
+  tecnicaDaMaoAberta(monge, alvo, tecnica) {
+    const cd = this.cdDeKi(monge);
+    const hab = tecnica === 'derrubar' ? 'dex' : tecnica === 'empurrar' ? 'str' : null;
+    if (tecnica === 'semReacao') {
+      this.aplicarCondicao(alvo, 'semReacoesDaMao', { rounds: 1, quando: 'fim', lado: monge.side, source: monge.id });
+      alvo.reactionUsed = true;
+      this.say('condicao', `${alvo.name} não pode tomar reações até o fim do próximo turno de ${monge.name} (Técnica da Mão Aberta).`);
+      return;
+    }
+    const save = this.resistencia(alvo, hab, cd);
+    this.explicarResistencia(alvo, hab, cd, save, {
+      contra: `Técnica da Mão Aberta de ${monge.name}`,
+      seSucesso: tecnica === 'derrubar' ? 'não cai' : 'não é empurrado',
+    });
+    if (save.success) return;
+    if (tecnica === 'derrubar') {
+      if (this.aplicarCondicao(alvo, 'caido', { source: monge.id })) this.say('condicao', `${alvo.name} é derrubado por ${monge.name} (Técnica da Mão Aberta).`);
+    } else {
+      this.empurrar(alvo, monge.pos, 15);
+      this.say('condicao', `${alvo.name} é empurrado 4,5 m por ${monge.name} (Técnica da Mão Aberta).`);
+    }
+  }
+
   /** O teste de Constituição do Ataque Atordoante, já com a conta aberta. */
   ataqueAtordoante(monge, alvo) {
     const cd = this.cdDeKi(monge);
@@ -872,7 +933,7 @@ export class Encounter {
     c.bonusUsed = true;
     c.reactionUsed = true;
     c.acted = true;
-    c.sneakUsedThisTurn = false;
+    c.sneakUsedThisTurn = false; c.golpeDivinoNoTurno = false; c.presaNoTurno = false;
     c.martialUsedThisTurn = false;
     c.atacouNoTurno = false;
     c.extraActions = 0;
@@ -1123,6 +1184,16 @@ export class Encounter {
 
   /** Marca o combatente como tendo terminado e, se o lado acabou, passa a vez. */
   endTurn(actor) {
+    // REFLEXOS DE LADRÃO (ladino Ladrão, 17º): na PRIMEIRA rodada, dois turnos — no livro, o segundo cai na iniciativa −10. Como a
+    // iniciativa aqui é por lado, o segundo turno vem logo em seguida ao primeiro, uma vez por luta.
+    if (this.round === 1 && actor.features?.includes('thiefsReflexes') && !this.reflexosUsados?.has(actor.id) && !actor.dead) {
+      (this.reflexosUsados ??= new Set()).add(actor.id);
+      actor.movementLeftFt = this.speedOf(actor);
+      Object.assign(actor, { actionUsed: false, bonusUsed: false, ataquesRestantes: 0, extraActions: 0, disengaging: false, magiasNoTurno: [], surgeUsedThisTurn: false, atacouDeMonge: false, atacouNoTurno: false, martialUsedThisTurn: false, sneakUsedThisTurn: false, interacaoUsada: false, corridaFt: 0 });
+      this.say('recurso', `${actor.name} age de novo: Reflexos de Ladrão dão um segundo turno na primeira rodada.`);
+      this.onEvent({ type: 'turnEnd', actor });
+      return;
+    }
     actor.acted = true;
     actor.movementLeftFt = 0;
     // O ki do Ataque Atordoante paga ESTE turno: armar e não acertar perde o
@@ -1240,6 +1311,8 @@ export class Encounter {
     this.field.sobreAgua = conditionEffects(actor).sobreAgua;
     this.field.atravessaVao = conditionEffects(actor).atravessaVao;
     this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil;
+    this.field.passoDaTerra = Boolean(actor.features?.includes('landsStride'));
+    this.field.escalaSemCusto = Boolean(actor.features?.includes('secondStoryWork'));
     this.field.rastejando = this.rastejando(actor);
     // Círculo Mágico: o tipo barrado não entra (quem já está dentro anda livre).
     const barras = this.circulosQueBarram(actor);
@@ -1268,6 +1341,8 @@ export class Encounter {
       this.field.sobreAgua = false;
       this.field.atravessaVao = false;
       this.field.semTerrenoDificil = false;
+      this.field.passoDaTerra = false;
+      this.field.escalaSemCusto = false;
       this.field.rastejando = false;
     }
   }
@@ -1368,6 +1443,8 @@ export class Encounter {
       this.field.sobreAgua = conditionEffects(actor).sobreAgua;
       this.field.atravessaVao = conditionEffects(actor).atravessaVao;
       this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil;
+      this.field.passoDaTerra = Boolean(actor.features?.includes('landsStride'));
+      this.field.escalaSemCusto = Boolean(actor.features?.includes('secondStoryWork'));
       this.field.rastejando = rasteja;
       let pes = 0;
       // O espaço de outra criatura é terreno difícil: atravessar o aliado custa o dobro (a mesma conta de `reachable`).
@@ -1379,6 +1456,8 @@ export class Encounter {
       this.field.sobreAgua = false;
       this.field.atravessaVao = false;
       this.field.semTerrenoDificil = false;
+      this.field.passoDaTerra = false;
+      this.field.escalaSemCusto = false;
       this.field.rastejando = false;
       return pes;
     };
@@ -1732,9 +1811,9 @@ export class Encounter {
     this.say('recurso', `${actor.name} enche o peito e solta ${b.name.toLowerCase()} num cone de ${b.areaFt / 5 * 1.5} m.`);
     this.onEvent({ type: 'spell', caster: actor, spell: { id: b.id ?? 'soproVenenoso', name: b.name, origem: b.origem ?? 'sopro' }, point: alvo, areaTiles: casas });
     for (const t of pegos) {
-      const save = this.resistencia(t, b.save, b.dc);
+      const save = this.resistencia(t, b.save, b.dc, { contra: { tipoDano: b.damageType } });
       const dmg = damageRoll(this.rng, b.damage);
-      const total = save.success ? (b.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+      const total = danoPorResistencia(t, b.save, !!b.halfOnSave, save.success, dmg.total, conditionEffects(t).incapacitated);
       const r = this.explicarResistencia(t, b.save, b.dc, save, {
         contra: `${b.name} (cone de ${b.areaFt / 5 * 1.5} m)`,
         seSucesso: b.halfOnSave ? 'metade do dano' : 'nenhum dano',
@@ -1858,7 +1937,7 @@ export class Encounter {
     const pegos = [...new Set(casas.map((t) => this.at(t.x, t.y)))].filter((c) => c && !c.dead);
     for (const c of pegos) {
       const save = this.resistencia(c, g.save, zona.cd);
-      const amount = save.success ? Math.floor(r.total / 2) : r.total;
+      const amount = danoPorResistencia(c, g.save, true, save.success, r.total, conditionEffects(c).incapacitated);
       const rr = this.explicarResistencia(c, g.save, zona.cd, save, { contra: 'Glifo de Proteção', seSucesso: 'metade do dano' });
       this.say('magia', `${c.name} ${save.success ? 'resiste' : 'falha'} contra o Glifo e sofre ${amount} de ${g.tipo}.`,
         `${rr.conta} · ${g.dados}[${r.rolls.join('+')}]${save.success ? ` → metade = ${amount}` : ''}`, { rolagem: rr });
@@ -1965,7 +2044,7 @@ export class Encounter {
     }
     if (reator) {
       reator.reactionUsed = true;
-      reator.spellcasting.slots[pode.circulo] -= 1;
+      this.pagarReacao(reator, pode);
       this.say('magia', `${reator.name} conjura Queda Suave (reação): ${protegidos.map((c) => c.name).join(', ')} desce${protegidos.length > 1 ? 'm' : ''} devagar, sem dano.`);
       this.onEvent({ type: 'spell', caster: reator, spell: pode.spell, target: protegidos[0], point: protegidos[0].pos, circulo: pode.circulo, buffTargets: protegidos });
     }
@@ -2121,7 +2200,7 @@ export class Encounter {
     if (this.imuneACondicao(c, zona.condition)) return true;
     // Nuvem Fétida: quem é imune a veneno passa direto.
     if (zona.imuneSe && (c.immune?.includes(zona.imuneSe) || this.imuneACondicao(c, 'envenenado'))) return true;
-    const save = this.resistencia(c, zona.save, zona.cd);
+    const save = this.resistencia(c, zona.save, zona.cd, { contra: { magico: true, planta: PLANTAS_QUE_PRENDEM.includes(zona.spellId) || zona.spellId === 'plantasConstritoras', condicao: zona.condition ?? null } });
     const nome = CONDITIONS[zona.condition]?.name.toLowerCase() ?? zona.condition;
     const r = this.explicarResistencia(c, zona.save, zona.cd, save, {
       contra: `${zona.nome} (${c.name} ${porque} na área)`,
@@ -2156,9 +2235,9 @@ export class Encounter {
     let total = r.total;
     let conta = `${zona.dano.dados}[${r.rolls.join('+')}]`;
     if (zona.dano.save) {
-      const save = this.resistencia(c, zona.dano.save, zona.cd);
+      const save = this.resistencia(c, zona.dano.save, zona.cd, { contra: { magico: true, planta: PLANTAS_QUE_PRENDEM.includes(zona.spellId), tipoDano: zona.dano.tipo ?? null } });
       const rr = this.explicarResistencia(c, zona.dano.save, zona.cd, save, { contra: zona.nome, seSucesso: zona.dano.metade ? 'metade do dano' : 'nenhum dano' });
-      if (save.success) total = zona.dano.metade ? Math.floor(total / 2) : 0;
+      total = danoPorResistencia(c, zona.dano.save, !!zona.dano.metade, save.success, total, conditionEffects(c).incapacitated);
       conta = `${rr.conta} · ${conta}`;
     }
     this.say('magia', `${c.name} ${porque} ${zona.em} ${zona.nome} e sofre ${total}${zona.dano.tipo ? ` de ${zona.dano.tipo}` : ''}.`, conta);
@@ -2183,7 +2262,7 @@ export class Encounter {
     let total = r.total;
     let conta = `${zona.fimDano.dados}[${r.rolls.join('+')}]`;
     if (zona.fimDano.save) {
-      const save = this.resistencia(c, zona.fimDano.save, zona.cd);
+      const save = this.resistencia(c, zona.fimDano.save, zona.cd, { contra: { magico: true, planta: PLANTAS_QUE_PRENDEM.includes(zona.spellId), tipoDano: zona.fimDano.tipo ?? null } });
       const rr = this.explicarResistencia(c, zona.fimDano.save, zona.cd, save, { contra: zona.nome, seSucesso: 'nenhum dano' });
       if (save.success) total = 0;
       conta = `${rr.conta} · ${conta}`;
@@ -2222,9 +2301,9 @@ export class Encounter {
     c.aurasNoTurno ??= [];
     if (c.aurasNoTurno.includes(aura.id) || c.dead) return;
     c.aurasNoTurno.push(aura.id);
-    const save = this.resistencia(c, aura.save, aura.cd);
+    const save = this.resistencia(c, aura.save, aura.cd, { contra: { magico: true, condicao: aura.condition ?? null } });
     const dmg = damageRoll(this.rng, aura.dano);
-    const amount = save.success ? (aura.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
+    const amount = danoPorResistencia(c, aura.save, !!aura.halfOnSave, save.success, dmg.total, conditionEffects(c).incapacitated);
     const r = this.explicarResistencia(c, aura.save, aura.cd, save, {
       contra: `${aura.nome} de ${aura.dono.name}`,
       seSucesso: 'metade do dano',
@@ -2252,6 +2331,7 @@ export class Encounter {
 
   /** Imunidade a condição do bloco (`contido` aparece também como 'imobilizado'). */
   imuneACondicao(alvo, id, fonte = null) {
+    if (this.imunePorCaracteristica(alvo, id, fonte)) return true;
     const lista = alvo.conditionImmunities ?? [];
     // Círculo Mágico: o tipo barrado não enfeitiça nem amedronta quem está dentro.
     if (fonte && ['enfeiticado', 'amedrontado', 'sugerido', 'hipnotizado', 'coroaDaLoucura'].includes(id) && this.circuloProtege(fonte, alvo)) return true;
@@ -2265,6 +2345,51 @@ export class Encounter {
     // Os blocos de monstro escrevem "enfeitiçado" e "imobilizado".
     const APELIDOS = { sugerido: 'enfeitiçado', hipnotizado: 'enfeitiçado', enfeiticado: 'enfeitiçado', coroaDaLoucura: 'enfeitiçado', contido: 'imobilizado', presoPorVinhas: 'imobilizado' };
     return porMagia || lista.includes(id) || lista.includes(APELIDOS[id]);
+  }
+
+  /**
+   * Os paladinos do lado de `alvo` cuja aura `aura` alcança `alvo`: vivos, conscientes, e a até `raioDeAura` pés (10; 30 no
+   * 18º; o próprio paladino conta). A aura não pede linha de visão: é uma emanação.
+   */
+  paladinosDaAura(alvo, aura) {
+    return this.combatants.filter((p) => p.side === alvo.side && !p.dead && p.hp > 0 && p.features?.includes(aura)
+      && !conditionEffects(p).incapacitated && p.raioDeAura && (p === alvo || distanceFt(p.pos, alvo.pos) <= p.raioDeAura));
+  }
+
+  /** A Aura de Proteção que vale para `alvo`: a de maior bônus (CAR, mínimo +1), ou null. */
+  auraDeProtecao(alvo) {
+    let melhor = null;
+    for (const p of this.paladinosDaAura(alvo, 'auraOfProtection')) {
+      const valor = Math.max(1, abilityMod(p.abilities.cha));
+      if (!melhor || valor > melhor.valor) melhor = { paladino: p, valor };
+    }
+    return melhor;
+  }
+
+  /**
+   * Imunidades que vêm de uma CARACTERÍSTICA, e não do bloco de criatura:
+   *   Fúria Irracional (Berserker, 6º)    em fúria, nem enfeitiçado nem amedrontado;
+   *   Pureza do Corpo (monge, 10º)        imune a veneno;
+   *   Bênção da Natureza (druida da Terra, 10º)  imune a veneno; e enfeitiçado/amedrontado por elementais e fadas;
+   *   Pureza de Espírito (Devoção, 15º)   enfeitiçado/amedrontado pelos seis tipos da Proteção contra o Bem e o Mal;
+   *   Aura de Coragem (10º) e Aura de Devoção (7º da Devoção)  o paladino e os aliados do raio, contra medo e encanto.
+   * Doença não existe como condição neste jogo, então a parte "doença" de Saúde Divina, Pureza do Corpo e Bênção da Natureza
+   * não tem o que impedir.
+   */
+  imunePorCaracteristica(alvo, id, fonte = null) {
+    const medo = id === 'amedrontado';
+    const encanto = CONDICOES_DE_ENCANTO.includes(id);
+    const veneno = id === 'envenenado';
+    const f = alvo.features ?? [];
+    if (f.length) {
+      if (f.includes('mindlessRage') && hasCondition(alvo, 'furia') && (medo || encanto)) return true;
+      if (f.includes('purityOfBody') && veneno) return true;
+      if (f.includes('naturesWard') && (veneno || ((medo || encanto) && ['elemental', 'fada'].includes(fonte?.tipo)))) return true;
+      if (f.includes('purityOfSpirit') && (medo || encanto) && TIPOS_DA_PUREZA.includes(fonte?.tipo)) return true;
+    }
+    if (medo && this.paladinosDaAura(alvo, 'auraOfCourage').length) return true;
+    if (encanto && this.paladinosDaAura(alvo, 'auraOfDevotion').length) return true;
+    return false;
   }
 
   /**
@@ -2376,7 +2501,9 @@ export class Encounter {
     const forca = actor.abilities?.str ?? 10;
     // Salto (magia): a distância triplica.
     const mult = hasCondition(actor, 'saltoTriplo') ? 3 : 1;
-    return Math.min((correu ? forca : Math.floor(forca / 2)) * mult, actor.movementLeftFt ?? 0);
+    // TRABALHO DE ANDAR DE CIMA (ladrão, 3º): o salto com corrida ganha o modificador de Destreza em pés.
+    const andarDeCima = correu && actor.features?.includes('secondStoryWork') ? Math.max(0, abilityMod(actor.abilities?.dex ?? 10)) : 0;
+    return Math.min(((correu ? forca : Math.floor(forca / 2)) + andarDeCima) * mult, actor.movementLeftFt ?? 0);
   }
 
   /**
@@ -2460,7 +2587,7 @@ export class Encounter {
       const x = origin.x + dx * i;
       const y = origin.y + dy * i;
       if (this.field.tileAt(x, y) !== 3) continue;
-      const r = this.testeDeAtributo(actor, 'str', skillBonus(actor, 'atletismo'), 'Atletismo');
+      const r = this.testeDeAtributo(actor, 'str', skillBonus(actor, 'atletismo'), 'Atletismo', { pericia: 'atletismo' });
       if (r.total >= 10) {
         this.say('acao', `${actor.name} salta por cima do obstáculo.`, `${r.conta} vs CD 10`);
         continue;
@@ -2472,7 +2599,7 @@ export class Encounter {
     }
     actor.pos = { x: origin.x + dx * fim, y: origin.y + dy * fim, f: 1 };
     if (!caiu && this.dificilParaPouso(actor, actor.pos.x, actor.pos.y)) {
-      const r = this.testeDeAtributo(actor, 'dex', skillBonus(actor, 'acrobacia'), 'Acrobacia');
+      const r = this.testeDeAtributo(actor, 'dex', skillBonus(actor, 'acrobacia'), 'Acrobacia', { pericia: 'acrobacia' });
       if (r.total < 10) {
         caiu = true;
         this.say('acao', `${actor.name} pousa mal no terreno difícil e cai.`, `${r.conta} vs CD 10`);
@@ -2525,7 +2652,7 @@ export class Encounter {
     // Teia e Emaranhar: o livro pede Força, então só Atletismo.
     const soForca = String(preso.source ?? '').startsWith('zona:') || !!preso.data?.soForca;
     const [pericia, bonus] = soForca || atl >= acr ? ['Atletismo', atl] : ['Acrobacia', acr];
-    const r = this.testeDeAtributo(actor, pericia === 'Atletismo' ? 'str' : 'dex', bonus, pericia);
+    const r = this.testeDeAtributo(actor, pericia === 'Atletismo' ? 'str' : 'dex', bonus, pericia, { pericia: pericia === 'Atletismo' ? 'atletismo' : 'acrobacia' });
     const conta = `${r.conta} vs CD ${cd}`;
     if (r.total >= cd) {
       removeCondition(actor, preso.id);
@@ -2611,7 +2738,11 @@ export class Encounter {
   opportunityAttack(attacker, target) {
     attacker.reactionUsed = true;
     this.say('reacao', `${attacker.name} aproveita a brecha (ataque de oportunidade).`);
-    this.resolveAttack(attacker, target, { opportunity: true, weaponId: this.armaDeOportunidade(attacker) });
+    // ESCAPAR DA HORDA (Caçador, 7º): os ataques de oportunidade contra ele têm desvantagem.
+    this.resolveAttack(attacker, target, {
+      opportunity: true, weaponId: this.armaDeOportunidade(attacker),
+      disadvantage: target.features?.includes('escapeTheHorde') ? 'Escapar da Horda' : false,
+    });
   }
 
   // ---- vantagem / desvantagem ---------------------------------------------
@@ -2683,10 +2814,16 @@ export class Encounter {
     if (hasCondition(attacker, 'invisivel') && !ve(target, attacker)) fonte(mods, 'vantagem', 'atacante invisível');
     // Emboscador (o doppelganger): vantagem contra quem ainda está surpreso.
     if (attacker.traits?.includes('emboscador') && this.surpresos?.has(target.id)) fonte(mods, 'vantagem', 'emboscador');
-    if (hasCondition(target, 'invisivel') && !ve(attacker, target)) fonte(mods, 'desvantagem', 'alvo invisível');
+    // SENTIDOS SELVAGENS (patrulheiro, 18º): não ver o alvo não dá desvantagem (até 9 m, para o invisível).
+    const sentidosSelvagens = attacker.features?.includes('feralSenses');
+    if (hasCondition(target, 'invisivel') && !ve(attacker, target) && !(sentidosSelvagens && distanceFt(attacker.pos, target.pos) <= 30)) {
+      fonte(mods, 'desvantagem', 'alvo invisível');
+    }
     // Proteção contra o Bem e o Mal: certos tipos atacam o protegido com desvantagem.
     const protecao = (target.conditions ?? []).find((c) => CONDITIONS[c.id]?.contraTipos?.includes(attacker.tipo));
     if (protecao) fonte(mods, 'desvantagem', CONDITIONS[protecao.id].name.toLowerCase());
+    // PUREZA DE ESPÍRITO (paladino da Devoção, 15º): sempre sob Proteção contra o Bem e o Mal, sem concentração nem duração.
+    if (target.features?.includes('purityOfSpirit') && TIPOS_DA_PUREZA.includes(attacker.tipo)) fonte(mods, 'desvantagem', 'Pureza de Espírito');
     // O aviso de armadura sem treino prometia um preço que ninguém cobrava: o
     // mago podia vestir cota de malha e ir de CA 12 para 16 de graça. Enquanto
     // nada desequipava, a promessa nunca era testada — o inventário novo a
@@ -2722,6 +2859,14 @@ export class Encounter {
     }
     // Escuridão: quem não vê o alvo erra mais; quem não é visto acerta mais.
     modificadoresDeLuz(this, attacker, target, mods, fonte);
+    // ESQUIVO (ladino, 18º): nenhuma jogada de ataque tem vantagem contra quem o tem, a menos que esteja incapacitado.
+    if (target.features?.includes('elusive') && mods.advantage && !tgtFx.incapacitated) {
+      const caidas = new Set(mods.vantagens);
+      mods.reasons = mods.reasons.filter((m) => !caidas.has(m));
+      mods.vantagens = [];
+      mods.advantage = false;
+      fecharModo(mods);
+    }
     return mods;
   }
 
@@ -2912,7 +3057,37 @@ export class Encounter {
     this.onEvent({ type: 'revelou', target: c });
   }
 
-  resolveAttack(attacker, target, { weaponId = null, opportunity = false, disadvantage = false, maoSecundaria = false } = {}) {
+  /**
+   * Um ataque com tudo em volta dele: o ataque em si (`resolveAttackBase`) e as respostas das características do Caçador.
+   *   QUEBRA-HORDAS (escolha do 3º)   uma vez por turno, ao atacar, faz outro ataque com a mesma arma contra OUTRA criatura a
+   *                                   até 1,5 m do alvo (e ao alcance da arma);
+   *   MATADOR DE GIGANTES (escolha do 3º)  reação: Grande ou maior, a 1,5 m, acertou ou errou o Caçador: ele ataca de volta.
+   * `horda` e `reacao` impedem que as respostas respondam a si mesmas.
+   */
+  resolveAttack(attacker, target, opts = {}) {
+    const r = this.resolveAttackBase(attacker, target, opts);
+    if (opts.horda || opts.reacao || attacker.dead) return r;
+    const f = attacker.features ?? [];
+    if (f.includes('hordeBreaker') && !attacker.presaNoTurno && !opts.opportunity && !conditionEffects(attacker).incapacitated) {
+      const outro = this.enemiesOf(attacker)
+        .filter((e) => e !== target && !e.dead && distanceFt(e.pos, target.pos) <= 5 && this.canAttack(attacker, e, opts.weaponId ?? null).ok)
+        .sort((a, b) => a.hp - b.hp)[0];
+      if (outro) {
+        attacker.presaNoTurno = true;
+        this.say('recurso', `${attacker.name} aproveita a confusão da horda: outro ataque, agora em ${outro.name} (Quebra-Hordas).`);
+        this.resolveAttackBase(attacker, outro, { ...opts, horda: true });
+      }
+    }
+    if (target.features?.includes('giantKiller') && !target.dead && !target.reactionUsed && !conditionEffects(target).incapacitated
+      && attacker.side !== target.side && (attacker.pos?.f ?? 1) >= 2 && distanceFt(attacker.pos, target.pos) <= 5) {
+      target.reactionUsed = true;
+      this.say('reacao', `${target.name} responde ao gigante (Matador de Gigantes).`);
+      this.resolveAttackBase(target, attacker, { opportunity: true, weaponId: this.armaDeOportunidade(target), reacao: true });
+    }
+    return r;
+  }
+
+  resolveAttackBase(attacker, target, { weaponId = null, opportunity = false, disadvantage = false, maoSecundaria = false } = {}) {
     // Atacar desfaz o disfarce do metamorfo: o golpe já sai da forma verdadeira.
     if (attacker.disfarce) this.revelarDisfarce(attacker, 'no ataque');
     // O chefe pode jogar um capanga na frente antes de a rolagem acontecer.
@@ -2960,7 +3135,7 @@ export class Encounter {
     if (p.teste) {
       this.quebraInvisibilidade(attacker);
       const t = p.teste;
-      const r = this.resistencia(target, t.save, t.dc);
+      const r = this.resistencia(target, t.save, t.dc, { contra: { magico: !!t.magico, condicao: t.condition ?? null } });
       const conta = `${ABILITY_NAME[t.save] ?? t.save} ${r.total} vs CD ${t.dc}`;
       let dano = 0;
       if (!r.success) {
@@ -3001,17 +3176,26 @@ export class Encounter {
       this.say('recurso', `${protetor.name} ergue o escudo na frente de ${target.name}.`);
     }
     if (check.longRange) fonte(mods, 'desvantagem', 'alcance longo');
-    if (disadvantage) fonte(mods, 'desvantagem', 'segundo ataque');
+    if (disadvantage) fonte(mods, 'desvantagem', typeof disadvantage === 'string' ? disadvantage : 'segundo ataque');
 
     const cover = p.ranged ? this.field.coverBetween(attacker.pos, target.pos) : 0;
     let ac = caEfetiva(target) + cover;
     const caPartes = [{ rotulo: `CA de ${target.name}`, valor: caEfetiva(target) }];
     if (cover) caPartes.push({ rotulo: 'cobertura', valor: cover });
+    // DEFESA CONTRA MULTIATAQUE (Caçador, 7º): depois de ser acertado por uma criatura, +4 de CA contra os ataques seguintes
+    // DELA no mesmo turno.
+    const turnoAgora = `${this.round}:${this.side}`;
+    if (target.features?.includes('multiattackDefense') && target.multiataqueDe?.id === attacker.id && target.multiataqueDe.turno === turnoAgora) {
+      ac += 4;
+      caPartes.push({ rotulo: 'Defesa contra Multiataque', valor: 4 });
+    }
 
     const { bonus, partes: bonusPartes } = this.dadosDeAtaque(attacker, p.bonus, p.bonusPartes);
     if (this.imagemDesvia(attacker, target, bonus, mods)) return { hit: false };
     this.quebraInvisibilidade(attacker);
 
+    // CRÍTICO APRIMORADO / SUPERIOR (Campeão): o d20 que é crítico desce para 19 ou 18, só em ataque com arma.
+    mods.critMin = margemDeCritico(attacker);
     const atk = segundaChanceNoAtaque(this, attacker, target, attackRoll(this.rng, bonus, ac, mods), bonus, ac);
     this.consumirAoAtacar(attacker, target);
     // Flecha Relampejante: o próximo ataque à distância vira raio, acertando ou não.
@@ -3027,6 +3211,7 @@ export class Encounter {
     this.consumirMarcas(target);
     const autoCrit = tgtFx.critWithinReach && distanceFt(attacker.pos, target.pos) <= 5;
     const critical = atk.critical || (atk.hit && autoCrit);
+    if (atk.hit && target.features?.includes('multiattackDefense')) target.multiataqueDe = { id: attacker.id, turno: turnoAgora };
 
     // Errar por 1 ou 2 é informação tática de verdade: diz que fabricar
     // vantagem, ou somar um único ponto de bônus, teria virado o ataque. Um
@@ -3151,7 +3336,15 @@ export class Encounter {
     }
     // Aumentar/Reduzir: +1d4 ou −1d4 no dano de arma.
     const tamanho = dmg ? this.ajusteDeTamanho(attacker, dmg, critical) : null;
-    const total = (dmg?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
+    // ATAQUES SELVAGENS (meio-orc) e CRÍTICO BRUTAL (bárbaro): num crítico corpo a corpo, dados da ARMA a mais — só o
+    // dado da arma, sem o modificador, e não dobram (já são o "a mais").
+    let critExtra = null;
+    if (critical && dmg && !p.ranged) {
+      const n = dadosExtraDeCritico(attacker);
+      const { sides } = parseDice(damageNotation);
+      if (n && sides) critExtra = damageRoll(this.rng, `${n}d${sides}`);
+    }
+    const total = (dmg?.total ?? 0) + (critExtra?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
       + (surpresa?.total ?? 0) + (furia?.total ?? 0) + (duelismo?.total ?? 0) + (smite?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
@@ -3159,6 +3352,7 @@ export class Encounter {
     // o ladino está manobrando o turno inteiro para conseguir.
     const danoPartes = dmg ? [parcelaDeDano('dano', dmg)] : [];
     if (tamanho) danoPartes.push(tamanho);
+    if (critExtra) danoPartes.push(parcelaDeDano('dado extra do crítico', critExtra));
     if (smite) danoPartes.push(parcelaDeDano('destruição divina', smite));
     if (duelismo) danoPartes.push(parcelaDeDano('estilo: duelismo', duelismo));
     if (furia) danoPartes.push(parcelaDeDano('fúria', furia));
@@ -3192,15 +3386,18 @@ export class Encounter {
       vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
       critoAutomatico: rolagem.critoAutomatico,
     });
-    const magico = !!(p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
+    // GOLPES REFORÇADOS PELO KI (monge, 6º): os golpes desarmados contam como mágicos para vencer resistência e imunidade.
+    const reforcadoPeloKi = attacker.features?.includes('kiEmpoweredStrikes') && p.weapon?.id === 'punhos';
+    const magico = !!(reforcadoPeloKi || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
     // Armadura de Agathys: vale se ele ainda tinha PV temporários ao ser acertado.
     const agathys = !p.ranged && getCondition(target, 'agathys');
     const geloDevolve = agathys && (target.tempHp ?? 0) > 0 ? agathys.data?.dano ?? 5 : 0;
     // O golpe e o que ele soma (Bruxaria, golpe divino, o veneno da aranha)
     // são UMA fonte de dano: um teste de concentração só, pela soma.
+    const hpAntesDoGolpe = target.hp;
     this.umaFonteDeDano(() => {
       this.applyDamage(target, total, p.type, attacker, { critical, magico, deArma: true, corpoACorpo: !p.ranged });
-      this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical });
+      this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical, hpAntes: hpAntesDoGolpe });
       // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
       if (p.danoExtra && !target.dead && (!p.danoExtra.contra || target.tipo === p.danoExtra.contra)) {
         this.danoExtraDoGolpe(attacker, target, p, critical);
@@ -3238,7 +3435,7 @@ export class Encounter {
       // Alguns efeitos não têm resistência: o acerto já basta (a teia prende).
       const save = p.onHit.semResistencia
         ? { success: false, total: 0, rolls: [] }
-        : this.resistencia(target, p.onHit.save, p.onHit.dc);
+        : this.resistencia(target, p.onHit.save, p.onHit.dc, { contra: { condicao: p.onHit.condition } });
       const nomeCondicao = CONDITIONS[p.onHit.condition]?.name ?? p.onHit.condition;
       const r = p.onHit.semResistencia
         ? { conta: `sem resistência: o acerto basta · escapa com Atletismo ou Acrobacia CD ${p.onHit.escape ?? p.onHit.dc}` }
@@ -3301,7 +3498,7 @@ export class Encounter {
     for (const c of pegos) {
       this.outraFonte(() => {
         const save = this.resistencia(c, 'dex', dc);
-        const amount = save.success ? Math.floor(r.total / 2) : r.total;
+        const amount = danoPorResistencia(c, 'dex', true, save.success, r.total, conditionEffects(c).incapacitated);
         const rr = this.explicarResistencia(c, 'dex', dc, save, { contra: 'Flecha Relampejante', seSucesso: 'metade do dano' });
         this.say('magia', `${c.name} ${save.success ? 'resiste' : 'falha'} e sofre ${amount} de ${d.tipo}.`, `${rr.conta} · ${d.explosao}[${r.rolls.join('+')}]`, { rolagem: rr });
         this.applyDamage(c, amount, d.tipo, atacante, { magico: true });
@@ -3320,7 +3517,7 @@ export class Encounter {
     let amount = dmg.total;
     let conta = contaDeDano(parcelaDeDano(ex.type, dmg));
     if (ex.save) {
-      const save = this.resistencia(target, ex.save, ex.dc);
+      const save = this.resistencia(target, ex.save, ex.dc, { contra: { tipoDano: ex.type } });
       const r = this.explicarResistencia(target, ex.save, ex.dc, save, {
         contra: `${ex.type} de ${p.name}`,
         seSucesso: ex.half ? 'metade' : 'nada',
@@ -3512,9 +3709,23 @@ export class Encounter {
       if (!magico && def?.resisteNaoMagico?.includes(type)) return true;
       return def?.resiste?.includes(type) && (!def.soDeArma || deArma);
     });
-    if (porCondicao || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
+    // RESILIÊNCIA INFERNAL: a resistência escolhida não vale contra arma mágica ou de prata.
+    const infernal = target.resistenciaInfernal === type && !(magico && deArma);
+    if (porCondicao || infernal || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
     if (target.vulnerable?.includes(type)) out *= 2;
     return out;
+  }
+
+  /**
+   * O que as passivas fazem no COMEÇO do turno de quem as tem:
+   *   SOBREVIVENTE (Campeão, 18º)  com metade dos PV ou menos (e ao menos 1), recupera 5 + CON.
+   */
+  comecoDoTurnoPassivo(c) {
+    if (c.dead || !c.features?.includes('survivor')) return;
+    if (c.hp > 0 && c.hp <= Math.floor(maxHpEfetivo(c) / 2)) {
+      const curou = this.heal(c, 5 + Math.max(0, abilityMod(c.abilities.con)), c);
+      if (curou) this.say('cura', `${c.name} se recompõe (Sobrevivente): +${curou} PV.`);
+    }
   }
 
   /**
@@ -3530,7 +3741,8 @@ export class Encounter {
    */
   fimDaFuria(c) {
     if (!hasCondition(c, 'furia')) { c.furiaAgiu = false; return; }
-    if (!c.furiaAgiu) {
+    // FÚRIA PERSISTENTE (bárbaro, 15º): a fúria não acaba por falta de ataque ou de dano; só se ele cair ou a encerrar.
+    if (!c.furiaAgiu && !c.features?.includes('persistentRage')) {
       removeCondition(c, 'furia');
       this.say('recurso', `A fúria de ${c.name} passa: um turno sem atacar nem apanhar.`);
     }
@@ -3607,13 +3819,16 @@ export class Encounter {
    * Orientação, que vale UM teste —, e a vantagem ou desvantagem de Força de
    * Aumentar/Reduzir. `conta` é o texto para o registro.
    */
-  testeDeAtributo(actor, hab, bonus, rotulo = '') {
+  testeDeAtributo(actor, hab, bonus, rotulo = '', { pericia = null } = {}) {
     const fx = conditionEffects(actor);
-    const r = d20(this.rng, bonus, {
+    let r = d20(this.rng, bonus, {
       advantage: fx.vantagemTeste.includes(hab) || fx.vantagemSoTeste.includes(hab),
       disadvantage: fx.desvantagemTeste.includes(hab) || fx.desvantagemSoTeste.includes(hab)
         || (!!actor.armorUntrained && (hab === 'str' || hab === 'dex')),
     });
+    // As passivas do dado: Sorte (halfling), Talento Confiável (ladino, 11º), Poder Indomável (bárbaro, 18º).
+    r = ajustarTeste(this.rng, actor, r, bonus, { ability: hab, treinada: pericia ? treinadoEm(actor, pericia) : false });
+    if (r.passivas?.length) this.say('recurso', `${actor.name}: ${r.passivas.join(' e ')} no teste${rotulo ? ` de ${rotulo}` : ''}.`);
     let total = r.total;
     const extras = [];
     for (const cond of [...(actor.conditions ?? [])]) {
@@ -3737,6 +3952,11 @@ export class Encounter {
       target.tempHp -= absorbed;
       left -= absorbed;
     }
+    // RESILIÊNCIA INFERNAL (bruxo Corruptor, 10º): a escolha do descanso é o tipo que mais machucou até agora.
+    if (target.features?.includes('fiendishResilience') && type) {
+      target.danoPorTipo ??= {};
+      target.danoPorTipo[type] = (target.danoPorTipo[type] ?? 0) + amount;
+    }
     target.hp -= left;
     this.onEvent({ type: 'damage', target, amount, source });
 
@@ -3803,6 +4023,16 @@ export class Encounter {
     const sobra = -target.hp;
     target.hp = 0;
     this.quedasDaFonte?.set(target, sobra);
+    // FÚRIA IMPLACÁVEL (bárbaro) e RESISTÊNCIA IMPLACÁVEL (meio-orc): cair a 0 PV SEM morrer na hora (dano maciço mata e
+    // nada disto vale) deixa o herói de pé com 1 PV. Antes da queda da concentração: quem fica de pé segue concentrado, e
+    // o dano cobra o teste de sempre.
+    if (target.kind === 'pc' && sobra < maxHpEfetivo(target) && this.cairImplacavel(target)) {
+      if (target.concentrating) {
+        if (this.danoDaFonte) this.danoDaFonte.set(target, (this.danoDaFonte.get(target) ?? 0) + amount);
+        else this.concentrationCheck(target, amount);
+      }
+      return;
+    }
     // Concentração não sobrevive à queda: inconsciente é incapacitado.
     this.dropConcentration(target);
 
@@ -3862,6 +4092,7 @@ export class Encounter {
       target.morreuNaRodada = this.round;
       removeCondition(target, 'esquivando');
       this.say('morte', `${target.name} cai.`);
+      this.aoMatar(source, target);
       this.onEvent({ type: 'died', target });
     } else if (sobra >= maxHpEfetivo(target)) {
       this.morrer(target, 'dano maciço');
@@ -3881,6 +4112,50 @@ export class Encounter {
       this.onEvent({ type: 'downed', target });
     }
     this.checkEnd();
+  }
+
+  /**
+   * Quem devia cair a 0 PV e não cai: Fúria Implacável primeiro (CON CD 10, +5 a cada uso depois do primeiro, até um
+   * descanso), depois Resistência Implacável (uma vez por descanso longo, sem teste). Devolve true se o herói ficou de pé.
+   *
+   * A ordem importa: a Fúria pode FALHAR e a Resistência não, então a Fúria tenta primeiro e a Resistência fica de reserva.
+   */
+  cairImplacavel(t) {
+    if (t.features?.includes('relentlessRage') && hasCondition(t, 'furia')) {
+      const cd = t.furiaImplacavelCD ?? 10;
+      const save = this.resistencia(t, 'con', cd);
+      this.explicarResistencia(t, 'con', cd, save, { contra: `Fúria Implacável (CD ${cd})`, seSucesso: 'fica de pé com 1 PV' });
+      t.furiaImplacavelCD = cd + 5;
+      if (save.success) {
+        t.hp = 1;
+        this.quedasDaFonte?.delete(t);
+        this.say('recurso', `${t.name} devia cair, e a fúria o mantém de pé com 1 PV.`);
+        return true;
+      }
+    }
+    if (t.features?.includes('relentlessEndurance') && (t.resources?.relentlessEndurance ?? 0) > 0) {
+      t.resources.relentlessEndurance -= 1;
+      t.hp = 1;
+      this.quedasDaFonte?.delete(t);
+      this.say('recurso', `${t.name} devia cair, e a Resistência Implacável o mantém de pé com 1 PV.`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * O que acontece com quem reduz uma criatura hostil a 0 PV:
+   *   BÊNÇÃO DO OBSCURO (bruxo Corruptor, 1º)  PV temporários = CAR + nível de bruxo (mínimo 1).
+   */
+  aoMatar(matador, vitima) {
+    if (!matador || matador.dead || matador.side === vitima.side) return;
+    if (matador.features?.includes('darkOnesBlessing')) {
+      const pv = Math.max(1, abilityMod(matador.abilities.cha) + (matador.level ?? 1));
+      if (pv > (matador.tempHp ?? 0)) {
+        matador.tempHp = pv;
+        this.say('recurso', `${matador.name} ganha ${pv} PV temporários (Bênção do Obscuro).`);
+      }
+    }
   }
 
   /** Morte de personagem: três falhas, ou dano maciço. */
@@ -4021,7 +4296,7 @@ export class Encounter {
     if (t.dead || t.hp <= 0) return;
     for (const cond of [...(t.conditions ?? [])]) {
       if (!CONDITIONS[cond.id]?.repeteAoSofrerDano || !cond.data?.save) continue;
-      const save = this.resistencia(t, cond.data.save, cond.data.dc, { vantagem: true });
+      const save = this.resistencia(t, cond.data.save, cond.data.dc, { vantagem: true, contra: { condicao: cond.id } });
       if (save.success) {
         removeCondition(t, cond.id);
         this.say('condicao', `${t.name} para de rir com o golpe.`);
@@ -4491,10 +4766,17 @@ export class Encounter {
       if (spell.reusoAuto && distanceFt(actor.pos, target.pos) > spell.rangeFt) return { ok: false, why: 'o alvo saiu do alcance do arco' };
       return { ok: true, spell, circulo: ativa.circulo, reuso: true };
     }
-    let slot = this.circuloDeConjuracao(actor, spell, circulo);
-    // Iniciado em Magia: a magia do talento sai uma vez sem espaço.
-    const gratis = slot === null && temUsoGratis(actor, spellId);
-    if (gratis) slot = spell.level;
+    // O SOPRO DO DRACONATO só sai com o recurso: uma vez por descanso curto ou longo.
+    if (spell.recursoRacial && !((actor.resources?.[spell.recursoRacial] ?? 0) > 0)) {
+      return { ok: false, why: 'o sopro já foi usado: ele volta num descanso curto ou longo' };
+    }
+    // USO LIVRE de característica (magia racial, Maestria, Assinatura): sai sem espaço, e vem ANTES de gastar um.
+    const livre = usoLivreDe(actor, spell, circulo);
+    let slot = livre ? livre.circulo : this.circuloDeConjuracao(actor, spell, circulo);
+    // Iniciado em Magia: a magia do talento sai uma vez sem espaço (só quando não há espaço, como sempre foi).
+    const iniciado = !livre && slot === null && temUsoGratis(actor, spellId);
+    if (iniciado) slot = spell.level;
+    const gratis = livre ?? iniciado;
     if (slot === null) {
       return { ok: false, why: circulo ? `sem espaço de ${circulo}º círculo` : `sem espaço de magia de ${spell.level}º círculo ou maior` };
     }
@@ -4570,7 +4852,30 @@ export class Encounter {
     return { ok: true, spell, circulo: slot, gratis };
   }
 
-  castSpell(actor, spellId, { target = null, point = null, circulo = null, targets = null, opcao = null } = {}) {
+  /**
+   * Conjurar com o que o conjurador soma a UMA rolagem de dano da magia (`bonusDeDanoPorTraco`): Evocação Potencializada e
+   * Afinidade Elemental. O bônus fica pendente durante a magia e a PRIMEIRA rolagem de dano o consome (Raios Ardentes rolam
+   * três, e só uma ganha).
+   */
+  castSpell(actor, spellId, opcoes = {}) {
+    this.bonusDeMagia = bonusDeDanoPorTraco(actor, SPELLS[spellId]);
+    try {
+      return this.castSpellBase(actor, spellId, opcoes);
+    } finally {
+      this.bonusDeMagia = null;
+    }
+  }
+
+  /** O bônus de dano pendente de `actor` nesta magia, UMA vez; null se não há (ou já foi). */
+  consumirBonusDeMagia(actor) {
+    const b = this.bonusDeMagia;
+    if (!b?.bonus || b.dono !== actor) return null;
+    this.bonusDeMagia = { ...b, bonus: 0 };
+    this.say('recurso', `${actor.name}: +${b.bonus} de dano (${b.motivos.join(' e ')}).`);
+    return b;
+  }
+
+  castSpellBase(actor, spellId, { target = null, point = null, circulo = null, targets = null, opcao = null } = {}) {
     const check = this.canCast(actor, spellId, { target, point, circulo });
     if (!check.ok) return { ok: false, why: check.why };
     const spell = check.spell;
@@ -4589,8 +4894,9 @@ export class Encounter {
     }
     if (spell.castTime === 'action') actor.actionUsed = true;
     if (spell.castTime === 'bonus') actor.bonusUsed = true;
-    if (check.gratis) gastarUsoGratis(this, actor);
+    if (check.gratis) gastarUsoGratis(this, actor, check.gratis);
     else if (spell.level > 0) actor.spellcasting.slots[slot] -= 1;
+    if (spell.recursoRacial) actor.resources[spell.recursoRacial] -= 1;
     (actor.magiasNoTurno ??= []).push({ level: spell.level, castTime: spell.castTime });
     // Contramágica: um inimigo atento pode interromper a magia antes de ela sair.
     if (this.tentarContramagia(actor, spell, slot)) {
@@ -4601,7 +4907,8 @@ export class Encounter {
     // Uma concentração por vez: a nova derruba a velha antes de tudo.
     if (spell.concentration) this.dropConcentration(actor);
 
-    const dc = spellSaveDc(actor);
+    // A CD do Sopro do draconato é 8 + proficiência + CON, e não a de conjuração.
+    const dc = spell.cdDeCon ? 8 + proficiencyBonus(actor.level ?? 1) + abilityMod(actor.abilities.con) : spellSaveDc(actor);
     const atkBonus = spellAttackBonus(actor);
     const mod = spellMod(actor);
     // Truque cresce com o nível; magia de círculo, com o espaço gasto.
@@ -4754,6 +5061,7 @@ export class Encounter {
         for (let i = 0; i < dardos; i++) {
           const alvo = alvos[i % alvos.length];
           const d = damageRoll(this.rng, spell.damage);
+          if (i === 0) { const b = this.consumirBonusDeMagia(actor); if (b) d.total += b.bonus; }
           porAlvo.set(alvo, [...(porAlvo.get(alvo) ?? []), d.total]);
         }
         // "Automática" é a razão de ser desta magia: não há rolagem de ataque
@@ -4789,6 +5097,7 @@ export class Encounter {
         if (actor.features?.includes('discipleOfLife') && spell.level > 0) amount += 2 + slot;
         const healed = this.heal(target, amount, actor);
         this.say('cura', `${target.name} recupera ${healed} PV.`, `${dados}[${r.rolls.join('+')}]${spell.addSpellMod ? ` + ${mod}` : ''}`);
+        this.curadorAbencoado(actor, spell, slot, [target]);
         break;
       }
 
@@ -4888,7 +5197,7 @@ export class Encounter {
         const pegos = [];
         for (const t of picks) {
           // Enfeitiçar Pessoa: quem está lutando com você testa com vantagem.
-          const save = this.resistencia(t, spell.save, dc, { vantagem: !!spell.vantagemEmCombate });
+          const save = this.resistencia(t, spell.save, dc, { vantagem: !!spell.vantagemEmCombate, contra: contraDaMagia(spell) });
           const r = this.explicarResistencia(t, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: `resiste a ${spell.name}`,
@@ -5013,6 +5322,7 @@ export class Encounter {
           const curado = this.heal(a, amount, actor);
           this.say('cura', `${a.name} recupera ${curado} PV.`, `${dados}[${r.rolls.join('+')}]${spell.addSpellMod ? ` + ${mod}` : ''}`);
         }
+        this.curadorAbencoado(actor, spell, slot, buffTargets ?? []);
         break;
       }
 
@@ -5072,7 +5382,7 @@ export class Encounter {
         const aliado = target.side === actor.side;
         const cond = aliado ? 'aumentado' : 'reduzido';
         if (!aliado) {
-          const save = this.resistencia(target, spell.save, dc);
+          const save = this.resistencia(target, spell.save, dc, { contra: contraDaMagia(spell) });
           const r = this.explicarResistencia(target, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: 'continua do tamanho que tem',
@@ -5103,7 +5413,7 @@ export class Encounter {
           const presos = MALES.filter((id) => hasCondition(t, id));
           if (amigo && !presos.length) continue;
           if (!amigo) {
-            const save = this.resistencia(t, spell.save, dc);
+            const save = this.resistencia(t, spell.save, dc, { contra: contraDaMagia(spell) });
             const r = this.explicarResistencia(t, spell.save, dc, save, {
               contra: `${spell.name} de ${actor.name}`,
               seSucesso: 'segue como estava',
@@ -5202,7 +5512,7 @@ export class Encounter {
       case 'levitar': {
         if (target.side !== actor.side) {
           this.acordaIndiferentes(target, actor);
-          const save = this.resistencia(target, spell.save, dc);
+          const save = this.resistencia(target, spell.save, dc, { contra: contraDaMagia(spell) });
           const r = this.explicarResistencia(target, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: 'continua no chão',
@@ -5339,6 +5649,7 @@ export class Encounter {
         : target ? [{ c: target, papel: 'inimigo' }] : [];
     // O dano de uma magia de área é rolado UMA vez para todos os alvos.
     const dmg = dano ? damageRoll(this.rng, dano) : null;
+    if (dmg) { const b = this.consumirBonusDeMagia(actor); if (b) { dmg.total += b.bonus; dmg.mod = (dmg.mod ?? 0) + b.bonus; } }
     // GOLPE DE CHAMA: a segunda parcela, de OUTRO tipo. Rolada UMA vez para a
     // área, como a primeira — rolá-la dentro do laço de alvos dava um radiante
     // diferente para cada um, e o fogo igual para todos. E SEM o dado a mais do
@@ -5350,6 +5661,8 @@ export class Encounter {
     // Raio Lunar e Esfera Flamejante: a zona anda com a ação (ou bônus).
     if (zona && spell.zona.movel) (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, zona };
     const presos = [];
+    // TRUQUE POTENTE (mago de Evocação, 6º): o truque de dano com resistência causa METADE do dano a quem passa (sem o efeito extra).
+    const metade = !!spell.halfOnSave || (spell.level === 0 && !!actor.features?.includes('potentCantrip'));
 
     for (const { c: t, papel } of pegos) {
       if (papel === 'poupado') {
@@ -5362,9 +5675,10 @@ export class Encounter {
       const auto = fx.autoFailSaves.includes(spell.save);
       const save = auto
         ? { total: 0, success: false, rolls: [0] }
-        : this.resistencia(t, spell.save, dc);
-      const amount = !dmg ? 0 : save.success ? (spell.halfOnSave ? Math.floor(dmg.total / 2) : 0) : dmg.total;
-      const amount2 = !dmg2 ? 0 : save.success ? (spell.halfOnSave ? Math.floor(dmg2.total / 2) : 0) : dmg2.total;
+        : this.resistencia(t, spell.save, dc, { contra: contraDaMagia(spell) });
+      const inc = conditionEffects(t).incapacitated;
+      const amount = !dmg ? 0 : danoPorResistencia(t, spell.save, metade, save.success, dmg.total, inc);
+      const amount2 = !dmg2 ? 0 : danoPorResistencia(t, spell.save, metade, save.success, dmg2.total, inc);
       // O que o sucesso compra é a decisão inteira: metade do dano ainda
       // vale conjurar numa multidão, nenhum dano não vale contra um alvo só.
       // Qual condição travou o teste: "falha automática" sem culpado deixa
@@ -5375,7 +5689,7 @@ export class Encounter {
       const efeito = spell.onFail ? `não fica ${CONDITIONS[spell.onFail.condition]?.name.toLowerCase()}` : null;
       const r = this.explicarResistencia(t, spell.save, dc, save, {
         contra: `${spell.name} (CD ${dc} = 8 + proficiência + atributo de conjuração)`,
-        seSucesso: efeito ?? (spell.halfOnSave ? 'metade do dano' : 'nenhum dano'),
+        seSucesso: efeito ?? (metade ? 'metade do dano' : 'nenhum dano'),
         automatica: auto,
         motivoAutomatico: culpada ? (CONDITIONS[culpada.id]?.name ?? culpada.id) : null,
       });
@@ -5396,7 +5710,7 @@ export class Encounter {
           this.say(
             'magia',
             `${t.name} ${verbo} contra ${spell.name} e sofre ${amount}.`,
-            `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && spell.halfOnSave ? ` → metade = ${amount}` : ''}`,
+            `${r.conta} · ${contaDeDano(danoPartes[0])}${save.success && metade ? ` → metade = ${amount}` : ''}`,
             { rolagem: r },
           );
         }
@@ -5425,7 +5739,7 @@ export class Encounter {
           this.say(
             'magia',
             `${t.name} ${verbo} contra ${spell.name} e sofre ${a1 + a2} (${a1} de ${spell.damageType} e ${a2} de ${spell.damageType2}).`,
-            `${r.conta} · ${danoPartes.map((q) => contaDeDano(q)).join(' · ')}${save.success && spell.halfOnSave ? ' → metade de cada' : ''}`,
+            `${r.conta} · ${danoPartes.map((q) => contaDeDano(q)).join(' · ')}${save.success && metade ? ' → metade de cada' : ''}`,
             { rolagem: r },
           );
         }
@@ -5603,6 +5917,22 @@ export class Encounter {
 
   /** Santuário: quem ataca o protegido faz SAB; falhou, perde o ataque. */
   passaPeloSantuario(atacante, alvo) {
+    // SANTUÁRIO DA NATUREZA (druida da Terra, 14º): uma besta ou planta que ataca o druida testa SAB contra a CD das magias dele.
+    // Passou: está imune por 24 horas (aqui, para sempre nesta campanha de curta duração). Falhou: escolhe outro alvo, e o
+    // ataque deste turno se perde.
+    if (alvo.features?.includes('naturesSanctuary') && atacante.side !== alvo.side && ['fera', 'planta'].includes(atacante.tipo)) {
+      alvo.passaramPeloSantuario ??= new Set();
+      if (!alvo.passaramPeloSantuario.has(atacante.id)) {
+        const dcN = spellSaveDc(alvo);
+        const saveN = this.resistencia(atacante, 'wis', dcN);
+        const rN = this.explicarResistencia(atacante, 'wis', dcN, saveN, { contra: `Santuário da Natureza de ${alvo.name}`, seSucesso: 'ataca, e fica imune por 24 horas' });
+        if (saveN.success) alvo.passaramPeloSantuario.add(atacante.id);
+        else {
+          this.say('magia', `${atacante.name} recua diante da natureza que guarda ${alvo.name} e perde o ataque.`, rN.conta, { rolagem: rN });
+          return false;
+        }
+      }
+    }
     const s = getCondition(alvo, 'santuario');
     if (!s || atacante.side === alvo.side) return true;
     const dc = s.data?.dc ?? 13;
@@ -5628,8 +5958,17 @@ export class Encounter {
     const cajado = c.spellcasting.cajado;
     const custo = cajado?.magias?.[id];
     if (custo) return cajado.cargas >= custo ? { spell, circulo: spell.level, cajado: custo } : null;
+    const livre = usoLivreDe(c, spell);
+    if (livre) return { spell, circulo: livre.circulo, livre };
     const circulo = this.circuloDeConjuracao(c, spell);
     return circulo === null ? null : { spell, circulo };
+  }
+
+  /** Paga o custo de uma magia de reação: cargas do cajado, uso livre (racial, Maestria, Assinatura) ou espaço. */
+  pagarReacao(ator, pode) {
+    if (pode.cajado) ator.spellcasting.cajado.cargas -= pode.cajado;
+    else if (pode.livre) gastarUsoGratis(this, ator, pode.livre);
+    else ator.spellcasting.slots[pode.circulo] -= 1;
   }
 
   /**
@@ -5642,8 +5981,7 @@ export class Encounter {
     // Já erguido: um segundo escudo não soma (a CA já tem o +5).
     if (!pode || total >= ca + 5 || hasCondition(alvo, 'escudoArcano')) return false;
     alvo.reactionUsed = true;
-    if (pode.cajado) alvo.spellcasting.cajado.cargas -= pode.cajado;
-    else alvo.spellcasting.slots[pode.circulo] -= 1;
+    this.pagarReacao(alvo, pode);
     this.aplicarCondicao(alvo, 'escudoArcano', { rounds: 1, source: alvo.id, lado: alvo.side, quando: 'inicio' });
     const doCajado = pode.cajado ? ` do cajado (${alvo.spellcasting.cajado.cargas} cargas)` : '';
     this.say('magia', `${alvo.name} ergue o Escudo Arcano${doCajado} (reação): CA ${ca + 5}, o ataque de ${atacante.name} erra.`);
@@ -5660,14 +5998,14 @@ export class Encounter {
     this.reagindo = true;
     try {
       alvo.reactionUsed = true;
-      alvo.spellcasting.slots[pode.circulo] -= 1;
+      this.pagarReacao(alvo, pode);
       const spell = pode.spell;
       const dc = spellSaveDc(alvo);
       this.say('magia', `${alvo.name} responde com Repreensão Infernal (reação).`);
       this.onEvent({ type: 'spell', caster: alvo, spell, target: fonte, point: fonte.pos, circulo: pode.circulo });
       const dmg = damageRoll(this.rng, dadosDaMagia(spell, { circulo: pode.circulo }));
-      const save = this.resistencia(fonte, spell.save, dc);
-      const amount = save.success ? Math.floor(dmg.total / 2) : dmg.total;
+      const save = this.resistencia(fonte, spell.save, dc, { contra: contraDaMagia(spell) });
+      const amount = danoPorResistencia(fonte, spell.save, true, save.success, dmg.total, conditionEffects(fonte).incapacitated);
       const r = this.explicarResistencia(fonte, spell.save, dc, save, { contra: spell.name, seSucesso: 'metade do dano' });
       this.say('magia', `${fonte.name} ${save.success ? 'resiste' : 'falha'} e sofre ${amount} de fogo.`, `${r.conta} · ${dmg.notation ?? ''}[${dmg.rolls?.join('+') ?? ''}]`, { rolagem: r });
       this.outraFonte(() => this.applyDamage(fonte, amount, spell.damageType, alvo, { magico: true }));
@@ -5681,12 +6019,12 @@ export class Encounter {
    * alvo, Favor Divino em quem ataca, e os golpes preparados (Trovejante,
    * Abrasador, Colérico, Saraivada de Espinhos), que se gastam no acerto.
    */
-  extrasDoAcerto(atacante, alvo, { arma, ranged, tipo, critical }) {
-    const extra = (rotulo, dados, tipoDano) => {
+  extrasDoAcerto(atacante, alvo, { arma, ranged, tipo, critical, hpAntes = alvo.hp }) {
+    const extra = (rotulo, dados, tipoDano, magico = true) => {
       if (alvo.dead) return;
       const r = damageRoll(this.rng, dados, { critical });
       this.say('magia', `${rotulo}: +${r.total} de ${tipoDano} em ${alvo.name}.`, `${dados}[${r.rolls.join('+')}]`);
-      this.applyDamage(alvo, r.total, tipoDano, atacante, { magico: true });
+      this.applyDamage(alvo, r.total, tipoDano, atacante, { magico });
     };
     for (const cond of [...(alvo.conditions ?? [])]) {
       const m = CONDITIONS[cond.id]?.marcaDano;
@@ -5694,6 +6032,25 @@ export class Encounter {
       extra(CONDITIONS[cond.id].name, m.dados, m.tipo ?? tipo);
     }
     if (!arma) return;
+    const f = atacante.features ?? [];
+    // GOLPE DIVINO (clérigo da Vida, 8º): +1d8 radiante UMA vez por turno no acerto de arma; 2d8 do 14º em diante.
+    if (f.includes('divineStrike') && !atacante.golpeDivinoNoTurno) {
+      atacante.golpeDivinoNoTurno = true;
+      extra('Golpe Divino', (atacante.level ?? 1) >= 14 ? '2d8' : '1d8', 'radiante');
+    }
+    // DESTRUIÇÃO DIVINA APRIMORADA (paladino, 11º): +1d8 radiante em TODO acerto de arma corpo a corpo.
+    if (f.includes('improvedDivineSmite') && !ranged) extra('Destruição Divina Aprimorada', '1d8', 'radiante');
+    // MATADOR DE COLOSSOS (Caçador, escolha do 3º): +1d8 UMA vez por turno contra quem já estava ferido ANTES do golpe.
+    if (f.includes('colossusSlayer') && !atacante.presaNoTurno && hpAntes < alvo.maxHp) {
+      atacante.presaNoTurno = true;
+      extra('Matador de Colossos', '1d8', tipo, false);
+    }
+    // MATADOR DE INIMIGOS (patrulheiro, 20º): uma vez por turno, soma o modificador de SAB ao dano contra um Inimigo Favorito.
+    const vezDoTurno = `${this.round}:${this.side}`;
+    if (f.includes('foeSlayer') && atacante.matadorNoTurno !== vezDoTurno && ehInimigoFavorito(atacante, alvo)) {
+      atacante.matadorNoTurno = vezDoTurno;
+      extra('Matador de Inimigos', `+${Math.max(1, abilityMod(atacante.abilities.wis))}`, tipo, false);
+    }
     for (const a of this.auras ?? []) {
       if (a.tipo !== 'manto' || a.dono.dead || a.dono.side !== atacante.side) continue;
       if (distanceFt(a.dono.pos, atacante.pos) <= a.raioFt && this.field.hasLineOfSight(a.dono.pos, atacante.pos)) extra(a.nome, '1d4', 'radiante');
@@ -5737,7 +6094,7 @@ export class Encounter {
         // A chuva é outra fonte ("além do efeito normal do ataque"), com teste próprio.
         for (const c of pegos) this.outraFonte(() => {
           const save = this.resistencia(c, 'dex', dc);
-          const amount = save.success ? Math.floor(r.total / 2) : r.total;
+          const amount = danoPorResistencia(c, 'dex', true, save.success, r.total, conditionEffects(c).incapacitated);
           const rr = this.explicarResistencia(c, 'dex', dc, save, { contra: def.name, seSucesso: 'metade do dano' });
           this.say('magia', `${c.name} ${save.success ? 'resiste' : 'falha'} e sofre ${amount} de ${g.tipo} (${def.name}).`, rr.conta, { rolagem: rr });
           this.applyDamage(c, amount, g.tipo, atacante, { magico: true });
@@ -5770,7 +6127,7 @@ export class Encounter {
         atacante.concentrating = { spellId: cond.id, condition: 'chamuscado', targets: [alvo], rounds: atacante.concentrating?.rounds ?? 10 };
         this.say('condicao', `${alvo.name} pega fogo.`);
       } else if (g.efeito === 'assusta') {
-        const save = this.resistencia(alvo, 'wis', dc);
+        const save = this.resistencia(alvo, 'wis', dc, { contra: { magico: true, condicao: 'amedrontado' } });
         if (!save.success && this.aplicarCondicao(alvo, 'amedrontado', { source: atacante.id, data: { save: 'wis', dc } })) {
           atacante.concentrating = { spellId: cond.id, condition: 'amedrontado', targets: [alvo], rounds: atacante.concentrating?.rounds ?? 10 };
           this.say('condicao', `${alvo.name} fica amedrontado de ${atacante.name}.`);
@@ -5813,8 +6170,19 @@ export class Encounter {
   }
 
   /** Farol de Esperança: a cura sai no máximo dos dados. */
+  /**
+   * CURADOR ABENÇOADO (clérigo da Vida, 6º): ao conjurar uma magia que cura OUTRA criatura, o clérigo recupera 2 + o círculo
+   * da magia. Uma vez por conjuração, mesmo que a magia cure vários.
+   */
+  curadorAbencoado(actor, spell, slot, curados) {
+    if (!actor.features?.includes('blessedHealer') || spell.level < 1 || !curados.some((a) => a !== actor)) return;
+    const pv = this.heal(actor, 2 + slot, actor);
+    if (pv) this.say('cura', `${actor.name} recupera ${pv} PV por curar outro (Curador Abençoado).`);
+  }
+
   rolarCuraPara(alvo, notacao, conjurador) {
-    if (!conditionEffects(alvo).curaMaxima) return rolarCura(this, notacao, conjurador);
+    // CURA SUPREMA (clérigo da Vida, 17º): os dados de cura de magia saem no valor MÁXIMO, sem rolar.
+    if (!conditionEffects(alvo).curaMaxima && !conjurador?.features?.includes('supremeHealing')) return rolarCura(this, notacao, conjurador);
     const m = /^(\d+)d(\d+)([+-]\d+)?$/.exec(String(notacao).replace(/\s/g, ''));
     if (!m) return rolarCura(this, notacao, conjurador);
     const rolls = Array(Number(m[1])).fill(Number(m[2]));
@@ -6017,6 +6385,7 @@ export class Encounter {
     }
     const dmg = damageRoll(this.rng, dano, { critical });
     if (bonusDano) dmg.total += bonusDano;
+    { const b = this.consumirBonusDeMagia(actor); if (b) dmg.total += b.bonus; }
     const danoPartes = [parcelaDeDano('dano', dmg)];
     rolagem.danoPartes = danoPartes;
     rolagem.danoTotal = dmg.total;
@@ -6056,7 +6425,7 @@ export class Encounter {
   aplicarEfeitoDeMagia(actor, target, spell, dc, slot = spell.level) {
     const ef = spell.applies;
     if (ef.save) {
-      const save = this.resistencia(target, ef.save, dc);
+      const save = this.resistencia(target, ef.save, dc, { contra: contraDaMagia(spell) });
       const nome = CONDITIONS[ef.condition]?.name.toLowerCase() ?? ef.condition;
       const r = this.explicarResistencia(target, ef.save, dc, save, {
         contra: `${spell.name} de ${actor.name}`,
@@ -6139,8 +6508,12 @@ export class Encounter {
    * nenhum deste arquivo, ou a próxima condição com dado de resistência vai
    * valer em três sítios e faltar num quarto.
    */
-  resistencia(actor, hab, dc, { vantagem = false } = {}) {
+  resistencia(actor, hab, dc, { vantagem = false, contra = null } = {}) {
     const fx = conditionEffects(actor);
+    // TRAÇOS que dão vantagem CONTRA algo (Corajoso, Ancestral Feérico, Resiliência Anã, Esperteza Gnômica): só valem
+    // quando quem chama diz do que vem o teste (`contra`). Sem contexto, nenhuma vale.
+    const porTraco = vantagemPorTraco(actor, hab, contra);
+    if (porTraco.length) vantagem = true;
     // SENTIDO DE PERIGO: o bárbaro esquiva do que consegue ver. Aqui, de
     // tudo que pede Destreza — o motor não guarda se a armadilha era visível.
     if (hab === 'dex' && actor.features?.includes('dangerSense')
@@ -6156,6 +6529,13 @@ export class Encounter {
     };
     let bonus = saveBonus(actor, hab);
     const partes = [];
+    // AURA DE PROTEÇÃO (paladino, 6º): soma o modificador de Carisma (mínimo +1) a TODA resistência do paladino e dos aliados
+    // dentro do raio dela. Só a maior aura vale: duas auras não se somam.
+    const protecao = this.auraDeProtecao(actor);
+    if (protecao) {
+      bonus += protecao.valor;
+      partes.push({ rotulo: `Aura de Proteção${protecao.paladino === actor ? '' : ` de ${protecao.paladino.name}`}`, valor: protecao.valor });
+    }
     if (fx.saveFixo[hab]) {
       bonus += fx.saveFixo[hab];
       // Um rótulo por condição (Lentidão −2, Elo de Proteção +1), não "lentidão" para tudo.
@@ -6188,7 +6568,9 @@ export class Encounter {
       const dono = this.combatants.find((c) => c.id === cond.source);
       if (dono?.concentrating?.condition === cond.id) dono.concentrating = null;
     }
-    return { ...segundaChanceNaResistencia(this, actor, savingThrow(this.rng, bonus, dc, opts), bonus, dc), partes };
+    const rolado = segundaChanceNaResistencia(this, actor, savingThrow(this.rng, bonus, dc, opts), bonus, dc);
+    // Só conta como "por traço" se a vantagem sobreviveu (uma desvantagem na mesma rolagem a cancela).
+    return { ...rolado, partes, vantagemPor: rolado.mode === 'vantagem' ? porTraco : [] };
   }
 
   // ---- itens de usar -------------------------------------------------------
@@ -6466,7 +6848,7 @@ export class Encounter {
     if (!hasCondition(target, 'inconsciente') || target.stable || target.dead) return false;
     if (!fora) actor.actionUsed = true;
 
-    const check = this.testeDeAtributo(actor, 'wis', skillBonus(actor, 'medicina'), 'Medicina');
+    const check = this.testeDeAtributo(actor, 'wis', skillBonus(actor, 'medicina'), 'Medicina', { pericia: 'medicina' });
     if (check.total >= 10) {
       target.stable = true;
       this.say('cura', `${actor.name} estabiliza ${target.name}.`, `Medicina ${check.total} vs CD 10`);
@@ -6619,6 +7001,18 @@ export class Encounter {
         if (!voltaram.length) return false;
         actor.resources.arcaneRecovery -= 1;
         this.say('recurso', `${actor.name} recolhe o que sobrou da magia do dia: ${voltaram.map((c) => `${c}º`).join(', ')}.`);
+        return true;
+      }
+      case 'eldritchMaster': {
+        // MESTRE MÍSTICO (bruxo, 20º): um minuto suplicando ao patrono devolve TODOS os espaços de Magia de Pacto. Uma vez por
+        // descanso longo, e fora da luta (leva um minuto).
+        if (!actor.resources?.eldritchMaster) return false;
+        if (!this.over && this.combatants.some((c) => c.side !== actor.side && !c.dead)) return false;
+        const sc = actor.spellcasting;
+        if (sc?.tipo !== 'pacto' || !sc.slotsMax || sc.slots.every((n, i) => n >= sc.slotsMax[i])) return false;
+        sc.slots = sc.slotsMax.slice();
+        actor.resources.eldritchMaster -= 1;
+        this.say('recurso', `${actor.name} suplica ao patrono por um minuto: todos os espaços de pacto voltam.`);
         return true;
       }
       case 'recklessAttack': {
@@ -6776,8 +7170,16 @@ export class Encounter {
         actor.bonusUsed = true;
         actor.resources.ki -= 1;
         this.say('recurso', `${actor.name} gasta 1 ki: Rajada de Golpes (${actor.resources.ki} de ki).`);
-        this.resolveAttack(actor, target, { weaponId: 'punhos' });
-        if (!target.dead) this.resolveAttack(actor, target, { weaponId: 'punhos' });
+        // TÉCNICA DA MÃO ABERTA (3º): cada golpe que ACERTA impõe uma de três coisas, à escolha do monge (`modo`):
+        // 'derrubar' (DES, senão cai), 'empurrar' (FOR, senão 4,5 m para longe) ou 'semReacao' (sem reações até o fim do
+        // próximo turno dele). A CD é a do ki. Sem escolha, derruba.
+        const tecnica = actor.features?.includes('openHandTechnique') ? (['empurrar', 'semReacao'].includes(modo) ? modo : 'derrubar') : null;
+        const golpe = () => {
+          const r = this.resolveAttack(actor, target, { weaponId: 'punhos' });
+          if (tecnica && r?.hit && !target.dead) this.tecnicaDaMaoAberta(actor, target, tecnica);
+        };
+        golpe();
+        if (!target.dead) golpe();
         return true;
       }
       case 'patientDefense': {
@@ -6835,10 +7237,15 @@ export class Encounter {
    * construção, sem duplicar a regra aqui.
    */
   explicarResistencia(actor, atributo, cd, save, { contra, seSucesso, automatica = false, motivoAutomatico = null } = {}) {
-    const bonus = saveBonus(actor, atributo);
+    const comProficiencia = saveBonus(actor, atributo);
     const base = abilityMod(actor.abilities[atributo]);
+    // As parcelas que a própria rolagem somou (Aura de Proteção, bênção, Lentidão...) entram na conta: sem elas o total
+    // na tela não bate com o bônus mostrado.
+    const extras = save.partes ?? [];
+    const bonus = comProficiencia + extras.reduce((s, p) => s + p.valor, 0);
     const bonusPartes = [{ rotulo: ABILITY_NAME[atributo], valor: base }];
-    if (bonus !== base) bonusPartes.push({ rotulo: 'proficiência', valor: bonus - base });
+    if (comProficiencia !== base) bonusPartes.push({ rotulo: 'proficiência', valor: comProficiencia - base });
+    bonusPartes.push(...extras);
 
     const r = {
       categoria: 'resistencia',
@@ -6852,6 +7259,7 @@ export class Encounter {
       d20Rolls: automatica ? [] : [...(save.rolls ?? [])],
       total: save.total,
       modo: save.mode ?? 'normal',
+      vantagemPor: save.vantagemPor ?? [],
       sucesso: !!save.success,
       automatica,
       motivoAutomatico,

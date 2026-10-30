@@ -6,9 +6,9 @@
 //     o covil fica a alguns quilômetros;
 //   - quem for grosseiro, desrespeitoso ou ameaçador ofende a banshee: ela
 //     some e não volta, nem chamada;
-//   - com respeito, Persuasão CD 15 de quem fala por todos, com vantagem para
-//     quem a trata bem de verdade; o pente de prata da Irmã Garaele, dado de
-//     presente, convence na hora;
+//   - com respeito, Persuasão CD 15 de quem fala por todos; o pente de prata
+//     da Irmã Garaele, dado de presente, convence na hora — é este o caminho
+//     de quem a trata bem, e ele vale mais que vantagem no dado;
 //   - convencida, ela responde UMA pergunta, e a resposta é verdadeira:
 //       o grimório de Arco Suave — trocado com um necromante chamado
 //       Tsernoth, em Iriaebor, há mais de cem anos (é o que a Garaele quer);
@@ -56,8 +56,13 @@ export async function visitarConyberry(app, grupo) {
     return;
   }
 
-  // Recusou da última vez: só volta a aparecer depois de um dia inteiro.
-  if (salvo.estado === 'recusou' && (vila.dia ?? 1) * 24 + (vila.tempo ?? 0) < salvo.voltaEm) {
+  // Recusou da última vez: só volta a aparecer no dia seguinte.
+  //
+  // A conta é em DIAS porque `vila.tempo` conta momentos do dia, não horas
+  // (`game/relogio.js`). Antes isto fazia `dia * 24 + tempo` e somava 24, como
+  // se o contador fossem horas: quem ofendia a banshee em qualquer momento que
+  // não o primeiro do dia continuava barrado depois de dormir uma noite.
+  if (salvo.estado === 'recusou' && (vila.dia ?? 1) < salvo.voltaEm) {
     await painel('O covil', 'Nada se acende. O frio está lá, e a sensação de que alguém olha de dentro da cabana, mas ninguém se mostra. Hoje, não.');
     return;
   }
@@ -91,7 +96,7 @@ export async function visitarConyberry(app, grupo) {
       recusa: {
         ao: () => {
           salvo.estado = 'recusou';
-          salvo.voltaEm = (vila.dia ?? 1) * 24 + (vila.tempo ?? 0) + 24;
+          salvo.voltaEm = (vila.dia ?? 1) + 1;
         },
         fala: 'Palavras de mercador. Voltem quando souberem falar com uma dama.',
         narra: 'A luz se apaga. O frio fica.',

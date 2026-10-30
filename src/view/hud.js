@@ -44,6 +44,7 @@ import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
 import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
+import { usoLivreDe } from '../rules/passivas.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
 import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
@@ -1199,6 +1200,10 @@ export class Hud {
       stunningStrike: ['atordoante', 'Ataque Atordoante',
         `Gasta 1 ponto de ki e carrega o próximo acerto de arma corpo a corpo deste turno: o alvo testa Constituição CD ${enc.cdDeKi(c)} ou fica atordoado até o fim do seu próximo turno.`,
         'Livre', () => !c.atordoantePronto && c.resources?.ki > 0, 'ki'],
+      eldritchMaster: ['mestreMistico', 'Mestre Místico',
+        'Um minuto suplicando ao patrono: todos os espaços de Magia de Pacto voltam. Uma vez por descanso longo.',
+        'Fora da luta', () => c.resources?.eldritchMaster > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
+        'eldritchMaster'],
       arcaneRecovery: ['recuperacaoArcana', 'Recuperação Arcana',
         `Fora da luta, recupera espaços de magia somando ${Math.ceil((c.level ?? 1) / 2)} círculos. Uma vez por dia.`,
         'Fora da luta', () => c.resources?.arcaneRecovery > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
@@ -1527,7 +1532,9 @@ export class Hud {
       .sort((a, b) => a.s.level - b.s.level)
       .map(({ sid, s }) => {
         // Sem espaço do círculo dela, a magia ainda sai num círculo maior.
-        const semSlot = s.level > 0 && !c.spellcasting.slots.some((n, i) => i >= s.level && n > 0);
+        // O uso LIVRE (magia da raça, Maestria, Assinatura) não depende de espaço.
+        const livre = usoLivreDe(c, s);
+        const semSlot = s.level > 0 && !livre && !c.spellcasting.slots.some((n, i) => i >= s.level && n > 0);
         const dano = dadosDaMagia(s, { nivel: c.level ?? 1 });
         // Repetir uma magia ativa (Lufada, Convocar) usa a ação do `reuso`, e
         // não a de conjurar, e não gasta espaço.
@@ -1539,7 +1546,8 @@ export class Hud {
         // Explorando, só a magia de utilidade sai: a de combate nem tem em quem pegar.
         const desabilitado = foraDoCombate ? semSlot && s.level > 0
           : explorandoAgora ? true
-            : (semSlot && !repete) || gasto || Boolean(s.foraDeCombate || s.soFora);
+            : (semSlot && !repete) || gasto || Boolean(s.foraDeCombate || s.soFora)
+              || Boolean(s.recursoRacial && !(c.resources?.[s.recursoRacial] > 0));
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
         return {
           sid,

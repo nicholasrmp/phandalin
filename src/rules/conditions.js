@@ -207,6 +207,12 @@ export const CONDITIONS = {
     umAtaque: true,
     concentrationEffect: true,
   },
+  // TÉCNICA DA MÃO ABERTA: não pode tomar reações até o fim do próximo turno do monge.
+  semReacoesDaMao: {
+    name: 'Sem reações',
+    desc: 'Não pode tomar reações até o fim do próximo turno do monge que o acertou.',
+    semReacao: true,
+  },
   hipnotizado: {
     name: 'Hipnotizado',
     desc: 'Preso às cores do padrão: incapacitado e parado. Sofrer dano o desperta.',

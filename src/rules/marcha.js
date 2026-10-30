@@ -30,7 +30,8 @@
 //   - caçar e colher só em ritmo normal ou lento, e um dia curto de chegada
 //     ainda custa um dia inteiro de comida e água.
 
-import { saveBonus, skillBonus } from './abilities.js';
+import { saveBonus, skillBonus, rolarPericia, treinadoEm } from './abilities.js';
+import { chanceDeNaturalMinimo } from './passivas.js';
 import { ARMORS } from './items/armors.js';
 import { savingThrow, d20 } from '../core/dice.js';
 import { mudarExaustao, exaustaoFatal, nivelDeExaustao, conditionEffects } from './conditions.js';
@@ -193,7 +194,7 @@ export function cobrarMarchaForcada(rng, herois, horasExtras) {
  * `vantagem` e `desvantagem` vêm de fora: a distância do encontro é uma delas
  * (`rules/encontros-estrada.js`, `vantagemDeDistancia`).
  */
-export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe, { vantagem = false, desvantagem = false, atencao: atencaoDada = null } = {}) {
+export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe, { vantagem = false, desvantagem = false, atencao: atencaoDada = null, lento = false } = {}) {
   const vivos = herois.filter((c) => !c.dead);
   if (!vivos.length) return { furtivo: false, rolagem: 0, atencao: 0, rolagens: [] };
   const rolagens = vivos.map((c) => {
@@ -203,7 +204,9 @@ export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe, { vantagem 
     const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem';
     const ruim = desvantagem || pelaArmadura
       || fx.desvantagemSoTeste.includes('dex') || fx.desvantagemTeste.includes('dex');
-    return d20(rng, skillBonus(c, 'furtividade'), { advantage: vantagem, disadvantage: ruim }).total;
+    // FURTIVIDADE SUPREMA (ladrão, 9º): vantagem em Furtividade se anda a meio deslocamento ou menos (ritmo lento, ou parado).
+    const suprema = lento && c.features?.includes('supremeSneak');
+    return rolarPericia(rng, c, 'furtividade', { advantage: vantagem || suprema, disadvantage: ruim }).total;
   });
   // `atencao` pode vir pronta de fora: o encontro de estrada soma ao bando o
   // que o TAMANHO dele dá (`rules/encontros-estrada.js`, `atencaoDoBando`).
@@ -225,7 +228,7 @@ export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe, { vantagem 
  * Teste de grupo: metade ou mais passando, o grupo passa. A conta é a soma das
  * combinações em que pelo menos metade passa.
  */
-export function chanceDeEsconder(herois, atencao, { vantagem = false, desvantagem = false } = {}) {
+export function chanceDeEsconder(herois, atencao, { vantagem = false, desvantagem = false, lento = false } = {}) {
   const vivos = herois.filter((c) => !c.dead);
   if (!vivos.length) return 0;
   const ps = vivos.map((c) => {
@@ -235,10 +238,10 @@ export function chanceDeEsconder(herois, atencao, { vantagem = false, desvantage
       || fx.desvantagemSoTeste.includes('dex') || fx.desvantagemTeste.includes('dex');
     // Precisa PASSAR da atenção: o empate vale para quem defende.
     const alvo = atencao + 1 - skillBonus(c, 'furtividade');
-    const p = Math.max(0, Math.min(1, (21 - alvo) / 20));
-    if (vantagem && !ruim) return 1 - (1 - p) ** 2;
-    if (ruim && !vantagem) return p ** 2;
-    return p;
+    // A mesma conta do dado, com as passivas dele: a Sorte do halfling e o Talento Confiável do ladino mudam a chance.
+    const comVantagem = vantagem || (lento && c.features?.includes('supremeSneak'));
+    const modo = comVantagem && !ruim ? 'vantagem' : ruim && !comVantagem ? 'desvantagem' : 'normal';
+    return chanceDeNaturalMinimo(c, alvo, { modo, treinada: treinadoEm(c, 'furtividade') });
   });
   // Poisson-binomial: a chance de k passarem, para cada k.
   let dist = [1];

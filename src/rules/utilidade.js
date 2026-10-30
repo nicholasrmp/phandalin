@@ -27,7 +27,7 @@
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from './spells.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, nivelDeExaustao, mudarExaustao, CONDITIONS } from './conditions.js';
 import { d20, roll } from '../core/dice.js';
-import { skillBonus, SKILLS, SKILL_NAME, saveBonus, spellSaveDc, abilityMod } from './abilities.js';
+import { skillBonus, rolarPericia, SKILLS, SKILL_NAME, saveBonus, spellSaveDc, abilityMod } from './abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { itemDeId } from './equipment.js';
 import { oracaoDeCura, bomFrutoNoDescanso } from './descanso.js';
@@ -889,7 +889,7 @@ export function rolarTeste(estado, herois, rng, quem, pericia, cd, { npc = null,
   // O modificador fixo das condições (Reviver os Mortos) pesa aqui também: um
   // teste de perícia fora de combate é teste de atributo com perícia.
   const fixo = conditionEffects(quem).testeFixo;
-  const r = d20(rng, skillBonus(quem, pericia) + fixo, { advantage: adv, disadvantage: dis });
+  const r = rolarPericia(rng, quem, pericia, { bonusExtra: fixo, advantage: adv, disadvantage: dis });
   let total = r.total;
   const extras = [];
   for (const cond of [...(quem.conditions ?? [])]) {

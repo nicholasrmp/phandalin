@@ -87,6 +87,73 @@ export function playCharacter(enc, c) {
 
   const nearest = foes.slice().sort((a, b) => distanceFt(c.pos, a.pos) - distanceFt(c.pos, b.pos))[0];
 
+  /**
+   * MAGIA DE ÁREA: ESCOLHE O CENTRO, E ACEITA O FOGO AMIGO QUANDO VALE.
+   *
+   * A política antiga conjurava a magia de maior círculo centrada no inimigo
+   * mais próximo, sem olhar quem mais estava ali: no 5º nível o mago jogava
+   * Bola de Fogo em cima do próprio grupo. Isso inflava "alguém caiu" em
+   * metade das lutas — era o mago derrubando os amigos, não o monstro.
+   *
+   * MAS A PRIMEIRA CORREÇÃO FOI PIOR QUE O DEFEITO, e a medição mostrou:
+   * proibir qualquer aliado na área fazia o mago NUNCA lançar contra um bando
+   * grande em contato, porque não existe centro limpo. Nas células de
+   * fronteira da tabela da estrada no 5º nível, a derrota saltou de 0% para
+   * 42-60% — o grupo perdia por não usar a própria melhor arma.
+   *
+   * A regra que ficou é a que um jogador competente usa: queima-se um amigo
+   * para matar vários inimigos, mas não se derruba um amigo. Então o centro
+   * escolhido é o que pega MAIS inimigos, e um aliado na área só é aceito
+   * quando os inimigos pegos valem o dobro dos aliados pegos E nenhum aliado
+   * dentro está abaixo de metade dos PV. Os cortes (o dobro, a metade) são
+   * nossos, e estão aqui para serem remedidos se a conta mudar.
+   */
+  const dentroDaArea = (s, ponto) => {
+    const casas = enc.areaDaMagia(c, s, ponto) ?? [];
+    if (!casas.length) return null;
+    const dentro = new Set(casas.map((p) => `${p.x},${p.y}`));
+    const gente = s.centradoEmSi ? enc.alliesOf(c) : [c, ...enc.alliesOf(c)];
+    return {
+      inimigos: foes.filter((f) => !f.dead && dentro.has(`${f.pos.x},${f.pos.y}`)).length,
+      amigos: gente.filter((a) => !a.dead && dentro.has(`${a.pos.x},${a.pos.y}`)),
+    };
+  };
+
+  /** O melhor centro para esta magia, ou null se nenhum presta. */
+  const centroPara = (s) => {
+    const candidatos = foes
+      .filter((f) => !f.dead
+        && (s.rangeFt <= 0 || distanceFt(c.pos, f.pos) <= s.rangeFt)
+        && enc.field.hasLineOfSight(c.pos, f.pos));
+    if (!candidatos.length) return null;
+    // Sem forma, a magia pega só o alvo: o mais próximo serve, como antes.
+    if (!s.shape) {
+      return candidatos.sort((a, b) => distanceFt(c.pos, a.pos) - distanceFt(c.pos, b.pos))[0];
+    }
+    let melhor = null;
+    for (const f of candidatos) {
+      const conta = dentroDaArea(s, f.pos);
+      if (!conta) continue;
+      // A conta do fogo amigo, em dois degraus, e os dois medidos:
+      //   - o dobro de inimigos basta, se nenhum amigo dentro estiver abaixo
+      //     de metade dos PV (não se queima quem está prestes a cair);
+      //   - o TRIPLO basta de qualquer jeito. Esta segunda linha existe por
+      //     medição: sem ela, o mago parava de lançar justo quando a luta
+      //     apertava e os amigos estavam machucados — e contra um bando de
+      //     onze ou doze, em que a Bola de Fogo é a única resposta, o grupo
+      //     passava de 0% a 30-38% de derrota nas células de fronteira da
+      //     tabela da estrada no 5º nível.
+      const vale = conta.amigos.length === 0
+        || conta.inimigos >= 3 * conta.amigos.length
+        || (conta.inimigos >= 2 * conta.amigos.length
+          && conta.amigos.every((a) => a.hp > a.maxHp * 0.5));
+      if (!vale) continue;
+      const nota = conta.inimigos - conta.amigos.length;
+      if (!melhor || nota > melhor.nota) melhor = { f, nota };
+    }
+    return melhor?.f ?? null;
+  };
+
   if (!c.actionUsed && c.spellcasting) {
     // Magias de círculo antes dos truques, como antes.
     for (const sid of [...prontas].sort((a, b) => getSpell(b).level - getSpell(a).level)) {
@@ -94,9 +161,9 @@ export function playCharacter(enc, c) {
       if (s.kind !== 'attack' && s.kind !== 'auto' && s.kind !== 'save') continue;
       if (!s.damage) continue;
       if (s.level > 0 && !c.spellcasting.slots[s.level]) continue;
-      if (s.rangeFt > 0 && distanceFt(c.pos, nearest.pos) > s.rangeFt) continue;
-      if (!enc.field.hasLineOfSight(c.pos, nearest.pos)) continue;
-      enc.castSpell(c, sid, { target: nearest, point: nearest.pos });
+      const alvo = centroPara(s);
+      if (!alvo) continue;
+      enc.castSpell(c, sid, { target: alvo, point: alvo.pos });
       enc.endTurn(c);
       return;
     }

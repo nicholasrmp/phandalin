@@ -204,7 +204,7 @@ entende (`attack`, `save`, `auto`, `heal`, `buff`). Sem código novo.
 
 ## Deploy
 
-**No ar:** <https://phandalin.nicholas-rmpimentel.workers.dev>
+**No ar:** <https://phandalin.sdz-games.workers.dev>
 
 ```bash
 npm run build

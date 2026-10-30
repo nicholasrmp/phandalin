@@ -219,7 +219,13 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
   // dobra os degraus da sede é o do COMEÇO do dia, não o que a fome acabou de
   // dar — o livro trata os dois como o fecho do mesmo dia.
   const exaustoAoAmanhecer = new Map(herois.map((c) => [c, nivelDeExaustao(c) > 0]));
-  for (const c of herois) { c.semAgua = false; }
+  // `comeuHoje` e `bebeuHoje` são do DIA; `diasSemComida` e `semAgua` são do
+  // acumulado. A diferença existe porque o livro pede coisas diferentes: a
+  // exaustão por fome cobra o total de dias além do limite, mas o descanso
+  // longo só pede "alguma comida e bebida" — hoje. Enquanto os dois andavam
+  // juntos, quem comia meia ração dois dias seguidos nunca mais tirava um
+  // degrau, e quem bebia três dos quatro litros também não.
+  for (const c of herois) { c.semAgua = false; c.comeuHoje = false; c.bebeuHoje = false; }
   const linhas = [];
   const precisa = calor ? AGUA_NO_CALOR : AGUA_POR_DIA;
   const comFome = [];
@@ -233,6 +239,7 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
     // ---- comida ----
     const r = comerUmDia(c, herois, fontes, { meia: meiaRacao });
     if (r.comeu === 'inteiro') {
+      c.comeuHoje = true;
       c.diasSemComida = 0;
       // Só vale contar de onde veio quando não foi da própria mochila.
       if (r.de) (deOutros[r.de] ??= []).push(c.name);
@@ -240,6 +247,8 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
       // Meia ração: meio dia sem comer, e a conta NÃO zera. O degrau só sai
       // quando um DIA INTEIRO a mais passa do limite — o livro cobra "ao fim
       // de cada dia além do limite", e meio dia não fecha um dia.
+      // Meia ração É "alguma comida": o descanso desta noite conta.
+      c.comeuHoje = true;
       const antesM = Math.floor(c.diasSemComida ?? 0);
       c.diasSemComida = (c.diasSemComida ?? 0) + 0.5;
       aMeia.push(c.name);
@@ -264,6 +273,8 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
 
     // ---- água ----
     if (agua) {
+      // Riacho, poço ou chuva: todos bebem à vontade.
+      c.bebeuHoje = true;
       encherAgua(c);
       // Água parada: mata a sede e pode cobrar depois (regra da casa).
       if (agua === 'suja' && !purificada) {
@@ -287,6 +298,9 @@ export function diaDeViagem(rng, herois, { calor = false, agua = false, fontes =
       bebeu += tira;
     }
     bebeu += beberAgua(c, precisa - bebeu);
+    // Um gole é "alguma bebida". A sede ainda cobra abaixo do dia inteiro
+    // (logo adiante), mas o descanso desta noite conta.
+    c.bebeuHoje = bebeu > 0;
     if (bebeu >= precisa) continue;
     // O descanso longo só desfaz cansaço de quem comeu E bebeu (`descanso.js`).
     c.semAgua = true;
@@ -360,16 +374,18 @@ export function limparMagicoVencido(estado, dia) {
  * { ok, teste, cd, racoes, litros, quem } — `racoes` e `litros` são o que
  * entrou de verdade na mochila e nos cantis (a água que não cabe se perde).
  */
-export function forragear(rng, c, { terreno = 'comum', vantagem = false, grupo = null } = {}) {
+export function forragear(rng, c, { terreno = 'comum', vantagem = false, grupo = null, bioma = null } = {}) {
   const cd = CD_FORRAGEM[terreno] ?? CD_FORRAGEM.comum;
-  const bonus = skillBonus(c, 'sobrevivencia');
+  const bonus = skillBonus(c, 'sobrevivencia', { bioma });
   // O 1º degrau de exaustão dá desvantagem em teste de atributo, e Sobrevivência é um.
   const fx = conditionEffects(c);
   const desvantagem = fx.desvantagemSoTeste.includes('wis') || fx.desvantagemTeste.includes('wis');
   const teste = d20(rng, bonus, { advantage: vantagem, disadvantage: desvantagem });
   if (teste.total < cd) return { ok: false, teste: teste.total, cd, racoes: 0, litros: 0, perdidos: 0, quem: c };
   const sab = abilityMod(c.abilities?.wis ?? 10);
-  const comida = Math.max(0, roll(rng, '1d6').total + sab);
+  // EXPLORADOR NATURAL (patrulheiro): no terreno favorito, caçar e colher rende o DOBRO de comida.
+  const dobra = bioma && c.features?.includes('naturalExplorer') && c.terrenosFavoritos?.includes(bioma) ? 2 : 1;
+  const comida = Math.max(0, roll(rng, '1d6').total + sab) * dobra;
   // O livro conta GALÕES de água; aqui um galão são quatro litros, o dia de
   // uma pessoa (`AGUA_POR_DIA`).
   const liquido = Math.max(0, roll(rng, '1d6').total + sab) * AGUA_POR_DIA;
@@ -385,9 +401,9 @@ export function forragear(rng, c, { terreno = 'comum', vantagem = false, grupo =
 }
 
 /** Quem do grupo forrageia melhor: o maior bônus de Sobrevivência. */
-export function melhorForrageador(herois) {
+export function melhorForrageador(herois, { bioma = null } = {}) {
   return herois.filter((c) => !c.dead)
-    .sort((a, b) => skillBonus(b, 'sobrevivencia') - skillBonus(a, 'sobrevivencia'))[0] ?? null;
+    .sort((a, b) => skillBonus(b, 'sobrevivencia', { bioma }) - skillBonus(a, 'sobrevivencia', { bioma }))[0] ?? null;
 }
 
 /**

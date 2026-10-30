@@ -88,7 +88,7 @@
 import { narrar } from '../view/narrativa.js';
 import { distanceFt, ARESTA, GLIFOS, SUPERFICIES } from '../core/grid.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { addCondition } from '../rules/conditions.js';
 import { criarBuscas } from './buscas.js';
 import { EXAMES, ACOES, ACHADO_DO_CASULO, EMPURRAR_ESTATUA, CONTEINERS, achadoDoRecipiente } from './arvoretrovao-exames.js';
@@ -131,7 +131,7 @@ export function criarArvoreTrovao(app, config) {
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   // Um teste de perícia de UM herói (a `buscas` limita a uma tentativa por herói).
   const teste = (c, pericia, cd) => {
-    const r = d20(enc.rng, skillBonus(c, pericia));
+    const r = rolarPericia(enc.rng, c, pericia);
     return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
@@ -221,7 +221,7 @@ export function criarArvoreTrovao(app, config) {
   }
 
   /** As rolagens de Furtividade do bando: o livro compara com a Percepção passiva. */
-  const furtividadeDe = (bando) => bando.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+  const furtividadeDe = (bando) => bando.map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
 
   function prepararExploracao() {
     enc.reinforcements = null;

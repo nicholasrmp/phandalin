@@ -52,6 +52,8 @@ export default {
         },
         // Truque Adicional: um truque de druida a mais.
         truquesExtra: { 2: 1 },
+        // Recuperação Natural: uma vez por descanso longo, num descanso curto (`rules/descanso.js`).
+        recursos: { naturalRecovery: (n) => (n >= 2 ? 1 : 0) },
         escolhasDeGanho: {
           // O terreno define as magias do círculo.
           circleSpells: {

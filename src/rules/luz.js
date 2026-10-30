@@ -179,7 +179,8 @@ export const podeVer = (enc, obs, alvo) => comoVe(enc, obs, alvo.pos) > ESCURO;
  */
 export function modificadoresDeLuz(enc, atacante, alvo, mods, fonte) {
   if (!temEscuridaoEm(enc)) return;
-  if (!podeVer(enc, atacante, alvo)) fonte(mods, 'desvantagem', 'alvo oculto no escuro');
+  // SENTIDOS SELVAGENS (patrulheiro, 18º): não ver o alvo não impõe desvantagem ao ataque.
+  if (!podeVer(enc, atacante, alvo) && !atacante.features?.includes('feralSenses')) fonte(mods, 'desvantagem', 'alvo oculto no escuro');
   if (!podeVer(enc, alvo, atacante)) fonte(mods, 'vantagem', 'atacante oculto no escuro');
 }
 

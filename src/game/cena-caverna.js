@@ -22,7 +22,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus } from '../rules/abilities.js';
+import { skillBonus, rolarPericia } from '../rules/abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { garantirInventario } from '../rules/equipment.js';
@@ -38,7 +38,7 @@ export function criarCenaCaverna(app, config) {
   droop.side = 'neutro';
   // Os guardas rolam Furtividade uma vez, na chegada: é contra esses números
   // que a Percepção passiva do grupo conta na hora da surpresa.
-  const furtividade = guardas.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+  const furtividade = guardas.map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
   const estado = { explorando: false, encerrado: false, lutando: false, avisados: false, alarme: false };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
@@ -269,7 +269,7 @@ export function criarCenaCaverna(app, config) {
       ops.push({
         rotulo: 'Escutar a rocha', icone: 'acao-procurar', detalhe: 'Percepção, CD 12',
         fazer: async () => {
-          const r = d20(enc.rng, skillBonus(c, 'percepcao'));
+          const r = rolarPericia(enc.rng, c, 'percepcao');
           const passou = r.total >= 12;
           const perto = guardasVivos().filter((g) => distanceFt(g.pos, c.pos) <= 40);
           await narrar(root, {

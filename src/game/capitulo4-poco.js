@@ -24,7 +24,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { hasCondition } from '../rules/conditions.js';
 import { makeMonster } from '../rules/monsters.js';
@@ -51,7 +51,7 @@ export function criarPoco(app, config) {
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
   const teste = (c, pericia, cd) => {
-    const r = d20(enc.rng, skillBonus(c, pericia));
+    const r = rolarPericia(enc.rng, c, pericia);
     return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
 

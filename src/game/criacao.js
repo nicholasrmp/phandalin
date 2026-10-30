@@ -22,6 +22,7 @@ import { criarPersonagem } from '../rules/progressao.js';
 import { abilityMod } from '../rules/abilities.js';
 import { HEROIS, heroiPorId } from './herois.js';
 import { atributoDoIniciado } from '../rules/talentos.js';
+import { RACAS, racaDe, tracosDaRaca } from '../rules/racas.js';
 
 // ---------------------------------------------------------------- magias ----
 
@@ -259,7 +260,8 @@ export function regrasDeMagia(heroi) {
   const preparar = Math.max(1, abilityMod(heroi.abilities[conj.atributo]) + 1);
   return {
     ...conj,
-    truques: conj.truques + (heroi.racial?.truquesExtras ?? 0),
+    // O Alto Elfo ganha UM truque de mago além dos da classe (`highElfCantrip`); sem esta linha o Ilvan tinha só 3.
+    truques: conj.truques + (heroi.racial?.truquesExtras ?? (tracosDaRaca(heroi).includes('highElfCantrip') ? 1 : 0)),
     preparar: conj.modo === 'conhecidas' ? null : preparar,
     // Escolher magias: conhecidas e livro, um número fixo; preparadas, o
     // limite de preparo, da lista inteira da classe.
@@ -516,7 +518,9 @@ const AUTOMATICO = {
   'pc-guardiao': { talento: 'alerta', equipamento: [1, 0, 1] },
   'pc-monja': { talento: 'alerta', equipamento: [0, 1] },
   'pc-barda': { talento: 'sortudo', equipamento: [0, 1, 0],
-    truques: ['zombariaViciosa', 'ilusaoMenor'], magias: ['palavraCurativa', 'sono', 'perdicao', 'ondaTrovejante'] },
+    // Ilusão Menor NÃO entra aqui: a gnoma da floresta a recebe de graça (`naturalIllusionist`), e gastar um truque da
+    // classe nela era perder um truque.
+    truques: ['zombariaViciosa', 'maoMagica'], magias: ['palavraCurativa', 'sono', 'perdicao', 'ondaTrovejante'] },
 };
 
 /**
@@ -632,7 +636,7 @@ export function montarHeroi(id, escolha = escolhaAutomatica(id)) {
   if (m) {
     const doDominio = (sub?.magias ?? []).filter(magiaTemRegra);
     // Os truques da raça (tiferino, gnomo da floresta) vêm de graça.
-    const truques = [...new Set([...escolha.truques, ...(h.racial?.truques ?? [])])].filter(magiaTemRegra);
+    const truques = [...new Set([...escolha.truques, ...(h.racial?.truques ?? []), ...(RACAS[racaDe(h)]?.truques ?? [])])].filter(magiaTemRegra);
     const preparadas = (m.modo === 'livro' ? escolha.preparadas : escolha.magias).filter(magiaTemRegra);
     spellcasting = {
       ability: m.atributo,
@@ -656,18 +660,22 @@ export function montarHeroi(id, escolha = escolhaAutomatica(id)) {
   const escolhas = {};
   if (sub?.motor && def.subclasse?.nivel === 1) escolhas[1] = { subclasse: sub.motor };
   if (h.classe === 'guerreiro') escolhas[1] = { ...escolhas[1], estiloDeLuta: 'defense' };
+  // Corin odeia goblins e cresceu na mata: é o que o Inimigo Favorito e o Explorador Natural dele guardam.
+  if (h.classe === 'patrulheiro') escolhas[1] = { ...escolhas[1], favoredEnemy: 'goblinoidesEOrcs', naturalExplorer: 'floresta' };
 
   const c = criarPersonagem({
     id: h.id, name: h.name, className: h.className, ancestry: h.ancestry, look: h.look,
-    abilities: h.abilities, skills, armor: armadura, shield: escudo, speedFt: h.speedFt,
+    raca: h.raca, abilities: h.abilities, skills, armor: armadura, shield: escudo, speedFt: h.speedFt,
     weapons: armas.length ? armas : ['adaga'],
     ...(spellcasting ? { spellcasting } : {}),
   }, { classe: h.classe, nivel: 1, escolhas });
 
   // O que a raça e o talento dão e a classe não sabe.
-  const extraPv = (h.racial?.pvPorNivel ?? 0) + (escolha.talento === 'vigoroso' ? 2 : 0);
+  // O PV a mais da raça (Robustez Anã) NÃO entra aqui: `criarPersonagem` o cobra em todo nível (`vidaPorNivel`).
+  const extraPv = (escolha.talento === 'vigoroso' ? 2 : 0);
   if (extraPv) { c.maxHp += extraPv; c.hp = c.maxHp; }
-  if (h.racial?.resistencias) c.resistances = [...new Set([...(c.resistances ?? []), ...h.racial.resistencias])];
+  // `resist` (e não `resistances`): é o campo que o motor lê para dividir o dano ao meio.
+  if (h.racial?.resistencias) c.resist = [...new Set([...(c.resist ?? []), ...h.racial.resistencias])];
   c.bag = bag;
   c.offhandWeapon = null;
   c.equippedWeapon = c.weapons[0];

@@ -91,6 +91,8 @@ export const PACOTES_DE_ANIMAIS = {
   nd14: { n: 8, defId: 'lobo', rotulo: '8 feras de ND 1/4', detalhe: 'oito lobos' },
 };
 
+import { ANCESTRALIDADES_DRACONICAS, AREA_DO_SOPRO } from './racas.js';
+
 export const SPELLS = {
   chamaSagrada: {
     id: 'chamaSagrada', name: 'Chama Sagrada', level: 0, school: 'evocação', fonte: 'srd',
@@ -1357,6 +1359,27 @@ export const SPELLS = {
 
 };
 
+// ---- OS SOPROS DO DRACONATO ----------------------------------------------------------------------------------------------
+// A Arma de Sopro é uma ação com mira (cone ou linha), teste de resistência e dano em área: o mesmo formato de uma magia, com
+// a mesma prévia sob o cursor, a mesma conta na tela e a mesma animação. Vira uma "magia" por cor de dragão, gerada da tabela
+// de `rules/racas.js` (o tipo de dano, a forma e a resistência de cada cor), e se paga com o recurso `breathWeapon` — uma vez
+// por descanso curto ou longo — e não com espaço de magia. Quem a tem a vê entre os truques.
+//   - a CD é 8 + CON + proficiência (`cdDeCon`), e não a de conjuração;
+//   - os dados crescem em degraus próprios (`dadosPorNivel`): 2d6, 3d6 no 6º, 4d6 no 11º, 5d6 no 16º;
+//   - `racial: true` a deixa de fora das características de conjurador (Evocação Potencializada, Afinidade Elemental).
+for (const [cor, a] of Object.entries(ANCESTRALIDADES_DRACONICAS)) {
+  if (cor === 'preto') continue; // sinônimo de 'negro'
+  const area = AREA_DO_SOPRO[a.forma];
+  const id = `sopro_${cor}`;
+  SPELLS[id] = {
+    id, name: `Sopro de Dragão ${a.dragao}`, level: 0, school: 'evocação', fonte: 'srd', racial: true, origem: 'sopro',
+    castTime: 'action', rangeFt: 0, shape: a.forma, areaFt: area.areaFt,
+    kind: 'save', save: a.save, damage: '2d6', damageType: a.dano, halfOnSave: true,
+    dadosPorNivel: { 1: '2d6', 6: '3d6', 11: '4d6', 16: '5d6' }, cdDeCon: true, recursoRacial: 'breathWeapon',
+    desc: `Arma de Sopro. ${a.forma === 'cone' ? 'Cone de 4,5 m' : 'Linha de 9 m por 1,5 m'}. CD de ${a.save === 'dex' ? 'DES' : 'CON'} (8 + CON + proficiência): 2d6 de ${a.dano}, metade se passar; 3d6 no 6º nível, 4d6 no 11º, 5d6 no 16º. Uma vez por descanso curto ou longo.`,
+  };
+}
+
 /**
  * Aprimorar Atributo: as seis opções do livro. `hab` ganha vantagem nos testes;
  * `pv` são PV temporários (somem com a magia); `semQueda` anula o dano de queda.
@@ -1403,7 +1426,9 @@ export const getSpell = (id) => {
 export function magiasProntas(actor) {
   const sc = actor.spellcasting;
   if (!sc) return [];
-  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? [])])]
+  // As magias RACIAIS (Legado Infernal, Magia Drow) entram na lista de quem as tem: uma vez por descanso longo, sem espaço.
+  const raciais = (actor.magiasRaciais ?? []).map((m) => m.magia);
+  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais])]
     .filter((id) => SPELLS[id]);
 }
 
@@ -1421,6 +1446,11 @@ function maisDados(notacao, extra) {
  */
 export function dadosDaMagia(spell, { nivel = 1, circulo = spell.level, notacao = spell.damage } = {}) {
   if (!notacao) return notacao;
+  // Dados que crescem com o nível do PERSONAGEM em degraus próprios (o Sopro do draconato: 2d6, 3d6 no 6º, 4d6 no 11º, 5d6 no 16º).
+  if (spell.dadosPorNivel) {
+    const degrau = Object.keys(spell.dadosPorNivel).map(Number).filter((n) => n <= nivel).sort((a, b) => b - a)[0] ?? 1;
+    return spell.dadosPorNivel[degrau];
+  }
   if (spell.level === 0 && spell.semEscala) return notacao;
   if (spell.level === 0) {
     const extra = (nivel >= 5) + (nivel >= 11) + (nivel >= 17);

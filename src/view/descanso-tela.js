@@ -19,7 +19,7 @@ import { comAcampamento } from '../core/musica.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
 import {
-  dadoDeVida, dadosDeVida, gastarDadoDeVida, dadosSugeridos, recuperarNoCurto, descansoLongo, oracaoDeCura, bomFrutoNoDescanso,
+  dadoDeVida, dadosDeVida, gastarDadoDeVida, dadoDaCancaoDeDescanso, dadosSugeridos, recuperarNoCurto, descansoLongo, oracaoDeCura, bomFrutoNoDescanso,
 } from '../rules/descanso.js';
 import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
 import { hasCondition, nivelDeExaustao, maxHpEfetivo } from '../rules/conditions.js';
@@ -87,14 +87,16 @@ function linhaDoHeroi(c, rng, registro, grupo = { vivos: [c], atualizarTodas: ()
   };
 
   const gastar = () => {
-    const r = gastarDadoDeVida(rng, c);
+    // CANÇÃO DE DESCANSO: o bardo acordado no grupo dá um dado a mais a quem gasta um dado de vida.
+    const r = gastarDadoDeVida(rng, c, { cancao: dadoDaCancaoDeDescanso(grupo.vivos) });
     if (!r) return null;
     const con = r.con ? ` ${r.con > 0 ? '+' : '−'} ${Math.abs(r.con)}` : '';
-    ultimo.textContent = `d${r.lados}: ${r.rolagem}${con} → +${r.cura}`;
+    const cancao = r.cancao ? ` + canção d${r.cancaoLados}: ${r.cancao}` : '';
+    ultimo.textContent = `d${r.lados}: ${r.rolagem}${con}${cancao} → +${r.cura}`;
     ultimo.classList.remove('pulso');
     void ultimo.offsetWidth;
     ultimo.classList.add('pulso');
-    registro.push(`${c.name} gasta um dado de vida: d${r.lados} ${r.rolagem}${con} → +${r.cura} PV (restam ${r.restam}).`);
+    registro.push(`${c.name} gasta um dado de vida: d${r.lados} ${r.rolagem}${con}${cancao} → +${r.cura} PV (restam ${r.restam}).`);
     atualizar();
     grupo.aoMudar?.();      // numa sala, os outros jogadores veem o dado gasto
     return r;

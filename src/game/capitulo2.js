@@ -46,7 +46,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { abilityMod, skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
+import { abilityMod, skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { distanceFt, Battlefield, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, hasCondition } from '../rules/conditions.js';
@@ -102,7 +102,7 @@ export function criarCapitulo2(app, config) {
   const grupos = {};
   for (const f of todos) (grupos[f.grupo] ??= { id: f.grupo, membros: [], ativo: false, vencido: false }).membros.push(f);
   for (const g of Object.values(grupos)) {
-    g.furtividade = g.membros.filter((f) => f.side === 'foes').map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+    g.furtividade = g.membros.filter((f) => f.side === 'foes').map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
   }
   const yeemik = grupos.covil.membros.find((f) => f.defId === 'yeemik');
   const sildar = grupos.covil.membros.find((f) => f.npcId === 'sildar');
@@ -173,7 +173,7 @@ export function criarCapitulo2(app, config) {
     enc.emboscada = surpresa === 'deles'
       ? { emboscadores: 'foes', furtividade: g.furtividade }
       : surpresa === 'nossa'
-        ? { emboscadores: 'party', furtividade: herois().map((h) => d20(enc.rng, skillBonus(h, 'furtividade')).total) }
+        ? { emboscadores: 'party', furtividade: herois().map((h) => rolarPericia(enc.rng, h, 'furtividade').total) }
         : null;
     app.selected = null;
     enc.start();
@@ -307,7 +307,7 @@ export function criarCapitulo2(app, config) {
   async function vigias(g, c) {
     if (!atravessou(c.pos)) return false;
     // Quem atravessa com cuidado pode pegar os vigias distraídos.
-    const r = d20(enc.rng, skillBonus(c, 'furtividade'));
+    const r = rolarPericia(enc.rng, c, 'furtividade');
     const atencao = Math.max(...hostis(g).map((f) => passivePerception(f)));
     const furtivo = r.total > atencao;
     await asArmas(furtivo
@@ -1068,7 +1068,7 @@ export function criarCapitulo2(app, config) {
         rotulo: 'Vasculhar o mato', icone: 'acao-procurar', detalhe: 'Percepção contra a Furtividade deles',
         motivo: longe(30),
         fazer: async () => {
-          const r = d20(enc.rng, skillBonus(c, 'percepcao'));
+          const r = rolarPericia(enc.rng, c, 'percepcao');
           const achou = r.total >= Math.min(...g2.furtividade);
           await asArmas([achou
             ? `${c.name} vê, entre o mato, ripas de madeira amarradas — e atrás delas dois goblins de arco.`

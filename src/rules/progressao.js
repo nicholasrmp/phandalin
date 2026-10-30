@@ -18,6 +18,9 @@
 import { ABILITIES, SKILLS, abilityMod, proficiencyBonus } from './abilities.js';
 import { armorClass } from './equipment.js';
 import { CLASSES } from './classes/index.js';
+import { aplicarRaca, magiasRaciaisDoNivel, completarConjuracaoRacial, RACAS } from './racas.js';
+import { escolherMaestria, escolherAssinaturas } from './passivas.js';
+import { SPELLS } from './spells.js';
 
 export const NIVEL_MAXIMO = 20;
 
@@ -134,7 +137,12 @@ export function criarPersonagem(base, { classe, nivel = 1, escolhas = {} } = {})
   };
   c.skills = [...(base.skills ?? [])];
   c.expertise = [...(base.expertise ?? [])];
+  // A RAÇA antes do 1º nível: os traços, o deslocamento, a visão e o PV por nível entram na ficha, e
+  // `subirNivel` cobra o PV a mais (Robustez Anã) em todo nível, e não só no primeiro.
+  const racaId = aplicarRaca(c);
+  if (racaId && RACAS[racaId].pvPorNivel) c.vidaPorNivel = RACAS[racaId].pvPorNivel;
   for (let n = 1; n <= nivel; n++) subirNivel(c, escolhas[n] ?? {});
+  completarConjuracaoRacial(c);
   c.xp = Math.max(c.xp ?? 0, XP_POR_NIVEL[c.level]);
   c.hp = c.maxHp;
   c.equippedWeapon ??= c.weapons?.[0];
@@ -251,6 +259,17 @@ export function subirNivel(c, escolhas = {}) {
     for (const p of pericias) if (!c.skills.includes(p)) c.skills.push(p);
   }
 
+  // MAESTRIA EM MAGIA (mago, 18º) e MAGIAS DE ASSINATURA (20º): a escolha padrão sai aqui; a tela, quando existir, grava as suas.
+  if (c.features.includes('spellMastery') && !c.maestriaDeMagia) c.maestriaDeMagia = escolherMaestria(c, SPELLS);
+  if (c.features.includes('signatureSpells') && !c.magiasAssinatura) {
+    c.magiasAssinatura = escolherAssinaturas(c, SPELLS).map((m) => ({ magia: m, recurso: `assinatura_${m}` }));
+    for (const a of c.magiasAssinatura) {
+      c.resourcesMax[a.recurso] = 1;
+      c.resources[a.recurso] = 1;
+      if (c.spellcasting && !c.spellcasting.prepared.includes(a.magia)) c.spellcasting.prepared.push(a.magia);
+    }
+  }
+
   // PONTOS DE VIDA: no 1º nível o dado inteiro; depois, a média do dado
   // (a regra fixa do SRD, que o jogo usa em vez de rolar). Constituição
   // conta em todo nível — e o aumento de CON conta retroativamente, como na
@@ -332,6 +351,9 @@ export function subirNivel(c, escolhas = {}) {
         .flatMap(([, magias]) => magias);
     }
   }
+
+  // MAGIAS RACIAIS por nível (Legado Infernal, Magia Drow): cada uma uma vez por descanso longo.
+  magiasRaciaisDoNivel(c, nivel);
 
   c.ac = armorClass(c);
   return { pendentes };

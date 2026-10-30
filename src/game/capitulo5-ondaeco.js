@@ -16,7 +16,7 @@
 import { narrar } from '../view/narrativa.js';
 import { distanceFt, ARESTA, Battlefield } from '../core/grid.js';
 import { d20, damageRoll } from '../core/dice.js';
-import { skillBonus, passivePerception, saveBonus, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, passivePerception, saveBonus, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { addCondition } from '../rules/conditions.js';
 import { criarBuscas } from './buscas.js';
 import { makeMonster } from '../rules/monsters.js';
@@ -54,7 +54,7 @@ export function criarOndaEco(app) {
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const teste = (c, pericia, cd) => {
-    const r = d20(enc.rng, skillBonus(c, pericia));
+    const r = rolarPericia(enc.rng, c, pericia);
     return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
   const salvaguarda = (c, atributo, cd) => {
@@ -110,7 +110,7 @@ export function criarOndaEco(app) {
     { chave: 'templo', lista: [...(nezznar ? [nezznar] : []), ...bugbearsTemplo, ...aranhasTemplo], xp: 'Nezznar, o Aranha Negra', fim: TEXTOS.fimTemplo },
   ];
   const valeDoBando = (b) => b.reduce((s, f) => s + (f.xp ?? 0), 0);
-  const furtividadeDe = (b) => b.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+  const furtividadeDe = (b) => b.map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
 
   // REFORÇOS: os bugbears da caverna desmoronada ouvem a luta do templo e chegam três rodadas depois.
   function prepararReforcos(porRodada) {

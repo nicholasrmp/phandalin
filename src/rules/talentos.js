@@ -16,7 +16,7 @@
 // (pontos de sorte, a magia grátis do Iniciado, a canção do Músico) volta a
 // cada encontro — é como se o grupo tivesse descansado antes de cada luta.
 
-import { abilityMod, proficiencyBonus } from './abilities.js';
+import { abilityMod, proficiencyBonus, meiaProficiencia } from './abilities.js';
 import { maxHpEfetivo } from './conditions.js';
 import { CLASSES } from './classes/index.js';
 import { roll } from '../core/dice.js';
@@ -52,7 +52,8 @@ export function prepararTalentos(enc) {
 
 /** Bônus de iniciativa de um combatente (o grupo usa o maior). */
 export function bonusDeIniciativa(c) {
-  return abilityMod(c.abilities.dex) + (temTalento(c, 'alerta') ? pb(c) : 0);
+  // A iniciativa é um teste de DES: Pau pra Toda Obra e Atleta Notável entram (`meiaProficiencia`).
+  return abilityMod(c.abilities.dex) + (temTalento(c, 'alerta') ? pb(c) : meiaProficiencia(c, 'dex'));
 }
 
 // ------------------------------------------------------------- d20 ----
@@ -76,6 +77,11 @@ function refazerAtaque(enc, atk, bonus, ac, escolher) {
  */
 export function segundaChanceNoAtaque(enc, atacante, alvo, atk, bonus, ac) {
   let r = atk;
+  // SORTE (halfling): um 1 natural no d20 do ataque é rolado de novo, e vale o novo — antes de qualquer outra segunda chance.
+  if (r.fumble && atacante.features?.includes('lucky')) {
+    r = refazerAtaque(enc, r, bonus, ac, (_, novo) => novo);
+    enc.say('recurso', `${atacante.name} tira 1 e rola o d20 de novo (Sorte): ${r.natural}${r.hit ? ', e acerta' : ''}.`, 'Sorte do halfling');
+  }
   if (!r.hit && (atacante.pontosDeSorte ?? 0) > 0) {
     atacante.pontosDeSorte -= 1;
     r = refazerAtaque(enc, r, bonus, ac, Math.max);
@@ -104,10 +110,22 @@ export function segundaChanceNaResistencia(enc, c, save, bonus, dc) {
     const natural = escolher(r.natural, novo);
     return { ...r, natural, total: natural + bonus, rolls: [...r.rolls, novo], success: natural + bonus >= dc };
   };
+  // SORTE (halfling): um 1 natural na resistência é rolado de novo, e vale o novo.
+  if (r.natural === 1 && c.features?.includes('lucky')) {
+    r = refaz((_, novo) => novo);
+    enc.say('recurso', `${c.name} tira 1 e rola a resistência de novo (Sorte): ${r.natural}${r.success ? ', e passa' : ''}.`, 'Sorte do halfling');
+  }
   if (!r.success && (c.pontosDeSorte ?? 0) > 0) {
     c.pontosDeSorte -= 1;
     r = refaz(Math.max);
     enc.say('recurso', `${c.name} usa a sorte na resistência${r.success ? ' e passa' : ''}.`, `Sortudo · restam ${c.pontosDeSorte} pontos`);
+  }
+  // INDOMÁVEL (guerreiro, 9º; 2 usos no 13º, 3 no 17º): uma resistência que falhou é rolada de novo, e vale a nova.
+  // O jogo usa por conta própria na primeira falha: rolar de novo nunca piora, mas gasta o uso mesmo numa resistência banal.
+  if (!r.success && c.features?.includes('indomitable') && (c.resources?.indomitable ?? 0) > 0) {
+    c.resources.indomitable -= 1;
+    r = refaz((_, novo) => novo);
+    enc.say('recurso', `${c.name} rola a resistência de novo (Indomável)${r.success ? ' e passa' : ''}.`, `Indomável · restam ${c.resources.indomitable}`);
   }
   if (!r.success && c.inspirado) {
     c.inspirado = false;
@@ -212,7 +230,13 @@ export function temUsoGratis(c, spellId) {
   return Boolean(c.magiaGratis && c.magiaGratis.id === spellId && !c.magiaGratis.usada);
 }
 
-export function gastarUsoGratis(enc, c) {
+export function gastarUsoGratis(enc, c, uso = true) {
+  // Uso livre de característica (`usoLivreDe`): racial e Assinatura gastam o recurso; a Maestria é à vontade.
+  if (uso && typeof uso === 'object') {
+    if (uso.recurso) c.resources[uso.recurso] = Math.max(0, (c.resources[uso.recurso] ?? 0) - 1);
+    enc.say('recurso', `${c.name} conjura sem gastar espaço (${uso.rotulo}).`);
+    return;
+  }
   c.magiaGratis.usada = true;
   enc.say('recurso', `${c.name} usa a magia de Iniciado sem gastar espaço (uma vez por descanso).`);
 }

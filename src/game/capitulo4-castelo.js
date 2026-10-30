@@ -45,7 +45,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { distanceFt, Battlefield, ARESTA } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, hasCondition } from '../rules/conditions.js';
@@ -115,7 +115,7 @@ export function criarCastelo(app, config) {
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
   const asArmas = (texto) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto) }], escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
   const teste = (c, pericia, cd) => {
-    const r = d20(enc.rng, skillBonus(c, pericia));
+    const r = rolarPericia(enc.rng, c, pericia);
     return { quem: c.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
   const melhor = (pericia) => [...herois()].sort((a, b) => skillBonus(b, pericia) - skillBonus(a, pericia))[0];
@@ -352,7 +352,7 @@ export function criarCastelo(app, config) {
     enc.emboscada = surpresa === 'nossa'
       ? { emboscadores: 'party', furtividade: herois().map(() => furtividadeDoGrupo()) }
       : surpresa === 'deles'
-        ? { emboscadores: 'foes', furtividade: gs.flatMap((g) => vivosDe(g)).map((f) => fixa ?? d20(enc.rng, skillBonus(f, 'furtividade')).total) }
+        ? { emboscadores: 'foes', furtividade: gs.flatMap((g) => vivosDe(g)).map((f) => fixa ?? rolarPericia(enc.rng, f, 'furtividade').total) }
         : null;
     app.selected = null;
     enc.start();
@@ -362,7 +362,7 @@ export function criarCastelo(app, config) {
 
   /** Teste de grupo (SRD): o valor da metade de cima dos rolamentos. */
   function furtividadeDoGrupo() {
-    const r = herois().map((h) => d20(enc.rng, skillBonus(h, 'furtividade')).total).sort((a, b) => b - a);
+    const r = herois().map((h) => rolarPericia(enc.rng, h, 'furtividade').total).sort((a, b) => b - a);
     return r[Math.max(0, Math.ceil(r.length / 2) - 1)] ?? 10;
   }
 
@@ -414,10 +414,10 @@ export function criarCastelo(app, config) {
     const arqueiros = [...vivosDe(grupos.postoNorte), ...vivosDe(grupos.postoSul)];
     if (r === 'disfarce') {
       // Enganação de cada herói contra a Intuição dos vigias: um que vença basta.
-      const intuicao = Math.max(...arqueiros.map((f) => d20(enc.rng, skillBonus(f, 'intuicao')).total), 0);
+      const intuicao = Math.max(...arqueiros.map((f) => rolarPericia(enc.rng, f, 'intuicao').total), 0);
       const mantos = herois().every((h) => h.mantoVermelho || garantirInventario(h).bag.some((i) => i.id === 'mantoVermelho'));
       const quem = melhor('enganacao');
-      const rol = herois().map((h) => d20(enc.rng, skillBonus(h, 'enganacao'), { advantage: mantos }).total);
+      const rol = herois().map((h) => rolarPericia(enc.rng, h, 'enganacao', { advantage: mantos }).total);
       const venceu = rol.some((v) => v > intuicao);
       if (venceu) {
         salvo.disfarce = true;
@@ -431,8 +431,8 @@ export function criarCastelo(app, config) {
       await asArmas([`${quem.name} começa o discurso — e uma flecha passa zunindo pela orelha. Lá dentro, alguém grita em goblin que é mentira.`]);
     } else if (r === 'furtivo') {
       // O livro: a pior Furtividade do grupo é a CD da Sabedoria dos vigias.
-      const pior = Math.min(...herois().map((h) => d20(enc.rng, skillBonus(h, 'furtividade')).total));
-      const viram = arqueiros.some((f) => d20(enc.rng, skillBonus(f, 'percepcao')).total >= pior);
+      const pior = Math.min(...herois().map((h) => rolarPericia(enc.rng, h, 'furtividade').total));
+      const viram = arqueiros.some((f) => rolarPericia(enc.rng, f, 'percepcao').total >= pior);
       if (!viram) {
         salvo.furtivo = true;
         await painel('Colados nas pedras, um de cada vez, vocês cruzam o terraço. Pelas seteiras, só se ouve um goblin reclamando do frio.');
@@ -557,7 +557,7 @@ export function criarCastelo(app, config) {
   async function oGrick() {
     // A Furtividade do grick contra a Percepção passiva de cada herói: quem
     // não nota fica surpreso, um a um (o motor usa o mesmo número).
-    const f = d20(enc.rng, skillBonus(grick, 'furtividade')).total;
+    const f = rolarPericia(enc.rng, grick, 'furtividade').total;
     const desatentos = herois().filter((h) => passivePerception(h) < f);
     salvo.grickOuviu = true;
     await asArmas([

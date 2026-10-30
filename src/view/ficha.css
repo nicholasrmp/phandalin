@@ -269,6 +269,7 @@
 .talento:last-child { border-bottom: none; }
 .talento-nome { font-family: var(--serif); font-size: 13.5px; color: var(--gold-escuro); }
 .talento-texto { margin: 2px 0 0; font-size: 11.5px; line-height: 1.45; color: #4a3b27; }
+.talento-aviso { margin: 2px 0 0; font-size: 10.5px; line-height: 1.4; color: #7a5a2e; font-style: italic; }
 /* Com ícone: a coluna dele tem 32 px, o tamanho do desenho — com menos, ele
    transbordava por cima do texto, como aconteceu na lista de magias. */
 .talento.com-icone { display: grid; grid-template-columns: 32px 1fr; gap: 9px; align-items: start; }

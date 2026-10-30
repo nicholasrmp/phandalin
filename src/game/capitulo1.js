@@ -36,18 +36,21 @@ import { maxHpEfetivo } from '../rules/conditions.js';
 import { descansoCurto } from '../view/descanso-tela.js';
 import { heroiPorId } from './herois.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { guardar } from './comercio.js';
 import { distanceFt, Battlefield } from '../core/grid.js';
 import { garantirInventario } from '../rules/equipment.js';
 
 const MOVIMENTO = 60;   // quanto cada herói anda por clique na exploração (pés)
 const CD = 10;
+// Os rastros são de goblins, na mata: é o que o Inimigo Favorito e o Explorador Natural do patrulheiro reconhecem.
+const RASTROS_DOS_GOBLINS = { inimigo: 'goblinoidesEOrcs', bioma: 'floresta' };
 
 /** O melhor teste entre algumas perícias, de um herói. */
-function testar(enc, c, pericias) {
-  const melhor = pericias.reduce((a, b) => (skillBonus(c, b) > skillBonus(c, a) ? b : a));
-  const r = d20(enc.rng, skillBonus(c, melhor));
+// `contexto` leva o que a característica de patrulheiro lê: o `inimigo` rastreado (Inimigo Favorito) e o `bioma` (Explorador Natural).
+function testar(enc, c, pericias, contexto = {}) {
+  const melhor = pericias.reduce((a, b) => (skillBonus(c, b, contexto) > skillBonus(c, a, contexto) ? b : a));
+  const r = rolarPericia(enc.rng, c, melhor, contexto);
   return { quem: c.name, pericia: SKILL_NAME[melhor], total: r.total, cd: CD, passou: r.total >= CD };
 }
 
@@ -59,7 +62,7 @@ export function criarCapitulo1(app, config) {
   // Os goblins ficam fora do tabuleiro até a armadilha disparar.
   const escondidos = app.inimigosEscondidos;
   // Como na aventura: UMA rolagem de Furtividade para os goblins.
-  const rolagemDeGrupo = d20(enc.rng, skillBonus(escondidos[0], 'furtividade')).total;
+  const rolagemDeGrupo = rolarPericia(enc.rng, escondidos[0], 'furtividade').total;
   const furtividade = escondidos.map(() => rolagemDeGrupo);
   const cavalos = [];
   for (let y = 0; y < enc.field.h; y++) {
@@ -412,9 +415,9 @@ export function criarCapitulo1(app, config) {
 
     // A trilha: quem procura acha o lugar usado para emboscadas há tempo, e a
     // trilha ao norte, para noroeste. Sobrevivência CD 10 lê os rastros.
-    const rastreador = vivos(enc).sort((a, b) => skillBonus(b, 'sobrevivencia') - skillBonus(a, 'sobrevivencia'))[0] ?? grupo[0];
+    const rastreador = vivos(enc).sort((a, b) => skillBonus(b, 'sobrevivencia', RASTROS_DOS_GOBLINS) - skillBonus(a, 'sobrevivencia', RASTROS_DOS_GOBLINS))[0] ?? grupo[0];
     if (rastreador) {
-      const t = estado.rastros ? null : testar(enc, rastreador, ['sobrevivencia']);
+      const t = estado.rastros ? null : testar(enc, rastreador, ['sobrevivencia'], RASTROS_DOS_GOBLINS);
       const leu = estado.rastros || t.passou;
       paginas.push({
         titulo: 'A trilha dos goblins',
@@ -531,7 +534,7 @@ export function criarCapitulo1(app, config) {
 
   async function vasculhar(c, tile) {
     estado.explorando = false;
-    const r = d20(enc.rng, skillBonus(c, 'percepcao'));
+    const r = rolarPericia(enc.rng, c, 'percepcao');
     const teste = { quem: c.name, pericia: 'Percepção', total: r.total, cd: 'a Furtividade deles', passou: false };
     const perto = escondidos.map((f, i) => ({ f, furt: furtividade[i] })).filter(({ f }) => distanceFt(f.pos, tile) <= 15);
     const achados = perto.filter(({ furt }) => r.total >= furt);
@@ -563,7 +566,7 @@ export function criarCapitulo1(app, config) {
 
   async function procurarRastros(c) {
     estado.explorando = false;
-    const t = testar(enc, c, ['sobrevivencia']);
+    const t = testar(enc, c, ['sobrevivencia'], RASTROS_DOS_GOBLINS);
     if (t.passou) estado.rastros = true;
     await narrar(root, {
       formato: 'painel',

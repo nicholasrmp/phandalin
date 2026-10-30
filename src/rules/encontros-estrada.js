@@ -111,21 +111,77 @@ export function reacaoDe(rng, encontroId) {
 }
 
 /**
- * Quanto o bando pesa para ESTE grupo, medido no que o jogo já tem: o XP dele,
- * por cabeça, contra o que falta a um herói para subir do nível em que está.
- * A tabela de XP por nível é do SRD; os cortes são nossos.
+ * ONDE CADA LINHA DA TABELA VIRA PERIGOSA, medido com o motor de verdade.
  *
- * Devolve 'facil', 'dificil' ou 'mortal'.
+ * Para cada espécie e cada nível de grupo: [a maior quantidade que ainda é
+ * FÁCIL, a maior que ainda é DIFÍCIL]. Acima da segunda, mortal. Medido na
+ * cena real da estrada com cem lutas por célula e o grupo pronto de quatro
+ * heróis, o simulador (`dev/balance.js`) jogando os dois lados.
  *
- * ATÉ ONDE VAI: medido contra o simulador, acerta cerca de três em cada
- * quatro bandos. Erra porque XP não distingue espécie — um lobo e um goblin
- * valem os mesmos 50 XP e não dão a mesma luta. Serve para graduar o XP da
- * conversa e o tamanho do bando, não para prometer dificuldade exata.
+ * POR QUE UMA TABELA MEDIDA, E NÃO UMA FÓRMULA. A conta anterior dividia o XP
+ * do bando pelo degrau de XP até o nível seguinte. Esse degrau salta — 1.800
+ * do 3º para o 4º, 3.800 do 4º para o 5º — enquanto o poder do grupo cresce
+ * bem menos, então do 4º nível em diante o rótulo ficava frouxo: nove orcs,
+ * que o simulador mede em 56% de derrota, eram chamados de fácil. E derrota na
+ * estrada encerra a partida (`game/capitulo4-estrada.js`). Tentei trocar por
+ * uma fórmula de dano contra PV, tirada dos blocos de estatísticas; ela também
+ * erra, porque a força do grupo dá um salto no 5º nível (Ataque Extra, 3º
+ * círculo) que nenhum procurador linear acompanha. O que o XP não sabe — que
+ * um lobo e um goblin valem os mesmos 50 XP e não dão a mesma luta —, o
+ * simulador sabe.
+ *
+ * OS CORTES SÃO NOSSOS: fácil é menos de 5% de derrota, difícil é menos de
+ * 20%. Um encontro de estrada é imprevisto, e não deve carregar mais de uma
+ * chance em vinte de acabar com o jogo e ainda se chamar fácil.
+ *
+ * ATÉ ONDE VAI: a medição cobre o 2º ao 5º nível, que é a campanha. Fora
+ * dessa faixa a tabela é lida pela ponta mais próxima, e aí ela é conservadora.
+ * Mexer em bloco de estatística, no mapa da estrada ou na IA desatualiza estes
+ * números: para refazer, `dev/estrada-virada.mjs`.
  */
-export function perigoDoBando(xpDoBando, herois) {
+export const VIRADA = {
+  stirge: { 2: [10, 12], 3: [12, 12], 4: [12, 12], 5: [12, 12] },
+  ghoul: { 2: [3, 4], 3: [4, 6], 4: [6, 7], 5: [10, 10] },
+  ogro: { 2: [1, 1], 3: [1, 2], 4: [2, 3], 5: [3, 3] },
+  goblin: { 2: [8, 9], 3: [9, 11], 4: [11, 12], 5: [12, 12] },
+  hobgoblin: { 2: [4, 4], 3: [4, 7], 4: [7, 8], 5: [12, 12] },
+  orc: { 2: [3, 4], 3: [4, 6], 4: [6, 7], 5: [9, 11] },
+  lobo: { 2: [4, 6], 3: [6, 8], 4: [8, 9], 5: [12, 12] },
+  corujaUrso: { 2: [1, 1], 3: [1, 1], 4: [1, 2], 5: [3, 3] },
+};
+
+const NIVEL_MEDIDO_MIN = 2;
+const NIVEL_MEDIDO_MAX = 5;
+
+/** A virada medida desta espécie para um grupo deste nível, ou null. */
+function viradaDe(id, nivel) {
+  const porNivel = VIRADA[id];
+  if (!porNivel) return null;
+  return porNivel[Math.min(Math.max(nivel, NIVEL_MEDIDO_MIN), NIVEL_MEDIDO_MAX)] ?? null;
+}
+
+/**
+ * Quanto o bando pesa para ESTE grupo: 'facil', 'dificil' ou 'mortal'.
+ *
+ * Com a espécie e a quantidade em mão (`id`, `qtd`), responde pela medição
+ * (`VIRADA`), que é o caminho que o jogo usa. Sem elas sobra o XP por cabeça
+ * contra o degrau do nível, que é grosseiro — não distingue lobo de goblin — e
+ * fica só de valor de segurança para quem chamar a função sem dizer o quê.
+ */
+export function perigoDoBando(xpDoBando, herois, { id = null, qtd = 0 } = {}) {
   const vivos = (herois ?? []).filter((c) => !c.dead);
   if (!vivos.length || !xpDoBando) return 'facil';
   const nivel = Math.max(1, Math.round(vivos.reduce((n, c) => n + (c.level ?? 1), 0) / vivos.length));
+  const virada = qtd > 0 ? viradaDe(id, nivel) : null;
+  if (virada) {
+    // A medição foi com QUATRO heróis. Com menos gente o mesmo bando pesa
+    // mais, e com mais gente pesa menos: a quantidade entra na tabela como se
+    // o grupo fosse de quatro.
+    const comoSeFossemQuatro = qtd * (4 / vivos.length);
+    if (comoSeFossemQuatro <= virada[0]) return 'facil';
+    if (comoSeFossemQuatro <= virada[1]) return 'dificil';
+    return 'mortal';
+  }
   const degrau = (XP_POR_NIVEL[nivel + 1] ?? XP_POR_NIVEL[XP_POR_NIVEL.length - 1]) - (XP_POR_NIVEL[nivel] ?? 0);
   if (degrau <= 0) return 'facil';
   const fracao = (xpDoBando / vivos.length) / degrau;
@@ -141,8 +197,8 @@ export const XP_POR_PERIGO = { facil: 0.5, dificil: 0.75, mortal: 1 };
  * O XP de resolver o encontro na conversa. Sem o grupo, metade — é o que a
  * camada anterior fazia, e serve de valor de segurança.
  */
-export function xpDeConversa(xpDoBando, herois = null) {
-  const fatia = herois ? XP_POR_PERIGO[perigoDoBando(xpDoBando, herois)] : 0.5;
+export function xpDeConversa(xpDoBando, herois = null, { id = null, qtd = 0 } = {}) {
+  const fatia = herois ? XP_POR_PERIGO[perigoDoBando(xpDoBando, herois, { id, qtd })] : 0.5;
   return Math.floor((xpDoBando ?? 0) * fatia);
 }
 
@@ -160,9 +216,10 @@ export function xpDeConversa(xpDoBando, herois = null) {
  *
  * Devolve { qtd, cresceu }.
  */
-export function escalarBando(qtd, xpDeUm, herois, { teto = 12 } = {}) {
+export function escalarBando(qtd, xpDeUm, herois, { teto = 12, id = null } = {}) {
   // Sem XP não há como medir: o bando fica como a tabela mandou.
   if (!(xpDeUm > 0)) return { qtd, cresceu: 0 };
+  const perigo = (n) => perigoDoBando(n * xpDeUm, herois, { id, qtd: n });
   // O teto é RELATIVO ao que o dado tirou, além do teto da cena. Sem isso
   // toda rolagem da tabela virava o mesmo número — 4 goblins e 9 goblins
   // acabavam ambos em 11 — e o crescimento passava por cima de bandos que já
@@ -174,11 +231,14 @@ export function escalarBando(qtd, xpDeUm, herois, { teto = 12 } = {}) {
   // urso-coruja sozinho (700 de XP) é fácil no 4º nível, e o segundo leva o
   // bando a 2.100 ajustados — mortal, com 61% de vitória de noite e 27% de
   // morte de herói. Um encontro de estrada é imprevisto, não emboscada.
-  while (n < limite && perigoDoBando(n * xpDeUm, herois) === 'facil') {
-    const depois = perigoDoBando((n + 1) * xpDeUm, herois);
-    if (depois === 'dificil' || depois === 'mortal') break;
-    n += 1;
-  }
+  while (n < limite && perigo(n) === 'facil' && perigo(n + 1) === 'facil') n += 1;
+  // E ENCOLHE quando o próprio dado já entregou um bando mortal. A tabela foi
+  // escrita para os primeiros níveis, mas o d12 pode tirar o máximo dela num
+  // grupo de 2º nível: três carniçais ali são 39% de derrota medida, e a
+  // função antes só sabia crescer, então os entregava intactos. Encolher não é
+  // tirar o perigo do jogo — difícil continua difícil —, é não acabar com a
+  // campanha num encontro que ninguém escolheu ter.
+  while (n > 1 && perigo(n) === 'mortal') n -= 1;
   return { qtd: n, cresceu: n - qtd };
 }
 

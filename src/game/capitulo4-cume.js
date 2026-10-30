@@ -27,7 +27,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { distanceFt, Battlefield } from '../core/grid.js';
 import { podeVer } from '../rules/luz.js';
 import { makeMonster } from '../rules/monsters.js';
@@ -36,6 +36,7 @@ import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { prepararLevas } from './levas.js';
 import { CUME } from './cume.js';
 import { guardar } from './comercio.js';
+import { gastarHoras } from './relogio.js';
 
 const MOVIMENTO = 60;
 const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
@@ -85,7 +86,7 @@ export function criarCume(app, config) {
 
   /** Teste de grupo (SRD): o valor da metade de cima dos rolamentos. */
   function testeDeGrupo() {
-    const r = herois().map((h) => d20(enc.rng, skillBonus(h, 'furtividade')).total).sort((a, b) => b - a);
+    const r = herois().map((h) => rolarPericia(enc.rng, h, 'furtividade').total).sort((a, b) => b - a);
     return r[Math.max(0, Math.ceil(r.length / 2) - 1)] ?? 10;
   }
 
@@ -329,12 +330,13 @@ export function criarCume(app, config) {
     const pericia = skillBonus(lider, 'sobrevivencia') > skillBonus(lider, 'percepcao') ? 'sobrevivencia' : 'percepcao';
     let horas = 0;
     let r;
-    do { horas += 1; r = d20(enc.rng, skillBonus(lider, pericia)); } while (r.total < 15 && horas < 8);
+    do { horas += 1; r = rolarPericia(enc.rng, lider, pericia); } while (r.total < 15 && horas < 8);
     salvo.achado = true;
-    if (vila.tempo != null) {
-      vila.tempo += horas;
-      while (vila.tempo >= 24) { vila.tempo -= 24; vila.dia = (vila.dia ?? 1) + 1; }
-    }
+    // O relógio da vila conta momentos do dia, não horas (`game/relogio.js`).
+    // Somar as horas direto no contador misturava duas escalas: oito horas de
+    // busca punham `tempo` em 8, e a vila ficava trancada em "noite" sem o dia
+    // nunca virar, porque a volta era em 24.
+    gastarHoras(vila, horas);
     await painel([
       'O cume não acaba: pedra rachada, ravina atrás de ravina, mato duro que arranha a canela. Daqui de cima se vê a Trilha Triboar inteira — e daqui de baixo não se vê nada.',
       `${lider.name} toma a frente (${SKILL_NAME[pericia]}). ${horas === 1 ? 'Não leva uma hora' : `Leva ${horas} horas, para cima e para baixo`} até achar o que procurava: uma pegada larga demais para ser de gente, e mais adiante, presa num espinho, uma tira de couro com um dente amarrado.`,

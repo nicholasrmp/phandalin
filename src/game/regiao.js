@@ -56,7 +56,7 @@ import {
   auguriumDaSaida,
 } from '../rules/encontros-estrada.js';
 import { makeMonster } from '../rules/monsters.js';
-import { passivePerception, skillBonus } from '../rules/abilities.js';
+import { passivePerception, skillBonus, rolarPericia } from '../rules/abilities.js';
 import { d20 } from '../core/dice.js';
 
 export { ENCONTROS, sortearEncontro };
@@ -122,16 +122,16 @@ export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0, montaria 
  */
 // Um dia de estrada, em poucas palavras. Sorteado, para a viagem não ser
 // sempre a mesma. `agua` diz se houve riacho, poço ou chuva de onde beber;
-// `calor` dobra a água do dia; `terreno` dá a CD de quem vai caçar e colher.
+// `calor` dobra a água do dia; `terreno` dá a CD de quem vai caçar e colher; `bioma` é o terreno do Explorador Natural.
 const PAISAGENS = [
-  { texto: 'Colinas baixas de capim amarelo, uma depois da outra. O vento não para.', terreno: 'comum' },
-  { texto: 'Uma garoa fina o dia inteiro. À tarde, o sol sai bem a tempo de secar as capas.', agua: true, terreno: 'comum' },
-  { texto: 'Rastros de carroça velhos na trilha, e um marco de pedra com um nome que ninguém consegue ler.', terreno: 'comum' },
-  { texto: 'Um bando de corvos acompanha o grupo por horas, de árvore em árvore.', terreno: 'comum' },
-  { texto: 'Ao longe, a mata escura de Neverwinter; mais perto, só pedra, urze e silêncio.', terreno: 'ermo' },
-  { texto: 'Um riacho raso, bom para encher os cantis. Alguém acha uma ponta de flecha antiga na margem.', agua: true, terreno: 'farto' },
-  { texto: 'Sol aberto e nenhuma sombra na trilha o dia inteiro. As bocas secam antes do meio-dia.', calor: true, terreno: 'ermo' },
-  { texto: 'A trilha corre junto de um brejo de água parada, cheio de juncos e mosquito.', agua: 'suja', terreno: 'farto' },
+  { texto: 'Colinas baixas de capim amarelo, uma depois da outra. O vento não para.', terreno: 'comum', bioma: 'planicie' },
+  { texto: 'Uma garoa fina o dia inteiro. À tarde, o sol sai bem a tempo de secar as capas.', agua: true, terreno: 'comum', bioma: 'planicie' },
+  { texto: 'Rastros de carroça velhos na trilha, e um marco de pedra com um nome que ninguém consegue ler.', terreno: 'comum', bioma: 'planicie' },
+  { texto: 'Um bando de corvos acompanha o grupo por horas, de árvore em árvore.', terreno: 'comum', bioma: 'floresta' },
+  { texto: 'Ao longe, a mata escura de Neverwinter; mais perto, só pedra, urze e silêncio.', terreno: 'ermo', bioma: 'montanha' },
+  { texto: 'Um riacho raso, bom para encher os cantis. Alguém acha uma ponta de flecha antiga na margem.', agua: true, terreno: 'farto', bioma: 'planicie' },
+  { texto: 'Sol aberto e nenhuma sombra na trilha o dia inteiro. As bocas secam antes do meio-dia.', calor: true, terreno: 'ermo', bioma: 'planicie' },
+  { texto: 'A trilha corre junto de um brejo de água parada, cheio de juncos e mosquito.', agua: 'suja', terreno: 'farto', bioma: 'pantano' },
 ];
 
 /**
@@ -276,6 +276,31 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     // junto: uma luta no meio do caminho não rebobina a estrada.
     const rng = dadoDaViagem(camp, via);
     while ((via.kmRestantes ?? 0) > 0 || via.periodo === 'chegou') {
+      // Grupo inteiro no chão: a viagem morre com ele. Sem isto o laço seguia
+      // armando acampamento e escolhendo vigia para ninguém, e chegava ao
+      // destino com `continuarCom: []`.
+      if (!vivos().length) { camp.viagem = null; tela.atualizar(); return; }
+      // O 5º degrau de exaustão é deslocamento 0: quem chegou nele não anda, e
+      // o grupo não deixa ninguém para trás. Acampa onde está e tenta tirar o
+      // degrau no descanso da noite. Se uma noite parada não resolver, a
+      // viagem é abortada — sem esse limite o laço pararia todos os dias para
+      // sempre, e sem a parada o jogo marchava com deslocamento 0.
+      const parados = via.periodo === 'dia' ? vivos().filter((c) => !podeMarchar(c)) : [];
+      if (parados.length) {
+        const nomes = parados.map((c) => c.name).join(', ');
+        const plural = parados.length > 1;
+        via.paradas = (via.paradas ?? 0) + 1;
+        if (via.paradas > 1) {
+          registrar(`${nomes} não se levanta${plural ? 'm' : ''} nem depois de uma noite parada. O grupo desiste da estrada e volta para ${LOCAL[via.de].nome}.`);
+          camp.viagem = null;
+          marcharEm(grupo, null);
+          tela.atualizar();
+          return;
+        }
+        registrar(`${nomes} não consegue${plural ? 'm' : ''} dar mais um passo: o grupo acampa onde está e não anda hoje.`);
+        via.terrenoDoDia ??= 'comum';
+        via.periodo = 'noite';
+      }
       if (via.periodo === 'dia') {
         const paisagem = rng.pick(PAISAGENS);
         // A noite acampa no terreno do dia.
@@ -286,6 +311,30 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome} (${Math.round(kmHoje)} km): ${paisagem.texto}`);
         for (const t of await oDiaDoGrupo(rng, paisagem)) registrar(t);
         via.kmRestantes = Math.max(0, (via.kmRestantes ?? via.porDia) - kmHoje);
+        // Andou: a conta de paradas zera. Senão uma parada no começo da viagem
+        // abortaria a próxima, dias depois, no primeiro degrau de exaustão.
+        via.paradas = 0;
+        // REGRA DA CASA: a sobra que a HORA PERDIDA criou não vira um dia.
+        //
+        // A hora de se esconder no mato devolve `porDia / 8` km, o que é
+        // honesto — quem para uma hora anda uma hora menos. Mas numa rota de
+        // ajuste exato isso criava um dia INTEIRO: Phandalin ao Poço é 72 km,
+        // dois dias de 36, sem folga para absorver os 4,5 km. O grupo pagava
+        // ração, água e mais uma noite de acampamento para andar quatro
+        // quilômetros e meio. Agora estica o passo no fim da tarde e chega.
+        //
+        // A regra olha `via.kmDeHora`, e não a sobra sozinha, de propósito: do
+        // contrário ela encurtaria viagens que ninguém atrapalhou. Cume ao
+        // Poço são 38 km e viravam um dia só, com uma noite de acampamento e
+        // um sorteio de encontro a menos — equilíbrio mexido de lambuja, que
+        // não é o que esta correção quer.
+        const umaHora = (via.porDia ?? 0) / 8;
+        const sobraDaHora = Math.min(umaHora, via.kmDeHora ?? 0);
+        if (via.kmRestantes > 0 && via.kmRestantes <= sobraDaHora) {
+          registrar(`Falta pouco: o grupo estica o passo no fim da tarde e vence os últimos ${Math.round(via.kmRestantes)} km.`);
+          via.kmRestantes = 0;
+          via.kmDeHora = 0;
+        }
         // Menos horas na estrada, menos chance de topar com alguma coisa: o
         // teste do dia só acontece na fração do dia que o grupo marchou. É o
         // que faz o passo acelerado valer a pena.
@@ -327,7 +376,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         // O livro pede "alguma comida e bebida": meia ração é alguma comida,
         // então meio dia sem comer (0,5) ainda deixa o descanso desfazer um
         // degrau. Um dia inteiro sem nada, não.
-        alimentado: (c) => (c.diasSemComida ?? 0) < 1 && !c.semAgua,
+        alimentado: (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true),
         descansou: (c) => !quebrou && descansou(c, campNoite),
         texto: [
           via.acampamento ? `${campNoite.lugar.texto}` : null,
@@ -373,12 +422,12 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       linhas.push('No passo acelerado ninguém para para caçar nem colher.');
     }
     if ((faltaComida || faltaAgua) && ritmo.forrageia) {
-      const quem = melhorForrageador(herois);
+      const quem = melhorForrageador(herois, { bioma: paisagem.bioma });
       if (quem) {
         // Localizar Animais ou Plantas aponta onde está a caça: vantagem no teste.
         // Localizar Animais ou Plantas vale no dia em que foi conjurada.
         const vantagem = (estadoDeUtilidade(camp).cacaNoDia ?? -1) === v.dia;
-        const f = forragear(rng, quem, { terreno: paisagem.terreno ?? 'comum', vantagem, grupo: herois });
+        const f = forragear(rng, quem, { terreno: paisagem.terreno ?? 'comum', vantagem, grupo: herois, bioma: paisagem.bioma });
         linhas.push(f.ok
           ? `${quem.name} caça e colhe pelo caminho (Sobrevivência ${f.teste} contra ${f.cd}${vantagem ? ', com vantagem' : ''}): ${f.racoes} ração(ões) e ${f.litros} litro(s) de água${f.perdidos ? `, e ${f.perdidos} litro(s) se perdem por falta de cantil` : ''}.`
           : `${quem.name} procura caça e raiz o dia todo e não acha nada (Sobrevivência ${f.teste} contra ${f.cd}${vantagem ? ', com vantagem' : ''}).`);
@@ -420,6 +469,63 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const depois = despensaDoGrupo(herois, { calor: paisagem.calor });
     linhas.push(`Despensa: ${depois.racoes} ração(ões) e ${depois.agua} litro(s) de água — ${depois.dias} dia(s) de comida.`);
     return linhas;
+  }
+
+  /**
+   * Acampar onde o grupo está, sem pegar a estrada: um dia e uma noite passam,
+   * o grupo caça, come, bebe e tira um descanso longo.
+   *
+   * Existe porque o mapa da região tinha um beco sem saída. Quem chega ao 5º
+   * degrau de exaustão tem deslocamento 0 e não pode partir (`podeMarchar`), e
+   * nos lugares SEM tabuleiro — Conyberry é o único — não havia onde descansar:
+   * a tela mandava "descansem, comam e bebam antes de pegar a estrada" e não
+   * dava como. Nos outros destinos dava para reentrar na cena e usar o menu.
+   *
+   * Não é descanso de graça: o dia cobra ração e água como qualquer outro, e
+   * sem comida o degrau não sai — o livro pede "alguma comida e bebida".
+   */
+  async function acamparAqui() {
+    // Na estrada quem manda é o laço da viagem, que já acampa toda noite.
+    if (camp.viagem) return;
+    const herois = vivos();
+    if (!herois.length) return;
+    const rng = dadoDaViagem(camp, (reg.dado ??= { de: 'acampar', para: reg.onde }));
+    tela.esconder();
+    const mant = estadoDeUtilidade(camp);
+    mant.dia = v.dia;
+    for (const e of limparMagicoVencido(mant, v.dia)) {
+      registrar(`O que ${e.nome} fez ontem estragou: ${[e.racoes && `${e.racoes} ração(ões)`, e.litros && `${e.litros} litro(s)`].filter(Boolean).join(' e ')} se perdem.`);
+    }
+
+    // No ermo, acampar inclui caçar e colher: é o que o grupo faz com o dia que
+    // não andou. Sem isso a despensa vazia continuaria sendo um beco sem saída.
+    const antes = despensaDoGrupo(herois);
+    if (antes.dias < 1 || antes.diasDeAgua < 1) {
+      const quem = melhorForrageador(herois);
+      if (quem) {
+        const f = forragear(rng, quem, { terreno: 'comum', grupo: herois });
+        registrar(f.ok
+          ? `${quem.name} caça e colhe em volta do acampamento (Sobrevivência ${f.teste} contra ${f.cd}): ${f.racoes} ração(ões) e ${f.litros} litro(s) de água.`
+          : `${quem.name} procura caça e raiz o dia todo e não acha nada (Sobrevivência ${f.teste} contra ${f.cd}).`);
+      }
+    }
+    for (const t of diaDeViagem(rng, herois, { fontes: despensaMagica(mant) })) registrar(t);
+    // A noite também é tempo: oito horas, e as magias de duração correm junto.
+    for (const t of avancarTempo(mant, 8 * 60, herois)) registrar(t);
+
+    const acamp = montarAcampamento({
+      lugar: 'aberto', fogueira: true, vigia: 'revezam', ...abrigoDoGrupo(), herois: naNoite(),
+    });
+    for (const t of await descansoLongoDoGrupo(app.root, {
+      herois, titulo: 'Acampar',
+      alimentado: (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true),
+      descansou: (c) => descansou(c, acamp),
+      texto: [`Um dia e uma noite em ${LOCAL[reg.onde].nome}, sem pegar a estrada.`],
+    })) registrar(t);
+    v.dia += 1;
+    v.tempo = 0;
+    tela.mostrar();
+    tela.atualizar();
   }
 
   /**
@@ -570,7 +676,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       // que vale é o pior dado de todos.
       const chegamAgora = e.qtd >= 6 ? Math.ceil(e.qtd / 2) : e.qtd;
       const furtividades = bandoN.slice(0, chegamAgora)
-        .map((f) => d20(rng, skillBonus(f, 'furtividade')).total);
+        .map((f) => rolarPericia(rng, f, 'furtividade').total);
       const vigia = oQueAVigiaPercebe(rng, camp3, furtividades);
       // A cena usa ESTA rolagem: rolar de novo lá daria duas noites diferentes.
       if (camp.viagem) camp.viagem.vigiaDaNoite = { ...vigia, furtividades };
@@ -581,7 +687,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       if (!vigia.gritouATempo || (!camp3.fogueira && !temCorda)) return 'luta';
 
       const atencaoN = atencaoDoBando(bandoN.map((m) => passivePerception(m)));
-      const chanceN = chanceDeEsconder(vivos(), atencaoN);
+      const chanceN = chanceDeEsconder(vivos(), atencaoN, { lento: true });
       tela?.esconder?.();
       const rN = await narrar(app.root, {
         formato: 'painel',
@@ -607,7 +713,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       }
       if (rN !== 'calar') return 'luta';
 
-      const furtivoN = furtividadeDoGrupo(rng, vivos(), bandoN, passivePerception, { atencao: atencaoN });
+      const furtivoN = furtividadeDoGrupo(rng, vivos(), bandoN, passivePerception, { atencao: atencaoN, lento: true });
       if (furtivoN.furtivo) {
         registrar(`O fogo é abafado e ninguém respira (Furtividade ${furtivoN.rolagem} contra ${atencaoN}): ${nomeDoBando(e)} passam a alguns passos e seguem. Nenhum XP, e o resto da noite é de olhos abertos.`);
         return null;
@@ -643,11 +749,14 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const falante = podeFalar ? melhorParaTeste(estadoDeUtilidade(camp), herois, 'persuasao', reacao.cd) : null;
     // A chance de verdade, não a faixa de bônus: ela conta a desvantagem da
     // armadura pesada, que a faixa escondia. O dado só rola DEPOIS da escolha.
-    const chanceDeSumir = chanceDeEsconder(herois, atencaoDeles, porDistancia);
+    const chanceDeSumir = chanceDeEsconder(herois, atencaoDeles, { ...porDistancia, lento: devagar });
     // O Augúrio de quem o conjurou vale para esta escolha (meia hora).
     const ativaAugurio = ativaDe(estadoDeUtilidade(camp), herois, 'augurio');
     const temAugurio = ativaAugurio ? herois.find((h) => h.id === ativaAugurio.por) : null;
-    const perigo = perigoDoBando(xpDoBando, herois);
+    // A espécie e a quantidade vão juntas: é por elas que o perigo é medido
+    // (`rules/encontros-estrada.js`, VIRADA), e não pelo XP sozinho.
+    const doBando = { id: e.id, qtd: e.qtd };
+    const perigo = perigoDoBando(xpDoBando, herois, doBando);
 
     // Nenhum botão em destaque: a medição mostrou que o destaque conduzia a
     // escolhas ruins (conversar num bando trivial, fugir de um ogro fácil).
@@ -667,7 +776,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
           + `${porDistancia.vantagem ? (terreno === 'farto' ? ' O mato fechado ajuda: com vantagem.' : ' Estão longe: com vantagem.') : porDistancia.desvantagem ? ' Estão em cima: com desvantagem.' : ''}`
           + ' Nenhum XP, uma hora perdida, e falhando o grupo é notado fora de posição: a iniciativa sai com desvantagem.',
         podeFalar
-          ? `${falante.quem.name} tentaria conversa: Persuasão contra CD ${reacao.cd}, ${Math.round(falante.p.chance * 100)}% de chance. Rende ${xpDeConversa(xpDoBando, herois)} XP dos ${xpDoBando} do bando — ${perigoDoBando(xpDoBando, herois) === 'mortal' ? 'tudo, porque essa luta podia acabar mal' : perigoDoBando(xpDoBando, herois) === 'dificil' ? 'três quartos, porque a luta seria dura' : 'metade, porque a luta seria fácil'}.`
+          ? `${falante.quem.name} tentaria conversa: Persuasão contra CD ${reacao.cd}, ${Math.round(falante.p.chance * 100)}% de chance. Rende ${xpDeConversa(xpDoBando, herois, doBando)} XP dos ${xpDoBando} do bando — ${perigo === 'mortal' ? 'tudo, porque essa luta podia acabar mal' : perigo === 'dificil' ? 'três quartos, porque a luta seria dura' : 'metade, porque a luta seria fácil'}.`
           : 'Com esses não há conversa: nenhum deles tem o que ganhar em parar para falar.',
         devagar
           ? 'O grupo vem devagar e escondido: encarar pode começar com a emboscada sendo dele.'
@@ -684,12 +793,19 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     tela?.mostrar?.();
 
     if (r === 'evitar') {
-      const furtivo = furtividadeDoGrupo(rng, herois, bando, passivePerception, { ...porDistancia, atencao: atencaoDeles });
+      const furtivo = furtividadeDoGrupo(rng, herois, bando, passivePerception, { ...porDistancia, atencao: atencaoDeles, lento: devagar });
       if (furtivo.furtivo) {
         // A hora no mato é uma hora a menos de estrada: o dia tem oito. Chegando
         // já não atrasa nada, e o registro não finge que atrasou.
         const aindaHaEstrada = (camp.viagem?.kmRestantes ?? 0) > 0;
-        if (aindaHaEstrada) camp.viagem.kmRestantes += (camp.viagem.porDia ?? 0) / 8;
+        if (aindaHaEstrada) {
+          const umaHora = (camp.viagem.porDia ?? 0) / 8;
+          camp.viagem.kmRestantes += umaHora;
+          // Quanto da estrada que falta é culpa de hora perdida no mato. O
+          // laço do dia usa isto para não transformar essa sobra num dia
+          // inteiro de viagem (`seguirViagem`).
+          camp.viagem.kmDeHora = (camp.viagem.kmDeHora ?? 0) + umaHora;
+        }
         registrar(`O grupo sai da trilha e deixa ${nomeDoBando(e)} passar (Furtividade ${furtivo.rolagem} contra ${atencaoDeles}). Nenhum XP`
           + `${aindaHaEstrada ? `, e uma hora perdida no mato — ${Math.round((camp.viagem.porDia ?? 0) / 8)} km que ficam para o dia seguinte.` : ': o destino já está logo ali.'}`);
         for (const t of avancarTempo(estadoDeUtilidade(camp), 60, herois)) registrar(t);
@@ -702,7 +818,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (r === 'falar') {
       const t = rolarTeste(estadoDeUtilidade(camp), herois, rng, falante.quem, 'persuasao', reacao.cd);
       if (t.passou) {
-        const xp = xpDeConversa(xpDoBando, herois);
+        const xp = xpDeConversa(xpDoBando, herois, doBando);
         registrar(`${falante.quem.name} conversa e ${nomeDoBando(e)} seguem caminho (Persuasão ${t.total} contra ${reacao.cd}).`);
         await pagarXp(xp, `Conversa na Trilha Triboar (${e.nome})`);
         for (const t2 of avancarTempo(estadoDeUtilidade(camp), 10, herois)) registrar(t2);
@@ -734,14 +850,21 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
   }
 
   async function encontro(e) {
-    // A tabela da aventura foi escrita para os primeiros níveis: o bando
-    // cresce até deixar de ser fácil para quem está na trilha hoje
-    // (`rules/encontros-estrada.js`). A espécie nunca muda, só o número.
+    // A tabela da aventura foi escrita para os primeiros níveis: o bando se
+    // ajusta ao que o grupo de hoje aguenta, medido em
+    // `rules/encontros-estrada.js`. A espécie nunca muda, só o número — para
+    // mais quando a linha virou passeio, para menos quando o d12 tirou o
+    // máximo dela num grupo novo.
     const umDeles = makeMonster(e.id, { x: 0, y: 0 });
-    const escala = escalarBando(e.qtd, umDeles.xp ?? 0, vivos());
+    const escala = escalarBando(e.qtd, umDeles.xp ?? 0, vivos(), { id: e.id });
     if (escala.cresceu) e.qtd = escala.qtd;
     const quando = e.periodo === 'dia' ? 'Na trilha' : 'No acampamento, à noite';
-    registrar(`${quando}: ${nomeDoBando(e)}${escala.cresceu ? ` (${escala.cresceu} a mais do que a tabela pede: o grupo já não é o que era)` : ''}.`);
+    const nota = escala.cresceu > 0
+      ? ` (${escala.cresceu} a mais do que a tabela pede: o grupo já não é o que era)`
+      : escala.cresceu < 0
+        ? ` (${-escala.cresceu} a menos do que a tabela pede: tantos acabariam com o grupo de hoje)`
+        : '';
+    registrar(`${quando}: ${nomeDoBando(e)}${nota}.`);
     const rng = dadoDaViagem(camp, camp.viagem ?? {});
     const saida = await saidaDoEncontro(rng, e);
     // Sem luta: a viagem segue de onde parou.
@@ -784,6 +907,9 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       const marcha = camp.viagem ? ` · ${ritmoDe(camp.viagem.ritmo).nome.toLowerCase()}${camp.viagem.horasExtras ? ', forçando' : ''}` : '';
       return `Dia ${v.dia} · em ${LOCAL[reg.onde].nome}${marcha} · ${d.racoes} ração(ões), ${d.agua} L`;
     },
+    // Sempre há como descansar: era a peça que faltava para a exaustão não
+    // trancar o jogo num lugar sem tabuleiro (`acamparAqui`).
+    botoes: [{ rotulo: 'Acampar', dica: 'Passar o dia e a noite aqui: caçar, comer, beber e um descanso longo', fazer: () => acamparAqui() }],
     dinheiro: () => totalEmCobre(vivos()),
     visivel: conhecido,
     aberto: (l) => Boolean(l.jogavel),

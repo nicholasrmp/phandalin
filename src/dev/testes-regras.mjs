@@ -1161,7 +1161,10 @@ const BASE = () => ({
 
 teste('a party pronta continua com os mesmos números no 2º nível', () => {
   const [d, p, b, i] = makeParty();
-  assert.deepEqual([d.maxHp, p.maxHp, b.maxHp, i.maxHp], [20, 17, 17, 14]);
+  // Brenn é anão da colina: Robustez Anã soma +1 PV por nível (19 no 2º, e não os 17 de antes). O número antigo
+  // fixava um defeito — o anão da party nunca teve o traço —, e este teste existe para as MUDANÇAS DE NÚMERO serem
+  // decididas, não acidentais: esta foi decidida.
+  assert.deepEqual([d.maxHp, p.maxHp, b.maxHp, i.maxHp], [20, 17, 19, 14]);
   assert.deepEqual([d.ac, p.ac, b.ac, i.ac], [19, 15, 16, 12]);
 });
 
@@ -6025,6 +6028,9 @@ teste('drow do Manual: dois golpes de espada curta e Fogo das Fadas em grupo', (
   const d = foes[0];
   assert.equal(enc.golpesDoAtaque(d, 'Espada curta').length, 2, 'Ataques Múltiplos');
   assert.equal(d.senses.darkvisionFt, 120);
+  // A concentração só se mantém se ALGUÉM falha na resistência de DES. Com o dado solto, isso dependia da sorte da
+  // semente (17 de 40 passavam) e quebrou quando a Sorte do halfling passou a gastar um dado; dado em 2, todos falham.
+  enc.rng = dadoFixo(2);
   takeMonsterTurn(enc, d);
   assert.equal(d.spellcasting.slots[1], 2, 'gastou um uso do Fogo das Fadas');
   assert.ok(d.concentrating, 'mantém a concentração');
@@ -6137,7 +6143,10 @@ teste('Sopro Venenoso: o cone de 9 m acontece, cobra CON CD 14 e recarrega 5-6',
   enc.rng = preso(1);
   assert.ok(enc.sopro(dragao, { x: 11, y: 5 }), 'o dragão sopra');
   for (let i = 0; i < 3; i++) {
-    assert.equal(party[i].hp, cheios[i] - 12, `${party[i].name} levou o dano cheio`);
+    // O Brenn é anão: Resiliência Anã dá resistência a veneno, e o sopro do dragão verde é veneno — ele leva a METADE.
+    // Antes da correção do campo `resist`, a resistência racial dos heróis nunca valia, e este teste fixava o dano cheio nele.
+    const esperado = party[i].resist?.includes('veneno') ? 6 : 12;
+    assert.equal(party[i].hp, cheios[i] - esperado, `${party[i].name} levou ${esperado}`);
   }
   // Gasta a ação e trava a recarga.
   assert.ok(dragao.actionUsed);
@@ -6325,6 +6334,10 @@ teste('a vigia vale a MEDIA de quem se reveza, mais o lugar e a fogueira', () =>
 
 teste('deixar os dois melhores de vigia enxerga MAIS que revezar entre todos', () => {
   const { party } = montar();
+  // O Ilvan é elfo: Sentidos Aguçados lhe dá Percepção treinada, e com isso os quatro empatam em 13 de passiva —
+  // e com todos iguais escolher quem vigia não muda nada. Para o teste medir a ESCOLHA, um deles tem de ser pior.
+  party[ILVAN].abilities.wis = 6;
+  party[ILVAN].skills = party[ILVAN].skills.filter((s) => s !== 'percepcao');
   const revezam = montarAcampamento({ lugar: 'aberto', fogueira: false, vigia: 'revezam', herois: party });
   const dois = montarAcampamento({ lugar: 'aberto', fogueira: false, vigia: 'dois', herois: party });
   assert.ok(atencaoDaVigia(dois) > atencaoDaVigia(revezam),
@@ -6731,7 +6744,8 @@ teste('a chance que a tela mostra conta a armadura pesada', () => {
   const soDara = chanceDeEsconder([dara], cd);
   const soPip = chanceDeEsconder([pip], cd);
   const bruto = (c) => Math.max(0, Math.min(1, (21 - (cd + 1 - skillBonus(c, 'furtividade'))) / 20));
-  assert.ok(Math.abs(soPip - bruto(pip)) < 1e-9, 'Pip rola um dado so');
+  // Pip rola UM dado (sem desvantagem), mas é halfling: a Sorte rola de novo o 1 natural, o que soma p/20 à chance.
+  assert.ok(Math.abs(soPip - bruto(pip) * (1 + 1 / 20)) < 1e-9, 'Pip rola um dado so, e a Sorte rola o 1 de novo');
   assert.ok(Math.abs(soDara - bruto(dara) ** 2) < 1e-9, 'Dara rola com desvantagem');
   assert.ok(soDara < bruto(dara), 'e por isso a chance dela e menor que o bonus sugere');
   // A vantagem da distancia desfaz a desvantagem, como manda o livro.

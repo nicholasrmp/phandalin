@@ -1,6 +1,8 @@
 // SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
 // Atributos, modificadores, perícias e proficiência.
 
+import { d20 } from '../core/dice.js';
+
 export const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
 export const ABILITY_NAME = {
@@ -32,8 +34,29 @@ export const SKILL_NAME = {
   religiao: 'Religião', sobrevivencia: 'Sobrevivência',
 };
 
-/** Bônus de um teste de perícia. */
-export function skillBonus(actor, skill) {
+/**
+ * Metade da proficiência em teste de atributo SEM proficiência: Pau pra Toda Obra do bardo (metade, para baixo, em
+ * qualquer teste) e Atleta Notável do Campeão (metade, para CIMA, em teste de FOR, DES ou CON). Quem tem os dois
+ * fica com o maior; nenhum soma com o outro.
+ */
+export function meiaProficiencia(actor, ability) {
+  const f = actor.features;
+  if (!f?.length) return 0;
+  const prof = proficiencyBonus(actor.level);
+  let meia = 0;
+  if (f.includes('jackOfAllTrades')) meia = Math.floor(prof / 2);
+  if (f.includes('remarkableAthlete') && ['str', 'dex', 'con'].includes(ability)) meia = Math.max(meia, Math.ceil(prof / 2));
+  return meia;
+}
+
+/**
+ * Bônus de um teste de perícia.
+ *
+ * `contexto` diz SOBRE O QUÊ é o teste, para os traços que só valem num assunto: Tino para Pedras do anão (`'pedra'`) e
+ * Saber do Artífice do gnomo das rochas (`'itemMagico'`) tratam o teste de História como treinado e somam o DOBRO da
+ * proficiência. Sem contexto, não valem.
+ */
+export function skillBonus(actor, skill, { contexto = null, bioma = null } = {}) {
   const ability = SKILLS[skill];
   const base = abilityMod(actor.abilities[ability]);
   const prof = proficiencyBonus(actor.level);
@@ -43,9 +66,64 @@ export function skillBonus(actor, skill) {
   // por isso mora aqui — é por este ponto que passam a iniciativa, a
   // Furtividade, a Sobrevivência, os testes dos capítulos e as previsões.
   const volta = -(penalidadeDeQuemVoltou(actor));
+  const f = actor.features;
+  if (skill === 'historia' && f?.length
+    && ((contexto === 'pedra' && f.includes('stonecunning')) || (contexto === 'itemMagico' && f.includes('artificersLore')))) {
+    return base + prof * 2 + rastro + volta;
+  }
   if (actor.expertise?.includes(skill)) return base + prof * 2 + rastro + volta;
+  // EXPLORADOR NATURAL (patrulheiro): num terreno favorito, o teste de INT ou SAB em que é treinado soma o DOBRO da proficiência.
+  if (bioma && f?.includes('naturalExplorer') && actor.terrenosFavoritos?.includes(bioma) && ['int', 'wis'].includes(ability) && actor.skills?.includes(skill)) {
+    return base + prof * 2 + rastro + volta;
+  }
   if (actor.skills?.includes(skill)) return base + prof + rastro + volta;
-  return base + rastro + volta;
+  return base + meiaProficiencia(actor, ability) + rastro + volta;
+}
+
+/** O personagem soma a proficiência a esta perícia? (treinado ou com especialização) */
+export const treinadoEm = (actor, skill) => Boolean(actor.skills?.includes(skill) || actor.expertise?.includes(skill));
+
+/**
+ * As passivas que mexem no DADO ou no TOTAL de um teste de atributo, depois da rolagem:
+ *   Sorte (halfling)         um 1 natural é rolado de novo, e vale o novo;
+ *   Talento Confiável (ladino, 11º)  num teste COM proficiência, d20 de 9 ou menos conta como 10;
+ *   Poder Indomável (bárbaro, 18º)   teste de FOR abaixo do valor de Força vale o valor de Força.
+ * Devolve a rolagem nova; `passivas` lista o que agiu (vazio = nada mudou).
+ */
+export function ajustarTeste(rng, actor, r, bonus, { ability, treinada = false } = {}) {
+  const f = actor.features;
+  if (!f?.length) return r;
+  let out = r;
+  const passivas = [];
+  if (out.natural === 1 && f.includes('lucky')) {
+    const novo = rng.die(20);
+    out = { ...out, natural: novo, total: novo + bonus, rolls: [...out.rolls, novo] };
+    passivas.push('Sorte');
+  }
+  if (treinada && f.includes('reliableTalent') && out.natural < 10) {
+    out = { ...out, natural: 10, total: 10 + bonus };
+    passivas.push('Talento Confiável');
+  }
+  if (ability === 'str' && f.includes('indomitableMight') && out.total < (actor.abilities?.str ?? 0)) {
+    out = { ...out, total: actor.abilities.str };
+    passivas.push('Poder Indomável');
+  }
+  return passivas.length ? { ...out, passivas } : out;
+}
+
+/**
+ * Rola um teste de perícia com tudo que a ficha tem: o bônus (`skillBonus`, com `contexto`) e as passivas do dado
+ * (`ajustarTeste`). É o que os capítulos chamam no lugar de `d20(rng, skillBonus(...))`, para que Sorte, Talento Confiável
+ * e Poder Indomável valham também fora do combate. Devolve o mesmo formato do `d20`.
+ */
+export function rolarPericia(rng, actor, skill, opts = {}) {
+  const { contexto = null, bonusExtra = 0, bioma = null, inimigo = null, ...d20opts } = opts;
+  const bonus = skillBonus(actor, skill, { contexto, bioma }) + bonusExtra;
+  // INIMIGO FAVORITO (patrulheiro): vantagem em Sobrevivência para rastrear e em testes de INT para lembrar do que se sabe dele.
+  if (inimigo && actor.features?.includes('favoredEnemy') && actor.inimigosFavoritos?.includes(inimigo)
+    && (skill === 'sobrevivencia' || SKILLS[skill] === 'int')) d20opts.advantage = true;
+  const r = d20(rng, bonus, d20opts);
+  return ajustarTeste(rng, actor, r, bonus, { ability: SKILLS[skill], treinada: treinadoEm(actor, skill) });
 }
 
 /**
@@ -56,10 +134,20 @@ export function penalidadeDeQuemVoltou(actor) {
   return actor?.conditions?.find((c) => c.id === 'revivido')?.data?.penalidade ?? 0;
 }
 
+/**
+ * O personagem soma a proficiência a esta resistência? Pela classe (`saves`), pela ALMA DE DIAMANTE (monge, 14º: em TODAS)
+ * ou pela MENTE ESCORREGADIA (ladino, 15º: em Sabedoria).
+ */
+export function temProficienciaNaResistencia(actor, ability) {
+  if (actor.saves?.includes(ability)) return true;
+  const f = actor.features;
+  return Boolean(f?.includes('diamondSoul') || (ability === 'wis' && f?.includes('slipperyMind')));
+}
+
 /** Bônus de um teste de resistência. */
 export function saveBonus(actor, ability) {
   const base = abilityMod(actor.abilities[ability]);
-  return actor.saves?.includes(ability) ? base + proficiencyBonus(actor.level) : base;
+  return temProficienciaNaResistencia(actor, ability) ? base + proficiencyBonus(actor.level) : base;
 }
 
 /** Percepção passiva = 10 + bônus de Percepção. */

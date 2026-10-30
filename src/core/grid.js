@@ -437,17 +437,21 @@ export class Battlefield {
     // Graxa ou um Crescimento de Plantas lançado sobre a água continua
     // cobrando, e é por isso que isto entra na conta do `dificil` em vez de
     // sair antes.
+    // PASSO DA TERRA (druida da Terra 6º, patrulheiro 8º): o terreno difícil NÃO MÁGICO do mapa não custa a mais. O que uma magia
+    // criou (Graxa, Crescimento de Plantas) e o espaço de outra criatura continuam cobrando.
     const naAgua = this.sobreAgua && this.aguas.has(key(x, y));
     // Terreno difícil: o do mapa (2) ou o que uma magia criou (Graxa).
     // Liberdade de Movimento tira TODO terreno difícil, do mapa e de magia —
     // é o que a magia promete, ao contrário do Andar na Água, que é só da água.
-    const dificil = !this.semTerrenoDificil && (espacoDeOutro || (this.tileAt(x, y) === 2 && !naAgua)
+    const dificil = !this.semTerrenoDificil && (espacoDeOutro || (this.tileAt(x, y) === 2 && !naAgua && !this.passoDaTerra)
       || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y)));
     // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
     const cerrado = this.dificeis4?.has(key(x, y)) && !this.semTerrenoDificil;
     let cost = cerrado ? FEET_PER_SQUARE * 4 : dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
     // Patas de Aranha: sobe sem o custo da escalada, mas pisa em terreno difícil.
-    if (fromX !== null && !this.escalando) {
+    // TRABALHO DE ANDAR DE CIMA (ladrão): escalar não custa deslocamento a mais (mas, ao contrário das Patas de Aranha, não
+    // dispensa o degrau: o que é alto demais continua alto demais).
+    if (fromX !== null && !this.escalando && !this.escalaSemCusto) {
       const climb = this.heightAt(x, y) - this.heightAt(fromX, fromY);
       if (climb > 0) cost += climb * FEET_PER_SQUARE;
     }

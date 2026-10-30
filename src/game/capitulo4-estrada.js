@@ -22,7 +22,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception } from '../rules/abilities.js';
+import { skillBonus, passivePerception, rolarPericia } from '../rules/abilities.js';
 import { ritmoDe, furtividadeDoGrupo } from '../rules/marcha.js';
 import { montarAcampamento, oQueAVigiaPercebe } from '../rules/acampamento.js';
 import { makeMonster } from '../rules/monsters.js';
@@ -222,7 +222,7 @@ export function criarEstrada(app, config) {
         aviso: noite ? 'Mais deles saem do escuro, do outro lado da fogueira!' : 'Mais deles sobem a trilha, correndo para alcançar os outros!' }]);
 
       const primeiros = inimigos.slice(0, primeira);
-      const furtividadeDeles = () => primeiros.map((f) => d20(enc.rng, skillBonus(f, 'furtividade')).total);
+      const furtividadeDeles = () => primeiros.map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
 
       if (noite) {
         // À NOITE o grupo está parado no acampamento: ritmo nenhum vale, e o

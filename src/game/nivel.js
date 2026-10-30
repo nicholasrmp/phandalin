@@ -90,8 +90,19 @@ export function subirUmNivel(c) {
     const lista = listaDaClasse(c.classe, maior).magias.filter(magiaTemRegra);
     const mod = abilityMod(c.abilities[conj.atributo]);
     if (conj.prepara === 'conhecidas') {
-      const quantas = (conj.conhecidas?.[c.level] ?? 0) - conhecidasAntes;
+      const total = (conj.conhecidas?.[c.level] ?? 0) - conhecidasAntes;
+      // SEGREDOS MÁGICOS (bardo 10º, 14º, 18º; Colégio do Conhecimento 6º): duas das magias aprendidas vêm de QUALQUER lista de
+      // classe. Elas contam entre as que a tabela já dá, então saem do total das da própria lista.
+      const segredos = novas.filter((f) => f === 'magicalSecrets' || f === 'additionalMagicalSecrets').length * 2;
+      const quantas = Math.max(0, total - segredos);
       const opcoes = ordenar(lista.filter((s) => !(sc.prepared ?? []).includes(s)));
+      if (segredos > 0) {
+        const todas = new Set();
+        for (const k of Object.keys(CLASSES)) for (const s of listaDaClasse(k, maior).magias.filter(magiaTemRegra)) todas.add(s);
+        const abertas = ordenar([...todas].filter((s) => !(sc.prepared ?? []).includes(s) && (getSpell(s)?.level ?? 9) <= maior));
+        const n = Math.min(segredos, abertas.length);
+        if (n > 0) escolhas.push({ id: 'segredos', rotulo: `Segredos Mágicos: ${n} magia${n > 1 ? 's' : ''} de qualquer lista`, quantas: n, opcoes: abertas, sugeridas: abertas.slice(0, n) });
+      }
       if (quantas > 0 && opcoes.length) {
         escolhas.push({ id: 'aprende', rotulo: `Aprende ${quantas} magia${quantas > 1 ? 's' : ''}`, quantas, opcoes, sugeridas: opcoes.slice(0, quantas) });
       }
@@ -118,7 +129,7 @@ export function subirUmNivel(c) {
     if (!sc) return;
     for (const e of escolhas) {
       let ids = (escolhidas[e.id] ?? e.sugeridas).slice(0, e.quantas);
-      if (e.id === 'aprende') sc.prepared = [...new Set([...(sc.prepared ?? []), ...ids])];
+      if (e.id === 'aprende' || e.id === 'segredos') sc.prepared = [...new Set([...(sc.prepared ?? []), ...ids])];
       if (e.id === 'livro') sc.livro = [...new Set([...sc.livro, ...ids])];
       if (e.id === 'prepara') {
         if (e.deLivro) {

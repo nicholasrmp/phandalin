@@ -24,7 +24,7 @@ import { narrar } from '../view/narrativa.js';
 import { abrirTelaVila } from '../view/vila.js';
 import { conversar } from './dialogo.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, SKILL_NAME } from '../rules/abilities.js';
+import { skillBonus, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { descansoLongoDoGrupo } from '../view/descanso-tela.js';
@@ -32,13 +32,12 @@ import { NPCS } from '../rules/npcs.js';
 import { totalEmCobre, guardar, cobrar, pagarCada, repartir, LOJAS } from './comercio.js';
 import { abrirLoja } from '../view/loja.js';
 import { garantirInventario } from '../rules/equipment.js';
+import { nomeDoMomento, deNoite } from './relogio.js';
 
 // ------------------------------------------------------------- o tempo ----
 // Seis momentos por dia; o grupo chega no quinto (fim de tarde). Cada visita
-// a um lugar gasta um. De noite, as lojas fecham.
-const MOMENTOS = ['manhã', 'manhã', 'tarde', 'tarde', 'fim de tarde', 'fim de tarde'];
-const nomeDoMomento = (t) => MOMENTOS[t] ?? 'noite';
-const deNoite = (t) => t >= MOMENTOS.length;
+// a um lugar gasta um. De noite, as lojas fecham. O relógio mora em
+// `game/relogio.js`, para o contador não voltar a ter duas unidades.
 
 // ------------------------------------------------------------ missões ----
 export const MISSOES = {
@@ -120,7 +119,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   const pista = (t) => { if (!v.pistas.includes(t)) v.pistas.push(t); };
   const teste = (pericia, cd) => {
     const quem = vivos().reduce((a, b) => (skillBonus(b, pericia) > skillBonus(a, pericia) ? b : a));
-    const r = d20(rng, skillBonus(quem, pericia));
+    const r = rolarPericia(rng, quem, pericia);
     return { quem: quem.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
   const falar = (npcId, arvore) => conversar(app, pessoa(npcId), arvore, fora);
@@ -445,8 +444,19 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             narra: 'Um nicho de pedra reaproveitada, com uma moeda de prata entalhada sobre o altar: o santuário de Tymora, a deusa da sorte. Velas, flores do campo, e uma elfa jovem varrendo o chão.',
             fala: 'Irmã Garaele. Que a sorte sorria para vocês — e os Marcarrubra que se danem.',
             opcoes: [
-              { texto: 'Dizem que a senhora voltou machucada de algum lugar.', vai: 'agatha', uma: true },
-              { texto: 'A banshee respondeu sobre o grimório.', vai: 'agathaFeita', uma: true,
+              // SEM `uma: true`: o motivo está em `game/dialogo.js`, que marca a
+              // opção como usada ao ESCOLHER, não ao aceitar. Como esta leva a
+              // um nó com "Vamos pensar" e a missão só nasce no `fim`, um `uma`
+              // aqui queimava a única porta da Agatha — e com ela o grimório, o
+              // pente e as poções — para a campanha inteira. A Halia faz a
+              // mesma oferta e escapa porque concede no `ao` do nó (linha 301).
+              // Aqui o aceite continua valendo algo, então o que esconde a
+              // opção é a missão existir, não o clique.
+              { texto: 'Dizem que a senhora voltou machucada de algum lugar.', vai: 'agatha',
+                requer: () => (v.missoes.agatha ? 'a missão já está de pé' : null), oculta: true },
+              // O `requer` abaixo já impede o repagamento (`garaelePagou` nasce
+              // no `ao` do nó), então o `uma` era redundância com o mesmo risco.
+              { texto: 'A banshee respondeu sobre o grimório.', vai: 'agathaFeita',
                 requer: () => (feitos.agathaGrimorio && !v.feito.garaelePagou ? null : 'nada'), oculta: true },
               { texto: 'Até mais.', fim: 'sai' },
             ],

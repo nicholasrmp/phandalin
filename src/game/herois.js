@@ -42,7 +42,9 @@ export const HEROIS = [
     abilities: { str: 17, dex: 13, con: 14, int: 8, wis: 12, cha: 11 },
     skills: ['atletismo', 'percepcao', 'lidarComAnimais', 'sobrevivencia'],
     speedFt: 30,
-    racial: { resistencias: ['fogo'], sopro: { tipo: 'fogo', forma: 'linha' } },
+    // O sopro e a resistência vêm da raça (`rules/racas.js`). Este bloco dizia `forma: 'linha'` para uma draconata
+    // VERMELHA, e o livro dá cone: o dragão vermelho sopra fogo em cone de 4,5 m. Nada lia o campo, então o erro não aparecia.
+    racial: { resistencias: ['fogo'] },
     antecedente: 'Heroína do povo',
     origem: 'Filha de estalajadeiros draconatos da beira da Estrada Alta, ao sul de Neverwinter.',
     historia: [

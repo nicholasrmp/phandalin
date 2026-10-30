@@ -28,6 +28,7 @@
 // A arte é nossa.
 
 import './ficha.css';
+import { CARACTERISTICAS, estadoDaCaracteristica } from '../rules/classes/caracteristicas.js';
 import { maxHpEfetivo } from '../rules/conditions.js';
 
 import { makeFigure, makePortrait } from '../art/sheet.js';
@@ -75,6 +76,9 @@ const SIGLA_ATRIBUTO = { str: 'FOR', dex: 'DES', con: 'CON', int: 'INT', wis: 'S
 // enigma: "Esculpir Magias" não diz a ninguém que o cone pode pegar o aliado.
 // Os números seguem o que `rules/combat.js` realmente executa — texto de ficha
 // que promete o que o motor não faz é pior que texto nenhum.
+// As que são só contabilidade do nível e não dizem nada ao jogador.
+const ESCONDIDAS_NA_FICHA = new Set(['asi', 'abilityScoreImprovement', 'spellcasting', 'pactMagic']);
+
 const TALENTOS = {
   defenseStyle: ['Estilo de Luta: Defesa', '+1 de CA enquanto estiver de armadura.'],
   secondWind: ['Retomar o Fôlego', 'Ação bônus: recupera 1d10 + nível de pontos de vida. Uma carga por descanso.'],
@@ -371,9 +375,16 @@ export function criarFicha(root, handlers = {}) {
   }
 
   function blocoTalentos() {
-    const lista = (personagem.features ?? []).map((f) => {
-      const t = TALENTOS[f];
+    // TODAS as características do herói, as de classe, as de subclasse e as da raça. As que têm texto próprio em `TALENTOS` usam
+    // esse texto; as outras, o do catálogo. A ficha diz o estado de cada uma — o jogo aplica, é só uma escolha, o jogo não
+    // tem onde aplicar, ou ainda falta — em vez de listar só o que já funciona.
+    const lista = [...new Set(personagem.features ?? [])].map((f) => {
+      const cat = CARACTERISTICAS[f];
+      const t = TALENTOS[f] ?? (cat && !ESCONDIDAS_NA_FICHA.has(f) ? [cat.nome, cat.desc] : null);
       if (!t) return null;
+      const estado = estadoDaCaracteristica(f);
+      const aviso = estado === 'semEfeito' ? `O jogo não modela isto${typeof cat.semEfeito === 'string' ? `: ${cat.semEfeito}` : ''}.`
+        : estado === 'pendente' && !TALENTOS[f] ? 'Ainda sem regra no jogo.' : '';
       const extra = f === 'sneakAttack' && personagem.sneakAttack ? ` Hoje são ${personagem.sneakAttack}.`
         : f === 'rage' && personagem.danoDeFuria ? ` Hoje o bônus é +${personagem.danoDeFuria}.` : '';
       // O ícone do recurso, quando existe, fica à esquerda — o mesmo que o
@@ -383,7 +394,8 @@ export function criarFicha(root, handlers = {}) {
         icone ? iconCanvas(icone, 32) : null,
         el('div', { class: 'talento-corpo' },
           el('div', { class: 'talento-nome' }, t[0]),
-          el('p', { class: 'talento-texto' }, t[1] + extra)));
+          el('p', { class: 'talento-texto' }, t[1] + extra),
+          aviso ? el('p', { class: 'talento-aviso' }, aviso) : null));
     }).filter(Boolean);
     if (!lista.length) return null;
     return el('section', { class: 'bloco' },

@@ -71,7 +71,8 @@ export function d20(rng, modifier = 0, { advantage = false, disadvantage = false
 /** Jogada de ataque contra uma CA. */
 export function attackRoll(rng, bonus, ac, opts) {
   const r = d20(rng, bonus, opts);
-  const critical = r.natural === 20;
+  // `critMin`: o menor d20 que é crítico (19 com Crítico Aprimorado, 18 com Crítico Superior); o padrão é o 20.
+  const critical = r.natural >= (opts?.critMin ?? 20);
   const fumble = r.natural === 1;
   return {
     ...r,

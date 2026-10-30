@@ -19,7 +19,7 @@ import { makeNpc } from '../rules/npcs.js';
 import { makeMonster, MONSTERS } from '../rules/monsters.js';
 import { averageOf } from '../core/dice.js';
 import { garantirInventario } from '../rules/equipment.js';
-import { guardar, totalEmCobre, cobrar } from '../game/comercio.js';
+import { guardar, totalEmCobre, cobrar, LOJAS } from '../game/comercio.js';
 import { Battlefield, distanceFt } from '../core/grid.js';
 import { visaoNoEscuro, nivelDeLuz } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
@@ -32,6 +32,12 @@ import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO } from '../game/esconderijo.js';
 import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from '../game/arvoretrovao.js';
+import { mudarExaustao, nivelDeExaustao } from '../rules/conditions.js';
+import { podeMarchar } from '../rules/marcha.js';
+import { descansoLongo } from '../rules/descanso.js';
+import { despensaDoGrupo, diaDeViagem } from '../rules/mantimentos.js';
+import { ENCONTROS, perigoDoBando, escalarBando } from '../rules/encontros-estrada.js';
+import { MOMENTOS_POR_DIA, nomeDoMomento, deNoite, gastarHoras } from '../game/relogio.js';
 
 let total = 0;
 let falhas = 0;
@@ -473,6 +479,181 @@ teste('o Cume não desenha chão que ninguém alcança', () => {
   let chao = 0;
   for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (!f.blocksMove(x, y)) chao += 1;
   assert.equal(chao, vistas.size, `${chao - vistas.size} casas de chão fora de alcance`);
+});
+
+// ---------------------------------------------------------- a estrada ----
+// A fase da estrada (`game/regiao.js`) não carrega em Node: ela importa a
+// pintura da região. Então aqui se testa o que ela depende, como no resto
+// deste arquivo — e são justamente as premissas das correções da revisão.
+
+teste('o relógio da vila conta momentos, e as horas entram por uma porta só', () => {
+  assert.equal(MOMENTOS_POR_DIA, 6);
+  assert.ok(!deNoite(5), 'o último momento do dia ainda é dia');
+  assert.ok(deNoite(6), 'passado o último, é noite');
+  assert.equal(nomeDoMomento(6), 'noite');
+
+  // Duas horas gastam um momento, e qualquer coisa gasta pelo menos um.
+  const vila = { dia: 1, tempo: 0 };
+  gastarHoras(vila, 1);
+  assert.equal(vila.tempo, 1);
+  gastarHoras(vila, 4);
+  assert.equal(vila.tempo, 3);
+
+  // Era aqui que o Cume quebrava: ele somava HORAS no contador, então oito
+  // horas de busca punham `tempo` em 8 e a vila ficava em noite permanente,
+  // porque a volta do contador dele era em 24.
+  const cume = { dia: 1, tempo: 0 };
+  gastarHoras(cume, 8);
+  assert.ok(cume.tempo <= MOMENTOS_POR_DIA, `oito horas puseram o relógio em ${cume.tempo}`);
+  assert.equal(cume.dia, 1, 'gastar horas não vira o dia: isso é de dormir');
+
+  // E não há como estourar: o relógio para na noite.
+  for (let i = 0; i < 20; i += 1) gastarHoras(cume, 8);
+  assert.equal(cume.tempo, MOMENTOS_POR_DIA);
+});
+
+teste('a exaustão tem saída na estrada: comer e dormir devolve o passo', () => {
+  const [c] = makeParty({ nivel: 3 });
+  mudarExaustao(c, 5);
+  assert.equal(nivelDeExaustao(c), 5);
+  assert.ok(!podeMarchar(c), 'no 5º degrau o deslocamento é 0: ninguém marcha');
+  // É o que `acamparAqui` faz: um descanso longo com comida e bebida.
+  descansoLongo(c, { alimentado: true });
+  assert.equal(nivelDeExaustao(c), 4, 'o descanso longo tira um degrau');
+  assert.ok(podeMarchar(c), 'e com isso o grupo volta a poder partir');
+});
+
+teste('sem comida o descanso não tira degrau — o acampar não é de graça', () => {
+  const [c] = makeParty({ nivel: 3 });
+  mudarExaustao(c, 5);
+  descansoLongo(c, { alimentado: false });
+  assert.equal(nivelDeExaustao(c), 5, 'o livro pede "alguma comida e bebida"');
+});
+
+// "Alguma comida e bebida" é do DIA; a fome e a sede são do acumulado. Era
+// isso que estava embaralhado: o jogo oferece a meia ração como a escolha em
+// destaque quando a comida aperta, e quem a aceitava parava de recuperar
+// exaustão do segundo dia em diante — o contrário do que o código dizia fazer.
+const alimentado = (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true);
+const naEstrada = (racoes, litros) => {
+  const [c] = makeParty({ nivel: 3 });
+  c.bag = [{ id: 'racoes', tipo: 'item', qtd: racoes }, { id: 'cantil', tipo: 'item', qtd: 1, litros }];
+  return c;
+};
+
+teste('meia ração todo dia NÃO impede a recuperação de exaustão', () => {
+  const rng = makeRng(7);
+  const c = naEstrada(30, 4);
+  for (let dia = 1; dia <= 4; dia += 1) {
+    c.bag.find((i) => i.id === 'cantil').litros = 4;
+    diaDeViagem(rng, [c], { agua: true, meiaRacao: true });
+    assert.ok(alimentado(c), `${dia}º dia de meia ração: o descanso devia contar`);
+  }
+  // E a fome acumulada continua correndo: meia ração é meio dia sem comer.
+  assert.equal(c.diasSemComida, 2, 'quatro dias de meia ração são dois dias de fome');
+});
+
+teste('um gole conta como bebida, e a sede ainda cobra o degrau dela', () => {
+  // Três dos quatro litros: o descanso conta, e o dia ainda é de água curta.
+  // Quanto a sede cobra aí depende de um teste de CON 15, então não se mede o
+  // degrau neste ramo — mede-se no de baixo, que é automático.
+  const c = naEstrada(30, 3);
+  diaDeViagem(makeRng(11), [c], {});
+  assert.ok(alimentado(c), 'bebeu três dos quatro litros: o descanso conta');
+  assert.ok(c.semAgua, 'e ainda assim o dia foi de água curta');
+
+  // Menos da metade da água é degrau automático, sem teste. Um litro ainda é
+  // "alguma bebida": o descanso conta E a sede cobra. Os dois ao mesmo tempo é
+  // o ponto — antes, a água curta tirava as duas coisas.
+  const seco = naEstrada(30, 1);
+  const antes = nivelDeExaustao(seco);
+  diaDeViagem(makeRng(13), [seco], {});
+  assert.ok(alimentado(seco), 'um litro é alguma bebida');
+  assert.ok(nivelDeExaustao(seco) > antes, 'e a sede cobrou o degrau dela');
+});
+
+teste('um dia inteiro sem nada continua travando o descanso', () => {
+  const rng = makeRng(13);
+  const semComida = naEstrada(0, 4);
+  diaDeViagem(rng, [semComida], { agua: true });
+  assert.ok(!alimentado(semComida), 'sem comer nada, o descanso não tira degrau');
+  const semAgua = naEstrada(30, 0);
+  diaDeViagem(rng, [semAgua], {});
+  assert.ok(!alimentado(semAgua), 'sem beber nada, o descanso não tira degrau');
+});
+
+teste('a viagem mais longa é abastecível: a Barthen vende ração', () => {
+  // Conyberry é a rota mais longa do mapa (114 km, quatro dias no passo
+  // normal), e o grupo pronto sai de casa com comida para três. A diferença
+  // existe de propósito — o painel da viagem diz quantas rações ela pede —,
+  // mas só funciona porque há onde comprar. Se a prateleira da Barthen deixasse
+  // de ter ração, Conyberry ficaria inalcançável sem forragear.
+  const grupo = makeParty({ nivel: 3 });
+  assert.equal(despensaDoGrupo(grupo).dias, 3, 'o grupo pronto leva três dias de comida');
+  assert.ok(LOJAS.barthen.estoque().some((l) => l.id === 'racoes'),
+    'a Barthen tem de vender ração, senão a estrada longa não se abastece');
+});
+
+// O que o SIMULADOR mediu na cena real da estrada, n=300 lutas por célula, com
+// o grupo pronto de quatro heróis (`dev/balance.js` jogando os dois lados).
+// `derrota` é a porcentagem de lutas em que o grupo foi derrotado — e derrota
+// na estrada encerra a partida (`game/capitulo4-estrada.js`).
+//
+// Serve de oráculo: o rótulo que o jogo mostra ao jogador tem de concordar com
+// o que a luta realmente faz. Era aqui que o rótulo antigo falhava.
+// MEDIDO com a luz de verdade. A primeira versão desta tabela veio de um
+// arranjo que deixava a grade de luz zerada — combate no breu —, e todos os
+// números estavam errados.
+const MEDIDO = [
+  { nivel: 3, id: 'goblin', qtd: 9, derrota: 1.0 },
+  { nivel: 3, id: 'hobgoblin', qtd: 6, derrota: 4.0 },
+  { nivel: 3, id: 'orc', qtd: 5, derrota: 18.0 },
+  { nivel: 3, id: 'lobo', qtd: 8, derrota: 11.7 },
+  { nivel: 3, id: 'lobo', qtd: 9, derrota: 33.7 },
+  { nivel: 3, id: 'ghoul', qtd: 5, derrota: 14.7 },
+  { nivel: 4, id: 'orc', qtd: 6, derrota: 2.7 },
+  { nivel: 4, id: 'orc', qtd: 8, derrota: 23.7 },
+  { nivel: 4, id: 'orc', qtd: 9, derrota: 56.3 },
+  { nivel: 4, id: 'hobgoblin', qtd: 8, derrota: 15.3 },
+  { nivel: 4, id: 'hobgoblin', qtd: 9, derrota: 31.3 },
+  { nivel: 4, id: 'lobo', qtd: 9, derrota: 11.7 },
+  { nivel: 5, id: 'orc', qtd: 9, derrota: 0.0 },
+  { nivel: 5, id: 'hobgoblin', qtd: 9, derrota: 0.0 },
+];
+
+teste('o rótulo de perigo concorda com o que o simulador mediu', () => {
+  // Os cortes do jogo são 5% e 20% de derrota. Cem ou trezentas lutas não
+  // medem isso com precisão de um ponto: numa célula de 4% o erro padrão já é
+  // de um ponto, e as duas rodadas de medição discordaram em 6 hobgoblins no
+  // 3º nível (4% com n=300, 5% com n=100). Então uma célula a menos de dois
+  // pontos de um corte aceita os dois rótulos vizinhos — o teste cobra onde a
+  // medição é firme, que é onde o rótulo antigo errava feio.
+  const FOLGA = 2;
+  const faixa = (d) => (d >= 20 ? 'mortal' : d >= 5 ? 'dificil' : 'facil');
+  for (const m of MEDIDO) {
+    const um = makeMonster(m.id, { x: 0, y: 0 });
+    const p = perigoDoBando(m.qtd * um.xp, makeParty({ nivel: m.nivel }), { id: m.id, qtd: m.qtd });
+    const aceitos = new Set([faixa(m.derrota), faixa(m.derrota - FOLGA), faixa(m.derrota + FOLGA)]);
+    assert.ok(aceitos.has(p),
+      `${m.qtd} ${m.id} no ${m.nivel}º nível mede ${m.derrota}% de derrota: o rótulo devia ser ${[...aceitos].join(' ou ')}, e o jogo diz ${p}`);
+  }
+});
+
+teste('escalarBando nunca entrega um bando que ele mesmo chama de mortal', () => {
+  for (const e of ENCONTROS) {
+    const um = makeMonster(e.id, { x: 0, y: 0 });
+    if (!(um.xp > 0)) continue;
+    const [dados, faces, bonus] = e.qtd;
+    for (let qtd = dados + bonus; qtd <= dados * faces + bonus; qtd += 1) {
+      for (const nivel of [2, 3, 4, 5]) {
+        const grupo = makeParty({ nivel });
+        const { qtd: n } = escalarBando(qtd, um.xp, grupo, { id: e.id });
+        assert.ok(n >= 1, `${e.id}: sobrou um bando de ${n}`);
+        assert.notEqual(perigoDoBando(n * um.xp, grupo, { id: e.id, qtd: n }), 'mortal',
+          `${qtd} ${e.id} no nível ${nivel} virou ${n}, que é mortal`);
+      }
+    }
+  }
 });
 
 // ------------------------------------------------- Árvore Trovão ----
