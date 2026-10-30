@@ -49,6 +49,8 @@ export default {
           14: ['dragonWings'],
           18: ['draconicPresence'],
         },
+        // Asas Dracônicas: uma vez por descanso longo.
+        recursos: { dragonWings: (n) => (n >= 14 ? 1 : 0) },
         escalas: { defesaSemArmadura: () => 'draconica' },
         escolhasDeGanho: {
           // O dragão ancestral define o tipo de dano da Afinidade Elemental.

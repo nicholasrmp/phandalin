@@ -2279,5 +2279,135 @@ teste('Sorte do Obscuro (Corruptor, 6º): +1d10 numa resistência que falhou, s�
   assert.equal(b.hurlPronto, false);
 });
 // ============================================================================================================
+// FEITICEIRO: Fonte de Magia, Metamagia, Asas e Presença Dracônicas
+// ============================================================================================================
+
+const feiticeiro = (nivel, extra = {}) => {
+  const s = heroi('feiticeiro', nivel, 'Humano', { abilities: { str: 10, dex: 14, con: 14, int: 10, wis: 10, cha: 18 }, ...extra });
+  s.pos = { x: 5, y: 5 };
+  for (const m of ['bolaDeFogo', 'misselMagico', 'curarFerimentos', 'imobilizarPessoa']) if (!s.spellcasting.prepared.includes(m)) s.spellcasting.prepared.push(m);
+  // o jogo escolhe duas metamagias sozinho; os testes precisam de todas
+  for (const m of ['carefulSpell', 'distantSpell', 'empoweredSpell', 'extendedSpell', 'heightenedSpell', 'quickenedSpell', 'subtleSpell', 'twinnedSpell']) if (!s.features.includes(m)) s.features.push(m);
+  return s;
+};
+
+teste('Fonte de Magia (feiticeiro, 2º): espaço rende pontos iguais ao círculo; pontos criam espaço pelo preço do livro; uma ação bônus', () => {
+  const s = feiticeiro(5);
+  const { enc } = arena({ herois: [s], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(s.resources.sorceryPoints, 5);
+  s.resources.sorceryPoints = 0;
+  const d1 = s.spellcasting.slots[1];
+  assert.equal(enc.useFeature(s, 'fontOfMagic', { modo: 'pontos' }), true);
+  assert.equal(s.resources.sorceryPoints, 1, 'um espaço de 1º círculo rende 1 ponto');
+  assert.equal(s.spellcasting.slots[1], d1 - 1);
+  assert.equal(enc.useFeature(s, 'fontOfMagic', { modo: 'pontos' }), false, 'uma ação bônus por turno');
+  s.bonusUsed = false;
+  s.resources.sorceryPoints = 5;
+  const d2 = s.spellcasting.slots[2];
+  assert.equal(enc.useFeature(s, 'fontOfMagic', { modo: 'espaco', valor: 2 }), true);
+  assert.equal(s.resources.sorceryPoints, 2, 'um espaço de 2º custa 3 pontos');
+  assert.equal(s.spellcasting.slots[2], d2 + 1);
+  s.bonusUsed = false;
+  assert.equal(enc.useFeature(s, 'fontOfMagic', { modo: 'espaco', valor: 3 }), false, 'um de 3º custa 5: faltam pontos');
+});
+
+teste('Metamagia: Cuidadosa poupa o aliado na área; Rápida troca a ação pela ação bônus; sem pontos, a magia sai sem metamagia', () => {
+  const s = feiticeiro(5);
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  s.pos = { x: 2, y: 5 }; amigo.pos = { x: 8, y: 6 };
+  const g = alvoParado({ x: 8, y: 5 });
+  const { enc, log } = arena({ herois: [s, amigo], foes: [g] });
+  enc.rng = dadoFixo(1); // todos falham
+  s.metaLigada = ['carefulSpell'];
+  const r = enc.castSpell(s, 'bolaDeFogo', { point: { x: 8, y: 5 } });
+  assert.ok(r.ok, r.why);
+  assert.equal(amigo.hp, amigo.maxHp, 'o aliado passou sozinho: nenhum dano');
+  assert.ok(g.hp < g.maxHp, 'o inimigo levou');
+  assert.equal(s.resources.sorceryPoints, 4, 'Cuidadosa custa 1');
+  // Rápida
+  const q = feiticeiro(5);
+  q.pos = { x: 5, y: 5 };
+  const g2 = alvoParado({ x: 8, y: 5 });
+  const { enc: e2 } = arena({ herois: [q], foes: [g2] });
+  q.metaLigada = ['quickenedSpell'];
+  const r2 = e2.castSpell(q, 'misselMagico', { target: g2 });
+  assert.ok(r2.ok, r2.why);
+  assert.equal(q.actionUsed, false, 'a ação ficou livre');
+  assert.equal(q.bonusUsed, true, 'a ação bônus pagou a magia');
+  assert.equal(q.resources.sorceryPoints, 3, 'Rápida custa 2');
+  assert.equal(SPELLS.misselMagico.castTime, 'action', 'a magia volta ao normal depois');
+  // sem pontos
+  const z = feiticeiro(5);
+  z.pos = { x: 5, y: 5 };
+  const g3 = alvoParado({ x: 8, y: 5 });
+  const { enc: e3 } = arena({ herois: [z], foes: [g3] });
+  z.resources.sorceryPoints = 0;
+  z.metaLigada = ['quickenedSpell'];
+  assert.ok(e3.castSpell(z, 'misselMagico', { target: g3 }).ok);
+  assert.equal(z.actionUsed, true, 'sem pontos, a magia sai como ação');
+  assert.equal(z.resources.sorceryPoints, 0);
+});
+
+teste('Metamagia: Gêmea cura dois por um espaço e custa o círculo; Potencializada e Elevada cobram; Prolongada dobra a duração', () => {
+  const s = feiticeiro(5);
+  const a = heroi('guerreiro', 1, 'Humano'), b = heroi('guerreiro', 1, 'Humano');
+  s.pos = { x: 5, y: 5 }; a.pos = { x: 6, y: 5 }; b.pos = { x: 4, y: 5 };
+  a.hp = 1; b.hp = 1;
+  const { enc, log } = arena({ herois: [s, a, b], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  s.metaLigada = ['twinnedSpell'];
+  const slots = s.spellcasting.slots[1];
+  const r = enc.castSpell(s, 'curarFerimentos', { target: a });
+  assert.ok(r.ok, r.why);
+  assert.ok(a.hp > 1 && b.hp > 1, 'os dois foram curados');
+  assert.equal(s.spellcasting.slots[1], slots - 1, 'um espaço só');
+  assert.equal(s.resources.sorceryPoints, 4, 'Gêmea de 1º círculo custa 1');
+  // Elevada e Potencializada cobram juntas (3 + 1)
+  const e = feiticeiro(5);
+  e.pos = { x: 2, y: 5 };
+  const g = alvoParado({ x: 8, y: 5 });
+  const { enc: e2 } = arena({ herois: [e], foes: [g] });
+  e.metaLigada = ['heightenedSpell', 'empoweredSpell'];
+  assert.ok(e2.castSpell(e, 'bolaDeFogo', { point: { x: 8, y: 5 } }).ok);
+  assert.equal(e.resources.sorceryPoints, 1, '5 − 3 − 1');
+  // Prolongada dobra a duração do efeito
+  const x = feiticeiro(5);
+  x.pos = { x: 5, y: 5 };
+  const hh = alvoParado({ x: 7, y: 5 }, 'bandido');
+  const { enc: ex } = arena({ herois: [x], foes: [hh] });
+  ex.rng = dadoFixo(1);
+  x.metaLigada = ['extendedSpell'];
+  assert.ok(ex.castSpell(x, 'imobilizarPessoa', { target: hh }).ok);
+  assert.equal(x.concentrating?.rounds, 20, 'um minuto de concentração vira dois');
+  // Gêmea não vale em concentração
+  const c = feiticeiro(5);
+  c.pos = { x: 5, y: 5 };
+  const h = alvoParado({ x: 7, y: 5 }, 'bandido'), h2 = alvoParado({ x: 8, y: 5 }, 'bandido');
+  const { enc: e3 } = arena({ herois: [c], foes: [h, h2] });
+  c.metaLigada = ['twinnedSpell'];
+  e3.castSpell(c, 'imobilizarPessoa', { target: h });
+  assert.equal(c.resources.sorceryPoints, 5, 'concentração não pode ser gêmea: não gastou ponto');
+});
+
+teste('Asas Dracônicas (14º) dão voo, sem armadura; Presença Dracônica (18º) custa 5 pontos e enfeitiça quem falha em SAB', () => {
+  const s = feiticeiro(14);
+  s.pos = { x: 5, y: 5 };
+  s.armor = 'nenhuma';
+  const { enc } = arena({ herois: [s], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(s.resources.dragonWings, 1);
+  assert.equal(enc.useFeature(s, 'dragonWings'), true);
+  assert.ok(hasCondition(s, 'voando'));
+  s.bonusUsed = false;
+  assert.equal(enc.useFeature(s, 'dragonWings'), false, 'uma vez por descanso longo');
+  const p = feiticeiro(18);
+  p.pos = { x: 5, y: 2 };
+  const g = alvoParado({ x: 8, y: 2 }, 'bandido');
+  const { enc: e2 } = arena({ herois: [p], foes: [g] });
+  e2.rng = dadoFixo(1);
+  const antes = p.resources.sorceryPoints;
+  assert.equal(e2.useFeature(p, 'draconicPresence'), true);
+  assert.equal(p.resources.sorceryPoints, antes - 5);
+  assert.ok(hasCondition(g, 'enfeiticado'));
+});
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

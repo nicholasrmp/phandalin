@@ -284,6 +284,8 @@ const FEITO = [
   'frenzy', 'intimidatingPresence', 'retaliation', 'countercharm', 'cuttingWords', 'divineIntervention', 'sacredWeapon', 'turnTheUnholy',
   'holyNimbus', 'cleansingTouch', 'deflectMissiles', 'slowFall', 'stillnessOfMind', 'wholenessOfBody', 'emptyBody', 'quiveringPalm',
   'volley', 'whirlwindAttack', 'standAgainstTheTide', 'fastHands', 'vanish', 'strokeOfLuck', 'darkOnesOwnLuck', 'hurlThroughHell',
+  'fontOfMagic', 'sorceryPoints', 'sorcerousRestoration', 'dragonWings', 'draconicPresence', 'carefulSpell', 'distantSpell', 'empoweredSpell',
+  'extendedSpell', 'heightenedSpell', 'quickenedSpell', 'subtleSpell', 'twinnedSpell',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',

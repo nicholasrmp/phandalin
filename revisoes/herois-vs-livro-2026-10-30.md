@@ -350,3 +350,24 @@ Mais **24 características** passaram de `pendente` a `motor`, cada uma com test
 
 ### O que continua `pendente` (54, caiu de 77)
 Todas dependem de sistema que o jogo não tem: **Forma Selvagem** (e Magias Bestiais, Arquidruida), **Pontos de Feitiçaria, Fonte de Magia e as oito Metamagias** (e Presença/Asas Dracônicas, Restauração Feiticeira), **Invocações Místicas** (25) e **Dádiva do Pacto**; além de **Arcana Mística** e **Sobrecanalizar** (precisam de magias de 6º a 9º círculo, que o jogo não tem), Percepção Primitiva e Habilidade Inigualável.
+
+---
+
+## Atualização 3 — o feiticeiro (Pontos de Feitiçaria, Metamagia, Linhagem Dracônica)
+
+Mais **15 características** com mecânica, teste e botão. Suíte: 1055/1055 em Node, 401/401 no vitest, build verde; `pendente` caiu de 54 para 39.
+
+- **Fonte de Magia:** espaço em pontos (o menor espaço que houver, pontos iguais ao círculo) e pontos em espaço (o maior até o 5º que os pontos pagam; 1º 2, 2º 3, 3º 5, 4º 6, 5º 7). Dois botões, ação bônus.
+- **Metamagia, as oito do livro**, como interruptores: armada, vale na próxima magia que servir e que os pontos pagarem.
+  Cuidadosa (CAR criaturas passam sozinhas e não sofrem nem a metade do dano), À Distância, Potencializada (rerrola até CAR dados baixos), Prolongada (dobra efeitos e o limite da concentração), Elevada (1ª resistência com desvantagem), Rápida (ação vira ação bônus), Sutil (ninguém contraria) e Gêmea (segundo alvo, custo = círculo, sem espaço extra).
+- **Linhagem Dracônica:** Asas Dracônicas (voo, sem armadura, uma vez por descanso longo) e Presença Dracônica (5 pontos, inimigos a 18 m testam SAB ou ficam enfeitiçados).
+- **Restauração Feiticeira** (20º) agora tem pontos para restaurar.
+
+### Aproximações novas
+- A escolha de metamagia continua automática (as duas primeiras da lista); não há tela de escolha.
+- A Gêmea não vale para magia de concentração nem de área; o segundo alvo é o mais próximo do mesmo lado do primeiro.
+- Os espaços criados pela Fonte de Magia não somem no descanso longo como no livro: o descanso reajusta tudo ao máximo.
+- A Presença Dracônica não pede concentração e só enfeitiça (o livro deixa escolher amedrontar).
+
+### Ainda pendente (39)
+Forma Selvagem (e Magias Bestiais, Arquidruida), Invocações Místicas (25) e Dádiva do Pacto, Arcana Mística e Sobrecanalizar (magias de 6º a 9º círculo), Percepção Primitiva e Habilidade Inigualável.

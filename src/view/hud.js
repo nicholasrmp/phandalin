@@ -1201,6 +1201,12 @@ export class Hud {
       stunningStrike: ['atordoante', 'Ataque Atordoante',
         `Gasta 1 ponto de ki e carrega o próximo acerto de arma corpo a corpo deste turno: o alvo testa Constituição CD ${enc.cdDeKi(c)} ou fica atordoado até o fim do seu próximo turno.`,
         'Livre', () => !c.atordoantePronto && c.resources?.ki > 0, 'ki'],
+      dragonWings: ['dragonWings', 'Asas de Dragão',
+        'Abre asas e voa com o seu deslocamento por uma hora. Não cabem sob armadura. Uma vez por descanso longo.',
+        'Ação bônus', () => !c.bonusUsed && c.resources?.dragonWings > 0 && !hasCondition(c, 'voando'), 'dragonWings'],
+      draconicPresence: ['draconicPresence', 'Presença Dracônica',
+        '5 pontos de feitiçaria: inimigos a até 18 m testam Sabedoria ou ficam enfeitiçados por um minuto.',
+        'Ação', () => !c.actionUsed && (c.resources?.sorceryPoints ?? 0) >= 5, 'sorceryPoints'],
       hurlThroughHell: ['hurlThroughHell', 'Lançar pelo Inferno',
         'Arma o próximo ataque deste turno: no acerto, o alvo é arremessado pelos planos inferiores e volta com 10d10 psíquico (corruptores não sofrem). Uma vez por descanso longo.',
         'Livre', () => !c.hurlPronto && c.resources?.hurlThroughHell > 0, 'hurlThroughHell'],
@@ -1258,6 +1264,33 @@ export class Hud {
           { kind: 'feature', featureId: f, modo: 'disparada' }, semKi, 'ki');
         comum('ventoDesengajar', 'Passo do Vento: desengajar', 'Gasta 1 ponto de ki e sai de perto sem levar ataque de oportunidade.', 'Ação bônus',
           { kind: 'feature', featureId: f, modo: 'desengajar' }, semKi, 'ki');
+        continue;
+      }
+      // METAMAGIA: um interruptor por opção (`actor.metaLigada`). Armada, vale na próxima magia que servir e que os pontos pagarem.
+      const META = {
+        carefulSpell: ['Magia Cuidadosa', '1 ponto: até CAR criaturas passam sozinhas na resistência da magia.'],
+        distantSpell: ['Magia à Distância', '1 ponto: o alcance dobra (toque vira 9 m).'],
+        empoweredSpell: ['Magia Potencializada', '1 ponto: rola de novo até CAR dados de dano que saíram baixos.'],
+        extendedSpell: ['Magia Prolongada', '1 ponto: a duração dos efeitos dobra.'],
+        heightenedSpell: ['Magia Elevada', '3 pontos: um alvo tem desvantagem na primeira resistência.'],
+        quickenedSpell: ['Magia Rápida', '2 pontos: a magia de ação passa a custar ação bônus.'],
+        subtleSpell: ['Magia Sutil', '1 ponto: sem gestos nem palavras; ninguém a contraria.'],
+        twinnedSpell: ['Magia Gêmea', 'Pontos iguais ao círculo (mínimo 1): a magia de um alvo, sem concentração, atinge também um segundo.'],
+      };
+      if (META[f]) {
+        const ligado = (c.metaLigada ?? []).includes(f);
+        comum(f, META[f][0], `Interruptor: ${META[f][1]} Pontos de feitiçaria: ${c.resources?.sorceryPoints ?? 0}.`, 'Livre',
+          { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, 'sorceryPoints', null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADA' : 'desarmada']] });
+        continue;
+      }
+      if (f === 'fontOfMagic') {
+        const pts = c.resources?.sorceryPoints ?? 0;
+        const slots = c.spellcasting?.slots ?? [];
+        comum('fontePontos', 'Fonte de Magia: espaço em pontos', 'Gasta o menor espaço de magia e ganha pontos de feitiçaria iguais ao círculo dele.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'pontos' }, c.bonusUsed || !slots.some((n, i) => i >= 1 && n > 0) || pts >= (c.resourcesMax?.sorceryPoints ?? 0), 'sorceryPoints');
+        comum('fonteEspaco', 'Fonte de Magia: pontos em espaço', 'Cria o maior espaço de magia (até o 5º) que os pontos pagam: 1º 2, 2º 3, 3º 5, 4º 6, 5º 7 pontos.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'espaco' }, c.bonusUsed || pts < 2, 'sorceryPoints');
         continue;
       }
       if (f === 'cunningAction') {

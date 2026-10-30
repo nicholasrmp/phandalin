@@ -12,6 +12,7 @@
 import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDice } from '../core/dice.js';
 import { Battlefield, distanceFt, isAdjacent, key, footprintOf, FEET_PER_SQUARE } from '../core/grid.js';
 import { ARMORS } from './items/index.js';
+import { nomeDaCaracteristica } from './classes/index.js';
 import {
   abilityMod, saveBonus, skillBonus, rolarPericia, spellSaveDc, spellAttackBonus,
   proficiencyBonus, ABILITY_NAME, passivePerception, ajustarTeste, treinadoEm,
@@ -2065,6 +2066,8 @@ export class Encounter {
    */
   tentarContramagia(conjurador, spell, slot) {
     if (spell.level === 0 || this.reagindo) return false;
+    // MAGIA SUTIL: sem gestos nem palavras, ninguém percebe a conjuração para contrariá-la.
+    if (this.metaAtiva?.subtle && this.metaAtiva.dono === conjurador) return false;
     for (const r of this.combatants) {
       if (r.side === conjurador.side || r.side === 'neutro' || r.dead) continue;
       const p = this.podeReagirCom(r, 'contramagia');
@@ -4804,7 +4807,7 @@ export class Encounter {
       return { ok: false, why: 'o sopro já foi usado: ele volta num descanso curto ou longo' };
     }
     // USO LIVRE de característica (magia racial, Maestria, Assinatura): sai sem espaço, e vem ANTES de gastar um.
-    const livre = usoLivreDe(actor, spell, circulo);
+    const livre = actor.geminada ? { circulo: actor.geminada.circulo, rotulo: 'Magia Gêmea' } : usoLivreDe(actor, spell, circulo);
     let slot = livre ? livre.circulo : this.circuloDeConjuracao(actor, spell, circulo);
     // Iniciado em Magia: a magia do talento sai uma vez sem espaço (só quando não há espaço, como sempre foi).
     const iniciado = !livre && slot === null && temUsoGratis(actor, spellId);
@@ -4892,10 +4895,120 @@ export class Encounter {
    */
   castSpell(actor, spellId, opcoes = {}) {
     this.bonusDeMagia = bonusDeDanoPorTraco(actor, SPELLS[spellId]);
+    const original = SPELLS[spellId];
+    const metas = this.metamagiasDaConjuracao(actor, original, opcoes);
+    const ids = new Set(metas.map((m) => m.id));
+    // RÁPIDA e À DISTÂNCIA mudam a própria magia por esta conjuração (o tempo e o alcance); `finally` devolve o original.
+    if (original && (ids.has('quickenedSpell') || ids.has('distantSpell'))) {
+      SPELLS[spellId] = {
+        ...original,
+        ...(ids.has('quickenedSpell') ? { castTime: 'bonus' } : {}),
+        ...(ids.has('distantSpell') ? { rangeFt: original.rangeFt <= 5 ? 30 : original.rangeFt * 2 } : {}),
+      };
+    }
+    const cuidado = Math.max(1, abilityMod(actor.abilities?.cha ?? 10));
+    this.metaAtiva = ids.size ? {
+      dono: actor, ids,
+      careful: ids.has('carefulSpell') ? { restantes: cuidado } : null,
+      heightened: ids.has('heightenedSpell'), subtle: ids.has('subtleSpell'),
+      empowered: ids.has('empoweredSpell') ? cuidado : 0, empoderou: false,
+    } : null;
+    const antesDeAcao = { acao: actor.actionUsed, bonus: actor.bonusUsed };
     try {
-      return this.castSpellBase(actor, spellId, opcoes);
+      const r = this.castSpellBase(actor, spellId, opcoes);
+      if (r?.ok && metas.length) this.pagarMetamagia(actor, original, metas, opcoes, r, antesDeAcao);
+      return r;
     } finally {
+      if (original) SPELLS[spellId] = original;
+      this.metaAtiva = null;
       this.bonusDeMagia = null;
+    }
+  }
+
+  /**
+   * METAMAGIA armada (`actor.metaLigada`): as opções que servem a ESTA magia e cabem nos pontos de feitiçaria, na ordem em que foram
+   * armadas. Cada uma custa o que o livro diz; a Magia Gêmea custa o círculo da magia (mínimo 1) e só serve a magia de um alvo,
+   * sem concentração. Devolve `[{ id, custo }]`.
+   */
+  metamagiasDaConjuracao(actor, spell, opcoes = {}) {
+    const armadas = (actor.metaLigada ?? []).filter((id) => actor.features?.includes(id));
+    if (!spell || !armadas.length) return [];
+    let pontos = actor.resources?.sorceryPoints ?? 0;
+    const out = [];
+    const serve = {
+      carefulSpell: () => Boolean(spell.save),
+      distantSpell: () => spell.rangeFt >= 5,
+      empoweredSpell: () => Boolean(spell.damage),
+      extendedSpell: () => Boolean(spell.concentration || spell.condition || spell.duracaoRodadas),
+      heightenedSpell: () => Boolean(spell.save),
+      quickenedSpell: () => spell.castTime === 'action' && !actor.bonusUsed,
+      subtleSpell: () => spell.level > 0,
+      twinnedSpell: () => !spell.concentration && !spell.shape && !spell.areaFt && (spell.targets ?? 1) <= 1
+        && Boolean(opcoes.target) && Boolean(this.alvoGemeo(actor, spell, opcoes.target)),
+    };
+    const custo = { carefulSpell: 1, distantSpell: 1, empoweredSpell: 1, extendedSpell: 1, heightenedSpell: 3, quickenedSpell: 2, subtleSpell: 1,
+      twinnedSpell: Math.max(1, spell.level) };
+    for (const id of armadas) {
+      if (!serve[id]?.() || custo[id] > pontos) continue;
+      pontos -= custo[id];
+      out.push({ id, custo: custo[id] });
+    }
+    return out;
+  }
+
+  /** O segundo alvo da Magia Gêmea: a criatura mais próxima do mesmo lado do primeiro, ao alcance da magia. */
+  alvoGemeo(actor, spell, alvo) {
+    return this.combatants
+      .filter((o) => !o.dead && o !== alvo && o.side === alvo.side && distanceFt(actor.pos, o.pos) <= Math.max(spell.rangeFt, 5)
+        && this.field.hasLineOfSight(actor.pos, o.pos))
+      .sort((a, b) => (a === actor) - (b === actor) || distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0] ?? null;
+  }
+
+  /** Cobra os pontos de feitiçaria da metamagia que de fato saiu, e faz o que a opção faz DEPOIS da conjuração. */
+  pagarMetamagia(actor, spell, metas, opcoes, resultado, antes) {
+    const total = metas.reduce((s, m) => s + m.custo, 0);
+    actor.resources.sorceryPoints -= total;
+    const nomes = { carefulSpell: 'Cuidadosa', distantSpell: 'À Distância', empoweredSpell: 'Potencializada', extendedSpell: 'Prolongada',
+      heightenedSpell: 'Elevada', quickenedSpell: 'Rápida', subtleSpell: 'Sutil', twinnedSpell: 'Gêmea' };
+    this.say('recurso', `${actor.name} molda ${spell.name}: ${metas.map((m) => nomes[m.id]).join(' + ')} (${total} ponto${total > 1 ? 's' : ''} de feitiçaria, restam ${actor.resources.sorceryPoints}).`);
+    const ids = new Set(metas.map((m) => m.id));
+    // PROLONGADA: a duração dos efeitos de magia que esta conjuração pôs vale o dobro.
+    if (ids.has('extendedSpell')) {
+      for (const c of this.combatants) {
+        for (const k of c.conditions ?? []) {
+          if (k.magia?.id === spell.id && k.source === actor.id && Number.isFinite(k.rounds) && !k.prolongada) { k.rounds = Math.min(k.rounds * 2, 14400); k.prolongada = true; }
+        }
+      }
+    }
+    // PROLONGADA em magia de concentração: o limite de rodadas da concentração também dobra.
+    if (ids.has('extendedSpell') && actor.concentrating?.spellId === spell.id && Number.isFinite(actor.concentrating.rounds)) {
+      actor.concentrating.rounds = Math.min(actor.concentrating.rounds * 2, 14400);
+    }
+    // GÊMEA: a mesma magia, sem custo, no segundo alvo.
+    if (ids.has('twinnedSpell')) {
+      const segundo = this.alvoGemeo(actor, spell, opcoes.target);
+      if (segundo) {
+        const depois = { acao: actor.actionUsed, bonus: actor.bonusUsed };
+        actor.actionUsed = antes.acao; actor.bonusUsed = antes.bonus;
+        actor.geminada = { circulo: opcoes.circulo ?? spell.level };
+        this.metaAtiva = null;
+        try { this.castSpellBase(actor, spell.id, { ...opcoes, target: segundo }); } finally { actor.geminada = null; }
+        actor.actionUsed = depois.acao; actor.bonusUsed = depois.bonus;
+      }
+    }
+  }
+
+  /** POTENCIALIZADA: rola de novo até CAR dados de dano que saíram abaixo da média (os piores), uma vez por magia. */
+  empoderar(d) {
+    const m = this.metaAtiva;
+    if (!m?.empowered || m.empoderou || !d?.rolls?.length) return;
+    const lados = Number(/d(\d+)/.exec(d.notation ?? '')?.[1] ?? 0);
+    if (!lados) return;
+    m.empoderou = true;
+    const ordem = d.rolls.map((v, i) => [v, i]).filter(([v]) => v < (lados + 1) / 2).sort((a, b) => a[0] - b[0]).slice(0, m.empowered);
+    for (const [v, i] of ordem) {
+      const novo = this.rng.die(lados);
+      if (novo > v) { d.total += novo - v; d.rolls[i] = novo; }
     }
   }
 
@@ -5094,7 +5207,7 @@ export class Encounter {
         for (let i = 0; i < dardos; i++) {
           const alvo = alvos[i % alvos.length];
           const d = damageRoll(this.rng, spell.damage);
-          if (i === 0) { const b = this.consumirBonusDeMagia(actor); if (b) d.total += b.bonus; }
+          if (i === 0) { this.empoderar(d); const b = this.consumirBonusDeMagia(actor); if (b) d.total += b.bonus; }
           porAlvo.set(alvo, [...(porAlvo.get(alvo) ?? []), d.total]);
         }
         // "Automática" é a razão de ser desta magia: não há rolagem de ataque
@@ -5682,6 +5795,7 @@ export class Encounter {
         : target ? [{ c: target, papel: 'inimigo' }] : [];
     // O dano de uma magia de área é rolado UMA vez para todos os alvos.
     const dmg = dano ? damageRoll(this.rng, dano) : null;
+    if (dmg) this.empoderar(dmg);
     if (dmg) { const b = this.consumirBonusDeMagia(actor); if (b) { dmg.total += b.bonus; dmg.mod = (dmg.mod ?? 0) + b.bonus; } }
     // GOLPE DE CHAMA: a segunda parcela, de OUTRO tipo. Rolada UMA vez para a
     // área, como a primeira — rolá-la dentro do laço de alvos dava um radiante
@@ -5710,8 +5824,9 @@ export class Encounter {
         ? { total: 0, success: false, rolls: [0] }
         : this.resistencia(t, spell.save, dc, { contra: contraDaMagia(spell) });
       const inc = conditionEffects(t).incapacitated;
-      const amount = !dmg ? 0 : danoPorResistencia(t, spell.save, metade, save.success, dmg.total, inc);
-      const amount2 = !dmg2 ? 0 : danoPorResistencia(t, spell.save, metade, save.success, dmg2.total, inc);
+      // MAGIA CUIDADOSA: quem foi poupado não sofre nem a metade do dano.
+      const amount = !dmg || save.cuidadosa ? 0 : danoPorResistencia(t, spell.save, metade, save.success, dmg.total, inc);
+      const amount2 = !dmg2 || save.cuidadosa ? 0 : danoPorResistencia(t, spell.save, metade, save.success, dmg2.total, inc);
       // O que o sucesso compra é a decisão inteira: metade do dano ainda
       // vale conjurar numa multidão, nenhum dano não vale contra um alvo só.
       // Qual condição travou o teste: "falha automática" sem culpado deixa
@@ -6493,6 +6608,7 @@ export class Encounter {
     }
     const dmg = damageRoll(this.rng, dano, { critical });
     if (bonusDano) dmg.total += bonusDano;
+    this.empoderar(dmg);
     { const b = this.consumirBonusDeMagia(actor); if (b) dmg.total += b.bonus; }
     const danoPartes = [parcelaDeDano('dano', dmg)];
     rolagem.danoPartes = danoPartes;
@@ -6618,6 +6734,12 @@ export class Encounter {
    */
   resistencia(actor, hab, dc, { vantagem = false, contra = null } = {}) {
     const fx = conditionEffects(actor);
+    // MAGIA CUIDADOSA: até CAR criaturas escolhidas passam sozinhas na resistência da magia (e não sofrem o efeito, nem o dano).
+    const meta = this.metaAtiva;
+    if (meta?.careful?.restantes > 0 && actor.side === meta.dono.side) {
+      meta.careful.restantes -= 1;
+      return { natural: 20, total: 99, rolls: [20], mode: 'normal', dc, success: true, partes: [], vantagemPor: [], cuidadosa: true };
+    }
     // TRAÇOS que dão vantagem CONTRA algo (Corajoso, Ancestral Feérico, Resiliência Anã, Esperteza Gnômica): só valem
     // quando quem chama diz do que vem o teste (`contra`). Sem contexto, nenhuma vale.
     const porTraco = vantagemPorTraco(actor, hab, contra);
@@ -6635,6 +6757,8 @@ export class Encounter {
       disadvantage: (!!actor.armorUntrained && (hab === 'str' || hab === 'dex'))
         || fx.saveDisadvantage.includes(hab) || fx.desvantagemTeste.includes(hab),
     };
+    // MAGIA ELEVADA: o primeiro alvo inimigo a resistir tem desvantagem.
+    if (meta?.heightened && actor.side !== meta.dono.side) { opts.disadvantage = true; meta.heightened = false; }
     let bonus = saveBonus(actor, hab);
     const partes = [];
     // AURA DE PROTEÇÃO (paladino, 6º): soma o modificador de Carisma (mínimo +1) a TODA resistência do paladino e dos aliados
@@ -7221,6 +7345,69 @@ export class Encounter {
         actor.resources.cleansingTouch -= 1;
         removeCondition(alvoT, magica.id);
         this.say('recurso', `${actor.name} toca ${alvoT === actor ? 'a si mesmo' : alvoT.name}: ${CONDITIONS[magica.id]?.name ?? magica.id} se desfaz (Toque Purificador).`);
+        return true;
+      }
+      case 'carefulSpell': case 'distantSpell': case 'empoweredSpell': case 'extendedSpell':
+      case 'heightenedSpell': case 'quickenedSpell': case 'subtleSpell': case 'twinnedSpell': {
+        // METAMAGIA é um INTERRUPTOR, de graça: armada, vale na próxima magia que servir (e que os pontos de feitiçaria pagarem).
+        if (!actor.features?.includes(featureId)) return false;
+        const lig = new Set(actor.metaLigada ?? []);
+        const liga = modo === 'ligar' ? true : modo === 'desligar' ? false : !lig.has(featureId);
+        if (liga) lig.add(featureId); else lig.delete(featureId);
+        actor.metaLigada = [...lig];
+        this.say('recurso', `${actor.name} ${liga ? 'arma' : 'desarma'} a metamagia ${nomeDaCaracteristica(featureId)}.`);
+        return true;
+      }
+      case 'fontOfMagic': {
+        // FONTE DE MAGIA (feiticeiro, 2º): ação bônus. 'pontos' gasta um espaço (o menor que houver) e rende pontos iguais ao círculo;
+        // 'espaco' cria um espaço (o maior que os pontos pagam, até o 5º): 1º 2 pontos, 2º 3, 3º 5, 4º 6, 5º 7.
+        if (actor.bonusUsed || !actor.spellcasting?.slots) return false;
+        const sc = actor.spellcasting;
+        const max = actor.resourcesMax?.sorceryPoints ?? 0;
+        if (modo === 'pontos') {
+          const nivelS = sc.slots.findIndex((n, i) => i >= 1 && n > 0);
+          if (nivelS < 1 || (actor.resources.sorceryPoints ?? 0) >= max) return false;
+          sc.slots[nivelS] -= 1;
+          actor.resources.sorceryPoints = Math.min(max, (actor.resources.sorceryPoints ?? 0) + nivelS);
+          actor.bonusUsed = true;
+          this.say('recurso', `${actor.name} converte um espaço de ${nivelS}º círculo em ${nivelS} pontos de feitiçaria (${actor.resources.sorceryPoints}).`);
+          return true;
+        }
+        const CUSTO = { 1: 2, 2: 3, 3: 5, 4: 6, 5: 7 };
+        const pedido = Number(valor);
+        const nivelC = pedido >= 1 && pedido <= 5 ? pedido : [5, 4, 3, 2, 1].find((n) => CUSTO[n] <= (actor.resources.sorceryPoints ?? 0) && n <= (sc.slotsMax?.length ?? 6) - 1);
+        if (!nivelC || CUSTO[nivelC] > (actor.resources.sorceryPoints ?? 0)) return false;
+        actor.resources.sorceryPoints -= CUSTO[nivelC];
+        sc.slots[nivelC] = (sc.slots[nivelC] ?? 0) + 1;
+        actor.bonusUsed = true;
+        this.say('recurso', `${actor.name} cria um espaço de ${nivelC}º círculo por ${CUSTO[nivelC]} pontos de feitiçaria (${actor.resources.sorceryPoints}).`);
+        return true;
+      }
+      case 'dragonWings': {
+        // ASAS DRACÔNICAS (Linhagem Dracônica, 14º): ação bônus; voo com o deslocamento atual por uma hora. Não cabem sob armadura. Uma vez por descanso longo.
+        if (actor.bonusUsed || !(actor.resources?.dragonWings > 0) || hasCondition(actor, 'voando')) return false;
+        if (['leve', 'média', 'pesada'].includes(ARMORS[actor.armor ?? 'nenhuma']?.categoria)) return false;
+        actor.bonusUsed = true;
+        actor.resources.dragonWings -= 1;
+        addCondition(actor, 'voando', { rounds: 600, source: actor.id });
+        this.say('recurso', `${actor.name} abre asas de dragão: voa por uma hora.`);
+        return true;
+      }
+      case 'draconicPresence': {
+        // PRESENÇA DRACÔNICA (Linhagem Dracônica, 18º): ação e 5 pontos; os inimigos a até 18 m testam SAB contra a CD de magia ou ficam
+        // enfeitiçados por um minuto (aqui, sem concentração e sem a escolha de amedrontar).
+        if (actor.actionUsed || (actor.resources?.sorceryPoints ?? 0) < 5) return false;
+        actor.actionUsed = true;
+        actor.resources.sorceryPoints -= 5;
+        const cdD = spellSaveDc(actor);
+        this.say('recurso', `${actor.name} irradia a presença de um dragão (5 pontos, CD ${cdD}).`);
+        for (const t of this.combatants) {
+          if (t.dead || t.side === actor.side || distanceFt(actor.pos, t.pos) > 60 || !this.field.hasLineOfSight(actor.pos, t.pos)) continue;
+          if (this.imuneACondicao(t, 'enfeiticado', actor)) continue;
+          const sv = this.resistencia(t, 'wis', cdD, { contra: { magico: true, condicao: 'enfeiticado' } });
+          this.explicarResistencia(t, 'wis', cdD, sv, { contra: `Presença Dracônica de ${actor.name}`, seSucesso: 'não se encanta' });
+          if (!sv.success) this.aplicarCondicao(t, 'enfeiticado', { rounds: 10, source: actor.id });
+        }
         return true;
       }
       case 'vanish': {
