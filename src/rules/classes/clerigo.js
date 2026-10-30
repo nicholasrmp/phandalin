@@ -37,6 +37,8 @@ export default {
     chanceDeIntervencao: (n) => (n >= 20 ? 100 : n >= 10 ? n : 0),
   },
   recursos: {
+    // Intervenção Divina: um pedido por descanso longo (e, se o deus atende, uma semana de silêncio).
+    divineIntervention: (n) => (n >= 10 ? 1 : 0),
     channelDivinity: (n) => (n >= 18 ? 3 : n >= 6 ? 2 : n >= 2 ? 1 : 0),
   },
   subclasse: {

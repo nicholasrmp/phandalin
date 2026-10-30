@@ -15,13 +15,13 @@ import { makeRng } from '../core/rng.js';
 import { criarPersonagem, subirNivel } from '../rules/progressao.js';
 import { skillBonus, saveBonus, proficiencyBonus, rolarPericia } from '../rules/abilities.js';
 import { bonusDeIniciativa } from '../rules/talentos.js';
-import { addCondition, hasCondition, getCondition, conditionEffects, caEfetiva } from '../rules/conditions.js';
+import { addCondition, removeCondition, nivelDeExaustao, hasCondition, getCondition, conditionEffects, caEfetiva } from '../rules/conditions.js';
 import { RACAS, TRACOS_RACIAIS, racaDe, aplicarRaca, corDoDraconato, ANCESTRALIDADES_DRACONICAS, dadosDoSopro } from '../rules/racas.js';
 import { CARACTERISTICAS } from '../rules/classes/caracteristicas.js';
 import { CLASSES } from '../rules/classes/index.js';
 import { visaoNoEscuro } from '../rules/luz.js';
 import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.js';
-import { margemDeCritico, dadosExtraDeCritico, danoPorResistencia, usoLivreDe, bonusDeDanoPorTraco, vantagemPorTraco, contraDaMagia } from '../rules/passivas.js';
+import { margemDeCritico, dadosExtraDeCritico, danoPorResistencia, usoLivreDe, bonusDeDanoPorTraco, vantagemPorTraco, contraDaMagia, danoDeQueda } from '../rules/passivas.js';
 import * as passivasExtra from '../rules/passivas.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
 import { descansoLongo, escolherResistenciaInfernal, recuperarNoCurto, dadoDaCancaoDeDescanso, gastarDadoDeVida } from '../rules/descanso.js';
@@ -68,8 +68,8 @@ const MAPA = Array(12).fill('............');
  * Um campo 12x12 vazio com os `herois` (já com `pos`) e os inimigos, no turno do grupo.
  * `rng` é opcional: dado fixo para medir a regra.
  */
-function arena({ herois = [], foes = [], rng = makeRng(1) } = {}) {
-  const field = new Battlefield(12, 12, MAPA);
+function arena({ herois = [], foes = [], rng = makeRng(1), mapa = MAPA } = {}) {
+  const field = new Battlefield(12, 12, mapa);
   herois.forEach((h, i) => { h.pos ??= { x: 2 + i, y: 5 }; });
   const log = [];
   const eventos = [];
@@ -1848,6 +1848,435 @@ teste('Matador de Inimigos (patrulheiro, 20º): soma SAB ao dano, uma vez por tu
   };
   assert.equal(soma(inimigo('bugbear', { x: 6, y: 5 })), true);
   assert.equal(soma(inimigo('vigiaCiclopico', { x: 6, y: 5 })), false);
+});
+// ============================================================================================================
+// AÇÕES DE CLASSE, LOTE 1: bárbaro Berserker e bardo
+// ============================================================================================================
+
+teste('Frenesi (Berserker, 3º): em fúria, um ataque como ação bônus; ao fim da fúria, um nível de exaustão; fora da fúria, não', () => {
+  const b = heroi('barbaro', 3, 'Humano', {}, { 3: { subclasse: 'berserker' } });
+  b.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc, log } = arena({ herois: [b], foes: [g] });
+  assert.ok(b.features.includes('frenzy'));
+  assert.equal(enc.useFeature(b, 'frenzy', { target: g }), false, 'sem fúria, não');
+  addCondition(b, 'furia', { rounds: 10 });
+  enc.rng = dadoFixo(15);
+  assert.equal(enc.useFeature(b, 'frenzy', { target: g }), true);
+  assert.equal(b.bonusUsed, true);
+  assert.ok(g.hp < g.maxHp, 'o ataque aconteceu');
+  assert.equal(enc.useFeature(b, 'frenzy', { target: g }), false, 'uma vez por turno (ação bônus)');
+  removeCondition(b, 'furia');
+  enc.fimDaFuria(b);
+  assert.equal(nivelDeExaustao(b), 1, 'a exaustão vem quando a fúria acaba');
+  enc.fimDaFuria(b);
+  assert.equal(nivelDeExaustao(b), 1, 'só uma vez');
+});
+
+teste('Presença Intimidadora (Berserker, 10º): inimigos a 9 m que falham em SAB ficam amedrontados; uma vez; quem passa e quem está longe, não', () => {
+  const b = heroi('barbaro', 10, 'Humano', { abilities: { str: 16, dex: 12, con: 14, int: 10, wis: 10, cha: 14 } });
+  b.pos = { x: 5, y: 2 };
+  const perto = alvoParado({ x: 7, y: 2 });
+  const longe = alvoParado({ x: 5, y: 11 });
+  const { enc } = arena({ herois: [b], foes: [perto, longe] });
+  assert.equal(b.resources.intimidatingPresence, 1);
+  enc.rng = dadoFixo(1);
+  assert.equal(enc.useFeature(b, 'intimidatingPresence'), true);
+  assert.ok(hasCondition(perto, 'amedrontado'));
+  assert.ok(!hasCondition(longe, 'amedrontado'), 'a mais de 9 m não ouve');
+  b.actionUsed = false;
+  assert.equal(enc.useFeature(b, 'intimidatingPresence'), false, 'uma vez por descanso longo');
+  const b2 = heroi('barbaro', 10, 'Humano');
+  b2.pos = { x: 5, y: 5 };
+  const g2 = alvoParado({ x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [b2], foes: [g2] });
+  e2.rng = dadoFixo(20);
+  e2.useFeature(b2, 'intimidatingPresence');
+  assert.ok(!hasCondition(g2, 'amedrontado'), 'quem passa na resistência não se amedronta');
+});
+
+teste('Retaliação (Berserker, 14º): quem leva dano de uma criatura adjacente a ataca de volta, uma vez por rodada (reação)', () => {
+  const b = heroi('barbaro', 14, 'Humano');
+  b.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc, log } = arena({ herois: [b], foes: [g] });
+  enc.beginSide('foes');
+  const antes = g.hp;
+  enc.rng = dadoFixo(15);
+  enc.applyDamage(b, 3, 'cortante', g);
+  assert.ok(g.hp < antes, 'o bárbaro revidou');
+  assert.equal(b.reactionUsed, true);
+  const depois = g.hp;
+  enc.applyDamage(b, 3, 'cortante', g);
+  assert.equal(g.hp, depois, 'sem reação, não revida de novo');
+  const semTraco = heroi('barbaro', 13, 'Humano');
+  semTraco.pos = { x: 5, y: 5 };
+  const g2 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [semTraco], foes: [g2] });
+  e2.beginSide('foes');
+  e2.applyDamage(semTraco, 3, 'cortante', g2);
+  assert.equal(g2.hp, g2.maxHp, 'controle: no 13º ainda não');
+});
+
+teste('Contracanto (bardo, 6º): o grupo a 9 m ganha vantagem contra medo e encantamento, e só contra eles', () => {
+  const bardo = heroi('bardo', 6, 'Humano');
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  bardo.pos = { x: 5, y: 2 }; amigo.pos = { x: 6, y: 2 };
+  const longe = heroi('guerreiro', 1, 'Humano');
+  longe.pos = { x: 5, y: 11 };
+  const { enc } = arena({ herois: [bardo, amigo, longe], foes: [inimigo('goblin', { x: 11, y: 0 })] });
+  assert.equal(enc.useFeature(bardo, 'countercharm'), true);
+  assert.ok(hasCondition(amigo, 'contracanto'));
+  assert.ok(!hasCondition(longe, 'contracanto'));
+  assert.deepEqual(vantagemPorTraco(amigo, 'wis', { condicao: 'amedrontado' }), ['Contracanto']);
+  assert.deepEqual(vantagemPorTraco(amigo, 'wis', { condicao: 'enfeiticado' }), ['Contracanto']);
+  assert.deepEqual(vantagemPorTraco(amigo, 'wis', { condicao: 'envenenado' }), [], 'controle: outra condição não');
+});
+
+teste('Palavras Cortantes (bardo do Conhecimento): gasta Inspiração e subtrai o dado de um acerto inimigo que vira erro; não gasta se não muda nada', () => {
+  const alvo = heroi('guerreiro', 1, 'Humano');
+  const bardo = heroi('bardo', 3, 'Humano', {}, { 3: { subclasse: 'conhecimento' } });
+  alvo.pos = { x: 5, y: 5 }; bardo.pos = { x: 5, y: 7 };
+  alvo.ac = 16;
+  const g = alvoParado({ x: 6, y: 5 });
+  const { enc } = arena({ herois: [alvo, bardo], foes: [g] });
+  enc.beginSide('foes');
+  assert.ok(bardo.features.includes('cuttingWords'));
+  const insp = bardo.resources.bardicInspiration;
+  const bonus = 4; // o ataque do goblin
+  enc.rng = dadoFixo(16 - bonus + 1); // acerta por 1
+  const r = enc.resolveAttack(g, alvo);
+  assert.equal(r?.hit, false, 'o dado cortou o acerto');
+  assert.equal(bardo.resources.bardicInspiration, insp - 1);
+  assert.equal(bardo.reactionUsed, true);
+  // acerto folgado: o dado (3) não basta, e a Inspiração fica
+  bardo.reactionUsed = false;
+  enc.rng = dadoFixo(20 - 1); // 19 + 4 = 23: 20 de folga demais para o d6 (3)
+  const r2 = enc.resolveAttack(g, alvo);
+  assert.equal(bardo.resources.bardicInspiration, insp - 1, 'não gastou à toa');
+  assert.ok(r2?.hit);
+});
+// ============================================================================================================
+// AÇÕES DE CLASSE, LOTE 2: clérigo e paladino
+// ============================================================================================================
+
+teste('Intervenção Divina (clérigo, 10º): d100 até o nível atende (cura o grupo e cala o deus por 7 dias); falhou, só volta no descanso longo', () => {
+  const c = heroi('clerigo', 10, 'Humano');
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  c.pos = { x: 5, y: 5 }; amigo.pos = { x: 6, y: 5 };
+  const { enc } = arena({ herois: [c, amigo], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(c.resources.divineIntervention, 1);
+  amigo.hp = 1;
+  enc.rng = dadoFixo(50, 100);
+  assert.equal(enc.useFeature(c, 'divineIntervention'), true);
+  assert.equal(amigo.hp, 1, 'd100 de 50 contra 10: silêncio');
+  assert.equal(c.resources.divineIntervention, 0);
+  assert.ok(!(c.intervencaoDias > 0));
+  descansoLongo(c);
+  assert.equal(c.resources.divineIntervention, 1, 'o descanso longo devolve o pedido');
+  c.actionUsed = false;
+  enc.rng = dadoFixo(7, 100);
+  assert.equal(enc.useFeature(c, 'divineIntervention'), true);
+  assert.equal(amigo.hp, amigo.maxHp, 'd100 de 7 contra 10: o deus atende');
+  assert.equal(c.intervencaoDias, 7);
+  descansoLongo(c);
+  assert.equal(c.resources.divineIntervention, 1);
+  c.actionUsed = false;
+  assert.equal(enc.useFeature(c, 'divineIntervention'), false, 'calado por seis dias ainda');
+  const c9 = heroi('clerigo', 9, 'Humano');
+  assert.equal(c9.resources.divineIntervention ?? 0, 0, 'antes do 10º, nada');
+});
+
+teste('Arma Sagrada (Devoção, 3º): gasta Canalizar Divindade e soma CAR (mín. +1) aos ataques; Expulsar os Profanos faz fugir corruptor e morto-vivo', () => {
+  const p = heroi('paladino', 3, 'Humano', { abilities: { str: 16, dex: 10, con: 14, int: 10, wis: 10, cha: 16 } });
+  p.pos = { x: 5, y: 5 };
+  const morto = alvoParado({ x: 7, y: 5 }, 'caveiraCandente');
+  const goblin = alvoParado({ x: 6, y: 6 });
+  const { enc } = arena({ herois: [p], foes: [morto, goblin] });
+  assert.equal(p.resources.channelDivinity, 1);
+  assert.equal(enc.useFeature(p, 'sacredWeapon'), true);
+  assert.ok(conditionEffects(p).attackBonusDice.includes('+3'), 'CAR 16 = +3');
+  assert.equal(p.resources.channelDivinity, 0);
+  p.actionUsed = false;
+  assert.equal(enc.useFeature(p, 'turnTheUnholy'), false, 'sem carga');
+  p.resources.channelDivinity = 1;
+  enc.rng = dadoFixo(1);
+  assert.equal(enc.useFeature(p, 'turnTheUnholy'), true);
+  assert.ok(hasCondition(morto, 'amedrontado'), 'o morto-vivo falhou e foge');
+  assert.ok(!hasCondition(goblin, 'amedrontado'), 'controle: um goblin não é profano');
+});
+
+teste('Nimbo Sagrado (Devoção, 20º): 10 radiante em quem começa o turno a 9 m, e vantagem contra magia de corruptor e morto-vivo; uma vez', () => {
+  const p = heroi('paladino', 20, 'Humano');
+  p.pos = { x: 5, y: 2 };
+  const perto = alvoParado({ x: 6, y: 2 });
+  const longe = alvoParado({ x: 5, y: 11 });
+  const { enc } = arena({ herois: [p], foes: [perto, longe] });
+  assert.equal(p.resources.holyNimbus, 1);
+  assert.equal(enc.useFeature(p, 'holyNimbus'), true);
+  enc.beginSide('foes');
+  assert.equal(perto.maxHp - perto.hp, 10, 'a luz queima quem está perto');
+  assert.equal(longe.hp, longe.maxHp, 'quem está longe não');
+  assert.deepEqual(vantagemPorTraco(p, 'wis', { magico: true, fonteTipo: 'morto-vivo' }), ['Nimbo Sagrado']);
+  assert.deepEqual(vantagemPorTraco(p, 'wis', { magico: true, fonteTipo: 'humanoide' }), [], 'controle: outro conjurador');
+  p.actionUsed = false;
+  assert.equal(enc.useFeature(p, 'holyNimbus'), false, 'uma vez por descanso longo');
+});
+
+teste('Toque Purificador (paladino, 14º): encerra uma magia no aliado tocado, gasta um uso; sem magia, não gasta', () => {
+  const p = heroi('paladino', 14, 'Humano', { abilities: { str: 16, dex: 10, con: 14, int: 10, wis: 10, cha: 16 } });
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  p.pos = { x: 5, y: 5 }; amigo.pos = { x: 6, y: 5 };
+  const { enc } = arena({ herois: [p, amigo], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  const usos = Math.max(1, abilityModDe(p.abilities.cha));
+  assert.equal(p.resources.cleansingTouch, usos, 'CAR vira usos');
+  assert.equal(enc.useFeature(p, 'cleansingTouch', { target: amigo }), false, 'sem magia nenhuma, nada a encerrar');
+  assert.equal(p.resources.cleansingTouch, usos);
+  addCondition(amigo, 'lentificado', { rounds: 10, magia: { id: 'lentidao', circulo: 3 } });
+  assert.equal(enc.useFeature(p, 'cleansingTouch', { target: amigo }), true);
+  assert.ok(!hasCondition(amigo, 'lentificado'));
+  assert.equal(p.resources.cleansingTouch, usos - 1);
+});
+// ============================================================================================================
+// AÇÕES DE CLASSE, LOTE 3: monge
+// ============================================================================================================
+
+teste('Queda Lenta (monge, 4º): o dano de queda cai em 5 × o nível; quem não é monge leva tudo', () => {
+  const m = heroi('monge', 4, 'Humano');
+  assert.equal(danoDeQueda(m, 12), 0, 'um monge de 4º absorve até 20');
+  assert.equal(danoDeQueda(m, 25), 5);
+  assert.equal(danoDeQueda(heroi('guerreiro', 4, 'Humano'), 12), 12, 'controle');
+  assert.equal(danoDeQueda(heroi('monge', 3, 'Humano'), 12), 12, 'antes do 4º, nada');
+});
+
+teste('Defletir Projéteis (monge, 3º): reação; ataque à distância perde 1d10 + DES + nível; zerado e com ki, devolve; corpo a corpo não', () => {
+  const m = heroi('monge', 5, 'Humano', { abilities: { str: 10, dex: 16, con: 12, int: 10, wis: 14, cha: 10 } });
+  m.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 9, y: 5 });
+  const { enc } = arena({ herois: [m], foes: [g] });
+  enc.beginSide('foes');
+  enc.rng = dadoFixo(15);
+  const ki = m.resources.ki;
+  const hp0 = m.hp;
+  enc.applyDamage(m, 5, 'perfurante', g, { deArma: true, corpoACorpo: false });
+  assert.equal(m.hp, hp0, 'o dano de 5 foi zerado (1d10 = 5, +3 DES, +5 nível)');
+  assert.equal(m.resources.ki, ki - 1, 'devolveu o projétil, gastando 1 de ki');
+  assert.ok(m.reactionUsed);
+  assert.ok(g.hp < g.maxHp, 'e o projétil acertou quem atirou');
+  const m2 = heroi('monge', 5, 'Humano');
+  m2.pos = { x: 5, y: 5 };
+  const g2 = alvoParado({ x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [m2], foes: [g2] });
+  e2.beginSide('foes');
+  const h2 = m2.hp;
+  e2.applyDamage(m2, 5, 'cortante', g2, { deArma: true, corpoACorpo: true });
+  assert.equal(m2.hp, h2 - 5, 'controle: golpe corpo a corpo não é defletido');
+});
+
+teste('Quietude da Mente (7º) e Integridade do Corpo (Mão Aberta, 6º)', () => {
+  const m = heroi('monge', 7, 'Humano');
+  m.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [m], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(enc.useFeature(m, 'stillnessOfMind'), false, 'sem nada a encerrar');
+  addCondition(m, 'amedrontado', { rounds: 10 });
+  assert.equal(enc.useFeature(m, 'stillnessOfMind'), true);
+  assert.ok(!hasCondition(m, 'amedrontado'));
+  const w = heroi('monge', 6, 'Humano');
+  w.pos = { x: 4, y: 5 };
+  const { enc: e2 } = arena({ herois: [w], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  w.hp = 1;
+  assert.equal(e2.useFeature(w, 'wholenessOfBody'), true);
+  assert.equal(w.hp, Math.min(w.maxHp, 1 + 18), '3 × 6');
+  w.actionUsed = false;
+  assert.equal(e2.useFeature(w, 'wholenessOfBody'), false, 'uma vez por descanso longo');
+});
+
+teste('Corpo Vazio (monge, 18º): 4 de ki, invisível e resistente a tudo menos energético; atacar não desfaz', () => {
+  const m = heroi('monge', 18, 'Humano');
+  m.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 });
+  const { enc } = arena({ herois: [m], foes: [g] });
+  const ki = m.resources.ki;
+  assert.equal(enc.useFeature(m, 'emptyBody'), true);
+  assert.equal(m.resources.ki, ki - 4);
+  assert.ok(hasCondition(m, 'invisivel'));
+  enc.quebraInvisibilidade(m);
+  assert.ok(hasCondition(m, 'invisivel'), 'a invisibilidade do monge não quebra ao atacar');
+  const antes = m.hp;
+  enc.applyDamage(m, 10, 'fogo', g);
+  assert.equal(antes - m.hp, 5, 'resistência a fogo');
+  const antes2 = m.hp;
+  enc.applyDamage(m, 10, 'energético', g);
+  assert.equal(antes2 - m.hp, 10, 'energético passa inteiro');
+});
+
+teste('Palma Vibrante (monge, 17º): 3 de ki armam; o golpe que acerta marca; encerrar faz CON (cai a 0 PV) ou 10d10 necrótico', () => {
+  const montar = () => {
+    const m = heroi('monge', 17, 'Humano', { abilities: { str: 10, dex: 18, con: 12, int: 10, wis: 18, cha: 10 } });
+    m.pos = { x: 5, y: 5 };
+    const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+    g.abilities = { ...g.abilities, con: 8 };
+    const { enc } = arena({ herois: [m], foes: [g] });
+    return { m, g, enc };
+  };
+  const { m, g, enc } = montar();
+  const ki = m.resources.ki;
+  assert.equal(enc.useFeature(m, 'quiveringPalm'), true);
+  assert.equal(m.resources.ki, ki - 3);
+  enc.rng = dadoFixo(15);
+  enc.resolveAttack(m, g, { weaponId: 'punhos' });
+  assert.equal(g.vibracao?.donoId, m.id, 'o golpe deixou as vibrações');
+  m.actionUsed = false;
+  enc.rng = dadoFixo(1);
+  assert.equal(enc.useFeature(m, 'quiveringPalm', { target: g, modo: 'encerrar' }), true);
+  assert.equal(g.hp, 0, 'falhou na CON: a 0 PV');
+  const { m: m2, g: g2, enc: e2 } = montar();
+  g2.vibracao = { donoId: m2.id };
+  e2.rng = dadoFixo(20);
+  e2.useFeature(m2, 'quiveringPalm', { target: g2, modo: 'encerrar' });
+  assert.ok(g2.hp < g2.maxHp && g2.hp > 0 || g2.dead, 'passou: 10d10 necrótico, e não cai direto a 0 sem o dano');
+  assert.equal(g2.vibracao, undefined);
+});
+// ============================================================================================================
+// AÇÕES DE CLASSE, LOTE 4: Caçador e ladino
+// ============================================================================================================
+
+const COM_CAIXOTE = MAPA.map((l, y) => (y === 5 ? '......o.....' : l));
+
+teste('Esconder-se em luta (Ação Ardilosa, Sumir): precisa de cobertura contra quem vê e de Furtividade acima da Percepção passiva', () => {
+  const l = heroi('ladino', 2, 'Humano', { abilities: { str: 10, dex: 18, con: 12, int: 10, wis: 10, cha: 10 } });
+  l.pos = { x: 7, y: 5 };
+  const g = alvoParado({ x: 4, y: 5 });
+  const { enc } = arena({ herois: [l], foes: [g], mapa: COM_CAIXOTE });
+  enc.rng = dadoFixo(20);
+  assert.equal(enc.useFeature(l, 'cunningAction', { modo: 'esconder' }), true);
+  assert.equal(l.bonusUsed, true);
+  assert.ok(hasCondition(l, 'invisivel'), 'escondido');
+  enc.quebraInvisibilidade(l);
+  assert.ok(!hasCondition(l, 'invisivel'), 'atacar revela quem se escondeu');
+  // sem cobertura: não esconde
+  const l2 = heroi('ladino', 2, 'Humano', { abilities: { str: 10, dex: 18, con: 12, int: 10, wis: 10, cha: 10 } });
+  l2.pos = { x: 7, y: 8 };
+  const g2 = alvoParado({ x: 4, y: 8 });
+  const { enc: e2 } = arena({ herois: [l2], foes: [g2] });
+  e2.rng = dadoFixo(20);
+  e2.useFeature(l2, 'cunningAction', { modo: 'esconder' });
+  assert.ok(!hasCondition(l2, 'invisivel'), 'em campo aberto não há onde se esconder');
+  // notado: Furtividade abaixo da Percepção
+  const l3 = heroi('ladino', 2, 'Humano');
+  l3.pos = { x: 7, y: 5 };
+  const g3 = alvoParado({ x: 4, y: 5 });
+  const { enc: e3 } = arena({ herois: [l3], foes: [g3], mapa: COM_CAIXOTE });
+  e3.rng = dadoFixo(1);
+  e3.useFeature(l3, 'cunningAction', { modo: 'esconder' });
+  assert.ok(!hasCondition(l3, 'invisivel'), 'tirou 1: foi notado');
+});
+
+teste('Sumir (patrulheiro, 14º) esconde como ação bônus; Mãos Rápidas (ladrão, 3º) usa objeto como ação bônus', () => {
+  const p = heroi('patrulheiro', 14, 'Humano', { abilities: { str: 10, dex: 18, con: 12, int: 10, wis: 14, cha: 10 } });
+  p.pos = { x: 7, y: 5 };
+  const g = alvoParado({ x: 4, y: 5 });
+  const { enc } = arena({ herois: [p], foes: [g], mapa: COM_CAIXOTE });
+  enc.rng = dadoFixo(20);
+  assert.equal(enc.useFeature(p, 'vanish'), true);
+  assert.ok(hasCondition(p, 'invisivel'));
+  assert.equal(p.bonusUsed, true);
+  const l = heroi('ladino', 3, 'Humano');
+  l.pos = { x: 5, y: 5 };
+  const { enc: e2 } = arena({ herois: [l], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  l.hp = 1;
+  const r = e2.useItem(l, 'pocaoDeCura');
+  assert.ok(r.ok, r.why);
+  assert.equal(l.bonusUsed, true, 'gastou a ação bônus');
+  assert.equal(l.actionUsed, false, 'e a ação ficou livre');
+  const c = heroi('guerreiro', 3, 'Humano');
+  c.pos = { x: 5, y: 5 };
+  const { enc: e3 } = arena({ herois: [c], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  c.hp = 1;
+  e3.useItem(c, 'pocaoDeCura');
+  assert.equal(c.actionUsed, true, 'controle: quem não é ladrão gasta a ação');
+});
+
+teste('Saraivada e Ataque Giratório (Caçador, 11º): um ataque contra cada criatura na área; só uma delas vem por escolha', () => {
+  const arq = heroi('patrulheiro', 11, 'Humano', { abilities: { str: 10, dex: 18, con: 12, int: 10, wis: 14, cha: 10 } });
+  assert.ok(arq.features.includes('volley') && !arq.features.includes('whirlwindAttack'), 'o padrão é a Saraivada');
+  arq.pos = { x: 2, y: 5 };
+  const a = alvoParado({ x: 8, y: 5 }, 'bugbear');
+  const b = alvoParado({ x: 9, y: 5 }, 'bugbear');
+  const longe = alvoParado({ x: 8, y: 10 }, 'bugbear');
+  const { enc } = arena({ herois: [arq], foes: [a, b, longe] });
+  arq.equippedWeapon = 'arcoCurto';
+  enc.rng = dadoFixo(18);
+  assert.equal(enc.useFeature(arq, 'volley', { target: a }), true);
+  assert.ok(a.hp < a.maxHp && b.hp < b.maxHp, 'os dois vizinhos levaram');
+  assert.equal(longe.hp, longe.maxHp, 'quem está a mais de 3 m não');
+  const giro = heroi('patrulheiro', 11, 'Humano', {}, { 11: { multiattack: 'whirlwindAttack' } });
+  assert.ok(giro.features.includes('whirlwindAttack'));
+  giro.pos = { x: 5, y: 5 };
+  const x = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const y = alvoParado({ x: 4, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [giro], foes: [x, y] });
+  e2.rng = dadoFixo(18);
+  assert.equal(e2.useFeature(giro, 'whirlwindAttack'), true);
+  assert.ok(x.hp < x.maxHp && y.hp < y.maxHp);
+});
+
+teste('Defesa Contra a Maré (Caçador, 15º): o golpe corpo a corpo que erra o patrulheiro cai em outra criatura ao alcance do atacante', () => {
+  const p = heroi('patrulheiro', 15, 'Humano', {}, { 15: { superiorHuntersDefense: 'standAgainstTheTide' } });
+  assert.ok(p.features.includes('standAgainstTheTide'));
+  p.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const g2 = alvoParado({ x: 7, y: 5 }, 'bugbear');
+  const { enc, log } = arena({ herois: [p], foes: [g, g2] });
+  enc.beginSide('foes');
+  enc.rng = dadoFixo(1); // erra o patrulheiro
+  enc.resolveAttack(g, p);
+  assert.equal(p.reactionUsed, true);
+  assert.equal(contaLog(log, /Defesa Contra a Maré/), 1, 'o golpe foi desviado');
+  assert.equal(contaLog(log, /erra/) >= 2, true, 'e o desvio também é um ataque (aqui, errou de novo)');
+});
+
+teste('Golpe de Sorte (ladino, 20º): um ataque que erra vira acerto, uma vez por descanso curto', () => {
+  const l = heroi('ladino', 20, 'Humano');
+  l.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [l], foes: [g] });
+  assert.equal(l.resources.strokeOfLuck, 1);
+  enc.rng = dadoFixo(1);
+  const r = enc.resolveAttack(l, g);
+  assert.equal(r?.hit, true, 'o erro virou acerto');
+  assert.equal(l.resources.strokeOfLuck, 0);
+  const r2 = enc.resolveAttack(l, g);
+  assert.equal(r2?.hit, false, 'só uma vez');
+  recuperarNoCurto(l);
+  assert.equal(l.resources.strokeOfLuck, 1, 'volta no descanso curto');
+});
+// ============================================================================================================
+// AÇÕES DE CLASSE, LOTE 5: bruxo do Corruptor
+// ============================================================================================================
+
+teste('Sorte do Obscuro (Corruptor, 6º): +1d10 numa resistência que falhou, só se isso a salva; Lançar pelo Inferno dá 10d10 psíquico no acerto', () => {
+  const b = heroi('bruxo', 14, 'Humano', { abilities: { str: 10, dex: 12, con: 14, int: 10, wis: 12, cha: 18 } });
+  b.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [b], foes: [g] });
+  assert.equal(b.resources.darkOnesOwnLuck, 1);
+  // d20 = 5 e o bônus de SAB (com proficiência) dão 11; o d10 fixo (5) leva a 16: contra CD 20 não salva, então não gasta
+  enc.rng = dadoFixo(5);
+  const r1 = enc.resistencia(b, 'wis', 20);
+  assert.equal(r1.success, false);
+  assert.equal(b.resources.darkOnesOwnLuck, 1, 'o d10 não bastava: não gasta');
+  const r2 = enc.resistencia(b, 'wis', 15);
+  assert.equal(r2.success, true, 'contra CD 15, o d10 salva');
+  assert.equal(b.resources.darkOnesOwnLuck, 0, 'gastou');
+  // Lançar pelo Inferno
+  b.resources.hurlThroughHell = 1;
+  assert.equal(enc.useFeature(b, 'hurlThroughHell'), true);
+  const antes = g.hp;
+  enc.rng = dadoFixo(15);
+  enc.resolveAttack(b, g);
+  assert.ok(antes - g.hp >= 10, `o acerto levou os 10d10 (${antes - g.hp} de dano)`);
+  assert.equal(b.hurlPronto, false);
 });
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);

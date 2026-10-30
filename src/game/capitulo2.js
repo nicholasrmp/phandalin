@@ -45,6 +45,7 @@
 // Fan Content Policy; nenhuma fala ou descrição é do livro, nem parafraseada.
 
 import { narrar } from '../view/narrativa.js';
+import { danoDeQueda } from '../rules/passivas.js';
 import { d20 } from '../core/dice.js';
 import { abilityMod, skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { distanceFt, Battlefield, SUPERFICIES } from '../core/grid.js';
@@ -218,7 +219,7 @@ export function criarCapitulo2(app, config) {
       if (r.success) {
         paginas.push({ texto: [`As folhas cedem sob ${frente.name}: um fosso! ${frente.name} se agarra na beirada e sai.`] });
       } else {
-        const dano = enc.rng.die(6);
+        const dano = danoDeQueda(frente, enc.rng.die(6));
         enc.applyDamage(frente, dano, 'concussão');
         enc.say('dano', `${frente.name} cai no fosso da trilha: ${dano} de dano.`);
         paginas.push({ texto: [`As folhas cedem e ${frente.name} despenca num fosso de três metros (${dano} de dano). As paredes não são íngremes; sair dá só trabalho.`] });
@@ -1017,7 +1018,7 @@ export function criarCapitulo2(app, config) {
           estado.ponteCortada = true;
           const linhas = [`${c.name} serra o cabo de apoio até ele arrebentar. A ponte tomba para um lado e fica pendurada por um cabo só.`];
           if (emCima) {
-            const dano = enc.rng.die(6) + enc.rng.die(6);
+            const dano = danoDeQueda(emCima, enc.rng.die(6) + enc.rng.die(6));
             enc.applyDamage(emCima, dano, 'concussão');
             if (!emCima.dead) {
               addCondition(emCima, 'caido');

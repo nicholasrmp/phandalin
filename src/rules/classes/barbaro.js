@@ -52,6 +52,8 @@ export default {
           10: ['intimidatingPresence'],
           14: ['retaliation'],
         },
+        // Presença Intimidadora: uma vez por descanso longo.
+        recursos: { intimidatingPresence: (n) => (n >= 10 ? 1 : 0) },
       },
     },
   },

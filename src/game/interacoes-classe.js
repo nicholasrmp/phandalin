@@ -71,6 +71,23 @@ export function opcoesDeClasse(app, c, occ, { enc, vez = false, explorando = fal
     }
   }
 
+  // ---- Toque Purificador (paladino, 14º) -------------------------------------
+  // Ação: encerra UMA magia em si ou num aliado ao lado. Só em combate, e só se há magia para encerrar.
+  if (c.features?.includes('cleansingTouch') && vez) {
+    const usos = c.resources?.cleansingTouch ?? 0;
+    const magica = (occ.conditions ?? []).find((k) => k.magia);
+    opcoes.push({
+      grupo: 'Socorrer', rotulo: occ === c ? `Toque Purificador em si (${usos})` : `Toque Purificador em ${occ.name} (${usos})`,
+      icone: 'classe-cleansingTouch', alvoPrevia: occ,
+      detalhe: `ação · encerra ${magica ? (CONDITIONS[magica.id]?.name ?? 'uma magia') : 'uma magia'}`,
+      motivo: c.actionUsed ? 'a ação deste turno já foi usada'
+        : usos <= 0 ? 'sem usos de Toque Purificador'
+          : occ !== c && enc?.field && !enc.field.vizinhos(c.pos, occ.pos) ? 'encoste nele primeiro'
+            : !magica ? `nenhuma magia em ${occ === c ? 'você' : occ.name}` : null,
+      fazer: () => app.usarFeature(c, 'cleansingTouch', { target: occ }),
+    });
+  }
+
   // ---- Inspiração Bárdica --------------------------------------------------
   // Ação bônus, um aliado (não o próprio bardo) a até 18 m. Só em combate.
   if (c.features?.includes('bardicInspiration') && occ !== c && vez) {

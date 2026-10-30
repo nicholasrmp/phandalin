@@ -44,7 +44,7 @@ import { spellMod } from './party.js';
 import { modificadoresDeLuz } from './luz.js';
 import {
   vantagemPorTraco, contraDaMagia, margemDeCritico, dadosExtraDeCritico, danoPorResistencia, TIPOS_DA_PUREZA, CONDICOES_DE_ENCANTO,
-  bonusDeDanoPorTraco, usoLivreDe, PLANTAS_QUE_PRENDEM, ehInimigoFavorito,
+  bonusDeDanoPorTraco, usoLivreDe, PLANTAS_QUE_PRENDEM, ehInimigoFavorito, danoDeQueda,
 } from './passivas.js';
 
 // ---- rolagens que se explicam ---------------------------------------------
@@ -617,6 +617,7 @@ export class Encounter {
       c.acaoVelozDisponivel = hasCondition(c, 'acelerado');
       this.comecoDoTurnoMagico(c);
       this.comecoDoTurnoPassivo(c);
+      this.nimboTick(c);
       c.sneakUsedThisTurn = false; c.golpeDivinoNoTurno = false; c.presaNoTurno = false;
       c.martialUsedThisTurn = false;
       c.atacouNoTurno = false;
@@ -1200,6 +1201,8 @@ export class Encounter {
     // ponto. Aqui, e não só no começo do lado, para que um ataque de
     // oportunidade entre turnos não gaste um golpe armado na rodada passada.
     actor.atordoantePronto = false;
+    actor.palmaPronta = false;
+    actor.hurlPronto = false;
     this.onEvent({ type: 'turnEnd', actor });
     this.maybeEndSide();
   }
@@ -2122,6 +2125,8 @@ export class Encounter {
       return;
     }
     const r = damageRoll(this.rng, dados);
+    // QUEDA LENTA (monge, 4º): o dano cai em 5 × o nível.
+    r.total = danoDeQueda(c, r.total);
     this.say('condicao', `${c.name} deixa de ${dados === '1d6' ? 'voar' : 'levitar'} e cai: ${r.total} concussão.`, `${dados}[${r.rolls.join('+')}]`);
     this.applyDamage(c, r.total, 'concussão', null);
     if (!c.dead && !hasCondition(c, 'inconsciente')) addCondition(c, 'caido');
@@ -3262,6 +3267,7 @@ export class Encounter {
         modo: mods.mode, anulado: mods.anulado,
         vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
       });
+      if (!p.ranged) this.desviarParaOutro(attacker, target, { weaponId });
       return { hit: false, faltou, errouPorPouco: porPouco, modo: mods.mode };
     }
 
@@ -3740,7 +3746,16 @@ export class Encounter {
    * Os dez turnos de duração são contados pela própria condição.
    */
   fimDaFuria(c) {
-    if (!hasCondition(c, 'furia')) { c.furiaAgiu = false; return; }
+    if (!hasCondition(c, 'furia')) {
+      // FRENESI (Berserker, 3º): quando a fúria em que ele atacou como ação bônus acaba, vem um nível de exaustão.
+      if (c.frenesiNaFuria) {
+        c.frenesiNaFuria = false;
+        mudarExaustao(c, 1);
+        this.say('condicao', `${c.name} sai do frenesi e fica exausto (1 nível).`);
+      }
+      c.furiaAgiu = false;
+      return;
+    }
     // FÚRIA PERSISTENTE (bárbaro, 15º): a fúria não acaba por falta de ataque ou de dano; só se ele cair ou a encerrar.
     if (!c.furiaAgiu && !c.features?.includes('persistentRage')) {
       removeCondition(c, 'furia');
@@ -3902,6 +3917,23 @@ export class Encounter {
       amount = Math.floor(amount / 2);
       this.say('recurso', `${target.name} se desvia: o golpe sai pela metade (${amount}).`);
     }
+    // DEFLETIR PROJÉTEIS (monge, 3º): reação; um ataque À DISTÂNCIA com arma que acerta o monge perde 1d10 + DES + nível do dano. Se zerar
+    // e ele tiver 1 de ki, devolve o projétil: um ataque à distância dele contra quem atirou, com o mesmo dano.
+    if (source && deArma && !corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('deflectMissiles')
+      && !conditionEffects(target).incapacitated && !hasCondition(target, 'cego')) {
+      const reduz = this.rng.die(10) + abilityMod(target.abilities.dex) + (target.level ?? 1);
+      target.reactionUsed = true;
+      const cheio = amount;
+      amount = Math.max(0, amount - reduz);
+      this.say('recurso', `${target.name} defleta o projétil: -${reduz}, o dano vai de ${cheio} a ${amount}.`);
+      if (amount === 0 && (target.resources?.ki ?? 0) > 0 && !source.dead && distanceFt(target.pos, source.pos) <= 60) {
+        target.resources.ki -= 1;
+        const d = this.rng.die(20);
+        const acerta = d === 20 || (d !== 1 && d + abilityMod(target.abilities.dex) + proficiencyBonus(target.level ?? 1) >= caEfetiva(source));
+        this.say('recurso', `${target.name} gasta 1 ki e devolve o projétil: ${acerta ? 'acerta' : 'erra'} ${source.name}.`);
+        if (acerta) this.applyDamage(source, cheio, type, target, { deArma: true });
+      }
+    }
     // DIVISÃO (Gelatina Ocre): o livro diz "ao ser ATINGIDA por dano cortante
     // ou elétrico", não "ao sofrer". A gelatina é imune aos dois, então aqui
     // `amount` já é 0 — e é exatamente por isso que a chamada vem ANTES do
@@ -3994,6 +4026,7 @@ export class Encounter {
       if (this.risoDaFonte) this.risoDaFonte.add(target);
       else this.repetirAoSofrerDano(target);
       this.reacaoAoDano(target, source);
+      this.retaliacao(target, source);
       // Enfeitiçar Pessoa: dano de quem enfeitiçou (ou dos aliados dele) quebra.
       const encanto = getCondition(target, 'enfeiticado');
       const quemEncantou = encanto && this.combatants.find((x) => x.id === encanto.source);
@@ -5197,7 +5230,7 @@ export class Encounter {
         const pegos = [];
         for (const t of picks) {
           // Enfeitiçar Pessoa: quem está lutando com você testa com vantagem.
-          const save = this.resistencia(t, spell.save, dc, { vantagem: !!spell.vantagemEmCombate, contra: contraDaMagia(spell) });
+          const save = this.resistencia(t, spell.save, dc, { vantagem: !!spell.vantagemEmCombate, contra: contraDaMagia(spell, actor) });
           const r = this.explicarResistencia(t, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: `resiste a ${spell.name}`,
@@ -5382,7 +5415,7 @@ export class Encounter {
         const aliado = target.side === actor.side;
         const cond = aliado ? 'aumentado' : 'reduzido';
         if (!aliado) {
-          const save = this.resistencia(target, spell.save, dc, { contra: contraDaMagia(spell) });
+          const save = this.resistencia(target, spell.save, dc, { contra: contraDaMagia(spell, actor) });
           const r = this.explicarResistencia(target, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: 'continua do tamanho que tem',
@@ -5413,7 +5446,7 @@ export class Encounter {
           const presos = MALES.filter((id) => hasCondition(t, id));
           if (amigo && !presos.length) continue;
           if (!amigo) {
-            const save = this.resistencia(t, spell.save, dc, { contra: contraDaMagia(spell) });
+            const save = this.resistencia(t, spell.save, dc, { contra: contraDaMagia(spell, actor) });
             const r = this.explicarResistencia(t, spell.save, dc, save, {
               contra: `${spell.name} de ${actor.name}`,
               seSucesso: 'segue como estava',
@@ -5512,7 +5545,7 @@ export class Encounter {
       case 'levitar': {
         if (target.side !== actor.side) {
           this.acordaIndiferentes(target, actor);
-          const save = this.resistencia(target, spell.save, dc, { contra: contraDaMagia(spell) });
+          const save = this.resistencia(target, spell.save, dc, { contra: contraDaMagia(spell, actor) });
           const r = this.explicarResistencia(target, spell.save, dc, save, {
             contra: `${spell.name} de ${actor.name}`,
             seSucesso: 'continua no chão',
@@ -5990,6 +6023,68 @@ export class Encounter {
   }
 
   /** Repreensão Infernal: quem fere o bruxo leva chamas, na reação dele. */
+  /**
+   * ESCONDER-SE em luta (Ação Ardilosa, Sumir): precisa de cobertura contra todo inimigo que o vê; Furtividade contra a maior
+   * Percepção passiva deles. Escondido vira invisível até atacar (`quebraInvisibilidade`).
+   */
+  esconder(actor) {
+    const olhos = this.combatants.filter((o) => !o.dead && o.side !== actor.side && this.field.hasLineOfSight(o.pos, actor.pos));
+    if (olhos.some((o) => this.field.coverBetween(o.pos, actor.pos) < 2)) {
+      this.say('aviso', `${actor.name} tenta se esconder, mas não há onde (precisa de cobertura contra quem o vê).`);
+      return false;
+    }
+    const cd = Math.max(0, ...olhos.map((o) => passivePerception(o)));
+    const t = rolarPericia(this.rng, actor, 'furtividade');
+    if (olhos.length && t.total <= cd) {
+      this.say('aviso', `${actor.name} tenta se esconder e é notado (Furtividade ${t.total} contra ${cd}).`);
+      return false;
+    }
+    addCondition(actor, 'invisivel', { rounds: Infinity, source: actor.id, data: { escondido: true } });
+    this.say('recurso', `${actor.name} se esconde (Furtividade ${t.total} contra ${cd}).`);
+    return true;
+  }
+
+  /** DEFESA CONTRA A MARÉ (Caçador, 15º): reação; um ataque corpo a corpo que ERRA o patrulheiro é desviado para outra criatura ao alcance do atacante. */
+  desviarParaOutro(atacante, alvo, opcoes) {
+    if (this.reagindo || alvo.reactionUsed || !alvo.features?.includes('standAgainstTheTide') || conditionEffects(alvo).incapacitated) return;
+    const outros = this.combatants.filter((o) => !o.dead && o !== atacante && o !== alvo && isAdjacent(atacante.pos, o.pos));
+    // Prefere um aliado do atacante (o desvio dói em quem atacou); senão, qualquer um ao alcance.
+    const novo = outros.find((o) => o.side === atacante.side) ?? outros[0];
+    if (!novo) return;
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      this.say('recurso', `${alvo.name} desvia o golpe de ${atacante.name} para ${novo.name} (Defesa Contra a Maré).`);
+      this.resolveAttack(atacante, novo, opcoes);
+    } finally {
+      this.reagindo = false;
+    }
+  }
+
+  /** NIMBO SAGRADO: quem começa o turno a 9 m de um paladino em nimbo sofre 10 de dano radiante. */
+  nimboTick(c) {
+    if (c.dead) return;
+    for (const p of this.combatants) {
+      if (p.dead || p.side === c.side || !hasCondition(p, 'nimboSagrado') || distanceFt(p.pos, c.pos) > 30) continue;
+      this.say('dano', `A luz de ${p.name} queima ${c.name}.`);
+      this.applyDamage(c, 10, 'radiante', p, { magico: true });
+    }
+  }
+
+  /** RETALIAÇÃO (Berserker, 14º): reação. Quem sofre dano de uma criatura a 1,5 m a ataca corpo a corpo. Automática. */
+  retaliacao(alvo, fonte) {
+    if (!fonte || fonte === alvo || fonte.dead || alvo.dead || alvo.hp <= 0 || fonte.side === alvo.side || this.reagindo) return;
+    if (!alvo.features?.includes('retaliation') || alvo.reactionUsed || conditionEffects(alvo).incapacitated || !isAdjacent(alvo.pos, fonte.pos)) return;
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      this.say('recurso', `${alvo.name} revida (Retaliação, reação).`);
+      this.resolveAttack(alvo, fonte, { opportunity: true });
+    } finally {
+      this.reagindo = false;
+    }
+  }
+
   reacaoAoDano(alvo, fonte) {
     if (!fonte || fonte === alvo || fonte.dead || fonte.side === alvo.side || this.reagindo) return;
     const pode = this.podeReagirCom(alvo, 'repreensaoInfernal');
@@ -6030,6 +6125,17 @@ export class Encounter {
       const m = CONDITIONS[cond.id]?.marcaDano;
       if (!m || cond.source !== atacante.id || (m.soArma && !arma)) continue;
       extra(CONDITIONS[cond.id].name, m.dados, m.tipo ?? tipo);
+    }
+    // LANÇAR PELO INFERNO armado: o acerto joga o alvo pelos planos inferiores (10d10 psíquico, menos em corruptor).
+    if (atacante.hurlPronto && !alvo.dead) {
+      atacante.hurlPronto = false;
+      if (alvo.tipo !== 'corruptor') extra('Lançar pelo Inferno', '10d10', 'psíquico');
+    }
+    // PALMA VIBRANTE armada: o golpe que acerta deixa as vibrações no alvo (até o monge as encerrar).
+    if (atacante.palmaPronta && !alvo.dead) {
+      atacante.palmaPronta = false;
+      alvo.vibracao = { donoId: atacante.id };
+      this.say('recurso', `${alvo.name} começa a vibrar por dentro (Palma Vibrante).`);
     }
     if (!arma) return;
     const f = atacante.features ?? [];
@@ -6165,6 +6271,8 @@ export class Encounter {
   /** Invisibilidade acaba quando o invisível ataca ou conjura contra alguém. */
   quebraInvisibilidade(c) {
     if (!hasCondition(c, 'invisivel')) return;
+    // A invisibilidade do Corpo Vazio não é de magia: atacar não a desfaz.
+    if (getCondition(c, 'invisivel')?.data?.persistente) return;
     removeCondition(c, 'invisivel');
     this.say('magia', `${c.name} reaparece.`);
   }
@@ -6601,7 +6709,8 @@ export class Encounter {
     // que incapacitado nao toma acao nenhuma, e usar poção é uma ação.
     if (actor.dead) return { ok: false, why: 'morto não usa item' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
-    const porBonus = dados.acao === 'bonus';
+    // MÃOS RÁPIDAS (ladino Ladrão, 3º): usar um objeto custa a ação bônus, se ela estiver livre.
+    const porBonus = dados.acao === 'bonus' || (actor.features?.includes('fastHands') && !actor.bonusUsed);
     // Fora da luta (explorando, ou depois dela) não há turno: a exploração marca a ação como usada
     // para travar o combate, e isso não pode impedir de beber uma poção nem de dá-la a um aliado.
     const fora = Boolean(this.over || this.explorando);
@@ -7003,6 +7112,210 @@ export class Encounter {
         this.say('recurso', `${actor.name} recolhe o que sobrou da magia do dia: ${voltaram.map((c) => `${c}º`).join(', ')}.`);
         return true;
       }
+      case 'frenzy': {
+        // FRENESI: em fúria, um ataque corpo a corpo como ação bônus. A exaustão vem quando a fúria acaba.
+        if (actor.bonusUsed || !hasCondition(actor, 'furia')) return false;
+        if (!target || target.dead || !isAdjacent(actor.pos, target.pos)) return false;
+        actor.bonusUsed = true;
+        actor.frenesiNaFuria = true;
+        this.say('recurso', `${actor.name} entra em frenesi: um ataque como ação bônus.`);
+        this.resolveAttack(actor, target);
+        return true;
+      }
+      case 'intimidatingPresence': {
+        // PRESENÇA INTIMIDADORA (Berserker, 10º): ação; cada inimigo a até 9 m que o vê testa SAB (CD 8 + proficiência + CAR) ou
+        // fica amedrontado até o fim do próximo turno do bárbaro. Uma vez por descanso longo.
+        if (actor.actionUsed || !(actor.resources?.intimidatingPresence > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.intimidatingPresence -= 1;
+        const cdP = 8 + proficiencyBonus(actor.level ?? 1) + abilityMod(actor.abilities.cha);
+        this.say('recurso', `${actor.name} se agiganta, ameaçador (Presença Intimidadora, CD ${cdP}).`);
+        for (const t of this.combatants) {
+          if (t.dead || t.side === actor.side || Math.max(Math.abs(t.pos.x - actor.pos.x), Math.abs(t.pos.y - actor.pos.y)) * 5 > 30) continue;
+          if (!this.field.hasLineOfSight(t.pos, actor.pos) || this.imuneACondicao(t, 'amedrontado', actor)) continue;
+          const sv = this.resistencia(t, 'wis', cdP, { contra: { condicao: 'amedrontado' } });
+          this.explicarResistencia(t, 'wis', cdP, sv, { contra: `Presença Intimidadora de ${actor.name}`, seSucesso: 'não se amedronta' });
+          if (!sv.success) this.aplicarCondicao(t, 'amedrontado', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+        }
+        return true;
+      }
+      case 'countercharm': {
+        // CONTRACANTO (bardo, 6º): ação; até o fim do próximo turno dele, ele e os aliados a até 9 m têm vantagem contra medo e encantamento.
+        if (actor.actionUsed) return false;
+        actor.actionUsed = true;
+        for (const a of this.combatants) {
+          if (a.dead || a.side !== actor.side || Math.max(Math.abs(a.pos.x - actor.pos.x), Math.abs(a.pos.y - actor.pos.y)) * 5 > 30) continue;
+          addCondition(a, 'contracanto', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+        }
+        this.say('recurso', `${actor.name} canta um contracanto: o grupo resiste a medo e encantamento.`);
+        return true;
+      }
+      case 'divineIntervention': {
+        // INTERVENÇÃO DIVINA (clérigo, 10º): ação; rola d100 e, se tirar o nível dele ou menos, o deus atende (certo no 20º). Quem manda
+        // no efeito é o mestre; o jogo atende com a cura total do grupo e o fim dos efeitos de magia. Atendido, o deus se cala por sete
+        // dias; negado, só volta a ouvir no descanso longo.
+        if (actor.actionUsed || !(actor.resources?.divineIntervention > 0) || (actor.intervencaoDias ?? 0) > 0) return false;
+        actor.actionUsed = true;
+        actor.resources.divineIntervention -= 1;
+        const nivelI = actor.level ?? 1;
+        const d = nivelI >= 20 ? 1 : this.rng.die(100);
+        if (d > nivelI) {
+          this.say('recurso', `${actor.name} pede a intervenção do seu deus (d100: ${d} contra ${nivelI}): silêncio.`);
+          return true;
+        }
+        actor.intervencaoDias = 7;
+        this.say('recurso', `${actor.name} pede a intervenção do seu deus (d100: ${d}): o deus responde.`);
+        for (const a of this.combatants) {
+          if (a.dead || a.side !== actor.side) continue;
+          a.hp = maxHpEfetivo(a);
+          for (const k of [...(a.conditions ?? [])]) if (k.magia) removeCondition(a, k.id);
+          this.say('cura', `${a.name} é restaurado.`);
+        }
+        return true;
+      }
+      case 'sacredWeapon': {
+        // ARMA SAGRADA (Devoção, 3º): ação e uma carga de Canalizar Divindade; por um minuto soma CAR (mínimo +1) aos ataques.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const bonusS = Math.max(1, abilityMod(actor.abilities.cha));
+        addCondition(actor, 'armaSagrada', { rounds: 10, source: actor.id, data: { bonus: bonusS } });
+        this.say('recurso', `${actor.name} consagra a arma: +${bonusS} nos ataques por um minuto.`);
+        return true;
+      }
+      case 'turnTheUnholy': {
+        // EXPULSAR OS PROFANOS (Devoção, 3º): como expulsar mortos-vivos, mas para corruptores e mortos-vivos, sem destruir.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cdU = spellSaveDc(actor);
+        const alvosU = this.combatants.filter((m) => !m.dead && ['morto-vivo', 'corruptor'].includes(m.tipo) && distanceFt(actor.pos, m.pos) <= 30);
+        this.say('recurso', `${actor.name} ergue o símbolo sagrado contra os profanos (CD ${cdU}).`);
+        for (const m of alvosU) {
+          const r = this.resistencia(m, 'wis', cdU);
+          if (r.success) { this.say('resistencia', `${m.name} resiste.`); continue; }
+          addCondition(m, 'amedrontado', { rounds: 10, source: actor.id });
+          m.fugindoDe = actor.id;
+          this.say('condicao', `${m.name} recua, sem conseguir chegar perto.`);
+        }
+        if (!alvosU.length) this.say('recurso', 'Nenhum profano por perto.');
+        return true;
+      }
+      case 'holyNimbus': {
+        // NIMBO SAGRADO (Devoção, 20º): ação; por um minuto, luz que fere quem começa o turno a 9 m (`nimboTick`). Uma vez por descanso longo.
+        if (actor.actionUsed || !(actor.resources?.holyNimbus > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.holyNimbus -= 1;
+        addCondition(actor, 'nimboSagrado', { rounds: 10, source: actor.id });
+        this.say('recurso', `${actor.name} irradia a luz do sol: o Nimbo Sagrado queima os inimigos por perto.`);
+        return true;
+      }
+      case 'cleansingTouch': {
+        // TOQUE PURIFICADOR (paladino, 14º): ação; encerra UMA magia em si ou num aliado tocado. Usos: CAR (mínimo 1) por descanso longo.
+        const alvoT = target ?? actor;
+        if (actor.actionUsed || !(actor.resources?.cleansingTouch > 0) || alvoT.side !== actor.side || alvoT.dead) return false;
+        if (alvoT !== actor && !isAdjacent(actor.pos, alvoT.pos)) return false;
+        const magica = (alvoT.conditions ?? []).find((k) => k.magia);
+        if (!magica) return false;
+        actor.actionUsed = true;
+        actor.resources.cleansingTouch -= 1;
+        removeCondition(alvoT, magica.id);
+        this.say('recurso', `${actor.name} toca ${alvoT === actor ? 'a si mesmo' : alvoT.name}: ${CONDITIONS[magica.id]?.name ?? magica.id} se desfaz (Toque Purificador).`);
+        return true;
+      }
+      case 'vanish': {
+        // SUMIR (patrulheiro, 14º): esconder-se como ação bônus. (Não deixar rastro por meios não mágicos não tem onde valer: a luta não rastreia.)
+        if (actor.bonusUsed) return false;
+        actor.bonusUsed = true;
+        this.esconder(actor);
+        return true;
+      }
+      case 'volley': {
+        // SARAIVADA (Caçador, 11º): ação; um ataque à distância contra cada criatura numa esfera de 3 m em torno do alvo.
+        if (actor.actionUsed || !target || target.dead) return false;
+        actor.actionUsed = true;
+        this.say('recurso', `${actor.name} dispara uma saraivada em volta de ${target.name}.`);
+        for (const t of this.combatants.filter((o) => !o.dead && o.side !== actor.side && distanceFt(o.pos, target.pos) <= 10)) {
+          if (!actor.dead) this.resolveAttack(actor, t);
+        }
+        return true;
+      }
+      case 'whirlwindAttack': {
+        // ATAQUE GIRATÓRIO (Caçador, 11º): ação; um ataque corpo a corpo contra cada criatura ao seu alcance.
+        if (actor.actionUsed) return false;
+        const vizinhos = this.combatants.filter((o) => !o.dead && o.side !== actor.side && isAdjacent(actor.pos, o.pos));
+        if (!vizinhos.length) return false;
+        actor.actionUsed = true;
+        this.say('recurso', `${actor.name} gira, atacando todos ao redor.`);
+        for (const t of vizinhos) if (!actor.dead && !t.dead) this.resolveAttack(actor, t);
+        return true;
+      }
+      case 'hurlThroughHell': {
+        // LANÇAR PELO INFERNO (bruxo do Corruptor, 14º): arma o próximo ataque; no acerto, o alvo é arremessado pelos planos
+        // inferiores e volta com 10d10 de dano psíquico (corruptores não sofrem). Uma vez por descanso longo. O sumiço até o fim do
+        // turno seguinte não é modelado: fica o dano.
+        if (!(actor.resources?.hurlThroughHell > 0) || actor.hurlPronto) return false;
+        actor.resources.hurlThroughHell -= 1;
+        actor.hurlPronto = true;
+        this.say('recurso', `${actor.name} abre o inferno no próximo golpe (Lançar pelo Inferno).`);
+        return true;
+      }
+      case 'stillnessOfMind': {
+        // QUIETUDE DA MENTE (monge, 7º): ação; encerra em si um efeito que o enfeitiça ou amedronta.
+        if (actor.actionUsed) return false;
+        const alvoQ = (actor.conditions ?? []).find((k) => k.id === 'amedrontado' || CONDICOES_DE_ENCANTO.includes(k.id));
+        if (!alvoQ) return false;
+        actor.actionUsed = true;
+        removeCondition(actor, alvoQ.id);
+        this.say('recurso', `${actor.name} acalma a mente: ${CONDITIONS[alvoQ.id]?.name ?? alvoQ.id} termina.`);
+        return true;
+      }
+      case 'wholenessOfBody': {
+        // INTEGRIDADE DO CORPO (Mão Aberta, 6º): ação; recupera 3 × nível de PV. Uma vez por descanso longo.
+        if (actor.actionUsed || !(actor.resources?.wholenessOfBody > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.wholenessOfBody -= 1;
+        const antesW = actor.hp;
+        actor.hp = Math.min(maxHpEfetivo(actor), actor.hp + 3 * (actor.level ?? 1));
+        this.say('cura', `${actor.name} recompõe o corpo: +${actor.hp - antesW} PV (Integridade do Corpo).`);
+        return true;
+      }
+      case 'emptyBody': {
+        // CORPO VAZIO (monge, 18º): ação e 4 de ki; um minuto invisível e resistente a todo dano, menos energético.
+        if (actor.actionUsed || !((actor.resources?.ki ?? 0) >= 4) || hasCondition(actor, 'corpoVazio')) return false;
+        actor.actionUsed = true;
+        actor.resources.ki -= 4;
+        addCondition(actor, 'corpoVazio', { rounds: 10, source: actor.id });
+        addCondition(actor, 'invisivel', { rounds: 10, source: actor.id, data: { persistente: true } });
+        this.say('recurso', `${actor.name} gasta 4 de ki: o corpo some do mundo material (Corpo Vazio).`);
+        return true;
+      }
+      case 'quiveringPalm': {
+        // PALMA VIBRANTE (monge, 17º). Armar: 3 de ki, e o próximo golpe desarmado que acerta deixa vibrações no alvo. Encerrar
+        // (`modo: 'encerrar'`, ação, no alvo marcado): CON contra a CD de ki; falhou, cai a 0 PV; passou, 10d10 necrótico.
+        if (modo === 'encerrar') {
+          if (actor.actionUsed || !target || target.dead || target.vibracao?.donoId !== actor.id) return false;
+          actor.actionUsed = true;
+          const cdV = this.cdDeKi(actor);
+          const svV = this.resistencia(target, 'con', cdV);
+          this.explicarResistencia(target, 'con', cdV, svV, { contra: `Palma Vibrante de ${actor.name}`, seSucesso: '10d10 necrótico' });
+          delete target.vibracao;
+          if (svV.success) {
+            const dV = damageRoll(this.rng, '10d10');
+            this.say('dano', `As vibrações se desfazem em ${target.name}: ${dV.total} necrótico.`);
+            this.applyDamage(target, dV.total, 'necrótico', actor, { magico: true });
+          } else {
+            this.say('dano', `${target.name} estremece por dentro e cai a 0 PV.`);
+            this.applyDamage(target, target.hp, 'necrótico', actor, { magico: true });
+          }
+          return true;
+        }
+        if (actor.palmaPronta || !((actor.resources?.ki ?? 0) >= 3)) return false;
+        actor.resources.ki -= 3;
+        actor.palmaPronta = true;
+        this.say('recurso', `${actor.name} gasta 3 de ki e arma a Palma Vibrante (${actor.resources.ki} de ki).`);
+        return true;
+      }
       case 'eldritchMaster': {
         // MESTRE MÍSTICO (bruxo, 20º): um minuto suplicando ao patrono devolve TODOS os espaços de Magia de Pacto. Uma vez por
         // descanso longo, e fora da luta (leva um minuto).
@@ -7129,7 +7442,12 @@ export class Encounter {
         // Ação Ardilosa: UMA de Disparada ou Desengajar como ação bônus (o SRD
         // dá também Esconder-se, que o motor ainda não tem).
         if (actor.bonusUsed) return false;
-        if (modo !== 'disparada' && modo !== 'desengajar') return false;
+        if (modo !== 'disparada' && modo !== 'desengajar' && modo !== 'esconder') return false;
+        if (modo === 'esconder') {
+          actor.bonusUsed = true;
+          this.esconder(actor);
+          return true;
+        }
         actor.bonusUsed = true;
         if (modo === 'disparada') {
           actor.movementLeftFt += this.speedOf(actor);

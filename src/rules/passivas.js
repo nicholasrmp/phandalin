@@ -15,6 +15,16 @@
 const ENFEITICADO = new Set(['enfeiticado', 'sugerido', 'hipnotizado', 'coroaDaLoucura', 'cativado']);
 
 /** O que a magia diz do seu efeito, no formato de `contra`. */
+// ------------------------------------------------------------------ queda ----
+
+/**
+ * QUEDA LENTA (monge, 4º): o dano de queda cai em 5 × o nível do monge. Vale também fora da luta, quando a cena sorteia o dano.
+ */
+export function danoDeQueda(c, dano) {
+  if (!c?.features?.includes('slowFall')) return dano;
+  return Math.max(0, dano - 5 * (c.level ?? 1));
+}
+
 // ------------------------------------------------------------------ inimigo favorito ----
 
 const GOBLINOIDES = ['goblin', 'goblinChefe', 'hobgoblin', 'bugbear', 'klarg', 'reiGrol', 'yeemik', 'droop'];
@@ -40,10 +50,11 @@ export const ehInimigoFavorito = (actor, alvo) => {
 /** As magias que prendem com PLANTAS (o Passo da Terra dá vantagem contra elas). */
 export const PLANTAS_QUE_PRENDEM = ['emaranhar', 'crescimentoDePlantas', 'crescimentoDeEspinhos', 'golpeConstritor'];
 
-export function contraDaMagia(spell) {
+export function contraDaMagia(spell, conjurador = null) {
   if (!spell) return null;
   return {
     magico: true,
+    fonteTipo: conjurador?.tipo ?? null,
     planta: PLANTAS_QUE_PRENDEM.includes(spell.id),
     condicao: spell.onFail?.condition ?? spell.applies?.condition ?? spell.condition ?? null,
     tipoDano: spell.damageType ?? null,
@@ -67,6 +78,10 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   if (veneno && f.includes('dwarvenResilience')) motivos.push('Resiliência Anã');
   if (veneno && f.includes('stoutResilience')) motivos.push('Resiliência Robusta');
   if (contra.magico && ['int', 'wis', 'cha'].includes(hab) && f.includes('gnomeCunning')) motivos.push('Esperteza Gnômica');
+  // NIMBO SAGRADO (paladino, 20º): vantagem contra magias de corruptores e mortos-vivos.
+  if (contra.magico && actor.conditions?.some((c) => c.id === 'nimboSagrado') && ['corruptor', 'morto-vivo'].includes(contra.fonteTipo)) motivos.push('Nimbo Sagrado');
+  // CONTRACANTO: o bardo que canta dá vantagem a quem ouve, contra medo e encantamento.
+  if (actor.conditions?.some((c) => c.id === 'contracanto') && (cond === 'amedrontado' || ENFEITICADO.has(cond))) motivos.push('Contracanto');
   // PASSO DA TERRA: vantagem contra as plantas mágicas que seguram ou atrasam.
   if (contra.planta && f.includes('landsStride')) motivos.push('Passo da Terra');
   return motivos;

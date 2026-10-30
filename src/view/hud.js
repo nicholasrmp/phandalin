@@ -39,6 +39,7 @@
 import { makePortrait } from '../art/sheet.js';
 import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
 import { CONDITIONS, hasCondition, maxHpEfetivo, DEGRAUS_DE_EXAUSTAO } from '../rules/conditions.js';
+import { CONDICOES_DE_ENCANTO } from '../rules/passivas.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
@@ -1200,6 +1201,45 @@ export class Hud {
       stunningStrike: ['atordoante', 'Ataque Atordoante',
         `Gasta 1 ponto de ki e carrega o próximo acerto de arma corpo a corpo deste turno: o alvo testa Constituição CD ${enc.cdDeKi(c)} ou fica atordoado até o fim do seu próximo turno.`,
         'Livre', () => !c.atordoantePronto && c.resources?.ki > 0, 'ki'],
+      hurlThroughHell: ['hurlThroughHell', 'Lançar pelo Inferno',
+        'Arma o próximo ataque deste turno: no acerto, o alvo é arremessado pelos planos inferiores e volta com 10d10 psíquico (corruptores não sofrem). Uma vez por descanso longo.',
+        'Livre', () => !c.hurlPronto && c.resources?.hurlThroughHell > 0, 'hurlThroughHell'],
+      vanish: ['vanish', 'Sumir',
+        'Esconder-se como ação bônus: precisa de cobertura contra quem o vê, e Furtividade acima da Percepção passiva deles.',
+        'Ação bônus', () => !c.bonusUsed],
+      whirlwindAttack: ['whirlwindAttack', 'Ataque Giratório',
+        'Um ataque corpo a corpo contra cada inimigo ao seu alcance.',
+        'Ação', () => !c.actionUsed && enc.combatants.some((o) => !o.dead && o.side !== c.side && isAdjacent(o.pos, c.pos))],
+      stillnessOfMind: ['stillnessOfMind', 'Quietude da Mente',
+        'Encerra em você um efeito que o enfeitiça ou amedronta.',
+        'Ação', () => !c.actionUsed && (c.conditions ?? []).some((k) => k.id === 'amedrontado' || CONDICOES_DE_ENCANTO.includes(k.id))],
+      wholenessOfBody: ['wholenessOfBody', 'Integridade do Corpo',
+        `Recupera ${3 * (c.level ?? 1)} PV. Uma vez por descanso longo.`,
+        'Ação', () => !c.actionUsed && c.resources?.wholenessOfBody > 0, 'wholenessOfBody'],
+      emptyBody: ['emptyBody', 'Corpo Vazio',
+        'Gasta 4 de ki: invisível e resistente a todo dano, menos energético, por um minuto.',
+        'Ação', () => !c.actionUsed && c.resources?.ki >= 4 && !hasCondition(c, 'corpoVazio'), 'ki'],
+      quiveringPalm: ['quiveringPalm', 'Palma Vibrante',
+        'Gasta 3 de ki e arma o próximo golpe desarmado: o alvo fica vibrando até você encerrar (CON ou cai a 0 PV; senão, 10d10 necrótico).',
+        'Livre', () => !c.palmaPronta && c.resources?.ki >= 3, 'ki'],
+      divineIntervention: ['divineIntervention', 'Intervenção Divina',
+        'Pede ajuda ao seu deus: rola d100 e, se tirar o seu nível ou menos, ele atende. Atendido, ele se cala por sete dias; certo no 20º nível.',
+        'Ação', () => !c.actionUsed && c.resources?.divineIntervention > 0 && !(c.intervencaoDias > 0), 'divineIntervention'],
+      sacredWeapon: ['sacredWeapon', 'Arma Sagrada',
+        'Canalizar Divindade: soma o Carisma aos seus ataques por um minuto.',
+        'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'armaSagrada'), 'channelDivinity'],
+      turnTheUnholy: ['turnTheUnholy', 'Expulsar os Profanos',
+        'Canalizar Divindade: corruptores e mortos-vivos a até 9 m testam Sabedoria ou fogem por um minuto.',
+        'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      holyNimbus: ['holyNimbus', 'Nimbo Sagrado',
+        'Por um minuto, quem começa o turno a até 9 m sofre 10 radiante, e você tem vantagem contra magias de corruptores e mortos-vivos. Uma vez por descanso longo.',
+        'Ação', () => !c.actionUsed && c.resources?.holyNimbus > 0 && !hasCondition(c, 'nimboSagrado'), 'holyNimbus'],
+      intimidatingPresence: ['intimidatingPresence', 'Presença Intimidadora',
+        'Cada inimigo a até 9 m que vê você testa Sabedoria (CD 8 + proficiência + Carisma) ou fica amedrontado até o fim do seu próximo turno. Uma vez por descanso longo.',
+        'Ação', () => !c.actionUsed && c.resources?.intimidatingPresence > 0, 'intimidatingPresence'],
+      countercharm: ['countercharm', 'Contracanto',
+        'Você e os aliados a até 9 m têm vantagem contra medo e encantamento até o fim do seu próximo turno.',
+        'Ação', () => !c.actionUsed],
       eldritchMaster: ['mestreMistico', 'Mestre Místico',
         'Um minuto suplicando ao patrono: todos os espaços de Magia de Pacto voltam. Uma vez por descanso longo.',
         'Fora da luta', () => c.resources?.eldritchMaster > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
@@ -1221,6 +1261,8 @@ export class Hud {
         continue;
       }
       if (f === 'cunningAction') {
+        comum('ardilosaEsconder', 'Ação Ardilosa: Esconder-se', 'Esconde-se como ação bônus: cobertura contra quem o vê e Furtividade acima da Percepção passiva deles.', 'Ação bônus',
+          { kind: 'feature', featureId: f, modo: 'esconder' }, c.bonusUsed);
         comum('ardilosaDisparada', 'Ação Ardilosa: Disparada', 'Dobra o deslocamento como ação bônus.', 'Ação bônus',
           { kind: 'feature', featureId: f, modo: 'disparada' }, c.bonusUsed);
         comum('ardilosaDesengajar', 'Ação Ardilosa: Desengajar', 'Sai de perto sem ataque de oportunidade, como ação bônus.', 'Ação bônus',

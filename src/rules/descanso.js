@@ -23,7 +23,7 @@ import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
-const VOLTAM_NO_CURTO = new Set(['secondWind', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon']);
+const VOLTAM_NO_CURTO = new Set(['secondWind', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck']);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
@@ -220,6 +220,9 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // Ninguém dorme oito horas em Fúria. O combate já a encerra (`checkEnd`),
   // mas uma Fúria entrada fora de luta ficaria até o fim dos tempos.
   if (getCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
+  // INTERVENÇÃO DIVINA: depois de atendido, o deus fica em silêncio por sete dias; cada descanso longo conta um.
+  const silencio = c.intervencaoDias ?? 0;
+  if (silencio > 0) c.intervencaoDias = silencio - 1;
   if (nivelDeExaustao(c) > 0 && alimentado) mudarExaustao(c, -1);
   // Reviver os Mortos: a penalidade de quem voltou cai de 1 por descanso longo.
   const volta = getCondition(c, 'revivido');

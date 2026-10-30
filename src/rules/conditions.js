@@ -207,6 +207,28 @@ export const CONDITIONS = {
     umAtaque: true,
     concentrationEffect: true,
   },
+  // CORPO VAZIO (monge, 18º): resistência a todo dano, menos energético. A invisibilidade vai numa condição à parte.
+  corpoVazio: {
+    name: 'Corpo Vazio',
+    desc: 'Invisível, com resistência a todo dano exceto energético, por um minuto.',
+    resiste: ['cortante', 'perfurante', 'concussão', 'fogo', 'frio', 'elétrico', 'trovejante', 'ácido', 'veneno', 'necrótico', 'radiante', 'psíquico'],
+  },
+  // ARMA SAGRADA (paladino da Devoção, 3º): soma o Carisma aos ataques, por um minuto. O valor mora na `data.bonus`.
+  armaSagrada: {
+    name: 'Arma Sagrada',
+    desc: 'Soma o modificador de Carisma às jogadas de ataque e a arma emite luz.',
+    bonusDeAtaqueNaData: true,
+  },
+  // NIMBO SAGRADO (paladino da Devoção, 20º): luz do sol que fere inimigos por perto e protege contra magia de corruptores e mortos-vivos.
+  nimboSagrado: {
+    name: 'Nimbo Sagrado',
+    desc: 'Aura de luz: quem começa o turno a até 9 m sofre 10 radiante; vantagem contra magias de corruptores e mortos-vivos.',
+  },
+  // CONTRACANTO (bardo, 6º): vantagem contra medo e encantamento, lida em `passivas.js` (`vantagemPorTraco`).
+  contracanto: {
+    name: 'Contracanto',
+    desc: 'Vantagem nas resistências contra amedrontado e enfeitiçado, até o fim do próximo turno do bardo.',
+  },
   // TÉCNICA DA MÃO ABERTA: não pode tomar reações até o fim do próximo turno do monge.
   semReacoesDaMao: {
     name: 'Sem reações',
@@ -874,6 +896,7 @@ export function conditionEffects(actor) {
     if (def.autoFailSaves) out.autoFailSaves.push(...def.autoFailSaves);
     if (def.saveDisadvantage) out.saveDisadvantage.push(...def.saveDisadvantage);
     if (def.attackBonusDice) out.attackBonusDice.push(def.attackBonusDice);
+    if (def.bonusDeAtaqueNaData && c.data?.bonus) out.attackBonusDice.push(`+${c.data.bonus}`);
     if (def.saveBonusDice) out.saveBonusDice.push(def.saveBonusDice);
     // Dado guardado na instância (Inspiração Bárdica): vale nos três.
     if (def.dadoNaData && c.data?.dado) {

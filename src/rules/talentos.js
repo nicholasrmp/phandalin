@@ -17,7 +17,7 @@
 // cada encontro — é como se o grupo tivesse descansado antes de cada luta.
 
 import { abilityMod, proficiencyBonus, meiaProficiencia } from './abilities.js';
-import { maxHpEfetivo } from './conditions.js';
+import { maxHpEfetivo, conditionEffects } from './conditions.js';
 import { CLASSES } from './classes/index.js';
 import { roll } from '../core/dice.js';
 
@@ -93,6 +93,29 @@ export function segundaChanceNoAtaque(enc, atacante, alvo, atk, bonus, ac) {
     r = refazerAtaque(enc, r, bonus, ac, (_, novo) => novo);
     enc.say('recurso', `${atacante.name} usa a Inspiração e rola o ataque de novo${r.hit ? ': acerta' : ''}.`);
   }
+  // GOLPE DE SORTE (ladino Ladrão, 20º): um ataque que errou vira acerto. Uma vez por descanso curto ou longo. Automático na primeira
+  // vez que erra (só o ataque: o jogo não rola teste de atributo com CD que dê para salvar).
+  if (!r.hit && atacante.features?.includes('strokeOfLuck') && (atacante.resources?.strokeOfLuck ?? 0) > 0) {
+    atacante.resources.strokeOfLuck -= 1;
+    r = { ...r, hit: true };
+    enc.say('recurso', `${atacante.name} vira o erro em acerto (Golpe de Sorte).`, 'Golpe de Sorte');
+  }
+  // PALAVRAS CORTANTES (bardo do Conhecimento, 3º): reação, gasta uma Inspiração Bárdica e SUBTRAI o dado do ataque de um inimigo a
+  // até 18 m. Automática, mas só quando muda algo: um acerto que o dado transforma em erro (e nunca num crítico).
+  if (r.hit && !r.critical && atacante.side !== alvo.side) {
+    const bardo = enc.combatants.find((b) => !b.dead && b.side === alvo.side && b.features?.includes('cuttingWords') && !b.reactionUsed
+      && (b.resources?.bardicInspiration ?? 0) > 0 && !conditionEffects(b).incapacitated
+      && Math.max(Math.abs(b.pos.x - atacante.pos.x), Math.abs(b.pos.y - atacante.pos.y)) * 5 <= 60 && enc.field.hasLineOfSight(b.pos, atacante.pos));
+    if (bardo) {
+      const dado = enc.rng.die(Number((bardo.dadoDeInspiracao ?? 'd6').slice(1)));
+      if (r.total - dado < ac) {
+        bardo.reactionUsed = true;
+        bardo.resources.bardicInspiration -= 1;
+        r = { ...r, total: r.total - dado, hit: false };
+        enc.say('recurso', `${bardo.name} corta com palavras (-${dado}): o ataque de ${atacante.name} erra ${alvo.name}.`, 'Palavras Cortantes');
+      }
+    }
+  }
   if (r.hit && !r.critical && (alvo.pontosDeSorte ?? 0) > 0) {
     alvo.pontosDeSorte -= 1;
     r = refazerAtaque(enc, r, bonus, ac, Math.min);
@@ -119,6 +142,16 @@ export function segundaChanceNaResistencia(enc, c, save, bonus, dc) {
     c.pontosDeSorte -= 1;
     r = refaz(Math.max);
     enc.say('recurso', `${c.name} usa a sorte na resistência${r.success ? ' e passa' : ''}.`, `Sortudo · restam ${c.pontosDeSorte} pontos`);
+  }
+  // SORTE DO OBSCURO (bruxo do Corruptor, 6º): soma 1d10 a uma resistência. Uma vez por descanso curto ou longo; só gasta se o d10 muda
+  // o resultado (a falha que ele salva).
+  if (!r.success && c.features?.includes('darkOnesOwnLuck') && (c.resources?.darkOnesOwnLuck ?? 0) > 0) {
+    const extra = enc.rng.die(10);
+    if (r.total + extra >= dc) {
+      c.resources.darkOnesOwnLuck -= 1;
+      r = { ...r, total: r.total + extra, success: true };
+      enc.say('recurso', `${c.name} pede a sorte do seu patrono (+${extra}) e passa na resistência.`, 'Sorte do Obscuro');
+    }
   }
   // INDOMÁVEL (guerreiro, 9º; 2 usos no 13º, 3 no 17º): uma resistência que falhou é rolada de novo, e vale a nova.
   // O jogo usa por conta própria na primeira falha: rolar de novo nunca piora, mas gasta o uso mesmo numa resistência banal.

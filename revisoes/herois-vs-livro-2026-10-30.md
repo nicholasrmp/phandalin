@@ -326,3 +326,27 @@ Inferno, Sobrecanalizar.
 Dependem de **sistemas que não existem**: Forma Selvagem (e Magias Bestiais, Arquidruida), Pontos de Feitiçaria, Fonte de Magia e
 as oito Metamagias, Invocações Místicas (25) e Dádiva do Pacto. Nenhum deles é uma passiva; cada um é uma frente de trabalho.
 Faltam ainda 19 das 40 subclasses do livro e as magias de 4º a 9º círculo.
+
+---
+
+## Atualização 2 — ações ativas (depois do commit 65297a0)
+
+Mais **24 características** passaram de `pendente` a `motor`, cada uma com teste e controle negativo
+(`testes-passivas.mjs`: 113 testes; suíte inteira 1051/1051, vitest 401/401, build verde):
+
+- **Bárbaro (Berserker):** Frenesi (ataque como ação bônus; 1 nível de exaustão quando a fúria acaba), Presença Intimidadora, Retaliação (reação automática).
+- **Bardo:** Contracanto (vantagem de grupo contra medo e encantamento), Palavras Cortantes (reação automática: só gasta a Inspiração se o dado transforma o acerto em erro).
+- **Clérigo e paladino:** Intervenção Divina (d100; atendida cura o grupo, o deus se cala 7 dias), Arma Sagrada, Expulsar os Profanos, Nimbo Sagrado (10 radiante por turno; vantagem contra magia de corruptor e morto-vivo), Toque Purificador.
+- **Monge:** Defletir Projéteis (e devolver com 1 ki), Queda Lenta (inclusive nas quedas dos capítulos), Quietude da Mente, Integridade do Corpo, Corpo Vazio, Palma Vibrante (armar, marcar, encerrar).
+- **Patrulheiro e ladino:** Saraivada, Ataque Giratório, Defesa Contra a Maré, Sumir, Mãos Rápidas, Golpe de Sorte; e **esconder-se em luta** (Ação Ardilosa ganhou o terceiro modo, que o jogo não tinha).
+- **Bruxo do Corruptor:** Sorte do Obscuro, Lançar pelo Inferno.
+
+### Aproximações novas (dizem-se na ficha e aqui)
+- Esconder-se exige cobertura contra todo inimigo que vê o herói e Furtividade acima da maior Percepção passiva.
+- Intervenção Divina: o "efeito do mestre" é a cura total do grupo e o fim dos efeitos de magia.
+- Lançar pelo Inferno dá o dano psíquico; o sumiço do alvo até o fim do turno seguinte não é modelado.
+- Golpe de Sorte vale para o ataque; o teste de atributo não tem CD que dê para salvar no jogo.
+- Sumir não tem onde "não deixar rastro": a luta não rastreia.
+
+### O que continua `pendente` (54, caiu de 77)
+Todas dependem de sistema que o jogo não tem: **Forma Selvagem** (e Magias Bestiais, Arquidruida), **Pontos de Feitiçaria, Fonte de Magia e as oito Metamagias** (e Presença/Asas Dracônicas, Restauração Feiticeira), **Invocações Místicas** (25) e **Dádiva do Pacto**; além de **Arcana Mística** e **Sobrecanalizar** (precisam de magias de 6º a 9º círculo, que o jogo não tem), Percepção Primitiva e Habilidade Inigualável.

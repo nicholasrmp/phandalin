@@ -281,6 +281,9 @@ const FEITO = [
   'escapeTheHorde', 'multiattackDefense', 'steelWill', 'reliableTalent', 'slipperyMind', 'elusive', 'secondStoryWork', 'supremeSneak',
   'thiefsReflexes', 'draconicResilience', 'elementalAffinity', 'pactMagic', 'eldritchMaster', 'darkOnesBlessing', 'fiendishResilience',
   'agonizingBlast', 'spellMastery', 'signatureSpells', 'potentCantrip', 'empoweredEvocation',
+  'frenzy', 'intimidatingPresence', 'retaliation', 'countercharm', 'cuttingWords', 'divineIntervention', 'sacredWeapon', 'turnTheUnholy',
+  'holyNimbus', 'cleansingTouch', 'deflectMissiles', 'slowFall', 'stillnessOfMind', 'wholenessOfBody', 'emptyBody', 'quiveringPalm',
+  'volley', 'whirlwindAttack', 'standAgainstTheTide', 'fastHands', 'vanish', 'strokeOfLuck', 'darkOnesOwnLuck', 'hurlThroughHell',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',

@@ -725,6 +725,8 @@ const ACAO_RESERVA = {
 export function iconeDeAcao(nome) {
   const novo = ACAO_DO_HUD[nome] ?? `acao-${nome}`;
   if (temIcone(novo)) return novo;
+  // A ação de classe que usa o próprio id da característica como chave do ícone (`classe-<id>`).
+  if (temIcone(`classe-${nome}`)) return `classe-${nome}`;
   return ACAO_RESERVA[nome] ?? nome;
 }
 

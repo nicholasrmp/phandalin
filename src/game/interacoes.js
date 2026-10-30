@@ -293,6 +293,35 @@ export function opcoesDaCasa(app, tile) {
           fazer: () => app.usarFeature(c, 'martialArts', { target: occ }),
         });
       }
+      // SARAIVADA (Caçador, 11º): um ataque à distância contra cada criatura a 3 m do alvo.
+      if (c && vez && c.features?.includes('volley')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Saraivada', icone: 'classe-volley',
+          detalhe: 'ação · um ataque à distância contra cada inimigo a 3 m deste',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : null,
+          fazer: () => app.usarFeature(c, 'volley', { target: occ }),
+        });
+      }
+      // PALMA VIBRANTE: encerrar as vibrações do alvo marcado.
+      if (c && vez && c.features?.includes('quiveringPalm') && occ.vibracao?.donoId === c.id) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Encerrar a Palma Vibrante', icone: 'classe-quiveringPalm',
+          detalhe: 'ação · CON ou cai a 0 PV; senão, 10d10 necrótico',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : null,
+          fazer: () => app.usarFeature(c, 'quiveringPalm', { target: occ, modo: 'encerrar' }),
+        });
+      }
+      // FRENESI (Berserker): em fúria, um ataque como ação bônus.
+      if (c && vez && c.features?.includes('frenzy')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Frenesi', icone: 'classe-frenzy',
+          detalhe: 'ação bônus · um ataque corpo a corpo · 1 nível de exaustão quando a fúria acabar',
+          motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada'
+            : !hasCondition(c, 'furia') ? 'só em fúria'
+              : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
+          fazer: () => app.usarFeature(c, 'frenzy', { target: occ }),
+        });
+      }
       // Os dois gastos de ki que miram um inimigo.
       if (c && vez && c.features?.includes('flurryOfBlows')) {
         opcoes.push({
