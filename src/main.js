@@ -1,86 +1,176 @@
-import './style.css';
-import './view/layout.css';
+import "./style.css";
+import "./view/layout.css";
 
-import { makeRng, seedFromString } from './core/rng.js';
-import { Battlefield, key, distanceFt } from './core/grid.js';
-import { Encounter } from './rules/combat.js';
-import { makeParty, limiteDePreparacao, fontesDePreparacao } from './rules/party.js';
-import { makeMonster } from './rules/monsters.js';
-import { runMonsterSide, runAutoSummons, encerrarTurnoComInvocados } from './rules/ai.js';
-import { hasCondition, conditionEffects } from './rules/conditions.js';
-import { getSpell, opcoesDaMagia } from './rules/spells.js';
-import { WEAPONS } from './rules/equipment.js';
-import { mapaDo, buildFoes, reinforcementsFor } from './game/encounter.js';
-import { montarCampo } from './game/campo.js';
-import { cordaPermite } from './game/corda.js';
-import { heroisDoPiloto, jogadaDoPiloto, controlaOHeroi } from './game/piloto.js';
-import { quemDecide, apurar, apurarLugar, TEMPO_DA_VOTACAO_MS } from './game/decisao.js';
-import { definirPortaDaVila } from './view/vila.js';
-import { definirPortaDaLoja, abrirLojaLocal } from './view/loja.js';
-import { definirPortaDeNivel } from './view/nivel-tela.js';
-import { saquearCorpo } from './game/saque.js';
-import { LOJAS, comprar as comprarNaLoja, vender as venderNaLoja, vendaveis } from './game/comercio.js';
-import { equipar, nomeDeId } from './rules/equipment.js';
-import { magiaNaHora, escolheVarios as magiaDeVariosAlvos } from './game/acoes.js';
-import { diferencasDoCampo } from './game/campo-delta.js';
-import { fotografar, emTexto, empacotarEvento, empacotarLista, MAX_VISTA, BATIMENTO_DA_VISTA_MS } from './game/partida-vista.js';
-import { criarEmissor } from './game/partida-delta.js';
-import { criarPartidaTela } from './view/partida-tela.js';
-import { criarDicas } from './view/dicas.js';
-import { ambienteDaVariante } from './core/ambiente.js';
-import { faixaAgora, tocarFaixa, tocarToque } from './core/musica.js';
-import { montarHeroi, escolhaAutomatica } from './game/criacao.js';
-import { criarCapitulo1 } from './game/capitulo1.js';
-import { criarCenaCaverna } from './game/cena-caverna.js';
-import { criarCapitulo2 } from './game/capitulo2.js';
-import { criarRuaMarcarrubra } from './game/capitulo3-rua.js';
-import { criarMansao } from './game/capitulo3-mansao.js';
-import { criarEstrada } from './game/capitulo4-estrada.js';
-import { criarPoco } from './game/capitulo4-poco.js';
-import { criarCume } from './game/capitulo4-cume.js';
-import { criarCastelo } from './game/capitulo4-castelo.js';
-import { abrirRegiao } from './game/regiao.js';
-import { criarArvoreTrovao } from './game/capitulo4-arvoretrovao.js';
-import { criarOndaEco } from './game/capitulo5-ondaeco.js';
-import { abrirPhandalin, MISSOES } from './game/phandalin.js';
-import { diarioDe } from './game/diario.js';
-import { narrar, narrativaAberta, narrarLocal, definirPorta, definirVoto } from './view/narrativa.js';
-import { criarPortaCompartilhada } from './game/porta-narrativa.js';
-import { abrirMenuContexto, fecharMenuContexto } from './view/menu-contexto.js';
-import { opcoesDaCasa } from './game/interacoes.js';
-import { alvosDaHabilidade, vetoDaHabilidade, previaDaHabilidade, HABILIDADES_DE_ALVO } from './rules/habilidades-alvo.js';
-import { conversar as conversarComArvore } from './game/dialogo.js';
-import { temEscuridaoEm, visaoDoGrupo } from './rules/luz.js';
-import { descansoCurto, descansoLongoDoGrupo } from './view/descanso-tela.js';
-import { UTIL_FORA, estadoDe as estadoDeUtilidade, avancar as avancarTempo, ativasDoGrupo, alarmeCobre } from './rules/utilidade.js';
-import { entrarNoEncontro as familiarEntra, sairDoEncontro as familiarSai } from './rules/familiar.js';
-import { escolherEConjurar, conjurarComTela, esperar as esperarTempo, auras as aurasDoDetectarMagia, marcasDoJogo } from './game/magias-fora.js';
-import { Board } from './view/board.js';
-import { Hud } from './view/hud.js';
-import { criarFicha, aplicarAparencia } from './view/ficha.js';
-import { criarMenu } from './view/menu.js';
-import { criarArmazenamento, montarSave, jogadorLocal, resumoDoSave, deArquivo } from './game/save.js';
-import { jogadorDaAba } from './game/sala-cliente.js';
-import { criarTaverna } from './view/taverna-tela.js';
-import { normalizarCodigo, FRASES_DA_PARTIDA, MARCAS_DO_MAPA } from './game/sala.js';
-import { aoDarXp } from './game/nivel.js';
-import { audio, passoSoundFor } from './core/audio.js';
+import { makeRng, seedFromString } from "./core/rng.js";
+import { Battlefield, key, distanceFt } from "./core/grid.js";
+import { Encounter } from "./rules/combat.js";
 import {
-  playWeaponVisual, playSpellVisual, playDeathVisual, andarDe,
-  playGlifoVisual, playCordaoVisual, playAnuladaVisual, mostrarAlfinete, mostrarFrase, impactoDeDano, CORES_DOS_JOGADORES,
-} from './view/visuals.js';
+  makeParty,
+  limiteDePreparacao,
+  fontesDePreparacao,
+} from "./rules/party.js";
+import { makeMonster } from "./rules/monsters.js";
+import {
+  runMonsterSide,
+  runAutoSummons,
+  encerrarTurnoComInvocados,
+} from "./rules/ai.js";
+import { hasCondition, conditionEffects } from "./rules/conditions.js";
+import { getSpell, opcoesDaMagia } from "./rules/spells.js";
+import { WEAPONS } from "./rules/equipment.js";
+import { mapaDo, buildFoes, reinforcementsFor } from "./game/encounter.js";
+import { montarCampo } from "./game/campo.js";
+import { cordaPermite } from "./game/corda.js";
+import {
+  heroisDoPiloto,
+  jogadaDoPiloto,
+  controlaOHeroi,
+} from "./game/piloto.js";
+import {
+  quemDecide,
+  apurar,
+  apurarLugar,
+  TEMPO_DA_VOTACAO_MS,
+} from "./game/decisao.js";
+import { definirPortaDaVila } from "./view/vila.js";
+import { definirPortaDaLoja, abrirLojaLocal } from "./view/loja.js";
+import { definirPortaDeNivel } from "./view/nivel-tela.js";
+import { saquearCorpo } from "./game/saque.js";
+import {
+  LOJAS,
+  comprar as comprarNaLoja,
+  vender as venderNaLoja,
+  vendaveis,
+} from "./game/comercio.js";
+import { equipar, nomeDeId } from "./rules/equipment.js";
+import {
+  magiaNaHora,
+  escolheVarios as magiaDeVariosAlvos,
+} from "./game/acoes.js";
+import { diferencasDoCampo } from "./game/campo-delta.js";
+import {
+  fotografar,
+  emTexto,
+  empacotarEvento,
+  empacotarLista,
+  MAX_VISTA,
+  BATIMENTO_DA_VISTA_MS,
+} from "./game/partida-vista.js";
+import { criarEmissor } from "./game/partida-delta.js";
+import { criarPartidaTela } from "./view/partida-tela.js";
+import { criarDicas } from "./view/dicas.js";
+import { ambienteDaVariante } from "./core/ambiente.js";
+import { faixaAgora, tocarFaixa, tocarToque } from "./core/musica.js";
+import { montarHeroi, escolhaAutomatica } from "./game/criacao.js";
+import { criarCapitulo1 } from "./game/capitulo1.js";
+import { criarCenaCaverna } from "./game/cena-caverna.js";
+import { criarCapitulo2 } from "./game/capitulo2.js";
+import { criarRuaMarcarrubra } from "./game/capitulo3-rua.js";
+import { criarMansao } from "./game/capitulo3-mansao.js";
+import { criarEstrada } from "./game/capitulo4-estrada.js";
+import { criarPoco } from "./game/capitulo4-poco.js";
+import { criarCume } from "./game/capitulo4-cume.js";
+import { criarCastelo } from "./game/capitulo4-castelo.js";
+import { abrirRegiao } from "./game/regiao.js";
+import { criarArvoreTrovao } from "./game/capitulo4-arvoretrovao.js";
+import { criarOndaEco } from "./game/capitulo5-ondaeco.js";
+import { abrirPhandalin, MISSOES } from "./game/phandalin.js";
+import { diarioDe } from "./game/diario.js";
+import {
+  narrar,
+  narrativaAberta,
+  narrarLocal,
+  definirPorta,
+  definirVoto,
+} from "./view/narrativa.js";
+import { criarPortaCompartilhada } from "./game/porta-narrativa.js";
+import { abrirMenuContexto, fecharMenuContexto } from "./view/menu-contexto.js";
+import { opcoesDaCasa } from "./game/interacoes.js";
+import {
+  alvosDaHabilidade,
+  vetoDaHabilidade,
+  previaDaHabilidade,
+  HABILIDADES_DE_ALVO,
+} from "./rules/habilidades-alvo.js";
+import { conversar as conversarComArvore } from "./game/dialogo.js";
+import { temEscuridaoEm, visaoDoGrupo } from "./rules/luz.js";
+import { descansoCurto, descansoLongoDoGrupo } from "./view/descanso-tela.js";
+import {
+  UTIL_FORA,
+  estadoDe as estadoDeUtilidade,
+  avancar as avancarTempo,
+  ativasDoGrupo,
+  alarmeCobre,
+} from "./rules/utilidade.js";
+import {
+  entrarNoEncontro as familiarEntra,
+  sairDoEncontro as familiarSai,
+} from "./rules/familiar.js";
+import {
+  escolherEConjurar,
+  conjurarComTela,
+  esperar as esperarTempo,
+  auras as aurasDoDetectarMagia,
+  marcasDoJogo,
+} from "./game/magias-fora.js";
+import { Board } from "./view/board.js";
+import { Hud } from "./view/hud.js";
+import { criarFicha, aplicarAparencia } from "./view/ficha.js";
+import { criarMenu } from "./view/menu.js";
+import {
+  criarArmazenamento,
+  montarSave,
+  jogadorLocal,
+  resumoDoSave,
+  deArquivo,
+} from "./game/save.js";
+import { jogadorDaAba } from "./game/sala-cliente.js";
+import { criarTaverna } from "./view/taverna-tela.js";
+import {
+  normalizarCodigo,
+  FRASES_DA_PARTIDA,
+  MARCAS_DO_MAPA,
+} from "./game/sala.js";
+import { aoDarXp } from "./game/nivel.js";
+import { audio, passoSoundFor } from "./core/audio.js";
+import {
+  playWeaponVisual,
+  playSpellVisual,
+  playDeathVisual,
+  andarDe,
+  playGlifoVisual,
+  playCordaoVisual,
+  playAnuladaVisual,
+  mostrarAlfinete,
+  mostrarFrase,
+  impactoDeDano,
+  CORES_DOS_JOGADORES,
+} from "./view/visuals.js";
 
+// Os módulos de `app/` que o App realmente usa. `AppState` e `LayoutManager`
+// existem em `app/` mas ninguém os chama ainda: ficam fora daqui até que alguém
+// os ligue, para o import não dizer que são usados.
+import { SaveManager } from "./app/persistence/SaveManager.js";
+import { CombatAdapter } from "./app/combat/CombatAdapter.js";
 
 /** O `localStorage`, ou um armazém em memória onde ele é bloqueado (aba anônima): o jogo roda, só não guarda. */
 function armazemDoNavegador() {
   try {
     const t = globalThis.localStorage;
-    t.setItem('phandalin:teste', '1');
-    t.removeItem('phandalin:teste');
+    t.setItem("phandalin:teste", "1");
+    t.removeItem("phandalin:teste");
     return t;
   } catch {
     const m = new Map();
-    return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
+    return {
+      getItem: (k) => (m.has(k) ? m.get(k) : null),
+      setItem: (k, v) => {
+        m.set(k, String(v));
+      },
+      removeItem: (k) => {
+        m.delete(k);
+      },
+    };
   }
 }
 
@@ -89,21 +179,42 @@ class App {
     this.root = root;
     this.hud = new Hud(root, {
       // Partida de sala vista de fora (F5.2): a barra é a mesma, mas quem age é o anfitrião; a tela de quem assiste a traduz em intenções.
-      onSelect: (c) => (this.partidaRemota?.aberta() ? this.partidaRemota.selecionar(c) : this.select(c)),
-      onAction: (a) => (this.partidaRemota?.aberta() ? this.partidaRemota.acao(a) : this.chooseAction(a)),
-      onEndTurn: () => (this.partidaRemota?.aberta() ? this.partidaRemota.terminar() : this.endTurn()),
+      onSelect: (c) =>
+        this.partidaRemota?.aberta()
+          ? this.partidaRemota.selecionar(c)
+          : this.select(c),
+      onAction: (a) =>
+        this.partidaRemota?.aberta()
+          ? this.partidaRemota.acao(a)
+          : this.chooseAction(a),
+      onEndTurn: () =>
+        this.partidaRemota?.aberta()
+          ? this.partidaRemota.terminar()
+          : this.endTurn(),
       // Invocados: "Controlar" x "Agir sozinho", por criatura ou para todas de um dono.
       onAutoInvocado: (c) => this.alternarAuto(c),
       onAutoDosInvocados: (dono) => this.alternarAutoDoDono(dono),
       onRestart: () => this.newEncounter(),
-      onZoom: (f) => { this.board?.zoomBy(f); audio.play('click'); },
-      onResetCamera: () => { this.board?.resetCamera(); audio.play('click'); this.refresh(); },
-      onAbrirFicha: (c) => this.ficha?.abrir(c, 'ficha'),
+      onZoom: (f) => {
+        this.board?.zoomBy(f);
+        audio.play("click");
+      },
+      onResetCamera: () => {
+        this.board?.resetCamera();
+        audio.play("click");
+        this.refresh();
+      },
+      onAbrirFicha: (c) => this.ficha?.abrir(c, "ficha"),
       // Explorando, as magias de utilidade saem pelo relógio, não pela rodada.
-      explorando: () => (this.partidaRemota?.aberta() ? this.partidaRemota.explorando() : Boolean(this.capitulo?.explorando)),
+      explorando: () =>
+        this.partidaRemota?.aberta()
+          ? this.partidaRemota.explorando()
+          : Boolean(this.capitulo?.explorando),
       // Mesma porta do hover do tabuleiro: um só caminho para "quem é o alvo
       // em consideração", para os dois nunca discordarem.
-      onAlvoHover: (alvo) => { if (!this.partidaRemota?.aberta()) this.definirAlvo(alvo); },
+      onAlvoHover: (alvo) => {
+        if (!this.partidaRemota?.aberta()) this.definirAlvo(alvo);
+      },
     });
 
     // A ficha pendura o próprio véu em `root` e cuida do teclado dela enquanto
@@ -122,15 +233,20 @@ class App {
       onEquipar: (p, troca) => {
         const enc = this.enc;
         if (enc && !enc.over && !this.capitulo?.explorando) {
-          enc.cobrarInteracao(p, troca.slot === 'escudo' ? 'acao' : enc.custoDeInteracao(p));
+          enc.cobrarInteracao(
+            p,
+            troca.slot === "escudo" ? "acao" : enc.custoDeInteracao(p),
+          );
         }
         this.hud.pushLog({
-          kind: 'recurso',
+          kind: "recurso",
           text: `${p.name} trocou ${troca.slot}: CA ${troca.acAntes} → ${troca.acDepois}`,
-          detail: troca.semTreino ? 'sem treino nessa armadura — desvantagem e nada de conjurar' : null,
+          detail: troca.semTreino
+            ? "sem treino nessa armadura — desvantagem e nada de conjurar"
+            : null,
           round: this.enc?.round ?? 1,
         });
-        audio.play('click');
+        audio.play("click");
         this.refresh();
       },
       // Beber a poção pela ficha é a MESMA ação de bebê-la pela barra: passa
@@ -140,11 +256,14 @@ class App {
       onUsar: (p, id) => {
         // Explorando (ou depois da luta) não há turno: beber não custa ação (`useItem`).
         const fora = Boolean(this.capitulo?.explorando || this.enc?.over);
-        if (!this.enc || (!fora && this.enc.side !== 'party')) {
-          return { ok: false, why: 'dá para usar item só no turno do grupo' };
+        if (!this.enc || (!fora && this.enc.side !== "party")) {
+          return { ok: false, why: "dá para usar item só no turno do grupo" };
         }
         const r = this.enc.useItem(p, id, { target: p });
-        if (r.ok) { audio.play('click'); this.afterAct(); }
+        if (r.ok) {
+          audio.play("click");
+          this.afterAct();
+        }
         return r;
       },
       // LIBERDADE ASSUMIDA: no 5e, preparar magia é coisa de descanso longo.
@@ -153,21 +272,25 @@ class App {
       // inalcançável para sempre, que é pior que a liberdade. O que se mantém
       // é o que importa: não dá para reescrever o arsenal enquanto os
       // inimigos agem.
-      podePreparar: () => (this.enc?.side === 'party' && !this.enc.over
-        ? null
-        : 'dá para preparar magias só no turno do grupo'),
-      onPreparar: () => { audio.play('click'); this.refresh(); },
+      podePreparar: () =>
+        this.enc?.side === "party" && !this.enc.over
+          ? null
+          : "dá para preparar magias só no turno do grupo",
+      onPreparar: () => {
+        audio.play("click");
+        this.refresh();
+      },
       onFechar: () => {
         this.refresh();
-        document.querySelector('.ficha-overlay')?.classList.remove('na-vila');
+        document.querySelector(".ficha-overlay")?.classList.remove("na-vila");
         const depois = this._aoFecharFicha;
         this._aoFecharFicha = null;
         depois?.();
       },
     });
 
-    this.canvas = document.createElement('canvas');
-    this.canvas.className = 'board';
+    this.canvas = document.createElement("canvas");
+    this.canvas.className = "board";
     this.hud.boardWrap.append(this.canvas);
 
     let last = performance.now();
@@ -181,23 +304,42 @@ class App {
 
     // O navegador só deixa tocar som depois de um gesto do usuário.
     const unlock = () => audio.unlock();
-    addEventListener('pointerdown', unlock, { once: true, capture: true });
-    addEventListener('keydown', unlock, { once: true, capture: true });
+    addEventListener("pointerdown", unlock, { once: true, capture: true });
+    addEventListener("keydown", unlock, { once: true, capture: true });
 
-    addEventListener('keydown', (e) => {
+    addEventListener("keydown", (e) => {
       if (!this.enc || this.menu?.estaAberto()) return;
-      if (e.key === 'Escape') { this.mode = null; this.refresh(); }
-      if (e.key === 'Enter' && this.mode?.alvos?.length) { e.preventDefault(); this.conjurarEscolhidos(); }
-      if (e.key === ' ' && this.enc?.side === 'party') { e.preventDefault(); this.endTurn(); }
-      if (e.key === 'Tab') { e.preventDefault(); this.cycleSelection(); }
+      if (e.key === "Escape") {
+        this.mode = null;
+        this.refresh();
+      }
+      if (e.key === "Enter" && this.mode?.alvos?.length) {
+        e.preventDefault();
+        this.conjurarEscolhidos();
+      }
+      if (e.key === " " && this.enc?.side === "party") {
+        e.preventDefault();
+        this.endTurn();
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        this.cycleSelection();
+      }
       const k = e.key.toLowerCase();
-      if (k === 'm') { audio.toggleMute(); this.refresh(); }
+      if (k === "m") {
+        audio.toggleMute();
+        this.refresh();
+      }
       // `i` e `p` abrem a ficha. `c` NÃO: o HUD reservou essa tecla para
       // Desengajar, e as duas no mesmo atalho fariam o turno depender de qual
       // ouvinte foi registrado primeiro.
-      if ((k === 'i' || k === 'p') && this.selected && !this.ficha?.estaAberta()) {
+      if (
+        (k === "i" || k === "p") &&
+        this.selected &&
+        !this.ficha?.estaAberta()
+      ) {
         e.preventDefault();
-        this.ficha.abrir(this.selected, k === 'i' ? 'inventario' : 'ficha');
+        this.ficha.abrir(this.selected, k === "i" ? "inventario" : "ficha");
       }
     });
 
@@ -208,14 +350,32 @@ class App {
     // Save e carregar no solo (MULTIJOGADOR.md, S-01…S-12): `game/save.js` cuida
     // do formato e do armazém; aqui entram os pontos em que o jogo salva.
     const armazem = armazemDoNavegador();
-    this.dicas = criarDicas(root, armazem);      // as dicas contextuais do primeiro combate (game/tutorial.js)
+    this.dicas = criarDicas(root, armazem); // as dicas contextuais do primeiro combate (game/tutorial.js)
     this.saves = criarArmazenamento(armazem);
     this.jogadorId = jogadorLocal(armazem);
     this.tempoBase = 0;
     this.inicioDaSessao = Date.now();
+
+    // Novo: SaveManager para gerenciar saves de forma modular
+    this.saveManager = new SaveManager(this.saves, this.jogadorId);
+
+    // Novo: CombatAdapter para gerenciar combate de forma modular
+    this.combatAdapter = new CombatAdapter(this, {
+      getSpell,
+      opcoesDaMagia,
+    });
+
     aoDarXp(() => this.autosalvar());
     // Quem não roda a partida da sala a vê aqui. Sair leva de volta ao menu.
-    this.partidaRemota = criarPartidaTela({ hud: this.hud, enviar: (msg) => this.menu.enviarCru(msg), aoSair: () => { this.menu.sairDaSala(); this.partidaRemota.fechar(); this.menu.abrir(); } });
+    this.partidaRemota = criarPartidaTela({
+      hud: this.hud,
+      enviar: (msg) => this.menu.enviarCru(msg),
+      aoSair: () => {
+        this.menu.sairDaSala();
+        this.partidaRemota.fechar();
+        this.menu.abrir();
+      },
+    });
     this.menu = criarMenu(root, {
       onIniciar: (config) => this.newEncounter(config),
       temPartida: () => Boolean(this.enc),
@@ -225,12 +385,19 @@ class App {
       onSalvar: (slot) => this.salvarManual(slot),
       // O multijogador (Fase 2): a sala, o lobby. `?como=Beto` dá um id por ABA, para testar com duas abas.
       multijogador: {
-        jogadorId: jogadorDaAba({ busca: location.search, sessionStorage, jogadorLocal: () => jogadorLocal(armazem) }),
+        jogadorId: jogadorDaAba({
+          busca: location.search,
+          sessionStorage,
+          jogadorLocal: () => jogadorLocal(armazem),
+        }),
         storage: armazem,
         local: location,
         // F4: a partida da sala. O anfitrião a roda e publica a vista; os outros a veem (`view/partida-tela.js`).
         partida: {
-          aoComecar: (v, { souAnfitriao }) => (souAnfitriao ? this.comecarPartidaDaSala(v) : this.partidaRemota.abrir(document.getElementById('app'))),
+          aoComecar: (v, { souAnfitriao }) =>
+            souAnfitriao
+              ? this.comecarPartidaDaSala(v)
+              : this.partidaRemota.abrir(document.getElementById("app")),
           aoVista: (vista) => this.partidaRemota.vista(vista),
           aoSala: (v) => {
             this.partidaRemota.atualizarSala(v);
@@ -245,9 +412,15 @@ class App {
             }
           },
           aoNarrativa: (msg) => this.partidaRemota.narrativa(msg),
-          aoIntencao: (m) => (m.tipo === 'agir' ? this.aplicarIntencao(m) : this.receberResposta(m)),
+          aoIntencao: (m) =>
+            m.tipo === "agir"
+              ? this.aplicarIntencao(m)
+              : this.receberResposta(m),
           aoAviso: (texto) => this.partidaRemota.avisar(texto),
-          aoStatus: (s) => { this.partidaRemota.status(s); this.mostrarConexao(s); },
+          aoStatus: (s) => {
+            this.partidaRemota.status(s);
+            this.mostrarConexao(s);
+          },
           aoAssumir: (save, v) => this.assumirPartidaDaSala(save, v),
           aoPerderOPosto: (v) => this.perderOPostoDaSala(v),
           aoEncerrar: () => this.encerrarPartidaDaSala(),
@@ -264,12 +437,15 @@ class App {
     });
     // O botão de voltar ao menu mora à esquerda do aviso de turno. O HUD
     // guarda a referência do aviso, então embrulhá-lo não o desliga.
-    const menuBtn = document.createElement('button');
-    menuBtn.className = 'btn btn-menu';
-    menuBtn.textContent = 'Menu';
-    menuBtn.addEventListener('click', () => { audio.play('click'); this.menu.abrir(); });
-    const esquerda = document.createElement('div');
-    esquerda.className = 'hud-topo-esq';
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "btn btn-menu";
+    menuBtn.textContent = "Menu";
+    menuBtn.addEventListener("click", () => {
+      audio.play("click");
+      this.menu.abrir();
+    });
+    const esquerda = document.createElement("div");
+    esquerda.className = "hud-topo-esq";
     this.hud.banner.replaceWith(esquerda);
     esquerda.append(menuBtn, this.hud.banner);
     this.montarLayoutLivre(esquerda);
@@ -277,10 +453,19 @@ class App {
     // `?encontro=` pula o menu e abre direto na arena: é o atalho de quem
     // testa (e dos agentes revisores, que abrem a página pela URL).
     const busca = new URLSearchParams(location.search);
-    const direto = busca.get('encontro');
-    if (direto) this.newEncounter({ modo: 'arena', variante: direto, nivel: Number(busca.get('nivel')) || 2 });
-    else if (busca.get('sala')) this.menu.abrirSala(normalizarCodigo(busca.get('sala')) ?? '');
-    else { this.menu.abrir(); this.menu.retomarSalaAtiva(); }
+    const direto = busca.get("encontro");
+    if (direto)
+      this.newEncounter({
+        modo: "arena",
+        variante: direto,
+        nivel: Number(busca.get("nivel")) || 2,
+      });
+    else if (busca.get("sala"))
+      this.menu.abrirSala(normalizarCodigo(busca.get("sala")) ?? "");
+    else {
+      this.menu.abrir();
+      this.menu.retomarSalaAtiva();
+    }
   }
 
   /**
@@ -300,18 +485,22 @@ class App {
     // (`src/dev/balance.js`) continua medindo; `grandes` é uma vitrine de
     // tamanho.
     // O capítulo 2 da campanha é o esconderijo dos goblins.
-    const variante = config.capitulo === 2 ? 'esconderijo'
-      : config.capitulo === 3 ? (config.cenaDaVila ?? 'rua')
-        // Capítulo 4, a região: os encontros da estrada e os lugares dela.
-        : config.capitulo === 4 ? config.cenaDaVila
-        : (config.variante ?? 'emboscada');
+    const variante =
+      config.capitulo === 2
+        ? "esconderijo"
+        : config.capitulo === 3
+          ? (config.cenaDaVila ?? "rua")
+          : // Capítulo 4, a região: os encontros da estrada e os lugares dela.
+            config.capitulo === 4
+            ? config.cenaDaVila
+            : (config.variante ?? "emboscada");
     const mapa = mapaDo(variante);
     const field = montarCampo(mapa);
-    this.campoBase = montarCampo(mapa);    // o mapa como nasceu: o que as cenas mudam depois vai ao convidado (`campo-delta.js`)
-    this.varianteAtual = variante;     // a partida da sala (F4) diz aos outros navegadores qual mapa montar
-    audio.ambiente(ambienteDaVariante(variante));      // o som de fundo do lugar (core/ambiente.js)
+    this.campoBase = montarCampo(mapa); // o mapa como nasceu: o que as cenas mudam depois vai ao convidado (`campo-delta.js`)
+    this.varianteAtual = variante; // a partida da sala (F4) diz aos outros navegadores qual mapa montar
+    audio.ambiente(ambienteDaVariante(variante)); // o som de fundo do lugar (core/ambiente.js)
     audio.tensao(false);
-    tocarFaixa(audio, faixaAgora({ variante }));        // a música do mapa (core/musica.js)
+    tocarFaixa(audio, faixaAgora({ variante })); // a música do mapa (core/musica.js)
 
     // Campanha: os quatro heróis escolhidos, montados com o que o jogador
     // marcou na preparação (ou com a escolha automática). Arena: o grupo
@@ -334,8 +523,17 @@ class App {
       // exaustão, que vem da estrada (fome, sede, marcha forçada); a conta de
       // quem voltou dos mortos, que o livro faz cair por descanso longo e não
       // por cena; e a Proteção contra a Morte, que dura oito horas.
-      const DE_FORA = new Set(['inconsciente', 'exausto', 'revivido', 'protegidoDaMorte']);
-      for (const c of party) { c.tochaAcesa = false; c.conditions = (c.conditions ?? []).filter((k) => DE_FORA.has(k.id)); c.concentrating = null; }
+      const DE_FORA = new Set([
+        "inconsciente",
+        "exausto",
+        "revivido",
+        "protegidoDaMorte",
+      ]);
+      for (const c of party) {
+        c.tochaAcesa = false;
+        c.conditions = (c.conditions ?? []).filter((k) => DE_FORA.has(k.id));
+        c.concentrating = null;
+      }
       // As magias de utilidade da cena anterior ficaram para trás (o relógio segue).
       if (this.campanha?.utilidade) this.campanha.utilidade.ativas = [];
     }
@@ -346,23 +544,36 @@ class App {
     party.forEach((c, i) => {
       c.pos = { ...mapa.grupo[i] };
       c.facingVec = { ...mapa.olhar };
-      aplicarAparencia(c);      // a figura entra com a arma e a armadura que tem
+      aplicarAparencia(c); // a figura entra com a arma e a armadura que tem
     });
     const foes = buildFoes(variante);
     // Campanha: os inimigos ficam fora do tabuleiro até a cena os chamar
     // (`game/capitulo1.js`) — o grupo explora a estrada antes da luta.
     // A arena da caverna também é uma cena: exploração no escuro antes da luta.
-    const cena = mapa.cena === 'esconderijo' ? criarCapitulo2
-      : mapa.cena === 'rua' ? criarRuaMarcarrubra
-      : mapa.cena === 'mansao' ? criarMansao
-      : mapa.cena === 'ermo' ? criarEstrada
-      : mapa.cena === 'poco' ? criarPoco
-      : mapa.cena === 'cume' ? criarCume
-      : mapa.cena === 'arvoreTrovao' ? criarArvoreTrovao
-      : mapa.cena === 'ondaEco' ? criarOndaEco
-      : mapa.cena === 'castelo' ? criarCastelo
-      : config.modo === 'campanha' ? criarCapitulo1
-        : mapa.cena === 'caverna' ? criarCenaCaverna : null;
+    const cena =
+      mapa.cena === "esconderijo"
+        ? criarCapitulo2
+        : mapa.cena === "rua"
+          ? criarRuaMarcarrubra
+          : mapa.cena === "mansao"
+            ? criarMansao
+            : mapa.cena === "ermo"
+              ? criarEstrada
+              : mapa.cena === "poco"
+                ? criarPoco
+                : mapa.cena === "cume"
+                  ? criarCume
+                  : mapa.cena === "arvoreTrovao"
+                    ? criarArvoreTrovao
+                    : mapa.cena === "ondaEco"
+                      ? criarOndaEco
+                      : mapa.cena === "castelo"
+                        ? criarCastelo
+                        : config.modo === "campanha"
+                          ? criarCapitulo1
+                          : mapa.cena === "caverna"
+                            ? criarCenaCaverna
+                            : null;
     const capitulo = Boolean(cena);
     this.inimigosEscondidos = capitulo ? foes : null;
 
@@ -372,48 +583,100 @@ class App {
       foes: capitulo ? [] : foes,
       rng,
       // Na campanha, a emboscada é a da aventura: quatro goblins, sem reforço.
-      reinforcements: config.modo === 'campanha' ? () => null : (round) => reinforcementsFor(round, variante),
+      reinforcements:
+        config.modo === "campanha"
+          ? () => null
+          : (round) => reinforcementsFor(round, variante),
       emboscada: capitulo ? null : (mapa.emboscada ?? null),
-      onLog: (entry) => { this.registrar(entry); this.contarNovidade?.(); },
+      onLog: (entry) => {
+        this.registrar(entry);
+        this.contarNovidade?.();
+      },
       onEvent: (ev) => this.onEvent(ev),
     });
     // Ganchos do encontro para as magias de utilidade: o familiar entra na luta e o Alarme avisa o grupo
     // (numa emboscada de quem o Alarme cobre, ninguém é pego de surpresa).
-    this.prontosDaCena = null;     // cena nova: ninguém está pronto para sair ainda
+    this.prontosDaCena = null; // cena nova: ninguém está pronto para sair ainda
     this.mostrarProntos?.();
-    this.enc.aoComecar = (e) => familiarEntra(e, estadoDeUtilidade(this.campanha ??= {}));
-    this.enc.protegidoDeSurpresa = (c) => Boolean(c.pos && alarmeCobre(estadoDeUtilidade(this.campanha ??= {}),
-      this.enc.combatants.filter((h) => h.side === 'party' && !h.dead && h.hp > 0), this.capitulo?.lugar, c.pos));
+    this.enc.aoComecar = (e) =>
+      familiarEntra(e, estadoDeUtilidade((this.campanha ??= {})));
+    this.enc.protegidoDeSurpresa = (c) =>
+      Boolean(
+        c.pos &&
+        alarmeCobre(
+          estadoDeUtilidade((this.campanha ??= {})),
+          this.enc.combatants.filter(
+            (h) => h.side === "party" && !h.dead && h.hp > 0,
+          ),
+          this.capitulo?.lugar,
+          c.pos,
+        ),
+      );
     // O motor pergunta se é exploração (sacar arma de graça, salto sem contar
     // corrida); quem sabe é o capítulo.
-    Object.defineProperty(this.enc, 'explorando', { get: () => !!this.capitulo?.explorando });
+    Object.defineProperty(this.enc, "explorando", {
+      get: () => !!this.capitulo?.explorando,
+    });
 
     this.hud.logList.replaceChildren();
     this.selected = null;
     this.mode = null;
 
-    this.board?.disposeCamera?.();      // o canvas é um só: o Board do encontro anterior solta os ouvintes dele
+    // Inicializar CombatAdapter com o novo encontro
+    this.combatAdapter.initialize(this.enc, {
+      afterAct: (c) => this.afterAct(c),
+      afterWalk: (fn) => this.afterWalk(fn),
+      refuse: (c, why) => this.refuse(c, why),
+      refresh: () => this.refresh(),
+      clearMode: () => {
+        this.mode = null;
+      },
+      getMode: () => this.mode,
+      setMode: (mode) => {
+        this.mode = mode;
+      },
+      getSelected: () => this.selected,
+      setSelected: (c) => {
+        this.selected = c;
+      },
+      getWalkWaitMs: () => this.walkWaitMs,
+      getCapitulo: () => this.capitulo,
+      getRoot: () => this.root,
+      getOpcaoDeFora: () => this._opcaoDeFora,
+      firstActive: () => this.firstActive(),
+    });
+
+    this.board?.disposeCamera?.(); // o canvas é um só: o Board do encontro anterior solta os ouvintes dele
     this.board = new Board(this.canvas, {
       encounter: this.enc,
       onTileClick: (t) => this.onTileClick(t),
-      onTileHover: (t) => { this.onTileHover(t); this.board?.render(0); },
+      onTileHover: (t) => {
+        this.onTileHover(t);
+        this.board?.render(0);
+      },
     });
     this.board.onCameraChange = () => this.refresh();
-    this.board.filtroDeVisao = this.donoDaVisao ?? null;     // partida de sala: o anfitrião vê o que os SEUS heróis veem
+    this.board.filtroDeVisao = this.donoDaVisao ?? null; // partida de sala: o anfitrião vê o que os SEUS heróis veem
     // Mapa grande (Árvore Trovão, 91 x 68): começa perto do grupo, e não com o
     // tabuleiro inteiro encaixado, onde cada herói tem 15% do tamanho.
     {
       // Numa partida de sala a tela do anfitrião começa no herói DELE, não no de outro jogador.
-      const lider = this.enc.combatants.find((x) => x.side === 'party' && (!this.donoDaVisao || this.donoDaVisao(x))) ?? this.enc.combatants.find((x) => x.side === 'party');
+      const lider =
+        this.enc.combatants.find(
+          (x) =>
+            x.side === "party" && (!this.donoDaVisao || this.donoDaVisao(x)),
+        ) ?? this.enc.combatants.find((x) => x.side === "party");
       this.board.focoInicial = lider?.pos ? { ...lider.pos } : null;
-      requestAnimationFrame(() => this.board?.enquadrarGrande(this.board.focoInicial));
+      requestAnimationFrame(() =>
+        this.board?.enquadrarGrande(this.board.focoInicial),
+      );
     }
     // Botão direito sem arrastar: o menu de ações da casa.
     this.board.onTileContext = (tile, e) => this.abrirContexto(tile, e);
     fecharMenuContexto();
 
     this.capitulo = null;
-    this.root.classList.remove('explorando');
+    this.root.classList.remove("explorando");
     if (capitulo) {
       this.capitulo = cena(this, config);
       this.refresh();
@@ -422,7 +685,7 @@ class App {
     }
 
     this.enc.start();
-    if (this.enc.side === 'party') this.select(this.firstActive());
+    if (this.enc.side === "party") this.select(this.firstActive());
     this.refresh();
   }
 
@@ -434,11 +697,18 @@ class App {
    */
   comecarPartidaDaSala(v) {
     const ids = Object.keys(v.herois);
-    this.salaDaPartida = { corda: v.corda ?? 'livre', herois: v.herois, voce: v.voce };
+    this.salaDaPartida = {
+      corda: v.corda ?? "livre",
+      herois: v.herois,
+      voce: v.voce,
+    };
     this.donoDaVisao = (c) => v.herois[c.id] === v.voce;
     this.prepararPortaDaSala();
     this.newEncounter({
-      modo: 'campanha', aventura: v.origem?.aventura ?? 'mina-perdida', variante: 'emboscada', nivel: 1,
+      modo: "campanha",
+      aventura: v.origem?.aventura ?? "mina-perdida",
+      variante: "emboscada",
+      nivel: 1,
       herois: ids.map((id) => ({ id, escolha: escolhaAutomatica(id) })),
     });
     clearInterval(this.publicador);
@@ -455,7 +725,9 @@ class App {
    */
   ligarAutosaveDaSala() {
     clearInterval(this.autosaveDaSala);
-    this.autosaveDaSala = setInterval(() => { if (this.salaDaPartida && this.podeSalvarAgora()) this.autosalvar(); }, 30_000);
+    this.autosaveDaSala = setInterval(() => {
+      if (this.salaDaPartida && this.podeSalvarAgora()) this.autosalvar();
+    }, 30_000);
   }
 
   /** A narrativa passa a ser transmitida: todos leem, e quem decide é o líder (A-02, J-20). */
@@ -473,26 +745,48 @@ class App {
     definirPortaDaVila({
       meu: (c) => this.podeControlar(c),
       escolher: (l) => this.votarLugar(this.salaDaPartida?.visao?.voce, l.id),
-      aoAtualizar: (snap, api) => { this.vilaBase = snap; this.vilaAtual = api; },
-      aoFechar: () => { this.vilaBase = null; this.vilaAtual = null; this.zerarVotoDeLugar(); },
+      aoAtualizar: (snap, api) => {
+        this.vilaBase = snap;
+        this.vilaAtual = api;
+      },
+      aoFechar: () => {
+        this.vilaBase = null;
+        this.vilaAtual = null;
+        this.zerarVotoDeLugar();
+      },
       votos: () => this.votosDeLugar(),
       faixa: () => this.faixaDaVotacao(),
     });
-    definirPorta(criarPortaCompartilhada({
-      // A tela do anfitrião também obedece a quem decide (J-20): pode ser só leitura, ou um voto.
-      local: (root, opts) => narrarLocal(root, { ...opts, ...this.opcoesLocaisDaDecisao() }),
-      transmitir: (msg) => {
-        if (msg.tipo === 'abrir') this.abrirDecisao(msg);
-        if (msg.tipo === 'fechar') definirVoto(null);
-        this.menu.enviarCru({ tipo: 'narrativa', msg });
-        if (msg.tipo === 'abrir') setTimeout(() => this.publicarVoto(), 80);
-      },
-      esperarResposta: (id, sinal) => new Promise((resolve) => {
-        this.esperasDeResposta.set(id, resolve);
-        sinal?.addEventListener('abort', () => { this.esperasDeResposta.delete(id); resolve(null); }, { once: true });
+    definirPorta(
+      criarPortaCompartilhada({
+        // A tela do anfitrião também obedece a quem decide (J-20): pode ser só leitura, ou um voto.
+        local: (root, opts) =>
+          narrarLocal(root, { ...opts, ...this.opcoesLocaisDaDecisao() }),
+        transmitir: (msg) => {
+          if (msg.tipo === "abrir") this.abrirDecisao(msg);
+          if (msg.tipo === "fechar") definirVoto(null);
+          this.menu.enviarCru({ tipo: "narrativa", msg });
+          if (msg.tipo === "abrir") setTimeout(() => this.publicarVoto(), 80);
+        },
+        esperarResposta: (id, sinal) =>
+          new Promise((resolve) => {
+            this.esperasDeResposta.set(id, resolve);
+            sinal?.addEventListener(
+              "abort",
+              () => {
+                this.esperasDeResposta.delete(id);
+                resolve(null);
+              },
+              { once: true },
+            );
+          }),
+        aoFalhar: (e) =>
+          console.warn(
+            "a narrativa compartilhada falhou; segue só neste navegador",
+            e,
+          ),
       }),
-      aoFalhar: (e) => console.warn('a narrativa compartilhada falhou; segue só neste navegador', e),
-    }));
+    );
   }
 
   /**
@@ -501,16 +795,27 @@ class App {
    */
   assumirPartidaDaSala(texto, v) {
     this.partidaRemota.fechar();
-    const lido = texto ? deArquivo(texto) : { ok: false, erro: 'o servidor não tem um save desta partida' };
+    const lido = texto
+      ? deArquivo(texto)
+      : { ok: false, erro: "o servidor não tem um save desta partida" };
     if (!lido.ok) {
-      this.avisarDeSave(`Você assumiu a sala, mas não deu para retomar a partida: ${lido.erro}`);
+      this.avisarDeSave(
+        `Você assumiu a sala, mas não deu para retomar a partida: ${lido.erro}`,
+      );
       return;
     }
-    this.salaDaPartida = { corda: v?.corda ?? 'livre', herois: v?.herois ?? {}, voce: v?.voce };
+    this.salaDaPartida = {
+      corda: v?.corda ?? "livre",
+      herois: v?.herois ?? {},
+      voce: v?.voce,
+    };
     this.donoDaVisao = (c) => v?.herois?.[c.id] === v?.voce;
     this.prepararPortaDaSala();
     const r = this.carregarSave(lido.save);
-    if (!r.ok) { this.avisarDeSave(r.erro); return; }
+    if (!r.ok) {
+      this.avisarDeSave(r.erro);
+      return;
+    }
     this.ultimaVistaTexto = null;
     this.emissorDeVista = criarEmissor();
     clearInterval(this.publicador);
@@ -523,7 +828,7 @@ class App {
   perderOPostoDaSala(v) {
     this.encerrarPartidaDaSala();
     this.menu.fechar();
-    this.partidaRemota.abrir(document.getElementById('app'));
+    this.partidaRemota.abrir(document.getElementById("app"));
     this.partidaRemota.atualizarSala(v);
   }
 
@@ -534,20 +839,64 @@ class App {
     if (!naVila && (!this.enc || !this.varianteAtual)) return;
     const eventos = naVila ? [] : (this.eventosPendentes ?? []);
     const vista = naVila
-      ? { v: 1, variante: 'vila', rodada: 0, lado: 'party', acabou: false, combatentes: [], extras: { vila: { ...this.vilaBase, votos: this.votosDeLugar(), faixa: this.faixaDaVotacao(), herois: empacotarLista((this.grupoDaCampanha ?? []).filter((c) => !c.dead)) } } }
-      : fotografar({ enc: this.enc, variante: this.varianteAtual, extras: { ...(eventos.length ? { eventos } : {}), campo: diferencasDoCampo(this.enc.field, this.campoBase), diario: diarioDe(this.campanha?.vila, MISSOES), explorando: Boolean(this.capitulo?.explorando), prontos: [...(this.prontosDaCena ?? [])] } });
+      ? {
+          v: 1,
+          variante: "vila",
+          rodada: 0,
+          lado: "party",
+          acabou: false,
+          combatentes: [],
+          extras: {
+            vila: {
+              ...this.vilaBase,
+              votos: this.votosDeLugar(),
+              faixa: this.faixaDaVotacao(),
+              herois: empacotarLista(
+                (this.grupoDaCampanha ?? []).filter((c) => !c.dead),
+              ),
+            },
+          },
+        }
+      : fotografar({
+          enc: this.enc,
+          variante: this.varianteAtual,
+          extras: {
+            ...(eventos.length ? { eventos } : {}),
+            campo: diferencasDoCampo(this.enc.field, this.campoBase),
+            diario: diarioDe(this.campanha?.vila, MISSOES),
+            explorando: Boolean(this.capitulo?.explorando),
+            prontos: [...(this.prontosDaCena ?? [])],
+          },
+        });
     // O que mudou se mede SEM os eventos (eles já foram dados uma vez): só estado novo, evento novo ou o batimento mandam.
-    const texto = naVila ? emTexto(vista) : emTexto({ ...vista, extras: { campo: vista.extras?.campo ?? null } });
+    const texto = naVila
+      ? emTexto(vista)
+      : emTexto({ ...vista, extras: { campo: vista.extras?.campo ?? null } });
     // Sem mudança, só repete de vez em quando: o servidor não guarda a vista (ela some se o Durable Object dormir ou for
     // trocado), e quem entra ou volta fica esperando a próxima. Três segundos de espera no pior caso, 7 KB de custo.
     const agora = Date.now();
-    if (texto === this.ultimaVistaTexto && !eventos.length && agora - (this.ultimaVistaEm ?? 0) < BATIMENTO_DA_VISTA_MS) return;
-    if (emTexto(vista).length > MAX_VISTA) { console.warn('a vista da partida passou do teto e não foi publicada'); this.eventosPendentes = []; return; }
+    if (
+      texto === this.ultimaVistaTexto &&
+      !eventos.length &&
+      agora - (this.ultimaVistaEm ?? 0) < BATIMENTO_DA_VISTA_MS
+    )
+      return;
+    if (emTexto(vista).length > MAX_VISTA) {
+      console.warn("a vista da partida passou do teto e não foi publicada");
+      this.eventosPendentes = [];
+      return;
+    }
     // Só o que mudou desde a publicação anterior (`game/partida-delta.js`); o batimento sai sempre completo.
     this.emissorDeVista ??= criarEmissor();
     const batimento = texto === this.ultimaVistaTexto && !eventos.length;
-    const saida = naVila ? vista : this.emissorDeVista.publicar(vista, { completa: batimento });
-    if (this.menu.enviarVista(saida)) { this.ultimaVistaTexto = texto; this.ultimaVistaEm = agora; this.eventosPendentes = []; } else this.emissorDeVista.reiniciar();
+    const saida = naVila
+      ? vista
+      : this.emissorDeVista.publicar(vista, { completa: batimento });
+    if (this.menu.enviarVista(saida)) {
+      this.ultimaVistaTexto = texto;
+      this.ultimaVistaEm = agora;
+      this.eventosPendentes = [];
+    } else this.emissorDeVista.reiniciar();
   }
 
   /**
@@ -557,83 +906,204 @@ class App {
   /** A corda do grupo (J-03): o porquê, se o herói não pode ir para lá; `null` se pode. Só vale em partida de sala. */
   cordaImpede(c, destino) {
     if (!this.salaDaPartida) return null;
-    const grupo = this.enc.combatants.filter((h) => h.side === 'party' && !h.dead && h.hp > 0);
-    const r = cordaPermite({ heroi: c, destino, grupo, modo: this.salaDaPartida.corda });
+    const grupo = this.enc.combatants.filter(
+      (h) => h.side === "party" && !h.dead && h.hp > 0,
+    );
+    const r = cordaPermite({
+      heroi: c,
+      destino,
+      grupo,
+      modo: this.salaDaPartida.corda,
+    });
     return r.ok ? null : r.why;
   }
 
-  aplicarIntencao({ de, heroi, acao, marca, id: idDaFrase, x, y, alvo, arma, action, circulo, tiles, lugar, item, slot, descanso, qual, id, spellId, valor }) {
-    if (acao === 'alfinete') { this.alfinete(de, x, y, marca); return; }
-    if (acao === 'frase') { this.falar(de, idDaFrase); return; }
-    if (acao === 'pronto-cena') { this.marcarPronto(de, valor); return; }
-    if (acao === 'descanso-dado' || acao === 'descanso-magia' || acao === 'descanso-pronto') { this.descansoDeFora({ de, heroi, acao, id, spellId, circulo }); return; }
-    if (acao === 'vila-acao') { this.acaoDaVila(de, qual); return; }
-    if (acao === 'descanso') { this.pedirDescanso(de, descanso === 'longo' ? 'longo' : 'curto'); return; }
-    if (acao === 'preparar') { this.prepararDeFora({ de, heroi, lista: arguments[0].lista }); return; }
-    if (acao === 'nivel') { const e = this._esperasDeNivel?.get(arguments[0].id); if (e && e.pub === de && e.heroi === heroi) e.resolve(arguments[0].selecoes); return; }
-    if (acao === 'comprar' || acao === 'vender') { this.negociarDeFora({ de, heroi, acao, item }); return; }
-    if (acao === 'equipar') { this.equiparDeFora({ de, heroi, slot: arguments[0].slot, item }); return; }
-    if (acao === 'lugar') { this.votarLugar(de, lugar); return; }   // na vila e na região não há herói: o voto é do jogador
-    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+  aplicarIntencao({
+    de,
+    heroi,
+    acao,
+    marca,
+    id: idDaFrase,
+    x,
+    y,
+    alvo,
+    arma,
+    action,
+    circulo,
+    tiles,
+    lugar,
+    item,
+    slot,
+    descanso,
+    qual,
+    id,
+    spellId,
+    valor,
+  }) {
+    if (acao === "alfinete") {
+      this.alfinete(de, x, y, marca);
+      return;
+    }
+    if (acao === "frase") {
+      this.falar(de, idDaFrase);
+      return;
+    }
+    if (acao === "pronto-cena") {
+      this.marcarPronto(de, valor);
+      return;
+    }
+    if (
+      acao === "descanso-dado" ||
+      acao === "descanso-magia" ||
+      acao === "descanso-pronto"
+    ) {
+      this.descansoDeFora({ de, heroi, acao, id, spellId, circulo });
+      return;
+    }
+    if (acao === "vila-acao") {
+      this.acaoDaVila(de, qual);
+      return;
+    }
+    if (acao === "descanso") {
+      this.pedirDescanso(de, descanso === "longo" ? "longo" : "curto");
+      return;
+    }
+    if (acao === "preparar") {
+      this.prepararDeFora({ de, heroi, lista: arguments[0].lista });
+      return;
+    }
+    if (acao === "nivel") {
+      const e = this._esperasDeNivel?.get(arguments[0].id);
+      if (e && e.pub === de && e.heroi === heroi)
+        e.resolve(arguments[0].selecoes);
+      return;
+    }
+    if (acao === "comprar" || acao === "vender") {
+      this.negociarDeFora({ de, heroi, acao, item });
+      return;
+    }
+    if (acao === "equipar") {
+      this.equiparDeFora({ de, heroi, slot: arguments[0].slot, item });
+      return;
+    }
+    if (acao === "lugar") {
+      this.votarLugar(de, lugar);
+      return;
+    } // na vila e na região não há herói: o voto é do jogador
+    const avisar = (texto) =>
+      this.menu.enviarCru({ tipo: "aviso", para: de, texto });
     if (!this.enc || this.enc.over) return;
-    if (this.ficha?.estaAberta() || narrativaAberta()) { avisar('espere a narrativa terminar'); return; }
-    if (this.busy) { avisar('um instante: a cena ainda está se mexendo'); return; }
-    if (this.enc.side !== 'party') { avisar('não é a vez do grupo'); return; }
-    const c = this.enc.combatants.find((h) => h.id === heroi && h.side === 'party' && !h.dead && h.hp > 0);
+    if (this.ficha?.estaAberta() || narrativaAberta()) {
+      avisar("espere a narrativa terminar");
+      return;
+    }
+    if (this.busy) {
+      avisar("um instante: a cena ainda está se mexendo");
+      return;
+    }
+    if (this.enc.side !== "party") {
+      avisar("não é a vez do grupo");
+      return;
+    }
+    const c = this.enc.combatants.find(
+      (h) => h.id === heroi && h.side === "party" && !h.dead && h.hp > 0,
+    );
     if (!c) return;
-    this.marcarAtor(c);   // a cena que este passo ou golpe começar é dele
+    this.marcarAtor(c); // a cena que este passo ou golpe começar é dele
     const emCombate = !this.capitulo?.explorando;
     // Quem já terminou o turno não age: vale também para o menu do botão direito (as opções que ele escolhe rodam aqui).
-    if (emCombate && c.acted) { avisar(`${c.name} já terminou o turno`); return; }
-    if (acao === 'contexto' || acao === 'contexto-escolher') { this.contextoDeFora(c, { de, acao, x, y, idx: arguments[0].idx }, avisar); return; }
+    if (emCombate && c.acted) {
+      avisar(`${c.name} já terminou o turno`);
+      return;
+    }
+    if (acao === "contexto" || acao === "contexto-escolher") {
+      this.contextoDeFora(c, { de, acao, x, y, idx: arguments[0].idx }, avisar);
+      return;
+    }
 
     // F5: a fase do grupo é simultânea. Cada jogador age com os SEUS heróis, em qualquer ordem, e o motor já aceita isso:
     // cada herói termina o turno sozinho, e a vez passa aos inimigos quando o último termina.
-    if (acao === 'usar') {
+    if (acao === "usar") {
       if (!emCombate) {
         // Explorando, o que se faz pela ficha: beber uma poção. O resto da barra é de luta.
-        if (action?.kind === 'item' && !action.mira) {
+        if (action?.kind === "item" && !action.mira) {
           const r = this.enc.useItem(c, action.itemId, { target: c });
-          if (!r.ok) avisar(r.why); else { audio.play('click'); this.afterAct(c); }
+          if (!r.ok) avisar(r.why);
+          else {
+            audio.play("click");
+            this.afterAct(c);
+          }
           return;
         }
         // Magia de utilidade (Luz, Detectar Magia…): a conjuração e as perguntas dela passam pela narrativa, e quem responde é o dono do herói.
-        if (action?.kind === 'spell' && UTIL_FORA.has(action.spellId)) {
-          if (narrativaAberta()) { avisar('espere a narrativa terminar'); return; }
+        if (action?.kind === "spell" && UTIL_FORA.has(action.spellId)) {
+          if (narrativaAberta()) {
+            avisar("espere a narrativa terminar");
+            return;
+          }
           const antes = this.selected;
           this.selected = null;
           this._remoto = true;
-          try { this.select(c); } finally { this._remoto = false; }
-          this.chooseAction({ kind: 'spell', spellId: action.spellId });
+          try {
+            this.select(c);
+          } finally {
+            this._remoto = false;
+          }
+          this.chooseAction({ kind: "spell", spellId: action.spellId });
           if (antes && antes !== c) this.selected = antes;
           return;
         }
         // A Cura pelas Mãos entre as lutas: o clique no aliado corre em `onTileClick`, como em combate.
-        if (action?.kind === 'featureAlvo' && action.featureId === 'layOnHands') { this.usarDeFora(c, { action, circulo, tiles }, avisar); return; }
-        avisar('em exploração só se anda, se usa item e se conjura magia de utilidade');
+        if (
+          action?.kind === "featureAlvo" &&
+          action.featureId === "layOnHands"
+        ) {
+          this.usarDeFora(c, { action, circulo, tiles }, avisar);
+          return;
+        }
+        avisar(
+          "em exploração só se anda, se usa item e se conjura magia de utilidade",
+        );
         return;
       }
       this.usarDeFora(c, { action, circulo, tiles }, avisar);
       return;
     }
-    if (acao === 'terminar') {
-      if (!emCombate) { avisar('só se termina o turno numa luta'); return; }
+    if (acao === "terminar") {
+      if (!emCombate) {
+        avisar("só se termina o turno numa luta");
+        return;
+      }
       this.terminarTurnoDe(c);
       return;
     }
-    if (acao === 'atacar') {
-      if (!emCombate) { avisar('não há ninguém para atacar'); return; }
-      const t = this.enc.combatants.find((h) => h.id === alvo && h.side !== 'party' && !h.dead && h.hp > 0);
-      if (!t) { avisar('esse alvo não está mais lá'); return; }
-      this.tryAttack(c, t, arma ?? c.equippedWeapon);   // recusa pelo `refuse`, que avisa o dono do herói
+    if (acao === "atacar") {
+      if (!emCombate) {
+        avisar("não há ninguém para atacar");
+        return;
+      }
+      const t = this.enc.combatants.find(
+        (h) => h.id === alvo && h.side !== "party" && !h.dead && h.hp > 0,
+      );
+      if (!t) {
+        avisar("esse alvo não está mais lá");
+        return;
+      }
+      this.tryAttack(c, t, arma ?? c.equippedWeapon); // recusa pelo `refuse`, que avisa o dono do herói
       return;
     }
-    if (acao !== 'mover') return;
+    if (acao !== "mover") return;
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(x, y));
-    if (!node || node.cost === 0) { if (emCombate) avisar('não dá para chegar lá com o movimento que sobra'); return; }
+    if (!node || node.cost === 0) {
+      if (emCombate) avisar("não dá para chegar lá com o movimento que sobra");
+      return;
+    }
     const corda = this.cordaImpede(c, { x, y });
-    if (corda) { avisar(corda); return; }
+    if (corda) {
+      avisar(corda);
+      return;
+    }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, { x, y }));
     if (!emCombate) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
     this.refresh();
@@ -649,31 +1119,64 @@ class App {
     const comHeroi = (fn) => {
       const antes = this.selected;
       this.selected = c;
-      try { return fn(); } finally { this.selected = antes; }
+      try {
+        return fn();
+      } finally {
+        this.selected = antes;
+      }
     };
-    if (acao === 'contexto-escolher') {
+    if (acao === "contexto-escolher") {
       const m = this._contextos.get(de);
       this._contextos.delete(de);
       const o = m?.heroi === c.id ? m.opcoes[idx] : null;
-      if (!o) { avisar('o menu já não vale: clique de novo'); return; }
-      if (o.motivo) { avisar(o.motivo); return; }
-      if (o.local) return;      // ficha e seleção são da tela de quem pediu: o convidado as faz sozinho
+      if (!o) {
+        avisar("o menu já não vale: clique de novo");
+        return;
+      }
+      if (o.motivo) {
+        avisar(o.motivo);
+        return;
+      }
+      if (o.local) return; // ficha e seleção são da tela de quem pediu: o convidado as faz sozinho
       comHeroi(() => o.fazer());
-      this.mode = null;         // nada fica pendente na mira do anfitrião
+      this.mode = null; // nada fica pendente na mira do anfitrião
       this.refresh();
       return;
     }
     const m = comHeroi(() => opcoesDaCasa(this, { x, y }));
-    if (!m?.opcoes.length) { avisar('nada a fazer ali'); return; }
+    if (!m?.opcoes.length) {
+      avisar("nada a fazer ali");
+      return;
+    }
     // Uma magia que pede uma escolha (Aprimorar Atributo) abriria o seletor na tela do anfitrião: essa o convidado conjura pela barra de magias.
-    for (const o of m.opcoes) if (o.spellId && !o.motivo && opcoesDaMagia(getSpell(o.spellId))) o.motivo = 'pede uma escolha: use a barra de magias';
+    for (const o of m.opcoes)
+      if (o.spellId && !o.motivo && opcoesDaMagia(getSpell(o.spellId)))
+        o.motivo = "pede uma escolha: use a barra de magias";
     this._contextos.set(de, { heroi: c.id, opcoes: m.opcoes });
     const opcoes = m.opcoes.map((o, i) => {
       const { fazer, alvoPrevia, ...resto } = o;
-      return { ...resto, i, previa: alvoPrevia?.pos ? { x: alvoPrevia.pos.x, y: alvoPrevia.pos.y } : null };
+      return {
+        ...resto,
+        i,
+        previa: alvoPrevia?.pos
+          ? { x: alvoPrevia.pos.x, y: alvoPrevia.pos.y }
+          : null,
+      };
     });
     const id = (this._seqContexto = (this._seqContexto ?? 0) + 1);
-    this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'contexto-abrir', id, para: de, heroi: c.id, titulo: m.titulo, subtitulo: m.subtitulo ?? null, alvo: m.alvo ?? null, opcoes } });
+    this.menu.enviarCru({
+      tipo: "narrativa",
+      msg: {
+        tipo: "contexto-abrir",
+        id,
+        para: de,
+        heroi: c.id,
+        titulo: m.titulo,
+        subtitulo: m.subtitulo ?? null,
+        alvo: m.alvo ?? null,
+        opcoes,
+      },
+    });
   }
 
   /**
@@ -682,25 +1185,39 @@ class App {
    * tela do anfitrião (uma magia com opção) não passa: seria sequestrar a tela dele.
    */
   usarDeFora(c, { action, circulo, tiles }, avisar) {
-    if (action.kind === 'spell') {
+    if (action.kind === "spell") {
       const spell = getSpell(action.spellId);
-      if (!spell) { avisar('magia desconhecida'); return; }
-      if (opcoesDaMagia(spell) && !action.opcao) { avisar(`${spell.name} pede uma escolha`); return; }
+      if (!spell) {
+        avisar("magia desconhecida");
+        return;
+      }
+      if (opcoesDaMagia(spell) && !action.opcao) {
+        avisar(`${spell.name} pede uma escolha`);
+        return;
+      }
     }
     this._opcaoDeFora = action.opcao ?? null;
     const antes = this.selected;
     this.selected = null;
     this._remoto = true;
-    try { this.select(c); } finally { this._remoto = false; }
+    try {
+      this.select(c);
+    } finally {
+      this._remoto = false;
+    }
     this.chooseAction(action);
-    if (circulo && this.mode?.kind === 'spell') this.chooseAction({ kind: 'circulo', lvl: circulo });
+    if (circulo && this.mode?.kind === "spell")
+      this.chooseAction({ kind: "circulo", lvl: circulo });
     if (this.mode) {
-      for (const t of tiles ?? []) { if (!this.mode) break; this.onTileClick(t); }
+      for (const t of tiles ?? []) {
+        if (!this.mode) break;
+        this.onTileClick(t);
+      }
       if (this.mode?.alvos?.length) this.conjurarEscolhidos();
     }
-    this.mode = null;       // nada fica pendente no anfitrião
+    this.mode = null; // nada fica pendente no anfitrião
     this._opcaoDeFora = null;
-    if (antes && antes !== c && !antes.acted && !antes.dead) this.select(antes);   // o do anfitrião, que ele podia controlar
+    if (antes && antes !== c && !antes.acted && !antes.dead) this.select(antes); // o do anfitrião, que ele podia controlar
     this.refresh();
   }
 
@@ -712,24 +1229,39 @@ class App {
   async pilotoDaSala() {
     if (this._pilotando || !this.salaDaPartida?.visao) return;
     const enc = this.enc;
-    if (!enc || enc.over || enc.side !== 'party' || this.capitulo?.explorando) return;
+    if (!enc || enc.over || enc.side !== "party" || this.capitulo?.explorando)
+      return;
     if (!heroisDoPiloto(this.salaDaPartida.visao).size) return;
     this._pilotando = true;
     const espera = (ms) => new Promise((r) => setTimeout(r, ms));
-    const continua = () => this.enc === enc && !enc.over && enc.side === 'party' && !this.capitulo?.explorando && this.salaDaPartida;
+    const continua = () =>
+      this.enc === enc &&
+      !enc.over &&
+      enc.side === "party" &&
+      !this.capitulo?.explorando &&
+      this.salaDaPartida;
     try {
       for (const id of [...heroisDoPiloto(this.salaDaPartida.visao)]) {
         // Narrativa aberta ou cena andando: espera um pouco, sem prender o piloto para sempre.
-        for (let i = 0; i < 40 && continua() && (narrativaAberta() || this.busy); i++) await espera(300);
-        if (!continua() || !heroisDoPiloto(this.salaDaPartida.visao).has(id)) continue;
-        const c = enc.combatants.find((h) => h.id === id && h.side === 'party');
+        for (
+          let i = 0;
+          i < 40 && continua() && (narrativaAberta() || this.busy);
+          i++
+        )
+          await espera(300);
+        if (!continua() || !heroisDoPiloto(this.salaDaPartida.visao).has(id))
+          continue;
+        const c = enc.combatants.find((h) => h.id === id && h.side === "party");
         if (!c) continue;
         const jogada = jogadaDoPiloto(c, enc.combatants);
-        if (jogada.tipo === 'atacar') {
+        if (jogada.tipo === "atacar") {
           this.tryAttack(c, jogada.alvo, jogada.arma);
           await espera(this.walkWaitMs + 900);
         }
-        if (continua() && !c.acted && !c.dead && c.hp > 0) { this.terminarTurnoDe(c); await espera(700); }
+        if (continua() && !c.acted && !c.dead && c.hp > 0) {
+          this.terminarTurnoDe(c);
+          await espera(700);
+        }
       }
     } finally {
       this._pilotando = false;
@@ -741,14 +1273,24 @@ class App {
   /** O que o descanso curto precisa da sala: quem é o dono de cada herói e como falar com a tela dos outros jogadores. */
   portaDoDescanso() {
     const id = (this._seqDescanso = (this._seqDescanso ?? 0) + 1);
-    const enviar = (msg) => this.menu.enviarCru({ tipo: 'narrativa', msg: { ...msg, id } });
-    let titulo = ''; let texto = null;
+    const enviar = (msg) =>
+      this.menu.enviarCru({ tipo: "narrativa", msg: { ...msg, id } });
+    let titulo = "";
+    let texto = null;
     return {
       dono: (c) => this.donoRemoto(c),
       local: (root, opts) => narrarLocal(root, opts),
-      abrir: (o) => { titulo = o.titulo; texto = o.texto; this._descansoRemoto = { id, ...o }; },
-      estado: (linhas, prontos) => enviar({ tipo: 'descanso-estado', titulo, texto, linhas, prontos }),
-      fechar: () => { enviar({ tipo: 'descanso-fechar' }); this._descansoRemoto = null; },
+      abrir: (o) => {
+        titulo = o.titulo;
+        texto = o.texto;
+        this._descansoRemoto = { id, ...o };
+      },
+      estado: (linhas, prontos) =>
+        enviar({ tipo: "descanso-estado", titulo, texto, linhas, prontos }),
+      fechar: () => {
+        enviar({ tipo: "descanso-fechar" });
+        this._descansoRemoto = null;
+      },
     };
   }
 
@@ -756,9 +1298,9 @@ class App {
   descansoDeFora({ de, heroi, acao, id, spellId, circulo }) {
     const d = this._descansoRemoto;
     if (!d || d.id !== id) return;
-    if (acao === 'descanso-dado') d.gastar(heroi, de);
-    else if (acao === 'descanso-magia') d.magia(heroi, de, spellId, circulo);
-    else if (acao === 'descanso-pronto') d.pronto(de);
+    if (acao === "descanso-dado") d.gastar(heroi, de);
+    else if (acao === "descanso-magia") d.magia(heroi, de, spellId, circulo);
+    else if (acao === "descanso-pronto") d.pronto(de);
   }
 
   // ---- subir de nível: o dono do herói escolhe ---------------------------------------------------
@@ -780,12 +1322,18 @@ class App {
       const fim = (selecoes) => {
         clearTimeout(t);
         if (!this._esperasDeNivel.delete(id)) return;
-        this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'nivel-fechar', id, para: pub } });
+        this.menu.enviarCru({
+          tipo: "narrativa",
+          msg: { tipo: "nivel-fechar", id, para: pub },
+        });
         resolve(selecoes);
       };
       const t = setTimeout(() => fim(null), 120_000);
       this._esperasDeNivel.set(id, { pub, heroi: c.id, resolve: fim });
-      this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'nivel-abrir', id, para: pub, dados } });
+      this.menu.enviarCru({
+        tipo: "narrativa",
+        msg: { tipo: "nivel-abrir", id, para: pub, dados },
+      });
     });
   }
 
@@ -795,74 +1343,154 @@ class App {
   async lojaDaSala(root, o) {
     const lojaId = Object.keys(LOJAS).find((k) => LOJAS[k] === o.loja);
     const id = (this._seqLoja = (this._seqLoja ?? 0) + 1);
-    this.lojaAberta = { id, lojaId, loja: o.loja, grupo: o.grupo, aoMudar: o.aoMudar };
-    if (lojaId) this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'loja-abrir', id, lojaId, npc: { name: o.npc?.name ?? '', look: o.npc?.look ?? null } } });
+    this.lojaAberta = {
+      id,
+      lojaId,
+      loja: o.loja,
+      grupo: o.grupo,
+      aoMudar: o.aoMudar,
+    };
+    if (lojaId)
+      this.menu.enviarCru({
+        tipo: "narrativa",
+        msg: {
+          tipo: "loja-abrir",
+          id,
+          lojaId,
+          npc: { name: o.npc?.name ?? "", look: o.npc?.look ?? null },
+        },
+      });
     try {
-      await abrirLojaLocal(root, { ...o, podeUsar: (c) => this.podeControlar(c), ligar: (api) => { this.lojaAberta.api = api; } });
+      await abrirLojaLocal(root, {
+        ...o,
+        podeUsar: (c) => this.podeControlar(c),
+        ligar: (api) => {
+          this.lojaAberta.api = api;
+        },
+      });
     } finally {
-      if (lojaId) this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'loja-fechar', id } });
+      if (lojaId)
+        this.menu.enviarCru({
+          tipo: "narrativa",
+          msg: { tipo: "loja-fechar", id },
+        });
       this.lojaAberta = null;
     }
   }
 
   /** Um jogador compra ou vende, na loja aberta, para o herói DELE (o servidor já conferiu de quem é). */
   negociarDeFora({ de, heroi, acao, item }) {
-    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    const avisar = (texto) =>
+      this.menu.enviarCru({ tipo: "aviso", para: de, texto });
     const lj = this.lojaAberta;
-    if (!lj) { avisar('a loja não está aberta'); return; }
+    if (!lj) {
+      avisar("a loja não está aberta");
+      return;
+    }
     const vivos = lj.grupo.filter((c) => !c.dead);
     const c = vivos.find((h) => h.id === heroi);
     if (!c) return;
-    if (acao === 'comprar') {
+    if (acao === "comprar") {
       const l = lj.loja.estoque().find((x) => x.id === item);
-      if (!l) { avisar('a loja não vende isso'); return; }
+      if (!l) {
+        avisar("a loja não vende isso");
+        return;
+      }
       const r = comprarNaLoja(c, l, vivos);
-      if (!r.ok) { avisar(r.why); return; }
-      lj.aoMudar?.(`${c.name} leva ${l.lote > 1 ? `${l.lote} ` : ''}${l.dados.name}.`);
+      if (!r.ok) {
+        avisar(r.why);
+        return;
+      }
+      lj.aoMudar?.(
+        `${c.name} leva ${l.lote > 1 ? `${l.lote} ` : ""}${l.dados.name}.`,
+      );
     } else {
       const v = vendaveis(c, lj.loja).find((x) => x.id === item);
-      if (!v) { avisar('a loja não compra isso de você'); return; }
+      if (!v) {
+        avisar("a loja não compra isso de você");
+        return;
+      }
       const r = venderNaLoja(c, v);
-      if (!r.ok) { avisar(r.why); return; }
-      lj.aoMudar?.(`${c.name} vende ${v.lote > 1 ? `${v.lote} ` : ''}${v.dados.name}.`);
+      if (!r.ok) {
+        avisar(r.why);
+        return;
+      }
+      lj.aoMudar?.(
+        `${c.name} vende ${v.lote > 1 ? `${v.lote} ` : ""}${v.dados.name}.`,
+      );
     }
-    audio.play('coin');
-    lj.api?.desenhar();   // a loja do anfitrião mostra o dinheiro e a mochila novos
+    audio.play("coin");
+    lj.api?.desenhar(); // a loja do anfitrião mostra o dinheiro e a mochila novos
   }
 
   /** Um jogador prepara as magias do herói DELE, pela ficha; valem as mesmas regras da ficha do anfitrião. */
   prepararDeFora({ de, heroi, lista }) {
-    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    const avisar = (texto) =>
+      this.menu.enviarCru({ tipo: "aviso", para: de, texto });
     const todos = this.enc ? this.enc.combatants : (this.grupoDaCampanha ?? []);
     const c = todos.find((h) => h.id === heroi && !h.dead);
     const sc = c?.spellcasting;
     if (!sc) return;
-    if (this.enc && !(this.enc.side === 'party' && !this.enc.over)) { avisar('dá para preparar magias só no turno do grupo'); return; }
+    if (this.enc && !(this.enc.side === "party" && !this.enc.over)) {
+      avisar("dá para preparar magias só no turno do grupo");
+      return;
+    }
     const fonte = fontesDePreparacao(c).filter((id) => getSpell(id).level > 0);
     const novas = new Set(lista);
-    if (novas.size !== lista.length || !lista.every((id) => fonte.includes(id))) { avisar('essas magias não podem ser preparadas'); return; }
-    if (novas.size > limiteDePreparacao(c)) { avisar(`${c.name} só prepara ${limiteDePreparacao(c)} magias`); return; }
-    sc.prepared = fonte.filter((id) => novas.has(id));   // a ordem do livro, como na ficha
+    if (
+      novas.size !== lista.length ||
+      !lista.every((id) => fonte.includes(id))
+    ) {
+      avisar("essas magias não podem ser preparadas");
+      return;
+    }
+    if (novas.size > limiteDePreparacao(c)) {
+      avisar(`${c.name} só prepara ${limiteDePreparacao(c)} magias`);
+      return;
+    }
+    sc.prepared = fonte.filter((id) => novas.has(id)); // a ordem do livro, como na ficha
     this.refresh();
   }
 
   /** Um botão da tela da vila ou da região (Dormir, Acampar), pedido por um jogador: o anfitrião o roda se nada está aberto. */
   acaoDaVila(de, qual) {
-    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
-    if (!this.vilaAtual?.acao || this.enc) { avisar('esse botão só vale na vila ou na região'); return; }
-    if (narrativaAberta() || this.ficha?.estaAberta() || this.lojaAberta) { avisar('já há uma decisão em andamento'); return; }
-    this._ator = null;     // pedido do grupo: ninguém "começou" esta cena; as escolhas dela vão a votação
+    const avisar = (texto) =>
+      this.menu.enviarCru({ tipo: "aviso", para: de, texto });
+    if (!this.vilaAtual?.acao || this.enc) {
+      avisar("esse botão só vale na vila ou na região");
+      return;
+    }
+    if (narrativaAberta() || this.ficha?.estaAberta() || this.lojaAberta) {
+      avisar("já há uma decisão em andamento");
+      return;
+    }
+    this._ator = null; // pedido do grupo: ninguém "começou" esta cena; as escolhas dela vão a votação
     this.vilaAtual.acao(qual);
   }
 
   /** O alfinete de `pub` na casa (x, y): aparece no mapa do anfitrião e, pela vista, no de todos os outros. */
-  alfinete(pub, x, y, marca = 'aqui') {
+  alfinete(pub, x, y, marca = "aqui") {
     const v = this.salaDaPartida?.visao;
     const b = this.board;
     if (!v || !b || !this.enc || !(x >= 0 && y >= 0)) return;
-    const i = Math.max(0, v.jogadores.findIndex((j) => j.id === pub));
-    mostrarAlfinete(b, { x, y }, v.jogadores[i]?.nome ?? '?', CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length], marca);
-    (this.eventosPendentes ??= []).push({ type: 'alfinete', x, y, de: pub, marca });
+    const i = Math.max(
+      0,
+      v.jogadores.findIndex((j) => j.id === pub),
+    );
+    mostrarAlfinete(
+      b,
+      { x, y },
+      v.jogadores[i]?.nome ?? "?",
+      CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length],
+      marca,
+    );
+    (this.eventosPendentes ??= []).push({
+      type: "alfinete",
+      x,
+      y,
+      de: pub,
+      marca,
+    });
     if (this.eventosPendentes.length > 100) this.eventosPendentes.shift();
   }
 
@@ -874,11 +1502,21 @@ class App {
     this._falouEm ??= {};
     if (Date.now() - (this._falouEm[pub] ?? 0) < 1500) return;
     this._falouEm[pub] = Date.now();
-    const c = this.enc.combatants.find((h) => v.herois[h.id] === pub && !h.dead && h.hp > 0);
+    const c = this.enc.combatants.find(
+      (h) => v.herois[h.id] === pub && !h.dead && h.hp > 0,
+    );
     if (!c?.pos) return;
-    const i = Math.max(0, v.jogadores.findIndex((j) => j.id === pub));
-    mostrarFrase(this.board, c.pos, frase.texto, CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length]);
-    (this.eventosPendentes ??= []).push({ type: 'frase', de: pub, id });
+    const i = Math.max(
+      0,
+      v.jogadores.findIndex((j) => j.id === pub),
+    );
+    mostrarFrase(
+      this.board,
+      c.pos,
+      frase.texto,
+      CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length],
+    );
+    (this.eventosPendentes ??= []).push({ type: "frase", de: pub, id });
   }
 
   /** "Pronto para sair da cena": quem já não tem o que fazer marca; a lista vai na vista e nas decisões de saída. */
@@ -886,54 +1524,100 @@ class App {
     const v = this.salaDaPartida?.visao;
     if (!v || !v.jogadores.some((j) => j.id === pub)) return;
     this.prontosDaCena ??= new Set();
-    if (valor) this.prontosDaCena.add(pub); else this.prontosDaCena.delete(pub);
+    if (valor) this.prontosDaCena.add(pub);
+    else this.prontosDaCena.delete(pub);
     this.mostrarProntos();
   }
 
   /** Quem está pronto, escrito (para a faixa do anfitrião e para o título das decisões). */
   textoDosProntos() {
     const v = this.salaDaPartida?.visao;
-    if (!v) return '';
-    return v.jogadores.filter((j) => j.conectado).map((j) => `${j.nome}${this.prontosDaCena?.has(j.id) ? ' ✓' : ''}`).join(' · ');
+    if (!v) return "";
+    return v.jogadores
+      .filter((j) => j.conectado)
+      .map((j) => `${j.nome}${this.prontosDaCena?.has(j.id) ? " ✓" : ""}`)
+      .join(" · ");
   }
 
   mostrarProntos() {
     // A faixa de jogadores do anfitrião: a cor de cada um (a do alfinete), o nome e ✓ de quem já está pronto para sair da cena.
     const v = this.salaDaPartida?.visao;
-    const assin = JSON.stringify([v?.jogadores?.map((j) => [j.id, j.nome, j.conectado]), [...(this.prontosDaCena ?? [])], v?.voce]);
-    if (assin === this._assinProntos && this.faixaDosProntos?.childElementCount !== undefined) { if (this.botaoPronto) this.botaoPronto.classList.toggle('aberto', Boolean(this.prontosDaCena?.has(v?.voce))); return; }
+    const assin = JSON.stringify([
+      v?.jogadores?.map((j) => [j.id, j.nome, j.conectado]),
+      [...(this.prontosDaCena ?? [])],
+      v?.voce,
+    ]);
+    if (
+      assin === this._assinProntos &&
+      this.faixaDosProntos?.childElementCount !== undefined
+    ) {
+      if (this.botaoPronto)
+        this.botaoPronto.classList.toggle(
+          "aberto",
+          Boolean(this.prontosDaCena?.has(v?.voce)),
+        );
+      return;
+    }
     this._assinProntos = assin;
     if (this.faixaDosProntos) {
-      this.faixaDosProntos.replaceChildren(...(v?.jogadores ?? []).map((j, i) => {
-        const li = document.createElement('span');
-        li.className = `faixa-jogador${j.conectado ? '' : ' ausente'}${this.prontosDaCena?.has(j.id) ? ' pronto' : ''}`;
-        li.title = `${j.nome}${j.id === v.voce ? ' (você)' : ''}${this.prontosDaCena?.has(j.id) ? ' — pronto para sair' : ''}`;
-        const ponto = document.createElement('i');
-        ponto.style.background = CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length];
-        li.append(ponto, `${j.nome}${this.prontosDaCena?.has(j.id) ? ' ✓' : ''}`);
-        return li;
-      }));
+      this.faixaDosProntos.replaceChildren(
+        ...(v?.jogadores ?? []).map((j, i) => {
+          const li = document.createElement("span");
+          li.className = `faixa-jogador${j.conectado ? "" : " ausente"}${this.prontosDaCena?.has(j.id) ? " pronto" : ""}`;
+          li.title = `${j.nome}${j.id === v.voce ? " (você)" : ""}${this.prontosDaCena?.has(j.id) ? " — pronto para sair" : ""}`;
+          const ponto = document.createElement("i");
+          ponto.style.background =
+            CORES_DOS_JOGADORES[i % CORES_DOS_JOGADORES.length];
+          li.append(
+            ponto,
+            `${j.nome}${this.prontosDaCena?.has(j.id) ? " ✓" : ""}`,
+          );
+          return li;
+        }),
+      );
     }
-    if (this.botaoPronto) this.botaoPronto.classList.toggle('aberto', Boolean(this.prontosDaCena?.has(this.salaDaPartida?.visao?.voce)));
+    if (this.botaoPronto)
+      this.botaoPronto.classList.toggle(
+        "aberto",
+        Boolean(this.prontosDaCena?.has(this.salaDaPartida?.visao?.voce)),
+      );
   }
 
   /** Um jogador troca o equipamento do herói DELE, pela ficha; valem as mesmas regras da ficha do anfitrião. */
   equiparDeFora({ de, heroi, slot, item }) {
-    const avisar = (texto) => this.menu.enviarCru({ tipo: 'aviso', para: de, texto });
+    const avisar = (texto) =>
+      this.menu.enviarCru({ tipo: "aviso", para: de, texto });
     const lista = this.enc ? this.enc.combatants : (this.grupoDaCampanha ?? []);
     const c = lista.find((h) => h.id === heroi && !h.dead);
     if (!c) return;
     this._remoto = true;
     let veto;
-    try { veto = this.vetoDeEquipar(c, slot); } finally { this._remoto = false; }
-    if (veto) { avisar(veto); return; }
+    try {
+      veto = this.vetoDeEquipar(c, slot);
+    } finally {
+      this._remoto = false;
+    }
+    if (veto) {
+      avisar(veto);
+      return;
+    }
     const r = equipar(c, slot, item);
-    if (!r.ok) { avisar(r.why); return; }
+    if (!r.ok) {
+      avisar(r.why);
+      return;
+    }
     aplicarAparencia(c);
     if (this.enc && !this.enc.over && !this.capitulo?.explorando) {
-      this.enc.cobrarInteracao(c, slot === 'escudo' ? 'acao' : this.enc.custoDeInteracao(c));
+      this.enc.cobrarInteracao(
+        c,
+        slot === "escudo" ? "acao" : this.enc.custoDeInteracao(c),
+      );
     }
-    this.registrar({ kind: 'recurso', text: `${c.name} trocou ${slot}: CA ${r.acAntes} → ${r.acDepois}`, round: this.enc?.round ?? 1 });
+    this.registrar({
+      kind: "recurso",
+      text: `${c.name} trocou ${slot}: CA ${r.acAntes} → ${r.acDepois}`,
+      round: this.enc?.round ?? 1,
+    });
     this.refresh();
   }
 
@@ -943,28 +1627,56 @@ class App {
    * `pub` pede um descanso curto (uma hora). Abre uma votação geral (sem herói à frente: decisão do grupo) com "Descansar" e "Agora
    * não"; se ganha o sim, o descanso roda como sempre, e os heróis dos outros jogadores gastam os dados sugeridos.
    */
-  async pedirDescanso(pub, tipo = 'curto') {
+  async pedirDescanso(pub, tipo = "curto") {
     const visao = this.salaDaPartida?.visao;
-    const avisar = (texto) => { if (pub && visao && pub !== visao.voce) this.menu.enviarCru({ tipo: 'aviso', para: pub, texto }); else this.avisarDeSave(texto); };
+    const avisar = (texto) => {
+      if (pub && visao && pub !== visao.voce)
+        this.menu.enviarCru({ tipo: "aviso", para: pub, texto });
+      else this.avisarDeSave(texto);
+    };
     if (!visao) return;
-    if (!this.enc || !this.capitulo?.explorando) { avisar('só dá para descansar explorando, sem luta e fora da vila'); return; }
-    if (this._descansoEmVotacao || narrativaAberta() || this.ficha?.estaAberta()) { avisar('já há uma decisão em andamento'); return; }
+    if (!this.enc || !this.capitulo?.explorando) {
+      avisar("só dá para descansar explorando, sem luta e fora da vila");
+      return;
+    }
+    if (
+      this._descansoEmVotacao ||
+      narrativaAberta() ||
+      this.ficha?.estaAberta()
+    ) {
+      avisar("já há uma decisão em andamento");
+      return;
+    }
     this._descansoEmVotacao = true;
-    this._ator = null;     // decisão do grupo: ninguém "começou" esta cena
-    const nome = visao.jogadores.find((j) => j.id === pub)?.nome ?? 'Alguém';
+    this._ator = null; // decisão do grupo: ninguém "começou" esta cena
+    const nome = visao.jogadores.find((j) => j.id === pub)?.nome ?? "Alguém";
     try {
       const r = await narrar(this.root, {
-        formato: 'painel',
-        paginas: [{ titulo: tipo === 'longo' ? 'Descanso longo' : 'Descanso rápido', texto: [tipo === 'longo'
-          ? `${nome} pede um descanso longo: oito horas de sono, com a vida, os espaços de magia e os recursos de volta. O grupo concorda?`
-          : `${nome} pede um descanso curto: uma hora para recuperar o fôlego e gastar dados de vida. O grupo concorda?`] }],
-        escolhas: [{ rotulo: 'Descansar', valor: 'sim', primaria: true }, { rotulo: 'Agora não', valor: 'nao' }],
+        formato: "painel",
+        paginas: [
+          {
+            titulo: tipo === "longo" ? "Descanso longo" : "Descanso rápido",
+            texto: [
+              tipo === "longo"
+                ? `${nome} pede um descanso longo: oito horas de sono, com a vida, os espaços de magia e os recursos de volta. O grupo concorda?`
+                : `${nome} pede um descanso curto: uma hora para recuperar o fôlego e gastar dados de vida. O grupo concorda?`,
+            ],
+          },
+        ],
+        escolhas: [
+          { rotulo: "Descansar", valor: "sim", primaria: true },
+          { rotulo: "Agora não", valor: "nao" },
+        ],
       });
-      if (r === 'sim' && this.enc && this.capitulo?.explorando) {
+      if (r === "sim" && this.enc && this.capitulo?.explorando) {
         this._descansoAprovado = true;
-        try { await this.descansar(tipo); } finally { this._descansoAprovado = false; }
+        try {
+          await this.descansar(tipo);
+        } finally {
+          this._descansoAprovado = false;
+        }
       } else {
-        this.enc?.say('recurso', 'O grupo prefere seguir sem descansar.');
+        this.enc?.say("recurso", "O grupo prefere seguir sem descansar.");
       }
     } finally {
       this._descansoEmVotacao = false;
@@ -977,7 +1689,8 @@ class App {
     const v = this.votoDeLugar;
     const visao = this.salaDaPartida?.visao;
     if (!v || !visao) return {};
-    const nome = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
+    const nome = (pub) =>
+      visao.jogadores.find((j) => j.id === pub)?.nome ?? "?";
     const por = {};
     for (const [pub, id] of v.votos) (por[id] ??= []).push(nome(pub));
     return por;
@@ -985,7 +1698,12 @@ class App {
 
   faixaDaVotacao() {
     const v = this.votoDeLugar;
-    if (!v) return this.salaDaPartida && (this.salaDaPartida.visao?.jogadores?.filter((j) => j.conectado).length ?? 1) > 1 ? 'Votem no destino: o grupo vai junto.' : '';
+    if (!v)
+      return this.salaDaPartida &&
+        (this.salaDaPartida.visao?.jogadores?.filter((j) => j.conectado)
+          .length ?? 1) > 1
+        ? "Votem no destino: o grupo vai junto."
+        : "";
     return `Votação do destino: ${v.votos.size} de ${v.votantes.length} votos.`;
   }
 
@@ -993,13 +1711,23 @@ class App {
   votarLugar(pub, id) {
     const visao = this.salaDaPartida?.visao;
     const api = this.vilaAtual;
-    if (!visao || !api || typeof id !== 'string') return;
+    if (!visao || !api || typeof id !== "string") return;
     const lugar = api.lugares.find((l) => l.id === id);
     if (!lugar) return;
-    const presentes = visao.jogadores.filter((j) => j.conectado).map((j) => j.id);
+    const presentes = visao.jogadores
+      .filter((j) => j.conectado)
+      .map((j) => j.id);
     if (!presentes.includes(pub)) return;
-    if (presentes.length <= 1) { this.zerarVotoDeLugar(); api.ir(lugar); return; }
-    const v = this.votoDeLugar ??= { votos: new Map(), votantes: presentes, timer: setTimeout(() => this.fecharVotoDeLugar(), TEMPO_DA_VOTACAO_MS) };
+    if (presentes.length <= 1) {
+      this.zerarVotoDeLugar();
+      api.ir(lugar);
+      return;
+    }
+    const v = (this.votoDeLugar ??= {
+      votos: new Map(),
+      votantes: presentes,
+      timer: setTimeout(() => this.fecharVotoDeLugar(), TEMPO_DA_VOTACAO_MS),
+    });
     v.votos.set(pub, id);
     if (v.votantes.every((p) => v.votos.has(p))) this.fecharVotoDeLugar();
     else api.atualizar?.();
@@ -1008,11 +1736,18 @@ class App {
   fecharVotoDeLugar() {
     const v = this.votoDeLugar;
     const api = this.vilaAtual;
-    if (!v || !api) { this.zerarVotoDeLugar(); return; }
-    const id = apurarLugar({ votos: v.votos, desempate: this.salaDaPartida?.visao?.lider });
+    if (!v || !api) {
+      this.zerarVotoDeLugar();
+      return;
+    }
+    const id = apurarLugar({
+      votos: v.votos,
+      desempate: this.salaDaPartida?.visao?.lider,
+    });
     const lugar = id ? api.lugares.find((l) => l.id === id) : null;
     this.zerarVotoDeLugar();
-    if (lugar) api.ir(lugar); else api.atualizar?.();
+    if (lugar) api.ir(lugar);
+    else api.atualizar?.();
   }
 
   zerarVotoDeLugar() {
@@ -1028,7 +1763,11 @@ class App {
   }
 
   atorAtual() {
-    return this._ator && this._ator.ate > Date.now() && this.enc?.side === 'party' ? this._ator.id : null;
+    return this._ator &&
+      this._ator.ate > Date.now() &&
+      this.enc?.side === "party"
+      ? this._ator.id
+      : null;
   }
 
   /**
@@ -1039,29 +1778,68 @@ class App {
     const p = msg.pedido;
     const visao = this.salaDaPartida?.visao;
     clearTimeout(this.decisao?.timer);
-    if (!p.escolhas?.length || !visao) { this.decisao = { id: msg.id, modo: 'leitura' }; p.decide = { modo: 'leitura' }; return; }
+    if (!p.escolhas?.length || !visao) {
+      this.decisao = { id: msg.id, modo: "leitura" };
+      p.decide = { modo: "leitura" };
+      return;
+    }
     const ator = this.atorAtual();
     // Página com tela interativa do anfitrião (o descanso, subir de nível): quem a conduz é ele, sem votação.
-    const d = p.paginas.some((pg) => pg.temConteudo) ? { modo: 'ator', pub: visao.anfitriao } : quemDecide({ ator, visao });
-    const nome = (pub) => visao.jogadores.find((j) => j.id === pub)?.nome ?? '?';
-    const heroi = ator ? this.enc?.combatants.find((c) => c.id === ator)?.name : null;
-    let titulo = d.modo === 'ator'
-      ? ((d.pub === visao.voce && (visao.jogadores.filter((j) => j.conectado).length <= 1 || p.paginas.some((pg) => pg.temConteudo))) ? '' : `Quem decide: ${nome(d.pub)}${heroi ? ` (${heroi})` : ''}.`)
-      : `Decisão do grupo: votação entre ${d.votantes.length} jogadores (${Math.round(TEMPO_DA_VOTACAO_MS / 1000)} s).`;
+    const d = p.paginas.some((pg) => pg.temConteudo)
+      ? { modo: "ator", pub: visao.anfitriao }
+      : quemDecide({ ator, visao });
+    const nome = (pub) =>
+      visao.jogadores.find((j) => j.id === pub)?.nome ?? "?";
+    const heroi = ator
+      ? this.enc?.combatants.find((c) => c.id === ator)?.name
+      : null;
+    let titulo =
+      d.modo === "ator"
+        ? d.pub === visao.voce &&
+          (visao.jogadores.filter((j) => j.conectado).length <= 1 ||
+            p.paginas.some((pg) => pg.temConteudo))
+          ? ""
+          : `Quem decide: ${nome(d.pub)}${heroi ? ` (${heroi})` : ""}.`
+        : `Decisão do grupo: votação entre ${d.votantes.length} jogadores (${Math.round(TEMPO_DA_VOTACAO_MS / 1000)} s).`;
     // Uma saída de cena: mostra quem já marcou "pronto" (a decisão é de quem é, mas o grupo vê quem ficou para trás).
-    if (this.prontosDaCena?.size) titulo = `${titulo ? `${titulo} ` : ''}Prontos para sair: ${this.textoDosProntos()}.`;
+    if (this.prontosDaCena?.size)
+      titulo = `${titulo ? `${titulo} ` : ""}Prontos para sair: ${this.textoDosProntos()}.`;
     this.decisao = {
-      id: msg.id, ...d, titulo, votos: new Map(), n: p.escolhas.length, timer: null,
-      bloqueadas: new Set(p.escolhas.filter((e) => e.motivo).map((e) => e.indice)),
+      id: msg.id,
+      ...d,
+      titulo,
+      votos: new Map(),
+      n: p.escolhas.length,
+      timer: null,
+      bloqueadas: new Set(
+        p.escolhas.filter((e) => e.motivo).map((e) => e.indice),
+      ),
     };
-    if (d.modo === 'votacao') { this.decisao.fim = Date.now() + TEMPO_DA_VOTACAO_MS; this.decisao.timer = setTimeout(() => this.fecharVotacao(), TEMPO_DA_VOTACAO_MS); }
-    p.decide = { modo: d.modo, pub: d.pub, votantes: d.votantes, titulo, ate: d.modo === 'votacao' ? TEMPO_DA_VOTACAO_MS : null };
+    if (d.modo === "votacao") {
+      this.decisao.fim = Date.now() + TEMPO_DA_VOTACAO_MS;
+      this.decisao.timer = setTimeout(
+        () => this.fecharVotacao(),
+        TEMPO_DA_VOTACAO_MS,
+      );
+    }
+    p.decide = {
+      modo: d.modo,
+      pub: d.pub,
+      votantes: d.votantes,
+      titulo,
+      ate: d.modo === "votacao" ? TEMPO_DA_VOTACAO_MS : null,
+    };
   }
 
   /** O anfitrião vê a própria conexão (a dos outros está na faixa de jogadores): só aparece quando algo vai mal. */
   mostrarConexao(s) {
     if (!this.pilulaDeConexao) return;
-    const texto = { reconectando: 'Reconectando…', caiu: 'Sem conexão com a sala', conectando: 'Conectando…' }[s] ?? '';
+    const texto =
+      {
+        reconectando: "Reconectando…",
+        caiu: "Sem conexão com a sala",
+        conectando: "Conectando…",
+      }[s] ?? "";
     this.pilulaDeConexao.textContent = texto;
     this.pilulaDeConexao.hidden = !texto;
   }
@@ -1072,16 +1850,34 @@ class App {
    */
   avisarPresenca(v) {
     const antes = this._presenca;
-    this._presenca = Object.fromEntries(v.jogadores.map((j) => [j.id, j.conectado]));
+    this._presenca = Object.fromEntries(
+      v.jogadores.map((j) => [j.id, j.conectado]),
+    );
     if (!antes) return;
-    const heroisDe = (pub) => Object.entries(v.herois).filter(([, d]) => d === pub || (d === 'piloto' && (v.cedidos ?? []).includes(pub))).map(([h]) => this.enc?.combatants.find((c) => c.id === h)?.name).filter(Boolean);
+    const heroisDe = (pub) =>
+      Object.entries(v.herois)
+        .filter(
+          ([, d]) =>
+            d === pub || (d === "piloto" && (v.cedidos ?? []).includes(pub)),
+        )
+        .map(([h]) => this.enc?.combatants.find((c) => c.id === h)?.name)
+        .filter(Boolean);
     for (const j of v.jogadores) {
-      if (j.id === v.voce || antes[j.id] === undefined || antes[j.id] === j.conectado) continue;
-      const nomes = heroisDe(j.id).join(', ');
+      if (
+        j.id === v.voce ||
+        antes[j.id] === undefined ||
+        antes[j.id] === j.conectado
+      )
+        continue;
+      const nomes = heroisDe(j.id).join(", ");
       const texto = j.conectado
-        ? `${j.nome} voltou${nomes ? ` e retoma ${nomes}` : ''}.`
-        : `${j.nome} caiu${nomes ? `: ${nomes} joga sozinho (piloto automático) até ele voltar` : ''}.`;
-      this.registrar({ kind: 'aviso', text: texto, round: this.enc?.round ?? 1 });
+        ? `${j.nome} voltou${nomes ? ` e retoma ${nomes}` : ""}.`
+        : `${j.nome} caiu${nomes ? `: ${nomes} joga sozinho (piloto automático) até ele voltar` : ""}.`;
+      this.registrar({
+        kind: "aviso",
+        text: texto,
+        round: this.enc?.round ?? 1,
+      });
       this.avisarDeSave?.(texto);
     }
   }
@@ -1090,29 +1886,58 @@ class App {
   publicarVoto() {
     const d = this.decisao;
     const v = this.salaDaPartida?.visao;
-    if (!v || !d || d.modo !== 'votacao') { definirVoto(null); return; }
-    const nome = (pub) => v.jogadores.find((j) => j.id === pub)?.nome ?? '?';
+    if (!v || !d || d.modo !== "votacao") {
+      definirVoto(null);
+      return;
+    }
+    const nome = (pub) => v.jogadores.find((j) => j.id === pub)?.nome ?? "?";
     const nomes = d.votantes.map(nome);
-    const votaram = [...d.votos.keys()].filter((p) => d.votantes.includes(p)).map(nome);
+    const votaram = [...d.votos.keys()]
+      .filter((p) => d.votantes.includes(p))
+      .map(nome);
     const fim = Date.now() + Math.max(0, (d.fim ?? Date.now()) - Date.now());
-    definirVoto({ nomes, votaram, fim: d.fim ?? null, aoEncerrar: () => this.fecharVotacao() });
-    this.menu.enviarCru({ tipo: 'narrativa', msg: { tipo: 'voto', id: d.id, nomes, votaram, fim: d.fim ?? null, restam: Math.max(0, fim - Date.now()) } });
+    definirVoto({
+      nomes,
+      votaram,
+      fim: d.fim ?? null,
+      aoEncerrar: () => this.fecharVotacao(),
+    });
+    this.menu.enviarCru({
+      tipo: "narrativa",
+      msg: {
+        tipo: "voto",
+        id: d.id,
+        nomes,
+        votaram,
+        fim: d.fim ?? null,
+        restam: Math.max(0, fim - Date.now()),
+      },
+    });
   }
 
   /** O que a tela do anfitrião faz com a decisão em curso: decidir (é dele), só ler (é de outro) ou votar. */
   opcoesLocaisDaDecisao() {
     const d = this.decisao;
     const v = this.salaDaPartida?.visao;
-    if (!d || d.modo === 'leitura' || !v) return {};
+    if (!d || d.modo === "leitura" || !v) return {};
     const nota = d.titulo || null;
-    if (d.modo === 'ator') return d.pub === v.voce ? { nota } : { nota, soLeitura: true, assumirApos: 60_000 };
+    if (d.modo === "ator")
+      return d.pub === v.voce
+        ? { nota }
+        : { nota, soLeitura: true, assumirApos: 60_000 };
     return { nota, aoVotar: (indice) => this.registrarVoto(v.voce, indice) };
   }
 
   registrarVoto(pub, indice) {
     const d = this.decisao;
-    if (!d || d.modo !== 'votacao' || !d.votantes.includes(pub)) return;
-    if (!Number.isInteger(indice) || indice < 0 || indice >= d.n || d.bloqueadas.has(indice)) return;
+    if (!d || d.modo !== "votacao" || !d.votantes.includes(pub)) return;
+    if (
+      !Number.isInteger(indice) ||
+      indice < 0 ||
+      indice >= d.n ||
+      d.bloqueadas.has(indice)
+    )
+      return;
     d.votos.set(pub, indice);
     this.publicarVoto();
     if (d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
@@ -1120,27 +1945,38 @@ class App {
 
   fecharVotacao() {
     const d = this.decisao;
-    if (!d || d.modo !== 'votacao') return;
+    if (!d || d.modo !== "votacao") return;
     clearTimeout(d.timer);
-    const indice = apurar({ votos: d.votos, nEscolhas: d.n, bloqueadas: d.bloqueadas, desempate: d.desempate });
+    const indice = apurar({
+      votos: d.votos,
+      nEscolhas: d.n,
+      bloqueadas: d.bloqueadas,
+      desempate: d.desempate,
+    });
     this.esperasDeResposta?.get(d.id)?.({ indice });
   }
 
   revisarVotoDeLugar(visao) {
     const vt = this.votoDeLugar;
     if (!vt) return;
-    const presentes = new Set(visao.jogadores.filter((j) => j.conectado).map((j) => j.id));
+    const presentes = new Set(
+      visao.jogadores.filter((j) => j.conectado).map((j) => j.id),
+    );
     vt.votantes = vt.votantes.filter((p) => presentes.has(p));
-    if (!vt.votantes.length || vt.votantes.every((p) => vt.votos.has(p))) this.fecharVotoDeLugar();
+    if (!vt.votantes.length || vt.votantes.every((p) => vt.votos.has(p)))
+      this.fecharVotoDeLugar();
   }
 
   /** Quem caiu no meio da votação deixa de ser esperado; se os que sobraram já votaram, apura. */
   revisarVotacao(visao) {
     const d = this.decisao;
-    if (!d || d.modo !== 'votacao') return;
-    const presentes = new Set(visao.jogadores.filter((j) => j.conectado).map((j) => j.id));
+    if (!d || d.modo !== "votacao") return;
+    const presentes = new Set(
+      visao.jogadores.filter((j) => j.conectado).map((j) => j.id),
+    );
     d.votantes = d.votantes.filter((p) => presentes.has(p));
-    if (!d.votantes.length || d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
+    if (!d.votantes.length || d.votantes.every((p) => d.votos.has(p)))
+      this.fecharVotacao();
   }
 
   /** A resposta de outro jogador a uma narrativa aberta: vale se ele é quem decide, ou como voto na votação. */
@@ -1148,10 +1984,21 @@ class App {
     const d = this.decisao;
     if (!d || d.id !== id) return;
     // Texto sem escolha: qualquer jogador vira a última página e a cena segue para todos (J-09).
-    if (continuar) { if (d.modo === 'leitura') this.esperasDeResposta?.get(id)?.({ continuar: true }); return; }
-    if (d.modo === 'ator') {
-      if (de === d.pub && Number.isInteger(indice) && indice >= 0 && indice < d.n && !d.bloqueadas.has(indice)) this.esperasDeResposta?.get(id)?.({ indice });
-    } else if (d.modo === 'votacao') {
+    if (continuar) {
+      if (d.modo === "leitura")
+        this.esperasDeResposta?.get(id)?.({ continuar: true });
+      return;
+    }
+    if (d.modo === "ator") {
+      if (
+        de === d.pub &&
+        Number.isInteger(indice) &&
+        indice >= 0 &&
+        indice < d.n &&
+        !d.bloqueadas.has(indice)
+      )
+        this.esperasDeResposta?.get(id)?.({ indice });
+    } else if (d.modo === "votacao") {
       this.registrarVoto(de, indice);
     }
   }
@@ -1164,7 +2011,8 @@ class App {
     for (const f of this._esperasDeNivel?.values() ?? []) f.resolve(null);
     this._esperasDeNivel?.clear();
     this.lojaAberta = null;
-    this.vilaBase = null; this.vilaAtual = null;
+    this.vilaBase = null;
+    this.vilaAtual = null;
     this.zerarVotoDeLugar();
     clearTimeout(this.decisao?.timer);
     this.decisao = null;
@@ -1187,7 +2035,13 @@ class App {
   registrar(entry) {
     this.hud.pushLog(entry);
     if (!this.salaDaPartida) return;
-    const dado = { type: 'log', kind: String(entry.kind ?? ''), text: String(entry.text ?? '').slice(0, 300), detail: entry.detail ? String(entry.detail).slice(0, 300) : null, round: entry.round ?? null };
+    const dado = {
+      type: "log",
+      kind: String(entry.kind ?? ""),
+      text: String(entry.text ?? "").slice(0, 300),
+      detail: entry.detail ? String(entry.detail).slice(0, 300) : null,
+      round: entry.round ?? null,
+    };
     (this.eventosPendentes ??= []).push(dado);
     if (this.eventosPendentes.length > 100) this.eventosPendentes.shift();
   }
@@ -1202,7 +2056,9 @@ class App {
    */
   setImpactDelay(seconds) {
     this.impactDelay = seconds;
-    queueMicrotask(() => { this.impactDelay = 0; });
+    queueMicrotask(() => {
+      this.impactDelay = 0;
+    });
   }
 
   atImpact(fn) {
@@ -1214,28 +2070,48 @@ class App {
   /** Uma dica contextual, um instante depois (para não cobrir o que acabou de acontecer). Só em quem joga solo ou roda a sala. */
   dicar(gatilho, ms = 900) {
     if (this._dicaPendente?.[gatilho]) return;
-    (this._dicaPendente ??= {})[gatilho] = setTimeout(() => { delete this._dicaPendente[gatilho]; this.dicas?.gatilho(gatilho); }, ms);
+    (this._dicaPendente ??= {})[gatilho] = setTimeout(() => {
+      delete this._dicaPendente[gatilho];
+      this.dicas?.gatilho(gatilho);
+    }, ms);
   }
 
   onEvent(ev) {
-    if (ev.type === 'iniciativa') {
-      this.dicar('combate', 1200); audio.tensao(true);
-      tocarFaixa(audio, faixaAgora({ variante: this.varianteAtual, emLuta: true, combatentes: this.enc?.combatants }), { fade: 1.2 });
-    }
-    else if (ev.type === 'attack' && ev.attacker?.side === 'party') this.dicar('golpe', 2200);
-    else if (ev.type === 'spell' && ev.caster?.side === 'party') this.dicar('magia', 2200);
-    else if (ev.type === 'downed' && ev.target?.side === 'party') this.dicar('queda', 1400);
+    if (ev.type === "iniciativa") {
+      this.dicar("combate", 1200);
+      audio.tensao(true);
+      tocarFaixa(
+        audio,
+        faixaAgora({
+          variante: this.varianteAtual,
+          emLuta: true,
+          combatentes: this.enc?.combatants,
+        }),
+        { fade: 1.2 },
+      );
+    } else if (ev.type === "attack" && ev.attacker?.side === "party")
+      this.dicar("golpe", 2200);
+    else if (ev.type === "spell" && ev.caster?.side === "party")
+      this.dicar("magia", 2200);
+    else if (ev.type === "downed" && ev.target?.side === "party")
+      this.dicar("queda", 1400);
     // Partida de sala (F5.3): o lado visual do evento segue na próxima vista, para o convidado ver o golpe, o número e a queda.
     if (this.salaDaPartida) {
       const dado = empacotarEvento(this.enc, ev);
-      if (dado) { (this.eventosPendentes ??= []).push(dado); if (this.eventosPendentes.length > 100) this.eventosPendentes.shift(); }
+      if (dado) {
+        (this.eventosPendentes ??= []).push(dado);
+        if (this.eventosPendentes.length > 100) this.eventosPendentes.shift();
+      }
     }
     // A cena do capítulo também escuta o combate (mortes, troca de lado).
     this.capitulo?.evento?.(ev);
     const board = this.board;
     switch (ev.type) {
-      case 'moved': {
-        ev.actor.facingVec = { dx: ev.to.x - ev.from.x, dy: ev.to.y - ev.from.y };
+      case "moved": {
+        ev.actor.facingVec = {
+          dx: ev.to.x - ev.from.x,
+          dy: ev.to.y - ev.from.y,
+        };
         // BARULHO FORA DA VISTA: um inimigo que anda onde o grupo não o enxerga
         // não aparece no tabuleiro, mas o grupo OUVE. O anel âmbar com "?" cai
         // numa casa PERTO do ponto de chegada (a até duas casas, sorteada de
@@ -1243,17 +2119,38 @@ class App {
         // prometia "sem dizer para onde foi" e o anel entregava a casa exata, a
         // cada passo, através da parede. Só a até 60 pés de alguém do grupo, e
         // nunca para quem está no Plano Etéreo (que também não é desenhado).
-        if (board?.field.avisosDeVista && ev.actor.side === 'foes' && !hasCondition(ev.actor, 'etereo')
-          && board.figuraVisivel(ev.actor) === false) {
-          const perto = this.enc.allOf('party').some((h) => !h.dead && h.pos && distanceFt(h.pos, ev.to) <= 60);
+        if (
+          board?.field.avisosDeVista &&
+          ev.actor.side === "foes" &&
+          !hasCondition(ev.actor, "etereo") &&
+          board.figuraVisivel(ev.actor) === false
+        ) {
+          const perto = this.enc
+            .allOf("party")
+            .some((h) => !h.dead && h.pos && distanceFt(h.pos, ev.to) <= 60);
           if (perto) {
-            const h = ((ev.to.x * 73856093) ^ (ev.to.y * 19349663) ^ ((this.enc.round ?? 0) * 83492791)) >>> 0;
+            const h =
+              ((ev.to.x * 73856093) ^
+                (ev.to.y * 19349663) ^
+                ((this.enc.round ?? 0) * 83492791)) >>>
+              0;
             const ponto = {
-              x: Math.max(0, Math.min(this.enc.field.w - 1, ev.to.x + (h % 5) - 2)),
-              y: Math.max(0, Math.min(this.enc.field.h - 1, ev.to.y + ((h >> 4) % 5) - 2)),
+              x: Math.max(
+                0,
+                Math.min(this.enc.field.w - 1, ev.to.x + (h % 5) - 2),
+              ),
+              y: Math.max(
+                0,
+                Math.min(this.enc.field.h - 1, ev.to.y + ((h >> 4) % 5) - 2),
+              ),
             };
-            board.fx.ring(ponto, { color: '#ffb04a', radius: 36, dur: 1.1, width: 2 });
-            board.floatText(ponto, '?', '#ffb04a');
+            board.fx.ring(ponto, {
+              color: "#ffb04a",
+              radius: 36,
+              dur: 1.1,
+              width: 2,
+            });
+            board.floatText(ponto, "?", "#ffb04a");
           }
         }
         // O motor já moveu a peça; isto conta a viagem quadrado a quadrado.
@@ -1261,18 +2158,22 @@ class App {
         // zumbi arrasta uma perna, o ogro parte e para seco.
         // Trecho VOADO (o dragao decolou): a trajetoria de voo, a folha no
         // estado `~voo` e a figura no ar ate o fim do trecho, quando pousa.
-        const andar = ev.voo ? 'voo' : andarDe(ev.actor);
+        const andar = ev.voo ? "voo" : andarDe(ev.actor);
         if (ev.voo) ev.actor.vooVisual = true;
         board?.fx.walk(ev.actor, ev.path, {
           andar,
-          onDone: ev.voo ? () => { ev.actor.vooVisual = false; } : null,
+          onDone: ev.voo
+            ? () => {
+                ev.actor.vooVisual = false;
+              }
+            : null,
           // `onStep` sempre deu o índice da casa no caminho; quem chamava o
           // jogava fora e tocava o mesmo passo em qualquer piso.
           onStep: (i) => {
             // Quem voa não pisa. O espectro, o stirge e a caveira flamejante
             // atravessam a sala sem tocar o chão, e um passo de pedra embaixo
             // deles desmente o desenho que os mostra no ar.
-            if (andar === 'voo' || andar === 'rastejar') return;
+            if (andar === "voo" || andar === "rastejar") return;
             // O aviso chega no COMEÇO do segmento, então `path[i]` é a casa que
             // ele DEIXA. O som é do chão onde ele põe o pé: o seguinte.
             const p = ev.path[i + 1] ?? ev.path[i];
@@ -1285,157 +2186,280 @@ class App {
       // As três notas da iniciativa, que existiam e nunca tocavam: o único
       // aviso sonoro de que a exploração virou combate. Vem do motor por evento
       // para valer nos capítulos também, não só no encontro solto.
-      case 'iniciativa':
-        audio.play('initiative');
+      case "iniciativa":
+        audio.play("initiative");
         break;
 
-      case 'attack': {
+      case "attack": {
         const a = ev.attacker;
         const t = ev.target;
         a.facingVec = { dx: t.pos.x - a.pos.x, dy: t.pos.y - a.pos.y };
-        a.anim = { name: 'attack', frame: 1 };
-        setTimeout(() => { a.anim = null; }, 280);
-        this._critico = ev.critical ? { alvo: t, ate: Date.now() + 2500 } : null;     // o dano deste golpe chega logo depois
+        a.anim = { name: "attack", frame: 1 };
+        setTimeout(() => {
+          a.anim = null;
+        }, 280);
+        this._critico = ev.critical
+          ? { alvo: t, ate: Date.now() + 2500 }
+          : null; // o dano deste golpe chega logo depois
         // A receita da arma toca som, anima e devolve quando o golpe chega.
         // Se quem ataca ainda está andando, o golpe espera a chegada.
-        const espera = (board?.fx.walkTimeLeft ?? 0);
-        this.setImpactDelay(playWeaponVisual(board, ev, { startDelay: espera }));
+        const espera = board?.fx.walkTimeLeft ?? 0;
+        this.setImpactDelay(
+          playWeaponVisual(board, ev, { startDelay: espera }),
+        );
         // Duas coisas que o jogador nunca descobre sozinho e que o motor
         // agora calcula: de quanto foi o erro, e quando vantagem e
         // desvantagem se anularam — que é contraintuitivo e muda a decisão
         // seguinte.
         if (ev.errouPorPouco) {
-          this.atImpact(() => board?.floatText(t.pos, `faltou ${ev.faltou}`, '#ffc83a'));
+          this.atImpact(() =>
+            board?.floatText(t.pos, `faltou ${ev.faltou}`, "#ffc83a"),
+          );
         }
-        if (ev.anulado) this.hud.setHint('vantagem e desvantagem se anulam — rolagem normal');
+        if (ev.anulado)
+          this.hud.setHint("vantagem e desvantagem se anulam — rolagem normal");
         break;
       }
 
-      case 'spell': {
+      case "spell": {
         const { caster, spell, target, point } = ev;
         const dest = target?.pos ?? point ?? caster.pos;
-        caster.facingVec = { dx: dest.x - caster.pos.x, dy: dest.y - caster.pos.y };
+        caster.facingVec = {
+          dx: dest.x - caster.pos.x,
+          dy: dest.y - caster.pos.y,
+        };
         // o gesto de magia, para quem tem um desenhado; os outros, o golpe.
         // Os dois quadros: CARREGA e depois SOLTA.
-        caster.anim = { name: 'conjurar', frame: 0 };
-        setTimeout(() => { if (caster.anim?.name === 'conjurar') caster.anim.frame = 1; }, 150);
-        setTimeout(() => { caster.anim = null; }, 420);
+        caster.anim = { name: "conjurar", frame: 0 };
+        setTimeout(() => {
+          if (caster.anim?.name === "conjurar") caster.anim.frame = 1;
+        }, 150);
+        setTimeout(() => {
+          caster.anim = null;
+        }, 420);
         this.setImpactDelay(playSpellVisual(board, ev));
         break;
       }
 
       // Golpe preparado (Trovejante, Abrasador, Colérico, Marcante, Cegante,
       // Saraivada): o efeito toca no ACERTO, junto do golpe da arma.
-      case 'golpeMagico': {
+      case "golpeMagico": {
         // Flecha Relampejante: faísca no alvo e um anel de raios na explosão.
-        if (ev.efeito === 'flecha') {
+        if (ev.efeito === "flecha") {
           // O raio corre do atirador ao alvo (~0,25 s) antes da faísca.
-          board?.fx.projectile(ev.atacante.pos, ev.alvo.pos, { style: 'sprite', sprite: 'flecha-raio', dur: 0.25, arc: 0.15 });
+          board?.fx.projectile(ev.atacante.pos, ev.alvo.pos, {
+            style: "sprite",
+            sprite: "flecha-raio",
+            dur: 0.25,
+            arc: 0.15,
+          });
           this.atImpact(() => {
-            board?.fx.quadros(ev.alvo.pos, 'eletrico-faisca', { fps: 16, altura: 24 });
-            board?.fx.ring(ev.alvo.pos, { color: '#bfe6ff', radius: 90, dur: 0.5, width: 3 });
+            board?.fx.quadros(ev.alvo.pos, "eletrico-faisca", {
+              fps: 16,
+              altura: 24,
+            });
+            board?.fx.ring(ev.alvo.pos, {
+              color: "#bfe6ff",
+              radius: 90,
+              dur: 0.5,
+              width: 3,
+            });
             board?.bump(0.35);
           });
           break;
         }
-        const espinhos = ev.efeito === 'espinhos' || ev.efeito === 'constringe';
-        const nome = espinhos ? 'vinhas'
-          : { fogo: 'golpe-fogo', 'psíquico': 'golpe-psiquico', trovejante: 'golpe-trovao' }[ev.tipo] ?? 'golpe-divino';
-        this.atImpact(() => board?.fx.quadros(ev.alvo.pos, nome, espinhos ? { fps: 12, altura: 18 } : { fps: 8, sumir: 0.25 }));
+        const espinhos = ev.efeito === "espinhos" || ev.efeito === "constringe";
+        const nome = espinhos
+          ? "vinhas"
+          : ({
+              fogo: "golpe-fogo",
+              psíquico: "golpe-psiquico",
+              trovejante: "golpe-trovao",
+            }[ev.tipo] ?? "golpe-divino");
+        this.atImpact(() =>
+          board?.fx.quadros(
+            ev.alvo.pos,
+            nome,
+            espinhos ? { fps: 12, altura: 18 } : { fps: 8, sumir: 0.25 },
+          ),
+        );
         break;
       }
 
       // Lote 12: a runa estoura, uma flecha do cordão voa, o voador pousa de pé, a magia é anulada.
-      case 'glifo': {
+      case "glifo": {
         playGlifoVisual(board, ev);
         break;
       }
-      case 'cordao': {
+      case "cordao": {
         playCordaoVisual(board, ev);
         break;
       }
       // Plantas Constritoras: o verde corre da vinha para fora e as raízes
       // sobem casa a casa (o emaranhado que FICA é a zona, pintada no chão).
-      case 'plantasConstritoras': {
-        const casas = [...ev.zona.casas].map((k) => { const [x, y] = k.split(',').map(Number); return { x, y }; });
-        board?.fx.ring(ev.actor.pos, { color: '#84b058', radius: 20 * 3, dur: 0.55, width: 4 });
-        board?.fx.area(casas, { color: 'rgba(132,176,88,.5)', dur: 0.6 });
+      case "plantasConstritoras": {
+        const casas = [...ev.zona.casas].map((k) => {
+          const [x, y] = k.split(",").map(Number);
+          return { x, y };
+        });
+        board?.fx.ring(ev.actor.pos, {
+          color: "#84b058",
+          radius: 20 * 3,
+          dur: 0.55,
+          width: 4,
+        });
+        board?.fx.area(casas, { color: "rgba(132,176,88,.5)", dur: 0.6 });
         for (const t of casas) {
-          const atraso = Math.max(Math.abs(t.x - ev.actor.pos.x), Math.abs(t.y - ev.actor.pos.y)) * 90;
+          const atraso =
+            Math.max(
+              Math.abs(t.x - ev.actor.pos.x),
+              Math.abs(t.y - ev.actor.pos.y),
+            ) * 90;
           setTimeout(() => {
-            board?.fx.quadros(t, 'vinhas', { fps: 12, altura: 16 });
-            board?.fx.motes(t, { color: '#9ec45e', count: 3, rise: 16, spread: 14, dur: 0.6 });
+            board?.fx.quadros(t, "vinhas", { fps: 12, altura: 16 });
+            board?.fx.motes(t, {
+              color: "#9ec45e",
+              count: 3,
+              rise: 16,
+              spread: 14,
+              dur: 0.6,
+            });
           }, atraso);
         }
         board?.bump(0.3);
         break;
       }
-      case 'pousou': {
-        board?.fx.motes(ev.target.pos, { color: '#dff3ff', count: 8, rise: 18, spread: 18, dur: 0.6 });
+      case "pousou": {
+        board?.fx.motes(ev.target.pos, {
+          color: "#dff3ff",
+          count: 8,
+          rise: 18,
+          spread: 18,
+          dur: 0.6,
+        });
         break;
       }
-      case 'anulada': {
+      case "anulada": {
         playAnuladaVisual(board, ev);
         break;
       }
 
       // Criaturas invocadas pelo grupo (Conjurar Animais, Animar os Mortos).
-      case 'invocado': {
-        const morto = ev.criatura.tipo === 'morto-vivo';
-        board?.fx.ring(ev.criatura.pos, { color: morto ? '#9ff0b8' : '#8fe6a8', radius: 46, dur: 0.7, width: 3 });
-        board?.fx.motes(ev.criatura.pos, { color: morto ? '#7fa890' : '#d9f7c4', count: 12, rise: 40, spread: 24, dur: 0.9 });
+      case "invocado": {
+        const morto = ev.criatura.tipo === "morto-vivo";
+        board?.fx.ring(ev.criatura.pos, {
+          color: morto ? "#9ff0b8" : "#8fe6a8",
+          radius: 46,
+          dur: 0.7,
+          width: 3,
+        });
+        board?.fx.motes(ev.criatura.pos, {
+          color: morto ? "#7fa890" : "#d9f7c4",
+          count: 12,
+          rise: 40,
+          spread: 24,
+          dur: 0.9,
+        });
         break;
       }
-      case 'dispensado': {
+      case "dispensado": {
         // O familiar guarda os PV na campanha (e some do registro se caiu).
-        if (ev.target.familiar && familiarSai(estadoDeUtilidade(this.campanha ??= {}), ev.target)) {
-          this.enc?.say('magia', `${ev.target.name} se desfaz em fumaça: o espírito volta ao seu lugar. Refaça Convocar Familiar para chamar outro.`);
+        if (
+          ev.target.familiar &&
+          familiarSai(estadoDeUtilidade((this.campanha ??= {})), ev.target)
+        ) {
+          this.enc?.say(
+            "magia",
+            `${ev.target.name} se desfaz em fumaça: o espírito volta ao seu lugar. Refaça Convocar Familiar para chamar outro.`,
+          );
         }
-        board?.fx.motes(ev.target.pos, { color: '#c7b4ff', count: 10, rise: 34, spread: 20, dur: 0.8 });
+        board?.fx.motes(ev.target.pos, {
+          color: "#c7b4ff",
+          count: 10,
+          rise: 34,
+          spread: 20,
+          dur: 0.8,
+        });
         break;
       }
       // Piscar: o clarão de quem some e o de quem volta.
-      case 'sumiu': {
-        board?.fx.ring(ev.de, { color: '#bfe6ff', radius: 40, dur: 0.6, width: 2 });
-        board?.fx.motes(ev.de, { color: '#e8f4ff', count: 12, rise: 46, spread: 20, dur: 0.8 });
+      case "sumiu": {
+        board?.fx.ring(ev.de, {
+          color: "#bfe6ff",
+          radius: 40,
+          dur: 0.6,
+          width: 2,
+        });
+        board?.fx.motes(ev.de, {
+          color: "#e8f4ff",
+          count: 12,
+          rise: 46,
+          spread: 20,
+          dur: 0.8,
+        });
         break;
       }
-      case 'voltou': {
-        board?.fx.ring(ev.to, { color: '#bfe6ff', radius: 40, dur: 0.6, width: 2 });
-        board?.fx.motes(ev.to, { color: '#e8f4ff', count: 10, rise: 30, spread: 18, dur: 0.7 });
+      case "voltou": {
+        board?.fx.ring(ev.to, {
+          color: "#bfe6ff",
+          radius: 40,
+          dur: 0.6,
+          width: 2,
+        });
+        board?.fx.motes(ev.to, {
+          color: "#e8f4ff",
+          count: 10,
+          rise: 30,
+          spread: 18,
+          dur: 0.7,
+        });
         break;
       }
 
-      case 'reinforcements': {
-        audio.play('down');
+      case "reinforcements": {
+        audio.play("down");
         for (const u of ev.units) {
-          board?.fx.ring(u.pos, { color: '#ff6a4b', radius: 44, dur: 0.7 });
-          board?.floatText(u.pos, '!', '#ff6a4b', true);
+          board?.fx.ring(u.pos, { color: "#ff6a4b", radius: 44, dur: 0.7 });
+          board?.floatText(u.pos, "!", "#ff6a4b", true);
         }
         break;
       }
 
-      case 'redirect': {
-        board?.floatText(ev.from.pos, 'empurrado!', '#ffc83a');
-        board?.fx.ring(ev.to.pos, { color: '#ffc83a', radius: 26, dur: 0.4, width: 2 });
-        audio.play('step');
+      case "redirect": {
+        board?.floatText(ev.from.pos, "empurrado!", "#ffc83a");
+        board?.fx.ring(ev.to.pos, {
+          color: "#ffc83a",
+          radius: 26,
+          dur: 0.4,
+          width: 2,
+        });
+        audio.play("step");
         break;
       }
 
-      case 'ignite': {
-        board?.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 6, dur: 0.7, scale: 1.2 });
-        board?.floatText(ev.target.pos, 'pegou fogo!', '#ff8a3a');
-        audio.play('castFire');
+      case "ignite": {
+        board?.fx.flames(ev.target.pos, {
+          color: "#ff6a2a",
+          count: 6,
+          dur: 0.7,
+          scale: 1.2,
+        });
+        board?.floatText(ev.target.pos, "pegou fogo!", "#ff8a3a");
+        audio.play("castFire");
         break;
       }
 
-      case 'burn': {
-        board?.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 4, dur: 0.45 });
-        audio.play('castFire');
+      case "burn": {
+        board?.fx.flames(ev.target.pos, {
+          color: "#ff6a2a",
+          count: 4,
+          dur: 0.45,
+        });
+        audio.play("castFire");
         break;
       }
 
-      case 'damage': {
+      case "damage": {
         const { target, amount } = ev;
         this.atImpact(() => {
           target.flash = 1;
@@ -1444,57 +2468,72 @@ class App {
           // lugares entre `draw.js` e os planos — mas nada no jogo escolhia
           // essa animação: ela era desenhada nas setenta folhas e morria lá.
           // Quem já está no chão não encolhe: a pose de caído vence.
-          if (!target.dead && !hasCondition(target, 'inconsciente')) {
-            target.anim = { name: 'hurt', frame: 0 };
+          if (!target.dead && !hasCondition(target, "inconsciente")) {
+            target.anim = { name: "hurt", frame: 0 };
             setTimeout(() => {
               // Só limpa se ainda for a dor: um golpe que chegue no meio não
               // pode ter a própria animação apagada pelo relógio do anterior.
-              if (target.anim?.name === 'hurt') target.anim = null;
+              if (target.anim?.name === "hurt") target.anim = null;
             }, 220);
           }
-          impactoDeDano(board, target, amount, this._critico?.alvo === target && Date.now() < this._critico.ate);
+          impactoDeDano(
+            board,
+            target,
+            amount,
+            this._critico?.alvo === target && Date.now() < this._critico.ate,
+          );
         });
         break;
       }
 
-      case 'heal': {
+      case "heal": {
         if (ev.amount > 0) {
           const { target, amount } = ev;
           this.atImpact(() => {
             // O som estava composto e o caso já desenhava o número e o anel:
             // só faltava pedir. Serve à magia, à poção e ao dado de vida, que
             // todos passam por aqui.
-            audio.play('heal');
-            board?.floatText(target.pos, `+${Math.round(amount)}`, '#6ee89a');
-            board?.fx.ring(target.pos, { color: '#6ee89a', radius: 28, dur: 0.5, width: 2 });
+            audio.play("heal");
+            board?.floatText(target.pos, `+${Math.round(amount)}`, "#6ee89a");
+            board?.fx.ring(target.pos, {
+              color: "#6ee89a",
+              radius: 28,
+              dur: 0.5,
+              width: 2,
+            });
           });
         }
         break;
       }
 
-      case 'downed':
-      case 'died': {
+      case "downed":
+      case "died": {
         const { target } = ev;
         this.atImpact(() => {
-          board?.floatText(target.pos, '✖', '#ff4b4b', true, { peso: 3 });
+          board?.floatText(target.pos, "✖", "#ff4b4b", true, { peso: 3 });
           board?.bump(0.55);
           board?.hitStop?.(170);
           // Esqueleto desmonta, gelatina derrete, espectro se dissipa. Um
           // respingo de sangue para os três joga fora metade do que o
           // bestiário conquistou — e esqueleto não sangra.
-          if (ev.type === 'died' && target.kind === 'npc') {
+          if (ev.type === "died" && target.kind === "npc") {
             playDeathVisual(board, target);
           } else {
-            board?.fx.impact(target.pos, { color: '#8a2b2b', count: 14, spread: 40, dur: 0.6 });
-            audio.play('down');
+            board?.fx.impact(target.pos, {
+              color: "#8a2b2b",
+              count: 14,
+              spread: 40,
+              dur: 0.6,
+            });
+            audio.play("down");
           }
         });
         break;
       }
 
-      case 'sideStart': {
-        audio.play('turn');
-        if (ev.side === 'foes') {
+      case "sideStart": {
+        audio.play("turn");
+        if (ev.side === "foes") {
           this.selected = null;
           this.mode = null;
           queueMicrotask(() => this.runFoes());
@@ -1502,23 +2541,35 @@ class App {
           this.select(this.firstActive());
           queueMicrotask(() => this.pilotoDaSala());
           // Invocados em "agir sozinho" jogam o turno deles, sem pedir nada.
-          if (this.enc.combatants.some((x) => x.invocado?.auto && x.side === 'party' && !x.acted)) queueMicrotask(() => this.runInvocadosAuto());
+          if (
+            this.enc.combatants.some(
+              (x) => x.invocado?.auto && x.side === "party" && !x.acted,
+            )
+          )
+            queueMicrotask(() => this.runInvocadosAuto());
         }
         break;
       }
 
-      case 'end': {
+      case "end": {
         this.selected = null;
         this.mode = null;
         const outcome = ev.outcome;
         audio.tensao(false);
-        setTimeout(() => audio.play(outcome === 'vitoria' ? 'victory' : 'defeat'), 500);
+        setTimeout(
+          () => audio.play(outcome === "vitoria" ? "victory" : "defeat"),
+          500,
+        );
         // A música da luta cede: a vitória volta à faixa do mapa (com o toque por cima); a derrota deixa só o toque.
-        if (outcome === 'vitoria') tocarFaixa(audio, faixaAgora({ variante: this.varianteAtual }), { fade: 3 });
+        if (outcome === "vitoria")
+          tocarFaixa(audio, faixaAgora({ variante: this.varianteAtual }), {
+            fade: 3,
+          });
         else audio.pararMusica(2);
-        tocarToque(audio, outcome === 'vitoria' ? 'vitoria' : 'derrota');
+        tocarToque(audio, outcome === "vitoria" ? "vitoria" : "derrota");
         // Na campanha, o fim da luta é a próxima cena, não o fim do jogo.
-        if (this.capitulo) setTimeout(() => this.capitulo?.fimDoCombate(outcome), 1400);
+        if (this.capitulo)
+          setTimeout(() => this.capitulo?.fimDoCombate(outcome), 1400);
         break;
       }
 
@@ -1529,17 +2580,17 @@ class App {
   }
 
   async runFoes() {
-    this.refresh();
-    // A pausa entre monstros tem que ser maior que a animação do golpe, senão
-    // um começa a agir enquanto o anterior ainda está no ar: flecha viajando
-    // (0,3 s) + estilhaços (0,42 s) ≈ 0,7 s.
-    await runMonsterSide(this.enc, { delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() });
-    this.refresh();
+    // Delegar para o CombatAdapter
+    return this.combatAdapter.runFoes();
   }
 
   async runInvocadosAuto(donoId = null) {
     this.refresh();
-    await runAutoSummons(this.enc, { donoId, delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() });
+    await runAutoSummons(this.enc, {
+      donoId,
+      delayMs: () => 420 + this.walkWaitMs,
+      onStep: () => this.refresh(),
+    });
     if (this.selected?.acted) this.select(this.firstActive());
     this.refresh();
   }
@@ -1547,8 +2598,11 @@ class App {
   alternarAuto(c) {
     if (!c?.invocado) return;
     this.enc.definirAutoDoInvocado(c, !c.invocado.auto);
-    audio.play('click');
-    if (c.invocado.auto && this.enc.side === 'party' && !c.acted) { this.runInvocadosAuto(); return; }
+    audio.play("click");
+    if (c.invocado.auto && this.enc.side === "party" && !c.acted) {
+      this.runInvocadosAuto();
+      return;
+    }
     this.refresh();
   }
 
@@ -1556,8 +2610,11 @@ class App {
     const lista = this.enc.invocadosDe(dono);
     const todosAuto = lista.length > 0 && lista.every((x) => x.invocado.auto);
     this.enc.definirAutoDosInvocados(dono, !todosAuto);
-    audio.play('click');
-    if (!todosAuto && this.enc.side === 'party') { this.runInvocadosAuto(dono.id); return; }
+    audio.play("click");
+    if (!todosAuto && this.enc.side === "party") {
+      this.runInvocadosAuto(dono.id);
+      return;
+    }
     this.refresh();
   }
 
@@ -1567,35 +2624,67 @@ class App {
     // A cena pode ter fechado o tabuleiro (fim da luta, ida para a vila ou a
     // região) com o turno dos inimigos ainda terminando.
     if (!this.enc) return null;
-    return this.enc.allOf('party').find((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto && this.podeControlar(c)) ?? null;
+    return (
+      this.enc
+        .allOf("party")
+        .find(
+          (c) =>
+            !c.acted &&
+            !c.dead &&
+            !hasCondition(c, "inconsciente") &&
+            !c.invocado?.auto &&
+            this.podeControlar(c),
+        ) ?? null
+    );
   }
 
   /** Por que `p` não pode trocar o encaixe `slot` agora (`null` = pode). Em sala, também: o herói tem de ser deste jogador. */
   vetoDeEquipar(p, slot) {
-    if (this.salaDaPartida && !this._remoto && !this.podeControlar(p)) return 'esse herói é de outro jogador';
+    if (this.salaDaPartida && !this._remoto && !this.podeControlar(p))
+      return "esse herói é de outro jogador";
     const enc = this.enc;
     if (!enc || enc.over || this.capitulo?.explorando) return null;
-    if (enc.side !== 'party') return 'dá para trocar equipamento só no turno do grupo';
-    if (p.hp <= 0 || conditionEffects(p).incapacitated) return 'incapacitado não troca de arma';
-    if (slot === 'armadura') return 'vestir ou tirar armadura leva minutos: só fora do combate';
-    if (slot === 'escudo') return p.actionUsed ? 'pôr ou tirar o escudo gasta a ação, e ela já foi usada' : null;
-    return enc.custoDeInteracao(p) ? null : 'a interação gratuita e a ação deste turno já foram usadas';
+    if (enc.side !== "party")
+      return "dá para trocar equipamento só no turno do grupo";
+    if (p.hp <= 0 || conditionEffects(p).incapacitated)
+      return "incapacitado não troca de arma";
+    if (slot === "armadura")
+      return "vestir ou tirar armadura leva minutos: só fora do combate";
+    if (slot === "escudo")
+      return p.actionUsed
+        ? "pôr ou tirar o escudo gasta a ação, e ela já foi usada"
+        : null;
+    return enc.custoDeInteracao(p)
+      ? null
+      : "a interação gratuita e a ação deste turno já foram usadas";
   }
 
   /** Este navegador controla `c`? Fora de sala, sim; em sala, o próprio herói (e os que sobraram, se este é o anfitrião). */
   podeControlar(c) {
-    return !this.salaDaPartida || controlaOHeroi(this.salaDaPartida.visao, c.id);
+    return (
+      !this.salaDaPartida || controlaOHeroi(this.salaDaPartida.visao, c.id)
+    );
   }
 
   cycleSelection() {
-    const list = this.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente') && !c.invocado?.auto && this.podeControlar(c));
+    const list = this.enc
+      .allOf("party")
+      .filter(
+        (c) =>
+          !c.acted &&
+          !c.dead &&
+          !hasCondition(c, "inconsciente") &&
+          !c.invocado?.auto &&
+          this.podeControlar(c),
+      );
     if (list.length === 0) return;
     const i = list.indexOf(this.selected);
     this.select(list[(i + 1) % list.length]);
   }
 
   select(c) {
-    if (c && (c.dead || hasCondition(c, 'inconsciente') || c.side !== 'party')) return;
+    if (c && (c.dead || hasCondition(c, "inconsciente") || c.side !== "party"))
+      return;
     // Partida de sala: cada um controla o SEU herói (o anfitrião, também os que sobraram). O pedido de outro jogador passa por `_remoto`.
     if (c && !this._remoto && !this.podeControlar(c)) return;
     this.selected = c;
@@ -1606,71 +2695,109 @@ class App {
 
   chooseAction(action) {
     const c = this.selected;
-    if (!c || this.enc.side !== 'party') return;
+    if (!c || this.enc.side !== "party") return;
 
     // Fora do combate, a magia de utilidade é conjurada pelo relógio (`rules/utilidade.js`).
-    if (action.kind === 'spell' && this.capitulo?.explorando && UTIL_FORA.has(action.spellId) && !narrativaAberta()) {
+    if (
+      action.kind === "spell" &&
+      this.capitulo?.explorando &&
+      UTIL_FORA.has(action.spellId) &&
+      !narrativaAberta()
+    ) {
       escolherEConjurar(this, c, action.spellId);
       return;
     }
 
-    if (action.kind === 'despertar') {
+    if (action.kind === "despertar") {
       const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
       if (alvo) this.enc.despertarFingido(c, alvo);
       this.afterAct();
       return;
     }
-    if (action.kind === 'arrancarGrudado') {
+    if (action.kind === "arrancarGrudado") {
       const s = this.enc.combatants.find((x) => x.id === action.targetId);
-      const r = s ? this.enc.arrancarGrudado(c, s) : { ok: false, why: 'não há stirge' };
-      if (!r.ok) { this.refuse(c, r.why); return; }
+      const r = s
+        ? this.enc.arrancarGrudado(c, s)
+        : { ok: false, why: "não há stirge" };
+      if (!r.ok) {
+        this.refuse(c, r.why);
+        return;
+      }
       this.afterAct();
       return;
     }
-    if (action.kind === 'stabilize') {
+    if (action.kind === "stabilize") {
       const alvo = this.enc.combatants.find((x) => x.id === action.targetId);
       if (alvo) this.enc.stabilize(c, alvo);
       this.afterAct();
       return;
     }
-    if (action.kind === 'examinar' || action.kind === 'investigar') {
-      const r = action.kind === 'examinar' ? this.enc.examinarIlusao(c, action.zona ?? null) : this.enc.investigarIlusao(c);
-      if (!r.ok) { this.refuse(c, r.why); return; }
+    if (action.kind === "examinar" || action.kind === "investigar") {
+      const r =
+        action.kind === "examinar"
+          ? this.enc.examinarIlusao(c, action.zona ?? null)
+          : this.enc.investigarIlusao(c);
+      if (!r.ok) {
+        this.refuse(c, r.why);
+        return;
+      }
       this.afterAct();
       return;
     }
-    if (action.kind === 'dash') { this.enc.dash(c); this.afterAct(); return; }
-    if (action.kind === 'dodge') { this.enc.dodge(c); this.afterAct(); return; }
-    if (action.kind === 'disengage') { this.enc.disengage(c); this.afterAct(); return; }
+    if (action.kind === "dash") {
+      this.enc.dash(c);
+      this.afterAct();
+      return;
+    }
+    if (action.kind === "dodge") {
+      this.enc.dodge(c);
+      this.afterAct();
+      return;
+    }
+    if (action.kind === "disengage") {
+      this.enc.disengage(c);
+      this.afterAct();
+      return;
+    }
     // Sacar a arma guardada: a figura troca de folha junto (a família da arma).
-    if (action.kind === 'sacar') {
+    if (action.kind === "sacar") {
       const r = this.enc.sacarArma(c, action.weaponId);
-      if (!r.ok) { this.refuse(c, r.why); return; }
+      if (!r.ok) {
+        this.refuse(c, r.why);
+        return;
+      }
       aplicarAparencia(c);
       this.afterAct();
       return;
     }
     // Saltar: entra no modo de escolher a casa de pouso (ou sai dele).
-    if (action.kind === 'salto') {
-      this.mode = this.mode?.kind === 'salto' ? null : { kind: 'salto' };
+    if (action.kind === "salto") {
+      this.mode = this.mode?.kind === "salto" ? null : { kind: "salto" };
       this.refresh();
       return;
     }
-    if (action.kind === 'standUp' || action.kind === 'escape') {
-      const r = action.kind === 'standUp' ? this.enc.standUp(c) : this.enc.escapar(c);
-      if (!r.ok) { this.refuse(c, r.why); return; }
+    if (action.kind === "standUp" || action.kind === "escape") {
+      const r =
+        action.kind === "standUp" ? this.enc.standUp(c) : this.enc.escapar(c);
+      if (!r.ok) {
+        this.refuse(c, r.why);
+        return;
+      }
       this.afterAct();
       return;
     }
     // Cura pelas Mãos, Inspiração Bárdica: pedem um ALIADO. O azulejo entra no
     // modo de mira (de novo, sai); o clique no aliado executa (`onTileClick`).
-    if (action.kind === 'featureAlvo') {
-      this.mode = this.mode?.kind === 'featureAlvo' && this.mode.featureId === action.featureId
-        ? null : { kind: 'featureAlvo', featureId: action.featureId };
+    if (action.kind === "featureAlvo") {
+      this.mode =
+        this.mode?.kind === "featureAlvo" &&
+        this.mode.featureId === action.featureId
+          ? null
+          : { kind: "featureAlvo", featureId: action.featureId };
       this.refresh();
       return;
     }
-    if (action.kind === 'feature') {
+    if (action.kind === "feature") {
       this.enc.useFeature(c, action.featureId, { modo: action.modo });
       this.afterAct();
       return;
@@ -1679,32 +2806,41 @@ class App {
     // Item de usar. O que tem alvo decidido (beber a própria poção, o kit no
     // aliado caído ao lado) resolve na hora; o que é arremessado cai no modo
     // de alvo junto com ataque e magia, logo abaixo.
-    if (action.kind === 'item' && !action.mira) {
+    if (action.kind === "item" && !action.mira) {
       const alvo = action.targetId
         ? this.enc.combatants.find((x) => x.id === action.targetId)
         : c;
       const r = this.enc.useItem(c, action.itemId, { target: alvo ?? c });
-      if (!r.ok) { this.refuse(c, r.why); return; }
+      if (!r.ok) {
+        this.refuse(c, r.why);
+        return;
+      }
       this.afterAct();
       return;
     }
     // Clicar num círculo da fileira de espaços, com uma magia na mira,
     // escolhe em que círculo ela sai.
-    if (action.kind === 'circulo') {
-      if (this.mode?.kind !== 'spell') return;
+    if (action.kind === "circulo") {
+      if (this.mode?.kind !== "spell") return;
       const spell = getSpell(this.mode.spellId);
       if (this.enc.circuloDeConjuracao(c, spell, action.lvl) === null) {
-        this.refuse(c, `não dá para conjurar ${spell.name} no ${action.lvl}º círculo`);
+        this.refuse(
+          c,
+          `não dá para conjurar ${spell.name} no ${action.lvl}º círculo`,
+        );
         return;
       }
       this.mode = { ...this.mode, circulo: action.lvl };
       // Mais alvos no círculo maior; menos no menor corta a lista.
-      this.mode.alvos = this.mode.alvos.slice(0, this.enc.alvosDaMagia(spell, action.lvl, c));
+      this.mode.alvos = this.mode.alvos.slice(
+        0,
+        this.enc.alvosDaMagia(spell, action.lvl, c),
+      );
       this.refresh();
       return;
     }
     // Ataques e magias entram em modo de alvo.
-    if (action.kind === 'spell') {
+    if (action.kind === "spell") {
       const spell = getSpell(action.spellId);
       // Magia só em si mesmo (Vida Falsa, Borrão, Espíritos Guardiões)
       // resolve na hora.
@@ -1713,21 +2849,32 @@ class App {
         return;
       }
       // Clicar de novo na magia com alvos já escolhidos CONJURA.
-      if (this.mode?.kind === 'spell' && this.mode.spellId === action.spellId && this.mode.alvos?.length) {
+      if (
+        this.mode?.kind === "spell" &&
+        this.mode.spellId === action.spellId &&
+        this.mode.alvos?.length
+      ) {
         this.conjurarEscolhidos();
         return;
       }
-      if (!(this.mode?.kind === 'spell' && this.mode.spellId === action.spellId)) {
-        this.mode = { ...action, circulo: this.enc.circuloDeConjuracao(c, spell), alvos: [] };
+      if (
+        !(this.mode?.kind === "spell" && this.mode.spellId === action.spellId)
+      ) {
+        this.mode = {
+          ...action,
+          circulo: this.enc.circuloDeConjuracao(c, spell),
+          alvos: [],
+        };
         this.refresh();
         return;
       }
     }
-    this.mode = this.mode?.kind === action.kind
-      && this.mode.weaponId === action.weaponId
-      && this.mode.spellId === action.spellId
-      ? null
-      : action;
+    this.mode =
+      this.mode?.kind === action.kind &&
+      this.mode.weaponId === action.weaponId &&
+      this.mode.spellId === action.spellId
+        ? null
+        : action;
     this.refresh();
   }
 
@@ -1743,35 +2890,57 @@ class App {
    */
   marcarAlvo(c, spell, alvo) {
     const why = this.enc.porqueNaoAlvo(c, spell, alvo);
-    if (why) { this.refuse(c, why); return; }
+    if (why) {
+      this.refuse(c, why);
+      return;
+    }
     const max = this.enc.alvosDaMagia(spell, this.mode.circulo, c);
     const alvos = this.mode.alvos;
     const i = alvos.indexOf(alvo);
     // Dardo e raio podem repetir o alvo; aliado e inimigo das outras, não.
-    if (!['auto', 'raios'].includes(spell.kind) && i >= 0) alvos.splice(i, 1);
+    if (!["auto", "raios"].includes(spell.kind) && i >= 0) alvos.splice(i, 1);
     else if (alvos.length < max) {
       // Lentidão (cubo de 12 m) e Respingo Ácido (a 1,5 m do primeiro):
       // recusa na hora, com o motivo, em vez de o alvo sumir ao conjurar.
-      if (spell.cuboFt && this.enc.dentroDoCubo(spell, [...alvos, alvo]).length <= alvos.length) {
-        this.refuse(c, `fora do cubo de ${(spell.cuboFt / 5) * 1.5} m dos já marcados`);
+      if (
+        spell.cuboFt &&
+        this.enc.dentroDoCubo(spell, [...alvos, alvo]).length <= alvos.length
+      ) {
+        this.refuse(
+          c,
+          `fora do cubo de ${(spell.cuboFt / 5) * 1.5} m dos já marcados`,
+        );
         this.refresh();
         return;
       }
-      if (spell.juntosFt && alvos.length && distanceFt(alvo.pos, alvos[0].pos) > spell.juntosFt) {
-        this.refuse(c, `o segundo alvo tem de estar a até ${(spell.juntosFt / 5) * 1.5} m do primeiro`);
+      if (
+        spell.juntosFt &&
+        alvos.length &&
+        distanceFt(alvo.pos, alvos[0].pos) > spell.juntosFt
+      ) {
+        this.refuse(
+          c,
+          `o segundo alvo tem de estar a até ${(spell.juntosFt / 5) * 1.5} m do primeiro`,
+        );
         this.refresh();
         return;
       }
       alvos.push(alvo);
     }
-    if (alvos.length >= max) { this.conjurarEscolhidos(); return; }
+    if (alvos.length >= max) {
+      this.conjurarEscolhidos();
+      return;
+    }
     this.refresh();
   }
 
   conjurarEscolhidos() {
     const c = this.selected;
-    if (!c || this.mode?.kind !== 'spell' || !this.mode.alvos?.length) return;
-    this.tryCast(c, this.mode.spellId, { target: this.mode.alvos[0], targets: [...this.mode.alvos] });
+    if (!c || this.mode?.kind !== "spell" || !this.mode.alvos?.length) return;
+    this.tryCast(c, this.mode.spellId, {
+      target: this.mode.alvos[0],
+      targets: [...this.mode.alvos],
+    });
   }
 
   /**
@@ -1788,9 +2957,10 @@ class App {
     this.recusa = why;
     // F5: o herói é de outro jogador: ele também precisa saber por que não deu.
     const dono = this.salaDaPartida?.herois?.[actor.id];
-    if (dono && dono !== this.salaDaPartida.voce) this.menu.enviarCru({ tipo: 'aviso', para: dono, texto: why });
-    this.board?.floatText(actor.pos, '✖', '#ffb04a');
-    audio.play('deny');
+    if (dono && dono !== this.salaDaPartida.voce)
+      this.menu.enviarCru({ tipo: "aviso", para: dono, texto: why });
+    this.board?.floatText(actor.pos, "✖", "#ffb04a");
+    audio.play("deny");
     this.refresh();
   }
 
@@ -1802,10 +2972,16 @@ class App {
   /** Espera a caminhada terminar antes de resolver o golpe, para ler na ordem. */
   afterWalk(fn) {
     const wait = this.walkWaitMs;
-    if (wait <= 0) { fn(); return; }
+    if (wait <= 0) {
+      fn();
+      return;
+    }
     this.busy = true;
     this.refresh();
-    setTimeout(() => { this.busy = false; fn(); }, wait + 40);
+    setTimeout(() => {
+      this.busy = false;
+      fn();
+    }, wait + 40);
   }
 
   /**
@@ -1815,171 +2991,187 @@ class App {
    * continua disponível.
    */
   tryAttack(c, target, weaponId) {
-    const enc = this.enc;
-    const check = enc.canAttack(c, target, weaponId);
-
-    if (check.ok) {
-      const r = enc.attackAction(c, target, weaponId);
-      this.mode = null;
-      if (!r.ok) { this.refuse(c, r.why); return; }
-      this.afterAct(c);
-      return;
-    }
-
-    const prof = enc.weaponAttackProfile(c, weaponId);
-    // Arma à distância não resolve andando: o problema é visão ou alcance.
-    if (prof.ranged) { this.refuse(c, check.why); return; }
-    if (!enc.podeAtacar(c)) { this.refuse(c, 'a ação deste turno já foi usada'); return; }
-    if (c.movementLeftFt <= 0) { this.refuse(c, `sem movimento para chegar até ${target.name}`); return; }
-
-    const reached = enc.reachableFor(c);
-    let encosta = null;
-    let maisPerto = null;
-    for (const node of reached.values()) {
-      if (node.parar === false) continue;   // tomada por outra criatura (aliado que se atravessa): não serve de destino
-      const d = distanceFt({ x: node.x, y: node.y }, target.pos);
-      if (d <= prof.reachFt && (!encosta || node.cost < encosta.node.cost)) encosta = { node, d };
-      if (!maisPerto || d < maisPerto.d || (d === maisPerto.d && node.cost < maisPerto.node.cost)) maisPerto = { node, d };
-    }
-
-    if (encosta) {
-      enc.moveAlong(c, Battlefield.pathFrom(reached, encosta.node));
-      this.mode = null;
-      this.afterWalk(() => {
-        const r = enc.attackAction(c, target, weaponId);
-        if (!r.ok) this.refuse(c, r.why);
-        else this.afterAct(c);
-      });
-      return;
-    }
-
-    // Não chega neste turno: avança o que der e guarda a ação.
-    if (maisPerto && maisPerto.node.cost > 0) {
-      enc.moveAlong(c, Battlefield.pathFrom(reached, maisPerto.node));
-      this.mode = null;
-      this.afterWalk(() => this.refuse(c, `movimento insuficiente para alcançar ${target.name} — avançou o máximo possível, a ação continua sua`));
-      return;
-    }
-    this.refuse(c, check.why);
+    // Delegar para o CombatAdapter
+    return this.combatAdapter.tryAttack(c, target, weaponId);
   }
 
   /** Conjuração com um clique, recusando sem gastar quando não dá. */
-  tryCast(c, spellId, { target = null, point = null, targets = null, opcao = null } = {}) {
-    const circulo = this.mode?.kind === 'spell' && this.mode.spellId === spellId ? this.mode.circulo : null;
-    // Magia com escolha (Aprimorar Atributo, Glifo de Proteção): pergunta antes
-    // de gastar. Esc fecha o seletor e deixa a mira como estava.
-    opcao ??= this._opcaoDeFora ?? null;
-    const lista = opcao ? null : opcoesDaMagia(getSpell(spellId));
-    if (lista) {
-      const sugerida = getSpell(spellId).escolheTipoDoGlifo
-        ? this.enc.tipoDoGlifo(null, c)
-        : this.enc.opcaoDeAprimorar(target ?? c);
-      const ordem = [...lista].sort((a, b) => (b.id === sugerida) - (a.id === sugerida));
-      abrirMenuContexto(this.root, {
-        x: NaN, y: NaN, titulo: getSpell(spellId).name, subtitulo: 'escolha uma opção',
-        opcoes: ordem.map((o) => ({
-          rotulo: o.rotulo, detalhe: o.id === sugerida ? `sugerida — ${o.detalhe ?? ''}` : o.detalhe,
-          destaque: o.id === sugerida,
-          fazer: () => this.tryCast(c, spellId, { target, point, targets, opcao: o.id }),
-        })),
-      });
-      return;
-    }
-    const r = this.enc.castSpell(c, spellId, { target, point, targets, circulo, opcao });
-    this.mode = null;
-    if (!r.ok) { this.refuse(c, r.why); return; }
-    this.afterAct();
+  tryCast(
+    c,
+    spellId,
+    { target = null, point = null, targets = null, opcao = null } = {},
+  ) {
+    // Delegar para o CombatAdapter
+    return this.combatAdapter.tryCast(c, spellId, {
+      target,
+      point,
+      targets,
+      opcao,
+    });
   }
 
   onTileClick(tile, ev) {
     // Alt+clique: um alfinete no mapa, para todos verem (não move ninguém).
     if (ev?.altKey && this.salaDaPartida) {
       abrirMenuContexto(this.root, {
-        x: ev.clientX, y: ev.clientY, titulo: 'Marcar no mapa', subtitulo: 'todos veem',
-        opcoes: MARCAS_DO_MAPA.map((m) => ({ rotulo: m.texto, icone: 'acao-procurar', fazer: () => this.alfinete(this.salaDaPartida?.visao?.voce, tile.x, tile.y, m.id) })),
+        x: ev.clientX,
+        y: ev.clientY,
+        titulo: "Marcar no mapa",
+        subtitulo: "todos veem",
+        opcoes: MARCAS_DO_MAPA.map((m) => ({
+          rotulo: m.texto,
+          icone: "acao-procurar",
+          fazer: () =>
+            this.alfinete(
+              this.salaDaPartida?.visao?.voce,
+              tile.x,
+              tile.y,
+              m.id,
+            ),
+        })),
       });
       return;
     }
     if (this.ficha?.estaAberta() || narrativaAberta()) return;
-    if (this.enc.over || this.enc.side !== 'party' || this.busy) return;
+    if (this.enc.over || this.enc.side !== "party" || this.busy) return;
     const occupant = this.enc.at(tile.x, tile.y);
     const c = this.selected;
 
     // Modo de alvo
     if (this.mode && c) {
-      if (this.mode.kind === 'salto') {
+      if (this.mode.kind === "salto") {
         const r = this.enc.pular(c, tile);
-        if (!r.ok) { this.refuse(c, r.why); return; }
+        if (!r.ok) {
+          this.refuse(c, r.why);
+          return;
+        }
         this.mode = null;
         // Explorando: a cena vê o pouso como vê um passo (vigias, armadilhas).
-        if (this.capitulo?.explorando) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+        if (this.capitulo?.explorando)
+          this.afterWalk(() => this.capitulo?.depoisDeMover(c));
         this.afterAct();
         return;
       }
       // Habilidade de classe com alvo aliado: o motor recusa antes de cobrar, e
       // o veto (`rules/habilidades-alvo.js`) já traz o motivo para o jogador.
-      if (this.mode.kind === 'featureAlvo') {
+      if (this.mode.kind === "featureAlvo") {
         const id = this.mode.featureId;
-        if (!occupant) { this.refuse(c, `${HABILIDADES_DE_ALVO[id]?.nome ?? 'a habilidade'}: clique num aliado`); return; }
+        if (!occupant) {
+          this.refuse(
+            c,
+            `${HABILIDADES_DE_ALVO[id]?.nome ?? "a habilidade"}: clique num aliado`,
+          );
+          return;
+        }
         const veto = vetoDaHabilidade(this.enc, c, id, occupant);
-        if (veto) { this.refuse(c, veto); return; }
+        if (veto) {
+          this.refuse(c, veto);
+          return;
+        }
         const ok = this.enc.useFeature(c, id, { target: occupant });
         this.mode = null;
-        if (!ok) { this.refuse(c, 'não deu'); return; }
+        if (!ok) {
+          this.refuse(c, "não deu");
+          return;
+        }
         this.afterAct();
         return;
       }
-      const magia = this.mode.kind === 'spell' ? getSpell(this.mode.spellId) : null;
+      const magia =
+        this.mode.kind === "spell" ? getSpell(this.mode.spellId) : null;
       // Revivificar mira o CORPO, que `at` não devolve (morto não ocupa casa).
-      if (magia?.kind === 'reviver') {
-        const corpo = this.enc.combatants.find((x) => x.dead && x.side === c.side && x.pos.x === tile.x && x.pos.y === tile.y);
+      if (magia?.kind === "reviver") {
+        const corpo = this.enc.combatants.find(
+          (x) =>
+            x.dead &&
+            x.side === c.side &&
+            x.pos.x === tile.x &&
+            x.pos.y === tile.y,
+        );
         if (corpo) this.tryCast(c, this.mode.spellId, { target: corpo });
-        else this.refuse(c, 'clique no corpo de um aliado');
+        else this.refuse(c, "clique no corpo de um aliado");
         this.refresh();
         return;
       }
       // Animar os Mortos também mira o corpo, mas de qualquer lado.
-      if (magia?.kind === 'animarMortos') {
-        const corpo = this.enc.combatants.find((x) => x.dead && x.pos.x === tile.x && x.pos.y === tile.y && !x.reerguido && !x.invocado);
+      if (magia?.kind === "animarMortos") {
+        const corpo = this.enc.combatants.find(
+          (x) =>
+            x.dead &&
+            x.pos.x === tile.x &&
+            x.pos.y === tile.y &&
+            !x.reerguido &&
+            !x.invocado,
+        );
         if (corpo) this.tryCast(c, this.mode.spellId, { target: corpo });
-        else this.refuse(c, 'clique num cadáver');
+        else this.refuse(c, "clique num cadáver");
         this.refresh();
         return;
       }
       // Levitação já em curso: a ação leva o levitante para a casa clicada.
-      if (magia?.kind === 'levitar' && c.magiasAtivas?.[magia.id] && !occupant) { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
+      if (
+        magia?.kind === "levitar" &&
+        c.magiasAtivas?.[magia.id] &&
+        !occupant
+      ) {
+        this.tryCast(c, this.mode.spellId, { point: tile });
+        return;
+      }
       // Passo Nebuloso mira a casa de chegada.
-      if (magia?.mira === 'casa') { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
+      if (magia?.mira === "casa") {
+        this.tryCast(c, this.mode.spellId, { point: tile });
+        return;
+      }
       // No escuro, quem o grupo não vê não é alvo: mirar nele seria saber que está lá.
-      if (occupant && this.board?.figuraVisivel(occupant) === false && !magia?.shape) {
-        this.refuse(c, 'no escuro, não se vê ninguém ali');
+      if (
+        occupant &&
+        this.board?.figuraVisivel(occupant) === false &&
+        !magia?.shape
+      ) {
+        this.refuse(c, "no escuro, não se vê ninguém ali");
         return;
       }
       if (!occupant) {
         // Dissipar Magia também mira uma casa de zona.
-        if (magia?.shape || magia?.kind === 'dissipar') this.tryCast(c, this.mode.spellId, { point: tile });
+        if (magia?.shape || magia?.kind === "dissipar")
+          this.tryCast(c, this.mode.spellId, { point: tile });
         return;
       }
-      if (this.mode.kind === 'attack') {
-        if (occupant.side === c.side) { this.select(occupant); return; }
+      if (this.mode.kind === "attack") {
+        if (occupant.side === c.side) {
+          this.select(occupant);
+          return;
+        }
         this.tryAttack(c, occupant, this.mode.weaponId);
         return;
       }
-      if (this.mode.kind === 'spell') {
+      if (this.mode.kind === "spell") {
         const spell = getSpell(this.mode.spellId);
         // Magia de área mira a CASA clicada, como a prévia — não a âncora da
         // criatura Grande que estiver nela.
-        if (spell.shape) { this.tryCast(c, this.mode.spellId, { point: tile }); return; }
-        if (this.escolheVarios(spell)) { this.marcarAlvo(c, spell, occupant); return; }
-        this.tryCast(c, this.mode.spellId, { target: occupant, point: occupant.pos });
+        if (spell.shape) {
+          this.tryCast(c, this.mode.spellId, { point: tile });
+          return;
+        }
+        if (this.escolheVarios(spell)) {
+          this.marcarAlvo(c, spell, occupant);
+          return;
+        }
+        this.tryCast(c, this.mode.spellId, {
+          target: occupant,
+          point: occupant.pos,
+        });
         return;
       }
-      if (this.mode.kind === 'item') {
+      if (this.mode.kind === "item") {
         // `useItem` já recusa alcance e linha de visão, com o motivo pronto:
         // repetir as guardas aqui seria uma segunda regra para divergir da
         // primeira.
         const r = this.enc.useItem(c, this.mode.itemId, { target: occupant });
-        if (!r.ok) { this.refuse(c, r.why); return; }
+        if (!r.ok) {
+          this.refuse(c, r.why);
+          return;
+        }
         this.mode = null;
         this.afterAct();
         return;
@@ -1987,7 +3179,10 @@ class App {
     }
 
     // Seleção
-    if (occupant && occupant.side === 'party') { this.select(occupant); return; }
+    if (occupant && occupant.side === "party") {
+      this.select(occupant);
+      return;
+    }
     if (occupant) return;
 
     // Movimento
@@ -1997,15 +3192,24 @@ class App {
     if (node?.cost === 0) return;
     if (!node) {
       // O clique que não anda não pode parecer ignorado: diz por quê.
-      this.refuse(c, this.enc.field.blocksMove(tile.x, tile.y) ? 'não dá para andar até lá' : `fora do alcance (restam ${c.movementLeftFt ?? 0} pés de deslocamento)`);
+      this.refuse(
+        c,
+        this.enc.field.blocksMove(tile.x, tile.y)
+          ? "não dá para andar até lá"
+          : `fora do alcance (restam ${c.movementLeftFt ?? 0} pés de deslocamento)`,
+      );
       return;
     }
     const corda = this.cordaImpede(c, tile);
-    if (corda) { this.refuse(c, corda); return; }
+    if (corda) {
+      this.refuse(c, corda);
+      return;
+    }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
     this.board?.seguir(c.pos);
     // Explorando: depois do passo, a cena vê se a armadilha dispara.
-    if (this.capitulo?.explorando) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+    if (this.capitulo?.explorando)
+      this.afterWalk(() => this.capitulo?.depoisDeMover(c));
     this.refresh();
   }
 
@@ -2023,7 +3227,10 @@ class App {
    */
   definirAlvo(candidato) {
     const c = this.selected;
-    const novo = candidato && c && candidato.side !== c.side && !candidato.dead ? candidato : null;
+    const novo =
+      candidato && c && candidato.side !== c.side && !candidato.dead
+        ? candidato
+        : null;
     if (novo === this.alvo) return;
     this.alvo = novo;
     this.hud.update(this.enc, c, this.mode, this.alvo);
@@ -2031,24 +3238,29 @@ class App {
 
   onTileHover(tile) {
     const c = this.selected;
-    if (!tile && this.mode?.kind !== 'featureAlvo') this.hud.setHint('');          // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
+    if (!tile && this.mode?.kind !== "featureAlvo") this.hud.setHint(""); // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
     this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
 
-    if (!c || this.enc.side !== 'party' || this.mode) {
+    if (!c || this.enc.side !== "party" || this.mode) {
       this.board?.setOverlay({ path: null });
       if (this.mode && tile) this.updateHint(tile);
       return;
     }
-    if (!tile) { this.board?.setOverlay({ path: null }); return; }
+    if (!tile) {
+      this.board?.setOverlay({ path: null });
+      return;
+    }
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(tile.x, tile.y));
     if (!node || node.parar === false) {
       this.board?.setOverlay({ path: null });
-      this.hud.setHint('');
+      this.hud.setHint("");
       return;
     }
     this.board?.setOverlay({ path: Battlefield.pathFrom(reached, tile) });
-    this.hud.setHint(`Mover ${node.cost} pés (restam ${c.movementLeftFt - node.cost})`);
+    this.hud.setHint(
+      `Mover ${node.cost} pés (restam ${c.movementLeftFt - node.cost})`,
+    );
   }
 
   /**
@@ -2058,9 +3270,9 @@ class App {
   dicaDaHabilidadeAlvo(c) {
     const id = this.mode.featureId;
     const quem = alvosDaHabilidade(this.enc, c, id);
-    const nome = HABILIDADES_DE_ALVO[id]?.nome ?? 'Habilidade';
+    const nome = HABILIDADES_DE_ALVO[id]?.nome ?? "Habilidade";
     return quem.length
-      ? `${nome}: clique num aliado aceso (${quem.map((a) => `${a === c ? 'você' : a.name} — ${previaDaHabilidade(this.enc, c, id, a).texto}`).join('; ')}). Esc cancela.`
+      ? `${nome}: clique num aliado aceso (${quem.map((a) => `${a === c ? "você" : a.name} — ${previaDaHabilidade(this.enc, c, id, a).texto}`).join("; ")}). Esc cancela.`
       : `${nome}: ninguém serve agora. Esc cancela.`;
   }
 
@@ -2068,18 +3280,34 @@ class App {
     const c = this.selected;
     const target = this.enc.at(tile.x, tile.y);
     // A mira de habilidade com alvo aliado não limpa a dica sobre o chão vazio.
-    if (c && this.mode?.kind === 'featureAlvo') { this.hud.setHint(this.dicaDaHabilidadeAlvo(c)); return; }
-    if (!c || !target || !this.mode) { this.hud.setHint(''); return; }
-    if (this.mode.kind === 'attack') {
+    if (c && this.mode?.kind === "featureAlvo") {
+      this.hud.setHint(this.dicaDaHabilidadeAlvo(c));
+      return;
+    }
+    if (!c || !target || !this.mode) {
+      this.hud.setHint("");
+      return;
+    }
+    if (this.mode.kind === "attack") {
       const check = this.enc.canAttack(c, target, this.mode.weaponId);
-      if (!check.ok) { this.hud.setHint(`✖ ${check.why}`); return; }
-      const mods = this.enc.attackModifiers(c, target, { ranged: check.profile.ranged });
-      const bits = [`CA ${target.ac}`, `${check.profile.damage} ${check.profile.type}`];
-      if (mods.advantage && !mods.disadvantage) bits.push(`vantagem (${mods.reasons.join(', ')})`);
-      if (mods.disadvantage && !mods.advantage) bits.push(`desvantagem (${mods.reasons.join(', ')})`);
-      if (check.longRange) bits.push('alcance longo');
-      this.hud.setHint(bits.join(' · '));
-    } else if (this.mode.kind === 'spell') {
+      if (!check.ok) {
+        this.hud.setHint(`✖ ${check.why}`);
+        return;
+      }
+      const mods = this.enc.attackModifiers(c, target, {
+        ranged: check.profile.ranged,
+      });
+      const bits = [
+        `CA ${target.ac}`,
+        `${check.profile.damage} ${check.profile.type}`,
+      ];
+      if (mods.advantage && !mods.disadvantage)
+        bits.push(`vantagem (${mods.reasons.join(", ")})`);
+      if (mods.disadvantage && !mods.advantage)
+        bits.push(`desvantagem (${mods.reasons.join(", ")})`);
+      if (check.longRange) bits.push("alcance longo");
+      this.hud.setHint(bits.join(" · "));
+    } else if (this.mode.kind === "spell") {
       const s = getSpell(this.mode.spellId);
       const why = this.enc.porqueNaoAlvo(c, s, target);
       this.hud.setHint(why && !s.shape ? `✖ ${why}` : this.dicaDaMagia(c, s));
@@ -2088,35 +3316,48 @@ class App {
 
   /** A linha de dica da magia na mira: círculo, alvos escolhidos e como conjurar. */
   dicaDaMagia(c, s) {
-    const circ = s.level > 0 && this.mode.circulo > s.level ? ` · no ${this.mode.circulo}º círculo` : '';
+    const circ =
+      s.level > 0 && this.mode.circulo > s.level
+        ? ` · no ${this.mode.circulo}º círculo`
+        : "";
     if (this.escolheVarios(s)) {
       const max = this.enc.alvosDaMagia(s, this.mode.circulo, c);
       const n = this.mode.alvos.length;
-      const quem = s.kind === 'auto' ? `${max} dardos: clique num inimigo por dardo (pode repetir)`
-        : s.kind === 'raios' ? `${max} raios: clique num inimigo por raio (pode repetir)`
-        : this.enc.miraAliados(s) ? `escolha até ${max} aliado${max > 1 ? 's' : ''}` : `escolha até ${max} inimigo${max > 1 ? 's' : ''}`;
-      return `${s.name}${circ} — ${quem} · ${n}/${max}${n ? ' · Enter ou a magia de novo conjura agora' : ''}`;
+      const quem =
+        s.kind === "auto"
+          ? `${max} dardos: clique num inimigo por dardo (pode repetir)`
+          : s.kind === "raios"
+            ? `${max} raios: clique num inimigo por raio (pode repetir)`
+            : this.enc.miraAliados(s)
+              ? `escolha até ${max} aliado${max > 1 ? "s" : ""}`
+              : `escolha até ${max} inimigo${max > 1 ? "s" : ""}`;
+      return `${s.name}${circ} — ${quem} · ${n}/${max}${n ? " · Enter ou a magia de novo conjura agora" : ""}`;
     }
-    if (s.zona?.movel && c.magiasAtivas?.[s.id]?.zona) return `Mover ${s.name} — clique no destino (até ${s.zona.movel / 5 * 1.5} m de onde está, sem gastar espaço)`;
+    if (s.zona?.movel && c.magiasAtivas?.[s.id]?.zona)
+      return `Mover ${s.name} — clique no destino (até ${(s.zona.movel / 5) * 1.5} m de onde está, sem gastar espaço)`;
     if (s.shape) return `${s.name}${circ} — aponte a área e clique`;
-    if (s.mira === 'casa') return `${s.name}${circ} — clique na casa de chegada (até ${s.rangeFt / 5 * 1.5} m)`;
-    if (s.kind === 'reviver') return `${s.name}${circ} — clique no corpo de um aliado ao seu lado`;
-    if (s.reuso && c.magiasAtivas?.[s.id]) return `${s.name} — já ativa: clique no alvo para golpear de novo, sem gastar espaço`;
-    return `${s.name}${circ} — clique no ${this.enc.miraAliados(s) ? 'aliado' : 'alvo'}`;
+    if (s.mira === "casa")
+      return `${s.name}${circ} — clique na casa de chegada (até ${(s.rangeFt / 5) * 1.5} m)`;
+    if (s.kind === "reviver")
+      return `${s.name}${circ} — clique no corpo de um aliado ao seu lado`;
+    if (s.reuso && c.magiasAtivas?.[s.id])
+      return `${s.name} — já ativa: clique no alvo para golpear de novo, sem gastar espaço`;
+    return `${s.name}${circ} — clique no ${this.enc.miraAliados(s) ? "aliado" : "alvo"}`;
   }
 
   /** `quem`: o herói que agiu (F5: pode ser de outro jogador, e então não é o selecionado do anfitrião). */
   afterAct(quem = this.selected) {
     const c = quem;
     // Terminou tudo que podia? passa para o próximo automaticamente.
-    if (c && c.actionUsed && c.bonusUsed && c.movementLeftFt <= 0) this.enc.endTurn(c);
+    if (c && c.actionUsed && c.bonusUsed && c.movementLeftFt <= 0)
+      this.enc.endTurn(c);
     if (c?.acted && c === this.selected) this.select(this.firstActive());
     this.refresh();
   }
 
   endTurn() {
     const c = this.selected;
-    if (!c || this.enc.side !== 'party' || this.capitulo?.explorando) return;
+    if (!c || this.enc.side !== "party" || this.capitulo?.explorando) return;
     this.selected = null;
     this.terminarTurnoDe(c);
   }
@@ -2126,36 +3367,50 @@ class App {
    * encerra também os invocados dele (os "sozinhos" jogam antes). Quando o último do grupo termina, o motor passa a vez.
    */
   terminarTurnoDe(c) {
-    if (!c || this.enc.side !== 'party' || this.capitulo?.explorando) return;
-    encerrarTurnoComInvocados(this.enc, c, { delayMs: () => 420 + this.walkWaitMs, onStep: () => this.refresh() }).then(() => {
-      if (this.enc.side === 'party' && (!this.selected || this.selected.acted)) this.select(this.firstActive());
-      this.refresh();
-    });
+    // Delegar para o CombatAdapter
+    return this.combatAdapter.terminarTurnoDe(c);
   }
 
   refresh() {
-    if (!this.enc) return;   // ainda no menu, sem partida
+    if (!this.enc) return; // ainda no menu, sem partida
     const c = this.selected;
     // Quem acende como alvo possível: na magia, quem a magia aceita (aliado
     // na cura e na Bênção, inimigo no resto); magia de área não acende
     // ninguém, quem mostra o que ela pega é a prévia da área.
-    const magia = this.mode?.kind === 'spell' ? getSpell(this.mode.spellId) : null;
-    const salto = this.mode?.kind === 'salto';
-    const aliado = this.mode?.kind === 'featureAlvo';
-    const targets = this.mode && c && !salto
-      ? aliado ? alvosDaHabilidade(this.enc, c, this.mode.featureId)
-        : magia
-          ? (magia.shape ? [] : this.enc.combatants.filter((t) => !this.enc.porqueNaoAlvo(c, magia, t)))
-        : this.enc.combatants.filter((t) => !t.dead && t.side !== c.side
-          && (this.mode.kind !== 'attack' || this.enc.canAttack(c, t, this.mode.weaponId).ok))
-      : null;
+    const magia =
+      this.mode?.kind === "spell" ? getSpell(this.mode.spellId) : null;
+    const salto = this.mode?.kind === "salto";
+    const aliado = this.mode?.kind === "featureAlvo";
+    const targets =
+      this.mode && c && !salto
+        ? aliado
+          ? alvosDaHabilidade(this.enc, c, this.mode.featureId)
+          : magia
+            ? magia.shape
+              ? []
+              : this.enc.combatants.filter(
+                  (t) => !this.enc.porqueNaoAlvo(c, magia, t),
+                )
+            : this.enc.combatants.filter(
+                (t) =>
+                  !t.dead &&
+                  t.side !== c.side &&
+                  (this.mode.kind !== "attack" ||
+                    this.enc.canAttack(c, t, this.mode.weaponId).ok),
+              )
+        : null;
 
     this.board?.setOverlay({
       selected: c,
       // No modo de salto, o chão azul são as casas de pouso.
-      reachable: c && this.enc.side === 'party'
-        ? (salto ? this.enc.destinosDoSalto(c) : !this.mode ? this.enc.reachableFor(c) : null)
-        : null,
+      reachable:
+        c && this.enc.side === "party"
+          ? salto
+            ? this.enc.destinosDoSalto(c)
+            : !this.mode
+              ? this.enc.reachableFor(c)
+              : null
+          : null,
       targets,
       // O Detectar Magia ativo acende o chão onde há aura (`game/magias-fora.js`).
       auras: this.capitulo?.explorando ? aurasDoDetectarMagia(this) : null,
@@ -2170,7 +3425,11 @@ class App {
     });
     // No escuro, quem o grupo não vê some também do HUD (fila e lista de inimigos).
     const visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc) : null;
-    for (const x of this.enc.combatants) x.oculto = Boolean(visao) && x.side !== 'party' && !visao.has(`${x.pos.x},${x.pos.y}`);
+    for (const x of this.enc.combatants)
+      x.oculto =
+        Boolean(visao) &&
+        x.side !== "party" &&
+        !visao.has(`${x.pos.x},${x.pos.y}`);
     this.hud.update(this.enc, c, this.mode, this.alvo);
     // A ficha fica por cima do jogo e não escuta o encontro: sem isto ela
     // congela com PV e espaços de magia velhos enquanto o combate anda.
@@ -2179,7 +3438,11 @@ class App {
       this.hud.setHint(`✖ ${this.recusa}`);
       this.recusa = null;
     } else if (!this.mode) {
-      this.hud.setHint(c ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.` : '');
+      this.hud.setHint(
+        c
+          ? `${c.name} — clique num quadrado azul para mover, ou escolha uma ação.`
+          : "",
+      );
     } else if (magia && c) {
       this.hud.setHint(this.dicaDaMagia(c, magia));
     } else if (aliado && c) {
@@ -2187,8 +3450,13 @@ class App {
     }
     // Explorando a estrada: não há turno nem rodada, há um grupo andando.
     if (this.capitulo?.explorando) {
-      this.hud.banner.textContent = `Exploração · ${this.capitulo.lugar ?? 'Trilha de Triboar'}`;
-      if (!this.recusa && !aliado) this.hud.setHint(c ? `${c.name} — clique no chão para andar. Clique em outro herói para trocar.` : '');
+      this.hud.banner.textContent = `Exploração · ${this.capitulo.lugar ?? "Trilha de Triboar"}`;
+      if (!this.recusa && !aliado)
+        this.hud.setHint(
+          c
+            ? `${c.name} — clique no chão para andar. Clique em outro herói para trocar.`
+            : "",
+        );
     }
   }
 
@@ -2202,78 +3470,107 @@ class App {
    */
   montarLayoutLivre(topoEsquerda) {
     const root = this.root;
-    const coluna = root.querySelector('.coluna-log');
-    const palco = root.querySelector('.palco');
+    const coluna = root.querySelector(".coluna-log");
+    const palco = root.querySelector(".palco");
     if (!coluna || !palco) return;
-    root.classList.add('layout-livre');
+    root.classList.add("layout-livre");
 
     // O minimapa sai da tela: o tabuleiro já mostra o mapa inteiro. O HUD
     // continua atualizando o elemento, só que fora do documento.
     this.hud.minimapaHost.remove();
-    const legal = coluna.querySelector('.legal');
-    if (legal) { legal.classList.add('legal-rodape'); palco.append(legal); }
-    coluna.classList.add('gaveta-registro');
+    const legal = coluna.querySelector(".legal");
+    if (legal) {
+      legal.classList.add("legal-rodape");
+      palco.append(legal);
+    }
+    coluna.classList.add("gaveta-registro");
     palco.append(coluna);
 
-    const novidades = document.createElement('span');
-    novidades.className = 'novidades';
-    const botao = document.createElement('button');
-    botao.className = 'btn btn-registro';
-    botao.title = 'Rolagens e acontecimentos';
-    botao.append('Registro', novidades);
+    const novidades = document.createElement("span");
+    novidades.className = "novidades";
+    const botao = document.createElement("button");
+    botao.className = "btn btn-registro";
+    botao.title = "Rolagens e acontecimentos";
+    botao.append("Registro", novidades);
     this.novidadesNoRegistro = 0;
-    this.alternarRegistro = (abrir = !coluna.classList.contains('aberta')) => {
-      coluna.classList.toggle('aberta', abrir);
-      botao.classList.toggle('aberto', abrir);
-      if (abrir) { this.novidadesNoRegistro = 0; novidades.textContent = ''; }
+    this.alternarRegistro = (abrir = !coluna.classList.contains("aberta")) => {
+      coluna.classList.toggle("aberta", abrir);
+      botao.classList.toggle("aberto", abrir);
+      if (abrir) {
+        this.novidadesNoRegistro = 0;
+        novidades.textContent = "";
+      }
     };
-    botao.addEventListener('click', () => { audio.play('click'); this.alternarRegistro(); });
+    botao.addEventListener("click", () => {
+      audio.play("click");
+      this.alternarRegistro();
+    });
     // Conta o que chegou com a gaveta fechada, para o jogador saber que há
     // rolagem nova sem precisar abrir.
     this.contarNovidade = () => {
-      if (coluna.classList.contains('aberta')) return;
+      if (coluna.classList.contains("aberta")) return;
       this.novidadesNoRegistro += 1;
-      novidades.textContent = this.novidadesNoRegistro > 99 ? '99+' : String(this.novidadesNoRegistro);
+      novidades.textContent =
+        this.novidadesNoRegistro > 99
+          ? "99+"
+          : String(this.novidadesNoRegistro);
     };
     topoEsquerda.insertBefore(botao, this.hud.banner);
 
     // Numa sala: "Pronto" (já não tenho o que fazer aqui) e a faixa de quem está pronto. Só aparecem com uma partida de sala.
-    const pronto = document.createElement('button');
-    pronto.className = 'btn btn-registro';
+    const pronto = document.createElement("button");
+    pronto.className = "btn btn-registro";
     pronto.hidden = true;
-    pronto.title = 'Marca que você não tem mais o que fazer nesta cena; as decisões de saída mostram quem está pronto';
-    pronto.textContent = 'Pronto';
-    pronto.addEventListener('click', () => {
-      audio.play('click');
+    pronto.title =
+      "Marca que você não tem mais o que fazer nesta cena; as decisões de saída mostram quem está pronto";
+    pronto.textContent = "Pronto";
+    pronto.addEventListener("click", () => {
+      audio.play("click");
       const eu = this.salaDaPartida?.visao?.voce;
       if (eu) this.marcarPronto(eu, !this.prontosDaCena?.has(eu));
     });
-    const faixa = document.createElement('span');
-    faixa.className = 'faixa-prontos';
+    const faixa = document.createElement("span");
+    faixa.className = "faixa-prontos";
     topoEsquerda.insertBefore(pronto, this.hud.banner);
     topoEsquerda.insertBefore(faixa, this.hud.banner);
-    const conexao = document.createElement('span');
-    conexao.className = 'conexao-ruim';
+    const conexao = document.createElement("span");
+    conexao.className = "conexao-ruim";
     conexao.hidden = true;
     topoEsquerda.insertBefore(conexao, this.hud.banner);
     this.pilulaDeConexao = conexao;
-    this.botaoPronto = pronto; this.faixaDosProntos = faixa;
-    setInterval(() => { pronto.hidden = !this.salaDaPartida; faixa.hidden = !this.salaDaPartida; this.mostrarProntos(); }, 1000);
+    this.botaoPronto = pronto;
+    this.faixaDosProntos = faixa;
+    setInterval(() => {
+      pronto.hidden = !this.salaDaPartida;
+      faixa.hidden = !this.salaDaPartida;
+      this.mostrarProntos();
+    }, 1000);
   }
 
   // ---- botão direito ---------------------------------------------------------
 
   /** O menu de ações da casa clicada (`game/interacoes.js`). */
   abrirContexto(tile, e) {
-    if (!this.enc || this.ficha?.estaAberta() || narrativaAberta() || this.menu?.estaAberto()) return;
+    if (
+      !this.enc ||
+      this.ficha?.estaAberta() ||
+      narrativaAberta() ||
+      this.menu?.estaAberto()
+    )
+      return;
     const m = opcoesDaCasa(this, tile);
     if (!m?.opcoes.length) return;
     this.mode = null;
     this.refresh();
     abrirMenuContexto(this.root, {
-      x: e.clientX, y: e.clientY, ...m,
+      x: e.clientX,
+      y: e.clientY,
+      ...m,
       // Passar o mouse numa ação acende o alvo dela no tabuleiro.
-      aoPrevia: (o) => this.board?.setOverlay({ targets: o?.alvoPrevia ? [o.alvoPrevia] : null }),
+      aoPrevia: (o) =>
+        this.board?.setOverlay({
+          targets: o?.alvoPrevia ? [o.alvoPrevia] : null,
+        }),
     });
   }
 
@@ -2289,7 +3586,10 @@ class App {
 
   /** Um texto curto no painel de narrativa, sem escolha (Olhar, Examinar). */
   mostrarTexto(titulo, texto) {
-    narrar(this.root, { formato: 'painel', paginas: [{ titulo, texto: [].concat(texto) }] });
+    narrar(this.root, {
+      formato: "painel",
+      paginas: [{ titulo, texto: [].concat(texto) }],
+    });
   }
 
   /**
@@ -2306,8 +3606,15 @@ class App {
       this.refresh();
       return;
     }
-    const falas = npc.falas ?? [npc.frase ?? `${npc.name} olha para vocês e não diz nada.`];
-    narrar(this.root, { formato: 'painel', paginas: falas.map((f) => ({ texto: [{ nome: `${npc.name}:`, texto: f }] })) });
+    const falas = npc.falas ?? [
+      npc.frase ?? `${npc.name} olha para vocês e não diz nada.`,
+    ];
+    narrar(this.root, {
+      formato: "painel",
+      paginas: falas.map((f) => ({
+        texto: [{ nome: `${npc.name}:`, texto: f }],
+      })),
+    });
   }
 
   /** Conversa com árvore dada pela cena, sem passar pelo botão direito. */
@@ -2319,27 +3626,48 @@ class App {
   async descansar(tipo) {
     if (narrativaAberta()) return;
     // Numa sala o descanso (curto ou longo) é votado pelo grupo: qualquer jogador pode pedir, o anfitrião também.
-    if (this.salaDaPartida && !this._descansoAprovado) { this.pedirDescanso(this.salaDaPartida.visao?.voce, tipo); return; }
-    const herois = this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
-    const linhas = tipo === 'longo'
-      // Na estrada, quem passou o dia sem comer ou sem beber dorme, mas não
-      // desfaz degrau de exaustão (`rules/mantimentos.js`).
-      ? await descansoLongoDoGrupo(this.root, {
-        herois,
-        texto: this.capitulo?.textoDoDescanso?.('longo'),
-        // O livro pede "alguma comida e bebida": meia ração é alguma comida,
-        // então meio dia sem comer (0,5) ainda deixa o descanso desfazer um
-        // degrau. Um dia inteiro sem nada, não.
-        alimentado: (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true),
-      })
-      : await descansoCurto(this.root, {
-        herois, rng: this.enc.rng, texto: this.capitulo?.textoDoDescanso?.('curto'),
-        automaticos: this.salaDaPartida ? new Set(herois.filter((c) => !this.podeControlar(c) && !this.donoRemoto(c)).map((c) => c.id)) : null,
-        porta: this.salaDaPartida ? this.portaDoDescanso() : null,
-      });
-    for (const t of linhas) this.enc.say('cura', t);
+    if (this.salaDaPartida && !this._descansoAprovado) {
+      this.pedirDescanso(this.salaDaPartida.visao?.voce, tipo);
+      return;
+    }
+    const herois = this.enc.combatants.filter(
+      (c) => c.side === "party" && !c.dead,
+    );
+    const linhas =
+      tipo === "longo"
+        ? // Na estrada, quem passou o dia sem comer ou sem beber dorme, mas não
+          // desfaz degrau de exaustão (`rules/mantimentos.js`).
+          await descansoLongoDoGrupo(this.root, {
+            herois,
+            texto: this.capitulo?.textoDoDescanso?.("longo"),
+            // O livro pede "alguma comida e bebida": meia ração é alguma comida,
+            // então meio dia sem comer (0,5) ainda deixa o descanso desfazer um
+            // degrau. Um dia inteiro sem nada, não.
+            alimentado: (c) => (c.comeuHoje ?? true) && (c.bebeuHoje ?? true),
+          })
+        : await descansoCurto(this.root, {
+            herois,
+            rng: this.enc.rng,
+            texto: this.capitulo?.textoDoDescanso?.("curto"),
+            automaticos: this.salaDaPartida
+              ? new Set(
+                  herois
+                    .filter(
+                      (c) => !this.podeControlar(c) && !this.donoRemoto(c),
+                    )
+                    .map((c) => c.id),
+                )
+              : null,
+            porta: this.salaDaPartida ? this.portaDoDescanso() : null,
+          });
+    for (const t of linhas) this.enc.say("cura", t);
     // O descanso é tempo de verdade: as magias de duração correm (uma hora, oito horas).
-    for (const t of avancarTempo(estadoDeUtilidade(this.campanha ??= {}), tipo === 'longo' ? 480 : 60, herois)) this.enc.say('magia', t);
+    for (const t of avancarTempo(
+      estadoDeUtilidade((this.campanha ??= {})),
+      tipo === "longo" ? 480 : 60,
+      herois,
+    ))
+      this.enc.say("magia", t);
     this.capitulo?.depoisDoDescanso?.(tipo);
     this.refresh();
     // S-02d: depois do relógio andar, para o save não guardar o descanso feito e o dia velho.
@@ -2360,10 +3688,14 @@ class App {
   alternarTocha(c) {
     const acender = !c.tochaAcesa;
     c.tochaAcesa = acender;
-    if (acender && !this.capitulo?.explorando && this.enc.side === 'party') c.actionUsed = true;
-    this.enc.say('acao', acender
-      ? `${c.name} acende uma tocha: luz em 20 pés ao redor, e quem está no escuro agora vê de onde ela vem.`
-      : `${c.name} apaga a tocha.`);
+    if (acender && !this.capitulo?.explorando && this.enc.side === "party")
+      c.actionUsed = true;
+    this.enc.say(
+      "acao",
+      acender
+        ? `${c.name} acende uma tocha: luz em 20 pés ao redor, e quem está no escuro agora vê de onde ela vem.`
+        : `${c.name} apaga a tocha.`,
+    );
     this.refresh();
   }
 
@@ -2372,19 +3704,36 @@ class App {
    * A mensagem fica no painel de texto, como o Olhar.
    */
   saquear(c, corpo) {
-    const r = saquearCorpo(this.enc, c, corpo, this.enc.combatants.filter((x) => x.side === 'party'));
-    if (!r.ok) { this.refuse(c, r.why); return; }
-    audio.play('click');
-    this.mostrarTexto(corpo.name, r.achados.length
-      ? [`${c.name} revista o corpo e leva o que ele carregava.`, ...r.achados.map((id) => `· ${nomeDeId(id)}`)]
-      : `${c.name} revista o corpo e não acha nada que valha.`);
+    const r = saquearCorpo(
+      this.enc,
+      c,
+      corpo,
+      this.enc.combatants.filter((x) => x.side === "party"),
+    );
+    if (!r.ok) {
+      this.refuse(c, r.why);
+      return;
+    }
+    audio.play("click");
+    this.mostrarTexto(
+      corpo.name,
+      r.achados.length
+        ? [
+            `${c.name} revista o corpo e leva o que ele carregava.`,
+            ...r.achados.map((id) => `· ${nomeDeId(id)}`),
+          ]
+        : `${c.name} revista o corpo e não acha nada que valha.`,
+    );
     this.afterAct(c);
   }
 
   /** Usar item pelo menu: a mesma porta do clique na barra. */
   usarItem(c, itemId, alvo, { jogando = false } = {}) {
     const r = this.enc.useItem(c, itemId, { target: alvo, jogando });
-    if (!r.ok) { this.refuse(c, r.why); return; }
+    if (!r.ok) {
+      this.refuse(c, r.why);
+      return;
+    }
     this.afterAct();
   }
 
@@ -2395,14 +3744,14 @@ class App {
    */
   irParaVila(grupo, { chegando = false } = {}) {
     this.grupoDaCampanha = grupo;
-    this.localAtual = { tipo: 'vila', chegando };
+    this.localAtual = { tipo: "vila", chegando };
     fecharMenuContexto();
     this.capitulo = null;
     this.enc = null;
     this.board = null;
     this.selected = null;
     this.mode = null;
-    this.root.classList.remove('explorando');
+    this.root.classList.remove("explorando");
     // S-02: entrar na vila é um ponto de save. Depois de zerar `enc`, para o save dizer "vila".
     if (!this.carregando) this.autosalvar({ herois: grupo });
     // `chegando` (a cena da chegada) só vale para o save de entrada: os da visita reabrem a vila já aberta.
@@ -2411,16 +3760,16 @@ class App {
   }
 
   /** Sai do tabuleiro para o mapa da região, com o grupo parado em `onde`. */
-  irParaRegiao(grupo, onde = 'phandalin') {
+  irParaRegiao(grupo, onde = "phandalin") {
     this.grupoDaCampanha = grupo;
-    this.localAtual = { tipo: 'regiao', onde };
+    this.localAtual = { tipo: "regiao", onde };
     fecharMenuContexto();
     this.capitulo = null;
     this.enc = null;
     this.board = null;
     this.selected = null;
     this.mode = null;
-    this.root.classList.remove('explorando');
+    this.root.classList.remove("explorando");
     // `abrirRegiao` grava `regiao.onde` ao abrir; o save de entrada precisa do lugar novo, não do velho.
     if (this.campanha?.regiao) this.campanha.regiao.onde = onde;
     if (!this.carregando) this.autosalvar({ herois: grupo });
@@ -2431,117 +3780,156 @@ class App {
   /** A ficha aberta na vila, por cima dela; `aoFechar` redesenha a vila. */
   abrirFichaNaVila(heroi, aoFechar) {
     this._aoFecharFicha = aoFechar;
-    this.ficha.abrir(heroi, 'inventario');
-    document.querySelector('.ficha-overlay')?.classList.add('na-vila');
+    this.ficha.abrir(heroi, "inventario");
+    document.querySelector(".ficha-overlay")?.classList.add("na-vila");
   }
 
   // ---- save e carregar (S-01…S-12) -----------------------------------------
 
   /** Os heróis vivos agora: no tabuleiro, os do encontro; na vila e na região, os que a tela guarda. */
   grupoAtual() {
-    if (this.enc) return this.enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+    if (this.enc)
+      return this.enc.combatants.filter((c) => c.side === "party" && !c.dead);
     return (this.grupoDaCampanha ?? []).filter((c) => !c.dead);
   }
 
   /** Onde o grupo está, no formato do save (`game/save.js`). */
   lugarAtual() {
-    if (this.enc) return { tipo: 'cena' };
+    if (this.enc) return { tipo: "cena" };
     // Sem Encounter e sem tela marcada: o grupo voltou de uma luta da estrada e a região
     // reabriu sozinha (`regiao.continuarViagem` chama `abrirRegiao` sem passar por `irParaRegiao`).
-    if (!this.localAtual) return this.campanha?.regiao ? { tipo: 'regiao', onde: this.campanha.regiao.onde } : { tipo: 'cena' };
-    if (this.localAtual.tipo === 'regiao') return { tipo: 'regiao', onde: this.campanha?.regiao?.onde ?? this.localAtual.onde };
+    if (!this.localAtual)
+      return this.campanha?.regiao
+        ? { tipo: "regiao", onde: this.campanha.regiao.onde }
+        : { tipo: "cena" };
+    if (this.localAtual.tipo === "regiao")
+      return {
+        tipo: "regiao",
+        onde: this.campanha?.regiao?.onde ?? this.localAtual.onde,
+      };
     return { ...this.localAtual };
   }
 
   /** S-03: salvar à mão só em lugar seguro. Combate, narrativa aberta e cena em luta não. */
   podeSalvarAgora() {
     if (narrativaAberta()) return false;
-    if (this.config?.modo !== 'campanha') return false;
+    if (this.config?.modo !== "campanha") return false;
     if (!this.enc) return false;
     return Boolean(this.capitulo?.explorando);
   }
 
-  montarSaveAtual({ tipo, slot, nome, herois, config } = {}) {
-    const grupo = (herois ?? this.grupoAtual()).map((h) => ({ ...h, jogadorId: h.jogadorId ?? this.jogadorId }));
-    if (!grupo.length) return { ok: false, erro: 'Não há heróis para salvar.' };
-    const agora = Date.now();
-    return montarSave({
-      id: slot ?? 'auto-1',
-      nome: nome ?? `${grupo.map((h) => h.name).join(', ')}`,
-      tipo,
-      agora,
-      tempoDeJogo: this.tempoBase + (agora - this.inicioDaSessao) / 1000,
-      config: config ?? this.config,
-      local: this.lugarAtual(),
-      campanha: this.campanha ?? {},
-      herois: grupo,
-      xpPendente: this.xpPendente ?? null,
-      jogadores: [{ jogadorId: this.jogadorId, nome: 'Jogador' }],
-    });
-  }
-
   /** S-02: o autosave. Só da campanha (a arena de testes não guarda nada). Falha em voz alta, mas nunca derruba o jogo. */
   autosalvar(ov = {}) {
-    if ((ov.config ?? this.config)?.modo !== 'campanha') return null;
-    try {
-      const r = this.montarSaveAtual({ tipo: 'auto', ...ov });
-      const g = r.ok ? this.saves.autosalvar(r.save) : r;
-      if (!g.ok) this.avisarDeSave(g.erro);
-      // F6: numa partida de sala o save também vai ao servidor, para quem assumir o posto (se o anfitrião cair) retomar dele.
-      else if (r.ok && this.salaDaPartida) this.menu.enviarCru({ tipo: 'salvar', save: r.save });
-      return g;
-    } catch (e) {
-      this.avisarDeSave(`Não consegui salvar: ${e.message}`);
-      return null;
-    }
+    const herois = ov.herois ?? this.grupoAtual();
+    const config = ov.config ?? this.config;
+    const local = this.lugarAtual();
+    const campanha = this.campanha ?? {};
+    const xpPendente = this.xpPendente ?? null;
+
+    return this.saveManager.autosalvar(
+      config,
+      herois,
+      local,
+      campanha,
+      xpPendente,
+      {
+        onError: (erro) => this.avisarDeSave(erro),
+        onMultiplayer: (save) => {
+          // F6: numa partida de sala o save também vai ao servidor, para quem assumir o posto (se o anfitrião cair) retomar dele.
+          if (this.salaDaPartida) {
+            this.menu.enviarCru({ tipo: "salvar", save });
+          }
+        },
+      },
+    );
   }
 
   salvarManual(slot) {
-    if (!this.podeSalvarAgora()) return { ok: false, erro: 'Só dá para salvar à mão explorando, sem combate e sem texto aberto.' };
-    const r = this.montarSaveAtual({ tipo: 'manual', slot });
-    const g = r.ok ? this.saves.gravar(slot, r.save) : r;
-    if (!g.ok) this.avisarDeSave(g.erro);
-    return g;
+    if (!this.podeSalvarAgora())
+      return {
+        ok: false,
+        erro: "Só dá para salvar à mão explorando, sem combate e sem texto aberto.",
+      };
+
+    const herois = this.grupoAtual();
+    const config = this.config;
+    const local = this.lugarAtual();
+    const campanha = this.campanha ?? {};
+    const xpPendente = this.xpPendente ?? null;
+
+    return this.saveManager.salvarManual(
+      slot,
+      config,
+      herois,
+      local,
+      campanha,
+      xpPendente,
+      {
+        onError: (erro) => this.avisarDeSave(erro),
+        onSuccess: (save) => {
+          // Sucesso silencioso - o menu de save já mostra feedback visual
+        },
+      },
+    );
   }
 
   /** S-10: o save já chega validado e migrado; carregar nunca é parcial. */
   carregarSave(save) {
     // Um painel de texto aberto é de uma cena que continuaria viva por baixo da nova.
-    if (narrativaAberta()) return { ok: false, erro: 'Feche o texto aberto na tela antes de carregar um jogo.' };
+    if (narrativaAberta())
+      return {
+        ok: false,
+        erro: "Feche o texto aberto na tela antes de carregar um jogo.",
+      };
+
     // S-10: nunca parcial. Se a cena nova não monta, o jogo volta ao que era.
     const antes = {
-      campanha: this.campanha, xpPendente: this.xpPendente, tempoBase: this.tempoBase,
-      inicioDaSessao: this.inicioDaSessao, config: this.config, localAtual: this.localAtual,
+      campanha: this.campanha,
+      xpPendente: this.xpPendente,
+      tempoBase: this.tempoBase,
+      inicioDaSessao: this.inicioDaSessao,
+      config: this.config,
+      localAtual: this.localAtual,
       grupoDaCampanha: this.grupoDaCampanha,
     };
-    this.carregando = true;
-    try {
-      this.ficha?.fechar();
-      this.campanha = save.campanha;
-      this.xpPendente = save.xpPendente ?? null;
-      this.tempoBase = save.tempoDeJogo ?? 0;
-      this.inicioDaSessao = Date.now();
-      this.config = save.config;
-      const lugar = save.local ?? { tipo: 'cena' };
-      if (lugar.tipo === 'vila') this.irParaVila(save.herois, { chegando: Boolean(lugar.chegando) });
-      else if (lugar.tipo === 'regiao') this.irParaRegiao(save.herois, lugar.onde);
-      else this.newEncounter({ ...save.config, continuarCom: save.herois });
-    } catch (e) {
-      Object.assign(this, antes);
-      console.error(e);
-      return { ok: false, erro: `Não consegui abrir este save: ${e?.message ?? e}` };
-    } finally {
-      this.carregando = false;
-    }
-    return { ok: true, resumo: resumoDoSave(save) };
+
+    return this.saveManager.carregarSave(save, {
+      onBeforeLoad: () => {
+        this.carregando = true;
+        this.ficha?.fechar();
+      },
+      onLoadState: (saveData) => {
+        this.campanha = saveData.campanha;
+        this.xpPendente = saveData.xpPendente ?? null;
+        this.tempoBase = saveData.tempoDeJogo ?? 0;
+        this.inicioDaSessao = Date.now();
+        this.config = saveData.config;
+      },
+      onLoadVila: (herois, chegando) => {
+        this.irParaVila(herois, { chegando });
+      },
+      onLoadRegiao: (herois, onde) => {
+        this.irParaRegiao(herois, onde);
+      },
+      onLoadCena: (herois, config) => {
+        this.newEncounter({ ...config, continuarCom: herois });
+      },
+      onError: (erro) => {
+        Object.assign(this, antes);
+        console.error(erro);
+      },
+      onFinally: () => {
+        this.carregando = false;
+      },
+    });
   }
 
   /** Aviso curto sobre o save, fora de qualquer tela: o jogador precisa saber que não salvou. */
   avisarDeSave(texto) {
     console.warn(`[save] ${texto}`);
-    const aviso = document.createElement('div');
-    aviso.className = 'aviso-de-save';
-    aviso.setAttribute('role', 'alert');
+    const aviso = document.createElement("div");
+    aviso.className = "aviso-de-save";
+    aviso.setAttribute("role", "alert");
     aviso.textContent = texto;
     this.root.append(aviso);
     setTimeout(() => aviso.remove(), 6000);
@@ -2554,12 +3942,12 @@ class App {
     this.board = null;
     this.selected = null;
     this.mode = null;
-    this.root.classList.remove('explorando');
+    this.root.classList.remove("explorando");
     this.menu.abrir();
   }
 }
 
-const app = new App(document.getElementById('app'));
+const app = new App(document.getElementById("app"));
 
 // Em desenvolvimento, dá para dirigir o combate pelo console:
 //   __app.enc            estado do encontro
@@ -2571,15 +3959,28 @@ if (import.meta.env?.DEV) {
   let playCharacter = null;
 
   app.autoPlay = async (maxRounds = 25) => {
-    playCharacter ??= (await import('./dev/balance.js')).playCharacter;
+    playCharacter ??= (await import("./dev/balance.js")).playCharacter;
     while (!app.enc.over && app.enc.round <= maxRounds) {
-      if (app.enc.side !== 'party') { await new Promise((r) => setTimeout(r, 60)); continue; }
-      const pending = app.enc.allOf('party').filter((c) => !c.acted && !c.dead && !hasCondition(c, 'inconsciente'));
-      if (pending.length === 0) { await new Promise((r) => setTimeout(r, 60)); continue; }
+      if (app.enc.side !== "party") {
+        await new Promise((r) => setTimeout(r, 60));
+        continue;
+      }
+      const pending = app.enc
+        .allOf("party")
+        .filter((c) => !c.acted && !c.dead && !hasCondition(c, "inconsciente"));
+      if (pending.length === 0) {
+        await new Promise((r) => setTimeout(r, 60));
+        continue;
+      }
       playCharacter(app.enc, pending[0]);
       await new Promise((r) => setTimeout(r, 25));
     }
     app.refresh();
-    return { over: app.enc.over, outcome: app.enc.outcome, round: app.enc.round, entries: app.enc.log.length };
+    return {
+      over: app.enc.over,
+      outcome: app.enc.outcome,
+      round: app.enc.round,
+      entries: app.enc.log.length,
+    };
   };
 }

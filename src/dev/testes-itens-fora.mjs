@@ -457,9 +457,15 @@ teste('grupoTem enxerga o cajado do herói morto; os capítulos conferem antes d
 
 teste('aplicarIntencao: o menu de contexto de quem já terminou o turno é recusado antes de rodar', () => {
   const t = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
-  const i = t.indexOf('if (emCombate && c.acted) { avisar(`${c.name} já terminou o turno`)');
-  const j = t.indexOf("if (acao === 'contexto' || acao === 'contexto-escolher') { this.contextoDeFora(");
-  assert.ok(i > 0 && j > i, 'a recusa vem antes do contexto');
+  // Por ÍNDICE de duas marcas curtas, não pelo texto da linha inteira: a regra
+  // é a ORDEM (recusar antes de abrir o contexto), e escrevê-la como uma linha
+  // literal fazia o teste quebrar só porque um formatador trocou as aspas ou
+  // partiu o `if` em duas linhas — o que já aconteceu.
+  const i = t.indexOf('já terminou o turno');
+  const j = t.indexOf('this.contextoDeFora(');
+  assert.ok(i > 0, 'a recusa de quem já agiu existe em main.js');
+  assert.ok(j > 0, 'o menu de contexto existe em main.js');
+  assert.ok(j > i, 'a recusa vem antes do contexto');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram`);

@@ -19,3 +19,12 @@ _previa-arvoretrovao.png
 
 # Capturas e pranchas de trabalho da Caverna Onda Eco (geradas pelo gerador): ficam locais.
 _trabalho/
+
+# Segredo: o .env real nunca entra. O .env.example entra, com placeholders.
+.env
+.env.*
+!.env.example
+
+# Gerados: relatorio de cobertura do vitest e cache do Python dos scripts de dev.
+coverage/
+__pycache__/
