@@ -1444,7 +1444,8 @@ export class Hud {
       if (dados.usos) linhas.push(['Usos no kit', String(dados.usos)]);
       linhas.push(['Na mochila', String(qtd)]);
 
-      return this.tile(dados.art ?? 'cura', {
+      // O ícone do próprio item primeiro (a poção de cura é uma poção, não o círculo verde de "cura"); o da família só na falta dele.
+      return this.tile(temIcone(`item-${id}`) ? `item-${id}` : (dados.art ?? 'cura'), {
         classe: 'item',
         desabilitado,
         ativo: ligado,
