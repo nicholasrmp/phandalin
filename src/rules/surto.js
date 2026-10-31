@@ -9,6 +9,7 @@ import { addCondition } from './conditions.js';
 import { damageRoll } from '../core/dice.js';
 import { distanceFt } from '../core/grid.js';
 import { spellSaveDc } from './abilities.js';
+import { SPELLS } from './spells.js';
 
 const sobre = (enc, actor, id, rounds, extra = {}) => enc.aplicarCondicao(actor, id, { rounds, source: actor.id, ...extra });
 const vivos = (enc) => enc.combatants.filter((x) => !x.dead);
@@ -91,7 +92,7 @@ export const SURTOS = [
     id: 'repete', nome: 'a magia continua a vazar: role de novo no começo de cada turno seu por um minuto', valor: 0,
     aplica: (enc, a) => addCondition(a, 'surtoRepetido', { rounds: 10, source: a.id }),
   },
-  { id: 'invisiveis', nome: 'você enxerga criaturas invisíveis por um minuto', valor: 1, aplica: cor },
+  { id: 'invisiveis', nome: 'você enxerga criaturas invisíveis por um minuto', valor: 1, aplica: (enc, a) => sobre(enc, a, 'veInvisiveis', 10) },
   { id: 'modron', nome: 'um modron do mestre surge ao seu lado e some em um minuto', valor: 1, aplica: cor },
   { id: 'altura', nome: 'sua altura muda 1d10 polegadas', valor: 1, aplica: cor },
   {
@@ -116,7 +117,7 @@ export const SURTOS = [
     },
   },
   { id: 'desvantagem', nome: 'a próxima magia sua com resistência, em um minuto, dá desvantagem a todos os alvos', valor: 2, aplica: (enc, a) => { a.surtoDesvSaveAte = enc.round + 10; } },
-  { id: 'olho', nome: 'um olho brota na sua testa: vantagem em Percepção pela visão por um minuto', valor: 1, aplica: cor },
+  { id: 'olho', nome: 'um olho brota na sua testa: vantagem em Percepção pela visão por um minuto', valor: 1, aplica: (enc, a) => sobre(enc, a, 'olhoDoCaos', 10) },
   { id: 'rapida', nome: 'suas magias de uma ação passam a custar uma ação bônus por um minuto', valor: 2, aplica: (enc, a) => { a.surtoRapidoAte = enc.round + 10; } },
   {
     id: 'astral', nome: 'você é levado ao Plano Astral até o fim do seu próximo turno', valor: 0,
@@ -139,7 +140,21 @@ export const SURTOS = [
     },
   },
   { id: 'grita', nome: 'você precisa gritar quando fala, por um minuto', valor: 1, aplica: cor },
-  { id: 'nevoa', nome: 'uma nuvem de névoa cerca você', valor: 1, aplica: cor },
+  {
+    id: 'nevoa', nome: 'uma nuvem de névoa cerca você', valor: 1,
+    // Névoa Obscurecente centrada no feiticeiro (esfera de 6 m), sem concentração: a zona do jogo dura o combate.
+    aplica(enc, a) {
+      const spell = SPELLS.nevoaObscurecente;
+      if (!spell?.zona) return;
+      const casas = [];
+      for (let x = a.pos.x - 4; x <= a.pos.x + 4; x += 1) {
+        for (let y = a.pos.y - 4; y <= a.pos.y + 4; y += 1) {
+          if (enc.field.inside(x, y) && distanceFt(a.pos, { x, y }) <= 20) casas.push({ x, y });
+        }
+      }
+      enc.criarZona(a, spell, casas, spellSaveDc(a), { centro: a.pos, circulo: 1 });
+    },
+  },
   {
     id: 'raios', nome: 'raios caem em até três criaturas a 9 m de você: 4d10 elétrico', valor: 0,
     aplica(enc, a) {
@@ -171,7 +186,7 @@ export const SURTOS = [
       if (c) sobre(enc, c, 'envenenado', 100000);
     },
   },
-  { id: 'luz', nome: 'você brilha: luz forte a 9 m por um minuto; quem termina o turno a 1,5 m de você fica cego até o fim do próximo turno', valor: 1, aplica: cor },
+  { id: 'luz', nome: 'você brilha: luz forte a 9 m por um minuto; quem termina o turno a 1,5 m de você fica cego até o fim do próximo turno', valor: 1, aplica: (enc, a) => sobre(enc, a, 'brilhoCaos', 10) },
   {
     id: 'ovelha', nome: 'você vira ovelha, a não ser que resista (Sabedoria)', valor: 0,
     aplica(enc, a) {
@@ -205,7 +220,7 @@ export const SURTOS = [
     },
   },
   { id: 'invisivelSurdo', nome: 'você fica invisível e ninguém o ouve por um minuto, até atacar ou conjurar', valor: 2, aplica: (enc, a) => sobre(enc, a, 'invisivel', 10) },
-  { id: 'reencarna', nome: 'se você morrer em um minuto, volta à vida como se reencarnado', valor: 1, aplica: cor },
+  { id: 'reencarna', nome: 'se você morrer em um minuto, volta à vida como se reencarnado', valor: 1, aplica: (enc, a) => sobre(enc, a, 'reencarnar', 10) },
   { id: 'tamanho', nome: 'seu tamanho sobe uma categoria por um minuto', valor: 1, aplica: cor },
   {
     id: 'perfurante', nome: 'você e todos a 9 m ficam vulneráveis a dano perfurante por um minuto', valor: 0,

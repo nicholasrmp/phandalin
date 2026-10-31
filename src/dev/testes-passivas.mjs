@@ -5242,6 +5242,43 @@ teste('Surto "máximo" + Bombardeio de Magia: os dados que saem no máximo rolam
   assert.equal(dmg.total, 16 + 3, 'máximo (16) e um dado máximo rolou de novo (+3)');
 });
 
+teste('Mais cinco surtos com regra: ver invisíveis, olho (Percepção), brilho que cega, névoa em volta e reencarnar', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  const { rolarPericia } = await import('../rules/abilities.js');
+  const por = (id) => SURTOS.find((x) => x.id === id);
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const { enc } = arena({ herois: [s], foes: [gob] });
+  // ver invisíveis: o goblin invisível deixa de ter desvantagem contra quem o enxerga
+  addCondition(gob, 'invisivel', { rounds: 10, source: gob.id });
+  assert.ok(enc.attackModifiers(s, gob, {}).desvantagens.includes('alvo invisível'));
+  por('invisiveis').aplica(enc, s);
+  assert.ok(!enc.attackModifiers(s, gob, {}).desvantagens.includes('alvo invisível'), 'quem vê o invisível ataca sem desvantagem');
+  // olho: vantagem em Percepção, não em Furtividade
+  por('olho').aplica(enc, s);
+  assert.equal(rolarPericia(makeRng(5), s, 'percepcao').mode, 'vantagem');
+  assert.notEqual(rolarPericia(makeRng(5), s, 'furtividade').mode, 'vantagem');
+  // brilho: o goblin que termina o turno a 1,5 m fica cego
+  removeCondition(gob, 'invisivel');
+  por('luz').aplica(enc, s);
+  enc.fimDoTurnoDoLado('foes');
+  assert.ok(hasCondition(gob, 'cego'), 'cego ao terminar o turno ao lado da luz');
+  // névoa: nasce uma zona que esconde, centrada nele
+  const zonas0 = enc.zonas?.length ?? 0;
+  por('nevoa').aplica(enc, s);
+  assert.equal((enc.zonas?.length ?? 0), zonas0 + 1);
+  // reencarnar: morrer dentro do minuto devolve a vida com metade dos PV
+  por('reencarna').aplica(enc, s);
+  enc.morrer(s, 'teste');
+  assert.equal(s.dead, false);
+  assert.ok(s.hp >= 1 && s.hp <= Math.floor(s.maxHp / 2) + 1);
+  assert.equal(hasCondition(s, 'reencarnar'), false, 'a volta se gasta');
+  enc.morrer(s, 'teste');
+  assert.equal(s.dead, true, 'a segunda morte vale');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

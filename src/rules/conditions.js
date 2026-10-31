@@ -451,6 +451,10 @@ export const CONDITIONS = {
     desc: 'Sofre o dobro de dano perfurante por um minuto (Surto de Magia Selvagem).',
     vulnerabilidade: ['perfurante'],
   },
+  veInvisiveis: { name: 'Vê o Invisível', desc: 'Enxerga criaturas invisíveis (Surto de Magia Selvagem).' },
+  olhoDoCaos: { name: 'Olho do Caos', desc: 'Um olho na testa: vantagem em Percepção pela visão (Surto de Magia Selvagem).' },
+  reencarnar: { name: 'Reencarnação Pendente', desc: 'Se morrer, volta à vida como se reencarnado (Surto de Magia Selvagem).' },
+  brilhoCaos: { name: 'Brilho do Caos', desc: 'Luz forte a 9 m: quem termina o turno a 1,5 m fica cego até o fim do próximo turno dele (Surto de Magia Selvagem).' },
   desarmado: {
     name: 'Desarmado',
     desc: 'Largou a arma: desvantagem em todos os ataques (Ataque Desarmante).',

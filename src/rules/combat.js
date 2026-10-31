@@ -739,6 +739,14 @@ export class Encounter {
    * desvantagem que prometia.
    */
   fimDoTurnoDoLado(side) {
+    // BRILHO DO CAOS (surto): quem termina o turno a 1,5 m de quem brilha fica cego até o fim do próximo turno dele.
+    for (const c of this.allOf(side)) {
+      if (c.dead || hasCondition(c, 'cego')) continue;
+      const brilha = this.combatants.some((b) => b !== c && !b.dead && hasCondition(b, 'brilhoCaos') && distanceFt(b.pos, c.pos) <= 5);
+      if (brilha && this.aplicarCondicao(c, 'cego', { rounds: 2, quando: 'fim', lado: c.side, source: c.id })) {
+        this.say('condicao', `${c.name} termina o turno ao lado da luz e fica cego.`);
+      }
+    }
     // Duelo Compelido: o conjurador que termina o turno a mais de 9 m do
     // duelado (ou com ele já morto) deixa a magia cair.
     for (const c of this.allOf(side)) {
@@ -3012,7 +3020,7 @@ export class Encounter {
     if (this.circuloProtege(attacker, target)) fonte(mods, 'desvantagem', 'círculo mágico');
     // Invisível: ataca com vantagem e é atacado com desvantagem.
     // Visão verdadeira (o nothic): dentro do alcance dela, invisível não esconde.
-    const ve = (quem, alvo) => (quem.senses?.truesightFt ?? 0) >= distanceFt(quem.pos, alvo.pos);
+    const ve = (quem, alvo) => (quem.senses?.truesightFt ?? 0) >= distanceFt(quem.pos, alvo.pos) || hasCondition(quem, 'veInvisiveis');
     if (hasCondition(attacker, 'invisivel') && !ve(target, attacker)) fonte(mods, 'vantagem', 'atacante invisível');
     // Emboscador (o doppelganger): vantagem contra quem ainda está surpreso.
     if (attacker.traits?.includes('emboscador') && this.surpresos?.has(target.id)) fonte(mods, 'vantagem', 'emboscador');
@@ -4815,6 +4823,17 @@ export class Encounter {
 
   /** Morte de personagem: três falhas, ou dano maciço. */
   morrer(target, motivo = null) {
+    // SURTO "reencarnar": quem morre dentro do minuto volta à vida (com metade dos PV), sem rolar a raça nova.
+    if (hasCondition(target, 'reencarnar')) {
+      removeCondition(target, 'reencarnar');
+      target.dead = false;
+      target.hp = Math.max(1, Math.floor(maxHpEfetivo(target) / 2));
+      removeCondition(target, 'inconsciente');
+      if (target.deathSaves) target.deathSaves = { successes: 0, failures: 0 };
+      target.stable = false;
+      this.say('cura', `${target.name} volta à vida num corpo novo (Surto de Magia Selvagem).`);
+      return;
+    }
     target.dead = true;
     // Revivificar só alcança quem morreu há até 1 minuto (10 rodadas).
     target.morreuNaRodada = this.round;
