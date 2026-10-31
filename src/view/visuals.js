@@ -1399,7 +1399,11 @@ const SPELL_VISUALS = {
     return 0.3;
   },
   peleDePedra: (board, _ctx, alvos = []) => {
-    for (const t of alvos) board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 6, altura: 30, sumir: 0.4 });
+    // Primeiro os estilhaços de pedra giram e se fecham em volta do alvo; depois as placas cobrem o corpo (traje vazado, com o alvo à vista).
+    for (const t of alvos) {
+      board.fx.quadros(t.pos, 'pele-de-pedra-aura', { fps: 8, altura: 26, sumir: 0.2 });
+      setTimeout(() => board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 5, altura: 30, sumir: 0.5 }), 500);
+    }
     return 0;
   },
   imobilizarMonstro: (board, _ctx, alvos = []) => {
