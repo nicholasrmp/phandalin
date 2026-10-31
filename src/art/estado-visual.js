@@ -55,6 +55,6 @@ export function aparenciaDaFigura(c, temFolhaNoEstado = () => false) {
 export function tintaDaAura(aparencia, tempo = 0) {
   if (aparencia?.aura !== 'procedural') return null;
   // Pele de Pedra: a figura vira cinza-pedra, parada (pedra não pulsa). Foi o que o /vfx do PixelLab fez com o sprite do Brenn.
-  if (aparencia.estado === 'pedra') return { color: '#9aa3ad', strength: 0.55 };
+  if (aparencia.estado === 'pedra') return { color: '#9aa3ad', strength: 0.42 };
   return { color: '#d62820', strength: 0.23 + 0.07 * Math.sin(tempo * 10) };
 }

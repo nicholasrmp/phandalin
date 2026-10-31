@@ -517,3 +517,6 @@ Feito: alturas da Muralha 28→20, Nuvem 34→20 (`sumir` maior) e Correntes 28�
 - No jogo: estado visual `pedra` (tinta cinza-pedra fixa em `estado-visual.js`, enquanto a condição `peleDePedra` vale) + brilho dourado do game pack (`pele-de-pedra`, 10 quadros 33x45) na conjuração. A Fúria continua mandando se as duas valem.
 - Não verificado: a animação em movimento no jogo (as capturas não pegam ~1 s de efeito) e o tom da tinta num zoom grande.
 - Scripts novos: `src/dev/efeito-pixellab.py`, `src/dev/importar-pixellab-efeito.py` (`--clip whole` importa a peça do pacote).
+
+### 11b — revisão da Pele de Pedra
+Recorte: conversão fiel; o brilho do pacote tem só 66 px em 10 quadros (poeira). Beleza: tinta 4/5, brilho 1/5, conjunto 2/5. Aplicado (grátis): tinta 0,55→0,42 (a 0,55 o contraste caía 55%), 5 quadros vazios cortados, lascas cinza (`smash` + `shards`) na conjuração. Pendente (1 geração): casca de granito com ≥300 px no quadro de pico.
