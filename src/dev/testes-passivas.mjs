@@ -5320,6 +5320,40 @@ teste('Surto de tamanho: sobe uma categoria (só a regra, não a pegada) e volta
   assert.equal(enc.aumentarTamanho(s), false, 'o maior não cresce mais');
 });
 
+teste('Revisão dos surtos novos: Passo do Caos convive com magia, tamanho não empilha, reencarnar leva um corpo limpo, nada vaza para o descanso', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  const por = (id) => SURTOS.find((x) => x.id === id);
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 7, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const { enc } = arena({ herois: [s], foes: [gob] });
+  // Passo do Caos não é magia conjurada: míssil e passo no mesmo turno
+  s.spellcasting.prepared = [...new Set([...(s.spellcasting.prepared ?? []), 'misselMagico'])];
+  s.spellcasting.slots[1] = 4;
+  por('passoDoCaos').aplica(enc, s);
+  enc.rng = dadoEmSequencia(15);
+  assert.ok(enc.castSpell(s, 'misselMagico', { target: gob }).ok !== false, 'o míssil sai');
+  const passo = enc.castSpell(s, 'passoDoCaos', { point: { x: 5, y: 6 } });
+  assert.ok(passo.ok !== false, passo.why);
+  // tamanho: um degrau só, mesmo com vários surtos
+  por('tamanho').aplica(enc, s);
+  por('tamanho').aplica(enc, s);
+  assert.equal(s.size, 'grande');
+  // reencarnar: corpo novo, sem condições nem concentração
+  addCondition(s, 'envenenado', { rounds: 10, source: 'x' });
+  s.tempHp = 7;
+  por('reencarna').aplica(enc, s);
+  enc.morrer(s, 'teste');
+  assert.equal(s.dead, false);
+  assert.equal(hasCondition(s, 'envenenado'), false);
+  assert.equal(s.tempHp, 0);
+  // descanso longo: nenhum efeito de surto sobrevive
+  for (const id of ['passoDoCaos', 'reencarna', 'luz', 'invisiveis', 'olho']) por(id).aplica(enc, s);
+  descansoLongo(s);
+  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos']) assert.equal(hasCondition(s, id), false, id);
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

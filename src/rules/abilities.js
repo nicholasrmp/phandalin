@@ -176,7 +176,8 @@ const SENTIDOS_AGUCADOS = ['keenHearingSmell', 'keenSmell', 'keenHearing', 'keen
 export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao')
   - (actor.conditions?.some((c) => c.id === 'cativado') ? 5 : 0)
   + (actor.traits?.some((t) => SENTIDOS_AGUCADOS.includes(t)) ? 5 : 0)
-  + (actor.percepcaoMarcha ?? 0);
+  + (actor.percepcaoMarcha ?? 0)
+  + (actor.conditions?.some((c) => c.id === 'olhoDoCaos') ? 5 : 0);
 
 /** CD de magia = 8 + proficiência + modificador de conjuração. */
 export function spellSaveDc(actor) {

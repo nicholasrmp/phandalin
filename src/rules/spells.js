@@ -492,7 +492,7 @@ export const SPELLS = {
   },
   passoDoCaos: {
     id: 'passoDoCaos', name: 'Passo do Caos', level: 0, school: 'conjuração', fonte: 'propria',
-    castTime: 'bonus', rangeFt: 20, kind: 'teleporte', mira: 'casa',
+    castTime: 'bonus', rangeFt: 20, kind: 'teleporte', mira: 'casa', semRegraDeBonus: true,
     desc: 'Surto de Magia Selvagem: por um minuto, ação bônus para se teleportar até 6 m para uma casa livre que você vê. Sem espaço de magia.',
   },
   transposicaoBenigna: {

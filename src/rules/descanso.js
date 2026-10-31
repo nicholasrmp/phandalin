@@ -92,6 +92,7 @@ export function escolherResistenciaInfernal(c, tipo = null) {
 }
 
 export function recuperarNoCurto(c) {
+  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
   delete c.furiaDestrutivaPronta;
   delete c.surtoMaximoAte;
   delete c.surtoRapidoAte;
@@ -220,6 +221,7 @@ export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
  */
 export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
+  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
   acordar(c);
   // Ninguém dorme oito horas em Fúria. O combate já a encerra (`checkEnd`),
   // mas uma Fúria entrada fora de luta ficaria até o fim dos tempos.

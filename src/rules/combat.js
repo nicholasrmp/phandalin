@@ -742,11 +742,12 @@ export class Encounter {
   fimDoTurnoDoLado(side) {
     // BRILHO DO CAOS (surto): quem termina o turno a 1,5 m de quem brilha fica cego até o fim do próximo turno dele.
     for (const c of this.allOf(side)) {
-      if (c.dead || hasCondition(c, 'cego')) continue;
+      if (c.dead || c.hp <= 0 || hasCondition(c, 'inconsciente')) continue;
       const brilha = this.combatants.some((b) => b !== c && !b.dead && hasCondition(b, 'brilhoCaos') && distanceFt(b.pos, c.pos) <= 5);
-      if (brilha && this.aplicarCondicao(c, 'cego', { rounds: 2, quando: 'fim', lado: c.side, source: c.id })) {
-        this.say('condicao', `${c.name} termina o turno ao lado da luz e fica cego.`);
-      }
+      if (!brilha) continue;
+      const jaCego = getCondition(c, 'cego');
+      if (jaCego) jaCego.rounds = Math.max(jaCego.rounds, 2);
+      else if (this.aplicarCondicao(c, 'cego', { rounds: 2, quando: 'fim', lado: c.side, source: c.id })) this.say('condicao', `${c.name} termina o turno ao lado da luz e fica cego.`);
     }
     // Duelo Compelido: o conjurador que termina o turno a mais de 9 m do
     // duelado (ou com ele já morto) deixa a magia cair.
@@ -854,6 +855,7 @@ export class Encounter {
   /** Anda um passo nas durações que `conta` escolher; some o que zerar. */
   contarDuracoes(conta) {
     for (const c of this.combatants) {
+      if (c.tamanhoOriginal && !hasCondition(c, 'tamanhoCaos')) this.restaurarTamanho(c);
       if (!c.conditions?.length) continue;
       c.conditions = c.conditions.filter((cond) => {
         if (cond.rounds === Infinity || !conta(cond, c)) return true;
@@ -1436,7 +1438,7 @@ export class Encounter {
         // medido, o bárbaro saía vitorioso ainda em Fúria e caía no fosso da
         // trilha levando 3 de 6. Resistência de graça, de uma luta anterior.
         if (hasCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
-        for (const id of ['levitando', 'piscando', 'etereo', 'descuidado', 'duplicidade', 'coroaDeLuz']) if (hasCondition(c, id)) removeCondition(c, id);
+        for (const id of ['levitando', 'piscando', 'etereo', 'descuidado', 'duplicidade', 'coroaDeLuz', 'passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) if (hasCondition(c, id)) removeCondition(c, id);
         // O Manto de Sombras do clérigo (invisível por 1 rodada) e a Ira Destrutiva armada não passam para a luta seguinte.
         if (c.features?.includes('trickeryCloak') && hasCondition(c, 'invisivel')) removeCondition(c, 'invisivel');
         c.furiaDestrutivaPronta = false;
@@ -3429,7 +3431,7 @@ export class Encounter {
     const ordem = ['miúdo', 'pequeno', 'médio', 'grande', 'enorme', 'imenso'];
     const base = `${c.size ?? (/halfling|pequenin|gnom/i.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 'pequeno' : 'médio')}`.toLowerCase();
     const i = ordem.indexOf(base);
-    if (i < 0 || i >= ordem.length - 1) return false;
+    if (i < 0 || i >= ordem.length - 1 || c.tamanhoOriginal) return false;
     if (!c.tamanhoOriginal) c.tamanhoOriginal = { size: c.size };
     c.size = ordem[i + 1];
     return true;
@@ -4849,13 +4851,16 @@ export class Encounter {
   morrer(target, motivo = null) {
     // SURTO "reencarnar": quem morre dentro do minuto volta à vida (com metade dos PV), sem rolar a raça nova.
     if (hasCondition(target, 'reencarnar')) {
-      removeCondition(target, 'reencarnar');
+      // Um corpo novo não leva nada do antigo: concentração, condições e PV temporários ficam para trás.
+      this.dropConcentration(target);
+      for (const cond of [...(target.conditions ?? [])]) removeCondition(target, cond.id);
+      target.tempHp = 0;
       target.dead = false;
       target.hp = Math.max(1, Math.floor(maxHpEfetivo(target) / 2));
-      removeCondition(target, 'inconsciente');
       if (target.deathSaves) target.deathSaves = { successes: 0, failures: 0 };
       target.stable = false;
       this.say('cura', `${target.name} volta à vida num corpo novo (Surto de Magia Selvagem).`);
+      this.onEvent({ type: 'heal', target, amount: target.hp });
       return;
     }
     target.dead = true;
@@ -5491,12 +5496,12 @@ export class Encounter {
     if (spell.castTime === 'bonus' && actor.bonusUsed) return { ok: false, why: 'a ação bônus deste turno já foi usada' };
     if (spell.castTime === 'action' && actor.acaoLimitada) return { ok: false, why: 'a ação da Velocidade não conjura magia' };
     // Magia de ação bônus no turno: além dela, só um truque de 1 ação.
-    const ja = actor.magiasNoTurno ?? [];
-    const truqueDeAcao = spell.level === 0 && spell.castTime === 'action';
+    const ja = (actor.magiasNoTurno ?? []).filter((m) => !m.semRegraDeBonus);
+    const truqueDeAcao = (spell.level === 0 && spell.castTime === 'action') || spell.semRegraDeBonus;
     if (ja.some((m) => m.castTime === 'bonus') && !truqueDeAcao) {
       return { ok: false, why: 'depois de uma magia de ação bônus, só um truque de 1 ação neste turno' };
     }
-    if (spell.castTime === 'bonus' && ja.some((m) => !(m.level === 0 && m.castTime === 'action'))) {
+    if (spell.castTime === 'bonus' && !spell.semRegraDeBonus && ja.some((m) => !(m.level === 0 && m.castTime === 'action'))) {
       return { ok: false, why: 'magia de ação bônus não sai no turno em que já saiu outra magia (só junto de um truque de 1 ação)' };
     }
 
@@ -5829,7 +5834,7 @@ export class Encounter {
     if (check.gratis) gastarUsoGratis(this, actor, check.gratis);
     else if (spell.level > 0) actor.spellcasting.slots[slot] -= 1;
     if (spell.recursoRacial) actor.resources[spell.recursoRacial] -= 1;
-    (actor.magiasNoTurno ??= []).push({ level: spell.level, castTime: spell.castTime });
+    (actor.magiasNoTurno ??= []).push({ level: spell.level, castTime: spell.castTime, semRegraDeBonus: !!spell.semRegraDeBonus });
     // Contramágica: um inimigo atento pode interromper a magia antes de ela sair.
     if (this.tentarContramagia(actor, spell, slot)) {
       this.afterAction(actor);

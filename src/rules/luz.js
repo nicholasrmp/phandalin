@@ -96,13 +96,13 @@ export function casasEscondidas(enc) {
 export const temEscuridaoEm = (enc) => temEscuridao(enc.field) || Boolean(casasEscondidas(enc));
 
 /** Emite luz: tocha acesa ou o truque Luz. */
-export const emiteLuz = (c) => !c.dead && Boolean(c.tochaAcesa || hasCondition(c, 'luzMagica') || hasCondition(c, 'luzesDancantes'));
+export const emiteLuz = (c) => !c.dead && Boolean(c.tochaAcesa || hasCondition(c, 'luzMagica') || hasCondition(c, 'luzesDancantes') || hasCondition(c, 'brilhoCaos'));
 
 /** As fontes de luz agora: tochas e truques Luz de quem está vivo, e as do mapa. */
 export function fontesDeLuz(enc) {
   const fontes = [];
   for (const c of enc.combatants) {
-    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa || hasCondition(c, 'luzMagica') ? TOCHA : LUZINHAS) });
+    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa || hasCondition(c, 'luzMagica') || hasCondition(c, 'brilhoCaos') ? TOCHA : LUZINHAS) });
   }
   for (const f of enc.field.luzes ?? []) fontes.push(f);
   // Luz do Dia: uma esfera de luz plena e mais uma de penumbra, num ponto.
