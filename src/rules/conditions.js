@@ -452,6 +452,7 @@ export const CONDITIONS = {
     vulnerabilidade: ['perfurante'],
   },
   passoDoCaos: { name: 'Passo do Caos', desc: 'Ação bônus: teleporta até 6 m (Surto de Magia Selvagem).' },
+  tamanhoCaos: { name: 'Maior', desc: 'Uma categoria de tamanho acima por um minuto (Surto de Magia Selvagem).' },
   veInvisiveis: { name: 'Vê o Invisível', desc: 'Enxerga criaturas invisíveis (Surto de Magia Selvagem).' },
   olhoDoCaos: { name: 'Olho do Caos', desc: 'Um olho na testa: vantagem em Percepção pela visão (Surto de Magia Selvagem).' },
   reencarnar: { name: 'Reencarnação Pendente', desc: 'Se morrer, volta à vida como se reencarnado (Surto de Magia Selvagem).' },

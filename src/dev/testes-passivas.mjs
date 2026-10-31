@@ -5300,6 +5300,26 @@ teste('Passo do Caos (surto): ação bônus, teleporta até 6 m sem espaço de m
   assert.ok(!magiasProntas(s).includes('passoDoCaos'), 'acabou o minuto');
 });
 
+teste('Surto de tamanho: sobe uma categoria (só a regra, não a pegada) e volta quando acaba', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const f0 = s.pos.f;
+  const { enc } = arena({ herois: [s], foes: [alvoParado({ x: 12, y: 12 })] });
+  assert.equal(s.size, undefined);
+  SURTOS.find((x) => x.id === 'tamanho').aplica(enc, s);
+  assert.equal(s.size, 'grande', 'médio vira grande');
+  assert.equal(s.pos.f, f0, 'a pegada não muda');
+  enc.restaurarTamanho(s);
+  assert.equal(s.size, 'grande', 'enquanto a condição dura, segue grande');
+  removeCondition(s, 'tamanhoCaos');
+  enc.restaurarTamanho(s);
+  assert.equal(s.size, undefined, 'acabou: volta ao que era');
+  assert.equal(s.tamanhoOriginal, undefined);
+  s.size = 'imenso';
+  assert.equal(enc.aumentarTamanho(s), false, 'o maior não cresce mais');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

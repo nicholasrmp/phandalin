@@ -641,6 +641,7 @@ export class Encounter {
         this.surtando = true;
         try { this.surtoDeMagia(c, { forcar: true }); } finally { this.surtando = false; }
       }
+      this.restaurarTamanho(c);
       // LUZ RESTAURADORA (surto de magia selvagem): +5 PV no começo de cada turno dele.
       if (hasCondition(c, 'regenCaos') && !c.dead && c.hp > 0) {
         const curaR = Math.min(5, maxHpEfetivo(c) - c.hp);
@@ -1439,6 +1440,7 @@ export class Encounter {
         // O Manto de Sombras do clérigo (invisível por 1 rodada) e a Ira Destrutiva armada não passam para a luta seguinte.
         if (c.features?.includes('trickeryCloak') && hasCondition(c, 'invisivel')) removeCondition(c, 'invisivel');
         c.furiaDestrutivaPronta = false;
+        this.restaurarTamanho(c, true);
         delete c.surtoMaximoAte;
         delete c.surtoRapidoAte;
         delete c.surtoDesvSaveAte;
@@ -3417,6 +3419,28 @@ export class Encounter {
     r.total = novo;
     r.success = aliado;
     this.say('recurso', `${quem.name} dobra a sorte: ${aliado ? '+' : '-'}${d} na resistência de ${quemResiste.name}, que ${r.success ? 'passa' : 'falha'} (Dobrar a Sorte).`);
+  }
+
+  /**
+   * SURTO "tamanho": a categoria de tamanho sobe um degrau por um minuto. Só o campo `size` (as regras de agarrar, derrubar e empurrar,
+   * que leem a categoria); a pegada no tabuleiro (`pos.f`) NÃO muda, porque uma criatura que cresce no meio da luta não tem onde caber.
+   */
+  aumentarTamanho(c) {
+    const ordem = ['miúdo', 'pequeno', 'médio', 'grande', 'enorme', 'imenso'];
+    const base = `${c.size ?? (/halfling|pequenin|gnom/i.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 'pequeno' : 'médio')}`.toLowerCase();
+    const i = ordem.indexOf(base);
+    if (i < 0 || i >= ordem.length - 1) return false;
+    if (!c.tamanhoOriginal) c.tamanhoOriginal = { size: c.size };
+    c.size = ordem[i + 1];
+    return true;
+  }
+
+  /** Devolve o tamanho de antes quando o surto "tamanho" acaba (ou, com `forcar`, no fim do combate). */
+  restaurarTamanho(c, forcar = false) {
+    if (!c.tamanhoOriginal || (!forcar && hasCondition(c, 'tamanhoCaos'))) return;
+    if (c.tamanhoOriginal.size === undefined) delete c.size; else c.size = c.tamanhoOriginal.size;
+    delete c.tamanhoOriginal;
+    removeCondition(c, 'tamanhoCaos');
   }
 
   /** SURTO DE MAGIA SELVAGEM: depois de uma magia de 1º círculo ou mais; 1 no d20, ou sempre depois das Marés do Caos. */

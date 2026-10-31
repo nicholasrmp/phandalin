@@ -221,7 +221,7 @@ export const SURTOS = [
   },
   { id: 'invisivelSurdo', nome: 'você fica invisível e ninguém o ouve por um minuto, até atacar ou conjurar', valor: 2, aplica: (enc, a) => sobre(enc, a, 'invisivel', 10) },
   { id: 'reencarna', nome: 'se você morrer em um minuto, volta à vida como se reencarnado', valor: 1, aplica: (enc, a) => sobre(enc, a, 'reencarnar', 10) },
-  { id: 'tamanho', nome: 'seu tamanho sobe uma categoria por um minuto', valor: 1, aplica: cor },
+  { id: 'tamanho', nome: 'seu tamanho sobe uma categoria por um minuto', valor: 1, aplica: (enc, a) => { if (enc.aumentarTamanho(a)) sobre(enc, a, 'tamanhoCaos', 10); } },
   {
     id: 'perfurante', nome: 'você e todos a 9 m ficam vulneráveis a dano perfurante por um minuto', valor: 0,
     aplica: (enc, a) => { for (const c of perto(enc, a, 30, true)) sobre(enc, c, 'vulnerabilidadePerfurante', 10); },
