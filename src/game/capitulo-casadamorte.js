@@ -1,30 +1,45 @@
 // Livro do Jogador não é SRD: a Maldição de Strahd é conteúdo da Wizards. TEXTO nosso, fatos do livro — ver NOTICE.md e STRAHD.md.
 //
-// A CASA DA MORTE, 1º ANDAR (Apêndice B, áreas 1 a 5). Exploração livre, sem iniciativa: não há monstro neste andar. A casa é "viva": o
-// térreo parece novo, e é a escadaria de mármore vermelho que leva ao resto (segundo andar ainda a fazer). O que a cena faz:
+// A CASA DA MORTE, 1º e 2º ANDARES (Apêndice B, áreas 1 a 10). Exploração livre, sem iniciativa: não há monstro nestes andares. A casa é
+// "viva": o térreo e o 2º andar parecem novos (o que sai dela, envelhece), e é a escadaria de mármore vermelho que liga os andares. O que
+// a cena faz:
 //   - ao entrar numa sala pela primeira vez, a descrição dela;
-//   - os painéis (Percepção CD 12) do salão e da sala de jantar, onde há cobras, crânios e rostos escondidos na madeira;
-//   - o armário trancado do canil (Destreza CD 15, ferramentas de ladrão): três bestas e sessenta virotes.
+//   - os painéis do salão principal e da sala de jantar (Percepção CD 12), as portas entalhadas do salão superior, as estatuetas do
+//     conservatório;
+//   - o armário trancado do canil (Destreza CD 15, ferramentas de ladrão): três bestas e sessenta virotes;
+//   - a biblioteca: a gaveta com a chave de ferro e o livro falso que abre a porta secreta (Percepção CD 13);
+//   - a sala secreta: o baú, os livros de rituais falsos (Arcana CD 12) e a CARTA DE STRAHD, que revela a escada secreta do sótão e é o
+//     marco do 2º nível (o livro avança o grupo por marcos, não por XP).
 //
 // Mesma interface de cena dos outros capítulos (`main.js`): lugar, explorando, encerrado, interacoes, depoisDeMover, fimDoCombate, evento,
 // iniciar.
 
 import { narrar } from '../view/narrativa.js';
-import { distanceFt } from '../core/grid.js';
+import { distanceFt, GLIFOS, SUPERFICIES } from '../core/grid.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste } from '../rules/utilidade.js';
 import { guardar } from './comercio.js';
 import { garantirInventario } from '../rules/equipment.js';
-import { AREAS_TERREO } from './casadamorte.js';
+import { darXp } from './nivel.js';
+import { telaDeSubirNivel } from '../view/nivel-tela.js';
+import { xpParaProximo } from '../rules/progressao.js';
+import { ANDARES } from './casadamorte.js';
+import { criarBuscas } from './buscas.js';
 
 const MOVIMENTO = 60;
 const dentro = (a, p) => p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2;
+const PORTA_SECRETA = { x: 7, y: 5 };      // a estante da biblioteca (2º andar) que gira para a sala secreta
 
 export function criarCasaDaMorte(app, config) {
   const enc = app.enc;
   const root = app.root;
+  const andar = ANDARES[config.variante ?? 'casaDaMorte1'];
   const campanha = (app.campanha ??= {});
-  const salvo = ((campanha.strahd ??= {}).terreo ??= { vistas: [], paineisSala: false, paineisSalao: false, armarioAberto: false });
+  const salvo = ((campanha.strahd ??= {}).casa ??= {
+    vistas: [], paineisSala: false, paineisSalao: false, portasEntalhadas: false, estatuetas: false,
+    armarioAberto: false, chave: false, livroFalso: false, passagemAberta: false, cartaLida: false, baul: false, livrosEstudados: false,
+  });
+  const buscas = criarBuscas((salvo.buscas ??= {}));
   const estado = { explorando: false, encerrado: false };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead);
@@ -34,8 +49,19 @@ export function criarCasaDaMorte(app, config) {
     const r = rolarTeste(x.estado, x.herois(), enc.rng, c, pericia, cd, {});
     return { quem: r.quem, total: r.total, cd, passou: r.passou };
   };
-  const areaDe = (p) => AREAS_TERREO.find((a) => dentro(a, p));
+  const areaDe = (p) => andar.areas.find((a) => dentro(a, p));
   const longe = (c, tile, pes = 10) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
+
+  /** Troca o que há numa casa do mapa (a porta secreta que se abre): regra e desenho. */
+  function mudarCasa(x, y, glifo) {
+    const f = enc.field;
+    const g = GLIFOS[glifo];
+    const i = y * f.w + x;
+    f.tiles[i] = g.kind;
+    f.surfaces[i] = SUPERFICIES.indexOf(g.sup);
+    f.heights[i] = 0;
+  }
+  if (salvo.passagemAberta && config.variante === 'casaDaMorte2') mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
 
   function prepararExploracao() {
     enc.over = false;
@@ -69,29 +95,51 @@ export function criarCasaDaMorte(app, config) {
     if (a) await descrever(a);
   }
 
+  /** Muda de andar: o grupo inteiro vai junto e a cena nova começa ao pé da escada. */
+  function irParaAndar(variante) {
+    app.newEncounter({ modo: 'campanha', aventura: 'cos', variante, entrada: 'escada', continuarCom: herois() });
+  }
+
+  /** O marco do livro: a escada do sótão aparece e o grupo passa ao 2º nível. */
+  async function carta(c) {
+    salvo.cartaLida = true;
+    await painel([
+      'O papel é grosso, e a letra, fina e inclinada. A carta chama o dono desta casa de "meu servo mais patético" e diz que ele nunca foi o mensageiro de nenhum poder das trevas, que as almas que sangrou no altar nunca foram dele, e que a miséria em que vive é uma escolha de Strahd: ele prefere o ver assim. Assina "Strahd von Zarovich".',
+      'Quando vocês levantam os olhos, uma coisa mudou na casa. Atrás dos painéis do quarto de cima, onde há pouco só havia parede, alguma coisa girou. A casa quer que vocês vejam o que mostra agora: uma escada secreta, descendo ao escuro.',
+    ], { titulo: 'A carta de Strahd' });
+    const grupo = herois();
+    const sobem = darXp(grupo, Math.max(...grupo.map((h) => xpParaProximo(h))));
+    enc.say('cura', 'A casa mostrou a escada secreta: o grupo passa ao 2º nível.');
+    if (sobem.length) for (const t of await telaDeSubirNivel(root, sobem)) enc.say('cura', t);
+    app.refresh();
+  }
+
   /** O que o menu do botão direito oferece na casa clicada. */
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const area = areaDe(tile);
     const ops = [];
-    if (!area) return ops;
-    if ((area.id === 'salao' || area.id === 'jantar') && sup !== 'parede') {
+    if (!area || sup === 'parede') return ops;
+
+    // ---- 1º andar
+    if (area.id === 'salao' || area.id === 'jantar') {
       const feito = area.id === 'salao' ? salvo.paineisSalao : salvo.paineisSala;
+      const onde = { x: area.x1, y: area.y1 };
       ops.push({
         rotulo: 'Examinar os painéis da parede', icone: 'acao-procurar', detalhe: feito ? 'já examinados' : 'Percepção, CD 12',
-        motivo: feito ? 'já examinados' : null,
+        motivo: feito ? 'já examinados' : buscas.ja(c, 'painel', onde),
         fazer: async () => {
+          buscas.marcar(c, 'painel', onde);
           const t = teste(c, 'percepcao', 12);
+          if (!t.passou) { await painel(`${c.name} passa a mão pela madeira lustrada. Bonita, nada mais.`); return; }
           if (area.id === 'salao') salvo.paineisSalao = true; else salvo.paineisSala = true;
-          await painel(t.passou
-            ? (area.id === 'salao'
-              ? `${t.quem?.name ?? c.name} se aproxima da madeira entalhada e vê o que o enfeite esconde: serpentes e crânios, tecidos com discrição entre as videiras e as flores.`
-              : `${t.quem?.name ?? c.name} segue as árvores esculpidas e acha o que elas escondem: rostos retorcidos nos troncos e lobos à espreita entre as folhas.`)
-            : `${c.name} passa a mão pela madeira lustrada. Bonita, nada mais.`);
+          await painel(area.id === 'salao'
+            ? `${t.quem?.name ?? c.name} se aproxima da madeira entalhada e vê o que o enfeite esconde: serpentes e crânios, tecidos com discrição entre as videiras e as flores.`
+            : `${t.quem?.name ?? c.name} segue as árvores esculpidas e acha o que elas escondem: rostos retorcidos nos troncos e lobos à espreita entre as folhas.`);
         },
       });
     }
-    if (area.id === 'canil' && sup !== 'parede') {
+    if (area.id === 'canil') {
       ops.push({
         rotulo: salvo.armarioAberto ? 'O armário do leste (aberto)' : 'Abrir o cadeado do armário do leste',
         icone: 'acao-usarObjeto', detalhe: salvo.armarioAberto ? 'já aberto' : 'ferramentas de ladrão, Destreza CD 15',
@@ -110,11 +158,110 @@ export function criarCasaDaMorte(app, config) {
         },
       });
     }
-    if (sup === 'escada') {
+
+    // ---- 2º andar
+    if (area.id === 'salaoSuperior' && sup !== 'escada') {
       ops.push({
-        rotulo: 'Subir a escadaria de mármore', icone: 'acao-usarObjeto', detalhe: 'segundo andar', motivo: null,
-        fazer: async () => { await painel('A escadaria gira para cima, ladeada por painéis de madeira entalhada, e uma corrente de ar frio desce por ela. (O segundo andar ainda está em obras: a casa continua aqui quando ele ficar pronto.)'); },
+        rotulo: 'Examinar as portas entalhadas', icone: 'acao-procurar', detalhe: salvo.portasEntalhadas ? 'já examinadas' : 'Percepção, CD 12',
+        motivo: salvo.portasEntalhadas ? 'já examinadas' : buscas.ja(c, 'portas', { x: 4, y: 8 }),
+        fazer: async () => {
+          buscas.marcar(c, 'portas', { x: 4, y: 8 });
+          const t = teste(c, 'percepcao', 12);
+          if (t.passou) salvo.portasEntalhadas = true;
+          await painel(t.passou
+            ? `${t.quem?.name ?? c.name} olha duas vezes: os rapazes entalhados nas portas não dançam. Estão lutando contra enxames de morcegos.`
+            : `${c.name} acha as portas bonitas: jovens dançando entre folhagens.`);
+        },
       });
+    }
+    if (area.id === 'biblioteca') {
+      ops.push({
+        rotulo: salvo.chave ? 'A gaveta da escrivaninha (vazia)' : 'Abrir a gaveta da escrivaninha', icone: 'acao-usarObjeto',
+        detalhe: salvo.chave ? 'já aberta' : 'uma chave de ferro',
+        motivo: salvo.chave ? 'já aberta' : longe(c, { x: 3, y: 2 }, 25),
+        fazer: async () => {
+          salvo.chave = true;
+          guardar(herois()[0], 'chaveDeFerroDosDurst', 1);
+          await painel('A gaveta guarda uma única coisa: uma chave de ferro, comprida e escura. Pelo tamanho, é de porta pesada. Quem a pegou foi o primeiro do grupo.');
+          app.refresh();
+        },
+      });
+      if (!salvo.passagemAberta) {
+        ops.push({
+          rotulo: 'Procurar uma passagem nas estantes', icone: 'acao-procurar', detalhe: 'Percepção, CD 13 (uma tentativa por herói)',
+          motivo: buscas.ja(c, 'passagem', PORTA_SECRETA),
+          fazer: async () => {
+            buscas.marcar(c, 'passagem', PORTA_SECRETA);
+            const t = teste(c, 'percepcao', 13);
+            if (!t.passou) { await painel(`${c.name} passa os dedos pelas lombadas e não acha nada que destoe. Outros olhos podem ajudar.`); return; }
+            salvo.livroFalso = true;
+            salvo.passagemAberta = true;
+            mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
+            await painel(`${t.quem?.name ?? c.name} repara num livro de capa vermelha e lombada branca que não é livro: é um interruptor. A estante gira e uma porta se abre nos fundos da biblioteca, mola nas dobradiças, pronta para fechar de novo.`);
+            app.refresh();
+          },
+        });
+      }
+    }
+    if (area.id === 'salaSecreta') {
+      ops.push({
+        rotulo: salvo.cartaLida ? 'Reler a carta de Strahd' : 'Ler a carta do esqueleto', icone: 'acao-procurar',
+        detalhe: salvo.cartaLida ? 'a casa já mostrou a escada' : 'selo de Strahd von Zarovich', motivo: longe(c, { x: 8, y: 7 }, 15),
+        fazer: async () => { if (salvo.cartaLida) await painel('A mesma letra fina e inclinada. A casa já mostrou o que queria mostrar.'); else await carta(c); },
+      });
+      ops.push({
+        rotulo: salvo.baul ? 'O baú dos Durst (vazio)' : 'Abrir o baú', icone: 'acao-usarObjeto', detalhe: salvo.baul ? 'já aberto' : 'livros, pergaminhos e papéis',
+        motivo: salvo.baul ? 'já aberto' : longe(c, { x: 8, y: 7 }, 15),
+        fazer: async () => {
+          salvo.baul = true;
+          const quem = herois()[0];
+          guardar(quem, 'livroEmBrancoPreto', 3);
+          for (const id of ['pergaminhoDeBencao', 'pergaminhoDeProtecaoContraVeneno', 'pergaminhoDeArmaEspiritual', 'escrituraDaCasaDosDurst', 'escrituraDoMoinho', 'testamentoDosDurst']) guardar(quem, id, 1);
+          await painel(`O mecanismo de dardos do baú já não dispara. Dentro: três livros em branco de capa preta, três pergaminhos (Bênção, Proteção contra Veneno e Arma Espiritual), a escritura da casa, a escritura de um moinho de vento nas montanhas a leste de Vallaki e um testamento assinado por Gustav e Elisabeth Durst, que deixa a casa e o moinho aos filhos. ${quem.name} guarda tudo; os papéis envelhecem se saírem da casa.`);
+          app.refresh();
+        },
+      });
+      ops.push({
+        rotulo: 'Estudar os livros de ritual', icone: 'acao-procurar', detalhe: salvo.livrosEstudados ? 'já estudados' : 'uma hora, Arcana CD 12',
+        motivo: salvo.livrosEstudados ? 'já estudados' : null,
+        fazer: async () => {
+          const t = teste(c, 'arcanismo', 12);
+          salvo.livrosEstudados = true;
+          await painel(t.passou
+            ? `Depois de uma hora de leitura, ${t.quem?.name ?? c.name} conclui o que as páginas escondem sob o verniz de erudição: os rituais não funcionam. Nenhum é verdadeiro.`
+            : `Uma hora de diagramas e invocações em latim de cozinha. ${c.name} sai sem saber se estava lendo teoria ou besteira.`);
+        },
+      });
+    }
+    if (area.id === 'conservatorio') {
+      ops.push({
+        rotulo: 'Inspecionar as estatuetas de alabastro', icone: 'acao-procurar', detalhe: salvo.estatuetas ? 'já vistas' : 'olhar de perto',
+        motivo: salvo.estatuetas ? 'já vistas' : null,
+        fazer: async () => {
+          salvo.estatuetas = true;
+          await painel('Dançarinos bem vestidos, em alabastro. De perto, vários são esqueletos de casaca e vestido de baile, dançando com a mesma elegância dos outros.');
+        },
+      });
+    }
+
+    // ---- as escadas
+    if (sup === 'escada') {
+      if (andar.escada.sobe) {
+        ops.push({
+          rotulo: 'Subir a escadaria de mármore', icone: 'acao-usarObjeto', detalhe: '2º andar', motivo: null,
+          fazer: async () => { await painel('A escadaria gira para cima, ladeada por painéis de madeira entalhada, e uma corrente de ar frio desce por ela.'); irParaAndar(andar.escada.sobe); },
+        });
+      }
+      if (andar.escada.desce) {
+        ops.push({
+          rotulo: 'Descer a escadaria', icone: 'acao-usarObjeto', detalhe: '1º andar', motivo: null,
+          fazer: async () => { irParaAndar(andar.escada.desce); },
+        });
+        ops.push({
+          rotulo: 'Subir a escadaria', icone: 'acao-usarObjeto', detalhe: '3º andar', motivo: null,
+          fazer: async () => { await painel('A escadaria sobe em curva até um patamar empoeirado, onde uma armadura de placas negras espera de pé, coberta de teia. (O 3º andar ainda está em obras: a casa continua aqui quando ele ficar pronto.)'); },
+        });
+      }
     }
     return ops;
   }
@@ -131,9 +278,14 @@ export function criarCasaDaMorte(app, config) {
     dialogoDe: () => null,
     depoisDaConversa: () => {},
     motivoSemDescanso: () => 'Ninguém fecha os olhos numa casa que não para de olhar de volta.',
-    textoDoDescanso: () => ['Uma hora de vigia revezada num canto da sala de espera.'],
+    textoDoDescanso: () => ['Uma hora de vigia revezada num canto da sala.'],
     async iniciar() {
       prepararExploracao();
+      // Quem chega pela escada aparece ao pé dela, e não na porta da casa.
+      if (config.entrada === 'escada') {
+        herois().forEach((h, i) => { h.pos = { ...(andar.chegadaPelaEscada[i] ?? andar.chegadaPelaEscada[0]) }; });
+        app.refresh();
+      }
       const a = areaDe(herois()[0]?.pos ?? { x: 2, y: 21 });
       if (a) await descrever(a);
     },

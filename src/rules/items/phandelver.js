@@ -130,6 +130,33 @@ export const PHANDELVER_ITEMS = {
   pergaminhoDeBolaDeFogo: nomeado('pergaminhoDeBolaDeFogo', 'Pergaminho de Bola de Fogo', 'incomum',
     'Bola de Fogo, escrita para uma leitura só. Por ora, vale o que um mago pagar.',
     { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 150, magia: 'bolaDeFogo' }),
+
+  // ------------------------------------------------------------ a Casa da Morte (Maldição de Strahd) ----
+  // Itens da sala secreta da biblioteca. Os papéis envelhecem se saírem da casa (o livro), mas continuam inteiros.
+  chaveDeFerroDosDurst: nomeado('chaveDeFerroDosDurst', 'Chave de ferro dos Durst', 'comum',
+    'Uma chave de ferro comprida, achada na gaveta da escrivaninha. Abre a porta trancada do quarto das crianças, no último andar.',
+    { tipo: 'chave', peso: 0, valor: 0 }),
+  livroEmBrancoPreto: nomeado('livroEmBrancoPreto', 'Livro em branco de capa preta', 'comum',
+    'Um livro de couro preto, de páginas limpas. Papel bom, caro, e cheira a tinta que nunca chegou.',
+    { tipo: 'tesouro', pilha: true, peso: 1, valor: 25 }),
+  pergaminhoDeBencao: nomeado('pergaminhoDeBencao', 'Pergaminho de Bênção', 'comum',
+    'Bênção, escrita para uma leitura só. Por ora, vale o que um clérigo pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 50, magia: 'bencao' }),
+  pergaminhoDeProtecaoContraVeneno: nomeado('pergaminhoDeProtecaoContraVeneno', 'Pergaminho de Proteção contra Veneno', 'incomum',
+    'Proteção contra Veneno, escrita para uma leitura só. Por ora, vale o que um clérigo pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 100, magia: 'protecaoContraVeneno' }),
+  pergaminhoDeArmaEspiritual: nomeado('pergaminhoDeArmaEspiritual', 'Pergaminho de Arma Espiritual', 'incomum',
+    'Arma Espiritual, escrita para uma leitura só. Por ora, vale o que um clérigo pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 100, magia: 'armaEspiritual' }),
+  escrituraDaCasaDosDurst: nomeado('escrituraDaCasaDosDurst', 'Escritura da Casa da Morte', 'comum',
+    'A escritura da casa de Baróvia, em nome dos Durst. O papel amarelece se sair da casa.',
+    { tipo: 'documento', peso: 0, valor: 0 }),
+  escrituraDoMoinho: nomeado('escrituraDoMoinho', 'Escritura de um moinho de vento', 'comum',
+    'A escritura de um moinho nas montanhas a leste de Vallaki, com o moinho dourado dos Durst no selo.',
+    { tipo: 'documento', peso: 0, valor: 0 }),
+  testamentoDosDurst: nomeado('testamentoDosDurst', 'Testamento de Gustav e Elisabeth Durst', 'comum',
+    'Deixa a casa, o moinho e o resto dos bens a Rosavalda e Thornboldt Durst, quando os pais morrerem.',
+    { tipo: 'documento', peso: 0, valor: 0 }),
 };
 
 /**

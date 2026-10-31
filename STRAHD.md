@@ -46,6 +46,10 @@ Material de trabalho (não entra no repositório; `_referencias/` é ignorado pe
 - **Abertura em Baróvia** (`game/strahd-abertura.js`): a névoa, a aldeia vazia e a conversa com Rose, com teste de Intuição, a recusa da névoa e o ataque às crianças (elas somem e o portão se abre). Para ver: `?encontro=padrao&nivel=1&strahd=abertura`.
 - **Criaturas** (`rules/monsters/strahd.js`): armadura animada, vassoura animada (nossa, não SRD), fantasma de criança (SRD alterado como no livro), enxames de centopeias e de ratos, sombra, mímico, lívido e arbusto errante. Grick, carniçal e espectro já existiam.
 
+- **1º e 2º andares jogáveis** (áreas 1 a 10): planta própria, descrições, painéis, o armário do canil, a gaveta e o livro falso da biblioteca, a sala secreta com o baú e a **carta de Strahd, que é o marco do 2º nível** (o grupo sobe de nível ao ler a carta; a casa mostra a escada secreta do sótão). Escadaria liga os dois andares.
+- **Kit de piso** (PixelLab, 10 gerações): assoalho, tapete, parquet e terra socada no atlas do chão, mais mobília de casa sobre assoalho.
+- **Save corrigido** (o `SaveManager` nunca gravava) e a cena entra no autosave.
+
 ## Pendente de arte (sprites)
 
 Os blocos novos usam o look mais próximo que existe (cavaleiro, plebeu, specter, giantRat, gelatinaOcre, wraith, vinhaInfectada): armadura animada, vassoura, fantasma de criança, sombra, mímico, lívido, arbusto errante e enxames precisam de sprite próprio.

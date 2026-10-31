@@ -5394,6 +5394,51 @@ teste('Casa da Morte: as nove criaturas instanciam, têm sprite que existe, XP d
   assert.equal(CASA_DA_MORTE.fantasmaDeCrianca.maxHp, 35);
 });
 
+teste('Casa da Morte: as plantas têm 14x24, glifos do jogo, salas alcançáveis e a sala secreta só abre com a porta', async () => {
+  const { TERREO, SEGUNDO_ANDAR, ANDARES } = await import('../game/casadamorte.js');
+  const { GLIFOS } = await import('../core/grid.js');
+  const { mapaDo } = await import('../game/encounter.js');
+  const alcance = (terreno, de) => {
+    const vistos = new Set([`${de.x},${de.y}`]);
+    const fila = [de];
+    while (fila.length) {
+      const { x, y } = fila.shift();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx; const ny = y + dy;
+        const g = terreno[ny]?.[nx];
+        if (!g || vistos.has(`${nx},${ny}`) || GLIFOS[g].kind === 1 || GLIFOS[g].kind === 3) continue;
+        vistos.add(`${nx},${ny}`);
+        fila.push({ x: nx, y: ny });
+      }
+    }
+    return vistos;
+  };
+  for (const [variante, terreno] of [['casaDaMorte1', TERREO], ['casaDaMorte2', SEGUNDO_ANDAR]]) {
+    assert.equal(terreno.length, 24, `${variante}: 24 linhas`);
+    for (const linha of terreno) {
+      assert.equal(linha.length, 14, `${variante}: 14 colunas em ${linha}`);
+      for (const g of linha) assert.ok(GLIFOS[g], `${variante}: glifo ${g} existe`);
+    }
+    const mapa = mapaDo(variante);
+    assert.equal(mapa.cena, 'casaDaMorte');
+    const andar = ANDARES[variante];
+    const ini = mapa.grupo[0];
+    const visto = alcance(terreno, ini);
+    for (const p of mapa.grupo) assert.ok(visto.has(`${p.x},${p.y}`), `${variante}: o grupo nasce em casa livre e ligada`);
+    for (const a of andar.areas) {
+      const casas = [];
+      for (let y = a.y1; y <= a.y2; y++) for (let x = a.x1; x <= a.x2; x++) if (GLIFOS[terreno[y][x]].kind === 0) casas.push(`${x},${y}`);
+      assert.ok(casas.length > 0, `${variante}: a sala ${a.area} tem casa de piso`);
+      if (a.id !== 'salaSecreta') assert.ok(casas.some((c) => visto.has(c)), `${variante}: a sala ${a.area} é alcançável`);
+    }
+  }
+  // A sala secreta (9): isolada até a estante girar (7,5).
+  const sala9 = ANDARES.casaDaMorte2.areas.find((a) => a.id === 'salaSecreta');
+  assert.equal(alcance(SEGUNDO_ANDAR, { x: 8, y: 10 }).has(`${sala9.x1},${sala9.y1}`), false, 'a sala 9 não se alcança sem a porta secreta');
+  const aberta = SEGUNDO_ANDAR.map((l, y) => (y === 5 ? `${l.slice(0, 7)}?${l.slice(8)}` : l));
+  assert.equal(alcance(aberta, { x: 8, y: 10 }).has(`${sala9.x1},${sala9.y1}`), true, 'com a porta, alcança');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

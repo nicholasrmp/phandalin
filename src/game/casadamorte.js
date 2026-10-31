@@ -1,13 +1,15 @@
 // Livro do Jogador não é SRD: a Maldição de Strahd é conteúdo da Wizards. A PLANTA e o TEXTO são nossos; os fatos (quem mora onde, o que há
 // em cada sala, as CDs) são os do livro — ver NOTICE.md e STRAHD.md.
 //
-// A CASA DA MORTE, 1º ANDAR (áreas 1 a 5 do Apêndice B). Rascunho da planta, desenhado à mão sobre a referência (que fica fora do repositório):
-// a casa tem 12 casas de largura por 22 de comprimento, e a parede é uma casa inteira (o jogo ainda não tem parede de aresta neste mapa).
-// Cada andar é uma cena separada, ligada pela escada.
+// A CASA DA MORTE (Apêndice B). Rascunho das plantas, desenhado à mão sobre a referência (que fica fora do repositório): a casa tem 12 casas
+// de largura por 22 de comprimento, e a parede é uma casa inteira (o jogo ainda não tem parede de aresta neste mapa). Cada andar é uma
+// cena separada, ligada pela escadaria de mármore vermelho.
 //
-// Glifos: M parede · U assoalho · * tapete · ? porta aberta · l escada · 0 mesa · } lareira ou fogão · { prateleira e caixotes · ) baú.
+// Glifos: M parede · U assoalho · - parquet · * tapete · ? porta aberta · l escada · z cama · 0 mesa ou piano · } lareira ou fogão ·
+// { prateleira e caixotes · ) baú.
 
-const BASE = [
+// ------------------------------------------------------------------------------------------------ 1º andar (áreas 1 a 5) ----
+const BASE_1 = [
   'MMMMMMMMMMMMMM',
   'MUUUUUUUMU{{{M',
   'MUUUUUUUMUUU)M',
@@ -34,19 +36,54 @@ const BASE = [
   'MMM?MMMMMMMMMM',
 ];
 
-/** Os tapetes: retângulos de casas (inclusivas) que viram tapete onde havia assoalho. */
-const TAPETES = [
+// ------------------------------------------------------------------------------------------------ 2º andar (áreas 6 a 10) ----
+// Ao norte: a biblioteca (8), com a sala secreta (9) atrás de uma estante, e os quartos dos empregados (7). No meio: o salão superior
+// (6), com a escadaria. Ao sul: o conservatório (10). O parquet em losangos é o piso de quase tudo.
+const BASE_2 = [
+  'MMMMMMMMMMMMMM',
+  'M--------M{{{M',
+  'M--0-----MUUUM',
+  'M}-------M?MMM',
+  'M-------{MUUUM',
+  'M-----MMMMzUzM',
+  'MMM--MUUUMUUUM',
+  'MMM--MUU)MUUUM',
+  'MMMM?MMMMM?MMM',
+  'M--------llllM',
+  'M--------llllM',
+  'M}-------llllM',
+  'M--------llllM',
+  'M--------llllM',
+  'M--------llllM',
+  'MMMM??MMMMMMMM',
+  'M------------M',
+  'M------------M',
+  'M------------M',
+  'M-----------}M',
+  'M------------M',
+  'M00----------M',
+  'M00----------M',
+  'MMMMMMMMMMMMMM',
+];
+
+/** Os tapetes: retângulos de casas (inclusivas) que viram tapete onde havia o piso base (U ou parquet). */
+const TAPETES_1 = [
   { x1: 1, y1: 11, x2: 7, y2: 13 },    // o salão principal
   { x1: 1, y1: 17, x2: 4, y2: 21 },    // a sala de espera
   { x1: 2, y1: 2, x2: 7, y2: 5 },      // a sala de jantar, sob a mesa
   { x1: 9, y1: 10, x2: 12, y2: 14 },   // a escadaria
 ];
+const TAPETES_2 = [
+  { x1: 9, y1: 9, x2: 12, y2: 14 },    // a escadaria
+  { x1: 6, y1: 16, x2: 9, y2: 18 },    // o conservatório, sob as cadeiras
+];
 const comTapetes = (linhas, tapetes) => linhas.map((linha, y) => [...linha].map((g, x) => (
-  g === 'U' && tapetes.some((t) => x >= t.x1 && x <= t.x2 && y >= t.y1 && y <= t.y2) ? '*' : g)).join(''));
+  (g === 'U' || g === '-') && tapetes.some((t) => x >= t.x1 && x <= t.x2 && y >= t.y1 && y <= t.y2) ? '*' : g)).join(''));
 
-export const TERREO = comTapetes(BASE, TAPETES);
+export const TERREO = comTapetes(BASE_1, TAPETES_1);
+export const SEGUNDO_ANDAR = comTapetes(BASE_2, TAPETES_2);
 
-/** Cada sala do térreo: o retângulo (casas inclusivas), o nome e o que se vê ao chegar. */
+/** Cada sala: o retângulo (casas inclusivas), o nome e o que se vê ao chegar. */
 export const AREAS_TERREO = [
   {
     id: 'espera', area: '1', nome: 'A sala de espera', x1: 1, y1: 16, x2: 4, y2: 22,
@@ -93,13 +130,84 @@ export const AREAS_TERREO = [
   },
 ];
 
+export const AREAS_SEGUNDO = [
+  {
+    id: 'salaoSuperior', area: '6', nome: 'O salão superior', x1: 1, y1: 9, x2: 12, y2: 14,
+    texto: [
+      'Lamparinas de óleo nas paredes, um piso de parquet em losangos e uma lareira de pedra. Sobre ela, o retrato emoldurado da família Durst: Gustav e Elisabeth sorrindo com dois filhos, Rose e Thorn, e um bebê enrolado nos braços do pai, que a mãe olha com uma ponta de desprezo.',
+      'Armaduras em pé guardam as portas do norte e do sul, com lanças nas mãos e elmos em forma de cabeça de lobo. A escadaria de mármore vermelho continua a subir.',
+    ],
+  },
+  {
+    id: 'empregados', area: '7A', nome: 'O quarto dos empregados', x1: 10, y1: 4, x2: 12, y2: 7,
+    texto: [
+      'Um quarto sem enfeite: duas camas com colchão de palha e, aos pés de cada uma, um armário de sapatos vazio. Uniformes de criado muito limpos pendem de ganchos no armário ao lado.',
+      'Junto à cabeceira de uma das camas, um botão na parede aciona o sininho da cozinha, vários metros abaixo, pelo mesmo monta-cargas.',
+    ],
+  },
+  {
+    id: 'armarioEmpregados', area: '7B', nome: 'O armário dos uniformes', x1: 10, y1: 1, x2: 12, y2: 2,
+    texto: ['Prateleiras com uniformes dobrados, aventais e chapéus de criada. Tudo limpo, tudo engomado.'],
+  },
+  {
+    id: 'biblioteca', area: '8', nome: 'A biblioteca', x1: 1, y1: 1, x2: 8, y2: 5,
+    texto: [
+      'Cortinas de veludo vermelho cobrem as janelas. Uma escrivaninha de mogno e uma cadeira de espaldar alto ficam entre a porta e a lareira, e acima do fogo está pendurado um quadro de um moinho de vento sobre um penhasco. Estantes do chão ao teto, uma escada de rodinhas para os livros altos.',
+      'Na escrivaninha: um tinteiro, uma pena, um barrilete de pólvora, uma lamparina e um estojo de carta com lacre vermelho e um selo de madeira com o moinho dos Durst.',
+    ],
+  },
+  {
+    id: 'salaSecreta', area: '9', nome: 'A sala secreta', x1: 6, y1: 6, x2: 8, y2: 7,
+    texto: [
+      'Estantes cheias de volumes sobre rituais de invocação de diabos e sobre necromancia, todos assinados por uma seita chamada Sacerdotes de Osybus. Um baú pesado, de pés de ferro, encostado à parede de trás, com a tampa entreaberta.',
+      'Do baú pende o esqueleto de um aventureiro de armadura de couro, com três dardos cravados na caixa torácica. A mão esquerda dele segura uma carta lacrada com o selo de Strahd von Zarovich.',
+    ],
+  },
+  {
+    id: 'conservatorio', area: '10', nome: 'O conservatório', x1: 1, y1: 16, x2: 12, y2: 22,
+    texto: [
+      'Cortinas finas nas janelas, um lustre de bronze no teto e cadeiras estofadas ao longo das paredes. As tapeçarias de vitral mostram homens, mulheres e crianças elegantes cantando e tocando.',
+      'Um cravo com banco no canto, uma harpa de pé junto à lareira e estatuetas de alabastro de dançarinos bem vestidos sobre o consolo.',
+    ],
+  },
+];
+
+const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
+const alturaDe = (terreno) => terreno.map((linha) => [...linha].map((g) => (g === 'M' ? '3' : '0')).join(''));
+
 export const MAPA_CASA_DA_MORTE_1 = {
   terreno: TERREO,
   // A parede é um bloco alto (3 níveis) e o piso é raso: sem isto, a parede de casa inteira era desenhada rente ao chão.
-  altura: TERREO.map((linha) => [...linha].map((g) => (g === 'M' ? '3' : '0')).join('')),
+  altura: alturaDe(TERREO),
   objetos: [],
   // O grupo entra pelo portão, ao sul, na sala de espera, olhando para o fundo da casa.
-  grupo: [{ x: 2, y: 21 }, { x: 3, y: 21 }, { x: 4, y: 21 }, { x: 3, y: 22 }],
+  grupo: grupoPadrao([[2, 21], [3, 21], [4, 21], [3, 22]]),
   olhar: { dx: 0, dy: -1 },
   cena: 'casaDaMorte',
 };
+
+export const MAPA_CASA_DA_MORTE_2 = {
+  terreno: SEGUNDO_ANDAR,
+  altura: alturaDe(SEGUNDO_ANDAR),
+  objetos: [],
+  // Quem sobe a escadaria chega ao salão superior, ao pé da curva.
+  grupo: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
+  olhar: { dx: -1, dy: 0 },
+  cena: 'casaDaMorte',
+};
+
+/** Os andares, por variante: as salas, as escadas e onde o grupo aparece ao chegar de outro andar. */
+export const ANDARES = {
+  casaDaMorte1: {
+    id: 'casaDaMorte1', nome: '1º andar', areas: AREAS_TERREO,
+    chegadaPelaEscada: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),
+    escada: { sobe: 'casaDaMorte2' },
+  },
+  casaDaMorte2: {
+    id: 'casaDaMorte2', nome: '2º andar', areas: AREAS_SEGUNDO,
+    chegadaPelaEscada: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
+    escada: { desce: 'casaDaMorte1' },
+  },
+};
+
+export const VARIANTES_DA_CASA = Object.keys(ANDARES);
