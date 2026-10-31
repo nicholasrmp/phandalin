@@ -293,7 +293,7 @@ export const PREFERIDAS_DA_MAESTRIA = {
   1: ['escudoArcano', 'misselMagico', 'sono', 'maosFlamejantes', 'armaduraArcana'],
   2: ['passoNebuloso', 'imagemEspelhada', 'invisibilidade', 'raioArdente', 'teia'],
 };
-export const PREFERIDAS_DA_ASSINATURA = ['bolaDeFogo', 'relampago', 'voo', 'velocidade', 'piscar', 'contramagia'];
+export const PREFERIDAS_DA_ASSINATURA = ['bolaDeFogo', 'relampago', 'velocidade', 'piscar', 'contramagia'];
 
 /**
  * Uma magia que `c` conjura SEM espaço de magia, e que o motor prefere ao espaço quando existe:

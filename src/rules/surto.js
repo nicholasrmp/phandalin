@@ -212,13 +212,8 @@ export const SURTOS = [
     },
   },
   { id: 'espelho', nome: 'três imagens espelhadas cercam você', valor: 2, aplica: (enc, a) => sobre(enc, a, 'imagens', 10, { data: { n: 3 } }) },
-  {
-    id: 'voo', nome: 'uma criatura aleatória a 18 m ganha voo por 10 minutos', valor: 1,
-    aplica(enc, a) {
-      const c = sorteia(enc, perto(enc, a, 60, true));
-      if (c) sobre(enc, c, 'voando', 100);
-    },
-  },
+  // O jogo é 2.5D e voo estraga a vista e a jogabilidade: este surto (uma criatura ganha voo) ficou só como cor.
+  { id: 'voo', nome: 'uma criatura aleatória a 18 m sente os pés leves por um instante (o jogo não tem voo livre)', valor: 1, aplica: cor },
   { id: 'invisivelSurdo', nome: 'você fica invisível e ninguém o ouve por um minuto, até atacar ou conjurar', valor: 2, aplica: (enc, a) => sobre(enc, a, 'invisivel', 10) },
   { id: 'reencarna', nome: 'se você morrer em um minuto, volta à vida como se reencarnado', valor: 1, aplica: (enc, a) => sobre(enc, a, 'reencarnar', 10) },
   { id: 'tamanho', nome: 'seu tamanho sobe uma categoria por um minuto', valor: 1, aplica: (enc, a) => { if (enc.aumentarTamanho(a)) sobre(enc, a, 'tamanhoCaos', 10); } },
