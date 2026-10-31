@@ -25,3 +25,11 @@ motor de combate, recorte, beleza, e os quatro de ícones (legibilidade, fidelid
 
 ## Custo
 OpenArt (Wan 2.7, 2K, 6 créditos por folha): 2 folhas de ícones + 3 de efeitos nesta frente de trabalho, 1 folha de ícones e 1 de efeitos na refação.
+
+## Segunda rodada (surtos novos, efeitos por código)
+
+Revisores: render dos efeitos de chão (duas passadas), direção de arte (duas passadas, nota 2/5 para 3/5), mecânica dos surtos novos e regressões do motor.
+
+Corrigido: Passo do Caos fora da regra de conjuração; tamanho sem empilhar e devolvido na hora; reencarnar com corpo limpo; efeitos de surto limpos no fim do combate e nos descansos; brilho que ilumina; Olho do Caos na Percepção passiva; coop com `surtoFx` (src/view/surto-fx.js); chão copiado casa a casa e no plano do relevo; pixels duros, sem alfa parcial; `willReadFrequently` no canvas de chão (mapa grande).
+
+Aceito: o anel no chão baixo usa o plano do platô quando nasce nele; a lateral vertical do platô não recebe a poça; a nuvem do vaso serve também à ovelha.
