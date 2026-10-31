@@ -40,6 +40,8 @@ import { makePortrait } from '../art/sheet.js';
 import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
 import { CONDITIONS, hasCondition, maxHpEfetivo, DEGRAUS_DE_EXAUSTAO } from '../rules/conditions.js';
 import { CONDICOES_DE_ENCANTO } from '../rules/passivas.js';
+import { formasDisponiveis } from '../rules/forma-selvagem.js';
+import { MONSTERS } from '../rules/monsters.js';
 import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
@@ -1282,6 +1284,20 @@ export class Hud {
         comum(f, META[f][0], `Interruptor: ${META[f][1]} Pontos de feitiçaria: ${c.resources?.sorceryPoints ?? 0}.`, 'Livre',
           { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, 'sorceryPoints', null,
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADA' : 'desarmada']] });
+        continue;
+      }
+      // FORMA SELVAGEM: um azulejo por fera que o nível permite (ou o de voltar ao normal, em forma de fera).
+      if (f === 'wildShape') {
+        if (c.formaSelvagem) {
+          comum('wildShape', `Voltar da forma de ${c.formaSelvagem.nome}`, 'Abandona a forma de fera como ação bônus; os PV de antes voltam.', 'Ação bônus',
+            { kind: 'feature', featureId: f, modo: 'voltar' }, c.bonusUsed);
+        } else {
+          for (const id of formasDisponiveis(c.level ?? 1).slice(0, 6)) {
+            const m = MONSTERS[id];
+            comum('wildShape', `Forma Selvagem: ${m.name}`, `Vira ${m.name} (${m.maxHp} PV, CA ${m.ac}, ND ${m.cr}). Gasta um uso; na forma de fera não se conjura.`, 'Ação',
+              { kind: 'feature', featureId: f, modo: id }, c.actionUsed || !(c.resources?.wildShape > 0), 'wildShape');
+          }
+        }
         continue;
       }
       if (f === 'fontOfMagic') {

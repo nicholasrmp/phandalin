@@ -288,7 +288,7 @@ const FEITO = [
   'extendedSpell', 'heightenedSpell', 'quickenedSpell', 'subtleSpell', 'twinnedSpell',
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
-  'mireTheMind', 'beguilingInfluence',
+  'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -314,8 +314,6 @@ const SEM_EFEITO = {
   masterOfMyriadForms: 'o jogo não tem Alterar-se',
   visionsOfDistantRealms: 'o jogo não tem Olho Arcano',
   oneWithShadows: 'o jogo não tem penumbra como esconderijo',
-  beastSpells: 'depende da Forma Selvagem, que ainda não existe',
-  archdruid: 'depende da Forma Selvagem, que ainda não existe',
 };
 for (const id of FEITO) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].motor = true;
 for (const id of ESTRUTURAIS) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].estrutural = true;

@@ -13,6 +13,7 @@ import { attackRoll, damageRoll, savingThrow, d20, roll, formatModifier, parseDi
 import { Battlefield, distanceFt, isAdjacent, key, footprintOf, FEET_PER_SQUARE } from '../core/grid.js';
 import { ARMORS } from './items/index.js';
 import { nomeDaCaracteristica } from './classes/index.js';
+import { vestirFera, despirFera, formasDisponiveis } from './forma-selvagem.js';
 import {
   abilityMod, saveBonus, skillBonus, rolarPericia, spellSaveDc, spellAttackBonus,
   proficiencyBonus, ABILITY_NAME, passivePerception, ajustarTeste, treinadoEm,
@@ -1241,6 +1242,7 @@ export class Encounter {
     }
     if (foesUp === 0) {
       this.over = true;
+      for (const c of this.combatants) if (c.formaSelvagem) despirFera(c);
       this.outcome = 'vitoria';
       this.say('fim', 'Inimigos derrotados.');
       // Fora do combate ninguém conta deslocamento: quem está acordado e no
@@ -1248,6 +1250,7 @@ export class Encounter {
       for (const c of this.allOf('party')) this.levantarForaDoCombate(c);
     } else if (partyUp === 0) {
       this.over = true;
+      for (const c of this.combatants) if (c.formaSelvagem) despirFera(c);
       this.outcome = 'derrota';
       this.say('fim', 'O grupo caiu.');
     }
@@ -3997,7 +4000,17 @@ export class Encounter {
       target.danoPorTipo[type] = (target.danoPorTipo[type] ?? 0) + amount;
     }
     target.hp -= left;
-    this.onEvent({ type: 'damage', target, amount, source });
+    // FORMA SELVAGEM: zerar os PV da fera não derruba o druida; ele volta à forma normal e o dano que sobrou desconta dos PV dele.
+    if (target.formaSelvagem && target.hp <= 0) {
+      const sobra = -target.hp;
+      this.say('condicao', `${target.name} perde a forma de ${target.formaSelvagem.nome} e volta ao normal${sobra ? ` (leva mais ${sobra})` : ''}.`);
+      despirFera(target, sobra);
+      this.onEvent({ type: 'damage', target, amount, source });
+      this.onEvent({ type: 'voltouAoNormal', target });
+      if (target.hp > 0) return;
+    } else {
+      this.onEvent({ type: 'damage', target, amount, source });
+    }
 
     // PROTEÇÃO CONTRA A MORTE (SRD): a PRIMEIRA vez que o alvo cairia a 0 PV
     // por dano, ele fica de pé com 1 PV e a magia acaba.
@@ -4719,6 +4732,8 @@ export class Encounter {
     // Forma Gasosa: a névoa não conjura — nem para desfazer a própria magia,
     // que é concentração e se solta sozinha quando o conjurador quiser.
     if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se conjura' };
+    // FORMA SELVAGEM: na pele da fera não se conjura — só com Magias Bestiais (druida, 18º).
+    if (actor.formaSelvagem && !actor.features?.includes('beastSpells')) return { ok: false, why: `na forma de ${actor.formaSelvagem.nome} não se conjura` };
     // Silêncio: sem som não há verbal. Quem repete uma magia já em pé (o golpe é
     // só um gesto) passa, e a magia sem componente verbal (Ataque Certeiro) também.
     if (!(spell.reuso && actor.magiasAtivas?.[spellId]) && !spell.semVerbal
@@ -7359,6 +7374,25 @@ export class Encounter {
         actor.resources.cleansingTouch -= 1;
         removeCondition(alvoT, magica.id);
         this.say('recurso', `${actor.name} toca ${alvoT === actor ? 'a si mesmo' : alvoT.name}: ${CONDITIONS[magica.id]?.name ?? magica.id} se desfaz (Toque Purificador).`);
+        return true;
+      }
+      case 'wildShape': {
+        // FORMA SELVAGEM (druida, 2º): ação e um uso; `modo` é a fera (id do monstro) ou 'voltar'. Voltar custa a ação bônus.
+        if (modo === 'voltar') {
+          if (!actor.formaSelvagem || actor.bonusUsed) return false;
+          actor.bonusUsed = true;
+          this.say('condicao', `${actor.name} abandona a forma de ${actor.formaSelvagem.nome}.`);
+          despirFera(actor);
+          this.onEvent({ type: 'voltouAoNormal', target: actor });
+          return true;
+        }
+        if (actor.actionUsed || actor.formaSelvagem || !(actor.resources?.wildShape > 0) || conditionEffects(actor).incapacitated) return false;
+        if (!formasDisponiveis(actor.level ?? 1).includes(modo)) return false;
+        if (!vestirFera(actor, modo)) return false;
+        actor.actionUsed = true;
+        actor.resources.wildShape -= 1;
+        this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
+        this.onEvent({ type: 'transformou', target: actor });
         return true;
       }
       case 'carefulSpell': case 'distantSpell': case 'empoweredSpell': case 'extendedSpell':

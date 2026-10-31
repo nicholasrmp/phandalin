@@ -388,3 +388,23 @@ Fala com Bestas, Olhar de Duas Mentes, Olhos do Guardião de Runas, Livro dos Se
 
 ### Ainda pendente (12)
 Forma Selvagem; Arcana Mística e Sobrecanalizar (magias de 6º a 9º círculo); Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Salto Transcendental, Sinal de Mau Agouro, Correntes de Carceri e Voz do Mestre das Correntes (cada uma precisa de uma magia que o jogo não tem); Percepção Primitiva e Habilidade Inigualável.
+
+---
+
+## Atualização 5 — Forma Selvagem (druida)
+
+Mais **3 características** com mecânica: Forma Selvagem, Magias Bestiais e Arquidruida (usos ilimitados). Suíte: 1062/1062, vitest 401/401, build verde; `pendente` caiu de 12 para **11**. Verificado no jogo rodando: um herói com a característica ganha os azulejos de cada fera permitida, vira o Lobo (11 PV, CA 13, golpe "Mordida" na barra) e ganha o azulejo de voltar.
+
+- **Fichas de animal reaproveitadas** das bestas que o jogo já tem (`rules/forma-selvagem.js`, `FERAS`); nenhuma arte nova foi preciso gerar. No 2º nível: ND 1/4 sem voar nem nadar; no 4º: ND 1/2 e nadar; no 8º: ND 1 e voar.
+- A fera troca FOR, DES, CON, PV, CA, deslocamento, golpes e traços; INT, SAB, CAR, perícias e resistências ficam do druida.
+- Zerar os PV da fera devolve o druida à forma normal, e o dano que sobrou desconta dos PV dele. Voltar por vontade custa a ação bônus.
+- Na forma de fera não se conjura, a não ser com Magias Bestiais (18º).
+
+### Aproximações
+- A forma acaba quando a luta termina (o livro dá horas); por isso nada fica transformado num save.
+- Só as bestas que o jogo tem existem como forma (lobo, rato gigante, javali, urso-negro, cabra gigante, aranha-lobo gigante e, do 8º, urso-pardo, aranha gigante, morcego gigante...).
+- A Arquidruida só tem o efeito dos usos ilimitados; ignorar componentes simples não tem onde valer no jogo.
+- O bônus de ataque da fera é o do bloco dela, não o do druida.
+
+### Ainda pendente (11)
+Arcana Mística e Sobrecanalizar (magias de 6º a 9º círculo); Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Salto Transcendental, Sinal de Mau Agouro, Correntes de Carceri e Voz do Mestre das Correntes (cada uma precisa de uma magia que o jogo não tem); Percepção Primitiva e Habilidade Inigualável.

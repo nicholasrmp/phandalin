@@ -24,6 +24,8 @@ import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.j
 import { margemDeCritico, dadosExtraDeCritico, danoPorResistencia, usoLivreDe, bonusDeDanoPorTraco, vantagemPorTraco, contraDaMagia, danoDeQueda, aplicarInvocacoes } from '../rules/passivas.js';
 import * as passivasExtra from '../rules/passivas.js';
 import { armorClass } from '../rules/equipment.js';
+import { formasDisponiveis } from '../rules/forma-selvagem.js';
+import { MONSTERS } from '../rules/monsters.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
 import { descansoLongo, escolherResistenciaInfernal, recuperarNoCurto, dadoDaCancaoDeDescanso, gastarDadoDeVida } from '../rules/descanso.js';
 import { montarAcampamento, descansou } from '../rules/acampamento.js';
@@ -2490,6 +2492,71 @@ teste('Pacto do Tomo: três truques de qualquer lista; Explosão Repelente empur
   enc.rng = dadoFixo(18);
   assert.ok(enc.castSpell(r, 'rajadaMistica', { target: g }).ok);
   assert.ok(g.pos.x >= 8, `empurrado 3 m (x=${g.pos.x})`);
+});
+// ============================================================================================================
+// FORMA SELVAGEM (druida, 2º)
+// ============================================================================================================
+
+teste('Forma Selvagem: o ND, o voo e a natação dependem do nível', () => {
+  const f2 = formasDisponiveis(2), f4 = formasDisponiveis(4), f8 = formasDisponiveis(8);
+  assert.ok(f2.includes('lobo') && f2.includes('ratoGigante'), 'no 2º: ND 1/4');
+  assert.ok(!f2.includes('ursoNegro'), 'ND 1/2 só no 4º');
+  assert.ok(f4.includes('ursoNegro'));
+  assert.ok(!f4.includes('morcegoGigante'), 'voar só no 8º');
+  assert.ok(f8.includes('morcegoGigante') && f8.includes('ursoPardo'), 'no 8º: ND 1, voo');
+  assert.ok(!f8.some((id) => /Familiar$/.test(id)), 'familiares não são forma');
+  assert.deepEqual(formasDisponiveis(1), [], 'no 1º, nada');
+});
+
+teste('Forma Selvagem: assume a fera (PV, CA, ataques), ataca com a mordida, não conjura, e volta com o dano que sobrou', () => {
+  const d = heroi('druida', 2, 'Humano', { abilities: { str: 10, dex: 12, con: 14, int: 10, wis: 16, cha: 10 } });
+  d.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc, log } = arena({ herois: [d], foes: [g] });
+  const hp0 = d.hp, ac0 = d.ac;
+  assert.equal(d.resources.wildShape, 2);
+  assert.equal(enc.useFeature(d, 'wildShape', { modo: 'ursoPardo' }), false, 'urso pardo é ND 1: não no 2º');
+  assert.equal(enc.useFeature(d, 'wildShape', { modo: 'lobo' }), true);
+  assert.equal(d.resources.wildShape, 1);
+  assert.equal(d.hp, MONSTERS.lobo.maxHp);
+  assert.equal(armorClass(d), MONSTERS.lobo.ac);
+  assert.equal(d.weapons, undefined, 'a barra de ações lê os golpes da fera');
+  assert.equal(d.attacks[0].name, 'Mordida');
+  assert.equal(d.abilities.wis, 16, 'SAB continua a do druida');
+  assert.equal(d.abilities.dex, MONSTERS.lobo.abilities.dex);
+  assert.equal(enc.castSpell(d, 'curarFerimentos', { target: d }).ok, false, 'na forma de fera não se conjura');
+  d.actionUsed = false;
+  enc.rng = dadoFixo(18);
+  enc.resolveAttack(d, g);
+  assert.ok(g.hp < g.maxHp, 'a mordida acertou');
+  // os PV da fera acabam: volta, e o que sobrou desconta dos PV do druida
+  enc.applyDamage(d, MONSTERS.lobo.maxHp + 4, 'cortante', g);
+  assert.equal(d.formaSelvagem, null, 'voltou ao normal');
+  assert.equal(d.hp, hp0 - 4, 'os 4 de dano que passaram da fera descontam dos PV dele');
+  assert.ok(d.weapons?.length > 0 && d.attacks === undefined);
+  assert.equal(d.ac, ac0);
+  assert.ok(contaLog(log, /volta ao normal/) >= 1);
+});
+
+teste('Forma Selvagem: voltar custa a ação bônus; a luta acabar devolve a forma; quem não é druida não se transforma', () => {
+  const d = heroi('druida', 4, 'Humano');
+  d.pos = { x: 5, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 });
+  const { enc } = arena({ herois: [d], foes: [g] });
+  assert.equal(enc.useFeature(d, 'wildShape', { modo: 'ursoNegro' }), true);
+  assert.equal(d.hp, MONSTERS.ursoNegro.maxHp);
+  assert.equal(enc.useFeature(d, 'wildShape', { modo: 'voltar' }), true);
+  assert.equal(d.bonusUsed, true);
+  assert.equal(d.formaSelvagem, null);
+  d.actionUsed = false;
+  enc.useFeature(d, 'wildShape', { modo: 'lobo' });
+  g.hp = 0; g.dead = true;
+  enc.checkEnd();
+  assert.equal(d.formaSelvagem, null, 'fim da luta: forma normal');
+  const guerreiro = heroi('guerreiro', 4, 'Humano');
+  guerreiro.pos = { x: 4, y: 5 };
+  const { enc: e2 } = arena({ herois: [guerreiro], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(e2.useFeature(guerreiro, 'wildShape', { modo: 'lobo' }), false);
 });
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);

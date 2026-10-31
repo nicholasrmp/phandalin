@@ -20,6 +20,8 @@ export { WEAPONS, ARMORS, SHIELD, SHIELD_AC, ITEMS };
 
 /** CA = base da armadura + DEX (limitado) + escudo + bônus diversos. */
 export function armorClass(actor) {
+  // FORMA SELVAGEM: a CA é a da fera, não a da armadura do druida.
+  if (actor.formaSelvagem) return actor.formaSelvagem.ac;
   const armor = ARMORS[actor.armor ?? 'nenhuma'] ?? ARMORS.nenhuma;
   const dex = Math.floor((actor.abilities.dex - 10) / 2);
   let ac = armor.base + Math.min(dex, armor.dexCap);
