@@ -137,7 +137,10 @@ export const SURTOS = [
     id: 'raios', nome: 'raios caem em até três criaturas a 9 m de você: 4d10 elétrico', valor: 0,
     aplica(enc, a) {
       const alvos = perto(enc, a, 30).sort((x, y) => (y.side !== a.side) - (x.side !== a.side)).slice(0, 3);
-      for (const c of alvos) enc.applyDamage(c, damageRoll(enc.rng, '4d10').total, 'elétrico', a, { magico: true });
+      for (const c of alvos) {
+        const dano = damageRoll(enc.rng, '4d10').total;
+        enc.applyDamage(c, dano, 'elétrico', a, { magico: true });
+      }
     },
   },
   {
