@@ -271,6 +271,15 @@ export function subirNivel(c, escolhas = {}) {
     for (const p of pericias) if (!c.skills.includes(p)) c.skills.push(p);
   }
 
+  // BÊNÇÃOS DO CONHECIMENTO (clérigo): as duas perícias de saber entram treinadas e dobradas. ACÓLITO DA NATUREZA: a perícia escolhida.
+  if (c.features.includes('blessingsOfKnowledge')) {
+    for (const p of c.bencaoDoSaber ?? []) {
+      if (!c.skills.includes(p)) c.skills.push(p);
+      if (!c.expertise.includes(p)) c.expertise.push(p);
+    }
+  }
+  if (c.features.includes('acolyteOfNature') && c.acolitoPericia && !c.skills.includes(c.acolitoPericia)) c.skills.push(c.acolitoPericia);
+
   // MAESTRIA EM MAGIA (mago, 18º) e MAGIAS DE ASSINATURA (20º): a escolha padrão sai aqui; a tela, quando existir, grava as suas.
   if (c.features.includes('spellMastery') && !c.maestriaDeMagia) c.maestriaDeMagia = escolherMaestria(c, SPELLS);
   if (c.features.includes('signatureSpells') && !c.magiasAssinatura) {

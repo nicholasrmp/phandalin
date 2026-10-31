@@ -4274,5 +4274,411 @@ teste('Companheiro: não há "agir sozinho"; a ordem de atacar com Ataque Extra 
 });
 
 // ============================================================================================================
+// DOMÍNIOS DE COMBATE DO CLÉRIGO (Livro do Jogador): Guerra, Tempestade, Luz
+// ============================================================================================================
+const dominio = (id, nivel, extra = {}) => heroi('clerigo', nivel, 'Humano', { weapons: ['maca'], ...extra }, { 1: { subclasse: id } });
+
+teste('Domínios do clérigo: características por nível, usos por SAB, magias do domínio e a carga de Canalizar Divindade', () => {
+  const g = dominio('guerra', 6);
+  assert.ok(['warPriest', 'guidedStrike', 'warGodsBlessing'].every((f) => g.features.includes(f)));
+  assert.ok(g.resources.warPriest >= 1 && g.resources.channelDivinity === 2);
+  assert.ok(dominio('guerra', 8).features.includes('divineStrikeWeapon') && dominio('guerra', 17).features.includes('avatarOfBattle'));
+  const t = dominio('tempestade', 8);
+  assert.ok(['wrathOfTheStorm', 'destructiveWrath', 'thunderboltStrike', 'divineStrikeThunder'].every((f) => t.features.includes(f)));
+  assert.ok(t.resources.wrathOfTheStorm >= 1);
+  const l = dominio('luz', 17);
+  assert.ok(['wardingFlare', 'lightCantrip', 'radianceOfTheDawn', 'improvedFlare', 'potentSpellcasting', 'coronaOfLight'].every((f) => l.features.includes(f)));
+  assert.ok(l.magiasDeCaracteristica?.includes('luz') || l.spellcasting.cantrips.includes('luz'), 'o truque Luz');
+  const prep = [...g.spellcasting.prepared, ...(g.spellcasting.sempreProntas ?? [])];
+  assert.ok(prep.includes('favorDivino') && prep.includes('escudoDaFe'), 'magias do domínio da Guerra');
+});
+
+teste('Golpe Divino do domínio: trovejante na Tempestade, do tipo da arma na Guerra; uma vez por turno', () => {
+  for (const [id, re] of [['tempestade', /trovejante/], ['guerra', /concussão/]]) {
+    const c = dominio(id, 8);
+    c.pos = { x: 5, y: 5 };
+    const gob = alvoParado({ x: 6, y: 5 });
+    const { enc, log } = arena({ herois: [c], foes: [gob] });
+    enc.rng = dadoEmSequencia(15, 15);
+    enc.resolveAttack(c, gob, { weaponId: 'maca' });
+    enc.resolveAttack(c, gob, { weaponId: 'maca' });
+    assert.equal(contaLog(log, /Golpe Divino/), 1, `${id}: um só por turno`);
+    assert.ok(log.some((e) => /Golpe Divino/.test(e.text) && re.test(e.text)), `${id}: tipo do dano`);
+  }
+});
+
+teste('Golpe Guiado e Bênção do Deus da Guerra: +10 só quando o ataque erraria por até 10; gasta carga; a bênção custa a reação do clérigo', () => {
+  const c = dominio('guerra', 6);
+  c.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 6, y: 5 });
+  gob.ac = 20;
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  enc.rng = dadoEmSequencia(12);
+  const r = enc.resolveAttack(c, gob, { weaponId: 'maca' });
+  assert.equal(r.hit, true, 'o golpe guiado acerta');
+  assert.equal(c.resources.channelDivinity, 1, 'gastou uma carga');
+  const c2 = dominio('guerra', 6);
+  c2.pos = { x: 5, y: 5 };
+  const g2 = alvoParado({ x: 6, y: 5 });
+  g2.ac = 20;
+  const { enc: e2 } = arena({ herois: [c2], foes: [g2] });
+  e2.rng = dadoEmSequencia(1);
+  assert.equal(e2.resolveAttack(c2, g2, { weaponId: 'maca' }).hit, false);
+  assert.equal(c2.resources.channelDivinity, 2, '1 natural: nada gasto');
+  const c3 = dominio('guerra', 6);
+  c3.pos = { x: 5, y: 5 };
+  const g3 = alvoParado({ x: 6, y: 5 });
+  g3.ac = 40;
+  const { enc: e3 } = arena({ herois: [c3], foes: [g3] });
+  e3.rng = dadoEmSequencia(5);
+  assert.equal(e3.resolveAttack(c3, g3, { weaponId: 'maca' }).hit, false);
+  assert.equal(c3.resources.channelDivinity, 2);
+  const sac = dominio('guerra', 6);
+  sac.pos = { x: 3, y: 5 };
+  const guer = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  guer.pos = { x: 5, y: 5 };
+  const g4 = alvoParado({ x: 6, y: 5 });
+  g4.ac = 20;
+  const { enc: e4 } = arena({ herois: [sac, guer], foes: [g4] });
+  e4.rng = dadoEmSequencia(12);
+  assert.equal(e4.resolveAttack(guer, g4, { weaponId: 'espadaLonga' }).hit, true);
+  assert.equal(sac.reactionUsed, true);
+  assert.equal(sac.resources.channelDivinity, 1);
+});
+
+teste('Sacerdote da Guerra: ataque como ação bônus só depois de atacar; gasta um uso', () => {
+  const c = dominio('guerra', 3);
+  c.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 6, y: 5 });
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  assert.equal(enc.useFeature(c, 'warPriest'), false, 'antes de atacar, não');
+  enc.rng = dadoEmSequencia(15, 15);
+  enc.resolveAttack(c, gob, { weaponId: 'maca' });
+  const antes = c.resources.warPriest;
+  assert.equal(enc.useFeature(c, 'warPriest'), true);
+  assert.equal(c.bonusUsed, true);
+  assert.equal(c.resources.warPriest, antes - 1);
+});
+
+teste('Avatar da Batalha: resistência a dano físico não mágico', () => {
+  const c = dominio('guerra', 17);
+  c.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [c], foes: [alvoParado({ x: 9, y: 9 })] });
+  assert.equal(enc.danoPorTipo(c, 10, 'cortante', false, true), 5);
+  assert.equal(enc.danoPorTipo(c, 10, 'cortante', true, true), 10, 'arma mágica ignora');
+  assert.equal(enc.danoPorTipo(c, 10, 'fogo', false, false), 10);
+});
+
+teste('Ira da Tempestade: reação ao golpe corpo a corpo; falhou, dano cheio; passou, metade; gasta um uso', () => {
+  const dano = {};
+  for (const [d20, chave] of [[1, 'falhou'], [20, 'passou']]) {
+    const c = dominio('tempestade', 1);
+    c.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 6, y: 5 });
+    gob.maxHp = gob.hp = 500;
+    const { enc } = arena({ herois: [c], foes: [gob] });
+    enc.rng = dadoEmSequencia(d20);
+    const usos = c.resources.wrathOfTheStorm;
+    enc.iraDaTempestade(c, gob);
+    dano[chave] = 500 - gob.hp;
+    assert.equal(c.reactionUsed, true);
+    assert.equal(c.resources.wrathOfTheStorm, usos - 1);
+  }
+  assert.ok(dano.falhou > 0 && dano.passou === Math.floor(dano.falhou / 2), JSON.stringify(dano));
+  const sem = dominio('tempestade', 1);
+  sem.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [sem], foes: [g2] });
+  sem.reactionUsed = true;
+  const h = g2.hp;
+  e2.iraDaTempestade(sem, g2);
+  assert.equal(g2.hp, h, 'sem reação, nada');
+});
+
+teste('Ira Destrutiva: arma o máximo no próximo dano elétrico ou trovejante; gasta a carga; só uma vez', () => {
+  const c = dominio('tempestade', 3);
+  c.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 7, y: 5 });
+  const { enc, log } = arena({ herois: [c], foes: [gob] });
+  assert.equal(enc.useFeature(c, 'destructiveWrath'), true);
+  assert.equal(c.resources.channelDivinity, c.resourcesMax.channelDivinity - 1);
+  assert.equal(enc.useFeature(c, 'destructiveWrath'), false, 'já armada');
+  assert.equal(enc.dadosMaximos(c, '2d8', 'elétrico'), 16);
+  assert.equal(c.furiaDestrutivaPronta, false, 'gastou');
+  assert.ok(contaLog(log, /Ira Destrutiva/) >= 1);
+});
+
+teste('Golpe do Relâmpago: dano elétrico do clérigo empurra 3 m criatura Grande ou menor, não Enorme', () => {
+  const c = dominio('tempestade', 6);
+  c.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 6, y: 5 });
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  enc.applyDamage(gob, 3, 'elétrico', c, { magico: true });
+  assert.ok(gob.pos.x > 6, 'empurrado');
+  const urso = alvoParado({ x: 5, y: 6 });
+  urso.size = 'enorme';
+  const { enc: e2 } = arena({ herois: [c], foes: [urso] });
+  e2.applyDamage(urso, 3, 'elétrico', c, { magico: true });
+  assert.equal(urso.pos.y, 6, 'enorme fica');
+});
+
+teste('Clarão de Aviso: reação; o Clarão Aprimorado cobre um aliado; sem ele só protege a si', () => {
+  const c = dominio('luz', 1);
+  c.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  const usos = c.resources.wardingFlare;
+  assert.equal(enc.clarao(gob, c)?.id, c.id);
+  assert.equal(c.resources.wardingFlare, usos - 1);
+  assert.equal(c.reactionUsed, true);
+  assert.equal(enc.clarao(gob, c), null, 'reação já gasta');
+  const c6 = dominio('luz', 6);
+  c6.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 7, y: 5 };
+  const g2 = inimigo('goblin', { x: 8, y: 5 });
+  const { enc: e2 } = arena({ herois: [c6, amigo], foes: [g2] });
+  assert.equal(e2.clarao(g2, amigo)?.id, c6.id, 'protege o aliado');
+  const c1 = dominio('luz', 1);
+  c1.pos = { x: 5, y: 5 };
+  const amigo1 = heroi('guerreiro', 1, 'Humano');
+  amigo1.pos = { x: 7, y: 5 };
+  const g3 = inimigo('goblin', { x: 8, y: 5 });
+  const { enc: e3 } = arena({ herois: [c1, amigo1], foes: [g3] });
+  assert.equal(e3.clarao(g3, amigo1), null, 'sem o Aprimorado, só protege a si');
+});
+
+teste('Esplendor da Aurora: só os inimigos perto sofrem; custa ação e carga', () => {
+  const c = dominio('luz', 8);
+  c.pos = { x: 1, y: 1 };
+  const g1 = alvoParado({ x: 3, y: 1 });
+  const g2 = alvoParado({ x: 1, y: 4 });
+  const longe = alvoParado({ x: 11, y: 11 });
+  const { enc } = arena({ herois: [c], foes: [g1, g2, longe] });
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.useFeature(c, 'radianceOfTheDawn'), true);
+  assert.equal(c.actionUsed, true);
+  assert.ok(g1.hp < 2000 && g2.hp < 2000, 'os dois perto sofrem');
+  assert.equal(longe.hp, 2000, 'o de longe não');
+  assert.equal(c.resources.channelDivinity, c.resourcesMax.channelDivinity - 1);
+});
+
+teste('Coroa de Luz: desvantagem na resistência contra fogo e radiante dentro de 18 m; sem limite de usos, só uma acesa por vez', () => {
+  const c = dominio('luz', 17);
+  c.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 9, y: 5 });
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  assert.equal(enc.useFeature(c, 'coronaOfLight'), true);
+  assert.equal(enc.useFeature(c, 'coronaOfLight'), false, 'já acesa');
+  enc.rng = dadoEmSequencia(20, 1);
+  const r = enc.resistencia(gob, 'dex', 30, { contra: { magico: true, tipoDano: 'fogo' } });
+  const rSopro = enc.resistencia(gob, 'dex', 30, { contra: { magico: false, tipoDano: 'fogo' } });
+  assert.notEqual(rSopro.mode, 'desvantagem', 'sopro e armadilha não contam, só magia');
+  assert.equal(r.mode, 'desvantagem', 'perto: desvantagem');
+  const r2 = enc.resistencia(gob, 'dex', 30, { contra: { magico: true, tipoDano: 'frio' } });
+  assert.notEqual(r2.mode, 'desvantagem', 'outro tipo de dano: normal');
+});
+
+// ============================================================================================================
+// DOMÍNIOS DO CLÉRIGO (Livro do Jogador): Conhecimento, Natureza, Enganação
+// ============================================================================================================
+teste('Conhecimento: duas perícias de saber entram treinadas e dobradas; Conjuração Potente no 8º', () => {
+  const c = heroi('clerigo', 8, 'Humano', { weapons: ['maca'] }, { 1: { subclasse: 'conhecimento', blessingsOfKnowledge: ['arcanismo', 'religiao'] } });
+  assert.ok(c.features.includes('blessingsOfKnowledge') && c.features.includes('potentSpellcasting'));
+  assert.ok(c.skills.includes('arcanismo') && c.skills.includes('religiao'));
+  assert.ok(c.expertise.includes('arcanismo') && c.expertise.includes('religiao'));
+  assert.ok(![...dominio('conhecimento', 1).features].includes('potentSpellcasting'));
+  const prep = [...c.spellcasting.prepared, ...(c.spellcasting.sempreProntas ?? [])];
+  assert.ok(prep.includes('comando') && prep.includes('identificar'), 'magias do domínio');
+});
+
+teste('Conjuração Potente soma SAB ao dano dos truques de clérigo (só truques)', () => {
+  const alvoDe = () => alvoParado({ x: 7, y: 5 });
+  const dano = (nivel, id, d20) => {
+    const c = dominio(id, nivel);
+    c.spellcasting.cantrips = ['chamaSagrada'];
+    c.pos = { x: 5, y: 5 };
+    const g = alvoDe();
+    g.ac = 1;
+    const { enc } = arena({ herois: [c], foes: [g] });
+    enc.rng = dadoEmSequencia(d20);
+    const antes = g.hp;
+    enc.castSpell(c, 'chamaSagrada', { target: g });
+    return antes - g.hp;
+  };
+  // Chama Sagrada: o alvo falha (d20 = 1) em ambos; a diferença é o bônus de SAB (o 8º tem o dado do 5º a mais — comparo o conhecimento do 8º com o da Vida do 8º)
+  const sab = Math.max(0, abilityModDe(dominio('conhecimento', 8).abilities.wis));
+  assert.equal(dano(8, 'conhecimento', 1) - dano(8, 'vida', 1), sab);
+});
+
+teste('Natureza: perícia e truque de druida escolhidos, armadura pesada e magias do domínio', () => {
+  const c = heroi('clerigo', 2, 'Humano', { weapons: ['maca'] }, { 1: { subclasse: 'natureza', acolyteOfNature: 'sobrevivencia', acolyteCantrip: 'produzirChama' } });
+  assert.ok(c.skills.includes('sobrevivencia'));
+  assert.ok(c.magiasDeCaracteristica?.includes('produzirChama') || c.spellcasting.cantrips.includes('produzirChama'));
+  const prep = [...c.spellcasting.prepared, ...(c.spellcasting.sempreProntas ?? [])];
+  assert.ok(prep.includes('amizadeAnimal') && prep.includes('falarComAnimais'));
+  assert.ok(c.features.includes('charmAnimalsAndPlants'));
+});
+
+teste('Encantar Animais e Plantas: só feras e plantas perto falham em SAB e ficam enfeitiçados; o resto, não', () => {
+  const c = dominio('natureza', 2);
+  c.pos = { x: 5, y: 5 };
+  const lobo = inimigo('lobo', { x: 7, y: 5 });
+  const gob = inimigo('goblin', { x: 6, y: 6 });
+  const { enc } = arena({ herois: [c], foes: [lobo, gob] });
+  assert.ok(lobo.tipo === 'fera', 'o lobo é fera');
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.useFeature(c, 'charmAnimalsAndPlants'), true);
+  assert.equal(c.actionUsed, true);
+  assert.equal(c.resources.channelDivinity, c.resourcesMax.channelDivinity - 1);
+  assert.equal(hasCondition(lobo, 'enfeiticado'), true);
+  assert.equal(hasCondition(gob, 'enfeiticado'), false, 'goblin não é fera');
+});
+
+teste('Abafar Elementos: reação do clérigo a até 9 m; o dano elemental cai à metade; outros tipos, não', () => {
+  const c = dominio('natureza', 6);
+  c.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 8, y: 5 };
+  const { enc } = arena({ herois: [c, amigo], foes: [alvoParado({ x: 11, y: 11 })] });
+  assert.equal(enc.abafarElementos(amigo, 10, 'cortante'), 10);
+  assert.equal(c.reactionUsed, false);
+  assert.equal(enc.abafarElementos(amigo, 10, 'fogo'), 5);
+  assert.equal(c.reactionUsed, true);
+  assert.equal(enc.abafarElementos(amigo, 10, 'fogo'), 10, 'sem reação');
+});
+
+teste('Golpe Divino da Natureza escolhe o tipo que o alvo não resiste; o da Enganação é veneno', () => {
+  for (const [id, re] of [['natureza', /fogo/], ['enganacao', /veneno/]]) {
+    const c = dominio(id, 8);
+    c.pos = { x: 5, y: 5 };
+    const gob = alvoParado({ x: 6, y: 5 });
+    const { enc, log } = arena({ herois: [c], foes: [gob] });
+    enc.rng = dadoEmSequencia(15);
+    enc.resolveAttack(c, gob, { weaponId: 'maca' });
+    assert.ok(log.some((e) => /Golpe Divino/.test(e.text) && re.test(e.text)), id);
+  }
+  const c2 = dominio('natureza', 8);
+  c2.pos = { x: 5, y: 5 };
+  const gob2 = alvoParado({ x: 6, y: 5 });
+  gob2.resist = ['fogo'];
+  const { enc: e2, log: l2 } = arena({ herois: [c2], foes: [gob2] });
+  e2.rng = dadoEmSequencia(15);
+  e2.resolveAttack(c2, gob2, { weaponId: 'maca' });
+  assert.ok(l2.some((e) => /Golpe Divino/.test(e.text) && /frio/.test(e.text)), 'resiste a fogo: vai de frio');
+});
+
+teste('Invocar Duplicidade: vantagem só contra quem está colado na cópia; a Aprimorada, contra quem está colado no clérigo', () => {
+  const c = dominio('enganacao', 2);
+  c.pos = { x: 5, y: 5 };
+  const perto = inimigo('goblin', { x: 6, y: 5 });
+  const outro = inimigo('goblin', { x: 5, y: 9 });
+  const { enc } = arena({ herois: [c], foes: [perto, outro] });
+  assert.equal(enc.useFeature(c, 'invokeDuplicity'), true);
+  assert.equal(c.actionUsed, true);
+  assert.equal(c.resources.channelDivinity, c.resourcesMax.channelDivinity - 1);
+  assert.ok(enc.attackModifiers(c, perto, {}).vantagens.includes('cópia ilusória'));
+  assert.ok(!enc.attackModifiers(c, outro, {}).vantagens.includes('cópia ilusória'));
+  assert.ok(!enc.attackModifiers(c, inimigo('goblin', { x: 8, y: 5 }), { ranged: true }).vantagens.includes('cópia ilusória'), 'o clérigo também tem de estar colado');
+  const c17 = dominio('enganacao', 17);
+  c17.pos = { x: 5, y: 5 };
+  const colado = inimigo('goblin', { x: 6, y: 5 });
+  const longe = inimigo('goblin', { x: 11, y: 11 });
+  const { enc: e2 } = arena({ herois: [c17], foes: [colado, longe] });
+  e2.useFeature(c17, 'invokeDuplicity');
+  assert.ok(e2.attackModifiers(c17, colado, {}).vantagens.includes('cópia ilusória'));
+});
+
+teste('Manto de Sombras (Enganação): invisível até o fim do próximo turno; custa ação e carga', () => {
+  const c = dominio('enganacao', 6);
+  c.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [c], foes: [alvoParado({ x: 11, y: 11 })] });
+  assert.equal(enc.useFeature(c, 'trickeryCloak'), true);
+  assert.equal(hasCondition(c, 'invisivel'), true);
+  assert.equal(c.resources.channelDivinity, c.resourcesMax.channelDivinity - 1);
+  assert.equal(enc.useFeature(c, 'trickeryCloak'), false);
+});
+
+// ============================================================================================================
+// DOMÍNIOS DO CLÉRIGO: correções da revisão (resistência que não soma, ataque de magia, Ira Destrutiva no Golpe Divino, estado que não vaza)
+// ============================================================================================================
+teste('Abafar Elementos não soma com outra resistência: quem já resiste a fogo leva a metade só uma vez, e a reação fica', () => {
+  const c = dominio('natureza', 6);
+  c.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 7, y: 5 };
+  amigo.resist = ['fogo'];
+  amigo.hp = amigo.maxHp = 200;
+  const { enc } = arena({ herois: [c, amigo], foes: [alvoParado({ x: 11, y: 11 })] });
+  enc.applyDamage(amigo, 20, 'fogo', null, { magico: true });
+  assert.equal(200 - amigo.hp, 10, 'só a resistência dele');
+  assert.equal(c.reactionUsed, false, 'a reação não foi gasta à toa');
+  amigo.resist = [];
+  enc.applyDamage(amigo, 20, 'fogo', null, { magico: true });
+  assert.equal(c.reactionUsed, true, 'sem resistência própria, o clérigo abafa');
+});
+
+teste('Golpe Guiado e Clarão de Aviso valem também no ataque de magia', () => {
+  const c = dominio('guerra', 6);
+  c.pos = { x: 5, y: 5 };
+  c.spellcasting.cantrips = ['raioDeFogo'];
+  const g = alvoParado({ x: 8, y: 5 });
+  g.ac = 20;
+  const { enc } = arena({ herois: [c], foes: [g] });
+  enc.rng = dadoEmSequencia(12);
+  const antes = g.hp;
+  enc.castSpell(c, 'raioDeFogo', { target: g });
+  assert.ok(g.hp < antes, 'o +10 do Golpe Guiado transformou o erro em acerto');
+  assert.equal(c.resources.channelDivinity, 1);
+  const luz = dominio('luz', 1);
+  luz.pos = { x: 5, y: 5 };
+  const mago = inimigo('goblin', { x: 8, y: 5 });
+  const { enc: e2 } = arena({ herois: [luz], foes: [mago] });
+  assert.equal(e2.clarao(mago, luz)?.id, luz.id);
+});
+
+teste('Ira Destrutiva também vale no Golpe Divino da Tempestade, e não passa para a luta seguinte', () => {
+  const c = dominio('tempestade', 8);
+  c.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 6, y: 5 });
+  const { enc, log } = arena({ herois: [c], foes: [gob] });
+  enc.useFeature(c, 'destructiveWrath');
+  enc.rng = dadoEmSequencia(15);
+  enc.resolveAttack(c, gob, { weaponId: 'maca' });
+  assert.ok(log.some((e) => /Golpe Divino \(Ira Destrutiva\)/.test(e.text) && /\+8/.test(e.text)), 'o dado saiu no máximo');
+  assert.equal(c.furiaDestrutivaPronta, false);
+  const c2 = dominio('tempestade', 3);
+  c2.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  g2.hp = 1;
+  const { enc: e2 } = arena({ herois: [c2], foes: [g2] });
+  e2.useFeature(c2, 'destructiveWrath');
+  e2.applyDamage(g2, 50, 'cortante', c2, {});
+  e2.checkEnd?.();
+  assert.equal(c2.furiaDestrutivaPronta, false, 'o fim do combate limpa a Ira armada');
+});
+
+teste('Ira da Tempestade também responde a um ataque à distância a até 1,5 m; Duplicidade e Coroa acabam com o combate', () => {
+  const c = dominio('tempestade', 1);
+  c.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.maxHp = gob.hp = 500;
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  enc.applyDamage(c, 4, 'perfurante', gob, { deArma: true });
+  assert.equal(c.reactionUsed, true, 'reagiu ao golpe de arma, corpo a corpo ou não');
+  const e = dominio('enganacao', 17);
+  e.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  g2.hp = 1;
+  const { enc: e2 } = arena({ herois: [e], foes: [g2] });
+  e2.useFeature(e, 'invokeDuplicity');
+  assert.equal(hasCondition(e, 'duplicidade'), true);
+  e2.applyDamage(g2, 50, 'cortante', e, {});
+  e2.checkEnd?.();
+  assert.equal(hasCondition(e, 'duplicidade'), false, 'a cópia some quando o combate acaba');
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

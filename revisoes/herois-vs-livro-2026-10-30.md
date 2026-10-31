@@ -574,3 +574,13 @@ Feitas e testadas (suítes 1141/1141, vitest 401/401, build ok): Cavaleiro Míst
 - Efeitos visuais: nenhum sprite novo; Transposição Benigna e Passo das Sombras reaproveitam `porta-dimensional` (a chave `necrotico-impacto` não existia e foi trocada).
 - Limites conhecidos: Eu Ilusório contra ataques de magia, Inspiração no dano, Alcance do Avançado, Terceiro Olho fixo, 7 de 16 manobras/disciplinas ainda faltam, ficha do monge, saves antigos sem migração. Efeitos e botões do HUD não foram vistos em movimento no jogo.
 - Faltam as 9 subclasses de clérigo, bruxo e feiticeiro só nomeadas.
+
+## Atualização 19 — seis domínios de clérigo do Livro do Jogador (31/10)
+
+Guerra, Tempestade, Luz, Conhecimento, Natureza e Enganação, com as características por nível, os usos por SAB, as magias de domínio e a criação de personagem ligada ao motor. Suítes 1164, vitest 401, build ok.
+
+- Revisão (sonnet, regras e ícones): corrigidos Coroa de Luz (sem limite de usos, só magias), Abafar Elementos (não soma com outra resistência), ids de magia do domínio, Duplicidade (exige o clérigo colado), estado que vazava entre combates, Clarão e Golpe Guiado no ataque de magia, Ira da Tempestade em qualquer ataque de arma, Ira Destrutiva no Golpe Divino.
+- Ícones: 31 em 6 folhas + 2 de refação (≈ 48 créditos). Fracos mas aceitos: Avatar da Batalha, Golpe do Relâmpago, Sacerdote da Guerra, Golpe Divino da Enganação.
+- Simplificações declaradas na ficha: uma cópia só (sem concentração nem mover), Duplicidade Aprimorada sem quatro cópias, Ira Destrutiva armada em vez de escolhida na rolagem, Golpe Guiado automático.
+- Sem efeito no jogo: Conhecimento das Eras, Ler Pensamentos, Visões do Passado, Mestre da Natureza, Bênção do Trapaceiro, Nascido da Tempestade.
+- Faltam: Bruxo (Arquifada, Grande Antigo) e Feiticeiro (Magia Selvagem).

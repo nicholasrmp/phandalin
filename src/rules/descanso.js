@@ -92,6 +92,7 @@ export function escolherResistenciaInfernal(c, tipo = null) {
 }
 
 export function recuperarNoCurto(c) {
+  delete c.furiaDestrutivaPronta;
   const frases = [];
   c.furiaImplacavelCD = 10; // Fúria Implacável: a CD volta a 10 depois de um descanso curto ou longo
   const infernal = escolherResistenciaInfernal(c);
@@ -225,6 +226,7 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   delete c.wardHp;
   delete c.portento;
   delete c.olharHipnoticoJa;
+  delete c.furiaDestrutivaPronta;
   delete c.charmeImunes;
   // INTERVENÇÃO DIVINA: depois de atendido, o deus fica em silêncio por sete dias; cada descanso longo conta um.
   const silencio = c.intervencaoDias ?? 0;

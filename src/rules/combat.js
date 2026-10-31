@@ -1381,7 +1381,10 @@ export class Encounter {
         // medido, o bárbaro saía vitorioso ainda em Fúria e caía no fosso da
         // trilha levando 3 de 6. Resistência de graça, de uma luta anterior.
         if (hasCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
-        for (const id of ['levitando', 'piscando', 'etereo', 'descuidado']) if (hasCondition(c, id)) removeCondition(c, id);
+        for (const id of ['levitando', 'piscando', 'etereo', 'descuidado', 'duplicidade', 'coroaDeLuz']) if (hasCondition(c, id)) removeCondition(c, id);
+        // O Manto de Sombras do clérigo (invisível por 1 rodada) e a Ira Destrutiva armada não passam para a luta seguinte.
+        if (c.features?.includes('trickeryCloak') && hasCondition(c, 'invisivel')) removeCondition(c, 'invisivel');
+        c.furiaDestrutivaPronta = false;
         const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
         if (k === 'levitar' || k === 'invocar') c.concentrating = null;
       }
@@ -2938,6 +2941,11 @@ export class Encounter {
     if (distraido && distraido.source !== attacker.id && this.combatants.find((x) => x.id === distraido.source)?.side === attacker.side) fonte(mods, 'vantagem', 'ataque distrativo');
     // PASSO DAS SOMBRAS (monge da Sombra): vantagem no primeiro ataque corpo a corpo depois do teleporte.
     if (hasCondition(attacker, 'passoSombrio') && !ranged) fonte(mods, 'vantagem', 'passo das sombras');
+    // INVOCAR DUPLICIDADE (clérigo da Enganação): vantagem contra quem está colado na cópia (ou, com a Aprimorada, colado no clérigo).
+    const dup = getCondition(attacker, 'duplicidade');
+    if (dup && distanceFt(attacker.pos, target.pos) <= 5 && ((dup.data?.pos && distanceFt(dup.data.pos, target.pos) <= 5) || attacker.features?.includes('improvedDuplicity'))) {
+      fonte(mods, 'vantagem', 'cópia ilusória');
+    }
     // VOTO DE INIMIZADE (paladino da Vingança): vantagem contra a criatura jurada.
     if (getCondition(target, 'votoDeInimizade')?.source === attacker.id) fonte(mods, 'vantagem', 'voto de inimizade');
     // Duelo Compelido: só quem o desafiou é alvo sem desvantagem.
@@ -3274,24 +3282,90 @@ export class Encounter {
     }
   }
 
+  /** ABAFAR ELEMENTOS: reação de um clérigo da Natureza a até 9 m de quem sofre ácido, frio, fogo, elétrico ou trovejante; o dano cai à metade. */
+  abafarElementos(alvo, amount, tipo) {
+    if (!['ácido', 'frio', 'fogo', 'elétrico', 'trovejante'].includes(tipo)) return amount;
+    const c = this.combatants.find((a) => !a.dead && a.side === alvo.side && a.features?.includes('dampenElements') && !a.reactionUsed
+      && !conditionEffects(a).incapacitated && distanceFt(a.pos, alvo.pos) <= 30);
+    if (!c) return amount;
+    c.reactionUsed = true;
+    const metade = Math.floor(amount / 2);
+    this.say('recurso', `${c.name} abafa a energia: o dano de ${tipo} em ${alvo.name} cai de ${amount} a ${metade} (Abafar Elementos).`);
+    return metade;
+  }
+
+  /** CLARÃO DE AVISO: quem o gasta (o alvo, ou um aliado a até 9 m dele com o Clarão Aprimorado), ou null. */
+  clarao(atacante, alvo) {
+    if (atacante.side === alvo.side) return null;
+    const c = this.combatants.find((a) => !a.dead && a.side === alvo.side && a.features?.includes('wardingFlare') && (a.resources?.wardingFlare ?? 0) > 0
+      && !a.reactionUsed && !conditionEffects(a).incapacitated && distanceFt(a.pos, atacante.pos) <= 30 && this.field.hasLineOfSight(a.pos, atacante.pos)
+      && (a === alvo || a.features.includes('improvedFlare')));
+    if (!c || this.imuneACondicao(atacante, 'cego', c)) return null;
+    c.resources.wardingFlare -= 1;
+    c.reactionUsed = true;
+    this.say('recurso', `${c.name} faz brilhar um clarão diante de ${atacante.name} (Clarão de Aviso).`);
+    return c;
+  }
+
   /**
-   * RIPOSTA (Mestre de Batalha): quando uma criatura erra um ataque corpo a corpo contra ele, gasta um dado e a reação e a ataca; no acerto soma o dado
-   * ao dano. Automática: perguntar a cada erro pararia a luta.
+   * GOLPE GUIADO (clérigo da Guerra) e BÊNÇÃO DO DEUS DA GUERRA: Canalizar Divindade soma +10 a um ataque que erraria por 10 ou menos.
+   * Automático e só quando muda o resultado (um 1 natural continua errando).
    */
-  riposta(atacante, alvo) {
-    if (this.reagindo || alvo.dead || atacante.dead || !alvo.features?.includes('riposte') || alvo.reactionUsed || (alvo.resources?.superiorityDice ?? 0) < 1
-      || conditionEffects(alvo).incapacitated || atacante.side === alvo.side || distanceFt(alvo.pos, atacante.pos) > 5) return;
-    const arma = this.armaDeOportunidade(alvo);
-    if (arma === undefined || !this.canAttack(alvo, atacante, arma).ok) return;
-    this.reagindo = true;
-    try {
-      alvo.reactionUsed = true;
-      alvo.manobraPronta = 'riposteStrike';
-      this.say('reacao', `${alvo.name} revida o golpe que errou (Riposta).`);
-      this.resolveAttackBase(alvo, atacante, { opportunity: true, weaponId: arma, reacao: true });
-    } finally {
-      alvo.manobraPronta = null;
-      this.reagindo = false;
+  guiarAtaque(atacante, atk, ca) {
+    if (atk.hit || atk.fumble || atk.total + 10 < ca) return;
+    const tem = (c) => !c.dead && (c.resources?.channelDivinity ?? 0) > 0 && !conditionEffects(c).incapacitated;
+    let quem = tem(atacante) && atacante.features?.includes('guidedStrike') ? atacante : null;
+    let nome = 'Golpe Guiado';
+    if (!quem) {
+      quem = this.combatants.find((c) => c !== atacante && c.side === atacante.side && c.features?.includes('warGodsBlessing') && tem(c) && !c.reactionUsed
+        && distanceFt(c.pos, atacante.pos) <= 30 && this.field.hasLineOfSight(c.pos, atacante.pos)) ?? null;
+      nome = 'Bênção do Deus da Guerra';
+      if (quem) quem.reactionUsed = true;
+    }
+    if (!quem) return;
+    quem.resources.channelDivinity -= 1;
+    atk.total += 10;
+    atk.hit = true;
+    this.say('recurso', `${quem.name} abençoa o golpe de ${atacante.name}: +10 no ataque (${nome}).`);
+  }
+
+  /** IRA DA TEMPESTADE (clérigo da Tempestade): reação a um golpe corpo a corpo que acerta; o agressor testa Destreza ou leva 2d8. */
+  iraDaTempestade(alvo, agressor) {
+    if (alvo.reactionUsed || !alvo.features?.includes('wrathOfTheStorm') || !((alvo.resources?.wrathOfTheStorm ?? 0) > 0) || conditionEffects(alvo).incapacitated
+      || agressor.side === alvo.side || distanceFt(alvo.pos, agressor.pos) > 5) return;
+    alvo.reactionUsed = true;
+    alvo.resources.wrathOfTheStorm -= 1;
+    const cd = spellSaveDc(alvo);
+    const sv = this.resistencia(agressor, 'dex', cd, { contra: { magico: true } });
+    this.explicarResistencia(agressor, 'dex', cd, sv, { contra: `Ira da Tempestade de ${alvo.name}`, seSucesso: 'leva só metade' });
+    const dmg = this.dadosMaximos(alvo, '2d8', 'elétrico');
+    const quanto = sv.success ? Math.floor(dmg / 2) : dmg;
+    this.say('recurso', `${alvo.name} responde ao golpe com um trovão: ${quanto} de dano elétrico em ${agressor.name} (Ira da Tempestade).`);
+    this.applyDamage(agressor, quanto, 'elétrico', alvo, { magico: true });
+  }
+
+  /** Rola `notacao`; se a Ira Destrutiva estiver armada e o tipo for elétrico ou trovejante, vira o máximo. Devolve o total. */
+  dadosMaximos(actor, notacao, tipo) {
+    const total = damageRoll(this.rng, notacao).total;
+    if (!actor.furiaDestrutivaPronta || !['elétrico', 'trovejante'].includes(tipo)) return total;
+    actor.furiaDestrutivaPronta = false;
+    const m = /^(\d+)d(\d+)([+-]\d+)?$/.exec(notacao);
+    const max = m ? Number(m[1]) * Number(m[2]) + Number(m[3] ?? 0) : total;
+    if (max > total) this.say('recurso', `${actor.name} canaliza a fúria da tempestade: o dano é o máximo (${max}) (Ira Destrutiva).`);
+    return Math.max(total, max);
+  }
+
+  /** O dano de uma magia ganha o que o domínio dá: Conjuração Potente (SAB nos truques) e Ira Destrutiva (máximo em elétrico/trovejante). */
+  ajustarDanoDeDominio(actor, spell, dmg, notacao) {
+    if (!dmg) return;
+    if (spell.level === 0 && actor.classe === 'clerigo' && actor.features?.includes('potentSpellcasting')) dmg.total += Math.max(0, abilityMod(actor.abilities.wis));
+    if (actor.furiaDestrutivaPronta && ['elétrico', 'trovejante'].includes(spell.damageType)) {
+      const m = /(\d+)d(\d+)([+-]\d+)?/.exec(String(notacao ?? ''));
+      actor.furiaDestrutivaPronta = false;
+      if (m) {
+        const max = Number(m[1]) * Number(m[2]) + Number(m[3] ?? 0);
+        if (max > dmg.total) { dmg.total = max; this.say('recurso', `${actor.name} canaliza a fúria da tempestade: ${spell.name} causa o dano máximo (Ira Destrutiva).`); }
+      }
     }
   }
 
@@ -3423,6 +3497,11 @@ export class Encounter {
       fonte(mods, 'desvantagem', `proteção de ${protetor.name}`);
       this.say('recurso', `${protetor.name} ergue o escudo na frente de ${target.name}.`);
     }
+    // CLARÃO DE AVISO (clérigo da Luz): reação; o atacante ataca com desvantagem. Só se ainda não havia desvantagem.
+    if (!mods.desvantagens.length) {
+      const lume = this.clarao(attacker, target);
+      if (lume) fonte(mods, 'desvantagem', `Clarão de Aviso de ${lume.name}`);
+    }
     if (check.longRange) fonte(mods, 'desvantagem', 'alcance longo');
     if (disadvantage) fonte(mods, 'desvantagem', typeof disadvantage === 'string' ? disadvantage : 'segundo ataque');
 
@@ -3445,6 +3524,7 @@ export class Encounter {
     // CRÍTICO APRIMORADO / SUPERIOR (Campeão): o d20 que é crítico desce para 19 ou 18, só em ataque com arma.
     mods.critMin = margemDeCritico(attacker);
     const atk = segundaChanceNoAtaque(this, attacker, target, attackRoll(this.rng, bonus, ac, mods), bonus, ac);
+    this.guiarAtaque(attacker, atk, ac);
     this.consumirAoAtacar(attacker, target);
     // PASSO DAS SOMBRAS: a vantagem é do primeiro golpe corpo a corpo; um tiro não a gasta.
     if (!p.ranged) removeCondition(attacker, 'passoSombrio');
@@ -4008,6 +4088,7 @@ export class Encounter {
       || (type === 'frio' && tf.includes('stoneResistCold')) || (type === 'elétrico' && tf.includes('stoneResistLightning'))
       || (type === 'ácido' && tf.includes('stoneResistAcid')) || (type === 'trovejante' && tf.includes('stoneResistThunder'))
       || (type === 'ácido' && tf.includes('stoneResistAcid')) || (type === 'trovejante' && tf.includes('stoneResistThunder'))
+      || (!magico && ['concussão', 'cortante', 'perfurante'].includes(type) && tf.includes('avatarOfBattle'))
       || (magico && !deArma && tf.includes('spellResistance'))
       || (magico && !deArma && this.paladinosDaAura(target, 'auraOfWarding').length > 0);
     if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
@@ -4238,16 +4319,10 @@ export class Encounter {
       amount = Math.max(0, amount - reduz);
       this.say('recurso', `${target.name} apara o golpe (Aparar): -${Math.max(0, reduz)}, o dano vai de ${cheio} a ${amount}.`);
     }
-    // APARAR (Mestre de Batalha): reação e um dado; um golpe corpo a corpo que acerta perde o dado + o modificador de Destreza do dano.
-    if (source && deArma && corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('parry')
-      && (target.resources?.superiorityDice ?? 0) > 0 && !conditionEffects(target).incapacitated) {
-      target.resources.superiorityDice -= 1;
-      target.reactionUsed = true;
-      const reduz = roll(this.rng, this.dadoDeSuperioridade(target)).total + abilityMod(target.abilities?.dex ?? 10);
-      const cheio = amount;
-      amount = Math.max(0, amount - reduz);
-      this.say('recurso', `${target.name} apara o golpe (Aparar): -${Math.max(0, reduz)}, o dano vai de ${cheio} a ${amount}.`);
-    }
+    // ABAFAR ELEMENTOS (clérigo da Natureza): reação; o alvo (ou um aliado a até 9 m do clérigo) resiste a este dano elemental.
+    if (amount > 0 && amount === bruto) amount = this.abafarElementos(target, amount, type);
+    // IRA DA TEMPESTADE (clérigo da Tempestade): reação ao golpe corpo a corpo que o acerta.
+    if (source && deArma && amount > 0) this.iraDaTempestade(target, source);
     // DEFLETIR PROJÉTEIS (monge, 3º): reação; um ataque À DISTÂNCIA com arma que acerta o monge perde 1d10 + DES + nível do dano. Se zerar
     // e ele tiver 1 de ki, devolve o projétil: um ataque à distância dele contra quem atirou, com o mesmo dano.
     if (source && deArma && !corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('deflectMissiles')
@@ -4336,6 +4411,9 @@ export class Encounter {
       this.onEvent({ type: 'damage', target, amount, source });
     }
 
+    // GOLPE DO RELÂMPAGO (clérigo da Tempestade, 6º): dano elétrico em criatura Grande ou menor também a empurra 3 m.
+    if (target.hp > 0 && type === 'elétrico' && source?.features?.includes('thunderboltStrike') && source !== target
+      && !['enorme', 'imenso', 'colossal'].includes(String(target.size ?? '').toLowerCase())) this.empurrar(target, source.pos, 10);
     // PROTEÇÃO CONTRA A MORTE (SRD): a PRIMEIRA vez que o alvo cairia a 0 PV
     // por dano, ele fica de pé com 1 PV e a magia acaba.
     //
@@ -6270,6 +6348,7 @@ export class Encounter {
         : target ? [{ c: target, papel: 'inimigo' }] : [];
     // O dano de uma magia de área é rolado UMA vez para todos os alvos.
     const dmg = dano ? damageRoll(this.rng, dano) : null;
+    this.ajustarDanoDeDominio(actor, spell, dmg, dano);
     if (dmg) this.empoderar(dmg);
     if (dmg) { const b = this.consumirBonusDeMagia(actor); if (b) { dmg.total += b.bonus; dmg.mod = (dmg.mod ?? 0) + b.bonus; } }
     // GOLPE DE CHAMA: a segunda parcela, de OUTRO tipo. Rolada UMA vez para a
@@ -6739,9 +6818,18 @@ export class Encounter {
     // MANOBRA armada (Mestre de Batalha): +dado de superioridade no dano e o efeito dela.
     if (atacante.manobraPronta) this.aplicarManobra(atacante, alvo, extra, tipo);
     // GOLPE DIVINO (clérigo da Vida, 8º): +1d8 radiante UMA vez por turno no acerto de arma; 2d8 do 14º em diante.
-    if (f.includes('divineStrike') && !atacante.golpeDivinoNoTurno) {
+    if (['divineStrike', 'divineStrikeThunder', 'divineStrikeWeapon', 'divineStrikeNature', 'divineStrikePoison'].some((x) => f.includes(x)) && !atacante.golpeDivinoNoTurno) {
       atacante.golpeDivinoNoTurno = true;
-      extra('Golpe Divino', (atacante.level ?? 1) >= 14 ? '2d8' : '1d8', 'radiante');
+      // Natureza: frio, fogo ou elétrico, o que o alvo não resiste. Os outros domínios têm tipo fixo.
+      const naNatureza = ['fogo', 'frio', 'elétrico'].find((t) => !alvo.immune?.includes(t) && !alvo.resist?.includes(t)) ?? 'fogo';
+      const tipoDivino = f.includes('divineStrikeThunder') ? 'trovejante' : f.includes('divineStrikeWeapon') ? tipo : f.includes('divineStrikeNature') ? naNatureza
+        : f.includes('divineStrikePoison') ? 'veneno' : 'radiante';
+      const grandeG = (atacante.level ?? 1) >= 14;
+      if (atacante.furiaDestrutivaPronta && ['elétrico', 'trovejante'].includes(tipoDivino)) {
+        // IRA DESTRUTIVA: o dado do Golpe Divino sai no máximo.
+        atacante.furiaDestrutivaPronta = false;
+        extra('Golpe Divino (Ira Destrutiva)', `+${grandeG ? 16 : 8}`, tipoDivino, true);
+      } else extra('Golpe Divino', grandeG ? '2d8' : '1d8', tipoDivino);
     }
     // DESTRUIÇÃO DIVINA APRIMORADA (paladino, 11º): +1d8 radiante em TODO acerto de arma corpo a corpo.
     if (f.includes('improvedDivineSmite') && !ranged) extra('Destruição Divina Aprimorada', '1d8', 'radiante');
@@ -7051,7 +7139,13 @@ export class Encounter {
       { rotulo: 'proficiência', valor: proficiencyBonus(actor.level) },
     ]);
     if (this.imagemDesvia(actor, target, extra.bonus, mods)) return 0;
+    // CLARÃO DE AVISO e GOLPE GUIADO valem para qualquer jogada de ataque, a de magia inclusive.
+    if (!mods.desvantagens.length) {
+      const lume = this.clarao(actor, target);
+      if (lume) fonte(mods, 'desvantagem', `Clarão de Aviso de ${lume.name}`);
+    }
     const atk = attackRoll(this.rng, extra.bonus, ca, mods);
+    this.guiarAtaque(actor, atk, ca);
     this.consumirAoAtacar(actor, target);
     this.consumirMarcas(target);
     // Acerto a até 1,5 m em alvo inconsciente ou paralisado é crítico,
@@ -7096,6 +7190,7 @@ export class Encounter {
     }
     const dmg = damageRoll(this.rng, dano, { critical });
     if (bonusDano) dmg.total += bonusDano;
+    this.ajustarDanoDeDominio(actor, spell, dmg, dano);
     this.empoderar(dmg);
     { const b = this.consumirBonusDeMagia(actor); if (b) dmg.total += b.bonus; }
     const danoPartes = [parcelaDeDano('dano', dmg)];
@@ -7246,6 +7341,9 @@ export class Encounter {
         || fx.saveDisadvantage.includes(hab) || fx.desvantagemTeste.includes(hab),
     };
     if (desvantagem) opts.disadvantage = true;
+    // COROA DE LUZ (clérigo da Luz, 17º): quem está a até 18 m do clérigo tem desvantagem contra as magias dele de fogo ou radiantes.
+    if (contra?.magico && ['fogo', 'radiante'].includes(contra?.tipoDano) && this.combatants.some((c) => !c.dead && hasCondition(c, 'coroaDeLuz')
+      && distanceFt(c.pos, actor.pos) <= 60)) opts.disadvantage = true;
     // MAGIA ELEVADA: o primeiro alvo inimigo a resistir tem desvantagem.
     if (meta?.heightened && actor.side !== meta.dono.side) { opts.disadvantage = true; meta.heightened = false; }
     let bonus = saveBonus(actor, hab);
@@ -7845,6 +7943,88 @@ export class Encounter {
           this.say('condicao', `${m.name} recua, sem conseguir chegar perto.`);
         }
         if (!alvosU.length) this.say('recurso', 'Nenhum profano por perto.');
+        return true;
+      }
+      case 'charmAnimalsAndPlants': {
+        // ENCANTAR ANIMAIS E PLANTAS (Natureza, 2º): ação e uma carga; feras e plantas a até 9 m testam SAB ou ficam enfeitiçadas (o dano as liberta).
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cdE = spellSaveDc(actor);
+        const alvosE = this.combatants.filter((m) => !m.dead && m !== actor && ['fera', 'planta'].includes(m.tipo) && distanceFt(actor.pos, m.pos) <= 30 && this.field.hasLineOfSight(actor.pos, m.pos));
+        this.say('recurso', `${actor.name} chama a natureza (CD ${cdE}).`);
+        for (const m of alvosE) {
+          const r = this.resistencia(m, 'wis', cdE, { contra: { magico: true, condicao: 'enfeiticado' } });
+          this.explicarResistencia(m, 'wis', cdE, r, { contra: `Encantar Animais e Plantas de ${actor.name}`, seSucesso: 'não se deixa encantar' });
+          if (!r.success && this.aplicarCondicao(m, 'enfeiticado', { rounds: 10, source: actor.id })) this.say('condicao', `${m.name} se acalma, encantado.`);
+        }
+        if (!alvosE.length) this.say('recurso', 'Nenhuma fera ou planta por perto.');
+        return true;
+      }
+      case 'trickeryCloak': {
+        // MANTO DE SOMBRAS (Enganação, 6º): ação e uma carga; invisível até o fim do próximo turno do clérigo.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0) || hasCondition(actor, 'invisivel')) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        addCondition(actor, 'invisivel', { rounds: 2, source: actor.id });
+        this.say('recurso', `${actor.name} se esconde nas sombras do engano.`);
+        return true;
+      }
+      case 'invokeDuplicity': {
+        // INVOCAR DUPLICIDADE (Enganação, 2º): ação e uma carga; a cópia fica ao lado do inimigo mais próximo (a até 9 m) por um minuto.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0) || hasCondition(actor, 'duplicidade')) return false;
+        const perto = this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 30)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        addCondition(actor, 'duplicidade', { rounds: 10, source: actor.id, data: { pos: perto ? { ...perto.pos } : { ...actor.pos } } });
+        this.say('recurso', `${actor.name} cria uma cópia ilusória${perto ? ` ao lado de ${perto.name}` : ''} (Invocar Duplicidade).`);
+        return true;
+      }
+      case 'warPriest': {
+        // SACERDOTE DA GUERRA (Guerra, 1º): depois da ação Atacar, um ataque com arma como ação bônus. SAB usos por descanso longo.
+        if (actor.bonusUsed || !(actor.resources?.warPriest > 0) || !actor.atacouNoTurno) return false;
+        const alvoW = target ?? this.enemiesOf(actor).filter((m) => !m.dead && this.armaDeOportunidade(actor) !== undefined && this.canAttack(actor, m, this.armaDeOportunidade(actor)).ok)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        const armaW = this.armaDeOportunidade(actor);
+        if (!alvoW || alvoW.dead || armaW === undefined || !this.canAttack(actor, alvoW, armaW).ok) return false;
+        actor.bonusUsed = true;
+        actor.resources.warPriest -= 1;
+        this.say('recurso', `${actor.name} ataca de novo, como um sacerdote da guerra.`);
+        this.resolveAttackBase(actor, alvoW, { weaponId: armaW, opportunity: true });
+        return true;
+      }
+      case 'destructiveWrath': {
+        // IRA DESTRUTIVA (Tempestade, 2º): arma o próximo dano elétrico ou trovejante para sair no máximo. Uma carga de Canalizar Divindade.
+        if (actor.furiaDestrutivaPronta || !(actor.resources?.channelDivinity > 0)) return false;
+        actor.resources.channelDivinity -= 1;
+        actor.furiaDestrutivaPronta = true;
+        this.say('recurso', `${actor.name} chama a tempestade: o próximo raio ou trovão sairá no máximo (Ira Destrutiva).`);
+        return true;
+      }
+      case 'radianceOfTheDawn': {
+        // ESPLENDOR DA AURORA (Luz, 2º): ação e uma carga; hostis a até 9 m fazem CD de CON ou sofrem 2d10 + nível radiante (metade se passa).
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cdR = spellSaveDc(actor);
+        const alvosR = this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 30 && this.field.hasLineOfSight(actor.pos, m.pos));
+        const danoR = damageRoll(this.rng, `2d10+${actor.level ?? 1}`).total;
+        this.say('recurso', `${actor.name} liberta a luz da aurora (CD ${cdR}, ${danoR} radiante).`);
+        for (const m of alvosR) {
+          const r = this.resistencia(m, 'con', cdR, { contra: { magico: true, tipoDano: 'radiante' } });
+          this.explicarResistencia(m, 'con', cdR, r, { contra: `Esplendor da Aurora de ${actor.name}`, seSucesso: 'leva só metade' });
+          this.applyDamage(m, r.success ? Math.floor(danoR / 2) : danoR, 'radiante', actor, { magico: true });
+        }
+        if (!alvosR.length) this.say('recurso', 'Nenhum inimigo à vista.');
+        return true;
+      }
+      case 'coronaOfLight': {
+        // COROA DE LUZ (Luz, 17º): ação; por um minuto as criaturas a até 18 m resistem pior às magias de fogo e radiantes. Sem limite de usos.
+        if (actor.actionUsed || hasCondition(actor, 'coroaDeLuz')) return false;
+        actor.actionUsed = true;
+        addCondition(actor, 'coroaDeLuz', { rounds: 10, source: actor.id });
+        this.say('recurso', `${actor.name} se envolve numa coroa de luz do sol.`);
         return true;
       }
       case 'holyNimbus': {

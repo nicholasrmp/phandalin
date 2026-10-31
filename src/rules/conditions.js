@@ -370,6 +370,14 @@ export const CONDITIONS = {
     curaMaxima: true,
     concentrationEffect: true,
   },
+  duplicidade: {
+    name: 'Duplicidade',
+    desc: 'Uma cópia ilusória sua luta ao seu lado: seus ataques contra quem está colado nela e em você têm vantagem.',
+  },
+  coroaDeLuz: {
+    name: 'Coroa de Luz',
+    desc: 'Luz do sol a até 18 m: as criaturas nela têm desvantagem nas resistências contra magias de fogo e radiantes.',
+  },
   campeaoAnciao: {
     name: 'Campeão Ancestral',
     desc: 'Recupera 10 PV no começo de cada turno seu, por um minuto.',

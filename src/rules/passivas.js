@@ -313,6 +313,7 @@ export const MAGIAS_DE_CARACTERISTICA = {
   improvedMinorIllusion: ['ilusaoMenor'],
   shadowStep: ['passoDasSombras'],
   shadowArts: ['ilusaoMenor'],
+  lightCantrip: ['luz'],
 };
 
 /**
@@ -354,6 +355,11 @@ export function darMagiasDeCaracteristica(c, SPELLS) {
     for (const id of ids) {
       if (SPELLS[id] && !c.magiasDeCaracteristica.includes(id) && !c.spellcasting.cantrips?.includes(id)) c.magiasDeCaracteristica.push(id);
     }
+  }
+  // ACÓLITO DA NATUREZA: o truque de druida escolhido.
+  if (c.features?.includes('acolyteCantrip') && c.truqueDaNatureza && SPELLS[c.truqueDaNatureza]) {
+    garantir();
+    if (!c.spellcasting.cantrips?.includes(c.truqueDaNatureza) && !c.magiasDeCaracteristica.includes(c.truqueDaNatureza)) c.magiasDeCaracteristica.push(c.truqueDaNatureza);
   }
   for (const [f, def] of Object.entries(MAGIAS_DE_KI)) {
     if (!c.features?.includes(f)) continue;
