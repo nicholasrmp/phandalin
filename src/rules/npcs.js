@@ -254,6 +254,43 @@ export const NPCS = {
   },
 
   // -------------------------------------------------------------------------
+  // MALDIÇÃO DE STRAHD: as duas crianças de Baróvia
+  // -------------------------------------------------------------------------
+  // São ilusões da Casa da Morte (somem se atacadas) e não sabem disso. Não entram em iniciativa.
+  rose: {
+    id: 'rose',
+    nome: 'Rose Durst',
+    look: 'rose',
+    papel: 'Menina na rua de Baróvia',
+    bloco: 'plebeu',
+    fonte: 'propria',
+    atitude: 'cordial',
+    personalidade: {
+      quer: 'Que o irmão pare de chorar e que alguém tire o monstro da casa deles.',
+      esconde: 'Que não são de carne: a casa as pôs na rua, e ela não sabe.',
+      fala: 'Séria demais para dez anos, manda no irmão com a voz baixa. Responde direto e olha para a casa entre uma frase e outra.',
+    },
+    frase: 'Tem um monstro na nossa casa. A gente não volta enquanto ele estiver lá.',
+    blurb: 'Nunca entra em iniciativa. Se for atacada, some.',
+  },
+  thorn: {
+    id: 'thorn',
+    nome: 'Thorn Durst',
+    look: 'thorn',
+    papel: 'Menino na rua de Baróvia',
+    bloco: 'plebeu',
+    fonte: 'propria',
+    atitude: 'cordial',
+    personalidade: {
+      quer: 'A mãe, o pai e o colo da irmã, nessa ordem.',
+      esconde: 'Que a boneca é a única coisa que ele consegue segurar sem tremer.',
+      fala: 'Quase não fala; soluça, aperta a boneca e deixa a irmã responder por ele.',
+    },
+    frase: '…(aperta a boneca e olha para a Rose).',
+    blurb: 'Nunca entra em iniciativa. Se for atacado, some.',
+  },
+
+  // -------------------------------------------------------------------------
   // OS QUE GUARDAM SEGREDO
   // -------------------------------------------------------------------------
 

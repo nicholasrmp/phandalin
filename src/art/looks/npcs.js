@@ -272,6 +272,24 @@ export const NPC_LOOKS = {
     stance: 'agachado',
   },
 
+  // BARÓVIA: Rose e Thorn Durst, as duas crianças que a Casa da Morte põe na rua para atrair o grupo. Humanas, desarmadas.
+  rose: {
+    species: 'human', build: 'magro', child: true,
+    skin: '#e8d2c0', hair: '#4a3020', hairStyle: 'long', beard: false,
+    outfit: '#7a3340', outfitDark: '#52202a', trim: '#e6dcc8',
+    metal: '#a0a6ae', leather: '#5a4630', eyes: '#6a6a70',
+    armorStyle: 'leather', helm: false, shield: false,
+    stance: 'agachado',
+  },
+  thorn: {
+    species: 'human', build: 'magro', child: true,
+    skin: '#ecd4c0', hair: '#9a7a4e', hairStyle: 'spiky', beard: false,
+    outfit: '#6c7c8e', outfitDark: '#475666', trim: '#b8b0a0',
+    metal: '#a0a6ae', leather: '#5a4630', eyes: '#5a4a3a',
+    armorStyle: 'leather', helm: false, shield: false,
+    stance: 'agachado',
+  },
+
   // -------------------------------------------------------------------------
   // OS QUE GUARDAM SEGREDO — santuário e floresta
   // -------------------------------------------------------------------------

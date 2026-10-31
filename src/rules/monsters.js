@@ -13,6 +13,7 @@ import { HUMANOIDES, TRAITS as T_HUM } from './monsters/humanoides.js';
 import { FERAS, TRAITS as T_FER } from './monsters/feras.js';
 import { MORTOS_VIVOS, TRAITS as T_MOR } from './monsters/mortosvivos.js';
 import { ABERRACOES, TRAITS as T_ABE } from './monsters/aberracoes.js';
+import { CASA_DA_MORTE, TRAITS as T_CDM } from './monsters/strahd.js';
 import { DANOS_FISICOS } from './tipos-de-dano.js';
 
 export const MONSTERS = {
@@ -21,6 +22,7 @@ export const MONSTERS = {
   ...FERAS,
   ...MORTOS_VIVOS,
   ...ABERRACOES,
+  ...CASA_DA_MORTE,
 };
 
 // Os tres fisicos vem de `tipos-de-dano.js`: era uma copia local, e copia de
@@ -45,7 +47,7 @@ const TRACOS_BASE = {
   martialAdvantage: { name: 'Vantagem Marcial', desc: 'Uma vez por turno, +2d6 de dano se um aliado não incapacitado estiver a até 1,5 m do alvo.' },
 };
 
-export const TRAIT_INFO = { ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE };
+export const TRAIT_INFO = { ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE, ...T_CDM };
 
 let serial = 0;
 

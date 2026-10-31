@@ -5374,6 +5374,26 @@ teste('Bênção do Trapaceiro: ação, toca um aliado, vantagem em Furtividade,
   assert.equal(hasCondition(a2, 'bencaoTrapaceiro'), true);
 });
 
+teste('Casa da Morte: as nove criaturas instanciam, têm sprite que existe, XP do ND e fonte declarada', async () => {
+  const { CASA_DA_MORTE } = await import('../rules/monsters/strahd.js');
+  const { makeMonster } = await import('../rules/monsters.js');
+  const { LOOKS } = await import('../art/looks.js');
+  const XP_DO_ND = { '1/8': 25, '1/4': 50, '1/2': 100, '1': 200, '2': 450, '3': 700, '4': 1100, '5': 1800 };
+  const ids = Object.keys(CASA_DA_MORTE);
+  assert.equal(ids.length, 9);
+  for (const id of ids) {
+    const b = CASA_DA_MORTE[id];
+    assert.ok(LOOKS[b.look], `${id}: o look ${b.look} existe`);
+    assert.equal(b.xp, XP_DO_ND[b.cr], `${id}: XP ${b.xp} bate com o ND ${b.cr}`);
+    assert.ok(['SRD', 'propria'].includes(b.fonte), `${id}: fonte declarada`);
+    const m = makeMonster(id, { x: 3, y: 3 });
+    assert.equal(m.maxHp, b.maxHp);
+  }
+  assert.equal(CASA_DA_MORTE.vassouraAnimada.fonte, 'propria', 'a vassoura de ataque não é SRD');
+  assert.equal(CASA_DA_MORTE.fantasmaDeCrianca.size, 'pequeno');
+  assert.equal(CASA_DA_MORTE.fantasmaDeCrianca.maxHp, 35);
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

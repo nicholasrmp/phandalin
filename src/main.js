@@ -64,6 +64,7 @@ import { ambienteDaVariante } from "./core/ambiente.js";
 import { faixaAgora, tocarFaixa, tocarToque } from "./core/musica.js";
 import { montarHeroi, escolhaAutomatica } from "./game/criacao.js";
 import { criarCapitulo1 } from "./game/capitulo1.js";
+import { abrirBarovia } from "./game/strahd-abertura.js";
 import { criarCenaCaverna } from "./game/cena-caverna.js";
 import { criarCapitulo2 } from "./game/capitulo2.js";
 import { criarRuaMarcarrubra } from "./game/capitulo3-rua.js";
@@ -455,18 +456,30 @@ class App {
     // testa (e dos agentes revisores, que abrem a página pela URL).
     const busca = new URLSearchParams(location.search);
     const direto = busca.get("encontro");
-    if (direto)
+    if (direto) {
       this.newEncounter({
         modo: "arena",
         variante: direto,
         nivel: Number(busca.get("nivel")) || 2,
       });
+      // Atalho de desenvolvimento: `?encontro=padrao&nivel=1&strahd=abertura` abre a chegada a Baróvia.
+      if (busca.get("strahd") === "abertura") this.abrirAberturaStrahd();
+    }
     else if (busca.get("sala"))
       this.menu.abrirSala(normalizarCodigo(busca.get("sala")) ?? "");
     else {
       this.menu.abrir();
       this.menu.retomarSalaAtiva();
     }
+  }
+
+  /** A abertura da Casa da Morte (Maldição de Strahd). A casa em si ainda não existe: por ora a conversa termina aqui. */
+  async abrirAberturaStrahd() {
+    const fim = await abrirBarovia(this);
+    await narrar(this.root, {
+      formato: "painel",
+      paginas: [{ titulo: "Casa da Morte", texto: [fim === "atacar" ? "O portão se abriu sozinho. A casa espera." : "O portão geme nas dobradiças. A casa espera.", "(A casa ainda está em obras: a aventura continua aqui quando os andares ficarem prontos.)"] }],
+    });
   }
 
   /**

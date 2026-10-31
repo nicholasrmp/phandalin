@@ -40,6 +40,16 @@ Material de trabalho (não entra no repositório; `_referencias/` é ignorado pe
 - **Casa (andares):** um quadrado do mapa = uma casa do jogo (5 pés, 1,5 m). Cada andar tem uns 12 × 22 quadrados.
 - **Masmorras:** um quadrado do mapa vale **4 casas do jogo (2 × 2)**. A grade da masmorra tem o dobro de casas em cada eixo; o rascunho da planta sai dessa grade, e as salas, as portas e os corredores (túneis de 1,2 m) são redesenhados nela.
 
+## Feito até aqui
+
+- **Retratos** de Rose e Thorn (OpenArt, 2 gerações, no estilo dos outros): `src/art/retratos/rose.webp` e `thorn.webp`, com os looks `rose` e `thorn` e as fichas em `rules/npcs.js`.
+- **Abertura em Baróvia** (`game/strahd-abertura.js`): a névoa, a aldeia vazia e a conversa com Rose, com teste de Intuição, a recusa da névoa e o ataque às crianças (elas somem e o portão se abre). Para ver: `?encontro=padrao&nivel=1&strahd=abertura`.
+- **Criaturas** (`rules/monsters/strahd.js`): armadura animada, vassoura animada (nossa, não SRD), fantasma de criança (SRD alterado como no livro), enxames de centopeias e de ratos, sombra, mímico, lívido e arbusto errante. Grick, carniçal e espectro já existiam.
+
+## Pendente de arte (sprites)
+
+Os blocos novos usam o look mais próximo que existe (cavaleiro, plebeu, specter, giantRat, gelatinaOcre, wraith, vinhaInfectada): armadura animada, vassoura, fantasma de criança, sombra, mímico, lívido, arbusto errante e enxames precisam de sprite próprio.
+
 ## Riscos já à vista
 
 - A casa é grande: 4 andares e 2 masmorras dão três a quatro vezes o tamanho da Mansão Tresendar. Por isso vale cortar.
