@@ -1289,6 +1289,34 @@ export class Fx {
     return this.add({ kind: 'onda', tile: { ...tile }, raio, dur, cor, escuro, osso, sem, chao: true });
   }
 
+  /**
+   * ESTRELAS EM ÓRBITA sobre a cabeça (confusão): três faíscas de pixels que giram numa elipse pequena. Por código e pequena, porque o
+   * sprite em anel empilhava um por criatura e escondia o grupo inteiro.
+   */
+  orbita(tile, { altura = 38, dur = 1.3, cor = '#e8c35a', miolo = '#f4f0e4', n = 3 } = {}) {
+    return this.add({ kind: 'orbita', tile: { ...tile }, altura, dur, cor, miolo, n, fase: Math.random() * Math.PI * 2 });
+  }
+
+  desenharOrbita(ctx, board, it, k) {
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    const aparece = Math.min(1, k / 0.15);
+    const some = Math.min(1, (1 - k) / 0.2);
+    ctx.save();
+    ctx.globalAlpha = Math.min(aparece, some);
+    for (let i = 0; i < it.n; i += 1) {
+      const a = it.fase + k * Math.PI * 5 + (i * Math.PI * 2) / it.n;
+      const x = Math.round(sx + Math.cos(a) * 14);
+      const y = Math.round(sy - it.altura + Math.sin(a) * 5);
+      const atras = Math.sin(a) < 0;
+      ctx.fillStyle = it.cor;
+      ctx.fillRect(x - 1, y - 4, 2, 8);
+      ctx.fillRect(x - 4, y - 1, 8, 2);
+      ctx.fillStyle = atras ? it.cor : it.miolo;
+      ctx.fillRect(x - 1, y - 1, 2, 2);
+    }
+    ctx.restore();
+  }
+
   desenharOnda(ctx, board, it, k) {
     const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
     const kk = EASE_OUT(Math.min(1, k));
@@ -1469,6 +1497,11 @@ export class Fx {
             ctx.stroke();
           }
           ctx.restore();
+          break;
+        }
+
+        case 'orbita': {
+          this.desenharOrbita(ctx, board, it, k);
           break;
         }
 

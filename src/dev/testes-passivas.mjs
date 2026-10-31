@@ -5230,6 +5230,18 @@ teste('Revisão das manobras e surtos: durações que cruzam o turno, golpe cedi
   assert.equal(s.surtoDesvSaveAte, undefined);
 });
 
+teste('Surto "máximo" + Bombardeio de Magia: os dados que saem no máximo rolam de novo', () => {
+  const s = selvagem(18);
+  s.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [s], foes: [alvoParado({ x: 9, y: 9 })] });
+  enc.rng = dadoEmSequencia(1);
+  enc.rng.die = () => 3;
+  s.surtoMaximoAte = enc.round + 10;
+  const dmg = { total: 5, rolls: [2, 3] };
+  enc.ajustarDanoDeDominio(s, { name: 'Raio', level: 1, damageType: 'fogo' }, dmg, '2d8');
+  assert.equal(dmg.total, 16 + 3, 'máximo (16) e um dado máximo rolou de novo (+3)');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

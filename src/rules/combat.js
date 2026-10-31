@@ -3510,7 +3510,11 @@ export class Encounter {
     // SURTO "no máximo": por um minuto as magias de dano do feiticeiro saem com o máximo dos dados.
     if (actor.surtoMaximoAte >= this.round) {
       const mm = /(\d+)d(\d+)([+-]\d+)?/.exec(String(notacao ?? ''));
-      if (mm && Number(mm[1]) * Number(mm[2]) + Number(mm[3] ?? 0) > dmg.total) dmg.total = Number(mm[1]) * Number(mm[2]) + Number(mm[3] ?? 0);
+      if (mm && Number(mm[1]) * Number(mm[2]) + Number(mm[3] ?? 0) > dmg.total) {
+        dmg.total = Number(mm[1]) * Number(mm[2]) + Number(mm[3] ?? 0);
+        // Todos os dados saem no lado máximo: o Bombardeio de Magia (18º) enxerga isso.
+        if (dmg.rolls?.length) dmg.rolls = dmg.rolls.map(() => Number(mm[2]));
+      }
     }
     // BOMBARDEIO DE MAGIA (feiticeiro, 18º): uma vez por turno, um dado que sai no máximo é rolado de novo e somado.
     const turnoB = `${this.round}:${this.side}`;
