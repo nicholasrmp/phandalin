@@ -189,6 +189,7 @@ export const SURTOS = [
         const d = damageRoll(enc.rng, '1d10').total;
         const antes = c.hp + (c.tempHp ?? 0);
         enc.applyDamage(c, d, 'necrótico', a, { magico: true });
+        fx(enc, 'almas-sobem', c.pos);
         // Cura o que o dano de fato causou (resistência, PV temporários e PV que restavam contam).
         curado += Math.max(0, antes - (c.hp + (c.tempHp ?? 0)));
       }

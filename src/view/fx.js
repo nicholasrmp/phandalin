@@ -989,7 +989,7 @@ export class Fx {
    * (`chaoNaCasa`): o chão é desenhado DEPOIS de `drawGround`, e um efeito pintado antes ficaria por baixo do terreno.
    */
   prepararChao(ctx, board) {
-    const lista = this.items.filter((i) => i.kind === 'quadros' && i.chao);
+    const lista = this.items.filter((i) => (i.kind === 'quadros' || i.kind === 'onda') && i.chao);
     if (!lista.length) { this._chao = null; return; }
     const cv = (this._chaoCv ??= document.createElement('canvas'));
     if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) { cv.width = ctx.canvas.width; cv.height = ctx.canvas.height; }
@@ -997,7 +997,11 @@ export class Fx {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, cv.width, cv.height);
     c.setTransform(ctx.getTransform());
-    for (const it of lista) this.desenharQuadros(c, board, it, Math.min(1, it.t / it.dur));
+    for (const it of lista) {
+      const k = Math.min(1, it.t / it.dur);
+      if (it.kind === 'onda') this.desenharOnda(c, board, it, k);
+      else this.desenharQuadros(c, board, it, k);
+    }
     this._chao = cv;
   }
 
@@ -1271,6 +1275,55 @@ export class Fx {
     ctx.globalAlpha = alfa;
     ctx.drawImage(d[camada], x0, y0);
     if (camada === 'tras' && t >= 0.3 && t < 0.38) ctx.drawImage(d.brilho, x0, y0);
+    ctx.restore();
+  }
+
+  /**
+   * ONDA DE CHÃO (onda necrótica, 9 m): desenhada por código, em pixels chapados, porque o raio é de muitas casas e um sprite esticado
+   * lê como um anel vazio. `raio` está em casas; no isométrico 2:1 o círculo da grade vira uma elipse de semi-eixos 45 e 22,6 px por casa.
+   * Camadas: poça escura que se abre, borda violeta com fio branco, rastro mais escuro e fagulhas ossudas que sobem.
+   */
+  onda(tile, { raio = 6, dur = 1.1, cor = '#a579d8', escuro = '#3a2760', osso = '#e8eef5', fagulhas = 34 } = {}) {
+    const sem = [];
+    for (let i = 0; i < fagulhas; i += 1) sem.push({ a: Math.random() * Math.PI * 2, r: 0.3 + Math.random() * 0.7, h: 10 + Math.random() * 34, w: Math.random() < 0.3 ? 3 : 2 });
+    return this.add({ kind: 'onda', tile: { ...tile }, raio, dur, cor, escuro, osso, sem, chao: true });
+  }
+
+  desenharOnda(ctx, board, it, k) {
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    const kk = EASE_OUT(Math.min(1, k));
+    const rx = it.raio * 45;
+    const ry = it.raio * 22.6;
+    const anel = (f, cor, largura, alfa) => {
+      if (f <= 0 || alfa <= 0) return;
+      ctx.globalAlpha = Math.min(1, alfa);
+      ctx.strokeStyle = cor;
+      ctx.lineWidth = largura;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, rx * f, ry * f, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    };
+    ctx.save();
+    // A poça escura que se abre e some.
+    ctx.globalAlpha = 0.42 * (1 - k) ** 1.5;
+    ctx.fillStyle = it.escuro;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, rx * kk, ry * kk, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Rastro, borda e fio de luz.
+    anel(kk * 0.72, it.escuro, 6 * (1 - k) + 2, 0.85 * (1 - k));
+    anel(kk, it.cor, 7 * (1 - k * 0.6) + 1, 1 - k * k);
+    anel(kk * 0.97, it.osso, 2, 0.9 * (1 - k));
+    // Fagulhas: quadradinhos que sobem da faixa da onda.
+    ctx.fillStyle = it.osso;
+    for (const p of it.sem) {
+      const rho = kk * p.r;
+      const x = sx + Math.cos(p.a) * rx * rho;
+      const y = sy + Math.sin(p.a) * ry * rho - p.h * k;
+      ctx.globalAlpha = Math.max(0, 1 - k * 1.1);
+      ctx.fillStyle = p.w === 3 ? it.cor : it.osso;
+      ctx.fillRect(Math.round(x), Math.round(y), p.w, p.w);
+    }
     ctx.restore();
   }
 
