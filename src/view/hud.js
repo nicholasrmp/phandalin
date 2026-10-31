@@ -1310,10 +1310,11 @@ export class Hud {
           comum('wildShape', `Voltar da forma de ${c.formaSelvagem.nome}`, 'Abandona a forma de fera como ação bônus; os PV de antes voltam.', 'Ação bônus',
             { kind: 'feature', featureId: f, modo: 'voltar' }, c.bonusUsed);
         } else {
-          for (const id of formasDisponiveis(c.level ?? 1).slice(0, 6)) {
+          const lua = (c.features ?? []).includes('combatWildShape');
+          for (const id of formasDisponiveis(c.level ?? 1, (c.features ?? []).includes('circleForms')).slice(0, 6)) {
             const m = MONSTERS[id];
-            comum('wildShape', `Forma Selvagem: ${m.name}`, `Vira ${m.name} (${m.maxHp} PV, CA ${m.ac}, ND ${m.cr}). Gasta um uso; na forma de fera não se conjura.`, 'Ação',
-              { kind: 'feature', featureId: f, modo: id }, c.actionUsed || !(c.resources?.wildShape > 0), 'wildShape');
+            comum('wildShape', `Forma Selvagem: ${m.name}`, `Vira ${m.name} (${m.maxHp} PV, CA ${m.ac}, ND ${m.cr}). Gasta um uso; na forma de fera não se conjura.`, lua ? 'Ação bônus' : 'Ação',
+              { kind: 'feature', featureId: f, modo: id }, (lua ? c.bonusUsed : c.actionUsed) || !(c.resources?.wildShape > 0), 'wildShape');
           }
         }
         continue;
@@ -1344,6 +1345,12 @@ export class Hud {
         comum('descuidado', 'Ataque Descuidado', 'Interruptor: ligado, o primeiro ataque corpo a corpo com Força de cada turno é descuidado — vantagem nos seus ataques corpo a corpo com Força neste turno, e quem te atacar também tem vantagem, até o seu próximo turno. Fica ligado (ou desligado) nos turnos seguintes até você trocar.',
           'Livre', { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, null, null,
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
+      if (f === 'combatWildShape') {
+        const slots = c.spellcasting?.slots ?? [];
+        comum('curaDaFera', 'Forma Selvagem em Combate: curar', 'Na forma de fera, gasta um espaço de magia (o menor) e recupera 1d8 PV por círculo do espaço.', 'Ação bônus',
+          { kind: 'feature', featureId: f }, !c.formaSelvagem || c.bonusUsed || !slots.some((n, i) => i >= 1 && n > 0));
         continue;
       }
       if (f === 'eagleSpirit') {

@@ -3474,7 +3474,9 @@ export class Encounter {
     const reforcadoPeloKi = attacker.features?.includes('kiEmpoweredStrikes') && p.weapon?.id === 'punhos';
     // PACTO DA LÂMINA: a arma do pacto é mágica (vence resistência e imunidade a dano não mágico).
     const armaDoPacto = attacker.features?.includes('pactOfTheBlade') && p.weapon && p.weapon.id !== 'punhos';
-    const magico = !!(reforcadoPeloKi || armaDoPacto || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
+    // GOLPE PRIMITIVO (Círculo da Lua, 6º): os ataques da forma de fera contam como mágicos.
+    const golpePrimitivo = attacker.features?.includes('primalStrike') && !!attacker.formaSelvagem;
+    const magico = !!(reforcadoPeloKi || armaDoPacto || golpePrimitivo || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
     // Armadura de Agathys: vale se ele ainda tinha PV temporários ao ser acertado.
     const agathys = !p.ranged && getCondition(target, 'agathys');
     const geloDevolve = agathys && (target.tempHp ?? 0) > 0 ? agathys.data?.dano ?? 5 : 0;
@@ -7519,13 +7521,30 @@ export class Encounter {
           this.onEvent({ type: 'voltouAoNormal', target: actor });
           return true;
         }
-        if (actor.actionUsed || actor.formaSelvagem || !(actor.resources?.wildShape > 0) || conditionEffects(actor).incapacitated) return false;
-        if (!formasDisponiveis(actor.level ?? 1).includes(modo)) return false;
+        // FORMA SELVAGEM EM COMBATE (Círculo da Lua, 2º): assumir a forma custa a ação BÔNUS, não a ação.
+        const lua = actor.features?.includes('combatWildShape');
+        if ((lua ? actor.bonusUsed : actor.actionUsed) || actor.formaSelvagem || !(actor.resources?.wildShape > 0) || conditionEffects(actor).incapacitated) return false;
+        if (!formasDisponiveis(actor.level ?? 1, actor.features?.includes('circleForms')).includes(modo)) return false;
         if (!vestirFera(actor, modo)) return false;
-        actor.actionUsed = true;
+        if (lua) actor.bonusUsed = true; else actor.actionUsed = true;
         actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
+        return true;
+      }
+      case 'combatWildShape': {
+        // FORMA SELVAGEM EM COMBATE, a cura: na forma de fera, ação bônus, gasta um espaço de magia e recupera 1d8 por círculo do espaço.
+        // `modo` é o círculo (1 a 9); sem ele, o menor espaço que houver.
+        const sc = actor.spellcasting;
+        if (!actor.formaSelvagem || actor.bonusUsed || !sc?.slots) return false;
+        const n = Number.isInteger(modo) && modo >= 1 ? modo : sc.slots.findIndex((q, i) => i >= 1 && q > 0);
+        if (!(n >= 1) || !(sc.slots[n] > 0)) return false;
+        sc.slots[n] -= 1;
+        actor.bonusUsed = true;
+        const cura = roll(this.rng, `${n}d8`);
+        const antes = actor.hp;
+        actor.hp = Math.min(actor.maxHp, actor.hp + cura.total);
+        this.say('cura', `${actor.name} gasta um espaço de ${n}º círculo e recupera ${actor.hp - antes} PV na forma de ${actor.formaSelvagem.nome} (Forma Selvagem em Combate).`);
         return true;
       }
       case 'tripAttack': case 'menacingAttack': case 'pushingAttack': case 'lungingAttack': case 'precisionAttack': {

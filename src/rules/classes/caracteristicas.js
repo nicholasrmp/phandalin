@@ -275,6 +275,13 @@ export const CARACTERISTICAS = {
   spiritWalker: C('Caminhante dos Espíritos', 'fora', 'Conjura Comunhão com a Natureza como ritual.'),
   totemicAttunement: C('Sintonia Totêmica', 'passiva', 'Urso: inimigos a até 1,5 m têm desvantagem em atacar quem não é você, em Fúria. (Águia e lobo: ainda sem efeito no jogo.)', { motor: true }),
 
+  // ---- druida: Círculo da Lua (Livro do Jogador) -----------------------------------------------------------------------
+  combatWildShape: C('Forma Selvagem em Combate', 'bonus', 'Assume a Forma Selvagem como ação bônus; na forma de fera, gasta um espaço de magia para recuperar 1d8 PV por círculo.', { motor: true }),
+  circleForms: C('Formas do Círculo', 'passiva', 'O ND máximo das feras sobe: nível ÷ 3 (mínimo 1), em vez da tabela do druida.', { motor: true }),
+  primalStrike: C('Golpe Primitivo', 'passiva', 'Os ataques da forma de fera contam como mágicos para vencer resistência e imunidade.', { motor: true }),
+  elementalWildShape: C('Forma Selvagem Elemental', 'acao', 'Gasta dois usos da Forma Selvagem para virar um elemental do ar, da terra, do fogo ou da água.'),
+  thousandForms: C('Mil Formas', 'passiva', 'Conjura Alterar-se à vontade.'),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -318,7 +325,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -326,6 +333,8 @@ const ESTRUTURAIS = [
   'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic', 'totemSpirit',
 ];
 const SEM_EFEITO = {
+  elementalWildShape: 'o jogo não tem os elementais como forma',
+  thousandForms: 'o jogo não tem Alterar-se',
   spiritSeeker: 'o jogo não tem conversa com animais nem rituais',
   aspectOfTheBeast: 'o jogo não conta carga, visão longa nem rastreio',
   spiritWalker: 'o jogo não tem Comunhão com a Natureza como ritual',

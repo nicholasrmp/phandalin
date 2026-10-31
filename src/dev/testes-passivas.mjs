@@ -24,7 +24,7 @@ import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.j
 import { margemDeCritico, dadosExtraDeCritico, danoPorResistencia, usoLivreDe, bonusDeDanoPorTraco, vantagemPorTraco, contraDaMagia, danoDeQueda, aplicarInvocacoes } from '../rules/passivas.js';
 import * as passivasExtra from '../rules/passivas.js';
 import { armorClass } from '../rules/equipment.js';
-import { formasDisponiveis } from '../rules/forma-selvagem.js';
+import { formasDisponiveis, crEmNumero } from '../rules/forma-selvagem.js';
 import { MONSTERS } from '../rules/monsters.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
 import { descansoLongo, escolherResistenciaInfernal, recuperarNoCurto, dadoDaCancaoDeDescanso, gastarDadoDeVida } from '../rules/descanso.js';
@@ -3192,6 +3192,76 @@ teste('Escolha de subclasse ao subir: só no nível certo, lista as opções, e 
   const sem = heroi('guerreiro', 2, 'Humano');
   subirUmNivel(sem);
   assert.equal(sem.subclasse, 'campeao', 'sem escolha, o padrão');
+});
+
+// ============================================================================================================
+// CÍRCULO DA LUA (druida, Livro do Jogador)
+// ============================================================================================================
+
+const lunar = (nivel) => heroi('druida', nivel, 'Humano', {}, { 2: { subclasse: 'lua' } });
+
+teste('Círculo da Lua: Formas do Círculo sobem o ND (nível ÷ 3, mínimo 1), e quem não é lunar fica na tabela', () => {
+  const l2 = lunar(2);
+  assert.ok(l2.features.includes('combatWildShape') && l2.features.includes('circleForms'));
+  const nd = (id) => crEmNumero(MONSTERS[id].cr);
+  assert.ok(formasDisponiveis(2, true).length > formasDisponiveis(2).length, 'o druida da Lua já pode feras de ND 1 no 2º');
+  assert.ok(formasDisponiveis(2, true).every((id) => nd(id) <= 1));
+  assert.ok(formasDisponiveis(2).every((id) => nd(id) <= 0.25), 'a tabela comum segue em 1/4');
+  assert.ok(formasDisponiveis(6, true).length >= formasDisponiveis(2, true).length);
+  assert.ok(formasDisponiveis(1, true).length === 0, 'no 1º nada');
+});
+
+teste('Forma Selvagem em Combate: a Lua assume a forma com a ação bônus; o da Terra gasta a ação', () => {
+  const l = lunar(4);
+  l.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [l], foes: [inimigo('goblin', { x: 9, y: 9 })] });
+  const fera = formasDisponiveis(4, true)[0];
+  assert.equal(enc.useFeature(l, 'wildShape', { modo: fera }), true);
+  assert.ok(l.formaSelvagem);
+  assert.equal(l.bonusUsed, true, 'custou a ação bônus');
+  assert.equal(l.actionUsed, false, 'a ação segue livre');
+  const t = heroi('druida', 4, 'Humano', {}, { 2: { subclasse: 'terra' } });
+  t.pos = { x: 6, y: 5 };
+  const { enc: e2 } = arena({ herois: [t], foes: [inimigo('goblin', { x: 9, y: 9 })] });
+  assert.equal(e2.useFeature(t, 'wildShape', { modo: formasDisponiveis(4)[0] }), true);
+  assert.equal(t.actionUsed, true);
+  assert.equal(t.bonusUsed, false);
+});
+
+teste('Forma Selvagem em Combate: curar na forma de fera gasta o espaço e a ação bônus; fora da forma, não', () => {
+  const l = lunar(4);
+  l.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [l], foes: [inimigo('goblin', { x: 9, y: 9 })] });
+  assert.equal(enc.useFeature(l, 'combatWildShape'), false, 'sem a forma não cura');
+  enc.useFeature(l, 'wildShape', { modo: formasDisponiveis(4, true)[0] });
+  l.bonusUsed = false;
+  l.hp = 1;
+  const slots = l.spellcasting.slots[1];
+  assert.equal(enc.useFeature(l, 'combatWildShape'), true);
+  assert.equal(l.spellcasting.slots[1], slots - 1, 'gastou um espaço de 1º');
+  assert.ok(l.hp > 1, 'recuperou PV');
+  assert.equal(enc.useFeature(l, 'combatWildShape'), false, 'uma por ação bônus');
+});
+
+teste('Golpe Primitivo (6º): os ataques da forma de fera vencem a resistência a dano não mágico; sem ele, não', () => {
+  for (const [sub, metade] of [['lua', false], ['terra', true]]) {
+    const d = heroi('druida', 6, 'Humano', {}, { 2: { subclasse: sub } });
+    d.pos = { x: 5, y: 5 };
+    const alvo = inimigo('goblin', { x: 6, y: 5 });
+    alvo.hp = alvo.maxHp = 500;
+    alvo.resistNaoMagico = ['cortante', 'perfurante', 'concussão'];
+    const { enc } = arena({ herois: [d], foes: [alvo] });
+    enc.useFeature(d, 'wildShape', { modo: formasDisponiveis(6, sub === 'lua')[0] });
+    assert.ok(d.formaSelvagem, `${sub}: virou fera`);
+    assert.equal(d.features.includes('primalStrike'), !metade);
+    d.attacks = [{ name: 'Golpe', bonus: 50, damage: '10d1', type: 'cortante', reach: 5 }];
+    enc.rng = dadoEmSequencia(15);
+    enc.resolveAttack(d, alvo, { weaponId: null });
+    const dano = 500 - alvo.hp;
+    assert.ok(dano > 0, `${sub}: acertou`);
+    if (metade) assert.ok(dano <= 5, 'o da Terra: metade');
+    else assert.ok(dano >= 10, 'o da Lua: dano cheio');
+  }
 });
 
 // ============================================================================================================

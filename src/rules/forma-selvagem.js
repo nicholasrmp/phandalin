@@ -19,7 +19,9 @@ export const crEmNumero = (cr) => {
 };
 
 /** Quanto a Forma Selvagem deixa, por nível do druida: ND máximo e se a fera pode voar ou nadar. */
-export function limitesDaForma(nivel) {
+export function limitesDaForma(nivel, lua = false) {
+  // CÍRCULO DA LUA (Formas do Círculo, 2º): o ND máximo é nível ÷ 3 (mínimo 1) em vez da tabela; voo e nado seguem a tabela.
+  if (lua && nivel >= 2) return { cr: Math.max(1, Math.floor(nivel / 3)), voo: nivel >= 8, nado: nivel >= 4 };
   if (nivel >= 8) return { cr: 1, voo: true, nado: true };
   if (nivel >= 4) return { cr: 0.5, voo: false, nado: true };
   if (nivel >= 2) return { cr: 0.25, voo: false, nado: false };
@@ -27,8 +29,8 @@ export function limitesDaForma(nivel) {
 }
 
 /** As bestas que o druida de `nivel` pode ser. Familiares e bestas de ND 0 ficam de fora. */
-export function formasDisponiveis(nivel) {
-  const lim = limitesDaForma(nivel);
+export function formasDisponiveis(nivel, lua = false) {
+  const lim = limitesDaForma(nivel, lua);
   return Object.values(MONSTERS)
     .filter((m) => m.tipo === 'fera' && !/Familiar$/i.test(m.id) && crEmNumero(m.cr) > 0)
     .filter((m) => crEmNumero(m.cr) <= lim.cr)
@@ -42,7 +44,7 @@ const CAMPOS_DA_FORMA = ['attacks', 'multiattack', 'traits', 'speedFt', 'speeds'
 /** Veste a fera no druida. Devolve false se não pode (sem usos, nível, fera proibida). */
 export function vestirFera(c, feraId) {
   if (c.formaSelvagem) return false;
-  if (!formasDisponiveis(c.level ?? 1).includes(feraId)) return false;
+  if (!formasDisponiveis(c.level ?? 1, c.features?.includes('circleForms')).includes(feraId)) return false;
   const m = makeMonster(feraId, { x: 0, y: 0 });
   const original = {
     abilities: { ...c.abilities }, hp: c.hp, maxHp: c.maxHp, ac: c.ac, tempHp: c.tempHp,

@@ -552,3 +552,9 @@ Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do h
 - Ao subir para o nível da subclasse (3º na maioria das classes), a tela mostra antes uma página **"Escolha de caminho"** com a lista das subclasses e as características do 1º nível de cada uma; `subirUmNivel(c, { subclasse })` repassa a escolha. Sem escolha, vale a primeira da lista, como antes. Isso libera Mestre de Batalha, Assassino e Totêmico para o jogador.
 - Limite: heróis de outros jogadores numa sala seguem o padrão (o cartão remoto ainda não carrega a pergunta). Visto abrindo a tela no jogo rodando com um bárbaro de 2º nível (as duas opções apareceram); a escolha não foi clicada até o fim.
 - Suíte 1095/1095, vitest 401/401, build verde.
+
+## Atualização 16 — Subclasse nova: Círculo da Lua (druida, Livro do Jogador)
+- **Existe agora** (25 das 40 subclasses; faltam 15). Com motor e teste: **Forma Selvagem em Combate** (assumir a forma custa a ação bônus; na forma de fera, gastar um espaço de magia cura 1d8 por círculo, com botão), **Formas do Círculo** (ND máximo = nível ÷ 3, mínimo 1; voo e nado seguem a tabela) e **Golpe Primitivo** (6º: os ataques da forma de fera contam como mágicos).
+- `semEfeito` com motivo: **Forma Selvagem Elemental** (o jogo não tem os elementais) e **Mil Formas** (não há Alterar-se).
+- Limite: o jogo só tem as feras do bestiário (`FERAS`); as de ND 2+ que a Lua permite no 6º ainda são poucas.
+- Suíte 1099/1099, vitest 401/401, build verde. Não vi o botão na tela.

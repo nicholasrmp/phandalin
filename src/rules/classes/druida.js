@@ -74,6 +74,16 @@ export default {
           subterraneo: { 3: ['patasDeAranha', 'teia'], 5: ['formaGasosa', 'nuvemFetida'], 7: ['invisibilidadeMaior', 'moldarRocha'], 9: ['nevoaMortal', 'pragaDeInsetos'] },
         },
       },
+      lua: {
+        nome: 'Círculo da Lua',
+        fonte: 'phb',
+        niveis: {
+          2: ['combatWildShape', 'circleForms'],
+          6: ['primalStrike'],
+          10: ['elementalWildShape'],
+          14: ['thousandForms'],
+        },
+      },
     },
   },
 };
