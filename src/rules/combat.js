@@ -639,6 +639,7 @@ export class Encounter {
       // acertar perde o ponto, como no livro.
       c.atordoantePronto = false;
       c.manobraPronta = null;
+      c.ataqueAposMagia = false;
       this.fimDaFuria(c);
       this.rolarRecarga(c);
       this.tickConditions(c);
@@ -1253,6 +1254,7 @@ export class Encounter {
     // oportunidade entre turnos não gaste um golpe armado na rodada passada.
     actor.atordoantePronto = false;
     actor.manobraPronta = null;
+    actor.ataqueAposMagia = false;
     actor.palmaPronta = false;
     actor.hurlPronto = false;
     this.onEvent({ type: 'turnEnd', actor });
@@ -5033,6 +5035,7 @@ export class Encounter {
     const antesDeAcao = { acao: actor.actionUsed, bonus: actor.bonusUsed };
     try {
       const r = this.castSpellBase(actor, spellId, opcoes);
+      if (r?.ok) this.depoisDaMagia(actor, original, r);
       if (r?.ok && metas.length) this.pagarMetamagia(actor, original, metas, opcoes, r, antesDeAcao);
       if (r?.ok && sobre) this.cobrarSobrecanalizar(actor, original);
       return r;
@@ -5040,6 +5043,19 @@ export class Encounter {
       if (original) SPELLS[spellId] = original;
       this.metaAtiva = null;
       this.bonusDeMagia = null;
+    }
+  }
+
+  /**
+   * O que acontece DEPOIS de uma conjuração que deu certo, por características de subclasse. Os ganchos de cada uma ficam aqui, num
+   * só lugar, em vez de espalhados pelas magias.
+   */
+  depoisDaMagia(actor, magia, resultado) {
+    const f = actor.features ?? [];
+    // MAGIA DE GUERRA (Cavaleiro Místico, 7º: com truque; 18º: com qualquer magia) e MAGIA DE BATALHA (bardo do Valor, 14º): depois de
+    // conjurar com a AÇÃO, um ataque com arma como ação bônus.
+    if (magia?.castTime === 'action' && (f.includes('improvedWarMagic') || f.includes('battleMagic') || (f.includes('warMagic') && magia.level === 0))) {
+      actor.ataqueAposMagia = true;
     }
   }
 
@@ -7577,6 +7593,19 @@ export class Encounter {
         actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
+        return true;
+      }
+      case 'warMagic': case 'improvedWarMagic': case 'battleMagic': {
+        // MAGIA DE GUERRA / MAGIA DE BATALHA: depois de conjurar com a ação, um ataque com arma como ação bônus (`ataqueAposMagia`).
+        if (!actor.ataqueAposMagia || actor.bonusUsed || conditionEffects(actor).incapacitated) return false;
+        const arma = this.armaDeOportunidade(actor) ?? actor.equippedWeapon ?? null;
+        const alvoG = target ?? this.enemiesOf(actor).filter((m) => !m.dead && this.canAttack(actor, m, arma).ok)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        if (!alvoG || alvoG.dead || alvoG.side === actor.side || !this.canAttack(actor, alvoG, arma).ok) return false;
+        actor.bonusUsed = true;
+        actor.ataqueAposMagia = false;
+        this.say('recurso', `${actor.name} ataca logo depois da magia (${nomeDaCaracteristica(featureId)}).`);
+        this.resolveAttack(actor, alvoG, { weaponId: arma });
         return true;
       }
       case 'combatWildShape': {

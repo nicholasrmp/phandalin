@@ -12,7 +12,7 @@
 // duas no livro, quem prepara pode preparar mais uma. Isto calcula quais
 // escolhas cada herói tem e aplica as que o jogador fizer (ou as sugeridas).
 
-import { ganharXp, subirNivel, XP_POR_NIVEL } from '../rules/progressao.js';
+import { ganharXp, subirNivel, XP_POR_NIVEL, conjuracaoDe } from '../rules/progressao.js';
 import { maxHpEfetivo } from '../rules/conditions.js';
 import { abilityMod } from '../rules/abilities.js';
 import { CLASSES, CARACTERISTICAS, nomeDaCaracteristica } from '../rules/classes/index.js';
@@ -91,9 +91,10 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
     prof: c.proficiency,
   };
   const def = CLASSES[c.classe];
-  const conj = def?.conjuracao;
-  const conhecidasAntes = conj?.conhecidas?.[c.level] ?? 0;
+  const conjAntes = conjuracaoDe(c);
+  const conhecidasAntes = conjAntes?.conhecidas?.[c.level] ?? 0;
   const { pendentes } = subirNivel(c, escolhasDeNivel);
+  const conj = conjuracaoDe(c);
   // Subir de nível dá o PV máximo CRU; a exaustão é um teto temporário por
   // cima dele, então a vida atual não pode passar do teto que vale agora.
   c.hp = Math.min(c.hp + (c.maxHp - antes.maxHp), maxHpEfetivo(c));
@@ -118,9 +119,15 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
   // ---- as escolhas de magia ----
   const escolhas = [];
   const sc = c.spellcasting;
+  // TRUQUES NOVOS: quem passa a conhecer mais truques do que tem (o Cavaleiro Místico no 3º, o Trapaceiro no 3º e no 10º) escolhe.
+  if (sc && conj && (sc.truquesConhecidos ?? 0) > (sc.cantrips ?? []).length) {
+    const quantos = sc.truquesConhecidos - (sc.cantrips ?? []).length;
+    const todos = listaDaClasse(c.classe, 0, c.subclasse).truques.filter((s) => magiaTemRegra(s) && !(sc.cantrips ?? []).includes(s));
+    if (todos.length >= quantos) escolhas.push({ id: 'truques', rotulo: `Aprende ${quantos} truque${quantos > 1 ? 's' : ''}`, quantas: quantos, opcoes: todos, sugeridas: todos.slice(0, quantos) });
+  }
   if (sc && conj) {
     const maior = slots.reduce((m, n, i) => (n > 0 ? i : m), 0);
-    const lista = listaDaClasse(c.classe, maior).magias.filter(magiaTemRegra);
+    const lista = listaDaClasse(c.classe, maior, c.subclasse).magias.filter(magiaTemRegra);
     const mod = abilityMod(c.abilities[conj.atributo]);
     if (conj.prepara === 'conhecidas') {
       const total = (conj.conhecidas?.[c.level] ?? 0) - conhecidasAntes;
@@ -236,6 +243,7 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
     for (const e of escolhas) {
       if (e.caracteristica) continue;
       let ids = (escolhidas[e.id] ?? e.sugeridas).slice(0, e.quantas);
+      if (e.id === 'truques') sc.cantrips = [...new Set([...(sc.cantrips ?? []), ...ids])];
       if (e.id === 'aprende' || e.id === 'segredos') sc.prepared = [...new Set([...(sc.prepared ?? []), ...ids])];
       if (e.id === 'livro') sc.livro = [...new Set([...sc.livro, ...ids])];
       if (e.id === 'prepara') {

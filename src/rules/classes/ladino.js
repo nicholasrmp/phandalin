@@ -55,6 +55,24 @@ export default {
           17: ['thiefsReflexes'],
         },
       },
+      trapaceiroArcano: {
+        nome: 'Trapaceiro Arcano',
+        fonte: 'phb',
+        niveis: {
+          3: ['spellcasting', 'mageHandLegerdemain'],
+          9: ['magicalAmbush'],
+          13: ['versatileTrickster'],
+          17: ['spellThief'],
+        },
+        // Conjura com um TERÇO do nível, por Inteligência, da lista do mago (só encantamento e ilusão, fora uma magia livre).
+        conjuracao: {
+          tipo: 'terco',
+          atributo: 'int',
+          prepara: 'conhecidas',
+          truques: { 3: 3, 10: 4 },
+          conhecidas: [null, 0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13],
+        },
+      },
       assassino: {
         nome: 'Assassino',
         fonte: 'phb',

@@ -3368,5 +3368,98 @@ teste('Inspiração em Combate: o inspirado soma o dado à CA e transforma o ace
 });
 
 // ============================================================================================================
+// CAVALEIRO MÍSTICO (guerreiro) e TRAPACEIRO ARCANO (ladino): conjuradores de um terço
+// ============================================================================================================
+
+const cavaleiro = (nivel) => heroi('guerreiro', nivel, 'Humano', { weapons: ['espadaLonga'] }, { 3: { subclasse: 'cavaleiroMistico' } });
+const trapaceiro = (nivel) => heroi('ladino', nivel, 'Humano', { weapons: ['adaga'] }, { 3: { subclasse: 'trapaceiroArcano' } });
+
+teste('Conjurador de um terço: espaços, truques e magias conhecidas batem com a tabela do livro', async () => {
+  const { espacosDeMagia } = await import('../rules/progressao.js');
+  assert.deepEqual(espacosDeMagia('terco', 2), [0]);
+  for (const [n, esperado] of [[3, [0, 2]], [4, [0, 3]], [7, [0, 4, 2]], [10, [0, 4, 3]], [13, [0, 4, 3, 2]], [16, [0, 4, 3, 3]], [19, [0, 4, 3, 3, 1]]]) {
+    assert.deepEqual(espacosDeMagia('terco', n), esperado, `${n}º nível`);
+  }
+  const k3 = cavaleiro(3);
+  assert.ok(k3.features.includes('spellcasting') && k3.features.includes('weaponBond'));
+  assert.equal(k3.spellcasting.ability, 'int');
+  assert.deepEqual(k3.spellcasting.slotsMax, [0, 2]);
+  assert.equal(k3.spellcasting.truquesConhecidos, 2);
+  assert.equal(k3.spellcasting.magiasConhecidas, 3);
+  assert.equal(cavaleiro(10).spellcasting.truquesConhecidos, 3);
+  assert.equal(cavaleiro(7).spellcasting.magiasConhecidas, 5);
+  assert.equal(cavaleiro(20).spellcasting.magiasConhecidas, 13);
+  assert.deepEqual(cavaleiro(19).spellcasting.slotsMax, [0, 4, 3, 3, 1]);
+  assert.equal(trapaceiro(3).spellcasting.truquesConhecidos, 3, 'o Trapaceiro conhece Mão Mágica a mais');
+  assert.equal(trapaceiro(10).spellcasting.truquesConhecidos, 4);
+  assert.equal(heroi('guerreiro', 3, 'Humano', {}, { 3: { subclasse: 'campeao' } }).spellcasting, undefined, 'o Campeão não conjura');
+  assert.equal(heroi('ladino', 3, 'Humano', {}, { 3: { subclasse: 'ladrao' } }).spellcasting, undefined, 'o Ladrão não conjura');
+});
+
+teste('Conjurador de um terço: a lista é a do mago, só das duas escolas da subclasse', async () => {
+  const { listaDaClasse } = await import('../game/criacao.js');
+  const k = listaDaClasse('guerreiro', 3, 'cavaleiroMistico');
+  assert.ok(k.magias.length && k.truques.length);
+  assert.ok(k.magias.every((id) => ['abjuração', 'evocação'].includes(SPELLS[id].school)), 'só abjuração e evocação');
+  assert.ok(k.magias.includes('escudoArcano') && k.magias.includes('misselMagico'));
+  assert.ok(!k.magias.includes('sono'), 'sono é encantamento');
+  const t = listaDaClasse('ladino', 3, 'trapaceiroArcano');
+  assert.ok(t.magias.every((id) => ['encantamento', 'ilusão'].includes(SPELLS[id].school)));
+  assert.ok(t.magias.includes('sono') && t.magias.includes('imagemSilenciosa'));
+  assert.ok(t.truques.includes('maoMagica'));
+});
+
+teste('Tela de nível: o Cavaleiro Místico escolhe truques e magias ao chegar ao 3º', async () => {
+  const { subirUmNivel } = await import('../game/nivel.js');
+  const g = heroi('guerreiro', 2, 'Humano');
+  const r = subirUmNivel(g, { subclasse: 'cavaleiroMistico' });
+  const truques = r.escolhas.find((e) => e.id === 'truques');
+  const magias = r.escolhas.find((e) => e.id === 'aprende');
+  assert.ok(truques && truques.quantas === 2, 'dois truques');
+  assert.ok(magias && magias.quantas === 3, 'três magias de 1º círculo');
+  r.aplicar({});
+  assert.equal(g.spellcasting.cantrips.length, 2);
+  assert.equal(g.spellcasting.prepared.length, 3);
+  assert.ok(g.spellcasting.prepared.every((id) => SPELLS[id].level === 1));
+});
+
+teste('Magia de Guerra (Cavaleiro Místico, 7º): depois de um truque com a ação, um ataque com arma como ação bônus; sem a magia, não', () => {
+  const k = cavaleiro(7);
+  k.pos = { x: 5, y: 5 };
+  k.spellcasting.cantrips = ['raioDeFogo'];
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 200;
+  const { enc } = arena({ herois: [k], foes: [gob] });
+  assert.equal(enc.useFeature(k, 'warMagic'), false, 'sem conjurar antes, nada');
+  const r = enc.castSpell(k, 'raioDeFogo', { target: gob });
+  assert.ok(r.ok, r.why);
+  assert.equal(k.ataqueAposMagia, true);
+  const hp = gob.hp;
+  enc.rng = dadoEmSequencia(15);
+  assert.equal(enc.useFeature(k, 'warMagic'), true);
+  assert.equal(k.bonusUsed, true, 'custou a ação bônus');
+  assert.ok(gob.hp < hp, 'o golpe com a arma acertou');
+  assert.equal(enc.useFeature(k, 'warMagic'), false, 'uma vez por magia');
+  // Uma magia de 1º círculo só vale com a versão aprimorada (18º).
+  k.spellcasting.prepared = ['misselMagico'];
+  const k7 = cavaleiro(7);
+  k7.pos = { x: 5, y: 5 };
+  k7.spellcasting.prepared = ['misselMagico'];
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  g2.hp = g2.maxHp = 200;
+  const { enc: e2 } = arena({ herois: [k7], foes: [g2] });
+  assert.ok(e2.castSpell(k7, 'misselMagico', { target: g2 }).ok);
+  assert.equal(k7.ataqueAposMagia, false, 'com uma magia de círculo, só no 18º');
+  const k18 = cavaleiro(18);
+  k18.pos = { x: 5, y: 5 };
+  k18.spellcasting.prepared = ['misselMagico'];
+  const g3 = inimigo('goblin', { x: 6, y: 5 });
+  g3.hp = g3.maxHp = 200;
+  const { enc: e3 } = arena({ herois: [k18], foes: [g3] });
+  assert.ok(e3.castSpell(k18, 'misselMagico', { target: g3 }).ok);
+  assert.equal(k18.ataqueAposMagia, true, 'a aprimorada vale para qualquer magia');
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

@@ -50,6 +50,25 @@ export default {
         },
         escalas: { margemDeCritico: (n) => (n >= 15 ? 18 : 19) },
       },
+      cavaleiroMistico: {
+        nome: 'Cavaleiro Místico',
+        fonte: 'phb',
+        niveis: {
+          3: ['spellcasting', 'weaponBond'],
+          7: ['warMagic'],
+          10: ['eldritchStrike'],
+          15: ['arcaneCharge'],
+          18: ['improvedWarMagic'],
+        },
+        // Conjura com um TERÇO do nível, por Inteligência, da lista do mago (só abjuração e evocação, fora uma magia livre).
+        conjuracao: {
+          tipo: 'terco',
+          atributo: 'int',
+          prepara: 'conhecidas',
+          truques: { 3: 2, 10: 3 },
+          conhecidas: [null, 0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13],
+        },
+      },
       mestreDeBatalha: {
         nome: 'Mestre de Batalha',
         fonte: 'phb',

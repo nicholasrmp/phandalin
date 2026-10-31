@@ -8,7 +8,7 @@
 // história de cada um mora em `game/herois.js`; aqui fica só a ficha.
 
 import { abilityMod } from './abilities.js';
-import { criarPersonagem } from './progressao.js';
+import { criarPersonagem, conjuracaoDe } from './progressao.js';
 import { CLASSES } from './classes/index.js';
 import { SPELLS } from './spells.js';
 
@@ -177,7 +177,7 @@ export function spellMod(actor) {
  */
 export function limiteDePreparacao(actor) {
   if (!actor.spellcasting) return 0;
-  const conj = CLASSES[actor.classe]?.conjuracao;
+  const conj = conjuracaoDe(actor);
   const nivel = actor.level ?? 1;
   if (conj?.prepara === 'conhecidas') return actor.spellcasting.magiasConhecidas ?? 0;
   const parte = conj?.preparaMetadeDoNivel ? Math.floor(nivel / 2) : nivel;

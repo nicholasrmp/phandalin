@@ -247,7 +247,21 @@ for (const [classe, ids] of Object.entries(ALTAS_NOVAS)) ALTAS[classe].push(...i
  * A lista de magias de uma classe: truques e 1º círculo e, com `circuloMax`
  * maior, as de 2º e 3º que o motor joga.
  */
-export const listaDaClasse = (classe, circuloMax = 1) => {
+// As ESCOLAS das subclasses conjuradoras de um terço (Cavaleiro Místico: abjuração e evocação; Trapaceiro Arcano: encantamento e
+// ilusão). Elas aprendem da lista do mago, fora a regra de uma magia livre de qualquer escola por nível ímpar de acréscimo.
+const ESCOLAS_DA_SUBCLASSE = {
+  cavaleiroMistico: ['abjuração', 'evocação'],
+  trapaceiroArcano: ['encantamento', 'ilusão'],
+};
+
+export const listaDaClasse = (classe, circuloMax = 1, subclasse = null) => {
+  if (subclasse && ESCOLAS_DA_SUBCLASSE[subclasse]) {
+    const escolas = ESCOLAS_DA_SUBCLASSE[subclasse];
+    const mago = listaDaClasse('mago', circuloMax);
+    const dela = (id) => escolas.includes(SPELLS[id]?.school);
+    // O Trapaceiro Arcano conhece Mão Mágica sem ocupar vaga: ela fica na lista como truque comum.
+    return { ...mago, truques: mago.truques.filter(dela).concat(subclasse === 'trapaceiroArcano' ? ['maoMagica'] : []), magias: mago.magias.filter(dela) };
+  }
   const base = L[classe] ?? { truques: [], magias: [] };
   const altas = (ALTAS[classe] ?? []).filter((id) => (SPELLS[id]?.level ?? 9) <= circuloMax);
   return altas.length ? { ...base, magias: [...base.magias, ...altas] } : base;

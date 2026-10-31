@@ -294,6 +294,17 @@ export const CARACTERISTICAS = {
   combatInspiration: C('Inspiração em Combate', 'reacao', 'Um aliado com o seu dado de Inspiração pode somá-lo à CA contra um ataque que o acertaria.', { motor: true }),
   battleMagic: C('Magia de Batalha', 'bonus', 'Depois de conjurar uma magia com a ação, faz um ataque com arma como ação bônus.'),
 
+  // ---- guerreiro: Cavaleiro Místico e ladino: Trapaceiro Arcano (Livro do Jogador) -------------------------------------
+  weaponBond: C('Vínculo com a Arma', 'bonus', 'Vincula até duas armas: ninguém as desarma, e elas voltam à mão como ação bônus.'),
+  warMagic: C('Magia de Guerra', 'bonus', 'Depois de conjurar um truque com a ação, faz um ataque com arma como ação bônus.', { motor: true }),
+  eldritchStrike: C('Golpe Místico', 'passiva', 'Quem você acerta com uma arma tem desvantagem na próxima resistência contra uma magia sua.'),
+  arcaneCharge: C('Investida Arcana', 'livre', 'Ao usar Surto de Ação, teleporta até 9 m para um espaço livre.'),
+  improvedWarMagic: C('Magia de Guerra Aprimorada', 'bonus', 'Depois de conjurar QUALQUER magia com a ação, faz um ataque com arma como ação bônus.', { motor: true }),
+  mageHandLegerdemain: C('Prestidigitação com Mão Mágica', 'acao', 'A Mão Mágica fica invisível e pode furtar, guardar e abrir fechaduras à distância.'),
+  magicalAmbush: C('Emboscada Mágica', 'passiva', 'Escondido, o alvo de uma magia sua tem desvantagem na resistência.'),
+  versatileTrickster: C('Trapaceiro Versátil', 'bonus', 'A Mão Mágica distrai um alvo: vantagem nos seus ataques contra ele até o fim do turno.'),
+  spellThief: C('Ladrão de Magias', 'reacao', 'Quando uma magia o tem como alvo e falha, rouba a magia e a conjura por oito horas.'),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -337,7 +348,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -345,6 +356,13 @@ const ESTRUTURAIS = [
   'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic', 'totemSpirit',
 ];
 const SEM_EFEITO = {
+  weaponBond: 'o jogo não desarma nem invoca armas de volta à mão',
+  arcaneCharge: 'o jogo não teleporta ao usar Surto de Ação',
+  eldritchStrike: 'a resistência de magia ainda não sabe quem marcou o alvo',
+  mageHandLegerdemain: 'o jogo não tem mãos invisíveis furtando objetos',
+  magicalAmbush: 'o jogo não tem esconder como estado antes de conjurar',
+  versatileTrickster: 'o jogo não tem Mão Mágica como criatura',
+  spellThief: 'o jogo não tem reação contra magia que falha',
   battleMagic: 'o jogo não deixa atacar com a ação bônus depois de conjurar',
   relentlessAvenger: 'o jogo não tem movimento fora do turno',
   soulOfVengeance: 'o jogo não tem reação disparada pelo ataque de um inimigo',

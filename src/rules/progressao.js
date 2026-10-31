@@ -65,6 +65,9 @@ const ESPACOS_PLENO = [
  */
 export function espacosDeMagia(tipo, nivel) {
   if (tipo === 'plena') return ESPACOS_PLENO[nivel].slice();
+  // `terco` (Cavaleiro Místico, Trapaceiro Arcano): nada antes do 3º; depois, a linha do conjurador pleno de um TERÇO do nível,
+  // arredondado para cima (3º: 2 espaços de 1º; 7º: 4+2; 13º: 4+3+2; 19º: 4+3+3+1) — a tabela do livro.
+  if (tipo === 'terco') return nivel < 3 ? [0] : ESPACOS_PLENO[Math.ceil(nivel / 3)].slice();
   if (tipo === 'meia') return nivel < 2 ? [0] : ESPACOS_PLENO[Math.ceil(nivel / 2)].slice();
   if (tipo === 'pacto') {
     const { espacos, circulo } = espacosDePacto(nivel);
@@ -86,6 +89,13 @@ export function espacosDePacto(nivel) {
 export const mediaDoDado = (faces) => faces / 2 + 1;
 
 /** O valor que cabe numa tabela por nível: a última entrada até o nível. */
+/** A conjuração que vale PARA ESTE personagem: a da subclasse, se ela traz uma, senão a da classe. */
+export function conjuracaoDe(c) {
+  const def = CLASSES[c.classe];
+  const sub = c.subclasse ? def?.subclasse?.opcoes?.[c.subclasse] : null;
+  return sub?.conjuracao ?? def?.conjuracao ?? null;
+}
+
 export function porNivel(tabela, nivel) {
   let valor = null;
   for (const [n, v] of Object.entries(tabela)) if (nivel >= Number(n)) valor = v;
@@ -317,8 +327,10 @@ export function subirNivel(c, escolhas = {}) {
   // CONJURAÇÃO.
   // Paladino e patrulheiro só conjuram do 2º nível em diante: o objeto de
   // conjuração nasce com a característica, não com a classe.
-  if (def.conjuracao && (c.features.includes('spellcasting') || c.features.includes('pactMagic'))) {
-    const conj = def.conjuracao;
+  // A SUBCLASSE pode trazer a conjuração (Cavaleiro Místico e Trapaceiro Arcano conjuram com um terço do nível).
+  const conjDaVez = sub?.conjuracao ?? def.conjuracao;
+  if (conjDaVez && (c.features.includes('spellcasting') || c.features.includes('pactMagic'))) {
+    const conj = conjDaVez;
     c.spellcasting ??= { ability: conj.atributo, cantrips: [], prepared: [] };
     c.spellcasting.ability = conj.atributo;
     c.spellcasting.tipo = conj.tipo;

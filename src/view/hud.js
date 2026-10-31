@@ -1353,6 +1353,13 @@ export class Hud {
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
         continue;
       }
+      if (f === 'warMagic' || f === 'improvedWarMagic' || f === 'battleMagic') {
+        if (f === 'warMagic' && (c.features ?? []).includes('improvedWarMagic')) continue;
+        const nome = f === 'battleMagic' ? 'Magia de Batalha' : 'Magia de Guerra';
+        comum('ataqueAposMagia', `${nome}: atacar`, 'Depois de conjurar com a ação, um ataque com arma como ação bônus no inimigo ao alcance.', 'Ação bônus',
+          { kind: 'feature', featureId: f }, !c.ataqueAposMagia || c.bonusUsed);
+        continue;
+      }
       if (f === 'combatWildShape') {
         const slots = c.spellcasting?.slots ?? [];
         comum('curaDaFera', 'Forma Selvagem em Combate: curar', 'Na forma de fera, gasta um espaço de magia (o menor) e recupera 1d8 PV por círculo do espaço.', 'Ação bônus',
