@@ -370,6 +370,10 @@ export const CONDITIONS = {
     curaMaxima: true,
     concentrationEffect: true,
   },
+  votoDeInimizade: {
+    name: 'Voto de Inimizade',
+    desc: 'O paladino da Vingança tem vantagem nos ataques contra esta criatura.',
+  },
   alvoCerteiro: {
     name: 'Ataque Certeiro',
     desc: 'O próximo ataque de quem o leu tem vantagem.',

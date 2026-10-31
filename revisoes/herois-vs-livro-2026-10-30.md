@@ -558,3 +558,10 @@ Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do h
 - `semEfeito` com motivo: **Forma Selvagem Elemental** (o jogo não tem os elementais) e **Mil Formas** (não há Alterar-se).
 - Limite: o jogo só tem as feras do bestiário (`FERAS`); as de ND 2+ que a Lua permite no 6º ainda são poucas.
 - Suíte 1099/1099, vitest 401/401, build verde. Não vi o botão na tela.
+
+## Atualização 17 — Juramento de Vingança (paladino) e Colégio do Valor (bardo)
+- **Existem agora** (27 das 40 subclasses; faltam 13).
+- **Vingança, com motor e teste:** magias do Juramento por nível (Perdição, Marca do Caçador, Imobilizar Pessoa, Passo Nebuloso, Velocidade, Proteção contra Energia, Banimento, Porta Dimensional, Imobilizar Monstro; falta só a Vidência, que o jogo não tem), **Voto de Inimizade** (ação bônus + carga de Canalizar Divindade: vantagem contra a criatura mais próxima a 3 m, por um minuto) e **Repelir o Inimigo** (ação + carga: SAB ou amedrontado e preso ao chão por um minuto). `semEfeito`: Vingador Implacável, Alma de Vingança, Anjo Vingador (movimento fora do turno, reação ao ataque do inimigo e voo por característica não existem).
+- **Valor, com motor e teste:** proficiência em armadura média, escudo e armas marciais (o motor passou a ler `armas` da subclasse), **Ataque Extra** (6º) e **Inspiração em Combate** só pelo lado da CA (o inspirado soma o dado à CA contra um acerto que a dado muda; o uso no dano não existe, porque o dado de inspiração já é gasto no ataque). `semEfeito`: Magia de Batalha (não há ataque com a ação bônus depois de conjurar).
+- Os alvos de Voto e Repelir são o mais próximo (não há clique de alvo); o teste cobre a escolha explícita por `target`.
+- Suíte 1105/1105, vitest 401/401, build verde. Não vi os botões na tela.

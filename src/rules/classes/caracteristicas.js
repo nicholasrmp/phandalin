@@ -282,6 +282,18 @@ export const CARACTERISTICAS = {
   elementalWildShape: C('Forma Selvagem Elemental', 'acao', 'Gasta dois usos da Forma Selvagem para virar um elemental do ar, da terra, do fogo ou da água.'),
   thousandForms: C('Mil Formas', 'passiva', 'Conjura Alterar-se à vontade.'),
 
+  // ---- paladino: Juramento de Vingança (Livro do Jogador) ---------------------------------------------------------------
+  abjureEnemy: C('Repelir o Inimigo', 'acao', 'Canalizar Divindade: uma criatura a até 18 m testa Sabedoria ou fica amedrontada e com deslocamento 0 por um minuto.', { motor: true }),
+  vowOfEnmity: C('Voto de Inimizade', 'bonus', 'Canalizar Divindade: vantagem nos ataques contra uma criatura a até 3 m, por um minuto.', { motor: true }),
+  relentlessAvenger: C('Vingador Implacável', 'passiva', 'Ao acertar um ataque de oportunidade, anda até metade do deslocamento sem provocar.'),
+  soulOfVengeance: C('Alma de Vingança', 'reacao', 'Quando a criatura sob o Voto de Inimizade ataca, você faz um ataque corpo a corpo contra ela como reação.'),
+  avengingAngel: C('Anjo Vingador', 'acao', 'Por uma hora, asas, voo de 18 m e uma aura de 9 m que amedronta.'),
+
+  // ---- bardo: Colégio do Valor (Livro do Jogador) -----------------------------------------------------------------------
+  valorProficiencies: C('Proficiências do Valor', 'passiva', 'Proficiência com armadura média, escudos e armas marciais.', { motor: true }),
+  combatInspiration: C('Inspiração em Combate', 'reacao', 'Um aliado com o seu dado de Inspiração pode somá-lo à CA contra um ataque que o acertaria.', { motor: true }),
+  battleMagic: C('Magia de Batalha', 'bonus', 'Depois de conjurar uma magia com a ação, faz um ataque com arma como ação bônus.'),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -325,7 +337,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -333,6 +345,10 @@ const ESTRUTURAIS = [
   'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic', 'totemSpirit',
 ];
 const SEM_EFEITO = {
+  battleMagic: 'o jogo não deixa atacar com a ação bônus depois de conjurar',
+  relentlessAvenger: 'o jogo não tem movimento fora do turno',
+  soulOfVengeance: 'o jogo não tem reação disparada pelo ataque de um inimigo',
+  avengingAngel: 'o jogo não tem voo concedido por característica nem aura de medo por uma hora',
   elementalWildShape: 'o jogo não tem os elementais como forma',
   thousandForms: 'o jogo não tem Alterar-se',
   spiritSeeker: 'o jogo não tem conversa com animais nem rituais',

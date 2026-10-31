@@ -2864,6 +2864,8 @@ export class Encounter {
     // Toque Arrepiante: desvantagem só contra quem conjurou.
     if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
     if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
+    // VOTO DE INIMIZADE (paladino da Vingança): vantagem contra a criatura jurada.
+    if (getCondition(target, 'votoDeInimizade')?.source === attacker.id) fonte(mods, 'vantagem', 'voto de inimizade');
     // Duelo Compelido: só quem o desafiou é alvo sem desvantagem.
     const duelo = getCondition(attacker, 'duelo');
     if (duelo && duelo.source !== target.id) fonte(mods, 'desvantagem', 'duelo compelido');
@@ -3269,6 +3271,19 @@ export class Encounter {
     mods.critMin = margemDeCritico(attacker);
     const atk = segundaChanceNoAtaque(this, attacker, target, attackRoll(this.rng, bonus, ac, mods), bonus, ac);
     this.consumirAoAtacar(attacker, target);
+    // INSPIRAÇÃO EM COMBATE (bardo do Valor, 3º): o alvo inspirado soma o dado à CA contra um golpe que o acertaria. Só quando muda algo.
+    if (atk.hit && !atk.critical) {
+      const insp = getCondition(target, 'inspirado');
+      const bardoV = insp ? this.combatants.find((b) => b.id === insp.source) : null;
+      if (bardoV?.features?.includes('combatInspiration')) {
+        const dV = roll(this.rng, insp.data?.dado ?? '1d6');
+        if (atk.total < ac + dV.total) {
+          atk.hit = false;
+          removeCondition(target, 'inspirado');
+          this.say('recurso', `${target.name} gasta a Inspiração e soma ${dV.total} à CA (${ac + dV.total}): o golpe de ${attacker.name} falha (Inspiração em Combate).`);
+        }
+      }
+    }
     // Flecha Relampejante: o próximo ataque à distância vira raio, acertando ou não.
     const flecha = p.ranged ? getCondition(attacker, 'flechaRelampago') : null;
     if (flecha) removeCondition(attacker, 'flechaRelampago');
@@ -7461,6 +7476,38 @@ export class Encounter {
         const bonusS = Math.max(1, abilityMod(actor.abilities.cha));
         addCondition(actor, 'armaSagrada', { rounds: 10, source: actor.id, data: { bonus: bonusS } });
         this.say('recurso', `${actor.name} consagra a arma: +${bonusS} nos ataques por um minuto.`);
+        return true;
+      }
+      case 'vowOfEnmity': {
+        // VOTO DE INIMIZADE (Vingança, 3º): ação bônus e uma carga de Canalizar Divindade; por um minuto, vantagem nos ataques contra UMA
+        // criatura a até 3 m (sem alvo dado, a mais próxima).
+        if (actor.bonusUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        const alvoV = target ?? this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 10)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        if (!alvoV || alvoV.dead || alvoV.side === actor.side || distanceFt(actor.pos, alvoV.pos) > 10) return false;
+        actor.bonusUsed = true;
+        actor.resources.channelDivinity -= 1;
+        addCondition(alvoV, 'votoDeInimizade', { rounds: 10, source: actor.id });
+        this.say('recurso', `${actor.name} jura inimizade a ${alvoV.name}: vantagem nos ataques contra ele por um minuto.`);
+        return true;
+      }
+      case 'abjureEnemy': {
+        // REPELIR O INIMIGO (Vingança, 3º): ação e uma carga; a criatura a até 18 m (sem alvo dado, a mais próxima) testa Sabedoria ou fica
+        // amedrontada e agarrada ao chão (deslocamento 0) por um minuto; um corruptor ou morto-vivo tem desvantagem na resistência.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        const alvoA = target ?? this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 60)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        if (!alvoA || alvoA.dead || alvoA.side === actor.side || distanceFt(actor.pos, alvoA.pos) > 60) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cdA = spellSaveDc(actor);
+        const svA = this.resistencia(alvoA, 'wis', cdA, { vantagem: false });
+        this.explicarResistencia(alvoA, 'wis', cdA, svA, { contra: `Repelir o Inimigo de ${actor.name}`, seSucesso: 'não fica amedrontado' });
+        if (!svA.success) {
+          this.aplicarCondicao(alvoA, 'amedrontado', { rounds: 10, source: actor.id });
+          this.aplicarCondicao(alvoA, 'agarrado', { rounds: 10, source: actor.id });
+          this.say('condicao', `${alvoA.name} fica amedrontado e paralisado de medo no lugar.`);
+        }
         return true;
       }
       case 'turnTheUnholy': {

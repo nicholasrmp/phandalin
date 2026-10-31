@@ -3265,5 +3265,108 @@ teste('Golpe Primitivo (6º): os ataques da forma de fera vencem a resistência 
 });
 
 // ============================================================================================================
+// JURAMENTO DE VINGANÇA (paladino, Livro do Jogador)
+// ============================================================================================================
+
+const vingador = (nivel) => heroi('paladino', nivel, 'Humano', { weapons: ['espadaLonga'] }, { 3: { subclasse: 'vinganca' } });
+
+teste('Vingança: as características do 3º, as magias do Juramento por nível e a carga de Canalizar Divindade', () => {
+  const p = vingador(5);
+  assert.ok(['channelDivinity', 'abjureEnemy', 'vowOfEnmity'].every((f) => p.features.includes(f)));
+  assert.equal(p.resources.channelDivinity, 1);
+  const prep = [...p.spellcasting.prepared, ...(p.spellcasting.sempreProntas ?? [])];
+  assert.ok(prep.includes('perdicao') && prep.includes('marcaDoCacador'), 'magias do 3º');
+  assert.ok(prep.includes('imobilizarPessoa') && prep.includes('passoNebuloso'), 'magias do 5º');
+  assert.ok(![...vingador(3).spellcasting.prepared, ...(vingador(3).spellcasting.sempreProntas ?? [])].includes('imobilizarPessoa'), 'as do 5º só no 5º');
+  assert.ok(vingador(7).features.includes('relentlessAvenger') && vingador(20).features.includes('avengingAngel'));
+});
+
+teste('Voto de Inimizade: ação bônus e uma carga; vantagem só contra a criatura jurada, e só enquanto dura', () => {
+  const p = vingador(3);
+  p.pos = { x: 5, y: 5 };
+  const juradoPerto = inimigo('goblin', { x: 6, y: 5 });
+  const outro = inimigo('goblin', { x: 5, y: 6 });
+  const longe = inimigo('goblin', { x: 11, y: 11 });
+  const { enc } = arena({ herois: [p], foes: [juradoPerto, outro, longe] });
+  assert.ok(!enc.attackModifiers(p, juradoPerto, {}).vantagens.includes('voto de inimizade'));
+  assert.equal(enc.useFeature(p, 'vowOfEnmity', { target: juradoPerto }), true);
+  assert.equal(p.bonusUsed, true);
+  assert.equal(p.resources.channelDivinity, 0, 'gastou a carga');
+  assert.ok(enc.attackModifiers(p, juradoPerto, {}).vantagens.includes('voto de inimizade'));
+  assert.ok(!enc.attackModifiers(p, outro, {}).vantagens.includes('voto de inimizade'), 'outro alvo: normal');
+  p.bonusUsed = false;
+  assert.equal(enc.useFeature(p, 'vowOfEnmity', { target: outro }), false, 'sem carga não jura');
+  const q = vingador(3);
+  q.pos = { x: 5, y: 5 };
+  const { enc: e2 } = arena({ herois: [q], foes: [longe] });
+  assert.equal(e2.useFeature(q, 'vowOfEnmity', { target: longe }), false, 'mais longe que 3 m');
+});
+
+teste('Repelir o Inimigo: falhou em SAB, fica amedrontado e preso ao chão; passou, nada; custa a ação e a carga', () => {
+  for (const [d20, cai] of [[1, true], [20, false]]) {
+    const p = vingador(3);
+    p.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 9, y: 5 });
+    const { enc } = arena({ herois: [p], foes: [gob] });
+    enc.rng = dadoEmSequencia(d20);
+    assert.equal(enc.useFeature(p, 'abjureEnemy', { target: gob }), true);
+    assert.equal(p.actionUsed, true);
+    assert.equal(p.resources.channelDivinity, 0);
+    assert.equal(hasCondition(gob, 'amedrontado'), cai);
+    assert.equal(hasCondition(gob, 'agarrado'), cai);
+  }
+  const p2 = vingador(3);
+  p2.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 6, y: 5 };
+  const { enc } = arena({ herois: [p2, amigo], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(enc.useFeature(p2, 'abjureEnemy', { target: amigo }), false, 'não se repele um aliado');
+  assert.equal(p2.resources.channelDivinity, 1, 'e nada se gasta');
+});
+
+// ============================================================================================================
+// COLÉGIO DO VALOR (bardo, Livro do Jogador)
+// ============================================================================================================
+
+const valoroso = (nivel) => heroi('bardo', nivel, 'Humano', {}, { 3: { subclasse: 'valor' } });
+
+teste('Colégio do Valor: armadura média, escudo e armas marciais; Ataque Extra no 6º', () => {
+  const b5 = valoroso(5);
+  assert.ok(b5.features.includes('valorProficiencies') && b5.features.includes('combatInspiration'));
+  assert.ok(b5.armorTraining.includes('média') && b5.armorTraining.includes('escudo'));
+  assert.ok(b5.weaponTraining.includes('marcial'));
+  assert.ok(!b5.features.includes('extraAttack'), 'o Ataque Extra só no 6º');
+  const b6 = valoroso(6);
+  assert.ok(b6.features.includes('extraAttack'));
+  const conhecimento = heroi('bardo', 6, 'Humano', {}, { 3: { subclasse: 'conhecimento' } });
+  assert.ok(!conhecimento.armorTraining.includes('média') && !conhecimento.features.includes('extraAttack'), 'o Conhecimento não tem');
+});
+
+teste('Inspiração em Combate: o inspirado soma o dado à CA e transforma o acerto raspando em erro; um acerto folgado passa', () => {
+  const rodada = (d20) => {
+    const bardo = valoroso(3);
+    bardo.pos = { x: 4, y: 5 };
+    const amigo = heroi('guerreiro', 1, 'Humano');
+    amigo.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 6, y: 5 });
+    const { enc } = arena({ herois: [bardo, amigo], foes: [gob] });
+    addCondition(amigo, 'inspirado', { rounds: 100, source: bardo.id, data: { dado: '1d6' } });
+    enc.rng = dadoEmSequencia(d20);
+    const hp = amigo.hp;
+    enc.resolveAttack(gob, amigo, { weaponId: null });
+    return { amigo, dano: hp - amigo.hp };
+  };
+  // CA do guerreiro de 1º ~ 10+; o goblin tem +4: um 20 natural é crítico (não conta). Procura o d20 que acerta raspando.
+  let raspa = null;
+  for (let d = 2; d < 20 && raspa === null; d += 1) {
+    const r = rodada(d);
+    if (r.dano === 0 && !hasCondition(r.amigo, 'inspirado')) raspa = d;
+  }
+  assert.ok(raspa !== null, 'algum d20 acerta raspando e o dado o desfaz');
+  const folgado = rodada(19);
+  assert.ok(folgado.dano > 0, 'um acerto folgado passa');
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

@@ -283,6 +283,7 @@ export function subirNivel(c, escolhas = {}) {
 
   // Treino da subclasse (Domínio da Vida dá armadura pesada, por exemplo).
   for (const t of sub?.armaduras ?? []) if (!c.armorTraining.includes(t)) c.armorTraining.push(t);
+  for (const t of sub?.armas ?? []) if (!c.weaponTraining.includes(t)) c.weaponTraining.push(t);
 
   // ESCALAS: o que cresce com o nível sem ser característica nova — dado do
   // Ataque Furtivo, dano da Fúria, dado de Artes Marciais.

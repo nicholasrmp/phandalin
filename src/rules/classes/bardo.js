@@ -68,6 +68,20 @@ export default {
           },
         },
       },
+      valor: {
+        nome: 'Colégio do Valor',
+        fonte: 'phb',
+        niveis: {
+          3: ['valorProficiencies', 'combatInspiration'],
+          6: ['extraAttack'],
+          14: ['battleMagic'],
+        },
+        // Proficiências Adicionais: armadura média, escudos e armas marciais.
+        armaduras: ['média', 'escudo'],
+        armas: ['marcial'],
+        // Ataque Extra: um ataque a mais na ação de Atacar (a escala que o guerreiro e o paladino usam).
+        escalas: { ataquesExtras: (n) => (n >= 6 ? 1 : 0) },
+      },
     },
   },
 };

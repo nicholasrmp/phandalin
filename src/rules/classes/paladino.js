@@ -68,6 +68,24 @@ export default {
           17: ['comunhao', 'golpeDeChama'],
         },
       },
+      vinganca: {
+        nome: 'Juramento de Vingança',
+        fonte: 'phb',
+        niveis: {
+          3: ['channelDivinity', 'abjureEnemy', 'vowOfEnmity'],
+          7: ['relentlessAvenger'],
+          15: ['soulOfVengeance'],
+          20: ['avengingAngel'],
+        },
+        // Magias do Juramento (Visão de Longe, do 9º círculo de magia, ainda não existe no jogo).
+        magiasDoDominio: {
+          3: ['perdicao', 'marcaDoCacador'],
+          5: ['imobilizarPessoa', 'passoNebuloso'],
+          9: ['velocidade', 'protecaoContraEnergia'],
+          13: ['banimento', 'dimensaoPorta'],
+          17: ['imobilizarMonstro'],
+        },
+      },
     },
   },
 };
