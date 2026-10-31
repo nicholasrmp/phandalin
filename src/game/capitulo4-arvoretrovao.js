@@ -631,8 +631,15 @@ export function criarArvoreTrovao(app, config) {
   // O FAVOR que Reidoth pede ("que essa vila fique em paz"): qualquer bando da vila resolvido.
   // O dragão saiu da torre (morto ou expulso): é a condição de Reidoth para guiar o grupo.
   const dragaoSaiu = () => ['morto', 'expulso'].includes(salvo.dragao);
-  // A poção de voo que o livro põe no pescoço de Favric ficou de fora: o jogo é 2.5D e não tem voo para o herói.
-  async function saquearFavric() {}
+  // No livro, Favric leva uma poção de voo no pescoço. O jogo é 2.5D e não tem voo para o herói: no lugar vai uma poção de invisibilidade.
+  async function saquearFavric() {
+    if (salvo.pocaoDeFavric || !chefeDoCulto) return;
+    salvo.pocaoDeFavric = true;
+    const quem = herois()[0];
+    if (!quem) return;
+    guardar(quem, 'pocaoDeInvisibilidade', 1);
+    await painel(`No pescoço de Favric, num cordão: um frasco de vidro fosco com um líquido que quase não se vê. ${quem.name} guarda.`);
+  }
 
   // ------------------------------------------------- o culto do dragão ----
   // A CASA DE ESQUINA (área 13): Favric é ambicioso. Se o grupo não ataca de saída, ele tenta uma
@@ -1223,7 +1230,7 @@ export function criarArvoreTrovao(app, config) {
       });
     }
 
-    // O COFRE DOS CULTISTAS (o livro): três diamantes de 100 po (a poção de voo do livro foi tirada do jogo). Os cultistas não o largam
+    // O COFRE DOS CULTISTAS (o livro): três diamantes de 100 po (a poção de Favric está com ele). Os cultistas não o largam
     // enquanto estão ali: só abre com eles mortos, convencidos a ir ou fora da casa.
     if (sup === 'bau' && mesmo(tile, OBJ.bauCulto) && !salvo.bauCulto) {
       const vigiam = cultistas.some((f) => !f.dead && enc.combatants.includes(f));
