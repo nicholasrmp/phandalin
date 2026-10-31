@@ -107,7 +107,7 @@ export const CARACTERISTICAS = {
   destructiveWrath: C('Ira Destrutiva', 'bonus', 'Canalizar Divindade: o próximo dano elétrico ou trovejante que você rolar vira o máximo.', { motor: true }),
   thunderboltStrike: C('Golpe do Relâmpago', 'passiva', 'Dano elétrico que você causa a criatura Grande ou menor também a empurra 3 m.', { motor: true }),
   divineStrikeThunder: C('Golpe Divino (Tempestade)', 'passiva', 'Uma vez por turno, +1d8 trovejante num acerto de arma (+2d8 no 14º).', { motor: true }),
-  stormborn: C('Nascido da Tempestade', 'passiva', 'Voa com seu deslocamento ao ar livre, fora de ambientes fechados. O jogo ainda não tem voo livre: fica na ficha.'),
+  stormborn: C('Nascido da Tempestade', 'passiva', 'Voa com seu deslocamento ao ar livre, fora de ambientes fechados (o voo vale em encontros sem teto baixo).', { motor: true }),
   wardingFlare: C('Clarão de Aviso', 'reacao', 'Reação: um atacante a até 9 m que você vê ataca você com desvantagem (não vale contra imunes à cegueira). SAB usos por descanso longo.', { motor: true }),
   lightCantrip: C('Truque Bônus: Luz', 'passiva', 'Você conhece o truque Luz.', { motor: true }),
   radianceOfTheDawn: C('Esplendor da Aurora', 'acao', 'Canalizar Divindade: criaturas hostis a até 9 m fazem CD de CON e sofrem 2d10 + nível radiante (metade se passa).', { motor: true }),
