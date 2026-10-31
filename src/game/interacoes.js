@@ -26,7 +26,7 @@ import { chaveDoTesouro, porqueNaoSaquear } from './saque.js';
 import { opcoesDeClasse } from './interacoes-classe.js';
 
 /** Linhas "Dar item" por aliado no menu (o servidor da sala aceita escolha de menu até 60). */
-const MAX_DAR = 16;
+const MAX_DAR = 24;
 
 /** O que se vê de longe, por superfície do mapa. Texto nosso. */
 export const OLHAR = {
@@ -412,19 +412,37 @@ export function opcoesDaCasa(app, tile) {
       if (occ !== c && occ.side === c.side && !occ.dead && !occ.invocado) {
         const longe = !enc.field.vizinhos(c.pos, occ.pos);
         const semInteracao = !fora && !enc.custoDeInteracao(c) ? 'a interação gratuita e a ação deste turno já foram usadas' : null;
-        const distintos = [...new Map(conteudoDaMochila(c)
-          .filter((e) => !itemDeId(e.id)?.dados.props?.includes('desarmado'))
-          .map((e) => [e.id, e])).values()];
+        // Uma linha por item: as entradas do mesmo id (ouro achado em momentos diferentes) somam a quantidade.
+        const porId = new Map();
+        for (const e of conteudoDaMochila(c).filter((x) => !itemDeId(x.id)?.dados.props?.includes('desarmado'))) {
+          const ja = porId.get(e.id);
+          if (ja) porId.set(e.id, { ...ja, qtd: ja.qtd + e.qtd }); else porId.set(e.id, e);
+        }
+        const distintos = [...porId.values()];
         // O que se usa (poção, kit) vem primeiro: é o que se passa no meio da aventura.
         distintos.sort((a, b) => Number(Boolean(itemDeId(b.id)?.dados.consumivel)) - Number(Boolean(itemDeId(a.id)?.dados.consumivel)));
-        for (const e of distintos.slice(0, MAX_DAR)) {
-          opcoes.push({
-            grupo: 'Dar item', rotulo: `${nomeDeId(e.id)} a ${occ.name}`, icone: 'acao-usarObjeto',
-            detalhe: `tem ${e.qtd}${fora ? ' · de graça' : ' · interação'}`,
-            motivo: longe ? 'encoste nele primeiro' : semInteracao, alvoPrevia: occ,
-            fazer: () => { const r = enc.darItem(c, occ, e.id); if (r.ok) app.refresh(); else app.refuse(c, r.why); },
-          });
+        // Uma pilha dá em três tamanhos: uma, metade ou toda (30 moedas não se passam uma a uma). Os itens ficam
+        // num grupo RECOLHIDO ("Dar item a Fulano"): a lista inteira abria o menu num paredão de linhas.
+        const grupo = `Dar item a ${occ.name}`;
+        const temOutro = (id) => conteudoDaMochila(occ).filter((x) => x.id === id).reduce((s, x) => s + x.qtd, 0);
+        const linhas = [];
+        for (const e of distintos) {
+          const nome = nomeDeId(e.id);
+          const tamanhos = e.qtd > 1 ? [[1, nome + ' × 1'], ...(e.qtd >= 4 ? [[Math.floor(e.qtd / 2), `${nome} × ${Math.floor(e.qtd / 2)} (metade)`]] : []), [e.qtd, `${nome} × ${e.qtd} (todas)`]] : [[1, nome]];
+          for (const [n, rotulo] of tamanhos) {
+            linhas.push({
+              grupo, recolhido: true, rotulo, icone: 'acao-usarObjeto',
+              detalhe: [
+                itemDeId(e.id)?.dados.cura ? `cura ${itemDeId(e.id).dados.cura}` : null,
+                `você tem ${e.qtd}`, `${occ.name} tem ${temOutro(e.id)}`,
+                fora ? 'de graça' : 'gasta a interação',
+              ].filter(Boolean).join(' · '),
+              motivo: longe ? 'encoste nele primeiro' : semInteracao, alvoPrevia: occ,
+              fazer: () => { const r = enc.darItem(c, occ, e.id, n); if (r.ok) app.refresh(); else app.refuse(c, r.why); },
+            });
+          }
         }
+        opcoes.push(...linhas.slice(0, MAX_DAR));
       }
     }
     // Golpe não letal: escolhido antes de bater, vale para o corpo a corpo.

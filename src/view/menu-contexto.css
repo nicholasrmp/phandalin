@@ -99,6 +99,13 @@
   text-transform: uppercase;
   color: var(--gold-escuro);
 }
+/* O grupo recolhível é um botão: seta, nome e a contagem de linhas. */
+.menu-ctx-grupo-recolhivel { width: 100%; background: none; border: 0; cursor: pointer; font: inherit; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-escuro); text-align: left; }
+.menu-ctx-grupo-recolhivel::before { content: '▸'; font-size: 11px; }
+.menu-ctx-grupo-recolhivel[aria-expanded="true"]::before { content: '▾'; }
+.menu-ctx-grupo-recolhivel em { font-style: normal; order: 3; padding: 0 6px; border-radius: 99px; background: rgba(120, 84, 30, .18); }
+.menu-ctx-grupo-recolhivel:hover, .menu-ctx-grupo-recolhivel:focus-visible { color: #6b3f00; }
+.menu-ctx-item[hidden] { display: none; }
 .menu-ctx-grupo::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-forte), transparent); }
 
 .menu-ctx-item {
@@ -138,7 +145,7 @@
   transform: rotate(45deg);
 }
 .menu-ctx-texto { display: grid; gap: 1px; min-width: 0; }
-.menu-ctx-rotulo { font-family: var(--serif); font-size: 13.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-ctx-rotulo { font-family: var(--serif); font-size: 13.5px; line-height: 1.15; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .menu-ctx-texto small { font-size: 10.5px; color: var(--muted); line-height: 1.25; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 .menu-ctx-chance {

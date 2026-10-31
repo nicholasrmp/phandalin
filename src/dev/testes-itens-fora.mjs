@@ -236,8 +236,8 @@ teste('menu do aliado caído: poção, Estabilizar e Dar item aparecem explorand
     const r = rotulos(m);
     assert.ok(r.some((x) => x.startsWith('Usar item: Poção de cura em Brenn') && !x.includes('[')), `${modo}: ${r.join(' | ')}`);
     assert.ok(r.some((x) => x.startsWith('Socorrer: Estabilizar') && !x.includes('[')), `${modo}: estabilizar`);
-    assert.ok(r.some((x) => x.startsWith('Dar item: Poção de cura a Brenn') && !x.includes('[')), `${modo}: dar item`);
-    const dar = m.opcoes.find((o) => o.rotulo === 'Poção de cura a Brenn');
+    assert.ok(r.some((x) => x.startsWith('Dar item a Brenn: Poção de cura') && !x.includes('[')), `${modo}: dar item`);
+    const dar = m.opcoes.find((o) => o.rotulo === 'Poção de cura' && o.grupo?.startsWith('Dar item'));
     const antes = qtd(cle, 'pocaoDeCura');
     dar.fazer();
     assert.equal(qtd(cle, 'pocaoDeCura'), antes + 1);
@@ -248,7 +248,7 @@ teste('menu: Dar item longe vem com o motivo, e não existe em si mesmo', () => 
   const { enc, cle, pal } = montar();
   pal.pos = { x: 9, y: 5 };
   const r = rotulos(opcoesDaCasa(appDe(enc, pal), cle.pos));
-  assert.ok(r.some((x) => x.startsWith('Dar item: ') && x.includes('encoste nele primeiro')));
+  assert.ok(r.some((x) => x.startsWith('Dar item a ') && x.includes('encoste nele primeiro')));
   assert.ok(!rotulos(opcoesDaCasa(appDe(enc, pal), pal.pos)).some((x) => x.startsWith('Dar item')));
 });
 
@@ -398,13 +398,28 @@ teste('menu: Dar item só a aliado vivo e não invocado, sem linhas repetidas e 
   foes[0].pos = { x: 7, y: 5 };
   for (let i = 0; i < 30; i += 1) pal.weapons.push('adaga');   // várias cópias do mesmo item: uma linha só
   garantirInventario(pal).bag.push({ id: 'cordaCanhamo', tipo: 'item', qtd: 1 }, { id: 'cordaDeSeda', tipo: 'item', qtd: 1 }, { id: 'pocaoDeCura', tipo: 'item', qtd: 1 });
-  const dar = (m) => m.opcoes.filter((o) => o.grupo === 'Dar item').map((o) => o.rotulo);
+  const dar = (m) => m.opcoes.filter((o) => o.grupo?.startsWith('Dar item')).map((o) => o.rotulo);
   const linhas = dar(opcoesDaCasa(appDe(enc, pal), cle.pos));
   assert.equal(new Set(linhas).size, linhas.length, `repetidas: ${linhas.join(' | ')}`);
-  assert.ok(linhas.length > 0 && linhas.length <= 16);
+  assert.ok(linhas.length > 0 && linhas.length <= 24);
   assert.equal(dar(opcoesDaCasa(appDe(enc, pal), foes[0].pos)).length, 0, 'inimigo');
   cle.invocado = { auto: false };
   assert.equal(dar(opcoesDaCasa(appDe(enc, pal), cle.pos)).length, 0, 'invocado');
+});
+
+teste('menu: Dar item vem num grupo recolhido, e uma pilha dá uma, metade ou toda', () => {
+  const { enc, cle, pal } = montar();
+  garantirInventario(pal).bag.push({ id: 'moedaDeOuro', tipo: 'item', qtd: 30 });
+  const m = opcoesDaCasa(appDe(enc, pal), cle.pos);
+  const dar = m.opcoes.filter((o) => o.grupo?.startsWith('Dar item'));
+  assert.ok(dar.length && dar.every((o) => o.recolhido === true), 'todas as linhas de Dar item são recolhidas');
+  const ouro = dar.filter((o) => /Peças? de ouro|ouro/i.test(o.rotulo));
+  assert.deepEqual(ouro.map((o) => o.rotulo.replace(/^.*× /, '')), ['1', '20 (metade)', '40 (todas)']);
+  const soma = (c) => garantirInventario(c).bag.filter((e) => e.id === 'moedaDeOuro').reduce((s, e) => s + e.qtd, 0);
+  const antesCle = soma(cle);
+  ouro[1].fazer();
+  assert.equal(soma(pal), 20, 'a pilha partida em duas entradas dá a metade do total');
+  assert.equal(soma(cle), antesCle + 20);
 });
 
 teste('menu dos corpos: uma linha de Olhar por corpo, e o chão e a cena continuam (não são engolidos)', () => {

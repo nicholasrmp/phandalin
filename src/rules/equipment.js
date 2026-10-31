@@ -439,11 +439,11 @@ export function consumirDaMochila(actor, id) {
 }
 
 /**
- * Passa UMA unidade de `id` da mochila de `de` para a de `para` (a regra de quem pode e o que custa é de
+ * Passa `qtd` unidades (uma, por padrão) de `id` da mochila de `de` para a de `para` (a regra de quem pode e o que custa é de
  * `Encounter.darItem`). A arma guardada vive em `weapons`, não em `bag`; o que está nas mãos ou no corpo
  * (arma empunhada, armadura e escudo vestidos) se desequipa antes.
  */
-export function transferirItem(de, para, id) {
+export function transferirItem(de, para, id, qtd = 1) {
   garantirInventario(de);
   garantirInventario(para);
   const dados = itemDeId(id)?.dados;
@@ -462,9 +462,25 @@ export function transferirItem(de, para, id) {
     (para.weapons ??= []).push(id);
     return { ok: true };
   }
+  // Uma pilha pode estar partida em mais de uma entrada (o ouro achado e o ouro de antes): tira-se de todas, na ordem.
+  if (dados.pilha && qtd > de.bag[i].qtd) {
+    let falta = Math.min(Math.floor(qtd), de.bag.filter((x) => x.id === id).reduce((s, x) => s + x.qtd, 0));
+    const total = falta;
+    for (let k = de.bag.length - 1; k >= 0 && falta > 0; k -= 1) {
+      if (de.bag[k].id !== id) continue;
+      const tira = Math.min(falta, de.bag[k].qtd);
+      de.bag[k].qtd -= tira;
+      falta -= tira;
+      if (de.bag[k].qtd <= 0) de.bag.splice(k, 1);
+    }
+    const jaTemP = para.bag.find((x) => x.id === id);
+    if (jaTemP) jaTemP.qtd += total; else para.bag.push({ id, tipo: 'item', qtd: total });
+    return { ok: true };
+  }
   const e = de.bag[i];
+  const n = Math.max(1, Math.min(Math.floor(qtd) || 1, e.qtd));
   let doado;
-  if (e.qtd > 1) { e.qtd -= 1; doado = { id, tipo: e.tipo, qtd: 1 }; }
+  if (e.qtd > n) { e.qtd -= n; doado = { id, tipo: e.tipo, qtd: n }; }
   else { de.bag.splice(i, 1); doado = e; }   // a entrada inteira leva `usosRestantes` e `litros` junto
   const jaTem = para.bag.find((x) => x.id === id);
   if (jaTem && dados.pilha) jaTem.qtd += doado.qtd;

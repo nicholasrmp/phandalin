@@ -92,12 +92,29 @@ export function abrirMenuContexto(root, { x, y, titulo, subtitulo = null, alvo =
   let grupoAnterior = null;
   let atalho = 0;
 
+  // Grupo RECOLHIDO (`recolhido: true`): um cabeçalho que abre e fecha as linhas dele. Os índices das opções não mudam (a sala
+  // escolhe por índice), só a exibição; as linhas escondidas ficam sem tecla de atalho.
+  const recolhiveis = new Map();
   for (const o of opcoes) {
     if (o.grupo && o.grupo !== grupoAnterior) {
-      corpo.append(el('div', { class: 'menu-ctx-grupo' }, o.grupo));
+      if (o.recolhido) {
+        const itens = [];
+        const cab = el('button', {
+          class: 'menu-ctx-grupo menu-ctx-grupo-recolhivel', type: 'button', 'aria-expanded': 'false',
+          onclick: () => {
+            const abre = cab.getAttribute('aria-expanded') !== 'true';
+            cab.setAttribute('aria-expanded', String(abre));
+            for (const i of itens) i.hidden = !abre;
+            audio.play('click');
+            posicionar();
+          },
+        }, o.grupo, el('em', {}, `${opcoes.filter((x) => x.grupo === o.grupo).length}`));
+        recolhiveis.set(o.grupo, itens);
+        corpo.append(cab);
+      } else corpo.append(el('div', { class: 'menu-ctx-grupo' }, o.grupo));
       grupoAnterior = o.grupo;
     }
-    const tecla = !o.motivo && atalho < 9 ? String(++atalho) : null;
+    const tecla = !o.motivo && !o.recolhido && atalho < 9 ? String(++atalho) : null;
     const b = el('button', {
       class: `menu-ctx-item${o.motivo ? ' recusada' : ''}${o.destaque ? ' destaque' : ''}`,
       role: 'menuitem',
@@ -116,6 +133,7 @@ export function abrirMenuContexto(root, { x, y, titulo, subtitulo = null, alvo =
     tecla && el('kbd', {}, tecla));
     botoes.push(b);
     corpo.append(b);
+    if (o.recolhido) { b.hidden = true; recolhiveis.get(o.grupo)?.push(b); }
   }
 
   // A rolagem do corpo ganha uma sombra no pé enquanto houver itens abaixo.
@@ -152,7 +170,7 @@ export function abrirMenuContexto(root, { x, y, titulo, subtitulo = null, alvo =
   requestAnimationFrame(posicionar);
   setTimeout(posicionar, 120);
 
-  const ativos = () => botoes.filter((b) => !b.disabled);
+  const ativos = () => botoes.filter((b) => !b.disabled && !b.hidden);
   const fora = (e) => { if (!caixa.contains(e.target)) fechar(); };
   const tecla = (e) => {
     if (e.key === 'Escape') { e.stopImmediatePropagation(); fechar(); return; }

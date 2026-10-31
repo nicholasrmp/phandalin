@@ -900,9 +900,9 @@ export function criarMansao(app, config) {
     }
     const quem = herois()[0];
     if (g?.id === 'alojamento' && quem) {
-      guardar(quem, 'moedaDePrata', 43); guardar(quem, 'moedaDeOuro', 12); guardar(quem, 'granada', 2);
+      guardar(quem, 'moedaDePrata', 28); guardar(quem, 'moedaDeOuro', 19); guardar(quem, 'granada', 2);
       guardar(quem, 'mantoVermelho', 3);
-      texto.push(`Nas bolsas de cinto dos três: 43 peças de prata, 12 de ouro e duas granadas. Nos beliches, três mantos vermelhos encardidos. ${quem.name} guarda tudo.`);
+      texto.push(`Nas bolsas de cinto dos três: 28 peças de prata, o equivalente a 19 de ouro (12 de ouro e 15 de electro, trocadas) e duas granadas. Nos beliches, três mantos vermelhos encardidos. ${quem.name} guarda tudo.`);
     } else if (g?.id === 'guardas' && quem) {
       salvo.temChave = true;
       guardar(quem, 'moedaDePrata', 33); guardar(quem, 'tapaOlho', 1);

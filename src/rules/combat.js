@@ -7731,7 +7731,7 @@ export class Encounter {
    * DAR UM ITEM a um aliado (SRD: interação com objeto, ao alcance do toque). Fora da luta é de graça; na luta
    * gasta a interação gratuita do turno (a segunda gasta a ação), como sacar a arma.
    */
-  darItem(actor, target, itemId) {
+  darItem(actor, target, itemId, qtd = 1) {
     if (actor.dead || target.dead) return { ok: false, why: 'morto não recebe item' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não age' };
     if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se usa objeto' };
@@ -7739,10 +7739,12 @@ export class Encounter {
     if (!this.field.vizinhos(actor.pos, target.pos)) return { ok: false, why: `${target.name} está longe: encoste nele (1,5 m)` };
     const custo = this.custoDeInteracao(actor);
     if (!custo) return { ok: false, why: 'a interação gratuita e a ação deste turno já foram usadas' };
-    const r = transferirItem(actor, target, itemId);
+    const antes = actor.bag?.find((e) => e.id === itemId)?.qtd ?? 1;
+    const r = transferirItem(actor, target, itemId, qtd);
     if (!r.ok) return r;
+    const dado = Math.min(Math.max(1, Math.floor(qtd) || 1), antes);
     this.cobrarInteracao(actor, custo);
-    this.say('acao', `${actor.name} entrega ${nomeDeId(itemId).toLowerCase()} a ${target.name}.`);
+    this.say('acao', `${actor.name} entrega ${dado > 1 ? `${dado} × ` : ''}${nomeDeId(itemId).toLowerCase()} a ${target.name}.`);
     this.onEvent({ type: 'item-dado', actor, target, itemId });
     return { ok: true };
   }
