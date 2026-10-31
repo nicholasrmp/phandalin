@@ -62,11 +62,28 @@ export function darXp(herois, xp) {
 }
 
 /**
+ * A escolha de SUBCLASSE que o próximo nível pede, ou `null`: só quando o herói está a um nível do da classe e ainda não tem uma.
+ * `{ rotulo, opcoes: [{ id, nome, desc }] }`, para a tela perguntar ANTES de subir (a subclasse muda o que o nível dá).
+ */
+export function escolhaDeSubclasse(c) {
+  const def = CLASSES[c.classe];
+  const sc = def?.subclasse;
+  if (!sc || c.subclasse || (c.level ?? 1) + 1 !== sc.nivel) return null;
+  return {
+    rotulo: sc.nome,
+    opcoes: Object.entries(sc.opcoes).map(([id, o]) => ({
+      id, nome: o.nome,
+      desc: (o.niveis?.[sc.nivel] ?? []).map(nomeDaCaracteristica).join(', '),
+    })),
+  };
+}
+
+/**
  * Sobe UM nível. Devolve o que mudou e as escolhas de magia pendentes:
  *   { ganhos: [texto], escolhas: [{ id, rotulo, quantas, opcoes, sugeridas }], aplicar(escolhidas) }
  * `aplicar` recebe { [escolha.id]: [ids] } e põe as magias no lugar.
  */
-export function subirUmNivel(c) {
+export function subirUmNivel(c, escolhasDeNivel = {}) {
   const antes = {
     maxHp: c.maxHp,
     features: [...(c.features ?? [])],
@@ -76,7 +93,7 @@ export function subirUmNivel(c) {
   const def = CLASSES[c.classe];
   const conj = def?.conjuracao;
   const conhecidasAntes = conj?.conhecidas?.[c.level] ?? 0;
-  const { pendentes } = subirNivel(c);
+  const { pendentes } = subirNivel(c, escolhasDeNivel);
   // Subir de nível dá o PV máximo CRU; a exaustão é um teto temporário por
   // cima dele, então a vida atual não pode passar do teto que vale agora.
   c.hp = Math.min(c.hp + (c.maxHp - antes.maxHp), maxHpEfetivo(c));

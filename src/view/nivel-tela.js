@@ -8,7 +8,7 @@ import './nivel-tela.css';
 import { el } from './hud.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
-import { subirUmNivel, depoisDeSubirNivel, dadosDoCartao, escolhasConferidas } from '../game/nivel.js';
+import { subirUmNivel, depoisDeSubirNivel, dadosDoCartao, escolhasConferidas, escolhaDeSubclasse } from '../game/nivel.js';
 import { audio } from '../core/audio.js';
 
 function retrato(look) {
@@ -69,7 +69,25 @@ export async function telaDeSubirNivel(root, herois) {
   // acordes empilhados viram barulho e tiram justamente o peso que ele tem.
   audio.play('levelUp');
   const registro = [];
-  const itens = herois.map((c) => ({ c, r: subirUmNivel(c), selecoes: {}, dono: porta?.dono(c) ?? null }));
+  // A SUBCLASSE se escolhe ANTES de subir (ela muda o que o nível dá). Os heróis de outros jogadores seguem o padrão.
+  const subclasses = {};
+  const quemEscolhe = herois.filter((c) => escolhaDeSubclasse(c) && !porta?.dono(c));
+  if (quemEscolhe.length) {
+    const blocos = quemEscolhe.map((c) => {
+      const e = escolhaDeSubclasse(c);
+      subclasses[c.id] = e.opcoes[0].id;
+      return el('div', { class: 'nivel-escolha' },
+        el('span', {}, `${c.name}: ${e.rotulo}`),
+        el('select', { class: 'nivel-select', onchange: (ev) => { subclasses[c.id] = ev.target.value; } },
+          ...e.opcoes.map((o) => el('option', { value: o.id, title: o.desc, selected: o.id === subclasses[c.id] }, o.desc ? `${o.nome} — ${o.desc}` : o.nome))));
+    });
+    await (porta?.local ?? narrar)(root, {
+      formato: 'tela',
+      paginas: [{ titulo: 'Escolha de caminho', texto: ['O herói chega a um ponto da vida em que escolhe o caminho que seguirá.'], conteudo: el('div', { class: 'nivel-lista' }, ...blocos) }],
+      escolhas: [{ rotulo: 'Seguir', valor: 'ok', primaria: true }],
+    });
+  }
+  const itens = herois.map((c) => ({ c, r: subirUmNivel(c, subclasses[c.id] ? { subclasse: subclasses[c.id] } : {}), selecoes: {}, dono: porta?.dono(c) ?? null }));
   // Os heróis de OUTROS jogadores: o cartão vai ao dono, que escolhe em paralelo (sem resposta, valem as sugeridas).
   const esperas = itens.filter((i) => i.dono).map((i) => porta.pedir(i.c, dadosDoCartao(i.c, i.r), i.dono)
     .then((enviadas) => { i.selecoes = escolhasConferidas(i.r.escolhas, enviadas); }));

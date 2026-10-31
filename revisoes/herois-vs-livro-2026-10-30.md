@@ -547,3 +547,8 @@ Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do h
 - **Com motor e teste:** Espírito do Urso (Fúria: resistência a todo dano menos psíquico), Espírito da Águia (Fúria: oportunidade contra o bárbaro com desvantagem; Disparada como ação bônus, com botão), Espírito do Lobo (Fúria: aliados com vantagem no corpo a corpo contra quem está a 1,5 m do bárbaro) e Sintonia Totêmica do urso (14º: inimigos colados nele têm desvantagem contra os outros).
 - **Sem efeito, com motivo escrito:** Buscador de Espíritos, Aspecto da Fera, Caminhante dos Espíritos. **Pendente:** Sintonia de águia (voo) e de lobo (derrubar com ação bônus).
 - Limite: o jogo ainda não tem tela para ESCOLHER a subclasse (o padrão é a primeira da lista), então o Totêmico só aparece em herói montado com ele. Suíte 1094/1094 em Node, vitest 401/401, build verde.
+
+## Atualização 15 — Escolha de subclasse na tela de nível
+- Ao subir para o nível da subclasse (3º na maioria das classes), a tela mostra antes uma página **"Escolha de caminho"** com a lista das subclasses e as características do 1º nível de cada uma; `subirUmNivel(c, { subclasse })` repassa a escolha. Sem escolha, vale a primeira da lista, como antes. Isso libera Mestre de Batalha, Assassino e Totêmico para o jogador.
+- Limite: heróis de outros jogadores numa sala seguem o padrão (o cartão remoto ainda não carrega a pergunta). Visto abrindo a tela no jogo rodando com um bárbaro de 2º nível (as duas opções apareceram); a escolha não foi clicada até o fim.
+- Suíte 1095/1095, vitest 401/401, build verde.

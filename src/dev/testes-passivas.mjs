@@ -3173,6 +3173,27 @@ teste('Tela de nível: o espírito totêmico aparece como escolha e a troca vale
   assert.ok(b.features.includes('wolfSpirit') && !b.features.includes('bearSpirit'), 'trocou para o lobo');
 });
 
+teste('Escolha de subclasse ao subir: só no nível certo, lista as opções, e a escolhida vale', async () => {
+  const { subirUmNivel, escolhaDeSubclasse } = await import('../game/nivel.js');
+  const b = heroi('barbaro', 1, 'Humano');
+  assert.equal(escolhaDeSubclasse(b), null, 'no 1º, a pergunta ainda não vem');
+  subirUmNivel(b);
+  const e = escolhaDeSubclasse(b);
+  assert.ok(e, 'no 3º que vem a seguir, vem');
+  assert.deepEqual(e.opcoes.map((o) => o.id), ['berserker', 'totemico']);
+  assert.ok(e.opcoes.every((o) => o.nome && o.desc));
+  subirUmNivel(b, { subclasse: 'totemico' });
+  assert.equal(b.subclasse, 'totemico');
+  assert.ok(b.features.includes('totemSpirit') && !b.features.includes('frenzy'));
+  assert.equal(escolhaDeSubclasse(b), null, 'já escolheu');
+  const g = heroi('guerreiro', 2, 'Humano');
+  subirUmNivel(g, { subclasse: 'mestreDeBatalha' });
+  assert.ok(g.features.includes('combatSuperiority') && g.resources.superiorityDice === 4);
+  const sem = heroi('guerreiro', 2, 'Humano');
+  subirUmNivel(sem);
+  assert.equal(sem.subclasse, 'campeao', 'sem escolha, o padrão');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);
