@@ -144,6 +144,23 @@ teste('Figura: sem folha do estado, a aura é procedural (tinta vermelha que pul
   assert.notEqual(a.strength, b.strength, 'pulsa');
 });
 
+teste('Figura: Pele de Pedra deixa a figura cinza-pedra, parada, e some quando a condição acaba', () => {
+  const { grask } = montar(1);
+  grask.look = 'barbarian@peleDeAnimal-machadoGrande';
+  addCondition(grask, 'peleDePedra', { rounds: 10 });
+  const f = aparenciaDaFigura(grask, comFolha);
+  assert.equal(f.estado, 'pedra');
+  assert.equal(f.aura, 'procedural', 'não há folha de pedra: a tinta cobre');
+  assert.equal(f.look, 'barbarian@peleDeAnimal-machadoGrande');
+  assert.deepEqual(tintaDaAura(f, 0), tintaDaAura(f, 0.16), 'pedra não pulsa');
+  assert.equal(tintaDaAura(f, 0).color, '#9aa3ad');
+  addCondition(grask, 'furia', { rounds: 10 });
+  assert.equal(estadoVisualDe(grask), 'furia', 'a Fúria manda quando as duas valem');
+  removeCondition(grask, 'furia');
+  removeCondition(grask, 'peleDePedra');
+  assert.equal(estadoVisualDe(grask), null);
+});
+
 teste('Figura: morto não brilha, e a chave com estado não acumula "~"', () => {
   const { grask } = montar(1);
   addCondition(grask, 'furia', { rounds: 10 });

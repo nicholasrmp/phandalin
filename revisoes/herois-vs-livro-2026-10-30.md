@@ -509,3 +509,11 @@ Feito: alturas da Muralha 28→20, Nuvem 34→20 (`sumir` maior) e Correntes 28�
 **Atualização 10b — Pele de Pedra, nova geração (Wan 2.7, 6 créditos).** Pedi uma aura de estilhaços de pedra, sem corpo nem estátua. O modelo devolveu duas versões: um anel de estilhaços com brilho dourado (limpo) e uma coluna de pedras (descartada: cobriria o personagem). O anel virou o efeito `pele-de-pedra-aura` (6 quadros): os estilhaços giram e se fecham em volta do alvo, e 0,5 s depois entra o traje de pedra vazado. Continua sem ter sido visto em movimento no jogo, e o desenho do anel é regular demais; nenhum revisor viu esta versão.
 
 **Atualização 10c — Pele de Pedra, terceira geração (Wan 2.7, 6 créditos).** Pedido: espiral irregular de estilhaços de tamanhos diferentes, sem anel. Saiu um redemoinho de lajes, lascas e pedrinhas, com brilho dourado, bem mais natural que o anel regular, e substitui o `pele-de-pedra-aura`. O defeito: o modelo repetiu quase o mesmo desenho nos seis quadros, então a "animação" é um redemoinho parado que pisca em dourado (5 quadros: cinza, cinza, dourado, dourado, cinza; o sexto foi cortado na borda direita). Para movimento de verdade seria preciso outra geração pedindo cada quadro com os estilhaços em posições diferentes, ou girar os quadros no código.
+
+## Atualização 11 — Pele de Pedra pelo PixelLab
+
+- Leitura: `doc.md`, skill `pixellab`, `vfx-workbench.md` do Pip. O `/vfx` com o sprite real do herói devolve o próprio sprite virando pedra; sem sprite, o resultado foi fraco (2/5 no revisor de beleza).
+- Custo: 2 chamadas `/vfx` lite (~1 geração cada, saldo ~3048). Nenhuma geração no OpenArt.
+- No jogo: estado visual `pedra` (tinta cinza-pedra fixa em `estado-visual.js`, enquanto a condição `peleDePedra` vale) + brilho dourado do game pack (`pele-de-pedra`, 10 quadros 33x45) na conjuração. A Fúria continua mandando se as duas valem.
+- Não verificado: a animação em movimento no jogo (as capturas não pegam ~1 s de efeito) e o tom da tinta num zoom grande.
+- Scripts novos: `src/dev/efeito-pixellab.py`, `src/dev/importar-pixellab-efeito.py` (`--clip whole` importa a peça do pacote).

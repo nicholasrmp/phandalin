@@ -1399,11 +1399,8 @@ const SPELL_VISUALS = {
     return 0.3;
   },
   peleDePedra: (board, _ctx, alvos = []) => {
-    // Primeiro os estilhaços de pedra giram e se fecham em volta do alvo; depois as placas cobrem o corpo (traje vazado, com o alvo à vista).
-    for (const t of alvos) {
-      board.fx.quadros(t.pos, 'pele-de-pedra-aura', { fps: 8, altura: 26, sumir: 0.2 });
-      setTimeout(() => board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 5, altura: 30, sumir: 0.5 }), 500);
-    }
+    // Efeito do `/vfx` do PixelLab (64x96, 12 quadros): as placas sobem dos pés e uma casca oval fica em volta do alvo, com o centro vazio.
+    for (const t of alvos) board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 10, altura: 20, sumir: 0.3 });
     return 0;
   },
   imobilizarMonstro: (board, _ctx, alvos = []) => {

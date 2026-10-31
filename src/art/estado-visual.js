@@ -28,7 +28,9 @@ export function comEstado(look, estado, ligado) {
 
 /** Que estado a figura mostra agora? `null` é a figura normal. */
 export function estadoVisualDe(c) {
-  return c && !c.dead && hasCondition(c, 'furia') ? 'furia' : null;
+  if (!c || c.dead) return null;
+  if (hasCondition(c, 'furia')) return 'furia';
+  return hasCondition(c, 'peleDePedra') ? 'pedra' : null;
 }
 
 /**
@@ -41,7 +43,7 @@ export function estadoVisualDe(c) {
 export function aparenciaDaFigura(c, temFolhaNoEstado = () => false) {
   const estado = estadoVisualDe(c);
   if (!estado) return { look: String(c.look).split('~')[0], estado: null, aura: null };
-  if (temFolhaNoEstado(c.look, estado)) return { look: comEstado(c.look, estado, true), estado, aura: 'folha' };
+  if (estado === 'furia' && temFolhaNoEstado(c.look, estado)) return { look: comEstado(c.look, estado, true), estado, aura: 'folha' };
   return { look: String(c.look).split('~')[0], estado, aura: 'procedural' };
 }
 
@@ -52,5 +54,7 @@ export function aparenciaDaFigura(c, temFolhaNoEstado = () => false) {
  */
 export function tintaDaAura(aparencia, tempo = 0) {
   if (aparencia?.aura !== 'procedural') return null;
+  // Pele de Pedra: a figura vira cinza-pedra, parada (pedra não pulsa). Foi o que o /vfx do PixelLab fez com o sprite do Brenn.
+  if (aparencia.estado === 'pedra') return { color: '#9aa3ad', strength: 0.55 };
   return { color: '#d62820', strength: 0.23 + 0.07 * Math.sin(tempo * 10) };
 }
