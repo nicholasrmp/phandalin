@@ -5,35 +5,46 @@
 // a casa tem 12 casas de largura por 22 de comprimento, e a parede é uma casa inteira (o jogo ainda não tem parede de aresta neste mapa).
 // Cada andar é uma cena separada, ligada pela escada.
 //
-// Glifos (os do jogo): M parede · L piso (provisório: vira assoalho quando o kit de arte chegar) · ? porta aberta · l escada ·
-// e lareira ou fogão · m mesa · s prateleira e caixotes · K baú.
+// Glifos: M parede · U assoalho · * tapete · ? porta aberta · l escada · 0 mesa · } lareira ou fogão · { prateleira e caixotes · ) baú.
 
-export const TERREO = [
+const BASE = [
   'MMMMMMMMMMMMMM',
-  'MLLLLLLLMLsssM',
-  'MLLLLLLLMLLLKM',
-  'MeLmmmmLM?MMMM',
-  'MLLmmmmLMLeLLM',
-  'MLLLLLLLMLLLsM',
-  'MLLLLLLLMLmmLM',
-  'MMMLMLML?LmmLM',
-  'MMMLMsMLMLLLLM',
+  'MUUUUUUUMU{{{M',
+  'MUUUUUUUMUUU)M',
+  'M}U0000UM?MMMM',
+  'MUU0000UMU}UUM',
+  'MUUUUUUUMUUU{M',
+  'MUUUUUUUMU00UM',
+  'MMMUMUMU?U00UM',
+  'MMMUM{MUMUUUUM',
   'MMM?M?MMMMMMMM',
-  'MLLLLLLLLllllM',
-  'MLLLLLLLLllllM',
-  'MeLLLLLLLllllM',
-  'MLLLLLLLLllllM',
-  'MLLLLLLLLllllM',
+  'MUUUUUUUUllllM',
+  'MUUUUUUUUllllM',
+  'M}UUUUUUUllllM',
+  'MUUUUUUUUllllM',
+  'MUUUUUUUUllllM',
   'MMM?MM?MMMMMMM',
-  'MLLLLMLLLLLLLM',
-  'MLLLLMLLLLLLLM',
-  'MLLLLMLLLLLLLM',
-  'MLLLLMLLLLmLeM',
-  'MLLLLMLLLLmLLM',
-  'MLLLLMLLLLLLLM',
-  'MLLLLMLLLLLLLM',
+  'MUUUUMUUUUUUUM',
+  'MUUUUMUUUUUUUM',
+  'MUUUUMUUUUUUUM',
+  'MUUUUMUUUU0U}M',
+  'MUUUUMUUUU0UUM',
+  'MUUUUMUUUUUUUM',
+  'MUUUUMUUUUUUUM',
   'MMM?MMMMMMMMMM',
 ];
+
+/** Os tapetes: retângulos de casas (inclusivas) que viram tapete onde havia assoalho. */
+const TAPETES = [
+  { x1: 1, y1: 11, x2: 7, y2: 13 },    // o salão principal
+  { x1: 1, y1: 17, x2: 4, y2: 21 },    // a sala de espera
+  { x1: 2, y1: 2, x2: 7, y2: 5 },      // a sala de jantar, sob a mesa
+  { x1: 9, y1: 10, x2: 12, y2: 14 },   // a escadaria
+];
+const comTapetes = (linhas, tapetes) => linhas.map((linha, y) => [...linha].map((g, x) => (
+  g === 'U' && tapetes.some((t) => x >= t.x1 && x <= t.x2 && y >= t.y1 && y <= t.y2) ? '*' : g)).join(''));
+
+export const TERREO = comTapetes(BASE, TAPETES);
 
 /** Cada sala do térreo: o retângulo (casas inclusivas), o nome e o que se vê ao chegar. */
 export const AREAS_TERREO = [

@@ -187,6 +187,16 @@ export const GLIFOS = {
   '!': { kind: 1, sup: 'portaMadeira' },
   '?': { kind: 0, sup: 'portaAberta' },
   '@': { kind: 0, sup: 'passagemAberta' },
+  // A CASA DA MORTE (Maldição de Strahd): o assoalho encerado, o tapete vermelho, o parquet do 2º andar e a terra socada da masmorra
+  // (pisos), e a mobília da casa sobre assoalho (mesa, lareira, estante, baú), que não pode pisar em laje de caverna.
+  'U': { kind: 0, sup: 'assoalho' },
+  '*': { kind: 0, sup: 'tapete' },
+  '-': { kind: 0, sup: 'parquet' },
+  '+': { kind: 0, sup: 'terraSocada' },
+  '0': { kind: 3, sup: 'mesaCasa' },
+  '}': { kind: 3, sup: 'lareiraCasa' },
+  '{': { kind: 3, sup: 'estanteCasa' },
+  ')': { kind: 3, sup: 'bauCasa' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];

@@ -126,12 +126,28 @@
       "y": 960,
       "n": 12
     },
-    "tabuasTaverna": {
+    "assoalho": {
       "y": 992,
+      "n": 2
+    },
+    "tapete": {
+      "y": 1024,
+      "n": 2
+    },
+    "parquet": {
+      "y": 1056,
+      "n": 2
+    },
+    "terraSocada": {
+      "y": 1088,
+      "n": 3
+    },
+    "tabuasTaverna": {
+      "y": 1120,
       "n": 4
     }
   },
   "_taverna": {
-    "y0": 992
+    "y0": 1120
   }
 }

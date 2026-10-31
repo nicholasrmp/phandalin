@@ -178,6 +178,25 @@ CONJUNTOS = {
                   '6). weathered planks with ash dust and a few weeds in the gaps. '
                   '7). weathered planks, one plank charred black. '
                   '8). weathered planks, slightly lighter and bleached.',
+    # A CASA DA MORTE (Maldição de Strahd): assoalho encerado dos dois primeiros andares, o tapete vermelho da escadaria e do salão, o
+    # parquet em losangos do 2º andar e a terra socada da masmorra. Tudo parece NOVO (a casa se refaz sozinha), menos a terra.
+    'casaDaMorte': ESTILO + ' Interior floors of a gloomy gothic mansion, lit by oil lamps, warm and dim. '
+                   '1). dark mahogany wooden planks laid side by side, waxed and polished, uniform. '
+                   '2). dark mahogany planks, waxed, with a few fine grain lines. '
+                   '3). dark mahogany planks, waxed, one plank slightly lighter. '
+                   '4). dark mahogany planks, waxed, tiny dark knots. '
+                   '5). dark mahogany planks, waxed, very evenly worn. '
+                   '6). deep crimson woven carpet, plain with a faint weave texture. '
+                   '7). deep crimson woven carpet with a faint weave and slightly darker threads. '
+                   '8). deep crimson carpet with two thin muted gold stripes running across. '
+                   '9). deep crimson carpet with one thin muted gold stripe near the middle. '
+                   '10). dark oak parquet of small diagonal diamond-shaped wooden blocks, tidy. '
+                   '11). dark oak diagonal parquet, blocks of two slightly different tones. '
+                   '12). dark oak diagonal parquet, waxed shine in a few blocks. '
+                   '13). dark oak diagonal parquet, uniform and clean. '
+                   '14). packed damp brown clay earth floor of an old cellar, uniform, tiny pebbles. '
+                   '15). packed damp brown clay earth floor with a few darker damp patches. '
+                   '16). packed dry dark earth floor with tiny flecks of gravel.',
     'trigo': ESTILO + ' Open farmland, daylight. '
              '1). ripe golden wheat field, dense upright stalks. 2). wheat with a few bent stalks. '
              '3). wheat with a thin dirt gap. 4). trampled wheat, stalks lying flat. '
@@ -256,6 +275,7 @@ PALETAS = {
     'lajeRuina': ['#1e1f22', '#3a3b3e', '#56575a', '#77766f', '#9e998b', '#4a4640', '#4a7236', '#33572e', '#2e2b27'],
     'tabuaRuina': ['#22160e', '#3e2a1b', '#5e4029', '#85603d', '#4a4640', '#2e2b27', '#4a7236'],
     'teiaChao': ['#4a4640', '#7c776c', '#cfc6ae', '#e6e1d4', '#3e2a1b', '#5e4029', '#85603d', '#56575a', '#77766f'],
+    'casaDaMorte': ['#1b120c', '#2e1d12', '#4a2c1a', '#6b4528', '#8a5e36', '#3a0f12', '#5a1a1c', '#7a2a2a', '#9a3a34', '#a8873a', '#3a2c22', '#52402f', '#6b543d'],
     'trigo': ['#4c3e1f', '#66572c', '#85733f', '#a68a4a', '#2a3a21', '#36492c'],
     'cinza': ['#4a4640', '#66625a', '#7c776c', '#9a948a', '#2e2b27', '#36492c', '#2a3a21', '#7d5d40'],
     'lago': ['#1b393f', '#17313a', '#35647d', '#4a8099', '#c2b48f', '#968a6c', '#6b6350', '#36492c'],

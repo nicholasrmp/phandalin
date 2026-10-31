@@ -93,6 +93,12 @@ FILEIRAS = [
     # O TOPO DA PAREDE DE CAVERNA da Onda Eco: a rocha do resto do jogo, sem a cruz de rejunte e mais escura, em 4 giros por
     # ladrilho (`board.js`: `rochaMina`, so com `field.paredeDeCaverna`).
     ('rochaMina', 'be2f8c15-eb43-44d6-b6fe-40d67b3ea6d1', [0, 1, 2, 3]),
+    # A CASA DA MORTE (leva `casaDaMorte`): assoalho encerado, tapete vermelho liso, parquet em losangos e a terra socada da masmorra.
+    # Fora: 3 (escuro demais), 7, 8 e 11 (listras e fios de ouro que, repetidos por casa, viram grade), 12 (parquet de dois tons).
+    ('assoalho', 'ladrilhos-pro/3cc586da-a0c2-4ac3-a33d-be60cf32b5a3', [0, 1, 2, 4]),
+    ('tapete', 'ladrilhos-pro/3cc586da-a0c2-4ac3-a33d-be60cf32b5a3', [5, 6]),
+    ('parquet', 'ladrilhos-pro/3cc586da-a0c2-4ac3-a33d-be60cf32b5a3', [9, 10, 12]),
+    ('terraSocada', 'ladrilhos-pro/3cc586da-a0c2-4ac3-a33d-be60cf32b5a3', [13, 14, 15]),
 ]
 
 

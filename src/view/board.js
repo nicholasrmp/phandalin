@@ -115,6 +115,15 @@ const SUPERFICIE = {
   lago: { topo: ['#1b393f', '#17313a'], lado: ROCHA_LADO, chao: 'lago' },
   margem: { topo: ['#c2b48f', '#bcae88'], lado: TERRA, chao: 'margem' },
   teia: { topo: ['#8a8478', '#847e72'], lado: TERRA, chao: 'teia' },
+  // A Casa da Morte: pisos de madeira, tapete e terra, e a mobília sobre o assoalho (o sprite é o mesmo da caverna, o chão é outro).
+  assoalho: { topo: ['#4a2c1a', '#452818'], lado: ROCHA_LADO, chao: 'assoalho', face: 'alvenaria' },
+  tapete: { topo: ['#7a2a2a', '#742626'], lado: ROCHA_LADO, chao: 'tapete', face: 'alvenaria' },
+  parquet: { topo: ['#4a3220', '#452e1d'], lado: ROCHA_LADO, chao: 'parquet', face: 'alvenaria' },
+  terraSocada: { topo: ['#52402f', '#4d3b2b'], lado: ROCHA_LADO, chao: 'terraSocada', face: 'penhasco' },
+  mesaCasa: { topo: ['#4a2c1a', '#452818'], lado: ROCHA_LADO, objeto: 'mesa', chao: 'assoalho', face: 'alvenaria' },
+  lareiraCasa: { topo: ['#4a2c1a', '#452818'], lado: ROCHA_LADO, objeto: 'braseiro', chao: 'assoalho', face: 'alvenaria' },
+  estanteCasa: { topo: ['#4a2c1a', '#452818'], lado: ROCHA_LADO, objeto: 'mantimentos', chao: 'assoalho', face: 'alvenaria' },
+  bauCasa: { topo: ['#4a2c1a', '#452818'], lado: ROCHA_LADO, objeto: 'bau', chao: 'assoalho', face: 'alvenaria' },
   // Caverna Onda Eco.
   mina: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'mina', face: 'penhasco' },
   lajeMina: { topo: ['#6e665a', '#686054'], lado: ROCHA_LADO, chao: 'lajeMina', face: 'alvenaria' },
