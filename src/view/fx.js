@@ -1301,9 +1301,9 @@ export class Fx {
    * semi-eixos 45 e 22,6 px por casa. Camadas: poça escura que se abre e some, borda violeta grossa com fio de luz, rastro escuro mais
    * atrás e fagulhas ossudas que sobem da faixa da onda. Vai para a tela de chão (`prepararChao`) e entra casa a casa, sobre o terreno.
    */
-  onda(tile, { raio = 6, dur = 1.2, cor = '#a579d8', escuro = '#3a2760', osso = '#e8eef5', fagulhas = 40 } = {}) {
+  onda(tile, { raio = 6, dur = 1.2, cor = '#a579d8', escuro = '#3a2760', osso = '#e8eef5', fagulhas = 80 } = {}) {
     const sem = [];
-    for (let i = 0; i < fagulhas; i += 1) sem.push({ a: Math.random() * Math.PI * 2, r: 0.3 + Math.random() * 0.7, h: 28 + Math.random() * 44, w: Math.random() < 0.35 ? 4 : 3 });
+    for (let i = 0; i < fagulhas; i += 1) sem.push({ a: Math.random() * Math.PI * 2, r: 0.3 + Math.random() * 0.7, h: 40 + Math.random() * 60, w: Math.random() < 0.4 ? 6 : 5 });
     return this.add({ kind: 'onda', tile: { ...tile }, raio, dur, cor, escuro, osso, sem, chao: true });
   }
 
@@ -1313,6 +1313,17 @@ export class Fx {
     for (let y = -Math.floor(ry); y <= Math.floor(ry); y += 1) {
       const meia = rx * Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
       ctx.fillRect(Math.round(cx - meia), Math.round(cy + y), Math.max(1, Math.round(2 * meia)), 1);
+    }
+  }
+
+  /** Elipse em trama de xadrez de 2 px: a poça que se desfaz em pontilhado, sem meio-tom. */
+  elipseTramada(ctx, cx, cy, rx, ry) {
+    if (rx < 1 || ry < 1) return;
+    for (let y = -Math.floor(ry); y <= Math.floor(ry); y += 1) {
+      const meia = rx * Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
+      const x0 = Math.round(cx - meia);
+      const x1 = Math.round(cx + meia);
+      for (let x = x0 + (Math.abs(y) % 2 ? 1 : 0); x < x1; x += 2) ctx.fillRect(x, Math.round(cy + y), 1, 1);
     }
   }
 
@@ -1343,9 +1354,14 @@ export class Fx {
     const degrau = (v) => (v > 0.75 ? 1 : v > 0.5 ? 0.75 : v > 0.25 ? 0.5 : v > 0.08 ? 0.25 : 0);
     ctx.save();
     // A poça escura: opaca no começo, desfeita no fim, que ainda dura um instante depois do anel.
-    ctx.globalAlpha = degrau(0.6 * (1 - k * k));
     ctx.fillStyle = it.escuro;
-    this.elipseDura(ctx, sx, sy, rx * kk, ry * kk);
+    if (k < 0.6) {
+      ctx.globalAlpha = 0.85;
+      this.elipseDura(ctx, sx, sy, rx * kk, ry * kk);
+    } else {
+      ctx.globalAlpha = 0.85;
+      this.elipseTramada(ctx, sx, sy, rx * kk, ry * kk);
+    }
     // Rastro escuro, atrás da borda.
     ctx.globalAlpha = degrau(0.9 * (1 - k));
     ctx.fillStyle = '#251a42';
@@ -1363,8 +1379,62 @@ export class Fx {
       const x = sx + Math.cos(p.a) * rx * rho;
       const y = sy + Math.sin(p.a) * ry * rho - p.h * k;
       ctx.globalAlpha = degrau(1 - k * 1.05);
-      ctx.fillStyle = p.w === 4 ? it.cor : it.osso;
+      ctx.fillStyle = p.w === 6 ? it.cor : it.osso;
       ctx.fillRect(Math.round(x), Math.round(y), p.w, p.w);
+      ctx.fillStyle = '#2a2430';
+      ctx.fillRect(Math.round(x), Math.round(y) + p.w, p.w, 1);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * NUVEM DE TRANSFORMAÇÃO (vaso de planta, ovelha): nasce numa elipse achatada sob os pés, sobe em bolas de fumaça cinza e branca com
+   * contorno escuro, solta folhinhas verdes que giram e caem, e se desfaz em trama. Por código: o sprite branco chapado pairava no
+   * peito e escondia as pernas.
+   */
+  poof(tile, { dur = 1.3 } = {}) {
+    const bolas = [];
+    for (let i = 0; i < 7; i += 1) bolas.push({ dx: (Math.random() - 0.5) * 26, atraso: Math.random() * 0.2, r: 6 + Math.random() * 6, sobe: 10 + Math.random() * 20 });
+    const folhas = [];
+    for (let i = 0; i < 6; i += 1) folhas.push({ dx: (Math.random() - 0.5) * 36, h: 24 + Math.random() * 20, fase: Math.random() * 6 });
+    return this.add({ kind: 'poof', tile: { ...tile }, dur, bolas, folhas });
+  }
+
+  desenharPoof(ctx, board, it, k) {
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    ctx.save();
+    // A base: elipse de fumaça achatada no chão, que se abre e se desfaz.
+    ctx.fillStyle = '#aab6c6';
+    ctx.globalAlpha = 1;
+    if (k < 0.65) this.elipseDura(ctx, sx, sy, 10 + 20 * EASE_OUT(Math.min(1, k * 2)), 4 + 8 * EASE_OUT(Math.min(1, k * 2)));
+    else this.elipseTramada(ctx, sx, sy, 30, 12);
+    // As bolas de fumaça: contorno escuro, corpo claro, sobem e encolhem no fim.
+    for (const b of it.bolas) {
+      const t = Math.min(1, Math.max(0, (k - b.atraso) / 0.8));
+      if (t <= 0) continue;
+      const r = Math.round(b.r * (t < 0.5 ? 0.5 + t : 1 - (t - 0.5) * 0.8));
+      const x = Math.round(sx + b.dx);
+      const y = Math.round(sy - 4 - b.sobe * EASE_OUT(t));
+      ctx.globalAlpha = t > 0.85 ? 0.5 : 1;
+      ctx.fillStyle = '#2a2430';
+      this.elipseDura(ctx, x, y, r + 1, r + 1);
+      ctx.fillStyle = '#e8eef5';
+      this.elipseDura(ctx, x, y - 1, r, r);
+      ctx.fillStyle = '#aab6c6';
+      this.elipseDura(ctx, x + 1, y + Math.round(r / 2), Math.max(1, r - 2), Math.max(1, Math.round(r / 2)));
+    }
+    // Folhas verdes que sobem e caem girando.
+    ctx.fillStyle = '#6fc07a';
+    for (const f of it.folhas) {
+      const t = Math.min(1, k / 0.9);
+      const alto = Math.sin(t * Math.PI) * f.h;
+      const x = Math.round(sx + f.dx + Math.sin(f.fase + t * 7) * 5);
+      const y = Math.round(sy - 6 - alto);
+      ctx.globalAlpha = t > 0.9 ? 0.5 : 1;
+      ctx.fillRect(x, y, 4, 3);
+      ctx.fillStyle = '#2a2430';
+      ctx.fillRect(x, y + 3, 4, 1);
+      ctx.fillStyle = '#6fc07a';
     }
     ctx.restore();
   }
@@ -1373,7 +1443,7 @@ export class Fx {
    * ESTRELAS EM ÓRBITA sobre a cabeça (confusão): três faíscas de pixels com contorno escuro que giram numa elipse acima da figura.
    * Por código e sem sprite, porque o anel em sprite empilhava um por criatura e escondia o grupo inteiro.
    */
-  orbita(tile, { altura = 58, dur = 1.4, cor = '#e8c35a', miolo = '#f4f0e4', n = 3 } = {}) {
+  orbita(tile, { altura = 68, dur = 1.4, cor = '#e8c35a', miolo = '#f4f0e4', n = 3 } = {}) {
     return this.add({ kind: 'orbita', tile: { ...tile }, altura, dur, cor, miolo, n, fase: Math.random() * Math.PI * 2 });
   }
 
@@ -1383,19 +1453,26 @@ export class Fx {
     const some = Math.min(1, (1 - k) / 0.2);
     ctx.save();
     ctx.globalAlpha = Math.min(aparece, some) > 0.5 ? 1 : 0.5;
+    // A sombra no chão: uma elipse achatada de trama, para a órbita não flutuar solta.
+    ctx.fillStyle = '#2a2430';
+    this.elipseTramada(ctx, sx, sy, 16, 6);
+    // ESTRELAS de losango (não cruzes: a cruz dourada já é a cura do jogo): 9 px, contorno escuro, centro claro.
+    const LOSANGO = [[0, 0, 1], [-1, 1, 3], [-2, 2, 5], [-3, 3, 7], [-4, 4, 9]];
     for (let i = 0; i < it.n; i += 1) {
       const a = it.fase + k * Math.PI * 5 + (i * Math.PI * 2) / it.n;
-      const x = Math.round(sx + Math.cos(a) * 18);
+      const x = Math.round(sx + Math.cos(a) * 20);
       const y = Math.round(sy - it.altura + Math.sin(a) * 7);
-      // Contorno escuro (uma cruz maior atrás), a cruz dourada e o miolo claro.
-      ctx.fillStyle = '#2a2430';
-      ctx.fillRect(x - 2, y - 6, 4, 12);
-      ctx.fillRect(x - 6, y - 2, 12, 4);
-      ctx.fillStyle = it.cor;
-      ctx.fillRect(x - 1, y - 5, 2, 10);
-      ctx.fillRect(x - 5, y - 1, 10, 2);
-      ctx.fillStyle = it.miolo;
-      ctx.fillRect(x - 1, y - 1, 2, 2);
+      const desenha = (raio, cor) => {
+        ctx.fillStyle = cor;
+        for (let r = -raio; r <= raio; r += 1) {
+          const meia = raio - Math.abs(r);
+          ctx.fillRect(x - meia, y + r, 2 * meia + 1, 1);
+        }
+      };
+      void LOSANGO;
+      desenha(6, '#2a2430');
+      desenha(5, it.cor);
+      desenha(2, it.miolo);
     }
     ctx.restore();
   }
@@ -1404,7 +1481,7 @@ export class Fx {
    * ALMAS que sobem dos atingidos pela onda necrótica: fantasminhas de pixels (corpo oval, dois olhos, cauda em ponta) que sobem uns
    * 50 px balançando de lado e somem. Uma a quatro por alvo, em tempos escalonados.
    */
-  almas(tile, { altura = 20, dur = 1.5, n = 4 } = {}) {
+  almas(tile, { altura = 20, dur = 1.5, n = 3 } = {}) {
     const almas = [];
     for (let i = 0; i < n; i += 1) almas.push({ atraso: i * 0.13 + Math.random() * 0.05, dx: (Math.random() - 0.5) * 22, ond: Math.random() * Math.PI * 2 });
     return this.add({ kind: 'almas', tile: { ...tile }, altura, dur, almas });
@@ -1452,7 +1529,7 @@ export class Fx {
     const cores = ['#e8c35a', '#a579d8', '#e8eef5', '#6ea8e8', '#e8c35a', '#a579d8'];
     const faiscas = [];
     for (let i = 0; i < n; i += 1) {
-      faiscas.push({ a: (i / n) * Math.PI * 2 + Math.random() * 0.4, v: 0.5 + Math.random() * 0.5, h: 14 + Math.random() * 38, w: Math.random() < 0.4 ? 4 : 3, cor: cores[i % cores.length], estrela: Math.random() < 0.3 });
+      faiscas.push({ a: (i / n) * Math.PI * 2 + Math.random() * 0.4, v: 0.5 + Math.random() * 0.5, h: 50 + Math.random() * 34, w: Math.random() < 0.4 ? 6 : 5, cor: cores[i % cores.length], estrela: Math.random() < 0.3 });
     }
     return this.add({ kind: 'caos', tile: { ...tile }, dur, faiscas });
   }
@@ -1460,19 +1537,16 @@ export class Fx {
   desenharCaos(ctx, board, it, k) {
     const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
     ctx.save();
-    // O clarão: cruz dourada que cresce e some nos primeiros 25%.
-    if (k < 0.25) {
-      const f = 1 - k / 0.25;
-      const r = Math.round(6 + 14 * (k / 0.25));
-      ctx.globalAlpha = f > 0.5 ? 1 : 0.5;
-      ctx.fillStyle = '#2a2430';
-      ctx.fillRect(sx - 3, sy - r - 2, 6, 2 * r + 4);
-      ctx.fillRect(sx - r - 2, sy - 3, 2 * r + 4, 6);
+    // O estouro no chão: um anel dourado que se abre com um segundo anel violeta atrás, e a poça de luz se desfazendo em trama.
+    if (k < 0.55) {
+      const e0 = EASE_OUT(k / 0.55);
       ctx.fillStyle = '#e8c35a';
-      ctx.fillRect(sx - 2, sy - r, 4, 2 * r);
-      ctx.fillRect(sx - r, sy - 2, 2 * r, 4);
-      ctx.fillStyle = '#f4f0e4';
-      ctx.fillRect(sx - 2, sy - 2, 4, 4);
+      ctx.globalAlpha = k < 0.3 ? 0.85 : 0.5;
+      this.elipseTramada(ctx, sx, sy, 8 + 34 * e0, 4 + 17 * e0);
+      ctx.globalAlpha = 1;
+      this.anelDuro(ctx, sx, sy, 10 + 40 * e0, 5 + 20 * e0, 4);
+      ctx.fillStyle = '#a579d8';
+      this.anelDuro(ctx, sx, sy, 6 + 28 * e0, 3 + 14 * e0, 3);
     }
     // A chuva de faíscas, saindo em elipse isométrica, com um arco para cima.
     const e = EASE_OUT(Math.min(1, k * 1.15));
@@ -1482,8 +1556,8 @@ export class Fx {
       ctx.globalAlpha = k < 0.55 ? 1 : k < 0.8 ? 0.6 : 0.3;
       ctx.fillStyle = p.cor;
       if (p.estrela) {
-        ctx.fillRect(Math.round(x) - 1, Math.round(y) - 3, 2, 6);
-        ctx.fillRect(Math.round(x) - 3, Math.round(y) - 1, 6, 2);
+        ctx.fillRect(Math.round(x) - 1, Math.round(y) - 4, 2, 8);
+        ctx.fillRect(Math.round(x) - 4, Math.round(y) - 1, 8, 2);
       } else {
         ctx.fillRect(Math.round(x), Math.round(y), p.w, p.w);
       }
@@ -1633,6 +1707,11 @@ export class Fx {
             ctx.stroke();
           }
           ctx.restore();
+          break;
+        }
+
+        case 'poof': {
+          this.desenharPoof(ctx, board, it, k);
           break;
         }
 

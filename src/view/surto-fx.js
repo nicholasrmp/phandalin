@@ -7,14 +7,18 @@ const ALTURA = { 'poof-vaso': 14, graxa: 4, 'raio-queda': 40, 'bola-de-fogo': 30
 
 export function tocarSurtoFx(board, ev) {
   if (!board?.fx || !ev?.pos) return;
-  // Os disparos de um mesmo surto saem escalonados: o grupo inteiro de uma vez vira uma pilha de efeitos no mesmo quadro.
-  const atraso = Math.random() * 110;
+  // Os disparos de um mesmo surto saem escalonados por TIPO (a onda abre primeiro, o estouro vem logo atrás, as almas depois e a confusão
+  // por último) e um pouco ao acaso entre as criaturas: o grupo inteiro no mesmo quadro vira uma pilha que não se lê.
+  const POR_TIPO = { 'onda-necrotica': 0, 'surto-caos': 0, 'poof-vaso': 0, 'almas-sobem': 450, 'confusao-estrelas': 700 };
+  const atraso = (POR_TIPO[ev.fx] ?? 0) + Math.random() * 160;
   setTimeout(() => {
     const fx = board.fx;
     switch (ev.fx) {
       case 'surto-caos': fx.caos(ev.pos); break;
       case 'onda-necrotica': fx.onda(ev.pos, { raio: 6, dur: 1.2 }); break;
-      case 'almas-sobem': fx.almas(ev.pos); break;
+      // Com o grupo todo atingido, duas almas por alvo bastam.
+      case 'almas-sobem': fx.almas(ev.pos, { n: fx.items.filter((i) => i.kind === 'almas').length > 4 ? 2 : 3 }); break;
+      case 'poof-vaso': fx.poof(ev.pos); break;
       case 'confusao-estrelas': fx.orbita(ev.pos); break;
       case 'graxa': fx.quadros(ev.pos, 'graxa', { fps: 8, altura: ALTURA.graxa, sumir: 0.2, chao: true, cresce: [0.65, 0.65] }); break;
       default: fx.quadros(ev.pos, ev.fx, { fps: ev.fx === 'poof-vaso' ? 8 : 12, altura: ALTURA[ev.fx] ?? 30, sumir: 0.2 });
