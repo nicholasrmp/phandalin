@@ -995,7 +995,8 @@ export class Fx {
     this._chaoAltura = board.field.heightAt(Math.round(lista[0].tile.x), Math.round(lista[0].tile.y));
     const cv = (this._chaoCv ??= document.createElement('canvas'));
     if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) { cv.width = ctx.canvas.width; cv.height = ctx.canvas.height; }
-    const c = cv.getContext('2d');
+    // `willReadFrequently`: o laço de profundidade lê esta tela casa a casa; em GPU, cada leitura trazia a tela inteira de volta.
+    const c = (this._chaoCtx ??= cv.getContext('2d', { willReadFrequently: true }));
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, cv.width, cv.height);
     c.setTransform(ctx.getTransform());
@@ -1316,14 +1317,22 @@ export class Fx {
     }
   }
 
-  /** Elipse em trama de xadrez de 2 px: a poça que se desfaz em pontilhado, sem meio-tom. */
-  elipseTramada(ctx, cx, cy, rx, ry) {
+  /**
+   * Elipse em trama de blocos de 2x2 px: a poça que se desfaz em pontilhado, sem meio-tom. `ralo` 1 deixa metade dos blocos (xadrez),
+   * 2 deixa um em cada quatro.
+   */
+  elipseTramada(ctx, cx, cy, rx, ry, ralo = 1) {
     if (rx < 1 || ry < 1) return;
     for (let y = -Math.floor(ry); y <= Math.floor(ry); y += 1) {
       const meia = rx * Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
       const x0 = Math.round(cx - meia);
       const x1 = Math.round(cx + meia);
-      for (let x = x0 + (Math.abs(y) % 2 ? 1 : 0); x < x1; x += 2) ctx.fillRect(x, Math.round(cy + y), 1, 1);
+      const bloco = Math.floor((Math.round(cy + y)) / 2);
+      for (let x = x0 - (x0 % 2); x < x1; x += 2) {
+        const bx = x / 2;
+        const vivo = ralo === 1 ? (bx + bloco) % 2 === 0 : (ralo === 2 ? bx % 2 === 0 && bloco % 2 === 0 : true);
+        if (vivo && x >= x0 - 1) ctx.fillRect(x, Math.round(cy + y), 2, 1);
+      }
     }
   }
 
@@ -1351,17 +1360,15 @@ export class Fx {
     const rx = it.raio * 45;
     const ry = it.raio * 22.6;
     // Alfa em degraus (sem contínuo): o pixel art não tem meio-tom.
-    const degrau = (v) => (v > 0.75 ? 1 : v > 0.5 ? 0.75 : v > 0.25 ? 0.5 : v > 0.08 ? 0.25 : 0);
+    // O alfa é 0 ou 1 (nada de meio-tom): o que apaga vira trama, e o que some vira ausência.
+    const degrau = (v) => (v > 0.45 ? 1 : 0);
     ctx.save();
     // A poça escura: opaca no começo, desfeita no fim, que ainda dura um instante depois do anel.
     ctx.fillStyle = it.escuro;
-    if (k < 0.6) {
-      ctx.globalAlpha = 0.85;
-      this.elipseDura(ctx, sx, sy, rx * kk, ry * kk);
-    } else {
-      ctx.globalAlpha = 0.85;
-      this.elipseTramada(ctx, sx, sy, rx * kk, ry * kk);
-    }
+    ctx.globalAlpha = 1;
+    if (k < 0.45) this.elipseDura(ctx, sx, sy, rx * kk, ry * kk);
+    else if (k < 0.7) this.elipseTramada(ctx, sx, sy, rx * kk, ry * kk, 1);
+    else if (k < 0.92) this.elipseTramada(ctx, sx, sy, rx * kk, ry * kk, 2);
     // Rastro escuro, atrás da borda.
     ctx.globalAlpha = degrau(0.9 * (1 - k));
     ctx.fillStyle = '#251a42';
@@ -1415,7 +1422,8 @@ export class Fx {
       const r = Math.round(b.r * (t < 0.5 ? 0.5 + t : 1 - (t - 0.5) * 0.8));
       const x = Math.round(sx + b.dx);
       const y = Math.round(sy - 4 - b.sobe * EASE_OUT(t));
-      ctx.globalAlpha = t > 0.85 ? 0.5 : 1;
+      ctx.globalAlpha = 1;
+      if (t > 0.88 && Math.floor(t * 20) % 2 === 0) continue;
       ctx.fillStyle = '#2a2430';
       this.elipseDura(ctx, x, y, r + 1, r + 1);
       ctx.fillStyle = '#e8eef5';
@@ -1430,7 +1438,8 @@ export class Fx {
       const alto = Math.sin(t * Math.PI) * f.h;
       const x = Math.round(sx + f.dx + Math.sin(f.fase + t * 7) * 5);
       const y = Math.round(sy - 6 - alto);
-      ctx.globalAlpha = t > 0.9 ? 0.5 : 1;
+      ctx.globalAlpha = 1;
+      if (t > 0.9) continue;
       ctx.fillRect(x, y, 4, 3);
       ctx.fillStyle = '#2a2430';
       ctx.fillRect(x, y + 3, 4, 1);
@@ -1452,7 +1461,8 @@ export class Fx {
     const aparece = Math.min(1, k / 0.15);
     const some = Math.min(1, (1 - k) / 0.2);
     ctx.save();
-    ctx.globalAlpha = Math.min(aparece, some) > 0.5 ? 1 : 0.5;
+    ctx.globalAlpha = 1;
+    if (Math.min(aparece, some) < 0.5) { ctx.restore(); return; }
     // A sombra no chão: uma elipse achatada de trama, para a órbita não flutuar solta.
     ctx.fillStyle = '#2a2430';
     this.elipseTramada(ctx, sx, sy, 16, 6);
@@ -1508,7 +1518,9 @@ export class Fx {
       if (t < 0 || t > 1) continue;
       const x = Math.round(sx + a.dx + Math.sin(a.ond + t * 6) * 5 - 7);
       const y = Math.round(sy - it.altura - t * 54 - 9);
-      ctx.globalAlpha = t < 0.15 ? 0.5 : t > 0.75 ? (t > 0.9 ? 0.25 : 0.5) : 1;
+      ctx.globalAlpha = 1;
+      // Sem translúcido: no fim a alma pisca (aparece e some) antes de ir embora.
+      if (t > 0.78 && Math.floor(t * 24) % 2 === 0) continue;
       for (let j = 0; j < FORMA.length; j += 1) {
         for (let i = 0; i < FORMA[j].length; i += 1) {
           const c = COR[FORMA[j][i]];
@@ -1541,9 +1553,8 @@ export class Fx {
     if (k < 0.55) {
       const e0 = EASE_OUT(k / 0.55);
       ctx.fillStyle = '#e8c35a';
-      ctx.globalAlpha = k < 0.3 ? 0.85 : 0.5;
-      this.elipseTramada(ctx, sx, sy, 8 + 34 * e0, 4 + 17 * e0);
       ctx.globalAlpha = 1;
+      this.elipseTramada(ctx, sx, sy, 8 + 34 * e0, 4 + 17 * e0, k < 0.3 ? 1 : 2);
       this.anelDuro(ctx, sx, sy, 10 + 40 * e0, 5 + 20 * e0, 4);
       ctx.fillStyle = '#a579d8';
       this.anelDuro(ctx, sx, sy, 6 + 28 * e0, 3 + 14 * e0, 3);
@@ -1553,7 +1564,8 @@ export class Fx {
     for (const p of it.faiscas) {
       const x = sx + Math.cos(p.a) * 52 * p.v * e;
       const y = sy + Math.sin(p.a) * 26 * p.v * e - Math.sin(Math.min(1, k * 1.4) * Math.PI) * p.h;
-      ctx.globalAlpha = k < 0.55 ? 1 : k < 0.8 ? 0.6 : 0.3;
+      ctx.globalAlpha = 1;
+      if (k > 0.8 && Math.floor((k + p.a) * 18) % 2 === 0) continue;
       ctx.fillStyle = p.cor;
       if (p.estrela) {
         ctx.fillRect(Math.round(x) - 1, Math.round(y) - 4, 2, 8);

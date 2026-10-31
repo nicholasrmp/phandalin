@@ -9,7 +9,7 @@ export function tocarSurtoFx(board, ev) {
   if (!board?.fx || !ev?.pos) return;
   // Os disparos de um mesmo surto saem escalonados por TIPO (a onda abre primeiro, o estouro vem logo atrás, as almas depois e a confusão
   // por último) e um pouco ao acaso entre as criaturas: o grupo inteiro no mesmo quadro vira uma pilha que não se lê.
-  const POR_TIPO = { 'onda-necrotica': 0, 'surto-caos': 0, 'poof-vaso': 0, 'almas-sobem': 450, 'confusao-estrelas': 700 };
+  const POR_TIPO = { 'onda-necrotica': 0, 'surto-caos': 0, 'poof-vaso': 0, 'almas-sobem': 400, 'confusao-estrelas': 550 };
   const atraso = (POR_TIPO[ev.fx] ?? 0) + Math.random() * 160;
   setTimeout(() => {
     const fx = board.fx;
