@@ -3374,7 +3374,14 @@ class App {
     const c = this.selected;
     if (!c || this.enc.side !== "party" || this.capitulo?.explorando) return;
     this.selected = null;
-    this.terminarTurnoDe(c);
+    const r = this.terminarTurnoDe(c);
+    // Passa o comando ao próximo herói que ainda pode agir: antes a barra de ações esvaziava ("Escolha um personagem") e custava
+    // um clique a mais por herói. Se foi o último, a vez vai aos inimigos e não se seleciona ninguém.
+    Promise.resolve(r).then(() => {
+      if (!this.enc || this.enc.over || this.enc.side !== "party" || this.selected) return;
+      const prox = this.firstActive();
+      if (prox) this.select(prox);
+    });
   }
 
   /**

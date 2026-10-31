@@ -523,5 +523,6 @@ teste('aplicarIntencao: o menu de contexto de quem já terminou o turno é recus
   assert.ok(j > i, 'a recusa vem antes do contexto');
 });
 
+await Promise.all(pendentes);
 console.log(`\n${total - falhas}/${total} testes passaram`);
 if (falhas) process.exit(1);

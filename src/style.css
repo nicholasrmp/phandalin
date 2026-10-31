@@ -391,16 +391,16 @@ h2 {
 }
 .bar i { display: block; height: 100%; }
 
-.slots { display: flex; gap: 7px; font-size: 10.5px; color: var(--blue); }
+.slots { display: flex; flex-wrap: wrap; gap: 2px 7px; font-size: 11px; color: var(--blue); }
 
 /* ---- economia de turno no cartão ----
    A, B e R são Ação, Bônus e Reação. Letra e não ícone: três desenhos de
    16 px lado a lado viram borrão, e a inicial já é o nome. */
-.eco-linha { display: flex; align-items: center; gap: 3px; margin-top: 1px; }
+.eco-linha { display: flex; align-items: center; gap: 3px; margin-top: 1px; flex-wrap: nowrap; white-space: nowrap; }
 .eco {
-  width: 13px; height: 13px; line-height: 12px;
+  width: 16px; height: 16px; line-height: 15px;
   text-align: center;
-  font-size: 8.5px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
   color: #2b1d07;
   background: linear-gradient(180deg, var(--gold-claro), var(--gold));
   border: 1px solid var(--gold-escuro);
@@ -413,7 +413,7 @@ h2 {
   color: var(--muted);
 }
 .eco-mov {
-  margin-left: 2px;
+  margin-left: 2px; white-space: nowrap;
   font-size: 11px;
   color: #1d4e76;
   font-variant-numeric: tabular-nums;
@@ -427,7 +427,7 @@ h2 {
    atrapalha, latão é o que te ajuda. */
 .conds { display: flex; flex-wrap: wrap; gap: 3px; }
 .cond {
-  font-size: 9px; line-height: 14px; letter-spacing: .06em;
+  font-size: 11px; line-height: 15px; letter-spacing: .04em;
   font-variant-numeric: tabular-nums;
   background: rgba(168, 52, 32, .16);
   border: 1px solid rgba(168, 52, 32, .5);
@@ -468,7 +468,7 @@ h2 {
 .inimigo.down { opacity: .45; filter: grayscale(.6); }
 .inimigo-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .inimigo-topo strong { font-family: var(--serif); font-size: 12.5px; font-weight: 500; }
-.inimigo-ca { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inimigo-ca { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* A chance de acerto do personagem selecionado. A cor é o atalho: verde é
    aposta boa, latão é duvidosa, vermelha é desperdício de ação. */
@@ -809,7 +809,7 @@ h2 {
 .economia-linha.gasta .gema-luz.furtivo { background: radial-gradient(circle at 35% 30%, #6b6258, #3a342e); border-color: #26211c; }
 /* A arma cujo golpe, contra o alvo sob o cursor, leva o Furtivo. */
 .tile.furtivo-vale { box-shadow: 0 0 0 2px rgba(232, 195, 90, .9), 0 0 8px rgba(232, 195, 90, .55); }
-.economia-estado { font-size: 10px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.economia-estado { font-size: 11px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
 
 /* ---- magias: a cor de cada círculo ----
    Truque é aço; 1º a 3º, metais (bronze, prata, ouro); 4º a 6º, gemas
@@ -832,7 +832,7 @@ h2 {
    por espaço, na cor dele. Cheia é espaço disponível. */
 .espacos-magia { display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .espaco-circulo { display: inline-flex; align-items: center; gap: 3px; cursor: help; }
-.espaco-num { font-family: var(--serif); font-size: 10px; font-weight: 700; color: var(--ink); margin-right: 1px; }
+.espaco-num { font-family: var(--serif); font-size: 11px; font-weight: 700; color: var(--ink); margin-right: 1px; }
 .espaco-circulo i {
   width: 7px; height: 7px;
   transform: rotate(45deg);
@@ -844,7 +844,7 @@ h2 {
 .espaco-circulo.escolhivel { cursor: pointer; border-radius: 3px; padding: 0 2px; outline: 1px dashed rgba(138, 95, 29, .5); }
 .espaco-circulo.escolhivel:hover { outline-color: var(--circulo); }
 .espaco-circulo.escolhido { outline: 2px solid var(--circulo); background: rgba(255, 240, 200, .35); }
-.espaco-livre { font-size: 9px; font-style: italic; color: var(--muted); }
+.espaco-livre { font-size: 11px; font-style: italic; color: var(--muted); }
 
 /* O selo do círculo no medalhão de magia: o numeral romano (ou "T", de
    truque) na cor do círculo — a mesma cor do aro e da fileira de espaços. */
@@ -914,7 +914,7 @@ h2 {
 .dica.on { opacity: 1; transform: none; }
 .dica-topo { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
 .dica-topo strong { font-family: var(--serif); font-size: 14.5px; color: var(--gold-escuro); }
-.dica-tipo { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.dica-tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
 .dica-linhas { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
 .dica-linha { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; }
 .dica-rot { color: var(--muted); }
@@ -990,7 +990,7 @@ h2 {
   display: flex; flex-direction: column; gap: 2px;
 }
 .resumo-linhas li { font-size: 11.5px; line-height: 1.35; color: #4a3b27; }
-.resumo-sobra { margin-top: 4px; font-size: 10.5px; color: var(--muted); }
+.resumo-sobra { margin-top: 4px; font-size: 11px; color: var(--muted); }
 .resumo-pe {
   margin-top: 6px;
   font-size: 9px; letter-spacing: .12em; text-transform: uppercase;

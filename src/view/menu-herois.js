@@ -48,8 +48,8 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
     const lista = el('div', { class: 'menu-doze' });
     const detalhe = el('article', { class: 'menu-heroi-detalhe' });
     const contagem = el('span', { class: 'menu-contagem' });
-    const pronto = botao('Jogar com os prontos', () => comecar(true));
-    const preparar = botao('Preparar os heróis', () => comecar(false), { primario: true });
+    const pronto = botao('Começar já, com as escolhas padrão', () => comecar(true));
+    const preparar = botao('Personalizar os heróis', () => comecar(false), { primario: true });
 
     function comecar(automatico) {
       const ids = HEROIS.map((h) => h.id).filter((id) => grupo.escolhidos.includes(id));
@@ -61,14 +61,15 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
     let tentativas = 0;
     function redesenhar() {
       let faltou = false;
-      lista.replaceChildren(...HEROIS.map((h) => {
+      // Os que ainda não têm arte vão para o fim: não ocupam o meio da grade de quem pode ser escolhido.
+      lista.replaceChildren(...[...HEROIS].sort((a, b) => Number(!disponivel(a)) - Number(!disponivel(b))).map((h) => {
         const marcado = grupo.escolhidos.includes(h.id);
         if (!disponivel(h)) {
-          return el('button', { class: 'menu-heroi compacto indisponivel', disabled: true, title: 'A arte deste herói ainda está sendo feita.' },
+          return el('button', { class: 'menu-heroi compacto indisponivel', disabled: true, title: 'Em breve: a arte deste herói ainda está sendo feita.' },
             el('span', { class: 'menu-heroi-retrato' }, retrato(h.look, () => { faltou = true; })),
             el('span', { class: 'menu-heroi-nome' }, h.name),
             el('span', { class: 'menu-heroi-classe' }, `${h.className} · ${h.raca}`),
-            el('span', { class: 'menu-heroi-marca' }, 'Não disponível'));
+            el('span', { class: 'menu-heroi-marca' }, 'Em breve'));
         }
         return el('button', {
           class: `menu-heroi compacto${marcado ? ' escolhido' : ''}${grupo.foco === h.id ? ' foco' : ''}`,
@@ -101,9 +102,13 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
         el('dl', { class: 'menu-heroi-tracos' },
           ...[['Traço', h.traco], ['Ideal', h.ideal], ['Vínculo', h.vinculo], ['Defeito', h.defeito]]
             .flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)])),
-        el('p', { class: 'menu-dica' }, marcado
-          ? 'Clique de novo no retrato para tirá-lo do grupo.'
-          : grupo.escolhidos.length < GRUPO ? 'Clique de novo no retrato para pô-lo no grupo.' : 'O grupo já tem quatro: tire alguém para pôr este.'),
+        // O botão faz o mesmo que o segundo clique no retrato, só que visível: quem lê a história vê o que fazer a seguir.
+        botao(marcado ? 'Tirar do grupo' : 'Pôr no grupo', () => {
+          if (marcado) grupo.escolhidos = grupo.escolhidos.filter((i) => i !== h.id);
+          else if (grupo.escolhidos.length < GRUPO) grupo.escolhidos.push(h.id);
+          redesenhar();
+        }, { primario: !marcado, desabilitado: !marcado && grupo.escolhidos.length >= GRUPO, dica: marcado ? null : 'O grupo já tem quatro: tire alguém para pôr este.' }),
+        el('p', { class: 'menu-dica' }, 'Começar já usa as escolhas padrão de cada herói; Personalizar deixa mudar talentos, perícias e equipamento antes de partir.'),
       ]);
 
       const n = grupo.escolhidos.length;

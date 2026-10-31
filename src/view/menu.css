@@ -395,7 +395,8 @@
 .menu-heroi.compacto .menu-heroi-retrato canvas { width: 44px !important; height: 44px !important; }
 .menu-heroi.compacto .menu-heroi-nome { font-size: 15px; }
 .menu-heroi.compacto .menu-heroi-classe { font-size: 11.5px; }
-.menu-heroi.compacto .menu-heroi-marca { grid-column: 2; grid-row: auto; font-size: 10px; }
+/* A linha "No grupo" tem altura própria mesmo vazia: antes o cartão crescia ao ser escolhido e a lista pulava sob o mouse. */
+.menu-heroi.compacto .menu-heroi-marca { grid-column: 2; grid-row: auto; font-size: 11px; min-height: 15px; }
 
 /* --------------------------------------------------- preparo: abas -- */
 .menu-abas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }

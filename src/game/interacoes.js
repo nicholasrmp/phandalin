@@ -237,6 +237,9 @@ export function opcoesDaCasa(app, tile) {
           else if (ranged && p.semVisao) motivo = 'sem linha de visão';
           else if (ranged && p.foraDeAlcance) motivo = `fora de alcance — ${p.dist} pés`;
           else if (!ranged && p.foraDeAlcance && c.movementLeftFt <= 0) motivo = 'longe, e sem movimento para chegar';
+          // A reta é o piso do caminho: se nem ela cabe no que sobra de movimento, andar até o alvo é impossível (antes a opção ficava
+          // acesa e o clique não fazia nada).
+          else if (!ranged && p.foraDeAlcance && p.dist - 5 > c.movementLeftFt) motivo = `longe demais: faltam ${p.dist - 5 - c.movementLeftFt} pés de movimento`;
           // Corpo a corpo longe: o herói anda até o alvo antes. A previsão dá
           // 0% para quem está fora do alcance AGORA, o que aqui enganaria.
           const andar = !ranged && p.foraDeAlcance;
