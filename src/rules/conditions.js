@@ -419,6 +419,38 @@ export const CONDITIONS = {
     name: 'Distraído',
     desc: 'O próximo ataque de um aliado de quem o distraiu tem vantagem (Ataque Distrativo).',
   },
+  // SURTOS de magia selvagem (surto.js).
+  surtoRepetido: {
+    name: 'Surto Persistente',
+    desc: 'Rola um novo surto de magia selvagem no começo de cada turno seu (Surto de Magia Selvagem).',
+  },
+  confuso: {
+    name: 'Confuso',
+    desc: 'Sem reações e com desvantagem nos ataques (a Confusão do livro sorteia o que a criatura faz; o jogo usa este resumo).',
+    semReacao: true,
+    attackDisadvantage: true,
+  },
+  vasoDePlanta: {
+    name: 'Vaso de Planta',
+    desc: 'Incapacitado e vulnerável a todo dano até o começo do próximo turno (Surto de Magia Selvagem).',
+    incapacitated: true,
+    vulnerabilidade: 'todos',
+  },
+  ovelha: {
+    name: 'Ovelha',
+    desc: 'Virou ovelha: incapacitado por um minuto (Polimorfia em si mesmo, num surto).',
+    incapacitated: true,
+  },
+  resistenciaTotal: {
+    name: 'Resistência a Tudo',
+    desc: 'Resistência a todo tipo de dano por um minuto (Surto de Magia Selvagem).',
+    resisteTudo: true,
+  },
+  vulnerabilidadePerfurante: {
+    name: 'Vulnerável a Perfurante',
+    desc: 'Sofre o dobro de dano perfurante por um minuto (Surto de Magia Selvagem).',
+    vulnerabilidade: ['perfurante'],
+  },
   desarmado: {
     name: 'Desarmado',
     desc: 'Largou a arma: desvantagem em todos os ataques (Ataque Desarmante).',

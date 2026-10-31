@@ -635,6 +635,11 @@ export class Encounter {
       this.comecoDoTurnoMagico(c);
       this.comecoDoTurnoPassivo(c);
       this.nimboTick(c);
+      // SURTO PERSISTENTE (surto de magia selvagem): um novo surto no começo de cada turno dele.
+      if (hasCondition(c, 'surtoRepetido') && !c.dead && !this.surtando) {
+        this.surtando = true;
+        try { this.surtoDeMagia(c, { forcar: true }); } finally { this.surtando = false; }
+      }
       // LUZ RESTAURADORA (surto de magia selvagem): +5 PV no começo de cada turno dele.
       if (hasCondition(c, 'regenCaos') && !c.dead && c.hp > 0) {
         const curaR = Math.min(5, maxHpEfetivo(c) - c.hp);
@@ -3381,16 +3386,18 @@ export class Encounter {
   }
 
   /** SURTO DE MAGIA SELVAGEM: depois de uma magia de 1º círculo ou mais; 1 no d20, ou sempre depois das Marés do Caos. */
-  surtoDeMagia(actor) {
-    const mare = actor.mareUsada;
-    if (!mare && this.rng.die(20) !== 1) return;
+  surtoDeMagia(actor, { forcar = false } = {}) {
+    const mare = !forcar && actor.mareUsada;
+    if (!forcar && !mare && this.rng.die(20) !== 1) return;
     if (mare) {
       actor.mareUsada = false;
       if (actor.resourcesMax?.tidesOfChaos) actor.resources.tidesOfChaos = actor.resourcesMax.tidesOfChaos;
     }
-    let efeito = SURTOS[this.rng.int(SURTOS.length)];
+    // O surto que se repete não se repete de novo (o livro manda ignorar esse resultado nos turnos seguintes).
+    const tabela = forcar ? SURTOS.filter((s) => s.id !== 'repete') : SURTOS;
+    let efeito = tabela[this.rng.int(tabela.length)];
     if (actor.features?.includes('controlledChaos')) {
-      const outro = SURTOS[this.rng.int(SURTOS.length)];
+      const outro = tabela[this.rng.int(tabela.length)];
       if (outro.valor > efeito.valor) efeito = outro;
     }
     this.say('recurso', `A magia de ${actor.name} escapa do controle: ${efeito.nome} (Surto de Magia Selvagem).`);
@@ -4229,7 +4236,7 @@ export class Encounter {
       || (magico && !deArma && tf.includes('spellResistance'))
       || (magico && !deArma && this.paladinosDaAura(target, 'auraOfWarding').length > 0);
     if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
-    if (target.vulnerable?.includes(type)) out *= 2;
+    if (target.vulnerable?.includes(type) || (target.conditions ?? []).some((c) => { const v = CONDITIONS[c.id]?.vulnerabilidade; return v === 'todos' || v?.includes?.(type); })) out *= 2;
     return out;
   }
 
@@ -5491,10 +5498,12 @@ export class Encounter {
     if (original?.id === 'rajadaMistica' && actor.features?.includes('eldritchSpear') && !ids.has('distantSpell')) {
       SPELLS[spellId] = { ...original, rangeFt: 300 };
     }
-    if (original && (ids.has('quickenedSpell') || ids.has('distantSpell'))) {
+    // SURTO "rápida": por um minuto, as magias de uma ação saem como ação bônus.
+    const rapidaDoSurto = actor.surtoRapidoAte >= this.round && original?.castTime === 'action';
+    if (original && (ids.has('quickenedSpell') || ids.has('distantSpell') || rapidaDoSurto)) {
       SPELLS[spellId] = {
         ...original,
-        ...(ids.has('quickenedSpell') ? { castTime: 'bonus' } : {}),
+        ...(ids.has('quickenedSpell') || rapidaDoSurto ? { castTime: 'bonus' } : {}),
         ...(ids.has('distantSpell') ? { rangeFt: original.rangeFt <= 5 ? 30 : original.rangeFt * 2 } : {}),
       };
     }
@@ -5511,8 +5520,14 @@ export class Encounter {
     const antesDeAcao = { acao: actor.actionUsed, bonus: actor.bonusUsed };
     const slotsAntes = actor.spellcasting?.slots?.slice();
     const mortosAntes = new Set(this.combatants.filter((c) => c.dead).map((c) => c.id));
+    // SURTO: a próxima magia com resistência dá desvantagem a todos os alvos.
+    const desvDoSurto = actor.surtoDesvSaveAte >= this.round && !!original?.save;
+    if (desvDoSurto) this.surtoDesvConjurador = actor;
     try {
       const r = this.castSpellBase(actor, spellId, opcoes);
+      this.surtoDesvConjurador = null;
+      if (r?.ok && desvDoSurto) delete actor.surtoDesvSaveAte;
+      if (r?.ok && actor.surtoMaximoAte >= this.round && (original?.damage || original?.damage2)) delete actor.surtoMaximoAte;
       if (r?.ok) {
         // O círculo do espaço que a magia gastou (0 se foi truque ou uso livre).
         const gasto = slotsAntes ? slotsAntes.findIndex((n, i) => i >= 1 && n > (actor.spellcasting.slots[i] ?? 0)) : -1;
@@ -5523,6 +5538,7 @@ export class Encounter {
       return r;
     } finally {
       if (original) SPELLS[spellId] = original;
+      this.surtoDesvConjurador = null;
       this.metaAtiva = null;
       this.bonusDeMagia = null;
     }
@@ -7514,6 +7530,8 @@ export class Encounter {
     // COROA DE LUZ (clérigo da Luz, 17º): quem está a até 18 m do clérigo tem desvantagem contra as magias dele de fogo ou radiantes.
     if (contra?.magico && ['fogo', 'radiante'].includes(contra?.tipoDano) && this.combatants.some((c) => !c.dead && hasCondition(c, 'coroaDeLuz')
       && distanceFt(c.pos, actor.pos) <= 60)) opts.disadvantage = true;
+    // SURTO de magia selvagem: a magia desta conjuração dá desvantagem a quem resiste.
+    if (contra?.magico && this.surtoDesvConjurador && this.surtoDesvConjurador !== actor) opts.disadvantage = true;
     // MAGIA ELEVADA: o primeiro alvo inimigo a resistir tem desvantagem.
     if (meta?.heightened && actor.side !== meta.dono.side) { opts.disadvantage = true; meta.heightened = false; }
     let bonus = saveBonus(actor, hab);

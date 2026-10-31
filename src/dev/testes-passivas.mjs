@@ -5071,6 +5071,74 @@ teste('As 16 manobras: Desarmante, Fintado, Varredura, Estratégico, Passo Evasi
   assert.equal(e8.useFeature(c2, 'commandersStrike', { target: al2 }), false, 'com um golpe só não há o que ceder');
 });
 
+teste('Tabela de surtos completa: 50 efeitos, e os de regra funcionam', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  assert.equal(SURTOS.length, 50);
+  assert.equal(new Set(SURTOS.map((x) => x.id)).size, 50);
+  const por = (id) => SURTOS.find((x) => x.id === id);
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 7, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const { enc } = arena({ herois: [s], foes: [gob] });
+  enc.rng = dadoEmSequencia(10);
+  // vaso de planta: vulnerável a todo dano
+  por('planta').aplica(enc, s);
+  assert.ok(hasCondition(s, 'vasoDePlanta'));
+  assert.equal(enc.danoPorTipo(s, 5, 'fogo'), 10);
+  removeCondition(s, 'vasoDePlanta');
+  assert.equal(enc.danoPorTipo(s, 5, 'fogo'), 5);
+  // perfurante: só o perfurante dobra
+  por('perfurante').aplica(enc, s);
+  assert.equal(enc.danoPorTipo(s, 5, 'perfurante'), 10);
+  assert.equal(enc.danoPorTipo(s, 5, 'fogo'), 5);
+  // resistência a tudo
+  por('resistencia').aplica(enc, s);
+  assert.equal(enc.danoPorTipo(s, 10, 'fogo'), 5);
+  // espaço de menor círculo
+  s.spellcasting.slots[1] = 0;
+  s.spellcasting.slotsMax[1] = 4;
+  por('espaco').aplica(enc, s);
+  assert.equal(s.spellcasting.slots[1], 1);
+  // raios: até três, 4d10 elétrico
+  const hp0 = gob.hp;
+  por('raios').aplica(enc, s);
+  assert.ok(gob.hp < hp0, 'o raio caiu no goblin');
+  // espelho e invisível
+  por('espelho').aplica(enc, s);
+  assert.equal(getCondition(s, 'imagens')?.data?.n, 3);
+  // surto que se repete: novo surto no começo do turno, sem repetir o "repete"
+  por('repete').aplica(enc, s);
+  assert.ok(hasCondition(s, 'surtoRepetido'));
+});
+
+teste('Surtos de magia: a próxima magia de dano sai no máximo (e só ela); a próxima com resistência dá desvantagem; as magias de ação viram bônus', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  const por = (id) => SURTOS.find((x) => x.id === id);
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 7, y: 5 });
+  gob.hp = gob.maxHp = 500;
+  const { enc } = arena({ herois: [s], foes: [gob] });
+  s.spellcasting.prepared = [...new Set([...(s.spellcasting.prepared ?? []), 'misselMagico', 'bolaDeFogo'])];
+  s.spellcasting.slots[1] = 4;
+  s.spellcasting.slots[3] = 3;
+  por('maximo').aplica(enc, s);
+  assert.ok(s.surtoMaximoAte >= enc.round);
+  enc.rng = dadoEmSequencia(15);
+  enc.castSpell(s, 'misselMagico', { target: gob });
+  assert.equal(s.surtoMaximoAte, undefined, 'a marca some depois da primeira magia de dano');
+  // desvantagem
+  por('desvantagem').aplica(enc, s);
+  assert.ok(s.surtoDesvSaveAte >= enc.round);
+  // rápida
+  por('rapida').aplica(enc, s);
+  assert.ok(s.surtoRapidoAte >= enc.round);
+  s.actionUsed = false; s.bonusUsed = false;
+  const r = enc.castSpell(s, 'misselMagico', { target: gob });
+  assert.equal(s.bonusUsed && !s.actionUsed, true, 'a magia de uma ação custou a ação bônus');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);
