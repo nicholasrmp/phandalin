@@ -23,7 +23,7 @@ import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
-const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck', 'illusorySelf']);
+const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck', 'illusorySelf', 'feyPresence', 'mistyEscapes', 'darkDelirium', 'entropicWard']);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
@@ -93,6 +93,7 @@ export function escolherResistenciaInfernal(c, tipo = null) {
 
 export function recuperarNoCurto(c) {
   delete c.furiaDestrutivaPronta;
+  delete c.surtoMaximoAte;
   const frases = [];
   c.furiaImplacavelCD = 10; // Fúria Implacável: a CD volta a 10 depois de um descanso curto ou longo
   const infernal = escolherResistenciaInfernal(c);
@@ -227,6 +228,9 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   delete c.portento;
   delete c.olharHipnoticoJa;
   delete c.furiaDestrutivaPronta;
+  delete c.mareUsada;
+  removeCondition(c, 'maresDoCaos');
+  delete c.surtoMaximoAte;
   delete c.charmeImunes;
   // INTERVENÇÃO DIVINA: depois de atendido, o deus fica em silêncio por sete dias; cada descanso longo conta um.
   const silencio = c.intervencaoDias ?? 0;

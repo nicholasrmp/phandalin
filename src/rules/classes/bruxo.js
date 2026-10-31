@@ -107,6 +107,33 @@ export default {
           hurlThroughHell: (n) => (n >= 14 ? 1 : 0),
         },
       },
+      // ---- Livro do Jogador (não é SRD): conteúdo próprio, ver NOTICE.md ----
+      arquifada: {
+        nome: 'A Arquifada',
+        fonte: 'phb',
+        niveis: {
+          1: ['feyPresence'],
+          6: ['mistyEscapes'],
+          10: ['beguilingDefenses'],
+          14: ['darkDelirium'],
+        },
+        recursos: {
+          feyPresence: () => 1,
+          mistyEscapes: (n) => (n >= 6 ? 1 : 0),
+          darkDelirium: (n) => (n >= 14 ? 1 : 0),
+        },
+      },
+      grandeAntigo: {
+        nome: 'O Grande Antigo',
+        fonte: 'phb',
+        niveis: {
+          1: ['awakenedMind'],
+          6: ['entropicWard'],
+          10: ['thoughtShield'],
+          14: ['createThrall'],
+        },
+        recursos: { entropicWard: (n) => (n >= 6 ? 1 : 0) },
+      },
     },
   },
 };

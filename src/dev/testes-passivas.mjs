@@ -4680,5 +4680,289 @@ teste('Ira da Tempestade também responde a um ataque à distância a até 1,5 m
 });
 
 // ============================================================================================================
+// BRUXO (Arquifada, Grande Antigo) e FEITICEIRO (Magia Selvagem) — Livro do Jogador
+// ============================================================================================================
+const bruxoDe = (sub, nivel) => heroi('bruxo', nivel, 'Humano', { weapons: ['adaga'] }, { 1: { subclasse: sub } });
+const selvagem = (nivel) => heroi('feiticeiro', nivel, 'Humano', { weapons: ['adaga'] }, { 1: { subclasse: 'magiaSelvagem' } });
+const condDe = (c, id) => c.conditions.find((x) => x.id === id);
+
+teste('Arquifada, Grande Antigo e Magia Selvagem: características e recursos por nível', () => {
+  const a = bruxoDe('arquifada', 14);
+  assert.ok(['feyPresence', 'mistyEscapes', 'beguilingDefenses', 'darkDelirium'].every((f) => a.features.includes(f)));
+  assert.deepEqual([a.resources.feyPresence, a.resources.mistyEscapes, a.resources.darkDelirium], [1, 1, 1]);
+  assert.ok(!bruxoDe('arquifada', 5).features.includes('mistyEscapes'));
+  const g = bruxoDe('grandeAntigo', 14);
+  assert.ok(['awakenedMind', 'entropicWard', 'thoughtShield', 'createThrall'].every((f) => g.features.includes(f)));
+  assert.equal(g.resources.entropicWard, 1);
+  const s = selvagem(18);
+  assert.ok(['wildMagicSurge', 'tidesOfChaos', 'bendLuck', 'controlledChaos', 'spellBombardment'].every((f) => s.features.includes(f)));
+  assert.equal(s.resources.tidesOfChaos, 1);
+});
+
+teste('Presença Feérica: hostis a até 3 m falham em SAB e ficam amedrontados ou enfeitiçados; o de longe, não; volta no descanso curto', () => {
+  const w = bruxoDe('arquifada', 1);
+  w.pos = { x: 5, y: 5 };
+  const perto = inimigo('goblin', { x: 6, y: 5 });
+  const longe = inimigo('goblin', { x: 11, y: 11 });
+  const { enc } = arena({ herois: [w], foes: [perto, longe] });
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.useFeature(w, 'feyPresence', { modo: 'enfeiticado' }), true);
+  assert.equal(w.actionUsed, true);
+  assert.equal(w.resources.feyPresence, 0);
+  assert.equal(hasCondition(perto, 'enfeiticado'), true);
+  assert.equal(hasCondition(longe, 'enfeiticado'), false);
+  assert.equal(enc.useFeature(w, 'feyPresence'), false, 'sem carga');
+  recuperarNoCurto(w);
+  assert.equal(w.resources.feyPresence, 1, 'descanso curto devolve');
+});
+
+teste('Fuga Nebulosa: reação ao dano; reaparece longe, invisível, e gasta o uso', () => {
+  const w = bruxoDe('arquifada', 6);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  const de = { ...w.pos };
+  enc.applyDamage(w, 3, 'cortante', gob, { deArma: true });
+  assert.ok(Math.max(Math.abs(w.pos.x - de.x), Math.abs(w.pos.y - de.y)) > 1, 'saiu dali');
+  assert.equal(hasCondition(w, 'invisivel'), true);
+  assert.equal(w.reactionUsed, true);
+  assert.equal(w.resources.mistyEscapes, 0);
+  const sem = bruxoDe('arquifada', 6);
+  sem.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [sem], foes: [g2] });
+  sem.reactionUsed = true;
+  e2.applyDamage(sem, 3, 'cortante', g2, { deArma: true });
+  assert.deepEqual([sem.pos.x, sem.pos.y], [5, 5], 'sem reação, fica');
+});
+
+teste('Defesas Sedutoras: imune a encanto; quem tenta enfeitiçar testa SAB e, se falha, fica enfeitiçado pelo bruxo', () => {
+  const w = bruxoDe('arquifada', 10);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 8, y: 5 });
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.aplicarCondicao(w, 'enfeiticado', { rounds: 5, source: gob.id }), null, 'imune');
+  assert.equal(condDe(gob, 'enfeiticado')?.source, w.id, 'o feitiço volta');
+  assert.equal(w.reactionUsed, true);
+});
+
+teste('Delírio Sombrio: SAB ou fica enfeitiçado por um minuto; o dano liberta; um uso por descanso curto', () => {
+  const w = bruxoDe('arquifada', 14);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 9, y: 5 });
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.useFeature(w, 'darkDelirium', { modo: 'enfeiticado' }), true);
+  assert.equal(hasCondition(gob, 'enfeiticado'), true);
+  assert.equal(w.resources.darkDelirium, 0);
+  assert.equal(enc.useFeature(w, 'darkDelirium'), false);
+});
+
+teste('Proteção Entrópica: desvantagem em quem ataca; se errar, o bruxo tem vantagem contra ele; gasta o uso', () => {
+  const w = bruxoDe('grandeAntigo', 6);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  enc.resolveAttack(gob, w, { weaponId: null });
+  assert.equal(w.resources.entropicWard, 0);
+  assert.equal(w.reactionUsed, true);
+  assert.equal(condDe(w, 'desordemEntropica')?.source, gob.id, 'o golpe errou e o bruxo ganha a vantagem');
+  assert.ok(enc.attackModifiers(w, gob, {}).vantagens.includes('proteção entrópica'));
+  const outro = inimigo('goblin', { x: 5, y: 6 });
+  assert.ok(!enc.attackModifiers(w, outro, {}).vantagens.includes('proteção entrópica'), 'só contra quem errou');
+});
+
+teste('Escudo de Pensamentos: resiste a dano psíquico e o devolve a quem o causou', () => {
+  const w = bruxoDe('grandeAntigo', 10);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.maxHp = gob.hp = 100;
+  w.maxHp = w.hp = 100;
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  enc.applyDamage(w, 10, 'psíquico', gob, { magico: true });
+  assert.equal(100 - w.hp, 5, 'resistência');
+  assert.equal(100 - gob.hp, 5, 'devolvido');
+});
+
+teste('Criar Servo: só um humanoide incapacitado ao lado fica enfeitiçado', () => {
+  const w = bruxoDe('grandeAntigo', 14);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  assert.equal(enc.useFeature(w, 'createThrall', { target: gob }), false, 'de pé, não');
+  addCondition(gob, 'paralisado', { rounds: 5, source: 'x' });
+  assert.equal(enc.useFeature(w, 'createThrall', { target: gob }), true);
+  assert.equal(condDe(gob, 'enfeiticado')?.source, w.id);
+  assert.equal(w.actionUsed, true);
+});
+
+teste('Marés do Caos: vantagem no próximo ataque; a próxima magia de 1º círculo causa um surto e devolve o uso', () => {
+  const s = selvagem(3);
+  s.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 7, y: 5 });
+  const { enc, log } = arena({ herois: [s], foes: [gob] });
+  assert.equal(enc.useFeature(s, 'tidesOfChaos'), true);
+  assert.equal(s.resources.tidesOfChaos, 0);
+  assert.ok(enc.attackModifiers(s, gob, {}).vantagens.includes('marés do caos'));
+  enc.rng = dadoEmSequencia(15);
+  s.spellcasting.prepared = [...new Set([...(s.spellcasting.prepared ?? []), 'misselMagico'])];
+  assert.ok(enc.castSpell(s, 'misselMagico', { target: gob }).ok !== false);
+  assert.equal(s.resources.tidesOfChaos, 1, 'o surto devolveu o uso');
+  assert.ok(contaLog(log, /Surto de Magia Selvagem/) >= 1);
+});
+
+teste('Surto de Magia Selvagem: 1 no d20 desencadeia; outro número não; Caos Controlado fica com o melhor dos dois', () => {
+  const s = selvagem(1);
+  s.pos = { x: 5, y: 5 };
+  const { enc, log } = arena({ herois: [s], foes: [alvoParado({ x: 9, y: 9 })] });
+  enc.rng = dadoEmSequencia(1);
+  enc.surtoDeMagia(s);
+  assert.equal(contaLog(log, /Surto de Magia Selvagem/), 1);
+  enc.rng = dadoEmSequencia(12);
+  enc.surtoDeMagia(s);
+  assert.equal(contaLog(log, /Surto de Magia Selvagem/), 1, 'sem 1, nada');
+  const c = selvagem(14);
+  c.pos = { x: 5, y: 5 };
+  const { enc: e2, log: l2 } = arena({ herois: [c], foes: [alvoParado({ x: 9, y: 9 })] });
+  let n = 0;
+  const f = () => 0.5;
+  f.die = () => 1;
+  f.int = () => (n++ === 0 ? 0 : 2);
+  f.pick = (a) => a[0];
+  f.chance = () => false;
+  e2.rng = f;
+  e2.surtoDeMagia(c);
+  assert.ok(l2.some((e) => /luz restauradora/.test(e.text ?? '')), 'rolou a bola de fogo (ruim) e o regenerador (bom): ficou com o bom');
+});
+
+teste('Dobrar a Sorte: 2 pontos e a reação viram um erro por até 4 em acerto, e um acerto por até 4 em erro', () => {
+  const s = selvagem(6);
+  s.pos = { x: 4, y: 5 };
+  s.resources.sorceryPoints = 6;
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 6, y: 5 };
+  const gob = alvoParado({ x: 7, y: 5 });
+  gob.ac = 12;
+  const { enc } = arena({ herois: [s, amigo], foes: [gob] });
+  const atk = { hit: false, total: 10, fumble: false, critical: false };
+  enc.rng = dadoEmSequencia(1);
+  const r = enc.rng;
+  enc.rng.die = (l) => (l === 4 ? 4 : 10);
+  enc.curvarSorte(amigo, gob, atk, 12);
+  assert.equal(atk.hit, true, '10 + 4 = 14 acerta CA 12');
+  assert.equal(s.resources.sorceryPoints, 4);
+  assert.equal(s.reactionUsed, true);
+  s.reactionUsed = false;
+  const longe = { hit: false, total: 3, fumble: false, critical: false };
+  enc.curvarSorte(amigo, gob, longe, 12);
+  assert.equal(longe.hit, false, 'errou por mais de 4: nada');
+  assert.equal(s.resources.sorceryPoints, 4);
+});
+
+teste('Bombardeio de Magia: um dado de dano no máximo rola de novo, uma vez por turno', () => {
+  const s = selvagem(18);
+  s.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [s], foes: [alvoParado({ x: 9, y: 9 })] });
+  enc.rng = dadoEmSequencia(1);
+  enc.rng.die = () => 3;
+  const dmg = { total: 11, rolls: [8, 3] };
+  enc.ajustarDanoDeDominio(s, { name: 'Raio', level: 1, damageType: 'fogo' }, dmg, '2d8');
+  assert.equal(dmg.total, 14, 'o 8 rolou de novo (+3)');
+  const dmg2 = { total: 16, rolls: [8, 8] };
+  enc.ajustarDanoDeDominio(s, { name: 'Raio', level: 1, damageType: 'fogo' }, dmg2, '2d8');
+  assert.equal(dmg2.total, 16, 'só uma vez por turno');
+});
+
+// ============================================================================================================
+// BRUXO E FEITICEIRO: correções da revisão (durações, servo permanente, charme devolvido, estado que vaza)
+// ============================================================================================================
+teste('Presença Feérica dura até o fim do PRÓXIMO turno do bruxo (um turno inimigo), e a Fuga Nebulosa some até o começo do dele', () => {
+  const w = bruxoDe('arquifada', 6);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  enc.useFeature(w, 'feyPresence', { modo: 'amedrontado' });
+  const c = condDe(gob, 'amedrontado');
+  assert.equal(c.rounds, 1);
+  assert.equal(c.lado, 'party');
+  assert.equal(c.quando, 'fim');
+  const w2 = bruxoDe('arquifada', 6);
+  w2.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [w2], foes: [g2] });
+  e2.applyDamage(w2, 2, 'cortante', g2, { deArma: true });
+  const inv = condDe(w2, 'invisivel');
+  assert.deepEqual([inv.rounds, inv.quando, inv.lado], [1, 'inicio', 'party']);
+  const w3 = bruxoDe('arquifada', 6);
+  w3.pos = { x: 5, y: 5 };
+  const { enc: e3 } = arena({ herois: [w3], foes: [alvoParado({ x: 6, y: 5 })] });
+  e3.applyDamage(w3, 2, 'fogo', null, {});
+  assert.equal(w3.resources.mistyEscapes, 0, 'dano sem fonte (armadilha) também dispara');
+});
+
+teste('Criar Servo não se desfaz quando o bruxo bate nele; o charme devolvido pelas Defesas Sedutoras acaba se o enfeitiçado fere o bruxo', () => {
+  const w = bruxoDe('grandeAntigo', 14);
+  w.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.maxHp = gob.hp = 200;
+  const { enc } = arena({ herois: [w], foes: [gob] });
+  addCondition(gob, 'paralisado', { rounds: 5, source: 'x' });
+  enc.useFeature(w, 'createThrall', { target: gob });
+  enc.applyDamage(gob, 1, 'cortante', w, {});
+  assert.equal(hasCondition(gob, 'enfeiticado'), true, 'o servo segue enfeitiçado');
+  const a = bruxoDe('arquifada', 10);
+  a.pos = { x: 5, y: 5 };
+  a.maxHp = a.hp = 100;
+  const g2 = inimigo('goblin', { x: 8, y: 5 });
+  g2.maxHp = g2.hp = 200;
+  const { enc: e2 } = arena({ herois: [a], foes: [g2] });
+  e2.rng = dadoEmSequencia(1);
+  e2.aplicarCondicao(a, 'enfeiticado', { rounds: 5, source: g2.id });
+  assert.equal(hasCondition(g2, 'enfeiticado'), true);
+  e2.applyDamage(g2, 1, 'cortante', a, {});
+  assert.equal(hasCondition(g2, 'enfeiticado'), true, 'o bruxo bater não desfaz');
+  e2.applyDamage(a, 1, 'cortante', g2, {});
+  assert.equal(hasCondition(g2, 'enfeiticado'), false, 'ferir o bruxo desfaz');
+});
+
+teste('Proteção Entrópica vale também no ataque de magia; Dobrar a Sorte protege o próprio feiticeiro', () => {
+  const w = bruxoDe('grandeAntigo', 6);
+  w.pos = { x: 5, y: 5 };
+  const mago = inimigo('goblin', { x: 8, y: 5 });
+  mago.spellcasting = { ability: 'int', cantrips: ['raioDeFogo'], prepared: [], slots: [0], slotsMax: [0] };
+  const { enc } = arena({ herois: [w], foes: [mago] });
+  assert.equal(enc.guardaEntropica(mago, w), true);
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  s.resources.sorceryPoints = 4;
+  const gob = alvoParado({ x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [s], foes: [gob] });
+  e2.rng = dadoEmSequencia(1);
+  e2.rng.die = () => 4;
+  const atk = { hit: true, total: 14, fumble: false, critical: false };
+  e2.curvarSorte(gob, s, atk, 12);
+  assert.equal(atk.hit, false, '14 - 4 = 10 erra CA 12: o feiticeiro se salva');
+  assert.equal(s.resources.sorceryPoints, 2);
+});
+
+teste('Estado do feiticeiro não vaza: Marés do Caos e o surto "no máximo" somem no descanso longo; o máximo, também no curto', () => {
+  const s = selvagem(3);
+  s.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [s], foes: [alvoParado({ x: 9, y: 9 })] });
+  enc.useFeature(s, 'tidesOfChaos');
+  s.surtoMaximoAte = 99;
+  recuperarNoCurto(s);
+  assert.equal(s.surtoMaximoAte, undefined, 'o curto limpa o máximo');
+  s.surtoMaximoAte = 99;
+  descansoLongo(s);
+  assert.equal(hasCondition(s, 'maresDoCaos'), false, 'a vantagem guardada não passa para o dia seguinte');
+  assert.equal(s.resources.tidesOfChaos, 1);
+  assert.equal(s.surtoMaximoAte, undefined);
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

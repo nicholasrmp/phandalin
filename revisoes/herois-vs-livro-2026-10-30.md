@@ -584,3 +584,12 @@ Guerra, Tempestade, Luz, Conhecimento, Natureza e Enganação, com as caracterí
 - Simplificações declaradas na ficha: uma cópia só (sem concentração nem mover), Duplicidade Aprimorada sem quatro cópias, Ira Destrutiva armada em vez de escolhida na rolagem, Golpe Guiado automático.
 - Sem efeito no jogo: Conhecimento das Eras, Ler Pensamentos, Visões do Passado, Mestre da Natureza, Bênção do Trapaceiro, Nascido da Tempestade.
 - Faltam: Bruxo (Arquifada, Grande Antigo) e Feiticeiro (Magia Selvagem).
+
+## Atualização 20 — Arquifada, Grande Antigo e Magia Selvagem (31/10)
+
+Com isso as 13 subclasses do Livro do Jogador pedidas e os seis domínios de clérigo estão no jogo; bruxo e feiticeiro deixam de ter só a subclasse do SRD.
+
+- Arquifada (Presença Feérica, Fuga Nebulosa, Defesas Sedutoras, Delírio Sombrio), Grande Antigo (Proteção Entrópica, Escudo de Pensamentos, Criar Servo; Mente Desperta só na ficha) e Magia Selvagem (Surto, Marés do Caos, Dobrar a Sorte, Caos Controlado, Bombardeio de Magia). Os usos dos bruxos voltam no descanso curto, as Marés no longo ou ao surtar.
+- Revisão (sonnet): corrigidas durações (Presença Feérica, Fuga Nebulosa), Criar Servo permanente, charme devolvido que acaba só se o enfeitiçado fere o bruxo, Proteção Entrópica e Dobrar a Sorte também em ataque de magia, estado que vazava (Marés, surto no máximo), CD do surto, Fuga Nebulosa com dano sem fonte.
+- Simplificações declaradas: tabela de surtos com 16 dos 50 efeitos (texto de "pontos de feitiçaria" e "dano máximo" por conferir no livro), Delírio Sombrio sem concentração, Dobrar a Sorte só em ataques, Marés sem teste de atributo, Presença Feérica só em hostis, lista de magias expandidas dos patronos ausente.
+- Ícones: 13 em 3 folhas (≈ 18 créditos).

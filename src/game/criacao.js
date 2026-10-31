@@ -337,9 +337,9 @@ export const SUBCLASSES_1 = {
     opcoes: [
       { id: 'corruptor', nome: 'O Corruptor', motor: 'corruptor',
         resumo: 'Cada inimigo que você derruba te dá pontos de vida temporários.' },
-      { id: 'arquifada', nome: 'A Arquifada',
+      { id: 'arquifada', nome: 'A Arquifada', motor: 'arquifada',
         resumo: 'Um lampejo de presença feérica que encanta ou assusta quem está perto.' },
-      { id: 'grandeAntigo', nome: 'O Grande Antigo',
+      { id: 'grandeAntigo', nome: 'O Grande Antigo', motor: 'grandeAntigo',
         resumo: 'Você fala com qualquer criatura pela mente, a curta distância.' },
     ],
   },
@@ -348,7 +348,7 @@ export const SUBCLASSES_1 = {
     opcoes: [
       { id: 'draconica', nome: 'Linhagem Dracônica', motor: 'draconica',
         resumo: 'Escamas que protegem sem armadura e um ponto de vida a mais por nível.' },
-      { id: 'magiaSelvagem', nome: 'Magia Selvagem',
+      { id: 'magiaSelvagem', nome: 'Magia Selvagem', motor: 'magiaSelvagem',
         resumo: 'A magia às vezes escapa do controle, para o bem e para o mal.' },
     ],
   },

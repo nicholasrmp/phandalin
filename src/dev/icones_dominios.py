@@ -66,6 +66,23 @@ NOVOS3 = {
     'classe-avatarOfBattle': 'a full grey plate armor torso with a bright gold sun emblem on the chest and a faint white glow',
 }
 
+# Quarta leva: Arquifada, Grande Antigo e Magia Selvagem (cores claras: o contorno escuro some no fundo do HUD).
+NOVOS4 = {
+    'classe-feyPresence': 'a pale glowing fairy with thin translucent wings and a ring of bright violet sparkles around her',
+    'classe-mistyEscapes': 'a pale violet mist cloud with a small pale figure fading out of it and sparkles',
+    'classe-beguilingDefenses': 'a bright red heart bouncing off a round silver shield with white sparks',
+    'classe-darkDelirium': 'a pale head in profile with a bright violet swirling spiral of mist inside it',
+    'classe-awakenedMind': 'a pale head with a glowing blue eye and three thin curved telepathy waves coming out of it',
+    'classe-entropicWard': 'a round silver shield with a jagged bright violet crack splitting a sword that strikes it',
+    'classe-thoughtShield': 'a bright violet brain surrounded by a ring of silver shield plates',
+    'classe-createThrall': 'a pale hand with a thin violet chain leading to a small pale kneeling figure with glowing violet eyes',
+    'classe-wildMagicSurge': 'a bright swirl of violet, blue and gold sparks bursting out of a pale hand',
+    'classe-tidesOfChaos': 'a bright blue sea wave topped with violet and gold sparks',
+    'classe-bendLuck': 'a gold six-sided die bending like a rubber band between two pale fingers',
+    'classe-controlledChaos': 'two gold six-sided dice with a bright white arrow pointing at one of them',
+    'classe-spellBombardment': 'a bright orange fireball with a second smaller fireball bursting out of it and white sparks',
+}
+
 
 def planejar(destino='x', novos=None):
     itens = list((novos or NOVOS).items())
@@ -89,4 +106,4 @@ def planejar(destino='x', novos=None):
 
 
 if __name__ == '__main__':
-    planejar('y', NOVOS2) if sys.argv[1:] == ['y'] else planejar('z', NOVOS3) if sys.argv[1:] == ['z'] else planejar()
+    planejar('w', NOVOS4) if sys.argv[1:] == ['w'] else planejar('y', NOVOS2) if sys.argv[1:] == ['y'] else planejar('z', NOVOS3) if sys.argv[1:] == ['z'] else planejar()

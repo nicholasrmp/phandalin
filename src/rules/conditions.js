@@ -370,6 +370,24 @@ export const CONDITIONS = {
     curaMaxima: true,
     concentrationEffect: true,
   },
+  maresDoCaos: {
+    name: 'Marés do Caos',
+    desc: 'Vantagem na próxima jogada de ataque ou resistência.',
+    consumidaAoAtacar: true,
+  },
+  desordemEntropica: {
+    name: 'Desordem Entrópica',
+    desc: 'O atacante que errou o feiticeiro do Grande Antigo dá a ele vantagem no próximo ataque contra ele.',
+  },
+  regenCaos: {
+    name: 'Luz Restauradora',
+    desc: 'Recupera 5 PV no começo de cada turno seu.',
+  },
+  escudoEspectral: {
+    name: 'Escudo Espectral',
+    desc: '+2 de CA.',
+    acBonus: 2,
+  },
   duplicidade: {
     name: 'Duplicidade',
     desc: 'Uma cópia ilusória sua luta ao seu lado: seus ataques contra quem está colado nela e em você têm vantagem.',

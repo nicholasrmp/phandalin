@@ -1179,13 +1179,15 @@ export class Hud {
     const feats = {
       secondWind: ['folego', 'Retomar o Fôlego', 'Recupera 1d10 + nível de pontos de vida.', 'Ação bônus', () => !c.bonusUsed && c.resources?.secondWind > 0, 'secondWind'],
       actionSurge: ['surto', 'Ação Surpreendente', 'Ganha uma ação extra neste turno.', 'Livre', () => c.resources?.actionSurge > 0, 'actionSurge'],
-      charmAnimalsAndPlants: ['encantarNatureza', 'Encantar Animais e Plantas', 'Canalizar Divindade: feras e plantas a até 9 m testam Sabedoria ou ficam enfeitiçadas por um minuto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
-      trickeryCloak: ['mantoEnganacao', 'Manto de Sombras', 'Canalizar Divindade: fica invisível até o fim do seu próximo turno.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'invisivel'), 'channelDivinity'],
-      invokeDuplicity: ['duplicidade', 'Invocar Duplicidade', 'Canalizar Divindade: uma cópia ilusória por um minuto; vantagem nos seus ataques contra quem está colado nela.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'duplicidade'), 'channelDivinity'],
-      warPriest: ['sacerdoteGuerra', 'Sacerdote da Guerra', 'Depois de atacar, um ataque com arma como ação bônus (SAB usos por descanso longo).', 'Ação bônus', () => !c.bonusUsed && c.atacouNoTurno && c.resources?.warPriest > 0, 'warPriest'],
-      destructiveWrath: ['iraDestrutiva', 'Ira Destrutiva', 'Canalizar Divindade: o próximo dano elétrico ou trovejante que você rolar sai no máximo.', 'Livre', () => c.resources?.channelDivinity > 0 && !c.furiaDestrutivaPronta, 'channelDivinity'],
-      radianceOfTheDawn: ['esplendorAurora', 'Esplendor da Aurora', 'Canalizar Divindade: inimigos a até 9 m testam Constituição ou sofrem 2d10 + nível radiante (metade se passam).', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
-      coronaOfLight: ['coroaDeLuz', 'Coroa de Luz', 'Por um minuto, criaturas a até 18 m resistem com desvantagem a magias de fogo e radiantes.', 'Ação', () => !c.actionUsed && !hasCondition(c, 'coroaDeLuz')],
+      charmAnimalsAndPlants: ['charmAnimalsAndPlants', 'Encantar Animais e Plantas', 'Canalizar Divindade: feras e plantas a até 9 m testam Sabedoria ou ficam enfeitiçadas por um minuto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      trickeryCloak: ['trickeryCloak', 'Manto de Sombras', 'Canalizar Divindade: fica invisível até o fim do seu próximo turno.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'invisivel'), 'channelDivinity'],
+      invokeDuplicity: ['invokeDuplicity', 'Invocar Duplicidade', 'Canalizar Divindade: uma cópia ilusória por um minuto; vantagem nos seus ataques contra quem está colado nela.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'duplicidade'), 'channelDivinity'],
+      createThrall: ['createThrall', 'Criar Servo', 'Toca um humanoide incapacitado a seu lado: ele fica enfeitiçado por você.', 'Ação', () => !c.actionUsed, null],
+      tidesOfChaos: ['tidesOfChaos', 'Marés do Caos', 'Vantagem na próxima jogada de ataque ou resistência; a próxima magia de 1º círculo ou mais causa um surto e devolve o uso.', 'Livre', () => c.resources?.tidesOfChaos > 0 && !hasCondition(c, 'maresDoCaos'), 'tidesOfChaos'],
+      warPriest: ['warPriest', 'Sacerdote da Guerra', 'Depois de atacar, um ataque com arma como ação bônus (SAB usos por descanso longo).', 'Ação bônus', () => !c.bonusUsed && c.atacouNoTurno && c.resources?.warPriest > 0, 'warPriest'],
+      destructiveWrath: ['destructiveWrath', 'Ira Destrutiva', 'Canalizar Divindade: o próximo dano elétrico ou trovejante que você rolar sai no máximo.', 'Livre', () => c.resources?.channelDivinity > 0 && !c.furiaDestrutivaPronta, 'channelDivinity'],
+      radianceOfTheDawn: ['radianceOfTheDawn', 'Esplendor da Aurora', 'Canalizar Divindade: inimigos a até 9 m testam Constituição ou sofrem 2d10 + nível radiante (metade se passam).', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      coronaOfLight: ['coronaOfLight', 'Coroa de Luz', 'Por um minuto, criaturas a até 18 m resistem com desvantagem a magias de fogo e radiantes.', 'Ação', () => !c.actionUsed && !hasCondition(c, 'coroaDeLuz')],
       preserveLife: ['preservar', 'Preservar a Vida', 'Distribui cura entre os feridos por perto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
       rage: ['furia', 'Fúria',
         `Vantagem em testes e resistências de Força, +${c.danoDeFuria ?? 2} de dano corpo a corpo com Força e resistência a dano de concussão, perfurante e cortante, de qualquer fonte. Um minuto; acaba antes se você passar um turno sem atacar nem apanhar, se cair inconsciente, ou quando o combate termina. Não se entra de Fúria com armadura pesada.`,
@@ -1369,6 +1371,15 @@ export class Hud {
         comum('descuidado', 'Ataque Descuidado', 'Interruptor: ligado, o primeiro ataque corpo a corpo com Força de cada turno é descuidado — vantagem nos seus ataques corpo a corpo com Força neste turno, e quem te atacar também tem vantagem, até o seu próximo turno. Fica ligado (ou desligado) nos turnos seguintes até você trocar.',
           'Livre', { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, null, null,
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
+      if (f === 'feyPresence' || f === 'darkDelirium') {
+        const delirio = f === 'darkDelirium';
+        const ok = c.actionUsed || !(c.resources?.[f] > 0);
+        comum(f, delirio ? 'Delírio Sombrio: encantar' : 'Presença Feérica: encantar', delirio ? 'A criatura mais próxima (até 18 m) testa Sabedoria ou fica enfeitiçada por um minuto.' : 'Hostis a até 3 m testam Sabedoria ou ficam enfeitiçados até o fim do seu próximo turno.', 'Ação',
+          { kind: 'feature', featureId: f, modo: 'enfeiticado' }, ok, f);
+        comum(f, delirio ? 'Delírio Sombrio: assustar' : 'Presença Feérica: assustar', delirio ? 'A criatura mais próxima (até 18 m) testa Sabedoria ou fica amedrontada por um minuto.' : 'Hostis a até 3 m testam Sabedoria ou ficam amedrontados até o fim do seu próximo turno.', 'Ação',
+          { kind: 'feature', featureId: f, modo: 'amedrontado' }, ok, f);
         continue;
       }
       if (f === 'rangersCompanion') {

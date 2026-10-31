@@ -22,6 +22,7 @@ import {
   WEAPONS, weaponAbility, armorClass,
   itemDeId, nomeDeId, quantosNaMochila, consumirDaMochila, garantirInventario, equipar, transferirItem,
 } from './equipment.js';
+import { SURTOS } from './surto.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, caEfetiva, maxHpEfetivo, nivelDeExaustao, mudarExaustao, CONDITIONS } from './conditions.js';
 
 /**
@@ -634,6 +635,11 @@ export class Encounter {
       this.comecoDoTurnoMagico(c);
       this.comecoDoTurnoPassivo(c);
       this.nimboTick(c);
+      // LUZ RESTAURADORA (surto de magia selvagem): +5 PV no começo de cada turno dele.
+      if (hasCondition(c, 'regenCaos') && !c.dead && c.hp > 0) {
+        const curaR = Math.min(5, maxHpEfetivo(c) - c.hp);
+        if (curaR > 0) { c.hp += curaR; this.say('cura', `${c.name} recupera ${curaR} PV (luz restauradora).`); }
+      }
       // CAMPEÃO ANCESTRAL (paladino dos Anciões, 20º): +10 PV no começo de cada turno dele, por um minuto.
       if (hasCondition(c, 'campeaoAnciao') && !c.dead && c.hp > 0) {
         const cura = Math.min(10, maxHpEfetivo(c) - c.hp);
@@ -961,6 +967,18 @@ export class Encounter {
     // Fora de alcance (Plano Etéreo, dentro da pedra): nada o afeta. A exceção é
     // a própria condição que o tirou de alcance.
     if (id !== 'etereo' && id !== 'naPedra' && conditionEffects(alvo).inalcancavel) return null;
+    // DEFESAS SEDUTORAS (bruxo da Arquifada, 10º): quem tenta enfeitiçá-lo testa Sabedoria ou fica enfeitiçado por ele.
+    if (CONDICOES_DE_ENCANTO.includes(id) && fonte && fonte !== alvo && fonte.side !== alvo.side && alvo.features?.includes('beguilingDefenses')
+      && !alvo.reactionUsed && !conditionEffects(alvo).incapacitated) {
+      alvo.reactionUsed = true;
+      const cdD = spellSaveDc(alvo);
+      const svD = this.resistencia(fonte, 'wis', cdD, { contra: { magico: true, condicao: 'enfeiticado' } });
+      this.explicarResistencia(fonte, 'wis', cdD, svD, { contra: `Defesas Sedutoras de ${alvo.name}`, seSucesso: 'não cai no próprio encanto' });
+      if (!svD.success) {
+        if (!this.imuneACondicao(fonte, 'enfeiticado', alvo)) addCondition(fonte, 'enfeiticado', { rounds: 10, source: alvo.id, data: { fimSeFerirFonte: true } });
+        this.say('condicao', `${fonte.name} cai no próprio encanto: fica enfeitiçado por ${alvo.name}.`);
+      }
+    }
     if (this.imuneACondicao(alvo, id, fonte)) return null;
     const cond = addCondition(alvo, id, opcoes);
     if (CONDITIONS[id]?.incapacitated) this.dropConcentration(alvo);
@@ -1385,6 +1403,7 @@ export class Encounter {
         // O Manto de Sombras do clérigo (invisível por 1 rodada) e a Ira Destrutiva armada não passam para a luta seguinte.
         if (c.features?.includes('trickeryCloak') && hasCondition(c, 'invisivel')) removeCondition(c, 'invisivel');
         c.furiaDestrutivaPronta = false;
+        delete c.surtoMaximoAte;
         const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
         if (k === 'levitar' || k === 'invocar') c.concentrating = null;
       }
@@ -2514,6 +2533,7 @@ export class Encounter {
     if (f.length) {
       if (f.includes('mindlessRage') && hasCondition(alvo, 'furia') && (medo || encanto)) return true;
       if (f.includes('purityOfBody') && veneno) return true;
+      if (f.includes('beguilingDefenses') && encanto) return true;
       if (f.includes('naturesWard') && (veneno || ((medo || encanto) && ['elemental', 'fada'].includes(fonte?.tipo)))) return true;
       if (f.includes('purityOfSpirit') && (medo || encanto) && TIPOS_DA_PUREZA.includes(fonte?.tipo)) return true;
     }
@@ -2941,6 +2961,10 @@ export class Encounter {
     if (distraido && distraido.source !== attacker.id && this.combatants.find((x) => x.id === distraido.source)?.side === attacker.side) fonte(mods, 'vantagem', 'ataque distrativo');
     // PASSO DAS SOMBRAS (monge da Sombra): vantagem no primeiro ataque corpo a corpo depois do teleporte.
     if (hasCondition(attacker, 'passoSombrio') && !ranged) fonte(mods, 'vantagem', 'passo das sombras');
+    // MARÉS DO CAOS (feiticeiro da Magia Selvagem): vantagem na próxima jogada de ataque.
+    if (hasCondition(attacker, 'maresDoCaos')) fonte(mods, 'vantagem', 'marés do caos');
+    // PROTEÇÃO ENTRÓPICA: o bruxo ataca com vantagem a criatura que errou o golpe contra ele.
+    if (getCondition(attacker, 'desordemEntropica')?.source === target.id) fonte(mods, 'vantagem', 'proteção entrópica');
     // INVOCAR DUPLICIDADE (clérigo da Enganação): vantagem contra quem está colado na cópia (ou, com a Aprimorada, colado no clérigo).
     const dup = getCondition(attacker, 'duplicidade');
     if (dup && distanceFt(attacker.pos, target.pos) <= 5 && ((dup.data?.pos && distanceFt(dup.data.pos, target.pos) <= 5) || attacker.features?.includes('improvedDuplicity'))) {
@@ -3282,6 +3306,75 @@ export class Encounter {
     }
   }
 
+  /** FUGA NEBULOSA: o bruxo da Arquifada que apanha reage: reaparece na casa livre mais longe dos inimigos a até 18 m, invisível. */
+  fugaNebulosa(c) {
+    if (!c.features?.includes('mistyEscapes') || !((c.resources?.mistyEscapes ?? 0) > 0) || c.reactionUsed || conditionEffects(c).incapacitated || c.dead) return;
+    const inimigos = this.enemiesOf(c).filter((m) => !m.dead);
+    let melhor = null;
+    for (let x = c.pos.x - 12; x <= c.pos.x + 12; x += 1) {
+      for (let y = c.pos.y - 12; y <= c.pos.y + 12; y += 1) {
+        if (!this.field.inside(x, y) || this.field.blocksMove(x, y) || this.at(x, y)) continue;
+        if (!this.field.hasLineOfSight(c.pos, { x, y })) continue;
+        const dist = Math.min(...inimigos.map((m) => distanceFt({ x, y }, m.pos)), 999);
+        if (!melhor || dist > melhor.dist || (dist === melhor.dist && distanceFt(c.pos, { x, y }) < distanceFt(c.pos, melhor))) melhor = { x, y, dist };
+      }
+    }
+    if (!melhor) return;
+    c.resources.mistyEscapes -= 1;
+    c.reactionUsed = true;
+    const de = { ...c.pos };
+    c.pos = { x: melhor.x, y: melhor.y, f: c.pos.f ?? 1 };
+    addCondition(c, 'invisivel', { rounds: 1, quando: 'inicio', lado: c.side, source: c.id });
+    this.say('recurso', `${c.name} some numa névoa e reaparece a ${distanceFt(de, c.pos)} pés dali (Fuga Nebulosa).`);
+    this.onEvent({ type: 'teleporte', actor: c, from: de, to: { ...c.pos } });
+  }
+
+  /** PROTEÇÃO ENTRÓPICA (bruxo do Grande Antigo, 6º): reação a um ataque contra ele; true se gastou (o ataque sai com desvantagem). */
+  guardaEntropica(atacante, alvo) {
+    if (!alvo.features?.includes('entropicWard') || !((alvo.resources?.entropicWard ?? 0) > 0) || alvo.reactionUsed || conditionEffects(alvo).incapacitated
+      || atacante.side === alvo.side) return false;
+    alvo.resources.entropicWard -= 1;
+    alvo.reactionUsed = true;
+    this.say('recurso', `${alvo.name} entorta o acaso contra ${atacante.name} (Proteção Entrópica).`);
+    return true;
+  }
+
+  /** DOBRAR A SORTE (feiticeiro da Magia Selvagem, 6º): reação e 2 pontos; 1d4 a mais ou a menos num ataque que muda por pouco. */
+  curvarSorte(atacante, alvo, atk, ca) {
+    if (atk.fumble || atk.critical) return;
+    const ajuda = atacante.side !== alvo.side && (atk.hit ? atk.total - ca <= 4 : ca - atk.total <= 4);
+    if (!ajuda) return;
+    const quem = this.combatants.find((s) => !s.dead && s.features?.includes('bendLuck') && !s.reactionUsed && (s.resources?.sorceryPoints ?? 0) >= 2
+      && !conditionEffects(s).incapacitated && s !== atacante && s.side === (atk.hit ? alvo.side : atacante.side)
+      && distanceFt(s.pos, atacante.pos) <= 30 && this.field.hasLineOfSight(s.pos, atacante.pos));
+    if (!quem) return;
+    const d = this.rng.die(4);
+    const novo = atk.hit ? atk.total - d : atk.total + d;
+    if (atk.hit ? novo >= ca : novo < ca) return;
+    quem.resources.sorceryPoints -= 2;
+    quem.reactionUsed = true;
+    atk.total = novo;
+    atk.hit = !atk.hit;
+    this.say('recurso', `${quem.name} dobra a sorte: ${atk.hit ? '+' : '-'}${d} no ataque de ${atacante.name}, que ${atk.hit ? 'acerta' : 'erra'} (Dobrar a Sorte).`);
+  }
+
+  /** SURTO DE MAGIA SELVAGEM: depois de uma magia de 1º círculo ou mais; 1 no d20, ou sempre depois das Marés do Caos. */
+  surtoDeMagia(actor) {
+    const mare = actor.mareUsada;
+    if (!mare && this.rng.die(20) !== 1) return;
+    if (mare) {
+      actor.mareUsada = false;
+      if (actor.resourcesMax?.tidesOfChaos) actor.resources.tidesOfChaos = actor.resourcesMax.tidesOfChaos;
+    }
+    let efeito = SURTOS[this.rng.int(SURTOS.length)];
+    if (actor.features?.includes('controlledChaos')) {
+      const outro = SURTOS[this.rng.int(SURTOS.length)];
+      if (outro.valor > efeito.valor) efeito = outro;
+    }
+    this.say('recurso', `A magia de ${actor.name} escapa do controle: ${efeito.nome} (Surto de Magia Selvagem).`);
+    efeito.aplica(this, actor);
+  }
+
   /** ABAFAR ELEMENTOS: reação de um clérigo da Natureza a até 9 m de quem sofre ácido, frio, fogo, elétrico ou trovejante; o dano cai à metade. */
   abafarElementos(alvo, amount, tipo) {
     if (!['ácido', 'frio', 'fogo', 'elétrico', 'trovejante'].includes(tipo)) return amount;
@@ -3358,6 +3451,22 @@ export class Encounter {
   /** O dano de uma magia ganha o que o domínio dá: Conjuração Potente (SAB nos truques) e Ira Destrutiva (máximo em elétrico/trovejante). */
   ajustarDanoDeDominio(actor, spell, dmg, notacao) {
     if (!dmg) return;
+    // SURTO "no máximo": por um minuto as magias de dano do feiticeiro saem com o máximo dos dados.
+    if (actor.surtoMaximoAte >= this.round) {
+      const mm = /(\d+)d(\d+)([+-]\d+)?/.exec(String(notacao ?? ''));
+      if (mm && Number(mm[1]) * Number(mm[2]) + Number(mm[3] ?? 0) > dmg.total) dmg.total = Number(mm[1]) * Number(mm[2]) + Number(mm[3] ?? 0);
+    }
+    // BOMBARDEIO DE MAGIA (feiticeiro, 18º): uma vez por turno, um dado que sai no máximo é rolado de novo e somado.
+    const turnoB = `${this.round}:${this.side}`;
+    if (actor.features?.includes('spellBombardment') && actor.bombardeioNoTurno !== turnoB && dmg.rolls?.length) {
+      const lados = Number(/\d+d(\d+)/.exec(String(notacao ?? ''))?.[1] ?? 0);
+      if (lados && dmg.rolls.some((r) => r === lados)) {
+        actor.bombardeioNoTurno = turnoB;
+        const extra = this.rng.die(lados);
+        dmg.total += extra;
+        this.say('recurso', `${actor.name}: um dado de ${spell.name} sai no máximo e rola de novo, +${extra} (Bombardeio de Magia).`);
+      }
+    }
     if (spell.level === 0 && actor.classe === 'clerigo' && actor.features?.includes('potentSpellcasting')) dmg.total += Math.max(0, abilityMod(actor.abilities.wis));
     if (actor.furiaDestrutivaPronta && ['elétrico', 'trovejante'].includes(spell.damageType)) {
       const m = /(\d+)d(\d+)([+-]\d+)?/.exec(String(notacao ?? ''));
@@ -3502,6 +3611,9 @@ export class Encounter {
       const lume = this.clarao(attacker, target);
       if (lume) fonte(mods, 'desvantagem', `Clarão de Aviso de ${lume.name}`);
     }
+    // PROTEÇÃO ENTRÓPICA (bruxo do Grande Antigo): reação; o atacante ataca com desvantagem e, se errar, dá vantagem ao bruxo.
+    const entropica = !mods.desvantagens.length && this.guardaEntropica(attacker, target);
+    if (entropica) fonte(mods, 'desvantagem', `Proteção Entrópica de ${target.name}`);
     if (check.longRange) fonte(mods, 'desvantagem', 'alcance longo');
     if (disadvantage) fonte(mods, 'desvantagem', typeof disadvantage === 'string' ? disadvantage : 'segundo ataque');
 
@@ -3525,6 +3637,7 @@ export class Encounter {
     mods.critMin = margemDeCritico(attacker);
     const atk = segundaChanceNoAtaque(this, attacker, target, attackRoll(this.rng, bonus, ac, mods), bonus, ac);
     this.guiarAtaque(attacker, atk, ac);
+    this.curvarSorte(attacker, target, atk, ac);
     this.consumirAoAtacar(attacker, target);
     // PASSO DAS SOMBRAS: a vantagem é do primeiro golpe corpo a corpo; um tiro não a gasta.
     if (!p.ranged) removeCondition(attacker, 'passoSombrio');
@@ -3611,6 +3724,7 @@ export class Encounter {
         modo: mods.mode, anulado: mods.anulado,
         vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
       });
+      if (entropica && !target.dead) addCondition(target, 'desordemEntropica', { rounds: 2, source: attacker.id });
       if (!p.ranged) { this.desviarParaOutro(attacker, target, { weaponId }); this.riposta(attacker, target); }
       return { hit: false, faltou, errouPorPouco: porPouco, modo: mods.mode };
     }
@@ -4089,6 +4203,7 @@ export class Encounter {
       || (type === 'ácido' && tf.includes('stoneResistAcid')) || (type === 'trovejante' && tf.includes('stoneResistThunder'))
       || (type === 'ácido' && tf.includes('stoneResistAcid')) || (type === 'trovejante' && tf.includes('stoneResistThunder'))
       || (!magico && ['concussão', 'cortante', 'perfurante'].includes(type) && tf.includes('avatarOfBattle'))
+      || (type === 'psíquico' && tf.includes('thoughtShield'))
       || (magico && !deArma && tf.includes('spellResistance'))
       || (magico && !deArma && this.paladinosDaAura(target, 'auraOfWarding').length > 0);
     if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
@@ -4319,6 +4434,14 @@ export class Encounter {
       amount = Math.max(0, amount - reduz);
       this.say('recurso', `${target.name} apara o golpe (Aparar): -${Math.max(0, reduz)}, o dano vai de ${cheio} a ${amount}.`);
     }
+    // ESCUDO DE PENSAMENTOS (bruxo do Grande Antigo, 10º): quem lhe causa dano psíquico sofre o mesmo tanto.
+    if (amount > 0 && type === 'psíquico' && source && source !== target && source.side !== target.side && target.features?.includes('thoughtShield') && !this.refletindo) {
+      this.refletindo = true;
+      try {
+        this.say('recurso', `${target.name} devolve o dano psíquico a ${source.name} (Escudo de Pensamentos).`);
+        this.applyDamage(source, amount, 'psíquico', target, { magico: true });
+      } finally { this.refletindo = false; }
+    }
     // ABAFAR ELEMENTOS (clérigo da Natureza): reação; o alvo (ou um aliado a até 9 m do clérigo) resiste a este dano elemental.
     if (amount > 0 && amount === bruto) amount = this.abafarElementos(target, amount, type);
     // IRA DA TEMPESTADE (clérigo da Tempestade): reação ao golpe corpo a corpo que o acerta.
@@ -4414,6 +4537,8 @@ export class Encounter {
     // GOLPE DO RELÂMPAGO (clérigo da Tempestade, 6º): dano elétrico em criatura Grande ou menor também a empurra 3 m.
     if (target.hp > 0 && type === 'elétrico' && source?.features?.includes('thunderboltStrike') && source !== target
       && !['enorme', 'imenso', 'colossal'].includes(String(target.size ?? '').toLowerCase())) this.empurrar(target, source.pos, 10);
+    // FUGA NEBULOSA (bruxo da Arquifada, 6º): reação ao sofrer dano; teleporta 18 m e some até o próximo turno.
+    if (target.hp > 0 && (!source || source.side !== target.side)) this.fugaNebulosa(target);
     // PROTEÇÃO CONTRA A MORTE (SRD): a PRIMEIRA vez que o alvo cairia a 0 PV
     // por dano, ele fica de pé com 1 PV e a magia acaba.
     //
@@ -4449,10 +4574,15 @@ export class Encounter {
       else this.repetirAoSofrerDano(target);
       this.reacaoAoDano(target, source);
       this.retaliacao(target, source);
+      // DEFESAS SEDUTORAS: o encanto devolvido acaba se o enfeitiçado (ou um aliado dele) fere o bruxo.
+      for (const m of this.combatants) {
+        const e = getCondition(m, 'enfeiticado');
+        if (e?.data?.fimSeFerirFonte && e.source === target.id && source && source.side === m.side) removeCondition(m, 'enfeiticado');
+      }
       // Enfeitiçar Pessoa: dano de quem enfeitiçou (ou dos aliados dele) quebra.
       const encanto = getCondition(target, 'enfeiticado');
       const quemEncantou = encanto && this.combatants.find((x) => x.id === encanto.source);
-      if (encanto && source && quemEncantou && source.side === quemEncantou.side) {
+      if (encanto && source && quemEncantou && source.side === quemEncantou.side && !encanto.data?.permanente && !encanto.data?.fimSeFerirFonte) {
         removeCondition(target, 'enfeiticado');
         this.say('condicao', `${target.name} acorda do encanto com o golpe.`);
       }
@@ -5384,6 +5514,11 @@ export class Encounter {
     const f = actor.features ?? [];
     const escola = magia?.school;
     const nivelEfetivo = Math.max(slotGasto, magia?.level ?? 0);
+    // SURTO DE MAGIA SELVAGEM (feiticeiro): depois de uma magia de 1º círculo ou mais.
+    if (f.includes('wildMagicSurge') && nivelEfetivo >= 1 && !this.surtando) {
+      this.surtando = true;
+      try { this.surtoDeMagia(actor); } finally { this.surtando = false; }
+    }
     // PROTEÇÃO ARCANA (Abjuração): uma abjuração de 1º círculo ou mais cria a proteção (PV = 2 × nível + INT) ou a recarrega em 2 × o círculo.
     if (f.includes('arcaneWard') && escola === 'abjuração' && nivelEfetivo >= 1) {
       const max = 2 * (actor.level ?? 1) + abilityMod(actor.abilities.int);
@@ -6596,6 +6731,7 @@ export class Encounter {
     for (const cond of [...(c.conditions ?? [])]) {
       if (CONDITIONS[cond.id]?.consumidaAoAtacar) removeCondition(c, cond.id);
     }
+    if (alvo && getCondition(c, 'desordemEntropica')?.source === alvo.id) removeCondition(c, 'desordemEntropica');
     if (alvo && getCondition(alvo, 'alvoCerteiro')?.source === c.id) {
       removeCondition(alvo, 'alvoCerteiro');
       if (c.concentrating?.spellId === 'ataqueCerteiro') c.concentrating = null;
@@ -7144,8 +7280,12 @@ export class Encounter {
       const lume = this.clarao(actor, target);
       if (lume) fonte(mods, 'desvantagem', `Clarão de Aviso de ${lume.name}`);
     }
+    const entropica = !mods.desvantagens.length && this.guardaEntropica(actor, target);
+    if (entropica) fonte(mods, 'desvantagem', `Proteção Entrópica de ${target.name}`);
     const atk = attackRoll(this.rng, extra.bonus, ca, mods);
     this.guiarAtaque(actor, atk, ca);
+    this.curvarSorte(actor, target, atk, ca);
+    if (entropica && !atk.hit && !target.dead) addCondition(target, 'desordemEntropica', { rounds: 2, source: actor.id });
     this.consumirAoAtacar(actor, target);
     this.consumirMarcas(target);
     // Acerto a até 1,5 m em alvo inconsciente ou paralisado é crítico,
@@ -7327,6 +7467,8 @@ export class Encounter {
     // quando quem chama diz do que vem o teste (`contra`). Sem contexto, nenhuma vale.
     const porTraco = vantagemPorTraco(actor, hab, contra);
     if (porTraco.length) vantagem = true;
+    // MARÉS DO CAOS: vantagem nesta resistência, e o uso se gasta.
+    if (hasCondition(actor, 'maresDoCaos')) { vantagem = true; removeCondition(actor, 'maresDoCaos'); }
     // SENTIDO DE PERIGO: o bárbaro esquiva do que consegue ver. Aqui, de
     // tudo que pede Destreza — o motor não guarda se a armadilha era visível.
     if (hab === 'dex' && actor.features?.includes('dangerSense')
@@ -7979,6 +8121,54 @@ export class Encounter {
         actor.resources.channelDivinity -= 1;
         addCondition(actor, 'duplicidade', { rounds: 10, source: actor.id, data: { pos: perto ? { ...perto.pos } : { ...actor.pos } } });
         this.say('recurso', `${actor.name} cria uma cópia ilusória${perto ? ` ao lado de ${perto.name}` : ''} (Invocar Duplicidade).`);
+        return true;
+      }
+      case 'feyPresence': {
+        // PRESENÇA FEÉRICA (Arquifada, 1º): ação; hostis a até 3 m testam SAB ou ficam enfeitiçados/amedrontados até o fim do próximo turno. Descanso curto.
+        if (actor.actionUsed || !(actor.resources?.feyPresence > 0)) return false;
+        const condP = modo === 'enfeiticado' ? 'enfeiticado' : 'amedrontado';
+        const alvosP = this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 10);
+        actor.actionUsed = true;
+        actor.resources.feyPresence -= 1;
+        const cdP = spellSaveDc(actor);
+        this.say('recurso', `${actor.name} irradia uma presença feérica (CD ${cdP}).`);
+        for (const m of alvosP) {
+          const r = this.resistencia(m, 'wis', cdP, { contra: { magico: true, condicao: condP } });
+          this.explicarResistencia(m, 'wis', cdP, r, { contra: `Presença Feérica de ${actor.name}`, seSucesso: 'resiste' });
+          if (!r.success) this.aplicarCondicao(m, condP, { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+        }
+        return true;
+      }
+      case 'darkDelirium': {
+        // DELÍRIO SOMBRIO (Arquifada, 14º): ação; uma criatura a até 18 m testa SAB ou fica enfeitiçada/amedrontada por um minuto (o dano a liberta). Descanso curto.
+        if (actor.actionUsed || !(actor.resources?.darkDelirium > 0)) return false;
+        const alvoD = target ?? this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 60 && this.field.hasLineOfSight(actor.pos, m.pos))
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        if (!alvoD || alvoD.dead || alvoD.side === actor.side || distanceFt(actor.pos, alvoD.pos) > 60) return false;
+        const condD = modo === 'enfeiticado' ? 'enfeiticado' : 'amedrontado';
+        actor.actionUsed = true;
+        actor.resources.darkDelirium -= 1;
+        const cdD2 = spellSaveDc(actor);
+        const svDD = this.resistencia(alvoD, 'wis', cdD2, { contra: { magico: true, condicao: condD } });
+        this.explicarResistencia(alvoD, 'wis', cdD2, svDD, { contra: `Delírio Sombrio de ${actor.name}`, seSucesso: 'resiste' });
+        if (!svDD.success && this.aplicarCondicao(alvoD, condD, { rounds: 10, source: actor.id, data: { fimAoDano: true } })) this.say('condicao', `${alvoD.name} se perde num reino de névoa e ilusão.`);
+        return true;
+      }
+      case 'createThrall': {
+        // CRIAR SERVO (Grande Antigo, 14º): ação; um humanoide incapacitado a seu alcance fica enfeitiçado até a magia ser desfeita.
+        const alvoT2 = target ?? this.enemiesOf(actor).find((m) => !m.dead && m.tipo === 'humanoide' && conditionEffects(m).incapacitated && isAdjacent(actor.pos, m.pos));
+        if (actor.actionUsed || !alvoT2 || alvoT2.dead || alvoT2.tipo !== 'humanoide' || !conditionEffects(alvoT2).incapacitated || !isAdjacent(actor.pos, alvoT2.pos)) return false;
+        actor.actionUsed = true;
+        if (this.aplicarCondicao(alvoT2, 'enfeiticado', { rounds: 100000, source: actor.id, data: { permanente: true } })) this.say('condicao', `${alvoT2.name} passa a servir ${actor.name}: fica enfeitiçado até alguém desfazer a magia.`);
+        return true;
+      }
+      case 'tidesOfChaos': {
+        // MARÉS DO CAOS (Magia Selvagem, 1º): vantagem na próxima jogada de ataque ou resistência; a próxima magia de 1º círculo ou mais causa um surto.
+        if (!(actor.resources?.tidesOfChaos > 0) || hasCondition(actor, 'maresDoCaos')) return false;
+        actor.resources.tidesOfChaos -= 1;
+        actor.mareUsada = true;
+        addCondition(actor, 'maresDoCaos', { rounds: 100, source: actor.id });
+        this.say('recurso', `${actor.name} chama as marés do caos: vantagem no próximo ataque ou resistência.`);
         return true;
       }
       case 'warPriest': {

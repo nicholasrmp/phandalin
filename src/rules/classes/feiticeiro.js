@@ -60,6 +60,19 @@ export default {
           },
         },
       },
+      // ---- Livro do Jogador (não é SRD): conteúdo próprio, ver NOTICE.md ----
+      magiaSelvagem: {
+        nome: 'Magia Selvagem',
+        fonte: 'phb',
+        niveis: {
+          1: ['wildMagicSurge', 'tidesOfChaos'],
+          6: ['bendLuck'],
+          14: ['controlledChaos'],
+          18: ['spellBombardment'],
+        },
+        // Marés do Caos: uma vez; volta no descanso longo ou quando um surto acontece.
+        recursos: { tidesOfChaos: () => 1 },
+      },
     },
   },
 };
