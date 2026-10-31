@@ -5374,21 +5374,6 @@ teste('Bênção do Trapaceiro: ação, toca um aliado, vantagem em Furtividade,
   assert.equal(hasCondition(a2, 'bencaoTrapaceiro'), true);
 });
 
-teste('Nascido da Tempestade: o clérigo da Tempestade de 17º voa com o deslocamento; teto baixo tira o voo', async () => {
-  const c = dominio('tempestade', 17);
-  c.pos = { x: 5, y: 5 };
-  const outro = dominio('vida', 17);
-  outro.pos = { x: 6, y: 5 };
-  const { enc } = arena({ herois: [c, outro], foes: [alvoParado({ x: 12, y: 12 })] });
-  assert.equal(enc.voaPelaFicha(c), true);
-  assert.equal(enc.voaPelaFicha(outro), false, 'outro domínio não voa');
-  assert.equal(enc.vooDaFicha(c), c.speedFt);
-  enc.tetoBaixo = true;
-  assert.equal(enc.voaPelaFicha(c), false, 'sob teto baixo, não');
-  enc.tetoBaixo = false;
-  assert.equal(enc.voaPelaFicha(dominio('tempestade', 16)), false, 'antes do 17º, não');
-});
-
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

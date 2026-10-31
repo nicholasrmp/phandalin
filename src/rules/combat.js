@@ -448,7 +448,7 @@ export class Encounter {
     // Voo de ficha (o dragão): enquanto está no ar, ele usa o deslocamento de
     // VOO no lugar do de andar -- 24 m contra 12 m no verde jovem. Era o
     // `flyFt` que a ficha declarava e ninguém lia.
-    const vooDaFicha = this.voaPelaFicha(actor) ? this.vooDaFicha(actor) : 0;
+    const vooDaFicha = this.voaPelaFicha(actor) ? (actor.flyFt ?? 0) : 0;
     const base = fx.soVoa ? fx.vooFt : Math.max(actor.speedFt, fx.vooFt, vooDaFicha);
     // Liberdade de Movimento: "nenhuma MAGIA reduz o deslocamento" — e só
     // magia. A primeira versão disto tirava toda redução e, pior, zerava o
@@ -1567,14 +1567,8 @@ export class Encounter {
    * menor). Dizer mais que isso seria mentira.
    */
   voaPelaFicha(actor) {
-    if (!this.vooDaFicha(actor) || this.tetoBaixo) return false;
+    if (!actor.flyFt || this.tetoBaixo) return false;
     return !hasCondition(actor, 'caido') && !conditionEffects(actor).incapacitated;
-  }
-
-  /** Deslocamento de voo da ficha: o do bloco (`flyFt`) ou, no clérigo da Tempestade de 17º nível, o próprio deslocamento (Nascido da Tempestade). */
-  vooDaFicha(actor) {
-    if (actor.flyFt) return actor.flyFt;
-    return actor.features?.includes('stormborn') ? actor.speedFt ?? 0 : 0;
   }
 
   /** Patas de Aranha: sobe degraus sem custo de escalada, mas pisa no terreno difícil e nas zonas do chão. */
