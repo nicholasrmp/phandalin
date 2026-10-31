@@ -242,7 +242,7 @@ export const CONDITIONS = {
   },
   // CONTRACANTO (bardo, 6º): vantagem contra medo e encantamento, lida em `passivas.js` (`vantagemPorTraco`).
   contracanto: {
-    name: 'Contracanto',
+    name: 'Contraencanto',
     desc: 'Vantagem nas resistências contra amedrontado e enfeitiçado, até o fim do próximo turno do bardo.',
   },
   // TÉCNICA DA MÃO ABERTA: não pode tomar reações até o fim do próximo turno do monge.
@@ -321,7 +321,7 @@ export const CONDITIONS = {
     concentrationEffect: true,
   },
   metalQuente: {
-    name: 'Metal em brasa',
+    name: 'Metal em Brasa',
     desc: 'O metal queima: desvantagem nos ataques.',
     attackDisadvantage: true,
   },
@@ -680,7 +680,7 @@ export const CONDITIONS = {
   // Aprimorar Atributo: `data.hab` diz qual atributo ganha vantagem nos TESTES
   // (não nas resistências); `data.opcao` é touro, gato, urso, aguia, raposa ou coruja.
   aprimorado: {
-    name: 'Atributo aprimorado',
+    name: 'Atributo Aprimorado',
     desc: 'Vantagem nos testes de um atributo (e, com a Graça do Gato, nenhum dano de queda; com a Resistência do Urso, PV temporários).',
     vantagemSoTesteDados: true,
     concentrationEffect: true,
@@ -709,14 +709,14 @@ export const CONDITIONS = {
 
   // Patas de Aranha (2º círculo): sobe como o Voo sobe, mas pisa no chão (ver `combat.js`, `escalaAgora`).
   escalando: {
-    name: 'Patas de aranha',
+    name: 'Patas de Aranha',
     desc: 'Sobe paredes e degraus de elevação sem custo extra nem limite de um nível por passo. Terreno difícil e zonas do chão continuam valendo.',
     concentrationEffect: true,
   },
   // Passo sem Rastro (2º círculo): `abilities.js` (`skillBonus`) soma o +10 em Furtividade;
   // `combat.js` (`renovarRastro`) tira a condição de quem se afasta mais de 9 m de quem a conjurou.
   semRastro: {
-    name: 'Passo sem rastro',
+    name: 'Passo sem Rastro',
     desc: '+10 em Furtividade enquanto ficar a até 9 m de quem conjurou o véu.',
     furtividadeBonus: 10,
     concentrationEffect: true,

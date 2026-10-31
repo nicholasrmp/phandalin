@@ -437,7 +437,7 @@ export const SPELLS = {
     id: 'enfeiticarPessoa', name: 'Enfeitiçar Pessoa', level: 1, school: 'encantamento', fonte: 'srd',
     castTime: 'action', rangeFt: 30, kind: 'debuff', targets: 1, save: 'wis', condition: 'enfeiticado',
     soTipo: 'humanoide', vantagemEmCombate: true, upcast: { alvos: 1 },
-    desc: 'Um humanoide faz CD de SAB, com vantagem por estar lutando com você, ou fica enfeitiçado: não o ataca. Dano seu ou dos seus aliados desfaz. 1 hora. +1 alvo por círculo acima do 1º. (Fora do combate: se ele resiste, nada fica; quando a magia acaba, ele sabe que foi enfeitiçado e, como regra da casa, passa a ter desvantagem nos testes de Carisma com você.)',
+    desc: 'Um humanoide faz CD de SAB, com vantagem por estar lutando com você, ou fica enfeitiçado: não o ataca. Dano seu ou dos seus aliados desfaz. 1 hora. +1 alvo por círculo acima do 1º. (Fora de combate: se ele resiste, nada fica; quando a magia acaba, ele sabe que foi enfeitiçado e, como regra da casa, passa a ter desvantagem nos testes de Carisma com você.)',
   },
 
   // ---- 2º círculo -------------------------------------------------------------
@@ -863,7 +863,7 @@ export const SPELLS = {
     id: 'ilusaoMenor', name: 'Ilusão Menor', level: 0, school: 'ilusão', fonte: 'srd',
     castTime: 'action', rangeFt: 30, shape: 'sphere', areaFt: 0, kind: 'save', soZona: true,
     zona: { rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, ilusao: true, ocupaCasa: true },
-    desc: 'Uma imagem de um objeto (um caixote, uma pedra) numa casa vazia a até 9 m, por 1 minuto. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles, e eles atacam e são atacados como no escuro. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. (Simplificação: o jogo ignora o som, e só o outro lado é enganado — seus aliados sempre sabem. Uma vez desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar. Fora do combate, como regra da casa, dá vantagem em Enganação por 1 minuto.)',
+    desc: 'Uma imagem de um objeto (um caixote, uma pedra) numa casa vazia a até 9 m, por 1 minuto. Quem não é do seu lado não enxerga através dela: o que está atrás fica oculto para eles, e eles atacam e são atacados como no escuro. Ela não impede ninguém de andar; quem a atravessa, ou gasta a ação num teste de Investigação (INT) contra a sua CD, vê que é só uma imagem, e ela some. (Simplificação: o jogo ignora o som, e só o outro lado é enganado — seus aliados sempre sabem. Uma vez desmascarada, some para todos. A imagem tira a visão, mas não impede de mirar. Fora de combate, como regra da casa, dá vantagem em Enganação por 1 minuto.)',
   },
   visaoNoEscuro: {
     // Familia do som de conjurar (`rules/familias-de-magia.js`): buff cuja condicao so declara um alcance de sentido: e utilidade, nao reforco.
@@ -992,7 +992,7 @@ export const SPELLS = {
     desc: 'Por 1 minuto você tem vantagem nos testes de Carisma contra UMA criatura que não seja hostil. Quando a magia acaba, ela percebe que foi influenciada e fica hostil. Concentração. (No jogo, vale nas conversas com ela; depois, os testes sociais com ela têm desvantagem. Só fora de combate.)',
   },
   maoMagica: {
-    id: 'maoMagica', name: 'Mãos Mágicas', level: 0, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
+    id: 'maoMagica', name: 'Mão Mágica', level: 0, school: 'conjuração', fonte: 'srd', soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1,
     desc: 'Uma mão espectral a até 9 m pega, abre, puxa ou aciona algo leve (até 5 kg): abrir uma porta destrancada, puxar um fio, apalpar o fundo de uma cisterna. Não ataca nem carrega mais que isso. (No jogo, vale nos pontos da cena que pedem um objeto a distância. Só fora de combate.)',
   },
@@ -1287,7 +1287,7 @@ export const SPELLS = {
     desc: 'Meteoros caem numa esfera de 12 m de raio. CD de DES: 20d6 de fogo MAIS 20d6 de concussão, metade de cada se passar. (O livro faz quatro pontos de impacto de 12 m; aqui é um só.)',
   },
   comunhao: {
-    id: 'comunhao', name: 'Comunhão', level: 5, school: 'divinação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
+    id: 'comunhao', name: 'Comunhão', level: 5, school: 'adivinhação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'minutos', minutos: 1, rangeFt: 0, kind: 'utilidade', duracaoMin: 1,
     desc: 'Você fala com o seu deus e recebe resposta certa para até três perguntas de sim ou não. Ritual para quem conjura ritual — o paladino da Devoção a recebe pelo juramento e gasta espaço. No jogo as perguntas saem de uma lista do que o motor sabe de verdade — se há inimigo que o grupo ainda não viu esperando na cena, se há armadilha marcada escondida, e o destino de Gundren e de Iarno — e a resposta é o que está acontecendo mesmo, sem engano. (Simplificações: o livro deixa perguntar qualquer coisa e o mestre responde; aqui a lista é fechada, porque uma resposta inventada seria pior que nenhuma. E não está a chance de o deus se calar quando a magia se repete no mesmo dia. A pergunta da armadilha só vê as armadilhas que o capítulo registrou como gancho — hoje o fosso da mansão e o fio do castelo —, então em cena sem gancho ela responde que não há. Só fora de combate.)',
   },

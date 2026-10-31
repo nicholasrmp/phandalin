@@ -39,7 +39,7 @@ export const MAGIAS_INICIAIS = {
   luz: ['Luz', 0],
   luzesDancantes: ['Luzes Dançantes', 0],
   mensagem: ['Mensagem', 0],
-  maoMagica: ['Mãos Mágicas', 0],
+  maoMagica: ['Mão Mágica', 0],
   orientacao: ['Orientação', 0],
   pouparOsMoribundos: ['Poupar os Moribundos', 0],
   prestidigitacao: ['Prestidigitação', 0],

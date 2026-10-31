@@ -38,7 +38,7 @@ export const PHANDELVER_ITEMS = {
     { tipo: 'arma mágica', art: 'machado', peso: 4, bonusAtaque: 1, bonusDano: 1, base: 'machadoDeBatalha', danoMaximoContra: 'planta' }),
 
   dragonguard: nomeado('dragonguard', 'Dragonguard', 'raro',
-    'Peitoral de aço +1 com um dragão dourado lavrado no peito. Quem o veste tem vantagem nas salvaguardas contra o sopro de dragão. Não pede sintonia.',
+    'Peitoral de aço +1 com um dragão dourado lavrado no peito. Quem o veste tem vantagem nas resistências contra o sopro de dragão. Não pede sintonia.',
     { tipo: 'armadura mágica', art: 'escudo', peso: 20, acBonusArmadura: 1, base: 'peitoral' }),
 
   cajadoAranha: nomeado('cajadoAranha', 'Cajado Aranha', 'raro',

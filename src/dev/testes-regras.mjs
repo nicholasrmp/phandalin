@@ -8208,7 +8208,7 @@ teste('as tres da Devocao existem, com circulo e classes do livro', () => {
   const esperado = [
     ['liberdadeDeMovimento', 4, 'abjuração', ['bardo', 'clerigo', 'druida', 'patrulheiro']],
     ['golpeDeChama', 5, 'evocação', ['clerigo']],
-    ['comunhao', 5, 'divinação', ['clerigo']],
+    ['comunhao', 5, 'adivinhação', ['clerigo']],
   ];
   for (const [id, nivel, escola, classes] of esperado) {
     const e = getSpell(id);
@@ -9146,7 +9146,7 @@ teste('a utilidade tem cor por escola, e toda escola do jogo tem a sua: nenhuma 
   const doJogo = new Set(Object.values(SPELLS).map((sp) => escolaDe(sp)));
   assert.deepEqual([...doJogo].sort(), [...ESCOLAS].sort(), 'as escolas do jogo, normalizadas, sao as oito');
   assert.deepEqual([...ESCOLAS_COM_COR].sort(), [...ESCOLAS].sort(), 'toda escola tem cor, e nenhuma cor sobra');
-  // Comunhao esta escrita `divinação` em vez de `adivinhação`: e a mesma escola.
+  // A Comunhão já foi escrita `divinação`: a escola é a mesma, e o normalizador aceita as duas.
   assert.equal(escolaDe(SPELLS.comunhao), 'adivinhacao');
   // E a escola chega ao timbre.
   assert.deepEqual(conjuracaoSoundFor(familiaDaMagia(SPELLS.detectarMagia)), { nome: 'castUtility', opts: { escola: 'adivinhacao' } });

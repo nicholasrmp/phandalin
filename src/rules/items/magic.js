@@ -262,8 +262,8 @@ const cajado = (id, name, raridade, desc, extra = {}) =>
 
 export const STAVES = {
   cajadoDeCura: cajado('cajadoDeCura', 'Cajado de cura', RARIDADE.raro, 'Dez cargas: Curar Ferimentos, Restauração Menor e Revigorar em Massa.'),
-  cajadoDeFogo: cajado('cajadoDeFogo', 'Cajado de fogo', RARIDADE.muitoRaro, 'Dez cargas: Mãos Flamejantes, Esfera Flamejante e Parede de Fogo. Resistência a fogo.'),
-  cajadoDeGelo: cajado('cajadoDeGelo', 'Cajado de gelo', RARIDADE.muitoRaro, 'Dez cargas: Raio de Gelo, Névoa, Parede de Gelo e Tempestade de Granizo. Resistência a frio.'),
+  cajadoDeFogo: cajado('cajadoDeFogo', 'Cajado de fogo', RARIDADE.muitoRaro, 'Dez cargas: Mãos Flamejantes, Esfera Flamejante e Muralha de Fogo. Resistência a fogo.'),
+  cajadoDeGelo: cajado('cajadoDeGelo', 'Cajado de gelo', RARIDADE.muitoRaro, 'Dez cargas: Raio de Gelo, Névoa, Muralha de Gelo e Tempestade de Granizo. Resistência a frio.'),
   cajadoDoGolpe: cajado('cajadoDoGolpe', 'Cajado do golpe', RARIDADE.muitoRaro, 'Arma +3. Dez cargas: até três a mais por golpe, 1d6 de dano energético cada.', { bonusAtaque: 3, bonusDano: 3 }),
   cajadoDeEnxame: cajado('cajadoDeEnxame', 'Cajado de enxame de insetos', RARIDADE.raro, 'Dez cargas: Praga de Insetos e Nuvem de Mosquitos.'),
   cajadoDaSerpente: cajado('cajadoDaSerpente', 'Cajado da serpente', RARIDADE.incomum, 'Uma ação bônus e ele vira uma cobra venenosa que luta por você.'),

@@ -1272,7 +1272,7 @@ export class Hud {
       intimidatingPresence: ['intimidatingPresence', 'Presença Intimidadora',
         'Cada inimigo a até 9 m que vê você testa Sabedoria (CD 8 + proficiência + Carisma) ou fica amedrontado até o fim do seu próximo turno. Uma vez por descanso longo.',
         'Ação', () => !c.actionUsed && c.resources?.intimidatingPresence > 0, 'intimidatingPresence'],
-      countercharm: ['countercharm', 'Contracanto',
+      countercharm: ['countercharm', 'Contraencanto',
         'Você e os aliados a até 9 m têm vantagem contra medo e encantamento até o fim do seu próximo turno.',
         'Ação', () => !c.actionUsed],
       eldritchMaster: ['mestreMistico', 'Mestre Místico',
