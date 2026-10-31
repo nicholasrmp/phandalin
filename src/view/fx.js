@@ -876,11 +876,12 @@ export class Fx {
   // `entrar`: segundos para aparecer (lampejo), em vez de surgir de estalo.
   // `cresce: [de, ate]`: a figura se estica de uma escala à outra ao longo do efeito (a onda necrótica que se abre). É a única
   // exceção ao 1:1 dos quadros, e só para anéis que se expandem.
-  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0, de = null, entrar = 0, cresce = null } = {}) {
+  // `chao: true`: desenha na camada do chão, por BAIXO das figuras (anéis e manchas que se deitam no tabuleiro).
+  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0, de = null, entrar = 0, cresce = null, chao = false } = {}) {
     const n = temEfeito(nome);
     if (!n) return this;
     const anim = n / fps;
-    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura, de: de && { ...de }, entrar, cresce });
+    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura, de: de && { ...de }, entrar, cresce, chao });
   }
 
   /**
@@ -987,6 +988,8 @@ export class Fx {
     for (const it of this.items) {
       const k = Math.min(1, it.t / it.dur);
 
+
+      if (it.kind === 'quadros' && it.chao) this.desenharQuadros(ctx, board, it, k);
 
       if (it.kind === 'ring') {
         const r = it.fecha ? it.radius * (1 - EASE_OUT(k) * 0.85) : it.radius * EASE_OUT(k);
@@ -1243,6 +1246,29 @@ export class Fx {
     ctx.restore();
   }
 
+  /** Um efeito de quadros (sprite animado), no chão ou por cima das figuras. */
+  desenharQuadros(ctx, board, it, k) {
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    const at = (tile) => board.centerF(tile.x, tile.y);
+    const t = k * it.dur;
+    const cv = quadro(it.nome, Math.min(it.n - 1, Math.floor((t / it.anim) * it.n)));
+    if (!cv) return;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    if (t > it.anim) ctx.globalAlpha = Math.max(0, 1 - (t - it.anim) / (it.dur - it.anim));
+    if (it.entrar && t < it.entrar) ctx.globalAlpha = t / it.entrar;
+    if (it.de && at(it.de).sx > sx) { ctx.translate(2 * Math.round(sx), 0); ctx.scale(-1, 1); }
+    if (it.cresce) {
+      const s = it.cresce[0] + (it.cresce[1] - it.cresce[0]) * Math.min(1, k);
+      const w = Math.round(cv.width * s);
+      const h = Math.round(cv.height * s);
+      ctx.drawImage(cv, Math.round(sx - w / 2), Math.round(sy - it.altura - h / 2), w, h);
+    } else {
+      ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
+    }
+    ctx.restore();
+  }
+
   drawOver(ctx, board) {
     for (const it of this.items) {
       const k = Math.min(1, it.t / it.dur);
@@ -1366,24 +1392,8 @@ export class Fx {
         }
 
         case 'quadros': {
-          const { sx, sy } = at(it.tile);
-          const t = k * it.dur;
-          const cv = quadro(it.nome, Math.min(it.n - 1, Math.floor((t / it.anim) * it.n)));
-          if (!cv) break;
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          if (t > it.anim) ctx.globalAlpha = Math.max(0, 1 - (t - it.anim) / (it.dur - it.anim));
-          if (it.entrar && t < it.entrar) ctx.globalAlpha = t / it.entrar;
-          if (it.de && at(it.de).sx > sx) { ctx.translate(2 * Math.round(sx), 0); ctx.scale(-1, 1); }
-          if (it.cresce) {
-            const s = it.cresce[0] + (it.cresce[1] - it.cresce[0]) * Math.min(1, k);
-            const w = Math.round(cv.width * s);
-            const h = Math.round(cv.height * s);
-            ctx.drawImage(cv, Math.round(sx - w / 2), Math.round(sy - it.altura - h / 2), w, h);
-          } else {
-            ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
-          }
-          ctx.restore();
+          if (it.chao) break;
+          this.desenharQuadros(ctx, board, it, k);
           break;
         }
 
