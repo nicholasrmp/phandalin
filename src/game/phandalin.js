@@ -161,7 +161,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   const CENAS = {
     async estalagem() {
       // 5 pp por pessoa; a casa faz metade do preço a quem limpou a rua.
-      const quarto = (v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length;
+      const quarto = (v.feito.vilaGrata ? 0 : v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length;
       // O livro: vencidos os bandidos, a maior parte da vila fica grata.
       const agradece = v.feito.ruaVencida && !v.feito.toblenAgradeceu;
       if (agradece) v.feito.toblenAgradeceu = true;
@@ -179,7 +179,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             opcoes: [
               { texto: 'Ouvir as conversas da sala.', vai: 'rumores', uma: true },
               { texto: 'E esses Marcarrubra?', vai: 'marcarrubra', uma: true },
-              { texto: `Alugar quartos para a noite (${(quarto / 10).toLocaleString('pt-BR')} pp${v.feito.ruaVencida ? ', metade do preço: a casa agradece' : ''}).`, fim: 'dormir',
+              { texto: `Alugar quartos para a noite (${(quarto / 10).toLocaleString('pt-BR')} pp${v.feito.vilaGrata ? ', de graça: a vila não esquece' : v.feito.ruaVencida ? ', metade do preço: a casa agradece' : ''}).`, fim: 'dormir',
                 requer: () => (totalEmCobre(vivos()) >= quarto ? null : 'o grupo não tem dinheiro para isso') },
               { texto: 'Até mais.', fim: 'sai' },
             ],
@@ -586,11 +586,28 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             opcoes: [
               { texto: 'O que acha dos Marcarrubra?', vai: 'marcarrubra', uma: true },
               { texto: 'Precisa de alguma coisa?', vai: 'coruja', uma: true },
+              { texto: 'O senhor andou por estradas piores. Sobrou algo útil dessas viagens?', teste: { pericia: 'persuasao', cd: 12 }, sucesso: 'velhoKit', falha: 'velhoNada', uma: true },
               { texto: 'Estivemos no Poço da Coruja Velha.', vai: 'relatoCoruja', uma: true,
                 requer: () => ((feitos.kostNegociou || feitos.kostDerrotado) && !v.feito.relatoCoruja ? null : 'nada'), oculta: true },
               { texto: 'Podemos dormir no seu galpão esta noite?', fim: 'galpaoDaran' },
               { texto: 'Até mais.', fim: 'sai' },
             ],
+          },
+          velhoKit: {
+            ao: () => {
+              const quem = vivos()[0];
+              const b = garantirInventario(quem).bag.find((i) => i.id === 'pocaoDeCura');
+              if (b) b.qtd += 1; else quem.bag.push({ id: 'pocaoDeCura', tipo: 'item', qtd: 1 });
+              pista('Daran guardou uma poção de cura da época em que andava pelas estradas, e a deu ao grupo.');
+              registro.push(`Daran Edermath entrega uma poção de cura (${quem.name} guarda).`);
+            },
+            narra: 'Daran fica um tempo olhando as próprias mãos. Depois sobe ao sótão e volta com um frasco embrulhado em pano.',
+            fala: 'Guardei isto trinta anos para uma hora que nunca veio. Vocês parecem gente de quem a hora vem. Não agradeçam: voltem vivos.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
+          velhoNada: {
+            fala: 'Ferrugem, lembrança e dor no joelho. Nada que dê para dar a alguém.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
           },
           marcarrubra: {
             ao: () => { missao('marcarrubra'); pista('Os Marcarrubra têm uma base embaixo da Mansão Tresendar, no leste da vila.'); },
@@ -704,9 +721,39 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           ],
         },
         orcsFeitos: {
-          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 100 * 100); registro.push('Harbin paga 100 po pelos orcs do Cume da Wyvern.'); },
           narra: 'Harbin conta as moedas duas vezes antes de soltar o saco.',
           fala: 'Cem peças de ouro, como estava no papel. E, por favor, não espalhem que foi tão fácil: os próximos vão querer cobrar mais.',
+          opcoes: [
+            { texto: 'Cem peças, como combinado.', vai: 'orcsPaga' },
+            { texto: 'Havia mais orcs do que o aviso dizia. O preço sobe.', teste: { pericia: 'intimidacao', cd: 13 }, sucesso: 'orcsMais', falha: 'orcsMenos' },
+            { texto: 'Fique com as moedas. Dê-as à família do Thel Dendrar, e que a vila saiba de onde vieram.', vai: 'orcsDoa',
+              requer: () => (v.feito.dendrarEmCasa ? null : 'a família Dendrar ainda não voltou'), oculta: true },
+          ],
+        },
+        orcsPaga: {
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 100 * 100); registro.push('Harbin paga 100 po pelos orcs do Cume da Wyvern.'); },
+          fala: 'Aqui. Contado duas vezes.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        orcsMais: {
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 150 * 100); registro.push('Harbin paga 150 po pelos orcs do Cume da Wyvern, depois de uma conversa dura.'); },
+          narra: 'Harbin recua a cadeira, passa o lenço na testa e abre a gaveta de baixo.',
+          fala: 'Cento e cinquenta! Mas entendam: saiu do meu bolso, não do da vila. E eu vou lembrar disto.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        orcsMenos: {
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 75 * 100); registro.push('Harbin paga só 75 po pelos orcs: não gostou da ameaça.'); },
+          narra: 'Harbin endireita as costas, ofendido, e conta as moedas muito devagar.',
+          fala: 'Ameaçar o chefe da vila no próprio salão? Setenta e cinco, e agradeçam que não chamo a guarda.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
+        orcsDoa: {
+          ao: () => {
+            v.feito.harbinPagouOrcs = true; v.feito.vilaGrata = true; concluir('orcs');
+            registro.push('O grupo recusa as 100 po: o dinheiro vai para a família Dendrar. Em Phandalin a estalagem passa a hospedar de graça.');
+          },
+          narra: 'O salão fica em silêncio. Um escrevente para de escrever; alguém, lá fora, tira o chapéu.',
+          fala: 'A vila sabe quem fez isto, e não vai esquecer. A casa do Toblen terá cama de graça para vocês pelo resto da estadia — isso eu garanto, com o meu selo.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         orcs: {
@@ -768,15 +815,25 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           narra: 'O Gigante Adormecido continua de pé, por pouco. Sem os mantos vermelhos na varanda, o lugar parece maior — e mais vazio. Atrás do balcão, Grista, uma anã de cara amarrada, esfrega um caneco que nunca fica limpo.',
           fala: 'Bebe ou some. E se vierem quebrar mais alguma coisa, a conta é de vocês.',
           opcoes: [
-            { texto: `Uma rodada de cerveja (${rodada} pc).`, vai: 'cerveja', uma: true,
-              requer: () => (totalEmCobre(vivos()) >= rodada ? null : 'sem dinheiro'),
-              efeito: () => cobrar(vivos(), rodada) },
-            { texto: 'Os Marcarrubra ainda aparecem aqui?', teste: { pericia: 'intimidacao', cd: 12 }, sucesso: 'conta', falha: 'nada', uma: true },
+            { texto: `Uma rodada de cerveja (${v.feito.gristaAmiga ? 'de graça: ela se lembra' : `${rodada} pc`}).`, vai: 'cerveja', uma: true,
+              requer: () => (v.feito.gristaMedo ? 'Grista não serve quem a ameaçou'
+                : v.feito.gristaAmiga || totalEmCobre(vivos()) >= rodada ? null : 'sem dinheiro'),
+              efeito: () => { if (!v.feito.gristaAmiga) cobrar(vivos(), rodada); } },
+            { texto: 'Os Marcarrubra ainda aparecem aqui?', teste: { pericia: 'intimidacao', cd: 12 }, sucesso: 'contaComMedo', falha: 'nada', uma: true },
+            { texto: 'Cinco peças pela informação, e outras cinco pelo silêncio.', vai: 'conta', uma: true,
+              requer: () => (totalEmCobre(vivos()) >= 1000 ? null : 'sem dinheiro'),
+              efeito: () => { cobrar(vivos(), 1000); v.feito.gristaAmiga = true; } },
             { texto: 'Até mais.', fim: 'sai' },
           ],
         },
         cerveja: { narra: 'A cerveja é rala e morna. Ninguém puxa conversa, mas ninguém vai embora também.', opcoes: [{ texto: '…', vai: 'oi' }] },
         nada: { fala: 'Não vi nada, não sei de nada, e não vou começar agora.', opcoes: [{ texto: '…', vai: 'oi' }] },
+        contaComMedo: {
+          ao: () => { v.feito.gristaMedo = true; pista('Os Marcarrubra entram no covil por uma escada de pedra nas ruínas da cozinha da Mansão Tresendar. Grista falou com medo, e agora não serve mais ao grupo.'); },
+          narra: 'Grista larga o caneco. A mão que o segurava treme um pouco.',
+          fala: 'Sobem a rua até a mansão velha e descem pela cozinha caída. Pronto. Agora saiam do meu balcão, e não voltem para pedir cerveja.',
+          opcoes: [{ texto: '…', vai: 'oi' }],
+        },
         conta: {
           ao: () => pista('Os Marcarrubra entram no covil por uma escada de pedra nas ruínas da cozinha da Mansão Tresendar.'),
           narra: 'Grista olha para a porta antes de falar, baixo:',
@@ -903,7 +960,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       }
     }
     if (fim === 'dormir') {
-      cobrar(vivos(), (v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length);
+      cobrar(vivos(), (v.feito.vilaGrata ? 0 : v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length);
       await dormir('Um quarto na Estalagem Stonehill, cama de verdade, sopa quente.');
     } else if (fim === 'palheiro') {
       await dormir('O galpão da Qelline cheira a feno e a vaca, mas é seco, quente e de graça.');
