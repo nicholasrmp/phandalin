@@ -3,7 +3,7 @@
 // A CASA DA MORTE, 3º ANDAR e SÓTÃO (áreas 11 a 21): o que acorda, o que se acha e o que as crianças-fantasma dizem.
 //   - gatilhos: a armadura animada (11), a vassoura animada (14) e o espectro da babá (15B ao abrir o berçário, 18 ao mexer nos restos);
 //   - o espelho de hera da suíte da babá (15A), a caixa de joias da suíte principal (12);
-//   - o quarto das crianças (20): a porta trancada (chave de ferro, ou ferramentas de ladrão, Destreza CD 15), a casa de bonecas
+//   - o quarto das crianças (20): a porta trancada (chave de ferro, ou ferramentas de ladrão, Prestidigitação, CD 15), a casa de bonecas
 //     (a réplica da casa, que mostra a escada secreta), os brinquedos e os ossos de Rose e Thorn;
 //   - Rose e Thorn: aparecem quando alguém mexe nos brinquedos, sabem que estão mortos e só lutam em autodefesa.
 
@@ -54,14 +54,14 @@ function arvoreDosFantasmas(ctx) {
     inicio: 'oi',
     nos: {
       oi: {
-        narra: 'O ar fica gelado e duas formas pálidas se desenham no meio do quarto: uma menina de uns dez anos e um menino pequeno, pequenos demais para o vestido e o casaquinho esfarrapados. Não são as crianças da rua. Estas sabem o que são.',
+        narra: 'O ar fica gelado e duas formas pálidas se desenham no meio do quarto: uma menina de uns dez anos e um menino, miúdos demais para o vestido e o casaquinho esfarrapados. Não são as crianças da rua. Estas sabem o que são.',
         fala: 'Vocês mexeram nas nossas coisas. A gente não gosta. Mas não vamos machucar ninguém, a menos que seja preciso.',
         opcoes: [
           { texto: 'Vocês são Rose e Thorn?', vai: 'quem', uma: true },
           { texto: 'Como vocês morreram?', vai: 'morte', uma: true },
           { texto: 'Como se chega ao porão?', vai: 'porta', uma: true },
           { texto: 'Como podemos ajudar vocês?', vai: 'ajuda', uma: true },
-          { texto: 'Obrigado. Vamos deixá-los em paz.', fim: 'sair' },
+          { texto: 'Valeu. Vamos deixá-los em paz.', fim: 'sair' },
         ],
       },
       quem: {
@@ -169,7 +169,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area.id === 'sotaoPedra' && !salvo.portaCriancas) {
       ops.push({
         rotulo: 'Abrir a porta trancada do norte', icone: 'acao-usarObjeto',
-        detalhe: ctx.algumTem('chaveDeFerroDosDurst') ? 'a chave de ferro dos Durst' : 'ferramentas de ladrão, Destreza CD 15',
+        detalhe: ctx.algumTem('chaveDeFerroDosDurst') ? 'a chave de ferro dos Durst' : 'ferramentas de ladrão, Prestidigitação, CD 15',
         motivo: ctx.longe(c, { x: 7, y: 7 }, 10),
         fazer: async () => {
           const dono = ctx.algumTem('chaveDeFerroDosDurst');
@@ -194,7 +194,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area.id === 'quarto17') {
       ops.push({
         rotulo: 'Olhar a boneca da janela', icone: 'acao-procurar', detalhe: 'sorrindo para o norte', motivo: null,
-        fazer: async () => { await ctx.painel('A boneca de vestido amarelo sorri para o vidro sujo da janela. Coberta de teia, tem um ar de noiva. Quando o olhar se afasta, parece que o rosto vira um dedo na direção da porta.'); },
+        fazer: async () => { await ctx.painel('A boneca de vestido amarelo sorri para o vidro sujo da janela. Coberta de teia, tem um ar de noiva. Quando o olhar se afasta, parece que o rosto gira um dedo na direção da porta.'); },
       });
     }
     if (area.id === 'quarto19') {

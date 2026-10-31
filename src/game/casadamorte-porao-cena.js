@@ -120,7 +120,7 @@ async function cair(ctx, c) {
   const queda = ctx.enc.rng.die(6);
   const espinhos = ctx.enc.rng.die(10) + ctx.enc.rng.die(10);
   ctx.enc.applyDamage(c, queda + espinhos, 'perfurante');
-  await ctx.painel(`As tábuas podres cedem sob ${c.name} e o chão some. A queda são três metros, e no fundo esperam espinhos de madeira, afiados: ${queda} de dano da queda e ${espinhos} dos espinhos. Os outros baixam uma corda, e ${c.name} sai de lá se agarrando a ela. O buraco agora está à mostra, e dá para pular por cima.`);
+  await ctx.painel(`As tábuas podres cedem sob ${c.name} e o chão some. A queda é de três metros, e no fundo esperam espinhos de madeira, afiados: ${queda} de dano da queda e ${espinhos} dos espinhos. Os outros baixam uma corda, e ${c.name} sai de lá se agarrando a ela. O buraco agora está à mostra, e dá para pular por cima.`);
   ctx.app.refresh();
 }
 
@@ -129,7 +129,7 @@ async function ritual(ctx, c) {
   const { salvo, root } = ctx;
   salvo.ritual = 'visto';
   await ctx.painel([
-    'O canto se ergue mais uma vez, e treze aparições escuras aparecem nas bordas que dominam a sala. Cada uma é uma figura de túnica preta segurando uma tocha, mas o fogo da tocha é negro e parece sugar a luz. Onde se esperaria ver rosto, só há vazio.',
+    'O canto se ergue mais uma vez, e treze figuras escuras aparecem nas bordas que dominam a sala. Cada uma é uma figura de túnica preta segurando uma tocha, mas o fogo da tocha é negro e parece sugar a luz. Onde se esperaria ver rosto, só há vazio.',
     '"Um deve morrer!", cantam, repetidamente. "Um deve morrer! Um deve morrer!"',
     'São aparições inofensivas: não podem ser feridas, transformadas nem dissipadas. Mas estão olhando o altar.',
   ], { titulo: '38. A câmara do ritual' });
@@ -192,12 +192,12 @@ async function negar(ctx) {
   salvo.fim = 'negado';
   const g = ctx.grupos.lorghoth;
   await ctx.painel([
-    'O grupo desce do estrado, e o canto muda, e vem de todos os lados: "Lorghoth, o Decadente, nós o despertamos, levanta-te!"',
+    'O grupo desce do estrado, e o canto muda, e vem de todos os lados: "Lorghoth, o Decadente, nós te despertamos, levanta-te!"',
     'Da alcova do lixo vem um ruído de galhos e de lama. A pilha de refugo se levanta, e ganha braços de cipó e boca.',
   ], { titulo: 'O culto é negado' });
   if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
     for (const f of g.membros) f.pos = { x: 22, y: 50 };
-    await ctx.combate(g, null, ['"O fim vem! Oh, Morte, seja louvado!", muda o canto. O arbusto errante entra na câmara, mole e pesado, e não vai parar até ser derrubado. Mas não vai deixar a masmorra.']);
+    await ctx.combate(g, null, ['"O fim vem! Ó Morte, sê louvada!", muda o canto. O arbusto errante entra na câmara, mole e pesado, e não vai parar até ser derrubado. Mas não vai deixar a masmorra.']);
   }
 }
 
@@ -217,7 +217,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       const feito = achados[`bau${b.id}`];
       ops.push({
         rotulo: feito ? 'O baú (vazio)' : 'Abrir o baú trancado', icone: 'acao-usarObjeto',
-        detalhe: feito ? 'já aberto' : 'ferramentas de ladrão, Destreza CD 15',
+        detalhe: feito ? 'já aberto' : 'ferramentas de ladrão, Prestidigitação, CD 15',
         motivo: feito ? 'já aberto' : ctx.longe(c, b, 10),
         fazer: async () => {
           const ladrao = ctx.herois().find((h) => ctx.tem(h, 'ferramentasDeLadrao'));
@@ -295,13 +295,13 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
         if (feito || dono) {
           ops.push({
             rotulo: feito ? `Os ossos de ${nome} já repousam` : `Deitar os ossos de ${nome} no caixão`, icone: 'acao-usarObjeto',
-            detalhe: feito ? 'em paz' : 'a menina' + (quem === 'thorn' ? '' : ''),
+            detalhe: feito ? 'em paz' : quem === 'thorn' ? 'o menino' : 'a menina',
             motivo: feito ? 'em paz' : ctx.longe(c, quem === 'rose' ? { x: 19, y: 8 } : { x: 19, y: 4 }, 30),
             fazer: async () => {
               ctx.consumir(dono, osso);
               salvo.paz[quem] = true;
               await ctx.painel(quem === 'rose'
-                ? 'Os ossinhos de Rose são deitados no caixão. Por um instante, num canto onde não há luz, uma menina de vestido de festa olha para o grupo, sorri, e some, sem deixar nem o frio.'
+                ? 'Os ossinhos de Rose são deitados no caixão. Por um instante, num canto onde não há luz, uma menina de vestido de festa olha para o grupo, sorri e some, sem deixar nem o frio.'
                 : 'Os ossinhos de Thorn, ainda abraçados ao boneco de pano, são deitados no caixão. Por um instante, uma voz pequena diz "obrigado" bem baixinho, e some.');
               if (salvo.paz.rose && salvo.paz.thorn) {
                 for (const h of ctx.herois()) addCondition(h, 'inspirado', { rounds: 100000, source: 'casaDaMorte', data: { dado: '1d6' } });
@@ -372,7 +372,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           const q = ctx.herois()[0];
           ctx.guardar(q, 'tocha', 30);
           ctx.guardar(q, 'vela', 15);
-          await ctx.painel('A caixa aberta tem trinta tochas, e o saquinho de couro, quinze velas. Boa coisa para uma masmorra escura.');
+          await ctx.painel('A caixa aberta tem trinta tochas, e o saco de couro, quinze velas. Boa coisa para uma masmorra escura.');
           ctx.app.refresh();
         },
       });
@@ -434,7 +434,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     }
     if (area?.id === 'tunelAgua') {
       ops.push({
-        rotulo: salvo.ponte ? 'A ponte levadiça (abaixada)' : 'Erguer a ponte levadiça à força', icone: 'acao-usarObjeto',
+        rotulo: salvo.ponte ? 'A ponte levadiça (abaixada)' : 'Abaixar a ponte levadiça à força', icone: 'acao-usarObjeto',
         detalhe: salvo.ponte ? 'já está baixa' : 'Atletismo, CD 20',
         motivo: salvo.ponte ? 'já está baixa' : (buscas.ja(c, 'ponte', { x: 21, y: 18 }) ?? ctx.longe(c, { x: 21, y: 17 }, 10)),
         fazer: async () => {
@@ -443,7 +443,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           if (!t.passou) { await ctx.painel(`${c.name} está com a água turva e fria até a canela, as mãos nas correntes enferrujadas. A ponte levadiça nem treme. Outra pessoa pode tentar, ou há uma roda do outro lado, dentro da câmara.`); return; }
           salvo.ponte = true;
           ctx.mudarCasas(PONTE, '=');
-          await ctx.painel(`${t.quem?.name ?? c.name} firma os pés no limo e levanta a ponte levadiça com um grito. As correntes rangem e a placa de ferro desce, devagar, até bater do outro lado. O caminho está livre.`);
+          await ctx.painel(`${t.quem?.name ?? c.name} firma os pés no limo e puxa as correntes da ponte levadiça com um grito. As correntes rangem e a placa de ferro desce, devagar, até bater do outro lado. O caminho está livre.`);
           ctx.app.refresh();
         },
       });
@@ -456,8 +456,8 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           salvo.ponte = !salvo.ponte;
           ctx.mudarCasas(PONTE, salvo.ponte ? '=' : 'M');
           await ctx.painel(salvo.ponte
-            ? 'A roda gira com um gemido de madeira, e as correntes no fundo da parede se retesam. A ponte levadiça se abaixa, no túnel a norte.'
-            : 'A roda gira para o outro lado, e as correntes recolhem a ponte levadiça. O túnel a norte volta a ficar fechado.');
+            ? 'A roda gira com um gemido de madeira, e as correntes no fundo da parede se retesam. A ponte levadiça se abaixa, no túnel ao norte.'
+            : 'A roda gira para o outro lado, e as correntes recolhem a ponte levadiça. O túnel ao norte volta a ficar fechado.');
           ctx.app.refresh();
         },
       });
@@ -470,7 +470,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           buscas.marcar(c, 'lorghoth', { x: 24, y: 57 });
           const t = ctx.teste(c, 'natureza', 15);
           await ctx.painel(t.passou
-            ? `${t.quem?.name ?? c.name} se agacha ao lado do monte e vê o que ele é: não é lixo, é uma planta. Galhos, cipós e lama, a respirar bem devagar. É um arbusto errante, e dorme. Os cultistas o chamavam de Lorghoth, o Decadente.`
+            ? `${t.quem?.name ?? c.name} se agacha ao lado do monte e vê o que ele é: não é lixo, é uma planta. Galhos, cipós e lama, respirando bem devagar. É um arbusto errante, e dorme. Os cultistas o chamavam de Lorghoth, o Decadente.`
             : 'Galhos, ervas, lama e coisas de comer apodrecido. Um monte de lixo a mais.');
         },
       });

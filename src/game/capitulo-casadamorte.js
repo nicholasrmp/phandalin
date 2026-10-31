@@ -60,7 +60,7 @@ export function criarCasaDaMorte(app, config) {
     return { quem: r.quem, total: r.total, cd, passou: r.passou };
   };
   const areaDe = (p) => andar.areas.find((a) => dentro(a, p));
-  const longe = (c, tile, pes = 10) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
+  const longe = (c, tile, pes = 10) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${Math.round(pes * 0.3)} m` : null);
   const tem = (c, id) => garantirInventario(c).bag.some((i) => i.id === id && i.qtd > 0);
   const algumTem = (id) => herois().find((h) => tem(h, id)) ?? null;
   const consumir = (c, id) => { const b = garantirInventario(c).bag.find((i) => i.id === id && i.qtd > 0); if (b && !(b.qtd -= 1)) c.bag.splice(c.bag.indexOf(b), 1); };
@@ -178,7 +178,7 @@ export function criarCasaDaMorte(app, config) {
     salvo.cartaLida = true;
     await painel([
       'O papel é grosso, e a letra, fina e inclinada. A carta chama o dono desta casa de "meu servo mais patético" e diz que ele nunca foi o mensageiro de nenhum poder das trevas, que as almas que sangrou no altar e os visitantes que torturou não foram trazidas por ele a esta bela terra: "vocês são apenas vermes que se contorcem na minha terra". Diz que ele está amaldiçoado, que gastou a fortuna, trocou o amor pela loucura e gerou um filho natimorto, e termina: "Salvar você de sua miséria? Eu acho que não. Prefiro que fique como está". Assina: Strahd von Zarovich.',
-      'Quando vocês levantam os olhos, uma coisa mudou na casa. Atrás do espelho do quarto da babá, no andar de cima, alguma coisa girou. A casa quer que vocês vejam o que mostra a escada.',
+      'Quando vocês levantam os olhos, uma coisa mudou na casa. Atrás do espelho do quarto da babá, no andar de cima, alguma coisa girou. A casa quer que vocês vejam o que a escada mostra.',
     ], { titulo: 'A carta de Strahd' });
     await revelarEscada();
   }
@@ -267,7 +267,7 @@ export function criarCasaDaMorte(app, config) {
     if (area.id === 'canil') {
       ops.push({
         rotulo: salvo.armarioAberto ? 'O armário do leste (aberto)' : 'Abrir o cadeado do armário do leste',
-        icone: 'acao-usarObjeto', detalhe: salvo.armarioAberto ? 'já aberto' : 'ferramentas de ladrão, Destreza CD 15',
+        icone: 'acao-usarObjeto', detalhe: salvo.armarioAberto ? 'já aberto' : 'ferramentas de ladrão, Prestidigitação, CD 15',
         motivo: salvo.armarioAberto ? 'já aberto' : longe(c, { x: 12, y: 21 }, 40),
         fazer: async () => {
           const ladrao = herois().find((h) => garantirInventario(h).bag.some((i) => i.id === 'ferramentasDeLadrao'));
@@ -347,7 +347,7 @@ export function criarCasaDaMorte(app, config) {
         },
       });
       ops.push({
-        rotulo: 'Estudar os livros de ritual', icone: 'acao-procurar', detalhe: salvo.livrosEstudados ? 'já estudados' : 'uma hora, Arcana CD 12',
+        rotulo: 'Estudar os livros de ritual', icone: 'acao-procurar', detalhe: salvo.livrosEstudados ? 'já estudados' : 'uma hora, Arcanismo, CD 12',
         motivo: salvo.livrosEstudados ? 'já estudados' : null,
         fazer: async () => {
           const t = teste(c, 'arcanismo', 12);

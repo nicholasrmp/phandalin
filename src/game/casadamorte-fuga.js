@@ -112,7 +112,7 @@ async function sair(ctx, c) {
       const r = ctx.enc.resistencia(alvo, 'cha', 13);
       const nome = quem === 'rose' ? 'Rose' : 'Thorn';
       if (r.success) {
-        await ctx.painel(`O ar gela em volta de ${alvo.name}, e uma mão pequenina tenta agarrá-lo por dentro. ${alvo.name} se aguenta. O fantasma de ${nome} se encolhe, soluçando, e se solta.`);
+        await ctx.painel(`O ar gela em volta de ${alvo.name}, e uma mão pequenina tenta agarrar ${alvo.name} por dentro. ${alvo.name} se aguenta. O fantasma de ${nome} se encolhe, soluçando, e se solta.`);
         continue;
       }
       salvo.possuidos.push({ heroi: alvo.id, nome: alvo.name, quem });
@@ -120,7 +120,7 @@ async function sair(ctx, c) {
         ? 'Eu gosto de estar no comando e fico com raiva quando outras pessoas me dizem o que fazer.'
         : 'Tenho medo de tudo, inclusive da minha própria sombra, e choro de desespero quando as coisas não vêm até mim.';
       await ctx.painel(quem === 'rose'
-        ? `${alvo.name} para na soleira, rígido. Os olhos se enchem de uma vontade que não é sua: Rose entrou. "Eu não quero ficar sozinha." Quem possui não deixa a casa. O jogador segue no comando, mas ${alvo.name} agora é teimoso e mandão como uma menina de dez anos.`
+        ? `${alvo.name} para na soleira, de corpo rígido. Os olhos se enchem de uma vontade que não é sua: Rose entrou. "Eu não quero ficar sozinha." Quem possui não deixa a casa. O jogador segue no comando, mas ${alvo.name} agora tem a teimosia e o mando de uma menina de dez anos.`
         : `${alvo.name} para na soleira e encolhe os ombros: Thorn entrou. "Não vão embora, por favor." Quem possui não deixa a casa. O jogador segue no comando, mas ${alvo.name} agora tem medo da própria sombra.`);
     }
   }
@@ -150,7 +150,7 @@ async function concluir(ctx) {
   await ctx.painel([
     salvo.fim === 'sacrificio'
       ? 'O portão se abre, e lá fora a névoa recuou. As ruas de Baróvia aparecem de novo, cinza, vazias, sob um céu sem sol. Nas costas do grupo, a Casa da Morte parece só uma casa: alta, estreita e quieta, esperando o próximo.'
-      : 'O portão cede, e lá fora a névoa recua com a lentidão de um bicho que desistiu. A Casa da Morte fica para trás, de janelas emparedadas, ainda a se ouvir, e depois nem isso.',
+      : 'O portão cede, e lá fora a névoa recua com a lentidão de um bicho que desistiu. A Casa da Morte fica para trás, de janelas emparedadas, ainda se ouvindo por um tempo, e depois nem isso.',
     'Strahd sabe que o grupo existe. É o que ele queria.',
   ], { titulo: 'As brumas recuam' });
   const grupo = ctx.herois();

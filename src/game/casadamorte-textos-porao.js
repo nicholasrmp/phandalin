@@ -29,7 +29,7 @@ export const TEXTOS_PORAO = {
     'Uma alcova escura, vazia, na parede sul do salão de jantar.',
   ],
   escadas: [
-    'Uma escada de seis metros, em degraus de pedra, desce para o escuro. Dá para ouvir com clareza que os cantos vêm de algum lugar lá embaixo.',
+    'Uma escada de seis metros, em degraus de pedra, desce para o escuro. Dá para ouvir com clareza que o canto vem de algum lugar lá embaixo.',
   ],
   santuario: [
     'Esqueletos mofados pendem de grilhões enferrujados contra as paredes. Numa grande alcova na parede sul está uma estátua de madeira pintada: um homem magro, de rosto pálido, com uma capa preta volumosa, a mão esquerda apoiada na cabeça de um lobo ao seu lado, e na direita uma esfera de cristal cinza esfumaçado.',
@@ -52,7 +52,7 @@ export const TEXTOS_PORAO = {
   criptaE: ['A laje está gravada com o nome Rosavalda Durst. A câmara tem um caixão vazio sobre um esquife de pedra.'],
   criptaF: ['A laje está gravada com o nome Thornboldt Durst. A câmara tem um caixão vazio sobre um esquife de pedra.'],
   escadaChegada: [
-    'A escada termina num corredor curto e baixo, que sobe de leve e vira. O canto ficou claro e alto, dezenas de vozes, as mesmas palavras: "Ele é o Ancestral. Ele é a Terra".',
+    'A escada termina num corredor curto e baixo, que sobe de leve e vira. O canto ficou claro e alto, uma dúzia de vozes, as mesmas palavras: "Ele é o Ancestral. Ele é a Terra".',
   ],
   relicario: [
     'Uma sala grande, cheia do canto: uma dúzia de vozes repete sem parar "Ele é o Ancestral. Ele é a Terra". Em treze nichos ao longo das paredes, o culto guardou as "relíquias" de seus rituais: uma mão de goblin mumificada num laço de corda, uma faca de osso humano, um punhal com um crânio de rato no pomo, um orbe feito de um olho de nótico, um aspergillum de osso, uma capa de pele de carniçal costurada, um sapo dissecado numa vara, um saco de guano de morcego, um dedo cortado de bruxa, uma estatueta de múmia, um pingente de ferro com rosto de diabo, a cabeça murcha de um halfling e um cofrezinho com a língua seca de um lobo atroz.',
@@ -66,7 +66,7 @@ export const TEXTOS_PORAO = {
     'Numa das celas, um esqueleto humano de manto preto esfarrapado pende da parede.',
   ],
   ponte: [
-    'Um trecho de túnel estreito, com água até o tornozelo, que leva à alcova do lixo.',
+    'Um trecho de túnel estreito, com água até a canela, que leva à alcova do lixo.',
   ],
   camara: [
     'O canto cessa assim que vocês entram. Uma sala de doze metros de lado, de paredes lisas de alvenaria, com pilares de pedra sem cor sustentando o teto, a quase cinco metros de altura. A água turva cobre quase todo o chão: sessenta centímetros de profundidade.',

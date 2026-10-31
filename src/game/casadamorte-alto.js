@@ -117,8 +117,8 @@ export const AREAS_SOTAO = [
   {
     id: 'sotaoPedra', area: '16', nome: 'O sótão de pedra', x1: 3, y1: 7, x2: 12, y2: 9,
     texto: [
-      'Um salão vazio, de teto alto, cheio de poeira e teias. As vigas rangem. Há quatro portas: a do norte-esquerda, a do norte-direita, uma grande, a oeste, e outra ao sul.',
-      'A porta do norte-direita, de ferro velho, está trancada com um cadeado.',
+      'Um salão vazio, de teto alto, cheio de poeira e teias. As vigas rangem. Há quatro portas: a do noroeste, a do nordeste, uma porta grande a oeste e outra ao sul.',
+      'A porta do nordeste, de ferro velho, está trancada com um cadeado.',
     ],
   },
   {
