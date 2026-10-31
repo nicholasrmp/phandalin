@@ -66,8 +66,6 @@ export const POTIONS = {
     'Acelerar por um minuto, sem concentração.'),
   pocaoDeInvisibilidade: pocao('pocaoDeInvisibilidade', 'Poção de invisibilidade', RARIDADE.muitoRaro,
     'Invisível por uma hora, ou até atacar ou conjurar.'),
-  pocaoDeVoo: pocao('pocaoDeVoo', 'Poção de voo', RARIDADE.muitoRaro,
-    'Deslocamento de voo igual ao de caminhada por uma hora.'),
   pocaoDeRespiracaoAquatica: pocao('pocaoDeRespiracaoAquatica', 'Poção de respiração aquática', RARIDADE.incomum,
     'Respira debaixo da água por uma hora.'),
   pocaoDeResistencia: pocao('pocaoDeResistencia', 'Poção de resistência', RARIDADE.incomum,
