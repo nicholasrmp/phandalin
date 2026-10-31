@@ -19,10 +19,17 @@ import { makeNpc } from '../rules/npcs.js';
 
 const MAPA = Array(12).fill('............');
 let falhas = 0;
+const pendentes = [];
 let total = 0;
 function teste(nome, fn) {
   total += 1;
-  try { fn(); console.log(`ok    ${nome}`); } catch (e) {
+  try {
+    const r = fn();
+    // Teste assíncrono: espera-se antes do resumo, e a falha conta (antes virava rejeição solta).
+    if (r && typeof r.then === 'function') {
+      pendentes.push(r.then(() => console.log(`ok    ${nome}`), (e) => { falhas += 1; console.log(`FALHA ${nome}: ${String(e.message).split('\n')[0]}`); }));
+    } else console.log(`ok    ${nome}`);
+  } catch (e) {
     falhas += 1;
     console.log(`FALHA ${nome}\n      ${e.message.split('\n').join('\n      ')}`);
   }
@@ -440,6 +447,19 @@ teste('a simpatia da vila: o ágio do Câmbio e a fração da loja mudam o que s
     const menos = paga({ ...LOJAS.cambio, mult: 0.9 });
     assert.ok(mais[ids[0]] >= cheio[ids[0]] && menos[ids[0]] <= cheio[ids[0]]);
   }
+});
+
+teste('lojaComSimpatia: sem gestos nada muda; Elmar grato corta 15% e a Halia aliada/fria mexe na balança', async () => {
+  const { lojaComSimpatia } = await import('../game/comercio.js');
+  const { LOJAS } = await import('../game/comercio.js');
+  assert.equal(lojaComSimpatia('barthen', {}), LOJAS.barthen, 'sem gestos, a mesma loja');
+  const base = LOJAS.barthen.estoque().find((l) => l.preco >= 500);
+  const grato = lojaComSimpatia('barthen', { elmarGrato: true }).estoque().find((l) => l.id === base.id);
+  assert.equal(grato.preco, Math.round(base.preco * 0.85));
+  assert.equal(lojaComSimpatia('escudoLeao', { elmarGrato: true }), LOJAS.escudoLeao, 'o gesto de um não vale no balcão do outro');
+  assert.equal(lojaComSimpatia('escudoLeao', { leaoGrata: true }).estoque()[0].preco <= LOJAS.escudoLeao.estoque()[0].preco, true);
+  assert.equal(lojaComSimpatia('cambio', { haliaAliada: true }).mult, 1.1);
+  assert.equal(lojaComSimpatia('cambio', { haliaFria: true }).mult, 0.9);
 });
 
 teste('menu dos corpos: uma linha de Olhar por corpo, e o chão e a cena continuam (não são engolidos)', () => {

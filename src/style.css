@@ -197,9 +197,9 @@ h2 {
   color: var(--ink);
   border: none;
   border-radius: 6px;
-  width: 28px;
-  height: 26px;
-  font-size: 15px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
   cursor: pointer;
   line-height: 1;
 }
@@ -354,7 +354,7 @@ h2 {
 /* A CA é uma plaquinha de latão rebitada no canto do retrato. */
 .ficha-ca {
   position: absolute; right: 2px; bottom: 2px;
-  font-size: 10px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
   background: linear-gradient(180deg, var(--gold-claro), var(--gold));
   color: #2b1d07;
   border: 1px solid var(--gold-escuro);
@@ -365,7 +365,7 @@ h2 {
 
 .ficha-corpo { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ficha-corpo strong { font-family: var(--serif); font-size: 14px; letter-spacing: .01em; }
-.ficha-sub { font-size: 10.5px; color: var(--muted); }
+.ficha-sub { font-size: 11px; color: var(--muted); }
 .ficha-pv { font-size: 11px; color: #5d4e36; font-variant-numeric: tabular-nums; }
 .ficha-morte { font-size: 11px; color: var(--red); }
 
@@ -414,7 +414,7 @@ h2 {
 }
 .eco-mov {
   margin-left: 2px;
-  font-size: 9.5px;
+  font-size: 11px;
   color: #1d4e76;
   font-variant-numeric: tabular-nums;
 }

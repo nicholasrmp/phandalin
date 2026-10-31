@@ -225,3 +225,18 @@ export function vender(heroi, v) {
   pagarEmMoedas(heroi, v.paga);
   return { ok: true };
 }
+
+// A SIMPATIA DA VILA: o que o grupo fez por um dono de loja volta no balcão. O desconto vem de uma escolha (Elmar e Linene, quando
+// o grupo abre mão do pagamento); o ágio na balança da Halia, de entregar a carta inteira; o balcão frio, de regatear com ela e falhar.
+// Fica em `v.feito`, que a campanha guarda.
+export const lojaComSimpatia = (id, f) => {
+  const base = LOJAS[id];
+  const compra = id === 'barthen' && f.elmarGrato ? 0.85 : id === 'escudoLeao' && f.leaoGrata ? 0.85 : 1;
+  const mult = id === 'cambio' ? (f.haliaAliada ? 1.1 : f.haliaFria ? 0.9 : 1) : 1;
+  if (compra === 1 && mult === 1) return base;
+  return {
+    ...base, mult,
+    estoque: () => base.estoque().map((x) => ({ ...x, preco: Math.round(x.preco * compra) })),
+    fala: compra < 1 ? { ...base.fala, comprar: 'Para quem me ajudou, o preço é menor. Não conta para ninguém.' } : base.fala,
+  };
+};

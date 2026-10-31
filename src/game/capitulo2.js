@@ -66,13 +66,15 @@ const MOVIMENTO = 60;
 // sala (a chaminé do canil, a boca do túnel) recebe o que faltou no fim (`fimDoCapitulo`): o total segue 350 para todos.
 const PARCELAS_DO_ESCONDERIJO = { vigias: 100, ponte: 125, pocos: 50 };
 
+// `clima` é o que se sente ao chegar: cheiro, som e o sinal de quem vive ali. Entra antes do aviso de combate, para a sala não ser só um
+// número de goblins. Texto nosso.
 const SALAS = {
-  vigias: { nome: 'o posto dos vigias', em: 'no mato' },
-  canil: { nome: 'o canil', em: 'no canil' },
-  ponte: { nome: 'a ponte', em: 'na ponte' },
-  covil: { nome: 'o covil', em: 'no covil' },
-  pocos: { nome: 'os poços', em: 'nos poços' },
-  chefe: { nome: 'a caverna de Klarg', em: 'na caverna de Klarg' },
+  vigias: { nome: 'o posto dos vigias', em: 'no mato', clima: 'Cheiro de fumaça fria e de casca de fruta podre; um dado de osso rola, esquecido, na tábua de um abrigo de ripas.' },
+  canil: { nome: 'o canil', em: 'no canil', clima: 'O fedor de pelo molhado vem antes de tudo. Correntes arrastam no escuro, e algo grande rosna baixo, sem pressa.' },
+  ponte: { nome: 'a ponte', em: 'na ponte', clima: 'O riacho corre ruidoso embaixo, abafando passos. As tábuas da ponte estão remendadas com portas velhas e cordas de tripa.' },
+  covil: { nome: 'o covil', em: 'no covil', clima: 'Fumaça de cozinha e couro mal curtido enchem o ar. Colchões de palha, ossos roídos e uma panela que ferve sozinha numa fogueira baixa.' },
+  pocos: { nome: 'os poços', em: 'nos poços', clima: 'Água parada em tanques escuros, e o gotejar que não para. Caixas de madeira marcadas com um leão azul estão empilhadas num canto, abertas à força.' },
+  chefe: { nome: 'a caverna de Klarg', em: 'na caverna de Klarg', clima: 'A caverna é quente e cheira a carne velha. Peles esticadas, crânios de lobo nos espetos e uma fogueira no meio, onde alguma coisa grande dorme sentada num trono de ossos.' },
 };
 
 // O riacho lá fora, linha por linha (a coluna da margem oeste dele): quem
@@ -283,7 +285,15 @@ export function criarCapitulo2(app, config) {
       if (visto) {
         const quem = herois().find((h) => podeVer(enc, h, visto));
         const nossa = g.id === 'chefe';     // desavisado, Klarg pode ser surpreendido
+        if (g.id === 'chefe' && !estado.klargAvisado && klarg && !klarg.dead) {
+          // Klarg não é só um número: dá para falar com ele antes da luta (e a conversa pode comprar a surpresa).
+          const fim = await app.conversarCom(klarg, arvoreKlarg());
+          if (fim === 'sai') continue;
+          await combate(g, fim === 'normal' ? null : 'nossa');
+          return;
+        }
         await asArmas([
+          SALAS[g.id].clima,
           visaoNoEscuro(quem) && !emiteLuz(quem)
             ? `No cinza da visão no escuro, ${quem.name} vê movimento ${SALAS[g.id].em}: ${visto.name}${hostis(g).length > 1 ? ', e não está sozinho' : ''}.`
             : `A luz alcança ${SALAS[g.id].nome} e pega ${visto.name} desprevenido.`,
@@ -612,6 +622,42 @@ export function criarCapitulo2(app, config) {
 
   // O resgate que Yeemik cobra é nosso número: a aventura só diz que é alto.
   const RESGATE = 50;
+
+  // KLARG fala de si na terceira pessoa e se acha rei. A conversa nunca dá nada de graça: pode comprar a surpresa (Intimidação ou
+  // Enganação), custar a surpresa (conversa que falha: luta normal) ou deixar o grupo recuar.
+  function arvoreKlarg() {
+    return {
+      inicio: 'oi',
+      nos: {
+        oi: {
+          narra: `${SALAS.chefe.clima} O vulto levanta a cabeça devagar. Os olhos pequenos acham o grupo antes que alguém consiga recuar.`,
+          fala: ['Klarg! Klarg manda aqui. Klarg não gosta de gente que entra sem bater, e Klarg gosta ainda menos de gente que sai.',
+            'Quem manda vocês? Foi o verme do Yeemik? Klarg sabe que foi o verme do Yeemik.'],
+          opcoes: [
+            { texto: 'Saia daqui com os seus, Klarg. Hoje ninguém precisa morrer.', teste: { pericia: 'intimidacao', cd: 14 }, sucesso: 'recua', falha: 'ri' },
+            { texto: 'Yeemik está vindo com o bando inteiro. Esconda-se, Klarg: ele quer o seu trono.', teste: { pericia: 'enganacao', cd: 13 }, sucesso: 'cai', falha: 'ri' },
+            { texto: 'Sacar as armas.', fim: 'nossa' },
+            { texto: 'Recuar em silêncio, antes que ele se levante.', fim: 'sai' },
+          ],
+        },
+        recua: {
+          narra: 'Klarg hesita. A mão enorme larga o osso que roía, e por um instante a boca fica aberta, sem resposta.',
+          fala: 'Klarg não tem medo! Klarg só está… pensando.',
+          opcoes: [{ texto: 'Aproveitar a hesitação.', fim: 'nossa' }],
+        },
+        cai: {
+          narra: 'O vulto se vira para a entrada que vocês não vigiam e rosna, o corpo inteiro em direção ao lado errado.',
+          fala: 'O verme! Klarg sabia! Klarg vai esmagar o verme quando ele…',
+          opcoes: [{ texto: 'Atacar enquanto ele olha para o outro lado.', fim: 'nossa' }],
+        },
+        ri: {
+          narra: 'Klarg gargalha, uma risada molhada que sacode as peles nas paredes.',
+          fala: 'Klarg não é bobo! Klarg conta com os dedos: um, dois, três, quatro… e Klarg tem mais amigos que dedos!',
+          opcoes: [{ texto: 'Às armas.', fim: 'normal' }],
+        },
+      },
+    };
+  }
 
   function arvoreYeemik(inicio) {
     return {

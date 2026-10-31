@@ -29,7 +29,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { descansoLongoDoGrupo } from '../view/descanso-tela.js';
 import { NPCS } from '../rules/npcs.js';
-import { totalEmCobre, guardar, cobrar, pagarCada, repartir, LOJAS } from './comercio.js';
+import { totalEmCobre, guardar, cobrar, pagarCada, repartir, LOJAS, lojaComSimpatia } from './comercio.js';
 import { abrirLoja } from '../view/loja.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { nomeDoMomento, deNoite } from './relogio.js';
@@ -94,22 +94,6 @@ export const LUGARES = [
 ];
 
 const QUADRO = 'O prédio mais sólido da vila: pedra grossa e uma torre com sino. Pregado na porta, um papel já amarelado promete recompensa a quem der fim aos orcs vistos para os lados do Cume da Wyvern — "tratar aqui dentro". A assinatura é um borrão.';
-
-// A SIMPATIA DA VILA: o que o grupo fez por um dono de loja volta no balcão. O desconto vem de uma escolha (Elmar e Linene, quando
-// o grupo abre mão do pagamento); o ágio na balança da Halia, de entregar a carta inteira; o balcão frio, de regatear com ela e falhar.
-// Fica em `v.feito`, que a campanha guarda.
-const lojaComSimpatia = (id) => {
-  const base = LOJAS[id];
-  const f = v.feito;
-  const compra = id === 'barthen' && f.elmarGrato ? 0.85 : id === 'escudoLeao' && f.leaoGrata ? 0.85 : 1;
-  const mult = id === 'cambio' ? (f.haliaAliada ? 1.1 : f.haliaFria ? 0.9 : 1) : 1;
-  if (compra === 1 && mult === 1) return base;
-  return {
-    ...base, mult,
-    estoque: () => base.estoque().map((x) => ({ ...x, preco: Math.round(x.preco * compra) })),
-    fala: compra < 1 ? { ...base.fala, comprar: 'Para quem me ajudou, o preço é menor. Não conta para ninguém.' } : base.fala,
-  };
-};
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 
@@ -944,7 +928,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     }
     if (fim === 'loja') {
       await abrirLoja(app.root, {
-        loja: lojaComSimpatia(l.id), npc: pessoa(l.npc), grupo: vivos(), aoMudar: (t) => registro.push(t),
+        loja: lojaComSimpatia(l.id, v.feito), npc: pessoa(l.npc), grupo: vivos(), aoMudar: (t) => registro.push(t),
         onFicha: (c, depois) => app.abrirFichaNaVila(c, depois),
       });
     }
