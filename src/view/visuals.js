@@ -1388,6 +1388,99 @@ const SPELL_VISUALS = {
     return 0;
   },
   // Some numa névoa e reaparece noutra.
+  // ---- 4º ao 9º círculo: cada efeito é uma folha própria (`_referencias/efeitos/v-lote13a` e `v-lote13b`) ----
+  banimento: (board, { dest }, alvos = []) => {
+    (alvos.length ? alvos : [{ pos: dest }]).forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'banimento-vortice', { fps: 9, altura: 44, sumir: 0.5 }), i * 90));
+    return 0;
+  },
+  dimensaoPorta: (board, { caster, dest }) => {
+    board.fx.quadros(caster.pos, 'porta-dimensional', { fps: 12, altura: 30, sumir: 0.2 });
+    setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 12, altura: 30, sumir: 0.2 }), 260);
+    return 0.3;
+  },
+  peleDePedra: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 6, altura: 30, sumir: 0.4 });
+    return 0;
+  },
+  imobilizarMonstro: (board, _ctx, alvos = []) => {
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'correntes-prender', { fps: 9, altura: 28 }), i * 90));
+    return 0;
+  },
+  invisibilidadeMaior: (board, _ctx, alvos = []) => {
+    for (const t of alvos) board.fx.quadros(t.pos, 'nevoa-prateada', { fps: 12, altura: 26 });
+    return 0;
+  },
+  muralhaDeFogo: (board, { caster, dest, areaTiles }) => {
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'fogo-projetil', dur: 0.3, arc: 0.3 });
+    const lista = areaTiles?.length ? areaTiles : [dest];
+    // Cada casa começa um pouco fora de fase das vizinhas, para a muralha não pulsar toda de uma vez.
+    setTimeout(() => lista.forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'muralha-de-fogo', { fps: 10, altura: 28, sumir: 0.3 }), i * 40 + (i % 3) * 70)), 300);
+    return 0.4;
+  },
+  nuvemMortal: (board, { caster, dest, areaTiles }) => {
+    board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'veneno-projetil', dur: 0.35, arc: 0.4 });
+    setTimeout(() => {
+      board.fx.area(areaTiles ?? [dest], { color: '#6fc07a', dur: 0.4 });
+      board.fx.quadros(dest, 'nuvem-mortal', { fps: 8, altura: 34, sumir: 0.5 });
+    }, 350);
+    return 0.4;
+  },
+  correnteDeRelampagos: (board, { caster, dest }, alvos = []) => {
+    const pontos = alvos.length ? alvos.map((t) => t.pos) : [dest];
+    let de = caster.pos;
+    pontos.forEach((p, i) => setTimeout(() => {
+      board.fx.beam(de, p, { color: '#bfe6ff', dur: 0.3, width: 4, jagged: true });
+      board.fx.quadros(p, 'corrente-de-relampagos', { fps: 14, altura: 26 });
+      de = p;
+    }, i * 140));
+    return 0;
+  },
+  chuvaDeMeteoros: (board, { dest, areaTiles }) => {
+    // O meteoro grande cai no centro e em mais duas casas da área, para a chuva cobrir a esfera.
+    board.fx.quadros(dest, 'meteoros', { fps: 9, altura: 34, sumir: 0.4 });
+    (areaTiles ?? []).filter((t) => Math.abs(t.x - dest.x) + Math.abs(t.y - dest.y) === 4).slice(0, 2)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'meteoros', { fps: 9, altura: 34, sumir: 0.4 }), 220 + i * 180));
+    (areaTiles ?? []).filter((t) => (t.x + t.y) % 3 === 0).slice(0, 8)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'fogo-impacto', { fps: 14, altura: 22 }), 150 + i * 70));
+    board.fx.tremor(0.8);
+    return 0.4;
+  },
+  tempestadeDeGelo: (board, { dest, areaTiles }) => {
+    (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 2 === 0).slice(0, 14)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'gelo-impacto', { fps: 14, altura: 22 }), (i % 7) * 60));
+    return 0.2;
+  },
+  coneDeFrio: (board, { caster, areaTiles }) => {
+    (areaTiles ?? []).filter((t) => (t.x + t.y) % 2 === 0).slice(0, 14)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'gelo-impacto', { fps: 14, altura: 24 }), i * 35));
+    board.fx.quadros(caster.pos, 'gelo-impacto', { fps: 14, altura: 18 });
+    return 0.2;
+  },
+  circuloDaMorte: (board, { dest, areaTiles }) => {
+    board.fx.area(areaTiles ?? [dest], { color: '#a579d8', dur: 0.8 });
+    (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 3 === 0).slice(0, 10)
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'necrotico-impacto', { fps: 12, altura: 26 }), i * 50));
+    return 0.2;
+  },
+  dedoDaMorte: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#a579d8', dur: 0.4, width: 4 });
+    setTimeout(() => board.fx.quadros(dest, 'necrotico-mao', { fps: 10, altura: 40 }), 300);
+    return 0.35;
+  },
+  palavraDePoderMatar: (board, { caster, dest }) => {
+    board.fx.glyph(caster.pos, { text: '!', color: '#f4f0e4', size: 28, rise: 34 });
+    setTimeout(() => board.fx.quadros(dest, 'necrotico-impacto', { fps: 12, altura: 34 }), 250);
+    return 0.3;
+  },
+  desintegrar: (board, { caster, dest }) => {
+    board.fx.beam(caster.pos, dest, { color: '#6fc07a', dur: 0.45, width: 5 });
+    setTimeout(() => board.fx.quadros(dest, 'arcano-impacto', { fps: 14, altura: 30 }), 350);
+    return 0.4;
+  },
+  curaTotal: (board, { dest }) => {
+    board.fx.quadros(dest, 'cura', { fps: 10, altura: 54, sumir: 0.3 });
+    return 0;
+  },
   passoNebuloso: (board, { caster, dest }) => {
     board.fx.quadros(caster.pos, 'nevoa-prateada', { fps: 12, altura: 22 });
     setTimeout(() => board.fx.quadros(dest, 'nevoa-prateada', { fps: 12, altura: 22 }), 120);

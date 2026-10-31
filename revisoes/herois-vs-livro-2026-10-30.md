@@ -482,3 +482,18 @@ Eu afirmei, nas atualizações 7 e 8, que as magias novas usavam "o ícone da ma
 ícones do OpenArt (`src/art/icones-magias.js`) cobre o Livro do Jogador inteiro, e 13 das 16 já tinham ícone próprio sob o mesmo id. As três
 restantes só estavam com nome diferente (Porta Dimensional → `portaDimensional`, Cura → `curaCompleta`, Nuvem Mortal → `nevoaMortal`) e agora
 apontam para ele. Nada foi gerado no OpenArt. Um teste novo exige que toda magia de 4º círculo para cima tenha ícone próprio.
+
+---
+
+## Atualização 9 — as animações próprias das magias novas (OpenArt, com os revisores)
+
+**8 efeitos novos em sprite**, no jogo (`src/art/efeitos.js`, ligados em `src/view/visuals.js`): `banimento-vortice` (Banimento), `porta-dimensional` (Porta Dimensional), `pele-de-pedra` (Pele de Pedra), `correntes-prender` (Imobilizar Monstro), `muralha-de-fogo`, `nuvem-mortal`, `corrente-de-relampagos` e `meteoros` (Chuva de Meteoros). Tempestade de Gelo, Cone de Frio, Círculo da Morte, Dedo da Morte, Palavra de Poder: Matar, Desintegrar, Cura e Invisibilidade Maior reaproveitam os efeitos aprovados (gelo, necrótico, arcano, cura, névoa).
+
+**Como foi feito.** Os dois primeiros pedidos, sem folha de referência (Kling), saíram inúteis: células com cartão escuro, texto, 7 a 8 colunas. O que funcionou foi mandar as folhas já aprovadas do jogo como referência de estilo e de layout (via URL assinada do próprio OpenArt) e pedir o conteúdo linha a linha: **Wan 2.7 Image, 6 créditos por folha**, 2 folhas boas e 2 de refação. Uma folha do GPT Image 2 (42 créditos) foi o ponto de partida do estilo e passou do limite de 15 por página que você fixou depois; as seguintes ficaram todas em 15 ou menos.
+
+**Revisão.** Dois revisores rodaram duas vezes cada (`revisor-magia-recorte` mede em pixel, `revisor-magia-beleza` julga a arte). Na 1ª rodada três efeitos foram reprovados (Pele de Pedra, Correntes, Porta Dimensional) e os cinco outros pediram ajuste: foram regerados e reconvertidos. O conversor ganhou `semFaixas`, `soMaiores` e `esmaecerTopo` por fileira, e as alturas no jogo foram refeitas para a figura assentar no chão. Na 2ª rodada: Banimento e Porta Dimensional 4/5, Correntes 4/5, Nuvem, Relâmpago e Muralha 3,5/5, Meteoros 3/5, Pele de Pedra reprovada como "manequim no lugar da criatura" — por isso virou o anel de pedras que se fecha com clarão dourado.
+
+**Medido no que está no jogo:** nenhum efeito tem cor fora da paleta nem quadro vazio; Banimento, Relâmpago, Porta, Correntes, Muralha e Pele não tocam a borda; Nuvem toca a borda direita em 1 quadro; Meteoros ainda toca topo e esquerda (a cauda do meteoro é cortada pelo quadro; o topo foi dissolvido em pontilhado).
+
+### O que continua fraco
+Meteoros (o corte da cauda), Pele de Pedra (é um anel de pedras, não uma casca sobre o corpo) e a Nuvem Mortal (o miolo escuro esconde a criatura). Nenhum deles foi visto em movimento no jogo: a animação dura menos que o intervalo entre um comando meu e a captura de tela, então só o rastro estático da Muralha de Fogo apareceu.

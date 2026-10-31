@@ -129,6 +129,53 @@ def esmaecer_topo(grade, n):
     return out
 
 
+def tirar_faixas(grade, fundo='e', fundura=3, limite=0.7):
+    """`semFaixas`: o recorte às vezes pega a linha de contorno de uma célula vizinha, uma faixa reta de borda a borda.
+    Nas `fundura` linhas e colunas das bordas, a que for `limite` ou mais da cor escura some."""
+    g = [list(l) for l in grade]
+    h, w = len(g), len(g[0]) if g else 0
+    for y in list(range(min(fundura, h))) + list(range(max(0, h - fundura), h)):
+        if sum(1 for k in g[y] if k == fundo) >= limite * w:
+            g[y] = ['.'] * w
+    for x in list(range(min(fundura, w))) + list(range(max(0, w - fundura), w)):
+        if sum(1 for y in range(h) if g[y][x] == fundo) >= limite * h:
+            for y in range(h):
+                g[y][x] = '.'
+    return [''.join(l) for l in g]
+
+
+def so_maiores(grade, minimo):
+    """`soMaiores`: tira os blocos soltos (8 vizinhos) com menos de `minimo` pixels, sem nunca tirar o maior."""
+    g = [list(l) for l in grade]
+    h, w = len(g), len(g[0]) if g else 0
+    visto = set()
+    blocos = []
+    for y in range(h):
+        for x in range(w):
+            if g[y][x] == '.' or (x, y) in visto:
+                continue
+            pilha, bloco = [(x, y)], []
+            visto.add((x, y))
+            while pilha:
+                a, b = pilha.pop()
+                bloco.append((a, b))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        p = (a + dx, b + dy)
+                        if 0 <= p[0] < w and 0 <= p[1] < h and p not in visto and g[p[1]][p[0]] != '.':
+                            visto.add(p)
+                            pilha.append(p)
+            blocos.append(bloco)
+    if not blocos:
+        return grade
+    maior = max(blocos, key=len)
+    for bloco in blocos:
+        if bloco is not maior and len(bloco) < minimo:
+            for a, b in bloco:
+                g[b][a] = '.'
+    return [''.join(l) for l in g]
+
+
 def ler_existentes():
     if not SAIDA.exists():
         return {}
@@ -178,6 +225,10 @@ def main():
             qx = qr * largura
             cel = folha.crop((int(cx - qx / 2), int(cy - qr / 2), int(cx + qx / 2), int(cy + qr / 2)))
             grade = converter_celula(cel, lado, pal, esp.get('fundoEscuro', False), largo, fil.get('franjaEstreita', False), fil.get('fundoClaro', False))
+            if fil.get('semFaixas'):
+                grade = tirar_faixas(grade)
+            if fil.get('soMaiores'):
+                grade = so_maiores(grade, fil['soMaiores'])
             if fil.get('esmaecerTopo'):
                 grade = esmaecer_topo(grade, fil['esmaecerTopo'])
             quadros.append(grade)
