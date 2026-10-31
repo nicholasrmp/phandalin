@@ -6,6 +6,7 @@
 
 import assert from 'node:assert/strict';
 import { makeParty } from '../rules/party.js';
+import { SaveManager } from '../app/persistence/SaveManager.js';
 import { descansoLongo } from '../rules/descanso.js';
 import { ganharXp } from '../rules/progressao.js';
 import { mapaDo } from '../game/encounter.js';
@@ -505,6 +506,19 @@ teste('nome de arquivo: curto, sem nome reservado do Windows', () => {
 
 teste('resumo de um save sem heróis não vira -Infinity', () => {
   assert.doesNotMatch(resumoDoSave({ herois: [], local: { tipo: 'cena' }, config: {} }), /Infinity/);
+});
+
+teste('SaveManager: o autosave e o save manual gravam de verdade (antes o save chegava ao armazém sem versão e era recusado)', () => {
+  const saves = criarArmazenamento(new Armazem());
+  const sm = new SaveManager(saves, 'j-1');
+  const herois = makeParty({ nivel: 3 });
+  const erros = [];
+  const r = sm.autosalvar(configDaCampanha(), herois, { tipo: 'cena' }, { vila: { dia: 2 } }, null, { onError: (e) => erros.push(e) });
+  assert.equal(r?.ok, true, `autosave: ${r?.erro}`);
+  assert.deepEqual(erros, []);
+  const m = sm.salvarManual('manual-1', configDaCampanha(), herois, { tipo: 'cena' }, {}, null, { onError: (e) => erros.push(e) });
+  assert.equal(m?.ok, true, `manual: ${m?.erro}`);
+  assert.deepEqual(erros, []);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);

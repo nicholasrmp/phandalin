@@ -11,6 +11,7 @@ import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { MAPA_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
+import { MAPA_CASA_DA_MORTE_1 } from './casadamorte.js';
 import { MAPA_POCO } from './poco.js';
 import { MAPA_CUME } from './cume.js';
 import { MAPA_CASTELO, CASTELO } from './castelo.js';
@@ -342,6 +343,7 @@ export function mapaDo(variante = 'padrao') {
       ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 7 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
     };
   }
+  if (variante === 'casaDaMorte1') return MAPA_CASA_DA_MORTE_1;
   if (variante === 'mansao' || variante === 'mansaoTunel') {
     // O esconderijo dos Marcarrubra embaixo da Mansão Tresendar. Pela escada
     // da cozinha (área 1, a leste) ou pelo túnel que o Carp achou (área 8, ao
@@ -423,7 +425,7 @@ export function mapaDo(variante = 'padrao') {
  */
 export function buildFoes(variante = 'padrao') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'casaDaMorte1'].includes(variante)) return [];
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
@@ -732,7 +734,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco'].includes(variante)) return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'casaDaMorte1'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

@@ -69,7 +69,9 @@ export class SaveManager {
     const tempoDeJogo = this.tempoBase + (agora - this.inicioDaSessao) / 1000;
 
     // Monta o save usando a função do game/save.js
-    const save = montarSave({
+    // `montarSave` devolve `{ ok, save }` (ou `{ ok: false, erro }`): antes o resultado inteiro era tratado como o próprio save, que então
+    // chegava ao armazém sem `versao` e era recusado ("O save não diz de que versão é"). Nenhum autosave nem save manual gravava.
+    const montado = montarSave({
       id: slot ?? "auto-1",
       nome: nome ?? `${grupo.map((h) => h.name).join(", ")}`,
       tipo,
@@ -83,7 +85,7 @@ export class SaveManager {
       jogadores: [{ jogadorId: this.jogadorId, nome: "Jogador" }],
     });
 
-    return { ok: true, save };
+    return montado.ok ? { ok: true, save: montado.save } : montado;
   }
 
   /**

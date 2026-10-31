@@ -65,6 +65,7 @@ import { faixaAgora, tocarFaixa, tocarToque } from "./core/musica.js";
 import { montarHeroi, escolhaAutomatica } from "./game/criacao.js";
 import { criarCapitulo1 } from "./game/capitulo1.js";
 import { abrirBarovia } from "./game/strahd-abertura.js";
+import { criarCasaDaMorte } from "./game/capitulo-casadamorte.js";
 import { criarCenaCaverna } from "./game/cena-caverna.js";
 import { criarCapitulo2 } from "./game/capitulo2.js";
 import { criarRuaMarcarrubra } from "./game/capitulo3-rua.js";
@@ -478,8 +479,11 @@ class App {
     const fim = await abrirBarovia(this);
     await narrar(this.root, {
       formato: "painel",
-      paginas: [{ titulo: "Casa da Morte", texto: [fim === "atacar" ? "O portão se abriu sozinho. A casa espera." : "O portão geme nas dobradiças. A casa espera.", "(A casa ainda está em obras: a aventura continua aqui quando os andares ficarem prontos.)"] }],
+      paginas: [{ titulo: "Casa da Morte", texto: [fim === "atacar" ? "O portão se abriu sozinho. A casa espera." : "O portão geme nas dobradiças. A casa espera."] }],
     });
+    // O grupo entra na casa: o 1º andar é uma cena de exploração.
+    const grupo = this.enc.combatants.filter((c) => c.side === "party" && !c.dead);
+    this.newEncounter({ modo: "campanha", aventura: "cos", variante: "casaDaMorte1", continuarCom: grupo });
   }
 
   /**
@@ -583,6 +587,8 @@ class App {
                       ? criarOndaEco
                       : mapa.cena === "castelo"
                         ? criarCastelo
+                        : mapa.cena === "casaDaMorte"
+                          ? criarCasaDaMorte
                         : config.modo === "campanha"
                           ? criarCapitulo1
                           : mapa.cena === "caverna"

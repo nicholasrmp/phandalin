@@ -4,10 +4,11 @@ import { GAME_MODES } from "../../../app/AppConfig.js";
 
 // Mock do módulo game/save.js
 vi.mock("../../../game/save.js", () => ({
+  // O contrato real de `montarSave` (game/save.js): `{ ok: true, save }`. O mock antigo devolvia o save pelado, e escondeu o bug de o
+  // SaveManager entregar o envelope inteiro ao armazém (sem `versao`).
   montarSave: vi.fn((data) => ({
-    ...data,
-    versao: 1,
-    timestamp: data.agora,
+    ok: true,
+    save: { ...data, versao: 1, timestamp: data.agora },
   })),
   resumoDoSave: vi.fn((save) => ({
     nome: save.nome,
