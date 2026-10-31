@@ -632,7 +632,7 @@ function foesGrandes() {
     makeMonster('spectator', { x: 12, y: 10 }),
     makeMonster('galhoInfectado', { x: 3, y: 2 }),
     makeMonster('espetoInfectado', { x: 5, y: 2 }),
-    makeMonster('vinhaInfectada', { x: 7, y: 2 }),
+    makeMonster('vinhaInfectada', { x: 8, y: 2 }),
     makeMonster('dragaoVerdeJovem', { x: 10, y: 6 }),
     makeMonster('acolito', { x: 3, y: 5 }),
     makeMonster('sacerdote', { x: 6, y: 7 }),

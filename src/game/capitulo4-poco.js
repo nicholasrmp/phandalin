@@ -80,10 +80,6 @@ export function criarPoco(app, config) {
     kost.falas = ['…'];
   }
   let levas = null;
-  const nivelMedio = () => {
-    const g = enc.combatants.filter((c) => c.side === 'party' && !c.dead);
-    return g.reduce((s, c) => s + (c.level ?? 1), 0) / Math.max(1, g.length);
-  };
 
   function prepararExploracao() {
     enc.over = false;
@@ -107,7 +103,7 @@ export function criarPoco(app, config) {
 
   /** Os zumbis que esta torre tem para este grupo, os vencidos de fora. */
   function daTorre() {
-    const total = Math.max(0, (nivelMedio() >= 3 ? 12 : 8) - (salvo.zumbisMortos ?? 0));
+    const total = Math.max(0, ZUMBIS - (salvo.zumbisMortos ?? 0));
     return zumbis.filter((z) => !z.dead).slice(0, total);
   }
 
@@ -129,13 +125,13 @@ export function criarPoco(app, config) {
   function combate() {
     trazerPrimeiros();
     if (kost) kost.side = 'foes';
-    // O resto sai pela porta, dois de cada vez, a cada três rodadas.
+    // O resto sai pela porta, dois de cada vez, a cada quatro rodadas.
     const resto = daTorre().filter((z) => !enc.combatants.includes(z));
     const ondas = [];
     for (let i = 0; i < resto.length; i += 2) {
       const units = resto.slice(i, i + 2);
       for (const z of units) { z.side = 'foes'; z.pos = { ...z.pos, x: POCO.porta.x - 1, y: POCO.porta.y }; }
-      ondas.push({ rodada: 4 + (i / 2) * 3, units, aviso: 'Mais mortos arrastam os pés para fora da porta escura da torre.' });
+      ondas.push({ rodada: 5 + (i / 2) * 4, units, aviso: 'Mais mortos arrastam os pés para fora da porta escura da torre.' });
     }
     levas = prepararLevas(enc, ondas);
     estado.explorando = false;
