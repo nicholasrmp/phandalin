@@ -565,3 +565,12 @@ Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do h
 - **Valor, com motor e teste:** proficiência em armadura média, escudo e armas marciais (o motor passou a ler `armas` da subclasse), **Ataque Extra** (6º) e **Inspiração em Combate** só pelo lado da CA (o inspirado soma o dado à CA contra um acerto que o dado desfaz; o uso no dano não existe, porque o dado de inspiração já é gasto no ataque). `semEfeito`: Magia de Batalha (não há ataque com a ação bônus depois de conjurar).
 - Os alvos de Voto e Repelir são o mais próximo (não há clique de alvo); o teste cobre a escolha explícita por `target`.
 - Suíte 1104/1104, vitest 401/401, build verde. Não vi os botões na tela.
+
+## Atualização 18 — as 13 subclasses do Livro do Jogador (31/10)
+
+Feitas e testadas (suítes 1141/1141, vitest 401/401, build ok): Cavaleiro Místico e Trapaceiro Arcano (conjuração de um terço, Magia de Guerra, Mão Magica versátil), as sete escolas de mago, Caminho da Sombra e dos Quatro Elementos (monge), Juramento dos Anciões (paladino) e Senhor das Feras (patrulheiro, companheiro animal).
+
+- Ícones: três rodadas de folhas de 6 no OpenArt (Wan 2.7, ≤15 créditos por folha, ≈150 no total); toda característica nova tem ícone. Fracos mas aceitos: benignTransposition, improvedWarMagic, masterTransmuter, rangersCompanion, lungingAttack.
+- Efeitos visuais: nenhum sprite novo; Transposição Benigna e Passo das Sombras reaproveitam `porta-dimensional` (a chave `necrotico-impacto` não existia e foi trocada).
+- Limites conhecidos: Eu Ilusório contra ataques de magia, Inspiração no dano, Alcance do Avançado, Terceiro Olho fixo, 7 de 16 manobras/disciplinas ainda faltam, ficha do monge, saves antigos sem migração. Efeitos e botões do HUD não foram vistos em movimento no jogo.
+- Faltam as 9 subclasses de clérigo, bruxo e feiticeiro só nomeadas.

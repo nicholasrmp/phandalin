@@ -475,6 +475,15 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
 
   // Gasta.
   if (!chk.ritual && spell.level > 0) c.spellcasting.slots[chk.circulo] -= 1;
+  // PROTEÇÃO ARCANA (Abjuração) e TRANSPOSIÇÃO BENIGNA (Conjuração), fora de combate também: uma abjuração de 1º círculo ou mais cria ou recarrega a proteção.
+  if (!chk.ritual && spell.level > 0) {
+    if (c.features?.includes('arcaneWard') && spell.school === 'abjuração') {
+      const max = 2 * (c.level ?? 1) + abilityMod(c.abilities.int);
+      c.wardHp = c.wardHp === undefined ? max : Math.min(max, c.wardHp + 2 * chk.circulo);
+      fim.push(`${c.name} tece a proteção arcana (${c.wardHp} PV).`);
+    }
+    if (c.features?.includes('benignTransposition') && spell.school === 'conjuração' && c.resources) c.resources.benignTransposition = c.resourcesMax?.benignTransposition ?? 1;
+  }
   // ADIVINHAÇÃO ESPECIALISTA (mago de Adivinhação, 6º): uma adivinhação de 2º círculo ou mais, fora de combate também, devolve um espaço menor.
   if (!chk.ritual && c.features?.includes('expertDivination') && ['adivinhação', 'divinação'].includes(spell.school) && chk.circulo >= 2) {
     for (let i = Math.min(chk.circulo - 1, 5); i >= 1; i -= 1) {

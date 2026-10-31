@@ -3314,7 +3314,7 @@ teste('Repelir o Inimigo: falhou em SAB, fica amedrontado e preso ao chão; pass
     assert.equal(p.actionUsed, true);
     assert.equal(p.resources.channelDivinity, 0);
     assert.equal(hasCondition(gob, 'amedrontado'), cai);
-    assert.equal(hasCondition(gob, 'agarrado'), cai);
+    assert.equal(hasCondition(gob, 'paralisadoDeMedo'), cai);
   }
   const p2 = vingador(3);
   p2.pos = { x: 5, y: 5 };
@@ -3645,7 +3645,8 @@ teste('Olhar Hipnótico (Encantamento): falhou em SAB, fica incapacitado e parad
     assert.equal(hasCondition(gob, 'olharHipnotico'), cai);
     if (cai) assert.equal(conditionEffects(gob).incapacitated, true);
     m.actionUsed = false;
-    assert.equal(enc.useFeature(m, 'hypnoticGaze', { target: gob }), false, 'a mesma criatura só uma vez');
+    // Quem foi hipnotizado se mantém com a ação (sem nova resistência); quem resistiu não pode ser olhado de novo.
+    assert.equal(enc.useFeature(m, 'hypnoticGaze', { target: gob }), cai, cai ? 'manter o olhar' : 'a mesma criatura só uma vez');
   }
   const m2 = escola('encantamento', 2);
   m2.pos = { x: 5, y: 5 };
@@ -3668,7 +3669,8 @@ teste('Encanto Instintivo (6º): quem ataca o mago falha em SAB e o golpe vai pa
     const hpM = m.hp, hpO = outro.hp;
     const alvo = enc.encantoInstintivo(gob, m, null);
     assert.equal(alvo === m, !desvia, desvia ? 'o golpe saiu do mago' : 'o golpe segue no mago');
-    assert.equal(m.resources.instinctiveCharm, 0);
+    assert.equal(m.resources?.instinctiveCharm, undefined, 'não há recurso: só a reação limita');
+    assert.equal((m.charmeImunes ?? []).includes(gob.id), !desvia, 'quem passou fica imune até o descanso longo');
     assert.equal(m.reactionUsed, true);
     assert.equal(m.hp, hpM);
     assert.equal(outro.hp, hpO);
@@ -3696,7 +3698,7 @@ teste('Ilusão: Ilusão Menor é do mago; o Eu Ilusório faz o golpe errar uma v
   assert.ok(m.hp < 500, 'sem a carga, o golpe acerta');
   m.spellcasting.prepared = ['imagemSilenciosa'];
   assert.ok(enc.castSpell(m, 'imagemSilenciosa', { point: { x: 8, y: 8 } }).ok);
-  assert.equal(m.resources.illusorySelf, 1, 'conjurar ilusão devolve a carga');
+  assert.equal(m.resources.illusorySelf, 0, 'conjurar ilusão NÃO devolve a carga (só o descanso curto ou longo)');
 });
 
 teste('Necromancia: Colheita Sombria cura ao matar com magia; Acostumado à Morte resiste a necrótico; Comandar Mortos-vivos vira o morto-vivo', () => {
@@ -3997,9 +3999,13 @@ teste('Treinamento Excepcional (7º): ordenar custa a ação bônus; Fúria Best
   enc.start();
   enc.firstSide = 'party';
   enc.beginSide('party');
-  assert.equal(enc.useFeature(r, 'rangersCompanion'), true);
-  assert.equal(r.bonusUsed, true, 'ação bônus');
+  assert.equal(enc.useFeature(r, 'rangersCompanion', { modo: 'apoio' }), true);
+  assert.equal(r.bonusUsed, true, 'o apoio custa a ação bônus com o Treinamento');
   assert.equal(r.actionUsed, false, 'a ação do patrulheiro segue livre');
+  assert.equal(enc.canAttack(enc.invocadosDe(r)[0], enc.foes?.[0] ?? enc.combatants.find((c) => c.side !== r.side), null).ok, false, 'na ordem de apoio a fera não ataca');
+  assert.equal(enc.useFeature(r, 'rangersCompanion'), true, 'atacar custa só um golpe do patrulheiro (Ataque Extra)');
+  assert.equal(r.actionUsed, false);
+  assert.equal(r.comandouNoTurno, true);
   const r11 = senhor(11);
   r11.pos = { x: 5, y: 5 };
   const e2 = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party: [r11], foes: [inimigo('goblin', { x: 11, y: 11 })], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
@@ -4007,6 +4013,264 @@ teste('Treinamento Excepcional (7º): ordenar custa a ação bônus; Fúria Best
   const comp = e2.invocadosDe(r11)[0];
   assert.equal(comp.multiattack.count, 2);
   assert.equal(comp.maxHp, 44, '4 × 11');
+});
+
+// ============================================================================================================
+// CORREÇÕES DA REVISÃO DAS 13 SUBCLASSES (os achados dos revisores, um teste por ponto)
+// ============================================================================================================
+
+teste('Mestre de Batalha: 9 manobras; Provocador e Distrativo marcam o alvo; Derrubador e Empurrão não valem contra Enorme', () => {
+  assert.equal(CLASSES.guerreiro.subclasse.opcoes.mestreDeBatalha.opcoesDeManobra.length, 9);
+  const prov = mestre(3);
+  prov.features.push('goadingAttack', 'distractingStrike');
+  prov.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const outro = alvoParado({ x: 7, y: 6 });
+  const { enc } = arena({ herois: [prov], foes: [gob, outro] });
+  enc.useFeature(prov, 'goadingAttack');
+  enc.rng = dadoEmSequencia(15, 2);
+  enc.attackAction(prov, gob, 'espadaLonga');
+  assert.ok(hasCondition(gob, 'provocado'), 'provocado');
+  assert.ok(enc.attackModifiers(gob, outro, {}).desvantagens.includes('provocado'), 'desvantagem contra quem não é o provocador');
+  assert.ok(!enc.attackModifiers(gob, prov, {}).desvantagens.includes('provocado'), 'contra o provocador: normal');
+  const amigo = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo.pos = { x: 5, y: 6 };
+  const prov2 = mestre(3);
+  prov2.features.push('distractingStrike');
+  prov2.pos = { x: 5, y: 5 };
+  const alvo = inimigo('goblin', { x: 6, y: 5 });
+  alvo.hp = alvo.maxHp = 300;
+  const { enc: e2 } = arena({ herois: [prov2, amigo], foes: [alvo] });
+  e2.useFeature(prov2, 'distractingStrike');
+  e2.rng = dadoEmSequencia(15);
+  e2.attackAction(prov2, alvo, 'espadaLonga');
+  assert.ok(hasCondition(alvo, 'distraido'));
+  assert.ok(e2.attackModifiers(amigo, alvo, {}).vantagens.includes('ataque distrativo'), 'o aliado ataca com vantagem');
+  assert.ok(!e2.attackModifiers(prov2, alvo, {}).vantagens.includes('ataque distrativo'), 'quem distraiu não');
+  // Enorme: não cai
+  const m = mestre(3);
+  m.pos = { x: 5, y: 5 };
+  const ogro = inimigo('goblin', { x: 6, y: 5 });
+  ogro.size = 'enorme';
+  ogro.hp = ogro.maxHp = 300;
+  const { enc: e3 } = arena({ herois: [m], foes: [ogro] });
+  e3.useFeature(m, 'tripAttack');
+  e3.rng = dadoEmSequencia(15, 2);
+  e3.attackAction(m, ogro, 'espadaLonga');
+  assert.ok(!hasCondition(ogro, 'caido'), 'grande demais');
+  assert.equal(m.resources.superiorityDice, 3, 'o dado se gastou');
+});
+
+teste('Riposta e Aparar (Mestre de Batalha): reações com um dado; a riposta soma o dado ao dano, o aparar corta o dano recebido', () => {
+  const m = mestre(7);
+  m.features.push('riposte', 'parry');
+  m.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  enc.rng = dadoEmSequencia(2, 15); // o goblin erra; a riposta acerta
+  const hp = gob.hp;
+  enc.resolveAttack(gob, m, { weaponId: null });
+  assert.ok(gob.hp < hp, 'a riposta feriu o goblin');
+  assert.equal(m.reactionUsed, true);
+  assert.equal(m.resources.superiorityDice, 4, 'gastou um dado');
+  // Aparar
+  const p = mestre(7);
+  p.features.push('parry');
+  p.pos = { x: 5, y: 5 };
+  p.hp = p.maxHp = 300;
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  const { enc: e2 } = arena({ herois: [p], foes: [g2] });
+  e2.applyDamage(p, 20, 'cortante', g2, { deArma: true, corpoACorpo: true });
+  assert.ok(300 - p.hp < 20, 'o dano caiu');
+  assert.equal(p.resources.superiorityDice, 4);
+  assert.equal(p.reactionUsed, true);
+  e2.applyDamage(p, 20, 'cortante', g2, { deArma: true, corpoACorpo: true });
+  assert.equal(p.resources.superiorityDice, 4, 'sem reação, não aparam de novo');
+});
+
+teste('Repelir o Inimigo: morto-vivo tem desvantagem; o efeito acaba no primeiro dano e nenhum "escapar" o solta', () => {
+  const p = vingador(3);
+  p.pos = { x: 5, y: 5 };
+  const zumbi = inimigo('zumbi', { x: 8, y: 5 });
+  zumbi.tipo = 'morto-vivo';
+  zumbi.hp = zumbi.maxHp = 100;
+  const { enc } = arena({ herois: [p], foes: [zumbi] });
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.useFeature(p, 'abjureEnemy', { target: zumbi }), true);
+  assert.ok(hasCondition(zumbi, 'amedrontado') && hasCondition(zumbi, 'paralisadoDeMedo'));
+  assert.equal(enc.speedOf(zumbi), 0, 'sem andar');
+  enc.applyDamage(zumbi, 3, 'cortante', p, { deArma: true });
+  assert.ok(!hasCondition(zumbi, 'amedrontado') && !hasCondition(zumbi, 'paralisadoDeMedo'), 'o dano encerra');
+  // desvantagem: com d20 11 e 10 (o pior vale), CD 8+2+3 = 13
+  const p2 = vingador(3);
+  p2.pos = { x: 5, y: 5 };
+  const z2 = inimigo('zumbi', { x: 8, y: 5 });
+  z2.tipo = 'morto-vivo';
+  const { enc: e2 } = arena({ herois: [p2], foes: [z2] });
+  const r = e2.resistencia(z2, 'wis', 30, { desvantagem: true });
+  assert.equal(r.mode, 'desvantagem');
+});
+
+teste('Olhar Hipnótico: o dano desperta, a criatura fica enfeitiçada e a ação mantém o olhar', () => {
+  const m = escola('encantamento', 2);
+  m.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 100;
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  enc.useFeature(m, 'hypnoticGaze', { target: gob });
+  assert.ok(hasCondition(gob, 'enfeiticado') && hasCondition(gob, 'olharHipnotico'));
+  m.actionUsed = false;
+  assert.equal(enc.useFeature(m, 'hypnoticGaze', { target: gob }), true, 'manter o olhar');
+  enc.applyDamage(gob, 2, 'cortante', m, { deArma: true });
+  assert.ok(!hasCondition(gob, 'olharHipnotico'), 'o dano o desperta');
+});
+
+teste('Encanto Instintivo: sem limite de usos, desvia para o MAIS PRÓXIMO do atacante e quem passa fica imune; Eu Ilusório só gasta se o ataque era possível', () => {
+  const m = escola('encantamento', 6);
+  m.pos = { x: 2, y: 5 };
+  m.hp = m.maxHp = 300;
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const longe = inimigo('goblin', { x: 4, y: 6 });
+  const { enc } = arena({ herois: [m, amigo], foes: [gob, longe] });
+  enc.rng = dadoEmSequencia(1);
+  const alvo = enc.encantoInstintivo(gob, m, null);
+  assert.equal(alvo, amigo, 'o amigo era o mais próximo do goblin');
+  m.reactionUsed = false;
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.encantoInstintivo(longe, m, null) !== m, true, 'outro atacante, outra vez: sem recurso a gastar');
+  // passa: imune
+  m.reactionUsed = false;
+  enc.rng = dadoEmSequencia(20);
+  assert.equal(enc.encantoInstintivo(gob, m, null), m);
+  m.reactionUsed = false;
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.encantoInstintivo(gob, m, null), m, 'quem passou fica imune');
+  // Eu Ilusório: ataque impossível não gasta
+  const i = escola('ilusao', 10);
+  i.pos = { x: 0, y: 0 };
+  const ar = inimigo('goblin', { x: 11, y: 11 });
+  ar.attacks = [{ name: 'Mordida', bonus: 4, damage: '1d4', type: 'perfurante', reachFt: 5 }];
+  const { enc: e2 } = arena({ herois: [i], foes: [ar] });
+  e2.resolveAttackBase(ar, i, { weaponId: null });
+  assert.equal(i.resources.illusorySelf, 1, 'o golpe nem era possível: nada se gastou');
+  assert.equal(i.reactionUsed, false);
+});
+
+teste('Inspiração em Combate exige a reação; Dissipar Magia no companheiro não quebra; Escudo Arcano cria a Proteção Arcana', () => {
+  const bardo = valoroso(3);
+  bardo.pos = { x: 4, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [bardo, amigo], foes: [gob] });
+  addCondition(amigo, 'inspirado', { rounds: 100, source: bardo.id, data: { dado: '1d6' } });
+  amigo.reactionUsed = true;
+  let achou = null;
+  for (let d = 2; d < 20 && achou === null; d += 1) {
+    amigo.hp = amigo.maxHp;
+    enc.rng = dadoEmSequencia(d);
+    const hp = amigo.hp;
+    enc.resolveAttack(gob, amigo, { weaponId: null });
+    if (amigo.hp === hp) { achou = d; }
+  }
+  // Sem reação, o dado nunca é gasto e o inspirado continua inspirado depois de ser acertado.
+  assert.ok(hasCondition(amigo, 'inspirado') || achou !== null, 'o dado só se gasta com a reação livre');
+  assert.equal(amigo.reactionUsed, true);
+  // Dissipar Magia na criatura do companheiro não lança
+  const r = senhor(3);
+  r.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 11, y: 11 });
+  const e2 = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party: [r], foes: [g2], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  e2.start();
+  const comp = e2.invocadosDe(r)[0];
+  const mago = escola('abjuracao', 6);
+  mago.pos = { x: 4, y: 5 };
+  mago.spellcasting.prepared = ['dissiparMagia'];
+  e2.combatants.push(mago);
+  assert.doesNotThrow(() => e2.castSpell(mago, 'dissiparMagia', { target: comp, circulo: 3 }));
+  // Escudo Arcano é abjuração: cria a proteção
+  const aj = escola('abjuracao', 6);
+  aj.pos = { x: 5, y: 5 };
+  aj.spellcasting.prepared = ['escudoArcano'];
+  const g3 = inimigo('goblin', { x: 6, y: 5 });
+  const { enc: e3 } = arena({ herois: [aj], foes: [g3] });
+  assert.equal(aj.wardHp, undefined);
+  let ergueu = false;
+  for (let d = 8; d < 20 && !ergueu; d += 1) {
+    e3.rng = dadoEmSequencia(d);
+    aj.reactionUsed = false;
+    delete aj.conditions;
+    aj.conditions = [];
+    e3.resolveAttack(g3, aj, { weaponId: null });
+    ergueu = aj.wardHp !== undefined;
+  }
+  assert.ok(ergueu, 'o Escudo Arcano (reação) criou a Proteção Arcana');
+});
+
+teste('Forma Selvagem é ilimitada no 20º (Arquidruida), inclusive na Lua; a Pedra dá ácido e trovejante; truques do conjurador de um terço vêm da lista inteira', async () => {
+  for (const sub of ['lua', 'terra']) {
+    const d = heroi('druida', 20, 'Humano', {}, { 2: { subclasse: sub } });
+    d.pos = { x: 5, y: 5 };
+    const { enc } = arena({ herois: [d], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+    const fera = formasDisponiveis(20, sub === 'lua')[0];
+    assert.equal(enc.useFeature(d, 'wildShape', { modo: fera }), true, `${sub}: vira fera`);
+    enc.useFeature(d, 'wildShape', { modo: 'voltar' });
+    d.actionUsed = false; d.bonusUsed = false;
+    assert.equal(enc.useFeature(d, 'wildShape', { modo: fera }), true, `${sub}: e de novo, sem limite`);
+  }
+  const acido = heroi('mago', 6, 'Humano', {}, { 2: { subclasse: 'transmutacao' }, 6: { transmutersStone: 'stoneResistAcid' } });
+  const trov = heroi('mago', 6, 'Humano', {}, { 2: { subclasse: 'transmutacao' }, 6: { transmutersStone: 'stoneResistThunder' } });
+  const { enc } = arena({ herois: [acido, trov], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(enc.danoPorTipo(acido, 20, 'ácido'), 10);
+  assert.equal(enc.danoPorTipo(trov, 20, 'trovejante'), 10);
+  const { listaDaClasse } = await import('../game/criacao.js');
+  assert.ok(listaDaClasse('guerreiro', 3, 'cavaleiroMistico').truques.includes('maoMagica'), 'o Cavaleiro Místico escolhe truques da lista inteira');
+  assert.ok(listaDaClasse('ladino', 3, 'trapaceiroArcano').truques.includes('prestidigitacao'));
+  assert.ok(!listaDaClasse('guerreiro', 3, 'cavaleiroMistico').magias.includes('sono'), 'as magias seguem restritas às duas escolas');
+});
+
+teste('Proteção Arcana e Transposição Benigna também valem fora de combate; Artes Sombrias dão Ilusão Menor; Convocação Duradoura só em conjuração', () => {
+  const ab = escola('abjuracao', 6);
+  ab.pos = { x: 5, y: 5 };
+  ab.spellcasting.prepared = ['alarme'];
+  const r = conjurarFora(estadoDe({}), ab, 'alarme', { herois: [ab], rng: makeRng(3), circulo: 1 });
+  assert.ok(r.ok, r.why);
+  assert.equal(ab.wardHp, 2 * 6 + Math.floor((ab.abilities.int - 10) / 2), 'a proteção nasceu fora de combate');
+  const monge = sombra(3);
+  assert.ok(magiasProntas(monge).includes('ilusaoMenor'), 'Artes Sombrias: Ilusão Menor');
+  const conj = escola('conjuracao', 14);
+  conj.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [conj], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(enc.invocar(conj, 'lobo', { x: 6, y: 6 }, { spellId: 'conjurarAnimais' }).tempHp, 30);
+  assert.ok(!(enc.invocar(conj, 'lobo', { x: 7, y: 7 }, { spellId: 'animarMortos' }).tempHp > 0), 'a convocação duradoura é só de conjuração');
+});
+
+teste('Companheiro: não há "agir sozinho"; a ordem de atacar com Ataque Extra gasta só um golpe; a de apoio impede o ataque; os golpes viram mágicos no 7º', () => {
+  const r = senhor(5);
+  r.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 11, y: 11 });
+  const enc = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party: [r], foes: [gob], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  enc.start();
+  const comp = enc.invocadosDe(r)[0];
+  enc.definirAutoDosInvocados(r, true);
+  assert.equal(comp.invocado.auto, false, 'o companheiro não age sozinho');
+  enc.firstSide = 'party';
+  enc.beginSide('party');
+  assert.equal(enc.useFeature(r, 'rangersCompanion'), true);
+  assert.equal(r.actionUsed, false, 'com Ataque Extra, a ação segue livre');
+  assert.equal(enc.golpesDoAtaque(r, 'espadaCurta').length, 1, 'um golpe a menos');
+  assert.equal(enc.useFeature(r, 'rangersCompanion'), true, 'a segunda ordem custa a ação');
+  assert.equal(r.actionUsed, true);
+  const r7 = senhor(7);
+  r7.pos = { x: 5, y: 5 };
+  const e2 = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party: [r7], foes: [inimigo('goblin', { x: 11, y: 11 })], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  e2.start();
+  assert.equal(e2.invocadosDe(r7)[0].golpesMagicos, true);
 });
 
 // ============================================================================================================

@@ -44,6 +44,7 @@ CATALOGOS = {
     # `folha-NN`; os itens vêm depois, em `itens-NN`, para não pisar nelas.
     'magias': (('icones_catalogo_magias.py', 'icones_catalogo_recursos.py'), 'folha'),
     'itens': (('icones_catalogo_itens.py',), 'itens'),
+    'subclasses': (('icones_catalogo_subclasses.py',), 'sub'),
 }
 
 

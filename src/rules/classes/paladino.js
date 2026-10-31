@@ -95,7 +95,7 @@ export default {
           15: ['soulOfVengeance'],
           20: ['avengingAngel'],
         },
-        // Magias do Juramento (Visão de Longe, do 9º círculo de magia, ainda não existe no jogo).
+        // Magias do Juramento (a Vidência, do 17º nível, ainda não existe no jogo).
         magiasDoDominio: {
           3: ['perdicao', 'marcaDoCacador'],
           5: ['imobilizarPessoa', 'passoNebuloso'],

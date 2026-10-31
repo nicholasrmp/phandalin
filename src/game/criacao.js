@@ -260,7 +260,8 @@ export const listaDaClasse = (classe, circuloMax = 1, subclasse = null) => {
     const mago = listaDaClasse('mago', circuloMax);
     const dela = (id) => escolas.includes(SPELLS[id]?.school);
     // O Trapaceiro Arcano conhece Mão Mágica sem ocupar vaga: ela fica na lista como truque comum.
-    return { ...mago, truques: mago.truques.filter(dela).concat(subclasse === 'trapaceiroArcano' ? ['maoMagica'] : []), magias: mago.magias.filter(dela) };
+    // Os TRUQUES vêm da lista inteira do mago; só as magias de 1º círculo ou mais se restringem às duas escolas.
+    return { ...mago, truques: [...new Set([...mago.truques, ...(subclasse === 'trapaceiroArcano' ? ['maoMagica'] : [])])], magias: mago.magias.filter(dela) };
   }
   const base = L[classe] ?? { truques: [], magias: [] };
   const altas = (ALTAS[classe] ?? []).filter((id) => (SPELLS[id]?.level ?? 9) <= circuloMax);

@@ -1,4 +1,4 @@
-// SRD 5.1 (CC-BY-4.0) — ver NOTICE.md
+// SRD 5.1 (CC-BY-4.0) + Livro do Jogador 2014 (as subclasses `fonte: 'phb'`, texto próprio) — ver NOTICE.md
 // O catálogo das características de classe e subclasse do SRD: nome, quando
 // se usa e o que faz, em texto nosso. Os ids são os mesmos dos ícones
 // (`classe-<id>` em src/art/icones-classes.js).
@@ -247,7 +247,7 @@ export const CARACTERISTICAS = {
   overchannel: C('Sobrecarga', 'livre', 'Uma magia de até 5º círculo dá dano máximo; repetir no mesmo dia fere você.'),
 
   // ---- guerreiro: Mestre de Batalha (Livro do Jogador) -----------------------------------------------------------------
-  combatSuperiority: C('Superioridade em Combate', 'passiva', 'Dados de superioridade (d8; d10 no 10º, d12 no 18º) que voltam no descanso curto, gastos em manobras. CD = 8 + proficiência + FOR ou DES.', { motor: true }),
+  combatSuperiority: C('Superioridade em Combate', 'passiva', 'Dados de superioridade (d8; d10 no 10º, d12 no 18º) que voltam no descanso curto, gastos em manobras (o jogo tem 9 das 16 do livro). CD = 8 + proficiência + FOR ou DES.', { motor: true }),
   studentOfWar: C('Estudante da Guerra', 'fora', 'Proficiência com um tipo de ferramenta de artesão.'),
   knowYourEnemy: C('Conheça seu Inimigo', 'fora', 'Observando uma criatura por 1 minuto, descobre como ela se compara a você em FOR, DES, CON, CA, PV e nível.'),
   improvedCombatSuperiority: C('Superioridade em Combate Aprimorada', 'passiva', 'Os dados de superioridade viram d10 (e d12 no 18º).', { motor: true }),
@@ -255,13 +255,17 @@ export const CARACTERISTICAS = {
   tripAttack: C('Ataque Derrubador', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo (Enorme ou menor) cai se falhar em FOR.', { motor: true }),
   menacingAttack: C('Ataque Amedrontador', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo fica amedrontado até o fim do seu próximo turno se falhar em SAB.', { motor: true }),
   pushingAttack: C('Ataque Empurrão', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo (Enorme ou menor) é empurrado 4,5 m se falhar em FOR.', { motor: true }),
-  lungingAttack: C('Ataque Avançado', 'livre', 'Arme: no próximo acerto de arma, +dado de dano. (O alcance extra de 1,5 m não é modelado.)', { motor: true }),
+  lungingAttack: C('Ataque Avançado', 'livre', 'Arme: no próximo acerto de arma, +dado de dano. (O alcance extra de 1,5 m do livro não é modelado.)', { motor: true }),
+  goadingAttack: C('Ataque Provocador', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo falha em SAB e ataca com desvantagem qualquer um que não seja você, até o fim do próximo turno dele.', { motor: true }),
+  distractingStrike: C('Ataque Distrativo', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o próximo ataque de um aliado contra o alvo tem vantagem.', { motor: true }),
+  riposte: C('Riposta', 'reacao', 'Reação, com um dado de superioridade: quando uma criatura erra um ataque corpo a corpo contra você, você a ataca e soma o dado ao dano.', { motor: true }),
+  parry: C('Aparar', 'reacao', 'Reação, com um dado de superioridade: um golpe corpo a corpo que acerta você perde o dado + seu modificador de Destreza do dano.', { motor: true }),
   precisionAttack: C('Ataque Preciso', 'livre', 'Arme: se o próximo ataque de arma errar por pouco, soma o dado à rolagem e pode acertar.', { motor: true }),
 
   // ---- ladino: Assassino (Livro do Jogador) ----------------------------------------------------------------------------
   assassinate: C('Assassinar', 'passiva', 'Vantagem nos ataques contra quem ainda não agiu na luta, e todo acerto contra um alvo surpreendido é crítico.', { motor: true }),
   assassinProficiencies: C('Proficiências de Assassino', 'fora', 'Proficiência com o kit de disfarce e o kit de venenos.'),
-  infiltrationExpertise: C('Perícia em Infiltração', 'fora', 'Passa a imitar a fala, a escrita e o comportamento de outra pessoa, com uma identidade falsa de sete dias de preparo.'),
+  infiltrationExpertise: C('Perícia em Infiltração', 'fora', 'Cria uma identidade falsa própria (sete dias de preparo e 25 po), com documentos e contatos.'),
   impostor: C('Impostor', 'fora', 'Imita a fala, a escrita e os gestos de outra pessoa depois de três horas de estudo.'),
   deathStrike: C('Golpe Mortal', 'passiva', 'Acertar um alvo surpreendido na primeira rodada: se ele falhar em CON (CD 8 + DES + proficiência), o dano dobra.', { motor: true }),
 
@@ -283,7 +287,7 @@ export const CARACTERISTICAS = {
   thousandForms: C('Mil Formas', 'passiva', 'Conjura Alterar-se à vontade.'),
 
   // ---- paladino: Juramento de Vingança (Livro do Jogador) ---------------------------------------------------------------
-  abjureEnemy: C('Repelir o Inimigo', 'acao', 'Canalizar Divindade: uma criatura a até 18 m testa Sabedoria ou fica amedrontada e com deslocamento 0 por um minuto.', { motor: true }),
+  abjureEnemy: C('Repelir o Inimigo', 'acao', 'Canalizar Divindade: uma criatura a até 18 m testa Sabedoria (desvantagem se for corruptor ou morto-vivo) ou fica amedrontada e com deslocamento 0 por um minuto, ou até sofrer dano. (No sucesso, o meio deslocamento do livro não é modelado.)', { motor: true }),
   vowOfEnmity: C('Voto de Inimizade', 'bonus', 'Canalizar Divindade: vantagem nos ataques contra uma criatura a até 3 m, por um minuto.', { motor: true }),
   relentlessAvenger: C('Vingador Implacável', 'passiva', 'Ao acertar um ataque de oportunidade, anda até metade do deslocamento sem provocar.'),
   soulOfVengeance: C('Alma de Vingança', 'reacao', 'Quando a criatura sob o Voto de Inimizade ataca, você faz um ataque corpo a corpo contra ela como reação.'),
@@ -291,7 +295,7 @@ export const CARACTERISTICAS = {
 
   // ---- bardo: Colégio do Valor (Livro do Jogador) -----------------------------------------------------------------------
   valorProficiencies: C('Proficiências do Valor', 'passiva', 'Proficiência com armadura média, escudos e armas marciais.', { motor: true }),
-  combatInspiration: C('Inspiração em Combate', 'reacao', 'Um aliado com o seu dado de Inspiração pode somá-lo à CA contra um ataque que o acertaria.', { motor: true }),
+  combatInspiration: C('Inspiração em Combate', 'reacao', 'Reação do aliado com o seu dado de Inspiração: soma o dado à CA contra um ataque que o acertaria. (A opção de somar ao dano não existe no jogo.)', { motor: true }),
   battleMagic: C('Magia de Batalha', 'bonus', 'Depois de conjurar uma magia com a ação, faz um ataque com arma como ação bônus.', { motor: true }),
 
   // ---- guerreiro: Cavaleiro Místico e ladino: Trapaceiro Arcano (Livro do Jogador) -------------------------------------
@@ -303,7 +307,7 @@ export const CARACTERISTICAS = {
   mageHandLegerdemain: C('Prestidigitação com Mão Mágica', 'acao', 'A Mão Mágica fica invisível e pode furtar, guardar e abrir fechaduras à distância.'),
   magicalAmbush: C('Emboscada Mágica', 'passiva', 'Escondido, o alvo de uma magia sua tem desvantagem na resistência.'),
   versatileTrickster: C('Trapaceiro Versátil', 'bonus', 'A Mão Mágica distrai um alvo: vantagem nos seus ataques contra ele até o fim do turno.'),
-  spellThief: C('Ladrão de Magias', 'reacao', 'Quando uma magia o tem como alvo e falha, rouba a magia e a conjura por oito horas.'),
+  spellThief: C('Ladrão de Magias', 'reacao', 'Logo depois de uma criatura conjurar uma magia que o tem como alvo, ela faz uma resistência (atributo de conjuração dela, CD das suas magias); se falhar, a magia não o afeta e você a rouba por oito horas. Uma vez por descanso longo.'),
 
   // ---- mago: as escolas do Livro do Jogador ------------------------------------------------------------------------------
   abjurationSavant: C('Sábio da Abjuração', 'fora', 'Copia magias de abjuração no grimório por metade do custo e do tempo.'),
@@ -322,14 +326,14 @@ export const CARACTERISTICAS = {
   focusedConjuration: C('Conjuração Focada', 'passiva', 'O dano nunca quebra a sua concentração numa magia de conjuração.', { motor: true }),
   durableSummons: C('Convocação Duradoura', 'passiva', 'As criaturas que você convoca ganham 30 PV temporários.', { motor: true }),
   enchantmentSavant: C('Sábio do Encantamento', 'fora', 'Copia magias de encantamento no grimório por metade do custo e do tempo.'),
-  hypnoticGaze: C('Olhar Hipnótico', 'acao', 'Uma criatura colada em você testa Sabedoria ou fica enfeitiçada e incapacitada, sem andar, até o fim do seu próximo turno. A mesma criatura só uma vez por descanso longo.', { motor: true }),
-  instinctiveCharm: C('Encanto Instintivo', 'reacao', 'Quando uma criatura a até 9 m o ataca, ela testa Sabedoria ou volta o ataque contra outra criatura. Volta com um descanso longo ou ao conjurar encantamento de 1º círculo ou mais.', { motor: true }),
+  hypnoticGaze: C('Olhar Hipnótico', 'acao', 'Uma criatura colada em você testa Sabedoria ou fica enfeitiçada e incapacitada, sem andar, até o fim do seu próximo turno ou até sofrer dano; nos turnos seguintes você mantém o olhar com a ação. A mesma criatura só uma vez por descanso longo.', { motor: true }),
+  instinctiveCharm: C('Encanto Instintivo', 'reacao', 'Quando uma criatura a até 9 m o ataca, ela testa Sabedoria ou volta o golpe contra a criatura mais próxima dela. Quem passa fica imune a este poder até o descanso longo.', { motor: true }),
   splitEnchantment: C('Encantamento Dividido', 'passiva', 'Uma magia de encantamento de um alvo pode atingir um segundo alvo.'),
   alterMemories: C('Alterar Memórias', 'passiva', 'A criatura enfeitiçada por sua magia esquece que foi enfeitiçada.'),
   illusionSavant: C('Sábio da Ilusão', 'fora', 'Copia magias de ilusão no grimório por metade do custo e do tempo.'),
   improvedMinorIllusion: C('Ilusão Menor Aprimorada', 'passiva', 'Aprende o truque Ilusão Menor; ele cria som e imagem ao mesmo tempo.', { motor: true }),
   malleableIllusions: C('Ilusões Maleáveis', 'acao', 'Muda a natureza de uma ilusão sua que dura mais que um minuto.'),
-  illusorySelf: C('Eu Ilusório', 'reacao', 'Quando uma criatura o ataca, uma cópia ilusória toma o golpe: o ataque erra. Volta com descanso curto ou longo, ou ao conjurar ilusão de 1º círculo ou mais.', { motor: true }),
+  illusorySelf: C('Eu Ilusório', 'reacao', 'Quando uma criatura o ataca com arma, uma cópia ilusória toma o golpe: o ataque erra. Volta com descanso curto ou longo. (Ataques de magia ainda não passam por aqui.)', { motor: true }),
   illusoryReality: C('Realidade Ilusória', 'bonus', 'Uma ilusão sua vira real, por um minuto, em um objeto inanimado.'),
   necromancySavant: C('Sábio da Necromancia', 'fora', 'Copia magias de necromancia no grimório por metade do custo e do tempo.'),
   grimHarvest: C('Colheita Sombria', 'passiva', 'Ao matar uma criatura com uma magia de 1º círculo ou mais, recupera PV iguais a 2 × o círculo (3 × se for necromancia). Não vale contra constructos e mortos-vivos.', { motor: true }),
@@ -338,22 +342,24 @@ export const CARACTERISTICAS = {
   commandUndead: C('Comandar Mortos-vivos', 'acao', 'Um morto-vivo a até 18 m testa Carisma ou passa a obedecer a você.', { motor: true }),
   transmutationSavant: C('Sábio da Transmutação', 'fora', 'Copia magias de transmutação no grimório por metade do custo e do tempo.'),
   minorAlchemy: C('Alquimia Menor', 'fora', 'Troca o material de um objeto (madeira, pedra, ferro, cobre, prata) por uma hora.'),
-  transmutersStone: C('Pedra do Transmutador', 'passiva', 'Uma pedra dá um benefício à escolha: visão no escuro, +3 m de deslocamento, proficiência em resistência de CON ou resistência a um tipo de dano.'),
+  transmutersStone: C('Pedra do Transmutador', 'passiva', 'Uma pedra dá um benefício à escolha: visão no escuro, +3 m de deslocamento, proficiência em resistência de CON ou resistência a ácido, frio, fogo, elétrico ou trovejante.'),
   stoneDarkvision: C('Pedra: Visão no Escuro', 'passiva', 'A Pedra do Transmutador dá visão no escuro até 18 m.', { motor: true }),
   stoneSpeed: C('Pedra: Velocidade', 'passiva', 'A Pedra do Transmutador soma 3 m ao deslocamento.', { motor: true }),
   stoneConSave: C('Pedra: Constituição', 'passiva', 'A Pedra do Transmutador dá proficiência em resistência de Constituição.', { motor: true }),
   stoneResistFire: C('Pedra: Resistência a Fogo', 'passiva', 'A Pedra do Transmutador dá resistência a dano de fogo.', { motor: true }),
   stoneResistCold: C('Pedra: Resistência a Frio', 'passiva', 'A Pedra do Transmutador dá resistência a dano de frio.', { motor: true }),
+  stoneResistAcid: C('Pedra: Resistência a Ácido', 'passiva', 'A Pedra do Transmutador dá resistência a dano de ácido.', { motor: true }),
+  stoneResistThunder: C('Pedra: Resistência a Trovejante', 'passiva', 'A Pedra do Transmutador dá resistência a dano trovejante.', { motor: true }),
   stoneResistLightning: C('Pedra: Resistência a Elétrico', 'passiva', 'A Pedra do Transmutador dá resistência a dano elétrico.', { motor: true }),
   shapechanger: C('Mutante', 'acao', 'Conjura Metamorfose em si mesmo, uma vez por descanso curto, só em fera de ND 1 ou menos.'),
-  masterTransmuter: C('Transmutador Mestre', 'acao', 'Consome a pedra: troca o material de um objeto, cura 50 PV, ou outro efeito.'),
+  masterTransmuter: C('Transmutador Mestre', 'acao', 'Consome a pedra: Grande Transformação, Panaceia (devolve todos os PV e cura maldições, doenças e venenos), Restaurar Vida ou Restaurar Juventude.'),
 
   // ---- monge: Caminho da Sombra e Caminho dos Quatro Elementos (Livro do Jogador) -----------------------------------------
   shadowArts: C('Artes Sombrias', 'acao', 'Gasta 2 de ki para conjurar Escuridão, Visão no Escuro, Passos sem Pegadas ou Silêncio.', { motor: true }),
   shadowStep: C('Passo das Sombras', 'bonus', 'Ação bônus: teleporta até 18 m; o primeiro ataque corpo a corpo do turno tem vantagem. (O jogo não exige penumbra.)', { motor: true }),
   cloakOfShadows: C('Manto de Sombras', 'acao', 'Fica invisível até atacar ou conjurar.', { motor: true }),
   opportunist: C('Oportunista', 'reacao', 'Quando uma criatura a até 1,5 m é acertada por outra, você a ataca com a reação.', { motor: true }),
-  discipleOfTheElements: C('Discípulo dos Elementos', 'passiva', 'Aprende disciplinas elementais, que gastam ki para conjurar magias. O limite de ki por magia cresce com o nível.', { motor: true }),
+  discipleOfTheElements: C('Discípulo dos Elementos', 'passiva', 'Aprende disciplinas elementais, que gastam ki para conjurar magias (o jogo tem as 11 que são magias; faltam Sintonia Elemental e as de efeito próprio). O limite de ki por magia cresce com o nível.', { motor: true }),
   fistOfFourThunders: C('Punho dos Quatro Trovões', 'acao', '2 de ki: conjura Onda Trovejante.', { motor: true }),
   rushOfTheGaleSpirits: C('Rajada dos Espíritos do Vendaval', 'acao', '2 de ki: conjura Lufada de Vento.', { motor: true }),
   sweepingCinderStrike: C('Golpe de Cinzas Varridas', 'acao', '2 de ki: conjura Mãos Flamejantes.', { motor: true }),
@@ -377,7 +383,7 @@ export const CARACTERISTICAS = {
   companionJavali: C('Companheiro: Javali', 'passiva', 'O companheiro é um javali.', { motor: true }),
   companionAranhaLobo: C('Companheiro: Aranha-lobo', 'passiva', 'O companheiro é uma aranha-lobo gigante.', { motor: true }),
   companionRato: C('Companheiro: Rato Gigante', 'passiva', 'O companheiro é um rato gigante.', { motor: true }),
-  exceptionalTraining: C('Treinamento Excepcional', 'passiva', 'Comandar o companheiro custa só a ação bônus.', { motor: true }),
+  exceptionalTraining: C('Treinamento Excepcional', 'passiva', 'Ordens de apoio (correr, desengajar, esquivar, ajudar) custam só a ação bônus, e os ataques da fera contam como mágicos. Atacar continua custando a ação.', { motor: true }),
   bestialFury: C('Fúria Bestial', 'passiva', 'O companheiro ataca duas vezes quando você o comanda a atacar.', { motor: true }),
   shareSpells: C('Magias Compartilhadas', 'passiva', 'Magias suas sobre você também afetam o companheiro.'),
 
@@ -424,7 +430,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'naturesWrath', 'turnTheFaithless', 'auraOfWarding', 'undyingSentinel', 'elderChampion', 'rangersCompanion', 'companionLobo', 'companionJavali', 'companionAranhaLobo', 'companionRato', 'exceptionalTraining', 'bestialFury', 'shadowArts', 'shadowStep', 'cloakOfShadows', 'opportunist', 'discipleOfTheElements', 'fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike', 'clenchOfTheNorthWind', 'gongOfTheSummit', 'flamesOfThePhoenix', 'mistStance', 'rideTheWind', 'breathOfWinter', 'eternalMountainDefense', 'riverOfHungryFlame', 'arcaneWard', 'projectedWard', 'spellResistance', 'portent', 'expertDivination', 'thirdEye', 'greaterPortent', 'benignTransposition', 'durableSummons', 'focusedConjuration', 'hypnoticGaze', 'instinctiveCharm', 'improvedMinorIllusion', 'illusorySelf', 'grimHarvest', 'inuredToUndeath', 'commandUndead', 'stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'battleMagic', 'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'naturesWrath', 'turnTheFaithless', 'auraOfWarding', 'undyingSentinel', 'elderChampion', 'rangersCompanion', 'companionLobo', 'companionJavali', 'companionAranhaLobo', 'companionRato', 'exceptionalTraining', 'bestialFury', 'shadowArts', 'shadowStep', 'cloakOfShadows', 'opportunist', 'discipleOfTheElements', 'fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike', 'clenchOfTheNorthWind', 'gongOfTheSummit', 'flamesOfThePhoenix', 'mistStance', 'rideTheWind', 'breathOfWinter', 'eternalMountainDefense', 'riverOfHungryFlame', 'arcaneWard', 'projectedWard', 'spellResistance', 'portent', 'expertDivination', 'thirdEye', 'greaterPortent', 'benignTransposition', 'durableSummons', 'focusedConjuration', 'hypnoticGaze', 'instinctiveCharm', 'improvedMinorIllusion', 'illusorySelf', 'grimHarvest', 'inuredToUndeath', 'commandUndead', 'stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'stoneResistAcid', 'stoneResistThunder', 'goadingAttack', 'distractingStrike', 'riposte', 'parry', 'battleMagic', 'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'transmutersStone', 'discipleOfTheElements', 'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',

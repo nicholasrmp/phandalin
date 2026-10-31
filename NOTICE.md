@@ -30,6 +30,12 @@ condições, blocos de estatística de monstros do SRD e o motor de regras
 
 Esta licença é **irrevogável**. É a fundação sólida do projeto.
 
+**O que passa do SRD (Livro do Jogador 2014).** Por decisão do dono do projeto, os heróis seguem o Livro do Jogador de 2014 inteiro, e não só o SRD:
+as subclasses, magias e características que NÃO estão no SRD 5.1 (por exemplo Mestre de Batalha, Totêmico, Círculo da Lua, Assassino, as escolas
+de mago além da Evocação e as demais) ficam marcadas `fonte: 'phb'` no código (`src/rules/classes/*.js`, `src/rules/spells.js`). Esse conteúdo **não**
+está sob a CC-BY-4.0: o jogo usa só os nomes e a mecânica, com texto e arte próprios, sob a Política de Conteúdo de Fã da seção 2, e não reproduz
+o texto do livro. Se a Wizards mudar a política, esse conteúdo é o primeiro a sair; o que é `fonte: 'srd'` continua de pé.
+
 Tudo que vier do SRD deve ficar em `src/rules/` e ser marcado com o comentário
 `// SRD 5.1 (CC-BY-4.0)` no topo do arquivo.
 

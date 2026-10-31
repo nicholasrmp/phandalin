@@ -225,6 +225,7 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   delete c.wardHp;
   delete c.portento;
   delete c.olharHipnoticoJa;
+  delete c.charmeImunes;
   // INTERVENÇÃO DIVINA: depois de atendido, o deus fica em silêncio por sete dias; cada descanso longo conta um.
   const silencio = c.intervencaoDias ?? 0;
   if (silencio > 0) c.intervencaoDias = silencio - 1;

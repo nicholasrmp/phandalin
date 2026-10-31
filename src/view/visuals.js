@@ -1463,7 +1463,7 @@ const SPELL_VISUALS = {
   circuloDaMorte: (board, { dest, areaTiles }) => {
     board.fx.area(areaTiles ?? [dest], { color: '#a579d8', dur: 0.8 });
     (areaTiles ?? [dest]).filter((t) => (t.x + t.y) % 3 === 0).slice(0, 10)
-      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'necrotico-impacto', { fps: 12, altura: 26 }), i * 50));
+      .forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'porta-dimensional', { fps: 12, altura: 26 }), i * 50));
     return 0.2;
   },
   dedoDaMorte: (board, { caster, dest }) => {
@@ -1473,7 +1473,7 @@ const SPELL_VISUALS = {
   },
   palavraDePoderMatar: (board, { caster, dest }) => {
     board.fx.glyph(caster.pos, { text: '!', color: '#f4f0e4', size: 28, rise: 34 });
-    setTimeout(() => board.fx.quadros(dest, 'necrotico-impacto', { fps: 12, altura: 34 }), 250);
+    setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 12, altura: 34 }), 250);
     return 0.3;
   },
   desintegrar: (board, { caster, dest }) => {
@@ -1483,6 +1483,17 @@ const SPELL_VISUALS = {
   },
   curaTotal: (board, { dest }) => {
     board.fx.quadros(dest, 'cura', { fps: 10, altura: 54, sumir: 0.3 });
+    return 0;
+  },
+  // As duas magias de CARACTERÍSTICA que teleportam (mago de Conjuração e monge da Sombra) reaproveitam os efeitos do Passo Nebuloso e da Porta Dimensional.
+  transposicaoBenigna: (board, { caster, dest }) => {
+    board.fx.quadros(caster.pos, 'porta-dimensional', { fps: 12, altura: 30, sumir: 0.2 });
+    setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 12, altura: 30, sumir: 0.2 }), 200);
+    return 0.25;
+  },
+  passoDasSombras: (board, { caster, dest }) => {
+    board.fx.quadros(caster.pos, 'porta-dimensional', { fps: 14, altura: 22 });
+    setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 14, altura: 22 }), 120);
     return 0;
   },
   passoNebuloso: (board, { caster, dest }) => {

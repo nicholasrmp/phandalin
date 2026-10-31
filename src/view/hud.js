@@ -46,7 +46,7 @@ import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
 import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
-import { getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
+import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { usoLivreDe } from '../rules/passivas.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
@@ -760,7 +760,7 @@ export class Hud {
       el('div', { class: 'ficha-corpo' },
         el('strong', {}, c.name),
         el('span', { class: 'ficha-sub' }, c.invocado
-          ? (c.familiar ? `Familiar de ${donoNome} · não ataca` : `Invocado de ${donoNome}${getSpell(c.invocado.spellId).concentration ? ' · concentração' : ''}`)
+          ? (c.familiar ? `Familiar de ${donoNome} · não ataca` : `Invocado de ${donoNome}${SPELLS[c.invocado.spellId]?.concentration ? ' · concentração' : ''}`)
           : `${c.className} ${c.ancestry}`),
         eter ? el('span', { class: 'tarja-etereo' }, 'No Plano Etéreo') : null,
         c.invocado ? this.botaoAuto(c) : null,
@@ -802,7 +802,7 @@ export class Hud {
       texto: down
         ? 'Fora de combate. Um aliado adjacente pode estabilizar com uma ação.'
         : c.invocado
-          ? (c.familiar ? `Olho e ouvido de ${donoNome}; se cair a 0 PV, o espírito se vai. ` : getSpell(c.invocado.spellId).concentration ? `Dura enquanto ${donoNome} se concentrar. ` : '') + 'Clique para comandar; o botão alterna entre controlar e agir sozinho.'
+          ? (c.familiar ? `Olho e ouvido de ${donoNome}; se cair a 0 PV, o espírito se vai. ` : SPELLS[c.invocado.spellId]?.concentration ? `Dura enquanto ${donoNome} se concentrar. ` : '') + 'Clique para comandar; o botão alterna entre controlar e agir sozinho.'
           : 'Clique para assumir este personagem. Tab passa para o próximo que ainda não agiu.',
       aviso: down
         ? (c.dead ? 'Morto' : 'Inconsciente — rolando testes de morte')
@@ -1310,6 +1310,8 @@ export class Hud {
         menacingAttack: ['Ataque Amedrontador', '+dado de dano; SAB ou fica amedrontado.'],
         pushingAttack: ['Ataque Empurrão', '+dado de dano; FOR ou é empurrado 4,5 m.'],
         lungingAttack: ['Ataque Avançado', '+dado de dano no acerto.'],
+        goadingAttack: ['Ataque Provocador', '+dado de dano; SAB ou ataca com desvantagem qualquer outro.'],
+        distractingStrike: ['Ataque Distrativo', '+dado de dano; o próximo aliado a atacar o alvo tem vantagem.'],
         precisionAttack: ['Ataque Preciso', 'Se o ataque errar por pouco, soma o dado e pode acertar.'],
       };
       if (MANOBRA[f]) {
@@ -1329,7 +1331,7 @@ export class Hud {
           for (const id of formasDisponiveis(c.level ?? 1, (c.features ?? []).includes('circleForms')).slice(0, 6)) {
             const m = MONSTERS[id];
             comum('wildShape', `Forma Selvagem: ${m.name}`, `Vira ${m.name} (${m.maxHp} PV, CA ${m.ac}, ND ${m.cr}). Gasta um uso; na forma de fera não se conjura.`, lua ? 'Ação bônus' : 'Ação',
-              { kind: 'feature', featureId: f, modo: id }, (lua ? c.bonusUsed : c.actionUsed) || !(c.resources?.wildShape > 0), 'wildShape');
+              { kind: 'feature', featureId: f, modo: id }, (lua ? c.bonusUsed : c.actionUsed) || !(c.resources?.wildShape > 0 || c.resourcesIlimitados?.includes('wildShape')), 'wildShape');
           }
         }
         continue;
@@ -1364,8 +1366,10 @@ export class Hud {
       }
       if (f === 'rangersCompanion') {
         const barato = (c.features ?? []).includes('exceptionalTraining');
-        comum('comandarCompanheiro', 'Comandar o companheiro', 'Dá a ordem à fera: ela age neste turno (ataca, corre...). Custa a sua ação (a ação bônus no 7º nível).', barato ? 'Ação bônus' : 'Ação',
-          { kind: 'feature', featureId: f }, (barato ? c.bonusUsed : c.actionUsed));
+        comum('comandarCompanheiro', 'Comandar o companheiro: atacar', 'Manda a fera atacar neste turno. Custa a sua ação (com Ataque Extra, só um dos seus ataques).', 'Ação',
+          { kind: 'feature', featureId: f, modo: 'atacar' }, c.actionUsed);
+        comum('apoioDoCompanheiro', 'Comandar o companheiro: apoio', 'Manda a fera correr, desengajar, esquivar ou ajudar (ela não ataca). Custa a ação, ou a ação bônus com o Treinamento Excepcional.', barato ? 'Ação bônus' : 'Ação',
+          { kind: 'feature', featureId: f, modo: 'apoio' }, barato ? c.bonusUsed : c.actionUsed);
         continue;
       }
       if (f === 'cloakOfShadows') {

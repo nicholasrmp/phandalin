@@ -87,8 +87,6 @@ export default {
           10: ['splitEnchantment'],
           14: ['alterMemories'],
         },
-        // Encanto Instintivo: uma vez por descanso longo, ou depois de conjurar uma magia de encantamento de 1º círculo ou mais.
-        recursos: { instinctiveCharm: (n) => (n >= 6 ? 1 : 0) },
       },
       ilusao: {
         nome: 'Escola de Ilusão',
@@ -99,7 +97,7 @@ export default {
           10: ['illusorySelf'],
           14: ['illusoryReality'],
         },
-        // Eu Ilusório: volta num descanso curto ou longo, ou ao conjurar uma magia de ilusão de 1º círculo ou mais.
+        // Eu Ilusório: volta num descanso curto ou longo.
         recursos: { illusorySelf: (n) => (n >= 10 ? 1 : 0) },
       },
       necromancia: {
@@ -123,7 +121,7 @@ export default {
         },
         // A Pedra do Transmutador dá UM benefício à escolha.
         escolhasDeGanho: {
-          transmutersStone: { opcoes: ['stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning'] },
+          transmutersStone: { opcoes: ['stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'stoneResistAcid', 'stoneResistThunder'] },
         },
       },
     },

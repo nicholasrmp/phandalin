@@ -623,6 +623,8 @@ export class Encounter {
       c.acted = false;
       c.aurasNoTurno = [];
       c.ataquesRestantes = 0;
+      c.comandouNoTurno = false;
+      c.proibidoAtacar = false;
       this.vinculoDoGuardiao(c);
       for (const ativa of Object.values(c.magiasAtivas ?? {})) ativa.usadoNoTurno = false;
       // Velocidade: uma ação a mais por turno, só para atacar (um golpe),
@@ -862,20 +864,42 @@ export class Encounter {
     atacante.manobraPronta = null;
     if (!id || id === 'precisionAttack' || (atacante.resources?.superiorityDice ?? 0) < 1) return;
     atacante.resources.superiorityDice -= 1;
-    const nomes = { tripAttack: 'Ataque Derrubador', menacingAttack: 'Ataque Amedrontador', pushingAttack: 'Ataque Empurrão', lungingAttack: 'Ataque Avançado' };
+    const nomes = {
+      tripAttack: 'Ataque Derrubador', menacingAttack: 'Ataque Amedrontador', pushingAttack: 'Ataque Empurrão', lungingAttack: 'Ataque Avançado',
+      goadingAttack: 'Ataque Provocador', distractingStrike: 'Ataque Distrativo', riposteStrike: 'Riposta',
+    };
     this.say('recurso', `${atacante.name} gasta um dado de superioridade: ${nomes[id]} (restam ${atacante.resources.superiorityDice}).`);
     extra(nomes[id], this.dadoDeSuperioridade(atacante), tipo, false);
-    if (alvo.dead || id === 'lungingAttack') return;
+    if (alvo.dead || id === 'lungingAttack' || id === 'riposteStrike') return;
+    // O DISTRATIVO: o próximo ataque de um aliado contra o alvo tem vantagem (some no primeiro golpe de quem não é o distrator).
+    if (id === 'distractingStrike') {
+      this.aplicarCondicao(alvo, 'distraido', { rounds: 1, quando: 'inicio', lado: atacante.side, source: atacante.id });
+      this.say('condicao', `${alvo.name} se distrai: o próximo aliado de ${atacante.name} que o atacar tem vantagem.`);
+      return;
+    }
+    // Derrubar e empurrar não afetam criatura Enorme ou maior.
+    if ((id === 'tripAttack' || id === 'pushingAttack') && ['enorme', 'imenso', 'colossal'].includes(String(alvo.size ?? '').toLowerCase())) {
+      this.say('condicao', `${alvo.name} é grande demais para ${id === 'tripAttack' ? 'cair' : 'ser empurrado'}.`);
+      return;
+    }
     const cd = this.cdDeManobra(atacante);
-    const hab = id === 'menacingAttack' ? 'wis' : 'str';
+    const hab = id === 'menacingAttack' || id === 'goadingAttack' ? 'wis' : 'str';
     const save = this.resistencia(alvo, hab, cd);
     this.explicarResistencia(alvo, hab, cd, save, {
       contra: `${nomes[id]} de ${atacante.name}`,
-      seSucesso: id === 'tripAttack' ? 'não cai' : id === 'menacingAttack' ? 'não fica amedrontado' : 'não é empurrado',
+      seSucesso: id === 'tripAttack' ? 'não cai' : id === 'menacingAttack' ? 'não fica amedrontado' : id === 'goadingAttack' ? 'não se deixa provocar' : 'não é empurrado',
     });
     if (save.success) return;
     if (id === 'tripAttack') {
       if (this.aplicarCondicao(alvo, 'caido', { source: atacante.id })) this.say('condicao', `${alvo.name} é derrubado por ${atacante.name}.`);
+    } else if (id === 'goadingAttack') {
+      if (this.aplicarCondicao(alvo, 'provocado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+        this.say('condicao', `${alvo.name} fica furioso com ${atacante.name}: desvantagem em atacar qualquer outro até o fim do próximo turno dele.`);
+      }
+    } else if (id === 'goadingAttack') {
+      if (this.aplicarCondicao(alvo, 'provocado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+        this.say('condicao', `${alvo.name} fica furioso com ${atacante.name}: desvantagem em atacar qualquer outro até o fim do próximo turno dele.`);
+      }
     } else if (id === 'menacingAttack') {
       if (this.aplicarCondicao(alvo, 'amedrontado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
         this.say('condicao', `${alvo.name} fica amedrontado até o fim do próximo turno de ${atacante.name}.`);
@@ -1109,10 +1133,10 @@ export class Encounter {
     m.pos = { x: casa.x, y: casa.y, f: m.pos.f };
     m.side = dono.side;
     // CONVOCAÇÃO DURADOURA (mago de Conjuração, 14º): as criaturas que ele convoca nascem com 30 PV temporários.
-    if (dono.features?.includes('durableSummons')) m.tempHp = Math.max(m.tempHp ?? 0, 30);
+    if (dono.features?.includes('durableSummons') && SPELLS[spellId]?.school === 'conjuração') m.tempHp = Math.max(m.tempHp ?? 0, 30);
     // No livro 2014, as feras do Conjurar Animais são feéricas (o Círculo Mágico as barra).
     if (spellId === 'conjurarAnimais') m.tipo = 'feérico';
-    m.invocado = { donoId: dono.id, spellId, auto: Boolean(dono.invocadosAuto) };
+    m.invocado = { donoId: dono.id, spellId, auto: spellId === 'companheiroAnimal' ? false : Boolean(dono.invocadosAuto) };
     // Não vale XP, e o painel do grupo lê estes dois campos do herói.
     m.xp = 0;
     m.className = 'Invocado';
@@ -1138,6 +1162,10 @@ export class Encounter {
     const soma = (d) => String(d).replace(/^(\d+d\d+)([+-]\d+)?$/, (_, dados, mod) => `${dados}${(Number(mod ?? 0) + pb) >= 0 ? '+' : ''}${Number(mod ?? 0) + pb}`);
     m.attacks = m.attacks.map((a) => ({ ...a, bonus: a.bonus + pb, damage: soma(a.damage) }));
     if (dono.features.includes('bestialFury')) m.multiattack = { count: 2 };
+    // TREINAMENTO EXCEPCIONAL (7º): os ataques da fera contam como mágicos.
+    if (dono.features.includes('exceptionalTraining')) m.golpesMagicos = true;
+    // TREINAMENTO EXCEPCIONAL (7º): os ataques da fera contam como mágicos.
+    if (dono.features.includes('exceptionalTraining')) m.golpesMagicos = true;
     m.companheiro = true;
     this.say('recurso', `${m.name} se junta a ${dono.name} (Companheiro do Patrulheiro, ${m.maxHp} PV).`);
     return m;
@@ -1150,13 +1178,14 @@ export class Encounter {
 
   /** "Agir sozinho" de UM invocado: a IA aliada joga o turno dele. */
   definirAutoDoInvocado(c, auto) {
-    if (c.invocado) c.invocado.auto = Boolean(auto);
+    // O companheiro do Senhor das Feras só age com a ordem do patrulheiro: não há "agir sozinho".
+    if (c.invocado && c.invocado.spellId !== 'companheiroAnimal') c.invocado.auto = Boolean(auto);
   }
 
   /** "Agir sozinhos" para TODOS os invocados do dono (e para os que ele invocar depois). */
   definirAutoDosInvocados(dono, auto) {
     dono.invocadosAuto = Boolean(auto);
-    for (const c of this.invocadosDe(dono)) c.invocado.auto = Boolean(auto);
+    for (const c of this.invocadosDe(dono)) if (c.invocado.spellId !== 'companheiroAnimal') c.invocado.auto = Boolean(auto);
   }
 
   /** Tira do encontro as criaturas invocadas que `quais` escolher (a magia acabou, o encontro acabou). */
@@ -2901,6 +2930,12 @@ export class Encounter {
     // Toque Arrepiante: desvantagem só contra quem conjurou.
     if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
     if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
+    // ATAQUE PROVOCADOR: quem foi provocado ataca com desvantagem qualquer um que não seja o provocador.
+    const provManobra = getCondition(attacker, 'provocado');
+    if (provManobra && provManobra.source !== target.id) fonte(mods, 'desvantagem', 'provocado');
+    // ATAQUE DISTRATIVO: o aliado de quem distraiu ataca o distraído com vantagem (uma vez).
+    const distraido = getCondition(target, 'distraido');
+    if (distraido && distraido.source !== attacker.id && this.combatants.find((x) => x.id === distraido.source)?.side === attacker.side) fonte(mods, 'vantagem', 'ataque distrativo');
     // PASSO DAS SOMBRAS (monge da Sombra): vantagem no primeiro ataque corpo a corpo depois do teleporte.
     if (hasCondition(attacker, 'passoSombrio') && !ranged) fonte(mods, 'vantagem', 'passo das sombras');
     // VOTO DE INIMIZADE (paladino da Vingança): vantagem contra a criatura jurada.
@@ -3110,6 +3145,8 @@ export class Encounter {
   }
 
   canAttack(actor, target, weaponId) {
+    if (actor.proibidoAtacar) return { ok: false, why: 'a fera só recebeu uma ordem de apoio' };
+    if (actor.proibidoAtacar) return { ok: false, why: 'a fera só recebeu uma ordem de apoio' };
     // Forma Gasosa: a névoa não ataca. Antes da arma na mão, porque névoa não
     // tem mão — perguntar da arma primeiro daria o motivo errado.
     if (conditionEffects(actor).semAtaqueNemMagia) return { ok: false, why: 'em Forma Gasosa não se ataca' };
@@ -3216,20 +3253,66 @@ export class Encounter {
     }
   }
 
+  /**
+   * RIPOSTA (Mestre de Batalha): quando uma criatura erra um ataque corpo a corpo contra ele, gasta um dado e a reação e a ataca; no acerto soma o dado
+   * ao dano. Automática: perguntar a cada erro pararia a luta.
+   */
+  riposta(atacante, alvo) {
+    if (this.reagindo || alvo.dead || atacante.dead || !alvo.features?.includes('riposte') || alvo.reactionUsed || (alvo.resources?.superiorityDice ?? 0) < 1
+      || conditionEffects(alvo).incapacitated || atacante.side === alvo.side || distanceFt(alvo.pos, atacante.pos) > 5) return;
+    const arma = this.armaDeOportunidade(alvo);
+    if (arma === undefined || !this.canAttack(alvo, atacante, arma).ok) return;
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      alvo.manobraPronta = 'riposteStrike';
+      this.say('reacao', `${alvo.name} revida o golpe que errou (Riposta).`);
+      this.resolveAttackBase(alvo, atacante, { opportunity: true, weaponId: arma, reacao: true });
+    } finally {
+      alvo.manobraPronta = null;
+      this.reagindo = false;
+    }
+  }
+
+  /**
+   * RIPOSTA (Mestre de Batalha): quando uma criatura erra um ataque corpo a corpo contra ele, gasta um dado e a reação e a ataca; no acerto soma o dado
+   * ao dano. Automática: perguntar a cada erro pararia a luta.
+   */
+  riposta(atacante, alvo) {
+    if (this.reagindo || alvo.dead || atacante.dead || !alvo.features?.includes('riposte') || alvo.reactionUsed || (alvo.resources?.superiorityDice ?? 0) < 1
+      || conditionEffects(alvo).incapacitated || atacante.side === alvo.side || distanceFt(alvo.pos, atacante.pos) > 5) return;
+    const arma = this.armaDeOportunidade(alvo);
+    if (arma === undefined || !this.canAttack(alvo, atacante, arma).ok) return;
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      alvo.manobraPronta = 'riposteStrike';
+      this.say('reacao', `${alvo.name} revida o golpe que errou (Riposta).`);
+      this.resolveAttackBase(alvo, atacante, { opportunity: true, weaponId: arma, reacao: true });
+    } finally {
+      alvo.manobraPronta = null;
+      this.reagindo = false;
+    }
+  }
+
   /** O ENCANTO INSTINTIVO: devolve o alvo de verdade do ataque (o mesmo, ou a criatura para onde o golpe foi desviado). */
   encantoInstintivo(atacante, alvo, weaponId) {
-    if (!alvo.features?.includes('instinctiveCharm') || (alvo.resources?.instinctiveCharm ?? 0) < 1 || alvo.reactionUsed
+    // Sem limite de usos: só a reação o limita. Quem PASSA na resistência fica imune a este mago até o descanso longo.
+    if (!alvo.features?.includes('instinctiveCharm') || alvo.reactionUsed || (alvo.charmeImunes ?? []).includes(atacante.id)
       || conditionEffects(alvo).incapacitated || atacante.side === alvo.side || distanceFt(atacante.pos, alvo.pos) > 30
-      || !this.field.hasLineOfSight(alvo.pos, atacante.pos)) return alvo;
+      || !this.field.hasLineOfSight(alvo.pos, atacante.pos) || this.imuneACondicao(atacante, 'enfeiticado', alvo)) return alvo;
+    // A criatura MAIS PRÓXIMA do atacante (aliada ou não), sem contar o mago nem o próprio atacante.
     const outros = this.combatants.filter((c) => !c.dead && c !== atacante && c !== alvo && this.canAttack(atacante, c, weaponId).ok)
-      .sort((a, b) => (Number(b.side === atacante.side) - Number(a.side === atacante.side)) || (distanceFt(atacante.pos, a.pos) - distanceFt(atacante.pos, b.pos)));
+      .sort((a, b) => distanceFt(atacante.pos, a.pos) - distanceFt(atacante.pos, b.pos));
     if (!outros.length) return alvo;
-    alvo.resources.instinctiveCharm -= 1;
     alvo.reactionUsed = true;
     const cd = spellSaveDc(alvo);
     const sv = this.resistencia(atacante, 'wis', cd, { contra: { magico: true, condicao: 'enfeiticado' } });
     this.explicarResistencia(atacante, 'wis', cd, sv, { contra: `Encanto Instintivo de ${alvo.name}`, seSucesso: 'o golpe segue para o alvo' });
-    if (sv.success) return alvo;
+    if (sv.success) {
+      (alvo.charmeImunes ??= []).push(atacante.id);
+      return alvo;
+    }
     this.say('recurso', `${alvo.name} enfeitiça o impulso de ${atacante.name}: o golpe vai contra ${outros[0].name} (Encanto Instintivo).`);
     return outros[0];
   }
@@ -3239,22 +3322,30 @@ export class Encounter {
     if (attacker.disfarce) this.revelarDisfarce(attacker, 'no ataque');
     // O chefe pode jogar um capanga na frente antes de a rolagem acontecer.
     target = this.tryRedirect(target);
-    // EU ILUSÓRIO (mago de Ilusão, 10º): uma cópia ilusória toma o golpe, que erra. Reação, uma vez por descanso (ou por ilusão conjurada).
-    if (target.features?.includes('illusorySelf') && (target.resources?.illusorySelf ?? 0) > 0 && !target.reactionUsed && attacker.side !== target.side
-      && !conditionEffects(target).incapacitated && distanceFt(attacker.pos, target.pos) <= 120) {
-      target.resources.illusorySelf -= 1;
-      target.reactionUsed = true;
-      this.say('recurso', `${attacker.name} golpeia uma cópia ilusória de ${target.name}, que se desfaz: o ataque erra (Eu Ilusório).`);
-      return { hit: false };
-    }
-    // ENCANTO INSTINTIVO (mago de Encantamento, 6º): quem ataca testa Sabedoria ou volta o golpe contra outra criatura.
-    target = this.encantoInstintivo(attacker, target, weaponId);
+    // ENCANTO INSTINTIVO (mago de Encantamento, 6º): quem ataca testa Sabedoria ou volta o golpe contra outra criatura. Só se o ataque era possível.
+    if (this.canAttack(attacker, target, weaponId).ok) target = this.encantoInstintivo(attacker, target, weaponId);
     const check = this.canAttack(attacker, target, weaponId);
     if (!check.ok) {
       this.say('aviso', `${attacker.name} não consegue atacar: ${check.why}.`);
       return null;
     }
     let p = check.profile;
+    // EU ILUSÓRIO (mago de Ilusão, 10º): uma cópia ilusória toma o golpe, que erra. Reação; volta com descanso curto ou longo.
+    if (target.features?.includes('illusorySelf') && (target.resources?.illusorySelf ?? 0) > 0 && !target.reactionUsed && attacker.side !== target.side
+      && !conditionEffects(target).incapacitated) {
+      target.resources.illusorySelf -= 1;
+      target.reactionUsed = true;
+      this.quebraInvisibilidade(attacker);
+      this.consumirAoAtacar(attacker, target);
+      if (!opportunity) attacker.atacouNoTurno = true;
+      this.say('recurso', `${attacker.name} golpeia uma cópia ilusória de ${target.name}, que se desfaz: o ataque erra (Eu Ilusório).`);
+      this.onEvent({
+        type: 'attack', attacker, target, hit: false, ranged: p.ranged, damageType: p.type, weaponName: p.name, art: p.art,
+        rolagem: null, faltou: null, errouPorPouco: false, modo: 'normal', anulado: false,
+        vantagens: [], desvantagens: [], motivos: ['eu ilusório'],
+      });
+      return { hit: false, ilusorio: true };
+    }
     // A fúria se alimenta de briga: atacar um hostil mantém o bárbaro nela
     // por mais um turno (ver `fimDaFuria`).
     if (hasCondition(attacker, 'furia') && target.side !== attacker.side) attacker.furiaAgiu = true;
@@ -3355,14 +3446,20 @@ export class Encounter {
     mods.critMin = margemDeCritico(attacker);
     const atk = segundaChanceNoAtaque(this, attacker, target, attackRoll(this.rng, bonus, ac, mods), bonus, ac);
     this.consumirAoAtacar(attacker, target);
+    // PASSO DAS SOMBRAS: a vantagem é do primeiro golpe corpo a corpo; um tiro não a gasta.
+    if (!p.ranged) removeCondition(attacker, 'passoSombrio');
+    // O Ataque Distrativo se gasta no primeiro golpe de um aliado.
+    const distr = getCondition(target, 'distraido');
+    if (distr && distr.source !== attacker.id) removeCondition(target, 'distraido');
     // INSPIRAÇÃO EM COMBATE (bardo do Valor, 3º): o alvo inspirado soma o dado à CA contra um golpe que o acertaria. Só quando muda algo.
     if (atk.hit && !atk.critical) {
       const insp = getCondition(target, 'inspirado');
       const bardoV = insp ? this.combatants.find((b) => b.id === insp.source) : null;
-      if (bardoV?.features?.includes('combatInspiration')) {
+      if (bardoV?.features?.includes('combatInspiration') && !target.reactionUsed && !conditionEffects(target).incapacitated) {
         const dV = roll(this.rng, insp.data?.dado ?? '1d6');
         if (atk.total < ac + dV.total) {
           atk.hit = false;
+          target.reactionUsed = true;
           removeCondition(target, 'inspirado');
           this.say('recurso', `${target.name} gasta a Inspiração e soma ${dV.total} à CA (${ac + dV.total}): o golpe de ${attacker.name} falha (Inspiração em Combate).`);
         }
@@ -3434,7 +3531,7 @@ export class Encounter {
         modo: mods.mode, anulado: mods.anulado,
         vantagens: rolagem.vantagens, desvantagens: rolagem.desvantagens, motivos: rolagem.motivos,
       });
-      if (!p.ranged) this.desviarParaOutro(attacker, target, { weaponId });
+      if (!p.ranged) { this.desviarParaOutro(attacker, target, { weaponId }); this.riposta(attacker, target); }
       return { hit: false, faltou, errouPorPouco: porPouco, modo: mods.mode };
     }
 
@@ -3575,7 +3672,7 @@ export class Encounter {
     const armaDoPacto = attacker.features?.includes('pactOfTheBlade') && p.weapon && p.weapon.id !== 'punhos';
     // GOLPE PRIMITIVO (Círculo da Lua, 6º): os ataques da forma de fera contam como mágicos.
     const golpePrimitivo = attacker.features?.includes('primalStrike') && !!attacker.formaSelvagem;
-    const magico = !!(reforcadoPeloKi || armaDoPacto || golpePrimitivo || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
+    const magico = !!(reforcadoPeloKi || armaDoPacto || golpePrimitivo || attacker.golpesMagicos || attacker.golpesMagicos || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
     // Armadura de Agathys: vale se ele ainda tinha PV temporários ao ser acertado.
     const agathys = !p.ranged && getCondition(target, 'agathys');
     const geloDevolve = agathys && (target.tempHp ?? 0) > 0 ? agathys.data?.dano ?? 5 : 0;
@@ -3847,7 +3944,8 @@ export class Encounter {
     // Ataque Extra dos personagens (guerreiro: 1, 2 ou 3 golpes a mais).
     // LÂMINA SEDENTA (invocação, Pacto da Lâmina, 5º): um ataque a mais com a arma do pacto.
     const sedenta = attacker.features?.includes('thirstingBlade') && attacker.features?.includes('pactOfTheBlade') ? 1 : 0;
-    if (!attacker.attacks) return Array(1 + Math.max(attacker.ataquesExtras ?? 0, sedenta)).fill(arma);
+    // Com um ataque cedido ao companheiro (Senhor das Feras), o patrulheiro faz um golpe a menos.
+    if (!attacker.attacks) return Array(Math.max(1, 1 + Math.max(attacker.ataquesExtras ?? 0, sedenta) - (attacker.comandouNoTurno ? 1 : 0))).fill(arma);
     if (!ma || ma.count <= 1) return [arma];
     const seq = ma.sequence ?? ma.pattern;
     if (seq) return seq.includes(arma) ? seq.slice(0, ma.count) : [arma];
@@ -3908,6 +4006,8 @@ export class Encounter {
     const tf = target.features ?? [];
     const porCaracteristica = (type === 'necrótico' && tf.includes('inuredToUndeath')) || (type === 'fogo' && tf.includes('stoneResistFire'))
       || (type === 'frio' && tf.includes('stoneResistCold')) || (type === 'elétrico' && tf.includes('stoneResistLightning'))
+      || (type === 'ácido' && tf.includes('stoneResistAcid')) || (type === 'trovejante' && tf.includes('stoneResistThunder'))
+      || (type === 'ácido' && tf.includes('stoneResistAcid')) || (type === 'trovejante' && tf.includes('stoneResistThunder'))
       || (magico && !deArma && tf.includes('spellResistance'))
       || (magico && !deArma && this.paladinosDaAura(target, 'auraOfWarding').length > 0);
     if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
@@ -4128,6 +4228,26 @@ export class Encounter {
       amount = Math.floor(amount / 2);
       this.say('recurso', `${target.name} se desvia: o golpe sai pela metade (${amount}).`);
     }
+    // APARAR (Mestre de Batalha): reação e um dado; um golpe corpo a corpo que acerta perde o dado + o modificador de Destreza do dano.
+    if (source && deArma && corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('parry')
+      && (target.resources?.superiorityDice ?? 0) > 0 && !conditionEffects(target).incapacitated) {
+      target.resources.superiorityDice -= 1;
+      target.reactionUsed = true;
+      const reduz = roll(this.rng, this.dadoDeSuperioridade(target)).total + abilityMod(target.abilities?.dex ?? 10);
+      const cheio = amount;
+      amount = Math.max(0, amount - reduz);
+      this.say('recurso', `${target.name} apara o golpe (Aparar): -${Math.max(0, reduz)}, o dano vai de ${cheio} a ${amount}.`);
+    }
+    // APARAR (Mestre de Batalha): reação e um dado; um golpe corpo a corpo que acerta perde o dado + o modificador de Destreza do dano.
+    if (source && deArma && corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('parry')
+      && (target.resources?.superiorityDice ?? 0) > 0 && !conditionEffects(target).incapacitated) {
+      target.resources.superiorityDice -= 1;
+      target.reactionUsed = true;
+      const reduz = roll(this.rng, this.dadoDeSuperioridade(target)).total + abilityMod(target.abilities?.dex ?? 10);
+      const cheio = amount;
+      amount = Math.max(0, amount - reduz);
+      this.say('recurso', `${target.name} apara o golpe (Aparar): -${Math.max(0, reduz)}, o dano vai de ${cheio} a ${amount}.`);
+    }
     // DEFLETIR PROJÉTEIS (monge, 3º): reação; um ataque À DISTÂNCIA com arma que acerta o monge perde 1d10 + DES + nível do dano. Se zerar
     // e ele tiver 1 de ki, devolve o projétil: um ataque à distância dele contra quem atirou, com o mesmo dano.
     if (source && deArma && !corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('deflectMissiles')
@@ -4268,7 +4388,7 @@ export class Encounter {
       }
       // Padrão Hipnótico: o dano quebra o encanto.
       for (const cond of [...(target.conditions ?? [])]) {
-        if (!CONDITIONS[cond.id]?.acordaComDano) continue;
+        if (!CONDITIONS[cond.id]?.acordaComDano && !cond.data?.fimAoDano) continue;
         removeCondition(target, cond.id);
         this.say('condicao', `${target.name} desperta do ${CONDITIONS[cond.id].name.toLowerCase()} com o golpe.`);
       }
@@ -5040,7 +5160,7 @@ export class Encounter {
     }
     // O SOPRO DO DRACONATO só sai com o recurso: uma vez por descanso curto ou longo.
     if (spell.recursoRacial && !((actor.resources?.[spell.recursoRacial] ?? 0) > 0)) {
-      return { ok: false, why: 'o sopro já foi usado: ele volta num descanso curto ou longo' };
+      return { ok: false, why: spell.recursoRacial === 'benignTransposition' ? 'a Transposição Benigna já foi usada: volta com um descanso longo ou ao conjurar conjuração de 1º círculo ou mais' : 'o sopro já foi usado: ele volta num descanso curto ou longo' };
     }
     // USO LIVRE de característica (magia racial, Maestria, Assinatura): sai sem espaço, e vem ANTES de gastar um.
     const livre = actor.geminada ? { circulo: actor.geminada.circulo, rotulo: 'Magia Gêmea' } : usoLivreDe(actor, spell, circulo);
@@ -5050,6 +5170,8 @@ export class Encounter {
     if (iniciado) slot = spell.level;
     const gratis = livre ?? iniciado;
     if (slot === null) {
+      const kiDela = actor.magiasDeKi?.find((m) => m.magia === spell.id);
+      if (kiDela) return { ok: false, why: `sem ki (precisa de ${kiDela.custo}${(actor.resources?.ki ?? 0) > 0 ? `, tem ${actor.resources.ki}` : ''})` };
       return { ok: false, why: circulo ? `sem espaço de ${circulo}º círculo` : `sem espaço de magia de ${spell.level}º círculo ou maior` };
     }
     if (spell.castTime === 'action' && actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
@@ -5164,7 +5286,7 @@ export class Encounter {
       if (r?.ok) {
         // O círculo do espaço que a magia gastou (0 se foi truque ou uso livre).
         const gasto = slotsAntes ? slotsAntes.findIndex((n, i) => i >= 1 && n > (actor.spellcasting.slots[i] ?? 0)) : -1;
-        this.depoisDaMagia(actor, original, r, { slotGasto: gasto > 0 ? gasto : (original?.level ?? 0), mortosAntes });
+        this.depoisDaMagia(actor, original, r, { slotGasto: gasto > 0 ? gasto : (original?.level ?? 0), mortosAntes, gastouEspaco: gasto > 0 });
       }
       if (r?.ok && metas.length) this.pagarMetamagia(actor, original, metas, opcoes, r, antesDeAcao);
       if (r?.ok && sobre) this.cobrarSobrecanalizar(actor, original);
@@ -5180,7 +5302,7 @@ export class Encounter {
    * O que acontece DEPOIS de uma conjuração que deu certo, por características de subclasse. Os ganchos de cada uma ficam aqui, num
    * só lugar, em vez de espalhados pelas magias.
    */
-  depoisDaMagia(actor, magia, resultado, { slotGasto = magia?.level ?? 0, mortosAntes = new Set() } = {}) {
+  depoisDaMagia(actor, magia, resultado, { slotGasto = magia?.level ?? 0, mortosAntes = new Set(), gastouEspaco = true } = {}) {
     const f = actor.features ?? [];
     const escola = magia?.school;
     const nivelEfetivo = Math.max(slotGasto, magia?.level ?? 0);
@@ -5196,7 +5318,7 @@ export class Encounter {
       }
     }
     // ADIVINHAÇÃO ESPECIALISTA: uma adivinhação de 2º círculo ou mais devolve um espaço menor (até o 5º).
-    if (f.includes('expertDivination') && ['adivinhação', 'divinação'].includes(escola) && slotGasto >= 2 && actor.spellcasting?.slots) {
+    if (f.includes('expertDivination') && gastouEspaco && ['adivinhação', 'divinação'].includes(escola) && slotGasto >= 2 && actor.spellcasting?.slots) {
       for (let i = Math.min(slotGasto - 1, 5); i >= 1; i -= 1) {
         if ((actor.spellcasting.slots[i] ?? 0) < (actor.spellcasting.slotsMax?.[i] ?? 0)) {
           actor.spellcasting.slots[i] += 1;
@@ -5205,8 +5327,8 @@ export class Encounter {
         }
       }
     }
-    // As recargas por escola: Transposição Benigna (conjuração), Encanto Instintivo (encantamento), Eu Ilusório (ilusão).
-    for (const [feature, escolaDela] of [['benignTransposition', 'conjuração'], ['instinctiveCharm', 'encantamento'], ['illusorySelf', 'ilusão']]) {
+    // A recarga por escola: só a Transposição Benigna volta ao conjurar conjuração (o Encanto e o Eu Ilusório não têm essa regra no livro).
+    for (const [feature, escolaDela] of [['benignTransposition', 'conjuração']]) {
       if (f.includes(feature) && escola === escolaDela && nivelEfetivo >= 1 && (actor.resources?.[feature] ?? 0) < (actor.resourcesMax?.[feature] ?? 0)) {
         actor.resources[feature] = actor.resourcesMax[feature];
         this.say('recurso', `${actor.name} recupera ${nomeDaCaracteristica(feature)} ao conjurar ${magia.name}.`);
@@ -6075,7 +6197,7 @@ export class Encounter {
       return;
     }
     // Uma fera de Conjurar Animais é a magia: dissipar nela encerra a magia toda.
-    if (target.invocado && getSpell(target.invocado.spellId).concentration) {
+    if (target.invocado && SPELLS[target.invocado.spellId]?.concentration) {
       const mag = getSpell(target.invocado.spellId);
       if (passa(mag.level, mag.name)) {
         this.say('magia', `${mag.name} acaba: ${target.name} se desfaz.`);
@@ -6470,6 +6592,13 @@ export class Encounter {
     if (pode.cajado) ator.spellcasting.cajado.cargas -= pode.cajado;
     else if (pode.livre) gastarUsoGratis(this, ator, pode.livre);
     else ator.spellcasting.slots[pode.circulo] -= 1;
+    // A reação é uma magia conjurada: Proteção Arcana e as recargas por escola valem também para Escudo Arcano e Contramágica.
+    if (pode.spell) {
+      this.depoisDaMagia(ator, pode.spell, { ok: true }, {
+        slotGasto: pode.cajado || pode.livre ? 0 : (pode.circulo ?? pode.spell.level), gastouEspaco: !pode.cajado && !pode.livre,
+        mortosAntes: new Set(this.combatants.filter((c) => c.dead).map((c) => c.id)),
+      });
+    }
   }
 
   /**
@@ -7091,7 +7220,7 @@ export class Encounter {
    * nenhum deste arquivo, ou a próxima condição com dado de resistência vai
    * valer em três sítios e faltar num quarto.
    */
-  resistencia(actor, hab, dc, { vantagem = false, contra = null } = {}) {
+  resistencia(actor, hab, dc, { vantagem = false, desvantagem = false, contra = null } = {}) {
     const fx = conditionEffects(actor);
     // MAGIA CUIDADOSA: até CAR criaturas escolhidas passam sozinhas na resistência da magia (e não sofrem o efeito, nem o dano).
     const meta = this.metaAtiva;
@@ -7116,6 +7245,7 @@ export class Encounter {
       disadvantage: (!!actor.armorUntrained && (hab === 'str' || hab === 'dex'))
         || fx.saveDisadvantage.includes(hab) || fx.desvantagemTeste.includes(hab),
     };
+    if (desvantagem) opts.disadvantage = true;
     // MAGIA ELEVADA: o primeiro alvo inimigo a resistir tem desvantagem.
     if (meta?.heightened && actor.side !== meta.dono.side) { opts.disadvantage = true; meta.heightened = false; }
     let bonus = saveBonus(actor, hab);
@@ -7689,12 +7819,13 @@ export class Encounter {
         actor.actionUsed = true;
         actor.resources.channelDivinity -= 1;
         const cdA = spellSaveDc(actor);
-        const svA = this.resistencia(alvoA, 'wis', cdA, { vantagem: false });
+        const svA = this.resistencia(alvoA, 'wis', cdA, { desvantagem: ['corruptor', 'morto-vivo'].includes(alvoA.tipo), contra: { magico: true, condicao: 'amedrontado' } });
         this.explicarResistencia(alvoA, 'wis', cdA, svA, { contra: `Repelir o Inimigo de ${actor.name}`, seSucesso: 'não fica amedrontado' });
         if (!svA.success) {
-          this.aplicarCondicao(alvoA, 'amedrontado', { rounds: 10, source: actor.id });
-          this.aplicarCondicao(alvoA, 'agarrado', { rounds: 10, source: actor.id });
-          this.say('condicao', `${alvoA.name} fica amedrontado e paralisado de medo no lugar.`);
+          // Amedrontado e SEM andar por um minuto, até sofrer dano (o `fimAoDano` o encerra no primeiro golpe).
+          this.aplicarCondicao(alvoA, 'amedrontado', { rounds: 10, source: actor.id, data: { fimAoDano: true } });
+          this.aplicarCondicao(alvoA, 'paralisadoDeMedo', { rounds: 10, source: actor.id, data: { fimAoDano: true } });
+          this.say('condicao', `${alvoA.name} fica amedrontado e sem conseguir andar, até sofrer dano.`);
         }
         return true;
       }
@@ -7758,11 +7889,12 @@ export class Encounter {
         }
         // FORMA SELVAGEM EM COMBATE (Círculo da Lua, 2º): assumir a forma custa a ação BÔNUS, não a ação.
         const lua = actor.features?.includes('combatWildShape');
-        if ((lua ? actor.bonusUsed : actor.actionUsed) || actor.formaSelvagem || !(actor.resources?.wildShape > 0) || conditionEffects(actor).incapacitated) return false;
+        const ilimitada = actor.resourcesIlimitados?.includes('wildShape');
+        if ((lua ? actor.bonusUsed : actor.actionUsed) || actor.formaSelvagem || !(ilimitada || actor.resources?.wildShape > 0) || conditionEffects(actor).incapacitated) return false;
         if (!formasDisponiveis(actor.level ?? 1, actor.features?.includes('circleForms')).includes(modo)) return false;
         if (!vestirFera(actor, modo)) return false;
         if (lua) actor.bonusUsed = true; else actor.actionUsed = true;
-        actor.resources.wildShape -= 1;
+        if (!ilimitada) actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
         return true;
@@ -7812,14 +7944,20 @@ export class Encounter {
         return true;
       }
       case 'rangersCompanion': {
-        // COMANDAR O COMPANHEIRO (Senhor das Feras): a fera só age com a ordem; custa a ação (a ação bônus com o Treinamento Excepcional).
+        // COMANDAR O COMPANHEIRO (Senhor das Feras). `modo` 'atacar' (o padrão) ou 'apoio' (correr, desengajar, esquivar, ajudar: a fera não ataca).
+        //   - Atacar custa a AÇÃO do patrulheiro; com Ataque Extra, custa só UM dos ataques dele (ele ainda faz os outros).
+        //   - Apoio custa a ação, ou a AÇÃO BÔNUS com o Treinamento Excepcional (7º).
         const comp = this.invocadosDe(actor).find((x) => x.invocado.spellId === 'companheiroAnimal');
-        if (!comp) return false;
-        const barato = actor.features?.includes('exceptionalTraining');
-        if (barato ? actor.bonusUsed : actor.actionUsed) return false;
-        if (barato) actor.bonusUsed = true; else actor.actionUsed = true;
+        if (!comp || comp.dead || conditionEffects(actor).incapacitated) return false;
+        const apoio = modo === 'apoio';
+        const bonus = apoio && actor.features?.includes('exceptionalTraining');
+        if (bonus ? actor.bonusUsed : actor.actionUsed) return false;
+        if (bonus) actor.bonusUsed = true;
+        else if (!apoio && actor.features?.includes('extraAttack') && !actor.comandouNoTurno) actor.comandouNoTurno = true;
+        else actor.actionUsed = true;
         comp.actionUsed = false;
-        this.say('recurso', `${actor.name} dá a ordem a ${comp.name}.`);
+        comp.proibidoAtacar = apoio;
+        this.say('recurso', `${actor.name} dá a ordem a ${comp.name}${apoio ? ' (apoio)' : ' (atacar)'}.`);
         return true;
       }
       case 'cloakOfShadows': {
@@ -7836,6 +7974,17 @@ export class Encounter {
         if (actor.actionUsed || conditionEffects(actor).incapacitated) return false;
         const alvoH = target ?? this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 5)[0];
         if (!alvoH || alvoH.dead || alvoH.side === actor.side || distanceFt(actor.pos, alvoH.pos) > 5) return false;
+        // MANTER: nos turnos seguintes a ação renova o olhar sobre quem já está hipnotizado e ainda colado nele (sem nova resistência).
+        const mantendo = getCondition(alvoH, 'olharHipnotico')?.source === actor.id;
+        if (mantendo) {
+          actor.actionUsed = true;
+          removeCondition(alvoH, 'olharHipnotico');
+          removeCondition(alvoH, 'enfeiticado');
+          this.aplicarCondicao(alvoH, 'olharHipnotico', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+          this.aplicarCondicao(alvoH, 'enfeiticado', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+          this.say('condicao', `${actor.name} mantém o olhar sobre ${alvoH.name}.`);
+          return true;
+        }
         if ((actor.olharHipnoticoJa ??= []).includes(alvoH.id)) return false;
         actor.actionUsed = true;
         actor.olharHipnoticoJa.push(alvoH.id);
@@ -7843,7 +7992,8 @@ export class Encounter {
         const svH = this.resistencia(alvoH, 'wis', cdH, { contra: { magico: true, condicao: 'enfeiticado' } });
         this.explicarResistencia(alvoH, 'wis', cdH, svH, { contra: `Olhar Hipnótico de ${actor.name}`, seSucesso: 'resiste ao olhar' });
         if (!svH.success && this.aplicarCondicao(alvoH, 'olharHipnotico', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id })) {
-          this.say('condicao', `${alvoH.name} fica hipnotizado: incapacitado e parado até o fim do próximo turno de ${actor.name}.`);
+          this.aplicarCondicao(alvoH, 'enfeiticado', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+          this.say('condicao', `${alvoH.name} fica hipnotizado: enfeitiçado, incapacitado e parado até o fim do próximo turno de ${actor.name} (ou até sofrer dano).`);
         }
         return true;
       }
@@ -7895,7 +8045,7 @@ export class Encounter {
         this.say('cura', `${actor.name} gasta um espaço de ${n}º círculo e recupera ${actor.hp - antes} PV na forma de ${actor.formaSelvagem.nome} (Forma Selvagem em Combate).`);
         return true;
       }
-      case 'tripAttack': case 'menacingAttack': case 'pushingAttack': case 'lungingAttack': case 'precisionAttack': {
+      case 'tripAttack': case 'menacingAttack': case 'pushingAttack': case 'lungingAttack': case 'precisionAttack': case 'goadingAttack': case 'distractingStrike': {
         // MANOBRA é um INTERRUPTOR, de graça: armada, vale no próximo ataque de arma do turno (uma por ataque). O dado se gasta no
         // acerto (ou, no Ataque Preciso, quando ele vira o erro em acerto): armar e não acertar não custa nada.
         if (!actor.features?.includes(featureId) || (actor.resources?.superiorityDice ?? 0) < 1) return false;

@@ -377,12 +377,33 @@ export const CONDITIONS = {
   passoSombrio: {
     name: 'Passo das Sombras',
     desc: 'O primeiro ataque corpo a corpo deste turno tem vantagem.',
-    consumidaAoAtacar: true,
   },
   olharHipnotico: {
     name: 'Olhar Hipnótico',
-    desc: 'Enfeitiçado: incapacitado e sem andar, até o fim do próximo turno de quem o hipnotizou.',
+    desc: 'Incapacitado e sem andar, até o fim do próximo turno de quem o hipnotizou ou até sofrer dano.',
     incapacitated: true,
+    speed: 0,
+    acordaComDano: true,
+  },
+  provocado: {
+    name: 'Provocado',
+    desc: 'Desvantagem nos ataques contra qualquer um que não seja quem o provocou (Ataque Provocador).',
+  },
+  distraido: {
+    name: 'Distraído',
+    desc: 'O próximo ataque de um aliado de quem o distraiu tem vantagem (Ataque Distrativo).',
+  },
+  provocado: {
+    name: 'Provocado',
+    desc: 'Desvantagem nos ataques contra qualquer um que não seja quem o provocou (Ataque Provocador).',
+  },
+  distraido: {
+    name: 'Distraído',
+    desc: 'O próximo ataque de um aliado de quem o distraiu tem vantagem (Ataque Distrativo).',
+  },
+  paralisadoDeMedo: {
+    name: 'Paralisado de Medo',
+    desc: 'Deslocamento 0 até sofrer dano (Repelir o Inimigo). Sem ação de se soltar.',
     speed: 0,
   },
   votoDeInimizade: {

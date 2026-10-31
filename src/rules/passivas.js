@@ -312,6 +312,7 @@ export const MAGIAS_DE_CARACTERISTICA = {
   benignTransposition: ['transposicaoBenigna'],
   improvedMinorIllusion: ['ilusaoMenor'],
   shadowStep: ['passoDasSombras'],
+  shadowArts: ['ilusaoMenor'],
 };
 
 /**

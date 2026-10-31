@@ -66,6 +66,7 @@ def main():
     fontes += sorted(ICONES.glob('lote/folha-*'))
     fontes += sorted(ICONES.glob('lote/novos-*'))
     fontes += sorted(ICONES.glob('lote/itens-*'))
+    fontes += sorted(ICONES.glob('lote/sub-*'))
     fontes += sorted(ICONES.glob('lote/refazer-*'))
     escolhidos = {}
     for pasta in fontes:
