@@ -153,7 +153,7 @@ teste('Figura: Pele de Pedra deixa a figura cinza-pedra, parada, e some quando a
   assert.equal(f.aura, 'procedural', 'não há folha de pedra: a tinta cobre');
   assert.equal(f.look, 'barbarian@peleDeAnimal-machadoGrande');
   assert.deepEqual(tintaDaAura(f, 0), tintaDaAura(f, 0.16), 'pedra não pulsa');
-  assert.equal(tintaDaAura(f, 0).color, '#9aa3ad');
+  assert.equal(tintaDaAura(f, 0).color, '#b4bcc6');
   addCondition(grask, 'furia', { rounds: 10 });
   assert.equal(estadoVisualDe(grask), 'furia', 'a Fúria manda quando as duas valem');
   removeCondition(grask, 'furia');

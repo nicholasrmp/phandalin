@@ -1399,11 +1399,10 @@ const SPELL_VISUALS = {
     return 0.3;
   },
   peleDePedra: (board, _ctx, alvos = []) => {
-    // Faíscas douradas do game pack do PixelLab (33x45, 5 quadros úteis); o corpo de pedra vem do estado visual 'pedra' (estado-visual.js).
+    // Casca de granito do /vfx `pro` do PixelLab (36x52, 13 quadros úteis): cresce dos pés, fecha em volta e racha; o corpo de pedra que fica é o estado visual 'pedra'.
     for (const t of alvos) {
-      board.fx.smash(t.pos, { color: '#aab6c6', dur: 0.4 });
-      board.fx.shards(t.pos, { color: '#aab6c6', count: 12, dur: 0.55, spread: 28 });
-      board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 10, altura: 30, sumir: 0.3 });
+      board.fx.quadros(t.pos, 'pele-de-pedra', { fps: 14, altura: 24, sumir: 0.1 });
+      setTimeout(() => board.fx.shards(t.pos, { color: '#aab6c6', count: 14, dur: 0.5, spread: 26 }), 700);
     }
     return 0;
   },
