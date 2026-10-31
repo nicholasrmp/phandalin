@@ -84,13 +84,13 @@ export const NPCS = {
       esconde: 'Que cedeu nomes durante o interrogatório e não sabe quais ainda valem alguma coisa.',
       fala: 'Frases curtas, voz baixa, chama todo mundo pelo ofício antes do nome. Nunca levanta o tom; quando discorda, repete a frase igual.',
     },
-    frase: 'Põe o escudo à minha esquerda. Eu não enxergo mais bem desse lado.',
+    frase: 'Põe o escudo à minha esquerda. Já não enxergo bem desse lado.',
     blurb: 'Segura corredor na frente do grupo e divide o dano que ia para o mago.',
   },
 
   gundren: {
     id: 'gundren',
-    nome: 'Gundren Rockseeker',
+    nome: 'Gundren Buscapedra',
     look: 'gundren',
     papel: 'Prospector, irmão do meio',
     bloco: 'plebeu',

@@ -241,7 +241,7 @@ export function criarPoco(app, config) {
           fala: [
             'Informação é mercadoria. Eu tenho, vocês querem. Façam-me um favor, e eu pago com o que sei.',
             'Duas coisas me fariam muito feliz. A primeira: tem orcs morando naquele morro do sul, o Cume da Wyvern, e eles andam passando perto demais daqui. Mortos eu tenho de sobra; orcs vivos, não quero.',
-            'A segunda é mais delicada. Esta torre teve um dono, e quero saber o nome dele. Quem sabe é uma banshee lá para os lados de Conyberry. Eu, pessoalmente, prefiro não acordar mortos que não são meus.',
+            'A segunda é mais delicada. Esta torre teve um dono, e quero saber o nome dele. Quem sabe disso é uma banshee lá para os lados de Conyberry. Eu, pessoalmente, prefiro não acordar mortos que não são meus.',
           ],
           opcoes: [
             { texto: 'Combinado. Os dois, se der.', vai: 'acordo' },
@@ -255,7 +255,7 @@ export function criarPoco(app, config) {
             feitos.sabeOCastelo = true;
             (vila.missoes ??= {}).kost = 'feita';
             if (!(vila.pistas ??= []).some((p) => p.startsWith('Hamun Kost contou'))) {
-              vila.pistas.push('Hamun Kost contou onde fica o Castelo Dentefino: goblins passam pelas colinas a caminho da mata de Neverwinter, ao norte da Trilha Triboar, e voltam para umas torres caídas lá dentro. Agora o castelo aparece no mapa da região.');
+              vila.pistas.push('Hamun Kost contou onde fica o Castelo Dentefino: goblins passam pelas colinas a caminho da mata de Neverwinter, ao norte da Trilha de Triboar, e voltam para umas torres caídas lá dentro. Agora o castelo aparece no mapa da região.');
             }
           },
           narra: 'Ele sorri pela primeira vez, sem mostrar os dentes.',

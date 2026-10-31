@@ -1,5 +1,5 @@
 // Refaz a tabela VIRADA de `rules/encontros-estrada.js`: onde cada linha da
-// tabela da Trilha Triboar deixa de ser fácil e onde passa a ser mortal, para
+// tabela da Trilha de Triboar deixa de ser fácil e onde passa a ser mortal, para
 // cada nível de grupo. Rode com:
 //
 //   node src/dev/estrada-virada.mjs [lutas por célula, padrão 100]

@@ -330,7 +330,7 @@ export const SUBCLASSES_1 = {
       { id: 'conhecimento', nome: 'Domínio do Conhecimento', motor: 'conhecimento', magias: ['comando', 'identificar'],
         resumo: 'Especialização em duas perícias de saber; no 8º nível, soma SAB ao dano dos seus truques.' },
       { id: 'luz', nome: 'Domínio da Luz', motor: 'luz', magias: ['maosFlamejantes', 'fogoDasFadas'],
-        resumo: 'O truque Luz e um clarão que atrapalha o ataque de quem você vê.' },
+        resumo: 'O truque Luz é um clarão que atrapalha o ataque de quem você vê.' },
       { id: 'natureza', nome: 'Domínio da Natureza', motor: 'natureza', magias: ['amizadeAnimal', 'falarComAnimais'],
         resumo: 'Um truque de druida, uma perícia da natureza e armadura pesada.' },
       { id: 'tempestade', nome: 'Domínio da Tempestade', motor: 'tempestade', magias: ['nevoaObscurecente', 'ondaTrovejante'],

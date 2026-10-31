@@ -94,7 +94,7 @@ export function opcoesDeClasse(app, c, occ, { enc, vez = false, explorando = fal
     const dado = c.dadoDeInspiracao ?? 'd6';
     opcoes.push({
       grupo: 'Apoiar',
-      rotulo: `Inspirar ${occ.name} (${c.resources?.bardicInspiration ?? 0} cargas)`,
+      rotulo: `Inspirar ${occ.name} (${c.resources?.bardicInspiration ?? 0} ${(c.resources?.bardicInspiration ?? 0) === 1 ? 'carga' : 'cargas'})`,
       icone: 'classe-bardicInspiration',
       alvoPrevia: occ,
       detalhe: `ação bônus · ${dado} para somar num ataque, teste ou resistência`,
@@ -124,7 +124,7 @@ export function opcoesDeClasse(app, c, occ, { enc, vez = false, explorando = fal
   const dados = c.resources?.superiorityDice ?? 0;
   if (c.features?.includes('rally') && occ !== c && vez) {
     opcoes.push({
-      grupo: 'Apoiar', rotulo: `Reagrupar ${occ.name} (${dados} dados)`, icone: 'classe-rally', alvoPrevia: occ,
+      grupo: 'Apoiar', rotulo: `Reagrupar ${occ.name} (${dados} ${dados === 1 ? 'dado' : 'dados'})`, icone: 'classe-rally', alvoPrevia: occ,
       detalhe: 'ação bônus · PV temporários = dado + Carisma',
       motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada' : dados <= 0 ? 'sem dados de superioridade'
         : distanceFt(c.pos, occ.pos) > 60 ? 'longe demais (alcance de 18 m)' : null,

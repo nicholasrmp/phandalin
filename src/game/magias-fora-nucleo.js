@@ -289,7 +289,7 @@ export function perguntasDaComunhao(app, estado, herois) {
   return [
     { id: 'espera', pergunta: 'Alguém espera o grupo neste lugar?', sim: esperando.length > 0 },
     { id: 'armadilha', pergunta: 'Há armadilha escondida por aqui?', sim: armadilhas.length > 0 },
-    { id: 'gundren', pergunta: 'Gundren Rockseeker ainda vive?', sim: vivo('gundren') },
+    { id: 'gundren', pergunta: 'Gundren Buscapedra ainda vive?', sim: vivo('gundren') },
     { id: 'iarno', pergunta: 'Iarno Albrek ainda vive?', sim: vivo('iarno') },
     // A quinta pergunta vem de estado guardado, como as duas de cima. A que
     // estava aqui antes — "o grupo está onde pensa que está?" — era tautologia

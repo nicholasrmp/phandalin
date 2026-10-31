@@ -246,7 +246,7 @@ export const HEROIS = [
     speedFt: 35,
     racial: {},
     antecedente: 'Acólito',
-    origem: 'Elfa da floresta, criada num mosteiro nas montanhas a norte de Neverwinter.',
+    origem: 'Elfa da floresta, criada num mosteiro nas montanhas ao norte de Neverwinter.',
     historia: [
       'Sylwen chegou ao mosteiro ainda criança, trazida por uma caravana que a encontrou sozinha na estrada, e cresceu entre monges que acreditavam que o corpo é a primeira oração. Aprendeu a quebrar uma tábua com a mão e a ficar um dia inteiro sentada sem se mexer, e acha a segunda coisa muito mais difícil.',
       'Ao completar sua formação, a mestra lhe deu a tarefa de todo discípulo: sair pelo mundo por um ano e voltar contando o que aprendeu. Sylwen ainda não sabe o que deveria aprender. Suspeita que a resposta está em quem ela encontrar pelo caminho.',

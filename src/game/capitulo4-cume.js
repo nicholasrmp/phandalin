@@ -338,7 +338,7 @@ export function criarCume(app, config) {
     // nunca virar, porque a volta era em 24.
     gastarHoras(vila, horas);
     await painel([
-      'O cume não acaba: pedra rachada, ravina atrás de ravina, mato duro que arranha a canela. Daqui de cima se vê a Trilha Triboar inteira — e daqui de baixo não se vê nada.',
+      'O cume não acaba: pedra rachada, ravina atrás de ravina, mato duro que arranha a canela. Daqui de cima se vê a Trilha de Triboar inteira — e daqui de baixo não se vê nada.',
       `${lider.name} toma a frente (${SKILL_NAME[pericia]}). ${horas === 1 ? 'Não leva uma hora' : `Leva ${horas} horas, para cima e para baixo`} até achar o que procurava: uma pegada larga demais para ser de gente, e mais adiante, presa num espinho, uma tira de couro com um dente amarrado.`,
       'O rastro some num desfiladeiro cortado no meio do planalto, depois de um bosque, por uma passagem estreita entre dois paredões.',
     ], { teste: { quem: lider.name, pericia: SKILL_NAME[pericia], total: r.total, cd: 15, passou: r.total >= 15 } });

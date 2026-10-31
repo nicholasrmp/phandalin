@@ -870,7 +870,7 @@ export class Hud {
     if (sc.prepared?.length) linhas.push(['Magias', sc.prepared.map(nome).join(', ')]);
     const espacos = (sc.slots ?? []).map((n, i) => (i > 0 ? `${i}º: ${n}` : null)).filter(Boolean);
     if (espacos.length) linhas.push(['Espaços', espacos.join(' · ')]);
-    if (sc.cajado) linhas.push(['Cajado', `${sc.cajado.cargas} cargas`]);
+    if (sc.cajado) linhas.push(['Cajado', `${sc.cajado.cargas} ${sc.cajado.cargas === 1 ? 'carga' : 'cargas'}`]);
     return linhas;
   }
 
@@ -1240,7 +1240,7 @@ export class Hud {
         'Gasta 3 de ki e arma o próximo golpe desarmado: o alvo fica vibrando até você encerrar (CON ou cai a 0 PV; senão, 10d10 necrótico).',
         'Livre', () => !c.palmaPronta && c.resources?.ki >= 3, 'ki'],
       overchannel: ['overchannel', 'Sobrecanalizar',
-        `Arma o próximo dano de magia de até 5º círculo no máximo. O primeiro uso depois do descanso longo é de graça; os seguintes ferem você (2d12 por círculo, +1d12 por uso).${(c.sobrecanalUsos ?? 0) ? ` Usos hoje: ${c.sobrecanalUsos}.` : ''}`,
+        `Arma o próximo dano de magia de até 5º círculo. O primeiro uso depois do descanso longo é de graça; os seguintes ferem você (2d12 por círculo, +1d12 por uso).${(c.sobrecanalUsos ?? 0) ? ` Usos hoje: ${c.sobrecanalUsos}.` : ''}`,
         'Livre', () => !c.sobrecanalizaPronta],
       divineIntervention: ['divineIntervention', 'Intervenção Divina',
         'Pede ajuda ao seu deus: rola d100 e, se tirar o seu nível ou menos, ele atende. Atendido, ele se cala por sete dias; certo no 20º nível.',

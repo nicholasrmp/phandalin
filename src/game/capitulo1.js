@@ -1,6 +1,6 @@
 // Capítulo 1 da campanha: de Neverwinter até a emboscada na Trilha de Triboar.
 //
-//   abertura    Neverwinter: Gundren Rockseeker contrata o grupo para levar a
+//   abertura    Neverwinter: Gundren Buscapedra contrata o grupo para levar a
 //               carroça a Phandalin; ele vai na frente com Sildar Hallwinter.
 //               Cada herói escolhido ganha a sua linha (o "porquê" da
 //               história dele), então a abertura muda com o grupo.
@@ -84,7 +84,7 @@ export function criarCapitulo1(app, config) {
         {
           titulo: 'Neverwinter',
           texto: [
-            'A taverna perto das docas cheira a peixe frito e a chuva que não passa. Num canto, um anão de barba ruiva e nariz queimado de sol espalha papéis pela mesa e paga rodadas para quem senta perto. Chama-se Gundren Rockseeker, e tem pressa.',
+            'A taverna perto das docas cheira a peixe frito e a chuva que não passa. Num canto, um anão de barba ruiva e nariz queimado de sol espalha papéis pela mesa e paga rodadas para quem senta perto. Chama-se Gundren Buscapedra, e tem pressa.',
             'Ele precisa de gente para levar uma carroça de suprimentos até a Barthen Provisões, um posto de troca em Phandalin — vila sem lei a dois dias de viagem a sudeste. Gundren vai na frente, a cavalo, com o guerreiro Sildar Hallwinter, porque tem "negócios" a acertar antes. Paga dez peças de ouro a cada um, na entrega.',
             'Entre um gole e outro, deixa escapar que ele e os irmãos acharam algo grande nas colinas. Quando alguém pergunta o quê, ele muda de assunto rápido demais.',
           ],
@@ -653,7 +653,7 @@ export function criarCapitulo1(app, config) {
       formato: 'painel',
       paginas: [{ titulo: 'Falar com Plantas', texto: [
         `O mato cochicha em coro, nervoso: "${escondidos.length} deles… com arcos… deitados atrás das moitas dos dois lados… esperando o grupo chegar nos cavalos".`,
-        `${c.name} sabe onde estão. Os goblins, não sabem que foram descobertos.`,
+        `${c.name} sabe onde estão. Os goblins não sabem que foram descobertos.`,
       ] }],
       escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }, { rotulo: 'Ainda não', valor: 'ainda' }],
     });

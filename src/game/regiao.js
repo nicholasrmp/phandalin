@@ -5,7 +5,7 @@
 //   - o grupo marcha oito horas por dia, no ritmo que escolher
 //     (`rules/marcha.js`), e acampa à noite — um descanso longo por noite;
 //   - um teste de encontro de dia e outro de noite: d20, 17 a 20 é encontro, e
-//     um d12 na tabela da Trilha Triboar diz o quê
+//     um d12 na tabela da Trilha de Triboar diz o quê
 //     (`rules/encontros-estrada.js`);
 //   - o XP de um encontro é o dos monstros, dividido pelo grupo.
 // Os MANTIMENTOS são os do livro e moram em `rules/mantimentos.js`: uma ração
@@ -116,7 +116,7 @@ export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0, montaria 
 }
 
 /**
- * A tabela da Trilha Triboar, d12. `dia`/`noite` são as faixas do dado em
+ * A tabela da Trilha de Triboar, d12. `dia`/`noite` são as faixas do dado em
  * cada período (null: não acontece naquele período). `qtd` é a rolagem do
  * número de criaturas, como [dados, faces, bônus].
  */
@@ -186,7 +186,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         `Rações: o grupo leva ${d.racoes}, e a viagem pede ${normal.dias * vivos().length} em ritmo normal.${d.racoes < normal.dias * vivos().length ? ' O que faltar sai da caça e da colheita — ou da fome.' : ''}`,
         `Água: ${encheu > 0 ? `os cantis foram enchidos aqui (${encheu} litro(s)) e levam ` : 'os cantis levam '}${d.agua} litro(s), um dia para cada um. O resto é riacho, chuva ou magia.`,
         montaria
-          ? `Montaria: ${MONTARIAS[montaria].nome} — ${MONTARIAS[montaria].resumo}. (Regra da casa: o Livro do Jogador nao casa a tabela de marcha com a ficha da montaria.)`
+          ? `Montaria: ${MONTARIAS[montaria].nome} — ${MONTARIAS[montaria].resumo}. (Regra da casa: o Livro do Jogador não casa a tabela de marcha com a ficha da montaria.)`
           : null,
         'Em que passo?',
         ...porRitmo.map((x) => {
@@ -820,7 +820,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
       if (t.passou) {
         const xp = xpDeConversa(xpDoBando, herois, doBando);
         registrar(`${falante.quem.name} conversa e ${nomeDoBando(e)} seguem caminho (Persuasão ${t.total} contra ${reacao.cd}).`);
-        await pagarXp(xp, `Conversa na Trilha Triboar (${e.nome})`);
+        await pagarXp(xp, `Conversa na Trilha de Triboar (${e.nome})`);
         for (const t2 of avancarTempo(estadoDeUtilidade(camp), 10, herois)) registrar(t2);
         return null;
       }

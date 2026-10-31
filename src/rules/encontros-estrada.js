@@ -1,4 +1,4 @@
-// A tabela de encontros da Trilha Triboar, o teste que a dispara e o que
+// A tabela de encontros da Trilha de Triboar, o teste que a dispara e o que
 // acontece ANTES das armas saírem: a que distância um vê o outro, com que cara
 // eles chegam, e se dá para passar sem luta.
 //

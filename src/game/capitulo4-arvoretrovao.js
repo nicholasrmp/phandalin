@@ -387,7 +387,7 @@ export function criarArvoreTrovao(app, config) {
     const segunda = bando.slice(4);
     await painel([
       'A casa da fazenda foi engolida pelo mato até a metade, e o mato cresce por dentro das fundações. Quem mexe no entulho acorda o que dorme debaixo dele.',
-      'À leste, a sarça inteira se levanta em pé: galhos, aos pares, a andar. Quatro agora, e o chão ainda treme com os que vêm atrás.',
+      'A leste, a sarça inteira se levanta: galhos, aos pares, a andar. Quatro agora, e o chão ainda treme com os que vêm atrás.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     if (segunda.length) prepararReforcos({ 2: { bando: segunda, aviso: 'Mais quatro galhos secos chegam pelo outro lado da casa.' } });
     luta(primeira);
@@ -451,7 +451,7 @@ export function criarArvoreTrovao(app, config) {
     if (n === 2) {
       await painel([
         'Mais perto, dá para ver o que a cinza do chão esconde: um elmo amassado como papel, e dentro dele coisa que não se olha duas vezes. E, a três passos, metade de um escudo com um brasão que ninguém da região usa.',
-        'Lá dentro, a respiração. Longa, grossa, com um assovio no fim — como fole velho. Devagar. Quem respira assim não está com pressa.',
+        'Lá dentro, a respiração. Longa, grossa, com um assobio no fim — como fole velho. Devagar. Quem respira assim não está com pressa.',
       ]);
     }
   }
@@ -765,7 +765,7 @@ export function criarArvoreTrovao(app, config) {
         castelo: {
           ao: () => {
             feitos.sabeOCastelo = true;
-            pista('Reidoth disse onde fica o Castelo Dentefino: ao norte da Trilha Triboar, dentro da Floresta de Neverwinter. Agora ele aparece no mapa da região.');
+            pista('Reidoth disse onde fica o Castelo Dentefino: ao norte da Trilha de Triboar, dentro da Floresta de Neverwinter. Agora ele aparece no mapa da região.');
           },
           fala: 'Sei onde é. Ruína de castelo no meio da mata, ao norte da trilha — torres caindo uma sobre a outra, e goblin em todas elas. O cheiro chega antes da parede.',
           narra: 'Ele risca o chão de cinza com o pé: uma linha para a trilha, um quadrado para o castelo, e um traço do quadrado até a linha.',
@@ -946,7 +946,7 @@ export function criarArvoreTrovao(app, config) {
           'Ele cai de lado, e a torre toda estremece. O silêncio depois é diferente de todos os silêncios desta vila.',
           'Vocês mataram um dragão. Ninguém em Phandalin vai acreditar, e não importa: está ali no chão.',
         ]);
-        await darXpDaLuta(valeDoBando([dragao]), 'O Presa Peçonhenta');
+        await darXpDaLuta(valeDoBando([dragao]), 'Presa Peçonhenta');
       }
       if (salvo.culto === 'aliado') {
         // Quem aceitou a aliança lutou contra o dragão E os seis. Os que caíram (ou fugiram com Favric) pagam o XP deles.

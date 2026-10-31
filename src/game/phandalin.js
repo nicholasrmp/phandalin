@@ -41,13 +41,13 @@ import { nomeDoMomento, deNoite } from './relogio.js';
 
 // ------------------------------------------------------------ missões ----
 export const MISSOES = {
-  gundren: { titulo: 'Achar Gundren', de: 'Sildar Hallwinter', texto: 'Gundren Rockseeker foi levado para o Castelo Dentefino, do Rei Grol. Ninguém na vila sabe onde fica.' },
+  gundren: { titulo: 'Achar Gundren', de: 'Sildar Hallwinter', texto: 'Gundren Buscapedra foi levado para o Castelo Dentefino, do Rei Grol. Ninguém na vila sabe onde fica.' },
   castelo: { titulo: 'O Castelo Dentefino', de: 'Sildar Hallwinter', texto: 'Achar o Castelo Dentefino e derrotar ou expulsar o chefe da tribo.', recompensa: '500 po' },
   iarno: { titulo: 'Onde está Iarno?', de: 'Sildar Hallwinter', texto: 'Iarno Albrek, mago da Aliança dos Lordes — baixo, barba preta, uns trinta anos — sumiu explorando a Mansão Tresendar há dois meses. Achá-lo, vivo ou não.', recompensa: '200 po por acabar com os Marcarrubra' },
   marcarrubra: { titulo: 'Os Marcarrubra', de: 'a vila', texto: 'A gangue de mantos vermelhos domina Phandalin. Frequentam o Gigante Adormecido; a base deles fica embaixo da Mansão Tresendar, no leste da vila.' },
   halia: { titulo: 'A oferta de Halia', de: 'Halia Thornton', texto: 'Eliminar o líder dos Marcarrubra, o Cajavidro, e levar a ela qualquer correspondência achada no quarto dele.', recompensa: '100 po' },
   coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', texto: 'Na torre velha do Poço da Coruja Velha, dois dias a nordeste, há gente nova — e uns garimpeiros juram que foram postos para correr por mortos que andavam. Ir lá ver quem é, e contar ao Daran.' },
-  orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'O Harbin pagou um aviso na porta do salão: um bando de orcs anda assaltando quem passa pela Trilha Triboar, e se esconde para os lados do Cume da Wyvern. Acabar com o bando.', recompensa: '100 po' },
+  orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'O Harbin pagou um aviso na porta do salão: um bando de orcs anda assaltando quem passa pela Trilha de Triboar, e se esconde para os lados do Cume da Wyvern. Acabar com o bando.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
   reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
   kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
@@ -206,7 +206,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             narra: 'Prateleiras até o teto e cheiro de corda nova e couro curtido. Dois rapazes, Ander e Thistle, carregam sacos de farinha para dentro. Uma tabuleta avisa: armas e armaduras, só na Escudo Leão.',
             fala: 'Elmar Barthen. Em que posso ajudar?',
             opcoes: [
-              { texto: 'Trouxemos a carroça de Gundren Rockseeker.', vai: 'carroca', uma: true,
+              { texto: 'Trouxemos a carroça de Gundren Buscapedra.', vai: 'carroca', uma: true,
                 requer: () => (camp.capitulo1?.carroca && !v.feito.carroca ? null : 'sem carroça para entregar'), oculta: true },
               { texto: 'Gundren foi capturado pelos goblins.', vai: 'gundren', uma: true },
               { texto: 'Como vão os negócios?', vai: 'negocios', uma: true },
@@ -231,8 +231,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             ],
           },
           mina: {
-            ao: () => pista('A Caverna Onda Eco: mina de anões e gnomos do Pacto de Phandelver, perdida há séculos quando orcs a saquearam. Dentro, a lendária Forja dos Feitiços.'),
-            narra: 'Vocês se lembram das histórias: há uns quinhentos anos, anões e gnomos fizeram um pacto com magos humanos — o Pacto de Phandelver — para dividir uma mina rica, a Caverna Onda Eco, onde ficava a Forja dos Feitiços. Orcs vieram, a caverna foi perdida, e a velha Phandalin junto.',
+            ao: () => pista('A Caverna Onda Eco: mina de anões e gnomos do Pacto de Phandelver, perdida há séculos quando orcs a saquearam. Dentro, a lendária Forja das Magias.'),
+            narra: 'Vocês se lembram das histórias: há uns quinhentos anos, anões e gnomos fizeram um pacto com magos humanos — o Pacto de Phandelver — para dividir uma mina rica, a Caverna Onda Eco, onde ficava a Forja das Magias. Orcs vieram, a caverna foi perdida, e a velha Phandalin junto.',
             fala: 'Isso! É disso que Gundren falava. E é por isso que alguém o quer.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
@@ -710,7 +710,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       const livres = vivos().filter((c) => !c.faccao);
       const quem = await narrar(app.root, {
         formato: 'painel',
-        paginas: [{ retrato: NPCS[f.npc]?.look, texto: [aceitos.length ? `${aceitos.join(' e ')} já aceitou. Mais alguém?` : f.convite] }],
+        paginas: [{ retrato: NPCS[f.npc]?.look, texto: [aceitos.length ? `${aceitos.join(' e ')} já ${aceitos.length > 1 ? 'aceitaram' : 'aceitou'}. Mais alguém?` : f.convite] }],
         escolhas: [
           ...livres.map((c) => ({ rotulo: `${c.name} aceita`, valor: c })),
           { rotulo: aceitos.length ? 'Pronto' : 'Ninguém, por enquanto', valor: null },
@@ -909,7 +909,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       tela.atualizar();
     },
     onMenu: () => { tela.fechar(); app.encerrarPartida(); },
-    // Sair da vila pela Trilha Triboar: o mapa da região.
+    // Sair da vila pela Trilha de Triboar: o mapa da região.
     botoes: [{ rotulo: 'Viajar', dica: 'Sair de Phandalin pelo mapa da região', fazer: () => { tela.fechar(); app.irParaRegiao(vivos(), 'phandalin'); } }],
     // A ficha fora de combate: vestir o que se comprou, guardar para vender.
     onFicha: (c) => app.abrirFichaNaVila(c, () => tela.atualizar()),

@@ -265,7 +265,7 @@ export default {
   },
 
   // ----------------------------------------------------------------------------------- o Castelo Dentefino ----
-  'Gundren Rockseeker': {
+  'Gundren Buscapedra': {
     nos: {
       'x:anao': {
         narra: 'Ele ri uma vez, curto, e a risada dói.',

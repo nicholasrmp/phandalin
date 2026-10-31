@@ -110,7 +110,7 @@ export function criarEstrada(app, config) {
     }
     const grupo = enc.combatants.filter((c) => c.side === 'party');
     if (outcome !== 'vitoria') {
-      await narrar(root, { formato: 'tela', paginas: [{ titulo: 'Na Trilha Triboar', texto: [
+      await narrar(root, { formato: 'tela', paginas: [{ titulo: 'Na Trilha de Triboar', texto: [
         'A trilha fica quieta de novo. Ninguém volta a Phandalin para contar o que aconteceu.'] }] });
       app.encerrarPartida();
       return;
@@ -139,7 +139,7 @@ export function criarEstrada(app, config) {
     if (xp) {
       app.xpPendente = {
         xp: (app.xpPendente?.xp ?? 0) + xp,
-        motivo: [app.xpPendente?.motivo, `Na Trilha Triboar (${e.nome})`].filter(Boolean).join('; '),
+        motivo: [app.xpPendente?.motivo, `Na Trilha de Triboar (${e.nome})`].filter(Boolean).join('; '),
       };
     }
     fecharTabuleiro();
@@ -168,7 +168,7 @@ export function criarEstrada(app, config) {
     });
     void fim;
     if (feitos.sabeOCastelo) {
-      (vila.pistas ??= []).push('Um goblin capturado na Trilha Triboar ensinou o caminho do Castelo Dentefino: ao norte, dentro da Floresta de Neverwinter. Agora ele aparece no mapa da região.');
+      (vila.pistas ??= []).push('Um goblin capturado na Trilha de Triboar ensinou o caminho do Castelo Dentefino: ao norte, dentro da Floresta de Neverwinter. Agora ele aparece no mapa da região.');
       texto.push('O Castelo Dentefino agora aparece no mapa da região.');
     }
   }
@@ -183,7 +183,7 @@ export function criarEstrada(app, config) {
   }
 
   return {
-    lugar: 'Trilha Triboar',
+    lugar: 'Trilha de Triboar',
     get explorando() { return false; },
     get encerrado() { return estado.encerrado; },
     interacoes: () => [],
@@ -194,7 +194,7 @@ export function criarEstrada(app, config) {
       const o = noite
         ? 'O fogo estala. Do lado de fora da luz, alguma coisa se mexe — e não é uma só.'
         : 'Na curva da trilha, entre as pedras e o capim alto, vocês não estão sozinhos.';
-      await narrar(root, { formato: 'painel', paginas: [{ titulo: noite ? 'Acampamento' : 'Trilha Triboar', texto: [o] }],
+      await narrar(root, { formato: 'painel', paginas: [{ titulo: noite ? 'Acampamento' : 'Trilha de Triboar', texto: [o] }],
         escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
       // O fogo foi abafado tarde demais (`game/regiao.js`): o acampamento fica
       // na brasa. Sem isto a tela prometia escuro e o mapa seguia iluminado,

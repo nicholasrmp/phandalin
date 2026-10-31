@@ -128,7 +128,7 @@ export const LOJAS = {
     nome: 'Transações Escudo Leão', npc: 'linene',
     estoque: estoqueEscudoLeao,
     compra: (d, tipo) => ['arma', 'armadura', 'escudo'].includes(tipo) && d.custo > 0 && mundano(d),
-    fala: { comprar: 'Os fundos. Olhe, pergunte, não encoste o que não vai levar.', vender: 'Metade do preço, e só se estiver inteiro.' },
+    fala: { comprar: 'Os fundos. Olhe, pergunte, não encoste no que não vai levar.', vender: 'Metade do preço, e só se estiver inteiro.' },
   },
   cambio: {
     nome: 'Câmbio de Minério', npc: 'halia',

@@ -65,7 +65,7 @@ export const EXAMES = {
   braseiroVerde: 'Um braseiro de ferro sobre um pedestal de pedra, e nele uma chama verde que não consome nada, estalando como se tivesse fôlego. Não esquenta: arrepia.',
   altarDumathoin: 'Um altar baixo de pedra, as faces cobertas de relevos de mineiros e de montanhas, e no topo uma bacia de ferro para as oferendas. Faz tempo que ninguém oferece nada.',
   bancadaRunas: 'Uma bancada de encantador com uma bigorna, ferramentas finas e runas azuis que acendem de leve quando se chega perto. É de onde saíam as armas dos anões, antes de a magia enfraquecer.',
-  mesaDeGuerra: 'Uma mesa de madeira pesada coberta de mapas desenrolados, com velas derretidas e uma aranha negra entalhada na ponta. O dono dela anda a explorar a mina palmo a palmo.',
+  mesaDeGuerra: 'Uma mesa de madeira pesada coberta de mapas desenrolados, com velas derretidas e uma aranha negra entalhada na ponta. O dono dela anda explorando a mina palmo a palmo.',
   guinchoPoco: 'Um guincho de madeira armado sobre uma abertura escura no chão, com corda e balde de ferro. A corda ainda aguenta o balde.',
   bau: 'Um baú de ferro chamuscado, aberto, perto da cama. Alguém acumulou muito aqui, e não pôde levar.',
 };
@@ -354,7 +354,7 @@ export function arvoreDeNezznar({ refem = false } = {}) {
         ],
       },
       revela: {
-        narra: 'O anão não pisca quando a tocha estala, e a barba dele é lisa demais, sem uma ponta queimada, como a de quem acabou de a vestir.',
+        narra: 'O anão não pisca quando a tocha estala, e a barba dele é lisa demais, sem uma ponta queimada, como a de quem acabou de vesti-la.',
         fala: 'Olho bom. Vhalak, acabou o teatro.',
         opcoes: [{ texto: '…', fim: 'luta-revelado' }],
       },

@@ -43,7 +43,7 @@ export async function visitarConyberry(app, grupo) {
   const painel = (titulo, texto) => narrar(app.root, { formato: 'painel', paginas: [{ titulo, texto: [].concat(texto) }] });
 
   await painel('Ruínas de Conyberry', [
-    'A Trilha Triboar passa bem no meio do que foi uma vila: chaminés de pedra sem casa em volta, um poço entupido de folhas, uma placa de taverna caída de cara no chão. Faz muito tempo que alguém pôs fogo em tudo, e ninguém voltou para reconstruir.',
+    'A Trilha de Triboar passa bem no meio do que foi uma vila: chaminés de pedra sem casa em volta, um poço entupido de folhas, uma placa de taverna caída de cara no chão. Faz muito tempo que alguém pôs fogo em tudo, e ninguém voltou para reconstruir.',
     'Na beira da vila, uma picada velha some para o noroeste, entre as árvores da mata de Neverwinter.',
   ]);
 
@@ -136,7 +136,7 @@ export async function visitarConyberry(app, grupo) {
     },
     castelo: () => {
       feitos.sabeOCastelo = true;
-      pista('Agatha disse onde fica o Castelo Dentefino: dentro da Floresta de Neverwinter, ao norte da Trilha Triboar. Agora ele aparece no mapa da região.');
+      pista('Agatha disse onde fica o Castelo Dentefino: dentro da Floresta de Neverwinter, ao norte da Trilha de Triboar. Agora ele aparece no mapa da região.');
       return 'Ao norte da trilha, dentro da mata. Torres velhas caindo umas sobre as outras, cheias de goblin. O cheiro chega antes.';
     },
     ondaEco: () => {

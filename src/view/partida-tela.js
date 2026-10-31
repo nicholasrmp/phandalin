@@ -523,7 +523,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
         onLugar: (l) => { audio.play('click'); enviar({ tipo: 'agir', acao: 'lugar', lugar: l.id }); },
         onMenu: () => aoSair(), onFicha: (c) => abrirFicha(vilaHerois.get(c?.id) ?? c),
         botoes: [
-          { rotulo: 'Descanso rápido', dica: 'Pede um descanso curto: o grupo vota', fazer: () => enviar({ tipo: 'agir', acao: 'descanso' }) },
+          { rotulo: 'Descanso curto', dica: 'Pede um descanso curto: o grupo vota', fazer: () => enviar({ tipo: 'agir', acao: 'descanso' }) },
           ...(snap.acoes ?? []).filter((a) => a.id !== 'dormir').map((a) => ({ rotulo: a.rotulo, dica: a.dica, fazer: () => enviar({ tipo: 'agir', acao: 'vila-acao', qual: a.id }) })),
         ],
         ...((snap.acoes ?? []).some((a) => a.id === 'dormir') ? { onDormir: () => enviar({ tipo: 'agir', acao: 'vila-acao', qual: 'dormir' }) } : {}),

@@ -679,7 +679,7 @@ export function criarCastelo(app, config) {
           if (ate.cost > 0) enc.moveAlong(vyerith, Battlefield.pathFrom(alcance, ate));
           gundren.dead = true;
           salvo.gundren = 'morto';
-          enc.say('acao', 'A coisa sem rosto se ajoelha junto do anão caído, e a faca entra uma vez só. Quem soubesse onde fica a mina não pode mais contar.');
+          enc.say('acao', 'A coisa sem rosto se ajoelha junto do anão caído, e a faca entra uma vez só. Quem sabia onde fica a mina não pode mais contar.');
           app.refresh();
           return true;
         }

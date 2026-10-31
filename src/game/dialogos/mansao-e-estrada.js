@@ -1,7 +1,7 @@
 // Falas por perfil (raça, classe, atributo). Formato em `../dialogos-extras.js`.
 //
 // Esta leva cobre a Mansão Tresendar (capitulo3-mansao.js), a briga de rua (capitulo3-rua.js), o covil dos Garras de Pedra
-// (capitulo1.js / capitulo2.js), a Trilha Triboar (capitulo4-estrada.js), as ruínas de Conyberry (conyberry.js) e a caverna
+// (capitulo1.js / capitulo2.js), a Trilha de Triboar (capitulo4-estrada.js), as ruínas de Conyberry (conyberry.js) e a caverna
 // escura de teste (cena-caverna.js).
 //
 // Onde duas cenas dividem o mesmo NPC (o goblin capturado do capítulo 1 e o da estrada; o Droop da mansão e o da caverna de
@@ -279,7 +279,7 @@ export default {
     },
   },
 
-  // O goblin capturado: o da emboscada do capítulo 1 (oi, cala, conta) e o da Trilha Triboar (oi, enrola, conta). Só `oi` e
+  // O goblin capturado: o da emboscada do capítulo 1 (oi, cala, conta) e o da Trilha de Triboar (oi, enrola, conta). Só `oi` e
   // `conta` existem nas duas; a falha de uma opção por perfil fecha a conversa (só se pode deixá-lo amarrado), para os extras não
   // virarem tentativas grátis.
   goblin: {

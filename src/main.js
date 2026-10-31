@@ -1656,7 +1656,7 @@ class App {
         formato: "painel",
         paginas: [
           {
-            titulo: tipo === "longo" ? "Descanso longo" : "Descanso rápido",
+            titulo: tipo === "longo" ? "Descanso longo" : "Descanso curto",
             texto: [
               tipo === "longo"
                 ? `${nome} pede um descanso longo: oito horas de sono, com a vida, os espaços de magia e os recursos de volta. O grupo concorda?`

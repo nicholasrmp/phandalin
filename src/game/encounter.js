@@ -193,7 +193,7 @@ const PREDIOS_RUA = [
   { tipo: 'casa', x: 14, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
 ];
 
-// O ERMO (Parte 3): a Trilha Triboar entre colinas, para os encontros do
+// O ERMO (Parte 3): a Trilha de Triboar entre colinas, para os encontros do
 // caminho. A trilha corre de oeste a leste no meio; pedras e moitas dão
 // cobertura dos dois lados, e uns poucos carvalhos fecham os cantos. De
 // noite é o mesmo chão, com a fogueira do acampamento no meio da trilha.
@@ -327,7 +327,7 @@ export function mapaDo(variante = 'padrao') {
     };
   }
   if (variante === 'ermo' || variante === 'ermoNoite') {
-    // Encontro na Trilha Triboar. De dia o grupo vem andando pela trilha; de
+    // Encontro na Trilha de Triboar. De dia o grupo vem andando pela trilha; de
     // noite está em volta da fogueira, e o resto do mapa é breu.
     const noite = variante === 'ermoNoite';
     return {

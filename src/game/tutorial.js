@@ -16,7 +16,7 @@ export const DICAS = {
   },
   golpe: {
     titulo: 'Como um ataque funciona',
-    texto: ['Rola-se um d20 e soma-se o bônus do herói: se passar a **Classe de Armadura** do alvo (CA), acerta. O 20 natural é **crítico** (dano em dobro); o 1 natural sempre erra.',
+    texto: ['Rola-se um d20 e soma-se o bônus do herói: se igualar ou superar a **Classe de Armadura** do alvo (CA), acerta. O 20 natural é **crítico** (dano em dobro); o 1 natural sempre erra.',
       'O **Registro** guarda cada rolagem e o porquê de cada resultado.'],
   },
   magia: {
