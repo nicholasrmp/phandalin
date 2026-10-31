@@ -46,6 +46,86 @@ export default {
           14: ['overchannel'],
         },
       },
+      abjuracao: {
+        nome: 'Escola de Abjuração',
+        fonte: 'phb',
+        niveis: {
+          2: ['abjurationSavant', 'arcaneWard'],
+          6: ['projectedWard'],
+          10: ['improvedAbjuration'],
+          14: ['spellResistance'],
+        },
+      },
+      adivinhacao: {
+        nome: 'Escola de Adivinhação',
+        fonte: 'phb',
+        niveis: {
+          2: ['divinationSavant', 'portent'],
+          6: ['expertDivination'],
+          10: ['thirdEye'],
+          14: ['greaterPortent'],
+        },
+      },
+      conjuracao: {
+        nome: 'Escola de Conjuração',
+        fonte: 'phb',
+        niveis: {
+          2: ['conjurationSavant', 'minorConjuration'],
+          6: ['benignTransposition'],
+          10: ['focusedConjuration'],
+          14: ['durableSummons'],
+        },
+        // Transposição Benigna: uma vez, e de novo depois de um descanso longo ou de conjurar uma magia de conjuração de 1º círculo ou mais.
+        recursos: { benignTransposition: (n) => (n >= 6 ? 1 : 0) },
+      },
+      encantamento: {
+        nome: 'Escola de Encantamento',
+        fonte: 'phb',
+        niveis: {
+          2: ['enchantmentSavant', 'hypnoticGaze'],
+          6: ['instinctiveCharm'],
+          10: ['splitEnchantment'],
+          14: ['alterMemories'],
+        },
+        // Encanto Instintivo: uma vez por descanso longo, ou depois de conjurar uma magia de encantamento de 1º círculo ou mais.
+        recursos: { instinctiveCharm: (n) => (n >= 6 ? 1 : 0) },
+      },
+      ilusao: {
+        nome: 'Escola de Ilusão',
+        fonte: 'phb',
+        niveis: {
+          2: ['illusionSavant', 'improvedMinorIllusion'],
+          6: ['malleableIllusions'],
+          10: ['illusorySelf'],
+          14: ['illusoryReality'],
+        },
+        // Eu Ilusório: volta num descanso curto ou longo, ou ao conjurar uma magia de ilusão de 1º círculo ou mais.
+        recursos: { illusorySelf: (n) => (n >= 10 ? 1 : 0) },
+      },
+      necromancia: {
+        nome: 'Escola de Necromancia',
+        fonte: 'phb',
+        niveis: {
+          2: ['necromancySavant', 'grimHarvest'],
+          6: ['undeadThralls'],
+          10: ['inuredToUndeath'],
+          14: ['commandUndead'],
+        },
+      },
+      transmutacao: {
+        nome: 'Escola de Transmutação',
+        fonte: 'phb',
+        niveis: {
+          2: ['transmutationSavant', 'minorAlchemy'],
+          6: ['transmutersStone'],
+          10: ['shapechanger'],
+          14: ['masterTransmuter'],
+        },
+        // A Pedra do Transmutador dá UM benefício à escolha.
+        escolhasDeGanho: {
+          transmutersStone: { opcoes: ['stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning'] },
+        },
+      },
     },
   },
 };

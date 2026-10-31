@@ -75,6 +75,74 @@ function refazerAtaque(enc, atk, bonus, ac, escolher) {
  * A jogada de ataque depois dos talentos: Sortudo e Inspiração de quem ataca
  * (para salvar um erro), Sortudo de quem é atacado (para estragar um acerto).
  */
+/**
+ * PRODÍGIO (mago de Adivinhação, 2º): depois de um descanso longo, 2d20 (3d20 no 14º) rolados e guardados; cada um SUBSTITUI uma jogada de
+ * d20 de qualquer criatura que o mago veja. O jogo usa por conta própria, e só quando muda o resultado:
+ *   - o d20 de um ALIADO que ia falhar (ataque ou resistência) vira o menor dado guardado que o faça passar;
+ *   - o d20 de um INIMIGO que ia acertar um aliado (ou passar numa resistência) vira o maior dado que o faça falhar.
+ * Testes de atributo não passam por aqui (o jogo não tem o hook), então o Prodígio não os cobre.
+ */
+export function garantirPortento(enc, c) {
+  if (c.dead || !c.features?.includes('portent') || c.portento !== undefined) return;
+  const n = c.features.includes('greaterPortent') ? 3 : 2;
+  c.portento = Array.from({ length: n }, () => enc.rng.die(20));
+  enc.say('recurso', `${c.name} lê os presságios do dia: ${c.portento.join(', ')} (Prodígio).`);
+}
+
+function adivinhoDe(enc, c, doLado) {
+  return enc.combatants.filter((d) => !d.dead && d.features?.includes('portent') && d.portento?.length
+    && (doLado ? d.side === c.side : d.side !== c.side) && !conditionEffects(d).incapacitated
+    && enc.field.hasLineOfSight(d.pos, c.pos));
+}
+
+/** Gasta o dado do Prodígio que serve ao `criterio`; devolve o dado usado ou null. */
+function gastarPortento(enc, adivinhos, criterio) {
+  for (const d of adivinhos) {
+    const ok = d.portento.filter(criterio).sort((a, b) => a - b);
+    if (!ok.length) continue;
+    return { d, dado: ok[0] };
+  }
+  return null;
+}
+
+function portentoNoAtaque(enc, atacante, alvo, r, bonus, ac) {
+  if (!r.hit) {
+    const uso = gastarPortento(enc, adivinhoDe(enc, atacante, true), (x) => x === 20 || (x !== 1 && x + bonus >= ac));
+    if (uso) {
+      uso.d.portento.splice(uso.d.portento.indexOf(uso.dado), 1);
+      enc.say('recurso', `${uso.d.name} troca o d20 de ${atacante.name} pelo dado do Prodígio (${uso.dado}): acerta.`, 'Prodígio');
+      return { ...r, natural: uso.dado, total: uso.dado + bonus, critical: uso.dado === 20, fumble: false, hit: true };
+    }
+  } else if (!r.critical) {
+    const uso = gastarPortento(enc, adivinhoDe(enc, atacante, false), (x) => x === 1 || (x !== 20 && x + bonus < ac));
+    if (uso) {
+      uso.d.portento.splice(uso.d.portento.indexOf(uso.dado), 1);
+      enc.say('recurso', `${uso.d.name} troca o d20 de ${atacante.name} pelo dado do Prodígio (${uso.dado}): erra.`, 'Prodígio');
+      return { ...r, natural: uso.dado, total: uso.dado + bonus, critical: false, fumble: uso.dado === 1, hit: false };
+    }
+  }
+  return r;
+}
+
+function portentoNaResistencia(enc, c, r, bonus, dc) {
+  if (!r.success) {
+    const uso = gastarPortento(enc, adivinhoDe(enc, c, true), (x) => x === 20 || x + bonus >= dc);
+    if (uso) {
+      uso.d.portento.splice(uso.d.portento.indexOf(uso.dado), 1);
+      enc.say('recurso', `${uso.d.name} troca o d20 de ${c.name} pelo dado do Prodígio (${uso.dado}): passa.`, 'Prodígio');
+      return { ...r, natural: uso.dado, total: uso.dado + bonus, success: true };
+    }
+  } else if (r.natural !== 20) {
+    const uso = gastarPortento(enc, adivinhoDe(enc, c, false), (x) => x === 1 || x + bonus < dc);
+    if (uso) {
+      uso.d.portento.splice(uso.d.portento.indexOf(uso.dado), 1);
+      enc.say('recurso', `${uso.d.name} troca o d20 de ${c.name} pelo dado do Prodígio (${uso.dado}): falha.`, 'Prodígio');
+      return { ...r, natural: uso.dado, total: uso.dado + bonus, success: false };
+    }
+  }
+  return r;
+}
+
 export function segundaChanceNoAtaque(enc, atacante, alvo, atk, bonus, ac) {
   let r = atk;
   // SORTE (halfling): um 1 natural no d20 do ataque é rolado de novo, e vale o novo — antes de qualquer outra segunda chance.
@@ -132,7 +200,8 @@ export function segundaChanceNoAtaque(enc, atacante, alvo, atk, bonus, ac) {
     enc.say('recurso', `${alvo.name} usa a sorte: desvantagem no ataque de ${atacante.name}${r.hit ? ', que acerta mesmo assim' : ', que erra'}.`,
       `Sortudo · restam ${alvo.pontosDeSorte} pontos`);
   }
-  return r;
+  // PRODÍGIO (mago de Adivinhação): por último, depois de todas as segundas chances.
+  return portentoNoAtaque(enc, atacante, alvo, r, bonus, ac);
 }
 
 /** O teste de resistência depois do Sortudo e da Inspiração. */
@@ -175,7 +244,7 @@ export function segundaChanceNaResistencia(enc, c, save, bonus, dc) {
     r = refaz((_, novo) => novo);
     enc.say('recurso', `${c.name} usa a Inspiração e rola a resistência de novo${r.success ? ': passa' : ''}.`);
   }
-  return r;
+  return portentoNaResistencia(enc, c, r, bonus, dc);
 }
 
 // ------------------------------------------------------------- dano ----

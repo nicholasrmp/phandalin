@@ -14,7 +14,7 @@ import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
 import { criarPersonagem, subirNivel } from '../rules/progressao.js';
 import { skillBonus, saveBonus, proficiencyBonus, rolarPericia } from '../rules/abilities.js';
-import { bonusDeIniciativa } from '../rules/talentos.js';
+import { bonusDeIniciativa, garantirPortento } from '../rules/talentos.js';
 import { addCondition, removeCondition, nivelDeExaustao, hasCondition, getCondition, conditionEffects, caEfetiva } from '../rules/conditions.js';
 import { RACAS, TRACOS_RACIAIS, racaDe, aplicarRaca, corDoDraconato, ANCESTRALIDADES_DRACONICAS, dadosDoSopro } from '../rules/racas.js';
 import { CARACTERISTICAS } from '../rules/classes/caracteristicas.js';
@@ -29,6 +29,7 @@ import { MONSTERS } from '../rules/monsters.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
 import { descansoLongo, escolherResistenciaInfernal, recuperarNoCurto, dadoDaCancaoDeDescanso, gastarDadoDeVida } from '../rules/descanso.js';
 import { montarAcampamento, descansou } from '../rules/acampamento.js';
+import { estadoDe, conjurarFora } from '../rules/utilidade.js';
 
 /** Um dado que sempre cai no mesmo número no d20; os outros dados caem no meio. */
 const dadoFixo = (n, faces = 20) => {
@@ -3458,6 +3459,298 @@ teste('Magia de Guerra (Cavaleiro Místico, 7º): depois de um truque com a aç�
   const { enc: e3 } = arena({ herois: [k18], foes: [g3] });
   assert.ok(e3.castSpell(k18, 'misselMagico', { target: g3 }).ok);
   assert.equal(k18.ataqueAposMagia, true, 'a aprimorada vale para qualquer magia');
+});
+
+// ============================================================================================================
+// AS ESCOLAS DE MAGO DO LIVRO DO JOGADOR (Abjuração, Adivinhação, Conjuração, Encantamento, Ilusão, Necromancia, Transmutação)
+// ============================================================================================================
+
+const escola = (id, nivel, extra = {}, escolhas = {}) => heroi('mago', nivel, 'Humano', { weapons: ['adaga'], ...extra }, { 2: { subclasse: id, ...escolhas } });
+
+teste('As sete escolas: cada uma dá as características do 2º nível, as do 6º, 10º e 14º chegam nos níveis certos', () => {
+  const esperado = {
+    abjuracao: ['arcaneWard', 'projectedWard', 'improvedAbjuration', 'spellResistance'],
+    adivinhacao: ['portent', 'expertDivination', 'thirdEye', 'greaterPortent'],
+    conjuracao: ['minorConjuration', 'benignTransposition', 'focusedConjuration', 'durableSummons'],
+    encantamento: ['hypnoticGaze', 'instinctiveCharm', 'splitEnchantment', 'alterMemories'],
+    ilusao: ['improvedMinorIllusion', 'malleableIllusions', 'illusorySelf', 'illusoryReality'],
+    necromancia: ['grimHarvest', 'undeadThralls', 'inuredToUndeath', 'commandUndead'],
+    transmutacao: ['minorAlchemy', 'transmutersStone', 'shapechanger', 'masterTransmuter'],
+  };
+  for (const [id, [n2, n6, n10, n14]] of Object.entries(esperado)) {
+    assert.ok(escola(id, 2).features.includes(n2), `${id} 2º: ${n2}`);
+    assert.ok(!escola(id, 5).features.includes(n6) && escola(id, 6).features.includes(n6), `${id} 6º: ${n6}`);
+    assert.ok(!escola(id, 9).features.includes(n10) && escola(id, 10).features.includes(n10), `${id} 10º: ${n10}`);
+    assert.ok(!escola(id, 13).features.includes(n14) && escola(id, 14).features.includes(n14), `${id} 14º: ${n14}`);
+    assert.ok(Object.keys(CLASSES.mago.subclasse.opcoes).includes(id));
+  }
+  assert.equal(Object.keys(CLASSES.mago.subclasse.opcoes).length, 8, 'as oito escolas do livro');
+});
+
+teste('Abjuração: a Proteção Arcana nasce com a primeira abjuração, absorve o dano antes dos PV e se recarrega com outras abjurações', () => {
+  const m = escola('abjuracao', 6);
+  m.pos = { x: 5, y: 5 };
+  m.spellcasting.prepared = ['armaduraArcana', 'escudoDaFe'];
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  assert.equal(m.wardHp, undefined, 'sem abjuração, sem proteção');
+  assert.ok(enc.castSpell(m, 'armaduraArcana', { target: m }).ok);
+  const max = 2 * 6 + Math.floor((m.abilities.int - 10) / 2);
+  assert.equal(m.wardHp, max, '2 × nível + INT');
+  const hp = m.hp;
+  enc.applyDamage(m, 5, 'cortante', gob, { deArma: true });
+  assert.equal(m.hp, hp, 'a proteção levou o golpe');
+  assert.equal(m.wardHp, max - 5);
+  enc.applyDamage(m, max, 'cortante', gob, { deArma: true });
+  assert.equal(m.wardHp, 0);
+  assert.equal(m.hp, hp - 5, 'o que passou da proteção feriu o mago');
+  m.actionUsed = false; m.bonusUsed = false;
+  assert.ok(enc.castSpell(m, 'armaduraArcana', { target: m, circulo: 2 }).ok, 'armadura arcana no 2º círculo');
+  assert.equal(m.wardHp, 4, 'recarrega 2 × o círculo do espaço');
+});
+
+teste('Proteção Projetada (6º): a proteção do mago absorve o dano de um aliado a até 9 m, com a reação; sem reação, não', () => {
+  const m = escola('abjuracao', 6);
+  m.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 8, y: 5 };
+  const gob = inimigo('goblin', { x: 9, y: 9 });
+  const { enc } = arena({ herois: [m, amigo], foes: [gob] });
+  m.wardHp = 20;
+  const hp = amigo.hp;
+  enc.applyDamage(amigo, 7, 'cortante', gob, { deArma: true });
+  assert.equal(amigo.hp, hp, 'o aliado não sentiu');
+  assert.equal(m.wardHp, 13);
+  assert.equal(m.reactionUsed, true, 'gastou a reação');
+  enc.applyDamage(amigo, 4, 'cortante', gob, { deArma: true });
+  assert.equal(amigo.hp, hp - 4, 'sem reação, o dano passa');
+  const longe = heroi('guerreiro', 1, 'Humano');
+  longe.pos = { x: 11, y: 11 };
+  const m2 = escola('abjuracao', 6);
+  m2.pos = { x: 0, y: 0 };
+  const { enc: e2 } = arena({ herois: [m2, longe], foes: [inimigo('goblin', { x: 11, y: 10 })] });
+  m2.wardHp = 20;
+  const hp2 = longe.hp;
+  e2.applyDamage(longe, 3, 'cortante', null, { deArma: true });
+  assert.equal(longe.hp, hp2 - 3, 'mais longe que 9 m: sem proteção');
+});
+
+teste('Resistência a Magia (14º): vantagem nas resistências contra magias e metade do dano de magia; arma não é magia', () => {
+  const m = escola('abjuracao', 14);
+  m.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 9, y: 9 });
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  assert.equal(enc.danoPorTipo(m, 20, 'fogo', true, false), 10, 'dano de magia pela metade');
+  assert.equal(enc.danoPorTipo(m, 20, 'fogo', false, true), 20, 'golpe de arma, inteiro');
+  const sem = escola('evocacao', 14);
+  assert.equal(enc.danoPorTipo(sem, 20, 'fogo', true, false), 20, 'outra escola, inteiro');
+  const r = enc.resistencia(m, 'dex', 30, { contra: { magico: true } });
+  assert.equal(r.mode, 'vantagem');
+  const r2 = enc.resistencia(m, 'dex', 30, { contra: { magico: false } });
+  assert.notEqual(r2.mode, 'vantagem');
+});
+
+teste('Prodígio (Adivinhação): rola os dados do dia na luta; troca o d20 do aliado que ia errar e o do inimigo que ia acertar', () => {
+  const m = escola('adivinhacao', 2);
+  m.pos = { x: 4, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 500;
+  gob.ac = 40;
+  const { enc } = arena({ herois: [m, amigo], foes: [gob] });
+  enc.rng = dadoEmSequencia(3);
+  garantirPortento(enc, m);
+  assert.equal(m.portento.length, 2, '2d20');
+  assert.equal(escola('adivinhacao', 14).features.includes('greaterPortent'), true);
+  m.portento = [20, 1];
+  const hp0 = gob.hp;
+  enc.rng = dadoEmSequencia(4);
+  enc.resolveAttack(amigo, gob, { weaponId: 'espadaLonga' });
+  assert.ok(gob.hp < hp0, 'o 20 do Prodígio trocou o 4 e acertou, mesmo contra CA 40');
+  assert.deepEqual(m.portento, [1], 'o dado se gastou');
+  // o dado 1 vira o acerto do inimigo em erro
+  const gob2 = inimigo('goblin', { x: 5, y: 6 });
+  gob2.ac = 10;
+  const { enc: e2 } = arena({ herois: [m, amigo], foes: [gob2] });
+  m.portento = [1];
+  const hpA = amigo.hp;
+  e2.rng = dadoEmSequencia(18);
+  e2.resolveAttack(gob2, amigo, { weaponId: null });
+  assert.equal(amigo.hp, hpA, 'o goblin ia acertar com 18, e o 1 do Prodígio o fez errar');
+  assert.deepEqual(m.portento, []);
+});
+
+teste('Adivinhação Especialista (6º): uma adivinhação de 2º círculo (fora do combate, onde elas existem) devolve um espaço menor', () => {
+  const m = escola('adivinhacao', 6);
+  m.pos = { x: 5, y: 5 };
+  m.spellcasting.prepared = ['verOInvisivel'];
+  m.spellcasting.slots[1] = 0;
+  const r = conjurarFora(estadoDe({}), m, 'verOInvisivel', { herois: [m], rng: makeRng(3), circulo: 2 });
+  assert.ok(r.ok, r.why);
+  assert.equal(m.spellcasting.slots[1], 1, 'o espaço de 1º voltou');
+  assert.equal(m.spellcasting.slots[2], m.spellcasting.slotsMax[2] - 1, 'o de 2º foi gasto');
+  const sem = escola('evocacao', 6);
+  sem.pos = { x: 5, y: 5 };
+  sem.spellcasting.prepared = ['verOInvisivel'];
+  sem.spellcasting.slots[1] = 0;
+  conjurarFora(estadoDe({}), sem, 'verOInvisivel', { herois: [sem], rng: makeRng(3), circulo: 2 });
+  assert.equal(sem.spellcasting.slots[1], 0, 'outra escola não recupera');
+});
+
+teste('Conjuração: Transposição Benigna teleporta e se recarrega com uma conjuração; Conjuração Focada não perde a concentração; Convocação Duradoura dá 30 PV temporários', () => {
+  const m = escola('conjuracao', 14);
+  m.pos = { x: 5, y: 5 };
+  m.spellcasting.prepared = ['graxa', 'teia'];
+  const gob = inimigo('goblin', { x: 11, y: 11 });
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  assert.ok(m.magiasDeCaracteristica.includes('transposicaoBenigna'));
+  const antes = { ...m.pos };
+  const r = enc.castSpell(m, 'transposicaoBenigna', { point: { x: 8, y: 5 } });
+  assert.ok(r.ok, r.why);
+  assert.equal(m.pos.x, 8, 'foi para a casa pedida');
+  assert.equal(m.resources.benignTransposition, 0);
+  assert.notEqual(antes.x, m.pos.x);
+  m.actionUsed = false;
+  assert.equal(enc.castSpell(m, 'transposicaoBenigna', { point: { x: 5, y: 5 } }).ok, false, 'sem a carga, não teleporta');
+  assert.ok(enc.castSpell(m, 'graxa', { point: { x: 9, y: 5 } }).ok);
+  assert.equal(m.resources.benignTransposition, 1, 'conjurar conjuração devolve a carga');
+  // concentração focada
+  m.actionUsed = false;
+  m.concentrating = { spellId: 'teia', targets: [], condition: 'contido' };
+  enc.rng = dadoEmSequencia(1);
+  enc.concentrationCheck(m, 40);
+  assert.ok(m.concentrating, 'o dano não derrubou a concentração');
+  const comum = escola('evocacao', 14);
+  comum.pos = { x: 4, y: 5 };
+  comum.concentrating = { spellId: 'teia', targets: [], condition: 'contido' };
+  const { enc: e2 } = arena({ herois: [comum], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  e2.rng = dadoEmSequencia(1);
+  e2.concentrationCheck(comum, 40);
+  assert.equal(comum.concentrating, null, 'sem a característica, cai');
+  // convocação duradoura
+  const lobo = enc.invocar(m, 'lobo', { x: 6, y: 6 }, { spellId: 'conjurarAnimais' });
+  assert.equal(lobo.tempHp, 30);
+});
+
+teste('Olhar Hipnótico (Encantamento): falhou em SAB, fica incapacitado e parado; a mesma criatura não de novo; passou, nada', () => {
+  for (const [d20, cai] of [[1, true], [20, false]]) {
+    const m = escola('encantamento', 2);
+    m.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 6, y: 5 });
+    const { enc } = arena({ herois: [m], foes: [gob] });
+    enc.rng = dadoEmSequencia(d20);
+    assert.equal(enc.useFeature(m, 'hypnoticGaze', { target: gob }), true);
+    assert.equal(m.actionUsed, true);
+    assert.equal(hasCondition(gob, 'olharHipnotico'), cai);
+    if (cai) assert.equal(conditionEffects(gob).incapacitated, true);
+    m.actionUsed = false;
+    assert.equal(enc.useFeature(m, 'hypnoticGaze', { target: gob }), false, 'a mesma criatura só uma vez');
+  }
+  const m2 = escola('encantamento', 2);
+  m2.pos = { x: 5, y: 5 };
+  const longe = inimigo('goblin', { x: 9, y: 5 });
+  const { enc } = arena({ herois: [m2], foes: [longe] });
+  assert.equal(enc.useFeature(m2, 'hypnoticGaze', { target: longe }), false, 'só colado');
+});
+
+teste('Encanto Instintivo (6º): quem ataca o mago falha em SAB e o golpe vai para outra criatura; passou, o golpe segue', () => {
+  for (const [d20, desvia] of [[1, true], [20, false]]) {
+    const m = escola('encantamento', 6);
+    m.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 6, y: 5 });
+    const outro = inimigo('goblin', { x: 7, y: 5 });
+    outro.hp = outro.maxHp = 500;
+    outro.ac = 1;
+    const { enc } = arena({ herois: [m], foes: [gob, outro] });
+    m.hp = m.maxHp = 500;
+    enc.rng = dadoEmSequencia(d20, 15);
+    const hpM = m.hp, hpO = outro.hp;
+    const alvo = enc.encantoInstintivo(gob, m, null);
+    assert.equal(alvo === m, !desvia, desvia ? 'o golpe saiu do mago' : 'o golpe segue no mago');
+    assert.equal(m.resources.instinctiveCharm, 0);
+    assert.equal(m.reactionUsed, true);
+    assert.equal(m.hp, hpM);
+    assert.equal(outro.hp, hpO);
+  }
+});
+
+teste('Ilusão: Ilusão Menor é do mago; o Eu Ilusório faz o golpe errar uma vez e volta com uma ilusão conjurada', () => {
+  const m = escola('ilusao', 10);
+  m.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  assert.ok(m.magiasDeCaracteristica.includes('ilusaoMenor'), 'Ilusão Menor Aprimorada');
+  assert.ok(magiasProntas(m).includes('ilusaoMenor'));
+  assert.equal(m.resources.illusorySelf, 1);
+  m.hp = m.maxHp = 500;
+  enc.rng = dadoEmSequencia(20);
+  const r = enc.resolveAttack(gob, m, { weaponId: null });
+  assert.equal(r?.hit, false, 'o golpe errou a cópia');
+  assert.equal(m.hp, 500);
+  assert.equal(m.resources.illusorySelf, 0);
+  assert.equal(m.reactionUsed, true);
+  m.reactionUsed = false;
+  enc.rng = dadoEmSequencia(20);
+  enc.resolveAttack(gob, m, { weaponId: null });
+  assert.ok(m.hp < 500, 'sem a carga, o golpe acerta');
+  m.spellcasting.prepared = ['imagemSilenciosa'];
+  assert.ok(enc.castSpell(m, 'imagemSilenciosa', { point: { x: 8, y: 8 } }).ok);
+  assert.equal(m.resources.illusorySelf, 1, 'conjurar ilusão devolve a carga');
+});
+
+teste('Necromancia: Colheita Sombria cura ao matar com magia; Acostumado à Morte resiste a necrótico; Comandar Mortos-vivos vira o morto-vivo', () => {
+  const m = escola('necromancia', 14);
+  m.pos = { x: 5, y: 5 };
+  m.spellcasting.prepared = ['misselMagico'];
+  const alvo = inimigo('goblin', { x: 7, y: 5 });
+  alvo.hp = 1;
+  const { enc } = arena({ herois: [m], foes: [alvo, inimigo('goblin', { x: 11, y: 11 })] });
+  m.hp = m.maxHp - 20;
+  const hp = m.hp;
+  assert.ok(enc.castSpell(m, 'misselMagico', { target: alvo }).ok);
+  assert.ok(alvo.dead);
+  assert.equal(m.hp, hp + 2, '2 × o círculo do espaço (1º)');
+  assert.equal(enc.danoPorTipo(m, 20, 'necrótico'), 10, 'Acostumado à Morte');
+  assert.equal(enc.danoPorTipo(escola('evocacao', 14), 20, 'necrótico'), 20);
+  // Comandar Mortos-vivos
+  const esq = inimigo('esqueleto', { x: 8, y: 5 });
+  esq.tipo = 'morto-vivo';
+  const { enc: e2 } = arena({ herois: [m], foes: [esq] });
+  m.actionUsed = false;
+  e2.rng = dadoEmSequencia(1);
+  assert.equal(e2.useFeature(m, 'commandUndead', { target: esq }), true);
+  assert.equal(esq.side, m.side, 'passou para o lado do mago');
+  assert.equal(esq.invocado?.donoId, m.id);
+  const esq2 = inimigo('esqueleto', { x: 8, y: 6 });
+  esq2.tipo = 'morto-vivo';
+  const { enc: e3 } = arena({ herois: [m], foes: [esq2] });
+  m.actionUsed = false;
+  e3.rng = dadoEmSequencia(20);
+  e3.useFeature(m, 'commandUndead', { target: esq2 });
+  assert.notEqual(esq2.side, m.side, 'passou na resistência: segue contra o mago');
+  const nao = inimigo('goblin', { x: 8, y: 7 });
+  const { enc: e4 } = arena({ herois: [m], foes: [nao] });
+  m.actionUsed = false;
+  assert.equal(e4.useFeature(m, 'commandUndead', { target: nao }), false, 'só mortos-vivos');
+});
+
+teste('Pedra do Transmutador (6º): o benefício escolhido vale — velocidade, CON, resistência ou visão no escuro', async () => {
+  const base = escola('transmutacao', 6, {}, {});
+  assert.ok(base.features.includes('transmutersStone'));
+  assert.ok(base.features.includes('stoneDarkvision'), 'o padrão é a primeira opção');
+  const { visaoNoEscuro } = await import('../rules/luz.js');
+  assert.ok(visaoNoEscuro(base) >= 60);
+  const veloz = heroi('mago', 6, 'Humano', { weapons: ['adaga'] }, { 2: { subclasse: 'transmutacao' }, 6: { transmutersStone: 'stoneSpeed' } });
+  const outro = heroi('mago', 6, 'Humano', { weapons: ['adaga'] }, { 2: { subclasse: 'transmutacao' } });
+  const { enc } = arena({ herois: [veloz, outro], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(enc.speedOf(veloz), enc.speedOf(outro) + 10, '+3 m');
+  const forte = heroi('mago', 6, 'Humano', { weapons: ['adaga'] }, { 2: { subclasse: 'transmutacao' }, 6: { transmutersStone: 'stoneConSave' } });
+  assert.equal(saveBonus(forte, 'con'), saveBonus(outro, 'con') + proficiencyBonus(6));
+  const quente = heroi('mago', 6, 'Humano', { weapons: ['adaga'] }, { 2: { subclasse: 'transmutacao' }, 6: { transmutersStone: 'stoneResistFire' } });
+  assert.equal(enc.danoPorTipo(quente, 20, 'fogo'), 10);
+  assert.equal(enc.danoPorTipo(quente, 20, 'frio'), 20);
+  assert.throws(() => heroi('mago', 6, 'Humano', {}, { 2: { subclasse: 'transmutacao' }, 6: { transmutersStone: 'stoneXyz' } }));
 });
 
 // ============================================================================================================

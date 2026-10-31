@@ -39,7 +39,7 @@ export const HOUSE_RULES = {
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia, APRIMORAR } from './spells.js';
 import { makeMonster } from './monsters.js';
 import {
-  prepararTalentos, bonusDeIniciativa, segundaChanceNoAtaque, segundaChanceNaResistencia,
+  prepararTalentos, garantirPortento, bonusDeIniciativa, segundaChanceNoAtaque, segundaChanceNaResistencia,
   ajustarDanoDeArma, depoisDoAcerto, rolarCura, vetoDoMedico, medicoDeCampanha, temUsoGratis, gastarUsoGratis,
 } from './talentos.js';
 import { spellMod } from './party.js';
@@ -459,7 +459,8 @@ export class Encounter {
     // que PARA (paralisia, 5º degrau). E o dobro da Velocidade, que é bônus.
     const semFreio = fx.semReducaoDeDeslocamento;
     const pes = Math.max(0, base + daClasse - (semFreio ? 0 : fx.speedPenaltyFt) - pesada);
-    const comBonus = (pes + fx.speedBonusFt) * (fx.speedMult ?? 1);
+    const daPedra = actor.features?.includes('stoneSpeed') ? 10 : 0;
+    const comBonus = (pes + daPedra + fx.speedBonusFt) * (fx.speedMult ?? 1);
     const metade = fx.speedHalf || (fx.speedHalfMagico && !semFreio);
     return metade ? Math.floor(comBonus / 10) * 5 : comBonus;
   }
@@ -481,6 +482,8 @@ export class Encounter {
         this.say('recurso', `${c.name} entra na luta já inspirado: recupera uma Inspiração Bárdica (Inspiração Superior).`);
       }
     }
+    // PRODÍGIO (mago de Adivinhação): os dados do dia são rolados na primeira luta depois de um descanso longo.
+    for (const c of this.combatants) garantirPortento(this, c);
     // IMPLACÁVEL (Mestre de Batalha, 15º): ao rolar iniciativa SEM dados de superioridade, recupera um.
     for (const c of this.combatants) {
       if (!c.dead && c.features?.includes('relentless') && (c.resources?.superiorityDice ?? 0) === 0 && (c.resourcesMax?.superiorityDice ?? 0) > 0) {
@@ -1096,6 +1099,8 @@ export class Encounter {
     if (!casa) return null;
     m.pos = { x: casa.x, y: casa.y, f: m.pos.f };
     m.side = dono.side;
+    // CONVOCAÇÃO DURADOURA (mago de Conjuração, 14º): as criaturas que ele convoca nascem com 30 PV temporários.
+    if (dono.features?.includes('durableSummons')) m.tempHp = Math.max(m.tempHp ?? 0, 30);
     // No livro 2014, as feras do Conjurar Animais são feéricas (o Círculo Mágico as barra).
     if (spellId === 'conjurarAnimais') m.tipo = 'feérico';
     m.invocado = { donoId: dono.id, spellId, auto: Boolean(dono.invocadosAuto) };
@@ -3162,11 +3167,39 @@ export class Encounter {
     return r;
   }
 
+  /** O ENCANTO INSTINTIVO: devolve o alvo de verdade do ataque (o mesmo, ou a criatura para onde o golpe foi desviado). */
+  encantoInstintivo(atacante, alvo, weaponId) {
+    if (!alvo.features?.includes('instinctiveCharm') || (alvo.resources?.instinctiveCharm ?? 0) < 1 || alvo.reactionUsed
+      || conditionEffects(alvo).incapacitated || atacante.side === alvo.side || distanceFt(atacante.pos, alvo.pos) > 30
+      || !this.field.hasLineOfSight(alvo.pos, atacante.pos)) return alvo;
+    const outros = this.combatants.filter((c) => !c.dead && c !== atacante && c !== alvo && this.canAttack(atacante, c, weaponId).ok)
+      .sort((a, b) => (Number(b.side === atacante.side) - Number(a.side === atacante.side)) || (distanceFt(atacante.pos, a.pos) - distanceFt(atacante.pos, b.pos)));
+    if (!outros.length) return alvo;
+    alvo.resources.instinctiveCharm -= 1;
+    alvo.reactionUsed = true;
+    const cd = spellSaveDc(alvo);
+    const sv = this.resistencia(atacante, 'wis', cd, { contra: { magico: true, condicao: 'enfeiticado' } });
+    this.explicarResistencia(atacante, 'wis', cd, sv, { contra: `Encanto Instintivo de ${alvo.name}`, seSucesso: 'o golpe segue para o alvo' });
+    if (sv.success) return alvo;
+    this.say('recurso', `${alvo.name} enfeitiça o impulso de ${atacante.name}: o golpe vai contra ${outros[0].name} (Encanto Instintivo).`);
+    return outros[0];
+  }
+
   resolveAttackBase(attacker, target, { weaponId = null, opportunity = false, disadvantage = false, maoSecundaria = false } = {}) {
     // Atacar desfaz o disfarce do metamorfo: o golpe já sai da forma verdadeira.
     if (attacker.disfarce) this.revelarDisfarce(attacker, 'no ataque');
     // O chefe pode jogar um capanga na frente antes de a rolagem acontecer.
     target = this.tryRedirect(target);
+    // EU ILUSÓRIO (mago de Ilusão, 10º): uma cópia ilusória toma o golpe, que erra. Reação, uma vez por descanso (ou por ilusão conjurada).
+    if (target.features?.includes('illusorySelf') && (target.resources?.illusorySelf ?? 0) > 0 && !target.reactionUsed && attacker.side !== target.side
+      && !conditionEffects(target).incapacitated && distanceFt(attacker.pos, target.pos) <= 120) {
+      target.resources.illusorySelf -= 1;
+      target.reactionUsed = true;
+      this.say('recurso', `${attacker.name} golpeia uma cópia ilusória de ${target.name}, que se desfaz: o ataque erra (Eu Ilusório).`);
+      return { hit: false };
+    }
+    // ENCANTO INSTINTIVO (mago de Encantamento, 6º): quem ataca testa Sabedoria ou volta o golpe contra outra criatura.
+    target = this.encantoInstintivo(attacker, target, weaponId);
     const check = this.canAttack(attacker, target, weaponId);
     if (!check.ok) {
       this.say('aviso', `${attacker.name} não consegue atacar: ${check.why}.`);
@@ -3820,7 +3853,13 @@ export class Encounter {
     });
     // RESILIÊNCIA INFERNAL: a resistência escolhida não vale contra arma mágica ou de prata.
     const infernal = target.resistenciaInfernal === type && !(magico && deArma);
-    if (porCondicao || infernal || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
+    // Resistências de subclasse: Acostumado à Morte (necrótico), Pedra do Transmutador (fogo, frio, elétrico) e Resistência a Magia
+    // (todo dano de magia: mágico e que não vem de arma).
+    const tf = target.features ?? [];
+    const porCaracteristica = (type === 'necrótico' && tf.includes('inuredToUndeath')) || (type === 'fogo' && tf.includes('stoneResistFire'))
+      || (type === 'frio' && tf.includes('stoneResistCold')) || (type === 'elétrico' && tf.includes('stoneResistLightning'))
+      || (magico && !deArma && tf.includes('spellResistance'));
+    if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
     if (target.vulnerable?.includes(type)) out *= 2;
     return out;
   }
@@ -3989,6 +4028,24 @@ export class Encounter {
     }
   }
 
+  /**
+   * A PROTEÇÃO ARCANA (mago de Abjuração, 2º) absorve o dano antes dos PV; a PROJETADA (6º) faz o mesmo por um aliado a até 9 m, com a
+   * reação. Devolve o dano que sobrou.
+   */
+  protecaoArcana(alvo, dano) {
+    let dono = alvo.wardHp > 0 ? alvo : null;
+    if (!dono) {
+      dono = this.alliesOf(alvo).find((a) => a.features?.includes('projectedWard') && a.wardHp > 0 && !a.reactionUsed
+        && !conditionEffects(a).incapacitated && distanceFt(a.pos, alvo.pos) <= 30 && this.field.hasLineOfSight(a.pos, alvo.pos));
+      if (dono) dono.reactionUsed = true;
+    }
+    if (!dono) return dano;
+    const absorve = Math.min(dono.wardHp, dano);
+    dono.wardHp -= absorve;
+    this.say('recurso', `${dono === alvo ? 'A proteção arcana de ' : `${dono.name} estende a proteção arcana sobre ${alvo.name}: `}${dono === alvo ? `${dono.name} ` : ''}absorve ${absorve} de dano (restam ${dono.wardHp} na proteção).`);
+    return dano - absorve;
+  }
+
   applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false } = {}) {
     if (amount <= 0 || target.dead) return;
     // Fora de alcance nada atinge: o Plano Etéreo e quem está dentro da pedra.
@@ -4042,6 +4099,9 @@ export class Encounter {
     // `amount` já é 0 — e é exatamente por isso que a chamada vem ANTES do
     // retorno por imunidade: cortar a gelatina não a fere, parte ela em duas.
     this.dividir(target, type);
+    if (amount <= 0) return;
+    // PROTEÇÃO ARCANA e PROTEÇÃO PROJETADA (mago de Abjuração): a proteção leva o golpe no lugar do PV.
+    amount = this.protecaoArcana(target, amount);
     if (amount <= 0) return;
     // Apanhar também mantém a fúria de pé.
     if (hasCondition(target, 'furia')) target.furiaAgiu = true;
@@ -4451,6 +4511,11 @@ export class Encounter {
   }
 
   concentrationCheck(actor, damage) {
+    // CONJURAÇÃO FOCADA (mago de Conjuração, 10º): o dano não quebra a concentração numa magia de conjuração.
+    if (actor.features?.includes('focusedConjuration') && getSpell(actor.concentrating?.spellId)?.school === 'conjuração') {
+      this.say('concentracao', `${actor.name} mantém a concentração (Conjuração Focada).`);
+      return;
+    }
     const dc = Math.max(10, Math.floor(damage / 2));
     const save = this.resistencia(actor, 'con', dc);
     const magia = actor.concentrating ? getSpell(actor.concentrating.spellId)?.name : null;
@@ -5033,9 +5098,15 @@ export class Encounter {
       empowered: ids.has('empoweredSpell') ? cuidado : 0, empoderou: false,
     } : null;
     const antesDeAcao = { acao: actor.actionUsed, bonus: actor.bonusUsed };
+    const slotsAntes = actor.spellcasting?.slots?.slice();
+    const mortosAntes = new Set(this.combatants.filter((c) => c.dead).map((c) => c.id));
     try {
       const r = this.castSpellBase(actor, spellId, opcoes);
-      if (r?.ok) this.depoisDaMagia(actor, original, r);
+      if (r?.ok) {
+        // O círculo do espaço que a magia gastou (0 se foi truque ou uso livre).
+        const gasto = slotsAntes ? slotsAntes.findIndex((n, i) => i >= 1 && n > (actor.spellcasting.slots[i] ?? 0)) : -1;
+        this.depoisDaMagia(actor, original, r, { slotGasto: gasto > 0 ? gasto : (original?.level ?? 0), mortosAntes });
+      }
       if (r?.ok && metas.length) this.pagarMetamagia(actor, original, metas, opcoes, r, antesDeAcao);
       if (r?.ok && sobre) this.cobrarSobrecanalizar(actor, original);
       return r;
@@ -5050,8 +5121,48 @@ export class Encounter {
    * O que acontece DEPOIS de uma conjuração que deu certo, por características de subclasse. Os ganchos de cada uma ficam aqui, num
    * só lugar, em vez de espalhados pelas magias.
    */
-  depoisDaMagia(actor, magia, resultado) {
+  depoisDaMagia(actor, magia, resultado, { slotGasto = magia?.level ?? 0, mortosAntes = new Set() } = {}) {
     const f = actor.features ?? [];
+    const escola = magia?.school;
+    const nivelEfetivo = Math.max(slotGasto, magia?.level ?? 0);
+    // PROTEÇÃO ARCANA (Abjuração): uma abjuração de 1º círculo ou mais cria a proteção (PV = 2 × nível + INT) ou a recarrega em 2 × o círculo.
+    if (f.includes('arcaneWard') && escola === 'abjuração' && nivelEfetivo >= 1) {
+      const max = 2 * (actor.level ?? 1) + abilityMod(actor.abilities.int);
+      if (actor.wardHp === undefined) {
+        actor.wardHp = max;
+        this.say('recurso', `${actor.name} tece uma proteção arcana em si mesmo (${max} PV).`);
+      } else {
+        actor.wardHp = Math.min(max, actor.wardHp + 2 * nivelEfetivo);
+        this.say('recurso', `${actor.name} recarrega a proteção arcana: ${actor.wardHp} PV.`);
+      }
+    }
+    // ADIVINHAÇÃO ESPECIALISTA: uma adivinhação de 2º círculo ou mais devolve um espaço menor (até o 5º).
+    if (f.includes('expertDivination') && ['adivinhação', 'divinação'].includes(escola) && slotGasto >= 2 && actor.spellcasting?.slots) {
+      for (let i = Math.min(slotGasto - 1, 5); i >= 1; i -= 1) {
+        if ((actor.spellcasting.slots[i] ?? 0) < (actor.spellcasting.slotsMax?.[i] ?? 0)) {
+          actor.spellcasting.slots[i] += 1;
+          this.say('recurso', `${actor.name} recupera um espaço de ${i}º círculo (Adivinhação Especialista).`);
+          break;
+        }
+      }
+    }
+    // As recargas por escola: Transposição Benigna (conjuração), Encanto Instintivo (encantamento), Eu Ilusório (ilusão).
+    for (const [feature, escolaDela] of [['benignTransposition', 'conjuração'], ['instinctiveCharm', 'encantamento'], ['illusorySelf', 'ilusão']]) {
+      if (f.includes(feature) && escola === escolaDela && nivelEfetivo >= 1 && (actor.resources?.[feature] ?? 0) < (actor.resourcesMax?.[feature] ?? 0)) {
+        actor.resources[feature] = actor.resourcesMax[feature];
+        this.say('recurso', `${actor.name} recupera ${nomeDaCaracteristica(feature)} ao conjurar ${magia.name}.`);
+      }
+    }
+    // COLHEITA SOMBRIA (Necromancia): matar com uma magia de 1º círculo ou mais devolve PV (2 × o círculo; 3 × se for necromancia).
+    if (f.includes('grimHarvest') && nivelEfetivo >= 1) {
+      const caiu = this.combatants.some((c) => c.dead && !mortosAntes.has(c.id) && c.side !== actor.side && !['constructo', 'morto-vivo'].includes(c.tipo));
+      if (caiu) {
+        const cura = (escola === 'necromancia' ? 3 : 2) * nivelEfetivo;
+        const antes = actor.hp;
+        actor.hp = Math.min(maxHpEfetivo(actor), actor.hp + cura);
+        if (actor.hp > antes) this.say('cura', `${actor.name} colhe a vida do que matou: recupera ${actor.hp - antes} PV (Colheita Sombria).`);
+      }
+    }
     // MAGIA DE GUERRA (Cavaleiro Místico, 7º: com truque; 18º: com qualquer magia) e MAGIA DE BATALHA (bardo do Valor, 14º): depois de
     // conjurar com a AÇÃO, um ataque com arma como ação bônus.
     if (magia?.castTime === 'action' && (f.includes('improvedWarMagic') || f.includes('battleMagic') || (f.includes('warMagic') && magia.level === 0))) {
@@ -7593,6 +7704,43 @@ export class Encounter {
         actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
+        return true;
+      }
+      case 'hypnoticGaze': {
+        // OLHAR HIPNÓTICO (mago de Encantamento, 2º): ação; uma criatura colada em você, que o veja ou ouça, testa Sabedoria (CD das magias) ou
+        // fica enfeitiçada e incapacitada, sem andar, até o fim do seu próximo turno. A mesma criatura só uma vez por descanso longo.
+        if (actor.actionUsed || conditionEffects(actor).incapacitated) return false;
+        const alvoH = target ?? this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 5)[0];
+        if (!alvoH || alvoH.dead || alvoH.side === actor.side || distanceFt(actor.pos, alvoH.pos) > 5) return false;
+        if ((actor.olharHipnoticoJa ??= []).includes(alvoH.id)) return false;
+        actor.actionUsed = true;
+        actor.olharHipnoticoJa.push(alvoH.id);
+        const cdH = spellSaveDc(actor);
+        const svH = this.resistencia(alvoH, 'wis', cdH, { contra: { magico: true, condicao: 'enfeiticado' } });
+        this.explicarResistencia(alvoH, 'wis', cdH, svH, { contra: `Olhar Hipnótico de ${actor.name}`, seSucesso: 'resiste ao olhar' });
+        if (!svH.success && this.aplicarCondicao(alvoH, 'olharHipnotico', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id })) {
+          this.say('condicao', `${alvoH.name} fica hipnotizado: incapacitado e parado até o fim do próximo turno de ${actor.name}.`);
+        }
+        return true;
+      }
+      case 'commandUndead': {
+        // COMANDAR MORTOS-VIVOS (mago de Necromancia, 14º): ação; um morto-vivo a até 18 m testa Carisma (CD das magias; com vantagem se tiver INT 8+)
+        // ou passa a obedecer ao mago (luta do lado dele, como uma criatura invocada).
+        if (actor.actionUsed || conditionEffects(actor).incapacitated) return false;
+        const alvoU = target ?? this.enemiesOf(actor).filter((m) => !m.dead && m.tipo === 'morto-vivo' && distanceFt(actor.pos, m.pos) <= 60)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        if (!alvoU || alvoU.dead || alvoU.tipo !== 'morto-vivo' || alvoU.side === actor.side || distanceFt(actor.pos, alvoU.pos) > 60) return false;
+        actor.actionUsed = true;
+        const cdU = spellSaveDc(actor);
+        const svU = this.resistencia(alvoU, 'cha', cdU, { vantagem: (alvoU.abilities?.int ?? 0) >= 8, contra: { magico: true, condicao: 'enfeiticado' } });
+        this.explicarResistencia(alvoU, 'cha', cdU, svU, { contra: `Comandar Mortos-vivos de ${actor.name}`, seSucesso: 'resiste ao comando' });
+        if (!svU.success) {
+          alvoU.side = actor.side;
+          alvoU.invocado = { donoId: actor.id, spellId: 'comandarMortosVivos', auto: Boolean(actor.invocadosAuto) };
+          alvoU.xp = 0;
+          this.say('condicao', `${alvoU.name} se curva à vontade de ${actor.name}: passa a lutar do lado dele.`);
+          this.onEvent({ type: 'invocado', criatura: alvoU, dono: actor });
+        }
         return true;
       }
       case 'warMagic': case 'improvedWarMagic': case 'battleMagic': {

@@ -19,7 +19,7 @@ import { ABILITIES, SKILLS, abilityMod, proficiencyBonus } from './abilities.js'
 import { armorClass } from './equipment.js';
 import { CLASSES } from './classes/index.js';
 import { aplicarRaca, magiasRaciaisDoNivel, completarConjuracaoRacial, RACAS } from './racas.js';
-import { escolherMaestria, escolherAssinaturas, aplicarInvocacoes } from './passivas.js';
+import { escolherMaestria, escolherAssinaturas, aplicarInvocacoes, darMagiasDeCaracteristica } from './passivas.js';
 import { SPELLS } from './spells.js';
 
 export const NIVEL_MAXIMO = 20;
@@ -369,6 +369,7 @@ export function subirNivel(c, escolhas = {}) {
   // MAGIAS RACIAIS por nível (Legado Infernal, Magia Drow): cada uma uma vez por descanso longo.
   magiasRaciaisDoNivel(c, nivel);
   aplicarInvocacoes(c, SPELLS);
+  darMagiasDeCaracteristica(c, SPELLS);
 
   c.ac = armorClass(c);
   return { pendentes };

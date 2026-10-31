@@ -370,6 +370,12 @@ export const CONDITIONS = {
     curaMaxima: true,
     concentrationEffect: true,
   },
+  olharHipnotico: {
+    name: 'Olhar Hipnótico',
+    desc: 'Enfeitiçado: incapacitado e sem andar, até o fim do próximo turno de quem o hipnotizou.',
+    incapacitated: true,
+    speed: 0,
+  },
   votoDeInimizade: {
     name: 'Voto de Inimizade',
     desc: 'O paladino da Vingança tem vantagem nos ataques contra esta criatura.',

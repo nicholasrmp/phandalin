@@ -485,6 +485,11 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['paralisado', 'cego', 'envenenado'],
     desc: 'Toque num aliado: tira a paralisia, a cegueira ou o envenenamento.',
   },
+  transposicaoBenigna: {
+    id: 'transposicaoBenigna', name: 'Transposição Benigna', level: 0, school: 'conjuração', fonte: 'propria',
+    castTime: 'action', rangeFt: 30, kind: 'teleporte', mira: 'casa', recursoRacial: 'benignTransposition',
+    desc: 'Característica do mago de Conjuração. Você se teleporta até 9 m para uma casa livre que vê. Volta com um descanso longo ou ao conjurar uma magia de conjuração de 1º círculo ou mais.',
+  },
   passoNebuloso: {
     id: 'passoNebuloso', name: 'Passo Nebuloso', level: 2, school: 'conjuração', fonte: 'srd',
     castTime: 'bonus', rangeFt: 30, kind: 'teleporte', mira: 'casa',
@@ -1524,7 +1529,7 @@ export function magiasProntas(actor) {
   if (!sc) return [];
   // As magias RACIAIS (Legado Infernal, Magia Drow) entram na lista de quem as tem: uma vez por descanso longo, sem espaço.
   const raciais = [...(actor.magiasRaciais ?? []), ...(actor.magiasDeInvocacao ?? [])].map((m) => m.magia);
-  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais])]
+  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? [])])]
     .filter((id) => SPELLS[id]);
 }
 

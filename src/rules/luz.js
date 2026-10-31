@@ -58,6 +58,8 @@ export function visaoNoEscuro(c) {
 function visaoNatural(c) {
   // VISÃO DO DIABO (invocação do bruxo): enxerga no escuro a 36 m, o mágico também.
   if (c.features?.includes('devilsSight')) return Math.max(120, c.visaoNoEscuro ?? 0);
+  // O TERCEIRO OLHO (Adivinhação, 10º) e a PEDRA DO TRANSMUTADOR: visão no escuro até 18 m.
+  if (c.features?.includes('thirdEye') || c.features?.includes('stoneDarkvision')) return Math.max(60, c.visaoNoEscuro ?? 0);
   if (c.visaoNoEscuro != null) return c.visaoNoEscuro;
   if (c.senses?.darkvisionFt || c.senses?.truesightFt) {
     return Math.max(c.senses.darkvisionFt ?? 0, c.senses.truesightFt ?? 0);

@@ -475,6 +475,16 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
 
   // Gasta.
   if (!chk.ritual && spell.level > 0) c.spellcasting.slots[chk.circulo] -= 1;
+  // ADIVINHAÇÃO ESPECIALISTA (mago de Adivinhação, 6º): uma adivinhação de 2º círculo ou mais, fora de combate também, devolve um espaço menor.
+  if (!chk.ritual && c.features?.includes('expertDivination') && ['adivinhação', 'divinação'].includes(spell.school) && chk.circulo >= 2) {
+    for (let i = Math.min(chk.circulo - 1, 5); i >= 1; i -= 1) {
+      if ((c.spellcasting.slots[i] ?? 0) < (c.spellcasting.slotsMax?.[i] ?? 0)) {
+        c.spellcasting.slots[i] += 1;
+        fim.push(`${c.name} recupera um espaço de ${i}º círculo (Adivinhação Especialista).`);
+        break;
+      }
+    }
+  }
   fim.push(...avancar(estado, tempoDeConjuracao(spellId, { ritual: chk.ritual }), grupo));
 
   const resultado = { tipo: u.efeito ?? (u.cond ? 'condicao' : 'nada') };

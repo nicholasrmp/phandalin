@@ -23,7 +23,7 @@ import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
-const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck']);
+const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck', 'illusorySelf']);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
@@ -221,6 +221,10 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // mas uma Fúria entrada fora de luta ficaria até o fim dos tempos.
   if (getCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
   c.sobrecanalUsos = 0;
+  // Proteção Arcana e Prodígio: duram até o descanso longo (o Prodígio rola de novo na próxima luta).
+  delete c.wardHp;
+  delete c.portento;
+  delete c.olharHipnoticoJa;
   // INTERVENÇÃO DIVINA: depois de atendido, o deus fica em silêncio por sete dias; cada descanso longo conta um.
   const silencio = c.intervencaoDias ?? 0;
   if (silencio > 0) c.intervencaoDias = silencio - 1;

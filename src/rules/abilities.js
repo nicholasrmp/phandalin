@@ -147,7 +147,9 @@ export function temProficienciaNaResistencia(actor, ability) {
 /** Bônus de um teste de resistência. */
 export function saveBonus(actor, ability) {
   const base = abilityMod(actor.abilities[ability]);
-  return temProficienciaNaResistencia(actor, ability) ? base + proficiencyBonus(actor.level) : base;
+  // PEDRA DO TRANSMUTADOR (mago de Transmutação): proficiência em resistência de Constituição.
+  const daPedra = ability === 'con' && actor.features?.includes('stoneConSave');
+  return temProficienciaNaResistencia(actor, ability) || daPedra ? base + proficiencyBonus(actor.level) : base;
 }
 
 /** Percepção passiva = 10 + bônus de Percepção. */

@@ -84,6 +84,8 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   if (actor.conditions?.some((c) => c.id === 'contracanto') && (cond === 'amedrontado' || ENFEITICADO.has(cond))) motivos.push('Contracanto');
   // PASSO DA TERRA: vantagem contra as plantas mágicas que seguram ou atrasam.
   if (contra.planta && f.includes('landsStride')) motivos.push('Passo da Terra');
+  // RESISTÊNCIA A MAGIA (mago de Abjuração, 14º): vantagem nas resistências contra magias.
+  if (contra.magico && f.includes('spellResistance')) motivos.push('Resistência a Magia');
   return motivos;
 }
 
@@ -301,6 +303,27 @@ export const PREFERIDAS_DA_ASSINATURA = ['bolaDeFogo', 'relampago', 'voo', 'velo
  * `pedido` é o círculo que o jogador pediu (null = o padrão): conjurar mais alto gasta espaço de verdade.
  * Devolve { tipo, circulo, recurso?, rotulo } ou null.
  */
+/**
+ * Magias que uma CARACTERISTICA de subclasse dá (cada uma sai como um truque na lista, limitada pelo recurso da própria magia, se tiver):
+ * Transposição Benigna do mago de Conjuração e Ilusão Menor do mago de Ilusão. Ficam numa lista própria para não gastar vaga de
+ * truque da classe.
+ */
+export const MAGIAS_DE_CARACTERISTICA = {
+  benignTransposition: ['transposicaoBenigna'],
+  improvedMinorIllusion: ['ilusaoMenor'],
+};
+
+export function darMagiasDeCaracteristica(c, SPELLS) {
+  for (const [f, ids] of Object.entries(MAGIAS_DE_CARACTERISTICA)) {
+    if (!c.features?.includes(f)) continue;
+    c.spellcasting ??= { ability: 'int', cantrips: [], prepared: [], slots: [0], slotsMax: [0] };
+    c.magiasDeCaracteristica ??= [];
+    for (const id of ids) {
+      if (SPELLS[id] && !c.magiasDeCaracteristica.includes(id) && !c.spellcasting.cantrips?.includes(id)) c.magiasDeCaracteristica.push(id);
+    }
+  }
+}
+
 export function usoLivreDe(c, spell, pedido = null) {
   if (!spell || spell.level === 0) return null;
   const tem = (r) => (c.resources?.[r] ?? 0) > 0;
