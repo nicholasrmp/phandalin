@@ -1491,6 +1491,11 @@ const SPELL_VISUALS = {
     setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 12, altura: 30, sumir: 0.2 }), 200);
     return 0.25;
   },
+  passoDoCaos: (board, { caster, dest }) => {
+    board.fx.quadros(caster.pos, 'porta-dimensional', { fps: 14, altura: 22 });
+    setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 14, altura: 22 }), 120);
+    return 0;
+  },
   passoDasSombras: (board, { caster, dest }) => {
     board.fx.quadros(caster.pos, 'porta-dimensional', { fps: 14, altura: 22 });
     setTimeout(() => board.fx.quadros(dest, 'porta-dimensional', { fps: 14, altura: 22 }), 120);

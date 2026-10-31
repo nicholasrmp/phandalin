@@ -490,6 +490,11 @@ export const SPELLS = {
     castTime: 'bonus', rangeFt: 60, kind: 'teleporte', mira: 'casa',
     desc: 'Característica do monge do Caminho da Sombra. Ação bônus: você se teleporta até 18 m para uma casa livre que vê (o jogo não exige penumbra). O primeiro ataque corpo a corpo que fizer neste turno tem vantagem.',
   },
+  passoDoCaos: {
+    id: 'passoDoCaos', name: 'Passo do Caos', level: 0, school: 'conjuração', fonte: 'propria',
+    castTime: 'bonus', rangeFt: 20, kind: 'teleporte', mira: 'casa',
+    desc: 'Surto de Magia Selvagem: por um minuto, ação bônus para se teleportar até 6 m para uma casa livre que você vê. Sem espaço de magia.',
+  },
   transposicaoBenigna: {
     id: 'transposicaoBenigna', name: 'Transposição Benigna', level: 0, school: 'conjuração', fonte: 'propria',
     castTime: 'action', rangeFt: 30, kind: 'teleporte', mira: 'casa', recursoRacial: 'benignTransposition',
@@ -1534,7 +1539,9 @@ export function magiasProntas(actor) {
   if (!sc) return [];
   // As magias RACIAIS (Legado Infernal, Magia Drow) entram na lista de quem as tem: uma vez por descanso longo, sem espaço.
   const raciais = [...(actor.magiasRaciais ?? []), ...(actor.magiasDeInvocacao ?? [])].map((m) => m.magia);
-  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? [])])]
+  // PASSO DO CAOS (surto de magia selvagem): vale enquanto a condição durar.
+  const doSurto = (actor.conditions ?? []).some((c) => c.id === 'passoDoCaos') ? ['passoDoCaos'] : [];
+  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? []), ...doSurto])]
     .filter((id) => SPELLS[id]);
 }
 

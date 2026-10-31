@@ -125,7 +125,7 @@ export const SURTOS = [
   },
   { id: 'idade', nome: 'sua idade muda 1d10 anos', valor: 1, aplica: cor },
   { id: 'flumphs', nome: '1d6 flumphs do mestre surgem a 18 m, com medo de você, e somem em um minuto', valor: 1, aplica: cor },
-  { id: 'passoDoCaos', nome: 'você pode se teleportar 6 m como ação bônus por um minuto', valor: 1, aplica: cor },
+  { id: 'passoDoCaos', nome: 'você pode se teleportar 6 m como ação bônus por um minuto', valor: 1, aplica: (enc, a) => sobre(enc, a, 'passoDoCaos', 10) },
   { id: 'unicornio', nome: 'um unicórnio do mestre surge ao seu lado e some em um minuto', valor: 1, aplica: cor },
   { id: 'bebado', nome: 'você fica imune a embriaguez por 5d6 dias', valor: 1, aplica: cor },
   { id: 'careca', nome: 'seu cabelo cai e volta em 24 horas', valor: 1, aplica: cor },

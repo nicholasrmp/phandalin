@@ -5279,6 +5279,27 @@ teste('Mais cinco surtos com regra: ver invisíveis, olho (Percepção), brilho 
   assert.equal(s.dead, true, 'a segunda morte vale');
 });
 
+teste('Passo do Caos (surto): ação bônus, teleporta até 6 m sem espaço de magia, só enquanto a condição durar', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [s], foes: [alvoParado({ x: 12, y: 12 })] });
+  assert.ok(!magiasProntas(s).includes('passoDoCaos'), 'sem o surto, nada');
+  SURTOS.find((x) => x.id === 'passoDoCaos').aplica(enc, s);
+  assert.ok(magiasProntas(s).includes('passoDoCaos'));
+  const slots = s.spellcasting.slots.slice();
+  const r = enc.castSpell(s, 'passoDoCaos', { point: { x: 8, y: 5 } });
+  assert.ok(r.ok !== false, r.why);
+  assert.deepEqual({ x: s.pos.x, y: s.pos.y }, { x: 8, y: 5 });
+  assert.equal(s.bonusUsed, true);
+  assert.equal(s.actionUsed, false);
+  assert.deepEqual(s.spellcasting.slots, slots, 'não gasta espaço');
+  const longe = enc.castSpell(s, 'passoDoCaos', { point: { x: 8, y: 5 } });
+  assert.equal(longe.ok, false, 'uma ação bônus por turno');
+  removeCondition(s, 'passoDoCaos');
+  assert.ok(!magiasProntas(s).includes('passoDoCaos'), 'acabou o minuto');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

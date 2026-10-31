@@ -785,6 +785,7 @@ export function iconeDeArma(art = '', nome = '') {
  */
 // Magias do lote 14 que ainda não têm ícone próprio usam o da parente mais próxima (sem arte nova).
 const ICONE_PARECIDO = {
+  passoDoCaos: 'passoNebuloso',
   linguas: 'compreenderIdiomas', alterarAparencia: 'disfarcarSe', cativar: 'sugestao',
   sentidosDaFera: 'falarComAnimais', fingirDeMorto: 'falarComOsMortos',
   // O catálogo de ícones foi desenhado com os nomes do livro; três magias do lote de 4º ao 9º círculo têm outro id no jogo.

@@ -17,8 +17,8 @@ motor de combate, recorte, beleza, e os quatro de ícones (legibilidade, fidelid
 
 ## Aceito e declarado
 - Desarmante vira desvantagem de ataque; Estratégico não move o aliado na hora; Comandante exige 2+ golpes; Passo Evasivo vale o turno todo.
-- Confusão e Polimorfia resumidas; efeitos de mestre (modron, flumphs, unicórnio) e de cor sem regra; dois efeitos do livro com regra seguem sem ela: tamanho (mexe na pegada da figura) e passo do caos (pede interface). Visão de invisíveis, olho,
-  brilho que cega, névoa e reencarnar entraram depois.
+- Confusão e Polimorfia resumidas; efeitos de mestre (modron, flumphs, unicórnio) e de cor sem regra; um efeito do livro com regra segue sem ela: tamanho (mexe na pegada da figura). Visão de invisíveis, olho, brilho que cega, névoa, reencarnar
+  e passo do caos (botão no HUD, ação bônus, 6 m) entraram depois.
 - Dobrar a Sorte só cobre ataque e resistência (não teste de atributo de outra criatura), tem alcance de 9 m e só gasta quando muda o resultado.
 - Onda necrótica saiu cinza-azulada (a conversão para a paleta do jogo levou o roxo escuro ao cinza) e quase parada; confusão gira pouco.
 - Bombardeio de Magia não reconhece o surto "máximo" (dado máximo sem lista de rolagens).
