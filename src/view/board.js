@@ -3200,6 +3200,7 @@ export class Board {
       const salaDaCasa = this.field.fachadaFechada ? this.field.sala?.get(`${x},${y}`) : null;
       const oculta = Boolean(salaDaCasa) && this._salasReveladas !== 'todas' && !this._salasReveladas?.has(salaDaCasa);
       this.drawTile(ctx, x, y, transp.chao, oculta ? 0 : transp.objeto);
+      this.fx.chaoNaCasa(ctx, this, x, y);
       // PRETO INTEIRO, com o traço da mesma cor: o piso e a grade não aparecem, só as paredes, as portas e as janelas.
       // Em ruína (sem telhado, com a parede caída) o interior fechado não é um poço preto: o piso aparece, bem escuro.
       if (oculta) {

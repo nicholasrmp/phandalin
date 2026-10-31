@@ -984,12 +984,40 @@ export class Fx {
 
   // ---- desenho: rente ao chão ---------------------------------------------
 
+  /**
+   * Efeitos de CHÃO (`quadros` com `chao`) vão para uma tela à parte e entram casa a casa no laço de profundidade do tabuleiro
+   * (`chaoNaCasa`): o chão é desenhado DEPOIS de `drawGround`, e um efeito pintado antes ficaria por baixo do terreno.
+   */
+  prepararChao(ctx, board) {
+    const lista = this.items.filter((i) => i.kind === 'quadros' && i.chao);
+    if (!lista.length) { this._chao = null; return; }
+    const cv = (this._chaoCv ??= document.createElement('canvas'));
+    if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) { cv.width = ctx.canvas.width; cv.height = ctx.canvas.height; }
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, cv.width, cv.height);
+    c.setTransform(ctx.getTransform());
+    for (const it of lista) this.desenharQuadros(c, board, it, Math.min(1, it.t / it.dur));
+    this._chao = cv;
+  }
+
+  /** O pedaço do efeito de chão que cai sobre a casa (x, y): logo depois do ladrilho dela, antes de parede e figuras. */
+  chaoNaCasa(ctx, board, x, y) {
+    if (!this._chao) return;
+    const { sx, sy } = board.iso(x, y);
+    ctx.save();
+    board.diamond(ctx, sx, sy);
+    ctx.clip();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(this._chao, 0, 0);
+    ctx.restore();
+  }
+
   drawGround(ctx, board) {
+    this.prepararChao(ctx, board);
     for (const it of this.items) {
       const k = Math.min(1, it.t / it.dur);
 
-
-      if (it.kind === 'quadros' && it.chao) this.desenharQuadros(ctx, board, it, k);
 
       if (it.kind === 'ring') {
         const r = it.fecha ? it.radius * (1 - EASE_OUT(k) * 0.85) : it.radius * EASE_OUT(k);
