@@ -473,3 +473,12 @@ Mais **7 magias**, cada uma com teste, e uma característica; `pendente` caiu pa
 
 ### Ainda pendente (7)
 Percepção Primitiva e Habilidade Inigualável; e as invocações Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Correntes de Carceri e Voz do Mestre das Correntes (precisam de Compulsão, Confusão, Conjurar Elemental e de uma regra para restringir ao tipo celestial/elemental/corruptor).
+
+---
+
+## Correção — os ícones das 16 magias novas já existiam
+
+Eu afirmei, nas atualizações 7 e 8, que as magias novas usavam "o ícone da magia mais parecida". Estava errado para todas: o catálogo de
+ícones do OpenArt (`src/art/icones-magias.js`) cobre o Livro do Jogador inteiro, e 13 das 16 já tinham ícone próprio sob o mesmo id. As três
+restantes só estavam com nome diferente (Porta Dimensional → `portaDimensional`, Cura → `curaCompleta`, Nuvem Mortal → `nevoaMortal`) e agora
+apontam para ele. Nada foi gerado no OpenArt. Um teste novo exige que toda magia de 4º círculo para cima tenha ícone próprio.

@@ -787,12 +787,8 @@ export function iconeDeArma(art = '', nome = '') {
 const ICONE_PARECIDO = {
   linguas: 'compreenderIdiomas', alterarAparencia: 'disfarcarSe', cativar: 'sugestao',
   sentidosDaFera: 'falarComAnimais', fingirDeMorto: 'falarComOsMortos',
-  // O lote de 4º a 6º círculo ainda não tem ícone próprio: cada uma pega o da magia mais parecida.
-  tempestadeDeGelo: 'raioDeGelo', coneDeFrio: 'raioDeGelo', peleDePedra: 'protecaoContraEnergia', invisibilidadeMaior: 'invisibilidade',
-  dimensaoPorta: 'passoNebuloso', imobilizarMonstro: 'imobilizarPessoa', correnteDeRelampagos: 'relampago', desintegrar: 'raioDeBruxa',
-  circuloDaMorte: 'toqueVampirico',
-  muralhaDeFogo: 'bolaDeFogo', nuvemMortal: 'nuvemFetida', banimento: 'passoNebuloso', curaTotal: 'curarFerimentos',
-  dedoDaMorte: 'toqueVampirico', palavraDePoderMatar: 'raioDeBruxa', chuvaDeMeteoros: 'bolaDeFogo',
+  // O catálogo de ícones foi desenhado com os nomes do livro; três magias do lote de 4º ao 9º círculo têm outro id no jogo.
+  dimensaoPorta: 'portaDimensional', curaTotal: 'curaCompleta', nuvemMortal: 'nevoaMortal',
 };
 
 export function iconeDeMagia(spell = {}) {

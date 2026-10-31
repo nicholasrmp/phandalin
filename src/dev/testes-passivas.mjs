@@ -2894,5 +2894,18 @@ teste('Sobrecanalizar (mago, 14º): o dano da magia sai no máximo; o primeiro u
   assert.equal(armado - (400 - g2.hp), 8 * (6 - 3), 'oito dados de 6 faces: do 3 do dado fixo ao máximo de 6, +24');
 });
 // ============================================================================================================
+// ÍCONES DAS MAGIAS DO LOTE DE 4º AO 9º CÍRCULO
+// ============================================================================================================
+
+teste('Toda magia de 4º círculo para cima tem ícone próprio no catálogo (nenhuma cai no genérico por escola)', async () => {
+  const { iconeDeMagia, temIcone } = await import('../art/icons.js');
+  const altas = Object.values(SPELLS).filter((s) => s.level >= 4);
+  assert.ok(altas.length >= 16);
+  for (const s of altas) {
+    const ic = iconeDeMagia(s);
+    assert.ok(ic.startsWith('magia-') && temIcone(ic), `${s.id}: ${ic}`);
+  }
+});
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);
