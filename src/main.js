@@ -2437,6 +2437,16 @@ class App {
         break;
       }
 
+      // SURTOS de magia selvagem: o motor pede a animação pelo nome e pela casa (rules/surto.js).
+      case "surtoFx": {
+        const ALTURA = {
+          "surto-caos": 40, "onda-necrotica": 26, "confusao-estrelas": 34, "poof-vaso": 34,
+          graxa: 4, "raio-queda": 40, "bola-de-fogo": 30, "arcano-impacto": 30,
+        };
+        board?.fx.quadros(ev.pos, ev.fx, { fps: 12, altura: ALTURA[ev.fx] ?? 30, sumir: 0.2 });
+        break;
+      }
+
       case "ignite": {
         board?.fx.flames(ev.target.pos, {
           color: "#ff6a2a",

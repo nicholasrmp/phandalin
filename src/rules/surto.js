@@ -16,6 +16,8 @@ const perto = (enc, a, ft, comAutor = false) => vivos(enc).filter((x) => (comAut
 const maisPerto = (enc, a) => perto(enc, a, 600).sort((x, y) => distanceFt(a.pos, x.pos) - distanceFt(a.pos, y.pos))[0];
 const sorteia = (enc, lista) => (lista.length ? lista[enc.rng.int(lista.length)] : null);
 const cor = () => {};
+// Pede à camada de desenho uma animação em uma casa (`surtoFx` em main.js); sem desenho, o evento cai no vazio.
+const fx = (enc, nome, pos) => enc.onEvent?.({ type: 'surtoFx', fx: nome, pos: { x: pos.x, y: pos.y, f: pos.f ?? 1 } });
 
 export const SURTOS = [
   {
@@ -23,6 +25,7 @@ export const SURTOS = [
     aplica(enc, a) {
       const dano = damageRoll(enc.rng, '8d6').total;
       const cd = spellSaveDc(a);
+      fx(enc, 'bola-de-fogo', a.pos);
       for (const c of perto(enc, a, 20, true)) {
         const sv = enc.resistencia(c, 'dex', cd, { contra: { magico: true, tipoDano: 'fogo' } });
         enc.applyDamage(c, sv.success ? Math.floor(dano / 2) : dano, 'fogo', a, { magico: true });
@@ -34,6 +37,7 @@ export const SURTOS = [
     aplica(enc, a) {
       const alvo = enc.enemiesOf(a).filter((m) => !m.dead).sort((x, y) => distanceFt(a.pos, x.pos) - distanceFt(a.pos, y.pos))[0];
       if (!alvo) return;
+      fx(enc, 'arcano-impacto', alvo.pos);
       let total = 0;
       for (let i = 0; i < 7; i += 1) total += damageRoll(enc.rng, '1d4+1').total;
       enc.applyDamage(alvo, total, 'energético', a, { magico: true });
@@ -70,7 +74,7 @@ export const SURTOS = [
   {
     id: 'planta', nome: 'você vira um vaso de planta até o começo do seu próximo turno', valor: 0,
     // Incapacitado e vulnerável a todo dano. (O vaso que quebra aos 0 PV não é modelado: quem cai fica caído como de costume.)
-    aplica: (enc, a) => sobre(enc, a, 'vasoDePlanta', 1, { quando: 'inicio', lado: a.side }),
+    aplica: (enc, a) => { fx(enc, 'poof-vaso', a.pos); sobre(enc, a, 'vasoDePlanta', 1, { quando: 'inicio', lado: a.side }); },
   },
   { id: 'levita', nome: 'você levita por um minuto', valor: 1, aplica: (enc, a) => sobre(enc, a, 'levitando', 10) },
   // 81-82: uma ação a mais agora (o antigo "outro turno" inteiro era invenção do jogo).
@@ -94,7 +98,7 @@ export const SURTOS = [
       const cd = spellSaveDc(a);
       for (const c of perto(enc, a, 10, true)) {
         const sv = enc.resistencia(c, 'wis', cd, { contra: { magico: true } });
-        if (!sv.success) sobre(enc, c, 'confuso', 10);
+        if (!sv.success) { sobre(enc, c, 'confuso', 10); fx(enc, 'confusao-estrelas', c.pos); }
       }
     },
   },
@@ -102,6 +106,7 @@ export const SURTOS = [
     id: 'graxa', nome: 'o chão em volta de você vira graxa', valor: 0,
     aplica(enc, a) {
       const cd = spellSaveDc(a);
+      fx(enc, 'graxa', a.pos);
       for (const c of perto(enc, a, 5, true)) {
         const sv = enc.resistencia(c, 'dex', cd, { contra: { magico: true } });
         if (!sv.success) sobre(enc, c, 'caido', 1);
@@ -139,6 +144,7 @@ export const SURTOS = [
       const alvos = perto(enc, a, 30).sort((x, y) => (y.side !== a.side) - (x.side !== a.side)).slice(0, 3);
       for (const c of alvos) {
         const dano = damageRoll(enc.rng, '4d10').total;
+        fx(enc, 'raio-queda', c.pos);
         enc.applyDamage(c, dano, 'elétrico', a, { magico: true });
       }
     },
@@ -167,7 +173,7 @@ export const SURTOS = [
     id: 'ovelha', nome: 'você vira ovelha, a não ser que resista (Sabedoria)', valor: 0,
     aplica(enc, a) {
       const sv = enc.resistencia(a, 'wis', spellSaveDc(a), { contra: { magico: true } });
-      if (!sv.success) sobre(enc, a, 'ovelha', 10);
+      if (!sv.success) { fx(enc, 'poof-vaso', a.pos); sobre(enc, a, 'ovelha', 10); }
     },
   },
   { id: 'borboletas', nome: 'borboletas e pétalas ilusórias esvoaçam a 3 m de você por um minuto', valor: 1, aplica: cor },
@@ -175,6 +181,7 @@ export const SURTOS = [
     id: 'necrotico', nome: 'uma onda necrótica atinge tudo a 9 m: 1d10, e você recupera o que causou', valor: 1,
     aplica(enc, a) {
       let curado = 0;
+      fx(enc, 'onda-necrotica', a.pos);
       for (const c of perto(enc, a, 30)) {
         const d = damageRoll(enc.rng, '1d10').total;
         enc.applyDamage(c, d, 'necrótico', a, { magico: true });

@@ -3419,6 +3419,7 @@ export class Encounter {
       if (outro.valor > efeito.valor) efeito = outro;
     }
     this.say('recurso', `A magia de ${actor.name} escapa do controle: ${efeito.nome} (Surto de Magia Selvagem).`);
+    this.onEvent({ type: 'surtoFx', fx: 'surto-caos', pos: { x: actor.pos.x, y: actor.pos.y, f: actor.pos.f ?? 1 } });
     efeito.aplica(this, actor);
   }
 
