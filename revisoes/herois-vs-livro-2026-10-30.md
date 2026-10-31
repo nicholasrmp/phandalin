@@ -526,3 +526,6 @@ Terceira chamada `/vfx` lite (1 geração, saldo ~3047), com o sprite do Brenn e
 
 ### 11d — casca de granito pelo `/vfx` pro (6 gerações, saldo ~3041)
 Efeito de 24 quadros 36x52 (21.815 px). Beleza: 2,5/5 — tem peso e ritmo (cresce dos pés, fecha, racha), mas no pico cobre 77% do herói e 71% dos pixels são o contorno quase preto (lê como golem). Aplicado (grátis): cortados os quadros finais (contorno solto) e os repetidos (24→13), fps 14, lascas aos 0,7 s, tinta mais clara (#b4bcc6, 0,5). Pendente (1 geração): casca vazada, contorno fino, 40–48 px de largura para cobrir escudo e arma.
+
+### 11e — casca v2 (`/vfx` pro, ~7,6 gerações, saldo ~3033)
+Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do herói no pico 59% (era 77%), 0% de contorno preto (era 71%), sem quadros repetidos. Problema restante: cor quase branca (lê como neve). Aplicado grátis: remapeamento 1→2, 2→3 (cinza-granito), quadro 19 cortado, 16 fps, lascas em #6b7686. Não feito: adiar a tinta do herói até a casca fechar.
