@@ -119,6 +119,12 @@ export function ajustarTeste(rng, actor, r, bonus, { ability, treinada = false }
 export function rolarPericia(rng, actor, skill, opts = {}) {
   const { contexto = null, bonusExtra = 0, bioma = null, inimigo = null, ...d20opts } = opts;
   const bonus = skillBonus(actor, skill, { contexto, bioma }) + bonusExtra;
+  // MARÉS DO CAOS (feiticeiro da Magia Selvagem): vantagem no próximo teste também; o uso se gasta.
+  const mare = actor?.conditions?.find((c) => c.id === 'maresDoCaos');
+  if (mare) {
+    d20opts.advantage = true;
+    actor.conditions = actor.conditions.filter((c) => c !== mare);
+  }
   // INIMIGO FAVORITO (patrulheiro): vantagem em Sobrevivência para rastrear e em testes de INT para lembrar do que se sabe dele.
   if (inimigo && actor.features?.includes('favoredEnemy') && actor.inimigosFavoritos?.includes(inimigo)
     && (skill === 'sobrevivencia' || SKILLS[skill] === 'int')) d20opts.advantage = true;

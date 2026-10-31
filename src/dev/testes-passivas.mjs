@@ -5139,6 +5139,32 @@ teste('Surtos de magia: a próxima magia de dano sai no máximo (e só ela); a p
   assert.equal(s.bonusUsed && !s.actionUsed, true, 'a magia de uma ação custou a ação bônus');
 });
 
+teste('Dobrar a Sorte vale também na resistência (aliado sobe, inimigo cai), e as Marés do Caos dão vantagem no teste de atributo', async () => {
+  const { rolarPericia } = await import('../rules/abilities.js');
+  const s = selvagem(6);
+  s.pos = { x: 4, y: 5 };
+  s.resources.sorceryPoints = 6;
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 6, y: 5 };
+  const gob = alvoParado({ x: 8, y: 5 });
+  const { enc } = arena({ herois: [s, amigo], foes: [gob] });
+  enc.rng = dadoEmSequencia(1);
+  enc.rng.die = () => 4;
+  const r1 = { success: false, total: 12 };
+  enc.curvarSorteNaResistencia(amigo, r1, 15);
+  assert.equal(r1.success, true, '12 + 4 = 16 passa a CD 15');
+  assert.equal(s.resources.sorceryPoints, 4);
+  s.reactionUsed = false;
+  const r2 = { success: true, total: 16 };
+  enc.curvarSorteNaResistencia(gob, r2, 15);
+  assert.equal(r2.success, false, 'inimigo: 16 - 4 = 12 falha a CD 15');
+  // Marés do Caos: vantagem no teste de perícia, e se gasta
+  addCondition(s, 'maresDoCaos', { rounds: 100, source: s.id });
+  const rolagem = rolarPericia(makeRng(3), s, 'percepcao');
+  assert.equal(rolagem.mode, 'vantagem');
+  assert.equal(hasCondition(s, 'maresDoCaos'), false);
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

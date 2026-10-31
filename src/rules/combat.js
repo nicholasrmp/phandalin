@@ -3385,6 +3385,24 @@ export class Encounter {
     this.say('recurso', `${quem.name} dobra a sorte: ${atk.hit ? '+' : '-'}${d} no ataque de ${atacante.name}, que ${atk.hit ? 'acerta' : 'erra'} (Dobrar a Sorte).`);
   }
 
+  /** DOBRAR A SORTE numa resistência de OUTRA criatura: 1d4 a mais (aliado em apuros) ou a menos (inimigo que se safaria por pouco). */
+  curvarSorteNaResistencia(quemResiste, r, dc) {
+    const ajuda = (s) => (s.side === quemResiste.side ? !r.success && dc - r.total <= 4 : r.success && r.total - dc <= 4);
+    const quem = this.combatants.find((s) => !s.dead && s !== quemResiste && s.features?.includes('bendLuck') && !s.reactionUsed
+      && (s.resources?.sorceryPoints ?? 0) >= 2 && !conditionEffects(s).incapacitated && ajuda(s)
+      && distanceFt(s.pos, quemResiste.pos) <= 30 && this.field.hasLineOfSight(s.pos, quemResiste.pos));
+    if (!quem) return;
+    const d = this.rng.die(4);
+    const aliado = quem.side === quemResiste.side;
+    const novo = aliado ? r.total + d : r.total - d;
+    if (aliado ? novo < dc : novo >= dc) return;
+    quem.resources.sorceryPoints -= 2;
+    quem.reactionUsed = true;
+    r.total = novo;
+    r.success = aliado;
+    this.say('recurso', `${quem.name} dobra a sorte: ${aliado ? '+' : '-'}${d} na resistência de ${quemResiste.name}, que ${r.success ? 'passa' : 'falha'} (Dobrar a Sorte).`);
+  }
+
   /** SURTO DE MAGIA SELVAGEM: depois de uma magia de 1º círculo ou mais; 1 no d20, ou sempre depois das Marés do Caos. */
   surtoDeMagia(actor, { forcar = false } = {}) {
     const mare = !forcar && actor.mareUsada;
@@ -7576,6 +7594,7 @@ export class Encounter {
       if (dono?.concentrating?.condition === cond.id) dono.concentrating = null;
     }
     const rolado = segundaChanceNaResistencia(this, actor, savingThrow(this.rng, bonus, dc, opts), bonus, dc);
+    this.curvarSorteNaResistencia(actor, rolado, dc);
     // Só conta como "por traço" se a vantagem sobreviveu (uma desvantagem na mesma rolagem a cancela).
     return { ...rolado, partes, vantagemPor: rolado.mode === 'vantagem' ? porTraco : [] };
   }
