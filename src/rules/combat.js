@@ -2875,6 +2875,8 @@ export class Encounter {
     if (hasCondition(attacker, 'invisivel') && !ve(target, attacker)) fonte(mods, 'vantagem', 'atacante invisível');
     // Emboscador (o doppelganger): vantagem contra quem ainda está surpreso.
     if (attacker.traits?.includes('emboscador') && this.surpresos?.has(target.id)) fonte(mods, 'vantagem', 'emboscador');
+    // ASSASSINAR (ladino Assassino, 3º): vantagem contra quem ainda não agiu na luta.
+    if (attacker.features?.includes('assassinate') && this.round === 1 && (!target.acted || this.surpreendidos?.has(target.id))) fonte(mods, 'vantagem', 'assassinar');
     // SENTIDOS SELVAGENS (patrulheiro, 18º): não ver o alvo não dá desvantagem (até 9 m, para o invisível).
     const sentidosSelvagens = attacker.features?.includes('feralSenses');
     if (hasCondition(target, 'invisivel') && !ve(attacker, target) && !(sentidosSelvagens && distanceFt(attacker.pos, target.pos) <= 30)) {
@@ -3270,7 +3272,9 @@ export class Encounter {
     }
     const tgtFx = conditionEffects(target);
     this.consumirMarcas(target);
-    const autoCrit = tgtFx.critWithinReach && distanceFt(attacker.pos, target.pos) <= 5;
+    // ASSASSINAR: todo acerto contra um alvo SURPREENDIDO é crítico.
+    const assassinando = atk.hit && attacker.features?.includes('assassinate') && this.round === 1 && this.surpreendidos?.has(target.id);
+    const autoCrit = (tgtFx.critWithinReach && distanceFt(attacker.pos, target.pos) <= 5) || assassinando;
     const critical = atk.critical || (atk.hit && autoCrit);
     if (atk.hit && target.features?.includes('multiattackDefense')) target.multiataqueDe = { id: attacker.id, turno: turnoAgora };
 
@@ -3406,8 +3410,17 @@ export class Encounter {
       const { sides } = parseDice(damageNotation);
       if (n && sides) critExtra = damageRoll(this.rng, `${n}d${sides}`);
     }
-    const total = (dmg?.total ?? 0) + (critExtra?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
+    const totalBase = (dmg?.total ?? 0) + (critExtra?.total ?? 0) + (tamanho?.total ?? 0) + (sneak?.total ?? 0) + (martial?.total ?? 0)
       + (surpresa?.total ?? 0) + (furia?.total ?? 0) + (duelismo?.total ?? 0) + (smite?.total ?? 0);
+    // GOLPE MORTAL (ladino Assassino, 17º): acertar um alvo SURPREENDIDO na 1ª rodada dobra o dano se ele falhar em CON (CD 8 + DES + proficiência).
+    let golpeMortal = null;
+    if (atk.hit && totalBase > 0 && attacker.features?.includes('deathStrike') && this.round === 1 && this.surpreendidos?.has(target.id)) {
+      const cdM = 8 + abilityMod(attacker.abilities?.dex ?? 10) + proficiencyBonus(attacker.level ?? 1);
+      const svM = this.resistencia(target, 'con', cdM);
+      this.explicarResistencia(target, 'con', cdM, svM, { contra: `Golpe Mortal de ${attacker.name}`, seSucesso: 'o dano não dobra' });
+      if (!svM.success) golpeMortal = { notation: `+${totalBase}`, rolls: [], mod: totalBase, total: totalBase, critical: false };
+    }
+    const total = totalBase + (golpeMortal?.total ?? 0);
 
     // Cada origem do dano vira uma parcela própria. Um "19 de dano" não deixa
     // ver que 12 daquilo foi o ataque furtivo — e é justamente essa parcela que
@@ -3417,6 +3430,7 @@ export class Encounter {
     if (critExtra) danoPartes.push(parcelaDeDano('dado extra do crítico', critExtra));
     if (smite) danoPartes.push(parcelaDeDano('destruição divina', smite));
     if (duelismo) danoPartes.push(parcelaDeDano('estilo: duelismo', duelismo));
+    if (golpeMortal) danoPartes.push(parcelaDeDano('golpe mortal (dobro)', golpeMortal));
     if (furia) danoPartes.push(parcelaDeDano('fúria', furia));
     if (sneak) danoPartes.push(parcelaDeDano('ataque furtivo', sneak));
     if (martial) danoPartes.push(parcelaDeDano('vantagem marcial', martial));

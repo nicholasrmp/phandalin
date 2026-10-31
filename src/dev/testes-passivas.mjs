@@ -3028,5 +3028,65 @@ teste('Implacável (15º): entra na luta sem dados e recupera um', () => {
 });
 
 // ============================================================================================================
+// ASSASSINO (ladino, Livro do Jogador): Assassinar e Golpe Mortal
+// ============================================================================================================
+
+const assassino = (nivel) => heroi('ladino', nivel, 'Humano', { weapons: ['adaga'] }, { 3: { subclasse: 'assassino' } });
+
+teste('Assassinar: vantagem contra quem ainda não agiu, só na 1ª rodada; o Ladrão e o ladino comum não têm', () => {
+  const a = assassino(3);
+  assert.ok(a.features.includes('assassinate') && a.features.includes('assassinProficiencies'));
+  a.pos = { x: 5, y: 5 };
+  const gob = alvoParado({ x: 6, y: 5 });
+  const { enc } = arena({ herois: [a], foes: [gob] });
+  gob.acted = false;
+  assert.ok(enc.attackModifiers(a, gob, {}).vantagens.includes('assassinar'), 'vantagem na 1ª rodada');
+  gob.acted = true;
+  assert.ok(!enc.attackModifiers(a, gob, {}).vantagens.includes('assassinar'), 'quem já agiu não conta');
+  gob.acted = false;
+  enc.round = 2;
+  assert.ok(!enc.attackModifiers(a, gob, {}).vantagens.includes('assassinar'), 'só na 1ª rodada');
+  const l = heroi('ladino', 3, 'Humano', { weapons: ['adaga'] }, { 3: { subclasse: 'ladrao' } });
+  l.pos = { x: 5, y: 5 };
+  enc.round = 1;
+  assert.ok(!enc.attackModifiers(l, gob, {}).vantagens.includes('assassinar'), 'o Ladrão não tem');
+});
+
+teste('Assassinar: todo acerto contra um alvo surpreendido é crítico', () => {
+  for (const [surpreso, esperado] of [[true, true], [false, false]]) {
+    const a = assassino(3);
+    a.pos = { x: 5, y: 5 };
+    const gob = alvoParado({ x: 6, y: 5 });
+    gob.hp = gob.maxHp = 200;
+    const { enc, eventos } = arena({ herois: [a], foes: [gob] });
+    if (surpreso) enc.surpreendidos = new Set([gob.id]);
+    enc.rng = dadoEmSequencia(12, 12);
+    enc.attackAction(a, gob, 'adaga');
+    const e = ultimoAtaque(eventos);
+    assert.equal(Boolean(e?.critical), esperado, surpreso ? 'surpreso: crítico' : 'sem surpresa: normal');
+  }
+});
+
+teste('Golpe Mortal (17º): contra um alvo surpreendido o dano dobra se ele falhar em CON, e não dobra se passar', () => {
+  const dano = (d20Resistencia) => {
+    const a = assassino(17);
+    a.pos = { x: 5, y: 5 };
+    const gob = alvoParado({ x: 6, y: 5 });
+    gob.hp = gob.maxHp = 500;
+    const { enc } = arena({ herois: [a], foes: [gob] });
+    enc.surpreendidos = new Set([gob.id]);
+    enc.rng = dadoEmSequencia(12, d20Resistencia);
+    enc.resolveAttack(a, gob, { weaponId: 'adaga' });
+    return 500 - gob.hp;
+  };
+  const passou = dano(20);
+  const falhou = dano(1);
+  assert.ok(passou > 0);
+  assert.equal(falhou, passou * 2, 'dobro exato');
+  const l = assassino(16);
+  assert.ok(!l.features.includes('deathStrike'), 'só no 17º');
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

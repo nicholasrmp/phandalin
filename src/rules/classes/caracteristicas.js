@@ -258,6 +258,13 @@ export const CARACTERISTICAS = {
   lungingAttack: C('Ataque Avançado', 'livre', 'Arme: no próximo acerto de arma, +dado de dano. (O alcance extra de 1,5 m não é modelado.)', { motor: true }),
   precisionAttack: C('Ataque Preciso', 'livre', 'Arme: se o próximo ataque de arma errar por pouco, soma o dado à rolagem e pode acertar.', { motor: true }),
 
+  // ---- ladino: Assassino (Livro do Jogador) ----------------------------------------------------------------------------
+  assassinate: C('Assassinar', 'passiva', 'Vantagem nos ataques contra quem ainda não agiu na luta, e todo acerto contra um alvo surpreendido é crítico.', { motor: true }),
+  assassinProficiencies: C('Proficiências de Assassino', 'fora', 'Proficiência com o kit de disfarce e o kit de venenos.'),
+  infiltrationExpertise: C('Perícia em Infiltração', 'fora', 'Passa a imitar a fala, a escrita e o comportamento de outra pessoa, com uma identidade falsa de sete dias de preparo.'),
+  impostor: C('Impostor', 'fora', 'Imita a fala, a escrita e os gestos de outra pessoa depois de três horas de estudo.'),
+  deathStrike: C('Golpe Mortal', 'passiva', 'Acertar um alvo surpreendido na primeira rodada: se ele falhar em CON (CD 8 + DES + proficiência), o dano dobra.', { motor: true }),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -301,7 +308,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -309,6 +316,9 @@ const ESTRUTURAIS = [
   'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic',
 ];
 const SEM_EFEITO = {
+  assassinProficiencies: 'o jogo não tem kits de disfarce nem de venenos',
+  infiltrationExpertise: 'o jogo não tem identidades falsas',
+  impostor: 'o jogo não tem imitação de pessoas',
   studentOfWar: 'o jogo não tem ferramentas de artesão',
   knowYourEnemy: 'o jogo não compara os atributos de duas criaturas',
   timelessBody: 'o jogo não conta a idade dos heróis',

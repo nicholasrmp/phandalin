@@ -55,6 +55,16 @@ export default {
           17: ['thiefsReflexes'],
         },
       },
+      assassino: {
+        nome: 'Assassino',
+        fonte: 'phb',
+        niveis: {
+          3: ['assassinate', 'assassinProficiencies'],
+          9: ['infiltrationExpertise'],
+          13: ['impostor'],
+          17: ['deathStrike'],
+        },
+      },
     },
   },
 };

@@ -536,3 +536,8 @@ Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do h
 - **Escolha na subida de nível:** 3 no 3º, 5 no 7º. O livro dá 9 no 15º, mas o jogo só tem 5 manobras: o resto não existe ainda.
 - **Faltam 11 manobras** (Aparar, Revidar, Provocar, Finta, Desarmar, Varrer, Comandar, Reunir, Passo Evasivo, Distrair, Troca de Lugar): precisam de reação, segundo alvo ou ação de aliado. Estudante da Guerra e Conheça seu Inimigo: `semEfeito` (o jogo não tem ferramentas nem comparação de atributos). O Avançado não dá o alcance extra de 1,5 m.
 - Ícones: ainda não há; o botão cai no genérico. Suíte 1085/1085, vitest 401/401, build verde.
+
+## Atualização 13 — Subclasse nova: Assassino (ladino, Livro do Jogador)
+- **Existe agora** (23 das 40 subclasses; faltam 17). Com motor e teste: **Assassinar** (3º: vantagem contra quem ainda não agiu na 1ª rodada; todo acerto num alvo surpreendido é crítico) e **Golpe Mortal** (17º: acerto num alvo surpreendido dobra o dano se ele falhar em CON, CD 8 + DES + proficiência; o dobro é parcela própria no log).
+- `semEfeito` com o motivo escrito: Proficiências de Assassino (sem kits), Perícia em Infiltração e Impostor (sem identidades falsas).
+- Suíte 1088/1088, vitest 401/401, build verde. Não vi a luta rodando na tela.
