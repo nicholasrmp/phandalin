@@ -74,7 +74,7 @@
   color: #2b1d07;
 }
 .vila-pino i {
-  width: 16px; height: 16px;
+  width: 24px; height: 24px;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
   background: linear-gradient(135deg, #e9c46a, #a5741e);
@@ -90,6 +90,16 @@
 }
 .vila-pino:hover span, .vila-pino:focus-visible span { background: #fff4d8; outline: none; }
 .vila-pino.fechado { opacity: .5; }
+.vila-proximo { padding: 8px 10px; border: 1px solid var(--gold-escuro); border-radius: 8px; background: rgba(245, 232, 200, .5); font-size: 13px; line-height: 1.35; }
+.vila-proximo strong { display: block; font-family: var(--serif); color: var(--gold-escuro); margin-bottom: 2px; }
+.vila-proximo p { margin: 0; }
+/* A dica de uso do mapa: sem ela, quem chega não sabe que os pinos são clicáveis. */
+.vila-dica {
+  position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 2;
+  padding: 3px 12px; border-radius: 99px; pointer-events: none;
+  background: rgba(245, 232, 200, .92); border: 1px solid #8a6a32;
+  font: 600 12px var(--font); color: #2b1d07; white-space: nowrap;
+}
 .vila-pino[hidden] { display: none; }
 /* Região: cidade grande, fora desta aventura — marcador cinza, só de referência. */
 .vila-pino.cidade i { background: linear-gradient(135deg, #c8c2b4, #7d776c); }
@@ -160,10 +170,11 @@
 }
 .vila-diario[hidden] { display: none; }
 .vila-diario h3 { margin: 0 0 6px; font-family: var(--serif); color: var(--gold-escuro); }
-.vila-diario h4 { margin: 12px 0 4px; }
+.vila-diario { font-family: var(--serif); }
+.vila-diario h4 { margin: 12px 0 4px; font-family: var(--serif); color: var(--gold-escuro); }
 .vila-diario li { margin-bottom: 8px; }
 .vila-diario li.feita strong { text-decoration: line-through; color: var(--muted); }
-.vila-diario p { margin: 2px 0; font-size: 13px; }
+.vila-diario p { margin: 2px 0; font-size: 14px; }
 @media (max-width: 720px) { .vila-diario { inset: 4%; } }
 
 /* A região: poucos marcadores, então o nome fica sempre à vista. Lugar ainda

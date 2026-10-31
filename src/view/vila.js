@@ -47,7 +47,7 @@ export function abrirTelaVila(root, o) {
   const quadro = el('div', { class: 'vila-quadro', style: { backgroundImage: `url(${o.pintura ?? pintura})` } });
   // Propriedade personalizada só entra por setProperty.
   if (o.proporcao) quadro.style.setProperty('--proporcao', o.proporcao);
-  const mapa = el('div', { class: 'vila-mapa' }, quadro);
+  const mapa = el('div', { class: 'vila-mapa' }, quadro, el('span', { class: 'vila-dica' }, 'Clique num pino para visitar o lugar.'));
   for (const l of o.lugares) {
     const b = el('button', {
       class: `vila-pino${l.cidade ? ' cidade' : ''}`,
@@ -57,6 +57,16 @@ export function abrirTelaVila(root, o) {
     }, el('i'), el('span', {}, l.nome));
     pinos.set(l.id, b);
     quadro.append(b);
+  }
+
+  /** O próximo passo: a primeira missão em aberto, ou, sem nenhuma, o que fazer para achar uma. */
+  function proximoPasso() {
+    const aberta = Object.entries(o.estado.missoes ?? {}).find(([, est]) => est !== 'feita');
+    const m = aberta ? o.missoes[aberta[0]] : null;
+    return el('div', { class: 'vila-proximo' },
+      el('strong', {}, 'Próximo passo'),
+      m ? el('p', {}, el('b', {}, `${m.titulo}. `), m.texto)
+        : el('p', {}, 'Nenhuma missão aberta. Fale com o dono da estalagem e com o chefe da vila: eles sabem o que a vila precisa.'));
   }
 
   const diario = el('div', { class: 'vila-diario', hidden: true });
@@ -69,13 +79,16 @@ export function abrirTelaVila(root, o) {
         ? el('ul', {}, ...ativas.map(([id, est]) => el('li', { class: est === 'feita' ? 'feita' : '' },
           el('strong', {}, o.missoes[id].titulo), el('small', {}, ` — de ${o.missoes[id].de}${o.missoes[id].recompensa ? ` · ${o.missoes[id].recompensa}` : ''}`),
           el('p', {}, o.missoes[id].texto))))
-        : el('p', {}, 'Nenhuma ainda.'),
+        : el('p', {}, 'Nenhuma missão ainda. Fale com o dono da estalagem, com o chefe da vila e com os comerciantes.'),
       ...(o.grupo.some((c) => c.faccao) ? [el('h4', {}, 'Facções'),
         el('ul', {}, ...o.grupo.filter((c) => c.faccao).map((c) => el('li', {}, el('strong', {}, c.name), ` — ${c.titulo}`)))] : []),
       el('h4', {}, 'Pistas'),
-      o.estado.pistas.length ? el('ul', {}, ...o.estado.pistas.map((p) => el('li', {}, p))) : el('p', {}, 'Nenhuma ainda.'),
-      el('button', { class: 'vila-btn', onclick: () => { diario.hidden = true; } }, 'Fechar'));
+      o.estado.pistas.length ? el('ul', {}, ...o.estado.pistas.map((p) => el('li', {}, p))) : el('p', {}, 'Nenhuma pista ainda. Ouça as conversas da estalagem.'),
+      el('button', { class: 'vila-btn', onclick: () => { diario.hidden = true; } }, 'Fechar (Esc)'));
     diario.hidden = false;
+    // Esc fecha, como na ficha.
+    const esc = (e) => { if (e.key === 'Escape') { diario.hidden = true; removeEventListener('keydown', esc, true); } };
+    addEventListener('keydown', esc, true);
   };
 
   const caixa = el('div', { class: `vila${o.classe ? ` ${o.classe}` : ''}` },
@@ -87,7 +100,7 @@ export function abrirTelaVila(root, o) {
         el('button', { class: 'vila-btn', title: 'Ficha e inventário (vestir, guardar)', onclick: () => o.onFicha?.(o.grupo.find((c) => !c.dead && (portaDaVila?.meu ? portaDaVila.meu(c) : true)) ?? o.grupo.find((c) => !c.dead)) }, 'Ficha'),
         ...(o.onDormir ? [el('button', { class: 'vila-btn', onclick: () => o.onDormir() }, 'Dormir')] : []),
         el('button', { class: 'vila-btn discreto', onclick: () => o.onMenu() }, 'Menu'))),
-    el('div', { class: 'vila-corpo' }, mapa, el('aside', { class: 'vila-lado' }, grupo, log)),
+    el('div', { class: 'vila-corpo' }, mapa, el('aside', { class: 'vila-lado' }, grupo, proximoPasso(), log)),
     diario);
   root.append(caixa);
   for (const t of o.estado.registro ?? []) log.prepend(el('li', {}, t));
