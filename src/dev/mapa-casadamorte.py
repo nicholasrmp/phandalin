@@ -156,6 +156,7 @@ for (x, y) in [(36, 30), (36, 31)]:
 for (x, y) in [(38, 30), (39, 30), (38, 31), (39, 31)]:
     P1.casa(x, y, 'l')
 
+P1.casa(19, 34, 'M', '3')                    # a porta fecha a passagem de 2 casas junto com o mímico
 P1.casa(19, 35, '?')                         # a porta do canto sudoeste do covil, que é um mímico
 PLANTA_1 = P1.linhas() + (P1.areas,)
 

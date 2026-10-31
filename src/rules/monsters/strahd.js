@@ -32,7 +32,7 @@ export const CASA_DA_MORTE = {
     damageImmunities: ['veneno', 'psíquico'],
     conditionImmunities: ['cego', 'enfeitiçado', 'surdo', 'exausto', 'amedrontado', 'paralisado', 'petrificado', 'envenenado'],
     attacks: [
-      { name: 'Pancada', bonus: 4, damage: '2d6+2', type: 'concussão', reachFt: 5, art: 'mace' },
+      { name: 'Pancada', bonus: 4, damage: '1d6+2', type: 'concussão', reachFt: 5, art: 'mace' },
     ],
     multiattack: { count: 2, sequence: ['Pancada', 'Pancada'] },
     traits: ['aparenciaFalsa', 'suscetibilidadeAntimagica'],

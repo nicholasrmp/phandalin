@@ -65,7 +65,8 @@ export function poraoGatilhos(ctx) {
   return {
     grick: (c) => {
       const f = vivo(ctx.grupos.grick);
-      if (!f || !perto(c, f.pos)) return null;
+      // O livro: a 1,5 m da alcova. A despensa tem 2 x 2 casas e o corredor ao lado passa colado nela.
+      if (!f || c.pos.x < 27 || c.pos.x > 32 || c.pos.y < 19 || c.pos.y > 22) return null;
       ctx.grupos.grick.furtividade = [12];       // o livro: quem tem Percepção passiva abaixo de 12 é surpreendido
       return { surpresa: 'deles', intro: ['Um pedaço da escuridão da alcova se desprende da parede: uma criatura longa, mole, de cabeça de minhoca e bico de ave, e tentáculos que se abrem como uma mão.'] };
     },

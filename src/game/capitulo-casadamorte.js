@@ -196,6 +196,8 @@ export function criarCasaDaMorte(app, config) {
   reaplicarPorao(ctx);
   fugaIniciar(ctx);
   // Onde o passo PARA: o poço escondido, o estrado do ritual, as portas de foice. Sem isto o herói atravessaria a armadilha andando.
+  // Os gatilhos de proximidade também PARAM o passo: sem isto quem atravessa o cruzamento ou passa rente à armadura andava por cima do gatilho.
+  ctx.paradas.push((c, p) => pendentes().some((g) => ctx.gatilhos[g.id]?.({ ...c, pos: p }, areaDe(p))));
   enc.paraNaCasa = (c, p) => c.side === 'party' && estado.explorando && ctx.paradas.some((f) => f(c, p));
 
   async function depoisDeMover(c) {
@@ -401,7 +403,7 @@ export function criarCasaDaMorte(app, config) {
     evento() {},
     dialogoDe: () => null,
     depoisDaConversa: () => {},
-    motivoSemDescanso: () => 'Ninguém fecha os olhos numa casa que não para de olhar de volta.',
+    motivoSemDescanso: () => (estado.lutando ? 'Há uma luta em andamento.' : null),
     textoDoDescanso: () => ['Uma hora de vigia revezada num canto da sala.'],
     async iniciar() {
       prepararExploracao();

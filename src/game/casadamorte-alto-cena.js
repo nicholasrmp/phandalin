@@ -242,7 +242,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       const g = ctx.grupos.espectroBaba;
       ops.push({
         rotulo: salvo.restosVistos ? 'Os restos da babá' : 'Abrir o baú sob o lençol', icone: 'acao-usarObjeto',
-        detalhe: 'Medicina, CD 14', motivo: ctx.longe(c, { x: 1, y: 13 }, 20),
+        detalhe: 'Medicina, CD 14', motivo: ctx.longe(c, { x: 1, y: 12 }, 20),
         fazer: async () => {
           const t = ctx.teste(c, 'medicina', 14);
           salvo.restosVistos = true;
