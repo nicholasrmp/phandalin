@@ -220,6 +220,7 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // Ninguém dorme oito horas em Fúria. O combate já a encerra (`checkEnd`),
   // mas uma Fúria entrada fora de luta ficaria até o fim dos tempos.
   if (getCondition(c, 'furia')) { removeCondition(c, 'furia'); c.furiaAgiu = false; }
+  c.sobrecanalUsos = 0;
   // INTERVENÇÃO DIVINA: depois de atendido, o deus fica em silêncio por sete dias; cada descanso longo conta um.
   const silencio = c.intervencaoDias ?? 0;
   if (silencio > 0) c.intervencaoDias = silencio - 1;

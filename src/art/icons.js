@@ -791,6 +791,8 @@ const ICONE_PARECIDO = {
   tempestadeDeGelo: 'raioDeGelo', coneDeFrio: 'raioDeGelo', peleDePedra: 'protecaoContraEnergia', invisibilidadeMaior: 'invisibilidade',
   dimensaoPorta: 'passoNebuloso', imobilizarMonstro: 'imobilizarPessoa', correnteDeRelampagos: 'relampago', desintegrar: 'raioDeBruxa',
   circuloDaMorte: 'toqueVampirico',
+  muralhaDeFogo: 'bolaDeFogo', nuvemMortal: 'nuvemFetida', banimento: 'passoNebuloso', curaTotal: 'curarFerimentos',
+  dedoDaMorte: 'toqueVampirico', palavraDePoderMatar: 'raioDeBruxa', chuvaDeMeteoros: 'bolaDeFogo',
 };
 
 export function iconeDeMagia(spell = {}) {

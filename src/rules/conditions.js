@@ -207,6 +207,15 @@ export const CONDITIONS = {
     umAtaque: true,
     concentrationEffect: true,
   },
+  // BANIMENTO: fora do jogo até a concentração acabar (a mesma lógica de quem está no Plano Etéreo).
+  banido: {
+    name: 'Banido',
+    desc: 'Foi mandado a um semiplano: não age, não pode ser alvo, e volta quando a magia acaba.',
+    incapacitated: true,
+    inalcancavel: true,
+    motivoInalcancavel: 'foi banido para outro plano',
+    concentrationEffect: true,
+  },
   // PELE DE PEDRA: resistência a dano físico que não seja mágico.
   peleDePedra: {
     name: 'Pele de Pedra',

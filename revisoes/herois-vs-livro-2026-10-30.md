@@ -445,3 +445,31 @@ E o que elas destravaram: **Arcana Mística** (o bruxo de 11º conjura Círculo 
 - A Arcana Mística só tem magia no 6º círculo (as de 7º a 9º não existem no jogo); Correntes de Carceri continua pendente, porque o livro restringe o uso a celestiais, elementais e corruptores.
 
 Suíte: 1072/1072 em Node, vitest 401/401, build verde. `pendente`: 8 (Sobrecanalizar, Percepção Primitiva, Habilidade Inigualável e as invocações Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Correntes de Carceri e Voz do Mestre das Correntes).
+
+---
+
+## Atualização 8 — segundo lote de magias (4º ao 9º círculo) e Sobrecanalizar
+
+Mais **7 magias**, cada uma com teste, e uma característica; `pendente` caiu para **7**. Suíte: 1078/1078 em Node, vitest 401/401, build verde.
+
+| Círculo | Magia | Quem aprende |
+|---|---|---|
+| 4º | Muralha de Fogo (zona de 18 m, 5d8 de fogo) | mago, feiticeiro, druida |
+| 4º | Banimento (CAR ou some até a concentração acabar) | mago, feiticeiro, bruxo, clérigo, paladino |
+| 5º | Nuvem Mortal (zona de 6 m, 5d8 de veneno) | mago, feiticeiro |
+| 6º | Cura (70 PV) | clérigo, druida |
+| 7º | Dedo da Morte (7d8+30 necrótico) | mago, feiticeiro, bruxo |
+| 9º | Palavra de Poder: Matar (≤100 PV morre, sem resistência) | mago, feiticeiro, bruxo, bardo |
+| 9º | Chuva de Meteoros (20d6 de fogo + 20d6 de concussão) | mago, feiticeiro |
+
+- **Arcana Mística completa o que o jogo tem:** 6º Círculo da Morte, 7º Dedo da Morte, 9º Palavra de Poder: Matar (o 8º continua sem magia no jogo).
+- **Sobrecanalizar** (mago, 14º), como interruptor: o dano da próxima magia de até 5º círculo sai no máximo. O primeiro uso depois do descanso longo é de graça; o segundo custa 2d12 por círculo da magia ao próprio mago, e cada uso depois soma mais 1d12 por círculo.
+- Conferido no jogo rodando: Banimento tirou o hobgoblin do tabuleiro, sem erro no console.
+
+### Aproximações
+- Todas usam o ícone da magia mais parecida (ainda sem ícone próprio).
+- Muralha de Fogo fere só quem está nela (o livro fere também um dos lados); Nuvem Mortal fica parada (a do livro se afasta); Banimento devolve todos no fim (o livro bane de vez quem veio de outro plano); Cura não trata cegueira nem doença; Chuva de Meteoros é um impacto só (o livro tem quatro).
+- Sobrecanalizar maximiza a primeira parcela de dano da magia; o dano que ele cobra do mago não ignora resistência, como o livro manda.
+
+### Ainda pendente (7)
+Percepção Primitiva e Habilidade Inigualável; e as invocações Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Correntes de Carceri e Voz do Mestre das Correntes (precisam de Compulsão, Confusão, Conjurar Elemental e de uma regra para restringir ao tipo celestial/elemental/corruptor).

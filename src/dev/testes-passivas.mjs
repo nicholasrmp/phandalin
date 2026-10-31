@@ -2770,5 +2770,129 @@ teste('Invocações que ganham magia nova e Arcana Mística do bruxo', () => {
   assert.equal(b.resources[arcano.recurso], 1);
 });
 // ============================================================================================================
+// MAGIAS, SEGUNDO LOTE (4º ao 9º círculo) e SOBRECANALIZAR
+// ============================================================================================================
+
+teste('Segundo lote: as classes certas aprendem as magias', async () => {
+  const { listaDaClasse } = await import('../game/criacao.js');
+  for (const id of ['muralhaDeFogo', 'nuvemMortal', 'banimento', 'dedoDaMorte', 'palavraDePoderMatar', 'chuvaDeMeteoros']) {
+    assert.ok(SPELLS[id], `${id} existe`);
+    assert.ok(listaDaClasse('mago', 9).magias.includes(id), `${id} na lista do mago`);
+  }
+  assert.ok(listaDaClasse('clerigo', 6).magias.includes('curaTotal') && listaDaClasse('druida', 6).magias.includes('curaTotal'));
+  assert.ok(listaDaClasse('bruxo', 9).magias.includes('palavraDePoderMatar') && !listaDaClasse('bruxo', 9).magias.includes('chuvaDeMeteoros'));
+  assert.ok(!listaDaClasse('mago', 3).magias.includes('dedoDaMorte'), 'só com o círculo');
+});
+
+teste('Muralha de Fogo e Nuvem Mortal: a zona fere quem entra e quem começa o turno nela', () => {
+  const m = conjurador('mago', 11, ['muralhaDeFogo', 'nuvemMortal']);
+  const a = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [m], foes: [a] });
+  enc.rng = dadoFixo(1);
+  assert.ok(enc.castSpell(m, 'nuvemMortal', { point: { x: 6, y: 5 } }).ok);
+  assert.ok(enc.zonas.length > 0, 'a nuvem é uma zona');
+  enc.beginSide('foes');
+  assert.ok(a.hp < a.maxHp, 'quem começa o turno nela leva veneno');
+  const m2 = conjurador('mago', 11, ['muralhaDeFogo']);
+  const b = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [m2], foes: [b] });
+  e2.rng = dadoFixo(1);
+  const r = e2.castSpell(m2, 'muralhaDeFogo', { point: { x: 6, y: 5 } });
+  assert.ok(r.ok, r.why);
+  assert.ok(e2.zonas.length > 0, 'a muralha também');
+});
+
+teste('Banimento (4º): quem falha em CAR some do jogo (fora de alcance e incapacitado) e volta quando a concentração acaba', () => {
+  const m = conjurador('mago', 11, ['banimento']);
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [m], foes: [g] });
+  enc.rng = dadoFixo(1);
+  assert.ok(enc.castSpell(m, 'banimento', { target: g }).ok);
+  assert.ok(hasCondition(g, 'banido'));
+  assert.equal(enc.canAttack(m, g).ok, false, 'não se acerta quem está banido');
+  enc.dropConcentration(m);
+  assert.ok(!hasCondition(g, 'banido'), 'a concentração acabou: volta');
+  const m2 = conjurador('mago', 11, ['banimento']);
+  const g2 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [m2], foes: [g2] });
+  e2.rng = dadoFixo(20);
+  e2.castSpell(m2, 'banimento', { target: g2 });
+  assert.ok(!hasCondition(g2, 'banido'), 'passou na resistência');
+});
+
+teste('Cura (6º), Dedo da Morte (7º), Palavra de Poder: Matar (9º) e Chuva de Meteoros (9º)', () => {
+  const c = conjurador('clerigo', 11, ['curaTotal']);
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 4, y: 5 }; amigo.maxHp = 100; amigo.hp = 10;
+  const { enc } = arena({ herois: [c, amigo], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.ok(enc.castSpell(c, 'curaTotal', { target: amigo }).ok);
+  assert.ok(amigo.hp >= 80, `70 pontos de vida (e o Discípulo da Vida, se houver): ${amigo.hp}`);
+  const m = conjurador('mago', 17, ['dedoDaMorte', 'palavraDePoderMatar', 'chuvaDeMeteoros']);
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [m], foes: [g] });
+  e2.rng = dadoFixo(1);
+  assert.ok(e2.castSpell(m, 'dedoDaMorte', { target: g }).ok);
+  assert.ok(g.maxHp - g.hp >= 30 || g.dead, 'pelo menos os 30 fixos');
+  const fraco = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  fraco.hp = 60;
+  const forte = alvoParado({ x: 7, y: 5 }, 'bugbear');
+  forte.hp = 150; forte.maxHp = 150;
+  const m2 = conjurador('mago', 17, ['palavraDePoderMatar']);
+  const { enc: e3 } = arena({ herois: [m2], foes: [fraco, forte] });
+  assert.ok(e3.castSpell(m2, 'palavraDePoderMatar', { target: fraco }).ok);
+  assert.ok(fraco.dead, 'até 100 PV: morre');
+  m2.actionUsed = false;
+  m2.spellcasting.slots[9] = 1;
+  assert.ok(e3.castSpell(m2, 'palavraDePoderMatar', { target: forte }).ok);
+  assert.ok(!forte.dead && forte.hp === 150, 'acima de 100 PV: nada');
+  const g1 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const m3 = conjurador('mago', 17, ['chuvaDeMeteoros']);
+  const { enc: e4 } = arena({ herois: [m3], foes: [g1] });
+  e4.rng = dadoFixo(1);
+  assert.ok(e4.castSpell(m3, 'chuvaDeMeteoros', { point: { x: 6, y: 5 } }).ok);
+  assert.ok(g1.dead || g1.maxHp - g1.hp >= 40, 'os meteoros pesam');
+});
+
+teste('Arcana Mística no 13º e no 17º: Dedo da Morte e Palavra de Poder: Matar, uma vez por descanso longo cada', () => {
+  const b13 = bruxo(13);
+  assert.ok(b13.magiasDeInvocacao.some((m) => m.arcano === 7 && m.magia === 'dedoDaMorte'));
+  const b17 = bruxo(17);
+  assert.ok(b17.magiasDeInvocacao.some((m) => m.arcano === 9 && m.magia === 'palavraDePoderMatar'));
+  assert.ok(!b17.magiasDeInvocacao.some((m) => m.arcano === 8), 'o 8º círculo continua sem magia');
+});
+
+teste('Sobrecanalizar (mago, 14º): o dano da magia sai no máximo; o primeiro uso é de graça, o segundo fere o mago', () => {
+  const m = conjurador('mago', 14, ['bolaDeFogo']);
+  m.features.push('overchannel');
+  m.pos = { x: 0, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  g.hp = g.maxHp = 400;
+  const { enc } = arena({ herois: [m], foes: [g] });
+  enc.rng = dadoFixo(1); // todos falham: dano cheio; os dados saem em 1... a menos que o máximo valha
+  assert.equal(enc.useFeature(m, 'overchannel'), true);
+  const hp0 = m.hp;
+  assert.ok(enc.castSpell(m, 'bolaDeFogo', { point: { x: 6, y: 5 } }).ok);
+  const armado = 400 - g.hp;
+  assert.equal(m.hp, hp0, 'o primeiro uso não custa nada');
+  assert.equal(m.sobrecanalizaPronta, false);
+  // segundo uso: fere
+  m.actionUsed = false;
+  enc.useFeature(m, 'overchannel');
+  const hp1 = m.hp;
+  assert.ok(enc.castSpell(m, 'bolaDeFogo', { point: { x: 6, y: 5 } }).ok);
+  assert.ok(m.hp < hp1, 'o segundo uso queima o mago');
+  descansoLongo(m);
+  assert.equal(m.sobrecanalUsos, 0, 'o descanso longo zera o preço');
+  // sem armar, os dados são os normais
+  const m2 = conjurador('mago', 14, ['bolaDeFogo']);
+  m2.pos = { x: 0, y: 5 };
+  const g2 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  g2.hp = g2.maxHp = 400;
+  const { enc: e2 } = arena({ herois: [m2], foes: [g2] });
+  e2.rng = dadoFixo(1);
+  e2.castSpell(m2, 'bolaDeFogo', { point: { x: 6, y: 5 } });
+  assert.equal(armado - (400 - g2.hp), 8 * (6 - 3), 'oito dados de 6 faces: do 3 do dado fixo ao máximo de 6, +24');
+});
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

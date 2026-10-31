@@ -48,7 +48,7 @@ export const ESCOLAS = Object.freeze(['abjuracao', 'adivinhacao', 'conjuracao', 
 export const KINDS_COM_RAMO = Object.freeze([
   'heal', 'healGrupo', 'curaReuso', 'reviver', 'restaurar', 'estabilizar', 'frutos',
   'armadura', 'reacao', 'tempHp', 'teleporte', 'disparada', 'levitar', 'sleep', 'acalmar',
-  'invocar', 'animarMortos', 'debuff', 'marca', 'attack', 'buff', 'aura', 'mira', 'ampliar', 'save',
+  'invocar', 'animarMortos', 'debuff', 'marca', 'attack', 'matar', 'buff', 'aura', 'mira', 'ampliar', 'save',
 ]);
 /** Kinds que são utilidade de verdade, e por isso caem nela de propósito. */
 export const KINDS_DE_UTILIDADE = Object.freeze(['utilidade', 'rastro', 'dissipar']);
@@ -139,7 +139,7 @@ export function familiaDaMagia(spell) {
   if (['teleporte', 'disparada', 'levitar'].includes(k)) return de('movimento');
   if (['sleep', 'acalmar'].includes(k)) return de('calma');
   if (['invocar', 'animarMortos'].includes(k)) return de('invocacao');
-  if (['debuff', 'marca', 'attack'].includes(k)) return de('maldicao');
+  if (['debuff', 'marca', 'attack', 'matar'].includes(k)) return de('maldicao');
 
   if (k === 'buff') {
     // Movimento antes de defesa: Velocidade tem bônus de CA e é, antes de tudo,

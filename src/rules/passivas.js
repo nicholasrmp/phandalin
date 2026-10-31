@@ -129,7 +129,7 @@ export function aplicarInvocacoes(c, SPELLS) {
   // ARCANA MÍSTICA (bruxo, 11º/13º/15º/17º): uma magia de 6º, 7º, 8º e 9º círculo, uma vez por descanso longo, sem espaço. O jogo só tem
   // as de 6º círculo da lista do bruxo (Círculo da Morte); os círculos sem magia ficam vazios.
   if (f.includes('mysticArcanum')) {
-    const lista = { 6: ['circuloDaMorte'], 7: [], 8: [], 9: [] };
+    const lista = { 6: ['circuloDaMorte'], 7: ['dedoDaMorte'], 8: [], 9: ['palavraDePoderMatar'] };
     for (const [circ, min] of [[6, 11], [7, 13], [8, 15], [9, 17]]) {
       if ((c.level ?? 1) < min) continue;
       const magia = lista[circ].find((id) => SPELLS[id] && !c.magiasDeInvocacao.some((x) => x.magia === id));

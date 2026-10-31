@@ -230,8 +230,17 @@ const ALTAS_NOVAS = {
   feiticeiro: ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte'],
   bruxo: ['dimensaoPorta', 'imobilizarMonstro', 'circuloDaMorte'],
   bardo: ['invisibilidadeMaior', 'dimensaoPorta', 'imobilizarMonstro'],
-  druida: ['tempestadeDeGelo', 'peleDePedra'],
+  druida: ['tempestadeDeGelo', 'peleDePedra', 'muralhaDeFogo', 'curaTotal'],
 };
+const ALTAS_NOVAS_2 = {
+  mago: ['muralhaDeFogo', 'nuvemMortal', 'banimento', 'dedoDaMorte', 'palavraDePoderMatar', 'chuvaDeMeteoros'],
+  feiticeiro: ['muralhaDeFogo', 'nuvemMortal', 'banimento', 'dedoDaMorte', 'palavraDePoderMatar', 'chuvaDeMeteoros'],
+  bruxo: ['banimento', 'dedoDaMorte', 'palavraDePoderMatar'],
+  bardo: ['palavraDePoderMatar'],
+  clerigo: ['banimento', 'curaTotal'],
+  paladino: ['banimento'],
+};
+for (const [classe, ids] of Object.entries(ALTAS_NOVAS_2)) ALTAS_NOVAS[classe] = [...(ALTAS_NOVAS[classe] ?? []), ...ids];
 for (const [classe, ids] of Object.entries(ALTAS_NOVAS)) ALTAS[classe].push(...ids.filter((id) => SPELLS[id] && !ALTAS[classe].includes(id)));
 
 /**

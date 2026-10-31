@@ -4930,7 +4930,10 @@ export class Encounter {
       };
     }
     const cuidado = Math.max(1, abilityMod(actor.abilities?.cha ?? 10));
-    this.metaAtiva = ids.size ? {
+    // SOBRECANALIZAR (mago, 14º), armado: o dano de uma magia de até 5º círculo sai no máximo.
+    const sobre = Boolean(actor.sobrecanalizaPronta && original && original.level >= 1 && original.level <= 5 && (original.damage || original.damage2));
+    this.metaAtiva = ids.size || sobre ? {
+      maximizar: sobre,
       dono: actor, ids,
       careful: ids.has('carefulSpell') ? { restantes: cuidado } : null,
       heightened: ids.has('heightenedSpell'), subtle: ids.has('subtleSpell'),
@@ -4940,6 +4943,7 @@ export class Encounter {
     try {
       const r = this.castSpellBase(actor, spellId, opcoes);
       if (r?.ok && metas.length) this.pagarMetamagia(actor, original, metas, opcoes, r, antesDeAcao);
+      if (r?.ok && sobre) this.cobrarSobrecanalizar(actor, original);
       return r;
     } finally {
       if (original) SPELLS[spellId] = original;
@@ -5021,9 +5025,36 @@ export class Encounter {
     }
   }
 
+  /**
+   * O PREÇO do Sobrecanalizar: a primeira vez depois de um descanso longo não custa nada; a segunda, 2d12 de dano necrótico por círculo da
+   * magia, e cada uso depois soma mais 1d12 por círculo. O dano ignora resistência e imunidade (aqui, entra direto nos PV).
+   */
+  cobrarSobrecanalizar(actor, spell) {
+    actor.sobrecanalizaPronta = false;
+    const usos = actor.sobrecanalUsos ?? 0;
+    actor.sobrecanalUsos = usos + 1;
+    this.say('recurso', `${actor.name} sobrecanaliza ${spell.name}: o dano sai no máximo.`);
+    if (usos === 0) return;
+    const dados = (usos + 1) * spell.level;
+    const dano = damageRoll(this.rng, `${dados}d12`);
+    this.say('dano', `A magia queima o próprio ${actor.name}: ${dano.total} necrótico (${dados}d12).`);
+    actor.hp = Math.max(0, actor.hp - dano.total);
+    if (actor.hp === 0 && actor.kind === 'pc') this.applyDamage(actor, 0, 'necrótico');
+  }
+
   /** POTENCIALIZADA: rola de novo até CAR dados de dano que saíram abaixo da média (os piores), uma vez por magia. */
   empoderar(d) {
     const m = this.metaAtiva;
+    // SOBRECANALIZAR: cada dado de dano vale o máximo (e o total sobe na diferença).
+    if (m?.maximizar && d?.rolls?.length && !m.maximizou) {
+      const lados = Number(/d(\d+)/.exec(d.notation ?? '')?.[1] ?? 0);
+      if (lados) {
+        m.maximizou = true;
+        d.total += d.rolls.reduce((s, v) => s + (lados - v), 0);
+        d.rolls = d.rolls.map(() => lados);
+        return;
+      }
+    }
     if (!m?.empowered || m.empoderou || !d?.rolls?.length) return;
     const lados = Number(/d(\d+)/.exec(d.notation ?? '')?.[1] ?? 0);
     if (!lados) return;
@@ -5461,6 +5492,17 @@ export class Encounter {
         break;
       }
 
+      case 'matar': {
+        // PALAVRA DE PODER: MATAR — sem resistência: com PV até o limite, morre; com mais, a magia não faz nada.
+        if (!target || target.dead) break;
+        if (target.hp <= (spell.limitePv ?? 100)) {
+          this.say('dano', `${actor.name} pronuncia a palavra: ${target.name} morre.`);
+          this.applyDamage(target, target.hp + (target.tempHp ?? 0), null, actor, { magico: true });
+        } else {
+          this.say('magia', `${target.name} tem mais de ${spell.limitePv ?? 100} PV: a palavra não o alcança.`);
+        }
+        break;
+      }
       case 'estabilizar': {
         target.stable = true;
         this.say('cura', `${actor.name} estabiliza ${target.name} com ${spell.name}.`, 'sem teste de Medicina');
@@ -7381,6 +7423,14 @@ export class Encounter {
         actor.resources.cleansingTouch -= 1;
         removeCondition(alvoT, magica.id);
         this.say('recurso', `${actor.name} toca ${alvoT === actor ? 'a si mesmo' : alvoT.name}: ${CONDITIONS[magica.id]?.name ?? magica.id} se desfaz (Toque Purificador).`);
+        return true;
+      }
+      case 'overchannel': {
+        // SOBRECANALIZAR (mago de Evocação, 14º): arma o próximo dano de magia de até 5º círculo no máximo. Interruptor, de graça.
+        if (!actor.features?.includes('overchannel')) return false;
+        const liga = modo === 'ligar' ? true : modo === 'desligar' ? false : !actor.sobrecanalizaPronta;
+        actor.sobrecanalizaPronta = liga;
+        this.say('recurso', `${actor.name} ${liga ? 'prepara' : 'desfaz'} o Sobrecanalizar.`);
         return true;
       }
       case 'wildShape': {

@@ -1229,6 +1229,48 @@ export const SPELLS = {
     damage: '8d6', damageType: 'necrótico', halfOnSave: true, upcast: { dados: 2 },
     desc: 'Uma onda de energia negativa numa esfera de 18 m de raio. CD de CON: 8d6 de dano necrótico, metade se passar. +2d6 por círculo acima do 6º.',
   },
+  // ---- o segundo lote: do 4º ao 9º círculo ----
+  muralhaDeFogo: {
+    id: 'muralhaDeFogo', name: 'Muralha de Fogo', level: 4, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'line', areaFt: 60, kind: 'save', save: 'dex', soZona: true,
+    zona: { rodadas: 10, quando: 'inicio', aoEntrar: true, dificil: false, semTeste: true, dano: { dados: '5d8', tipo: 'fogo', save: 'dex', metade: true } },
+    concentration: true, duracaoRodadas: 10, upcast: { dados: 1 },
+    desc: 'Uma muralha de fogo de 18 m. Quem entra nela ou começa o turno nela faz CD de DES: 5d8 de fogo, metade se passar. Concentração, até 1 minuto. +1d8 por círculo acima do 4º. (O livro põe também o dano no lado da muralha; aqui só vale quem está nela.)',
+  },
+  nuvemMortal: {
+    id: 'nuvemMortal', name: 'Nuvem Mortal', level: 5, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'sphere', areaFt: 20, kind: 'save', save: 'con', soZona: true,
+    zona: { rodadas: 10, quando: 'inicio', aoEntrar: true, dificil: false, semTeste: true, dano: { dados: '5d8', tipo: 'veneno', save: 'con', metade: true } },
+    concentration: true, duracaoRodadas: 10, upcast: { dados: 1 },
+    desc: 'Uma névoa de veneno numa esfera de 6 m de raio. Quem entra nela ou começa o turno nela faz CD de CON: 5d8 de veneno, metade se passar. Concentração, até 10 minutos (aqui, 1 minuto). +1d8 por círculo acima do 5º. (A nuvem do livro se afasta 3 m por turno; aqui fica parada.)',
+  },
+  banimento: {
+    id: 'banimento', name: 'Banimento', level: 4, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'debuff', targets: 1, upcast: { alvos: 1 },
+    save: 'cha', condition: 'banido', concentration: true, duracaoRodadas: 10,
+    desc: 'Uma criatura faz CD de CAR ou some para um semiplano até a magia acabar (concentração, até 1 minuto); volta onde estava. +1 alvo por círculo acima do 4º. (O livro bane de vez quem veio de outro plano; aqui todos voltam.)',
+  },
+  curaTotal: {
+    id: 'curaTotal', name: 'Cura', level: 6, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'heal', targets: 1, heal: '+70',
+    desc: 'Uma criatura a até 18 m recupera 70 pontos de vida. (O livro também cura cegueira, surdez e doenças; o jogo não as modela.)',
+  },
+  dedoDaMorte: {
+    id: 'dedoDaMorte', name: 'Dedo da Morte', level: 7, school: 'necromancia', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'save', save: 'con', damage: '7d8+30', damageType: 'necrótico', halfOnSave: true,
+    desc: 'Uma criatura a até 18 m faz CD de CON: 7d8 + 30 de dano necrótico, metade se passar. (O livro ergue como zumbi quem morre; o jogo não.)',
+  },
+  palavraDePoderMatar: {
+    id: 'palavraDePoderMatar', name: 'Palavra de Poder: Matar', level: 9, school: 'encantamento', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'matar', targets: 1, limitePv: 100,
+    desc: 'Uma criatura a até 18 m com 100 pontos de vida ou menos morre, sem resistência. Com mais, nada acontece.',
+  },
+  chuvaDeMeteoros: {
+    id: 'chuvaDeMeteoros', name: 'Chuva de Meteoros', level: 9, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 1000, shape: 'sphere', areaFt: 40, kind: 'save', save: 'dex',
+    damage: '20d6', damageType: 'fogo', damage2: '20d6', damageType2: 'concussão', halfOnSave: true,
+    desc: 'Meteoros caem numa esfera de 12 m de raio. CD de DES: 20d6 de fogo MAIS 20d6 de concussão, metade de cada se passar. (O livro faz quatro pontos de impacto de 12 m; aqui é um só.)',
+  },
   comunhao: {
     id: 'comunhao', name: 'Comunhão', level: 5, school: 'divinação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'minutos', minutos: 1, rangeFt: 0, kind: 'utilidade', duracaoMin: 1,
