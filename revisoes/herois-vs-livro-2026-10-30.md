@@ -497,3 +497,11 @@ apontam para ele. Nada foi gerado no OpenArt. Um teste novo exige que toda magia
 
 ### O que continua fraco
 Meteoros (o corte da cauda), Pele de Pedra (é um anel de pedras, não uma casca sobre o corpo) e a Nuvem Mortal (o miolo escuro esconde a criatura). Nenhum deles foi visto em movimento no jogo: a animação dura menos que o intervalo entre um comando meu e a captura de tela, então só o rastro estático da Muralha de Fogo apareceu.
+
+---
+
+## Atualização 10 — o que o revisor-chefe mediu, e as correções grátis
+
+O `revisor-magias` (chefe) mediu os 8 efeitos novos contra os 77 aprovados: lado do quadro igual (mediana 64), ocupação média 31% contra 20% (dentro da faixa já aprovada: dissipar-sigilo 48%, ilusao-veu 46%), 6 dos 8 sem pixel na borda (vários aprovados cortam mais), mesmo contorno. Derrubou três afirmações dos sub-revisores: "os aprovados não têm halo escuro" (a família das sombras tem 41 a 78%), "Correntes e Porta são objeto isolado" (cobrem 31% e 37% do quadro) e "o Relâmpago está cortado" (zero pixel na borda depois da reconversão). Pediu: alturas menores nos efeitos de área, menos cores em Meteoros e Pele de Pedra, base alinhada na Nuvem Mortal, e refazer a Pele de Pedra.
+
+Feito: alturas da Muralha 28→20, Nuvem 34→20 (`sumir` maior) e Correntes 28→22; Meteoros reduzido a 6 cores e Nuvem a 5, com a base alinhada (conversor: `maxCores`, `alinharBase`, `casca`). **Pele de Pedra:** refeita no OpenArt (Wan 2.7, 6 créditos) e o modelo desenhou de novo uma estátua cheia; em vez de gastar outra geração, o conversor esvazia o miolo (`casca`): sobra um traje de pedra rachada com veios dourados e o tronco vazado, o personagem fica à vista. São só 4 quadros e dois pares quase iguais: continua o efeito mais fraco do lote.

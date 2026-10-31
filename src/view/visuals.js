@@ -1403,7 +1403,7 @@ const SPELL_VISUALS = {
     return 0;
   },
   imobilizarMonstro: (board, _ctx, alvos = []) => {
-    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'correntes-prender', { fps: 9, altura: 28 }), i * 90));
+    alvos.forEach((t, i) => setTimeout(() => board.fx.quadros(t.pos, 'correntes-prender', { fps: 9, altura: 22 }), i * 90));
     return 0;
   },
   invisibilidadeMaior: (board, _ctx, alvos = []) => {
@@ -1414,14 +1414,14 @@ const SPELL_VISUALS = {
     board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'fogo-projetil', dur: 0.3, arc: 0.3 });
     const lista = areaTiles?.length ? areaTiles : [dest];
     // Cada casa começa um pouco fora de fase das vizinhas, para a muralha não pulsar toda de uma vez.
-    setTimeout(() => lista.forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'muralha-de-fogo', { fps: 10, altura: 28, sumir: 0.3 }), i * 40 + (i % 3) * 70)), 300);
+    setTimeout(() => lista.forEach((t, i) => setTimeout(() => board.fx.quadros(t, 'muralha-de-fogo', { fps: 10, altura: 20, sumir: 0.3 }), i * 40 + (i % 3) * 70)), 300);
     return 0.4;
   },
   nuvemMortal: (board, { caster, dest, areaTiles }) => {
     board.fx.projectile(caster.pos, dest, { style: 'sprite', sprite: 'veneno-projetil', dur: 0.35, arc: 0.4 });
     setTimeout(() => {
       board.fx.area(areaTiles ?? [dest], { color: '#6fc07a', dur: 0.4 });
-      board.fx.quadros(dest, 'nuvem-mortal', { fps: 8, altura: 34, sumir: 0.5 });
+      board.fx.quadros(dest, 'nuvem-mortal', { fps: 8, altura: 20, sumir: 0.7 });
     }, 350);
     return 0.4;
   },

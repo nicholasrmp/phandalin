@@ -144,6 +144,60 @@ def tirar_faixas(grade, fundo='e', fundura=3, limite=0.7):
     return [''.join(l) for l in g]
 
 
+def reduzir_cores(grades, n):
+    """`maxCores`: o efeito inteiro (todos os quadros) fica só com as `n` cores mais usadas; as outras viram a mais próxima
+    entre as que ficaram. Menos cores leem como efeito, e não como ilustração, e não pulam de um quadro para o outro."""
+    uso = {}
+    for g in grades:
+        for l in g:
+            for k in l:
+                if k != '.':
+                    uso[k] = uso.get(k, 0) + 1
+    fica = [k for k, _ in sorted(uso.items(), key=lambda kv: -kv[1])[:n]]
+    if len(uso) <= n:
+        return grades
+    rgb_de = {k: rgb(PALETA[CHAVES.index(k)]) for k in uso}
+    mapa = {k: (k if k in fica else min(fica, key=lambda f: sum((rgb_de[k][i] - rgb_de[f][i]) ** 2 for i in range(3)))) for k in uso}
+    return [[''.join(mapa.get(k, '.') if k != '.' else '.' for k in l) for l in g] for g in grades]
+
+
+def alinhar_base(grades):
+    """`alinharBase`: desce cada quadro até a base do desenho (a última linha com pixel) bater com a do quadro mais baixo:
+    a nuvem que se dissipa não "pula" para cima no fim."""
+    bases = []
+    for g in grades:
+        ys = [y for y, l in enumerate(g) if any(k != '.' for k in l)]
+        bases.append(max(ys) if ys else 0)
+    alvo = max(bases)
+    out = []
+    for g, b in zip(grades, bases):
+        d = alvo - b
+        vazia = '.' * len(g[0])
+        out.append(([vazia] * d + g)[:len(g)] if d > 0 else g)
+    return out
+
+
+def casca(grade, espessura):
+    """`casca`: esvazia o miolo de uma figura cheia. Só ficam os pixels a até `espessura` pixels da borda da silhueta (o
+    corpo de pedra vira uma casca, e o personagem que está dentro continua à vista)."""
+    h, w = len(grade), len(grade[0])
+    cheio = [[grade[y][x] != '.' for x in range(w)] for y in range(h)]
+    # distância (de xadrez) até o fundo, por varredura de camadas
+    dist = [[0 if not cheio[y][x] else None for x in range(w)] for y in range(h)]
+    fila = [(x, y) for y in range(h) for x in range(w) if not cheio[y][x]]
+    while fila:
+        proxima = []
+        for x, y in fila:
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    a, b = x + dx, y + dy
+                    if 0 <= a < w and 0 <= b < h and dist[b][a] is None:
+                        dist[b][a] = dist[y][x] + 1
+                        proxima.append((a, b))
+        fila = proxima
+    return [''.join(grade[y][x] if cheio[y][x] and dist[y][x] <= espessura else '.' for x in range(w)) for y in range(h)]
+
+
 def so_maiores(grade, minimo):
     """`soMaiores`: tira os blocos soltos (8 vizinhos) com menos de `minimo` pixels, sem nunca tirar o maior."""
     g = [list(l) for l in grade]
@@ -229,6 +283,8 @@ def main():
                 grade = tirar_faixas(grade)
             if fil.get('soMaiores'):
                 grade = so_maiores(grade, fil['soMaiores'])
+            if fil.get('casca'):
+                grade = casca(grade, fil['casca'])
             if fil.get('esmaecerTopo'):
                 grade = esmaecer_topo(grade, fil['esmaecerTopo'])
             quadros.append(grade)
@@ -239,6 +295,10 @@ def main():
                     cor = rgb(PALETA[CHAVES.index(k)])
                     ImageDraw.Draw(previa).rectangle(
                         [((len(quadros) - 1) * maior_x + x) * 4, (r * maior + y) * 4, ((len(quadros) - 1) * maior_x + x) * 4 + 3, (r * maior + y) * 4 + 3], fill=cor)
+        if fil.get('maxCores'):
+            quadros = reduzir_cores(quadros, fil['maxCores'])
+        if fil.get('alinharBase'):
+            quadros = alinhar_base(quadros)
         efeitos[fil['nome']] = {'lado': lado, 'quadros': quadros}
         print(f"{fil['nome']}: {len(quadros)} quadros de {lado}x{lado}")
     previa.save(pasta / 'quadros.png')
