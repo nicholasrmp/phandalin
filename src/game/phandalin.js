@@ -95,6 +95,22 @@ export const LUGARES = [
 
 const QUADRO = 'O prédio mais sólido da vila: pedra grossa e uma torre com sino. Pregado na porta, um papel já amarelado promete recompensa a quem der fim aos orcs vistos para os lados do Cume da Wyvern — "tratar aqui dentro". A assinatura é um borrão.';
 
+// A SIMPATIA DA VILA: o que o grupo fez por um dono de loja volta no balcão. O desconto vem de uma escolha (Elmar e Linene, quando
+// o grupo abre mão do pagamento); o ágio na balança da Halia, de entregar a carta inteira; o balcão frio, de regatear com ela e falhar.
+// Fica em `v.feito`, que a campanha guarda.
+const lojaComSimpatia = (id) => {
+  const base = LOJAS[id];
+  const f = v.feito;
+  const compra = id === 'barthen' && f.elmarGrato ? 0.85 : id === 'escudoLeao' && f.leaoGrata ? 0.85 : 1;
+  const mult = id === 'cambio' ? (f.haliaAliada ? 1.1 : f.haliaFria ? 0.9 : 1) : 1;
+  if (compra === 1 && mult === 1) return base;
+  return {
+    ...base, mult,
+    estoque: () => base.estoque().map((x) => ({ ...x, preco: Math.round(x.preco * compra) })),
+    fala: compra < 1 ? { ...base.fala, comprar: 'Para quem me ajudou, o preço é menor. Não conta para ninguém.' } : base.fala,
+  };
+};
+
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 
 // ------------------------------------------------------------ a vila ----
@@ -144,7 +160,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   // ------------------------------------------------------------ cenas ----
   const CENAS = {
     async estalagem() {
-      const quarto = 5 * 10 * vivos().length;       // 5 pp por pessoa
+      // 5 pp por pessoa; a casa faz metade do preço a quem limpou a rua.
+      const quarto = (v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length;
       // O livro: vencidos os bandidos, a maior parte da vila fica grata.
       const agradece = v.feito.ruaVencida && !v.feito.toblenAgradeceu;
       if (agradece) v.feito.toblenAgradeceu = true;
@@ -162,7 +179,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             opcoes: [
               { texto: 'Ouvir as conversas da sala.', vai: 'rumores', uma: true },
               { texto: 'E esses Marcarrubra?', vai: 'marcarrubra', uma: true },
-              { texto: `Alugar quartos para a noite (${quarto / 10} pp).`, fim: 'dormir',
+              { texto: `Alugar quartos para a noite (${(quarto / 10).toLocaleString('pt-BR')} pp${v.feito.ruaVencida ? ', metade do preço: a casa agradece' : ''}).`, fim: 'dormir',
                 requer: () => (totalEmCobre(vivos()) >= quarto ? null : 'o grupo não tem dinheiro para isso') },
               { texto: 'Até mais.', fim: 'sai' },
             ],
@@ -215,9 +232,28 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             ],
           },
           carroca: {
-            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 10); registro.push('Elmar Barthen paga 10 po a cada um pela carroça.'); },
             fala: 'Farinha, porco salgado, as ferramentas, as lanternas… tudo aqui. Como combinado: dez peças de ouro para cada um. A carroça fica comigo.',
+            opcoes: [
+              { texto: 'Combinado: dez para cada um.', vai: 'carrocaPaga' },
+              { texto: 'A carga está inteira, e a estrada custou caro. Dá para pagar mais.', teste: { pericia: 'persuasao', cd: 13 }, sucesso: 'carrocaMais', falha: 'carrocaPaga' },
+              { texto: 'Fique com o pagamento: é pelo Gundren. Só se lembre de nós quando formos comprar.', vai: 'carrocaGraca' },
+            ],
+          },
+          carrocaPaga: {
+            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 10); registro.push('Elmar Barthen paga 10 po a cada um pela carroça.'); },
+            fala: 'Dez peças de ouro para cada um. Ainda bem que vocês voltaram com tudo.',
             opcoes: [{ texto: 'Obrigado.', vai: 'oi' }],
+          },
+          carrocaMais: {
+            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 15); registro.push('Elmar Barthen paga 15 po a cada um pela carroça (regateio).'); },
+            fala: 'Hm. Nem uma peça a menos do que a carga vale, e vocês sabem disso. Quinze para cada um — e esta é a última vez que perco um regateio.',
+            opcoes: [{ texto: 'Obrigado.', vai: 'oi' }],
+          },
+          carrocaGraca: {
+            ao: () => { v.feito.carroca = true; v.feito.elmarGrato = true; registro.push('Elmar Barthen fica com a carroça sem pagar. Daqui em diante vende ao grupo por 15% menos.'); },
+            narra: 'Elmar fica um instante sem saber o que dizer. Depois estende a mão, e o aperto dura mais do que o necessário.',
+            fala: 'Ninguém aqui faz isso de graça. Então eu também não vou cobrar o que devo: da próxima vez que vierem ao balcão, o preço é menor. Palavra de Barthen.',
+            opcoes: [{ texto: 'Fechado.', vai: 'oi' }],
           },
           gundren: {
             ao: () => { missao('gundren'); },
@@ -267,8 +303,20 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           carga: {
-            ao: () => { v.feito.linene = true; concluir('linene'); guardar(vivos()[0], 'moedaDeOuro', 50); registro.push('Linene paga 50 po pelos suprimentos.'); },
             fala: 'Os goblins! Então era isso. Cinquenta peças de ouro, como prometido — e a Escudo Leão não esquece quem a ajudou.',
+            opcoes: [
+              { texto: 'Pegamos as cinquenta peças.', vai: 'cargaPaga' },
+              { texto: 'Guarde o dinheiro. Em troca, um preço melhor nos fundos.', vai: 'cargaDesconto' },
+            ],
+          },
+          cargaPaga: {
+            ao: () => { v.feito.linene = true; concluir('linene'); guardar(vivos()[0], 'moedaDeOuro', 50); registro.push('Linene paga 50 po pelos suprimentos.'); },
+            fala: 'Aqui estão. Contadas.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
+          cargaDesconto: {
+            ao: () => { v.feito.linene = true; v.feito.leaoGrata = true; concluir('linene'); registro.push('Linene recusa pagar, mas a Escudo Leão passa a vender ao grupo por 15% menos.'); },
+            fala: 'Companhia não gosta de dever; gosta menos ainda de perder carga. Aceito — e o preço dos fundos, para vocês, cai quinze por cento. Fica no livro, com a minha letra.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
         },
@@ -314,9 +362,37 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           },
           semMotivo: { fala: 'Gosto de saber com quem a vila está lidando. Só isso.', opcoes: [{ texto: '…', vai: 'oi' }] },
           carta: {
-            ao: () => { v.feito.haliaPagou = true; concluir('halia'); repartir(vivos(), 100 * 100); registro.push('Halia paga 100 po pelo Cajavidro e pelos papéis.'); },
-            narra: 'Halia lê a carta com a aranha desenhada duas vezes, devagar, e a guarda numa gaveta com chave.',
-            fala: 'Combinado é combinado. Cem peças de ouro. E, se um dia quiserem trabalho de verdade, a porta está aberta.',
+            narra: 'Halia lê a carta com a aranha desenhada duas vezes, devagar. Quando levanta os olhos, o sorriso já não é de comerciante.',
+            fala: 'Aranha Negra… Isto vale mais do que eu combinei, e nós duas sabemos. Cem peças, como no papel. A não ser que alguém queira discutir o preço.',
+            opcoes: [
+              { texto: 'Cem peças, como combinado. E a carta é sua.', vai: 'cartaPaga' },
+              { texto: 'Esta carta vale cento e cinquenta, e você sabe.', teste: { pericia: 'persuasao', cd: 15 }, sucesso: 'cartaMais', falha: 'cartaMenos' },
+              { texto: 'A carta fica com o Sildar. A Aliança dos Lordes precisa saber da aranha.', vai: 'cartaSildar',
+                requer: () => (v.sildar ? null : 'o Sildar ainda não está na vila'), oculta: true },
+            ],
+          },
+          cartaPaga: {
+            ao: () => { v.feito.haliaPagou = true; v.feito.haliaAliada = true; concluir('halia'); repartir(vivos(), 100 * 100); registro.push('Halia paga 100 po pelo Cajavidro e pelos papéis. O Câmbio passa a pagar 10% a mais pelo que o grupo vende.'); },
+            narra: 'Ela guarda a carta numa gaveta com chave.',
+            fala: 'Combinado é combinado. E quem me trata com franqueza ganha uma balança mais generosa: o que me trouxerem, eu pago dez por cento acima do peso. Se um dia quiserem trabalho de verdade, a porta está aberta.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
+          cartaMais: {
+            ao: () => { v.feito.haliaPagou = true; concluir('halia'); repartir(vivos(), 150 * 100); registro.push('Halia paga 150 po pelo Cajavidro e pelos papéis, depois de um regateio.'); },
+            narra: 'Ela arqueia uma sobrancelha. Por um momento parece prestes a recusar; depois ri, curta e seca.',
+            fala: 'Cento e cinquenta. Vocês aprenderam depressa o que um papel vale nesta vila. Não me peçam isto duas vezes.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
+          cartaMenos: {
+            ao: () => { v.feito.haliaPagou = true; v.feito.haliaFria = true; concluir('halia'); repartir(vivos(), 75 * 100); registro.push('Halia paga só 75 po e passa a pagar 10% a menos pelo que o grupo vende.'); },
+            narra: 'Ela guarda a carta antes que alguém mude de ideia.',
+            fala: 'Eu não gosto de ser pressionada em casa. Setenta e cinco, e é a minha última palavra. E a minha balança, de hoje em diante, pesa com mais cuidado para os seus lados.',
+            opcoes: [{ texto: '…', vai: 'oi' }],
+          },
+          cartaSildar: {
+            ao: () => { v.feito.haliaPagou = true; v.feito.cartaComSildar = true; concluir('halia'); registro.push('O grupo recusa o pagamento da Halia: a carta do Cajavidro vai para o Sildar.'); },
+            narra: 'Halia fica imóvel. A mão que ia à gaveta volta para o balcão.',
+            fala: 'Então o trato morre aqui. Não vou fingir que isso me agrada. Levem o papel — e lembrem que a Aliança está longe e a vila é perto.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
         },
@@ -342,6 +418,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                   requer: () => (feitos.grolMorto && !v.feito.castelaPago ? null : 'nada'), oculta: true },
                 { texto: 'Achamos a sua espada.', vai: 'espada', uma: true,
                   requer: () => (vivos().some((c) => garantirInventario(c).bag.some((i) => i.id === 'espadaDeSildar')) ? null : 'nada'), oculta: true },
+                { texto: 'Esta carta é do Cajavidro. Tem uma aranha desenhada duas vezes.', vai: 'cartaDaAranha', uma: true,
+                  requer: () => (v.feito.cartaComSildar && !v.feito.sildarCarta ? null : 'nada'), oculta: true },
                 { texto: 'Os Marcarrubra acabaram.', vai: 'fimDaGangue', uma: true,
                   requer: () => (feitos.marcarrubra && !v.feito.sildarPagouGangue ? null : 'nada'), oculta: true },
                 { texto: 'Trouxemos o Cajavidro. É o Iarno.', vai: 'iarno', uma: true,
@@ -395,6 +473,16 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               },
               narra: 'Sildar segura a espada pelo cabo, olha o brasão, e por um momento não diz nada.',
               fala: 'Vinte anos de estrada com esta espada. Achei que tinha virado enfeite de goblin. Eu fico devendo isto a vocês — e eu pago as minhas dívidas.',
+              opcoes: [{ texto: '…', vai: 'oi' }],
+            },
+            cartaDaAranha: {
+              ao: () => {
+                v.feito.sildarCarta = true; repartir(vivos(), 50 * 100);
+                pista('Aranha Negra: o nome por trás do Cajavidro. A Aliança dos Lordes quer saber tudo sobre ele, e o Sildar guarda a carta a sete chaves.');
+                registro.push('Sildar paga 50 po pela carta do Cajavidro.');
+              },
+              narra: 'Sildar lê duas vezes, devagar. Depois dobra o papel com um cuidado que não tinha até agora.',
+              fala: 'Isto muda o que a Aliança sabe. Não é muito, mas é o que eu posso pagar: cinquenta peças. E vocês agora têm um aliado que não esquece.',
               opcoes: [{ texto: '…', vai: 'oi' }],
             },
             fimDaGangue: {
@@ -799,7 +887,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     }
     if (fim === 'loja') {
       await abrirLoja(app.root, {
-        loja: LOJAS[l.id], npc: pessoa(l.npc), grupo: vivos(), aoMudar: (t) => registro.push(t),
+        loja: lojaComSimpatia(l.id), npc: pessoa(l.npc), grupo: vivos(), aoMudar: (t) => registro.push(t),
         onFicha: (c, depois) => app.abrirFichaNaVila(c, depois),
       });
     }
@@ -815,7 +903,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       }
     }
     if (fim === 'dormir') {
-      cobrar(vivos(), 5 * 10 * vivos().length);
+      cobrar(vivos(), (v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length);
       await dormir('Um quarto na Estalagem Stonehill, cama de verdade, sopa quente.');
     } else if (fim === 'palheiro') {
       await dormir('O galpão da Qelline cheira a feno e a vaca, mas é seco, quente e de graça.');

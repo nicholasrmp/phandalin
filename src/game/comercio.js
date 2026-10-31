@@ -183,7 +183,8 @@ export function vendaveis(heroi, loja) {
   const lista = [];
   const pagar = (d, lote) => {
     const cheio = emCobre(valorDe(d) * lote);
-    return loja.valorCheio ? cheio : Math.floor(cheio / 2);
+    // `mult` (o balcão que gosta do grupo paga mais) vale na balança cheia; `fracao` na loja de metade.
+    return loja.valorCheio ? Math.floor(cheio * (loja.mult ?? 1)) : Math.floor(cheio * (loja.fracao ?? 0.5));
   };
   for (const id of heroi.weapons ?? []) {
     const d = WEAPONS[id];

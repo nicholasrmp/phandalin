@@ -422,6 +422,26 @@ teste('menu: Dar item vem num grupo recolhido, e uma pilha dá uma, metade ou to
   assert.equal(soma(cle), antesCle + 20);
 });
 
+teste('a simpatia da vila: o ágio do Câmbio e a fração da loja mudam o que se recebe', async () => {
+  const { LOJAS, vendaveis } = await import('../game/comercio.js');
+  const { enc, pal } = montar();
+  garantirInventario(pal).bag.push({ id: 'pocaoDeCura', tipo: 'item', qtd: 1 });
+  const paga = (loja) => Object.fromEntries(vendaveis(pal, loja).map((x) => [x.id, x.paga]));
+  const base = paga(LOJAS.barthen);
+  const melhor = paga({ ...LOJAS.barthen, fracao: 0.6 });
+  const id = Object.keys(base)[0];
+  assert.ok(id, 'a Barthen compra algo do grupo');
+  assert.ok(melhor[id] > base[id], 'fracao 0,6 paga mais que a metade');
+  // O Câmbio paga o valor cheio; com `mult` 1,1 paga dez por cento a mais, e com 0,9 dez por cento a menos.
+  const cheio = paga(LOJAS.cambio);
+  const ids = Object.keys(cheio);
+  if (ids.length) {
+    const mais = paga({ ...LOJAS.cambio, mult: 1.1 });
+    const menos = paga({ ...LOJAS.cambio, mult: 0.9 });
+    assert.ok(mais[ids[0]] >= cheio[ids[0]] && menos[ids[0]] <= cheio[ids[0]]);
+  }
+});
+
 teste('menu dos corpos: uma linha de Olhar por corpo, e o chão e a cena continuam (não são engolidos)', () => {
   const { enc, pal } = montar({ foes: [['goblin', { x: 7, y: 5 }], ['goblin', { x: 7, y: 5 }], ['goblin', { x: 11, y: 11 }]] });
   enc.combatants.filter((x) => x.side === 'foes' && x.pos.x === 7).forEach((g, i) => { g.dead = true; g.name = `Goblin ${i + 1}`; });
