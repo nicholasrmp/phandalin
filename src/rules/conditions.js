@@ -434,7 +434,7 @@ export const CONDITIONS = {
     name: 'Vaso de Planta',
     desc: 'Incapacitado e vulnerável a todo dano até o começo do próximo turno (Surto de Magia Selvagem).',
     incapacitated: true,
-    vulnerabilidade: 'todos',
+    vulnerabilidadeTotal: true,
   },
   ovelha: {
     name: 'Ovelha',

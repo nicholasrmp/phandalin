@@ -4236,7 +4236,7 @@ export class Encounter {
       || (magico && !deArma && tf.includes('spellResistance'))
       || (magico && !deArma && this.paladinosDaAura(target, 'auraOfWarding').length > 0);
     if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
-    if (target.vulnerable?.includes(type) || (target.conditions ?? []).some((c) => { const v = CONDITIONS[c.id]?.vulnerabilidade; return v === 'todos' || v?.includes?.(type); })) out *= 2;
+    if (target.vulnerable?.includes(type) || (target.conditions ?? []).some((c) => { const d = CONDITIONS[c.id]; return d?.vulnerabilidadeTotal || d?.vulnerabilidade?.includes?.(type); })) out *= 2;
     return out;
   }
 
