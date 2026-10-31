@@ -32,7 +32,9 @@ Esta licença é **irrevogável**. É a fundação sólida do projeto.
 
 **O que passa do SRD (Livro do Jogador 2014).** Por decisão do dono do projeto, os heróis seguem o Livro do Jogador de 2014 inteiro, e não só o SRD:
 as subclasses, magias e características que NÃO estão no SRD 5.1 (por exemplo Mestre de Batalha, Totêmico, Círculo da Lua, Assassino, as escolas
-de mago além da Evocação e as demais) ficam marcadas `fonte: 'phb'` no código (`src/rules/classes/*.js`, `src/rules/spells.js`). Esse conteúdo **não**
+de mago além da Evocação e as demais) ficam marcadas `fonte: 'phb'` no código (`src/rules/classes/*.js`, `src/rules/spells.js`). Entram também aqui as 16 manobras
+do Mestre de Batalha, a tabela de 50 surtos de Magia Selvagem (`src/rules/surto.js`, que segue a ordem e os números do livro, com frases próprias; os efeitos que o livro
+entrega ao mestre ou são só cor saem no registro, sem regra) e as listas de magias de patrono do bruxo. Esse conteúdo **não**
 está sob a CC-BY-4.0: o jogo usa só os nomes e a mecânica, com texto e arte próprios, sob a Política de Conteúdo de Fã da seção 2, e não reproduz
 o texto do livro. Se a Wizards mudar a política, esse conteúdo é o primeiro a sair; o que é `fonte: 'srd'` continua de pé.
 

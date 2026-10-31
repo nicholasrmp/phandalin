@@ -106,6 +106,19 @@ export function opcoesDeClasse(app, c, occ, { enc, vez = false, explorando = fal
     });
   }
 
+  // ---- Bênção do Trapaceiro (clérigo da Enganação) --------------------------
+  // Ação, tocando outra criatura aliada: vantagem em Furtividade por uma hora.
+  if (c.features?.includes('blessingOfTheTrickster') && occ !== c && vez) {
+    opcoes.push({
+      grupo: 'Apoiar', rotulo: `Bênção do Trapaceiro em ${occ.name}`, icone: 'classe-blessingOfTheTrickster', alvoPrevia: occ,
+      detalhe: 'ação · vantagem em Furtividade por uma hora (uma criatura por vez)',
+      motivo: c.actionUsed ? 'a ação deste turno já foi usada'
+        : enc?.field && !enc.field.vizinhos(c.pos, occ.pos) ? 'encoste nele primeiro'
+          : hasCondition(occ, 'bencaoTrapaceiro') ? `${occ.name} já tem a bênção` : null,
+      fazer: () => app.usarFeature(c, 'blessingOfTheTrickster', { target: occ }),
+    });
+  }
+
   // ---- Manobras com aliado (Mestre de Batalha) ------------------------------
   // Reagrupar: PV temporários. Golpe do Comandante: um golpe cedido, o aliado ataca de reação.
   const dados = c.resources?.superiorityDice ?? 0;

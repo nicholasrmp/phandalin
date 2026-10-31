@@ -5354,6 +5354,26 @@ teste('Revisão dos surtos novos: Passo do Caos convive com magia, tamanho não 
   for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos']) assert.equal(hasCondition(s, id), false, id);
 });
 
+teste('Bênção do Trapaceiro: ação, toca um aliado, vantagem em Furtividade, uma criatura por vez', async () => {
+  const { rolarPericia } = await import('../rules/abilities.js');
+  const c = dominio('enganacao', 3);
+  c.pos = { x: 5, y: 5 };
+  const a1 = heroi('guerreiro', 1, 'Humano');
+  a1.pos = { x: 5, y: 6 };
+  const a2 = heroi('ladino', 1, 'Humano');
+  a2.pos = { x: 6, y: 5 };
+  const { enc } = arena({ herois: [c, a1, a2], foes: [alvoParado({ x: 12, y: 12 })] });
+  assert.equal(enc.useFeature(c, 'blessingOfTheTrickster', { target: c }), false, 'não em si mesmo');
+  assert.equal(enc.useFeature(c, 'blessingOfTheTrickster', { target: a1 }), true);
+  assert.equal(c.actionUsed, true);
+  assert.equal(rolarPericia(makeRng(4), a1, 'furtividade').mode, 'vantagem');
+  assert.notEqual(rolarPericia(makeRng(4), a1, 'percepcao').mode, 'vantagem');
+  c.actionUsed = false;
+  assert.equal(enc.useFeature(c, 'blessingOfTheTrickster', { target: a2 }), true);
+  assert.equal(hasCondition(a1, 'bencaoTrapaceiro'), false, 'a bênção passou para o outro');
+  assert.equal(hasCondition(a2, 'bencaoTrapaceiro'), true);
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

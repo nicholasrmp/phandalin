@@ -120,6 +120,8 @@ export function rolarPericia(rng, actor, skill, opts = {}) {
   const { contexto = null, bonusExtra = 0, bioma = null, inimigo = null, ...d20opts } = opts;
   const bonus = skillBonus(actor, skill, { contexto, bioma }) + bonusExtra;
   // MARÉS DO CAOS (feiticeiro da Magia Selvagem): vantagem no próximo teste também; o uso se gasta.
+  // BÊNÇÃO DO TRAPACEIRO (clérigo da Enganação): vantagem em Furtividade.
+  if (skill === 'furtividade' && actor?.conditions?.some((c) => c.id === 'bencaoTrapaceiro')) d20opts.advantage = true;
   // OLHO DO CAOS (surto): vantagem em Percepção.
   if (skill === 'percepcao' && actor?.conditions?.some((c) => c.id === 'olhoDoCaos')) d20opts.advantage = true;
   const mare = actor?.conditions?.find((c) => c.id === 'maresDoCaos');

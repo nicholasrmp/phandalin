@@ -8558,6 +8558,20 @@ export class Encounter {
         this.say('recurso', `${actor.name} ${liga ? 'arma' : 'desarma'} a manobra ${nomeDaCaracteristica(featureId)}.`);
         return true;
       }
+      case 'blessingOfTheTrickster': {
+        // BÊNÇÃO DO TRAPACEIRO: ação; toca outra criatura aliada (1,5 m); vantagem em Furtividade por uma hora, e só em uma criatura por vez.
+        const alvoB = target;
+        if (!actor.features?.includes(featureId) || actor.actionUsed || conditionEffects(actor).incapacitated) return false;
+        if (!alvoB || alvoB === actor || alvoB.dead || alvoB.side !== actor.side || distanceFt(actor.pos, alvoB.pos) > 5) return false;
+        for (const c of this.combatants) {
+          const antiga = getCondition(c, 'bencaoTrapaceiro');
+          if (antiga && antiga.source === actor.id) removeCondition(c, 'bencaoTrapaceiro');
+        }
+        actor.actionUsed = true;
+        addCondition(alvoB, 'bencaoTrapaceiro', { rounds: 600, source: actor.id });
+        this.say('recurso', `${actor.name} toca ${alvoB.name}: vantagem em Furtividade por uma hora (Bênção do Trapaceiro).`);
+        return true;
+      }
       case 'feintingAttack': {
         // ATAQUE FINTADO: ação bônus que arma a manobra; a vantagem e o dado vêm no próximo ataque de arma do turno.
         if (!actor.features?.includes(featureId) || actor.bonusUsed || (actor.resources?.superiorityDice ?? 0) < 1) return false;
