@@ -224,6 +224,16 @@ const ALTAS = {
     'liberdadeDeMovimento'],
 };
 
+// O LOTE DE 4º A 6º CÍRCULO (`rules/spells.js`): quem pode aprender cada uma, pelo livro.
+const ALTAS_NOVAS = {
+  mago: ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte'],
+  feiticeiro: ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte'],
+  bruxo: ['dimensaoPorta', 'imobilizarMonstro', 'circuloDaMorte'],
+  bardo: ['invisibilidadeMaior', 'dimensaoPorta', 'imobilizarMonstro'],
+  druida: ['tempestadeDeGelo', 'peleDePedra'],
+};
+for (const [classe, ids] of Object.entries(ALTAS_NOVAS)) ALTAS[classe].push(...ids.filter((id) => SPELLS[id] && !ALTAS[classe].includes(id)));
+
 /**
  * A lista de magias de uma classe: truques e 1º círculo e, com `circuloMax`
  * maior, as de 2º e 3º que o motor joga.

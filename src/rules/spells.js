@@ -1175,6 +1175,60 @@ export const SPELLS = {
     damage: '4d6', damageType: 'fogo', damage2: '4d6', damageType2: 'radiante', halfOnSave: true, upcast: { dados: 1 },
     desc: 'Uma coluna de fogo divino cai do alto num ponto a até 18 m. CD de DES: 4d6 de fogo MAIS 4d6 de radiante, metade de cada se passar. +1d6 por círculo acima do 5º. (Os dois tipos valem separado: quem resiste a fogo ainda leva o radiante inteiro. Simplificações: o livro faz um cilindro de 3 m de raio e 12 m de altura, e aqui a altura não conta — o que pega é o quadrado de 5 por 5 casas em volta do ponto; e o dado a mais por círculo maior entra só no fogo, que é uma escolha nossa onde o livro deixa escolher entre os dois tipos.)',
   },
+  // ---- 4º ao 6º círculo: o lote que destrava as classes arcanas e o druida acima do 3º ----
+  tempestadeDeGelo: {
+    id: 'tempestadeDeGelo', name: 'Tempestade de Gelo', level: 4, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 300, shape: 'sphere', areaFt: 20, kind: 'save', save: 'dex',
+    damage: '2d8', damageType: 'concussão', damage2: '4d6', damageType2: 'frio', halfOnSave: true, upcast: { dados: 1 },
+    desc: 'Pedras de granizo caem numa esfera de 6 m de raio a até 90 m. CD de DES: 2d8 de concussão MAIS 4d6 de frio, metade de cada se passar. +1d8 de concussão por círculo acima do 4º. (O terreno difícil que o livro deixa na área não é modelado.)',
+  },
+  peleDePedra: {
+    id: 'peleDePedra', name: 'Pele de Pedra', level: 4, school: 'abjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'peleDePedra',
+    concentration: true, duracaoRodadas: 600,
+    desc: 'Toque: o alvo ganha resistência a dano cortante, perfurante e de concussão que não seja mágico. Concentração, até 1 hora. (O livro pede 100 po de pó de diamante: o jogo não cobra.)',
+  },
+  invisibilidadeMaior: {
+    id: 'invisibilidadeMaior', name: 'Invisibilidade Maior', level: 4, school: 'ilusão', fonte: 'srd',
+    castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'invisivel', persistente: true,
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Toque: o alvo fica invisível por até 1 minuto e continua invisível mesmo atacando ou conjurando. Concentração.',
+  },
+  dimensaoPorta: {
+    id: 'dimensaoPorta', name: 'Porta Dimensional', level: 4, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 500, kind: 'teleporte', mira: 'casa',
+    desc: 'Você some e aparece numa casa livre que você enxerga, a até 150 m. (O livro deixa levar uma criatura junto; o jogo leva só você.)',
+  },
+  coneDeFrio: {
+    id: 'coneDeFrio', name: 'Cone de Frio', level: 5, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 0, shape: 'cone', areaFt: 60, kind: 'save', save: 'con',
+    damage: '8d8', damageType: 'frio', halfOnSave: true, upcast: { dados: 1 },
+    desc: 'Uma rajada de ar gélido num cone de 18 m. CD de CON: 8d8 de frio, metade se passar. +1d8 por círculo acima do 5º.',
+  },
+  imobilizarMonstro: {
+    id: 'imobilizarMonstro', name: 'Imobilizar Monstro', level: 5, school: 'encantamento', fonte: 'srd',
+    castTime: 'action', rangeFt: 90, kind: 'debuff', targets: 1, upcast: { alvos: 1 },
+    save: 'wis', condition: 'paralisado', repete: true,
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma criatura qualquer faz CD de SAB ou fica paralisada; repete o teste no fim de cada turno dela. Concentração, até 1 minuto. +1 alvo por círculo acima do 5º.',
+  },
+  correnteDeRelampagos: {
+    id: 'correnteDeRelampagos', name: 'Corrente de Relâmpagos', level: 6, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 150, kind: 'save', save: 'dex', alvos: 4, juntosFt: 30, autoJuntos: true,
+    damage: '10d8', damageType: 'elétrico', halfOnSave: true, upcast: { dados: 1 },
+    desc: 'Um raio atinge o alvo e salta para até 3 outras criaturas a 9 m dele (as mais próximas). CD de DES: 10d8 de dano elétrico, metade se passar. +1 criatura por círculo acima do 6º (aqui, o dano não muda).',
+  },
+  desintegrar: {
+    id: 'desintegrar', name: 'Desintegrar', level: 6, school: 'transmutação', fonte: 'srd',
+    castTime: 'action', rangeFt: 60, kind: 'save', save: 'dex', damage: '10d6+40', damageType: 'energético', upcast: { dados: 3 },
+    desc: 'Um raio verde. CD de DES: quem falha sofre 10d6 + 40 de dano energético; quem passa, nada. Quem chega a 0 PV vira pó. +3d6 por círculo acima do 6º.',
+  },
+  circuloDaMorte: {
+    id: 'circuloDaMorte', name: 'Círculo da Morte', level: 6, school: 'necromancia', fonte: 'srd',
+    castTime: 'action', rangeFt: 150, shape: 'sphere', areaFt: 60, kind: 'save', save: 'con',
+    damage: '8d6', damageType: 'necrótico', halfOnSave: true, upcast: { dados: 2 },
+    desc: 'Uma onda de energia negativa numa esfera de 18 m de raio. CD de CON: 8d6 de dano necrótico, metade se passar. +2d6 por círculo acima do 6º.',
+  },
   comunhao: {
     id: 'comunhao', name: 'Comunhão', level: 5, school: 'divinação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'minutos', minutos: 1, rangeFt: 0, kind: 'utilidade', duracaoMin: 1,

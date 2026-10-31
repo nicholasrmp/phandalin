@@ -787,6 +787,10 @@ export function iconeDeArma(art = '', nome = '') {
 const ICONE_PARECIDO = {
   linguas: 'compreenderIdiomas', alterarAparencia: 'disfarcarSe', cativar: 'sugestao',
   sentidosDaFera: 'falarComAnimais', fingirDeMorto: 'falarComOsMortos',
+  // O lote de 4º a 6º círculo ainda não tem ícone próprio: cada uma pega o da magia mais parecida.
+  tempestadeDeGelo: 'raioDeGelo', coneDeFrio: 'raioDeGelo', peleDePedra: 'protecaoContraEnergia', invisibilidadeMaior: 'invisibilidade',
+  dimensaoPorta: 'passoNebuloso', imobilizarMonstro: 'imobilizarPessoa', correnteDeRelampagos: 'relampago', desintegrar: 'raioDeBruxa',
+  circuloDaMorte: 'toqueVampirico',
 };
 
 export function iconeDeMagia(spell = {}) {

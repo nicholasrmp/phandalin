@@ -207,6 +207,13 @@ export const CONDITIONS = {
     umAtaque: true,
     concentrationEffect: true,
   },
+  // PELE DE PEDRA: resistência a dano físico que não seja mágico.
+  peleDePedra: {
+    name: 'Pele de Pedra',
+    desc: 'Resistência a dano cortante, perfurante e de concussão que não seja mágico.',
+    resisteNaoMagico: DANOS_FISICOS,
+    concentrationEffect: true,
+  },
   // CORPO VAZIO (monge, 18º): resistência a todo dano, menos energético. A invisibilidade vai numa condição à parte.
   corpoVazio: {
     name: 'Corpo Vazio',

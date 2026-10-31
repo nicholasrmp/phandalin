@@ -288,7 +288,7 @@ const FEITO = [
   'extendedSpell', 'heightenedSpell', 'quickenedSpell', 'subtleSpell', 'twinnedSpell',
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
-  'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid',
+  'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',

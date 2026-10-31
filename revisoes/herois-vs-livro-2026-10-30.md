@@ -422,3 +422,26 @@ O jogo deixava de decidir sozinho o que o livro deixa na mão do jogador. A tela
 "Seguir" sem mexer em nada vale o padrão de antes. A escolha repetida volta à sugerida; o que não é opção é descartado (também para o jogador de outra máquina, pela mesma conferência das magias). Verificado no jogo rodando: um feiticeiro de 2º nível subiu ao 3º, trocou Acelerada e Duplicada por Cuidadosa e Sutil, clicou em Seguir e ficou com as duas escolhidas. Suíte: 1066/1066, vitest 401/401, build verde.
 
 Ainda sem tela: a escolha das perícias de Especialização (bardo e ladino), de estilo de luta e de Inimigo Favorito/Explorador Natural, que o motor segue fazendo sozinho.
+
+---
+
+## Atualização 7 — o ícone da poção e o primeiro lote de magias de 4º a 6º círculo
+
+**Ícone da poção de cura.** Vinha de uma folha do OpenArt e estava sujo (o líquido salpicado de pele e madeira, a rolha confusa, um pixel roxo solto). Redesenhei à mão, na paleta do jogo, a **poção de cura** (frasco redondo, brilho no vidro, superfície do líquido, bolhas) e a **poção de cura maior** (frasco comprido). Não gerei nada no OpenArt para isto.
+
+**Magias.** O jogo tinha 7 magias acima do 3º círculo, todas de clérigo e bardo; mago, feiticeiro, bruxo e druida tinham espaços de 4º ao 9º e nada para gastar neles. Entraram **9 magias**, cada uma com teste:
+
+| Círculo | Magia | Quem aprende |
+|---|---|---|
+| 4º | Tempestade de Gelo, Pele de Pedra, Invisibilidade Maior, Porta Dimensional | mago, feiticeiro (+ druida nas duas primeiras, bardo nas duas últimas, bruxo na Porta) |
+| 5º | Cone de Frio, Imobilizar Monstro | mago, feiticeiro (+ bardo e bruxo na segunda) |
+| 6º | Corrente de Relâmpagos, Desintegrar, Círculo da Morte | mago, feiticeiro (+ bruxo no Círculo da Morte) |
+
+E o que elas destravaram: **Arcana Mística** (o bruxo de 11º conjura Círculo da Morte uma vez por descanso longo, sem espaço), **Sinal de Mau Agouro** (Rogar Maldição) e **Salto Transcendental** (Salto à vontade). Conferido no jogo rodando: Tempestade de Gelo conjurada por um mago de 9º nível limpou os quatro inimigos da estrada, sem erro no console.
+
+### Aproximações
+- Sem ícone próprio: cada magia nova usa o da mais parecida (Raio de Gelo, Passo Nebuloso, Relâmpago...). Um ícone de cada, no OpenArt, é o passo seguinte, se quiser.
+- Tempestade de Gelo não deixa o terreno difícil do livro; Porta Dimensional leva só o conjurador; a Corrente de Relâmpagos salta para os mais próximos do primeiro alvo e não pede escolha; Pele de Pedra não cobra o pó de diamante.
+- A Arcana Mística só tem magia no 6º círculo (as de 7º a 9º não existem no jogo); Correntes de Carceri continua pendente, porque o livro restringe o uso a celestiais, elementais e corruptores.
+
+Suíte: 1072/1072 em Node, vitest 401/401, build verde. `pendente`: 8 (Sobrecanalizar, Percepção Primitiva, Habilidade Inigualável e as invocações Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Correntes de Carceri e Voz do Mestre das Correntes).

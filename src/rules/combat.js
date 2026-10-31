@@ -5326,7 +5326,7 @@ export class Encounter {
           const bonusArma = Object.entries(spell.escalaBonus ?? {}).reduce((b, [c, v]) => (slot >= Number(c) ? v : b), spell.escalaBonus ? 1 : undefined);
           addCondition(a, spell.condition, {
             source: actor.id, ...duracao, magia: { id: spell.id, circulo: slot },
-            data: { dc, pvTemp: mod, n: spell.imagens ?? 0, tipo, circulo: slot, bonusArma, dadosNoAcerto: bonusArma ? `${bonusArma}d4` : undefined },
+            data: { dc, pvTemp: mod, n: spell.imagens ?? 0, tipo, circulo: slot, bonusArma, dadosNoAcerto: bonusArma ? `${bonusArma}d4` : undefined, persistente: spell.persistente || undefined },
           });
           // Passos Largos e Voo valem já neste turno, não só no próximo. O que
           // sobra do turno é refeito a partir de `speedOf`, que é quem conhece
@@ -5810,6 +5810,13 @@ export class Encounter {
     // Quem a área pega, e quem Esculpir Magias poupa: a mesma conta da
     // prévia (`afetadosPelaArea`).
     // Respingo Ácido: até 2 criaturas, a até 1,5 m da primeira.
+    // CORRENTE DE RELÂMPAGOS (`autoJuntos`): sem lista de alvos, o raio salta para os inimigos mais próximos do primeiro.
+    if (spell.autoJuntos && target && !targets?.length) {
+      const primeiro = target;
+      targets = [primeiro, ...this.combatants
+        .filter((o) => !o.dead && o !== primeiro && o.side === primeiro.side && distanceFt(o.pos, primeiro.pos) <= spell.juntosFt)
+        .sort((a, b) => distanceFt(a.pos, primeiro.pos) - distanceFt(b.pos, primeiro.pos))];
+    }
     const varios = spell.alvos && targets?.length
       ? targets.filter((t, i, l) => l.indexOf(t) === i && !this.porqueNaoAlvo(actor, spell, t)
         && distanceFt(t.pos, targets[0].pos) <= spell.juntosFt).slice(0, spell.alvos)

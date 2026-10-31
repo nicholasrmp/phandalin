@@ -2643,5 +2643,132 @@ teste('Tela de nível: Maestria em Magia e Assinaturas do mago são escolhidas e
   for (const x of m3.magiasAssinatura) assert.equal(m3.resources[x.recurso], 1);
 });
 // ============================================================================================================
+// MAGIAS DE 4º A 6º CÍRCULO
+// ============================================================================================================
+
+const conjurador = (classe, nivel, magias) => {
+  const c = heroi(classe, nivel, 'Humano', { abilities: { str: 10, dex: 14, con: 14, int: 18, wis: 14, cha: 18 } });
+  c.pos = { x: 2, y: 5 };
+  for (const m of magias) if (!c.spellcasting.prepared.includes(m)) c.spellcasting.prepared.push(m);
+  return c;
+};
+
+teste('4º a 6º círculo: as classes certas aprendem as magias novas, e só quando têm o círculo', async () => {
+  const { listaDaClasse } = await import('../game/criacao.js');
+  for (const id of ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte']) {
+    assert.ok(SPELLS[id], `${id} existe`);
+    assert.ok(listaDaClasse('mago', 6).magias.includes(id), `${id} está na lista do mago`);
+    assert.ok(!listaDaClasse('mago', 3).magias.includes(id), `${id} não aparece antes de ter o círculo`);
+  }
+  assert.ok(listaDaClasse('bruxo', 6).magias.includes('circuloDaMorte'));
+  assert.ok(!listaDaClasse('clerigo', 6).magias.includes('desintegrar'), 'o clérigo não aprende magia de mago');
+  assert.ok(listaDaClasse('druida', 4).magias.includes('peleDePedra'));
+});
+
+teste('Tempestade de Gelo (4º), Cone de Frio (5º) e Círculo da Morte (6º): dano de área, e metade ao passar', () => {
+  const m = conjurador('mago', 11, ['tempestadeDeGelo']);
+  const a = alvoParado({ x: 8, y: 5 }, 'bugbear'), b = alvoParado({ x: 9, y: 5 }, 'bugbear');
+  const { enc, log } = arena({ herois: [m], foes: [a, b] });
+  enc.rng = dadoFixo(1);
+  assert.ok(enc.castSpell(m, 'tempestadeDeGelo', { point: { x: 8, y: 5 } }).ok);
+  assert.ok(a.hp < a.maxHp && b.hp < b.maxHp);
+  const frio = alvoParado({ x: 6, y: 5 }, 'bugbear'), longe = alvoParado({ x: 6, y: 11 }, 'bugbear');
+  const mg = conjurador('mago', 11, ['coneDeFrio']);
+  const { enc: e2 } = arena({ herois: [mg], foes: [frio, longe] });
+  e2.rng = dadoFixo(1);
+  assert.ok(e2.castSpell(mg, 'coneDeFrio', { point: { x: 6, y: 5 } }).ok);
+  assert.ok(frio.hp < frio.maxHp, 'o cone pega quem está na frente');
+  assert.equal(longe.hp, longe.maxHp, 'e não quem está fora dele');
+  const g1 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const mm = conjurador('mago', 11, ['circuloDaMorte']);
+  const { enc: e3 } = arena({ herois: [mm], foes: [g1] });
+  e3.rng = dadoFixo(1);
+  assert.ok(e3.castSpell(mm, 'circuloDaMorte', { point: { x: 6, y: 5 } }).ok);
+  const cheio = g1.maxHp - g1.hp;
+  const g3 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const m4 = conjurador('mago', 11, ['circuloDaMorte']);
+  const { enc: e4 } = arena({ herois: [m4], foes: [g3] });
+  e4.rng = dadoFixo(20);
+  e4.castSpell(m4, 'circuloDaMorte', { point: { x: 6, y: 5 } });
+  assert.ok(g3.maxHp - g3.hp < cheio && g3.maxHp - g3.hp > 0, 'passando na CON, leva metade');
+  assert.ok(log.length > 0);
+});
+
+teste('Corrente de Relâmpagos (6º): salta do primeiro alvo para os três mais próximos e não passa de 9 m', () => {
+  const m = conjurador('mago', 11, ['correnteDeRelampagos']);
+  const a = alvoParado({ x: 7, y: 5 }, 'bugbear');
+  const perto = [alvoParado({ x: 8, y: 5 }, 'bugbear'), alvoParado({ x: 7, y: 6 }, 'bugbear'), alvoParado({ x: 8, y: 6 }, 'bugbear'), alvoParado({ x: 6, y: 6 }, 'bugbear')];
+  const longe = alvoParado({ x: 7, y: 11 }, 'bugbear');
+  const { enc } = arena({ herois: [m], foes: [a, ...perto, longe] });
+  enc.rng = dadoFixo(1);
+  assert.ok(enc.castSpell(m, 'correnteDeRelampagos', { target: a }).ok);
+  assert.ok(a.hp < a.maxHp);
+  assert.equal(perto.filter((x) => x.hp < x.maxHp).length, 3, 'o raio salta para três, não quatro');
+  assert.equal(longe.hp, longe.maxHp, 'quem está a mais de 9 m do primeiro não é pego');
+});
+
+teste('Desintegrar (6º): quem falha na DES leva 10d6+40; quem passa não leva nada', () => {
+  const m = conjurador('mago', 11, ['desintegrar']);
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [m], foes: [g] });
+  enc.rng = dadoFixo(1);
+  assert.ok(enc.castSpell(m, 'desintegrar', { target: g }).ok);
+  assert.ok(g.maxHp - g.hp >= 40 || g.dead, 'falhou: pelo menos os 40 fixos');
+  const m2 = conjurador('mago', 11, ['desintegrar']);
+  const g2 = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [m2], foes: [g2] });
+  e2.rng = dadoFixo(20);
+  e2.castSpell(m2, 'desintegrar', { target: g2 });
+  assert.equal(g2.hp, g2.maxHp, 'passou: nada');
+});
+
+teste('Pele de Pedra, Invisibilidade Maior, Porta Dimensional e Imobilizar Monstro', () => {
+  const m = conjurador('mago', 11, ['peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta']);
+  const g = alvoParado({ x: 3, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [m], foes: [g] });
+  assert.ok(enc.castSpell(m, 'peleDePedra', { target: m }).ok);
+  m.actionUsed = false;
+  const antes = m.hp;
+  enc.applyDamage(m, 10, 'cortante', g, { magico: false, deArma: true, corpoACorpo: true });
+  assert.equal(antes - m.hp, 5, 'metade do dano comum');
+  const antes2 = m.hp;
+  enc.applyDamage(m, 10, 'cortante', g, { magico: true, deArma: true, corpoACorpo: true });
+  assert.equal(antes2 - m.hp, 10, 'arma mágica passa inteira');
+  m.concentrating = null;
+  assert.ok(enc.castSpell(m, 'invisibilidadeMaior', { target: m }).ok);
+  assert.ok(hasCondition(m, 'invisivel'));
+  enc.quebraInvisibilidade(m);
+  assert.ok(hasCondition(m, 'invisivel'), 'continua invisível depois de atacar');
+  m.actionUsed = false;
+  const r = enc.castSpell(m, 'dimensaoPorta', { point: { x: 10, y: 10 } });
+  assert.ok(r.ok, r.why);
+  assert.deepEqual([m.pos.x, m.pos.y], [10, 10]);
+  const m2 = conjurador('mago', 11, ['imobilizarMonstro']);
+  const bb = alvoParado({ x: 5, y: 5 }, 'bugbear');
+  const { enc: e2 } = arena({ herois: [m2], foes: [bb] });
+  e2.rng = dadoFixo(1);
+  assert.ok(e2.castSpell(m2, 'imobilizarMonstro', { target: bb }).ok);
+  assert.ok(hasCondition(bb, 'paralisado'));
+});
+
+teste('Invocações que ganham magia nova e Arcana Mística do bruxo', () => {
+  const b = bruxo(11, ['signOfIllOmen', 'otherworldlyLeap']);
+  assert.ok(b.features.includes('mysticArcanum'));
+  const arcano = b.magiasDeInvocacao.find((m) => m.arcano === 6);
+  assert.equal(arcano?.magia, 'circuloDaMorte', 'uma magia de 6º círculo, uma vez por descanso longo');
+  const prontas = magiasProntas(b);
+  assert.ok(prontas.includes('circuloDaMorte') && prontas.includes('rogarMaldicao') && prontas.includes('salto'));
+  const g = alvoParado({ x: 7, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [b], foes: [g] });
+  const slots = [...b.spellcasting.slots];
+  enc.rng = dadoFixo(1);
+  assert.ok(enc.castSpell(b, 'circuloDaMorte', { point: { x: 7, y: 5 } }).ok);
+  assert.equal(b.resources[arcano.recurso], 0, 'gastou o uso do dia');
+  assert.deepEqual(b.spellcasting.slots, slots, 'e nenhum espaço');
+  assert.equal(usoLivreDe(b, SPELLS.circuloDaMorte), null, 'uma vez só');
+  descansoLongo(b);
+  assert.equal(b.resources[arcano.recurso], 1);
+});
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

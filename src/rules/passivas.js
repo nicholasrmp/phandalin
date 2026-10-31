@@ -103,6 +103,8 @@ export const MAGIAS_DE_INVOCACAO = {
   ascendantStep: { magia: 'levitacao', tipo: 'avontade' },
   thiefOfFiveFates: { magia: 'perdicao', tipo: 'longo', circulo: 1 },
   mireTheMind: { magia: 'lentidao', tipo: 'longo', circulo: 3 },
+  signOfIllOmen: { magia: 'rogarMaldicao', tipo: 'longo', circulo: 3 },
+  otherworldlyLeap: { magia: 'salto', tipo: 'avontade', circulo: 1 },
 };
 
 /** As três dádivas do pacto escolhem 3 truques do Livro das Sombras entre estes, na falta de escolha. */
@@ -123,6 +125,20 @@ export function aplicarInvocacoes(c, SPELLS) {
     const reg = { magia: m.magia, tipo: m.tipo, circulo: m.circulo ?? null, recurso: m.tipo === 'longo' ? `invocacao_${m.magia}` : null };
     c.magiasDeInvocacao.push(reg);
     if (reg.recurso) { c.resourcesMax[reg.recurso] = 1; c.resources[reg.recurso] = 1; }
+  }
+  // ARCANA MÍSTICA (bruxo, 11º/13º/15º/17º): uma magia de 6º, 7º, 8º e 9º círculo, uma vez por descanso longo, sem espaço. O jogo só tem
+  // as de 6º círculo da lista do bruxo (Círculo da Morte); os círculos sem magia ficam vazios.
+  if (f.includes('mysticArcanum')) {
+    const lista = { 6: ['circuloDaMorte'], 7: [], 8: [], 9: [] };
+    for (const [circ, min] of [[6, 11], [7, 13], [8, 15], [9, 17]]) {
+      if ((c.level ?? 1) < min) continue;
+      const magia = lista[circ].find((id) => SPELLS[id] && !c.magiasDeInvocacao.some((x) => x.magia === id));
+      if (!magia || c.magiasDeInvocacao.some((x) => x.arcano === circ)) continue;
+      const reg = { magia, tipo: 'longo', circulo: circ, recurso: `arcano_${magia}`, arcano: circ };
+      c.magiasDeInvocacao.push(reg);
+      c.resourcesMax[reg.recurso] = 1;
+      c.resources[reg.recurso] = 1;
+    }
   }
   if (f.includes('witchSight')) c.senses = { ...(c.senses ?? {}), truesightFt: Math.max(c.senses?.truesightFt ?? 0, 30) };
   if (f.includes('pactOfTheTome') && !c.livroDasSombras && c.spellcasting) {
