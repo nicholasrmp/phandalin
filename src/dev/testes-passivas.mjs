@@ -2559,5 +2559,89 @@ teste('Forma Selvagem: voltar custa a ação bônus; a luta acabar devolve a for
   assert.equal(e2.useFeature(guerreiro, 'wildShape', { modo: 'lobo' }), false);
 });
 // ============================================================================================================
+// TELA DE NÍVEL: as escolhas de característica (metamagia, pacto, invocações, Maestria, Assinaturas)
+// ============================================================================================================
+
+teste('Tela de nível: o feiticeiro escolhe as metamagias; sem escolha valem as sugeridas; a escolha troca as do padrão', async () => {
+  const { subirUmNivel, dadosDoCartao, escolhasConferidas } = await import('../game/nivel.js');
+  const monta = () => { const s = heroi('feiticeiro', 2, 'Humano'); return { s, r: subirUmNivel(s) }; };
+  const { s, r } = monta();
+  const e = r.escolhas.find((x) => x.id === 'metamagia');
+  assert.ok(e, 'o 3º nível oferece a metamagia');
+  assert.equal(e.quantas, 2);
+  assert.equal(e.opcoes.length, 8);
+  assert.deepEqual(e.sugeridas, ['quickenedSpell', 'twinnedSpell'], 'o padrão do motor');
+  const dado = dadosDoCartao(s, r).escolhas.find((x) => x.id === 'metamagia');
+  assert.ok(dado.opcoes.every((o) => o.nome && o.nome !== o.id), 'as opções têm nome legível');
+  r.aplicar({ metamagia: ['carefulSpell', 'subtleSpell'] });
+  assert.ok(s.features.includes('carefulSpell') && s.features.includes('subtleSpell'));
+  assert.ok(!s.features.includes('quickenedSpell') && !s.features.includes('twinnedSpell'), 'trocou as do padrão');
+  const { s: s2, r: r2 } = monta();
+  r2.aplicar({});
+  assert.ok(s2.features.includes('quickenedSpell') && s2.features.includes('twinnedSpell'), 'sem escolha: o padrão');
+  const { r: r3 } = monta();
+  const conf = escolhasConferidas(r3.escolhas, { metamagia: ['carefulSpell', 'nao-existe'] });
+  assert.deepEqual(conf.metamagia, ['carefulSpell', 'twinnedSpell'], 'o que não é opção volta à sugerida');
+  const { s: s4, r: r4 } = monta();
+  r4.aplicar({ metamagia: ['carefulSpell', 'carefulSpell'] });
+  assert.equal(s4.features.filter((f) => f === 'carefulSpell').length, 1);
+  assert.equal(s4.features.filter((f) => /Spell$/.test(f)).length, 2, 'repetida: a segunda volta à sugerida');
+});
+
+teste('Tela de nível: o bruxo escolhe o pacto e as invocações; trocar o pacto refaz o que dependia dele', async () => {
+  const { subirUmNivel } = await import('../game/nivel.js');
+  const b = heroi('bruxo', 2, 'Humano');
+  const r = subirUmNivel(b);
+  const pacto = r.escolhas.find((x) => x.id === 'pacto');
+  assert.ok(pacto, 'o 3º nível oferece o pacto');
+  assert.deepEqual(pacto.opcoes.sort(), ['pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome']);
+  assert.deepEqual(pacto.sugeridas, ['pactOfTheBlade'], 'o padrão é a Lâmina');
+  r.aplicar({ pacto: ['pactOfTheTome'] });
+  assert.ok(b.features.includes('pactOfTheTome') && !b.features.includes('pactOfTheBlade'));
+  assert.equal(b.livroDasSombras?.length, 3, 'o Tomo dá os três truques');
+  for (const t of b.livroDasSombras) assert.ok(b.spellcasting.cantrips.includes(t));
+  // trocar de volta para a Lâmina tira os truques do livro
+  const c = heroi('bruxo', 2, 'Humano');
+  const rc = subirUmNivel(c);
+  rc.aplicar({ pacto: ['pactOfTheChain'] });
+  assert.ok(c.spellcasting.sempreProntas.includes('encontrarFamiliar'));
+  assert.ok(!c.livroDasSombras?.length);
+});
+
+teste('Tela de nível: invocações novas são escolhidas dentre as que o pacto permite; a escolhida entra e a do padrão sai', async () => {
+  const { subirUmNivel } = await import('../game/nivel.js');
+  const b = heroi('bruxo', 4, 'Humano');
+  const r = subirUmNivel(b); // 5º: mais uma invocação
+  const e = r.escolhas.find((x) => x.id === 'invocacoes');
+  assert.ok(e && e.quantas === 1, 'uma invocação nova');
+  assert.ok(!e.opcoes.some((o) => b.features.includes(o) && !e.sugeridas.includes(o)), 'não repete as que já tem');
+  const queria = e.opcoes.find((o) => o === 'fiendishVigor') ?? e.opcoes[0];
+  r.aplicar({ invocacoes: [queria] });
+  assert.ok(b.features.includes(queria));
+  if (queria !== e.sugeridas[0]) assert.ok(!b.features.includes(e.sugeridas[0]));
+  if (queria === 'fiendishVigor') assert.ok(b.magiasDeInvocacao.some((m) => m.magia === 'vidaFalsa'), 'a magia da invocação nova vale');
+});
+
+teste('Tela de nível: Maestria em Magia e Assinaturas do mago são escolhidas entre o que ele conhece', async () => {
+  const { subirUmNivel } = await import('../game/nivel.js');
+  const m = heroi('mago', 17, 'Humano');
+  const r = subirUmNivel(m);
+  const m1 = r.escolhas.find((x) => x.id === 'maestria1');
+  const m2 = r.escolhas.find((x) => x.id === 'maestria2');
+  assert.ok(m1 && m2, 'o 18º oferece a Maestria');
+  assert.ok(m1.opcoes.every((s) => SPELLS[s].level === 1) && m2.opcoes.every((s) => SPELLS[s].level === 2));
+  const quer1 = m1.opcoes[m1.opcoes.length - 1], quer2 = m2.opcoes[m2.opcoes.length - 1];
+  r.aplicar({ maestria1: [quer1], maestria2: [quer2] });
+  assert.deepEqual(m.maestriaDeMagia, [quer1, quer2]);
+  const m3 = heroi('mago', 19, 'Humano');
+  const r3 = subirUmNivel(m3);
+  const a = r3.escolhas.find((x) => x.id === 'assinaturas');
+  assert.ok(a && a.quantas === 2, 'o 20º oferece as duas Assinaturas');
+  const dois = a.opcoes.slice(-2);
+  r3.aplicar({ assinaturas: dois });
+  assert.deepEqual(m3.magiasAssinatura.map((x) => x.magia).sort(), [...dois].sort());
+  for (const x of m3.magiasAssinatura) assert.equal(m3.resources[x.recurso], 1);
+});
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

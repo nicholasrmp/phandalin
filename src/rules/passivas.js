@@ -137,6 +137,33 @@ export function aplicarInvocacoes(c, SPELLS) {
 }
 
 /**
+ * Desfaz o que `aplicarInvocacoes` derivou (magias das invocações, visão verdadeira, Livro das Sombras, familiar) para refazer depois
+ * de o jogador trocar uma invocação ou o pacto na tela de nível.
+ */
+export function desfazerInvocacoes(c) {
+  c.magiasDeInvocacao = [];
+  if (!c.features?.includes('witchSight') && c.senses?.truesightFt === 30) c.senses = { ...c.senses, truesightFt: 0 };
+  if (c.livroDasSombras && !c.features?.includes('pactOfTheTome') && c.spellcasting) {
+    c.spellcasting.cantrips = (c.spellcasting.cantrips ?? []).filter((id) => !c.livroDasSombras.includes(id));
+    c.livroDasSombras = null;
+  }
+  if (!c.features?.includes('pactOfTheChain') && c.spellcasting?.sempreProntas) {
+    c.spellcasting.sempreProntas = c.spellcasting.sempreProntas.filter((id) => id !== 'encontrarFamiliar');
+  }
+}
+
+/** Grava as Magias de Assinatura escolhidas (cada uma: uma vez por descanso curto, sem espaço). */
+export function gravarAssinaturas(c, magias) {
+  for (const a of c.magiasAssinatura ?? []) { delete c.resources[a.recurso]; delete c.resourcesMax[a.recurso]; }
+  c.magiasAssinatura = magias.map((m) => ({ magia: m, recurso: `assinatura_${m}` }));
+  for (const a of c.magiasAssinatura) {
+    c.resourcesMax[a.recurso] = 1;
+    c.resources[a.recurso] = 1;
+    if (c.spellcasting && !c.spellcasting.prepared.includes(a.magia)) c.spellcasting.prepared.push(a.magia);
+  }
+}
+
+/**
  * O menor d20 que é crítico num ataque com ARMA: 20 para todo mundo, 19 com Crítico Aprimorado (Campeão, 3º nível),
  * 18 com Crítico Superior (15º). Ataque de magia não passa por aqui: as duas características falam de ataques com arma.
  */

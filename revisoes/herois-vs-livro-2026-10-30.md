@@ -408,3 +408,17 @@ Mais **3 características** com mecânica: Forma Selvagem, Magias Bestiais e Arq
 
 ### Ainda pendente (11)
 Arcana Mística e Sobrecanalizar (magias de 6º a 9º círculo); Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Salto Transcendental, Sinal de Mau Agouro, Correntes de Carceri e Voz do Mestre das Correntes (cada uma precisa de uma magia que o jogo não tem); Percepção Primitiva e Habilidade Inigualável.
+
+---
+
+## Atualização 6 — telas de escolha ao subir de nível
+
+O jogo deixava de decidir sozinho o que o livro deixa na mão do jogador. A tela de subir de nível (`view/nivel-tela.js`) agora mostra, já preenchido com o padrão do motor, e deixa trocar:
+
+- **Metamagia** do feiticeiro (2 no 3º, mais uma no 10º e no 17º), com a descrição de cada opção.
+- **Dádiva do Pacto** do bruxo (Lâmina, Corrente ou Tomo) e as **Invocações Místicas** novas de cada nível, só as que o pacto e o nível permitem. Trocar o pacto refaz o que dependia dele (truques do Tomo, familiar, magias das invocações) e derruba a invocação que exigia o pacto antigo.
+- **Maestria em Magia** (uma de 1º e uma de 2º círculo) e as **duas Magias de Assinatura** do mago, entre as magias que ele conhece.
+
+"Seguir" sem mexer em nada vale o padrão de antes. A escolha repetida volta à sugerida; o que não é opção é descartado (também para o jogador de outra máquina, pela mesma conferência das magias). Verificado no jogo rodando: um feiticeiro de 2º nível subiu ao 3º, trocou Acelerada e Duplicada por Cuidadosa e Sutil, clicou em Seguir e ficou com as duas escolhidas. Suíte: 1066/1066, vitest 401/401, build verde.
+
+Ainda sem tela: a escolha das perícias de Especialização (bardo e ladino), de estilo de luta e de Inimigo Favorito/Explorador Natural, que o motor segue fazendo sozinho.

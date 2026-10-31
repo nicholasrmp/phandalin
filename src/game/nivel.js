@@ -15,8 +15,9 @@
 import { ganharXp, subirNivel, XP_POR_NIVEL } from '../rules/progressao.js';
 import { maxHpEfetivo } from '../rules/conditions.js';
 import { abilityMod } from '../rules/abilities.js';
-import { CLASSES, nomeDaCaracteristica } from '../rules/classes/index.js';
-import { getSpell } from '../rules/spells.js';
+import { CLASSES, CARACTERISTICAS, nomeDaCaracteristica } from '../rules/classes/index.js';
+import { getSpell, SPELLS } from '../rules/spells.js';
+import { aplicarInvocacoes, desfazerInvocacoes, gravarAssinaturas } from '../rules/passivas.js';
 import { listaDaClasse, magiaTemRegra } from './criacao.js';
 
 /** As magias que costumam render mais no jogo, para a sugestão. */
@@ -30,6 +31,17 @@ const ordenar = (ids) => [...ids].sort((a, b) => {
 });
 
 export const nomeDaMagiaJogavel = (id) => getSpell(id)?.name ?? id;
+
+/** O nome de uma opção da tela: magia ou característica (metamagia, invocação, pacto). */
+export const nomeDaOpcao = (id) => (SPELLS[id] ? getSpell(id).name : nomeDaCaracteristica(id));
+
+const PACTOS = ['pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome'];
+
+/** Troca, em `c.features`, as características `de` pelas `para` (mesmo número; as que já são iguais ficam). */
+function trocarCaracteristicas(c, de, para) {
+  for (const f of de) if (!para.includes(f)) c.features = c.features.filter((x) => x !== f);
+  for (const f of para) if (!c.features.includes(f)) c.features.push(f);
+}
 
 // Cada XP dado é um marco da aventura e um ponto de save (MULTIJOGADOR.md,
 // S-02c). Os ~10 lugares que chamam `darXp` não precisam saber disso: quem
@@ -73,7 +85,10 @@ export function subirUmNivel(c) {
   const ganhos = [`${c.level}º nível: +${c.maxHp - antes.maxHp} pontos de vida (agora ${c.maxHp}).`];
   if (c.proficiency > antes.prof) ganhos.push(`Bônus de proficiência +${c.proficiency}.`);
   const novas = (c.features ?? []).filter((f) => !antes.features.includes(f));
-  if (novas.length) ganhos.push(`Novo: ${novas.map(nomeDaCaracteristica).join(', ')}.`);
+  // Metamagia, invocação e pacto saem na tela como escolha; listá-los aqui mostraria o padrão que o jogador pode trocar.
+  const jaEscolhivel = (f) => def?.opcoesDeMetamagia?.includes(f) || def?.opcoesDeInvocacao?.includes(f) || PACTOS.includes(f);
+  const novidades = novas.filter((f) => !jaEscolhivel(f));
+  if (novidades.length) ganhos.push(`Novo: ${novidades.map(nomeDaCaracteristica).join(', ')}.`);
   for (const p of pendentes ?? []) {
     if (p.tipo === 'subclasse') ganhos.push(`Subclasse: ${def?.subclasse?.opcoes?.[p.valor]?.nome ?? p.valor}.`);
   }
@@ -125,9 +140,68 @@ export function subirUmNivel(c) {
     }
   }
 
+  // ---- as escolhas de característica, que o motor já fez por padrão e o jogador pode trocar ----
+  // O motor sorteia o padrão em `subirNivel` (metamagia, invocação, pacto, Maestria, Assinatura); a tela mostra o padrão e quem
+  // quiser troca. `aplicar` desfaz o padrão e põe o que foi escolhido.
+  const escolhasDeCaracteristica = [];
+  const acrescentar = (id, rotulo, quantas, opcoes, sugeridas, extra = {}) => {
+    if (quantas > 0 && opcoes.length >= quantas) escolhasDeCaracteristica.push({ id, rotulo, quantas, opcoes, sugeridas: sugeridas.slice(0, quantas), caracteristica: true, ...extra });
+  };
+  const novasMeta = novas.filter((f) => def?.opcoesDeMetamagia?.includes(f));
+  acrescentar('metamagia', `Metamagia: ${novasMeta.length > 1 ? `${novasMeta.length} opções` : 'uma opção'}`, novasMeta.length,
+    (def?.opcoesDeMetamagia ?? []).filter((o) => !antes.features.includes(o)), novasMeta);
+  const novoPacto = novas.filter((f) => PACTOS.includes(f));
+  acrescentar('pacto', 'Dádiva do Pacto', novoPacto.length, PACTOS, novoPacto);
+  const novasInv = novas.filter((f) => def?.opcoesDeInvocacao?.includes(f));
+  acrescentar('invocacoes', `Invocações Místicas: ${novasInv.length > 1 ? `${novasInv.length} novas` : 'uma nova'}`, novasInv.length,
+    (def?.opcoesDeInvocacao ?? []).filter((o) => !antes.features.includes(o) && (def.podeEscolher?.(o, c) ?? true)), novasInv);
+  if (novas.includes('spellMastery') && c.maestriaDeMagia?.length === 2) {
+    for (const [i, n] of [[0, 1], [1, 2]]) {
+      const conhecidas = [...new Set([...(c.spellcasting?.livro ?? []), ...(c.spellcasting?.prepared ?? [])])].filter((s) => SPELLS[s]?.level === n);
+      acrescentar(`maestria${n}`, `Maestria em Magia: uma de ${n}º círculo`, 1, conhecidas, [c.maestriaDeMagia[i]].filter((s) => conhecidas.includes(s)).concat(conhecidas).slice(0, 1));
+    }
+  }
+  if (novas.includes('signatureSpells') && c.magiasAssinatura?.length) {
+    const conhecidas = [...new Set([...(c.spellcasting?.livro ?? []), ...(c.spellcasting?.prepared ?? [])])].filter((s) => SPELLS[s]?.level === 3);
+    acrescentar('assinaturas', 'Magias de Assinatura: duas de 3º círculo', 2, conhecidas, c.magiasAssinatura.map((a) => a.magia));
+  }
+  escolhas.push(...escolhasDeCaracteristica);
+
+  function aplicarCaracteristicas(escolhidas) {
+    const pega = (e) => {
+      const vindas = escolhidas[e.id];
+      const lista = Array.from({ length: e.quantas }, (_, k) => (e.opcoes.includes(vindas?.[k]) ? vindas[k] : e.sugeridas[k]));
+      // sem repetir: quem repete volta à sugerida daquela posição
+      return lista.map((v, k) => (lista.indexOf(v) !== k ? e.sugeridas[k] : v));
+    };
+    const por = (id) => escolhasDeCaracteristica.find((e) => e.id === id);
+    if (por('pacto')) trocarCaracteristicas(c, por('pacto').sugeridas, pega(por('pacto')));
+    if (por('metamagia')) {
+      const e = por('metamagia');
+      trocarCaracteristicas(c, e.sugeridas, pega(e));
+      c.metaLigada = (c.metaLigada ?? []).filter((f) => c.features.includes(f));
+    }
+    if (por('invocacoes')) {
+      const e = por('invocacoes');
+      // Só vale a invocação que o pacto de agora permite; a que não vale fica a padrão.
+      const quer = pega(e).map((f, k) => ((def.podeEscolher?.(f, c) ?? true) ? f : e.sugeridas[k]));
+      trocarCaracteristicas(c, e.sugeridas, quer);
+    }
+    if (por('pacto') || por('invocacoes')) {
+      // Trocar de pacto derruba a invocação que dependia do antigo.
+      c.features = c.features.filter((f) => !(def.opcoesDeInvocacao?.includes(f) && def.podeEscolher && !def.podeEscolher(f, c)));
+      desfazerInvocacoes(c);
+      aplicarInvocacoes(c, SPELLS);
+    }
+    if (por('maestria1') && por('maestria2')) c.maestriaDeMagia = [pega(por('maestria1'))[0], pega(por('maestria2'))[0]];
+    if (por('assinaturas')) gravarAssinaturas(c, pega(por('assinaturas')));
+  }
+
   function aplicar(escolhidas = {}) {
+    aplicarCaracteristicas(escolhidas);
     if (!sc) return;
     for (const e of escolhas) {
+      if (e.caracteristica) continue;
       let ids = (escolhidas[e.id] ?? e.sugeridas).slice(0, e.quantas);
       if (e.id === 'aprende' || e.id === 'segredos') sc.prepared = [...new Set([...(sc.prepared ?? []), ...ids])];
       if (e.id === 'livro') sc.livro = [...new Set([...sc.livro, ...ids])];
@@ -154,7 +228,7 @@ export function dadosDoCartao(c, r) {
     heroi: c.id, nome: c.name, className: c.className ?? '', look: c.look ?? null, ganhos: r.ganhos,
     escolhas: r.escolhas.map((e) => ({
       id: e.id, rotulo: e.rotulo, quantas: e.quantas, deLivro: Boolean(e.deLivro), sugeridas: e.sugeridas,
-      opcoes: e.opcoes.map((id) => ({ id, nome: nomeDaMagiaJogavel(id) })),
+      opcoes: e.opcoes.map((id) => ({ id, nome: nomeDaOpcao(id), desc: CARACTERISTICAS[id]?.desc ?? getSpell(id)?.desc ?? '' })),
     })),
   };
 }

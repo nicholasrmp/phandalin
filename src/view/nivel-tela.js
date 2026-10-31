@@ -39,7 +39,7 @@ export function montarCartao(d, selecoes) {
     const selects = Array.from({ length: e.quantas }, (_, k) => el('select', {
       class: 'nivel-select',
       onchange: (ev) => { selecoes[e.id][k] = ev.target.value; },
-    }, ...e.opcoes.map((o) => el('option', { value: o.id, selected: o.id === e.sugeridas[k] }, o.nome))));
+    }, ...e.opcoes.map((o) => el('option', { value: o.id, title: o.desc ?? '', selected: o.id === e.sugeridas[k] }, o.nome))));
     return el('div', { class: 'nivel-escolha' }, el('span', {}, e.rotulo), ...selects);
   });
   return el('div', { class: 'nivel-cartao' },
