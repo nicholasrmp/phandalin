@@ -991,6 +991,8 @@ export class Fx {
   prepararChao(ctx, board) {
     const lista = this.items.filter((i) => (i.kind === 'quadros' || i.kind === 'onda') && i.chao);
     if (!lista.length) { this._chao = null; return; }
+    // O plano do efeito é o da altura da casa onde ele nasce; cada casa mostra a sua fatia nesse plano (`chaoNaCasa`).
+    this._chaoAltura = board.field.heightAt(Math.round(lista[0].tile.x), Math.round(lista[0].tile.y));
     const cv = (this._chaoCv ??= document.createElement('canvas'));
     if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) { cv.width = ctx.canvas.width; cv.height = ctx.canvas.height; }
     const c = cv.getContext('2d');
@@ -1005,15 +1007,30 @@ export class Fx {
     this._chao = cv;
   }
 
-  /** O pedaço do efeito de chão que cai sobre a casa (x, y): logo depois do ladrilho dela, antes de parede e figuras. */
+  /**
+   * O pedaço do efeito de chão que cai sobre a casa (x, y): logo depois do ladrilho dela, antes de parede e figuras. Só o retângulo da
+   * casa é copiado (copiar a tela inteira por casa custava ~11 ms por quadro), da fatia do plano do efeito para o topo da casa, que pode
+   * estar mais alto ou mais baixo. Parede fica de fora: o efeito não pinta o topo dela.
+   */
   chaoNaCasa(ctx, board, x, y) {
-    if (!this._chao) return;
-    const { sx, sy } = board.iso(x, y);
+    if (!this._chao || board.field.tileAt(x, y) === 1) return;
+    const dst = board.iso(x, y);
+    const src = board.iso(x, y, this._chaoAltura);
+    const m = ctx.getTransform();
     ctx.save();
-    board.diamond(ctx, sx, sy);
+    // O losango da casa, um pouco inflado: o recorte suavizado deixava uma costura clara nas emendas.
+    const g = 0.75;
+    ctx.beginPath();
+    ctx.moveTo(dst.sx, dst.sy - g);
+    ctx.lineTo(dst.sx + 32 + g, dst.sy + 16);
+    ctx.lineTo(dst.sx, dst.sy + 32 + g);
+    ctx.lineTo(dst.sx - 32 - g, dst.sy + 16);
+    ctx.closePath();
     ctx.clip();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(this._chao, 0, 0);
+    const w = m.a * 68;
+    const h = m.d * 36;
+    ctx.drawImage(this._chao, m.a * (src.sx - 34) + m.e, m.d * (src.sy - 2) + m.f, w, h, m.a * (dst.sx - 34) + m.e, m.d * (dst.sy - 2) + m.f, w, h);
     ctx.restore();
   }
 
@@ -1279,21 +1296,84 @@ export class Fx {
   }
 
   /**
-   * ONDA DE CHÃO (onda necrótica, 9 m): desenhada por código, em pixels chapados, porque o raio é de muitas casas e um sprite esticado
-   * lê como um anel vazio. `raio` está em casas; no isométrico 2:1 o círculo da grade vira uma elipse de semi-eixos 45 e 22,6 px por casa.
-   * Camadas: poça escura que se abre, borda violeta com fio branco, rastro mais escuro e fagulhas ossudas que sobem.
+   * ONDA DE CHÃO (onda necrótica, 9 m): desenhada por código, em pixels duros (varredura por linhas, sem suavização), porque o raio é de
+   * muitas casas e um sprite esticado lê como um anel vazio. `raio` está em casas; no isométrico 2:1 o círculo da grade vira uma elipse de
+   * semi-eixos 45 e 22,6 px por casa. Camadas: poça escura que se abre e some, borda violeta grossa com fio de luz, rastro escuro mais
+   * atrás e fagulhas ossudas que sobem da faixa da onda. Vai para a tela de chão (`prepararChao`) e entra casa a casa, sobre o terreno.
    */
-  onda(tile, { raio = 6, dur = 1.1, cor = '#a579d8', escuro = '#3a2760', osso = '#e8eef5', fagulhas = 34 } = {}) {
+  onda(tile, { raio = 6, dur = 1.2, cor = '#a579d8', escuro = '#3a2760', osso = '#e8eef5', fagulhas = 40 } = {}) {
     const sem = [];
-    for (let i = 0; i < fagulhas; i += 1) sem.push({ a: Math.random() * Math.PI * 2, r: 0.3 + Math.random() * 0.7, h: 10 + Math.random() * 34, w: Math.random() < 0.3 ? 3 : 2 });
+    for (let i = 0; i < fagulhas; i += 1) sem.push({ a: Math.random() * Math.PI * 2, r: 0.3 + Math.random() * 0.7, h: 28 + Math.random() * 44, w: Math.random() < 0.35 ? 4 : 3 });
     return this.add({ kind: 'onda', tile: { ...tile }, raio, dur, cor, escuro, osso, sem, chao: true });
   }
 
+  /** Elipse cheia, em linhas de 1 px (bordas duras). */
+  elipseDura(ctx, cx, cy, rx, ry) {
+    if (rx < 1 || ry < 1) return;
+    for (let y = -Math.floor(ry); y <= Math.floor(ry); y += 1) {
+      const meia = rx * Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
+      ctx.fillRect(Math.round(cx - meia), Math.round(cy + y), Math.max(1, Math.round(2 * meia)), 1);
+    }
+  }
+
+  /** Anel de `grosso` px (e metade disso na vertical), em linhas de 1 px. */
+  anelDuro(ctx, cx, cy, rx, ry, grosso) {
+    if (rx < 2 || ry < 1) return;
+    const gy = Math.max(1, Math.round(grosso / 2));
+    const rxi = rx - grosso;
+    const ryi = ry - gy;
+    for (let y = -Math.floor(ry); y <= Math.floor(ry); y += 1) {
+      const fora = rx * Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
+      const dentro = ryi > 0 && Math.abs(y) < ryi && rxi > 0 ? rxi * Math.sqrt(Math.max(0, 1 - (y / ryi) * (y / ryi))) : 0;
+      if (dentro <= 0) {
+        ctx.fillRect(Math.round(cx - fora), Math.round(cy + y), Math.max(1, Math.round(2 * fora)), 1);
+      } else {
+        ctx.fillRect(Math.round(cx - fora), Math.round(cy + y), Math.max(1, Math.round(fora - dentro)), 1);
+        ctx.fillRect(Math.round(cx + dentro), Math.round(cy + y), Math.max(1, Math.round(fora - dentro)), 1);
+      }
+    }
+  }
+
+  desenharOnda(ctx, board, it, k) {
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    const kk = EASE_OUT(Math.min(1, k));
+    const rx = it.raio * 45;
+    const ry = it.raio * 22.6;
+    // Alfa em degraus (sem contínuo): o pixel art não tem meio-tom.
+    const degrau = (v) => (v > 0.75 ? 1 : v > 0.5 ? 0.75 : v > 0.25 ? 0.5 : v > 0.08 ? 0.25 : 0);
+    ctx.save();
+    // A poça escura: opaca no começo, desfeita no fim, que ainda dura um instante depois do anel.
+    ctx.globalAlpha = degrau(0.6 * (1 - k * k));
+    ctx.fillStyle = it.escuro;
+    this.elipseDura(ctx, sx, sy, rx * kk, ry * kk);
+    // Rastro escuro, atrás da borda.
+    ctx.globalAlpha = degrau(0.9 * (1 - k));
+    ctx.fillStyle = '#251a42';
+    this.anelDuro(ctx, sx, sy, rx * kk * 0.74, ry * kk * 0.74, 5);
+    // Borda violeta grossa e o fio de luz por dentro.
+    ctx.globalAlpha = degrau(1 - k * k * 0.9);
+    ctx.fillStyle = it.cor;
+    this.anelDuro(ctx, sx, sy, rx * kk, ry * kk, Math.max(3, Math.round(8 * (1 - k * 0.5))));
+    ctx.globalAlpha = degrau(0.95 * (1 - k));
+    ctx.fillStyle = it.osso;
+    this.anelDuro(ctx, sx, sy, rx * kk - 6 * (1 - k * 0.5), ry * kk - 3 * (1 - k * 0.5), 2);
+    // Fagulhas: quadradinhos que sobem da faixa da onda.
+    for (const p of it.sem) {
+      const rho = kk * p.r;
+      const x = sx + Math.cos(p.a) * rx * rho;
+      const y = sy + Math.sin(p.a) * ry * rho - p.h * k;
+      ctx.globalAlpha = degrau(1 - k * 1.05);
+      ctx.fillStyle = p.w === 4 ? it.cor : it.osso;
+      ctx.fillRect(Math.round(x), Math.round(y), p.w, p.w);
+    }
+    ctx.restore();
+  }
+
   /**
-   * ESTRELAS EM ÓRBITA sobre a cabeça (confusão): três faíscas de pixels que giram numa elipse pequena. Por código e pequena, porque o
-   * sprite em anel empilhava um por criatura e escondia o grupo inteiro.
+   * ESTRELAS EM ÓRBITA sobre a cabeça (confusão): três faíscas de pixels com contorno escuro que giram numa elipse acima da figura.
+   * Por código e sem sprite, porque o anel em sprite empilhava um por criatura e escondia o grupo inteiro.
    */
-  orbita(tile, { altura = 38, dur = 1.3, cor = '#e8c35a', miolo = '#f4f0e4', n = 3 } = {}) {
+  orbita(tile, { altura = 58, dur = 1.4, cor = '#e8c35a', miolo = '#f4f0e4', n = 3 } = {}) {
     return this.add({ kind: 'orbita', tile: { ...tile }, altura, dur, cor, miolo, n, fase: Math.random() * Math.PI * 2 });
   }
 
@@ -1302,55 +1382,111 @@ export class Fx {
     const aparece = Math.min(1, k / 0.15);
     const some = Math.min(1, (1 - k) / 0.2);
     ctx.save();
-    ctx.globalAlpha = Math.min(aparece, some);
+    ctx.globalAlpha = Math.min(aparece, some) > 0.5 ? 1 : 0.5;
     for (let i = 0; i < it.n; i += 1) {
       const a = it.fase + k * Math.PI * 5 + (i * Math.PI * 2) / it.n;
-      const x = Math.round(sx + Math.cos(a) * 14);
-      const y = Math.round(sy - it.altura + Math.sin(a) * 5);
-      const atras = Math.sin(a) < 0;
+      const x = Math.round(sx + Math.cos(a) * 18);
+      const y = Math.round(sy - it.altura + Math.sin(a) * 7);
+      // Contorno escuro (uma cruz maior atrás), a cruz dourada e o miolo claro.
+      ctx.fillStyle = '#2a2430';
+      ctx.fillRect(x - 2, y - 6, 4, 12);
+      ctx.fillRect(x - 6, y - 2, 12, 4);
       ctx.fillStyle = it.cor;
-      ctx.fillRect(x - 1, y - 4, 2, 8);
-      ctx.fillRect(x - 4, y - 1, 8, 2);
-      ctx.fillStyle = atras ? it.cor : it.miolo;
+      ctx.fillRect(x - 1, y - 5, 2, 10);
+      ctx.fillRect(x - 5, y - 1, 10, 2);
+      ctx.fillStyle = it.miolo;
       ctx.fillRect(x - 1, y - 1, 2, 2);
     }
     ctx.restore();
   }
 
-  desenharOnda(ctx, board, it, k) {
+  /**
+   * ALMAS que sobem dos atingidos pela onda necrótica: fantasminhas de pixels (corpo oval, dois olhos, cauda em ponta) que sobem uns
+   * 50 px balançando de lado e somem. Uma a quatro por alvo, em tempos escalonados.
+   */
+  almas(tile, { altura = 20, dur = 1.5, n = 4 } = {}) {
+    const almas = [];
+    for (let i = 0; i < n; i += 1) almas.push({ atraso: i * 0.13 + Math.random() * 0.05, dx: (Math.random() - 0.5) * 22, ond: Math.random() * Math.PI * 2 });
+    return this.add({ kind: 'almas', tile: { ...tile }, altura, dur, almas });
+  }
+
+  desenharAlmas(ctx, board, it, k) {
     const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
-    const kk = EASE_OUT(Math.min(1, k));
-    const rx = it.raio * 45;
-    const ry = it.raio * 22.6;
-    const anel = (f, cor, largura, alfa) => {
-      if (f <= 0 || alfa <= 0) return;
-      ctx.globalAlpha = Math.min(1, alfa);
-      ctx.strokeStyle = cor;
-      ctx.lineWidth = largura;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, rx * f, ry * f, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    };
+    // Corpo 7x9: '#' corpo claro, 'o' contorno violeta, 'e' olho.
+    const FORMA = [
+      '..ooo..',
+      '.o###o.',
+      'o#####o',
+      'o#e#e#o',
+      'o#####o',
+      'o#####o',
+      'o#####o',
+      'o#o#o#o',
+      '.o.o.o.',
+    ];
+    const COR = { '#': '#e8eef5', o: '#a579d8', e: '#2a2430' };
     ctx.save();
-    // A poça escura que se abre e some.
-    ctx.globalAlpha = 0.42 * (1 - k) ** 1.5;
-    ctx.fillStyle = it.escuro;
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, rx * kk, ry * kk, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Rastro, borda e fio de luz.
-    anel(kk * 0.72, it.escuro, 6 * (1 - k) + 2, 0.85 * (1 - k));
-    anel(kk, it.cor, 7 * (1 - k * 0.6) + 1, 1 - k * k);
-    anel(kk * 0.97, it.osso, 2, 0.9 * (1 - k));
-    // Fagulhas: quadradinhos que sobem da faixa da onda.
-    ctx.fillStyle = it.osso;
-    for (const p of it.sem) {
-      const rho = kk * p.r;
-      const x = sx + Math.cos(p.a) * rx * rho;
-      const y = sy + Math.sin(p.a) * ry * rho - p.h * k;
-      ctx.globalAlpha = Math.max(0, 1 - k * 1.1);
-      ctx.fillStyle = p.w === 3 ? it.cor : it.osso;
-      ctx.fillRect(Math.round(x), Math.round(y), p.w, p.w);
+    for (const a of it.almas) {
+      const t = (k * it.dur - a.atraso) / (it.dur - 0.5);
+      if (t < 0 || t > 1) continue;
+      const x = Math.round(sx + a.dx + Math.sin(a.ond + t * 6) * 5 - 7);
+      const y = Math.round(sy - it.altura - t * 54 - 9);
+      ctx.globalAlpha = t < 0.15 ? 0.5 : t > 0.75 ? (t > 0.9 ? 0.25 : 0.5) : 1;
+      for (let j = 0; j < FORMA.length; j += 1) {
+        for (let i = 0; i < FORMA[j].length; i += 1) {
+          const c = COR[FORMA[j][i]];
+          if (!c) continue;
+          ctx.fillStyle = c;
+          ctx.fillRect(x + i * 2, y + j * 2, 2, 2);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  /**
+   * ESTOURO DE MAGIA SELVAGEM: um clarão dourado que vira uma chuva radial de faíscas, estrelas e fitas em violeta, dourado, azul e
+   * branco. Por código, no tom dourado e violeta dos outros efeitos de surto, e baixo (nos pés), para não apagar quem está lá.
+   */
+  caos(tile, { dur = 1.0, n = 30 } = {}) {
+    const cores = ['#e8c35a', '#a579d8', '#e8eef5', '#6ea8e8', '#e8c35a', '#a579d8'];
+    const faiscas = [];
+    for (let i = 0; i < n; i += 1) {
+      faiscas.push({ a: (i / n) * Math.PI * 2 + Math.random() * 0.4, v: 0.5 + Math.random() * 0.5, h: 14 + Math.random() * 38, w: Math.random() < 0.4 ? 4 : 3, cor: cores[i % cores.length], estrela: Math.random() < 0.3 });
+    }
+    return this.add({ kind: 'caos', tile: { ...tile }, dur, faiscas });
+  }
+
+  desenharCaos(ctx, board, it, k) {
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    ctx.save();
+    // O clarão: cruz dourada que cresce e some nos primeiros 25%.
+    if (k < 0.25) {
+      const f = 1 - k / 0.25;
+      const r = Math.round(6 + 14 * (k / 0.25));
+      ctx.globalAlpha = f > 0.5 ? 1 : 0.5;
+      ctx.fillStyle = '#2a2430';
+      ctx.fillRect(sx - 3, sy - r - 2, 6, 2 * r + 4);
+      ctx.fillRect(sx - r - 2, sy - 3, 2 * r + 4, 6);
+      ctx.fillStyle = '#e8c35a';
+      ctx.fillRect(sx - 2, sy - r, 4, 2 * r);
+      ctx.fillRect(sx - r, sy - 2, 2 * r, 4);
+      ctx.fillStyle = '#f4f0e4';
+      ctx.fillRect(sx - 2, sy - 2, 4, 4);
+    }
+    // A chuva de faíscas, saindo em elipse isométrica, com um arco para cima.
+    const e = EASE_OUT(Math.min(1, k * 1.15));
+    for (const p of it.faiscas) {
+      const x = sx + Math.cos(p.a) * 52 * p.v * e;
+      const y = sy + Math.sin(p.a) * 26 * p.v * e - Math.sin(Math.min(1, k * 1.4) * Math.PI) * p.h;
+      ctx.globalAlpha = k < 0.55 ? 1 : k < 0.8 ? 0.6 : 0.3;
+      ctx.fillStyle = p.cor;
+      if (p.estrela) {
+        ctx.fillRect(Math.round(x) - 1, Math.round(y) - 3, 2, 6);
+        ctx.fillRect(Math.round(x) - 3, Math.round(y) - 1, 6, 2);
+      } else {
+        ctx.fillRect(Math.round(x), Math.round(y), p.w, p.w);
+      }
     }
     ctx.restore();
   }
@@ -1497,6 +1633,16 @@ export class Fx {
             ctx.stroke();
           }
           ctx.restore();
+          break;
+        }
+
+        case 'almas': {
+          this.desenharAlmas(ctx, board, it, k);
+          break;
+        }
+
+        case 'caos': {
+          this.desenharCaos(ctx, board, it, k);
           break;
         }
 

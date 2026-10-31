@@ -38,6 +38,7 @@ import { montarCampo } from '../game/campo.js';
 import { lerVista, aplicarVista, desempacotarEvento } from '../game/partida-vista.js';
 import { aplicarDiferencas } from '../game/campo-delta.js';
 import { criarReceptor, lerDelta } from '../game/partida-delta.js';
+import { tocarSurtoFx } from './surto-fx.js';
 import { playWeaponVisual, playSpellVisual, andarDe, mostrarAlfinete, mostrarFrase, impactoDeDano, CORES_DOS_JOGADORES } from './visuals.js';
 import { FRASES_DA_PARTIDA, MARCAS_DO_MAPA } from '../game/sala.js';
 
@@ -420,6 +421,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
             audio.play('down');
             for (const u of ev.units ?? []) if (u?.pos) { board.fx.ring(u.pos, { color: '#ff6a4b', radius: 44, dur: 0.7 }); board.floatText(u.pos, '!', '#ff6a4b', true); }
             break;
+          case 'surtoFx': tocarSurtoFx(board, ev); break;
           case 'ignite': if (ev.target) { board.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 6, dur: 0.7, scale: 1.2 }); board.floatText(ev.target.pos, 'pegou fogo!', '#ff8a3a'); } break;
           case 'burn': if (ev.target) board.fx.flames(ev.target.pos, { color: '#ff6a2a', count: 4, dur: 0.45 }); break;
           case 'redirect': if (ev.from && ev.to) { board.floatText(ev.from.pos, 'empurrado!', '#ffc83a'); board.fx.ring(ev.to.pos, { color: '#ffc83a', radius: 26, dur: 0.4, width: 2 }); } break;

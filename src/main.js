@@ -1,3 +1,4 @@
+import { tocarSurtoFx } from "./view/surto-fx.js";
 import "./style.css";
 import "./view/layout.css";
 
@@ -2439,16 +2440,7 @@ class App {
 
       // SURTOS de magia selvagem: o motor pede a animação pelo nome e pela casa (rules/surto.js).
       case "surtoFx": {
-        const ALTURA = {
-          "surto-caos": 40, "onda-necrotica": 3, "almas-sobem": 14, "confusao-estrelas": 34, "poof-vaso": 34,
-          graxa: 4, "raio-queda": 40, "bola-de-fogo": 30, "arcano-impacto": 30,
-        };
-        // A onda necrótica (9 m) abre de uma casa até o raio todo; a confusão gira mais devagar.
-        const opcoes = { fps: ev.fx === "onda-necrotica" || ev.fx === "confusao-estrelas" ? 8 : ev.fx === "almas-sobem" ? 10 : 12, altura: ALTURA[ev.fx] ?? 30, sumir: 0.2 };
-        if (ev.fx === "confusao-estrelas") { board?.fx.orbita(ev.pos, { altura: 40 }); break; }
-        if (ev.fx === "onda-necrotica") { board?.fx.onda(ev.pos, { raio: 6, dur: 1.2 }); break; }
-        if (ev.fx === "graxa") opcoes.chao = true;
-        board?.fx.quadros(ev.pos, ev.fx, opcoes);
+        tocarSurtoFx(board, ev);
         break;
       }
 
