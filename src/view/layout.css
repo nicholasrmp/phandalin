@@ -32,10 +32,12 @@
   z-index: 7;
   width: min(320px, 92%);
   transform: translateX(calc(100% + 24px));
-  transition: transform .2s ease-out;
+  /* Fechada, sai da tela E do foco: sem isto, focar ou rolar até algo dentro dela empurrava a página inteira 40 px para o lado. */
+  visibility: hidden;
+  transition: transform .2s ease-out, visibility 0s linear .2s;
   box-shadow: -10px 0 26px rgba(0, 0, 0, .55);
 }
-#app.layout-livre .gaveta-registro.aberta { transform: none; }
+#app.layout-livre .gaveta-registro.aberta { transform: none; visibility: visible; transition: transform .2s ease-out, visibility 0s; }
 @media (prefers-reduced-motion: reduce) {
   #app.layout-livre .gaveta-registro { transition: none; }
 }

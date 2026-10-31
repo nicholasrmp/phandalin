@@ -3190,6 +3190,14 @@ class App {
       this.select(occupant);
       return;
     }
+    // Clicar num inimigo sem ter escolhido nada na barra ataca com a arma da mão (alcance e visão são do `tryAttack`, que diz o motivo).
+    // Antes o clique era engolido em silêncio: parecia travado.
+    if (occupant && c && !occupant.dead && this.enc.enemiesOf(c).includes(occupant)) {
+      const arma = (c.weapons ?? []).find((w) => this.enc.empunha(c, w));
+      if (!arma) this.refuse(c, "nenhuma arma na mão (escolha uma na barra)");
+      else this.tryAttack(c, occupant, arma);
+      return;
+    }
     if (occupant) return;
 
     // Movimento

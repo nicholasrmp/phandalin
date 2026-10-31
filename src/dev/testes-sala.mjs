@@ -1909,5 +1909,14 @@ teste('mansão: a mobília, os candeeiros e os degraus apontam para casas e peç
   for (const [a, b] of MANSAO_DADOS.folhas.map((p) => [p[0], p[1]])) assert.ok(a && b);
 });
 
+teste('F4: o efeito de um surto (surtoFx) viaja pela vista do anfitrião até o convidado', () => {
+  const enc = encDeTeste();
+  const dado = empacotarEvento(enc, { type: 'surtoFx', fx: 'onda-necrotica', pos: { x: 4, y: 5, f: 1 } });
+  assert.ok(dado, 'o evento do surto é visual e cabe na vista');
+  const volta = JSON.parse(JSON.stringify(desempacotarEvento(enc, dado)));
+  assert.equal(volta.fx, 'onda-necrotica');
+  assert.deepEqual(volta.pos, { x: 4, y: 5, f: 1 });
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);
 process.exit(falhas ? 1 : 0);
