@@ -874,11 +874,13 @@ export class Fx {
   // `de`: a casa de quem lançou. O desenho que vem da esquerda (o chicote)
   // vira de lado quando quem lançou está à direita na tela.
   // `entrar`: segundos para aparecer (lampejo), em vez de surgir de estalo.
-  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0, de = null, entrar = 0 } = {}) {
+  // `cresce: [de, ate]`: a figura se estica de uma escala à outra ao longo do efeito (a onda necrótica que se abre). É a única
+  // exceção ao 1:1 dos quadros, e só para anéis que se expandem.
+  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0, de = null, entrar = 0, cresce = null } = {}) {
     const n = temEfeito(nome);
     if (!n) return this;
     const anim = n / fps;
-    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura, de: de && { ...de }, entrar });
+    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura, de: de && { ...de }, entrar, cresce });
   }
 
   /**
@@ -1373,7 +1375,14 @@ export class Fx {
           if (t > it.anim) ctx.globalAlpha = Math.max(0, 1 - (t - it.anim) / (it.dur - it.anim));
           if (it.entrar && t < it.entrar) ctx.globalAlpha = t / it.entrar;
           if (it.de && at(it.de).sx > sx) { ctx.translate(2 * Math.round(sx), 0); ctx.scale(-1, 1); }
-          ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
+          if (it.cresce) {
+            const s = it.cresce[0] + (it.cresce[1] - it.cresce[0]) * Math.min(1, k);
+            const w = Math.round(cv.width * s);
+            const h = Math.round(cv.height * s);
+            ctx.drawImage(cv, Math.round(sx - w / 2), Math.round(sy - it.altura - h / 2), w, h);
+          } else {
+            ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
+          }
           ctx.restore();
           break;
         }

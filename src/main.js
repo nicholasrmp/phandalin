@@ -2443,7 +2443,10 @@ class App {
           "surto-caos": 40, "onda-necrotica": 3, "confusao-estrelas": 34, "poof-vaso": 34,
           graxa: 4, "raio-queda": 40, "bola-de-fogo": 30, "arcano-impacto": 30,
         };
-        board?.fx.quadros(ev.pos, ev.fx, { fps: ev.fx === "onda-necrotica" || ev.fx === "confusao-estrelas" ? 8 : 12, altura: ALTURA[ev.fx] ?? 30, sumir: 0.2 });
+        // A onda necrótica (9 m) abre de uma casa até o raio todo; a confusão gira mais devagar.
+        const opcoes = { fps: ev.fx === "onda-necrotica" || ev.fx === "confusao-estrelas" ? 8 : 12, altura: ALTURA[ev.fx] ?? 30, sumir: 0.2 };
+        if (ev.fx === "onda-necrotica") opcoes.cresce = [0.6, 5.5];
+        board?.fx.quadros(ev.pos, ev.fx, opcoes);
         break;
       }
 
