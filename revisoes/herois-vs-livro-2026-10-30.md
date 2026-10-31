@@ -520,3 +520,6 @@ Feito: alturas da Muralha 28→20, Nuvem 34→20 (`sumir` maior) e Correntes 28�
 
 ### 11b — revisão da Pele de Pedra
 Recorte: conversão fiel; o brilho do pacote tem só 66 px em 10 quadros (poeira). Beleza: tinta 4/5, brilho 1/5, conjunto 2/5. Aplicado (grátis): tinta 0,55→0,42 (a 0,55 o contraste caía 55%), 5 quadros vazios cortados, lascas cinza (`smash` + `shards`) na conjuração. Pendente (1 geração): casca de granito com ≥300 px no quadro de pico.
+
+### 11c — casca de granito pelo PixelLab: não serviu
+Terceira chamada `/vfx` lite (1 geração, saldo ~3047), com o sprite do Brenn e pedido de casca de placas. O clip sem sprite saiu com 303 px em 10 quadros (pedrinhas soltas, sem forma de casca); a peça com sprite só serve ao Brenn. Nada importado. Para uma casca de verdade, o caminho é `artist: pro` (6 a 8 gerações) ou desenhar à mão.
