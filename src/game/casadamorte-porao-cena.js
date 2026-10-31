@@ -109,6 +109,8 @@ export function reaplicarPorao(ctx) {
   ctx.aoMover = async (c, a) => {
     if (antes) await antes(c, a);
     if (!ctx.estado.explorando) return;
+    // O livro: o alçapão só se mostra a quem sobe a escada até a área 32.
+    if (variante === 'casaDaMortePorao1' && a?.id === 'alcapao') salvo.alcapaoCanil = true;
     if (variante === 'casaDaMortePorao1' && !salvo.espinhos && POCO_ESPINHOS.some(([x, y]) => x === c.pos.x && y === c.pos.y)) await cair(ctx, c);
     else if (variante === 'casaDaMortePorao2' && !salvo.ritual && noEstrado(c.pos)) await ritual(ctx, c);
   };
@@ -119,7 +121,8 @@ async function cair(ctx, c) {
   ctx.salvo.espinhos = 'caiu';
   const queda = ctx.enc.rng.die(6);
   const espinhos = ctx.enc.rng.die(10) + ctx.enc.rng.die(10);
-  ctx.enc.applyDamage(c, queda + espinhos, 'perfurante');
+  ctx.enc.applyDamage(c, queda, 'concussão');
+  if (!c.dead) ctx.enc.applyDamage(c, espinhos, 'perfurante');
   await ctx.painel(`As tábuas podres cedem sob ${c.name} e o chão some. A queda é de três metros, e no fundo esperam espinhos de madeira, afiados: ${queda} de dano da queda e ${espinhos} dos espinhos. Os outros baixam uma corda, e ${c.name} sai de lá se agarrando a ela. O buraco agora está à mostra, e dá para pular por cima.`);
   ctx.app.refresh();
 }
@@ -129,7 +132,7 @@ async function ritual(ctx, c) {
   const { salvo, root } = ctx;
   salvo.ritual = 'visto';
   await ctx.painel([
-    'O canto se ergue mais uma vez, e treze figuras escuras aparecem nas bordas que dominam a sala. Cada uma é uma figura de túnica preta segurando uma tocha, mas o fogo da tocha é negro e parece sugar a luz. Onde se esperaria ver rosto, só há vazio.',
+    'O canto volta a crescer. Nas bordas altas da câmara, treze vultos de capuz preto se acendem um a um, cada qual com uma tocha cuja chama é negra e parece beber a luz em volta. Sob os capuzes não há rostos, só vazio.',
     '"Um deve morrer!", cantam, repetidamente. "Um deve morrer! Um deve morrer!"',
     'São aparições inofensivas: não podem ser feridas, transformadas nem dissipadas. Mas estão olhando o altar.',
   ], { titulo: '38. A câmara do ritual' });
@@ -243,7 +246,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     // ---- o poço de espinhos (26)
     if (area?.id === 'espinhos' && !salvo.espinhos) {
       ops.push({
-        rotulo: 'Procurar armadilhas no chão', icone: 'acao-procurar', detalhe: 'Percepção, CD 15, sem pegadas', motivo: null,
+        rotulo: 'Procurar armadilhas no chão', icone: 'acao-procurar', detalhe: 'olhar o chão, sem pegadas', motivo: null,
         fazer: async () => {
           salvo.espinhos = 'achado';
           await ctx.painel('Quem se abaixa e olha o chão do túnel repara no que falta: pegadas. Em todos os outros corredores da masmorra há marcas de pés de séculos; aqui, nenhuma. Por baixo de uma fina camada de terra, tábuas podres cobrem um poço de um metro e meio de comprimento. No fundo, espinhos de madeira. Dá para pular por cima.');

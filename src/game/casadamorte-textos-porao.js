@@ -55,7 +55,7 @@ export const TEXTOS_PORAO = {
     'A escada termina num corredor curto e baixo, que sobe de leve e vira. O canto ficou claro e alto, uma dúzia de vozes, as mesmas palavras: "Ele é o Ancestral. Ele é a Terra".',
   ],
   relicario: [
-    'Uma sala grande, cheia do canto: uma dúzia de vozes repete sem parar "Ele é o Ancestral. Ele é a Terra". Em treze nichos ao longo das paredes, o culto guardou as "relíquias" de seus rituais: uma mão de goblin mumificada num laço de corda, uma faca de osso humano, um punhal com um crânio de rato no pomo, um orbe feito de um olho de nótico, um aspergillum de osso, uma capa de pele de carniçal costurada, um sapo dissecado numa vara, um saco de guano de morcego, um dedo cortado de bruxa, uma estatueta de múmia, um pingente de ferro com rosto de diabo, a cabeça murcha de um halfling e um cofrezinho com a língua seca de um lobo atroz.',
+    'Uma sala grande, cheia do canto: uma dúzia de vozes repete sem parar "Ele é o Ancestral. Ele é a Terra". Em treze nichos ao longo das paredes, o culto guardou as "relíquias" dos seus rituais: uma mão de goblin mumificada, facas de osso, uma capa de pele de carniçal remendada, um sapo seco num cabo, o dedo de uma bruxa, a cabeça murcha de um halfling, um pingente de ferro com cara de diabo, e outras bugigangas do gênero.',
     'São bugigangas sem valor. Para o sul, um túnel desce em ângulo, para dentro da água turva.',
   ],
   tunelAgua: [

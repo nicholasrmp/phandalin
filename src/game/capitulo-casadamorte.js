@@ -78,7 +78,7 @@ export function criarCasaDaMorte(app, config) {
   const mudarCasas = (lista, glifo) => { for (const [x, y] of lista) mudarCasa(x, y, glifo); };
   if (salvo.passagemAberta && variante === 'casaDaMorte2') mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
   // O alçapão do canil só existe depois que alguém o viu pelo lado de baixo.
-  if (salvo.alcapao && variante === 'casaDaMorte1') mudarCasa(6, 22, 'l');
+  if (salvo.alcapaoCanil && variante === 'casaDaMorte1') mudarCasa(6, 22, 'l');
 
   // ----------------------------------------------------------- as criaturas ----
   const grupos = {};
@@ -177,7 +177,7 @@ export function criarCasaDaMorte(app, config) {
   async function carta() {
     salvo.cartaLida = true;
     await painel([
-      'O papel é grosso, e a letra, fina e inclinada. A carta chama o dono desta casa de "meu servo mais patético" e diz que ele nunca foi o mensageiro de nenhum poder das trevas, que as almas que sangrou no altar e os visitantes que torturou não foram trazidas por ele a esta bela terra: "vocês são apenas vermes que se contorcem na minha terra". Diz que ele está amaldiçoado, que gastou a fortuna, trocou o amor pela loucura e gerou um filho natimorto, e termina: "Salvar você de sua miséria? Eu acho que não. Prefiro que fique como está". Assina: Strahd von Zarovich.',
+      'O papel é grosso, e a letra, fina e inclinada. É uma carta de desprezo: quem a escreve diz ao dono da casa que nunca foi enviado por poder nenhum, que não lhe prometeu imortalidade, e que as vidas sacrificadas no altar não foram ele quem trouxe a estas terras. Chama o culto de vermes na sua terra, lembra que o dono da casa perdeu a fortuna e o juízo e acabou com um filho nascido morto, e recusa qualquer socorro: prefere vê-lo como está. O selo é de Strahd von Zarovich.',
       'Quando vocês levantam os olhos, uma coisa mudou na casa. Atrás do espelho do quarto da babá, no andar de cima, alguma coisa girou. A casa quer que vocês vejam o que a escada mostra.',
     ], { titulo: 'A carta de Strahd' });
     await revelarEscada();
@@ -410,7 +410,7 @@ export function criarCasaDaMorte(app, config) {
       if (chegada) {
         herois().forEach((h, i) => { h.pos = { ...(chegada[i] ?? chegada[0]) }; });
         // Vir pelo alçapão do canil mostra o alçapão (e vir pela porta secreta da masmorra, a porta).
-        if (config.entrada === 'casaDaMortePorao1' && variante === 'casaDaMorte1') { salvo.alcapao = true; mudarCasa(6, 22, 'l'); }
+        if (config.entrada === 'casaDaMortePorao1' && variante === 'casaDaMorte1') { salvo.alcapaoCanil = true; mudarCasa(6, 22, 'l'); }
         if (config.entrada === 'casaDaMorte1' && variante === 'casaDaMortePorao1') { salvo.alcapao = true; mudarCasas([[36, 30], [36, 31]], '?'); }
         app.refresh();
       }

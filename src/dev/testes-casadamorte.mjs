@@ -376,6 +376,9 @@ await teste('as escadas levam ao andar certo, vindo da origem certa; o alçapão
   poe(D.party[0], 34, 30);
   d20(D, 20);
   await op(D, D.party[0], 34, 30, 'portas escondidas').fazer();
+  assert.equal(D.casa().alcapaoCanil, undefined, 'achar a porta não mostra o alçapão lá em cima');
+  poe(D.party[0], 37, 30);
+  await D.cena.depoisDeMover(D.party[0]);
   const V = await nova('casaDaMorte1', { campanha: D.app.campanha });
   assert.equal(V.field.surfaceAt(6, 22), 'escada', 'depois de achar a porta de baixo, o alçapão aparece no canil');
 });
