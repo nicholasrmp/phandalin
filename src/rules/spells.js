@@ -1427,7 +1427,7 @@ export function magiasProntas(actor) {
   const sc = actor.spellcasting;
   if (!sc) return [];
   // As magias RACIAIS (Legado Infernal, Magia Drow) entram na lista de quem as tem: uma vez por descanso longo, sem espaço.
-  const raciais = (actor.magiasRaciais ?? []).map((m) => m.magia);
+  const raciais = [...(actor.magiasRaciais ?? []), ...(actor.magiasDeInvocacao ?? [])].map((m) => m.magia);
   return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais])]
     .filter((id) => SPELLS[id]);
 }

@@ -3397,7 +3397,9 @@ export class Encounter {
     });
     // GOLPES REFORÇADOS PELO KI (monge, 6º): os golpes desarmados contam como mágicos para vencer resistência e imunidade.
     const reforcadoPeloKi = attacker.features?.includes('kiEmpoweredStrikes') && p.weapon?.id === 'punhos';
-    const magico = !!(reforcadoPeloKi || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
+    // PACTO DA LÂMINA: a arma do pacto é mágica (vence resistência e imunidade a dano não mágico).
+    const armaDoPacto = attacker.features?.includes('pactOfTheBlade') && p.weapon && p.weapon.id !== 'punhos';
+    const magico = !!(reforcadoPeloKi || armaDoPacto || p.weapon?.raridade || p.weapon?.bonusAtaque || (attacker.conditions ?? []).some((c) => CONDITIONS[c.id]?.bonusArma));
     // Armadura de Agathys: vale se ele ainda tinha PV temporários ao ser acertado.
     const agathys = !p.ranged && getCondition(target, 'agathys');
     const geloDevolve = agathys && (target.tempHp ?? 0) > 0 ? agathys.data?.dano ?? 5 : 0;
@@ -3666,7 +3668,9 @@ export class Encounter {
     // Lentidão e a ação da Velocidade: um ataque só, com Multiataque ou sem.
     if (conditionEffects(attacker).umAtaque || attacker.acaoLimitada) return [arma];
     // Ataque Extra dos personagens (guerreiro: 1, 2 ou 3 golpes a mais).
-    if (!attacker.attacks) return Array(1 + (attacker.ataquesExtras ?? 0)).fill(arma);
+    // LÂMINA SEDENTA (invocação, Pacto da Lâmina, 5º): um ataque a mais com a arma do pacto.
+    const sedenta = attacker.features?.includes('thirstingBlade') && attacker.features?.includes('pactOfTheBlade') ? 1 : 0;
+    if (!attacker.attacks) return Array(1 + Math.max(attacker.ataquesExtras ?? 0, sedenta)).fill(arma);
     if (!ma || ma.count <= 1) return [arma];
     const seq = ma.sequence ?? ma.pattern;
     if (seq) return seq.includes(arma) ? seq.slice(0, ma.count) : [arma];
@@ -4899,6 +4903,10 @@ export class Encounter {
     const metas = this.metamagiasDaConjuracao(actor, original, opcoes);
     const ids = new Set(metas.map((m) => m.id));
     // RÁPIDA e À DISTÂNCIA mudam a própria magia por esta conjuração (o tempo e o alcance); `finally` devolve o original.
+    // LANÇA MÍSTICA (invocação): a Rajada Mística alcança 90 m.
+    if (original?.id === 'rajadaMistica' && actor.features?.includes('eldritchSpear') && !ids.has('distantSpell')) {
+      SPELLS[spellId] = { ...original, rangeFt: 300 };
+    }
     if (original && (ids.has('quickenedSpell') || ids.has('distantSpell'))) {
       SPELLS[spellId] = {
         ...original,
@@ -5454,7 +5462,9 @@ export class Encounter {
         for (let i = 0; i < n && alvos.length; i++) {
           const alvo = alvos[i % alvos.length];
           if (alvo.dead) continue;
-          this.ataqueMagico(actor, alvo, spell, dano, dc, { bonusDano: agonizante });
+          const feriu = this.ataqueMagico(actor, alvo, spell, dano, dc, { bonusDano: agonizante });
+          // EXPLOSÃO REPELENTE (invocação): quem a Rajada atinge é empurrado 3 m para longe do bruxo.
+          if (feriu > 0 && spell.id === 'rajadaMistica' && actor.features?.includes('repellingBlast') && !alvo.dead) this.empurrar(alvo, actor.pos, 10);
         }
         break;
       }
@@ -6265,6 +6275,10 @@ export class Encounter {
     if (f.includes('colossusSlayer') && !atacante.presaNoTurno && hpAntes < alvo.maxHp) {
       atacante.presaNoTurno = true;
       extra('Matador de Colossos', '1d8', tipo, false);
+    }
+    // SORVEDOR DE VIDA (invocação, Pacto da Lâmina, 12º): +CAR necrótico com a arma do pacto.
+    if (f.includes('lifedrinker') && f.includes('pactOfTheBlade') && arma) {
+      extra('Sorvedor de Vida', `+${Math.max(1, abilityMod(atacante.abilities.cha))}`, 'necrótico', true);
     }
     // MATADOR DE INIMIGOS (patrulheiro, 20º): uma vez por turno, soma o modificador de SAB ao dano contra um Inimigo Favorito.
     const vezDoTurno = `${this.round}:${this.side}`;

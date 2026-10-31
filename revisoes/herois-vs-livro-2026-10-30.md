@@ -371,3 +371,20 @@ Mais **15 características** com mecânica, teste e botão. Suíte: 1055/1055 em
 
 ### Ainda pendente (39)
 Forma Selvagem (e Magias Bestiais, Arquidruida), Invocações Místicas (25) e Dádiva do Pacto, Arcana Mística e Sobrecanalizar (magias de 6º a 9º círculo), Percepção Primitiva e Habilidade Inigualável.
+
+---
+
+## Atualização 4 — o bruxo (Dádiva do Pacto e Invocações Místicas)
+
+Mais **19 características** com mecânica e teste; 9 passaram a `semEfeito` com o motivo escrito. Suíte: 1059/1059, vitest 401/401, build verde. `pendente` caiu de 39 para **12**.
+
+- **Dádivas do Pacto:** Lâmina (a arma é mágica), Tomo (três truques de qualquer lista), Corrente (Convocar Familiar sempre pronta).
+- **Invocações de combate:** Lâmina Sedenta (um ataque a mais), Sorvedor de Vida (+CAR necrótico), Explosão Repelente (empurra 3 m), Lança Mística (alcance de 90 m).
+- **Invocações passivas:** Armadura de Sombras (CA 13 + DES), Visão do Diabo (36 m, mágico também), Visão das Bruxas (visão verdadeira a 9 m), Influência Sedutora.
+- **Invocações que dão magia, sem espaço:** Vigor Diabólico, Visões Nebulosas, Máscara das Muitas Faces, Visão Mística, Passo Ascendente (à vontade); Ladrão dos Cinco Destinos e Atolar a Mente (uma vez por descanso longo).
+
+### Sem efeito no jogo (a ficha avisa)
+Fala com Bestas, Olhar de Duas Mentes, Olhos do Guardião de Runas, Livro dos Segredos Antigos, Sussurros da Sepultura, Escultor de Carne, Mestre das Muitas Formas, Visões de Reinos Distantes, Um com as Sombras.
+
+### Ainda pendente (12)
+Forma Selvagem; Arcana Mística e Sobrecanalizar (magias de 6º a 9º círculo); Sussurros Enfeitiçantes, Palavra Terrível, Servos do Caos, Salto Transcendental, Sinal de Mau Agouro, Correntes de Carceri e Voz do Mestre das Correntes (cada uma precisa de uma magia que o jogo não tem); Percepção Primitiva e Habilidade Inigualável.

@@ -43,7 +43,8 @@ export function armorClass(actor) {
     if (semArmadura != null) ac = Math.max(ac, semArmadura);
   }
   // Armadura Arcana: CA base 13 + DES enquanto estiver sem armadura.
-  if (!comArmadura && actor.armaduraArcana) ac = Math.max(ac, 13 + dex + (actor.shield ? SHIELD_AC : 0));
+  // ARMADURA DE SOMBRAS (invocação do bruxo): a Armadura Arcana à vontade.
+  if (!comArmadura && (actor.armaduraArcana || actor.features?.includes('armorOfShadows'))) ac = Math.max(ac, 13 + dex + (actor.shield ? SHIELD_AC : 0));
   ac += actor.acBonus ?? 0;
   if (comArmadura) ac += actor.acBonusArmadura ?? 0;
   // A armadura mágica (a Dragonguard é um peitoral +1): o bônus é dela, então

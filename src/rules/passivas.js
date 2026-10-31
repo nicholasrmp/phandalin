@@ -89,6 +89,53 @@ export function vantagemPorTraco(actor, hab, contra = null) {
 
 // ------------------------------------------------------------------ crítico ----
 
+// ------------------------------------------------------------------ bruxo: invocações e dádivas ----
+
+/**
+ * As invocações que dão uma MAGIA (à vontade, ou uma vez por descanso longo), sem espaço. Só entram as que o jogo tem como magia:
+ * Palavras Sussurrantes, Palavra Terrível, Passo Ascendente de 4º+ e os servos do caos ficam de fora (não há a magia).
+ */
+export const MAGIAS_DE_INVOCACAO = {
+  fiendishVigor: { magia: 'vidaFalsa', tipo: 'avontade', circulo: 1 },
+  mistyVisions: { magia: 'imagemSilenciosa', tipo: 'avontade' },
+  maskOfManyFaces: { magia: 'disfarcarSe', tipo: 'avontade' },
+  eldritchSight: { magia: 'detectarMagia', tipo: 'avontade' },
+  ascendantStep: { magia: 'levitacao', tipo: 'avontade' },
+  thiefOfFiveFates: { magia: 'perdicao', tipo: 'longo', circulo: 1 },
+  mireTheMind: { magia: 'lentidao', tipo: 'longo', circulo: 3 },
+};
+
+/** As três dádivas do pacto escolhem 3 truques do Livro das Sombras entre estes, na falta de escolha. */
+const TRUQUES_DO_LIVRO = ['orientacao', 'chamaSagrada', 'luz', 'resistencia', 'maoMagica', 'consertar', 'toqueArrepiante', 'raioDeGelo'];
+
+/**
+ * Aplica no bruxo o que as invocações e a Dádiva do Pacto dão em dados: as magias das invocações (com o recurso das de uma vez por
+ * descanso longo), a Visão das Bruxas (visão verdadeira de 9 m), o Livro das Sombras (três truques de qualquer lista) e o familiar
+ * do Pacto da Corrente. Idempotente; `SPELLS` vem de fora para este módulo não importar `spells.js`.
+ */
+export function aplicarInvocacoes(c, SPELLS) {
+  const f = c.features ?? [];
+  c.resources ??= {};
+  c.resourcesMax ??= {};
+  c.magiasDeInvocacao ??= [];
+  for (const [inv, m] of Object.entries(MAGIAS_DE_INVOCACAO)) {
+    if (!f.includes(inv) || !SPELLS[m.magia] || c.magiasDeInvocacao.some((x) => x.magia === m.magia)) continue;
+    const reg = { magia: m.magia, tipo: m.tipo, circulo: m.circulo ?? null, recurso: m.tipo === 'longo' ? `invocacao_${m.magia}` : null };
+    c.magiasDeInvocacao.push(reg);
+    if (reg.recurso) { c.resourcesMax[reg.recurso] = 1; c.resources[reg.recurso] = 1; }
+  }
+  if (f.includes('witchSight')) c.senses = { ...(c.senses ?? {}), truesightFt: Math.max(c.senses?.truesightFt ?? 0, 30) };
+  if (f.includes('pactOfTheTome') && !c.livroDasSombras && c.spellcasting) {
+    const sabe = new Set(c.spellcasting.cantrips ?? []);
+    c.livroDasSombras = TRUQUES_DO_LIVRO.filter((id) => SPELLS[id]?.level === 0 && !sabe.has(id)).slice(0, 3);
+    c.spellcasting.cantrips = [...(c.spellcasting.cantrips ?? []), ...c.livroDasSombras];
+  }
+  if (f.includes('pactOfTheChain') && SPELLS.encontrarFamiliar && c.spellcasting) {
+    const fixas = c.spellcasting.sempreProntas ?? [];
+    if (!fixas.includes('encontrarFamiliar')) c.spellcasting.sempreProntas = [...fixas, 'encontrarFamiliar'];
+  }
+}
+
 /**
  * O menor d20 que é crítico num ataque com ARMA: 20 para todo mundo, 19 com Crítico Aprimorado (Campeão, 3º nível),
  * 18 com Crítico Superior (15º). Ataque de magia não passa por aqui: as duas características falam de ataques com arma.
@@ -221,6 +268,11 @@ export function usoLivreDe(c, spell, pedido = null) {
   }
   if (c.features?.includes('spellMastery') && c.maestriaDeMagia?.includes(spell.id) && (pedido == null || pedido === spell.level)) {
     return { tipo: 'maestria', circulo: spell.level, rotulo: 'Maestria em Magia, à vontade' };
+  }
+  // INVOCAÇÕES do bruxo que dão uma magia: à vontade, ou uma vez por descanso longo.
+  const inv = c.magiasDeInvocacao?.find((m) => m.magia === spell.id && (m.tipo === 'avontade' || tem(m.recurso)));
+  if (inv && (pedido == null || pedido === (inv.circulo ?? spell.level))) {
+    return { tipo: 'invocacao', circulo: inv.circulo ?? spell.level, recurso: inv.recurso, rotulo: inv.tipo === 'avontade' ? 'invocação, à vontade' : 'invocação, uma vez por descanso longo' };
   }
   const assinatura = c.magiasAssinatura?.find((m) => m.magia === spell.id && tem(m.recurso));
   if (assinatura && (pedido == null || pedido === spell.level)) {

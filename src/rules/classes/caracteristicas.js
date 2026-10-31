@@ -286,6 +286,9 @@ const FEITO = [
   'volley', 'whirlwindAttack', 'standAgainstTheTide', 'fastHands', 'vanish', 'strokeOfLuck', 'darkOnesOwnLuck', 'hurlThroughHell',
   'fontOfMagic', 'sorceryPoints', 'sorcerousRestoration', 'dragonWings', 'draconicPresence', 'carefulSpell', 'distantSpell', 'empoweredSpell',
   'extendedSpell', 'heightenedSpell', 'quickenedSpell', 'subtleSpell', 'twinnedSpell',
+  'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
+  'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
+  'mireTheMind', 'beguilingInfluence',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -302,6 +305,15 @@ const SEM_EFEITO = {
   hideInPlainSight: 'o jogo não tem camuflagem nem a ação de se pintar',
   evocationSavant: 'o jogo não copia magias para o grimório',
   blindsense: 'a percepção às cegas ainda não muda a linha de visão',
+  beastSpeech: 'o jogo não tem conversa com animais',
+  gazeOfTwoMinds: 'o jogo não tem como ver pelos olhos de outra criatura',
+  eyesOfTheRuneKeeper: 'o jogo não tem escrita para ler',
+  bookOfAncientSecrets: 'o jogo não tem rituais além dos que já são magia',
+  whispersOfTheGrave: 'o jogo não tem Falar com Mortos',
+  sculptorOfFlesh: 'o jogo não tem Metamorfose',
+  masterOfMyriadForms: 'o jogo não tem Alterar-se',
+  visionsOfDistantRealms: 'o jogo não tem Olho Arcano',
+  oneWithShadows: 'o jogo não tem penumbra como esconderijo',
   beastSpells: 'depende da Forma Selvagem, que ainda não existe',
   archdruid: 'depende da Forma Selvagem, que ainda não existe',
 };

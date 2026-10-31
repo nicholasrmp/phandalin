@@ -21,8 +21,9 @@ import { CARACTERISTICAS } from '../rules/classes/caracteristicas.js';
 import { CLASSES } from '../rules/classes/index.js';
 import { visaoNoEscuro } from '../rules/luz.js';
 import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.js';
-import { margemDeCritico, dadosExtraDeCritico, danoPorResistencia, usoLivreDe, bonusDeDanoPorTraco, vantagemPorTraco, contraDaMagia, danoDeQueda } from '../rules/passivas.js';
+import { margemDeCritico, dadosExtraDeCritico, danoPorResistencia, usoLivreDe, bonusDeDanoPorTraco, vantagemPorTraco, contraDaMagia, danoDeQueda, aplicarInvocacoes } from '../rules/passivas.js';
 import * as passivasExtra from '../rules/passivas.js';
+import { armorClass } from '../rules/equipment.js';
 import { previsaoDeAtaque } from '../rules/odds.js';
 import { descansoLongo, escolherResistenciaInfernal, recuperarNoCurto, dadoDaCancaoDeDescanso, gastarDadoDeVida } from '../rules/descanso.js';
 import { montarAcampamento, descansou } from '../rules/acampamento.js';
@@ -2407,6 +2408,88 @@ teste('Asas Dracônicas (14º) dão voo, sem armadura; Presença Dracônica (18�
   assert.equal(e2.useFeature(p, 'draconicPresence'), true);
   assert.equal(p.resources.sorceryPoints, antes - 5);
   assert.ok(hasCondition(g, 'enfeiticado'));
+});
+// ============================================================================================================
+// BRUXO: invocações e Dádiva do Pacto
+// ============================================================================================================
+
+const bruxo = (nivel, features = []) => {
+  const b = heroi('bruxo', nivel, 'Humano', { abilities: { str: 10, dex: 14, con: 14, int: 10, wis: 10, cha: 18 } });
+  b.pos = { x: 5, y: 5 };
+  for (const f of features) if (!b.features.includes(f)) b.features.push(f);
+  aplicarInvocacoes(b, SPELLS);
+  return b;
+};
+
+teste('Invocações passivas: Armadura de Sombras (CA 13 + DES), Visão do Diabo (36 m no escuro), Visão das Bruxas (visão verdadeira de 9 m)', () => {
+  const sem = bruxo(5);
+  sem.features = sem.features.filter((f) => !['armorOfShadows', 'devilsSight', 'witchSight'].includes(f));
+  sem.armor = 'nenhuma';
+  const com = bruxo(5, ['armorOfShadows', 'devilsSight', 'witchSight']);
+  com.armor = 'nenhuma';
+  assert.ok(armorClass(com) > armorClass(sem), `CA ${armorClass(com)} contra ${armorClass(sem)}`);
+  assert.equal(armorClass(com), 13 + abilityModDe(com.abilities.dex));
+  assert.equal(visaoNoEscuro(com), 120);
+  assert.equal(com.senses.truesightFt, 30);
+  assert.ok(visaoNoEscuro(sem) < 120);
+});
+
+teste('Invocações que dão magia: à vontade (Vigor Diabólico) e uma vez por descanso longo (Ladrão dos Cinco Destinos), sem gastar espaço', () => {
+  const b = bruxo(5, ['fiendishVigor', 'thiefOfFiveFates']);
+  const g = alvoParado({ x: 7, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [b], foes: [g] });
+  assert.ok(magiasProntas(b).includes('vidaFalsa') && magiasProntas(b).includes('perdicao'));
+  const slots = [...b.spellcasting.slots];
+  enc.rng = dadoFixo(10);
+  assert.ok(enc.castSpell(b, 'vidaFalsa', { target: b }).ok);
+  assert.deepEqual(b.spellcasting.slots, slots, 'à vontade: nenhum espaço gasto');
+  b.actionUsed = false;
+  assert.ok(enc.castSpell(b, 'vidaFalsa', { target: b }).ok, 'e de novo');
+  assert.equal(b.resources.invocacao_perdicao, 1);
+  b.actionUsed = false;
+  assert.ok(enc.castSpell(b, 'perdicao', { target: g }).ok);
+  assert.equal(b.resources.invocacao_perdicao, 0, 'uma vez por descanso longo');
+  assert.deepEqual(b.spellcasting.slots, slots, 'sem espaço também');
+  descansoLongo(b);
+  assert.equal(b.resources.invocacao_perdicao, 1);
+});
+
+teste('Pacto da Lâmina: arma mágica; Lâmina Sedenta dá um ataque a mais; Sorvedor de Vida soma CAR necrótico; sem o pacto, nada disso', () => {
+  const golpes = (b) => {
+    const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+    const { enc, eventos } = arena({ herois: [b], foes: [g] });
+    enc.rng = dadoFixo(15);
+    enc.attackAction(b, g);
+    return eventos.filter((e) => e.type === 'attack').length;
+  };
+  const lamina = bruxo(12, ['pactOfTheBlade', 'thirstingBlade', 'lifedrinker']);
+  const comum = bruxo(12);
+  comum.features = comum.features.filter((f) => !['pactOfTheBlade', 'thirstingBlade', 'lifedrinker'].includes(f));
+  assert.equal(golpes(lamina), 2, 'Lâmina Sedenta: dois ataques');
+  assert.equal(golpes(comum), 1);
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const b = bruxo(12, ['pactOfTheBlade', 'lifedrinker']);
+  const { enc, log } = arena({ herois: [b], foes: [g] });
+  enc.rng = dadoFixo(15);
+  enc.resolveAttack(b, g);
+  assert.equal(contaLog(log, /Sorvedor de Vida/), 1);
+});
+
+teste('Pacto do Tomo: três truques de qualquer lista; Explosão Repelente empurra 3 m; o resto não se perde', () => {
+  const b = bruxo(5, ['pactOfTheTome']);
+  assert.equal(b.livroDasSombras.length, 3);
+  for (const c of b.livroDasSombras) assert.ok(b.spellcasting.cantrips.includes(c));
+  const antes = b.spellcasting.cantrips.length;
+  aplicarInvocacoes(b, SPELLS);
+  assert.equal(b.spellcasting.cantrips.length, antes, 'idempotente');
+  const r = bruxo(5, ['repellingBlast']);
+  if (!r.spellcasting.cantrips.includes('rajadaMistica')) r.spellcasting.cantrips.push('rajadaMistica');
+  r.pos = { x: 3, y: 5 };
+  const g = alvoParado({ x: 6, y: 5 }, 'bugbear');
+  const { enc } = arena({ herois: [r], foes: [g] });
+  enc.rng = dadoFixo(18);
+  assert.ok(enc.castSpell(r, 'rajadaMistica', { target: g }).ok);
+  assert.ok(g.pos.x >= 8, `empurrado 3 m (x=${g.pos.x})`);
 });
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
