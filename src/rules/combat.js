@@ -481,6 +481,13 @@ export class Encounter {
         this.say('recurso', `${c.name} entra na luta já inspirado: recupera uma Inspiração Bárdica (Inspiração Superior).`);
       }
     }
+    // IMPLACÁVEL (Mestre de Batalha, 15º): ao rolar iniciativa SEM dados de superioridade, recupera um.
+    for (const c of this.combatants) {
+      if (!c.dead && c.features?.includes('relentless') && (c.resources?.superiorityDice ?? 0) === 0 && (c.resourcesMax?.superiorityDice ?? 0) > 0) {
+        c.resources.superiorityDice = 1;
+        this.say('recurso', `${c.name} entra na luta sem se cansar: recupera um dado de superioridade (Implacável).`);
+      }
+    }
     // EU PERFEITO (monge, 20º): ao rolar iniciativa SEM pontos de ki, recupera 4.
     for (const c of this.combatants) {
       if (!c.dead && c.features?.includes('perfectSelf') && (c.resources?.ki ?? 0) === 0 && (c.resourcesMax?.ki ?? 0) > 0) {
@@ -631,6 +638,7 @@ export class Encounter {
       // O ki do Ataque Atordoante paga o turno, não a luta: armar e não
       // acertar perde o ponto, como no livro.
       c.atordoantePronto = false;
+      c.manobraPronta = null;
       this.fimDaFuria(c);
       this.rolarRecarga(c);
       this.tickConditions(c);
@@ -824,6 +832,47 @@ export class Encounter {
    * (atordoado, paralisado, inconsciente) derruba a concentração: a Bênção
    * não continua valendo com o clérigo fora de combate.
    */
+  /** O dado de superioridade do Mestre de Batalha: d8, d10 a partir do 10º, d12 a partir do 18º. */
+  dadoDeSuperioridade(c) {
+    const n = c.level ?? 1;
+    return n >= 18 ? '1d12' : n >= 10 ? '1d10' : '1d8';
+  }
+
+  /** CD das manobras: 8 + proficiência + o maior entre Força e Destreza. */
+  cdDeManobra(c) {
+    return 8 + proficiencyBonus(c.level ?? 1) + Math.max(abilityMod(c.abilities?.str ?? 10), abilityMod(c.abilities?.dex ?? 10));
+  }
+
+  /** O que a manobra armada faz DEPOIS de acertar: paga o dado, soma o dano e aplica o efeito. Chamado por `extrasDoAcerto`. */
+  aplicarManobra(atacante, alvo, extra, tipo) {
+    const id = atacante.manobraPronta;
+    atacante.manobraPronta = null;
+    if (!id || id === 'precisionAttack' || (atacante.resources?.superiorityDice ?? 0) < 1) return;
+    atacante.resources.superiorityDice -= 1;
+    const nomes = { tripAttack: 'Ataque Derrubador', menacingAttack: 'Ataque Amedrontador', pushingAttack: 'Ataque Empurrão', lungingAttack: 'Ataque Avançado' };
+    this.say('recurso', `${atacante.name} gasta um dado de superioridade: ${nomes[id]} (restam ${atacante.resources.superiorityDice}).`);
+    extra(nomes[id], this.dadoDeSuperioridade(atacante), tipo, false);
+    if (alvo.dead || id === 'lungingAttack') return;
+    const cd = this.cdDeManobra(atacante);
+    const hab = id === 'menacingAttack' ? 'wis' : 'str';
+    const save = this.resistencia(alvo, hab, cd);
+    this.explicarResistencia(alvo, hab, cd, save, {
+      contra: `${nomes[id]} de ${atacante.name}`,
+      seSucesso: id === 'tripAttack' ? 'não cai' : id === 'menacingAttack' ? 'não fica amedrontado' : 'não é empurrado',
+    });
+    if (save.success) return;
+    if (id === 'tripAttack') {
+      if (this.aplicarCondicao(alvo, 'caido', { source: atacante.id })) this.say('condicao', `${alvo.name} é derrubado por ${atacante.name}.`);
+    } else if (id === 'menacingAttack') {
+      if (this.aplicarCondicao(alvo, 'amedrontado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+        this.say('condicao', `${alvo.name} fica amedrontado até o fim do próximo turno de ${atacante.name}.`);
+      }
+    } else {
+      this.empurrar(alvo, atacante.pos, 15);
+      this.say('condicao', `${alvo.name} é empurrado 4,5 m por ${atacante.name}.`);
+    }
+  }
+
   /** CD de ki do monge: 8 + proficiência + Sabedoria. */
   cdDeKi(monge) {
     return 8 + proficiencyBonus(monge.level ?? 1) + abilityMod(monge.abilities?.wis ?? 10);
@@ -1203,6 +1252,7 @@ export class Encounter {
     // ponto. Aqui, e não só no começo do lado, para que um ataque de
     // oportunidade entre turnos não gaste um golpe armado na rodada passada.
     actor.atordoantePronto = false;
+    actor.manobraPronta = null;
     actor.palmaPronta = false;
     actor.hurlPronto = false;
     this.onEvent({ type: 'turnEnd', actor });
@@ -6328,6 +6378,8 @@ export class Encounter {
     }
     if (!arma) return;
     const f = atacante.features ?? [];
+    // MANOBRA armada (Mestre de Batalha): +dado de superioridade no dano e o efeito dela.
+    if (atacante.manobraPronta) this.aplicarManobra(atacante, alvo, extra, tipo);
     // GOLPE DIVINO (clérigo da Vida, 8º): +1d8 radiante UMA vez por turno no acerto de arma; 2d8 do 14º em diante.
     if (f.includes('divineStrike') && !atacante.golpeDivinoNoTurno) {
       atacante.golpeDivinoNoTurno = true;
@@ -7450,6 +7502,15 @@ export class Encounter {
         actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
+        return true;
+      }
+      case 'tripAttack': case 'menacingAttack': case 'pushingAttack': case 'lungingAttack': case 'precisionAttack': {
+        // MANOBRA é um INTERRUPTOR, de graça: armada, vale no próximo ataque de arma do turno (uma por ataque). O dado se gasta no
+        // acerto (ou, no Ataque Preciso, quando ele vira o erro em acerto): armar e não acertar não custa nada.
+        if (!actor.features?.includes(featureId) || (actor.resources?.superiorityDice ?? 0) < 1) return false;
+        const liga = modo === 'ligar' ? true : modo === 'desligar' ? false : actor.manobraPronta !== featureId;
+        actor.manobraPronta = liga ? featureId : null;
+        this.say('recurso', `${actor.name} ${liga ? 'arma' : 'desarma'} a manobra ${nomeDaCaracteristica(featureId)}.`);
         return true;
       }
       case 'carefulSpell': case 'distantSpell': case 'empoweredSpell': case 'extendedSpell':

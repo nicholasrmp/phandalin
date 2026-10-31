@@ -50,6 +50,21 @@ export default {
         },
         escalas: { margemDeCritico: (n) => (n >= 15 ? 18 : 19) },
       },
+      mestreDeBatalha: {
+        nome: 'Mestre de Batalha',
+        fonte: 'phb',
+        niveis: {
+          3: ['combatSuperiority', 'studentOfWar'],
+          7: ['knowYourEnemy'],
+          10: ['improvedCombatSuperiority'],
+          15: ['relentless'],
+        },
+        // Dados de superioridade: 4 no 3º, 5 no 7º, 6 no 15º (o tamanho do dado sai do nível, em combat.js).
+        recursos: { superiorityDice: (n) => (n >= 15 ? 6 : n >= 7 ? 5 : 4) },
+        // Manobras conhecidas: 3 no 3º, 5 no 7º, 7 no 10º, 9 no 15º. Só entram as que o motor aplica.
+        manobras: { 3: 3, 7: 5, 10: 7, 15: 9 },
+        opcoesDeManobra: ['tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack'],
+      },
     },
   },
 };

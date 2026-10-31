@@ -86,7 +86,8 @@ export function subirUmNivel(c) {
   if (c.proficiency > antes.prof) ganhos.push(`Bônus de proficiência +${c.proficiency}.`);
   const novas = (c.features ?? []).filter((f) => !antes.features.includes(f));
   // Metamagia, invocação e pacto saem na tela como escolha; listá-los aqui mostraria o padrão que o jogador pode trocar.
-  const jaEscolhivel = (f) => def?.opcoesDeMetamagia?.includes(f) || def?.opcoesDeInvocacao?.includes(f) || PACTOS.includes(f);
+  const subDe = def?.subclasse?.opcoes?.[c.subclasse];
+  const jaEscolhivel = (f) => subDe?.opcoesDeManobra?.includes(f) || def?.opcoesDeMetamagia?.includes(f) || def?.opcoesDeInvocacao?.includes(f) || PACTOS.includes(f);
   const novidades = novas.filter((f) => !jaEscolhivel(f));
   if (novidades.length) ganhos.push(`Novo: ${novidades.map(nomeDaCaracteristica).join(', ')}.`);
   for (const p of pendentes ?? []) {
@@ -150,6 +151,9 @@ export function subirUmNivel(c) {
   const novasMeta = novas.filter((f) => def?.opcoesDeMetamagia?.includes(f));
   acrescentar('metamagia', `Metamagia: ${novasMeta.length > 1 ? `${novasMeta.length} opções` : 'uma opção'}`, novasMeta.length,
     (def?.opcoesDeMetamagia ?? []).filter((o) => !antes.features.includes(o)), novasMeta);
+  const novasMan = novas.filter((f) => subDe?.opcoesDeManobra?.includes(f));
+  acrescentar('manobras', `Manobras: ${novasMan.length > 1 ? `${novasMan.length} novas` : 'uma nova'}`, novasMan.length,
+    (subDe?.opcoesDeManobra ?? []).filter((o) => !antes.features.includes(o)), novasMan);
   const novoPacto = novas.filter((f) => PACTOS.includes(f));
   acrescentar('pacto', 'Dádiva do Pacto', novoPacto.length, PACTOS, novoPacto);
   const novasInv = novas.filter((f) => def?.opcoesDeInvocacao?.includes(f));
@@ -175,6 +179,11 @@ export function subirUmNivel(c) {
       return lista.map((v, k) => (lista.indexOf(v) !== k ? e.sugeridas[k] : v));
     };
     const por = (id) => escolhasDeCaracteristica.find((e) => e.id === id);
+    if (por('manobras')) {
+      const e = por('manobras');
+      trocarCaracteristicas(c, e.sugeridas, pega(e));
+      if (c.manobraPronta && !c.features.includes(c.manobraPronta)) c.manobraPronta = null;
+    }
     if (por('pacto')) trocarCaracteristicas(c, por('pacto').sugeridas, pega(por('pacto')));
     if (por('metamagia')) {
       const e = por('metamagia');

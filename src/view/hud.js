@@ -1289,6 +1289,21 @@ export class Hud {
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADA' : 'desarmada']] });
         continue;
       }
+      // MANOBRAS do Mestre de Batalha: um interruptor por manobra (`actor.manobraPronta`, uma por ataque). O dado se gasta no acerto.
+      const MANOBRA = {
+        tripAttack: ['Ataque Derrubador', '+dado de dano; FOR ou cai no chão.'],
+        menacingAttack: ['Ataque Amedrontador', '+dado de dano; SAB ou fica amedrontado.'],
+        pushingAttack: ['Ataque Empurrão', '+dado de dano; FOR ou é empurrado 4,5 m.'],
+        lungingAttack: ['Ataque Avançado', '+dado de dano no acerto.'],
+        precisionAttack: ['Ataque Preciso', 'Se o ataque errar por pouco, soma o dado e pode acertar.'],
+      };
+      if (MANOBRA[f]) {
+        const ligado = c.manobraPronta === f;
+        comum(f, MANOBRA[f][0], `Interruptor: ${MANOBRA[f][1]} Dados de superioridade: ${c.resources?.superiorityDice ?? 0}.`, 'Livre',
+          { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, !(c.resources?.superiorityDice > 0) && !ligado, 'superiorityDice', null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADA' : 'desarmada']] });
+        continue;
+      }
       // FORMA SELVAGEM: um azulejo por fera que o nível permite (ou o de voltar ao normal, em forma de fera).
       if (f === 'wildShape') {
         if (c.formaSelvagem) {

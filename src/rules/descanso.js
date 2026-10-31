@@ -23,7 +23,7 @@ import { spellMod } from './party.js';
 import { rolarCura } from './talentos.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
-const VOLTAM_NO_CURTO = new Set(['secondWind', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck']);
+const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck']);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);

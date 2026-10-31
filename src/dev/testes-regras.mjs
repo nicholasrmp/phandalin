@@ -1182,7 +1182,7 @@ teste('nível fora de 1–20 é recusado', () => {
 });
 
 teste('escolhas inválidas são recusadas', () => {
-  assert.throws(() => criarPersonagem(BASE(), { classe: 'guerreiro', nivel: 3, escolhas: { 3: { subclasse: 'mestreDeBatalha' } } }));
+  assert.throws(() => criarPersonagem(BASE(), { classe: 'guerreiro', nivel: 3, escolhas: { 3: { subclasse: 'guardiaoDaAurora' } } }));
   assert.throws(() => criarPersonagem(BASE(), { classe: 'guerreiro', nivel: 4, escolhas: { 4: { asi: { str: 8 } } } }));
   assert.throws(() => criarPersonagem(BASE(), { classe: 'ladino', nivel: 1, escolhas: { 1: { expertise: ['arcanismo'] } } }));
   assert.throws(() => criarPersonagem(BASE(), { classe: 'bruxo', nivel: 2, escolhas: { 2: { invocacoes: ['lifedrinker', 'xyz'] } } }));

@@ -93,6 +93,16 @@ export function segundaChanceNoAtaque(enc, atacante, alvo, atk, bonus, ac) {
     r = refazerAtaque(enc, r, bonus, ac, (_, novo) => novo);
     enc.say('recurso', `${atacante.name} usa a Inspiração e rola o ataque de novo${r.hit ? ': acerta' : ''}.`);
   }
+  // ATAQUE PRECISO (Mestre de Batalha): armado, um erro por pouco vira acerto somando o dado de superioridade. Só quando muda algo.
+  if (!r.hit && !r.fumble && atacante.manobraPronta === 'precisionAttack' && (atacante.resources?.superiorityDice ?? 0) > 0) {
+    const dado = roll(enc.rng, enc.dadoDeSuperioridade(atacante));
+    if (r.total + dado.total >= ac) {
+      atacante.resources.superiorityDice -= 1;
+      r = { ...r, hit: true, total: r.total + dado.total };
+      enc.say('recurso', `${atacante.name} soma ${dado.total} ao ataque (Ataque Preciso, restam ${atacante.resources.superiorityDice} dados).`);
+    }
+    atacante.manobraPronta = null;
+  }
   // GOLPE DE SORTE (ladino Ladrão, 20º): um ataque que errou vira acerto. Uma vez por descanso curto ou longo. Automático na primeira
   // vez que erra (só o ataque: o jogo não rola teste de atributo com CD que dê para salvar).
   if (!r.hit && atacante.features?.includes('strokeOfLuck') && (atacante.resources?.strokeOfLuck ?? 0) > 0) {

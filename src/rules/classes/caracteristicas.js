@@ -246,6 +246,18 @@ export const CARACTERISTICAS = {
   empoweredEvocation: C('Evocação Fortalecida', 'passiva', 'Soma INT ao dano das evocações de mago.'),
   overchannel: C('Sobrecarga', 'livre', 'Uma magia de até 5º círculo dá dano máximo; repetir no mesmo dia fere você.'),
 
+  // ---- guerreiro: Mestre de Batalha (Livro do Jogador) -----------------------------------------------------------------
+  combatSuperiority: C('Superioridade em Combate', 'passiva', 'Dados de superioridade (d8; d10 no 10º, d12 no 18º) que voltam no descanso curto, gastos em manobras. CD = 8 + proficiência + FOR ou DES.', { motor: true }),
+  studentOfWar: C('Estudante da Guerra', 'fora', 'Proficiência com um tipo de ferramenta de artesão.'),
+  knowYourEnemy: C('Conheça seu Inimigo', 'fora', 'Observando uma criatura por 1 minuto, descobre como ela se compara a você em FOR, DES, CON, CA, PV e nível.'),
+  improvedCombatSuperiority: C('Superioridade em Combate Aprimorada', 'passiva', 'Os dados de superioridade viram d10 (e d12 no 18º).', { motor: true }),
+  relentless: C('Implacável', 'passiva', 'Ao rolar iniciativa sem dados de superioridade, recupera um.', { motor: true }),
+  tripAttack: C('Ataque Derrubador', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo (Enorme ou menor) cai se falhar em FOR.', { motor: true }),
+  menacingAttack: C('Ataque Amedrontador', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo fica amedrontado até o fim do seu próximo turno se falhar em SAB.', { motor: true }),
+  pushingAttack: C('Ataque Empurrão', 'livre', 'Arme: no próximo acerto de arma, +dado de dano; o alvo (Enorme ou menor) é empurrado 4,5 m se falhar em FOR.', { motor: true }),
+  lungingAttack: C('Ataque Avançado', 'livre', 'Arme: no próximo acerto de arma, +dado de dano. (O alcance extra de 1,5 m não é modelado.)', { motor: true }),
+  precisionAttack: C('Ataque Preciso', 'livre', 'Arme: se o próximo ataque de arma errar por pouco, soma o dado à rolagem e pode acertar.', { motor: true }),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -289,6 +301,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
+  'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
@@ -296,6 +309,8 @@ const ESTRUTURAIS = [
   'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic',
 ];
 const SEM_EFEITO = {
+  studentOfWar: 'o jogo não tem ferramentas de artesão',
+  knowYourEnemy: 'o jogo não compara os atributos de duas criaturas',
   timelessBody: 'o jogo não conta a idade dos heróis',
   druidic: 'o jogo não tem idiomas',
   thievesCant: 'o jogo não tem idiomas',

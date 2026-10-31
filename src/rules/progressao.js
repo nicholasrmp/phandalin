@@ -239,6 +239,7 @@ export function subirNivel(c, escolhas = {}) {
   for (const [tipo, tabela, opcoes] of [
     ['metamagia', def.metamagias, def.opcoesDeMetamagia],
     ['invocacoes', def.invocacoes, def.opcoesDeInvocacao],
+    ['manobras', sub?.manobras, sub?.opcoesDeManobra],
   ]) {
     if (!tabela) continue;
     const quer = porNivel(tabela, nivel) ?? 0;

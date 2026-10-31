@@ -974,7 +974,7 @@ teste('Matador de Gigantes (Caçador): reação ao ataque de criatura Grande a 1
   r2.pos = { x: 5, y: 5 };
   const g2 = inimigo('goblin', { x: 6, y: 5 });
   const { enc: e2, log: l2 } = arena({ herois: [r2], foes: [g2] });
-  e2.rng = dadoEmSequencia(10);
+  e2.rng = dadoEmSequencia(8);
   e2.resolveAttack(g2, r2, {});
   assert.equal(contaLog(l2, /Matador de Gigantes/), 0);
 });
@@ -2906,6 +2906,127 @@ teste('Toda magia de 4º círculo para cima tem ícone próprio no catálogo (ne
     assert.ok(ic.startsWith('magia-') && temIcone(ic), `${s.id}: ${ic}`);
   }
 });
+// ============================================================================================================
+// MESTRE DE BATALHA (guerreiro, Livro do Jogador): dados de superioridade e manobras
+// ============================================================================================================
+
+const mestre = (nivel) => heroi('guerreiro', nivel, 'Humano', { weapons: ['espadaLonga'] }, { 3: { subclasse: 'mestreDeBatalha' } });
+
+teste('Mestre de Batalha: dados e manobras crescem com o nível, o dado sobe de tamanho e o descanso curto devolve', () => {
+  const m3 = mestre(3);
+  assert.ok(m3.features.includes('combatSuperiority') && m3.features.includes('studentOfWar'));
+  assert.equal(m3.resources.superiorityDice, 4);
+  const manobras = (c) => c.features.filter((f) => CLASSES.guerreiro.subclasse.opcoes.mestreDeBatalha.opcoesDeManobra.includes(f));
+  assert.equal(manobras(m3).length, 3, '3 manobras no 3º');
+  const m7 = mestre(7);
+  assert.equal(m7.resources.superiorityDice, 5);
+  assert.equal(manobras(m7).length, 5, '5 no 7º (todas as que o jogo tem)');
+  assert.equal(mestre(15).resources.superiorityDice, 6);
+  assert.ok(mestre(15).features.includes('relentless') && mestre(10).features.includes('improvedCombatSuperiority'));
+  const { enc } = arena({ herois: [m3], foes: [inimigo('goblin', { x: 9, y: 9 })] });
+  assert.equal(enc.dadoDeSuperioridade(mestre(3)), '1d8');
+  assert.equal(enc.dadoDeSuperioridade(mestre(10)), '1d10');
+  assert.equal(enc.dadoDeSuperioridade(mestre(18)), '1d12');
+  m3.resources.superiorityDice = 0;
+  recuperarNoCurto(m3);
+  assert.equal(m3.resources.superiorityDice, 4, 'volta no descanso curto');
+  assert.equal(heroi('guerreiro', 3, 'Humano', {}, { 3: { subclasse: 'campeao' } }).resources.superiorityDice, undefined, 'o Campeão não tem dados');
+});
+
+teste('Ataque Derrubador: arma, acerta, +dado de dano, FOR ou cai; o dado só sai no acerto', () => {
+  const c = mestre(3);
+  c.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 200;
+  const { enc } = arena({ herois: [c], foes: [gob] });
+  assert.equal(enc.useFeature(c, 'tripAttack'), true);
+  assert.equal(c.manobraPronta, 'tripAttack');
+  enc.rng = dadoEmSequencia(15, 2); // acerta; o goblin falha na FOR
+  enc.attackAction(c, gob, 'espadaLonga');
+  assert.equal(c.resources.superiorityDice, 3, 'gastou um dado');
+  assert.ok(hasCondition(gob, 'caido'), 'caiu');
+  assert.equal(c.manobraPronta, null, 'a manobra se gastou');
+  // Passou na resistência: dano extra, sem queda.
+  const c2 = mestre(3);
+  c2.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  g2.hp = g2.maxHp = 200;
+  const { enc: e2 } = arena({ herois: [c2], foes: [g2] });
+  e2.useFeature(c2, 'tripAttack');
+  e2.rng = dadoEmSequencia(15, 20);
+  e2.attackAction(c2, g2, 'espadaLonga');
+  assert.ok(!hasCondition(g2, 'caido'), 'passou na FOR');
+  assert.equal(c2.resources.superiorityDice, 3);
+  // Errou: o dado não sai e a manobra segue armada até o fim do turno.
+  const c3 = mestre(3);
+  c3.pos = { x: 5, y: 5 };
+  const g3 = inimigo('goblin', { x: 6, y: 5 });
+  g3.ac = 40;
+  const { enc: e3 } = arena({ herois: [c3], foes: [g3] });
+  e3.useFeature(c3, 'tripAttack');
+  e3.rng = dadoEmSequencia(2);
+  e3.attackAction(c3, g3, 'espadaLonga');
+  assert.equal(c3.resources.superiorityDice, 4, 'errou: nada gasto');
+  // Sem dado: não arma.
+  c3.resources.superiorityDice = 0;
+  assert.equal(e3.useFeature(c3, 'menacingAttack'), false);
+});
+
+teste('Ataque Amedrontador, Empurrão e Avançado: cada um com o seu efeito', () => {
+  const casos = [['menacingAttack', 'amedrontado'], ['pushingAttack', null], ['lungingAttack', null]];
+  for (const [id, cond] of casos) {
+    const c = mestre(7);
+    c.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 6, y: 5 });
+    gob.hp = gob.maxHp = 200;
+    const { enc } = arena({ herois: [c], foes: [gob] });
+    enc.useFeature(c, id);
+    enc.rng = dadoEmSequencia(15, 2);
+    const hpAntes = gob.hp;
+    enc.attackAction(c, gob, 'espadaLonga');
+    assert.equal(c.resources.superiorityDice, 4, `${id}: gastou um dado`);
+    assert.ok(gob.hp < hpAntes, `${id}: feriu`);
+    if (cond) assert.ok(hasCondition(gob, cond), `${id}: ${cond}`);
+    if (id === 'pushingAttack') assert.ok(gob.pos.x > 6, 'empurrado para longe');
+    if (id === 'lungingAttack') assert.equal(gob.pos.x, 6, 'o Avançado não empurra');
+  }
+});
+
+teste('Ataque Preciso: um erro por pouco vira acerto somando o dado; um erro grande não gasta nada', () => {
+  const luta = (ac, arma) => {
+    const c = mestre(7);
+    c.pos = { x: 5, y: 5 };
+    const g = inimigo('goblin', { x: 6, y: 5 });
+    g.hp = g.maxHp = 200;
+    g.ac = ac;
+    const { enc } = arena({ herois: [c], foes: [g] });
+    if (arma) assert.equal(enc.useFeature(c, 'precisionAttack'), true);
+    enc.rng = dadoEmSequencia(8);
+    enc.attackAction(c, g, 'espadaLonga');
+    return { c, g };
+  };
+  // A menor CA que o 8 natural erra: erra por 1, e o d8 (que cai em 4 no dado fixo) cobre.
+  let ac = 10;
+  while (luta(ac, false).g.hp < 200) ac += 1;
+  const { c, g } = luta(ac, true);
+  assert.equal(c.resources.superiorityDice, 4, 'o dado foi para o ataque');
+  assert.ok(g.hp < 200, 'acertou');
+  const longe = luta(ac + 20, true);
+  assert.equal(longe.c.resources.superiorityDice, 5, 'erro grande: o dado não resolve, não se gasta');
+  assert.equal(longe.g.hp, 200);
+});
+
+teste('Implacável (15º): entra na luta sem dados e recupera um', () => {
+  const c = mestre(15);
+  c.resources.superiorityDice = 0;
+  c.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 9, y: 9 });
+  const field = new Battlefield(12, 12, MAPA);
+  const enc = new Encounter({ battlefield: field, party: [c], foes: [gob], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  enc.start?.();
+  assert.equal(c.resources.superiorityDice, 1);
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

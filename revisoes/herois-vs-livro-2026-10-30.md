@@ -529,3 +529,10 @@ Efeito de 24 quadros 36x52 (21.815 px). Beleza: 2,5/5 — tem peso e ritmo (cres
 
 ### 11e — casca v2 (`/vfx` pro, ~7,6 gerações, saldo ~3033)
 Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do herói no pico 59% (era 77%), 0% de contorno preto (era 71%), sem quadros repetidos. Problema restante: cor quase branca (lê como neve). Aplicado grátis: remapeamento 1→2, 2→3 (cinza-granito), quadro 19 cortado, 16 fps, lascas em #6b7686. Não feito: adiar a tinta do herói até a casca fechar.
+
+## Atualização 12 — Subclasse nova: Mestre de Batalha (guerreiro, Livro do Jogador)
+- **Existe agora** (20 das 40 subclasses; faltam 18): dados de superioridade (4/5/6, d8→d10 no 10º→d12 no 18º, voltam no descanso curto), Implacável (15º, recupera um dado ao rolar iniciativa sem dados), Superioridade Aprimorada.
+- **Manobras com motor e teste (5):** Ataque Derrubador, Amedrontador, Empurrão, Avançado (+dado de dano e a resistência de FOR/SAB; CD = 8 + prof + maior de FOR/DES) e Ataque Preciso (soma o dado a um erro por pouco). Interruptor armado, uma por ataque; o dado só sai no acerto.
+- **Escolha na subida de nível:** 3 no 3º, 5 no 7º. O livro dá 9 no 15º, mas o jogo só tem 5 manobras: o resto não existe ainda.
+- **Faltam 11 manobras** (Aparar, Revidar, Provocar, Finta, Desarmar, Varrer, Comandar, Reunir, Passo Evasivo, Distrair, Troca de Lugar, Trocar/Arremesso): precisam de reação, segundo alvo ou ação de aliado. Estudante da Guerra e Conheça seu Inimigo: `semEfeito` (o jogo não tem ferramentas nem comparação de atributos). O Avançado não dá o alcance extra de 1,5 m.
+- Ícones: ainda não há; o botão cai no genérico. Suíte 1085/1085, vitest 401/401, build verde.
