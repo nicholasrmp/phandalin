@@ -1353,6 +1353,11 @@ export class Hud {
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
         continue;
       }
+      if (f === 'cloakOfShadows') {
+        comum('mantoDeSombras', 'Manto de Sombras', 'Fica invisível até atacar ou conjurar.', 'Ação',
+          { kind: 'feature', featureId: f }, c.actionUsed || hasCondition(c, 'invisivel'));
+        continue;
+      }
       if (f === 'warMagic' || f === 'improvedWarMagic' || f === 'battleMagic') {
         if (f === 'warMagic' && (c.features ?? []).includes('improvedWarMagic')) continue;
         const nome = f === 'battleMagic' ? 'Magia de Batalha' : 'Magia de Guerra';

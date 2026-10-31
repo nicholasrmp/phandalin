@@ -345,7 +345,7 @@ export function temUsoGratis(c, spellId) {
 export function gastarUsoGratis(enc, c, uso = true) {
   // Uso livre de característica (`usoLivreDe`): racial e Assinatura gastam o recurso; a Maestria é à vontade.
   if (uso && typeof uso === 'object') {
-    if (uso.recurso) c.resources[uso.recurso] = Math.max(0, (c.resources[uso.recurso] ?? 0) - 1);
+    if (uso.recurso) c.resources[uso.recurso] = Math.max(0, (c.resources[uso.recurso] ?? 0) - (uso.custo ?? 1));
     enc.say('recurso', `${c.name} conjura sem gastar espaço (${uso.rotulo}).`);
     return;
   }

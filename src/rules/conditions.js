@@ -370,6 +370,11 @@ export const CONDITIONS = {
     curaMaxima: true,
     concentrationEffect: true,
   },
+  passoSombrio: {
+    name: 'Passo das Sombras',
+    desc: 'O primeiro ataque corpo a corpo deste turno tem vantagem.',
+    consumidaAoAtacar: true,
+  },
   olharHipnotico: {
     name: 'Olhar Hipnótico',
     desc: 'Enfeitiçado: incapacitado e sem andar, até o fim do próximo turno de quem o hipnotizou.',

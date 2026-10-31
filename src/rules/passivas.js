@@ -311,17 +311,60 @@ export const PREFERIDAS_DA_ASSINATURA = ['bolaDeFogo', 'relampago', 'voo', 'velo
 export const MAGIAS_DE_CARACTERISTICA = {
   benignTransposition: ['transposicaoBenigna'],
   improvedMinorIllusion: ['ilusaoMenor'],
+  shadowStep: ['passoDasSombras'],
 };
 
+/**
+ * As magias do MONGE que saem gastando ki em vez de espaço: as Artes Sombrias do Caminho da Sombra (2 ki, qualquer uma das quatro) e as
+ * disciplinas elementais do Caminho dos Quatro Elementos (cada uma uma magia, com o custo do livro; gastar ki a mais sobe o círculo, até o
+ * limite de ki por magia do nível).
+ */
+export const MAGIAS_DE_KI = {
+  shadowArts: { fixo: true, magias: [['escuridao', 2], ['visaoNoEscuro', 2], ['passosSemPegadas', 2], ['silencio', 2]] },
+  fistOfFourThunders: { magias: [['ondaTrovejante', 2]] },
+  rushOfTheGaleSpirits: { magias: [['lufadaDeVento', 2]] },
+  sweepingCinderStrike: { magias: [['maosFlamejantes', 2]] },
+  clenchOfTheNorthWind: { magias: [['imobilizarPessoa', 3]] },
+  gongOfTheSummit: { magias: [['despedacar', 3]] },
+  flamesOfThePhoenix: { magias: [['bolaDeFogo', 4]] },
+  mistStance: { magias: [['formaGasosa', 4]] },
+  rideTheWind: { magias: [['voo', 4]] },
+  breathOfWinter: { magias: [['coneDeFrio', 6]] },
+  eternalMountainDefense: { magias: [['peleDePedra', 5]] },
+  riverOfHungryFlame: { magias: [['muralhaDeFogo', 5]] },
+};
+
+/** O limite de ki que um monge de `nivel` gasta numa só magia (Discípulo dos Elementos). */
+export const kiMaximoPorMagia = (nivel) => (nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2);
+
+/**
+ * Refaz, do zero e a partir das características de agora, as listas de magias que uma característica dá (`magiasDeCaracteristica`, os
+ * truques e as magias de característica sem espaço) e as de ki (`magiasDeKi`). É idempotente: trocar uma escolha na tela de nível e
+ * chamar de novo deixa tudo certo.
+ */
 export function darMagiasDeCaracteristica(c, SPELLS) {
+  c.magiasDeCaracteristica = [];
+  c.magiasDeKi = [];
+  const habilidade = c.classe === 'monge' ? 'wis' : 'int';
+  const garantir = () => { c.spellcasting ??= { ability: habilidade, cantrips: [], prepared: [], slots: [0], slotsMax: [0] }; };
   for (const [f, ids] of Object.entries(MAGIAS_DE_CARACTERISTICA)) {
     if (!c.features?.includes(f)) continue;
-    c.spellcasting ??= { ability: 'int', cantrips: [], prepared: [], slots: [0], slotsMax: [0] };
-    c.magiasDeCaracteristica ??= [];
+    garantir();
     for (const id of ids) {
       if (SPELLS[id] && !c.magiasDeCaracteristica.includes(id) && !c.spellcasting.cantrips?.includes(id)) c.magiasDeCaracteristica.push(id);
     }
   }
+  for (const [f, def] of Object.entries(MAGIAS_DE_KI)) {
+    if (!c.features?.includes(f)) continue;
+    garantir();
+    for (const [id, custo] of def.magias) {
+      if (!SPELLS[id] || c.magiasDeKi.some((m) => m.magia === id)) continue;
+      c.magiasDeKi.push({ magia: id, custo, fixo: Boolean(def.fixo) });
+      if (!c.magiasDeCaracteristica.includes(id)) c.magiasDeCaracteristica.push(id);
+    }
+  }
+  if (!c.magiasDeCaracteristica.length) { delete c.magiasDeCaracteristica; delete c.magiasDeKi; }
+  else if (!c.magiasDeKi.length) delete c.magiasDeKi;
 }
 
 export function usoLivreDe(c, spell, pedido = null) {
@@ -334,6 +377,16 @@ export function usoLivreDe(c, spell, pedido = null) {
   }
   if (c.features?.includes('spellMastery') && c.maestriaDeMagia?.includes(spell.id) && (pedido == null || pedido === spell.level)) {
     return { tipo: 'maestria', circulo: spell.level, rotulo: 'Maestria em Magia, à vontade' };
+  }
+  // KI (monge): as Artes Sombrias e as disciplinas elementais saem gastando ki (o custo do livro; ki a mais sobe o círculo).
+  const ki = c.magiasDeKi?.find((m) => m.magia === spell.id);
+  if (ki) {
+    const circulo = pedido != null && pedido >= spell.level && !ki.fixo ? pedido : spell.level;
+    const custo = ki.custo + (circulo - spell.level);
+    if (custo <= kiMaximoPorMagia(c.level ?? 1) && (c.resources?.ki ?? 0) >= custo) {
+      return { tipo: 'ki', circulo, recurso: 'ki', custo, rotulo: `${custo} de ki` };
+    }
+    return null;
   }
   // INVOCAÇÕES do bruxo que dão uma magia: à vontade, ou uma vez por descanso longo.
   const inv = c.magiasDeInvocacao?.find((m) => m.magia === spell.id && (m.tipo === 'avontade' || tem(m.recurso)));

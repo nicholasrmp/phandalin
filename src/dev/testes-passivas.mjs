@@ -3754,5 +3754,125 @@ teste('Pedra do Transmutador (6º): o benefício escolhido vale — velocidade, 
 });
 
 // ============================================================================================================
+// CAMINHO DA SOMBRA e CAMINHO DOS QUATRO ELEMENTOS (monge, Livro do Jogador)
+// ============================================================================================================
+
+const sombra = (nivel) => heroi('monge', nivel, 'Humano', {}, { 3: { subclasse: 'sombra' } });
+const elementos = (nivel, disc = {}) => heroi('monge', nivel, 'Humano', {}, { 3: { subclasse: 'quatroElementos', ...disc } });
+
+teste('Caminho da Sombra: Artes Sombrias gastam 2 de ki e dão as quatro magias; sem ki, não saem', () => {
+  const m = sombra(3);
+  m.pos = { x: 5, y: 5 };
+  assert.ok(m.features.includes('shadowArts'));
+  const prontas = magiasProntas(m);
+  for (const id of ['escuridao', 'visaoNoEscuro', 'passosSemPegadas', 'silencio']) assert.ok(prontas.includes(id), id);
+  const gob = inimigo('goblin', { x: 11, y: 11 });
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  const ki = m.resources.ki;
+  const r = enc.castSpell(m, 'escuridao', { point: { x: 8, y: 8 } });
+  assert.ok(r.ok, r.why);
+  assert.equal(m.resources.ki, ki - 2, 'gastou 2 de ki');
+  m.actionUsed = false;
+  m.resources.ki = 1;
+  assert.equal(enc.castSpell(m, 'silencio', { point: { x: 8, y: 8 } }).ok, false, 'com 1 de ki, nada');
+  assert.equal(heroi('monge', 3, 'Humano', {}, { 3: { subclasse: 'maoAberta' } }).magiasDeKi, undefined, 'a Mão Aberta não tem');
+});
+
+teste('Passo das Sombras (6º): bônus, teleporta 18 m, e o primeiro golpe corpo a corpo do turno tem vantagem, uma vez', () => {
+  const m = sombra(6);
+  m.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 9, y: 5 });
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  assert.ok(magiasProntas(m).includes('passoDasSombras'));
+  assert.ok(!enc.attackModifiers(m, gob, {}).vantagens.includes('passo das sombras'));
+  const r = enc.castSpell(m, 'passoDasSombras', { point: { x: 8, y: 5 } });
+  assert.ok(r.ok, r.why);
+  assert.equal(m.pos.x, 8);
+  assert.equal(m.bonusUsed, true, 'custou a ação bônus');
+  assert.ok(enc.attackModifiers(m, gob, {}).vantagens.includes('passo das sombras'));
+  assert.ok(!enc.attackModifiers(m, gob, { ranged: true }).vantagens.includes('passo das sombras'), 'só corpo a corpo');
+  enc.rng = dadoEmSequencia(10);
+  enc.resolveAttack(m, gob, { weaponId: 'punhos' });
+  assert.ok(!enc.attackModifiers(m, gob, {}).vantagens.includes('passo das sombras'), 'a vantagem se gastou no primeiro golpe');
+});
+
+teste('Manto de Sombras (11º): ação, invisível; Oportunista (17º): reação que ataca quem foi acertado por outro', () => {
+  const m = sombra(11);
+  m.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [m], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  assert.equal(enc.useFeature(m, 'cloakOfShadows'), true);
+  assert.ok(hasCondition(m, 'invisivel'));
+  assert.equal(m.actionUsed, true);
+  assert.equal(enc.useFeature(m, 'cloakOfShadows'), false);
+  // Oportunista
+  const op = sombra(17);
+  op.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo.pos = { x: 7, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 500;
+  gob.ac = 1;
+  const { enc: e2 } = arena({ herois: [op, amigo], foes: [gob] });
+  e2.rng = dadoEmSequencia(15);
+  const antes = gob.hp;
+  e2.resolveAttack(amigo, gob, { weaponId: 'espadaLonga' });
+  assert.ok(gob.hp < antes - 1, 'o golpe do amigo e o do monge');
+  assert.equal(op.reactionUsed, true, 'o monge usou a reação');
+  const sem = heroi('monge', 17, 'Humano', {}, { 3: { subclasse: 'maoAberta' } });
+  sem.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  g2.hp = g2.maxHp = 500;
+  g2.ac = 1;
+  const amigo2 = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo2.pos = { x: 7, y: 5 };
+  const { enc: e3 } = arena({ herois: [sem, amigo2], foes: [g2] });
+  e3.rng = dadoEmSequencia(15);
+  e3.resolveAttack(amigo2, g2, { weaponId: 'espadaLonga' });
+  assert.equal(sem.reactionUsed, false, 'sem a característica, nada');
+});
+
+teste('Quatro Elementos: escolhe disciplinas pelo nível do monge, conjura gastando ki (o custo do livro) e limita o ki por magia', () => {
+  const m3 = elementos(3);
+  assert.ok(m3.features.includes('discipleOfTheElements'));
+  const d3 = m3.features.filter((f) => CLASSES.monge.subclasse.opcoes.quatroElementos.opcoesDeDisciplina.includes(f));
+  assert.equal(d3.length, 1, 'uma disciplina no 3º');
+  assert.ok(['fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike'].includes(d3[0]), 'só as do 3º nível');
+  const m6 = heroi('monge', 6, 'Humano', {}, { 3: { subclasse: 'quatroElementos', disciplinas: ['fistOfFourThunders'] }, 6: { disciplinas: ['clenchOfTheNorthWind'] } });
+  assert.ok(m6.features.includes('clenchOfTheNorthWind'));
+  assert.throws(() => elementos(3, { disciplinas: ['flamesOfThePhoenix'] }), /disciplinas/, 'Chamas da Fênix só no 11º');
+  // conjurar
+  const m = elementos(11, { disciplinas: ['sweepingCinderStrike'] });
+  m.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 500;
+  const { enc } = arena({ herois: [m], foes: [gob] });
+  assert.ok(magiasProntas(m).includes('maosFlamejantes'));
+  const ki = m.resources.ki;
+  assert.ok(enc.castSpell(m, 'maosFlamejantes', { target: gob, point: gob.pos }).ok);
+  assert.equal(m.resources.ki, ki - 2, '2 de ki');
+  assert.ok(gob.hp < 500, 'queimou');
+  // mais ki sobe o círculo (1 de ki por círculo), até o limite (4 de ki por magia no 11º)
+  m.actionUsed = false;
+  assert.ok(enc.castSpell(m, 'maosFlamejantes', { target: gob, point: gob.pos, circulo: 3 }).ok, '2 + 2 = 4 de ki, no 3º círculo');
+  assert.equal(m.resources.ki, ki - 2 - 4);
+  m.actionUsed = false;
+  m.resources.ki = 20;
+  assert.equal(enc.castSpell(m, 'maosFlamejantes', { target: gob, point: gob.pos, circulo: 4 }).ok, false, '5 de ki passa do limite do 11º');
+});
+
+teste('Tela de nível: o monge dos Quatro Elementos escolhe a disciplina nova, e a troca refaz as magias', async () => {
+  const { subirUmNivel } = await import('../game/nivel.js');
+  const m = heroi('monge', 2, 'Humano');
+  const r = subirUmNivel(m, { subclasse: 'quatroElementos' });
+  const e = r.escolhas.find((x) => x.id === 'disciplinas');
+  assert.ok(e && e.quantas === 1 && e.opcoes.length === 3, 'as três do 3º nível');
+  const padrao = m.features.find((f) => e.opcoes.includes(f));
+  const outra = e.opcoes.find((o) => o !== padrao);
+  r.aplicar({ disciplinas: [outra] });
+  assert.ok(m.features.includes(outra) && !m.features.includes(padrao));
+  assert.ok(m.magiasDeKi.some((x) => x.magia === (outra === 'fistOfFourThunders' ? 'ondaTrovejante' : outra === 'rushOfTheGaleSpirits' ? 'lufadaDeVento' : 'maosFlamejantes')));
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

@@ -348,6 +348,24 @@ export const CARACTERISTICAS = {
   shapechanger: C('Mutante', 'acao', 'Conjura Metamorfose em si mesmo, uma vez por descanso curto, só em fera de ND 1 ou menos.'),
   masterTransmuter: C('Transmutador Mestre', 'acao', 'Consome a pedra: troca o material de um objeto, cura 50 PV, ou outro efeito.'),
 
+  // ---- monge: Caminho da Sombra e Caminho dos Quatro Elementos (Livro do Jogador) -----------------------------------------
+  shadowArts: C('Artes Sombrias', 'acao', 'Gasta 2 de ki para conjurar Escuridão, Visão no Escuro, Passos sem Pegadas ou Silêncio.', { motor: true }),
+  shadowStep: C('Passo das Sombras', 'bonus', 'Ação bônus: teleporta até 18 m; o primeiro ataque corpo a corpo do turno tem vantagem. (O jogo não exige penumbra.)', { motor: true }),
+  cloakOfShadows: C('Manto de Sombras', 'acao', 'Fica invisível até atacar ou conjurar.', { motor: true }),
+  opportunist: C('Oportunista', 'reacao', 'Quando uma criatura a até 1,5 m é acertada por outra, você a ataca com a reação.', { motor: true }),
+  discipleOfTheElements: C('Discípulo dos Elementos', 'passiva', 'Aprende disciplinas elementais, que gastam ki para conjurar magias. O limite de ki por magia cresce com o nível.', { motor: true }),
+  fistOfFourThunders: C('Punho dos Quatro Trovões', 'acao', '2 de ki: conjura Onda Trovejante.', { motor: true }),
+  rushOfTheGaleSpirits: C('Rajada dos Espíritos do Vendaval', 'acao', '2 de ki: conjura Lufada de Vento.', { motor: true }),
+  sweepingCinderStrike: C('Golpe de Cinzas Varridas', 'acao', '2 de ki: conjura Mãos Flamejantes.', { motor: true }),
+  clenchOfTheNorthWind: C('Garra do Vento do Norte', 'acao', '3 de ki: conjura Imobilizar Pessoa.', { motor: true }),
+  gongOfTheSummit: C('Gongo do Cume', 'acao', '3 de ki: conjura Despedaçar.', { motor: true }),
+  flamesOfThePhoenix: C('Chamas da Fênix', 'acao', '4 de ki: conjura Bola de Fogo.', { motor: true }),
+  mistStance: C('Postura da Névoa', 'acao', '4 de ki: conjura Forma Gasosa em si mesmo.', { motor: true }),
+  rideTheWind: C('Cavalgar o Vento', 'acao', '4 de ki: conjura Voo em si mesmo.', { motor: true }),
+  breathOfWinter: C('Sopro do Inverno', 'acao', '6 de ki: conjura Cone de Frio.', { motor: true }),
+  eternalMountainDefense: C('Defesa da Montanha Eterna', 'acao', '5 de ki: conjura Pele de Pedra em si mesmo.', { motor: true }),
+  riverOfHungryFlame: C('Rio de Chama Faminta', 'acao', '5 de ki: conjura Muralha de Fogo.', { motor: true }),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -391,7 +409,7 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'arcaneWard', 'projectedWard', 'spellResistance', 'portent', 'expertDivination', 'thirdEye', 'greaterPortent', 'benignTransposition', 'durableSummons', 'focusedConjuration', 'hypnoticGaze', 'instinctiveCharm', 'improvedMinorIllusion', 'illusorySelf', 'grimHarvest', 'inuredToUndeath', 'commandUndead', 'stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'battleMagic', 'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'shadowArts', 'shadowStep', 'cloakOfShadows', 'opportunist', 'discipleOfTheElements', 'fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike', 'clenchOfTheNorthWind', 'gongOfTheSummit', 'flamesOfThePhoenix', 'mistStance', 'rideTheWind', 'breathOfWinter', 'eternalMountainDefense', 'riverOfHungryFlame', 'arcaneWard', 'projectedWard', 'spellResistance', 'portent', 'expertDivination', 'thirdEye', 'greaterPortent', 'benignTransposition', 'durableSummons', 'focusedConjuration', 'hypnoticGaze', 'instinctiveCharm', 'improvedMinorIllusion', 'illusorySelf', 'grimHarvest', 'inuredToUndeath', 'commandUndead', 'stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'battleMagic', 'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'transmutersStone', 'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',

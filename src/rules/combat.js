@@ -2871,6 +2871,8 @@ export class Encounter {
     // Toque Arrepiante: desvantagem só contra quem conjurou.
     if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
     if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
+    // PASSO DAS SOMBRAS (monge da Sombra): vantagem no primeiro ataque corpo a corpo depois do teleporte.
+    if (hasCondition(attacker, 'passoSombrio') && !ranged) fonte(mods, 'vantagem', 'passo das sombras');
     // VOTO DE INIMIZADE (paladino da Vingança): vantagem contra a criatura jurada.
     if (getCondition(target, 'votoDeInimizade')?.source === attacker.id) fonte(mods, 'vantagem', 'voto de inimizade');
     // Duelo Compelido: só quem o desafiou é alvo sem desvantagem.
@@ -3165,6 +3167,23 @@ export class Encounter {
       this.resolveAttackBase(target, attacker, { opportunity: true, weaponId: this.armaDeOportunidade(target), reacao: true });
     }
     return r;
+  }
+
+  /**
+   * OPORTUNISTA (monge da Sombra, 17º): quando uma criatura a até 1,5 m dele é ACERTADA por um ataque de outra criatura (não dele), ele usa a
+   * reação e faz um ataque corpo a corpo contra ela. Só contra quem é hostil a ele.
+   */
+  oportunista(atacante, alvo) {
+    if (alvo.dead) return;
+    for (const m of this.combatants) {
+      if (m.dead || m === atacante || m === alvo || !m.features?.includes('opportunist') || m.reactionUsed || m.side === alvo.side
+        || conditionEffects(m).incapacitated || distanceFt(m.pos, alvo.pos) > 5) continue;
+      const arma = this.armaDeOportunidade(m);
+      if (arma === undefined || !this.canAttack(m, alvo, arma).ok) continue;
+      m.reactionUsed = true;
+      this.say('reacao', `${m.name} aproveita a brecha e golpeia ${alvo.name} (Oportunista).`);
+      this.resolveAttackBase(m, alvo, { opportunity: true, weaponId: arma, reacao: true });
+    }
   }
 
   /** O ENCANTO INSTINTIVO: devolve o alvo de verdade do ataque (o mesmo, ou a criatura para onde o golpe foi desviado). */
@@ -3550,6 +3569,7 @@ export class Encounter {
     }
     if (p.recarga) (attacker.recarregando ??= {})[p.name] = true;
     depoisDoAcerto(this, attacker, target, p);
+    this.oportunista(attacker, target);
 
     // ATAQUE ATORDOANTE: o monge gastou 1 ki antes do golpe. No primeiro
     // acerto de arma CORPO A CORPO depois disso, o alvo faz Constituição
@@ -5163,6 +5183,8 @@ export class Encounter {
         if (actor.hp > antes) this.say('cura', `${actor.name} colhe a vida do que matou: recupera ${actor.hp - antes} PV (Colheita Sombria).`);
       }
     }
+    // PASSO DAS SOMBRAS: o teleporte dá vantagem no primeiro golpe corpo a corpo do turno.
+    if (magia?.id === 'passoDasSombras') addCondition(actor, 'passoSombrio', { rounds: 1, source: actor.id });
     // MAGIA DE GUERRA (Cavaleiro Místico, 7º: com truque; 18º: com qualquer magia) e MAGIA DE BATALHA (bardo do Valor, 14º): depois de
     // conjurar com a AÇÃO, um ataque com arma como ação bônus.
     if (magia?.castTime === 'action' && (f.includes('improvedWarMagic') || f.includes('battleMagic') || (f.includes('warMagic') && magia.level === 0))) {
@@ -7704,6 +7726,14 @@ export class Encounter {
         actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
+        return true;
+      }
+      case 'cloakOfShadows': {
+        // MANTO DE SOMBRAS (monge da Sombra, 11º): ação; fica invisível até atacar ou conjurar (o jogo não exige penumbra).
+        if (actor.actionUsed || hasCondition(actor, 'invisivel') || conditionEffects(actor).incapacitated) return false;
+        actor.actionUsed = true;
+        addCondition(actor, 'invisivel', { rounds: 100, source: actor.id });
+        this.say('recurso', `${actor.name} se envolve nas sombras e some da vista (Manto de Sombras).`);
         return true;
       }
       case 'hypnoticGaze': {

@@ -19,6 +19,7 @@ import { CLASSES, CARACTERISTICAS, nomeDaCaracteristica } from '../rules/classes
 import { getSpell, SPELLS } from '../rules/spells.js';
 import { aplicarInvocacoes, desfazerInvocacoes, gravarAssinaturas } from '../rules/passivas.js';
 import { listaDaClasse, magiaTemRegra } from './criacao.js';
+import { darMagiasDeCaracteristica } from '../rules/passivas.js';
 
 /** As magias que costumam render mais no jogo, para a sugestão. */
 const PREFERIDAS = ['curarFerimentos', 'palavraCurativa', 'misselMagico', 'sono', 'raioGuiado', 'bencao',
@@ -105,7 +106,7 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
   const novas = (c.features ?? []).filter((f) => !antes.features.includes(f));
   // Metamagia, invocação e pacto saem na tela como escolha; listá-los aqui mostraria o padrão que o jogador pode trocar.
   const subDe = def?.subclasse?.opcoes?.[c.subclasse];
-  const jaEscolhivel = (f) => Object.values(subDe?.escolhasDeGanho ?? {}).some((e) => Array.isArray(e.opcoes) && !e.campo && e.opcoes.includes(f)) || subDe?.opcoesDeManobra?.includes(f) || def?.opcoesDeMetamagia?.includes(f) || def?.opcoesDeInvocacao?.includes(f) || PACTOS.includes(f);
+  const jaEscolhivel = (f) => subDe?.opcoesDeDisciplina?.includes(f) || Object.values(subDe?.escolhasDeGanho ?? {}).some((e) => Array.isArray(e.opcoes) && !e.campo && e.opcoes.includes(f)) || subDe?.opcoesDeManobra?.includes(f) || def?.opcoesDeMetamagia?.includes(f) || def?.opcoesDeInvocacao?.includes(f) || PACTOS.includes(f);
   const novidades = novas.filter((f) => !jaEscolhivel(f));
   if (novidades.length) ganhos.push(`Novo: ${novidades.map(nomeDaCaracteristica).join(', ')}.`);
   for (const p of pendentes ?? []) {
@@ -184,6 +185,9 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
     const nova = novas.filter((f) => esc.opcoes.includes(f));
     acrescentar(`ganho_${g}`, nomeDaOpcao(g), nova.length, esc.opcoes, nova);
   }
+  const novasDisc = novas.filter((f) => subDe?.opcoesDeDisciplina?.includes(f));
+  acrescentar('disciplinas', `Disciplinas Elementais: ${novasDisc.length > 1 ? `${novasDisc.length} novas` : 'uma nova'}`, novasDisc.length,
+    (subDe?.opcoesDeDisciplina ?? []).filter((o) => !antes.features.includes(o) && (subDe.podeEscolher?.(o, c) ?? true)), novasDisc);
   const novoPacto = novas.filter((f) => PACTOS.includes(f));
   acrescentar('pacto', 'Dádiva do Pacto', novoPacto.length, PACTOS, novoPacto);
   const novasInv = novas.filter((f) => def?.opcoesDeInvocacao?.includes(f));
@@ -209,6 +213,11 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
       return lista.map((v, k) => (lista.indexOf(v) !== k ? e.sugeridas[k] : v));
     };
     const por = (id) => escolhasDeCaracteristica.find((e) => e.id === id);
+    if (por('disciplinas')) {
+      const e = por('disciplinas');
+      trocarCaracteristicas(c, e.sugeridas, pega(e));
+      darMagiasDeCaracteristica(c, SPELLS);
+    }
     if (por('manobras')) {
       const e = por('manobras');
       trocarCaracteristicas(c, e.sugeridas, pega(e));

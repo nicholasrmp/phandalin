@@ -57,6 +57,33 @@ export default {
           17: ['quiveringPalm'],
         },
       },
+      sombra: {
+        nome: 'Caminho da Sombra',
+        fonte: 'phb',
+        niveis: {
+          3: ['shadowArts'],
+          6: ['shadowStep'],
+          11: ['cloakOfShadows'],
+          17: ['opportunist'],
+        },
+      },
+      quatroElementos: {
+        nome: 'Caminho dos Quatro Elementos',
+        fonte: 'phb',
+        niveis: {
+          3: ['discipleOfTheElements'],
+        },
+        // Disciplinas Elementais conhecidas (a Sintonia Elemental não conta): 1 no 3º, 2 no 6º, 3 no 11º, 4 no 17º.
+        disciplinas: { 3: 1, 6: 2, 11: 3, 17: 4 },
+        opcoesDeDisciplina: ['fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike', 'clenchOfTheNorthWind', 'gongOfTheSummit',
+          'flamesOfThePhoenix', 'mistStance', 'rideTheWind', 'breathOfWinter', 'eternalMountainDefense', 'riverOfHungryFlame'],
+        // Cada disciplina pede um nível de monge: 3º as básicas, 6º as de 3 ki, 11º as de 4, 17º as de 5 e 6.
+        podeEscolher: (o, c) => {
+          const nivelDe = { fistOfFourThunders: 3, rushOfTheGaleSpirits: 3, sweepingCinderStrike: 3, clenchOfTheNorthWind: 6, gongOfTheSummit: 6,
+            flamesOfThePhoenix: 11, mistStance: 11, rideTheWind: 11, breathOfWinter: 17, eternalMountainDefense: 17, riverOfHungryFlame: 17 };
+          return (c.level ?? 1) >= (nivelDe[o] ?? 99);
+        },
+      },
     },
   },
 };

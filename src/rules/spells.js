@@ -485,6 +485,11 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['paralisado', 'cego', 'envenenado'],
     desc: 'Toque num aliado: tira a paralisia, a cegueira ou o envenenamento.',
   },
+  passoDasSombras: {
+    id: 'passoDasSombras', name: 'Passo das Sombras', level: 0, school: 'conjuração', fonte: 'propria',
+    castTime: 'bonus', rangeFt: 60, kind: 'teleporte', mira: 'casa',
+    desc: 'Característica do monge do Caminho da Sombra. Ação bônus: você se teleporta até 18 m para uma casa livre que vê (o jogo não exige penumbra). O primeiro ataque corpo a corpo que fizer neste turno tem vantagem.',
+  },
   transposicaoBenigna: {
     id: 'transposicaoBenigna', name: 'Transposição Benigna', level: 0, school: 'conjuração', fonte: 'propria',
     castTime: 'action', rangeFt: 30, kind: 'teleporte', mira: 'casa', recursoRacial: 'benignTransposition',

@@ -250,13 +250,14 @@ export function subirNivel(c, escolhas = {}) {
     ['metamagia', def.metamagias, def.opcoesDeMetamagia],
     ['invocacoes', def.invocacoes, def.opcoesDeInvocacao],
     ['manobras', sub?.manobras, sub?.opcoesDeManobra],
+    ['disciplinas', sub?.disciplinas, sub?.opcoesDeDisciplina],
   ]) {
     if (!tabela) continue;
     const quer = porNivel(tabela, nivel) ?? 0;
     const tem = c.features.filter((f) => opcoes.includes(f));
     if (quer > tem.length) {
       // Invocações têm pré-requisito de nível ou de pacto: a classe filtra.
-      const livres = opcoes.filter((o) => !tem.includes(o) && (def.podeEscolher?.(o, c) ?? true));
+      const livres = opcoes.filter((o) => !tem.includes(o) && ((sub?.podeEscolher ?? def.podeEscolher)?.(o, c) ?? true));
       if (escolhas[tipo] !== undefined) validarLista(tipo, escolhas[tipo], livres, quer - tem.length);
       const novas = escolhas[tipo] ?? decidir(tipo, livres.slice(0, quer - tem.length), livres);
       for (const f of novas) addFeature(c, f);
