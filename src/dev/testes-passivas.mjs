@@ -4963,6 +4963,17 @@ teste('Estado do feiticeiro não vaza: Marés do Caos e o surto "no máximo" som
   assert.equal(s.surtoMaximoAte, undefined);
 });
 
+teste('Patronos do bruxo: Arquifada e Grande Antigo ganham as magias extras na lista, e só quem tem o patrono', async () => {
+  const { listaDaClasse } = await import('../game/criacao.js');
+  const arq = listaDaClasse('bruxo', 3, 'arquifada').magias;
+  assert.ok(arq.includes('sono') && arq.includes('piscar') && arq.includes('fogoDasFadas'));
+  assert.ok(!arq.includes('clarividencia'));
+  const goa = listaDaClasse('bruxo', 3, 'grandeAntigo').magias;
+  assert.ok(goa.includes('sussurrosDissonantes') && goa.includes('clarividencia'));
+  assert.ok(!listaDaClasse('bruxo', 3).magias.includes('sono'), 'sem patrono, nada extra');
+  assert.equal(new Set(arq).size, arq.length, 'sem repetida');
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

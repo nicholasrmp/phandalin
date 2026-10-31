@@ -254,6 +254,13 @@ const ESCOLAS_DA_SUBCLASSE = {
   trapaceiroArcano: ['encantamento', 'ilusão'],
 };
 
+// Magias extras dos patronos do bruxo (Livro do Jogador): entram na lista de onde ele escolhe, sem ficarem sempre preparadas.
+// Só as que o motor joga; Dominar Fera/Pessoa, Aparência, Telecinese e Tentáculos Negros de Evard ficam de fora.
+const MAGIAS_DO_PATRONO = {
+  arquifada: ['fogoDasFadas', 'sono', 'acalmarEmocoes', 'forcaFantasmagorica', 'piscar', 'crescimentoDePlantas', 'invisibilidadeMaior'],
+  grandeAntigo: ['sussurrosDissonantes', 'risoHisterico', 'detectarPensamentos', 'forcaFantasmagorica', 'clarividencia', 'enviarMensagem'],
+};
+
 export const listaDaClasse = (classe, circuloMax = 1, subclasse = null) => {
   if (subclasse && ESCOLAS_DA_SUBCLASSE[subclasse]) {
     const escolas = ESCOLAS_DA_SUBCLASSE[subclasse];
@@ -265,7 +272,9 @@ export const listaDaClasse = (classe, circuloMax = 1, subclasse = null) => {
   }
   const base = L[classe] ?? { truques: [], magias: [] };
   const altas = (ALTAS[classe] ?? []).filter((id) => (SPELLS[id]?.level ?? 9) <= circuloMax);
-  return altas.length ? { ...base, magias: [...base.magias, ...altas] } : base;
+  const doPatrono = classe === 'bruxo' ? (MAGIAS_DO_PATRONO[subclasse] ?? []).filter((id) => SPELLS[id] && (SPELLS[id].level ?? 9) <= circuloMax) : [];
+  const extras = [...altas, ...doPatrono].filter((id, i, v) => v.indexOf(id) === i && !base.magias.includes(id));
+  return extras.length ? { ...base, magias: [...base.magias, ...extras] } : base;
 };
 
 /**
