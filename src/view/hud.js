@@ -1245,6 +1245,15 @@ export class Hud {
       abjureEnemy: ['abjureEnemy', 'Repelir o Inimigo',
         'Canalizar Divindade: a criatura mais próxima (até 18 m) testa Sabedoria ou fica amedrontada e presa ao chão por um minuto.',
         'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      naturesWrath: ['naturesWrath', 'Ira da Natureza',
+        'Canalizar Divindade: a criatura mais próxima (até 3 m) testa Força ou Destreza ou fica presa por vinhas.',
+        'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      turnTheFaithless: ['turnTheFaithless', 'Expulsar os Infiéis',
+        'Canalizar Divindade: fadas e corruptores a até 9 m testam Sabedoria ou fogem por um minuto.',
+        'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      elderChampion: ['elderChampion', 'Campeão Ancestral',
+        'Por um minuto, você recupera 10 PV no começo de cada turno. Uma vez por descanso longo.',
+        'Ação', () => !c.actionUsed && c.resources?.elderChampion > 0 && !hasCondition(c, 'campeaoAnciao'), 'elderChampion'],
       turnTheUnholy: ['turnTheUnholy', 'Expulsar os Profanos',
         'Canalizar Divindade: corruptores e mortos-vivos a até 9 m testam Sabedoria ou fogem por um minuto.',
         'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
@@ -1351,6 +1360,12 @@ export class Hud {
         comum('descuidado', 'Ataque Descuidado', 'Interruptor: ligado, o primeiro ataque corpo a corpo com Força de cada turno é descuidado — vantagem nos seus ataques corpo a corpo com Força neste turno, e quem te atacar também tem vantagem, até o seu próximo turno. Fica ligado (ou desligado) nos turnos seguintes até você trocar.',
           'Livre', { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, null, null,
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
+      if (f === 'rangersCompanion') {
+        const barato = (c.features ?? []).includes('exceptionalTraining');
+        comum('comandarCompanheiro', 'Comandar o companheiro', 'Dá a ordem à fera: ela age neste turno (ataca, corre...). Custa a sua ação (a ação bônus no 7º nível).', barato ? 'Ação bônus' : 'Ação',
+          { kind: 'feature', featureId: f }, (barato ? c.bonusUsed : c.actionUsed));
         continue;
       }
       if (f === 'cloakOfShadows') {

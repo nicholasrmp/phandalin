@@ -3874,5 +3874,141 @@ teste('Tela de nível: o monge dos Quatro Elementos escolhe a disciplina nova, e
 });
 
 // ============================================================================================================
+// JURAMENTO DOS ANCIÕES (paladino) e SENHOR DAS FERAS (patrulheiro), Livro do Jogador
+// ============================================================================================================
+
+const ancião = (nivel) => heroi('paladino', nivel, 'Humano', { weapons: ['espadaLonga'] }, { 3: { subclasse: 'ancioes' } });
+const senhor = (nivel, bicho = 'companionLobo') => heroi('patrulheiro', nivel, 'Humano', { weapons: ['espadaCurta'] }, { 3: { subclasse: 'senhorDasFeras', rangersCompanion: bicho } });
+
+teste('Anciões: características por nível, magias do Juramento e a carga de Canalizar Divindade', () => {
+  const p = ancião(5);
+  assert.ok(['channelDivinity', 'naturesWrath', 'turnTheFaithless'].every((f) => p.features.includes(f)));
+  const prep = [...p.spellcasting.prepared, ...(p.spellcasting.sempreProntas ?? [])];
+  assert.ok(prep.includes('golpeConstritor') && prep.includes('raioLunar') && prep.includes('passoNebuloso'));
+  assert.ok(ancião(7).features.includes('auraOfWarding') && ancião(15).features.includes('undyingSentinel') && ancião(20).features.includes('elderChampion'));
+  assert.equal(ancião(15).resources.undyingSentinel, 1);
+  assert.equal(ancião(20).resources.elderChampion, 1);
+});
+
+teste('Ira da Natureza: falhou em FOR e DES, fica contido; passou, solto; custa a ação e a carga', () => {
+  for (const [d20, preso] of [[1, true], [20, false]]) {
+    const p = ancião(3);
+    p.pos = { x: 5, y: 5 };
+    const gob = inimigo('goblin', { x: 7, y: 5 });
+    const { enc } = arena({ herois: [p], foes: [gob] });
+    enc.rng = dadoEmSequencia(d20);
+    assert.equal(enc.useFeature(p, 'naturesWrath', { target: gob }), true);
+    assert.equal(p.actionUsed, true);
+    assert.equal(p.resources.channelDivinity, 0);
+    assert.equal(hasCondition(gob, 'contido'), preso);
+  }
+  const p2 = ancião(3);
+  p2.pos = { x: 5, y: 5 };
+  const longe = inimigo('goblin', { x: 11, y: 5 });
+  const { enc } = arena({ herois: [p2], foes: [longe] });
+  assert.equal(enc.useFeature(p2, 'naturesWrath', { target: longe }), false, 'só até 3 m');
+});
+
+teste('Expulsar os Infiéis: fadas e corruptores falham em SAB e fogem; o resto não é afetado', () => {
+  const p = ancião(3);
+  p.pos = { x: 5, y: 5 };
+  const fada = inimigo('goblin', { x: 7, y: 5 });
+  fada.tipo = 'feérico';
+  const gob = inimigo('goblin', { x: 6, y: 6 });
+  const { enc } = arena({ herois: [p], foes: [fada, gob] });
+  enc.rng = dadoEmSequencia(1);
+  assert.equal(enc.useFeature(p, 'turnTheFaithless'), true);
+  assert.ok(hasCondition(fada, 'amedrontado'));
+  assert.ok(!hasCondition(gob, 'amedrontado'), 'um goblin comum não é infiel');
+  assert.equal(p.resources.channelDivinity, 0);
+});
+
+teste('Aura de Resguardo (7º): o paladino e os aliados na aura resistem a dano de magia; fora da aura ou de arma, não', () => {
+  const p = ancião(7);
+  p.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 7, y: 5 };
+  const longe = heroi('guerreiro', 1, 'Humano');
+  longe.pos = { x: 11, y: 11 };
+  const { enc } = arena({ herois: [p, amigo, longe], foes: [inimigo('goblin', { x: 11, y: 10 })] });
+  assert.equal(enc.danoPorTipo(p, 20, 'fogo', true, false), 10, 'o paladino');
+  assert.equal(enc.danoPorTipo(amigo, 20, 'fogo', true, false), 10, 'o aliado na aura');
+  assert.equal(enc.danoPorTipo(amigo, 20, 'cortante', false, true), 20, 'golpe de arma, inteiro');
+  assert.equal(enc.danoPorTipo(longe, 20, 'fogo', true, false), 20, 'fora da aura');
+  const dev = heroi('paladino', 7, 'Humano', {}, { 3: { subclasse: 'devocao' } });
+  dev.pos = { x: 5, y: 5 };
+  const { enc: e2 } = arena({ herois: [dev], foes: [inimigo('goblin', { x: 11, y: 10 })] });
+  assert.equal(e2.danoPorTipo(dev, 20, 'fogo', true, false), 20, 'a Devoção não tem');
+});
+
+teste('Sentinela Imortal (15º): cai a 1 PV em vez de 0, uma vez; Campeão Ancestral (20º): +10 PV por turno', () => {
+  const p = ancião(15);
+  p.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [p], foes: [gob] });
+  enc.applyDamage(p, p.hp + 10, 'cortante', gob, { deArma: true });
+  assert.equal(p.hp, 1, 'ficou de pé com 1 PV');
+  assert.equal(p.resources.undyingSentinel, 0);
+  enc.applyDamage(p, 10, 'cortante', gob, { deArma: true });
+  assert.ok(p.hp <= 0 || p.dead || hasCondition(p, 'inconsciente'), 'a segunda vez cai');
+  const c = ancião(20);
+  c.pos = { x: 5, y: 5 };
+  const { enc: e2 } = arena({ herois: [c], foes: [inimigo('goblin', { x: 11, y: 11 })] });
+  c.hp = 10;
+  assert.equal(e2.useFeature(c, 'elderChampion'), true);
+  assert.ok(hasCondition(c, 'campeaoAnciao'));
+  e2.beginSide('party');
+  assert.equal(c.hp, 20, '+10 PV no começo do turno');
+});
+
+teste('Senhor das Feras: o companheiro nasce na luta com os PV e a proficiência do patrulheiro, e só age com a ordem', () => {
+  const r = senhor(3);
+  assert.ok(r.features.includes('rangersCompanion') && r.features.includes('companionLobo'));
+  assert.ok(!senhor(3, 'companionJavali').features.includes('companionLobo'));
+  r.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 11, y: 11 });
+  const field = new Battlefield(12, 12, MAPA);
+  const enc = new Encounter({ battlefield: field, party: [r], foes: [gob], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  enc.start();
+  const comp = enc.invocadosDe(r).find((x) => x.invocado.spellId === 'companheiroAnimal');
+  assert.ok(comp, 'o companheiro entrou');
+  assert.equal(comp.side, r.side);
+  assert.equal(comp.maxHp, Math.max(11, 4 * 3), '4 × o nível do patrulheiro, no mínimo');
+  const base = MONSTERS.lobo;
+  assert.equal(comp.ac, base.ac + proficiencyBonus(3), 'CA + proficiência');
+  assert.equal(comp.attacks[0].bonus, base.attacks[0].bonus + proficiencyBonus(3));
+  assert.equal(comp.attacks[0].damage, '2d4+4', 'dano + proficiência');
+  // só age com a ordem
+  enc.round = 1;
+  enc.firstSide = 'party';
+  enc.beginSide('party');
+  assert.equal(comp.actionUsed, true, 'sem ordem, sem ação');
+  assert.equal(enc.useFeature(r, 'rangersCompanion'), true);
+  assert.equal(r.actionUsed, true, 'a ordem custa a ação');
+  assert.equal(comp.actionUsed, false, 'a fera pode agir');
+  assert.equal(enc.useFeature(r, 'rangersCompanion'), false);
+});
+
+teste('Treinamento Excepcional (7º): ordenar custa a ação bônus; Fúria Bestial (11º): a fera ataca duas vezes', () => {
+  const r = senhor(7);
+  r.pos = { x: 5, y: 5 };
+  const field = new Battlefield(12, 12, MAPA);
+  const enc = new Encounter({ battlefield: field, party: [r], foes: [inimigo('goblin', { x: 11, y: 11 })], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  enc.start();
+  enc.firstSide = 'party';
+  enc.beginSide('party');
+  assert.equal(enc.useFeature(r, 'rangersCompanion'), true);
+  assert.equal(r.bonusUsed, true, 'ação bônus');
+  assert.equal(r.actionUsed, false, 'a ação do patrulheiro segue livre');
+  const r11 = senhor(11);
+  r11.pos = { x: 5, y: 5 };
+  const e2 = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party: [r11], foes: [inimigo('goblin', { x: 11, y: 11 })], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  e2.start();
+  const comp = e2.invocadosDe(r11)[0];
+  assert.equal(comp.multiattack.count, 2);
+  assert.equal(comp.maxHp, 44, '4 × 11');
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

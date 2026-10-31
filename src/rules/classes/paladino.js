@@ -68,6 +68,24 @@ export default {
           17: ['comunhao', 'golpeDeChama'],
         },
       },
+      ancioes: {
+        nome: 'Juramento dos Anciões',
+        fonte: 'phb',
+        niveis: {
+          3: ['channelDivinity', 'naturesWrath', 'turnTheFaithless'],
+          7: ['auraOfWarding'],
+          15: ['undyingSentinel'],
+          20: ['elderChampion'],
+        },
+        recursos: { undyingSentinel: (n) => (n >= 15 ? 1 : 0), elderChampion: (n) => (n >= 20 ? 1 : 0) },
+        // Magias do Juramento (Comunhão com a Natureza e Caminhar entre Árvores, do 5º círculo, ainda não existem no jogo).
+        magiasDoDominio: {
+          3: ['golpeConstritor', 'falarComAnimais'],
+          5: ['raioLunar', 'passoNebuloso'],
+          9: ['crescimentoDePlantas', 'protecaoContraEnergia'],
+          13: ['tempestadeDeGelo', 'peleDePedra'],
+        },
+      },
       vinganca: {
         nome: 'Juramento de Vingança',
         fonte: 'phb',

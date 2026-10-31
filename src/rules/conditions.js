@@ -370,6 +370,10 @@ export const CONDITIONS = {
     curaMaxima: true,
     concentrationEffect: true,
   },
+  campeaoAnciao: {
+    name: 'Campeão Ancestral',
+    desc: 'Recupera 10 PV no começo de cada turno seu, por um minuto.',
+  },
   passoSombrio: {
     name: 'Passo das Sombras',
     desc: 'O primeiro ataque corpo a corpo deste turno tem vantagem.',

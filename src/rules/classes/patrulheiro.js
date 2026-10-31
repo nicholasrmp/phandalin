@@ -67,6 +67,20 @@ export default {
           superiorHuntersDefense: { opcoes: ['evasion', 'standAgainstTheTide', 'uncannyDodge'] },
         },
       },
+      senhorDasFeras: {
+        nome: 'Senhor das Feras',
+        fonte: 'phb',
+        niveis: {
+          3: ['rangersCompanion'],
+          7: ['exceptionalTraining'],
+          11: ['bestialFury'],
+          15: ['shareSpells'],
+        },
+        // O companheiro: uma fera de ND 1/4 ou menos, Média ou menor.
+        escolhasDeGanho: {
+          rangersCompanion: { opcoes: ['companionLobo', 'companionJavali', 'companionAranhaLobo', 'companionRato'] },
+        },
+      },
     },
   },
 };

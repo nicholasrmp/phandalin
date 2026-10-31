@@ -366,6 +366,21 @@ export const CARACTERISTICAS = {
   eternalMountainDefense: C('Defesa da Montanha Eterna', 'acao', '5 de ki: conjura Pele de Pedra em si mesmo.', { motor: true }),
   riverOfHungryFlame: C('Rio de Chama Faminta', 'acao', '5 de ki: conjura Muralha de Fogo.', { motor: true }),
 
+  // ---- paladino: Juramento dos Anciões e patrulheiro: Senhor das Feras (Livro do Jogador) ---------------------------------
+  naturesWrath: C('Ira da Natureza', 'acao', 'Canalizar Divindade: uma criatura a até 3 m testa Força ou Destreza (a que preferir) ou fica contida por vinhas espectrais.', { motor: true }),
+  turnTheFaithless: C('Expulsar os Infiéis', 'acao', 'Canalizar Divindade: fadas e corruptores a até 9 m testam Sabedoria ou fogem por um minuto.', { motor: true }),
+  auraOfWarding: C('Aura de Resguardo', 'passiva', 'Você e os aliados na sua aura têm resistência a dano de magias.', { motor: true }),
+  undyingSentinel: C('Sentinela Imortal', 'passiva', 'Ao cair a 0 PV sem morrer de vez, fica com 1 PV. Uma vez por descanso longo.', { motor: true }),
+  elderChampion: C('Campeão Ancestral', 'acao', 'Por um minuto, recupera 10 PV no começo de cada turno seu. (O resto do poder do livro não está no jogo.) Uma vez por descanso longo.', { motor: true }),
+  rangersCompanion: C('Companheiro do Patrulheiro', 'acao', 'Uma fera companheira luta ao seu lado, com a sua proficiência somada a CA, ataque e dano. Comandá-la custa a ação.', { motor: true }),
+  companionLobo: C('Companheiro: Lobo', 'passiva', 'O companheiro é um lobo.', { motor: true }),
+  companionJavali: C('Companheiro: Javali', 'passiva', 'O companheiro é um javali.', { motor: true }),
+  companionAranhaLobo: C('Companheiro: Aranha-lobo', 'passiva', 'O companheiro é uma aranha-lobo gigante.', { motor: true }),
+  companionRato: C('Companheiro: Rato Gigante', 'passiva', 'O companheiro é um rato gigante.', { motor: true }),
+  exceptionalTraining: C('Treinamento Excepcional', 'passiva', 'Comandar o companheiro custa só a ação bônus.', { motor: true }),
+  bestialFury: C('Fúria Bestial', 'passiva', 'O companheiro ataca duas vezes quando você o comanda a atacar.', { motor: true }),
+  shareSpells: C('Magias Compartilhadas', 'passiva', 'Magias suas sobre você também afetam o companheiro.'),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -409,14 +424,15 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'shadowArts', 'shadowStep', 'cloakOfShadows', 'opportunist', 'discipleOfTheElements', 'fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike', 'clenchOfTheNorthWind', 'gongOfTheSummit', 'flamesOfThePhoenix', 'mistStance', 'rideTheWind', 'breathOfWinter', 'eternalMountainDefense', 'riverOfHungryFlame', 'arcaneWard', 'projectedWard', 'spellResistance', 'portent', 'expertDivination', 'thirdEye', 'greaterPortent', 'benignTransposition', 'durableSummons', 'focusedConjuration', 'hypnoticGaze', 'instinctiveCharm', 'improvedMinorIllusion', 'illusorySelf', 'grimHarvest', 'inuredToUndeath', 'commandUndead', 'stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'battleMagic', 'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'naturesWrath', 'turnTheFaithless', 'auraOfWarding', 'undyingSentinel', 'elderChampion', 'rangersCompanion', 'companionLobo', 'companionJavali', 'companionAranhaLobo', 'companionRato', 'exceptionalTraining', 'bestialFury', 'shadowArts', 'shadowStep', 'cloakOfShadows', 'opportunist', 'discipleOfTheElements', 'fistOfFourThunders', 'rushOfTheGaleSpirits', 'sweepingCinderStrike', 'clenchOfTheNorthWind', 'gongOfTheSummit', 'flamesOfThePhoenix', 'mistStance', 'rideTheWind', 'breathOfWinter', 'eternalMountainDefense', 'riverOfHungryFlame', 'arcaneWard', 'projectedWard', 'spellResistance', 'portent', 'expertDivination', 'thirdEye', 'greaterPortent', 'benignTransposition', 'durableSummons', 'focusedConjuration', 'hypnoticGaze', 'instinctiveCharm', 'improvedMinorIllusion', 'illusorySelf', 'grimHarvest', 'inuredToUndeath', 'commandUndead', 'stoneDarkvision', 'stoneSpeed', 'stoneConSave', 'stoneResistFire', 'stoneResistCold', 'stoneResistLightning', 'battleMagic', 'warMagic', 'improvedWarMagic', 'valorProficiencies', 'combatInspiration', 'abjureEnemy', 'vowOfEnmity', 'combatWildShape', 'circleForms', 'primalStrike', 'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
-  'transmutersStone', 'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
+  'transmutersStone', 'discipleOfTheElements', 'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
   'roguishArchetype', 'sorcerousOrigin', 'otherworldlyPatron', 'arcaneTradition', 'sacredOath', 'huntersPrey', 'defensiveTactics',
   'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic', 'totemSpirit',
 ];
 const SEM_EFEITO = {
+  shareSpells: 'o jogo ainda não estende as magias do patrulheiro ao companheiro',
   abjurationSavant: 'o jogo não copia magias para o grimório',
   divinationSavant: 'o jogo não copia magias para o grimório',
   conjurationSavant: 'o jogo não copia magias para o grimório',

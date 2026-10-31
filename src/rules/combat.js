@@ -484,6 +484,8 @@ export class Encounter {
     }
     // PRODÍGIO (mago de Adivinhação): os dados do dia são rolados na primeira luta depois de um descanso longo.
     for (const c of this.combatants) garantirPortento(this, c);
+    // O COMPANHEIRO do Senhor das Feras entra com o grupo.
+    for (const c of [...this.combatants]) if (!c.dead && c.features?.includes('rangersCompanion') && !this.invocadosDe(c).some((x) => x.invocado.spellId === 'companheiroAnimal')) this.criarCompanheiro(c);
     // IMPLACÁVEL (Mestre de Batalha, 15º): ao rolar iniciativa SEM dados de superioridade, recupera um.
     for (const c of this.combatants) {
       if (!c.dead && c.features?.includes('relentless') && (c.resources?.superiorityDice ?? 0) === 0 && (c.resourcesMax?.superiorityDice ?? 0) > 0) {
@@ -630,6 +632,13 @@ export class Encounter {
       this.comecoDoTurnoMagico(c);
       this.comecoDoTurnoPassivo(c);
       this.nimboTick(c);
+      // CAMPEÃO ANCESTRAL (paladino dos Anciões, 20º): +10 PV no começo de cada turno dele, por um minuto.
+      if (hasCondition(c, 'campeaoAnciao') && !c.dead && c.hp > 0) {
+        const cura = Math.min(10, maxHpEfetivo(c) - c.hp);
+        if (cura > 0) { c.hp += cura; this.say('cura', `${c.name} recupera ${cura} PV (Campeão Ancestral).`); }
+      }
+      // O COMPANHEIRO do Senhor das Feras só age se o patrulheiro o comanda (`rangersCompanion`).
+      if (c.invocado?.spellId === 'companheiroAnimal') { c.actionUsed = true; c.bonusUsed = true; }
       c.sneakUsedThisTurn = false; c.golpeDivinoNoTurno = false; c.presaNoTurno = false;
       c.martialUsedThisTurn = false;
       c.atacouNoTurno = false;
@@ -1110,6 +1119,27 @@ export class Encounter {
     m.ancestry = m.tipo ?? 'criatura';
     this.addCombatant(m);
     this.onEvent({ type: 'invocado', criatura: m, dono });
+    return m;
+  }
+
+  /**
+   * O COMPANHEIRO do Senhor das Feras: nasce no começo de cada luta ao lado do patrulheiro, com PV mínimos de 4 × o nível dele, e soma a
+   * proficiência dele a CA, ataque e dano. É uma criatura invocada (o grupo a comanda), mas só age com a ordem (`rangersCompanion`).
+   */
+  criarCompanheiro(dono) {
+    const feras = { companionLobo: 'lobo', companionJavali: 'javali', companionAranhaLobo: 'aranhaLoboGigante', companionRato: 'ratoGigante' };
+    const escolha = dono.features.find((f) => feras[f]);
+    const m = this.invocar(dono, feras[escolha] ?? 'lobo', dono.pos, { spellId: 'companheiroAnimal' });
+    if (!m) return null;
+    const pb = proficiencyBonus(dono.level ?? 1);
+    m.ac += pb;
+    m.maxHp = Math.max(m.maxHp, 4 * (dono.level ?? 1));
+    m.hp = m.maxHp;
+    const soma = (d) => String(d).replace(/^(\d+d\d+)([+-]\d+)?$/, (_, dados, mod) => `${dados}${(Number(mod ?? 0) + pb) >= 0 ? '+' : ''}${Number(mod ?? 0) + pb}`);
+    m.attacks = m.attacks.map((a) => ({ ...a, bonus: a.bonus + pb, damage: soma(a.damage) }));
+    if (dono.features.includes('bestialFury')) m.multiattack = { count: 2 };
+    m.companheiro = true;
+    this.say('recurso', `${m.name} se junta a ${dono.name} (Companheiro do Patrulheiro, ${m.maxHp} PV).`);
     return m;
   }
 
@@ -3878,7 +3908,8 @@ export class Encounter {
     const tf = target.features ?? [];
     const porCaracteristica = (type === 'necrótico' && tf.includes('inuredToUndeath')) || (type === 'fogo' && tf.includes('stoneResistFire'))
       || (type === 'frio' && tf.includes('stoneResistCold')) || (type === 'elétrico' && tf.includes('stoneResistLightning'))
-      || (magico && !deArma && tf.includes('spellResistance'));
+      || (magico && !deArma && tf.includes('spellResistance'))
+      || (magico && !deArma && this.paladinosDaAura(target, 'auraOfWarding').length > 0);
     if (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type))) out = Math.floor(out / 2);
     if (target.vulnerable?.includes(type)) out *= 2;
     return out;
@@ -4358,6 +4389,14 @@ export class Encounter {
         this.say('recurso', `${t.name} devia cair, e a fúria o mantém de pé com 1 PV.`);
         return true;
       }
+    }
+    // SENTINELA IMORTAL (paladino dos Anciões, 15º): uma vez por descanso longo, cai a 1 PV em vez de 0.
+    if (t.features?.includes('undyingSentinel') && (t.resources?.undyingSentinel ?? 0) > 0) {
+      t.resources.undyingSentinel -= 1;
+      t.hp = 1;
+      this.quedasDaFonte?.delete(t);
+      this.say('recurso', `${t.name} devia cair, e a Sentinela Imortal o mantém de pé com 1 PV.`);
+      return true;
     }
     if (t.features?.includes('relentlessEndurance') && (t.resources?.relentlessEndurance ?? 0) > 0) {
       t.resources.relentlessEndurance -= 1;
@@ -7726,6 +7765,61 @@ export class Encounter {
         actor.resources.wildShape -= 1;
         this.say('condicao', `${actor.name} assume a forma de ${actor.formaSelvagem.nome} (${actor.hp} PV, CA ${actor.ac}).`);
         this.onEvent({ type: 'transformou', target: actor });
+        return true;
+      }
+      case 'naturesWrath': {
+        // IRA DA NATUREZA (Anciões, 3º): ação e uma carga; uma criatura a até 3 m testa Força ou Destreza (a de melhor bônus) ou fica contida.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        const alvoN = target ?? this.enemiesOf(actor).filter((m) => !m.dead && distanceFt(actor.pos, m.pos) <= 10)
+          .sort((a, b) => distanceFt(actor.pos, a.pos) - distanceFt(actor.pos, b.pos))[0];
+        if (!alvoN || alvoN.dead || alvoN.side === actor.side || distanceFt(actor.pos, alvoN.pos) > 10) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cdN = spellSaveDc(actor);
+        const hab = saveBonus(alvoN, 'str') >= saveBonus(alvoN, 'dex') ? 'str' : 'dex';
+        const svN = this.resistencia(alvoN, hab, cdN);
+        this.explicarResistencia(alvoN, hab, cdN, svN, { contra: `Ira da Natureza de ${actor.name}`, seSucesso: 'se solta das vinhas' });
+        if (!svN.success && this.aplicarCondicao(alvoN, 'contido', { rounds: 10, source: actor.id, data: { save: hab, dc: cdN, repete: true } })) {
+          this.say('condicao', `Vinhas espectrais prendem ${alvoN.name}.`);
+        }
+        return true;
+      }
+      case 'turnTheFaithless': {
+        // EXPULSAR OS INFIÉIS (Anciões, 3º): como Expulsar os Profanos, mas para fadas e corruptores.
+        if (actor.actionUsed || !(actor.resources?.channelDivinity > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.channelDivinity -= 1;
+        const cdF = spellSaveDc(actor);
+        const alvosF = this.combatants.filter((m) => !m.dead && ['feérico', 'corruptor'].includes(m.tipo) && distanceFt(actor.pos, m.pos) <= 30);
+        this.say('recurso', `${actor.name} ergue a mão aos infiéis (CD ${cdF}).`);
+        for (const m of alvosF) {
+          const r = this.resistencia(m, 'wis', cdF);
+          if (r.success) { this.say('resistencia', `${m.name} resiste.`); continue; }
+          addCondition(m, 'amedrontado', { rounds: 10, source: actor.id });
+          m.fugindoDe = actor.id;
+          this.say('condicao', `${m.name} recua, sem conseguir chegar perto.`);
+        }
+        if (!alvosF.length) this.say('recurso', 'Nenhum infiel por perto.');
+        return true;
+      }
+      case 'elderChampion': {
+        // CAMPEÃO ANCESTRAL (Anciões, 20º): ação; por um minuto recupera 10 PV por turno. Uma vez por descanso longo.
+        if (actor.actionUsed || !(actor.resources?.elderChampion > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.elderChampion -= 1;
+        addCondition(actor, 'campeaoAnciao', { rounds: 10, source: actor.id });
+        this.say('recurso', `${actor.name} se torna uma força da natureza: recupera 10 PV por turno (Campeão Ancestral).`);
+        return true;
+      }
+      case 'rangersCompanion': {
+        // COMANDAR O COMPANHEIRO (Senhor das Feras): a fera só age com a ordem; custa a ação (a ação bônus com o Treinamento Excepcional).
+        const comp = this.invocadosDe(actor).find((x) => x.invocado.spellId === 'companheiroAnimal');
+        if (!comp) return false;
+        const barato = actor.features?.includes('exceptionalTraining');
+        if (barato ? actor.bonusUsed : actor.actionUsed) return false;
+        if (barato) actor.bonusUsed = true; else actor.actionUsed = true;
+        comp.actionUsed = false;
+        this.say('recurso', `${actor.name} dá a ordem a ${comp.name}.`);
         return true;
       }
       case 'cloakOfShadows': {
