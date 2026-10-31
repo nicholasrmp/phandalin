@@ -1,0 +1,384 @@
+// Testes da CENA da Casa da Morte (Maldição de Strahd, Apêndice B): os gatilhos do livro, as armadilhas, a escada secreta e o marco do 2º nível,
+// o ritual da câmara e a saída. Roda a cena DE VERDADE (`game/capitulo-casadamorte.js`) com a interface trocada por stubs:
+//
+//   node --import ./src/dev/cena-node/register.mjs src/dev/testes-casadamorte.mjs
+import assert from 'node:assert/strict';
+
+const P = new URL('../', import.meta.url).href;
+const { Battlefield } = await import(P + 'core/grid.js');
+const { Encounter } = await import(P + 'rules/combat.js');
+const { makeParty } = await import(P + 'rules/party.js');
+const { makeRng } = await import(P + 'core/rng.js');
+const { mapaDo, buildFoes } = await import(P + 'game/encounter.js');
+const { criarCasaDaMorte } = await import(P + 'game/capitulo-casadamorte.js');
+const { garantirInventario } = await import(P + 'rules/equipment.js');
+
+let total = 0;
+let falhas = 0;
+async function teste(nome, fn) {
+  total += 1;
+  try { await fn(); console.log(`ok    ${nome}`); } catch (e) {
+    falhas += 1;
+    console.log(`FALHA ${nome}\n      ${String(e.stack ?? e.message).split('\n').slice(0, 6).join('\n      ')}`);
+  }
+}
+
+/** A cena montada como o `main.js` monta: campo, grupo de 4, criaturas escondidas; `campanha` e `estado` dividem entre andares. */
+async function nova(variante, { campanha = {}, nivel = 1, entrada = null, seed = 11 } = {}) {
+  const mapa = mapaDo(variante);
+  const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length, mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
+  const party = makeParty({ nivel });
+  party.forEach((c, i) => { c.pos = { ...mapa.grupo[i] }; c.facingVec = { ...mapa.olhar }; });
+  const foes = buildFoes(variante);
+  const trocas = [];
+  const app = {
+    root: { classList: { add() {}, remove() {} } }, campanha, selected: null, inimigosEscondidos: foes,
+    select(c) { this.selected = c; }, firstActive() { return enc.allOf('party').find((c) => !c.acted && !c.dead && c.hp > 0) ?? null; },
+    refresh() {}, encerrarPartida() { app.encerrou = true; }, newEncounter(cfg) { trocas.push(cfg); },
+  };
+  const enc = new Encounter({ battlefield: field, party, foes: [], rng: makeRng(seed), emboscada: null, reinforcements: () => null, onEvent: (ev) => cena?.evento?.(ev) });
+  app.enc = enc;
+  enc.aoComecar = () => {};
+  enc.protegidoDeSurpresa = () => false;
+  const cena = criarCasaDaMorte(app, { variante, modo: 'campanha', aventura: 'cos', entrada });
+  await cena.iniciar();
+  return { app, enc, cena, field, party, foes, trocas, casa: () => app.campanha.strahd.casa };
+}
+
+const poe = (h, x, y) => { h.pos = { x, y }; };
+/** O d20 sai sempre `v`: para testar o ramo de sucesso ou de falha sem depender de sorte. */
+const d20 = (S, v) => { const die = S.enc.rng.die; S.enc.rng.die = (n) => (n === 20 ? v : die(n)); };
+const op = (S, h, x, y, parte) => {
+  const sup = S.field.surfaceAt(x, y);
+  const ops = S.cena.interacoes({ x, y }, sup, h);
+  return ops.find((o) => o.rotulo.includes(parte));
+};
+const itens = (h, id) => garantirInventario(h).bag.filter((i) => i.id === id).reduce((n, i) => n + i.qtd, 0);
+
+await teste('3º andar: a armadura só acorda quando alguém chega a 1,5 m; vencida, a cena volta a explorar e o grupo não luta de novo', async () => {
+  const S = await nova('casaDaMorte3');
+  assert.equal(S.foes.length, 3);
+  poe(S.party[0], 9, 8);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.cena.explorando, 'a 3 casas ela não acorda');
+  poe(S.party[0], 11, 8);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'a 1 casa, sim');
+  const armadura = S.foes.find((f) => f.grupo === 'armadura');
+  assert.ok(S.enc.combatants.includes(armadura));
+  assert.ok(!S.enc.combatants.some((f) => f.grupo === 'vassoura'), 'a vassoura segue escondida');
+  S.enc.applyDamage(armadura, 999, 'concussão');
+  await S.cena.fimDoCombate('vitoria');
+  assert.ok(S.cena.explorando);
+  assert.ok(S.casa().vencidos.includes('armadura'));
+  poe(S.party[0], 11, 8);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.cena.explorando, 'vencida, não volta');
+});
+
+await teste('3º andar: o espectro da babá se manifesta ao entrar no berçário, e vencido lá não aparece no sótão', async () => {
+  const S = await nova('casaDaMorte3');
+  poe(S.party[0], 3, 18);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando);
+  const e = S.foes.find((f) => f.grupo === 'espectroBaba');
+  assert.ok(S.enc.combatants.includes(e));
+  S.enc.applyDamage(e, 999, 'radiante');
+  await S.cena.fimDoCombate('vitoria');
+  const A = await nova('casaDaMorte4', { campanha: S.app.campanha });
+  const restos = A.cena.interacoes({ x: 1, y: 13 }, A.field.surfaceAt(1, 13), A.party[0]).find((o) => o.rotulo.includes('baú'));
+  assert.ok(restos, 'o baú existe no depósito');
+  poe(A.party[0], 2, 13);
+  await restos.fazer();
+  assert.ok(A.cena.explorando, 'a babá já foi vencida: nada acontece');
+});
+
+await teste('sótão: mexer nos restos da babá a chama (se ainda está), e Medicina CD 14 dá o diagnóstico', async () => {
+  const S = await nova('casaDaMorte4');
+  poe(S.party[0], 2, 13);
+  d20(S, 20);
+  await op(S, S.party[0], 2, 13, 'baú').fazer();
+  assert.ok(!S.cena.explorando, 'o espectro aparece');
+  assert.ok(S.enc.combatants.some((f) => f.grupo === 'espectroBaba'));
+});
+
+await teste('escada secreta: a carta revela a escada, dá o 2º nível uma vez só, e a espiral do sótão aparece junto', async () => {
+  const S = await nova('casaDaMorte2', { nivel: 1 });
+  assert.equal(S.party[0].level, 1);
+  assert.ok(S.party[0].xp < 300);
+  poe(S.party[0], 8, 7);
+  S.casa().passagemAberta = true;
+  const ler = S.cena.interacoes({ x: 8, y: 7 }, S.field.surfaceAt(8, 7), S.party[0]).find((o) => o.rotulo.includes('carta'));
+  assert.ok(ler);
+  await ler.fazer();
+  assert.equal(S.casa().escada, true);
+  assert.equal(S.casa().nivel2, true);
+  assert.ok(S.party[0].xp >= 300, 'a carta é o marco do 2º nível (300 XP)');
+  const xp = S.party[0].xp;
+  await ler.fazer();
+  assert.equal(S.party[0].xp, xp, 'reler não dá XP de novo');
+  const T = await nova('casaDaMorte3', { campanha: S.app.campanha });
+  assert.equal(T.field.surfaceAt(11, 17), 'escada', 'a escada da suíte da babá já está à mostra');
+  assert.equal(T.field.surfaceAt(9, 17), 'portaAberta');
+  const A = await nova('casaDaMorte4', { campanha: S.app.campanha });
+  assert.equal(A.field.surfaceAt(1, 7), 'escada', 'a espiral do sótão também');
+});
+
+await teste('sótão: a casa de bonecas mostra a escada (e o 2º nível) quando a carta não foi achada; a porta do 20 abre com a chave de ferro', async () => {
+  const S = await nova('casaDaMorte4', { nivel: 1 });
+  poe(S.party[0], 6, 4);
+  d20(S, 20);
+  const bonecas = op(S, S.party[0], 6, 4, 'casa de bonecas');
+  assert.ok(bonecas);
+  await bonecas.fazer();
+  assert.equal(S.casa().escada, true);
+  assert.ok(S.party[0].xp >= 300, 'a casa de bonecas também é o marco do 2º nível');
+  assert.equal(S.field.surfaceAt(1, 7), 'escada');
+  assert.equal(S.casa().fantasmas, 'apareceram', 'Rose e Thorn aparecem quando alguém mexe na casa de bonecas');
+  // a porta trancada
+  assert.equal(S.field.surfaceAt(7, 6), 'alvenaria', 'a porta do 20 começa trancada (parede)');
+  poe(S.party[0], 7, 7);
+  garantirInventario(S.party[1]);
+  S.party[1].bag.push({ id: 'chaveDeFerroDosDurst', tipo: 'item', qtd: 1 });
+  await op(S, S.party[0], 7, 7, 'porta trancada').fazer();
+  assert.equal(S.field.surfaceAt(7, 6), 'portaAberta');
+  assert.equal(S.casa().portaCriancas, true);
+});
+
+await teste('masmorra 1: o grick surpreende quem tem Percepção passiva abaixo de 12; os carniçais se levantam no meio do cruzamento', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 28, 18);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.cena.explorando, 'a 3 casas do grick, nada');
+  poe(S.party[0], 28, 20);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'a 1 casa, o grick ataca');
+  assert.equal(S.enc.emboscada?.emboscadores, 'foes');
+  assert.deepEqual(S.enc.emboscada.furtividade, [12], 'o livro: Percepção passiva abaixo de 12 é surpreendido');
+  const C = await nova('casaDaMortePorao1');
+  poe(C.party[0], 22, 14);
+  await C.cena.depoisDeMover(C.party[0]);
+  assert.ok(C.cena.explorando, 'na borda do cruzamento, não');
+  poe(C.party[0], 22, 16);
+  await C.cena.depoisDeMover(C.party[0]);
+  assert.ok(!C.cena.explorando, 'no meio, sim');
+  assert.equal(C.enc.combatants.filter((f) => f.side === 'foes').length, 4, 'quatro carniçais');
+});
+
+await teste('masmorra 1: o mímico é a porta do canto sudoeste do covil', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 21, 35);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.cena.explorando, 'a 2 casas, não');
+  poe(S.party[0], 20, 35);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'ao chegar a 1 casa da porta');
+  assert.ok(S.enc.combatants.some((f) => f.defId === 'mimico'));
+});
+
+await teste('masmorra 1: as cinco sombras vêm com a esfera de cristal (e com o toque na estátua); a porta secreta leste leva ao alçapão', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 33, 29);
+  const esfera = op(S, S.party[0], 33, 29, 'esfera');
+  assert.ok(esfera);
+  await esfera.fazer();
+  assert.ok(!S.cena.explorando);
+  assert.equal(S.enc.combatants.filter((f) => f.defId === 'sombra').length, 5);
+  assert.equal(itens(S.party[0], 'orbeDeCristalCinza'), 1);
+  const T = await nova('casaDaMortePorao1');
+  poe(T.party[0], 34, 30);
+  d20(T, 20);
+  assert.equal(T.field.surfaceAt(36, 30), 'alvenaria');
+  await op(T, T.party[0], 34, 30, 'portas escondidas').fazer();
+  assert.equal(T.casa().alcapao, true);
+  assert.equal(T.field.surfaceAt(36, 30), 'portaAberta');
+});
+
+await teste('masmorra 1: o poço de espinhos: o passo PARA no fosso e o primeiro a pisar cai (3 + 2d10 no máximo, e o fosso fica sabido)', async () => {
+  const S = await nova('casaDaMortePorao1');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 15, y: 16 }), true, 'o passo para na tampa');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 14, y: 16 }), false);
+  poe(S.party[0], 15, 16);
+  const antes = S.party[0].hp;
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.equal(S.casa().espinhos, 'caiu');
+  assert.ok(S.party[0].hp < antes && antes - S.party[0].hp <= 26, `dano ${antes - S.party[0].hp}`);
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 15, y: 16 }), false, 'depois, o passo não para mais');
+});
+
+await teste('masmorra 1: as lajes das criptas de Gustav a Thorn abrem com Atletismo CD 15 e cada herói tenta uma vez; a de Elisabeth solta o enxame', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 23, 12);
+  const laje = op(S, S.party[0], 23, 12, 'laje');
+  assert.ok(laje, 'a laje de Elisabeth tem a opção do corredor');
+  d20(S, 1);
+  await laje.fazer();
+  assert.equal(S.field.surfaceAt(24, 12), 'alvenaria', 'tirou 1, a laje não saiu');
+  assert.ok(op(S, S.party[0], 23, 12, 'laje').motivo, 'o mesmo herói não tenta duas vezes');
+  d20(S, 20);
+  poe(S.party[1], 23, 12);
+  await op(S, S.party[1], 23, 12, 'laje').fazer();
+  assert.equal(S.field.surfaceAt(24, 12), 'terraSocada', 'a laje saiu');
+  assert.ok(S.casa().criptas.includes('criptaD'));
+  poe(S.party[0], 26, 12);
+  await op(S, S.party[0], 26, 12, 'caixão de Elisabeth').fazer();
+  assert.ok(!S.cena.explorando, 'o enxame ataca');
+  assert.ok(S.enc.combatants.some((f) => f.defId === 'enxameDeCentopeias'));
+});
+
+await teste('masmorra 1: deitar os ossos de Rose e de Thorn dá paz aos dois, e a paz dos dois dá Inspiração a todos', async () => {
+  const S = await nova('casaDaMortePorao1');
+  S.casa().criptas = ['criptaE', 'criptaF'];
+  S.casa().fantasmas = 'apareceram';
+  for (const id of ['ossosDeRose', 'ossosDeThorn']) garantirInventario(S.party[0]).bag.push({ id, tipo: 'item', qtd: 1 });
+  poe(S.party[0], 20, 8);
+  await op(S, S.party[0], 20, 8, 'ossos de Rose').fazer();
+  assert.equal(S.casa().paz.rose, true);
+  assert.equal(S.party[0].conditions?.some((c) => c.id === 'inspirado'), false, 'só uma criança: sem inspiração');
+  poe(S.party[0], 20, 4);
+  await op(S, S.party[0], 20, 4, 'ossos de Thorn').fazer();
+  assert.equal(S.casa().paz.thorn, true);
+  assert.ok(S.party.every((h) => h.conditions?.some((c) => c.id === 'inspirado')), 'cada herói ganha Inspiração');
+});
+
+await teste('masmorra 1: o baú dos líderes dá o tesouro do livro e acorda os dois lívidos; as tochas vêm do outro baú', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 13, 37);
+  const tochas = itens(S.party[0], 'tocha');
+  await op(S, S.party[0], 13, 37, 'tochas').fazer();
+  assert.equal(itens(S.party[0], 'tocha') - tochas, 30);
+  const antes = Object.fromEntries(['mantoDeProtecao', 'pocaoDeCura', 'ferramentasDeLadrao', 'livroDeMagiasDosCultistas'].map((id) => [id, itens(S.party[0], id)]));
+  await op(S, S.party[0], 13, 37, 'caixa ao pé da cama').fazer();
+  for (const [id, n] of [['mantoDeProtecao', 1], ['pocaoDeCura', 4], ['ferramentasDeLadrao', 1], ['livroDeMagiasDosCultistas', 1]]) assert.equal(itens(S.party[0], id) - antes[id], n, id);
+  assert.ok(garantirInventario(S.party[0]).bag.some((i) => i.id === 'cotaDeMalha' && i.tipo === 'armadura'), 'a cota de malha chega como armadura');
+  assert.ok(!S.cena.explorando);
+  const l = S.enc.combatants.filter((f) => f.side === 'foes').map((f) => f.name).sort();
+  assert.deepEqual(l, ['Elisabeth Durst', 'Gustav Durst']);
+});
+
+await teste('masmorra 1: os cinco baús do poço pedem ferramentas de ladrão, Destreza CD 15, e cada herói tenta uma vez', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 3, 7);
+  const bau = op(S, S.party[0], 3, 6, 'baú trancado');
+  assert.ok(bau, 'o baú A tem a opção');
+  await bau.fazer();
+  assert.equal(S.casa().achados.bauA, undefined, 'sem ferramentas de ladrão, o baú segue fechado');
+  garantirInventario(S.party[0]).bag.push({ id: 'ferramentasDeLadrao', tipo: 'item', qtd: 1 });
+  d20(S, 20);
+  await op(S, S.party[0], 3, 6, 'baú trancado').fazer();
+  assert.equal(S.casa().achados.bauA, true);
+  assert.equal(itens(S.party[0], 'moedaDeOuro') >= 11, true);
+});
+
+await teste('masmorra 2: a ponte levadiça se força (Atletismo CD 20) ou se gira pela roda; a porta da prisão (Percepção CD 15) dá na câmara', async () => {
+  const S = await nova('casaDaMortePorao2');
+  assert.equal(S.field.surfaceAt(21, 19), 'alvenaria', 'a ponte está erguida');
+  poe(S.party[0], 21, 17);
+  d20(S, 20);
+  const forcar = op(S, S.party[0], 21, 17, 'ponte levadiça');
+  assert.ok(forcar);
+  await forcar.fazer();
+  assert.equal(S.casa().ponte, true);
+  assert.equal(S.field.surfaceAt(21, 19), 'ponte');
+  const T = await nova('casaDaMortePorao2');
+  poe(T.party[0], 10, 35);
+  d20(T, 20);
+  await op(T, T.party[0], 10, 35, 'portas secretas').fazer();
+  assert.equal(T.casa().portaPrisao, true);
+  assert.equal(T.field.surfaceAt(12, 34), 'portaAberta');
+  const G = await nova('casaDaMortePorao2', { campanha: { strahd: { casa: { ponte: true, portaPrisao: true, vencidos: [] } } } });
+  assert.equal(G.field.surfaceAt(21, 19), 'ponte', 'o estado salvo volta ao reentrar');
+  assert.equal(G.field.surfaceAt(12, 34), 'portaAberta');
+});
+
+await teste('masmorra 2: pisar no estrado abre o ritual; sacrificar um herói apazigua o culto, negar acorda Lorghoth', async () => {
+  const S = await nova('casaDaMortePorao2');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 25, y: 35 }), true, 'o passo para na primeira casa do estrado');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 15, y: 35 }), false, 'a borda da câmara não é o estrado');
+  const prefs = ['sacrificar', S.party[3].id];
+  globalThis.__escolher = (esc) => { const v = prefs.shift(); const e = esc.find((x) => x.valor === v); return (e ?? esc.find((x) => x.primaria) ?? esc[0]).valor; };
+  poe(S.party[0], 25, 35);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.equal(S.casa().ritual, 'sacrificio');
+  assert.equal(S.casa().fim, 'sacrificio');
+  assert.ok(S.party[3].dead, 'a vítima morreu no altar');
+  assert.ok(S.cena.explorando);
+  const N = await nova('casaDaMortePorao2');
+  globalThis.__escolher = (esc) => (esc.find((x) => x.valor === 'negar') ?? esc[0]).valor;
+  poe(N.party[0], 25, 35);
+  await N.cena.depoisDeMover(N.party[0]);
+  globalThis.__escolher = undefined;
+  assert.equal(N.casa().fim, 'negado');
+  assert.ok(!N.cena.explorando, 'Lorghoth ataca');
+  assert.ok(N.enc.combatants.some((f) => f.defId === 'arbustoErrante'));
+});
+
+await teste('a casa ataca quem negou o sacrifício: portas de foice, fumaça e ratos; e a saída só abre depois do fim', async () => {
+  const S = await nova('casaDaMorte1', { campanha: { strahd: { casa: { vistas: [], vencidos: [], achados: {}, fim: 'negado' } } }, nivel: 2 });
+  // sem entrar pelo sótão a casa só vira furiosa ao chegar de baixo
+  await S.cena.iniciar();
+  assert.equal(S.casa().furia, true, 'a casa se volta contra o grupo');
+  // porta: o passo para
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 3, y: 23 }), true, 'a porta de foice para o passo');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 5, y: 20 }), false);
+  poe(S.party[0], 3, 15);
+  const antes = S.party[0].hp;
+  d20(S, 1);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.party[0].hp < antes && antes - S.party[0].hp <= 20, `a foice cortou ${antes - S.party[0].hp}`);
+  d20(S, 20);
+  const h = S.party[1].hp;
+  poe(S.party[1], 3, 15);
+  await S.cena.depoisDeMover(S.party[1]);
+  assert.equal(S.party[1].hp, h, 'com 20 no dado, a foice não pega');
+  // os ratos esperam na sala de espera
+  poe(S.party[0], 3, 19);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'dois enxames de ratos saem das paredes');
+  assert.equal(S.enc.combatants.filter((f) => f.defId === 'enxameDeRatos').length, 2);
+});
+
+await teste('a saída: sem o fim as brumas fecham o portão; com o fim, sai e passa ao 3º nível; Rose e Thorn tentam possuir quem sai', async () => {
+  const S = await nova('casaDaMorte1', { nivel: 2 });
+  poe(S.party[0], 3, 22);
+  await op(S, S.party[0], 3, 22, 'Sair').fazer();
+  assert.ok(!S.app.encerrou, 'o portão não abre antes do fim');
+  assert.ok(S.cena.explorando);
+  const T = await nova('casaDaMorte1', { nivel: 2, campanha: { strahd: { casa: { vistas: [], vencidos: [], achados: {}, fim: 'sacrificio', fantasmas: 'apareceram', paz: {} } } } });
+  T.enc.resistencia = () => ({ success: false });
+  poe(T.party[0], 3, 22);
+  globalThis.__escolher = (esc) => esc[0].valor;
+  d20(T, 20);
+  await op(T, T.party[0], 3, 22, 'Sair').fazer();
+  globalThis.__escolher = undefined;
+  assert.equal(T.casa().possuidos.length, 0, 'intimidados, os dois fantasmas largam');
+  assert.ok(T.app.encerrou, 'o grupo saiu');
+  assert.ok(T.party[0].xp >= 900, 'sair da casa é o marco do 3º nível (900 XP)');
+  const U = await nova('casaDaMorte1', { nivel: 2, campanha: { strahd: { casa: { vistas: [], vencidos: [], achados: {}, fim: 'sacrificio', fantasmas: 'apareceram', paz: { rose: true, thorn: true } } } } });
+  poe(U.party[0], 3, 22);
+  await op(U, U.party[0], 3, 22, 'Sair').fazer();
+  assert.ok(U.app.encerrou, 'em paz, ninguém tenta possuir');
+  assert.equal(U.casa().possuidos?.length ?? 0, 0);
+});
+
+await teste('as escadas levam ao andar certo, vindo da origem certa; o alçapão do canil só aparece depois de visto de baixo', async () => {
+  const S = await nova('casaDaMorte2');
+  const sobe = op(S, S.party[0], 10, 12, 'Subir a escadaria');
+  assert.ok(sobe);
+  await sobe.fazer();
+  assert.equal(S.trocas[0].variante, 'casaDaMorte3');
+  assert.equal(S.trocas[0].entrada, 'casaDaMorte2');
+  const T = await nova('casaDaMorte3', { entrada: 'casaDaMorte2' });
+  assert.deepEqual(T.party.map((h) => `${h.pos.x},${h.pos.y}`), ['8,11', '8,12', '7,11', '7,12']);
+  const U = await nova('casaDaMorte1');
+  assert.equal(U.field.surfaceAt(6, 22), 'assoalho', 'o alçapão ainda não existe');
+  const D = await nova('casaDaMortePorao1', { entrada: null });
+  poe(D.party[0], 34, 30);
+  d20(D, 20);
+  await op(D, D.party[0], 34, 30, 'portas escondidas').fazer();
+  const V = await nova('casaDaMorte1', { campanha: D.app.campanha });
+  assert.equal(V.field.surfaceAt(6, 22), 'escada', 'depois de achar a porta de baixo, o alçapão aparece no canil');
+});
+
+console.log(`\n${total - falhas}/${total} testes passaram`);
+process.exit(falhas ? 1 : 0);

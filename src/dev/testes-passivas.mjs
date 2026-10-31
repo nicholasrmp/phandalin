@@ -5439,6 +5439,126 @@ teste('Casa da Morte: as plantas têm 14x24, glifos do jogo, salas alcançáveis
   assert.equal(alcance(aberta, { x: 8, y: 10 }).has(`${sala9.x1},${sala9.y1}`), true, 'com a porta, alcança');
 });
 
+teste('Casa da Morte: 3º andar, sótão e masmorras têm plantas ligadas, escadas recíprocas e criaturas em casa livre', async () => {
+  const { ANDARES, VARIANTES_DA_CASA } = await import('../game/casadamorte.js');
+  const { ESCADA_SECRETA_3, ESCADA_SECRETA_4 } = await import('../game/casadamorte-alto.js');
+  const { GLIFOS } = await import('../core/grid.js');
+  const { mapaDo, buildFoes } = await import('../game/encounter.js');
+  const { itemDeId } = await import('../rules/equipment.js');
+  assert.deepEqual(VARIANTES_DA_CASA, ['casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2']);
+  const livre = (terreno, x, y) => { const g = terreno[y]?.[x]; return g && GLIFOS[g].kind === 0; };
+  const alcance = (terreno, de) => {
+    const vistos = new Set([`${de.x},${de.y}`]);
+    const fila = [de];
+    while (fila.length) {
+      const { x, y } = fila.shift();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx; const ny = y + dy;
+        if (vistos.has(`${nx},${ny}`) || !livre(terreno, nx, ny)) continue;
+        vistos.add(`${nx},${ny}`);
+        fila.push({ x: nx, y: ny });
+      }
+    }
+    return vistos;
+  };
+  const mudar = (terreno, casas, g) => terreno.map((l, y) => [...l].map((ch, x) => (casas.some(([cx, cy]) => cx === x && cy === y) ? g : ch)).join(''));
+  const tem = (vistos, a) => { for (let y = a.y1; y <= a.y2; y++) for (let x = a.x1; x <= a.x2; x++) if (vistos.has(`${x},${y}`)) return true; return false; };
+
+  // formato e glifos
+  for (const v of VARIANTES_DA_CASA) {
+    const m = mapaDo(v);
+    assert.equal(m.cena, 'casaDaMorte', v);
+    assert.equal(m.altura.length, m.terreno.length, `${v}: altura tem as mesmas linhas`);
+    for (const l of m.terreno) { assert.equal(l.length, m.terreno[0].length, `${v}: linhas do mesmo tamanho`); for (const g of l) assert.ok(GLIFOS[g], `${v}: glifo ${g} existe`); }
+    for (const p of m.grupo) assert.ok(livre(m.terreno, p.x, p.y), `${v}: o grupo nasce em casa livre (${p.x},${p.y})`);
+  }
+  // as escadas: o retângulo é de escada (ou parede escondida, nas secretas) e o destino tem a chegada de volta
+  for (const v of VARIANTES_DA_CASA) {
+    const m = mapaDo(v);
+    for (const e of ANDARES[v].escadas) {
+      const g = m.terreno[e.rect.y1][e.rect.x1];
+      if (!e.secreta && !(v === 'casaDaMorte1' && e.destino === 'casaDaMortePorao1')) assert.equal(GLIFOS[g].sup, 'escada', `${v} -> ${e.destino}: a casa ${e.rect.x1},${e.rect.y1} é escada (${g})`);
+      assert.ok(ANDARES[e.destino].chegadas[v], `${e.destino} sabe onde o grupo chega vindo de ${v}`);
+      assert.ok(ANDARES[e.destino].escadas.some((x) => x.destino === v), `${e.destino} tem a escada de volta para ${v}`);
+    }
+    for (const [origem, pontos] of Object.entries(ANDARES[v].chegadas)) {
+      assert.ok(ANDARES[origem], `a origem ${origem} existe`);
+      assert.equal(pontos.length, 4, `${v}: quatro casas de chegada vindo de ${origem}`);
+      for (const p of pontos) assert.ok(livre(m.terreno, p.x, p.y) || (v === 'casaDaMortePorao1' && origem === 'casaDaMorte1'), `${v}/${origem}: chegada livre (${p.x},${p.y})`);
+    }
+  }
+  // 3º andar: tudo se alcança pela varanda; a escada secreta só depois de revelada
+  {
+    const m = mapaDo('casaDaMorte3');
+    const vistos = alcance(m.terreno, m.grupo[0]);
+    for (const a of ANDARES.casaDaMorte3.areas) assert.ok(tem(vistos, a), `3º andar: a sala ${a.area} é alcançável`);
+    assert.equal(vistos.has('11,17'), false, 'a escada secreta está escondida');
+    const aberta = mudar(mudar(m.terreno, ESCADA_SECRETA_3, 'l'), [[9, 17], [9, 18]], '?');
+    assert.equal(alcance(aberta, m.grupo[0]).has('11,17'), true, 'revelada, a escada se alcança');
+  }
+  // sótão: a porta das crianças é trancada, a espiral é escondida
+  {
+    const m = mapaDo('casaDaMorte4');
+    const vistos = alcance(m.terreno, m.grupo[0]);
+    for (const a of ANDARES.casaDaMorte4.areas) if (!['criancas', 'escadaSecreta'].includes(a.id)) assert.ok(tem(vistos, a), `sótão: a sala ${a.area} é alcançável`);
+    const destrancada = mudar(m.terreno, [[7, 6]], '?');
+    assert.equal(tem(alcance(destrancada, m.grupo[0]), ANDARES.casaDaMorte4.areas.find((a) => a.id === 'criancas')), true, 'com a porta aberta, o quarto 20 se alcança');
+    assert.equal(alcance(mudar(m.terreno, ESCADA_SECRETA_4, 'l'), m.grupo[0]).has('1,7'), true, 'a espiral se alcança depois de revelada');
+  }
+  // masmorra 1: as criptas seladas e a porta secreta do santuário
+  {
+    const m = mapaDo('casaDaMortePorao1');
+    const vistos = alcance(m.terreno, m.grupo[0]);
+    const seladas = ['criptaC', 'criptaD', 'criptaE', 'criptaF'];
+    for (const a of ANDARES.casaDaMortePorao1.areas) {
+      if (seladas.includes(a.id) || a.id === 'alcapao') continue;
+      assert.ok(tem(vistos, a), `masmorra 1: a sala ${a.area} (${a.id}) é alcançável`);
+    }
+    for (const id of seladas) {
+      const a = ANDARES.casaDaMortePorao1.areas.find((x) => x.id === id);
+      const dentroDaCripta = id === 'criptaC' || id === 'criptaD' ? 25 : 19;
+      assert.equal(vistos.has(`${dentroDaCripta},${a.y1}`), false, `a cripta ${id} está selada por dentro`);
+    }
+    const lajes = [[24, 8], [24, 9], [24, 12], [24, 13], [21, 8], [21, 9], [21, 4], [21, 5]];
+    let t = mudar(m.terreno, lajes, '+');
+    t = mudar(t, [[36, 30], [36, 31]], '?');
+    const v2 = alcance(t, m.grupo[0]);
+    for (const a of ANDARES.casaDaMortePorao1.areas) assert.ok(tem(v2, a), `masmorra 1 aberta: a sala ${a.area} (${a.id}) é alcançável`);
+  }
+  // masmorra 2: a ponte e a porta da prisão fecham a câmara
+  {
+    const m = mapaDo('casaDaMortePorao2');
+    const vistos = alcance(m.terreno, m.grupo[0]);
+    for (const id of ['escadaChegada', 'relicario', 'tunelAgua', 'prisao']) assert.ok(tem(vistos, ANDARES.casaDaMortePorao2.areas.find((a) => a.id === id)), `masmorra 2: ${id} é alcançável`);
+    assert.equal(vistos.has('16,30'), false, 'a câmara está fechada até a ponte baixar ou a porta secreta abrir');
+    const ponte = [[20, 18], [21, 18], [22, 18], [23, 18], [20, 19], [21, 19], [22, 19], [23, 19]];
+    for (const t of [mudar(m.terreno, ponte, '='), mudar(m.terreno, [[12, 34], [13, 34], [12, 35], [13, 35]], '?')]) {
+      const v2 = alcance(t, m.grupo[0]);
+      assert.ok(v2.has('16,30'), 'a câmara se alcança');
+      for (const id of ['camara', 'ponte', 'alcova']) assert.ok(tem(v2, ANDARES.casaDaMortePorao2.areas.find((a) => a.id === id)), `masmorra 2 aberta: ${id}`);
+    }
+  }
+  // criaturas: em casa livre, sem repetir casa, todas com grupo
+  const quais = { casaDaMorte1: 2, casaDaMorte2: 0, casaDaMorte3: 3, casaDaMorte4: 1, casaDaMortePorao1: 14, casaDaMortePorao2: 1 };
+  for (const [v, n] of Object.entries(quais)) {
+    const foes = buildFoes(v);
+    assert.equal(foes.length, n, `${v}: ${n} criaturas`);
+    const m = mapaDo(v);
+    const usadas = new Set();
+    for (const f of foes) {
+      assert.ok(f.grupo, `${v}: ${f.name} tem grupo`);
+      assert.ok(livre(m.terreno, f.pos.x, f.pos.y), `${v}: ${f.name} em casa livre (${f.pos.x},${f.pos.y})`);
+      const k = `${f.pos.x},${f.pos.y}`;
+      assert.equal(usadas.has(k), false, `${v}: ${f.name} não divide casa`);
+      usadas.add(k);
+    }
+  }
+  // o tesouro do livro existe como item
+  for (const id of ['caixaDeJoiasDosDurst', 'anelDeOuro', 'colarDeTopazio', 'agataMusgo', 'tapaOlho', 'escovaDeMarfim', 'espadaCurtaPrateada', 'orbeDeCristalCinza',
+    'mantoDeProtecao', 'pocaoDeCura', 'cotaDeMalha', 'kitDeRefeicao', 'fogoAlquimico', 'lanternaFuraco', 'ferramentasDeLadrao', 'livroDeMagiasDosCultistas', 'tocha', 'vela',
+    'ossosDeRose', 'ossosDeThorn', 'pedeCabra', 'moedaDeOuro', 'moedaDePrata']) assert.ok(itemDeId(id), `o item ${id} existe`);
+});
+
 // ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

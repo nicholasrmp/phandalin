@@ -47,12 +47,24 @@ Material de trabalho (não entra no repositório; `_referencias/` é ignorado pe
 - **Criaturas** (`rules/monsters/strahd.js`): armadura animada, vassoura animada (nossa, não SRD), fantasma de criança (SRD alterado como no livro), enxames de centopeias e de ratos, sombra, mímico, lívido e arbusto errante. Grick, carniçal e espectro já existiam.
 
 - **1º e 2º andares jogáveis** (áreas 1 a 10): planta própria, descrições, painéis, o armário do canil, a gaveta e o livro falso da biblioteca, a sala secreta com o baú e a **carta de Strahd, que é o marco do 2º nível** (o grupo sobe de nível ao ler a carta; a casa mostra a escada secreta do sótão). Escadaria liga os dois andares.
+- **A casa inteira jogável, sem arte nova** (áreas 1 a 38, seis cenas: 1º, 2º e 3º andares, sótão, masmorra 1 e masmorra 2). Plantas em `casadamorte.js` e `casadamorte-alto.js` (casas) e `casadamorte-porao.js` (masmorras, gerado por `src/dev/mapa-casadamorte.py`; cada quadrado do mapa vale 2 x 2 casas). A cena é `capitulo-casadamorte.js` mais três módulos: `casadamorte-alto-cena.js` (3º andar e sótão), `casadamorte-porao-cena.js` (masmorras) e `casadamorte-fuga.js` (a saída, a possessão, a casa que ataca). Criaturas em `casadamorte-criaturas.js`; textos das masmorras em `casadamorte-textos-porao.js`. `?strahd=casaDaMorte3` (ou 1, 2, 4, Porao1, Porao2) cai direto no andar.
+  - **Gatilhos do livro:** a armadura animada (11) e a vassoura (14) a 1,5 m; o espectro da babá no berçário (15B) ou nos restos (18); o grick (28, surpresa para Percepção passiva < 12); os quatro carniçais no meio do cruzamento (29); as cinco sombras com a esfera ou a estátua (31); o mímico que é a porta (33); os dois lívidos ao revirar a caixa (34); o enxame de centopeias no caixão de Elisabeth (23D); Lorghoth (38).
+  - **Armadilhas e segredos:** o poço de espinhos (26) PARA o passo e cobra a queda; a escada secreta (carta ou casa de bonecas, que dão o 2º nível); a espiral do sótão; a porta secreta leste do santuário e o alçapão do canil; as lajes das criptas (Atletismo CD 15); a porta da prisão e a ponte levadiça (Atletismo CD 20, ou a roda da câmara); os cinco baús do poço (Destreza CD 15).
+  - **O ritual "Um deve morrer!"** (38) e os dois finais: sacrificar um herói (a casa não faz mais nada) ou negar (Lorghoth e depois a casa ataca: janelas emparedadas, portas de foice com Acrobacia/Inteligência CD 15, fumaça nos cômodos com lareira, enxames de ratos). Rose e Thorn: aparecem quando se mexe nos brinquedos, e se não forem postos em paz (ossos nas criptas E e F, que dá Inspiração aos dois juntos) tentam possuir quem sai (Carisma CD 13); o 3º nível vem ao sair.
 - **Kit de piso** (PixelLab, 10 gerações): assoalho, tapete, parquet e terra socada no atlas do chão, mais mobília de casa sobre assoalho.
 - **Save corrigido** (o `SaveManager` nunca gravava) e a cena entra no autosave.
 
 ## Pendente de arte (sprites)
 
 Os blocos novos usam o look mais próximo que existe (cavaleiro, plebeu, specter, giantRat, gelatinaOcre, wraith, vinhaInfectada): armadura animada, vassoura, fantasma de criança, sombra, mímico, lívido, arbusto errante e enxames precisam de sprite próprio.
+
+## Pendente de regra e de cena
+
+- **Escuro das masmorras:** o livro põe tudo no escuro; o motor de luz da mansão (`rules/luz.js`) ainda não está ligado nestas cenas.
+- **Inspiração** vira um d6 (a condição `inspirado` da bárdica): o motor não tem a Inspiração de vantagem.
+- Traços que o bloco declara e o motor não executa: enxame, posse, adesivo/agarrador do mímico, engolir, amorfo.
+- A prata da espada curta (110 po) é só preço: a regra de arma prateada não existe.
+- O resto da Maldição de Strahd (Baróvia, Vallaki, Ravenloft) ainda não existe; a casa termina em "Voltar ao menu".
 
 ## Riscos já à vista
 

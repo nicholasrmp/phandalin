@@ -11,7 +11,8 @@ import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { MAPA_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
-import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2 } from './casadamorte.js';
+import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, MAPA_CASA_DA_MORTE_PORAO_1, MAPA_CASA_DA_MORTE_PORAO_2 } from './casadamorte.js';
+import { foesDaCasa } from './casadamorte-criaturas.js';
 import { MAPA_POCO } from './poco.js';
 import { MAPA_CUME } from './cume.js';
 import { MAPA_CASTELO, CASTELO } from './castelo.js';
@@ -345,6 +346,10 @@ export function mapaDo(variante = 'padrao') {
   }
   if (variante === 'casaDaMorte1') return MAPA_CASA_DA_MORTE_1;
   if (variante === 'casaDaMorte2') return MAPA_CASA_DA_MORTE_2;
+  if (variante === 'casaDaMorte3') return MAPA_CASA_DA_MORTE_3;
+  if (variante === 'casaDaMorte4') return MAPA_CASA_DA_MORTE_4;
+  if (variante === 'casaDaMortePorao1') return MAPA_CASA_DA_MORTE_PORAO_1;
+  if (variante === 'casaDaMortePorao2') return MAPA_CASA_DA_MORTE_PORAO_2;
   if (variante === 'mansao' || variante === 'mansaoTunel') {
     // O esconderijo dos Marcarrubra embaixo da Mansão Tresendar. Pela escada
     // da cozinha (área 1, a leste) ou pelo túnel que o Carp achou (área 8, ao
@@ -426,7 +431,8 @@ export function mapaDo(variante = 'padrao') {
  */
 export function buildFoes(variante = 'padrao') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'casaDaMorte1', 'casaDaMorte2'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco'].includes(variante)) return [];
+  if (variante.startsWith('casaDaMorte')) return foesDaCasa(variante);
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
   if (variante === 'esconderijo') return foesEsconderijo();
@@ -735,7 +741,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'casaDaMorte1', 'casaDaMorte2'].includes(variante)) return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

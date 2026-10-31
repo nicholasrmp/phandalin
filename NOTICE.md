@@ -61,6 +61,13 @@ Condições que o projeto precisa respeitar, e respeita:
 - Não usa logotipos nem marcas registradas da Wizards.
 - Não remove avisos de copyright de material deles.
 
+**A Maldição de Strahd** (a Casa da Morte, `src/game/casadamorte*.js`, `capitulo-casadamorte.js`) é conteúdo
+de fã do mesmo tipo: nomes (Strahd von Zarovich, Baróvia, Rose e Thorn, os Durst), a ordem das salas, as CDs e o que
+há em cada área seguem o livro; **todo o texto de descrição, os diálogos, as plantas e a arte são nossos**. As
+plantas foram desenhadas à mão, com os mapas da Morvold Press (Jeff Todd) só como referência de organização: nenhum
+desses mapas é distribuído, copiado ou embutido neste repositório (a pasta de referência é ignorada pelo git). A
+vassoura animada de ataque não é SRD e vem marcada `fonte: 'propria'`.
+
 **Atenção:** esta política **não** é irrevogável, diferente da CC-BY. É por isso
 que o motor e a campanha são separados no código — se um dia ela mudar, troca-se
 o arquivo de campanha e o motor continua de pé.

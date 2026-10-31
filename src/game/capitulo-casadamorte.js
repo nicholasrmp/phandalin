@@ -1,15 +1,15 @@
 // Livro do Jogador não é SRD: a Maldição de Strahd é conteúdo da Wizards. TEXTO nosso, fatos do livro — ver NOTICE.md e STRAHD.md.
 //
-// A CASA DA MORTE, 1º e 2º ANDARES (Apêndice B, áreas 1 a 10). Exploração livre, sem iniciativa: não há monstro nestes andares. A casa é
-// "viva": o térreo e o 2º andar parecem novos (o que sai dela, envelhece), e é a escadaria de mármore vermelho que liga os andares. O que
-// a cena faz:
-//   - ao entrar numa sala pela primeira vez, a descrição dela;
-//   - os painéis do salão principal e da sala de jantar (Percepção CD 12), as portas entalhadas do salão superior, as estatuetas do
-//     conservatório;
-//   - o armário trancado do canil (Destreza CD 15, ferramentas de ladrão): três bestas e sessenta virotes;
-//   - a biblioteca: a gaveta com a chave de ferro e o livro falso que abre a porta secreta (Percepção CD 13);
-//   - a sala secreta: o baú, os livros de rituais falsos (Arcana CD 12) e a CARTA DE STRAHD, que revela a escada secreta do sótão e é o
-//     marco do 2º nível (o livro avança o grupo por marcos, não por XP).
+// A CASA DA MORTE (Apêndice B, áreas 1 a 38): os quatro andares e as duas masmorras. Exploração livre, sem iniciativa, até alguma coisa
+// da casa acordar; aí a luta é do motor de combate, e depois a cena volta à exploração. O livro avança o grupo por MARCOS e não por XP:
+//   - 2º nível: a carta de Strahd (área 9), que faz a casa mostrar a escada secreta;
+//   - 3º nível: ao sair da casa, depois do ritual da câmara (38).
+//
+// A casa é "viva": o 1º e o 2º andares parecem novos (o que sai dela, envelhece); o 3º andar e o sótão são poeira e teia; as masmorras
+// são terra, argila e escuro. O que cada módulo faz:
+//   - este arquivo: o estado, os grupos de criaturas, o combate, os gatilhos, as escadas, a saída e o fim;
+//   - `casadamorte-alto-cena.js`: 3º andar e sótão (a armadura, a vassoura, a babá, as crianças fantasma, a casa de bonecas);
+//   - `casadamorte-porao-cena.js`: as masmorras (criptas, poço, armadilha, carniçais, grick, sombras, mímico, lívidos, o ritual).
 //
 // Mesma interface de cena dos outros capítulos (`main.js`): lugar, explorando, encerrado, interacoes, depoisDeMover, fimDoCombate, evento,
 // iniciar.
@@ -18,13 +18,18 @@ import { narrar } from '../view/narrativa.js';
 import { distanceFt, GLIFOS, SUPERFICIES } from '../core/grid.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste } from '../rules/utilidade.js';
+import { rolarPericia } from '../rules/abilities.js';
 import { guardar } from './comercio.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { xpParaProximo } from '../rules/progressao.js';
 import { ANDARES } from './casadamorte.js';
+import { ESCADA_SECRETA_3, ESCADA_SECRETA_4 } from './casadamorte-alto.js';
 import { criarBuscas } from './buscas.js';
+import { altoInteracoes, altoGatilhos } from './casadamorte-alto-cena.js';
+import { poraoInteracoes, poraoGatilhos, reaplicarPorao } from './casadamorte-porao-cena.js';
+import { fugaInteracoes, fugaIniciar } from './casadamorte-fuga.js';
 
 const MOVIMENTO = 60;
 const dentro = (a, p) => p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2;
@@ -33,25 +38,34 @@ const PORTA_SECRETA = { x: 7, y: 5 };      // a estante da biblioteca (2º andar
 export function criarCasaDaMorte(app, config) {
   const enc = app.enc;
   const root = app.root;
-  const andar = ANDARES[config.variante ?? 'casaDaMorte1'];
+  const variante = config.variante ?? 'casaDaMorte1';
+  const andar = ANDARES[variante];
   const campanha = (app.campanha ??= {});
   const salvo = ((campanha.strahd ??= {}).casa ??= {
     vistas: [], paineisSala: false, paineisSalao: false, portasEntalhadas: false, estatuetas: false,
     armarioAberto: false, chave: false, livroFalso: false, passagemAberta: false, cartaLida: false, baul: false, livrosEstudados: false,
   });
+  // Campos que os saves antigos (só 1º e 2º andares) não têm.
+  salvo.vistas ??= [];
+  salvo.vencidos ??= [];
+  salvo.achados ??= {};          // o que já se pegou, por chave: cada tesouro vale uma vez
   const buscas = criarBuscas((salvo.buscas ??= {}));
-  const estado = { explorando: false, encerrado: false };
+  const estado = { explorando: false, encerrado: false, lutando: null };
 
-  const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+  const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
-  const teste = (c, pericia, cd) => {
+  const teste = (c, pericia, cd, vantagem = false) => {
     const x = ctxDe(app, enc);
-    const r = rolarTeste(x.estado, x.herois(), enc.rng, c, pericia, cd, {});
+    const r = rolarTeste(x.estado, x.herois(), enc.rng, c, pericia, cd, { vantagem });
     return { quem: r.quem, total: r.total, cd, passou: r.passou };
   };
   const areaDe = (p) => andar.areas.find((a) => dentro(a, p));
   const longe = (c, tile, pes = 10) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
+  const tem = (c, id) => garantirInventario(c).bag.some((i) => i.id === id && i.qtd > 0);
+  const algumTem = (id) => herois().find((h) => tem(h, id)) ?? null;
+  const consumir = (c, id) => { const b = garantirInventario(c).bag.find((i) => i.id === id && i.qtd > 0); if (b && !(b.qtd -= 1)) c.bag.splice(c.bag.indexOf(b), 1); };
 
+  // ------------------------------------------------------------ o terreno ----
   /** Troca o que há numa casa do mapa (a porta secreta que se abre): regra e desenho. */
   function mudarCasa(x, y, glifo) {
     const f = enc.field;
@@ -59,9 +73,33 @@ export function criarCasaDaMorte(app, config) {
     const i = y * f.w + x;
     f.tiles[i] = g.kind;
     f.surfaces[i] = SUPERFICIES.indexOf(g.sup);
-    f.heights[i] = 0;
+    f.heights[i] = g.kind === 1 ? 3 : 0;
   }
-  if (salvo.passagemAberta && config.variante === 'casaDaMorte2') mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
+  const mudarCasas = (lista, glifo) => { for (const [x, y] of lista) mudarCasa(x, y, glifo); };
+  if (salvo.passagemAberta && variante === 'casaDaMorte2') mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
+  // O alçapão do canil só existe depois que alguém o viu pelo lado de baixo.
+  if (salvo.alcapao && variante === 'casaDaMorte1') mudarCasa(6, 22, 'l');
+
+  // ----------------------------------------------------------- as criaturas ----
+  const grupos = {};
+  for (const f of (app.inimigosEscondidos ?? [])) (grupos[f.grupo] ??= { id: f.grupo, membros: [], ativo: false, vencido: false }).membros.push(f);
+  for (const g of Object.values(grupos)) {
+    g.furtividade = g.membros.map((f) => rolarPericia(enc.rng, f, 'furtividade').total);
+    if (salvo.vencidos.includes(g.id)) g.vencido = true;
+  }
+  const hostis = (g) => (g?.membros ?? []).filter((f) => f.side === 'foes' && !f.dead && !f.fugiu);
+  const pendentes = () => Object.values(grupos).filter((g) => !g.ativo && !g.vencido && hostis(g).length);
+  const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
+
+  function trazer(g) {
+    if (g.ativo) return;
+    g.ativo = true;
+    for (const f of g.membros) {
+      if (enc.combatants.includes(f) || f.dead) continue;
+      if (enc.occupied(f.pos.x, f.pos.y)) f.pos = { ...f.pos, ...casaPerto(f.pos) };
+      enc.addCombatant(f);
+    }
+  }
 
   function prepararExploracao() {
     enc.over = false;
@@ -77,36 +115,58 @@ export function criarCasaDaMorte(app, config) {
       c.acted = false;
     }
     estado.explorando = true;
+    estado.lutando = null;
     root.classList.add('explorando');
     if (!herois().includes(app.selected)) app.select(herois()[0]);
     app.refresh();
   }
 
+  /** Começa a luta com um grupo. `surpresa`: 'deles' (os monstros pegam o grupo desprevenido), 'nossa' ou nenhuma. */
+  async function combate(g, surpresa = null, intro = null) {
+    if (intro) await painel(intro, { titulo: g.titulo ?? undefined });
+    trazer(g);
+    estado.explorando = false;
+    estado.lutando = g;
+    root.classList.remove('explorando');
+    enc.emboscada = surpresa === 'deles'
+      ? { emboscadores: 'foes', furtividade: g.furtividade }
+      : surpresa === 'nossa' ? { emboscadores: 'party', furtividade: herois().map((h) => teste(h, 'furtividade', 0).total) } : null;
+    app.selected = null;
+    enc.start();
+    if (enc.side === 'party') app.select(app.firstActive());
+    app.refresh();
+  }
+
+  // ---------------------------------------------------------------- andares ----
   async function descrever(area) {
     if (salvo.vistas.includes(area.id)) return;
     salvo.vistas.push(area.id);
-    await painel(area.texto, { titulo: `${area.area}. ${area.nome}` });
-  }
-
-  async function depoisDeMover(c) {
-    if (!estado.explorando) return;
-    c.movementLeftFt = MOVIMENTO;
-    const a = areaDe(c.pos);
-    if (a) await descrever(a);
+    if (area.texto?.length) await painel(area.texto, { titulo: `${area.area}. ${area.nome}` });
   }
 
   /** Muda de andar: o grupo inteiro vai junto e a cena nova começa ao pé da escada. */
-  function irParaAndar(variante) {
-    app.newEncounter({ modo: 'campanha', aventura: 'cos', variante, entrada: 'escada', continuarCom: herois() });
+  function irParaAndar(destino) {
+    app.newEncounter({ modo: 'campanha', aventura: 'cos', variante: destino, entrada: variante, continuarCom: herois() });
   }
 
-  /** O marco do livro: a escada do sótão aparece e o grupo passa ao 2º nível. */
-  async function carta(c) {
-    salvo.cartaLida = true;
-    await painel([
-      'O papel é grosso, e a letra, fina e inclinada. A carta chama o dono desta casa de "meu servo mais patético" e diz que ele nunca foi o mensageiro de nenhum poder das trevas, que as almas que sangrou no altar nunca foram dele, e que a miséria em que vive é uma escolha de Strahd: ele prefere o ver assim. Assina "Strahd von Zarovich".',
-      'Quando vocês levantam os olhos, uma coisa mudou na casa. Atrás dos painéis do quarto de cima, onde há pouco só havia parede, alguma coisa girou. A casa quer que vocês vejam o que mostra agora: uma escada secreta, descendo ao escuro.',
-    ], { titulo: 'A carta de Strahd' });
+  /** A escada secreta (21): a porta atrás do espelho da babá e a espiral do sótão só existem depois que a casa as mostra. */
+  function aplicarEscada() {
+    if (!salvo.escada) return;
+    if (variante === 'casaDaMorte3') { mudarCasas(ESCADA_SECRETA_3, 'l'); mudarCasas([[9, 17], [9, 18]], '?'); }
+    if (variante === 'casaDaMorte4') mudarCasas(ESCADA_SECRETA_4, 'l');
+  }
+  aplicarEscada();
+  // A porta do quarto das crianças (20) fica trancada até alguém abri-la.
+  if (variante === 'casaDaMorte4' && !salvo.portaCriancas) mudarCasa(7, 6, 'M');
+
+  /** O marco do livro: quem chega à escada secreta (pela carta de Strahd ou pela casa de bonecas) passa ao 2º nível. */
+  async function revelarEscada() {
+    if (salvo.escada) return;
+    salvo.escada = true;
+    aplicarEscada();
+    app.refresh();
+    if (salvo.nivel2) return;
+    salvo.nivel2 = true;
     const grupo = herois();
     const sobem = darXp(grupo, Math.max(...grupo.map((h) => xpParaProximo(h))));
     enc.say('cura', 'A casa mostrou a escada secreta: o grupo passa ao 2º nível.');
@@ -114,13 +174,78 @@ export function criarCasaDaMorte(app, config) {
     app.refresh();
   }
 
+  async function carta() {
+    salvo.cartaLida = true;
+    await painel([
+      'O papel é grosso, e a letra, fina e inclinada. A carta chama o dono desta casa de "meu servo mais patético" e diz que ele nunca foi o mensageiro de nenhum poder das trevas, que as almas que sangrou no altar e os visitantes que torturou não foram trazidas por ele a esta bela terra: "vocês são apenas vermes que se contorcem na minha terra". Diz que ele está amaldiçoado, que gastou a fortuna, trocou o amor pela loucura e gerou um filho natimorto, e termina: "Salvar você de sua miséria? Eu acho que não. Prefiro que fique como está". Assina: Strahd von Zarovich.',
+      'Quando vocês levantam os olhos, uma coisa mudou na casa. Atrás do espelho do quarto da babá, no andar de cima, alguma coisa girou. A casa quer que vocês vejam o que mostra a escada.',
+    ], { titulo: 'A carta de Strahd' });
+    await revelarEscada();
+  }
+
+  // ------------------------------------------------------- o contexto dos módulos ----
+  const ctx = {
+    app, enc, root, config, variante, andar, salvo, estado, grupos,
+    herois, hostis, painel, teste, areaDe, longe, buscas, tem, algumTem, consumir, guardar,
+    mudarCasa, mudarCasas, combate, irParaAndar, revelarEscada, prepararExploracao, dentro,
+    vencer(id) { if (!salvo.vencidos.includes(id)) salvo.vencidos.push(id); const g = grupos[id]; if (g) g.vencido = true; },
+  };
+  ctx.depoisDaLuta = {};
+  ctx.paradas = [];
+  ctx.gatilhos = { ...altoGatilhos(ctx), ...poraoGatilhos(ctx) };
+  reaplicarPorao(ctx);
+  fugaIniciar(ctx);
+  // Onde o passo PARA: o poço escondido, o estrado do ritual, as portas de foice. Sem isto o herói atravessaria a armadilha andando.
+  enc.paraNaCasa = (c, p) => c.side === 'party' && estado.explorando && ctx.paradas.some((f) => f(c, p));
+
+  async function depoisDeMover(c) {
+    if (!estado.explorando) return;
+    c.movementLeftFt = MOVIMENTO;
+    const a = areaDe(c.pos);
+    if (a) await descrever(a);
+    // Os gatilhos do livro: o que acorda quando o grupo chega perto, entra na sala ou mexe no que não devia.
+    for (const g of pendentes()) {
+      const r = ctx.gatilhos[g.id]?.(c, a);
+      if (!r) continue;
+      await combate(g, r.surpresa ?? null, r.intro ?? null);
+      return;
+    }
+    if (ctx.aoMover) await ctx.aoMover(c, a);
+  }
+
+  /** O fim de cada luta: marca o grupo e volta a explorar. Derrota é o fim da partida. */
+  async function fimDoCombate(outcome) {
+    const g = estado.lutando;
+    if (outcome !== 'vitoria') {
+      estado.encerrado = true;
+      const v = await narrar(root, {
+        formato: 'tela',
+        paginas: [{ titulo: 'A Casa da Morte', texto: ['O grupo caiu na Casa da Morte. A casa fica à espera do próximo.'] }],
+        escolhas: [
+          { rotulo: 'Voltar ao menu', valor: 'menu' },
+          { rotulo: 'Tentar de novo', valor: 'denovo', primaria: true },
+        ],
+      });
+      if (v === 'denovo') app.newEncounter({ ...config, continuarCom: null });
+      else app.encerrarPartida();
+      return;
+    }
+    if (g) {
+      g.vencido = true;
+      if (!salvo.vencidos.includes(g.id)) salvo.vencidos.push(g.id);
+      const depois = ctx.depoisDaLuta?.[g.id];
+      if (depois) await depois(g);
+    }
+    prepararExploracao();
+  }
+
   /** O que o menu do botão direito oferece na casa clicada. */
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const area = areaDe(tile);
     const ops = [];
-    if (!area || sup === 'parede') return ops;
-
+    if (sup === 'parede') return ops;
+    if (!area) { poraoInteracoes(ctx, { area: null, tile, sup, c, ops }); return ops; }
     // ---- 1º andar
     if (area.id === 'salao' || area.id === 'jantar') {
       const feito = area.id === 'salao' ? salvo.paineisSalao : salvo.paineisSala;
@@ -244,22 +369,21 @@ export function criarCasaDaMorte(app, config) {
       });
     }
 
-    // ---- as escadas
+    // ---- 3º andar, sótão e masmorras, e a saída da casa
+    altoInteracoes(ctx, { area, tile, sup, c, ops });
+    poraoInteracoes(ctx, { area, tile, sup, c, ops });
+    fugaInteracoes(ctx, { area, tile, sup, c, ops });
+
+    // ---- as escadas (todas as que a planta declara, onde a casa já as mostrou)
     if (sup === 'escada') {
-      if (andar.escada.sobe) {
+      for (const e of andar.escadas ?? []) {
+        if (!dentro(e.rect, tile)) continue;
         ops.push({
-          rotulo: 'Subir a escadaria de mármore', icone: 'acao-usarObjeto', detalhe: '2º andar', motivo: null,
-          fazer: async () => { await painel('A escadaria gira para cima, ladeada por painéis de madeira entalhada, e uma corrente de ar frio desce por ela.'); irParaAndar(andar.escada.sobe); },
-        });
-      }
-      if (andar.escada.desce) {
-        ops.push({
-          rotulo: 'Descer a escadaria', icone: 'acao-usarObjeto', detalhe: '1º andar', motivo: null,
-          fazer: async () => { irParaAndar(andar.escada.desce); },
-        });
-        ops.push({
-          rotulo: 'Subir a escadaria', icone: 'acao-usarObjeto', detalhe: '3º andar', motivo: null,
-          fazer: async () => { await painel('A escadaria sobe em curva até um patamar empoeirado, onde uma armadura de placas negras espera de pé, coberta de teia. (O 3º andar ainda está em obras: a casa continua aqui quando ele ficar pronto.)'); },
+          rotulo: e.rotulo, icone: 'acao-usarObjeto', detalhe: e.detalhe, motivo: null,
+          fazer: async () => {
+            const passa = ctx.aoSubir ? await ctx.aoSubir(e) : true;
+            if (passa !== false) irParaAndar(e.destino);
+          },
         });
       }
     }
@@ -273,7 +397,7 @@ export function criarCasaDaMorte(app, config) {
     interacoes,
     interacoesDoHeroi: (c) => interacoes(c.pos, enc.field.surfaceAt(c.pos.x, c.pos.y), c),
     depoisDeMover,
-    fimDoCombate() {},
+    fimDoCombate,
     evento() {},
     dialogoDe: () => null,
     depoisDaConversa: () => {},
@@ -281,11 +405,16 @@ export function criarCasaDaMorte(app, config) {
     textoDoDescanso: () => ['Uma hora de vigia revezada num canto da sala.'],
     async iniciar() {
       prepararExploracao();
-      // Quem chega pela escada aparece ao pé dela, e não na porta da casa.
-      if (config.entrada === 'escada') {
-        herois().forEach((h, i) => { h.pos = { ...(andar.chegadaPelaEscada[i] ?? andar.chegadaPelaEscada[0]) }; });
+      // Quem chega de outro andar aparece onde a escada de lá termina, e não na porta da casa.
+      const chegada = config.entrada && andar.chegadas?.[config.entrada];
+      if (chegada) {
+        herois().forEach((h, i) => { h.pos = { ...(chegada[i] ?? chegada[0]) }; });
+        // Vir pelo alçapão do canil mostra o alçapão (e vir pela porta secreta da masmorra, a porta).
+        if (config.entrada === 'casaDaMortePorao1' && variante === 'casaDaMorte1') { salvo.alcapao = true; mudarCasa(6, 22, 'l'); }
+        if (config.entrada === 'casaDaMorte1' && variante === 'casaDaMortePorao1') { salvo.alcapao = true; mudarCasas([[36, 30], [36, 31]], '?'); }
         app.refresh();
       }
+      if (ctx.aoChegar) await ctx.aoChegar(config.entrada);
       const a = areaDe(herois()[0]?.pos ?? { x: 2, y: 21 });
       if (a) await descrever(a);
     },

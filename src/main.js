@@ -465,6 +465,11 @@ class App {
       });
       // Atalho de desenvolvimento: `?encontro=padrao&nivel=1&strahd=abertura` abre a chegada a Baróvia.
       if (busca.get("strahd") === "abertura") this.abrirAberturaStrahd();
+      // ... e `strahd=casaDaMorte3` (ou 1, 2, 4, Porao1, Porao2) cai direto no andar pedido, com o grupo da arena.
+      else if (/^casaDaMorte/.test(busca.get("strahd") ?? "")) {
+        const grupo = this.enc.combatants.filter((c) => c.side === "party" && !c.dead);
+        this.newEncounter({ modo: "campanha", aventura: "cos", variante: busca.get("strahd"), continuarCom: grupo });
+      }
     }
     else if (busca.get("sala"))
       this.menu.abrirSala(normalizarCodigo(busca.get("sala")) ?? "");
