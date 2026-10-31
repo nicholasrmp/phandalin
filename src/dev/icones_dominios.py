@@ -83,6 +83,17 @@ NOVOS4 = {
     'classe-spellBombardment': 'a bright orange fireball with a second smaller fireball bursting out of it and white sparks',
 }
 
+# Quinta leva: as sete manobras que faltavam ao Mestre de Batalha.
+NOVOS5 = {
+    'classe-disarmingAttack': 'a steel sword hooked under a steel sword hilt of an enemy, flipping a spinning grey sword up into the air with white motion streaks',
+    'classe-maneuveringAttack': 'a steel sword strike and a pale boot print with a bright white curved arrow showing an ally stepping aside',
+    'classe-sweepingAttack': 'a wide steel sword sweep arc cutting through two small round grey shield targets at once with a white crescent trail',
+    'classe-feintingAttack': 'a steel sword pointing left with a faint ghost sword pointing right and a bright white double arrow between them',
+    'classe-evasiveFootwork': 'a pale boot mid-step with white speed streaks and a small silver round shield glowing above it',
+    'classe-rally': 'a pale raised fist holding a small gold banner flag with bright green healing sparks around it',
+    'classe-commandersStrike': 'a pale pointing arm with a bright gold command ring and a steel sword swinging toward the point in white motion streaks',
+}
+
 
 def planejar(destino='x', novos=None):
     itens = list((novos or NOVOS).items())
@@ -106,4 +117,4 @@ def planejar(destino='x', novos=None):
 
 
 if __name__ == '__main__':
-    planejar('w', NOVOS4) if sys.argv[1:] == ['w'] else planejar('y', NOVOS2) if sys.argv[1:] == ['y'] else planejar('z', NOVOS3) if sys.argv[1:] == ['z'] else planejar()
+    planejar('u', NOVOS5) if sys.argv[1:] == ['u'] else planejar('w', NOVOS4) if sys.argv[1:] == ['w'] else planejar('y', NOVOS2) if sys.argv[1:] == ['y'] else planejar('z', NOVOS3) if sys.argv[1:] == ['z'] else planejar()

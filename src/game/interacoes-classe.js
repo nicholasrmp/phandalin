@@ -106,5 +106,27 @@ export function opcoesDeClasse(app, c, occ, { enc, vez = false, explorando = fal
     });
   }
 
+  // ---- Manobras com aliado (Mestre de Batalha) ------------------------------
+  // Reagrupar: PV temporários. Golpe do Comandante: um golpe cedido, o aliado ataca de reação.
+  const dados = c.resources?.superiorityDice ?? 0;
+  if (c.features?.includes('rally') && occ !== c && vez) {
+    opcoes.push({
+      grupo: 'Apoiar', rotulo: `Reagrupar ${occ.name} (${dados} dados)`, icone: 'classe-rally', alvoPrevia: occ,
+      detalhe: 'ação bônus · PV temporários = dado + Carisma',
+      motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada' : dados <= 0 ? 'sem dados de superioridade'
+        : distanceFt(c.pos, occ.pos) > 60 ? 'longe demais (alcance de 18 m)' : null,
+      fazer: () => app.usarFeature(c, 'rally', { target: occ }),
+    });
+  }
+  if (c.features?.includes('commandersStrike') && occ !== c && vez) {
+    opcoes.push({
+      grupo: 'Apoiar', rotulo: `Golpe do Comandante: ${occ.name} ataca (${dados} dados)`, icone: 'classe-commandersStrike', alvoPrevia: occ,
+      detalhe: 'ação bônus · abre mão de um golpe seu; ele ataca de reação com +dado',
+      motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada' : c.actionUsed ? 'use antes de atacar' : dados <= 0 ? 'sem dados de superioridade'
+        : occ.reactionUsed ? `${occ.name} já usou a reação` : distanceFt(c.pos, occ.pos) > 60 ? 'longe demais (alcance de 18 m)' : null,
+      fazer: () => app.usarFeature(c, 'commandersStrike', { target: occ }),
+    });
+  }
+
   return opcoes;
 }

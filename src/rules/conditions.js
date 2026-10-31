@@ -419,13 +419,19 @@ export const CONDITIONS = {
     name: 'Distraído',
     desc: 'O próximo ataque de um aliado de quem o distraiu tem vantagem (Ataque Distrativo).',
   },
-  provocado: {
-    name: 'Provocado',
-    desc: 'Desvantagem nos ataques contra qualquer um que não seja quem o provocou (Ataque Provocador).',
+  desarmado: {
+    name: 'Desarmado',
+    desc: 'Largou a arma: desvantagem em todos os ataques (Ataque Desarmante).',
+    attackDisadvantage: true,
   },
-  distraido: {
-    name: 'Distraído',
-    desc: 'O próximo ataque de um aliado de quem o distraiu tem vantagem (Ataque Distrativo).',
+  manobrado: {
+    name: 'Reposicionado',
+    desc: 'Anda sem provocar ataque de oportunidade de quem o Ataque Estratégico marcou.',
+  },
+  passoEvasivo: {
+    name: 'Passo Evasivo',
+    desc: 'Soma o dado de superioridade à CA até o fim do turno.',
+    acNaData: true,
   },
   paralisadoDeMedo: {
     name: 'Paralisado de Medo',
@@ -988,6 +994,7 @@ export function conditionEffects(actor) {
     if (def.attackPenaltyDice) out.attackPenaltyDice.push(def.attackPenaltyDice);
     if (def.savePenaltyDice) out.savePenaltyDice.push(def.savePenaltyDice);
     if (def.acBonus) out.acBonus += def.acBonus;
+    if (def.acNaData && c.data?.acBonus) out.acBonus += c.data.acBonus;
     for (const [hab, v] of Object.entries(def.saveFixo ?? {})) out.saveFixo[hab] = (out.saveFixo[hab] ?? 0) + v;
     if (def.speedHalf) out.speedHalf = true;
     if (def.speedHalfMagico) out.speedHalfMagico = true;

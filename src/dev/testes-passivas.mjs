@@ -4020,7 +4020,7 @@ teste('Treinamento Excepcional (7º): ordenar custa a ação bônus; Fúria Best
 // ============================================================================================================
 
 teste('Mestre de Batalha: 9 manobras; Provocador e Distrativo marcam o alvo; Derrubador e Empurrão não valem contra Enorme', () => {
-  assert.equal(CLASSES.guerreiro.subclasse.opcoes.mestreDeBatalha.opcoesDeManobra.length, 9);
+  assert.equal(CLASSES.guerreiro.subclasse.opcoes.mestreDeBatalha.opcoesDeManobra.length, 16);
   const prov = mestre(3);
   prov.features.push('goadingAttack', 'distractingStrike');
   prov.pos = { x: 5, y: 5 };
@@ -4972,6 +4972,103 @@ teste('Patronos do bruxo: Arquifada e Grande Antigo ganham as magias extras na l
   assert.ok(goa.includes('sussurrosDissonantes') && goa.includes('clarividencia'));
   assert.ok(!listaDaClasse('bruxo', 3).magias.includes('sono'), 'sem patrono, nada extra');
   assert.equal(new Set(arq).size, arq.length, 'sem repetida');
+});
+
+teste('As 16 manobras: Desarmante, Fintado, Varredura, Estratégico, Passo Evasivo, Reagrupar e Comandante', async () => {
+  // Desarmante: FOR ou larga a arma (desvantagem), o dado só no acerto
+  const d = mestre(3);
+  d.features.push('disarmingAttack');
+  d.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const { enc } = arena({ herois: [d], foes: [gob] });
+  enc.useFeature(d, 'disarmingAttack');
+  enc.rng = dadoEmSequencia(15, 2);
+  enc.attackAction(d, gob, 'espadaLonga');
+  assert.ok(hasCondition(gob, 'desarmado'));
+  assert.equal(d.resources.superiorityDice, 3);
+  assert.ok(enc.attackModifiers(gob, d, {}).desvantagens.length > 0, 'desarmado ataca com desvantagem');
+  // Fintado: ação bônus, vantagem no ataque seguinte
+  const f = mestre(3);
+  f.features.push('feintingAttack');
+  f.pos = { x: 5, y: 5 };
+  const g2 = inimigo('goblin', { x: 6, y: 5 });
+  g2.hp = g2.maxHp = 300;
+  const { enc: e2 } = arena({ herois: [f], foes: [g2] });
+  assert.equal(e2.useFeature(f, 'feintingAttack'), true);
+  assert.equal(f.bonusUsed, true);
+  assert.ok(e2.attackModifiers(f, g2, {}).vantagens.includes('ataque fintado'));
+  assert.equal(e2.useFeature(f, 'feintingAttack'), false, 'só uma ação bônus');
+  // Varredura: a mesma rolagem acerta o vizinho do alvo
+  const v = mestre(3);
+  v.features.push('sweepingAttack');
+  v.pos = { x: 5, y: 5 };
+  const a1 = inimigo('goblin', { x: 6, y: 5 });
+  const a2 = inimigo('goblin', { x: 6, y: 6 });
+  a1.hp = a1.maxHp = 300;
+  a2.hp = a2.maxHp = 300;
+  a2.ac = 5;
+  const { enc: e3 } = arena({ herois: [v], foes: [a1, a2] });
+  e3.useFeature(v, 'sweepingAttack');
+  e3.rng = dadoEmSequencia(15, 3);
+  e3.attackAction(v, a1, 'espadaLonga');
+  assert.ok(a2.hp < 300, 'o vizinho sofreu o dado');
+  // Estratégico: o aliado anda sem provocar o alvo
+  const m = mestre(3);
+  m.features.push('maneuveringAttack');
+  m.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo.pos = { x: 4, y: 5 };
+  const g3 = inimigo('goblin', { x: 6, y: 5 });
+  g3.hp = g3.maxHp = 300;
+  const { enc: e4 } = arena({ herois: [m, amigo], foes: [g3] });
+  e4.useFeature(m, 'maneuveringAttack');
+  e4.rng = dadoEmSequencia(15, 2);
+  e4.attackAction(m, g3, 'espadaLonga');
+  assert.equal(getCondition(amigo, 'manobrado')?.data?.de, g3.id);
+  // Passo Evasivo: soma o dado à CA
+  const p = mestre(3);
+  p.features.push('evasiveFootwork');
+  p.pos = { x: 5, y: 5 };
+  const { enc: e5 } = arena({ herois: [p], foes: [alvoParado({ x: 9, y: 9 })] });
+  e5.rng = dadoEmSequencia(1);
+  e5.rng.die = () => 4;
+  const ca0 = caEfetiva(p);
+  assert.equal(e5.useFeature(p, 'evasiveFootwork'), true);
+  assert.equal(caEfetiva(p), ca0 + 4);
+  assert.equal(p.resources.superiorityDice, 3);
+  // Reagrupar: PV temporários = dado + Carisma
+  const r = mestre(3);
+  r.features.push('rally');
+  r.pos = { x: 5, y: 5 };
+  const ferido = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  ferido.pos = { x: 6, y: 5 };
+  const { enc: e6 } = arena({ herois: [r, ferido], foes: [alvoParado({ x: 9, y: 9 })] });
+  assert.equal(e6.useFeature(r, 'rally', { target: ferido }), true);
+  assert.ok((ferido.tempHp ?? 0) >= 0 && r.bonusUsed);
+  assert.equal(e6.useFeature(r, 'rally', { target: r }), false, 'não em si mesmo');
+  // Comandante: abre mão de um golpe (nível 5), o aliado ataca de reação
+  const c = mestre(5);
+  c.features.push('commandersStrike');
+  c.pos = { x: 5, y: 5 };
+  const aliado = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  aliado.pos = { x: 5, y: 6 };
+  const alvo = inimigo('goblin', { x: 6, y: 6 });
+  alvo.hp = alvo.maxHp = 300;
+  const { enc: e7 } = arena({ herois: [c, aliado], foes: [alvo] });
+  const swings0 = e7.golpesDoAtaque(c, 'espadaLonga').length;
+  e7.rng = dadoEmSequencia(15, 3);
+  assert.equal(e7.useFeature(c, 'commandersStrike', { target: aliado }), true);
+  assert.equal(aliado.reactionUsed, true);
+  assert.ok(alvo.hp < 300, 'o aliado acertou');
+  assert.equal(e7.golpesDoAtaque(c, 'espadaLonga').length, swings0 - 1);
+  const c2 = mestre(3);
+  c2.features.push('commandersStrike');
+  c2.pos = { x: 5, y: 5 };
+  const al2 = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  al2.pos = { x: 5, y: 6 };
+  const { enc: e8 } = arena({ herois: [c2, al2], foes: [inimigo('goblin', { x: 6, y: 6 })] });
+  assert.equal(e8.useFeature(c2, 'commandersStrike', { target: al2 }), false, 'com um golpe só não há o que ceder');
 });
 
 // ============================================================================================================

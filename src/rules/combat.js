@@ -865,7 +865,7 @@ export class Encounter {
   }
 
   /** O que a manobra armada faz DEPOIS de acertar: paga o dado, soma o dano e aplica o efeito. Chamado por `extrasDoAcerto`. */
-  aplicarManobra(atacante, alvo, extra, tipo) {
+  aplicarManobra(atacante, alvo, extra, tipo, atkTotal = null) {
     const id = atacante.manobraPronta;
     atacante.manobraPronta = null;
     if (!id || id === 'precisionAttack' || (atacante.resources?.superiorityDice ?? 0) < 1) return;
@@ -873,10 +873,29 @@ export class Encounter {
     const nomes = {
       tripAttack: 'Ataque Derrubador', menacingAttack: 'Ataque Amedrontador', pushingAttack: 'Ataque Empurrão', lungingAttack: 'Ataque Avançado',
       goadingAttack: 'Ataque Provocador', distractingStrike: 'Ataque Distrativo', riposteStrike: 'Riposta',
+      disarmingAttack: 'Ataque Desarmante', maneuveringAttack: 'Ataque Estratégico', sweepingAttack: 'Ataque Varredura', feintingAttack: 'Ataque Fintado',
     };
     this.say('recurso', `${atacante.name} gasta um dado de superioridade: ${nomes[id]} (restam ${atacante.resources.superiorityDice}).`);
     extra(nomes[id], this.dadoDeSuperioridade(atacante), tipo, false);
-    if (alvo.dead || id === 'lungingAttack' || id === 'riposteStrike') return;
+    // ATAQUE VARREDURA: se a mesma rolagem também acertaria outra criatura ao lado do alvo e ao alcance de quem ataca, ela sofre o dado.
+    if (id === 'sweepingAttack' && atkTotal != null) {
+      const outro = this.enemiesOf(atacante).find((e) => e !== alvo && !e.dead && distanceFt(e.pos, alvo.pos) <= 5 && distanceFt(e.pos, atacante.pos) <= this.reachOf(atacante));
+      if (outro && atkTotal >= caEfetiva(outro)) {
+        const r = damageRoll(this.rng, this.dadoDeSuperioridade(atacante), { critical: false });
+        this.say('recurso', `A varredura de ${atacante.name} alcança ${outro.name}: +${r.total} de ${tipo}.`, `${atkTotal} contra CA ${caEfetiva(outro)}`);
+        this.applyDamage(outro, r.total, tipo, atacante, { deArma: true, corpoACorpo: true });
+      }
+    }
+    // ATAQUE ESTRATÉGICO: o aliado mais perto anda, até o fim do próximo turno dele, sem provocar o alvo.
+    if (id === 'maneuveringAttack') {
+      const amigo = this.combatants.filter((x) => x !== atacante && !x.dead && x.side === atacante.side && distanceFt(x.pos, atacante.pos) <= 30)
+        .sort((a, b) => distanceFt(a.pos, atacante.pos) - distanceFt(b.pos, atacante.pos))[0];
+      if (amigo) {
+        addCondition(amigo, 'manobrado', { rounds: 1, quando: 'fim', lado: amigo.side, source: atacante.id, data: { de: alvo.id } });
+        this.say('recurso', `${amigo.name} pode se reposicionar sem provocar ${alvo.name} (Ataque Estratégico).`);
+      }
+    }
+    if (alvo.dead || ['lungingAttack', 'riposteStrike', 'feintingAttack', 'sweepingAttack', 'maneuveringAttack'].includes(id)) return;
     // O DISTRATIVO: o próximo ataque de um aliado contra o alvo tem vantagem (some no primeiro golpe de quem não é o distrator).
     if (id === 'distractingStrike') {
       this.aplicarCondicao(alvo, 'distraido', { rounds: 1, quando: 'inicio', lado: atacante.side, source: atacante.id });
@@ -893,7 +912,7 @@ export class Encounter {
     const save = this.resistencia(alvo, hab, cd);
     this.explicarResistencia(alvo, hab, cd, save, {
       contra: `${nomes[id]} de ${atacante.name}`,
-      seSucesso: id === 'tripAttack' ? 'não cai' : id === 'menacingAttack' ? 'não fica amedrontado' : id === 'goadingAttack' ? 'não se deixa provocar' : 'não é empurrado',
+      seSucesso: id === 'tripAttack' ? 'não cai' : id === 'menacingAttack' ? 'não fica amedrontado' : id === 'goadingAttack' ? 'não se deixa provocar' : id === 'disarmingAttack' ? 'segura a arma' : 'não é empurrado',
     });
     if (save.success) return;
     if (id === 'tripAttack') {
@@ -902,9 +921,9 @@ export class Encounter {
       if (this.aplicarCondicao(alvo, 'provocado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
         this.say('condicao', `${alvo.name} fica furioso com ${atacante.name}: desvantagem em atacar qualquer outro até o fim do próximo turno dele.`);
       }
-    } else if (id === 'goadingAttack') {
-      if (this.aplicarCondicao(alvo, 'provocado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
-        this.say('condicao', `${alvo.name} fica furioso com ${atacante.name}: desvantagem em atacar qualquer outro até o fim do próximo turno dele.`);
+    } else if (id === 'disarmingAttack') {
+      if (this.aplicarCondicao(alvo, 'desarmado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+        this.say('condicao', `${alvo.name} deixa a arma escapar: ataca com desvantagem até o fim do próximo turno dele.`);
       }
     } else if (id === 'menacingAttack') {
       if (this.aplicarCondicao(alvo, 'amedrontado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
@@ -1324,7 +1343,7 @@ export class Encounter {
     if (this.round === 1 && actor.features?.includes('thiefsReflexes') && !this.reflexosUsados?.has(actor.id) && !actor.dead) {
       (this.reflexosUsados ??= new Set()).add(actor.id);
       actor.movementLeftFt = this.speedOf(actor);
-      Object.assign(actor, { actionUsed: false, bonusUsed: false, ataquesRestantes: 0, extraActions: 0, disengaging: false, magiasNoTurno: [], surgeUsedThisTurn: false, atacouDeMonge: false, atacouNoTurno: false, martialUsedThisTurn: false, sneakUsedThisTurn: false, interacaoUsada: false, corridaFt: 0 });
+      Object.assign(actor, { actionUsed: false, bonusUsed: false, ataquesRestantes: 0, extraActions: 0, disengaging: false, golpeCedido: false, magiasNoTurno: [], surgeUsedThisTurn: false, atacouDeMonge: false, atacouNoTurno: false, martialUsedThisTurn: false, sneakUsedThisTurn: false, interacaoUsada: false, corridaFt: 0 });
       this.say('recurso', `${actor.name} age de novo: Reflexos de Ladrão dão um segundo turno na primeira rodada.`);
       this.onEvent({ type: 'turnEnd', actor });
       return;
@@ -1633,6 +1652,7 @@ export class Encounter {
       // tem com que aproveitar a brecha.
       const threats = actor.disengaging ? [] : this.enemiesOf(actor).filter(
         (e) => !e.reactionUsed
+          && getCondition(actor, 'manobrado')?.data?.de !== e.id
           && !conditionEffects(e).incapacitated
           && this.armaDeOportunidade(e) !== undefined
           && !this.separadosPelaAltura(e, actor)
@@ -2721,7 +2741,7 @@ export class Encounter {
     const dy = Math.sign(dest.y - origin.y);
     const n = alvo.cost / 5;
     const threats = actor.disengaging ? [] : this.enemiesOf(actor).filter(
-      (e) => !e.reactionUsed && !conditionEffects(e).incapacitated
+      (e) => !e.reactionUsed && getCondition(actor, 'manobrado')?.data?.de !== e.id && !conditionEffects(e).incapacitated
         && this.armaDeOportunidade(e) !== undefined
         && distanceFt(e.pos, origin) <= this.reachOf(e)
         && distanceFt(e.pos, dest) > this.reachOf(e),
@@ -2953,6 +2973,8 @@ export class Encounter {
     // Toque Arrepiante: desvantagem só contra quem conjurou.
     if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
     if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
+    // ATAQUE FINTADO: a finta dá vantagem no próximo ataque contra quem está a 1,5 m.
+    if (attacker.manobraPronta === 'feintingAttack' && distanceFt(attacker.pos, target.pos) <= 5) fonte(mods, 'vantagem', 'ataque fintado');
     // ATAQUE PROVOCADOR: quem foi provocado ataca com desvantagem qualquer um que não seja o provocador.
     const provManobra = getCondition(attacker, 'provocado');
     if (provManobra && provManobra.source !== target.id) fonte(mods, 'desvantagem', 'provocado');
@@ -3875,7 +3897,7 @@ export class Encounter {
     const hpAntesDoGolpe = target.hp;
     this.umaFonteDeDano(() => {
       this.applyDamage(target, total, p.type, attacker, { critical, magico, deArma: true, corpoACorpo: !p.ranged });
-      this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical, hpAntes: hpAntesDoGolpe });
+      this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical, hpAntes: hpAntesDoGolpe, atkTotal: atk.total });
       // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
       if (p.danoExtra && !target.dead && (!p.danoExtra.contra || target.tipo === p.danoExtra.contra)) {
         this.danoExtraDoGolpe(attacker, target, p, critical);
@@ -4139,7 +4161,7 @@ export class Encounter {
     // LÂMINA SEDENTA (invocação, Pacto da Lâmina, 5º): um ataque a mais com a arma do pacto.
     const sedenta = attacker.features?.includes('thirstingBlade') && attacker.features?.includes('pactOfTheBlade') ? 1 : 0;
     // Com um ataque cedido ao companheiro (Senhor das Feras), o patrulheiro faz um golpe a menos.
-    if (!attacker.attacks) return Array(Math.max(1, 1 + Math.max(attacker.ataquesExtras ?? 0, sedenta) - (attacker.comandouNoTurno ? 1 : 0))).fill(arma);
+    if (!attacker.attacks) return Array(Math.max(1, 1 + Math.max(attacker.ataquesExtras ?? 0, sedenta) - (attacker.comandouNoTurno ? 1 : 0) - (attacker.golpeCedido ? 1 : 0))).fill(arma);
     if (!ma || ma.count <= 1) return [arma];
     const seq = ma.sequence ?? ma.pattern;
     if (seq) return seq.includes(arma) ? seq.slice(0, ma.count) : [arma];
@@ -6926,7 +6948,7 @@ export class Encounter {
    * alvo, Favor Divino em quem ataca, e os golpes preparados (Trovejante,
    * Abrasador, Colérico, Saraivada de Espinhos), que se gastam no acerto.
    */
-  extrasDoAcerto(atacante, alvo, { arma, ranged, tipo, critical, hpAntes = alvo.hp }) {
+  extrasDoAcerto(atacante, alvo, { arma, ranged, tipo, critical, hpAntes = alvo.hp, atkTotal = null }) {
     const extra = (rotulo, dados, tipoDano, magico = true) => {
       if (alvo.dead) return;
       const r = damageRoll(this.rng, dados, { critical });
@@ -6952,7 +6974,13 @@ export class Encounter {
     if (!arma) return;
     const f = atacante.features ?? [];
     // MANOBRA armada (Mestre de Batalha): +dado de superioridade no dano e o efeito dela.
-    if (atacante.manobraPronta) this.aplicarManobra(atacante, alvo, extra, tipo);
+    // GOLPE DO COMANDANTE: o aliado que atacou a mando soma o dado do comandante (o dado já foi pago por ele).
+    if (atacante.comandoDado) {
+      const d = atacante.comandoDado;
+      atacante.comandoDado = null;
+      extra('Golpe do Comandante', d, tipo, false);
+    }
+    if (atacante.manobraPronta) this.aplicarManobra(atacante, alvo, extra, tipo, atkTotal);
     // GOLPE DIVINO (clérigo da Vida, 8º): +1d8 radiante UMA vez por turno no acerto de arma; 2d8 do 14º em diante.
     if (['divineStrike', 'divineStrikeThunder', 'divineStrikeWeapon', 'divineStrikeNature', 'divineStrikePoison'].some((x) => f.includes(x)) && !atacante.golpeDivinoNoTurno) {
       atacante.golpeDivinoNoTurno = true;
@@ -8415,13 +8443,67 @@ export class Encounter {
         this.say('cura', `${actor.name} gasta um espaço de ${n}º círculo e recupera ${actor.hp - antes} PV na forma de ${actor.formaSelvagem.nome} (Forma Selvagem em Combate).`);
         return true;
       }
-      case 'tripAttack': case 'menacingAttack': case 'pushingAttack': case 'lungingAttack': case 'precisionAttack': case 'goadingAttack': case 'distractingStrike': {
+      case 'tripAttack': case 'menacingAttack': case 'pushingAttack': case 'lungingAttack': case 'precisionAttack': case 'goadingAttack': case 'distractingStrike':
+      case 'disarmingAttack': case 'maneuveringAttack': case 'sweepingAttack': {
         // MANOBRA é um INTERRUPTOR, de graça: armada, vale no próximo ataque de arma do turno (uma por ataque). O dado se gasta no
         // acerto (ou, no Ataque Preciso, quando ele vira o erro em acerto): armar e não acertar não custa nada.
         if (!actor.features?.includes(featureId) || (actor.resources?.superiorityDice ?? 0) < 1) return false;
         const liga = modo === 'ligar' ? true : modo === 'desligar' ? false : actor.manobraPronta !== featureId;
         actor.manobraPronta = liga ? featureId : null;
         this.say('recurso', `${actor.name} ${liga ? 'arma' : 'desarma'} a manobra ${nomeDaCaracteristica(featureId)}.`);
+        return true;
+      }
+      case 'feintingAttack': {
+        // ATAQUE FINTADO: ação bônus que arma a manobra; a vantagem e o dado vêm no próximo ataque de arma do turno.
+        if (!actor.features?.includes(featureId) || actor.bonusUsed || (actor.resources?.superiorityDice ?? 0) < 1) return false;
+        actor.bonusUsed = true;
+        actor.manobraPronta = featureId;
+        this.say('recurso', `${actor.name} finta (Ataque Fintado): vantagem no próximo ataque contra quem está ao lado.`);
+        return true;
+      }
+      case 'evasiveFootwork': {
+        // PASSO EVASIVO: livre; gasta o dado e soma a rolagem à CA até o fim do turno.
+        if (!actor.features?.includes(featureId) || (actor.resources?.superiorityDice ?? 0) < 1 || hasCondition(actor, 'passoEvasivo')) return false;
+        actor.resources.superiorityDice -= 1;
+        const r = roll(this.rng, this.dadoDeSuperioridade(actor));
+        addCondition(actor, 'passoEvasivo', { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id, data: { acBonus: r.total } });
+        this.say('recurso', `${actor.name} gasta um dado de superioridade: +${r.total} de CA até o fim do turno (Passo Evasivo).`);
+        return true;
+      }
+      case 'rally': {
+        // REAGRUPAR: ação bônus; um aliado que o ouça ganha PV temporários = dado + Carisma.
+        const aliado = target;
+        if (!actor.features?.includes(featureId) || actor.bonusUsed || (actor.resources?.superiorityDice ?? 0) < 1) return false;
+        if (!aliado || aliado === actor || aliado.dead || aliado.side !== actor.side || distanceFt(actor.pos, aliado.pos) > 60) return false;
+        actor.bonusUsed = true;
+        actor.resources.superiorityDice -= 1;
+        const r = roll(this.rng, this.dadoDeSuperioridade(actor));
+        const pv = Math.max(0, r.total + abilityMod(actor.abilities?.cha ?? 10));
+        aliado.tempHp = Math.max(aliado.tempHp ?? 0, pv);
+        this.say('recurso', `${actor.name} reagrupa ${aliado.name}: ${pv} PV temporários (Reagrupar).`);
+        return true;
+      }
+      case 'commandersStrike': {
+        // GOLPE DO COMANDANTE: ação bônus, antes do Ataque. Abre mão de um golpe (exige dois ou mais); o aliado usa a reação para atacar.
+        const aliado = target;
+        if (!actor.features?.includes(featureId) || actor.bonusUsed || actor.actionUsed || (actor.resources?.superiorityDice ?? 0) < 1) return false;
+        if (!aliado || aliado === actor || aliado.dead || aliado.side !== actor.side || aliado.reactionUsed || conditionEffects(aliado).incapacitated) return false;
+        if (distanceFt(actor.pos, aliado.pos) > 60 || this.golpesDoAtaque(actor, actor.equippedWeapon).length < 2) return false;
+        const arma = this.armaDeOportunidade(aliado);
+        const alvoDele = arma === undefined ? null : this.enemiesOf(aliado).filter((e) => !e.dead && this.canAttack(aliado, e, arma).ok)
+          .sort((a, b) => distanceFt(a.pos, aliado.pos) - distanceFt(b.pos, aliado.pos))[0];
+        if (!alvoDele) return false;
+        actor.bonusUsed = true;
+        actor.golpeCedido = true;
+        actor.resources.superiorityDice -= 1;
+        aliado.reactionUsed = true;
+        aliado.comandoDado = this.dadoDeSuperioridade(actor);
+        this.say('recurso', `${actor.name} abre mão de um golpe e manda ${aliado.name} atacar (Golpe do Comandante).`);
+        try {
+          this.resolveAttackBase(aliado, alvoDele, { opportunity: true, weaponId: arma, reacao: true });
+        } finally {
+          aliado.comandoDado = null;
+        }
         return true;
       }
       case 'carefulSpell': case 'distantSpell': case 'empoweredSpell': case 'extendedSpell':

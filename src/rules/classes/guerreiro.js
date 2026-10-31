@@ -80,9 +80,10 @@ export default {
         },
         // Dados de superioridade: 4 no 3º, 5 no 7º, 6 no 15º (o tamanho do dado sai do nível, em combat.js).
         recursos: { superiorityDice: (n) => (n >= 15 ? 6 : n >= 7 ? 5 : 4) },
-        // Manobras conhecidas: 3 no 3º, 5 no 7º, 7 no 10º, 9 no 15º. Só entram as 9 que o motor aplica (o livro tem 16).
+        // Manobras conhecidas: 3 no 3º, 5 no 7º, 7 no 10º, 9 no 15º. Entram as 16 do livro.
         manobras: { 3: 3, 7: 5, 10: 7, 15: 9 },
-        opcoesDeManobra: ['tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack', 'goadingAttack', 'distractingStrike', 'riposte', 'parry'],
+        opcoesDeManobra: ['tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack', 'goadingAttack', 'distractingStrike', 'riposte', 'parry',
+          'commandersStrike', 'disarmingAttack', 'evasiveFootwork', 'feintingAttack', 'maneuveringAttack', 'rally', 'sweepingAttack'],
       },
     },
   },

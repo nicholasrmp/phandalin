@@ -1322,7 +1322,27 @@ export class Hud {
         goadingAttack: ['Ataque Provocador', '+dado de dano; SAB ou ataca com desvantagem qualquer outro.'],
         distractingStrike: ['Ataque Distrativo', '+dado de dano; o próximo aliado a atacar o alvo tem vantagem.'],
         precisionAttack: ['Ataque Preciso', 'Se o ataque errar por pouco, soma o dado e pode acertar.'],
+        disarmingAttack: ['Ataque Desarmante', '+dado de dano; FOR ou larga a arma (ataca com desvantagem).'],
+        maneuveringAttack: ['Ataque Estratégico', '+dado de dano; o aliado mais perto anda sem provocar o alvo.'],
+        sweepingAttack: ['Ataque Varredura', '+dado de dano; se a rolagem acertar outro inimigo ao lado do alvo, ele sofre o dado.'],
       };
+      // FINTA e PASSO EVASIVO não são interruptores de golpe: um gasta a ação bônus e arma, o outro soma à CA na hora.
+      if (f === 'feintingAttack') {
+        const ligado = c.manobraPronta === f;
+        comum(f, 'Ataque Fintado', `Ação bônus: vantagem no próximo ataque de arma contra quem está ao lado; se acertar, +dado de dano. Dados de superioridade: ${c.resources?.superiorityDice ?? 0}.`, 'Ação bônus',
+          { kind: 'feature', featureId: f }, (c.bonusUsed || !(c.resources?.superiorityDice > 0)) && !ligado, 'superiorityDice', null,
+          { ativo: ligado, selo: ligado ? 'LIG' : null });
+        continue;
+      }
+      if (f === 'evasiveFootwork') {
+        const ligado = hasCondition(c, 'passoEvasivo');
+        comum(f, 'Passo Evasivo', `Livre: soma o dado à CA até o fim do turno (vale contra ataques de oportunidade). Dados de superioridade: ${c.resources?.superiorityDice ?? 0}.`, 'Livre',
+          { kind: 'feature', featureId: f }, ligado || !(c.resources?.superiorityDice > 0), 'superiorityDice', null,
+          { ativo: ligado });
+        continue;
+      }
+      // REAGRUPAR e GOLPE DO COMANDANTE pedem um aliado: ficam no menu do botão direito sobre ele (interacoes-classe.js).
+      if (f === 'rally' || f === 'commandersStrike') continue;
       if (MANOBRA[f]) {
         const ligado = c.manobraPronta === f;
         comum(f, MANOBRA[f][0], `Interruptor: ${MANOBRA[f][1]} Dados de superioridade: ${c.resources?.superiorityDice ?? 0}.`, 'Livre',
