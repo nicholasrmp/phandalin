@@ -625,6 +625,7 @@ export class Encounter {
       c.aurasNoTurno = [];
       c.ataquesRestantes = 0;
       c.comandouNoTurno = false;
+      c.golpeCedido = false;
       c.proibidoAtacar = false;
       this.vinculoDoGuardiao(c);
       for (const ativa of Object.values(c.magiasAtivas ?? {})) ativa.usadoNoTurno = false;
@@ -870,10 +871,12 @@ export class Encounter {
   }
 
   /** O que a manobra armada faz DEPOIS de acertar: paga o dado, soma o dano e aplica o efeito. Chamado por `extrasDoAcerto`. */
-  aplicarManobra(atacante, alvo, extra, tipo, atkTotal = null) {
+  aplicarManobra(atacante, alvo, extra, tipo, atkTotal = null, ranged = false) {
     const id = atacante.manobraPronta;
     atacante.manobraPronta = null;
     if (!id || id === 'precisionAttack' || (atacante.resources?.superiorityDice ?? 0) < 1) return;
+    // A finta só vale contra quem está a 1,5 m: de longe, o dado não se gasta.
+    if (id === 'feintingAttack' && distanceFt(atacante.pos, alvo.pos) > 5) return;
     atacante.resources.superiorityDice -= 1;
     const nomes = {
       tripAttack: 'Ataque Derrubador', menacingAttack: 'Ataque Amedrontador', pushingAttack: 'Ataque Empurrão', lungingAttack: 'Ataque Avançado',
@@ -881,14 +884,14 @@ export class Encounter {
       disarmingAttack: 'Ataque Desarmante', maneuveringAttack: 'Ataque Estratégico', sweepingAttack: 'Ataque Varredura', feintingAttack: 'Ataque Fintado',
     };
     this.say('recurso', `${atacante.name} gasta um dado de superioridade: ${nomes[id]} (restam ${atacante.resources.superiorityDice}).`);
-    extra(nomes[id], this.dadoDeSuperioridade(atacante), tipo, false);
+    const dadoRolado = extra(nomes[id], this.dadoDeSuperioridade(atacante), tipo, false);
     // ATAQUE VARREDURA: se a mesma rolagem também acertaria outra criatura ao lado do alvo e ao alcance de quem ataca, ela sofre o dado.
-    if (id === 'sweepingAttack' && atkTotal != null) {
-      const outro = this.enemiesOf(atacante).find((e) => e !== alvo && !e.dead && distanceFt(e.pos, alvo.pos) <= 5 && distanceFt(e.pos, atacante.pos) <= this.reachOf(atacante));
-      if (outro && atkTotal >= caEfetiva(outro)) {
-        const r = damageRoll(this.rng, this.dadoDeSuperioridade(atacante), { critical: false });
-        this.say('recurso', `A varredura de ${atacante.name} alcança ${outro.name}: +${r.total} de ${tipo}.`, `${atkTotal} contra CA ${caEfetiva(outro)}`);
-        this.applyDamage(outro, r.total, tipo, atacante, { deArma: true, corpoACorpo: true });
+    if (id === 'sweepingAttack' && atkTotal != null && !ranged && dadoRolado) {
+      const outro = this.enemiesOf(atacante).find((e) => e !== alvo && !e.dead && distanceFt(e.pos, alvo.pos) <= 5
+        && distanceFt(e.pos, atacante.pos) <= this.reachOf(atacante) && atkTotal >= caEfetiva(e));
+      if (outro) {
+        this.say('recurso', `A varredura de ${atacante.name} alcança ${outro.name}: +${dadoRolado} de ${tipo}.`, `${atkTotal} contra CA ${caEfetiva(outro)}`);
+        this.applyDamage(outro, dadoRolado, tipo, atacante, { deArma: true, corpoACorpo: true });
       }
     }
     // ATAQUE ESTRATÉGICO: o aliado mais perto anda, até o fim do próximo turno dele, sem provocar o alvo.
@@ -923,15 +926,16 @@ export class Encounter {
     if (id === 'tripAttack') {
       if (this.aplicarCondicao(alvo, 'caido', { source: atacante.id })) this.say('condicao', `${alvo.name} é derrubado por ${atacante.name}.`);
     } else if (id === 'goadingAttack') {
-      if (this.aplicarCondicao(alvo, 'provocado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+      // "até o fim do SEU próximo turno": criada no turno de quem ataca, só cai no fim do seguinte (2 contagens).
+      if (this.aplicarCondicao(alvo, 'provocado', { rounds: 2, quando: 'fim', lado: atacante.side, source: atacante.id })) {
         this.say('condicao', `${alvo.name} fica furioso com ${atacante.name}: desvantagem em atacar qualquer outro até o fim do próximo turno dele.`);
       }
     } else if (id === 'disarmingAttack') {
-      if (this.aplicarCondicao(alvo, 'desarmado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+      if (this.aplicarCondicao(alvo, 'desarmado', { rounds: 1, quando: 'fim', lado: alvo.side, source: atacante.id })) {
         this.say('condicao', `${alvo.name} deixa a arma escapar: ataca com desvantagem até o fim do próximo turno dele.`);
       }
     } else if (id === 'menacingAttack') {
-      if (this.aplicarCondicao(alvo, 'amedrontado', { rounds: 1, quando: 'fim', lado: atacante.side, source: atacante.id })) {
+      if (this.aplicarCondicao(alvo, 'amedrontado', { rounds: 2, quando: 'fim', lado: atacante.side, source: atacante.id })) {
         this.say('condicao', `${alvo.name} fica amedrontado até o fim do próximo turno de ${atacante.name}.`);
       }
     } else {
@@ -1428,6 +1432,8 @@ export class Encounter {
         if (c.features?.includes('trickeryCloak') && hasCondition(c, 'invisivel')) removeCondition(c, 'invisivel');
         c.furiaDestrutivaPronta = false;
         delete c.surtoMaximoAte;
+        delete c.surtoRapidoAte;
+        delete c.surtoDesvSaveAte;
         const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
         if (k === 'levitar' || k === 'invocar') c.concentrating = null;
       }
@@ -3274,6 +3280,8 @@ export class Encounter {
    */
   resolveAttack(attacker, target, opts = {}) {
     const r = this.resolveAttackBase(attacker, target, opts);
+    // A finta vale para UM ataque: errando, ela se desfaz (a ação bônus já foi paga).
+    if (attacker.manobraPronta === 'feintingAttack') attacker.manobraPronta = null;
     if (opts.horda || opts.reacao || attacker.dead) return r;
     const f = attacker.features ?? [];
     if (f.includes('hordeBreaker') && !attacker.presaNoTurno && !opts.opportunity && !conditionEffects(attacker).incapacitated) {
@@ -4145,6 +4153,8 @@ export class Encounter {
     // Monstro nomeia o golpe pelo nome do bloco; personagem, pelo id da arma.
     const arma = attacker.attacks ? (weaponId ?? check.profile.name) : weaponId;
     const golpes = continuando ? Array(attacker.ataquesRestantes).fill(arma) : this.golpesDoAtaque(attacker, arma);
+    // O golpe cedido ao Comandante vale para ESTA ação de Ataque; o Surto de Ação seguinte volta ao normal.
+    if (!continuando) attacker.golpeCedido = false;
     attacker.ataquesRestantes = 0;
     let anterior = null;
     for (const [i, golpe] of golpes.entries()) {
@@ -5574,7 +5584,11 @@ export class Encounter {
     // SURTO DE MAGIA SELVAGEM (feiticeiro): depois de uma magia de 1º círculo ou mais.
     if (f.includes('wildMagicSurge') && nivelEfetivo >= 1 && !this.surtando) {
       this.surtando = true;
-      try { this.surtoDeMagia(actor); } finally { this.surtando = false; }
+      // O surto é outro efeito: não herda a Metamagia da magia que o causou.
+      const metaDaMagia = this.metaAtiva;
+      this.metaAtiva = null;
+      this.surtoDesvConjurador = null;
+      try { this.surtoDeMagia(actor); } finally { this.surtando = false; this.metaAtiva = metaDaMagia; }
     }
     // PROTEÇÃO ARCANA (Abjuração): uma abjuração de 1º círculo ou mais cria a proteção (PV = 2 × nível + INT) ou a recarrega em 2 × o círculo.
     if (f.includes('arcaneWard') && escola === 'abjuração' && nivelEfetivo >= 1) {
@@ -6989,6 +7003,7 @@ export class Encounter {
       const r = damageRoll(this.rng, dados, { critical });
       this.say('magia', `${rotulo}: +${r.total} de ${tipoDano} em ${alvo.name}.`, `${dados}[${r.rolls.join('+')}]`);
       this.applyDamage(alvo, r.total, tipoDano, atacante, { magico });
+      return r.total;
     };
     for (const cond of [...(alvo.conditions ?? [])]) {
       const m = CONDITIONS[cond.id]?.marcaDano;
@@ -7015,7 +7030,7 @@ export class Encounter {
       atacante.comandoDado = null;
       extra('Golpe do Comandante', d, tipo, false);
     }
-    if (atacante.manobraPronta) this.aplicarManobra(atacante, alvo, extra, tipo, atkTotal);
+    if (atacante.manobraPronta) this.aplicarManobra(atacante, alvo, extra, tipo, atkTotal, ranged);
     // GOLPE DIVINO (clérigo da Vida, 8º): +1d8 radiante UMA vez por turno no acerto de arma; 2d8 do 14º em diante.
     if (['divineStrike', 'divineStrikeThunder', 'divineStrikeWeapon', 'divineStrikeNature', 'divineStrikePoison'].some((x) => f.includes(x)) && !atacante.golpeDivinoNoTurno) {
       atacante.golpeDivinoNoTurno = true;
@@ -7531,7 +7546,7 @@ export class Encounter {
     const porTraco = vantagemPorTraco(actor, hab, contra);
     if (porTraco.length) vantagem = true;
     // MARÉS DO CAOS: vantagem nesta resistência, e o uso se gasta.
-    if (hasCondition(actor, 'maresDoCaos')) { vantagem = true; removeCondition(actor, 'maresDoCaos'); }
+    if (hasCondition(actor, 'maresDoCaos') && !this.surtando) { vantagem = true; removeCondition(actor, 'maresDoCaos'); }
     // SENTIDO DE PERIGO: o bárbaro esquiva do que consegue ver. Aqui, de
     // tudo que pede Destreza — o motor não guarda se a armadilha era visível.
     if (hab === 'dex' && actor.features?.includes('dangerSense')
@@ -8201,7 +8216,7 @@ export class Encounter {
         for (const m of alvosP) {
           const r = this.resistencia(m, 'wis', cdP, { contra: { magico: true, condicao: condP } });
           this.explicarResistencia(m, 'wis', cdP, r, { contra: `Presença Feérica de ${actor.name}`, seSucesso: 'resiste' });
-          if (!r.success) this.aplicarCondicao(m, condP, { rounds: 1, quando: 'fim', lado: actor.side, source: actor.id });
+          if (!r.success) this.aplicarCondicao(m, condP, { rounds: 2, quando: 'fim', lado: actor.side, source: actor.id });
         }
         return true;
       }
@@ -8513,6 +8528,7 @@ export class Encounter {
         const aliado = target;
         if (!actor.features?.includes(featureId) || actor.bonusUsed || (actor.resources?.superiorityDice ?? 0) < 1) return false;
         if (!aliado || aliado === actor || aliado.dead || aliado.side !== actor.side || distanceFt(actor.pos, aliado.pos) > 60) return false;
+        if (aliado.hp <= 0 || hasCondition(aliado, 'inconsciente') || conditionEffects(aliado).incapacitated) return false;
         actor.bonusUsed = true;
         actor.resources.superiorityDice -= 1;
         const r = roll(this.rng, this.dadoDeSuperioridade(actor));

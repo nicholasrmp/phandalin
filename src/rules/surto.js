@@ -16,6 +16,8 @@ const perto = (enc, a, ft, comAutor = false) => vivos(enc).filter((x) => (comAut
 const maisPerto = (enc, a) => perto(enc, a, 600).sort((x, y) => distanceFt(a.pos, x.pos) - distanceFt(a.pos, y.pos))[0];
 const sorteia = (enc, lista) => (lista.length ? lista[enc.rng.int(lista.length)] : null);
 const cor = () => {};
+// "Até o fim do seu PRÓXIMO turno": surgindo no turno do próprio feiticeiro, a primeira contagem é a do turno em curso.
+const proximoTurno = (enc, a) => (enc.side === a.side ? 2 : 1);
 // Pede à camada de desenho uma animação em uma casa (`surtoFx` em main.js); sem desenho, o evento cai no vazio.
 const fx = (enc, nome, pos) => enc.onEvent?.({ type: 'surtoFx', fx: nome, pos: { x: pos.x, y: pos.y, f: pos.f ?? 1 } });
 
@@ -54,7 +56,7 @@ export const SURTOS = [
       const livres = [];
       for (let x = a.pos.x - 12; x <= a.pos.x + 12; x += 1) {
         for (let y = a.pos.y - 12; y <= a.pos.y + 12; y += 1) {
-          if (enc.field.inside(x, y) && !enc.field.blocksMove(x, y) && !enc.at(x, y)) livres.push({ x, y });
+          if (enc.field.inside(x, y) && !enc.field.blocksMove(x, y) && !enc.at(x, y) && enc.field.hasLineOfSight(a.pos, { x, y })) livres.push({ x, y });
         }
       }
       if (!livres.length) return;
@@ -82,7 +84,7 @@ export const SURTOS = [
   { id: 'musica', nome: 'uma música etérea fraquinha cerca você por um minuto', valor: 1, aplica: cor },
   { id: 'barba', nome: 'uma barba comprida de penas brota no seu rosto até você espirrar', valor: 1, aplica: cor },
   { id: 'bolhas', nome: 'bolhas cor-de-rosa saem da sua boca quando você fala, por um minuto', valor: 1, aplica: cor },
-  { id: 'azul', nome: 'sua pele fica azul vivo até alguém dissipar a magia', valor: 1, aplica: cor },
+  { id: 'azul', nome: 'sua pele fica azul vivo até alguém conjurar Remover Maldição', valor: 1, aplica: cor },
 
   // ---- o resto da tabela do livro --------------------------------------------------------------------------------------
   {
@@ -98,7 +100,7 @@ export const SURTOS = [
       const cd = spellSaveDc(a);
       for (const c of perto(enc, a, 10, true)) {
         const sv = enc.resistencia(c, 'wis', cd, { contra: { magico: true } });
-        if (!sv.success) { sobre(enc, c, 'confuso', 10); fx(enc, 'confusao-estrelas', c.pos); }
+        if (!sv.success) { sobre(enc, c, 'confuso', 10); c.reactionUsed = true; fx(enc, 'confusao-estrelas', c.pos); }
       }
     },
   },
@@ -109,7 +111,7 @@ export const SURTOS = [
       fx(enc, 'graxa', a.pos);
       for (const c of perto(enc, a, 5, true)) {
         const sv = enc.resistencia(c, 'dex', cd, { contra: { magico: true } });
-        if (!sv.success) sobre(enc, c, 'caido', 1);
+        if (!sv.success) enc.aplicarCondicao(c, 'caido', { source: a.id });
       }
     },
   },
@@ -118,7 +120,7 @@ export const SURTOS = [
   { id: 'rapida', nome: 'suas magias de uma ação passam a custar uma ação bônus por um minuto', valor: 2, aplica: (enc, a) => { a.surtoRapidoAte = enc.round + 10; } },
   {
     id: 'astral', nome: 'você é levado ao Plano Astral até o fim do seu próximo turno', valor: 0,
-    aplica: (enc, a) => sobre(enc, a, 'banido', 1, { quando: 'fim', lado: a.side }),
+    aplica: (enc, a) => sobre(enc, a, 'banido', proximoTurno(enc, a), { quando: 'fim', lado: a.side }),
   },
   { id: 'idade', nome: 'sua idade muda 1d10 anos', valor: 1, aplica: cor },
   { id: 'flumphs', nome: '1d6 flumphs do mestre surgem a 18 m, com medo de você, e somem em um minuto', valor: 1, aplica: cor },
@@ -141,7 +143,8 @@ export const SURTOS = [
   {
     id: 'raios', nome: 'raios caem em até três criaturas a 9 m de você: 4d10 elétrico', valor: 0,
     aplica(enc, a) {
-      const alvos = perto(enc, a, 30).sort((x, y) => (y.side !== a.side) - (x.side !== a.side)).slice(0, 3);
+      // "Até três criaturas à sua escolha": o feiticeiro escolhe inimigos.
+      const alvos = perto(enc, a, 30).filter((x) => x.side !== a.side).slice(0, 3);
       for (const c of alvos) {
         const dano = damageRoll(enc.rng, '4d10').total;
         fx(enc, 'raio-queda', c.pos);
@@ -153,7 +156,7 @@ export const SURTOS = [
     id: 'medo', nome: 'a criatura mais próxima te dá medo até o fim do seu próximo turno', valor: 0,
     aplica(enc, a) {
       const c = maisPerto(enc, a);
-      if (c) sobre(enc, a, 'amedrontado', 1, { source: c.id, quando: 'fim', lado: a.side });
+      if (c) sobre(enc, a, 'amedrontado', proximoTurno(enc, a), { source: c.id, quando: 'fim', lado: a.side });
     },
   },
   {
@@ -184,8 +187,10 @@ export const SURTOS = [
       fx(enc, 'onda-necrotica', a.pos);
       for (const c of perto(enc, a, 30)) {
         const d = damageRoll(enc.rng, '1d10').total;
+        const antes = c.hp + (c.tempHp ?? 0);
         enc.applyDamage(c, d, 'necrótico', a, { magico: true });
-        curado += d;
+        // Cura o que o dano de fato causou (resistência, PV temporários e PV que restavam contam).
+        curado += Math.max(0, antes - (c.hp + (c.tempHp ?? 0)));
       }
       if (curado) enc.heal(a, curado, a);
     },

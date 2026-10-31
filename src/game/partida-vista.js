@@ -15,7 +15,7 @@ export const VERSAO_DA_VISTA = 1;
  */
 export const EVENTOS_VISUAIS = new Set([
   'moved', 'attack', 'spell', 'golpeMagico', 'damage', 'heal', 'downed', 'died', 'reinforcements',
-  'ignite', 'burn', 'redirect', 'invocado', 'dispensado', 'sumiu', 'voltou', 'pousou', 'iniciativa',
+  'ignite', 'burn', 'redirect', 'invocado', 'dispensado', 'sumiu', 'voltou', 'pousou', 'iniciativa', 'surtoFx',
 ]);
 const MAX_EVENTO = 4000;
 

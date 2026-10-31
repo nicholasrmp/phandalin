@@ -4886,7 +4886,7 @@ teste('Presença Feérica dura até o fim do PRÓXIMO turno do bruxo (um turno i
   enc.rng = dadoEmSequencia(1);
   enc.useFeature(w, 'feyPresence', { modo: 'amedrontado' });
   const c = condDe(gob, 'amedrontado');
-  assert.equal(c.rounds, 1);
+  assert.equal(c.rounds, 2, 'criada no turno do bruxo: a 1ª contagem é a do turno em curso');
   assert.equal(c.lado, 'party');
   assert.equal(c.quando, 'fim');
   const w2 = bruxoDe('arquifada', 6);
@@ -5163,6 +5163,71 @@ teste('Dobrar a Sorte vale também na resistência (aliado sobe, inimigo cai), e
   const rolagem = rolarPericia(makeRng(3), s, 'percepcao');
   assert.equal(rolagem.mode, 'vantagem');
   assert.equal(hasCondition(s, 'maresDoCaos'), false);
+});
+
+teste('Revisão das manobras e surtos: durações que cruzam o turno, golpe cedido, Fintado e Varredura', async () => {
+  const { SURTOS } = await import('../rules/surto.js');
+  // Desarmante dura até o fim do próximo turno do ALVO; Amedrontador e Provocador, do atacante
+  const d = mestre(3);
+  d.features.push('disarmingAttack');
+  d.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  gob.hp = gob.maxHp = 300;
+  const { enc } = arena({ herois: [d], foes: [gob] });
+  enc.useFeature(d, 'disarmingAttack');
+  enc.rng = dadoEmSequencia(15, 2);
+  enc.attackAction(d, gob, 'espadaLonga');
+  assert.ok(hasCondition(gob, 'desarmado'));
+  enc.fimDoTurnoDoLado('party');
+  assert.ok(hasCondition(gob, 'desarmado'), 'sobrevive ao fim do turno de quem atacou');
+  enc.fimDoTurnoDoLado('foes');
+  assert.ok(!hasCondition(gob, 'desarmado'), 'cai no fim do turno do alvo');
+  // golpe cedido: zera no começo do turno seguinte
+  const c = mestre(5);
+  c.features.push('commandersStrike');
+  c.pos = { x: 5, y: 5 };
+  const al = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  al.pos = { x: 5, y: 6 };
+  const alvo = inimigo('goblin', { x: 6, y: 6 });
+  alvo.hp = alvo.maxHp = 300;
+  const { enc: e2 } = arena({ herois: [c, al], foes: [alvo] });
+  e2.rng = dadoEmSequencia(15, 3);
+  assert.equal(e2.useFeature(c, 'commandersStrike', { target: al }), true);
+  assert.equal(c.golpeCedido, true);
+  e2.beginSide?.('party');
+  assert.equal(c.golpeCedido, false, 'o golpe cedido vale só naquele turno');
+  // Fintado: errar desfaz a manobra; de longe não cobra o dado
+  const f = mestre(3);
+  f.features.push('feintingAttack');
+  f.pos = { x: 5, y: 5 };
+  const g3 = inimigo('goblin', { x: 6, y: 5 });
+  g3.hp = g3.maxHp = 300;
+  g3.ac = 40;
+  const { enc: e3 } = arena({ herois: [f], foes: [g3] });
+  e3.useFeature(f, 'feintingAttack');
+  e3.rng = dadoEmSequencia(2);
+  e3.attackAction(f, g3, 'espadaLonga');
+  assert.equal(f.manobraPronta, null, 'errou: a finta se desfez');
+  assert.equal(f.resources.superiorityDice, 4, 'sem acerto, sem dado');
+  // Surtos: astral e medo cruzam o turno; raios só em inimigos; flags limpas no descanso
+  const s = selvagem(6);
+  s.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano');
+  amigo.pos = { x: 5, y: 6 };
+  const g4 = alvoParado({ x: 8, y: 5 });
+  g4.hp = g4.maxHp = 500;
+  const { enc: e4 } = arena({ herois: [s, amigo], foes: [g4] });
+  const hpAmigo = amigo.hp;
+  SURTOS.find((x) => x.id === 'raios').aplica(e4, s);
+  assert.equal(amigo.hp, hpAmigo, 'os raios não caem no aliado');
+  SURTOS.find((x) => x.id === 'astral').aplica(e4, s);
+  e4.fimDoTurnoDoLado('party');
+  assert.ok(hasCondition(s, 'banido'), 'ainda no Plano Astral depois do próprio turno');
+  s.surtoRapidoAte = 99;
+  s.surtoDesvSaveAte = 99;
+  recuperarNoCurto(s);
+  assert.equal(s.surtoRapidoAte, undefined);
+  assert.equal(s.surtoDesvSaveAte, undefined);
 });
 
 // ============================================================================================================
