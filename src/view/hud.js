@@ -1346,6 +1346,11 @@ export class Hud {
           { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
         continue;
       }
+      if (f === 'eagleSpirit') {
+        comum('espiritoAguia', 'Espírito da Águia: correr', 'Em Fúria, Disparada como ação bônus: o deslocamento deste turno dobra.', 'Ação bônus',
+          { kind: 'feature', featureId: f }, c.bonusUsed || !(c.conditions ?? []).some((x) => x.id === 'furia'));
+        continue;
+      }
       const e = feats[f];
       if (!e) continue;
       comum(e[0], e[1], e[2], e[3], { kind: 'feature', featureId: f }, !e[4](), e[5]);

@@ -2875,6 +2875,14 @@ export class Encounter {
     if (hasCondition(attacker, 'invisivel') && !ve(target, attacker)) fonte(mods, 'vantagem', 'atacante invisível');
     // Emboscador (o doppelganger): vantagem contra quem ainda está surpreso.
     if (attacker.traits?.includes('emboscador') && this.surpresos?.has(target.id)) fonte(mods, 'vantagem', 'emboscador');
+    // ESPÍRITO DA ÁGUIA (Totêmico): em Fúria, ataque de oportunidade contra o bárbaro tem desvantagem.
+    if (opportunity && target.features?.includes('eagleSpirit') && hasCondition(target, 'furia')) fonte(mods, 'desvantagem', 'espírito da águia');
+    // ESPÍRITO DO LOBO (Totêmico): em Fúria, os aliados do bárbaro têm vantagem no corpo a corpo contra quem está colado nele.
+    if (!ranged && this.alliesOf(attacker).some((a) => a !== attacker && !a.dead && a.features?.includes('wolfSpirit') && hasCondition(a, 'furia')
+      && distanceFt(a.pos, target.pos) <= 5)) fonte(mods, 'vantagem', 'espírito do lobo');
+    // SINTONIA TOTÊMICA (urso, 14º): em Fúria, inimigos a 1,5 m do bárbaro têm desvantagem contra quem NÃO é ele.
+    if (this.enemiesOf(attacker).some((b) => b !== target && !b.dead && b.features?.includes('totemicAttunement') && b.features?.includes('bearSpirit')
+      && hasCondition(b, 'furia') && distanceFt(b.pos, attacker.pos) <= 5)) fonte(mods, 'desvantagem', 'sintonia do urso');
     // ASSASSINAR (ladino Assassino, 3º): vantagem contra quem ainda não agiu na luta.
     if (attacker.features?.includes('assassinate') && this.round === 1 && (!target.acted || this.surpreendidos?.has(target.id))) fonte(mods, 'vantagem', 'assassinar');
     // SENTIDOS SELVAGENS (patrulheiro, 18º): não ver o alvo não dá desvantagem (até 9 m, para o invisível).
@@ -3782,6 +3790,8 @@ export class Encounter {
     const porCondicao = (target.conditions ?? []).some((c) => {
       const def = CONDITIONS[c.id];
       if (def?.resisteTudo && !def.resisteTudoExceto?.includes(type)) return true;
+      // ESPÍRITO DO URSO (bárbaro Totêmico): em Fúria, resistência a todo dano, menos psíquico.
+      if (c.id === 'furia' && target.features?.includes('bearSpirit') && type !== 'psíquico') return true;
       if (def?.resisteTipoDado && c.data?.tipo === type) return true;
       // Forma Gasosa: o livro dá resistência a TODO dano não mágico — fogo e
       // ácido de fonte comum inclusive, não só o aço.
@@ -7875,6 +7885,14 @@ export class Encounter {
         actor.resources.ki -= 1;
         addCondition(actor, 'esquivando', { rounds: 1, quando: 'inicio', lado: actor.side });
         this.say('recurso', `${actor.name} gasta 1 ki: Defesa Paciente (${actor.resources.ki} de ki).`);
+        return true;
+      }
+      case 'eagleSpirit': {
+        // ESPÍRITO DA ÁGUIA: em Fúria, Disparada como ação bônus.
+        if (actor.bonusUsed || !hasCondition(actor, 'furia')) return false;
+        actor.bonusUsed = true;
+        actor.movementLeftFt += this.speedOf(actor);
+        this.say('recurso', `${actor.name} corre como a águia (Espírito da Águia).`);
         return true;
       }
       case 'stepOfTheWind': {

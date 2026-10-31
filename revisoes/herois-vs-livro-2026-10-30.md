@@ -541,3 +541,9 @@ Placas claras, vazadas, 20 quadros 46x54. Beleza 3,5/5 (era 2,5): cobertura do h
 - **Existe agora** (23 das 40 subclasses; faltam 17). Com motor e teste: **Assassinar** (3º: vantagem contra quem ainda não agiu na 1ª rodada; todo acerto num alvo surpreendido é crítico) e **Golpe Mortal** (17º: acerto num alvo surpreendido dobra o dano se ele falhar em CON, CD 8 + DES + proficiência; o dobro é parcela própria no log).
 - `semEfeito` com o motivo escrito: Proficiências de Assassino (sem kits), Perícia em Infiltração e Impostor (sem identidades falsas).
 - Suíte 1088/1088, vitest 401/401, build verde. Não vi a luta rodando na tela.
+
+## Atualização 14 — Subclasse nova: Guerreiro Totêmico (bárbaro, Livro do Jogador)
+- **Existe agora** (24 das 40 subclasses; faltam 16). O espírito (urso, águia ou lobo) é escolha dentro da subclasse; a tela de nível passou a oferecer a troca para qualquer escolha de característica de subclasse (`ganho_<id>`), com teste.
+- **Com motor e teste:** Espírito do Urso (Fúria: resistência a todo dano menos psíquico), Espírito da Águia (Fúria: oportunidade contra o bárbaro com desvantagem; Disparada como ação bônus, com botão), Espírito do Lobo (Fúria: aliados com vantagem no corpo a corpo contra quem está a 1,5 m do bárbaro) e Sintonia Totêmica do urso (14º: inimigos colados nele têm desvantagem contra os outros).
+- **Sem efeito, com motivo escrito:** Buscador de Espíritos, Aspecto da Fera, Caminhante dos Espíritos. **Pendente:** Sintonia de águia (voo) e de lobo (derrubar com ação bônus).
+- Limite: o jogo ainda não tem tela para ESCOLHER a subclasse (o padrão é a primeira da lista), então o Totêmico só aparece em herói montado com ele. Suíte 1094/1094 em Node, vitest 401/401, build verde.

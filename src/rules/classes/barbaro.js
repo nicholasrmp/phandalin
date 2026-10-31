@@ -55,6 +55,20 @@ export default {
         // Presença Intimidadora: uma vez por descanso longo.
         recursos: { intimidatingPresence: (n) => (n >= 10 ? 1 : 0) },
       },
+      totemico: {
+        nome: 'Caminho do Guerreiro Totêmico',
+        fonte: 'phb',
+        niveis: {
+          3: ['spiritSeeker', 'totemSpirit'],
+          6: ['aspectOfTheBeast'],
+          10: ['spiritWalker'],
+          14: ['totemicAttunement'],
+        },
+        // Espírito Totêmico: urso, águia ou lobo.
+        escolhasDeGanho: {
+          totemSpirit: { opcoes: ['bearSpirit', 'eagleSpirit', 'wolfSpirit'] },
+        },
+      },
     },
   },
 };

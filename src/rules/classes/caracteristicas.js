@@ -265,6 +265,16 @@ export const CARACTERISTICAS = {
   impostor: C('Impostor', 'fora', 'Imita a fala, a escrita e os gestos de outra pessoa depois de três horas de estudo.'),
   deathStrike: C('Golpe Mortal', 'passiva', 'Acertar um alvo surpreendido na primeira rodada: se ele falhar em CON (CD 8 + DES + proficiência), o dano dobra.', { motor: true }),
 
+  // ---- bárbaro: Caminho do Guerreiro Totêmico (Livro do Jogador) -------------------------------------------------------
+  spiritSeeker: C('Buscador de Espíritos', 'fora', 'Fala com animais e conjura Sentido Animal e Falar com Animais como rituais.'),
+  totemSpirit: C('Espírito Totêmico', 'passiva', 'Escolhe o animal-totem do bárbaro: urso, águia ou lobo.'),
+  bearSpirit: C('Espírito: Urso', 'passiva', 'Em Fúria, resistência a todo dano, menos psíquico.', { motor: true }),
+  eagleSpirit: C('Espírito: Águia', 'bonus', 'Em Fúria, ataques de oportunidade contra você têm desvantagem, e a ação bônus pode ser Disparada.', { motor: true }),
+  wolfSpirit: C('Espírito: Lobo', 'passiva', 'Em Fúria, seus aliados têm vantagem nos ataques corpo a corpo contra criaturas hostis a até 1,5 m de você.', { motor: true }),
+  aspectOfTheBeast: C('Aspecto da Fera', 'passiva', 'Um poder do animal-totem: carga dobrada (urso), visão longa (águia) ou rastreio (lobo).'),
+  spiritWalker: C('Caminhante dos Espíritos', 'fora', 'Conjura Comunhão com a Natureza como ritual.'),
+  totemicAttunement: C('Sintonia Totêmica', 'passiva', 'Urso: inimigos a até 1,5 m têm desvantagem em atacar quem não é você, em Fúria. (Águia e lobo: ainda sem efeito no jogo.)', { motor: true }),
+
   // ---- marcadores de subclasse (o nível em que a subclasse entra) ----------
   primalPath: C('Caminho Primitivo', 'passiva', 'A subclasse do bárbaro.'),
   bardCollege: C('Colégio de Bardo', 'passiva', 'A subclasse do bardo.'),
@@ -308,14 +318,17 @@ const FEITO = [
   'pactOfTheBlade', 'pactOfTheChain', 'pactOfTheTome', 'thirstingBlade', 'lifedrinker', 'repellingBlast', 'eldritchSpear', 'armorOfShadows',
   'devilsSight', 'witchSight', 'fiendishVigor', 'mistyVisions', 'maskOfManyFaces', 'eldritchSight', 'ascendantStep', 'thiefOfFiveFates',
   'mireTheMind', 'beguilingInfluence', 'wildShape', 'beastSpells', 'archdruid', 'signOfIllOmen', 'otherworldlyLeap', 'mysticArcanum', 'overchannel',
-  'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
+  'bearSpirit', 'eagleSpirit', 'wolfSpirit', 'totemicAttunement', 'assassinate', 'deathStrike', 'combatSuperiority', 'improvedCombatSuperiority', 'relentless', 'tripAttack', 'menacingAttack', 'pushingAttack', 'lungingAttack', 'precisionAttack',
 ];
 const ESTRUTURAIS = [
   'primalPath', 'bardCollege', 'divineDomain', 'druidCircle', 'martialArchetype', 'monasticTradition', 'rangerArchetype',
   'roguishArchetype', 'sorcerousOrigin', 'otherworldlyPatron', 'arcaneTradition', 'sacredOath', 'huntersPrey', 'defensiveTactics',
-  'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic',
+  'superiorHuntersDefense', 'multiattack', 'dragonAncestor', 'pactBoon', 'eldritchInvocations', 'metamagic', 'totemSpirit',
 ];
 const SEM_EFEITO = {
+  spiritSeeker: 'o jogo não tem conversa com animais nem rituais',
+  aspectOfTheBeast: 'o jogo não conta carga, visão longa nem rastreio',
+  spiritWalker: 'o jogo não tem Comunhão com a Natureza como ritual',
   assassinProficiencies: 'o jogo não tem kits de disfarce nem de venenos',
   infiltrationExpertise: 'o jogo não tem identidades falsas',
   impostor: 'o jogo não tem imitação de pessoas',

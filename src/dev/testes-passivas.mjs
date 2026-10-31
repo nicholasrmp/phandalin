@@ -3088,5 +3088,91 @@ teste('Golpe Mortal (17º): contra um alvo surpreendido o dano dobra se ele falh
 });
 
 // ============================================================================================================
+// GUERREIRO TOTÊMICO (bárbaro, Livro do Jogador): urso, águia e lobo
+// ============================================================================================================
+
+const totemico = (nivel, espirito = 'bearSpirit') => heroi('barbaro', nivel, 'Humano', { weapons: ['machadoGrande'] }, { 3: { subclasse: 'totemico', totemSpirit: espirito } });
+
+teste('Totêmico: o espírito escolhido vira característica; o padrão é o urso; Sintonia só no 14º', () => {
+  assert.ok(totemico(3, 'wolfSpirit').features.includes('wolfSpirit'));
+  assert.ok(!totemico(3, 'wolfSpirit').features.includes('bearSpirit'));
+  assert.ok(totemico(3, 'eagleSpirit').features.includes('eagleSpirit'));
+  const padrao = heroi('barbaro', 3, 'Humano', {}, { 3: { subclasse: 'totemico' } });
+  assert.ok(padrao.features.includes('bearSpirit') && padrao.features.includes('spiritSeeker'));
+  assert.ok(!totemico(13).features.includes('totemicAttunement') && totemico(14).features.includes('totemicAttunement'));
+  assert.throws(() => totemico(3, 'serpentSpirit'));
+});
+
+teste('Espírito do Urso: em Fúria, resistência a todo dano menos psíquico; fora da Fúria, nenhuma', () => {
+  const b = totemico(3);
+  b.pos = { x: 5, y: 5 };
+  const { enc } = arena({ herois: [b], foes: [inimigo('goblin', { x: 9, y: 9 })] });
+  assert.equal(enc.danoPorTipo(b, 20, 'fogo'), 20, 'sem Fúria: dano inteiro');
+  addCondition(b, 'furia', { rounds: 10 });
+  assert.equal(enc.danoPorTipo(b, 20, 'fogo'), 10, 'fogo pela metade');
+  assert.equal(enc.danoPorTipo(b, 20, 'necrótico'), 10);
+  assert.equal(enc.danoPorTipo(b, 20, 'psíquico'), 20, 'psíquico passa inteiro');
+  const l = totemico(3, 'wolfSpirit');
+  addCondition(l, 'furia', { rounds: 10 });
+  assert.equal(enc.danoPorTipo(l, 20, 'fogo'), 20, 'o lobo não resiste a fogo');
+});
+
+teste('Espírito do Lobo: em Fúria, o aliado tem vantagem contra quem está colado no bárbaro', () => {
+  const b = totemico(3, 'wolfSpirit');
+  b.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo.pos = { x: 7, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const longe = inimigo('goblin', { x: 8, y: 8 });
+  const { enc } = arena({ herois: [b, amigo], foes: [gob, longe] });
+  assert.ok(!enc.attackModifiers(amigo, gob, {}).vantagens.includes('espírito do lobo'), 'sem Fúria: nada');
+  addCondition(b, 'furia', { rounds: 10 });
+  assert.ok(enc.attackModifiers(amigo, gob, {}).vantagens.includes('espírito do lobo'), 'colado no bárbaro');
+  assert.ok(!enc.attackModifiers(amigo, longe, {}).vantagens.includes('espírito do lobo'), 'longe dele: nada');
+  assert.ok(!enc.attackModifiers(amigo, gob, { ranged: true }).vantagens.includes('espírito do lobo'), 'só corpo a corpo');
+});
+
+teste('Espírito da Águia: em Fúria, oportunidade contra ele tem desvantagem, e a ação bônus é Disparada', () => {
+  const b = totemico(3, 'eagleSpirit');
+  b.pos = { x: 5, y: 5 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [b], foes: [gob] });
+  assert.equal(enc.useFeature(b, 'eagleSpirit'), false, 'sem Fúria não corre');
+  assert.ok(!enc.attackModifiers(gob, b, { opportunity: true }).desvantagens.includes('espírito da águia'));
+  addCondition(b, 'furia', { rounds: 10 });
+  assert.ok(enc.attackModifiers(gob, b, { opportunity: true }).desvantagens.includes('espírito da águia'));
+  assert.ok(!enc.attackModifiers(gob, b, {}).desvantagens.includes('espírito da águia'), 'só a oportunidade');
+  const antes = b.movementLeftFt;
+  assert.equal(enc.useFeature(b, 'eagleSpirit'), true);
+  assert.ok(b.movementLeftFt > antes, 'o deslocamento cresce');
+  assert.equal(enc.useFeature(b, 'eagleSpirit'), false, 'uma ação bônus por turno');
+});
+
+teste('Sintonia Totêmica (urso, 14º): em Fúria, inimigos colados nele têm desvantagem contra os outros', () => {
+  const b = totemico(14);
+  b.pos = { x: 5, y: 5 };
+  const amigo = heroi('guerreiro', 1, 'Humano', { weapons: ['espadaLonga'] });
+  amigo.pos = { x: 7, y: 6 };
+  const gob = inimigo('goblin', { x: 6, y: 5 });
+  const { enc } = arena({ herois: [b, amigo], foes: [gob] });
+  addCondition(b, 'furia', { rounds: 10 });
+  assert.ok(enc.attackModifiers(gob, amigo, {}).desvantagens.includes('sintonia do urso'), 'contra o amigo: desvantagem');
+  assert.ok(!enc.attackModifiers(gob, b, {}).desvantagens.includes('sintonia do urso'), 'contra o bárbaro: normal');
+});
+
+teste('Tela de nível: o espírito totêmico aparece como escolha e a troca vale', async () => {
+  const { subirUmNivel } = await import('../game/nivel.js');
+  const b = heroi('barbaro', 2, 'Humano');
+  b.subclasse = 'totemico';
+  const r = subirUmNivel(b);
+  assert.ok(b.features.includes('bearSpirit'), 'o padrão é o urso');
+  const e = r.escolhas.find((x) => x.id === 'ganho_totemSpirit');
+  assert.ok(e, 'a tela oferece a escolha');
+  assert.deepEqual(e.opcoes.slice().sort(), ['bearSpirit', 'eagleSpirit', 'wolfSpirit']);
+  r.aplicar({ ganho_totemSpirit: ['wolfSpirit'] });
+  assert.ok(b.features.includes('wolfSpirit') && !b.features.includes('bearSpirit'), 'trocou para o lobo');
+});
+
+// ============================================================================================================
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);
