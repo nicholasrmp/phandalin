@@ -1258,7 +1258,7 @@ export class Hud {
         'Canalizar Divindade: a criatura mais próxima (até 3 m) testa Força ou Destreza ou fica presa por vinhas.',
         'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
       turnTheFaithless: ['turnTheFaithless', 'Expulsar os Infiéis',
-        'Canalizar Divindade: fadas e corruptores a até 9 m testam Sabedoria ou fogem por um minuto.',
+        'Canalizar Divindade: feéricos e corruptores a até 9 m testam Sabedoria ou fogem por um minuto.',
         'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
       elderChampion: ['elderChampion', 'Campeão Ancestral',
         'Por um minuto, você recupera 10 PV no começo de cada turno. Uma vez por descanso longo.',

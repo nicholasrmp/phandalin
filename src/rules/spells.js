@@ -430,7 +430,7 @@ export const SPELLS = {
     id: 'protecaoBemMal', name: 'Proteção contra o Bem e o Mal', level: 1, school: 'abjuração', fonte: 'srd',
     castTime: 'action', rangeFt: 5, kind: 'buff', targets: 1, condition: 'protegidoBemMal',
     concentration: true, duracaoRodadas: 100,
-    desc: 'Toque num aliado: aberrações, celestiais, elementais, fadas, corruptores e mortos-vivos o atacam com desvantagem e não o assustam. Concentração, até 10 minutos.',
+    desc: 'Toque num aliado: aberrações, celestiais, elementais, feéricos, corruptores e mortos-vivos o atacam com desvantagem e não o assustam. Concentração, até 10 minutos.',
   },
 
   enfeiticarPessoa: {

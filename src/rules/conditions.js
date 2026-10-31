@@ -602,7 +602,7 @@ export const CONDITIONS = {
   },
   protegidoBemMal: {
     name: 'Proteção contra o Bem e o Mal',
-    desc: 'Aberrações, celestiais, elementais, fadas, corruptores e mortos-vivos atacam com desvantagem.',
+    desc: 'Aberrações, celestiais, elementais, feéricos, corruptores e mortos-vivos atacam com desvantagem.',
     contraTipos: ['aberração', 'celestial', 'elemental', 'fada', 'corruptor', 'morto-vivo'],
     imuneA: ['amedrontado'],
     concentrationEffect: true,

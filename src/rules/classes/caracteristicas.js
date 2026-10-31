@@ -128,7 +128,7 @@ export const CARACTERISTICAS = {
   naturalRecovery: C('Recuperação Natural', 'fora', 'No descanso curto, recupera espaços de magia somando metade do nível.'),
   circleSpells: C('Magias do Círculo', 'passiva', 'Magias do terreno escolhido, sempre preparadas.'),
   landsStride: C('Passo da Terra', 'passiva', 'Terreno difícil não mágico não atrasa nem fere.'),
-  naturesWard: C('Proteção da Natureza', 'passiva', 'Imune a veneno e doença; elementais e fadas não o encantam nem amedrontam.'),
+  naturesWard: C('Proteção da Natureza', 'passiva', 'Imune a veneno e doença; elementais e feéricos não o encantam nem amedrontam.'),
   naturesSanctuary: C('Santuário da Natureza', 'passiva', 'Bestas e plantas precisam passar numa resistência de SAB para atacá-lo.'),
 
   // ---- guerreiro -----------------------------------------------------------
@@ -425,7 +425,7 @@ export const CARACTERISTICAS = {
 
   // ---- paladino: Juramento dos Anciões e patrulheiro: Senhor das Feras (Livro do Jogador) ---------------------------------
   naturesWrath: C('Ira da Natureza', 'acao', 'Canalizar Divindade: uma criatura a até 3 m testa Força ou Destreza (a que preferir) ou fica contida por vinhas espectrais.', { motor: true }),
-  turnTheFaithless: C('Expulsar os Infiéis', 'acao', 'Canalizar Divindade: fadas e corruptores a até 9 m testam Sabedoria ou fogem por um minuto.', { motor: true }),
+  turnTheFaithless: C('Expulsar os Infiéis', 'acao', 'Canalizar Divindade: feéricos e corruptores a até 9 m testam Sabedoria ou fogem por um minuto.', { motor: true }),
   auraOfWarding: C('Aura de Resguardo', 'passiva', 'Você e os aliados na sua aura têm resistência a dano de magias.', { motor: true }),
   undyingSentinel: C('Sentinela Imortal', 'passiva', 'Ao cair a 0 PV sem morrer de vez, fica com 1 PV. Uma vez por descanso longo.', { motor: true }),
   elderChampion: C('Campeão Ancestral', 'acao', 'Por um minuto, recupera 10 PV no começo de cada turno seu. (O resto do poder do livro não está no jogo.) Uma vez por descanso longo.', { motor: true }),
