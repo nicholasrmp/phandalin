@@ -217,12 +217,15 @@ def main():
         pasta = ultimo(spec['conjunto'])
         base = Image.open(pasta / f"frame_urls_{spec['n']}.png").convert('RGBA')
         base = limpar(base.crop(base.getbbox()))
-        for d in spec['dirs']:
+        # Toda peca entra nos DOIS eixos (`+y` como saiu, `+x` espelhada): o mapa vira a peca para onde faz sentido, e a casa nao fica toda
+        # olhando para o mesmo lado. A poltrona de costas (`-y`/`-x`) fica so com as suas.
+        dirs = list(spec['dirs']) if '-y' in spec['dirs'] else sorted(set(spec['dirs']) | {'+y', '+x'})
+        for d in dirs:
             if d == '+x' and spec.get('leste') is not None:        # a vista propria da parede do oeste: a luz continua a de cima a esquerda
                 im = Image.open(ultimo(spec.get('leste_conjunto', 'casaPecasLeste')) / f"frame_urls_{spec['leste']}.png").convert('RGBA')
                 q = limpar(im.crop(im.getbbox()))
             else:
-                q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaVaoEscada', 'casaCama3', 'casaCravo3') else base.transpose(Image.FLIP_LEFT_RIGHT)
+                q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaVaoEscada') else base.transpose(Image.FLIP_LEFT_RIGHT)
             if spec.get('apagar') and not (d == '+x' and spec.get('leste') is not None):
                 q = apagar(q)
             if spec.get('envelhecer'):

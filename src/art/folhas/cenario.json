@@ -4550,68 +4550,19 @@
  "_casaObjetos": {
   "y0": 2229
  },
- "prop-casa-lareira:+y": {
+ "prop-casa-lareira:+x": {
   "todas": [
    {
     "x": 0,
     "y": 2229,
-    "w": 54,
+    "w": 55,
     "h": 61,
-    "ax": 42,
+    "ax": 12,
     "ay": 48,
     "origem": "casa"
    },
    {
-    "x": 56,
-    "y": 2229,
-    "w": 54,
-    "h": 61,
-    "ax": 42,
-    "ay": 48,
-    "origem": "casa"
-   },
-   {
-    "x": 112,
-    "y": 2229,
-    "w": 54,
-    "h": 61,
-    "ax": 42,
-    "ay": 48,
-    "origem": "casa"
-   },
-   {
-    "x": 168,
-    "y": 2229,
-    "w": 54,
-    "h": 61,
-    "ax": 42,
-    "ay": 48,
-    "origem": "casa"
-   },
-   {
-    "x": 224,
-    "y": 2229,
-    "w": 54,
-    "h": 61,
-    "ax": 42,
-    "ay": 48,
-    "origem": "casa"
-   },
-   {
-    "x": 280,
-    "y": 2229,
-    "w": 54,
-    "h": 61,
-    "ax": 42,
-    "ay": 48,
-    "origem": "casa"
-   }
-  ]
- },
- "prop-casa-lareira:+x": {
-  "todas": [
-   {
-    "x": 336,
+    "x": 57,
     "y": 2229,
     "w": 55,
     "h": 61,
@@ -4620,7 +4571,7 @@
     "origem": "casa"
    },
    {
-    "x": 393,
+    "x": 114,
     "y": 2229,
     "w": 55,
     "h": 61,
@@ -4629,7 +4580,7 @@
     "origem": "casa"
    },
    {
-    "x": 450,
+    "x": 171,
     "y": 2229,
     "w": 55,
     "h": 61,
@@ -4638,7 +4589,7 @@
     "origem": "casa"
    },
    {
-    "x": 507,
+    "x": 228,
     "y": 2229,
     "w": 55,
     "h": 61,
@@ -4647,16 +4598,7 @@
     "origem": "casa"
    },
    {
-    "x": 564,
-    "y": 2229,
-    "w": 55,
-    "h": 61,
-    "ax": 12,
-    "ay": 48,
-    "origem": "casa"
-   },
-   {
-    "x": 621,
+    "x": 285,
     "y": 2229,
     "w": 55,
     "h": 61,
@@ -4666,60 +4608,60 @@
    }
   ]
  },
- "prop-casa-lareiraB:+y": {
+ "prop-casa-lareira:+y": {
   "todas": [
    {
-    "x": 678,
+    "x": 342,
     "y": 2229,
-    "w": 50,
-    "h": 62,
-    "ax": 39,
-    "ay": 49,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    },
    {
-    "x": 730,
+    "x": 398,
     "y": 2229,
-    "w": 50,
-    "h": 62,
-    "ax": 39,
-    "ay": 49,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    },
    {
-    "x": 782,
+    "x": 454,
     "y": 2229,
-    "w": 50,
-    "h": 62,
-    "ax": 39,
-    "ay": 49,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    },
    {
-    "x": 834,
+    "x": 510,
     "y": 2229,
-    "w": 50,
-    "h": 62,
-    "ax": 39,
-    "ay": 49,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    },
    {
-    "x": 886,
+    "x": 566,
     "y": 2229,
-    "w": 50,
-    "h": 62,
-    "ax": 39,
-    "ay": 49,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    },
    {
-    "x": 938,
+    "x": 622,
     "y": 2229,
-    "w": 50,
-    "h": 62,
-    "ax": 39,
-    "ay": 49,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    }
   ]
@@ -4727,8 +4669,8 @@
  "prop-casa-lareiraB:+x": {
   "todas": [
    {
-    "x": 0,
-    "y": 2293,
+    "x": 678,
+    "y": 2229,
     "w": 55,
     "h": 59,
     "ax": 12,
@@ -4736,8 +4678,8 @@
     "origem": "casa"
    },
    {
-    "x": 57,
-    "y": 2293,
+    "x": 735,
+    "y": 2229,
     "w": 55,
     "h": 59,
     "ax": 12,
@@ -4745,8 +4687,8 @@
     "origem": "casa"
    },
    {
-    "x": 114,
-    "y": 2293,
+    "x": 792,
+    "y": 2229,
     "w": 55,
     "h": 59,
     "ax": 12,
@@ -4754,8 +4696,8 @@
     "origem": "casa"
    },
    {
-    "x": 171,
-    "y": 2293,
+    "x": 849,
+    "y": 2229,
     "w": 55,
     "h": 59,
     "ax": 12,
@@ -4763,8 +4705,8 @@
     "origem": "casa"
    },
    {
-    "x": 228,
-    "y": 2293,
+    "x": 906,
+    "y": 2229,
     "w": 55,
     "h": 59,
     "ax": 12,
@@ -4772,8 +4714,8 @@
     "origem": "casa"
    },
    {
-    "x": 285,
-    "y": 2293,
+    "x": 963,
+    "y": 2229,
     "w": 55,
     "h": 59,
     "ax": 12,
@@ -4782,15 +4724,60 @@
    }
   ]
  },
- "prop-casa-lareiraApagada:+y": {
+ "prop-casa-lareiraB:+y": {
   "todas": [
    {
-    "x": 342,
-    "y": 2293,
-    "w": 54,
-    "h": 61,
-    "ax": 42,
-    "ay": 48,
+    "x": 0,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 39,
+    "ay": 49,
+    "origem": "casa"
+   },
+   {
+    "x": 52,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 39,
+    "ay": 49,
+    "origem": "casa"
+   },
+   {
+    "x": 104,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 39,
+    "ay": 49,
+    "origem": "casa"
+   },
+   {
+    "x": 156,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 39,
+    "ay": 49,
+    "origem": "casa"
+   },
+   {
+    "x": 208,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 39,
+    "ay": 49,
+    "origem": "casa"
+   },
+   {
+    "x": 260,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 39,
+    "ay": 49,
     "origem": "casa"
    }
   ]
@@ -4798,8 +4785,8 @@
  "prop-casa-lareiraApagada:+x": {
   "todas": [
    {
-    "x": 398,
-    "y": 2293,
+    "x": 312,
+    "y": 2292,
     "w": 54,
     "h": 60,
     "ax": 14,
@@ -4808,15 +4795,15 @@
    }
   ]
  },
- "prop-casa-cadeira:+y": {
+ "prop-casa-lareiraApagada:+y": {
   "todas": [
    {
-    "x": 454,
-    "y": 2293,
-    "w": 27,
-    "h": 36,
-    "ax": 12,
-    "ay": 25,
+    "x": 368,
+    "y": 2292,
+    "w": 54,
+    "h": 61,
+    "ax": 42,
+    "ay": 48,
     "origem": "casa"
    }
   ]
@@ -4824,8 +4811,8 @@
  "prop-casa-cadeira:+x": {
   "todas": [
    {
-    "x": 483,
-    "y": 2293,
+    "x": 424,
+    "y": 2292,
     "w": 26,
     "h": 36,
     "ax": 12,
@@ -4834,11 +4821,37 @@
    }
   ]
  },
+ "prop-casa-cadeira:+y": {
+  "todas": [
+   {
+    "x": 452,
+    "y": 2292,
+    "w": 27,
+    "h": 36,
+    "ax": 12,
+    "ay": 25,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-estante:+x": {
+  "todas": [
+   {
+    "x": 481,
+    "y": 2292,
+    "w": 50,
+    "h": 62,
+    "ax": 10,
+    "ay": 49,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-estante:+y": {
   "todas": [
    {
-    "x": 511,
-    "y": 2293,
+    "x": 533,
+    "y": 2292,
     "w": 40,
     "h": 63,
     "ax": 30,
@@ -4847,12 +4860,12 @@
    }
   ]
  },
- "prop-casa-estante:+x": {
+ "prop-casa-estanteB:+x": {
   "todas": [
    {
-    "x": 553,
-    "y": 2293,
-    "w": 50,
+    "x": 575,
+    "y": 2292,
+    "w": 51,
     "h": 62,
     "ax": 10,
     "ay": 49,
@@ -4863,8 +4876,8 @@
  "prop-casa-estanteB:+y": {
   "todas": [
    {
-    "x": 605,
-    "y": 2293,
+    "x": 628,
+    "y": 2292,
     "w": 42,
     "h": 63,
     "ax": 32,
@@ -4873,37 +4886,11 @@
    }
   ]
  },
- "prop-casa-estanteB:+x": {
-  "todas": [
-   {
-    "x": 649,
-    "y": 2293,
-    "w": 51,
-    "h": 62,
-    "ax": 10,
-    "ay": 49,
-    "origem": "casa"
-   }
-  ]
- },
- "prop-casa-guardaRoupaB:+y": {
-  "todas": [
-   {
-    "x": 702,
-    "y": 2293,
-    "w": 43,
-    "h": 62,
-    "ax": 30,
-    "ay": 49,
-    "origem": "casa"
-   }
-  ]
- },
  "prop-casa-guardaRoupaB:+x": {
   "todas": [
    {
-    "x": 747,
-    "y": 2293,
+    "x": 672,
+    "y": 2292,
     "w": 49,
     "h": 64,
     "ax": 14,
@@ -4912,14 +4899,14 @@
    }
   ]
  },
- "prop-casa-guardaRoupa:+y": {
+ "prop-casa-guardaRoupaB:+y": {
   "todas": [
    {
-    "x": 798,
-    "y": 2293,
-    "w": 40,
+    "x": 723,
+    "y": 2292,
+    "w": 43,
     "h": 62,
-    "ax": 28,
+    "ax": 30,
     "ay": 49,
     "origem": "casa"
    }
@@ -4928,8 +4915,8 @@
  "prop-casa-guardaRoupa:+x": {
   "todas": [
    {
-    "x": 840,
-    "y": 2293,
+    "x": 768,
+    "y": 2292,
     "w": 45,
     "h": 63,
     "ax": 11,
@@ -4938,14 +4925,14 @@
    }
   ]
  },
- "prop-casa-fogao:+y": {
+ "prop-casa-guardaRoupa:+y": {
   "todas": [
    {
-    "x": 887,
-    "y": 2293,
-    "w": 38,
+    "x": 815,
+    "y": 2292,
+    "w": 40,
     "h": 62,
-    "ax": 14,
+    "ax": 28,
     "ay": 49,
     "origem": "casa"
    }
@@ -4954,8 +4941,8 @@
  "prop-casa-fogao:+x": {
   "todas": [
    {
-    "x": 927,
-    "y": 2293,
+    "x": 857,
+    "y": 2292,
     "w": 39,
     "h": 63,
     "ax": 14,
@@ -4964,11 +4951,24 @@
    }
   ]
  },
- "prop-casa-candelabro:+y": {
+ "prop-casa-fogao:+y": {
   "todas": [
    {
-    "x": 968,
-    "y": 2293,
+    "x": 898,
+    "y": 2292,
+    "w": 38,
+    "h": 62,
+    "ax": 14,
+    "ay": 49,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-candelabro:+x": {
+  "todas": [
+   {
+    "x": 938,
+    "y": 2292,
     "w": 24,
     "h": 59,
     "ax": 12,
@@ -4977,15 +4977,15 @@
    }
   ]
  },
- "prop-casa-escrivaninha:+y": {
+ "prop-casa-candelabro:+y": {
   "todas": [
    {
-    "x": 0,
-    "y": 2359,
-    "w": 60,
-    "h": 61,
-    "ax": 18,
-    "ay": 50,
+    "x": 964,
+    "y": 2292,
+    "w": 24,
+    "h": 59,
+    "ax": 12,
+    "ay": 48,
     "origem": "casa"
    }
   ]
@@ -4993,8 +4993,8 @@
  "prop-casa-escrivaninha:+x": {
   "todas": [
    {
-    "x": 62,
-    "y": 2359,
+    "x": 0,
+    "y": 2358,
     "w": 60,
     "h": 53,
     "ax": 31,
@@ -5003,11 +5003,37 @@
    }
   ]
  },
- "prop-casa-armadura:+y": {
+ "prop-casa-escrivaninha:+y": {
+  "todas": [
+   {
+    "x": 62,
+    "y": 2358,
+    "w": 60,
+    "h": 61,
+    "ax": 18,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-armadura:+x": {
   "todas": [
    {
     "x": 124,
-    "y": 2359,
+    "y": 2358,
+    "w": 30,
+    "h": 63,
+    "ax": 16,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-armadura:+y": {
+  "todas": [
+   {
+    "x": 156,
+    "y": 2358,
     "w": 30,
     "h": 63,
     "ax": 13,
@@ -5016,11 +5042,24 @@
    }
   ]
  },
+ "prop-casa-berco:+x": {
+  "todas": [
+   {
+    "x": 188,
+    "y": 2358,
+    "w": 29,
+    "h": 35,
+    "ax": 16,
+    "ay": 24,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-berco:+y": {
   "todas": [
    {
-    "x": 156,
-    "y": 2359,
+    "x": 219,
+    "y": 2358,
     "w": 29,
     "h": 35,
     "ax": 12,
@@ -5029,11 +5068,24 @@
    }
   ]
  },
+ "prop-casa-bau:+x": {
+  "todas": [
+   {
+    "x": 250,
+    "y": 2358,
+    "w": 29,
+    "h": 30,
+    "ax": 17,
+    "ay": 19,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-bau:+y": {
   "todas": [
    {
-    "x": 187,
-    "y": 2359,
+    "x": 281,
+    "y": 2358,
     "w": 29,
     "h": 30,
     "ax": 11,
@@ -5045,8 +5097,8 @@
  "prop-casa-mesaJantar:+x": {
   "todas": [
    {
-    "x": 218,
-    "y": 2359,
+    "x": 312,
+    "y": 2358,
     "w": 85,
     "h": 79,
     "ax": 54,
@@ -5055,11 +5107,37 @@
    }
   ]
  },
+ "prop-casa-mesaJantar:+y": {
+  "todas": [
+   {
+    "x": 399,
+    "y": 2358,
+    "w": 85,
+    "h": 79,
+    "ax": 30,
+    "ay": 68,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cama:+x": {
+  "todas": [
+   {
+    "x": 486,
+    "y": 2358,
+    "w": 84,
+    "h": 84,
+    "ax": 50,
+    "ay": 73,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-cama:+y": {
   "todas": [
    {
-    "x": 305,
-    "y": 2359,
+    "x": 572,
+    "y": 2358,
     "w": 84,
     "h": 84,
     "ax": 32,
@@ -5068,11 +5146,24 @@
    }
   ]
  },
+ "prop-casa-camaAbandonada:+x": {
+  "todas": [
+   {
+    "x": 658,
+    "y": 2358,
+    "w": 82,
+    "h": 80,
+    "ax": 48,
+    "ay": 69,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-camaAbandonada:+y": {
   "todas": [
    {
-    "x": 391,
-    "y": 2359,
+    "x": 742,
+    "y": 2358,
     "w": 82,
     "h": 80,
     "ax": 32,
@@ -5081,11 +5172,24 @@
    }
   ]
  },
+ "prop-casa-camaVelha:+x": {
+  "todas": [
+   {
+    "x": 826,
+    "y": 2358,
+    "w": 82,
+    "h": 74,
+    "ax": 50,
+    "ay": 63,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-camaVelha:+y": {
   "todas": [
    {
-    "x": 475,
-    "y": 2359,
+    "x": 910,
+    "y": 2358,
     "w": 82,
     "h": 74,
     "ax": 30,
@@ -5097,8 +5201,8 @@
  "prop-casa-tina:+x": {
   "todas": [
    {
-    "x": 559,
-    "y": 2359,
+    "x": 0,
+    "y": 2444,
     "w": 70,
     "h": 62,
     "ax": 29,
@@ -5107,11 +5211,37 @@
    }
   ]
  },
+ "prop-casa-tina:+y": {
+  "todas": [
+   {
+    "x": 72,
+    "y": 2444,
+    "w": 70,
+    "h": 62,
+    "ax": 40,
+    "ay": 51,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cravo:+x": {
+  "todas": [
+   {
+    "x": 144,
+    "y": 2444,
+    "w": 78,
+    "h": 89,
+    "ax": 58,
+    "ay": 78,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-cravo:+y": {
   "todas": [
    {
-    "x": 631,
-    "y": 2359,
+    "x": 224,
+    "y": 2444,
     "w": 78,
     "h": 89,
     "ax": 18,
@@ -5123,8 +5253,8 @@
  "prop-casa-cadeiraCostas:-y": {
   "todas": [
    {
-    "x": 711,
-    "y": 2359,
+    "x": 304,
+    "y": 2444,
     "w": 26,
     "h": 36,
     "ax": 12,
@@ -5136,8 +5266,8 @@
  "prop-casa-cadeiraCostas:-x": {
   "todas": [
    {
-    "x": 739,
-    "y": 2359,
+    "x": 332,
+    "y": 2444,
     "w": 26,
     "h": 36,
     "ax": 14,
@@ -5146,11 +5276,24 @@
    }
   ]
  },
+ "prop-casa-poltronaCoberta:+x": {
+  "todas": [
+   {
+    "x": 360,
+    "y": 2444,
+    "w": 34,
+    "h": 37,
+    "ax": 14,
+    "ay": 26,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-poltronaCoberta:+y": {
   "todas": [
    {
-    "x": 767,
-    "y": 2359,
+    "x": 396,
+    "y": 2444,
     "w": 28,
     "h": 37,
     "ax": 11,
@@ -5159,37 +5302,11 @@
    }
   ]
  },
- "prop-casa-poltronaCoberta:+x": {
-  "todas": [
-   {
-    "x": 797,
-    "y": 2359,
-    "w": 34,
-    "h": 37,
-    "ax": 14,
-    "ay": 26,
-    "origem": "casa"
-   }
-  ]
- },
- "prop-casa-armarioCoberto:+y": {
-  "todas": [
-   {
-    "x": 833,
-    "y": 2359,
-    "w": 42,
-    "h": 62,
-    "ax": 28,
-    "ay": 49,
-    "origem": "casa"
-   }
-  ]
- },
  "prop-casa-armarioCoberto:+x": {
   "todas": [
    {
-    "x": 877,
-    "y": 2359,
+    "x": 426,
+    "y": 2444,
     "w": 49,
     "h": 62,
     "ax": 14,
@@ -5198,11 +5315,37 @@
    }
   ]
  },
+ "prop-casa-armarioCoberto:+y": {
+  "todas": [
+   {
+    "x": 477,
+    "y": 2444,
+    "w": 42,
+    "h": 62,
+    "ax": 28,
+    "ay": 49,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-caixotes:+x": {
+  "todas": [
+   {
+    "x": 521,
+    "y": 2444,
+    "w": 52,
+    "h": 55,
+    "ax": 12,
+    "ay": 44,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-caixotes:+y": {
   "todas": [
    {
-    "x": 928,
-    "y": 2359,
+    "x": 575,
+    "y": 2444,
     "w": 52,
     "h": 55,
     "ax": 38,
@@ -5211,24 +5354,11 @@
    }
   ]
  },
- "prop-casa-espelhoCoberto:+y": {
-  "todas": [
-   {
-    "x": 982,
-    "y": 2359,
-    "w": 36,
-    "h": 61,
-    "ax": 19,
-    "ay": 48,
-    "origem": "casa"
-   }
-  ]
- },
  "prop-casa-espelhoCoberto:+x": {
   "todas": [
    {
-    "x": 0,
-    "y": 2450,
+    "x": 629,
+    "y": 2444,
     "w": 36,
     "h": 61,
     "ax": 16,
@@ -5237,15 +5367,15 @@
    }
   ]
  },
- "prop-casa-sofaCoberto:+y": {
+ "prop-casa-espelhoCoberto:+y": {
   "todas": [
    {
-    "x": 38,
-    "y": 2450,
-    "w": 62,
-    "h": 50,
-    "ax": 44,
-    "ay": 39,
+    "x": 667,
+    "y": 2444,
+    "w": 36,
+    "h": 61,
+    "ax": 19,
+    "ay": 48,
     "origem": "casa"
    }
   ]
@@ -5253,8 +5383,8 @@
  "prop-casa-sofaCoberto:+x": {
   "todas": [
    {
-    "x": 102,
-    "y": 2450,
+    "x": 705,
+    "y": 2444,
     "w": 61,
     "h": 53,
     "ax": 18,
@@ -5263,11 +5393,24 @@
    }
   ]
  },
- "prop-casa-manequim:+y": {
+ "prop-casa-sofaCoberto:+y": {
   "todas": [
    {
-    "x": 165,
-    "y": 2450,
+    "x": 768,
+    "y": 2444,
+    "w": 62,
+    "h": 50,
+    "ax": 44,
+    "ay": 39,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-manequim:+x": {
+  "todas": [
+   {
+    "x": 832,
+    "y": 2444,
     "w": 26,
     "h": 56,
     "ax": 12,
@@ -5276,11 +5419,37 @@
    }
   ]
  },
+ "prop-casa-manequim:+y": {
+  "todas": [
+   {
+    "x": 860,
+    "y": 2444,
+    "w": 26,
+    "h": 56,
+    "ax": 12,
+    "ay": 45,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cobertores:+x": {
+  "todas": [
+   {
+    "x": 888,
+    "y": 2444,
+    "w": 51,
+    "h": 41,
+    "ax": 15,
+    "ay": 30,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-cobertores:+y": {
   "todas": [
    {
-    "x": 193,
-    "y": 2450,
+    "x": 941,
+    "y": 2444,
     "w": 51,
     "h": 41,
     "ax": 35,
@@ -5289,11 +5458,24 @@
    }
   ]
  },
+ "prop-casa-cadeiraQuebrada:+x": {
+  "todas": [
+   {
+    "x": 0,
+    "y": 2535,
+    "w": 29,
+    "h": 31,
+    "ax": 18,
+    "ay": 20,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-cadeiraQuebrada:+y": {
   "todas": [
    {
-    "x": 246,
-    "y": 2450,
+    "x": 31,
+    "y": 2535,
     "w": 29,
     "h": 31,
     "ax": 10,
@@ -5302,11 +5484,24 @@
    }
   ]
  },
+ "prop-casa-livrosTeia:+x": {
+  "todas": [
+   {
+    "x": 62,
+    "y": 2535,
+    "w": 56,
+    "h": 44,
+    "ax": 36,
+    "ay": 33,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-livrosTeia:+y": {
   "todas": [
    {
-    "x": 277,
-    "y": 2450,
+    "x": 120,
+    "y": 2535,
     "w": 56,
     "h": 44,
     "ax": 19,
@@ -5315,24 +5510,11 @@
    }
   ]
  },
- "prop-casa-comodaCoberta:+y": {
-  "todas": [
-   {
-    "x": 335,
-    "y": 2450,
-    "w": 51,
-    "h": 56,
-    "ax": 18,
-    "ay": 43,
-    "origem": "casa"
-   }
-  ]
- },
  "prop-casa-comodaCoberta:+x": {
   "todas": [
    {
-    "x": 388,
-    "y": 2450,
+    "x": 178,
+    "y": 2535,
     "w": 51,
     "h": 51,
     "ax": 17,
@@ -5341,15 +5523,15 @@
    }
   ]
  },
- "prop-casa-cavaloDePau:+y": {
+ "prop-casa-comodaCoberta:+y": {
   "todas": [
    {
-    "x": 441,
-    "y": 2450,
-    "w": 52,
-    "h": 52,
-    "ax": 20,
-    "ay": 41,
+    "x": 231,
+    "y": 2535,
+    "w": 51,
+    "h": 56,
+    "ax": 18,
+    "ay": 43,
     "origem": "casa"
    }
   ]
@@ -5357,8 +5539,8 @@
  "prop-casa-cavaloDePau:+x": {
   "todas": [
    {
-    "x": 495,
-    "y": 2450,
+    "x": 284,
+    "y": 2535,
     "w": 44,
     "h": 43,
     "ax": 16,
@@ -5367,11 +5549,24 @@
    }
   ]
  },
- "prop-casa-castical:+y": {
+ "prop-casa-cavaloDePau:+y": {
   "todas": [
    {
-    "x": 541,
-    "y": 2450,
+    "x": 330,
+    "y": 2535,
+    "w": 52,
+    "h": 52,
+    "ax": 20,
+    "ay": 41,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-castical:+x": {
+  "todas": [
+   {
+    "x": 384,
+    "y": 2535,
     "w": 22,
     "h": 54,
     "ax": 10,
@@ -5380,11 +5575,37 @@
    }
   ]
  },
+ "prop-casa-castical:+y": {
+  "todas": [
+   {
+    "x": 408,
+    "y": 2535,
+    "w": 22,
+    "h": 54,
+    "ax": 10,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-harpa:+x": {
+  "todas": [
+   {
+    "x": 432,
+    "y": 2535,
+    "w": 35,
+    "h": 62,
+    "ax": 24,
+    "ay": 51,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-harpa:+y": {
   "todas": [
    {
-    "x": 565,
-    "y": 2450,
+    "x": 469,
+    "y": 2535,
     "w": 35,
     "h": 62,
     "ax": 10,
@@ -5393,11 +5614,11 @@
    }
   ]
  },
- "prop-casa-mesaRedonda:+y": {
+ "prop-casa-mesaRedonda:+x": {
   "todas": [
    {
-    "x": 602,
-    "y": 2450,
+    "x": 506,
+    "y": 2535,
     "w": 50,
     "h": 51,
     "ax": 24,
@@ -5406,11 +5627,37 @@
    }
   ]
  },
+ "prop-casa-mesaRedonda:+y": {
+  "todas": [
+   {
+    "x": 558,
+    "y": 2535,
+    "w": 50,
+    "h": 51,
+    "ax": 24,
+    "ay": 40,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-loboA:+x": {
+  "todas": [
+   {
+    "x": 610,
+    "y": 2535,
+    "w": 55,
+    "h": 45,
+    "ax": 34,
+    "ay": 34,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-loboA:+y": {
   "todas": [
    {
-    "x": 654,
-    "y": 2450,
+    "x": 667,
+    "y": 2535,
     "w": 55,
     "h": 45,
     "ax": 20,
@@ -5419,11 +5666,24 @@
    }
   ]
  },
+ "prop-casa-loboB:+x": {
+  "todas": [
+   {
+    "x": 724,
+    "y": 2535,
+    "w": 55,
+    "h": 44,
+    "ax": 34,
+    "ay": 33,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-loboB:+y": {
   "todas": [
    {
-    "x": 711,
-    "y": 2450,
+    "x": 781,
+    "y": 2535,
     "w": 55,
     "h": 44,
     "ax": 20,
@@ -5432,11 +5692,24 @@
    }
   ]
  },
+ "prop-casa-loboC:+x": {
+  "todas": [
+   {
+    "x": 838,
+    "y": 2535,
+    "w": 55,
+    "h": 45,
+    "ax": 34,
+    "ay": 34,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-loboC:+y": {
   "todas": [
    {
-    "x": 768,
-    "y": 2450,
+    "x": 895,
+    "y": 2535,
     "w": 55,
     "h": 45,
     "ax": 20,
@@ -5445,11 +5718,24 @@
    }
   ]
  },
+ "prop-casa-tigre:+x": {
+  "todas": [
+   {
+    "x": 952,
+    "y": 2535,
+    "w": 63,
+    "h": 39,
+    "ax": 27,
+    "ay": 36,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-tigre:+y": {
   "todas": [
    {
-    "x": 825,
-    "y": 2450,
+    "x": 0,
+    "y": 2599,
     "w": 63,
     "h": 39,
     "ax": 35,
@@ -5458,11 +5744,24 @@
    }
   ]
  },
+ "prop-casa-barril:+x": {
+  "todas": [
+   {
+    "x": 65,
+    "y": 2599,
+    "w": 51,
+    "h": 53,
+    "ax": 23,
+    "ay": 42,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-barril:+y": {
   "todas": [
    {
-    "x": 890,
-    "y": 2450,
+    "x": 118,
+    "y": 2599,
     "w": 51,
     "h": 53,
     "ax": 27,
@@ -5471,11 +5770,24 @@
    }
   ]
  },
+ "prop-casa-casaDeBonecas:+x": {
+  "todas": [
+   {
+    "x": 171,
+    "y": 2599,
+    "w": 53,
+    "h": 62,
+    "ax": 21,
+    "ay": 51,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-casaDeBonecas:+y": {
   "todas": [
    {
-    "x": 943,
-    "y": 2450,
+    "x": 226,
+    "y": 2599,
     "w": 53,
     "h": 62,
     "ax": 31,
@@ -5484,11 +5796,11 @@
    }
   ]
  },
- "prop-casa-cadeiraBalanco:+y": {
+ "prop-casa-cadeiraBalanco:+x": {
   "todas": [
    {
-    "x": 0,
-    "y": 2514,
+    "x": 281,
+    "y": 2599,
     "w": 31,
     "h": 39,
     "ax": 15,
@@ -5497,11 +5809,24 @@
    }
   ]
  },
- "prop-casa-boneca:+y": {
+ "prop-casa-cadeiraBalanco:+y": {
   "todas": [
    {
-    "x": 33,
-    "y": 2514,
+    "x": 314,
+    "y": 2599,
+    "w": 31,
+    "h": 39,
+    "ax": 15,
+    "ay": 28,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-boneca:+x": {
+  "todas": [
+   {
+    "x": 347,
+    "y": 2599,
     "w": 25,
     "h": 46,
     "ax": 12,
@@ -5510,11 +5835,37 @@
    }
   ]
  },
+ "prop-casa-boneca:+y": {
+  "todas": [
+   {
+    "x": 374,
+    "y": 2599,
+    "w": 25,
+    "h": 46,
+    "ax": 12,
+    "ay": 35,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-criado:+x": {
+  "todas": [
+   {
+    "x": 401,
+    "y": 2599,
+    "w": 34,
+    "h": 50,
+    "ax": 16,
+    "ay": 39,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-criado:+y": {
   "todas": [
    {
-    "x": 60,
-    "y": 2514,
+    "x": 437,
+    "y": 2599,
     "w": 34,
     "h": 50,
     "ax": 17,
@@ -5523,11 +5874,24 @@
    }
   ]
  },
+ "prop-casa-criadoVelho:+x": {
+  "todas": [
+   {
+    "x": 473,
+    "y": 2599,
+    "w": 42,
+    "h": 50,
+    "ax": 14,
+    "ay": 39,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-criadoVelho:+y": {
   "todas": [
    {
-    "x": 96,
-    "y": 2514,
+    "x": 517,
+    "y": 2599,
     "w": 42,
     "h": 50,
     "ax": 26,
@@ -5536,11 +5900,24 @@
    }
   ]
  },
+ "prop-casa-espelhoHera:+x": {
+  "todas": [
+   {
+    "x": 561,
+    "y": 2599,
+    "w": 34,
+    "h": 62,
+    "ax": 9,
+    "ay": 49,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-espelhoHera:+y": {
   "todas": [
    {
-    "x": 140,
-    "y": 2514,
+    "x": 597,
+    "y": 2599,
     "w": 34,
     "h": 62,
     "ax": 24,
@@ -5552,8 +5929,8 @@
  "prop-casa-escadariaVelha:+x": {
   "todas": [
    {
-    "x": 176,
-    "y": 2514,
+    "x": 633,
+    "y": 2599,
     "w": 130,
     "h": 120,
     "ax": 70,
@@ -5562,11 +5939,37 @@
    }
   ]
  },
+ "prop-casa-escadariaVelha:+y": {
+  "todas": [
+   {
+    "x": 765,
+    "y": 2599,
+    "w": 130,
+    "h": 120,
+    "ax": 70,
+    "ay": 105,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-lustre:+x": {
+  "todas": [
+   {
+    "x": 897,
+    "y": 2599,
+    "w": 79,
+    "h": 92,
+    "ax": 23,
+    "ay": 145,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-lustre:+y": {
   "todas": [
    {
-    "x": 308,
-    "y": 2514,
+    "x": 0,
+    "y": 2721,
     "w": 79,
     "h": 92,
     "ax": 23,
@@ -5578,8 +5981,8 @@
  "prop-casa-vaoEscada:+x": {
   "todas": [
    {
-    "x": 389,
-    "y": 2514,
+    "x": 81,
+    "y": 2721,
     "w": 112,
     "h": 98,
     "ax": 56,
@@ -5588,11 +5991,37 @@
    }
   ]
  },
+ "prop-casa-vaoEscada:+y": {
+  "todas": [
+   {
+    "x": 195,
+    "y": 2721,
+    "w": 112,
+    "h": 98,
+    "ax": 56,
+    "ay": 83,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-esqueletosCriancas:+x": {
+  "todas": [
+   {
+    "x": 309,
+    "y": 2721,
+    "w": 62,
+    "h": 29,
+    "ax": 31,
+    "ay": 26,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-esqueletosCriancas:+y": {
   "todas": [
    {
-    "x": 503,
-    "y": 2514,
+    "x": 373,
+    "y": 2721,
     "w": 62,
     "h": 29,
     "ax": 30,
@@ -5601,11 +6030,24 @@
    }
   ]
  },
+ "prop-casa-esqueletoBau:+x": {
+  "todas": [
+   {
+    "x": 437,
+    "y": 2721,
+    "w": 60,
+    "h": 54,
+    "ax": 9,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-esqueletoBau:+y": {
   "todas": [
    {
-    "x": 567,
-    "y": 2514,
+    "x": 499,
+    "y": 2721,
     "w": 60,
     "h": 54,
     "ax": 50,
@@ -5614,14 +6056,40 @@
    }
   ]
  },
+ "prop-casa-prateleiraLencois:+x": {
+  "todas": [
+   {
+    "x": 561,
+    "y": 2721,
+    "w": 62,
+    "h": 63,
+    "ax": 44,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-prateleiraLencois:+y": {
   "todas": [
    {
-    "x": 629,
-    "y": 2514,
+    "x": 625,
+    "y": 2721,
     "w": 62,
     "h": 63,
     "ax": 17,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-prateleiraCobertores:+x": {
+  "todas": [
+   {
+    "x": 689,
+    "y": 2721,
+    "w": 62,
+    "h": 63,
+    "ax": 44,
     "ay": 50,
     "origem": "casa"
    }
@@ -5630,8 +6098,8 @@
  "prop-casa-prateleiraCobertores:+y": {
   "todas": [
    {
-    "x": 693,
-    "y": 2514,
+    "x": 753,
+    "y": 2721,
     "w": 62,
     "h": 63,
     "ax": 16,
@@ -5640,11 +6108,11 @@
    }
   ]
  },
- "prop-casa-cadeiraJantar:+y": {
+ "prop-casa-cadeiraJantar:+x": {
   "todas": [
    {
-    "x": 757,
-    "y": 2514,
+    "x": 817,
+    "y": 2721,
     "w": 25,
     "h": 38,
     "ax": 12,
@@ -5653,15 +6121,28 @@
    }
   ]
  },
- "prop-casa-cadeiraJantar:+x": {
+ "prop-casa-cadeiraJantar:+y": {
   "todas": [
    {
-    "x": 784,
-    "y": 2514,
+    "x": 844,
+    "y": 2721,
     "w": 25,
     "h": 38,
     "ax": 12,
     "ay": 27,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-bauSapatos:+x": {
+  "todas": [
+   {
+    "x": 871,
+    "y": 2721,
+    "w": 50,
+    "h": 50,
+    "ax": 32,
+    "ay": 39,
     "origem": "casa"
    }
   ]
@@ -5669,8 +6150,8 @@
  "prop-casa-bauSapatos:+y": {
   "todas": [
    {
-    "x": 811,
-    "y": 2514,
+    "x": 923,
+    "y": 2721,
     "w": 50,
     "h": 50,
     "ax": 17,
@@ -5679,11 +6160,24 @@
    }
   ]
  },
+ "prop-casa-bauCorpo:+x": {
+  "todas": [
+   {
+    "x": 975,
+    "y": 2721,
+    "w": 30,
+    "h": 28,
+    "ax": 20,
+    "ay": 17,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-bauCorpo:+y": {
   "todas": [
    {
-    "x": 863,
-    "y": 2514,
+    "x": 0,
+    "y": 2821,
     "w": 30,
     "h": 28,
     "ax": 10,
@@ -5692,11 +6186,24 @@
    }
   ]
  },
+ "prop-casa-cabideiro:+x": {
+  "todas": [
+   {
+    "x": 32,
+    "y": 2821,
+    "w": 34,
+    "h": 62,
+    "ax": 14,
+    "ay": 51,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-cabideiro:+y": {
   "todas": [
    {
-    "x": 895,
-    "y": 2514,
+    "x": 68,
+    "y": 2821,
     "w": 34,
     "h": 62,
     "ax": 19,
@@ -5705,11 +6212,11 @@
    }
   ]
  },
- "prop-casa-capasParede:+y": {
+ "prop-casa-capasParede:+x": {
   "todas": [
    {
-    "x": 931,
-    "y": 2514,
+    "x": 104,
+    "y": 2821,
     "w": 62,
     "h": 63,
     "ax": 30,
@@ -5718,11 +6225,24 @@
    }
   ]
  },
- "prop-casa-montaCargas:+y": {
+ "prop-casa-capasParede:+y": {
   "todas": [
    {
-    "x": 0,
-    "y": 2636,
+    "x": 168,
+    "y": 2821,
+    "w": 62,
+    "h": 63,
+    "ax": 30,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-montaCargas:+x": {
+  "todas": [
+   {
+    "x": 232,
+    "y": 2821,
     "w": 54,
     "h": 61,
     "ax": 26,
@@ -5731,11 +6251,37 @@
    }
   ]
  },
+ "prop-casa-montaCargas:+y": {
+  "todas": [
+   {
+    "x": 288,
+    "y": 2821,
+    "w": 54,
+    "h": 61,
+    "ax": 26,
+    "ay": 48,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-barrilAgua:+x": {
+  "todas": [
+   {
+    "x": 344,
+    "y": 2821,
+    "w": 46,
+    "h": 55,
+    "ax": 7,
+    "ay": 44,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-barrilAgua:+y": {
   "todas": [
    {
-    "x": 56,
-    "y": 2636,
+    "x": 392,
+    "y": 2821,
     "w": 46,
     "h": 55,
     "ax": 38,
@@ -5744,11 +6290,24 @@
    }
   ]
  },
+ "prop-casa-bancadaCozinha:+x": {
+  "todas": [
+   {
+    "x": 440,
+    "y": 2821,
+    "w": 61,
+    "h": 54,
+    "ax": 40,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
  "prop-casa-bancadaCozinha:+y": {
   "todas": [
    {
-    "x": 104,
-    "y": 2636,
+    "x": 503,
+    "y": 2821,
     "w": 61,
     "h": 54,
     "ax": 20,
@@ -5760,8 +6319,21 @@
  "prop-casa-escadaria:+x": {
   "todas": [
    {
-    "x": 167,
-    "y": 2636,
+    "x": 566,
+    "y": 2821,
+    "w": 130,
+    "h": 120,
+    "ax": 70,
+    "ay": 105,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-escadaria:+y": {
+  "todas": [
+   {
+    "x": 698,
+    "y": 2821,
     "w": 130,
     "h": 120,
     "ax": 70,
@@ -5773,8 +6345,8 @@
  "portaCasa": {
   "carvalho": [
    {
-    "x": 299,
-    "y": 2636,
+    "x": 830,
+    "y": 2821,
     "w": 52,
     "h": 86,
     "ax": 26,
@@ -5784,8 +6356,8 @@
   ],
   "velha": [
    {
-    "x": 353,
-    "y": 2636,
+    "x": 884,
+    "y": 2821,
     "w": 48,
     "h": 90,
     "ax": 24,
@@ -5795,8 +6367,8 @@
   ],
   "ferro": [
    {
-    "x": 403,
-    "y": 2636,
+    "x": 0,
+    "y": 2943,
     "w": 96,
     "h": 96,
     "ax": 48,
