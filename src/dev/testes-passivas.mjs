@@ -5434,8 +5434,8 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const f = campo(v);
     for (const p of m.grupo) assert.ok(livre(f, p.x, p.y), `${v}: o grupo nasce em casa livre (${p.x},${p.y})`);
     if (!v.includes('Porao')) {
-      assert.equal(m.terreno.length, v === 'casaDaMorte1' ? 17 : 13, `${v}: 11 casas de comprimento mais o anel de fora (a escala do livro: 1 quadrado = 1 casa; o térreo leva o jardim)`);
-      assert.equal(m.terreno[0].length, 8, `${v}: 6 casas de largura mais o anel de fora`);
+      assert.equal(m.terreno.length, v === 'casaDaMorte1' ? 19 : 13, `${v}: 11 casas de comprimento mais o anel de fora (a escala do livro: 1 quadrado = 1 casa; o térreo leva o jardim)`);
+      assert.equal(m.terreno[0].length, v === 'casaDaMorte1' ? 12 : 8, `${v}: 6 casas de largura mais o anel de fora`);
       assert.ok(m.paredes?.n && m.paredes?.o, `${v}: parede de borda`);
       assert.ok(!m.terreno.join('').includes('M'), `${v}: sem casa de parede (a parede é de aresta)`);
       assert.ok(m.materialDaParede, `${v}: material da parede`);

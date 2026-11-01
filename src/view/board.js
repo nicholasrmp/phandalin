@@ -2776,8 +2776,10 @@ export class Board {
     const inicio = { x: A.x - passo.x * atras, y: A.y - passo.y * atras };
     const pe = { x: inicio.x + passo.x * (total / 2), y: inicio.y + passo.y * (total / 2) };
     // Raio inteiro: com meio pixel o batente do arco saía borrado.
-    const raio = Math.round(Math.abs(passo.x) * total * 0.78 / 2);
-    const altura = Math.round(alto * 0.80);
+    // A casa de moradia (`vaoPorCasa`) tem porta de TOPO RETO (verga de pedra), não arco: porta de casa de gente, de 1,9 m (uns 56 px).
+    const reto = Boolean(f.vaoPorCasa);
+    const raio = Math.round(Math.abs(passo.x) * total * (reto ? 0.86 : 0.78) / 2);
+    const altura = reto ? Math.round(Math.min(alto - 6, 58)) : Math.round(alto * 0.80);
     const sentido = lado === 'N' ? 1 : -1;
     return {
       // A MOLDURA E A FOLHA SAEM NA ULTIMA CASA DO CORRIDO, nao na primeira.
@@ -2806,8 +2808,13 @@ export class Board {
         // do plano. A aresta do oeste é o espelho dela.
         ctx.transform(sentido, 0.5, 0, 1, 0, 0);
         ctx.moveTo(-raio, 0);
-        ctx.lineTo(-raio, -(altura - raio));
-        ctx.arc(0, -(altura - raio), raio, Math.PI, 0);
+        if (reto) {
+          ctx.lineTo(-raio, -altura);
+          ctx.lineTo(raio, -altura);
+        } else {
+          ctx.lineTo(-raio, -(altura - raio));
+          ctx.arc(0, -(altura - raio), raio, Math.PI, 0);
+        }
         ctx.lineTo(raio, 0);
         ctx.closePath();
         ctx.restore();

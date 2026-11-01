@@ -52,6 +52,15 @@ export const MOBILIA = {
     ['casa-guardaRoupa:+y', 3, 7], ['casa-lareira:+y', 4, 7], ['casa-guardaRoupa:+y', 5, 7],
     ['casa-cadeiraCostas:-y', 4, 8],
     // ... a mesa redonda, os três lobos empalhados (cada um olhando para um lado) e o barril de vinho
+    // a FLORESTA MORTA de fora: árvores secas em volta da clareira (nunca na frente da porta) e restos pelo chão
+    ['casa-arvoreMortaA:+y', 0, 16], ['casa-arvoreMortaB:+y', 2, 17], ['casa-arvoreMortaC:+y', 4, 16], ['casa-arvoreMortaA:+x', 6, 17], ['casa-arvoreMortaB:+x', 8, 16],
+    ['casa-arvoreMortaC:+x', 7, 13], ['casa-arvoreMortaA:+x', 8, 11], ['casa-arvoreMortaB:+y', 9, 14], ['casa-arvoreMortaD:+y', 7, 9], ['casa-arvoreMortaC:+y', 8, 7],
+    ['casa-arvoreMortaA:+y', 9, 4], ['casa-arvoreMortaB:+x', 7, 2], ['casa-arvoreMortaC:+y', 8, 0], ['casa-arvoreMortaA:+x', 6, 3], ['casa-arvoreMortaB:+y', 6, 7],
+    ['casa-arvoreMortaA:+y', -1, 3], ['casa-arvoreMortaC:+x', -1, 7], ['casa-arvoreMortaB:+y', -1, 10], ['casa-arvoreMortaC:+y', -1, 13], ['casa-arvoreMortaA:+x', -1, 16],
+    ['casa-arvoreMortaB:+y', 1, -1], ['casa-arvoreMortaC:+x', 4, -1],
+    ['casa-toco:+y', 1, 12], ['casa-arbustoSeco:+y', 5, 13], ['casa-tronco:+y', 3, 15], ['casa-ossosFora:+y', 4, 12, { baixo: true }], ['casa-pedraFora:+y', 6, 15],
+    ['casa-capimSeco:+y', 2, 14, { baixo: true }], ['casa-capimSecoB:+y', 5, 15, { baixo: true }], ['casa-lapide:+x', 6, 11], ['casa-placa:+y', 5, 16], ['casa-espinhos:+y', 0, 14],
+    ['casa-arbustoSecoB:+x', 7, 6], ['casa-capimSecoB:+x', 7, 11, { baixo: true }],
     ['casa-mesaRedonda:+y', 3, 10], ['casa-loboA:+x', 5, 8], ['casa-loboB:+y', 3, 8], ['casa-loboC:+x', 4, 10], ['casa-barril:+x', 5, 10],
   ],
 

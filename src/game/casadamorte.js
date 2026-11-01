@@ -34,9 +34,9 @@ export const PLANTA_1 = plantaDeSalas({
     [3, 2, 3, 3], [3, 3, 4, 3], [4, 0, 4, 1], [1, 3, 1, 4], [2, 3, 2, 4], [2, 6, 2, 7],
     [0, 6, 0, 7], [1, 6, 1, 7], [0, 9, 0, 10], [1, 9, 1, 10], [0, 10, 0, 11], [1, 10, 1, 11],
   ],
-  // o jardim da frente (quadrados 0..5 x 11..14), cercado de ferro, com o portão nas colunas 2 e 3 da cerca do sul
-  extra: 4,
-  quintal: { retangulo: [0, 11, 5, 14], portao: [2, 3] },
+  // a FLORESTA MORTA de fora da casa: seis linhas ao sul e quatro colunas a leste do anel (o mapa ainda tem o anel de uma casa em volta)
+  extra: 6,
+  extraLeste: 4,
   // as portas duplas (dois quadrados) são UM vão com uma folha só, centrada: do salão para a sala de espera, desta para o pórtico e o portão da frente
   duplas: [[[0, 6, 0, 7], [1, 6, 1, 7]], [[0, 9, 0, 10], [1, 9, 1, 10]], [[0, 10, 0, 11], [1, 10, 1, 11]]],
 });
@@ -60,13 +60,6 @@ export const PLANTA_2 = plantaDeSalas({
 });
 
 export const AREAS_TERREO = [
-  criarArea({
-    id: 'jardim', area: '0', nome: 'O jardim da frente', cel: [[0, 11, 5, 14]],
-    texto: [
-      'A névoa chega rente ao chão, e o cinza da terra come as cores. Uma cerca de ferro fecha o jardim; o portão, de duas folhas, está às costas de vocês. Adiante, a Casa da Morte ergue-se em silêncio, de pedra e madeira escura, com as janelas acesas.',
-      'No pórtico, as portas de carvalho se entreabrem ao peso da mão.',
-    ],
-  }),
   criarArea({
     id: 'espera', area: '1', nome: 'A sala de espera', cel: [[0, 7, 1, 10]],
     texto: [
@@ -108,6 +101,14 @@ export const AREAS_TERREO = [
     texto: [
       'A mesa é de mogno trabalhado, cercada de cadeiras de braços, e a prataria reluz demais. Um lustre de cristal pende sobre ela. Nas paredes, um vale alpino pintado, cortinas de seda vermelha e uma tapeçaria de caçadores e cães acuando um lobo.',
       'Nos painéis de madeira, veados correm entre árvores entalhadas.',
+    ],
+  }),
+  // (a ÚLTIMA: tudo o que não é sala da casa é a floresta de fora)
+  criarArea({
+    id: 'floresta', area: '0', nome: 'A floresta morta', cel: [[-1, -1, 9, 17]],
+    texto: [
+      'A estrada acaba numa clareira de capim cinzento. Em volta, as árvores de Baróvia estão mortas há tanto tempo que já nem caem: troncos retorcidos de galhos nus, a névoa rente ao chão e um silêncio sem pássaros. No meio da clareira, a Casa da Morte espera, de pedra e madeira escura, com as janelas acesas.',
+      'No pórtico, as portas de carvalho se entreabrem ao peso da mão.',
     ],
   }),
 ];
@@ -168,11 +169,10 @@ export const MAPA_CASA_DA_MORTE_1 = {
   paredes: PLANTA_1.paredes,
   salas: PLANTA_1.salas,
   folhas: PLANTA_1.folhas,
-  grades: PLANTA_1.grades,
   vaoUnido: PLANTA_1.vaoUnido,
   materialDaParede: 'painelCarvalho',
   vaoPorCasa: true,
-  // O grupo começa no jardim da frente, de costas para o portão, olhando para a casa.
+  // O grupo começa na clareira da floresta morta, em frente à casa, olhando para ela.
   grupo: grupoDoLivro([[2, 12], [3, 12], [2, 13], [3, 13]]),
   olhar: { dx: 0, dy: -1 },
   cena: 'casaDaMorte',

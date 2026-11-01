@@ -22,14 +22,15 @@ export const COMPRIMENTO = 11 + 2 * D;
  * @param {object} p
  * @param {Array<{ id: string, piso?: string, retangulos: number[][] }>} p.salas retângulos [x1, y1, x2, y2] em quadrados do livro (inclusivos)
  * @param {number[][]} [p.portas] arestas [ax, ay, bx, by, codigo?] (3 arco aberto, 2 porta fechada); só arestas entre duas salas
+ * @param {number} [p.extraLeste] colunas a mais a leste do anel (a floresta de fora)
  * @param {number} [p.extra] linhas a mais ao sul do anel (o jardim da frente do térreo)
  * @param {{ retangulo: number[], portao: number[] }} [p.quintal] o jardim de fora: o retângulo (quadrados do livro) e as duas colunas do portão da cerca de ferro
  * @param {number[][][]} [p.duplas] pares de arestas de porta vizinhas que formam UM vão (a porta dupla de dois quadrados): um arco só, centrado
  * @param {Array<[number, number, string]>} [p.glifos] casas que trocam de glifo: escada ('l'), tapete ('*')
  * @param {string} [p.piso] glifo do piso das salas que não dizem o seu
  */
-export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], piso = 'U', extra = 0, quintal = null }) {
-  const w = LARGURA; const h = COMPRIMENTO + extra;
+export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], piso = 'U', extra = 0, extraLeste = 0, quintal = null }) {
+  const w = LARGURA + extraLeste; const h = COMPRIMENTO + extra;
   const dentro = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
   const dono = Array.from({ length: h }, () => Array(w).fill(-1));
   const glifo = Array.from({ length: h }, () => Array(w).fill('Z'));

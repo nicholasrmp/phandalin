@@ -35,6 +35,7 @@ ESTILO = ('for a gothic manor in an isometric tactical RPG, carved dark oak, bur
           'outline, not black. ')
 
 PALETA = obj.PALETA_CASA
+PALETA_FLORESTA = ['#1b1612', '#2e261d', '#463a2c', '#62523f', '#7e6d55', '#4a4a44', '#6a6a62', '#8e8e82', '#2a2f26', '#3d4536', '#586347', '#8a6a44', '#a8a89a']
 
 DE_UMA_CASA = ('Single prop that fits ONE floor tile, about 40 px wide, sitting on the bottom of the canvas, seen '
                'from the front-left in isometric 2:1 view, ')
@@ -343,6 +344,37 @@ obj.CONJUNTOS.update({
         'view': 'top-down',
         'item_descriptions': ['elegant painted harpsichord with raised lid, ivory keys, dark oak legs and a burgundy bench', 'dark oak harpsichord with gold trim, raised lid, ivory keys, a small bench', 'harpsichord with a burgundy painted lid, ivory keys, carved legs, a cushioned bench', 'black lacquer harpsichord with brass trim, raised lid, a small bench'],
         'target_palette': {'colors': PALETA},
+    },
+    # A FLORESTA MORTA de fora da casa (Baroviá): arvores secas e pequenos restos, na mesma projecao 2:1.
+    'casaArvoreMorta': {
+        'description': ('ONE tall dead tree for a cursed dead forest, twisted bare black-brown trunk with gnarled leafless branches, '
+                        'about 100 px tall, the foot of the trunk at the bottom centre of the canvas, seen in isometric 2:1 view, '
+                        'lit from the upper left. No leaves, no grass, no ground. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'twisted dead oak with a thick trunk and bare spiky branches, grey bark, hollow knot',
+            'tall dead pine, bare, split trunk, a few broken branches, grey and brown',
+            'gnarled dead tree with claw-like branches reaching to the sides, cracked dark bark',
+            'dead tree leaning to one side, bare crooked branches, a crow sitting on one branch',
+        ],
+        'target_palette': {'colors': PALETA_FLORESTA},
+    },
+    'casaMata': {
+        'description': ('Single small piece of dead forest that fits ONE floor tile, about 36 px wide, sitting on the bottom of the canvas, '
+                        'seen in isometric 2:1 view, grey and brown, lifeless, lit from the upper left. ' + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'dead thorny bush, bare grey branches', 'dead thorny bush with a few dry brown leaves', 'dry dead shrub, tangled branches',
+            'old tree stump with roots, grey, cracked', 'rotten tree stump with moss and a mushroom',
+            'fallen dead log lying on the ground, broken branch', 'fallen rotten log with a hollow end',
+            'pile of old bones and a skull half buried in grey dirt', 'mossy grey boulder with cracks', 'small pile of grey stones',
+            'tuft of dry dead grass and weeds', 'tall dry dead grass clump',
+            'rotten wooden signpost with a broken arrow board', 'crumbling mossy tombstone leaning', 'old broken wooden cart wheel leaning on stones',
+            'bramble of dead thorny vines with a wilted flower',
+        ],
+        'target_palette': {'colors': PALETA_FLORESTA},
     },
 })
 

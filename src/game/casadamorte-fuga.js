@@ -92,7 +92,7 @@ async function fumaca(ctx, c, area) {
 async function sair(ctx, c) {
   const { salvo } = ctx;
   if (!salvo.fim) {
-    await ctx.painel('O portão de ferro cede, e o jardim lá fora desapareceu: as brumas chegam ao pórtico, grossas, e se negam a deixar passar quem quer que seja. Nada se vê além do primeiro degrau. A casa terá de ser resolvida antes: o que as criptas e a câmara de baixo guardam.');
+    await ctx.painel('A porta se abre, e a floresta lá fora desapareceu: as brumas chegam ao pórtico, grossas, e se negam a deixar passar quem quer que seja. Nada se vê além do primeiro degrau. A casa terá de ser resolvida antes: o que as criptas e a câmara de baixo guardam.');
     return;
   }
   salvo.possuidos ??= [];
@@ -202,9 +202,9 @@ export function fugaParedesOps(ctx, { tile, c, ops }) {
 }
 
 export function fugaInteracoes(ctx, { area, tile, sup, c, ops }) {
-  if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'jardim') return;
+  if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'floresta') return;
   ops.push({
-    rotulo: 'Sair pelo portão', icone: 'acao-usarObjeto', detalhe: ctx.salvo.fim ? 'a névoa recuou' : 'cercado pelas brumas', motivo: null,
+    rotulo: 'Voltar à estrada (sair da casa)', icone: 'acao-usarObjeto', detalhe: ctx.salvo.fim ? 'a névoa recuou' : 'cercado pelas brumas', motivo: null,
     fazer: async () => { await sair(ctx, c); },
   });
 }

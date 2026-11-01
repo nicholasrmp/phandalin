@@ -101,6 +101,22 @@ PECAS = {
     'montaCargas': {'conjunto': 'casaMais', 'n': 13, 'dirs': ['+y'], 'folga': 4},
     'barrilAgua': {'conjunto': 'casaMais', 'n': 14, 'dirs': ['+y'], 'folga': 6},
     'bancadaCozinha': {'conjunto': 'casaMais', 'n': 15, 'dirs': ['+y'], 'folga': 6},
+    # A FLORESTA MORTA de fora da casa (`casaArvoreMorta`, `casaMata`)
+    'arvoreMortaA': {'conjunto': 'casaArvoreMorta', 'n': 0, 'dirs': ['+y'], 'folga': 14},
+    'arvoreMortaB': {'conjunto': 'casaArvoreMorta', 'n': 2, 'dirs': ['+y'], 'folga': 14},
+    'arvoreMortaC': {'conjunto': 'casaArvoreMorta', 'n': 3, 'dirs': ['+y'], 'folga': 14},
+    'arvoreMortaD': {'conjunto': 'casaArvoreMorta', 'n': 1, 'dirs': ['+y'], 'folga': 14},
+    'arbustoSeco': {'conjunto': 'casaMata', 'n': 0, 'dirs': ['+y'], 'folga': 10},
+    'arbustoSecoB': {'conjunto': 'casaMata', 'n': 2, 'dirs': ['+y'], 'folga': 10},
+    'toco': {'conjunto': 'casaMata', 'n': 3, 'dirs': ['+y'], 'folga': 10},
+    'tronco': {'conjunto': 'casaMata', 'n': 5, 'dirs': ['+y'], 'folga': 10},
+    'ossosFora': {'conjunto': 'casaMata', 'n': 7, 'dirs': ['+y'], 'folga': 10},
+    'pedraFora': {'conjunto': 'casaMata', 'n': 8, 'dirs': ['+y'], 'folga': 10},
+    'capimSeco': {'conjunto': 'casaMata', 'n': 10, 'dirs': ['+y'], 'folga': 10},
+    'capimSecoB': {'conjunto': 'casaMata', 'n': 11, 'dirs': ['+y'], 'folga': 10},
+    'lapide': {'conjunto': 'casaMata', 'n': 13, 'dirs': ['+y'], 'folga': 10},
+    'espinhos': {'conjunto': 'casaMata', 'n': 15, 'dirs': ['+y'], 'folga': 10},
+    'placa': {'conjunto': 'casaMata', 'n': 12, 'dirs': ['+y'], 'folga': 10},
     'escadaria': {'conjunto': 'casaEscadaria', 'n': 0, 'dirs': ['+x'], 'folga': 2},
 }
 
