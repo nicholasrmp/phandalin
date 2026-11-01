@@ -1,176 +1,168 @@
 // Livro do Jogador não é SRD: a Maldição de Strahd é conteúdo da Wizards. A PLANTA e o TEXTO são nossos; os fatos (o que há em cada sala,
 // as CDs) são os do livro — ver NOTICE.md e STRAHD.md.
 //
-// A CASA DA MORTE, 3º ANDAR e SÓTÃO (Apêndice B, áreas 11 a 21). Aqui a casa "viva" para de fingir: a poeira, as teias e a madeira que
-// geme são de séculos. Um quadrado do mapa = uma casa do jogo. O 3º andar é a varanda no alto da escadaria (11), a suíte principal (12),
-// o banheiro (13), o depósito da vassoura (14) e a suíte da babá com o berçário (15). O sótão: o salão de pedra (16), dois quartos de
-// repouso (17 e 19), o depósito dos móveis cobertos (18), o quarto trancado das crianças (20) e, escondida, a escada em espiral (21)
-// que desce ao nível das masmorras.
+// A CASA DA MORTE, 3º ANDAR e SÓTÃO (Apêndice B, áreas 11 a 21), na escala do mapa do livro: um quadrado é uma casa do jogo, 6 de largura por
+// 11 de comprimento (`casadamorte-plantas.js`). Aqui a casa "viva" para de fingir: a poeira, as teias e a madeira que geme são de séculos.
+// O 3º andar é a varanda no alto da escadaria (11), a suíte principal (12), o banheiro (13), o depósito da vassoura (14) e a suíte da babá
+// com o berçário (15). O sótão: o salão de pedra (16), dois quartos de repouso (17 e 19), o depósito dos móveis cobertos (18), o quarto
+// trancado das crianças (20) e, escondida, a escada em espiral (21) que desce ao nível das masmorras.
 //
-// Glifos: M parede · U assoalho · * tapete · ? porta · l escada · z cama · 0 mesa · { prateleira e caixotes · ) baú · } lareira.
+// Glifos: U assoalho · * tapete · 0 mesa · l escada · Z o chão de fora da casa.
 
-const BASE_3 = [
-  'MMMMMMMMMMMMMM',
-  'M}UUUUzzzzUUUM',
-  'MUUUUUUUUUUUUM',
-  'MUUUUUUUUUUUUM',
-  'MUUUUUUUUUU0UM',
-  'MUUUUUUUUUUUUM',
-  'MMMMM?MMMMMMMM',
-  'MMMMMUUUUUUUUM',
-  'MMMMMUUUUUUUUM',
-  'MUUUUMUUUUUUUM',
-  'MUUUU?UUUllllM',
-  'MUUUUMUUUllllM',
-  'M}UUUMUUUllllM',
-  'MMMMMMUUUllllM',
-  'MUUUU?UUUllllM',
-  'MUUUUMUUUUUUUM',
-  'MMMMMMM?MMMMMM',
-  'MUUUUMUUUMMMMM',
-  'MUUUU?UUUMMMMM',
-  'MzUUUMUUUUUUUM',
-  'MUUUUMUUUUUUUM',
-  'MMMMMMUUUzzUUM',
-  'MMMMMMUUUzzUUM',
-  'MMMMMMMMMMMMMM',
-];
+import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
+import { plantaDeSalas, criarArea, casa, tapete } from './casadamorte-plantas.js';
 
-const BASE_4 = [
-  'MMMMMMMMMMMMMM',
-  'MUUUMUUUUUUMMM',
-  'MzzUMzUUUUzMMM',
-  'MUUUMUUUUUUMMM',
-  'MUUUMUUUUUUMMM',
-  'M}UUMUUUUUUMMM',
-  'MMM?MMM?MMMMMM',
-  'MMMUUUUUUUUUUM',
-  'MMMUUUUUUUUUUM',
-  'MMM?MMMUUUUUUM',
-  'MUUUUUUMUUUUUM',
-  'M}UUUUUMUUUllM',
-  'M){UUUUMUUUllM',
-  'MUUUUUUMUUUllM',
-  'MUU{UUUMUUUllM',
-  'MUUUU{UMUUUUUM',
-  'MU{UUUUMUUUUUM',
-  'MUUUU{UMMM?MMM',
-  'MUU{UUUMUUUUUM',
-  'MUUUUUUMUUzUUM',
-  'MMMMMMMMUUUUUM',
-  'MMMMMMMMUUUUUM',
-  'MMMMMMMMUUUU}M',
-  'MMMMMMMMMMMMMM',
-];
+// ------------------------------------------------------------------------------------------------ 3º andar ----
+// A suíte principal (12) ocupa o norte, com o armário do espelho (12B) e a varanda de fora (12C). No meio, a varanda (11) em volta do vão da
+// escadaria, o banheiro (13) e o depósito (14) a oeste. Ao sul: o berçário (15B), a suíte da babá (15A) e, fora da casa, a sacada (15C).
+// O poço da escada secreta (as três casas ao norte da suíte da babá) é uma sala fechada até a casa abrir as duas portas dele.
+export const PLANTA_3 = plantaDeSalas({
+  salas: [
+    { id: 'suite', retangulos: [[0, 0, 4, 1], [0, 2, 5, 2], [4, 3, 5, 3]] },
+    { id: 'sacadaNorte', retangulos: [[5, 0, 5, 1]] },
+    { id: 'espelho', retangulos: [[3, 3, 3, 3]] },
+    { id: 'varanda', retangulos: [[1, 3, 2, 3], [2, 4, 5, 6]] },
+    { id: 'banheiro', retangulos: [[0, 4, 1, 5]] },
+    { id: 'deposito', retangulos: [[0, 6, 1, 6]] },
+    { id: 'bercario', retangulos: [[0, 7, 1, 8]] },
+    { id: 'sacadaSul', retangulos: [[0, 9, 1, 10]] },
+    { id: 'suiteBaba', retangulos: [[2, 7, 2, 7], [2, 8, 5, 10]] },
+    { id: 'poco', retangulos: [[3, 7, 5, 7]] },
+  ],
+  // as duas portas do poço (3,6)-(3,7) e (3,7)-(3,8) começam como parede: são as portas secretas
+  portas: [
+    [1, 2, 1, 3], [2, 2, 2, 3], [3, 2, 3, 3], [5, 1, 5, 2], [1, 3, 1, 4], [1, 6, 2, 6], [2, 6, 2, 7],
+    [1, 8, 2, 8], [1, 9, 2, 9], [1, 10, 2, 10],
+  ],
+  glifos: [
+    ...tapete(0, 0, 2, 2), ...tapete(2, 7, 5, 10),
+    [5, 3, '0'],
+    ...[4, 5].flatMap((x) => [4, 5, 6].map((y) => [x, y, 'l'])),
+  ],
+});
 
-export const TERCEIRO_ANDAR = BASE_3;
-export const SOTAO = BASE_4;
+// ------------------------------------------------------------------------------------------------ sótão ----
+// Ao norte, o quarto de repouso (19) e o quarto das crianças (20), trancado. O salão de pedra (16) corre por baixo deles e dobra para o
+// sul; a oeste, o depósito dos móveis (18), com a escada em espiral (21) atrás de uma porta secreta; a leste, o quarto de repouso (17) e o
+// armário da escada que desce à suíte da babá. O resto da planta é telhado, fora da casa.
+export const PLANTA_4 = plantaDeSalas({
+  salas: [
+    { id: 'quarto19', retangulos: [[0, 0, 1, 2]] },
+    { id: 'criancas', retangulos: [[2, 0, 4, 2]] },
+    { id: 'espiral', retangulos: [[0, 3, 0, 3]] },
+    { id: 'salao', retangulos: [[1, 3, 5, 3], [3, 4, 5, 4], [3, 5, 4, 6]] },
+    { id: 'deposito', retangulos: [[0, 4, 2, 7], [1, 8, 1, 8]] },
+    { id: 'armarioEscada', retangulos: [[5, 5, 5, 7], [4, 7, 4, 7]] },
+    { id: 'quarto17', retangulos: [[3, 7, 3, 7], [3, 8, 5, 8], [2, 9, 5, 9], [2, 10, 4, 10]] },
+  ],
+  // a porta do quarto das crianças (3,2)-(3,3) é fechada (trancada); a da espiral (0,3)-(0,4) é secreta (parede até a casa mostrar)
+  portas: [[1, 2, 1, 3], [3, 2, 3, 3, '+'], [1, 3, 1, 4], [3, 6, 3, 7], [5, 4, 5, 5]],
+  glifos: [...tapete(2, 0, 4, 2), [5, 6, 'l'], [5, 7, 'l'], [4, 7, 'l']],
+});
 
-/** Onde fica a escada em espiral oculta do sótão (21) e o que a porta secreta da suíte da babá (15A) revela. As casas são parede até a casa as mostrar. */
-export const ESCADA_SECRETA_3 = [[10, 17], [11, 17], [12, 17], [10, 18], [11, 18], [12, 18]];
-export const ESCADA_SECRETA_4 = [[1, 7], [2, 7], [1, 8], [2, 8]];
-/** A segunda porta secreta da escada (11, parede oeste da varanda, Percepção CD 15): a escada sobe ao sótão e a porta dá para a varanda. */
-export const ESCADA_OESTE_3 = [[2, 7], [3, 7], [2, 8], [3, 8]];
-export const PORTA_OESTE_3 = [[4, 7], [4, 8]];
+export const TERCEIRO_ANDAR = PLANTA_3.terreno;
+export const SOTAO = PLANTA_4.terreno;
+
+/** Onde fica a escada em espiral oculta do sótão (21) e o que as portas secretas do 3º andar revelam: as casas são piso até a casa as mostrar. */
+export const ESCADA_SECRETA_3 = [[3, 7], [4, 7], [5, 7]].map(([x, y]) => [x + 1, y + 1]);
+export const ESCADA_SECRETA_4 = [[0, 3]].map(([x, y]) => [x + 1, y + 1]);
+/** As duas portas secretas do poço do 3º andar: a da suíte da babá (atrás do espelho de hera) e a da varanda (Percepção CD 15). Cada uma é um par de casas. */
+export const PORTA_ESPELHO_3 = [casa(3, 7), casa(3, 8)];
+export const PORTA_VARANDA_3 = [casa(3, 6), casa(3, 7)];
+/** A porta secreta da espiral (21) com o depósito (18), no sótão. */
+export const PORTA_ESPIRAL_4 = [casa(0, 3), casa(0, 4)];
+/** A porta do quarto das crianças (20) e a do poço da escada (no armário a leste): pares de casas. */
+export const PORTA_CRIANCAS_4 = [casa(3, 2), casa(3, 3)];
 
 export const AREAS_TERCEIRO = [
-  {
-    id: 'varanda', area: '11', nome: 'A varanda', x1: 5, y1: 7, x2: 12, y2: 15,
+  criarArea({
+    id: 'varanda', area: '11', nome: 'A varanda', cel: [[1, 3, 2, 3], [2, 4, 5, 6]],
     texto: [
       'Aqui em cima a casa não finge mais. A poeira cobre o assoalho como neve, as teias pendem em véus, as tábuas gemem a cada passo e o ar é frio e parado. A escadaria de mármore vermelho termina numa varanda que dá a volta no vão da escada.',
       'Contra a parede, envolta em teias, uma armadura de placas negras, de pé, com um elmo de viseira fechada. Não se mexe.',
     ],
-  },
-  {
-    id: 'suitePrincipal', area: '12', nome: 'A suíte principal', x1: 1, y1: 1, x2: 12, y2: 6,
+  }),
+  criarArea({
+    id: 'suitePrincipal', area: '12', nome: 'A suíte principal', cel: [[0, 0, 5, 2], [4, 3, 5, 3], [3, 3, 3, 3]],
     texto: [
       'Portas duplas de vitral, cobertas de pó, com moinhos de vento desenhados nos painéis. Do outro lado, o quarto do casal Durst: uma cama de dossel com cortinas bordadas e véus esfarrapados, dois guarda-roupas vazios, uma penteadeira com espelho de moldura de madeira e uma poltrona acolchoada, tudo sob um pano de teias.',
       'Um tapete de pele de tigre, apodrecendo, jaz diante da lareira, e acima dela, empoeirado, o retrato de Gustav e Elisabeth Durst. Num canto da parede ocidental, um criado-mudo com um botão que toca o sininho da cozinha, muitos andares abaixo. No canto sudoeste, uma mesa e duas cadeiras, e sobre a toalha uma tigela e um jarro de porcelana, vazios.',
       'Uma porta de frente para o pé da cama tem um espelho de corpo inteiro. Abre para um armário vazio. Outra porta leva a uma varanda de fora da casa.',
     ],
-  },
-  {
-    id: 'banheiro', area: '13', nome: 'O banheiro', x1: 1, y1: 9, x2: 4, y2: 12,
+  }),
+  criarArea({
+    id: 'banheiro', area: '13', nome: 'O banheiro', cel: [[0, 4, 1, 5]],
     texto: [
       'Um quarto escuro: banheira de madeira com pés de garra, um fogãozinho de ferro com uma chaleira, um barril sob uma torneira na parede leste. A cisterna do telhado recolhia a água da chuva e a mandava para baixo por um cano. O encanamento não funciona mais.',
     ],
-  },
-  {
-    id: 'deposito', area: '14', nome: 'O depósito', x1: 1, y1: 14, x2: 4, y2: 15,
+  }),
+  criarArea({
+    id: 'deposito', area: '14', nome: 'O depósito', cel: [[0, 6, 1, 6]],
     texto: [
       'Prateleiras empoeiradas ao longo das paredes, com lençóis e cobertores dobrados e barras de sabão ressecadas. No fundo, encostada à parede, uma vassoura coberta de teia.',
     ],
-  },
-  {
-    id: 'suiteBaba', area: '15A', nome: 'A suíte da babá', x1: 5, y1: 16, x2: 12, y2: 22,
+  }),
+  criarArea({
+    id: 'suiteBaba', area: '15A', nome: 'A suíte da babá', cel: [[2, 7, 2, 7], [2, 8, 5, 10]],
     texto: [
       'Poeira e teias sobre um quarto bem decorado: uma cama grande, duas mesas de canto, um guarda-roupa vazio. Preso à parede ao lado do guarda-roupa, um espelho de corpo inteiro com a moldura esculpida como hera e bagas.',
       'A babá da família era amante do dono da casa. Do caso nasceu um bebê natimorto, Walter, e pouco depois o culto matou a mulher. Uma porta dupla de vitral dá para uma varanda de fora, de frente para a entrada.',
     ],
-  },
-  {
-    id: 'bercario', area: '15B', nome: 'O berçário', x1: 1, y1: 17, x2: 4, y2: 20,
+  }),
+  criarArea({
+    id: 'bercario', area: '15B', nome: 'O berçário', cel: [[0, 7, 1, 8]],
     texto: [
       'Um berço coberto por uma mortalha negra, e nada mais que valha o nome de quarto de criança: o ar tem cheiro de leite azedo e de coisa guardada demais.',
     ],
-  },
+  }),
 ];
 
 export const AREAS_SOTAO = [
-  {
-    id: 'sotaoPedra', area: '16', nome: 'O sótão de pedra', x1: 3, y1: 7, x2: 12, y2: 9,
+  criarArea({
+    id: 'sotaoPedra', area: '16', nome: 'O sótão de pedra', cel: [[1, 3, 5, 3], [3, 4, 5, 4], [3, 5, 4, 6], [5, 5, 5, 7], [4, 7, 4, 7]],
     texto: [
       'Um salão vazio, de teto alto, cheio de poeira e teias. As vigas rangem. Há quatro portas: a do noroeste, a do nordeste, uma porta grande a oeste e outra ao sul.',
       'A porta do nordeste, de ferro velho, está trancada com um cadeado.',
     ],
-  },
-  {
-    id: 'sotaoPedra2', area: '16', nome: 'O sótão de pedra', x1: 8, y1: 10, x2: 12, y2: 17,
-    texto: [],
-  },
-  {
-    id: 'quarto17', area: '17', nome: 'O quarto de repouso', x1: 1, y1: 1, x2: 3, y2: 5,
+  }),
+  criarArea({
+    id: 'quarto17', area: '17', nome: 'O quarto de repouso', cel: [[3, 7, 3, 7], [3, 8, 5, 8], [2, 9, 5, 9], [2, 10, 4, 10]],
     texto: [
       'Uma cama estreita, um criado-mudo, um fogãozinho de ferro, uma escrivaninha com banco, um guarda-roupa vazio e uma cadeira de balanço. Sobre o parapeito da janela do norte, uma boneca sorridente de vestido amarelo, tão coberta de teia que parece de noiva.',
     ],
-  },
-  {
-    id: 'criancas', area: '20', nome: 'O quarto das crianças', x1: 5, y1: 1, x2: 10, y2: 5,
+  }),
+  criarArea({
+    id: 'criancas', area: '20', nome: 'O quarto das crianças', cel: [[2, 0, 4, 2]],
     texto: [
       'Uma janela tapada por tijolos, duas camas pequenas de estrutura de madeira, empoeiradas, e, perto da porta, um baú de brinquedos com moinhos de vento pintados e uma casa de bonecas que é uma réplica perfeita da casa em que vocês estão. Tudo sob teias.',
       'No meio do chão, dois esqueletos pequenos, de roupas esfarrapadas que vocês reconhecem. O de Thorn abraça o boneco de pano do irmão.',
     ],
-  },
-  {
-    id: 'deposito18', area: '18', nome: 'O depósito dos móveis cobertos', x1: 1, y1: 10, x2: 6, y2: 19,
+  }),
+  criarArea({
+    id: 'deposito18', area: '18', nome: 'O depósito dos móveis cobertos', cel: [[0, 4, 2, 7], [1, 8, 1, 8]],
     texto: [
       'Uma câmara empoeirada cheia de móveis antigos sob lençóis brancos: cadeiras, casacos, espelhos de corpo inteiro, manequins de costura. Os lençóis têm forma de gente em pé.',
       'Perto de um fogão de ferro, sob um dos lençóis, um baú de madeira, destrancado.',
     ],
-  },
-  {
-    id: 'quarto19', area: '19', nome: 'O outro quarto de repouso', x1: 8, y1: 18, x2: 12, y2: 22,
+  }),
+  criarArea({
+    id: 'quarto19', area: '19', nome: 'O outro quarto de repouso', cel: [[0, 0, 1, 2]],
     texto: [
       'Uma cama pequena, uma mesa de cabeceira, uma cadeira de balanço, um guarda-roupa vazio e um fogãozinho de ferro, tudo coberto de teia.',
     ],
-  },
-  {
-    id: 'escadaSecreta', area: '21', nome: 'A escada secreta', x1: 1, y1: 7, x2: 2, y2: 8,
+  }),
+  criarArea({
+    id: 'escadaSecreta', area: '21', nome: 'A escada secreta', cel: [[0, 3, 0, 3]],
     texto: [
       'Uma escada estreita em espiral, de madeira frágil, dentro de um poço de pedra argamassada de metro e meio de largura. Teias grossas enchem o poço e a visão não passa de um metro e meio. A escada desce, desce, e passa por trás dos andares da casa até muito abaixo da terra.',
     ],
-  },
+  }),
 ];
 
-import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
-import { paredesDeBorda } from './casadamorte-paredes.js';
 
-const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
+const grupoPadrao = (pontos) => pontos.map(([x, y]) => casa(x, y));
 
-/** As plantas em PAREDE DE BORDA. Os poços da escada secreta são salas fechadas até a casa abrir uma aresta delas; a porta do quarto das crianças (20) começa trancada. */
-export const PLANTA_3 = paredesDeBorda(BASE_3, { piso: 'U', nichos: [ESCADA_SECRETA_3, ESCADA_OESTE_3] });
-export const PLANTA_4 = paredesDeBorda(BASE_4, { piso: 'U', nichos: [ESCADA_SECRETA_4], fechadas: ['7,6,N'] });
-
+/** As casas dos andares: as plantas de aresta, a mobília e o grupo de chegada. */
 const MOB_3 = mobiliar(PLANTA_3.terreno, MOBILIA.casaDaMorte3, 'assoalho');
 const MOB_4 = mobiliar(PLANTA_4.terreno, MOBILIA.casaDaMorte4, 'assoalho');
 
@@ -182,8 +174,8 @@ export const MAPA_CASA_DA_MORTE_3 = {
   salas: PLANTA_3.salas,
   materialDaParede: 'madeiraVelha',
   poeira: true,
-  grupo: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),
-  olhar: { dx: 1, dy: 0 },
+  grupo: grupoPadrao([[2, 6], [3, 6], [2, 5], [3, 5]]),
+  olhar: { dx: 0, dy: -1 },
   cena: 'casaDaMorte',
 };
 
@@ -195,7 +187,7 @@ export const MAPA_CASA_DA_MORTE_4 = {
   salas: PLANTA_4.salas,
   materialDaParede: 'madeiraVelha',
   poeira: true,
-  grupo: grupoPadrao([[10, 12], [10, 13], [9, 12], [9, 13]]),
-  olhar: { dx: 1, dy: 0 },
+  grupo: grupoPadrao([[5, 5], [5, 6], [5, 7], [4, 7]]),
+  olhar: { dx: -1, dy: 0 },
   cena: 'casaDaMorte',
 };

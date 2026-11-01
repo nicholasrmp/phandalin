@@ -8,11 +8,15 @@
 //   - Rose e Thorn: aparecem quando alguém mexe nos brinquedos, sabem que estão mortos e só lutam em autodefesa.
 
 import { conversar } from './dialogo.js';
+import { casa } from './casadamorte-plantas.js';
+import { PORTA_CRIANCAS_4 } from './casadamorte-alto.js';
 import { NPCS } from '../rules/npcs.js';
 import { makeMonster } from '../rules/monsters.js';
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 const perto = (c, p, casas = 1) => Math.max(Math.abs(c.pos.x - p.x), Math.abs(c.pos.y - p.y)) <= casas;
+/** A criatura só acorda com quem ela alcança: uma parede entre os dois (o depósito e o berçário são vizinhos) não conta. */
+const semParede = (ctx, c, p) => ctx.enc.field.paredesEntre(c.pos, p) === 0;
 const vivo = (g) => (g?.membros ?? []).find((f) => !f.dead);
 
 /** Os gatilhos que disparam ao fim de um passo: `(c, area)` devolve `null` ou `{ intro, surpresa }`. */
@@ -25,14 +29,14 @@ export function altoGatilhos(ctx) {
   return {
     armadura: (c) => {
       const f = vivo(ctx.grupos.armadura);
-      if (!f || !perto(c, f.pos)) return null;
+      if (!f || !perto(c, f.pos) || !semParede(ctx, c, f.pos)) return null;
       return { intro: [
         'A armadura de placas negras vira o elmo para vocês com um chiado de ferrugem, solta as teias dos ombros e levanta o braço de ferro. Do outro lado da viseira fechada não há ninguém, mas alguma coisa decidiu que vocês não deviam ter subido.',
       ] };
     },
     vassoura: (c) => {
       const f = vivo(ctx.grupos.vassoura);
-      if (!f || !perto(c, f.pos)) return null;
+      if (!f || !perto(c, f.pos) || !semParede(ctx, c, f.pos)) return null;
       return { intro: [
         'A vassoura encostada no canto desliza da parede, uma cerda de cada vez, e sai do véu de teia como um bicho sacudindo a poeira. O cabo corta o ar.',
       ] };
@@ -98,8 +102,8 @@ async function fantasmas(ctx) {
 /** O livro: eles só lutam em autodefesa. Quem levanta a arma contra eles terá a luta. Reduzidos a 0 PV, voltam ao amanhecer. */
 async function lutarComOsFantasmas(ctx) {
   if (ctx.grupos.fantasmas && !ctx.grupos.fantasmas.vencido) return;
-  const mk = (nome, x) => { const f = makeMonster('fantasmaDeCrianca', { x, y: 3 }); f.name = nome; f.grupo = 'fantasmas'; f.facingVec = { dx: 0, dy: 1 }; return f; };
-  const g = { id: 'fantasmas', membros: [mk('Rose', 7), mk('Thorn', 8)], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
+  const mk = (nome, p) => { const f = makeMonster('fantasmaDeCrianca', { ...p }); f.name = nome; f.grupo = 'fantasmas'; f.facingVec = { dx: 0, dy: 1 }; return f; };
+  const g = { id: 'fantasmas', membros: [mk('Rose', casa(3, 1)), mk('Thorn', casa(4, 1))], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
   ctx.grupos.fantasmas = g;
   ctx.depoisDaLuta.fantasmas = async () => {
     ctx.salvo.fantasmas = 'apareceram';
@@ -124,7 +128,7 @@ async function casaDeBonecas(ctx, c) {
 /** Destranca a porta do quarto das crianças (a chave, a gazua e a magia Abrir chegam aqui). */
 export async function destrancarPortaDasCriancas(ctx, quem, texto = null) {
   ctx.salvo.portaCriancas = true;
-  ctx.abrirAresta(7, 5, 7, 6);
+  ctx.abrirPar(PORTA_CRIANCAS_4);
   await ctx.painel(texto ?? `${quem.name} destranca o cadeado, e a porta do quarto das crianças range e abre.`);
   ctx.app.refresh();
 }
@@ -137,16 +141,16 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
   // ============================================================== 3º andar ==
   if (v === 'casaDaMorte3') {
     if (area.id === 'varanda') {
-      const oeste = { x: 5, y: 8 };
+      const oeste = casa(3, 6);
       ops.push({
-        rotulo: salvo.portaOeste ? 'A porta da parede oeste (aberta)' : 'Procurar portas secretas na parede oeste', icone: 'acao-procurar',
+        rotulo: salvo.portaOeste ? 'A porta da parede sul (aberta)' : 'Procurar portas secretas na parede sul', icone: 'acao-procurar',
         detalhe: salvo.portaOeste ? 'a escada sobe ao sótão' : 'Percepção, CD 15',
         motivo: salvo.portaOeste ? null : buscas.ja(c, 'portaOeste', oeste),
         fazer: async () => {
-          if (salvo.portaOeste) { await ctx.painel('Uma porta de madeira na parede oeste, aberta sobre uma escada estreita cheia de teia, que sobe ao sótão.'); return; }
+          if (salvo.portaOeste) { await ctx.painel('Uma porta de madeira na parede sul, aberta sobre uma escada estreita cheia de teia, que sobe ao sótão.'); return; }
           buscas.marcar(c, 'portaOeste', oeste);
           const t = ctx.teste(c, 'percepcao', 15);
-          if (!t.passou) { await ctx.painel(`${c.name} passa a mão pelos painéis da parede oeste e só acha madeira.`); return; }
+          if (!t.passou) { await ctx.painel(`${c.name} passa a mão pelos painéis da parede sul e só acha madeira.`); return; }
           if (!salvo.escada) { await ctx.painel(`${t.quem?.name ?? c.name} procura com cuidado e encontra o desenho de uma porta, sob a tinta: a casa a esconde ainda, e não vai mostrá-la enquanto não quiser.`); return; }
           salvo.portaOeste = true;
           ctx.aplicarEscada();
@@ -154,7 +158,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
           ctx.app.refresh();
         },
       });
-      const onde = { x: 7, y: 8 };
+      const onde = casa(3, 5);
       ops.push({
         rotulo: 'Examinar os painéis das paredes', icone: 'acao-procurar',
         detalhe: salvo.paineisVaranda ? 'já examinados' : 'Percepção, CD 12',
@@ -171,7 +175,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area.id === 'suitePrincipal') {
       ops.push({
         rotulo: achados.joias ? 'A caixa de joias (vazia)' : 'Abrir a caixa de joias da penteadeira', icone: 'acao-usarObjeto',
-        detalhe: achados.joias ? 'já aberta' : 'prata com filigrana de ouro', motivo: achados.joias ? 'já aberta' : ctx.longe(c, { x: 8, y: 3 }, 40),
+        detalhe: achados.joias ? 'já aberta' : 'prata com filigrana de ouro', motivo: achados.joias ? 'já aberta' : ctx.longe(c, casa(0, 2), 25),
         fazer: async () => {
           achados.joias = true;
           const quem = ctx.herois()[0];
@@ -192,7 +196,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
     }
     if (area.id === 'suiteBaba') {
-      const onde = { x: 5, y: 20 };
+      const onde = casa(3, 8);
       const aberto = salvo.escada;
       ops.push({
         rotulo: aberto ? 'A porta atrás do espelho (aberta)' : 'Examinar o espelho de hera',
@@ -226,12 +230,12 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: 'Abrir a porta trancada do norte', icone: 'acao-usarObjeto',
         detalhe: ctx.algumTem('chaveDeFerroDosDurst') ? 'a chave de ferro dos Durst' : 'ferramentas de ladrão, Prestidigitação, CD 15',
-        motivo: ctx.longe(c, { x: 7, y: 7 }, 10),
+        motivo: ctx.longe(c, casa(3, 3), 10),
         fazer: async () => {
           const dono = ctx.algumTem('chaveDeFerroDosDurst');
           if (dono) {
             salvo.portaCriancas = true;
-            ctx.abrirAresta(7, 5, 7, 6);
+            ctx.abrirPar(PORTA_CRIANCAS_4);
             await ctx.painel(`${dono.name} gira a chave de ferro no cadeado, que cede com um estalo. A porta do quarto das crianças range e abre.`);
             ctx.app.refresh();
             return;
@@ -241,7 +245,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
           const t = ctx.teste(ladrao, 'prestidigitacao', 15);
           if (!t.passou) { await ctx.painel(`${ladrao.name} trabalha o cadeado até a ponta da gazua entortar. Dá para tentar de novo com mais calma.`); return; }
           salvo.portaCriancas = true;
-          ctx.abrirAresta(7, 5, 7, 6);
+          ctx.abrirPar(PORTA_CRIANCAS_4);
           await ctx.painel(`${ladrao.name} sente o último pino ceder. O cadeado cai, e a porta do quarto das crianças abre sozinha.`);
           ctx.app.refresh();
         },
@@ -270,9 +274,9 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: 'Procurar portas na casa de bonecas', icone: 'acao-procurar',
         detalhe: salvo.escada ? 'a escada já foi achada' : (salvo.dicaDaCasaDeBonecas ? 'Percepção, CD 15, com vantagem' : 'Percepção, CD 15'),
-        motivo: salvo.escada ? 'já achada' : buscas.ja(c, 'bonecas', { x: 6, y: 4 }),
+        motivo: salvo.escada ? 'já achada' : buscas.ja(c, 'bonecas', casa(2, 2)),
         fazer: async () => {
-          if (!salvo.escada) buscas.marcar(c, 'bonecas', { x: 6, y: 4 });
+          if (!salvo.escada) buscas.marcar(c, 'bonecas', casa(2, 2));
           await casaDeBonecas(ctx, c);
           if (!salvo.fantasmas) await fantasmas(ctx);
         },
@@ -298,7 +302,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       const g = ctx.grupos.espectroBaba;
       ops.push({
         rotulo: salvo.restosVistos ? 'Os restos da babá' : 'Abrir o baú sob o lençol', icone: 'acao-usarObjeto',
-        detalhe: 'Medicina, CD 14', motivo: ctx.longe(c, { x: 1, y: 12 }, 20),
+        detalhe: 'Medicina, CD 14', motivo: ctx.longe(c, casa(0, 6), 15),
         fazer: async () => {
           const t = ctx.teste(c, 'medicina', 14);
           salvo.restosVistos = true;

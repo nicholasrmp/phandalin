@@ -5396,7 +5396,7 @@ teste('Casa da Morte: as nove criaturas instanciam, têm sprite que existe, XP d
 
 teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos andares da casa, escadas recíprocas e criaturas em casa livre', async () => {
   const { ANDARES, VARIANTES_DA_CASA } = await import('../game/casadamorte.js');
-  const { ESCADA_SECRETA_3, ESCADA_SECRETA_4, ESCADA_OESTE_3 } = await import('../game/casadamorte-alto.js');
+  const { ESCADA_SECRETA_3, ESCADA_SECRETA_4 } = await import('../game/casadamorte-alto.js');
   const { GLIFOS, Battlefield } = await import('../core/grid.js');
   const { mapaDo, buildFoes } = await import('../game/encounter.js');
   const { montarCampo } = await import('../game/campo.js');
@@ -5423,7 +5423,7 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     return vistos;
   };
   const mudar = (terreno, casas, g) => terreno.map((l, y) => [...l].map((ch, x) => (casas.some(([cx, cy]) => cx === x && cy === y) ? g : ch)).join(''));
-  const tem = (vistos, a) => { for (let y = a.y1; y <= a.y2; y++) for (let x = a.x1; x <= a.x2; x++) if (vistos.has(`${x},${y}`)) return true; return false; };
+  const tem = (vistos, a) => { for (let y = a.y1; y <= a.y2; y++) for (let x = a.x1; x <= a.x2; x++) if ((!a.contem || a.contem({ x, y })) && vistos.has(`${x},${y}`)) return true; return false; };
   const e = (f, ax, ay, bx, by) => f.aresta(ax, ay, bx, by);
 
   // formato, glifos e quem nasce em casa livre
@@ -5434,8 +5434,8 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const f = campo(v);
     for (const p of m.grupo) assert.ok(livre(f, p.x, p.y), `${v}: o grupo nasce em casa livre (${p.x},${p.y})`);
     if (!v.includes('Porao')) {
-      assert.equal(m.terreno.length, 24, `${v}: 24 linhas`);
-      assert.equal(m.terreno[0].length, 14, `${v}: 14 colunas`);
+      assert.equal(m.terreno.length, 13, `${v}: 11 casas de comprimento mais o anel de fora (a escala do livro: 1 quadrado = 1 casa)`);
+      assert.equal(m.terreno[0].length, 8, `${v}: 6 casas de largura mais o anel de fora`);
       assert.ok(m.paredes?.n && m.paredes?.o, `${v}: parede de borda`);
       assert.ok(!m.terreno.join('').includes('M'), `${v}: sem casa de parede (a parede é de aresta)`);
       assert.ok(m.materialDaParede, `${v}: material da parede`);
@@ -5465,7 +5465,7 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const vistos = alcance(f, m.grupo[0]);
     for (const a of ANDARES.casaDaMorte1.areas) assert.ok(tem(vistos, a), `1º andar: a sala ${a.area} é alcançável`);
     // a parede é de verdade: a sala de espera e o canil só se falam pela porta
-    assert.equal(e(f, 4, 17, 5, 17), 1, 'parede entre a sala de espera e o canil');
+    assert.equal(e(f, 2, 9, 3, 9), 1, 'parede entre a sala de espera e o canil');
   }
   // 2º andar: a sala secreta (9) só se alcança depois que a estante gira
   {
@@ -5474,8 +5474,8 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const sala9 = ANDARES.casaDaMorte2.areas.find((a) => a.id === 'salaSecreta');
     for (const a of ANDARES.casaDaMorte2.areas) if (a.id !== 'salaSecreta') assert.ok(tem(alcance(f, m.grupo[0]), a), `2º andar: a sala ${a.area} é alcançável`);
     assert.equal(tem(alcance(f, m.grupo[0]), sala9), false, 'a sala 9 não se alcança sem a porta secreta');
-    assert.equal(e(f, 7, 4, 7, 5), 1, 'a estante é parede');
-    f.porAresta(7, 4, 7, 5, 3);
+    assert.equal(e(f, 4, 1, 5, 1), 1, 'a estante é parede');
+    f.porAresta(4, 1, 5, 1, 3);
     assert.equal(tem(alcance(f, m.grupo[0]), sala9), true, 'com a estante girada, alcança');
   }
   // 3º andar: o poço da escada secreta e o da parede oeste só abrem depois que a casa os mostra
@@ -5484,14 +5484,13 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const m = mapaDo('casaDaMorte3');
     const vistos = alcance(f, m.grupo[0]);
     for (const a of ANDARES.casaDaMorte3.areas) assert.ok(tem(vistos, a), `3º andar: a sala ${a.area} é alcançável`);
-    assert.equal(vistos.has('11,17'), false, 'a escada secreta está escondida');
-    assert.equal(vistos.has('2,7'), false, 'a escada da parede oeste está escondida');
+    assert.equal(vistos.has('5,8'), false, 'a escada secreta está escondida');
     const aberta = campo('casaDaMorte3', mudar(m.terreno, ESCADA_SECRETA_3, 'l'));
-    aberta.porAresta(9, 17, 10, 17, 3);
-    assert.equal(alcance(aberta, m.grupo[0]).has('11,17'), true, 'revelada, a escada se alcança');
-    const oeste = campo('casaDaMorte3', mudar(m.terreno, ESCADA_OESTE_3, 'l'));
-    oeste.porAresta(4, 7, 3, 7, 3);
-    assert.equal(alcance(oeste, m.grupo[0]).has('2,7'), true, 'a porta oeste, aberta, leva à escada');
+    aberta.porAresta(4, 8, 4, 9, 3);
+    assert.equal(alcance(aberta, m.grupo[0]).has('5,8'), true, 'revelada, a escada se alcança pela suíte da babá');
+    const varanda = campo('casaDaMorte3', mudar(m.terreno, ESCADA_SECRETA_3, 'l'));
+    varanda.porAresta(4, 7, 4, 8, 3);
+    assert.equal(alcance(varanda, m.grupo[0]).has('5,8'), true, 'a porta secreta da varanda, aberta, leva à escada');
   }
   // sótão: a porta das crianças é trancada, a espiral é escondida
   {
@@ -5499,15 +5498,15 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const m = mapaDo('casaDaMorte4');
     const vistos = alcance(f, m.grupo[0]);
     for (const a of ANDARES.casaDaMorte4.areas) if (!['criancas', 'escadaSecreta'].includes(a.id)) assert.ok(tem(vistos, a), `sótão: a sala ${a.area} é alcançável`);
-    assert.equal(e(f, 7, 5, 7, 6), 2, 'a porta do quarto 20 começa trancada (porta fechada)');
+    assert.equal(e(f, 4, 3, 4, 4), 2, 'a porta do quarto 20 começa trancada (porta fechada)');
     const criancas = ANDARES.casaDaMorte4.areas.find((a) => a.id === 'criancas');
     assert.equal(tem(vistos, criancas), false, 'trancada, o quarto 20 não se alcança');
-    f.porAresta(7, 5, 7, 6, 3);
+    f.porAresta(4, 3, 4, 4, 3);
     assert.equal(tem(alcance(f, m.grupo[0]), criancas), true, 'com a porta aberta, o quarto 20 se alcança');
     const g = campo('casaDaMorte4', mudar(m.terreno, ESCADA_SECRETA_4, 'l'));
-    assert.equal(alcance(g, m.grupo[0]).has('1,7'), false, 'o poço da espiral é fechado');
-    g.porAresta(3, 7, 2, 7, 3);
-    assert.equal(alcance(g, m.grupo[0]).has('1,7'), true, 'a espiral se alcança depois de revelada');
+    assert.equal(alcance(g, m.grupo[0]).has('1,4'), false, 'o poço da espiral é fechado');
+    g.porAresta(1, 4, 1, 5, 3);
+    assert.equal(alcance(g, m.grupo[0]).has('1,4'), true, 'a espiral se alcança depois de revelada');
   }
   // masmorra 1: as criptas seladas e a porta secreta do santuário
   {

@@ -11,6 +11,10 @@
 // `grupo` é a chave que a cena usa; `olha`, para onde cada um olha ao nascer.
 
 import { makeMonster } from '../rules/monsters.js';
+import { casa } from './casadamorte-plantas.js';
+
+/** Um quadrado do livro, em casas do mapa: `[x, y]`. */
+const P = (x, y) => { const c = casa(x, y); return [c.x, c.y]; };
 
 const m = (id, x, y, grupo, { sufixo = '', nome = null, olha = { dx: 0, dy: 1 } } = {}) => {
   const f = makeMonster(id, { x, y }, { nameSuffix: sufixo });
@@ -25,12 +29,12 @@ export function foesDaCasa(variante) {
   switch (variante) {
     case 'casaDaMorte3':
       return [
-        m('armaduraAnimada', 12, 8, 'armadura', { olha: { dx: -1, dy: 0 } }),
-        m('vassouraAnimada', 1, 14, 'vassoura', { olha: { dx: 1, dy: 0 } }),
-        m('espectro', 2, 19, 'espectroBaba', { nome: 'A babá', olha: { dx: 1, dy: 0 } }),
+        m('armaduraAnimada', ...P(2, 3), 'armadura', { olha: { dx: 0, dy: 1 } }),
+        m('vassouraAnimada', ...P(0, 6), 'vassoura', { olha: { dx: 1, dy: 0 } }),
+        m('espectro', ...P(0, 8), 'espectroBaba', { nome: 'A babá', olha: { dx: 1, dy: 0 } }),
       ];
     case 'casaDaMorte4':
-      return [m('espectro', 4, 12, 'espectroBaba', { nome: 'A babá', olha: { dx: 1, dy: 0 } })];
+      return [m('espectro', ...P(1, 6), 'espectroBaba', { nome: 'A babá', olha: { dx: 1, dy: 0 } })];
     case 'casaDaMortePorao1':
       return [
         // 23D: o enxame sai da parede dos fundos se mexerem no caixão de Elisabeth.

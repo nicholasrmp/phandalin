@@ -89,7 +89,7 @@ export async function pistasPassivas(ctx, area) {
   const s = estado(ctx);
   for (const p of PISTAS[ctx.variante] ?? []) {
     if (!p.passiva || s.pistas[`${p.id}:passiva`]) continue;
-    const dentro = p.x >= area.x1 && p.x <= area.x2 && p.y >= area.y1 && p.y <= area.y2;
+    const dentro = area.contem ? area.contem(p) : p.x >= area.x1 && p.x <= area.x2 && p.y >= area.y1 && p.y <= area.y2;
     if (!dentro) continue;
     const quem = ctx.herois().find((h) => 10 + skillBonus(h, p.passiva.p) >= p.passiva.cd);
     if (!quem) continue;

@@ -1,192 +1,161 @@
 // Livro do Jogador não é SRD: a Maldição de Strahd é conteúdo da Wizards. A PLANTA e o TEXTO são nossos; os fatos (quem mora onde, o que há
 // em cada sala, as CDs) são os do livro — ver NOTICE.md e STRAHD.md.
 //
-// A CASA DA MORTE (Apêndice B). Rascunho das plantas, desenhado à mão sobre a referência (que fica fora do repositório): a casa tem 12 casas
-// de largura por 22 de comprimento, e a parede é uma casa inteira (o jogo ainda não tem parede de aresta neste mapa). Cada andar é uma
-// cena separada, ligada pela escadaria de mármore vermelho.
+// A CASA DA MORTE (Apêndice B). A planta é a do livro na ESCALA DELE: um quadrado do mapa (5 pés) é uma casa do jogo, e a casa tem 6 casas de
+// largura por 11 de comprimento (`casadamorte-plantas.js`). Só a masmorra usa 2 x 2 casas por quadrado. Cada andar é uma cena separada,
+// ligada pela escadaria de mármore vermelho.
 //
-// Glifos: M parede · U assoalho · - parquet · * tapete · ? porta aberta · l escada · z cama · 0 mesa ou piano · } lareira ou fogão ·
-// { prateleira e caixotes · ) baú.
+// Glifos: U assoalho · - parquet · * tapete · 0 mesa · l escada · Z o chão de fora da casa. Parede e porta são de aresta (a planta diz quais).
 
-// ------------------------------------------------------------------------------------------------ 1º andar (áreas 1 a 5) ----
 import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
-import { paredesDeBorda } from './casadamorte-paredes.js';
+import { plantaDeSalas, criarArea, casa, ret, tapete } from './casadamorte-plantas.js';
 import { TERCEIRO_ANDAR, SOTAO, AREAS_TERCEIRO, AREAS_SOTAO, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4 } from './casadamorte-alto.js';
 import { PLANTA_PORAO_1, PLANTA_PORAO_2 } from './casadamorte-porao.js';
 import { TEXTOS_PORAO } from './casadamorte-textos-porao.js';
 
 export { MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, TERCEIRO_ANDAR, SOTAO };
 
-const BASE_1 = [
-  'MMMMMMMMMMMMMM',
-  'MUUUUUUUMU{{{M',
-  'MUUUUUUUMUUU)M',
-  'M}U0000UM?MMMM',
-  'MUU0000UMU}UUM',
-  'MUUUUUUUMUUU{M',
-  'MUUUUUUUMU00UM',
-  'MMMUMUMU?U00UM',
-  'MMMUM{MUMUUUUM',
-  'MMM?M?MMMMMMMM',
-  'MUUUUUUUUllllM',
-  'MUUUUUUUUllllM',
-  'M}UUUUUUUllllM',
-  'MUUUUUUUUllllM',
-  'MUUUUUUUUllllM',
-  'MMM?MM?MMMMMMM',
-  'MUUUUMUUUUUUUM',
-  'MUUUUMUUUUUUUM',
-  'MUUUUMUUUUUUUM',
-  'MUUUUMUUUU0U}M',
-  'MUUUUMUUUU0UUM',
-  'MUUUUMUUUUUUUM',
-  'MUUUUMUUUUUUUM',
-  'MMM?MMMMMMMMMM',
-];
+// ------------------------------------------------------------------------------------------------ 1º andar (áreas 1 a 5) ----
+// A sala de jantar (5) e a cozinha (4A, com a despensa 4B) ao norte; o salão (2A), com a escadaria em curva, no meio; a sala de espera (1B,
+// com o pórtico 1A) e o canil de lobos (3) ao sul. O vestíbulo, ao lado do armário (2B), liga a sala de jantar à cozinha.
+export const PLANTA_1 = plantaDeSalas({
+  salas: [
+    { id: 'jantar', retangulos: [[0, 0, 3, 2], [1, 3, 1, 3]] },
+    { id: 'despensa', retangulos: [[4, 0, 5, 0]] },
+    { id: 'cozinha', retangulos: [[4, 1, 5, 3]] },
+    { id: 'vestibulo', retangulos: [[3, 3, 3, 3]] },
+    { id: 'vestiario', retangulos: [[2, 3, 2, 3]] },
+    { id: 'salao', retangulos: [[0, 4, 5, 6]] },
+    { id: 'espera', retangulos: [[0, 7, 1, 9]] },
+    { id: 'porche', retangulos: [[0, 10, 1, 10]] },
+    { id: 'canil', retangulos: [[2, 7, 5, 10]] },
+  ],
+  portas: [
+    [3, 2, 3, 3], [3, 3, 4, 3], [4, 0, 4, 1], [1, 3, 1, 4], [2, 3, 2, 4], [2, 6, 2, 7],
+    [0, 6, 0, 7], [1, 6, 1, 7], [0, 9, 0, 10], [1, 9, 1, 10], [1, 10, 1, 11],
+  ],
+  glifos: [
+    ...tapete(0, 4, 3, 6), ...tapete(0, 7, 1, 9), ...tapete(0, 0, 3, 2), ...tapete(2, 7, 5, 10),
+    [1, 1, '0'], [2, 1, '0'], [3, 9, '0'],
+    ...[4, 5].flatMap((x) => [4, 5, 6].map((y) => [x, y, 'l'])),
+  ],
+});
 
 // ------------------------------------------------------------------------------------------------ 2º andar (áreas 6 a 10) ----
-// Ao norte: a biblioteca (8), com a sala secreta (9) atrás de uma estante, e os quartos dos empregados (7). No meio: o salão superior
-// (6), com a escadaria. Ao sul: o conservatório (10). O parquet em losangos é o piso de quase tudo.
-const BASE_2 = [
-  'MMMMMMMMMMMMMM',
-  'M--------M{{{M',
-  'M--0-----MUUUM',
-  'M}-------M?MMM',
-  'M-------{MUUUM',
-  'M-----MMMMzUzM',
-  'MMM--MUUUMUUUM',
-  'MMM--MUU)MUUUM',
-  'MMMM?MMMMM?MMM',
-  'M--------llllM',
-  'M--------llllM',
-  'M}-------llllM',
-  'M--------llllM',
-  'M--------llllM',
-  'M--------llllM',
-  'MMMM??MMMMMMMM',
-  'M------------M',
-  'M------------M',
-  'M------------M',
-  'M-----------}M',
-  'M------------M',
-  'M00----------M',
-  'M00----------M',
-  'MMMMMMMMMMMMMM',
-];
+// Ao norte: a biblioteca (8), com a sala secreta (9) atrás de uma estante, o armário dos uniformes (7B) e os quartos dos empregados (7A).
+// No meio: o salão superior (6), com a escadaria. Ao sul: o conservatório (10). O parquet em losangos é o piso de quase tudo.
+export const PLANTA_2 = plantaDeSalas({
+  piso: '-',
+  salas: [
+    { id: 'biblioteca', retangulos: [[0, 0, 3, 2], [1, 3, 2, 3]] },
+    { id: 'armario', retangulos: [[3, 3, 3, 3]] },
+    { id: 'secreta', retangulos: [[4, 0, 5, 0]] },
+    { id: 'empregados', retangulos: [[4, 1, 5, 3]] },
+    { id: 'salao', retangulos: [[0, 4, 5, 6]] },
+    { id: 'conservatorio', retangulos: [[0, 7, 5, 10]] },
+  ],
+  // a estante da biblioteca gira: a aresta (3,0)-(4,0) é parede até a passagem se abrir
+  portas: [[1, 3, 1, 4], [2, 3, 2, 4], [4, 3, 4, 4], [3, 3, 4, 3], [4, 0, 4, 1], [1, 6, 1, 7], [2, 6, 2, 7]],
+  glifos: [
+    ...tapete(0, 4, 3, 6), ...tapete(1, 8, 4, 9),
+    ...[4, 5].flatMap((x) => [5, 6].map((y) => [x, y, 'l'])), [5, 4, 'l'],
+  ],
+});
 
-/** Os tapetes: retângulos de casas (inclusivas) que viram tapete onde havia o piso base (U ou parquet). */
-const TAPETES_1 = [
-  { x1: 1, y1: 11, x2: 7, y2: 13 },    // o salão principal
-  { x1: 1, y1: 17, x2: 4, y2: 21 },    // a sala de espera
-  { x1: 2, y1: 2, x2: 7, y2: 5 },      // a sala de jantar, sob a mesa
-  { x1: 9, y1: 10, x2: 12, y2: 14 },   // a escadaria
-];
-const TAPETES_2 = [
-  { x1: 9, y1: 9, x2: 12, y2: 14 },    // a escadaria
-  { x1: 6, y1: 16, x2: 9, y2: 18 },    // o conservatório, sob as cadeiras
-];
-const comTapetes = (linhas, tapetes) => linhas.map((linha, y) => [...linha].map((g, x) => (
-  (g === 'U' || g === '-') && tapetes.some((t) => x >= t.x1 && x <= t.x2 && y >= t.y1 && y <= t.y2) ? '*' : g)).join(''));
-
-export const TERREO = comTapetes(BASE_1, TAPETES_1);
-export const SEGUNDO_ANDAR = comTapetes(BASE_2, TAPETES_2);
-
-/** Cada sala: o retângulo (casas inclusivas), o nome e o que se vê ao chegar. */
 export const AREAS_TERREO = [
-  {
-    id: 'espera', area: '1', nome: 'A sala de espera', x1: 1, y1: 16, x2: 4, y2: 22,
+  criarArea({
+    id: 'espera', area: '1', nome: 'A sala de espera', cel: [[0, 7, 1, 10]],
     texto: [
       'Atrás do portão de ferro, um pórtico de pedra e portas de carvalho que se abrem sozinhas ao peso da mão. Dentro, uma sala de espera ampla, com retratos de aristocratas de rosto imóvel nas paredes e um escudo de armas sobre a porta do fundo: um moinho de vento dourado sobre um campo vermelho.',
       'O ar tem cheiro de cera e de madeira recém-lustrada. Nada aqui parece velho.',
     ],
-  },
-  {
-    id: 'salao', area: '2A', nome: 'O salão principal', x1: 1, y1: 10, x2: 12, y2: 14,
+  }),
+  criarArea({
+    id: 'salao', area: '2A', nome: 'O salão principal', cel: [[0, 4, 5, 6]],
     texto: [
       'Um salão tão largo quanto a casa. Numa ponta, uma lareira de mármore preto; na outra, uma escadaria larga de mármore vermelho, que sobe em curva. Sobre o fogo apagado, uma espada longa de enfeite, com um pequeno moinho no punho.',
       'Os painéis de madeira da parede são entalhados com videiras, flores, ninfas e sátiros.',
     ],
-  },
-  {
-    id: 'vestiario', area: '2B', nome: 'O vestiário', x1: 5, y1: 7, x2: 5, y2: 8,
+  }),
+  criarArea({
+    id: 'vestiario', area: '2B', nome: 'O vestiário', cel: [[2, 3, 2, 3]],
     texto: ['Um armário de passagem, estreito. Mantos pretos pendurados em ganchos e um chapéu alto numa prateleira.'],
-  },
-  {
-    id: 'canil', area: '3', nome: 'O canil de lobos', x1: 6, y1: 16, x2: 12, y2: 22,
+  }),
+  criarArea({
+    id: 'canil', area: '3', nome: 'O canil de lobos', cel: [[2, 7, 5, 10]],
     texto: [
       'Painéis de carvalho, uma cabeça de veado sobre a lareira e três lobos empalhados espalhados pela sala, de bocas abertas. Duas poltronas forradas de pele encaram o fogo, com uma mesa de carvalho entre elas: um barril de vinho, duas taças esculpidas e um suporte de cachimbos.',
       'Há dois armários contra as paredes. O do leste tem cadeado; o do norte está aberto.',
     ],
-  },
-  {
-    id: 'cozinha', area: '4A', nome: 'A cozinha', x1: 9, y1: 4, x2: 12, y2: 8,
+  }),
+  criarArea({
+    id: 'cozinha', area: '4A', nome: 'A cozinha', cel: [[4, 1, 5, 3]],
     texto: [
       'Tudo em ordem: louça, talheres e panelas nas prateleiras, uma tábua de corte e um rolo sobre a mesa grande. O forno de pedra abobadada tem a chaminé de ferro dobrada que some no teto.',
       'Num canto, uma portinha dá para um eixo de pedra estreito com uma caixa de madeira presa a uma roldana: um monta-cargas manual.',
     ],
-  },
-  {
-    id: 'despensa', area: '4B', nome: 'A despensa', x1: 9, y1: 1, x2: 12, y2: 2,
+  }),
+  criarArea({
+    id: 'despensa', area: '4B', nome: 'A despensa', cel: [[4, 0, 5, 0]],
     texto: ['Prateleiras cheias. Tudo parece fresco, e tem o cheiro certo, mas nada aqui tem gosto de nada.'],
-  },
-  {
-    id: 'jantar', area: '5', nome: 'A sala de jantar', x1: 1, y1: 1, x2: 7, y2: 8,
+  }),
+  criarArea({
+    id: 'jantar', area: '5', nome: 'A sala de jantar', cel: [[0, 0, 3, 2], [1, 3, 1, 3]],
     texto: [
       'Uma mesa de mogno entalhado, oito cadeiras de braços e uma prataria que brilha demais, com um lustre de cristal pendurado acima dela. Na parede, a pintura de um vale alpino; as cortinas são de seda vermelha, e uma tapeçaria mostra cães e cavaleiros caçando um lobo.',
       'Os painéis da parede têm cervos entre as árvores.',
     ],
-  },
+  }),
 ];
 
 export const AREAS_SEGUNDO = [
-  {
-    id: 'salaoSuperior', area: '6', nome: 'O salão superior', x1: 1, y1: 9, x2: 12, y2: 14,
+  criarArea({
+    id: 'salaoSuperior', area: '6', nome: 'O salão superior', cel: [[0, 4, 5, 6]],
     texto: [
       'Lamparinas de óleo nas paredes, um piso de parquet em losangos e uma lareira de pedra. Sobre ela, o retrato emoldurado da família Durst: Gustav e Elisabeth sorrindo com dois filhos, Rose e Thorn, e um bebê enrolado nos braços do pai, que a mãe olha com uma ponta de desprezo.',
       'Armaduras em pé guardam as portas do norte e do sul, com lanças nas mãos e elmos em forma de cabeça de lobo. A escadaria de mármore vermelho continua a subir.',
     ],
-  },
-  {
-    id: 'empregados', area: '7A', nome: 'O quarto dos empregados', x1: 10, y1: 4, x2: 12, y2: 7,
+  }),
+  criarArea({
+    id: 'empregados', area: '7A', nome: 'O quarto dos empregados', cel: [[4, 1, 5, 3]],
     texto: [
       'Um quarto sem enfeite: duas camas com colchão de palha e, aos pés de cada uma, um armário de sapatos vazio. Uniformes de criado muito limpos pendem de ganchos no armário ao lado.',
       'Junto à cabeceira de uma das camas, um botão na parede aciona o sininho da cozinha, vários metros abaixo, pelo mesmo monta-cargas.',
     ],
-  },
-  {
-    id: 'armarioEmpregados', area: '7B', nome: 'O armário dos uniformes', x1: 10, y1: 1, x2: 12, y2: 2,
+  }),
+  criarArea({
+    id: 'armarioEmpregados', area: '7B', nome: 'O armário dos uniformes', cel: [[3, 3, 3, 3]],
     texto: ['Prateleiras com uniformes dobrados, aventais e chapéus de criada. Tudo limpo, tudo engomado.'],
-  },
-  {
-    id: 'biblioteca', area: '8', nome: 'A biblioteca', x1: 1, y1: 1, x2: 8, y2: 5,
+  }),
+  criarArea({
+    id: 'biblioteca', area: '8', nome: 'A biblioteca', cel: [[0, 0, 3, 2], [1, 3, 2, 3]],
     texto: [
       'Cortinas de veludo vermelho cobrem as janelas. Uma escrivaninha de mogno e uma cadeira de espaldar alto ficam entre a porta e a lareira, e acima do fogo está pendurado um quadro de um moinho de vento sobre um penhasco. Estantes do chão ao teto, uma escada de rodinhas para os livros altos.',
       'Na escrivaninha: um tinteiro, uma pena, um barrilete de pólvora, uma lamparina e um estojo de carta com lacre vermelho e um selo de madeira com o moinho dos Durst.',
     ],
-  },
-  {
-    id: 'salaSecreta', area: '9', nome: 'A sala secreta', x1: 6, y1: 6, x2: 8, y2: 7,
+  }),
+  criarArea({
+    id: 'salaSecreta', area: '9', nome: 'A sala secreta', cel: [[4, 0, 5, 0]],
     texto: [
       'Estantes cheias de volumes sobre rituais de invocação de diabos e sobre necromancia, todos assinados por uma seita chamada Sacerdotes de Osybus. Um baú pesado, de pés de ferro, encostado à parede de trás, com a tampa entreaberta.',
       'Do baú pende o esqueleto de um aventureiro de armadura de couro, com três dardos cravados na caixa torácica. A mão esquerda dele segura uma carta lacrada com o selo de Strahd von Zarovich.',
     ],
-  },
-  {
-    id: 'conservatorio', area: '10', nome: 'O conservatório', x1: 1, y1: 16, x2: 12, y2: 22,
+  }),
+  criarArea({
+    id: 'conservatorio', area: '10', nome: 'O conservatório', cel: [[0, 7, 5, 10]],
     texto: [
       'Cortinas finas nas janelas, um lustre de bronze no teto e cadeiras estofadas ao longo das paredes. As tapeçarias de vitral mostram homens, mulheres e crianças elegantes cantando e tocando.',
       'Um cravo com banco no canto, uma harpa de pé junto à lareira e estatuetas de alabastro de dançarinos bem vestidos sobre o consolo.',
     ],
-  },
+  }),
 ];
-
-const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
-/** As plantas em PAREDE DE BORDA (`casadamorte-paredes.js`): a mesma planta, com a parede na aresta entre duas casas e a porta de verdade. */
-export const PLANTA_1 = paredesDeBorda(TERREO, { piso: 'U' });
-export const PLANTA_2 = paredesDeBorda(SEGUNDO_ANDAR, { piso: '-' });
 
 const MOB_1 = mobiliar(PLANTA_1.terreno, MOBILIA.casaDaMorte1, 'assoalho');
 const MOB_2 = mobiliar(PLANTA_2.terreno, MOBILIA.casaDaMorte2, 'parquet');
+
+const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
+/** Casas em quadrados do livro passam a casas do mapa. */
+const grupoDoLivro = (pontos) => pontos.map(([x, y]) => casa(x, y));
 
 export const MAPA_CASA_DA_MORTE_1 = {
   terreno: MOB_1.terreno,
@@ -195,8 +164,8 @@ export const MAPA_CASA_DA_MORTE_1 = {
   paredes: PLANTA_1.paredes,
   salas: PLANTA_1.salas,
   materialDaParede: 'painelCarvalho',
-  // O grupo entra pelo portão, ao sul, na sala de espera, olhando para o fundo da casa.
-  grupo: grupoPadrao([[2, 21], [3, 21], [4, 21], [3, 22]]),
+  // O grupo entra pelo portão, ao sul, no pórtico e na sala de espera, olhando para o fundo da casa.
+  grupo: grupoDoLivro([[0, 10], [1, 10], [0, 9], [1, 9]]),
   olhar: { dx: 0, dy: -1 },
   cena: 'casaDaMorte',
 };
@@ -209,8 +178,8 @@ export const MAPA_CASA_DA_MORTE_2 = {
   salas: PLANTA_2.salas,
   materialDaParede: 'painelCarvalho',
   // Quem sobe a escadaria chega ao salão superior, ao pé da curva.
-  grupo: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
-  olhar: { dx: -1, dy: 0 },
+  grupo: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
+  olhar: { dx: 1, dy: 0 },
   cena: 'casaDaMorte',
 };
 
@@ -219,21 +188,21 @@ export const MAPA_CASA_DA_MORTE_2 = {
  *
  * `escadas`: cada escada que se pega pelo botão direito. `rect` são as casas (inclusivas) da escada; `destino` é a variante; a entrada na
  * outra cena é a de `chegadas[origem]` (as quatro casas onde o grupo aparece). `secreta` marca as que só existem depois que a casa as
- * mostra; a cena trata disso.
+ * mostra; a cena trata disso. Tudo em casas do MAPA (o quadrado do livro mais o anel).
  */
 const rect = (x1, y1, x2, y2) => ({ x1, y1, x2, y2 });
-const ESCADARIA = rect(9, 9, 12, 14);
+const ESCADARIA = ret(4, 4, 5, 6);
 
 export const ANDARES = {
   casaDaMorte1: {
     id: 'casaDaMorte1', nome: '1º andar', areas: AREAS_TERREO,
     escadas: [
-      { rect: rect(9, 10, 12, 14), rotulo: 'Subir a escadaria de mármore', detalhe: '2º andar', destino: 'casaDaMorte2' },
-      { rect: rect(6, 22, 6, 22), rotulo: 'Descer pelo alçapão', detalhe: 'as masmorras', destino: 'casaDaMortePorao1' },
+      { rect: ESCADARIA, rotulo: 'Subir a escadaria de mármore', detalhe: '2º andar', destino: 'casaDaMorte2' },
+      { rect: ret(2, 10, 2, 10), rotulo: 'Descer pelo alçapão', detalhe: 'as masmorras', destino: 'casaDaMortePorao1' },
     ],
     chegadas: {
-      casaDaMorte2: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),
-      casaDaMortePorao1: grupoPadrao([[7, 22], [7, 21], [8, 22], [8, 21]]),     // pelo alçapão do canil
+      casaDaMorte2: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
+      casaDaMortePorao1: grupoDoLivro([[2, 9], [3, 10], [3, 9], [2, 8]]),     // pelo alçapão do canil
     },
   },
   casaDaMorte2: {
@@ -243,31 +212,30 @@ export const ANDARES = {
       { rect: ESCADARIA, rotulo: 'Subir a escadaria', detalhe: '3º andar', destino: 'casaDaMorte3' },
     ],
     chegadas: {
-      casaDaMorte1: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
-      casaDaMorte3: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
+      casaDaMorte1: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
+      casaDaMorte3: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
     },
   },
   casaDaMorte3: {
     id: 'casaDaMorte3', nome: '3º andar', areas: AREAS_TERCEIRO,
     escadas: [
-      { rect: rect(9, 10, 12, 14), rotulo: 'Descer a escadaria de mármore', detalhe: '2º andar', destino: 'casaDaMorte2' },
-      { rect: rect(10, 17, 12, 18), rotulo: 'Subir a escada secreta', detalhe: 'sótão', destino: 'casaDaMorte4', secreta: true },
-      { rect: rect(2, 7, 3, 8), rotulo: 'Subir a escada da parede oeste', detalhe: 'sótão', destino: 'casaDaMorte4', secreta: true },
+      { rect: ESCADARIA, rotulo: 'Descer a escadaria de mármore', detalhe: '2º andar', destino: 'casaDaMorte2' },
+      { rect: ret(3, 7, 5, 7), rotulo: 'Subir a escada secreta', detalhe: 'sótão', destino: 'casaDaMorte4', secreta: true },
     ],
     chegadas: {
-      casaDaMorte2: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),
-      casaDaMorte4: grupoPadrao([[8, 17], [8, 18], [7, 17], [7, 18]]),
+      casaDaMorte2: grupoDoLivro([[2, 6], [3, 6], [2, 5], [3, 5]]),
+      casaDaMorte4: grupoDoLivro([[3, 8], [2, 8], [2, 9], [3, 9]]),
     },
   },
   casaDaMorte4: {
     id: 'casaDaMorte4', nome: 'Sótão', areas: AREAS_SOTAO,
     escadas: [
-      { rect: rect(11, 11, 12, 14), rotulo: 'Descer a escada secreta', detalhe: '3º andar, suíte da babá', destino: 'casaDaMorte3' },
-      { rect: rect(1, 7, 2, 8), rotulo: 'Descer a escada em espiral', detalhe: 'as masmorras', destino: 'casaDaMortePorao1', secreta: true },
+      { rect: ret(4, 6, 5, 7), rotulo: 'Descer a escada secreta', detalhe: '3º andar, suíte da babá', destino: 'casaDaMorte3' },
+      { rect: ret(0, 3, 0, 3), rotulo: 'Descer a escada em espiral', detalhe: 'as masmorras', destino: 'casaDaMortePorao1', secreta: true },
     ],
     chegadas: {
-      casaDaMorte3: grupoPadrao([[10, 12], [10, 13], [9, 12], [9, 13]]),
-      casaDaMortePorao1: grupoPadrao([[3, 7], [3, 8], [4, 7], [4, 8]]),
+      casaDaMorte3: grupoDoLivro([[5, 5], [5, 6], [5, 7], [4, 7]]),
+      casaDaMortePorao1: grupoDoLivro([[0, 4], [1, 4], [1, 5], [2, 4]]),
     },
   },
   casaDaMortePorao1: {

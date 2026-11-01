@@ -10,13 +10,14 @@
 // o fantasma ser intimidado (Intimidação CD 11). Ao sair, o grupo avança ao 3º nível.
 
 import { narrar } from '../view/narrativa.js';
+import { casa } from './casadamorte-plantas.js';
 import { makeMonster } from '../rules/monsters.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { xpParaProximo } from '../rules/progressao.js';
 
 const FUMACA = (area, field) => {
-  for (let y = area.y1; y <= area.y2; y++) for (let x = area.x1; x <= area.x2; x++) if (field.surfaceAt(x, y) === 'lareiraCasa') return true;
+  for (let y = area.y1; y <= area.y2; y++) for (let x = area.x1; x <= area.x2; x++) if ((!area.contem || area.contem({ x, y })) && field.surfaceAt(x, y) === 'lareiraCasa') return true;
   return false;
 };
 
@@ -178,8 +179,9 @@ export function fugaParedesOps(ctx, { tile, c, ops }) {
     ['sul', y + 1 < f.h && f.paredeN[(y + 1) * f.w + x] === 1, { x, y: y + 1 }],
     ['leste', x + 1 < f.w && f.paredeO[y * f.w + x + 1] === 1, { x: x + 1, y }],
   ];
+  const dentroDaCasa = (p) => f.sala?.has(`${p.x},${p.y}`);
   for (const [nome, existe, outro] of lados) {
-    if (!existe) continue;
+    if (!existe || !dentroDaCasa(tile) || !dentroDaCasa(outro)) continue;     // a parede de fora (do lado do anel) é imune
     ops.push({
       grupo: 'A casa ataca', rotulo: `Quebrar a parede apodrecida do ${nome}`, icone: 'acao-usarObjeto', detalhe: 'Atletismo, CD 10 (CA 5, 5 PV): solta ratos',
       motivo: ctx.longe(c, tile, 10),
@@ -200,7 +202,7 @@ export function fugaParedesOps(ctx, { tile, c, ops }) {
 }
 
 export function fugaInteracoes(ctx, { area, tile, sup, c, ops }) {
-  if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'espera' || tile.y < 21) return;
+  if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'espera' || tile.y < casa(0, 10).y) return;
   ops.push({
     rotulo: 'Sair pelo portão', icone: 'acao-usarObjeto', detalhe: ctx.salvo.fim ? 'a névoa recuou' : 'cercado pelas brumas', motivo: null,
     fazer: async () => { await sair(ctx, c); },

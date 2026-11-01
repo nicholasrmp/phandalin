@@ -11,11 +11,13 @@
 //
 // Formato: { id, x, y, r (raio de clique, em casas; padrão 1), nome, olhar, aura?, passiva?, verbos: [{ p, cd, ok, falha?, marca? }] }
 
+import { casa } from './casadamorte-plantas.js';
+
 export const PISTAS = {
   // ===================================================================================================== 1º ANDAR ===
   casaDaMorte1: [
     {
-      id: 'brasao', x: 2, y: 19, r: 3, nome: 'O escudo com brasão',
+      id: 'brasao', ...casa(1, 8), r: 2, nome: 'O escudo com brasão',
       olhar: 'Na parede da sala de espera, um escudo de armas: um moinho de vento dourado, estilizado, num campo vermelho.',
       verbos: [
         { p: 'historia', cd: 10, ok: 'O moinho é o emblema da família Durst, de Baróvia. Os Durst tinham um moinho nas montanhas, a leste de Vallaki: é o "Velho Moedor de Ossos".' },
@@ -23,7 +25,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'retratos', x: 4, y: 18, r: 3, nome: 'Os retratos dos aristocratas',
+      id: 'retratos', ...casa(0, 8), r: 2, nome: 'Os retratos dos aristocratas',
       olhar: 'Retratos de aristocratas de rostos impassíveis, em molduras douradas. Dizem-se mortos da família Durst.',
       verbos: [
         { p: 'historia', cd: 12, ok: 'As roupas são de séculos diferentes. Não são todos Durst: a família era de moleiros, e retrato nenhum aqui parece de moleiro.' },
@@ -31,7 +33,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'lareiraSalao', x: 1, y: 12, r: 1, nome: 'A lareira e a espada do salão',
+      id: 'lareiraSalao', ...casa(0, 5), r: 1, nome: 'A lareira e a espada do salão',
       olhar: 'Uma lareira de mármore negro, o fogo apagado. Sobre ela, presa à parede, uma espada longa com um camafeu de moinho no punho.',
       aura: { escola: 'abjuração', texto: 'Uma aura fraca e velha de abjuração cobre a casa inteira, não só a lareira. Quem a fez queria que quem entrasse não saísse.' },
       verbos: [
@@ -40,7 +42,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'vestiario', x: 5, y: 8, r: 1, nome: 'O vestiário',
+      id: 'vestiario', ...casa(2, 3), r: 1, nome: 'O vestiário',
       olhar: 'Mantos pretos de capuz, pendurados em ganchos. Um chapéu alto numa prateleira.',
       verbos: [
         { p: 'religiao', cd: 12, ok: 'Mantos de culto: gente que se vestia de preto para cantar de noite. Os Sacerdotes de Osybus faziam assim, e o culto da casa era deles.' },
@@ -48,7 +50,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'aparador', x: 12, y: 8, r: 2, nome: 'O aparador (monta-cargas)',
+      id: 'aparador', ...casa(5, 3), r: 1, nome: 'O aparador (monta-cargas)',
       olhar: 'Atrás de uma portinha, no canto da cozinha, um eixo de pedra de setenta centímetros com uma caixa de madeira pendurada em corda e polia.',
       verbos: [
         { p: 'investigacao', cd: 10, ok: 'O monta-cargas liga a cozinha ao quarto dos empregados e à suíte principal. Dá para subir nele, mas o cabo só aguenta setenta quilos: não é para gente.' },
@@ -56,7 +58,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'despensa', x: 11, y: 1, r: 2, nome: 'A despensa',
+      id: 'despensa', ...casa(5, 0), r: 2, nome: 'A despensa',
       olhar: 'Prateleiras cheias de comida: queijos, linguiças, potes, frutas.',
       verbos: [
         { p: 'natureza', cd: 10, ok: 'Tudo parece fresco e cheira bem. Tudo, também, tem o mesmo aroma: nenhum cheiro particular. É comida de enfeite, que a casa faz.' },
@@ -64,7 +66,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'lobos', x: 9, y: 18, r: 3, nome: 'Os lobos empalhados e a cabeça de veado',
+      id: 'lobos', ...casa(4, 9), r: 2, nome: 'Os lobos empalhados e a cabeça de veado',
       olhar: 'Uma sala de caçador, de painéis de carvalho: a cabeça de um veado sobre a lareira e três lobos empalhados nos cantos.',
       verbos: [
         { p: 'natureza', cd: 11, ok: 'Os lobos são lobos atrozes pequenos, de olhos de vidro perfeitos, sem uma lasca. Empalhadores não fazem tão bem: a casa os fez.' },
@@ -72,7 +74,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'cantoCanil', x: 6, y: 22, r: 1, nome: 'O canto sudoeste do canil',
+      id: 'cantoCanil', ...casa(2, 10), r: 1, nome: 'O canto sudoeste do canil',
       olhar: 'O assoalho de madeira, bem lustrado, até o canto.',
       aura: { escola: 'ilusão', texto: 'Uma aura de ilusão forte, concentrada no chão do canto sudoeste. Algo foi escondido aqui por magia.' },
       verbos: [
@@ -81,7 +83,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'armarioNorte', x: 12, y: 17, r: 1, nome: 'O armário do norte',
+      id: 'armarioNorte', ...casa(4, 7), r: 1, nome: 'O armário do norte',
       olhar: 'Um armário de portas lisas, destrancado.',
       verbos: [
         { p: 'investigacao', cd: 10, ok: 'Dentro, uma caixa com um baralho de cartas e taças de vinho de madeira. O baralho tem o rei, a rainha e o cavaleiro dos Durst: o resto são cartas em branco.' },
@@ -92,7 +94,7 @@ export const PISTAS = {
   // ===================================================================================================== 2º ANDAR ===
   casaDaMorte2: [
     {
-      id: 'retratoDosDurst', x: 1, y: 11, r: 2, nome: 'O retrato da família Durst',
+      id: 'retratoDosDurst', ...casa(0, 5), r: 2, nome: 'O retrato da família Durst',
       olhar: 'Sobre a lareira do salão superior, um retrato em moldura de madeira: Gustav e Elisabeth Durst, Rose e Thorn sorrindo, e nos braços do pai um bebê embrulhado.',
       verbos: [
         { p: 'intuicao', cd: 12, ok: 'A mãe olha o bebê embrulhado com um toque de desprezo. Os filhos sorriem, mas o sorriso das crianças parece ensaiado. Esta família não era feliz.' },
@@ -101,7 +103,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'armaduras', x: 4, y: 9, r: 8, nome: 'As armaduras de lança',
+      id: 'armaduras', ...casa(2, 5), r: 3, nome: 'As armaduras de lança',
       olhar: 'Armaduras de pé flanqueiam as portas do norte e do sul, com lanças e elmos em cabeça de lobo.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'Estas armaduras são vazias e mudas: só enfeite. Mas o elmo de lobo é o mesmo da armadura de placas negras que dizem estar lá em cima, na varanda.' },
@@ -109,7 +111,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'empregados', x: 10, y: 6, r: 2, nome: 'O quarto dos empregados',
+      id: 'empregados', ...casa(4, 2), r: 2, nome: 'O quarto dos empregados',
       olhar: 'Duas camas de colchão de palha, armários de sapatos vazios, uniformes limpos pendurados.',
       verbos: [
         { p: 'investigacao', cd: 10, ok: 'Nenhum uniforme tem um bolso gasto, uma costura puída, uma mancha. Ninguém jamais trabalhou aqui: a casa fingiu uma criadagem.' },
@@ -117,7 +119,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'escrivaninha', x: 3, y: 2, r: 1, nome: 'A escrivaninha da biblioteca',
+      id: 'escrivaninha', ...casa(2, 1), r: 1, nome: 'A escrivaninha da biblioteca',
       olhar: 'Mogno requintado, uma cadeira de espaldar alto, tinteiro, pena, lamparina, um barrilete de pólvora e um estojo de cartas com lacre vermelho e o selo do moinho dos Durst.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'A gaveta da escrivaninha tem um fundo falso? Não: o que ela tem é uma chave de ferro, grande, deixada sozinha. Alguém quis que a achassem.' },
@@ -125,7 +127,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'quadroDoMoinho', x: 1, y: 3, r: 1, nome: 'O quadro do moinho sobre a lareira',
+      id: 'quadroDoMoinho', ...casa(0, 1), r: 1, nome: 'O quadro do moinho sobre a lareira',
       olhar: 'Um moinho de vento empoleirado num penhasco rochoso, pintado sobre a lareira da biblioteca.',
       verbos: [
         { p: 'historia', cd: 14, ok: 'É o Velho Moedor de Ossos, nas montanhas a leste de Vallaki. A escritura que há nesta casa é a dele. Quem a tiver herdará, um dia, o moinho.' },
@@ -133,7 +135,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'estantes', x: 7, y: 5, r: 2, nome: 'As estantes altas',
+      id: 'estantes', ...casa(3, 1), r: 2, nome: 'As estantes altas',
       olhar: 'Centenas de volumes: história, guerra, alquimia, e algumas prateleiras de primeiras edições de poesia e de ficção.',
       aura: { escola: 'ilusão', texto: 'Uma aura de ilusão muito pequena, num único volume de capa vermelha e lombada branca: um interruptor disfarçado de livro.' },
       verbos: [
@@ -142,7 +144,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'esqueletoDaCarta', x: 7, y: 7, r: 1, nome: 'O esqueleto de armadura de couro',
+      id: 'esqueletoDaCarta', ...casa(5, 0), r: 1, nome: 'O esqueleto de armadura de couro',
       olhar: 'Um esqueleto pende do baú, três dardos cravados no peito, a mão esquerda fechada sobre uma carta lacrada.',
       verbos: [
         { p: 'medicina', cd: 12, ok: 'Morreu quase de imediato: os três dardos pegaram o coração. O veneno já tinha secado. Está aqui há anos, talvez décadas.' },
@@ -151,7 +153,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'cravo', x: 2, y: 21, r: 2, nome: 'O cravo e a harpa',
+      id: 'cravo', ...casa(1, 10), r: 2, nome: 'O cravo e a harpa',
       olhar: 'Um cravo no canto noroeste e uma harpa de pé perto da lareira.',
       verbos: [
         { p: 'atuacao', cd: 12, ok: 'O cravo está afinado, e a harpa também: as cordas respondem sem ninguém ter mexido nelas. Uma melodia vem, doce, que nenhum dos dois toca, e depois silêncio.' },
@@ -159,7 +161,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'estatuetas', x: 12, y: 19, r: 1, nome: 'As estatuetas de alabastro',
+      id: 'estatuetas', ...casa(5, 9), r: 1, nome: 'As estatuetas de alabastro',
       olhar: 'Dançarinos bem vestidos, em alabastro, sobre a lareira.',
       verbos: [
         { p: 'investigacao', cd: 10, ok: 'De perto, vários dançarinos são esqueletos de casaca e vestido de baile, dançando com a mesma elegância dos outros.' },
@@ -171,7 +173,7 @@ export const PISTAS = {
   // ===================================================================================================== 3º ANDAR ===
   casaDaMorte3: [
     {
-      id: 'tapeteDeTigre', x: 3, y: 3, r: 1, nome: 'O tapete de pele de tigre',
+      id: 'tapeteDeTigre', ...casa(1, 1), r: 1, nome: 'O tapete de pele de tigre',
       olhar: 'Uma pele de tigre, apodrecendo, diante da lareira da suíte principal.',
       verbos: [
         { p: 'natureza', cd: 12, ok: 'Tigres não existem em Baróvia: a pele veio de muito longe, trazida por quem tinha dinheiro e gosto de caça. Os Durst não eram só moleiros.' },
@@ -179,7 +181,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'retratoDoCasal', x: 1, y: 2, r: 1, nome: 'O retrato sobre a lareira',
+      id: 'retratoDoCasal', ...casa(0, 1), r: 1, nome: 'O retrato sobre a lareira',
       olhar: 'Um retrato empoeirado de Gustav e Elisabeth Durst, pendurado acima da lareira.',
       verbos: [
         { p: 'intuicao', cd: 12, ok: 'No retrato do casal, marido e mulher posam sem se tocar. Em todos os quartos da casa há duas camas, ou um quarto para cada um.' },
@@ -187,7 +189,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'camaDosel', x: 7, y: 1, r: 2, nome: 'A cama de dossel',
+      id: 'camaDosel', ...casa(3, 1), r: 2, nome: 'A cama de dossel',
       olhar: 'Uma cama grande de dossel, de cortinas bordadas e véus esfarrapados.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'Um dos dois travesseiros está intacto; o outro, afundado. O dono da casa dormia sozinho, e há muito tempo.' },
@@ -195,14 +197,14 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'mesaDoCanto', x: 11, y: 4, r: 1, nome: 'A mesa e as duas cadeiras',
+      id: 'mesaDoCanto', ...casa(5, 3), r: 1, nome: 'A mesa e as duas cadeiras',
       olhar: 'No canto sudoeste, uma mesa, duas cadeiras e, sobre a toalha empoeirada, uma tigela de porcelana vazia e um jarro de par.',
       verbos: [
         { p: 'investigacao', cd: 11, ok: 'A toalha tem duas marcas de xícara, de mãos diferentes. Duas pessoas tomavam chá aqui: o dono e, adivinhe, a babá.' },
       ],
     },
     {
-      id: 'banheira', x: 2, y: 10, r: 2, nome: 'A banheira de pés de garra',
+      id: 'banheira', ...casa(1, 5), r: 2, nome: 'A banheira de pés de garra',
       olhar: 'Uma banheira de madeira, um fogãozinho de ferro com uma chaleira e um barril sob uma torneira na parede leste.',
       verbos: [
         { p: 'investigacao', cd: 10, ok: 'O encanamento vem da cisterna do telhado e está seco desde sempre. Dentro da banheira, uma única unha de criança, presa no fundo.' },
@@ -210,14 +212,14 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'lencois', x: 2, y: 14, r: 2, nome: 'Os lençóis do depósito',
+      id: 'lencois', ...casa(0, 6), r: 1, nome: 'Os lençóis do depósito',
       olhar: 'Prateleiras de lençóis e cobertores dobrados, barras velhas de sabão.',
       verbos: [
         { p: 'investigacao', cd: 11, ok: 'Cada lençol tem um monograma bordado: R, T e W. Rose, Thorn e Walter. Os de Walter são os mais novos: nunca foram usados.' },
       ],
     },
     {
-      id: 'bercoDoQuarto', x: 1, y: 19, r: 1, nome: 'O berço com a mortalha',
+      id: 'bercoDoQuarto', ...casa(0, 7), r: 1, nome: 'O berço com a mortalha',
       olhar: 'Um berço coberto por uma mortalha negra, bem esticada.',
       verbos: [
         { p: 'medicina', cd: 12, ok: 'Mortalha de enterro, e não de berço. Quem embrulhou o pacote lá dentro queria enterrar um bebê que nunca viveu.' },
@@ -225,7 +227,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'camaDaBaba', x: 10, y: 21, r: 2, nome: 'A cama grande da babá',
+      id: 'camaDaBaba', ...casa(3, 10), r: 2, nome: 'A cama grande da babá',
       olhar: 'Uma cama grande, duas mesas de canto e um guarda-roupa vazio.',
       verbos: [
         { p: 'historia', cd: 13, ok: 'A babá da família teve um caso com o dono da casa. Do caso nasceu Walter, que não viveu. O culto matou a babá pouco depois.' },
@@ -237,7 +239,7 @@ export const PISTAS = {
   // ======================================================================================================== SÓTÃO ===
   casaDaMorte4: [
     {
-      id: 'sotaoVazio', x: 8, y: 8, r: 3, nome: 'O assoalho do sótão',
+      id: 'sotaoVazio', ...casa(3, 4), r: 3, nome: 'O assoalho do sótão',
       olhar: 'Poeira grossa e teia por todo o salão de pedra.',
       verbos: [
         { p: 'sobrevivencia', cd: 12, ok: 'Há pegadas na poeira, só de criança: duas linhas, de pés descalços, que vão e voltam ao quarto das crianças. Nenhuma de adulto.' },
@@ -245,7 +247,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'bonecaDaJanela', x: 2, y: 1, r: 2, nome: 'A boneca de vestido amarelo',
+      id: 'bonecaDaJanela', ...casa(3, 7), r: 2, nome: 'A boneca de vestido amarelo',
       olhar: 'Sobre o parapeito da janela do norte, uma boneca sorridente de vestido amarelo, coberta de teia como um véu de noiva.',
       verbos: [
         { p: 'intuicao', cd: 13, ok: 'A boneca está virada para a porta, e não para a janela: quem a pôs queria que visse quem entrava. Alguém brincava com ela e não terminou.' },
@@ -253,14 +255,14 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'camaDoQuarto17', x: 1, y: 3, r: 2, nome: 'O quarto de repouso (17)',
+      id: 'camaDoQuarto17', ...casa(5, 8), r: 2, nome: 'O quarto de repouso (17)',
       olhar: 'Uma cama estreita, um criado-mudo, um fogãozinho, uma escrivaninha com banco, um guarda-roupa vazio e uma cadeira de balanço.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'Cada gaveta da escrivaninha está arranhada por dentro, em linhas pequeninas, como contagens de dias: alguém marcou quantos dias passaram.' },
       ],
     },
     {
-      id: 'moveisCobertos', x: 3, y: 14, r: 4, nome: 'Os móveis sob os lençóis',
+      id: 'moveisCobertos', ...casa(1, 6), r: 2, nome: 'Os móveis sob os lençóis',
       olhar: 'Cadeiras, casacos, espelhos de corpo inteiro e manequins de costura, todos sob lençóis brancos que parecem gente.',
       passiva: { p: 'percepcao', cd: 14, texto: 'um dos lençóis está virado para a porta, como se alguém o puxasse para ver quem chega.' },
       verbos: [
@@ -269,7 +271,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'restosDosIrmaos', x: 7, y: 3, r: 2, nome: 'Os ossos de Rose e Thorn',
+      id: 'restosDosIrmaos', ...casa(3, 1), r: 2, nome: 'Os ossos de Rose e Thorn',
       olhar: 'No meio do chão, dois esqueletos pequenos de roupas esfarrapadas, um abraçando um boneco de pano.',
       verbos: [
         { p: 'medicina', cd: 10, ok: 'Crianças, de uns dez e sete anos. Morreram juntas, de fome, com meses de diferença para o último fôlego. Estão abraçadas: uma cuidou da outra.' },
@@ -278,7 +280,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'brinquedos', x: 6, y: 4, r: 1, nome: 'A caixa de brinquedos',
+      id: 'brinquedos', ...casa(4, 2), r: 1, nome: 'A caixa de brinquedos',
       olhar: 'Um baú com moinhos de vento pintados nos lados. Dentro, bichos de pelúcia e brinquedos.',
       aura: { escola: 'necromancia', texto: 'Uma aura fraca e fria de necromancia: a presença de duas crianças que morreram aqui.' },
       verbos: [
@@ -286,7 +288,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'casaDeBonecasPista', x: 6, y: 5, r: 1, nome: 'A casa de bonecas',
+      id: 'casaDeBonecasPista', ...casa(2, 2), r: 1, nome: 'A casa de bonecas',
       olhar: 'Uma réplica perfeita da Casa da Morte, em miniatura, coberta de teia.',
       aura: { escola: 'ilusão', texto: 'Uma aura de ilusão e de adivinhação: a casa de bonecas é um espelho da casa verdadeira, e mostra o que ela esconde.' },
       verbos: [
@@ -295,7 +297,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'camasDasCriancas', x: 5, y: 2, r: 1, nome: 'As camas pequenas',
+      id: 'camasDasCriancas', ...casa(2, 0), r: 2, nome: 'As camas pequenas',
       olhar: 'Duas camas de estrutura de madeira, dimensionadas para crianças, empoeiradas.',
       verbos: [
         { p: 'investigacao', cd: 11, ok: 'As cobertas estão dobradas por mão pequena, com capricho torto. O menor dos berços tem uma boneca de pelúcia: vocês a reconhecem.' },

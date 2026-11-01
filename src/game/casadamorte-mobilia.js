@@ -10,9 +10,11 @@
 //     baixo     peça de passar por cima (tapete, pele): vai sobre `&`
 //     piso      o piso que fica por baixo (padrão: o piso que a casa já tinha)
 
+import { D } from './casadamorte-plantas.js';
+
 const PISO_DO_GLIFO = { U: 'assoalho', '*': 'tapete', '-': 'parquet', '+': 'terraSocada' };
 
-/** Põe as peças no terreno e devolve o terreno novo e as anotações de `objetos`. */
+/** Põe as peças no terreno e devolve o terreno novo e as anotações de `objetos`. As casas da lista são quadrados do livro (o mapa tem um anel a mais). */
 export function mobiliar(terreno, lista, pisoPadrao = 'assoalho') {
   const linhas = terreno.map((l) => [...l]);
   const objetos = [];
@@ -23,8 +25,8 @@ export function mobiliar(terreno, lista, pisoPadrao = 'assoalho') {
     objetos.push({ tipo: 'prop', x, y, variante, piso: pisoDe, ...(espelhar ? { espelhar: true } : {}) });
   };
   for (const [v, x, y, o = {}] of lista) {
-    for (const [nx, ny] of o.nada ?? []) casa(nx, ny, 'taverna-nada', { piso: o.piso });
-    casa(x, y, v, o);
+    for (const [nx, ny] of o.nada ?? []) casa(nx + D, ny + D, 'taverna-nada', { piso: o.piso });
+    casa(x + D, y + D, v, o);
   }
   return { terreno: linhas.map((l) => l.join('')), objetos };
 }
@@ -32,80 +34,70 @@ export function mobiliar(terreno, lista, pisoPadrao = 'assoalho') {
 export const MOBILIA = {
   // ------------------------------------------------------------------------------------------------ 1º andar ---
   casaDaMorte1: [
-    // sala de jantar (5): lareira na parede oeste e oito cadeiras em volta da mesa
-    ['taverna-lareira', 1, 3, { espelhar: true }],
-    ...[3, 4, 5, 6].flatMap((x) => [['cadeira', x, 2], ['cadeira', x, 5]]),
-    ['candelabro', 7, 1], ['candelabro', 1, 7],
-    // cozinha (4A) e despensa (4B)
-    ['fogao', 10, 4], ['prateleira', 12, 5],
-    ['prateleira', 10, 1], ['prateleira', 11, 1], ['prateleira', 12, 1],
-    // vestiário (2B)
-    ['guardaRoupa', 5, 8],
-    // salão principal (2A): lareira, duas poltronas e candelabros
-    ['taverna-lareira', 1, 12, { espelhar: true }],
-    ['cadeira', 3, 11], ['cadeira', 3, 13],
-    ['candelabro', 4, 10], ['candelabro', 7, 10], ['candelabro', 4, 14], ['candelabro', 7, 14],
-    // sala de espera (1)
-    ['banco', 2, 22], ['candelabro', 4, 16],
+    // sala de jantar (5): lareira na parede oeste, a mesa (glifo) e as cadeiras em volta
+    ['taverna-lareira', 0, 1, { espelhar: true }],
+    ['cadeira', 1, 0], ['cadeira', 2, 0], ['candelabro', 0, 0],
+    // cozinha (4A) e despensa (4B): o forno, o aparador (o monta-cargas) e as prateleiras
+    ['fogao', 5, 1], ['prateleira', 5, 3], ['prateleira', 5, 0],
+    // salão principal (2A): lareira na parede oeste e candelabros ao pé da escadaria
+    ['taverna-lareira', 0, 5, { espelhar: true }],
+    ['candelabro', 3, 4], ['candelabro', 3, 6],
+    // sala de espera (1B)
+    ['banco', 0, 8],
     // canil (3): lareira, poltronas, os lobos empalhados e os dois armários
-    ['taverna-lareira', 12, 19],
-    ['cadeira', 9, 19], ['cadeira', 9, 20],
-    ['peles', 7, 17, { baixo: true }], ['peles', 12, 17, { baixo: true }], ['peles', 8, 21, { baixo: true }],
-    ['armario', 12, 21], ['armario', 12, 16],
+    ['taverna-lareira', 5, 9],
+    ['cadeira', 4, 9], ['cadeira', 4, 10],
+    ['peles', 3, 7, { baixo: true }], ['peles', 5, 7, { baixo: true }], ['peles', 5, 8, { baixo: true }],
+    ['armario', 4, 7], ['armario', 5, 10],
   ],
 
   // ------------------------------------------------------------------------------------------------ 2º andar ---
   casaDaMorte2: [
-    // biblioteca (8): lareira, escrivaninha e cadeira, estantes do chão ao teto na parede sul, duas poltronas
-    ['taverna-lareira', 1, 3, { espelhar: true }],
-    ['escrivaninha', 3, 2], ['cadeira', 3, 3],
-    ['estante', 1, 5], ['estante', 2, 5], ['estante', 3, 5], ['estante', 4, 5], ['estante', 5, 5],
-    ['cadeira', 8, 1], ['cadeira', 1, 1], ['estante', 8, 4],
-    // sala secreta (9)
-    ['estante', 6, 6], ['estante', 6, 7], ['estante', 8, 6],
-    // quartos dos empregados (7A, 7B)
-    ['cama', 10, 5], ['cama', 12, 5], ['banquinho', 11, 6],
-    ['prateleira', 10, 1], ['prateleira', 11, 1], ['prateleira', 12, 1],
-    // salão superior (6): lareira, armaduras de pé ladeando as portas, candelabros
-    ['taverna-lareira', 1, 11, { espelhar: true }],
-    ['estatuaPalien', 3, 9], ['estatuaPalien', 5, 9], ['estatuaPalien', 3, 14], ['estatuaPalien', 6, 14],
-    ['candelabro', 8, 9], ['candelabro', 8, 14],
-    // conservatório (10): lareira, cadeiras ao longo das paredes e o cravo
-    ['taverna-lareira', 12, 19],
-    ['cadeira', 3, 16], ['cadeira', 5, 16], ['cadeira', 10, 16], ['cadeira', 3, 22], ['cadeira', 6, 22], ['cadeira', 9, 22],
-    ['escrivaninha', 1, 17],
+    // biblioteca (8): lareira, escrivaninha e cadeira, estantes junto da parede leste, a poltrona e o canto da escada em espiral
+    ['taverna-lareira', 0, 1, { espelhar: true }],
+    ['escrivaninha', 2, 1], ['cadeira', 2, 2],
+    ['estante', 3, 1], ['estante', 3, 2], ['estante', 0, 2], ['cadeira', 0, 0],
+    // sala secreta (9): o baú, em cima do esqueleto (o glifo `)` fica no mapa)
+    // quartos dos empregados (7A): duas camas de palha
+    ['cama', 5, 1], ['cama', 5, 3],
+    // salão superior (6): lareira, armaduras de pé ladeando as portas
+    ['taverna-lareira', 0, 5, { espelhar: true }],
+    ['estatuaPalien', 0, 4], ['estatuaPalien', 3, 4], ['estatuaPalien', 0, 6], ['estatuaPalien', 3, 6],
+    // conservatório (10): lareira, cadeiras ao longo das paredes, o cravo e a harpa
+    ['taverna-lareira', 5, 9],
+    ['cadeira', 0, 7], ['cadeira', 2, 10], ['cadeira', 3, 10],
+    ['escrivaninha', 1, 10], ['candelabro', 4, 8],
   ],
 
   // ------------------------------------------------------------------------------------------------ 3º andar ---
   casaDaMorte3: [
-    // suíte principal (12): lareira, cama de dossel, guarda-roupas, penteadeira, a pele de tigre, poltrona e a mesa do canto
-    ['taverna-lareira', 1, 1, { espelhar: true }],
-    ['camaViuva', 7, 1, { nada: [[6, 1], [8, 1], [9, 1]] }],
-    ['guardaRoupa', 3, 1], ['guardaRoupa', 4, 1], ['escrivaninha', 11, 1],
-    ['peles', 3, 3, { baixo: true }], ['cadeira', 2, 5], ['cadeira', 10, 4], ['cadeira', 12, 4],
+    // suíte principal (12): lareira, cama de dossel, guarda-roupa, penteadeira, a pele de tigre e as cadeiras da mesa do canto
+    ['taverna-lareira', 0, 1, { espelhar: true }],
+    ['camaViuva', 3, 1, { nada: [[3, 0], [4, 0], [4, 1]] }],
+    ['guardaRoupa', 0, 0], ['escrivaninha', 0, 2],
+    ['peles', 1, 1, { baixo: true }], ['cadeira', 4, 3],
     // banheiro (13)
-    ['tina', 2, 10], ['fogao', 1, 11],
-    // depósito (14)
-    ['prateleira', 2, 14], ['prateleira', 3, 14], ['prateleira', 4, 14],
+    ['tina', 1, 5], ['fogao', 0, 5],
+    // depósito (14): as prateleiras são só parede; a vassoura espera no fundo
     // berçário (15B)
-    ['berco', 1, 19], ['cadeira', 3, 17],
+    ['berco', 0, 7],
     // suíte da babá (15A)
-    ['camaViuva', 9, 22, { nada: [[9, 21], [10, 21], [10, 22]] }],
-    ['guardaRoupa', 12, 19], ['banquinho', 8, 21], ['banquinho', 11, 21],
+    ['camaViuva', 3, 10, { nada: [[4, 10]] }],
+    ['guardaRoupa', 4, 8], ['banquinho', 5, 10],
     // varanda (11)
-    ['candelabro', 6, 9], ['candelabro', 8, 15],
+    ['candelabro', 3, 5],
   ],
 
   // ----------------------------------------------------------------------------------------------------- sótão ---
   casaDaMorte4: [
-    // quarto de repouso (17)
-    ['cama', 2, 2, { nada: [[1, 2]] }], ['escrivaninha', 3, 1], ['cadeira', 3, 4], ['fogao', 1, 5],
+    // quarto de repouso (19, a noroeste)
+    ['cama', 1, 0], ['fogao', 0, 0], ['guardaRoupa', 0, 1],
     // quarto das crianças (20): as camas, o baú de brinquedos e a casa de bonecas
-    ['cama', 5, 2], ['cama', 10, 2], ['cofreVazio', 6, 4], ['armario', 6, 5],
+    ['cama', 2, 0], ['cama', 4, 0], ['cofreVazio', 4, 2], ['armario', 2, 2],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e o fogão
-    ['fogao', 1, 11],
-    ['trapos', 2, 12], ['trapos', 3, 14], ['trapos', 5, 15], ['trapos', 2, 16], ['trapos', 5, 17], ['trapos', 3, 18],
-    // quarto de repouso (19)
-    ['cama', 10, 19], ['fogao', 12, 22], ['cadeira', 12, 19],
+    ['fogao', 0, 5],
+    ['trapos', 0, 6], ['trapos', 2, 5], ['trapos', 0, 7], ['trapos', 2, 7],
+    // quarto de repouso (17, a sudeste)
+    ['cama', 5, 8], ['fogao', 5, 9], ['escrivaninha', 2, 9], ['guardaRoupa', 4, 10], ['cadeira', 2, 10],
   ],
 };

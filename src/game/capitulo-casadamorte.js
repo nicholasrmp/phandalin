@@ -25,7 +25,8 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { xpParaProximo } from '../rules/progressao.js';
 import { ANDARES } from './casadamorte.js';
-import { ESCADA_SECRETA_3, ESCADA_SECRETA_4, ESCADA_OESTE_3, PORTA_OESTE_3 } from './casadamorte-alto.js';
+import { ESCADA_SECRETA_3, ESCADA_SECRETA_4, PORTA_ESPELHO_3, PORTA_VARANDA_3, PORTA_ESPIRAL_4, PORTA_CRIANCAS_4 } from './casadamorte-alto.js';
+import { casa } from './casadamorte-plantas.js';
 import { criarBuscas } from './buscas.js';
 import { altoInteracoes, altoGatilhos, destrancarPortaDasCriancas } from './casadamorte-alto-cena.js';
 import { pistasInteracoes, pistasPassivas, pistasAuras } from './casadamorte-pistas-cena.js';
@@ -33,8 +34,9 @@ import { poraoInteracoes, poraoGatilhos, reaplicarPorao, BAUS_POCO, abrirBauDoPo
 import { fugaInteracoes, fugaIniciar, fugaParedesOps } from './casadamorte-fuga.js';
 
 const MOVIMENTO = 60;
-const dentro = (a, p) => p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2;
-const PORTA_SECRETA = { x: 7, y: 5 };      // a estante da biblioteca (2º andar) que gira para a sala secreta
+const dentro = (a, p) => (a.contem ? a.contem(p) : p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2);
+const PORTA_SECRETA = casa(3, 0);          // a estante da biblioteca (2º andar) que gira para a sala secreta (a aresta com a casa ao lado)
+const ALCAPAO = casa(2, 10);               // o alçapão do canil, no canto sudoeste
 
 export function criarCasaDaMorte(app, config) {
   const enc = app.enc;
@@ -79,13 +81,14 @@ export function criarCasaDaMorte(app, config) {
   const mudarCasas = (lista, glifo) => { for (const [x, y] of lista) mudarCasa(x, y, glifo); };
   /** Muda uma aresta (a parede fina entre duas casas): porta aberta, por padrão. */
   const abrirAresta = (ax, ay, bx, by, codigo = 3) => enc.field.porAresta(ax, ay, bx, by, codigo);
+  const abrirPar = ([a, b]) => abrirAresta(a.x, a.y, b.x, b.y);
   // A estante da biblioteca (a aresta entre a biblioteca e a sala secreta) gira: a passagem fica aberta.
-  const abrirBiblioteca = () => abrirAresta(PORTA_SECRETA.x, PORTA_SECRETA.y - 1, PORTA_SECRETA.x, PORTA_SECRETA.y);
+  const abrirBiblioteca = () => abrirPar([PORTA_SECRETA, casa(4, 0)]);
   if (salvo.passagemAberta && variante === 'casaDaMorte2') abrirBiblioteca();
   // A porta do quarto das crianças (20) começa trancada (a planta a põe fechada) e fica aberta depois.
-  if (salvo.portaCriancas && variante === 'casaDaMorte4') abrirAresta(7, 5, 7, 6);
+  if (salvo.portaCriancas && variante === 'casaDaMorte4') abrirPar(PORTA_CRIANCAS_4);
   // O alçapão do canil só existe depois que alguém o viu pelo lado de baixo.
-  if (salvo.alcapaoCanil && variante === 'casaDaMorte1') mudarCasa(6, 22, 'l');
+  if (salvo.alcapaoCanil && variante === 'casaDaMorte1') mudarCasa(ALCAPAO.x, ALCAPAO.y, 'l');
 
   // ----------------------------------------------------------- as criaturas ----
   const grupos = {};
@@ -161,10 +164,10 @@ export function criarCasaDaMorte(app, config) {
     if (!salvo.escada) return;
     if (variante === 'casaDaMorte3') {
       // O poço da escada atrás do espelho da babá é uma sala fechada; a aresta dele com a suíte vira porta.
-      mudarCasas(ESCADA_SECRETA_3, 'l'); abrirAresta(9, 17, 10, 17); abrirAresta(9, 18, 10, 18);
-      if (salvo.portaOeste) { mudarCasas(ESCADA_OESTE_3, 'l'); abrirAresta(4, 7, 3, 7); abrirAresta(4, 8, 3, 8); }
+      mudarCasas(ESCADA_SECRETA_3, 'l'); abrirPar(PORTA_ESPELHO_3);
+      if (salvo.portaOeste) abrirPar(PORTA_VARANDA_3);
     }
-    if (variante === 'casaDaMorte4') { mudarCasas(ESCADA_SECRETA_4, 'l'); abrirAresta(3, 7, 2, 7); abrirAresta(3, 8, 2, 8); }
+    if (variante === 'casaDaMorte4') { mudarCasas(ESCADA_SECRETA_4, 'l'); abrirPar(PORTA_ESPIRAL_4); }
   }
   aplicarEscada();
 
@@ -196,7 +199,7 @@ export function criarCasaDaMorte(app, config) {
   const ctx = {
     app, enc, root, config, variante, andar, salvo, estado, grupos,
     herois, hostis, painel, teste, areaDe, longe, buscas, tem, algumTem, consumir, guardar,
-    mudarCasa, mudarCasas, abrirAresta, aplicarEscada, combate, irParaAndar, revelarEscada, prepararExploracao, dentro,
+    mudarCasa, mudarCasas, abrirAresta, abrirPar, aplicarEscada, ALCAPAO, combate, irParaAndar, revelarEscada, prepararExploracao, dentro,
     vencer(id) { if (!salvo.vencidos.includes(id)) salvo.vencidos.push(id); const g = grupos[id]; if (g) g.vencido = true; },
   };
   ctx.depoisDaLuta = {};
@@ -227,11 +230,11 @@ export function criarCasaDaMorte(app, config) {
     if (!estado.explorando) return [];
     const out = [...pistasAuras(ctx)];
     if (variante === 'casaDaMorte1' && !salvo.armarioAberto) {
-      out.push({ id: 'armario', tipo: 'trancada', x: 12, y: 21, nome: 'O armário do leste do canil', fazer: abrirArmario });
+      out.push({ id: 'armario', tipo: 'trancada', ...casa(5, 10), nome: 'O armário do leste do canil', fazer: abrirArmario });
     }
-    if (variante === 'casaDaMorte2' && !salvo.chave) out.push({ id: 'chave', tipo: 'procurado', x: 3, y: 2, nome: 'A chave de ferro dos Durst' });
+    if (variante === 'casaDaMorte2' && !salvo.chave) out.push({ id: 'chave', tipo: 'procurado', ...casa(2, 1), nome: 'A chave de ferro dos Durst' });
     if (variante === 'casaDaMorte4' && !salvo.portaCriancas) {
-      out.push({ id: 'porta20', tipo: 'trancada', x: 7, y: 7, nome: 'A porta trancada do quarto das crianças', fazer: () => destrancarPortaDasCriancas(ctx, herois()[0], 'A tranca estala por dentro e a porta do quarto das crianças se entreabre sozinha.') });
+      out.push({ id: 'porta20', tipo: 'trancada', ...casa(3, 3), nome: 'A porta trancada do quarto das crianças', fazer: () => destrancarPortaDasCriancas(ctx, herois()[0], 'A tranca estala por dentro e a porta do quarto das crianças se entreabre sozinha.') });
     }
     if (variante === 'casaDaMortePorao1') {
       for (const b of BAUS_POCO) {
@@ -321,7 +324,7 @@ export function criarCasaDaMorte(app, config) {
       ops.push({
         rotulo: salvo.armarioAberto ? 'O armário do leste (aberto)' : 'Abrir o cadeado do armário do leste',
         icone: 'acao-usarObjeto', detalhe: salvo.armarioAberto ? 'já aberto' : 'ferramentas de ladrão, Prestidigitação, CD 15',
-        motivo: salvo.armarioAberto ? 'já aberto' : longe(c, { x: 12, y: 21 }, 40),
+        motivo: salvo.armarioAberto ? 'já aberto' : longe(c, casa(5, 10), 25),
         fazer: async () => {
           const ladrao = herois().find((h) => garantirInventario(h).bag.some((i) => i.id === 'ferramentasDeLadrao'));
           if (!ladrao) { await painel('O cadeado é pequeno e firme. Sem ferramentas de ladrão, não há o que fazer.'); return; }
@@ -336,9 +339,9 @@ export function criarCasaDaMorte(app, config) {
     if (area.id === 'salaoSuperior' && sup !== 'escada') {
       ops.push({
         rotulo: 'Examinar as portas entalhadas', icone: 'acao-procurar', detalhe: salvo.portasEntalhadas ? 'já examinadas' : 'Percepção, CD 12',
-        motivo: salvo.portasEntalhadas ? 'já examinadas' : buscas.ja(c, 'portas', { x: 4, y: 8 }),
+        motivo: salvo.portasEntalhadas ? 'já examinadas' : buscas.ja(c, 'portas', casa(2, 5)),
         fazer: async () => {
-          buscas.marcar(c, 'portas', { x: 4, y: 8 });
+          buscas.marcar(c, 'portas', casa(2, 5));
           const t = teste(c, 'percepcao', 12);
           if (t.passou) salvo.portasEntalhadas = true;
           await painel(t.passou
@@ -351,7 +354,7 @@ export function criarCasaDaMorte(app, config) {
       ops.push({
         rotulo: salvo.chave ? 'A gaveta da escrivaninha (vazia)' : 'Abrir a gaveta da escrivaninha', icone: 'acao-usarObjeto',
         detalhe: salvo.chave ? 'já aberta' : 'uma chave de ferro',
-        motivo: salvo.chave ? 'já aberta' : longe(c, { x: 3, y: 2 }, 25),
+        motivo: salvo.chave ? 'já aberta' : longe(c, casa(2, 1), 25),
         fazer: async () => {
           salvo.chave = true;
           guardar(herois()[0], 'chaveDeFerroDosDurst', 1);
@@ -379,12 +382,12 @@ export function criarCasaDaMorte(app, config) {
     if (area.id === 'salaSecreta') {
       ops.push({
         rotulo: salvo.cartaLida ? 'Reler a carta de Strahd' : 'Ler a carta do esqueleto', icone: 'acao-procurar',
-        detalhe: salvo.cartaLida ? 'a casa já mostrou a escada' : 'selo de Strahd von Zarovich', motivo: longe(c, { x: 8, y: 7 }, 15),
+        detalhe: salvo.cartaLida ? 'a casa já mostrou a escada' : 'selo de Strahd von Zarovich', motivo: longe(c, casa(5, 0), 15),
         fazer: async () => { if (salvo.cartaLida) await painel('A mesma letra fina e inclinada. A casa já mostrou o que queria mostrar.'); else await carta(c); },
       });
       ops.push({
         rotulo: salvo.baul ? 'O baú dos Durst (vazio)' : 'Abrir o baú', icone: 'acao-usarObjeto', detalhe: salvo.baul ? 'já aberto' : 'livros, pergaminhos e papéis',
-        motivo: salvo.baul ? 'já aberto' : longe(c, { x: 8, y: 7 }, 15),
+        motivo: salvo.baul ? 'já aberto' : longe(c, casa(5, 0), 15),
         fazer: async () => {
           salvo.baul = true;
           const quem = herois()[0];
@@ -459,12 +462,12 @@ export function criarCasaDaMorte(app, config) {
       if (chegada) {
         herois().forEach((h, i) => { h.pos = { ...(chegada[i] ?? chegada[0]) }; });
         // Vir pelo alçapão do canil mostra o alçapão (e vir pela porta secreta da masmorra, a porta).
-        if (config.entrada === 'casaDaMortePorao1' && variante === 'casaDaMorte1') { salvo.alcapaoCanil = true; mudarCasa(6, 22, 'l'); }
+        if (config.entrada === 'casaDaMortePorao1' && variante === 'casaDaMorte1') { salvo.alcapaoCanil = true; mudarCasa(ALCAPAO.x, ALCAPAO.y, 'l'); }
         if (config.entrada === 'casaDaMorte1' && variante === 'casaDaMortePorao1') { salvo.alcapao = true; mudarCasas([[36, 30], [36, 31]], '?'); }
         app.refresh();
       }
       if (ctx.aoChegar) await ctx.aoChegar(config.entrada);
-      const a = areaDe(herois()[0]?.pos ?? { x: 2, y: 21 });
+      const a = areaDe(herois()[0]?.pos ?? casa(1, 10));
       if (a) await descrever(a);
     },
   };
