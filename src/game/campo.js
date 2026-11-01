@@ -23,6 +23,7 @@ export function montarCampo(mapa) {
   if (mapa.pisos) field.pisoDeSala = new Map(Object.entries(mapa.pisos));
   // As construções só se abrem à vista quando o grupo está dentro ou enxerga dentro (`board.calcularSalasReveladas`).
   field.fachadaFechada = Boolean(mapa.fachadaFechada);
+  field.fachadaUnica = Boolean(mapa.fachadaUnica);   // todas as salas são UM prédio: fechado de fora, aberto por inteiro de dentro
   // A rocha junto de chão é desenhada como PAREDE de caverna (mais alta que um degrau): ver `board.alturaVisual`.
   field.paredeDeCaverna = Boolean(mapa.paredeDeCaverna);
   field.cliqueNoObjeto = Boolean(mapa.cliqueNoObjeto);   // o botão direito no corpo do sprite acha o objeto (a mansão)

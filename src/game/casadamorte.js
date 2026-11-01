@@ -169,6 +169,9 @@ export const MAPA_CASA_DA_MORTE_1 = {
   paredes: PLANTA_1.paredes,
   salas: PLANTA_1.salas,
   folhas: PLANTA_1.folhas,
+  // do lado de fora a casa é um bloco fechado (só as paredes e as portas); ao entrar, abre por inteiro
+  fachadaFechada: true,
+  fachadaUnica: true,
   vaoUnido: PLANTA_1.vaoUnido,
   materialDaParede: 'painelCarvalho',
   vaoPorCasa: true,

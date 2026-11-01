@@ -1667,10 +1667,10 @@ export class Board {
       const chama = CHAMA[prop?.grupo ?? s.objeto];
       const fase = (x * 1.7 + y * 2.9) % 6.28;
       // A peça alta (cama, escadaria, cravo, estante) esmaece quando cobre quem está atrás dela.
-      if (prop?.grupo === 'prop-casa-lustre:+y') ctx.globalAlpha = 0.72;      // o lustre pende sobre a mesa: leve, para não esconder a sala
+      if (prop?.grupo === 'prop-casa-lustre:+y') ctx.globalAlpha *= 0.72;      // o lustre pende sobre a mesa: leve, para não esconder a sala
       if (baixo.h > 52 && prop) {
         const v = this.toView(x, y);
-        if (this.cobreFigura(Math.round(cx - baixo.ax), Math.round(cy - baixo.ay), baixo.w, baixo.h, v.vx + v.vy)) ctx.globalAlpha = TRANSLUCIDO;
+        if (this.cobreFigura(Math.round(cx - baixo.ax), Math.round(cy - baixo.ay), baixo.w, baixo.h, v.vx + v.vy)) ctx.globalAlpha = Math.min(ctx.globalAlpha, TRANSLUCIDO);
       }
       if (prop?.espelhar) {
         // De lado: o ponto de ancoragem da peça continua caindo no centro da casa.
@@ -2241,6 +2241,9 @@ export class Board {
     const f = this.field;
     if (!f.fachadaFechada || !f.sala) return null;
     if (this.verTudo) return 'todas';
+    // A CASA É UM PRÉDIO SÓ (`fachadaUnica`, a Casa da Morte): enquanto o grupo está do lado de fora ela é um bloco FECHADO (as paredes,
+    // as portas e nada do que há dentro); quem entra em qualquer cômodo abre a casa inteira.
+    if (f.fachadaUnica) return (this._salasOcupadas?.size ?? 0) > 0 ? 'todas' : new Set();
     const rev = new Set(this._salasOcupadas ?? []);
     if (this._visao) {
       for (const k of this._visao.keys()) {
@@ -3317,7 +3320,7 @@ export class Board {
       this.desenharParedes(ctx, x, y, cell.d);
 
       const k = `${x},${y}`;
-      if (reach) {
+      if (reach && !oculta) {
         const node = reach.get(k);
         // `parar === false`: a casa está tomada por outra criatura (o aliado que se atravessa não é destino): não acende.
         // As casas ATRÁS dele acendem, com o custo dobrado de atravessá-lo.
