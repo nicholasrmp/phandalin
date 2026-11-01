@@ -50,7 +50,7 @@ export const PLANTA_2 = plantaDeSalas({
     { id: 'conservatorio', retangulos: [[0, 7, 5, 10]] },
   ],
   // a estante da biblioteca gira: a aresta (3,0)-(4,0) é parede até a passagem se abrir
-  portas: [[1, 3, 1, 4], [2, 3, 2, 4], [4, 3, 4, 4], [3, 3, 4, 3], [4, 0, 4, 1], [1, 6, 1, 7], [2, 6, 2, 7]],
+  portas: [[1, 3, 1, 4], [2, 3, 2, 4], [4, 3, 4, 4], [3, 3, 4, 3], [1, 6, 1, 7], [2, 6, 2, 7]],
 });
 
 export const AREAS_TERREO = [

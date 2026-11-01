@@ -52,7 +52,7 @@ PECAS = {
     'cama': {'conjunto': 'casaCamaIso', 'n': 0, 'dirs': ['+y'], 'folga': 6},
     'camaVelha': {'conjunto': 'casaCamaIso', 'n': 2, 'dirs': ['+y'], 'folga': 6},
     'tina': {'conjunto': 'casaTinaIso', 'n': 0, 'dirs': ['+x'], 'folga': 6},
-    'cravo': {'conjunto': 'casaCravoIso', 'n': 2, 'dirs': ['+y'], 'folga': 6},
+    'cravo': {'conjunto': 'casaCravoIso', 'n': 2, 'dirs': ['+y'], 'folga': 6, 'ax': 60},
     # a poltrona de COSTAS (olha para a lareira, para longe da camera): -y como saiu, -x espelhada
     'cadeiraCostas': {'conjunto': 'casaCadeiraCostas', 'n': 2, 'dirs': ['-y', '-x'], 'folga': 6},
     # o ABANDONO dos andares de cima (`casaAbandono`): moveis sob lencol, teia e lixo
@@ -117,10 +117,12 @@ def main():
         base = Image.open(pasta / f"frame_urls_{spec['n']}.png").convert('RGBA')
         base = base.crop(base.getbbox())
         for d in spec['dirs']:
-            q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaMesa', 'casaEscadaria', 'casaTinaIso') else base.transpose(Image.FLIP_LEFT_RIGHT)
+            q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaTinaIso') else base.transpose(Image.FLIP_LEFT_RIGHT)
             if spec.get('apagar'):
                 q = apagar(q)
             ax, ay = tav.ancora_da_pegada(q, spec['folga'])
+            if spec.get('ax') is not None:           # a ancora medida a mao, quando o pe mais baixo e de outra peca (o banco do cravo)
+                ax = spec['ax']
             n = spec.get('fogo')
             quadros[f'prop-casa-{nome}:{d}'] = [(tav.fogo(q, i, n), ax, ay) for i in range(n)] if n else [(q, ax, ay)]
     portas = {}

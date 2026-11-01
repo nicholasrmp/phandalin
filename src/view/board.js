@@ -1655,9 +1655,9 @@ export class Board {
     if (baixo) {
       // Moita, pedra, estalagmite, mantimentos ou espinheiro do PixelLab, 1:1,
       // com o centro da base no centro da casa. A sombra acompanha a largura.
-      const r = SOMBRA_DO_BAIXO[s.objeto];
+      const r = Math.max(SOMBRA_DO_BAIXO[s.objeto], Math.round(baixo.w * 0.34));
       // Peça de parede, balcão e escada já trazem a sombra no desenho: a elipse seria uma mancha.
-      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)|^prop-casa-(lareira|estante|guardaRoupa|fogao|escadaria)/.test(prop?.grupo ?? '')) {
+      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)|^prop-casa-(lareira|estante|guardaRoupa|fogao|escadaria|armarioCoberto|comodaCoberta|espelhoCoberto)/.test(prop?.grupo ?? '')) {
         ctx.fillStyle = 'rgba(0,0,0,.25)';
         ctx.beginPath();
         ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
@@ -1666,6 +1666,11 @@ export class Board {
       ctx.imageSmoothingEnabled = false;
       const chama = CHAMA[prop?.grupo ?? s.objeto];
       const fase = (x * 1.7 + y * 2.9) % 6.28;
+      // A peça alta (cama, escadaria, cravo, estante) esmaece quando cobre quem está atrás dela.
+      if (baixo.h > 52 && prop) {
+        const v = this.toView(x, y);
+        if (this.cobreFigura(Math.round(cx - baixo.ax), Math.round(cy - baixo.ay), baixo.w, baixo.h, v.vx + v.vy)) ctx.globalAlpha = TRANSLUCIDO;
+      }
       if (prop?.espelhar) {
         // De lado: o ponto de ancoragem da peça continua caindo no centro da casa.
         ctx.translate(cx, 0);
