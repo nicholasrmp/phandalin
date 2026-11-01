@@ -144,6 +144,45 @@ obj.CONJUNTOS.update({
         ],
         'target_palette': {'colors': PALETA},
     },
+    # Poltrona de COSTAS (a que olha para a lareira, para longe da camera): 16 candidatos.
+    'casaCadeiraCostas': {
+        'description': ('Single manor armchair TURNED AWAY from the viewer, facing up-right: we see its tall BACK and one '
+                        'side, about 40 px wide, sitting on the bottom of the canvas, seen in isometric 2:1 view, ' + ESTILO + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'high-backed armchair seen from behind, burgundy velvet back with brass studs, carved dark oak top',
+            'wing-back armchair seen from behind, burgundy velvet back, dark oak legs',
+            'high-backed armchair seen from behind, plain burgundy velvet back, carved oak frame',
+            'wing-back armchair seen from behind, deep red velvet with buttons, brass studs',
+        ] * 4,
+        'target_palette': {'colors': PALETA},
+    },
+    # O ABANDONO dos andares de cima: moveis sob lencol, teia, lixo. 16 candidatos de uma casa.
+    'casaAbandono': {
+        'description': DE_UMA_CASA + 'abandoned, dusty, cobwebs, ' + ESTILO + PIXEL,
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'armchair covered by a dusty white sheet draped to the floor, cobwebs',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: tall wardrobe covered by a dusty white sheet, about 60 px tall',
+            'small round table covered by a dusty white sheet, cobwebs',
+            'two stacked wooden crates covered by a grey dusty sheet',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: tall standing mirror covered by a dusty white sheet, about 60 px tall',
+            'sofa covered by a dusty white sheet',
+            'tailor dress mannequin standing under a dusty white sheet, about 56 px tall',
+            'pile of folded old blankets and linen on the floor, dusty',
+            'broken wooden chair lying on its side, cobwebs',
+            'old open empty trunk with a cobweb across it',
+            'stack of old books covered in thick cobwebs',
+            'rolled up old carpet standing in a corner, dusty',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: chest of drawers covered by a dusty sheet, about 40 px tall',
+            'old wooden rocking horse toy, dusty, a cobweb on its head',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: tall bookshelf covered by a dusty sheet, about 60 px tall',
+            'cast iron floor candlestick with a burnt-out candle, wax drips and cobwebs',
+        ],
+        'target_palette': {'colors': PALETA},
+    },
 })
 
 if __name__ == '__main__':

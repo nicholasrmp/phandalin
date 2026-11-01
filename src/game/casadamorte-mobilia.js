@@ -53,7 +53,7 @@ export const MOBILIA = {
     ['banco', 0, 8],
     // canil (3): a lareira na parede do norte, flanqueada pelos armários, duas poltronas de frente para ela e os lobos
     ['casa-guardaRoupa:+y', 3, 7], ['casa-lareira:+y', 4, 7], ['casa-guardaRoupa:+y', 5, 7],
-    ['casa-cadeira:+y', 3, 8], ['casa-cadeira:+y', 5, 8],
+    ['casa-cadeiraCostas:-y', 3, 8], ['casa-cadeiraCostas:-y', 5, 8],
   ],
 
   // ------------------------------------------------------------------------------------------------ 2º andar ---
@@ -69,36 +69,36 @@ export const MOBILIA = {
     ['casa-armadura:+y', 0, 4], ['casa-armadura:+y', 3, 6],
     ['casa-escadaria:+x', 5, 6, { nada: [[5, 4], [4, 5], [5, 5], [4, 6]] }],
     // conservatório (10): a lareira na parede do norte com duas poltronas de frente, o cravo na parede oeste e um candelabro
-    ['casa-lareiraB:+y', 4, 7], ['casa-cadeira:+y', 3, 8], ['casa-cadeira:+y', 5, 8], ['casa-candelabro:+y', 5, 7],
+    ['casa-lareiraB:+y', 4, 7], ['casa-cadeiraCostas:-y', 3, 8], ['casa-cadeiraCostas:-y', 5, 8], ['casa-candelabro:+y', 5, 7],
     ['casa-cravo:+y', 0, 9, { nada: [[0, 8]] }],
   ],
 
   // ------------------------------------------------------------------------------------------------ 3º andar ---
   casaDaMorte3: [
     // suíte principal (12): a lareira e o guarda-roupa na parede oeste, a cama de dossel, a penteadeira, a pele de tigre e a mesa do canto
-    ['casa-lareiraApagada:+x', 0, 1], ['casa-guardaRoupaB:+x', 0, 0], ['casa-escrivaninha:+x', 0, 2],
+    ['casa-lareiraApagada:+x', 0, 1], ['casa-armarioCoberto:+x', 0, 0], ['casa-comodaCoberta:+x', 0, 2],
     ['camaViuva', 3, 1, { nada: [[3, 0], [4, 0], [4, 1]] }],
     // banheiro (13): a tina ao longo da parede oeste e o fogãozinho
     ['casa-tina:+x', 1, 5, { nada: [[0, 5]] }], ['casa-fogao:+y', 0, 4],
     // berçário (15B)
     ['casa-berco:+y', 0, 7],
     // suíte da babá (15A): a cama ao longo da parede leste e o guarda-roupa ao lado da porta do espelho
-    ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-guardaRoupa:+x', 2, 9],
+    ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-armarioCoberto:+x', 2, 9], ['casa-espelhoCoberto:+y', 4, 10],
     // varanda (11)
-    ['casa-candelabro:+y', 3, 5],
+    ['casa-castical:+y', 3, 5],
     ['casa-escadaria:+x', 5, 6, { nada: [[5, 4], [4, 5], [5, 5], [4, 6]] }],
   ],
 
   // ----------------------------------------------------------------------------------------------------- sótão ---
   casaDaMorte4: [
     // quarto de repouso (19, a noroeste)
-    ['casa-camaVelha:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-guardaRoupa:+x', 0, 1],
+    ['casa-camaVelha:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-armarioCoberto:+x', 0, 1],
     // quarto das crianças (20): as camas pequenas, o baú de brinquedos e a casa de bonecas
-    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-berco:+y', 2, 2],
+    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-cavaloDePau:+y', 4, 2], ['casa-berco:+y', 2, 2],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e o fogão
     ['casa-lareiraApagada:+x', 0, 5],
-    ['trapos', 0, 6], ['trapos', 2, 5], ['trapos', 0, 7], ['trapos', 2, 7],
+    ['casa-manequim:+y', 0, 6], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-livrosTeia:+y', 2, 4],
     // quarto de repouso (17, a sudeste)
-    ['casa-camaVelha:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-guardaRoupa:+x', 2, 10], ['casa-cadeira:+y', 3, 10],
+    ['casa-camaVelha:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-armarioCoberto:+x', 2, 10], ['casa-cadeiraQuebrada:+y', 3, 10],
   ],
 };

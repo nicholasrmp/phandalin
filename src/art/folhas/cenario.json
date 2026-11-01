@@ -5107,11 +5107,271 @@
    }
   ]
  },
- "prop-casa-escadaria:+x": {
+ "prop-casa-cadeiraCostas:-y": {
   "todas": [
    {
     "x": 764,
     "y": 2358,
+    "w": 46,
+    "h": 57,
+    "ax": 21,
+    "ay": 46,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cadeiraCostas:-x": {
+  "todas": [
+   {
+    "x": 812,
+    "y": 2358,
+    "w": 46,
+    "h": 57,
+    "ax": 24,
+    "ay": 46,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-poltronaCoberta:+y": {
+  "todas": [
+   {
+    "x": 860,
+    "y": 2358,
+    "w": 41,
+    "h": 53,
+    "ax": 22,
+    "ay": 42,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-poltronaCoberta:+x": {
+  "todas": [
+   {
+    "x": 903,
+    "y": 2358,
+    "w": 41,
+    "h": 53,
+    "ax": 18,
+    "ay": 42,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-armarioCoberto:+y": {
+  "todas": [
+   {
+    "x": 946,
+    "y": 2358,
+    "w": 42,
+    "h": 62,
+    "ax": 28,
+    "ay": 49,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-armarioCoberto:+x": {
+  "todas": [
+   {
+    "x": 0,
+    "y": 2477,
+    "w": 42,
+    "h": 62,
+    "ax": 14,
+    "ay": 49,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-caixotes:+y": {
+  "todas": [
+   {
+    "x": 44,
+    "y": 2477,
+    "w": 52,
+    "h": 55,
+    "ax": 38,
+    "ay": 44,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-espelhoCoberto:+y": {
+  "todas": [
+   {
+    "x": 98,
+    "y": 2477,
+    "w": 36,
+    "h": 61,
+    "ax": 19,
+    "ay": 48,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-espelhoCoberto:+x": {
+  "todas": [
+   {
+    "x": 136,
+    "y": 2477,
+    "w": 36,
+    "h": 61,
+    "ax": 16,
+    "ay": 48,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-sofaCoberto:+y": {
+  "todas": [
+   {
+    "x": 174,
+    "y": 2477,
+    "w": 62,
+    "h": 50,
+    "ax": 44,
+    "ay": 39,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-sofaCoberto:+x": {
+  "todas": [
+   {
+    "x": 238,
+    "y": 2477,
+    "w": 62,
+    "h": 50,
+    "ax": 18,
+    "ay": 39,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-manequim:+y": {
+  "todas": [
+   {
+    "x": 302,
+    "y": 2477,
+    "w": 26,
+    "h": 56,
+    "ax": 12,
+    "ay": 45,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cobertores:+y": {
+  "todas": [
+   {
+    "x": 330,
+    "y": 2477,
+    "w": 51,
+    "h": 41,
+    "ax": 35,
+    "ay": 30,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cadeiraQuebrada:+y": {
+  "todas": [
+   {
+    "x": 383,
+    "y": 2477,
+    "w": 50,
+    "h": 55,
+    "ax": 30,
+    "ay": 44,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-livrosTeia:+y": {
+  "todas": [
+   {
+    "x": 435,
+    "y": 2477,
+    "w": 56,
+    "h": 44,
+    "ax": 19,
+    "ay": 33,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-comodaCoberta:+y": {
+  "todas": [
+   {
+    "x": 493,
+    "y": 2477,
+    "w": 51,
+    "h": 56,
+    "ax": 18,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-comodaCoberta:+x": {
+  "todas": [
+   {
+    "x": 546,
+    "y": 2477,
+    "w": 51,
+    "h": 56,
+    "ax": 32,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cavaloDePau:+y": {
+  "todas": [
+   {
+    "x": 599,
+    "y": 2477,
+    "w": 52,
+    "h": 52,
+    "ax": 20,
+    "ay": 41,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cavaloDePau:+x": {
+  "todas": [
+   {
+    "x": 653,
+    "y": 2477,
+    "w": 52,
+    "h": 52,
+    "ax": 32,
+    "ay": 41,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-castical:+y": {
+  "todas": [
+   {
+    "x": 707,
+    "y": 2477,
+    "w": 22,
+    "h": 54,
+    "ax": 10,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-escadaria:+x": {
+  "todas": [
+   {
+    "x": 731,
+    "y": 2477,
     "w": 130,
     "h": 120,
     "ax": 70,
@@ -5123,8 +5383,8 @@
  "portaCasa": {
   "carvalho": [
    {
-    "x": 896,
-    "y": 2358,
+    "x": 863,
+    "y": 2477,
     "w": 52,
     "h": 86,
     "ax": 26,
@@ -5134,8 +5394,8 @@
   ],
   "velha": [
    {
-    "x": 950,
-    "y": 2358,
+    "x": 917,
+    "y": 2477,
     "w": 48,
     "h": 90,
     "ax": 24,
@@ -5146,7 +5406,7 @@
   "ferro": [
    {
     "x": 0,
-    "y": 2480,
+    "y": 2599,
     "w": 96,
     "h": 96,
     "ax": 48,

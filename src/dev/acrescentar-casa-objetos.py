@@ -53,6 +53,21 @@ PECAS = {
     'camaVelha': {'conjunto': 'casaCamaIso', 'n': 2, 'dirs': ['+y'], 'folga': 6},
     'tina': {'conjunto': 'casaTinaIso', 'n': 0, 'dirs': ['+x'], 'folga': 6},
     'cravo': {'conjunto': 'casaCravoIso', 'n': 2, 'dirs': ['+y'], 'folga': 6},
+    # a poltrona de COSTAS (olha para a lareira, para longe da camera): -y como saiu, -x espelhada
+    'cadeiraCostas': {'conjunto': 'casaCadeiraCostas', 'n': 2, 'dirs': ['-y', '-x'], 'folga': 6},
+    # o ABANDONO dos andares de cima (`casaAbandono`): moveis sob lencol, teia e lixo
+    'poltronaCoberta': {'conjunto': 'casaAbandono', 'n': 0, 'dirs': ['+y', '+x'], 'folga': 6},
+    'armarioCoberto': {'conjunto': 'casaAbandono', 'n': 1, 'dirs': ['+y', '+x'], 'folga': 4},
+    'caixotes': {'conjunto': 'casaAbandono', 'n': 3, 'dirs': ['+y'], 'folga': 6},
+    'espelhoCoberto': {'conjunto': 'casaAbandono', 'n': 4, 'dirs': ['+y', '+x'], 'folga': 4},
+    'sofaCoberto': {'conjunto': 'casaAbandono', 'n': 5, 'dirs': ['+y', '+x'], 'folga': 6},
+    'manequim': {'conjunto': 'casaAbandono', 'n': 6, 'dirs': ['+y'], 'folga': 6},
+    'cobertores': {'conjunto': 'casaAbandono', 'n': 7, 'dirs': ['+y'], 'folga': 6},
+    'cadeiraQuebrada': {'conjunto': 'casaAbandono', 'n': 8, 'dirs': ['+y'], 'folga': 6},
+    'livrosTeia': {'conjunto': 'casaAbandono', 'n': 10, 'dirs': ['+y'], 'folga': 6},
+    'comodaCoberta': {'conjunto': 'casaAbandono', 'n': 12, 'dirs': ['+y', '+x'], 'folga': 4},
+    'cavaloDePau': {'conjunto': 'casaAbandono', 'n': 13, 'dirs': ['+y', '+x'], 'folga': 6},
+    'castical': {'conjunto': 'casaAbandono', 'n': 15, 'dirs': ['+y'], 'folga': 6},
     'escadaria': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2},
 }
 
@@ -102,7 +117,7 @@ def main():
         base = Image.open(pasta / f"frame_urls_{spec['n']}.png").convert('RGBA')
         base = base.crop(base.getbbox())
         for d in spec['dirs']:
-            q = base if d == '+y' or spec['conjunto'] in ('casaMesa', 'casaEscadaria', 'casaTinaIso') else base.transpose(Image.FLIP_LEFT_RIGHT)
+            q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaMesa', 'casaEscadaria', 'casaTinaIso') else base.transpose(Image.FLIP_LEFT_RIGHT)
             if spec.get('apagar'):
                 q = apagar(q)
             ax, ay = tav.ancora_da_pegada(q, spec['folga'])
