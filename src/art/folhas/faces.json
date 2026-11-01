@@ -18,11 +18,27 @@
   },
   "painelCarvalho": {
    "y": 178,
-   "n": 3
+   "n": 4
+  },
+  "painelCarvalho:topo": {
+   "y": 216,
+   "n": 5
+  },
+  "painelCarvalho:base": {
+   "y": 254,
+   "n": 5
   },
   "madeiraVelha": {
-   "y": 248,
-   "n": 6
+   "y": 292,
+   "n": 4
+  },
+  "madeiraVelha:topo": {
+   "y": 330,
+   "n": 5
+  },
+  "madeiraVelha:base": {
+   "y": 368,
+   "n": 5
   }
  },
  "topos": {
@@ -33,14 +49,6 @@
   "penhasco": {
    "y": 108,
    "n": 4
-  },
-  "painelCarvalho": {
-   "y": 216,
-   "n": 3
-  },
-  "madeiraVelha": {
-   "y": 286,
-   "n": 6
   }
  },
  "_taverna": {

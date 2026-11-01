@@ -1322,7 +1322,13 @@ export class Board {
     const u0 = !pilar && vxMenos ? 0 : a; const u1 = !pilar && vxMais ? 1 : b;
     const w0 = !pilar && vyMenos ? 0 : a; const w1 = !pilar && vyMais ? 1 : b;
     const lift = hgt * LIFT;
-    const P = (u, w) => ({ x: sx + (u - w) * TW / 2, y: sy + (u + w) * TH / 2 });
+    // O MURO DA FRENTE (a borda da casa que a câmera tem diante de si) é baixo: um nível só. Alto, ele esconderia a sala inteira atrás
+    // dele, e quem joga precisa ver dentro da casa. As paredes de dentro e as de trás sobem inteiras.
+    const dentro = (dvx, dvy) => { const p = this.fromView(v.vx + dvx, v.vy + dvy); return this.field.inside(p.x, p.y); };
+    const emFrente = !dentro(1, 0) || !dentro(0, 1);
+    const niv = emFrente ? 1 : hgt;
+    const syt = sy + (hgt - niv) * LIFT;
+    const P = (u, w) => ({ x: sx + (u - w) * TW / 2, y: syt + (u + w) * TH / 2 });
 
     // O chão por baixo, no nível do piso.
     const lad = ladrilhoChao(this.field.paredePiso ?? 'assoalho', x, y);
@@ -1337,16 +1343,16 @@ export class Board {
 
     ctx.imageSmoothingEnabled = false;
     const fatia = (lado, n, colunas, dx, dy, deslocX, deslocY) => {
-      const f = faixaDaFace(s.face, lado, x, y, n);
+      const f = faixaDaFace(s.face, lado, x, y, n, niv);
       if (!f) return;
       const [c0, c1] = colunas;
       const larg = Math.round(c1) - Math.round(c0);
       if (larg <= 0) return;
       const basex = lado === 'esq' ? sx - TW / 2 : sx;
       ctx.drawImage(f.img, f.sx + Math.round(c0), f.sy, larg, f.h,
-        Math.round(basex + dx + Math.round(c0) + deslocX), Math.round(sy + TH / 2 + n * LIFT + dy + deslocY), larg, f.h);
+        Math.round(basex + dx + Math.round(c0) + deslocX), Math.round(syt + TH / 2 + n * LIFT + dy + deslocY), larg, f.h);
     };
-    for (let n = 0; n < hgt; n++) {
+    for (let n = 0; n < niv; n++) {
       if (ex) {
         // A face comprida que olha para +vy, trazida da borda (w = 1) para o plano w = b.
         fatia('esq', n, [u0 * (TW / 2), u1 * (TW / 2)], (1 - b) * (TW / 2), -(1 - b) * (TH / 2), 0, 0);
@@ -1373,7 +1379,7 @@ export class Board {
       ctx.closePath();
       if (topo) {
         ctx.clip();
-        ctx.drawImage(topo.img, topo.sx, topo.sy, topo.w, topo.h, sx - TW / 2, sy, topo.w, topo.h);
+        ctx.drawImage(topo.img, topo.sx, topo.sy, topo.w, topo.h, sx - TW / 2, syt, topo.w, topo.h);
       } else {
         ctx.fillStyle = corDoTopo ?? s.topo[0];
         ctx.fill();
@@ -1426,7 +1432,7 @@ export class Board {
         const oy = sy + TH / 2 + n * LIFT;
         for (const lado of ['esq', 'dir']) {
           if (n >= visiveis[lado]) continue;
-          const f = faixaDaFace(s.face, lado, x, y, n);
+          const f = faixaDaFace(s.face, lado, x, y, n, hgt);
           ctx.drawImage(f.img, f.sx, f.sy, f.w, f.h, lado === 'esq' ? sx - TW / 2 : sx, oy, f.w, f.h);
         }
       }
@@ -2645,7 +2651,7 @@ export class Board {
       const fx = (grau
         ? faixaDaRuina(pedra, face, n === niveisDaFace - 1 ? 'base' : (n === 0 && niveisDaFace > 1 ? 'topo' : 'meio'),
           x * 7 + (lado === 'N' ? 0 : 3), y * 5, n)
-        : null) ?? faixaDaFace(f.materialDaParede ?? 'alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n);
+        : null) ?? faixaDaFace(f.materialDaParede ?? 'alvenaria', face, x * 7 + (lado === 'N' ? 0 : 3), y * 5, n, niveisDaFace);
       if (!fx) break;
       pintou = true;
       ctx.drawImage(fx.img, fx.sx, fx.sy, fx.w, fx.h,

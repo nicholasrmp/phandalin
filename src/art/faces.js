@@ -26,8 +26,13 @@ img.src = urlFaces;
  * A faixa de um nível da face `lado` ('esq' | 'dir') do material, para a
  * casa (x, y) e o nível `n`, ou null.
  */
-export function faixaDaFace(material, lado, x, y, n) {
-  const f = meta.faces[material];
+export function faixaDaFace(material, lado, x, y, n, total = 0) {
+  // A parede alta tem peças diferentes por nível (o atlas guarda `material:topo` e `material:base`): a moldura no alto, o corpo no meio e
+  // o rodapé embaixo. Sem `total` (ou sem as peças no atlas), é a mesma faixa em todos os níveis.
+  let chave = material;
+  if (total === 1 && meta.faces[`${material}:base`]) chave = `${material}:base`;
+  else if (total > 1 && meta.faces[`${material}:topo`]) chave = n === 0 ? `${material}:topo` : (n === total - 1 ? `${material}:base` : material);
+  const f = meta.faces[chave];
   if (!pronto || !f) return null;
   const i = sorteio(x * 5 + n * 11, y * 3 + n, f.n);
   return { img, sx: i * meta.tw + (lado === 'dir' ? meta.fw : 0), sy: f.y, w: meta.fw, h: meta.fh };

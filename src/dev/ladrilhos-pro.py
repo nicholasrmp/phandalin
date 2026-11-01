@@ -258,6 +258,45 @@ CONJUNTOS = {
                '14). old grey-beige plaster wall with faded damask wallpaper in tatters, dusty, grey wooden cap on top. '
                '15). old grey plaster wall with a faint pale web and mold spots, dusty, grey wooden cap on top. '
                '16). old grey-beige plaster wall, dusty and stained, evenly weathered, grey wooden cap on top.',
+    # As PAREDES da Casa da Morte em TRES PECAS (montar com `acrescentar-casa.py`): a parede alta tem tres niveis, e cada nivel e uma peca
+    # diferente: a MOLDURA no alto (1 a 5), o CORPO no meio (6 a 11) e o RODAPE e lambri embaixo (12 a 16). Repetir a mesma faixa tres vezes
+    # empilhava rodape sobre rodape. Dois lotes, um por material: a casa de baixo (papel de parede bordo) e a casa velha de cima (reboco).
+    'casaDaMorteParedesA': ESTILO.replace('No objects,', 'Each tile is a solid wall block with its two side faces visible, and each face shows one SECTION of a tall wall. No objects,') + ' '
+               'Interior wall of a gloomy gothic mansion: deep burgundy damask wallpaper with a faint dark gold pattern, dark mahogany woodwork. '
+               '1). TOP SECTION of the wall: a band of dark carved mahogany crown moulding along the upper part of the face, burgundy wallpaper below it. '
+               '2). TOP SECTION of the wall: a dark mahogany cornice moulding band with a thin gold line, burgundy wallpaper below it. '
+               '3). TOP SECTION of the wall: a dark mahogany crown moulding band along the upper edge of the face, burgundy damask below. '
+               '4). TOP SECTION of the wall: a dark carved wooden moulding at the top of the face, plain burgundy wallpaper below. '
+               '5). TOP SECTION of the wall: a dark mahogany cornice band with a small dentil pattern, burgundy wallpaper below it. '
+               '6). MIDDLE SECTION of the wall: burgundy damask wallpaper only, faint dark gold diamond pattern, seamless and uniform, nothing else. '
+               '7). MIDDLE SECTION of the wall: burgundy damask wallpaper only, faint tone-on-tone pattern, seamless and uniform, nothing else. '
+               '8). MIDDLE SECTION of the wall: burgundy wallpaper only with a faint small flower motif, seamless and uniform, nothing else. '
+               '9). MIDDLE SECTION of the wall: burgundy damask wallpaper only, very slightly faded, seamless, nothing else. '
+               '10). MIDDLE SECTION of the wall: burgundy wallpaper only with faint thin vertical stripes, seamless, nothing else. '
+               '11). MIDDLE SECTION of the wall: burgundy damask wallpaper only, evenly lit, seamless and uniform, nothing else. '
+               '12). BOTTOM SECTION of the wall: burgundy wallpaper above, and below it a dark mahogany wainscot panel ending in a thick wooden skirting board at the very bottom of the face. '
+               '13). BOTTOM SECTION of the wall: a dark mahogany wainscot with a raised rectangular panel and a thick skirting board at the very bottom edge, a little burgundy wallpaper above. '
+               '14). BOTTOM SECTION of the wall: dark mahogany wainscot boards and a thick skirting board along the very bottom of the face. '
+               '15). BOTTOM SECTION of the wall: burgundy wallpaper above a dark wooden chair rail and a plain wainscot, skirting board at the bottom. '
+               '16). BOTTOM SECTION of the wall: dark mahogany wainscot panel with a thin gold line and a thick skirting board at the very bottom.',
+    'casaDaMorteParedesB': ESTILO.replace('No objects,', 'Each tile is a solid wall block with its two side faces visible, and each face shows one SECTION of a tall wall. No objects,') + ' '
+               'Interior wall of an abandoned gothic mansion, decayed: cracked grey-beige plaster, peeling faded wallpaper, dusty, grey rotten wood. '
+               '1). TOP SECTION of the wall: crumbling plaster cornice moulding along the upper part of the face, grey plaster below, a hanging pale cobweb. '
+               '2). TOP SECTION of the wall: a cracked grey wooden crown moulding band, dusty plaster below it. '
+               '3). TOP SECTION of the wall: a broken plaster cornice with missing chunks, grey-beige plaster below. '
+               '4). TOP SECTION of the wall: a dusty grey moulding band with a pale web in one corner, plaster below. '
+               '5). TOP SECTION of the wall: a warped grey wooden cornice band, water-stained plaster below. '
+               '6). MIDDLE SECTION of the wall: old grey-beige plaster only, with a faded peeling wallpaper strip, dusty, nothing else. '
+               '7). MIDDLE SECTION of the wall: old grey-beige plaster only, a thin hairline crack, dusty, nothing else. '
+               '8). MIDDLE SECTION of the wall: old grey-beige plaster only with dark water stains, nothing else. '
+               '9). MIDDLE SECTION of the wall: old grey plaster only with tattered remnants of dark wallpaper, nothing else. '
+               '10). MIDDLE SECTION of the wall: old grey-beige plaster only, evenly weathered and dusty, nothing else. '
+               '11). MIDDLE SECTION of the wall: old grey plaster only with faint mold spots, nothing else. '
+               '12). BOTTOM SECTION of the wall: damp stained grey plaster above a rotting dark wooden skirting board at the very bottom of the face. '
+               '13). BOTTOM SECTION of the wall: crumbling plaster above a warped grey skirting board, dust at the bottom. '
+               '14). BOTTOM SECTION of the wall: grey plaster with dark damp patches and a split wooden skirting board along the very bottom. '
+               '15). BOTTOM SECTION of the wall: dusty plaster above a broken, rotting skirting board, a pale web in one corner. '
+               '16). BOTTOM SECTION of the wall: stained grey plaster above a thick grey wooden skirting board at the very bottom edge.',
     # O alto dos planaltos do Cume da Wyvern: pedra bege-acinzentada ao sol,
     # com capim duro nas frestas (o mapa de referencia do usuario).
     'planalto': ESTILO + ' Rocky hilltop in bright daylight, warm beige-grey stone. '
@@ -300,6 +339,8 @@ PALETAS = {
     'cinza': ['#4a4640', '#66625a', '#7c776c', '#9a948a', '#2e2b27', '#36492c', '#2a3a21', '#7d5d40'],
     'lago': ['#1b393f', '#17313a', '#35647d', '#4a8099', '#c2b48f', '#968a6c', '#6b6350', '#36492c'],
     'casaDaMorteParedes': ['#1b0a0c', '#2a0d10', '#3a1015', '#4e1a1e', '#6a2428', '#8a3a38', '#a8873a', '#1b120c', '#2e1d12', '#4a2c1a', '#3a3128', '#52473a', '#6b5d4a', '#857660', '#a29a8a', '#d8d6cf'],
+    'casaDaMorteParedesA': ['#1b0a0c', '#2a0d10', '#3a1015', '#4e1a1e', '#6a2428', '#8a3a38', '#a8873a', '#1b120c', '#2e1d12', '#4a2c1a', '#6b4528'],
+    'casaDaMorteParedesB': ['#3a3128', '#52473a', '#6b5d4a', '#857660', '#a29a8a', '#d8d6cf', '#2e2b27', '#4a4640', '#7c776c', '#1b120c', '#3e2a1b'],
     'paredes': ['#1e1c1a', '#2a2724', '#3d3a35', '#57534b', '#6e695d', '#8d8878', '#a39e8c',
                 '#1f2428', '#2c3035', '#3b3f44', '#4d5156', '#62666a'],
 }
