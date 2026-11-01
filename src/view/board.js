@@ -1362,7 +1362,8 @@ export class Board {
     }
 
     // O alto: um paralelogramo por braço, com o topo do bloco do material dentro (ou a cor lisa).
-    const topo = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || null;
+    const corDoTopo = this.field.paredeTopo ?? null;
+    const topo = (!corDoTopo && s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || null;
     const braco = (ua, ub, wa, wb) => {
       ctx.save();
       ctx.beginPath();
@@ -1374,7 +1375,7 @@ export class Board {
         ctx.clip();
         ctx.drawImage(topo.img, topo.sx, topo.sy, topo.w, topo.h, sx - TW / 2, sy, topo.w, topo.h);
       } else {
-        ctx.fillStyle = s.topo[0];
+        ctx.fillStyle = corDoTopo ?? s.topo[0];
         ctx.fill();
       }
       ctx.restore();
@@ -2410,8 +2411,8 @@ export class Board {
    * cerca desenhada no eixo x serve ao eixo y.
    */
   varianteDaProp(x, y) {
-    if (this._propsDe !== this.field) {
-      this._propsDe = this.field;
+    if (this._propsDe !== this.field.objetos) {
+      this._propsDe = this.field.objetos;
       this._props = new Map();
       for (const o of this.field.objetos ?? []) {
         if (o.tipo === 'prop') this._props.set(`${o.x},${o.y}`, { grupo: `prop-${o.variante}`, espelhar: Boolean(o.espelhar), piso: o.piso ?? null });

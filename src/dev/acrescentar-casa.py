@@ -19,11 +19,13 @@ from PIL import Image
 
 AQUI = Path(__file__).resolve().parents[2]
 FOLHAS = AQUI / 'src' / 'art' / 'folhas'
-LOTE = AQUI / '_referencias' / 'pixellab' / 'ladrilhos-pro' / '5256fed6-aafc-485d-8744-b23a9993cf83'
+LOTE = AQUI / '_referencias' / 'pixellab' / 'ladrilhos-pro' / '3f87a064-9acb-4934-8b41-dc331421382c'
 
-# Escolhidos olhando a folha de contato do lote: fora os de topo com moldura (0, 2, 5) e os que trazem uma teia grande no meio da face (8).
+# Escolhidos olhando a folha de contato do lote: o papel de parede bordô liso ou de padrão (0, 1, 3), sem os de borda inferior (6, 7: virava
+# listra a cada nível), o laranja (2) e o manchado (4); e o reboco velho (9, 10, 11, 13, 14, 15), sem o de lascas na ponta (8) e o de oval (12).
+# (O nome `painelCarvalho` ficou: é o material do atlas; o desenho agora é papel de parede.)
 MATERIAIS = {
-    'painelCarvalho': [1, 3, 4, 6, 7],
+    'painelCarvalho': [0, 3, 1],
     'madeiraVelha': [9, 10, 11, 13, 14, 15],
 }
 

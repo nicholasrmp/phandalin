@@ -241,23 +241,23 @@ CONJUNTOS = {
     # As PAREDES da Casa da Morte (montar-faces.py): blocos com face, num lote so para sairem no mesmo tom.
     # 1 a 8: o painel de carvalho polido dos andares de baixo; 9 a 16: a madeira velha, seca e empoeirada, do 3o andar e do sotao.
     'casaDaMorteParedes': ESTILO.replace('No objects,', 'Each tile is a solid wall block with its two side faces visible. No objects,') + ' '
-               'Interior walls of a gloomy gothic mansion. '
-               '1). polished dark oak wall panelling, vertical boards with a thin carved moulding, uniform and tidy. '
-               '2). polished dark oak wall panelling, vertical boards, a thin gold trim line near the top. '
-               '3). polished dark oak wall panelling, vertical boards with a raised rectangular panel. '
-               '4). polished dark oak wall panelling, vertical boards, a faint carved vine. '
-               '5). polished dark oak wall panelling, vertical boards, tidy and plain. '
-               '6). polished dark oak wall panelling, vertical boards with a raised rectangular panel and gold trim. '
-               '7). polished dark oak wall panelling, vertical boards, slightly darker. '
-               '8). polished dark oak wall panelling, vertical boards, a faint carved leaf pattern. '
-               '9). old dry grey-brown wooden boards, dusty, warped planks, plain. '
-               '10). old dry grey-brown wooden boards with a hanging strip of pale cobweb in a corner. '
-               '11). old dry grey-brown wooden boards, dusty, a long crack. '
-               '12). old dry grey-brown wooden boards, dusty, a few missing splinters. '
-               '13). old dry grey-brown wooden boards with faint peeling dark wallpaper. '
-               '14). old dry grey-brown wooden boards, dusty, dark water stains. '
-               '15). old dry grey-brown wooden boards with a faint pale web. '
-               '16). old dry grey-brown wooden boards, dusty, rotting at the edges.',
+               'Interior walls of a gloomy gothic stone mansion, plastered and papered, not wooden planks. '
+               '1). deep burgundy damask wallpaper with a faint dark gold diamond pattern, the face seamless and uniform top to bottom, dark wooden cap on top. '
+               '2). deep burgundy damask wallpaper, faint tone-on-tone vertical stripes and small gold flowers, uniform, dark wooden cap on top. '
+               '3). deep burgundy damask wallpaper with a faint pattern, very slightly faded, uniform, dark wooden cap on top. '
+               '4). dark wine-red patterned wallpaper, small repeating motif, uniform, dark wooden cap on top. '
+               '5). deep burgundy damask wallpaper with a faint gold diamond pattern, slightly darker, uniform, dark wooden cap on top. '
+               '6). deep burgundy wallpaper with thin vertical muted gold stripes, uniform, dark wooden cap on top. '
+               '7). deep burgundy damask wallpaper, faint pattern, a thin dark carved wooden moulding at the very top edge. '
+               '8). deep burgundy damask wallpaper, faint pattern, evenly lit, dark wooden cap on top. '
+               '9). old cracked grey-beige plaster wall with peeling strips of dark faded wallpaper, dusty, grey wooden cap on top. '
+               '10). old grey-beige plaster wall, dusty, with a hanging strip of pale cobweb near the top, grey wooden cap on top. '
+               '11). old grey plaster wall with a long diagonal crack and faded wallpaper remnants, dusty, grey wooden cap on top. '
+               '12). old grey-beige plaster wall with dark water stains and flaking paint, dusty, grey wooden cap on top. '
+               '13). old grey plaster wall with patches of exposed wooden lath under peeling wallpaper, dusty, grey wooden cap on top. '
+               '14). old grey-beige plaster wall with faded damask wallpaper in tatters, dusty, grey wooden cap on top. '
+               '15). old grey plaster wall with a faint pale web and mold spots, dusty, grey wooden cap on top. '
+               '16). old grey-beige plaster wall, dusty and stained, evenly weathered, grey wooden cap on top.',
     # O alto dos planaltos do Cume da Wyvern: pedra bege-acinzentada ao sol,
     # com capim duro nas frestas (o mapa de referencia do usuario).
     'planalto': ESTILO + ' Rocky hilltop in bright daylight, warm beige-grey stone. '
@@ -299,7 +299,7 @@ PALETAS = {
     'trigo': ['#4c3e1f', '#66572c', '#85733f', '#a68a4a', '#2a3a21', '#36492c'],
     'cinza': ['#4a4640', '#66625a', '#7c776c', '#9a948a', '#2e2b27', '#36492c', '#2a3a21', '#7d5d40'],
     'lago': ['#1b393f', '#17313a', '#35647d', '#4a8099', '#c2b48f', '#968a6c', '#6b6350', '#36492c'],
-    'casaDaMorteParedes': ['#1b120c', '#2e1d12', '#4a2c1a', '#6b4528', '#8a5e36', '#a8873a', '#3a2c22', '#23201c', '#3a3128', '#52473a', '#6b5d4a', '#857660', '#a29a8a', '#d8d6cf'],
+    'casaDaMorteParedes': ['#1b0a0c', '#2a0d10', '#3a1015', '#4e1a1e', '#6a2428', '#8a3a38', '#a8873a', '#1b120c', '#2e1d12', '#4a2c1a', '#3a3128', '#52473a', '#6b5d4a', '#857660', '#a29a8a', '#d8d6cf'],
     'paredes': ['#1e1c1a', '#2a2724', '#3d3a35', '#57534b', '#6e695d', '#8d8878', '#a39e8c',
                 '#1f2428', '#2c3035', '#3b3f44', '#4d5156', '#62666a'],
 }

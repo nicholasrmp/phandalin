@@ -54,6 +54,12 @@ Material de trabalho (não entra no repositório; `_referencias/` é ignorado pe
 - **Kit de piso** (PixelLab, 10 gerações): assoalho, tapete, parquet e terra socada no atlas do chão, mais mobília de casa sobre assoalho.
 - **Save corrigido** (o `SaveManager` nunca gravava) e a cena entra no autosave.
 
+## Arte da casa (feita)
+
+- **Paredes finas:** a casa de parede continua inteira na regra, mas o tabuleiro a desenha como um muro de ~1/4 de casa (`board.desenharParedeFina`, flag `paredeFina` do mapa). Material em `faces.png`: `painelCarvalho` (na verdade papel de parede bordô, 1º e 2º andares) e `madeiraVelha` (reboco velho e rachado, 3º andar e sótão), do lote PixelLab `3f87a064-...` (15 gerações; o primeiro, de tábuas verticais, foi recusado: parecia galpão). `src/dev/acrescentar-casa.py` monta e é chamado por `acrescentar-taverna.py`.
+- **Mobília:** `casadamorte-mobilia.js`: lareiras, camas, estantes, armários, cadeiras, candelabros, armaduras de pé etc., todas peças que já existiam no atlas `cenario` (nada gerado). Faltam peças próprias: cravo, harpa, casa de bonecas, espelho de corpo inteiro, cama de dossel.
+- **Poeira e teia** nos andares de cima (véu e teias nos cantos, só desenho).
+
 ## Pendente de arte (sprites)
 
 Os blocos novos usam o look mais próximo que existe (cavaleiro, plebeu, specter, giantRat, gelatinaOcre, wraith, vinhaInfectada): armadura animada, vassoura, fantasma de criança, sombra, mímico, lívido, arbusto errante e enxames precisam de sprite próprio.

@@ -162,16 +162,22 @@ export const AREAS_SOTAO = [
   },
 ];
 
+import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
+
+const MOB_3 = mobiliar(BASE_3, MOBILIA.casaDaMorte3, 'assoalho');
+const MOB_4 = mobiliar(BASE_4, MOBILIA.casaDaMorte4, 'assoalho');
+
 const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
 const alturaDe = (terreno) => terreno.map((linha) => [...linha].map((g) => (g === 'M' ? '3' : '0')).join(''));
 
 export const MAPA_CASA_DA_MORTE_3 = {
-  terreno: TERCEIRO_ANDAR,
+  terreno: MOB_3.terreno,
   altura: alturaDe(TERCEIRO_ANDAR),
-  objetos: [],
+  objetos: MOB_3.objetos,
   paredeMaterial: 'madeiraVelha',
   paredeFina: true,
   paredePiso: 'assoalho',
+  paredeTopo: '#6f6657',
   poeira: true,
   grupo: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),
   olhar: { dx: 1, dy: 0 },
@@ -179,12 +185,13 @@ export const MAPA_CASA_DA_MORTE_3 = {
 };
 
 export const MAPA_CASA_DA_MORTE_4 = {
-  terreno: SOTAO,
+  terreno: MOB_4.terreno,
   altura: alturaDe(SOTAO),
-  objetos: [],
+  objetos: MOB_4.objetos,
   paredeMaterial: 'madeiraVelha',
   paredeFina: true,
   paredePiso: 'assoalho',
+  paredeTopo: '#6f6657',
   poeira: true,
   grupo: grupoPadrao([[10, 12], [10, 13], [9, 12], [9, 13]]),
   olhar: { dx: 1, dy: 0 },
