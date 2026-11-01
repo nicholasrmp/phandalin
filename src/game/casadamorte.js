@@ -32,8 +32,10 @@ export const PLANTA_1 = plantaDeSalas({
   ],
   portas: [
     [3, 2, 3, 3], [3, 3, 4, 3], [4, 0, 4, 1], [1, 3, 1, 4], [2, 3, 2, 4], [2, 6, 2, 7],
-    [0, 6, 0, 7], [1, 6, 1, 7], [0, 9, 0, 10], [1, 9, 1, 10], [1, 10, 1, 11, '+'],
+    [0, 6, 0, 7], [1, 6, 1, 7], [0, 9, 0, 10], [1, 9, 1, 10], [0, 10, 0, 11, '+'], [1, 10, 1, 11, '+'],
   ],
+  // as portas duplas (dois quadrados) são UM vão com uma folha só, centrada: do salão para a sala de espera, desta para o pórtico e o portão da frente
+  duplas: [[[0, 6, 0, 7], [1, 6, 1, 7]], [[0, 9, 0, 10], [1, 9, 1, 10]], [[0, 10, 0, 11], [1, 10, 1, 11]]],
 });
 
 // ------------------------------------------------------------------------------------------------ 2º andar (áreas 6 a 10) ----
@@ -51,6 +53,7 @@ export const PLANTA_2 = plantaDeSalas({
   ],
   // a estante da biblioteca gira: a aresta (3,0)-(4,0) é parede até a passagem se abrir
   portas: [[1, 3, 1, 4], [2, 3, 2, 4], [4, 3, 4, 4], [3, 3, 4, 3], [1, 6, 1, 7], [2, 6, 2, 7]],
+  duplas: [[[1, 3, 1, 4], [2, 3, 2, 4]], [[1, 6, 1, 7], [2, 6, 2, 7]]],
 });
 
 export const AREAS_TERREO = [
@@ -155,6 +158,7 @@ export const MAPA_CASA_DA_MORTE_1 = {
   paredes: PLANTA_1.paredes,
   salas: PLANTA_1.salas,
   folhas: PLANTA_1.folhas,
+  vaoUnido: PLANTA_1.vaoUnido,
   materialDaParede: 'painelCarvalho',
   vaoPorCasa: true,
   // O grupo entra pelo portão, ao sul, no pórtico e na sala de espera, olhando para o fundo da casa.
@@ -170,6 +174,7 @@ export const MAPA_CASA_DA_MORTE_2 = {
   paredes: PLANTA_2.paredes,
   salas: PLANTA_2.salas,
   folhas: PLANTA_2.folhas,
+  vaoUnido: PLANTA_2.vaoUnido,
   materialDaParede: 'painelCarvalho',
   vaoPorCasa: true,
   // Quem sobe a escadaria chega ao salão superior, ao pé da curva.

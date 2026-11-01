@@ -22,10 +22,11 @@ export const COMPRIMENTO = 11 + 2 * D;
  * @param {object} p
  * @param {Array<{ id: string, piso?: string, retangulos: number[][] }>} p.salas retângulos [x1, y1, x2, y2] em quadrados do livro (inclusivos)
  * @param {number[][]} [p.portas] arestas [ax, ay, bx, by, codigo?] (3 arco aberto, 2 porta fechada); só arestas entre duas salas
+ * @param {number[][][]} [p.duplas] pares de arestas de porta vizinhas que formam UM vão (a porta dupla de dois quadrados): um arco só, centrado
  * @param {Array<[number, number, string]>} [p.glifos] casas que trocam de glifo: escada ('l'), tapete ('*')
  * @param {string} [p.piso] glifo do piso das salas que não dizem o seu
  */
-export function plantaDeSalas({ salas, portas = [], glifos = [], piso = 'U' }) {
+export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], piso = 'U' }) {
   const w = LARGURA; const h = COMPRIMENTO;
   const dentro = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
   const dono = Array.from({ length: h }, () => Array(w).fill(-1));
@@ -70,6 +71,14 @@ export function plantaDeSalas({ salas, portas = [], glifos = [], piso = 'U' }) {
     rows[y][x] = cod;
   }
 
+  // as portas duplas: as duas arestas viram um vão só ('x,y,N|O' do mapa)
+  const vaoUnido = [];
+  for (const par of duplas) {
+    for (const [ax, ay, bx, by] of par) {
+      const [rows, x, y] = aresta(ax + D, ay + D, bx + D, by + D);
+      vaoUnido.push(`${x},${y},${rows === nRows ? 'N' : 'O'}`);
+    }
+  }
   // as portas têm folha (o tabuleiro a desenha encostada no batente quando o arco está aberto)
   const folhas = portas.map(([ax, ay, bx, by]) => [{ x: ax + D, y: ay + D }, { x: bx + D, y: by + D }]);
 
@@ -82,6 +91,7 @@ export function plantaDeSalas({ salas, portas = [], glifos = [], piso = 'U' }) {
     paredes: { n: nRows.map((l) => l.join('')), o: oRows.map((l) => l.join('')) },
     salas: mapaSalas,
     folhas,
+    vaoUnido,
     dono,
   };
 }

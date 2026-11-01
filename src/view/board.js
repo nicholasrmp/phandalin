@@ -2759,15 +2759,15 @@ export class Board {
     const mesma = (ax, ay) => (lado === 'N'
       ? f.inside(ax, ay) && f.paredeN[ay * f.w + ax] === codDoCorrido
       : f.inside(ax, ay) && f.paredeO[ay * f.w + ax] === codDoCorrido);
-    // Recua até a primeira casa do corrido e mede o comprimento dele.
+    // Recua até a primeira casa do corrido e mede o comprimento dele. Na casa de moradia (`vaoPorCasa`) cada porta é uma aresta, e só se
+    // juntam as que o mapa marca (`vaoUnido`): a porta dupla de dois quadrados vira UM arco, centrado, com uma folha só.
+    const junta = (ax, ay) => mesma(ax, ay) && (!f.vaoPorCasa || (f.vaoUnido?.has(`${ax},${ay},${lado}`) && f.vaoUnido?.has(`${x},${y},${lado}`)));
     let atras = 0;
-    while (!f.vaoPorCasa && mesma(lado === 'N' ? x - atras - 1 : x, lado === 'N' ? y : y - atras - 1)) atras += 1;
+    while (junta(lado === 'N' ? x - atras - 1 : x, lado === 'N' ? y : y - atras - 1)) atras += 1;
     let total = atras + 1;
-    // Uma porta por aresta (a casa de moradia): duas portas vizinhas não viram um arco só, com uma folha.
-    if (f.vaoPorCasa) { atras = 0; total = 1; }
-    for (; !f.vaoPorCasa;) {
+    for (;;) {
       const adiante = total - atras;
-      if (!mesma(lado === 'N' ? x + adiante : x, lado === 'N' ? y : y + adiante)) break;
+      if (!junta(lado === 'N' ? x + adiante : x, lado === 'N' ? y : y + adiante)) break;
       total += 1;
     }
     // O pé do vão: o meio do corrido, rente ao chão. Porta que não encosta no
