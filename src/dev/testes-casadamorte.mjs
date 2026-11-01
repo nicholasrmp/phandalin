@@ -51,7 +51,7 @@ const d20 = (S, v) => { const die = S.enc.rng.die; S.enc.rng.die = (n) => (n ===
 const op = (S, h, x, y, parte) => {
   const sup = S.field.surfaceAt(x, y);
   const ops = S.cena.interacoes({ x, y }, sup, h);
-  return ops.find((o) => o.rotulo.includes(parte));
+  return ops.find((o) => !o.grupo?.startsWith('Examinar') && o.rotulo.includes(parte));
 };
 const itens = (h, id) => garantirInventario(h).bag.filter((i) => i.id === id).reduce((n, i) => n + i.qtd, 0);
 
@@ -417,6 +417,147 @@ await teste('os drenos funcionam: PV máximo (lívido) e Força (sombra) caem, e
   assert.equal(alvo.maxHp, max0);
   S.enc.drenarVida(atq, alvo, { name: 'x', maxHpDrain: { save: 'con', dc: 13 } }, 999);
   assert.ok(alvo.dead || alvo.hp === 0, 'PV máximo a zero mata');
+});
+
+await teste('investigação: cada ponto tem coordenada no mapa, perícias válidas e verbos com CD; passivas e auras só onde cabem', async () => {
+  const { PISTAS } = await import(P + 'game/casadamorte-pistas.js');
+  const { SKILL_NAME } = await import(P + 'rules/abilities.js');
+  let pontos = 0; let verbos = 0;
+  for (const [v, lista] of Object.entries(PISTAS)) {
+    const m = mapaDo(v);
+    const ids = new Set();
+    for (const p of lista) {
+      pontos += 1;
+      assert.ok(!ids.has(p.id), `${v}: id repetido ${p.id}`);
+      ids.add(p.id);
+      assert.ok(p.x >= 0 && p.y >= 0 && p.x < m.terreno[0].length && p.y < m.terreno.length, `${v}/${p.id}: dentro do mapa (${p.x},${p.y})`);
+      assert.ok(p.nome && p.olhar, `${v}/${p.id}: nome e olhar`);
+      assert.ok(p.verbos.length >= 1 || p.aura, `${v}/${p.id}: tem o que fazer`);
+      for (const verbo of p.verbos) {
+        verbos += 1;
+        assert.ok(SKILL_NAME[verbo.p], `${v}/${p.id}: perícia ${verbo.p} existe`);
+        assert.ok(verbo.cd >= 8 && verbo.cd <= 20, `${v}/${p.id}: CD ${verbo.cd}`);
+        assert.ok(verbo.ok && verbo.ok.length > 20, `${v}/${p.id}: texto de sucesso`);
+      }
+      if (p.passiva) assert.ok(SKILL_NAME[p.passiva.p] && p.passiva.cd && p.passiva.texto, `${v}/${p.id}: passiva completa`);
+    }
+  }
+  assert.ok(pontos >= 40 && verbos >= 80, `investigação rica: ${pontos} pontos, ${verbos} verbos`);
+});
+
+await teste('investigação: o botão direito oferece olhar e uma opção por perícia; uma tentativa por herói; sucesso grava no diário', async () => {
+  const S = await nova('casaDaMorte1');
+  poe(S.party[0], 3, 18);
+  const ops = S.cena.interacoes({ x: 3, y: 18 }, S.field.surfaceAt(3, 18), S.party[0]);
+  const hist = ops.find((o) => o.grupo === 'Examinar: O escudo com brasão' && o.rotulo === 'História');
+  assert.ok(hist, 'História no escudo');
+  assert.ok(ops.some((o) => o.grupo === 'Examinar: O escudo com brasão' && o.rotulo.startsWith('Olhar')), 'olhar de relance');
+  d20(S, 1);
+  await hist.fazer();
+  assert.equal(S.casa().diario?.length ?? 0, 0);
+  const de_novo = S.cena.interacoes({ x: 3, y: 18 }, S.field.surfaceAt(3, 18), S.party[0]).find((o) => o.grupo === 'Examinar: O escudo com brasão' && o.rotulo === 'História');
+  assert.ok(de_novo.motivo, 'o mesmo herói não tenta duas vezes');
+  poe(S.party[1], 3, 18);
+  d20(S, 20);
+  await S.cena.interacoes({ x: 3, y: 18 }, 'assoalho', S.party[1]).find((o) => o.grupo === 'Examinar: O escudo com brasão' && o.rotulo === 'História').fazer();
+  assert.equal(S.casa().diario.length, 1);
+  assert.ok(S.cena.interacoes({ x: 3, y: 18 }, 'assoalho', S.party[0]).some((o) => o.rotulo === 'Rever as pistas'), 'o diário aparece');
+});
+
+await teste('investigação: avisar do grick, desmascarar o mímico e achar o fosso mudam o que acontece depois', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 28, 18);
+  d20(S, 20);
+  await S.cena.interacoes({ x: 28, y: 18 }, 'terraSocada', S.party[0]).find((o) => o.grupo?.includes('alcova escura') && o.rotulo === 'Sobrevivência').fazer();
+  assert.equal(S.casa().marcas.gricAvisado, true);
+  poe(S.party[0], 28, 20);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'o grick ataca mesmo assim');
+  assert.equal(S.enc.emboscada, null, 'mas sem surpresa: o grupo estava avisado');
+  const M = await nova('casaDaMortePorao1');
+  poe(M.party[0], 21, 35);
+  d20(M, 20);
+  await M.cena.interacoes({ x: 21, y: 35 }, 'terraSocada', M.party[0]).find((o) => o.grupo?.includes('A porta do canto') && o.rotulo === 'Arcanismo').fazer();
+  assert.equal(M.casa().marcas.mimicoVisto, true);
+  poe(M.party[0], 20, 35);
+  await M.cena.depoisDeMover(M.party[0]);
+  assert.ok(!M.cena.explorando);
+  assert.equal(M.enc.emboscada, null, 'o mímico não pega ninguém de surpresa');
+  const F = await nova('casaDaMortePorao1');
+  poe(F.party[0], 14, 16);
+  d20(F, 20);
+  await F.cena.interacoes({ x: 14, y: 16 }, 'terraSocada', F.party[0]).find((o) => o.rotulo === 'Percepção' && o.grupo?.includes('poço de espinhos')).fazer();
+  assert.equal(F.casa().espinhos, 'achado', 'sem pegadas: o grupo sabe do fosso');
+  assert.equal(F.enc.paraNaCasa(F.party[0], { x: 15, y: 16 }), false, 'o passo não para mais no fosso');
+});
+
+await teste('investigação: a Percepção passiva alta repara sozinha ao entrar na sala, uma vez só', async () => {
+  const S = await nova('casaDaMortePorao1');
+  S.party.forEach((h) => { h.skills = [...(h.skills ?? []), 'percepcao']; h.abilities.wis = 20; });
+  poe(S.party[0], 14, 35);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.casa().pistas['cavidadesDoQuarto:passiva'], 'a passiva do quarto dos líderes');
+  const n = S.casa().diario.length;
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.equal(S.casa().diario.length, n, 'só uma vez');
+});
+
+await teste('magias de utilidade: a cena oferece auras, trancas, fosso e a chave aos ganchos', async () => {
+  const A = await nova('casaDaMortePorao1');
+  const g = A.cena.ganchosMagicos(A.party[0]);
+  assert.ok(g.some((x) => x.tipo === 'magico' && x.aura), 'auras do Detectar Magia');
+  assert.equal(g.filter((x) => x.tipo === 'trancada').length, 5, 'os cinco baús do poço');
+  const fosso = g.find((x) => x.tipo === 'armadilha');
+  assert.ok(fosso.revelar(), 'o Encontrar Armadilhas acha o fosso');
+  assert.equal(A.casa().espinhos, 'achado');
+  const B = await nova('casaDaMorte2');
+  assert.ok(B.cena.ganchosMagicos(B.party[0]).some((x) => x.tipo === 'procurado' && x.id === 'chave'), 'o Localizar Objeto acha a chave');
+  const C = await nova('casaDaMorte4');
+  const porta = C.cena.ganchosMagicos(C.party[0]).find((x) => x.id === 'porta20');
+  await porta.fazer();
+  assert.equal(C.field.surfaceAt(7, 6), 'portaAberta', 'o Abrir destranca o quarto das crianças');
+  const D = await nova('casaDaMorte1');
+  assert.ok(D.cena.ganchosMagicos(D.party[0]).some((x) => x.id === 'aura:cantoCanil'), 'o canto do canil tem aura de ilusão');
+});
+
+await teste('varanda: a segunda porta secreta (parede oeste, Percepção CD 15) só abre depois que a casa mostrou a escada', async () => {
+  const S = await nova('casaDaMorte3');
+  poe(S.party[0], 6, 8);
+  d20(S, 20);
+  await op(S, S.party[0], 6, 8, 'Procurar portas secretas na parede oeste').fazer();
+  assert.ok(!S.casa().portaOeste, 'antes da casa mostrar, nada');
+  S.casa().escada = true;
+  const T = await nova('casaDaMorte3', { campanha: S.app.campanha });
+  poe(T.party[1], 6, 8);
+  d20(T, 20);
+  await op(T, T.party[1], 6, 8, 'Procurar portas secretas na parede oeste').fazer();
+  assert.equal(T.casa().portaOeste, true);
+  assert.equal(T.field.surfaceAt(2, 7), 'escada');
+  assert.equal(T.field.surfaceAt(4, 7), 'portaAberta');
+  const U = await nova('casaDaMorte3', { campanha: T.app.campanha });
+  assert.equal(U.field.surfaceAt(2, 7), 'escada', 'o estado volta ao reentrar');
+});
+
+await teste('Engolir e sombra nova: o arbusto afoga quem prende; quem morre por Força 0 vira sombra', async () => {
+  const S = await nova('casaDaMortePorao2');
+  const mound = S.foes[0];
+  S.enc.addCombatant(mound);
+  const alvo = S.party[0];
+  const { addCondition } = await import(P + 'rules/conditions.js');
+  addCondition(alvo, 'contido', { rounds: 10, source: mound.id });
+  S.enc.resistencia = () => ({ success: false, total: 1, rolls: [] });
+  const hp = alvo.hp;
+  S.enc.engolidosNoTurno(mound);
+  assert.ok(alvo.hp < hp, 'o arbusto afoga quem está preso a ele');
+  const T = await nova('casaDaMortePorao1');
+  const sombra = T.foes.find((f) => f.defId === 'sombra');
+  T.enc.addCombatant(sombra);
+  const vitima = T.party[1];
+  vitima.abilities.str = 1;
+  const antes = T.enc.combatants.filter((f) => f.defId === 'sombra').length;
+  T.enc.drenarForca(sombra, vitima, { forcaDrain: { dado: '1d4' }, type: 'necrótico' });
+  assert.ok(vitima.dead, 'Força 0 mata');
+  assert.equal(T.enc.combatants.filter((f) => f.defId === 'sombra').length, antes + 1, 'e uma sombra nova se levanta');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram`);

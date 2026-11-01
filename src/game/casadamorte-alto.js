@@ -39,7 +39,7 @@ const BASE_3 = [
 const BASE_4 = [
   'MMMMMMMMMMMMMM',
   'MUUUMUUUUUUMMM',
-  'MzzUMzUUUUUzMM',
+  'MzzUMzUUUUzMMM',
   'MUUUMUUUUUUMMM',
   'MUUUMUUUUUUMMM',
   'M}UUMUUUUUUMMM',
@@ -69,6 +69,9 @@ export const SOTAO = BASE_4;
 /** Onde fica a escada em espiral oculta do sótão (21) e o que a porta secreta da suíte da babá (15A) revela. As casas são parede até a casa as mostrar. */
 export const ESCADA_SECRETA_3 = [[10, 17], [11, 17], [12, 17], [10, 18], [11, 18], [12, 18]];
 export const ESCADA_SECRETA_4 = [[1, 7], [2, 7], [1, 8], [2, 8]];
+/** A segunda porta secreta da escada (11, parede oeste da varanda, Percepção CD 15): a escada sobe ao sótão e a porta dá para a varanda. */
+export const ESCADA_OESTE_3 = [[2, 7], [3, 7], [2, 8], [3, 8]];
+export const PORTA_OESTE_3 = [[4, 7], [4, 8]];
 
 export const AREAS_TERCEIRO = [
   {

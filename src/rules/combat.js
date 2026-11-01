@@ -635,6 +635,7 @@ export class Encounter {
       c.acaoVelozDisponivel = hasCondition(c, 'acelerado');
       this.comecoDoTurnoMagico(c);
       this.comecoDoTurnoPassivo(c);
+      this.engolidosNoTurno(c);
       this.nimboTick(c);
       // SURTO PERSISTENTE (surto de magia selvagem): um novo surto no começo de cada turno dele.
       if (hasCondition(c, 'surtoRepetido') && !c.dead && !this.surtando) {
@@ -4068,7 +4069,42 @@ export class Encounter {
     alvo.abilities.str = Math.max(0, antes - perde);
     alvo.forcaPerdida = (alvo.forcaPerdida ?? 0) + (antes - alvo.abilities.str);
     this.say('condicao', `${alvo.name} perde ${antes - alvo.abilities.str} de Força até o descanso (agora ${alvo.abilities.str}).`);
-    if (alvo.abilities.str <= 0) { alvo.hp = 0; this.applyDamage(alvo, 9999, 'necrótico', atacante); }
+    if (alvo.abilities.str <= 0) {
+      alvo.hp = 0;
+      this.applyDamage(alvo, 9999, 'necrótico', atacante);
+      // O livro: quem morre assim se levanta como uma sombra nova, do lado de quem o matou, no mesmo lugar.
+      const nova = atacante.defId === 'sombra' ? this.invocarSombraNova(atacante, alvo) : null;
+      if (nova) this.say('recurso', `${alvo.name} cai, e uma sombra nova se levanta no lugar dele.`);
+    }
+  }
+
+  /** A sombra que nasce de quem morreu por Força 0: do lado da que o matou, perto do corpo. */
+  invocarSombraNova(origem, corpo) {
+    const casa = this.casaLivreMaisProxima({ x: corpo.pos.x, y: corpo.pos.y, f: 0 });
+    if (!casa) return null;
+    const nova = makeMonster('sombra', { x: casa.x, y: casa.y }, { rng: this.rng, nameSuffix: 'nova' });
+    nova.side = origem.side;
+    nova.xp = 0;
+    this.addCombatant(nova);
+    return nova;
+  }
+
+  /**
+   * ENGOLIR (arbusto errante): no começo do turno dele, quem ele tem preso (condição `contido` posta por ele) faz Constituição CD 14 ou
+   * leva 2d8 de concussão: sem ar, o livro diz que a pessoa não respira.
+   */
+  engolidosNoTurno(c) {
+    if (c.dead || !c.traits?.includes('engolir')) return;
+    for (const alvo of this.combatants) {
+      if (alvo.dead || alvo === c || alvo.hp <= 0) continue;
+      if (getCondition(alvo, 'contido')?.source !== c.id) continue;
+      const sv = this.resistencia(alvo, 'con', 14);
+      const r = this.explicarResistencia(alvo, 'con', 14, sv, { contra: `ser engolido por ${c.name}`, seSucesso: 'respira e não leva dano' });
+      if (sv.success) { this.say('condicao', `${alvo.name} prende o fôlego dentro de ${c.name} e não se machuca.`, r.conta, { rolagem: r }); continue; }
+      const dano = this.rng.die(8) + this.rng.die(8);
+      this.say('dano', `${alvo.name} se afoga nas ervas de ${c.name}: ${dano} de dano de concussão.`, r.conta, { rolagem: r });
+      this.applyDamage(alvo, dano, 'concussão', c);
+    }
   }
 
   /** Os dados da Flecha Relampejante no círculo em que saiu: o alvo e a explosão. */

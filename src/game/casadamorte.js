@@ -240,6 +240,7 @@ export const ANDARES = {
     escadas: [
       { rect: rect(9, 10, 12, 14), rotulo: 'Descer a escadaria de mármore', detalhe: '2º andar', destino: 'casaDaMorte2' },
       { rect: rect(10, 17, 12, 18), rotulo: 'Subir a escada secreta', detalhe: 'sótão', destino: 'casaDaMorte4', secreta: true },
+      { rect: rect(2, 7, 3, 8), rotulo: 'Subir a escada da parede oeste', detalhe: 'sótão', destino: 'casaDaMorte4', secreta: true },
     ],
     chegadas: {
       casaDaMorte2: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),

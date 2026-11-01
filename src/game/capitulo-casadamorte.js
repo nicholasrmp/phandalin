@@ -25,10 +25,11 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { xpParaProximo } from '../rules/progressao.js';
 import { ANDARES } from './casadamorte.js';
-import { ESCADA_SECRETA_3, ESCADA_SECRETA_4 } from './casadamorte-alto.js';
+import { ESCADA_SECRETA_3, ESCADA_SECRETA_4, ESCADA_OESTE_3, PORTA_OESTE_3 } from './casadamorte-alto.js';
 import { criarBuscas } from './buscas.js';
-import { altoInteracoes, altoGatilhos } from './casadamorte-alto-cena.js';
-import { poraoInteracoes, poraoGatilhos, reaplicarPorao } from './casadamorte-porao-cena.js';
+import { altoInteracoes, altoGatilhos, destrancarPortaDasCriancas } from './casadamorte-alto-cena.js';
+import { pistasInteracoes, pistasPassivas, pistasAuras } from './casadamorte-pistas-cena.js';
+import { poraoInteracoes, poraoGatilhos, reaplicarPorao, BAUS_POCO, abrirBauDoPoco } from './casadamorte-porao-cena.js';
 import { fugaInteracoes, fugaIniciar } from './casadamorte-fuga.js';
 
 const MOVIMENTO = 60;
@@ -152,7 +153,10 @@ export function criarCasaDaMorte(app, config) {
   /** A escada secreta (21): a porta atrás do espelho da babá e a espiral do sótão só existem depois que a casa as mostra. */
   function aplicarEscada() {
     if (!salvo.escada) return;
-    if (variante === 'casaDaMorte3') { mudarCasas(ESCADA_SECRETA_3, 'l'); mudarCasas([[9, 17], [9, 18]], '?'); }
+    if (variante === 'casaDaMorte3') {
+      mudarCasas(ESCADA_SECRETA_3, 'l'); mudarCasas([[9, 17], [9, 18]], '?');
+      if (salvo.portaOeste) { mudarCasas(ESCADA_OESTE_3, 'l'); mudarCasas(PORTA_OESTE_3, '?'); }
+    }
     if (variante === 'casaDaMorte4') mudarCasas(ESCADA_SECRETA_4, 'l');
   }
   aplicarEscada();
@@ -200,11 +204,51 @@ export function criarCasaDaMorte(app, config) {
   ctx.paradas.push((c, p) => pendentes().some((g) => ctx.gatilhos[g.id]?.({ ...c, pos: p }, areaDe(p))));
   enc.paraNaCasa = (c, p) => c.side === 'party' && estado.explorando && ctx.paradas.some((f) => f(c, p));
 
+  /** O armário do leste do canil, aberto (a gazua e a magia Abrir chegam aqui). */
+  async function abrirArmario() {
+    salvo.armarioAberto = true;
+    const quem = herois()[0];
+    for (const arma of ['bestaPesada', 'bestaLeve', 'bestaDeMao']) if (!(quem.weapons ?? []).includes(arma)) (quem.weapons ??= []).push(arma);
+    guardar(quem, 'virotes', 60);
+    await painel(`O cadeado cede. Dentro, três bestas (pesada, leve e de mão) e sessenta virotes, tudo limpo e oleado. ${quem.name} fica com o lote.`);
+    app.refresh();
+  }
+
+  /**
+   * O que a cena aceita das magias de utilidade (`game/magias-fora.js`): auras para o Detectar Magia, trancas para o Abrir, o fosso para
+   * o Encontrar Armadilhas e a chave para o Localizar Objeto.
+   */
+  function ganchosMagicos() {
+    if (!estado.explorando) return [];
+    const out = [...pistasAuras(ctx)];
+    if (variante === 'casaDaMorte1' && !salvo.armarioAberto) {
+      out.push({ id: 'armario', tipo: 'trancada', x: 12, y: 21, nome: 'O armário do leste do canil', fazer: abrirArmario });
+    }
+    if (variante === 'casaDaMorte2' && !salvo.chave) out.push({ id: 'chave', tipo: 'procurado', x: 3, y: 2, nome: 'A chave de ferro dos Durst' });
+    if (variante === 'casaDaMorte4' && !salvo.portaCriancas) {
+      out.push({ id: 'porta20', tipo: 'trancada', x: 7, y: 7, nome: 'A porta trancada do quarto das crianças', fazer: () => destrancarPortaDasCriancas(ctx, herois()[0], 'A tranca estala por dentro e a porta do quarto das crianças se entreabre sozinha.') });
+    }
+    if (variante === 'casaDaMortePorao1') {
+      for (const b of BAUS_POCO) {
+        if (salvo.achados[`bau${b.id}`]) continue;
+        out.push({ id: `bau${b.id}`, tipo: 'trancada', x: b.x, y: b.y, nome: `O baú trancado (25${b.id})`, fazer: () => abrirBauDoPoco(ctx, b) });
+      }
+      if (!salvo.espinhos) {
+        out.push({
+          id: 'fosso', tipo: 'armadilha', x: 15, y: 16, nome: 'O poço de espinhos', texto: 'Um poço de três metros, de espinhos de madeira, sob tábuas podres.',
+          revelar: () => { if (salvo.espinhos) return false; salvo.espinhos = 'achado'; return true; },
+        });
+      }
+    }
+    return out;
+  }
+
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
     const a = areaDe(c.pos);
     if (a) await descrever(a);
+    await pistasPassivas(ctx, a);
     // Os gatilhos do livro: o que acorda quando o grupo chega perto, entra na sala ou mexe no que não devia.
     for (const g of pendentes()) {
       const r = ctx.gatilhos[g.id]?.(c, a);
@@ -249,6 +293,7 @@ export function criarCasaDaMorte(app, config) {
     // As paredes de dentro, apodrecidas pela casa furiosa, se quebram (a surpresa: clicar na parede, e não no chão).
     if (sup === 'alvenaria') { fugaInteracoes(ctx, { area, tile, sup, c, ops }); return ops; }
     if (sup === 'parede') return ops;
+    pistasInteracoes(ctx, { tile, c, ops });
     if (!area) { poraoInteracoes(ctx, { area: null, tile, sup, c, ops }); return ops; }
     // ---- 1º andar
     if (area.id === 'salao' || area.id === 'jantar') {
@@ -278,12 +323,7 @@ export function criarCasaDaMorte(app, config) {
           if (!ladrao) { await painel('O cadeado é pequeno e firme. Sem ferramentas de ladrão, não há o que fazer.'); return; }
           const t = teste(ladrao, 'prestidigitacao', 15);
           if (!t.passou) { await painel(`${ladrao.name} mexe no cadeado até a ponta da gazua entortar. Dá para tentar de novo com mais calma.`); return; }
-          salvo.armarioAberto = true;
-          const quem = herois()[0];
-          for (const arma of ['bestaPesada', 'bestaLeve', 'bestaDeMao']) if (!(quem.weapons ?? []).includes(arma)) (quem.weapons ??= []).push(arma);
-          guardar(quem, 'virotes', 60);
-          await painel(`O cadeado cede. Dentro, três bestas (pesada, leve e de mão) e sessenta virotes, tudo limpo e oleado. ${quem.name} fica com o lote.`);
-          app.refresh();
+          await abrirArmario();
         },
       });
     }
@@ -399,6 +439,7 @@ export function criarCasaDaMorte(app, config) {
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
+    ganchosMagicos,
     interacoesDoHeroi: (c) => interacoes(c.pos, enc.field.surfaceAt(c.pos.x, c.pos.y), c),
     depoisDeMover,
     fimDoCombate,

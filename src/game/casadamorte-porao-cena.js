@@ -20,7 +20,7 @@ const igual = (a, b) => a.x === b.x && a.y === b.y;
 
 // ---- as plantas: o que está onde (casas do jogo) -------------------------------------------------------------------------
 /** Os cinco baús do poço (25A a 25E) e o que há em cada um. */
-const BAUS_POCO = [
+export const BAUS_POCO = [
   { id: 'A', x: 3, y: 6, texto: 'Dentro, numa bolsa feita de pele humana: 11 peças de ouro e 60 de prata.', dar: (g, q) => { g(q, 'moedaDeOuro', 11); g(q, 'moedaDePrata', 60); } },
   { id: 'B', x: 9, y: 6, texto: 'Dentro, em um pedaço dobrado de pano negro, três ágatas-musgo.', dar: (g, q) => g(q, 'agataMusgo', 3) },
   { id: 'C', x: 1, y: 12, texto: 'Dentro, um tapa-olho de couro preto com uma pedra vermelha costurada.', dar: (g, q) => g(q, 'tapaOlho', 1) },
@@ -68,6 +68,7 @@ export function poraoGatilhos(ctx) {
       // O livro: a 1,5 m da alcova. A despensa tem 2 x 2 casas e o corredor ao lado passa colado nela.
       if (!f || c.pos.x < 27 || c.pos.x > 32 || c.pos.y < 19 || c.pos.y > 22) return null;
       ctx.grupos.grick.furtividade = [12];       // o livro: quem tem Percepção passiva abaixo de 12 é surpreendido
+      if (ctx.salvo.marcas?.gricAvisado) return { surpresa: null, intro: ['O rastro de muco não enganou: o grick se solta do teto da alcova, comprido e mole, bico aberto, mas o grupo já estava pronto.'] };
       return { surpresa: 'deles', intro: ['Um pedaço da escuridão da alcova se desprende da parede: uma criatura longa, mole, de cabeça de minhoca e bico de ave, e tentáculos que se abrem como uma mão.'] };
     },
     carnicais: (c, area) => {
@@ -79,6 +80,7 @@ export function poraoGatilhos(ctx) {
       const f = vivo(ctx.grupos.mimico);
       if (!f || !perto(c, f.pos)) return null;
       ctx.grupos.mimico.furtividade = [20];
+      if (ctx.salvo.marcas?.mimicoVisto) return { surpresa: null, intro: ['A porta que não era porta estremece e abre uma boca de dentes de madeira. O grupo já sabia: ninguém toca nela de surpresa.'] };
       return { surpresa: 'deles', intro: ['A porta do canto sudoeste, de madeira escura e dobradiças de ferro, está estranhamente quente ao toque. Quem encosta nela fica preso: a porta tem boca.'] };
     },
   };
@@ -206,6 +208,14 @@ async function negar(ctx) {
 }
 
 // ---- as interações -------------------------------------------------------------------------------------------------------
+/** Abre um dos baús do poço (a magia Abrir e a gazua chegam aqui). */
+export async function abrirBauDoPoco(ctx, b) {
+  ctx.salvo.achados[`bau${b.id}`] = true;
+  b.dar(ctx.guardar, ctx.herois()[0]);
+  await ctx.painel(`O cadeado cede com um estalo. ${b.texto} ${ctx.herois()[0].name} fica com tudo.`);
+  ctx.app.refresh();
+}
+
 export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
   const { salvo, buscas, variante } = ctx;
   const { achados } = salvo;
@@ -230,10 +240,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           buscas.marcar(ladrao, `bau${b.id}`);
           const t = ctx.teste(ladrao, 'prestidigitacao', 15);
           if (!t.passou) { await ctx.painel(`${ladrao.name} força o cadeado até a gazua quebrar na ferrugem. Outro herói, com ferramentas, pode tentar.`); return; }
-          achados[`bau${b.id}`] = true;
-          b.dar(ctx.guardar, ctx.herois()[0]);
-          await ctx.painel(`O cadeado cede com um estalo. ${b.texto} ${ctx.herois()[0].name} fica com tudo.`);
-          ctx.app.refresh();
+          await abrirBauDoPoco(ctx, b);
         },
       });
     }

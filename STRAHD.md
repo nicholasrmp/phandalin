@@ -58,13 +58,16 @@ Material de trabalho (não entra no repositório; `_referencias/` é ignorado pe
 
 Os blocos novos usam o look mais próximo que existe (cavaleiro, plebeu, specter, giantRat, gelatinaOcre, wraith, vinhaInfectada): armadura animada, vassoura, fantasma de criança, sombra, mímico, lívido, arbusto errante e enxames precisam de sprite próprio.
 
+## Investigação (o coração da casa)
+
+Os pontos clicáveis moram em `casadamorte-pistas.js` (mais de 40 pontos, 80 verbos de perícia) e a cena em `casadamorte-pistas-cena.js`: o botão direito num objeto oferece **Olhar** (de graça) e **uma opção por perícia** (História, Investigação, Percepção, Arcanismo, Religião, Natureza, Medicina, Intuição, Sobrevivência, Atuação, Acrobacia, Atletismo), com CD e uma tentativa por herói. O que se descobre vai para o **diário** ("Rever as pistas"). A **Percepção passiva** repara sozinha ao entrar na sala. As **magias de utilidade** entram pelos ganchos da cena: Detectar Magia lê auras (o canto do canil esconde o alçapão por ilusão; a casa de bonecas e a estátua de Strahd também), Abrir destranca (armário do canil, baús do poço, porta do quarto das crianças), Encontrar Armadilhas acha o fosso e Localizar Objeto acha a chave de ferro. Algumas pistas **mudam a luta**: avisar do grick, desmascarar o mímico e achar o fosso tiram a surpresa.
+
 ## Pendente de regra e de cena
 
-- **Feito nesta rodada:** os drenos (PV máximo do espectro, lívido e aparição; Força da sombra, que voltam nos descansos e matam a zero), o agarrar do mímico e do arbusto errante (restringe até escapar), a masmorra no escuro (luz do motor: tochas e visão no escuro), a fuga com paredes destrutíveis (um enxame de ratos por seção) e fumaça a cada passo, Rose e Thorn lutando se atacados, o painel da varanda e o bloco da vassoura do livro.
-- **Inspiração** vira um d6 (a condição `inspirado` da bárdica): o motor não tem a Inspiração de vantagem.
-- **Ainda sem execução no motor:** enxame ocupando o espaço de outros, posse (feita na cena, não no combate), o dano por turno de quem é engolido, a "sombra que se levanta" de quem chega a Força 0.
-- A prata da espada curta (110 po) é só preço: a regra de arma prateada não existe. O voo da vassoura não existe (o jogo não tem voo): ela anda a 15 m.
-- Porta secreta oeste da varanda (11, CD 15): a escada secreta já se acha pelo espelho da babá; falta a segunda porta.
+- **Feito:** os drenos (PV máximo do espectro, lívido e aparição; Força da sombra, e quem morre por Força 0 vira uma sombra nova), o agarrar do mímico e do arbusto errante, o **Engolir** (2d8 por turno de quem o arbusto prende, Constituição CD 14), a masmorra no escuro, a fuga com paredes destrutíveis e fumaça por passo, Rose e Thorn lutando se atacados, a segunda porta secreta da varanda (11) e o bloco da vassoura do livro.
+- **Inspiração** continua um d6 (a condição `inspirado` da bárdica): o motor não tem o d20 de vantagem por Inspiração, e não vale mexer nele só por isto.
+- **Enxame:** não ocupa o espaço de outras criaturas (o tabuleiro tem uma criatura por casa); morde como criatura normal.
+- A prata da espada curta (110 po) é só preço; o voo da vassoura não existe (o jogo não tem voo): ela anda a 15 m.
 - O resto da Maldição de Strahd (Baróvia, Vallaki, Ravenloft) ainda não existe; a casa termina em "Voltar ao menu".
 
 ## Riscos já à vista

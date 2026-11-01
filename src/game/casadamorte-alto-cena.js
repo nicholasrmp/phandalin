@@ -10,6 +10,7 @@
 import { conversar } from './dialogo.js';
 import { NPCS } from '../rules/npcs.js';
 import { makeMonster } from '../rules/monsters.js';
+import { ESCADA_OESTE_3, PORTA_OESTE_3 } from './casadamorte-alto.js';
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 const perto = (c, p, casas = 1) => Math.max(Math.abs(c.pos.x - p.x), Math.abs(c.pos.y - p.y)) <= casas;
@@ -121,6 +122,14 @@ async function casaDeBonecas(ctx, c) {
   await ctx.revelarEscada('bonecas');
 }
 
+/** Destranca a porta do quarto das crianças (a chave, a gazua e a magia Abrir chegam aqui). */
+export async function destrancarPortaDasCriancas(ctx, quem, texto = null) {
+  ctx.salvo.portaCriancas = true;
+  ctx.mudarCasa(7, 6, '?');
+  await ctx.painel(texto ?? `${quem.name} destranca o cadeado, e a porta do quarto das crianças range e abre.`);
+  ctx.app.refresh();
+}
+
 export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
   const { salvo, buscas } = ctx;
   const { achados } = salvo;
@@ -129,6 +138,24 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
   // ============================================================== 3º andar ==
   if (v === 'casaDaMorte3') {
     if (area.id === 'varanda') {
+      const oeste = { x: 5, y: 8 };
+      ops.push({
+        rotulo: salvo.portaOeste ? 'A porta da parede oeste (aberta)' : 'Procurar portas secretas na parede oeste', icone: 'acao-procurar',
+        detalhe: salvo.portaOeste ? 'a escada sobe ao sótão' : 'Percepção, CD 15',
+        motivo: salvo.portaOeste ? null : buscas.ja(c, 'portaOeste', oeste),
+        fazer: async () => {
+          if (salvo.portaOeste) { await ctx.painel('Uma porta de madeira na parede oeste, aberta sobre uma escada estreita cheia de teia, que sobe ao sótão.'); return; }
+          buscas.marcar(c, 'portaOeste', oeste);
+          const t = ctx.teste(c, 'percepcao', 15);
+          if (!t.passou) { await ctx.painel(`${c.name} passa a mão pelos painéis da parede oeste e só acha madeira.`); return; }
+          if (!salvo.escada) { await ctx.painel(`${t.quem?.name ?? c.name} procura com cuidado e encontra o desenho de uma porta, sob a tinta: a casa a esconde ainda, e não vai mostrá-la enquanto não quiser.`); return; }
+          salvo.portaOeste = true;
+          ctx.mudarCasas(ESCADA_OESTE_3, 'l');
+          ctx.mudarCasas(PORTA_OESTE_3, '?');
+          await ctx.painel(`${t.quem?.name ?? c.name} acha a fresta e puxa: um painel gira, e atrás dele há uma escada de madeira cheia de teia, que sobe.`);
+          ctx.app.refresh();
+        },
+      });
       const onde = { x: 7, y: 8 };
       ops.push({
         rotulo: 'Examinar os painéis das paredes', icone: 'acao-procurar',
