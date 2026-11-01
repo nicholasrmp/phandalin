@@ -25,14 +25,18 @@ export function fugaIniciar(ctx) {
   const { salvo, enc } = ctx;
   if (ctx.variante.startsWith('casaDaMortePorao')) return;
 
-  // As portas viram foices: o passo para na porta, e a lâmina cobra.
-  (ctx.paradas ??= []).push((c, p) => Boolean(salvo.furia) && enc.field.surfaceAt(p.x, p.y) === 'portaAberta');
-
+  // As portas viram foices: cada vez que o herói termina o passo numa sala diferente da de antes, passou por uma porta, e a lâmina cobra.
+  const salaDe = (c) => enc.field.sala?.get(`${c.pos.x},${c.pos.y}`) ?? null;
+  const ondeEstava = {};
+  for (const h of ctx.herois()) ondeEstava[h.id] = salaDe(h);
   const antes = ctx.aoMover;
   ctx.aoMover = async (c, area) => {
     if (antes) await antes(c, area);
+    const agora = salaDe(c);
+    const antesDele = ondeEstava[c.id];
+    ondeEstava[c.id] = agora;
     if (!salvo.furia || !ctx.estado.explorando) return;
-    if (enc.field.surfaceAt(c.pos.x, c.pos.y) === 'portaAberta') await foice(ctx, c);
+    if (antesDele && agora && antesDele !== agora) await foice(ctx, c);
     if (area && FUMACA(area, enc.field)) await fumaca(ctx, c, area);
   };
 
@@ -159,30 +163,43 @@ async function concluir(ctx) {
 
 let paredesQuebradas = 0;
 
-/** As paredes de dentro apodrecidas (CA 5, 5 PV): Atletismo CD 10 as derruba, e cada seção que cai solta um enxame de ratos. */
-function fugaParedes(ctx, { tile, sup, c, ops }) {
+/**
+ * As paredes de dentro apodrecidas (CA 5, 5 PV): Atletismo CD 10 as derruba, e cada seção que cai solta um enxame de ratos. Vale para as
+ * quatro arestas da casa em que o herói clicou; a parede de fora (a borda norte e a oeste do mapa) é imune, como o livro manda.
+ */
+export function fugaParedesOps(ctx, { tile, c, ops }) {
   const { salvo } = ctx;
-  if (!salvo.furia || ctx.variante.startsWith('casaDaMortePorao') || sup !== 'alvenaria') return;
-  if (tile.x < 1 || tile.x > 12 || tile.y < 1 || tile.y > 22) return;
-  ops.push({
-    rotulo: 'Quebrar a parede apodrecida', icone: 'acao-usarObjeto', detalhe: 'Atletismo, CD 10 (CA 5, 5 PV): solta ratos', motivo: ctx.longe(c, tile, 10),
-    fazer: async () => {
-      const t = ctx.teste(c, 'atletismo', 10);
-      if (!t.passou) { await ctx.painel(`${c.name} bate o ombro na madeira podre, que geme e aguenta.`); return; }
-      ctx.mudarCasa(tile.x, tile.y, 'U');
-      const f = makeMonster('enxameDeRatos', { x: tile.x, y: tile.y }, { nameSuffix: String(++paredesQuebradas) });
-      const id = `ratos${tile.x}-${tile.y}`;
-      f.grupo = id; f.facingVec = { dx: 0, dy: 1 };
-      const g = { id, membros: [f], ativo: false, vencido: false, furtividade: [0] };
-      ctx.grupos[id] = g;
-      ctx.app.refresh();
-      await ctx.combate(g, null, [`${t.quem?.name ?? c.name} derruba a parede, e do vão sai uma onda de ratos, de dentro das paredes de toda a casa, como água de uma represa. Eles não saem da casa, mas dentro dela, vêm todos.`]);
-    },
-  });
+  if (!salvo.furia || ctx.variante.startsWith('casaDaMortePorao')) return;
+  const f = ctx.enc.field;
+  const { x, y } = tile;
+  const lados = [
+    ['norte', y > 0 && f.paredeN[y * f.w + x] === 1, { x, y: y - 1 }],
+    ['oeste', x > 0 && f.paredeO[y * f.w + x] === 1, { x: x - 1, y }],
+    ['sul', y + 1 < f.h && f.paredeN[(y + 1) * f.w + x] === 1, { x, y: y + 1 }],
+    ['leste', x + 1 < f.w && f.paredeO[y * f.w + x + 1] === 1, { x: x + 1, y }],
+  ];
+  for (const [nome, existe, outro] of lados) {
+    if (!existe) continue;
+    ops.push({
+      grupo: 'A casa ataca', rotulo: `Quebrar a parede apodrecida do ${nome}`, icone: 'acao-usarObjeto', detalhe: 'Atletismo, CD 10 (CA 5, 5 PV): solta ratos',
+      motivo: ctx.longe(c, tile, 10),
+      fazer: async () => {
+        const t = ctx.teste(c, 'atletismo', 10);
+        if (!t.passou) { await ctx.painel(`${c.name} bate o ombro na madeira podre, que geme e aguenta.`); return; }
+        ctx.abrirAresta(x, y, outro.x, outro.y);
+        const f2 = makeMonster('enxameDeRatos', { x: outro.x, y: outro.y }, { nameSuffix: String(++paredesQuebradas) });
+        const id = `ratos${x}-${y}-${nome}`;
+        f2.grupo = id; f2.facingVec = { dx: 0, dy: 1 };
+        const g = { id, membros: [f2], ativo: false, vencido: false, furtividade: [0] };
+        ctx.grupos[id] = g;
+        ctx.app.refresh();
+        await ctx.combate(g, null, [`${t.quem?.name ?? c.name} derruba a parede, e do vão sai uma onda de ratos, de dentro das paredes de toda a casa, como água de uma represa. Eles não saem da casa, mas dentro dela, vêm todos.`]);
+      },
+    });
+  }
 }
 
 export function fugaInteracoes(ctx, { area, tile, sup, c, ops }) {
-  fugaParedes(ctx, { tile, sup, c, ops });
   if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'espera' || tile.y < 21) return;
   ops.push({
     rotulo: 'Sair pelo portão', icone: 'acao-usarObjeto', detalhe: ctx.salvo.fim ? 'a névoa recuou' : 'cercado pelas brumas', motivo: null,

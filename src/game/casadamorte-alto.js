@@ -163,21 +163,24 @@ export const AREAS_SOTAO = [
 ];
 
 import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
-
-const MOB_3 = mobiliar(BASE_3, MOBILIA.casaDaMorte3, 'assoalho');
-const MOB_4 = mobiliar(BASE_4, MOBILIA.casaDaMorte4, 'assoalho');
+import { paredesDeBorda } from './casadamorte-paredes.js';
 
 const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
-const alturaDe = (terreno) => terreno.map((linha) => [...linha].map((g) => (g === 'M' ? '3' : '0')).join(''));
+
+/** As plantas em PAREDE DE BORDA. Os poços da escada secreta são salas fechadas até a casa abrir uma aresta delas; a porta do quarto das crianças (20) começa trancada. */
+export const PLANTA_3 = paredesDeBorda(BASE_3, { piso: 'U', nichos: [ESCADA_SECRETA_3, ESCADA_OESTE_3] });
+export const PLANTA_4 = paredesDeBorda(BASE_4, { piso: 'U', nichos: [ESCADA_SECRETA_4], fechadas: ['7,6,N'] });
+
+const MOB_3 = mobiliar(PLANTA_3.terreno, MOBILIA.casaDaMorte3, 'assoalho');
+const MOB_4 = mobiliar(PLANTA_4.terreno, MOBILIA.casaDaMorte4, 'assoalho');
 
 export const MAPA_CASA_DA_MORTE_3 = {
   terreno: MOB_3.terreno,
-  altura: alturaDe(TERCEIRO_ANDAR),
+  altura: null,
   objetos: MOB_3.objetos,
-  paredeMaterial: 'madeiraVelha',
-  paredeFina: true,
-  paredePiso: 'assoalho',
-  paredeTopo: '#6f6657',
+  paredes: PLANTA_3.paredes,
+  salas: PLANTA_3.salas,
+  materialDaParede: 'madeiraVelha',
   poeira: true,
   grupo: grupoPadrao([[8, 11], [8, 12], [7, 11], [7, 12]]),
   olhar: { dx: 1, dy: 0 },
@@ -186,12 +189,11 @@ export const MAPA_CASA_DA_MORTE_3 = {
 
 export const MAPA_CASA_DA_MORTE_4 = {
   terreno: MOB_4.terreno,
-  altura: alturaDe(SOTAO),
+  altura: null,
   objetos: MOB_4.objetos,
-  paredeMaterial: 'madeiraVelha',
-  paredeFina: true,
-  paredePiso: 'assoalho',
-  paredeTopo: '#6f6657',
+  paredes: PLANTA_4.paredes,
+  salas: PLANTA_4.salas,
+  materialDaParede: 'madeiraVelha',
   poeira: true,
   grupo: grupoPadrao([[10, 12], [10, 13], [9, 12], [9, 13]]),
   olhar: { dx: 1, dy: 0 },

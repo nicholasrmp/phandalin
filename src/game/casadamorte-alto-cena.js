@@ -10,7 +10,6 @@
 import { conversar } from './dialogo.js';
 import { NPCS } from '../rules/npcs.js';
 import { makeMonster } from '../rules/monsters.js';
-import { ESCADA_OESTE_3, PORTA_OESTE_3 } from './casadamorte-alto.js';
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 const perto = (c, p, casas = 1) => Math.max(Math.abs(c.pos.x - p.x), Math.abs(c.pos.y - p.y)) <= casas;
@@ -125,7 +124,7 @@ async function casaDeBonecas(ctx, c) {
 /** Destranca a porta do quarto das crianças (a chave, a gazua e a magia Abrir chegam aqui). */
 export async function destrancarPortaDasCriancas(ctx, quem, texto = null) {
   ctx.salvo.portaCriancas = true;
-  ctx.mudarCasa(7, 6, '?');
+  ctx.abrirAresta(7, 5, 7, 6);
   await ctx.painel(texto ?? `${quem.name} destranca o cadeado, e a porta do quarto das crianças range e abre.`);
   ctx.app.refresh();
 }
@@ -150,8 +149,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
           if (!t.passou) { await ctx.painel(`${c.name} passa a mão pelos painéis da parede oeste e só acha madeira.`); return; }
           if (!salvo.escada) { await ctx.painel(`${t.quem?.name ?? c.name} procura com cuidado e encontra o desenho de uma porta, sob a tinta: a casa a esconde ainda, e não vai mostrá-la enquanto não quiser.`); return; }
           salvo.portaOeste = true;
-          ctx.mudarCasas(ESCADA_OESTE_3, 'l');
-          ctx.mudarCasas(PORTA_OESTE_3, '?');
+          ctx.aplicarEscada();
           await ctx.painel(`${t.quem?.name ?? c.name} acha a fresta e puxa: um painel gira, e atrás dele há uma escada de madeira cheia de teia, que sobe.`);
           ctx.app.refresh();
         },
@@ -233,7 +231,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
           const dono = ctx.algumTem('chaveDeFerroDosDurst');
           if (dono) {
             salvo.portaCriancas = true;
-            ctx.mudarCasa(7, 6, '?');
+            ctx.abrirAresta(7, 5, 7, 6);
             await ctx.painel(`${dono.name} gira a chave de ferro no cadeado, que cede com um estalo. A porta do quarto das crianças range e abre.`);
             ctx.app.refresh();
             return;
@@ -243,7 +241,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
           const t = ctx.teste(ladrao, 'prestidigitacao', 15);
           if (!t.passou) { await ctx.painel(`${ladrao.name} trabalha o cadeado até a ponta da gazua entortar. Dá para tentar de novo com mais calma.`); return; }
           salvo.portaCriancas = true;
-          ctx.mudarCasa(7, 6, '?');
+          ctx.abrirAresta(7, 5, 7, 6);
           await ctx.painel(`${ladrao.name} sente o último pino ceder. O cadeado cai, e a porta do quarto das crianças abre sozinha.`);
           ctx.app.refresh();
         },

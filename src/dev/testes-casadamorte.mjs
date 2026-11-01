@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 
 const P = new URL('../', import.meta.url).href;
-const { Battlefield } = await import(P + 'core/grid.js');
+const { montarCampo } = await import(P + 'game/campo.js');
 const { Encounter } = await import(P + 'rules/combat.js');
 const { makeParty } = await import(P + 'rules/party.js');
 const { makeRng } = await import(P + 'core/rng.js');
@@ -26,7 +26,7 @@ async function teste(nome, fn) {
 /** A cena montada como o `main.js` monta: campo, grupo de 4, criaturas escondidas; `campanha` e `estado` dividem entre andares. */
 async function nova(variante, { campanha = {}, nivel = 1, entrada = null, seed = 11 } = {}) {
   const mapa = mapaDo(variante);
-  const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length, mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
+  const field = montarCampo(mapa);
   const party = makeParty({ nivel });
   party.forEach((c, i) => { c.pos = { ...mapa.grupo[i] }; c.facingVec = { ...mapa.olhar }; });
   const foes = buildFoes(variante);
@@ -119,7 +119,7 @@ await teste('escada secreta: a carta revela a escada, dá o 2º nível uma vez s
   assert.equal(S.party[0].xp, xp, 'reler não dá XP de novo');
   const T = await nova('casaDaMorte3', { campanha: S.app.campanha });
   assert.equal(T.field.surfaceAt(11, 17), 'escada', 'a escada da suíte da babá já está à mostra');
-  assert.equal(T.field.surfaceAt(9, 17), 'portaAberta');
+  assert.equal(T.field.aresta(9, 17, 10, 17), 3, 'a aresta da suíte com o poço da escada é porta aberta');
   const A = await nova('casaDaMorte4', { campanha: S.app.campanha });
   assert.equal(A.field.surfaceAt(1, 7), 'escada', 'a espiral do sótão também');
 });
@@ -137,12 +137,12 @@ await teste('sótão: a casa de bonecas mostra a escada (e o 2º nível) quando 
   assert.equal(S.field.surfaceAt(1, 7), 'escada');
   assert.equal(S.casa().fantasmas, 'apareceram', 'Rose e Thorn aparecem quando alguém mexe na casa de bonecas');
   // a porta trancada
-  assert.equal(S.field.surfaceAt(7, 6), 'alvenaria', 'a porta do 20 começa trancada (parede)');
+  assert.equal(S.field.aresta(7, 5, 7, 6), 2, 'a porta do 20 começa trancada (porta fechada)');
   poe(S.party[0], 7, 7);
   garantirInventario(S.party[1]);
   S.party[1].bag.push({ id: 'chaveDeFerroDosDurst', tipo: 'item', qtd: 1 });
   await op(S, S.party[0], 7, 7, 'porta trancada').fazer();
-  assert.equal(S.field.surfaceAt(7, 6), 'portaAberta');
+  assert.equal(S.field.aresta(7, 5, 7, 6), 3);
   assert.equal(S.casa().portaCriancas, true);
 });
 
@@ -319,35 +319,38 @@ await teste('a casa ataca quem negou o sacrifício: portas de foice, fumaça e r
   // sem entrar pelo sótão a casa só vira furiosa ao chegar de baixo
   await S.cena.iniciar();
   assert.equal(S.casa().furia, true, 'a casa se volta contra o grupo');
-  // porta: o passo para
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 3, y: 23 }), true, 'a porta de foice para o passo');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 5, y: 20 }), false);
-  poe(S.party[0], 3, 15);
+  // porta de foice: cada vez que o herói termina o passo numa sala diferente, passou por uma porta
+  poe(S.party[0], 3, 12);
   const antes = S.party[0].hp;
   d20(S, 1);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(S.party[0].hp < antes && antes - S.party[0].hp <= 20, `a foice cortou ${antes - S.party[0].hp}`);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(S.party[0].hp >= antes - 20 && S.party[0].hp === antes - (antes - S.party[0].hp), 'na mesma sala, a foice não corta de novo');
   d20(S, 20);
   const h = S.party[1].hp;
-  poe(S.party[1], 3, 15);
+  poe(S.party[1], 3, 12);
   await S.cena.depoisDeMover(S.party[1]);
   assert.equal(S.party[1].hp, h, 'com 20 no dado, a foice não pega');
   // as paredes de dentro apodrecem: quebrar uma (Atletismo CD 10) solta um enxame de ratos
   poe(S.party[0], 4, 19);
-  assert.equal(S.field.surfaceAt(5, 19), 'alvenaria');
-  const quebrar = op(S, S.party[0], 5, 19, 'Quebrar a parede');
+  assert.equal(S.field.aresta(4, 19, 5, 19), 1, 'a parede entre a sala de espera e o canto');
+  const quebrar = op(S, S.party[0], 4, 19, 'Quebrar a parede apodrecida do leste');
   assert.ok(quebrar, 'a parede de dentro se quebra');
   d20(S, 1);
   await quebrar.fazer();
-  assert.equal(S.field.surfaceAt(5, 19), 'alvenaria', 'com 1 no dado, a parede aguenta');
+  assert.equal(S.field.aresta(4, 19, 5, 19), 1, 'com 1 no dado, a parede aguenta');
   assert.ok(S.cena.explorando);
   d20(S, 20);
-  await op(S, S.party[0], 5, 19, 'Quebrar a parede').fazer();
-  assert.notEqual(S.field.surfaceAt(5, 19), 'alvenaria');
+  await op(S, S.party[0], 4, 19, 'Quebrar a parede apodrecida do leste').fazer();
+  assert.equal(S.field.aresta(4, 19, 5, 19), 3, 'a parede caiu: vira passagem');
   assert.ok(!S.cena.explorando, 'um enxame de ratos sai da parede');
   assert.equal(S.enc.combatants.filter((f) => f.defId === 'enxameDeRatos').length, 1);
+  // a parede de fora (a borda do mapa) não se quebra
+  poe(S.party[2], 6, 0);
+  assert.equal(S.cena.interacoes({ x: 6, y: 0 }, 'assoalho', S.party[2]).some((o) => /Quebrar a parede apodrecida do norte/.test(o.rotulo)), false, 'o muro de fora é imune');
   const N = await nova('casaDaMorte1', { nivel: 2 });
-  assert.equal(op(N, N.party[0], 5, 19, 'Quebrar a parede'), undefined, 'sem a casa furiosa, a parede é parede');
+  assert.equal(op(N, N.party[0], 4, 19, 'Quebrar a parede'), undefined, 'sem a casa furiosa, a parede é parede');
 });
 
 await teste('a saída: sem o fim as brumas fecham o portão; com o fim, sai e passa ao 3º nível; Rose e Thorn tentam possuir quem sai', async () => {
@@ -515,7 +518,7 @@ await teste('magias de utilidade: a cena oferece auras, trancas, fosso e a chave
   const C = await nova('casaDaMorte4');
   const porta = C.cena.ganchosMagicos(C.party[0]).find((x) => x.id === 'porta20');
   await porta.fazer();
-  assert.equal(C.field.surfaceAt(7, 6), 'portaAberta', 'o Abrir destranca o quarto das crianças');
+  assert.equal(C.field.aresta(7, 5, 7, 6), 3, 'o Abrir destranca o quarto das crianças');
   const D = await nova('casaDaMorte1');
   assert.ok(D.cena.ganchosMagicos(D.party[0]).some((x) => x.id === 'aura:cantoCanil'), 'o canto do canil tem aura de ilusão');
 });
@@ -533,7 +536,7 @@ await teste('varanda: a segunda porta secreta (parede oeste, Percepção CD 15) 
   await op(T, T.party[1], 6, 8, 'Procurar portas secretas na parede oeste').fazer();
   assert.equal(T.casa().portaOeste, true);
   assert.equal(T.field.surfaceAt(2, 7), 'escada');
-  assert.equal(T.field.surfaceAt(4, 7), 'portaAberta');
+  assert.equal(T.field.aresta(4, 7, 3, 7), 3);
   const U = await nova('casaDaMorte3', { campanha: T.app.campanha });
   assert.equal(U.field.surfaceAt(2, 7), 'escada', 'o estado volta ao reentrar');
 });

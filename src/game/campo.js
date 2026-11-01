@@ -27,11 +27,8 @@ export function montarCampo(mapa) {
   field.paredeDeCaverna = Boolean(mapa.paredeDeCaverna);
   field.cliqueNoObjeto = Boolean(mapa.cliqueNoObjeto);   // o botão direito no corpo do sprite acha o objeto (a mansão)
   field.rochaEmCorte = Boolean(mapa.rochaEmCorte);   // a pedra na frente de uma sala fica baixa (a mansão)
-  // O material das paredes de alvenaria do mapa no atlas das faces (a Casa da Morte: painel de carvalho, madeira velha).
-  if (mapa.paredeMaterial) field.paredeMaterial = mapa.paredeMaterial;
-  // A parede de casa inteira desenhada como muro fino (a Casa da Morte), com o piso que fica por baixo dela.
-  field.poeira = Boolean(mapa.poeira);        // o véu de poeira e as teias dos cantos (o 3º andar e o sótão da Casa da Morte)
-  if (mapa.paredeFina) { field.paredeFina = true; field.paredePiso = mapa.paredePiso ?? 'assoalho'; if (mapa.paredeTopo) field.paredeTopo = mapa.paredeTopo; }
+  // O material das paredes de borda no atlas das faces (a Casa da Morte: papel de parede bordô, reboco velho).
+  if (mapa.materialDaParede) field.materialDaParede = mapa.materialDaParede;
   field.paredeAlta = Number(mapa.paredeAlta) || 0;   // níveis de parede ACIMA do chão, só no desenho (a regra segue a altura do mapa)
   // As portas que têm FOLHA de madeira (o tabuleiro desenha a folha encostada quando aberta). As cenas do anfitrião refazem
   // isto; o espelho do convidado só tem o mapa, e sem esta lista nunca desenhava a folha.

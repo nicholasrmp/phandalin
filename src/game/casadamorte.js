@@ -10,6 +10,7 @@
 
 // ------------------------------------------------------------------------------------------------ 1º andar (áreas 1 a 5) ----
 import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
+import { paredesDeBorda } from './casadamorte-paredes.js';
 import { TERCEIRO_ANDAR, SOTAO, AREAS_TERCEIRO, AREAS_SOTAO, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4 } from './casadamorte-alto.js';
 import { PLANTA_PORAO_1, PLANTA_PORAO_2 } from './casadamorte-porao.js';
 import { TEXTOS_PORAO } from './casadamorte-textos-porao.js';
@@ -180,20 +181,20 @@ export const AREAS_SEGUNDO = [
 ];
 
 const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
-const alturaDe = (terreno) => terreno.map((linha) => [...linha].map((g) => (g === 'M' ? '3' : '0')).join(''));
+/** As plantas em PAREDE DE BORDA (`casadamorte-paredes.js`): a mesma planta, com a parede na aresta entre duas casas e a porta de verdade. */
+export const PLANTA_1 = paredesDeBorda(TERREO, { piso: 'U' });
+export const PLANTA_2 = paredesDeBorda(SEGUNDO_ANDAR, { piso: '-' });
 
-const MOB_1 = mobiliar(TERREO, MOBILIA.casaDaMorte1, 'assoalho');
-const MOB_2 = mobiliar(SEGUNDO_ANDAR, MOBILIA.casaDaMorte2, 'parquet');
+const MOB_1 = mobiliar(PLANTA_1.terreno, MOBILIA.casaDaMorte1, 'assoalho');
+const MOB_2 = mobiliar(PLANTA_2.terreno, MOBILIA.casaDaMorte2, 'parquet');
 
 export const MAPA_CASA_DA_MORTE_1 = {
   terreno: MOB_1.terreno,
-  // A parede é um bloco alto (3 níveis) e o piso é raso: sem isto, a parede de casa inteira era desenhada rente ao chão.
-  altura: alturaDe(TERREO),
+  altura: null,
   objetos: MOB_1.objetos,
-  paredeMaterial: 'painelCarvalho',
-  paredeFina: true,
-  paredePiso: 'assoalho',
-  paredeTopo: '#3b2717',
+  paredes: PLANTA_1.paredes,
+  salas: PLANTA_1.salas,
+  materialDaParede: 'painelCarvalho',
   // O grupo entra pelo portão, ao sul, na sala de espera, olhando para o fundo da casa.
   grupo: grupoPadrao([[2, 21], [3, 21], [4, 21], [3, 22]]),
   olhar: { dx: 0, dy: -1 },
@@ -202,12 +203,11 @@ export const MAPA_CASA_DA_MORTE_1 = {
 
 export const MAPA_CASA_DA_MORTE_2 = {
   terreno: MOB_2.terreno,
-  altura: alturaDe(SEGUNDO_ANDAR),
+  altura: null,
   objetos: MOB_2.objetos,
-  paredeMaterial: 'painelCarvalho',
-  paredeFina: true,
-  paredePiso: 'parquet',
-  paredeTopo: '#3b2717',
+  paredes: PLANTA_2.paredes,
+  salas: PLANTA_2.salas,
+  materialDaParede: 'painelCarvalho',
   // Quem sobe a escadaria chega ao salão superior, ao pé da curva.
   grupo: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
   olhar: { dx: -1, dy: 0 },

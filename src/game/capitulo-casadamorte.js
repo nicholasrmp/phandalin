@@ -30,7 +30,7 @@ import { criarBuscas } from './buscas.js';
 import { altoInteracoes, altoGatilhos, destrancarPortaDasCriancas } from './casadamorte-alto-cena.js';
 import { pistasInteracoes, pistasPassivas, pistasAuras } from './casadamorte-pistas-cena.js';
 import { poraoInteracoes, poraoGatilhos, reaplicarPorao, BAUS_POCO, abrirBauDoPoco } from './casadamorte-porao-cena.js';
-import { fugaInteracoes, fugaIniciar } from './casadamorte-fuga.js';
+import { fugaInteracoes, fugaIniciar, fugaParedesOps } from './casadamorte-fuga.js';
 
 const MOVIMENTO = 60;
 const dentro = (a, p) => p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2;
@@ -77,7 +77,13 @@ export function criarCasaDaMorte(app, config) {
     f.heights[i] = g.kind === 1 ? 3 : 0;
   }
   const mudarCasas = (lista, glifo) => { for (const [x, y] of lista) mudarCasa(x, y, glifo); };
-  if (salvo.passagemAberta && variante === 'casaDaMorte2') mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
+  /** Muda uma aresta (a parede fina entre duas casas): porta aberta, por padrão. */
+  const abrirAresta = (ax, ay, bx, by, codigo = 3) => enc.field.porAresta(ax, ay, bx, by, codigo);
+  // A estante da biblioteca (a aresta entre a biblioteca e a sala secreta) gira: a passagem fica aberta.
+  const abrirBiblioteca = () => abrirAresta(PORTA_SECRETA.x, PORTA_SECRETA.y - 1, PORTA_SECRETA.x, PORTA_SECRETA.y);
+  if (salvo.passagemAberta && variante === 'casaDaMorte2') abrirBiblioteca();
+  // A porta do quarto das crianças (20) começa trancada (a planta a põe fechada) e fica aberta depois.
+  if (salvo.portaCriancas && variante === 'casaDaMorte4') abrirAresta(7, 5, 7, 6);
   // O alçapão do canil só existe depois que alguém o viu pelo lado de baixo.
   if (salvo.alcapaoCanil && variante === 'casaDaMorte1') mudarCasa(6, 22, 'l');
 
@@ -154,14 +160,13 @@ export function criarCasaDaMorte(app, config) {
   function aplicarEscada() {
     if (!salvo.escada) return;
     if (variante === 'casaDaMorte3') {
-      mudarCasas(ESCADA_SECRETA_3, 'l'); mudarCasas([[9, 17], [9, 18]], '?');
-      if (salvo.portaOeste) { mudarCasas(ESCADA_OESTE_3, 'l'); mudarCasas(PORTA_OESTE_3, '?'); }
+      // O poço da escada atrás do espelho da babá é uma sala fechada; a aresta dele com a suíte vira porta.
+      mudarCasas(ESCADA_SECRETA_3, 'l'); abrirAresta(9, 17, 10, 17); abrirAresta(9, 18, 10, 18);
+      if (salvo.portaOeste) { mudarCasas(ESCADA_OESTE_3, 'l'); abrirAresta(4, 7, 3, 7); abrirAresta(4, 8, 3, 8); }
     }
-    if (variante === 'casaDaMorte4') mudarCasas(ESCADA_SECRETA_4, 'l');
+    if (variante === 'casaDaMorte4') { mudarCasas(ESCADA_SECRETA_4, 'l'); abrirAresta(3, 7, 2, 7); abrirAresta(3, 8, 2, 8); }
   }
   aplicarEscada();
-  // A porta do quarto das crianças (20) fica trancada até alguém abri-la.
-  if (variante === 'casaDaMorte4' && !salvo.portaCriancas) mudarCasa(7, 6, 'M');
 
   /** O marco do livro: quem chega à escada secreta (pela carta de Strahd ou pela casa de bonecas) passa ao 2º nível. */
   async function revelarEscada() {
@@ -191,7 +196,7 @@ export function criarCasaDaMorte(app, config) {
   const ctx = {
     app, enc, root, config, variante, andar, salvo, estado, grupos,
     herois, hostis, painel, teste, areaDe, longe, buscas, tem, algumTem, consumir, guardar,
-    mudarCasa, mudarCasas, combate, irParaAndar, revelarEscada, prepararExploracao, dentro,
+    mudarCasa, mudarCasas, abrirAresta, aplicarEscada, combate, irParaAndar, revelarEscada, prepararExploracao, dentro,
     vencer(id) { if (!salvo.vencidos.includes(id)) salvo.vencidos.push(id); const g = grupos[id]; if (g) g.vencido = true; },
   };
   ctx.depoisDaLuta = {};
@@ -290,10 +295,9 @@ export function criarCasaDaMorte(app, config) {
     if (!c || !estado.explorando) return [];
     const area = areaDe(tile);
     const ops = [];
-    // As paredes de dentro, apodrecidas pela casa furiosa, se quebram (a surpresa: clicar na parede, e não no chão).
-    if (sup === 'alvenaria') { fugaInteracoes(ctx, { area, tile, sup, c, ops }); return ops; }
     if (sup === 'parede') return ops;
     pistasInteracoes(ctx, { tile, c, ops });
+    fugaParedesOps(ctx, { tile, c, ops });
     if (!area) { poraoInteracoes(ctx, { area: null, tile, sup, c, ops }); return ops; }
     // ---- 1º andar
     if (area.id === 'salao' || area.id === 'jantar') {
@@ -365,7 +369,7 @@ export function criarCasaDaMorte(app, config) {
             if (!t.passou) { await painel(`${c.name} passa os dedos pelas lombadas e não acha nada que destoe. Outros olhos podem ajudar.`); return; }
             salvo.livroFalso = true;
             salvo.passagemAberta = true;
-            mudarCasa(PORTA_SECRETA.x, PORTA_SECRETA.y, '?');
+            abrirBiblioteca();
             await painel(`${t.quem?.name ?? c.name} repara num livro de capa vermelha e lombada branca que não é livro: é um interruptor. A estante gira e uma porta se abre nos fundos da biblioteca, mola nas dobradiças, pronta para fechar de novo.`);
             app.refresh();
           },
