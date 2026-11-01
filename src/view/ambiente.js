@@ -69,6 +69,8 @@ export function emissoresDoAmbiente(field) {
     else if (ESPECIES[o.variante]) e.especies.push({ x: o.x, y: o.y, ...ESPECIES[o.variante] });
     else if (o.variante === 'cristais') e.cristais.push({ x: o.x, y: o.y });
     else if (o.variante === 'braseiroVerde') e.brasas.push({ x: o.x, y: o.y, cor: '150, 255, 150' });
+    // A Casa da Morte: a luz quente das lareiras acesas e dos candelabros (as apagadas, dos andares de cima, não acendem).
+    else if (/^casa-(lareira|lareiraB|candelabro):/.test(o.variante)) e.brasas.push({ x: o.x, y: o.y, cor: '255, 168, 72' });
   }
   e.vazio = !Object.values(e).some((l) => l.length);
   CACHE.set(field, e);

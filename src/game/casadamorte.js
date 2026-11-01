@@ -20,10 +20,10 @@ export { MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, TERCEIRO_ANDAR, SOTAO };
 // com o pórtico 1A) e o canil de lobos (3) ao sul. O vestíbulo, ao lado do armário (2B), liga a sala de jantar à cozinha.
 export const PLANTA_1 = plantaDeSalas({
   salas: [
-    { id: 'jantar', retangulos: [[0, 0, 3, 2], [1, 3, 1, 3]] },
-    { id: 'despensa', retangulos: [[4, 0, 5, 0]] },
-    { id: 'cozinha', retangulos: [[4, 1, 5, 3]] },
-    { id: 'vestibulo', retangulos: [[3, 3, 3, 3]] },
+    { id: 'jantar', piso: '-', retangulos: [[0, 0, 3, 2], [1, 3, 1, 3]] },
+    { id: 'despensa', piso: 'L', retangulos: [[4, 0, 5, 0]] },
+    { id: 'cozinha', piso: 'L', retangulos: [[4, 1, 5, 3]] },
+    { id: 'vestibulo', piso: 'L', retangulos: [[3, 3, 3, 3]] },
     { id: 'vestiario', retangulos: [[2, 3, 2, 3]] },
     { id: 'salao', retangulos: [[0, 4, 5, 6]] },
     { id: 'espera', retangulos: [[0, 7, 1, 9]] },
@@ -42,10 +42,10 @@ export const PLANTA_1 = plantaDeSalas({
 export const PLANTA_2 = plantaDeSalas({
   piso: '-',
   salas: [
-    { id: 'biblioteca', retangulos: [[0, 0, 3, 2], [1, 3, 2, 3]] },
-    { id: 'armario', retangulos: [[3, 3, 3, 3]] },
-    { id: 'secreta', retangulos: [[4, 0, 5, 0]] },
-    { id: 'empregados', retangulos: [[4, 1, 5, 3]] },
+    { id: 'biblioteca', piso: 'U', retangulos: [[0, 0, 3, 2], [1, 3, 2, 3]] },
+    { id: 'armario', piso: 'U', retangulos: [[3, 3, 3, 3]] },
+    { id: 'secreta', piso: 'L', retangulos: [[4, 0, 5, 0]] },
+    { id: 'empregados', piso: 'U', retangulos: [[4, 1, 5, 3]] },
     { id: 'salao', retangulos: [[0, 4, 5, 6]] },
     { id: 'conservatorio', retangulos: [[0, 7, 5, 10]] },
   ],
@@ -64,8 +64,8 @@ export const AREAS_TERREO = [
   criarArea({
     id: 'salao', area: '2A', nome: 'O salão principal', cel: [[0, 4, 5, 6]],
     texto: [
-      'Um salão tão largo quanto a casa. Numa ponta, uma lareira de mármore preto; na outra, uma escadaria larga de mármore vermelho, que sobe em curva. Sobre o fogo apagado, uma espada longa de enfeite, com um pequeno moinho no punho.',
-      'Os painéis de madeira da parede são entalhados com videiras, flores, ninfas e sátiros.',
+      'O salão ocupa a largura da casa. Numa ponta, uma lareira de pedra negra; na outra, a escadaria de mármore vermelho sobe em curva. Sobre o fogo apagado repousa uma espada de adorno, com um moinho gravado no punho.',
+      'A madeira das paredes é entalhada em folhagens, flores e figuras de faunos e ninfas.',
     ],
   }),
   criarArea({
@@ -75,8 +75,8 @@ export const AREAS_TERREO = [
   criarArea({
     id: 'canil', area: '3', nome: 'O canil de lobos', cel: [[2, 7, 5, 10]],
     texto: [
-      'Painéis de carvalho, uma cabeça de veado sobre a lareira e três lobos empalhados espalhados pela sala, de bocas abertas. Duas poltronas forradas de pele encaram o fogo, com uma mesa de carvalho entre elas: um barril de vinho, duas taças esculpidas e um suporte de cachimbos.',
-      'Há dois armários contra as paredes. O do leste tem cadeado; o do norte está aberto.',
+      'Uma sala de caça forrada de carvalho. Sobre a lareira, uma cabeça de veado; pelo chão, três lobos empalhados de bocas abertas. Duas poltronas forradas de pele encaram o fogo, e uma mesinha entre elas guarda um barrilete, taças lavradas e um porta-cachimbos.',
+      'Dois armários ficam junto às paredes: o do leste está trancado a cadeado, o do norte, aberto.',
     ],
   }),
   criarArea({
@@ -121,8 +121,8 @@ export const AREAS_SEGUNDO = [
   criarArea({
     id: 'biblioteca', area: '8', nome: 'A biblioteca', cel: [[0, 0, 3, 2], [1, 3, 2, 3]],
     texto: [
-      'Cortinas de veludo vermelho cobrem as janelas. Uma escrivaninha de mogno e uma cadeira de espaldar alto ficam entre a porta e a lareira, e acima do fogo está pendurado um quadro de um moinho de vento sobre um penhasco. Estantes do chão ao teto, uma escada de rodinhas para os livros altos.',
-      'Na escrivaninha: um tinteiro, uma pena, um barrilete de pólvora, uma lamparina e um estojo de carta com lacre vermelho e um selo de madeira com o moinho dos Durst.',
+      'Pesadas cortinas vinho fecham as janelas. Entre a porta e a lareira, uma escrivaninha escura e uma cadeira de encosto alto; sobre o consolo, um quadro mostra um moinho no alto de um rochedo. Os livros chegam ao teto, e uma escadinha sobre trilhos serve às prateleiras de cima.',
+      'O tampo da escrivaninha guarda um tinteiro, uma pena, um pequeno barril de pólvora, uma lamparina e um estojo de cartas lacrado em vermelho, com o selo do moinho dos Durst.',
     ],
   }),
   criarArea({

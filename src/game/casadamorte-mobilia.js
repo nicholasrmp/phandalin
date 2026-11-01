@@ -12,7 +12,7 @@
 
 import { D } from './casadamorte-plantas.js';
 
-const PISO_DO_GLIFO = { U: 'assoalho', '*': 'tapete', '-': 'parquet', '+': 'terraSocada' };
+const PISO_DO_GLIFO = { U: 'assoalho', '*': 'tapete', '-': 'parquet', '+': 'terraSocada', L: 'laje' };
 
 /** Põe as peças no terreno e devolve o terreno novo e as anotações de `objetos`. As casas da lista são quadrados do livro (o mapa tem um anel a mais). */
 export function mobiliar(terreno, lista, pisoPadrao = 'assoalho') {
@@ -42,7 +42,7 @@ export const MOBILIA = {
     // sala de jantar (5): lareira na parede oeste, a mesa comprida ao longo de x e as cadeiras do lado do norte (o sul fica livre para a passagem)
     ['casa-lareira:+x', 0, 1],
     ['casa-mesaJantar:+x', 2, 1, { nada: [[1, 1]] }],
-    ['casa-cadeira:+y', 1, 0], ['casa-cadeira:+y', 2, 0], ['casa-candelabro:+y', 0, 0],
+    ['casa-cadeira:+y', 1, 0], ['casa-cadeira:+y', 2, 0], ['casa-candelabro:+y', 0, 0], ['casa-lustre:+y', 2, 2, { baixo: true }],
     // cozinha (4A) e despensa (4B): o forno na parede do norte e a estante da despensa
     ['casa-fogao:+y', 5, 1], ['casa-estante:+y', 5, 0],
     // salão principal (2A): a lareira na parede oeste e a escadaria em curva a leste
@@ -86,7 +86,7 @@ export const MOBILIA = {
     ['casa-berco:+y', 0, 8],
     // suíte da babá (15A): a cama ao longo da parede leste, o guarda-roupa coberto e o espelho coberto junto da porta secreta, na parede do poço
     ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-armarioCoberto:+y', 4, 8], ['casa-espelhoHera:+y', 5, 8], ['casa-criadoVelho:+y', 4, 10],
-    ['casa-escadariaVelha:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
+    ['casa-vaoEscada:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
   ],
 
   // ----------------------------------------------------------------------------------------------------- sótão ---

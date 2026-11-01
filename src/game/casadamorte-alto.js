@@ -22,7 +22,7 @@ export const PLANTA_3 = plantaDeSalas({
     { id: 'sacadaNorte', retangulos: [[5, 0, 5, 1]] },
     { id: 'espelho', retangulos: [[3, 3, 3, 3]] },
     { id: 'varanda', retangulos: [[1, 3, 2, 3], [2, 4, 5, 6]] },
-    { id: 'banheiro', retangulos: [[0, 4, 1, 5]] },
+    { id: 'banheiro', piso: 'L', retangulos: [[0, 4, 1, 5]] },
     { id: 'deposito', retangulos: [[0, 6, 1, 6]] },
     { id: 'bercario', retangulos: [[0, 7, 1, 8]] },
     { id: 'sacadaSul', retangulos: [[0, 9, 1, 10]] },
@@ -89,20 +89,20 @@ export const AREAS_TERCEIRO = [
   criarArea({
     id: 'banheiro', area: '13', nome: 'O banheiro', cel: [[0, 4, 1, 5]],
     texto: [
-      'Um quarto escuro: banheira de madeira com pés de garra, um fogãozinho de ferro com uma chaleira, um barril sob uma torneira na parede leste. A cisterna do telhado recolhia a água da chuva e a mandava para baixo por um cano. O encanamento não funciona mais.',
+      'Um cômodo sem luz e de ar parado. Há uma banheira de madeira sobre pés de garra, um fogareiro de ferro com uma chaleira e um barril sob uma torneira, junto da parede leste. Antigamente a água da chuva descia do telhado por um cano; hoje o encanamento está seco.',
     ],
   }),
   criarArea({
     id: 'deposito', area: '14', nome: 'O depósito', cel: [[0, 6, 1, 6]],
     texto: [
-      'Prateleiras empoeiradas ao longo das paredes, com lençóis e cobertores dobrados e barras de sabão ressecadas. No fundo, encostada à parede, uma vassoura coberta de teia.',
+      'Prateleiras cobertas de pó correm pelas paredes, com roupa de cama dobrada e pedaços de sabão seco. No fundo, uma vassoura velha, toda enrolada em teia, parece esperar.',
     ],
   }),
   criarArea({
     id: 'suiteBaba', area: '15A', nome: 'A suíte da babá', cel: [[2, 7, 2, 7], [2, 8, 5, 10]],
     texto: [
-      'Poeira e teias sobre um quarto bem decorado: uma cama grande, duas mesas de canto, um guarda-roupa vazio. Preso à parede ao lado do guarda-roupa, um espelho de corpo inteiro com a moldura esculpida como hera e bagas.',
-      'A babá da família era amante do dono da casa. Do caso nasceu um bebê natimorto, Walter, e pouco depois o culto matou a mulher. Uma porta dupla de vitral dá para uma varanda de fora, de frente para a entrada.',
+      'Teias e pó cobrem um quarto antes elegante: uma cama larga, criados-mudos e um guarda-roupa vazio. Na parede, ao lado dele, um espelho alto com a moldura entalhada em hera e frutinhas.',
+      'Diz-se que a babá da família foi amante do dono da casa, que o filho dos dois nasceu morto e que o culto a matou pouco depois. Portas de vitral dão para uma sacada de fora, voltada para a entrada.',
     ],
   }),
   criarArea({
@@ -130,7 +130,7 @@ export const AREAS_SOTAO = [
   criarArea({
     id: 'criancas', area: '20', nome: 'O quarto das crianças', cel: [[2, 0, 4, 2]],
     texto: [
-      'Uma janela tapada por tijolos, duas camas pequenas de estrutura de madeira, empoeiradas, e, perto da porta, um baú de brinquedos com moinhos de vento pintados e uma casa de bonecas que é uma réplica perfeita da casa em que vocês estão. Tudo sob teias.',
+      'A janela foi emparedada com tijolos. Duas caminhas de criança, de madeira, juntam pó; perto da porta há um baú de brinquedos pintado de moinhos e uma casa de bonecas que copia, em miniatura, esta mesma casa. Tudo sob teias.',
       'No meio do chão, dois esqueletos pequenos, de roupas esfarrapadas que vocês reconhecem. O de Thorn abraça o boneco de pano do irmão.',
     ],
   }),

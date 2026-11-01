@@ -234,6 +234,36 @@ obj.CONJUNTOS.update({
         ],
         'target_palette': {'colors': PALETA},
     },
+    # O lustre da sala de jantar (pende do teto, desenhado alto sobre a mesa) e o VAO da escada do 3o andar (so o corrimao em volta do poco).
+    'casaLustre': {
+        'description': ('ONE hanging crystal chandelier with a black iron frame and about twelve lit candles, hanging in the air '
+                        'with a short iron chain at the top, about 70 px wide and 60 px tall, seen from the front-left in isometric '
+                        '2:1 view. No ceiling, no table, no ground. ' + ESTILO + PIXEL),
+        'size': 96,
+        'view': 'top-down',
+        'item_descriptions': [
+            'large crystal chandelier with a black iron frame, many lit candles and hanging crystal drops',
+            'round black iron chandelier with two tiers of lit candles and crystal drops',
+            'ornate brass and crystal chandelier with lit candles',
+            'gothic wrought iron chandelier with lit candles and a small chain',
+        ],
+        'target_palette': {'colors': PALETA},
+    },
+    'casaVaoEscada': {
+        'description': ('A stairwell opening seen from above, TWO floor tiles wide by TWO tiles long (about 128 px wide): a '
+                        'half-round dark opening in the floor with NO steps, surrounded by a carved dark oak banister with '
+                        'balusters and a black newel post, a rim of red marble, seen from the front-left in isometric 2:1 view, '
+                        'about 36 px tall, sitting on the bottom of the canvas. No ground. ' + ESTILO + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'round dark stairwell opening with a carved oak banister around it and a red marble rim, dusty, cobwebs',
+            'half-round stairwell hole with an oak balustrade and a black newel post, dusty',
+            'stairwell opening surrounded by an old oak banister with a missing baluster, cobwebs',
+            'wide round stairwell opening with a carved dark oak banister, red marble edge',
+        ],
+        'target_palette': {'colors': PALETA},
+    },
 })
 
 if __name__ == '__main__':

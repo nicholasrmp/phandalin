@@ -84,6 +84,9 @@ PECAS = {
     'espelhoHera': {'conjunto': 'casaFaltam', 'n': 14, 'dirs': ['+y'], 'folga': 4},
     # a escadaria dos andares abandonados: a mesma, desbotada e escurecida
     'escadariaVelha': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2, 'envelhecer': True},
+    # o lustre PENDE do teto: a folga alta o ergue, e `dx`/`dy` (px de tela) o centram sobre a mesa; o vao da escada do 3o andar e so o corrimao
+    'lustre': {'conjunto': 'casaLustre', 'n': 0, 'dirs': ['+y'], 'folga': 66, 'dx': 16, 'dy': -24},
+    'vaoEscada': {'conjunto': 'casaVaoEscada', 'n': 0, 'dirs': ['+x'], 'folga': 2},
     'escadaria': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2},
 }
 
@@ -174,7 +177,7 @@ def main():
                 im = Image.open(ultimo('casaPecasLeste') / f"frame_urls_{spec['leste']}.png").convert('RGBA')
                 q = im.crop(im.getbbox())
             else:
-                q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaTinaIso') else base.transpose(Image.FLIP_LEFT_RIGHT)
+                q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaTinaIso', 'casaVaoEscada') else base.transpose(Image.FLIP_LEFT_RIGHT)
             if spec.get('apagar') and not (d == '+x' and spec.get('leste') is not None):
                 q = apagar(q)
             if spec.get('envelhecer'):
@@ -182,6 +185,8 @@ def main():
             elif spec['conjunto'] != 'casaAbandono':
                 q = aclarar(q)
             ax, ay = tav.ancora_da_pegada(q, spec['folga'])
+            ax -= spec.get('dx', 0)
+            ay -= spec.get('dy', 0)
             if spec.get('ax') is not None:           # a ancora medida a mao, quando o pe mais baixo e de outra peca (o banco do cravo)
                 ax = spec['ax']
             n = spec.get('fogo')
