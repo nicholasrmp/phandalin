@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Editor de cenário — Phandalin</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root { color-scheme: dark; --fundo:#14121a; --painel:#1d1a25; --borda:#3a3446; --texto:#e9e4d9; --suave:#9a93a6; --ouro:#d9b45a; }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--texto); font: 13px/1.4 system-ui, sans-serif; }
+      #raiz { display: grid; grid-template-columns: 300px 1fr; grid-template-rows: auto 1fr auto; height: 100%; }
+      header { grid-column: 1 / 3; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; background: var(--painel); border-bottom: 1px solid var(--borda); }
+      header h1 { font-size: 15px; margin: 0 10px 0 0; color: var(--ouro); }
+      button, select, input[type=text], input[type=number] { background: #2a2634; color: var(--texto); border: 1px solid var(--borda); border-radius: 5px; padding: 5px 9px; font: inherit; }
+      button { cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--ouro); }
+      button:disabled { opacity: .4; cursor: default; }
+      button.on { background: #4a3f22; border-color: var(--ouro); color: #fff; }
+      aside { overflow-y: auto; padding: 10px; background: var(--painel); border-right: 1px solid var(--borda); }
+      aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); margin: 14px 0 6px; }
+      aside h2:first-child { margin-top: 0; }
+      .ferramentas { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+      .grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+      .grade button { padding: 4px 2px; font-size: 11px; min-height: 40px; }
+      .lista { display: flex; flex-direction: column; gap: 4px; }
+      .lista button { text-align: left; }
+      #pecas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 330px; overflow-y: auto; padding: 2px; }
+      #pecas button { padding: 2px; height: 66px; display: flex; align-items: flex-end; justify-content: center; }
+      #pecas canvas { image-rendering: pixelated; max-width: 100%; max-height: 60px; }
+      #area { overflow: auto; position: relative; background: #0d0c11; }
+      #area canvas { display: block; cursor: crosshair; }
+      footer { grid-column: 1 / 3; padding: 6px 10px; background: var(--painel); border-top: 1px solid var(--borda); display: flex; gap: 18px; color: var(--suave); }
+      footer b { color: var(--texto); font-weight: 600; }
+      #avisos { color: #ff9a8a; margin: 6px 0 0; padding-left: 16px; }
+      #avisos.ok { color: #8fd49a; list-style: none; padding-left: 0; }
+      label.linha { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+      .dica { color: var(--suave); font-size: 12px; }
+      @media (max-width: 760px) { #raiz { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; } header, footer { grid-column: 1; } aside { max-height: 40vh; } }
+    </style>
+  </head>
+  <body>
+    <div id="raiz">
+      <header>
+        <h1>Editor de cenário</h1>
+        <select id="base" title="Abrir um mapa do jogo para editar"></select>
+        <button id="abrir">Abrir</button>
+        <button id="novo">Novo vazio</button>
+        <button id="desfazer" title="Ctrl+Z">Desfazer</button>
+        <button id="refazer" title="Ctrl+Y">Refazer</button>
+        <button id="exportar">Exportar JSON</button>
+        <button id="importar">Importar JSON</button>
+        <input id="arquivo" type="file" accept=".json,application/json" hidden />
+        <button id="testar" title="Abre o jogo neste mapa">▶ Testar no jogo</button>
+      </header>
+      <aside id="lateral"></aside>
+      <div id="area"><canvas id="tela"></canvas></div>
+      <footer><span id="estado">—</span><span id="tamanho"></span></footer>
+    </div>
+    <script type="module" src="/src/dev/editor.js"></script>
+  </body>
+</html>

@@ -19,6 +19,7 @@ export default defineConfig({
         propostas: resolve(import.meta.dirname, 'propostas.html'),
         rig: resolve(import.meta.dirname, 'rig.html'),
         fichaSprite: resolve(import.meta.dirname, 'ficha-sprite.html'),
+        editor: resolve(import.meta.dirname, 'editor.html'),
       },
     },
   },

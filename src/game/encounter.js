@@ -13,6 +13,7 @@ import { MAPA_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
 import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, MAPA_CASA_DA_MORTE_PORAO_1, MAPA_CASA_DA_MORTE_PORAO_2 } from './casadamorte.js';
 import { foesDaCasa } from './casadamorte-criaturas.js';
+import { ler as lerMapaDoEditor, novoMapa as mapaVazioDoEditor } from './mapa-editor.js';
 import { MAPA_POCO } from './poco.js';
 import { MAPA_CUME } from './cume.js';
 import { MAPA_CASTELO, CASTELO } from './castelo.js';
@@ -344,6 +345,7 @@ export function mapaDo(variante = 'padrao') {
       ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 7 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
     };
   }
+  if (variante === 'editor') return lerMapaDoEditor() ?? mapaVazioDoEditor();   // o que se montou em /editor.html
   if (variante === 'casaDaMorte1') return MAPA_CASA_DA_MORTE_1;
   if (variante === 'casaDaMorte2') return MAPA_CASA_DA_MORTE_2;
   if (variante === 'casaDaMorte3') return MAPA_CASA_DA_MORTE_3;
@@ -431,7 +433,7 @@ export function mapaDo(variante = 'padrao') {
  */
 export function buildFoes(variante = 'padrao') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor'].includes(variante)) return [];
   if (variante.startsWith('casaDaMorte')) return foesDaCasa(variante);
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
@@ -741,7 +743,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;
