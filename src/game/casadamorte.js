@@ -8,7 +8,7 @@
 // Glifos: U assoalho · - parquet · * tapete · 0 mesa · l escada · Z o chão de fora da casa. Parede e porta são de aresta (a planta diz quais).
 
 import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
-import { plantaDeSalas, criarArea, casa, ret, tapete } from './casadamorte-plantas.js';
+import { plantaDeSalas, criarArea, casa, ret } from './casadamorte-plantas.js';
 import { TERCEIRO_ANDAR, SOTAO, AREAS_TERCEIRO, AREAS_SOTAO, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4 } from './casadamorte-alto.js';
 import { PLANTA_PORAO_1, PLANTA_PORAO_2 } from './casadamorte-porao.js';
 import { TEXTOS_PORAO } from './casadamorte-textos-porao.js';
@@ -32,12 +32,7 @@ export const PLANTA_1 = plantaDeSalas({
   ],
   portas: [
     [3, 2, 3, 3], [3, 3, 4, 3], [4, 0, 4, 1], [1, 3, 1, 4], [2, 3, 2, 4], [2, 6, 2, 7],
-    [0, 6, 0, 7], [1, 6, 1, 7], [0, 9, 0, 10], [1, 9, 1, 10], [1, 10, 1, 11],
-  ],
-  glifos: [
-    ...tapete(0, 4, 3, 6), ...tapete(0, 7, 1, 9), ...tapete(0, 0, 3, 2), ...tapete(2, 7, 5, 10),
-    [1, 1, '0'], [2, 1, '0'], [3, 9, '0'],
-    ...[4, 5].flatMap((x) => [4, 5, 6].map((y) => [x, y, 'l'])),
+    [0, 6, 0, 7], [1, 6, 1, 7], [0, 9, 0, 10], [1, 9, 1, 10], [1, 10, 1, 11, '+'],
   ],
 });
 
@@ -56,10 +51,6 @@ export const PLANTA_2 = plantaDeSalas({
   ],
   // a estante da biblioteca gira: a aresta (3,0)-(4,0) é parede até a passagem se abrir
   portas: [[1, 3, 1, 4], [2, 3, 2, 4], [4, 3, 4, 4], [3, 3, 4, 3], [4, 0, 4, 1], [1, 6, 1, 7], [2, 6, 2, 7]],
-  glifos: [
-    ...tapete(0, 4, 3, 6), ...tapete(1, 8, 4, 9),
-    ...[4, 5].flatMap((x) => [5, 6].map((y) => [x, y, 'l'])), [5, 4, 'l'],
-  ],
 });
 
 export const AREAS_TERREO = [
@@ -163,7 +154,9 @@ export const MAPA_CASA_DA_MORTE_1 = {
   objetos: MOB_1.objetos,
   paredes: PLANTA_1.paredes,
   salas: PLANTA_1.salas,
+  folhas: PLANTA_1.folhas,
   materialDaParede: 'painelCarvalho',
+  vaoPorCasa: true,
   // O grupo entra pelo portão, ao sul, no pórtico e na sala de espera, olhando para o fundo da casa.
   grupo: grupoDoLivro([[0, 10], [1, 10], [0, 9], [1, 9]]),
   olhar: { dx: 0, dy: -1 },
@@ -176,7 +169,9 @@ export const MAPA_CASA_DA_MORTE_2 = {
   objetos: MOB_2.objetos,
   paredes: PLANTA_2.paredes,
   salas: PLANTA_2.salas,
+  folhas: PLANTA_2.folhas,
   materialDaParede: 'painelCarvalho',
+  vaoPorCasa: true,
   // Quem sobe a escadaria chega ao salão superior, ao pé da curva.
   grupo: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
   olhar: { dx: 1, dy: 0 },

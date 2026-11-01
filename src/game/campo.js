@@ -29,6 +29,7 @@ export function montarCampo(mapa) {
   field.rochaEmCorte = Boolean(mapa.rochaEmCorte);   // a pedra na frente de uma sala fica baixa (a mansão)
   // O material das paredes de borda no atlas das faces (a Casa da Morte: papel de parede bordô, reboco velho).
   if (mapa.materialDaParede) field.materialDaParede = mapa.materialDaParede;
+  field.vaoPorCasa = Boolean(mapa.vaoPorCasa);       // cada porta é uma aresta, mesmo ao lado de outra (a Casa da Morte)
   field.paredeAlta = Number(mapa.paredeAlta) || 0;   // níveis de parede ACIMA do chão, só no desenho (a regra segue a altura do mapa)
   // As portas que têm FOLHA de madeira (o tabuleiro desenha a folha encostada quando aberta). As cenas do anfitrião refazem
   // isto; o espelho do convidado só tem o mapa, e sem esta lista nunca desenhava a folha.

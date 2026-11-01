@@ -230,7 +230,7 @@ export function criarCasaDaMorte(app, config) {
     if (!estado.explorando) return [];
     const out = [...pistasAuras(ctx)];
     if (variante === 'casaDaMorte1' && !salvo.armarioAberto) {
-      out.push({ id: 'armario', tipo: 'trancada', ...casa(5, 10), nome: 'O armário do leste do canil', fazer: abrirArmario });
+      out.push({ id: 'armario', tipo: 'trancada', ...casa(5, 7), nome: 'O armário do leste do canil', fazer: abrirArmario });
     }
     if (variante === 'casaDaMorte2' && !salvo.chave) out.push({ id: 'chave', tipo: 'procurado', ...casa(2, 1), nome: 'A chave de ferro dos Durst' });
     if (variante === 'casaDaMorte4' && !salvo.portaCriancas) {
@@ -324,7 +324,7 @@ export function criarCasaDaMorte(app, config) {
       ops.push({
         rotulo: salvo.armarioAberto ? 'O armário do leste (aberto)' : 'Abrir o cadeado do armário do leste',
         icone: 'acao-usarObjeto', detalhe: salvo.armarioAberto ? 'já aberto' : 'ferramentas de ladrão, Prestidigitação, CD 15',
-        motivo: salvo.armarioAberto ? 'já aberto' : longe(c, casa(5, 10), 25),
+        motivo: salvo.armarioAberto ? 'já aberto' : longe(c, casa(5, 7), 25),
         fazer: async () => {
           const ladrao = herois().find((h) => garantirInventario(h).bag.some((i) => i.id === 'ferramentasDeLadrao'));
           if (!ladrao) { await painel('O cadeado é pequeno e firme. Sem ferramentas de ladrão, não há o que fazer.'); return; }
@@ -426,8 +426,10 @@ export function criarCasaDaMorte(app, config) {
     fugaInteracoes(ctx, { area, tile, sup, c, ops });
 
     // ---- as escadas (todas as que a planta declara, onde a casa já as mostrou)
-    if (sup === 'escada') {
+    // A escadaria de mármore é uma peça de cenário (a casa onde se clica é de `prop`): vale o retângulo dela, onde a casa a mostra.
+    if (sup === 'escada' || sup === 'prop') {
       for (const e of andar.escadas ?? []) {
+        if (sup === 'prop' && e.secreta) continue;
         if (!dentro(e.rect, tile)) continue;
         ops.push({
           rotulo: e.rotulo, icone: 'acao-usarObjeto', detalhe: e.detalhe, motivo: null,

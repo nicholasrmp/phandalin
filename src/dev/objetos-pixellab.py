@@ -1208,6 +1208,101 @@ def medir(im):
     }
 
 
+# ----------------------------------------------------------------------------------------------------------------
+# NAO USADO NO JOGO: a mobilia da casa em oito vistas saiu numa perspectiva propria, que nao bate com a grade 2:1; a que vale e a rota de uma
+# direcao de `casa-objetos-1dir.py`. Fica como registro (e a paleta `PALETA_CASA` e reaproveitada). As oito vistas serviriam para que cada peca olhe para onde o mapa
+# manda (a lareira de frente para a sala, e nao para a parede): `acrescentar-casa.py` escolhe a vista de cada um dos
+# quatro eixos do mapa. Mesma paleta em todas (carvalho escuro, vinho do papel de parede, latao, marmore vermelho),
+# para que a casa pareca uma casa so. Sem `smart` na paleta: a API recusa em objeto de varias direcoes.
+# ----------------------------------------------------------------------------------------------------------------
+VINHO = ['#2c0d12', '#4a1520', '#74222f', '#9a3a46']
+LATAO = ['#6e5a2c', '#a8893f', '#d9be6e']
+MARMORE = ['#2a2528', '#4a4045', '#7e6a68', '#b09a92']
+FOGO = ['#7a2a10', '#c4521a', '#f09a2c', '#ffd868']
+PALETA_CASA = MADEIRA + VINHO + LATAO + FERRO + MARMORE + FOGO
+PIXEL_CASA = (PIXEL + ' Dark gothic manor furniture, carved dark oak, burgundy velvet and brass, tidy and well kept. '
+              'Dark brown selective outline, not black. ')
+
+
+def _casa(nome, descricao, largura, altura, seed):
+    PRO_FLASH[nome] = {
+        'description': descricao + ' ' + PIXEL_CASA,
+        'view': 'low top-down',
+        'image_size': {'width': largura, 'height': altura},
+        'n_directions': 8,
+        'seed': seed,
+        'target_palette': {'colors': PALETA_CASA},
+    }
+
+
+_casa('casaLareira',
+      'The fireplace FILLS THE WHOLE CANVAS WIDTH. A grand manor fireplace built against a wall: black marble '
+      'mantel shelf on two carved pilasters, a deep arched firebox with a lit orange fire and logs on iron '
+      'andirons, a plain stone hearth in front, about 58 px tall, one cell wide. The back is flat against a wall.',
+      72, 72, 20261201)
+_casa('casaCadeira',
+      'The armchair FILLS THE WHOLE CANVAS WIDTH. One high-backed manor armchair, burgundy velvet seat and '
+      'back with carved dark oak arms and legs and brass studs, facing forward, about 34 px tall.',
+      48, 48, 20261202)
+_casa('casaMesaJantar',
+      'The table FILLS THE WHOLE CANVAS WIDTH, edge to edge. Long polished mahogany dining table, twice as long '
+      'as wide, carved legs, white tablecloth runner, silver candlesticks, plates and goblets, about 30 px tall. '
+      'No chairs.',
+      104, 80, 20261203)
+_casa('casaCama',
+      'The bed FILLS THE WHOLE CANVAS WIDTH, edge to edge. Single narrow manor bed, twice as long as wide, '
+      'dark oak frame with a tall carved headboard at ONE short end and a low footboard, burgundy quilt, '
+      'white pillow, about 26 px tall, headboard 38 px.',
+      104, 84, 20261204)
+_casa('casaEstante',
+      'The bookshelf FILLS THE WHOLE CANVAS WIDTH. Tall dark oak library bookcase built against a wall, one cell '
+      'wide, five shelves packed with leather books in red, brown and green, a brass rail, about 66 px tall. '
+      'The back is flat against a wall.',
+      60, 84, 20261205)
+_casa('casaGuardaRoupa',
+      'The wardrobe FILLS THE WHOLE CANVAS WIDTH. Tall dark oak wardrobe with two carved doors and brass '
+      'handles, a crown molding and short feet, one cell wide, about 62 px tall. The back is flat against a wall.',
+      60, 84, 20261206)
+_casa('casaFogao',
+      'The stove FILLS THE WHOLE CANVAS WIDTH. Black cast-iron kitchen stove with a flat hot plate, a kettle '
+      'and a pot on top, an oven door with a brass handle, a stovepipe rising behind, about 52 px tall, one '
+      'cell wide, back flat against a wall.',
+      60, 84, 20261207)
+_casa('casaCandelabro',
+      'The candelabra FILLS THE CANVAS HEIGHT. Tall standing brass candelabra on a round base, five lit '
+      'candles with small flames, about 56 px tall and 20 px wide.',
+      40, 64, 20261208)
+_casa('casaEscrivaninha',
+      'The desk FILLS THE WHOLE CANVAS WIDTH. Dark mahogany writing desk with a green leather top, an inkwell, '
+      'a quill, papers and a brass oil lamp, three drawers on one side, one cell wide, about 34 px tall.',
+      56, 56, 20261209)
+_casa('casaArmadura',
+      'The armor FILLS THE CANVAS HEIGHT. Full suit of plate armor standing upright on a small dark wooden '
+      'plinth, a wolf-head helm, holding a spear upright in one gauntlet, about 62 px tall, narrow.',
+      44, 80, 20261210)
+_casa('casaTina',
+      'The bathtub FILLS THE WHOLE CANVAS WIDTH, edge to edge. Old wooden clawfoot bathtub, twice as long as '
+      'wide, empty and dusty, cobwebs, brass taps at one end, about 24 px tall.',
+      104, 76, 20261211)
+_casa('casaBerco',
+      'The cradle FILLS THE WHOLE CANVAS WIDTH. Small dark wooden baby cradle on curved rockers, covered with a '
+      'black funeral shroud, dusty, cobwebs, about 26 px tall.',
+      56, 56, 20261212)
+_casa('casaCravo',
+      'The harpsichord FILLS THE WHOLE CANVAS WIDTH, edge to edge. Elegant painted harpsichord with a raised '
+      'lid, ivory keys, dark oak legs and a small bench, twice as long as wide, about 38 px tall.',
+      104, 80, 20261213)
+_casa('casaBau',
+      'The chest FILLS THE WHOLE CANVAS WIDTH. Heavy iron-bound dark oak treasure chest with a domed lid and a '
+      'brass lock, closed, about 24 px tall, one cell wide.',
+      52, 52, 20261214)
+_casa('casaEscadaoCurva',
+      'The staircase FILLS THE WHOLE CANVAS WIDTH, edge to edge. A grand curved staircase of RED MARBLE, a half '
+      'circle of wide steps winding around an empty round well, with a carved dark oak banister and a black '
+      'newel post, rising toward the back, as wide as it is deep. About 60 px tall at the high end.',
+      176, 152, 20261215)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--conjunto', required=True, choices=list(CONJUNTOS) + list(PRO_FLASH))

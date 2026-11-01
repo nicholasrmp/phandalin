@@ -83,7 +83,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'armarioNorte', ...casa(4, 7), r: 1, nome: 'O armário do norte',
+      id: 'armarioNorte', ...casa(3, 7), r: 1, nome: 'O armário do norte',
       olhar: 'Um armário de portas lisas, destrancado.',
       verbos: [
         { p: 'investigacao', cd: 10, ok: 'Dentro, uma caixa com um baralho de cartas e taças de vinho de madeira. O baralho tem o rei, a rainha e o cavaleiro dos Durst: o resto são cartas em branco.' },

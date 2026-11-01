@@ -103,7 +103,7 @@ async function fantasmas(ctx) {
 async function lutarComOsFantasmas(ctx) {
   if (ctx.grupos.fantasmas && !ctx.grupos.fantasmas.vencido) return;
   const mk = (nome, p) => { const f = makeMonster('fantasmaDeCrianca', { ...p }); f.name = nome; f.grupo = 'fantasmas'; f.facingVec = { dx: 0, dy: 1 }; return f; };
-  const g = { id: 'fantasmas', membros: [mk('Rose', casa(3, 1)), mk('Thorn', casa(4, 1))], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
+  const g = { id: 'fantasmas', membros: [mk('Rose', casa(3, 0)), mk('Thorn', casa(3, 1))], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
   ctx.grupos.fantasmas = g;
   ctx.depoisDaLuta.fantasmas = async () => {
     ctx.salvo.fantasmas = 'apareceram';

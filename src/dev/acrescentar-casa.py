@@ -92,3 +92,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # A mobília e as portas da casa vão para o atlas do cenário, que a taverna também corta: refaz sozinho, sem gastar geração.
+    import subprocess
+    import sys
+    subprocess.run([sys.executable, '-P', str(Path(__file__).with_name('acrescentar-casa-objetos.py'))], check=True)

@@ -10,7 +10,7 @@
 // Glifos: U assoalho · * tapete · 0 mesa · l escada · Z o chão de fora da casa.
 
 import { MOBILIA, mobiliar } from './casadamorte-mobilia.js';
-import { plantaDeSalas, criarArea, casa, tapete } from './casadamorte-plantas.js';
+import { plantaDeSalas, criarArea, casa } from './casadamorte-plantas.js';
 
 // ------------------------------------------------------------------------------------------------ 3º andar ----
 // A suíte principal (12) ocupa o norte, com o armário do espelho (12B) e a varanda de fora (12C). No meio, a varanda (11) em volta do vão da
@@ -34,11 +34,7 @@ export const PLANTA_3 = plantaDeSalas({
     [1, 2, 1, 3], [2, 2, 2, 3], [3, 2, 3, 3], [5, 1, 5, 2], [1, 3, 1, 4], [1, 6, 2, 6], [2, 6, 2, 7],
     [1, 8, 2, 8], [1, 9, 2, 9], [1, 10, 2, 10],
   ],
-  glifos: [
-    ...tapete(0, 0, 2, 2), ...tapete(2, 7, 5, 10),
-    [5, 3, '0'],
-    ...[4, 5].flatMap((x) => [4, 5, 6].map((y) => [x, y, 'l'])),
-  ],
+  glifos: [[5, 3, '0']],
 });
 
 // ------------------------------------------------------------------------------------------------ sótão ----
@@ -57,7 +53,7 @@ export const PLANTA_4 = plantaDeSalas({
   ],
   // a porta do quarto das crianças (3,2)-(3,3) é fechada (trancada); a da espiral (0,3)-(0,4) é secreta (parede até a casa mostrar)
   portas: [[1, 2, 1, 3], [3, 2, 3, 3, '+'], [1, 3, 1, 4], [3, 6, 3, 7], [5, 4, 5, 5]],
-  glifos: [...tapete(2, 0, 4, 2), [5, 6, 'l'], [5, 7, 'l'], [4, 7, 'l']],
+  glifos: [[5, 6, 'l'], [5, 7, 'l'], [4, 7, 'l']],
 });
 
 export const TERCEIRO_ANDAR = PLANTA_3.terreno;
@@ -172,7 +168,9 @@ export const MAPA_CASA_DA_MORTE_3 = {
   objetos: MOB_3.objetos,
   paredes: PLANTA_3.paredes,
   salas: PLANTA_3.salas,
+  folhas: PLANTA_3.folhas,
   materialDaParede: 'madeiraVelha',
+  vaoPorCasa: true,
   poeira: true,
   grupo: grupoPadrao([[2, 6], [3, 6], [2, 5], [3, 5]]),
   olhar: { dx: 0, dy: -1 },
@@ -185,7 +183,9 @@ export const MAPA_CASA_DA_MORTE_4 = {
   objetos: MOB_4.objetos,
   paredes: PLANTA_4.paredes,
   salas: PLANTA_4.salas,
+  folhas: PLANTA_4.folhas,
   materialDaParede: 'madeiraVelha',
+  vaoPorCasa: true,
   poeira: true,
   grupo: grupoPadrao([[5, 5], [5, 6], [5, 7], [4, 7]]),
   olhar: { dx: -1, dy: 0 },

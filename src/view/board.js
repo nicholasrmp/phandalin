@@ -194,7 +194,7 @@ const MULTICASA = new Set(['carroca', 'cavalo', 'casa', 'taverna', 'tenda',
   'altar', 'banheira', 'mesaBanquete', 'camaRei', 'portaoQuebrado']);
 
 /** Peças de vários quadros e quantos quadros por segundo (o grupo do atlas é o nome). */
-const PROP_ANIMADA = { 'prop-taverna-lareira': 8, 'prop-rodaDagua': 5 };
+const PROP_ANIMADA = { 'prop-taverna-lareira': 8, 'prop-rodaDagua': 5, 'prop-casa-lareira:+y': 8, 'prop-casa-lareira:+x': 8, 'prop-casa-lareiraB:+y': 8, 'prop-casa-lareiraB:+x': 8 };
 
 // A CHAMA QUE BALANÇA. As fogueiras, os braseiros e as tochas do atlas são um quadro só; em vez de gerar quadros novos, o
 // motor refaz a parte de cima do desenho a cada instante, fileira por fileira, com um desvio lateral que cresce para a ponta
@@ -1384,7 +1384,10 @@ export class Board {
     const pisoDaSala = salaDaCasa && this.field.pisoDeSala?.get(salaDaCasa);
     // Em casa de tabua, as marcas de laje (cacos, musgo) saem: ficariam um remendo de pedra no assoalho.
     const MARCA_DE_LAJE = ['ossos', 'mancha', 'cacos', 'musgoChao'];
-    const chaoDe = (salaDaCasa && (s.chao === 'grama' || s.chao === 'caverna' || s.chao === 'laje'
+    // A peça de mobília numa sala SEM piso próprio pisa no piso que o mapa anotou nela (`piso`), e não na laje: sem isto cada cadeira
+    // ganhava um losango cinza por baixo.
+    const pisoDaPeca = salaDaCasa && !pisoDaSala && s.objeto === 'prop' ? this.varianteDaProp(x, y)?.piso : null;
+    const chaoDe = pisoDaPeca && ladrilhoChao(pisoDaPeca, 0, 0) ? pisoDaPeca : (salaDaCasa && (s.chao === 'grama' || s.chao === 'caverna' || s.chao === 'laje'
       || (pisoDaSala === 'tabua' && MARCA_DE_LAJE.includes(s.chao))))
       ? (pisoDaSala && ladrilhoChao(pisoDaSala, 0, 0) ? this.pisoSorteado(pisoDaSala, x, y) : 'laje')
       // Mobília fora de casa (a cerca do campo) pisa em capim, não na laje do castelo.
@@ -1654,7 +1657,7 @@ export class Board {
       // com o centro da base no centro da casa. A sombra acompanha a largura.
       const r = SOMBRA_DO_BAIXO[s.objeto];
       // Peça de parede, balcão e escada já trazem a sombra no desenho: a elipse seria uma mancha.
-      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)/.test(prop?.grupo ?? '')) {
+      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)|^prop-casa-(lareira|estante|guardaRoupa|fogao|escadaria)/.test(prop?.grupo ?? '')) {
         ctx.fillStyle = 'rgba(0,0,0,.25)';
         ctx.beginPath();
         ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
@@ -2345,6 +2348,28 @@ export class Board {
     return piso;
   }
 
+  /**
+   * A altura de uma parede de borda que desce e sobe: `k` vai de 0 (inteira) a 1 (baixa, 1 nível), a 6 por segundo, medido no relógio
+   * do desenho (as paredes são desenhadas várias vezes por quadro com o mesmo relógio: só o primeiro desenho avança).
+   */
+  alturaDaParede(chave, cheia, baixar) {
+    const agora = this.time ?? 0;
+    if (this._relogioParede !== agora) {
+      this._dtParede = Math.min(0.1, Math.max(0, agora - (this._relogioParede ?? agora)));
+      this._relogioParede = agora;
+      this._paredeVista = new Set();
+    }
+    this._paredeBaixa ??= new Map();
+    let k = this._paredeBaixa.get(chave) ?? 0;
+    const alvo = baixar ? 1 : 0;
+    if (!this._paredeVista.has(chave)) {
+      this._paredeVista.add(chave);
+      k += Math.max(-1, Math.min(1, alvo - k)) * Math.min(Math.abs(alvo - k), 6 * (this._dtParede || 0.016));
+      this._paredeBaixa.set(chave, k);
+    }
+    return cheia + (Math.min(cheia, LIFT) - cheia) * k;
+  }
+
   /** As paredes de borda do norte e do oeste da casa (x, y). */
   desenharParedes(ctx, x, y, d) {
     const f = this.field;
@@ -2388,14 +2413,19 @@ export class Board {
       const ehBrecha = Boolean(f.brechas?.has(`${x},${y},${lado}`));
       const passagem = !ehBrecha && (cod === ARESTA.porta || cod === ARESTA.aberta);
       const emRuina = grau > 0 && !passagem;
-      const alto = (emRuina ? this.niveisEmRuina(niveisAqui, grau, x, y, lado) : niveisAqui) * LIFT;
+      const altoCheio = (emRuina ? this.niveisEmRuina(niveisAqui, grau, x, y, lado) : niveisAqui) * LIFT;
+      const cobre = !fora && (escondeSala
+        || this.cobreFigura(Math.min(A.x, B.x), A.y - altoCheio, TW / 2, altoCheio + TH / 2, d)
+        || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - altoCheio, TW / 2, altoCheio + TH / 2, this.hover)));
+      // A PAREDE DA FRENTE ABAIXA. Uma parede que fica entre a câmera e quem anda não esmaece (ficava um vidro por onde o grupo não
+      // clicava): ela desce a 1 nível, devagar, e volta quando ninguém está atrás. Só a parede cheia; o vão de uma porta segue translúcido.
+      // Mobília atrás da parede (a casa de trás, ou a uma diagonal dela) também a faz baixar: a peça não pode ficar escondida.
+      const pecaAtras = !fora && [[ax, ay], [ax - 1, ay - 1]].some(([px, py]) => f.inside(px, py) && f.surfaceAt(px, py) === 'prop' && !this.casaDeFora(px, py));
+      const baixavel = !fora && !passagem && !emRuina && cod === ARESTA.parede;
+      const alto = baixavel ? this.alturaDaParede(`${x},${y},${lado}`, altoCheio, cobre || pecaAtras) : altoCheio;
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      if (!fora && (escondeSala
-        || this.cobreFigura(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, d)
-        || (this.hover && this.cobreTela(Math.min(A.x, B.x), A.y - alto, TW / 2, alto + TH / 2, this.hover)))) {
-        ctx.globalAlpha = TRANSLUCIDO;
-      }
+      if (cobre && !baixavel) ctx.globalAlpha = TRANSLUCIDO;
       this.faceDaParede(ctx, lado, A, B, alto, cod, x, y, emRuina ? grau : 0, passagem ? grau : 0, fachadaFechada && passagem, ehBrecha);
       ctx.restore();
     }
@@ -2723,9 +2753,11 @@ export class Board {
       : f.inside(ax, ay) && f.paredeO[ay * f.w + ax] === codDoCorrido);
     // Recua até a primeira casa do corrido e mede o comprimento dele.
     let atras = 0;
-    while (mesma(lado === 'N' ? x - atras - 1 : x, lado === 'N' ? y : y - atras - 1)) atras += 1;
+    while (!f.vaoPorCasa && mesma(lado === 'N' ? x - atras - 1 : x, lado === 'N' ? y : y - atras - 1)) atras += 1;
     let total = atras + 1;
-    for (;;) {
+    // Uma porta por aresta (a casa de moradia): duas portas vizinhas não viram um arco só, com uma folha.
+    if (f.vaoPorCasa) { atras = 0; total = 1; }
+    for (; !f.vaoPorCasa;) {
       const adiante = total - atras;
       if (!mesma(lado === 'N' ? x + adiante : x, lado === 'N' ? y : y + adiante)) break;
       total += 1;
@@ -2815,7 +2847,20 @@ export class Board {
     // fica igual a uma arcada, e o jogador não tem como saber o que pode
     // fechar atrás de si. É uma tábua estreita no batente, vista quase de
     // perfil — que é como uma porta aberta aparece nesta câmera.
-    if (cod === ARESTA.aberta && temFolha) {
+    // A folha da CASA DA MORTE é arte própria (`portas-pixellab.py`): carvalho nos andares de baixo, tábua velha nos de cima, ferro
+    // no portão de fora. De frente, ela é uma elevação; encostada no batente, é a mesma imagem espremida.
+    const tipoDaFolha = this.casaDeFora(x, y) ? 'ferro' : (this.field.materialDaParede === 'madeiraVelha' ? 'velha' : 'carvalho');
+    const arte = this.field.materialDaParede ? spriteCenario('portaCasa', [tipoDaFolha], x, y) : null;
+    if (cod === ARESTA.aberta && temFolha && arte) {
+      const larg = Math.max(6, Math.round(raio * 0.58));
+      const alt = Math.round(altura * 0.94);
+      vao.noPlano(ctx, () => {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(arte.img, arte.x, arte.y, arte.w, arte.h, -raio + 1, -alt, larg, alt);
+        ctx.fillStyle = 'rgba(10,8,6,.38)';
+        ctx.fillRect(-raio + 1 + Math.round(larg * 0.55), -alt, Math.ceil(larg * 0.45), alt);
+      });
+    } else if (cod === ARESTA.aberta && temFolha) {
       const larg = Math.max(6, Math.round(raio * 0.58));
       const alt = Math.round(altura * 0.94);
       vao.noPlano(ctx, () => {
@@ -2846,7 +2891,10 @@ export class Board {
       // Em construção arruinada a folha é uma porta velha de verdade (`vaoRuina`: quebrada,
       // escorada, queimada, entreaberta), esticada para o vão. Na inteira, a de tábuas.
       const velha = grauVao ? spriteCenario('vaoRuina', ['porta'], x, y) : null;
-      vao.noPlano(ctx, velha ? () => {
+      vao.noPlano(ctx, arte ? () => {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(arte.img, arte.x, arte.y, arte.w, arte.h, -raio, -altura, raio * 2, altura);
+      } : velha ? () => {
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(velha.img, velha.x, velha.y, velha.w, velha.h, -raio, -altura, raio * 2, altura);
       } : () => {

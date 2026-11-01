@@ -70,6 +70,9 @@ export function plantaDeSalas({ salas, portas = [], glifos = [], piso = 'U' }) {
     rows[y][x] = cod;
   }
 
+  // as portas têm folha (o tabuleiro a desenha encostada no batente quando o arco está aberto)
+  const folhas = portas.map(([ax, ay, bx, by]) => [{ x: ax + D, y: ay + D }, { x: bx + D, y: by + D }]);
+
   const mapaSalas = {};
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) if (dono[y][x] >= 0) (mapaSalas[salas[dono[y][x]].id] ??= []).push({ x, y });
@@ -78,6 +81,7 @@ export function plantaDeSalas({ salas, portas = [], glifos = [], piso = 'U' }) {
     terreno: glifo.map((l) => l.join('')),
     paredes: { n: nRows.map((l) => l.join('')), o: oRows.map((l) => l.join('')) },
     salas: mapaSalas,
+    folhas,
     dono,
   };
 }
