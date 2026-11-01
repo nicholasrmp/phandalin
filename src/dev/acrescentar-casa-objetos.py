@@ -36,7 +36,7 @@ PECAS = {
     'lareira': {'conjunto': 'casaPecas', 'n': 2, 'dirs': ['+y', '+x'], 'folga': 4, 'fogo': 6, 'leste': 0},
     'lareiraB': {'conjunto': 'casaPecas', 'n': 3, 'dirs': ['+y', '+x'], 'folga': 4, 'fogo': 6, 'leste': 1},
     'lareiraApagada': {'conjunto': 'casaPecas', 'n': 2, 'dirs': ['+y', '+x'], 'folga': 4, 'apagar': True, 'leste': 14},
-    'cadeira': {'conjunto': 'casaPecas', 'n': 1, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 9},
+    'cadeira': {'conjunto': 'casaPequenos', 'n': 1, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 5, 'leste_conjunto': 'casaPequenos'},
     'estante': {'conjunto': 'casaPecas', 'n': 4, 'dirs': ['+y', '+x'], 'folga': 4, 'leste': 2},
     'estanteB': {'conjunto': 'casaPecas', 'n': 5, 'dirs': ['+y', '+x'], 'folga': 4, 'leste': 3},
     'guardaRoupaB': {'conjunto': 'casaPecas', 'n': 7, 'dirs': ['+y', '+x'], 'folga': 4, 'leste': 5},
@@ -45,25 +45,26 @@ PECAS = {
     'candelabro': {'conjunto': 'casaPecas', 'n': 10, 'dirs': ['+y'], 'folga': 6},
     'escrivaninha': {'conjunto': 'casaPecas', 'n': 11, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 11},
     'armadura': {'conjunto': 'casaPecas', 'n': 13, 'dirs': ['+y'], 'folga': 4},
-    'berco': {'conjunto': 'casaPecas', 'n': 14, 'dirs': ['+y'], 'folga': 6},
-    'bau': {'conjunto': 'casaPecas', 'n': 15, 'dirs': ['+y'], 'folga': 6},
+    'berco': {'conjunto': 'casaPequenos', 'n': 31, 'dirs': ['+y'], 'folga': 6},
+    'bau': {'conjunto': 'casaPequenos', 'n': 28, 'dirs': ['+y'], 'folga': 6},
     # as compridas: a direcao e o EIXO em que corre o comprimento (+x desce a direita, +y desce a esquerda)
-    'mesaJantar': {'conjunto': 'casaMesa', 'n': 2, 'dirs': ['+x'], 'folga': 6},
-    'cama': {'conjunto': 'casaCamaIso', 'n': 0, 'dirs': ['+y'], 'folga': 6},
-    'camaVelha': {'conjunto': 'casaCamaIso', 'n': 2, 'dirs': ['+y'], 'folga': 6},
-    'tina': {'conjunto': 'casaTinaIso', 'n': 0, 'dirs': ['+x'], 'folga': 6},
-    'cravo': {'conjunto': 'casaCravoIso', 'n': 2, 'dirs': ['+y'], 'folga': 6, 'ax': 60},
+    'mesaJantar': {'conjunto': 'casaMesa3', 'n': 2, 'dirs': ['+x'], 'folga': 6},
+    'cama': {'conjunto': 'casaCama3', 'n': 0, 'dirs': ['+y'], 'folga': 6},
+    'camaAbandonada': {'conjunto': 'casaCama3', 'n': 3, 'dirs': ['+y'], 'folga': 6},
+    'camaVelha': {'conjunto': 'casaCama3', 'n': 2, 'dirs': ['+y'], 'folga': 6},
+    'tina': {'conjunto': 'casaTina3', 'n': 0, 'dirs': ['+x'], 'folga': 6},
+    'cravo': {'conjunto': 'casaCravo3', 'n': 2, 'dirs': ['+y'], 'folga': 6},
     # a poltrona de COSTAS (olha para a lareira, para longe da camera): -y como saiu, -x espelhada
-    'cadeiraCostas': {'conjunto': 'casaCadeiraCostas', 'n': 2, 'dirs': ['-y', '-x'], 'folga': 6},
+    'cadeiraCostas': {'conjunto': 'casaPequenos', 'n': 8, 'dirs': ['-y', '-x'], 'folga': 6},
     # o ABANDONO dos andares de cima (`casaAbandono`): moveis sob lencol, teia e lixo
-    'poltronaCoberta': {'conjunto': 'casaAbandono', 'n': 0, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 10},
+    'poltronaCoberta': {'conjunto': 'casaPequenos', 'n': 24, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 26, 'leste_conjunto': 'casaPequenos'},
     'armarioCoberto': {'conjunto': 'casaAbandono', 'n': 1, 'dirs': ['+y', '+x'], 'folga': 4, 'leste': 7},
     'caixotes': {'conjunto': 'casaAbandono', 'n': 3, 'dirs': ['+y'], 'folga': 6},
     'espelhoCoberto': {'conjunto': 'casaAbandono', 'n': 4, 'dirs': ['+y', '+x'], 'folga': 4},
     'sofaCoberto': {'conjunto': 'casaAbandono', 'n': 5, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 15},
     'manequim': {'conjunto': 'casaAbandono', 'n': 6, 'dirs': ['+y'], 'folga': 6},
     'cobertores': {'conjunto': 'casaAbandono', 'n': 7, 'dirs': ['+y'], 'folga': 6},
-    'cadeiraQuebrada': {'conjunto': 'casaAbandono', 'n': 8, 'dirs': ['+y'], 'folga': 6},
+    'cadeiraQuebrada': {'conjunto': 'casaPequenos', 'n': 22, 'dirs': ['+y'], 'folga': 6},
     'livrosTeia': {'conjunto': 'casaAbandono', 'n': 10, 'dirs': ['+y'], 'folga': 6},
     'comodaCoberta': {'conjunto': 'casaAbandono', 'n': 12, 'dirs': ['+y', '+x'], 'folga': 4, 'leste': 8},
     'cavaloDePau': {'conjunto': 'casaAbandono', 'n': 13, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 13},
@@ -77,7 +78,7 @@ PECAS = {
     'tigre': {'conjunto': 'casaFaltam', 'n': 5, 'dirs': ['+y'], 'folga': 14},
     'barril': {'conjunto': 'casaFaltam', 'n': 6, 'dirs': ['+y'], 'folga': 6},
     'casaDeBonecas': {'conjunto': 'casaFaltam', 'n': 7, 'dirs': ['+y'], 'folga': 6},
-    'cadeiraBalanco': {'conjunto': 'casaFaltam', 'n': 8, 'dirs': ['+y'], 'folga': 6},
+    'cadeiraBalanco': {'conjunto': 'casaPequenos', 'n': 20, 'dirs': ['+y'], 'folga': 6},
     'boneca': {'conjunto': 'casaFaltam', 'n': 9, 'dirs': ['+y'], 'folga': 6},
     'criado': {'conjunto': 'casaFaltam', 'n': 11, 'dirs': ['+y'], 'folga': 6},
     'criadoVelho': {'conjunto': 'casaFaltam', 'n': 15, 'dirs': ['+y'], 'folga': 6},
@@ -92,9 +93,9 @@ PECAS = {
     'esqueletoBau': {'conjunto': 'casaMais', 'n': 2, 'dirs': ['+y'], 'folga': 6},
     'prateleiraLencois': {'conjunto': 'casaMais', 'n': 3, 'dirs': ['+y'], 'folga': 4},
     'prateleiraCobertores': {'conjunto': 'casaMais', 'n': 4, 'dirs': ['+y'], 'folga': 4},
-    'cadeiraJantar': {'conjunto': 'casaMais', 'n': 5, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 7, 'leste_conjunto': 'casaMais'},
+    'cadeiraJantar': {'conjunto': 'casaPequenos', 'n': 13, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 17, 'leste_conjunto': 'casaPequenos'},
     'bauSapatos': {'conjunto': 'casaMais', 'n': 9, 'dirs': ['+y'], 'folga': 6},
-    'bauCorpo': {'conjunto': 'casaMais', 'n': 10, 'dirs': ['+y'], 'folga': 6},
+    'bauCorpo': {'conjunto': 'casaPequenos', 'n': 30, 'dirs': ['+y'], 'folga': 6},
     'cabideiro': {'conjunto': 'casaMais', 'n': 11, 'dirs': ['+y'], 'folga': 6},
     'capasParede': {'conjunto': 'casaMais', 'n': 12, 'dirs': ['+y'], 'folga': 4},
     'montaCargas': {'conjunto': 'casaMais', 'n': 13, 'dirs': ['+y'], 'folga': 4},
@@ -119,6 +120,37 @@ def apagar(q):
 
 # A folha de cada porta: (arquivo, papel). Escolhidas olhando a folha de contato de `portas-pixellab.py`.
 PORTAS = {'carvalho': 'portaCarvalho-0.png', 'velha': 'portaVelha-1.png', 'ferro': 'portaoFerro-0.png'}
+
+
+def limpar(q, minimo=14):
+    """Tira os pixels soltos que o PixelLab deixa no canto da tela (um ponto escuro longe da peca estica a caixa e estraga a ancora)."""
+    w, h = q.size
+    px = q.load()
+    visto = [[False] * w for _ in range(h)]
+    comps = []
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] and not visto[y][x]:
+                fila = [(x, y)]
+                visto[y][x] = True
+                lista = []
+                while fila:
+                    cx, cy = fila.pop()
+                    lista.append((cx, cy))
+                    for dx in (-1, 0, 1):
+                        for dy in (-1, 0, 1):
+                            nx, ny = cx + dx, cy + dy
+                            if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] and not visto[ny][nx]:
+                                visto[ny][nx] = True
+                                fila.append((nx, ny))
+                comps.append(lista)
+    if len(comps) > 1:
+        maior = max(len(c) for c in comps)
+        for c in comps:
+            if len(c) < max(minimo, maior * 0.08):
+                for cx, cy in c:
+                    px[cx, cy] = (0, 0, 0, 0)
+    return q.crop(q.getbbox())
 
 
 def aclarar(q, fator=1.22):
@@ -184,13 +216,13 @@ def main():
     for nome, spec in PECAS.items():
         pasta = ultimo(spec['conjunto'])
         base = Image.open(pasta / f"frame_urls_{spec['n']}.png").convert('RGBA')
-        base = base.crop(base.getbbox())
+        base = limpar(base.crop(base.getbbox()))
         for d in spec['dirs']:
             if d == '+x' and spec.get('leste') is not None:        # a vista propria da parede do oeste: a luz continua a de cima a esquerda
                 im = Image.open(ultimo(spec.get('leste_conjunto', 'casaPecasLeste')) / f"frame_urls_{spec['leste']}.png").convert('RGBA')
-                q = im.crop(im.getbbox())
+                q = limpar(im.crop(im.getbbox()))
             else:
-                q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaTinaIso', 'casaVaoEscada') else base.transpose(Image.FLIP_LEFT_RIGHT)
+                q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaVaoEscada', 'casaCama3', 'casaCravo3') else base.transpose(Image.FLIP_LEFT_RIGHT)
             if spec.get('apagar') and not (d == '+x' and spec.get('leste') is not None):
                 q = apagar(q)
             if spec.get('envelhecer'):

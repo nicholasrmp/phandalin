@@ -85,20 +85,20 @@ export const MOBILIA = {
     // berçário (15B)
     ['casa-berco:+y', 0, 7],
     // suíte da babá (15A): a cama ao longo da parede leste, o guarda-roupa coberto e o espelho coberto junto da porta secreta, na parede do poço
-    ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-espelhoHera:+y', 4, 8], ['casa-armarioCoberto:+y', 5, 8], ['casa-criadoVelho:+y', 3, 10],
+    ['casa-camaAbandonada:+y', 5, 10, { nada: [[5, 9]] }], ['casa-espelhoHera:+y', 4, 8], ['casa-armarioCoberto:+y', 5, 8], ['casa-criadoVelho:+y', 3, 10],
     ['casa-vaoEscada:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
   ],
 
   // ----------------------------------------------------------------------------------------------------- sótão ---
   casaDaMorte4: [
     // quarto de repouso (19, a noroeste)
-    ['casa-camaVelha:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-armarioCoberto:+x', 0, 1], ['casa-cadeiraBalanco:+y', 0, 2],
+    ['casa-camaAbandonada:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-armarioCoberto:+x', 0, 1], ['casa-cadeiraBalanco:+y', 0, 2],
     // quarto das crianças (20): as camas pequenas, o baú de brinquedos e o cavalinho de pau
-    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 3, 0], ['casa-esqueletosCriancas:+y', 3, 1, { baixo: true }],
+    ['casa-camaAbandonada:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaAbandonada:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 3, 0], ['casa-esqueletosCriancas:+y', 3, 1, { baixo: true }],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e o fogão apagado
     ['casa-lareiraApagada:+x', 0, 5],
     ['casa-bauCorpo:+y', 0, 6], ['casa-manequim:+y', 1, 8], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-cobertores:+y', 2, 6], ['casa-livrosTeia:+y', 2, 4],
     // quarto de repouso (17, a sudeste)
-    ['casa-camaVelha:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-armarioCoberto:+x', 2, 10], ['casa-cadeiraBalanco:+y', 3, 10], ['casa-boneca:+y', 4, 10],
+    ['casa-camaAbandonada:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-armarioCoberto:+x', 2, 10], ['casa-cadeiraBalanco:+y', 3, 10], ['casa-boneca:+y', 4, 10],
   ],
 };

@@ -289,6 +289,61 @@ obj.CONJUNTOS.update({
         ],
         'target_palette': {'colors': PALETA},
     },
+    # AS PECAS NO TAMANHO CERTO (a medida contra a pegada em `/tmp/calib`: poltrona de 56 px contra o heroi de 50, cama de 114 px contra 96, bau de 53 px):
+    # o PixelLab enche a tela que se pede, entao o tamanho vem da TELA. 40 px = 36 candidatos de uma peca baixa (poltrona 36 px, bau 28 px).
+    'casaPequenos': {
+        'description': ('Single small piece of furniture that fits ONE floor tile, about 30 px wide and 34 px tall, sitting on the '
+                        'bottom of the canvas, seen in isometric 2:1 view, ' + ESTILO + PIXEL),
+        'size': 40,
+        'view': 'top-down',
+        'item_descriptions': (
+            ['high-backed manor armchair, burgundy velvet seat and back, carved dark oak arms, facing down-left'] * 2
+            + ['wing-back manor armchair, burgundy velvet with brass studs, facing down-left'] * 2
+            + ['high-backed manor armchair, burgundy velvet, carved dark oak arms, facing down-right'] * 2
+            + ['wing-back manor armchair, burgundy velvet with brass studs, facing down-right'] * 2
+            + ['manor armchair seen from BEHIND, turned away from the viewer facing up-right, tall burgundy velvet back'] * 4
+            + ['dining chair with arms, carved dark oak, burgundy velvet seat, high back, facing down-left'] * 2
+            + ['dining chair with arms, carved dark oak with slatted back, burgundy cushion, facing down-left'] * 2
+            + ['dining chair with arms, carved dark oak, burgundy velvet seat, high back, facing down-right'] * 2
+            + ['dining chair with arms, carved dark oak with slatted back, burgundy cushion, facing down-right'] * 2
+            + ['wooden rocking chair, dusty, cobwebs, facing down-left'] * 2
+            + ['broken wooden chair lying on its side, cobwebs'] * 2
+            + ['armchair covered by a dusty white sheet, facing down-left'] * 2
+            + ['armchair covered by a dusty white sheet, facing down-right'] * 2
+            + ['small iron-bound dark oak chest with a domed lid and brass lock, closed, only 26 px tall'] * 2
+            + ['small dark oak chest with a bloodstained sheet draped over a bundle, cobwebs'] * 1
+            + ['small dark wooden baby cradle on rockers, black funeral shroud, cobwebs, only 30 px tall'] * 1
+        ),
+        'target_palette': {'colors': PALETA},
+    },
+    'casaCama3': {
+        'description': ('ONE narrow bed TWO floor tiles long (about 92 px) and one tile wide, its long side running down to the left at 27 degrees, seen from the front-left in isometric 2:1 view, headboard at the upper end, about 28 px tall (headboard 38 px), sitting on the bottom of the canvas. No ground. ' + ESTILO + PIXEL),
+        'size': 96,
+        'view': 'top-down',
+        'item_descriptions': ['single bed, dark oak frame, tall carved gothic headboard, burgundy quilt, white pillow', 'single bed, dark oak frame with brass knobs, burgundy quilt, white pillow', 'single bed with straw mattress and a grey blanket, plain wooden frame, simple headboard', 'single bed, dark oak frame, dusty grey blanket, cobwebs, simple headboard'],
+        'target_palette': {'colors': PALETA},
+    },
+    'casaMesa3': {
+        'description': ('ONE long table TWO floor tiles long (about 92 px) and one tile deep, running down to the right at 27 degrees, seen from the front-left in isometric 2:1 view, about 30 px tall, sitting on the bottom of the canvas. No ground, no chairs. ' + ESTILO + PIXEL),
+        'size': 96,
+        'view': 'top-down',
+        'item_descriptions': ['polished mahogany dining table with white runner, silver candlesticks, plates and goblets', 'mahogany dining table with a burgundy tablecloth, candelabra, plates and wine goblets', 'mahogany dining table with carved legs, white runner, two candelabras and a fruit bowl', 'dark oak dining table set with silver plates, goblets and one candelabrum'],
+        'target_palette': {'colors': PALETA},
+    },
+    'casaTina3': {
+        'description': ('ONE clawfoot bathtub TWO floor tiles long (about 92 px) and one tile wide, its long side running down to the right at 27 degrees, taps at the left end, seen from the front-left in isometric 2:1 view, about 24 px tall, sitting on the bottom of the canvas. No ground. ' + ESTILO + PIXEL),
+        'size': 96,
+        'view': 'top-down',
+        'item_descriptions': ['old wooden clawfoot bathtub with brass taps, empty and dusty, cobwebs', 'old iron clawfoot bathtub with brass taps, empty and dusty', 'old wooden bathtub with brass claw feet, empty, cobwebs', 'old enamel clawfoot bathtub with a wooden rim, empty and dusty'],
+        'target_palette': {'colors': PALETA},
+    },
+    'casaCravo3': {
+        'description': ('ONE harpsichord TWO floor tiles long (about 92 px) and one tile wide, its long side running down to the left at 27 degrees, the keyboard on the long side facing down-right, with a small bench in front, seen from the front-left in isometric 2:1 view, about 36 px tall, sitting on the bottom of the canvas. No ground. ' + ESTILO + PIXEL),
+        'size': 96,
+        'view': 'top-down',
+        'item_descriptions': ['elegant painted harpsichord with raised lid, ivory keys, dark oak legs and a burgundy bench', 'dark oak harpsichord with gold trim, raised lid, ivory keys, a small bench', 'harpsichord with a burgundy painted lid, ivory keys, carved legs, a cushioned bench', 'black lacquer harpsichord with brass trim, raised lid, a small bench'],
+        'target_palette': {'colors': PALETA},
+    },
 })
 
 if __name__ == '__main__':
