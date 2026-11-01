@@ -101,7 +101,7 @@ PECAS = {
     'montaCargas': {'conjunto': 'casaMais', 'n': 13, 'dirs': ['+y'], 'folga': 4},
     'barrilAgua': {'conjunto': 'casaMais', 'n': 14, 'dirs': ['+y'], 'folga': 6},
     'bancadaCozinha': {'conjunto': 'casaMais', 'n': 15, 'dirs': ['+y'], 'folga': 6},
-    'escadaria': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2},
+    'escadaria': {'conjunto': 'casaEscadaria', 'n': 0, 'dirs': ['+x'], 'folga': 2},
 }
 
 

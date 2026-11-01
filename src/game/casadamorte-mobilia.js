@@ -47,7 +47,7 @@ export const MOBILIA = {
     ['casa-fogao:+y', 5, 1], ['casa-estante:+y', 5, 0], ['casa-bancadaCozinha:+x', 5, 3], ['casa-capasParede:+y', 2, 3],
     // salão principal (2A): a lareira na parede oeste e a escadaria em curva a leste
     ['casa-lareiraB:+x', 0, 5],
-    ['casa-escadaria:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
+    ['casa-escadaria:+x', 5, 6, { nada: [[4, 6], [4, 5], [5, 5], [5, 4]] }],
     // canil (3): a lareira na parede do norte, os armários dos lados dela (o do leste tem cadeado), a poltrona de frente para o fogo
     ['casa-guardaRoupa:+y', 3, 7], ['casa-lareira:+y', 4, 7], ['casa-guardaRoupa:+y', 5, 7],
     ['casa-cadeiraCostas:-y', 4, 8],
@@ -68,7 +68,7 @@ export const MOBILIA = {
     // salão superior (6): a lareira na parede oeste, a armadura de pé, a escadaria em curva
     ['casa-lareira:+x', 0, 5],
     ['casa-armadura:+x', 0, 4],
-    ['casa-escadaria:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
+    ['casa-escadaria:+x', 5, 6, { nada: [[4, 6], [4, 5], [5, 5], [5, 4]] }],
     // conservatório (10): a lareira na parede do norte, a harpa de frente para a sala, o cravo na parede oeste e as cadeiras de parede
     ['casa-lareiraB:+y', 4, 7], ['casa-harpa:+x', 4, 8], ['casa-cadeira:+x', 0, 7], ['casa-cadeira:+y', 3, 7], ['casa-cadeira:+y', 5, 7],
     ['casa-cravo:+y', 0, 9, { nada: [[0, 8]] }],
