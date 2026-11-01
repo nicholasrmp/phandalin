@@ -2168,6 +2168,22 @@ export class Board {
    * redesenhado por cima de tudo no fim do quadro, para o jogador ver o
    * alcance atrás da mata sem precisar girar a câmera.
    */
+  /** O brilho de um ponto de exame: uma estrelinha de quatro pontas que pulsa devagar sobre a casa. Não esconde nada e não tapa quem está na casa. */
+  brilhoDeExame(ctx, x, y) {
+    const { sx, sy } = this.center(x, y);
+    const p = 0.5 + 0.5 * Math.sin(this.time * 2.4 + x * 1.3 + y * 0.7);
+    const r = 3 + p * 2;
+    ctx.save();
+    ctx.globalAlpha = 0.45 + 0.4 * p;
+    ctx.fillStyle = '#ffe9a8';
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - 20 - r); ctx.lineTo(sx + 1.6, sy - 20 - 1.6); ctx.lineTo(sx + r, sy - 20); ctx.lineTo(sx + 1.6, sy - 20 + 1.6);
+    ctx.lineTo(sx, sy - 20 + r); ctx.lineTo(sx - 1.6, sy - 20 + 1.6); ctx.lineTo(sx - r, sy - 20); ctx.lineTo(sx - 1.6, sy - 20 - 1.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
   marcar(ctx, x, y, fill, stroke, tracejado = false) {
     if (fill) this.fillDiamond(ctx, x, y, fill, tracejado ? null : stroke);
     if (tracejado) this.strokeDiamondTracejado(ctx, x, y, stroke);
@@ -3287,6 +3303,8 @@ export class Board {
     // A área que a magia pegaria se o jogador clicasse AGORA, e quem está nela.
     this.areaMirada = this.areaDaMira();
     const escolhidos = this.alvosEscolhidos();
+    // os pontos de exame (o botão direito neles tem o que investigar): um brilho discreto, só em sala que o grupo vê
+    const pontos = this.overlay.pontos?.length ? new Map(this.overlay.pontos.map((p) => [`${p.x},${p.y}`, p])) : null;
     // O chão que uma magia deixou (Graxa escura, Teia branca) enquanto ela
     // durar, e a aura dos Espíritos Guardiões em volta de quem a conjurou.
     const zonas = new Map();
@@ -3386,6 +3404,7 @@ export class Board {
         if (miraAliados) this.fillDiamond(ctx, x, y, 'rgba(110,200,120,.24)', '#8ff0a0');
         else this.fillDiamond(ctx, x, y, 'rgba(255,90,70,.22)', '#ff6a4b');
       }
+      if (pontos?.has(k) && !oculta) this.brilhoDeExame(ctx, x, y);
       if (this.hover && this.hover.x === x && this.hover.y === y) {
         this.marcar(ctx, x, y, 'rgba(255,255,255,.08)', 'rgba(255,255,255,.5)');
       }
@@ -4540,6 +4559,8 @@ export class Board {
     // A coluna de luz de uma magia de utilidade: a cor sozinha não diz o que é (legenda na dica).
     const marca = (this.overlay.marcas ?? []).find((k) => k.x === t.x && k.y === t.y);
     const legenda = marca ? LEGENDA_DA_MARCA[marca.cor] : null;
+    const ponto = !alvo && (this.overlay.pontos ?? []).find((k) => k.x === t.x && k.y === t.y);
+    if (ponto) return { titulo: ponto.nome, subtitulo: 'botão direito: examinar', destaque: null, linhas: [], avisos: [] };
     if (legenda && !alvo) {
       return { titulo: marca.nome ?? 'Marca', subtitulo: legenda, destaque: null, linhas: [], avisos: [] };
     }

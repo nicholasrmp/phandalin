@@ -138,6 +138,9 @@ for x in range(26, 31):
     P1.casa(x, 16, 'm'); P1.casa(x, 17, 'm')
 # O santuário: a estátua de Strahd no nicho redondo (altar) e os esqueletos nas correntes (decoração: ossos).
 P1.casa(35, 29, 'a')
+# estalagmites no santuário: cobertura onde as sombras e o grupo lutam (sem elas era campo aberto)
+for (x, y) in [(28, 28), (31, 28), (28, 32), (31, 32)]:
+    P1.casa(x, y, 'A')
 for y in range(27, 35):
     P1.casa(26, y, 'c')
 # O covil dos líderes: a mesa e as duas cadeiras; o quarto: a cama grande e o baú.
@@ -212,6 +215,14 @@ for x in range(20, 24):
 for x in (12, 13):
     for y in (34, 35):
         P2.casa(x, y, 'M')
+# Pedras de cobertura (pilares do relicário, borda da câmara, celas da prisão): sem elas a masmorra 2 era 90% campo aberto.
+for x in (8, 12, 16, 24, 28):
+    for y in (3, 7, 11):
+        P2.casa(x, y, 'r', '3')
+for (x, y) in [(16, 24), (16, 46), (40, 24), (40, 46), (22, 22), (34, 22), (22, 46), (34, 46)]:
+    P2.casa(x, y, 'r', '0')
+for (x, y) in [(2, 26), (8, 26), (2, 32), (8, 32), (2, 40), (8, 40)]:
+    P2.casa(x, y, 'r', '3')
 PLANTA_2 = P2.linhas() + (P2.areas,)
 
 

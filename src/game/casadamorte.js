@@ -291,6 +291,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_1 = {
   altura: PLANTA_PORAO_1.altura,
   objetos: [],
   paredeDeCaverna: true,
+  rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
   // O grupo chega pela escada em espiral do sótão, ao fim do túnel de acesso.
   grupo: grupoPadrao([[22, 2], [23, 2], [22, 3], [23, 3]]),
   olhar: { dx: 0, dy: 1 },
@@ -303,6 +304,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_2 = {
   altura: PLANTA_PORAO_2.altura,
   objetos: [],
   paredeDeCaverna: true,
+  rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
   grupo: grupoPadrao([[2, 10], [2, 11], [3, 10], [3, 11]]),
   olhar: { dx: 1, dy: 0 },
   cena: 'casaDaMorte',

@@ -674,7 +674,7 @@ class App {
     this.board?.disposeCamera?.(); // o canvas é um só: o Board do encontro anterior solta os ouvintes dele
     this.board = new Board(this.canvas, {
       encounter: this.enc,
-      onTileClick: (t) => this.onTileClick(t),
+      onTileClick: (t, e) => this.onTileClick(t, e),
       onTileHover: (t) => {
         this.onTileHover(t);
         this.board?.render(0);
@@ -3246,10 +3246,35 @@ class App {
     }
     this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
     this.board?.seguir(c.pos);
+    // Explorando: Shift+clique leva o GRUPO todo (cada um ao lugar livre mais perto de quem foi), em vez de um clique por herói.
+    const seguem = this.capitulo?.explorando && ev?.shiftKey ? this.grupoSegue(c) : [];
     // Explorando: depois do passo, a cena vê se a armadilha dispara.
     if (this.capitulo?.explorando)
-      this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+      this.afterWalk(async () => {
+        for (const m of [c, ...seguem]) await this.capitulo?.depoisDeMover(m);
+      });
     this.refresh();
+  }
+
+  /** O grupo segue o líder: cada herói vivo anda, dentro do que alcança, até a casa livre mais perto dele. Devolve quem andou. */
+  grupoSegue(lider) {
+    const andaram = [];
+    for (const m of this.enc.combatants) {
+      if (m === lider || m.side !== "party" || m.dead || !m.pos) continue;
+      const alcance = this.enc.reachableFor(m);
+      let melhor = null;
+      for (const [k, n] of alcance) {
+        const [x, y] = k.split(",").map(Number);
+        const dono = this.enc.at(x, y);
+        if (dono && dono !== m) continue;
+        const score = distanceFt({ x, y }, lider.pos) * 1000 + n.cost;
+        if (!melhor || score < melhor.score) melhor = { x, y, score };
+      }
+      if (!melhor || (melhor.x === m.pos.x && melhor.y === m.pos.y)) continue;
+      this.enc.moveAlong(m, Battlefield.pathFrom(alcance, melhor));
+      andaram.push(m);
+    }
+    return andaram;
   }
 
   /**
@@ -3462,6 +3487,8 @@ class App {
       auras: this.capitulo?.explorando ? aurasDoDetectarMagia(this) : null,
       // As colunas de luz das magias de utilidade: Bem e Mal, armadilhas, Localizar Objeto, o que o bicho viu.
       marcas: this.capitulo?.explorando ? marcasDoJogo(this) : null,
+      // onde o botão direito tem o que examinar (a Casa da Morte): o tabuleiro põe um brilho discreto
+      pontos: this.capitulo?.explorando ? (this.capitulo.pontosDeExame?.() ?? null) : null,
       path: null,
       // `mode` é a chave que acende a camada de previsão inteira do tabuleiro:
       // chão de alcance, tracejado do alcance longo, cruz de alvo impossível e
@@ -3500,7 +3527,7 @@ class App {
       if (!this.recusa && !aliado)
         this.hud.setHint(
           c
-            ? `${c.name} — clique no chão para andar. Clique em outro herói para trocar.`
+            ? `${c.name} — clique no chão para andar (Shift+clique leva o grupo). Clique em outro herói para trocar.`
             : "",
         );
     }

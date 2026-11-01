@@ -52,7 +52,7 @@ PECAS = {
     'cama': {'conjunto': 'casaCama3', 'n': 0, 'dirs': ['+y'], 'folga': 6},
     'camaAbandonada': {'conjunto': 'casaCama3', 'n': 3, 'dirs': ['+y'], 'folga': 6},
     'camaVelha': {'conjunto': 'casaCama3', 'n': 2, 'dirs': ['+y'], 'folga': 6},
-    'tina': {'conjunto': 'casaTina3', 'n': 0, 'dirs': ['+x'], 'folga': 6},
+    'tina': {'conjunto': 'casaTina3', 'n': 0, 'dirs': ['+y'], 'folga': 6, 'ax': 51},
     'cravo': {'conjunto': 'casaCravo3', 'n': 2, 'dirs': ['+y'], 'folga': 6},
     # a poltrona de COSTAS (olha para a lareira, para longe da camera): -y como saiu, -x espelhada
     'cadeiraCostas': {'conjunto': 'casaPequenos', 'n': 8, 'dirs': ['-y', '-x'], 'folga': 6},
@@ -117,7 +117,7 @@ PECAS = {
     'lapide': {'conjunto': 'casaMata', 'n': 13, 'dirs': ['+y'], 'folga': 10},
     'espinhos': {'conjunto': 'casaMata', 'n': 15, 'dirs': ['+y'], 'folga': 10},
     'placa': {'conjunto': 'casaMata', 'n': 12, 'dirs': ['+y'], 'folga': 10},
-    'escadaria': {'conjunto': 'casaEscadaria', 'n': 0, 'dirs': ['+x'], 'folga': 2},
+    'escadaria': {'conjunto': 'casaEscadaria', 'n': 0, 'dirs': ['+x'], 'folga': 2, 'ax': 34},
 }
 
 

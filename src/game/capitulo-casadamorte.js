@@ -30,6 +30,7 @@ import { casa } from './casadamorte-plantas.js';
 import { criarBuscas } from './buscas.js';
 import { altoInteracoes, altoGatilhos, destrancarPortaDasCriancas } from './casadamorte-alto-cena.js';
 import { pistasInteracoes, pistasPassivas, pistasAuras } from './casadamorte-pistas-cena.js';
+import { PISTAS } from './casadamorte-pistas.js';
 import { poraoInteracoes, poraoGatilhos, reaplicarPorao, BAUS_POCO, abrirBauDoPoco } from './casadamorte-porao-cena.js';
 import { fugaInteracoes, fugaIniciar, fugaParedesOps } from './casadamorte-fuga.js';
 
@@ -457,6 +458,13 @@ export function criarCasaDaMorte(app, config) {
     ganchosMagicos,
     interacoesDoHeroi: (c) => interacoes(c.pos, enc.field.surfaceAt(c.pos.x, c.pos.y), c),
     depoisDeMover,
+    /** Os pontos de exame ainda com o que descobrir (alguma perícia sem sucesso), para o brilho no tabuleiro. */
+    pontosDeExame() {
+      const feitos = salvo.pistas ?? {};
+      return (PISTAS[variante] ?? [])
+        .filter((p) => p.verbos?.some((v) => !feitos[`${p.id}:${v.p}`]))
+        .map((p) => ({ x: p.x, y: p.y, nome: p.nome }));
+    },
     fimDoCombate,
     evento() {},
     dialogoDe: () => null,
