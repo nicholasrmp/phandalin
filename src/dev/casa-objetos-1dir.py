@@ -183,6 +183,57 @@ obj.CONJUNTOS.update({
         ],
         'target_palette': {'colors': PALETA},
     },
+    # As mesmas pecas de parede VISTAS DE FRENTE E A DIREITA (a parede do OESTE, que desce para a esquerda): sem espelhar, a luz continua vindo
+    # do alto a esquerda. 16 candidatos de uma casa.
+    'casaPecasLeste': {
+        'description': DE_UMA_CASA.replace('front-left', 'front-right') + ESTILO + PIXEL,
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: manor fireplace of black marble with brass trim, deep arched firebox with a lit orange fire and logs, about 56 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: carved dark oak fireplace surround with a marble mantel, a roaring orange fire, about 56 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: tall dark oak library bookcase packed with red, brown and green leather books, about 62 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: tall dark oak bookcase with brass rail, books and a skull on the top shelf, about 62 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: tall dark oak wardrobe with two carved doors and brass handles, about 62 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: dark oak wardrobe with carved burgundy panels, crown molding, about 62 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: black cast-iron kitchen stove with a stovepipe, a kettle and a red pot on top, about 56 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: tall wardrobe covered by a dusty white sheet, about 60 px tall',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: chest of drawers covered by a dusty sheet, about 40 px tall',
+            'high-backed manor armchair, burgundy velvet seat and back, carved dark oak arms and legs, facing down-right',
+            'armchair covered by a dusty white sheet draped to the floor, cobwebs, facing down-right',
+            'dark mahogany writing desk with green leather top, an inkwell, a quill, papers and a brass lamp, the kneehole facing down-right',
+            'dark mahogany writing desk with papers and a stack of books, the kneehole facing down-right',
+            'old wooden rocking horse toy, dusty, a cobweb on its head, facing down-right',
+            'wall piece in the plane of a wall face running down to the LEFT at 27 degrees, ONE tile wide: COLD black marble fireplace with no fire, empty firebox with grey ashes and cobwebs, about 56 px tall',
+            'sofa covered by a dusty white sheet, facing down-right',
+        ],
+        'target_palette': {'colors': PALETA},
+    },
+    # O que o texto promete e ainda nao existia: harpa, mesa redonda, lobos empalhados, tapete de tigre, barril, casa de bonecas...
+    'casaFaltam': {
+        'description': DE_UMA_CASA + ESTILO + PIXEL,
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'tall gilded concert harp standing on the floor, carved column, gold strings, facing down-left',
+            'round dining table with a white tablecloth to the floor, one candle and a decanter, on a central pedestal',
+            'stuffed grey wolf standing on a small wooden base, mouth open, glass eyes, facing down-left',
+            'stuffed black wolf standing on a small wooden base, snarling, glass eyes, facing down-left',
+            'stuffed white wolf standing on a small wooden base, head turned, glass eyes, facing down-left',
+            'tiger skin rug lying FLAT on the floor with the head, striped orange and black, old and moth-eaten',
+            'large oak wine barrel on a low wooden stand with a brass tap',
+            'dollhouse, a perfect small replica of a gothic manor with many windows, standing on a low wooden table',
+            'wooden rocking chair, dusty, cobwebs, facing down-left',
+            'porcelain doll in a yellow dress sitting on a small wooden stool, cobwebs',
+            'oak keg on a wooden rack with iron hoops',
+            'small bedside nightstand with a lit candle, dark oak',
+            'small bedside nightstand with an oil lamp, dark oak',
+            'plain round wooden stool',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: tall full-length standing mirror with a frame carved as ivy leaves and berries that look like eyeballs, about 60 px tall',
+            'old bedside nightstand with a burnt out candle and cobwebs',
+        ],
+        'target_palette': {'colors': PALETA},
+    },
 })
 
 if __name__ == '__main__':

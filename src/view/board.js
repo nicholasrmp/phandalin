@@ -1657,7 +1657,7 @@ export class Board {
       // com o centro da base no centro da casa. A sombra acompanha a largura.
       const r = Math.max(SOMBRA_DO_BAIXO[s.objeto], Math.round(baixo.w * 0.34));
       // Peça de parede, balcão e escada já trazem a sombra no desenho: a elipse seria uma mancha.
-      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)|^prop-casa-(lareira|estante|guardaRoupa|fogao|escadaria|armarioCoberto|comodaCoberta|espelhoCoberto)/.test(prop?.grupo ?? '')) {
+      if (!/^prop-taverna-(lareira|prateleira|balcao|escada)|^prop-casa-(lareira|estante|guardaRoupa|fogao|escadaria|escadariaVelha|armarioCoberto|comodaCoberta|espelhoCoberto|espelhoHera|tigre)/.test(prop?.grupo ?? '')) {
         ctx.fillStyle = 'rgba(0,0,0,.25)';
         ctx.beginPath();
         ctx.ellipse(cx + 3, cy + 2, r, r * 0.42, 0, 0, Math.PI * 2);
