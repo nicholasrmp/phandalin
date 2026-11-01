@@ -246,6 +246,8 @@ export function criarCasaDaMorte(app, config) {
     if (!c || !estado.explorando) return [];
     const area = areaDe(tile);
     const ops = [];
+    // As paredes de dentro, apodrecidas pela casa furiosa, se quebram (a surpresa: clicar na parede, e não no chão).
+    if (sup === 'alvenaria') { fugaInteracoes(ctx, { area, tile, sup, c, ops }); return ops; }
     if (sup === 'parede') return ops;
     if (!area) { poraoInteracoes(ctx, { area: null, tile, sup, c, ops }); return ops; }
     // ---- 1º andar

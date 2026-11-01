@@ -60,10 +60,11 @@ Os blocos novos usam o look mais próximo que existe (cavaleiro, plebeu, specter
 
 ## Pendente de regra e de cena
 
-- **Escuro das masmorras:** o livro põe tudo no escuro; o motor de luz da mansão (`rules/luz.js`) ainda não está ligado nestas cenas.
+- **Feito nesta rodada:** os drenos (PV máximo do espectro, lívido e aparição; Força da sombra, que voltam nos descansos e matam a zero), o agarrar do mímico e do arbusto errante (restringe até escapar), a masmorra no escuro (luz do motor: tochas e visão no escuro), a fuga com paredes destrutíveis (um enxame de ratos por seção) e fumaça a cada passo, Rose e Thorn lutando se atacados, o painel da varanda e o bloco da vassoura do livro.
 - **Inspiração** vira um d6 (a condição `inspirado` da bárdica): o motor não tem a Inspiração de vantagem.
-- Traços que o bloco declara e o motor não executa: enxame, posse, adesivo/agarrador do mímico, engolir, amorfo.
-- A prata da espada curta (110 po) é só preço: a regra de arma prateada não existe.
+- **Ainda sem execução no motor:** enxame ocupando o espaço de outros, posse (feita na cena, não no combate), o dano por turno de quem é engolido, a "sombra que se levanta" de quem chega a Força 0.
+- A prata da espada curta (110 po) é só preço: a regra de arma prateada não existe. O voo da vassoura não existe (o jogo não tem voo): ela anda a 15 m.
+- Porta secreta oeste da varanda (11, CD 15): a escada secreta já se acha pelo espelho da babá; falta a segunda porta.
 - O resto da Maldição de Strahd (Baróvia, Vallaki, Ravenloft) ainda não existe; a casa termina em "Voltar ao menu".
 
 ## Riscos já à vista

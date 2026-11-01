@@ -5539,7 +5539,7 @@ teste('Casa da Morte: 3º andar, sótão e masmorras têm plantas ligadas, escad
     }
   }
   // criaturas: em casa livre, sem repetir casa, todas com grupo
-  const quais = { casaDaMorte1: 2, casaDaMorte2: 0, casaDaMorte3: 3, casaDaMorte4: 1, casaDaMortePorao1: 14, casaDaMortePorao2: 1 };
+  const quais = { casaDaMorte1: 0, casaDaMorte2: 0, casaDaMorte3: 3, casaDaMorte4: 1, casaDaMortePorao1: 14, casaDaMortePorao2: 1 };
   for (const [v, n] of Object.entries(quais)) {
     const foes = buildFoes(v);
     assert.equal(foes.length, n, `${v}: ${n} criaturas`);

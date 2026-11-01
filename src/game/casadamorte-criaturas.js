@@ -23,12 +23,6 @@ const m = (id, x, y, grupo, { sufixo = '', nome = null, olha = { dx: 0, dy: 1 } 
 /** As criaturas de cada variante da casa; a lista é vazia onde o livro não põe ninguém (1º e 2º andares). */
 export function foesDaCasa(variante) {
   switch (variante) {
-    case 'casaDaMorte1':
-      // Só vêm depois que a casa se volta contra o grupo que negou o sacrifício: as paredes apodrecem e soltam os ratos.
-      return [
-        m('enxameDeRatos', 2, 18, 'ratosFuga', { sufixo: 'A', olha: { dx: 1, dy: 0 } }),
-        m('enxameDeRatos', 4, 20, 'ratosFuga', { sufixo: 'B', olha: { dx: 0, dy: -1 } }),
-      ];
     case 'casaDaMorte3':
       return [
         m('armaduraAnimada', 12, 8, 'armadura', { olha: { dx: -1, dy: 0 } }),

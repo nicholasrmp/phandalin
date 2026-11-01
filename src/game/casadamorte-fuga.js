@@ -10,6 +10,7 @@
 // o fantasma ser intimidado (Intimidação CD 11). Ao sair, o grupo avança ao 3º nível.
 
 import { narrar } from '../view/narrativa.js';
+import { makeMonster } from '../rules/monsters.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { xpParaProximo } from '../rules/progressao.js';
@@ -23,12 +24,6 @@ const FUMACA = (area, field) => {
 export function fugaIniciar(ctx) {
   const { salvo, enc } = ctx;
   if (ctx.variante.startsWith('casaDaMortePorao')) return;
-  Object.assign(ctx.depoisDaLuta ??= {}, {
-    ratosFuga: async () => { await ctx.painel('Os últimos ratos fogem para dentro das paredes, que se fecham sobre eles. O portão, lá fora, parece mais perto.'); },
-  });
-  ctx.gatilhos.ratosFuga = (c, area) => (salvo.furia && ctx.variante === 'casaDaMorte1' && area?.id === 'espera'
-    ? { intro: ['As paredes da sala de espera estão apodrecendo, e onde a madeira se esfarela, os ratos saem: um enxame, depois outro, de dentro dos buracos, rápidos como água.'] }
-    : null);
 
   // As portas viram foices: o passo para na porta, e a lâmina cobra.
   (ctx.paradas ??= []).push((c, p) => Boolean(salvo.furia) && enc.field.surfaceAt(p.x, p.y) === 'portaAberta');
@@ -78,12 +73,8 @@ async function foice(ctx, c) {
   ctx.app.refresh();
 }
 
-/** A fumaça preta dos cômodos com lareira ou fogão: Constituição CD 10, ou 1d10 de veneno, uma vez por herói e cômodo. */
+/** A fumaça preta dos cômodos com lareira ou fogão: a cada vez que o herói termina o passo lá dentro, Constituição CD 10 ou 1d10 de veneno. */
 async function fumaca(ctx, c, area) {
-  const chave = `fumaca:${c.id}:${area.id}`;
-  ctx.salvo.achados[chave] ??= false;
-  if (ctx.salvo.achados[chave]) return;
-  ctx.salvo.achados[chave] = true;
   const r = ctx.enc.resistencia(c, 'con', 10);
   if (r.success) return;
   const dano = ctx.enc.rng.die(10);
@@ -166,7 +157,32 @@ async function concluir(ctx) {
   if (v) ctx.app.encerrarPartida();
 }
 
-export function fugaInteracoes(ctx, { area, tile, c, ops }) {
+let paredesQuebradas = 0;
+
+/** As paredes de dentro apodrecidas (CA 5, 5 PV): Atletismo CD 10 as derruba, e cada seção que cai solta um enxame de ratos. */
+function fugaParedes(ctx, { tile, sup, c, ops }) {
+  const { salvo } = ctx;
+  if (!salvo.furia || ctx.variante.startsWith('casaDaMortePorao') || sup !== 'alvenaria') return;
+  if (tile.x < 1 || tile.x > 12 || tile.y < 1 || tile.y > 22) return;
+  ops.push({
+    rotulo: 'Quebrar a parede apodrecida', icone: 'acao-usarObjeto', detalhe: 'Atletismo, CD 10 (CA 5, 5 PV): solta ratos', motivo: ctx.longe(c, tile, 10),
+    fazer: async () => {
+      const t = ctx.teste(c, 'atletismo', 10);
+      if (!t.passou) { await ctx.painel(`${c.name} bate o ombro na madeira podre, que geme e aguenta.`); return; }
+      ctx.mudarCasa(tile.x, tile.y, 'U');
+      const f = makeMonster('enxameDeRatos', { x: tile.x, y: tile.y }, { nameSuffix: String(++paredesQuebradas) });
+      const id = `ratos${tile.x}-${tile.y}`;
+      f.grupo = id; f.facingVec = { dx: 0, dy: 1 };
+      const g = { id, membros: [f], ativo: false, vencido: false, furtividade: [0] };
+      ctx.grupos[id] = g;
+      ctx.app.refresh();
+      await ctx.combate(g, null, [`${t.quem?.name ?? c.name} derruba a parede, e do vão sai uma onda de ratos, de dentro das paredes de toda a casa, como água de uma represa. Eles não saem da casa, mas dentro dela, vêm todos.`]);
+    },
+  });
+}
+
+export function fugaInteracoes(ctx, { area, tile, sup, c, ops }) {
+  fugaParedes(ctx, { tile, sup, c, ops });
   if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'espera' || tile.y < 21) return;
   ops.push({
     rotulo: 'Sair pelo portão', icone: 'acao-usarObjeto', detalhe: ctx.salvo.fim ? 'a névoa recuou' : 'cercado pelas brumas', motivo: null,

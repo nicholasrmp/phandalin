@@ -3118,6 +3118,7 @@ export class Encounter {
         ranged: !!atk.ranged, reachFt: atk.reachFt ?? 5,
         rangeFt: atk.rangeFt ?? 5, longRangeFt: atk.longRangeFt ?? atk.rangeFt ?? 5,
         onHit: atk.onHit ?? null, weapon: null, art: atk.art ?? null,
+        maxHpDrain: atk.maxHpDrain ?? null, forcaDrain: atk.forcaDrain ?? null,
         danoExtra: atk.danoExtra ?? atk.extraDamage ?? null,
         recarga: recargaMinima(atk.recharge),
         // Bloco de criatura do SRD traz o bônus já somado, sem dizer quanto é
@@ -4034,7 +4035,40 @@ export class Encounter {
     }
     // Drenar Sangue (o stirge): o acerto GRUDA no alvo, sem teste.
     if (p.gruda && !target.dead && !attacker.dead) this.grudar(attacker, target);
+    // Dreno de vida (espectro, lívido, aparição) e de Força (sombra).
+    if (p.maxHpDrain && !target.dead && total > 0) this.drenarVida(attacker, target, p, total);
+    if (p.forcaDrain && !target.dead && p.type === 'necrótico') this.drenarForca(attacker, target, p);
     return { hit: true, critical, damage: total, modo: mods.mode, danoPartes };
+  }
+
+  /**
+   * DRENAR VIDA (SRD: espectro, lívido, aparição): quem sofre o dano faz Constituição; se falhar, o PV MÁXIMO cai do mesmo tanto, até um
+   * descanso longo (`descansoLongo` devolve). A zero de máximo, morre.
+   */
+  drenarVida(atacante, alvo, p, dano) {
+    const d = p.maxHpDrain;
+    const sv = this.resistencia(alvo, d.save ?? 'con', d.dc);
+    const r = this.explicarResistencia(alvo, d.save ?? 'con', d.dc, sv, { contra: `${p.name} de ${atacante.name}`, seSucesso: 'o PV máximo não cai' });
+    if (sv.success) { this.say('condicao', `${alvo.name} resiste ao dreno: o PV máximo fica como está.`, r.conta, { rolagem: r }); return; }
+    const tira = Math.min(dano, alvo.maxHp);
+    alvo.maxHp -= tira;
+    alvo.maxHpPerdido = (alvo.maxHpPerdido ?? 0) + tira;
+    if (alvo.hp > alvo.maxHp) alvo.hp = alvo.maxHp;
+    this.say('condicao', `${alvo.name} perde ${tira} de PV máximo até o descanso longo (agora ${alvo.maxHp}).`, r.conta, { rolagem: r });
+    if (alvo.maxHp <= 0) { alvo.hp = 0; this.applyDamage(alvo, 9999, 'necrótico', atacante); }
+  }
+
+  /**
+   * DRENAR FORÇA (SRD: sombra): o acerto tira `dado` de Força do alvo até um descanso curto ou longo. Quem chega a Força 0 morre (e, no
+   * livro, se levanta como sombra: aqui, só morre).
+   */
+  drenarForca(atacante, alvo, p) {
+    const perde = this.rng.die(Number(String(p.forcaDrain.dado ?? '1d4').split('d')[1] ?? 4));
+    const antes = alvo.abilities.str;
+    alvo.abilities.str = Math.max(0, antes - perde);
+    alvo.forcaPerdida = (alvo.forcaPerdida ?? 0) + (antes - alvo.abilities.str);
+    this.say('condicao', `${alvo.name} perde ${antes - alvo.abilities.str} de Força até o descanso (agora ${alvo.abilities.str}).`);
+    if (alvo.abilities.str <= 0) { alvo.hp = 0; this.applyDamage(alvo, 9999, 'necrótico', atacante); }
   }
 
   /** Os dados da Flecha Relampejante no círculo em que saiu: o alvo e a explosão. */

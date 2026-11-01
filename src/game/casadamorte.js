@@ -286,6 +286,7 @@ export const VARIANTES_DA_CASA = Object.keys(ANDARES);
 
 export const MAPA_CASA_DA_MORTE_PORAO_1 = {
   terreno: PLANTA_PORAO_1.terreno,
+  luz: 'escuro',                  // o livro: a masmorra é escura; quem não enxerga no escuro acende uma tocha
   altura: PLANTA_PORAO_1.altura,
   objetos: [],
   paredeDeCaverna: true,
@@ -297,6 +298,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_1 = {
 
 export const MAPA_CASA_DA_MORTE_PORAO_2 = {
   terreno: PLANTA_PORAO_2.terreno,
+  luz: 'escuro',                  // o livro: a masmorra é escura; quem não enxerga no escuro acende uma tocha
   altura: PLANTA_PORAO_2.altura,
   objetos: [],
   paredeDeCaverna: true,

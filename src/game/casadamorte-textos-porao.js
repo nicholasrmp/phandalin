@@ -6,7 +6,7 @@
 export const TEXTOS_PORAO = {
   acesso: [
     'A escada em espiral de madeira do sótão termina num túnel estreito, de paredes de terra, escoradas por vigas. Ele segue para o sul antes de se abrir em corredores para leste e oeste. O teto é baixo, e no chão de terra batida há pegadas humanas de séculos, indo para todos os lados.',
-    'Desde que vocês pisaram aqui, ouvem um canto incessante e abafado. Não dá para dizer de onde vem.',
+    'Aqui embaixo é escuro: quem não enxerga no escuro precisa acender uma tocha. Desde que vocês pisaram aqui, ouvem um canto incessante e abafado, e não dá para dizer de onde vem.',
   ],
   iniciados: [
     'Uma mesa de madeira e quatro cadeiras ao leste. A oeste, quatro alcovas com palha mofada, onde dormiam os iniciados do culto.',

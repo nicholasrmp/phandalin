@@ -91,7 +91,13 @@ export function escolherResistenciaInfernal(c, tipo = null) {
   return escolhido;
 }
 
+/** A Força que a sombra tirou volta num descanso curto ou longo. */
+export function restaurarForca(c) {
+  if (c.forcaPerdida) { c.abilities.str += c.forcaPerdida; delete c.forcaPerdida; }
+}
+
 export function recuperarNoCurto(c) {
+  restaurarForca(c);
   for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
   delete c.furiaDestrutivaPronta;
   delete c.surtoMaximoAte;
@@ -252,6 +258,9 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // O mal da água parada (`rules/mantimentos.js`) passa dormindo. Regra da
   // casa: o livro não dá duração para água ruim.
   if (c.maldaAgua) { removeCondition(c, 'envenenado'); c.maldaAgua = false; }
+  // O que os mortos-vivos drenaram volta: o PV máximo e a Força (a Força já voltou no descanso curto).
+  if (c.maxHpPerdido) { c.maxHp += c.maxHpPerdido; delete c.maxHpPerdido; }
+  restaurarForca(c);
   c.hp = maxHpEfetivo(c);
   c.tempHp = 0;
   const nivel = c.level ?? 1;

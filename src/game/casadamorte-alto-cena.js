@@ -9,6 +9,7 @@
 
 import { conversar } from './dialogo.js';
 import { NPCS } from '../rules/npcs.js';
+import { makeMonster } from '../rules/monsters.js';
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 const perto = (c, p, casas = 1) => Math.max(Math.abs(c.pos.x - p.x), Math.abs(c.pos.y - p.y)) <= casas;
@@ -61,6 +62,7 @@ function arvoreDosFantasmas(ctx) {
           { texto: 'Como vocês morreram?', vai: 'morte', uma: true },
           { texto: 'Como se chega ao porão?', vai: 'porta', uma: true },
           { texto: 'Como podemos ajudar vocês?', vai: 'ajuda', uma: true },
+          { texto: 'Levantar a arma contra eles.', fim: 'atacar' },
           { texto: 'Valeu. Vamos deixá-los em paz.', fim: 'sair' },
         ],
       },
@@ -89,7 +91,21 @@ function arvoreDosFantasmas(ctx) {
 async function fantasmas(ctx) {
   if (ctx.salvo.fantasmas) return;
   ctx.salvo.fantasmas = 'apareceram';
-  await conversar(ctx.app, pessoa('rose'), arvoreDosFantasmas(ctx));
+  const fim = await conversar(ctx.app, pessoa('rose'), arvoreDosFantasmas(ctx));
+  if (fim === 'atacar') await lutarComOsFantasmas(ctx);
+}
+
+/** O livro: eles só lutam em autodefesa. Quem levanta a arma contra eles terá a luta. Reduzidos a 0 PV, voltam ao amanhecer. */
+async function lutarComOsFantasmas(ctx) {
+  if (ctx.grupos.fantasmas && !ctx.grupos.fantasmas.vencido) return;
+  const mk = (nome, x) => { const f = makeMonster('fantasmaDeCrianca', { x, y: 3 }); f.name = nome; f.grupo = 'fantasmas'; f.facingVec = { dx: 0, dy: 1 }; return f; };
+  const g = { id: 'fantasmas', membros: [mk('Rose', 7), mk('Thorn', 8)], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
+  ctx.grupos.fantasmas = g;
+  ctx.depoisDaLuta.fantasmas = async () => {
+    ctx.salvo.fantasmas = 'apareceram';
+    await ctx.painel('Rose e Thorn se desfazem em fiapos de frio e de choro. Os ossos continuam no chão. Quando amanhecer, eles voltarão: só o enterro das crianças as põe em paz.');
+  };
+  await ctx.combate(g, null, ['As duas formas pálidas se erguem do chão, de rostos duros: não é a hora de brincar. Rose abre os braços na frente do irmão, e o frio da sala se fecha em volta de vocês.']);
 }
 
 /** A casa de bonecas mostra a escada secreta; o marco do 2º nível, se a carta ainda não o deu. */
@@ -112,6 +128,21 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
 
   // ============================================================== 3º andar ==
   if (v === 'casaDaMorte3') {
+    if (area.id === 'varanda') {
+      const onde = { x: 7, y: 8 };
+      ops.push({
+        rotulo: 'Examinar os painéis das paredes', icone: 'acao-procurar',
+        detalhe: salvo.paineisVaranda ? 'já examinados' : 'Percepção, CD 12',
+        motivo: salvo.paineisVaranda ? 'já examinados' : buscas.ja(c, 'paineisVaranda', onde),
+        fazer: async () => {
+          buscas.marcar(c, 'paineisVaranda', onde);
+          const t = ctx.teste(c, 'percepcao', 12);
+          if (!t.passou) { await ctx.painel(`${c.name} olha as árvores entalhadas na madeira escura. Cenas de floresta, folhas caindo, bichinhos. Nada mais.`); return; }
+          salvo.paineisVaranda = true;
+          await ctx.painel(`${t.quem?.name ?? c.name} chega bem perto da madeira entalhada e vê o que ela mostra: nos galhos pendem cadáveres minúsculos, e do chão saem vermes.`);
+        },
+      });
+    }
     if (area.id === 'suitePrincipal') {
       ops.push({
         rotulo: achados.joias ? 'A caixa de joias (vazia)' : 'Abrir a caixa de joias da penteadeira', icone: 'acao-usarObjeto',

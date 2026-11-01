@@ -128,6 +128,7 @@ await teste('sótão: a casa de bonecas mostra a escada (e o 2º nível) quando 
   const S = await nova('casaDaMorte4', { nivel: 1 });
   poe(S.party[0], 6, 4);
   d20(S, 20);
+  S.casa().fantasmas = 'apareceram';      // a conversa em si é da interface; aqui só a escada
   const bonecas = op(S, S.party[0], 6, 4, 'casa de bonecas');
   assert.ok(bonecas);
   await bonecas.fazer();
@@ -331,11 +332,22 @@ await teste('a casa ataca quem negou o sacrifício: portas de foice, fumaça e r
   poe(S.party[1], 3, 15);
   await S.cena.depoisDeMover(S.party[1]);
   assert.equal(S.party[1].hp, h, 'com 20 no dado, a foice não pega');
-  // os ratos esperam na sala de espera
-  poe(S.party[0], 3, 19);
-  await S.cena.depoisDeMover(S.party[0]);
-  assert.ok(!S.cena.explorando, 'dois enxames de ratos saem das paredes');
-  assert.equal(S.enc.combatants.filter((f) => f.defId === 'enxameDeRatos').length, 2);
+  // as paredes de dentro apodrecem: quebrar uma (Atletismo CD 10) solta um enxame de ratos
+  poe(S.party[0], 4, 19);
+  assert.equal(S.field.surfaceAt(5, 19), 'alvenaria');
+  const quebrar = op(S, S.party[0], 5, 19, 'Quebrar a parede');
+  assert.ok(quebrar, 'a parede de dentro se quebra');
+  d20(S, 1);
+  await quebrar.fazer();
+  assert.equal(S.field.surfaceAt(5, 19), 'alvenaria', 'com 1 no dado, a parede aguenta');
+  assert.ok(S.cena.explorando);
+  d20(S, 20);
+  await op(S, S.party[0], 5, 19, 'Quebrar a parede').fazer();
+  assert.notEqual(S.field.surfaceAt(5, 19), 'alvenaria');
+  assert.ok(!S.cena.explorando, 'um enxame de ratos sai da parede');
+  assert.equal(S.enc.combatants.filter((f) => f.defId === 'enxameDeRatos').length, 1);
+  const N = await nova('casaDaMorte1', { nivel: 2 });
+  assert.equal(op(N, N.party[0], 5, 19, 'Quebrar a parede'), undefined, 'sem a casa furiosa, a parede é parede');
 });
 
 await teste('a saída: sem o fim as brumas fecham o portão; com o fim, sai e passa ao 3º nível; Rose e Thorn tentam possuir quem sai', async () => {
@@ -381,6 +393,30 @@ await teste('as escadas levam ao andar certo, vindo da origem certa; o alçapão
   await D.cena.depoisDeMover(D.party[0]);
   const V = await nova('casaDaMorte1', { campanha: D.app.campanha });
   assert.equal(V.field.surfaceAt(6, 22), 'escada', 'depois de achar a porta de baixo, o alçapão aparece no canil');
+});
+
+await teste('os drenos funcionam: PV máximo (lívido) e Força (sombra) caem, e voltam nos descansos; zero mata', async () => {
+  const { descansoLongo, recuperarNoCurto } = await import(P + 'rules/descanso.js');
+  const S = await nova('casaDaMortePorao1');
+  const [atq, alvo] = [S.party[0], S.party[1]];
+  const max0 = alvo.maxHp;
+  S.enc.resistencia = () => ({ success: true, total: 20, rolls: [] });
+  S.enc.drenarVida(atq, alvo, { name: 'Drenar Vida', maxHpDrain: { save: 'con', dc: 13 } }, 5);
+  assert.equal(alvo.maxHp, max0, 'passou na resistência: nada cai');
+  S.enc.resistencia = () => ({ success: false, total: 1, rolls: [] });
+  S.enc.drenarVida(atq, alvo, { name: 'Drenar Vida', maxHpDrain: { save: 'con', dc: 13 } }, 5);
+  assert.equal(alvo.maxHp, max0 - 5);
+  assert.ok(alvo.hp <= alvo.maxHp);
+  const str0 = alvo.abilities.str;
+  S.enc.drenarForca(atq, alvo, { forcaDrain: { dado: '1d4' } });
+  assert.ok(alvo.abilities.str < str0 && alvo.abilities.str >= str0 - 4);
+  recuperarNoCurto(alvo);
+  assert.equal(alvo.abilities.str, str0, 'a Força volta no descanso curto');
+  assert.equal(alvo.maxHp, max0 - 5, 'o PV máximo só volta no longo');
+  descansoLongo(alvo);
+  assert.equal(alvo.maxHp, max0);
+  S.enc.drenarVida(atq, alvo, { name: 'x', maxHpDrain: { save: 'con', dc: 13 } }, 999);
+  assert.ok(alvo.dead || alvo.hp === 0, 'PV máximo a zero mata');
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram`);
