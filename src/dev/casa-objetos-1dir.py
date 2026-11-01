@@ -264,6 +264,31 @@ obj.CONJUNTOS.update({
         ],
         'target_palette': {'colors': PALETA},
     },
+    # O que ainda faltava do texto: esqueletos, cadeiras de jantar, roupa de cama, mantos, baú de sapatos, bancada da cozinha.
+    'casaMais': {
+        'description': DE_UMA_CASA + ESTILO + PIXEL,
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'two tiny child skeletons lying FLAT on the dusty floor in tattered clothes, one hugging a rag doll, low and flat',
+            'two small child skeletons lying side by side FLAT on the floor with a toy windmill, tattered clothes, low and flat',
+            'adventurer skeleton in leather armor slumped over a heavy iron-footed dark oak chest with a half open lid, three small darts stuck in its ribs',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: tall wooden shelf unit with folded linens, blankets and dry soap bars, dusty, about 56 px tall',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: tall wooden shelf unit with folded grey blankets and bed sheets, cobwebs, about 56 px tall',
+            'dining chair with arms, carved dark oak, burgundy velvet seat, high back, facing down-left',
+            'dining chair with arms, carved dark oak with a tall slatted back, burgundy cushion, facing down-left',
+            'dining chair with arms, carved dark oak, burgundy velvet seat, high back, facing down-right',
+            'dining chair carved dark oak with a tall slatted back, burgundy cushion, facing down-right',
+            'small dark oak shoe chest with brass handles, two drawers',
+            'dark oak chest with a bloodstained sheet draped over a bundle shaped like a body, cobwebs',
+            'standing wooden coat rack with three long black hooded cloaks hanging and a tall black hat on top',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: wall hooks with long black hooded cloaks hanging, a tall hat on a shelf, about 56 px tall',
+            'wall piece in the plane of a wall face running down to the right at 27 degrees, ONE tile wide: small wooden hatch door set in a stone shaft with a rope and pulley, a dumbwaiter, about 50 px tall',
+            'oak water barrel with a brass tap and a bucket beneath it',
+            'kitchen work counter in dark oak with a cutting board, a rolling pin, a knife and a loaf of bread on top',
+        ],
+        'target_palette': {'colors': PALETA},
+    },
 })
 
 if __name__ == '__main__':

@@ -5575,11 +5575,180 @@
    }
   ]
  },
- "prop-casa-escadaria:+x": {
+ "prop-casa-esqueletosCriancas:+y": {
   "todas": [
    {
     "x": 745,
     "y": 2542,
+    "w": 62,
+    "h": 29,
+    "ax": 30,
+    "ay": 26,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-esqueletoBau:+y": {
+  "todas": [
+   {
+    "x": 809,
+    "y": 2542,
+    "w": 60,
+    "h": 54,
+    "ax": 50,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-prateleiraLencois:+y": {
+  "todas": [
+   {
+    "x": 871,
+    "y": 2542,
+    "w": 62,
+    "h": 63,
+    "ax": 17,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-prateleiraCobertores:+y": {
+  "todas": [
+   {
+    "x": 935,
+    "y": 2542,
+    "w": 62,
+    "h": 63,
+    "ax": 16,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cadeiraJantar:+y": {
+  "todas": [
+   {
+    "x": 0,
+    "y": 2664,
+    "w": 38,
+    "h": 59,
+    "ax": 19,
+    "ay": 48,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cadeiraJantar:+x": {
+  "todas": [
+   {
+    "x": 40,
+    "y": 2664,
+    "w": 38,
+    "h": 59,
+    "ax": 18,
+    "ay": 48,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-bauSapatos:+y": {
+  "todas": [
+   {
+    "x": 80,
+    "y": 2664,
+    "w": 50,
+    "h": 50,
+    "ax": 17,
+    "ay": 39,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-bauCorpo:+y": {
+  "todas": [
+   {
+    "x": 132,
+    "y": 2664,
+    "w": 59,
+    "h": 53,
+    "ax": 21,
+    "ay": 42,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-cabideiro:+y": {
+  "todas": [
+   {
+    "x": 193,
+    "y": 2664,
+    "w": 34,
+    "h": 62,
+    "ax": 19,
+    "ay": 51,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-capasParede:+y": {
+  "todas": [
+   {
+    "x": 229,
+    "y": 2664,
+    "w": 62,
+    "h": 63,
+    "ax": 30,
+    "ay": 50,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-montaCargas:+y": {
+  "todas": [
+   {
+    "x": 293,
+    "y": 2664,
+    "w": 54,
+    "h": 61,
+    "ax": 26,
+    "ay": 48,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-barrilAgua:+y": {
+  "todas": [
+   {
+    "x": 349,
+    "y": 2664,
+    "w": 46,
+    "h": 55,
+    "ax": 38,
+    "ay": 44,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-bancadaCozinha:+y": {
+  "todas": [
+   {
+    "x": 397,
+    "y": 2664,
+    "w": 61,
+    "h": 54,
+    "ax": 20,
+    "ay": 43,
+    "origem": "casa"
+   }
+  ]
+ },
+ "prop-casa-escadaria:+x": {
+  "todas": [
+   {
+    "x": 460,
+    "y": 2664,
     "w": 130,
     "h": 120,
     "ax": 70,
@@ -5591,8 +5760,8 @@
  "portaCasa": {
   "carvalho": [
    {
-    "x": 877,
-    "y": 2542,
+    "x": 592,
+    "y": 2664,
     "w": 52,
     "h": 86,
     "ax": 26,
@@ -5602,8 +5771,8 @@
   ],
   "velha": [
    {
-    "x": 931,
-    "y": 2542,
+    "x": 646,
+    "y": 2664,
     "w": 48,
     "h": 90,
     "ax": 24,
@@ -5613,7 +5782,7 @@
   ],
   "ferro": [
    {
-    "x": 0,
+    "x": 696,
     "y": 2664,
     "w": 96,
     "h": 96,

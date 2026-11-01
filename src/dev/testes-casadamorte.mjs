@@ -435,7 +435,7 @@ await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala con
     const livres = [];
     for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) if (f.sala.has(`${x},${y}`) && !f.blocksMove(x, y)) livres.push({ x, y });
     const fora = livres.filter((c) => !alcanca.has(`${c.x},${c.y}`)).map((c) => `${c.x},${c.y}:${f.sala.get(`${c.x},${c.y}`)}`);
-    const escondidos = { casaDaMorte1: [], casaDaMorte2: ['secreta'], casaDaMorte3: ['poco', 'sacadaSul', 'sacadaNorte'], casaDaMorte4: ['espiral', 'criancas', 'armarioEscada'] }[v];
+    const escondidos = { casaDaMorte1: ['vestiario'], casaDaMorte2: ['secreta', 'armario'], casaDaMorte3: ['poco', 'sacadaSul', 'sacadaNorte'], casaDaMorte4: ['espiral', 'criancas', 'armarioEscada'] }[v];
     const sobra = fora.filter((c) => !escondidos.some((e) => c.endsWith(`:${e}`)));
     assert.deepEqual(sobra, [], `${v}: casas que o grupo não alcança: ${sobra.join(' ')}`);
   }

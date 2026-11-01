@@ -42,9 +42,9 @@ export const MOBILIA = {
     // sala de jantar (5): lareira na parede oeste, a mesa comprida ao longo de x e as cadeiras do lado do norte (o sul fica livre para a passagem)
     ['casa-lareira:+x', 0, 1],
     ['casa-mesaJantar:+x', 2, 1, { nada: [[1, 1]] }],
-    ['casa-cadeira:+y', 1, 0], ['casa-cadeira:+y', 2, 0], ['casa-candelabro:+y', 0, 0], ['casa-lustre:+y', 2, 2, { baixo: true }],
+    ['casa-cadeiraJantar:+y', 1, 0], ['casa-cadeiraJantar:+y', 2, 0], ['casa-candelabro:+y', 0, 0], ['casa-lustre:+y', 2, 2, { baixo: true }],
     // cozinha (4A) e despensa (4B): o forno na parede do norte e a estante da despensa
-    ['casa-fogao:+y', 5, 1], ['casa-estante:+y', 5, 0],
+    ['casa-fogao:+y', 5, 1], ['casa-estante:+y', 5, 0], ['casa-bancadaCozinha:+y', 5, 3], ['casa-capasParede:+y', 2, 3],
     // salão principal (2A): a lareira na parede oeste e a escadaria em curva a leste
     ['casa-lareiraB:+x', 0, 5],
     ['casa-escadaria:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
@@ -62,9 +62,9 @@ export const MOBILIA = {
     ['casa-estanteB:+y', 1, 0], ['casa-estante:+y', 2, 0],
     ['casa-escrivaninha:+y', 1, 1], ['casa-cadeiraCostas:-y', 1, 2],
     // sala secreta (9): o baú de pés de ferro
-    ['casa-bau:+y', 5, 0],
+    ['casa-esqueletoBau:+y', 5, 0],
     // quartos dos empregados (7A): duas camas de palha, de cabeceira para o norte
-    ['casa-camaVelha:+y', 4, 2, { nada: [[4, 1]] }], ['casa-camaVelha:+y', 5, 2, { nada: [[5, 1]] }], ['casa-bau:+y', 5, 3],
+    ['casa-camaVelha:+y', 4, 2, { nada: [[4, 1]] }], ['casa-camaVelha:+y', 5, 2, { nada: [[5, 1]] }], ['casa-bauSapatos:+y', 5, 3], ['casa-prateleiraLencois:+y', 3, 3],
     // salão superior (6): a lareira na parede oeste, a escadaria em curva, as armaduras de pé na parede do norte
     ['casa-lareira:+x', 0, 5],
     ['casa-armadura:+y', 0, 4],
@@ -94,10 +94,10 @@ export const MOBILIA = {
     // quarto de repouso (19, a noroeste)
     ['casa-camaVelha:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-armarioCoberto:+x', 0, 1], ['casa-cadeiraBalanco:+y', 0, 2],
     // quarto das crianças (20): as camas pequenas, o baú de brinquedos e o cavalinho de pau
-    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 3, 0],
+    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 3, 0], ['casa-esqueletosCriancas:+y', 3, 1, { baixo: true }],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e o fogão apagado
     ['casa-lareiraApagada:+x', 0, 5],
-    ['casa-manequim:+y', 0, 6], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-cobertores:+y', 2, 6], ['casa-livrosTeia:+y', 2, 4],
+    ['casa-bauCorpo:+y', 0, 6], ['casa-manequim:+y', 1, 8], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-cobertores:+y', 2, 6], ['casa-livrosTeia:+y', 2, 4],
     // quarto de repouso (17, a sudeste)
     ['casa-camaVelha:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-armarioCoberto:+x', 2, 10], ['casa-cadeiraBalanco:+y', 3, 10], ['casa-boneca:+y', 4, 10],
   ],

@@ -87,6 +87,19 @@ PECAS = {
     # o lustre PENDE do teto: a folga alta o ergue, e `dx`/`dy` (px de tela) o centram sobre a mesa; o vao da escada do 3o andar e so o corrimao
     'lustre': {'conjunto': 'casaLustre', 'n': 0, 'dirs': ['+y'], 'folga': 46, 'dx': 16, 'dy': -24},
     'vaoEscada': {'conjunto': 'casaVaoEscada', 'n': 0, 'dirs': ['+x'], 'folga': 2},
+    # o resto do texto (`casaMais`): esqueletos, cadeiras de jantar, roupa de cama, mantos, sapatos, bancada
+    'esqueletosCriancas': {'conjunto': 'casaMais', 'n': 1, 'dirs': ['+y'], 'folga': 14},
+    'esqueletoBau': {'conjunto': 'casaMais', 'n': 2, 'dirs': ['+y'], 'folga': 6},
+    'prateleiraLencois': {'conjunto': 'casaMais', 'n': 3, 'dirs': ['+y'], 'folga': 4},
+    'prateleiraCobertores': {'conjunto': 'casaMais', 'n': 4, 'dirs': ['+y'], 'folga': 4},
+    'cadeiraJantar': {'conjunto': 'casaMais', 'n': 5, 'dirs': ['+y', '+x'], 'folga': 6, 'leste': 7, 'leste_conjunto': 'casaMais'},
+    'bauSapatos': {'conjunto': 'casaMais', 'n': 9, 'dirs': ['+y'], 'folga': 6},
+    'bauCorpo': {'conjunto': 'casaMais', 'n': 10, 'dirs': ['+y'], 'folga': 6},
+    'cabideiro': {'conjunto': 'casaMais', 'n': 11, 'dirs': ['+y'], 'folga': 6},
+    'capasParede': {'conjunto': 'casaMais', 'n': 12, 'dirs': ['+y'], 'folga': 4},
+    'montaCargas': {'conjunto': 'casaMais', 'n': 13, 'dirs': ['+y'], 'folga': 4},
+    'barrilAgua': {'conjunto': 'casaMais', 'n': 14, 'dirs': ['+y'], 'folga': 6},
+    'bancadaCozinha': {'conjunto': 'casaMais', 'n': 15, 'dirs': ['+y'], 'folga': 6},
     'escadaria': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2},
 }
 
@@ -174,7 +187,7 @@ def main():
         base = base.crop(base.getbbox())
         for d in spec['dirs']:
             if d == '+x' and spec.get('leste') is not None:        # a vista propria da parede do oeste: a luz continua a de cima a esquerda
-                im = Image.open(ultimo('casaPecasLeste') / f"frame_urls_{spec['leste']}.png").convert('RGBA')
+                im = Image.open(ultimo(spec.get('leste_conjunto', 'casaPecasLeste')) / f"frame_urls_{spec['leste']}.png").convert('RGBA')
                 q = im.crop(im.getbbox())
             else:
                 q = base if d in ('+y', '-y') or spec['conjunto'] in ('casaEscadaria', 'casaTinaIso', 'casaVaoEscada') else base.transpose(Image.FLIP_LEFT_RIGHT)
