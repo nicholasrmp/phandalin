@@ -28,6 +28,8 @@ export function criarBuscas(registro) {
     ja: (c, tipo, onde = null) => (registro[chave(c, tipo, onde)] ? `${c.name} já tentou aqui` : null),
     /** Marca a tentativa. Chame ao FAZER, não ao mostrar. */
     marcar: (c, tipo, onde = null) => { registro[chave(c, tipo, onde)] = true; },
+    /** Todos os heróis vivos já tentaram aqui? Então a paciência do grupo vale por um sucesso (sem soft-lock por dado). */
+    esgotou: (herois, tipo, onde = null) => herois.length > 0 && herois.every((h) => registro[chave(h, tipo, onde)]),
     /** Para quando a cena muda de verdade e o ponto volta a valer a pena. */
     limpar: (tipo) => {
       for (const k of Object.keys(registro)) if (k.includes(`:${tipo}:`)) delete registro[k];

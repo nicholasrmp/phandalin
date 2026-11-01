@@ -440,6 +440,7 @@ export class Board {
     }
     // Muro mais alto que o de sempre sobe acima da casa do fundo: o canvas reserva o que passa dos 3 níveis.
     // (só nos mapas de vila: o enquadramento do castelo e dos encontros padrão não muda)
+    if (this.field.fachadaUnica) copa = Math.max(copa, 44);   // as árvores mortas de fora e a quina das paredes saíam cortadas no topo
     if (this.field.paredeAlt && (this.field.fachadaFechada || Math.max(w, h) >= 60)) copa += Math.max(0, Math.max(...this.field.paredeAlt) - ALTURA_PAREDE) * LIFT;
     // Dimensionado para o pior caso, para não redimensionar ao girar.
     canvas.width = span * (TW / 2) + PAD * 2;
@@ -453,6 +454,8 @@ export class Board {
     this.rebuildOrder();
 
     this.zoom = 1;
+    // o zoom CSS do andar anterior não pode ficar no canvas novo (de outro tamanho)
+    canvas.style.width = ''; canvas.style.height = ''; canvas.style.maxWidth = ''; canvas.style.maxHeight = '';
     this.drag = null;
 
     // Todos os ouvintes saem juntos (`disposeCamera`): o canvas é um só para todos os encontros, e um Board antigo que ficasse
@@ -483,7 +486,7 @@ export class Board {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 2) return;
-      this.drag = { x: e.clientX, acc: 0 };
+      this.drag = { x: e.clientX, acc: 0, total: 0 };
       this.dragMoved = false;
       this.hover = null;
       this.pointer = null;
@@ -495,7 +498,9 @@ export class Board {
       const dx = e.clientX - this.drag.x;
       this.drag.x = e.clientX;
       this.drag.acc += dx;
-      if (Math.abs(dx) > 1) this.dragMoved = true;
+      // Só vira arrasto depois de ~8 px ACUMULADOS: a mão treme, e um empurrão de 2 px cancelava o menu do botão direito.
+      this.drag.total += Math.abs(dx);
+      if (this.drag.total > 8) this.dragMoved = true;
       // Arrastar ~110 px vira a câmera um quarto de volta.
       const STEP = 110;
       while (this.drag.acc >= STEP) { this.drag.acc -= STEP; this.rotate(1); this.onCameraChange?.(); }
@@ -508,8 +513,12 @@ export class Board {
       if (!this.dragMoved && e?.button === 2) {
         // A PORTA primeiro: ela é uma aresta, e a folha desenhada em pé cobre casas de trás da porta; sem isto, clicar nela
         // acertava uma casa longe dela e o menu de abrir e fechar nunca saía.
-        const porta = this.portaDoPonto(e);
-        const t = porta ? this.casaParaAPorta(porta) : (this.objetoDoPonto(e) ?? this.tileFromEvent(e));
+        // A CRIATURA vem antes de tudo: o herói parado junto de uma porta é o alvo, não a porta nem a casa de trás dele.
+        const t0 = this.tileFromEvent(e);
+        const { px, py } = this.pointer;
+        const figura = this.casaDaFigura(px, py, null);
+        const porta = figura ? null : this.portaDoPonto(e);
+        const t = figura ?? (porta ? this.casaParaAPorta(porta) : (this.objetoDoPonto(e) ?? t0));
         if (t) this.onTileContext?.(t, e);
       }
       this.dragMoved = false;
@@ -873,6 +882,15 @@ export class Board {
     if (!f.cliqueNoObjeto || this.rot !== 0) return null;
     this.tileFromEvent(e);                                  // guarda o ponteiro em pixel interno do canvas
     const { px, py } = this.pointer;
+    if (this._alvos?.length) {
+      // O retângulo REAL de cada sprite desenhado: vale o mais à frente que cobre o ponto (o que se vê é o que se pega).
+      let melhor = null;
+      for (const a of this._alvos) {
+        if (px < a.x0 || px > a.x1 || py < a.y0 || py > a.y1) continue;
+        if (!melhor || a.d > melhor.d) melhor = a;
+      }
+      if (melhor) return { x: melhor.x, y: melhor.y };
+    }
     // As casas candidatas: a que o ponteiro acerta no chão, em cada altura possível, e as três da frente de cada uma.
     const achadas = new Map();
     for (let hgt = this.maxHeight; hgt >= 0; hgt--) {
@@ -1119,7 +1137,12 @@ export class Board {
     if (amb.vazio) return;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    desenharAmbiente(ctx, this.time, (x, y) => this.center(x, y), amb);
+    // a casa fechada de fora não entrega onde ficam as lareiras: faísca só em sala que o grupo vê
+    const visivel = this.field.fachadaFechada ? (x, y) => {
+      const sala = this.field.sala?.get(`${x},${y}`);
+      return !sala || this._salasReveladas === 'todas' || Boolean(this._salasReveladas?.has(sala));
+    } : null;
+    desenharAmbiente(ctx, this.time, (x, y) => this.center(x, y), amb, visivel);
     ctx.restore();
   }
 
@@ -1671,6 +1694,13 @@ export class Board {
       if (baixo.h > 52 && prop) {
         const v = this.toView(x, y);
         if (this.cobreFigura(Math.round(cx - baixo.ax), Math.round(cy - baixo.ay), baixo.w, baixo.h, v.vx + v.vy)) ctx.globalAlpha = Math.min(ctx.globalAlpha, TRANSLUCIDO);
+      }
+      if (prop && this._alvos) {
+        const lx = prop.espelhar ? cx + baixo.ax + baixo.dx - baixo.w : cx - baixo.ax + baixo.dx;
+        const ty = cy - baixo.ay + baixo.dy;
+        const v = this.toView(x, y);
+        // o corpo, sem as bordas vazias do quadro
+        this._alvos.push({ x, y, d: v.vx + v.vy, x0: lx + baixo.w * 0.12, x1: lx + baixo.w * 0.88, y0: ty + baixo.h * 0.08, y1: ty + baixo.h });
       }
       if (prop?.espelhar) {
         // De lado: o ponto de ancoragem da peça continua caindo no centro da casa.
@@ -2326,6 +2356,8 @@ export class Board {
     // Árvore Trovão.
     if (this.field.sala?.has(`${x},${y}`)) return false;
     const s = SUPERFICIE[this.field.surfaceAt(x, y)];
+    // casa de PEÇA fora de qualquer sala, na casa de fachada única, é a floresta de fora (a árvore não baixa a parede da casa)
+    if (this.field.fachadaUnica && s?.objeto === 'prop') return true;
     return !s || CHAO_DE_FORA.has(s.chao);
   }
 
@@ -3279,6 +3311,7 @@ export class Board {
     this._salasOcupadas = this.salasDoGrupo();
     this._salasReveladas = this.calcularSalasReveladas();
     this._figuras = this.figurasNaTela();
+    this._alvos = [];                                  // os retângulos dos objetos desenhados neste quadro (o clique os acha pelo corpo)
     // Árvores que esmaecem neste quadro: as que escondem a casa sob o cursor
     // ou o destino do caminho. Sem isso o jogador mira uma casa que não vê.
     this._copas = this.coberturaDasCopas();

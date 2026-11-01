@@ -100,6 +100,18 @@ export const AREAS_TERCEIRO = [
     ],
   }),
   criarArea({
+    id: 'pocoEscada', area: '21A', nome: 'O poço da escada', cel: [[3, 7, 5, 7]],
+    texto: [
+      'Um vão estreito entre duas paredes, com degraus de madeira que sobem no escuro. O ar cheira a casa fechada há muito tempo.',
+    ],
+  }),
+  criarArea({
+    id: 'sacadaSul', area: '15C', nome: 'A sacada da frente', cel: [[0, 9, 1, 10]],
+    texto: [
+      'A sacada de pedra se debruça sobre o jardim da entrada. Lá embaixo, entre as árvores mortas, vê-se o portão e a estrada.',
+    ],
+  }),
+  criarArea({
     id: 'suiteBaba', area: '15A', nome: 'A suíte da babá', cel: [[2, 7, 2, 7], [2, 8, 5, 10]],
     texto: [
       'Teias e pó cobrem um quarto antes elegante: uma cama larga, criados-mudos e um guarda-roupa vazio. Na parede, ao lado dele, um espelho alto com a moldura entalhada em hera e frutinhas.',
@@ -173,6 +185,7 @@ export const MAPA_CASA_DA_MORTE_3 = {
   vaoUnido: PLANTA_3.vaoUnido,
   materialDaParede: 'madeiraVelha',
   vaoPorCasa: true,
+  cliqueNoObjeto: true,   // o botão direito no corpo de um móvel acha o móvel, e não a casa de trás
   poeira: true,
   grupo: grupoPadrao([[2, 6], [3, 6], [2, 5], [3, 5]]),
   olhar: { dx: 0, dy: -1 },
@@ -188,6 +201,7 @@ export const MAPA_CASA_DA_MORTE_4 = {
   folhas: PLANTA_4.folhas,
   materialDaParede: 'madeiraVelha',
   vaoPorCasa: true,
+  cliqueNoObjeto: true,   // o botão direito no corpo de um móvel acha o móvel, e não a casa de trás
   poeira: true,
   grupo: grupoPadrao([[5, 5], [5, 6], [5, 7], [4, 7]]),
   olhar: { dx: -1, dy: 0 },

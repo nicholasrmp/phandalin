@@ -202,7 +202,7 @@ async function negar(ctx) {
     'Da alcova do lixo vem um ruído de galhos e de lama. A pilha de refugo se levanta, e ganha braços de cipó e boca.',
   ], { titulo: 'O culto é negado' });
   if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
-    for (const f of g.membros) f.pos = { x: 22, y: 50 };
+    for (const f of g.membros) f.pos = { ...f.pos, x: 22, y: 50 };
     await ctx.combate(g, null, ['"O fim vem! Ó Morte, sê louvada!", muda o canto. O arbusto errante entra na câmara, mole e pesado, e não vai parar até ser derrubado. Mas não vai deixar a masmorra.']);
   }
 }
@@ -434,7 +434,9 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           fazer: async () => {
             buscas.marcar(c, 'portaPrisao', { x: 11, y: 35 });
             const t = ctx.teste(c, 'percepcao', 15);
-            if (!t.passou) { await ctx.painel(`${c.name} procura nas paredes de terra e não acha nada.`); return; }
+            const paciencia = !t.passou && buscas.esgotou(ctx.herois(), 'portaPrisao', { x: 11, y: 35 });
+            if (!t.passou && !paciencia) { await ctx.painel(`${c.name} procura nas paredes de terra e não acha nada.`); return; }
+            if (paciencia) await ctx.painel('Depois de todos terem tentado, o grupo refaz a busca palmo a palmo, sem pressa.');
             salvo.portaPrisao = true;
             ctx.mudarCasas(SEGREDO_PRISAO, '?');
             await ctx.painel(`${t.quem?.name ?? c.name} nota uma fresta onde a argila parece fina demais. Atrás dela, uma porta de madeira, que se abre puxando: daqui se chega direto à câmara do ritual.`);
@@ -451,7 +453,9 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
         fazer: async () => {
           buscas.marcar(c, 'ponte', { x: 21, y: 18 });
           const t = ctx.teste(c, 'atletismo', 20);
-          if (!t.passou) { await ctx.painel(`${c.name} está com a água turva e fria até a canela, as mãos nas correntes enferrujadas. A ponte levadiça nem treme. Outra pessoa pode tentar, ou há uma roda do outro lado, dentro da câmara.`); return; }
+          const juntos = !t.passou && buscas.esgotou(ctx.herois(), 'ponte', { x: 21, y: 18 });
+          if (juntos) await ctx.painel('Cansados de tentar sozinhos, os quatro se agarram às correntes e puxam juntos.');
+          if (!t.passou && !juntos) { await ctx.painel(`${c.name} está com a água turva e fria até a canela, as mãos nas correntes enferrujadas. A ponte levadiça nem treme. Outra pessoa pode tentar, ou há uma roda do outro lado, dentro da câmara.`); return; }
           salvo.ponte = true;
           ctx.mudarCasas(PONTE, '=');
           await ctx.painel(`${t.quem?.name ?? c.name} firma os pés no limo e puxa as correntes da ponte levadiça com um grito. As correntes rangem e a placa de ferro desce, devagar, até bater do outro lado. O caminho está livre.`);

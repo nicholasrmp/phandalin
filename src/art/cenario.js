@@ -38,7 +38,8 @@ img.src = urlCenario;
 const SEM_BALANCO = new Set(['grade']);
 
 // A taverna é desenhada à mão numa grade só: nenhuma peça dela balança.
-const semBalanco = (grupo) => SEM_BALANCO.has(grupo) || grupo.startsWith('prop-taverna-');
+// a mobília da Casa encosta na parede: sem o balanço de ±3 px (o mato e as árvores de fora balançam)
+const semBalanco = (grupo) => SEM_BALANCO.has(grupo) || grupo.startsWith('prop-taverna-') || /^prop-casa-(?!arvore|arbusto|capim|toco|tronco|pedra|ossos|lapide|espinhos|placa)/.test(grupo);
 
 /** `quadro`: escolhe esse quadro (módulo o total) em vez de sortear por casa, para as peças animadas. */
 export function spriteCenario(grupo, papeis, x, y, quadro = null) {

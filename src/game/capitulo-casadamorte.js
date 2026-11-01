@@ -277,10 +277,11 @@ export function criarCasaDaMorte(app, config) {
         paginas: [{ titulo: 'A Casa da Morte', texto: ['O grupo caiu na Casa da Morte. A casa fica à espera do próximo.'] }],
         escolhas: [
           { rotulo: 'Voltar ao menu', valor: 'menu' },
-          { rotulo: 'Tentar de novo', valor: 'denovo', primaria: true },
+          { rotulo: 'Recomeçar a Casa da Morte', valor: 'denovo', primaria: true },
         ],
       });
-      if (v === 'denovo') app.newEncounter({ ...config, continuarCom: null });
+      // recomeça pela porta da frente, com os heróis que o jogador escolheu (não no andar em que caíram, com o grupo padrão)
+      if (v === 'denovo') app.newEncounter({ ...config, variante: 'casaDaMorte1', continuarCom: null });
       else app.encerrarPartida();
       return;
     }
@@ -301,7 +302,7 @@ export function criarCasaDaMorte(app, config) {
     if (sup === 'parede') return ops;
     pistasInteracoes(ctx, { tile, c, ops });
     fugaParedesOps(ctx, { tile, c, ops });
-    if (!area) { poraoInteracoes(ctx, { area: null, tile, sup, c, ops }); return ops; }
+    if (!area) { poraoInteracoes(ctx, { area: null, tile, sup, c, ops }); escadasOps(tile, sup, ops, c); return ops; }
     // ---- 1º andar
     if (area.id === 'salao' || area.id === 'jantar') {
       const feito = area.id === 'salao' ? salvo.paineisSalao : salvo.paineisSala;
@@ -369,7 +370,9 @@ export function criarCasaDaMorte(app, config) {
           fazer: async () => {
             buscas.marcar(c, 'passagem', PORTA_SECRETA);
             const t = teste(c, 'percepcao', 13);
-            if (!t.passou) { await painel(`${c.name} passa os dedos pelas lombadas e não acha nada que destoe. Outros olhos podem ajudar.`); return; }
+            const paciencia = !t.passou && buscas.esgotou(herois(), 'passagem', PORTA_SECRETA);
+            if (!t.passou && !paciencia) { await painel(`${c.name} passa os dedos pelas lombadas e não acha nada que destoe. Outros olhos podem ajudar.`); return; }
+            if (paciencia) await painel('Depois de todos terem tentado, o grupo volta às estantes com calma, livro por livro, e acaba achando o que destoa.');
             salvo.livroFalso = true;
             salvo.passagemAberta = true;
             abrirBiblioteca();
@@ -425,22 +428,25 @@ export function criarCasaDaMorte(app, config) {
     poraoInteracoes(ctx, { area, tile, sup, c, ops });
     fugaInteracoes(ctx, { area, tile, sup, c, ops });
 
-    // ---- as escadas (todas as que a planta declara, onde a casa já as mostrou)
-    // A escadaria de mármore é uma peça de cenário (a casa onde se clica é de `prop`): vale o retângulo dela, onde a casa a mostra.
-    if (sup === 'escada' || sup === 'prop') {
-      for (const e of andar.escadas ?? []) {
-        if (sup === 'prop' && e.secreta) continue;
-        if (!dentro(e.rect, tile)) continue;
-        ops.push({
-          rotulo: e.rotulo, icone: 'acao-usarObjeto', detalhe: e.detalhe, motivo: null,
-          fazer: async () => {
-            const passa = ctx.aoSubir ? await ctx.aoSubir(e) : true;
-            if (passa !== false) irParaAndar(e.destino);
-          },
-        });
-      }
-    }
+    escadasOps(tile, sup, ops, c);
     return ops;
+  }
+
+  /** As escadas (todas as que a planta declara, onde a casa já as mostrou). Valem também fora de qualquer área. */
+  // A escadaria de mármore é uma peça de cenário (a casa onde se clica é de `prop`): vale o retângulo dela, onde a casa a mostra.
+  function escadasOps(tile, sup, ops, c) {
+    if (sup !== 'escada' && sup !== 'prop') return;
+    for (const e of andar.escadas ?? []) {
+      if (sup === 'prop' && e.secreta) continue;
+      if (!dentro(e.rect, tile)) continue;
+      ops.push({
+        rotulo: e.rotulo, icone: 'acao-usarObjeto', detalhe: e.detalhe, motivo: longe(c, tile, 30),
+        fazer: async () => {
+          const passa = ctx.aoSubir ? await ctx.aoSubir(e) : true;
+          if (passa !== false) irParaAndar(e.destino);
+        },
+      });
+    }
   }
 
   return {

@@ -110,7 +110,7 @@ function esporos(g, t, sx, sy, e, n, topo, cor, alcance) {
 /**
  * Pinta o ambiente em `g` (a tela do brilho, em modo `lighter`). `centro(x, y)` devolve o ponto de tela do centro da casa.
  */
-export function desenharAmbiente(g, t, centro, e) {
+export function desenharAmbiente(g, t, centro, e, visivel = null) {
   for (const f of e.fungos) {
     const { sx, sy } = centro(f.x, f.y);
     const fase = sorteio(f.x, f.y, 3) * 6.28;
@@ -138,6 +138,7 @@ export function desenharAmbiente(g, t, centro, e) {
     esporos(g, t, sx, sy, c, 3, TOPO_DE.cogumelos, '200, 235, 170', 40);
   }
   for (const b of e.brasas) {
+    if (visivel && !visivel(b.x, b.y)) continue;   // a lareira de uma sala coberta não solta faísca
     const { sx, sy } = centro(b.x, b.y);
     for (let i = 0; i < 5; i += 1) {
       const periodo = 1.3 + sorteio(b.x, b.y, 50 + i) * 1.2;

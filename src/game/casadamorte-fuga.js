@@ -45,6 +45,8 @@ export function fugaIniciar(ctx) {
   const chegou = ctx.aoChegar;
   ctx.aoChegar = async (entrada) => {
     if (chegou) await chegou(entrada);
+    // o grupo acabou de ser posto nas casas de chegada do andar: a sala de onde "vinham" é a de agora (sem foice por chegar)
+    for (const h of ctx.herois()) ondeEstava[h.id] = salaDe(h);
     if (salvo.fim === 'negado' && !salvo.furia) {
       salvo.furia = true;
       await ctx.painel([

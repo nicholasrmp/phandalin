@@ -42,15 +42,15 @@ export const MOBILIA = {
     // sala de jantar (5): lareira na parede oeste, a mesa comprida ao longo de x, as cadeiras do lado do norte e o lustre
     ['casa-lareira:+x', 0, 1],
     ['casa-mesaJantar:+x', 2, 1, { nada: [[1, 1]] }],
-    ['casa-cadeiraJantar:+y', 1, 0], ['casa-cadeiraJantar:+y', 2, 0], ['casa-candelabro:+y', 0, 0], ['casa-lustre:+y', 2, 2, { baixo: true }],
+    ['casa-cadeiraJantar:+y', 1, 0], ['casa-cadeiraJantar:+y', 2, 0], ['casa-cadeiraJantar:+y', 3, 0], ['casa-candelabro:+y', 0, 0], ['casa-lustre:+y', 2, 2, { baixo: true }],
     // cozinha (4A) e despensa (4B): o forno na parede do norte, a bancada na do leste
-    ['casa-fogao:+y', 5, 1], ['casa-estante:+y', 5, 0], ['casa-bancadaCozinha:+x', 5, 3], ['casa-capasParede:+y', 2, 3],
+    ['casa-fogao:+y', 5, 1], ['casa-estante:+y', 5, 0], ['casa-bancadaCozinha:+x', 5, 3], ['casa-capasParede:+y', 2, 3, { baixo: true }],
     // salão principal (2A): a lareira na parede oeste e a escadaria em curva a leste
     ['casa-lareiraB:+x', 0, 5],
     ['casa-escadaria:+x', 5, 6, { nada: [[4, 6], [4, 5], [5, 5], [5, 4]] }],
     // canil (3): a lareira na parede do norte, os armários dos lados dela (o do leste tem cadeado), a poltrona de frente para o fogo
     ['casa-guardaRoupa:+y', 3, 7], ['casa-lareira:+y', 4, 7], ['casa-guardaRoupa:+y', 5, 7],
-    ['casa-cadeiraCostas:-y', 4, 8],
+    ['casa-cadeiraCostas:-y', 4, 8], ['casa-cadeiraCostas:-y', 3, 8],
     // ... a mesa redonda, os três lobos empalhados (cada um olhando para um lado) e o barril de vinho
     // a FLORESTA MORTA de fora: árvores secas em volta da clareira (nunca na frente da porta) e restos pelo chão
     ['casa-arvoreMortaA:+y', 0, 16], ['casa-arvoreMortaB:+y', 2, 17], ['casa-arvoreMortaC:+y', 4, 16], ['casa-arvoreMortaA:+x', 6, 17], ['casa-arvoreMortaB:+x', 8, 16],
@@ -61,7 +61,7 @@ export const MOBILIA = {
     ['casa-toco:+y', 1, 12], ['casa-arbustoSeco:+y', 5, 13], ['casa-tronco:+y', 3, 15], ['casa-ossosFora:+y', 4, 12, { baixo: true }], ['casa-pedraFora:+y', 6, 15],
     ['casa-capimSeco:+y', 2, 14, { baixo: true }], ['casa-capimSecoB:+y', 5, 15, { baixo: true }], ['casa-lapide:+x', 6, 11], ['casa-placa:+y', 5, 16], ['casa-espinhos:+y', 0, 14],
     ['casa-arbustoSecoB:+x', 7, 6], ['casa-capimSecoB:+x', 7, 11, { baixo: true }],
-    ['casa-mesaRedonda:+y', 3, 10], ['casa-loboA:+x', 5, 8], ['casa-loboB:+y', 3, 8], ['casa-loboC:+x', 4, 10], ['casa-barril:+x', 5, 10],
+    ['casa-mesaRedonda:+y', 3, 10], ['casa-loboA:+x', 5, 8], ['casa-loboC:+x', 4, 10], ['casa-barril:+x', 5, 10],
   ],
 
   // ------------------------------------------------------------------------------------------------ 2º andar ---
@@ -73,14 +73,14 @@ export const MOBILIA = {
     // sala secreta (9): o baú de pés de ferro com o esqueleto
     ['casa-esqueletoBau:+x', 5, 0],
     // quartos dos empregados (7A): duas camas de palha, de cabeceira para o norte, e o baú de sapatos
-    ['casa-camaVelha:+y', 4, 2, { nada: [[4, 1]] }], ['casa-camaVelha:+y', 5, 2, { nada: [[5, 1]] }], ['casa-bauSapatos:+x', 5, 3], ['casa-prateleiraLencois:+y', 3, 3],
+    ['casa-camaVelha:+y', 4, 2, { nada: [[4, 1]] }], ['casa-camaVelha:+y', 5, 2, { nada: [[5, 1]] }], ['casa-bauSapatos:+x', 5, 3], ['casa-prateleiraLencois:+y', 3, 3, { baixo: true }],
     // salão superior (6): a lareira na parede oeste, a armadura de pé, a escadaria em curva
     ['casa-lareira:+x', 0, 5],
-    ['casa-armadura:+x', 0, 4],
+    ['casa-armadura:+x', 0, 4], ['casa-armadura:+x', 0, 6],
     ['casa-escadaria:+x', 5, 6, { nada: [[4, 6], [4, 5], [5, 5], [5, 4]] }],
     // conservatório (10): a lareira na parede do norte, a harpa de frente para a sala, o cravo na parede oeste e as cadeiras de parede
-    ['casa-lareiraB:+y', 4, 7], ['casa-harpa:+x', 4, 8], ['casa-cadeira:+x', 0, 7], ['casa-cadeira:+y', 3, 7], ['casa-cadeira:+y', 5, 7],
-    ['casa-cravo:+y', 0, 9, { nada: [[0, 8]] }],
+    ['casa-lareiraB:+y', 4, 7], ['casa-harpa:+x', 4, 8], ['casa-cadeira:+x', 0, 9], ['casa-cadeira:+y', 3, 7], ['casa-cadeira:+y', 5, 7],
+    ['casa-cravo:+y', 0, 8, { nada: [[0, 7]] }],
   ],
 
   // ------------------------------------------------------------------------------------------------ 3º andar ---
@@ -90,7 +90,7 @@ export const MOBILIA = {
     ['casa-camaAbandonada:+y', 3, 1, { nada: [[3, 0]] }], ['casa-criadoVelho:+y', 2, 1],
     ['casa-poltronaCoberta:+x', 4, 3], ['casa-tigre:+x', 1, 1, { baixo: true }],
     // banheiro (13): a tina ao longo de x, torneira na parede oeste, e o fogãozinho
-    ['casa-tina:+x', 1, 5, { nada: [[0, 5]] }], ['casa-fogao:+x', 0, 4],
+    ['casa-tina:+x', 1, 5, { nada: [[0, 5]] }],
     // berçário (15B)
     ['casa-berco:+x', 0, 7],
     // suíte da babá (15A): a cama ao longo de x com a cabeceira no oeste, o guarda-roupa coberto e o espelho de hera na parede do poço
@@ -111,6 +111,6 @@ export const MOBILIA = {
     ['casa-cobertores:+y', 2, 6], ['casa-livrosTeia:+y', 2, 4],
     // quarto de repouso (17, a sudeste)
     ['casa-camaAbandonada:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-armarioCoberto:+x', 2, 10],
-    ['casa-cadeiraBalanco:+x', 3, 10], ['casa-boneca:+y', 4, 10],
+    ['casa-cadeiraBalanco:+x', 3, 10], ['casa-boneca:+y', 3, 8, { baixo: true }],
   ],
 };

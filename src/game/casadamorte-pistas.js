@@ -153,7 +153,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'cravo', ...casa(1, 10), r: 2, nome: 'O cravo e a harpa',
+      id: 'cravo', ...casa(1, 8), r: 2, nome: 'O cravo e a harpa',
       olhar: 'Um cravo no canto noroeste e uma harpa de pé perto da lareira.',
       verbos: [
         { p: 'atuacao', cd: 12, ok: 'O cravo está afinado, e a harpa também: as cordas respondem sem ninguém ter mexido nelas. Uma melodia vem, doce, que nenhum dos dois toca, e depois silêncio.' },
@@ -247,7 +247,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'bonecaDaJanela', ...casa(3, 7), r: 2, nome: 'A boneca de vestido amarelo',
+      id: 'bonecaDaJanela', ...casa(3, 8), r: 2, nome: 'A boneca de vestido amarelo',
       olhar: 'Sobre o parapeito da janela do norte, uma boneca sorridente de vestido amarelo, coberta de teia como um véu de noiva.',
       verbos: [
         { p: 'intuicao', cd: 13, ok: 'A boneca está virada para a porta, e não para a janela: quem a pôs queria que visse quem entrava. Alguém brincava com ela e não terminou.' },

@@ -103,9 +103,13 @@ export const AREAS_TERREO = [
       'Nos painéis de madeira, veados correm entre árvores entalhadas.',
     ],
   }),
+  criarArea({
+    id: 'vestibulo', area: '5A', nome: 'O vestíbulo', cel: [[3, 3, 3, 3]],
+    texto: ['Uma passagem curta e ladrilhada, entre a sala de jantar e a cozinha. Cheira a gordura e a cera de vela.'],
+  }),
   // (a ÚLTIMA: tudo o que não é sala da casa é a floresta de fora)
   criarArea({
-    id: 'floresta', area: '0', nome: 'A floresta morta', cel: [[-1, -1, 9, 17]],
+    id: 'floresta', area: '0', nome: 'A floresta morta', cel: [[-1, -1, 10, 17]],
     texto: [
       'A estrada acaba numa clareira de capim cinzento. Em volta, as árvores de Baróvia estão mortas há tanto tempo que já nem caem: troncos retorcidos de galhos nus, a névoa rente ao chão e um silêncio sem pássaros. No meio da clareira, a Casa da Morte espera, de pedra e madeira escura, com as janelas acesas.',
       'No pórtico, as portas de carvalho se entreabrem ao peso da mão.',
@@ -175,6 +179,7 @@ export const MAPA_CASA_DA_MORTE_1 = {
   vaoUnido: PLANTA_1.vaoUnido,
   materialDaParede: 'painelCarvalho',
   vaoPorCasa: true,
+  cliqueNoObjeto: true,   // o botão direito no corpo de um móvel acha o móvel, e não a casa de trás
   // O grupo começa na clareira da floresta morta, em frente à casa, olhando para ela.
   grupo: grupoDoLivro([[2, 12], [3, 12], [2, 13], [3, 13]]),
   olhar: { dx: 0, dy: -1 },
@@ -191,6 +196,7 @@ export const MAPA_CASA_DA_MORTE_2 = {
   vaoUnido: PLANTA_2.vaoUnido,
   materialDaParede: 'painelCarvalho',
   vaoPorCasa: true,
+  cliqueNoObjeto: true,   // o botão direito no corpo de um móvel acha o móvel, e não a casa de trás
   // Quem sobe a escadaria chega ao salão superior, ao pé da curva.
   grupo: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
   olhar: { dx: 1, dy: 0 },
@@ -216,7 +222,7 @@ export const ANDARES = {
     ],
     chegadas: {
       casaDaMorte2: grupoDoLivro([[3, 5], [3, 4], [3, 6], [2, 5]]),
-      casaDaMortePorao1: grupoDoLivro([[2, 9], [3, 10], [3, 9], [2, 8]]),     // pelo alçapão do canil
+      casaDaMortePorao1: grupoDoLivro([[2, 9], [2, 10], [3, 9], [2, 8]]),     // pelo alçapão do canil
     },
   },
   casaDaMorte2: {
@@ -249,7 +255,7 @@ export const ANDARES = {
     ],
     chegadas: {
       casaDaMorte3: grupoDoLivro([[5, 5], [5, 6], [5, 7], [4, 7]]),
-      casaDaMortePorao1: grupoDoLivro([[0, 4], [1, 4], [1, 5], [2, 4]]),
+      casaDaMortePorao1: grupoDoLivro([[0, 4], [1, 4], [1, 5], [1, 7]]),
     },
   },
   casaDaMortePorao1: {

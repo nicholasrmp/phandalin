@@ -72,6 +72,9 @@ P1.sala('carnicais', '29', 'O cruzamento das quatro vias', 11, 7, 11, 9)
 # O salão de jantar do culto (27), com a despensa do grick (28) na parede sul.
 P1.piso(12, 7, 15, 9)
 P1.piso(14, 10, 14, 10)
+# A cripta D (23D) fica SELADA: sem parede entre ela e o salão, ela abria para o jantar e a laje não valia nada.
+for x in range(24, 28):
+    P1.casa(x, 14, 'R', '3')
 P1.sala('jantar', '27', 'O salão de jantar do culto', 12, 7, 15, 9)
 P1.sala('despensa', '28', 'A despensa', 14, 10, 14, 10)
 # A espinha sul: do cruzamento até a escada para baixo (30), o santuário (31) e o covil (33).
