@@ -407,3 +407,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # As paredes da Casa da Morte entram depois da taverna (este script corta o atlas no marcador dela): refaz sozinho, sem gastar geração.
+    import subprocess
+    import sys
+    subprocess.run([sys.executable, '-P', str(Path(__file__).with_name('acrescentar-casa.py'))], check=True)

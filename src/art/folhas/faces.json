@@ -15,6 +15,14 @@
   "tijolo": {
    "y": 140,
    "n": 4
+  },
+  "painelCarvalho": {
+   "y": 178,
+   "n": 5
+  },
+  "madeiraVelha": {
+   "y": 248,
+   "n": 6
   }
  },
  "topos": {
@@ -25,9 +33,20 @@
   "penhasco": {
    "y": 108,
    "n": 4
+  },
+  "painelCarvalho": {
+   "y": 216,
+   "n": 5
+  },
+  "madeiraVelha": {
+   "y": 286,
+   "n": 6
   }
  },
  "_taverna": {
   "y0": 140
+ },
+ "_casa": {
+  "y0": 178
  }
 }

@@ -186,6 +186,9 @@ export const MAPA_CASA_DA_MORTE_1 = {
   // A parede é um bloco alto (3 níveis) e o piso é raso: sem isto, a parede de casa inteira era desenhada rente ao chão.
   altura: alturaDe(TERREO),
   objetos: [],
+  paredeMaterial: 'painelCarvalho',
+  paredeFina: true,
+  paredePiso: 'assoalho',
   // O grupo entra pelo portão, ao sul, na sala de espera, olhando para o fundo da casa.
   grupo: grupoPadrao([[2, 21], [3, 21], [4, 21], [3, 22]]),
   olhar: { dx: 0, dy: -1 },
@@ -196,6 +199,9 @@ export const MAPA_CASA_DA_MORTE_2 = {
   terreno: SEGUNDO_ANDAR,
   altura: alturaDe(SEGUNDO_ANDAR),
   objetos: [],
+  paredeMaterial: 'painelCarvalho',
+  paredeFina: true,
+  paredePiso: 'parquet',
   // Quem sobe a escadaria chega ao salão superior, ao pé da curva.
   grupo: grupoPadrao([[8, 10], [8, 11], [7, 10], [7, 11]]),
   olhar: { dx: -1, dy: 0 },

@@ -1274,12 +1274,131 @@ export class Board {
    * estrada, onde caem os degraus, por onde os goblins atiram — antes de gastar
    * geração em arte. Errar o traçado depois da arte pronta custa a arte.
    */
+  /**
+   * PAREDE FINA (a Casa da Morte). Na regra, a casa de parede segue sendo uma casa inteira (nada do mapa, das salas e dos gatilhos muda);
+   * no desenho, ela vira um muro de uma fração de casa, no meio dela, que corre pelo lado em que há mais parede. Parede de casa inteira
+   * lia como cubo de pedra: fina, lê como a parede de um casarão.
+   *
+   * As contas são em coordenadas de VISTA dentro da casa: u anda por vx e w por vy, de 0 a 1. O ponto (u, w) do alto fica em
+   * (sx + (u - w) * TW/2, sy + (u + w) * TH/2). As faces são as MESMAS faixas de um nível do atlas (a esquerda olha para +vy, a direita
+   * para +vx), recortadas por colunas e deslocadas para o plano do muro; as pontas do muro levam uma tampa recortada da outra face.
+   */
+  /**
+   * POEIRA E TEIA (o 3º andar e o sótão da Casa da Morte): um véu cinza-claro por cima do piso, alguns grãos claros por sorteio da casa e
+   * uma teia nos cantos (a casa de piso com duas paredes coladas). Só desenho: a teia aqui não custa terreno difícil.
+   */
+  desenharPoeira(ctx, sx, sy, x, y) {
+    this.diamond(ctx, sx, sy);
+    ctx.fillStyle = 'rgba(176,170,152,.11)';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(214,208,190,.42)';
+    for (let k = 0; k < 4; k++) {
+      const px = sx + sorteio(x * 3 + k, y * 5 + k + 1, 41) - 20;
+      const py = sy + TH / 2 + sorteio(y * 7 + k + 2, x * 2 + k, 13) - 6;
+      if (Math.abs(px - sx) / (TW / 2) + Math.abs(py - (sy + TH / 2)) / (TH / 2) <= 0.9) ctx.fillRect(Math.round(px), Math.round(py), sorteio(x + k, y, 2) ? 2 : 1, 1);
+    }
+    let paredes = 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (this.field.inside(x + dx, y + dy) && this.field.surfaceAt(x + dx, y + dy) === 'alvenaria') paredes += 1;
+    if (paredes >= 2 && sorteio(x * 13 + 5, y * 7 + 3, 100) < 72) this.desenharTeia(ctx, sx, sy, x, y);
+  }
+
+  /**
+   * PAREDE FINA, o desenho (ver o comentário acima).
+   */
+  desenharParedeFina(ctx, x, y, s, hgt, sx, sy) {
+    const E = 0.26;
+    const a = 0.5 - E / 2;
+    const b = 0.5 + E / 2;
+    const v = this.toView(x, y);
+    const parede = (dvx, dvy) => {
+      const p = this.fromView(v.vx + dvx, v.vy + dvy);
+      return this.field.inside(p.x, p.y) && this.field.surfaceAt(p.x, p.y) === 'alvenaria';
+    };
+    const vxMais = parede(1, 0); const vxMenos = parede(-1, 0); const vyMais = parede(0, 1); const vyMenos = parede(0, -1);
+    let ex = vxMais || vxMenos;
+    let ey = vyMais || vyMenos;
+    const pilar = !ex && !ey;
+    if (pilar) { ex = true; ey = true; }
+    const u0 = !pilar && vxMenos ? 0 : a; const u1 = !pilar && vxMais ? 1 : b;
+    const w0 = !pilar && vyMenos ? 0 : a; const w1 = !pilar && vyMais ? 1 : b;
+    const lift = hgt * LIFT;
+    const P = (u, w) => ({ x: sx + (u - w) * TW / 2, y: sy + (u + w) * TH / 2 });
+
+    // O chão por baixo, no nível do piso.
+    const lad = ladrilhoChao(this.field.paredePiso ?? 'assoalho', x, y);
+    if (lad) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(lad.img, lad.sx, lad.sy, lad.w, lad.h, sx - TW / 2, sy + lift, lad.w, lad.h);
+    } else {
+      this.diamond(ctx, sx, sy + lift);
+      ctx.fillStyle = s.topo[0];
+      ctx.fill();
+    }
+
+    ctx.imageSmoothingEnabled = false;
+    const fatia = (lado, n, colunas, dx, dy, deslocX, deslocY) => {
+      const f = faixaDaFace(s.face, lado, x, y, n);
+      if (!f) return;
+      const [c0, c1] = colunas;
+      const larg = Math.round(c1) - Math.round(c0);
+      if (larg <= 0) return;
+      const basex = lado === 'esq' ? sx - TW / 2 : sx;
+      ctx.drawImage(f.img, f.sx + Math.round(c0), f.sy, larg, f.h,
+        Math.round(basex + dx + Math.round(c0) + deslocX), Math.round(sy + TH / 2 + n * LIFT + dy + deslocY), larg, f.h);
+    };
+    for (let n = 0; n < hgt; n++) {
+      if (ex) {
+        // A face comprida que olha para +vy, trazida da borda (w = 1) para o plano w = b.
+        fatia('esq', n, [u0 * (TW / 2), u1 * (TW / 2)], (1 - b) * (TW / 2), -(1 - b) * (TH / 2), 0, 0);
+        // A tampa da ponta de +vx (plano u = u1), recortada da face da direita: as colunas de w entre a e b.
+        if (!vxMais) fatia('dir', n, [(1 - b) * (TW / 2), (1 - a) * (TW / 2)], -(1 - u1) * (TW / 2), -(1 - u1) * (TH / 2), 0, 0);
+      }
+      if (ey) {
+        // A face comprida que olha para +vx, trazida da borda (u = 1) para o plano u = b.
+        fatia('dir', n, [(1 - w1) * (TW / 2), (1 - w0) * (TW / 2)], -(1 - b) * (TW / 2), -(1 - b) * (TH / 2), 0, 0);
+        // A tampa da ponta de +vy (plano w = w1), da face da esquerda: as colunas de u entre a e b.
+        if (!vyMais) fatia('esq', n, [a * (TW / 2), b * (TW / 2)], (1 - w1) * (TW / 2), -(1 - w1) * (TH / 2), 0, 0);
+      }
+    }
+
+    // O alto: um paralelogramo por braço, com o topo do bloco do material dentro (ou a cor lisa).
+    const topo = (s.topoBloco && topoDoBloco(s.topoBloco, x, y)) || null;
+    const braco = (ua, ub, wa, wb) => {
+      ctx.save();
+      ctx.beginPath();
+      const q = [P(ua, wa), P(ub, wa), P(ub, wb), P(ua, wb)];
+      ctx.moveTo(q[0].x, q[0].y);
+      for (let i = 1; i < 4; i++) ctx.lineTo(q[i].x, q[i].y);
+      ctx.closePath();
+      if (topo) {
+        ctx.clip();
+        ctx.drawImage(topo.img, topo.sx, topo.sy, topo.w, topo.h, sx - TW / 2, sy, topo.w, topo.h);
+      } else {
+        ctx.fillStyle = s.topo[0];
+        ctx.fill();
+      }
+      ctx.restore();
+    };
+    if (ex) braco(u0, u1, a, b);
+    if (ey) braco(a, b, w0, w1);
+  }
+
   drawSuperficie(ctx, x, y, alphaChao, alphaObjeto, s) {
+    // A parede do mapa pode ter o material dela (a Casa da Morte: carvalho polido, madeira velha), no lugar da alvenaria de pedra.
+    const material = this.field.paredeMaterial;
+    if (material && s.face === 'alvenaria') s = { ...s, face: material, ...(s.topoBloco ? { topoBloco: material } : {}) };
     const hgt = this.alturaVisual(x, y);
     const { sx, sy } = this.iso(x, y, hgt);
     const lift = hgt * LIFT;
     ctx.save();
     ctx.globalAlpha = alphaChao;
+
+    // A parede fina da Casa da Morte: o muro de uma fração de casa, no lugar do cubo.
+    if (this.field.paredeFina && s.face && this.field.surfaceAt(x, y) === 'alvenaria' && hgt > 0) {
+      this.desenharParedeFina(ctx, x, y, s, hgt, sx, sy);
+      ctx.restore();
+      return;
+    }
 
     // A ponte tem desenho próprio, alinhado à grade (`desenharPonte`).
     if (s.objeto === 'ponte') {
@@ -1419,6 +1538,7 @@ export class Board {
     ctx.stroke();
     if (s.chao === 'fosso') this.profundidadeDoFosso(ctx, x, y, sx, sy);
     if (this.field.paredeDeCaverna && s.chao === 'teia') this.desenharTeia(ctx, sx, sy, x, y);
+    if (this.field.poeira && !s.objeto) this.desenharPoeira(ctx, sx, sy, x, y);
     const degrau = this.field.degraus?.get(`${x},${y}`);
     if (degrau) this.desenharDegraus(ctx, sx, sy, degrau);
     if (s.chao === 'entulho' && hgt === 0) this.salpicarFundoDaFenda(ctx, sx, sy, x, y);
