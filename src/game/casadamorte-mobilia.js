@@ -53,10 +53,10 @@ export const MOBILIA = {
     ['casa-cadeiraCostas:-y', 4, 8], ['casa-cadeiraCostas:-y', 3, 8],
     // ... a mesa redonda, os três lobos empalhados (cada um olhando para um lado) e o barril de vinho
     // a FLORESTA MORTA de fora: árvores secas em volta da clareira (nunca na frente da porta) e restos pelo chão
-    ['casa-arvoreMortaA:+y', 0, 16], ['casa-arvoreMortaB:+y', 2, 17], ['casa-arvoreMortaC:+y', 4, 16], ['casa-arvoreMortaA:+x', 6, 17], ['casa-arvoreMortaB:+x', 8, 16],
-    ['casa-arvoreMortaC:+x', 7, 13], ['casa-arvoreMortaA:+x', 8, 11], ['casa-arvoreMortaB:+y', 9, 14], ['casa-arvoreMortaD:+y', 7, 9], ['casa-arvoreMortaC:+y', 8, 7],
-    ['casa-arvoreMortaA:+y', 9, 4], ['casa-arvoreMortaB:+x', 7, 2], ['casa-arvoreMortaC:+y', 8, 0], ['casa-arvoreMortaA:+x', 6, 3], ['casa-arvoreMortaB:+y', 6, 7],
-    ['casa-arvoreMortaA:+y', -1, 3], ['casa-arvoreMortaC:+x', -1, 7], ['casa-arvoreMortaB:+y', -1, 10], ['casa-arvoreMortaC:+y', -1, 13], ['casa-arvoreMortaA:+x', -1, 16],
+    ['casa-arvoreMortaA:+y', 0, 16], ['casa-arvoreMortaE:+y', 2, 17], ['casa-arvoreMortaC:+y', 4, 16], ['casa-arvoreMortaA:+x', 6, 17], ['casa-arvoreMortaB:+x', 8, 16],
+    ['casa-arvoreMortaG:+x', 7, 13], ['casa-arvoreMortaA:+x', 8, 11], ['casa-arvoreMortaB:+y', 9, 14], ['casa-arvoreMortaD:+y', 7, 9], ['casa-arvoreMortaF:+y', 8, 7],
+    ['casa-arvoreMortaG:+y', 9, 4], ['casa-arvoreMortaB:+x', 7, 2], ['casa-arvoreMortaC:+y', 8, 0], ['casa-arvoreMortaA:+x', 6, 3], ['casa-arvoreMortaE:+y', 6, 7],
+    ['casa-arvoreMortaA:+y', -1, 3], ['casa-arvoreMortaC:+x', -1, 7], ['casa-arvoreMortaH:+y', -1, 10], ['casa-arvoreMortaC:+y', -1, 13], ['casa-arvoreMortaA:+x', -1, 16],
     ['casa-arvoreMortaB:+y', 1, -1], ['casa-arvoreMortaC:+x', 4, -1],
     ['casa-toco:+y', 1, 12], ['casa-arbustoSeco:+y', 5, 13], ['casa-tronco:+y', 3, 15], ['casa-ossosFora:+y', 4, 12, { baixo: true }], ['casa-pedraFora:+y', 6, 15],
     ['casa-capimSeco:+y', 2, 14, { baixo: true }], ['casa-capimSecoB:+y', 5, 15, { baixo: true }], ['casa-lapide:+x', 6, 11], ['casa-placa:+y', 5, 16], ['casa-espinhos:+y', 0, 14],
@@ -103,7 +103,7 @@ export const MOBILIA = {
     // quarto de repouso (19, a noroeste)
     ['casa-camaAbandonada:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-armarioCoberto:+x', 0, 1], ['casa-cadeiraBalanco:+x', 0, 2, { baixo: true }],
     // quarto das crianças (20): as camas pequenas, o baú de brinquedos, a casa de bonecas e os ossinhos
-    ['casa-camaAbandonada:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaAbandonada:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+x', 4, 2, { baixo: true }],
+    ['casa-camaAbandonada:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaInfantil:+y', 4, 1], ['casa-bau:+x', 4, 2, { baixo: true }],
     ['casa-casaDeBonecas:+y', 3, 0], ['casa-esqueletosCriancas:+y', 3, 1, { baixo: true }],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e a lareira apagada
     ['casa-lareiraApagada:+x', 0, 5],

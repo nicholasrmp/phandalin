@@ -378,5 +378,36 @@ obj.CONJUNTOS.update({
     },
 })
 
+# Variedade que faltava: cama de crianca (uma casa, pequena) e mais arvores mortas.
+obj.CONJUNTOS.update({
+    'casaCamaInfantil': {
+        'description': ('Single small CHILD bed that fits about ONE floor tile, about 38 px wide and 26 px tall, its long side running '
+                        'down to the left at 27 degrees, sitting on the bottom of the canvas, seen from the front-left in isometric 2:1 view, ' + ESTILO + PIXEL),
+        'size': 64,
+        'view': 'top-down',
+        'item_descriptions': [
+            'small child bed, dark oak frame, faded blue quilt, small pillow, a toy sword leaning on it, dusty',
+            'small child bed with a high headboard carved with stars, faded blue quilt, cobwebs',
+            'tiny wooden child bed, grey blanket and a teddy bear, dusty, cobwebs',
+            'small child bed, dark oak, patched yellow quilt, a rag doll on the pillow, cobwebs',
+        ] * 4,
+        'target_palette': {'colors': PALETA},
+    },
+    'casaArvoreMorta2': {
+        'description': ('ONE tall dead tree for a cursed dead forest, twisted bare black-brown trunk with gnarled leafless branches, '
+                        'about 100 px tall, the foot of the trunk at the bottom centre of the canvas, seen in isometric 2:1 view, '
+                        'lit from the upper left. No leaves, no grass, no ground. ' + PIXEL),
+        'size': 128,
+        'view': 'top-down',
+        'item_descriptions': [
+            'dead willow with long bare drooping branches, grey bark',
+            'burnt dead tree, charred black trunk, broken top, a few spiky branches',
+            'tall thin dead birch, white-grey peeling bark, bare twigs',
+            'dead tree with a huge twisted root base and a hollow trunk, bare branches',
+        ],
+        'target_palette': {'colors': PALETA_FLORESTA},
+    },
+})
+
 if __name__ == '__main__':
     obj.main()
