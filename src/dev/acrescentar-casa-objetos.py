@@ -85,7 +85,7 @@ PECAS = {
     # a escadaria dos andares abandonados: a mesma, desbotada e escurecida
     'escadariaVelha': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2, 'envelhecer': True},
     # o lustre PENDE do teto: a folga alta o ergue, e `dx`/`dy` (px de tela) o centram sobre a mesa; o vao da escada do 3o andar e so o corrimao
-    'lustre': {'conjunto': 'casaLustre', 'n': 0, 'dirs': ['+y'], 'folga': 66, 'dx': 16, 'dy': -24},
+    'lustre': {'conjunto': 'casaLustre', 'n': 0, 'dirs': ['+y'], 'folga': 46, 'dx': 16, 'dy': -24},
     'vaoEscada': {'conjunto': 'casaVaoEscada', 'n': 0, 'dirs': ['+x'], 'folga': 2},
     'escadaria': {'conjunto': 'casaEscadaria', 'n': 3, 'dirs': ['+x'], 'folga': 2},
 }

@@ -38,9 +38,9 @@ export const PLANTA_1 = plantaDeSalas({
 
 // ------------------------------------------------------------------------------------------------ 2º andar (áreas 6 a 10) ----
 // Ao norte: a biblioteca (8), com a sala secreta (9) atrás de uma estante, o armário dos uniformes (7B) e os quartos dos empregados (7A).
-// No meio: o salão superior (6), com a escadaria. Ao sul: o conservatório (10). O parquet em losangos é o piso de quase tudo.
+// No meio: o salão superior (6), com a escadaria. Ao sul: o conservatório (10). O assoalho encerado é o piso de quase tudo.
 export const PLANTA_2 = plantaDeSalas({
-  piso: '-',
+  piso: 'U',
   salas: [
     { id: 'biblioteca', piso: 'U', retangulos: [[0, 0, 3, 2], [1, 3, 2, 3]] },
     { id: 'armario', piso: 'U', retangulos: [[3, 3, 3, 3]] },
@@ -82,8 +82,8 @@ export const AREAS_TERREO = [
   criarArea({
     id: 'cozinha', area: '4A', nome: 'A cozinha', cel: [[4, 1, 5, 3]],
     texto: [
-      'Tudo em ordem: louça, talheres e panelas nas prateleiras, uma tábua de corte e um rolo sobre a mesa grande. O forno de pedra abobadada tem a chaminé de ferro dobrada que some no teto.',
-      'Num canto, uma portinha dá para um eixo de pedra estreito com uma caixa de madeira presa a uma roldana: um monta-cargas manual.',
+      'Tudo no lugar: louças e talheres nas prateleiras, uma tábua e um rolo de massa à mão. O forno é de pedra, em abóbada, e o cano de ferro da chaminé faz uma curva antes de sumir no teto.',
+      'Num canto há uma portinha baixa, e atrás dela um poço estreito de pedra com uma caixa de madeira pendurada numa polia: um elevador de mantimentos, puxado à mão.',
     ],
   }),
   criarArea({
@@ -93,8 +93,8 @@ export const AREAS_TERREO = [
   criarArea({
     id: 'jantar', area: '5', nome: 'A sala de jantar', cel: [[0, 0, 3, 2], [1, 3, 1, 3]],
     texto: [
-      'Uma mesa de mogno entalhado, oito cadeiras de braços e uma prataria que brilha demais, com um lustre de cristal pendurado acima dela. Na parede, a pintura de um vale alpino; as cortinas são de seda vermelha, e uma tapeçaria mostra cães e cavaleiros caçando um lobo.',
-      'Os painéis da parede têm cervos entre as árvores.',
+      'A mesa é de mogno trabalhado, cercada de cadeiras de braços, e a prataria reluz demais. Um lustre de cristal pende sobre ela. Nas paredes, um vale alpino pintado, cortinas de seda vermelha e uma tapeçaria de caçadores e cães acuando um lobo.',
+      'Nos painéis de madeira, veados correm entre árvores entalhadas.',
     ],
   }),
 ];
@@ -103,15 +103,15 @@ export const AREAS_SEGUNDO = [
   criarArea({
     id: 'salaoSuperior', area: '6', nome: 'O salão superior', cel: [[0, 4, 5, 6]],
     texto: [
-      'Lamparinas de óleo nas paredes, um piso de parquet em losangos e uma lareira de pedra. Sobre ela, o retrato emoldurado da família Durst: Gustav e Elisabeth sorrindo com dois filhos, Rose e Thorn, e um bebê enrolado nos braços do pai, que a mãe olha com uma ponta de desprezo.',
-      'Armaduras em pé guardam as portas do norte e do sul, com lanças nas mãos e elmos em forma de cabeça de lobo. A escadaria de mármore vermelho continua a subir.',
+      'Lamparinas de óleo nas paredes, o assoalho encerado e uma lareira de pedra. Acima dela, o retrato da família Durst: Gustav e Elisabeth, com os filhos Rose e Thorn e um bebê no colo do pai, que a mãe encara com certo desdém.',
+      'Armaduras de pé flanqueiam as portas, de lança em punho e elmo com focinho de lobo. A escadaria de mármore vermelho segue para cima.',
     ],
   }),
   criarArea({
     id: 'empregados', area: '7A', nome: 'O quarto dos empregados', cel: [[4, 1, 5, 3]],
     texto: [
-      'Um quarto sem enfeite: duas camas com colchão de palha e, aos pés de cada uma, um armário de sapatos vazio. Uniformes de criado muito limpos pendem de ganchos no armário ao lado.',
-      'Junto à cabeceira de uma das camas, um botão na parede aciona o sininho da cozinha, vários metros abaixo, pelo mesmo monta-cargas.',
+      'Um quarto sem adornos: duas camas de colchão de palha, um baú pequeno ao pé de cada uma e uniformes de criado muito limpos pendurados ao lado.',
+      'Junto à cabeceira de uma cama há um botão na parede, que faz tocar o sininho da cozinha lá embaixo, pelo mesmo elevador.',
     ],
   }),
   criarArea({
@@ -128,21 +128,21 @@ export const AREAS_SEGUNDO = [
   criarArea({
     id: 'salaSecreta', area: '9', nome: 'A sala secreta', cel: [[4, 0, 5, 0]],
     texto: [
-      'Estantes cheias de volumes sobre rituais de invocação de diabos e sobre necromancia, todos assinados por uma seita chamada Sacerdotes de Osybus. Um baú pesado, de pés de ferro, encostado à parede de trás, com a tampa entreaberta.',
-      'Do baú pende o esqueleto de um aventureiro de armadura de couro, com três dardos cravados na caixa torácica. A mão esquerda dele segura uma carta lacrada com o selo de Strahd von Zarovich.',
+      'Estantes de livros sobre invocação de demônios e necromancia, todos assinados pelos Sacerdotes de Osybus. Encostado ao fundo, um baú pesado de pés de ferro, com a tampa semiaberta.',
+      'Do baú pende o esqueleto de um aventureiro de couro, com três dardos cravados nas costelas. A mão esquerda segura uma carta lacrada com o selo de Strahd von Zarovich.',
     ],
   }),
   criarArea({
     id: 'conservatorio', area: '10', nome: 'O conservatório', cel: [[0, 7, 5, 10]],
     texto: [
-      'Cortinas finas nas janelas, um lustre de bronze no teto e cadeiras estofadas ao longo das paredes. As tapeçarias de vitral mostram homens, mulheres e crianças elegantes cantando e tocando.',
-      'Um cravo com banco no canto, uma harpa de pé junto à lareira e estatuetas de alabastro de dançarinos bem vestidos sobre o consolo.',
+      'Cortinas leves nas janelas, um lustre de bronze no teto e poltronas estofadas ao longo das paredes. Os vitrais das tapeçarias mostram gente elegante, de todas as idades, cantando e tocando.',
+      'Um cravo com seu banquinho num canto, uma harpa junto da lareira e, sobre o consolo, estatuetas de alabastro de dançarinos em trajes de baile.',
     ],
   }),
 ];
 
 const MOB_1 = mobiliar(PLANTA_1.terreno, MOBILIA.casaDaMorte1, 'assoalho');
-const MOB_2 = mobiliar(PLANTA_2.terreno, MOBILIA.casaDaMorte2, 'parquet');
+const MOB_2 = mobiliar(PLANTA_2.terreno, MOBILIA.casaDaMorte2, 'assoalho');
 
 const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
 /** Casas em quadrados do livro passam a casas do mapa. */

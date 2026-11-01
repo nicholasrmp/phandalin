@@ -74,16 +74,16 @@ export const AREAS_TERCEIRO = [
   criarArea({
     id: 'varanda', area: '11', nome: 'A varanda', cel: [[1, 3, 2, 3], [2, 4, 5, 6]],
     texto: [
-      'Aqui em cima a casa não finge mais. A poeira cobre o assoalho como neve, as teias pendem em véus, as tábuas gemem a cada passo e o ar é frio e parado. A escadaria de mármore vermelho termina numa varanda que dá a volta no vão da escada.',
-      'Contra a parede, envolta em teias, uma armadura de placas negras, de pé, com um elmo de viseira fechada. Não se mexe.',
+      'Aqui em cima a casa deixa de fingir. O pó forra o assoalho como neve, as teias pendem em cortinas, as tábuas rangem e o ar é frio e parado. A escadaria de mármore termina numa varanda que contorna o vão da escada.',
+      'Junto à parede, enrolada em teias, uma armadura negra de placas, de pé, de viseira baixa. Ela não se mexe.',
     ],
   }),
   criarArea({
     id: 'suitePrincipal', area: '12', nome: 'A suíte principal', cel: [[0, 0, 5, 2], [4, 3, 5, 3], [3, 3, 3, 3]],
     texto: [
-      'Portas duplas de vitral, cobertas de pó, com moinhos de vento desenhados nos painéis. Do outro lado, o quarto do casal Durst: uma cama de dossel com cortinas bordadas e véus esfarrapados, dois guarda-roupas vazios, uma penteadeira com espelho de moldura de madeira e uma poltrona acolchoada, tudo sob um pano de teias.',
-      'Um tapete de pele de tigre, apodrecendo, jaz diante da lareira, e acima dela, empoeirado, o retrato de Gustav e Elisabeth Durst. Num canto da parede ocidental, um criado-mudo com um botão que toca o sininho da cozinha, muitos andares abaixo. No canto sudoeste, uma mesa e duas cadeiras, e sobre a toalha uma tigela e um jarro de porcelana, vazios.',
-      'Uma porta de frente para o pé da cama tem um espelho de corpo inteiro. Abre para um armário vazio. Outra porta leva a uma varanda de fora da casa.',
+      'Portas de vitral cobertas de pó, com moinhos pintados nos vidros, dão para o quarto do casal Durst: uma cama de dossel de cortinas bordadas e véus em trapos, dois guarda-roupas vazios, uma penteadeira de espelho emoldurado e uma poltrona, tudo sob teias.',
+      'Uma pele de tigre apodrece diante da lareira, sob o retrato empoeirado de Gustav e Elisabeth. Na parede do oeste, um criado-mudo traz um botão que faz tocar o sininho da cozinha, muitos andares abaixo. No canto sudeste, uma mesa com duas cadeiras sustenta uma tigela e um jarro de porcelana, ambos vazios.',
+      'Uma porta aos pés da cama guarda um espelho de corpo inteiro e abre para um armário vazio e empoeirado. Outra porta sai para uma sacada fora da casa.',
     ],
   }),
   criarArea({

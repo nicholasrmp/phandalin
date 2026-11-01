@@ -2614,6 +2614,8 @@ export class Board {
     // A taverna é quente e fechada: a face na sombra escurece menos, senão o tijolo vira breu.
     ctx.fillStyle = lado === 'N' ? 'rgba(255,246,224,.15)' : (f.materialDaParede === 'tijolo' ? 'rgba(14,16,28,.14)' : 'rgba(14,16,28,.30)');
     ctx.fill();
+    // O reboco velho dos andares de cima é esfriado para a família do papel de parede de baixo: um vinho velho por cima.
+    if (f.materialDaParede === 'madeiraVelha') { ctx.fillStyle = 'rgba(52,22,32,.24)'; ctx.fill(); }
     ctx.restore();
     // A SETEIRA: a fenda estreita, aberta na pedra na altura do peito.
     // (a fenda estreita só vale na parede inteira: na ruína a seteira é a brecha, desenhada no perfil)

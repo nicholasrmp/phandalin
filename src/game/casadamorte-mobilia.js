@@ -52,25 +52,25 @@ export const MOBILIA = {
     ['casa-guardaRoupa:+y', 3, 7], ['casa-lareira:+y', 4, 7], ['casa-guardaRoupa:+y', 5, 7],
     ['casa-cadeiraCostas:-y', 4, 8],
     // ... a mesa redonda, os três lobos empalhados e o barril de vinho
-    ['casa-mesaRedonda:+y', 3, 10], ['casa-loboA:+y', 5, 8], ['casa-loboB:+y', 3, 8], ['casa-loboC:+y', 5, 10], ['casa-barril:+y', 4, 10],
+    ['casa-mesaRedonda:+y', 3, 10], ['casa-loboA:+y', 5, 8], ['casa-loboB:+y', 3, 8], ['casa-loboC:+y', 4, 10], ['casa-barril:+y', 5, 10],
   ],
 
   // ------------------------------------------------------------------------------------------------ 2º andar ---
   casaDaMorte2: [
     // biblioteca (8): a lareira entre duas estantes na parede oeste, estantes na do norte, a escrivaninha com a cadeira de frente para ela
-    ['casa-lareiraB:+x', 0, 1], ['casa-estante:+x', 0, 0], ['casa-estante:+x', 0, 2],
+    ['casa-lareiraB:+x', 0, 1], ['casa-cadeira:+x', 0, 0], ['casa-cadeira:+x', 0, 2],
     ['casa-estanteB:+y', 1, 0], ['casa-estante:+y', 2, 0],
-    ['casa-escrivaninha:+y', 2, 1], ['casa-cadeira:+x', 1, 1],
+    ['casa-escrivaninha:+y', 1, 1], ['casa-cadeiraCostas:-y', 1, 2],
     // sala secreta (9): o baú de pés de ferro
     ['casa-bau:+y', 5, 0],
     // quartos dos empregados (7A): duas camas de palha, de cabeceira para o norte
-    ['casa-camaVelha:+y', 4, 2, { nada: [[4, 1]] }], ['casa-camaVelha:+y', 5, 2, { nada: [[5, 1]] }],
+    ['casa-camaVelha:+y', 4, 2, { nada: [[4, 1]] }], ['casa-camaVelha:+y', 5, 2, { nada: [[5, 1]] }], ['casa-bau:+y', 5, 3],
     // salão superior (6): a lareira na parede oeste, a escadaria em curva, as armaduras de pé na parede do norte
     ['casa-lareira:+x', 0, 5],
     ['casa-armadura:+y', 0, 4],
     ['casa-escadaria:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
     // conservatório (10): a lareira na parede do norte, a poltrona de frente para ela, o cravo na parede oeste e a harpa (o candelabro)
-    ['casa-lareiraB:+y', 4, 7], ['casa-cadeiraCostas:-y', 4, 8], ['casa-candelabro:+y', 3, 7], ['casa-harpa:+y', 5, 10],
+    ['casa-lareiraB:+y', 4, 7], ['casa-harpa:+y', 4, 8], ['casa-cadeira:+y', 0, 7], ['casa-cadeira:+y', 3, 7], ['casa-cadeira:+y', 5, 7],
     ['casa-cravo:+y', 0, 9, { nada: [[0, 8]] }],
   ],
 
@@ -78,14 +78,14 @@ export const MOBILIA = {
   casaDaMorte3: [
     // suíte principal (12): a lareira apagada e o guarda-roupa coberto na parede oeste, a cama de dossel, a penteadeira, a mesa do canto
     ['casa-lareiraApagada:+x', 0, 1], ['casa-armarioCoberto:+x', 0, 0], ['casa-comodaCoberta:+x', 0, 2],
-    ['casa-cama:+y', 4, 1, { nada: [[4, 0]] }],
-    ['casa-poltronaCoberta:+x', 4, 3], ['casa-tigre:+y', 1, 1, { baixo: true }], ['casa-criadoVelho:+y', 3, 1],
+    ['casa-cama:+y', 3, 1, { nada: [[3, 0]] }],
+    ['casa-poltronaCoberta:+x', 4, 3], ['casa-tigre:+y', 1, 1, { baixo: true }], ['casa-criadoVelho:+y', 2, 1],
     // banheiro (13): a tina ao longo de x e o fogãozinho
     ['casa-tina:+x', 1, 5, { nada: [[0, 5]] }], ['casa-fogao:+y', 0, 4],
     // berçário (15B)
     ['casa-berco:+y', 0, 8],
     // suíte da babá (15A): a cama ao longo da parede leste, o guarda-roupa coberto e o espelho coberto junto da porta secreta, na parede do poço
-    ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-armarioCoberto:+y', 4, 8], ['casa-espelhoHera:+y', 5, 8], ['casa-criadoVelho:+y', 4, 10],
+    ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-espelhoHera:+y', 4, 8], ['casa-armarioCoberto:+y', 5, 8], ['casa-criadoVelho:+y', 3, 10],
     ['casa-vaoEscada:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
   ],
 
@@ -97,7 +97,7 @@ export const MOBILIA = {
     ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 2, 2],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e o fogão apagado
     ['casa-lareiraApagada:+x', 0, 5],
-    ['casa-manequim:+y', 0, 6], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-livrosTeia:+y', 2, 4],
+    ['casa-manequim:+y', 0, 6], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-cobertores:+y', 2, 6], ['casa-livrosTeia:+y', 2, 4],
     // quarto de repouso (17, a sudeste)
     ['casa-camaVelha:+y', 5, 9, { nada: [[5, 8]] }], ['casa-fogao:+y', 4, 8], ['casa-escrivaninha:+x', 2, 9], ['casa-armarioCoberto:+x', 2, 10], ['casa-cadeiraBalanco:+y', 3, 10], ['casa-boneca:+y', 4, 10],
   ],
