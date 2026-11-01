@@ -148,7 +148,7 @@ async function ritual(ctx, c) {
       escolhas: [
         ...(tentou ? [] : [{ rotulo: 'Entender o que querem (Religião ou Intuição, CD 11)', valor: 'entender' }]),
         { rotulo: 'Sacrificar uma vida no altar', valor: 'sacrificar' },
-        { rotulo: 'Descer do estrado sem sacrificar ninguém', valor: 'negar', primaria: true },
+        { rotulo: 'Descer do estrado sem sacrificar ninguém (perigo: o culto ataca e Lorghoth desperta)', valor: 'negar' },
       ],
     });
     if (v === 'entender') {
@@ -335,7 +335,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     // ---- o santuário (31)
     if (area?.id === 'santuario') {
       ops.push({
-        rotulo: 'Pegar a esfera de cristal da estátua', icone: 'acao-usarObjeto', detalhe: 'a esfera cinza esfumaçada',
+        rotulo: 'Pegar a esfera de cristal da estátua', icone: 'acao-usarObjeto', detalhe: 'a esfera cinza esfumaçada. Perigo: solta cinco sombras',
         motivo: achados.esfera ? 'já foi pega' : ctx.longe(c, { x: 35, y: 29 }, 20),
         fazer: async () => {
           achados.esfera = true;
@@ -347,7 +347,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
         },
       });
       ops.push({
-        rotulo: 'Tocar a estátua de Strahd', icone: 'acao-usarObjeto', detalhe: 'a mão sobre a cabeça do lobo',
+        rotulo: 'Tocar a estátua de Strahd', icone: 'acao-usarObjeto', detalhe: 'a mão sobre a cabeça do lobo. Perigo: solta cinco sombras',
         motivo: ctx.longe(c, { x: 35, y: 29 }, 20),
         fazer: async () => {
           const g = ctx.grupos.sombras;
