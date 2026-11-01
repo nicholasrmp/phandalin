@@ -103,7 +103,7 @@ async function fantasmas(ctx) {
 async function lutarComOsFantasmas(ctx) {
   if (ctx.grupos.fantasmas && !ctx.grupos.fantasmas.vencido) return;
   const mk = (nome, p) => { const f = makeMonster('fantasmaDeCrianca', { ...p }); f.name = nome; f.grupo = 'fantasmas'; f.facingVec = { dx: 0, dy: 1 }; return f; };
-  const g = { id: 'fantasmas', membros: [mk('Rose', casa(3, 0)), mk('Thorn', casa(3, 1))], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
+  const g = { id: 'fantasmas', membros: [mk('Rose', casa(3, 1)), mk('Thorn', casa(2, 2))], ativo: false, vencido: false, furtividade: [0], titulo: '20. O quarto das crianças' };
   ctx.grupos.fantasmas = g;
   ctx.depoisDaLuta.fantasmas = async () => {
     ctx.salvo.fantasmas = 'apareceram';
@@ -274,9 +274,9 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: 'Procurar portas na casa de bonecas', icone: 'acao-procurar',
         detalhe: salvo.escada ? 'a escada já foi achada' : (salvo.dicaDaCasaDeBonecas ? 'Percepção, CD 15, com vantagem' : 'Percepção, CD 15'),
-        motivo: salvo.escada ? 'já achada' : buscas.ja(c, 'bonecas', casa(2, 2)),
+        motivo: salvo.escada ? 'já achada' : buscas.ja(c, 'bonecas', casa(3, 0)),
         fazer: async () => {
-          if (!salvo.escada) buscas.marcar(c, 'bonecas', casa(2, 2));
+          if (!salvo.escada) buscas.marcar(c, 'bonecas', casa(3, 0));
           await casaDeBonecas(ctx, c);
           if (!salvo.fantasmas) await fantasmas(ctx);
         },

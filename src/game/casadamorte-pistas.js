@@ -288,7 +288,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'casaDeBonecasPista', ...casa(2, 2), r: 1, nome: 'A casa de bonecas',
+      id: 'casaDeBonecasPista', ...casa(3, 0), r: 1, nome: 'A casa de bonecas',
       olhar: 'Uma réplica perfeita da Casa da Morte, em miniatura, coberta de teia.',
       aura: { escola: 'ilusão', texto: 'Uma aura de ilusão e de adivinhação: a casa de bonecas é um espelho da casa verdadeira, e mostra o que ela esconde.' },
       verbos: [

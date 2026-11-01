@@ -83,7 +83,7 @@ export const MOBILIA = {
     // banheiro (13): a tina ao longo de x e o fogãozinho
     ['casa-tina:+x', 1, 5, { nada: [[0, 5]] }], ['casa-fogao:+y', 0, 4],
     // berçário (15B)
-    ['casa-berco:+y', 0, 8],
+    ['casa-berco:+y', 0, 7],
     // suíte da babá (15A): a cama ao longo da parede leste, o guarda-roupa coberto e o espelho coberto junto da porta secreta, na parede do poço
     ['casa-camaVelha:+y', 5, 10, { nada: [[5, 9]] }], ['casa-espelhoHera:+y', 4, 8], ['casa-armarioCoberto:+y', 5, 8], ['casa-criadoVelho:+y', 3, 10],
     ['casa-vaoEscada:+x', 5, 6, { nada: [[4, 5], [5, 5], [4, 6]] }],
@@ -94,7 +94,7 @@ export const MOBILIA = {
     // quarto de repouso (19, a noroeste)
     ['casa-camaVelha:+y', 1, 1, { nada: [[1, 0]] }], ['casa-fogao:+y', 0, 0], ['casa-armarioCoberto:+x', 0, 1], ['casa-cadeiraBalanco:+y', 0, 2],
     // quarto das crianças (20): as camas pequenas, o baú de brinquedos e o cavalinho de pau
-    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 2, 2],
+    ['casa-camaVelha:+y', 2, 1, { nada: [[2, 0]] }], ['casa-camaVelha:+y', 4, 1, { nada: [[4, 0]] }], ['casa-bau:+y', 4, 2], ['casa-casaDeBonecas:+y', 3, 0],
     // depósito dos móveis cobertos (18): lençóis sobre tudo, o baú dos restos e o fogão apagado
     ['casa-lareiraApagada:+x', 0, 5],
     ['casa-manequim:+y', 0, 6], ['casa-poltronaCoberta:+y', 2, 5], ['casa-caixotes:+y', 0, 7], ['casa-sofaCoberto:+y', 2, 7], ['casa-cobertores:+y', 2, 6], ['casa-livrosTeia:+y', 2, 4],

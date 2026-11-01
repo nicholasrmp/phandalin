@@ -1667,6 +1667,7 @@ export class Board {
       const chama = CHAMA[prop?.grupo ?? s.objeto];
       const fase = (x * 1.7 + y * 2.9) % 6.28;
       // A peça alta (cama, escadaria, cravo, estante) esmaece quando cobre quem está atrás dela.
+      if (prop?.grupo === 'prop-casa-lustre:+y') ctx.globalAlpha = 0.72;      // o lustre pende sobre a mesa: leve, para não esconder a sala
       if (baixo.h > 52 && prop) {
         const v = this.toView(x, y);
         if (this.cobreFigura(Math.round(cx - baixo.ax), Math.round(cy - baixo.ay), baixo.w, baixo.h, v.vx + v.vy)) ctx.globalAlpha = TRANSLUCIDO;
