@@ -2857,7 +2857,9 @@ export class Board {
     // perfil — que é como uma porta aberta aparece nesta câmera.
     // A folha da CASA DA MORTE é arte própria (`portas-pixellab.py`): carvalho nos andares de baixo, tábua velha nos de cima, ferro
     // no portão de fora. De frente, ela é uma elevação; encostada no batente, é a mesma imagem espremida.
-    const tipoDaFolha = this.casaDeFora(x, y) ? 'ferro' : (this.field.materialDaParede === 'madeiraVelha' ? 'velha' : 'carvalho');
+    const [bx0, by0] = lado === 'N' ? [x, y - 1] : [x - 1, y];
+    const portaoDeFora = this.casaDeFora(x, y) && this.casaDeFora(bx0, by0);     // a cerca do jardim: ferro; a porta da casa (para um cômodo) é de carvalho
+    const tipoDaFolha = portaoDeFora ? 'ferro' : (this.field.materialDaParede === 'madeiraVelha' ? 'velha' : 'carvalho');
     const arte = this.field.materialDaParede ? spriteCenario('portaCasa', [tipoDaFolha], x, y) : null;
     if (cod === ARESTA.aberta && temFolha && arte) {
       const larg = Math.max(6, Math.round(raio * 0.58));

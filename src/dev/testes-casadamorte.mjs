@@ -321,6 +321,11 @@ await teste('a casa ataca quem negou o sacrifício: portas de foice, fumaça e r
   await S.cena.iniciar();
   assert.equal(S.casa().furia, true, 'a casa se volta contra o grupo');
   // porta de foice: cada vez que o herói termina o passo numa sala diferente, passou por uma porta
+  // o grupo começa no jardim (fora de qualquer sala): entra no pórtico primeiro, e só depois passa para o salão
+  poe(S.party[0], 2, 11);
+  await S.cena.depoisDeMover(S.party[0]);
+  poe(S.party[1], 2, 11);
+  await S.cena.depoisDeMover(S.party[1]);
   poe(S.party[0], 3, 6);
   const antes = S.party[0].hp;
   d20(S, 1);
@@ -356,23 +361,23 @@ await teste('a casa ataca quem negou o sacrifício: portas de foice, fumaça e r
 
 await teste('a saída: sem o fim as brumas fecham o portão; com o fim, sai e passa ao 3º nível; Rose e Thorn tentam possuir quem sai', async () => {
   const S = await nova('casaDaMorte1', { nivel: 2 });
-  poe(S.party[0], 2, 11);
-  await op(S, S.party[0], 2, 11, 'Sair').fazer();
+  poe(S.party[0], 3, 13);
+  await op(S, S.party[0], 3, 13, 'Sair').fazer();
   assert.ok(!S.app.encerrou, 'o portão não abre antes do fim');
   assert.ok(S.cena.explorando);
   const T = await nova('casaDaMorte1', { nivel: 2, campanha: { strahd: { casa: { vistas: [], vencidos: [], achados: {}, fim: 'sacrificio', fantasmas: 'apareceram', paz: {} } } } });
   T.enc.resistencia = () => ({ success: false });
-  poe(T.party[0], 2, 11);
+  poe(T.party[0], 3, 13);
   globalThis.__escolher = (esc) => esc[0].valor;
   d20(T, 20);
-  await op(T, T.party[0], 2, 11, 'Sair').fazer();
+  await op(T, T.party[0], 3, 13, 'Sair').fazer();
   globalThis.__escolher = undefined;
   assert.equal(T.casa().possuidos.length, 0, 'intimidados, os dois fantasmas largam');
   assert.ok(T.app.encerrou, 'o grupo saiu');
   assert.ok(T.party[0].xp >= 900, 'sair da casa é o marco do 3º nível (900 XP)');
   const U = await nova('casaDaMorte1', { nivel: 2, campanha: { strahd: { casa: { vistas: [], vencidos: [], achados: {}, fim: 'sacrificio', fantasmas: 'apareceram', paz: { rose: true, thorn: true } } } } });
-  poe(U.party[0], 2, 11);
-  await op(U, U.party[0], 2, 11, 'Sair').fazer();
+  poe(U.party[0], 3, 13);
+  await op(U, U.party[0], 3, 13, 'Sair').fazer();
   assert.ok(U.app.encerrou, 'em paz, ninguém tenta possuir');
   assert.equal(U.casa().possuidos?.length ?? 0, 0);
 });
@@ -428,7 +433,7 @@ await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala con
   for (const [v, ate] of [['casaDaMorte1', 'espera'], ['casaDaMorte2', 'salao'], ['casaDaMorte3', 'varanda'], ['casaDaMorte4', 'salao']]) {
     const m = mapaDo(v);
     assert.equal(m.terreno[0].length, 8, `${v}: 6 casas de largura mais o anel de fora`);
-    assert.equal(m.terreno.length, 13, `${v}: 11 casas de comprimento mais o anel de fora`);
+    assert.equal(m.terreno.length, v === 'casaDaMorte1' ? 17 : 13, `${v}: 11 casas de comprimento mais o anel de fora (o térreo leva o jardim da frente, 4 casas a mais)`);
     const f = montarCampo(m);
     // tudo que se anda na casa se alcança a partir de onde o grupo chega, exceto o que o livro esconde (poço, sala secreta, espiral, armário do sótão)
     const alcanca = f.reachable(m.grupo[0], 9999);

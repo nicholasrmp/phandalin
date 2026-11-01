@@ -22,12 +22,14 @@ export const COMPRIMENTO = 11 + 2 * D;
  * @param {object} p
  * @param {Array<{ id: string, piso?: string, retangulos: number[][] }>} p.salas retângulos [x1, y1, x2, y2] em quadrados do livro (inclusivos)
  * @param {number[][]} [p.portas] arestas [ax, ay, bx, by, codigo?] (3 arco aberto, 2 porta fechada); só arestas entre duas salas
+ * @param {number} [p.extra] linhas a mais ao sul do anel (o jardim da frente do térreo)
+ * @param {{ retangulo: number[], portao: number[] }} [p.quintal] o jardim de fora: o retângulo (quadrados do livro) e as duas colunas do portão da cerca de ferro
  * @param {number[][][]} [p.duplas] pares de arestas de porta vizinhas que formam UM vão (a porta dupla de dois quadrados): um arco só, centrado
  * @param {Array<[number, number, string]>} [p.glifos] casas que trocam de glifo: escada ('l'), tapete ('*')
  * @param {string} [p.piso] glifo do piso das salas que não dizem o seu
  */
-export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], piso = 'U' }) {
-  const w = LARGURA; const h = COMPRIMENTO;
+export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], piso = 'U', extra = 0, quintal = null }) {
+  const w = LARGURA; const h = COMPRIMENTO + extra;
   const dentro = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
   const dono = Array.from({ length: h }, () => Array(w).fill(-1));
   const glifo = Array.from({ length: h }, () => Array(w).fill('Z'));
@@ -71,6 +73,23 @@ export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], pi
     rows[y][x] = cod;
   }
 
+  // O JARDIM DA FRENTE: fora de qualquer sala (o muro da casa não cobre quem está nele), cercado por grades de ferro (`J`, as barras que a
+  // cela da mansão usa) e com um portão de duas colunas na cerca do sul.
+  const grades = [];
+  const portaoDuplo = [];
+  if (quintal) {
+    const [qx1, qy1, qx2, qy2] = quintal.retangulo.map((v, i) => v + D);
+    const cerca = (rows, x, y, lado) => { if (rows[y][x] === '.') { rows[y][x] = 'J'; grades.push(`${x},${y},${lado}`); } };
+    for (let y = qy1; y <= qy2; y++) { cerca(oRows, qx1, y, 'O'); cerca(oRows, qx2 + 1, y, 'O'); }
+    for (let x = qx1; x <= qx2; x++) cerca(nRows, x, qy2 + 1, 'N');
+    for (const c of quintal.portao) {
+      const x = c + D;
+      nRows[qy2 + 1][x] = '+';
+      const k = `${x},${qy2 + 1},N`;
+      grades.splice(grades.indexOf(k), 1);
+      portaoDuplo.push(k);
+    }
+  }
   // as portas duplas: as duas arestas viram um vão só ('x,y,N|O' do mapa)
   const vaoUnido = [];
   for (const par of duplas) {
@@ -80,6 +99,7 @@ export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], pi
     }
   }
   // as portas têm folha (o tabuleiro a desenha encostada no batente quando o arco está aberto)
+  vaoUnido.push(...portaoDuplo);
   const folhas = portas.map(([ax, ay, bx, by]) => [{ x: ax + D, y: ay + D }, { x: bx + D, y: by + D }]);
 
   const mapaSalas = {};
@@ -92,6 +112,7 @@ export function plantaDeSalas({ salas, portas = [], duplas = [], glifos = [], pi
     salas: mapaSalas,
     folhas,
     vaoUnido,
+    grades,
     dono,
   };
 }

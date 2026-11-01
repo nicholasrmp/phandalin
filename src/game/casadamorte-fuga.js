@@ -202,7 +202,7 @@ export function fugaParedesOps(ctx, { tile, c, ops }) {
 }
 
 export function fugaInteracoes(ctx, { area, tile, sup, c, ops }) {
-  if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'espera' || tile.y < casa(0, 10).y) return;
+  if (ctx.variante !== 'casaDaMorte1' || area?.id !== 'jardim') return;
   ops.push({
     rotulo: 'Sair pelo portão', icone: 'acao-usarObjeto', detalhe: ctx.salvo.fim ? 'a névoa recuou' : 'cercado pelas brumas', motivo: null,
     fazer: async () => { await sair(ctx, c); },
