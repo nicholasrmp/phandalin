@@ -48,8 +48,8 @@ export function foesDaCasa(variante) {
         m('ghoul', 17, 15, 'carnicais', { sufixo: 'D', olha: { dx: -1, dy: 0 } }),
         // 31: as cinco sombras se formam ao redor da estátua de Strahd.
         ...[[22, 16], [22, 17], [22, 18], [23, 18], [21, 17]].map(([x, y], i) => m('sombra', x, y, 'sombras', { sufixo: 'ABCDE'[i], olha: { dx: -1, dy: 0 } })),
-        // 33: a porta do canto sudoeste é um mímico.
-        m('mimico', 15, 22, 'mimico', { nome: 'A porta', olha: { dx: 1, dy: 0 } }),
+        // 33: a porta do canto sudoeste (a que dá no santuário) é um mímico.
+        m('mimico', 19, 20, 'mimico', { nome: 'A porta', olha: { dx: 1, dy: 0 } }),
         // 34: Gustav e Elisabeth, nas cavidades atrás das paredes de terra.
         m('livido', 13, 20, 'livdos', { nome: 'Gustav Durst', olha: { dx: 0, dy: 1 } }),
         m('livido', 11, 22, 'livdos', { nome: 'Elisabeth Durst', olha: { dx: 0, dy: 1 } }),

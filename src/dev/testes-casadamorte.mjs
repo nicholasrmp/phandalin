@@ -172,7 +172,7 @@ await teste('masmorra 1: o mímico é a porta do canto sudoeste do covil', async
   poe(S.party[0], 17, 22);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(S.cena.explorando, 'a 2 casas, não');
-  poe(S.party[0], 16, 22);
+  poe(S.party[0], 18, 21);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(!S.cena.explorando, 'ao chegar a 1 casa da porta');
   assert.ok(S.enc.combatants.some((f) => f.defId === 'mimico'));
@@ -518,9 +518,9 @@ await teste('investigação: avisar do grick, desmascarar o mímico e achar o fo
   const M = await nova('casaDaMortePorao1');
   poe(M.party[0], 17, 22);
   d20(M, 20);
-  await M.cena.interacoes({ x: 16, y: 22 }, 'terraSocada', M.party[0]).find((o) => o.grupo?.includes('A porta do canto') && o.rotulo === 'Arcanismo').fazer();
+  await M.cena.interacoes({ x: 18, y: 21 }, 'terraSocada', M.party[0]).find((o) => o.grupo?.includes('A porta do canto') && o.rotulo === 'Arcanismo').fazer();
   assert.equal(M.casa().marcas.mimicoVisto, true);
-  poe(M.party[0], 16, 22);
+  poe(M.party[0], 18, 21);
   await M.cena.depoisDeMover(M.party[0]);
   assert.ok(!M.cena.explorando);
   assert.equal(M.enc.emboscada, null, 'o mímico não pega ninguém de surpresa');

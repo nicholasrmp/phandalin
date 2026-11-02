@@ -121,7 +121,7 @@ P1.casa(21, 12, 'l'); P1.casa(21, 13, 'l')
 P1.casa(21, 14, 'M')                                   # a porta escondida, na parede norte do santuário
 # --- o covil dos líderes do culto (33), 3 x 3, e o quarto dos líderes (34), 3 x 3, ligados pela porta do canto (o mímico).
 P1.piso(16, 20, 18, 22)
-P1.piso(19, 20, 19, 20)                                # a porta do covil para o santuário
+P1.piso(19, 20, 19, 20)                                # a porta do canto sudoeste do covil para o santuário: o mímico
 P1.sala('covil', '33', 'O covil dos líderes do culto', 16, 20, 18, 22)
 P1.piso(12, 21, 14, 23)
 P1.piso(15, 22, 15, 22)
@@ -129,7 +129,7 @@ P1.piso(13, 20, 13, 20); P1.piso(11, 22, 11, 22)       # as cavidades dos lívid
 P1.sala('quartoLideres', '34', 'O quarto dos líderes do culto', 12, 21, 14, 23)
 
 # --- a mobília (casas do jogo)
-P1.casa(15, 22, '?')                                   # a porta do canto sudoeste do covil, que é um mímico
+P1.casa(19, 20, '?')                                   # a porta do canto sudoeste do covil, que é um mímico
 P1.casa(11, 1, 'm')                                    # a mesa dos iniciados
 for (x, y) in [(9, 4), (9, 5), (12, 3), (12, 4), (10, 6), (11, 6)]:
     P1.casa(x, y, 'p')                                 # as camas de palha
@@ -144,7 +144,7 @@ for (x, y) in [(20, 16), (20, 18)]:
     P1.casa(x, y, 'A')                                 # estalagmites no santuário: cobertura
 for y in (16, 17, 18):
     P1.casa(19, y, 'c')                                # os esqueletos nas correntes, junto à parede oeste
-P1.casa(17, 21, 'm'); P1.casa(17, 20, 'm')             # a mesa do covil
+P1.casa(17, 21, 'm')                                    # a mesa do covil, no meio da sala
 P1.casa(13, 23, 'D'); P1.casa(14, 23, 'D')             # a cama grande
 P1.casa(12, 21, 'K')                                   # o baú dos líderes
 PLANTA_1 = P1.linhas() + (P1.areas,)

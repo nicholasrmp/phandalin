@@ -382,7 +382,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'portaDoMimico', x: 15, y: 22, r: 1, nome: 'A porta do canto sudoeste',
+      id: 'portaDoMimico', x: 19, y: 20, r: 1, nome: 'A porta do canto sudoeste',
       olhar: 'Uma porta de madeira escura, de dobradiças de ferro, no canto sudoeste do covil.',
       verbos: [
         { p: 'percepcao', cd: 14, ok: 'A porta tem uma película de umidade, como suor. As dobradiças não têm ferrugem, em uma masmorra em que tudo enferruja. Alguma coisa nela respira.', marca: 'mimicoVisto' },
