@@ -264,12 +264,12 @@ export const ANDARES = {
     escadas: [
       { rect: rect(22, 14, 22, 14), rotulo: 'Subir a escada em espiral', detalhe: 'o sótão', destino: 'casaDaMorte4' },
       { rect: rect(8, 10, 9, 10), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
-      { rect: rect(12, 21, 13, 21), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
+      { rect: rect(12, 22, 13, 22), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
     ],
     chegadas: {
       casaDaMorte4: grupoPadrao([[22, 15], [22, 16], [22, 17], [21, 17]]),
       casaDaMortePorao2: grupoPadrao([[7, 11], [6, 11], [6, 10], [6, 12]]),
-      casaDaMorte1: grupoPadrao([[15, 21], [14, 21], [13, 21], [12, 21]]),
+      casaDaMorte1: grupoPadrao([[15, 22], [14, 22], [13, 22], [12, 22]]),
     },
   },
   casaDaMortePorao2: {
@@ -289,7 +289,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_1 = {
   terreno: PLANTA_PORAO_1.terreno,
   luz: 'escuro',                  // o livro: a masmorra é escura; quem não enxerga no escuro acende uma tocha
   altura: PLANTA_PORAO_1.altura,
-  objetos: [],
+  objetos: PLANTA_PORAO_1.objetos,
   paredeDeCaverna: true,
   rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
   // O grupo chega pela escada em espiral do sótão, ao fim do túnel de acesso.
@@ -302,7 +302,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_2 = {
   terreno: PLANTA_PORAO_2.terreno,
   luz: 'escuro',                  // o livro: a masmorra é escura; quem não enxerga no escuro acende uma tocha
   altura: PLANTA_PORAO_2.altura,
-  objetos: [],
+  objetos: PLANTA_PORAO_2.objetos,
   paredeDeCaverna: true,
   rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
   grupo: grupoPadrao([[14, 1], [13, 1], [13, 2], [13, 3]]),

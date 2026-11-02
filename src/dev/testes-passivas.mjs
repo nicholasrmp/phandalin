@@ -5523,7 +5523,7 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
       assert.equal(vistos.has(`${a.x1},${a.y1}`), false, `a cripta ${id} está selada por dentro`);
     }
     const lajes = [[20, 18], [17, 18], [20, 16], [17, 16]];
-    const aberta = campo('casaDaMortePorao1', mudar(mudar(m.terreno, lajes, '+'), [[11, 21]], '?'));
+    const aberta = campo('casaDaMortePorao1', mudar(mudar(m.terreno, lajes, '+'), [[11, 22]], '?'));
     const v2 = alcance(aberta, m.grupo[0]);
     for (const a of ANDARES.casaDaMortePorao1.areas) assert.ok(tem(v2, a), `masmorra 1 aberta: a sala ${a.area} (${a.id}) é alcançável`);
   }

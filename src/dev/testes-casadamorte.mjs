@@ -188,12 +188,12 @@ await teste('masmorra 1: as cinco sombras vêm com a esfera de cristal (e com o 
   assert.equal(S.enc.combatants.filter((f) => f.defId === 'sombra').length, 5);
   assert.equal(itens(S.party[0], 'orbeDeCristalCinza'), 1);
   const T = await nova('casaDaMortePorao1');
-  poe(T.party[0], 10, 21);
+  poe(T.party[0], 10, 22);
   d20(T, 20);
-  assert.equal(T.field.surfaceAt(11, 21), 'alvenaria');
-  await op(T, T.party[0], 10, 21, 'portas escondidas').fazer();
+  assert.equal(T.field.surfaceAt(11, 22), 'alvenaria');
+  await op(T, T.party[0], 10, 22, 'portas escondidas').fazer();
   assert.equal(T.casa().alcapao, true);
-  assert.equal(T.field.surfaceAt(11, 21), 'portaAberta');
+  assert.equal(T.field.surfaceAt(11, 22), 'portaAberta');
 });
 
 await teste('masmorra 1: o poço de espinhos: o passo PARA no fosso e o primeiro a pisar cai (3 + 2d10 no máximo, e o fosso fica sabido)', async () => {
@@ -394,11 +394,11 @@ await teste('as escadas levam ao andar certo, vindo da origem certa; o alçapão
   const U = await nova('casaDaMorte1');
   assert.notEqual(U.field.surfaceAt(3, 11), 'escada', 'o alçapão ainda não existe');
   const D = await nova('casaDaMortePorao1', { entrada: null });
-  poe(D.party[0], 10, 21);
+  poe(D.party[0], 10, 22);
   d20(D, 20);
-  await op(D, D.party[0], 10, 21, 'portas escondidas').fazer();
+  await op(D, D.party[0], 10, 22, 'portas escondidas').fazer();
   assert.equal(D.casa().alcapaoCanil, undefined, 'achar a porta não mostra o alçapão lá em cima');
-  poe(D.party[0], 13, 21);
+  poe(D.party[0], 13, 22);
   await D.cena.depoisDeMover(D.party[0]);
   const V = await nova('casaDaMorte1', { campanha: D.app.campanha });
   assert.equal(V.field.surfaceAt(3, 11), 'escada', 'depois de achar a porta de baixo, o alçapão aparece no canil');

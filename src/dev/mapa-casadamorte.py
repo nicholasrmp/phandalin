@@ -24,6 +24,7 @@ class Planta:
         self.t = [['R'] * self.cols for _ in range(self.rows)]       # terreno: R rocha
         self.h = [['3'] * self.cols for _ in range(self.rows)]       # altura: 3 na rocha, 0 no piso
         self.areas = []
+        self.objetos = []
 
     def cel(self, c0, r0, c1, r1):
         """Um retângulo de QUADRADOS (inclusivo) vira o retângulo de casas (com esc=1 são a mesma coisa)."""
@@ -43,6 +44,12 @@ class Planta:
         if alt is not None:
             self.h[y][x] = alt
 
+    def prop(self, x, y, variante, baixo=True, piso='terraSocada'):
+        """Uma peça do atlas `cenario` (`casa-<peça>:<direção>`) sobre uma casa: `&` se dá para passar por cima (cadeira, castiçal, nicho), `^` se bloqueia."""
+        self.t[y][x] = '&' if baixo else '^'
+        self.h[y][x] = '0'
+        self.objetos.append({'tipo': 'prop', 'x': x, 'y': y, 'variante': variante, 'piso': piso})
+
     def sala(self, id, area, nome, c0, r0, c1, r1):
         x0, y0, x1, y1 = self.cel(c0, r0, c1, r1)
         self.areas.append({'id': id, 'area': area, 'nome': nome, 'x1': x0, 'y1': y0, 'x2': x1, 'y2': y1})
@@ -59,6 +66,9 @@ P1 = Planta(25, 26, esc=1)
 
 # --- o oeste: o salão do poço (25) e os cinco quartos de cultista (A a E).
 P1.piso(2, 7, 7, 11)                                   # o salão do poço, com a espinha de pilares
+# Cada um dos cinco quartos de cultista (25A a 25E) é uma área própria, antes da área do salão (a primeira que contém a casa é a que vale).
+for (id_, nome, r) in [('quartoA', '25A', (4, 4, 5, 6)), ('quartoB', '25B', (1, 4, 2, 6)), ('quartoC', '25C', (1, 8, 1, 10)), ('quartoD', '25D', (2, 12, 3, 14)), ('quartoE', '25E', (5, 12, 6, 14))]:
+    P1.sala(id_, nome, 'O quarto ' + nome[-1] + ' dos cultistas', *r)
 P1.sala('poco', '25', 'O poço e os quartos dos cultistas', 1, 4, 7, 14)
 P1.piso(1, 8, 1, 10)                                   # o quarto C, aberto para o salão
 P1.piso(1, 4, 2, 5); P1.piso(2, 6, 2, 6)               # o quarto B e a porta dele
@@ -74,7 +84,7 @@ P1.piso(8, 2, 8, 2)                                    # a porta do oeste, para 
 P1.sala('iniciados', '24', 'O quarto dos iniciados', 9, 0, 12, 6)
 # --- o corredor de cima: do salão dos iniciados até a espinha leste (que desce até o jantar), e o canto da escada em espiral (22).
 P1.piso(13, 1, 17, 1)
-P1.piso(17, 1, 17, 9)
+P1.piso(17, 1, 17, 8)
 P1.piso(14, 3, 16, 3)
 P1.sala('acesso', '22', 'O acesso à masmorra', 14, 3, 16, 3)
 # --- as criptas (23): A e B no alto, E e F a oeste da espinha, C e D a leste. Cada uma tem 2 casas e o sarcófago na ponta de dentro.
@@ -105,22 +115,23 @@ P1.sala('escadas', '30', 'A escada para baixo', 10, 16, 12, 19)
 for (x, y) in [(10, 16), (10, 17)]:
     P1.casa(x, y, 'l')
 # --- o salão de jantar (27): 4 x 3, com a mesa comprida, e a despensa do grick (28) na parede leste.
-P1.piso(16, 10, 19, 12)
-P1.sala('jantar', '27', 'O salão de jantar do culto', 16, 10, 19, 12)
+P1.piso(16, 9, 19, 11)
+P1.sala('jantar', '27', 'O salão de jantar do culto', 16, 9, 19, 11)
 P1.piso(20, 10, 20, 10)
 P1.sala('despensa', '28', 'A despensa', 20, 10, 20, 10)
 # --- o cruzamento de quatro vias (29) e a espinha sul, que desce do jantar até o covil; o corredor leste vai ao santuário.
-P1.piso(16, 13, 16, 19)
+P1.piso(16, 12, 16, 19)
 P1.piso(11, 15, 18, 15)
 P1.sala('carnicais', '29', 'O cruzamento das quatro vias', 16, 14, 16, 16)
 # --- o santuário do Senhor Negro (31): 3 x 5, a abside redonda a leste com a estátua, e a escada do alçapão (32) ao norte.
 P1.piso(19, 15, 21, 19)
 P1.piso(22, 16, 22, 19); P1.piso(23, 17, 23, 18)
 P1.sala('santuario', '31', 'O santuário do Senhor Negro', 19, 15, 23, 19)
-P1.piso(21, 10, 21, 13)
-P1.sala('alcapao', '32', 'A escada do alçapão', 21, 10, 21, 13)
-P1.casa(21, 12, 'l'); P1.casa(21, 13, 'l')
-P1.casa(21, 14, 'M')                                   # a porta escondida, na parede norte do santuário
+P1.piso(22, 10, 22, 13)
+P1.sala('alcapao', '32', 'A escada do alçapão', 22, 10, 22, 13)
+P1.casa(22, 12, 'l'); P1.casa(22, 13, 'l')
+P1.casa(22, 14, 'M')                                   # a porta escondida, na parede norte do santuário
+P1.piso(22, 15, 22, 15)                                # o canto do santuário, atrás da porta
 # --- o covil dos líderes do culto (33), 3 x 3, e o quarto dos líderes (34), 3 x 3, ligados pela porta do canto (o mímico).
 P1.piso(16, 20, 18, 22)
 P1.piso(19, 20, 19, 20)                                # a porta do canto sudoeste do covil para o santuário: o mímico
@@ -140,7 +151,8 @@ P1.casa(4, 9, 'q')                                     # o poço
 for (x, y, bx, by) in [(1, 4, 2, 4), (5, 4, 4, 4), (1, 8, 1, 10), (2, 14, 3, 14), (6, 14, 5, 14)]:
     P1.casa(x, y, 'z'); P1.casa(bx, by, 'K')           # cinco leitos com baú (A a E)
 for x in (17, 18):
-    P1.casa(x, 11, 'm')                                # a mesa comprida do jantar
+    P1.casa(x, 10, 'm')                                # a mesa comprida do jantar
+    P1.prop(x, 9, 'casa-cadeira:+y'); P1.prop(x, 11, 'casa-cadeira:+y')    # e os longos bancos dos dois lados
 P1.casa(23, 17, 'a')                                   # a estátua de Strahd, no nicho redondo
 for (x, y) in [(20, 16), (20, 18)]:
     P1.casa(x, y, 'A')                                 # estalagmites no santuário: cobertura
@@ -149,8 +161,15 @@ for y in (16, 17, 18):
 P1.casa(17, 21, 'm')                                    # a mesa do covil, no meio da sala
 P1.casa(13, 23, 'D'); P1.casa(14, 23, 'D')             # a cama grande
 P1.casa(12, 21, 'K')                                   # a caixa das tochas e velas
-P1.casa(14, 22, 'K')                                   # a caixa de madeira ao pé da cama (o tesouro do livro)
-PLANTA_1 = P1.linhas() + (P1.areas,)
+P1.casa(12, 23, 'K')                                   # a caixa de madeira ao pé da cama (o tesouro do livro)
+P1.prop(14, 21, 'casa-guardaRoupa:+y', baixo=False)    # o guarda-roupa com as vestes antigas
+# o quarto dos iniciados: quatro cadeiras em volta da mesa; o covil: duas cadeiras de encosto alto e os castiçais nos cantos
+for (x, y) in [(10, 1), (12, 1), (11, 0), (11, 2)]:
+    P1.prop(x, y, 'casa-cadeiraJantar:+y')
+P1.prop(16, 21, 'casa-cadeiraJantar:+y'); P1.prop(18, 21, 'casa-cadeiraJantar:+y')
+P1.prop(16, 20, 'casa-castical:+y'); P1.prop(18, 22, 'casa-castical:+y')
+P1.prop(12, 22, 'casa-castical:+y')
+PLANTA_1 = P1.linhas() + (P1.areas, P1.objetos)
 
 # ================================================================================================================ NÍVEL 2 ====
 # Áreas 35 a 38, em CASAS (1 quadrado do livro = 1 casa; a rocha das paredes ocupa uma casa). 15 colunas x 20 linhas. Norte em cima.
@@ -165,6 +184,11 @@ for y in (3, 4):
 # O relicário (35): sala de pilares, 5 x 3, com treze nichos nas paredes.
 P2.piso(3, 1, 7, 3)
 P2.sala('relicario', '35', 'O relicário', 3, 1, 7, 3)
+# Os treze nichos de relíquias, nas paredes do relicário (uma casa funda cada).
+RELIQUIAS = ['ossosFora', 'livrosTeia', 'boneca', 'caixotes', 'barril', 'esqueletoBau', 'estante', 'lapide', 'capasParede', 'cobertores', 'cabideiro', 'espinhos', 'cadeira']
+NICHOS = [(x, 0) for x in range(3, 8)] + [(8, y) for y in range(1, 4)] + [(4, 4), (5, 4), (7, 4)] + [(2, 2), (2, 3)]
+for (x, y), r in zip(NICHOS, RELIQUIAS):
+    P2.prop(x, y, 'casa-%s:+y' % r)
 # O corredor do relicário até a prisão.
 P2.piso(3, 4, 3, 6)
 P2.piso(1, 6, 3, 6)
@@ -208,25 +232,26 @@ P2.casa(4, 10, 'M')
 # Pedras de cobertura no relicário (os pilares).
 for (x, y) in [(4, 2), (6, 2)]:
     P2.casa(x, y, 'r', '3')
-PLANTA_2 = P2.linhas() + (P2.areas,)
+PLANTA_2 = P2.linhas() + (P2.areas, P2.objetos)
 
 
 def girar(planta):
     """Gira a planta 90 graus no sentido horário: o mapa do livro tem o NORTE À ESQUERDA (a rosa dos ventos), e os textos dele seguem essa
     bússola ("o túnel mais ao sul", "a porta secreta na parede sul"). Girada, a planta tem o norte do livro em cima, como o jogo."""
-    t, h, areas = planta
+    t, h, areas, objetos = planta
     H, W = len(t), len(t[0])
     def g(m):
         return [''.join(m[H - 1 - X][Y] for X in range(H)) for Y in range(W)]
     novas = [{**a, 'x1': H - 1 - a['y2'], 'x2': H - 1 - a['y1'], 'y1': a['x1'], 'y2': a['x2']} for a in areas]
-    return g(t), g(h), novas
+    return g(t), g(h), novas, [{**o, 'x': H - 1 - o['y'], 'y': o['x']} for o in objetos]
 
 
 def js(nome, planta):
-    t, h, areas = planta
+    t, h, areas, objetos = planta
     return (f"export const {nome} = {{\n  terreno: {json.dumps(t, ensure_ascii=False, indent=2)},\n"
             f"  altura: {json.dumps(h, ensure_ascii=False, indent=2)},\n"
-            f"  areas: {json.dumps(areas, ensure_ascii=False, indent=2)},\n}};\n")
+            f"  areas: {json.dumps(areas, ensure_ascii=False, indent=2)},\n"
+            f"  objetos: {json.dumps(objetos, ensure_ascii=False, indent=2)},\n}};\n")
 
 
 cabecalho = ("// Gerado por `src/dev/mapa-casadamorte.py` — mude lá e rode de novo.\n"

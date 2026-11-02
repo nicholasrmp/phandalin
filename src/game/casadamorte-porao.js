@@ -13,19 +13,19 @@ export const PLANTA_PORAO_1 = {
   "RRRRRRRRRRRRRR++++++++++RR",
   "RRRRRRRRRRRRRR+RRRRRRRR+RR",
   "RRRRRRRRRRRRRR+RRRR+pp++RR",
-  "RRRRRR++llRRRR+RRRRp++++++",
-  "RRR+RR+++++++++RRRRp++++m+",
-  "RR++KR+RRR+RRR+RRRR++pp+++",
+  "RRRRRR++llRRRR+RRRRp++++&+",
+  "RRR+RR+++++++++RRRRp+++&m&",
+  "RRK&KR+RRR+RRR+RRRR++pp+&+",
   "RRD+++RRRR+RRR+RRRRRRRRR+R",
-  "RRDK+RRRRR+RRR+RRQRRQRlR+R",
+  "RRD+^RRRRR+RRR+RRQRRQRlR+R",
   "RRR+RRRRRR+RRR+RR+RR+R+R+R",
-  "RRR+++++++++++++RMRRMR+R+R",
-  "RRR+m+RRRR+RR+m++++++++++R",
-  "RRR+++RRRR+RR+m+RMRRMRR+RR",
-  "RRRRR?+ccc+RR+++R+RR+RR+RR",
+  "RRR+&&+++++++++++MRRMR+R+R",
+  "RRR+m+RRRR+RRR&m&++++++++R",
+  "RRR&&+RRRR+RRR&m&MRRMRR+RR",
+  "RRRRR?+ccc+RRR++++RR+RR+RR",
   "RRRRRR+A+A+RRRR+RQRRQRR+RR",
-  "RRRRRR+++++Mll++RRRRRR+++R",
-  "RRRRRR++++RRRRRRRRRRRR+R+R",
+  "RRRRRR+++++RRRRRRRRRRR+++R",
+  "RRRRRR+++++Mll++RRRRRR+R+R",
   "RRRRRRR+aRRRRRRRRRRRRRQRQR",
   "RRRRRRRRRRRRRRRRRRRRRRRRRR"
 ],
@@ -46,17 +46,62 @@ export const PLANTA_PORAO_1 = {
   "33000033330333033333333303",
   "33000333330333033033030303",
   "33303333330333033033030303",
-  "33300000000000003333330303",
-  "33300033330330000000000003",
-  "33300033330330003333333033",
-  "33333000000330003033033033",
+  "33300000000000000333330303",
+  "33300033330333000000000003",
+  "33300033330333000333333033",
+  "33333000000333000033033033",
   "33333300000333303033033033",
-  "33333300000300003333330003",
-  "33333300003333333333330303",
+  "33333300000333333333330003",
+  "33333300000300003333330303",
   "33333330033333333333330303",
   "33333333333333333333333333"
 ],
   areas: [
+  {
+    "id": "quartoA",
+    "area": "25A",
+    "nome": "O quarto A dos cultistas",
+    "x1": 19,
+    "y1": 4,
+    "x2": 21,
+    "y2": 5
+  },
+  {
+    "id": "quartoB",
+    "area": "25B",
+    "nome": "O quarto B dos cultistas",
+    "x1": 19,
+    "y1": 1,
+    "x2": 21,
+    "y2": 2
+  },
+  {
+    "id": "quartoC",
+    "area": "25C",
+    "nome": "O quarto C dos cultistas",
+    "x1": 15,
+    "y1": 1,
+    "x2": 17,
+    "y2": 1
+  },
+  {
+    "id": "quartoD",
+    "area": "25D",
+    "nome": "O quarto D dos cultistas",
+    "x1": 11,
+    "y1": 2,
+    "x2": 13,
+    "y2": 3
+  },
+  {
+    "id": "quartoE",
+    "area": "25E",
+    "nome": "O quarto E dos cultistas",
+    "x1": 11,
+    "y1": 5,
+    "x2": 13,
+    "y2": 6
+  },
   {
     "id": "poco",
     "area": "25",
@@ -160,9 +205,9 @@ export const PLANTA_PORAO_1 = {
     "id": "jantar",
     "area": "27",
     "nome": "O salão de jantar do culto",
-    "x1": 13,
+    "x1": 14,
     "y1": 16,
-    "x2": 15,
+    "x2": 16,
     "y2": 19
   },
   {
@@ -197,9 +242,9 @@ export const PLANTA_PORAO_1 = {
     "area": "32",
     "nome": "A escada do alçapão",
     "x1": 12,
-    "y1": 21,
+    "y1": 22,
     "x2": 15,
-    "y2": 21
+    "y2": 22
   },
   {
     "id": "covil",
@@ -220,19 +265,119 @@ export const PLANTA_PORAO_1 = {
     "y2": 14
   }
 ],
+  objetos: [
+  {
+    "tipo": "prop",
+    "x": 16,
+    "y": 17,
+    "variante": "casa-cadeira:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 14,
+    "y": 17,
+    "variante": "casa-cadeira:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 16,
+    "y": 18,
+    "variante": "casa-cadeira:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 14,
+    "y": 18,
+    "variante": "casa-cadeira:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 4,
+    "y": 14,
+    "variante": "casa-guardaRoupa:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 24,
+    "y": 10,
+    "variante": "casa-cadeiraJantar:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 24,
+    "y": 12,
+    "variante": "casa-cadeiraJantar:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 25,
+    "y": 11,
+    "variante": "casa-cadeiraJantar:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 23,
+    "y": 11,
+    "variante": "casa-cadeiraJantar:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 4,
+    "y": 16,
+    "variante": "casa-cadeiraJantar:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 4,
+    "y": 18,
+    "variante": "casa-cadeiraJantar:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 5,
+    "y": 16,
+    "variante": "casa-castical:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 3,
+    "y": 18,
+    "variante": "casa-castical:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 3,
+    "y": 12,
+    "variante": "casa-castical:+y",
+    "piso": "terraSocada"
+  }
+],
 };
 
 export const PLANTA_PORAO_2 = {
   terreno: [
   "RRRRRRRRRRRRRRRRRRRR",
   "RRRRR+R+R+R+R++ll++R",
-  "RRRRR+++++++++RRRR+R",
-  "RRRRR+R+R+R+R++++++R",
-  "RRRRRRRRRMRRRRRR+r+R",
-  "RRRRLLLLLLLLRRRR+++R",
-  "RRRRLrwwwwrLMMw++r+R",
-  "R++wLwwLLwwLRRRR+++R",
-  "R++wLwLLaLwLRRRRRRRR",
+  "RRRRR+++++++++RR&&+R",
+  "RRRRR+R+R+R+R++++++&",
+  "RRRRRRRRRMRRRRR&+r+&",
+  "RRRRLLLLLLLLRRR&+++&",
+  "RRRRLrwwwwrLMMw++r+&",
+  "R++wLwwLLwwLRRR&+++&",
+  "R++wLwLLaLwLRRRR&&&R",
   "RRRRLwLLaLwLRRRRRRRR",
   "RRRRLwwLLwwLRRRRRRRR",
   "RRRRLrwwwwrLRRRRRRRR",
@@ -243,13 +388,13 @@ export const PLANTA_PORAO_2 = {
   altura: [
   "33333333333333333333",
   "33333030303030000003",
-  "33333000000000333303",
-  "33333030303030000003",
-  "33333333333333330303",
-  "33331111111133330003",
-  "33331300003111000303",
-  "30001001100133330003",
-  "30001011110133333333",
+  "33333000000000330003",
+  "33333030303030000000",
+  "33333333333333300300",
+  "33331111111133300000",
+  "33331300003111000300",
+  "30001001100133300000",
+  "30001011110133330003",
   "33331011110133333333",
   "33331001100133333333",
   "33331300003133333333",
@@ -320,6 +465,99 @@ export const PLANTA_PORAO_2 = {
     "y1": 7,
     "x2": 3,
     "y2": 8
+  }
+],
+  objetos: [
+  {
+    "tipo": "prop",
+    "x": 19,
+    "y": 3,
+    "variante": "casa-ossosFora:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 19,
+    "y": 4,
+    "variante": "casa-livrosTeia:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 19,
+    "y": 5,
+    "variante": "casa-boneca:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 19,
+    "y": 6,
+    "variante": "casa-caixotes:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 19,
+    "y": 7,
+    "variante": "casa-barril:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 18,
+    "y": 8,
+    "variante": "casa-esqueletoBau:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 17,
+    "y": 8,
+    "variante": "casa-estante:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 16,
+    "y": 8,
+    "variante": "casa-lapide:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 15,
+    "y": 4,
+    "variante": "casa-capasParede:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 15,
+    "y": 5,
+    "variante": "casa-cobertores:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 15,
+    "y": 7,
+    "variante": "casa-cabideiro:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 17,
+    "y": 2,
+    "variante": "casa-espinhos:+y",
+    "piso": "terraSocada"
+  },
+  {
+    "tipo": "prop",
+    "x": 16,
+    "y": 2,
+    "variante": "casa-cadeira:+y",
+    "piso": "terraSocada"
   }
 ],
 };

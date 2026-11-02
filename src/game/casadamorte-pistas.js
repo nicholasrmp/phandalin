@@ -341,7 +341,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'ossosDoJantar', x: 14, y: 17, r: 2, nome: 'Os ossos do salão de jantar',
+      id: 'ossosDoJantar', x: 15, y: 17, r: 2, nome: 'Os ossos do salão de jantar',
       olhar: 'Ossos humanoides, mofados, espalhados pelo chão de terra de um salão com uma mesa de madeira e bancos longos.',
       verbos: [
         { p: 'medicina', cd: 12, ok: 'Ossos de gente, roídos pelos dentes e não por facas: os "banquetes" do culto eram comer pessoas. Dá para contar pelo menos doze mortos.' },

@@ -11,6 +11,11 @@ export const TEXTOS_PORAO = {
   iniciados: [
     'Uma mesa de madeira e quatro cadeiras ao leste. A oeste, quatro alcovas com palha mofada, onde dormiam os iniciados do culto.',
   ],
+  quartoA: ['Um quarto lateral, onde dormia um cultista veterano: uma cama de armação de madeira com colchão de palha mofada e um baú de madeira, com cadeado de ferro enferrujado.'],
+  quartoB: ['Um quarto lateral, onde dormia um cultista veterano: uma cama de armação de madeira com colchão de palha mofada e um baú de madeira, com cadeado de ferro enferrujado.'],
+  quartoC: ['Um quarto lateral, aberto para o salão: uma cama de armação de madeira com colchão de palha mofada e um baú de madeira, com cadeado de ferro enferrujado.'],
+  quartoD: ['Um quarto lateral, onde dormia um cultista veterano: uma cama de armação de madeira com colchão de palha mofada e um baú de madeira, com cadeado de ferro enferrujado.'],
+  quartoE: ['Um quarto lateral, onde dormia um cultista veterano: uma cama de armação de madeira com colchão de palha mofada e um baú de madeira, com cadeado de ferro enferrujado.'],
   poco: [
     'Um poço de pedra, de pouco mais de um metro de largura e borda na altura da cintura, desce nove metros até uma cisterna de água parada. Um balde de madeira pende de uma polia presa à viga, acima.',
     'Em volta, cinco quartos pequenos serviram a cultistas veteranos: cada um com uma cama de armação de madeira, um colchão de palha mofada e um baú de madeira trancado com cadeado de ferro enferrujado.',

@@ -37,8 +37,8 @@ const CRIPTAS = {
   criptaE: { lado: 'oeste', selada: true, laje: [[20, 16]], de: { x: 20, y: 17 } },
   criptaF: { lado: 'oeste', selada: true, laje: [[17, 16]], de: { x: 17, y: 17 } },
 };
-const POCO_ESPINHOS = [[12, 11], [11, 11]];
-const SEGREDO_SANTUARIO = [[11, 21]];
+const POCO_ESPINHOS = [[12, 11]];
+const SEGREDO_SANTUARIO = [[11, 22]];
 const SEGREDO_PRISAO = [[9, 4]];
 const PONTE = [[13, 6], [12, 6]];
 const RODA = { x: 11, y: 8 };
@@ -357,9 +357,9 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       if (!salvo.alcapao) {
         ops.push({
           rotulo: 'Procurar portas escondidas na parede leste', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 (uma tentativa por herói)',
-          motivo: buscas.ja(c, 'portaLeste', { x: 10, y: 21 }),
+          motivo: buscas.ja(c, 'portaLeste', { x: 10, y: 22 }),
           fazer: async () => {
-            buscas.marcar(c, 'portaLeste', { x: 10, y: 21 });
+            buscas.marcar(c, 'portaLeste', { x: 10, y: 22 });
             const t = ctx.teste(c, 'percepcao', 10);
             if (!t.passou) { await ctx.painel(`${c.name} passa a mão pela argila da parede leste, sem achar nada.`); return; }
             salvo.alcapao = true;
