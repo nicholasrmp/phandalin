@@ -130,5 +130,67 @@ teste('mapaDo("editor") lê o que o editor guardou (sem armazém, devolve um map
   assert.ok(f.w >= 5);
 });
 
+teste('peça de várias casas: ocupa as de trás, bloqueia, e sai inteira por qualquer casa', () => {
+  const m = M.novoMapa(10, 10);
+  assert.deepEqual(M.pegadaDe(2, 2), [[-1, 0], [0, -1], [-1, -1]]);
+  assert.equal(M.colocarProp(m, 5, 5, 'casa-mesaJantar:+x', { pega: M.pegadaDe(2, 1) }), true);
+  assert.equal(M.propEm(m, 4, 5).variante, M.NADA);
+  assert.equal(m.terreno[5][4], '^');
+  assert.equal(montarCampo(m).blocksMove(4, 5), true, 'a casa de trás bloqueia o passo');
+  assert.equal(M.colocarProp(m, 1, 1, 'casa-mesaJantar:+x', { pega: M.pegadaDe(3, 1) }), false, 'não cabe: a casa de trás cai na parede de fora');
+  assert.equal(M.colocarProp(m, 7, 7, 'casa-cama:+x', { pega: M.pegadaDe(1, 2) }), true);
+  // por cima de uma peça grande: a peça velha sai inteira
+  assert.equal(M.colocarProp(m, 4, 5, 'casa-barril:+y'), true);
+  assert.equal(M.propEm(m, 5, 5), null, 'a mesa saiu inteira');
+  assert.equal(m.terreno[5][5], 'U', 'o piso volta');
+  // tirar pela casa de trás leva a peça
+  assert.equal(M.removerProp(m, 7, 6), true);
+  assert.equal(M.propEm(m, 7, 7), null);
+  assert.equal(M.propEm(m, 7, 6), null);
+  assert.equal(M.removerProp(m, 7, 6), false);
+  assert.deepEqual(M.diagnostico(m), []);
+});
+
+teste('peça grande: acompanha o mapa quando ele cresce pelo oeste', () => {
+  const m = M.novoMapa(10, 10);
+  M.colocarProp(m, 5, 5, 'casa-mesaJantar:+x', { pega: M.pegadaDe(2, 1) });
+  M.redimensionar(m, 'O', 2);
+  assert.equal(M.propEm(m, 7, 5).pega.length, 1);
+  assert.equal(M.propEm(m, 6, 5).variante, M.NADA);
+});
+
+teste('altura: pinta de 0 a 6, cria a grade, e o motor enxerga o degrau', () => {
+  const m = M.novoMapa(8, 8);
+  assert.equal(m.altura, undefined);
+  assert.equal(M.pintarAltura(m, 3, 3, 2), true);
+  assert.equal(M.alturaDe(m, 3, 3), 2);
+  assert.equal(M.pintarAltura(m, 3, 3, 2), false);
+  assert.equal(M.pintarAltura(m, 4, 3, 99), true);
+  assert.equal(M.alturaDe(m, 4, 3), M.ALTURA_MAXIMA);
+  assert.equal(M.pintarAltura(m, -1, 0, 1), false);
+  assert.equal(montarCampo(m).heightAt(3, 3), 2);
+  M.redimensionar(m, 'N', 1);
+  assert.equal(M.alturaDe(m, 3, 4), 2, 'a altura acompanha o terreno');
+});
+
+teste('exploração livre: liga e desliga, vai no JSON, e o jogo só aceita a cena "editor"', () => {
+  const m = M.novoMapa(8, 8);
+  assert.equal(M.definirExploracao(m, false), false);
+  assert.equal(M.definirExploracao(m, true), true);
+  assert.equal(M.limpar(m).cena, 'editor');
+  assert.equal(M.definirExploracao(m, true), false);
+  // a cena de aventura de um mapa do jogo não vai para o editor
+  assert.equal(M.limpar(mapaDo('casaDaMortePorao1')).cena, undefined);
+  const guardado = memoria();
+  globalThis.localStorage = guardado;
+  try {
+    M.guardar(m, guardado);
+    assert.equal(mapaDo('editor').cena, 'editor');
+    const falso = M.novoMapa(8, 8); falso.cena = 'casaDaMorte';
+    M.guardar(falso, guardado);
+    assert.equal(mapaDo('editor').cena, undefined, 'um JSON não escolhe a cena de uma aventura');
+  } finally { delete globalThis.localStorage; }
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

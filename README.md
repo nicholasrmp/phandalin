@@ -184,6 +184,20 @@ Mapa é texto. `src/main.js`:
 '1'..'9' elevação, cada nível = 1,5 m
 ```
 
+### O editor de cenário
+
+`/editor.html` (`npm run dev`, depois abra o endereço) monta um mapa sobre o próprio tabuleiro do jogo: pinta piso, põe parede, porta, arco e
+grade por aresta, coloca objetos do atlas (inclusive peças de várias casas), pinta a altura do terreno, define salas e os quatro pontos de
+partida, e cresce ou encolhe o mapa por qualquer borda. Desfaz e refaz (Ctrl+Z, Ctrl+Y), guarda sozinho no navegador e exporta e importa JSON.
+Abre qualquer mapa do jogo para retocar. A caixa "Exploração livre" faz o jogo abrir o mapa sem iniciativa e sem inimigos; desligada, abre em
+combate por turnos. "Testar no jogo" abre `?encontro=editor`. A lógica está em `src/game/mapa-editor.js` (testes: `src/dev/testes-editor.mjs`).
+
+### A escala das masmorras da Casa da Morte
+
+O mapa do livro diz "One square = 5 feet": **um quadrado é uma casa** do jogo, nas duas masmorras. As plantas saem de
+`src/dev/mapa-casadamorte.py` (`python src/dev/mapa-casadamorte.py`), desenhadas como a página do livro (norte à esquerda, como a rosa dos
+ventos dele) e giradas 90° no fim para o norte do livro ficar em cima, de modo que os textos do livro valem sem tradução.
+
 ---
 
 ## Como adicionar conteúdo

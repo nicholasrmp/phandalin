@@ -345,7 +345,12 @@ export function mapaDo(variante = 'padrao') {
       ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 7 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
     };
   }
-  if (variante === 'editor') return lerMapaDoEditor() ?? mapaVazioDoEditor();   // o que se montou em /editor.html
+  if (variante === 'editor') {
+    // O que se montou em /editor.html. Só a cena 'editor' (exploração livre) vale: um JSON importado não escolhe cena de aventura.
+    const m = lerMapaDoEditor() ?? mapaVazioDoEditor();
+    const { cena, ...resto } = m;
+    return cena === 'editor' ? { ...resto, cena } : resto;
+  }
   if (variante === 'casaDaMorte1') return MAPA_CASA_DA_MORTE_1;
   if (variante === 'casaDaMorte2') return MAPA_CASA_DA_MORTE_2;
   if (variante === 'casaDaMorte3') return MAPA_CASA_DA_MORTE_3;

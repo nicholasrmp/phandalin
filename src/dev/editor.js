@@ -31,8 +31,10 @@ const PISOS = [
 ];
 
 const FERRAMENTAS = [
-  ['piso', 'Piso', '1'], ['aresta', 'Parede e porta', '2'], ['objeto', 'Objeto', '3'], ['apagar', 'Tirar objeto', '4'], ['sala', 'Sala', '5'], ['inicio', 'Partida', '6'],
+  ['piso', 'Piso', '1'], ['aresta', 'Parede e porta', '2'], ['objeto', 'Objeto', '3'], ['apagar', 'Tirar objeto', '4'], ['sala', 'Sala', '5'], ['inicio', 'Partida', '6'], ['altura', 'Altura', '7'],
 ];
+
+const PEGADAS = [[1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [1, 3], [3, 2], [2, 3]];
 
 // ------------------------------------------------------------------------------------------------ estado ---
 let mapa = M.ler() ?? M.limpar(mapaDo('casaDaMorte4'));
@@ -40,7 +42,7 @@ let desfazer = [];
 let refazer = [];
 let board = null;
 let sujo = true;
-const sel = { ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, sala: 'sala1', inicio: 0 };
+const sel = { ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, pega: [1, 1], altura: 1, sala: 'sala1', inicio: 0 };
 let hoverEdge = null;
 let hoverTile = null;
 let pressionado = null;   // { tipo, chave }
@@ -71,6 +73,7 @@ function volta(de, para) {
   sujo = true;
   agendarGuardar();
   botoes();
+  sincronizarModo();
 }
 
 // ------------------------------------------------------------------------------------------------ tabuleiro ---
@@ -216,8 +219,9 @@ function agir(e, primeira) {
   if (primeira) ponto();
   pressionado = { chave };
   if (f === 'piso') aplicar(M.pintarPiso(mapa, t.x, t.y, sel.piso));
-  else if (f === 'objeto') { if (sel.variante) aplicar(M.colocarProp(mapa, t.x, t.y, sel.variante, { baixo: sel.baixo, espelhar: sel.espelhar })); }
+  else if (f === 'objeto') { if (sel.variante) aplicar(M.colocarProp(mapa, t.x, t.y, sel.variante, { baixo: sel.baixo, espelhar: sel.espelhar, pega: M.pegadaDe(...sel.pega) })); }
   else if (f === 'apagar') aplicar(M.removerProp(mapa, t.x, t.y));
+  else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
   else if (f === 'sala') aplicar(M.definirSala(mapa, t.x, t.y, sel.sala.trim()));
   else if (f === 'inicio') aplicar(M.definirInicio(mapa, sel.inicio, t.x, t.y));
 }
@@ -261,6 +265,12 @@ function estado() {
   $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${h}`;
 }
 
+/** A caixa de "exploração livre" acompanha o mapa (depois de abrir, importar ou desfazer). */
+function sincronizarModo() {
+  const c = $('explorar');
+  if (c) c.checked = mapa.cena === 'editor';
+}
+
 function botoes() {
   $('desfazer').disabled = !desfazer.length;
   $('refazer').disabled = !refazer.length;
@@ -299,7 +309,7 @@ function miniatura(chave) {
 function montarPainel() {
   const L = $('lateral');
   L.innerHTML = `
-    <h2>Ferramenta (teclas 1 a 6)</h2>
+    <h2>Ferramenta (teclas 1 a 7)</h2>
     <div class="ferramentas">${FERRAMENTAS.map(([id, nome, k]) => `<button data-ferramenta="${id}">${k} · ${nome}</button>`).join('')}</div>
 
     <div data-secao="piso">
@@ -318,12 +328,20 @@ function montarPainel() {
       <h2>Objeto</h2>
       <input type="text" id="filtro" placeholder="buscar: lareira, cama, arvore..." style="width:100%;margin-bottom:6px" />
       <div id="pecas"></div>
+      <label class="linha">Pegada <select id="pega">${PEGADAS.map(([w, h]) => `<option value="${w},${h}">${w} x ${h} casa${w * h > 1 ? 's' : ''}</option>`).join('')}</select></label>
+      <p class="dica">Peça de várias casas: clique na casa da FRENTE (a mais ao sul/leste na tela); as outras ficam a oeste e ao norte dela. Tirar uma casa da peça tira a peça inteira.</p>
       <label class="linha"><input type="checkbox" id="baixo" /> Baixo (dá para pisar por cima)</label>
       <label class="linha"><input type="checkbox" id="espelhar" /> Espelhar</label>
       <p class="dica" id="escolhida">Nenhuma peça escolhida.</p>
     </div>
 
     <div data-secao="apagar"><h2>Tirar objeto</h2><p class="dica">Clique num objeto para tirá-lo.</p></div>
+
+    <div data-secao="altura">
+      <h2>Altura do terreno</h2>
+      <div class="grade">${[0, 1, 2, 3, 4, 5, 6].map((n) => `<button data-altura="${n}">${n}</button>`).join('')}</div>
+      <p class="dica">Cada nível vale 1,5 m a mais (um degrau de pedra). Escolha o nível e pinte; subir custa o dobro de movimento, e quem está no alto tem vantagem de visão. 0 é o chão.</p>
+    </div>
 
     <div data-secao="sala">
       <h2>Sala</h2>
@@ -336,6 +354,10 @@ function montarPainel() {
       <div class="grade">${[0, 1, 2, 3].map((i) => `<button data-inicio="${i}">Herói ${i + 1}</button>`).join('')}</div>
       <p class="dica">Escolha o herói e clique na casa onde ele nasce.</p>
     </div>
+
+    <h2>Modo no jogo</h2>
+    <label class="linha"><input type="checkbox" id="explorar" ${mapa.cena === 'editor' ? 'checked' : ''} /> Exploração livre (sem iniciativa e sem inimigos)</label>
+    <p class="dica">Desligado, "Testar no jogo" abre o mapa em combate por turnos.</p>
 
     <h2>Tamanho do mapa</h2>
     <div class="grade">
@@ -359,6 +381,12 @@ function montarPainel() {
     sel.inicio = Number(b.dataset.inicio);
     L.querySelectorAll('[data-inicio]').forEach((x) => x.classList.toggle('on', x === b));
   }));
+  L.querySelectorAll('[data-altura]').forEach((b) => b.addEventListener('click', () => {
+    sel.altura = Number(b.dataset.altura);
+    L.querySelectorAll('[data-altura]').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  $('pega').addEventListener('change', (e) => { sel.pega = e.target.value.split(',').map(Number); });
+  $('explorar').addEventListener('change', (e) => { ponto(); if (!aplicar(M.definirExploracao(mapa, e.target.checked))) { desfazer.pop(); botoes(); } });
   L.querySelectorAll('[data-cresce]').forEach((b) => b.addEventListener('click', () => {
     const [borda, n] = b.dataset.cresce.split(',');
     ponto();
@@ -370,6 +398,7 @@ function montarPainel() {
   L.querySelector(`[data-piso="${sel.piso}"]`).classList.add('on');
   L.querySelector(`[data-estilo="${sel.estilo}"]`).classList.add('on');
   L.querySelector(`[data-inicio="${sel.inicio}"]`).classList.add('on');
+  L.querySelector(`[data-altura="${sel.altura}"]`).classList.add('on');
 
   // as peças do atlas: toda chave `prop-...` é um objeto que o jogo sabe desenhar
   const chaves = Object.keys(atlas).filter((k) => k.startsWith('prop-')).sort();
@@ -407,14 +436,14 @@ function iniciarCabecalho() {
     if (!$('base').value) return;
     ponto();
     try { mapa = M.limpar(mapaDo($('base').value)); } catch (e) { alert(`Não abriu: ${e.message}`); return; }
-    sujo = true; agendarGuardar();
+    sujo = true; agendarGuardar(); sincronizarModo();
   });
   $('novo').addEventListener('click', () => {
     const t = prompt('Tamanho do mapa novo (largura x altura, em casas):', '12x12');
     const m = /^(\d+)\s*[x×]\s*(\d+)$/i.exec(t ?? '');
     if (!m) return;
     const w = Math.min(80, Math.max(5, Number(m[1]))); const h = Math.min(80, Math.max(5, Number(m[2])));
-    ponto(); mapa = M.novoMapa(w, h); sujo = true; agendarGuardar();
+    ponto(); mapa = M.novoMapa(w, h); sujo = true; agendarGuardar(); sincronizarModo();
   });
   $('desfazer').addEventListener('click', () => volta(desfazer, refazer));
   $('refazer').addEventListener('click', () => volta(refazer, desfazer));
@@ -430,7 +459,7 @@ function iniciarCabecalho() {
     try {
       const m = M.limpar(JSON.parse(await arq.text()));
       if (!Array.isArray(m.terreno) || !m.terreno.length) throw new Error('não tem `terreno`');
-      ponto(); mapa = m; sujo = true; agendarGuardar();
+      ponto(); mapa = m; sujo = true; agendarGuardar(); sincronizarModo();
     } catch (err) { alert(`Esse arquivo não é um cenário: ${err.message}`); }
   });
   $('testar').addEventListener('click', () => { M.guardar(mapa); window.open('/?encontro=editor&nivel=2', '_blank'); });

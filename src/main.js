@@ -67,6 +67,7 @@ import { criarCapitulo1 } from "./game/capitulo1.js";
 import { abrirBarovia } from "./game/strahd-abertura.js";
 import { criarCasaDaMorte } from "./game/capitulo-casadamorte.js";
 import { criarCenaCaverna } from "./game/cena-caverna.js";
+import { criarCenaEditor } from "./game/cena-editor.js";
 import { criarCapitulo2 } from "./game/capitulo2.js";
 import { criarRuaMarcarrubra } from "./game/capitulo3-rua.js";
 import { criarMansao } from "./game/capitulo3-mansao.js";
@@ -592,6 +593,8 @@ class App {
                       ? criarOndaEco
                       : mapa.cena === "castelo"
                         ? criarCastelo
+                        : mapa.cena === "editor"
+                          ? criarCenaEditor
                         : mapa.cena === "casaDaMorte"
                           ? criarCasaDaMorte
                         : config.modo === "campanha"

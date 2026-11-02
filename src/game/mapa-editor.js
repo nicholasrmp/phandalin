@@ -14,13 +14,15 @@ export const CHAVE = 'phandalin.editor.mapa';
 const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
-  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar',
+  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
 export function limpar(mapa) {
   const cru = {};
   for (const k of DADOS) if (mapa[k] !== undefined) cru[k] = mapa[k];
+  // a cena de aventura de um mapa do jogo não vai junto: só a exploração livre do editor (`cena: 'editor'`) fica
+  if (cru.cena !== 'editor') delete cru.cena;
   return JSON.parse(JSON.stringify(cru, (_, v) => (v instanceof Set ? [...v] : v instanceof Map ? [...v] : v)));
 }
 
@@ -127,24 +129,88 @@ export function pintarAresta(m, x, y, lado, estilo) {
 
 // ---------------------------------------------------------------------------------------------- objetos ---
 
-/** Põe um móvel ou peça de cenário na casa (`variante` é a chave do atlas sem o `prop-`: `casa-lareira:+x`). Troca o que já estava lá. */
-export function colocarProp(m, x, y, variante, { baixo = false, espelhar = false } = {}) {
-  if (!dentro(m, x, y)) return false;
+/** A peça "vazia" que ocupa as casas de trás de um móvel de várias casas (a mesma `nada` da mobília da Casa da Morte). */
+export const NADA = 'taverna-nada';
+
+/** A peça de várias casas a que esta casa pertence: a própria casa se ela leva `pega`, ou a dona, se esta casa é uma das de trás. */
+function donaDaCasa(m, x, y) {
+  const o = propEm(m, x, y);
+  if (!o) return null;
+  if (o.variante !== NADA) return o;
+  return (m.objetos ?? []).find((q) => q.pega?.some(([dx, dy]) => q.x + dx === x && q.y + dy === y)) ?? o;
+}
+
+/** As casas que a peça ocupa para uma pegada de `w` x `h` casas: a casa da FRENTE (a clicada) e as de trás, a oeste e ao norte dela. */
+export const pegadaDe = (w, h) => {
+  const lista = [];
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (i || j) lista.push([i ? -i : 0, j ? -j : 0]);
+  return lista;
+};
+
+/**
+ * Põe um móvel ou peça de cenário na casa (`variante` é a chave do atlas sem o `prop-`: `casa-lareira:+x`). Troca o que já estava lá.
+ * `pega` são as casas de trás de uma peça grande (deslocamentos a partir da casa da frente): todas têm de estar livres, e saem junto com a peça.
+ */
+export function colocarProp(m, x, y, variante, { baixo = false, espelhar = false, pega = [] } = {}) {
+  const casas = [[0, 0], ...pega].map(([dx, dy]) => [x + dx, y + dy]);
+  for (const [cx, cy] of casas) {
+    if (!dentro(m, cx, cy)) return false;
+    // dentro de parede de casa inteira não se põe móvel
+    if (['#', 'M', 'R', 'T'].includes(m.terreno[cy][cx]) && !propEm(m, cx, cy)) return false;
+  }
+  for (const [cx, cy] of casas) {
+    const velha = donaDaCasa(m, cx, cy);
+    if (velha) removerProp(m, velha.x, velha.y);
+  }
   const antes = m.terreno[y][x];
-  if (['#', 'M', 'R', 'T'].includes(antes) && !propEm(m, x, y)) return false;   // dentro de parede de casa inteira não se põe móvel
-  const velho = propEm(m, x, y);
-  const piso = velho?.piso ?? PISO_DO_GLIFO[antes] ?? 'assoalho';
-  if (velho) m.objetos.splice(m.objetos.indexOf(velho), 1);
-  m.objetos.push({ tipo: 'prop', x, y, variante, piso, ...(espelhar ? { espelhar: true } : {}) });
+  const piso = PISO_DO_GLIFO[antes] ?? 'assoalho';
+  m.objetos.push({ tipo: 'prop', x, y, variante, piso, ...(espelhar ? { espelhar: true } : {}), ...(pega.length ? { pega: pega.map((d) => [...d]) } : {}) });
   trocar(m.terreno, x, y, baixo ? '&' : '^');
+  for (const [dx, dy] of pega) {
+    const nx = x + dx;
+    const ny = y + dy;
+    m.objetos.push({ tipo: 'prop', x: nx, y: ny, variante: NADA, piso: PISO_DO_GLIFO[m.terreno[ny][nx]] ?? piso });
+    trocar(m.terreno, nx, ny, '^');
+  }
   return true;
 }
 
+/** Tira o móvel da casa; se a casa é de uma peça grande (a da frente ou uma de trás), a peça inteira sai. */
 export function removerProp(m, x, y) {
-  const o = propEm(m, x, y);
+  const o = donaDaCasa(m, x, y);
   if (!o) return false;
-  m.objetos.splice(m.objetos.indexOf(o), 1);
-  trocar(m.terreno, x, y, GLIFO_DO_PISO[o.piso] ?? '.');
+  const todas = [[0, 0], ...(o.pega ?? [])].map(([dx, dy]) => [o.x + dx, o.y + dy]);
+  for (const [cx, cy] of todas) {
+    const q = propEm(m, cx, cy);
+    if (!q) continue;
+    m.objetos.splice(m.objetos.indexOf(q), 1);
+    trocar(m.terreno, cx, cy, GLIFO_DO_PISO[q.piso] ?? '.');
+  }
+  return true;
+}
+
+// ----------------------------------------------------------------------------------------------- altura ---
+
+/** A altura máxima que o editor deixa pintar (o tabuleiro desenha até esta, com a face lateral de cada degrau). */
+export const ALTURA_MAXIMA = 6;
+
+/** Põe a casa na altura `n` (0 a 6). Cria a grade de alturas se o mapa não tinha. */
+export function pintarAltura(m, x, y, n) {
+  if (!dentro(m, x, y)) return false;
+  const v = Math.max(0, Math.min(ALTURA_MAXIMA, Math.trunc(n)));
+  if (!m.altura) m.altura = m.terreno.map((l) => '0'.repeat(l.length));
+  return trocar(m.altura, x, y, String(v));
+}
+
+/** A altura da casa (0 se o mapa não tem grade de alturas). */
+export const alturaDe = (m, x, y) => Number(m.altura?.[y]?.[x] ?? 0) || 0;
+
+// ------------------------------------------------------------------------------------------------- modo ---
+
+/** `true`: o jogo abre este mapa em EXPLORAÇÃO livre (sem iniciativa, sem inimigos); `false`: no modo de combate por turnos. */
+export function definirExploracao(m, ligada) {
+  if (Boolean(ligada) === (m.cena === 'editor')) return false;
+  if (ligada) m.cena = 'editor'; else delete m.cena;
   return true;
 }
 
