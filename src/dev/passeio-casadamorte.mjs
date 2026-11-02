@@ -69,7 +69,7 @@ async function ir(S, h, para) {
     if (h.pos.x === para.x && h.pos.y === para.y) return true;
     if (!S.cena.explorando) return false;
     const p = caminho(S, h, para);
-    if (!p || p.length < 2) return false;
+    if (!p || p.length < 2) { if (process.env.DEPURA) console.log('   [ir: sem caminho]', h.name, JSON.stringify(h.pos), '->', JSON.stringify(para), p ? p.length : p); return false; }
     h.movementLeftFt = 60;
     // o maior trecho que cabe no movimento do turno e termina numa casa onde se pode parar (não em cima de um aliado)
     const alcancado = S.enc.reachableFor(h);
@@ -78,12 +78,14 @@ async function ir(S, h, para) {
       const no = alcancado.get(chave(p[k].x, p[k].y));
       if (no && no.parar !== false) { melhor = BF.pathFrom(alcancado, no); break; }   // o caminho que o motor cobra, e não o meu
     }
-    if (!melhor) return false;
+    if (!melhor) { if (process.env.DEPURA) console.log('   [ir: nenhum trecho cabe]', h.name, JSON.stringify(h.pos), '->', JSON.stringify(para), 'caminho', p.map((q) => q.x + ',' + q.y).join(' '), 'mov', h.movementLeftFt, 'outros', S.enc.combatants.filter((c) => c !== h && !c.dead).map((c) => c.name + '@' + c.pos.x + ',' + c.pos.y).join(' ')); return false; }
     const antes = { ...h.pos };
     const andou = S.enc.moveAlong(h, melhor);
+    if (process.env.DEPURA && volta > 52) console.log('   [ir: andou', andou, ']', JSON.stringify(antes), 'caminho', melhor.map((q) => q.x + ',' + q.y).join(' '), '=> pos', JSON.stringify(h.pos), 'mov', h.movementLeftFt);
     if (andou === false && h.pos.x === antes.x && h.pos.y === antes.y) { if (process.env.DEPURA) console.log('   [ir falhou]', h.name, JSON.stringify(antes), '->', JSON.stringify(melhor.at(-1)), 'trecho', melhor.length, 'de', p.length, 'mov', h.movementLeftFt, 'outros', S.enc.combatants.filter((c) => c !== h).map((c) => c.pos.x + ',' + c.pos.y).join(' ')); return false; }
     await S.cena.depoisDeMover(h);
-    if (!S.cena.explorando || S.trocas.length) return false;
+    if (!S.cena.explorando || S.trocas.length) { if (process.env.DEPURA) console.log('   [ir: cena mudou]', h.name, JSON.stringify(h.pos), 'explorando', S.cena.explorando, 'trocas', S.trocas.length); return false; }
+    if (process.env.DEPURA && volta > 50) console.log('   [ir: volta', volta, ']', h.name, JSON.stringify(h.pos), '->', JSON.stringify(para), 'mov', h.movementLeftFt);
   }
   return false;
 }
@@ -95,7 +97,7 @@ function juntar(S, lider) {
   const candidatas = [...alcance.entries()].map(([k, n]) => ({ k, n })).sort((a, b) => a.n.cost - b.n.cost);
   for (const h of vivos(S)) {
     if (h === lider) continue;
-    const c = candidatas.find((q) => !ocupadas.has(q.k) && !S.field.blocksMove(...q.k.split(',').map(Number)));
+    const c = candidatas.find((q) => !ocupadas.has(q.k) && !S.field.blocksMove(...q.k.split(',').map(Number)) && !S.enc.paraNaCasa?.(h, { x: Number(q.k.split(',')[0]), y: Number(q.k.split(',')[1]) }));   // casa onde o passo para (gatilho): ninguém é posto nela sem o gatilho andar
     if (!c) continue;
     const [x, y] = c.k.split(',').map(Number);
     ocupadas.delete(chave(h.pos.x, h.pos.y));
@@ -118,6 +120,12 @@ async function lutar(S) {
   }
   if (!enc.over) {
     problema(`a luta contra ${nome} não terminou (rodada ${enc.round})`);
+    const foe0 = enc.combatants.find((c) => c.side === 'foes' && !c.dead); const her0 = enc.combatants.find((c) => c.side === 'party' && !c.dead);
+    if (foe0 && her0) {
+      console.log('     enemiesOf(foe):', enc.enemiesOf(foe0).map((x) => x.name).join(','), '| enemiesOf(hero):', enc.enemiesOf(her0).map((x) => x.name).join(','));
+      console.log('     foe condições:', JSON.stringify((foe0.conditions ?? []).map((q) => q.id)), 'traits', JSON.stringify(foe0.traits), 'ataques', JSON.stringify((foe0.attacks ?? []).map((q) => q.name)), 'side', foe0.side, 'defId', foe0.defId);
+      console.log('     canAttack hero->foe:', JSON.stringify(enc.canAttack(her0, foe0, her0.weapons?.[0])), '| foe->hero:', JSON.stringify(enc.canAttack(foe0, her0, foe0.attacks?.[0]?.name)));
+    }
     for (const c of enc.combatants) console.log(`     ${c.side} ${c.name} (${c.pos.x},${c.pos.y}) pv ${c.hp}/${c.maxHp}${c.dead ? ' morto' : ''}${c.conditions?.length ? ' ' + c.conditions.map((q) => q.id).join(',') : ''}`);
   }
   const mortos = S.party.filter((h) => h.dead).length;
@@ -148,7 +156,7 @@ function oferecidas(S, h, feitas) {
   for (let y = 0; y < hh; y++) {
     for (let x = 0; x < w; x++) {
       // de pé em volta da casa clicada (ou nela)
-      const pes = [[x, y], [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].filter(([px, py]) => saidas.has(chave(px, py)) && !S.field.blocksMove(px, py) && !ocupadas.has(chave(px, py)));
+      const pes = [[x, y], [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].filter(([px, py]) => saidas.has(chave(px, py)) && !S.field.blocksMove(px, py) && !ocupadas.has(chave(px, py)) && ((px === x && py === y) || S.field.passa(px, py, x, y)));   // de pé do mesmo lado da parede
       if (!pes.length) continue;
       const [px, py] = pes[0];
       h.pos = { x: px, y: py };

@@ -92,6 +92,9 @@ function arvoreDosFantasmas(ctx) {
   };
 }
 
+/** Mexer no que é do quarto das crianças (20) só se faz de dentro dele: do outro lado da parede, Rose e Thorn apareciam fora de alcance e a luta nunca acabava. */
+const foraDoQuarto = (ctx, c) => (ctx.areaDe(c.pos)?.id === 'criancas' ? null : 'só de dentro do quarto das crianças');
+
 async function fantasmas(ctx) {
   if (ctx.salvo.fantasmas) return;
   ctx.salvo.fantasmas = 'apareceram';
@@ -265,7 +268,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
     }
     if (area.id === 'criancas') {
       ops.push({
-        rotulo: 'Mexer nos brinquedos', icone: 'acao-usarObjeto', detalhe: 'o baú de moinhos pintados', motivo: salvo.fantasmas ? 'as crianças já apareceram' : null,
+        rotulo: 'Mexer nos brinquedos', icone: 'acao-usarObjeto', detalhe: 'o baú de moinhos pintados', motivo: salvo.fantasmas ? 'as crianças já apareceram' : foraDoQuarto(ctx, c),
         fazer: async () => {
           await ctx.painel('A tampa do baú range. Dentro: bichos de pelúcia, soldadinhos de madeira, um cavalinho de pau e outros brinquedos de uma infância que não terminou. Quando a tampa bate de volta, o ar do quarto fica gelado.');
           await fantasmas(ctx);
@@ -274,7 +277,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: 'Procurar portas na casa de bonecas', icone: 'acao-procurar',
         detalhe: salvo.escada ? 'a escada já foi achada' : (salvo.dicaDaCasaDeBonecas ? 'Percepção, CD 15, com vantagem' : 'Percepção, CD 15'),
-        motivo: salvo.escada ? 'já achada' : buscas.ja(c, 'bonecas', casa(3, 0)),
+        motivo: salvo.escada ? 'já achada' : (foraDoQuarto(ctx, c) ?? buscas.ja(c, 'bonecas', casa(3, 0))),
         fazer: async () => {
           if (!salvo.escada) buscas.marcar(c, 'bonecas', casa(3, 0));
           await casaDeBonecas(ctx, c);
@@ -285,7 +288,7 @@ export function altoInteracoes(ctx, { area, tile, sup, c, ops }) {
         const chave = `ossos${quem}`;
         ops.push({
           rotulo: `Recolher os ossos de ${quem}`, icone: 'acao-usarObjeto', detalhe: achados[chave] ? 'já recolhidos' : 'um embrulho de ossinhos',
-          motivo: achados[chave] ? 'já recolhidos' : null,
+          motivo: achados[chave] ? 'já recolhidos' : foraDoQuarto(ctx, c),
           fazer: async () => {
             achados[chave] = true;
             ctx.guardar(ctx.herois()[0], id, 1);
