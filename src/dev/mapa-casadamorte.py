@@ -148,7 +148,8 @@ for y in (16, 17, 18):
     P1.casa(19, y, 'c')                                # os esqueletos nas correntes, junto à parede oeste
 P1.casa(17, 21, 'm')                                    # a mesa do covil, no meio da sala
 P1.casa(13, 23, 'D'); P1.casa(14, 23, 'D')             # a cama grande
-P1.casa(12, 21, 'K')                                   # o baú dos líderes
+P1.casa(12, 21, 'K')                                   # a caixa das tochas e velas
+P1.casa(14, 22, 'K')                                   # a caixa de madeira ao pé da cama (o tesouro do livro)
 PLANTA_1 = P1.linhas() + (P1.areas,)
 
 # ================================================================================================================ NÍVEL 2 ====
