@@ -275,9 +275,9 @@ export const ANDARES = {
   casaDaMortePorao2: {
     id: 'casaDaMortePorao2', nome: 'Masmorra, nível 2',
     areas: PLANTA_PORAO_2.areas.map((a) => ({ ...a, texto: TEXTOS_PORAO[a.id] ?? [] })),
-    escadas: [{ rect: rect(0, 10, 1, 11), rotulo: 'Subir a escada', detalhe: 'masmorra, nível 1', destino: 'casaDaMortePorao1' }],
+    escadas: [{ rect: rect(1, 3, 1, 4), rotulo: 'Subir a escada', detalhe: 'masmorra, nível 1', destino: 'casaDaMortePorao1' }],
     chegadas: {
-      casaDaMortePorao1: grupoPadrao([[2, 10], [2, 11], [3, 10], [3, 11]]),
+      casaDaMortePorao1: grupoPadrao([[1, 5], [1, 6], [2, 6], [3, 6]]),
     },
   },
 };
@@ -305,7 +305,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_2 = {
   objetos: [],
   paredeDeCaverna: true,
   rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
-  grupo: grupoPadrao([[2, 10], [2, 11], [3, 10], [3, 11]]),
-  olhar: { dx: 1, dy: 0 },
+  grupo: grupoPadrao([[1, 5], [1, 6], [2, 6], [3, 6]]),
+  olhar: { dx: 0, dy: 1 },
   cena: 'casaDaMorte',
 };

@@ -66,12 +66,12 @@ export const TEXTOS_PORAO = {
     'Numa das celas, um esqueleto humano de manto preto esfarrapado pende da parede.',
   ],
   ponte: [
-    'Um trecho de túnel estreito, com água até a canela, que leva à alcova do lixo.',
+    'O fim do túnel, com água até a canela. Uma ponte levadiça de ferro, erguida, fecha a passagem; abaixada, ela leva ao salão afundado da câmara.',
   ],
   camara: [
     'O canto cessa assim que vocês entram. Uma sala de doze metros de lado, de paredes lisas de alvenaria, com pilares de pedra sem cor sustentando o teto, a quase cinco metros de altura. A água turva cobre quase todo o chão: sessenta centímetros de profundidade.',
     'Escadas levam a bordas de pedra secas junto às paredes. No meio da sala, mais degraus sobem a um estrado octogonal, também acima da água. Correntes enferrujadas com grilhões pendem do teto, direto sobre um altar de pedra no estrado. O altar tem entalhes horríveis de carniçais agarrando, e está manchado de sangue seco.',
-    'No meio da parede oeste, uma abertura leva a uma alcova escura, cheia de lixo. Na parede leste, meio embutida, uma roda de madeira ligada a correntes.',
+    'No meio da parede sul, uma abertura leva a uma alcova escura, cheia de lixo. Na parede norte, meio embutida, junto à ponte, uma roda de madeira ligada a correntes.',
   ],
   alcova: [
     'Uma alcova natural, de teto baixo, entupida de um monte semi-submerso de refugo: galhos, ervas e lama.',

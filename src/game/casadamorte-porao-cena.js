@@ -39,14 +39,12 @@ const CRIPTAS = {
 };
 const POCO_ESPINHOS = [[15, 16], [15, 17]];
 const SEGREDO_SANTUARIO = [[36, 30], [36, 31]];
-const SEGREDO_PRISAO = [[12, 34], [13, 34], [12, 35], [13, 35]];
-const PONTE = [[20, 18], [21, 18], [22, 18], [23, 18], [20, 19], [21, 19], [22, 19], [23, 19]];
-const RODA = { x: 43, y: 35 };
-const ALTAR = { x: 28, y: 35 };
-const noEstrado = (p) => {
-  const dx = Math.abs(p.x - 28); const dy = Math.abs(p.y - 35);
-  return dx <= 9 && dy <= 9 && dx + dy <= 13;
-};
+const SEGREDO_PRISAO = [[4, 10]];
+const PONTE = [[6, 6], [6, 7]];
+const RODA = { x: 8, y: 8 };
+const ALTAR = { x: 8, y: 11 };
+// O estrado octogonal: 4 x 4 casas sem os cantos, no meio da água (x 7 a 10, y 10 a 13).
+const noEstrado = (p) => p.x >= 7 && p.x <= 10 && p.y >= 10 && p.y <= 13 && !((p.x === 7 || p.x === 10) && (p.y === 10 || p.y === 13));
 
 /** Os gatilhos de passo das masmorras. */
 export function poraoGatilhos(ctx) {
@@ -202,7 +200,7 @@ async function negar(ctx) {
     'Da alcova do lixo vem um ruído de galhos e de lama. A pilha de refugo se levanta, e ganha braços de cipó e boca.',
   ], { titulo: 'O culto é negado' });
   if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
-    for (const f of g.membros) f.pos = { ...f.pos, x: 22, y: 50 };
+    for (const f of g.membros) f.pos = { ...f.pos, x: 7, y: 15 };
     await ctx.combate(g, null, ['"O fim vem! Ó Morte, sê louvada!", muda o canto. O arbusto errante entra na câmara, mole e pesado, e não vai parar até ser derrubado. Mas não vai deixar a masmorra.']);
   }
 }
@@ -418,7 +416,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'prisao') {
       if (!achados.aneisPrisao) {
         ops.push({
-          rotulo: 'Revistar o esqueleto de manto preto', icone: 'acao-procurar', detalhe: 'um esqueleto preso à parede', motivo: ctx.longe(c, { x: 8, y: 30 }, 40),
+          rotulo: 'Revistar o esqueleto de manto preto', icone: 'acao-procurar', detalhe: 'um esqueleto preso à parede', motivo: ctx.longe(c, { x: 1, y: 14 }, 20),
           fazer: async () => {
             achados.aneisPrisao = true;
             ctx.guardar(ctx.herois()[0], 'anelDeOuro', 1);
@@ -430,11 +428,11 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       if (!salvo.portaPrisao) {
         ops.push({
           rotulo: 'Procurar portas secretas na parede leste', icone: 'acao-procurar', detalhe: 'Percepção, CD 15 (uma tentativa por herói)',
-          motivo: buscas.ja(c, 'portaPrisao', { x: 11, y: 35 }),
+          motivo: buscas.ja(c, 'portaPrisao', { x: 3, y: 10 }),
           fazer: async () => {
-            buscas.marcar(c, 'portaPrisao', { x: 11, y: 35 });
+            buscas.marcar(c, 'portaPrisao', { x: 3, y: 10 });
             const t = ctx.teste(c, 'percepcao', 15);
-            const paciencia = !t.passou && buscas.esgotou(ctx.herois(), 'portaPrisao', { x: 11, y: 35 });
+            const paciencia = !t.passou && buscas.esgotou(ctx.herois(), 'portaPrisao', { x: 3, y: 10 });
             if (!t.passou && !paciencia) { await ctx.painel(`${c.name} procura nas paredes de terra e não acha nada.`); return; }
             if (paciencia) await ctx.painel('Depois de todos terem tentado, o grupo refaz a busca palmo a palmo, sem pressa.');
             salvo.portaPrisao = true;
@@ -449,11 +447,11 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: salvo.ponte ? 'A ponte levadiça (abaixada)' : 'Abaixar a ponte levadiça à força', icone: 'acao-usarObjeto',
         detalhe: salvo.ponte ? 'já está baixa' : 'Atletismo, CD 20',
-        motivo: salvo.ponte ? 'já está baixa' : (buscas.ja(c, 'ponte', { x: 21, y: 18 }) ?? ctx.longe(c, { x: 21, y: 17 }, 10)),
+        motivo: salvo.ponte ? 'já está baixa' : (buscas.ja(c, 'ponte', { x: 6, y: 6 }) ?? ctx.longe(c, { x: 6, y: 5 }, 10)),
         fazer: async () => {
-          buscas.marcar(c, 'ponte', { x: 21, y: 18 });
+          buscas.marcar(c, 'ponte', { x: 6, y: 6 });
           const t = ctx.teste(c, 'atletismo', 20);
-          const juntos = !t.passou && buscas.esgotou(ctx.herois(), 'ponte', { x: 21, y: 18 });
+          const juntos = !t.passou && buscas.esgotou(ctx.herois(), 'ponte', { x: 6, y: 6 });
           if (juntos) await ctx.painel('Cansados de tentar sozinhos, os quatro se agarram às correntes e puxam juntos.');
           if (!t.passou && !juntos) { await ctx.painel(`${c.name} está com a água turva e fria até a canela, as mãos nas correntes enferrujadas. A ponte levadiça nem treme. Outra pessoa pode tentar, ou há uma roda do outro lado, dentro da câmara.`); return; }
           salvo.ponte = true;
@@ -466,7 +464,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'camara') {
       ops.push({
         rotulo: salvo.ponte ? 'Girar a roda e erguer a ponte' : 'Girar a roda da ponte levadiça', icone: 'acao-usarObjeto',
-        detalhe: 'a roda de madeira da parede leste', motivo: ctx.longe(c, RODA, 10),
+        detalhe: 'a roda de madeira da parede norte', motivo: ctx.longe(c, RODA, 10),
         fazer: async () => {
           salvo.ponte = !salvo.ponte;
           ctx.mudarCasas(PONTE, salvo.ponte ? '=' : 'M');
@@ -480,9 +478,9 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'alcova') {
       const g = ctx.grupos.lorghoth;
       ops.push({
-        rotulo: 'Examinar o monte de lixo', icone: 'acao-procurar', detalhe: 'Natureza, CD 15', motivo: buscas.ja(c, 'lorghoth', { x: 24, y: 57 }) ?? (g?.vencido ? 'já foi' : null),
+        rotulo: 'Examinar o monte de lixo', icone: 'acao-procurar', detalhe: 'Natureza, CD 15', motivo: buscas.ja(c, 'lorghoth', { x: 7, y: 17 }) ?? (g?.vencido ? 'já foi' : null),
         fazer: async () => {
-          buscas.marcar(c, 'lorghoth', { x: 24, y: 57 });
+          buscas.marcar(c, 'lorghoth', { x: 7, y: 17 });
           const t = ctx.teste(c, 'natureza', 15);
           await ctx.painel(t.passou
             ? `${t.quem?.name ?? c.name} se agacha ao lado do monte e vê o que ele é: não é lixo, é uma planta. Galhos, cipós e lama, respirando bem devagar. É um arbusto errante, e dorme. Os cultistas o chamavam de Lorghoth, o Decadente.`
@@ -491,7 +489,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
       if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
         ops.push({
-          rotulo: 'Atacar o monte de lixo', icone: 'acao-usarObjeto', detalhe: 'Lorghoth dorme', motivo: ctx.longe(c, { x: 24, y: 57 }, 20),
+          rotulo: 'Atacar o monte de lixo', icone: 'acao-usarObjeto', detalhe: 'Lorghoth dorme', motivo: ctx.longe(c, { x: 7, y: 17 }, 10),
           fazer: async () => { await ctx.combate(g, 'nossa', ['O primeiro golpe afunda no monte como num colchão de folhas. Debaixo dele, alguma coisa abre os olhos.']); },
         });
       }

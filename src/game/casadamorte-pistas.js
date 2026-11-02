@@ -430,7 +430,7 @@ export const PISTAS = {
   // ===================================================================================== MASMORRA 2 (áreas 35 a 38) ===
   casaDaMortePorao2: [
     {
-      id: 'canto', x: 8, y: 6, r: 6, nome: 'O canto no ar',
+      id: 'canto', x: 5, y: 2, r: 4, nome: 'O canto no ar',
       olhar: 'Uma dúzia de vozes repete, sem parar: "Ele é o Ancestral. Ele é a Terra".',
       verbos: [
         { p: 'intuicao', cd: 12, ok: 'As vozes não vêm das paredes, e sim de dentro delas: não é eco, é gente. Cantam sem respirar, como cantam os que não têm mais fôlego.' },
@@ -438,7 +438,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'niches', x: 14, y: 4, r: 8, nome: 'Os treze nichos de relíquias',
+      id: 'niches', x: 5, y: 1, r: 4, nome: 'Os treze nichos de relíquias',
       olhar: 'Nichos nas paredes guardam as "relíquias" do culto.',
       aura: { escola: 'necromancia', texto: 'Auras ínfimas de necromancia em quase todos os nichos: restos de gente, e só. Nenhum item é mágico.' },
       verbos: [
@@ -448,7 +448,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'algemasDaPrisao', x: 4, y: 28, r: 6, nome: 'As algemas da prisão',
+      id: 'algemasDaPrisao', x: 2, y: 11, r: 4, nome: 'As algemas da prisão',
       olhar: 'Grilhões enferrujados nas paredes dos fundos das alcovas.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'Algumas algemas estão fechadas e vazias, sem esqueleto: os presos foram soltos, e levados, e comidos. Os ossos estão no salão de jantar, no nível de cima.' },
@@ -456,15 +456,15 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'ponteLevadica', x: 21, y: 17, r: 2, nome: 'A ponte levadiça de ferro',
+      id: 'ponteLevadica', x: 6, y: 5, r: 2, nome: 'A ponte levadiça de ferro',
       olhar: 'Uma ponte levadiça de ferro enferrujado, erguida, fecha o túnel. O chão em volta está sob sessenta centímetros de água turva.',
       verbos: [
-        { p: 'investigacao', cd: 12, ok: 'As correntes da ponte sobem pelo teto do túnel e somem na parede leste da câmara. Há uma roda de madeira lá, do outro lado, que a ergue e a abaixa.' },
+        { p: 'investigacao', cd: 12, ok: 'As correntes da ponte sobem pelo teto do túnel e somem na parede norte da câmara. Há uma roda de madeira lá, do outro lado, que a ergue e a abaixa.' },
         { p: 'atletismo', cd: 15, ok: 'A ponte é pesada, mas não emperrada: com ombros fortes, dá para levantá-la um palmo e ver o outro lado. Nenhuma passagem, mas uma ideia da câmara.' },
       ],
     },
     {
-      id: 'altarDoRitual', x: 28, y: 35, r: 2, nome: 'O altar de pedra',
+      id: 'altarDoRitual', x: 8, y: 11, r: 3, nome: 'O altar de pedra',
       olhar: 'Um altar de pedra no estrado octogonal, esculpido com carniçais agarrando, manchado de sangue seco, sob correntes pendentes.',
       aura: { escola: 'necromancia', texto: 'Uma aura de necromancia forte, de décadas de sacrifícios, concentrada no altar e no estrado, como a de uma cripta que sangra.' },
       verbos: [
@@ -474,7 +474,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'acusticaDaCamara', x: 20, y: 30, r: 6, nome: 'Os pilares e as paredes lisas',
+      id: 'acusticaDaCamara', x: 8, y: 13, r: 4, nome: 'Os pilares e as paredes lisas',
       olhar: 'Uma sala de doze metros de lado, de alvenaria lisa, com pilares de pedra sem cor sustentando o teto, a quase cinco metros.',
       verbos: [
         { p: 'arcanismo', cd: 14, ok: 'A câmara é perfeita para ritual: a acústica leva a voz para o teto e a devolve para o altar. Quem canta aqui, canta para dentro de si.' },
@@ -482,14 +482,14 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'rodaDaPonte', x: 42, y: 35, r: 2, nome: 'A roda de madeira na parede leste',
-      olhar: 'Meio embutida na parede leste, uma roda de madeira ligada a correntes e mecanismos ocultos.',
+      id: 'rodaDaPonte', x: 8, y: 8, r: 2, nome: 'A roda de madeira na parede norte',
+      olhar: 'Meio embutida na parede norte, junto à ponte, uma roda de madeira ligada a correntes e mecanismos ocultos.',
       verbos: [
         { p: 'investigacao', cd: 11, ok: 'A roda é o que levanta e baixa a ponte do túnel norte. Está engraxada, e funciona.' },
       ],
     },
     {
-      id: 'lixoDeLorghoth', x: 24, y: 57, r: 2, nome: 'O monte de lixo da alcova',
+      id: 'lixoDeLorghoth', x: 7, y: 17, r: 2, nome: 'O monte de lixo da alcova',
       olhar: 'Um monte semi-submerso de refugo: galhos, ervas e lama.',
       verbos: [
         { p: 'natureza', cd: 15, ok: 'Não é lixo: é um arbusto errante, grande, adormecido. Os cultistas o chamavam de Lorghoth, o Decadente. Acorda se for atacado.' },

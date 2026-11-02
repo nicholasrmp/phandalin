@@ -55,7 +55,7 @@ export function foesDaCasa(variante) {
         m('livido', 15, 33, 'livdos', { nome: 'Elisabeth Durst', olha: { dx: 0, dy: 1 } }),
       ];
     case 'casaDaMortePorao2':
-      return [m('arbustoErrante', 24, 57, 'lorghoth', { nome: 'Lorghoth, o Decadente', olha: { dx: 0, dy: -1 } })];
+      return [m('arbustoErrante', 7, 17, 'lorghoth', { nome: 'Lorghoth, o Decadente', olha: { dx: 0, dy: -1 } })];
     default:
       return [];
   }

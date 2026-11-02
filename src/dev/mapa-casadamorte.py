@@ -2,10 +2,10 @@
 #
 #   python src/dev/mapa-casadamorte.py
 #
-# A ESCALA (decisão do dono): nas masmorras, cada QUADRADO DO MAPA vale 2 x 2 casas do jogo (10 pés = 3 m = 2 casas de 1,5 m). Por isso as
-# salas e corredores abaixo são escritos em QUADRADOS do mapa de referência (a imagem fica em `_referencias/`, fora do repositório, e só dá a
-# ORGANIZAÇÃO) e o script os multiplica por 2 em cada eixo. O mapa de nível 1 tem 18 x 20 quadrados = 36 x 40 casas; o de nível 2, 22 x 30
-# quadrados = 44 x 60 casas.
+# A ESCALA: o mapa do livro diz "One square = 5 feet" (1,5 m), ou seja, UM QUADRADO = UMA CASA do jogo. O nível 2 já está nessa escala
+# (a câmara do ritual tem 12 m de lado = 8 x 8 casas, como o texto do livro) e é escrito direto em casas, com a rocha das paredes ocupando
+# uma casa. O nível 1 ainda está na escala antiga, de 2 x 2 casas por quadrado (`Planta(.., esc=2)`), e é escrito em quadrados; o script os
+# multiplica por 2 em cada eixo. O mapa de nível 1 tem 18 x 20 quadrados = 36 x 40 casas.
 #
 # A planta é um RASCUNHO fiel à topologia do livro (quem liga a quem, onde está cada sala com algo marcado) e não ao pixel da referência:
 # os corredores do mapa original são labirínticos, e aqui só entram os que levam a alguma sala. Os glifos são os do jogo; rocha em volta,
@@ -17,15 +17,17 @@ SAIDA = Path(__file__).resolve().parents[2] / 'src' / 'game' / 'casadamorte-pora
 
 
 class Planta:
-    def __init__(self, cols, rows):
-        self.cols, self.rows = cols * 2, rows * 2
+    def __init__(self, cols, rows, esc=2):
+        self.esc = esc
+        self.cols, self.rows = cols * esc, rows * esc
         self.t = [['R'] * self.cols for _ in range(self.rows)]       # terreno: R rocha
         self.h = [['3'] * self.cols for _ in range(self.rows)]       # altura: 3 na rocha, 0 no piso
         self.areas = []
 
     def cel(self, c0, r0, c1, r1):
-        """Um retângulo de QUADRADOS (inclusivo) vira o retângulo de casas."""
-        return (c0 * 2, r0 * 2, c1 * 2 + 1, r1 * 2 + 1)
+        """Um retângulo de QUADRADOS (inclusivo) vira o retângulo de casas (com esc=1 são a mesma coisa)."""
+        e = self.esc
+        return (c0 * e, r0 * e, c1 * e + e - 1, r1 * e + e - 1)
 
     def piso(self, c0, r0, c1, r1, g='+', alt='0'):
         x0, y0, x1, y1 = self.cel(c0, r0, c1, r1)
@@ -167,61 +169,60 @@ P1.casa(19, 35, '?')                         # a porta do canto sudoeste do covi
 PLANTA_1 = P1.linhas() + (P1.areas,)
 
 # ================================================================================================================ NÍVEL 2 ====
-# Áreas 35 a 38. Em quadrados: 22 colunas x 30 linhas.
-P2 = Planta(22, 30)
+# Áreas 35 a 38, em CASAS (1 quadrado do livro = 1 casa; a rocha das paredes ocupa uma casa). 15 colunas x 20 linhas. Norte em cima.
+P2 = Planta(15, 20, esc=1)
 
-# A escada que vem do nível 1 (30) e o corredor até o relicário (35).
-P2.piso(0, 5, 1, 8)
-P2.piso(0, 1, 1, 5)
-P2.piso(0, 0, 3, 1)
-P2.sala('escadaChegada', '30', 'A escada que desce', 0, 5, 1, 8)
-# O relicário (35): sala grande de pilares, com treze nichos nas paredes.
-P2.piso(3, 0, 14, 7)
-P2.sala('relicario', '35', 'O relicário', 0, 0, 14, 7)
-# O túnel que desce do relicário para a água (e a ponte levadiça, 37).
-P2.piso(10, 8, 11, 9)
-P2.sala('tunelAgua', '35', 'O túnel que desce para a água', 10, 8, 11, 9)
-# A prisão (36): o bloco oeste, de celas, ligado à escada por um corredor.
-P2.piso(2, 8, 3, 9)
-P2.piso(0, 10, 5, 24)
-P2.sala('prisao', '36', 'A prisão', 0, 10, 5, 24)
-# A câmara do ritual (38): salão afundado (água de 60 cm), bordas de pedra a 1,5 m e o estrado octogonal no meio.
-P2.piso(7, 10, 21, 25, 'L', '1')       # o anel de laje; a coluna 6 fica de rocha: é a parede entre a prisão e a câmara (a porta secreta)
-P2.piso(8, 11, 20, 24, 'w', '0')       # a água (60 cm)
-P2.sala('camara', '38', 'A câmara do ritual', 7, 10, 21, 25)
-# O estrado octogonal: casas com |dx| + |dy| dentro do octógono, em casas de jogo, centro em (27, 35).
-CX, CY, R = 28, 35, 9
-for y in range(P2.rows):
-    for x in range(P2.cols):
-        dx, dy = abs(x - CX), abs(y - CY)
-        if dx <= R and dy <= R and dx + dy <= int(R * 1.5):
-            if P2.t[y][x] in ('w', 'L'):
-                P2.casa(x, y, 'L', '1')
-P2.casa(CX, CY, 'a', '1'); P2.casa(CX + 1, CY, 'a', '1')                 # o altar de pedra
-# A ponte levadiça (37) e a alcova do arbusto errante.
-P2.piso(10, 25, 11, 26, '=', '1')
-P2.sala('ponte', '37', 'A ponte levadiça', 10, 25, 11, 26)
-P2.piso(9, 27, 14, 29)
-P2.sala('alcova', '38', 'A alcova do lixo', 9, 27, 14, 29)
+# A escada que vem do nível 1 (30): o corredor oeste, que desce até a junção com a prisão e com o relicário.
+P2.piso(1, 1, 2, 1)
+P2.piso(1, 1, 1, 6)
+P2.sala('escadaChegada', '30', 'A escada que desce', 1, 1, 1, 6)
+for y in (3, 4):
+    P2.casa(1, y, 'l')
+# O relicário (35): sala de pilares, 5 x 3, com treze nichos nas paredes.
+P2.piso(3, 1, 7, 3)
+P2.sala('relicario', '35', 'O relicário', 3, 1, 7, 3)
+# O corredor do relicário até a prisão.
+P2.piso(3, 4, 3, 6)
+P2.piso(1, 6, 3, 6)
+# O túnel que desce do relicário para a água (35), e a ponte levadiça (37) na entrada da câmara.
+P2.piso(6, 4, 6, 4)
+P2.piso(6, 5, 6, 5, 'w', '0')
+P2.sala('tunelAgua', '35', 'O túnel que desce para a água', 6, 4, 6, 5)
+P2.piso(6, 6, 6, 7, '=', '1')
+P2.sala('ponte', '37', 'A ponte levadiça', 6, 6, 6, 7)
+# A prisão (36): o corredor do meio e quatro celas de cada lado.
+P2.piso(2, 7, 2, 14)
+for y in (8, 10, 12, 14):
+    P2.piso(1, y, 1, y)
+    P2.piso(3, y, 3, y)
+P2.sala('prisao', '36', 'A prisão', 1, 7, 3, 14)
+# A câmara do ritual (38): salão afundado de 12 m de lado (8 x 8 casas), bordas de pedra a 1,5 m junto às paredes, água a 60 cm e o estrado octogonal
+# no meio, a 1,5 m. A coluna 4 é a parede entre a prisão e a câmara (a porta secreta).
+P2.piso(5, 8, 12, 15, 'L', '1')        # o anel de pedra
+P2.piso(6, 9, 11, 14, 'w', '0')        # a água (60 cm)
+P2.sala('camara', '38', 'A câmara do ritual', 5, 8, 12, 15)
+# O estrado octogonal: 4 x 4 casas sem os cantos, no meio da água; o altar de pedra ocupa duas casas no centro.
+for y in range(10, 14):
+    for x in range(7, 11):
+        if (x in (7, 10)) and (y in (10, 13)):
+            continue
+        P2.casa(x, y, 'L', '1')
+P2.casa(8, 11, 'a', '1'); P2.casa(9, 11, 'a', '1')
+# Os pilares nos cantos da água (cobertura, e o livro os desenha ali).
+for (x, y) in [(6, 9), (11, 9), (6, 14), (11, 14)]:
+    P2.casa(x, y, 'r', '3')
+# A alcova do arbusto errante: uma abertura de duas casas na parede do fundo da câmara.
+P2.piso(7, 16, 8, 16, 'w', '0')
+P2.piso(7, 17, 8, 18)
+P2.sala('alcova', '38', 'A alcova do lixo', 7, 16, 8, 18)
 
-# A escada que chega do nível 1 (dois degraus de largura, no canto de cima da esquerda).
-for (x, y) in [(0, 10), (1, 10), (0, 11), (1, 11)]:
-    P2.casa(x, y, 'l')
-# A ponte levadiça (37): erguida, fecha o túnel que sai do relicário até a água da câmara.
-for x in range(20, 24):
-    for y in (18, 19):
-        P2.casa(x, y, 'M')
-# A porta secreta da prisão para a câmara (parede sul da prisão): duas casas de parede que se abrem.
-for x in (12, 13):
-    for y in (34, 35):
-        P2.casa(x, y, 'M')
-# Pedras de cobertura (pilares do relicário, borda da câmara, celas da prisão): sem elas a masmorra 2 era 90% campo aberto.
-for x in (8, 12, 16, 24, 28):
-    for y in (3, 7, 11):
-        P2.casa(x, y, 'r', '3')
-for (x, y) in [(16, 24), (16, 46), (40, 24), (40, 46), (22, 22), (34, 22), (22, 46), (34, 46)]:
-    P2.casa(x, y, 'r', '0')
-for (x, y) in [(2, 26), (8, 26), (2, 32), (8, 32), (2, 40), (8, 40)]:
+# A ponte levadiça (37): erguida, fecha o túnel que sai do relicário até a câmara.
+for y in (6, 7):
+    P2.casa(6, y, 'M')
+# A porta secreta da prisão para a câmara: uma casa de parede que se abre.
+P2.casa(4, 10, 'M')
+# Pedras de cobertura no relicário (os pilares).
+for (x, y) in [(4, 2), (6, 2)]:
     P2.casa(x, y, 'r', '3')
 PLANTA_2 = P2.linhas() + (P2.areas,)
 

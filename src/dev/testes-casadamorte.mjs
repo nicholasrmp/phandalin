@@ -274,32 +274,32 @@ await teste('masmorra 1: os cinco baús do poço pedem ferramentas de ladrão, D
 
 await teste('masmorra 2: a ponte levadiça se força (Atletismo CD 20) ou se gira pela roda; a porta da prisão (Percepção CD 15) dá na câmara', async () => {
   const S = await nova('casaDaMortePorao2');
-  assert.equal(S.field.surfaceAt(21, 19), 'alvenaria', 'a ponte está erguida');
-  poe(S.party[0], 21, 17);
+  assert.equal(S.field.surfaceAt(6, 7), 'alvenaria', 'a ponte está erguida');
+  poe(S.party[0], 6, 5);
   d20(S, 20);
-  const forcar = op(S, S.party[0], 21, 17, 'ponte levadiça');
+  const forcar = op(S, S.party[0], 6, 5, 'ponte levadiça');
   assert.ok(forcar);
   await forcar.fazer();
   assert.equal(S.casa().ponte, true);
-  assert.equal(S.field.surfaceAt(21, 19), 'ponte');
+  assert.equal(S.field.surfaceAt(6, 7), 'ponte');
   const T = await nova('casaDaMortePorao2');
-  poe(T.party[0], 10, 35);
+  poe(T.party[0], 3, 10);
   d20(T, 20);
-  await op(T, T.party[0], 10, 35, 'portas secretas').fazer();
+  await op(T, T.party[0], 3, 10, 'portas secretas').fazer();
   assert.equal(T.casa().portaPrisao, true);
-  assert.equal(T.field.surfaceAt(12, 34), 'portaAberta');
+  assert.equal(T.field.surfaceAt(4, 10), 'portaAberta');
   const G = await nova('casaDaMortePorao2', { campanha: { strahd: { casa: { ponte: true, portaPrisao: true, vencidos: [] } } } });
-  assert.equal(G.field.surfaceAt(21, 19), 'ponte', 'o estado salvo volta ao reentrar');
-  assert.equal(G.field.surfaceAt(12, 34), 'portaAberta');
+  assert.equal(G.field.surfaceAt(6, 7), 'ponte', 'o estado salvo volta ao reentrar');
+  assert.equal(G.field.surfaceAt(4, 10), 'portaAberta');
 });
 
 await teste('masmorra 2: pisar no estrado abre o ritual; sacrificar um herói apazigua o culto, negar acorda Lorghoth', async () => {
   const S = await nova('casaDaMortePorao2');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 25, y: 35 }), true, 'o passo para na primeira casa do estrado');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 15, y: 35 }), false, 'a borda da câmara não é o estrado');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 7, y: 11 }), true, 'o passo para na primeira casa do estrado');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 5, y: 11 }), false, 'a borda da câmara não é o estrado');
   const prefs = ['sacrificar', S.party[3].id];
   globalThis.__escolher = (esc) => { const v = prefs.shift(); const e = esc.find((x) => x.valor === v); return (e ?? esc.find((x) => x.primaria) ?? esc[0]).valor; };
-  poe(S.party[0], 25, 35);
+  poe(S.party[0], 7, 11);
   await S.cena.depoisDeMover(S.party[0]);
   assert.equal(S.casa().ritual, 'sacrificio');
   assert.equal(S.casa().fim, 'sacrificio');
@@ -307,7 +307,7 @@ await teste('masmorra 2: pisar no estrado abre o ritual; sacrificar um herói ap
   assert.ok(S.cena.explorando);
   const N = await nova('casaDaMortePorao2');
   globalThis.__escolher = (esc) => (esc.find((x) => x.valor === 'negar') ?? esc[0]).valor;
-  poe(N.party[0], 25, 35);
+  poe(N.party[0], 7, 11);
   await N.cena.depoisDeMover(N.party[0]);
   globalThis.__escolher = undefined;
   assert.equal(N.casa().fim, 'negado');
@@ -428,7 +428,7 @@ await teste('os drenos funcionam: PV máximo (lívido) e Força (sombra) caem, e
   assert.ok(alvo.dead || alvo.hp === 0, 'PV máximo a zero mata');
 });
 
-await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala conecta por porta, e a masmorra segue em 2 x 2', async () => {
+await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala conecta por porta, a masmorra 1 ainda em 2 x 2 e a 2 na escala do livro (câmara 38: 12 m de lado)', async () => {
   const { Battlefield } = await import(P + 'core/grid.js');
   for (const [v, ate] of [['casaDaMorte1', 'espera'], ['casaDaMorte2', 'salao'], ['casaDaMorte3', 'varanda'], ['casaDaMorte4', 'salao']]) {
     const m = mapaDo(v);
@@ -447,6 +447,15 @@ await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala con
   assert.ok(Battlefield);
   const porao = mapaDo('casaDaMortePorao1');
   assert.ok(porao.terreno[0].length > 30, 'a masmorra tem a sua escala própria');
+  // o livro: "One square = 5 feet" e a câmara do ritual é uma sala de 12 m de lado = 8 x 8 casas de 1,5 m; a água tem 60 cm e as bordas 1,5 m
+  const { ANDARES } = await import(P + 'game/casadamorte.js');
+  const camara = ANDARES.casaDaMortePorao2.areas.find((a) => a.id === 'camara');
+  assert.equal(camara.x2 - camara.x1 + 1, 8, 'a câmara tem 8 casas de largura');
+  assert.equal(camara.y2 - camara.y1 + 1, 8, 'a câmara tem 8 casas de comprimento');
+  const p2 = mapaDo('casaDaMortePorao2');
+  assert.equal(p2.terreno[8][5], 'L');
+  assert.equal(p2.terreno[9][6], 'r');
+  assert.equal(p2.terreno[11][8], 'a');
 });
 
 await teste('investigação: cada ponto tem coordenada no mapa, perícias válidas e verbos com CD; passivas e auras só onde cabem', async () => {
