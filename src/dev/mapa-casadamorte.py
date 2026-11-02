@@ -2,10 +2,9 @@
 #
 #   python src/dev/mapa-casadamorte.py
 #
-# A ESCALA: o mapa do livro diz "One square = 5 feet" (1,5 m), ou seja, UM QUADRADO = UMA CASA do jogo. O nível 2 já está nessa escala
-# (a câmara do ritual tem 12 m de lado = 8 x 8 casas, como o texto do livro) e é escrito direto em casas, com a rocha das paredes ocupando
-# uma casa. O nível 1 ainda está na escala antiga, de 2 x 2 casas por quadrado (`Planta(.., esc=2)`), e é escrito em quadrados; o script os
-# multiplica por 2 em cada eixo. O mapa de nível 1 tem 18 x 20 quadrados = 36 x 40 casas.
+# A ESCALA: o mapa do livro diz "One square = 5 feet" (1,5 m), ou seja, UM QUADRADO = UMA CASA do jogo, nas duas masmorras. As plantas são
+# escritas direto em casas, com a rocha das paredes ocupando uma casa. Os tamanhos das salas vêm da grade desenhada no próprio mapa (a imagem
+# fica em `_referencias/`, fora do repositório): a câmara do ritual (38) tem 12 m de lado = 8 x 8 casas, como diz o texto.
 #
 # A planta é um RASCUNHO fiel à topologia do livro (quem liga a quem, onde está cada sala com algo marcado) e não ao pixel da referência:
 # os corredores do mapa original são labirínticos, e aqui só entram os que levam a alguma sala. Os glifos são os do jogo; rocha em volta,
@@ -51,121 +50,103 @@ class Planta:
 
 
 # ================================================================================================================ NÍVEL 1 ====
-# Áreas 22 a 34. Em quadrados: 18 colunas x 20 linhas.
-P1 = Planta(20, 20)
+# Áreas 22 a 34, em CASAS (1 quadrado do livro = 1 casa; a rocha das paredes ocupa uma casa). 25 colunas x 26 linhas. Norte em cima.
+# Os tamanhos das salas vêm da grade desenhada no mapa do livro: o salão do poço (25) tem 5 x 5, o dos iniciados (24) 4 x 5, o de jantar (27)
+# 4 x 3, o santuário (31) 3 x 5 com a abside, o covil (33) e o quarto dos líderes (34) 3 x 3; os corredores têm 1 casa.
+P1 = Planta(25, 26, esc=1)
 
-# A espinha norte-sul (22, a chegada da escada em espiral do sótão; os cruzamentos 29 e as criptas ficam ao longo dela).
-P1.piso(11, 0, 11, 8)
-P1.sala('acesso', '22', 'O acesso à masmorra', 11, 0, 11, 3)
-# O salão dos iniciados (24), com a mesa e as quatro cadeiras, e as alcovas de palha a oeste. Ligado à espinha por um corredor.
-P1.piso(6, 0, 8, 1)
-P1.piso(4, 0, 5, 1)
-P1.piso(9, 0, 10, 0)
-P1.sala('iniciados', '24', 'O quarto dos iniciados', 4, 0, 8, 1)
-# O poço e os quartos dos cultistas (25): o salão do poço com cinco nichos de cama e baú nos cantos.
-P1.piso(1, 3, 5, 10)
-P1.piso(0, 6, 0, 7)
-P1.sala('poco', '25', 'O poço e os quartos dos cultistas', 0, 3, 5, 10)
-# O corredor leste-oeste (r8): do salão do poço até o cruzamento, com o poço de espinhos (26) no meio.
-P1.piso(6, 8, 10, 8)
-P1.sala('espinhos', '26', 'O túnel do poço de espinhos', 6, 8, 10, 8)
-# O cruzamento de quatro vias (29), onde os carniçais se levantam.
-P1.sala('carnicais', '29', 'O cruzamento das quatro vias', 11, 7, 11, 9)
-# O salão de jantar do culto (27), com a despensa do grick (28) na parede sul.
-P1.piso(12, 7, 15, 9)
-P1.piso(14, 10, 14, 10)
-# A cripta D (23D) fica SELADA: sem parede entre ela e o salão, ela abria para o jantar e a laje não valia nada.
-for x in range(24, 28):
-    P1.casa(x, 14, 'R', '3')
-P1.sala('jantar', '27', 'O salão de jantar do culto', 12, 7, 15, 9)
-P1.sala('despensa', '28', 'A despensa', 14, 10, 14, 10)
-# A espinha sul: do cruzamento até a escada para baixo (30), o santuário (31) e o covil (33).
-P1.piso(11, 9, 11, 15)
-P1.piso(7, 12, 10, 12)
-P1.piso(7, 13, 8, 14)
-P1.sala('escadas', '30', 'A escada para baixo', 7, 12, 10, 14)
-# O santuário do Senhor Negro (31): sala grande, nicho redondo a leste com a estátua, saída oeste e norte.
-P1.piso(13, 13, 16, 17)
-P1.piso(17, 14, 17, 16)
-P1.piso(12, 15, 12, 15)
-P1.piso(15, 10, 15, 12)
-P1.sala('santuario', '31', 'O santuário do Senhor Negro', 13, 13, 17, 17)
-# O covil dos líderes do culto (33) e o quarto dos líderes (34).
-P1.piso(10, 16, 12, 18)
-P1.sala('covil', '33', 'O covil dos líderes do culto', 10, 16, 12, 18)
-P1.piso(9, 17, 9, 17)
-P1.piso(6, 17, 8, 19)
-P1.piso(7, 16, 7, 16)
-P1.piso(5, 18, 5, 18)
-P1.sala('quartoLideres', '34', 'O quarto dos líderes do culto', 5, 16, 8, 19)
-# As seis criptas familiares (23): salas de 2 x 1 quadrados ao longo da espinha norte, três de cada lado.
+# --- o oeste: o salão do poço (25) e os cinco quartos de cultista (A a E).
+P1.piso(2, 7, 7, 11)                                   # o salão do poço, com a espinha de pilares
+P1.sala('poco', '25', 'O poço e os quartos dos cultistas', 1, 4, 7, 14)
+P1.piso(1, 8, 1, 10)                                   # o quarto C, aberto para o salão
+P1.piso(1, 4, 2, 5); P1.piso(2, 6, 2, 6)               # o quarto B e a porta dele
+P1.piso(4, 4, 5, 5); P1.piso(4, 6, 4, 6)               # o quarto A
+P1.piso(2, 13, 3, 14); P1.piso(2, 12, 2, 12)           # o quarto D
+P1.piso(5, 13, 6, 14); P1.piso(5, 12, 5, 12)           # o quarto E
+# --- a escadinha (7, 2..6) que sobe do canto do salão até o salão dos iniciados.
+P1.piso(7, 2, 7, 6)
+# --- o salão dos iniciados (24): a parte de cima (3 x 2, com a mesa) e o salão (4 x 5), com as camas de palha.
+P1.piso(10, 0, 12, 1)
+P1.piso(9, 2, 12, 6)
+P1.piso(8, 2, 8, 2)                                    # a porta do oeste, para a escadinha
+P1.sala('iniciados', '24', 'O quarto dos iniciados', 9, 0, 12, 6)
+# --- o corredor de cima: do salão dos iniciados até a espinha leste (que desce até o jantar), e o canto da escada em espiral (22).
+P1.piso(13, 1, 17, 1)
+P1.piso(17, 1, 17, 9)
+P1.piso(14, 3, 16, 3)
+P1.sala('acesso', '22', 'O acesso à masmorra', 14, 3, 16, 3)
+# --- as criptas (23): A e B no alto, E e F a oeste da espinha, C e D a leste. Cada uma tem 2 casas e o sarcófago na ponta de dentro.
 CRIPTAS = {
-    'criptaA': ('23A', 'A cripta vazia', (9, 6, 10, 6)),
-    'criptaF': ('23F', 'A cripta de Thorn', (9, 2, 10, 2)),
-    'criptaE': ('23E', 'A cripta de Rose', (9, 4, 10, 4)),
-    'criptaB': ('23B', 'A cripta de Walter', (12, 2, 13, 2)),
-    'criptaC': ('23C', 'A cripta de Gustav', (12, 4, 13, 4)),
-    'criptaD': ('23D', 'A cripta de Elisabeth', (12, 6, 13, 6)),
+    'criptaA': ('23A', 'A cripta vazia', (22, 1, 23, 1)),
+    'criptaB': ('23B', 'A cripta de Walter', (22, 3, 23, 3)),
+    'criptaC': ('23C', 'A cripta de Gustav', (19, 5, 20, 5)),
+    'criptaD': ('23D', 'A cripta de Elisabeth', (19, 8, 20, 8)),
+    'criptaE': ('23E', 'A cripta de Rose', (14, 5, 15, 5)),
+    'criptaF': ('23F', 'A cripta de Thorn', (14, 8, 15, 8)),
 }
-for id_, (area, nome, (c0, r0, c1, r1)) in CRIPTAS.items():
-    P1.piso(c0, r0, c1, r1)
-    P1.sala(id_, area, nome, c0, r0, c1, r1)
-
-# --- a mobília (casas de jogo): cada cripta tem o sarcófago na ponta de dentro; as lajes de C, D, E e F fecham a entrada.
-def cr(c, r, dx=0, dy=0):
-    return c * 2 + dx, r * 2 + dy
-
-# Sarcófagos (Q): na ponta de dentro de cada cripta (2 x 2 casas por quadrado).
-for (c, r) in [(9, 6), (9, 2), (9, 4), (13, 2), (13, 4), (13, 6)]:
-    x = c * 2 + (0 if c == 9 else 1)
-    P1.casa(x, r * 2, 'Q'); P1.casa(x, r * 2 + 1, 'Q')
-# As lajes que SELAM as criptas C, D (leste: a casa junto da espinha, x = 24) e E, F (oeste: x = 21): parede até alguém afastá-las.
-for r in (2, 4):
-    P1.casa(21, r * 2, 'M'); P1.casa(21, r * 2 + 1, 'M')
-for r in (4, 6):
-    P1.casa(24, r * 2, 'M'); P1.casa(24, r * 2 + 1, 'M')
-P1.casa(24, 4 * 2, 'M'); P1.casa(24, 4 * 2 + 1, 'M')
-
-# O quarto dos iniciados: mesa de 2 x 2 casas no meio, palha nas alcovas.
-for (x, y) in [(14, 2), (15, 2), (14, 3), (15, 3)]:
-    P1.casa(x, y, 'm')
-for (x, y) in [(8, 0), (8, 1), (9, 0), (9, 1), (8, 2), (9, 2)]:
-    P1.casa(x, y, 'p')
-# O salão do poço: o poço (4,6 em quadrados = casas 8,12), cinco leitos com baú.
-P1.casa(9, 12, 'q'); P1.casa(8, 12, 'q')
-for (x, y, bx, by) in [(2, 6, 3, 6), (10, 6, 9, 6), (0, 12, 1, 12), (2, 20, 3, 20), (10, 20, 9, 20)]:
-    P1.casa(x, y, 'z'); P1.casa(bx, by, 'K')
-# O salão de jantar: mesa comprida e bancos.
-for x in range(26, 31):
-    P1.casa(x, 16, 'm'); P1.casa(x, 17, 'm')
-# O santuário: a estátua de Strahd no nicho redondo (altar) e os esqueletos nas correntes (decoração: ossos).
-P1.casa(35, 29, 'a')
-# estalagmites no santuário: cobertura onde as sombras e o grupo lutam (sem elas era campo aberto)
-for (x, y) in [(28, 28), (31, 28), (28, 32), (31, 32)]:
-    P1.casa(x, y, 'A')
-for y in range(27, 35):
-    P1.casa(26, y, 'c')
-# O covil dos líderes: a mesa e as duas cadeiras; o quarto: a cama grande e o baú.
-for (x, y) in [(22, 34), (23, 34), (22, 35), (23, 35)]:
-    P1.casa(x, y, 'm')
-P1.casa(14, 37, 'D'); P1.casa(15, 37, 'D'); P1.casa(14, 38, 'D'); P1.casa(15, 38, 'D')
-P1.casa(11, 36, 'K')
-# A escada para baixo (30): degraus em duas casas; a espiral do sótão (22) no topo da espinha.
-for (x, y) in [(14, 26), (15, 26), (14, 27), (15, 27), (16, 26), (17, 26)]:
-    P1.casa(x, y, 'l')
-for (x, y) in [(22, 0), (23, 0), (22, 1), (23, 1)]:
-    P1.casa(x, y, 'l')                       # a espiral que sobe ao sótão (21)
-# O alçapão oculto (32): uma porta escondida na parede leste do santuário (as duas casas de fora começam como parede) e uma escada de pedra
-# que sobe 3 m até o alçapão sob o canil.
-P1.piso(18, 15, 19, 15)
-P1.sala('alcapao', '32', 'A escada do alçapão', 18, 15, 19, 15)
-for (x, y) in [(36, 30), (36, 31)]:
+P1.piso(18, 2, 21, 2); P1.piso(21, 1, 21, 3)           # o corredor curto até A e B
+for id_, (area, nome, (x0, y0, x1, y1)) in CRIPTAS.items():
+    P1.piso(x0, y0, x1, y1)
+    P1.sala(id_, area, nome, x0, y0, x1, y1)
+# As lajes que SELAM as criptas C, D, E e F: parede até alguém afastá-las. A cripta D (23D) não tem parede para o jantar.
+for (x, y) in [(18, 5), (18, 8), (16, 5), (16, 8)]:
     P1.casa(x, y, 'M')
-for (x, y) in [(38, 30), (39, 30), (38, 31), (39, 31)]:
+# Os sarcófagos (Q): na ponta de dentro de cada cripta.
+for (x, y) in [(23, 1), (23, 3), (20, 5), (20, 8), (14, 5), (14, 8)]:
+    P1.casa(x, y, 'Q')
+# --- o corredor leste-oeste (do salão do poço até o jantar), e o túnel do poço de espinhos (26) que desce até a escada (30).
+P1.piso(8, 11, 15, 11)
+P1.piso(11, 12, 11, 19)
+P1.sala('espinhos', '26', 'O túnel do poço de espinhos', 11, 12, 11, 14)
+P1.piso(10, 16, 10, 19); P1.piso(12, 19, 12, 19)
+P1.sala('escadas', '30', 'A escada para baixo', 10, 16, 12, 19)
+for (x, y) in [(10, 16), (10, 17)]:
     P1.casa(x, y, 'l')
+# --- o salão de jantar (27): 4 x 3, com a mesa comprida, e a despensa do grick (28) na parede leste.
+P1.piso(16, 10, 19, 12)
+P1.sala('jantar', '27', 'O salão de jantar do culto', 16, 10, 19, 12)
+P1.piso(20, 10, 20, 10)
+P1.sala('despensa', '28', 'A despensa', 20, 10, 20, 10)
+# --- o cruzamento de quatro vias (29) e a espinha sul, que desce do jantar até o covil; o corredor leste vai ao santuário.
+P1.piso(16, 13, 16, 19)
+P1.piso(11, 15, 18, 15)
+P1.sala('carnicais', '29', 'O cruzamento das quatro vias', 16, 14, 16, 16)
+# --- o santuário do Senhor Negro (31): 3 x 5, a abside redonda a leste com a estátua, e a escada do alçapão (32) ao norte.
+P1.piso(19, 15, 21, 19)
+P1.piso(22, 16, 22, 19); P1.piso(23, 17, 23, 18)
+P1.sala('santuario', '31', 'O santuário do Senhor Negro', 19, 15, 23, 19)
+P1.piso(21, 10, 21, 13)
+P1.sala('alcapao', '32', 'A escada do alçapão', 21, 10, 21, 13)
+P1.casa(21, 12, 'l'); P1.casa(21, 13, 'l')
+P1.casa(21, 14, 'M')                                   # a porta escondida, na parede norte do santuário
+# --- o covil dos líderes do culto (33), 3 x 3, e o quarto dos líderes (34), 3 x 3, ligados pela porta do canto (o mímico).
+P1.piso(16, 20, 18, 22)
+P1.piso(19, 20, 19, 20)                                # a porta do covil para o santuário
+P1.sala('covil', '33', 'O covil dos líderes do culto', 16, 20, 18, 22)
+P1.piso(12, 21, 14, 23)
+P1.piso(15, 22, 15, 22)
+P1.piso(13, 20, 13, 20); P1.piso(11, 22, 11, 22)       # as cavidades dos lívidos (as marcas X do livro)
+P1.sala('quartoLideres', '34', 'O quarto dos líderes do culto', 12, 21, 14, 23)
 
-P1.casa(19, 34, 'M', '3')                    # a porta fecha a passagem de 2 casas junto com o mímico
-P1.casa(19, 35, '?')                         # a porta do canto sudoeste do covil, que é um mímico
+# --- a mobília (casas do jogo)
+P1.casa(15, 22, '?')                                   # a porta do canto sudoeste do covil, que é um mímico
+P1.casa(11, 1, 'm')                                    # a mesa dos iniciados
+for (x, y) in [(9, 4), (9, 5), (12, 3), (12, 4), (10, 6), (11, 6)]:
+    P1.casa(x, y, 'p')                                 # as camas de palha
+P1.casa(14, 3, 'l')                                    # a espiral que sobe ao sótão (21)
+P1.casa(4, 9, 'q')                                     # o poço
+for (x, y, bx, by) in [(1, 4, 2, 4), (5, 4, 4, 4), (1, 8, 1, 10), (2, 14, 3, 14), (6, 14, 5, 14)]:
+    P1.casa(x, y, 'z'); P1.casa(bx, by, 'K')           # cinco leitos com baú (A a E)
+for x in (17, 18):
+    P1.casa(x, 11, 'm')                                # a mesa comprida do jantar
+P1.casa(23, 17, 'a')                                   # a estátua de Strahd, no nicho redondo
+for (x, y) in [(20, 16), (20, 18)]:
+    P1.casa(x, y, 'A')                                 # estalagmites no santuário: cobertura
+for y in (16, 17, 18):
+    P1.casa(19, y, 'c')                                # os esqueletos nas correntes, junto à parede oeste
+P1.casa(17, 21, 'm'); P1.casa(17, 20, 'm')             # a mesa do covil
+P1.casa(13, 23, 'D'); P1.casa(14, 23, 'D')             # a cama grande
+P1.casa(12, 21, 'K')                                   # o baú dos líderes
 PLANTA_1 = P1.linhas() + (P1.areas,)
 
 # ================================================================================================================ NÍVEL 2 ====
@@ -235,6 +216,6 @@ def js(nome, planta):
 
 
 cabecalho = ("// Gerado por `src/dev/mapa-casadamorte.py` — mude lá e rode de novo.\n"
-             "// As duas masmorras da Casa da Morte (áreas 22 a 38). Cada quadrado do mapa de referência vale 2 x 2 casas.\n\n")
+             "// As duas masmorras da Casa da Morte (áreas 22 a 38). Cada quadrado do mapa de referência é uma casa.\n\n")
 SAIDA.write_text(cabecalho + js('PLANTA_PORAO_1', PLANTA_1) + '\n' + js('PLANTA_PORAO_2', PLANTA_2), encoding='utf-8')
 print('ok', SAIDA, P1.cols, P1.rows, P2.cols, P2.rows)

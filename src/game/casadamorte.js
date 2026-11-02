@@ -2,7 +2,7 @@
 // em cada sala, as CDs) são os do livro — ver NOTICE.md e STRAHD.md.
 //
 // A CASA DA MORTE (Apêndice B). A planta é a do livro na ESCALA DELE: um quadrado do mapa (5 pés) é uma casa do jogo, e a casa tem 6 casas de
-// largura por 11 de comprimento (`casadamorte-plantas.js`). Só a masmorra usa 2 x 2 casas por quadrado. Cada andar é uma cena separada,
+// largura por 11 de comprimento (`casadamorte-plantas.js`). Cada andar é uma cena separada,
 // ligada pela escadaria de mármore vermelho.
 //
 // Glifos: U assoalho · - parquet · * tapete · 0 mesa · l escada · Z o chão de fora da casa. Parede e porta são de aresta (a planta diz quais).
@@ -262,14 +262,14 @@ export const ANDARES = {
     id: 'casaDaMortePorao1', nome: 'Masmorra, nível 1',
     areas: PLANTA_PORAO_1.areas.map((a) => ({ ...a, texto: TEXTOS_PORAO[a.id] ?? [] })),
     escadas: [
-      { rect: rect(22, 0, 23, 1), rotulo: 'Subir a escada em espiral', detalhe: 'o sótão', destino: 'casaDaMorte4' },
-      { rect: rect(14, 26, 17, 27), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
-      { rect: rect(38, 30, 39, 31), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
+      { rect: rect(14, 3, 14, 3), rotulo: 'Subir a escada em espiral', detalhe: 'o sótão', destino: 'casaDaMorte4' },
+      { rect: rect(10, 16, 10, 17), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
+      { rect: rect(21, 12, 21, 13), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
     ],
     chegadas: {
-      casaDaMorte4: grupoPadrao([[22, 2], [23, 2], [22, 3], [23, 3]]),
-      casaDaMortePorao2: grupoPadrao([[14, 28], [15, 28], [14, 29], [15, 29]]),
-      casaDaMorte1: grupoPadrao([[37, 30], [37, 31], [36, 30], [36, 31]]),
+      casaDaMorte4: grupoPadrao([[15, 3], [16, 3], [17, 3], [17, 4]]),
+      casaDaMortePorao2: grupoPadrao([[11, 18], [11, 19], [10, 19], [12, 19]]),
+      casaDaMorte1: grupoPadrao([[21, 10], [21, 11], [21, 12], [21, 13]]),
     },
   },
   casaDaMortePorao2: {
@@ -293,8 +293,8 @@ export const MAPA_CASA_DA_MORTE_PORAO_1 = {
   paredeDeCaverna: true,
   rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
   // O grupo chega pela escada em espiral do sótão, ao fim do túnel de acesso.
-  grupo: grupoPadrao([[22, 2], [23, 2], [22, 3], [23, 3]]),
-  olhar: { dx: 0, dy: 1 },
+  grupo: grupoPadrao([[15, 3], [16, 3], [17, 3], [17, 4]]),
+  olhar: { dx: 1, dy: 0 },
   cena: 'casaDaMorte',
 };
 

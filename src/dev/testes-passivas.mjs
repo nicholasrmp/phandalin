@@ -5520,11 +5520,10 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     }
     for (const id of seladas) {
       const a = ANDARES.casaDaMortePorao1.areas.find((x) => x.id === id);
-      const dentroDaCripta = id === 'criptaC' || id === 'criptaD' ? 25 : 19;
-      assert.equal(vistos.has(`${dentroDaCripta},${a.y1}`), false, `a cripta ${id} está selada por dentro`);
+      assert.equal(vistos.has(`${a.x1},${a.y1}`), false, `a cripta ${id} está selada por dentro`);
     }
-    const lajes = [[24, 8], [24, 9], [24, 12], [24, 13], [21, 8], [21, 9], [21, 4], [21, 5]];
-    const aberta = campo('casaDaMortePorao1', mudar(mudar(m.terreno, lajes, '+'), [[36, 30], [36, 31]], '?'));
+    const lajes = [[18, 5], [18, 8], [16, 5], [16, 8]];
+    const aberta = campo('casaDaMortePorao1', mudar(mudar(m.terreno, lajes, '+'), [[21, 14]], '?'));
     const v2 = alcance(aberta, m.grupo[0]);
     for (const a of ANDARES.casaDaMortePorao1.areas) assert.ok(tem(v2, a), `masmorra 1 aberta: a sala ${a.area} (${a.id}) é alcançável`);
   }

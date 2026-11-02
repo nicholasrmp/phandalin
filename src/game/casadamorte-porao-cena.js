@@ -21,24 +21,24 @@ const igual = (a, b) => a.x === b.x && a.y === b.y;
 // ---- as plantas: o que está onde (casas do jogo) -------------------------------------------------------------------------
 /** Os cinco baús do poço (25A a 25E) e o que há em cada um. */
 export const BAUS_POCO = [
-  { id: 'A', x: 3, y: 6, texto: 'Dentro, numa bolsa feita de pele humana: 11 peças de ouro e 60 de prata.', dar: (g, q) => { g(q, 'moedaDeOuro', 11); g(q, 'moedaDePrata', 60); } },
-  { id: 'B', x: 9, y: 6, texto: 'Dentro, em um pedaço dobrado de pano negro, três ágatas-musgo.', dar: (g, q) => g(q, 'agataMusgo', 3) },
-  { id: 'C', x: 1, y: 12, texto: 'Dentro, um tapa-olho de couro preto com uma pedra vermelha costurada.', dar: (g, q) => g(q, 'tapaOlho', 1) },
-  { id: 'D', x: 3, y: 20, texto: 'Dentro, uma escova de cabelo de marfim com cerdas de prata.', dar: (g, q) => g(q, 'escovaDeMarfim', 1) },
-  { id: 'E', x: 9, y: 20, texto: 'Dentro, uma espada curta prateada, de lâmina fina.', dar: (g, q) => g(q, 'espadaCurtaPrateada', 1) },
+  { id: 'A', x: 4, y: 4, texto: 'Dentro, numa bolsa feita de pele humana: 11 peças de ouro e 60 de prata.', dar: (g, q) => { g(q, 'moedaDeOuro', 11); g(q, 'moedaDePrata', 60); } },
+  { id: 'B', x: 2, y: 4, texto: 'Dentro, em um pedaço dobrado de pano negro, três ágatas-musgo.', dar: (g, q) => g(q, 'agataMusgo', 3) },
+  { id: 'C', x: 1, y: 10, texto: 'Dentro, um tapa-olho de couro preto com uma pedra vermelha costurada.', dar: (g, q) => g(q, 'tapaOlho', 1) },
+  { id: 'D', x: 3, y: 14, texto: 'Dentro, uma escova de cabelo de marfim com cerdas de prata.', dar: (g, q) => g(q, 'escovaDeMarfim', 1) },
+  { id: 'E', x: 5, y: 14, texto: 'Dentro, uma espada curta prateada, de lâmina fina.', dar: (g, q) => g(q, 'espadaCurtaPrateada', 1) },
 ];
 
 /** As seis criptas (23A a 23F): a laje (se for selada), o caixão e o que a cripta guarda. */
 const CRIPTAS = {
   criptaA: { lado: 'oeste', selada: false },
   criptaB: { lado: 'leste', selada: false },
-  criptaC: { lado: 'leste', selada: true, laje: [[24, 8], [24, 9]], de: { x: 22, y: 8 } },
-  criptaD: { lado: 'leste', selada: true, laje: [[24, 12], [24, 13]], de: { x: 22, y: 12 } },
-  criptaE: { lado: 'oeste', selada: true, laje: [[21, 8], [21, 9]], de: { x: 23, y: 8 } },
-  criptaF: { lado: 'oeste', selada: true, laje: [[21, 4], [21, 5]], de: { x: 23, y: 4 } },
+  criptaC: { lado: 'leste', selada: true, laje: [[18, 5]], de: { x: 17, y: 5 } },
+  criptaD: { lado: 'leste', selada: true, laje: [[18, 8]], de: { x: 17, y: 8 } },
+  criptaE: { lado: 'oeste', selada: true, laje: [[16, 5]], de: { x: 17, y: 5 } },
+  criptaF: { lado: 'oeste', selada: true, laje: [[16, 8]], de: { x: 17, y: 8 } },
 };
-const POCO_ESPINHOS = [[15, 16], [15, 17]];
-const SEGREDO_SANTUARIO = [[36, 30], [36, 31]];
+const POCO_ESPINHOS = [[11, 13], [11, 14]];
+const SEGREDO_SANTUARIO = [[21, 14]];
 const SEGREDO_PRISAO = [[4, 10]];
 const PONTE = [[6, 6], [6, 7]];
 const RODA = { x: 8, y: 8 };
@@ -63,15 +63,15 @@ export function poraoGatilhos(ctx) {
   return {
     grick: (c) => {
       const f = vivo(ctx.grupos.grick);
-      // O livro: a 1,5 m da alcova. A despensa tem 2 x 2 casas e o corredor ao lado passa colado nela.
-      if (!f || c.pos.x < 27 || c.pos.x > 32 || c.pos.y < 19 || c.pos.y > 22) return null;
+      // O livro: a 1,5 m da alcova. A despensa tem 1 casa e fica na parede leste do jantar.
+      if (!f || c.pos.x < 18 || c.pos.x > 19 || c.pos.y < 9 || c.pos.y > 12) return null;
       ctx.grupos.grick.furtividade = [12];       // o livro: quem tem Percepção passiva abaixo de 12 é surpreendido
       if (ctx.salvo.marcas?.gricAvisado) return { surpresa: null, intro: ['O rastro de muco não enganou: o grick se solta do teto da alcova, comprido e mole, bico aberto, mas o grupo já estava pronto.'] };
       return { surpresa: 'deles', intro: ['Um pedaço da escuridão da alcova se desprende da parede: uma criatura longa, mole, de cabeça de minhoca e bico de ave, e tentáculos que se abrem como uma mão.'] };
     },
     carnicais: (c, area) => {
       if (area?.id !== 'carnicais') return null;
-      if (!(c.pos.x >= 22 && c.pos.x <= 23 && c.pos.y >= 16 && c.pos.y <= 17)) return null;
+      if (!(c.pos.x === 16 && c.pos.y === 15)) return null;
       return { intro: ['O canto ficou tão alto que dói. De repente a terra do chão se levanta em quatro pontos ao redor, e de dentro dela sobem corpos de túnica preta, de pele cinzenta e garras: ex-cultistas, ainda com a fome do culto.'] };
     },
     mimico: (c) => {
@@ -265,7 +265,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     for (const [id, cr] of Object.entries(CRIPTAS)) {
       const nesta = area?.id === id;
       // a laje: de fora, do corredor
-      if (cr.selada && !salvo.criptas.includes(id) && cr.de && Math.abs(tile.x - cr.de.x) <= 1 && tile.y >= cr.de.y - 1 && tile.y <= cr.de.y + 2) {
+      if (cr.selada && !salvo.criptas.includes(id) && cr.de && (cr.laje.some(([lx, ly]) => lx === tile.x && ly === tile.y) || (tile.x === cr.de.x && tile.y === cr.de.y))) {
         const nome = { criptaC: 'Gustav', criptaD: 'Elisabeth', criptaE: 'Rose', criptaF: 'Thorn' }[id];
         const pe = ctx.algumTem('pedeCabra');
         ops.push({
@@ -285,7 +285,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       if (!nesta) continue;
       if (id === 'criptaD' && !salvo.centopeiasVistas) {
         ops.push({
-          rotulo: 'Mexer no caixão de Elisabeth', icone: 'acao-usarObjeto', detalhe: 'um caixão sobre o esquife', motivo: ctx.longe(c, { x: 26, y: 13 }, 20),
+          rotulo: 'Mexer no caixão de Elisabeth', icone: 'acao-usarObjeto', detalhe: 'um caixão sobre o esquife', motivo: ctx.longe(c, { x: 19, y: 8 }, 10),
           fazer: async () => {
             salvo.centopeiasVistas = true;
             const g = ctx.grupos.centopeias;
@@ -305,7 +305,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           ops.push({
             rotulo: feito ? `Os ossos de ${nome} já repousam` : `Deitar os ossos de ${nome} no caixão`, icone: 'acao-usarObjeto',
             detalhe: feito ? 'em paz' : quem === 'thorn' ? 'o menino' : 'a menina',
-            motivo: feito ? 'em paz' : ctx.longe(c, quem === 'rose' ? { x: 19, y: 8 } : { x: 19, y: 4 }, 30),
+            motivo: feito ? 'em paz' : ctx.longe(c, quem === 'rose' ? { x: 15, y: 5 } : { x: 15, y: 8 }, 10),
             fazer: async () => {
               ctx.consumir(dono, osso);
               salvo.paz[quem] = true;
@@ -334,7 +334,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'santuario') {
       ops.push({
         rotulo: 'Pegar a esfera de cristal da estátua', icone: 'acao-usarObjeto', detalhe: 'a esfera cinza esfumaçada. Perigo: solta cinco sombras',
-        motivo: achados.esfera ? 'já foi pega' : ctx.longe(c, { x: 35, y: 29 }, 20),
+        motivo: achados.esfera ? 'já foi pega' : ctx.longe(c, { x: 23, y: 17 }, 15),
         fazer: async () => {
           achados.esfera = true;
           ctx.guardar(ctx.herois()[0], 'orbeDeCristalCinza', 1);
@@ -346,7 +346,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
       ops.push({
         rotulo: 'Tocar a estátua de Strahd', icone: 'acao-usarObjeto', detalhe: 'a mão sobre a cabeça do lobo. Perigo: solta cinco sombras',
-        motivo: ctx.longe(c, { x: 35, y: 29 }, 20),
+        motivo: ctx.longe(c, { x: 23, y: 17 }, 15),
         fazer: async () => {
           const g = ctx.grupos.sombras;
           if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
@@ -356,12 +356,12 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
       if (!salvo.alcapao) {
         ops.push({
-          rotulo: 'Procurar portas escondidas na parede leste', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 (uma tentativa por herói)',
-          motivo: buscas.ja(c, 'portaLeste', { x: 35, y: 30 }),
+          rotulo: 'Procurar portas escondidas na parede norte', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 (uma tentativa por herói)',
+          motivo: buscas.ja(c, 'portaLeste', { x: 21, y: 15 }),
           fazer: async () => {
-            buscas.marcar(c, 'portaLeste', { x: 35, y: 30 });
+            buscas.marcar(c, 'portaLeste', { x: 21, y: 15 });
             const t = ctx.teste(c, 'percepcao', 10);
-            if (!t.passou) { await ctx.painel(`${c.name} passa a mão pela argila da parede leste, sem achar nada.`); return; }
+            if (!t.passou) { await ctx.painel(`${c.name} passa a mão pela argila da parede norte, sem achar nada.`); return; }
             salvo.alcapao = true;
             ctx.mudarCasas(SEGREDO_SANTUARIO, '?');
             await ctx.painel(`${t.quem?.name ?? c.name} sente, sob a camada de argila, uma moldura de madeira apodrecida. A porta se abre puxando: atrás dela, uma escada de pedra sobe três metros, na direção de um teto de tábuas.`);
@@ -375,7 +375,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'quartoLideres') {
       ops.push({
         rotulo: achados.tochas ? 'As tochas e velas (levadas)' : 'Pegar as tochas e as velas', icone: 'acao-usarObjeto', detalhe: 'trinta tochas e quinze velas',
-        motivo: achados.tochas ? 'já pegas' : ctx.longe(c, { x: 11, y: 36 }, 30),
+        motivo: achados.tochas ? 'já pegas' : ctx.longe(c, { x: 12, y: 21 }, 15),
         fazer: async () => {
           achados.tochas = true;
           const q = ctx.herois()[0];
@@ -388,7 +388,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: achados.cofreDosLideres ? 'A caixa ao pé da cama (vazia)' : 'Revirar a caixa ao pé da cama', icone: 'acao-usarObjeto',
         detalhe: achados.cofreDosLideres ? 'já revirada' : 'itens de aventureiros mortos',
-        motivo: achados.cofreDosLideres ? 'já revirada' : ctx.longe(c, { x: 14, y: 37 }, 40),
+        motivo: achados.cofreDosLideres ? 'já revirada' : ctx.longe(c, { x: 13, y: 22 }, 15),
         fazer: async () => {
           achados.cofreDosLideres = true;
           const q = ctx.herois()[0];

@@ -149,19 +149,19 @@ await teste('sótão: a casa de bonecas mostra a escada (e o 2º nível) quando 
 
 await teste('masmorra 1: o grick surpreende quem tem Percepção passiva abaixo de 12; os carniçais se levantam no meio do cruzamento', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 28, 18);
+  poe(S.party[0], 17, 11);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(S.cena.explorando, 'a 3 casas do grick, nada');
-  poe(S.party[0], 28, 20);
+  poe(S.party[0], 19, 10);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(!S.cena.explorando, 'a 1 casa, o grick ataca');
   assert.equal(S.enc.emboscada?.emboscadores, 'foes');
   assert.deepEqual(S.enc.emboscada.furtividade, [12], 'o livro: Percepção passiva abaixo de 12 é surpreendido');
   const C = await nova('casaDaMortePorao1');
-  poe(C.party[0], 22, 14);
+  poe(C.party[0], 16, 14);
   await C.cena.depoisDeMover(C.party[0]);
   assert.ok(C.cena.explorando, 'na borda do cruzamento, não');
-  poe(C.party[0], 22, 16);
+  poe(C.party[0], 16, 15);
   await C.cena.depoisDeMover(C.party[0]);
   assert.ok(!C.cena.explorando, 'no meio, sim');
   assert.equal(C.enc.combatants.filter((f) => f.side === 'foes').length, 4, 'quatro carniçais');
@@ -169,61 +169,61 @@ await teste('masmorra 1: o grick surpreende quem tem Percepção passiva abaixo 
 
 await teste('masmorra 1: o mímico é a porta do canto sudoeste do covil', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 21, 35);
+  poe(S.party[0], 17, 22);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(S.cena.explorando, 'a 2 casas, não');
-  poe(S.party[0], 20, 35);
+  poe(S.party[0], 16, 22);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(!S.cena.explorando, 'ao chegar a 1 casa da porta');
   assert.ok(S.enc.combatants.some((f) => f.defId === 'mimico'));
 });
 
-await teste('masmorra 1: as cinco sombras vêm com a esfera de cristal (e com o toque na estátua); a porta secreta leste leva ao alçapão', async () => {
+await teste('masmorra 1: as cinco sombras vêm com a esfera de cristal (e com o toque na estátua); a porta secreta norte leva ao alçapão', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 33, 29);
-  const esfera = op(S, S.party[0], 33, 29, 'esfera');
+  poe(S.party[0], 22, 17);
+  const esfera = op(S, S.party[0], 22, 17, 'esfera');
   assert.ok(esfera);
   await esfera.fazer();
   assert.ok(!S.cena.explorando);
   assert.equal(S.enc.combatants.filter((f) => f.defId === 'sombra').length, 5);
   assert.equal(itens(S.party[0], 'orbeDeCristalCinza'), 1);
   const T = await nova('casaDaMortePorao1');
-  poe(T.party[0], 34, 30);
+  poe(T.party[0], 21, 15);
   d20(T, 20);
-  assert.equal(T.field.surfaceAt(36, 30), 'alvenaria');
-  await op(T, T.party[0], 34, 30, 'portas escondidas').fazer();
+  assert.equal(T.field.surfaceAt(21, 14), 'alvenaria');
+  await op(T, T.party[0], 21, 15, 'portas escondidas').fazer();
   assert.equal(T.casa().alcapao, true);
-  assert.equal(T.field.surfaceAt(36, 30), 'portaAberta');
+  assert.equal(T.field.surfaceAt(21, 14), 'portaAberta');
 });
 
 await teste('masmorra 1: o poço de espinhos: o passo PARA no fosso e o primeiro a pisar cai (3 + 2d10 no máximo, e o fosso fica sabido)', async () => {
   const S = await nova('casaDaMortePorao1');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 15, y: 16 }), true, 'o passo para na tampa');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 14, y: 16 }), false);
-  poe(S.party[0], 15, 16);
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 11, y: 13 }), true, 'o passo para na tampa');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 11, y: 12 }), false);
+  poe(S.party[0], 11, 13);
   const antes = S.party[0].hp;
   await S.cena.depoisDeMover(S.party[0]);
   assert.equal(S.casa().espinhos, 'caiu');
   assert.ok(S.party[0].hp < antes && antes - S.party[0].hp <= 26, `dano ${antes - S.party[0].hp}`);
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 15, y: 16 }), false, 'depois, o passo não para mais');
+  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 11, y: 13 }), false, 'depois, o passo não para mais');
 });
 
 await teste('masmorra 1: as lajes das criptas de Gustav a Thorn abrem com Atletismo CD 15 e cada herói tenta uma vez; a de Elisabeth solta o enxame', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 23, 12);
-  const laje = op(S, S.party[0], 23, 12, 'laje');
+  poe(S.party[0], 17, 8);
+  const laje = op(S, S.party[0], 17, 8, 'cripta de Elisabeth');
   assert.ok(laje, 'a laje de Elisabeth tem a opção do corredor');
   d20(S, 1);
   await laje.fazer();
-  assert.equal(S.field.surfaceAt(24, 12), 'alvenaria', 'tirou 1, a laje não saiu');
-  assert.ok(op(S, S.party[0], 23, 12, 'laje').motivo, 'o mesmo herói não tenta duas vezes');
+  assert.equal(S.field.surfaceAt(18, 8), 'alvenaria', 'tirou 1, a laje não saiu');
+  assert.ok(op(S, S.party[0], 17, 8, 'cripta de Elisabeth').motivo, 'o mesmo herói não tenta duas vezes');
   d20(S, 20);
-  poe(S.party[1], 23, 12);
-  await op(S, S.party[1], 23, 12, 'laje').fazer();
-  assert.equal(S.field.surfaceAt(24, 12), 'terraSocada', 'a laje saiu');
+  poe(S.party[1], 17, 8);
+  await op(S, S.party[1], 17, 8, 'cripta de Elisabeth').fazer();
+  assert.equal(S.field.surfaceAt(18, 8), 'terraSocada', 'a laje saiu');
   assert.ok(S.casa().criptas.includes('criptaD'));
-  poe(S.party[0], 26, 12);
-  await op(S, S.party[0], 26, 12, 'caixão de Elisabeth').fazer();
+  poe(S.party[0], 19, 8);
+  await op(S, S.party[0], 19, 8, 'caixão de Elisabeth').fazer();
   assert.ok(!S.cena.explorando, 'o enxame ataca');
   assert.ok(S.enc.combatants.some((f) => f.defId === 'enxameDeCentopeias'));
 });
@@ -233,24 +233,24 @@ await teste('masmorra 1: deitar os ossos de Rose e de Thorn dá paz aos dois, e 
   S.casa().criptas = ['criptaE', 'criptaF'];
   S.casa().fantasmas = 'apareceram';
   for (const id of ['ossosDeRose', 'ossosDeThorn']) garantirInventario(S.party[0]).bag.push({ id, tipo: 'item', qtd: 1 });
-  poe(S.party[0], 20, 8);
-  await op(S, S.party[0], 20, 8, 'ossos de Rose').fazer();
+  poe(S.party[0], 15, 5);
+  await op(S, S.party[0], 15, 5, 'ossos de Rose').fazer();
   assert.equal(S.casa().paz.rose, true);
   assert.equal(S.party[0].conditions?.some((c) => c.id === 'inspirado'), false, 'só uma criança: sem inspiração');
-  poe(S.party[0], 20, 4);
-  await op(S, S.party[0], 20, 4, 'ossos de Thorn').fazer();
+  poe(S.party[0], 15, 8);
+  await op(S, S.party[0], 15, 8, 'ossos de Thorn').fazer();
   assert.equal(S.casa().paz.thorn, true);
   assert.ok(S.party.every((h) => h.conditions?.some((c) => c.id === 'inspirado')), 'cada herói ganha Inspiração');
 });
 
 await teste('masmorra 1: o baú dos líderes dá o tesouro do livro e acorda os dois lívidos; as tochas vêm do outro baú', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 13, 37);
+  poe(S.party[0], 13, 22);
   const tochas = itens(S.party[0], 'tocha');
-  await op(S, S.party[0], 13, 37, 'tochas').fazer();
+  await op(S, S.party[0], 13, 22, 'tochas').fazer();
   assert.equal(itens(S.party[0], 'tocha') - tochas, 30);
   const antes = Object.fromEntries(['mantoDeProtecao', 'pocaoDeCura', 'ferramentasDeLadrao', 'livroDeMagiasDosCultistas'].map((id) => [id, itens(S.party[0], id)]));
-  await op(S, S.party[0], 13, 37, 'caixa ao pé da cama').fazer();
+  await op(S, S.party[0], 13, 22, 'caixa ao pé da cama').fazer();
   for (const [id, n] of [['mantoDeProtecao', 1], ['pocaoDeCura', 4], ['ferramentasDeLadrao', 1], ['livroDeMagiasDosCultistas', 1]]) assert.equal(itens(S.party[0], id) - antes[id], n, id);
   assert.ok(garantirInventario(S.party[0]).bag.some((i) => i.id === 'cotaDeMalha' && i.tipo === 'armadura'), 'a cota de malha chega como armadura');
   assert.ok(!S.cena.explorando);
@@ -260,14 +260,14 @@ await teste('masmorra 1: o baú dos líderes dá o tesouro do livro e acorda os 
 
 await teste('masmorra 1: os cinco baús do poço pedem ferramentas de ladrão, Destreza CD 15, e cada herói tenta uma vez', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 3, 7);
-  const bau = op(S, S.party[0], 3, 6, 'baú trancado');
+  poe(S.party[0], 4, 5);
+  const bau = op(S, S.party[0], 4, 4, 'baú trancado');
   assert.ok(bau, 'o baú A tem a opção');
   await bau.fazer();
   assert.equal(S.casa().achados.bauA, undefined, 'sem ferramentas de ladrão, o baú segue fechado');
   garantirInventario(S.party[0]).bag.push({ id: 'ferramentasDeLadrao', tipo: 'item', qtd: 1 });
   d20(S, 20);
-  await op(S, S.party[0], 3, 6, 'baú trancado').fazer();
+  await op(S, S.party[0], 4, 4, 'baú trancado').fazer();
   assert.equal(S.casa().achados.bauA, true);
   assert.equal(itens(S.party[0], 'moedaDeOuro') >= 11, true);
 });
@@ -394,11 +394,11 @@ await teste('as escadas levam ao andar certo, vindo da origem certa; o alçapão
   const U = await nova('casaDaMorte1');
   assert.notEqual(U.field.surfaceAt(3, 11), 'escada', 'o alçapão ainda não existe');
   const D = await nova('casaDaMortePorao1', { entrada: null });
-  poe(D.party[0], 34, 30);
+  poe(D.party[0], 21, 15);
   d20(D, 20);
-  await op(D, D.party[0], 34, 30, 'portas escondidas').fazer();
+  await op(D, D.party[0], 21, 15, 'portas escondidas').fazer();
   assert.equal(D.casa().alcapaoCanil, undefined, 'achar a porta não mostra o alçapão lá em cima');
-  poe(D.party[0], 37, 30);
+  poe(D.party[0], 21, 12);
   await D.cena.depoisDeMover(D.party[0]);
   const V = await nova('casaDaMorte1', { campanha: D.app.campanha });
   assert.equal(V.field.surfaceAt(3, 11), 'escada', 'depois de achar a porta de baixo, o alçapão aparece no canil');
@@ -428,7 +428,7 @@ await teste('os drenos funcionam: PV máximo (lívido) e Força (sombra) caem, e
   assert.ok(alvo.dead || alvo.hp === 0, 'PV máximo a zero mata');
 });
 
-await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala conecta por porta, a masmorra 1 ainda em 2 x 2 e a 2 na escala do livro (câmara 38: 12 m de lado)', async () => {
+await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala conecta por porta, as duas masmorras na escala do livro (1 quadrado = 1 casa; câmara 38: 12 m de lado)', async () => {
   const { Battlefield } = await import(P + 'core/grid.js');
   for (const [v, ate] of [['casaDaMorte1', 'espera'], ['casaDaMorte2', 'salao'], ['casaDaMorte3', 'varanda'], ['casaDaMorte4', 'salao']]) {
     const m = mapaDo(v);
@@ -446,7 +446,7 @@ await teste('a casa tem a escala do livro: 6 x 11 casas por andar, cada sala con
   }
   assert.ok(Battlefield);
   const porao = mapaDo('casaDaMortePorao1');
-  assert.ok(porao.terreno[0].length > 30, 'a masmorra tem a sua escala própria');
+  assert.ok(porao.terreno[0].length >= 20 && porao.terreno[0].length < 30, 'a masmorra 1 tem a escala do livro (1 quadrado = 1 casa)');
   // o livro: "One square = 5 feet" e a câmara do ritual é uma sala de 12 m de lado = 8 x 8 casas de 1,5 m; a água tem 60 cm e as bordas 1,5 m
   const { ANDARES } = await import(P + 'game/casadamorte.js');
   const camara = ANDARES.casaDaMortePorao2.areas.find((a) => a.id === 'camara');
@@ -507,35 +507,35 @@ await teste('investigação: o botão direito oferece olhar e uma opção por pe
 
 await teste('investigação: avisar do grick, desmascarar o mímico e achar o fosso mudam o que acontece depois', async () => {
   const S = await nova('casaDaMortePorao1');
-  poe(S.party[0], 28, 18);
+  poe(S.party[0], 19, 10);
   d20(S, 20);
-  await S.cena.interacoes({ x: 28, y: 18 }, 'terraSocada', S.party[0]).find((o) => o.grupo?.includes('alcova escura') && o.rotulo === 'Sobrevivência').fazer();
+  await S.cena.interacoes({ x: 20, y: 10 }, 'terraSocada', S.party[0]).find((o) => o.grupo?.includes('alcova escura') && o.rotulo === 'Sobrevivência').fazer();
   assert.equal(S.casa().marcas.gricAvisado, true);
-  poe(S.party[0], 28, 20);
+  poe(S.party[0], 19, 11);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(!S.cena.explorando, 'o grick ataca mesmo assim');
   assert.equal(S.enc.emboscada, null, 'mas sem surpresa: o grupo estava avisado');
   const M = await nova('casaDaMortePorao1');
-  poe(M.party[0], 21, 35);
+  poe(M.party[0], 17, 22);
   d20(M, 20);
-  await M.cena.interacoes({ x: 21, y: 35 }, 'terraSocada', M.party[0]).find((o) => o.grupo?.includes('A porta do canto') && o.rotulo === 'Arcanismo').fazer();
+  await M.cena.interacoes({ x: 16, y: 22 }, 'terraSocada', M.party[0]).find((o) => o.grupo?.includes('A porta do canto') && o.rotulo === 'Arcanismo').fazer();
   assert.equal(M.casa().marcas.mimicoVisto, true);
-  poe(M.party[0], 20, 35);
+  poe(M.party[0], 16, 22);
   await M.cena.depoisDeMover(M.party[0]);
   assert.ok(!M.cena.explorando);
   assert.equal(M.enc.emboscada, null, 'o mímico não pega ninguém de surpresa');
   const F = await nova('casaDaMortePorao1');
-  poe(F.party[0], 14, 16);
+  poe(F.party[0], 11, 12);
   d20(F, 20);
-  await F.cena.interacoes({ x: 14, y: 16 }, 'terraSocada', F.party[0]).find((o) => o.rotulo === 'Percepção' && o.grupo?.includes('poço de espinhos')).fazer();
+  await F.cena.interacoes({ x: 11, y: 12 }, 'terraSocada', F.party[0]).find((o) => o.rotulo === 'Percepção' && o.grupo?.includes('poço de espinhos')).fazer();
   assert.equal(F.casa().espinhos, 'achado', 'sem pegadas: o grupo sabe do fosso');
-  assert.equal(F.enc.paraNaCasa(F.party[0], { x: 15, y: 16 }), false, 'o passo não para mais no fosso');
+  assert.equal(F.enc.paraNaCasa(F.party[0], { x: 11, y: 13 }), false, 'o passo não para mais no fosso');
 });
 
 await teste('investigação: a Percepção passiva alta repara sozinha ao entrar na sala, uma vez só', async () => {
   const S = await nova('casaDaMortePorao1');
   S.party.forEach((h) => { h.skills = [...(h.skills ?? []), 'percepcao']; h.abilities.wis = 20; });
-  poe(S.party[0], 14, 35);
+  poe(S.party[0], 13, 22);
   await S.cena.depoisDeMover(S.party[0]);
   assert.ok(S.casa().pistas['cavidadesDoQuarto:passiva'], 'a passiva do quarto dos líderes');
   const n = S.casa().diario.length;

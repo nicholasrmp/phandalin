@@ -1,7 +1,7 @@
 // Livro do Jogador não é SRD: a Maldição de Strahd é conteúdo da Wizards. A PLANTA é nossa — ver NOTICE.md e STRAHD.md.
 //
 // A PLANTA DA CASA DA MORTE NA ESCALA DO LIVRO. O mapa do apêndice B é de quadrados de 5 pés (1,5 m), e a casa tem 6 quadrados de largura por
-// 11 de comprimento: um quadrado do mapa é uma casa do jogo (só a masmorra usa 2 x 2 casas por quadrado). Cada andar aqui é escrito em
+// 11 de comprimento: um quadrado do mapa é uma casa do jogo. Cada andar aqui é escrito em
 // QUADRADOS DO LIVRO (0 a 5 de largura, 0 a 10 de comprimento): cada sala é um conjunto de retângulos, cada porta é uma aresta entre dois
 // quadrados vizinhos. A parede é a aresta entre duas casas de salas diferentes (a casa NÃO gasta uma casa de chão com parede).
 //

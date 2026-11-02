@@ -38,21 +38,21 @@ export function foesDaCasa(variante) {
     case 'casaDaMortePorao1':
       return [
         // 23D: o enxame sai da parede dos fundos se mexerem no caixão de Elisabeth.
-        m('enxameDeCentopeias', 26, 13, 'centopeias', { olha: { dx: -1, dy: 0 } }),
+        m('enxameDeCentopeias', 19, 8, 'centopeias', { olha: { dx: -1, dy: 0 } }),
         // 28: a despensa. O grick desliza para o primeiro que chegar a 1,5 m.
-        m('grick', 28, 21, 'grick', { olha: { dx: 0, dy: -1 } }),
+        m('grick', 20, 10, 'grick', { olha: { dx: 0, dy: -1 } }),
         // 29: os quatro carniçais (ex-cultistas) se levantam do chão nas quatro vias.
-        m('ghoul', 22, 12, 'carnicais', { sufixo: 'A', olha: { dx: 0, dy: 1 } }),
-        m('ghoul', 20, 17, 'carnicais', { sufixo: 'B', olha: { dx: 1, dy: 0 } }),
-        m('ghoul', 25, 15, 'carnicais', { sufixo: 'C', olha: { dx: -1, dy: 0 } }),
-        m('ghoul', 23, 20, 'carnicais', { sufixo: 'D', olha: { dx: 0, dy: -1 } }),
+        m('ghoul', 16, 16, 'carnicais', { sufixo: 'A', olha: { dx: 0, dy: -1 } }),
+        m('ghoul', 16, 18, 'carnicais', { sufixo: 'B', olha: { dx: 0, dy: -1 } }),
+        m('ghoul', 18, 15, 'carnicais', { sufixo: 'C', olha: { dx: -1, dy: 0 } }),
+        m('ghoul', 17, 15, 'carnicais', { sufixo: 'D', olha: { dx: -1, dy: 0 } }),
         // 31: as cinco sombras se formam ao redor da estátua de Strahd.
-        ...[[33, 28], [33, 30], [32, 29], [33, 32], [31, 31]].map(([x, y], i) => m('sombra', x, y, 'sombras', { sufixo: 'ABCDE'[i], olha: { dx: -1, dy: 0 } })),
+        ...[[22, 16], [22, 17], [22, 18], [23, 18], [21, 17]].map(([x, y], i) => m('sombra', x, y, 'sombras', { sufixo: 'ABCDE'[i], olha: { dx: -1, dy: 0 } })),
         // 33: a porta do canto sudoeste é um mímico.
-        m('mimico', 19, 35, 'mimico', { nome: 'A porta', olha: { dx: 1, dy: 0 } }),
+        m('mimico', 15, 22, 'mimico', { nome: 'A porta', olha: { dx: 1, dy: 0 } }),
         // 34: Gustav e Elisabeth, nas cavidades atrás das paredes de terra.
-        m('livido', 14, 32, 'livdos', { nome: 'Gustav Durst', olha: { dx: 0, dy: 1 } }),
-        m('livido', 15, 33, 'livdos', { nome: 'Elisabeth Durst', olha: { dx: 0, dy: 1 } }),
+        m('livido', 13, 20, 'livdos', { nome: 'Gustav Durst', olha: { dx: 0, dy: 1 } }),
+        m('livido', 11, 22, 'livdos', { nome: 'Elisabeth Durst', olha: { dx: 0, dy: 1 } }),
       ];
     case 'casaDaMortePorao2':
       return [m('arbustoErrante', 7, 17, 'lorghoth', { nome: 'Lorghoth, o Decadente', olha: { dx: 0, dy: -1 } })];

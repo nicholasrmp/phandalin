@@ -308,7 +308,7 @@ export const PISTAS = {
   // ===================================================================================== MASMORRA 1 (áreas 22 a 34) ===
   casaDaMortePorao1: [
     {
-      id: 'pegadasDoAcesso', x: 22, y: 5, r: 3, nome: 'As pegadas no chão de terra',
+      id: 'pegadasDoAcesso', x: 16, y: 4, r: 2, nome: 'As pegadas no chão de terra',
       olhar: 'O chão de terra batida tem pegadas humanas de séculos, indo para todos os lados.',
       verbos: [
         { p: 'sobrevivencia', cd: 10, ok: 'Todas as pegadas são velhas de séculos, de gente de sapato e de gente descalça, de passo lento: filas de iniciados em procissão.' },
@@ -316,7 +316,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'mesaDosIniciados', x: 14, y: 2, r: 2, nome: 'A mesa dos iniciados',
+      id: 'mesaDosIniciados', x: 11, y: 1, r: 1, nome: 'A mesa dos iniciados',
       olhar: 'Uma mesa de madeira e quatro cadeiras no extremo leste do quarto; alcovas de palha mofada a oeste.',
       verbos: [
         { p: 'religiao', cd: 12, ok: 'Na madeira da mesa, riscados com faca: círculos dentro de círculos, o signo de Osybus. Os iniciados juravam sobre ele, de joelhos.' },
@@ -324,7 +324,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'pocoDosCultistas', x: 8, y: 12, r: 2, nome: 'O poço e a polia',
+      id: 'pocoDosCultistas', x: 4, y: 9, r: 1, nome: 'O poço e a polia',
       olhar: 'Um poço de pedra, de borda na cintura, desce nove metros até uma cisterna. Um balde pende de uma corda lisa.',
       verbos: [
         { p: 'investigacao', cd: 11, ok: 'A corda é nova, de uma fibra que se gasta e some: a casa a repõe, como a madeira. O poço, esse, é de verdade: alguém o cavou a mão.' },
@@ -332,7 +332,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'pegadasDoPoco', x: 15, y: 16, r: 3, nome: 'O túnel do poço de espinhos',
+      id: 'pegadasDoPoco', x: 11, y: 13, r: 2, nome: 'O túnel do poço de espinhos',
       olhar: 'Um túnel de terra, de paredes escoradas por vigas, onde o canto fica mais alto.',
       passiva: { p: 'percepcao', cd: 15, texto: 'o chão do túnel não tem nenhuma pegada: nem velha, nem nova, nem uma. Em todo o resto da masmorra elas estão por toda parte.' },
       verbos: [
@@ -341,7 +341,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'ossosDoJantar', x: 27, y: 18, r: 3, nome: 'Os ossos do salão de jantar',
+      id: 'ossosDoJantar', x: 17, y: 11, r: 2, nome: 'Os ossos do salão de jantar',
       olhar: 'Ossos humanoides, mofados, espalhados pelo chão de terra de um salão com uma mesa de madeira e bancos longos.',
       verbos: [
         { p: 'medicina', cd: 12, ok: 'Ossos de gente, roídos pelos dentes e não por facas: os "banquetes" do culto eram comer pessoas. Dá para contar pelo menos doze mortos.' },
@@ -349,7 +349,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'alcovaDoGrick', x: 28, y: 18, r: 1, nome: 'A alcova escura na parede sul',
+      id: 'alcovaDoGrick', x: 20, y: 10, r: 1, nome: 'A alcova escura na parede sul',
       olhar: 'No meio da parede sul, uma alcova escurecida, vazia.',
       verbos: [
         { p: 'sobrevivencia', cd: 12, ok: 'Um rastro de muco seco desce do teto da alcova ao chão, de uma largura de tentáculos. Alguma coisa mora ali, e se esconde na parede.', marca: 'gricAvisado' },
@@ -357,7 +357,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'estatuaDeStrahd', x: 35, y: 29, r: 2, nome: 'A estátua de Strahd',
+      id: 'estatuaDeStrahd', x: 23, y: 17, r: 1, nome: 'A estátua de Strahd',
       olhar: 'Uma estátua de madeira pintada num nicho: um homem magro e pálido, de capa preta volumosa, a mão esquerda na cabeça de um lobo, a direita segurando uma esfera de cristal cinza esfumaçado.',
       aura: { escola: 'necromancia', texto: 'Uma aura de necromancia concentrada em volta da estátua e na sala: espíritos presos aqui, esperando quem toque a esfera.' },
       verbos: [
@@ -367,7 +367,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'esqueletosPendurados', x: 26, y: 29, r: 4, nome: 'Os esqueletos nas correntes',
+      id: 'esqueletosPendurados', x: 19, y: 17, r: 2, nome: 'Os esqueletos nas correntes',
       olhar: 'Esqueletos mofados pendem de grilhões enferrujados contra as paredes.',
       verbos: [
         { p: 'investigacao', cd: 11, ok: 'Estes esqueletos são só decoração: sem uma marca de faca, sem um dente quebrado. Foram postos aqui para a cena.' },
@@ -375,14 +375,14 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'mesaDoCovil', x: 22, y: 34, r: 2, nome: 'A mesa dos líderes',
+      id: 'mesaDoCovil', x: 17, y: 21, r: 1, nome: 'A mesa dos líderes',
       olhar: 'Um candelabro suspenso sobre uma mesa, duas cadeiras de espaldar alto, um jarro de barro vazio e duas garrafas. Castiçais de ferro nos cantos.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'As duas garrafas têm resto de vinho, e o jarro, um resto de sangue. Os líderes do culto brindavam com o que tiravam das vítimas.' },
       ],
     },
     {
-      id: 'portaDoMimico', x: 20, y: 35, r: 2, nome: 'A porta do canto sudoeste',
+      id: 'portaDoMimico', x: 15, y: 22, r: 1, nome: 'A porta do canto sudoeste',
       olhar: 'Uma porta de madeira escura, de dobradiças de ferro, no canto sudoeste do covil.',
       verbos: [
         { p: 'percepcao', cd: 14, ok: 'A porta tem uma película de umidade, como suor. As dobradiças não têm ferrugem, em uma masmorra em que tudo enferruja. Alguma coisa nela respira.', marca: 'mimicoVisto' },
@@ -391,7 +391,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'cavidadesDoQuarto', x: 14, y: 33, r: 2, nome: 'As paredes de terra do quarto dos líderes',
+      id: 'cavidadesDoQuarto', x: 13, y: 21, r: 1, nome: 'As paredes de terra do quarto dos líderes',
       olhar: 'Uma grande cama de madeira, um guarda-roupa de vestes antigas, castiçais de ferro e uma caixa aberta com tochas e velas.',
       passiva: { p: 'percepcao', cd: 15, texto: 'a terra da parede norte soa oca, em dois pontos: há espaço atrás dela.' },
       verbos: [
@@ -400,7 +400,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'caixaDoPe', x: 14, y: 37, r: 2, nome: 'A caixa ao pé da cama',
+      id: 'caixaDoPe', x: 13, y: 22, r: 1, nome: 'A caixa ao pé da cama',
       olhar: 'Uma caixa de madeira destrancada, ao pé da cama.',
       aura: { escola: 'abjuração', texto: 'Uma aura de abjuração forte, num manto dobrado, dentro da caixa. Há também magia fraca de adivinhação num livro de capa amarela.' },
       verbos: [
@@ -409,7 +409,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'lajeDeWalter', x: 23, y: 5, r: 2, nome: 'As criptas da família',
+      id: 'lajeDeWalter', x: 21, y: 2, r: 1, nome: 'As criptas da família',
       olhar: 'Criptas escavadas na terra, cada uma selada por uma laje de pedra, menos as que estão encostadas na parede.',
       verbos: [
         { p: 'historia', cd: 12, ok: 'Os nomes gravados nas lajes são dos Durst: Walter, Gustav, Elisabeth, Rose e Thorn. A cripta vazia sobrou: a casa guardou lugar para mais um.' },
@@ -418,7 +418,7 @@ export const PISTAS = {
       ],
     },
     {
-      id: 'caixaoDeElisabeth', x: 26, y: 13, r: 1, nome: 'O caixão de Elisabeth',
+      id: 'caixaoDeElisabeth', x: 19, y: 8, r: 1, nome: 'O caixão de Elisabeth',
       olhar: 'Um esquife de pedra com um caixão vazio sobre ele.',
       verbos: [
         { p: 'percepcao', cd: 14, ok: 'A parede dos fundos desta cripta tem frestas finas demais para serem do tempo: algo mora nelas e sai se o caixão for mexido.', marca: 'centopeiasVistas' },
