@@ -262,22 +262,22 @@ export const ANDARES = {
     id: 'casaDaMortePorao1', nome: 'Masmorra, nível 1',
     areas: PLANTA_PORAO_1.areas.map((a) => ({ ...a, texto: TEXTOS_PORAO[a.id] ?? [] })),
     escadas: [
-      { rect: rect(14, 3, 14, 3), rotulo: 'Subir a escada em espiral', detalhe: 'o sótão', destino: 'casaDaMorte4' },
-      { rect: rect(10, 16, 10, 17), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
-      { rect: rect(21, 12, 21, 13), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
+      { rect: rect(22, 14, 22, 14), rotulo: 'Subir a escada em espiral', detalhe: 'o sótão', destino: 'casaDaMorte4' },
+      { rect: rect(8, 10, 9, 10), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
+      { rect: rect(12, 21, 13, 21), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
     ],
     chegadas: {
-      casaDaMorte4: grupoPadrao([[15, 3], [16, 3], [17, 3], [17, 4]]),
-      casaDaMortePorao2: grupoPadrao([[11, 18], [11, 19], [10, 19], [12, 19]]),
-      casaDaMorte1: grupoPadrao([[21, 10], [21, 11], [21, 12], [21, 13]]),
+      casaDaMorte4: grupoPadrao([[22, 15], [22, 16], [22, 17], [21, 17]]),
+      casaDaMortePorao2: grupoPadrao([[7, 11], [6, 11], [6, 10], [6, 12]]),
+      casaDaMorte1: grupoPadrao([[15, 21], [14, 21], [13, 21], [12, 21]]),
     },
   },
   casaDaMortePorao2: {
     id: 'casaDaMortePorao2', nome: 'Masmorra, nível 2',
     areas: PLANTA_PORAO_2.areas.map((a) => ({ ...a, texto: TEXTOS_PORAO[a.id] ?? [] })),
-    escadas: [{ rect: rect(1, 3, 1, 4), rotulo: 'Subir a escada', detalhe: 'masmorra, nível 1', destino: 'casaDaMortePorao1' }],
+    escadas: [{ rect: rect(15, 1, 16, 1), rotulo: 'Subir a escada', detalhe: 'masmorra, nível 1', destino: 'casaDaMortePorao1' }],
     chegadas: {
-      casaDaMortePorao1: grupoPadrao([[1, 5], [1, 6], [2, 6], [3, 6]]),
+      casaDaMortePorao1: grupoPadrao([[14, 1], [13, 1], [13, 2], [13, 3]]),
     },
   },
 };
@@ -293,8 +293,8 @@ export const MAPA_CASA_DA_MORTE_PORAO_1 = {
   paredeDeCaverna: true,
   rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
   // O grupo chega pela escada em espiral do sótão, ao fim do túnel de acesso.
-  grupo: grupoPadrao([[15, 3], [16, 3], [17, 3], [17, 4]]),
-  olhar: { dx: 1, dy: 0 },
+  grupo: grupoPadrao([[22, 15], [22, 16], [22, 17], [21, 17]]),
+  olhar: { dx: 0, dy: 1 },
   cena: 'casaDaMorte',
 };
 
@@ -305,7 +305,7 @@ export const MAPA_CASA_DA_MORTE_PORAO_2 = {
   objetos: [],
   paredeDeCaverna: true,
   rochaEmCorte: true,             // a rocha da frente fica baixa: sem isso um bloco de 3 níveis escondia 20% das casas (escada, baús, lajes)
-  grupo: grupoPadrao([[1, 5], [1, 6], [2, 6], [3, 6]]),
-  olhar: { dx: 0, dy: 1 },
+  grupo: grupoPadrao([[14, 1], [13, 1], [13, 2], [13, 3]]),
+  olhar: { dx: -1, dy: 0 },
   cena: 'casaDaMorte',
 };

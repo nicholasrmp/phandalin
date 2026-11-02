@@ -5522,8 +5522,8 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
       const a = ANDARES.casaDaMortePorao1.areas.find((x) => x.id === id);
       assert.equal(vistos.has(`${a.x1},${a.y1}`), false, `a cripta ${id} está selada por dentro`);
     }
-    const lajes = [[18, 5], [18, 8], [16, 5], [16, 8]];
-    const aberta = campo('casaDaMortePorao1', mudar(mudar(m.terreno, lajes, '+'), [[21, 14]], '?'));
+    const lajes = [[20, 18], [17, 18], [20, 16], [17, 16]];
+    const aberta = campo('casaDaMortePorao1', mudar(mudar(m.terreno, lajes, '+'), [[11, 21]], '?'));
     const v2 = alcance(aberta, m.grupo[0]);
     for (const a of ANDARES.casaDaMortePorao1.areas) assert.ok(tem(v2, a), `masmorra 1 aberta: a sala ${a.area} (${a.id}) é alcançável`);
   }
@@ -5533,11 +5533,11 @@ teste('Casa da Morte: as seis plantas têm glifos do jogo, parede de borda nos a
     const f = campo('casaDaMortePorao2');
     const vistos = alcance(f, m.grupo[0]);
     for (const id of ['escadaChegada', 'relicario', 'tunelAgua', 'prisao']) assert.ok(tem(vistos, ANDARES.casaDaMortePorao2.areas.find((a) => a.id === id)), `masmorra 2: ${id} é alcançável`);
-    assert.equal(vistos.has('8,9'), false, 'a câmara está fechada até a ponte baixar ou a porta secreta abrir');
-    const ponte = [[6, 6], [6, 7]];
-    for (const t of [mudar(m.terreno, ponte, '='), mudar(m.terreno, [[4, 10]], '?')]) {
+    assert.equal(vistos.has('10,8'), false, 'a câmara está fechada até a ponte baixar ou a porta secreta abrir');
+    const ponte = [[13, 6], [12, 6]];
+    for (const t of [mudar(m.terreno, ponte, '='), mudar(m.terreno, [[9, 4]], '?')]) {
       const v2 = alcance(campo('casaDaMortePorao2', t), m.grupo[0]);
-      assert.ok(v2.has('8,9'), 'a câmara se alcança');
+      assert.ok(v2.has('10,8'), 'a câmara se alcança');
       for (const id of ['camara', 'ponte', 'alcova']) assert.ok(tem(v2, ANDARES.casaDaMortePorao2.areas.find((a) => a.id === id)), `masmorra 2 aberta: ${id}`);
     }
   }

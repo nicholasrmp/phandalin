@@ -11,13 +11,13 @@ import { playCharacter } from './balance.js';
 import { mapaDo, buildFoes } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 const CASOS = [
-  ['casaDaMortePorao1', 'sombras', [[19,15],[20,15],[21,15],[18,15]]],
-  ['casaDaMortePorao1', 'carnicais', [[16,14],[16,13],[16,12],[17,12]]],
-  ['casaDaMortePorao1', 'grick', [[19,10],[19,11],[18,11],[17,11]]],
-  ['casaDaMortePorao1', 'mimico', [[16,22],[17,22],[17,21],[16,21]]],
-  ['casaDaMortePorao1', 'livdos', [[13,22],[12,22],[14,22],[13,21]]],
-  ['casaDaMortePorao1', 'centopeias', [[19,8],[18,8],[17,8],[17,7]]],
-  ['casaDaMortePorao2', 'lorghoth', [[7,11],[7,12],[10,12],[9,13]]],
+  ['casaDaMortePorao1', 'sombras', [[10,19],[10,20],[10,21],[10,18]]],
+  ['casaDaMortePorao1', 'carnicais', [[11,16],[12,16],[13,16],[13,17]]],
+  ['casaDaMortePorao1', 'grick', [[15,19],[14,19],[14,18],[14,17]]],
+  ['casaDaMortePorao1', 'mimico', [[3,16],[3,17],[4,17],[4,16]]],
+  ['casaDaMortePorao1', 'livdos', [[3,13],[3,12],[3,14],[4,13]]],
+  ['casaDaMortePorao1', 'centopeias', [[17,19],[17,18],[17,17],[18,17]]],
+  ['casaDaMortePorao2', 'lorghoth', [[8,7],[7,7],[7,10],[6,9]]],
 ];
 for (const nivel of [1, 2]) {
   console.log('--- grupo de nível', nivel);

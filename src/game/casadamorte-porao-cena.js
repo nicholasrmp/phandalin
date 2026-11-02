@@ -21,30 +21,30 @@ const igual = (a, b) => a.x === b.x && a.y === b.y;
 // ---- as plantas: o que está onde (casas do jogo) -------------------------------------------------------------------------
 /** Os cinco baús do poço (25A a 25E) e o que há em cada um. */
 export const BAUS_POCO = [
-  { id: 'A', x: 4, y: 4, texto: 'Dentro, numa bolsa feita de pele humana: 11 peças de ouro e 60 de prata.', dar: (g, q) => { g(q, 'moedaDeOuro', 11); g(q, 'moedaDePrata', 60); } },
-  { id: 'B', x: 2, y: 4, texto: 'Dentro, em um pedaço dobrado de pano negro, três ágatas-musgo.', dar: (g, q) => g(q, 'agataMusgo', 3) },
-  { id: 'C', x: 1, y: 10, texto: 'Dentro, um tapa-olho de couro preto com uma pedra vermelha costurada.', dar: (g, q) => g(q, 'tapaOlho', 1) },
-  { id: 'D', x: 3, y: 14, texto: 'Dentro, uma escova de cabelo de marfim com cerdas de prata.', dar: (g, q) => g(q, 'escovaDeMarfim', 1) },
-  { id: 'E', x: 5, y: 14, texto: 'Dentro, uma espada curta prateada, de lâmina fina.', dar: (g, q) => g(q, 'espadaCurtaPrateada', 1) },
+  { id: 'A', x: 21, y: 4, texto: 'Dentro, numa bolsa feita de pele humana: 11 peças de ouro e 60 de prata.', dar: (g, q) => { g(q, 'moedaDeOuro', 11); g(q, 'moedaDePrata', 60); } },
+  { id: 'B', x: 21, y: 2, texto: 'Dentro, em um pedaço dobrado de pano negro, três ágatas-musgo.', dar: (g, q) => g(q, 'agataMusgo', 3) },
+  { id: 'C', x: 15, y: 1, texto: 'Dentro, um tapa-olho de couro preto com uma pedra vermelha costurada.', dar: (g, q) => g(q, 'tapaOlho', 1) },
+  { id: 'D', x: 11, y: 3, texto: 'Dentro, uma escova de cabelo de marfim com cerdas de prata.', dar: (g, q) => g(q, 'escovaDeMarfim', 1) },
+  { id: 'E', x: 11, y: 5, texto: 'Dentro, uma espada curta prateada, de lâmina fina.', dar: (g, q) => g(q, 'espadaCurtaPrateada', 1) },
 ];
 
 /** As seis criptas (23A a 23F): a laje (se for selada), o caixão e o que a cripta guarda. */
 const CRIPTAS = {
   criptaA: { lado: 'oeste', selada: false },
   criptaB: { lado: 'leste', selada: false },
-  criptaC: { lado: 'leste', selada: true, laje: [[18, 5]], de: { x: 17, y: 5 } },
-  criptaD: { lado: 'leste', selada: true, laje: [[18, 8]], de: { x: 17, y: 8 } },
-  criptaE: { lado: 'oeste', selada: true, laje: [[16, 5]], de: { x: 17, y: 5 } },
-  criptaF: { lado: 'oeste', selada: true, laje: [[16, 8]], de: { x: 17, y: 8 } },
+  criptaC: { lado: 'leste', selada: true, laje: [[20, 18]], de: { x: 20, y: 17 } },
+  criptaD: { lado: 'leste', selada: true, laje: [[17, 18]], de: { x: 17, y: 17 } },
+  criptaE: { lado: 'oeste', selada: true, laje: [[20, 16]], de: { x: 20, y: 17 } },
+  criptaF: { lado: 'oeste', selada: true, laje: [[17, 16]], de: { x: 17, y: 17 } },
 };
-const POCO_ESPINHOS = [[11, 13], [11, 14]];
-const SEGREDO_SANTUARIO = [[21, 14]];
-const SEGREDO_PRISAO = [[4, 10]];
-const PONTE = [[6, 6], [6, 7]];
-const RODA = { x: 8, y: 8 };
-const ALTAR = { x: 8, y: 11 };
-// O estrado octogonal: 4 x 4 casas sem os cantos, no meio da água (x 7 a 10, y 10 a 13).
-const noEstrado = (p) => p.x >= 7 && p.x <= 10 && p.y >= 10 && p.y <= 13 && !((p.x === 7 || p.x === 10) && (p.y === 10 || p.y === 13));
+const POCO_ESPINHOS = [[12, 11], [11, 11]];
+const SEGREDO_SANTUARIO = [[11, 21]];
+const SEGREDO_PRISAO = [[9, 4]];
+const PONTE = [[13, 6], [12, 6]];
+const RODA = { x: 11, y: 8 };
+const ALTAR = { x: 8, y: 8 };
+// O estrado octogonal: 4 x 4 casas sem os cantos, no meio da água (x 6 a 9, y 7 a 10).
+const noEstrado = (p) => p.x >= 6 && p.x <= 9 && p.y >= 7 && p.y <= 10 && !((p.x === 6 || p.x === 9) && (p.y === 7 || p.y === 10));
 
 /** Os gatilhos de passo das masmorras. */
 export function poraoGatilhos(ctx) {
@@ -64,14 +64,14 @@ export function poraoGatilhos(ctx) {
     grick: (c) => {
       const f = vivo(ctx.grupos.grick);
       // O livro: a 1,5 m da alcova. A despensa tem 1 casa e fica na parede leste do jantar.
-      if (!f || c.pos.x < 18 || c.pos.x > 19 || c.pos.y < 9 || c.pos.y > 12) return null;
+      if (!f || c.pos.x < 13 || c.pos.x > 16 || c.pos.y < 18 || c.pos.y > 19) return null;
       ctx.grupos.grick.furtividade = [12];       // o livro: quem tem Percepção passiva abaixo de 12 é surpreendido
       if (ctx.salvo.marcas?.gricAvisado) return { surpresa: null, intro: ['O rastro de muco não enganou: o grick se solta do teto da alcova, comprido e mole, bico aberto, mas o grupo já estava pronto.'] };
       return { surpresa: 'deles', intro: ['Um pedaço da escuridão da alcova se desprende da parede: uma criatura longa, mole, de cabeça de minhoca e bico de ave, e tentáculos que se abrem como uma mão.'] };
     },
     carnicais: (c, area) => {
       if (area?.id !== 'carnicais') return null;
-      if (!(c.pos.x === 16 && c.pos.y === 15)) return null;
+      if (!(c.pos.x === 10 && c.pos.y === 16)) return null;
       return { intro: ['O canto ficou tão alto que dói. De repente a terra do chão se levanta em quatro pontos ao redor, e de dentro dela sobem corpos de túnica preta, de pele cinzenta e garras: ex-cultistas, ainda com a fome do culto.'] };
     },
     mimico: (c) => {
@@ -200,7 +200,7 @@ async function negar(ctx) {
     'Da alcova do lixo vem um ruído de galhos e de lama. A pilha de refugo se levanta, e ganha braços de cipó e boca.',
   ], { titulo: 'O culto é negado' });
   if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
-    for (const f of g.membros) f.pos = { ...f.pos, x: 7, y: 15 };
+    for (const f of g.membros) f.pos = { ...f.pos, x: 3, y: 7 };
     await ctx.combate(g, null, ['"O fim vem! Ó Morte, sê louvada!", muda o canto. O arbusto errante entra na câmara, mole e pesado, e não vai parar até ser derrubado. Mas não vai deixar a masmorra.']);
   }
 }
@@ -285,7 +285,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       if (!nesta) continue;
       if (id === 'criptaD' && !salvo.centopeiasVistas) {
         ops.push({
-          rotulo: 'Mexer no caixão de Elisabeth', icone: 'acao-usarObjeto', detalhe: 'um caixão sobre o esquife', motivo: ctx.longe(c, { x: 19, y: 8 }, 10),
+          rotulo: 'Mexer no caixão de Elisabeth', icone: 'acao-usarObjeto', detalhe: 'um caixão sobre o esquife', motivo: ctx.longe(c, { x: 17, y: 19 }, 10),
           fazer: async () => {
             salvo.centopeiasVistas = true;
             const g = ctx.grupos.centopeias;
@@ -305,7 +305,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
           ops.push({
             rotulo: feito ? `Os ossos de ${nome} já repousam` : `Deitar os ossos de ${nome} no caixão`, icone: 'acao-usarObjeto',
             detalhe: feito ? 'em paz' : quem === 'thorn' ? 'o menino' : 'a menina',
-            motivo: feito ? 'em paz' : ctx.longe(c, quem === 'rose' ? { x: 15, y: 5 } : { x: 15, y: 8 }, 10),
+            motivo: feito ? 'em paz' : ctx.longe(c, quem === 'rose' ? { x: 20, y: 15 } : { x: 17, y: 15 }, 10),
             fazer: async () => {
               ctx.consumir(dono, osso);
               salvo.paz[quem] = true;
@@ -334,7 +334,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'santuario') {
       ops.push({
         rotulo: 'Pegar a esfera de cristal da estátua', icone: 'acao-usarObjeto', detalhe: 'a esfera cinza esfumaçada. Perigo: solta cinco sombras',
-        motivo: achados.esfera ? 'já foi pega' : ctx.longe(c, { x: 23, y: 17 }, 15),
+        motivo: achados.esfera ? 'já foi pega' : ctx.longe(c, { x: 8, y: 23 }, 15),
         fazer: async () => {
           achados.esfera = true;
           ctx.guardar(ctx.herois()[0], 'orbeDeCristalCinza', 1);
@@ -346,7 +346,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
       ops.push({
         rotulo: 'Tocar a estátua de Strahd', icone: 'acao-usarObjeto', detalhe: 'a mão sobre a cabeça do lobo. Perigo: solta cinco sombras',
-        motivo: ctx.longe(c, { x: 23, y: 17 }, 15),
+        motivo: ctx.longe(c, { x: 8, y: 23 }, 15),
         fazer: async () => {
           const g = ctx.grupos.sombras;
           if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
@@ -356,12 +356,12 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
       if (!salvo.alcapao) {
         ops.push({
-          rotulo: 'Procurar portas escondidas na parede norte', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 (uma tentativa por herói)',
-          motivo: buscas.ja(c, 'portaLeste', { x: 21, y: 15 }),
+          rotulo: 'Procurar portas escondidas na parede leste', icone: 'acao-procurar', detalhe: 'Percepção, CD 10 (uma tentativa por herói)',
+          motivo: buscas.ja(c, 'portaLeste', { x: 10, y: 21 }),
           fazer: async () => {
-            buscas.marcar(c, 'portaLeste', { x: 21, y: 15 });
+            buscas.marcar(c, 'portaLeste', { x: 10, y: 21 });
             const t = ctx.teste(c, 'percepcao', 10);
-            if (!t.passou) { await ctx.painel(`${c.name} passa a mão pela argila da parede norte, sem achar nada.`); return; }
+            if (!t.passou) { await ctx.painel(`${c.name} passa a mão pela argila da parede leste, sem achar nada.`); return; }
             salvo.alcapao = true;
             ctx.mudarCasas(SEGREDO_SANTUARIO, '?');
             await ctx.painel(`${t.quem?.name ?? c.name} sente, sob a camada de argila, uma moldura de madeira apodrecida. A porta se abre puxando: atrás dela, uma escada de pedra sobe três metros, na direção de um teto de tábuas.`);
@@ -375,7 +375,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'quartoLideres') {
       ops.push({
         rotulo: achados.tochas ? 'As tochas e velas (levadas)' : 'Pegar as tochas e as velas', icone: 'acao-usarObjeto', detalhe: 'trinta tochas e quinze velas',
-        motivo: achados.tochas ? 'já pegas' : ctx.longe(c, { x: 12, y: 21 }, 15),
+        motivo: achados.tochas ? 'já pegas' : ctx.longe(c, { x: 4, y: 12 }, 15),
         fazer: async () => {
           achados.tochas = true;
           const q = ctx.herois()[0];
@@ -388,7 +388,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: achados.cofreDosLideres ? 'A caixa ao pé da cama (vazia)' : 'Revirar a caixa ao pé da cama', icone: 'acao-usarObjeto',
         detalhe: achados.cofreDosLideres ? 'já revirada' : 'itens de aventureiros mortos',
-        motivo: achados.cofreDosLideres ? 'já revirada' : ctx.longe(c, { x: 13, y: 22 }, 15),
+        motivo: achados.cofreDosLideres ? 'já revirada' : ctx.longe(c, { x: 3, y: 13 }, 15),
         fazer: async () => {
           achados.cofreDosLideres = true;
           const q = ctx.herois()[0];
@@ -416,7 +416,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'prisao') {
       if (!achados.aneisPrisao) {
         ops.push({
-          rotulo: 'Revistar o esqueleto de manto preto', icone: 'acao-procurar', detalhe: 'um esqueleto preso à parede', motivo: ctx.longe(c, { x: 1, y: 14 }, 20),
+          rotulo: 'Revistar o esqueleto de manto preto', icone: 'acao-procurar', detalhe: 'um esqueleto preso à parede', motivo: ctx.longe(c, { x: 5, y: 1 }, 20),
           fazer: async () => {
             achados.aneisPrisao = true;
             ctx.guardar(ctx.herois()[0], 'anelDeOuro', 1);
@@ -427,12 +427,12 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       }
       if (!salvo.portaPrisao) {
         ops.push({
-          rotulo: 'Procurar portas secretas na parede leste', icone: 'acao-procurar', detalhe: 'Percepção, CD 15 (uma tentativa por herói)',
-          motivo: buscas.ja(c, 'portaPrisao', { x: 3, y: 10 }),
+          rotulo: 'Procurar portas secretas na parede sul', icone: 'acao-procurar', detalhe: 'Percepção, CD 15 (uma tentativa por herói)',
+          motivo: buscas.ja(c, 'portaPrisao', { x: 9, y: 3 }),
           fazer: async () => {
-            buscas.marcar(c, 'portaPrisao', { x: 3, y: 10 });
+            buscas.marcar(c, 'portaPrisao', { x: 9, y: 3 });
             const t = ctx.teste(c, 'percepcao', 15);
-            const paciencia = !t.passou && buscas.esgotou(ctx.herois(), 'portaPrisao', { x: 3, y: 10 });
+            const paciencia = !t.passou && buscas.esgotou(ctx.herois(), 'portaPrisao', { x: 9, y: 3 });
             if (!t.passou && !paciencia) { await ctx.painel(`${c.name} procura nas paredes de terra e não acha nada.`); return; }
             if (paciencia) await ctx.painel('Depois de todos terem tentado, o grupo refaz a busca palmo a palmo, sem pressa.');
             salvo.portaPrisao = true;
@@ -447,11 +447,11 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       ops.push({
         rotulo: salvo.ponte ? 'A ponte levadiça (abaixada)' : 'Abaixar a ponte levadiça à força', icone: 'acao-usarObjeto',
         detalhe: salvo.ponte ? 'já está baixa' : 'Atletismo, CD 20',
-        motivo: salvo.ponte ? 'já está baixa' : (buscas.ja(c, 'ponte', { x: 6, y: 6 }) ?? ctx.longe(c, { x: 6, y: 5 }, 10)),
+        motivo: salvo.ponte ? 'já está baixa' : (buscas.ja(c, 'ponte', { x: 13, y: 6 }) ?? ctx.longe(c, { x: 14, y: 6 }, 10)),
         fazer: async () => {
-          buscas.marcar(c, 'ponte', { x: 6, y: 6 });
+          buscas.marcar(c, 'ponte', { x: 13, y: 6 });
           const t = ctx.teste(c, 'atletismo', 20);
-          const juntos = !t.passou && buscas.esgotou(ctx.herois(), 'ponte', { x: 6, y: 6 });
+          const juntos = !t.passou && buscas.esgotou(ctx.herois(), 'ponte', { x: 13, y: 6 });
           if (juntos) await ctx.painel('Cansados de tentar sozinhos, os quatro se agarram às correntes e puxam juntos.');
           if (!t.passou && !juntos) { await ctx.painel(`${c.name} está com a água turva e fria até a canela, as mãos nas correntes enferrujadas. A ponte levadiça nem treme. Outra pessoa pode tentar, ou há uma roda do outro lado, dentro da câmara.`); return; }
           salvo.ponte = true;
@@ -464,13 +464,13 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'camara') {
       ops.push({
         rotulo: salvo.ponte ? 'Girar a roda e erguer a ponte' : 'Girar a roda da ponte levadiça', icone: 'acao-usarObjeto',
-        detalhe: 'a roda de madeira da parede norte', motivo: ctx.longe(c, RODA, 10),
+        detalhe: 'a roda de madeira da parede leste', motivo: ctx.longe(c, RODA, 10),
         fazer: async () => {
           salvo.ponte = !salvo.ponte;
           ctx.mudarCasas(PONTE, salvo.ponte ? '=' : 'M');
           await ctx.painel(salvo.ponte
-            ? 'A roda gira com um gemido de madeira, e as correntes no fundo da parede se retesam. A ponte levadiça se abaixa, no túnel ao norte.'
-            : 'A roda gira para o outro lado, e as correntes recolhem a ponte levadiça. O túnel ao norte volta a ficar fechado.');
+            ? 'A roda gira com um gemido de madeira, e as correntes no fundo da parede se retesam. A ponte levadiça se abaixa, no túnel a leste.'
+            : 'A roda gira para o outro lado, e as correntes recolhem a ponte levadiça. O túnel a leste volta a ficar fechado.');
           ctx.app.refresh();
         },
       });
@@ -478,9 +478,9 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
     if (area?.id === 'alcova') {
       const g = ctx.grupos.lorghoth;
       ops.push({
-        rotulo: 'Examinar o monte de lixo', icone: 'acao-procurar', detalhe: 'Natureza, CD 15', motivo: buscas.ja(c, 'lorghoth', { x: 7, y: 17 }) ?? (g?.vencido ? 'já foi' : null),
+        rotulo: 'Examinar o monte de lixo', icone: 'acao-procurar', detalhe: 'Natureza, CD 15', motivo: buscas.ja(c, 'lorghoth', { x: 1, y: 7 }) ?? (g?.vencido ? 'já foi' : null),
         fazer: async () => {
-          buscas.marcar(c, 'lorghoth', { x: 7, y: 17 });
+          buscas.marcar(c, 'lorghoth', { x: 1, y: 7 });
           const t = ctx.teste(c, 'natureza', 15);
           await ctx.painel(t.passou
             ? `${t.quem?.name ?? c.name} se agacha ao lado do monte e vê o que ele é: não é lixo, é uma planta. Galhos, cipós e lama, respirando bem devagar. É um arbusto errante, e dorme. Os cultistas o chamavam de Lorghoth, o Decadente.`
@@ -489,7 +489,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
       });
       if (g && !g.vencido && !g.ativo && g.membros.some((f) => !f.dead)) {
         ops.push({
-          rotulo: 'Atacar o monte de lixo', icone: 'acao-usarObjeto', detalhe: 'Lorghoth dorme', motivo: ctx.longe(c, { x: 7, y: 17 }, 10),
+          rotulo: 'Atacar o monte de lixo', icone: 'acao-usarObjeto', detalhe: 'Lorghoth dorme', motivo: ctx.longe(c, { x: 1, y: 7 }, 10),
           fazer: async () => { await ctx.combate(g, 'nossa', ['O primeiro golpe afunda no monte como num colchão de folhas. Debaixo dele, alguma coisa abre os olhos.']); },
         });
       }

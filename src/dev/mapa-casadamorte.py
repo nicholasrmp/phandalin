@@ -5,6 +5,8 @@
 # A ESCALA: o mapa do livro diz "One square = 5 feet" (1,5 m), ou seja, UM QUADRADO = UMA CASA do jogo, nas duas masmorras. As plantas são
 # escritas direto em casas, com a rocha das paredes ocupando uma casa. Os tamanhos das salas vêm da grade desenhada no próprio mapa (a imagem
 # fica em `_referencias/`, fora do repositório): a câmara do ritual (38) tem 12 m de lado = 8 x 8 casas, como diz o texto.
+# As plantas são DESENHADAS como a página do livro (norte à esquerda) e GIRADAS 90 graus no fim (`girar`), para o norte do livro ficar em cima:
+# assim "parede sul", "canto sudoeste" e o resto dos textos do livro valem no jogo sem tradução. As coordenadas abaixo são as da página.
 #
 # A planta é um RASCUNHO fiel à topologia do livro (quem liga a quem, onde está cada sala com algo marcado) e não ao pixel da referência:
 # os corredores do mapa original são labirínticos, e aqui só entram os que levam a alguma sala. Os glifos são os do jogo; rocha em volta,
@@ -208,6 +210,17 @@ for (x, y) in [(4, 2), (6, 2)]:
 PLANTA_2 = P2.linhas() + (P2.areas,)
 
 
+def girar(planta):
+    """Gira a planta 90 graus no sentido horário: o mapa do livro tem o NORTE À ESQUERDA (a rosa dos ventos), e os textos dele seguem essa
+    bússola ("o túnel mais ao sul", "a porta secreta na parede sul"). Girada, a planta tem o norte do livro em cima, como o jogo."""
+    t, h, areas = planta
+    H, W = len(t), len(t[0])
+    def g(m):
+        return [''.join(m[H - 1 - X][Y] for X in range(H)) for Y in range(W)]
+    novas = [{**a, 'x1': H - 1 - a['y2'], 'x2': H - 1 - a['y1'], 'y1': a['x1'], 'y2': a['x2']} for a in areas]
+    return g(t), g(h), novas
+
+
 def js(nome, planta):
     t, h, areas = planta
     return (f"export const {nome} = {{\n  terreno: {json.dumps(t, ensure_ascii=False, indent=2)},\n"
@@ -217,5 +230,5 @@ def js(nome, planta):
 
 cabecalho = ("// Gerado por `src/dev/mapa-casadamorte.py` — mude lá e rode de novo.\n"
              "// As duas masmorras da Casa da Morte (áreas 22 a 38). Cada quadrado do mapa de referência é uma casa.\n\n")
-SAIDA.write_text(cabecalho + js('PLANTA_PORAO_1', PLANTA_1) + '\n' + js('PLANTA_PORAO_2', PLANTA_2), encoding='utf-8')
-print('ok', SAIDA, P1.cols, P1.rows, P2.cols, P2.rows)
+SAIDA.write_text(cabecalho + js('PLANTA_PORAO_1', girar(PLANTA_1)) + '\n' + js('PLANTA_PORAO_2', girar(PLANTA_2)), encoding='utf-8')
+print('ok', SAIDA, P1.rows, P1.cols, P2.rows, P2.cols)
