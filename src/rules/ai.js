@@ -388,6 +388,18 @@ export function takeMonsterTurn(enc, monster) {
     }
     return best && best.node.cost > 0 ? Battlefield.pathFrom(reached, best.node) : null;
   });
+  // 4a: sem passo que o aproxime de ninguém de pé (o nicho de uma casa, com o herói caído na boca dele), mas com um caído ao alcance da arma: bate
+  // nele. A IA não procura herói caído (`enemiesOf` os deixa fora), e sem esta regra a luta nunca acabava: ninguém alcançava o monstro, e ele
+  // não alcançava ninguém de pé. Só vale quando não há outro movimento: com para onde andar, ele anda atrás de quem está de pé.
+  if (!passo?.length) {
+    const caidos = enc.combatants.filter((c) => c.side !== monster.side && c.side !== 'neutro' && !c.dead && hasCondition(c, 'inconsciente') && !conditionEffects(c).inalcancavel);
+    const noChao = pickReachableTarget(enc, monster, caidos, { meleeOnly: true });
+    if (noChao) {
+      enc.attackAction(monster, noChao.target, noChao.weaponName);
+      enc.endTurn(monster);
+      return;
+    }
+  }
   if (passo) enc.moveAlong(monster, passo);
   // Depois de andar, ainda ha a acao: o que ficou ao alcance (o olhar do
   // vigia a 9 m, o arco que agora alcanca) e usado em vez de desperdicado.
