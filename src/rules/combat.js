@@ -1063,6 +1063,16 @@ export class Encounter {
       // E sem parede de borda cortando o corpo dela.
       return !this.field.paredeNaPegada(x, y, f);
     };
+    // Primeiro, a casa mais perto ANDANDO: do outro lado de uma parede ou do anel de fora do mapa não serve (o grupo não alcançaria a criatura,
+    // e a luta emperrava). Só se não houver nenhuma assim, a mais perto em linha reta.
+    try {
+      const alcance = this.field.reachable({ x: pos.x, y: pos.y }, 40);
+      const perto = [...alcance.entries()].map(([k, n]) => ({ k, custo: n.cost })).sort((a, b) => a.custo - b.custo);
+      for (const { k } of perto) {
+        const [x, y] = k.split(',').map(Number);
+        if (livre(x, y)) return { ...pos, x, y };
+      }
+    } catch { /* sem mapa de alcance: cai no anel */ }
     for (let r = 0; r <= 6; r++) {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {
