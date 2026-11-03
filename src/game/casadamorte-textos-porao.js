@@ -45,7 +45,7 @@ export const TEXTOS_PORAO = {
   ],
   covil: [
     'Um candelabro pende sobre uma mesa no meio da sala. Duas cadeiras de espaldar alto flanqueiam a mesa, sobre a qual há um jarro de barro vazio e duas garrafas. Castiçais de ferro nos cantos, com velas há muito derretidas.',
-    'Uma porta no canto sudoeste leva ao quarto ao lado.',
+    'No canto sudoeste, uma porta de madeira escura, de dobradiças de ferro, parece levar adiante.',
   ],
   quartoLideres: [
     'Uma cama de madeira grande, com colchão de pena. Um guarda-roupa com vestes antigas, um par de castiçais de ferro e uma caixa aberta com trinta tochas e um saco de couro com quinze velas. Ao pé da cama, uma caixa de madeira destrancada.',
@@ -61,7 +61,7 @@ export const TEXTOS_PORAO = {
   ],
   relicario: [
     'Uma sala grande, cheia do canto: uma dúzia de vozes repete sem parar "Ele é o Ancestral. Ele é a Terra". Em treze nichos ao longo das paredes, o culto guardou as "relíquias" dos seus rituais: uma mão de goblin mumificada, facas de osso, uma capa de pele de carniçal remendada, um sapo seco num cabo, o dedo de uma bruxa, a cabeça murcha de um halfling, um pingente de ferro com cara de diabo, e outras bugigangas do gênero.',
-    'São bugigangas sem valor. Para o sul, um túnel desce em ângulo, para dentro da água turva.',
+    'São bugigangas sem valor. O túnel mais ao sul inclina-se para baixo, a vinte graus, e entra na água turva.',
   ],
   tunelAgua: [
     'O túnel desce a vinte graus e some debaixo d\'água escura. No fim, uma ponte levadiça de ferro enferrujado, erguida, fecha a passagem. O chão em volta está debaixo de sessenta centímetros de água turva.',

@@ -263,12 +263,12 @@ export const ANDARES = {
     areas: PLANTA_PORAO_1.areas.map((a) => ({ ...a, texto: TEXTOS_PORAO[a.id] ?? [] })),
     escadas: [
       { rect: rect(22, 14, 22, 14), rotulo: 'Subir a escada em espiral', detalhe: 'o sótão', destino: 'casaDaMorte4' },
-      { rect: rect(8, 10, 9, 10), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
+      { rect: rect(6, 10, 9, 10), rotulo: 'Descer a escada', detalhe: 'masmorra, nível 2', destino: 'casaDaMortePorao2' },
       { rect: rect(12, 22, 13, 22), rotulo: 'Subir a escada do alçapão', detalhe: 'o canil, no térreo', destino: 'casaDaMorte1', secreta: true },
     ],
     chegadas: {
       casaDaMorte4: grupoPadrao([[22, 15], [22, 16], [22, 17], [21, 17]]),
-      casaDaMortePorao2: grupoPadrao([[7, 11], [6, 11], [6, 10], [6, 12]]),
+      casaDaMortePorao2: grupoPadrao([[8, 11], [7, 11], [6, 11], [6, 12]]),
       casaDaMorte1: grupoPadrao([[15, 22], [14, 22], [13, 22], [12, 22]]),
     },
   },

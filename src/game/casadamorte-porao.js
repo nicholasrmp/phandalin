@@ -13,7 +13,7 @@ export const PLANTA_PORAO_1 = {
   "RRRRRRRRRRRRRR++++++++++RR",
   "RRRRRRRRRRRRRR+RRRRRRRR+RR",
   "RRRRRRRRRRRRRR+RRRR+pp++RR",
-  "RRRRRR++llRRRR+RRRRp++++&+",
+  "RRRRRRllllRRRR+RRRRp++++&+",
   "RRR+RR+++++++++RRRRp+++&m&",
   "RRK&KR+RRR+RRR+RRRR++pp+&+",
   "RRD+++RRRR+RRR+RRRRRRRRR+R",

@@ -112,8 +112,8 @@ P1.piso(11, 12, 11, 19)
 P1.sala('espinhos', '26', 'O túnel do poço de espinhos', 11, 12, 11, 14)
 P1.piso(10, 16, 10, 19); P1.piso(12, 19, 12, 19)
 P1.sala('escadas', '30', 'A escada para baixo', 10, 16, 12, 19)
-for (x, y) in [(10, 16), (10, 17)]:
-    P1.casa(x, y, 'l')
+for y in range(16, 20):
+    P1.casa(10, y, 'l')                                # a escada de 6 m (4 casas), como o livro
 # --- o salão de jantar (27): 4 x 3, com a mesa comprida, e a despensa do grick (28) na parede leste.
 P1.piso(16, 9, 19, 11)
 P1.sala('jantar', '27', 'O salão de jantar do culto', 16, 9, 19, 11)
