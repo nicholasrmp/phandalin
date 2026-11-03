@@ -126,5 +126,6 @@ porta, save, sala, sala-ws, dialogo-perfil, itens-fora, movimento-aliados,
 musica, editor, casadamorte). O de editor e o da Casa da Morte rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
-`src/dev/passeio-casadamorte.mjs [sacrificar|negar] [semente]` percorre a casa inteira, do jardim à saída, como um jogador automático. **Rode-os antes de chamar revisor**: achado que um teste já pega não
+`src/dev/passeio-casadamorte.mjs [sacrificar|negar] [semente]` percorre a casa inteira, do jardim à saída, como um jogador automático.
+`src/dev/gatilhos-casadamorte.mjs` faz cada ação de cada casa e confere que toda luta que ela começa tem caminho entre os dois lados. **Rode-os antes de chamar revisor**: achado que um teste já pega não
 precisa de agente.
