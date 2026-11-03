@@ -57,7 +57,7 @@ export const TEXTOS_PORAO = {
   criptaE: ['A laje está gravada com o nome Rosavalda Durst. A câmara tem um caixão vazio sobre um esquife de pedra.'],
   criptaF: ['A laje está gravada com o nome Thornboldt Durst. A câmara tem um caixão vazio sobre um esquife de pedra.'],
   escadaChegada: [
-    'A escada termina num corredor curto e baixo, que sobe de leve e vira. O canto ficou claro e alto, uma dúzia de vozes, as mesmas palavras: "Ele é o Ancestral. Ele é a Terra".',
+    'A escada termina num corredor curto e baixo, que sobe de leve e vira. O canto ficou mais alto, uma dúzia de vozes, mas ainda não dá para distinguir as palavras.',
   ],
   relicario: [
     'Uma sala grande, cheia do canto: uma dúzia de vozes repete sem parar "Ele é o Ancestral. Ele é a Terra". Em treze nichos ao longo das paredes, o culto guardou as "relíquias" dos seus rituais: uma mão de goblin mumificada, facas de osso, uma capa de pele de carniçal remendada, um sapo seco num cabo, o dedo de uma bruxa, a cabeça murcha de um halfling, um pingente de ferro com cara de diabo, e outras bugigangas do gênero.',

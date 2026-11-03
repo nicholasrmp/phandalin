@@ -63,7 +63,7 @@ export function poraoGatilhos(ctx) {
   return {
     grick: (c) => {
       const f = vivo(ctx.grupos.grick);
-      // O livro: a 1,5 m da alcova. A despensa tem 1 casa e fica na parede leste do jantar.
+      // O livro: a 1,5 m da alcova. A despensa tem 1 casa e fica no meio da parede sul do jantar (a do livro).
       if (!f || c.pos.x < 13 || c.pos.x > 16 || c.pos.y < 18 || c.pos.y > 19) return null;
       ctx.grupos.grick.furtividade = [12];       // o livro: quem tem Percepção passiva abaixo de 12 é surpreendido
       if (ctx.salvo.marcas?.gricAvisado) return { surpresa: null, intro: ['O rastro de muco não enganou: o grick se solta do teto da alcova, comprido e mole, bico aberto, mas o grupo já estava pronto.'] };

@@ -16,10 +16,9 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { xpParaProximo } from '../rules/progressao.js';
 
-const FUMACA = (area, field) => {
-  for (let y = area.y1; y <= area.y2; y++) for (let x = area.x1; x <= area.x2; x++) if ((!area.contem || area.contem({ x, y })) && field.surfaceAt(x, y) === 'lareiraCasa') return true;
-  return false;
-};
+/** O livro: todo cômodo com lareira, forno ou fogão se enche de fumaça preta. Os móveis são `prop`s do mapa (não há glifo de lareira). */
+const FUMACA = (area, field) => (field.objetos ?? []).some((o) => o.tipo === 'prop' && /^casa-(lareira|fogao)/.test(o.variante)
+  && o.x >= area.x1 && o.x <= area.x2 && o.y >= area.y1 && o.y <= area.y2 && (!area.contem || area.contem({ x: o.x, y: o.y })));
 
 /** Os ganchos da fuga: a casa furiosa, as lâminas nas portas, a fumaça, os ratos. */
 export function fugaIniciar(ctx) {
@@ -38,7 +37,8 @@ export function fugaIniciar(ctx) {
     ondeEstava[c.id] = agora;
     if (!salvo.furia || !ctx.estado.explorando) return;
     if (antesDele && agora && antesDele !== agora) await foice(ctx, c);
-    if (area && FUMACA(area, enc.field)) await fumaca(ctx, c, area);
+    // a fumaça cobra de quem ENTRA na sala (sem iniciativa, o começo do turno do livro é a chegada)
+    if (area && antesDele !== agora && FUMACA(area, enc.field)) await fumaca(ctx, c, area);
   };
 
   // A casa só mostra a cara quando o grupo volta das masmorras depois de negar o sacrifício.

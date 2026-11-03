@@ -28,7 +28,7 @@ export const PISTAS = {
       id: 'retratos', ...casa(0, 8), r: 2, nome: 'Os retratos dos aristocratas',
       olhar: 'Retratos de aristocratas de rostos impassíveis, em molduras douradas. Dizem-se mortos da família Durst.',
       verbos: [
-        { p: 'historia', cd: 12, ok: 'As roupas são de séculos diferentes. Não são todos Durst: a família era de moleiros, e retrato nenhum aqui parece de moleiro.' },
+        { p: 'historia', cd: 12, ok: 'As roupas são de séculos diferentes: são Durst de muitas gerações, todos de rosto severo, e nenhum deles sorri.' },
         { p: 'intuicao', cd: 13, ok: 'Nenhum dos rostos olha para nada. Quem os pintou não quis que olhassem para vocês: quis que lembrassem de uma família que não existe mais.' },
       ],
     },
@@ -38,7 +38,7 @@ export const PISTAS = {
       aura: { escola: 'abjuração', texto: 'Uma aura fraca e velha de abjuração cobre a casa inteira, não só a lareira. Quem a fez queria que quem entrasse não saísse.' },
       verbos: [
         { p: 'arcanismo', cd: 12, ok: 'A espada não é mágica, mas o salão inteiro tem um cheiro de magia antiga, de abjuração: a casa guarda o que entra.' },
-        { p: 'investigacao', cd: 11, ok: 'A espada está soldada à parede. O camafeu do punho é de moinho e de nada mais: um enfeite de uma espada que nunca foi sacada.' },
+        { p: 'investigacao', cd: 11, ok: 'A espada está firme na parede. O camafeu do punho é de moinho e de nada mais: um enfeite de uma espada que nunca foi sacada.' },
       ],
     },
     {
@@ -76,10 +76,9 @@ export const PISTAS = {
     {
       id: 'cantoCanil', ...casa(2, 10), r: 1, nome: 'O canto sudoeste do canil',
       olhar: 'O assoalho de madeira, bem lustrado, até o canto.',
-      aura: { escola: 'ilusão', texto: 'Uma aura de ilusão forte, concentrada no chão do canto sudoeste. Algo foi escondido aqui por magia.' },
+      // o livro: o alçapão não pode ser detectado nem aberto até que o grupo chegue pelo lado de baixo (área 32): nenhuma perícia nem magia o acha daqui
       verbos: [
-        { p: 'percepcao', cd: 16, ok: 'Uma tábua que não geme como as outras, e uma emenda mais fina do que o resto. A casa está escondendo alguma coisa aqui, e não quer mostrar.' },
-        { p: 'investigacao', cd: 17, ok: 'O assoalho tem uma moldura quadrada de poucos milímetros, que a vista não pega. Um alçapão, sem trinco deste lado: só se abre por baixo.', marca: 'alcapaoSuspeito' },
+        { p: 'investigacao', cd: 12, ok: 'O assoalho está lustrado até o canto, sem frestas nem emendas. Nada fora do lugar.' },
       ],
     },
     {
@@ -106,7 +105,7 @@ export const PISTAS = {
       id: 'armaduras', ...casa(2, 5), r: 3, nome: 'As armaduras de lança',
       olhar: 'Armaduras de pé flanqueiam as portas do norte e do sul, com lanças e elmos em cabeça de lobo.',
       verbos: [
-        { p: 'investigacao', cd: 12, ok: 'Estas armaduras são vazias e mudas: só enfeite. Mas o elmo de lobo é o mesmo da armadura de placas negras que dizem estar lá em cima, na varanda.' },
+        { p: 'investigacao', cd: 12, ok: 'Estas armaduras são vazias e mudas: só enfeite, de lança em punho e elmo de cabeça de lobo.' },
         { p: 'arcanismo', cd: 14, ok: 'Nenhuma delas tem a aura de animação. A casa as deixou por decoração. A de cima é outra história.' },
       ],
     },
@@ -223,7 +222,7 @@ export const PISTAS = {
       olhar: 'Um berço coberto por uma mortalha negra, bem esticada.',
       verbos: [
         { p: 'medicina', cd: 12, ok: 'Mortalha de enterro, e não de berço. Quem embrulhou o pacote lá dentro queria enterrar um bebê que nunca viveu.' },
-        { p: 'intuicao', cd: 14, ok: 'Alguém em quem se deve confiar quer que vocês olhem o berço. É um pedido, não uma ameaça. O ar está frio, mas sem raiva.' },
+        { p: 'intuicao', cd: 14, ok: 'O ar do quarto está frio e parado, como o de um lugar onde alguém espera.' },
       ],
     },
     {
@@ -312,7 +311,7 @@ export const PISTAS = {
       olhar: 'O chão de terra batida tem pegadas humanas de séculos, indo para todos os lados.',
       verbos: [
         { p: 'sobrevivencia', cd: 10, ok: 'Todas as pegadas são velhas de séculos, de gente de sapato e de gente descalça, de passo lento: filas de iniciados em procissão.' },
-        { p: 'percepcao', cd: 12, ok: 'Nenhuma pegada vai para o túnel oeste do sul: ele existe, mas ninguém o usou. Ou alguém tirou os rastros.' },
+        { p: 'percepcao', cd: 12, ok: 'Os passos vão e vêm sem ordem, para todos os lados, como se alguém andasse em círculos pelo mesmo chão há séculos.' },
       ],
     },
     {
@@ -460,7 +459,7 @@ export const PISTAS = {
       olhar: 'Uma ponte levadiça de ferro enferrujado, erguida, fecha o túnel. O chão em volta está sob sessenta centímetros de água turva.',
       verbos: [
         { p: 'investigacao', cd: 12, ok: 'As correntes da ponte sobem pelo teto do túnel e somem na parede leste da câmara. Há uma roda de madeira lá, do outro lado, que a ergue e a abaixa.' },
-        { p: 'atletismo', cd: 15, ok: 'A ponte é pesada, mas não emperrada: com ombros fortes, dá para levantá-la um palmo e ver o outro lado. Nenhuma passagem, mas uma ideia da câmara.' },
+        { p: 'atletismo', cd: 20, ok: 'A ponte é pesada, mas não emperrada: com ombros fortes, dá para levantá-la um palmo e ver o outro lado. Nenhuma passagem, mas uma ideia da câmara.' },
       ],
     },
     {
@@ -485,7 +484,7 @@ export const PISTAS = {
       id: 'rodaDaPonte', x: 11, y: 8, r: 2, nome: 'A roda de madeira na parede leste',
       olhar: 'Meio embutida na parede leste, uma roda de madeira ligada a correntes e mecanismos ocultos.',
       verbos: [
-        { p: 'investigacao', cd: 11, ok: 'A roda é o que levanta e baixa a ponte do túnel norte. Está engraxada, e funciona.' },
+        { p: 'investigacao', cd: 11, ok: 'A roda é o que levanta e baixa a ponte do túnel a leste. Está engraxada, e funciona.' },
       ],
     },
     {

@@ -111,7 +111,7 @@ export const AREAS_TERREO = [
   criarArea({
     id: 'floresta', area: '0', nome: 'A floresta morta', cel: [[-1, -1, 10, 17]],
     texto: [
-      'A estrada acaba numa clareira de capim cinzento. Em volta, as árvores de Baróvia estão mortas há tanto tempo que já nem caem: troncos retorcidos de galhos nus, a névoa rente ao chão e um silêncio sem pássaros. No meio da clareira, a Casa da Morte espera, de pedra e madeira escura, com as janelas acesas.',
+      'A estrada acaba numa clareira de capim cinzento. Em volta, as árvores de Baróvia estão mortas há tanto tempo que já nem caem: troncos retorcidos de galhos nus, a névoa rente ao chão e um silêncio sem pássaros. No meio da clareira, a Casa da Morte espera, de tijolo escuro, com as janelas apagadas.',
       'No pórtico, as portas de carvalho se entreabrem ao peso da mão.',
     ],
   }),

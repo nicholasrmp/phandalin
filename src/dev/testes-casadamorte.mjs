@@ -359,6 +359,27 @@ await teste('a casa ataca quem negou o sacrifício: portas de foice, fumaça e r
   assert.equal(op(N, N.party[0], 2, 9, 'Quebrar a parede'), undefined, 'sem a casa furiosa, a parede é parede');
 });
 
+await teste('a casa que ataca: entrar numa sala com lareira, forno ou fogão cobra a fumaça preta (Constituição CD 10, 1d10 de veneno)', async () => {
+  const { ANDARES } = await import(P + 'game/casadamorte.js');
+  const S = await nova('casaDaMorte1', { campanha: { strahd: { casa: { vistas: [], vencidos: [], achados: {}, fim: 'negado' } } }, nivel: 2 });
+  await S.cena.iniciar();
+  const jantar = ANDARES.casaDaMorte1.areas.find((a) => a.id === 'jantar');
+  assert.ok(S.field.objetos.some((o) => /^casa-lareira/.test(o.variante)), 'a sala de jantar tem lareira (prop)');
+  const h = S.party[2];
+  poe(h, jantar.x1 + 1, jantar.y1 + 1);
+  d20(S, 1);
+  const antes = h.hp;
+  await S.cena.depoisDeMover(h);
+  assert.ok(h.hp < antes && antes - h.hp <= 10, `a fumaça cobrou ${antes - h.hp}`);
+  // uma sala sem lareira nem fogão não cobra
+  const g = S.party[3];
+  const sem = ANDARES.casaDaMorte1.areas.find((a) => a.id === 'espera');
+  poe(g, sem.x1, sem.y1);
+  const g0 = g.hp;
+  await S.cena.depoisDeMover(g);
+  assert.equal(g.hp, g0, 'sem lareira, sem fumaça');
+});
+
 await teste('a saída: sem o fim as brumas fecham o portão; com o fim, sai e passa ao 3º nível; Rose e Thorn tentam possuir quem sai', async () => {
   const S = await nova('casaDaMorte1', { nivel: 2 });
   poe(S.party[0], 3, 13);
@@ -558,7 +579,7 @@ await teste('magias de utilidade: a cena oferece auras, trancas, fosso e a chave
   await porta.fazer();
   assert.equal(C.field.aresta(4, 3, 4, 4), 3, 'o Abrir destranca o quarto das crianças');
   const D = await nova('casaDaMorte1');
-  assert.ok(D.cena.ganchosMagicos(D.party[0]).some((x) => x.id === 'aura:cantoCanil'), 'o canto do canil tem aura de ilusão');
+  assert.ok(!D.cena.ganchosMagicos(D.party[0]).some((x) => x.id === 'aura:cantoCanil'), 'o alçapão do canil não se detecta de cima (o livro: só pelo lado de baixo)');
 });
 
 await teste('varanda: a segunda porta secreta (a do poço da escada, Percepção CD 15) só abre depois que a casa mostrou a escada', async () => {
