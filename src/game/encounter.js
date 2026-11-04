@@ -284,6 +284,13 @@ export function mapaDo(variante = 'padrao') {
       objetos: ONDA_ECO.props.map((p) => ({ ...p })),
       grupo: ONDA_ECO.grupo.map((p) => ({ ...p })),
       olhar: { dx: 1, dy: -1 },
+      // SEM mapa pintado, e isto foi MEDIDO, não esquecido. A nossa planta é um decalque exato do mapa oficial
+      // do Roll20, em DOBRO: duas casas nossas por quadrado pintado (`src/dev/encaixar-roll20.py` acha escala
+      // 0,50 cravada, uma casa de desvio, 60% de chão em comum, e a prova visual encaixa parede por parede).
+      // O que reprova é a resolução: a maior imagem que o CDN entrega tem 1515 px para 37 quadrados, e como
+      // uma casa nossa vale meio quadrado, o tabuleiro teria de ampliar 3x — a rocha vira borrão marrom, pior
+      // que o ladrilho que já temos. Se um dia aparecer uma imagem maior, é só ligar:
+      //   fundo: { nome: '6-wave-echo-cave.jpg', url: '<a imagem>', escala: 20.473, x0: 0.6, y0: 40.4, giro: 0, opacidade: 1 },
       cena: 'ondaEco',
     };
   }
@@ -350,6 +357,12 @@ export function mapaDo(variante = 'padrao') {
         ? [{ x: 10, y: 19 }, { x: 10, y: 18 }, { x: 10, y: 17 }, { x: 10, y: 16 }]
         : [{ x: 29, y: 14 }, { x: 28, y: 14 }, { x: 27, y: 14 }, { x: 27, y: 15 }],
       olhar: tunel ? { dx: 0, dy: -1 } : { dx: -1, dy: 0 },
+      // O MAPA OFICIAL por baixo. A nossa planta é um decalque dele: medido em `src/dev/encaixar-roll20.py`,
+      // escala 1 para 1 e uma casa de desvio para baixo, com 83% das paredes dele caindo em cima das nossas.
+      // A imagem é do CDN do Roll20, de onde a página da campanha a serve — nada é copiado para o repositório
+      // (ver NOTICE.md). `escala` não é 70: a página trava a casa em 70 px, mas o CDN entrega a imagem com 2048
+      // px no lado maior e a página a estica de volta, o que dá 68,267 px por casa na imagem de verdade.
+      fundo: { nome: '4-redbrand-hideout.jpg', url: 'https://files.d20.io/images/34717495/tqvoxEujIj6h0ekkD7h1Wg/max.jpg?1497810681', escala: 68.267, x0: 0, y0: 68.267, giro: 0, opacidade: 1 },
       cena: 'mansao',
       entrada: tunel ? 'tunel' : 'cozinha',
     };
