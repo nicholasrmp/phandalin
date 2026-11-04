@@ -48,6 +48,7 @@ const PEGADAS = [[1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [1, 3], [3, 2], [2, 3]]
 
 // ------------------------------------------------------------------------------------------------ estado ---
 let mapa = M.ler() ?? M.limpar(mapaDo('casaDaMorte4'));
+let cenaAberta = '';   // a cena do jogo que está aberta, se for uma: dá nome ao JSON exportado
 let desfazer = [];
 let refazer = [];
 let sujo = true;
@@ -720,7 +721,7 @@ function iniciarCabecalho() {
     if (desfazer.length && !confirm('Abrir outro mapa descarta o que está na tela (dá para desfazer). Continuar?')) return;
     if (!$('base').value) return;
     ponto();
-    try { mapa = M.limpar(mapaDo($('base').value)); } catch (e) { alert(`Não abriu: ${e.message}`); return; }
+    try { mapa = M.limpar(mapaDo($('base').value)); cenaAberta = $('base').value; } catch (e) { alert(`Não abriu: ${e.message}`); return; }
     sujo = true; agendarGuardar(); sincronizarModo(); recuperarFundo();
   });
   $('novo').addEventListener('click', () => {
@@ -735,7 +736,9 @@ function iniciarCabecalho() {
   $('exportar').addEventListener('click', () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(mapa, null, 1)], { type: 'application/json' }));
-    a.download = 'cenario.json'; a.click(); URL.revokeObjectURL(a.href);
+    // o nome da cena, e não `cenario.json` para todas: revisando mapa a mapa, o terceiro arquivo já era
+    // `cenario (2).json` e ninguém sabia de qual mapa era
+    a.download = `${cenaAberta || 'cenario'}.json`; a.click(); URL.revokeObjectURL(a.href);
   });
   $('importar').addEventListener('click', () => $('arquivo').click());
   $('arquivo').addEventListener('change', async (e) => {

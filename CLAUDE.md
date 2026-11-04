@@ -134,6 +134,12 @@ Mansão, o segredo da prisão, as lajes das criptas) e o que é de propósito (o
 grade, a escada que se pega pelo botão), então 0 achados quer dizer 0 mesmo; `--tudo` solta os avisos fracos.
 `src/dev/testes-paredes.mjs` prova que ele acusa cada defeito. Para corrigir, `/editor.html` abre qualquer uma
 das vinte cenas e a caixinha `x,y` do alto leva a casa que o parecer apontou para o meio da tela.
+Para MARCAR em cima de um mapa pintado: `/editor.html` abre a cena (a lista do alto), carrega o desenho dela
+sozinho e deixa decalcar parede, porta, arco e grade por aresta (ferramenta 2) ou contorno à mão (ferramenta 9);
+o checkbox "Pintar o chão do jogo" desliga a camada do jogo e deixa o desenho limpo. "Exportar JSON" baixa o
+arquivo com o nome da cena, e
+`node --import ./src/dev/cena-node/register.mjs src/dev/aplicar-editor.mjs <arquivo.json>` imprime só o que
+mudou, já no formato de colar em `game/encounter.js`.
 `src/dev/gatilhos-casadamorte.mjs` faz cada ação de cada casa e confere que toda luta que ela começa tem caminho entre os dois lados.
 `python src/dev/alinhar-mapa-pintado.py --provas` casa a planta de cada andar da Casa da Morte com o battlemap pintado de verdade
 (`_referencias/casa-da-morte-morvold/`) e devolve giro, escala, origem e a prova visual — serve de conferência de fidelidade da planta.
