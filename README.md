@@ -255,22 +255,31 @@ Para isso o chão é deduzido pelo avesso: é o que a **borda do mapa não alcan
 A diferença decide o resultado — partindo das fichas, todo corredor sem ninguém dentro ficaria de fora, e aí os vãos
 nem teriam chão dos dois lados para ligar.
 
-Medido nas nove páginas de Phandelver, com `--abrir-vaos`:
+`--tapar-frestas` fecha o contorno antes disso, pelo caminho inverso: acha o **corte mínimo** entre a borda do mapa e
+as fichas, que por definição cai onde a passagem é mais estreita — que é onde está a fresta. Só age em página que já
+tem parede, desiste se o corte passar de 14 arestas, e desfaz se o que sobrar dentro for menos de 20% do mapa (em
+campo aberto o corte mínimo lacraria um cantinho em volta das fichas, e isso não é planta).
 
-| página | casas | arestas | fichas | contorno fecha? | vãos abertos | pedaços |
+Antes de tudo isso o importador tira as **fichas estacionadas**: o mestre deixa pilhas de ficha sobrando de lado, em
+fileira. Na Caverna Onda Eco são 66 "Ochre Jelly" enfileiradas, metade fora da planta, e eram elas que estragavam o
+corte. Uma criatura posta no mapa não forma fileira reta de cinco ou mais do mesmo nome em casas seguidas.
+
+Medido nas cinco páginas com parede, rodando `--tapar-frestas --abrir-vaos`:
+
+| página | casas | chão | frestas tapadas | vãos abertos | pedaços | o motor reclama? |
 |---|---|---|---|---|---|---|
-| 2: Cragmaw Hideout | 30 × 21 | 254 | 19 | não (caverna à mão livre) | — | 9 |
-| **4: Redbrand Hideout** | 30 × 21 | 255 | 17 | **sim** | **18** | **1** |
-| Ruins of Thundertree | 30 × 21 | 299 | 2 | não | — | 54 |
-| 5: Cragmaw Castle | 31 × 21 | 324 | 29 | não (17 de 29) | — | 41 |
-| 6: Wave Echo Cave | 37 × 50 | 969 | 91 | não (15 de 91) | — | 53 |
+| **2: Cragmaw Hideout** | 30 × 21 | 241 | 1 | 8 | 1 | **não** |
+| **4: Redbrand Hideout** | 30 × 21 | 358 | 0 | 18 | 1 | **não** |
+| **6: Wave Echo Cave** | 37 × 50 | 1.178 | 0 | 50 | 1 | **não** |
+| 5: Cragmaw Castle | 31 × 21 | 319 | 3 | 39 | 3 | 271 casas isoladas |
+| Ruins of Thundertree | 30 × 21 | — | recusado | — | — | mapa de campo aberto |
 
-O Covil Carrasco atravessa inteiro: 358 casas de chão, 272 de rocha, tudo ligado, e o `diagnostico()` do editor não
-acha nada. É uma masmorra ortogonal, com a parede traçada na grade.
+Três masmorras entram inteiras e sem um aviso sequer. A Árvore Trovão é ruína a céu aberto com duas fichas só: não há
+contorno para fechar, e o importador se recusa a inventar um.
 
-Onde o contorno **não fecha** o importador não abre nada, de propósito: sem contorno os "pedaços" não são cômodos,
-são recortes do mapa inteiro, e abrir seria adivinhação. Esses mapas chegam como o Roll20 os trata — tudo é chão e só
-a parede barra —, e a fresta se tapa no editor, ou o chão se tira da própria imagem (claro é chão, escuro é rocha).
+**E a grade das imagens confere.** Medindo o passo da grade desenhada em cada mapa, pela imagem inteira: Cragmaw
+Hideout 69,0 px (a página pede 68,3), Redbrand 68,75 (68,27), Onda Eco 41,00 (40,95). As imagens estão alinhadas.
+(Medir uma faixa estreita da imagem dá resposta errada — numa faixa de 5 períodos o pico sai em outro harmônico.)
 
 ### A escala das masmorras da Casa da Morte
 

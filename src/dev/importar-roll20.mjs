@@ -113,15 +113,141 @@ function abrirVaos(w, h, paredes, dentro) {
   return abertos;
 }
 
-export function converter(pagina, { imagem, inundarChao = false, abrir = false } = {}) {
+/**
+ * TAPA AS FRESTAS. A parede do Roll20 é uma linha fina que só precisa ser estanque para a LUZ; na nossa grade, de
+ * 70 px por casa, uma fresta sub-pixel vira passagem, e a borda do mapa alcança o interior. Isto acha o MENOR
+ * conjunto de passagens a fechar para separar a borda das fichas — um corte mínimo, que por definição cai onde a
+ * passagem é mais estreita, que é onde está a fresta.
+ *
+ * É o avesso de `abrirVaos`: lá o menor conjunto a ABRIR para ligar; aqui o menor a FECHAR para separar.
+ */
+/**
+ * Tira as fichas ESTACIONADAS. O mestre deixa pilhas de ficha sobrando de lado, em fileira — na Caverna Onda Eco são
+ * 66 "Ochre Jelly" enfileiradas, e eram elas que estragavam o corte mínimo, porque metade estava fora da planta.
+ * Uma criatura posta no mapa não forma fileira reta de cinco ou mais do mesmo nome em casas seguidas.
+ */
+function fichasDeVerdade(fichas) {
+  const estacionada = new Set();
+  const porNome = {};
+  for (const f of fichas) (porNome[f.nome] ??= []).push(f);
+  for (const mesmas of Object.values(porNome)) {
+    if (mesmas.length < 5) continue;
+    const casas = new Set(mesmas.map((f) => `${Math.floor(f.cx)},${Math.floor(f.cy)}`));
+    for (const f of mesmas) {
+      const x = Math.floor(f.cx); const y = Math.floor(f.cy);
+      const corrida = (dx, dy) => {
+        let n = 1;
+        for (let k = 1; casas.has(`${x + k * dx},${y + k * dy}`); k++) n++;
+        for (let k = 1; casas.has(`${x - k * dx},${y - k * dy}`); k++) n++;
+        return n;
+      };
+      if (corrida(1, 0) >= 5 || corrida(0, 1) >= 5) estacionada.add(f);
+    }
+  }
+  return fichas.filter((f) => !estacionada.has(f));
+}
+
+const LIMITE_DO_CORTE = 14;     // mais que isto não é fresta: é mapa que simplesmente não tem contorno
+
+function taparFrestas(w, h, paredes, sementes) {
+  const id = (x, y) => y * w + x;
+  const N = w * h;
+  const FONTE = N; const SUMIDOURO = N + 1;
+  // grafo de fluxo: cada passagem entre casas vizinhas tem capacidade 1 nos dois sentidos
+  const prox = []; const de = []; const cap = [];
+  const vizinhos = Array.from({ length: N + 2 }, () => []);
+  const ligar = (a, b, c) => {
+    vizinhos[a].push(de.length); de.push(b); cap.push(c); prox.push(0);
+    vizinhos[b].push(de.length); de.push(a); cap.push(0); prox.push(0);
+  };
+  const livre = (ch) => ch === '.' || ch === '/';
+  const arestas = [];       // para saber, no fim, que aresta do mapa cada ligação é
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (y > 0 && livre(paredes.n[y][x])) { arestas.push({ i: de.length, lado: 'n', x, y }); ligar(id(x, y - 1), id(x, y), 1); ligar(id(x, y), id(x, y - 1), 1); }
+      if (x > 0 && livre(paredes.o[y][x])) { arestas.push({ i: de.length, lado: 'o', x, y }); ligar(id(x - 1, y), id(x, y), 1); ligar(id(x, y), id(x - 1, y), 1); }
+    }
+  }
+  const INF = 1e9;
+  for (let x = 0; x < w; x++) { ligar(FONTE, id(x, 0), INF); ligar(FONTE, id(x, h - 1), INF); }
+  for (let y = 0; y < h; y++) { ligar(FONTE, id(0, y), INF); ligar(FONTE, id(w - 1, y), INF); }
+  for (const [x, y] of sementes) ligar(id(x, y), SUMIDOURO, INF);
+
+  // Edmonds-Karp: caminhos de aumento por largura, capacidades unitárias — o fluxo máximo é pequeno
+  let fluxo = 0;
+  for (;;) {
+    const veioDe = new Int32Array(N + 2).fill(-1);
+    veioDe[FONTE] = -2;
+    const fila = [FONTE];
+    let achou = false;
+    for (let k = 0; k < fila.length && !achou; k++) {
+      const u = fila[k];
+      for (const e of vizinhos[u]) {
+        if (cap[e] <= 0 || veioDe[de[e]] !== -1) continue;
+        veioDe[de[e]] = e;
+        if (de[e] === SUMIDOURO) { achou = true; break; }
+        fila.push(de[e]);
+      }
+    }
+    if (!achou) break;
+    let u = SUMIDOURO; let minimo = INF;
+    while (u !== FONTE) { const e = veioDe[u]; minimo = Math.min(minimo, cap[e]); u = de[e ^ 1]; }
+    u = SUMIDOURO;
+    while (u !== FONTE) { const e = veioDe[u]; cap[e] -= minimo; cap[e ^ 1] += minimo; u = de[e ^ 1]; }
+    fluxo += minimo;
+    if (fluxo > LIMITE_DO_CORTE) return [];   // sem contorno nenhum: não é fresta, é mapa aberto
+  }
+  if (!fluxo) return [];
+
+  // o corte: o que a fonte ainda alcança no grafo residual, e as passagens que saem daí
+  const alcanca = new Uint8Array(N + 2);
+  alcanca[FONTE] = 1;
+  const fila = [FONTE];
+  for (let k = 0; k < fila.length; k++) {
+    for (const e of vizinhos[fila[k]]) if (cap[e] > 0 && !alcanca[de[e]]) { alcanca[de[e]] = 1; fila.push(de[e]); }
+  }
+  const tapadas = [];
+  for (const { i, lado, x, y } of arestas) {
+    const a = de[i ^ 1]; const b = de[i];
+    if (alcanca[a] !== alcanca[b]) {
+      paredes[lado][y] = `${paredes[lado][y].slice(0, x)}#${paredes[lado][y].slice(x + 1)}`;
+      tapadas.push({ lado, x, y });
+    }
+  }
+  return tapadas;
+}
+
+export function converter(pagina, { imagem, inundarChao = false, abrir = false, tapar = false } = {}) {
   const { w, h, pxPorCasa: P = 70 } = pagina;
-  const sementes = (pagina.fichas ?? []).map((f) => [Math.floor(f.cx), Math.floor(f.cy)]);
+  const noMapa = fichasDeVerdade(pagina.fichas ?? []);
+  const sementes = noMapa.map((f) => [Math.floor(f.cx), Math.floor(f.cy)]);
 
   // O contorno fecha? Se a borda do mapa alcança uma ficha, há fresta, e não dá para deduzir chão nenhum.
   const daBorda = [];
   for (let x = 0; x < w; x++) { daBorda.push([x, 0]); daBorda.push([x, h - 1]); }
   for (let y = 0; y < h; y++) { daBorda.push([0, y]); daBorda.push([w - 1, y]); }
-  const fora = inundar(w, h, pagina.paredes, daBorda);
+  let fora = inundar(w, h, pagina.paredes, daBorda);
+  const vazaramAntes = sementes.filter(([x, y]) => fora[y]?.[x]).length;
+  const tinhaParede = pagina.paredes.n.join('').includes('#') || pagina.paredes.o.join('').includes('#');
+  // tapar primeiro: sem contorno estanque não dá para falar em dentro, nem achar vão de porta.
+  // Só em página que JÁ tem parede — numa página sem nenhuma o corte mínimo inventaria muro em volta das fichas.
+  // o corte mira só nas fichas QUE VAZAM: as outras já estão do lado de dentro e só engordariam o corte
+  const vazando = sementes.filter(([x, y]) => fora[y]?.[x]);
+  let frestas = tapar && tinhaParede && vazando.length
+    ? taparFrestas(w, h, pagina.paredes, vazando) : [];
+  if (frestas.length) {
+    fora = inundar(w, h, pagina.paredes, daBorda);
+    // o corte mínimo é mínimo, não é certo: num mapa de campo aberto ele lacra um cantinho em volta das fichas.
+    // Se o que sobrou dentro é pouco demais para ser a planta, desfaz e deixa o mapa como o Roll20 o trata.
+    const dentroAgora = fora.flat().filter((v) => !v).length;
+    if (dentroAgora < w * h * 0.2) {
+      for (const { lado, x, y } of frestas) {
+        pagina.paredes[lado][y] = `${pagina.paredes[lado][y].slice(0, x)}.${pagina.paredes[lado][y].slice(x + 1)}`;
+      }
+      frestas = [];
+      fora = inundar(w, h, pagina.paredes, daBorda);
+    }
+  }
   const vazaram = sementes.filter(([x, y]) => fora[y]?.[x]).length;
   const quantasParedes = pagina.paredes.n.join('').split('#').length - 1 + pagina.paredes.o.join('').split('#').length - 1;
   // só dá para falar em "dentro" quando há parede, há ficha para conferir, e nenhuma delas é alcançada pela borda
@@ -186,11 +312,13 @@ export function converter(pagina, { imagem, inundarChao = false, abrir = false }
     resumo: {
       pagina: pagina.nome, casas: `${w} x ${h}`, chao: livres.length, rocha: w * h - livres.length,
       arestas: pagina.paredes.n.join('').split('#').length - 1 + pagina.paredes.o.join('').split('#').length - 1,
-      fichas: (pagina.fichas ?? []).length,
+      fichas: noMapa.length === (pagina.fichas ?? []).length ? noMapa.length
+        : `${noMapa.length} (${(pagina.fichas ?? []).length - noMapa.length} estacionadas)`,
       contornoFecha: quantasParedes === 0 ? 'sem paredes'
         : !sementes.length ? 'sem fichas para conferir'
           : vazaram ? `NÃO: a borda alcança ${vazaram} das ${sementes.length} fichas` : 'sim',
       pedacos: pedacos === 1 ? '1 (tudo ligado)' : `${pedacos} — abra os vãos de porta no editor`,
+      frestasTapadas: frestas.length,
       vaosAbertos: vaos.length,
     },
   };
@@ -202,12 +330,13 @@ if (process.argv[1] && import.meta.url.endsWith(basename(process.argv[1]))) {
   const cru = JSON.parse(await readFile(entrada, 'utf8'));
   // o arquivo pode ser uma página só, ou o saco com todas elas (`{ nome: pagina }`)
   const paginas = cru.paredes ? { [cru.nome]: cru } : cru;
+  const tapar = process.argv.includes('--tapar-frestas');
   const abrir = process.argv.includes('--abrir-vaos');
   const inundarChao = process.argv.includes('--inundar') || abrir;   // sem saber o que é chão não dá para achar vão
   const pasta = dirname(entrada);
   const resumos = [];
   for (const pagina of Object.values(paginas)) {
-    const { mapa, fichas, resumo } = converter(pagina, { inundarChao, abrir });
+    const { mapa, fichas, resumo } = converter(pagina, { inundarChao, abrir, tapar });
     const base = join(pasta, apelido(pagina.nome));
     await writeFile(`${base}-mapa.json`, JSON.stringify(mapa, null, 1), 'utf8');
     if (fichas.length) await writeFile(`${base}-fichas.json`, JSON.stringify(fichas, null, 1), 'utf8');
