@@ -145,6 +145,30 @@ function marcarTopo(ctx, C) {
     }
     ctx.restore();
   }
+  // A ALTURA, que de cima não aparece em lugar nenhum. Nove cenas usam desnível — o platô do encontro padrão, os
+  // barrancos do Poço, os três níveis da Onda Eco — e sem isto o editor desenhava todas elas planas: não dava
+  // para conferir o que a regra usa para cobertura, custo de subida e linha de visão.
+  if (sel.ferramenta === 'altura') {
+    ctx.save();
+    ctx.font = `bold ${Math.max(9, C * 0.34)}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let y = 0; y < campo.h; y++) {
+      for (let x = 0; x < campo.w; x++) {
+        const nivel = campo.heightAt(x, y);
+        if (!nivel) continue;
+        ctx.fillStyle = `rgba(120, 200, 255, ${0.10 + Math.min(nivel, 5) * 0.055})`;
+        ctx.fillRect(x * C, y * C, C, C);
+        if (C < 18) continue;        // em zoom pequeno o número vira borrão: fica só a tinta
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,.85)';
+        ctx.strokeText(String(nivel), (x + 0.5) * C, (y + 0.5) * C);
+        ctx.fillStyle = '#dff1ff';
+        ctx.fillText(String(nivel), (x + 0.5) * C, (y + 0.5) * C);
+      }
+    }
+    ctx.restore();
+  }
   if (sel.ferramenta === 'inicio' || sel.ferramenta === 'sala') {
     ctx.save();
     ctx.font = `bold ${Math.max(11, C * 0.3)}px system-ui`;
