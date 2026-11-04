@@ -41,8 +41,6 @@ const NIVEIS_DA_ARENA = [1, 2, 3, 5];
 const ARENA = [
   { variante: 'emboscada', nome: 'Emboscada na estrada',
     texto: 'Quatro goblins nos barrancos, a carroça e os cavalos mortos no meio, e lobos que descem pela trilha na 2ª rodada. Com surpresa.' },
-  { variante: 'caverna', nome: 'Caverna escura',
-    texto: 'Teste da luz e das conversas: breu, tochas, visão no escuro, dois guardas goblins e Droop ao lado da fogueira. Começa explorando.' },
   // A "Clareira dos goblins" saiu: era um mapa desenhado em código, e os mapas do jogo agora são pintados. A
   // grade dela continua viva como arena do simulador (`MAPA_ARENA`), que é o que ela sempre foi de fato, e a
   // vitrine abaixo é a única coisa que ainda a mostra.

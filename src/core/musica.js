@@ -44,7 +44,7 @@ export const TOQUES = { vitoria: { ganho: 0.9 }, derrota: { ganho: 0.9 } };
 /** A faixa de EXPLORAÇÃO de cada mapa (a `variante` do encontro). */
 export function faixaDaVariante(variante) {
   switch (variante) {
-    case 'ondaEco': case 'caverna': case 'esconderijo': return 'caverna-onda-eco';
+    case 'ondaEco': case 'esconderijo': return 'caverna-onda-eco';
     case 'mansao': case 'mansaoTunel': case 'castelo': return 'masmorra-mansao';
     case 'rua': return 'vila-phandalin';
     default: return 'exploracao-estrada';

@@ -10,7 +10,7 @@
 /** Qual ambiente toca em cada encontro (a `variante` do mapa). Puro e testável. */
 export function ambienteDaVariante(variante) {
   switch (variante) {
-    case 'ondaEco': case 'caverna': case 'esconderijo': case 'mansao': case 'mansaoTunel': case 'castelo': case 'casaDaMorte1': case 'casaDaMorte2': case 'casaDaMorte3': case 'casaDaMorte4': case 'casaDaMortePorao1': case 'casaDaMortePorao2': return 'caverna';
+    case 'ondaEco': case 'esconderijo': case 'mansao': case 'mansaoTunel': case 'castelo': case 'casaDaMorte1': case 'casaDaMorte2': case 'casaDaMorte3': case 'casaDaMorte4': case 'casaDaMortePorao1': case 'casaDaMortePorao2': return 'caverna';
     case 'rua': return 'vila';
     case 'ermoNoite': return 'noite';
     default: return 'floresta';

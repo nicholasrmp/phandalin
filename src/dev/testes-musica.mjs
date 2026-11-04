@@ -47,7 +47,7 @@ await teste('cada mapa tem a sua faixa de exploração', () => {
   assert.equal(faixaDaVariante('rua'), 'vila-phandalin');
   assert.equal(faixaDaVariante('emboscada'), 'exploracao-estrada');
   assert.equal(faixaDaVariante(undefined), 'exploracao-estrada');
-  for (const v of ['ondaEco', 'caverna', 'esconderijo', 'mansao', 'mansaoTunel', 'castelo', 'rua', 'emboscada', 'xyz']) {
+  for (const v of ['ondaEco', 'esconderijo', 'mansao', 'mansaoTunel', 'castelo', 'rua', 'emboscada', 'xyz']) {
     assert.ok(FAIXAS[faixaDaVariante(v)], `${v} aponta para uma faixa que existe`);
   }
 });

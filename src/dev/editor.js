@@ -24,7 +24,7 @@ const area = $('area');
 // `src/dev/conferir-paredes.mjs` aponta achados em qualquer uma delas — de nada adianta o parecer dizer
 // "(30,78)" se a cena não abre para olhar e corrigir.
 const MAPAS_DO_JOGO = [
-  ['emboscada', 'Emboscada na estrada'], ['caverna', 'Caverna'],
+  ['emboscada', 'Emboscada na estrada'],
   ['ermo', 'Ermo'], ['ermoNoite', 'Ermo, de noite'], ['rua', 'Rua de Phandalin'],
   ['esconderijo', 'Esconderijo Cragmaw'], ['mansao', 'Mansão Tresendar'], ['mansaoTunel', 'Mansão Tresendar, pelo túnel'],
   ['poco', 'Poço da Coruja Velha'], ['cume', 'Cume'], ['castelo', 'Castelo Dentefino'],

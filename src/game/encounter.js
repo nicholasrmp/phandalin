@@ -96,39 +96,6 @@ export const MAPA_EMBOSCADA = {
   // Eles continuam valendo como regra: `C` e `h` são cobertura (+2 de CA) e não se atravessa.
   objetos: [],
 };
-// A CAVERNA ESCURA (arena de teste da luz e das conversas).
-//
-// Uma sala em anel em volta de um paredão de rocha. O grupo entra pelo sul;
-// os dois corredores sobem pelos lados do paredão e se encontram no nicho do
-// norte, onde Droop cochila ao lado de uma fogueira baixa — a única luz.
-// Um goblin de guarda em cada corredor, no breu, atrás da curva: os dois veem
-// no escuro, o grupo (na maioria) não. Quem acende tocha enxerga o corredor e
-// é enxergado do outro lado dele.
-//
-// Mapa nosso, de teste: não é o esconderijo da aventura.
-const CAVERNA_ASCII = [
-  '###################',
-  '#####........######',
-  '####..........#####',
-  '###....####....####',
-  '##....######....###',
-  '##...########...###',
-  '#....########.....#',
-  '#.....######......#',
-  '#..o...####...o...#',
-  '#.................#',
-  '#......~~.........#',
-  '##.....~~....#....#',
-  '###..........##..##',
-  '#####..........####',
-  '###################',
-];
-// Com os glifos de caverna (rocha, chão de caverna, estalagmite no lugar dos caixotes, entulho no lugar do mato) e a fogueira de
-// Droop de verdade, no nicho do norte. Antes era o ASCII de teste: chão verde, paredão roxo e a luz sem fogo.
-export const MAPA_CAVERNA = CAVERNA_ASCII.map((l, y) => [...l].map((c, x) => (
-  y === 1 && x === 10 ? 'F' : ({ '#': 'R', '.': '_', o: 'A', '~': 'x' }[c] ?? c))).join(''));
-
-
 // A RUA DE PHANDALIN (capítulo 3): a briga com os Marcarrubra. Uma rua de
 // terra entre casas de pedra e reboco; a taverna Gigante Adormecido fica ao
 // norte, com o pátio de barris ao lado, e os Marcarrubra esperam na frente
@@ -390,23 +357,6 @@ export function mapaDo(variante) {
       cena: 'esconderijo',
     };
   }
-  if (variante === 'caverna') {
-    return {
-      terreno: MAPA_CAVERNA,
-      // A rocha junto do chão sobe um nível (e a flag a desenha como parede de 3): sem altura, o paredão central era um piso roxo.
-      altura: MAPA_CAVERNA.map((l, y) => [...l].map((c, x) => (c !== 'R' ? '0' : [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => {
-        const v = MAPA_CAVERNA[y + dy]?.[x + dx];
-        return v && v !== 'R';
-      })) ? '1' : '0')).join('')),
-      paredeDeCaverna: true,
-      grupo: [{ x: 7, y: 13 }, { x: 8, y: 13 }, { x: 6, y: 12 }, { x: 9, y: 12 }],
-      olhar: { dx: 0, dy: -1 },
-      luz: 'escuro',
-      // A fogueira de Droop: brasa baixa, 10 pés de luz e mais 10 de penumbra.
-      luzes: [{ pos: { x: 10, y: 1 }, claro: 10, penumbra: 10, tipo: 'fogueira' }],
-      cena: 'caverna',
-    };
-  }
   // A vitrine de tamanhos e o simulador, os dois na arena. Explícito: antes qualquer variante desconhecida caía
   // aqui por descuido, e `mapaDo('cachorro')` devolvia um mapa como se nada fosse.
   if (variante === 'grandes' || variante === 'arena') {
@@ -449,16 +399,6 @@ export function buildFoes(variante = 'arena') {
       f.facingVec = { dx: -1, dy: 0 };
       return f;
     });
-    return foes;
-  }
-  if (variante === 'caverna') {
-    // Os dois guardas, cada um atrás da curva do seu corredor, e Droop.
-    const foes = [
-      makeMonster('goblin', { x: 4, y: 3 }, { nameSuffix: 'da esquerda' }),
-      makeMonster('goblin', { x: 14, y: 3 }, { nameSuffix: 'da direita', tatica: 'atirador', arma: 'Arco curto' }),
-      makeMonster('droop', { x: 8, y: 1 }),
-    ];
-    for (const f of foes) f.facingVec = { dx: 0, dy: 1 };
     return foes;
   }
   if (variante !== 'arena') throw new Error(`buildFoes: não existe a cena "${variante}"`);
@@ -745,7 +685,7 @@ const REFORCOS_EMBOSCADA = [
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'arena') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
+  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;
