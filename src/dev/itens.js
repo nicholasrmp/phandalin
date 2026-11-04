@@ -14,7 +14,7 @@
 
 const { Encounter } = await import('../rules/combat.js');
 const { makeParty } = await import('../rules/party.js');
-const { MAP, PARTY_SPOTS, buildFoes } = await import('../game/encounter.js');
+const { MAPA_ARENA, PARTIDA_ARENA, buildFoes } = await import('../game/encounter.js');
 const { quantosNaMochila, garantirInventario, consumiveisDe } = await import('../rules/equipment.js');
 const { Battlefield } = await import('../core/grid.js');
 const { makeRng } = await import('../core/rng.js');
@@ -27,9 +27,9 @@ const ok = (cond, msg, extra = '') => {
 
 function novoEncontro() {
   const party = makeParty();
-  party.forEach((c, i) => { c.pos = { ...PARTY_SPOTS[i], f: 1 }; });
-  const foes = buildFoes('padrao');
-  const field = new Battlefield(MAP[0].length, MAP.length, MAP);
+  party.forEach((c, i) => { c.pos = { ...PARTIDA_ARENA[i], f: 1 }; });
+  const foes = buildFoes('arena');
+  const field = new Battlefield(MAPA_ARENA[0].length, MAPA_ARENA.length, MAPA_ARENA);
   const enc = new Encounter({ battlefield: field, party, foes, rng: makeRng(1234) });
   return { enc, party };
 }

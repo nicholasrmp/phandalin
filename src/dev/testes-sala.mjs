@@ -1759,7 +1759,7 @@ teste('dicas contextuais: cada gatilho chama as suas dicas, uma vez, e dá para 
 });
 
 teste('ambiente sonoro: toda variante de mapa aponta para um ambiente que existe', () => {
-  const variantes = ['emboscada', 'rua', 'castelo', 'cume', 'arvoreTrovao', 'ondaEco', 'poco', 'ermo', 'ermoNoite', 'mansao', 'mansaoTunel', 'esconderijo', 'caverna', 'padrao', 'grandes'];
+  const variantes = ['emboscada', 'rua', 'castelo', 'cume', 'arvoreTrovao', 'ondaEco', 'poco', 'ermo', 'ermoNoite', 'mansao', 'mansaoTunel', 'esconderijo', 'caverna', 'grandes'];
   for (const v of variantes) assert.ok(AMBIENTES.includes(ambienteDaVariante(v)) && temCamadas(ambienteDaVariante(v)), `${v} -> ${ambienteDaVariante(v)}`);
   assert.equal(ambienteDaVariante('ondaEco'), 'caverna');
   assert.equal(ambienteDaVariante('rua'), 'vila');

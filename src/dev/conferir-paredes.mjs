@@ -64,7 +64,7 @@ function casasDeEscada(cena) {
 }
 
 const CENAS = [
-  'padrao', 'caverna', 'emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
+  'caverna', 'emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
   'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
   'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2',
 ];

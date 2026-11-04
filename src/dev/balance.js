@@ -20,7 +20,7 @@ import { hasCondition, conditionEffects } from '../rules/conditions.js';
 import { WEAPONS } from '../rules/equipment.js';
 import { getSpell, magiasProntas } from '../rules/spells.js';
 import { distanceFt, Battlefield as BF } from '../core/grid.js';
-import { MAP, PARTY_SPOTS, buildFoes, reinforcementsFor } from '../game/encounter.js';
+import { MAPA_ARENA, PARTIDA_ARENA, buildFoes, reinforcementsFor } from '../game/encounter.js';
 
 /**
  * Política do grupo: joga de forma competente mas não ótima — cura quem está
@@ -245,14 +245,14 @@ export function playCharacter(enc, c) {
 /** Roda um combate inteiro, sem esperar nada. */
 export function runOne(seed) {
   const rng = makeRng(seed);
-  const field = new Battlefield(MAP[0].length, MAP.length, MAP);
+  const field = new Battlefield(MAPA_ARENA[0].length, MAPA_ARENA.length, MAPA_ARENA);
   const party = makeParty();
-  party.forEach((c, i) => { c.pos = { ...PARTY_SPOTS[i] }; });
-  const foes = buildFoes();
+  party.forEach((c, i) => { c.pos = { ...PARTIDA_ARENA[i] }; });
+  const foes = buildFoes('arena');
 
   const enc = new Encounter({
     battlefield: field, party, foes, rng,
-    reinforcements: (round) => reinforcementsFor(round),
+    reinforcements: (round) => reinforcementsFor(round, 'arena'),
   });
 
   // Conta turnos sem tocar no fluxo de eventos.

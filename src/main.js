@@ -469,12 +469,21 @@ class App {
     const busca = new URLSearchParams(location.search);
     const direto = busca.get("encontro");
     if (direto) {
-      this.newEncounter({
-        modo: "arena",
-        variante: direto,
-        nivel: Number(busca.get("nivel")) || 2,
-      });
-      // Atalho de desenvolvimento: `?encontro=padrao&nivel=1&strahd=abertura` abre a chegada a Baróvia.
+      // Cena que não existe não pode derrubar o jogo inteiro: `mapaDo` agora recusa nome desconhecido (antes
+      // devolvia a arena calada), e isso acontece dentro do construtor do App. Sem este try, `?encontro=padrao`
+      // — que era uma cena e deixou de ser — abria a página pela metade, com o HUD e sem tabuleiro.
+      try {
+        this.newEncounter({
+          modo: "arena",
+          variante: direto,
+          nivel: Number(busca.get("nivel")) || 2,
+        });
+      } catch (e) {
+        console.warn(`?encontro=${direto}: ${e.message}`);
+        this.menu.abrir();
+        return;
+      }
+      // Atalho de desenvolvimento: `?encontro=emboscada&nivel=1&strahd=abertura` abre a chegada a Baróvia.
       if (busca.get("strahd") === "abertura") this.abrirAberturaStrahd();
       // ... e `strahd=casaDaMorte3` (ou 1, 2, 4, Porao1, Porao2) cai direto no andar pedido, com o grupo da arena.
       else if (/^casaDaMorte/.test(busca.get("strahd") ?? "")) {

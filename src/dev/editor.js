@@ -24,7 +24,7 @@ const area = $('area');
 // `src/dev/conferir-paredes.mjs` aponta achados em qualquer uma delas — de nada adianta o parecer dizer
 // "(30,78)" se a cena não abre para olhar e corrigir.
 const MAPAS_DO_JOGO = [
-  ['emboscada', 'Emboscada na estrada'], ['padrao', 'Encontro padrão'], ['caverna', 'Caverna'],
+  ['emboscada', 'Emboscada na estrada'], ['caverna', 'Caverna'],
   ['ermo', 'Ermo'], ['ermoNoite', 'Ermo, de noite'], ['rua', 'Rua de Phandalin'],
   ['esconderijo', 'Esconderijo Cragmaw'], ['mansao', 'Mansão Tresendar'], ['mansaoTunel', 'Mansão Tresendar, pelo túnel'],
   ['poco', 'Poço da Coruja Velha'], ['cume', 'Cume'], ['castelo', 'Castelo Dentefino'],
@@ -145,9 +145,9 @@ function marcarTopo(ctx, C) {
     }
     ctx.restore();
   }
-  // A ALTURA, que de cima não aparece em lugar nenhum. Nove cenas usam desnível — o platô do encontro padrão, os
-  // barrancos do Poço, os três níveis da Onda Eco — e sem isto o editor desenhava todas elas planas: não dava
-  // para conferir o que a regra usa para cobertura, custo de subida e linha de visão.
+  // A ALTURA, que de cima não aparece em lugar nenhum. Oito cenas usam desnível — os
+  // barrancos do Poço, os cinco níveis da Mansão, os três da Onda Eco — e sem isto o editor desenhava todas
+  // elas planas: não dava para conferir o que a regra usa para cobertura, custo de subida e linha de visão.
   if (sel.ferramenta === 'altura') {
     ctx.save();
     ctx.font = `bold ${Math.max(9, C * 0.34)}px system-ui`;

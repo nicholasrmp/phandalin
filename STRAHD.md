@@ -43,7 +43,7 @@ Material de trabalho (não entra no repositório; `_referencias/` é ignorado pe
 ## Feito até aqui
 
 - **Retratos** de Rose e Thorn (OpenArt, 2 gerações, no estilo dos outros): `src/art/retratos/rose.webp` e `thorn.webp`, com os looks `rose` e `thorn` e as fichas em `rules/npcs.js`.
-- **Abertura em Baróvia** (`game/strahd-abertura.js`): a névoa, a aldeia vazia e a conversa com Rose, com teste de Intuição, a recusa da névoa e o ataque às crianças (elas somem e o portão se abre). Para ver: `?encontro=padrao&nivel=1&strahd=abertura`.
+- **Abertura em Baróvia** (`game/strahd-abertura.js`): a névoa, a aldeia vazia e a conversa com Rose, com teste de Intuição, a recusa da névoa e o ataque às crianças (elas somem e o portão se abre). Para ver: `?encontro=emboscada&nivel=1&strahd=abertura`.
 - **Criaturas** (`rules/monsters/strahd.js`): armadura animada, vassoura animada (nossa, não SRD), fantasma de criança (SRD alterado como no livro), enxames de centopeias e de ratos, sombra, mímico, lívido e arbusto errante. Grick, carniçal e espectro já existiam.
 
 - **1º e 2º andares jogáveis** (áreas 1 a 10): planta própria, descrições, painéis, o armário do canil, a gaveta e o livro falso da biblioteca, a sala secreta com o baú e a **carta de Strahd, que é o marco do 2º nível** (o grupo sobe de nível ao ler a carta; a casa mostra a escada secreta do sótão). Escadaria liga os dois andares.

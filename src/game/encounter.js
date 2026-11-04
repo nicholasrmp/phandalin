@@ -22,13 +22,18 @@ import { MAPA_ONDA_ECO, ONDA_ECO } from './ondaeco.js';
 
 // '.' chão · '#' parede · '~' terreno difícil · 'o' cobertura · '1'..'9' elevação
 //
-// O paredão central (x7–9, y4–6) existe porque, sem ele, os dois lados se veem
-// do primeiro quadrado e o combate vira troca de tiros de 24 m.
+// A ARENA DO SIMULADOR. NÃO é uma cena do jogo: não está no menu, não está na lista do editor e a conferência
+// de parede e porta não passa por ela. É a bancada onde `src/dev/balance.js` mede equilíbrio desde o começo do
+// projeto — todos os números de encontro citados nos comentários daqui saíram dela — e onde a vitrine de
+// tamanhos (`grandes`) põe as criaturas Grandes e Enormes para serem vistas.
 //
-// O platô do canto superior direito é onde os goblins se posicionam. Subir
-// custa o dobro (escalada, pelo SRD), quem está em cima tem cobertura contra
-// quem está embaixo, e o platô corta a linha de visão de quem está atrás dele.
-export const MAP = [
+// Ela saiu do jogo porque é um mapa DESENHADO EM CÓDIGO, e os mapas do jogo agora são pintados. Ficou como
+// gabarito de medição, que é o que sempre foi de fato: trocá-la invalidaria a série de medidas inteira.
+//
+// O paredão central (x7–9, y4–6) existe porque, sem ele, os dois lados se veem do primeiro quadrado e o combate
+// vira troca de tiros de 24 m. O platô do canto nordeste (altura 1) é onde os goblins se posicionam: subir custa
+// o dobro, quem está em cima tem cobertura e o platô corta a visão de quem tenta contornar.
+export const MAPA_ARENA = [
   '################',
   '#......o...111.#',
   '#..~~..o...111.#',
@@ -44,7 +49,7 @@ export const MAP = [
 ];
 
 /** Guerreira na frente, mago atrás — o posicionamento inicial já ensina. */
-export const PARTY_SPOTS = [
+export const PARTIDA_ARENA = [
   { x: 3, y: 9 }, { x: 2, y: 10 }, { x: 2, y: 9 }, { x: 1, y: 10 },
 ];
 
@@ -195,7 +200,7 @@ export const PARTY_SPOTS_EMBOSCADA = [
  * Mapa e posições andam juntos: uma posição boa num mapa cai dentro de uma
  * árvore no outro.
  */
-export function mapaDo(variante = 'padrao') {
+export function mapaDo(variante) {
   if (variante === 'emboscada') {
     return {
       terreno: MAPA_EMBOSCADA.terreno,
@@ -402,7 +407,12 @@ export function mapaDo(variante = 'padrao') {
       cena: 'caverna',
     };
   }
-  return { terreno: MAP, altura: null, grupo: PARTY_SPOTS, olhar: { dx: 1, dy: -1 } };
+  // A vitrine de tamanhos e o simulador, os dois na arena. Explícito: antes qualquer variante desconhecida caía
+  // aqui por descuido, e `mapaDo('cachorro')` devolvia um mapa como se nada fosse.
+  if (variante === 'grandes' || variante === 'arena') {
+    return { terreno: MAPA_ARENA, altura: null, grupo: PARTIDA_ARENA, olhar: { dx: 1, dy: -1 } };
+  }
+  throw new Error(`mapaDo: não existe a cena "${variante}"`);
 }
 
 /**
@@ -412,12 +422,11 @@ export function mapaDo(variante = 'padrao') {
  *   fácil 200 · médio 400 · difícil 600 · mortal 800 (XP ajustado)
  */
 /**
- * @param {string} variante  'padrão' é o encontro do jogo. 'grandes' existe
- *   para VER as criaturas que ocupam mais de um quadrado, porque o encontro
- *   padrão não tem nenhuma e trocar a composição dele só para exibir um
- *   recurso estragaria um equilíbrio que foi medido. Chega por `?encontro=`.
+ * @param {string} variante  a cena. 'arena' é a bancada do simulador (`MAPA_ARENA`), com o bando que o
+ *   `balance.js` mede desde sempre; 'grandes' é a mesma arena com as criaturas que ocupam mais de um quadrado,
+ *   para VER pegada e alcance — trocar a composição da arena só para exibir isso estragaria a série de medidas.
  */
-export function buildFoes(variante = 'padrao') {
+export function buildFoes(variante = 'arena') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
   if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor'].includes(variante)) return [];
   if (variante.startsWith('casaDaMorte')) return foesDaCasa(variante);
@@ -452,6 +461,8 @@ export function buildFoes(variante = 'padrao') {
     for (const f of foes) f.facingVec = { dx: 0, dy: 1 };
     return foes;
   }
+  if (variante !== 'arena') throw new Error(`buildFoes: não existe a cena "${variante}"`);
+  // O BANDO DA ARENA, que o `balance.js` mede desde o começo do projeto. Mexer aqui invalida a série inteira.
   const foes = [
     makeMonster('goblinChefe', { x: 12, y: 2 }),
     // O goblin fica COLADO no chefe de propósito: Redirecionar Ataque só
@@ -733,8 +744,8 @@ const REFORCOS_EMBOSCADA = [
 ];
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
-export function reinforcementsFor(round, variante = 'padrao') {
-  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
+export function reinforcementsFor(round, variante = 'arena') {
+  if (['caverna', 'esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;
