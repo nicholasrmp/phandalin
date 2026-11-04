@@ -31,18 +31,28 @@ PASSO = 80.0
 VERDE = 12                  # excesso de verde acima disto é folha
 ESCURO = 92                 # escuro e verde é copa
 
-# Decalcadas da imagem, em casas (x1, y1, x2, y2 inclusivos). `Y` é o Gigante Adormecido, a estalagem do livro:
-# telhado grande de quatro águas no meio do lado norte, com o pátio cercado de barris do lado leste.
+# DECALCADAS DA IMAGEM, em casas (x1, y1, x2, y2 inclusivos). A regra do decalque é 50%: a casa entra na pegada
+# quando o telhado cobre metade dela ou mais. Medido olhando a imagem com a grade e os rótulos por cima
+# (`src/dev/_tmp`, as provas `rua-norte.png` e `rua-sul.png`), e não no olho sobre o mapa inteiro.
+#
+# `Y` é o Gigante Adormecido, a estalagem do livro: telhado grande de quatro águas no meio do lado norte, com o
+# pátio cercado de barris do lado leste. O frontão do alto é mais estreito que o corpo, por isso vai numa linha
+# só; as outras quatro casas são retângulos.
 PREDIOS = [
-    ('H', 2, 2, 4, 4),      # a casa de pedra, a noroeste
-    ('Y', 8, 0, 13, 4),     # o Gigante Adormecido
-    ('H', 17, 2, 20, 4),    # a casa de telha, a nordeste
-    ('H', 2, 9, 5, 11),     # o chalé de palha, a sudoeste
-    ('H', 11, 9, 14, 11),   # o chalé de palha, a sudeste
+    ('H', 2, 2, 4, 4),        # a casa de pedra, a noroeste
+    ('Y', 10, 0, 12, 0),      # o frontão do telhado da estalagem, que não chega às alas
+    ('Y', 8, 1, 13, 4),       # o corpo do Gigante Adormecido
+    ('H', 18, 2, 20, 4),      # a casa de telha, a nordeste
+    ('H', 3, 9, 5, 10),       # o chalé de palha, a sudoeste
+    ('H', 12, 9, 14, 10),     # o chalé de palha, a sudeste
 ]
-BARRIS = [(14, 1), (15, 1), (14, 3)]        # o pátio da estalagem
-HORTA = [(7, 12), (8, 12), (9, 12)]         # a horta do chalé do sul: passa-se, mas atrapalha
-
+# Os barris e caixotes do pátio. SÓ os que o desenho mostra como pilha fechada: enfileirar os cinco que
+# aparecem na arte emparedava a faixa norte do pátio, e o passe de bolsão a transformava em mata.
+BARRIS = [(14, 1), (16, 2), (16, 3)]
+# O MURO BAIXO do quintal do chalé do sul: `r` é pedra — barra passo, não barra visão, que é o que um muro de
+# meio metro faz. Dá cobertura a quem se agacha atrás dele.
+MURO = [(2, 9), (2, 10), (2, 11), (2, 12), (3, 12), (4, 12), (5, 12), (6, 12), (7, 12)]
+HORTA = [(x, y) for y in (11, 12) for x in (7, 8, 9)]   # a horta: passa-se, mas atrapalha
 
 def amostrar():
     im = Image.open(IMAGEM).convert('RGB')
@@ -89,11 +99,13 @@ def main():
                 g[y][x] = glifo
     for x, y in BARRIS:
         g[y][x] = 'u'
+    for x, y in MURO:
+        g[y][x] = 'r'
     for x, y in HORTA:
         g[y][x] = '%'
 
     # bolsão fechado vira mata, como no Ermo: o recorte deixa cantos de grama que ninguém alcança
-    andavel = {(x, y) for y in range(H) for x in range(W) if g[y][x] not in 'THYu'}
+    andavel = {(x, y) for y in range(H) for x in range(W) if g[y][x] not in 'THYur'}
     pedacos = grupos(andavel)
     for pedaco in pedacos[1:]:
         for x, y in pedaco:

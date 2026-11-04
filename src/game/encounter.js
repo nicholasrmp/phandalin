@@ -107,20 +107,20 @@ export const MAPA_EMBOSCADA = {
 // palha do telhado e a terra da rua ficam na mesma faixa de matiz e de brilho — e o preenchimento conexo também
 // não resolve, já que o telhado da estalagem encosta na rua e os dois viram um borrão só.
 export const MAPA_RUA = [
-  'TT:T:,,,YYYYYY,,,TTTTT',
-  'T::,:,,TYYYYYYuu,TTTTT',
-  '::HHH,,,YYYYYY::,HHHHT',
-  ':,HHH,,,YYYYYYu:,HHHHT',
-  ',,HHH,,:YYYYYY::,HHHH,',
+  'TT:T:,,,::YYY,,,,TTTTT',
+  'T::,:,,TYYYYYYu:,TTTTT',
+  '::HHH,,,YYYYYY::u,HHHT',
+  ':,HHH,,,YYYYYY::u:HHHT',
+  ',,HHH,,:YYYYYY::,,HHH,',
   ',,,:,,,:,,,:,,:,,:,,,,',
   '::::::::::::::::::::::',
   '::::::::::::::::::::::',
   ',,,,,,,::,,:,:,,,T,,,T',
-  ',THHHH,:,,,HHHH,TT,,,T',
-  ',,HHHH,,,:,HHHH,,,,,,T',
-  'TTHHHH,,::,HHHH,T,,,TT',
-  'T::,,,,%%%,T,,,,T,,:::',
-  'T:::,TTT,,,TT,,TTTT:TT',
+  ',TrHHH,:,,,:HHH,TT,,,T',
+  ',,rHHH,,,:,,HHH,,,,,,T',
+  'TTr,,,,%%%,T,,,,T,,,TT',
+  'TTrrrrr%%%,T,,,,T,,:::',
+  'TTTTTTTT,,,TT,,TTTT:TT',
 ];
 
 // O ERMO: a Trilha de Triboar entre colinas, onde caem os encontros de viagem (`game/regiao.js` manda para cá
