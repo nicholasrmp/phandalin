@@ -39,9 +39,25 @@ export class TabuleiroTopo extends Board {
     this.maxHeight = 0;
     this.retratos = new Map();
     this.imgFundo = null;
+    this.imgFrente = null;       // a máscara da folhagem, derivada da pintura em `carregarFundo`
+    this.imgSobre = new Map();   // url -> Image das sobreposições que o roteiro acende e apaga
     this.enquadrar();
     this.rebuildOrder();
     this.carregarFundo();
+    this.carregarSobreposicoes();
+  }
+
+  /**
+   * As imagens das sobreposições. Carregam TODAS no começo, mesmo as apagadas: se esperássemos o roteiro
+   * acender para só então buscar o arquivo, a ponte cairia um instante depois do estrondo.
+   */
+  carregarSobreposicoes() {
+    for (const o of this.field.sobreposicoes ?? []) {
+      if (!o.url || this.imgSobre.has(o.url)) continue;
+      const img = new Image();
+      this.imgSobre.set(o.url, img);
+      img.src = o.url;
+    }
   }
 
   /** O canvas é o mapa inteiro: largura por altura em casas, mais uma margem. */
@@ -62,7 +78,12 @@ export class TabuleiroTopo extends Board {
     const f = this.field.fundo;
     if (!f?.nome) return;
     const img = new Image();
-    img.addEventListener('load', () => { this.imgFundo = img; }, { once: true });
+    img.addEventListener('load', () => {
+      this.imgFundo = img;
+      // A máscara da folhagem sai da pintura uma vez, no carregamento: é uma varredura de 2,4 milhões de pixels
+      // na Emboscada, e repeti-la a cada quadro seria absurdo.
+      this.imgFrente = this.field.frente?.cor ? V.mascaraDaFrente(img, this.field.frente.cor) : null;
+    }, { once: true });
     img.src = f.url ?? `/_referencias/roll20/${f.nome}`;
   }
 
@@ -145,6 +166,9 @@ export class TabuleiroTopo extends Board {
     ctx.translate(this.ox, this.oy);
     const comPintura = V.pintarFundo(ctx, this.imgFundo, this.field.fundo, C);
     if (!comPintura) V.pintarChao(ctx, this.field, C);
+    // As sobreposições de CHÃO: a fogueira acesa, o destroço, o baú aberto. Entram logo depois do mapa pintado,
+    // por baixo de tudo o mais, porque é chão repintado — as fichas passam por cima.
+    V.pintarSobreposicoes(ctx, this.imgSobre, this.field, C, false);
     // Com mapa pintado, só os móveis que a cena marcou com `sobreOFundo`: o desenho já tem o resto.
     V.pintarMoveis(ctx, this.field, C, atlas, imgAtlas, comPintura);
     V.pintarGrade(ctx, this.field, C, comPintura ? 'rgba(120,200,255,.25)' : 'rgba(0,0,0,.28)');
@@ -169,6 +193,8 @@ export class TabuleiroTopo extends Board {
       aVista.set(c.id, c);
       this.ficha(ctx, c);
     }
+
+    this.desenharFrente(ctx, aVista);
 
     // O VÉU, na mesma ordem do isométrico: por cima do chão e das fichas, por baixo dos efeitos e dos números.
     // `desenharEscuridao` é herdada inteira; o que muda de vista são as três peças de geometria logo abaixo.
@@ -196,6 +222,65 @@ export class TabuleiroTopo extends Board {
     for (const t of targets ?? []) this.fillDiamond(ctx, t.pos.x, t.pos.y, 'rgba(220,90,70,.26)', '#d9594a');
     if (selected?.pos) this.fillDiamond(ctx, selected.pos.x, selected.pos.y, 'rgba(0,0,0,0)', '#ffd868');
     if (this.hover) this.fillDiamond(ctx, this.hover.x, this.hover.y, 'rgba(255,255,255,.07)', 'rgba(255,216,104,.7)');
+  }
+
+  /**
+   * A CAMADA DE FRENTE: a copa e o beiral redesenhados POR CIMA das fichas, para quem passa debaixo deles ser
+   * coberto em parte e ficar DENTRO do desenho em vez de em cima dele.
+   *
+   * Vem antes do véu, para a folha escurecer junto com o chão que ela cobre, e antes dos efeitos e dos números,
+   * que ninguém quer ver tapados por uma folha. Não mexe em regra: a casa continua valendo o que o terreno diz.
+   *
+   * E A FOLHA DESBOTA ONDE HÁ FICHA. Sem isto a camada ESCONDE o personagem: medido na Emboscada, a copa cobre
+   * 75% a 89% das casas em que se quis a prova, e o herói simplesmente sumiu debaixo dela. É o mesmo problema
+   * que o Foundry resolve com a oclusão do tile de frente (o modo "Fade"), e a saída aqui é a mesma do véu —
+   * a camada vai para uma tela à parte e se fura com `destination-out`, só que com degradê, para a borda do
+   * furo não aparecer. Sobra folha por cima do ombro: o suficiente para ler "está debaixo da árvore".
+   */
+  desenharFrente(ctx, aVista) {
+    // a sobreposição marcada `frente` (a ponte quebrada) desenha-se aqui mesmo sem haver camada de frente
+    const comSobre = (this.field.sobreposicoes ?? []).some((o) => o.ligada && o.frente);
+    if (!this.field.frente && !comSobre) return;
+    const { width: w, height: h } = this.canvas;
+    const lona = this._frente ?? (this._frente = document.createElement('canvas'));
+    if (lona.width !== w) lona.width = w;
+    if (lona.height !== h) lona.height = h;
+    const m = lona.getContext('2d');
+    m.globalCompositeOperation = 'source-over';
+    m.clearRect(0, 0, w, h);
+    m.save();
+    m.translate(this.ox, this.oy);
+    V.pintarFrente(m, this.imgFundo, this.imgFrente, this.field, this.casa);
+    V.pintarSobreposicoes(m, this.imgSobre, this.field, this.casa, true);
+    m.restore();
+    m.globalCompositeOperation = 'destination-out';
+    for (const c of aVista.values()) this.recortarFiguraDaFrente(m, c);
+    m.globalCompositeOperation = 'source-over';
+    ctx.drawImage(lona, 0, 0);
+  }
+
+  /** O furo da ficha na camada de frente: o disco da figura em degrau suave, mais a faixa da barra e do nome. */
+  recortarFiguraDaFrente(m, c) {
+    const C = this.casa;
+    const andando = this.fx.positionFor(c.id);
+    const pegada = c.pos.f ?? 1;
+    const meio = (pegada - 1) / 2;
+    const { sx, sy } = this.centerF((andando ? andando.x : c.pos.x) + meio, (andando ? andando.y : c.pos.y) + meio);
+    const r = C * pegada * 0.42;
+    const g = m.createRadialGradient(sx, sy, r * 0.2, sx, sy, r * 1.55);
+    g.addColorStop(0, 'rgba(0,0,0,.9)');
+    g.addColorStop(0.62, 'rgba(0,0,0,.82)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    m.fillStyle = g;
+    m.beginPath();
+    m.arc(sx, sy, r * 1.55, 0, Math.PI * 2);
+    m.fill();
+    // a barra de vida e o nome ficam ABAIXO do disco e são escritos antes desta camada: sem furo próprio,
+    // a folhagem cobria justamente o que diz de quem é a ficha
+    const bh = Math.max(4, C * 0.075);
+    const letra = Math.max(10, Math.round(C * 0.16));
+    m.fillStyle = 'rgba(0,0,0,.9)';
+    m.fillRect(sx - r * 1.2, sy + r - bh, r * 2.4, bh * 2 + letra + 6);
   }
 
   // ---- as três peças da escuridão que sabem de geometria (ver `board.js`) --------------------------------

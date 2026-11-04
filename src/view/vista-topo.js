@@ -17,15 +17,20 @@ const corDoChao = (sup) => SUPERFICIE[sup]?.topo ?? COR_PADRAO;
 /** Quantos pixels da imagem de fundo valem um pixel da tela, no zoom atual. */
 export const escalaDoFundo = (fundo, C) => C / (fundo?.escala || 1);
 
+// Uma `Image` mede por `naturalWidth`, um canvas por `width`. `pintarFundo` recebe os dois: a pintura é uma
+// imagem, e a máscara da camada de frente é um canvas desenhado a partir dela.
+const largura = (im) => im?.naturalWidth || im?.width || 0;
+const altura = (im) => im?.naturalHeight || im?.height || 0;
+
 /**
  * A imagem de fundo deitada na grade: `fundo.escala` pixels da imagem por casa, `fundo.x0/y0` dizendo onde cai,
  * em pixels da imagem (já girada), o canto da casa (0,0), e `fundo.giro` em graus (0, 90, 180 ou 270).
  */
 export function pintarFundo(ctx, img, fundo, C) {
-  if (!img?.naturalWidth || !fundo) return false;
+  if (!largura(img) || !fundo) return false;
   const k = escalaDoFundo(fundo, C);
-  const iw = img.naturalWidth * k;
-  const ih = img.naturalHeight * k;
+  const iw = largura(img) * k;
+  const ih = altura(img) * k;
   ctx.save();
   ctx.globalAlpha = fundo.opacidade ?? 1;
   ctx.imageSmoothingEnabled = true;
@@ -35,6 +40,101 @@ export function pintarFundo(ctx, img, fundo, C) {
   ctx.drawImage(img, canto[0], canto[1], iw, ih);
   ctx.restore();
   return true;
+}
+
+// ------------------------------------------------------------------------------- camada de sobreposição ---
+
+/**
+ * AS SOBREPOSIÇÕES: pedaços de arte com nome, deitados num retângulo de casas, que o roteiro ACENDE E APAGA.
+ *
+ * É o que um mapa do Foundry faz com ladrilho comutável — a fogueira que se acende, a ponte que cede, o baú que
+ * abre, o túnel que desaba, a enxurrada que desce. Lá o mestre dá um duplo clique num ladrilho invisível e o
+ * Monk's Active Tile Triggers liga a arte etiquetada; aqui não há mestre, então quem liga é o `aoInteragir` da
+ * cena, quando o grupo mexe no objeto (`game/interacoes.js`).
+ *
+ * `frente` escolhe a camada: sem ele, a peça entra logo depois do mapa pintado e as fichas passam POR CIMA dela
+ * (chão aceso, destroço, baú aberto); com ele, a peça vai junto da camada de frente e cobre quem está debaixo
+ * (a ponte quebrada, que no Foundry vem marcada como ladrilho de teto).
+ */
+export function pintarSobreposicoes(ctx, imagens, field, C, frente = false) {
+  for (const o of field.sobreposicoes ?? []) {
+    if (!o.ligada || Boolean(o.frente) !== frente) continue;
+    const img = imagens?.get(o.url);
+    if (!largura(img)) continue;
+    ctx.save();
+    if (o.opacidade != null) ctx.globalAlpha = o.opacidade;
+    ctx.drawImage(img, o.x * C, o.y * C, o.w * C, o.h * C);
+    ctx.restore();
+  }
+}
+
+// ------------------------------------------------------------------------------------- camada de frente ---
+
+/**
+ * A MÁSCARA DA FOLHAGEM, tirada da própria pintura: um canvas do tamanho da imagem em que só a folha fica
+ * opaca, pronto para ser deitado na grade pelo mesmo `pintarFundo`.
+ *
+ * O teste é o de `src/dev/mapa-ermo.py`, que já separa copa de grama por cor: excesso de verde acima de
+ * `verde`, brilho abaixo de `escuro`. Por isso a camada de frente não custa arte nenhuma — a copa já está
+ * desenhada no mapa, e o que faltava era desenhá-la DUAS vezes, a segunda por cima das fichas.
+ *
+ * Devolve `null` quando não dá: imagem de outro domínio suja o canvas e `getImageData` lança (é o caso do mapa
+ * do Esconderijo, que vem do `files.d20.io`). Aí só valem as casas marcadas à mão.
+ */
+export function mascaraDaFrente(img, cor = {}) {
+  const w = largura(img);
+  const h = altura(img);
+  if (!w || !h) return null;
+  const verdeMin = cor.verde ?? 12;
+  const escuroMax = cor.escuro ?? 92;
+  const lona = document.createElement('canvas');
+  lona.width = w;
+  lona.height = h;
+  const c = lona.getContext('2d', { willReadFrequently: true });
+  c.drawImage(img, 0, 0);
+  let quadro;
+  try { quadro = c.getImageData(0, 0, w, h); } catch { return null; }
+  const p = quadro.data;
+  let opacos = 0;
+  for (let i = 0; i < p.length; i += 4) {
+    const r = p[i];
+    const g = p[i + 1];
+    const b = p[i + 2];
+    if (g - (r + b) / 2 > verdeMin && (r + g + b) / 3 < escuroMax) { opacos += 1; continue; }
+    p[i + 3] = 0;
+  }
+  if (!opacos) return null;
+  c.putImageData(quadro, 0, 0);
+  return lona;
+}
+
+/**
+ * A CAMADA DE FRENTE, desenhada DEPOIS das fichas: a folhagem derivada da cor (`mascara`) e, por cima dela, a
+ * pintura recortada nas casas que alguém marcou à mão (`frente.casas`, para o beiral que a cor não acha).
+ *
+ * Quem chama desenha isto antes do véu da escuridão, para a folha escurecer junto com o chão que ela cobre.
+ */
+export function pintarFrente(ctx, img, mascara, field, C) {
+  const fundo = field.fundo;
+  if (!fundo) return;
+  if (mascara) pintarFundo(ctx, mascara, fundo, C);
+  const casas = field.frente?.casas;
+  if (!casas || !largura(img)) return;
+  ctx.save();
+  ctx.beginPath();
+  let alguma = false;
+  for (let y = 0; y < field.h; y++) {
+    for (let x = 0; x < field.w; x++) {
+      if (casas[y]?.[x] !== '#') continue;
+      ctx.rect(x * C, y * C, C, C);
+      alguma = true;
+    }
+  }
+  if (alguma) {
+    ctx.clip();
+    pintarFundo(ctx, img, fundo, C);
+  }
+  ctx.restore();
 }
 
 /** O chão: a cor que o jogo já usa para cada superfície, variada por casa para não virar um lençol liso. */

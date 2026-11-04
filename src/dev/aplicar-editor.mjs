@@ -57,11 +57,11 @@ if (mudou('tracos') && novo.tracos?.length) {
   for (const pts of novo.tracos) console.log(`  [${pts.map(([x, y]) => `[${x}, ${y}]`).join(', ')}],`);
   console.log('],\n');
 }
-for (const k of ['objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 'decor', 'altura', 'grupo', 'fundo']) {
+for (const k of ['objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 'decor', 'altura', 'grupo', 'fundo', 'frente']) {
   if (!mudou(k) || novo[k] === undefined) continue;
   console.log(`${k}: ${JSON.stringify(novo[k])},\n`);
 }
 
-const nada = ['terreno', 'paredes', 'tracos', 'objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 'decor', 'altura', 'grupo', 'fundo']
+const nada = ['terreno', 'paredes', 'tracos', 'objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 'decor', 'altura', 'grupo', 'fundo', 'frente']
   .every((k) => !mudou(k) || novo[k] === undefined);
 if (nada) console.log(`// nada mudou em relação à cena "${cena}".`);

@@ -15,6 +15,24 @@ export function montarCampo(mapa) {
   field.avisosDeVista = Boolean(mapa.avisosDeVista);
   // O mapa PINTADO por baixo e como ele se encaixa na grade (ver `mapa-editor.js`): quem desenha é a vista de cima.
   if (mapa.fundo) field.fundo = mapa.fundo;
+  // AS SOBREPOSIÇÕES: pedaços de arte com nome que o roteiro acende e apaga (a fogueira, a ponte que cede, o
+  // baú aberto). Vão COPIADAS, porque `ligada` muda durante a partida e o mapa da cena é compartilhado — sem a
+  // cópia, acender a fogueira numa partida a deixava acesa na próxima.
+  if (mapa.sobreposicoes?.length) {
+    field.sobreposicoes = mapa.sobreposicoes.map((o) => ({ ...o, ligada: Boolean(o.ligada) }));
+    /** Acende (`true`), apaga (`false`) ou inverte (sem argumento) uma peça pelo `id`. Devolve se mudou. */
+    field.alternarSobreposicao = (id, ligada) => {
+      const o = field.sobreposicoes.find((p) => p.id === id);
+      if (!o) return false;
+      const novo = ligada ?? !o.ligada;
+      if (o.ligada === novo) return false;
+      o.ligada = novo;
+      return true;
+    };
+  }
+  // A CAMADA DE FRENTE: a parte da pintura que o tabuleiro redesenha POR CIMA das fichas, para copa e beiral
+  // cobrirem quem passa debaixo (ver `mapa-editor.js`). É só aparência — quem barra passo é o terreno.
+  if (mapa.frente) field.frente = mapa.frente;
   // A PAREDE LIVRE, como foi traçada: polilinhas em casas (com fração). A aresta de casa (`paredes`) é a derivada
   // delas para a regra; o desenho usa o traço, porque caverna, pedra e destroço não são retos.
   if (mapa.tracos?.length) field.tracos = mapa.tracos;

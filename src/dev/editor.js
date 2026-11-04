@@ -68,6 +68,8 @@ const FERRAMENTAS = [
   ['sala', 'Sala', '7'],
   ['inicio', 'Partida', '8'],
   ['interativo', 'Objeto interagível', '9'],
+  ['frente', 'Camada de frente', '0'],
+  ['sobrepor', 'Sobreposição', 'q'],
 ];
 
 // ------------------------------------------------------------------------------------------------ estado ---
@@ -79,7 +81,8 @@ let sujo = true;
 const sel = {
   ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
   interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false },
-  modoPiso: 'pincel', modoAresta: 'aresta',
+  modoPiso: 'pincel', modoAresta: 'aresta', modoFrente: 'pincel', frenteMarca: true,
+  sobrepor: { id: '', url: '/mapas/fa/ChestOpen.webp', frente: false, ligada: true },
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
   tracoModo: 'desenhar',
@@ -95,8 +98,30 @@ let arrasto = null;       // o retângulo que está sendo arrastado para calibra
 let tracando = null;      // os pontos da parede livre que está sendo desenhada, em casas
 // AS FERRAMENTAS DE ÁREA. Marcar a pegada de um prédio casa a casa é o que o Foundry resolve com Region e o
 // Roll20 com o polígono da camada de luz: aqui são o retângulo arrastado, o polígono clicado e o balde.
-let caixa = null;         // { a, b } em casas inteiras, enquanto se arrasta um retângulo (terreno ou parede)
+let caixa = null;         // { a, b } em casas inteiras, enquanto se arrasta um retângulo (terreno, frente ou parede)
 let poligono = null;      // os cantos clicados do polígono, em casas com fração
+
+// AS SOBREPOSIÇÕES no editor: as imagens de verdade, para se ver o que se está colocando, e qual peça está
+// escolhida. As imagens vêm do servidor pela mesma `url` que o jogo usa — se o arquivo não estiver lá, a peça
+// aparece só como retângulo com o nome, que é exatamente o que o jogo faz também.
+const imgSobre = new Map();
+let sobreSel = '';        // o `id` da peça escolhida, que os campos do painel editam
+
+function imagemDaPeca(url) {
+  if (!url) return null;
+  if (!imgSobre.has(url)) {
+    const img = new Image();
+    img.addEventListener('load', () => { sujo = true; }, { once: true });
+    img.src = url;
+    imgSobre.set(url, img);
+  }
+  const img = imgSobre.get(url);
+  return img.complete && img.naturalWidth ? img : null;
+}
+
+/** Qual forma de área a ferramenta escolhida está usando. A parede só tem retângulo. */
+const modoDeArea = () => (sel.ferramenta === 'piso' ? sel.modoPiso
+  : sel.ferramenta === 'frente' ? sel.modoFrente : 'retangulo');
 
 
 const instantaneo = () => JSON.stringify(mapa);
@@ -200,6 +225,54 @@ function marcarTopo(ctx, C) {
         ctx.fillStyle = '#dff1ff';
         ctx.fillText(String(nivel), (x + 0.5) * C, (y + 0.5) * C);
       }
+    }
+    ctx.restore();
+  }
+  // A CAMADA DE FRENTE marcada à mão, que no editor não aparece de outro jeito: no jogo ela é a própria
+  // pintura redesenhada, então sem esta tinta não se vê o que já foi marcado.
+  if (sel.ferramenta === 'frente') {
+    ctx.save();
+    for (let y = 0; y < campo.h; y++) {
+      for (let x = 0; x < campo.w; x++) {
+        if (!M.frenteEm(mapa, x, y)) continue;
+        ctx.fillStyle = 'rgba(120, 230, 160, .26)';
+        ctx.fillRect(x * C, y * C, C, C);
+        ctx.strokeStyle = 'rgba(150, 255, 190, .7)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x * C + 1, y * C + 1, C - 2, C - 2);
+      }
+    }
+    ctx.restore();
+  }
+  // AS SOBREPOSIÇÕES. Fora da ferramenta, só as ACESAS, do jeito que o jogo as mostra. Dentro dela, todas —
+  // as apagadas esmaecidas —, com o retângulo e o nome, porque é o nome que o roteiro da cena vai chamar.
+  const naFerramenta = sel.ferramenta === 'sobrepor';
+  for (const o of mapa.sobreposicoes ?? []) {
+    if (!o.ligada && !naFerramenta) continue;
+    const img = imagemDaPeca(o.url);
+    ctx.save();
+    ctx.globalAlpha = o.ligada ? (o.opacidade ?? 1) : 0.35;
+    if (img) ctx.drawImage(img, o.x * C, o.y * C, o.w * C, o.h * C);
+    else if (naFerramenta) { ctx.fillStyle = 'rgba(200,120,255,.18)'; ctx.fillRect(o.x*C, o.y*C, o.w*C, o.h*C); }
+    ctx.restore();
+    if (!naFerramenta) continue;
+    const escolhida = o.id === sobreSel;
+    ctx.save();
+    ctx.setLineDash(o.ligada ? [] : [6, 4]);
+    ctx.strokeStyle = escolhida ? '#ffd868' : '#c080ff';
+    ctx.lineWidth = escolhida ? 3 : 2;
+    ctx.strokeRect(o.x * C + 1, o.y * C + 1, o.w * C - 2, o.h * C - 2);
+    ctx.setLineDash([]);
+    if (C >= 14) {
+      const rotulo = `${o.id}${o.frente ? ' ↑' : ''}${img ? '' : ' (sem arte)'}`;
+      ctx.font = `bold ${Math.max(10, C * 0.26)}px system-ui`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      ctx.strokeText(rotulo, o.x * C + 5, o.y * C + 4);
+      ctx.fillStyle = escolhida ? '#ffd868' : '#e8d0ff';
+      ctx.fillText(rotulo, o.x * C + 5, o.y * C + 4);
     }
     ctx.restore();
   }
@@ -342,6 +415,7 @@ function agir(e, primeira) {
   if (primeira) ponto();
   pressionado = { chave };
   if (f === 'piso') aplicar(M.pintarPiso(mapa, t.x, t.y, sel.piso));
+  else if (f === 'frente') aplicar(M.pintarFrente(mapa, t.x, t.y, sel.frenteMarca));
   else if (f === 'luz') { const l = LUZES.find(([id]) => id === sel.luz); aplicar(M.porLuz(mapa, t.x, t.y, { tipo: l[0], claro: l[2], penumbra: l[3] })); }
   else if (f === 'interativo') aplicar(M.porInterativo(mapa, t.x, t.y, sel.interativo.id.trim() ? { ...sel.interativo } : null));
   else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
@@ -373,13 +447,22 @@ function aoApertar(e) {
     e.preventDefault();
     return;
   }
-  // terreno e parede por ÁREA: retângulo arrastado, polígono clicado, balde de uma vez
-  const porArea = (sel.ferramenta === 'piso' && sel.modoPiso !== 'pincel') || (sel.ferramenta === 'aresta' && sel.modoAresta === 'retangulo');
+  // terreno, parede e camada de frente por ÁREA: retângulo arrastado, polígono clicado, balde de uma vez
+  const porArea = (sel.ferramenta === 'piso' && sel.modoPiso !== 'pincel')
+    || (sel.ferramenta === 'frente' && sel.modoFrente !== 'pincel')
+    || sel.ferramenta === 'sobrepor'
+    || (sel.ferramenta === 'aresta' && sel.modoAresta === 'retangulo');
   if (porArea) {
     const t = casaDe(e);
     if (!t) return;
-    const modo = sel.ferramenta === 'piso' ? sel.modoPiso : 'retangulo';
-    if (modo === 'balde') { ponto(); if (!aplicar(M.balde(mapa, t.x, t.y, sel.piso) > 0)) { desfazer.pop(); botoes(); } }
+    const modo = modoDeArea();
+    if (modo === 'balde') {
+      ponto();
+      const n = sel.ferramenta === 'frente'
+        ? M.frenteNoBalde(mapa, t.x, t.y, sel.frenteMarca)
+        : M.balde(mapa, t.x, t.y, sel.piso);
+      if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
+    }
     else if (modo === 'poligono') {
       const c = casaFracionada(e);
       poligono = poligono ?? [];
@@ -417,13 +500,55 @@ addEventListener('mousemove', (e) => {
     estado();
   }
 });
+/** Um nome livre para a peça nova: `peca1`, `peca2`... Nome é o que o roteiro usa para acender, então tem de existir. */
+function proximoId() {
+  const usados = new Set((mapa.sobreposicoes ?? []).map((o) => o.id));
+  for (let i = 1; ; i++) if (!usados.has(`peca${i}`)) return `peca${i}`;
+}
+
+/** Enche o painel com a peça de `id` e a deixa escolhida. */
+function escolherPeca(id) {
+  const o = (mapa.sobreposicoes ?? []).find((p) => p.id === id);
+  if (!o) return;
+  sobreSel = id;
+  sel.sobrepor = { id: o.id, url: o.url, frente: Boolean(o.frente), ligada: Boolean(o.ligada) };
+  sobreNoPainel();
+}
+
+/**
+ * O arrasto da ferramenta de sobreposição: a caixa vira o retângulo da peça.
+ *
+ * CLIQUE SECO DENTRO DE UMA PEÇA ESCOLHE em vez de criar — senão não haveria como pegar uma peça já posta para
+ * mexer nela, e cada clique empilharia uma peça de uma casa por cima da outra.
+ */
+function sobreposicaoNoArrasto(a, b) {
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  const w = Math.abs(a.x - b.x) + 1;
+  const h = Math.abs(a.y - b.y) + 1;
+  if (w === 1 && h === 1) {
+    const achada = M.sobreposicoesEm(mapa, x, y)[0];
+    if (achada) { escolherPeca(achada.id); return 0; }
+  }
+  const id = (sel.sobrepor.id || '').trim() || proximoId();
+  const ok = M.porSobreposicao(mapa, {
+    id, url: (sel.sobrepor.url || '').trim(), x, y, w, h,
+    ligada: sel.sobrepor.ligada, frente: sel.sobrepor.frente,
+  });
+  if (ok) { sobreSel = id; sel.sobrepor.id = id; sobreNoPainel(); }
+  return ok ? 1 : 0;
+}
+
 /** Fecha o polígono que está sendo clicado e pinta o que está dentro dele. */
 function fecharPoligono() {
   const pts = poligono;
   poligono = null;
   if (!pts || pts.length < 3) return;
   ponto();
-  if (!aplicar(M.pintarPoligono(mapa, pts, sel.piso) > 0)) { desfazer.pop(); botoes(); }
+  const n = sel.ferramenta === 'frente'
+    ? M.frenteNoPoligono(mapa, pts, sel.frenteMarca)
+    : M.pintarPoligono(mapa, pts, sel.piso);
+  if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
 }
 
 addEventListener('mouseup', () => {
@@ -431,9 +556,10 @@ addEventListener('mouseup', () => {
     const { a, b } = caixa;
     caixa = null;
     ponto();
-    const n = sel.ferramenta === 'piso'
-      ? M.pintarRetangulo(mapa, a, b, sel.piso)
-      : M.paredesDoRetangulo(mapa, a, b, sel.estilo);
+    const n = sel.ferramenta === 'piso' ? M.pintarRetangulo(mapa, a, b, sel.piso)
+      : sel.ferramenta === 'frente' ? M.frenteNoRetangulo(mapa, a, b, sel.frenteMarca)
+        : sel.ferramenta === 'sobrepor' ? sobreposicaoNoArrasto(a, b)
+          : M.paredesDoRetangulo(mapa, a, b, sel.estilo);
     if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
   }
   if (tracando) {
@@ -475,6 +601,42 @@ addEventListener('keydown', (e) => {
 });
 
 // ------------------------------------------------------------------------------------------------ painel ---
+
+/** A seção da sobreposição: os campos da peça escolhida e a lista do que há no mapa. */
+function sobreNoPainel() {
+  const campo = (id, v) => { const e = $(id); if (e) { if (e.type === 'checkbox') e.checked = Boolean(v); else e.value = v ?? ''; } };
+  campo('sId', sel.sobrepor.id);
+  campo('sUrl', sel.sobrepor.url);
+  campo('sLigada', sel.sobrepor.ligada);
+  campo('sFrente', sel.sobrepor.frente);
+  const conta = $('contaSobre');
+  const lista = $('listaSobre');
+  const todas = mapa.sobreposicoes ?? [];
+  if (conta) conta.textContent = `${todas.length} peça(s), ${todas.filter((o) => o.ligada).length} acesa(s).`;
+  if (!lista) return;
+  lista.innerHTML = '';
+  for (const o of todas) {
+    const b = document.createElement('button');
+    b.textContent = `${o.ligada ? '●' : '○'} ${o.id} — ${o.w}x${o.h}${o.frente ? ' ↑' : ''}`;
+    b.classList.toggle('on', o.id === sobreSel);
+    b.addEventListener('click', () => { escolherPeca(o.id); sujo = true; });
+    lista.appendChild(b);
+  }
+}
+
+/** A seção da camada de frente: se a folhagem sai da cor do desenho, e com que limiares. */
+function frenteNoPainel() {
+  const cor = mapa.frente?.cor;
+  document.querySelectorAll('[data-frentecor]').forEach((b) => {
+    b.classList.toggle('on', (b.dataset.frentecor === '1') === Boolean(cor));
+  });
+  const alvo = $('frenteCor');
+  if (!alvo) return;
+  alvo.textContent = cor
+    ? `Folhagem pela cor: verde acima de ${cor.verde}, brilho abaixo de ${cor.escuro}. O recorte sai pixel a pixel do próprio desenho — não custa arte nenhuma.`
+    : 'Sem máscara de cor: só as casas marcadas à mão entram na camada de frente.';
+}
+
 function estado() {
   const conta = $('contaTracos');
   if (conta) conta.textContent = `${mapa.tracos?.length ?? 0} traço(s) no mapa.`;
@@ -482,20 +644,29 @@ function estado() {
   if (luzes) luzes.textContent = `${mapa.luzes?.length ?? 0} luz(es) no mapa.`;
   const inter = $('contaInterativos');
   if (inter) inter.textContent = `${mapa.interativos?.length ?? 0} objeto(s) interagível(is) no mapa.`;
+  const frente = $('contaFrente');
+  if (frente) {
+    const n = (mapa.frente?.casas ?? []).reduce((a, l) => a + [...l].filter((c) => c === '#').length, 0);
+    frente.textContent = `${n} casa(s) marcada(s) à mão.`;
+  }
   const t = hoverTile;
   if (!t) { $('estado').textContent = 'Passe o mouse no mapa. Botão do meio arrasta; a roda dá zoom.'; return; }
   const sala = M.salaDe(mapa, t.x, t.y);
   const o = M.propEm(mapa, t.x, t.y);
   const luz = (mapa.luzes ?? []).find((l) => l.pos?.x === t.x && l.pos?.y === t.y);
   const alvo = (mapa.interativos ?? []).find((i) => i.x === t.x && i.y === t.y);
+  const pecas = M.sobreposicoesEm(mapa, t.x, t.y);
   const h = hoverEdge ? ` | aresta ${hoverEdge.lado === 'N' ? 'de cima' : 'da esquerda'}: ${M.ESTILOS_DE_ARESTA[M.estiloDaAresta(mapa, hoverEdge.x, hoverEdge.y, hoverEdge.lado)].rotulo}` : '';
-  $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${luz ? ` | luz <b>${luz.tipo}</b>` : ''}${alvo ? ` | interagível <b>${alvo.id}</b>` : ''}${h}`;
+  $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${luz ? ` | luz <b>${luz.tipo}</b>` : ''}${alvo ? ` | interagível <b>${alvo.id}</b>` : ''}${M.frenteEm(mapa, t.x, t.y) ? ' | <b>frente</b>' : ''}${pecas.length ? ` | peça <b>${pecas.map((o) => o.id).join(', ')}</b>` : ''}${h}`;
 }
 
-/** A caixa de "exploração livre" acompanha o mapa (depois de abrir, importar ou desfazer). */
+/** O painel acompanha o mapa (depois de abrir, importar ou desfazer): o modo livre e a lista de sobreposições. */
 function sincronizarModo() {
   const c = $('explorar');
   if (c) c.checked = mapa.cena === 'editor';
+  // a peça escolhida pode ter sumido no desfazer, ou o mapa aberto ser outro
+  if (sobreSel && !(mapa.sobreposicoes ?? []).some((o) => o.id === sobreSel)) sobreSel = '';
+  sobreNoPainel();
 }
 
 function botoes() {
@@ -522,7 +693,7 @@ function escolher(f) {
 function montarPainel() {
   const L = $('lateral');
   L.innerHTML = `
-    <h2>Ferramenta (teclas 1 a 9)</h2>
+    <h2>Ferramenta (teclas 1 a 0, e Q)</h2>
     <div class="ferramentas">${FERRAMENTAS.map(([id, nome, k]) => `<button data-ferramenta="${id}">${k} · ${nome}</button>`).join('')}</div>
 
     <div data-secao="piso">
@@ -541,6 +712,60 @@ function montarPainel() {
       <p class="dica">O POLÍGONO fecha clicando de novo no primeiro canto (ou com <b>Enter</b>); <b>Esc</b> desiste.
       É assim que se marca a pegada de um prédio inteiro sem criar parede nenhuma: pinte a área com um glifo que
       barra passo e pronto.</p>
+    </div>
+
+    <div data-secao="sobrepor">
+      <h2>Sobreposição</h2>
+      <p class="dica">Pedaço de arte com NOME que o roteiro acende e apaga — a fogueira que acende, a ponte que
+      cede, o baú que abre. É o ladrilho comutável de um mapa do Foundry; lá o mestre dá um duplo clique, aqui
+      quem liga é o <code>aoInteragir</code> da cena, com <code>enc.field.alternarSobreposicao(id, true)</code>.</p>
+      <p class="dica"><b>Arraste</b> um retângulo no mapa para pôr a peça. <b>Um clique</b> dentro de uma peça já
+      posta escolhe ela, para mexer nos campos aqui.</p>
+      <div class="numeros">
+        <label>nome (o id que o roteiro chama)<input id="sId" type="text" /></label>
+      </div>
+      <div class="numeros">
+        <label>arte (url que o jogo carrega)<input id="sUrl" type="text" /></label>
+      </div>
+      <label class="dica"><input type="checkbox" id="sLigada" /> começa acesa</label>
+      <label class="dica"><input type="checkbox" id="sFrente" /> por cima das fichas (teto, ponte, copa)</label>
+      <div class="lista">
+        <button id="sAlternar">Acender / apagar a escolhida</button>
+        <button id="sTirar">Tirar a escolhida</button>
+      </div>
+      <p class="dica">Não é camada de regra: a ponte que cai no desenho continua atravessável até alguém mudar o
+      terreno (ferramenta 5) ou a parede (2).</p>
+      <p class="dica" id="contaSobre">—</p>
+      <div class="lista" id="listaSobre"></div>
+    </div>
+
+    <div data-secao="frente">
+      <h2>Camada de frente</h2>
+      <p class="dica">A parte da pintura que o tabuleiro redesenha <b>por cima das fichas</b>, para copa de árvore
+      e beiral de telhado cobrirem em parte quem passa debaixo deles. Não é regra: quem barra passo é o terreno
+      (ferramenta 5).</p>
+      <div class="lista">
+        <button data-frentecor="1">Derivar a folhagem da cor do desenho</button>
+        <button data-frentecor="0">Só o que eu marcar à mão</button>
+      </div>
+      <p class="dica" id="frenteCor">—</p>
+      <h2>Marcar à mão</h2>
+      <div class="lista">
+        <button data-frentemarca="1">Marcar</button>
+        <button data-frentemarca="0">Apagar</button>
+      </div>
+      <div class="lista">
+        <button data-modofrente="pincel">Pincel (casa a casa)</button>
+        <button data-modofrente="retangulo">Retângulo (arrastar)</button>
+        <button data-modofrente="poligono">Polígono (clicar os cantos)</button>
+        <button data-modofrente="balde">Balde (a mancha de terreno igual)</button>
+      </div>
+      <p class="dica">Use a mão para o que a cor não acha — a palha dos chalés da Rua mede a mesma faixa de
+      brilho da terra batida, e nenhuma regra de cor os separa. O <b>balde</b> enche a pegada inteira do prédio
+      de uma vez, porque ela já é uma mancha de um glifo só.</p>
+      <p class="dica">A borda da casa marcada à mão sai <b>reta</b>, na aresta da grade: serve para telhado, não
+      para folha. Folha é trabalho da máscara de cor, que recorta pixel a pixel.</p>
+      <p class="dica" id="contaFrente">—</p>
     </div>
 
     <div data-secao="aresta">
@@ -723,7 +948,42 @@ function montarPainel() {
     sel.luz = b.dataset.luz;
     L.querySelectorAll('[data-luz]').forEach((x) => x.classList.toggle('on', x === b));
   }));
-  for (const [attr, campo] of [['data-modopiso', 'modoPiso'], ['data-modoaresta', 'modoAresta']]) {
+  // a sobreposição: os campos da peça, e os dois botões que mexem na escolhida
+  for (const [id, campo] of [['sId', 'id'], ['sUrl', 'url']]) {
+    $(id).addEventListener('input', (e) => { sel.sobrepor[campo] = e.target.value; });
+  }
+  for (const [id, campo] of [['sLigada', 'ligada'], ['sFrente', 'frente']]) {
+    $(id).addEventListener('change', (e) => {
+      sel.sobrepor[campo] = e.target.checked;
+      // mexer no campo com uma peça escolhida muda a PEÇA, e não só o molde da próxima
+      if (!sobreSel) return;
+      ponto();
+      const o = (mapa.sobreposicoes ?? []).find((p) => p.id === sobreSel);
+      if (o && aplicar(M.porSobreposicao(mapa, { ...o, [campo]: e.target.checked }))) sobreNoPainel();
+      else { desfazer.pop(); botoes(); }
+    });
+  }
+  $('sAlternar').addEventListener('click', () => {
+    if (!sobreSel) return;
+    ponto();
+    if (aplicar(M.alternarSobreposicao(mapa, sobreSel))) { escolherPeca(sobreSel); } else { desfazer.pop(); botoes(); }
+  });
+  $('sTirar').addEventListener('click', () => {
+    if (!sobreSel) return;
+    ponto();
+    if (aplicar(M.tirarSobreposicao(mapa, sobreSel))) { sobreSel = ''; sobreNoPainel(); } else { desfazer.pop(); botoes(); }
+  });
+  // a camada de frente: marcar ou apagar, e se a folhagem sai da cor do desenho
+  L.querySelectorAll('[data-frentemarca]').forEach((b) => b.addEventListener('click', () => {
+    sel.frenteMarca = b.dataset.frentemarca === '1';
+    L.querySelectorAll('[data-frentemarca]').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  L.querySelectorAll('[data-frentecor]').forEach((b) => b.addEventListener('click', () => {
+    ponto();
+    if (!aplicar(M.definirFrentePorCor(mapa, b.dataset.frentecor === '1' ? M.FRENTE_PADRAO : null))) { desfazer.pop(); botoes(); }
+    frenteNoPainel();
+  }));
+  for (const [attr, campo] of [['data-modopiso', 'modoPiso'], ['data-modoaresta', 'modoAresta'], ['data-modofrente', 'modoFrente']]) {
     L.querySelectorAll(`[${attr}]`).forEach((b) => b.addEventListener('click', () => {
       sel[campo] = b.getAttribute(attr);
       poligono = null;
@@ -735,6 +995,9 @@ function montarPainel() {
     $(id).addEventListener('input', (e) => { sel.interativo[campo] = e.target.value; });
   }
   $('iOculto').addEventListener('change', (e) => { sel.interativo.oculto = e.target.checked; });
+  L.querySelector(`[data-frentemarca="${sel.frenteMarca ? 1 : 0}"]`).classList.add('on');
+  frenteNoPainel();
+  sobreNoPainel();
   L.querySelector(`[data-luz="${sel.luz}"]`).classList.add('on');
   L.querySelector(`[data-piso="${sel.piso}"]`).classList.add('on');
   L.querySelector(`[data-estilo="${sel.estilo}"]`).classList.add('on');

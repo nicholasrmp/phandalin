@@ -578,6 +578,183 @@ teste('área bloqueada: a casa marcada não se atravessa, e sem aresta de parede
   assert.equal(/[#+/J]/.test(arestas), false, 'e não criou parede nenhuma');
 });
 
+teste('parede livre: onde ela barra o passo sai da LINHA, e não do quadrado mais perto', () => {
+  // Uma diagonal rasa de (2,5; 1,5) a (5,5; 6,5): anda 3 casas em x enquanto anda 5 em y, então em cada
+  // fileira ela cruza num x diferente. Se o motor arredondasse a parede para o quadrado, o corte ficaria no
+  // mesmo lugar nas duas fileiras testadas aqui — ele não fica.
+  const m = M.novoMapa(8, 8);
+  M.tracarParede(m, [[2.5, 1.5], [5.5, 6.5]]);
+  const campo = montarCampo(m);
+
+  // na fileira y=3 a linha passa em x = 3,7 → o corte cai entre as casas 3 e 4
+  assert.equal(campo.passa(3, 3, 4, 3), false, 'y=3: barra entre 3 e 4');
+  assert.equal(campo.passa(2, 3, 3, 3), true, 'y=3: uma casa antes dela, não barra');
+  // na fileira y=5 a linha já passa em x = 4,9 → o corte ANDOU, e cai entre as casas 4 e 5
+  assert.equal(campo.passa(4, 5, 5, 5), false, 'y=5: barra entre 4 e 5');
+  assert.equal(campo.passa(3, 5, 4, 5), true, 'y=5: e não barra mais onde barrava em y=3');
+
+  // a visão olha o SEGMENTO cru, sem passar pela aresta, e tem de concordar
+  assert.equal(campo.passaVisao(3, 3, 4, 3), false, 'a visão barra na mesma linha');
+  const sem = montarCampo({ ...m, tracos: [], paredes: { n: m.paredes.n.map(() => '........'), o: m.paredes.o.map(() => '........') } });
+  assert.equal(sem.passa(3, 3, 4, 3), true, 'e sem a parede, passa');
+});
+
+teste('passo pelo traço: um contorno fechado isola o que está dentro dele', () => {
+  const m = M.novoMapa(12, 12);
+  // Pelo caminho de verdade (`tracarParede`, que é o que o editor e o `derivar-paredes.mjs` chamam): o traço
+  // fica E a aresta de casa é derivada dele. São as DUAS que fecham o contorno, e cada uma pega um caso —
+  // a aresta pega o cruzamento que cai na borda da casa, o traço pega o que corta pelo meio dela.
+  M.tracarParede(m, [[6, 2.5], [9.5, 6], [6, 9.5], [2.5, 6], [6, 2.5]]);
+  const campo = montarCampo(m);
+  const alcanca = (sx, sy) => {
+    const vis = new Set([`${sx},${sy}`]);
+    const pilha = [[sx, sy]];
+    while (pilha.length) {
+      const [x, y] = pilha.pop();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx; const ny = y + dy; const k = `${nx},${ny}`;
+        if (nx < 0 || ny < 0 || nx >= 12 || ny >= 12 || vis.has(k)) continue;
+        if (campo.blocksMove(nx, ny) || !campo.passa(x, y, nx, ny)) continue;
+        vis.add(k); pilha.push([nx, ny]);
+      }
+    }
+    return vis;
+  };
+  const dentro = alcanca(6, 6);
+  assert.equal(dentro.has('6,6'), true);
+  assert.equal(dentro.has('1,1'), false, 'de dentro não se sai do losango');
+  assert.equal(dentro.size < 40, true, `o miolo é pequeno (deu ${dentro.size})`);
+  assert.equal(alcanca(1, 1).has('6,6'), false, 'e de fora não se entra');
+});
+
+// ------------------------------------------------------------------------------------- sobreposições ---
+
+teste('sobreposição: põe, troca, acha pela casa e tira', () => {
+  const m = M.novoMapa(20, 20);
+  const peca = { id: 'fogo', url: '/mapas/fa/LightDen.webp', x: 1, y: 3, w: 8, h: 6 };
+  assert.equal(M.porSobreposicao(m, peca), true);
+  assert.equal(M.porSobreposicao(m, peca), false, 'pôr a mesma de novo não é mudança');
+  assert.equal(M.porSobreposicao(m, { ...peca, w: 9 }), true, 'mudar o tamanho é');
+  assert.equal(m.sobreposicoes.length, 1, 'e troca a de mesmo id, não duplica');
+
+  assert.deepEqual(M.sobreposicoesEm(m, 2, 4).map((o) => o.id), ['fogo'], 'acha pela casa de dentro');
+  assert.deepEqual(M.sobreposicoesEm(m, 15, 4), [], 'e não pela de fora');
+
+  assert.equal(M.porSobreposicao(m, { ...peca, id: 'ponte', frente: true }), true);
+  assert.equal(m.sobreposicoes[1].frente, true, 'guarda `frente`');
+  assert.equal('ligada' in m.sobreposicoes[1], false, 'e não guarda `ligada` quando é falso');
+
+  assert.equal(M.tirarSobreposicao(m, 'fogo'), true);
+  assert.equal(M.tirarSobreposicao(m, 'fogo'), false);
+  assert.equal(M.tirarSobreposicao(m, 'ponte'), true);
+  assert.equal(m.sobreposicoes, undefined, 'sem nenhuma, o campo some do mapa');
+});
+
+teste('sobreposição: acende e apaga, no mapa e na partida — e uma não contamina a outra', () => {
+  const m = M.novoMapa(20, 20);
+  M.porSobreposicao(m, { id: 'fogo', url: '/x.webp', x: 1, y: 3, w: 8, h: 6 });
+  assert.equal(M.alternarSobreposicao(m, 'fogo', true), true);
+  assert.equal(m.sobreposicoes[0].ligada, true);
+  assert.equal(M.alternarSobreposicao(m, 'fogo', true), false, 'acender a acesa não é mudança');
+  assert.equal(M.alternarSobreposicao(m, 'fogo'), true, 'sem argumento, inverte');
+  assert.equal(M.alternarSobreposicao(m, 'nao-existe', true), false);
+
+  // A PARTIDA MEXE NUMA CÓPIA. Sem isso, acender a fogueira numa partida a deixava acesa na próxima, porque o
+  // mapa da cena é o mesmo objeto para todas.
+  const campo = montarCampo(m);
+  assert.equal(campo.sobreposicoes[0].ligada, false);
+  assert.equal(campo.alternarSobreposicao('fogo', true), true);
+  assert.equal(campo.sobreposicoes[0].ligada, true, 'acendeu na partida');
+  assert.equal(m.sobreposicoes[0].ligada, undefined, 'e o mapa da cena ficou como estava');
+  assert.equal(montarCampo(m).sobreposicoes[0].ligada, false, 'a próxima partida nasce apagada');
+});
+
+teste('sobreposição: não mexe em regra nenhuma, e sobrevive ao JSON', () => {
+  const m = M.novoMapa(20, 20);
+  M.porSobreposicao(m, { id: 'desabamento', url: '/x.webp', x: 4, y: 4, w: 4, h: 3, ligada: true });
+  const campo = montarCampo(m);
+  assert.equal(campo.blocksMove(5, 5), false, 'a peça acesa não barra passo');
+  assert.equal(m.terreno[5][4], 'U', 'nem toca no terreno');
+  const volta = JSON.parse(JSON.stringify(M.limpar(m)));
+  assert.deepEqual(volta.sobreposicoes, m.sobreposicoes, 'vai e volta inteira no JSON');
+});
+
+// ------------------------------------------------------------------------------------ camada de frente ---
+
+teste('camada de frente: marca, apaga, e o campo a recebe', () => {
+  const m = M.novoMapa(8, 8);
+  assert.equal(M.frenteEm(m, 3, 3), false, 'nasce sem camada nenhuma');
+  assert.equal(M.pintarFrente(m, 3, 3, true), true);
+  assert.equal(M.frenteEm(m, 3, 3), true);
+  assert.equal(M.pintarFrente(m, 3, 3, true), false, 'marcar de novo não é mudança');
+  assert.equal(M.pintarFrente(m, 3, 3, false), true, 'e dá para apagar');
+  assert.equal(M.frenteEm(m, 3, 3), false);
+  M.pintarFrente(m, 2, 5, true);
+  assert.equal(montarCampo(m).frente.casas[5][2], '#', 'o campo lê a mesma grade');
+});
+
+teste('camada de frente: não mexe em regra nenhuma', () => {
+  const m = M.novoMapa(8, 8);
+  M.frenteNoRetangulo(m, { x: 2, y: 2 }, { x: 5, y: 5 }, true);
+  const campo = montarCampo(m);
+  assert.equal(campo.blocksMove(3, 3), false, 'marcar a frente não barra passo');
+  assert.equal(campo.blocksSight?.(3, 3) ?? false, false, 'nem visão');
+  assert.equal(m.terreno[3][3], 'U', 'e não tocou no terreno');
+});
+
+teste('camada de frente por área: retângulo, polígono e balde', () => {
+  const m = M.novoMapa(10, 10);
+  assert.equal(M.frenteNoRetangulo(m, { x: 1, y: 1 }, { x: 3, y: 2 }, true), 6, 'a caixa inteira');
+  assert.equal(M.frenteEm(m, 3, 2), true);
+  assert.equal(M.frenteEm(m, 4, 2), false, 'e para na borda da caixa');
+
+  const n = M.frenteNoPoligono(m, [[5, 5], [8, 5], [8, 8], [5, 8]], true);
+  assert.equal(n > 0, true);
+  assert.equal(M.frenteEm(m, 6, 6), true, 'dentro do polígono');
+  assert.equal(M.frenteEm(m, 9, 9), false, 'fora dele');
+
+  // o balde segue a mancha de TERRENO igual: é assim que se marca a pegada inteira de um prédio
+  const t = M.novoMapa(10, 10);
+  M.pintarRetangulo(t, { x: 2, y: 2 }, { x: 4, y: 4 }, 'H');
+  assert.equal(M.frenteNoBalde(t, 3, 3, true), 9, 'o telhado inteiro de uma vez');
+  assert.equal(M.frenteEm(t, 2, 2), true);
+  assert.equal(M.frenteEm(t, 5, 5), false, 'e não vaza para o chão em volta');
+});
+
+teste('camada de frente: a máscara de cor liga, desliga e some quando não sobra nada', () => {
+  const m = M.novoMapa(6, 6);
+  assert.equal(M.definirFrentePorCor(m, M.FRENTE_PADRAO), true);
+  assert.deepEqual(m.frente.cor, { verde: 12, escuro: 92 });
+  assert.equal(M.definirFrentePorCor(m, M.FRENTE_PADRAO), false, 'pôr a mesma de novo não é mudança');
+  assert.equal(M.definirFrentePorCor(m, null), true);
+  assert.equal(m.frente, undefined, 'sem cor e sem casa marcada, o campo some do mapa');
+});
+
+teste('camada de frente: sobrevive ao vai e volta de JSON e acompanha o mapa quando ele cresce', () => {
+  const m = M.novoMapa(8, 8);
+  M.definirFrentePorCor(m, { verde: 10, escuro: 80 });
+  M.pintarFrente(m, 3, 3, true);
+  const volta = JSON.parse(JSON.stringify(M.limpar(m)));
+  assert.deepEqual(volta.frente.cor, { verde: 10, escuro: 80 }, 'a cor vai no JSON');
+  assert.equal(M.frenteEm(volta, 3, 3), true, 'e a casa marcada também');
+
+  // crescer pelo norte empurra tudo para baixo: a marca tem de andar junto com a casa dela
+  M.redimensionar(m, 'N', 2);
+  assert.equal(M.frenteEm(m, 3, 5), true, 'a marca desceu duas casas');
+  assert.equal(M.frenteEm(m, 3, 3), false, 'e não ficou para trás');
+  assert.equal(m.frente.casas.length, m.terreno.length, 'a grade tem a altura do mapa');
+  assert.equal(m.frente.casas[0].length, m.terreno[0].length, 'e a largura');
+});
+
+teste('as cenas pintadas pedem a camada de frente, e ela vai e volta inteira', () => {
+  for (const v of ['emboscada', 'ermo', 'ermoNoite']) {
+    const m = M.limpar(mapaDo(v));
+    assert.equal(typeof m.frente?.cor?.verde, 'number', `${v}: tem a máscara de cor`);
+    assert.deepEqual(JSON.parse(JSON.stringify(m.frente)), m.frente, v);
+    assert.equal(montarCampo(m).frente.cor.escuro, m.frente.cor.escuro, `${v}: o campo recebe`);
+  }
+});
+
 for (const rodar of fila) await rodar();
 
 console.log(`\n${total - falhas}/${total} testes passaram`);

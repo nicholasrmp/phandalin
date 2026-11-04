@@ -139,7 +139,18 @@ casa: pincel, retângulo arrastado, polígono (clica os cantos, fecha no primeir
 se bloqueia a pegada de um prédio **sem criar parede nenhuma**: escolha um glifo que barra passo (Casa, Taverna,
 Rocha, Parede inteira) e arraste por cima dele. Ferramenta 2 desenha parede, porta, arco, grade, seteira e
 passagem secreta por aresta, ou o contorno de uma caixa de uma arrastada (modo Retângulo); a 3 traça parede livre;
-a 4 acende luz; a 9 marca objeto interagível.
+a 4 acende luz; a 9 marca objeto interagível; a 0 é a CAMADA DE FRENTE — a parte da pintura que o tabuleiro
+redesenha por cima das fichas, para copa de árvore e beiral de telhado cobrirem quem passa debaixo deles. Ela
+não é regra, e tem dois caminhos: a máscara derivada da COR do desenho (grátis, recorte pixel a pixel, é o que
+serve para folha) e a marca à MÃO por área (borda reta na aresta da casa, para o telhado que a cor não separa).
+Em ambos a folha desbota onde há ficha, senão o personagem some debaixo dela.
+A **SOBREPOSIÇÃO** (`mapa.sobreposicoes`) é a outra metade: pedaços de arte com nome (`{ id, url, x, y, w, h, ligada, frente? }`) que o
+roteiro acende e apaga — a fogueira que acende, a ponte que cede, o baú que abre, o túnel que desaba. É o ladrilho comutável de um mapa do
+Foundry; lá o mestre dá um duplo clique, aqui quem liga é o `aoInteragir` da cena, com `enc.field.alternarSobreposicao(id, true)`. O campo
+recebe uma CÓPIA, para acender numa partida não deixar aceso na próxima. Não é camada de regra: a ponte que cai no desenho continua
+atravessável até alguém mudar o terreno. No editor é a ferramenta **Q**: arrasta-se o retângulo para pôr a peça, um clique dentro de uma já
+posta escolhe ela, e a lista do painel acende e apaga. Peça cuja arte não está no disco aparece como retângulo tracejado com o nome — no
+jogo ela simplesmente não desenha.
 
 `/editor.html` abre a cena (a lista do alto) e carrega o desenho dela sozinho; o checkbox "Pintar o chão do jogo"
 desliga a camada do jogo e deixa o desenho limpo. "Exportar JSON" baixa o
@@ -150,7 +161,29 @@ mudou, já no formato de colar em `game/encounter.js`.
 `python src/dev/alinhar-mapa-pintado.py --provas` casa a planta de cada andar da Casa da Morte com o battlemap pintado de verdade
 (`_referencias/casa-da-morte-morvold/`) e devolve giro, escala, origem e a prova visual — serve de conferência de fidelidade da planta.
 `python src/dev/conferir-encaixe.py <cena>` pinta de vermelho, por cima do mapa pintado, as casas que o jogo bloqueia, e conta quanto do
-nosso chão cai sobre chão pintado. Para mapa novo, ou quando as duas plantas não são a mesma, o caminho é o editor: `/editor.html`, vista
+nosso chão cai sobre chão pintado.
+`python src/dev/encaixar-fa.py <cena> <imagem>` faz o contrário: procura o enquadramento (escala, x0, y0) que melhor casa um battlemap de
+terceiro com a nossa planta e imprime o `fundo` pronto para colar, com a nota do encaixe em IoU. 1,0 é a mesma planta; abaixo de 0,7 são
+plantas DIFERENTES do mesmo lugar, e aí não adianta enquadrar melhor — ou se redesenha a planta por cima, ou não se usa o desenho.
+**Battlemap de terceiro não entra no repositório** (licença): `mapas/` e `public/mapas/esconderijo-fa*.webp` estão no `.gitignore`. Atenção:
+o `.gitignore` protege o REPOSITÓRIO, não o `dist/` — o `npm run build` copia tudo que está em `public/`.
+
+**Importar uma cena do Foundry VTT** — paredes, luzes e grade, sem instalar o Foundry. Os módulos de battlemap publicam as cenas em JSON
+puro; as da Forgotten Adventures estão em `github.com/Forgotten-Adventures/FA_Battlemaps/tree/main/packs/_source/maps` (303 cenas).
+
+```bash
+python src/dev/importar-foundry.py <cena.json> <imagem> --editor src/dev/_tmp/<nome>.json
+```
+
+Ele traduz: grade → `fundo` (e desconta a MOLDURA que o Foundry põe em volta, `ceil(padding*largura/grid)*grid`), parede → `tracos`
+(segmentos que se tocam viram uma linha só) e luz → `luzes` (`claro` = `bright`, `penumbra` = `dim - bright`, em pés). **O Foundry não tem
+camada de chão**: lá quem decide onde se pisa é só a parede, então o mapa sai todo de chão e `src/dev/derivar-paredes.mjs` faz o resto —
+tira a aresta de casa do traço (é ela que barra movimento), semeia nas LUZES, que estão dentro, e vira rocha tudo que a parede não deixa
+alcançar. Semear no maior pedaço não serve aqui: com tudo de chão, o maior pedaço é o lado de FORA. Com `--chao-pela-cor` o recorte vem do
+preto da imagem — dá 56 casas a menos, porque come a casa de borda que é meio caverna meio vazio.
+O relatório diz o que NÃO atravessa: parede só de visão (o "Ethereal", que a nossa aresta não sabe ser), ladrilho de overlay, som e região.
+Medido no Cragmaw Hideout: 371 de 382 paredes, 23 traços, 3 luzes, 330 casas de chão, e **0 achados** em `conferir-paredes.mjs`.
+Para ver: carregue o JSON em `localStorage['phandalin.editor.mapa']` e abra `/editor.html` ou `?encontro=editor`. Para mapa novo, ou quando as duas plantas não são a mesma, o caminho é o editor: `/editor.html`, vista
 de cima, ferramenta 8, que enquadra a imagem e deixa decalcar parede e porta por cima (como no Roll20). E para trazer
 uma página pronta do Roll20 (imagem, grade e paredes), `src/dev/extrair-roll20.js` (colar no console da aba) mais
 `node src/dev/importar-roll20.mjs <pagina.json>` — ver o README. **Rode-os antes de chamar revisor**: achado que um teste já pega não

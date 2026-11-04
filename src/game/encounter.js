@@ -182,6 +182,10 @@ export function mapaDo(variante) {
       // O mapa PINTADO por baixo. É NOSSO (gerado no OpenArt), entra no repositório e o Vite o serve de
       // `public/`. Já vem cortado na grade: 80 px por casa, e o canto da casa (0,0) é o canto da imagem.
       fundo: { nome: 'emboscada.webp', url: '/mapas/emboscada.webp', escala: 80, x0: 0, y0: 0, giro: 0, opacidade: 1 },
+      // A COPA POR CIMA DAS FICHAS: a folhagem do desenho é redesenhada depois dos personagens, para quem anda
+      // na beira da mata ficar debaixo dela. Das 50 casas andáveis que encostam em copa aqui, a folha cobre
+      // 47,6% da casa na mediana — por isso a máscara é por PIXEL, tirada da própria pintura, e não por casa.
+      frente: { cor: { verde: 12, escuro: 92 } },
       // Os goblins estão escondidos: rola-se surpresa no começo (combat.js).
       emboscada: { emboscadores: 'foes' },
     };
@@ -305,6 +309,10 @@ export function mapaDo(variante) {
       // O mapa pintado por baixo. É NOSSO, entra no repositório e o Vite o serve de `public/`; já vem cortado
       // na grade, 80 px por casa, com o canto da casa (0,0) no canto da imagem.
       fundo: { nome: 'ermo.webp', url: '/mapas/ermo.webp', escala: 80, x0: 0, y0: 0, giro: 0, opacidade: 1 },
+      // A copa e o espinheiro da curva por cima das fichas (ver a Emboscada). Aqui a folha é mais rala — 17,1%
+      // da casa na mediana das 40 que encostam em mata —, e nenhuma delas passa de 80%: marcar casa inteira
+      // seria errado em todas as quarenta.
+      frente: { cor: { verde: 12, escuro: 92 } },
       ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 5 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
     };
   }
@@ -370,6 +378,16 @@ export function mapaDo(variante) {
         { pos: { x: 5, y: 6 }, claro: 10, penumbra: 10, tipo: 'fogueira' },
         { pos: { x: 32, y: 17 }, claro: 10, penumbra: 10, tipo: 'fogueira' },
       ],
+      // O BATTLEMAP DA FORGOTTEN ADVENTURES por baixo (Cragmaw Hideout 30x20, release grátis, versão sem
+      // fogueira acesa e sem grade: o jogo acende a luz e desenha a grade). O arquivo fica FORA do
+      // versionamento (ver `.gitignore`): a licença da FA proíbe embutir a arte deles em video game, então ela
+      // roda na máquina de quem a baixou e não viaja com o repositório. Se o arquivo não estiver lá, o
+      // tabuleiro simplesmente desenha o chão de sempre.
+      //
+      // O ENQUADRAMENTO foi medido, não chutado (`src/dev/encaixar-fa.py`): é o (escala, x0, y0) que maximiza
+      // a sobreposição entre o nosso chão e o interior da caverna do desenho. O melhor possível dá IoU 0,449 —
+      // as duas plantas NÃO são a mesma, e este arquivo nunca foi decalque dela (ver `esconderijo.js`).
+      fundo: { nome: 'esconderijo-fa.webp', url: '/mapas/esconderijo-fa.webp', escala: 69, x0: 15, y0: 135, giro: 0, opacidade: 1 },
       cena: 'esconderijo',
     };
   }

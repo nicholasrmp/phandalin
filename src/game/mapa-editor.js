@@ -15,6 +15,7 @@ const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
   'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
+  'frente', 'sobreposicoes',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -403,6 +404,162 @@ export function pintarAltura(m, x, y, n) {
 /** A altura da casa (0 se o mapa não tem grade de alturas). */
 export const alturaDe = (m, x, y) => Number(m.altura?.[y]?.[x] ?? 0) || 0;
 
+// -------------------------------------------------------------------------------------- camada de frente ---
+//
+// `m.frente` é a parte da pintura que o tabuleiro desenha POR CIMA das fichas, para copa de árvore e beiral de
+// telhado cobrirem em parte quem passa debaixo deles. NÃO é camada de regra: não barra passo nem visão, e a
+// casa continua valendo o que o glifo do terreno diz.
+//
+//   { cor: { verde, escuro }, casas: ['..##..', ...] }
+//
+// `cor` manda DERIVAR a máscara da própria pintura: o pixel verde e escuro (a folha) vira frente, com a
+// silhueta exata que o desenho tem. Nada se gera e nada se guarda — a máscara se calcula da imagem que já está
+// ali, e acompanha sozinha qualquer troca do desenho.
+//
+// POR QUE A MÁSCARA, e não marcar a casa inteira. Medido na Emboscada e no Ermo: das 90 casas andáveis que
+// encostam em copa, 65 têm entre 15% e 80% da área cobertas de folha (mediana 47,6% na Emboscada, 17,1% no
+// Ermo), e só 5 passam de 80%. Redesenhar a casa inteira jogaria, nessas 65, um quadrado de grama por cima do
+// herói — que é pior que não ter camada nenhuma.
+//
+// `casas` é a marca À MÃO, para o que a cor não acha. O beiral de palha da Rua cai na mesma faixa de matiz e de
+// brilho da terra batida da rua (está medido em `src/dev/mapa-rua.py`), e nenhuma regra de cor os separa; aí o
+// tabuleiro redesenha a pintura recortada nessas casas, e a borda sai na aresta da casa — o que é aceitável num
+// telhado, que é reto, e não numa copa.
+
+/** O que, na pintura, conta como folha: excesso de verde acima de `verde` e brilho abaixo de `escuro`. */
+export const FRENTE_PADRAO = { verde: 12, escuro: 92 };
+
+const grade = (m) => m.terreno.map((l) => '.'.repeat(l.length));
+
+/** Marca (`true`) ou apaga (`false`) uma casa da camada de frente desenhada à mão. */
+export function pintarFrente(m, x, y, marcada) {
+  if (!dentro(m, x, y)) return false;
+  m.frente ??= {};
+  m.frente.casas ??= grade(m);
+  return trocar(m.frente.casas, x, y, marcada ? '#' : '.');
+}
+
+export const frenteEm = (m, x, y) => m.frente?.casas?.[y]?.[x] === '#';
+
+/** Liga ou desliga a máscara derivada da cor. Sem ela, só valem as casas marcadas à mão. */
+export function definirFrentePorCor(m, cor) {
+  const antes = JSON.stringify(m.frente?.cor ?? null);
+  const depois = cor ? JSON.stringify({ verde: cor.verde ?? FRENTE_PADRAO.verde, escuro: cor.escuro ?? FRENTE_PADRAO.escuro }) : 'null';
+  if (antes === depois) return false;
+  m.frente ??= {};
+  if (cor) m.frente.cor = JSON.parse(depois);
+  else delete m.frente.cor;
+  if (!m.frente.cor && !m.frente.casas) delete m.frente;
+  return true;
+}
+
+/** A camada de frente num retângulo arrastado. Devolve quantas casas mudaram. */
+export function frenteNoRetangulo(m, a, b, marcada) {
+  let n = 0;
+  for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++) {
+    for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) if (pintarFrente(m, x, y, marcada)) n += 1;
+  }
+  return n;
+}
+
+/** A camada de frente dentro de um polígono clicado. */
+export function frenteNoPoligono(m, pontos, marcada) {
+  if (!pontos || pontos.length < 3) return 0;
+  const xs = pontos.map(([x]) => x);
+  const ys = pontos.map(([, y]) => y);
+  let n = 0;
+  for (let y = Math.max(0, Math.floor(Math.min(...ys))); y <= Math.min(m.terreno.length - 1, Math.ceil(Math.max(...ys))); y++) {
+    for (let x = Math.max(0, Math.floor(Math.min(...xs))); x <= Math.min(m.terreno[0].length - 1, Math.ceil(Math.max(...xs))); x++) {
+      if (dentroDoPoligono(pontos, x, y) && pintarFrente(m, x, y, marcada)) n += 1;
+    }
+  }
+  return n;
+}
+
+// ---------------------------------------------------------------------------------------- sobreposição ---
+//
+// `m.sobreposicoes` são pedaços de arte com NOME, deitados num retângulo de casas, que o roteiro acende e
+// apaga durante a partida:
+//
+//   { id, url, x, y, w, h, ligada, frente?, opacidade? }
+//
+// É o ladrilho comutável de um mapa do Foundry — a fogueira que acende, a ponte que cede, o baú que abre, o
+// túnel que desaba. Lá o mestre dá um duplo clique num ladrilho invisível e o Monk's Active Tile Triggers liga
+// a arte etiquetada; aqui quem liga é o `aoInteragir` da cena, porque este jogo não tem mestre.
+//
+// `frente` manda a peça para CIMA das fichas (ver `tabuleiro-topo.js`); sem ele ela é chão repintado.
+//
+// NÃO É CAMADA DE REGRA: acender a fogueira não abre caminho nenhum, e a ponte que cai no desenho continua
+// atravessável até alguém mudar o terreno. Quem manda na regra é o terreno (ferramenta 5), a parede (2) e a
+// luz (4) — e o roteiro costuma mexer neles JUNTO com a sobreposição.
+
+/** Põe uma peça (ou troca a de mesmo `id`). Devolve `true` se mudou alguma coisa. */
+export function porSobreposicao(m, peca) {
+  if (!peca?.id) return false;
+  m.sobreposicoes ??= [];
+  const nova = {
+    id: peca.id, url: peca.url, x: peca.x, y: peca.y, w: peca.w, h: peca.h,
+    ...(peca.ligada ? { ligada: true } : {}),
+    ...(peca.frente ? { frente: true } : {}),
+    ...(peca.opacidade != null ? { opacidade: peca.opacidade } : {}),
+  };
+  const i = m.sobreposicoes.findIndex((o) => o.id === peca.id);
+  if (i >= 0) {
+    if (JSON.stringify(m.sobreposicoes[i]) === JSON.stringify(nova)) return false;
+    m.sobreposicoes[i] = nova;
+    return true;
+  }
+  m.sobreposicoes.push(nova);
+  return true;
+}
+
+/** Tira a peça de `id`. */
+export function tirarSobreposicao(m, id) {
+  const i = (m.sobreposicoes ?? []).findIndex((o) => o.id === id);
+  if (i < 0) return false;
+  m.sobreposicoes.splice(i, 1);
+  if (!m.sobreposicoes.length) delete m.sobreposicoes;
+  return true;
+}
+
+/** Acende, apaga ou inverte a peça de `id` NO MAPA — que é o estado com que a cena abre. */
+export function alternarSobreposicao(m, id, ligada) {
+  const o = (m.sobreposicoes ?? []).find((p) => p.id === id);
+  if (!o) return false;
+  const novo = ligada ?? !o.ligada;
+  if (Boolean(o.ligada) === novo) return false;
+  if (novo) o.ligada = true;
+  else delete o.ligada;
+  return true;
+}
+
+/** As peças cujo retângulo cobre esta casa, a de cima primeiro: é por onde o editor as pega no clique. */
+export const sobreposicoesEm = (m, x, y) => (m.sobreposicoes ?? [])
+  .filter((o) => x >= o.x && y >= o.y && x < o.x + o.w && y < o.y + o.h).reverse();
+
+/**
+ * O balde da camada de frente: enche a mancha contígua de casas com o MESMO GLIFO DE TERRENO da apontada. É
+ * assim que se marca um telhado inteiro de uma vez, porque a pegada do prédio já é uma mancha de `H` ou `Y`.
+ */
+export function frenteNoBalde(m, x, y, marcada) {
+  if (!dentro(m, x, y)) return 0;
+  const alvo = m.terreno[y][x];
+  const fila = [[x, y]];
+  const vistos = new Set([`${x},${y}`]);
+  let n = 0;
+  while (fila.length) {
+    const [cx, cy] = fila.pop();
+    if (pintarFrente(m, cx, cy, marcada)) n += 1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      const k = `${nx},${ny}`;
+      if (dentro(m, nx, ny) && !vistos.has(k) && m.terreno[ny][nx] === alvo) { vistos.add(k); fila.push([nx, ny]); }
+    }
+  }
+  return n;
+}
+
 // ------------------------------------------------------------------------------------------------- modo ---
 
 /** `true`: o jogo abre este mapa em EXPLORAÇÃO livre (sem iniciativa, sem inimigos); `false`: no modo de combate por turnos. */
@@ -613,6 +770,7 @@ export function redimensionar(m, borda, n) {
   m.paredes.n = preencher(m.paredes.n, '.');
   m.paredes.o = preencher(m.paredes.o, '.');
   if (m.altura) m.altura = preencher(m.altura, '0');
+  if (m.frente?.casas) m.frente.casas = preencher(m.frente.casas, '.');
   m.objetos = m.objetos.map(move).filter(ok);
   m.salas = Object.fromEntries(Object.entries(m.salas ?? {}).map(([id, cs]) => [id, cs.map(move).filter(ok)]).filter(([, cs]) => cs.length));
   m.folhas = m.folhas.map(([a, b]) => [move(a), move(b)]).filter(([a, b]) => ok(a) && ok(b));
