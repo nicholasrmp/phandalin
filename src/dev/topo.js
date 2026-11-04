@@ -1,0 +1,281 @@
+// PROTÓTIPO de VISÃO DE CIMA (`/topo.html`) — descartável, para decidir se vale refazer o jogo nesse estilo (o do Foundry VTT).
+//
+// Desenha um mapa DE VERDADE do jogo (o mesmo `mapaDo()` que o jogo usa) visto de cima, e um botão alterna para o tabuleiro isométrico
+// de verdade (`Board`), no mesmo mapa, para comparar lado a lado.
+//
+// O QUE É HONESTO AQUI: a planta, as paredes, as portas, o tamanho das salas e as fichas das criaturas são os do jogo.
+// O QUE É FALSO AQUI: o chão e os móveis. O chão é pintado com as cores que o jogo já usa para cada superfície, sem textura; os móveis
+// são o sprite ISOMÉTRICO deitado na casa, porque arte de cima não existe no projeto. Num jogo de verdade os dois seriam arte nova —
+// e é esse o custo que o protótipo existe para mostrar.
+
+import { Battlefield, ARESTA } from '../core/grid.js';
+import { Encounter } from '../rules/combat.js';
+import { makeParty } from '../rules/party.js';
+import { makeRng } from '../core/rng.js';
+import { mapaDo, buildFoes } from '../game/encounter.js';
+import { montarCampo } from '../game/campo.js';
+import { Board, SUPERFICIE } from '../view/board.js';
+import { makePortrait } from '../art/sheet.js';
+import { sorteio } from '../art/chao.js';
+import atlas from '../art/folhas/cenario.json';
+import urlAtlas from '../art/folhas/cenario.png';
+
+const $ = (id) => document.getElementById(id);
+const area = $('area');
+const canvas = $('tela');
+const ctx = canvas.getContext('2d');
+
+const MAPAS = [
+  ['casaDaMortePorao2', 'Casa da Morte, masmorra 2 (a câmara do ritual)'],
+  ['casaDaMortePorao1', 'Casa da Morte, masmorra 1'],
+  ['casaDaMorte1', 'Casa da Morte, 1º andar'],
+  ['casaDaMorte3', 'Casa da Morte, 3º andar'],
+  ['mansao', 'Mansão Tresendar'],
+  ['castelo', 'Castelo Dentefino'],
+  ['rua', 'Rua de Phandalin'],
+  ['emboscada', 'Emboscada na estrada'],
+];
+
+const sel = { variante: 'casaDaMortePorao2', topo: true, grade: true, moveis: true, arestas: false, celula: 70 };
+let cena = null;          // { mapa, field, enc, criaturas }
+let board = null;         // o tabuleiro isométrico, criado só quando se pede
+let telaIso = null;
+
+const imgAtlas = new Image();
+imgAtlas.src = urlAtlas;
+let atlasPronto = imgAtlas.complete;
+imgAtlas.addEventListener('load', () => { atlasPronto = true; desenhar(); }, { once: true });
+
+// ------------------------------------------------------------------------------------------------- a cena ---
+function montar() {
+  const mapa = mapaDo(sel.variante);
+  const field = montarCampo(mapa);
+  const party = makeParty({ nivel: 2 });
+  const lugares = mapa.grupo?.length ? mapa.grupo : [{ x: 1, y: 1 }];
+  party.forEach((c, i) => { c.pos = { ...(lugares[i] ?? lugares[0]) }; c.facingVec = { ...(mapa.olhar ?? { dx: 0, dy: 1 }) }; });
+  const foes = buildFoes(sel.variante);
+  const enc = new Encounter({ battlefield: field, party, foes, rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  for (const f of foes) { try { enc.addCombatant(f); } catch { /* criatura fora do mapa: ignora */ } }
+  cena = { mapa, field, enc, criaturas: [...party, ...foes] };
+  board?.disposeCamera();
+  board = null;
+  $('rodape').textContent = `${mapa.terreno[0].length} x ${mapa.terreno.length} casas · ${cena.criaturas.length} criaturas · chão e móveis são provisórios (ver o cabeçalho de src/dev/topo.js)`;
+}
+
+// ------------------------------------------------------------------------------------------- visão de cima ---
+const COR_FALLBACK = ['#3a3630', '#36322c'];
+const corDoChao = (sup) => SUPERFICIE[sup]?.topo ?? COR_FALLBACK;
+
+/** O chão: a cor que o jogo já usa para a superfície, variada por casa para não virar um lençol liso. */
+function pintarChao(C) {
+  const { field } = cena;
+  for (let y = 0; y < field.h; y++) {
+    for (let x = 0; x < field.w; x++) {
+      const sup = field.surfaceAt(x, y);
+      const cores = corDoChao(sup);
+      ctx.fillStyle = cores[sorteio(x, y, cores.length)];
+      ctx.fillRect(x * C, y * C, C, C);
+      // pedra maciça (parede de casa inteira, rocha): escurece e põe um chanfro, que é o que dá relevo numa vista de cima
+      if (field.tileAt(x, y) === 1) {
+        ctx.fillStyle = 'rgba(0,0,0,.45)';
+        ctx.fillRect(x * C, y * C, C, C);
+        ctx.strokeStyle = 'rgba(255,255,255,.07)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x * C + 2, y * C + 2, C - 4, C - 4);
+      }
+    }
+  }
+}
+
+function pintarGrade(C) {
+  const { field } = cena;
+  ctx.strokeStyle = 'rgba(0,0,0,.28)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 0; x <= field.w; x++) { ctx.moveTo(x * C + 0.5, 0); ctx.lineTo(x * C + 0.5, field.h * C); }
+  for (let y = 0; y <= field.h; y++) { ctx.moveTo(0, y * C + 0.5); ctx.lineTo(field.w * C, y * C + 0.5); }
+  ctx.stroke();
+}
+
+/** Uma aresta: parede, porta fechada, arco aberto ou grade. `à mostra` desenha como o editor do Foundry (linha colorida). */
+function traco(x0, y0, x1, y1, codigo, C) {
+  if (!codigo) return;
+  if (sel.arestas) {
+    const cor = { [ARESTA.parede]: '#9ad7ff', [ARESTA.porta]: '#ffb347', [ARESTA.aberta]: '#7bd88f', [ARESTA.seteira]: '#c49cff' }[codigo] ?? '#fff';
+    ctx.strokeStyle = cor; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.fillStyle = cor;
+    for (const [px, py] of [[x0, y0], [x1, y1]]) { ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill(); }
+    return;
+  }
+  if (codigo === ARESTA.parede || codigo === ARESTA.seteira) {
+    ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.strokeStyle = 'rgba(190,180,165,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    if (codigo === ARESTA.seteira) {   // a fresta: um corte claro no meio da parede
+      ctx.strokeStyle = '#c9d6e4'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo((x0 + x1) / 2 - (y1 - y0) * 0.14, (y0 + y1) / 2 - (x1 - x0) * 0.14);
+      ctx.lineTo((x0 + x1) / 2 + (y1 - y0) * 0.14, (y0 + y1) / 2 + (x1 - x0) * 0.14); ctx.stroke();
+    }
+    return;
+  }
+  // porta: a madeira no vão, clara quando aberta
+  const aberta = codigo === ARESTA.aberta;
+  ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  ctx.strokeStyle = aberta ? '#6f5a3a' : '#9a6b35'; ctx.lineWidth = Math.max(3, C * 0.07);
+  const t = aberta ? 0.3 : 0.86;   // aberta: só os batentes
+  const mx = (x0 + x1) / 2; const my = (y0 + y1) / 2;
+  ctx.beginPath();
+  ctx.moveTo(mx - (x1 - x0) * t / 2, my - (y1 - y0) * t / 2);
+  ctx.lineTo(mx + (x1 - x0) * t / 2, my + (y1 - y0) * t / 2);
+  ctx.stroke();
+}
+
+function pintarParedes(C) {
+  const { field } = cena;
+  ctx.lineCap = 'round';
+  for (let y = 0; y < field.h; y++) {
+    for (let x = 0; x < field.w; x++) {
+      const i = y * field.w + x;
+      traco(x * C, y * C, (x + 1) * C, y * C, field.paredeN[i], C);       // a de cima
+      traco(x * C, y * C, x * C, (y + 1) * C, field.paredeO[i], C);       // a da esquerda
+    }
+  }
+  ctx.lineCap = 'butt';
+}
+
+/** Os móveis: o sprite ISOMÉTRICO centrado na casa. É provisório — arte de cima não existe no projeto. */
+function pintarMoveis(C) {
+  if (!atlasPronto) return;
+  for (const o of cena.mapa.objetos ?? []) {
+    if (o.tipo !== 'prop' || o.variante === 'taverna-nada') continue;
+    const f = atlas[`prop-${o.variante}`]?.todas?.[0];
+    if (!f) continue;
+    const k = Math.min((C * 0.92) / f.w, (C * 0.92) / f.h);
+    const w = f.w * k; const h = f.h * k;
+    ctx.globalAlpha = 0.95;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(imgAtlas, f.x, f.y, f.w, f.h, o.x * C + (C - w) / 2, o.y * C + (C - h) / 2, w, h);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/** A ficha de criatura do Foundry: retrato num círculo, anel do lado e barra de vida. */
+const retratos = new Map();
+function retrato(look) {
+  if (!retratos.has(look)) {
+    let c = null;
+    try { c = makePortrait(look, 64); } catch { c = null; }
+    retratos.set(look, c);
+  }
+  return retratos.get(look);
+}
+
+function pintarCriaturas(C) {
+  for (const c of cena.criaturas) {
+    if (!c.pos || c.dead) continue;
+    const f = c.pos.f ?? 1;                       // criatura Grande ocupa 2 x 2
+    const cx = (c.pos.x + f / 2) * C;
+    const cy = (c.pos.y + f / 2) * C;
+    const r = (C * f) * 0.43;
+    const aliado = c.side === 'party';
+    const anel = aliado ? '#d9b45a' : c.side === 'neutro' ? '#6fa8dc' : '#b3433a';
+
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.closePath();
+    ctx.fillStyle = 'rgba(10,8,14,.85)'; ctx.fill();
+    ctx.clip();
+    const p = retrato(c.look);
+    if (p) { ctx.imageSmoothingEnabled = false; ctx.drawImage(p, cx - r, cy - r, r * 2, r * 2); }
+    else {
+      ctx.fillStyle = anel; ctx.globalAlpha = 0.5; ctx.fillRect(cx - r, cy - r, r * 2, r * 2); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.round(r)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText((c.name ?? '?')[0], cx, cy);
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = anel; ctx.lineWidth = Math.max(2, C * 0.045);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+
+    // a barra de vida, colada embaixo do anel
+    const bw = r * 1.8; const bh = Math.max(4, C * 0.075);
+    const bx = cx - bw / 2; const by = cy + r - bh / 2;
+    const frac = Math.max(0, Math.min(1, (c.hp ?? 1) / (c.maxHp || 1)));
+    ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = frac > 0.5 ? '#5fbf5f' : frac > 0.25 ? '#d9b45a' : '#b3433a';
+    ctx.fillRect(bx + 1, by + 1, (bw - 2) * frac, bh - 2);
+
+    // o nome, como nas telas do Foundry
+    ctx.font = `${Math.max(10, Math.round(C * 0.16))}px system-ui`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const nome = c.name ?? '';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.9)'; ctx.strokeText(nome, cx, by + bh + 3);
+    ctx.fillStyle = '#efe8da'; ctx.fillText(nome, cx, by + bh + 3);
+  }
+}
+
+function desenhar() {
+  if (!cena || !sel.topo) return;
+  const C = sel.celula;
+  const { field } = cena;
+  canvas.width = field.w * C;
+  canvas.height = field.h * C;
+  ctx.imageSmoothingEnabled = false;
+  pintarChao(C);
+  if (sel.grade) pintarGrade(C);
+  if (sel.moveis) pintarMoveis(C);
+  pintarParedes(C);
+  pintarCriaturas(C);
+}
+
+// ------------------------------------------------------------------------------------------------ isométrico ---
+function iso(ligar) {
+  if (ligar) {
+    if (!telaIso) { telaIso = document.createElement('canvas'); area.append(telaIso); }
+    telaIso.hidden = false;
+    canvas.hidden = true;
+    if (!board) {
+      board = new Board(telaIso, { encounter: cena.enc, onTileClick: () => {}, onTileHover: () => {} });
+      board.verTudo = true;
+    }
+  } else {
+    if (telaIso) telaIso.hidden = true;
+    canvas.hidden = false;
+    desenhar();
+  }
+}
+
+let ultimo = 0;
+function quadro(t) {
+  const dt = Math.min(0.1, (t - ultimo) / 1000 || 0);
+  ultimo = t;
+  if (!sel.topo && board) { try { board.render(dt); } catch (e) { console.error(e); } }
+  requestAnimationFrame(quadro);
+}
+
+// ----------------------------------------------------------------------------------------------------- tela ---
+$('mapa').innerHTML = MAPAS.map(([id, nome]) => `<option value="${id}">${nome}</option>`).join('');
+$('mapa').value = sel.variante;
+$('mapa').addEventListener('change', (e) => {
+  sel.variante = e.target.value;
+  montar();
+  if (sel.topo) desenhar(); else iso(true);
+});
+$('modo').addEventListener('click', () => {
+  sel.topo = !sel.topo;
+  $('modo').textContent = sel.topo ? 'Visão de cima' : 'Isométrico';
+  $('modo').classList.toggle('on', sel.topo);
+  iso(!sel.topo);
+});
+for (const [id, campo] of [['grade', 'grade'], ['moveis', 'moveis'], ['arestas', 'arestas']]) {
+  $(id).addEventListener('change', (e) => { sel[campo] = e.target.checked; desenhar(); });
+}
+$('mais').addEventListener('click', () => { sel.celula = Math.min(140, sel.celula + 14); desenhar(); });
+$('menos').addEventListener('click', () => { sel.celula = Math.max(28, sel.celula - 14); desenhar(); });
+
+montar();
+desenhar();
+requestAnimationFrame(quadro);
+window.__topo = { get cena() { return cena; }, sel, desenhar };

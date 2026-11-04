@@ -93,7 +93,7 @@ const CAVERNA = ['#575049', '#504943'];
 // `chao` é a fileira do atlas desenhado (`art/chao.js`) que vai por baixo.
 // `topo` continua existindo como recuo: é o losango liso que aparece enquanto
 // o atlas não carregou, ou se ele falhar.
-const SUPERFICIE = {
+export const SUPERFICIE = {
   estrada: { topo: ESTRADA, lado: TERRA, chao: 'estrada' },
   grama: { topo: GRAMA, lado: TERRA, chao: 'grama' },
   // Debaixo da copa o chão é grama mais escura, que é como mata fechada lê.
