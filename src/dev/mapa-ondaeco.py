@@ -648,6 +648,51 @@ for _y in range(H):
             _l += str(alt(_x, _y))
     ALTURA.append(_l)
 
+# ------------------------------------------------- bolsao fechado vira rocha ----
+# A limpeza de componentes soltos acontece DUAS vezes la em cima, mas antes das paredes: depois que a parede
+# entra, sobram bolsoes novos que ninguem alcanca. Mediu-se: a agua escura em (63-64, 12-15) e o nicho de uma
+# casa em (30, 78), os dois cercados de rocha. Nao da para ver nem pisar, e `src/dev/conferir-paredes.mjs`
+# (com razao) acusava os dois. Aqui eles viram rocha, com o MESMO modelo de passo do motor: diagonal conta,
+# porta conta como aberta e agua e chao dificil, nao parede.
+_ANDAVEL = set('`<"[;|x=L_+?')     # tudo que nao e rocha macica nem fosso
+
+
+def _andavel(x, y):
+    return T[y][x] in _ANDAVEL
+
+
+def _alcancaComoOMotor():
+    vistas, fila = set(), []
+    for (gx, gy) in GRUPO + [CHEGADA]:
+        if _andavel(gx, gy) and (gx, gy) not in vistas:
+            vistas.add((gx, gy))
+            fila.append((gx, gy))
+    while fila:
+        x, y = fila.pop()
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if not dx and not dy:
+                    continue
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < W and 0 <= ny < H) or (nx, ny) in vistas or not _andavel(nx, ny):
+                    continue
+                if dx and dy:
+                    if not (_passa(x, y, nx, y) and _passa(nx, y, nx, ny)
+                            and _passa(x, y, x, ny) and _passa(x, ny, nx, ny)):
+                        continue
+                elif not _passa(x, y, nx, ny):
+                    continue
+                vistas.add((nx, ny))
+                fila.append((nx, ny))
+    return vistas
+
+
+_VIVO = _alcancaComoOMotor()
+_MURADAS = [(x, y) for y in range(H) for x in range(W) if _andavel(x, y) and (x, y) not in _VIVO]
+for (_x, _y) in _MURADAS:
+    T[_y][_x] = 'R'
+print('bolsoes fechados que viraram rocha:', len(_MURADAS), _MURADAS[:12])
+
 dados = {
     'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO]},
     'terreno': [''.join(l) for l in T],

@@ -36,7 +36,10 @@ import { fugaInteracoes, fugaIniciar, fugaParedesOps } from './casadamorte-fuga.
 
 const MOVIMENTO = 60;
 const dentro = (a, p) => (a.contem ? a.contem(p) : p.x >= a.x1 && p.x <= a.x2 && p.y >= a.y1 && p.y <= a.y2);
-const PORTA_SECRETA = casa(3, 0);          // a estante da biblioteca (2º andar) que gira para a sala secreta (a aresta com a casa ao lado)
+// A estante da biblioteca (2º andar) que gira para a sala secreta: a ARESTA entre esta casa e a do lado.
+// Exportada porque `src/dev/conferir-paredes.mjs` precisa dela para não acusar a sala secreta de ilhada.
+export const PORTA_SECRETA = casa(3, 0);
+export const PAR_DA_BIBLIOTECA = [PORTA_SECRETA, casa(4, 0)];
 const ALCAPAO = casa(2, 10);               // o alçapão do canil, no canto sudoeste
 
 export function criarCasaDaMorte(app, config) {
@@ -84,7 +87,7 @@ export function criarCasaDaMorte(app, config) {
   const abrirAresta = (ax, ay, bx, by, codigo = 3) => enc.field.porAresta(ax, ay, bx, by, codigo);
   const abrirPar = ([a, b]) => abrirAresta(a.x, a.y, b.x, b.y);
   // A estante da biblioteca (a aresta entre a biblioteca e a sala secreta) gira: a passagem fica aberta.
-  const abrirBiblioteca = () => abrirPar([PORTA_SECRETA, casa(4, 0)]);
+  const abrirBiblioteca = () => abrirPar(PAR_DA_BIBLIOTECA);
   if (salvo.passagemAberta && variante === 'casaDaMorte2') abrirBiblioteca();
   // A porta do quarto das crianças (20) começa trancada (a planta a põe fechada) e fica aberta depois.
   if (salvo.portaCriancas && variante === 'casaDaMorte4') abrirPar(PORTA_CRIANCAS_4);

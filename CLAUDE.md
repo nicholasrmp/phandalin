@@ -127,6 +127,13 @@ musica, editor, casadamorte). O de editor e o da Casa da Morte rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
 `src/dev/passeio-casadamorte.mjs [sacrificar|negar] [semente]` percorre a casa inteira, do jardim à saída, como um jogador automático.
+`node --import ./src/dev/cena-node/register.mjs src/dev/conferir-paredes.mjs` confere PAREDE E PORTA das vinte
+cenas rodando o motor: porta no maciço, porta que não separa nada, chão que nenhuma entrada alcança (com a
+fronteira da ilha), `folhas` e `grades` apontando aresta errada. Ele sabe o que o roteiro abre (as secretas da
+Mansão, o segredo da prisão, as lajes das criptas) e o que é de propósito (o anel de fora da casa, a cela de
+grade, a escada que se pega pelo botão), então 0 achados quer dizer 0 mesmo; `--tudo` solta os avisos fracos.
+`src/dev/testes-paredes.mjs` prova que ele acusa cada defeito. Para corrigir, `/editor.html` abre qualquer uma
+das vinte cenas e a caixinha `x,y` do alto leva a casa que o parecer apontou para o meio da tela.
 `src/dev/gatilhos-casadamorte.mjs` faz cada ação de cada casa e confere que toda luta que ela começa tem caminho entre os dois lados.
 `python src/dev/alinhar-mapa-pintado.py --provas` casa a planta de cada andar da Casa da Morte com o battlemap pintado de verdade
 (`_referencias/casa-da-morte-morvold/`) e devolve giro, escala, origem e a prova visual — serve de conferência de fidelidade da planta.

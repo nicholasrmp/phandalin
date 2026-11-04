@@ -28,8 +28,14 @@ export const BAUS_POCO = [
   { id: 'E', x: 11, y: 5, texto: 'Dentro, uma espada curta prateada, de lâmina fina.', dar: (g, q) => g(q, 'espadaCurtaPrateada', 1) },
 ];
 
-/** As seis criptas (23A a 23F): a laje (se for selada), o caixão e o que a cripta guarda. */
-const CRIPTAS = {
+/**
+ * As seis criptas (23A a 23F): a laje (se for selada), o caixão e o que a cripta guarda.
+ *
+ * Exportada, como `SEGREDO_SANTUARIO`, `SEGREDO_PRISAO` e `PONTE`, porque `src/dev/conferir-paredes.mjs`
+ * precisa saber quais casas o roteiro ABRE: senão ele conta a câmara do ritual (64 casas, atrás do segredo da
+ * prisão) como chão que ninguém alcança, e o parecer vira ruído.
+ */
+export const CRIPTAS = {
   criptaA: { lado: 'oeste', selada: false },
   criptaB: { lado: 'leste', selada: false },
   criptaC: { lado: 'leste', selada: true, laje: [[20, 18]], de: { x: 20, y: 17 } },
@@ -38,9 +44,9 @@ const CRIPTAS = {
   criptaF: { lado: 'oeste', selada: true, laje: [[17, 16]], de: { x: 17, y: 17 } },
 };
 const POCO_ESPINHOS = [[12, 11]];
-const SEGREDO_SANTUARIO = [[11, 22]];
-const SEGREDO_PRISAO = [[9, 4]];
-const PONTE = [[13, 6], [12, 6]];
+export const SEGREDO_SANTUARIO = [[11, 22]];
+export const SEGREDO_PRISAO = [[9, 4]];
+export const PONTE = [[13, 6], [12, 6]];
 const RODA = { x: 11, y: 8 };
 const ALTAR = { x: 8, y: 8 };
 // O estrado octogonal: 4 x 4 casas sem os cantos, no meio da água (x 6 a 9, y 7 a 10).

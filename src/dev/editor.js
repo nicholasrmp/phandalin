@@ -20,10 +20,17 @@ const $ = (id) => document.getElementById(id);
 const canvas = $('tela');
 const area = $('area');
 
+// TODA cena do jogo abre aqui. A lista tinha dez; as outras dez só se podiam conferir lendo o código, e
+// `src/dev/conferir-paredes.mjs` aponta achados em qualquer uma delas — de nada adianta o parecer dizer
+// "(30,78)" se a cena não abre para olhar e corrigir.
 const MAPAS_DO_JOGO = [
+  ['emboscada', 'Emboscada na estrada'], ['padrao', 'Encontro padrão'], ['caverna', 'Caverna'],
+  ['ermo', 'Ermo'], ['ermoNoite', 'Ermo, de noite'], ['rua', 'Rua de Phandalin'],
+  ['esconderijo', 'Esconderijo Cragmaw'], ['mansao', 'Mansão Tresendar'], ['mansaoTunel', 'Mansão Tresendar, pelo túnel'],
+  ['poco', 'Poço da Coruja Velha'], ['cume', 'Cume'], ['castelo', 'Castelo Dentefino'],
+  ['arvoreTrovao', 'Árvore Trovão'], ['ondaEco', 'Caverna Onda Eco'],
   ['casaDaMorte1', 'Casa da Morte, 1º andar'], ['casaDaMorte2', 'Casa da Morte, 2º andar'], ['casaDaMorte3', 'Casa da Morte, 3º andar'],
   ['casaDaMorte4', 'Casa da Morte, sótão'], ['casaDaMortePorao1', 'Casa da Morte, masmorra 1'], ['casaDaMortePorao2', 'Casa da Morte, masmorra 2'],
-  ['rua', 'Rua de Phandalin'], ['castelo', 'Castelo Dentefino'], ['emboscada', 'Emboscada na estrada'], ['mansao', 'Mansão Tresendar'],
 ];
 
 const PISOS = [
@@ -665,6 +672,24 @@ async function recuperarFundo() {
 // ------------------------------------------------------------------------------------------------ cabeçalho ---
 function iniciarCabecalho() {
   $('base').innerHTML = '<option value="" disabled selected>(mapa em edição)</option>' + MAPAS_DO_JOGO.map(([id, nome]) => `<option value="${id}">${nome}</option>`).join('');
+  // IR PARA UMA CASA. `src/dev/conferir-paredes.mjs` devolve achados por coordenada — "[30,78] chão ilhado" —
+  // e num mapa de 91 por 68 casas procurar isso com o olho é desistir. Digita-se `x,y` e a casa vem ao centro,
+  // marcada como a de baixo do ponteiro.
+  $('irPara').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const [x, y] = String(e.target.value).split(/[^0-9-]+/).filter((v) => v !== '').map(Number);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !M.dentro(mapa, x, y)) { e.target.value = ''; return; }
+    hoverTile = { x, y };
+    // DESENHAR ANTES DE ROLAR: a tela só ganha o tamanho do mapa novo quando `desenharTopo` a redimensiona, e
+    // rolar antes disso o navegador grampeia em zero — foi o que aconteceu na primeira versão.
+    if (sujo) reconstruir();
+    desenharTopo();
+    const C = sel.celula;
+    area.scrollLeft = Math.max(0, (x + 0.5) * C - area.clientWidth / 2);
+    area.scrollTop = Math.max(0, (y + 0.5) * C - area.clientHeight / 2);
+    $('estado').textContent = `casa (${x},${y})`;
+  });
+
   $('abrir').addEventListener('click', () => {
     if (desfazer.length && !confirm('Abrir outro mapa descarta o que está na tela (dá para desfazer). Continuar?')) return;
     if (!$('base').value) return;
