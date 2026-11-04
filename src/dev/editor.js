@@ -114,7 +114,14 @@ function desenharTopo() {
   }
   if (sel.verGrade) T.pintarGrade(ctx, campo, C, comFundo ? 'rgba(120,200,255,.45)' : 'rgba(0,0,0,.28)');
   if (sel.verMoveis) T.pintarMoveis(ctx, mapa, C, atlas, imgAtlas);
+  // O traço livre (parede de caverna, pedra, destroço) é desenhado como foi traçado. A aresta de casa é a DERIVADA
+  // dele, que é o que a regra usa para barrar movimento — fica discreta por baixo, para dar para conferir as duas.
+  const comTracos = Boolean(mapa.tracos?.length);
+  ctx.save();
+  if (comTracos) ctx.globalAlpha = 0.3;
   T.pintarArestas(ctx, campo, C, sel.arestasFinas || comFundo);
+  ctx.restore();
+  if (comTracos) T.pintarTracos(ctx, mapa.tracos, C, sel.arestasFinas || comFundo);
   marcarTopo(ctx, C);
 }
 

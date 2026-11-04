@@ -15,6 +15,9 @@ export function montarCampo(mapa) {
   field.avisosDeVista = Boolean(mapa.avisosDeVista);
   // O mapa PINTADO por baixo e como ele se encaixa na grade (ver `mapa-editor.js`): quem desenha é a vista de cima.
   if (mapa.fundo) field.fundo = mapa.fundo;
+  // A PAREDE LIVRE, como foi traçada: polilinhas em casas (com fração). A aresta de casa (`paredes`) é a derivada
+  // delas para a regra; o desenho usa o traço, porque caverna, pedra e destroço não são retos.
+  if (mapa.tracos?.length) field.tracos = mapa.tracos;
   // As salas do mapa, por casa: o tabuleiro usa para apagar a parede da
   // sala em que o grupo está (ver `board.desenharParedes`).
   // A decoração pendurada nas paredes, por aresta ('x,y,N' ou 'x,y,O').

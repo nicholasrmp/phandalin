@@ -14,7 +14,7 @@ export const CHAVE = 'phandalin.editor.mapa';
 const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
-  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo',
+  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -378,6 +378,8 @@ export function redimensionar(m, borda, n) {
   m.vaoUnido = m.vaoUnido.map(chaveMove);
   m.grades = m.grades.map(chaveMove);
   m.grupo = (m.grupo ?? []).map(move).map((p) => (ok(p) ? p : { x: 1, y: 1 }));
+  // o traço de parede livre anda junto com as casas
+  if (m.tracos) m.tracos = m.tracos.map((pts) => pts.map(([x, y]) => [+(x + dx).toFixed(3), +(y + dy).toFixed(3)]));
   // crescer pelo norte ou pelo oeste empurra todas as casas para baixo e para a direita. A imagem de fundo fica onde
   // está, então a casa (0,0), que agora é `dx`, `dy` casas antes da antiga, cai `dx * escala` pixels antes na imagem.
   if (m.fundo && (dx || dy)) {

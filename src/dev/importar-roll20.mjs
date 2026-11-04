@@ -306,6 +306,7 @@ export function converter(pagina, { imagem, inundarChao = false, abrir = false, 
     mapa: {
       terreno,
       paredes: { n: [...pagina.paredes.n], o: [...pagina.paredes.o] },
+      ...(pagina.tracos?.length ? { tracos: pagina.tracos } : {}),
       objetos: [], salas: {}, folhas: [], vaoUnido: [], grades: [],
       materialDaParede: 'rocha', vaoPorCasa: true, cliqueNoObjeto: true,
       grupo: grupo.length ? grupo : [{ x: 1, y: 1 }],

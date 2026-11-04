@@ -217,6 +217,15 @@ certo de graça.
 
 A herança é um degrau, não o destino: quando o desenho de cima cobrir tudo, as 4.804 linhas do `board.js` saem.
 
+**Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
+destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**
+(`mapa.tracos`): polilinhas em casas, com fração, como foram desenhadas. Quando há traço, é ele que o tabuleiro
+desenha; a aresta de casa (`mapa.paredes`) continua existindo como **derivada**, e é o que a regra usa para barrar
+movimento. Uma aresta é parede quando o traço SEPARA as duas casas — cruza o segmento que liga um centro ao outro —,
+então o que se vê e o que a regra faz nascem da mesma linha.
+
+No editor as duas aparecem: o traço em cima, a aresta derivada discreta por baixo, para dar para conferir.
+
 **O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
 regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é
 toda isométrica: o móvel é o sprite deitado na casa, provisório.

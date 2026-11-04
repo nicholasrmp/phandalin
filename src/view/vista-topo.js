@@ -121,6 +121,34 @@ export function pintarArestas(ctx, field, C, aMostra = false) {
   ctx.restore();
 }
 
+/**
+ * A PAREDE LIVRE, desenhada como foi traçada: polilinhas em casas (com fração), e não degraus da grade.
+ *
+ * É a diferença entre parecer uma caverna e parecer uma escada de quadrados. Pedra, caverna e destroço são
+ * irregulares, e forçá-los na aresta de casa destrói justamente o que os faz parecer o que são. A aresta de casa
+ * continua existindo (`paredes`), mas como DERIVADA, para a regra de movimento; quem manda no desenho é o traço.
+ */
+export function pintarTracos(ctx, tracos, C, aMostra = false) {
+  if (!tracos?.length) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const pts of tracos) {
+    if (!pts || pts.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0] * C, pts[0][1] * C);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0] * C, pts[i][1] * C);
+    if (aMostra) {
+      // sobre um mapa pintado a parede já está desenhada: basta a linha fina, como na camada do editor do Foundry
+      ctx.strokeStyle = '#9ad7ff'; ctx.lineWidth = 2.5; ctx.stroke();
+      continue;
+    }
+    ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.11); ctx.stroke();
+    ctx.strokeStyle = 'rgba(190,180,165,.32)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** Os móveis: o sprite ISOMÉTRICO centrado na casa. É provisório — arte de cima não existe no projeto. */
 export function pintarMoveis(ctx, mapa, C, atlas, imgAtlas) {
   if (!imgAtlas?.complete || !imgAtlas.naturalWidth) return;

@@ -148,10 +148,12 @@ export class TabuleiroTopo extends Board {
     this.realce(ctx);
     this.fx.drawGround(ctx, this);
 
-    // a parede por cima do chão e do realce, para o alcance não vazar por cima dela
+    // a parede por cima do chão e do realce, para o alcance não vazar por cima dela.
+    // Com traço livre (`field.tracos`), desenha-se o traço: a aresta de casa é só a derivada que a regra usa.
     ctx.save();
     ctx.translate(this.ox, this.oy);
-    V.pintarArestas(ctx, this.field, C, comPintura);
+    if (this.field.tracos?.length) V.pintarTracos(ctx, this.field.tracos, C, comPintura);
+    else V.pintarArestas(ctx, this.field, C, comPintura);
     ctx.restore();
 
     for (const c of this.enc.combatants) {

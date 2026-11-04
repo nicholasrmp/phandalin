@@ -59,11 +59,35 @@ window.__extrairPagina = function (nomeDaPagina) {
     }
   }
 
+  // Os TRAÇOS como foram desenhados, em casas (com fração). A aresta de casa é uma derivada deles, para a regra; o
+  // desenho usa o traço, que é o que faz caverna e destroço parecerem caverna e destroço, e não escada de quadrados.
+  const simplificar = (pts, tol) => {
+    if (pts.length < 3) return pts;
+    const dist = (q, a, b) => {
+      const dx = b[0] - a[0]; const dy = b[1] - a[1];
+      if (!dx && !dy) return Math.hypot(q[0] - a[0], q[1] - a[1]);
+      const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / (dx * dx + dy * dy)));
+      return Math.hypot(q[0] - (a[0] + t * dx), q[1] - (a[1] + t * dy));
+    };
+    const dp = (ini, fim) => {
+      let pior = 0; let idx = -1;
+      for (let i = ini + 1; i < fim; i++) { const d = dist(pts[i], pts[ini], pts[fim]); if (d > pior) { pior = d; idx = i; } }
+      return pior > tol ? [...dp(ini, idx).slice(0, -1), ...dp(idx, fim)] : [pts[ini], pts[fim]];
+    };
+    return dp(0, pts.length - 1);
+  };
+  const r3 = (v) => Math.round(v * 1000) / 1000;
+  const tracos = lista(p.thepaths)
+    .filter((t) => t.attributes.layer === 'walls')
+    .map((t) => simplificar(absolutos(t.attributes), 0.04).map(([x, y]) => [r3(x), r3(y)]))
+    .filter((pts) => pts.length > 1);
+
   const mapa = lista(p.thegraphics).map((g) => g.attributes).find((a) => a.layer === 'map');
   const r2 = (v) => Math.round(v * 100) / 100;
   return {
     nome: pa.name, w: W, h: H, pxPorCasa: P, escala: pa.scale_number, unidade: pa.scale_units,
     paredes: { n: n.map((l) => l.join('')), o: o.map((l) => l.join('')) },
+    tracos,
     mapa: mapa && { src: mapa.imgsrc, x: mapa.left, y: mapa.top, w: mapa.width, h: mapa.height, rot: mapa.rotation || 0 },
     fichas: lista(p.thegraphics).map((g) => g.attributes).filter((a) => a.layer === 'objects')
       .map((a) => ({ nome: a.name || '', cx: r2(a.left / P), cy: r2(a.top / P), casas: r2(a.width / P) })),
