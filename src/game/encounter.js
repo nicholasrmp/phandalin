@@ -129,28 +129,38 @@ const PREDIOS_RUA = [
   { tipo: 'casa', x: 14, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
 ];
 
-// O ERMO (Parte 3): a Trilha de Triboar entre colinas, para os encontros do
-// caminho. A trilha corre de oeste a leste no meio; pedras e moitas dão
-// cobertura dos dois lados, e uns poucos carvalhos fecham os cantos. De
-// noite é o mesmo chão, com a fogueira do acampamento no meio da trilha.
+// O ERMO: a Trilha de Triboar entre colinas, onde caem os encontros de viagem (`game/regiao.js` manda para cá
+// de dia e para o `ermoNoite` depois do escurecer).
+//
+// O MAPA É UM DESENHO: `public/mapas/ermo.webp`, gerado por nós no OpenArt, 1760x1200 = 22 por 15 casas de
+// 80 px. O terreno abaixo SAI DELE, por cor (`python src/dev/mapa-ermo.py` remede e reimprime). Antes era
+// desenhado em código: uma estrada retangular de duas casas atravessando o campo em linha reta, quatro borrões
+// de mata nos cantos e dezoito moitas salpicadas uma a uma, que taticamente era campo aberto com confete.
+//
+// Agora a trilha serpenteia e muda de largura, a moita fecha a curva do meio (e empurra quem passa para a volta
+// pelo sul), os pedregulhos vêm em grupo e o bosque fica nas bordas. `:` estrada e `,` grama valem o mesmo para
+// a regra — a diferença é o som do passo e a tinta por baixo do desenho —, então o glifo de estrada marca o
+// miolo do caminho, e não a largura pintada inteira.
 export const MAPA_ERMO = [
-  'TT,,,,,,,,,,,,,,,,,,TT',
-  'T,,,,b,,,,,,,,,r,,,,,T',
-  ',,,,,,,,,,r,,,,,,TT,,,',
-  ',,r,,,,,,,,,,,,,,b,,,,',
-  ',,,,,,,,b,,,,,,,,,,,,,',
-  ',,,,,,,r,,,,,,,,,,,,,,',
-  '::::::::::::::::::::::',
-  '::::::::::::::::::::::',
-  ',,,,,,r,,,,,,,,,,b,,,,',
-  ',,,,b,,,,,,,,,,,r,,,b,',
-  ',,,,,,,,,,,,r,,,,,,,,,',
-  ',,,,,,,r,,,,,,,,,,b,,,',
-  ',,b,,,,,,,,,,,,,,b,,,,',
-  'T,,,,,,,,,,,b,,,,,,,,T',
-  'TT,,,,,,,,,,,,,,,,,,TT',
+  'TTT,,,,,,,,,,,,,,,,TTT',
+  'T,,,,,,,,,,,,,,,,,TTTT',
+  'T,,,,,,,,,,,,,,,,,,,TT',
+  ',,,,,,,,,,,,,,,,,,,,,T',
+  ',,,rr,,,,,,,,,,,,,,,,,',
+  ',,,,,::::,,,,,,,,,,,,,',
+  ',,,::::::::b,,,,,,::,,',
+  '::::,,,,b,::bb,:::::::',
+  ',,,r,,,,bbb:::::,,,,,,',
+  ',,,b,,,,,bbb,,,,,r,,,,',
+  ',,,,,,,,,,,,,,,,,,,,,T',
+  ',,,,,,,,,,,,,,,,,,,,,T',
+  ',,,,,,,,,,,,,,,,,,TTTT',
+  'TT,,,,,,,,,,,,,,,,TTTT',
+  'TTTT,,,,,,,T,,,,,TTTTT',
 ];
-export const MAPA_ERMO_NOITE = MAPA_ERMO.map((l, y) => (y === 7 ? `${l.slice(0, 11)}F${l.slice(12)}` : l));
+// A fogueira do acampamento, em (11,5): grama aberta ao NORTE da trilha. No mapa antigo ela caía em cima
+// do caminho, que é o último lugar onde alguém acampa.
+export const MAPA_ERMO_NOITE = MAPA_ERMO.map((l, y) => (y === 5 ? `${l.slice(0, 11)}F${l.slice(12)}` : l));
 
 /**
  * O grupo vem pela trilha olhando para leste, JÁ DEPOIS da carroça tombada: ela tapa a estrada inteira na coluna
@@ -285,11 +295,14 @@ export function mapaDo(variante) {
       altura: null,
       objetos: [],
       grupo: noite
-        ? [{ x: 10, y: 7 }, { x: 12, y: 7 }, { x: 9, y: 6 }, { x: 13, y: 8 }]      // fora da diagonal da fogueira (11,7): nenhum herói a esconde
-        : [{ x: 9, y: 6 }, { x: 10, y: 7 }, { x: 8, y: 7 }, { x: 11, y: 6 }],
+        ? [{ x: 10, y: 5 }, { x: 12, y: 5 }, { x: 11, y: 4 }, { x: 10, y: 4 }]     // em volta da fogueira (11,5), na grama
+        : [{ x: 9, y: 6 }, { x: 10, y: 6 }, { x: 9, y: 7 }, { x: 10, y: 7 }],      // na trilha, no alto da curva
       olhar: { dx: 1, dy: 0 },
       cena: 'ermo',
-      ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 7 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
+      // O mapa pintado por baixo. É NOSSO, entra no repositório e o Vite o serve de `public/`; já vem cortado
+      // na grade, 80 px por casa, com o canto da casa (0,0) no canto da imagem.
+      fundo: { nome: 'ermo.webp', url: '/mapas/ermo.webp', escala: 80, x0: 0, y0: 0, giro: 0, opacidade: 1 },
+      ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 5 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
     };
   }
   if (variante === 'editor') {
