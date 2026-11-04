@@ -360,5 +360,48 @@ teste('visão pelo traço: mapa sem traço nenhum não muda de comportamento', (
   assert.equal(f.hasLineOfSight({ x: 2, y: 4 }, { x: 8, y: 4 }), false, 'a aresta continua cortando');
 });
 
+teste('cobertura pelos cantos: o degradê em volta da ponta de uma parede', () => {
+  const m = M.novoMapa(14, 10);
+  M.tracarParede(m, [[7, 0], [7, 5]]);           // parede do topo até y=5; de y=5 para baixo é passagem
+  const f = montarCampo(M.limpar(m));
+  // fundo atrás da parede: três ou quatro cantos barrados, três quartos de cobertura
+  assert.equal(f.coverBetween({ x: 4, y: 2 }, { x: 9, y: 2 }), 5, 'atrás da parede, +5');
+  // espiando por cima da ponta: um ou dois cantos barrados, meia cobertura
+  assert.equal(f.coverBetween({ x: 4, y: 3 }, { x: 9, y: 6 }), 2, 'na diagonal da ponta, +2');
+  assert.equal(f.coverBetween({ x: 4, y: 4 }, { x: 9, y: 4 }), 2);
+  // dobrada a quina, nada cobre
+  assert.equal(f.coverBetween({ x: 4, y: 6 }, { x: 9, y: 6 }), 0, 'passada a ponta, nenhuma');
+  assert.equal(f.coverBetween({ x: 4, y: 6 }, { x: 9, y: 4 }), 0);
+});
+
+teste('cobertura pelos cantos: quem ataca escolhe o melhor canto', () => {
+  const m = M.novoMapa(14, 10);
+  M.tracarParede(m, [[7, 0], [7, 4]]);
+  const f = montarCampo(M.limpar(m));
+  // de uma casa bem aberta, dá para achar um canto que vê tudo: nenhuma cobertura
+  assert.equal(f.coverBetween({ x: 2, y: 8 }, { x: 11, y: 8 }), 0);
+});
+
+teste('cobertura pelos cantos: mapa sem traço mantém a regra antiga', () => {
+  const m = M.novoMapa(12, 10);
+  M.pintarAltura(m, 6, 5, 2);                       // um platô no meio da linha
+  const f = montarCampo(M.limpar(m));
+  assert.equal(f.tracos, undefined);
+  assert.equal(f.coberturaPorTracos({ x: 3, y: 5 }, { x: 9, y: 5 }), 0, 'sem traço, nada a medir');
+  assert.equal(f.coverBetween({ x: 3, y: 5 }, { x: 9, y: 5 }), 2, 'o degrau continua dando meia cobertura');
+});
+
+teste('cobertura pelos cantos: pelo arco se vê e não se cobre, porque o vão é largo o bastante', () => {
+  const m = M.novoMapa(14, 10);
+  M.tracarParede(m, [[7, 0], [7, 10]]);
+  M.pintarAresta(m, 7, 5, 'O', 'arco');
+  const f = montarCampo(M.limpar(m));
+  // de frente para o arco, na mesma fileira: as quatro linhas de canto cabem no vão de 1,5 m
+  assert.equal(f.hasLineOfSight({ x: 4, y: 5 }, { x: 9, y: 5 }), true, 'pelo arco se vê');
+  assert.equal(f.coverBetween({ x: 4, y: 5 }, { x: 9, y: 5 }), 0, 'e de frente não há o que cobrir');
+  // de viés, o batente do arco entra na frente
+  assert.equal(f.coverBetween({ x: 4, y: 3 }, { x: 9, y: 6 }) > 0, true, 'de viés, o batente cobre');
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

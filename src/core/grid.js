@@ -616,36 +616,75 @@ export class Battlefield {
    * a aresta que ele atravessa: se ela deixa a visão passar (arco, porta aberta, grade, seteira), o cruzamento não
    * conta.
    */
-  tracoCortaVisao(a, b) {
+  /**
+   * Um traço de parede corta o segmento de `A` a `B`? Os pontos são em casas, com fração.
+   *
+   * ONDE HÁ PORTA, O TRAÇO NÃO VALE. O vão de porta costuma ser traçado por cima, porque num VTT a parede barra luz
+   * e não movimento; se o traço mandasse sozinho, porta aberta nunca deixaria ver. Então, em cada cruzamento,
+   * olha-se a aresta de casa que ele atravessa: se ela deixa a visão passar (arco, porta aberta, grade, seteira), o
+   * cruzamento não conta.
+   */
+  cortadoPorTraco(A, B) {
     if (!this.tracos?.length) return false;
     const idx = this.indiceDosTracos();
-    const A = [a.x + 0.5, a.y + 0.5];
-    const B = [b.x + 0.5, b.y + 0.5];
     const dx = B[0] - A[0];
     const dy = B[1] - A[1];
+    const comprimento = Math.hypot(dx, dy);
     const lado = (p1, p2, q) => Math.sign((p2[0] - p1[0]) * (q[1] - p1[1]) - (p2[1] - p1[1]) * (q[0] - p1[0]));
     const vistos = new Set();
-    for (const p of this.line(a, b)) {
-      const lista = idx.get(`${p.x},${p.y}`);
+    const passos = Math.max(2, Math.ceil(comprimento * 2) + 1);
+    for (let i = 0; i <= passos; i++) {
+      const t = i / passos;
+      const cx = Math.floor(A[0] + t * dx);
+      const cy = Math.floor(A[1] + t * dy);
+      // uma busca só por casa: o índice já guarda cada segmento com uma casa de folga em volta
+      const lista = idx.get(`${cx},${cy}`);
       if (!lista) continue;
       for (const seg of lista) {
         if (vistos.has(seg)) continue;
         vistos.add(seg);
         const [c, d] = seg;
         if (!(lado(A, B, c) * lado(A, B, d) <= 0 && lado(c, d, A) * lado(c, d, B) <= 0)) continue;
-        // onde a reta cruza o traço, e que aresta de casa é aquela
-        const den = (B[0] - A[0]) * (d[1] - c[1]) - (B[1] - A[1]) * (d[0] - c[0]);
+        const den = dx * (d[1] - c[1]) - dy * (d[0] - c[0]);
         if (!den) continue;
-        const t = ((c[0] - A[0]) * (d[1] - c[1]) - (c[1] - A[1]) * (d[0] - c[0])) / den;
-        const passo = 0.02 / Math.max(1e-6, Math.hypot(dx, dy));
-        const antes = { x: Math.floor(A[0] + (t - passo) * dx), y: Math.floor(A[1] + (t - passo) * dy) };
-        const depois = { x: Math.floor(A[0] + (t + passo) * dx), y: Math.floor(A[1] + (t + passo) * dy) };
+        const u = ((c[0] - A[0]) * (d[1] - c[1]) - (c[1] - A[1]) * (d[0] - c[0])) / den;
+        const e = 0.02 / Math.max(1e-6, comprimento);
+        const antes = { x: Math.floor(A[0] + (u - e) * dx), y: Math.floor(A[1] + (u - e) * dy) };
+        const depois = { x: Math.floor(A[0] + (u + e) * dx), y: Math.floor(A[1] + (u + e) * dy) };
         // cruzamento no meio de uma casa (parede atravessando o quadrado): não há aresta para consultar, barra
         if (antes.x === depois.x && antes.y === depois.y) return true;
         if (!this.passa(antes.x, antes.y, depois.x, depois.y, 'visao')) return true;
       }
     }
     return false;
+  }
+
+  /** O traço corta a reta que vai do centro de `a` ao centro de `b`? É a visão medida na geometria, não na grade. */
+  tracoCortaVisao(a, b) {
+    return this.cortadoPorTraco([a.x + 0.5, a.y + 0.5], [b.x + 0.5, b.y + 0.5]);
+  }
+
+  /**
+   * COBERTURA PELA REGRA DOS CANTOS (SRD). Escolhe-se um canto da casa de quem ataca e traçam-se linhas dele até os
+   * QUATRO cantos da casa do alvo. Uma ou duas barradas: meia cobertura, +2. Três: três quartos, +5. As quatro:
+   * cobertura total, e aí nem dá para mirar — mas isso a linha de visão já resolve antes.
+   *
+   * Quem ataca escolhe o canto, então vale o MELHOR dos quatro (o que barra menos). É a regra do livro, e ela só
+   * fica natural com parede de verdade: na aresta de casa não há como traçar do canto.
+   */
+  coberturaPorTracos(a, b) {
+    if (!this.tracos?.length) return 0;
+    const cantos = (p) => [[p.x, p.y], [p.x + 1, p.y], [p.x, p.y + 1], [p.x + 1, p.y + 1]];
+    const doAlvo = cantos(b);
+    let melhor = 4;
+    for (const canto of cantos(a)) {
+      let barradas = 0;
+      for (const alvo of doAlvo) if (this.cortadoPorTraco(canto, alvo)) barradas += 1;
+      if (barradas < melhor) melhor = barradas;
+      if (!melhor) return 0;
+    }
+    if (melhor >= 3) return 5;
+    return melhor >= 1 ? 2 : 0;
   }
 
   /**
@@ -719,11 +758,12 @@ export class Battlefield {
         : [this.aresta(p.x, p.y, q.x, p.y), this.aresta(q.x, p.y, q.x, q.y), this.aresta(p.x, p.y, p.x, q.y), this.aresta(p.x, q.y, q.x, q.y)];
       if (arestas.includes(4)) return 5;
     }
+    let maior = 0;
     for (let i = 1; i < pts.length - 1; i++) {
-      if (this.tileAt(pts[i].x, pts[i].y) === 3) return 2;
-      if (this.heightAt(pts[i].x, pts[i].y) > low) return 2;
+      if (this.tileAt(pts[i].x, pts[i].y) === 3 || this.heightAt(pts[i].x, pts[i].y) > low) { maior = 2; break; }
     }
-    return 0;
+    // a quina de uma parede livre também cobre, e aí vale a regra dos cantos do SRD
+    return Math.max(maior, this.coberturaPorTracos(a, b));
   }
 
   /** Quadrados dentro de um raio em pés (para explosões e auras). */

@@ -248,6 +248,15 @@ A mudança é de mão única: o traço **só barra mais, nunca menos**. São os 
 parede que o desenho fecha. Custo medido na Onda Eco (127 traços, 1.115 segmentos): 1,8 µs por par, e 2 ms para
 montar o índice uma vez.
 
+**E a COBERTURA passa a seguir a regra dos cantos do SRD.** Escolhe-se um canto da casa de quem ataca e traçam-se
+linhas até os quatro cantos da casa do alvo: uma ou duas barradas dão meia cobertura (+2 de CA), três dão três
+quartos (+5). Quem ataca escolhe o canto, então vale o melhor dos quatro. Antes a cobertura só olhava altura e
+obstáculo — **parede não cobria**, porque na aresta de casa não há como traçar do canto.
+
+Medido nos mapas importados, entre os pares que se enxergam: no Covil Cragmaw **70 de 272** mudaram (68 ganharam +2,
+2 ganharam +5); no Covil Carrasco **99 de 518** (75 de +2, 24 de +5). É a quina da parede passando a valer o que o
+livro diz que vale. Custo: 42 µs por par (dezesseis linhas de canto, cada uma contra o índice).
+
 **O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
 regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é
 toda isométrica: o móvel é o sprite deitado na casa, provisório.
