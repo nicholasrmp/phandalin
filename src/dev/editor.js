@@ -667,7 +667,9 @@ function fundoNoPainel() {
   const nome = $('fundoNome');
   if (!nome) return;
   if (!f) nome.textContent = 'Nenhuma imagem carregada.';
-  else if (!imgFundo) nome.textContent = f.url ? `Carregando ${f.nome} de ${new URL(f.url).host}…` : `O mapa pede "${f.nome}", mas a imagem não está neste navegador: carregue de novo.`;
+  // `new URL(f.url)` sozinho estoura em endereço RELATIVO, e os mapas nossos usam `/mapas/...`: sem a base,
+  // abrir o Ermo no editor derrubava o painel com "Invalid URL" antes de a imagem carregar.
+  else if (!imgFundo) nome.textContent = f.url ? `Carregando ${f.nome} de ${new URL(f.url, location.href).host}…` : `O mapa pede "${f.nome}", mas a imagem não está neste navegador: carregue de novo.`;
   else nome.textContent = `${f.nome} — ${imgFundo.naturalWidth} x ${imgFundo.naturalHeight} px, ${f.escala} px por casa.`;
 }
 

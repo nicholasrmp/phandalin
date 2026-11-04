@@ -293,7 +293,10 @@ export function mapaDo(variante) {
     return {
       terreno: noite ? MAPA_ERMO_NOITE : MAPA_ERMO,
       altura: null,
-      objetos: [],
+      // A fogueira é a ÚNICA luz da noite, e o desenho por baixo é o do dia: sem este sprite ela não existe na
+      // tela, e a cena mostrava quatro heróis parados no escuro em volta de nada. `sobreOFundo` diz ao tabuleiro
+      // que este é dos poucos móveis que o mapa pintado não traz.
+      objetos: noite ? [{ tipo: 'prop', variante: 'fogueiraPanela', x: 11, y: 5, sobreOFundo: true }] : [],
       grupo: noite
         ? [{ x: 10, y: 5 }, { x: 12, y: 5 }, { x: 11, y: 4 }, { x: 10, y: 4 }]     // em volta da fogueira (11,5), na grama
         : [{ x: 9, y: 6 }, { x: 10, y: 6 }, { x: 9, y: 7 }, { x: 10, y: 7 }],      // na trilha, no alto da curva

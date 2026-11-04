@@ -149,14 +149,22 @@ export function pintarTracos(ctx, tracos, C, aMostra = false) {
   ctx.restore();
 }
 
-/** Os móveis: o sprite ISOMÉTRICO centrado na casa. É provisório — arte de cima não existe no projeto. */
-export function pintarMoveis(ctx, mapa, C, atlas, imgAtlas) {
+/**
+ * Os móveis: o sprite ISOMÉTRICO centrado na casa. É provisório — arte de cima não existe no projeto.
+ *
+ * `soMarcados` é para quando há MAPA PINTADO por baixo: aí o desenho já mostra a mobília, e repetir o sprite em
+ * cima dela desenha tudo duas vezes (a carroça da emboscada é o caso). Só passam os objetos que a cena marcou
+ * com `sobreOFundo`, que é como ela diz "este aqui o desenho NÃO tem" — a fogueira do acampamento do Ermo de
+ * noite, por exemplo, que é a única luz da cena e some se ninguém a desenhar.
+ */
+export function pintarMoveis(ctx, mapa, C, atlas, imgAtlas, soMarcados = false) {
   if (!imgAtlas?.complete || !imgAtlas.naturalWidth) return;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.globalAlpha = 0.95;
   for (const o of mapa.objetos ?? []) {
     if (o.tipo !== 'prop' || o.variante === 'taverna-nada') continue;
+    if (soMarcados && !o.sobreOFundo) continue;
     const f = atlas[`prop-${o.variante}`]?.todas?.[0];
     if (!f) continue;
     const k = Math.min((C * 0.92) / f.w, (C * 0.92) / f.h);

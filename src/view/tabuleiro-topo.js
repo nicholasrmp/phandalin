@@ -144,10 +144,9 @@ export class TabuleiroTopo extends Board {
     ctx.save();
     ctx.translate(this.ox, this.oy);
     const comPintura = V.pintarFundo(ctx, this.imgFundo, this.field.fundo, C);
-    if (!comPintura) {
-      V.pintarChao(ctx, this.field, C);
-      V.pintarMoveis(ctx, this.field, C, atlas, imgAtlas);
-    }
+    if (!comPintura) V.pintarChao(ctx, this.field, C);
+    // Com mapa pintado, só os móveis que a cena marcou com `sobreOFundo`: o desenho já tem o resto.
+    V.pintarMoveis(ctx, this.field, C, atlas, imgAtlas, comPintura);
     V.pintarGrade(ctx, this.field, C, comPintura ? 'rgba(120,200,255,.25)' : 'rgba(0,0,0,.28)');
     ctx.restore();
 
