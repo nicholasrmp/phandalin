@@ -192,5 +192,57 @@ teste('exploração livre: liga e desliga, vai no JSON, e o jogo só aceita a ce
   } finally { delete globalThis.localStorage; }
 });
 
+// ------------------------------------------------------------------------------- o mapa pintado de fundo ---
+
+teste('fundo: o enquadramento entra e sai do JSON, e mudar o giro zera a origem', () => {
+  const m = M.novoMapa(10, 10);
+  assert.equal(M.definirFundo(m, { nome: 'mapa.jpg', escala: 100, x0: 20, y0: 30 }), true);
+  assert.deepEqual(M.limpar(m).fundo, m.fundo, 'o enquadramento vai no JSON');
+  assert.equal(M.definirFundo(m, { giro: 90 }), true);
+  assert.deepEqual([m.fundo.x0, m.fundo.y0], [0, 0], 'girar a imagem invalida a origem medida nela');
+  M.definirFundo(m, { giro: 450 });
+  assert.equal(m.fundo.giro, 90, 'o giro é sempre 0, 90, 180 ou 270');
+  assert.equal(M.definirFundo(m, null), true);
+  assert.equal(m.fundo, undefined);
+  assert.equal(M.definirFundo(m, null), false, 'tirar o que não tem não é mudança');
+});
+
+teste('fundo: calibrar com a verdade não muda nada; errar a contagem muda a escala na proporção', () => {
+  const m = M.novoMapa(10, 10);
+  M.definirFundo(m, { nome: 'x.jpg', escala: 76.8, x0: 42, y0: 3.8 });
+  const antes = JSON.stringify(m.fundo);
+  // um arrasto que cobre 5 x 5 casas da grade de agora, declarado como 5 x 5: a grade já estava certa
+  M.calibrarFundo(m, { x: 5, y: 5 }, { x: 10, y: 10 }, 5, 5);
+  assert.equal(JSON.stringify(m.fundo), antes);
+  // o mesmo arrasto, declarado como 4 x 4: cada casa passa a valer 25% mais pixels
+  M.calibrarFundo(m, { x: 5, y: 5 }, { x: 10, y: 10 }, 4, 4);
+  assert.equal(m.fundo.escala, 96);
+  // e o canto do arrasto continua em cima da casa (5,5)
+  assert.equal(m.fundo.x0 + 5 * 96, 42 + 5 * 76.8);
+  assert.equal(M.calibrarFundo(m, { x: 2, y: 2 }, { x: 2, y: 2 }, 1, 1), false, 'arrasto sem tamanho não calibra');
+});
+
+teste('fundo: arrastar a imagem anda em casas, e crescer o mapa pelo norte não a desloca', () => {
+  const m = M.novoMapa(10, 10);
+  M.definirFundo(m, { nome: 'x.jpg', escala: 50, x0: 0, y0: 0 });
+  M.moverFundo(m, 1, -2);
+  assert.deepEqual([m.fundo.x0, m.fundo.y0], [-50, 100], 'arrastar a imagem uma casa para a direita tira 50 px da origem');
+  // a casa (3,3) cai no mesmo pixel da imagem antes e depois de o mapa crescer duas linhas ao norte
+  const px = (x, y) => [m.fundo.x0 + x * m.fundo.escala, m.fundo.y0 + y * m.fundo.escala];
+  const antes = px(3, 3);
+  M.redimensionar(m, 'N', 2);
+  assert.deepEqual(px(3, 5), antes, 'a casa andou duas para baixo; a imagem ficou parada');
+});
+
+teste('fundo: casasDoFundo diz o retângulo de casas que a imagem cobre', () => {
+  const m = M.novoMapa(10, 10);
+  M.definirFundo(m, { nome: 'x.jpg', escala: 100, x0: 0, y0: 0 });
+  assert.deepEqual(M.casasDoFundo(m, 500, 300), { x1: 0, y1: 0, x2: 5, y2: 3 });
+  M.definirFundo(m, { x0: 250, y0: 0 });
+  assert.equal(M.casasDoFundo(m, 500, 300).x1, -3, 'a imagem deslocada começa antes da casa (0,0)');
+  M.definirFundo(m, { giro: 90 });
+  assert.deepEqual(M.casasDoFundo(m, 500, 300), { x1: 0, y1: 0, x2: 3, y2: 5 }, 'girada, troca largura por altura');
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

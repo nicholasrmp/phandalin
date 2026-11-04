@@ -129,5 +129,8 @@ musica, editor, casadamorte). O de editor e o da Casa da Morte rodam com
 `src/dev/passeio-casadamorte.mjs [sacrificar|negar] [semente]` percorre a casa inteira, do jardim à saída, como um jogador automático.
 `src/dev/gatilhos-casadamorte.mjs` faz cada ação de cada casa e confere que toda luta que ela começa tem caminho entre os dois lados.
 `python src/dev/alinhar-mapa-pintado.py --provas` casa a planta de cada andar da Casa da Morte com o battlemap pintado de verdade
-(`_referencias/casa-da-morte-morvold/`) e devolve giro, escala, origem e a prova visual — serve de conferência de fidelidade da planta. **Rode-os antes de chamar revisor**: achado que um teste já pega não
+(`_referencias/casa-da-morte-morvold/`) e devolve giro, escala, origem e a prova visual — serve de conferência de fidelidade da planta.
+`python src/dev/conferir-encaixe.py <cena>` pinta de vermelho, por cima do mapa pintado, as casas que o jogo bloqueia, e conta quanto do
+nosso chão cai sobre chão pintado. Para mapa novo, ou quando as duas plantas não são a mesma, o caminho é o editor: `/editor.html`, vista
+de cima, ferramenta 8, que enquadra a imagem e deixa decalcar parede e porta por cima (como no Roll20). **Rode-os antes de chamar revisor**: achado que um teste já pega não
 precisa de agente.

@@ -3,6 +3,11 @@
 //
 // Ferramentas: piso, parede e portas (por aresta), objetos de cenário, salas, ponto de partida e borracha de objeto. Cada mudança vira um
 // ponto de desfazer, é guardada no navegador (`localStorage`) e o botão "Testar no jogo" abre o jogo naquele mapa (`?encontro=editor`).
+//
+// Duas VISTAS. A isométrica é o tabuleiro do jogo. A DE CIMA (`vista-topo.js`) existe para decalcar um mapa pintado, como no Roll20 e no
+// Foundry: carrega-se a imagem, enquadra-se a grade nela (arrastando um retângulo por cima de N x M quadrados desenhados) e desenha-se em
+// cima o que é parede, porta e arco. A imagem NÃO entra no mapa — só o enquadramento (`mapa.fundo`) entra; a figura fica no navegador
+// (IndexedDB), porque costuma ser arte de terceiros que não pode ser publicada.
 
 import { Board, TW, TH, LIFT } from '../view/board.js';
 import { Encounter } from '../rules/combat.js';
@@ -11,6 +16,7 @@ import { makeRng } from '../core/rng.js';
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import * as M from '../game/mapa-editor.js';
+import * as T from './vista-topo.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
 
@@ -32,6 +38,7 @@ const PISOS = [
 
 const FERRAMENTAS = [
   ['piso', 'Piso', '1'], ['aresta', 'Parede e porta', '2'], ['objeto', 'Objeto', '3'], ['apagar', 'Tirar objeto', '4'], ['sala', 'Sala', '5'], ['inicio', 'Partida', '6'], ['altura', 'Altura', '7'],
+  ['fundo', 'Mapa de fundo', '8'],
 ];
 
 const PEGADAS = [[1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [1, 3], [3, 2], [2, 3]];
@@ -42,10 +49,23 @@ let desfazer = [];
 let refazer = [];
 let board = null;
 let sujo = true;
-const sel = { ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, pega: [1, 1], altura: 1, sala: 'sala1', inicio: 0 };
+const sel = {
+  ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, pega: [1, 1], altura: 1, sala: 'sala1', inicio: 0,
+  // a vista de cima
+  vista: 'iso', celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
+  fundoModo: 'calibrar', colunas: 5, linhas: 5,
+};
 let hoverEdge = null;
 let hoverTile = null;
 let pressionado = null;   // { tipo, chave }
+let campo = null;         // o Battlefield, que a vista de cima desenha direto
+let imgFundo = null;      // a imagem escolhida; vive só no navegador, nunca no mapa
+let arrasto = null;       // o retângulo que está sendo arrastado para calibrar, em casas
+
+const telaTopo = document.createElement('canvas');
+telaTopo.hidden = true;
+area.append(telaTopo);
+const telaAtiva = () => (sel.vista === 'topo' ? telaTopo : canvas);
 
 const instantaneo = () => JSON.stringify(mapa);
 function aplicar(mudou) {
@@ -74,13 +94,17 @@ function volta(de, para) {
   agendarGuardar();
   botoes();
   sincronizarModo();
+  fundoNoPainel();
 }
 
 // ------------------------------------------------------------------------------------------------ tabuleiro ---
 function reconstruir() {
   const x = area.scrollLeft; const y = area.scrollTop;
+  campo = montarCampo(mapa);
+  $('tamanho').textContent = `${mapa.terreno[0].length} x ${mapa.terreno.length} casas`;
+  if (sel.vista === 'topo') { sujo = false; return; }
   board?.disposeCamera();
-  const field = montarCampo(mapa);
+  const field = campo;
   const party = makeParty({ nivel: 2 });
   const lugares = mapa.grupo?.length ? mapa.grupo : [{ x: 1, y: 1 }];
   party.forEach((c, i) => { c.pos = { ...(lugares[i] ?? lugares[0]) }; c.facingVec = { ...(mapa.olhar ?? { dx: 0, dy: 1 }) }; });
@@ -90,7 +114,90 @@ function reconstruir() {
   board.soCenario = true;     // sem anel nem barra de vida
   area.scrollLeft = x; area.scrollTop = y;
   sujo = false;
-  $('tamanho').textContent = `${mapa.terreno[0].length} x ${mapa.terreno.length} casas`;
+}
+
+// -------------------------------------------------------------------------------------------- vista de cima ---
+/** Desenha o mapa visto de cima: a imagem de fundo embaixo, e por cima o que o jogo sabe — chão, grade, parede, móvel. */
+function desenharTopo() {
+  const C = sel.celula;
+  if (telaTopo.width !== campo.w * C || telaTopo.height !== campo.h * C) {
+    telaTopo.width = campo.w * C;
+    telaTopo.height = campo.h * C;
+  }
+  const ctx = telaTopo.getContext('2d');
+  ctx.clearRect(0, 0, telaTopo.width, telaTopo.height);
+  ctx.fillStyle = '#0d0c11';
+  ctx.fillRect(0, 0, telaTopo.width, telaTopo.height);
+  const comFundo = T.pintarFundo(ctx, imgFundo, mapa.fundo, C);
+  if (sel.verChao) {
+    ctx.save();
+    if (comFundo) ctx.globalAlpha = 0.45;     // com mapa pintado embaixo, o chão do jogo é só conferência
+    T.pintarChao(ctx, campo, C);
+    ctx.restore();
+  }
+  if (sel.verGrade) T.pintarGrade(ctx, campo, C, comFundo ? 'rgba(120,200,255,.45)' : 'rgba(0,0,0,.28)');
+  if (sel.verMoveis) T.pintarMoveis(ctx, mapa, C, atlas, imgAtlas);
+  T.pintarArestas(ctx, campo, C, sel.arestasFinas || comFundo);
+  marcarTopo(ctx, C);
+}
+
+/** Por cima do quadro: as salas, os pontos de partida, a aresta sob o cursor e o retângulo da calibração. */
+function marcarTopo(ctx, C) {
+  if (sel.ferramenta === 'sala') {
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    for (const [id, casas] of Object.entries(mapa.salas ?? {})) {
+      ctx.fillStyle = `hsl(${[...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 360} 80% 60%)`;
+      for (const c of casas) ctx.fillRect(c.x * C, c.y * C, C, C);
+    }
+    ctx.restore();
+  }
+  if (sel.ferramenta === 'inicio' || sel.ferramenta === 'sala') {
+    ctx.save();
+    ctx.font = `bold ${Math.max(11, C * 0.3)}px system-ui`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    (mapa.grupo ?? []).forEach((p, i) => {
+      ctx.lineWidth = 3; ctx.strokeStyle = '#000';
+      ctx.fillStyle = i === sel.inicio && sel.ferramenta === 'inicio' ? '#ffd868' : '#fff';
+      ctx.strokeText(String(i + 1), (p.x + 0.5) * C, (p.y + 0.5) * C);
+      ctx.fillText(String(i + 1), (p.x + 0.5) * C, (p.y + 0.5) * C);
+    });
+    ctx.restore();
+  }
+  if (sel.ferramenta === 'aresta' && hoverEdge) {
+    const { x, y, lado } = hoverEdge;
+    ctx.save();
+    ctx.strokeStyle = '#ffd868'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x * C, y * C);
+    if (lado === 'N') ctx.lineTo((x + 1) * C, y * C); else ctx.lineTo(x * C, (y + 1) * C);
+    ctx.stroke();
+    ctx.restore();
+  } else if (hoverTile && sel.ferramenta !== 'fundo') {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,216,104,.9)'; ctx.lineWidth = 2;
+    ctx.strokeRect(hoverTile.x * C + 1, hoverTile.y * C + 1, C - 2, C - 2);
+    ctx.restore();
+  }
+  if (arrasto) {
+    const x = Math.min(arrasto.a.x, arrasto.b.x) * C; const y = Math.min(arrasto.a.y, arrasto.b.y) * C;
+    const w = Math.abs(arrasto.b.x - arrasto.a.x) * C; const h = Math.abs(arrasto.b.y - arrasto.a.y) * C;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,216,104,.18)'; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#ffd868'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+}
+
+/** Troca de vista. A de cima some com o tabuleiro isométrico e vice-versa. */
+function vista(qual) {
+  sel.vista = qual;
+  const topo = qual === 'topo';
+  telaTopo.hidden = !topo;
+  canvas.hidden = topo;
+  $('vista').textContent = topo ? 'Vista: de cima' : 'Vista: isométrica';
+  $('vista').classList.toggle('on', topo);
+  sujo = true;
 }
 
 let ultimo = 0;
@@ -99,8 +206,8 @@ function quadro(t) {
   ultimo = t;
   try {
     if (sujo) reconstruir();
-    board.render(dt);
-    marcar();
+    if (sel.vista === 'topo') desenharTopo();
+    else { board.render(dt); marcar(); }
   } catch (e) {
     console.error(e);
     $('estado').textContent = `Erro ao desenhar: ${e.message}`;
@@ -169,17 +276,27 @@ function noPano(P, A, B) {
 }
 
 function pontoDe(e) {
+  if (sel.vista === 'topo') {
+    const r = telaTopo.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (telaTopo.width / r.width || 1), y: (e.clientY - r.top) * (telaTopo.height / r.height || 1) };
+  }
   const { px, py } = board.pontoDoEvento(e);
   return { x: px, y: py };
 }
+/** O ponto do mouse em CASAS (com fração), que é como a calibração e o arrasto do fundo falam. */
+function casaFracionada(e) {
+  const p = pontoDe(e);
+  return { x: p.x / sel.celula, y: p.y / sel.celula };
+}
 function casaDe(e) {
   const p = pontoDe(e);
-  const t = board.casaNoPonto(p.x, p.y);
+  const t = sel.vista === 'topo' ? T.casaNoPonto(campo, sel.celula, p.x, p.y) : board.casaNoPonto(p.x, p.y);
   return t && M.dentro(mapa, t.x, t.y) ? t : null;
 }
 /** A aresta mais perto do ponteiro entre as quatro da casa apontada. */
 function arestaDe(e) {
   const P = pontoDe(e);
+  if (sel.vista === 'topo') return T.arestaNoPonto(mapa.terreno[0].length, mapa.terreno.length, sel.celula, P.x, P.y);
   const t = board.casaNoPonto(P.x, P.y);
   if (!t) return null;
   let melhor = null;
@@ -227,24 +344,57 @@ function agir(e, primeira) {
 }
 
 let panorama = null;
-canvas.addEventListener('mousedown', (e) => {
+let arrastandoFundo = null;
+
+function aoApertar(e) {
   if (e.button === 1) { panorama = { x: e.clientX, y: e.clientY, l: area.scrollLeft, t: area.scrollTop }; e.preventDefault(); return; }
   if (e.button !== 0) return;
   pressionado = null;
+  if (sel.ferramenta === 'fundo' && sel.vista === 'topo') {
+    const c = casaFracionada(e);
+    if (sel.fundoModo === 'mover') { ponto(); arrastandoFundo = c; } else { arrasto = { a: c, b: c }; }
+    e.preventDefault();
+    return;
+  }
   agir(e, true);
-});
+}
+canvas.addEventListener('mousedown', aoApertar);
+telaTopo.addEventListener('mousedown', aoApertar);
+
 addEventListener('mousemove', (e) => {
   if (panorama) { area.scrollLeft = panorama.l - (e.clientX - panorama.x); area.scrollTop = panorama.t - (e.clientY - panorama.y); return; }
-  if (!board || e.target !== canvas) return;
-  if (e.buttons & 1) agir(e, false);
+  if (arrastandoFundo) {
+    const c = casaFracionada(e);
+    if (M.moverFundo(mapa, c.x - arrastandoFundo.x, c.y - arrastandoFundo.y)) { arrastandoFundo = c; aplicar(true); fundoNoPainel(); }
+    return;
+  }
+  if (arrasto) { arrasto = { ...arrasto, b: casaFracionada(e) }; return; }
+  if (e.target !== telaAtiva()) return;
+  if (sel.vista === 'iso' && !board) return;
+  if ((e.buttons & 1) && sel.ferramenta !== 'fundo') agir(e, false);
   else {
     hoverEdge = sel.ferramenta === 'aresta' ? arestaDe(e) : null;
     hoverTile = casaDe(e);
     estado();
   }
 });
-addEventListener('mouseup', () => { pressionado = null; panorama = null; });
-canvas.addEventListener('mouseleave', () => { hoverEdge = null; hoverTile = null; estado(); });
+addEventListener('mouseup', () => {
+  if (arrasto) {
+    const { a, b } = arrasto;
+    arrasto = null;
+    if (Math.abs(b.x - a.x) > 0.1 && Math.abs(b.y - a.y) > 0.1) {
+      ponto();
+      if (!aplicar(M.calibrarFundo(mapa, a, b, sel.colunas, sel.linhas))) { desfazer.pop(); botoes(); }
+      fundoNoPainel();
+    }
+  }
+  pressionado = null; panorama = null; arrastandoFundo = null;
+});
+for (const t of [canvas, telaTopo]) t.addEventListener('mouseleave', () => { hoverEdge = null; hoverTile = null; estado(); });
+telaTopo.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  sel.celula = Math.min(200, Math.max(12, Math.round(sel.celula * (e.deltaY < 0 ? 1.12 : 1 / 1.12))));
+}, { passive: false });
 
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -287,6 +437,7 @@ function avisar() {
 
 function escolher(f) {
   sel.ferramenta = f;
+  if (f === 'fundo' && sel.vista !== 'topo') vista('topo');
   document.querySelectorAll('[data-ferramenta]').forEach((b) => b.classList.toggle('on', b.dataset.ferramenta === f));
   document.querySelectorAll('[data-secao]').forEach((s) => { s.hidden = s.dataset.secao !== f && !(s.dataset.secao === 'objeto' && f === 'apagar' && false); });
   canvas.style.cursor = f === 'apagar' ? 'not-allowed' : 'crosshair';
@@ -343,6 +494,32 @@ function montarPainel() {
       <p class="dica">Cada nível vale 1,5 m a mais (um degrau de pedra). Escolha o nível e pinte; subir custa o dobro de movimento, e quem está no alto tem vantagem de visão. 0 é o chão.</p>
     </div>
 
+    <div data-secao="fundo">
+      <h2>Mapa de fundo</h2>
+      <p class="dica">Decalcar um mapa pintado, como no Roll20: carregue a imagem, enquadre a grade nela e depois desenhe parede e porta por cima (ferramenta 2).</p>
+      <button id="escolherFundo" style="width:100%">Escolher imagem…</button>
+      <p class="dica" id="fundoNome">Nenhuma imagem carregada.</p>
+      <h2>Enquadrar</h2>
+      <div class="lista">
+        <button data-fundomodo="calibrar">Calibrar: arrastar sobre N x M casas</button>
+        <button data-fundomodo="mover">Mover a imagem</button>
+      </div>
+      <div class="numeros" style="margin-top:6px">
+        <label>colunas do arrasto<input type="number" id="fColunas" min="1" max="60" value="5" /></label>
+        <label>linhas do arrasto<input type="number" id="fLinhas" min="1" max="60" value="5" /></label>
+      </div>
+      <p class="dica">Arraste por cima de um bloco de quadrados DESENHADOS no mapa e diga quantos são. A escala e a fase da grade saem daí.</p>
+      <div class="numeros" style="margin-top:6px">
+        <label>px por casa<input type="number" id="fEscala" step="0.1" min="1" /></label>
+        <label>giro<select id="fGiro"><option>0</option><option>90</option><option>180</option><option>270</option></select></label>
+        <label>origem x<input type="number" id="fX" step="1" /></label>
+        <label>origem y<input type="number" id="fY" step="1" /></label>
+      </div>
+      <label class="linha">Opacidade <input type="range" id="fOpaco" min="0" max="1" step="0.05" value="1" style="flex:1" /></label>
+      <button id="ajustarMapa" style="width:100%;margin-top:6px">Crescer o mapa até cobrir a imagem</button>
+      <button id="tirarFundo" style="width:100%;margin-top:4px">Tirar o fundo</button>
+    </div>
+
     <div data-secao="sala">
       <h2>Sala</h2>
       <input type="text" id="salaId" value="${sel.sala}" style="width:100%" />
@@ -354,6 +531,13 @@ function montarPainel() {
       <div class="grade">${[0, 1, 2, 3].map((i) => `<button data-inicio="${i}">Herói ${i + 1}</button>`).join('')}</div>
       <p class="dica">Escolha o herói e clique na casa onde ele nasce.</p>
     </div>
+
+    <h2>Vista de cima</h2>
+    <label class="linha"><input type="checkbox" id="vChao" checked /> Pintar o chão do jogo</label>
+    <label class="linha"><input type="checkbox" id="vGrade" checked /> Grade</label>
+    <label class="linha"><input type="checkbox" id="vMoveis" checked /> Móveis</label>
+    <label class="linha"><input type="checkbox" id="vFinas" /> Parede em linha fina (como o editor do Foundry)</label>
+    <p class="dica">A roda do mouse dá zoom na vista de cima.</p>
 
     <h2>Modo no jogo</h2>
     <label class="linha"><input type="checkbox" id="explorar" ${mapa.cena === 'editor' ? 'checked' : ''} /> Exploração livre (sem iniciativa e sem inimigos)</label>
@@ -386,6 +570,40 @@ function montarPainel() {
     L.querySelectorAll('[data-altura]').forEach((x) => x.classList.toggle('on', x === b));
   }));
   $('pega').addEventListener('change', (e) => { sel.pega = e.target.value.split(',').map(Number); });
+  L.querySelectorAll('[data-fundomodo]').forEach((b) => b.addEventListener('click', () => {
+    sel.fundoModo = b.dataset.fundomodo;
+    L.querySelectorAll('[data-fundomodo]').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  L.querySelector(`[data-fundomodo="${sel.fundoModo}"]`).classList.add('on');
+  $('escolherFundo').addEventListener('click', () => $('arquivoFundo').click());
+  $('fColunas').addEventListener('input', (e) => { sel.colunas = Math.max(1, Number(e.target.value) || 1); });
+  $('fLinhas').addEventListener('input', (e) => { sel.linhas = Math.max(1, Number(e.target.value) || 1); });
+  for (const [id, campoDoFundo] of [['fEscala', 'escala'], ['fX', 'x0'], ['fY', 'y0'], ['fGiro', 'giro'], ['fOpaco', 'opacidade']]) {
+    $(id).addEventListener('input', (e) => {
+      if (!mapa.fundo) return;
+      ponto();
+      if (!aplicar(M.definirFundo(mapa, { [campoDoFundo]: Number(e.target.value) }))) { desfazer.pop(); botoes(); }
+      if (campoDoFundo === 'giro') fundoNoPainel();
+    });
+  }
+  $('tirarFundo').addEventListener('click', () => { ponto(); if (!aplicar(M.definirFundo(mapa, null))) { desfazer.pop(); botoes(); } fundoNoPainel(); });
+  $('ajustarMapa').addEventListener('click', () => {
+    if (!mapa.fundo || !imgFundo) return;
+    ponto();
+    let mudou = false;
+    // cada crescimento pelo norte ou pelo oeste desloca as casas, então o retângulo se recalcula a cada borda
+    for (const borda of ['O', 'N', 'L', 'S']) {
+      const c = M.casasDoFundo(mapa, imgFundo.naturalWidth, imgFundo.naturalHeight);
+      const n = { O: -c.x1, N: -c.y1, L: c.x2 - mapa.terreno[0].length, S: c.y2 - mapa.terreno.length }[borda];
+      if (n) mudou = M.redimensionar(mapa, borda, n) || mudou;
+    }
+    if (!aplicar(mudou)) { desfazer.pop(); botoes(); }
+    fundoNoPainel();
+  });
+  for (const [id, campoVisto] of [['vChao', 'verChao'], ['vGrade', 'verGrade'], ['vMoveis', 'verMoveis'], ['vFinas', 'arestasFinas']]) {
+    $(id).checked = sel[campoVisto];
+    $(id).addEventListener('change', (e) => { sel[campoVisto] = e.target.checked; });
+  }
   $('explorar').addEventListener('change', (e) => { ponto(); if (!aplicar(M.definirExploracao(mapa, e.target.checked))) { desfazer.pop(); botoes(); } });
   L.querySelectorAll('[data-cresce]').forEach((b) => b.addEventListener('click', () => {
     const [borda, n] = b.dataset.cresce.split(',');
@@ -428,6 +646,59 @@ function montarPainel() {
   escolher(sel.ferramenta);
 }
 
+// ------------------------------------------------------------------------------- a imagem de fundo, no navegador ---
+//
+// A figura não entra no mapa nem no repositório: fica no IndexedDB deste navegador. Quase sempre é arte de terceiros
+// (um battlemap comprado), e o que o jogo precisa guardar é só o ENQUADRAMENTO.
+
+const BD = 'phandalin.editor';
+function comBanco(modo, trabalho) {
+  return new Promise((ok, falha) => {
+    const p = indexedDB.open(BD, 1);
+    p.onupgradeneeded = () => p.result.createObjectStore('fundos');
+    p.onerror = () => falha(p.error);
+    p.onsuccess = () => {
+      const t = p.result.transaction('fundos', modo);
+      const r = trabalho(t.objectStore('fundos'));
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => falha(r.error);
+    };
+  });
+}
+const guardarFundo = (nome, blob) => comBanco('readwrite', (s) => s.put(blob, nome)).catch(() => {});
+const lerFundo = (nome) => comBanco('readonly', (s) => s.get(nome)).catch(() => null);
+
+function usarFundo(blob, nome) {
+  const img = new Image();
+  img.addEventListener('load', () => { imgFundo = img; sujo = true; fundoNoPainel(); }, { once: true });
+  img.addEventListener('error', () => { imgFundo = null; fundoNoPainel(); }, { once: true });
+  img.src = URL.createObjectURL(blob);
+  img.nomeDoArquivo = nome;
+}
+
+/** Põe no painel os números do enquadramento que está valendo. */
+function fundoNoPainel() {
+  const f = mapa.fundo;
+  const campos = { fEscala: f?.escala ?? '', fX: f?.x0 ?? '', fY: f?.y0 ?? '', fGiro: String(f?.giro ?? 0), fOpaco: f?.opacidade ?? 1 };
+  for (const [id, v] of Object.entries(campos)) if ($(id)) $(id).value = v;
+  const nome = $('fundoNome');
+  if (!nome) return;
+  if (!f) nome.textContent = 'Nenhuma imagem carregada.';
+  else if (!imgFundo) nome.textContent = `O mapa pede "${f.nome}", mas a imagem não está neste navegador: carregue de novo.`;
+  else nome.textContent = `${f.nome} — ${imgFundo.naturalWidth} x ${imgFundo.naturalHeight} px, ${f.escala} px por casa.`;
+}
+
+/** Depois de abrir ou importar um mapa: se ele pede um fundo, procura a imagem guardada. */
+async function recuperarFundo() {
+  const nome = mapa.fundo?.nome;
+  imgFundo = null;
+  if (nome) {
+    const blob = await lerFundo(nome);
+    if (blob) usarFundo(blob, nome);
+  }
+  fundoNoPainel();
+}
+
 // ------------------------------------------------------------------------------------------------ cabeçalho ---
 function iniciarCabecalho() {
   $('base').innerHTML = '<option value="" disabled selected>(mapa em edição)</option>' + MAPAS_DO_JOGO.map(([id, nome]) => `<option value="${id}">${nome}</option>`).join('');
@@ -436,14 +707,14 @@ function iniciarCabecalho() {
     if (!$('base').value) return;
     ponto();
     try { mapa = M.limpar(mapaDo($('base').value)); } catch (e) { alert(`Não abriu: ${e.message}`); return; }
-    sujo = true; agendarGuardar(); sincronizarModo();
+    sujo = true; agendarGuardar(); sincronizarModo(); recuperarFundo();
   });
   $('novo').addEventListener('click', () => {
     const t = prompt('Tamanho do mapa novo (largura x altura, em casas):', '12x12');
     const m = /^(\d+)\s*[x×]\s*(\d+)$/i.exec(t ?? '');
     if (!m) return;
     const w = Math.min(80, Math.max(5, Number(m[1]))); const h = Math.min(80, Math.max(5, Number(m[2])));
-    ponto(); mapa = M.novoMapa(w, h); sujo = true; agendarGuardar(); sincronizarModo();
+    ponto(); mapa = M.novoMapa(w, h); sujo = true; agendarGuardar(); sincronizarModo(); recuperarFundo();
   });
   $('desfazer').addEventListener('click', () => volta(desfazer, refazer));
   $('refazer').addEventListener('click', () => volta(refazer, desfazer));
@@ -459,16 +730,34 @@ function iniciarCabecalho() {
     try {
       const m = M.limpar(JSON.parse(await arq.text()));
       if (!Array.isArray(m.terreno) || !m.terreno.length) throw new Error('não tem `terreno`');
-      ponto(); mapa = m; sujo = true; agendarGuardar(); sincronizarModo();
+      ponto(); mapa = m; sujo = true; agendarGuardar(); sincronizarModo(); recuperarFundo();
     } catch (err) { alert(`Esse arquivo não é um cenário: ${err.message}`); }
   });
   $('testar').addEventListener('click', () => { M.guardar(mapa); window.open('/?encontro=editor&nivel=2', '_blank'); });
+  $('vista').addEventListener('click', () => vista(sel.vista === 'topo' ? 'iso' : 'topo'));
+  $('arquivoFundo').addEventListener('change', async (e) => {
+    const arq = e.target.files[0]; e.target.value = '';
+    if (!arq) return;
+    ponto();
+    M.definirFundo(mapa, { nome: arq.name });
+    await guardarFundo(arq.name, arq);
+    usarFundo(arq, arq.name);
+    aplicar(true);
+    if (sel.vista !== 'topo') vista('topo');
+    sel.verChao = false;
+    if ($('vChao')) $('vChao').checked = false;   // com mapa pintado, o chão do jogo só atrapalha
+  });
 }
 
 montarPainel();
 iniciarCabecalho();
+recuperarFundo();
 botoes();
 avisar();
 estado();
 requestAnimationFrame(quadro);
-window.__editor = { arestaDe, casaDe, agir, get mapa() { return mapa; }, set mapa(v) { mapa = v; sujo = true; }, M, sel, get board() { return board; } };
+window.__editor = {
+  arestaDe, casaDe, agir, M, sel, vista, usarFundo,
+  get mapa() { return mapa; }, set mapa(v) { mapa = v; sujo = true; },
+  get board() { return board; }, get campo() { return campo; }, get imgFundo() { return imgFundo; },
+};

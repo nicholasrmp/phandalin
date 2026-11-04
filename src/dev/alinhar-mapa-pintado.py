@@ -8,6 +8,18 @@ Devolve px por casa e onde cai, em pixels, a casa (0,0) do terreno.
     python src/dev/alinhar-mapa-pintado.py                 # todas as cenas
     python src/dev/alinhar-mapa-pintado.py casaDaMorte1    # so uma
     python src/dev/alinhar-mapa-pintado.py --provas        # grava a prova visual de cada encaixe
+    python src/dev/alinhar-mapa-pintado.py casaDaMortePorao1 --giro 90 --escala 70 88 --fino --provas
+
+O que ja se aprendeu medindo nestes mapas, para nao repetir o caminho errado:
+
+- O corte de claridade da pedra tem de ser RELATIVO a imagem. Fixo, marcava 77% dos andares de cima como pedra,
+  porque eles sao muito mais escuros que o terreo.
+- Na MASMORRA, claridade nao separa chao de parede: o chao tem mediana 0,16 e a parede fica na mesma faixa.
+  O unico sinal forte ali e o RECORTE do desenho sobre o fundo branco da folha (`molde_silhueta`).
+- As marquinhas de ~100 px que o desenho tem nos cantos das lajes NAO sao a grade de 1,5 m: sao as lajotas que o
+  artista desenhou. Medir por elas da uma escala ~30% maior que a verdadeira.
+- `--fino` repete a busca na imagem inteira, numa faixa estreita de escala. Vale quando a busca reduzida deixa
+  duvida: na masmorra 1 ela confirmou, em resolucao cheia, o mesmo 76,8 px/casa que a reduzida tinha achado.
 """
 import json
 import os
@@ -30,6 +42,7 @@ PARES = {
 }
 FORA = set('ZRM')      # o que nao e chao de sala: anel de fora da casa e rocha macica
 REDUZ = 4             # a busca roda na imagem reduzida; o resultado volta para a escala cheia
+FINO = 1              # `--fino`: a mesma busca na imagem inteira, numa faixa estreita de escala
 
 
 ALVO_PEDRA = 0.28   # fracao da imagem que costuma ser parede num mapa de masmorra/casa
@@ -152,7 +165,7 @@ def correlacionar(M, P):
     return float(C.flat[i]), dy, dx
 
 
-def alinhar(planta, caminho, verboso=True, faixa=None, giros=(0, 90, 180, 270), pedra=False):
+def alinhar(planta, caminho, verboso=True, faixa=None, giros=(0, 90, 180, 270), pedra=False, reduz=REDUZ, passo=0.25):
     im = Image.open(caminho)
     dentro = interior(planta)
     silhueta = planta['n'] is None and not pedra   # masmorra: sem aresta, o sinal bom e o recorte sobre o branco
@@ -164,15 +177,15 @@ def alinhar(planta, caminho, verboso=True, faixa=None, giros=(0, 90, 180, 270), 
     for giro, espelho in [(g, e) for g in giros for e in (False, True)]:
         img = im.transpose(Image.FLIP_LEFT_RIGHT) if espelho else im
         img = img.rotate(-giro, expand=True) if giro else img
-        peq = img.resize((img.width // REDUZ, img.height // REDUZ), Image.BILINEAR)
+        peq = img.resize((img.width // reduz, img.height // reduz), Image.BILINEAR) if reduz > 1 else img
         M0 = mascara_conteudo(peq) if silhueta else mascara_pedra(peq)
         # a escala maxima e o interior enchendo a imagem; a moldura sobra fora, entao a imagem ganha margem
         s_max = min(M0.shape[1] / iw, M0.shape[0] / ih)
         margem = int(np.ceil(s_max))
         M = np.pad(M0, margem)
         H, W = M.shape
-        lo, hi = (faixa[0] / REDUZ, faixa[1] / REDUZ) if faixa else (s_max * 0.70, s_max)
-        for s in np.arange(lo, min(hi, s_max) + 0.01, 0.25):
+        lo, hi = (faixa[0] / reduz, faixa[1] / reduz) if faixa else (s_max * 0.70, s_max)
+        for s in np.arange(lo, min(hi, s_max) + 0.01, passo / reduz):
             fazer = molde_silhueta if silhueta else molde
             P = fazer(planta, dentro, float(s), cx1, cy1, cx2, cy2)
             if P is None or P.shape[0] > H or P.shape[1] > W:
@@ -181,12 +194,12 @@ def alinhar(planta, caminho, verboso=True, faixa=None, giros=(0, 90, 180, 270), 
             if melhor is None or v > melhor[0]:
                 melhor = (v, float(s), dx - margem, dy - margem, giro, img.size, espelho)
         if verboso and melhor:
-            print(f'    giro {giro:3d}{" espelhado" if espelho else "":>10}: melhor nota {melhor[0]:+.3f} (giro {melhor[4]}{", espelhado" if melhor[6] else ""}, {melhor[1] * REDUZ:.1f} px/casa)')
+            print(f'    giro {giro:3d}{" espelhado" if espelho else "":>10}: melhor nota {melhor[0]:+.3f} (giro {melhor[4]}{", espelhado" if melhor[6] else ""}, {melhor[1] * reduz:.1f} px/casa)')
     v, s, dx, dy, giro, tam, espelho = melhor
     # volta para a escala cheia e para a casa (0,0) do terreno
-    S = s * REDUZ
+    S = s * reduz
     return {'nota': round(v, 4), 'giro': giro, 'espelho': espelho, 'escala': round(S, 2),
-            'x0': round(dx * REDUZ - cx1 * S, 1), 'y0': round(dy * REDUZ - cy1 * S, 1),
+            'x0': round(dx * reduz - cx1 * S, 1), 'y0': round(dy * reduz - cy1 * S, 1),
             'imagem': list(tam)}
 
 
@@ -232,7 +245,9 @@ def main():
     for cena in cenas:
         caminho = os.path.join(ARTE, PARES[cena])
         print(f'{cena}  ({PARES[cena]})')
-        a = alinhar(plantas[cena], caminho, faixa=faixa, giros=giros, pedra='--pedra' in argv)
+        fino = '--fino' in argv
+        a = alinhar(plantas[cena], caminho, faixa=faixa, giros=giros, pedra='--pedra' in argv,
+                    reduz=FINO if fino else REDUZ, passo=0.2 if fino else 1.0)
         a['arquivo'] = PARES[cena]
         print(f"  >> giro {a['giro']}{' ESPELHADO' if a['espelho'] else ''}  {a['escala']} px/casa  origem ({a['x0']}, {a['y0']})  nota {a['nota']:+.4f}")
         if provas:

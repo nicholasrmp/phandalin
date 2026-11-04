@@ -14,15 +14,14 @@
 // `python src/dev/alinhar-mapa-pintado.py --provas` escreve a escala, o giro e a origem de cada andar, e a prova visual.
 // Com ele ligado, o que se vê é exatamente o que o Foundry entrega: mapa pintado embaixo, as paredes e as fichas do jogo em cima.
 
-import { Battlefield, ARESTA } from '../core/grid.js';
 import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { makeRng } from '../core/rng.js';
 import { mapaDo, buildFoes } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
-import { Board, SUPERFICIE } from '../view/board.js';
+import { Board } from '../view/board.js';
 import { makePortrait } from '../art/sheet.js';
-import { sorteio } from '../art/chao.js';
+import * as T from './vista-topo.js';
 import { PINTADOS, PASTA_PINTADOS } from './topo-pintados.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
@@ -110,22 +109,10 @@ function pintado(variante) {
   return img.complete && img.naturalWidth ? img : null;
 }
 
-/** Deita a imagem pintada na grade: `escala` px da imagem por casa, origem na casa (0,0), com o giro medido. */
+/** Deita a imagem pintada na grade, com o encaixe medido. É o mesmo enquadramento que o editor usa (`mapa.fundo`). */
 function pintarMapaPintado(C) {
   const img = pintado(sel.variante);
-  if (!img) return false;
-  const a = { ...PINTADOS[sel.variante], ...(ajuste[sel.variante] ?? {}) };
-  const k = C / a.escala;
-  const iw = img.naturalWidth * k;
-  const ih = img.naturalHeight * k;
-  ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.translate(-a.x0 * k, -a.y0 * k);
-  ctx.rotate((a.giro * Math.PI) / 180);
-  const canto = { 0: [0, 0], 90: [0, -ih], 180: [-iw, -ih], 270: [-iw, 0] }[a.giro] ?? [0, 0];
-  ctx.drawImage(img, canto[0], canto[1], iw, ih);
-  ctx.restore();
-  return true;
+  return img ? T.pintarFundo(ctx, img, { ...PINTADOS[sel.variante], ...(ajuste[sel.variante] ?? {}) }, C) : false;
 }
 
 // ------------------------------------------------------------------------------------------------- a cena ---
@@ -154,104 +141,7 @@ function rodape() {
 }
 
 // ------------------------------------------------------------------------------------------- visão de cima ---
-const COR_FALLBACK = ['#3a3630', '#36322c'];
-const corDoChao = (sup) => SUPERFICIE[sup]?.topo ?? COR_FALLBACK;
-
-/** O chão: a cor que o jogo já usa para a superfície, variada por casa para não virar um lençol liso. */
-function pintarChao(C) {
-  const { field } = cena;
-  for (let y = 0; y < field.h; y++) {
-    for (let x = 0; x < field.w; x++) {
-      const sup = field.surfaceAt(x, y);
-      const cores = corDoChao(sup);
-      ctx.fillStyle = cores[sorteio(x, y, cores.length)];
-      ctx.fillRect(x * C, y * C, C, C);
-      // pedra maciça (parede de casa inteira, rocha): escurece e põe um chanfro, que é o que dá relevo numa vista de cima
-      if (field.tileAt(x, y) === 1) {
-        ctx.fillStyle = 'rgba(0,0,0,.45)';
-        ctx.fillRect(x * C, y * C, C, C);
-        ctx.strokeStyle = 'rgba(255,255,255,.07)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x * C + 2, y * C + 2, C - 4, C - 4);
-      }
-    }
-  }
-}
-
-function pintarGrade(C) {
-  const { field } = cena;
-  ctx.strokeStyle = 'rgba(0,0,0,.28)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let x = 0; x <= field.w; x++) { ctx.moveTo(x * C + 0.5, 0); ctx.lineTo(x * C + 0.5, field.h * C); }
-  for (let y = 0; y <= field.h; y++) { ctx.moveTo(0, y * C + 0.5); ctx.lineTo(field.w * C, y * C + 0.5); }
-  ctx.stroke();
-}
-
-/** Uma aresta: parede, porta fechada, arco aberto ou grade. `à mostra` desenha como o editor do Foundry (linha colorida). */
-function traco(x0, y0, x1, y1, codigo, C) {
-  if (!codigo) return;
-  if (sel.arestas) {
-    const cor = { [ARESTA.parede]: '#9ad7ff', [ARESTA.porta]: '#ffb347', [ARESTA.aberta]: '#7bd88f', [ARESTA.seteira]: '#c49cff' }[codigo] ?? '#fff';
-    ctx.strokeStyle = cor; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.fillStyle = cor;
-    for (const [px, py] of [[x0, y0], [x1, y1]]) { ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill(); }
-    return;
-  }
-  if (codigo === ARESTA.parede || codigo === ARESTA.seteira) {
-    ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.strokeStyle = 'rgba(190,180,165,.35)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    if (codigo === ARESTA.seteira) {   // a fresta: um corte claro no meio da parede
-      ctx.strokeStyle = '#c9d6e4'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo((x0 + x1) / 2 - (y1 - y0) * 0.14, (y0 + y1) / 2 - (x1 - x0) * 0.14);
-      ctx.lineTo((x0 + x1) / 2 + (y1 - y0) * 0.14, (y0 + y1) / 2 + (x1 - x0) * 0.14); ctx.stroke();
-    }
-    return;
-  }
-  // porta: a madeira no vão, clara quando aberta
-  const aberta = codigo === ARESTA.aberta;
-  ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-  ctx.strokeStyle = aberta ? '#6f5a3a' : '#9a6b35'; ctx.lineWidth = Math.max(3, C * 0.07);
-  const t = aberta ? 0.3 : 0.86;   // aberta: só os batentes
-  const mx = (x0 + x1) / 2; const my = (y0 + y1) / 2;
-  ctx.beginPath();
-  ctx.moveTo(mx - (x1 - x0) * t / 2, my - (y1 - y0) * t / 2);
-  ctx.lineTo(mx + (x1 - x0) * t / 2, my + (y1 - y0) * t / 2);
-  ctx.stroke();
-}
-
-function pintarParedes(C) {
-  const { field } = cena;
-  ctx.lineCap = 'round';
-  for (let y = 0; y < field.h; y++) {
-    for (let x = 0; x < field.w; x++) {
-      const i = y * field.w + x;
-      traco(x * C, y * C, (x + 1) * C, y * C, field.paredeN[i], C);       // a de cima
-      traco(x * C, y * C, x * C, (y + 1) * C, field.paredeO[i], C);       // a da esquerda
-    }
-  }
-  ctx.lineCap = 'butt';
-}
-
-/** Os móveis: o sprite ISOMÉTRICO centrado na casa. É provisório — arte de cima não existe no projeto. */
-function pintarMoveis(C) {
-  if (!atlasPronto) return;
-  for (const o of cena.mapa.objetos ?? []) {
-    if (o.tipo !== 'prop' || o.variante === 'taverna-nada') continue;
-    const f = atlas[`prop-${o.variante}`]?.todas?.[0];
-    if (!f) continue;
-    const k = Math.min((C * 0.92) / f.w, (C * 0.92) / f.h);
-    const w = f.w * k; const h = f.h * k;
-    ctx.globalAlpha = 0.95;
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(imgAtlas, f.x, f.y, f.w, f.h, o.x * C + (C - w) / 2, o.y * C + (C - h) / 2, w, h);
-    ctx.globalAlpha = 1;
-  }
-}
+// O desenho em si mora em `vista-topo.js`, que o editor também usa.
 
 /** A ficha de criatura do Foundry: retrato num círculo, anel do lado e barra de vida. */
 const retratos = new Map();
@@ -316,12 +206,12 @@ function desenhar() {
   ctx.imageSmoothingEnabled = false;
   const comPintura = sel.pintado && pintarMapaPintado(C);
   if (!comPintura) {
-    pintarChao(C);
-    if (sel.moveis) pintarMoveis(C);
+    T.pintarChao(ctx, field, C);
+    if (sel.moveis) T.pintarMoveis(ctx, cena.mapa, C, atlas, imgAtlas);
   }
-  if (sel.grade) pintarGrade(C);
+  if (sel.grade) T.pintarGrade(ctx, field, C, comPintura ? 'rgba(120,200,255,.4)' : 'rgba(0,0,0,.28)');
   // sobre o mapa pintado as paredes não se desenham: elas já estão pintadas. Só aparecem no modo do editor do Foundry.
-  if (!comPintura || sel.arestas) pintarParedes(C);
+  if (!comPintura || sel.arestas) T.pintarArestas(ctx, field, C, sel.arestas);
   pintarCriaturas(C);
 }
 

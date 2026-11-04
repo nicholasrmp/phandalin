@@ -192,6 +192,16 @@ partida, e cresce ou encolhe o mapa por qualquer borda. Desfaz e refaz (Ctrl+Z, 
 Abre qualquer mapa do jogo para retocar. A caixa "Exploração livre" faz o jogo abrir o mapa sem iniciativa e sem inimigos; desligada, abre em
 combate por turnos. "Testar no jogo" abre `?encontro=editor`. A lógica está em `src/game/mapa-editor.js` (testes: `src/dev/testes-editor.mjs`).
 
+**Decalcar um mapa pintado, como no Roll20.** O botão "Vista" troca o tabuleiro isométrico por uma **vista de cima**
+(`src/dev/vista-topo.js`, a mesma do protótipo `/topo.html`), que é onde um battlemap pintado se encaixa. Na ferramenta 8, "Mapa de fundo":
+carregue a imagem, **arraste um retângulo por cima de N x M quadrados desenhados nela** e diga quantos são — daí saem a escala e a fase da
+grade. Depois é só desenhar por cima o que é parede, porta e arco (ferramenta 2), e o resto do editor (salas, altura, partida) funciona igual.
+Há ainda giro de 90°, opacidade, arrastar a imagem e "crescer o mapa até cobrir a imagem".
+
+A figura **não entra no mapa nem no repositório**: fica no IndexedDB do navegador, porque quase sempre é arte comercial de terceiros. O que o
+mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0, giro, opacidade }`, com `escala` em pixels da imagem por casa e
+`x0`/`y0` dizendo onde cai, em pixels da imagem já girada, o canto da casa (0,0).
+
 ### O protótipo de visão de cima
 
 `/topo.html` é descartável e existe para uma pergunta só: vale refazer o jogo em visão de cima, como o Foundry VTT? Desenha um mapa de
@@ -205,7 +215,11 @@ pedra da imagem com as arestas da planta, acha giro, escala e origem, e grava a 
 `src/dev/topo-pintados.js`; no protótipo, as setas e o PgUp/PgDn afinam o encaixe a olho.
 
 Os quatro andares da casa deram ~198 px por casa, giro 0 — o que também serve de **conferência de fidelidade**: a planta do jogo cai em cima
-da planta publicada, parede por parede e porta por porta.
+da planta publicada, parede por parede e porta por porta. As duas masmorras saíram em giro 90°, 76,8 e 128,2 px por casa, o que bate com a
+conta (1920 px ÷ 25 casas e 1920 ÷ 15).
+
+A medida automática só fecha quando as duas plantas **são a mesma**. Quando não são, ou quando o mapa é novo, o caminho é o do editor acima:
+enquadrar à mão e decalcar.
 
 ### A escala das masmorras da Casa da Morte
 
