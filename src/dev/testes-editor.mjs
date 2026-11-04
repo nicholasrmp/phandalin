@@ -244,5 +244,67 @@ teste('fundo: casasDoFundo diz o retângulo de casas que a imagem cobre', () => 
   assert.deepEqual(M.casasDoFundo(m, 500, 300), { x1: 0, y1: 0, x2: 3, y2: 5 }, 'girada, troca largura por altura');
 });
 
+// --------------------------------------------------------------------------------- a parede livre (traço) ---
+
+teste('traço: uma linha reta entre duas casas vira a aresta que ela separa', () => {
+  const m = M.novoMapa(10, 10);
+  // uma linha vertical em x = 4, de y 2 a y 6: separa a coluna 3 da coluna 4
+  assert.equal(M.tracarParede(m, [[4, 2], [4, 6]]), true);
+  assert.equal(m.tracos.length, 1);
+  for (let y = 2; y < 6; y++) assert.equal(M.estiloDaAresta(m, 4, y, 'O'), 'parede', `y=${y}`);
+  assert.equal(M.estiloDaAresta(m, 4, 1, 'O'), 'nada', 'não passa do fim do traço');
+  assert.equal(M.estiloDaAresta(m, 5, 3, 'O'), 'nada', 'não pega a coluna de lado');
+  // e o motor enxerga: não dá para atravessar
+  const f = montarCampo(M.limpar(m));
+  assert.equal(f.passa(3, 3, 4, 3), false, 'a parede barra o passo de lado');
+  assert.equal(f.passa(4, 3, 5, 3), true, 'e so ela');
+});
+
+teste('traço: apagar devolve a aresta, mas não leva a parede pintada à mão junto', () => {
+  const m = M.novoMapa(10, 10);
+  M.pintarAresta(m, 2, 2, 'N', 'parede');            // esta é da mão, e tem de sobreviver
+  M.tracarParede(m, [[4, 2], [4, 6]]);
+  assert.equal(M.estiloDaAresta(m, 4, 3, 'O'), 'parede');
+  assert.equal(M.apagarTraco(m, 4, 4), true);
+  assert.equal(m.tracos, undefined, 'sem traço nenhum, o campo some');
+  assert.equal(M.estiloDaAresta(m, 4, 3, 'O'), 'nada', 'a aresta derivada saiu junto');
+  assert.equal(M.estiloDaAresta(m, 2, 2, 'N'), 'parede', 'a pintada à mão ficou');
+  assert.equal(M.apagarTraco(m, 4, 4), false, 'não há mais o que apagar');
+});
+
+teste('traço: a porta posta em cima dele não vira parede de volta', () => {
+  const m = M.novoMapa(10, 10);
+  M.tracarParede(m, [[4, 2], [4, 6]]);
+  M.pintarAresta(m, 4, 4, 'O', 'porta');
+  M.tracarParede(m, [[7, 2], [7, 6]]);               // outro traço: recalcula as derivadas
+  assert.equal(M.estiloDaAresta(m, 4, 4, 'O'), 'porta', 'a porta continua porta');
+  assert.equal(M.estiloDaAresta(m, 7, 3, 'O'), 'parede');
+});
+
+teste('traço: a diagonal vira escada de arestas, e não se corta a quina dela', () => {
+  const m = M.novoMapa(12, 12);
+  M.tracarParede(m, [[2, 2], [8, 8]]);
+  const f = montarCampo(M.limpar(m));
+  // o passo EM DIAGONAL por cima do traço é barrado: `passa` exige livres as quatro arestas do contorno
+  assert.equal(f.passa(3, 3, 4, 4), false, 'não se corta a quina de uma parede diagonal');
+  assert.equal(f.passa(3, 4, 4, 5), false);
+  assert.equal(f.passa(2, 6, 3, 7), true, 'longe do traço, a diagonal passa');
+  // atravessando o mapa de ponta a ponta, a diagonal separa de verdade
+  const cheio = M.novoMapa(12, 12);
+  M.tracarParede(cheio, [[-1, -1], [13, 13]]);
+  const g = montarCampo(M.limpar(cheio));
+  const deUmLado = g.reachable({ x: 1, y: 8 }, 400);
+  assert.equal(deUmLado.has('8,1'), false, 'a diagonal de ponta a ponta separa os dois lados');
+  assert.equal(deUmLado.has('2,9'), true, 'e o lado de baixo continua ligado');
+});
+
+teste('traço: anda junto quando o mapa cresce pelo norte', () => {
+  const m = M.novoMapa(10, 10);
+  M.tracarParede(m, [[4, 2], [4, 6]]);
+  M.redimensionar(m, 'N', 2);
+  assert.deepEqual(m.tracos[0], [[4, 4], [4, 8]]);
+  assert.equal(M.estiloDaAresta(m, 4, 5, 'O'), 'parede', 'a derivada acompanhou');
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

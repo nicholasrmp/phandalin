@@ -224,7 +224,11 @@ desenha; a aresta de casa (`mapa.paredes`) continua existindo como **derivada**,
 movimento. Uma aresta é parede quando o traço SEPARA as duas casas — cruza o segmento que liga um centro ao outro —,
 então o que se vê e o que a regra faz nascem da mesma linha.
 
-No editor as duas aparecem: o traço em cima, a aresta derivada discreta por baixo, para dar para conferir.
+No editor as duas aparecem: o traço em cima, a aresta derivada discreta por baixo, para dar para conferir. A
+ferramenta **9, "Parede livre"**, desenha: clique e arraste para traçar o contorno como ele é, com **Shift** para
+grudar nos cantos de casa quando a parede for reta. "Apagar traço" tira o traço inteiro e devolve as arestas que ele
+tinha criado — a parede pintada à mão (ferramenta 2) e as portas postas em cima dele ficam, porque quem as pôs foi a
+mão. A lógica está em `game/mapa-editor.js` (`tracarParede`, `apagarTraco`, `arestasDosTracos`), com testes.
 
 **O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
 regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é

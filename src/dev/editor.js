@@ -34,7 +34,7 @@ const PISOS = [
 
 const FERRAMENTAS = [
   ['piso', 'Piso', '1'], ['aresta', 'Parede e porta', '2'], ['objeto', 'Objeto', '3'], ['apagar', 'Tirar objeto', '4'], ['sala', 'Sala', '5'], ['inicio', 'Partida', '6'], ['altura', 'Altura', '7'],
-  ['fundo', 'Mapa de fundo', '8'],
+  ['fundo', 'Mapa de fundo', '8'], ['tracar', 'Parede livre', '9'],
 ];
 
 const PEGADAS = [[1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [1, 3], [3, 2], [2, 3]];
@@ -48,6 +48,7 @@ const sel = {
   ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, pega: [1, 1], altura: 1, sala: 'sala1', inicio: 0,
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
+  tracoModo: 'desenhar',
 };
 let hoverEdge = null;
 let hoverTile = null;
@@ -55,6 +56,7 @@ let pressionado = null;   // { tipo, chave }
 let campo = null;         // o Battlefield, que a vista desenha direto
 let imgFundo = null;      // a imagem escolhida; vive só no navegador, nunca no mapa
 let arrasto = null;       // o retângulo que está sendo arrastado para calibrar, em casas
+let tracando = null;      // os pontos da parede livre que está sendo desenhada, em casas
 
 
 const instantaneo = () => JSON.stringify(mapa);
@@ -162,6 +164,16 @@ function marcarTopo(ctx, C) {
     ctx.strokeRect(hoverTile.x * C + 1, hoverTile.y * C + 1, C - 2, C - 2);
     ctx.restore();
   }
+  if (tracando?.length) {
+    ctx.save();
+    ctx.strokeStyle = '#ffd868'; ctx.lineWidth = Math.max(3, C * 0.09);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tracando[0].x * C, tracando[0].y * C);
+    for (const p of tracando.slice(1)) ctx.lineTo(p.x * C, p.y * C);
+    ctx.stroke();
+    ctx.restore();
+  }
   if (arrasto) {
     const x = Math.min(arrasto.a.x, arrasto.b.x) * C; const y = Math.min(arrasto.a.y, arrasto.b.y) * C;
     const w = Math.abs(arrasto.b.x - arrasto.a.x) * C; const h = Math.abs(arrasto.b.y - arrasto.a.y) * C;
@@ -189,6 +201,11 @@ function pontoDe(e) {
   const r = canvas.getBoundingClientRect();
   return { x: (e.clientX - r.left) * (canvas.width / r.width || 1), y: (e.clientY - r.top) * (canvas.height / r.height || 1) };
 }
+/** Com Shift, o ponto gruda no canto de casa mais perto: parede reta sai reta. Sem Shift, vai onde a mão foi. */
+function prender(c, e) {
+  return e?.shiftKey ? { x: Math.round(c.x * 2) / 2, y: Math.round(c.y * 2) / 2 } : c;
+}
+
 /** O ponto do mouse em CASAS (com fração), que é como a calibração e o arrasto do fundo falam. */
 function casaFracionada(e) {
   const p = pontoDe(e);
@@ -245,6 +262,17 @@ function aoApertar(e) {
   if (e.button === 1) { panorama = { x: e.clientX, y: e.clientY, l: area.scrollLeft, t: area.scrollTop }; e.preventDefault(); return; }
   if (e.button !== 0) return;
   pressionado = null;
+  if (sel.ferramenta === 'tracar') {
+    const c = casaFracionada(e);
+    if (sel.tracoModo === 'apagar') {
+      ponto();
+      if (!aplicar(M.apagarTraco(mapa, c.x, c.y, 0.6))) { desfazer.pop(); botoes(); }
+    } else {
+      tracando = [prender(c, e)];
+    }
+    e.preventDefault();
+    return;
+  }
   if (sel.ferramenta === 'fundo') {
     const c = casaFracionada(e);
     if (sel.fundoModo === 'mover') { ponto(); arrastandoFundo = c; } else { arrasto = { a: c, b: c }; }
@@ -262,6 +290,12 @@ addEventListener('mousemove', (e) => {
     if (M.moverFundo(mapa, c.x - arrastandoFundo.x, c.y - arrastandoFundo.y)) { arrastandoFundo = c; aplicar(true); fundoNoPainel(); }
     return;
   }
+  if (tracando) {
+    const c = prender(casaFracionada(e), e);
+    const ultimo = tracando[tracando.length - 1];
+    if (Math.hypot(c.x - ultimo.x, c.y - ultimo.y) > 0.18) tracando.push(c);
+    return;
+  }
   if (arrasto) { arrasto = { ...arrasto, b: casaFracionada(e) }; return; }
   if (e.target !== canvas) return;
   if ((e.buttons & 1) && sel.ferramenta !== 'fundo') agir(e, false);
@@ -272,6 +306,14 @@ addEventListener('mousemove', (e) => {
   }
 });
 addEventListener('mouseup', () => {
+  if (tracando) {
+    const pontos = tracando;
+    tracando = null;
+    if (pontos.length >= 2) {
+      ponto();
+      if (!aplicar(M.tracarParede(mapa, pontos.map((p) => [p.x, p.y])))) { desfazer.pop(); botoes(); }
+    }
+  }
   if (arrasto) {
     const { a, b } = arrasto;
     arrasto = null;
@@ -300,6 +342,8 @@ addEventListener('keydown', (e) => {
 
 // ------------------------------------------------------------------------------------------------ painel ---
 function estado() {
+  const conta = $('contaTracos');
+  if (conta) conta.textContent = `${mapa.tracos?.length ?? 0} traço(s) no mapa.`;
   const t = hoverTile;
   if (!t) { $('estado').textContent = 'Passe o mouse no mapa. Botão do meio arrasta; a roda dá zoom.'; return; }
   const sala = M.salaDe(mapa, t.x, t.y);
@@ -352,7 +396,7 @@ function miniatura(chave) {
 function montarPainel() {
   const L = $('lateral');
   L.innerHTML = `
-    <h2>Ferramenta (teclas 1 a 7)</h2>
+    <h2>Ferramenta (teclas 1 a 9)</h2>
     <div class="ferramentas">${FERRAMENTAS.map(([id, nome, k]) => `<button data-ferramenta="${id}">${k} · ${nome}</button>`).join('')}</div>
 
     <div data-secao="piso">
@@ -412,6 +456,17 @@ function montarPainel() {
       <button id="tirarFundo" style="width:100%;margin-top:4px">Tirar o fundo</button>
     </div>
 
+    <div data-secao="tracar">
+      <h2>Parede livre</h2>
+      <p class="dica">Caverna, pedra e destroço não são retos. Clique e arraste para traçar a parede como ela é; a aresta de casa que a regra usa sai sozinha do traço.</p>
+      <div class="lista">
+        <button data-tracomodo="desenhar">Desenhar</button>
+        <button data-tracomodo="apagar">Apagar traço</button>
+      </div>
+      <p class="dica">Segure <b>Shift</b> para grudar nos cantos de casa (parede reta sai reta). Apagar tira o traço inteiro e devolve as arestas que ele tinha criado — a parede pintada à mão (ferramenta 2) e as portas ficam.</p>
+      <p class="dica" id="contaTracos">—</p>
+    </div>
+
     <div data-secao="sala">
       <h2>Sala</h2>
       <input type="text" id="salaId" value="${sel.sala}" style="width:100%" />
@@ -467,6 +522,11 @@ function montarPainel() {
     L.querySelectorAll('[data-fundomodo]').forEach((x) => x.classList.toggle('on', x === b));
   }));
   L.querySelector(`[data-fundomodo="${sel.fundoModo}"]`).classList.add('on');
+  L.querySelectorAll('[data-tracomodo]').forEach((b) => b.addEventListener('click', () => {
+    sel.tracoModo = b.dataset.tracomodo;
+    L.querySelectorAll('[data-tracomodo]').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  L.querySelector(`[data-tracomodo="${sel.tracoModo}"]`).classList.add('on');
   $('escolherFundo').addEventListener('click', () => $('arquivoFundo').click());
   $('fColunas').addEventListener('input', (e) => { sel.colunas = Math.max(1, Number(e.target.value) || 1); });
   $('fLinhas').addEventListener('input', (e) => { sel.linhas = Math.max(1, Number(e.target.value) || 1); });

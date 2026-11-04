@@ -127,6 +127,109 @@ export function pintarAresta(m, x, y, lado, estilo) {
   return true;
 }
 
+// ------------------------------------------------------------------------------------------ parede livre ---
+//
+// Caverna, pedra e destroço não são retos, e forçá-los na aresta de casa destrói justamente o que os faz parecer o
+// que são. `m.tracos` guarda a parede COMO FOI DESENHADA: polilinhas em casas, com fração. É o que o tabuleiro
+// desenha.
+//
+// A aresta de casa (`m.paredes`) continua existindo, agora como DERIVADA: é o que a regra usa para barrar
+// movimento. Uma aresta é parede quando o traço SEPARA as duas casas — isto é, quando cruza o segmento que liga o
+// centro de uma ao centro da outra. Marcar "a aresta que o traço cruza" não serve: um traço quase horizontal cruza
+// as linhas verticais da grade e viraria uma fileira de barras soltas, com buraco entre elas.
+//
+// Como as duas nascem da mesma linha, o que se vê e o que o motor faz não divergem.
+
+const ladoDoPonto = (p1, p2, q) => Math.sign((p2[0] - p1[0]) * (q[1] - p1[1]) - (p2[1] - p1[1]) * (q[0] - p1[0]));
+const cruzam = (a, b, c, d) => ladoDoPonto(a, b, c) * ladoDoPonto(a, b, d) <= 0
+  && ladoDoPonto(c, d, a) * ladoDoPonto(c, d, b) <= 0;
+
+/** As arestas que os traços de `tracos` derivam, como chaves 'n|o,x,y'. */
+export function arestasDosTracos(m, tracos = m.tracos) {
+  const fora = new Set();
+  if (!tracos?.length) return fora;
+  const h = m.terreno.length;
+  const w = m.terreno[0].length;
+  for (const pts of tracos) {
+    for (let i = 0; i + 1 < (pts?.length ?? 0); i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const x0 = Math.max(0, Math.floor(Math.min(a[0], b[0])) - 1);
+      const x1 = Math.min(w - 1, Math.ceil(Math.max(a[0], b[0])) + 1);
+      const y0 = Math.max(0, Math.floor(Math.min(a[1], b[1])) - 1);
+      const y1 = Math.min(h - 1, Math.ceil(Math.max(a[1], b[1])) + 1);
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          if (y > 0 && cruzam(a, b, [x + 0.5, y - 0.5], [x + 0.5, y + 0.5])) fora.add(`n,${x},${y}`);
+          if (x > 0 && cruzam(a, b, [x - 0.5, y + 0.5], [x + 0.5, y + 0.5])) fora.add(`o,${x},${y}`);
+        }
+      }
+    }
+  }
+  return fora;
+}
+
+/**
+ * Passa as arestas de `antes` para as de `depois`. Só mexe no que é parede simples: porta, arco e grade ficam (quem
+ * as pôs foi a mão), e parede pintada à mão também, porque ela nunca esteve em `antes`.
+ */
+function trocarDerivadas(m, antes, depois) {
+  garantirParedes(m);
+  let mudou = false;
+  for (const chave of antes) {
+    if (depois.has(chave)) continue;
+    const [lado, x, y] = chave.split(',');
+    const grade = m.paredes[lado];
+    if (grade[Number(y)]?.[Number(x)] === '#') mudou = trocar(grade, Number(x), Number(y), '.') || mudou;
+  }
+  for (const chave of depois) {
+    const [lado, x, y] = chave.split(',');
+    const grade = m.paredes[lado];
+    if (grade[Number(y)]?.[Number(x)] === '.') mudou = trocar(grade, Number(x), Number(y), '#') || mudou;
+  }
+  return mudou;
+}
+
+/** Traça uma parede livre. `pontos` são casas com fração: [[x, y], ...]. */
+export function tracarParede(m, pontos) {
+  if (!pontos || pontos.length < 2) return false;
+  const antes = arestasDosTracos(m);
+  m.tracos = [...(m.tracos ?? []), pontos.map(([x, y]) => [+Number(x).toFixed(3), +Number(y).toFixed(3)])];
+  trocarDerivadas(m, antes, arestasDosTracos(m));
+  return true;
+}
+
+/** A distância de um ponto a um traço, em casas. */
+function distanciaAoTraco(pts, q) {
+  let menor = Infinity;
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const [ax, ay] = pts[i];
+    const [bx, by] = pts[i + 1];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const t = dx || dy ? Math.max(0, Math.min(1, ((q[0] - ax) * dx + (q[1] - ay) * dy) / (dx * dx + dy * dy))) : 0;
+    menor = Math.min(menor, Math.hypot(q[0] - (ax + t * dx), q[1] - (ay + t * dy)));
+  }
+  return menor;
+}
+
+/** Apaga o traço mais perto do ponto (em casas), dentro de `raio`. */
+export function apagarTraco(m, x, y, raio = 0.5) {
+  if (!m.tracos?.length) return false;
+  let alvo = -1;
+  let menor = raio;
+  m.tracos.forEach((pts, i) => {
+    const d = distanciaAoTraco(pts, [x, y]);
+    if (d <= menor) { menor = d; alvo = i; }
+  });
+  if (alvo < 0) return false;
+  const antes = arestasDosTracos(m);
+  m.tracos = m.tracos.filter((_, i) => i !== alvo);
+  if (!m.tracos.length) delete m.tracos;
+  trocarDerivadas(m, antes, arestasDosTracos(m));
+  return true;
+}
+
 // ---------------------------------------------------------------------------------------------- objetos ---
 
 /** A peça "vazia" que ocupa as casas de trás de um móvel de várias casas (a mesma `nada` da mobília da Casa da Morte). */
