@@ -50,54 +50,47 @@ export const PARTY_SPOTS = [
 
 // A EMBOSCADA NA ESTRADA.
 //
-// Uma estrada larga atravessando a mata, barrancos de grama dos dois lados e
-// mata fechada além deles. A carroça do grupo está na ponta oeste; dois cavalos
-// mortos, flechados, bloqueiam o meio do caminho; uma trilha estreita sobe
-// para o norte pela mata — é por ela que os goblins vieram e é por ela que os
-// reforços chegam.
+// A Trilha Triboar cortando a mata: uma faixa de terra batida de leste a oeste, moita fechada nas duas beiras e
+// floresta além dela. Uma carroça de mercador tombada tapa o caminho na ponta oeste; dois cavalos de tiro mortos,
+// ainda na arreata, estão caídos na estrada a leste. Os goblins esperam na moita dos dois lados.
 //
-// O desenho é pensado para a altura TRABALHAR: os goblins ficam no alto dos
-// barrancos (nível 1), o grupo embaixo, na estrada. Subir custa o dobro, quem
-// está em cima tem cobertura contra quem está embaixo, e a mata atrás deles
-// corta a linha de visão de quem tentar contornar. A carroça e os cavalos são
-// a única cobertura no chão da estrada — e estão longe uma da outra.
+// O MAPA É UM DESENHO, e não um rascunho de caracteres: `public/mapas/emboscada.webp`, gerado por nós no OpenArt,
+// 1760x1360 = 22 por 17 casas de 80 px. O terreno abaixo SAI DELE, por cor
+// (`python src/dev/mapa-emboscada.py` remede e reimprime), então os dois não divergem: o que a regra chama de
+// bloqueio é o que o jogador vê pintado.
 //
-// Duas grades porque um caractere não diz as duas coisas: TERRENO diz o que é
-// (`,` grama, `:` estrada, `T` mata, `C` carroça, `h` cavalo, `r` pedra) e
-// ALTURA diz em que nível está. A grama do barranco é `,` no terreno e `1` na
-// altura; a do acostamento é `,` e `0`.
+// A CARROÇA BARRA A TRILHA de verdade: na coluna 4 ela vai de beira a beira, e quem quiser passar sai pela moita.
+// Isso não foi escolhido, é o que o desenho mostra — e por isso o grupo começa a LESTE dela, entre o destroço e
+// os cavalos.
 export const MAPA_EMBOSCADA = {
-  // O TERRENO SAI DO DESENHO, por cor, e não à mão: `python src/dev/mapa-emboscada.py` reclassifica e reimprime.
-  //   verde forte -> `T` mata fechada (barra passo e visão)   verde fraco -> `,` grama do acostamento
-  //   areia -> `:` estrada                                     escuro no meio da estrada -> `C` carroça, `h` cavalo
-  // E a primeira fileira de mata colada na estrada vira `%` espinheiro: terreno difícil, a moita do livro.
+  //   `:` estrada            `%` espinheiro (terreno difícil, a moita do livro, de onde os goblins saltam)
+  //   `T` mata fechada       `C` carroça e destroço, `h` cavalo morto (cobertura, e não se atravessa)
   terreno: [
-    ':%%,%TTTTTTTTTT%,%TTTT',
-    '::%%,%TTTTTTTTT%,%TTTT',
-    '::%T%,%TTTTTTTTT%TTTTT',
-    ':::%T%TTTTTTTTTTTTTTTT',
-    ':::,%TTTTTTTTTTTTTTTTT',
-    ':CC:%%%%T%%%%%%%%TTTTT',
-    ':CC::,,,%,:::,:::%%%%%',
-    ',:CC:::::::::::::::::,',
-    '%::C:::::::::::::h::::',
-    'T%::::::::::::::::::::',
-    'T%,::::::::::::::h::::',
-    'TT%,:,:::::::::::h::::',
-    'TTT%%%%:::::,:,:::::::',
-    'TTTTTTT%%%,,%%%%%%,%,,',
-    'TTTTTTTTTT%%TTTTTT%,%%',
-    'TTTTTTTTTTTTTTTTTTT%TT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
+    'TTT%TT%TTTTTTTTTTTTTTT',
+    '%%%%%%%%%%%%%%%%%%%%%%',
+    '%%%C%%C%%%%%%%%%%%%%%%',
+    ':::CCCC:::::::::::hh::',
+    '::::C:::::::::::::hhh:',
+    '::::CC::::::::::::hhh:',
+    '%%CCCC::::::::::%%%%%%',
+    '%%%CCC%%%%%%%%%%%%%%%%',
+    'TT%%%%%%%%%%%%%%TTTTTT',
+    'TTT%%%TTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
     'TTTTTTTTTTTTTTTTTTTTTT',
   ],
   // A trilha é plana: o desenho não tem barranco, e inventar um desnível que a imagem não mostra seria mentir
   // para quem olha o mapa.
   altura: null,
-  // A carroça e os cavalos JÁ ESTÃO PINTADOS no mapa; pôr o sprite isométrico por cima seria desenhá-los duas vezes.
+  // A carroça e os cavalos JÁ ESTÃO PINTADOS no mapa; pôr o sprite por cima seria desenhá-los duas vezes.
   // Eles continuam valendo como regra: `C` e `h` são cobertura (+2 de CA) e não se atravessa.
   objetos: [],
 };
-
 // A CAVERNA ESCURA (arena de teste da luz e das conversas).
 //
 // Uma sala em anel em volta de um paredão de rocha. O grupo entra pelo sul;
@@ -187,9 +180,13 @@ export const MAPA_ERMO = [
 ];
 export const MAPA_ERMO_NOITE = MAPA_ERMO.map((l, y) => (y === 7 ? `${l.slice(0, 11)}F${l.slice(12)}` : l));
 
-/** O grupo vem pela trilha, do oeste, logo depois da carroça tombada, olhando para leste. */
+/**
+ * O grupo vem pela trilha olhando para leste, JÁ DEPOIS da carroça tombada: ela tapa a estrada inteira na coluna
+ * 4, então começar a oeste dela seria começar preso. Os cavalos mortos ficam oito casas à frente — é o que o
+ * grupo enxerga na estrada quando os goblins atiram da moita.
+ */
 export const PARTY_SPOTS_EMBOSCADA = [
-  { x: 5, y: 9 }, { x: 4, y: 9 }, { x: 5, y: 8 }, { x: 4, y: 10 },
+  { x: 11, y: 9 }, { x: 10, y: 9 }, { x: 11, y: 8 }, { x: 10, y: 10 },
 ];
 
 /**
@@ -206,9 +203,9 @@ export function mapaDo(variante = 'padrao') {
       objetos: MAPA_EMBOSCADA.objetos,
       grupo: PARTY_SPOTS_EMBOSCADA,
       olhar: { dx: 1, dy: 0 },
-      // O mapa PINTADO por baixo (Venatus Maps). Fica em `_referencias/`, fora do versionamento: é arte de
-      // terceiros. O terreno acima saiu dele, então os dois não podem divergir.
-      fundo: { nome: 'emboscada-goblin.png', url: '/_referencias/mapas/emboscada-goblin.png', escala: 37.38, x0: 0.3, y0: 3.4, giro: 0, opacidade: 1 },
+      // O mapa PINTADO por baixo. É NOSSO (gerado no OpenArt), entra no repositório e o Vite o serve de
+      // `public/`. Já vem cortado na grade: 80 px por casa, e o canto da casa (0,0) é o canto da imagem.
+      fundo: { nome: 'emboscada.webp', url: '/mapas/emboscada.webp', escala: 80, x0: 0, y0: 0, giro: 0, opacidade: 1 },
       // Os goblins estão escondidos: rola-se surpresa no começo (combat.js).
       emboscada: { emboscadores: 'foes' },
     };
@@ -665,15 +662,16 @@ function foesEmboscada() {
   // Os três esperam de arco na mão, agachados na moita. A e C são atiradores
   // declarados; B a IA também deixa atirando. Eram quatro (o livro): de 1º nível, quatro goblins
   // são o limiar MORTAL do DMG (200 XP, ×2) e a emboscada derrotava o grupo em 9,9% das lutas medidas (496 lutas, 4 heróis de
-  // 1º nível); com três, em 2,8%.
+  // 1º nível); com três, em 2,8%. Esses dois números foram medidos no mapa anterior; os do mapa de hoje estão em
+  // `REFORCOS_EMBOSCADA`, e saem de `node src/dev/simular-emboscada.mjs`.
   const arco = { arma: 'Arco curto' };
-  // Na moita (`%`), dos dois lados da estrada e na altura dos cavalos mortos: é onde o livro os põe.
+  // Na moita (`%`), dos dois lados da estrada e entre o grupo e os cavalos mortos: é onde o livro os põe.
   const norte = [
-    makeMonster('goblin', { x: 12, y: 5 }, { nameSuffix: 'A', tatica: 'atirador', ...arco }),
-    makeMonster('goblin', { x: 16, y: 5 }, { nameSuffix: 'B', ...arco }),
+    makeMonster('goblin', { x: 15, y: 6 }, { nameSuffix: 'A', tatica: 'atirador', ...arco }),
+    makeMonster('goblin', { x: 18, y: 6 }, { nameSuffix: 'B', ...arco }),
   ];
   const sul = [
-    makeMonster('goblin', { x: 14, y: 13 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
+    makeMonster('goblin', { x: 16, y: 11 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
   ];
   // Cada lado olha para a estrada.
   for (const f of norte) f.facingVec = { dx: 0, dy: 1 };
@@ -693,26 +691,30 @@ export const REINFORCEMENTS = [
 ];
 
 /**
- * Na emboscada os reforços descem pela trilha do norte — e são LOBOS.
+ * Na emboscada os reforços saem da moita do sul — e são LOBOS.
  *
  * Dois goblins a mais repetiam o que já está em cena: mais dois arqueiros.
- * Dois lobos (SRD, ND 1/4, 50 XP cada: o mesmo orçamento) correm 40 pés pela
- * trilha, derrubam com a mordida e prendem o grupo na estrada enquanto os
- * arqueiros atiram. Medido: com lobos, duas quedas ou mais em 44% dos
- * combates; com goblins, 27%.
+ * Dois lobos (SRD, ND 1/4, 50 XP cada: o mesmo orçamento) correm 40 pés,
+ * derrubam com a mordida e prendem o grupo na estrada enquanto os arqueiros
+ * atiram. Medido: com lobos, duas quedas ou mais em 44% dos combates; com
+ * goblins, 27%.
  *
- * RODADA 2, E NA BOCA DA TRILHA. Na rodada 3, em (19,4), eles nasciam num
- * corredor sem visão de ninguém, chegavam com o combate decidido (1,2 goblin
- * vivo, em média) e em 6% das simulações a IA travava ali.
+ * RODADA 2, E DENTRO DO ALCANCE. No mapa antigo nasciam na boca da trilha, a
+ * quinze casas, e chegavam com o combate decidido; aqui saem do espinheiro do
+ * sul a cinco e oito casas, o bastante para fechar em um turno de corrida sem
+ * já começarem mordendo. Medido em `src/dev/simular-emboscada.mjs`, 400 lutas:
+ * 97% de vitória, nenhuma morte, alguém a 0 PV em 28% e dois ou mais em 11%,
+ * em 3,1 rodadas e com 78% dos PV do grupo de pé. Saíam de três casas: 6% de
+ * derrota. No mapa antigo, que era mais largo: 7% e 4%.
  */
 const REFORCOS_EMBOSCADA = [
   {
     round: 2,
     aviso: 'Lobos saem do mato!',
-    olhar: { dx: -1, dy: 0 },
+    olhar: { dx: 0, dy: -1 },
     spawn: [
-      { id: 'lobo', at: { x: 19, y: 6 }, nameSuffix: 'do mato' },
-      { id: 'lobo', at: { x: 20, y: 6 }, nameSuffix: 'da moita' },
+      { id: 'lobo', at: { x: 16, y: 12 }, nameSuffix: 'do mato' },
+      { id: 'lobo', at: { x: 19, y: 11 }, nameSuffix: 'da moita' },
     ],
   },
 ];

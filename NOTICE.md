@@ -68,6 +68,11 @@ plantas foram desenhadas à mão, com os mapas da Morvold Press (Jeff Todd) só 
 desses mapas é distribuído, copiado ou embutido neste repositório (a pasta de referência é ignorada pelo git). A
 vassoura animada de ataque não é SRD e vem marcada `fonte: 'propria'`.
 
+**Os mapas pintados** de `public/mapas/` são NOSSOS: gerados por nós em modelos de imagem (o da emboscada dos
+goblins, `emboscada.webp`, saiu do Nano Banana Pro pelo OpenArt) e depois cortados na grade do jogo. Mapa de
+batalha comprado ou baixado de terceiro não entra no repositório nem é distribuído: quando serve de referência de
+trabalho, fica em `_referencias/`, que o git ignora.
+
 **Atenção:** esta política **não** é irrevogável, diferente da CC-BY. É por isso
 que o motor e a campanha são separados no código — se um dia ela mudar, troca-se
 o arquivo de campanha e o motor continua de pé.
