@@ -10,15 +10,25 @@
 // barra.
 //
 // `--inundar` tenta deduzir o chão: inunda a partir das fichas e chama de rocha o que não alcançar. Só funciona se
-// o contorno das paredes FECHAR na grade de casas, e medindo o Covil Cragmaw ele não fecha: a borda do mapa alcança
-// as 19 fichas. As paredes do Roll20 são linhas finas que só precisam ser estanques para a LUZ; na nossa grade, de
-// 70 px por casa, uma fresta sub-pixel vira passagem. O relatório diz quantas casas vazaram, e aí ou se tapa o
-// buraco no `/editor.html`, ou se tira o chão da própria imagem (claro é chão, escuro é rocha).
+// o contorno das paredes FECHAR na grade de casas. Medido nas nove páginas de Phandelver: fecha nas masmorras
+// ortogonais (o Covil Carrasco), vaza nas cavernas e no campo aberto, onde a parede é traçada à mão livre — as
+// paredes do Roll20 são linhas finas que só precisam ser estanques para a LUZ, e na nossa grade, de 70 px por casa,
+// uma fresta sub-pixel vira passagem. O relatório diz se fecha; o que vaza se tapa no `/editor.html`.
+//
+// PORTA NÃO VEM, e a razão importa. Na iluminação dinâmica antiga do Roll20 a parede barra a LUZ, não o movimento:
+// o vão de porta é traçado como parede (para fechar a visão) e quem joga simplesmente anda por cima. No nosso motor
+// uma aresta barra as duas coisas, então o mapa importado chega com os cômodos LACRADOS. O relatório conta em
+// quantos pedaços o chão ficou; abrir os vãos é trabalho de alguns cliques na ferramenta 2 do editor.
 //
 // As fichas saem num arquivo ao lado (`-fichas.json`): o nosso mapa não guarda criatura, quem monta o encontro é
 // `src/game/encounter.js`.
 import { readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
+
+/** O nome de arquivo de uma página: "6: Wave Echo Cave" vira "6-wave-echo-cave". */
+const apelido = (nome) => (nome ?? '')
+  .normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'pagina';
 
 const PISO_DENTRO = '_';      // caverna
 const PISO_FORA = 'R';        // rocha maciça
@@ -63,6 +73,18 @@ export function converter(pagina, { imagem, inundarChao = false } = {}) {
   const fora = inundar(w, h, pagina.paredes, daBorda);
   const vazaram = sementes.filter(([x, y]) => fora[y]?.[x]).length;
 
+  // em quantos pedaços sem ligação o chão ficou? Cada pedaço a mais é um vão de porta que o Roll20 traçou como parede
+  const visto = Array.from({ length: h }, () => new Array(w).fill(false));
+  let pedacos = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!dentro[y][x] || visto[y][x]) continue;
+      pedacos += 1;
+      const alcance = inundar(w, h, pagina.paredes, [[x, y]]);
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (alcance[j][i]) visto[j][i] = true;
+    }
+  }
+
   // o grupo começa nas casas livres mais ao sul e a oeste: é por onde se entra na maioria das plantas
   const livres = [];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (dentro[y][x]) livres.push({ x, y });
@@ -100,8 +122,9 @@ export function converter(pagina, { imagem, inundarChao = false } = {}) {
     resumo: {
       pagina: pagina.nome, casas: `${w} x ${h}`, chao: livres.length, rocha: w * h - livres.length,
       arestas: pagina.paredes.n.join('').split('#').length - 1 + pagina.paredes.o.join('').split('#').length - 1,
-      fichas: (pagina.fichas ?? []).length, imagem: fundo?.nome ?? '(sem imagem)',
+      fichas: (pagina.fichas ?? []).length,
       contornoFecha: vazaram === 0 ? 'sim' : `NÃO: a borda alcança ${vazaram} das ${sementes.length} fichas`,
+      pedacos: pedacos === 1 ? '1 (tudo ligado)' : `${pedacos} — abra os vãos de porta no editor`,
     },
   };
 }
@@ -109,11 +132,19 @@ export function converter(pagina, { imagem, inundarChao = false } = {}) {
 if (process.argv[1] && import.meta.url.endsWith(basename(process.argv[1]))) {
   const entrada = process.argv[2];
   if (!entrada) { console.error('uso: node src/dev/importar-roll20.mjs <pagina.json>'); process.exit(1); }
-  const pagina = JSON.parse(await readFile(entrada, 'utf8'));
-  const { mapa, fichas, resumo } = converter(pagina, { inundarChao: process.argv.includes('--inundar') });
-  const base = entrada.replace(/\.json$/, '');
-  await writeFile(`${base}-mapa.json`, JSON.stringify(mapa, null, 1), 'utf8');
-  await writeFile(`${base}-fichas.json`, JSON.stringify(fichas, null, 1), 'utf8');
-  console.table(resumo);
-  console.log(`\n${base}-mapa.json   (importe no /editor.html)\n${base}-fichas.json`);
+  const cru = JSON.parse(await readFile(entrada, 'utf8'));
+  // o arquivo pode ser uma página só, ou o saco com todas elas (`{ nome: pagina }`)
+  const paginas = cru.paredes ? { [cru.nome]: cru } : cru;
+  const inundarChao = process.argv.includes('--inundar');
+  const pasta = dirname(entrada);
+  const resumos = [];
+  for (const pagina of Object.values(paginas)) {
+    const { mapa, fichas, resumo } = converter(pagina, { inundarChao });
+    const base = join(pasta, apelido(pagina.nome));
+    await writeFile(`${base}-mapa.json`, JSON.stringify(mapa, null, 1), 'utf8');
+    if (fichas.length) await writeFile(`${base}-fichas.json`, JSON.stringify(fichas, null, 1), 'utf8');
+    resumos.push(resumo);
+  }
+  console.table(resumos);
+  console.log(`\n${resumos.length} mapa(s) em ${pasta}/ — importe o "-mapa.json" no /editor.html`);
 }

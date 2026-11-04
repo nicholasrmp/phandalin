@@ -240,9 +240,25 @@ cruza as linhas verticais da grade e viraria uma fileira de barras soltas.
 
 **O Roll20 não guarda chão.** Um mapa dele é imagem e parede; quem sabe onde se pisa é o olho de quem joga. Por isso
 o importador deixa a página inteira como chão e só a parede barra. O `--inundar` tenta deduzir rocha a partir das
-fichas, mas só vale se o contorno fechar na nossa grade — e o relatório diz se fecha. No Covil Cragmaw **não fecha**:
-as paredes do Roll20 são linhas finas que só precisam ser estanques para a luz, e numa casa de 70 px uma fresta
-sub-pixel vira passagem. Aí ou se tapa o buraco no editor, ou se tira o chão da própria imagem.
+fichas, mas só vale se o contorno fechar na nossa grade, e o relatório diz se fecha.
+
+**E porta não vem**, por um motivo que vale saber: na iluminação dinâmica antiga do Roll20 a parede barra a **luz**,
+não o movimento. O vão de porta é traçado como parede, para fechar a visão, e quem joga anda por cima. No nosso motor
+uma aresta barra as duas coisas, então o mapa chega com os cômodos lacrados — o relatório conta em quantos pedaços o
+chão ficou, e abrir os vãos é trabalho de alguns cliques na ferramenta 2 do editor.
+
+Medido nas nove páginas de Phandelver:
+
+| página | casas | arestas | fichas | contorno fecha? | pedaços |
+|---|---|---|---|---|---|
+| 2: Cragmaw Hideout | 30 × 21 | 254 | 19 | não (caverna à mão livre) | 1 |
+| 4: Redbrand Hideout | 30 × 21 | 273 | 17 | **sim** | 5 |
+| Ruins of Thundertree | 30 × 21 | 299 | 2 | não | 1 |
+| 5: Cragmaw Castle | 31 × 21 | 324 | 29 | 12 das 29 fecham | 6 |
+| 6: Wave Echo Cave | 37 × 50 | 969 | 91 | 76 das 91 fecham | 14 |
+
+Fecha onde a masmorra é ortogonal e a parede foi traçada na grade; vaza em caverna e campo aberto, onde ela é à mão
+livre. O que vaza se tapa no editor, ou se tira o chão da própria imagem (claro é chão, escuro é rocha).
 
 ### A escala das masmorras da Casa da Morte
 
