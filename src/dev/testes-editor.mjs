@@ -306,5 +306,59 @@ teste('traço: anda junto quando o mapa cresce pelo norte', () => {
   assert.equal(M.estiloDaAresta(m, 4, 5, 'O'), 'parede', 'a derivada acompanhou');
 });
 
+teste('visão pelo traço: a parede livre corta a reta dos olhos', () => {
+  const m = M.novoMapa(14, 10);
+  M.tracarParede(m, [[7, 1], [7, 9]]);
+  const f = montarCampo(M.limpar(m));
+  assert.equal(f.hasLineOfSight({ x: 3, y: 5 }, { x: 10, y: 5 }), false, 'a parede corta');
+  assert.equal(f.hasLineOfSight({ x: 3, y: 5 }, { x: 5, y: 5 }), true, 'do mesmo lado, vê');
+});
+
+teste('visão pelo traço: porta aberta em cima do traço deixa ver', () => {
+  const m = M.novoMapa(14, 10);
+  M.tracarParede(m, [[7, 1], [7, 9]]);
+  const f0 = montarCampo(M.limpar(m));
+  assert.equal(f0.hasLineOfSight({ x: 3, y: 5 }, { x: 10, y: 5 }), false);
+  // o vão de porta é traçado por cima; abrindo a aresta, o olho passa por ele
+  M.pintarAresta(m, 7, 5, 'O', 'arco');
+  const f = montarCampo(M.limpar(m));
+  assert.equal(f.hasLineOfSight({ x: 3, y: 5 }, { x: 10, y: 5 }), true, 'o arco deixa ver através do traço');
+  assert.equal(f.hasLineOfSight({ x: 3, y: 2 }, { x: 10, y: 2 }), false, 'e só na altura do arco');
+});
+
+teste('visão pelo traço: a diagonal barra o que o degrau da grade deixava passar', () => {
+  // um traço na diagonal dentro de UMA casa: a grade não tem aresta para isso, a geometria tem
+  const m = M.novoMapa(9, 9);
+  M.tracarParede(m, [[4.1, 3.9], [4.9, 4.1]]);
+  const f = montarCampo(M.limpar(m));
+  assert.equal(f.tracos.length, 1);
+  assert.equal(f.tracoCortaVisao({ x: 4, y: 2 }, { x: 4, y: 6 }), true, 'a reta de cima para baixo cruza o traço');
+  assert.equal(f.tracoCortaVisao({ x: 1, y: 1 }, { x: 2, y: 2 }), false, 'longe dele, não');
+});
+
+teste('visão pelo traço: é simétrica', () => {
+  const m = M.novoMapa(12, 12);
+  M.tracarParede(m, [[3.2, 2.1], [8.7, 9.4]]);
+  const f = montarCampo(M.limpar(m));
+  let pares = 0;
+  for (let y = 0; y < 12; y += 1) {
+    for (let x = 0; x < 12; x += 1) {
+      const a = { x, y };
+      const b = { x: 11 - x, y: 11 - y };
+      if (f.hasLineOfSight(a, b) !== f.hasLineOfSight(b, a)) pares += 1;
+    }
+  }
+  assert.equal(pares, 0, 'nenhum par enxerga só de um lado');
+});
+
+teste('visão pelo traço: mapa sem traço nenhum não muda de comportamento', () => {
+  const m = M.novoMapa(10, 10);
+  M.pintarAresta(m, 5, 4, 'O', 'parede');
+  const f = montarCampo(M.limpar(m));
+  assert.equal(f.tracos, undefined);
+  assert.equal(f.tracoCortaVisao({ x: 2, y: 4 }, { x: 8, y: 4 }), false, 'sem traço, nada a cortar');
+  assert.equal(f.hasLineOfSight({ x: 2, y: 4 }, { x: 8, y: 4 }), false, 'a aresta continua cortando');
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

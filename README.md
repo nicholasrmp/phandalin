@@ -230,6 +230,24 @@ grudar nos cantos de casa quando a parede for reta. "Apagar traço" tira o traç
 tinha criado — a parede pintada à mão (ferramenta 2) e as portas postas em cima dele ficam, porque quem as pôs foi a
 mão. A lógica está em `game/mapa-editor.js` (`tracarParede`, `apagarTraco`, `arestasDosTracos`), com testes.
 
+**A LINHA DE VISÃO usa o traço, não o degrau.** Movimento continua na aresta — é ela que diz de que casa dá para ir
+a que casa —, mas o olho é testado na geometria: `grid.js` cruza a reta de centro a centro com as polilinhas
+(`tracoCortaVisao`), com um índice por casa para não ficar caro. Onde o traço cruza uma aresta que deixa ver (arco,
+porta aberta, grade, seteira), o cruzamento não conta — senão o vão de porta, que o VTT traça por cima, nunca
+deixaria enxergar.
+
+Medido nos três mapas importados, comparando com e sem traço (99 mil pares):
+
+| mapa | pares | iguais | a grade deixava ver e o traço barra | o contrário |
+|---|---|---|---|---|
+| 6: Wave Echo Cave | 87.320 | 99,9% | 82 | **0** |
+| 4: Redbrand Hideout | 8.556 | 99,5% | 46 | **0** |
+| 2: Cragmaw Hideout | 3.306 | 99,1% | 30 | **0** |
+
+A mudança é de mão única: o traço **só barra mais, nunca menos**. São os vazamentos que o degrau da grade abria numa
+parede que o desenho fecha. Custo medido na Onda Eco (127 traços, 1.115 segmentos): 1,8 µs por par, e 2 ms para
+montar o índice uma vez.
+
 **O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
 regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é
 toda isométrica: o móvel é o sprite deitado na casa, provisório.

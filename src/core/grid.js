@@ -577,6 +577,78 @@ export class Battlefield {
   }
 
   /**
+   * O ÍNDICE DOS TRAÇOS por casa. A parede livre (`field.tracos`) é uma polilinha, e testar todas elas contra toda
+   * reta de visão sairia caro: na Caverna Onda Eco são 127 traços e 1.242 pontos. Aqui cada segmento entra nas
+   * casas que ele toca, e a reta só testa os segmentos das casas por onde ela passa.
+   */
+  indiceDosTracos() {
+    if (this._indiceTracos) return this._indiceTracos;
+    const idx = new Map();
+    for (const pts of this.tracos ?? []) {
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const seg = [pts[i], pts[i + 1]];
+        const x0 = Math.floor(Math.min(seg[0][0], seg[1][0])) - 1;
+        const x1 = Math.ceil(Math.max(seg[0][0], seg[1][0]));
+        const y0 = Math.floor(Math.min(seg[0][1], seg[1][1])) - 1;
+        const y1 = Math.ceil(Math.max(seg[0][1], seg[1][1]));
+        for (let y = y0; y <= y1; y++) {
+          for (let x = x0; x <= x1; x++) {
+            const k = `${x},${y}`;
+            const lista = idx.get(k);
+            if (lista) lista.push(seg); else idx.set(k, [seg]);
+          }
+        }
+      }
+    }
+    this._indiceTracos = idx;
+    return idx;
+  }
+
+  /**
+   * Um traço de parede corta a reta que vai do centro de `a` ao centro de `b`?
+   *
+   * É a visão medida na GEOMETRIA, e não na grade: a aresta de casa é a derivada em degraus do traço, e o degrau
+   * tanto deixa passar o que a parede barra quanto barra o que ela deixa passar. A regra de movimento continua na
+   * aresta (é ela que diz de que casa dá para ir a que casa); quem ganha precisão aqui é o olho.
+   *
+   * ONDE HÁ PORTA, O TRAÇO NÃO VALE. O vão de porta costuma ser traçado por cima, porque num VTT a parede barra luz
+   * e não movimento; se o traço mandasse sozinho, porta aberta nunca deixaria ver. Então, em cada cruzamento, olha-se
+   * a aresta que ele atravessa: se ela deixa a visão passar (arco, porta aberta, grade, seteira), o cruzamento não
+   * conta.
+   */
+  tracoCortaVisao(a, b) {
+    if (!this.tracos?.length) return false;
+    const idx = this.indiceDosTracos();
+    const A = [a.x + 0.5, a.y + 0.5];
+    const B = [b.x + 0.5, b.y + 0.5];
+    const dx = B[0] - A[0];
+    const dy = B[1] - A[1];
+    const lado = (p1, p2, q) => Math.sign((p2[0] - p1[0]) * (q[1] - p1[1]) - (p2[1] - p1[1]) * (q[0] - p1[0]));
+    const vistos = new Set();
+    for (const p of this.line(a, b)) {
+      const lista = idx.get(`${p.x},${p.y}`);
+      if (!lista) continue;
+      for (const seg of lista) {
+        if (vistos.has(seg)) continue;
+        vistos.add(seg);
+        const [c, d] = seg;
+        if (!(lado(A, B, c) * lado(A, B, d) <= 0 && lado(c, d, A) * lado(c, d, B) <= 0)) continue;
+        // onde a reta cruza o traço, e que aresta de casa é aquela
+        const den = (B[0] - A[0]) * (d[1] - c[1]) - (B[1] - A[1]) * (d[0] - c[0]);
+        if (!den) continue;
+        const t = ((c[0] - A[0]) * (d[1] - c[1]) - (c[1] - A[1]) * (d[0] - c[0])) / den;
+        const passo = 0.02 / Math.max(1e-6, Math.hypot(dx, dy));
+        const antes = { x: Math.floor(A[0] + (t - passo) * dx), y: Math.floor(A[1] + (t - passo) * dy) };
+        const depois = { x: Math.floor(A[0] + (t + passo) * dx), y: Math.floor(A[1] + (t + passo) * dy) };
+        // cruzamento no meio de uma casa (parede atravessando o quadrado): não há aresta para consultar, barra
+        if (antes.x === depois.x && antes.y === depois.y) return true;
+        if (!this.passa(antes.x, antes.y, depois.x, depois.y, 'visao')) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Linha de visão. Além das paredes, um platô mais alto que os DOIS pontos
    * corta a visão — é isso que faz o terreno alto importar de verdade.
    */
@@ -584,6 +656,8 @@ export class Battlefield {
     // SIMÉTRICA: o Bresenham de `line` não é (a reta de A a B pode cruzar casas que a de B a A não cruza), e em cerca de 1% dos
     // pares um via o outro sem ser visto. A reta é sempre traçada do extremo "menor" (y, depois x) para o outro.
     if (a.y > b.y || (a.y === b.y && a.x > b.x)) [a, b] = [b, a];
+    // parede livre: o traço corta a reta dos olhos, com a precisão da geometria e não a do degrau da grade
+    if (this.tracos?.length && this.tracoCortaVisao(a, b)) return false;
     const eye = Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     const pts = this.line(a, b);
     for (let i = 1; i < pts.length; i++) {
