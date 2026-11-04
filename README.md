@@ -244,21 +244,33 @@ fichas, mas só vale se o contorno fechar na nossa grade, e o relatório diz se 
 
 **E porta não vem**, por um motivo que vale saber: na iluminação dinâmica antiga do Roll20 a parede barra a **luz**,
 não o movimento. O vão de porta é traçado como parede, para fechar a visão, e quem joga anda por cima. No nosso motor
-uma aresta barra as duas coisas, então o mapa chega com os cômodos lacrados — o relatório conta em quantos pedaços o
-chão ficou, e abrir os vãos é trabalho de alguns cliques na ferramenta 2 do editor.
+uma aresta barra as duas coisas, então o mapa chega com os cômodos lacrados.
 
-Medido nas nove páginas de Phandelver:
+`--abrir-vaos` resolve isso sozinho onde dá: procura o **menor conjunto de arestas a abrir** para o chão voltar a ser
+um pedaço só. Cada abertura liga dois cômodos que não se falavam, e é exatamente aí que a porta está; entre as
+arestas que separam os mesmos dois cômodos escolhe a do **meio da divisa**, porque porta fica no meio da parede e não
+na quina. As arestas abertas viram **arco** (vão livre) — quem quiser porta com folha troca na ferramenta 2.
 
-| página | casas | arestas | fichas | contorno fecha? | pedaços |
-|---|---|---|---|---|---|
-| 2: Cragmaw Hideout | 30 × 21 | 254 | 19 | não (caverna à mão livre) | 1 |
-| 4: Redbrand Hideout | 30 × 21 | 273 | 17 | **sim** | 5 |
-| Ruins of Thundertree | 30 × 21 | 299 | 2 | não | 1 |
-| 5: Cragmaw Castle | 31 × 21 | 324 | 29 | 12 das 29 fecham | 6 |
-| 6: Wave Echo Cave | 37 × 50 | 969 | 91 | 76 das 91 fecham | 14 |
+Para isso o chão é deduzido pelo avesso: é o que a **borda do mapa não alcança**, e não o que as fichas alcançam.
+A diferença decide o resultado — partindo das fichas, todo corredor sem ninguém dentro ficaria de fora, e aí os vãos
+nem teriam chão dos dois lados para ligar.
 
-Fecha onde a masmorra é ortogonal e a parede foi traçada na grade; vaza em caverna e campo aberto, onde ela é à mão
-livre. O que vaza se tapa no editor, ou se tira o chão da própria imagem (claro é chão, escuro é rocha).
+Medido nas nove páginas de Phandelver, com `--abrir-vaos`:
+
+| página | casas | arestas | fichas | contorno fecha? | vãos abertos | pedaços |
+|---|---|---|---|---|---|---|
+| 2: Cragmaw Hideout | 30 × 21 | 254 | 19 | não (caverna à mão livre) | — | 9 |
+| **4: Redbrand Hideout** | 30 × 21 | 255 | 17 | **sim** | **18** | **1** |
+| Ruins of Thundertree | 30 × 21 | 299 | 2 | não | — | 54 |
+| 5: Cragmaw Castle | 31 × 21 | 324 | 29 | não (17 de 29) | — | 41 |
+| 6: Wave Echo Cave | 37 × 50 | 969 | 91 | não (15 de 91) | — | 53 |
+
+O Covil Carrasco atravessa inteiro: 358 casas de chão, 272 de rocha, tudo ligado, e o `diagnostico()` do editor não
+acha nada. É uma masmorra ortogonal, com a parede traçada na grade.
+
+Onde o contorno **não fecha** o importador não abre nada, de propósito: sem contorno os "pedaços" não são cômodos,
+são recortes do mapa inteiro, e abrir seria adivinhação. Esses mapas chegam como o Roll20 os trata — tudo é chão e só
+a parede barra —, e a fresta se tapa no editor, ou o chão se tira da própria imagem (claro é chão, escuro é rocha).
 
 ### A escala das masmorras da Casa da Morte
 

@@ -58,20 +58,84 @@ function inundar(w, h, paredes, sementes) {
   return visto;
 }
 
-export function converter(pagina, { imagem, inundarChao = false } = {}) {
+/** Os pedaços de chão sem ligação entre si, numerados: `nome[y][x]` é o número do pedaço, ou -1 fora do chão. */
+function pedacosDoChao(w, h, paredes, dentro) {
+  const numero = Array.from({ length: h }, () => new Array(w).fill(-1));
+  let quantos = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!dentro[y][x] || numero[y][x] >= 0) continue;
+      const alcance = inundar(w, h, paredes, [[x, y]]);
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (alcance[j][i] && dentro[j][i]) numero[j][i] = quantos;
+      quantos += 1;
+    }
+  }
+  return { numero, quantos };
+}
+
+/**
+ * Abre os VÃOS DE PORTA. O Roll20 traça o vão como parede (lá a parede barra luz, não movimento), então o mapa chega
+ * com os cômodos lacrados. Isto procura o MENOR conjunto de arestas a abrir para o chão voltar a ser um só pedaço:
+ * cada abertura liga dois pedaços que não se falavam, e é aí que a porta está.
+ *
+ * Entre as várias arestas que separam os mesmos dois pedaços, escolhe a do MEIO da divisa — porta costuma ficar no
+ * meio da parede, não na quina.
+ */
+function abrirVaos(w, h, paredes, dentro) {
+  const { numero, quantos } = pedacosDoChao(w, h, paredes, dentro);
+  const pai = Array.from({ length: quantos }, (_, i) => i);
+  const raiz = (i) => (pai[i] === i ? i : (pai[i] = raiz(pai[i])));
+  // candidatas: toda aresta de parede com chão dos dois lados, agrupada pelo par de pedaços que ela separa
+  const porPar = new Map();
+  const juntar = (a, b, lado, x, y) => {
+    if (a < 0 || b < 0 || raiz(a) === raiz(b)) return;
+    const chave = `${Math.min(a, b)}-${Math.max(a, b)}`;
+    if (!porPar.has(chave)) porPar.set(chave, []);
+    porPar.get(chave).push({ lado, x, y, a, b });
+  };
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (y > 0 && paredes.n[y][x] === '#') juntar(numero[y - 1][x], numero[y][x], 'n', x, y);
+      if (x > 0 && paredes.o[y][x] === '#') juntar(numero[y][x - 1], numero[y][x], 'o', x, y);
+    }
+  }
+  // os pares com menos divisa primeiro: uma parede compartilhada curta é vão; uma longa é parede de verdade
+  const pares = [...porPar.values()].sort((A, B) => A.length - B.length);
+  const abertos = [];
+  for (const divisa of pares) {
+    const { a, b } = divisa[0];
+    if (raiz(a) === raiz(b)) continue;
+    const meio = divisa[Math.floor(divisa.length / 2)];      // o vão fica no meio da parede, não na quina
+    paredes[meio.lado][meio.y] = `${paredes[meio.lado][meio.y].slice(0, meio.x)}/${paredes[meio.lado][meio.y].slice(meio.x + 1)}`;
+    abertos.push(meio);
+    pai[raiz(a)] = raiz(b);
+  }
+  return abertos;
+}
+
+export function converter(pagina, { imagem, inundarChao = false, abrir = false } = {}) {
   const { w, h, pxPorCasa: P = 70 } = pagina;
   const sementes = (pagina.fichas ?? []).map((f) => [Math.floor(f.cx), Math.floor(f.cy)]);
-  const dentro = inundarChao
-    ? inundar(w, h, pagina.paredes, sementes.length ? sementes : [[Math.floor(w / 2), Math.floor(h / 2)]])
-    : Array.from({ length: h }, () => new Array(w).fill(true));
-  const terreno = dentro.map((linha) => linha.map((d) => (d ? PISO_DENTRO : PISO_FORA)).join(''));
 
-  // o contorno fecha? Se a borda do mapa alcança uma ficha, há fresta: o chão deduzido não vale
+  // O contorno fecha? Se a borda do mapa alcança uma ficha, há fresta, e não dá para deduzir chão nenhum.
   const daBorda = [];
   for (let x = 0; x < w; x++) { daBorda.push([x, 0]); daBorda.push([x, h - 1]); }
   for (let y = 0; y < h; y++) { daBorda.push([0, y]); daBorda.push([w - 1, y]); }
   const fora = inundar(w, h, pagina.paredes, daBorda);
   const vazaram = sementes.filter(([x, y]) => fora[y]?.[x]).length;
+  const quantasParedes = pagina.paredes.n.join('').split('#').length - 1 + pagina.paredes.o.join('').split('#').length - 1;
+  // só dá para falar em "dentro" quando há parede, há ficha para conferir, e nenhuma delas é alcançada pela borda
+  const fechado = quantasParedes > 0 && sementes.length > 0 && vazaram === 0;
+
+  // O chão é o que a BORDA NÃO ALCANÇA — e não o que as fichas alcançam. A diferença importa: no Covil Carrasco
+  // cada cômodo está lacrado, então partir das fichas deixaria de fora todo corredor sem ninguém dentro, e aí os
+  // vãos de porta nem teriam chão dos dois lados para ligar.
+  const dentro = inundarChao && fechado
+    ? fora.map((linha) => linha.map((alcancada) => !alcancada))
+    : Array.from({ length: h }, () => new Array(w).fill(true));
+  // abrir vão sem contorno fechado é adivinhação: os "pedaços" seriam recortes do mapa inteiro, não cômodos
+  const vaos = abrir && fechado ? abrirVaos(w, h, pagina.paredes, dentro) : [];
+  const terreno = dentro.map((linha) => linha.map((d) => (d ? PISO_DENTRO : PISO_FORA)).join(''));
 
   // em quantos pedaços sem ligação o chão ficou? Cada pedaço a mais é um vão de porta que o Roll20 traçou como parede
   const visto = Array.from({ length: h }, () => new Array(w).fill(false));
@@ -123,8 +187,11 @@ export function converter(pagina, { imagem, inundarChao = false } = {}) {
       pagina: pagina.nome, casas: `${w} x ${h}`, chao: livres.length, rocha: w * h - livres.length,
       arestas: pagina.paredes.n.join('').split('#').length - 1 + pagina.paredes.o.join('').split('#').length - 1,
       fichas: (pagina.fichas ?? []).length,
-      contornoFecha: vazaram === 0 ? 'sim' : `NÃO: a borda alcança ${vazaram} das ${sementes.length} fichas`,
+      contornoFecha: quantasParedes === 0 ? 'sem paredes'
+        : !sementes.length ? 'sem fichas para conferir'
+          : vazaram ? `NÃO: a borda alcança ${vazaram} das ${sementes.length} fichas` : 'sim',
       pedacos: pedacos === 1 ? '1 (tudo ligado)' : `${pedacos} — abra os vãos de porta no editor`,
+      vaosAbertos: vaos.length,
     },
   };
 }
@@ -135,11 +202,12 @@ if (process.argv[1] && import.meta.url.endsWith(basename(process.argv[1]))) {
   const cru = JSON.parse(await readFile(entrada, 'utf8'));
   // o arquivo pode ser uma página só, ou o saco com todas elas (`{ nome: pagina }`)
   const paginas = cru.paredes ? { [cru.nome]: cru } : cru;
-  const inundarChao = process.argv.includes('--inundar');
+  const abrir = process.argv.includes('--abrir-vaos');
+  const inundarChao = process.argv.includes('--inundar') || abrir;   // sem saber o que é chão não dá para achar vão
   const pasta = dirname(entrada);
   const resumos = [];
   for (const pagina of Object.values(paginas)) {
-    const { mapa, fichas, resumo } = converter(pagina, { inundarChao });
+    const { mapa, fichas, resumo } = converter(pagina, { inundarChao, abrir });
     const base = join(pasta, apelido(pagina.nome));
     await writeFile(`${base}-mapa.json`, JSON.stringify(mapa, null, 1), 'utf8');
     if (fichas.length) await writeFile(`${base}-fichas.json`, JSON.stringify(fichas, null, 1), 'utf8');
