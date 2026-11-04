@@ -202,6 +202,25 @@ A figura **não entra no mapa nem no repositório**: fica no IndexedDB do navega
 mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0, giro, opacidade }`, com `escala` em pixels da imagem por casa e
 `x0`/`y0` dizendo onde cai, em pixels da imagem já girada, o canto da casa (0,0).
 
+### O tabuleiro visto de cima
+
+`?vista=topo` na barra de endereço (ou `localStorage.phandalin.vista = 'topo'`) troca o tabuleiro isométrico pelo de
+cima: grade quadrada, mapa pintado por baixo quando o mapa tem um, parede e porta por aresta, e a criatura como
+**ficha redonda** — anel da disposição, barra de vida e nome, no estilo do Foundry e do Roll20.
+
+Ele está em `src/view/tabuleiro-topo.js` e **herda do `Board`**, de propósito. O jogo conversa com o tabuleiro por
+uma superfície grande — 530 chamadas a `board.fx`, mais realce de alcance, cartão de previsão, mira de área,
+escuridão e salas reveladas —, e quase nada disso é isométrico. O que é isométrico é a GEOMETRIA, e ela mora em meia
+dúzia de métodos: `iso`, `center`, `centerF`, `toView`, `fromView`, `casaNoPonto` e `diamond`. Trocando esses seis e
+o `render`, o jogo inteiro muda de vista sem saber. O `diamond` virar quadrado é o que faz todo o realce herdado sair
+certo de graça.
+
+A herança é um degrau, não o destino: quando o desenho de cima cobrir tudo, as 4.804 linhas do `board.js` saem.
+
+**O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
+regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é
+toda isométrica: o móvel é o sprite deitado na casa, provisório.
+
 ### O protótipo de visão de cima
 
 `/topo.html` é descartável e existe para uma pergunta só: vale refazer o jogo em visão de cima, como o Foundry VTT? Desenha um mapa de

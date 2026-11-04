@@ -13,6 +13,8 @@ export function montarCampo(mapa) {
   // todos, o encontro padrão e o Poço ganharam contorno em quem não estava
   // coberto por nada.
   field.avisosDeVista = Boolean(mapa.avisosDeVista);
+  // O mapa PINTADO por baixo e como ele se encaixa na grade (ver `mapa-editor.js`): quem desenha é a vista de cima.
+  if (mapa.fundo) field.fundo = mapa.fundo;
   // As salas do mapa, por casa: o tabuleiro usa para apagar a parede da
   // sala em que o grupo está (ver `board.desenharParedes`).
   // A decoração pendurada nas paredes, por aresta ('x,y,N' ou 'x,y,O').

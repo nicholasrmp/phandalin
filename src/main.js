@@ -118,6 +118,15 @@ import {
   marcasDoJogo,
 } from "./game/magias-fora.js";
 import { Board } from "./view/board.js";
+import { TabuleiroTopo } from "./view/tabuleiro-topo.js";
+
+// A VISTA. O jogo está saindo do isométrico para a de cima; enquanto as duas convivem, `?vista=topo` na barra de
+// endereço (ou `localStorage.phandalin.vista`) escolhe. Ver `view/tabuleiro-topo.js`.
+const Tabuleiro = (() => {
+  let v = null;
+  try { v = new URLSearchParams(location.search).get("vista") ?? localStorage.getItem("phandalin.vista"); } catch { v = null; }
+  return v === "topo" ? TabuleiroTopo : Board;
+})();
 import { Hud } from "./view/hud.js";
 import { criarFicha, aplicarAparencia } from "./view/ficha.js";
 import { criarMenu } from "./view/menu.js";
@@ -675,7 +684,7 @@ class App {
     });
 
     this.board?.disposeCamera?.(); // o canvas é um só: o Board do encontro anterior solta os ouvintes dele
-    this.board = new Board(this.canvas, {
+    this.board = new Tabuleiro(this.canvas, {
       encounter: this.enc,
       onTileClick: (t, e) => this.onTileClick(t, e),
       onTileHover: (t) => {

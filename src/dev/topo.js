@@ -21,7 +21,7 @@ import { mapaDo, buildFoes } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import { Board } from '../view/board.js';
 import { makePortrait } from '../art/sheet.js';
-import * as T from './vista-topo.js';
+import * as T from '../view/vista-topo.js';
 import { PINTADOS, PASTA_PINTADOS } from './topo-pintados.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';

@@ -12,7 +12,7 @@
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import * as M from '../game/mapa-editor.js';
-import * as T from './vista-topo.js';
+import * as T from '../view/vista-topo.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
 
