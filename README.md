@@ -290,6 +290,28 @@ conta (1920 px ÷ 25 casas e 1920 ÷ 15).
 A medida automática só fecha quando as duas plantas **são a mesma**. Quando não são, ou quando o mapa é novo, o caminho é o do editor acima:
 enquadrar à mão e decalcar.
 
+### A emboscada dos goblins, do desenho
+
+O primeiro encontro de **A Mina Perdida de Phandelver** usa um battlemap pintado de verdade (Venatus Maps, em
+`_referencias/mapas/`, fora do versionamento). E o terreno **sai do desenho**, por cor — não à mão:
+
+    python src/dev/mapa-emboscada.py        # reclassifica e reimprime as linhas de `game/encounter.js`
+
+    verde forte -> `T` mata fechada        areia -> `:` estrada
+    verde fraco -> `,` grama do acostamento   escuro no MEIO da estrada -> `C` carroça, `h` cavalo morto
+
+A primeira fileira de mata colada na estrada vira `%` espinheiro: terreno difícil, que é a moita onde o livro põe os
+goblins. Eles ganham cobertura e quem vai atrás paga o dobro para entrar.
+
+O corte do escuro só vale no meio da estrada: na beira, a sombra da mata é escura do mesmo jeito e não é objeto.
+(O chão da estrada mede 170 a 192 de brilho, o acostamento sombreado chega a 135, e carroça e cavalo ficam abaixo
+de 125.)
+
+O mapa novo tem **22 x 17 casas**, contra 28 x 22 do que fizemos à mão, e é **mais fiel ao livro**: a trilha reta
+com moita dos dois lados, sem a encruzilhada e os barrancos que tínhamos inventado. Os três goblins (três, e não os
+quatro do livro — ver o comentário em `foesEmboscada`) mudaram para a moita, e o grupo entra pelo oeste, atrás da
+carroça tombada.
+
 ### Trazer um mapa do Roll20
 
 Uma página do Roll20 é **imagem + grade + paredes**, que é quase o nosso `mapa.fundo` mais as arestas. Dá para trazer

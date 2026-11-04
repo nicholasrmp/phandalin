@@ -67,67 +67,35 @@ export const PARTY_SPOTS = [
 // ALTURA diz em que nível está. A grama do barranco é `,` no terreno e `1` na
 // altura; a do acostamento é `,` e `0`.
 export const MAPA_EMBOSCADA = {
+  // O TERRENO SAI DO DESENHO, por cor, e não à mão: `python src/dev/mapa-emboscada.py` reclassifica e reimprime.
+  //   verde forte -> `T` mata fechada (barra passo e visão)   verde fraco -> `,` grama do acostamento
+  //   areia -> `:` estrada                                     escuro no meio da estrada -> `C` carroça, `h` cavalo
+  // E a primeira fileira de mata colada na estrada vira `%` espinheiro: terreno difícil, a moita do livro.
   terreno: [
-    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
-    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
-    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
-    'TTTTTTTTTTTTTTTTTTT::TTTTTTT',
-    'TT,,TTTTTTTTTTTT,,T::TTT,,TT',
-    ',,,,,TT,,TT,,TT,,TT::TT,,,,,',
-    ',,,,,,,,r,,,,,,,,TT::TT,r,,,',
-    ',,,,,,,,,,,,,,,,,bT::Tb,,,,,',
-    ',,,,,,,,,,,,,,,,,bb::b,b,,,,',
-    '::::::,,,,,,,,,,,,b::b::::::',
-    ':::::::::::::,,,,:::::::::::',
-    ':CC:::::::::::::::::::::::::',
-    ':CC:::::::::::::::hh::::::::',
-    '::::::::::::::::::::::::::::',
-    ':::::::::::::::::::hh:::::::',
-    ',,,,,,::::::::::::::::,,,,,,',
-    ',,,,r,,,,,,,,,,,,b,,,,,,,,,,',
-    ',,,,,,,,,,,r,,,,,,,,,,,,,r,,',
-    'TT,,,,,TT,,,,,,,,,,TTTT,,TTT',
-    'TTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-    'TTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-    'TTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+    ':%%,%TTTTTTTTTT%,%TTTT',
+    '::%%,%TTTTTTTTT%,%TTTT',
+    '::%T%,%TTTTTTTTT%TTTTT',
+    ':::%T%TTTTTTTTTTTTTTTT',
+    ':::,%TTTTTTTTTTTTTTTTT',
+    ':CC:%%%%T%%%%%%%%TTTTT',
+    ':CC::,,,%,:::,:::%%%%%',
+    ',:CC:::::::::::::::::,',
+    '%::C:::::::::::::h::::',
+    'T%::::::::::::::::::::',
+    'T%,::::::::::::::h::::',
+    'TT%,:,:::::::::::h::::',
+    'TTT%%%%:::::,:,:::::::',
+    'TTTTTTT%%%,,%%%%%%,%,,',
+    'TTTTTTTTTT%%TTTTTT%,%%',
+    'TTTTTTTTTTTTTTTTTTT%TT',
+    'TTTTTTTTTTTTTTTTTTTTTT',
   ],
-  altura: [
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '0000011111111111111111000000',
-    '0000000000000111100000000000',
-    '0000000000000000000000000000',
-    '0000000000000000000000000000',
-    '0000000000000000000000000000',
-    '0000000000000000000000000000',
-    '0000000000000000000000000000',
-    '1100000000000000000000100111',
-    '1111111111111000011111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-    '1111111111111111111111111111',
-  ],
-  // Para onde apontam os objetos de várias casas — a grade de glifos diz ONDE
-  // eles estão, não para onde olham. (x, y) é qualquer casa da pegada.
-  // A carroça aponta para leste, na direção da viagem. Os cavalos caíram em
-  // sentidos opostos e têm pelagens diferentes: dois sprites iguais lado a
-  // lado leriam como cópia. Os cavalos olham na DIAGONAL do mundo, que na tela
-  // cai sempre em perfil ou de frente (leste, oeste, norte, sul) em qualquer
-  // rotação: nas vistas diagonais o PixelLab encurta o corpo deitado e ele
-  // parece sentado.
-  objetos: [
-    { tipo: 'carroca', x: 1, y: 11, olha: { dx: 1, dy: 0 } },
-    { tipo: 'cavalo', x: 18, y: 12, olha: { dx: 1, dy: -1 } },
-    { tipo: 'cavalo', x: 19, y: 14, olha: { dx: -1, dy: 1 }, variante: 'tordilho' },
-  ],
+  // A trilha é plana: o desenho não tem barranco, e inventar um desnível que a imagem não mostra seria mentir
+  // para quem olha o mapa.
+  altura: null,
+  // A carroça e os cavalos JÁ ESTÃO PINTADOS no mapa; pôr o sprite isométrico por cima seria desenhá-los duas vezes.
+  // Eles continuam valendo como regra: `C` e `h` são cobertura (+2 de CA) e não se atravessa.
+  objetos: [],
 };
 
 // A CAVERNA ESCURA (arena de teste da luz e das conversas).
@@ -219,9 +187,9 @@ export const MAPA_ERMO = [
 ];
 export const MAPA_ERMO_NOITE = MAPA_ERMO.map((l, y) => (y === 7 ? `${l.slice(0, 11)}F${l.slice(12)}` : l));
 
-/** O grupo escolta a carroça: logo à frente dela, na estrada, olhando para leste. */
+/** O grupo vem pela trilha, do oeste, logo depois da carroça tombada, olhando para leste. */
 export const PARTY_SPOTS_EMBOSCADA = [
-  { x: 5, y: 11 }, { x: 4, y: 12 }, { x: 4, y: 11 }, { x: 3, y: 13 },
+  { x: 5, y: 9 }, { x: 4, y: 9 }, { x: 5, y: 8 }, { x: 4, y: 10 },
 ];
 
 /**
@@ -238,6 +206,9 @@ export function mapaDo(variante = 'padrao') {
       objetos: MAPA_EMBOSCADA.objetos,
       grupo: PARTY_SPOTS_EMBOSCADA,
       olhar: { dx: 1, dy: 0 },
+      // O mapa PINTADO por baixo (Venatus Maps). Fica em `_referencias/`, fora do versionamento: é arte de
+      // terceiros. O terreno acima saiu dele, então os dois não podem divergir.
+      fundo: { nome: 'emboscada-goblin.png', url: '/_referencias/mapas/emboscada-goblin.png', escala: 37.38, x0: 0.3, y0: 3.4, giro: 0, opacidade: 1 },
       // Os goblins estão escondidos: rola-se surpresa no começo (combat.js).
       emboscada: { emboscadores: 'foes' },
     };
@@ -691,18 +662,18 @@ function foesGrandes() {
  * surpreendido e em 98% quando não é, e morre alguém em 6 a 8% das vezes.
  */
 function foesEmboscada() {
-  // Os três esperam de arco na mão, no alto do barranco. A e C são atiradores
-  // declarados; B a IA também deixa atirando, pela regra do terreno alto. Eram quatro (o livro): de 1º nível, quatro goblins
+  // Os três esperam de arco na mão, agachados na moita. A e C são atiradores
+  // declarados; B a IA também deixa atirando. Eram quatro (o livro): de 1º nível, quatro goblins
   // são o limiar MORTAL do DMG (200 XP, ×2) e a emboscada derrotava o grupo em 9,9% das lutas medidas (496 lutas, 4 heróis de
   // 1º nível); com três, em 2,8%.
   const arco = { arma: 'Arco curto' };
+  // Na moita (`%`), dos dois lados da estrada e na altura dos cavalos mortos: é onde o livro os põe.
   const norte = [
-    makeMonster('goblin', { x: 12, y: 7 }, { nameSuffix: 'A', tatica: 'atirador', ...arco }),
-    // Colado nos arbustos da boca da trilha.
-    makeMonster('goblin', { x: 16, y: 7 }, { nameSuffix: 'B', ...arco }),
+    makeMonster('goblin', { x: 12, y: 5 }, { nameSuffix: 'A', tatica: 'atirador', ...arco }),
+    makeMonster('goblin', { x: 16, y: 5 }, { nameSuffix: 'B', ...arco }),
   ];
   const sul = [
-    makeMonster('goblin', { x: 14, y: 17 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
+    makeMonster('goblin', { x: 14, y: 13 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
   ];
   // Cada lado olha para a estrada.
   for (const f of norte) f.facingVec = { dx: 0, dy: 1 };
@@ -737,11 +708,11 @@ export const REINFORCEMENTS = [
 const REFORCOS_EMBOSCADA = [
   {
     round: 2,
-    aviso: 'Lobos descem pela trilha!',
-    olhar: { dx: 0, dy: 1 },
+    aviso: 'Lobos saem do mato!',
+    olhar: { dx: -1, dy: 0 },
     spawn: [
-      { id: 'lobo', at: { x: 19, y: 6 }, nameSuffix: 'da trilha' },
-      { id: 'lobo', at: { x: 20, y: 6 }, nameSuffix: 'do mato' },
+      { id: 'lobo', at: { x: 19, y: 6 }, nameSuffix: 'do mato' },
+      { id: 'lobo', at: { x: 20, y: 6 }, nameSuffix: 'da moita' },
     ],
   },
 ];
