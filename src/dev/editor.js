@@ -569,17 +569,28 @@ function fundoNoPainel() {
   const nome = $('fundoNome');
   if (!nome) return;
   if (!f) nome.textContent = 'Nenhuma imagem carregada.';
-  else if (!imgFundo) nome.textContent = `O mapa pede "${f.nome}", mas a imagem não está neste navegador: carregue de novo.`;
+  else if (!imgFundo) nome.textContent = f.url ? `Carregando ${f.nome} de ${new URL(f.url).host}…` : `O mapa pede "${f.nome}", mas a imagem não está neste navegador: carregue de novo.`;
   else nome.textContent = `${f.nome} — ${imgFundo.naturalWidth} x ${imgFundo.naturalHeight} px, ${f.escala} px por casa.`;
 }
 
-/** Depois de abrir ou importar um mapa: se ele pede um fundo, procura a imagem guardada. */
+/**
+ * Depois de abrir ou importar um mapa: se ele pede um fundo, procura a imagem.
+ * Primeiro a guardada neste navegador; se não houver, o endereço que o mapa traz (`fundo.url`) — é o caso dos mapas
+ * vindos do Roll20, que apontam para o `files.d20.io`.
+ */
 async function recuperarFundo() {
-  const nome = mapa.fundo?.nome;
+  const f = mapa.fundo;
   imgFundo = null;
-  if (nome) {
-    const blob = await lerFundo(nome);
-    if (blob) usarFundo(blob, nome);
+  if (f?.nome) {
+    const blob = await lerFundo(f.nome);
+    if (blob) { usarFundo(blob, f.nome); fundoNoPainel(); return; }
+  }
+  if (f?.url) {
+    // sem `crossOrigin`: o `files.d20.io` não manda cabeçalho de CORS, e para DESENHAR a imagem não é preciso
+    const img = new Image();
+    img.addEventListener('load', () => { imgFundo = img; sujo = true; fundoNoPainel(); }, { once: true });
+    img.addEventListener('error', () => { imgFundo = null; fundoNoPainel(); }, { once: true });
+    img.src = f.url;
   }
   fundoNoPainel();
 }
@@ -640,7 +651,7 @@ avisar();
 estado();
 requestAnimationFrame(quadro);
 window.__editor = {
-  arestaDe, casaDe, agir, M, sel, usarFundo,
+  arestaDe, casaDe, agir, M, sel, usarFundo, recuperarFundo,
   desenhar: () => { if (sujo) reconstruir(); desenharTopo(); },
   get mapa() { return mapa; }, set mapa(v) { mapa = v; sujo = true; },
   get campo() { return campo; }, get imgFundo() { return imgFundo; },

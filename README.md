@@ -249,8 +249,12 @@ sem copiar nada à mão:
    `__extrairPagina(nome)`.
 2. `__extrairPagina('2: Cragmaw Hideout')` devolve a página já com as paredes **rasterizadas para arestas de casa** —
    o dado pesado (as polilinhas à mão livre) nunca sai do navegador. Salve em `_referencias/roll20/<nome>.json`.
-3. `node src/dev/importar-roll20.mjs _referencias/roll20/<nome>.json` escreve `<nome>-mapa.json` (importe no
-   `/editor.html`) e `<nome>-fichas.json` (as criaturas e onde estavam).
+3. `node src/dev/importar-roll20.mjs _referencias/roll20/<nome>.json --tapar-frestas --abrir-vaos` escreve um
+   `<apelido>-mapa.json` por página (importe no `/editor.html`) e um `<apelido>-fichas.json` com as criaturas.
+
+**Para jogar num deles:** abra o `-mapa.json` no `/editor.html` (Importar JSON) e clique em "Testar no jogo", ou
+abra `/?vista=topo&encontro=editor`. A imagem vem do `files.d20.io` pelo endereço que o próprio mapa guarda em
+`fundo.url` — nada é baixado nem entra no repositório.
 
 A grade do Roll20 é travada em **70 px por casa**, então a imagem entra com `escala: 70` e a origem sai do canto do
 gráfico. A regra da parede: uma aresta é parede quando o traço do Roll20 **separa** as duas casas, isto é, cruza o

@@ -289,6 +289,10 @@ export function converter(pagina, { imagem, inundarChao = false, abrir = false, 
     const cantoY = g.y - g.h / 2;
     fundo = {
       nome: imagem ?? basename(new URL(g.src).pathname),
+      // o endereço de onde o navegador PEGA a imagem. O `src` do Roll20 aponta para o bucket cru do S3, que responde
+      // AccessDenied; quem serve é o `files.d20.io`, e o `max` é a maior resolução que ele guarda.
+      url: g.src.replace('https://s3.amazonaws.com/files.d20.io/', 'https://files.d20.io/')
+        .replace(/\/(med|thumb|original)\.(jpg|png|jpeg)/, '/max.$2'),
       // px da IMAGEM por casa: se o gráfico está esticado, uma casa cobre menos pixels do arquivo
       escala: +(P * (pagina.imagemLargura ? pagina.imagemLargura / g.w : 1)).toFixed(3),
       x0: +(-cantoX * (pagina.imagemLargura ? pagina.imagemLargura / g.w : 1)).toFixed(2),
