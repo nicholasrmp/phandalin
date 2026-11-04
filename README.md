@@ -204,9 +204,10 @@ mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0,
 
 ### O tabuleiro visto de cima
 
-`?vista=topo` na barra de endereço (ou `localStorage.phandalin.vista = 'topo'`) troca o tabuleiro isométrico pelo de
-cima: grade quadrada, mapa pintado por baixo quando o mapa tem um, parede e porta por aresta, e a criatura como
-**ficha redonda** — anel da disposição, barra de vida e nome, no estilo do Foundry e do Roll20.
+**É a vista padrão do jogo.** Grade quadrada, mapa pintado por baixo quando o mapa tem um, parede livre, e a
+criatura como **ficha redonda** — anel da disposição, barra de vida e nome, no estilo do Foundry e do Roll20. O
+isométrico ainda responde em `?vista=iso`, enquanto não cobrirmos o que ele cobre (elevação e arte de cenário) e
+porque o de cima ainda herda dele.
 
 Ele está em `src/view/tabuleiro-topo.js` e **herda do `Board`**, de propósito. O jogo conversa com o tabuleiro por
 uma superfície grande — 530 chamadas a `board.fx`, mais realce de alcance, cartão de previsão, mira de área,
@@ -215,7 +216,10 @@ dúzia de métodos: `iso`, `center`, `centerF`, `toView`, `fromView`, `casaNoPon
 o `render`, o jogo inteiro muda de vista sem saber. O `diamond` virar quadrado é o que faz todo o realce herdado sair
 certo de graça.
 
-A herança é um degrau, não o destino: quando o desenho de cima cobrir tudo, as 4.804 linhas do `board.js` saem.
+A herança é um degrau, não o destino. Medindo numa partida de verdade (mover, passar o mouse, botão direito), o
+tabuleiro de cima usa **9 dos 92 métodos** que herda: `fillDiamond`, `figuraVisivel`, `drawFloaters`,
+`tileFromEvent`, `pontoDoEvento`, `setOverlay`, `atualizarHover`, `portaDoPonto` e `objetoDoPonto`. Levados esses
+nove para dentro da classe, o `board.js` inteiro sai.
 
 **Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
 destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**

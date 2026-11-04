@@ -120,12 +120,13 @@ import {
 import { Board } from "./view/board.js";
 import { TabuleiroTopo } from "./view/tabuleiro-topo.js";
 
-// A VISTA. O jogo está saindo do isométrico para a de cima; enquanto as duas convivem, `?vista=topo` na barra de
-// endereço (ou `localStorage.phandalin.vista`) escolhe. Ver `view/tabuleiro-topo.js`.
+// A VISTA. O jogo é VISTO DE CIMA (`view/tabuleiro-topo.js`): grade quadrada, mapa pintado por baixo, parede livre.
+// O isométrico ainda existe atrás de `?vista=iso` enquanto o de cima não cobre tudo o que ele cobria (elevação e
+// arte de cenário), e porque o de cima ainda HERDA dele — ver o cabeçalho de `tabuleiro-topo.js`.
 const Tabuleiro = (() => {
   let v = null;
   try { v = new URLSearchParams(location.search).get("vista") ?? localStorage.getItem("phandalin.vista"); } catch { v = null; }
-  return v === "topo" ? TabuleiroTopo : Board;
+  return v === "iso" ? Board : TabuleiroTopo;
 })();
 import { Hud } from "./view/hud.js";
 import { criarFicha, aplicarAparencia } from "./view/ficha.js";

@@ -164,6 +164,8 @@ export class TabuleiroTopo extends Board {
 
     this.fx.drawOver(ctx, this);
     this.drawFloaters(ctx, dt);
+    // o cartão de previsão de acerto, que segue o cursor: é desenhado em pixel de tela, então vale nas duas vistas
+    this.drawCartao(ctx);
     ctx.restore();
   }
 
