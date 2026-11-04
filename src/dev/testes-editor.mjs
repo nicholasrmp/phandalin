@@ -463,6 +463,65 @@ teste('sem traço, `passaVisao` é exatamente o `passa` de antes', () => {
   assert.equal(divergiu, 0, 'sem traço, nenhuma divergência');
 });
 
+// ------------------------------------------------- o que o editor ganhou para o mapa pintado ---
+
+const mapinha = () => M.novoMapa(6, 6);
+
+teste('passagem secreta: é parede no desenho e entra em `secretas`, e volta a ser lida como secreta', () => {
+  const m = mapinha();
+  M.pintarAresta(m, 3, 2, 'N', 'secreta');
+  assert.equal(m.paredes.n[2][3], '#', 'no desenho é parede');
+  assert.equal(M.estiloDaAresta(m, 3, 2, 'N'), 'secreta', 'mas a lista a separa da parede comum');
+  assert.deepEqual(m.secretas, [[{ x: 3, y: 1 }, { x: 3, y: 2 }]]);
+  // virar parede comum tira da lista
+  M.pintarAresta(m, 3, 2, 'N', 'parede');
+  assert.equal(M.estiloDaAresta(m, 3, 2, 'N'), 'parede');
+  assert.deepEqual(m.secretas, []);
+});
+
+teste('parede comum não vira secreta por engano', () => {
+  const m = mapinha();
+  M.pintarAresta(m, 2, 2, 'O', 'parede');
+  assert.equal(M.estiloDaAresta(m, 2, 2, 'O'), 'parede');
+  assert.deepEqual(m.secretas, []);
+});
+
+teste('iluminação: acende, troca de tipo e o mesmo clique apaga', () => {
+  const m = mapinha();
+  M.porLuz(m, 2, 3, { tipo: 'tocha', claro: 20, penumbra: 20 });
+  assert.deepEqual(m.luzes, [{ pos: { x: 2, y: 3 }, claro: 20, penumbra: 20, tipo: 'tocha' }]);
+  M.porLuz(m, 2, 3, { tipo: 'vela', claro: 5, penumbra: 5 });       // outra luz na mesma casa: troca
+  assert.equal(m.luzes.length, 1);
+  assert.equal(m.luzes[0].tipo, 'vela');
+  M.porLuz(m, 2, 3, { tipo: 'vela', claro: 5, penumbra: 5 });       // a mesma de novo: apaga
+  assert.deepEqual(m.luzes, []);
+});
+
+teste('objeto interagível: põe, tira, e chega ao campo pela casa', () => {
+  const m = mapinha();
+  M.porInterativo(m, 4, 1, { id: 'bau', rotulo: 'Abrir o baú', texto: 'Carvalho e ferro.' });
+  assert.equal(m.interativos.length, 1);
+  const campo = montarCampo(m);
+  assert.equal(campo.interativos.get('4,1').id, 'bau');
+  assert.equal(campo.interativos.get('4,1').rotulo, 'Abrir o baú');
+  M.porInterativo(m, 4, 1, null);
+  assert.deepEqual(m.interativos, []);
+  assert.equal(montarCampo(m).interativos, undefined, 'sem objeto, o campo nem monta o mapa');
+});
+
+teste('o que o editor marca sobrevive ao vai e volta de JSON', () => {
+  const m = mapinha();
+  M.pintarAresta(m, 3, 3, 'N', 'secreta');
+  M.porLuz(m, 1, 1, { tipo: 'fogueira', claro: 20, penumbra: 20 });
+  M.porInterativo(m, 2, 2, { id: 'alavanca', rotulo: 'Puxar', texto: 'Range.', oculto: true });
+  const ida = M.limpar(m);
+  const volta = M.limpar(JSON.parse(JSON.stringify(ida)));
+  assert.deepEqual(volta.secretas, ida.secretas);
+  assert.deepEqual(volta.luzes, ida.luzes);
+  assert.deepEqual(volta.interativos, ida.interativos);
+  assert.equal(volta.interativos[0].oculto, true);
+});
+
 for (const rodar of fila) await rodar();
 
 console.log(`\n${total - falhas}/${total} testes passaram`);

@@ -148,6 +148,7 @@ export class TabuleiroTopo extends Board {
     // Com mapa pintado, só os móveis que a cena marcou com `sobreOFundo`: o desenho já tem o resto.
     V.pintarMoveis(ctx, this.field, C, atlas, imgAtlas, comPintura);
     V.pintarGrade(ctx, this.field, C, comPintura ? 'rgba(120,200,255,.25)' : 'rgba(0,0,0,.28)');
+    V.pintarInterativos(ctx, this.field, C, this.time);
     ctx.restore();
 
     this.realce(ctx);

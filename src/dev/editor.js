@@ -67,6 +67,7 @@ const FERRAMENTAS = [
   ['altura', 'Altura', '6'],
   ['sala', 'Sala', '7'],
   ['inicio', 'Partida', '8'],
+  ['interativo', 'Objeto interagível', '9'],
 ];
 
 // ------------------------------------------------------------------------------------------------ estado ---
@@ -77,6 +78,7 @@ let refazer = [];
 let sujo = true;
 const sel = {
   ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
+  interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false },
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
   tracoModo: 'desenhar',
@@ -148,6 +150,7 @@ function desenharTopo() {
     ctx.restore();
   }
   if (sel.verGrade) T.pintarGrade(ctx, campo, C, comFundo ? 'rgba(120,200,255,.45)' : 'rgba(0,0,0,.28)');
+  T.pintarInterativos(ctx, campo, C, performance.now() / 1000);
   if (sel.verMoveis) T.pintarMoveis(ctx, mapa, C, atlas, imgAtlas);
   // O traço livre (parede de caverna, pedra, destroço) é desenhado como foi traçado. A aresta de casa é a DERIVADA
   // dele, que é o que a regra usa para barrar movimento — fica discreta por baixo, para dar para conferir as duas.
@@ -246,6 +249,7 @@ function quadro() {
   try {
     if (sujo) reconstruir();
     desenharTopo();
+    estado();      // os contadores do painel (traços, luzes, interagíveis) acompanham o que está no mapa
   } catch (e) {
     console.error(e);
     $('estado').textContent = `Erro ao desenhar: ${e.message}`;
@@ -306,6 +310,7 @@ function agir(e, primeira) {
   pressionado = { chave };
   if (f === 'piso') aplicar(M.pintarPiso(mapa, t.x, t.y, sel.piso));
   else if (f === 'luz') { const l = LUZES.find(([id]) => id === sel.luz); aplicar(M.porLuz(mapa, t.x, t.y, { tipo: l[0], claro: l[2], penumbra: l[3] })); }
+  else if (f === 'interativo') aplicar(M.porInterativo(mapa, t.x, t.y, sel.interativo.id.trim() ? { ...sel.interativo } : null));
   else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
   else if (f === 'sala') aplicar(M.definirSala(mapa, t.x, t.y, sel.sala.trim()));
   else if (f === 'inicio') aplicar(M.definirInicio(mapa, sel.inicio, t.x, t.y));
@@ -400,12 +405,18 @@ addEventListener('keydown', (e) => {
 function estado() {
   const conta = $('contaTracos');
   if (conta) conta.textContent = `${mapa.tracos?.length ?? 0} traço(s) no mapa.`;
+  const luzes = $('contaLuzes');
+  if (luzes) luzes.textContent = `${mapa.luzes?.length ?? 0} luz(es) no mapa.`;
+  const inter = $('contaInterativos');
+  if (inter) inter.textContent = `${mapa.interativos?.length ?? 0} objeto(s) interagível(is) no mapa.`;
   const t = hoverTile;
   if (!t) { $('estado').textContent = 'Passe o mouse no mapa. Botão do meio arrasta; a roda dá zoom.'; return; }
   const sala = M.salaDe(mapa, t.x, t.y);
   const o = M.propEm(mapa, t.x, t.y);
+  const luz = (mapa.luzes ?? []).find((l) => l.pos?.x === t.x && l.pos?.y === t.y);
+  const alvo = (mapa.interativos ?? []).find((i) => i.x === t.x && i.y === t.y);
   const h = hoverEdge ? ` | aresta ${hoverEdge.lado === 'N' ? 'de cima' : 'da esquerda'}: ${M.ESTILOS_DE_ARESTA[M.estiloDaAresta(mapa, hoverEdge.x, hoverEdge.y, hoverEdge.lado)].rotulo}` : '';
-  $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${h}`;
+  $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${luz ? ` | luz <b>${luz.tipo}</b>` : ''}${alvo ? ` | interagível <b>${alvo.id}</b>` : ''}${h}`;
 }
 
 /** A caixa de "exploração livre" acompanha o mapa (depois de abrir, importar ou desfazer). */
@@ -515,6 +526,20 @@ function montarPainel() {
       <p class="dica">Pinte as casas da sala com este nome. Deixe o campo vazio para tirar a casa de qualquer sala. O jogo usa as salas para abrir e fechar a casa e para os textos.</p>
     </div>
 
+    <div data-secao="interativo">
+      <h2>Objeto interagível</h2>
+      <label class="linha">id <input type="text" id="iId" value="${sel.interativo.id}" style="flex:1" /></label>
+      <label class="linha">menu <input type="text" id="iRotulo" value="${sel.interativo.rotulo}" style="flex:1" /></label>
+      <p class="dica" style="margin:6px 0 2px">texto (o que acontece quando a cena não reconhece o id)</p>
+      <textarea id="iTexto" rows="3" style="width:100%">${sel.interativo.texto}</textarea>
+      <label class="linha"><input type="checkbox" id="iOculto" /> Oculto (sem marca no tabuleiro)</label>
+      <p class="dica">Clique na casa para pôr; clique de novo para tirar. No jogo ele aparece no menu do botão
+      direito de quem estiver encostado, e o tabuleiro desenha um anel na casa — a não ser que seja oculto.</p>
+      <p class="dica">O <b>id</b> é o nome pelo qual o roteiro da cena o reconhece
+      (<code>capitulo.aoInteragir</code>). Sem roteiro, o clique abre o texto acima.</p>
+      <p class="dica" id="contaInterativos">—</p>
+    </div>
+
     <div data-secao="inicio">
       <h2>Ponto de partida</h2>
       <div class="grade">${[0, 1, 2, 3].map((i) => `<button data-inicio="${i}">Herói ${i + 1}</button>`).join('')}</div>
@@ -608,6 +633,10 @@ function montarPainel() {
     sel.luz = b.dataset.luz;
     L.querySelectorAll('[data-luz]').forEach((x) => x.classList.toggle('on', x === b));
   }));
+  for (const [id, campo] of [['iId', 'id'], ['iRotulo', 'rotulo'], ['iTexto', 'texto']]) {
+    $(id).addEventListener('input', (e) => { sel.interativo[campo] = e.target.value; });
+  }
+  $('iOculto').addEventListener('change', (e) => { sel.interativo.oculto = e.target.checked; });
   L.querySelector(`[data-luz="${sel.luz}"]`).classList.add('on');
   L.querySelector(`[data-piso="${sel.piso}"]`).classList.add('on');
   L.querySelector(`[data-estilo="${sel.estilo}"]`).classList.add('on');

@@ -49,6 +49,9 @@ export function montarCampo(mapa) {
   // As arestas de barra que são GRADE de ferro (a cela), e não seteira: o tabuleiro desenha barras em vez de parede.
   if (mapa.grades) field.grades = new Set(mapa.grades);
   if (mapa.degraus) field.degraus = new Map(mapa.degraus.map((d) => [`${d.x},${d.y}`, d.eixo]));
+  // Os OBJETOS INTERAGÍVEIS do mapa (baú, alavanca, poço): a casa em que o grupo pode mexer. O menu do botão
+  // direito os encontra por aqui (`game/interacoes.js`), e a cena pode reconhecê-los pelo `id`.
+  if (mapa.interativos?.length) field.interativos = new Map(mapa.interativos.map((o) => [`${o.x},${o.y}`, o]));
   // O quanto o que o grupo não enxerga escurece (0 a 1; padrão 0,8). Árvore Trovão pede 1: preto.
   if (mapa.veuDaEscuridao != null) field.veuDaEscuridao = mapa.veuDaEscuridao;
   if (mapa.salas) {

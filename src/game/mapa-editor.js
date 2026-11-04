@@ -14,7 +14,7 @@ export const CHAVE = 'phandalin.editor.mapa';
 const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
-  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas',
+  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -457,6 +457,29 @@ export function porLuz(m, x, y, luz) {
     if (igual) return true;                      // mesma luz: o clique apaga
   }
   m.luzes.push({ pos: { x, y }, claro: luz.claro, penumbra: luz.penumbra, tipo: luz.tipo });
+  return true;
+}
+
+/**
+ * O OBJETO INTERAGÍVEL: a casa em que o grupo pode mexer — um baú, uma alavanca, um altar, um poço.
+ *
+ * `id` é o nome pelo qual o roteiro da cena o reconhece (`capitulo.aoInteragir`); `rotulo` é a linha do menu do
+ * botão direito; `texto` é o que acontece quando NINGUÉM o reconhece — o painel que descreve a coisa. É de
+ * propósito que o padrão faça algo: marcar no editor sem o jogo reagir seria um botão que mente.
+ *
+ * `oculto` tira a marca do tabuleiro: a alavanca escondida atrás da estante existe, mas não se anuncia.
+ * Clicar de novo na mesma casa tira o objeto.
+ */
+export function porInterativo(m, x, y, obj) {
+  if (!dentro(m, x, y)) return false;
+  m.interativos ??= [];
+  const i = m.interativos.findIndex((o) => o.x === x && o.y === y);
+  if (i >= 0) {
+    m.interativos.splice(i, 1);
+    if (!obj) return true;
+  }
+  if (!obj) return i >= 0;
+  m.interativos.push({ x, y, id: obj.id, rotulo: obj.rotulo, texto: obj.texto, ...(obj.oculto ? { oculto: true } : {}) });
   return true;
 }
 

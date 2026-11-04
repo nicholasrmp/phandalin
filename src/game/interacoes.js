@@ -542,6 +542,26 @@ export function opcoesDaCasa(app, tile) {
       fazer: () => app.chooseAction({ kind: 'examinar', zona: imagem }),
     });
   }
+  // O OBJETO INTERAGÍVEL DO MAPA (`mapa.interativos`, desenhado no editor): o baú, a alavanca, o poço. Vem
+  // ANTES das ações da cena de propósito — o roteiro pode acrescentar as dele e ficar por cima.
+  //
+  // Se a cena reconhece o `id` (`capitulo.aoInteragir`), quem manda é ela; se ninguém reconhece, abre o texto
+  // que o objeto traz. É isso que faz valer a pena marcar no editor antes de a cena existir: a marca já faz
+  // alguma coisa, em vez de ser um botão que não liga em lugar nenhum.
+  const alvoInterativo = enc.field.interativos?.get(`${tile.x},${tile.y}`);
+  if (alvoInterativo && c) {
+    const perto = distanceFt(c.pos, tile) <= (alvoInterativo.alcance ?? 5);
+    opcoes.push({
+      rotulo: alvoInterativo.rotulo || 'Mexer',
+      icone: 'acao-procurar',
+      detalhe: fora ? 'de graça' : undefined,
+      motivo: perto ? null : `longe demais — encoste (está a ${distanceFt(c.pos, tile)} pés)`,
+      fazer: async () => {
+        const feito = await app.capitulo?.aoInteragir?.(alvoInterativo, { tile, heroi: c });
+        if (!feito) app.mostrarTexto(alvoInterativo.rotulo || 'Objeto', alvoInterativo.texto || 'Não há nada de mais aqui.');
+      },
+    });
+  }
   for (const o of app.capitulo?.interacoes?.(tile, sup, c) ?? []) opcoes.push(o);
   if (explorando) opcoes.push(...opcoesDeMagia(app, c, { tile }));
   const dist = c ? distanceFt(c.pos, tile) : null;

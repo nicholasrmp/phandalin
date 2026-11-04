@@ -174,6 +174,40 @@ export function pintarMoveis(ctx, mapa, C, atlas, imgAtlas, soMarcados = false) 
   ctx.restore();
 }
 
+/**
+ * A MARCA DO OBJETO INTERAGÍVEL: um anel fino na casa em que o grupo pode mexer (baú, alavanca, poço).
+ *
+ * Sem ela o objeto existe no menu do botão direito e em lugar nenhum na tela, e ninguém clica no que não vê.
+ * Quem é `oculto` não ganha marca — a alavanca atrás da estante existe, mas não se anuncia.
+ */
+export function pintarInterativos(ctx, field, C, tempo = 0) {
+  if (!field.interativos?.size) return;
+  const pulso = 0.72 + Math.sin(tempo * 2.2) * 0.16;
+  const r = C * 0.33;
+  ctx.save();
+  for (const o of field.interativos.values()) {
+    if (o.oculto) continue;
+    const cx = (o.x + 0.5) * C;
+    const cy = (o.y + 0.5) * C;
+    // o contorno escuro PRIMEIRO: pintado por cima, ele apagava metade do anel quente e a marca sumia no mapa
+    ctx.lineWidth = Math.max(4, C * 0.11);
+    ctx.strokeStyle = 'rgba(0, 0, 0, .55)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(2, C * 0.055);
+    ctx.strokeStyle = `rgba(255, 214, 120, ${pulso.toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255, 228, 160, ${(pulso * 0.9).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(1.5, C * 0.055), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 // ------------------------------------------------------------------------------------------------- pontaria ---
 
 /** A casa sob o ponto (em pixels da tela), ou null fora do mapa. */
