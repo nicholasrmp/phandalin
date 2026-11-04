@@ -28,3 +28,6 @@ _trabalho/
 # Gerados: relatorio de cobertura do vitest e cache do Python dos scripts de dev.
 coverage/
 __pycache__/
+
+# Saida de trabalho dos scripts de dev (plantas exportadas, encaixes medidos, provas visuais).
+src/dev/_tmp/

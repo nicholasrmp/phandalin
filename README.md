@@ -192,6 +192,21 @@ partida, e cresce ou encolhe o mapa por qualquer borda. Desfaz e refaz (Ctrl+Z, 
 Abre qualquer mapa do jogo para retocar. A caixa "Exploração livre" faz o jogo abrir o mapa sem iniciativa e sem inimigos; desligada, abre em
 combate por turnos. "Testar no jogo" abre `?encontro=editor`. A lógica está em `src/game/mapa-editor.js` (testes: `src/dev/testes-editor.mjs`).
 
+### O protótipo de visão de cima
+
+`/topo.html` é descartável e existe para uma pergunta só: vale refazer o jogo em visão de cima, como o Foundry VTT? Desenha um mapa de
+verdade do jogo (o mesmo `mapaDo()`) visto de cima — paredes e portas por aresta, fichas circulares com anel, barra de PV e nome — e um botão
+alterna para o tabuleiro isométrico de verdade, no mesmo mapa.
+
+Para a comparação ser justa, a Casa da Morte entra com um **battlemap pintado de verdade** por baixo (Morvold Press / Jeff Todd, em
+`_referencias/casa-da-morte-morvold/`, fora do versionamento: arte comercial de terceiros, consulta apenas, não pode ser publicada). O
+encaixe de cada andar na grade foi **medido**, não estimado: `python src/dev/alinhar-mapa-pintado.py --provas` correlaciona a máscara de
+pedra da imagem com as arestas da planta, acha giro, escala e origem, e grava a prova visual. O resultado vive em
+`src/dev/topo-pintados.js`; no protótipo, as setas e o PgUp/PgDn afinam o encaixe a olho.
+
+Os quatro andares da casa deram ~198 px por casa, giro 0 — o que também serve de **conferência de fidelidade**: a planta do jogo cai em cima
+da planta publicada, parede por parede e porta por porta.
+
 ### A escala das masmorras da Casa da Morte
 
 O mapa do livro diz "One square = 5 feet": **um quadrado é uma casa** do jogo, nas duas masmorras. As plantas saem de

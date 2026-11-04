@@ -4,9 +4,15 @@
 // de verdade (`Board`), no mesmo mapa, para comparar lado a lado.
 //
 // O QUE É HONESTO AQUI: a planta, as paredes, as portas, o tamanho das salas e as fichas das criaturas são os do jogo.
-// O QUE É FALSO AQUI: o chão e os móveis. O chão é pintado com as cores que o jogo já usa para cada superfície, sem textura; os móveis
-// são o sprite ISOMÉTRICO deitado na casa, porque arte de cima não existe no projeto. Num jogo de verdade os dois seriam arte nova —
-// e é esse o custo que o protótipo existe para mostrar.
+// O QUE É FALSO AQUI: o chão e os móveis DESENHADOS PELO PROTÓTIPO. O chão é pintado com as cores que o jogo já usa para cada
+// superfície, sem textura; os móveis são o sprite ISOMÉTRICO deitado na casa, porque arte de cima não existe no projeto. Num jogo de
+// verdade os dois seriam arte nova — e é esse o custo que o protótipo existe para mostrar.
+//
+// O MAPA PINTADO ("Mapa pintado de verdade") é a exceção, e é o que torna a comparação justa: a Casa da Morte tem um battlemap
+// comercial pintado (Morvold Press / Jeff Todd, em `_referencias/casa-da-morte-morvold/`, FORA do versionamento — é arte de terceiros,
+// só serve de consulta e não pode ser publicada). O encaixe na grade do jogo foi MEDIDO por correlação, não chutado:
+// `python src/dev/alinhar-mapa-pintado.py --provas` escreve a escala, o giro e a origem de cada andar, e a prova visual.
+// Com ele ligado, o que se vê é exatamente o que o Foundry entrega: mapa pintado embaixo, as paredes e as fichas do jogo em cima.
 
 import { Battlefield, ARESTA } from '../core/grid.js';
 import { Encounter } from '../rules/combat.js';
@@ -17,6 +23,7 @@ import { montarCampo } from '../game/campo.js';
 import { Board, SUPERFICIE } from '../view/board.js';
 import { makePortrait } from '../art/sheet.js';
 import { sorteio } from '../art/chao.js';
+import { PINTADOS, PASTA_PINTADOS } from './topo-pintados.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
 
@@ -26,17 +33,19 @@ const canvas = $('tela');
 const ctx = canvas.getContext('2d');
 
 const MAPAS = [
-  ['casaDaMortePorao2', 'Casa da Morte, masmorra 2 (a câmara do ritual)'],
-  ['casaDaMortePorao1', 'Casa da Morte, masmorra 1'],
-  ['casaDaMorte1', 'Casa da Morte, 1º andar'],
-  ['casaDaMorte3', 'Casa da Morte, 3º andar'],
+  ['casaDaMorte1', 'Casa da Morte, 1º andar ✦'],
+  ['casaDaMorte2', 'Casa da Morte, 2º andar ✦'],
+  ['casaDaMorte3', 'Casa da Morte, 3º andar ✦'],
+  ['casaDaMorte4', 'Casa da Morte, sótão ✦'],
+  ['casaDaMortePorao1', 'Casa da Morte, masmorra 1 ✦'],
+  ['casaDaMortePorao2', 'Casa da Morte, masmorra 2, a câmara do ritual ✦'],
   ['mansao', 'Mansão Tresendar'],
   ['castelo', 'Castelo Dentefino'],
   ['rua', 'Rua de Phandalin'],
   ['emboscada', 'Emboscada na estrada'],
 ];
 
-const sel = { variante: 'casaDaMortePorao2', topo: true, grade: true, moveis: true, arestas: false, celula: 70 };
+const sel = { variante: 'casaDaMorte1', topo: true, grade: true, moveis: true, arestas: false, pintado: true, centro: true, celula: 70 };
 let cena = null;          // { mapa, field, enc, criaturas }
 let board = null;         // o tabuleiro isométrico, criado só quando se pede
 let telaIso = null;
@@ -46,12 +55,85 @@ imgAtlas.src = urlAtlas;
 let atlasPronto = imgAtlas.complete;
 imgAtlas.addEventListener('load', () => { atlasPronto = true; desenhar(); }, { once: true });
 
+/** As casas de DENTRO da planta: as que uma inundação vinda da borda não alcança, barrada por parede, porta ou rocha. */
+function dentroDaPlanta(field) {
+  const fora = new Uint8Array(field.w * field.h);
+  const pilha = [];
+  const por = (x, y) => {
+    if (x < 0 || y < 0 || x >= field.w || y >= field.h || fora[y * field.w + x] || field.blocksMove(x, y)) return;
+    fora[y * field.w + x] = 1;
+    pilha.push([x, y]);
+  };
+  for (let x = 0; x < field.w; x++) { por(x, 0); por(x, field.h - 1); }
+  for (let y = 0; y < field.h; y++) { por(0, y); por(field.w - 1, y); }
+  while (pilha.length) {
+    const [x, y] = pilha.pop();
+    const i = y * field.w + x;
+    if (!field.paredeN[i]) por(x, y - 1);
+    if (y + 1 < field.h && !field.paredeN[i + field.w]) por(x, y + 1);
+    if (!field.paredeO[i]) por(x - 1, y);
+    if (x + 1 < field.w && !field.paredeO[i + 1]) por(x + 1, y);
+  }
+  const dentro = [];
+  for (let y = 0; y < field.h; y++) {
+    for (let x = 0; x < field.w; x++) if (!fora[y * field.w + x] && !field.blocksMove(x, y)) dentro.push({ x, y });
+  }
+  return dentro;
+}
+
+/** As casas livres mais perto do meio da planta. O grupo começa fora da casa, e aí não daria para ver as fichas na pintura. */
+function aoCentro(field, quantos) {
+  const livres = dentroDaPlanta(field);
+  if (!livres.length) return [{ x: 1, y: 1 }];
+  const mx = livres.reduce((s, p) => s + p.x, 0) / livres.length;
+  const my = livres.reduce((s, p) => s + p.y, 0) / livres.length;
+  livres.sort((a, b) => ((a.x - mx) ** 2 + (a.y - my) ** 2) - ((b.x - mx) ** 2 + (b.y - my) ** 2));
+  return livres.slice(0, quantos);
+}
+
+// ------------------------------------------------------------------------------- o mapa pintado de verdade ---
+const pintadas = new Map();
+/** Correcao manual do encaixe, por cena: as setas e o PgUp/PgDn mexem aqui, e o rodape mostra o numero para copiar. */
+const ajuste = {};
+/** A imagem pintada da cena, se houver. Devolve `null` enquanto carrega ou se não existir. */
+function pintado(variante) {
+  const a = PINTADOS[variante];
+  if (!a) return null;
+  if (!pintadas.has(variante)) {
+    const img = new Image();
+    img.addEventListener('load', () => desenhar(), { once: true });
+    img.addEventListener('error', () => { img.falhou = true; desenhar(); }, { once: true });
+    img.src = `${PASTA_PINTADOS}${a.arquivo}`;
+    pintadas.set(variante, img);
+  }
+  const img = pintadas.get(variante);
+  return img.complete && img.naturalWidth ? img : null;
+}
+
+/** Deita a imagem pintada na grade: `escala` px da imagem por casa, origem na casa (0,0), com o giro medido. */
+function pintarMapaPintado(C) {
+  const img = pintado(sel.variante);
+  if (!img) return false;
+  const a = { ...PINTADOS[sel.variante], ...(ajuste[sel.variante] ?? {}) };
+  const k = C / a.escala;
+  const iw = img.naturalWidth * k;
+  const ih = img.naturalHeight * k;
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.translate(-a.x0 * k, -a.y0 * k);
+  ctx.rotate((a.giro * Math.PI) / 180);
+  const canto = { 0: [0, 0], 90: [0, -ih], 180: [-iw, -ih], 270: [-iw, 0] }[a.giro] ?? [0, 0];
+  ctx.drawImage(img, canto[0], canto[1], iw, ih);
+  ctx.restore();
+  return true;
+}
+
 // ------------------------------------------------------------------------------------------------- a cena ---
 function montar() {
   const mapa = mapaDo(sel.variante);
   const field = montarCampo(mapa);
   const party = makeParty({ nivel: 2 });
-  const lugares = mapa.grupo?.length ? mapa.grupo : [{ x: 1, y: 1 }];
+  const lugares = sel.centro ? aoCentro(field, party.length) : (mapa.grupo?.length ? mapa.grupo : [{ x: 1, y: 1 }]);
   party.forEach((c, i) => { c.pos = { ...(lugares[i] ?? lugares[0]) }; c.facingVec = { ...(mapa.olhar ?? { dx: 0, dy: 1 }) }; });
   const foes = buildFoes(sel.variante);
   const enc = new Encounter({ battlefield: field, party, foes, rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
@@ -59,7 +141,16 @@ function montar() {
   cena = { mapa, field, enc, criaturas: [...party, ...foes] };
   board?.disposeCamera();
   board = null;
-  $('rodape').textContent = `${mapa.terreno[0].length} x ${mapa.terreno.length} casas · ${cena.criaturas.length} criaturas · chão e móveis são provisórios (ver o cabeçalho de src/dev/topo.js)`;
+  rodape();
+}
+
+function rodape() {
+  const m = cena.mapa;
+  const a = PINTADOS[sel.variante] ? { ...PINTADOS[sel.variante], ...(ajuste[sel.variante] ?? {}) } : null;
+  const encaixe = a
+    ? `mapa pintado: giro ${a.giro}°, ${a.escala.toFixed(1)} px/casa, origem (${a.x0.toFixed(0)}, ${a.y0.toFixed(0)}) — setas movem, PgUp/PgDn muda a escala`
+    : 'sem mapa pintado para esta cena: chão e móveis são provisórios (ver o cabeçalho de src/dev/topo.js)';
+  $('rodape').textContent = `${m.terreno[0].length} x ${m.terreno.length} casas · ${cena.criaturas.length} criaturas · ${encaixe}`;
 }
 
 // ------------------------------------------------------------------------------------------- visão de cima ---
@@ -223,10 +314,14 @@ function desenhar() {
   canvas.width = field.w * C;
   canvas.height = field.h * C;
   ctx.imageSmoothingEnabled = false;
-  pintarChao(C);
+  const comPintura = sel.pintado && pintarMapaPintado(C);
+  if (!comPintura) {
+    pintarChao(C);
+    if (sel.moveis) pintarMoveis(C);
+  }
   if (sel.grade) pintarGrade(C);
-  if (sel.moveis) pintarMoveis(C);
-  pintarParedes(C);
+  // sobre o mapa pintado as paredes não se desenham: elas já estão pintadas. Só aparecem no modo do editor do Foundry.
+  if (!comPintura || sel.arestas) pintarParedes(C);
   pintarCriaturas(C);
 }
 
@@ -269,9 +364,28 @@ $('modo').addEventListener('click', () => {
   $('modo').classList.toggle('on', sel.topo);
   iso(!sel.topo);
 });
-for (const [id, campo] of [['grade', 'grade'], ['moveis', 'moveis'], ['arestas', 'arestas']]) {
-  $(id).addEventListener('change', (e) => { sel[campo] = e.target.checked; desenhar(); });
+for (const [id, campo] of [['grade', 'grade'], ['moveis', 'moveis'], ['arestas', 'arestas'], ['pintado', 'pintado'], ['centro', 'centro']]) {
+  $(id).addEventListener('change', (e) => {
+    sel[campo] = e.target.checked;
+    if (campo === 'centro') montar();
+    desenhar();
+  });
 }
+// Afinar o encaixe do mapa pintado a olho, quando a medida automática deixar um resto.
+window.addEventListener('keydown', (e) => {
+  const base = PINTADOS[sel.variante];
+  if (!base || !sel.topo || !sel.pintado) return;
+  const a = (ajuste[sel.variante] ??= { x0: base.x0, y0: base.y0, escala: base.escala });
+  const passo = e.shiftKey ? 10 : 1;
+  const movimento = { ArrowLeft: ['x0', -passo], ArrowRight: ['x0', passo], ArrowUp: ['y0', -passo], ArrowDown: ['y0', passo],
+    PageUp: ['escala', passo * 0.25], PageDown: ['escala', -passo * 0.25] }[e.key];
+  if (!movimento) return;
+  e.preventDefault();
+  a[movimento[0]] += movimento[1];
+  rodape();
+  desenhar();
+});
+
 $('mais').addEventListener('click', () => { sel.celula = Math.min(140, sel.celula + 14); desenhar(); });
 $('menos').addEventListener('click', () => { sel.celula = Math.max(28, sel.celula - 14); desenhar(); });
 
