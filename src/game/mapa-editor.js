@@ -64,6 +64,68 @@ export function pintarPiso(m, x, y, glifo) {
   return trocar(m.terreno, x, y, glifo);
 }
 
+/**
+ * PINTAR UMA ÁREA, e não casa a casa. É o que o Foundry chama de Region e o Roll20 resolve com o polígono da
+ * camada de iluminação: marcar de uma vez a pegada inteira de um prédio, de um lago, de um bosque.
+ *
+ * `retangulo` arrasta uma caixa; `poligono` fecha uma forma qualquer; `balde` enche a mancha contígua que já
+ * tem o mesmo glifo (a estrada inteira, o telhado inteiro). Os três devolvem quantas casas mudaram.
+ */
+export function pintarRetangulo(m, a, b, glifo) {
+  let n = 0;
+  for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++) {
+    for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) if (pintarPiso(m, x, y, glifo)) n += 1;
+  }
+  return n;
+}
+
+/** A casa está dentro do polígono? Conta cruzamentos na horizontal que passa pelo CENTRO dela (regra par-ímpar). */
+export function dentroDoPoligono(pontos, x, y) {
+  const px = x + 0.5;
+  const py = y + 0.5;
+  let dentroDele = false;
+  for (let i = 0, j = pontos.length - 1; i < pontos.length; j = i++) {
+    const [xi, yi] = pontos[i];
+    const [xj, yj] = pontos[j];
+    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) dentroDele = !dentroDele;
+  }
+  return dentroDele;
+}
+
+export function pintarPoligono(m, pontos, glifo) {
+  if (!pontos || pontos.length < 3) return 0;
+  const xs = pontos.map(([x]) => x);
+  const ys = pontos.map(([, y]) => y);
+  let n = 0;
+  for (let y = Math.max(0, Math.floor(Math.min(...ys))); y <= Math.min(m.terreno.length - 1, Math.ceil(Math.max(...ys))); y++) {
+    for (let x = Math.max(0, Math.floor(Math.min(...xs))); x <= Math.min(m.terreno[0].length - 1, Math.ceil(Math.max(...xs))); x++) {
+      if (dentroDoPoligono(pontos, x, y) && pintarPiso(m, x, y, glifo)) n += 1;
+    }
+  }
+  return n;
+}
+
+export function balde(m, x, y, glifo) {
+  if (!dentro(m, x, y)) return 0;
+  const alvo = m.terreno[y][x];
+  if (alvo === glifo) return 0;
+  const fila = [[x, y]];
+  const vistos = new Set([`${x},${y}`]);
+  let n = 0;
+  while (fila.length) {
+    const [cx, cy] = fila.pop();
+    if (m.terreno[cy][cx] !== alvo) continue;
+    if (pintarPiso(m, cx, cy, glifo)) n += 1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      const k = `${nx},${ny}`;
+      if (dentro(m, nx, ny) && !vistos.has(k) && m.terreno[ny][nx] === alvo) { vistos.add(k); fila.push([nx, ny]); }
+    }
+  }
+  return n;
+}
+
 // ---------------------------------------------------------------------------------------- paredes e portas ---
 
 /**
@@ -83,6 +145,27 @@ export const ESTILOS_DE_ARESTA = {
   // `MANSAO.secretas` dentro dela); agora mora no mapa, que é onde se desenha e onde a conferência a lê.
   secreta: { rotulo: 'Passagem secreta', car: '#', secreta: true },
 };
+
+/**
+ * PAREDE EM VOLTA DE UMA CAIXA, de uma arrastada só — o que no Foundry vem de módulo (Indy Walls, Wayfinder) e
+ * no core só se faz segmento por segmento. Fecha o contorno do retângulo entre as duas casas, inclusive.
+ */
+export function paredesDoRetangulo(m, a, b, estilo) {
+  const x1 = Math.min(a.x, b.x);
+  const x2 = Math.max(a.x, b.x);
+  const y1 = Math.min(a.y, b.y);
+  const y2 = Math.max(a.y, b.y);
+  let n = 0;
+  for (let x = x1; x <= x2; x++) {
+    if (pintarAresta(m, x, y1, 'N', estilo)) n += 1;          // o lado de cima
+    if (pintarAresta(m, x, y2 + 1, 'N', estilo)) n += 1;      // o de baixo é o norte da fileira seguinte
+  }
+  for (let y = y1; y <= y2; y++) {
+    if (pintarAresta(m, x1, y, 'O', estilo)) n += 1;          // o lado esquerdo
+    if (pintarAresta(m, x2 + 1, y, 'O', estilo)) n += 1;      // o direito é o oeste da coluna seguinte
+  }
+  return n;
+}
 
 /** As duas casas que a aresta separa: a de cima/esquerda primeiro. */
 export function casasDaAresta(x, y, lado) {

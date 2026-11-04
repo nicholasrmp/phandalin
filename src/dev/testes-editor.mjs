@@ -522,6 +522,62 @@ teste('o que o editor marca sobrevive ao vai e volta de JSON', () => {
   assert.equal(volta.interativos[0].oculto, true);
 });
 
+// ------------------------------------------------------ pintar ÁREA, e não casa a casa ---
+
+teste('retângulo: enche a caixa inteira e para na borda do mapa', () => {
+  const m = M.novoMapa(8, 8);
+  const n = M.pintarRetangulo(m, { x: 2, y: 2 }, { x: 4, y: 5 }, 'R');
+  assert.equal(n, 12, '3 colunas por 4 fileiras');
+  assert.equal(m.terreno[2][2], 'R');
+  assert.equal(m.terreno[5][4], 'R');
+  assert.equal(m.terreno[2][5], 'U', 'não passou da caixa');
+  // arrastar ao contrário dá o mesmo retângulo
+  const m2 = M.novoMapa(8, 8);
+  assert.equal(M.pintarRetangulo(m2, { x: 4, y: 5 }, { x: 2, y: 2 }, 'R'), 12);
+  assert.deepEqual(m2.terreno, m.terreno);
+});
+
+teste('polígono: enche o que está dentro e deixa o que está fora', () => {
+  const m = M.novoMapa(10, 10);
+  // um losango em volta de (5,5)
+  const n = M.pintarPoligono(m, [[5, 2], [8, 5], [5, 8], [2, 5]], 'R');
+  assert.equal(m.terreno[5][5], 'R', 'o centro está dentro');
+  assert.equal(m.terreno[2][2], 'U', 'o canto está fora');
+  assert.equal(n > 8 && n < 40, true, `encheu ${n} casas, uma quantidade plausível`);
+});
+
+teste('balde: enche a mancha contígua e não pula para a de trás da parede', () => {
+  const m = M.novoMapa(9, 5);
+  for (let y = 1; y < 4; y++) M.pintarPiso(m, 4, y, 'R');     // uma coluna de rocha divide o chão
+  const n = M.balde(m, 1, 2, ',');
+  assert.equal(m.terreno[2][1], ',', 'encheu o lado de cá');
+  assert.equal(m.terreno[2][6], 'U', 'não atravessou a rocha');
+  assert.equal(m.terreno[2][4], 'R', 'e não comeu a rocha');
+  assert.equal(n > 0, true);
+  assert.equal(M.balde(m, 1, 2, ','), 0, 'encher do mesmo glifo não faz nada');
+});
+
+teste('parede por retângulo: fecha o contorno e não risca o miolo', () => {
+  const m = M.novoMapa(8, 8);
+  M.paredesDoRetangulo(m, { x: 2, y: 2 }, { x: 4, y: 4 }, 'parede');
+  assert.equal(M.estiloDaAresta(m, 3, 2, 'N'), 'parede', 'o lado de cima');
+  assert.equal(M.estiloDaAresta(m, 3, 5, 'N'), 'parede', 'o de baixo');
+  assert.equal(M.estiloDaAresta(m, 2, 3, 'O'), 'parede', 'o esquerdo');
+  assert.equal(M.estiloDaAresta(m, 5, 3, 'O'), 'parede', 'o direito');
+  assert.equal(M.estiloDaAresta(m, 3, 3, 'N'), 'nada', 'o miolo fica livre');
+  assert.equal(M.estiloDaAresta(m, 3, 4, 'O'), 'nada', 'o miolo fica livre');
+});
+
+teste('área bloqueada: a casa marcada não se atravessa, e sem aresta de parede nenhuma', () => {
+  const m = M.novoMapa(10, 10);
+  M.pintarRetangulo(m, { x: 3, y: 3 }, { x: 6, y: 6 }, 'R');
+  const campo = montarCampo(m);
+  assert.equal(campo.blocksMove(4, 4), true, 'não se pisa dentro');
+  assert.equal(campo.blocksMove(2, 4), false, 'fora, sim');
+  const arestas = (m.paredes?.n ?? []).join('') + (m.paredes?.o ?? []).join('');
+  assert.equal(/[#+/J]/.test(arestas), false, 'e não criou parede nenhuma');
+});
+
 for (const rodar of fila) await rodar();
 
 console.log(`\n${total - falhas}/${total} testes passaram`);

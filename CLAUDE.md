@@ -134,9 +134,15 @@ Mansão, o segredo da prisão, as lajes das criptas) e o que é de propósito (o
 grade, a escada que se pega pelo botão), então 0 achados quer dizer 0 mesmo; `--tudo` solta os avisos fracos.
 `src/dev/testes-paredes.mjs` prova que ele acusa cada defeito. Para corrigir, `/editor.html` abre qualquer uma
 das vinte cenas e a caixinha `x,y` do alto leva a casa que o parecer apontou para o meio da tela.
-Para MARCAR em cima de um mapa pintado: `/editor.html` abre a cena (a lista do alto), carrega o desenho dela
-sozinho e deixa decalcar parede, porta, arco e grade por aresta (ferramenta 2) ou contorno à mão (ferramenta 9);
-o checkbox "Pintar o chão do jogo" desliga a camada do jogo e deixa o desenho limpo. "Exportar JSON" baixa o
+Para MARCAR em cima de um mapa pintado: ferramenta 5 (Terreno) pinta a camada de REGRA — e por ÁREA, não casa a
+casa: pincel, retângulo arrastado, polígono (clica os cantos, fecha no primeiro ou com Enter) e balde. É assim que
+se bloqueia a pegada de um prédio **sem criar parede nenhuma**: escolha um glifo que barra passo (Casa, Taverna,
+Rocha, Parede inteira) e arraste por cima dele. Ferramenta 2 desenha parede, porta, arco, grade, seteira e
+passagem secreta por aresta, ou o contorno de uma caixa de uma arrastada (modo Retângulo); a 3 traça parede livre;
+a 4 acende luz; a 9 marca objeto interagível.
+
+`/editor.html` abre a cena (a lista do alto) e carrega o desenho dela sozinho; o checkbox "Pintar o chão do jogo"
+desliga a camada do jogo e deixa o desenho limpo. "Exportar JSON" baixa o
 arquivo com o nome da cena, e
 `node --import ./src/dev/cena-node/register.mjs src/dev/aplicar-editor.mjs <arquivo.json>` imprime só o que
 mudou, já no formato de colar em `game/encounter.js`.

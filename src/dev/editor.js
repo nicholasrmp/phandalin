@@ -40,7 +40,7 @@ const MAPAS_DO_JOGO = [
 // (parquet, tapete, palha, ossos, cacos, mancha...) que não se veem mais sob a pintura e não mudam regra nenhuma.
 const PISOS = [
   ['Livre', [[':', 'Estrada'], [',', 'Grama'], ['_', 'Caverna'], ['L', 'Laje'], ['U', 'Assoalho'], ['Z', 'Chão de fora']]],
-  ['Barra passo e visão', [['R', 'Rocha'], ['#', 'Parede inteira'], ['T', 'Mata'], ['M', 'Alvenaria']]],
+  ['Barra passo e visão', [['R', 'Rocha'], ['#', 'Parede inteira'], ['T', 'Mata'], ['M', 'Alvenaria'], ['H', 'Casa'], ['Y', 'Taverna']]],
   ['Cobertura: barra passo, não visão', [['b', 'Arbusto'], ['r', 'Pedra'], ['u', 'Barris'], ['A', 'Estalagmite']]],
   ['Difícil: custa o dobro', [['%', 'Espinheiro'], ['w', 'Água rasa'], ['x', 'Entulho']]],
   ['Não se anda', [['W', 'Água funda'], ['O', 'Fosso']]],
@@ -79,6 +79,7 @@ let sujo = true;
 const sel = {
   ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
   interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false },
+  modoPiso: 'pincel', modoAresta: 'aresta',
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
   tracoModo: 'desenhar',
@@ -92,6 +93,10 @@ imgAtlas.src = urlAtlas;
 let imgFundo = null;      // a imagem escolhida; vive só no navegador, nunca no mapa
 let arrasto = null;       // o retângulo que está sendo arrastado para calibrar, em casas
 let tracando = null;      // os pontos da parede livre que está sendo desenhada, em casas
+// AS FERRAMENTAS DE ÁREA. Marcar a pegada de um prédio casa a casa é o que o Foundry resolve com Region e o
+// Roll20 com o polígono da camada de luz: aqui são o retângulo arrastado, o polígono clicado e o balde.
+let caixa = null;         // { a, b } em casas inteiras, enquanto se arrasta um retângulo (terreno ou parede)
+let poligono = null;      // os cantos clicados do polígono, em casas com fração
 
 
 const instantaneo = () => JSON.stringify(mapa);
@@ -224,6 +229,34 @@ function marcarTopo(ctx, C) {
     ctx.strokeRect(hoverTile.x * C + 1, hoverTile.y * C + 1, C - 2, C - 2);
     ctx.restore();
   }
+  // A PRÉVIA DA ÁREA: ver antes de soltar é a diferença entre arrastar com confiança e arrastar e desfazer.
+  if (caixa) {
+    const x1 = Math.min(caixa.a.x, caixa.b.x);
+    const x2 = Math.max(caixa.a.x, caixa.b.x);
+    const y1 = Math.min(caixa.a.y, caixa.b.y);
+    const y2 = Math.max(caixa.a.y, caixa.b.y);
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,216,104,.18)';
+    ctx.fillRect(x1 * C, y1 * C, (x2 - x1 + 1) * C, (y2 - y1 + 1) * C);
+    ctx.strokeStyle = '#ffd868';
+    ctx.lineWidth = Math.max(2, C * 0.06);
+    ctx.strokeRect(x1 * C, y1 * C, (x2 - x1 + 1) * C, (y2 - y1 + 1) * C);
+    ctx.restore();
+    $('estado').textContent = `${x2 - x1 + 1} x ${y2 - y1 + 1} casas`;
+  }
+  if (poligono?.length) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,216,104,.16)';
+    ctx.strokeStyle = '#ffd868';
+    ctx.lineWidth = Math.max(2, C * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(poligono[0][0] * C, poligono[0][1] * C);
+    for (const [x, y] of poligono.slice(1)) ctx.lineTo(x * C, y * C);
+    if (poligono.length > 2) { ctx.closePath(); ctx.fill(); }
+    ctx.stroke();
+    for (const [x, y] of poligono) { ctx.beginPath(); ctx.arc(x * C, y * C, Math.max(3, C * 0.08), 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
   if (tracando?.length) {
     ctx.save();
     ctx.strokeStyle = '#ffd868'; ctx.lineWidth = Math.max(3, C * 0.09);
@@ -340,6 +373,23 @@ function aoApertar(e) {
     e.preventDefault();
     return;
   }
+  // terreno e parede por ÁREA: retângulo arrastado, polígono clicado, balde de uma vez
+  const porArea = (sel.ferramenta === 'piso' && sel.modoPiso !== 'pincel') || (sel.ferramenta === 'aresta' && sel.modoAresta === 'retangulo');
+  if (porArea) {
+    const t = casaDe(e);
+    if (!t) return;
+    const modo = sel.ferramenta === 'piso' ? sel.modoPiso : 'retangulo';
+    if (modo === 'balde') { ponto(); if (!aplicar(M.balde(mapa, t.x, t.y, sel.piso) > 0)) { desfazer.pop(); botoes(); } }
+    else if (modo === 'poligono') {
+      const c = casaFracionada(e);
+      poligono = poligono ?? [];
+      // fechar: clicar de novo bem perto do primeiro canto
+      if (poligono.length >= 3 && Math.hypot(c.x - poligono[0][0], c.y - poligono[0][1]) < 0.6) fecharPoligono();
+      else poligono.push([c.x, c.y]);
+    } else caixa = { a: t, b: t };
+    e.preventDefault();
+    return;
+  }
   agir(e, true);
 }
 canvas.addEventListener('mousedown', aoApertar);
@@ -357,6 +407,7 @@ addEventListener('mousemove', (e) => {
     if (Math.hypot(c.x - ultimo.x, c.y - ultimo.y) > 0.18) tracando.push(c);
     return;
   }
+  if (caixa) { const t = casaDe(e); if (t) caixa = { ...caixa, b: t }; return; }
   if (arrasto) { arrasto = { ...arrasto, b: casaFracionada(e) }; return; }
   if (e.target !== canvas) return;
   if ((e.buttons & 1) && sel.ferramenta !== 'fundo') agir(e, false);
@@ -366,7 +417,25 @@ addEventListener('mousemove', (e) => {
     estado();
   }
 });
+/** Fecha o polígono que está sendo clicado e pinta o que está dentro dele. */
+function fecharPoligono() {
+  const pts = poligono;
+  poligono = null;
+  if (!pts || pts.length < 3) return;
+  ponto();
+  if (!aplicar(M.pintarPoligono(mapa, pts, sel.piso) > 0)) { desfazer.pop(); botoes(); }
+}
+
 addEventListener('mouseup', () => {
+  if (caixa) {
+    const { a, b } = caixa;
+    caixa = null;
+    ponto();
+    const n = sel.ferramenta === 'piso'
+      ? M.pintarRetangulo(mapa, a, b, sel.piso)
+      : M.paredesDoRetangulo(mapa, a, b, sel.estilo);
+    if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
+  }
   if (tracando) {
     const pontos = tracando;
     tracando = null;
@@ -397,6 +466,10 @@ addEventListener('keydown', (e) => {
   const ctrl = e.ctrlKey || e.metaKey;
   if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); volta(e.shiftKey ? refazer : desfazer, e.shiftKey ? desfazer : refazer); return; }
   if (ctrl && e.key.toLowerCase() === 'y') { e.preventDefault(); volta(refazer, desfazer); return; }
+  if (poligono?.length) {
+    if (e.key === 'Enter') { fecharPoligono(); return; }
+    if (e.key === 'Escape') { poligono = null; return; }
+  }
   const f = FERRAMENTAS.find(([, , k]) => k === e.key);
   if (f) escolher(f[0]);
 });
@@ -458,6 +531,16 @@ function montarPainel() {
       <div class="grade">${lista.map(([g, n]) => `<button data-piso="${g}" title="${n}">${n}</button>`).join('')}</div>`).join('')}
       <p class="dica">É a camada de REGRA, não a de aparência: com mapa pintado por baixo, quem se vê é o desenho,
       e o glifo só diz se a casa barra passo, barra visão, custa o dobro ou é livre.</p>
+      <h2>Como pintar</h2>
+      <div class="lista">
+        <button data-modopiso="pincel">Pincel (casa a casa)</button>
+        <button data-modopiso="retangulo">Retângulo (arrastar)</button>
+        <button data-modopiso="poligono">Polígono (clicar os cantos)</button>
+        <button data-modopiso="balde">Balde (encher a mancha)</button>
+      </div>
+      <p class="dica">O POLÍGONO fecha clicando de novo no primeiro canto (ou com <b>Enter</b>); <b>Esc</b> desiste.
+      É assim que se marca a pegada de um prédio inteiro sem criar parede nenhuma: pinte a área com um glifo que
+      barra passo e pronto.</p>
     </div>
 
     <div data-secao="aresta">
@@ -466,6 +549,13 @@ function montarPainel() {
       <p class="dica">Passe o mouse perto da borda de uma casa: a aresta acende. Clique (ou arraste ao longo da parede) para pôr o estilo. Clicar de novo no mesmo estilo apaga.</p>
       <p class="dica"><b>Passagem secreta</b> é parede para quem joga: fica igual a uma parede no tabuleiro e entra
       em <code>secretas</code>, que é o que o roteiro da cena abre quando alguém a acha.</p>
+      <h2>Como desenhar</h2>
+      <div class="lista">
+        <button data-modoaresta="aresta">Aresta a aresta</button>
+        <button data-modoaresta="retangulo">Retângulo (arrastar)</button>
+      </div>
+      <p class="dica">O retângulo fecha o contorno de uma caixa de uma arrastada só — no Foundry isso vem de
+      módulo (Indy Walls, Wayfinder), no núcleo é segmento por segmento.</p>
     </div>
 
     <div data-secao="luz">
@@ -633,6 +723,14 @@ function montarPainel() {
     sel.luz = b.dataset.luz;
     L.querySelectorAll('[data-luz]').forEach((x) => x.classList.toggle('on', x === b));
   }));
+  for (const [attr, campo] of [['data-modopiso', 'modoPiso'], ['data-modoaresta', 'modoAresta']]) {
+    L.querySelectorAll(`[${attr}]`).forEach((b) => b.addEventListener('click', () => {
+      sel[campo] = b.getAttribute(attr);
+      poligono = null;
+      L.querySelectorAll(`[${attr}]`).forEach((x) => x.classList.toggle('on', x === b));
+    }));
+    L.querySelector(`[${attr}="${sel[campo]}"]`)?.classList.add('on');
+  }
   for (const [id, campo] of [['iId', 'id'], ['iRotulo', 'rotulo'], ['iTexto', 'texto']]) {
     $(id).addEventListener('input', (e) => { sel.interativo[campo] = e.target.value; });
   }
