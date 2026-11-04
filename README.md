@@ -186,14 +186,14 @@ Mapa é texto. `src/main.js`:
 
 ### O editor de cenário
 
-`/editor.html` (`npm run dev`, depois abra o endereço) monta um mapa sobre o próprio tabuleiro do jogo: pinta piso, põe parede, porta, arco e
+`/editor.html` (`npm run dev`, depois abra o endereço) monta um mapa **visto de cima**: pinta piso, põe parede, porta, arco e
 grade por aresta, coloca objetos do atlas (inclusive peças de várias casas), pinta a altura do terreno, define salas e os quatro pontos de
 partida, e cresce ou encolhe o mapa por qualquer borda. Desfaz e refaz (Ctrl+Z, Ctrl+Y), guarda sozinho no navegador e exporta e importa JSON.
 Abre qualquer mapa do jogo para retocar. A caixa "Exploração livre" faz o jogo abrir o mapa sem iniciativa e sem inimigos; desligada, abre em
 combate por turnos. "Testar no jogo" abre `?encontro=editor`. A lógica está em `src/game/mapa-editor.js` (testes: `src/dev/testes-editor.mjs`).
 
-**Decalcar um mapa pintado, como no Roll20.** O botão "Vista" troca o tabuleiro isométrico por uma **vista de cima**
-(`src/dev/vista-topo.js`, a mesma do protótipo `/topo.html`), que é onde um battlemap pintado se encaixa. Na ferramenta 8, "Mapa de fundo":
+**Decalcar um mapa pintado, como no Roll20.** A vista é a de cima (`src/dev/vista-topo.js`), que é onde um battlemap pintado se
+encaixa — o isométrico saiu do editor. Na ferramenta 8, "Mapa de fundo":
 carregue a imagem, **arraste um retângulo por cima de N x M quadrados desenhados nela** e diga quantos são — daí saem a escala e a fase da
 grade. Depois é só desenhar por cima o que é parede, porta e arco (ferramenta 2), e o resto do editor (salas, altura, partida) funciona igual.
 Há ainda giro de 90°, opacidade, arrastar a imagem e "crescer o mapa até cobrir a imagem".

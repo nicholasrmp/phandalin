@@ -1,18 +1,14 @@
-// O EDITOR DE CENÁRIO (`/editor.html`). Desenha o mapa com o TABULEIRO DE VERDADE (`Board`), então o que se vê é o que o jogo desenha, com a
-// mesma luz, a mesma pedra e a mesma câmera. A lógica das edições mora em `game/mapa-editor.js` (testável em Node); aqui é só tela e mouse.
+// O EDITOR DE CENÁRIO (`/editor.html`), VISTO DE CIMA. Desenha com `vista-topo.js` — a mesma vista que o jogo passa a usar. O isométrico
+// saiu daqui: mapa se desenha de cima, como no Roll20 e no Foundry. A lógica das edições mora em `game/mapa-editor.js` (testável em Node);
+// aqui é só tela e mouse.
 //
-// Ferramentas: piso, parede e portas (por aresta), objetos de cenário, salas, ponto de partida e borracha de objeto. Cada mudança vira um
-// ponto de desfazer, é guardada no navegador (`localStorage`) e o botão "Testar no jogo" abre o jogo naquele mapa (`?encontro=editor`).
+// Ferramentas: piso, parede e portas (por aresta), objetos de cenário, salas, ponto de partida, altura e o mapa de fundo. Cada mudança vira
+// um ponto de desfazer, é guardada no navegador (`localStorage`) e o botão "Testar no jogo" abre o jogo naquele mapa (`?encontro=editor`).
 //
-// Duas VISTAS. A isométrica é o tabuleiro do jogo. A DE CIMA (`vista-topo.js`) existe para decalcar um mapa pintado, como no Roll20 e no
-// Foundry: carrega-se a imagem, enquadra-se a grade nela (arrastando um retângulo por cima de N x M quadrados desenhados) e desenha-se em
-// cima o que é parede, porta e arco. A imagem NÃO entra no mapa — só o enquadramento (`mapa.fundo`) entra; a figura fica no navegador
-// (IndexedDB), porque costuma ser arte de terceiros que não pode ser publicada.
+// O MAPA DE FUNDO é o alinhamento do Roll20: carrega-se a imagem pintada, enquadra-se a grade nela (arrastando um retângulo por cima de
+// N x M quadrados desenhados) e desenha-se em cima o que é parede, porta e arco. A imagem NÃO entra no mapa — só o enquadramento
+// (`mapa.fundo`) entra; a figura fica no navegador (IndexedDB), porque costuma ser arte de terceiros que não pode ser publicada.
 
-import { Board, TW, TH, LIFT } from '../view/board.js';
-import { Encounter } from '../rules/combat.js';
-import { makeParty } from '../rules/party.js';
-import { makeRng } from '../core/rng.js';
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import * as M from '../game/mapa-editor.js';
@@ -47,25 +43,19 @@ const PEGADAS = [[1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [1, 3], [3, 2], [2, 3]]
 let mapa = M.ler() ?? M.limpar(mapaDo('casaDaMorte4'));
 let desfazer = [];
 let refazer = [];
-let board = null;
 let sujo = true;
 const sel = {
   ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, pega: [1, 1], altura: 1, sala: 'sala1', inicio: 0,
-  // a vista de cima
-  vista: 'iso', celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
+  celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
 };
 let hoverEdge = null;
 let hoverTile = null;
 let pressionado = null;   // { tipo, chave }
-let campo = null;         // o Battlefield, que a vista de cima desenha direto
+let campo = null;         // o Battlefield, que a vista desenha direto
 let imgFundo = null;      // a imagem escolhida; vive só no navegador, nunca no mapa
 let arrasto = null;       // o retângulo que está sendo arrastado para calibrar, em casas
 
-const telaTopo = document.createElement('canvas');
-telaTopo.hidden = true;
-area.append(telaTopo);
-const telaAtiva = () => (sel.vista === 'topo' ? telaTopo : canvas);
 
 const instantaneo = () => JSON.stringify(mapa);
 function aplicar(mudou) {
@@ -97,37 +87,24 @@ function volta(de, para) {
   fundoNoPainel();
 }
 
-// ------------------------------------------------------------------------------------------------ tabuleiro ---
+// -------------------------------------------------------------------------------------------- vista de cima ---
 function reconstruir() {
-  const x = area.scrollLeft; const y = area.scrollTop;
   campo = montarCampo(mapa);
   $('tamanho').textContent = `${mapa.terreno[0].length} x ${mapa.terreno.length} casas`;
-  if (sel.vista === 'topo') { sujo = false; return; }
-  board?.disposeCamera();
-  const field = campo;
-  const party = makeParty({ nivel: 2 });
-  const lugares = mapa.grupo?.length ? mapa.grupo : [{ x: 1, y: 1 }];
-  party.forEach((c, i) => { c.pos = { ...(lugares[i] ?? lugares[0]) }; c.facingVec = { ...(mapa.olhar ?? { dx: 0, dy: 1 }) }; });
-  const enc = new Encounter({ battlefield: field, party, foes: [], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
-  board = new Board(canvas, { encounter: enc, onTileClick: () => {}, onTileHover: () => {} });
-  board.verTudo = true;       // a casa aberta por inteiro: o editor não esconde sala nenhuma
-  board.soCenario = true;     // sem anel nem barra de vida
-  area.scrollLeft = x; area.scrollTop = y;
   sujo = false;
 }
 
-// -------------------------------------------------------------------------------------------- vista de cima ---
 /** Desenha o mapa visto de cima: a imagem de fundo embaixo, e por cima o que o jogo sabe — chão, grade, parede, móvel. */
 function desenharTopo() {
   const C = sel.celula;
-  if (telaTopo.width !== campo.w * C || telaTopo.height !== campo.h * C) {
-    telaTopo.width = campo.w * C;
-    telaTopo.height = campo.h * C;
+  if (canvas.width !== campo.w * C || canvas.height !== campo.h * C) {
+    canvas.width = campo.w * C;
+    canvas.height = campo.h * C;
   }
-  const ctx = telaTopo.getContext('2d');
-  ctx.clearRect(0, 0, telaTopo.width, telaTopo.height);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#0d0c11';
-  ctx.fillRect(0, 0, telaTopo.width, telaTopo.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   const comFundo = T.pintarFundo(ctx, imgFundo, mapa.fundo, C);
   if (sel.verChao) {
     ctx.save();
@@ -189,25 +166,10 @@ function marcarTopo(ctx, C) {
   }
 }
 
-/** Troca de vista. A de cima some com o tabuleiro isométrico e vice-versa. */
-function vista(qual) {
-  sel.vista = qual;
-  const topo = qual === 'topo';
-  telaTopo.hidden = !topo;
-  canvas.hidden = topo;
-  $('vista').textContent = topo ? 'Vista: de cima' : 'Vista: isométrica';
-  $('vista').classList.toggle('on', topo);
-  sujo = true;
-}
-
-let ultimo = 0;
-function quadro(t) {
-  const dt = Math.min(0.1, (t - ultimo) / 1000 || 0);
-  ultimo = t;
+function quadro() {
   try {
     if (sujo) reconstruir();
-    if (sel.vista === 'topo') desenharTopo();
-    else { board.render(dt); marcar(); }
+    desenharTopo();
   } catch (e) {
     console.error(e);
     $('estado').textContent = `Erro ao desenhar: ${e.message}`;
@@ -215,73 +177,10 @@ function quadro(t) {
   requestAnimationFrame(quadro);
 }
 
-/** O que o mouse aponta, por cima do quadro: o losango da casa, a aresta, ou o fantasma do ponto de partida. */
-function marcar() {
-  const ctx = canvas.getContext('2d');
-  ctx.save();
-  ctx.lineWidth = 3; ctx.lineCap = 'round';
-  if (sel.ferramenta === 'aresta' && hoverEdge) {
-    const { A, B } = segmento(hoverEdge);
-    ctx.strokeStyle = '#ffd868'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
-    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
-  }
-  if (sel.ferramenta === 'inicio' || sel.ferramenta === 'sala') {
-    // as casas de partida e a sala do cursor
-    ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
-    (mapa.grupo ?? []).forEach((p, i) => {
-      const c = board.center(p.x, p.y);
-      ctx.fillStyle = i === sel.inicio && sel.ferramenta === 'inicio' ? '#ffd868' : '#fff';
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
-      ctx.strokeText(String(i + 1), c.sx, c.sy - 18); ctx.fillText(String(i + 1), c.sx, c.sy - 18);
-    });
-  }
-  if (sel.ferramenta === 'sala') {
-    const cor = {};
-    ctx.globalAlpha = 0.28;
-    for (const [id, casas] of Object.entries(mapa.salas ?? {})) {
-      cor[id] ??= `hsl(${[...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 360} 80% 60%)`;
-      ctx.fillStyle = cor[id];
-      for (const c of casas) losango(ctx, c.x, c.y);
-    }
-  }
-  ctx.restore();
-}
-
-function losango(ctx, x, y) {
-  const { sx, sy } = board.iso(x, y);
-  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + TW / 2, sy + TH / 2); ctx.lineTo(sx, sy + TH); ctx.lineTo(sx - TW / 2, sy + TH / 2); ctx.closePath(); ctx.fill();
-}
-
 // ------------------------------------------------------------------------------------------------ pontaria ---
-const ARESTA_ALTURA = 3 * LIFT;
-function segmento({ x, y, lado }) {
-  const { sx, sy } = board.iso(x, y);
-  const A = { x: sx, y: sy };
-  const B = lado === 'N' ? { x: sx + TW / 2, y: sy + TH / 2 } : { x: sx - TW / 2, y: sy + TH / 2 };
-  return { A, B };
-}
-function distSeg(P, A, B) {
-  const dx = B.x - A.x; const dy = B.y - A.y;
-  const t = Math.max(0, Math.min(1, ((P.x - A.x) * dx + (P.y - A.y) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(P.x - (A.x + t * dx), P.y - (A.y + t * dy));
-}
-/** O ponto está no pano de parede (o retângulo da aresta até 3 níveis acima)? */
-function noPano(P, A, B) {
-  const q = [A, B, { x: B.x, y: B.y - ARESTA_ALTURA }, { x: A.x, y: A.y - ARESTA_ALTURA }];
-  let d = false;
-  for (let i = 0, j = q.length - 1; i < q.length; j = i++) {
-    if ((q[i].y > P.y) !== (q[j].y > P.y) && P.x < ((q[j].x - q[i].x) * (P.y - q[i].y)) / (q[j].y - q[i].y) + q[i].x) d = !d;
-  }
-  return d;
-}
-
 function pontoDe(e) {
-  if (sel.vista === 'topo') {
-    const r = telaTopo.getBoundingClientRect();
-    return { x: (e.clientX - r.left) * (telaTopo.width / r.width || 1), y: (e.clientY - r.top) * (telaTopo.height / r.height || 1) };
-  }
-  const { px, py } = board.pontoDoEvento(e);
-  return { x: px, y: py };
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (canvas.width / r.width || 1), y: (e.clientY - r.top) * (canvas.height / r.height || 1) };
 }
 /** O ponto do mouse em CASAS (com fração), que é como a calibração e o arrasto do fundo falam. */
 function casaFracionada(e) {
@@ -290,24 +189,13 @@ function casaFracionada(e) {
 }
 function casaDe(e) {
   const p = pontoDe(e);
-  const t = sel.vista === 'topo' ? T.casaNoPonto(campo, sel.celula, p.x, p.y) : board.casaNoPonto(p.x, p.y);
+  const t = T.casaNoPonto(campo, sel.celula, p.x, p.y);
   return t && M.dentro(mapa, t.x, t.y) ? t : null;
 }
 /** A aresta mais perto do ponteiro entre as quatro da casa apontada. */
 function arestaDe(e) {
   const P = pontoDe(e);
-  if (sel.vista === 'topo') return T.arestaNoPonto(mapa.terreno[0].length, mapa.terreno.length, sel.celula, P.x, P.y);
-  const t = board.casaNoPonto(P.x, P.y);
-  if (!t) return null;
-  let melhor = null;
-  for (const c of [{ x: t.x, y: t.y, lado: 'N' }, { x: t.x, y: t.y, lado: 'O' }, { x: t.x, y: t.y + 1, lado: 'N' }, { x: t.x + 1, y: t.y, lado: 'O' }]) {
-    if (!M.dentro(mapa, c.x, c.y) || (c.lado === 'N' && c.y === 0) || (c.lado === 'O' && c.x === 0)) continue;
-    const { A, B } = segmento(c);
-    const d = distSeg(P, A, B);
-    const nota = (noPano(P, A, B) ? 0 : 1000) + d;
-    if (!melhor || nota < melhor.nota) melhor = { ...c, nota };
-  }
-  return melhor && melhor.nota < 1000 + 22 ? melhor : null;
+  return T.arestaNoPonto(mapa.terreno[0].length, mapa.terreno.length, sel.celula, P.x, P.y);
 }
 
 // ------------------------------------------------------------------------------------------------ mouse ---
@@ -350,7 +238,7 @@ function aoApertar(e) {
   if (e.button === 1) { panorama = { x: e.clientX, y: e.clientY, l: area.scrollLeft, t: area.scrollTop }; e.preventDefault(); return; }
   if (e.button !== 0) return;
   pressionado = null;
-  if (sel.ferramenta === 'fundo' && sel.vista === 'topo') {
+  if (sel.ferramenta === 'fundo') {
     const c = casaFracionada(e);
     if (sel.fundoModo === 'mover') { ponto(); arrastandoFundo = c; } else { arrasto = { a: c, b: c }; }
     e.preventDefault();
@@ -359,7 +247,6 @@ function aoApertar(e) {
   agir(e, true);
 }
 canvas.addEventListener('mousedown', aoApertar);
-telaTopo.addEventListener('mousedown', aoApertar);
 
 addEventListener('mousemove', (e) => {
   if (panorama) { area.scrollLeft = panorama.l - (e.clientX - panorama.x); area.scrollTop = panorama.t - (e.clientY - panorama.y); return; }
@@ -369,8 +256,7 @@ addEventListener('mousemove', (e) => {
     return;
   }
   if (arrasto) { arrasto = { ...arrasto, b: casaFracionada(e) }; return; }
-  if (e.target !== telaAtiva()) return;
-  if (sel.vista === 'iso' && !board) return;
+  if (e.target !== canvas) return;
   if ((e.buttons & 1) && sel.ferramenta !== 'fundo') agir(e, false);
   else {
     hoverEdge = sel.ferramenta === 'aresta' ? arestaDe(e) : null;
@@ -390,8 +276,8 @@ addEventListener('mouseup', () => {
   }
   pressionado = null; panorama = null; arrastandoFundo = null;
 });
-for (const t of [canvas, telaTopo]) t.addEventListener('mouseleave', () => { hoverEdge = null; hoverTile = null; estado(); });
-telaTopo.addEventListener('wheel', (e) => {
+canvas.addEventListener('mouseleave', () => { hoverEdge = null; hoverTile = null; estado(); });
+canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   sel.celula = Math.min(200, Math.max(12, Math.round(sel.celula * (e.deltaY < 0 ? 1.12 : 1 / 1.12))));
 }, { passive: false });
@@ -437,7 +323,6 @@ function avisar() {
 
 function escolher(f) {
   sel.ferramenta = f;
-  if (f === 'fundo' && sel.vista !== 'topo') vista('topo');
   document.querySelectorAll('[data-ferramenta]').forEach((b) => b.classList.toggle('on', b.dataset.ferramenta === f));
   document.querySelectorAll('[data-secao]').forEach((s) => { s.hidden = s.dataset.secao !== f && !(s.dataset.secao === 'objeto' && f === 'apagar' && false); });
   canvas.style.cursor = f === 'apagar' ? 'not-allowed' : 'crosshair';
@@ -734,7 +619,6 @@ function iniciarCabecalho() {
     } catch (err) { alert(`Esse arquivo não é um cenário: ${err.message}`); }
   });
   $('testar').addEventListener('click', () => { M.guardar(mapa); window.open('/?encontro=editor&nivel=2', '_blank'); });
-  $('vista').addEventListener('click', () => vista(sel.vista === 'topo' ? 'iso' : 'topo'));
   $('arquivoFundo').addEventListener('change', async (e) => {
     const arq = e.target.files[0]; e.target.value = '';
     if (!arq) return;
@@ -743,7 +627,6 @@ function iniciarCabecalho() {
     await guardarFundo(arq.name, arq);
     usarFundo(arq, arq.name);
     aplicar(true);
-    if (sel.vista !== 'topo') vista('topo');
     sel.verChao = false;
     if ($('vChao')) $('vChao').checked = false;   // com mapa pintado, o chão do jogo só atrapalha
   });
@@ -757,7 +640,8 @@ avisar();
 estado();
 requestAnimationFrame(quadro);
 window.__editor = {
-  arestaDe, casaDe, agir, M, sel, vista, usarFundo,
+  arestaDe, casaDe, agir, M, sel, usarFundo,
+  desenhar: () => { if (sujo) reconstruir(); desenharTopo(); },
   get mapa() { return mapa; }, set mapa(v) { mapa = v; sujo = true; },
-  get board() { return board; }, get campo() { return campo; }, get imgFundo() { return imgFundo; },
+  get campo() { return campo; }, get imgFundo() { return imgFundo; },
 };
