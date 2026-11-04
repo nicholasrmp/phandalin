@@ -13,6 +13,8 @@ import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import * as M from '../game/mapa-editor.js';
 import * as T from '../view/vista-topo.js';
+// O atlas ainda é desenhado: os mapas sem pintura trazem móveis em `objetos`, e vê-los ajuda a decalcar. O que
+// saiu foi PÔR e TIRAR sprite pelo editor — isso é do mundo isométrico, e o cenário agora vem pintado.
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
 
@@ -33,18 +35,39 @@ const MAPAS_DO_JOGO = [
   ['casaDaMorte4', 'Casa da Morte, sótão'], ['casaDaMortePorao1', 'Casa da Morte, masmorra 1'], ['casaDaMortePorao2', 'Casa da Morte, masmorra 2'],
 ];
 
+// O TERRENO, por ORDEM DE REGRA e não por material. Com mapa pintado por baixo, a aparência da casa vem do
+// desenho: o que o glifo decide é só o que a regra faz com ela. A paleta antiga tinha 24 materiais de decoração
+// (parquet, tapete, palha, ossos, cacos, mancha...) que não se veem mais sob a pintura e não mudam regra nenhuma.
 const PISOS = [
-  ['U', 'Assoalho'], ['-', 'Parquet'], ['*', 'Tapete'], ['L', 'Laje'], ['+', 'Terra socada'], ['Z', 'Chão de fora'], [',', 'Grama'], [':', 'Estrada'],
-  ['.', 'Chão liso'], ['_', 'Caverna'], ['w', 'Água rasa'], ['=', 'Ponte'], ['p', 'Palha'], ['c', 'Ossos'], ['v', 'Mancha'], ['d', 'Cacos'],
-  ['l', 'Escada'], ['M', 'Alvenaria'], ['R', 'Rocha'], ['#', 'Parede inteira'], ['r', 'Pedra'], ['A', 'Estalagmite'], ['W', 'Água funda'], ['O', 'Fosso'],
+  ['Livre', [[':', 'Estrada'], [',', 'Grama'], ['_', 'Caverna'], ['L', 'Laje'], ['U', 'Assoalho'], ['Z', 'Chão de fora']]],
+  ['Barra passo e visão', [['R', 'Rocha'], ['#', 'Parede inteira'], ['T', 'Mata'], ['M', 'Alvenaria']]],
+  ['Cobertura: barra passo, não visão', [['b', 'Arbusto'], ['r', 'Pedra'], ['u', 'Barris'], ['A', 'Estalagmite']]],
+  ['Difícil: custa o dobro', [['%', 'Espinheiro'], ['w', 'Água rasa'], ['x', 'Entulho']]],
+  ['Não se anda', [['W', 'Água funda'], ['O', 'Fosso']]],
 ];
 
+// As luzes que se põem com um clique. `claro` e `penumbra` em PÉS, como o SRD conta.
+const LUZES = [
+  ['fogueira', 'Fogueira', 20, 20],
+  ['tocha', 'Tocha', 20, 20],
+  ['braseiro', 'Braseiro', 15, 15],
+  ['vela', 'Vela', 5, 5],
+  ['lanterna', 'Lanterna', 30, 30],
+];
+
+// AS FERRAMENTAS, na ordem do trabalho com mapa pintado: primeiro se põe o desenho e se enquadra a grade,
+// depois se decalca em cima dele. Saíram as duas do mundo isométrico — pôr e tirar sprite de cenário —, porque
+// o cenário agora está PINTADO no mapa, e o sprite por cima o desenharia duas vezes.
 const FERRAMENTAS = [
-  ['piso', 'Piso', '1'], ['aresta', 'Parede e porta', '2'], ['objeto', 'Objeto', '3'], ['apagar', 'Tirar objeto', '4'], ['sala', 'Sala', '5'], ['inicio', 'Partida', '6'], ['altura', 'Altura', '7'],
-  ['fundo', 'Mapa de fundo', '8'], ['tracar', 'Parede livre', '9'],
+  ['fundo', 'Mapa de fundo', '1'],
+  ['aresta', 'Parede, porta e segredo', '2'],
+  ['tracar', 'Parede livre', '3'],
+  ['luz', 'Iluminação', '4'],
+  ['piso', 'Terreno', '5'],
+  ['altura', 'Altura', '6'],
+  ['sala', 'Sala', '7'],
+  ['inicio', 'Partida', '8'],
 ];
-
-const PEGADAS = [[1, 1], [2, 1], [1, 2], [2, 2], [3, 1], [1, 3], [3, 2], [2, 3]];
 
 // ------------------------------------------------------------------------------------------------ estado ---
 let mapa = M.ler() ?? M.limpar(mapaDo('casaDaMorte4'));
@@ -53,7 +76,7 @@ let desfazer = [];
 let refazer = [];
 let sujo = true;
 const sel = {
-  ferramenta: 'piso', piso: 'U', estilo: 'parede', variante: null, baixo: false, espelhar: false, pega: [1, 1], altura: 1, sala: 'sala1', inicio: 0,
+  ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
   tracoModo: 'desenhar',
@@ -62,6 +85,8 @@ let hoverEdge = null;
 let hoverTile = null;
 let pressionado = null;   // { tipo, chave }
 let campo = null;         // o Battlefield, que a vista desenha direto
+const imgAtlas = new Image();
+imgAtlas.src = urlAtlas;
 let imgFundo = null;      // a imagem escolhida; vive só no navegador, nunca no mapa
 let arrasto = null;       // o retângulo que está sendo arrastado para calibrar, em casas
 let tracando = null;      // os pontos da parede livre que está sendo desenhada, em casas
@@ -280,8 +305,7 @@ function agir(e, primeira) {
   if (primeira) ponto();
   pressionado = { chave };
   if (f === 'piso') aplicar(M.pintarPiso(mapa, t.x, t.y, sel.piso));
-  else if (f === 'objeto') { if (sel.variante) aplicar(M.colocarProp(mapa, t.x, t.y, sel.variante, { baixo: sel.baixo, espelhar: sel.espelhar, pega: M.pegadaDe(...sel.pega) })); }
-  else if (f === 'apagar') aplicar(M.removerProp(mapa, t.x, t.y));
+  else if (f === 'luz') { const l = LUZES.find(([id]) => id === sel.luz); aplicar(M.porLuz(mapa, t.x, t.y, { tipo: l[0], claro: l[2], penumbra: l[3] })); }
   else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
   else if (f === 'sala') aplicar(M.definirSala(mapa, t.x, t.y, sel.sala.trim()));
   else if (f === 'inicio') aplicar(M.definirInicio(mapa, sel.inicio, t.x, t.y));
@@ -407,22 +431,8 @@ function avisar() {
 function escolher(f) {
   sel.ferramenta = f;
   document.querySelectorAll('[data-ferramenta]').forEach((b) => b.classList.toggle('on', b.dataset.ferramenta === f));
-  document.querySelectorAll('[data-secao]').forEach((s) => { s.hidden = s.dataset.secao !== f && !(s.dataset.secao === 'objeto' && f === 'apagar' && false); });
-  canvas.style.cursor = f === 'apagar' ? 'not-allowed' : 'crosshair';
-}
-
-const miniaturas = new Map();
-const imgAtlas = new Image();
-imgAtlas.src = urlAtlas;
-
-function miniatura(chave) {
-  const f = atlas[chave]?.todas?.[0];
-  const c = document.createElement('canvas');
-  if (!f) return c;
-  c.width = f.w; c.height = f.h;
-  const pinta = () => c.getContext('2d').drawImage(imgAtlas, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
-  if (imgAtlas.complete) pinta(); else imgAtlas.addEventListener('load', pinta, { once: true });
-  return c;
+  document.querySelectorAll('[data-secao]').forEach((s) => { s.hidden = s.dataset.secao !== f; });
+  canvas.style.cursor = 'crosshair';
 }
 
 function montarPainel() {
@@ -432,29 +442,29 @@ function montarPainel() {
     <div class="ferramentas">${FERRAMENTAS.map(([id, nome, k]) => `<button data-ferramenta="${id}">${k} · ${nome}</button>`).join('')}</div>
 
     <div data-secao="piso">
-      <h2>Piso</h2>
-      <div class="grade">${PISOS.map(([g, n]) => `<button data-piso="${g}" title="${n}">${n}</button>`).join('')}</div>
-      <p class="dica">Clique e arraste para pintar. Casa com móvel não se pinta: tire o móvel antes.</p>
+      <h2>Terreno</h2>
+      ${PISOS.map(([titulo, lista]) => `<p class="dica" style="margin:6px 0 2px">${titulo}</p>
+      <div class="grade">${lista.map(([g, n]) => `<button data-piso="${g}" title="${n}">${n}</button>`).join('')}</div>`).join('')}
+      <p class="dica">É a camada de REGRA, não a de aparência: com mapa pintado por baixo, quem se vê é o desenho,
+      e o glifo só diz se a casa barra passo, barra visão, custa o dobro ou é livre.</p>
     </div>
 
     <div data-secao="aresta">
-      <h2>Parede e porta</h2>
+      <h2>Parede, porta e segredo</h2>
       <div class="lista">${Object.entries(M.ESTILOS_DE_ARESTA).map(([id, e]) => `<button data-estilo="${id}">${e.rotulo}</button>`).join('')}</div>
       <p class="dica">Passe o mouse perto da borda de uma casa: a aresta acende. Clique (ou arraste ao longo da parede) para pôr o estilo. Clicar de novo no mesmo estilo apaga.</p>
+      <p class="dica"><b>Passagem secreta</b> é parede para quem joga: fica igual a uma parede no tabuleiro e entra
+      em <code>secretas</code>, que é o que o roteiro da cena abre quando alguém a acha.</p>
     </div>
 
-    <div data-secao="objeto">
-      <h2>Objeto</h2>
-      <input type="text" id="filtro" placeholder="buscar: lareira, cama, arvore..." style="width:100%;margin-bottom:6px" />
-      <div id="pecas"></div>
-      <label class="linha">Pegada <select id="pega">${PEGADAS.map(([w, h]) => `<option value="${w},${h}">${w} x ${h} casa${w * h > 1 ? 's' : ''}</option>`).join('')}</select></label>
-      <p class="dica">Peça de várias casas: clique na casa da FRENTE (a mais ao sul/leste na tela); as outras ficam a oeste e ao norte dela. Tirar uma casa da peça tira a peça inteira.</p>
-      <label class="linha"><input type="checkbox" id="baixo" /> Baixo (dá para pisar por cima)</label>
-      <label class="linha"><input type="checkbox" id="espelhar" /> Espelhar</label>
-      <p class="dica" id="escolhida">Nenhuma peça escolhida.</p>
+    <div data-secao="luz">
+      <h2>Iluminação</h2>
+      <div class="lista">${LUZES.map(([id, n, c, pn]) => `<button data-luz="${id}">${n} — ${c} / ${pn} pés</button>`).join('')}</div>
+      <p class="dica">Clique na casa para acender; clique de novo na mesma luz para apagar. O primeiro número é a
+      luz CLARA e o segundo a penumbra, em pés, como o SRD conta. Num mapa escuro (<code>luz: 'escuro'</code>) é
+      isto que o grupo enxerga.</p>
+      <p class="dica" id="contaLuzes">—</p>
     </div>
-
-    <div data-secao="apagar"><h2>Tirar objeto</h2><p class="dica">Clique num objeto para tirá-lo.</p></div>
 
     <div data-secao="altura">
       <h2>Altura do terreno</h2>
@@ -548,7 +558,6 @@ function montarPainel() {
     sel.altura = Number(b.dataset.altura);
     L.querySelectorAll('[data-altura]').forEach((x) => x.classList.toggle('on', x === b));
   }));
-  $('pega').addEventListener('change', (e) => { sel.pega = e.target.value.split(',').map(Number); });
   L.querySelectorAll('[data-fundomodo]').forEach((b) => b.addEventListener('click', () => {
     sel.fundoModo = b.dataset.fundomodo;
     L.querySelectorAll('[data-fundomodo]').forEach((x) => x.classList.toggle('on', x === b));
@@ -595,38 +604,16 @@ function montarPainel() {
     if (!aplicar(M.redimensionar(mapa, borda, Number(n)))) { desfazer.pop(); botoes(); }
   }));
   $('salaId').addEventListener('input', (e) => { sel.sala = e.target.value; });
-  $('baixo').addEventListener('change', (e) => { sel.baixo = e.target.checked; });
-  $('espelhar').addEventListener('change', (e) => { sel.espelhar = e.target.checked; });
+  L.querySelectorAll('[data-luz]').forEach((b) => b.addEventListener('click', () => {
+    sel.luz = b.dataset.luz;
+    L.querySelectorAll('[data-luz]').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  L.querySelector(`[data-luz="${sel.luz}"]`).classList.add('on');
   L.querySelector(`[data-piso="${sel.piso}"]`).classList.add('on');
   L.querySelector(`[data-estilo="${sel.estilo}"]`).classList.add('on');
   L.querySelector(`[data-inicio="${sel.inicio}"]`).classList.add('on');
   L.querySelector(`[data-altura="${sel.altura}"]`).classList.add('on');
 
-  // as peças do atlas: toda chave `prop-...` é um objeto que o jogo sabe desenhar
-  const chaves = Object.keys(atlas).filter((k) => k.startsWith('prop-')).sort();
-  const grade = $('pecas');
-  const botoesDePeca = chaves.map((k) => {
-    const b = document.createElement('button');
-    const nome = k.slice(5);
-    b.title = nome; b.dataset.nome = nome;
-    if (!miniaturas.has(k)) miniaturas.set(k, miniatura(k));
-    b.append(miniaturas.get(k).cloneNode(true));
-    // o clone não leva o desenho: redesenha
-    const c = b.firstChild;
-    const f = atlas[k]?.todas?.[0];
-    if (f) { c.width = f.w; c.height = f.h; const pinta = () => c.getContext('2d').drawImage(imgAtlas, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h); if (imgAtlas.complete) pinta(); else imgAtlas.addEventListener('load', pinta, { once: true }); }
-    b.addEventListener('click', () => {
-      sel.variante = nome;
-      grade.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-      $('escolhida').textContent = `Peça: ${nome}. Clique no mapa para colocar.`;
-    });
-    grade.append(b);
-    return b;
-  });
-  $('filtro').addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    botoesDePeca.forEach((b) => { b.hidden = q && !b.dataset.nome.toLowerCase().includes(q); });
-  });
   escolher(sel.ferramenta);
 }
 

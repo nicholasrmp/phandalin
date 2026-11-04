@@ -14,7 +14,7 @@ export const CHAVE = 'phandalin.editor.mapa';
 const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
-  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos',
+  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -78,6 +78,10 @@ export const ESTILOS_DE_ARESTA = {
   trancada: { rotulo: 'Porta fechada', car: '+' },
   grade: { rotulo: 'Grade de ferro', car: 'J', grade: true },
   seteira: { rotulo: 'Seteira', car: 'J' },
+  // A PASSAGEM SECRETA é parede no mapa (`#`) e entra também em `m.secretas`: para quem joga, parede; para o
+  // roteiro da cena, a aresta que ele abre quando alguém a acha. Era dado solto de cada capítulo (a Mansão tinha
+  // `MANSAO.secretas` dentro dela); agora mora no mapa, que é onde se desenha e onde a conferência a lê.
+  secreta: { rotulo: 'Passagem secreta', car: '#', secreta: true },
 };
 
 /** As duas casas que a aresta separa: a de cima/esquerda primeiro. */
@@ -93,7 +97,7 @@ function garantirParedes(m) {
     m.paredes[l] ??= [];
     for (let y = 0; y < h; y++) m.paredes[l][y] = (m.paredes[l][y] ?? '').padEnd(w, '.');
   }
-  m.folhas ??= []; m.vaoUnido ??= []; m.grades ??= [];
+  m.folhas ??= []; m.vaoUnido ??= []; m.grades ??= []; m.secretas ??= [];
 }
 
 export function estiloDaAresta(m, x, y, lado) {
@@ -101,13 +105,19 @@ export function estiloDaAresta(m, x, y, lado) {
   const car = m.paredes?.[lado === 'N' ? 'n' : 'o']?.[y]?.[x] ?? '.';
   if (car === '/') return temFolha(m, x, y, lado) ? 'porta' : 'arco';
   if (car === 'J') return m.grades?.includes(`${x},${y},${lado}`) ? 'grade' : 'seteira';
-  return { '#': 'parede', '+': 'trancada' }[car] ?? 'nada';
+  // parede e passagem secreta são o MESMO caractere: quem as separa é a lista, não o desenho da grade
+  if (car === '#') return naLista(m.secretas, x, y, lado) ? 'secreta' : 'parede';
+  return { '+': 'trancada' }[car] ?? 'nada';
 }
 
-function temFolha(m, x, y, lado) {
+/** A aresta está numa lista de pares de casas (`folhas`, `secretas`)? */
+function naLista(lista, x, y, lado) {
   const [a, b] = casasDaAresta(x, y, lado);
-  return (m.folhas ?? []).some(([p, q]) => (p.x === a.x && p.y === a.y && q.x === b.x && q.y === b.y) || (p.x === b.x && p.y === b.y && q.x === a.x && q.y === a.y));
+  return (lista ?? []).some(([p, q]) => (p.x === a.x && p.y === a.y && q.x === b.x && q.y === b.y)
+    || (p.x === b.x && p.y === b.y && q.x === a.x && q.y === a.y));
 }
+
+const temFolha = (m, x, y, lado) => naLista(m.folhas, x, y, lado);
 
 /** Põe um estilo numa aresta. Devolve false se nada mudou (ou se a aresta é do contorno de fora do mapa). */
 export function pintarAresta(m, x, y, lado, estilo) {
@@ -122,8 +132,10 @@ export function pintarAresta(m, x, y, lado, estilo) {
   m.folhas = m.folhas.filter(([p, q]) => !((p.x === a.x && p.y === a.y && q.x === b.x && q.y === b.y) || (p.x === b.x && p.y === b.y && q.x === a.x && q.y === a.y)));
   m.vaoUnido = m.vaoUnido.filter((v) => v !== k);
   m.grades = m.grades.filter((v) => v !== k);
+  m.secretas = (m.secretas ?? []).filter(([p, q]) => !((p.x === a.x && p.y === a.y && q.x === b.x && q.y === b.y) || (p.x === b.x && p.y === b.y && q.x === a.x && q.y === a.y)));
   if (e.folha) m.folhas.push([a, b]);
   if (e.grade) m.grades.push(k);
+  if (e.secreta) m.secretas.push([a, b]);
   return true;
 }
 
@@ -425,6 +437,26 @@ export function definirInicio(m, i, x, y) {
   m.grupo ??= [];
   if (m.grupo[i]?.x === x && m.grupo[i]?.y === y) return false;
   m.grupo[i] = { x, y };
+  return true;
+}
+
+/**
+ * A ILUMINAÇÃO: põe (ou tira) uma fonte de luz na casa. `claro` e `penumbra` em PÉS, como o SRD conta — uma
+ * tocha é 20 e 20, uma fogueira de acampamento 20 e 20, um braseiro 15 e 15. Clicar de novo na mesma casa tira.
+ *
+ * O dado já existia e o motor já o lia (`rules/luz.js` monta a visão do grupo a partir de `mapa.luzes`); o que
+ * não existia era um jeito de PÔR uma luz sem editar o código da cena à mão.
+ */
+export function porLuz(m, x, y, luz) {
+  if (!dentro(m, x, y)) return false;
+  m.luzes ??= [];
+  const i = m.luzes.findIndex((l) => l.pos?.x === x && l.pos?.y === y);
+  if (i >= 0) {
+    const igual = m.luzes[i].claro === luz.claro && m.luzes[i].penumbra === luz.penumbra && m.luzes[i].tipo === luz.tipo;
+    m.luzes.splice(i, 1);
+    if (igual) return true;                      // mesma luz: o clique apaga
+  }
+  m.luzes.push({ pos: { x, y }, claro: luz.claro, penumbra: luz.penumbra, tipo: luz.tipo });
   return true;
 }
 
