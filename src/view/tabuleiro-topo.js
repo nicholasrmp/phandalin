@@ -15,6 +15,7 @@
 // toda isométrica: o móvel aqui é o sprite deitado na casa, provisório.
 
 import { Board, SUPERFICIE } from './board.js';
+import { temEscuridaoEm, visaoDoGrupo } from '../rules/luz.js';
 import * as V from './vista-topo.js';
 import { makePortrait } from '../art/sheet.js';
 import atlas from '../art/folhas/cenario.json';
@@ -125,6 +126,11 @@ export class TabuleiroTopo extends Board {
     const ctx = this.ctx;
     const C = this.casa;
 
+    // O QUE O GRUPO ENXERGA. Tem de sair ANTES das fichas: `figuraVisivel` (herdada) consulta `_visao` para
+    // esconder quem está no escuro, e sem isto ela devolvia sempre `true` — a vista de cima mostrava a masmorra
+    // inteira, monstros e tudo, assim que a cena abria.
+    this._visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc, this.filtroDeVisao ?? null) : null;
+
     ctx.save();
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt * 2);
@@ -156,11 +162,18 @@ export class TabuleiroTopo extends Board {
     else V.pintarArestas(ctx, this.field, C, comPintura);
     ctx.restore();
 
+    const aVista = new Map();
     for (const c of this.enc.combatants) {
       if (!c.pos) continue;
       if (this.figuraVisivel && !this.figuraVisivel(c)) continue;
+      aVista.set(c.id, c);
       this.ficha(ctx, c);
     }
+
+    // O VÉU, na mesma ordem do isométrico: por cima do chão e das fichas, por baixo dos efeitos e dos números.
+    // `desenharEscuridao` é herdada inteira; o que muda de vista são as três peças de geometria logo abaixo.
+    if (this._visao) this.desenharEscuridao(ctx, aVista);
+    else this.desenharAmbienteAoLuz(ctx);
 
     this.fx.drawOver(ctx, this);
     this.drawFloaters(ctx, dt);
@@ -183,6 +196,50 @@ export class TabuleiroTopo extends Board {
     for (const t of targets ?? []) this.fillDiamond(ctx, t.pos.x, t.pos.y, 'rgba(220,90,70,.26)', '#d9594a');
     if (selected?.pos) this.fillDiamond(ctx, selected.pos.x, selected.pos.y, 'rgba(0,0,0,0)', '#ffd868');
     if (this.hover) this.fillDiamond(ctx, this.hover.x, this.hover.y, 'rgba(255,255,255,.07)', 'rgba(255,216,104,.7)');
+  }
+
+  // ---- as três peças da escuridão que sabem de geometria (ver `board.js`) --------------------------------
+
+  /** De cima a casa é um quadrado e não tem face lateral: `alto` não existe aqui. */
+  recortarCasaDaMascara(m, x, y) {
+    const C = this.casa;
+    // meio pixel de sangria para duas casas vizinhas não deixarem um fio de véu na emenda
+    m.fillRect(this.ox + x * C - 0.5, this.oy + y * C - 0.5, C + 1, C + 1);
+  }
+
+  /** A ficha é um disco na própria casa; o recorte cobre o anel e a barra de vida colada embaixo dele. */
+  recortarFiguraDaMascara(m, c, domo) {
+    const C = this.casa;
+    const pegada = c.pos.f ?? 1;
+    const meio = (pegada - 1) / 2;
+    const { sx, sy } = this.centerF(c.pos.x + meio, c.pos.y + meio);
+    const r = (domo ? domo.raio + 4 : C * pegada * 0.42) + 4;
+    m.beginPath();
+    m.arc(sx, sy, r, 0, Math.PI * 2);
+    m.fill();
+    if (!domo) m.fillRect(sx - r, sy + r - C * 0.08, r * 2, C * 0.30);
+  }
+
+  /**
+   * De cima a tocha acende um CÍRCULO, e não a elipse 2:1 do isométrico — e o raio é o alcance de verdade:
+   * `claro` pés viram `claro / 1,5 m` casas. No isométrico o número era 0,55 largura de losango por casa,
+   * que ali funciona porque o losango tem o dobro da largura da altura.
+   */
+  pocaDeLuz(bg, f) {
+    const { sx, sy } = this.center(f.pos.x, f.pos.y);
+    const r = (Math.max(f.claro, 5) / 5) * this.casa;
+    // Duas ondas que não casam: o fogo treme sem repetir o compasso.
+    const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02 + Math.sin(this.time * 14.3 + f.pos.y * 2.9) * 0.012;
+    for (const [esc, forca, cor] of [[0.55, 0.26, '255, 186, 96'], [1, 0.10, '255, 136, 52']]) {
+      const g = bg.createRadialGradient(sx, sy, 3, sx, sy, r * esc);
+      g.addColorStop(0, `rgba(${cor}, ${forca + pulso})`);
+      g.addColorStop(0.55, `rgba(${cor}, ${(forca + pulso) * 0.35})`);
+      g.addColorStop(1, 'rgba(255, 120, 40, 0)');
+      bg.fillStyle = g;
+      bg.beginPath();
+      bg.arc(sx, sy, r * esc, 0, Math.PI * 2);
+      bg.fill();
+    }
   }
 
   retrato(look) {

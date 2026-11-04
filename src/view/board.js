@@ -3488,6 +3488,59 @@ export class Board {
     return false;
   }
 
+  // AS TRÊS PEÇAS DA ESCURIDÃO QUE SABEM DE GEOMETRIA. O resto de `desenharEscuridao` — o véu, o cache da
+  // máscara, o borrão, as zonas que escondem — vale em qualquer vista; só estas três conhecem o losango.
+  // A vista de cima (`view/tabuleiro-topo.js`) troca as três e herda todo o resto.
+
+  /** O buraco que uma casa à vista abre no véu: o topo do losango mais a face lateral que desce dele. */
+  recortarCasaDaMascara(m, x, y, alto) {
+    const hgt = this.alturaVisual(x, y);
+    const { sx, sy } = this.iso(x, y, hgt);
+    // A face lateral desce do topo: a do degrau (altura) ou a da parede antiga.
+    const paredeAntiga = this.field.tileAt(x, y) === 1 && !SUPERFICIE[this.field.surfaceAt(x, y)];
+    const baixo = paredeAntiga ? LIFT * 1.6 : hgt * LIFT;
+    m.beginPath();
+    m.moveTo(sx - TW / 2, sy + TH / 2 + baixo);
+    m.lineTo(sx - TW / 2, sy + TH / 2 - alto);
+    m.lineTo(sx + TW / 2, sy + TH / 2 - alto);
+    m.lineTo(sx + TW / 2, sy + TH / 2 + baixo);
+    m.lineTo(sx, sy + TH + baixo);
+    m.closePath();
+    m.fill();
+  }
+
+  /** O buraco de uma figura à vista: o corpo em pé, ou a bolha de proteção quando ela tem uma. */
+  recortarFiguraDaMascara(m, c, domo) {
+    if (domo) {
+      // Centrado na pegada (a Grande ocupa 2x2) e da largura da bolha.
+      const meio = (domo.f - 1) / 2;
+      const q = this.centerF(c.pos.x + meio, c.pos.y + meio);
+      const meia = domo.raio + 4;
+      m.fillRect(q.sx - meia, q.sy - (domo.altura + 16), meia * 2, domo.altura + 34);
+      return;
+    }
+    const { sx, sy } = this.center(c.pos.x, c.pos.y);
+    m.fillRect(sx - 30, sy - 84, 60, 84);
+  }
+
+  /** O brilho quente de uma tocha: duas poças, um miolo curto e forte e um halo largo e fraco. */
+  pocaDeLuz(bg, f) {
+    const { sx, sy } = this.center(f.pos.x, f.pos.y);
+    const r = (Math.max(f.claro, 5) / 5) * TW * 0.55;
+    // Duas ondas que não casam: o fogo treme sem repetir o compasso.
+    const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02 + Math.sin(this.time * 14.3 + f.pos.y * 2.9) * 0.012;
+    for (const [esc, forca, cor] of [[1, 0.26, '255, 186, 96'], [1.9, 0.10, '255, 136, 52']]) {
+      const g = bg.createRadialGradient(sx, sy - 20, 3, sx, sy, r * esc);
+      g.addColorStop(0, `rgba(${cor}, ${forca + pulso})`);
+      g.addColorStop(0.55, `rgba(${cor}, ${(forca + pulso) * 0.35})`);
+      g.addColorStop(1, 'rgba(255, 120, 40, 0)');
+      bg.fillStyle = g;
+      bg.beginPath();
+      bg.ellipse(sx, sy, r * esc, r * esc / 2, 0, 0, Math.PI * 2);
+      bg.fill();
+    }
+  }
+
   /**
    * A ESCURIDÃO: uma máscara por cima do tabuleiro inteiro. Escuro onde o
    * grupo não vê (o chão ainda se adivinha, para dar para andar), meia-luz na
@@ -3521,21 +3574,7 @@ export class Board {
       m.fillRect(0, 0, w, h);
       m.globalCompositeOperation = 'destination-out';
       m.fillStyle = '#000';
-      const recortar = (x, y, alto) => {
-        const hgt = this.alturaVisual(x, y);
-        const { sx, sy } = this.iso(x, y, hgt);
-        // A face lateral desce do topo: a do degrau (altura) ou a da parede antiga.
-        const paredeAntiga = this.field.tileAt(x, y) === 1 && !SUPERFICIE[this.field.surfaceAt(x, y)];
-        const baixo = paredeAntiga ? LIFT * 1.6 : hgt * LIFT;
-        m.beginPath();
-        m.moveTo(sx - TW / 2, sy + TH / 2 + baixo);
-        m.lineTo(sx - TW / 2, sy + TH / 2 - alto);
-        m.lineTo(sx + TW / 2, sy + TH / 2 - alto);
-        m.lineTo(sx + TW / 2, sy + TH / 2 + baixo);
-        m.lineTo(sx, sy + TH + baixo);
-        m.closePath();
-        m.fill();
-      };
+      const recortar = (x, y, alto) => this.recortarCasaDaMascara(m, x, y, alto);
       for (const [k, nivel] of this._visao) {
         const [x, y] = k.split(',').map(Number);
         m.globalAlpha = nivel === CLARO ? 1 : 0.45;
@@ -3546,16 +3585,7 @@ export class Board {
       }
       for (const c of figuras) {
         m.globalAlpha = this._visao.get(`${c.pos.x},${c.pos.y}`) === CLARO ? 1 : 0.45;
-        const { sx, sy } = this.center(c.pos.x, c.pos.y);
-        const domo = domoDe.get(c.id);
-        if (domo) {
-          // Centrado na pegada (a Grande ocupa 2x2) e da largura da bolha.
-          const meio = (domo.f - 1) / 2;
-          const q = this.centerF(c.pos.x + meio, c.pos.y + meio);
-          const meia = domo.raio + 4;
-          m.fillRect(q.sx - meia, q.sy - (domo.altura + 16), meia * 2, domo.altura + 34);
-        }
-        else m.fillRect(sx - 30, sy - 84, 60, 84);
+        this.recortarFiguraDaMascara(m, c, domoDe.get(c.id));
       }
       m.globalAlpha = 1;
       const b = borrada.getContext('2d');
@@ -3589,22 +3619,7 @@ export class Board {
     bg.globalCompositeOperation = 'source-over';
     bg.clearRect(0, 0, w, h);
     bg.globalCompositeOperation = 'lighter';
-    for (const f of fontes) {
-      const { sx, sy } = this.center(f.pos.x, f.pos.y);
-      const r = (Math.max(f.claro, 5) / 5) * TW * 0.55;
-      // Duas ondas que não casam: o fogo treme sem repetir o compasso.
-      const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02 + Math.sin(this.time * 14.3 + f.pos.y * 2.9) * 0.012;
-      for (const [esc, forca, cor] of [[1, 0.26, '255, 186, 96'], [1.9, 0.10, '255, 136, 52']]) {
-        const g = bg.createRadialGradient(sx, sy - 20, 3, sx, sy, r * esc);
-        g.addColorStop(0, `rgba(${cor}, ${forca + pulso})`);
-        g.addColorStop(0.55, `rgba(${cor}, ${(forca + pulso) * 0.35})`);
-        g.addColorStop(1, 'rgba(255, 120, 40, 0)');
-        bg.fillStyle = g;
-        bg.beginPath();
-        bg.ellipse(sx, sy, r * esc, r * esc / 2, 0, 0, Math.PI * 2);
-        bg.fill();
-      }
-    }
+    for (const f of fontes) this.pocaDeLuz(bg, f);
     desenharAmbiente(bg, this.time, (x, y) => this.center(x, y), ambiente);
     // UMA passada. O véu da escuridão é de 80%, de propósito: o que já foi
     // visto continua se enxergando de leve. O brilho segue a mesma conta e
