@@ -96,37 +96,31 @@ export const MAPA_EMBOSCADA = {
   // Eles continuam valendo como regra: `C` e `h` são cobertura (+2 de CA) e não se atravessa.
   objetos: [],
 };
-// A RUA DE PHANDALIN (capítulo 3): a briga com os Marcarrubra. Uma rua de
-// terra entre casas de pedra e reboco; a taverna Gigante Adormecido fica ao
-// norte, com o pátio de barris ao lado, e os Marcarrubra esperam na frente
-// dela. Cada prédio ocupa 3 x 3 casas (`H` casa, `Y` taverna) e é um sprite
-// só; casas iguais nunca encostam, senão viram um prédio só (`pegadaDe`).
+// A RUA DE PHANDALIN (capítulo 3): a briga com os Marcarrubra, na frente do Gigante Adormecido.
+//
+// O MAPA É UM DESENHO: `public/mapas/rua.webp`, gerado por nós no OpenArt, 1760x1120 = 22 por 14 casas de
+// 80 px. Antes era código: rua retangular de três fileiras de ponta a ponta e cinco prédios em blocos de 3 x 3
+// exatos, num ritmo regular.
+//
+// O terreno sai do desenho, mas por DOIS caminhos, e vale saber qual é qual (`src/dev/mapa-rua.py` explica a
+// medida): o chão sai da cor, como no Ermo; as PEGADAS DOS PRÉDIOS saem da mão, decalcadas da imagem, porque a
+// palha do telhado e a terra da rua ficam na mesma faixa de matiz e de brilho — e o preenchimento conexo também
+// não resolve, já que o telhado da estalagem encosta na rua e os dois viram um borrão só.
 export const MAPA_RUA = [
-  'TT,,HHH,,HHH,,YYY,u,TT',
-  'T,,,HHH,,HHH,,YYY,,u,T',
-  ',,,,HHH,,HHH,,YYY,,,,,',
-  ',,,,,,,,,,,,,,,,,,,,,,',
+  'TT:T:,,,YYYYYY,,,TTTTT',
+  'T::,:,,TYYYYYYuu,TTTTT',
+  '::HHH,,,YYYYYY::,HHHHT',
+  ':,HHH,,,YYYYYYu:,HHHHT',
+  ',,HHH,,:YYYYYY::,HHHH,',
+  ',,,:,,,:,,,:,,:,,:,,,,',
   '::::::::::::::::::::::',
   '::::::::::::::::::::::',
-  '::::::::::::::::::::::',
-  ',,,,,,,,,,,,,,,,u,,,,,',
-  ',,,HHH,,,,,,,,HHH,,,,,',
-  ',,,HHH,,b,,,,,HHH,,,,,',
-  ',,,HHH,,,,,,,,HHH,,,,,',
-  ',,,,,,,,,,,r,,,,,,,,,,',
-  'TT,,,,,,,,,,,,,,,,,,TT',
-  'TTTTTTTT,,,,,,TTTTTTTT',
-];
-
-/** Qual prédio é cada bloco da rua e para onde fica a porta. */
-const PREDIOS_RUA = [
-  { tipo: 'casa', x: 4, y: 0, olha: { dx: 0, dy: 1 }, variante: 'a' },
-  { tipo: 'casa', x: 9, y: 0, olha: { dx: 0, dy: 1 }, variante: 'b' },
-  { tipo: 'taverna', x: 14, y: 0, olha: { dx: 0, dy: 1 } },
-  // Ao sul, na frente da câmera, só a casa baixa: a de enxaimel é alta e
-  // larga demais e cobria metade do grupo na rua.
-  { tipo: 'casa', x: 3, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
-  { tipo: 'casa', x: 14, y: 8, olha: { dx: 0, dy: -1 }, variante: 'a' },
+  ',,,,,,,::,,:,:,,,T,,,T',
+  ',THHHH,:,,,HHHH,TT,,,T',
+  ',,HHHH,,,:,HHHH,,,,,,T',
+  'TTHHHH,,::,HHHH,T,,,TT',
+  'T::,,,,%%%,T,,,,T,,:::',
+  'T:::,TTT,,,TT,,TTTT:TT',
 ];
 
 // O ERMO: a Trilha de Triboar entre colinas, onde caem os encontros de viagem (`game/regiao.js` manda para cá
@@ -196,11 +190,17 @@ export function mapaDo(variante) {
     return {
       terreno: MAPA_RUA,
       altura: null,
-      objetos: PREDIOS_RUA,
-      // O grupo vem pela rua, do oeste; os Marcarrubra esperam a leste, na
-      // frente do Gigante Adormecido.
-      grupo: [{ x: 3, y: 4 }, { x: 3, y: 6 }, { x: 2, y: 5 }, { x: 4, y: 5 }],
+      // Os prédios JÁ ESTÃO PINTADOS no mapa; o sprite por cima seria desenhá-los duas vezes. Eles continuam
+      // valendo como regra: `H` e `Y` barram passo e visão.
+      objetos: [],
+      // O grupo vem pela rua, do oeste; os Marcarrubra esperam a leste, na frente do Gigante Adormecido. Todos
+      // desceram UMA fileira em relação ao mapa antigo: a rua pintada passa nas fileiras 6 e 7, e as casas 4 e 5
+      // caíam dentro da casa de pedra e do telhado da estalagem. A distância entre os dois lados não mudou —
+      // os dois blocos desceram juntos —, e é ela que o comentário de `buildFoes` mediu.
+      grupo: [{ x: 3, y: 5 }, { x: 3, y: 7 }, { x: 2, y: 6 }, { x: 4, y: 6 }],
       olhar: { dx: 1, dy: 0 },
+      // O mapa pintado por baixo, nosso, servido de `public/`: 80 px por casa, canto da casa (0,0) no canto da imagem.
+      fundo: { nome: 'rua.webp', url: '/mapas/rua.webp', escala: 80, x0: 0, y0: 0, giro: 0, opacidade: 1 },
       cena: 'rua',
     };
   }
@@ -410,7 +410,7 @@ export function buildFoes(variante = 'arena') {
     // 17% de PV; a 6 casas fica em 95,5%, 3,8% de morte de herói e 25% de PV —
     // a abertura do capítulo com dentes, sem virar cara ou coroa (a 7 casas
     // não melhora mais nada: 94% e 26%).
-    const foes = [[11, 4], [12, 5], [11, 6], [13, 5]].map(([x, y], i) => {
+    const foes = [[11, 5], [12, 6], [11, 7], [13, 6]].map(([x, y], i) => {
       const f = makeMonster('marcarrubra', { x, y }, { nameSuffix: 'ABCD'[i] });
       f.facingVec = { dx: -1, dy: 0 };
       return f;
