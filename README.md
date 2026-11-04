@@ -221,6 +221,29 @@ conta (1920 px ÷ 25 casas e 1920 ÷ 15).
 A medida automática só fecha quando as duas plantas **são a mesma**. Quando não são, ou quando o mapa é novo, o caminho é o do editor acima:
 enquadrar à mão e decalcar.
 
+### Trazer um mapa do Roll20
+
+Uma página do Roll20 é **imagem + grade + paredes**, que é quase o nosso `mapa.fundo` mais as arestas. Dá para trazer
+sem copiar nada à mão:
+
+1. Com a campanha aberta, cole `src/dev/extrair-roll20.js` no console da aba. Ele define `__paginasDoRoll20()` e
+   `__extrairPagina(nome)`.
+2. `__extrairPagina('2: Cragmaw Hideout')` devolve a página já com as paredes **rasterizadas para arestas de casa** —
+   o dado pesado (as polilinhas à mão livre) nunca sai do navegador. Salve em `_referencias/roll20/<nome>.json`.
+3. `node src/dev/importar-roll20.mjs _referencias/roll20/<nome>.json` escreve `<nome>-mapa.json` (importe no
+   `/editor.html`) e `<nome>-fichas.json` (as criaturas e onde estavam).
+
+A grade do Roll20 é travada em **70 px por casa**, então a imagem entra com `escala: 70` e a origem sai do canto do
+gráfico. A regra da parede: uma aresta é parede quando o traço do Roll20 **separa** as duas casas, isto é, cruza o
+segmento que liga um centro ao outro. Marcar "a aresta que o traço cruza" não funciona — um traço quase horizontal
+cruza as linhas verticais da grade e viraria uma fileira de barras soltas.
+
+**O Roll20 não guarda chão.** Um mapa dele é imagem e parede; quem sabe onde se pisa é o olho de quem joga. Por isso
+o importador deixa a página inteira como chão e só a parede barra. O `--inundar` tenta deduzir rocha a partir das
+fichas, mas só vale se o contorno fechar na nossa grade — e o relatório diz se fecha. No Covil Cragmaw **não fecha**:
+as paredes do Roll20 são linhas finas que só precisam ser estanques para a luz, e numa casa de 70 px uma fresta
+sub-pixel vira passagem. Aí ou se tapa o buraco no editor, ou se tira o chão da própria imagem.
+
 ### A escala das masmorras da Casa da Morte
 
 O mapa do livro diz "One square = 5 feet": **um quadrado é uma casa** do jogo, nas duas masmorras. As plantas saem de
