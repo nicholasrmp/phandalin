@@ -665,6 +665,15 @@ export class Battlefield {
   }
 
   /**
+   * A visão passa desta casa para a vizinha? Junta as duas paredes: a aresta de casa (porta, arco, grade, seteira)
+   * e o traço livre. É o que o relâmpago e a explosão que contorna esquina usam para andar de casa em casa.
+   */
+  passaVisao(ax, ay, bx, by) {
+    if (!this.passa(ax, ay, bx, by, 'visao')) return false;
+    return !this.tracoCortaVisao({ x: ax, y: ay }, { x: bx, y: by });
+  }
+
+  /**
    * COBERTURA PELA REGRA DOS CANTOS (SRD). Escolhe-se um canto da casa de quem ataca e traçam-se linhas dele até os
    * QUATRO cantos da casa do alvo. Uma ou duas barradas: meia cobertura, +2. Três: três quartos, +5. As quatro:
    * cobertura total, e aí nem dá para mirar — mas isso a linha de visão já resolve antes.

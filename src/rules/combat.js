@@ -5350,7 +5350,7 @@ export class Encounter {
         // Para na parede; caixote e carroça dão cobertura, não param o raio.
         if (!this.field.inside(casa.x, casa.y) || this.field.blocksSight(casa.x, casa.y)) break;
         const antes = linha[linha.length - 1] ?? actor.pos;
-        if (!this.field.passa(antes.x, antes.y, casa.x, casa.y, 'visao')) break;
+        if (!this.field.passaVisao(antes.x, antes.y, casa.x, casa.y)) break;
         linha.push(casa);
       }
       // Lufada de Vento: 3 m de largura são duas casas, a segunda ao lado.
@@ -5361,6 +5361,7 @@ export class Encounter {
         for (const c of [...linha]) {
           const v = { x: c.x + r(lado.x), y: c.y + r(lado.y) };
           if (vistas.has(key(v.x, v.y)) || !this.field.inside(v.x, v.y) || this.field.blocksSight(v.x, v.y)) continue;
+          if (!this.field.passaVisao(c.x, c.y, v.x, v.y)) continue;   // parede entre a reta e a casa de lado
           vistas.add(key(v.x, v.y));
           linha.push(v);
         }
@@ -5389,7 +5390,7 @@ export class Encounter {
           const y = cur.y + dy;
           if (!this.field.inside(x, y) || this.field.blocksSight(x, y)) continue;
           if (dx && dy && this.field.blocksSight(cur.x + dx, cur.y) && this.field.blocksSight(cur.x, cur.y + dy)) continue;
-          if (!this.field.passa(cur.x, cur.y, x, y, 'visao')) continue;
+          if (!this.field.passaVisao(cur.x, cur.y, x, y)) continue;
           const k = key(x, y);
           if (vistos.has(k)) continue;
           vistos.set(k, cur.d + 1);

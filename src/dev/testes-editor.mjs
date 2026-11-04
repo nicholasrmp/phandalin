@@ -6,9 +6,14 @@ import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 
 let total = 0; let falhas = 0;
+// A FILA é o que deixa teste `async` valer. Sem ela, `teste()` imprimia "ok" antes de a asserção rodar — a função
+// devolvia uma promessa e o `try` já tinha acabado —, e uma asserção quebrada só apareceria como erro solto do Node.
+const fila = [];
 function teste(nome, fn) {
   total += 1;
-  try { fn(); console.log(`ok    ${nome}`); } catch (e) { falhas += 1; console.log(`FALHA ${nome}\n      ${e.message.split('\n').join('\n      ')}`); }
+  fila.push(async () => {
+    try { await fn(); console.log(`ok    ${nome}`); } catch (e) { falhas += 1; console.log(`FALHA ${nome}\n      ${e.message.split('\n').join('\n      ')}`); }
+  });
 }
 const memoria = () => { const d = {}; return { setItem: (k, v) => { d[k] = v; }, getItem: (k) => d[k] ?? null }; };
 
@@ -402,6 +407,63 @@ teste('cobertura pelos cantos: pelo arco se vê e não se cobre, porque o vão �
   // de viés, o batente do arco entra na frente
   assert.equal(f.coverBetween({ x: 4, y: 3 }, { x: 9, y: 6 }) > 0, true, 'de viés, o batente cobre');
 });
+
+teste('área de magia: a esfera não atravessa a parede livre', async () => {
+  const m = M.novoMapa(16, 12);
+  M.tracarParede(m, [[8, 0], [8, 12]]);
+  const { Encounter } = await import('../rules/combat.js');
+  const { makeParty } = await import('../rules/party.js');
+  const { makeRng } = await import('../core/rng.js');
+  const f = montarCampo(M.limpar(m));
+  const party = makeParty({ nivel: 5 });
+  party.forEach((c, i) => { c.pos = { x: 3, y: 4 + i }; });
+  const enc = new Encounter({ battlefield: f, party, foes: [], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  const bola = { shape: 'esfera', areaFt: 20, level: 3 };
+  const casas = enc.areaDaMagia(party[0], bola, { x: 6, y: 5 }) ?? [];
+  assert.equal(casas.length > 0, true, 'a esfera pega alguma coisa');
+  assert.equal(casas.some((c) => c.x > 8), false, 'nenhuma casa do outro lado da parede');
+  assert.equal(casas.some((c) => c.x >= 6 && c.x <= 7), true, 'e pega do lado de cá');
+});
+
+teste('área de magia: o relâmpago para na parede livre', async () => {
+  const m = M.novoMapa(20, 10);
+  M.tracarParede(m, [[9, 0], [9, 10]]);
+  const { Encounter } = await import('../rules/combat.js');
+  const { makeParty } = await import('../rules/party.js');
+  const { makeRng } = await import('../core/rng.js');
+  const f = montarCampo(M.limpar(m));
+  const party = makeParty({ nivel: 5 });
+  party.forEach((c, i) => { c.pos = { x: 2, y: 4 + i }; });
+  const enc = new Encounter({ battlefield: f, party, foes: [], rng: makeRng(1), onLog: () => {}, onEvent: () => {} });
+  const raio = { shape: 'linha', areaFt: 100, larguraFt: 5, level: 3 };
+  const linha = enc.areaDaMagia(party[0], raio, { x: 18, y: 4 }) ?? [];
+  assert.equal(linha.length > 0, true, 'o raio sai');
+  assert.equal(Math.max(...linha.map((c) => c.x)) < 9, true, `o raio parou antes da parede, foi até ${Math.max(...linha.map((c) => c.x))}`);
+});
+
+teste('sem traço, `passaVisao` é exatamente o `passa` de antes', () => {
+  // a invariante que garante que mapa sem parede livre não mudou de comportamento em lugar nenhum
+  const m = M.limpar(mapaDo('casaDaMorte1'));
+  const f = montarCampo(m);
+  assert.equal(f.tracos, undefined);
+  let pares = 0;
+  let divergiu = 0;
+  for (let y = 0; y < f.h; y++) {
+    for (let x = 0; x < f.w; x++) {
+      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!f.inside(nx, ny)) continue;
+        pares += 1;
+        if (f.passaVisao(x, y, nx, ny) !== f.passa(x, y, nx, ny, 'visao')) divergiu += 1;
+      }
+    }
+  }
+  assert.equal(pares > 500, true, 'mediu o mapa inteiro');
+  assert.equal(divergiu, 0, 'sem traço, nenhuma divergência');
+});
+
+for (const rodar of fila) await rodar();
 
 console.log(`\n${total - falhas}/${total} testes passaram`);
 process.exit(falhas ? 1 : 0);

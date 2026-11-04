@@ -257,6 +257,12 @@ Medido nos mapas importados, entre os pares que se enxergam: no Covil Cragmaw **
 2 ganharam +5); no Covil Carrasco **99 de 518** (75 de +2, 24 de +5). É a quina da parede passando a valer o que o
 livro diz que vale. Custo: 42 µs por par (dezesseis linhas de canto, cada uma contra o índice).
 
+**A ÁREA DE MAGIA também.** A esfera já saía certa de graça, porque filtra por `hasLineOfSight`; faltavam os dois
+caminhos que andam de casa em casa — o relâmpago e a explosão que contorna esquina. Os dois passaram a usar
+`passaVisao`, que junta a aresta e o traço. Então Bola de Fogo não dobra mais a quina de uma parede que o desenho
+fecha, e o Relâmpago para nela. A prévia sob o cursor não pode divergir: `board.areaDaMira` chama o mesmo
+`enc.areaDaMagia` do motor.
+
 **O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
 regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é
 toda isométrica: o móvel é o sprite deitado na casa, provisório.
