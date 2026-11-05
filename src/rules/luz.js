@@ -104,7 +104,8 @@ export function fontesDeLuz(enc) {
   for (const c of enc.combatants) {
     if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa || hasCondition(c, 'luzMagica') || hasCondition(c, 'brilhoCaos') ? TOCHA : LUZINHAS) });
   }
-  for (const f of enc.field.luzes ?? []) fontes.push(f);
+  // A luz do mapa que alguém apagou (`game/fogo.js`) continua no mapa — para poder ser acesa de novo —, mas não acende nada.
+  for (const f of enc.field.luzes ?? []) if (!f.apagada) fontes.push(f);
   // Luz do Dia: uma esfera de luz plena e mais uma de penumbra, num ponto.
   for (const z of enc.zonas ?? []) if (z.luz && z.centro) fontes.push({ pos: z.centro, claro: z.luz.claro, penumbra: z.luz.penumbra });
   return fontes;
@@ -202,7 +203,9 @@ export function visaoDoGrupo(enc, quem = null) {
   if (proprios?.length) grupo = proprios;
   const guarda = proprios?.length ? '_visaoDoFiltro' : '_visao';
   const chave = grupo.map((c) => `${c.pos.x},${c.pos.y},${emiteLuz(c) ? 1 : 0}`).join('|')
-    + `#${(enc.field.luzes ?? []).length}#${casasEscondidas(enc)?.chave ?? ''}`
+    // Cada luz do mapa conta se está ACESA, e não só quantas há: apagar uma fogueira e acender outra deixava a contagem
+    // igual, e a visão guardada continuava valendo com o fogo errado (`game/fogo.js`).
+    + `#${(enc.field.luzes ?? []).map((l) => (l.apagada ? 0 : 1)).join('')}#${casasEscondidas(enc)?.chave ?? ''}`
     + `#${(enc.zonas ?? []).filter((z) => z.luz).map((z) => z.id).join('.')}`
     // A cena que abre porta ou cava buraco no mapa sobe a versão.
     + `#${enc.field.versao ?? 0}`;

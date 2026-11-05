@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { CombatAdapter } from "../../../app/combat/CombatAdapter.js";
-import { runMonsterSide } from "../../../rules/ai.js";
+import { runMonsterSide, encerrarTurnoComInvocados } from "../../../rules/ai.js";
 
 // Mock do CombatManager
 vi.mock("../../../app/combat/CombatManager.js", () => ({
@@ -33,6 +33,7 @@ vi.mock("../../../rules/spells.js", () => ({
 // que roda o motor de verdade.
 vi.mock("../../../rules/ai.js", () => ({
   runMonsterSide: vi.fn(async () => {}),
+  encerrarTurnoComInvocados: vi.fn(async () => {}),
 }));
 
 describe("CombatAdapter", () => {
@@ -280,45 +281,37 @@ describe("CombatAdapter", () => {
   describe("terminarTurnoDe", () => {
     beforeEach(() => {
       adapter.initialize(mockEncounter, mockBoard);
+      encerrarTurnoComInvocados.mockClear();
+      mockApp.enc = { side: "party", combatants: [hero, foe] };
+      mockApp.select = vi.fn();
+      mockApp.firstActive = vi.fn(() => null);
     });
 
-    it("deve finalizar turno", () => {
-      adapter.terminarTurnoDe(hero);
-
-      expect(adapter.combatManager.endTurn).toHaveBeenCalled();
+    // O defeito: o botão encerrava sempre o primeiro da lista, qualquer que fosse o herói pedido.
+    it("encerra o turno do herói PEDIDO, não o primeiro da lista", async () => {
+      const outro = { ...hero, id: "hero2", name: "Pip" };
+      mockApp.enc.combatants = [hero, outro, foe];
+      await adapter.terminarTurnoDe(outro);
+      expect(encerrarTurnoComInvocados).toHaveBeenCalledTimes(1);
+      expect(encerrarTurnoComInvocados.mock.calls[0][1]).toBe(outro);
     });
 
-    it("deve chamar callback onTurnEnd", () => {
-      adapter.combatManager.endTurn.mockImplementation((callbacks) => {
-        callbacks.onTurnEnd(hero);
-        return { ok: true };
-      });
-
-      adapter.terminarTurnoDe(hero);
-
-      expect(mockApp.onTurnEnd).toHaveBeenCalledWith(hero);
+    it("não faz nada fora da vez do grupo nem explorando", async () => {
+      mockApp.enc.side = "foes";
+      await adapter.terminarTurnoDe(hero);
+      mockApp.enc.side = "party";
+      mockApp.capitulo = { explorando: true };
+      await adapter.terminarTurnoDe(hero);
+      expect(encerrarTurnoComInvocados).not.toHaveBeenCalled();
     });
 
-    it("deve chamar callback onRoundEnd", () => {
-      adapter.combatManager.endTurn.mockImplementation((callbacks) => {
-        callbacks.onRoundEnd(2);
-        return { ok: true };
-      });
-
-      adapter.terminarTurnoDe(hero);
-
-      expect(mockApp.onRoundEnd).toHaveBeenCalledWith(2);
-    });
-
-    it("deve chamar callback onCombatEnd", () => {
-      adapter.combatManager.endTurn.mockImplementation((callbacks) => {
-        callbacks.onCombatEnd("party"); // o vencedor é um `c.side`
-        return { ok: true };
-      });
-
-      adapter.terminarTurnoDe(hero);
-
-      expect(mockApp.onCombatEnd).toHaveBeenCalledWith("party");
+    it("passa o comando ao próximo herói que ainda pode agir", async () => {
+      const prox = { ...hero, id: "hero3" };
+      mockApp.firstActive = vi.fn(() => prox);
+      mockApp.selected = null;
+      await adapter.terminarTurnoDe(hero);
+      expect(mockApp.select).toHaveBeenCalledWith(prox);
+      expect(mockApp.refresh).toHaveBeenCalled();
     });
   });
 

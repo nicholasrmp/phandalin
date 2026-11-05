@@ -1,6 +1,15 @@
-# Gera `src/game/esconderijo.js`: terreno, altura e luz do esconderijo.
+# Gera `src/game/esconderijo.js`: terreno, altura e luz do esconderijo — NA PLANTA ANTIGA, de 40 x 28.
 #
-#   python src/dev/mapa-esconderijo.py
+#   python src/dev/mapa-esconderijo.py --planta-antiga
+#
+# APOSENTADO. O capítulo 2 agora roda sobre o battlemap da Forgotten Adventures, e o mapa sai de
+# `src/dev/mapa-esconderijo-fa.mjs` (ver o de-para em `revisoes/esconderijo-de-para-2026-11-04.md`). Este gerador
+# continua aqui como registro da planta antiga, mas rodá-lo sem querer apagaria o mapa novo e os
+# `PONTOS_DO_ESCONDERIJO` de que o capítulo depende — por isso ele só roda com `--planta-antiga`.
+import sys
+if '--planta-antiga' not in sys.argv:
+    sys.exit('mapa-esconderijo.py está aposentado: o esconderijo é gerado por src/dev/mapa-esconderijo-fa.mjs.\n'
+             'Para regerar a planta antiga de propósito (e perder a nova), rode com --planta-antiga.')
 #
 # O mapa é pintado por regiões (rocha por padrão, e cada sala cavada nela),
 # porque três grades de 40 x 28 escritas à mão saem do lugar uma da outra.

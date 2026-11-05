@@ -80,7 +80,7 @@ let refazer = [];
 let sujo = true;
 const sel = {
   ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
-  interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false },
+  interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false, pistaVerbo: '', pistaCd: 10, pistaAchado: '' },
   modoPiso: 'pincel', modoAresta: 'aresta', modoFrente: 'pincel', frenteMarca: true,
   sobrepor: { id: '', url: '/mapas/fa/ChestOpen.webp', frente: false, ligada: true },
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
@@ -417,7 +417,7 @@ function agir(e, primeira) {
   if (f === 'piso') aplicar(M.pintarPiso(mapa, t.x, t.y, sel.piso));
   else if (f === 'frente') aplicar(M.pintarFrente(mapa, t.x, t.y, sel.frenteMarca));
   else if (f === 'luz') { const l = LUZES.find(([id]) => id === sel.luz); aplicar(M.porLuz(mapa, t.x, t.y, { tipo: l[0], claro: l[2], penumbra: l[3] })); }
-  else if (f === 'interativo') aplicar(M.porInterativo(mapa, t.x, t.y, sel.interativo.id.trim() ? { ...sel.interativo } : null));
+  else if (f === 'interativo') aplicar(M.porInterativo(mapa, t.x, t.y, sel.interativo.id.trim() ? objetoDoPainel() : null));
   else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
   else if (f === 'sala') aplicar(M.definirSala(mapa, t.x, t.y, sel.sala.trim()));
   else if (f === 'inicio') aplicar(M.definirInicio(mapa, sel.inicio, t.x, t.y));
@@ -660,6 +660,15 @@ function estado() {
   $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${luz ? ` | luz <b>${luz.tipo}</b>` : ''}${alvo ? ` | interagível <b>${alvo.id}</b>` : ''}${M.frenteEm(mapa, t.x, t.y) ? ' | <b>frente</b>' : ''}${pecas.length ? ` | peça <b>${pecas.map((o) => o.id).join(', ')}</b>` : ''}${h}`;
 }
 
+/** O objeto interagível como o painel o descreve, com o TESTE (a pista) se um verbo foi escolhido. */
+function objetoDoPainel() {
+  const i = sel.interativo;
+  const pista = i.pistaVerbo && i.pistaAchado.trim()
+    ? { verbo: i.pistaVerbo, cd: Number(i.pistaCd) || 10, achado: i.pistaAchado.trim(), titulo: i.rotulo.trim() || i.id.trim() }
+    : null;
+  return { id: i.id, rotulo: i.rotulo, texto: i.texto, oculto: i.oculto, ...(pista ? { pista } : {}) };
+}
+
 /** O painel acompanha o mapa (depois de abrir, importar ou desfazer): o modo livre e a lista de sobreposições. */
 function sincronizarModo() {
   const c = $('explorar');
@@ -848,6 +857,20 @@ function montarPainel() {
       <p class="dica" style="margin:6px 0 2px">texto (o que acontece quando a cena não reconhece o id)</p>
       <textarea id="iTexto" rows="3" style="width:100%">${sel.interativo.texto}</textarea>
       <label class="linha"><input type="checkbox" id="iOculto" /> Oculto (sem marca no tabuleiro)</label>
+      <h3 style="margin:10px 0 4px">Teste (opcional)</h3>
+      <label class="linha">verbo <select id="iVerbo" style="flex:1">
+        <option value="">nenhum — só o "menu" acima</option>
+        <option value="procurar">Procurar (Percepção) — o que está escondido</option>
+        <option value="investigar">Investigar (Investigação) — o que se deduz</option>
+        <option value="rastrear">Ler os rastros (Sobrevivência)</option>
+        <option value="lembrar">Lembrar (História, Arcanismo, Religião, Natureza)</option>
+      </select></label>
+      <label class="linha">CD <input type="number" id="iCd" min="5" max="30" value="${sel.interativo.pistaCd}" style="width:5em" /></label>
+      <p class="dica" style="margin:6px 0 2px">o que acha quem passa no teste</p>
+      <textarea id="iAchado" rows="3" style="width:100%">${sel.interativo.pistaAchado}</textarea>
+      <p class="dica">Com um verbo, o jogo põe a opção no menu da casa, com a perícia e o bônus de quem vai rolar, uma
+      tentativa por herói; o achado vai para o diário. A Percepção passiva de quem chega perto já faz a casa brilhar
+      se alcançar a CD. Sem roteiro nenhum.</p>
       <p class="dica">Clique na casa para pôr; clique de novo para tirar. No jogo ele aparece no menu do botão
       direito de quem estiver encostado, e o tabuleiro desenha um anel na casa — a não ser que seja oculto.</p>
       <p class="dica">O <b>id</b> é o nome pelo qual o roteiro da cena o reconhece
@@ -995,6 +1018,9 @@ function montarPainel() {
     $(id).addEventListener('input', (e) => { sel.interativo[campo] = e.target.value; });
   }
   $('iOculto').addEventListener('change', (e) => { sel.interativo.oculto = e.target.checked; });
+  $('iVerbo').addEventListener('change', (e) => { sel.interativo.pistaVerbo = e.target.value; });
+  $('iCd').addEventListener('input', (e) => { sel.interativo.pistaCd = e.target.value; });
+  $('iAchado').addEventListener('input', (e) => { sel.interativo.pistaAchado = e.target.value; });
   L.querySelector(`[data-frentemarca="${sel.frenteMarca ? 1 : 0}"]`).classList.add('on');
   frenteNoPainel();
   sobreNoPainel();

@@ -203,4 +203,7 @@ export const TESOURO_POR_INIMIGO = {
   // (Sem entrada para o chefe goblin: as duas poções de Klarg estão no BAÚ do covil, não no corpo — `capitulo2.js` as
   // entrega. A chave antiga `chefeGoblin` não casava com id de monstro nenhum, e ligá-la a Klarg as daria em dobro.)
   hobgoblin: ['moedaDeOuro'],
+  // A algibeira de Yeemik (livro, área 6): três dentes de ouro de 1 po e 15 pp. É o único tesouro do esconderijo que
+  // está num CORPO — o baú de Klarg está entre os suprimentos, e sai de "Revirar os suprimentos" (`capitulo2.js`).
+  yeemik: [{ id: 'denteDeOuro', qtd: 3 }, { id: 'moedaDePrata', qtd: 15 }],
 };

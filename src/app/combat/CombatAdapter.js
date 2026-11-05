@@ -9,7 +9,7 @@
  */
 
 import { CombatManager } from "./CombatManager.js";
-import { runMonsterSide } from "../../rules/ai.js";
+import { runMonsterSide, encerrarTurnoComInvocados } from "../../rules/ai.js";
 
 export class CombatAdapter {
   /**
@@ -233,34 +233,27 @@ export class CombatAdapter {
   }
 
   /**
-   * Termina o turno de um combatente
+   * Termina o turno do herói `c` — o do clique, e não "o atual".
+   *
+   * Aqui delegava a `CombatManager.endTurn`, que encerra `combatants[enc.current ?? 0]`. O motor não tem `current`:
+   * a fase do grupo é simultânea, cada herói termina o seu. Então o botão encerrava SEMPRE o primeiro da lista (a
+   * Dara), e Pip, Brenn e Ilvan nunca passavam a vez — nem pelo botão, nem pelo espaço, nem pelo convidado da sala.
+   * Medido no esconderijo em 2026-11-04. Voltou a ser o caminho de antes da camada `src/app`: o motor encerra o turno
+   * de quem foi pedido, junto com os invocados dele (`encerrarTurnoComInvocados`), e o comando passa ao próximo.
+   *
    * @param {Object} c - Combatente
    */
   terminarTurnoDe(c) {
-    if (!this.isInitialized()) {
-      console.warn("CombatAdapter não inicializado, usando método original");
-      return;
-    }
-
-    return this.combatManager.endTurn({
-      onTurnEnd: (combatant) => {
-        // Atualizar UI do turno
-        if (this.app.onTurnEnd) {
-          this.app.onTurnEnd(combatant);
-        }
-      },
-      onRoundEnd: (round) => {
-        // Processar fim de round
-        if (this.app.onRoundEnd) {
-          this.app.onRoundEnd(round);
-        }
-      },
-      onCombatEnd: (winner) => {
-        // Finalizar combate
-        if (this.app.onCombatEnd) {
-          this.app.onCombatEnd(winner);
-        }
-      },
+    const app = this.app;
+    const enc = app.enc;
+    if (!c || !enc || enc.side !== "party" || app.capitulo?.explorando) return;
+    return encerrarTurnoComInvocados(enc, c, {
+      delayMs: () => 420 + (app.walkWaitMs ?? 0),
+      onStep: () => app.refresh(),
+    }).then(() => {
+      if (enc.side === "party" && (!app.selected || app.selected.acted))
+        app.select?.(app.firstActive?.());
+      app.refresh();
     });
   }
 

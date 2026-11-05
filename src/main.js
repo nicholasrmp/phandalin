@@ -90,6 +90,8 @@ import {
 import { criarPortaCompartilhada } from "./game/porta-narrativa.js";
 import { abrirMenuContexto, fecharMenuContexto } from "./view/menu-contexto.js";
 import { opcoesDaCasa } from "./game/interacoes.js";
+import { cortarNoPerigo, resolverPerigo } from "./game/armadilhas.js";
+import { casasNotadas } from "./game/investigar.js";
 import {
   alvosDaHabilidade,
   vetoDaHabilidade,
@@ -1151,8 +1153,12 @@ class App {
       avisar(corda);
       return;
     }
-    this.enc.moveAlong(c, Battlefield.pathFrom(reached, { x, y }));
-    if (!emCombate) this.afterWalk(() => this.capitulo?.depoisDeMover(c));
+    const perigo = this.andarComCuidado(c, Battlefield.pathFrom(reached, { x, y }));
+    if (perigo || !emCombate)
+      this.afterWalk(async () => {
+        await resolverPerigo(c, perigo);
+        if (!emCombate) await this.capitulo?.depoisDeMover(c);
+      });
     this.refresh();
   }
 
@@ -3266,16 +3272,51 @@ class App {
       this.refuse(c, corda);
       return;
     }
-    this.enc.moveAlong(c, Battlefield.pathFrom(reached, tile));
+    const perigo = this.andarComCuidado(c, Battlefield.pathFrom(reached, tile));
     this.board?.seguir(c.pos);
     // Explorando: Shift+clique leva o GRUPO todo (cada um ao lugar livre mais perto de quem foi), em vez de um clique por herói.
     const seguem = this.capitulo?.explorando && ev?.shiftKey ? this.grupoSegue(c) : [];
-    // Explorando: depois do passo, a cena vê se a armadilha dispara.
-    if (this.capitulo?.explorando)
+    // Depois do passo: a armadilha que alguém notou ou pisou no caminho (também na luta) e, explorando, a cena.
+    // (Na luta sem perigo nenhum não se espera a caminhada: o próximo clique não fica preso.)
+    if (perigo || seguem.some((m) => m._perigo) || this.capitulo?.explorando)
       this.afterWalk(async () => {
-        for (const m of [c, ...seguem]) await this.capitulo?.depoisDeMover(m);
+        await resolverPerigo(c, perigo);
+        for (const m of seguem) await resolverPerigo(m, m._perigo);
+        if (this.capitulo?.explorando)
+          for (const m of [c, ...seguem]) await this.capitulo?.depoisDeMover(m);
       });
     this.refresh();
+  }
+
+  /**
+   * Os brilhos do tabuleiro: os pontos de exame da cena, o que a Percepção passiva de alguém notou ("algo aqui chama
+   * a atenção") e as armadilhas que o grupo já descobriu e ainda valem. Só o que o grupo enxerga.
+   */
+  pontosDoTabuleiro() {
+    const cap = this.capitulo;
+    if (!this.enc || !cap) return null;
+    const pontos = cap.explorando ? [...(cap.pontosDeExame?.() ?? [])] : [];
+    if (cap.investigavel !== false) {
+      const visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc) : null;
+      if (cap.explorando) for (const p of casasNotadas(this, { visao })) pontos.push({ ...p, tipo: "notado" });
+      for (const a of cap.armadilhas?.() ?? []) {
+        if (!a.descoberta || a.desarmada) continue;
+        for (const q of a.casas)
+          if (!visao || visao.has(`${q.x},${q.y}`)) pontos.push({ x: q.x, y: q.y, tipo: "armadilha", nome: a.nome });
+      }
+    }
+    return pontos.length ? pontos : null;
+  }
+
+  /**
+   * Anda pelo caminho conferindo cada casa contra as armadilhas da cena (`game/armadilhas.js`): para antes da
+   * armadilha que a Percepção passiva notou, ou em cima da que ninguém notou. Devolve o que aconteceu, para depois
+   * da caminhada (`resolverPerigo`).
+   */
+  andarComCuidado(c, path) {
+    const { caminho, evento } = cortarNoPerigo(this.enc, c, path, this.capitulo?.armadilhas?.());
+    if (caminho.length > 1) this.enc.moveAlong(c, caminho);
+    return evento;
   }
 
   /** O grupo segue o líder: cada herói vivo anda, dentro do que alcança, até a casa livre mais perto dele. Devolve quem andou. */
@@ -3293,7 +3334,7 @@ class App {
         if (!melhor || score < melhor.score) melhor = { x, y, score };
       }
       if (!melhor || (melhor.x === m.pos.x && melhor.y === m.pos.y)) continue;
-      this.enc.moveAlong(m, Battlefield.pathFrom(alcance, melhor));
+      m._perigo = this.andarComCuidado(m, Battlefield.pathFrom(alcance, melhor));
       andaram.push(m);
     }
     return andaram;
@@ -3510,7 +3551,10 @@ class App {
       // As colunas de luz das magias de utilidade: Bem e Mal, armadilhas, Localizar Objeto, o que o bicho viu.
       marcas: this.capitulo?.explorando ? marcasDoJogo(this) : null,
       // onde o botão direito tem o que examinar (a Casa da Morte): o tabuleiro põe um brilho discreto
-      pontos: this.capitulo?.explorando ? (this.capitulo.pontosDeExame?.() ?? null) : null,
+      // e, em toda cena, o que a Percepção passiva notou e as armadilhas já descobertas (`game/investigar.js`)
+      pontos: this.pontosDoTabuleiro(),
+      // explorando, a vista de cima não desenha o alcance (só o caminho sob o cursor): ver `tabuleiro-topo.js realce`
+      explorando: Boolean(this.capitulo?.explorando),
       path: null,
       // `mode` é a chave que acende a camada de previsão inteira do tabuleiro:
       // chão de alcance, tracejado do alcance longo, cruz de alvo impossível e
@@ -3815,7 +3859,7 @@ class App {
       r.achados.length
         ? [
             `${c.name} revista o corpo e leva o que ele carregava.`,
-            ...r.achados.map((id) => `· ${nomeDeId(id)}`),
+            ...(r.itens ?? r.achados.map((id) => ({ id, qtd: 1 }))).map(({ id, qtd }) => `· ${qtd > 1 ? `${qtd} × ` : ''}${nomeDeId(id)}`),
           ]
         : `${c.name} revista o corpo e não acha nada que valha.`,
     );

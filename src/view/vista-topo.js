@@ -208,14 +208,16 @@ export function traco(ctx, x0, y0, x1, y1, codigo, C, aMostra) {
   ctx.stroke();
 }
 
-export function pintarArestas(ctx, field, C, aMostra = false) {
+export function pintarArestas(ctx, field, C, aMostra = false, soPortas = false) {
   ctx.save();
   ctx.lineCap = 'round';
+  // `soPortas`: sobre mapa pintado, a parede já está no desenho; só a porta (que abre e fecha) precisa de traço
+  const vale = (codigo) => (soPortas && codigo !== ARESTA.porta && codigo !== ARESTA.aberta ? 0 : codigo);
   for (let y = 0; y < field.h; y++) {
     for (let x = 0; x < field.w; x++) {
       const i = y * field.w + x;
-      traco(ctx, x * C, y * C, (x + 1) * C, y * C, field.paredeN[i], C, aMostra);     // a de cima
-      traco(ctx, x * C, y * C, x * C, (y + 1) * C, field.paredeO[i], C, aMostra);     // a da esquerda
+      traco(ctx, x * C, y * C, (x + 1) * C, y * C, vale(field.paredeN[i]), C, aMostra);     // a de cima
+      traco(ctx, x * C, y * C, x * C, (y + 1) * C, vale(field.paredeO[i]), C, aMostra);     // a da esquerda
     }
   }
   ctx.restore();
@@ -304,6 +306,50 @@ export function pintarInterativos(ctx, field, C, tempo = 0) {
     ctx.beginPath();
     ctx.arc(cx, cy, Math.max(1.5, C * 0.055), 0, Math.PI * 2);
     ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * OS BRILHOS DO QUE A ATENÇÃO ACHOU (`app.pontosDoTabuleiro`). Discretos de propósito: o mapa pintado é o que se
+ * olha, e o brilho só diz "aqui". Dois desenhos:
+ * - o notado (a Percepção passiva viu algo, ou o ponto de exame da cena): uma faísca dourada que respira, sem anel —
+ *   o anel é do objeto interagível, e confundir os dois diria que dá para MEXER onde só dá para olhar;
+ * - a armadilha descoberta: um losango vermelho tracejado na casa, que é o aviso "não pise".
+ * Vão por baixo do véu: o que o grupo não enxerga não brilha.
+ */
+export function pintarPontos(ctx, pontos, C, tempo = 0) {
+  if (!pontos?.length) return;
+  ctx.save();
+  for (const p of pontos) {
+    const cx = (p.x + 0.5) * C;
+    const cy = (p.y + 0.5) * C;
+    if (p.tipo === 'armadilha') {
+      const r = C * 0.36;
+      ctx.setLineDash([C * 0.09, C * 0.07]);
+      ctx.lineDashOffset = -tempo * C * 0.3;
+      ctx.lineWidth = Math.max(2, C * 0.05);
+      ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
+      ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); ctx.stroke();
+      ctx.lineWidth = Math.max(1.5, C * 0.03);
+      ctx.strokeStyle = 'rgba(235, 90, 70, .9)';
+      ctx.stroke();
+      ctx.setLineDash([]);
+      continue;
+    }
+    const fase = (p.x * 1.7 + p.y * 2.3) % 6.28;
+    const a = 0.35 + 0.3 * Math.sin(tempo * 2.4 + fase);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, C * 0.32);
+    g.addColorStop(0, `rgba(255, 236, 170, ${(a * 0.9).toFixed(3)})`);
+    g.addColorStop(0.35, `rgba(255, 210, 120, ${(a * 0.35).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(255, 200, 100, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, C * 0.32, 0, Math.PI * 2); ctx.fill();
+    // a faísca: quatro pontas finas
+    ctx.strokeStyle = `rgba(255, 246, 210, ${Math.min(1, a + 0.25).toFixed(3)})`;
+    ctx.lineWidth = Math.max(1, C * 0.018);
+    const k = C * (0.1 + 0.03 * Math.sin(tempo * 3.1 + fase));
+    ctx.beginPath(); ctx.moveTo(cx - k, cy); ctx.lineTo(cx + k, cy); ctx.moveTo(cx, cy - k); ctx.lineTo(cx, cy + k); ctx.stroke();
   }
   ctx.restore();
 }

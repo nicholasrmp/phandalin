@@ -11,6 +11,10 @@ import { TESOURO_POR_INIMIGO } from '../rules/items/phandelver.js';
 import { WEAPONS, garantirInventario, nomeDeId } from '../rules/equipment.js';
 import { guardar } from './comercio.js';
 
+// Uma entrada da tabela é um id (uma peça) ou `{ id, qtd }` (a algibeira de Yeemik: três dentes de ouro e 15 de prata).
+const idDe = (e) => (typeof e === 'string' ? e : e.id);
+const qtdDe = (e) => (typeof e === 'string' ? 1 : e.qtd ?? 1);
+
 /** A chave do corpo na tabela de tesouro, ou null (o corpo não carrega nada de nota). */
 export const chaveDoTesouro = (m) => [m?.npcId, m?.defId].find((k) => k && TESOURO_POR_INIMIGO[k]) ?? null;
 
@@ -26,7 +30,7 @@ export function tesouroDoCorpo(corpo, grupo = []) {
   const chave = chaveDoTesouro(corpo);
   if (!chave) return [];
   const entregues = corpo.pecasEntregues ?? [];
-  return TESOURO_POR_INIMIGO[chave].filter((id) => !entregues.includes(id) && (WEAPONS[id] ? !grupoTem(grupo, id) : true));
+  return TESOURO_POR_INIMIGO[chave].map(idDe).filter((id) => !entregues.includes(id) && (WEAPONS[id] ? !grupoTem(grupo, id) : true));
 }
 
 /** Por que `c` não pode revistar `corpo` agora (`null` = pode). `enc.over`/`enc.explorando` dizem se há turno. */
@@ -45,15 +49,18 @@ export function saquearCorpo(enc, c, corpo, grupo = []) {
   const why = porqueNaoSaquear(enc, c, corpo);
   if (why) return { ok: false, why };
   const achados = tesouroDoCorpo(corpo, grupo);
+  const qtd = (id) => qtdDe(TESOURO_POR_INIMIGO[chaveDoTesouro(corpo)].find((e) => idDe(e) === id));
+  const itens = achados.map((id) => ({ id, qtd: qtd(id) }));
   corpo.saqueado = true;
   corpo.pecasEntregues = [...(corpo.pecasEntregues ?? []), ...achados];
   if (!(enc.over || enc.explorando)) c.actionUsed = true;
-  for (const id of achados) {
+  for (const { id, qtd: n } of itens) {
     if (WEAPONS[id]) (c.weapons ??= []).push(id);
-    else guardar(c, id, 1);
+    else guardar(c, id, n);
   }
-  enc.say('acao', achados.length
-    ? `${c.name} revista ${corpo.name} e leva: ${achados.map((id) => nomeDeId(id).toLowerCase()).join(', ')}.`
+  const nome = ({ id, qtd: n }) => (n > 1 ? `${n} × ${nomeDeId(id).toLowerCase()}` : nomeDeId(id).toLowerCase());
+  enc.say('acao', itens.length
+    ? `${c.name} revista ${corpo.name} e leva: ${itens.map(nome).join(', ')}.`
     : `${c.name} revista ${corpo.name} e não acha nada que valha.`);
-  return { ok: true, achados };
+  return { ok: true, achados, itens };
 }

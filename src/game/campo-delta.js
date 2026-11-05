@@ -20,7 +20,20 @@ export function diferencasDoCampo(campo, base) {
   }
   // Uma diferença enorme (uma cena que remonta o mapa inteiro) estouraria o teto da vista: melhor não mandar do que perder a vista.
   if (a.length + c.length > LIMITE_DE_DIFERENCAS) return null;
-  return a.length || c.length ? { a, c } : null;
+  // AS LUZES E AS PEÇAS DE ARTE. A fogueira que alguém apagou (`game/fogo.js`) e a sobreposição que a cena acendeu (a
+  // ponte caída, o baú aberto) não são casa nem aresta, e sem isto o convidado continuava vendo o fogo aceso e a ponte
+  // inteira. `l`: [índice da luz, 1 acesa | 0 apagada]; `s`: [id da peça, 1 ligada | 0 desligada].
+  const l = [];
+  (campo.luzes ?? []).forEach((luz, i) => {
+    if (Boolean(luz.apagada) !== Boolean(base.luzes?.[i]?.apagada)) l.push([i, luz.apagada ? 0 : 1]);
+  });
+  const s = [];
+  for (const o of campo.sobreposicoes ?? []) {
+    const b = base.sobreposicoes?.find((p) => p.id === o.id);
+    if (b && Boolean(b.ligada) !== Boolean(o.ligada)) s.push([o.id, o.ligada ? 1 : 0]);
+  }
+  if (!(a.length || c.length || l.length || s.length)) return null;
+  return { a, c, ...(l.length ? { l } : {}), ...(s.length ? { s } : {}) };
 }
 
 /** Quantas casas e arestas diferentes cabem numa vista (cada uma pesa uns 15 caracteres; o teto é 120.000). */
@@ -32,9 +45,13 @@ export function diferencaValida(d, n) {
   if (typeof d !== 'object' || !Array.isArray(d.a) || !Array.isArray(d.c)) return false;
   const inteiro = (v) => Number.isInteger(v) && v >= 0 && v < 256;
   const indice = (v) => Number.isInteger(v) && v >= 0 && v < n;
+  const liga = (v) => v === 0 || v === 1;
+  const nome = (v) => typeof v === 'string' && v.length > 0 && v.length <= 64;
   return d.a.length <= n * 2 && d.c.length <= n
     && d.a.every((e) => Array.isArray(e) && (e[0] === 0 || e[0] === 1) && indice(e[1]) && inteiro(e[2]))
-    && d.c.every((e) => Array.isArray(e) && indice(e[0]) && inteiro(e[1]) && inteiro(e[2]) && inteiro(e[3]));
+    && d.c.every((e) => Array.isArray(e) && indice(e[0]) && inteiro(e[1]) && inteiro(e[2]) && inteiro(e[3]))
+    && (d.l === undefined || (Array.isArray(d.l) && d.l.length <= 256 && d.l.every((e) => Array.isArray(e) && inteiro(e[0]) && liga(e[1]))))
+    && (d.s === undefined || (Array.isArray(d.s) && d.s.length <= 256 && d.s.every((e) => Array.isArray(e) && nome(e[0]) && liga(e[1]))));
 }
 
 /**
@@ -66,6 +83,25 @@ export function aplicarDiferencas(campo, base, d) {
   for (const i of mexidasC) if (!novoC.has(i)) poeC(i, base.tiles[i], base.surfaces[i], base.heights[i]);
   for (const [t, i, cod] of d?.a ?? []) poeA(t, i, cod);
   for (const [i, tile, sup, h] of d?.c ?? []) poeC(i, tile, sup, h);
+  // As luzes e as peças de arte: o que a diferença anterior mexeu e a nova não repete volta ao que a base tem.
+  const poeL = (i, acesa) => {
+    const luz = campo.luzes?.[i];
+    if (!luz || Boolean(!luz.apagada) === Boolean(acesa)) return;
+    if (acesa) delete luz.apagada; else luz.apagada = true;
+    mudou = true;
+  };
+  const poeS = (id, ligada) => {
+    const o = campo.sobreposicoes?.find((p) => p.id === id);
+    if (!o || Boolean(o.ligada) === Boolean(ligada)) return;
+    o.ligada = Boolean(ligada);
+    mudou = true;
+  };
+  const novoL = new Set((d?.l ?? []).map((e) => e[0]));
+  const novoS = new Set((d?.s ?? []).map((e) => e[0]));
+  for (const [i] of antes.l ?? []) if (!novoL.has(i)) poeL(i, !base.luzes?.[i]?.apagada);
+  for (const [id] of antes.s ?? []) if (!novoS.has(id)) poeS(id, base.sobreposicoes?.find((p) => p.id === id)?.ligada);
+  for (const [i, v] of d?.l ?? []) poeL(i, v === 1);
+  for (const [id, v] of d?.s ?? []) poeS(id, v === 1);
   campo.difAplicada = d ?? { a: [], c: [] };
   if (mudou) campo.versao = (campo.versao ?? 0) + 1;
   return mudou;

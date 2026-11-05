@@ -15,7 +15,9 @@
 // toda isométrica: o móvel aqui é o sprite deitado na casa, provisório.
 
 import { Board, SUPERFICIE } from './board.js';
-import { temEscuridaoEm, visaoDoGrupo } from '../rules/luz.js';
+import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, visaoNoEscuro, CLARO } from '../rules/luz.js';
+import { emissoresDoAmbiente, desenharAmbiente } from './ambiente.js';
+import { criarCacheDePoligonos } from './raios.js';
 import * as V from './vista-topo.js';
 import { makePortrait } from '../art/sheet.js';
 import atlas from '../art/folhas/cenario.json';
@@ -173,6 +175,7 @@ export class TabuleiroTopo extends Board {
     V.pintarMoveis(ctx, this.field, C, atlas, imgAtlas, comPintura);
     V.pintarGrade(ctx, this.field, C, comPintura ? 'rgba(120,200,255,.25)' : 'rgba(0,0,0,.28)');
     V.pintarInterativos(ctx, this.field, C, this.time);
+    V.pintarPontos(ctx, this.overlay.pontos, C, this.time);
     ctx.restore();
 
     this.realce(ctx);
@@ -182,8 +185,11 @@ export class TabuleiroTopo extends Board {
     // Com traço livre (`field.tracos`), desenha-se o traço: a aresta de casa é só a derivada que a regra usa.
     ctx.save();
     ctx.translate(this.ox, this.oy);
-    if (this.field.tracos?.length) V.pintarTracos(ctx, this.field.tracos, C, comPintura);
-    else V.pintarArestas(ctx, this.field, C, comPintura);
+    // SOBRE MAPA PINTADO A PAREDE NÃO SE DESENHA: o desenho já a tem, e a linha por cima é coisa de editor (o jogador
+    // via a planta inteira em ciano, até onde não enxergava). Fica só a PORTA, que abre e fecha e o desenho não sabe.
+    if (comPintura) V.pintarArestas(ctx, this.field, C, false, true);
+    else if (this.field.tracos?.length) V.pintarTracos(ctx, this.field.tracos, C, false);
+    else V.pintarArestas(ctx, this.field, C, false);
     ctx.restore();
 
     const aVista = new Map();
@@ -208,20 +214,89 @@ export class TabuleiroTopo extends Board {
     ctx.restore();
   }
 
-  /** O realce do HUD: alcance, caminho, alvos e a casa sob o cursor. `fillDiamond` é o herdado — agora pinta quadrado. */
+  /**
+   * O realce do HUD: alcance, caminho, alvos e a casa sob o cursor.
+   *
+   * O ALCANCE NÃO PINTA O CHÃO. Encher de azul cada casa alcançável cobria o mapa pintado justamente onde o jogador
+   * precisa olhar — o baú, a fogueira, a laje rachada. Agora:
+   * - explorando, não se desenha alcance nenhum: o passo é de 60 pés e cabe quase tudo; o caminho sob o cursor basta;
+   * - na luta, só o CONTORNO da área alcançável, uma linha fina na borda (como o Foundry e o BG3 fazem), e o resto do
+   *   chão fica limpo;
+   * - o caminho sob o cursor é uma LINHA pelos centros das casas, com um anel no destino (os pés, no cartão).
+   */
   realce(ctx) {
-    const { reachable, path, targets, selected } = this.overlay;
-    if (reachable) {
-      // as mesmas cores do isométrico: o jogador não tem de reaprender o que é azul
-      for (const chave of reachable.keys()) {
-        const [x, y] = String(chave).split(',').map(Number);
-        this.fillDiamond(ctx, x, y, 'rgba(96,168,255,.26)', 'rgba(140,200,255,.45)');
-      }
-    }
-    for (const p of path ?? []) this.fillDiamond(ctx, p.x, p.y, 'rgba(160,210,255,.5)', '#bfe0ff');
+    const { reachable, path, targets, selected, explorando } = this.overlay;
+    if (reachable && !explorando) this.contornoDoAlcance(ctx, reachable);
+    if (path?.length > 1) this.linhaDoCaminho(ctx, path);
     for (const t of targets ?? []) this.fillDiamond(ctx, t.pos.x, t.pos.y, 'rgba(220,90,70,.26)', '#d9594a');
     if (selected?.pos) this.fillDiamond(ctx, selected.pos.x, selected.pos.y, 'rgba(0,0,0,0)', '#ffd868');
-    if (this.hover) this.fillDiamond(ctx, this.hover.x, this.hover.y, 'rgba(255,255,255,.07)', 'rgba(255,216,104,.7)');
+    if (this.hover) this.fillDiamond(ctx, this.hover.x, this.hover.y, 'rgba(255,255,255,.05)', 'rgba(255,216,104,.55)');
+  }
+
+  /**
+   * A borda da área que o herói alcança: cada lado de casa alcançável que encosta numa casa que não é.
+   *
+   * A casa de um aliado conta como DENTRO (passa-se por ela, só não se para): sem isso cada aliado ganhava uma
+   * caixinha própria no meio da área. E a cor NÃO é a da grade — a grade é azul claro sobre o mapa pintado, e um
+   * contorno azul lia como mais uma linha dela. É marfim, mais grosso, com sombra embaixo.
+   */
+  contornoDoAlcance(ctx, reachable) {
+    const C = this.casa;
+    const dentro = (x, y) => {
+      const n = reachable.get(`${x},${y}`);
+      if (n) return true;
+      const quem = this.enc?.at?.(x, y);
+      return Boolean(quem && quem.side === 'party');
+    };
+    ctx.save();
+    ctx.translate(this.ox, this.oy);
+    ctx.beginPath();
+    for (const k of reachable.keys()) {
+      const [x, y] = String(k).split(',').map(Number);
+      if (!dentro(x, y - 1)) { ctx.moveTo(x * C, y * C); ctx.lineTo((x + 1) * C, y * C); }
+      if (!dentro(x, y + 1)) { ctx.moveTo(x * C, (y + 1) * C); ctx.lineTo((x + 1) * C, (y + 1) * C); }
+      if (!dentro(x - 1, y)) { ctx.moveTo(x * C, y * C); ctx.lineTo(x * C, (y + 1) * C); }
+      if (!dentro(x + 1, y)) { ctx.moveTo((x + 1) * C, y * C); ctx.lineTo((x + 1) * C, (y + 1) * C); }
+    }
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(0, 0, 0, .55)';
+    ctx.lineWidth = Math.max(5, C * 0.09);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(246, 230, 186, .92)';
+    ctx.lineWidth = Math.max(2.5, C * 0.045);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** O caminho: linha pelos centros e anel no destino (o custo em pés já vai no cartão que segue o cursor). */
+  linhaDoCaminho(ctx, path) {
+    const C = this.casa;
+    const pts = path.map((p) => this.center(p.x, p.y));
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].sx, pts[0].sy);
+    for (const p of pts.slice(1)) ctx.lineTo(p.sx, p.sy);
+    ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
+    ctx.lineWidth = Math.max(4, C * 0.08);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(200, 230, 255, .9)';
+    ctx.lineWidth = Math.max(2, C * 0.035);
+    ctx.setLineDash([C * 0.12, C * 0.08]);
+    ctx.lineDashOffset = -this.time * C * 0.6;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const fim = pts.at(-1);
+    ctx.beginPath();
+    ctx.arc(fim.sx, fim.sy, C * 0.3, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
+    ctx.lineWidth = Math.max(4, C * 0.07);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(200, 230, 255, .95)';
+    ctx.lineWidth = Math.max(2, C * 0.035);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /**
@@ -281,6 +356,223 @@ export class TabuleiroTopo extends Board {
     const letra = Math.max(10, Math.round(C * 0.16));
     m.fillStyle = 'rgba(0,0,0,.9)';
     m.fillRect(sx - r * 1.2, sy + r - bh, r * 2.4, bh * 2 + letra + 6);
+  }
+
+  // ---- a escuridão de cima: luz em raio, recortada pela parede --------------------------------------------
+
+  /**
+   * O VÉU DE CIMA. O herdado acende casa por casa e borra: de cima isso lê como uma escada de quadrados, e a tocha
+   * vira um tabuleiro de xadrez. Aqui a luz é desenhada como o Foundry desenha:
+   *
+   * - cada fonte (tocha, fogueira, Luz do Dia) acende um CÍRCULO do tamanho do alcance dela, cheio até a luz plena
+   *   e esmaecendo na penumbra, recortado pelo polígono de raios (`raios.js`): a rocha corta a luz, a luz não vaza;
+   * - a visão no escuro acende o mesmo círculo a meia força, do alcance dela;
+   * - a luz do mapa (a clareira de dia, `field.luz`) entra como está, com a borda borrada;
+   * - tudo isso só onde algum herói tem linha de visão (o polígono dele, sem limite) E onde a regra diz que ele
+   *   enxerga (a máscara de casas, um pouco dilatada): é o que faz o platô alto cortar a vista na tela também.
+   *
+   * E O QUE NINGUÉM VÊ É PRETO. O isométrico deixa 20% (o já visto se adivinha); de cima, com mapa pintado, os 20%
+   * entregavam a caverna inteira — o desenho da FA mostra cada sala, cada baú. `veuDaEscuridao` do mapa ainda manda.
+   *
+   * A regra não muda: quem aparece continua decidido por `_visao` (a casa da figura tem de estar nela).
+   */
+  desenharEscuridao(ctx, byView) {
+    const { width: w, height: h } = this.canvas;
+    const C = this.casa;
+    const field = this.field;
+    const figuras = [];
+    for (const c of byView.values()) {
+      if (!c.dead && this.figuraVisivel(c) && this._visao.has(`${c.pos.x},${c.pos.y}`)) figuras.push(c);
+    }
+    const fontes = fontesDeLuz(this.enc);
+    let grupo = this.enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.pos);
+    const proprios = this.filtroDeVisao ? grupo.filter(this.filtroDeVisao) : null;
+    if (proprios?.length) grupo = proprios;
+    const domoDe = new Map(this.fx.domosAtivos(this).filter((o) => o.it.id != null).map((o) => [o.it.id, o.it]));
+    const chave = [w, h, this.ox, this.oy, C, field.versao ?? 0,
+      grupo.map((c) => `${c.pos.x},${c.pos.y},${visaoNoEscuro(c)}`).join(';'),
+      fontes.map((f) => `${f.pos.x},${f.pos.y},${f.claro},${f.penumbra}`).join(';'),
+      figuras.map((c) => `${c.pos.x},${c.pos.y}${domoDe.has(c.id) ? 'd' : ''}`).join(';')].join('|');
+    if (this._mascara?.visao !== this._visao || this._mascara.chave !== chave) {
+      this._mascara = this.montarVeuDeCima(w, h, fontes, grupo, figuras, domoDe, chave);
+    }
+    ctx.drawImage(this._mascara.borrada, 0, 0);
+    this.zonasObscurasPorCima(ctx, figuras);
+
+    // o brilho quente do fogo, como no herdado: numa tela à parte, furado pelo mesmo véu
+    const ambiente = emissoresDoAmbiente(field);
+    if (!fontes.length && ambiente.vazio) return;
+    const brilho = this._brilho ?? (this._brilho = document.createElement('canvas'));
+    if (brilho.width !== w) brilho.width = w;
+    if (brilho.height !== h) brilho.height = h;
+    const bg = brilho.getContext('2d');
+    bg.globalCompositeOperation = 'source-over';
+    bg.clearRect(0, 0, w, h);
+    bg.globalCompositeOperation = 'lighter';
+    for (const f of fontes) this.pocaDeLuz(bg, f);
+    desenharAmbiente(bg, this.time, (x, y) => this.center(x, y), ambiente);
+    bg.globalCompositeOperation = 'destination-out';
+    bg.drawImage(this._mascara.borrada, 0, 0);
+    bg.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(brilho, 0, 0);
+    ctx.restore();
+  }
+
+  /** Monta o véu (uma tela preta furada onde se enxerga). Só roda quando muda quem vê, a luz, o mapa ou a câmera. */
+  montarVeuDeCima(w, h, fontes, grupo, figuras, domoDe, chave) {
+    const C = this.casa;
+    const field = this.field;
+    const tela = (nome) => {
+      const telas = (this._telasDoVeu ??= {});
+      const cv = telas[nome] ?? (telas[nome] = document.createElement('canvas'));
+      if (cv.width !== w) cv.width = w;
+      if (cv.height !== h) cv.height = h;
+      const g = cv.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalCompositeOperation = 'source-over';
+      g.globalAlpha = 1;
+      g.filter = 'none';
+      g.clearRect(0, 0, w, h);
+      return [cv, g];
+    };
+    // os polígonos valem enquanto o mapa não muda (porta aberta, parede caída sobem `versao`)
+    this._poligonos ??= criarCacheDePoligonos();
+    const poligono = (ox, oy, raio, n) => this._poligonos(field, ox, oy, raio, n, `${field.versao ?? 0}`);
+    const caminho = (g, pts) => {
+      g.beginPath();
+      g.moveTo(this.ox + pts[0] * C, this.oy + pts[1] * C);
+      for (let i = 2; i < pts.length; i += 2) g.lineTo(this.ox + pts[i] * C, this.oy + pts[i + 1] * C);
+      g.closePath();
+    };
+    const centroDe = (pos) => { const f = pos.f ?? 1; return [pos.x + f / 2, pos.y + f / 2]; };
+    const diagonal = Math.hypot(field.w, field.h) + 1;
+
+    // 1. A LUZ: quanto cada ponto está aceso (alfa), sem olhar quem vê.
+    const [luz, gl] = tela('luz');
+    if (field.luz) {
+      // a luz do mapa por casa, borrada para a borda da clareira não sair em degrau
+      const [amb, ga] = tela('amb');
+      for (let y = 0; y < field.h; y++) {
+        for (let x = 0; x < field.w; x++) {
+          const n = field.luz[y * field.w + x];
+          if (!n) continue;
+          ga.fillStyle = n >= CLARO ? '#fff' : 'rgba(255,255,255,.5)';
+          ga.fillRect(this.ox + x * C - 0.5, this.oy + y * C - 0.5, C + 1, C + 1);
+        }
+      }
+      gl.filter = `blur(${Math.round(C * 0.45)}px)`;
+      gl.drawImage(amb, 0, 0);
+      gl.filter = 'none';
+    } else {
+      gl.fillStyle = '#fff';
+      gl.fillRect(0, 0, w, h);
+    }
+    gl.globalCompositeOperation = 'lighter';
+    const circulo = (ox, oy, raioCasas, paradas) => {
+      const pts = poligono(ox, oy, raioCasas, 720);
+      const sx = this.ox + ox * C;
+      const sy = this.oy + oy * C;
+      const g = gl.createRadialGradient(sx, sy, 0, sx, sy, raioCasas * C);
+      for (const [p, a] of paradas) g.addColorStop(p, `rgba(255,255,255,${a})`);
+      gl.fillStyle = g;
+      caminho(gl, pts);
+      gl.fill();
+    };
+    for (const f of fontes) {
+      const claro = Math.max(0, f.claro) / 5;
+      const total = (Math.max(0, f.claro) + f.penumbra) / 5;
+      if (total <= 0) continue;
+      const [ox, oy] = centroDe(f.pos);
+      const k = claro / total;
+      // plena até o fim da luz plena, com o degrau para a penumbra macio, e a penumbra morrendo até a borda
+      circulo(ox, oy, total, claro > 0
+        ? [[0, 1], [Math.max(0, k - 0.08), 1], [Math.min(1, k + 0.06), 0.55], [0.85, 0.4], [1, 0]]
+        : [[0, 0.55], [0.85, 0.4], [1, 0]]);
+    }
+    for (const c of grupo) {
+      const dv = visaoNoEscuro(c) / 5;
+      if (dv <= 0) continue;
+      const [ox, oy] = centroDe(c.pos);
+      circulo(ox, oy, dv, [[0, 0.5], [0.88, 0.45], [1, 0]]);
+    }
+
+    // 2. QUEM VÊ: a união das linhas de visão dos heróis. O polígono não sabe de ALTURA, e a regra sabe: o platô
+    // mais alto que os dois olhos corta a vista (`hasLineOfSight`). Essas casas — só essas — saem por cima, borradas.
+    // A máscara de casas inteira da regra NÃO entra: ela é a derivada em degrau do traço, e era ela que fazia a
+    // borda da luz sair em escada.
+    const [vista, gv] = tela('vista');
+    gv.fillStyle = '#fff';
+    for (const c of grupo) {
+      const [ox, oy] = centroDe(c.pos);
+      caminho(gv, poligono(ox, oy, diagonal, 1080));
+      gv.fill();
+    }
+    const cortes = this.casasAtrasDoAlto(grupo);
+    if (cortes.size) {
+      const [casas, gc] = tela('casas');
+      const folga = C * 0.1;
+      gc.fillStyle = '#fff';
+      for (const k of cortes) {
+        const [x, y] = k.split(',').map(Number);
+        gc.fillRect(this.ox + x * C - folga, this.oy + y * C - folga, C + 2 * folga, C + 2 * folga);
+      }
+      gv.globalCompositeOperation = 'destination-out';
+      gv.filter = `blur(${Math.round(C * 0.15)}px)`;
+      gv.drawImage(casas, 0, 0);
+      gv.filter = 'none';
+    }
+    gl.globalCompositeOperation = 'destination-in';
+    gl.drawImage(vista, 0, 0);
+
+    // 3. O VÉU: preto, furado pela luz que se vê e pela ficha de quem está à vista
+    const [nitida, m] = tela('nitida');
+    m.fillStyle = `rgba(0, 0, 0, ${this.field.veuDaEscuridao ?? 1})`;
+    m.fillRect(0, 0, w, h);
+    m.globalCompositeOperation = 'destination-out';
+    m.drawImage(luz, 0, 0);
+    m.fillStyle = '#000';
+    for (const c of figuras) {
+      m.globalAlpha = this._visao.get(`${c.pos.x},${c.pos.y}`) === CLARO ? 1 : 0.5;
+      this.recortarFiguraDaMascara(m, c, domoDe.get(c.id));
+    }
+    m.globalAlpha = 1;
+    const [borrada, b] = tela('borrada');
+    b.filter = 'blur(1.5px)';
+    b.drawImage(nitida, 0, 0);
+    b.filter = 'none';
+    return { nitida, borrada, visao: this._visao, chave };
+  }
+
+  /**
+   * As casas que NENHUM herói vê porque um platô mais alto que os dois olhos fica no meio — o mesmo teste de altura
+   * de `Battlefield.hasLineOfSight`, sem as paredes (essas o polígono já tem). Num mapa chato, nenhuma.
+   */
+  casasAtrasDoAlto(grupo) {
+    const f = this.field;
+    const chave = `${f.versao ?? 0}|${grupo.map((c) => `${c.pos.x},${c.pos.y}`).join(';')}`;
+    if (this._atrasDoAlto?.chave === chave) return this._atrasDoAlto.casas;
+    const casas = new Set();
+    let plano = true;
+    const h0 = f.heightAt(0, 0);
+    for (let y = 0; y < f.h && plano; y++) for (let x = 0; x < f.w; x++) if (f.heightAt(x, y) !== h0) { plano = false; break; }
+    if (!plano && grupo.length) {
+      for (let y = 0; y < f.h; y++) {
+        for (let x = 0; x < f.w; x++) {
+          const alvo = { x, y };
+          const tapada = grupo.every((c) => {
+            const eye = Math.max(f.heightAt(c.pos.x, c.pos.y), f.heightAt(x, y));
+            const pts = f.line(c.pos, alvo);
+            for (let i = 1; i < pts.length - 1; i++) if (f.heightAt(pts[i].x, pts[i].y) > eye) return true;
+            return false;
+          });
+          if (tapada) casas.add(`${x},${y}`);
+        }
+      }
+    }
+    this._atrasDoAlto = { chave, casas };
+    return casas;
   }
 
   // ---- as três peças da escuridão que sabem de geometria (ver `board.js`) --------------------------------

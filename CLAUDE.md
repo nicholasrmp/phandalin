@@ -186,7 +186,24 @@ alcançar. Semear no maior pedaço não serve aqui: com tudo de chão, o maior p
 preto da imagem — dá 56 casas a menos, porque come a casa de borda que é meio caverna meio vazio.
 O relatório diz o que NÃO atravessa: parede só de visão (o "Ethereal", que a nossa aresta não sabe ser), ladrilho de overlay, som e região.
 Medido no Cragmaw Hideout: 371 de 382 paredes, 23 traços, 3 luzes, 330 casas de chão, e **0 achados** em `conferir-paredes.mjs`.
-Para ver: carregue o JSON em `localStorage['phandalin.editor.mapa']` e abra `/editor.html` ou `?encontro=editor`. Para mapa novo, ou quando as duas plantas não são a mesma, o caminho é o editor: `/editor.html`, vista
+Para ver: carregue o JSON em `localStorage['phandalin.editor.mapa']` e abra `/editor.html` ou `?encontro=editor`.
+
+**O Esconderijo (capítulo 2) roda sobre o battlemap da FA.** O mapa sai de
+`node --import ./src/dev/cena-node/register.mjs src/dev/mapa-esconderijo-fa.mjs`, que lê o import do Foundry acima e pinta por cima o
+que o Foundry não tem: terreno por glifo, ALTURA (degrau de mais de um nível é parede) e SALAS por distância de caminhada. Ele escreve
+`game/esconderijo.js` com `PONTOS_DO_ESCONDERIJO`, e o capítulo lê tudo dali — não há número de casa em `capitulo2.js`. O de-para do livro
+para esta planta, e cada desvio medido, está em `revisoes/esconderijo-de-para-2026-11-04.md`. O gerador antigo, `mapa-esconderijo.py`
+(planta 40×28), está aposentado e só roda com `--planta-antiga`, porque sobrescreveria o mapa novo.
+
+**A atenção do herói e o fogo** (`game/investigar.js`, `game/armadilhas.js`, `game/fogo.js`): o botão direito dá os VERBOS do
+livro, cada um com a sua perícia e o bônus de quem rola — Olhar (grátis), Procurar (Percepção, na casa e nas oito em volta, sem
+mostrar a CD), Investigar (Investigação), Ler os rastros (Sobrevivência), Lembrar (História, Arcanismo, Religião ou Natureza, também
+sobre a criatura: CD 10 + ND, devolve resistências, sentidos e traços do bloco) e Examinar o corpo (Medicina). Valem em toda cena
+que não os desliga (`capitulo.investigavel === false`). Aliado perto dá vantagem (Ajudar). Todo achado vai para o diário (botão direito
+no próprio herói) e para o registro da sala. A pista vem da cena (`capitulo.pistasEm`, uma por verbo) ou do editor (ferramenta 9,
+"Teste"). A Percepção passiva acende uma faísca discreta na pista que alcança; a armadilha da cena (`capitulo.armadilhas()`) é
+conferida CASA A CASA no caminho: quem nota para antes, quem não nota para em cima e ela dispara; a descoberta ganha um losango
+vermelho. "Apagar"/"Acender" em cada luz do mapa leva junto a sobreposição do cômodo aceso. `src/dev/testes-investigar.mjs` prova tudo. Para mapa novo, ou quando as duas plantas não são a mesma, o caminho é o editor: `/editor.html`, vista
 de cima, ferramenta 8, que enquadra a imagem e deixa decalcar parede e porta por cima (como no Roll20). E para trazer
 uma página pronta do Roll20 (imagem, grade e paredes), `src/dev/extrair-roll20.js` (colar no console da aba) mais
 `node src/dev/importar-roll20.mjs <pagina.json>` — ver o README. **Rode-os antes de chamar revisor**: achado que um teste já pega não

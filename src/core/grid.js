@@ -708,6 +708,22 @@ export class Battlefield {
     if (this.tracos?.length && this.tracoCortaVisao(a, b)) return false;
     const eye = Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     const pts = this.line(a, b);
+    // COM TRAÇO, A GEOMETRIA MANDA. A aresta de casa aqui é a derivada em degrau do traço, e conferi-la de novo pela
+    // reta da grade barrava o que o traço deixa ver: o canto diagonal da estalagmite do canil escondia a casa VIZINHA
+    // de Dara, e o lobo a duas casas, com a tocha acesa e nada no meio. A tela de cima desenha a visão pelo traço
+    // (`view/raios.js`); a regra tem de enxergar o mesmo, senão o jogador vê o chão aceso e não vê o lobo em cima dele.
+    // Continuam valendo a porta fechada na aresta (que o traço não desenha) e o platô mais alto que os dois olhos.
+    if (this.tracos?.length) {
+      for (let i = 1; i < pts.length; i++) {
+        const p = pts[i - 1];
+        const q = pts[i];
+        if (p.x !== q.x && p.y !== q.y) {
+          if (this.aresta(p.x, p.y, q.x, p.y) === ARESTA.porta && this.aresta(p.x, p.y, p.x, q.y) === ARESTA.porta) return false;
+        } else if (this.aresta(p.x, p.y, q.x, q.y) === ARESTA.porta) return false;
+        if (i < pts.length - 1 && this.heightAt(q.x, q.y) > eye) return false;
+      }
+      return true;
+    }
     for (let i = 1; i < pts.length; i++) {
       if (!this.passa(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, 'visao')) return false;
       if (i === pts.length - 1) break;

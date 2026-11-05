@@ -367,27 +367,36 @@ export function mapaDo(variante) {
     return {
       ...MAPA_ESCONDERIJO,
       paredeDeCaverna: true,          // a rocha junto do chão é parede de verdade (3 níveis), e não um degrau de 22 px
-      // A ponte cruza o canal de norte a sul: o corrimão corre nesse eixo.
-      objetos: [{ tipo: 'ponte', x: 20, y: 5, olha: { dx: 0, dy: 1 } }],
-      // O grupo chega pela trilha dos goblins, no canto sudoeste do campo.
-      grupo: [{ x: 5, y: 24 }, { x: 6, y: 25 }, { x: 4, y: 25 }, { x: 7, y: 25 }],
+      // A ponte cruza o canal na diagonal, de noroeste para sudeste, como o desenho da FA a põe.
+      objetos: [{ tipo: 'ponte', x: 15, y: 4, olha: { dx: 1, dy: 1 } }],
+      // O grupo chega pela trilha dos goblins, pelo oeste da clareira da área 1.
+      grupo: [{ x: 1, y: 16 }, { x: 2, y: 16 }, { x: 1, y: 17 }, { x: 2, y: 17 }],
       olhar: { dx: 1, dy: -1 },
-      // A fogueira da caverna do chefe: a única luz lá dentro.
-      // As duas fogueiras: a da comida no covil e a de Klarg.
+      // As duas fogueiras: a da comida no covil e a de Klarg. Cada uma leva a SOBREPOSIÇÃO do cômodo aceso — a
+      // pintura da FA com o fogo dando cor à sala —, e quem apaga a fogueira apaga as duas coisas juntas: a luz
+      // que a regra conta e a cor que o desenho mostra (`game/fogo.js`).
       luzes: [
-        { pos: { x: 5, y: 6 }, claro: 10, penumbra: 10, tipo: 'fogueira' },
-        { pos: { x: 32, y: 17 }, claro: 10, penumbra: 10, tipo: 'fogueira' },
+        { pos: { x: 3, y: 6 }, claro: 10, penumbra: 10, tipo: 'fogueira', sobreposicao: 'fogoDoCovil', nome: 'a fogueira do covil' },
+        { pos: { x: 23, y: 13 }, claro: 10, penumbra: 10, tipo: 'fogueira', sobreposicao: 'fogoDeKlarg', nome: 'a fogueira de Klarg' },
       ],
       // O BATTLEMAP DA FORGOTTEN ADVENTURES por baixo (Cragmaw Hideout 30x20, release grátis, versão sem
-      // fogueira acesa e sem grade: o jogo acende a luz e desenha a grade). O arquivo fica FORA do
-      // versionamento (ver `.gitignore`): a licença da FA proíbe embutir a arte deles em video game, então ela
-      // roda na máquina de quem a baixou e não viaja com o repositório. Se o arquivo não estiver lá, o
-      // tabuleiro simplesmente desenha o chão de sempre.
-      //
-      // O ENQUADRAMENTO foi medido, não chutado (`src/dev/encaixar-fa.py`): é o (escala, x0, y0) que maximiza
-      // a sobreposição entre o nosso chão e o interior da caverna do desenho. O melhor possível dá IoU 0,449 —
-      // as duas plantas NÃO são a mesma, e este arquivo nunca foi decalque dela (ver `esconderijo.js`).
-      fundo: { nome: 'esconderijo-fa.webp', url: '/mapas/esconderijo-fa.webp', escala: 69, x0: 15, y0: 135, giro: 0, opacidade: 1 },
+      // fogueira acesa e sem grade: o jogo acende a luz e desenha a grade). A planta deste capítulo é a DELE: o
+      // traçado das paredes veio da cena do Foundry, e a escala é a da imagem, 100 px por casa, sem desvio.
+      // O arquivo fica FORA do versionamento (ver `.gitignore`): a licença da FA proíbe embutir a arte deles em
+      // video game, então ela roda na máquina de quem a baixou. Sem o arquivo, o tabuleiro desenha o chão de sempre.
+      fundo: { nome: 'esconderijo-fa.webp', url: '/mapas/esconderijo-fa.webp', escala: 100, x0: 0, y0: 0, giro: 0, opacidade: 1 },
+      // AS PEÇAS DA ARTE QUE MUDAM COM A HISTÓRIA, todas do pacote da FA e todas na casa onde a cena do Foundry as
+      // põe. O capítulo as acende quando a coisa acontece: o fogo aceso de cada cômodo, o ressalto que desaba, o
+      // baú que se abre, a ponte que cai, e as duas barragens dos tanques que estouram.
+      sobreposicoes: [
+        { id: 'fogoDoCovil', url: '/mapas/fa/LightDen.webp', x: 1, y: 3, w: 8, h: 6, ligada: true },
+        { id: 'fogoDeKlarg', url: '/mapas/fa/LightCave.webp', x: 19, y: 8, w: 10, h: 10, ligada: true },
+        { id: 'ressaltoCaido', url: '/mapas/fa/Collapse.webp', x: 8, y: 5, w: 4, h: 3 },
+        { id: 'bauAberto', url: '/mapas/fa/ChestOpen.webp', x: 26, y: 15, w: 2, h: 2 },
+        { id: 'ponteCaida', url: '/mapas/fa/BridgeBreak.webp', x: 12, y: 4, w: 5, h: 7, frente: true },
+        { id: 'diqueRompido1', url: '/mapas/fa/FirstBreak.webp', x: 21, y: 3, w: 3, h: 3 },
+        { id: 'diqueRompido2', url: '/mapas/fa/SecondBreak.webp', x: 23, y: 3, w: 4, h: 5 },
+      ],
       cena: 'esconderijo',
     };
   }
@@ -473,50 +482,61 @@ function foesEsconderijo() {
     f.facingVec = olha;
     return f;
   };
+  // As casas são as do battlemap da FA (`game/esconderijo.js`, gerado por `src/dev/mapa-esconderijo-fa.mjs`); quem
+  // está onde segue o de-para do livro em `revisoes/esconderijo-de-para-2026-11-04.md`.
   // Área 6: Sildar amarrado na parte de cima (sul) do covil, com 1 PV.
   const sildar = makeNpc('sildar', { x: 4, y: 10 }, { side: 'neutro' });
   sildar.hp = 1;
   sildar.grupo = 'covil';
   sildar.refem = true;
   // Yeemik tem 12 PV na aventura.
-  const yeemik = m('yeemik', 5, 10, 'covil', '', { dx: 0, dy: -1 });
+  const yeemik = m('yeemik', 5, 9, 'covil', '', { dx: 0, dy: -1 });
   yeemik.maxHp = 12;
   yeemik.hp = 12;
-  const klargLobo = m('lobo', 33, 20, 'chefe', '', { dx: -1, dy: -1 });
+  const klargLobo = m('lobo', 26, 13, 'chefe', '', { dx: -1, dy: -1 });
   klargLobo.name = 'Serrote';
   return [
-    // Área 2: dois vigias no posto de ripas, no meio do mato.
-    m('goblin', 20, 22, 'vigias', 'vigia', { dx: -1, dy: 1 }, { arma: 'Arco curto' }),
-    m('goblin', 22, 23, 'vigias', 'vigia', { dx: -1, dy: 1 }, { arma: 'Arco curto' }),
-    // Área 3: três lobos acorrentados à estalagmite do meio do canil. A
-    // corrente não deixa nenhum chegar aos degraus da entrada.
-    ...[[21, 11], [24, 13], [22, 13]].map(([x, y]) => Object.assign(
+    // Área 2: dois vigias no abrigo de ripas desenhado em (13,16)–(14,17), de olho no riacho e na boca.
+    m('goblin', 13, 16, 'vigias', 'vigia', { dx: -1, dy: -1 }, { arma: 'Arco curto' }),
+    m('goblin', 14, 17, 'vigias', 'vigia', { dx: -1, dy: -1 }, { arma: 'Arco curto' }),
+    // Área 3: três lobos acorrentados ao espeto ao pé da estalagmite desenhada em (15,10). O canil da FA é mais
+    // estreito que o nosso antigo: com o espeto em (16,11) e 5 pés de corrente, a mordida alcança até x 14, e os
+    // degraus da entrada (x 13) ficam fora — o livro diz que eles não alcançam os degraus.
+    ...[[16, 10], [17, 11], [16, 12]].map(([x, y]) => Object.assign(
       m('lobo', x, y, 'canil', 'do canil', { dx: -1, dy: 0 }),
-      { corrente: { x: 23, y: 12, raioFt: 10 } })),
+      { corrente: { x: 16, y: 11, raioFt: 5 } })),
     // Área 5: um goblin escondido na ponte, vigiando o riacho lá embaixo.
-    m('goblin', 21, 5, 'ponte', 'da ponte', { dx: 0, dy: 1 }, { arma: 'Arco curto' }),
+    m('goblin', 16, 5, 'ponte', 'da ponte', { dx: -1, dy: 1 }, { arma: 'Arco curto' }),
     // Área 6: quatro goblins junto ao fogo, na parte de baixo; Yeemik em cima.
     // Eram cinco, e com o bloco de ND 1 do Yeemik isso dava 900 de XP
     // ajustado — "mortal" para quatro de 2º nível, com 18% de derrota medida
     // mesmo com o grupo inteiro e descansado. Com quatro: 95,5% de vitória.
-    m('goblin', 4, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
-    m('goblin', 6, 5, 'covil', 'do covil', { dx: -1, dy: 1 }),
-    m('goblin', 6, 7, 'covil', 'do covil', { dx: -1, dy: -1 }),
-    m('goblin', 7, 6, 'covil', 'do covil', { dx: -1, dy: 0 }),
+    // Em volta da fogueira de cozinha em (3,6), na parte de baixo, junto da entrada.
+    m('goblin', 4, 5, 'covil', 'do covil', { dx: 1, dy: 0 }),
+    m('goblin', 5, 5, 'covil', 'do covil', { dx: 1, dy: 1 }),
+    m('goblin', 5, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
+    m('goblin', 4, 7, 'covil', 'do covil', { dx: 1, dy: -1 }),
     yeemik,
     sildar,
-    // Área 7: três goblins guardam os poços.
-    m('goblin', 29, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
-    m('goblin', 34, 9, 'pocos', 'dos poços', { dx: -1, dy: 0 }, { tatica: 'atirador', arma: 'Arco curto' }),
-    m('goblin', 36, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    // Área 7: três goblins na margem sul dos tanques, entre o dique e a saída para Klarg.
+    m('goblin', 22, 7, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    m('goblin', 25, 7, 'pocos', 'dos poços', { dx: -1, dy: 0 }, { tatica: 'atirador', arma: 'Arco curto' }),
+    m('goblin', 26, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
     // Área 8: Klarg, o lobo Serrote e dois goblins.
-    // Klarg fica ATRÁS da estalagmite de (30,18), como a cena narra: de
-    // (32,19) a cobertura medida era 0 de três das quatro casas da porta; de
-    // (30,19) é 2 de todas, e ele some da linha de visão de (30,13) e (30,14).
-    m('klarg', 30, 19, 'chefe', '', { dx: 1, dy: -1 }),
+    // Klarg espera FORA DA VISTA da soleira, encostado na estalagmite desenhada em (28,13). Medido: nesta caverna
+    // não há casa com meia cobertura de quem entra pela soleira (24,10)/(25,10) — ou se vê tudo, ou nada —, então
+    // o equivalente fiel de "atrás de uma estalagmite" é a casa que a soleira não enxerga. E ele fica a 30 pés da
+    // chaminé, como ficava a 15 na planta antiga: fugir por ela custa um turno, não é instantâneo.
+    m('klarg', 27, 13, 'chefe', '', { dx: -1, dy: -1 }),
     klargLobo,
-    m('goblin', 29, 17, 'chefe', 'de Klarg', { dx: 0, dy: -1 }),
-    m('goblin', 35, 22, 'chefe', 'de Klarg', { dx: -1, dy: -1 }),
+    // Os dois goblins de guarda, um de cada lado da soleira, nos cantos que nem ela nem os tanques enxergam.
+    // Em (24,15) um deles se via da coluna x 24 dos tanques inteira, reto pelo funil da soleira, e a luta de Klarg
+    // começava de dentro dos tanques. Em (26,14) e (26,15) a aresta em degrau os escondia; desde que a visão segue
+    // o traço da FA (`grid.hasLineOfSight`), a reta passa pelo corredor e cinco casas dos tanques os viam. Medido:
+    // com a visão pela geometria, só quatro casas da caverna ficam fora da vista dos tanques — 22,11, 26,13, 27,12
+    // e 27,13 —, e as quatro estão fora da vista da soleira também.
+    m('goblin', 22, 11, 'chefe', 'de Klarg', { dx: 1, dy: -1 }),
+    m('goblin', 27, 12, 'chefe', 'de Klarg', { dx: -1, dy: -1 }),
   ];
 }
 

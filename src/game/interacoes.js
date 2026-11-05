@@ -24,6 +24,8 @@ import { opcoesDeMagia, opcoesDoHeroi, ctxDe } from './magias-fora.js';
 import { falaPorMensagem } from '../rules/utilidade.js';
 import { chaveDoTesouro, porqueNaoSaquear } from './saque.js';
 import { opcoesDeClasse } from './interacoes-classe.js';
+import { opcoesDeAtencao, opcaoDeExaminarCorpo, opcaoDeLembrarCriatura, opcaoDoDiario } from './investigar.js';
+import { opcaoDeFogo } from './fogo.js';
 
 /** Linhas "Dar item" por aliado no menu (o servidor da sala aceita escolha de menu até 60). */
 const MAX_DAR = 24;
@@ -180,12 +182,24 @@ export function opcoesDaCasa(app, tile) {
   const vez = !explorando && enc.side === 'party' && !enc.over && !app.busy;
   // Fora da luta (explorando, ou depois dela) não há turno: item, socorro e entrega não custam ação.
   const fora = explorando || Boolean(enc.over);
+  // Os verbos da atenção (Procurar, Investigar, Lembrar...) e o fogo: em toda cena que não os desliga
+  // (`capitulo.investigavel === false`), com herói escolhido, e na luta só na vez do grupo.
+  const investigavel = app.capitulo?.investigavel !== false && Boolean(c) && (fora || vez);
   const opcoes = [];
   const olhar = (titulo, texto) => ({ rotulo: 'Olhar', icone: 'acao-procurar', detalhe: 'de graça', fazer: () => app.mostrarTexto(titulo, texto) });
 
   // No escuro, o que o grupo não vê não existe para o menu: nem o goblin
   // parado ali, nem o chão. Mostrar o nome dele já seria entregá-lo.
-  if (temEscuridaoEm(enc) && !visaoDoGrupo(enc).has(`${tile.x},${tile.y}`) && occ?.side !== 'party') {
+  //
+  // MENOS A ROCHA QUE O HERÓI ESTÁ TOCANDO. Num mapa traçado como os do Foundry a parede corre NA FACE da pedra, e a
+  // casa de rocha do outro lado da linha nunca entra na visão — então "Escutar" (que é na rocha) e "Investigar" a
+  // parede morriam, mesmo com a mão encostada nela. Vale para a rocha maciça (tipo 1) e para a estalagmite, que a FA
+  // cerca de parede como pedra que é; o objeto encostado (barril, baú) só se não houver parede no meio. Nunca com
+  // criatura: o goblin no escuro continua escondido, e a casa de chão do outro lado de uma parede também.
+  const tipoDaCasa = enc.field.tileAt(tile.x, tile.y);
+  const tocaARocha = Boolean(c) && !occ && isAdjacent(c.pos, tile) && (tipoDaCasa === 1 || sup === 'estalagmite'
+    || (tipoDaCasa === 3 && enc.field.passa(c.pos.x, c.pos.y, tile.x, tile.y, 'visao')));
+  if (temEscuridaoEm(enc) && !visaoDoGrupo(enc).has(`${tile.x},${tile.y}`) && occ?.side !== 'party' && !tocaARocha) {
     const [nome, texto] = OLHAR.escuro;
     return { titulo: nome, subtitulo: null, opcoes: [olhar(nome, texto)], alvo: { icone: 'acao-procurar', lado: 'objeto', etiquetas: [] } };
   }
@@ -227,6 +241,11 @@ export function opcoesDaCasa(app, tile) {
 
     if (inimigo) {
       opcoes.push(olhar(occ.name, [`${occ.name}: ${estadoAparente(occ)}.`, occ.blurb].filter(Boolean).join(' ')));
+      // LEMBRAR o que se sabe da criatura: memória, não custa a ação (`game/investigar.js`).
+      if (investigavel) {
+        const lembra = opcaoDeLembrarCriatura(app, c, occ, { fora });
+        if (lembra) opcoes.push(lembra);
+      }
       if (c && vez) {
         for (const w of c.weapons ?? []) {
           const p = previsaoDeAtaque(enc, c, occ, w);
@@ -484,6 +503,11 @@ export function opcoesDaCasa(app, tile) {
         });
       }
     }
+    // O diário: o que o grupo já achou, para reler.
+    if (occ === c) {
+      const diario = opcaoDoDiario(app);
+      if (diario) opcoes.push(diario);
+    }
     // O que a cena deixa o herói fazer consigo mesmo (vestir um disfarce…).
     if (occ === c) for (const o of app.capitulo?.interacoesDoHeroi?.(c) ?? []) opcoes.push(o);
     opcoes.push(...magias);
@@ -502,6 +526,11 @@ export function opcoesDaCasa(app, tile) {
     const aliado = corpo.side === 'party';
     const nome = corpos.length > 1 ? ` de ${corpo.name}` : '';
     opcoesDosCorpos.push({ ...olhar(corpo.name, `${corpo.name} está morto. ${corpo.blurb ?? ''}`.trim()), rotulo: `Olhar o corpo${nome}` });
+    // Examinar: o que a atenção acha no corpo (`game/investigar.js`), onde a cena liga a investigação.
+    if (investigavel) {
+      const ex = opcaoDeExaminarCorpo(app, c, corpo, { fora, sufixo: nome, extra: app.capitulo?.achadoNoCorpo?.(corpo) ?? null });
+      if (ex) opcoesDosCorpos.push({ ...ex, grupo: 'Corpo', alvoPrevia: corpo });
+    }
     // Revistar: só o que a tabela de tesouro diz que ele carrega; de graça fora da luta, uma ação na luta.
     if (!aliado && chaveDoTesouro(corpo)) {
       opcoesDosCorpos.push({
@@ -532,6 +561,17 @@ export function opcoesDaCasa(app, tile) {
     ? app.enc?.field?.objetos?.find((o) => o.tipo === 'prop' && o.x === tile.x && o.y === tile.y)?.variante : null;
   const [nome, texto] = OLHAR_PROP[variante] ?? OLHAR[sup] ?? OLHAR.chao;
   opcoes.push(olhar(nome, texto));
+  // INVESTIGAR a casa e mexer no FOGO dela, onde a cena liga (`capitulo.investigavel`). A pista da cena, presa à casa
+  // onde a arte desenha a coisa, manda sobre a da superfície (`game/investigar.js`); a luz do mapa nesta casa vira
+  // "Apagar"/"Acender" (`game/fogo.js`). Na luta, só na vez do grupo, e custa a ação.
+  if (investigavel) {
+    // as pistas desta casa: as da cena (uma por verbo) e a que o editor prendeu ao objeto interagível
+    const daCena = app.capitulo?.pistasEm?.(tile, sup, c) ?? [].concat(app.capitulo?.pistaEm?.(tile, sup, c) ?? []);
+    const doEditor = [].concat(enc.field.interativos?.get(`${tile.x},${tile.y}`)?.pista ?? []);
+    opcoes.push(...opcoesDeAtencao(app, c, tile, sup, { fora, nome, pistas: [...daCena, ...doEditor] }));
+    const fogo = opcaoDeFogo(enc, c, tile, { fora, depois: () => { app.refresh?.(); if (!fora) app.afterAct?.(); } });
+    if (fogo) opcoes.push(fogo);
+  }
   // Uma imagem ilusória do outro lado nesta casa: examinar gasta a ação.
   const imagem = (app.enc?.zonas ?? []).find((z) => z.ilusao && z.lado !== c?.side && z.casas.has(`${tile.x},${tile.y}`));
   if (imagem && c && app.enc.side === 'party') {
@@ -549,7 +589,8 @@ export function opcoesDaCasa(app, tile) {
   // que o objeto traz. É isso que faz valer a pena marcar no editor antes de a cena existir: a marca já faz
   // alguma coisa, em vez de ser um botão que não liga em lugar nenhum.
   const alvoInterativo = enc.field.interativos?.get(`${tile.x},${tile.y}`);
-  if (alvoInterativo && c) {
+  // Com TESTE (a pista do editor) quem fala é o verbo dele, acima; o "Mexer" só se a cena tiver roteiro para o id.
+  if (alvoInterativo && c && (!alvoInterativo.pista || app.capitulo?.aoInteragir)) {
     const perto = distanceFt(c.pos, tile) <= (alvoInterativo.alcance ?? 5);
     opcoes.push({
       rotulo: alvoInterativo.rotulo || 'Mexer',

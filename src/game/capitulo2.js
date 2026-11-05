@@ -59,6 +59,8 @@ import { rolarTeste, ativaDe } from '../rules/utilidade.js';
 import { guardar, totalEmCobre, cobrar } from './comercio.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { criarBuscas } from './buscas.js';
+import { PONTOS_DO_ESCONDERIJO as PE } from './esconderijo.js';
+import { fogueiraAcesa } from './fogo.js';
 
 const MOVIMENTO = 60;
 // Os 275 XP do esconderijo (o marco do livro) pagos conforme as salas caem; o que sobra sai ao limpar tudo (`fimDoCapitulo`).
@@ -77,25 +79,25 @@ const SALAS = {
   chefe: { nome: 'a caverna de Klarg', em: 'na caverna de Klarg', clima: 'A caverna é quente e cheira a carne velha. Peles esticadas, crânios de lobo nos espetos e uma fogueira no meio, onde alguma coisa grande dorme sentada num trono de ossos.' },
 };
 
-// O riacho lá fora, linha por linha (a coluna da margem oeste dele): quem
-// pisa nele ou além está atravessando para o lado dos vigias.
-const RIACHO_FORA = { 18: 15, 19: 14, 20: 14, 21: 13, 22: 13, 23: 12, 24: 12, 25: 11, 26: 11, 27: 10 };
-// SÓ a céu aberto. A regra antiga também cobria a boca e o túnel, e aí não
-// sobrava uma casa sequer de entrada sem gatilho — medido: 0 casas com y<13
-// alcançáveis sem acionar os vigias. Quem sobe pela margem oeste e entra pela
-// boca passa por eles; quem cruza o riacho no campo, não.
-const atravessou = (p) => p.y >= 18 && p.x >= (RIACHO_FORA[p.y] ?? 99) && p.x <= 26;
+// A PLANTA é a do battlemap da FA (`game/esconderijo.js`, gerado por `src/dev/mapa-esconderijo-fa.mjs`). Este
+// arquivo não repete número de casa nenhum: as SALAS vêm do mapa (`field.sala`) e os PONTOS de `PE`.
+const salaDe = (field, p) => field.sala?.get(`${p.x},${p.y}`) ?? null;
+const naLista = (lista, p) => lista.some((q) => q.x === p.x && q.y === p.y);
 
-// A passagem por onde a enchente desce: o túnel do riacho, a curva, o canal
-// embaixo da ponte e os degraus do canil. Quem está na ponte ou no canil
-// propriamente dito fica fora.
-const naPassagem = (field, p) => p.y >= 5 && p.y <= 17 && p.x >= 13 && p.x <= 26
-  && field.heightAt(p.x, p.y) <= 1 && !(p.x >= 20 && p.y >= 9);
+// Cruzar o riacho lá fora para o lado dos vigias. O riacho corre em x 10–11; quem pisa nele ou além, a céu aberto,
+// está atravessando. SÓ a céu aberto: a boca da caverna (y ≤ 13) fica de fora, senão não sobrava casa de entrada
+// sem gatilho — quem sobe pela clareira oeste e entra pela boca passa pelos vigias, como no livro.
+const atravessou = (field, p) => p.y >= 14 && p.x >= 10 && ['fora', 'vigias'].includes(salaDe(field, p));
 
-const RESSALTO = [{ x: 11, y: 5 }, { x: 11, y: 6 }];       // área 4
-const CHAMINE_BASE = { x: 25, y: 13 };                     // área 3
-const CHAMINE_TOPO = { x: 28, y: 16 };                     // área 8
-const DENTRO_DO_KLARG = (p) => p.x >= 27 && p.y >= 14;
+// A passagem por onde a enchente desce (livro, área 5): a passagem da área 4 e os degraus da área 3 — e o canal
+// sob a ponte, que é a mesma água. Quem está na ponte, no anel alto ou no canil propriamente dito fica fora: é o
+// nível que decide, e eles estão do 2 para cima.
+const naPassagem = (field, p) => ['passagem', 'canil', 'ponte'].includes(salaDe(field, p)) && field.heightAt(p.x, p.y) <= 1;
+
+const RESSALTO = PE.ressalto;                              // área 4
+const CHAMINE_BASE = PE.chamineBase;                       // área 3
+const CHAMINE_TOPO = PE.chamineTopo;                       // área 8
+const DENTRO_DO_KLARG = (field, p) => salaDe(field, p) === 'chefe';
 const pequeno = (c) => /halfling|pequenin|gnom/i.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`);
 
 export function criarCapitulo2(app, config) {
@@ -273,7 +275,7 @@ export function criarCapitulo2(app, config) {
       if (g.id === 'canil') { if (await canil(g)) return; continue; }
       if (g.id === 'chefe' && estado.klargAvisado) {
         // Avisado, Klarg se esconde atrás das estalagmites e espera.
-        const entrou = herois().find((h) => DENTRO_DO_KLARG(h.pos));
+        const entrou = herois().find((h) => DENTRO_DO_KLARG(enc.field, h.pos));
         if (entrou) {
           await asArmas(`${entrou.name} mal pisa na caverna e uma sombra enorme se levanta atrás de uma estalagmite: Klarg estava esperando.`);
           await combate(g, 'deles');
@@ -316,7 +318,7 @@ export function criarCapitulo2(app, config) {
 
   // ------------------------------------------------------------- área 2 ----
   async function vigias(g, c) {
-    if (!atravessou(c.pos)) return false;
+    if (!atravessou(enc.field, c.pos)) return false;
     // Quem atravessa com cuidado pode pegar os vigias distraídos.
     const r = rolarPericia(enc.rng, c, 'furtividade');
     const atencao = Math.max(...hostis(g).map((f) => passivePerception(f)));
@@ -333,7 +335,7 @@ export function criarCapitulo2(app, config) {
   /** Barulho lá fora (descansar ali) chama os vigias, que atacam primeiro. */
   async function barulhoLaFora() {
     const g = grupos.vigias;
-    if (!pendentes().includes(g) || !herois().every((h) => h.pos.y >= 16)) return false;
+    if (!pendentes().includes(g) || !herois().every((h) => ['fora', 'vigias'].includes(salaDe(enc.field, h.pos)))) return false;
     await asArmas('Uma hora de conversa e panelas batendo é demais até para goblins preguiçosos: uma flecha sai do mato a leste do riacho, e outra.');
     await combate(g, 'deles');
     return true;
@@ -477,12 +479,13 @@ export function criarCapitulo2(app, config) {
     // Encontrar Armadilhas: quem sabe da laje rachada passa rente à parede, de um em um, sem pisar nela.
     if (estado.ressaltoQuebrado || estado.ressaltoVisto || pequeno(c) || !RESSALTO.some((p) => p.x === c.pos.x && p.y === c.pos.y)) return false;
     estado.ressaltoQuebrado = true;
+    enc.field.alternarSobreposicao?.('ressaltoCaido', true);   // o entulho desabado, como a FA o desenha
     const r = enc.resistencia(c, 'dex', 10);
     const dano = enc.rng.die(6) + enc.rng.die(6);
     const levou = r.success ? Math.floor(dano / 2) : dano;
     enc.applyDamage(c, levou, 'concussão');
     if (!r.success && !c.dead) addCondition(c, 'caido');
-    const baixo = casaPerto({ x: 13, y: 6 });
+    const baixo = casaPerto(PE.peDaPassagem);
     c.pos = { ...c.pos, x: baixo.x, y: baixo.y };
     enc.say('dano', `O ressalto cede sob ${c.name}: ${levou} de dano (Destreza ${r.total}).`);
     await narrar(root, { formato: 'painel', paginas: [{ texto: [
@@ -529,7 +532,7 @@ export function criarCapitulo2(app, config) {
       enc.applyDamage(c, dano, 'concussão');
       if (!c.dead) {
         addCondition(c, 'caido');
-        const fora = casaPerto({ x: 16, y: 19 });
+        const fora = casaPerto(PE.fozDaEnchente);
         c.pos = { ...c.pos, x: fora.x, y: fora.y };
       }
       linhas.push(`${c.name} é arrastado pela água até a boca da caverna: ${dano} de dano.`);
@@ -552,13 +555,12 @@ export function criarCapitulo2(app, config) {
   function esvaziarPoco(qual) {
     const f = enc.field;
     const chao = SUPERFICIES.indexOf('caverna');
-    const [x0, x1, y0, y1] = qual === 1 ? [27, 30, 5, 6] : [30, 37, 1, 7];
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        const i = y * f.w + x;
-        if (f.surfaceAt(x, y) === 'poco') { f.surfaces[i] = chao; f.tiles[i] = 0; }
-      }
+    for (const { x, y } of qual === 1 ? PE.poco1 : PE.poco2) {
+      const i = y * f.w + x;
+      if (f.surfaceAt(x, y) === 'poco') { f.surfaces[i] = chao; f.tiles[i] = 0; }
     }
+    // a barragem desenhada estoura junto: a peça de arte do dique rompido (a FA a desenha em dois estágios)
+    f.alternarSobreposicao?.(qual === 1 ? 'diqueRompido1' : 'diqueRompido2', true);
   }
 
   // ------------------------------------------------------------- área 6 ----
@@ -592,7 +594,7 @@ export function criarCapitulo2(app, config) {
       sildar.hp = 0;
       sildar.stable = false;
       addCondition(sildar, 'inconsciente');
-      const baixo = casaPerto({ x: 4, y: 7 });
+      const baixo = casaPerto(PE.baixoDoCovil);
       sildar.pos = { ...sildar.pos, x: baixo.x, y: baixo.y };
       enc.say('dano', `Yeemik joga Sildar do alto do ressalto: ${dano} de dano. Sildar está morrendo — estabilize-o.`);
     }
@@ -608,7 +610,7 @@ export function criarCapitulo2(app, config) {
     if (!sildar || estado.sildarLivre) return;
     estado.sildarLivre = true;
     if (texto) enc.say('acao', texto);
-    const lugar = casaPerto({ x: 4, y: 7 });
+    const lugar = casaPerto(PE.baixoDoCovil);
     sildar.pos = { ...sildar.pos, x: lugar.x, y: lugar.y };
     sildar.refem = false;
     app.refresh();
@@ -799,6 +801,7 @@ export function criarCapitulo2(app, config) {
     // porque os arquivos deles estão em obra de outra frente.
     audio.play('chestOpen');
     estado.bauAchado = true;
+    enc.field.alternarSobreposicao?.('bauAberto', true);
     for (const [id, qtd] of [['moedaDeCobre', 600], ['moedaDePrata', 110], ['pocaoDeCura', 2], ['estatuetaDeSapo', 1]]) guardar(c, id, qtd);
     return narrar(root, { formato: 'painel', paginas: [{ texto: [
       `Entre sacos e caixotes com a marca de um leão azul, ${c.name} acha um baú destrancado: 600 peças de cobre, 110 de prata, duas poções de cura e um sapinho de jade com olhos de ouro.`,
@@ -813,7 +816,8 @@ export function criarCapitulo2(app, config) {
    */
   function fogueira(ev) {
     const turno = `${enc.round}:${enc.side}:${estado.explorando ? 'x' : 'c'}`;
-    const naBrasa = (c) => enc.field.surfaceAt(c.pos.x, c.pos.y) === 'fogueira';
+    // Só a brasa ACESA queima: quem abafou a fogueira (`game/fogo.js`) pode pisar nela.
+    const naBrasa = (c) => fogueiraAcesa(enc.field, c.pos.x, c.pos.y);
     if (ev.type === 'moved' && ev.actor && !ev.actor.dead && naBrasa(ev.actor) && ev.actor._brasa !== turno) {
       ev.actor._brasa = turno;
       enc.applyDamage(ev.actor, 1, 'fogo');
@@ -895,11 +899,9 @@ export function criarCapitulo2(app, config) {
         subiram = sobem;
       }
       if (g?.id === 'covil') {
-        if (yeemik?.dead) {
-          const quem = herois()[0];
-          if (quem) { guardar(quem, 'denteDeOuro', 3); guardar(quem, 'moedaDePrata', 15); }
-          texto.push(`Na algibeira de Yeemik: três dentes de ouro e 15 peças de prata.${quem ? ` ${quem.name} guarda.` : ''}`);
-        }
+        // A algibeira de Yeemik fica NO CORPO dele (`TESOURO_POR_INIMIGO.yeemik`): botão direito nele, "Revistar o
+        // corpo". Antes ela ia direto para o primeiro herói, e o corpo não tinha o que revistar.
+        if (yeemik?.dead) texto.push('Yeemik caiu com uma algibeira presa ao cinto, que tilinta quando o corpo assenta.');
         if (sildar && !sildar.dead) {
           libertarSildar(null);
           texto.push(sildar.hp > 0
@@ -1019,7 +1021,7 @@ export function criarCapitulo2(app, config) {
     }
     // Área 3: acalmar os lobos, e a chaminé.
     const g3 = grupos.canil;
-    if (tile.x >= 18 && tile.x <= 25 && tile.y >= 10 && tile.y <= 15 && !g3.vencido && !g3.tregua) {
+    if (salaDe(enc.field, tile) === 'canil' && !g3.vencido && !g3.tregua) {
       const comida = garantirInventario(c).bag.some((i) => i.id === 'racoes' && i.qtd > 0);
       ops.push({
         rotulo: 'Acalmar os lobos', icone: 'acao-ajudar',
@@ -1034,7 +1036,7 @@ export function criarCapitulo2(app, config) {
       ops.push({ rotulo: 'Descer a chaminé', icone: 'acao-levantarSe', detalhe: 'Atletismo, CD 10 · 9 m até o canil', motivo: longe(5), fazer: () => chamine(c, false) });
     }
     // Área 8: o baú entre os suprimentos.
-    if ((sup === 'mantimentos' || sup === 'bau') && DENTRO_DO_KLARG(tile) && !estado.bauAchado) {
+    if ((sup === 'mantimentos' || sup === 'bau') && DENTRO_DO_KLARG(enc.field, tile) && !estado.bauAchado) {
       ops.push({
         rotulo: 'Revirar os suprimentos', icone: 'acao-procurar', detalhe: 'sacos e caixotes roubados',
         motivo: longe(5) ?? (pendentes().includes(grupos.chefe) ? 'Klarg ainda está aqui' : null),
@@ -1049,7 +1051,7 @@ export function criarCapitulo2(app, config) {
     // despenca os 6 m no canal. Derrubar a ponte inteira travaria o capítulo —
     // ela é o único caminho do anel para os poços.
     if (sup === 'ponte' && !estado.ponteCortada) {
-      const emCima = hostis(grupos.ponte).find((f) => f.pos.x >= 20 && f.pos.x <= 21 && f.pos.y >= 5 && f.pos.y <= 6);
+      const emCima = hostis(grupos.ponte).find((f) => naLista(PE.ponte, f.pos));
       ops.push({
         rotulo: 'Cortar as cordas da ponte', icone: 'acao-usarObjeto',
         detalhe: emCima ? `Atletismo, CD 10 · ${emCima.name} cai 6 m` : 'Atletismo, CD 10 · não tem ninguém em cima',
@@ -1062,13 +1064,14 @@ export function criarCapitulo2(app, config) {
             return;
           }
           estado.ponteCortada = true;
+          enc.field.alternarSobreposicao?.('ponteCaida', true);
           const linhas = [`${c.name} serra o cabo de apoio até ele arrebentar. A ponte tomba para um lado e fica pendurada por um cabo só.`];
           if (emCima) {
             const dano = danoDeQueda(emCima, enc.rng.die(6) + enc.rng.die(6));
             enc.applyDamage(emCima, dano, 'concussão');
             if (!emCima.dead) {
               addCondition(emCima, 'caido');
-              const agua = casaPerto({ x: 19, y: 6 });
+              const agua = casaPerto(PE.sobAPonte);
               emCima.pos = { ...emCima.pos, x: agua.x, y: agua.y };
             }
             trazer(grupos.ponte);
@@ -1085,7 +1088,7 @@ export function criarCapitulo2(app, config) {
     }
     // Área 7: romper o dique de propósito, para gastar a enchente antes que o
     // goblin da ponte a solte em cima do grupo.
-    if (sup === 'entulho' && tile.y === 4 && tile.x >= 32 && tile.x <= 37) {
+    if (sup === 'entulho' && naLista(PE.dique, tile)) {
       const semAgua = estado.enchentes >= 2 || estado.diqueRompido;
       ops.push({
         rotulo: 'Romper o dique', icone: 'acao-usarObjeto',
@@ -1127,6 +1130,138 @@ export function criarCapitulo2(app, config) {
     return ops;
   }
 
+  // ------------------------------------------------------------ investigar ----
+  /**
+   * AS PISTAS DO ESCONDERIJO para o "Investigar" (`game/investigar.js`), cada uma presa à casa onde o desenho da FA
+   * mostra a coisa — os ossos e o espeto do canil, a laje rachada, as caixas com o leão azul (ver o de-para,
+   * `revisoes/esconderijo-de-para-2026-11-04.md`). Fatos do livro, palavras nossas. Onde não há pista, vale o achado
+   * da superfície; algumas MUDAM A CENA (a laje vista não desaba mais) ou mudam com ela (o fogo apagado, o dique
+   * rompido).
+   */
+  function pistaEm(tile, sup) {
+    const sala = salaDe(enc.field, tile);
+    const em = (lista) => naLista(lista, tile);
+    const no = (p) => tile.x === p.x && tile.y === p.y;
+    const luzDe = (p) => (enc.field.luzes ?? []).find((l) => l.pos.x === p.x && l.pos.y === p.y);
+    // Área 1: a trilha chega à boca. É a mesma leitura do livro na trilha: perto de uma dúzia de goblins, e dois corpos.
+    if (sala === 'fora' && sup === 'grama') {
+      return {
+        titulo: 'A trilha', pericias: ['sobrevivencia', 'percepcao'], cd: 10,
+        achado: 'Pegadas pequenas, muitas, indo e voltando da boca da caverna: perto de uma dúzia de goblins usa este caminho. E, no meio delas, o rastro de dois corpos do tamanho de gente arrastados para dentro.',
+      };
+    }
+    // Área 4: a laje rachada do ressalto. Achá-la é passar rente à parede sem pisar nela.
+    // Já descoberta (Procurar, a passiva no caminho ou este mesmo Investigar), não há mais o que achar nela.
+    if (em(RESSALTO) && !estado.ressaltoQuebrado && !estado.ressaltoVisto) {
+      return {
+        titulo: 'A subida do oeste', cd: 12, alcance: 10,
+        achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez e sem pisar nela, dá para passar.',
+        efeito: () => { estado.ressaltoVisto = true; enc.say('acao', 'O grupo sabe da laje rachada: quem passa por ali vai rente à parede.'); },
+      };
+    }
+    if (sala === 'passagem' && sup === 'riacho') {
+      return {
+        titulo: 'O riacho', cd: 10,
+        achado: 'A água desce de mais acima, fria. No barro da margem, pegadas pequenas de garra — e o mesmo rastro de dois corpos pesados arrastados, subindo a passagem.',
+      };
+    }
+    if (sala === 'passagem' && tile.y <= 8 && sup === 'caverna') {
+      return {
+        titulo: 'O teto ao norte', pericias: ['percepcao', 'investigacao'], cd: 10, alcance: 30,
+        achado: 'Lá em cima, seis metros acima do riacho, uma ponte frágil de madeira e corda cruza de um túnel alto a outro. Quem está nela vê esta passagem inteira.',
+      };
+    }
+    // Área 3: o canil visto dos degraus — o espeto das correntes ao pé da estalagmite desenhada, os ossos, a fenda.
+    //
+    // UMA pista, feita de LONGE, e não uma no espeto. Medido: a FA cerca a estalagmite de parede, e toda casa
+    // encostada nela está dentro do alcance da corrente — investigar o espeto de perto era entrar na briga. Dos
+    // degraus (x 13) se enxerga o chão da câmara, e é dali que se descobre que dá para passar.
+    if (sala === 'canil' && (sup === 'caverna' || sup === 'estalagmite' || no(PE.corrente))) {
+      return {
+        titulo: 'O canil', pericias: ['percepcao', 'investigacao'], cd: 10, alcance: 30,
+        achado: [
+          'Os lobos estão presos por correntes curtas a um espeto de ferro, cravado ao pé da estalagmite do meio da câmara. As correntes não chegam aos degraus da entrada — chegam quase.',
+          'No chão, ossos roídos e sujeira de bicho. No fundo, lixo caído de uma fenda alta na parede leste.',
+        ],
+      };
+    }
+    if (no(PE.chamineBase) || (sala === 'canil' && sup === 'entulho')) {
+      const fogoDeKlarg = luzDe(PE.fogueiraKlarg);
+      return {
+        titulo: 'O lixo da fenda', cd: 10,
+        achado: [
+          'Lixo jogado lá de cima: ossos de cozinha, cascas, um sapato furado. A fenda no fundo sobe nove metros, apertada, até outra caverna.',
+          fogoDeKlarg && !fogoDeKlarg.apagada ? 'Lá do alto desce ar morno e cheiro de fumaça: tem fogo aceso do outro lado.' : 'Lá do alto desce cheiro de cinza fria.',
+        ],
+      };
+    }
+    // Área 6: a fogueira de cozinha, os colchões, e a borda de 3 m com a escada natural.
+    if (no(PE.fogueiraCovil)) {
+      const fogo = luzDe(PE.fogueiraCovil);
+      return {
+        titulo: 'A fogueira do covil', cd: 10,
+        achado: fogo?.apagada
+          ? 'A brasa abafada ainda solta fumaça. A panela pendurada esfria, com um ensopado que já foi coelho.'
+          : 'Uma panela de ferro pendurada sobre a brasa, com um ensopado que já foi coelho e um pouco de outra coisa. Os goblins comem aqui.',
+      };
+    }
+    if (sala === 'covil' && sup === 'leito') {
+      return {
+        titulo: 'Os colchões', cd: 10,
+        achado: 'Colchões de palha cheios de pulga, quase uma dúzia, ainda amassados. Dorme mais goblin aqui do que está acordado agora.',
+      };
+    }
+    if (sala === 'covil' && tile.y === PE.escadaDoCovil.y - 1 && enc.field.heightAt(tile.x, tile.y) <= 2) {
+      return {
+        titulo: 'A borda do covil', pericias: ['percepcao', 'investigacao'], cd: 10, alcance: 15,
+        achado: 'A parte do fundo fica três metros acima, numa borda de pedra lisa. A escada natural sobe pelo lado leste dela — é o único jeito de chegar lá em cima.',
+      };
+    }
+    // Área 7: o dique de pedra solta e a cachoeira.
+    if (em(PE.dique)) {
+      return {
+        titulo: 'O dique', cd: 10,
+        achado: estado.diqueRompido || estado.enchentes >= 2
+          ? 'Pedras espalhadas no canal: o dique já cedeu, e o tanque esvaziou.'
+          : 'As pedras do dique só estão encaixadas, sem argamassa. Tirando a de baixo, o resto vem junto — e a água desce o canal inteiro até a boca da caverna.',
+      };
+    }
+    if (sala === 'pocos' && sup === 'poco' && tile.x >= 27) {
+      return {
+        titulo: 'A cachoeira', pericias: ['percepcao', 'investigacao'], cd: 10, alcance: 30,
+        achado: 'Uma cachoeira estreita cai de uma fenda alta e enche os tanques. O barulho engole tudo: uma luta aqui não se ouve na caverna do lado.',
+      };
+    }
+    // Área 8: os suprimentos roubados, a fogueira grande e a boca da chaminé.
+    if (sala === 'chefe' && (sup === 'mantimentos' || sup === 'bau')) {
+      return {
+        titulo: 'Os suprimentos', cd: 10,
+        achado: [
+          'Sacos e caixas com a marca de um leão azul pintada: é da Leão-Escudo, uma companhia mercante de Phandalin. Isto saiu das caravanas assaltadas.',
+          ...(estado.bauAchado ? [] : ['E, no meio das pilhas, o canto de um baú aparece.']),
+        ],
+      };
+    }
+    if (no(PE.fogueiraKlarg)) {
+      const fogo = luzDe(PE.fogueiraKlarg);
+      return {
+        titulo: 'A fogueira de Klarg', cd: 10,
+        achado: fogo?.apagada
+          ? 'A brasa abafada solta fumaça grossa. Sem o fogo, a caverna é breu para quem não enxerga no escuro.'
+          : 'Brasa larga como uma mesa, e ossos jogados na cinza. Queima quem pisa nela, e mais quem cai em cima.',
+      };
+    }
+    if (no(PE.chamineTopo)) {
+      return {
+        titulo: 'A boca da chaminé', cd: 10,
+        achado: hostis(grupos.canil).length
+          ? 'Uma abertura estreita no chão, junto da parede oeste, desce no escuro. Lá de baixo sobe cheiro de bicho e um rosnado.'
+          : 'Uma abertura estreita no chão, junto da parede oeste, desce no escuro até o canil.',
+      };
+    }
+    return null;
+  }
+
   // O que a cena aceita das magias de utilidade (`game/magias-fora.js`): o baú de Klarg tem duas
   // poções de cura, e o Detectar Magia as acende no chão.
   function ganchosMagicos() {
@@ -1137,7 +1272,7 @@ export function criarCapitulo2(app, config) {
     const canil = grupos.canil;
     if (canil && !canil.vencido && !canil.tregua && hostis(canil).length) {
       out.push({
-        id: 'canil', tipo: 'fera', x: 21, y: 12, nome: 'Os lobos acorrentados',
+        id: 'canil', tipo: 'fera', x: PE.corrente.x, y: PE.corrente.y, nome: 'Os lobos acorrentados',
         criaturas: () => hostis(canil),
         // Quando nenhum lobo ainda rosna, o canil está em trégua: eles aparecem deitados, nas correntes.
         aplicar: () => {
@@ -1151,7 +1286,7 @@ export function criarCapitulo2(app, config) {
     // A laje frágil é fraqueza natural da pedra, não armadilha: Encontrar Armadilhas não a vê.
     for (let y = 0; y < f.h; y++) {
       for (let x = 0; x < f.w; x++) {
-        if (!estado.bauAchado && DENTRO_DO_KLARG({ x, y }) && f.surfaceAt(x, y) === 'bau') {
+        if (!estado.bauAchado && DENTRO_DO_KLARG(f, { x, y }) && f.surfaceAt(x, y) === 'bau') {
           out.push({ id: `bau-p:${x},${y}`, tipo: 'procurado', x, y, nome: 'Um baú (o mais próximo)' });
           out.push({
             id: `bau:${x},${y}`, tipo: 'magico', x, y, nome: 'O baú entre os suprimentos',
@@ -1207,10 +1342,59 @@ export function criarCapitulo2(app, config) {
     return null;
   }
 
+  /**
+   * Todas as pistas de uma casa, uma por verbo (`game/investigar.js`): a da cena (`pistaEm`) e as de LEMBRAR, que
+   * são o que o herói sabe do que vê — não o que a casa esconde.
+   */
+  function pistasEm(tile, sup, c) {
+    const out = [];
+    const p = pistaEm(tile, sup, c);
+    if (p) out.push(p);
+    if (salaDe(enc.field, tile) === 'chefe' && (sup === 'mantimentos' || sup === 'bau')) {
+      out.push({
+        verbo: 'lembrar', titulo: 'O leão azul', pericias: ['historia'], cd: 10,
+        achado: 'O leão azul é a marca da Leão-Escudo, uma companhia mercante que tem posto em Phandalin. Carga roubada dela, devolvida, abre portas por lá.',
+      });
+    }
+    return out;
+  }
+
+  /**
+   * As armadilhas do mapa, conferidas passo a passo no caminho (`game/armadilhas.js`). A laje rachada do ressalto
+   * é a única: a Percepção passiva de quem vai pisar nota (CD 12, a mesma do Investigar) e para antes; quem não nota
+   * para em cima, e ela cede. O pequeno passa sem peso para quebrá-la.
+   */
+  function armadilhasDoMapa() {
+    return [{
+      id: 'ressalto', nome: 'A laje rachada', casas: RESSALTO, cd: 12,
+      descoberta: Boolean(estado.ressaltoVisto || estado.ressaltoQuebrado),
+      desarmada: Boolean(estado.ressaltoQuebrado),   // caiu: não há mais laje para marcar
+      afeta: (c) => !pequeno(c),
+      achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez, dá para passar.',
+      notar: async (c, { mostrar = true } = {}) => {
+        if (estado.ressaltoVisto) return;
+        estado.ressaltoVisto = true;
+        enc.say('acao', `${c.name} nota a laje rachada do ressalto: quem passa por ali vai rente à parede.`);
+        if (mostrar) {
+          await narrar(root, { formato: 'painel', paginas: [{ titulo: 'A laje rachada', texto: [
+            `${c.name} para antes de pisar: a laje no meio da subida está rachada por baixo, solta da rocha. Não aguenta um adulto. Rente à parede, um de cada vez, dá para passar.`,
+          ] }] });
+        }
+        app.refresh?.();
+      },
+      disparar: (c) => ressalto(c),
+    }];
+  }
+
   return {
     lugar: 'Esconderijo Dentefino',
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
+    // Investigar o cenário e os corpos, e apagar e acender as fogueiras (`game/investigar.js`, `game/fogo.js`).
+    investigavel: true,
+    pistaEm,
+    pistasEm,
+    armadilhas: armadilhasDoMapa,
     interacoes,
     ganchosMagicos,
     plantasSabem,

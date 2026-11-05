@@ -317,10 +317,11 @@ teste('menu do corpo: antes só "Olhar" do chão; agora Olhar do corpo e Revista
   assert.equal(corpo.saqueado, true);
   const depois = rotulos(opcoesDaCasa(appDe(enc, pal), corpo.pos));
   assert.ok(depois.some((x) => x.includes('já revistado')));
-  // goblin morto sem tabela: só Olhar
+  // goblin morto sem tabela: nada a revistar — olhar, examinar o corpo (Medicina) e procurar em volta (os verbos
+  // da atenção valem em toda cena, `game/investigar.js`)
   const { enc: e2, pal: p2 } = montar({ foes: [['goblin', { x: 7, y: 5 }], ['goblin', { x: 11, y: 11 }]] });
   e2.combatants.find((c) => c.pos.x === 7).dead = true;
-  assert.deepEqual(rotulos(opcoesDaCasa(appDe(e2, p2), { x: 7, y: 5 })), ['Olhar o corpo', 'Olhar']);
+  assert.deepEqual(rotulos(opcoesDaCasa(appDe(e2, p2), { x: 7, y: 5 })), ['Olhar o corpo', 'Corpo: Examinar o corpo', 'Olhar', 'Procurar']);
 });
 
 

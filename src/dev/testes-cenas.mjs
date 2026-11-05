@@ -30,7 +30,8 @@ import { mapaDo, buildFoes } from '../game/encounter.js';
 import { criarBuscas } from '../game/buscas.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
-import { MAPA_ESCONDERIJO } from '../game/esconderijo.js';
+import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO as PE } from '../game/esconderijo.js';
+import { montarCampo } from '../game/campo.js';
 import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from '../game/arvoretrovao.js';
 import { mudarExaustao, nivelDeExaustao } from '../rules/conditions.js';
 import { podeMarchar } from '../rules/marcha.js';
@@ -150,66 +151,99 @@ teste('toda criatura do esconderijo nasce em casa livre e alcançável', () => {
   }
 });
 
-teste('o túnel fica FORA do alcance da corrente dos lobos', () => {
+// As invariantes abaixo são as da planta, e não números soltos: as casas vêm de `PONTOS_DO_ESCONDERIJO`, o mesmo
+// lugar de onde o capítulo 2 as lê. A planta é a do battlemap da FA (`src/dev/mapa-esconderijo-fa.mjs`).
+const salaDoEsconderijo = () => montarCampo(mapaDo('esconderijo'));
+const casasDaSala = (f, nome) => [...f.sala].filter(([, n]) => n === nome).map(([c]) => c.split(',').map(Number))
+  .filter(([x, y]) => !f.blocksMove(x, y));
+
+teste('o túnel e os degraus do canil ficam FORA do alcance da corrente dos lobos', () => {
   // É disso que depende o gatilho próprio do canil: passar pelo túnel não pode
-  // acender a briga, senão "Acalmar os lobos" volta a ser letra morta.
-  const f = campo();
-  const corrente = { x: 23, y: 12, raioFt: 10 };
-  for (let y = 5; y <= 17; y++) {
-    for (let x = 13; x <= 19; x++) {
-      if (f.blocksMove(x, y)) continue;
-      assert.ok(distanceFt(corrente, { x, y }) > corrente.raioFt + 5,
-        `a casa do túnel (${x},${y}) está dentro do alcance da corrente`);
-    }
+  // acender a briga, senão "Acalmar os lobos" volta a ser letra morta. E o livro: eles não alcançam os degraus.
+  const f = salaDoEsconderijo();
+  const degraus = casasDaSala(f, 'canil').filter(([x, y]) => f.heightAt(x, y) <= 1);
+  assert.ok(degraus.length >= 2, 'o canil perdeu os degraus da entrada');
+  for (const [x, y] of [...casasDaSala(f, 'passagem'), ...degraus]) {
+    assert.ok(distanceFt(PE.corrente, { x, y }) > PE.corrente.raioFt + 5,
+      `a casa (${x},${y}) está dentro do alcance da corrente`);
   }
 });
 
-teste('os lobos acorrentados não alcançam os degraus da entrada', () => {
+teste('os lobos acorrentados são três, presos ao mesmo espeto', () => {
   const presos = bando().filter((c) => c.corrente);
   assert.equal(presos.length, 3);
-  for (const l of presos) assert.deepEqual(l.corrente, { x: 23, y: 12, raioFt: 10 });
+  for (const l of presos) {
+    assert.deepEqual(l.corrente, PE.corrente);
+    assert.ok(distanceFt(l.pos, PE.corrente) <= PE.corrente.raioFt, `${l.name} nasce fora da corrente`);
+  }
 });
 
-teste('não se vê o bando de Klarg do lado dos poços, só da soleira', () => {
-  const f = campo();
+teste('não se vê o bando de Klarg do lado dos tanques', () => {
+  // A luta de Klarg começa na SOLEIRA, não de dentro dos tanques: senão ver um goblin dele lá do fundo já abria a
+  // caverna inteira — medido na primeira versão desta planta, um goblin em (24,15) se via da coluna x 24 toda.
+  const f = salaDoEsconderijo();
   const chefe = bando().filter((c) => c.grupo === 'chefe');
-  const veem = [];
-  for (let y = 1; y <= 14; y++) {
-    for (let x = 20; x <= 38; x++) {
-      if (f.blocksMove(x, y)) continue;
-      if (chefe.some((k) => f.hasLineOfSight({ x, y }, k.pos))) veem.push(`${x},${y}`);
-    }
-  }
-  assert.ok(veem.length <= 5, `${veem.length} casas enxergam a caverna do chefe: ${veem.join(' ')}`);
+  const veem = casasDaSala(f, 'pocos').filter(([x, y]) => chefe.some((k) => f.hasLineOfSight({ x, y }, k.pos)));
+  assert.equal(veem.length, 0, `${veem.length} casas dos tanques enxergam o bando de Klarg: ${veem.map((p) => p.join(',')).join(' ')}`);
 });
 
-teste('Klarg espera atrás da estalagmite, com cobertura da porta', () => {
-  const f = campo();
-  const klarg = bando().find((c) => c.defId === 'klarg' || /klarg/i.test(c.name));
-  assert.ok(klarg, 'Klarg sumiu do elenco');
-  for (const porta of [{ x: 30, y: 13 }, { x: 30, y: 14 }, { x: 31, y: 14 }, { x: 31, y: 15 }]) {
-    assert.equal(f.coverBetween(porta, klarg.pos), 2,
-      `sem cobertura de (${porta.x},${porta.y}): a cena narra que ele está atrás de uma estalagmite`);
+teste('pela chaminé não se vê a caverna de Klarg: a fenda sobe nove metros', () => {
+  // A FA desenha a fenda aberta (o Foundry não tem altura); com a visão pelo traço, do canil se via o bando de Klarg.
+  // A rocha da chaminé é alta no mapa (`mapa-esconderijo-fa.mjs`, ROCHA_DA_CHAMINE) e corta a reta.
+  const f = salaDoEsconderijo();
+  const caverna = casasDaSala(f, 'chefe');
+  for (const sala of ['canil', 'passagem']) {
+    const veem = casasDaSala(f, sala).filter(([x, y]) => caverna.some(([a, b]) => f.hasLineOfSight({ x, y }, { x: a, y: b })));
+    assert.equal(veem.length, 0, `do ${sala} se vê a caverna de Klarg: ${veem.map((p) => p.join(',')).join(' ')}`);
   }
+});
+
+teste('Klarg espera fora da vista de quem pisa na soleira', () => {
+  // Medido: nesta caverna não há casa com meia cobertura da soleira — ou se vê tudo, ou nada. Então o "atrás de
+  // uma estalagmite" que a cena narra é a casa que a soleira não enxerga, encostada na estalagmite desenhada.
+  const f = salaDoEsconderijo();
+  const klarg = bando().find((c) => c.defId === 'klarg');
+  assert.ok(klarg, 'Klarg sumiu do elenco');
+  const pocos = new Set(casasDaSala(f, 'pocos').map((p) => p.join(',')));
+  const soleira = casasDaSala(f, 'chefe').filter(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => pocos.has(`${x + dx},${y + dy}`)));
+  assert.ok(soleira.length >= 1, 'a caverna de Klarg perdeu a soleira');
+  for (const [x, y] of soleira) assert.ok(!f.hasLineOfSight({ x, y }, klarg.pos), `da soleira (${x},${y}) se vê Klarg`);
+  assert.ok(distanceFt(klarg.pos, PE.chamineTopo) >= 15, 'Klarg nasce colado na chaminé: fugiria sem gastar turno');
 });
 
 teste('a ponte está alta e o canal embaixo dela é baixo', () => {
-  // A ponte é o cruzamento do anel com a passagem dos poços, 6 m acima da água:
-  // quem está no canal não sobe nela, e é por isso que dá para cortar as cordas.
-  for (const [x, y] of [[20, 5], [21, 5], [20, 6], [21, 6]]) {
-    assert.equal(MAPA_ESCONDERIJO.terreno[y][x], '=');
-    assert.equal(Number(MAPA_ESCONDERIJO.altura[y][x]), 4);
+  // A ponte é 6 m acima da água (livro, área 5): quem está no canal não sobe nela, e é por isso que dá para cortar
+  // as cordas. O canal passa por baixo dela na diagonal, de (15,5) para (16,4).
+  const f = salaDoEsconderijo();
+  for (const p of PE.ponte) {
+    assert.equal(MAPA_ESCONDERIJO.terreno[p.y][p.x], '=');
+    assert.equal(f.heightAt(p.x, p.y), 4);
   }
-  for (const [x, y] of [[19, 5], [19, 6]]) assert.equal(Number(MAPA_ESCONDERIJO.altura[y][x]), 0);
+  assert.equal(f.heightAt(PE.sobAPonte.x, PE.sobAPonte.y), 1, 'o canal sob a ponte saiu do nível 1');
+  for (const p of PE.ponte) {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const q = { x: p.x + dx, y: p.y + dy };
+      if (f.blocksMove(q.x, q.y) || f.heightAt(q.x, q.y) > 2) continue;
+      assert.ok(f.stepBlocked(p.x, p.y, q.x, q.y), `do canal (${q.x},${q.y}) se sobe na ponte (${p.x},${p.y})`);
+    }
+  }
 });
 
-teste('o dique dos poços continua sendo entulho, onde a cena o procura', () => {
-  for (let x = 32; x <= 37; x++) assert.equal(MAPA_ESCONDERIJO.terreno[4][x], 'x');
+teste('o dique dos tanques continua sendo entulho, onde a cena o procura', () => {
+  const f = salaDoEsconderijo();
+  for (const p of PE.dique) {
+    assert.equal(MAPA_ESCONDERIJO.terreno[p.y][p.x], 'x');
+    assert.equal(f.sala.get(`${p.x},${p.y}`), 'pocos');
+  }
+  for (const p of [...PE.poco1, ...PE.poco2]) assert.equal(MAPA_ESCONDERIJO.terreno[p.y][p.x], 'W');
 });
 
 teste('a chaminé liga o canil à caverna do chefe pelas duas pontas', () => {
-  assert.equal(MAPA_ESCONDERIJO.terreno[13][25], 'x');
-  assert.equal(MAPA_ESCONDERIJO.terreno[16][28], 'x');
+  const f = salaDoEsconderijo();
+  assert.equal(MAPA_ESCONDERIJO.terreno[PE.chamineBase.y][PE.chamineBase.x], 'x');
+  assert.equal(MAPA_ESCONDERIJO.terreno[PE.chamineTopo.y][PE.chamineTopo.x], 'x');
+  assert.equal(f.sala.get(`${PE.chamineBase.x},${PE.chamineBase.y}`), 'canil');
+  assert.equal(f.sala.get(`${PE.chamineTopo.x},${PE.chamineTopo.y}`), 'chefe');
 });
 
 // ---- o elenco do esconderijo -----------------------------------------------

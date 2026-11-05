@@ -708,6 +708,7 @@ export function porLuz(m, x, y, luz) {
  * propósito que o padrão faça algo: marcar no editor sem o jogo reagir seria um botão que mente.
  *
  * `oculto` tira a marca do tabuleiro: a alavanca escondida atrás da estante existe, mas não se anuncia.
+ * `pista` prende um TESTE à casa (Procurar, Investigar, Ler os rastros, Lembrar), para o menu e o diário.
  * Clicar de novo na mesma casa tira o objeto.
  */
 export function porInterativo(m, x, y, obj) {
@@ -719,7 +720,9 @@ export function porInterativo(m, x, y, obj) {
     if (!obj) return true;
   }
   if (!obj) return i >= 0;
-  m.interativos.push({ x, y, id: obj.id, rotulo: obj.rotulo, texto: obj.texto, ...(obj.oculto ? { oculto: true } : {}) });
+  m.interativos.push({ x, y, id: obj.id, rotulo: obj.rotulo, texto: obj.texto, ...(obj.oculto ? { oculto: true } : {}),
+    // O TESTE: `{ verbo, cd, achado, titulo? }` vira um verbo no menu da casa (`game/investigar.js`), sem roteiro.
+    ...(obj.pista?.achado ? { pista: { verbo: obj.pista.verbo, cd: obj.pista.cd ?? 10, achado: obj.pista.achado, ...(obj.pista.titulo ? { titulo: obj.pista.titulo } : {}) } } : {}) });
   return true;
 }
 
