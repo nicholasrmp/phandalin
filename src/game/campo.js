@@ -99,5 +99,7 @@ export function montarCampo(mapa) {
   if (mapa.luzes?.length) field.luzes = mapa.luzes.map((f) => ({ ...f, pos: { ...f.pos } }));
   // A escuridão da cena (0 dia, 1 noite: `rules/luz.js definirEscuridao`), quando o mapa a declara.
   if (mapa.escuridao != null) definirEscuridao(field, mapa.escuridao);
+  // a NÉVOA EXPLORADA (`rules/nevoa.js`) vem ligada; o mapa que não quer diz `nevoaExplorada: false`
+  if (mapa.nevoaExplorada === false) field.nevoaExplorada = false;
   return field;
 }

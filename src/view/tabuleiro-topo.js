@@ -16,6 +16,7 @@
 
 import { distanceFt, ARESTA } from '../core/grid.js';
 import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, visaoNoEscuro, CLARO, aparenciaDaLuz } from '../rules/luz.js';
+import { explorar } from '../rules/nevoa.js';
 import { emissoresDoAmbiente, desenharAmbiente } from './ambiente.js';
 import { criarCacheDePoligonos } from './raios.js';
 import { SUPERFICIE } from './superficies.js';
@@ -61,6 +62,8 @@ const PRIORIDADE = ['inconsciente', 'paralisado', 'atordoado', 'contido', 'preso
 const ICONE_DA_CONDICAO = { contido: 'agarrado', presoPorVinhas: 'agarrado', paralisado: 'atordoado' };
 const iconeDe = (id) => (temIcone(id) ? id : ICONE_DA_CONDICAO[id] ?? null);
 const COR_DA_CONCENTRACAO = '#8fd3ff';
+/** Quanto do véu a memória tira (`rules/nevoa.js`): 0,42 deixa o chão lembrado visível e claramente no escuro. */
+const NEVOA_LEMBRADA = 0.42;
 /** '#rrggbb' → [r, g, b] (a cor da luz). */
 const rgbDe = (hex) => {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex ?? ''));
@@ -514,6 +517,8 @@ export class TabuleiroTopo {
     // esconder quem está no escuro, e sem isto ela devolvia sempre `true` — a vista de cima mostrava a masmorra
     // inteira, monstros e tudo, assim que a cena abria.
     this._visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc, this.filtroDeVisao ?? null) : null;
+    // a NÉVOA EXPLORADA (`rules/nevoa.js`): o que se vê agora fica lembrado
+    if (this._visao) explorar(this.field, this._visao);
     this.prepararLeitura();
 
     ctx.save();
@@ -880,7 +885,7 @@ export class TabuleiroTopo {
     const proprios = this.filtroDeVisao ? grupo.filter(this.filtroDeVisao) : null;
     if (proprios?.length) grupo = proprios;
     const domoDe = new Map(this.fx.domosAtivos(this).filter((o) => o.it.id != null).map((o) => [o.it.id, o.it]));
-    const chave = [w, h, this.ox, this.oy, C, field.versao ?? 0,
+    const chave = [w, h, this.ox, this.oy, C, field.versao ?? 0, field.exploradoVersao ?? 0,
       grupo.map((c) => `${c.pos.x},${c.pos.y},${visaoNoEscuro(c)}`).join(';'),
       fontes.map((f) => `${f.pos.x},${f.pos.y},${f.claro},${f.penumbra},${f.angulo ?? ''},${f.direcao ?? ''}`).join(';'),
       figuras.map((c) => `${c.pos.x},${c.pos.y}${domoDe.has(c.id) ? 'd' : ''}`).join(';')].join('|');
@@ -890,7 +895,8 @@ export class TabuleiroTopo {
     ctx.drawImage(this._mascara.borrada, 0, 0);
     this.zonasObscurasPorCima(ctx, figuras);
 
-    // o brilho quente do fogo, como no herdado: numa tela à parte, furado pelo mesmo véu
+    // o brilho quente do fogo, como no herdado: numa tela à parte, furado pelo véu SEM a memória — a fogueira de
+    // uma sala que o grupo só lembra não brilha (quem garante que ainda está acesa?)
     const ambiente = emissoresDoAmbiente(field);
     if (!fontes.length && ambiente.vazio) return;
     const brilho = this._brilho ?? (this._brilho = document.createElement('canvas'));
@@ -903,7 +909,7 @@ export class TabuleiroTopo {
     for (const f of fontes) this.pocaDeLuz(bg, f);
     desenharAmbiente(bg, this.time, (x, y) => this.center(x, y), ambiente);
     bg.globalCompositeOperation = 'destination-out';
-    bg.drawImage(this._mascara.borrada, 0, 0);
+    bg.drawImage(this._mascara.semMemoria, 0, 0);
     bg.globalCompositeOperation = 'source-over';
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -1032,11 +1038,35 @@ export class TabuleiroTopo {
       this.recortarFiguraDaMascara(m, c, domoDe.get(c.id));
     }
     m.globalAlpha = 1;
-    const [borrada, b] = tela('borrada');
-    b.filter = 'blur(1.5px)';
-    b.drawImage(nitida, 0, 0);
-    b.filter = 'none';
-    return { nitida, borrada, visao: this._visao, chave };
+    const [semMemoria, sm] = tela('semMemoria');
+    sm.filter = 'blur(1.5px)';
+    sm.drawImage(nitida, 0, 0);
+    sm.filter = 'none';
+    // 4. A MEMÓRIA (`rules/nevoa.js`): o chão já visto sai do preto e fica no escuro, com a borda borrada como a da
+    // luz do mapa. Sem fichas: quem está lá só aparece onde alguém olha agora (`_visao`).
+    const explorado = field.explorado;
+    let borrada = semMemoria;
+    if (explorado?.some((v) => v)) {
+      const [lembrado, ge] = tela('lembrado');
+      ge.fillStyle = '#fff';
+      for (let y = 0; y < field.h; y++) {
+        for (let x = 0; x < field.w; x++) {
+          if (explorado[y * field.w + x]) ge.fillRect(this.ox + x * C - 0.5, this.oy + y * C - 0.5, C + 1, C + 1);
+        }
+      }
+      m.globalCompositeOperation = 'destination-out';
+      m.globalAlpha = NEVOA_LEMBRADA;
+      m.filter = `blur(${Math.round(C * 0.3)}px)`;
+      m.drawImage(lembrado, 0, 0);
+      m.filter = 'none';
+      m.globalAlpha = 1;
+      const [comMemoria, b] = tela('borrada');
+      b.filter = 'blur(1.5px)';
+      b.drawImage(nitida, 0, 0);
+      b.filter = 'none';
+      borrada = comMemoria;
+    }
+    return { nitida, borrada, semMemoria, visao: this._visao, chave };
   }
 
   /**

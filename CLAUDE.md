@@ -122,7 +122,7 @@ npm run build                      # roda verificar-taverna.mjs no prebuild
 
 Há um `testes-*.mjs` por frente (barbaro, goblin, habilidades, mansao, ondaeco,
 porta, save, sala, sala-ws, dialogo-perfil, itens-fora, movimento-aliados,
-musica, editor, casadamorte, regioes, criador, sala-criados, arestas). O de editor, o da Casa da Morte, o das regiões, o do
+musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa). O de editor, o da Casa da Morte, o das regiões, o do
 criador, o do herói criado na sala e o das arestas rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
@@ -167,6 +167,12 @@ pode trazer `cor` e `animacao` próprias. É só desenho, `tabuleiro-topo.js poc
 escuro dos dois. O tabuleiro põe um véu azul que chega aos poucos. O mapa leva `escuridao`, a rua da vila anoitece pelo relógio
 (`capitulo3-rua.js`), e o multijogador manda a escuridão na diferença do campo (`e`). No editor é a ferramenta 4.
 `src/dev/testes-luz.mjs` prova tudo.
+A **NÉVOA EXPLORADA** (`rules/nevoa.js`) guarda em `field.explorado` cada casa que o grupo viu. O tabuleiro a enche com
+`explorar(field, _visao)` a cada quadro. No véu ela tira `NEVOA_LEMBRADA` (0,42) do preto e deixa o chão no escuro. O brilho das luzes
+é cortado pelo véu SEM a memória. Quem aparece continua sendo só `_visao`. O save leva uma por cena em `campanha.nevoa[variante]`
+(`codificarExplorado`, corridas em base 36, com `LxA:` na frente; `restaurarExplorado` recusa outro tamanho). `main.js guardarNevoa` grava
+ao salvar e ao sair da cena, e só na campanha de onde o campo saiu (`field.nevoaDe`). Não vai na diferença do campo: cada jogador tem a
+sua. O mapa desliga com `nevoaExplorada: false`. `src/dev/testes-nevoa.mjs` prova tudo.
 A **REGIÃO** (`mapa.regioes`, motor em `rules/regioes.js`) é a área que FAZ algo quando alguém entra, sai, ou começa e termina o turno
 nela — a Region do Foundry. Efeitos, na ordem: texto, dano (com teste e metade), condição (com teste), parar o passo, terreno difícil
 (enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte; o dano pode deixar com uma condição quem

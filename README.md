@@ -246,6 +246,12 @@ o mapa de dia, no entardecer (penumbra em toda parte) ou à noite (só se vê o 
 escurece mais. A rua da vila anoitece sozinha pelo relógio, e o convidado da sala vê a mesma noite. Tudo na ferramenta 4
 do editor; `src/dev/testes-luz.mjs` prova cada parte.
 
+**O que o grupo já viu fica lembrado** (`src/rules/nevoa.js`), como a névoa explorada do Foundry. Numa cena escura,
+o chão por onde o grupo passou não volta ao preto. Ele fica visível no escuro, mas sem os monstros, que só aparecem onde
+alguém olha agora. A fogueira de uma sala só lembrada também não brilha. O save guarda a memória de cada cena na
+campanha, então voltar à caverna acha o mapa já andado. No multijogador cada navegador tem a sua, como no Foundry.
+Um mapa desliga com `nevoaExplorada: false` (a caixa na ferramenta 4 do editor). `src/dev/testes-nevoa.mjs` prova tudo.
+
 **Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
 destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**
 (`mapa.tracos`): polilinhas em casas, com fração, como foram desenhadas. Quando há traço, é ele que o tabuleiro

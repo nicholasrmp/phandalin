@@ -15,7 +15,7 @@ const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
   'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
-  'frente', 'sobreposicoes', 'regioes', 'trancas', 'escuridao',
+  'frente', 'sobreposicoes', 'regioes', 'trancas', 'escuridao', 'nevoaExplorada',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -835,6 +835,14 @@ export function porLuz(m, x, y, luz) {
     if (igual) return true;                      // mesma luz: o clique apaga
   }
   m.luzes.push(nova);
+  return true;
+}
+
+/** A névoa explorada (`rules/nevoa.js`) vem ligada; desligá-la grava `nevoaExplorada: false` no mapa. */
+export function definirNevoaExplorada(m, ligada) {
+  if ((m.nevoaExplorada !== false) === Boolean(ligada)) return false;
+  if (ligada) delete m.nevoaExplorada;
+  else m.nevoaExplorada = false;
   return true;
 }
 

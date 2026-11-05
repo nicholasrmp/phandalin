@@ -923,6 +923,8 @@ function sincronizarModo() {
   if (c) c.checked = mapa.cena === 'editor';
   const e = $('escuridao');
   if (e) e.value = String(mapa.escuridao ?? 0);
+  const nv = $('nevoaExplorada');
+  if (nv) nv.checked = mapa.nevoaExplorada !== false;
   // a peça escolhida pode ter sumido no desfazer, ou o mapa aberto ser outro
   if (sobreSel && !(mapa.sobreposicoes ?? []).some((o) => o.id === sobreSel)) sobreSel = '';
   sobreNoPainel();
@@ -1094,6 +1096,9 @@ function montarPainel() {
       <label class="linha">dia <input type="range" id="escuridao" min="0" max="1" step="0.05" value="${mapa.escuridao ?? 0}" style="flex:1" /> noite</label>
       <p class="dica">Ao ar livre: abaixo de 0,35 é dia, até 0,7 é entardecer (penumbra em toda parte), acima disso é
       noite — só se vê o que alguém ilumina, e as luzes "só no escuro" acendem. Numa caverna, só escurece mais.</p>
+      <label class="linha"><input type="checkbox" id="nevoaExplorada" ${mapa.nevoaExplorada === false ? '' : 'checked'} /> lembrar o que o grupo já viu (névoa explorada)</label>
+      <p class="dica">Ligada, o chão que alguém viu fica no escuro em vez de sumir no preto — sem os monstros, que só
+      aparecem onde alguém olha agora. Desligue numa cena onde lembrar não faz sentido.</p>
       <p class="dica" id="contaLuzes">—</p>
     </div>
 
@@ -1271,6 +1276,7 @@ function montarPainel() {
   $('luzDirecao').addEventListener('change', (e) => { sel.luzDirecao = Number(e.target.value) || 0; });
   $('luzSoNoEscuro').addEventListener('change', (e) => { sel.luzSoNoEscuro = e.target.checked; });
   $('escuridao').addEventListener('change', (e) => { ponto(); if (!aplicar(M.definirEscuridaoDoMapa(mapa, e.target.value))) { desfazer.pop(); botoes(); } });
+  $('nevoaExplorada').addEventListener('change', (e) => { ponto(); if (!aplicar(M.definirNevoaExplorada(mapa, e.target.checked))) { desfazer.pop(); botoes(); } });
   L.querySelectorAll('[data-luz]').forEach((b) => b.addEventListener('click', () => {
     sel.luz = b.dataset.luz;
     L.querySelectorAll('[data-luz]').forEach((x) => x.classList.toggle('on', x === b));

@@ -164,6 +164,7 @@ import {
 // existem em `app/` mas ninguém os chama ainda: ficam fora daqui até que alguém
 // os ligue, para o import não dizer que são usados.
 import { SaveManager } from "./app/persistence/SaveManager.js";
+import { codificarExplorado, restaurarExplorado } from "./rules/nevoa.js";
 import { CombatAdapter } from "./app/combat/CombatAdapter.js";
 
 /** O `localStorage`, ou um armazém em memória onde ele é bloqueado (aba anônima): o jogo roda, só não guarda. */
@@ -536,6 +537,7 @@ class App {
             config.capitulo === 4
             ? config.cenaDaVila
             : (config.variante ?? "emboscada");
+    this.guardarNevoa(); // o que o grupo viu na cena que está saindo
     const mapa = mapaDo(variante);
     const field = montarCampo(mapa);
     this.campoBase = montarCampo(mapa); // o mapa como nasceu: o que as cenas mudam depois vai ao convidado (`campo-delta.js`)
@@ -584,6 +586,11 @@ class App {
       // As magias de utilidade da cena anterior ficaram para trás (o relógio segue).
       if (this.campanha?.utilidade) this.campanha.utilidade.ativas = [];
     }
+    // A NÉVOA EXPLORADA desta cena, se o grupo já esteve aqui (`rules/nevoa.js`). O campo leva de qual cena e de
+    // qual campanha ela é: carregar um save troca `this.campanha`, e a memória da partida de antes não pode ir
+    // parar dentro dele.
+    restaurarExplorado(field, this.campanha?.nevoa?.[variante]);
+    field.nevoaDe = { variante, campanha: this.campanha };
     // S-02a: entrar numa cena é um ponto de save. Carregar um save também
     // reentra aqui, e aí não há o que salvar de novo.
     this.localAtual = null;
@@ -3910,6 +3917,7 @@ class App {
     this.localAtual = { tipo: "vila", chegando };
     fecharMenuContexto();
     this.capitulo = null;
+    this.guardarNevoa(); // a memória da cena que fecha vai para a campanha antes do campo sumir
     this.enc = null;
     this.board = null;
     this.selected = null;
@@ -3928,6 +3936,7 @@ class App {
     this.localAtual = { tipo: "regiao", onde };
     fecharMenuContexto();
     this.capitulo = null;
+    this.guardarNevoa(); // a memória da cena que fecha vai para a campanha antes do campo sumir
     this.enc = null;
     this.board = null;
     this.selected = null;
@@ -3982,7 +3991,21 @@ class App {
   }
 
   /** S-02: o autosave. Só da campanha (a arena de testes não guarda nada). Falha em voz alta, mas nunca derruba o jogo. */
+  /**
+   * Guarda na campanha o que o grupo já viu na cena aberta (`campanha.nevoa[variante]`, `rules/nevoa.js`), para o
+   * save levar e a volta à mesma cena achar o mapa andado. Só na campanha de onde o campo saiu.
+   */
+  guardarNevoa() {
+    const field = this.enc?.field;
+    const de = field?.nevoaDe;
+    if (!de || !this.campanha || de.campanha !== this.campanha) return;
+    const texto = codificarExplorado(field);
+    if (!texto) return;
+    (this.campanha.nevoa ??= {})[de.variante] = texto;
+  }
+
   autosalvar(ov = {}) {
+    this.guardarNevoa();
     const herois = ov.herois ?? this.grupoAtual();
     const config = ov.config ?? this.config;
     const local = this.lugarAtual();
@@ -4101,6 +4124,7 @@ class App {
   encerrarPartida() {
     fecharMenuContexto();
     this.capitulo = null;
+    this.guardarNevoa(); // a memória da cena que fecha vai para a campanha antes do campo sumir
     this.enc = null;
     this.board = null;
     this.selected = null;
