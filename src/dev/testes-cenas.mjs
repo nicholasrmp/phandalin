@@ -454,6 +454,45 @@ teste('a mansão nasce no breu, e cada tocha acende a sala dela', async () => {
   assert.equal(aoBreu.length, 7, `só ${aoBreu.length} das 11 jogam casa no breu ao apagar (${aoBreu.join(' | ')})`);
 });
 
+teste('nenhuma luz de mapa é inerte: apagar qualquer uma muda alguma casa', () => {
+  // O DEFEITO DA LUZ INERTE, achado na Mansão e depois medido em todas as cenas: uma chama dentro de um cômodo
+  // que a GRADE já põe claro não acende nada. O desenho mostra fogo, a regra não vê diferença, e o "Apagar" do
+  // botão direito (`game/fogo.js`) é um botão sem consequência. Pegou três mapas: a Mansão (9 de 11 inertes), a
+  // Onda Eco (o braseiro do acampamento) e o Cume (a fogueira do bando, que a planta da FA deixou SEM luz
+  // nenhuma, contra a decisão do próprio capítulo). A prova é a mesma conta que achou os três: apaga uma de cada
+  // vez e conta o que cai. Mapa novo que nasça com sala clara e chama dentro cai aqui.
+  const DESCULPAS = {
+    // Cômodo pequeno com DUAS luzes: a de menor alcance não acrescenta nada à outra, e isso é física, não defeito.
+    'mansao 8,2': 'a vela da escrivaninha, dentro do alcance da tocha do quarto do mago',
+    'mansaoTunel 8,2': 'a vela da escrivaninha, dentro do alcance da tocha do quarto do mago',
+  };
+  const inertes = [];
+  for (const cena of ['emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
+    'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
+    'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2']) {
+    const m = mapaDo(cena);
+    const luzes = (m?.luzes ?? []).map((l) => ({ ...l }));
+    if (!luzes.length) continue;
+    const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+    f.luz = new Uint8Array(f.w * f.h);
+    if (Array.isArray(m.luz)) m.luz.forEach((linha, y) => { for (let x = 0; x < f.w; x++) f.luz[y * f.w + x] = Number(linha[x] ?? 0); });
+    else if (!m.luz) f.luz.fill(2);                 // cena sem grade é clara: a luz do mapa ali espera a noite
+    const grade = (fontes) => {
+      const g = new Array(f.w * f.h);
+      for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) g[y * f.w + x] = nivelDeLuz(f, x, y, fontes);
+      return g;
+    };
+    const base = grade(luzes);
+    for (const l of luzes) {
+      const sem = grade(luzes.filter((o) => o !== l));
+      if (base.some((v, i) => sem[i] < v)) continue;
+      const chave = `${cena} ${l.pos.x},${l.pos.y}`;
+      if (!DESCULPAS[chave]) inertes.push(`${chave} (${l.tipo}, grade=${f.luz[l.pos.y * f.w + l.pos.x]})`);
+    }
+  }
+  assert.deepEqual(inertes, [], `luz que não acende nada: ${inertes.join(' | ')}`);
+});
+
 teste('uma tentativa por herói em cada ponto, e o registro sobrevive', () => {
   const registro = {};
   const b = criarBuscas(registro);

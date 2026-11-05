@@ -293,6 +293,23 @@ só fica em penumbra o que não tem chama nenhuma. `testes-cenas.mjs` guarda as 
 para na parede deixou de ser "casa escura não acende" (que passava só porque as luzes eram inertes) e virou uma
 INUNDAÇÃO aresta a aresta, conta diferente da reta que o `nivelDeLuz` traça — e vale nas quatro cenas com luz.
 
+**A mesma conta rodou nas dezoito cenas, e pegou mais duas.** `testes-cenas.mjs` agora tem uma prova permanente
+— *nenhuma luz de mapa é inerte* —, que apaga cada chama de cada cena e exige que alguma casa mude:
+- **Onda Eco**: quatro salas nasciam claras (templo, alojamento norte, forja, oficina da forja) a mil metros de
+  rocha, onde não há luz do dia nenhuma, e o braseiro do acampamento não mudava NADA. Com a grade no breu, as
+  três chamas acendem as salas inteiras sozinhas (80, 136 e 74 casas caem ao apagar). A oficina da forja (16
+  casas) fica escura de propósito: não há fogo nela, e a chama verde do salão ao lado não a enxerga.
+- **Cume da Wyvern**: a fogueira do bando estava DESENHADA e não existia na regra — a planta nova da FA deixou a
+  caverna no breu sem luz nenhuma, contra a decisão medida do próprio capítulo ("a caverna tem penumbra, não
+  breu", `capitulo4-cume.js`) e contra a narração dele. Voltou como `claro: 0, penumbra: 40` (40 pés é a
+  distância MEDIDA da fogueira à casa mais longe): a caverna fica em penumbra, só o nicho (5,13), atrás da
+  quina, segue escuro, e `mapa-cume-fa.py` se recusa a escrever se aparecer um segundo canto escuro ou se algum
+  posto do bando cair no breu. Agora dá para apagar a fogueira — e aí a visão no escuro dos orcs vale contra o
+  grupo.
+- **Castelo**: não é o mesmo caso. As salas nascem em penumbra de PROPÓSITO (`sala(..., luz=1)`), porque a
+  fortaleza é ruína e entra luz pelos buracos do teto; o salão escuro nasce em breu por escolha explícita. Lá
+  apagar uma tocha devolve a penumbra em vez do breu, e está certo assim.
+
 **O Cume da Wyvern também**, e aqui a planta nova MUDOU A CENA, não só as coordenadas: `python
 src/dev/mapa-cume-fa.py`. A antiga (30x21) era um desfiladeiro com o acampamento orc do lado de fora, num platô de
 220 casas elevadas; a da FA é a caverna, com fogueira, palha e caixote desenhados no chão dela. É o que o livro

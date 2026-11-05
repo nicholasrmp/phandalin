@@ -111,10 +111,24 @@ const alc = f.reachable({ x: pontos['heroi 0'][0], y: pontos['heroi 0'][1] }, 60
 for (const [nome, [x, y]] of Object.entries(pontos)) {
   if (!f.blocksMove(x, y) && !alc.has(`${x},${y}`)) erros.push(`${nome} (${x},${y}) nao se alcanca do grupo`);
 }
-// o fogo acende, o caixote barra e a caverna esta no breu
+// o fogo acende, o caixote barra e a caverna esta no breu NA GRADE
 if (f.surfaceAt(...JSON.parse(process.env.CAIXOTE)) !== 'bau') erros.push('o caixote nao tem a superficie bau');
 for (const k of dentro) { const [x, y] = k.split(',').map(Number);
   if (!f.blocksMove(x, y) && f.luz && f.luz[y * f.w + x] !== 0) { erros.push(`a caverna nao esta no breu em (${x},${y})`); break; } }
+// ... e a FOGUEIRA poe a caverna em penumbra, que e a decisao do capitulo ("a caverna tem penumbra, nao breu").
+// Medido, e nao chutado: TODO POSTO do bando tem de estar aceso, e so UM canto fica no escuro -- o nicho (5,13),
+// atras da quina, que a reta da luz nao enxerga. Se aparecer um segundo, a fogueira encolheu e a cena mudou.
+const { nivelDeLuz } = await import('@BASE@/src/rules/luz.js');
+const fontes = (f.luzes ?? []).map((l) => ({ ...l }));
+if (!fontes.length) erros.push('a caverna ficou sem a luz da fogueira');
+const escuras = [];
+for (const k of dentro) { const [x, y] = k.split(',').map(Number);
+  if (!f.blocksMove(x, y) && nivelDeLuz(f, x, y, fontes) === 0) escuras.push(k); }
+if (escuras.join(' ') !== '5,13') erros.push(`a fogueira deixa ${escuras.length} casa(s) da caverna no breu: ${escuras.join(' ')} (esperado so o nicho 5,13)`);
+for (const [nome, [x, y]] of Object.entries(pontos)) {
+  if (nome === 'saida 0' || nome === 'saida 1' || nome.startsWith('heroi')) continue;   // esses ficam fora da caverna
+  if (dentro.has(`${x},${y}`) && nivelDeLuz(f, x, y, fontes) === 0) erros.push(`${nome} (${x},${y}) fica no breu: a fogueira nao o alcanca`);
+}
 console.log(JSON.stringify(erros));
 '''
     erros = motor(programa, {'MAPA': json.dumps(mapa), 'PONTOS': json.dumps(pontos),
@@ -146,14 +160,26 @@ def main():
     t[CAIXOTE[1]][CAIXOTE[0]] = 'K'
     terreno = [''.join(l) for l in t]
 
-    # --- a luz: a caverna no breu, o lado de fora à luz do dia
+    # --- a luz: a caverna no breu NA GRADE, o lado de fora à luz do dia, e a FOGUEIRA acendendo a caverna
+    #
+    # A grade é o que sobra quando o fogo apaga, e mil metros de rocha não têm luz do dia: breu. Quem acende é a
+    # chama, como na Mansão e na Onda Eco. O capítulo decidiu, medindo 200 a 400 lutas, que "a caverna tem
+    # penumbra (a fogueira do fundo), não breu" (`capitulo4-cume.js`) — e a narração diz "a luz baixa de uma
+    # fogueira no fundo mostra o bando". A planta nova tinha deixado a caverna no breu SEM fogueira nenhuma, o
+    # que contradizia as duas coisas. Então: `claro: 0` (só a casa da própria chama fica clara) e `penumbra: 40`,
+    # que é a distância MEDIDA da fogueira até a casa mais longe da caverna — luz baixa que chega ao canto, e
+    # não um holofote. Apagar a fogueira (`game/fogo.js`) joga a caverna no breu de verdade, e aí a visão no
+    # escuro dos orcs vale contra o grupo.
     luz = []
     for y in range(h):
         luz.append(''.join('0' if (x, y) in interior_cache else '2' for x in range(w)))
+    alcance = max(max(abs(x - FOGUEIRA[0]), abs(y - FOGUEIRA[1])) for (x, y) in interior_cache) * 5
+    luzes = [{'pos': {'x': FOGUEIRA[0], 'y': FOGUEIRA[1]}, 'claro': 0, 'penumbra': alcance, 'tipo': 'fogueira'}]
 
     mapa = {
         'terreno': terreno,
         'luz': luz,
+        'luzes': luzes,
         'paredes': base['paredes'],
         'tracos': base['tracos'],
         **({'tracosTipo': base['tracosTipo']} if base.get('tracosTipo') else {}),
@@ -197,6 +223,7 @@ def main():
         'export const MAPA_CUME = {\n'
         '  terreno: [\n' + ''.join(f'    {um(l)},\n' for l in terreno) + '  ],\n'
         '  luz: [\n' + ''.join(f'    {um(l)},\n' for l in luz) + '  ],\n'
+        '  luzes: [\n' + ''.join(f'    {um(l)},\n' for l in luzes) + '  ],\n'
         '  paredes: {\n'
         + ''.join(f'    {lado}: [\n' + ''.join(f'      {um(l)},\n' for l in mapa['paredes'][lado]) + '    ],\n'
                   for lado in ('n', 'o'))

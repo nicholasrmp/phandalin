@@ -624,11 +624,17 @@ print('bandos:', {k: len(v) for k, v in NINHOS.items()})
 
 
 # A LUZ: a mina e escura (luz 0); so ha luz onde o livro a poe (braseiros, o acampamento, as chamas verdes).
+#
+# A SALA NAO NASCE CLARA. Quatro delas nasciam (alojNorte, templo, forja, forjaOficina), e o fogo que o livro
+# poe dentro ficava por cima de uma grade que ja dizia "esta claro aqui" -- medido apagando um a um, o braseiro
+# do acampamento nao mudava NENHUMA casa. Nao ha luz do dia a mil metros de rocha: quem acende e a chama. Com a
+# grade no breu, cada uma das tres acende a sala dela inteira (o braseiro de 30 pes de claro pega 80 casas do
+# alojamento, a fogueira 120 do templo, a chama verde 56 da forja), e apagar passou a ter consequencia -- e o
+# mesmo achado da Mansao (`mapa-mansao.py`), medido aqui.
+# A OFICINA DA FORJA (16 casas) fica no escuro de proposito: ela nao tem fogo nenhum, e a chama verde do salao
+# ao lado nao a enxerga. Quem entra leva tocha.
 L = [[0] * W for _ in range(H)]
 LUZES = []
-for (_x, _y), _n in SALA_DE.items():
-    if _n in ('alojNorte', 'templo', 'forja', 'forjaOficina'):
-        L[_y][_x] = 2
 for (_x, _y) in FUNGOS:
     L[_y][_x] = 1
 for (_x, _y, _tipo) in ((26, 27, 'braseiro'), (9, 9, 'fogueira'), (65, 37, 'chama verde')):

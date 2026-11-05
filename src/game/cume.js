@@ -63,6 +63,9 @@ export const MAPA_CUME = {
     "222222222222222222",
     "222222222222222222",
   ],
+  luzes: [
+    {"pos": {"x": 5, "y": 7}, "claro": 0, "penumbra": 40, "tipo": "fogueira"},
+  ],
   paredes: {
     n: [
       "..................",
