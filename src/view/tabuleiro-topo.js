@@ -25,6 +25,7 @@ import { fichaDe } from '../art/fichas-de-criatura.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
 import { hasCondition } from '../rules/conditions.js';
+import { iconCanvas, temIcone } from '../art/icons.js';
 import { previsaoDeAtaque, previsaoDeMagia, pct, MAGIAS_DE_ATAQUE } from '../rules/odds.js';
 import { HABILIDADES_DE_ALVO, vetoDaHabilidade, previaDaHabilidade, estadoDoFurtivo } from '../rules/habilidades-alvo.js';
 import { SPELLS, dadosDaMagia } from '../rules/spells.js';
@@ -53,8 +54,13 @@ imgAtlas.src = urlAtlas;
 // mostra UM, o que mais muda a próxima decisão, mais um "+N"; a lista
 // completa fica no HUD. A ordem é do que tira a criatura de jogo para o que
 // só a atrapalha, e as condições boas vêm por último.
-const PRIORIDADE = ['atordoado', 'inconsciente', 'agarrado', 'amedrontado', 'envenenado',
-  'caido', 'queimando', 'amaldicoado', 'lento', 'abencoado', 'esquivando'];
+const PRIORIDADE = ['inconsciente', 'paralisado', 'atordoado', 'contido', 'presoPorVinhas', 'agarrado', 'amedrontado',
+  'envenenado', 'caido', 'queimando', 'amaldicoado', 'lento', 'abencoado', 'esquivando'];
+// As condições sem ícone próprio que têm um PARENTE com ícone: a mão que prende vale para quem está contido ou preso nas
+// vinhas, as estrelas do atordoado para quem está paralisado. As outras (cego, enfeitiçado...) ficam só no HUD.
+const ICONE_DA_CONDICAO = { contido: 'agarrado', presoPorVinhas: 'agarrado', paralisado: 'atordoado' };
+const iconeDe = (id) => (temIcone(id) ? id : ICONE_DA_CONDICAO[id] ?? null);
+const COR_DA_CONCENTRACAO = '#8fd3ff';
 
 const peso = (id) => { const i = PRIORIDADE.indexOf(id); return i < 0 ? PRIORIDADE.length : i; };
 
@@ -1107,6 +1113,96 @@ export class TabuleiroTopo {
     return this.retratos.get(look);
   }
 
+  /** Na luta (e não explorando, nem depois dela)? É só aí que vez e "já agiu" querem dizer alguma coisa. */
+  emLuta() {
+    return Boolean(this.enc) && !this.enc.over && !this.overlay?.explorando;
+  }
+
+  /** É a vez desta criatura agora? Do grupo, o herói escolhido; dos inimigos, o que a IA está jogando (`enc.agindo`). */
+  agindoAgora(c) {
+    if (!this.emLuta() || c.side !== this.enc.side) return false;
+    return c === (this.enc.side === 'party' ? this.overlay?.selected : this.enc.agindo);
+  }
+
+  /** Do lado da vez e já agiu nesta rodada. */
+  jaAgiu(c) {
+    return this.emLuta() && c.side === this.enc.side && Boolean(c.acted);
+  }
+
+  /** O ícone de condição, desenhado uma vez por id (a grade de 32 px, ampliada pelo canvas da ficha). */
+  iconeDaCondicao(id) {
+    this.iconesDeCondicao ??= new Map();
+    if (!this.iconesDeCondicao.has(id)) this.iconesDeCondicao.set(id, iconCanvas(id, 32));
+    return this.iconesDeCondicao.get(id);
+  }
+
+  /**
+   * AS MARCAS DA FICHA, como o Foundry as põe em cima do token:
+   *   - a VEZ: um anel dourado que pulsa em quem está agindo (o herói escolhido, ou o inimigo que a IA joga);
+   *   - a CONCENTRAÇÃO: um anel azul tracejado que gira devagar — é o que mais se perde de vista numa luta;
+   *   - as CONDIÇÕES: até três ícones no alto, à direita do anel, da que mais muda a próxima decisão para a que só
+   *     atrapalha (`PRIORIDADE`), e um "+N" com as que não couberam.
+   * Quem já agiu fica apagado (`jaAgiu`, no `ficha`).
+   */
+  marcasDaFicha(ctx, c, sx, sy, r) {
+    const C = this.casa;
+    const t = this.time ?? 0;
+    if (this.agindoAgora(c)) {
+      ctx.save();
+      ctx.globalAlpha = 0.55 + 0.35 * Math.sin(t * 4.2);
+      ctx.strokeStyle = '#ffd868';
+      ctx.lineWidth = Math.max(2.5, C * 0.05);
+      ctx.beginPath(); ctx.arc(sx, sy, r * 1.22, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    if (c.concentrating) {
+      ctx.save();
+      ctx.strokeStyle = COR_DA_CONCENTRACAO;
+      ctx.lineWidth = Math.max(1.5, C * 0.03);
+      ctx.setLineDash([C * 0.09, C * 0.06]);
+      ctx.lineDashOffset = -t * C * 0.25;
+      ctx.beginPath(); ctx.arc(sx, sy, r * 1.14, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    const ids = [...new Set((c.conditions ?? []).map((k) => k.id))]
+      .filter((id) => iconeDe(id))
+      .sort((a, b) => peso(a) - peso(b));
+    const icones = [...new Set(ids.map(iconeDe))];
+    if (!icones.length) return;
+    // três selos em arco no alto à direita, sem se encavalar: o espaço entre os centros (r · 0,62 rad) é maior que o
+    // diâmetro de cada selo (lado · 1,1)
+    const lado = Math.max(11, r * 0.5);
+    const mostrar = icones.slice(0, 3);
+    const sobra = icones.length - mostrar.length;
+    const angulos = [-Math.PI * 0.42, -Math.PI * 0.22, -Math.PI * 0.02];
+    ctx.save();
+    ctx.globalAlpha = 1;
+    mostrar.forEach((id, i) => {
+      const a = angulos[i];
+      const bx = sx + Math.cos(a) * r * 1.02;
+      const by = sy + Math.sin(a) * r * 1.02;
+      ctx.fillStyle = 'rgba(16,12,10,.88)';
+      ctx.strokeStyle = 'rgba(235,220,186,.9)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(bx, by, lado * 0.58, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(this.iconeDaCondicao(id), bx - lado / 2, by - lado / 2, lado, lado);
+    });
+    if (sobra > 0) {
+      const a = Math.PI * 0.18;
+      const bx = sx + Math.cos(a) * r * 1.02;
+      const by = sy + Math.sin(a) * r * 1.02;
+      ctx.fillStyle = 'rgba(16,12,10,.88)';
+      ctx.beginPath(); ctx.arc(bx, by, lado * 0.46, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#efe8da';
+      ctx.font = `700 ${Math.round(lado * 0.5)}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`+${sobra}`, bx, by + 1);
+    }
+    ctx.restore();
+  }
+
   /** A imagem da ficha da criatura, já carregada; `null` enquanto carrega ou se ela fica com o retrato em pixel. */
   imagemDaFicha(c) {
     const url = fichaDe(c);
@@ -1135,7 +1231,10 @@ export class TabuleiroTopo {
     // os ganchos de cena (a taverna: o marcador do jogador no chão e a placa com o nome em cima)
     this.aoPes?.(ctx, c, sx, sy);
     ctx.save();
+    // na luta, quem do lado da vez já agiu fica em CINZA: dá para ver de relance quem ainda falta. (Só transparência
+    // não servia: sobre a areia clara da estrada, 60% de opacidade quase não se nota.)
     ctx.globalAlpha = c.dead ? 0.45 : 1;
+    if (!c.dead && this.jaAgiu(c)) ctx.filter = 'grayscale(0.9) brightness(0.75)';
     const ficha = this.imagemDaFicha(c);
     if (ficha) {
       // A FICHA DA CRIATURA (`art/fichas-de-criatura.js`): a imagem já traz o anel dourado dela, e enche o disco
@@ -1172,6 +1271,9 @@ export class TabuleiroTopo {
       ctx.lineWidth = Math.max(2, C * 0.045);
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
     }
+
+    // as marcas do Foundry: de quem é a vez, a concentração e as condições
+    if (!this.soCenario && !c.dead) this.marcasDaFicha(ctx, c, sx, sy, r);
 
     // `soCenario` (o fundo do título, a taverna): é cena, não jogo — sem barra de vida nem nome
     if (this.soCenario) {

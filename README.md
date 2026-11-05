@@ -220,6 +220,12 @@ mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0,
 **É a única vista do jogo.** Grade quadrada, mapa pintado por baixo quando o mapa tem um, parede livre, e a
 criatura como **ficha redonda** — anel da disposição, barra de vida e nome, no estilo do Foundry e do Roll20.
 
+**As marcas da ficha**, como o Foundry as põe no token (`tabuleiro-topo.js marcasDaFicha`): um anel dourado que pulsa
+em quem está agindo (o herói escolhido, ou o inimigo que a IA joga, `enc.agindo`); quem do lado da vez já agiu fica em
+cinza; a concentração é um anel azul tracejado que gira; e as condições aparecem como até três selos no alto do anel,
+da que mais muda a próxima decisão para a que só atrapalha, com "+N" para as que não couberam. Só as condições com
+ícone (onze, mais contido, preso nas vinhas e paralisado, que usam o ícone do parente); as outras ficam no HUD.
+
 Ele está em `src/view/tabuleiro-topo.js`. Até 2026-11-05 herdava do `Board` isométrico (`board.js`, 4.800 linhas);
 quando o isométrico saiu, o que a vista de cima usava dele — câmera, ponteiro, cartão de previsão, mira de área,
 números flutuantes, efeitos — foi trazido para dentro da classe, e o resto foi apagado. A tabela das superfícies do

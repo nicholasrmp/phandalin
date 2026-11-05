@@ -276,8 +276,10 @@ export class CombatAdapter {
     app.refresh();
     await runMonsterSide(app.enc, {
       delayMs: () => 420 + app.walkWaitMs,
-      onStep: () => app.refresh(),
+      // quem a IA está jogando agora: o tabuleiro põe nele o anel da vez (`tabuleiro-topo.js marcasDaFicha`)
+      onStep: (m) => { app.enc.agindo = m; app.refresh(); },
     });
+    app.enc.agindo = null;
     app.refresh();
   }
 
