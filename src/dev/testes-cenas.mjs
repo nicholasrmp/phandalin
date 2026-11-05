@@ -191,7 +191,7 @@ teste('não se vê o bando de Klarg do lado dos tanques', () => {
 
 teste('toda criatura tem a ficha da galeria no disco, menos as que a galeria não tem', () => {
   // `art/fichas-de-criatura.js` diz quem tem ficha; `src/dev/baixar-fichas.py` as põe em `public/fichas`.
-  const SEM_FICHA = new Set(['vassouraAnimada']);   // a galeria não tem vassoura
+  const SEM_FICHA = new Set();   // a vassoura veio do 5etools: agora toda criatura tem
   for (const id of CRIATURAS_COM_FICHA) assert.ok(existsSync(`public/fichas/${id}.webp`), `falta public/fichas/${id}.webp`);
   const faltam = Object.keys(MONSTERS).filter((id) => !SEM_FICHA.has(id) && !CRIATURAS_COM_FICHA.includes(id));
   assert.deepEqual(faltam, [], `criatura sem ficha: ${faltam.join(', ')}`);
@@ -199,6 +199,9 @@ teste('toda criatura tem a ficha da galeria no disco, menos as que a galeria nã
   assert.equal(fichaDe({ side: 'party', defId: 'goblin' }), null);
   assert.equal(fichaDe({ side: 'neutro', defId: 'cavaleiro', npcId: 'sildar' }), null);
   assert.equal(fichaDe({ side: 'foes', defId: 'bugbear', npcId: 'klarg' }), '/fichas/klarg.webp');
+  // Rose e Thorn são o mesmo bloco com nomes diferentes: o nome escolhe a ficha
+  assert.equal(fichaDe({ side: 'foes', defId: 'fantasmaDeCrianca', name: 'Thorn' }), '/fichas/thorn.webp');
+  assert.equal(fichaDe({ side: 'foes', defId: 'fantasmaDeCrianca', name: 'Rose' }), '/fichas/rose.webp');
 });
 
 teste('pela chaminé não se vê a caverna de Klarg: a fenda sobe nove metros', () => {

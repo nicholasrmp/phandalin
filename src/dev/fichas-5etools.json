@@ -1,0 +1,9 @@
+{
+  "_fonte": "https://github.com/5etools-mirror-3/5etools-2014-img (bestiary/tokens/<livro>/<arquivo>). Mesmo anel dourado da galeria do imgur. Vale sobre a ficha da galeria; a de fichas-proprias.json vale sobre esta.",
+  "mormesk": ["LMoP", "Mormesk the Wraith.webp"],
+  "zumbiDasCinzas": ["LMoP", "Ash Zombie.webp"],
+  "dragaoVerdeJovem": ["LMoP", "Venomfang.webp"],
+  "vassouraAnimada": ["CoS", "Broom of Animated Attack.webp"],
+  "rose": ["CoS", "Rosavalda Rose Durst.webp"],
+  "thorn": ["CoS", "Thornboldt Thorn Durst.webp"]
+}
