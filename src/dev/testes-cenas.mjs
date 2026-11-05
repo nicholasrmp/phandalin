@@ -365,22 +365,93 @@ teste('quem o guardião ignora não entra na lista de alvos dele', () => {
 });
 
 teste('a luz do mapa para na parede', () => {
-  // Medido nos mapas reais: sem esta regra, 91 casas escuras do castelo e 117
-  // da mansão acendiam através de pedra maciça.
+  // Medido nos mapas reais: sem esta regra, 91 casas escuras do castelo e 117 da mansão acendiam através de pedra
+  // maciça — pondo braseiros nos cômodos da Mansão, o vigia da caverna passava a ser visto de 106 casas em vez de 1.
+  //
+  // A PROVA MUDOU. Ela dizia "casa que a grade põe no escuro não acende", e passava na mansão só porque as salas
+  // nasciam CLARAS na grade: as onze luzes não acendiam nada, e apagar uma não mudava nada (medido: 9 das 11 com
+  // efeito zero). Com as salas no breu, acender a sala É o trabalho da luz, e casa escura que acende deixou de ser
+  // defeito. Por isso a prova agora é a INUNDAÇÃO, e não a reta: a luz só pode acender casa onde ela CHEGA andando
+  // de casa em casa, perguntando a cada aresta `passa(..., 'luz')`. É uma conta diferente da que `nivelDeLuz` faz
+  // (que traça a reta), então vale como prova: luz que atravessou pedra aparece aqui, e vale em toda cena com luz
+  // de mapa, não só na mansão. A grade de cada uma continua sendo o piso — só o que passa dela é que se confere.
+  for (const cena of ['mansao', 'castelo', 'esconderijo', 'ondaEco']) {
+    const m = mapaDo(cena);
+    if (!m?.luz || !(m.luzes ?? []).length) continue;
+    const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+    f.luz = new Uint8Array(f.w * f.h);
+    m.luz.forEach((linha, y) => { for (let x = 0; x < f.w; x++) f.luz[y * f.w + x] = Number(linha[x] ?? 0); });
+    const fontes = m.luzes.map((l) => ({ ...l }));
+    // onde a luz CHEGA: inundação a partir de cada fonte, dentro do alcance dela e só por aresta que deixa a luz passar
+    const alcance = new Set();
+    for (const l of fontes) {
+      const raio = l.claro + l.penumbra;
+      const fila = [l.pos];
+      const vistos = new Set([`${l.pos.x},${l.pos.y}`]);
+      while (fila.length) {
+        const p = fila.shift();
+        alcance.add(`${p.x},${p.y}`);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+          const q = { x: p.x + dx, y: p.y + dy };
+          if (q.x < 0 || q.y < 0 || q.x >= f.w || q.y >= f.h) continue;
+          if (vistos.has(`${q.x},${q.y}`) || distanceFt(l.pos, q) > raio) continue;
+          if (!f.passa(p.x, p.y, q.x, q.y, 'luz')) continue;
+          vistos.add(`${q.x},${q.y}`);
+          fila.push(q);
+        }
+      }
+    }
+    const vazou = [];
+    for (let y = 0; y < f.h; y++) {
+      for (let x = 0; x < f.w; x++) {
+        if (nivelDeLuz(f, x, y, fontes) <= f.luz[y * f.w + x]) continue;
+        if (!alcance.has(`${x},${y}`)) vazou.push(`${x},${y}`);
+      }
+    }
+    assert.equal(vazou.length, 0, `${cena}: ${vazou.length} casas acenderam sem a luz chegar lá (${vazou.slice(0, 8).join(' ')})`);
+  }
+});
+
+teste('a mansão nasce no breu, e cada tocha acende a sala dela', async () => {
+  // O PONTO DA GRADE NO BREU: a luz do mapa tem de FAZER algo. Antes nove salas nasciam CLARAS na grade e a tocha
+  // dentro delas era enfeite — medido apagando uma a uma, 9 das 11 não mudavam casa nenhuma, e o "Apagar a tocha"
+  // do botão direito (`game/fogo.js`) era um botão sem consequência. Esta prova guarda as duas metades.
+  const { MANSAO } = await import('../game/mansao.js');
   const m = mapaDo('mansao');
+  assert.ok(!m.luz.some((linha) => linha.includes('2')), 'nenhuma casa da mansão nasce clara: quem acende é a luz');
   const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
   f.luz = new Uint8Array(f.w * f.h);
   m.luz.forEach((linha, y) => { for (let x = 0; x < f.w; x++) f.luz[y * f.w + x] = Number(linha[x] ?? 0); });
-  const fontes = (m.luzes ?? []).map((l) => ({ ...l }));
-  assert.ok(fontes.length >= 4, 'a mansão tem braseiros');
-  let vazou = 0;
-  for (let y = 0; y < f.h; y++) {
-    for (let x = 0; x < f.w; x++) {
-      if (f.blocksMove(x, y) || f.luz[y * f.w + x] > 0) continue;
-      if (nivelDeLuz(f, x, y, fontes) > 0) vazou += 1;
-    }
+  const todas = m.luzes.map((l) => ({ ...l }));
+  assert.equal(todas.length, 11, 'as onze luzes da cena do Foundry');
+  const grade = (fontes) => {
+    const g = new Array(f.w * f.h);
+    for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) g[y * f.w + x] = nivelDeLuz(f, x, y, fontes);
+    return g;
+  };
+  const base = grade(todas);
+  // Com as onze acesas, a sala que tem luz dentro fica ACESA: nenhuma casa dela no breu. A única exceção medida é
+  // uma casa do porão (22,17), o canto da cisterna que as duas tochas do patamar não alcançam.
+  for (const [nome, casas] of Object.entries(MANSAO.salas)) {
+    if (!todas.some((l) => casas.some((c) => c.x === l.pos.x && c.y === l.pos.y))) continue;
+    const escuras = casas.filter((c) => base[c.y * f.w + c.x] === 0).map((c) => `${c.x},${c.y}`);
+    assert.ok(escuras.length <= 1, `${nome} tem tocha e ${escuras.length} casas no breu (${escuras.join(' ')})`);
   }
-  assert.equal(vazou, 0, `${vazou} casas escuras da mansão acenderam através da rocha`);
+  // E apagar tem consequência. Quatro das onze não jogam casa no breu, e cada uma por um motivo medido: a fogueira
+  // da cripta e a tocha do depósito de armas moram em salas que a grade ainda põe em PENUMBRA, então apagar as
+  // deixa na penumbra; a vela da escrivaninha e a tocha do quarto do mago dividem cômodo e se cobrem uma à outra.
+  const mudam = [];
+  const aoBreu = [];
+  for (const l of todas) {
+    const semEla = grade(todas.filter((o) => o !== l));
+    let caiu = 0;
+    let breu = 0;
+    for (let i = 0; i < base.length; i++) if (semEla[i] < base[i]) { caiu += 1; if (semEla[i] === 0) breu += 1; }
+    if (caiu) mudam.push(`${l.tipo} ${l.pos.x},${l.pos.y}`);
+    if (breu) aoBreu.push(`${l.tipo} ${l.pos.x},${l.pos.y}`);
+  }
+  assert.equal(mudam.length, 10, `só ${mudam.length} das 11 luzes mudam alguma casa ao apagar (${mudam.join(' | ')})`);
+  assert.equal(aoBreu.length, 7, `só ${aoBreu.length} das 11 jogam casa no breu ao apagar (${aoBreu.join(' | ')})`);
 });
 
 teste('uma tentativa por herói em cada ponto, e o registro sobrevive', () => {

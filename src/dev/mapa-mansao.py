@@ -17,6 +17,18 @@
 # Alturas (um nível = 1,5 m): o oeste é mais baixo que o leste, como o livro diz. Leste e
 # caverna no nível 4; oeste (salas 9-12) no 3; a fenda no 0 (seis metros abaixo); o anel de
 # pedra do porão no 5, com as escadinhas entre os dois pisos.
+#
+# LUZ: A SALA NASCE NO BREU, e quem acende é a tocha. Isto mudou em 2026-11-05 e vale explicar, porque o
+# contrário parece mais simples e não é. Nove salas nasciam CLARAS na grade (`luz=2`) e tinham uma tocha do
+# Foundry dentro. Resultado medido, apagando uma a uma no motor: 9 das 11 luzes não mudavam NENHUMA casa — a
+# grade já dizia "está claro aqui", então a chama não acrescentava nada e o "Apagar a tocha" do botão direito
+# (`game/fogo.js`) era um botão sem consequência. Com as salas em `luz=0`, a mesma conta dá 10 das 11 mudando
+# casa e 7 jogando casa no BREU, e a sala continua acesa como antes enquanto a tocha estiver acesa (medido: 158
+# casas de sala em claro, contra 146 de grade antes). É o modelo do Foundry: o subsolo é escuro, a luz ilumina.
+#
+# As que ficam em PENUMBRA (`luz=1`) são de propósito: os corredores, o depósito, a escadinha secreta, a cripta e
+# o depósito de armas. Nessas a tocha ainda sobe de penumbra para claro, e apagar devolve a penumbra em vez do
+# breu. O corredor do fosso e o túnel da cisterna já nasciam no breu.
 import json
 from collections import deque
 from pathlib import Path
@@ -62,10 +74,10 @@ def prop(x, y, variante, bloqueia=True, espelhar=False):
 
 
 # ------------------------------------------------------------ o oeste (nível 3) ----
-retang('oficina', 2, 2, 5, 5, 'L', 3, 2)                      # 11 a oficina do mago (4 x 4)
-retang('quartoMago', 6, 2, 9, 4, 'L', 3, 2)                   # 12 o quarto do Cajavidro (4 x 3)
-retang('estarRubro', 2, 7, 6, 11, 'L', 3, 2)                  # 10 a sala de estar (5 x 5)
-retang('guardasBugbear', 2, 15, 6, 17, 'L', 3, 2)             # 9 o alojamento dos bugbears (5 x 3)
+retang('oficina', 2, 2, 5, 5, 'L', 3, 0)                      # 11 a oficina do mago (4 x 4)
+retang('quartoMago', 6, 2, 9, 4, 'L', 3, 0)                   # 12 o quarto do Cajavidro (4 x 3)
+retang('estarRubro', 2, 7, 6, 11, 'L', 3, 0)                  # 10 a sala de estar (5 x 5)
+retang('guardasBugbear', 2, 15, 6, 17, 'L', 3, 0)             # 9 o alojamento dos bugbears (5 x 3)
 
 # O corredor de cima: do pé da oficina até a caverna, com a escada de dois lances.
 for (x, h) in [(4, 3), (5, 3), (6, 3), (7, 4), (8, 4)]:
@@ -90,7 +102,7 @@ casa(15, 2, 'deposito', 'L', 4, 1)                            # ... e o nicho de
 retang('corredorArmas', 16, 2, 16, 4, 'L', 4, 1)              # o corredor do depósito de armas
 retang('armas', 17, 2, 18, 4, 'L', 4, 1)                      # 6 o depósito de armas (2 x 3), trancado
 retang('cripta', 16, 5, 19, 10, 'L', 4, 1)                    # 4 as criptas (4 x 6)
-retang('jaulas', 20, 2, 22, 8, 'L', 4, 2)                     # 5 as jaulas (3 x 7)
+retang('jaulas', 20, 2, 22, 8, 'L', 4, 0)                     # 5 as jaulas (3 x 7)
 retang('corredorFosso', 20, 9, 27, 10, 'L', 4, 0)             # 3 o corredor do fosso (8 x 2)
 casa(26, 11, 'passagemPorao', 'L', 4, 1)                      # a passagem entre o corredor e o porão
 
@@ -100,8 +112,8 @@ for y in R(12, 17):
         if (x, y) in {(23, 12), (24, 12), (23, 17), (24, 17)}:
             continue                                          # os entalhes de pedra (a planta tem dois, de cada lado)
         cinza = y in (12, 17) and x >= 25          # o patamar de pedra: só as fileiras 12 e 17; as quatro escadinhas descem dele
-        casa(x, y, 'poraoCisterna', 'L', 5 if cinza else 4, 2)
-retang('poraoCisterna', 20, 14, 22, 15, 'V', 3, 2)            # a cisterna (3 x 2), um nível abaixo do piso
+        casa(x, y, 'poraoCisterna', 'L', 5 if cinza else 4, 0)
+retang('poraoCisterna', 20, 14, 22, 15, 'V', 3, 0)            # a cisterna (3 x 2), um nível abaixo do piso
 DEGRAUS += [{'x': 25, 'y': 13, 'eixo': 'y'}, {'x': 25, 'y': 16, 'eixo': 'y'},
             {'x': 27, 'y': 13, 'eixo': 'y'}, {'x': 27, 'y': 16, 'eixo': 'y'}]
 for (x, y) in [(25, 13), (25, 16), (27, 13), (27, 16)]:
@@ -110,8 +122,8 @@ casa(28, 14, 'entrada', 'L', 4, 1)                            # a porta da escad
 casa(29, 14, 'entrada', 'L', 4, 1)
 
 # 2 O alojamento dos Marcarrubra (3 x 4 e o vestíbulo da porta) e o túnel da secreta da cisterna.
-retang('alojamentoRubro', 16, 12, 18, 15, 'L', 4, 2)
-casa(19, 13, 'alojamentoRubro', 'L', 4, 2)
+retang('alojamentoRubro', 16, 12, 18, 15, 'L', 4, 0)
+casa(19, 13, 'alojamentoRubro', 'L', 4, 0)
 for (x, y) in [(14, 15), (15, 15), (15, 16), (15, 17), (16, 17), (17, 17), (18, 17), (19, 17)]:
     casa(x, y, 'tunelCisterna', 'L', 4, 0)
 

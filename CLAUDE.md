@@ -283,6 +283,15 @@ casa, servido da banda deles a quem jogasse) e passou a ser a da FA, no disco, e
 **E uma correção que a Mansão obrigou:** os MARCADORES `.svg` da FA caem em cima de PAREDE, não na casa da coisa
 — são etiqueta pregada na parede ao lado, apontando para o cômodo. Os quatro do Redbrand caem todos em rocha
 nossa. O importador agora diz isso em vez de prometer coordenada.
+**E outra, de luz: A SALA NASCE NO BREU, e quem acende é a tocha.** Nove salas da Mansão nasciam CLARAS na grade
+(`luz=2` em `mapa-mansao.py`) e tinham uma tocha do Foundry dentro. Medido apagando uma a uma no motor: **9 das 11
+luzes não mudavam casa nenhuma** — a grade já dizia "está claro aqui", então o `Apagar a tocha` do botão direito
+(`game/fogo.js`) era um botão sem consequência. Com as salas em `luz=0`, a mesma conta dá 10 das 11 mudando casa e
+**7 jogando casa no breu**, e a sala fica MAIS acesa do que era enquanto a tocha estiver acesa (158 casas de sala
+em claro, contra 146 de grade). Quem for pintar grade de luz em mapa novo: a sala com luz dentro nasce no breu, e
+só fica em penumbra o que não tem chama nenhuma. `testes-cenas.mjs` guarda as duas metades, e a prova de que a luz
+para na parede deixou de ser "casa escura não acende" (que passava só porque as luzes eram inertes) e virou uma
+INUNDAÇÃO aresta a aresta, conta diferente da reta que o `nivelDeLuz` traça — e vale nas quatro cenas com luz.
 
 **O Cume da Wyvern também**, e aqui a planta nova MUDOU A CENA, não só as coordenadas: `python
 src/dev/mapa-cume-fa.py`. A antiga (30x21) era um desfiladeiro com o acampamento orc do lado de fora, num platô de
