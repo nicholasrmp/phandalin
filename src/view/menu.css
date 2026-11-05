@@ -622,3 +622,25 @@
   .menu-lobby .menu-herois-sala { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
 }
 .menu-pendencias { color: #8a4b2a; font-weight: 600; }
+
+/* ---- o criador de personagem (menu-herois.js telaCriar) ---- */
+.menu-heroi-criar { opacity: 1; border-style: dashed; border-color: var(--gold-escuro); }
+.menu-heroi-mais { font-family: var(--serif); font-size: 30px; font-weight: 700; color: var(--gold-escuro); min-height: 48px; }
+.menu-campo {
+  width: 100%; box-sizing: border-box; padding: 6px 9px; font: inherit; font-size: 14px; color: var(--ink);
+  background: var(--papel-3); border: 1px solid var(--line-forte); border-radius: 7px;
+}
+.menu-secao .menu-campo + .menu-chips { margin-top: 6px; }
+select.menu-campo { width: auto; padding: 3px 6px; }
+.menu-criar-previa { display: block; width: 160px; height: 160px; margin: 0 auto 8px; }
+.menu-criar-ajustes { display: grid; gap: 3px; margin: 6px 0; }
+.menu-criar-ajustes[hidden] { display: none; }
+.menu-criar-ajuste { display: grid; grid-template-columns: 3.2em 1fr; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.menu-criar-atributo {
+  display: grid; grid-template-columns: 8.5em auto 2.5em 1fr; align-items: center; gap: 8px; padding: 3px 0;
+  border-bottom: 1px dotted var(--line-forte);
+}
+.menu-criar-atributo small { color: var(--muted); text-align: right; }
+.menu-criar-atributo strong { font-family: var(--serif); }
+.menu-criar-pontos { display: inline-flex; align-items: center; gap: 6px; }
+.menu-criar-pontos b { min-width: 1.6em; text-align: center; }

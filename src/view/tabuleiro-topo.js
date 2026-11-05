@@ -1158,7 +1158,9 @@ export class TabuleiroTopo {
       ctx.clip();
       const p = this.retrato(c.look);
       if (p) {
-        ctx.imageSmoothingEnabled = false;
+        // a pintura (o retrato pintado do pronto, a imagem do herói criado) pede suavização; o pixel, vizinho
+        ctx.imageSmoothingEnabled = p.style?.imageRendering === 'auto';
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(p, sx - r, sy - r, r * 2, r * 2);
       } else {
         ctx.fillStyle = anel;

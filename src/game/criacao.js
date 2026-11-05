@@ -23,6 +23,7 @@ import { abilityMod } from '../rules/abilities.js';
 import { HEROIS, heroiPorId } from './herois.js';
 import { atributoDoIniciado } from '../rules/talentos.js';
 import { RACAS, racaDe, tracosDaRaca } from '../rules/racas.js';
+import { ANTECEDENTES } from './criador.js';
 
 // ---------------------------------------------------------------- magias ----
 
@@ -572,7 +573,8 @@ const AUTOMATICO = {
  */
 export function escolhaAutomatica(id) {
   const h = heroiPorId(id);
-  const a = AUTOMATICO[id] ?? {};
+  // o herói criado: o talento que o livro de 2024 dá ao antecedente dele (`game/criador.js`)
+  const a = AUTOMATICO[id] ?? (h.criado ? { talento: ANTECEDENTES[h.antecedenteId]?.talento } : {});
   const m = regrasDeMagia(h);
   const preferir = (lista, quantos, sugeridas = []) => {
     const ok = sugeridas.filter((s) => lista.includes(s));
@@ -589,7 +591,7 @@ export function escolhaAutomatica(id) {
     magias: m ? preferir(m.listaMagias, m.escolhe, a.magias) : [],
     // Mago: das seis do livro, quais ficam preparadas.
     preparadas: m?.modo === 'livro' ? preferir(m.listaMagias, m.preparar, a.magias) : null,
-    iniciado: escolhaDoIniciado(h),
+    iniciado: escolhaDoIniciado(h, h.criado ? ANTECEDENTES[h.antecedenteId]?.iniciado ?? null : null),
   };
 }
 

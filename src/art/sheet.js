@@ -6,6 +6,7 @@ import { paint, DIRECTIONS } from './draw.js';
 import { resolveLook } from './looks.js';
 import { folhaImportada, carregarFolhas } from './folhas/index.js';
 import { retratoPintado } from './retratos/index.js';
+import { ehArte, pintarArte } from './arte-propria.js';
 
 const cache = new Map();
 
@@ -224,6 +225,16 @@ function imagemDa(sheet, anim) {
  * aparecer menor dentro do quadro é informação, não defeito.
  */
 export function makePortrait(lookKey, lado = 40) {
+  // O herói criado pelo jogador não tem folha: o retrato sai da imagem que ele mandou (`art/arte-propria.js`).
+  if (ehArte(lookKey)) {
+    const canvas = document.createElement('canvas');
+    canvas.width = lado * S;
+    canvas.height = lado * S;
+    canvas.style.width = `${lado}px`;
+    canvas.style.height = `${lado}px`;
+    pintarArte(canvas, lookKey);
+    return canvas;
+  }
   const sheet = getSheet(lookKey);
   const b = caixaDo(lookKey);
   // `lado` é LÓGICO: é o tamanho que a HUD quer na tela. A janela recortada e

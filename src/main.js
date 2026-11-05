@@ -63,6 +63,8 @@ import { criarDicas } from "./view/dicas.js";
 import { ambienteDaVariante } from "./core/ambiente.js";
 import { faixaAgora, tocarFaixa, tocarToque } from "./core/musica.js";
 import { montarHeroi, escolhaAutomatica } from "./game/criacao.js";
+import { definicaoValida } from "./game/criador.js";
+import { apresentarHeroi } from "./game/herois-criados.js";
 import { criarCapitulo1 } from "./game/capitulo1.js";
 import { abrirBarovia } from "./game/strahd-abertura.js";
 import { criarCasaDaMorte } from "./game/capitulo-casadamorte.js";
@@ -546,6 +548,11 @@ class App {
     // pronto de `party.js`, no 2º nível.
     // Capítulo seguinte: os MESMOS heróis, com as feridas, os espaços gastos e
     // o que acharam pelo caminho (`continuarCom`). Quem morreu fica para trás.
+    // O herói criado pelo jogador (`game/criador.js`): a config da partida leva a definição dele, e é ela que o põe
+    // no jogo — também ao abrir um save noutro navegador, onde o rol de heróis criados não existe.
+    for (const h of config.herois ?? []) {
+      if (h.definicao && definicaoValida(h.definicao)) apresentarHeroi(h.definicao);
+    }
     const party = config.continuarCom
       ? config.continuarCom.filter((c) => !c.dead)
       : config.herois

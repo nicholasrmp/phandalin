@@ -262,6 +262,7 @@ export function criarMenu(root, {
 
     grupo: (dados) => herois.telaGrupo(dados),
     preparo: (dados) => herois.telaPreparo(dados),
+    criar: (dados) => herois.telaCriar(dados),
 
     // O nível troca na própria tela (sem empilhar): o 3º abre o 2º círculo
     // de magia, o 5º o 3º círculo.

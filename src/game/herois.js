@@ -1,9 +1,11 @@
 // Os doze heróis prontos da campanha, um por classe, no 1º nível.
 //
 // O ELENCO foi decidido com o dono do projeto (classe, raça e gênero de cada
-// um — ver a memória "elenco de heróis"): heróis pré-definidos em vez de um
-// criador de personagem, porque cada um tem arte própria feita à mão no
-// PixelLab. O que o jogador escolhe na entrada da aventura é o que o Livro do
+// um): heróis pré-definidos, cada um com arte própria. Desde 2026-11-05 há
+// também o CRIADOR (`game/criador.js`): o jogador faz o próprio herói e manda a
+// imagem da ficha, e os doze daqui ficam para quem não quer criar nada. O
+// herói criado entra neste mesmo registro (`registrarHeroi`), e o resto do jogo
+// não distingue um do outro. O que o jogador escolhe na entrada da aventura é o que o Livro do
 // Jogador deixa escolher no 1º nível — magias, talento de origem, subclasse
 // quando a classe tem uma no 1º nível, equipamento inicial —, e isso mora em
 // `criacao.js`. Aqui fica o que NÃO se escolhe: atributos, raça, perícias,
@@ -279,4 +281,12 @@ export const HEROIS = [
   },
 ];
 
-export const heroiPorId = (id) => HEROIS.find((h) => h.id === id) ?? null;
+// OS HERÓIS CRIADOS pelo jogador (`game/criador.js`): a mesma definição, registrada aqui quando o menu os carrega ou
+// quando uma partida que os leva começa. Todo o resto do jogo os acha por `heroiPorId`, como acha os prontos.
+const CRIADOS = new Map();
+export function registrarHeroi(def) {
+  if (def?.id) CRIADOS.set(def.id, def);
+}
+export const esquecerHeroi = (id) => CRIADOS.delete(id);
+
+export const heroiPorId = (id) => HEROIS.find((h) => h.id === id) ?? CRIADOS.get(id) ?? null;

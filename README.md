@@ -54,6 +54,24 @@ O que já funciona:
   brasas subindo; atordoado tem estrelas girando; caído fica deitado com poeira;
   abençoado ganha argola dourada; lento arrasta setas; esquivando tem brilho.
 
+### O criador de personagem
+
+Na tela do grupo, o cartão **Criar herói** abre o criador (`src/game/criador.js`, tela em `src/view/menu-herois.js`):
+nome, gênero, raça (as do Livro do Jogador que o motor joga, menos o humano variante), classe, antecedente (os quatro do
+SRD 5.2: Acólito, Criminoso, Sábio, Soldado), atributos pelo conjunto padrão ou por compra de 27 pontos, perícias e uma
+história curta. O resumo ao lado é a ficha montada pelo motor, ao vivo.
+
+A **imagem da ficha** segue o anel dinâmico do Foundry: o jogador manda só a arte, escolhe zoom e enquadramento, e o
+jogo a recorta no círculo e põe o anel do grupo em volta. Ela é reduzida para um webp de 192 px (`src/view/arte-upload.js`)
+e mora na definição do herói, com a chave de retrato `arte:<id>` (`src/art/arte-propria.js`): toda tela que pede um
+retrato o tira dela. Sem imagem, o retrato é a inicial do nome.
+
+O herói criado vai para o rol do navegador (`src/game/herois-criados.js`) e passa pelo mesmo caminho dos doze prontos:
+tela de preparo (talento, magias, equipamento), `criacao.js montarHeroi` e o motor de progressão. A partida guarda a
+definição na própria config, então o save abre noutro navegador. `node --import ./src/dev/cena-node/register.mjs
+src/dev/testes-criador.mjs` monta as 336 combinações de raça, classe e gênero. Ainda não vai para a sala do
+multijogador: lá o herói é escolhido por id de uma lista fixa.
+
 ### Como a animação conversa com o motor
 
 O motor resolve tudo de uma vez: quando o evento de dano chega, os PV já
