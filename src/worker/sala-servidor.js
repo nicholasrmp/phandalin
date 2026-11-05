@@ -12,15 +12,17 @@
 //   { tipo: 'emote', id }                                          uma frase pronta em balão (T-14)
 //   { tipo: 'ping' }                                     o batimento: a conexão ainda vive?
 //   e as intenções de `game/sala.js` (pegar, largar, pronto, iniciar, ...)
+//   { tipo: 'heroi', definicao }   o herói criado que o jogador traz: porta própria, maior que 2 KB (`tratarHeroi`)
 // `eu` é o id SECRETO do jogador. Vai na primeira mensagem e não na URL: a URL
 // aparece nos registros do Cloudflare (`observability`), o corpo não.
 // Mensagens do servidor:
 //   { tipo: 'sala', visao }   o estado inteiro, depois de toda mudança
 //   { tipo: 'erro', erro }    a intenção foi recusada; o estado não mudou
 //   { tipo: 'pong' }          resposta ao ping
+//   { tipo: 'artes', artes }  as imagens dos heróis criados (id → data URL): a quem entra e depois de alguém trazer um
 //   { tipo: 'fechada' }       a sala acabou
 
-import { criarSala, aplicar, visaoDaSala, idValido } from '../game/sala.js';
+import { criarSala, aplicar, visaoDaSala, idValido, artesDaSala, MAX_ARTE_DA_SALA } from '../game/sala.js';
 import { MAX_VISTA, MS_ENTRE_VISTAS, lerVista } from '../game/partida-vista.js';
 import { lerDelta } from '../game/partida-delta.js';
 
@@ -178,6 +180,31 @@ export function tratarSave({ sala, jogadorId, bruto }) {
   const s = m?.save;
   if (!s || typeof s !== 'object' || Array.isArray(s.herois) !== true || !s.herois.length || typeof s.config !== 'object') return { ok: false, erro: 'save inválido' };
   return { ok: true, texto: JSON.stringify(s) };
+}
+
+/**
+ * O HERÓI CRIADO que um jogador traz para a mesa (`game/criador.js`): `{ tipo: 'heroi', definicao }`. Passa de 2 KB
+ * (a imagem vai junto), então tem porta própria, com teto de imagem mais o resto da definição. A regra é a de
+ * `game/sala.js` (`trazer`); aqui só o tamanho e a forma. Devolve o mesmo que `tratarMensagem`, mais `artes`.
+ */
+export const ehHeroi = (bruto) => typeof bruto === 'string' && /^\s*\{\s*"tipo"\s*:\s*"heroi"/.test(bruto.slice(0, 40));
+export const MAX_HEROI = MAX_ARTE_DA_SALA + 8_000;
+export function tratarHeroi({ sala, jogadorId, bruto, agora }) {
+  if (!sala) return { sala, resposta: erro('essa sala não existe'), mudou: false };
+  if (typeof bruto !== 'string' || bruto.length > MAX_HEROI) return { sala, resposta: erro('o herói é grande demais para a sala'), mudou: false };
+  let m;
+  try { m = JSON.parse(bruto); } catch { return { sala, resposta: erro('herói inválido'), mudou: false }; }
+  if (!m || m.tipo !== 'heroi' || !m.definicao || typeof m.definicao !== 'object') return { sala, resposta: erro('herói inválido'), mudou: false };
+  if (sala.publica) return { sala, resposta: erro('isso não vale na taverna pública: sente numa mesa e abra uma sala'), mudou: false };
+  const r = aplicar(sala, jogadorId, { tipo: 'trazer', definicao: m.definicao }, agora);
+  if (!r.ok) return { sala, resposta: erro(r.erro), mudou: false };
+  return { sala, resposta: null, mudou: true, tipo: 'trazer', artes: r.artes === true };
+}
+
+/** As imagens dos heróis criados da sala, para quem entra e depois de alguém trazer um; `null` se não há. */
+export function mensagemDeArtes(sala) {
+  const artes = sala ? artesDaSala(sala) : null;
+  return artes ? { tipo: 'artes', artes } : null;
 }
 
 /** A mensagem de visão que um jogador recebe (cada um recebe a SUA, com o `voce` dele). */

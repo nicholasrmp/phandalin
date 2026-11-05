@@ -45,6 +45,25 @@ export function desenharRecorte(canvas, img, ajuste) {
   ctx.drawImage(img, r.x, r.y, r.lado, r.lado, 0, 0, canvas.width, canvas.height);
 }
 
+/**
+ * A imagem do herói para levar à SALA do multijogador, que tem teto menor (`MAX_ARTE_DA_SALA`): se já cabe, vai como
+ * está; se não, sai de novo a 128 px, baixando a qualidade até caber. `null` se não couber de jeito nenhum.
+ */
+export async function arteParaSala(url, teto) {
+  if (!url || url.length <= teto) return url ?? null;
+  const img = await new Promise((ok, falha) => { const i = new Image(); i.onload = () => ok(i); i.onerror = falha; i.src = url; });
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  desenharRecorte(c, img, { zoom: 1, dx: 0, dy: 0 });
+  for (const q of [0.8, 0.65, 0.5, 0.35]) {
+    const saida = c.toDataURL('image/webp', q);
+    const final = saida.startsWith('data:image/webp') ? saida : c.toDataURL('image/jpeg', q);
+    if (final.length <= teto) return final;
+  }
+  return null;
+}
+
 /** A imagem final, em data URL: webp, baixando a qualidade até caber no teto. */
 export function reduzirArte(img, ajuste) {
   const c = document.createElement('canvas');

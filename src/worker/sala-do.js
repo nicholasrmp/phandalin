@@ -18,6 +18,7 @@ import { deveFechar, desconectar, promoverAnfitriao, GRACA_DO_ANFITRIAO_MS, MINU
 import { MAX_VISTA } from '../game/partida-vista.js';
 import {
   tratarMensagem, tratarVista, ehVista, tratarNarrativa, ehNarrativa, MAX_NARRATIVA, tratarSave, ehSave, MAX_SAVE, dentroDoLimite, mensagemDeSala, identidade, erro,
+  tratarHeroi, ehHeroi, MAX_HEROI, mensagemDeArtes,
   MAX_BYTES, MAX_CONEXOES_POR_SALA, MAX_CONEXOES_POR_JOGADOR,
 } from './sala-servidor.js';
 
@@ -100,6 +101,7 @@ export class SalaDO extends DurableObject {
     if (ehVista(mensagem)) { await this.receberVista(ws, anexo, mensagem, agora); return; }
     if (ehNarrativa(mensagem)) { await this.receberNarrativa(ws, anexo, mensagem); return; }
     if (ehSave(mensagem)) { await this.receberSave(ws, anexo, mensagem, agora); return; }
+    if (ehHeroi(mensagem)) { await this.receberHeroi(ws, anexo, mensagem, agora); return; }
     if (typeof mensagem !== 'string' || mensagem.length > MAX_BYTES * 2) { try { ws.close(1009, 'mensagem grande demais'); } catch { /* já fechado */ } return; }
 
     // A primeira mensagem diz quem é a conexão; até lá nada mais vale.
@@ -132,6 +134,7 @@ export class SalaDO extends DurableObject {
     if (!r.mudou) {
       // Quem acabou de entrar recebe o estado mesmo sem mudança (a aba que reabre).
       if (!r.resposta && this.sala) ws.send(JSON.stringify(mensagemDeSala(this.sala, jogadorId)));
+      this.entregarArtes(ws, r.tipo);
       this.entregarUltimaVista(ws, jogadorId, r.tipo);
       return;
     }
@@ -147,6 +150,7 @@ export class SalaDO extends DurableObject {
     // Abriu-se uma mesa da taverna pública: o dono mandou o código da sala privada, e a mesa toda é convidada.
     for (const id of r.convidar?.para ?? []) this.enviarAoJogador(id, { tipo: 'convite', codigo: r.convidar.codigo, de: r.convidar.de });
     this.informarPopulacao();
+    this.entregarArtes(ws, r.tipo);
     this.entregarUltimaVista(ws, jogadorId, r.tipo);
     if (this.sala.fase === 'fechada') await this.encerrar();
     else await this.reagendar();
@@ -183,6 +187,37 @@ export class SalaDO extends DurableObject {
       if (outro === ws || !outro.deserializeAttachment()?.jogadorId) continue;
       try { outro.send(r.texto); } catch { /* conexão caindo */ }
     }
+  }
+
+  /** Quem acaba de entrar (ou voltar) recebe as imagens dos heróis criados da sala, que a visão não leva. */
+  entregarArtes(ws, tipo) {
+    if (tipo !== 'entrar') return;
+    const m = mensagemDeArtes(this.sala);
+    if (m) { try { ws.send(JSON.stringify(m)); } catch { /* conexão caindo */ } }
+  }
+
+  /** Um jogador trouxe o herói que criou: confere, guarda, e manda a visão nova e as imagens a todos. */
+  async receberHeroi(ws, anexo, mensagem, agora) {
+    const jogadorId = anexo.jogadorId;
+    if (!jogadorId) { ws.send(JSON.stringify(erro('identifique-se na primeira mensagem'))); return; }
+    if (mensagem.length > MAX_HEROI + 200) { try { ws.close(1009, 'herói grande demais'); } catch { /* já fechado */ } return; }
+    const registro = this.ritmo.get(jogadorId) ?? [];
+    this.ritmo.set(jogadorId, registro);
+    if (!dentroDoLimite(registro, agora)) { ws.send(JSON.stringify(erro('devagar: mensagens demais'))); return; }
+    await this.carregar();
+    const r = tratarHeroi({ sala: this.sala, jogadorId, bruto: mensagem, agora });
+    if (r.resposta) { ws.send(JSON.stringify(r.resposta)); return; }
+    await this.guardar();
+    this.retransmitir();
+    const artes = r.artes ? mensagemDeArtes(this.sala) : null;
+    if (artes) {
+      const texto = JSON.stringify(artes);
+      for (const w of this.ctx.getWebSockets()) {
+        if (!w.deserializeAttachment()?.jogadorId) continue;
+        try { w.send(texto); } catch { /* conexão caindo */ }
+      }
+    }
+    await this.reagendar();
   }
 
   /** O anfitrião mandou o save da cena: guarda o último (sobrevive a o objeto dormir) e, no máximo, um a cada 3 s. */

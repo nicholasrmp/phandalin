@@ -22,6 +22,7 @@ import { makeRng } from '../core/rng.js';
 import { HEROIS_COM_ARTE, MS_POR_CASA, EMOTES } from '../game/sala.js';
 import { campoDaTaverna, caminhoNaTaverna, ehMesaDeGrupo, ehBalcao, CORES_DO_MARCADOR, FORMAS_DO_MARCADOR } from '../game/taverna.js';
 import { HEROIS, montarHeroi, escolhaAutomatica } from '../game/criacao.js';
+import { heroiPorId } from '../game/herois.js';
 
 const MS_DO_BALAO = 4500;       // quanto tempo uma frase pronta fica sobre a cabeça
 const ALTURA_DA_PLACA = 78;   // do pé da figura até a placa do nome, em pixels do canvas
@@ -289,7 +290,8 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
   function retratoDe(id) {
     if (retratos.has(id)) return retratos.get(id);
     let rosto = null;
-    try { rosto = makePortrait(HEROIS.find((x) => x.id === id).look, 40); rosto.className = 'pixel'; } catch { rosto = null; }
+    // `heroiPorId`, e não a lista dos doze: o herói criado que alguém trouxe também tem retrato (a imagem dele)
+    try { rosto = makePortrait(heroiPorId(id).look, 40); rosto.className = 'pixel'; } catch { rosto = null; }
     retratos.set(id, rosto);
     return rosto;
   }

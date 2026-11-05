@@ -69,8 +69,11 @@ retrato o tira dela. Sem imagem, o retrato é a inicial do nome.
 O herói criado vai para o rol do navegador (`src/game/herois-criados.js`) e passa pelo mesmo caminho dos doze prontos:
 tela de preparo (talento, magias, equipamento), `criacao.js montarHeroi` e o motor de progressão. A partida guarda a
 definição na própria config, então o save abre noutro navegador. `node --import ./src/dev/cena-node/register.mjs
-src/dev/testes-criador.mjs` monta as 336 combinações de raça, classe e gênero. Ainda não vai para a sala do
-multijogador: lá o herói é escolhido por id de uma lista fixa.
+src/dev/testes-criador.mjs` monta as 336 combinações de raça, classe e gênero.
+
+Na **sala do multijogador**, o lobby tem "Trazer um herói seu": o herói criado entra na mesa na mão de quem o trouxe, e
+os outros navegadores recebem a definição pela visão da sala e a imagem numa mensagem à parte (MULTIJOGADOR.md, L-06b).
+`src/dev/testes-sala-criados.mjs` prova as regras, a porta do servidor e a montagem.
 
 ### Como a animação conversa com o motor
 

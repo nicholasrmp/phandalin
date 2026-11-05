@@ -13,8 +13,11 @@
 import { el } from './hud.js';
 import { audio } from '../core/audio.js';
 import { HEROIS } from '../game/criacao.js';
+import { heroiPorId } from '../game/herois.js';
+import { lerCriados, apresentarCriadosDaSala, guardarArtesDaSala } from '../game/herois-criados.js';
+import { arteParaSala } from './arte-upload.js';
 import {
-  gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, MAX_NOME, TAMANHO_DO_GRUPO, PILOTO, HEROIS_COM_ARTE,
+  gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, MAX_NOME, TAMANHO_DO_GRUPO, PILOTO, HEROIS_COM_ARTE, MAX_ARTE_DA_SALA,
 } from '../game/sala.js';
 import {
   criarClienteDeSala, urlDaSala, salasRecentes, lembrarSala, esquecerSala, salaAtiva, lembrarAtiva, esquecerAtiva, nomeLembrado, lembrarNome, personaLembrada, lembrarPersona,
@@ -50,6 +53,8 @@ export function criarTelasDeSala({
       urlDe: (c) => urlDaSala(local, c),
       aoVisao: atual((v) => {
         const primeira = !estado.visao;
+        // os heróis criados que alguém trouxe: entram no jogo deste navegador (a imagem chega à parte, em `aoArtes`)
+        apresentarCriadosDaSala(v.criados);
         estado.visao = v; lembrarSala(storage, v.codigo); lembrarAtiva(storage, jogadorId, v.codigo, estado.nome);
         if (taverna) {
           // Na fase de lobby a sala é a taverna; quando a partida começa (ou fecha), volta o painel.
@@ -81,6 +86,7 @@ export function criarTelasDeSala({
         }
         redesenhar('lobby');
       }),
+      aoArtes: atual((artes) => { guardarArtesDaSala(artes); apresentarCriadosDaSala(estado.visao?.criados); redesenhar('lobby'); }),
       aoPartida: atual((vista) => partida?.aoVista(vista)),
       aoNarrativa: atual((msg) => partida?.aoNarrativa?.(msg)),
       aoIntencao: atual((msg) => partida?.aoIntencao?.(msg)),
@@ -337,7 +343,7 @@ export function criarTelasDeSala({
       return el('div', {},
         cabecalho('A partida começou', `Sala ${v.codigo}`),
         el('p', { class: 'menu-nota' }, 'O grupo está formado. O jogo sincronizado entre os jogadores é a próxima fase da construção: por enquanto a sala guarda quem joga com quem.'),
-        el('ul', { class: 'menu-grupo-final' }, Object.entries(v.herois).map(([id, dono]) => el('li', {}, `${HEROIS.find((h) => h.id === id)?.name ?? id} — ${nomeDe(dono)}`))),
+        el('ul', { class: 'menu-grupo-final' }, Object.entries(v.herois).map(([id, dono]) => el('li', {}, `${heroiPorId(id)?.name ?? id} — ${nomeDe(dono)}`))),
         el('div', { class: 'menu-rodape' }, botao('Sair da sala', sair)));
     }
 
@@ -357,7 +363,9 @@ export function criarTelasDeSala({
         el('p', { class: 'menu-nota' }, souAnfitriao
           ? `Cada jogador controla um herói. Você, anfitrião, fica também com os que sobrarem (até ${v.limiteDeHerois}).`
           : 'Cada jogador controla um herói; o anfitrião fica com os que sobrarem.'),
-        el('div', { class: 'menu-herois-sala' }, HEROIS.map((h) => cartaoDeHeroi(h, v, { eu, souAnfitriao, meusHerois, nomeDe, sem })))),
+        el('div', { class: 'menu-herois-sala' }, [...HEROIS, ...Object.keys(v.criados ?? {}).map(heroiPorId).filter(Boolean)]
+          .map((h) => cartaoDeHeroi(h, v, { eu, souAnfitriao, meusHerois, nomeDe, sem }))),
+        secaoDeTrazer(v, { sem })),
 
       // D4: a corda do grupo. Só o anfitrião muda; os outros veem o que ficou.
       el('section', { class: 'menu-lobby-corda' }, el('h3', {}, 'Corda do grupo'),
@@ -391,11 +399,32 @@ export function criarTelasDeSala({
       el('strong', {}, j.nome),
       el('small', { class: 'menu-situacao' }, texto),
       marcas && el('small', {}, marcas),
-      el('span', { class: 'menu-jogador-herois' }, j.herois.map((h) => HEROIS.find((x) => x.id === h)?.name ?? h).join(', ') || 'sem herói'),
+      el('span', { class: 'menu-jogador-herois' }, j.herois.map((h) => heroiPorId(h)?.name ?? h).join(', ') || 'sem herói'),
       souAnfitriao && j.id !== v.anfitriao && el('span', { class: 'menu-jogador-acoes' },
         j.id !== v.lider && botao('Líder', () => mandar({ tipo: 'lider', jogador: j.id }), { chave: `lider:${j.id}`, aria: `Passar a liderança para ${j.nome}`, dica: 'Passar a liderança' }),
         botao(estado.confirmar === `remover:${j.id}` ? 'Clique de novo' : 'Remover', () => comConfirmacao(`remover:${j.id}`, { tipo: 'remover', jogador: j.id }),
           { chave: `remover:${j.id}`, aria: `Remover ${j.nome}`, dica: 'Tira o jogador da sala; ele não volta' })));
+  }
+
+  /**
+   * TRAZER UM HERÓI SEU: os heróis que este navegador criou (`game/herois-criados.js`). Trazer põe o herói na mesa, já
+   * na mão de quem trouxe; cada jogador traz um, e trazer outro troca. A imagem é reduzida para o teto da sala antes.
+   */
+  function secaoDeTrazer(v, { sem }) {
+    const meus = lerCriados();
+    if (!meus.length) {
+      return el('p', { class: 'menu-nota' }, 'Para jogar com um herói seu, crie-o em Jogar solo › Campanha › Criar herói: ele fica neste navegador e aparece aqui.');
+    }
+    return el('div', { class: 'menu-trazer' },
+      el('h4', {}, 'Trazer um herói seu'),
+      el('div', { class: 'menu-linha-equip' }, ...meus.map((d) => {
+        const naMesa = Boolean(v.criados?.[d.id]);
+        return botao(naMesa ? `${d.name} (na mesa)` : `Trazer ${d.name}`, async () => {
+          const arte = await arteParaSala(d.arte, MAX_ARTE_DA_SALA).catch(() => null);
+          if (d.arte && !arte) { estado.aviso = 'A imagem desse herói não coube na sala.'; limparAvisoDepois(); redesenhar('lobby'); return; }
+          mandar({ tipo: 'heroi', definicao: { ...d, arte } });
+        }, { chave: `trazer:${d.id}`, desabilitado: sem || naMesa, dica: `${d.className} · ${d.raca}` });
+      })));
   }
 
   function cartaoDeHeroi(h, v, { eu, souAnfitriao, meusHerois, nomeDe, sem }) {

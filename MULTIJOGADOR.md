@@ -191,6 +191,17 @@ Menu principal
   pronto), a aventura e o capítulo, e os **4 lugares do grupo**.
 - **L-06 · [requisito] Cada jogador escolhe seu personagem**, entre os 12 prontos.
   Cada herói tem um jogador só; **Pegar** e **Largar**.
+- **L-06b · [feito, 2026-11-05] O herói criado.** O jogador pode **Trazer** um herói que
+  fez no criador (`game/criador.js`): ele entra na mesa já na mão dele, só ele o controla,
+  e cada jogador traz um (trazer outro troca). A definição vem do navegador, então passa
+  pela conferência do save (`definicaoValida`), com a imagem até 24 kB (o navegador a
+  reduz antes). Passa de 2 KB, então tem **porta própria** no servidor
+  (`{ tipo: 'heroi', definicao }`, `worker/sala-servidor.js tratarHeroi`). A **visão** da
+  sala leva a definição **sem** a imagem — ela vai a todos a cada passo na taverna —, e as
+  imagens vão à parte (`{ tipo: 'artes', artes }`) para todos quando alguém traz um herói
+  e para quem entra. Largar, ou sair no lobby, tira o herói da mesa; na partida, quem cai
+  o deixa no piloto. O anfitrião põe a definição (com a imagem) na config da partida, e
+  ela vai no save da sala. Não vale na taverna pública.
 - **L-07 · [proposta] Distribuição.** O grupo é **sempre de 4**. Com 2 jogadores:
   2+2; com 3: 2+1+1; com 4: 1+1+1+1; sozinho: 4. Mínimo de 1 herói por jogador.
 - **L-08 · [proposta] Herói sem jogador** joga em **piloto automático**. Isso

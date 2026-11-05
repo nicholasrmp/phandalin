@@ -20,6 +20,7 @@
 import { PADRAO_DA_CORDA, MODOS_DA_CORDA } from './corda.js';
 import { acaoRemotaValida, tilesValidos, circuloValido } from './acoes.js';
 import { key } from '../core/grid.js';
+import { definicaoValida } from './criador.js';
 import {
   campoDaTaverna, caminhoNaTaverna, casaLivre, NASCEDOUROS, marcadorLivre, marcadorN, LARGURA, ALTURA,
 } from './taverna.js';
@@ -59,6 +60,13 @@ export const HEROIS_JOGAVEIS = [
  */
 export const HEROIS_COM_ARTE = HEROIS_JOGAVEIS;
 export const PERSONA_PADRAO = 'pc-guerreiro';
+
+/**
+ * O HERÓI CRIADO na sala (`game/criador.js`): cada jogador traz no máximo UM, e só ele o controla. A definição vem do
+ * navegador — entrada hostil —, então passa pela mesma conferência do save (`definicaoValida`) e a imagem tem teto
+ * próprio, menor que o do jogo solo: ela vai a todos da sala, e o navegador a reduz antes de mandar.
+ */
+export const MAX_ARTE_DA_SALA = 24_000;
 
 /**
  * Quanto tempo cada casa andada ocupa o avatar (T-11): o servidor só aceita outro `mover` do mesmo
@@ -225,6 +233,8 @@ export function criarSala({ codigo, anfitriao, nome, maxJogadores = MAX_JOGADORE
     proximoPub: 2,
     jogadores: { [anfitriao]: { id: anfitriao, pub: 'p1', nome: nomeLimpo, conectado: true, pronto: false, desde: agora } },
     herois: {},
+    // Os heróis criados que os jogadores trouxeram: id → { dono, definicao } (a definição com a imagem).
+    criados: {},
     // Cada jogador anda na taverna com UM avatar: onde está, a persona e o marcador (T-05).
     avatares: {},
     // Heróis que o anfitrião mandou para o piloto automático quando o dono estava ausente: quem
@@ -291,6 +301,8 @@ const desfazerProntos = (sala) => { for (const j of jogadoresPresentes(sala)) j.
 
 const soAnfitriao = (sala, id) => (id === sala.anfitriao ? null : recusa('só o anfitrião pode fazer isso'));
 const heroiValido = (h) => typeof h === 'string' && HEROIS_JOGAVEIS.includes(h);
+/** Um dos doze, ou um herói criado que alguém trouxe para esta sala. */
+const heroiDaSala = (sala, h) => heroiValido(h) || (typeof h === 'string' && Boolean(sala.criados?.[h]));
 
 /**
  * Aplica UMA intenção de `jogadorId`. Muta `sala` só quando dá certo. Devolve
@@ -301,6 +313,7 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
   if (sala.fase === 'fechada') return recusa('a sala foi fechada');
   if (!mensagem || typeof mensagem !== 'object' || typeof mensagem.tipo !== 'string') return recusa('mensagem inválida');
   sala.avatares ??= {};   // uma sala guardada antes da taverna
+  sala.criados ??= {};    // e antes do herói criado
   const eu = jogadorDe(sala, jogadorId);
 
   if (mensagem.tipo === 'entrar') {
@@ -529,9 +542,32 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       av.persona = mensagem.heroi;
       return ok();
     }
+    case 'trazer': {
+      if (sala.fase !== 'lobby') return recusa('a partida já começou');
+      const def = mensagem.definicao;
+      if (!definicaoValida(def)) return recusa('esse herói não passou na conferência');
+      if (def.arte != null && def.arte.length > MAX_ARTE_DA_SALA) return recusa('a imagem do herói é grande demais para a sala');
+      const ja = sala.criados[def.id];
+      if (ja && ja.dono !== jogadorId) return recusa('esse herói é de outro jogador');
+      // Um por jogador: trazer outro troca o que estava na mesa.
+      for (const [id, c] of Object.entries(sala.criados)) {
+        if (c.dono === jogadorId && id !== def.id) { delete sala.criados[id]; delete sala.herois[id]; }
+      }
+      if (!sala.herois[def.id]) {
+        if (Object.keys(sala.herois).length >= TAMANHO_DO_GRUPO) return recusa('o grupo já tem quatro heróis');
+        if (heroisDe(sala, jogadorId).length >= limiteDeHerois(sala, jogadorId)) {
+          return recusa(jogadorId === sala.anfitriao ? 'os outros jogadores ficariam sem herói' : 'cada jogador controla um herói: largue o seu antes de trazer outro');
+        }
+      }
+      sala.criados[def.id] = { dono: jogadorId, definicao: def };
+      sala.herois[def.id] = jogadorId;
+      desfazerProntos(sala);
+      return ok({ artes: Boolean(def.arte) });
+    }
     case 'pegar': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
-      if (!heroiValido(mensagem.heroi)) return recusa('herói inexistente');
+      if (!heroiDaSala(sala, mensagem.heroi)) return recusa('herói inexistente');
+      if (sala.criados[mensagem.heroi] && sala.criados[mensagem.heroi].dono !== jogadorId) return recusa('esse herói é de outro jogador');
       if (sala.herois[mensagem.heroi]) return recusa('esse herói já tem dono');
       if (Object.keys(sala.herois).length >= TAMANHO_DO_GRUPO) return recusa('o grupo já tem quatro heróis');
       if (heroisDe(sala, jogadorId).length >= limiteDeHerois(sala, jogadorId)) {
@@ -543,12 +579,14 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     }
     case 'largar': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
-      if (!heroiValido(mensagem.heroi)) return recusa('herói inexistente');
+      if (!heroiDaSala(sala, mensagem.heroi)) return recusa('herói inexistente');
       const dono = sala.herois[mensagem.heroi];
       if (!dono) return recusa('esse herói não tem dono');
       // P2: ninguém mexe no herói de outro. O anfitrião só solta os do piloto automático.
       if (dono === PILOTO ? jogadorId !== sala.anfitriao : dono !== jogadorId) return recusa('esse herói não é seu');
       delete sala.herois[mensagem.heroi];
+      // o herói criado que se larga sai da mesa: era dele, e ninguém mais o pega
+      delete sala.criados[mensagem.heroi];
       desfazerProntos(sala);
       return ok();
     }
@@ -664,6 +702,7 @@ function saiu(sala, id, agora) {
     if (j) { j.conectado = false; j.pronto = false; }
   } else {
     for (const h of heroisDe(sala, id)) delete sala.herois[h];
+    for (const [h, c] of Object.entries(sala.criados ?? {})) if (c.dono === id) delete sala.criados[h];
     delete sala.jogadores[id];
     delete sala.avatares[id];
     sala.ordem = sala.ordem.filter((x) => x !== id);
@@ -719,6 +758,13 @@ export function desconectar(sala, jogadorId, agora) {
 export const deveFechar = (sala, agora) => sala.fase !== 'fechada' && sala.vaziaDesde != null
   && agora - sala.vaziaDesde >= MINUTOS_VAZIA * 60_000;
 
+/** As imagens dos heróis criados da sala, por id; `null` se nenhum tem imagem. */
+export function artesDaSala(sala) {
+  const artes = {};
+  for (const [h, c] of Object.entries(sala.criados ?? {})) if (c.definicao.arte) artes[h] = c.definicao.arte;
+  return Object.keys(artes).length ? artes : null;
+}
+
 // ------------------------------------------------------------------- a visão --
 
 /**
@@ -745,6 +791,9 @@ export function visaoDaSala(sala, paraJogador) {
       id: j.pub, nome: j.nome, conectado: j.conectado, pronto: j.pronto, herois: heroisDe(sala, j.id),
     })),
     herois: Object.fromEntries(Object.entries(sala.herois).map(([h, dono]) => [h, pubDe(dono)])),
+    // Os heróis criados, SEM a imagem: a visão vai a todos a cada passo na taverna, e a imagem só quando muda
+    // (`artesDaSala`, mensagem `artes`). `temArte` diz se há uma a esperar.
+    criados: Object.fromEntries(Object.entries(sala.criados ?? {}).map(([h, c]) => [h, { ...c.definicao, arte: null, temArte: Boolean(c.definicao.arte), dono: pubDe(c.dono) }])),
     limiteDeHerois: limiteDeHerois(sala, paraJogador),
     // Heróis que o piloto automático segura porque o dono estava ausente quando a partida começou (vão de volta ao dono se ele reaparece).
     cedidos: Object.keys(sala.cedidos ?? {}).filter((h) => sala.herois[h] === PILOTO),

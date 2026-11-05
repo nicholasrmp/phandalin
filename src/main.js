@@ -64,6 +64,7 @@ import { ambienteDaVariante } from "./core/ambiente.js";
 import { faixaAgora, tocarFaixa, tocarToque } from "./core/musica.js";
 import { montarHeroi, escolhaAutomatica } from "./game/criacao.js";
 import { definicaoValida } from "./game/criador.js";
+import { heroiPorId } from "./game/herois.js";
 import { apresentarHeroi } from "./game/herois-criados.js";
 import { criarCapitulo1 } from "./game/capitulo1.js";
 import { abrirBarovia } from "./game/strahd-abertura.js";
@@ -759,7 +760,12 @@ class App {
       aventura: v.origem?.aventura ?? "mina-perdida",
       variante: "emboscada",
       nivel: 1,
-      herois: ids.map((id) => ({ id, escolha: escolhaAutomatica(id) })),
+      // O herói criado que alguém trouxe leva a definição junto (com a imagem que chegou pela sala): é ela que o
+      // monta aqui e que vai no save da sala, para quem assumir o posto de anfitrião.
+      herois: ids.map((id) => {
+        const def = heroiPorId(id);
+        return { id, escolha: escolhaAutomatica(id), ...(def?.criado ? { definicao: def } : {}) };
+      }),
     });
     clearInterval(this.publicador);
     this.ultimaVistaTexto = null;
