@@ -28,7 +28,9 @@
 
 import { getSheet, ANIMS, S } from '../art/sheet.js';
 import { allLookKeys } from '../art/looks.js';
-import { TW, TH } from '../view/board.js';
+// o losango do chão em que a figura pisa, na medida das folhas (64 x 32)
+const TW = 64;
+const TH = 32;
 
 const FUNDO = '#1b1610';
 const PAINEL = '#241d16';

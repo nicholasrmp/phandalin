@@ -277,7 +277,11 @@ h2 {
 .board-wrap {
   flex: 1;
   display: grid;
-  place-items: center;
+  /* A trilha tem a altura do quadro, senão o `max-height: 100%` do tabuleiro não vale e um mapa mais alto que
+     largo (a taverna, 12x12) passa do quadro. `safe`: ampliado, ele encosta no canto em vez de transbordar para
+     cima e para a esquerda, onde a rolagem não chega. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: safe center;
   min-height: 0;
   min-width: 0;
   width: 100%;

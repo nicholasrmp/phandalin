@@ -1,4 +1,4 @@
-// Confere que a arte da taverna está nos atlas (cenário, chão e faces). Quem regera um atlas com os montadores (`montar-*.py`) a
+// Confere que a arte da taverna está no atlas de cenário (o chão e as faces eram do isométrico, que saiu). Quem regera um atlas com os montadores (`montar-*.py`) a
 // apaga; os montadores já chamam `acrescentar-taverna.py` no fim, e este arquivo é a rede de segurança: roda antes do `npm run build`
 // (script `prebuild`) e falha a publicação se algo sumiu.
 //
@@ -15,8 +15,6 @@ export function faltamDaTaverna() {
   const pecas = [...new Set([...fonte.matchAll(/peca\('([a-zA-Z0-9]+)'/g)].map((m) => m[1]))];
   const cenario = ler('cenario.json');
   const faltas = pecas.filter((p) => !cenario.includes(`"prop-taverna-${p}"`)).map((p) => `peça "${p}" no atlas de cenário`);
-  if (!ler('chao.json').includes('tabuasTaverna')) faltas.push('o piso de tábuas no atlas do chão');
-  if (!ler('faces.json').includes('tijolo')) faltas.push('a parede de tijolo no atlas das faces');
   return { pecas: pecas.length, faltas };
 }
 

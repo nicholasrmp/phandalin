@@ -7,7 +7,7 @@
 
 import './taverna.css';
 import { el } from './hud.js';
-import { Board } from './board.js';
+import { TabuleiroTopo } from './tabuleiro-topo.js';
 import { aplicarAparencia } from './ficha.js';
 import { audio } from '../core/audio.js';
 import { narrarLocal, definirVoto } from './narrativa.js';
@@ -104,7 +104,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     const mapa = mapaDo(variante);
     baseCampo = montarCampo(mapa);      // o mapa como nasceu, para desfazer o que o anfitrião reverteu
     enc = new Encounter({ battlefield: montarCampo(mapa), party: [], foes: [], rng: makeRng(7), onLog: () => {}, onEvent: () => {} });
-    board = new Board(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
+    board = new TabuleiroTopo(canvas, { encounter: enc, onTileClick: clicar, onTileHover: () => {} });
     board.onTileContext = pedirContexto;
     board.filtroDeVisao = (c) => visaoDaSala?.herois?.[c.id] === visaoDaSala?.voce;   // F4.4: vê o que os SEUS heróis veem
     if (import.meta.env?.DEV) window.__partida = { board, enc };

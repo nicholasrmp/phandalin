@@ -1,20 +1,20 @@
 // O fundo da tela de título: a estrada da emboscada, viva, com a câmera
 // passeando devagar da carroça até os cavalos mortos.
 //
-// É o tabuleiro de verdade (`Board`) desenhando um encontro que nunca começa:
+// É o tabuleiro de verdade (`TabuleiroTopo`) desenhando um encontro que nunca começa:
 // o grupo parado ao lado da carroça, nenhum goblin à vista — eles estão
 // escondidos nos barrancos, que é exatamente a graça da cena. Nada de arte
 // nova: a tela de título mostra o jogo que o jogador vai jogar.
 //
-// Criado uma vez e reaproveitado: `Board` pendura ouvintes na janela, e um
+// Criado uma vez e reaproveitado: o tabuleiro pendura ouvintes na janela, e um
 // fundo novo a cada abertura do menu os acumularia.
 
-import { Battlefield } from '../core/grid.js';
 import { Encounter } from '../rules/combat.js';
 import { makeParty } from '../rules/party.js';
 import { makeRng } from '../core/rng.js';
 import { mapaDo } from '../game/encounter.js';
-import { Board } from './board.js';
+import { TabuleiroTopo } from './tabuleiro-topo.js';
+import { montarCampo } from '../game/campo.js';
 
 const PERIODO = 70;          // segundos para ir da carroça aos cavalos e voltar
 const QUADROS_POR_SEG = 30;  // o fundo não precisa dos 60 do jogo
@@ -28,8 +28,8 @@ export function criarFundo() {
   canvas.setAttribute('aria-hidden', 'true');
 
   const mapa = mapaDo('emboscada');
-  const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
-    mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
+  // `montarCampo` traz o mapa pintado (`fundo`): de cima, a estrada é o desenho da emboscada
+  const field = montarCampo(mapa);
   const party = makeParty({ nivel: 1 });
   // Lugares de cena, não os de combate: na fileira de cima da estrada, onde
   // nenhuma copa da mata do sul cobre ninguém — senão a árvore esmaece (é a
@@ -40,7 +40,7 @@ export function criarFundo() {
     battlefield: field, party, foes: [], rng: makeRng(1),
     onLog: () => {}, onEvent: () => {},
   });
-  const board = new Board(canvas, { encounter: enc, onTileClick: () => {}, onTileHover: () => {} });
+  const board = new TabuleiroTopo(canvas, { encounter: enc, onTileClick: () => {}, onTileHover: () => {} });
   board.soCenario = true;   // sem anel nem barra de vida: é cena, não jogo
 
   const movimento = !matchMedia('(prefers-reduced-motion: reduce)').matches;

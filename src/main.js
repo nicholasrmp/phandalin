@@ -119,17 +119,11 @@ import {
   auras as aurasDoDetectarMagia,
   marcasDoJogo,
 } from "./game/magias-fora.js";
-import { Board } from "./view/board.js";
 import { TabuleiroTopo } from "./view/tabuleiro-topo.js";
 
-// A VISTA. O jogo é VISTO DE CIMA (`view/tabuleiro-topo.js`): grade quadrada, mapa pintado por baixo, parede livre.
-// O isométrico ainda existe atrás de `?vista=iso` enquanto o de cima não cobre tudo o que ele cobria (elevação e
-// arte de cenário), e porque o de cima ainda HERDA dele — ver o cabeçalho de `tabuleiro-topo.js`.
-const Tabuleiro = (() => {
-  let v = null;
-  try { v = new URLSearchParams(location.search).get("vista") ?? localStorage.getItem("phandalin.vista"); } catch { v = null; }
-  return v === "iso" ? Board : TabuleiroTopo;
-})();
+// A VISTA. O jogo é VISTO DE CIMA (`view/tabuleiro-topo.js`), no modelo do Foundry: mapa pintado por baixo, grade
+// quadrada, parede livre, ficha redonda. O isométrico saiu em 2026-11-05.
+const Tabuleiro = TabuleiroTopo;
 import { Hud } from "./view/hud.js";
 import { criarFicha, aplicarAparencia } from "./view/ficha.js";
 import { criarMenu } from "./view/menu.js";

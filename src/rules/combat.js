@@ -1474,7 +1474,9 @@ export class Encounter {
    * quem anda (a IA de quem tem juízo), não regra: quem já está dentro da
    * zona anda livre para sair.
    */
-  reachableFor(actor, { evitarZonas = false } = {}) {
+  // `orcamentoFt` troca o teto (o movimento que sobra) por outro: o cartão do tabuleiro quer saber quanto custaria
+  // chegar a uma casa fora do alcance, para dizer "o caminho custa 45 pés" em vez de só "longe demais".
+  reachableFor(actor, { evitarZonas = false, orcamentoFt = null } = {}) {
     if (hasCondition(actor, 'inconsciente') || conditionEffects(actor).incapacitated) return new Map();
     const f = actor.pos.f ?? 1;
     // Só as zonas que ferem ou prendem: ninguém desvia de uma névoa.
@@ -1521,7 +1523,7 @@ export class Encounter {
       return this.field.reachable(
       actor.pos,
       // Caído rasteja: +1 pé por pé, SOMADO ao terreno difícil (`costOf`), então o orçamento é o que sobra, sem dividir.
-      actor.movementLeftFt,
+      orcamentoFt ?? actor.movementLeftFt,
       // Tomada = alguma criatura (fora ele) cobre a PEGADA inteira dele naquela âncora (Grande ocupa 2x2).
       (x, y) => tomadas.tomada(x, y, f),
       // Quem ocupa 2x2 só pisa onde os quatro quadrados existem e estão livres

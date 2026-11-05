@@ -1,7 +1,7 @@
 # Phandalin
 
 RPG tático cooperativo no navegador, com as regras do **SRD 5.1**. Até 4 pessoas
-numa campanha, combate por turnos em grade isométrica de 1,5 m.
+numa campanha, combate por turnos em grade de 1,5 m vista de cima, como num VTT.
 
 ```bash
 npm install
@@ -10,7 +10,7 @@ npm run build
 ```
 
 `http://localhost:5190/estilos.html` mostra as quatro direções visuais que foram
-avaliadas antes de escolher o isométrico.
+avaliadas no começo do projeto.
 
 ---
 
@@ -133,7 +133,7 @@ src/
     draw.js       o pintor: look → pixels
     sheet.js      folha de sprites, contorno automático, cache
   view/           ← só desenha e traduz clique. Não conhece regra.
-    board.js      tabuleiro isométrico
+    tabuleiro-topo.js  o tabuleiro visto de cima (mapa pintado, ficha redonda)
     hud.js        fichas, barra de ações, log de rolagens
   main.js         liga tudo
 ```
@@ -143,32 +143,17 @@ então **move para o servidor sem reescrita** quando entrar o multiplayer.
 
 ---
 
-## Por que isométrico
+## Por que vista de cima
 
-Quatro direções visuais foram desenhadas e comparadas (`/estilos.html`): pixel
-art em vista superior, mesa de RPG com tokens redondos, isométrico 2.5D e
-minimalista tático. A escolha foi o **isométrico**, ciente do custo: mais
-ângulos por personagem, clique em losango mais difícil que em quadrado, e
-oclusão a resolver.
+O jogo começou isométrico: das quatro direções de `/estilos.html`, foi a escolhida,
+pela elevação que se via. Em 2026-11-05 o isométrico saiu, e o jogo ficou só com a
+vista de cima, no modelo do Foundry VTT — battlemap pintado por baixo, ficha redonda
+com a arte da criatura, parede por traço, luz em raio.
 
-Em troca, a elevação virou mecânica de verdade em vez de decoração.
-
-**Projeção** (`view/board.js`):
-
-```
-sx = ox + (x - y) · TW/2
-sy = oy + (x + y) · TH/2 - altura · LIFT
-```
-
-**Projeção inversa** (clique → quadrado), a partir do centro do losango:
-
-```
-x = cx/TW + cy/TH        y = cy/TH - cx/TW
-```
-
-Arredondar dá o losango que contém o ponto. Como a altura desloca o losango para
-cima, os platôs são testados do mais alto para o mais baixo — assim clicar no
-topo seleciona o platô, não o chão atrás dele.
+O que pesou: o battlemap pintado (que é como mesa de RPG on-line se joga) só se
+encaixa de cima; a ficha com imagem dispensa uma folha de sprites de 8 direções por
+criatura; e o clique em quadrado é exato. A elevação continua valendo na regra,
+só não se desenha.
 
 ---
 
@@ -204,22 +189,13 @@ mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0,
 
 ### O tabuleiro visto de cima
 
-**É a vista padrão do jogo.** Grade quadrada, mapa pintado por baixo quando o mapa tem um, parede livre, e a
-criatura como **ficha redonda** — anel da disposição, barra de vida e nome, no estilo do Foundry e do Roll20. O
-isométrico ainda responde em `?vista=iso`, enquanto não cobrirmos o que ele cobre (elevação e arte de cenário) e
-porque o de cima ainda herda dele.
+**É a única vista do jogo.** Grade quadrada, mapa pintado por baixo quando o mapa tem um, parede livre, e a
+criatura como **ficha redonda** — anel da disposição, barra de vida e nome, no estilo do Foundry e do Roll20.
 
-Ele está em `src/view/tabuleiro-topo.js` e **herda do `Board`**, de propósito. O jogo conversa com o tabuleiro por
-uma superfície grande — 530 chamadas a `board.fx`, mais realce de alcance, cartão de previsão, mira de área,
-escuridão e salas reveladas —, e quase nada disso é isométrico. O que é isométrico é a GEOMETRIA, e ela mora em meia
-dúzia de métodos: `iso`, `center`, `centerF`, `toView`, `fromView`, `casaNoPonto` e `diamond`. Trocando esses seis e
-o `render`, o jogo inteiro muda de vista sem saber. O `diamond` virar quadrado é o que faz todo o realce herdado sair
-certo de graça.
-
-A herança é um degrau, não o destino. Medindo numa partida de verdade (mover, passar o mouse, botão direito), o
-tabuleiro de cima usa **9 dos 92 métodos** que herda: `fillDiamond`, `figuraVisivel`, `drawFloaters`,
-`tileFromEvent`, `pontoDoEvento`, `setOverlay`, `atualizarHover`, `portaDoPonto` e `objetoDoPonto`. Levados esses
-nove para dentro da classe, o `board.js` inteiro sai.
+Ele está em `src/view/tabuleiro-topo.js`. Até 2026-11-05 herdava do `Board` isométrico (`board.js`, 4.800 linhas);
+quando o isométrico saiu, o que a vista de cima usava dele — câmera, ponteiro, cartão de previsão, mira de área,
+números flutuantes, efeitos — foi trazido para dentro da classe, e o resto foi apagado. A tabela das superfícies do
+chão (`SUPERFICIE`), que o editor também usa, mora em `view/superficies.js`.
 
 **Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
 destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**
@@ -264,24 +240,19 @@ livro diz que vale. Custo: 42 µs por par (dezesseis linhas de canto, cada uma c
 **A ÁREA DE MAGIA também.** A esfera já saía certa de graça, porque filtra por `hasLineOfSight`; faltavam os dois
 caminhos que andam de casa em casa — o relâmpago e a explosão que contorna esquina. Os dois passaram a usar
 `passaVisao`, que junta a aresta e o traço. Então Bola de Fogo não dobra mais a quina de uma parede que o desenho
-fecha, e o Relâmpago para nela. A prévia sob o cursor não pode divergir: `board.areaDaMira` chama o mesmo
+fecha, e o Relâmpago para nela. A prévia sob o cursor não pode divergir: `tabuleiro-topo.js areaDaMira` chama o mesmo
 `enc.areaDaMagia` do motor.
 
-**O que ainda não faz, e o isométrico fazia:** elevação (de cima, 1,5 m não aparece — a altura continua valendo na
-regra, só não se vê), oclusão e transparência de parede (não fazem sentido sem volume) e a arte de cenário, que é
-toda isométrica: o móvel é o sprite deitado na casa, provisório.
+**O que não faz, e o isométrico fazia:** elevação desenhada (de cima, 1,5 m não aparece — a altura continua valendo
+na regra, só não se vê) e a arte de cenário isométrica: onde o mapa não tem desenho pintado (a taverna), o chão é a cor
+lisa da superfície e o móvel é o sprite do atlas deitado na casa, provisório.
 
-### O protótipo de visão de cima
+### Conferir a planta contra um battlemap pintado
 
-`/topo.html` é descartável e existe para uma pergunta só: vale refazer o jogo em visão de cima, como o Foundry VTT? Desenha um mapa de
-verdade do jogo (o mesmo `mapaDo()`) visto de cima — paredes e portas por aresta, fichas circulares com anel, barra de PV e nome — e um botão
-alterna para o tabuleiro isométrico de verdade, no mesmo mapa.
-
-Para a comparação ser justa, a Casa da Morte entra com um **battlemap pintado de verdade** por baixo (Morvold Press / Jeff Todd, em
-`_referencias/casa-da-morte-morvold/`, fora do versionamento: arte comercial de terceiros, consulta apenas, não pode ser publicada). O
-encaixe de cada andar na grade foi **medido**, não estimado: `python src/dev/alinhar-mapa-pintado.py --provas` correlaciona a máscara de
-pedra da imagem com as arestas da planta, acha giro, escala e origem, e grava a prova visual. O resultado vive em
-`src/dev/topo-pintados.js`; no protótipo, as setas e o PgUp/PgDn afinam o encaixe a olho.
+Para a Casa da Morte, o encaixe de cada andar num **battlemap pintado de verdade** (Morvold Press / Jeff Todd, em
+`_referencias/casa-da-morte-morvold/`, fora do versionamento: arte comercial de terceiros, consulta apenas, não pode
+ser publicada) foi **medido**, não estimado: `python src/dev/alinhar-mapa-pintado.py --provas` correlaciona a máscara
+de pedra da imagem com as arestas da planta, acha giro, escala e origem, e grava a prova visual.
 
 Os quatro andares da casa deram ~198 px por casa, giro 0 — o que também serve de **conferência de fidelidade**: a planta do jogo cai em cima
 da planta publicada, parede por parede e porta por porta. As duas masmorras saíram em giro 90°, 76,8 e 128,2 px por casa, o que bate com a

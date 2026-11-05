@@ -12,7 +12,7 @@ Por que isto existe: a mobilia do atlas antigo tinha UMA vista por peca, e a pec
 para a sala) nao tinha como ser virada. O PixelLab devolve as oito vistas de cada objeto; aqui se escolhe a que cada eixo do mapa pede.
 
 Idempotente, como os outros `acrescentar-*`: o atlas guarda em `_casaObjetos` onde as linhas novas comecam; rodar de novo corta dali.
-Este script e chamado no fim de `acrescentar-casa.py` (que e chamado no fim de `acrescentar-taverna.py`).
+Este script e chamado no fim de `acrescentar-taverna.py`.
 
     python -P src/dev/acrescentar-casa-objetos.py
 """

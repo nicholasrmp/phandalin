@@ -8,7 +8,7 @@
 // Nada aqui sabe de mouse nem de painel: recebe o campo (`Battlefield`), o mapa e o contexto, e pinta.
 
 import { ARESTA } from '../core/grid.js';
-import { SUPERFICIE } from './board.js';
+import { SUPERFICIE } from './superficies.js';
 import { sorteio } from '../art/chao.js';
 
 const COR_PADRAO = ['#3a3630', '#36322c'];

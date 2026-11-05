@@ -20,7 +20,6 @@ export default defineConfig({
         rig: resolve(import.meta.dirname, 'rig.html'),
         fichaSprite: resolve(import.meta.dirname, 'ficha-sprite.html'),
         editor: resolve(import.meta.dirname, 'editor.html'),
-        topo: resolve(import.meta.dirname, 'topo.html'),
       },
     },
   },

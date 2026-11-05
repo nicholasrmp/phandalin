@@ -12,7 +12,7 @@
 
 import './taverna.css';
 import { el } from './hud.js';
-import { Board } from './board.js';
+import { TabuleiroTopo } from './tabuleiro-topo.js';
 import { aplicarAparencia } from './ficha.js';
 import { makePortrait } from '../art/sheet.js';
 import { audio } from '../core/audio.js';
@@ -180,7 +180,7 @@ export function criarTaverna({ aoMesa, aoAbrirMesa = () => {}, aoSair, enviar, a
   }
 
   function criarBoard() {
-    board = new Board(canvas, {
+    board = new TabuleiroTopo(canvas, {
       encounter: enc,
       onTileClick: (t) => {
         if (!visao || visao.fase !== 'lobby') return;

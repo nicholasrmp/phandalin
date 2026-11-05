@@ -386,8 +386,8 @@ def main():
     p.add_argument('--previa', action='store_true', help='grava uma folha de contato em scratch (so olhar)')
     a = p.parse_args()
     quadros = atualizar_cenario(a.previa)
-    pisos = atualizar_chao()
-    faixas = atualizar_faces()
+    # o piso de tabuas e a parede de tijolo eram do isometrico (atlas `chao` e `faces`), que saiu em 2026-11-05
+    pisos, faixas = [], {'esq': [], 'dir': []}
     if a.previa:
         saida = AQUI / '_referencias' / 'pixellab' / 'taverna-previa.png'
         f = Image.new('RGBA', (1100, 520), (34, 28, 40, 255))
@@ -407,7 +407,7 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # As paredes da Casa da Morte entram depois da taverna (este script corta o atlas no marcador dela): refaz sozinho, sem gastar geração.
+    # A mobilia da Casa da Morte entra depois da taverna (este script corta o atlas no marcador dela): refaz sozinho, sem gastar geracao.
     import subprocess
     import sys
-    subprocess.run([sys.executable, '-P', str(Path(__file__).with_name('acrescentar-casa.py'))], check=True)
+    subprocess.run([sys.executable, '-P', str(Path(__file__).with_name('acrescentar-casa-objetos.py'))], check=True)
