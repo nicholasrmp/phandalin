@@ -46,6 +46,7 @@ import {
 import { spellMod } from './party.js';
 import { modificadoresDeLuz } from './luz.js';
 import { regioesNoPasso, regioesNoTurno } from './regioes.js';
+import { categoriaDeTamanho } from './tamanho.js';
 import {
   vantagemPorTraco, contraDaMagia, margemDeCritico, dadosExtraDeCritico, danoPorResistencia, TIPOS_DA_PUREZA, CONDICOES_DE_ENCANTO,
   bonusDeDanoPorTraco, usoLivreDe, PLANTAS_QUE_PRENDEM, ehInimigoFavorito, danoDeQueda,
@@ -231,15 +232,8 @@ const RECARGA_DE_TRACO = { 'Plantas Constritoras': [5, 6] };
  * Os 6 m são os mesmos do arremesso de frasco (água benta, ácido, fogo
  * alquímico), para a mão do herói ter um alcance só.
  */
-/** A categoria de tamanho do SRD como número (Miúdo 0 ... Imenso/Colossal 5), para a regra de passar pelo espaço de outro. */
-const CATEGORIAS_DE_TAMANHO = { miudo: 0, pequeno: 1, medio: 2, grande: 3, enorme: 4, imenso: 5, colossal: 5 };
+// A categoria de tamanho do SRD (Miúdo 0 ... Imenso 5), para a regra de passar pelo espaço de outro: `rules/tamanho.js`.
 const TOMADAS_NENHUMA = { tomada: () => false, atravessa: () => true };
-function categoriaDeTamanho(c) {
-  // Os heróis não trazem `size`: halfling e gnomo são Pequenos (a mesma dedução de `capitulo2.js` e `visuals.js`).
-  const padrao = /halfling|pequenin|gnom/i.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 'pequeno' : 'médio';
-  const t = `${c.size ?? padrao}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  return CATEGORIAS_DE_TAMANHO[t] ?? 2;
-}
 
 const ARREMESSO_DE_POCAO_FT = 20;
 

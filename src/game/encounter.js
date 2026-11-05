@@ -9,7 +9,7 @@
 
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
-import { MAPA_ESCONDERIJO } from './esconderijo.js';
+import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
 import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, MAPA_CASA_DA_MORTE_PORAO_1, MAPA_CASA_DA_MORTE_PORAO_2 } from './casadamorte.js';
 import { foesDaCasa } from './casadamorte-criaturas.js';
@@ -397,6 +397,21 @@ export function mapaDo(variante) {
         { id: 'diqueRompido1', url: '/mapas/fa/FirstBreak.webp', x: 21, y: 3, w: 3, h: 3 },
         { id: 'diqueRompido2', url: '/mapas/fa/SecondBreak.webp', x: 23, y: 3, w: 4, h: 5 },
       ],
+      // A LAJE RACHADA DO RESSALTO (área 4), como REGIÃO (`rules/regioes.js`) — era roteiro do capítulo. Escondida:
+      // a Percepção passiva de quem vai pisar nota antes (CD 12), o Procurar e o Encontrar Armadilhas acham, e o
+      // Investigar da cena também. Quem tem peso (Médio ou maior) e pisa nela sem saber testa Destreza: a laje
+      // desce rolando com ele até o pé da passagem (2d6, metade se passar, e no chão se falhar), e o desenho do
+      // desabamento acende. O goblin, Pequeno, passa por ela. Uma vez só: caída, não há mais laje.
+      regioes: [{
+        id: 'ressalto', nome: 'A laje rachada', casas: PONTOS_DO_ESCONDERIJO.ressalto.map((p) => `${p.x},${p.y}`),
+        vezes: 1, tamanhoMinimo: 'medio',
+        escondida: { cd: 12, achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez, dá para passar.' },
+        efeitos: [
+          { tipo: 'sobreposicao', id: 'ressaltoCaido', ligada: true },
+          { tipo: 'dano', dados: '2d6', dano: 'contundente', teste: { atributo: 'dex', cd: 10, metade: true }, seFalhar: 'caido' },
+          { tipo: 'teleporte', x: PONTOS_DO_ESCONDERIJO.peDaPassagem.x, y: PONTOS_DO_ESCONDERIJO.peDaPassagem.y },
+        ],
+      }],
       cena: 'esconderijo',
     };
   }

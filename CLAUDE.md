@@ -162,8 +162,10 @@ das próprias portas (as que cuidam declaram `portasProprias: true`). No editor 
 por cima o que o jogo não desenha. `src/dev/testes-arestas.mjs` prova cada tipo.
 A **REGIÃO** (`mapa.regioes`, motor em `rules/regioes.js`) é a área que FAZ algo quando alguém entra, sai, ou começa e termina o turno
 nela — a Region do Foundry. Efeitos, na ordem: texto, dano (com teste e metade), condição (com teste), parar o passo, terreno difícil
-(enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte. Filtros: quem (todos, o grupo, os inimigos),
-quantas vezes, começa desligada, pega quem voa. **Escondida** vira armadilha sem roteiro: a Percepção passiva nota antes
+(enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte; o dano pode deixar com uma condição quem
+falha no teste dele (`seFalhar`). Filtros: quem (todos, o grupo, os inimigos), tamanho mínimo (`tamanhoMinimo`, a laje que o goblin
+atravessa), quantas vezes, começa desligada, pega quem voa. Exemplo de cena: a **laje rachada do esconderijo** (`encounter.js`,
+`regioes` do esconderijo) era roteiro de `capitulo2.js` e hoje é só uma região; o capítulo guarda só o painel da queda (`naRegiao`). **Escondida** vira armadilha sem roteiro: a Percepção passiva nota antes
 (`game/armadilhas.js`), o Procurar e o Encontrar Armadilhas acham, e descoberta ela não pega mais o grupo (o monstro não sabe dela). Roda
 dentro do `moveAlong`, então vale para herói e monstro, na luta e explorando. A cena que quer mais (ir para outra cena) ouve
 `capitulo.naRegiao(regiao, criatura, quando)`. No editor é a ferramenta **R**: pincel, retângulo, polígono e balde, e o formulário dos

@@ -2484,7 +2484,12 @@ class App {
         break;
       }
       case "regiao": {
-        this.capitulo?.naRegiao?.(ev.regiao, ev.actor, ev.quando);
+        this.capitulo?.naRegiao?.(ev.regiao, ev.actor, ev.quando, ev.resultado);
+        break;
+      }
+      // a Percepção passiva de alguém notou a armadilha (a região escondida): o painel diz o que ele viu
+      case "regiaoNotada": {
+        this.mostrarTexto(ev.regiao.nome || "Uma armadilha", `${ev.actor.name} para antes de pisar: ${ev.texto}`);
         break;
       }
 

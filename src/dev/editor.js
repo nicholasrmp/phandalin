@@ -645,7 +645,8 @@ function camposDoEfeito(e, i) {
   switch (e.tipo) {
     case 'texto': return `<textarea rows="2" style="width:100%" ${at('texto')}>${escapar(e.texto)}</textarea>`;
     case 'dano': return `<label class="linha">dados <input type="text" style="width:6em" value="${escapar(e.dados ?? '1d6')}" ${at('dados')} />
-      tipo <select ${at('dano')}>${opcoes(TIPOS_DE_DANO.map((t) => [t, t || '—']), e.dano)}</select></label>${teste(true)}`;
+      tipo <select ${at('dano')}>${opcoes(TIPOS_DE_DANO.map((t) => [t, t || '—']), e.dano)}</select></label>${teste(true)}
+      <label class="linha">falhou, fica <select ${at('seFalhar')}>${opcoes([['', '—'], ...CONDICOES.map((c) => [c, CONDITIONS[c]?.name ?? c])], e.seFalhar)}</select></label>`;
     case 'condicao': return `<label class="linha"><select ${at('condicao')}>${opcoes(CONDICOES.map((c) => [c, CONDITIONS[c]?.name ?? c]), e.condicao)}</select>
       rodadas <input type="number" min="0" style="width:4em" value="${e.rodadas ?? ''}" placeholder="—" ${at('rodadas')} /></label>${teste(false)}`;
     case 'sobreposicao': return `<label class="linha">peça <select ${at('id')}>${opcoes([['', '—'], ...(mapa.sobreposicoes ?? []).map((o) => [o.id, o.id])], e.id)}</select>
@@ -716,6 +717,7 @@ function regiaoNoPainel() {
     <p class="dica" style="margin:6px 0 2px">dispara quando alguém…</p>
     ${Object.entries(ROTULO_DO_QUANDO).map(([q, n]) => `<label class="linha"><input type="checkbox" data-quando="${q}" ${quando.includes(q) ? 'checked' : ''} /> ${n}</label>`).join('')}
     <label class="linha">vale para <select id="rQuem">${opcoes([['todos', 'todos'], ['grupo', 'só o grupo'], ['inimigos', 'só os inimigos']], r.quem ?? 'todos')}</select></label>
+    <label class="linha">tamanho mínimo <select id="rTamanho">${opcoes([['', 'qualquer'], ['pequeno', 'Pequeno ou maior'], ['medio', 'Médio ou maior'], ['grande', 'Grande ou maior']], r.tamanhoMinimo ?? '')}</select></label>
     <label class="linha">vezes <input id="rVezes" type="number" min="0" style="width:4em" value="${r.vezes ?? 0}" /> <span class="dica">0 = sempre</span></label>
     <label class="linha"><input type="checkbox" id="rDesligada" ${r.desligada ? 'checked' : ''} /> começa desligada (outra região ou o roteiro liga)</label>
     <label class="linha"><input type="checkbox" id="rVoa" ${r.pegaQuemVoa ? 'checked' : ''} /> pega quem voa</label>
@@ -738,6 +740,7 @@ function regiaoNoPainel() {
     q.quando = [...form.querySelectorAll('[data-quando]')].filter((x) => x.checked).map((x) => x.dataset.quando);
   })));
   $('rQuem').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.quem = ev.target.value; }));
+  $('rTamanho').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.tamanhoMinimo = ev.target.value || undefined; }));
   $('rVezes').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.vezes = Math.max(0, Number(ev.target.value) || 0); }));
   $('rDesligada').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.desligada = ev.target.checked; }));
   $('rVoa').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.pegaQuemVoa = ev.target.checked; }));

@@ -61,6 +61,7 @@ import { garantirInventario } from '../rules/equipment.js';
 import { criarBuscas } from './buscas.js';
 import { PONTOS_DO_ESCONDERIJO as PE } from './esconderijo.js';
 import { fogueiraAcesa } from './fogo.js';
+import { descobrirRegiao } from '../rules/regioes.js';
 
 const MOVIMENTO = 60;
 // Os 275 XP do esconderijo (o marco do livro) pagos conforme as salas caem; o que sobra sai ao limpar tudo (`fimDoCapitulo`).
@@ -98,7 +99,6 @@ const RESSALTO = PE.ressalto;                              // área 4
 const CHAMINE_BASE = PE.chamineBase;                       // área 3
 const CHAMINE_TOPO = PE.chamineTopo;                       // área 8
 const DENTRO_DO_KLARG = (field, p) => salaDe(field, p) === 'chefe';
-const pequeno = (c) => /halfling|pequenin|gnom/i.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`);
 
 export function criarCapitulo2(app, config) {
   const enc = app.enc;
@@ -120,7 +120,7 @@ export function criarCapitulo2(app, config) {
     lobosRosnaram: false, ponteCortada: false, diqueRompido: false,
     // Uma tentativa por herói em cada ponto (`game/buscas.js`).
     buscas: {},
-    ressaltoQuebrado: false, bauAchado: false, klargFugiu: false,
+    bauAchado: false, klargFugiu: false,
   };
 
   const buscas = criarBuscas(estado.buscas);
@@ -267,7 +267,7 @@ export function criarCapitulo2(app, config) {
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
-    if (await ressalto(c)) return;
+    await contarAQueda();
     if (estado.enchente) { await enchente(); if (!estado.explorando) return; }
     for (const g of pendentes()) {
       if (g.id === 'vigias') { if (await vigias(g, c)) return; continue; }
@@ -474,25 +474,30 @@ export function criarCapitulo2(app, config) {
   }
 
   // ------------------------------------------------------------- área 4 ----
-  /** O ressalto frágil da passagem do oeste. */
-  async function ressalto(c) {
-    // Encontrar Armadilhas: quem sabe da laje rachada passa rente à parede, de um em um, sem pisar nela.
-    if (estado.ressaltoQuebrado || estado.ressaltoVisto || pequeno(c) || !RESSALTO.some((p) => p.x === c.pos.x && p.y === c.pos.y)) return false;
-    estado.ressaltoQuebrado = true;
-    enc.field.alternarSobreposicao?.('ressaltoCaido', true);   // o entulho desabado, como a FA o desenha
-    const r = enc.resistencia(c, 'dex', 10);
-    const dano = enc.rng.die(6) + enc.rng.die(6);
-    const levou = r.success ? Math.floor(dano / 2) : dano;
-    enc.applyDamage(c, levou, 'concussão');
-    if (!r.success && !c.dead) addCondition(c, 'caido');
-    const baixo = casaPerto(PE.peDaPassagem);
-    c.pos = { ...c.pos, x: baixo.x, y: baixo.y };
-    enc.say('dano', `O ressalto cede sob ${c.name}: ${levou} de dano (Destreza ${r.total}).`);
+  // A LAJE RACHADA DO RESSALTO é uma REGIÃO do mapa (`encounter.js`, `rules/regioes.js`): a passiva que nota antes, o
+  // Procurar, o Encontrar Armadilhas, o tombo e o desenho do desabamento são todos do motor. O capítulo só conta a queda.
+  const laje = () => enc.field.regioes?.find((r) => r.id === 'ressalto') ?? null;
+
+  /**
+   * A laje cedeu sob alguém (a região disparou, no meio do passo): o painel conta o tombo, com o dano que o motor
+   * tirou. Explorando, ele espera o passo acabar e vem ANTES de tudo o que o passo novo dispara (`depoisDeMover`) —
+   * senão o goblin da ponte, que vê quem rolou até perto dele, falaria primeiro e a queda ficaria embaixo. Na luta
+   * não há `depoisDeMover`: conta na hora.
+   */
+  function naRegiao(regiao, c, quando, resultado) {
+    if (regiao.id !== 'ressalto' || quando !== 'entrar') return;
+    estado.queda = { nome: c.name, dano: resultado?.dano ?? 0, caiu: resultado?.passou === false };
+    if (!estado.explorando) contarAQueda();
+  }
+
+  async function contarAQueda() {
+    const q = estado.queda;
+    if (!q) return;
+    estado.queda = null;
     await narrar(root, { formato: 'painel', paginas: [{ texto: [
-      `A laje onde ${c.name} pisa racha com um estalo e desce rolando junto com o entulho, até o pé da passagem (${levou} de dano${r.success ? '' : ', e no chão'}).`,
+      `A laje onde ${q.nome} pisa racha com um estalo e desce rolando junto com o entulho, até o pé da passagem (${q.dano} de dano${q.caiu ? ', e no chão' : ''}).`,
     ] }] });
     app.refresh();
-    return false;
   }
 
   // ------------------------------------------------------------- área 5 ----
@@ -1152,11 +1157,11 @@ export function criarCapitulo2(app, config) {
     }
     // Área 4: a laje rachada do ressalto. Achá-la é passar rente à parede sem pisar nela.
     // Já descoberta (Procurar, a passiva no caminho ou este mesmo Investigar), não há mais o que achar nela.
-    if (em(RESSALTO) && !estado.ressaltoQuebrado && !estado.ressaltoVisto) {
+    if (em(RESSALTO) && laje() && !laje().desligada && !laje().descoberta) {
       return {
         titulo: 'A subida do oeste', cd: 12, alcance: 10,
         achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez e sem pisar nela, dá para passar.',
-        efeito: () => { estado.ressaltoVisto = true; enc.say('acao', 'O grupo sabe da laje rachada: quem passa por ali vai rente à parede.'); },
+        efeito: () => { descobrirRegiao(enc.field, 'ressalto'); enc.say('acao', 'O grupo sabe da laje rachada: quem passa por ali vai rente à parede.'); },
       };
     }
     if (sala === 'passagem' && sup === 'riacho') {
@@ -1359,32 +1364,6 @@ export function criarCapitulo2(app, config) {
     return out;
   }
 
-  /**
-   * As armadilhas do mapa, conferidas passo a passo no caminho (`game/armadilhas.js`). A laje rachada do ressalto
-   * é a única: a Percepção passiva de quem vai pisar nota (CD 12, a mesma do Investigar) e para antes; quem não nota
-   * para em cima, e ela cede. O pequeno passa sem peso para quebrá-la.
-   */
-  function armadilhasDoMapa() {
-    return [{
-      id: 'ressalto', nome: 'A laje rachada', casas: RESSALTO, cd: 12,
-      descoberta: Boolean(estado.ressaltoVisto || estado.ressaltoQuebrado),
-      desarmada: Boolean(estado.ressaltoQuebrado),   // caiu: não há mais laje para marcar
-      afeta: (c) => !pequeno(c),
-      achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez, dá para passar.',
-      notar: async (c, { mostrar = true } = {}) => {
-        if (estado.ressaltoVisto) return;
-        estado.ressaltoVisto = true;
-        enc.say('acao', `${c.name} nota a laje rachada do ressalto: quem passa por ali vai rente à parede.`);
-        if (mostrar) {
-          await narrar(root, { formato: 'painel', paginas: [{ titulo: 'A laje rachada', texto: [
-            `${c.name} para antes de pisar: a laje no meio da subida está rachada por baixo, solta da rocha. Não aguenta um adulto. Rente à parede, um de cada vez, dá para passar.`,
-          ] }] });
-        }
-        app.refresh?.();
-      },
-      disparar: (c) => ressalto(c),
-    }];
-  }
 
   return {
     lugar: 'Esconderijo Dentefino',
@@ -1394,7 +1373,7 @@ export function criarCapitulo2(app, config) {
     investigavel: true,
     pistaEm,
     pistasEm,
-    armadilhas: armadilhasDoMapa,
+    naRegiao,
     interacoes,
     ganchosMagicos,
     plantasSabem,

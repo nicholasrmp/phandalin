@@ -209,7 +209,8 @@ Foundry: o fosso escondido, a placa de pressão que abre outra área, o mato que
 retângulo, polígono, balde) e os efeitos se escolhem no painel: texto, dano com teste, condição, parar o passo, terreno difícil, acender
 uma sobreposição, ligar outra região, teleporte. Marcada como **escondida**, ela é uma armadilha completa sem roteiro nenhum: a Percepção
 passiva nota antes, o Procurar e o Encontrar Armadilhas acham. O motor (`src/rules/regioes.js`) a executa no passo de qualquer criatura,
-e o formato de cada efeito está no cabeçalho dele.
+e o formato de cada efeito está no cabeçalho dele. A laje rachada do esconderijo (capítulo 2) é a primeira armadilha de
+capítulo que virou região: o roteiro dela saiu de `capitulo2.js`, e ficou só o painel que conta a queda.
 
 A figura **não entra no mapa nem no repositório**: fica no IndexedDB do navegador, porque quase sempre é arte comercial de terceiros. O que o
 mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0, giro, opacidade }`, com `escala` em pixels da imagem por casa e

@@ -5,7 +5,7 @@
 // motor a executa sozinho, para herói e para monstro, na luta e explorando.
 //
 //   { id, nome?, casas: ['x,y', ...], quando: ['entrar' | 'sair' | 'comecaTurno' | 'terminaTurno'],
-//     quem?: 'todos' | 'grupo' | 'inimigos', vezes?: n, desligada?, pegaQuemVoa?,
+//     quem?: 'todos' | 'grupo' | 'inimigos', tamanhoMinimo?: 'pequeno' | 'medio' | 'grande'..., vezes?: n, desligada?, pegaQuemVoa?,
 //     escondida?: { cd, achado }, efeitos: [...] }
 //
 // `vezes` conta os disparos da região inteira (1 = uma vez só; sem ele, sempre). `escondida` faz dela uma ARMADILHA:
@@ -14,7 +14,8 @@
 //
 // Os EFEITOS, na ordem em que estão:
 //   texto          { texto }                              o registro diz, e a tela mostra em cima de quem pisou
-//   dano           { dados, dano?, teste?: { atributo, cd, metade? } }
+//   dano           { dados, dano?, teste?: { atributo, cd, metade? }, seFalhar?: condição }   `seFalhar`: quem falha no
+//                  teste do dano também fica com a condição (a laje que cede: no chão), sem um segundo teste
 //   condicao       { condicao, rodadas?, teste?: { atributo, cd } }
 //   parar          {}                                     o passo acaba ali
 //   terrenoDificil {}                                     ENQUANTO LIGADA, as casas custam o dobro (não dispara)
@@ -22,7 +23,10 @@
 //   alternar       { regiao, ligada? }                    liga, desliga ou inverte outra região (ou a própria)
 //   teleporte      { x, y }                               leva quem pisou para a casa (x, y)
 //
-// Quem quer mais que isso (ir para outra cena, uma conversa) ouve o evento `regiao` (`capitulo.naRegiao`).
+// `tamanhoMinimo` deixa de fora quem é menor (a laje rachada não cede sob o goblin, que é Pequeno).
+//
+// Quem quer mais que isso (ir para outra cena, uma conversa) ouve o evento `regiao` (`capitulo.naRegiao`), que traz o
+// `resultado`: o dano que entrou e se o teste passou.
 //
 // Puro: roda em Node. O campo leva uma CÓPIA das regiões do mapa (`prepararRegioes`), porque `vezes`, `desligada` e
 // `descoberta` mudam durante a partida e o mapa da cena é compartilhado entre partidas.
@@ -31,6 +35,7 @@ import { damageRoll } from '../core/dice.js';
 import { key } from '../core/grid.js';
 import { danoPorResistencia } from './passivas.js';
 import { CONDITIONS, conditionEffects, hasCondition } from './conditions.js';
+import { categoriaDeTamanho, categoriaDoNome } from './tamanho.js';
 
 export const QUANDO = ['entrar', 'sair', 'comecaTurno', 'terminaTurno'];
 export const QUEM = ['todos', 'grupo', 'inimigos'];
@@ -81,6 +86,8 @@ function pega(enc, r, c) {
   if (c.dead) return false;
   if (r.quem === 'grupo' && c.side !== 'party') return false;
   if (r.quem === 'inimigos' && c.side === 'party') return false;
+  const minimo = categoriaDoNome(r.tamanhoMinimo);
+  if (minimo != null && categoriaDeTamanho(c) < minimo) return false;
   if (!r.pegaQuemVoa && enc.voaAgora?.(c)) return false;
   // A armadilha descoberta: o grupo sabe dela e passa por fora.
   if (r.escondida && r.descoberta && c.side === 'party') return false;
@@ -118,13 +125,22 @@ export function disparar(enc, r, c, quando) {
   r.disparos += 1;
   const nome = r.nome || r.id;
   let para = false;
+  const resultado = { dano: 0, passou: null };
   for (const e of r.efeitos) {
     if (c.dead) break;
     if (e.tipo === 'texto' && e.texto) {
       enc.say('acao', e.texto);
       enc.onEvent({ type: 'regiaoTexto', regiao: r, actor: c, texto: e.texto });
     } else if (e.tipo === 'dano' && e.dados) {
-      danoDaRegiao(enc, r, c, e, nome);
+      const d = danoDaRegiao(enc, r, c, e, nome);
+      resultado.dano += d.total;
+      if (d.passou != null) resultado.passou = d.passou;
+      // a condição de quem falhou no teste do dano, sem outro teste (a laje que cede deixa no chão)
+      if (d.passou === false && e.seFalhar && !c.dead && !hasCondition(c, e.seFalhar) && !enc.imuneACondicao?.(c, e.seFalhar)) {
+        if (enc.aplicarCondicao(c, e.seFalhar, { source: `regiao:${r.id}` })) {
+          enc.say('condicao', `${nome}: ${c.name} fica ${CONDITIONS[e.seFalhar]?.name.toLowerCase() ?? e.seFalhar}.`);
+        }
+      }
     } else if (e.tipo === 'condicao' && e.condicao) {
       if (condicaoDaRegiao(enc, r, c, e, nome)) para = true;
     } else if (e.tipo === 'parar') {
@@ -139,7 +155,7 @@ export function disparar(enc, r, c, quando) {
   }
   if (r.vezes && r.disparos >= r.vezes && r.efeitos.every((e) => e.tipo !== 'terrenoDificil')) r.desligada = true;
   // A cena pode ouvir (ir para outra cena, uma conversa): é o "rodar macro" da Region do Foundry.
-  enc.onEvent({ type: 'regiao', regiao: r, actor: c, quando });
+  enc.onEvent({ type: 'regiao', regiao: r, actor: c, quando, resultado });
   return para;
 }
 
@@ -148,14 +164,17 @@ function danoDaRegiao(enc, r, c, e, nome) {
   let total = rolagem.total;
   let conta = `${e.dados}[${rolagem.rolls.join('+')}]`;
   let r2 = null;
+  let passou = null;
   if (e.teste?.atributo) {
     const save = enc.resistencia(c, e.teste.atributo, e.teste.cd ?? 10, { contra: { tipoDano: e.dano ?? null } });
+    passou = save.success;
     r2 = enc.explicarResistencia(c, e.teste.atributo, e.teste.cd ?? 10, save, { contra: nome, seSucesso: e.teste.metade ? 'metade do dano' : 'nenhum dano' });
     total = danoPorResistencia(c, e.teste.atributo, Boolean(e.teste.metade), save.success, total, conditionEffects(c).incapacitated);
     conta = `${r2.conta} · ${conta}`;
   }
   enc.say('dano', `${nome}: ${c.name} sofre ${total}${e.dano ? ` de ${e.dano}` : ''}.`, conta, r2 ? { rolagem: r2 } : undefined);
   if (total > 0) enc.applyDamage(c, total, e.dano ?? null, null, {});
+  return { total, passou };
 }
 
 /** Aplica a condição (com o teste, se houver). Devolve `true` se ela ficou. */
@@ -196,6 +215,14 @@ function teleportar(enc, c, e) {
   return true;
 }
 
+/** Dá a região escondida de `id` por descoberta (a cena achou a armadilha por outro caminho, um Investigar dela). */
+export function descobrirRegiao(field, id) {
+  const r = field.regioes?.find((q) => q.id === id);
+  if (!r || r.descoberta) return false;
+  r.descoberta = true;
+  return true;
+}
+
 /** Liga (`true`), desliga (`false`) ou inverte (sem argumento) a região de `id`. Devolve se mudou. */
 export function alternarRegiao(field, id, ligada) {
   const r = field.regioes?.find((q) => q.id === id);
@@ -223,10 +250,13 @@ export function armadilhasDasRegioes(enc) {
       descoberta: r.descoberta,
       afeta: (c) => (r.quem !== 'inimigos' || c.side !== 'party') && (r.quem !== 'grupo' || c.side === 'party'),
       achado: r.escondida.achado || `${r.nome || 'Uma armadilha'}: dá para ver onde pisar.`,
-      notar: (c) => {
+      notar: (c, { mostrar = true } = {}) => {
         if (r.descoberta) return;
         r.descoberta = true;
-        enc.say('acao', `${c.name} nota: ${r.escondida.achado || r.nome || 'uma armadilha no chão'}`);
+        const texto = r.escondida.achado || `${r.nome || 'Uma armadilha'} no chão.`;
+        enc.say('acao', `${c.name} nota: ${texto}`);
+        // a tela mostra o que ele notou (o painel da cena, `main.js`); o Procurar já mostra o achado dele
+        if (mostrar) enc.onEvent({ type: 'regiaoNotada', regiao: r, actor: c, texto });
       },
       descobrir: () => { r.descoberta = true; },
       disparar: () => {},

@@ -8,11 +8,14 @@ import { makeParty } from '../rules/party.js';
 import { makeMonster } from '../rules/monsters.js';
 import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
-import { prepararRegioes, alternarRegiao, armadilhasDasRegioes, regioesEm } from '../rules/regioes.js';
+import { prepararRegioes, alternarRegiao, armadilhasDasRegioes, regioesEm, descobrirRegiao } from '../rules/regioes.js';
 import { cortarNoPerigo } from '../game/armadilhas.js';
 import { montarCampo } from '../game/campo.js';
 import { limpar, novoMapa, porRegiao, regiaoNoRetangulo, regiaoNoPoligono, regiaoNaCasa, tirarRegiao, regioesEm as regioesDoMapa, redimensionar } from '../game/mapa-editor.js';
 import { hasCondition } from '../rules/conditions.js';
+import { mapaDo } from '../game/encounter.js';
+import { PONTOS_DO_ESCONDERIJO as PE } from '../game/esconderijo.js';
+import { Battlefield as Campo } from '../core/grid.js';
 
 const ABERTO = Array(12).fill('............');
 const [DARA, PIP] = [0, 1];
@@ -210,7 +213,8 @@ teste('editor: guarda só o que não é padrão, pinta por área e tira', () => 
   assert.equal(m.regioes[0].casas.length, 5);
   assert.equal(regiaoNoPoligono(m, 'r1', [[6, 6], [8, 6], [8, 8], [6, 8]], true), 4, 'os cantos são de casa: de (6,6) a (8,8) cobre 2x2');
   assert.deepEqual(regioesDoMapa(m, 7, 7).map((r) => r.id), ['r1']);
-  assert.ok(porRegiao(m, { ...m.regioes[0], escondida: { cd: 14, achado: 'oco' }, vezes: 1 }), 'trocar a de mesmo id');
+  assert.ok(porRegiao(m, { ...m.regioes[0], escondida: { cd: 14, achado: 'oco' }, vezes: 1, tamanhoMinimo: 'medio' }), 'trocar a de mesmo id');
+  assert.equal(m.regioes[0].tamanhoMinimo, 'medio', 'o tamanho mínimo vai para o mapa');
   assert.equal(m.regioes.length, 1);
   assert.deepEqual(m.regioes[0].escondida, { cd: 14, achado: 'oco' });
   assert.ok(tirarRegiao(m, 'r1'));
@@ -225,6 +229,88 @@ teste('editor: crescer o mapa pelo oeste leva as casas e o destino do teleporte'
   assert.deepEqual([m.regioes[0].efeitos[0].x, m.regioes[0].efeitos[0].y], [7, 5]);
   assert.ok(redimensionar(m, 'O', -5));
   assert.deepEqual(m.regioes[0].casas, [], 'a casa que caiu fora do mapa sai da região');
+});
+
+// ---- a laje rachada do esconderijo, que era roteiro do capítulo 2 e virou região do mapa ----
+
+function noEsconderijo() {
+  const field = montarCampo(mapaDo('esconderijo'));
+  const party = makeParty({ nivel: 2 });
+  const log = [];
+  const eventos = [];
+  const enc = new Encounter({ battlefield: field, party, foes: [makeMonster('goblin', { x: 1, y: 1 })], rng: makeRng(11), onLog: (e) => log.push(e), onEvent: (e) => eventos.push(e) });
+  enc.firstSide = 'party';
+  enc.round = 1;
+  enc.beginSide('party');
+  // todos longe da laje, menos quem o teste põe nela
+  party.forEach((c, i) => { c.pos = { x: 13 + i, y: 7 }; });
+  return { enc, field, party, log, eventos, laje: field.regioes.find((r) => r.id === 'ressalto') };
+}
+/** O caminho de `c` até uma casa da laje, pelo motor. */
+function ateALaje(enc, c) {
+  c.movementLeftFt = 60;
+  const alcance = enc.reachableFor(c);
+  const alvo = PE.ressalto.find((p) => alcance.has(`${p.x},${p.y}`));
+  assert.ok(alvo, 'alcança a laje');
+  return Campo.pathFrom(alcance, alvo);
+}
+
+teste('esconderijo: a laje é uma região escondida do mapa, de uma vez só, só para quem tem peso', () => {
+  const { laje } = noEsconderijo();
+  assert.ok(laje);
+  assert.equal(laje.escondida.cd, 12);
+  assert.equal(laje.vezes, 1);
+  assert.equal(laje.tamanhoMinimo, 'medio');
+  assert.deepEqual([...laje.casas].sort(), PE.ressalto.map((p) => `${p.x},${p.y}`).sort());
+});
+
+teste('esconderijo: quem é Médio e pisa nela sem saber rola até o pé da passagem, ferido, e o desabamento acende', () => {
+  const { enc, field, party, eventos, laje } = noEsconderijo();
+  const dara = party[DARA];
+  const acesas = [];
+  const antes = field.alternarSobreposicao;
+  field.alternarSobreposicao = (id, l) => { acesas.push([id, l]); return antes?.(id, l); };
+  const pv = dara.hp;
+  enc.moveAlong(dara, ateALaje(enc, dara));
+  assert.ok(dara.hp < pv, 'levou o dano');
+  assert.ok(Math.max(Math.abs(dara.pos.x - PE.peDaPassagem.x), Math.abs(dara.pos.y - PE.peDaPassagem.y)) <= 1, `foi parar no pé da passagem (está em ${dara.pos.x},${dara.pos.y})`);
+  assert.deepEqual(acesas, [['ressaltoCaido', true]]);
+  assert.equal(laje.desligada, true, 'caída, não há mais laje');
+  const ev = eventos.find((e) => e.type === 'regiao' && e.regiao.id === 'ressalto');
+  assert.equal(ev.resultado.dano, pv - dara.hp, 'o evento traz o dano, para o painel da cena');
+});
+
+teste('esconderijo: o halfling, Pequeno, passa por ela sem quebrar', () => {
+  const { enc, party, laje } = noEsconderijo();
+  const pip = party[PIP];
+  const pv = pip.hp;
+  enc.moveAlong(pip, ateALaje(enc, pip));
+  assert.equal(pip.hp, pv);
+  assert.equal(laje.desligada, false);
+});
+
+teste('esconderijo: descoberta (o Investigar da cena, a passiva, o Procurar), o grupo passa por ela', () => {
+  const { enc, field, party, laje } = noEsconderijo();
+  assert.ok(descobrirRegiao(field, 'ressalto'));
+  const dara = party[DARA];
+  const pv = dara.hp;
+  enc.moveAlong(dara, ateALaje(enc, dara));
+  assert.equal(dara.hp, pv);
+  assert.equal(laje.desligada, false, 'continua lá: quem não sabe dela ainda pode cair');
+});
+
+teste('esconderijo: a Percepção passiva que alcança a CD 12 para antes, e a cena mostra o que ele viu', () => {
+  const { enc, party, eventos } = noEsconderijo();
+  // o Brenn, anão, enxerga no escuro da caverna: a armadilha só se nota se o grupo a vê (como sempre foi)
+  const brenn = party[2];
+  [brenn.pos, party[DARA].pos] = [party[DARA].pos, brenn.pos];   // no lugar da Dara, de onde se chega à laje
+  const armas = armadilhasDasRegioes(enc);
+  assert.equal(armas.length, 1);
+  armas[0].cd = 0;   // a passiva de qualquer um alcança
+  const { evento } = cortarNoPerigo(enc, brenn, ateALaje(enc, brenn), armas);
+  assert.equal(evento?.tipo, 'notou');
+  evento.armadilha.notar(brenn, { mostrar: true });
+  assert.ok(eventos.some((e) => e.type === 'regiaoNotada'), 'o painel do que ele notou');
 });
 
 console.log(`\n${total - falhas}/${total} testes das regiões passaram.`);

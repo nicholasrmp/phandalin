@@ -578,6 +578,7 @@ export function porRegiao(m, r) {
     casas,
     ...(quando.length && !(quando.length === 1 && quando[0] === 'entrar') ? { quando } : {}),
     ...(r.quem && r.quem !== 'todos' ? { quem: r.quem } : {}),
+    ...(r.tamanhoMinimo ? { tamanhoMinimo: r.tamanhoMinimo } : {}),
     ...(r.vezes > 0 ? { vezes: Number(r.vezes) } : {}),
     ...(r.desligada ? { desligada: true } : {}),
     ...(r.pegaQuemVoa ? { pegaQuemVoa: true } : {}),
