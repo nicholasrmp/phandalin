@@ -17,6 +17,26 @@
 //   { id, nome, casas: [{x,y}], cd, descoberta, achado, afeta?(c), notar?(c, {mostrar}), disparar?(c) }
 import { passivePerception } from '../rules/abilities.js';
 import { visaoDoGrupo, temEscuridaoEm } from '../rules/luz.js';
+import { armadilhasDasRegioes } from '../rules/regioes.js';
+
+/** As armadilhas da cena (`capitulo.armadilhas`) e as do MAPA (regiões escondidas, desenhadas no editor). */
+export function armadilhasDaCena(app) {
+  return [...(app.capitulo?.armadilhas?.() ?? []), ...armadilhasDasRegioes(app.enc)];
+}
+
+/**
+ * Os ganchos das magias de fora da luta (`capitulo.ganchosMagicos`) e, das regiões escondidas, um gancho de
+ * armadilha por região — é o que o Encontrar Armadilhas revela e o Augúrio pergunta, sem a cena saber dela.
+ */
+export function ganchosMagicosDaCena(app, c) {
+  const daCena = app.capitulo?.ganchosMagicos?.(c) ?? [];
+  const dasRegioes = armadilhasDasRegioes(app.enc).map((a) => {
+    // a casa da região mais perto de quem conjura: é dela que se mede o alcance e a linha de visão
+    const casa = [...a.casas].sort((p, q) => Math.hypot(p.x - c.pos.x, p.y - c.pos.y) - Math.hypot(q.x - c.pos.x, q.y - c.pos.y))[0];
+    return { tipo: 'armadilha', id: a.id, x: casa.x, y: casa.y, nome: a.nome, texto: a.achado, vista: a.descoberta, revelar: () => { a.descobrir(); return true; } };
+  });
+  return [...daCena, ...dasRegioes];
+}
 
 const naCasa = (a, p) => a.casas.some((q) => q.x === p.x && q.y === p.y);
 const aoLado = (a, p) => a.casas.some((q) => Math.abs(q.x - p.x) <= 1 && Math.abs(q.y - p.y) <= 1);

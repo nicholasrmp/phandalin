@@ -183,6 +183,13 @@ carregue a imagem, **arraste um retângulo por cima de N x M quadrados desenhado
 grade. Depois é só desenhar por cima o que é parede, porta e arco (ferramenta 2), e o resto do editor (salas, altura, partida) funciona igual.
 Há ainda giro de 90°, opacidade, arrastar a imagem e "crescer o mapa até cobrir a imagem".
 
+**Regiões (ferramenta R).** Uma área do mapa que faz algo quando alguém entra, sai, ou começa e termina o turno nela, como a Region do
+Foundry: o fosso escondido, a placa de pressão que abre outra área, o mato que atrasa, o chão que range. Desenha-se por área (pincel,
+retângulo, polígono, balde) e os efeitos se escolhem no painel: texto, dano com teste, condição, parar o passo, terreno difícil, acender
+uma sobreposição, ligar outra região, teleporte. Marcada como **escondida**, ela é uma armadilha completa sem roteiro nenhum: a Percepção
+passiva nota antes, o Procurar e o Encontrar Armadilhas acham. O motor (`src/rules/regioes.js`) a executa no passo de qualquer criatura,
+e o formato de cada efeito está no cabeçalho dele.
+
 A figura **não entra no mapa nem no repositório**: fica no IndexedDB do navegador, porque quase sempre é arte comercial de terceiros. O que o
 mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0, giro, opacidade }`, com `escala` em pixels da imagem por casa e
 `x0`/`y0` dizendo onde cai, em pixels da imagem já girada, o canto da casa (0,0).

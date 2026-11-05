@@ -12,6 +12,7 @@
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import * as M from '../game/mapa-editor.js';
+import { CONDITIONS } from '../rules/conditions.js';
 import * as T from '../view/vista-topo.js';
 // O atlas ainda é desenhado: os mapas sem pintura trazem móveis em `objetos`, e vê-los ajuda a decalcar. O que
 // saiu foi PÔR e TIRAR sprite pelo editor — isso é do mundo isométrico, e o cenário agora vem pintado.
@@ -70,6 +71,7 @@ const FERRAMENTAS = [
   ['interativo', 'Objeto interagível', '9'],
   ['frente', 'Camada de frente', '0'],
   ['sobrepor', 'Sobreposição', 'q'],
+  ['regiao', 'Região', 'r'],
 ];
 
 // ------------------------------------------------------------------------------------------------ estado ---
@@ -82,6 +84,7 @@ const sel = {
   ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
   interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false, pistaVerbo: '', pistaCd: 10, pistaAchado: '' },
   modoPiso: 'pincel', modoAresta: 'aresta', modoFrente: 'pincel', frenteMarca: true,
+  modoRegiao: 'retangulo', regiaoMarca: true,
   sobrepor: { id: '', url: '/mapas/fa/ChestOpen.webp', frente: false, ligada: true },
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
@@ -106,6 +109,7 @@ let poligono = null;      // os cantos clicados do polígono, em casas com fraç
 // aparece só como retângulo com o nome, que é exatamente o que o jogo faz também.
 const imgSobre = new Map();
 let sobreSel = '';        // o `id` da peça escolhida, que os campos do painel editam
+let regiaoSel = '';       // o `id` da região escolhida (ferramenta R)
 
 function imagemDaPeca(url) {
   if (!url) return null;
@@ -121,7 +125,8 @@ function imagemDaPeca(url) {
 
 /** Qual forma de área a ferramenta escolhida está usando. A parede só tem retângulo. */
 const modoDeArea = () => (sel.ferramenta === 'piso' ? sel.modoPiso
-  : sel.ferramenta === 'frente' ? sel.modoFrente : 'retangulo');
+  : sel.ferramenta === 'frente' ? sel.modoFrente
+    : sel.ferramenta === 'regiao' ? sel.modoRegiao : 'retangulo');
 
 
 const instantaneo = () => JSON.stringify(mapa);
@@ -276,6 +281,7 @@ function marcarTopo(ctx, C) {
     }
     ctx.restore();
   }
+  if (sel.ferramenta === 'regiao') desenharRegioes(ctx, C);
   if (sel.ferramenta === 'inicio' || sel.ferramenta === 'sala') {
     ctx.save();
     ctx.font = `bold ${Math.max(11, C * 0.3)}px system-ui`;
@@ -418,6 +424,7 @@ function agir(e, primeira) {
   else if (f === 'frente') aplicar(M.pintarFrente(mapa, t.x, t.y, sel.frenteMarca));
   else if (f === 'luz') { const l = LUZES.find(([id]) => id === sel.luz); aplicar(M.porLuz(mapa, t.x, t.y, { tipo: l[0], claro: l[2], penumbra: l[3] })); }
   else if (f === 'interativo') aplicar(M.porInterativo(mapa, t.x, t.y, sel.interativo.id.trim() ? objetoDoPainel() : null));
+  else if (f === 'regiao') { const id = regiaoParaPintar(); if (id && aplicar(M.regiaoNaCasa(mapa, id, t.x, t.y, sel.regiaoMarca))) regiaoNoPainel(); }
   else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
   else if (f === 'sala') aplicar(M.definirSala(mapa, t.x, t.y, sel.sala.trim()));
   else if (f === 'inicio') aplicar(M.definirInicio(mapa, sel.inicio, t.x, t.y));
@@ -451,6 +458,7 @@ function aoApertar(e) {
   const porArea = (sel.ferramenta === 'piso' && sel.modoPiso !== 'pincel')
     || (sel.ferramenta === 'frente' && sel.modoFrente !== 'pincel')
     || sel.ferramenta === 'sobrepor'
+    || (sel.ferramenta === 'regiao' && sel.modoRegiao !== 'pincel')
     || (sel.ferramenta === 'aresta' && sel.modoAresta === 'retangulo');
   if (porArea) {
     const t = casaDe(e);
@@ -460,8 +468,9 @@ function aoApertar(e) {
       ponto();
       const n = sel.ferramenta === 'frente'
         ? M.frenteNoBalde(mapa, t.x, t.y, sel.frenteMarca)
-        : M.balde(mapa, t.x, t.y, sel.piso);
-      if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
+        : sel.ferramenta === 'regiao' ? (regiaoParaPintar() ? M.regiaoNoBalde(mapa, regiaoSel, t.x, t.y, sel.regiaoMarca) : 0)
+          : M.balde(mapa, t.x, t.y, sel.piso);
+      if (!aplicar(n > 0)) { desfazer.pop(); botoes(); } else if (sel.ferramenta === 'regiao') regiaoNoPainel();
     }
     else if (modo === 'poligono') {
       const c = casaFracionada(e);
@@ -539,6 +548,227 @@ function sobreposicaoNoArrasto(a, b) {
   return ok ? 1 : 0;
 }
 
+// --------------------------------------------------------------------------------------------- região (R) ---
+
+/** Um nome livre: `regiao1`, `regiao2`... */
+function novaRegiao() {
+  const usados = new Set((mapa.regioes ?? []).map((r) => r.id));
+  let i = 1;
+  while (usados.has(`regiao${i}`)) i += 1;
+  const id = `regiao${i}`;
+  // O padrão FAZ algo (o registro diz que alguém pisou ali): uma região muda seria um botão que mente.
+  M.porRegiao(mapa, { id, nome: '', casas: [], efeitos: [{ tipo: 'texto', texto: 'O chão range.' }] });
+  return id;
+}
+
+/** A região que o pincel pinta: a escolhida, ou uma nova se não houver (e se for para marcar). */
+function regiaoParaPintar() {
+  if (regiaoSel && (mapa.regioes ?? []).some((r) => r.id === regiaoSel)) return regiaoSel;
+  if (!sel.regiaoMarca) return '';
+  regiaoSel = novaRegiao();
+  return regiaoSel;
+}
+
+/** O arrasto da região. Um clique seco numa casa de outra região a escolhe, em vez de pintar por cima. */
+function regiaoNoArrasto(a, b) {
+  if (a.x === b.x && a.y === b.y) {
+    const achada = M.regioesEm(mapa, a.x, a.y)[0];
+    if (achada && achada.id !== regiaoSel) { regiaoSel = achada.id; regiaoNoPainel(); return 0; }
+  }
+  return regiaoParaPintar() ? M.regiaoNoRetangulo(mapa, regiaoSel, a, b, sel.regiaoMarca) : 0;
+}
+
+const corDaRegiao = (id) => `${[...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 11) % 360}`;
+
+/** As regiões no mapa: a tinta de cada uma, a borda e o nome; a escolhida mais forte, as desligadas tracejadas. */
+function desenharRegioes(ctx, C) {
+  for (const r of mapa.regioes ?? []) {
+    const escolhida = r.id === regiaoSel;
+    const h = corDaRegiao(r.id);
+    const casas = new Set(r.casas);
+    ctx.save();
+    ctx.fillStyle = `hsla(${h} 85% 60% / ${escolhida ? 0.34 : 0.16})`;
+    for (const k of casas) { const [x, y] = k.split(',').map(Number); ctx.fillRect(x * C, y * C, C, C); }
+    // a borda: só os lados que dão para fora da região
+    ctx.strokeStyle = `hsl(${h} 90% ${escolhida ? 75 : 62}%)`;
+    ctx.lineWidth = escolhida ? 3 : 1.5;
+    if (r.desligada) ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    for (const k of casas) {
+      const [x, y] = k.split(',').map(Number);
+      if (!casas.has(`${x},${y - 1}`)) { ctx.moveTo(x * C, y * C); ctx.lineTo((x + 1) * C, y * C); }
+      if (!casas.has(`${x},${y + 1}`)) { ctx.moveTo(x * C, (y + 1) * C); ctx.lineTo((x + 1) * C, (y + 1) * C); }
+      if (!casas.has(`${x - 1},${y}`)) { ctx.moveTo(x * C, y * C); ctx.lineTo(x * C, (y + 1) * C); }
+      if (!casas.has(`${x + 1},${y}`)) { ctx.moveTo((x + 1) * C, y * C); ctx.lineTo((x + 1) * C, (y + 1) * C); }
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const primeira = [...casas].map((k) => k.split(',').map(Number)).sort((p, q) => p[1] - q[1] || p[0] - q[0])[0];
+    if (primeira && C >= 14) {
+      const rotulo = `${r.nome || r.id}${r.escondida ? ' (escondida)' : ''}`;
+      ctx.font = `bold ${Math.max(10, C * 0.24)}px system-ui`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      ctx.strokeText(rotulo, primeira[0] * C + 4, primeira[1] * C + 3);
+      ctx.fillStyle = escolhida ? '#fff4c8' : `hsl(${h} 90% 82%)`;
+      ctx.fillText(rotulo, primeira[0] * C + 4, primeira[1] * C + 3);
+    }
+    ctx.restore();
+  }
+}
+
+const ROTULO_DO_QUANDO = { entrar: 'entra', sair: 'sai', comecaTurno: 'começa o turno dentro', terminaTurno: 'termina o turno dentro' };
+const ROTULO_DO_EFEITO = {
+  texto: 'Texto', dano: 'Dano', condicao: 'Condição', parar: 'Parar o passo', terrenoDificil: 'Terreno difícil',
+  sobreposicao: 'Acender/apagar arte', alternar: 'Ligar/desligar região', teleporte: 'Teleporte',
+};
+const ATRIBUTOS = [['', 'sem teste'], ['str', 'FOR'], ['dex', 'DES'], ['con', 'CON'], ['int', 'INT'], ['wis', 'SAB'], ['cha', 'CAR']];
+const TIPOS_DE_DANO = ['', 'contundente', 'cortante', 'perfurante', 'fogo', 'frio', 'elétrico', 'ácido', 'veneno', 'necrótico', 'radiante', 'trovejante', 'psíquico', 'energético'];
+const CONDICOES = ['caido', 'contido', 'agarrado', 'envenenado', 'amedrontado', 'cego', 'atordoado', 'paralisado', 'inconsciente'];
+const LIGA = [['', 'inverter'], ['1', 'ligar'], ['0', 'desligar']];
+
+const escapar = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const opcoes = (lista, atual) => lista.map(([v, n]) => `<option value="${escapar(v)}"${String(atual ?? '') === v ? ' selected' : ''}>${escapar(n)}</option>`).join('');
+const ligaDe = (e) => (e.ligada === undefined ? '' : e.ligada ? '1' : '0');
+
+/** Os campos de um efeito, por tipo. `data-ef` é o índice; `data-campo` o caminho ('teste.cd'). */
+function camposDoEfeito(e, i) {
+  const at = (c) => `data-ef="${i}" data-campo="${c}"`;
+  const teste = (comMetade) => `
+    <label class="linha">teste <select ${at('teste.atributo')}>${opcoes(ATRIBUTOS, e.teste?.atributo)}</select>
+    CD <input type="number" min="1" max="30" style="width:4em" value="${e.teste?.cd ?? 12}" ${at('teste.cd')} /></label>
+    ${comMetade ? `<label class="linha"><input type="checkbox" ${e.teste?.metade ? 'checked' : ''} ${at('teste.metade')} /> passou, metade do dano</label>` : ''}`;
+  switch (e.tipo) {
+    case 'texto': return `<textarea rows="2" style="width:100%" ${at('texto')}>${escapar(e.texto)}</textarea>`;
+    case 'dano': return `<label class="linha">dados <input type="text" style="width:6em" value="${escapar(e.dados ?? '1d6')}" ${at('dados')} />
+      tipo <select ${at('dano')}>${opcoes(TIPOS_DE_DANO.map((t) => [t, t || '—']), e.dano)}</select></label>${teste(true)}`;
+    case 'condicao': return `<label class="linha"><select ${at('condicao')}>${opcoes(CONDICOES.map((c) => [c, CONDITIONS[c]?.name ?? c]), e.condicao)}</select>
+      rodadas <input type="number" min="0" style="width:4em" value="${e.rodadas ?? ''}" placeholder="—" ${at('rodadas')} /></label>${teste(false)}`;
+    case 'sobreposicao': return `<label class="linha">peça <select ${at('id')}>${opcoes([['', '—'], ...(mapa.sobreposicoes ?? []).map((o) => [o.id, o.id])], e.id)}</select>
+      <select ${at('ligada')}>${opcoes(LIGA, ligaDe(e))}</select></label>`;
+    case 'alternar': return `<label class="linha">região <select ${at('regiao')}>${opcoes([['', '—'], ...(mapa.regioes ?? []).map((r) => [r.id, r.nome || r.id])], e.regiao)}</select>
+      <select ${at('ligada')}>${opcoes(LIGA, ligaDe(e))}</select></label>`;
+    case 'teleporte': return `<label class="linha">para x <input type="number" style="width:4em" value="${e.x ?? 0}" ${at('x')} />
+      y <input type="number" style="width:4em" value="${e.y ?? 0}" ${at('y')} /></label>`;
+    case 'terrenoDificil': return '<p class="dica" style="margin:2px 0">Enquanto ligada, as casas custam o dobro. Não dispara: vale o tempo todo.</p>';
+    default: return '';
+  }
+}
+
+/** Muda a região escolhida pelo `troca(r)` (numa cópia) e guarda, com um ponto de desfazer. */
+function mexerNaRegiao(troca) {
+  const atual = (mapa.regioes ?? []).find((r) => r.id === regiaoSel);
+  if (!atual) return;
+  const r = JSON.parse(JSON.stringify(atual));
+  troca(r);
+  ponto();
+  let mudou;
+  if (r.id !== atual.id) {
+    // renomear: o id é a chave, e os efeitos "alternar" que apontavam para o nome velho seguem a região
+    if (!r.id || (mapa.regioes ?? []).some((q) => q.id === r.id)) { desfazer.pop(); botoes(); regiaoNoPainel(); return; }
+    for (const q of mapa.regioes) for (const e of q.efeitos ?? []) if (e.tipo === 'alternar' && e.regiao === atual.id) e.regiao = r.id;
+    for (const e of r.efeitos ?? []) if (e.tipo === 'alternar' && e.regiao === atual.id) e.regiao = r.id;
+    M.tirarRegiao(mapa, atual.id);
+    mudou = M.porRegiao(mapa, r);
+    regiaoSel = r.id;
+  } else mudou = M.porRegiao(mapa, r);
+  if (!aplicar(mudou)) { desfazer.pop(); botoes(); }
+  regiaoNoPainel();
+}
+
+/** Põe `valor` no caminho 'a.b' de `obj`; valor vazio apaga a chave. */
+function porNoCaminho(obj, caminho, valor) {
+  const partes = caminho.split('.');
+  let alvo = obj;
+  for (const p of partes.slice(0, -1)) alvo = alvo[p] ??= {};
+  const ultima = partes.at(-1);
+  if (valor === '' || valor === undefined || valor === null || Number.isNaN(valor)) delete alvo[ultima];
+  else alvo[ultima] = valor;
+  if (obj.teste && !obj.teste.atributo) delete obj.teste;
+}
+
+/** A seção da região: a lista do mapa e, da escolhida, todos os campos. */
+function regiaoNoPainel() {
+  const lista = $('listaRegioes');
+  const form = $('formRegiao');
+  if (!lista || !form) return;
+  const todas = mapa.regioes ?? [];
+  lista.innerHTML = '';
+  for (const r of todas) {
+    const b = document.createElement('button');
+    b.textContent = `${r.desligada ? '○' : '●'} ${r.nome || r.id} — ${r.casas.length} casa(s)${r.escondida ? ' · escondida' : ''}`;
+    b.classList.toggle('on', r.id === regiaoSel);
+    b.addEventListener('click', () => { regiaoSel = r.id; regiaoNoPainel(); sujo = true; });
+    lista.appendChild(b);
+  }
+  const r = todas.find((q) => q.id === regiaoSel);
+  if (!r) { form.innerHTML = `<p class="dica">${todas.length} região(ões) no mapa. Escolha uma na lista, ou pinte para criar.</p>`; return; }
+  const quando = r.quando ?? ['entrar'];
+  form.innerHTML = `
+    <div class="numeros">
+      <label>id (o nome que o roteiro e as outras regiões chamam)<input id="rId" type="text" value="${escapar(r.id)}" /></label>
+      <label>nome (o que o registro diz)<input id="rNome" type="text" value="${escapar(r.nome)}" /></label>
+    </div>
+    <p class="dica" style="margin:6px 0 2px">dispara quando alguém…</p>
+    ${Object.entries(ROTULO_DO_QUANDO).map(([q, n]) => `<label class="linha"><input type="checkbox" data-quando="${q}" ${quando.includes(q) ? 'checked' : ''} /> ${n}</label>`).join('')}
+    <label class="linha">vale para <select id="rQuem">${opcoes([['todos', 'todos'], ['grupo', 'só o grupo'], ['inimigos', 'só os inimigos']], r.quem ?? 'todos')}</select></label>
+    <label class="linha">vezes <input id="rVezes" type="number" min="0" style="width:4em" value="${r.vezes ?? 0}" /> <span class="dica">0 = sempre</span></label>
+    <label class="linha"><input type="checkbox" id="rDesligada" ${r.desligada ? 'checked' : ''} /> começa desligada (outra região ou o roteiro liga)</label>
+    <label class="linha"><input type="checkbox" id="rVoa" ${r.pegaQuemVoa ? 'checked' : ''} /> pega quem voa</label>
+    <label class="linha"><input type="checkbox" id="rEscondida" ${r.escondida ? 'checked' : ''} /> escondida (armadilha: a Percepção passiva nota antes)</label>
+    ${r.escondida ? `<label class="linha">CD para notar <input id="rCd" type="number" min="1" max="30" style="width:4em" value="${r.escondida.cd ?? 12}" /></label>
+      <p class="dica" style="margin:4px 0 2px">o que vê quem nota (ou acha procurando)</p>
+      <textarea id="rAchado" rows="2" style="width:100%">${escapar(r.escondida.achado)}</textarea>` : ''}
+    <h3 style="margin:10px 0 4px">Efeitos, na ordem</h3>
+    ${(r.efeitos ?? []).map((e, i) => `<div class="efeito" style="border:1px solid #4a4030;border-radius:6px;padding:6px;margin:4px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>${ROTULO_DO_EFEITO[e.tipo] ?? e.tipo}</b>
+      <button data-tiraef="${i}" title="tirar">×</button></div>${camposDoEfeito(e, i)}</div>`).join('')}
+    <label class="linha">+ <select id="rNovoEfeito"><option value="">acrescentar efeito…</option>${Object.entries(ROTULO_DO_EFEITO).map(([t, n]) => `<option value="${t}">${n}</option>`).join('')}</select></label>
+    <button id="rApagar" style="width:100%;margin-top:8px">Apagar esta região</button>
+    <p class="dica">Escondida, ela vira armadilha: quem chega perto com Percepção passiva alcançando a CD para antes e a
+    marca no mapa; o Procurar e a magia Encontrar Armadilhas também a acham. Descoberta, o grupo passa por fora — o
+    monstro não sabe dela.</p>`;
+  $('rId').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.id = ev.target.value.trim(); }));
+  $('rNome').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.nome = ev.target.value.trim(); }));
+  form.querySelectorAll('[data-quando]').forEach((c) => c.addEventListener('change', () => mexerNaRegiao((q) => {
+    q.quando = [...form.querySelectorAll('[data-quando]')].filter((x) => x.checked).map((x) => x.dataset.quando);
+  })));
+  $('rQuem').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.quem = ev.target.value; }));
+  $('rVezes').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.vezes = Math.max(0, Number(ev.target.value) || 0); }));
+  $('rDesligada').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.desligada = ev.target.checked; }));
+  $('rVoa').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.pegaQuemVoa = ev.target.checked; }));
+  $('rEscondida').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.escondida = ev.target.checked ? { cd: 12 } : undefined; }));
+  $('rCd')?.addEventListener('change', (ev) => mexerNaRegiao((q) => { q.escondida.cd = Number(ev.target.value) || 10; }));
+  $('rAchado')?.addEventListener('change', (ev) => mexerNaRegiao((q) => { q.escondida.achado = ev.target.value.trim(); }));
+  const NUMEROS = new Set(['teste.cd', 'rodadas', 'x', 'y']);
+  form.querySelectorAll('[data-ef]').forEach((c) => c.addEventListener('change', () => mexerNaRegiao((q) => {
+    const e = q.efeitos[Number(c.dataset.ef)];
+    const caminho = c.dataset.campo;
+    let v = c.type === 'checkbox' ? c.checked : c.value;
+    if (NUMEROS.has(caminho)) v = v === '' ? '' : Number(v);
+    if (caminho === 'ligada') v = v === '' ? undefined : v === '1';
+    if (caminho === 'teste.metade' && !v) v = '';
+    porNoCaminho(e, caminho, v);
+    // a CD que o campo mostra (12) vale desde que se escolhe o atributo, e não só depois de mexer nela
+    if (caminho === 'teste.atributo' && e.teste && e.teste.cd == null) e.teste.cd = 12;
+  })));
+  form.querySelectorAll('[data-tiraef]').forEach((b) => b.addEventListener('click', () => mexerNaRegiao((q) => { q.efeitos.splice(Number(b.dataset.tiraef), 1); })));
+  $('rNovoEfeito').addEventListener('change', (ev) => {
+    const tipo = ev.target.value;
+    if (!tipo) return;
+    const molde = { texto: { texto: 'O chão range.' }, dano: { dados: '1d6' }, condicao: { condicao: 'caido' }, teleporte: { x: 1, y: 1 } }[tipo] ?? {};
+    mexerNaRegiao((q) => { q.efeitos.push({ tipo, ...molde }); });
+  });
+  $('rApagar').addEventListener('click', () => {
+    ponto();
+    if (aplicar(M.tirarRegiao(mapa, regiaoSel))) regiaoSel = '';
+    else { desfazer.pop(); botoes(); }
+    regiaoNoPainel();
+  });
+}
+
 /** Fecha o polígono que está sendo clicado e pinta o que está dentro dele. */
 function fecharPoligono() {
   const pts = poligono;
@@ -547,8 +777,9 @@ function fecharPoligono() {
   ponto();
   const n = sel.ferramenta === 'frente'
     ? M.frenteNoPoligono(mapa, pts, sel.frenteMarca)
-    : M.pintarPoligono(mapa, pts, sel.piso);
-  if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
+    : sel.ferramenta === 'regiao' ? (regiaoParaPintar() ? M.regiaoNoPoligono(mapa, regiaoSel, pts, sel.regiaoMarca) : 0)
+      : M.pintarPoligono(mapa, pts, sel.piso);
+  if (!aplicar(n > 0)) { desfazer.pop(); botoes(); } else if (sel.ferramenta === 'regiao') regiaoNoPainel();
 }
 
 addEventListener('mouseup', () => {
@@ -559,8 +790,9 @@ addEventListener('mouseup', () => {
     const n = sel.ferramenta === 'piso' ? M.pintarRetangulo(mapa, a, b, sel.piso)
       : sel.ferramenta === 'frente' ? M.frenteNoRetangulo(mapa, a, b, sel.frenteMarca)
         : sel.ferramenta === 'sobrepor' ? sobreposicaoNoArrasto(a, b)
-          : M.paredesDoRetangulo(mapa, a, b, sel.estilo);
-    if (!aplicar(n > 0)) { desfazer.pop(); botoes(); }
+          : sel.ferramenta === 'regiao' ? regiaoNoArrasto(a, b)
+            : M.paredesDoRetangulo(mapa, a, b, sel.estilo);
+    if (!aplicar(n > 0)) { desfazer.pop(); botoes(); } else if (sel.ferramenta === 'regiao') regiaoNoPainel();
   }
   if (tracando) {
     const pontos = tracando;
@@ -656,8 +888,9 @@ function estado() {
   const luz = (mapa.luzes ?? []).find((l) => l.pos?.x === t.x && l.pos?.y === t.y);
   const alvo = (mapa.interativos ?? []).find((i) => i.x === t.x && i.y === t.y);
   const pecas = M.sobreposicoesEm(mapa, t.x, t.y);
+  const regs = M.regioesEm(mapa, t.x, t.y);
   const h = hoverEdge ? ` | aresta ${hoverEdge.lado === 'N' ? 'de cima' : 'da esquerda'}: ${M.ESTILOS_DE_ARESTA[M.estiloDaAresta(mapa, hoverEdge.x, hoverEdge.y, hoverEdge.lado)].rotulo}` : '';
-  $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${luz ? ` | luz <b>${luz.tipo}</b>` : ''}${alvo ? ` | interagível <b>${alvo.id}</b>` : ''}${M.frenteEm(mapa, t.x, t.y) ? ' | <b>frente</b>' : ''}${pecas.length ? ` | peça <b>${pecas.map((o) => o.id).join(', ')}</b>` : ''}${h}`;
+  $('estado').innerHTML = `casa <b>${t.x},${t.y}</b> | piso <b>${mapa.terreno[t.y][t.x]}</b>${sala ? ` | sala <b>${sala}</b>` : ''}${o ? ` | objeto <b>${o.variante}</b>` : ''}${luz ? ` | luz <b>${luz.tipo}</b>` : ''}${alvo ? ` | interagível <b>${alvo.id}</b>` : ''}${M.frenteEm(mapa, t.x, t.y) ? ' | <b>frente</b>' : ''}${pecas.length ? ` | peça <b>${pecas.map((o) => o.id).join(', ')}</b>` : ''}${regs.length ? ` | região <b>${regs.map((r) => r.id).join(', ')}</b>` : ''}${h}`;
 }
 
 /** O objeto interagível como o painel o descreve, com o TESTE (a pista) se um verbo foi escolhido. */
@@ -676,6 +909,8 @@ function sincronizarModo() {
   // a peça escolhida pode ter sumido no desfazer, ou o mapa aberto ser outro
   if (sobreSel && !(mapa.sobreposicoes ?? []).some((o) => o.id === sobreSel)) sobreSel = '';
   sobreNoPainel();
+  if (regiaoSel && !(mapa.regioes ?? []).some((r) => r.id === regiaoSel)) regiaoSel = '';
+  regiaoNoPainel();
 }
 
 function botoes() {
@@ -702,7 +937,7 @@ function escolher(f) {
 function montarPainel() {
   const L = $('lateral');
   L.innerHTML = `
-    <h2>Ferramenta (teclas 1 a 0, e Q)</h2>
+    <h2>Ferramenta (teclas 1 a 0, Q e R)</h2>
     <div class="ferramentas">${FERRAMENTAS.map(([id, nome, k]) => `<button data-ferramenta="${id}">${k} · ${nome}</button>`).join('')}</div>
 
     <div data-secao="piso">
@@ -746,6 +981,28 @@ function montarPainel() {
       terreno (ferramenta 5) ou a parede (2).</p>
       <p class="dica" id="contaSobre">—</p>
       <div class="lista" id="listaSobre"></div>
+    </div>
+
+    <div data-secao="regiao">
+      <h2>Região</h2>
+      <p class="dica">Uma área que FAZ algo quando alguém entra, sai, ou começa e termina o turno nela — o fosso, a
+      placa de pressão, o chão que range, o mato que atrasa. É a Region do Foundry: vale para herói e monstro, na
+      luta e explorando, sem roteiro nenhum.</p>
+      <div class="lista">
+        <button data-modoregiao="pincel">Pincel</button>
+        <button data-modoregiao="retangulo">Retângulo</button>
+        <button data-modoregiao="poligono">Polígono</button>
+        <button data-modoregiao="balde">Balde</button>
+      </div>
+      <div class="lista">
+        <button data-regiaomarca="1">Marcar</button>
+        <button data-regiaomarca="0">Apagar casas</button>
+      </div>
+      <p class="dica">Pintar sem região escolhida cria uma nova. Um clique numa casa de região com o retângulo escolhe
+      a de cima.</p>
+      <button id="rNova" style="width:100%">Nova região</button>
+      <div class="lista" id="listaRegioes"></div>
+      <div id="formRegiao"></div>
     </div>
 
     <div data-secao="frente">
@@ -1006,7 +1263,13 @@ function montarPainel() {
     if (!aplicar(M.definirFrentePorCor(mapa, b.dataset.frentecor === '1' ? M.FRENTE_PADRAO : null))) { desfazer.pop(); botoes(); }
     frenteNoPainel();
   }));
-  for (const [attr, campo] of [['data-modopiso', 'modoPiso'], ['data-modoaresta', 'modoAresta'], ['data-modofrente', 'modoFrente']]) {
+  L.querySelectorAll('[data-regiaomarca]').forEach((b) => b.addEventListener('click', () => {
+    sel.regiaoMarca = b.dataset.regiaomarca === '1';
+    L.querySelectorAll('[data-regiaomarca]').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  L.querySelector(`[data-regiaomarca="${sel.regiaoMarca ? 1 : 0}"]`).classList.add('on');
+  $('rNova').addEventListener('click', () => { ponto(); regiaoSel = novaRegiao(); aplicar(true); regiaoNoPainel(); });
+  for (const [attr, campo] of [['data-modopiso', 'modoPiso'], ['data-modoaresta', 'modoAresta'], ['data-modofrente', 'modoFrente'], ['data-modoregiao', 'modoRegiao']]) {
     L.querySelectorAll(`[${attr}]`).forEach((b) => b.addEventListener('click', () => {
       sel[campo] = b.getAttribute(attr);
       poligono = null;
@@ -1024,6 +1287,7 @@ function montarPainel() {
   L.querySelector(`[data-frentemarca="${sel.frenteMarca ? 1 : 0}"]`).classList.add('on');
   frenteNoPainel();
   sobreNoPainel();
+  regiaoNoPainel();
   L.querySelector(`[data-luz="${sel.luz}"]`).classList.add('on');
   L.querySelector(`[data-piso="${sel.piso}"]`).classList.add('on');
   L.querySelector(`[data-estilo="${sel.estilo}"]`).classList.add('on');

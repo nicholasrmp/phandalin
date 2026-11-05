@@ -454,7 +454,7 @@ export class Battlefield {
     // Liberdade de Movimento tira TODO terreno difícil, do mapa e de magia —
     // é o que a magia promete, ao contrário do Andar na Água, que é só da água.
     const dificil = !this.semTerrenoDificil && (espacoDeOutro || (this.tileAt(x, y) === 2 && !naAgua && !this.passoDaTerra)
-      || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y)));
+      || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y)) || this.dificeisDeRegiao?.has(key(x, y)));
     // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
     const cerrado = this.dificeis4?.has(key(x, y)) && !this.semTerrenoDificil;
     let cost = cerrado ? FEET_PER_SQUARE * 4 : dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;

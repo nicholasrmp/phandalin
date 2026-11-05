@@ -3,6 +3,7 @@
 // mesmo campo a partir do mesmo mapa, e os dois nunca divergem.
 
 import { Battlefield } from '../core/grid.js';
+import { prepararRegioes } from '../rules/regioes.js';
 
 /** Monta o `Battlefield` de um mapa de `mapaDo()`. */
 export function montarCampo(mapa) {
@@ -30,6 +31,9 @@ export function montarCampo(mapa) {
       return true;
     };
   }
+  // AS REGIÕES (`rules/regioes.js`): a área que faz algo quando alguém entra, sai, ou começa e termina o turno nela.
+  // Copiadas pelo mesmo motivo das sobreposições: `vezes`, `desligada` e `descoberta` mudam durante a partida.
+  if (mapa.regioes?.length) prepararRegioes(field, mapa.regioes);
   // A CAMADA DE FRENTE: a parte da pintura que o tabuleiro redesenha POR CIMA das fichas, para copa e beiral
   // cobrirem quem passa debaixo (ver `mapa-editor.js`). É só aparência — quem barra passo é o terreno.
   if (mapa.frente) field.frente = mapa.frente;

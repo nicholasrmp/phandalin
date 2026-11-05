@@ -31,6 +31,7 @@ import { TRAIT_INFO } from '../rules/monsters.js';
 import { rolarTeste } from '../rules/utilidade.js';
 import { ctxDe } from './magias-fora.js';
 import { criarBuscas } from './buscas.js';
+import { armadilhasDaCena } from './armadilhas.js';
 
 export const PERICIAS_DE_INVESTIGAR = ['investigacao'];
 export const CD_PADRAO = 10;
@@ -243,7 +244,7 @@ export function opcaoDeProcurar(app, c, tile, { fora, pistas = [], nome = null }
   if (!c) return null;
   const enc = app.enc;
   const perto = (p) => Math.abs(p.x - tile.x) <= 1 && Math.abs(p.y - tile.y) <= 1;
-  const armadilhas = (app.capitulo?.armadilhas?.() ?? []).filter((a) => !a.descoberta && a.casas.some(perto));
+  const armadilhas = armadilhasDaCena(app).filter((a) => !a.descoberta && a.casas.some(perto));
   const escondidas = pistas.filter((p) => verboDa(p) === 'procurar');
   const cds = [...armadilhas.map((a) => a.cd ?? CD_PADRAO), ...escondidas.map((p) => p.cd ?? CD_PADRAO)];
   const nada = `${c.name} passa os olhos devagar por tudo em volta: nada fora do lugar.`;

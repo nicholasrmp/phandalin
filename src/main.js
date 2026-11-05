@@ -90,7 +90,7 @@ import {
 import { criarPortaCompartilhada } from "./game/porta-narrativa.js";
 import { abrirMenuContexto, fecharMenuContexto } from "./view/menu-contexto.js";
 import { opcoesDaCasa } from "./game/interacoes.js";
-import { cortarNoPerigo, resolverPerigo } from "./game/armadilhas.js";
+import { cortarNoPerigo, resolverPerigo, armadilhasDaCena } from "./game/armadilhas.js";
 import { casasNotadas } from "./game/investigar.js";
 import {
   alvosDaHabilidade,
@@ -2463,6 +2463,18 @@ class App {
         break;
       }
 
+      // AS REGIÕES do mapa (`rules/regioes.js`): o texto vai para o registro, e em cima de quem pisou aparece a
+      // frase, se for curta, ou um "!" que puxa o olho para o registro. A cena ouve todas (`capitulo.naRegiao`).
+      case "regiaoTexto": {
+        const curta = ev.texto.length <= 28;
+        board?.floatText(ev.actor.pos, curta ? ev.texto : "!", "#ffd27a", !curta);
+        break;
+      }
+      case "regiao": {
+        this.capitulo?.naRegiao?.(ev.regiao, ev.actor, ev.quando);
+        break;
+      }
+
       case "reinforcements": {
         audio.play("down");
         for (const u of ev.units) {
@@ -3293,7 +3305,7 @@ class App {
     if (cap.investigavel !== false) {
       const visao = temEscuridaoEm(this.enc) ? visaoDoGrupo(this.enc) : null;
       if (cap.explorando) for (const p of casasNotadas(this, { visao })) pontos.push({ ...p, tipo: "notado" });
-      for (const a of cap.armadilhas?.() ?? []) {
+      for (const a of armadilhasDaCena(this)) {
         if (!a.descoberta || a.desarmada) continue;
         for (const q of a.casas)
           if (!visao || visao.has(`${q.x},${q.y}`)) pontos.push({ x: q.x, y: q.y, tipo: "armadilha", nome: a.nome });
@@ -3308,7 +3320,7 @@ class App {
    * da caminhada (`resolverPerigo`).
    */
   andarComCuidado(c, path) {
-    const { caminho, evento } = cortarNoPerigo(this.enc, c, path, this.capitulo?.armadilhas?.());
+    const { caminho, evento } = cortarNoPerigo(this.enc, c, path, armadilhasDaCena(this));
     if (caminho.length > 1) this.enc.moveAlong(c, caminho);
     return evento;
   }

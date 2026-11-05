@@ -45,6 +45,7 @@ import {
 } from './talentos.js';
 import { spellMod } from './party.js';
 import { modificadoresDeLuz } from './luz.js';
+import { regioesNoPasso, regioesNoTurno } from './regioes.js';
 import {
   vantagemPorTraco, contraDaMagia, margemDeCritico, dadosExtraDeCritico, danoPorResistencia, TIPOS_DA_PUREZA, CONDICOES_DE_ENCANTO,
   bonusDeDanoPorTraco, usoLivreDe, PLANTAS_QUE_PRENDEM, ehInimigoFavorito, danoDeQueda,
@@ -684,6 +685,7 @@ export class Encounter {
       for (const zona of this.zonasEm(c.pos)) if (zona.quando === 'inicio') this.resistirAZona(c, zona, 'começa o turno');
       for (const aura of this.aurasHostisEm(c, c.pos)) this.golpeDaAura(aura, c, 'começa o turno');
     }
+    regioesNoTurno(this, side, 'comecaTurno');
     // Passos sem Pegadas: quem ficou perto de quem o conjurou leva o véu.
     this.renovarRastro();
     this.say('turno', side === 'party' ? `— Turno do grupo (rodada ${this.round}) —` : `— Turno dos inimigos (rodada ${this.round}) —`);
@@ -741,6 +743,7 @@ export class Encounter {
    * desvantagem que prometia.
    */
   fimDoTurnoDoLado(side) {
+    regioesNoTurno(this, side, 'terminaTurno');
     // BRILHO DO CAOS (surto): quem termina o turno a 1,5 m de quem brilha fica cego até o fim do próximo turno dele.
     for (const c of this.allOf(side)) {
       if (c.dead || c.hp <= 0 || hasCondition(c, 'inconsciente')) continue;
@@ -1721,6 +1724,8 @@ export class Encounter {
       }
       // Glifo de Proteção e Cordão de Flechas: o que o passo novo dispara.
       if (this.gatilhosDeArmadilha(actor, from)) parou = true;
+      // As REGIÕES do mapa (`rules/regioes.js`): o fosso, a placa de pressão, o chão que range.
+      if (regioesNoPasso(this, actor, from)) parou = true;
       if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i; break; }
       if (parou) { ate = i; break; }
       // Armadilha da cena (fosso escondido, ponte podre): o passo para ali, e

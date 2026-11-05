@@ -31,6 +31,7 @@ import {
 } from '../rules/utilidade.js';
 import { familiarDe, familiarVirtual } from '../rules/familiar.js';
 import { getSpell } from '../rules/spells.js';
+import { ganchosMagicosDaCena } from './armadilhas.js';
 
 /** Pés para metros, em português ("9 m", "7,5 m"). */
 export const metros = (ft) => {
@@ -57,7 +58,7 @@ export function visivelPara(app, c, m) {
 
 /** As feras que a Amizade Animal alcança agora (do tabuleiro, de gancho 'fera' e as ocultas). */
 export function ferasAoAlcance(app, c, alcanceFt) {
-  const ganchos = (app.capitulo?.ganchosMagicos?.(c) ?? []).filter((g) => g.tipo === 'fera');
+  const ganchos = ganchosMagicosDaCena(app, c).filter((g) => g.tipo === 'fera');
   const lista = new Set([...ganchos.flatMap((g) => g.criaturas()), ...criaturasDaCena(app)]);
   return [...lista]
     .filter((m) => eFeraAmansavel(m) && m.side !== 'neutro' && m.pos && distanceFt(c.pos, m.pos) <= alcanceFt && visivelPara(app, c, m))
@@ -147,7 +148,7 @@ export function posConjurar(x, c, spellId, r, opts) {
 
 /** Revela as armadilhas da cena que `c` vê a até 36 m. Devolve [{ nome, texto, novo }]. */
 export function revelarArmadilhas(app, estado, c) {
-  const gs = (app.capitulo?.ganchosMagicos?.(c) ?? []).filter((g) => g.tipo === 'armadilha'
+  const gs = ganchosMagicosDaCena(app, c).filter((g) => g.tipo === 'armadilha'
     && distanceFt(c.pos, g) <= 120 && app.enc.field.hasLineOfSight(c.pos, { x: g.x, y: g.y }));
   const out = [];
   for (const g of gs) {
@@ -284,7 +285,7 @@ export function perguntasDaComunhao(app, estado, herois) {
   const noTabuleiro = new Set(app.enc?.combatants ?? []);
   const esperando = (app.inimigosEscondidos ?? [])
     .filter((m) => !m.dead && m.side === 'foes' && !noTabuleiro.has(m));
-  const armadilhas = (app.capitulo?.ganchosMagicos?.(herois[0]) ?? []).filter((g) => g.tipo === 'armadilha' && !g.vista);
+  const armadilhas = ganchosMagicosDaCena(app, herois[0]).filter((g) => g.tipo === 'armadilha' && !g.vista);
   const vivo = (id) => destinoDoNpc(estado, id) !== 'morto';
   return [
     { id: 'espera', pergunta: 'Alguém espera o grupo neste lugar?', sim: esperando.length > 0 },

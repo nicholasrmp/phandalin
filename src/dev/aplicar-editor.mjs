@@ -61,7 +61,13 @@ for (const k of ['objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 
   if (!mudou(k) || novo[k] === undefined) continue;
   console.log(`${k}: ${JSON.stringify(novo[k])},\n`);
 }
+// as regiões (`rules/regioes.js`), uma por linha
+if (mudou('regioes') && novo.regioes?.length) {
+  console.log('regioes: [');
+  for (const r of novo.regioes) console.log(`  ${JSON.stringify(r)},`);
+  console.log('],\n');
+}
 
-const nada = ['terreno', 'paredes', 'tracos', 'objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 'decor', 'altura', 'grupo', 'fundo', 'frente']
+const nada = ['terreno', 'paredes', 'tracos', 'objetos', 'salas', 'folhas', 'grades', 'vaoUnido', 'degraus', 'decor', 'altura', 'grupo', 'fundo', 'frente', 'regioes']
   .every((k) => !mudou(k) || novo[k] === undefined);
 if (nada) console.log(`// nada mudou em relação à cena "${cena}".`);

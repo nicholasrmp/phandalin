@@ -15,7 +15,7 @@ const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
   'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
-  'frente', 'sobreposicoes',
+  'frente', 'sobreposicoes', 'regioes',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -533,6 +533,107 @@ export function alternarSobreposicao(m, id, ligada) {
   return true;
 }
 
+// ---------------------------------------------------------------------------------------------- região ---
+//
+// `m.regioes` são as áreas que FAZEM algo quando alguém entra, sai, ou começa e termina o turno nelas — a Region do
+// Foundry. O formato e o que cada efeito faz estão em `rules/regioes.js`; aqui só se edita. As casas vão como
+// lista de 'x,y', que é o que sai limpo em JSON.
+
+/** Põe uma região (ou troca a de mesmo `id`), guardando só o que não é o padrão. Devolve `true` se mudou. */
+export function porRegiao(m, r) {
+  if (!r?.id) return false;
+  m.regioes ??= [];
+  const i = m.regioes.findIndex((q) => q.id === r.id);
+  const casas = [...new Set(r.casas ?? (i >= 0 ? m.regioes[i].casas : []))];
+  const quando = (r.quando ?? []).filter(Boolean);
+  const nova = {
+    id: r.id,
+    ...(r.nome ? { nome: r.nome } : {}),
+    casas,
+    ...(quando.length && !(quando.length === 1 && quando[0] === 'entrar') ? { quando } : {}),
+    ...(r.quem && r.quem !== 'todos' ? { quem: r.quem } : {}),
+    ...(r.vezes > 0 ? { vezes: Number(r.vezes) } : {}),
+    ...(r.desligada ? { desligada: true } : {}),
+    ...(r.pegaQuemVoa ? { pegaQuemVoa: true } : {}),
+    ...(r.escondida ? { escondida: { cd: Number(r.escondida.cd) || 10, ...(r.escondida.achado ? { achado: r.escondida.achado } : {}) } } : {}),
+    efeitos: (r.efeitos ?? []).map((e) => ({ ...e })),
+  };
+  if (i >= 0) {
+    if (JSON.stringify(m.regioes[i]) === JSON.stringify(nova)) return false;
+    m.regioes[i] = nova;
+    return true;
+  }
+  m.regioes.push(nova);
+  return true;
+}
+
+/** Tira a região de `id`. */
+export function tirarRegiao(m, id) {
+  const i = (m.regioes ?? []).findIndex((r) => r.id === id);
+  if (i < 0) return false;
+  m.regioes.splice(i, 1);
+  if (!m.regioes.length) delete m.regioes;
+  return true;
+}
+
+/** Põe (`marcar`) ou tira a casa (x, y) da região de `id`. Devolve se mudou. */
+export function regiaoNaCasa(m, id, x, y, marcar) {
+  const r = (m.regioes ?? []).find((q) => q.id === id);
+  if (!r || !dentro(m, x, y)) return false;
+  const k = `${x},${y}`;
+  const tem = r.casas.includes(k);
+  if (marcar === tem) return false;
+  if (marcar) r.casas.push(k);
+  else r.casas.splice(r.casas.indexOf(k), 1);
+  return true;
+}
+
+/** A região num retângulo arrastado. Devolve quantas casas mudaram. */
+export function regiaoNoRetangulo(m, id, a, b, marcar) {
+  let n = 0;
+  for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++) {
+    for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) if (regiaoNaCasa(m, id, x, y, marcar)) n += 1;
+  }
+  return n;
+}
+
+/** A região dentro de um polígono clicado. */
+export function regiaoNoPoligono(m, id, pontos, marcar) {
+  if (!pontos || pontos.length < 3) return 0;
+  const xs = pontos.map(([x]) => x);
+  const ys = pontos.map(([, y]) => y);
+  let n = 0;
+  for (let y = Math.max(0, Math.floor(Math.min(...ys))); y <= Math.min(m.terreno.length - 1, Math.ceil(Math.max(...ys))); y++) {
+    for (let x = Math.max(0, Math.floor(Math.min(...xs))); x <= Math.min(m.terreno[0].length - 1, Math.ceil(Math.max(...xs))); x++) {
+      if (dentroDoPoligono(pontos, x, y) && regiaoNaCasa(m, id, x, y, marcar)) n += 1;
+    }
+  }
+  return n;
+}
+
+/** O balde da região: a mancha contígua de casas com o mesmo glifo de terreno da apontada (o fosso inteiro, o mato inteiro). */
+export function regiaoNoBalde(m, id, x, y, marcar) {
+  if (!dentro(m, x, y)) return 0;
+  const alvo = m.terreno[y][x];
+  const fila = [[x, y]];
+  const vistos = new Set([`${x},${y}`]);
+  let n = 0;
+  while (fila.length) {
+    const [cx, cy] = fila.pop();
+    if (regiaoNaCasa(m, id, cx, cy, marcar)) n += 1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      const k = `${nx},${ny}`;
+      if (dentro(m, nx, ny) && !vistos.has(k) && m.terreno[ny][nx] === alvo) { vistos.add(k); fila.push([nx, ny]); }
+    }
+  }
+  return n;
+}
+
+/** As regiões que cobrem esta casa, a última posta primeiro. */
+export const regioesEm = (m, x, y) => (m.regioes ?? []).filter((r) => r.casas.includes(`${x},${y}`)).reverse();
+
 /** As peças cujo retângulo cobre esta casa, a de cima primeiro: é por onde o editor as pega no clique. */
 export const sobreposicoesEm = (m, x, y) => (m.sobreposicoes ?? [])
   .filter((o) => x >= o.x && y >= o.y && x < o.x + o.w && y < o.y + o.h).reverse();
@@ -782,6 +883,11 @@ export function redimensionar(m, borda, n) {
   m.grupo = (m.grupo ?? []).map(move).map((p) => (ok(p) ? p : { x: 1, y: 1 }));
   // o traço de parede livre anda junto com as casas
   if (m.tracos) m.tracos = m.tracos.map((pts) => pts.map(([x, y]) => [+(x + dx).toFixed(3), +(y + dy).toFixed(3)]));
+  // as regiões também, e o destino do teleporte delas
+  for (const r of m.regioes ?? []) {
+    r.casas = r.casas.map((k) => { const [x, y] = k.split(',').map(Number); return { x: x + dx, y: y + dy }; }).filter(ok).map((p) => `${p.x},${p.y}`);
+    for (const e of r.efeitos ?? []) if (e.tipo === 'teleporte') Object.assign(e, move(e));
+  }
   // crescer pelo norte ou pelo oeste empurra todas as casas para baixo e para a direita. A imagem de fundo fica onde
   // está, então a casa (0,0), que agora é `dx`, `dy` casas antes da antiga, cai `dx * escala` pixels antes na imagem.
   if (m.fundo && (dx || dy)) {
