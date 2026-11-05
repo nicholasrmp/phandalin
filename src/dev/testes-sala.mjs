@@ -845,16 +845,15 @@ teste('taverna: criar e entrar põem um avatar de cada jogador em casas livres, 
   assert.ok(av.every((a) => a.persona === PERSONA_PADRAO));
 });
 
-teste('T-02: a persona vem da mensagem de entrada, só entre as que têm arte', () => {
+teste('T-02: a persona vem da mensagem de entrada, entre os doze heróis', () => {
   const s = nova();
   assert.ok(faz(s, BETO, { tipo: 'entrar', nome: 'Beto', persona: 'pc-mago' }).ok);
   assert.equal(s.avatares[BETO].persona, 'pc-mago');
   assert.ok(faz(s, CAIO, { tipo: 'entrar', nome: 'Caio', persona: 'pc-druida' }).ok);
-  assert.equal(s.avatares[CAIO].persona, PERSONA_PADRAO, 'a druida ainda não tem arte: cai no padrão');
+  assert.equal(s.avatares[CAIO].persona, 'pc-druida', 'a druida, que não tem folha, entra: a taverna desenha o retrato');
   assert.ok(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-paladino' }).ok);
   assert.equal(s.avatares[CAIO].persona, 'pc-paladino');
-  deve(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-druida' }), /arte/);
-  deve(faz(s, CAIO, { tipo: 'persona', heroi: 'xx' }), /arte/);
+  deve(faz(s, CAIO, { tipo: 'persona', heroi: 'xx' }), /herói/);
   assert.equal(faz(s, CAIO, { tipo: 'persona', heroi: 'pc-paladino' }).igual, true);
 });
 
@@ -1421,12 +1420,12 @@ teste('mover e persona só valem no lobby: depois de iniciada, a taverna acabou'
   deve(faz(s, ANF, { tipo: 'persona', heroi: 'pc-mago' }), /começou/);
 });
 
-teste('T-02/T-03: herói sem arte não vira figura na taverna; vale o primeiro COM arte', () => {
+teste('T-03: a figura na taverna é o primeiro herói que o jogador pegou, de qualquer um dos doze', () => {
   const s = nova();
   pega(s, ANF, 'pc-bruxo');
-  assert.equal(figuraDe(s, ANF), PERSONA_PADRAO, 'o bruxo ainda não tem arte: fica a persona');
+  assert.equal(figuraDe(s, ANF), 'pc-bruxo', 'o bruxo, sem folha, vira a figura pelo retrato');
   faz(s, ANF, { tipo: 'pegar', heroi: 'pc-paladino' });
-  assert.equal(figuraDe(s, ANF), 'pc-paladino');
+  assert.equal(figuraDe(s, ANF), 'pc-bruxo', 'pegar um segundo não troca a figura');
 });
 
 teste('a visão de uma sala guardada antes da taverna não quebra', () => {

@@ -12,7 +12,6 @@
 
 import { el } from './hud.js';
 import { audio } from '../core/audio.js';
-import { temArteImportada } from '../art/folhas/index.js';
 import { HEROIS } from '../game/criacao.js';
 import {
   gerarCodigo, aleatorioSeguro, normalizarCodigo, limparNome, MAX_NOME, TAMANHO_DO_GRUPO, PILOTO, HEROIS_COM_ARTE,
@@ -402,12 +401,10 @@ export function criarTelasDeSala({
   function cartaoDeHeroi(h, v, { eu, souAnfitriao, meusHerois, nomeDe, sem }) {
     const dono = v.herois[h.id] ?? null;
     const meu = dono && dono === v.voce;
-    const comArte = temArteImportada(h.look);
     const cheio = Object.keys(v.herois).length >= TAMANHO_DO_GRUPO;
     const noLimite = meusHerois.length >= v.limiteDeHerois;
     let acao = null;
-    if (!comArte) acao = el('small', { class: 'menu-sem-regra' }, 'Não disponível');
-    else if (meu || (dono === PILOTO && souAnfitriao)) acao = botao('Largar', () => mandar({ tipo: 'largar', heroi: h.id }), { chave: `largar:${h.id}`, aria: `Largar ${h.name}`, desabilitado: sem });
+    if (meu || (dono === PILOTO && souAnfitriao)) acao = botao('Largar', () => mandar({ tipo: 'largar', heroi: h.id }), { chave: `largar:${h.id}`, aria: `Largar ${h.name}`, desabilitado: sem });
     else if (!dono) {
       acao = el('span', { class: 'menu-heroi-acoes' },
         eu && botao('Pegar', () => mandar({ tipo: 'pegar', heroi: h.id }),
@@ -415,7 +412,7 @@ export function criarTelasDeSala({
         souAnfitriao && botao('Piloto', () => mandar({ tipo: 'piloto', heroi: h.id }), { chave: `piloto:${h.id}`, aria: `${h.name} no piloto automático`, desabilitado: sem || cheio, dica: 'Fica no piloto automático' }));
     }
     const rosto = retratoDe(h.look);
-    return el('div', { class: `menu-heroi-sala${meu ? ' meu' : ''}${dono && !meu ? ' ocupado' : ''}${comArte ? '' : ' apagado'}` },
+    return el('div', { class: `menu-heroi-sala${meu ? ' meu' : ''}${dono && !meu ? ' ocupado' : ''}` },
       el('span', { class: 'menu-heroi-rosto' }, rosto ?? el('canvas', { width: 48, height: 48, class: 'pixel' })),
       el('strong', {}, h.name),
       el('small', {}, `${h.className}`),

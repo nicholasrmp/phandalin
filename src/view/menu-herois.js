@@ -15,7 +15,6 @@ import { el } from './hud.js';
 import { maxHpEfetivo } from '../rules/conditions.js';
 import { audio } from '../core/audio.js';
 import { nomeDeId } from '../rules/equipment.js';
-import { temArteImportada } from '../art/folhas/index.js';
 import { lerCriados, guardarCriado, apagarCriado } from '../game/herois-criados.js';
 import { heroiPorId, registrarHeroi } from '../game/herois.js';
 import {
@@ -37,11 +36,6 @@ import {
 } from '../game/criacao.js';
 
 const GRUPO = 4;   // a carroça leva quatro, e o mapa tem quatro lugares de partida
-
-// Só entra na carroça quem já tem as animações do PixelLab: os outros aparecem
-// apagados, "Não disponível", até a arte deles ficar pronta (pedido do dono).
-// O herói criado pelo jogador entra sempre: a ficha dele é a imagem que ele mandou.
-const disponivel = (h) => h.criado || temArteImportada(h.look);
 
 /** Os prontos e os criados, nesta ordem. Ler os criados também os registra no jogo. */
 const todosOsHerois = () => [...HEROIS, ...lerCriados()];
@@ -91,16 +85,10 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
       el('span', { class: 'menu-heroi-retrato menu-heroi-mais' }, '+'),
       el('span', { class: 'menu-heroi-nome' }, 'Criar herói'),
       el('span', { class: 'menu-heroi-classe' }, 'o seu, do zero'));
-      // Os que ainda não têm arte vão para o fim: não ocupam o meio da grade de quem pode ser escolhido.
-      lista.replaceChildren(criar, ...[...todos].sort((a, b) => Number(!disponivel(a)) - Number(!disponivel(b))).map((h) => {
+      // Todos entram na carroça: o tabuleiro de cima desenha o retrato na ficha, e os doze têm retrato (até
+      // 2026-11-05 só entrava quem tinha a folha animada do PixelLab).
+      lista.replaceChildren(criar, ...todos.map((h) => {
         const marcado = grupo.escolhidos.includes(h.id);
-        if (!disponivel(h)) {
-          return el('button', { class: 'menu-heroi compacto indisponivel', disabled: true, title: 'Em breve: a arte deste herói ainda está sendo feita.' },
-            el('span', { class: 'menu-heroi-retrato' }, retrato(h.look, () => { faltou = true; })),
-            el('span', { class: 'menu-heroi-nome' }, h.name),
-            el('span', { class: 'menu-heroi-classe' }, `${h.className} · ${h.raca}`),
-            el('span', { class: 'menu-heroi-marca' }, 'Em breve'));
-        }
         return el('button', {
           class: `menu-heroi compacto${marcado ? ' escolhido' : ''}${grupo.foco === h.id ? ' foco' : ''}`,
           'aria-pressed': String(marcado),

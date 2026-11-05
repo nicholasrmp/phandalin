@@ -609,8 +609,8 @@ await teste('taverna: trocar de persona muda a figura para todos; herói que nã
   a.manda({ tipo: 'persona', heroi: 'pc-barbaro' });
   const v = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.find((q) => q.id === 'p1')?.figura === 'pc-barbaro');
   assert.equal(v.visao.avatares.find((q) => q.id === 'p1').persona, 'pc-barbaro');
-  a.recebidas.length = 0; a.manda({ tipo: 'persona', heroi: 'pc-druida' });
-  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /arte/);
+  a.recebidas.length = 0; a.manda({ tipo: 'persona', heroi: 'xx' });
+  assert.match((await a.esperar((x) => x.tipo === 'erro')).erro, /herói/);
   // pegar um herói na mesa muda a figura (T-03)
   a.manda({ tipo: 'pegar', heroi: 'pc-ladino' });
   const pegou = await b.esperar((x) => x.tipo === 'sala' && x.visao.avatares.find((q) => q.id === 'p1')?.figura === 'pc-ladino');

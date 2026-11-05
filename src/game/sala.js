@@ -53,10 +53,11 @@ export const HEROIS_JOGAVEIS = [
 ];
 
 /**
- * Quem tem arte final do PixelLab (as 8 direções e as animações) e por isso pode
- * ser persona na taverna (T-02). Os outros ganham a vez quando ganharem folha.
+ * Quem pode ser persona na taverna (T-02) e figura de quem pegou o herói (T-03). Era só quem tinha folha do
+ * PixelLab (as 8 direções e as animações); desde 2026-11-05 o tabuleiro é visto de cima e desenha o RETRATO na
+ * ficha, não a folha — e os doze têm retrato. Então são todos.
  */
-export const HEROIS_COM_ARTE = ['pc-guerreiro', 'pc-ladino', 'pc-clerigo', 'pc-mago', 'pc-barbaro', 'pc-paladino', 'pc-guardiao'];
+export const HEROIS_COM_ARTE = HEROIS_JOGAVEIS;
 export const PERSONA_PADRAO = 'pc-guerreiro';
 
 /**
@@ -521,7 +522,7 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
     }
     case 'persona': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');
-      if (!HEROIS_COM_ARTE.includes(mensagem.heroi)) return recusa('esse herói ainda não tem arte para a taverna');
+      if (!HEROIS_COM_ARTE.includes(mensagem.heroi)) return recusa('esse não é um herói da taverna');
       const av = sala.avatares[jogadorId];
       if (!av) return recusa('você não está na taverna');
       if (av.persona === mensagem.heroi) return ok({ igual: true });
