@@ -237,6 +237,9 @@ som (`src/core/grid.js`, `RESTRICOES`): a **etérea** parece parede e se atraves
 **limitada** é a moita (a primeira deixa ver, a segunda não), a **janela** deixa ver e não passar, a **mão única** só
 deixa passar num sentido. A **porta trancada** tem CD no mapa, e qualquer cena sem roteiro de porta ganha o menu de abrir
 a fechadura, arrombar ou usar a chave (`src/game/portas.js`). Tudo na ferramenta 2 do editor.
+A **parede livre também tem tipo**: o traço da ferramenta 3 pode ser janela, porta, etérea, seteira, invisível ou moita, e
+a regra segue o desenho — a janela em diagonal deixa ver mesmo cortando o meio da casa. O importador do Foundry traz o
+tipo de cada parede, em vez de jogar fora a etérea e a porta (`src/dev/testes-tracos.mjs`).
 
 **A luz também é a do Foundry** (`src/rules/luz.js`). Cada fonte tem cor e animação (a fogueira e a tocha tremem, a vela
 oscila, a magia respira, a lanterna fica parada), pelo tipo ou escolhidas no mapa. A **lanterna coberta** acende só num

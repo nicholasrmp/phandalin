@@ -30,11 +30,12 @@ const w = m.terreno[0].length;
 
 // 1 ---- as arestas
 m.paredes ??= { n: Array.from({ length: h }, () => '.'.repeat(w)), o: Array.from({ length: h }, () => '.'.repeat(w)) };
+// cada aresta leva o glifo do tipo do traço (`tracosTipo`: porta, janela, etérea...); sem tipo, parede
 const fora = arestasDosTracos(m);
-for (const chave of fora) {
+for (const [chave, car] of fora) {
   const [lado, x, y] = chave.split(',');
   const grade = m.paredes[lado === 'n' ? 'n' : 'o'];
-  grade[+y] = grade[+y].slice(0, +x) + '#' + grade[+y].slice(+x + 1);
+  grade[+y] = grade[+y].slice(0, +x) + car + grade[+y].slice(+x + 1);
 }
 
 // 2 ---- o bolsão

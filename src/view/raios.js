@@ -13,7 +13,7 @@
 // - sem traço, a aresta de casa (parede, porta fechada) e a casa que tapa a vista (`blocksSight`). Essa casa entra
 //   no polígono inteira: a parede se vê, o que está atrás dela não.
 
-import { barraVisaoAlemDoTraco } from '../core/grid.js';
+import { barraVisaoAlemDoTraco, segmentoBarra } from '../core/grid.js';
 
 const EPS = 1e-7;
 
@@ -67,7 +67,8 @@ function lancar(field, idx, ox, oy, ang, raio) {
           if (vistos.has(seg)) continue;
           vistos.add(seg);
           const t = cruzamento(ox, oy, dx, dy, seg[0], seg[1]);
-          if (t < melhor && tracoBarra(field, ox, oy, dx, dy, t)) melhor = t;
+          // o traço de janela, invisível ou moita não para o raio (`grid.segmentoBarra`, o mesmo da regra)
+          if (t < melhor && segmentoBarra(seg) && tracoBarra(field, ox, oy, dx, dy, t)) melhor = t;
         }
       }
     }

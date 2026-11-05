@@ -26,8 +26,11 @@ AS CONTAS DA TRADUÇÃO
 
 O QUE NÃO ATRAVESSA, e o script diz quanto de cada um ficou para trás:
 
-  parede só de visão   `move: 0` com `sight: 20` (o "Ethereal" do Foundry). A nossa aresta barra as duas coisas
-                       ou nenhuma, então essas somem. Precisariam de um código novo em `core/grid.js`.
+  tipo da parede       cada parede do Foundry diz o que barra (`move`, `sight`, `sound`, `door`), e o traço leva o
+                       tipo mais perto (`tracosTipo`, os glifos de `core/grid.js`): porta `+`, etérea `E` (`move: 0`:
+                       barra a visão e se atravessa), janela `W` (barra o passo e o som, não a visão), invisível `I`
+                       (só o passo), moita `T` (visão limitada). A parede que não barra nada não vira traço. A porta
+                       trancada (`ds: 2`) sai como porta comum: a CD é da cena.
   ladrilho de overlay  a ponte que cede, o baú aberto, a enxurrada, o brilho pintado de cada fogueira. Nós temos
                        onde pendurar isso (`frente` e `interativos`), mas não um ladrilho comutável.
   som ambiente         não temos som por posição.
@@ -55,6 +58,23 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 # lido como rocha; em 12 a separação é limpa com folga dos dois lados.
 VAZIO = 12
 BLOQUEIA = 20       # CONST.WALL_MOVEMENT_TYPES.NORMAL
+LIMITADA = 10       # CONST.WALL_SENSE_TYPES.LIMITED
+
+
+def tipoDaParede(w):
+    """O glifo do nosso tipo de aresta mais perto do que a parede do Foundry barra, ou None se ela não barra nada."""
+    passo = w.get('move', BLOQUEIA) >= BLOQUEIA
+    visao = w.get('sight', w.get('sense', BLOQUEIA))
+    som = w.get('sound', BLOQUEIA)
+    if w.get('door'):
+        return '+'
+    if passo:
+        if visao == 0:
+            return 'W' if som else 'I'
+        return '#'
+    if visao == 0:
+        return None
+    return 'T' if visao == LIMITADA else 'E'
 
 # A MESMA ARTE COM OUTRO NOME. O módulo do Foundry batiza as manchas de fogo aceso de `Light00` e `Light01` e
 # as baixa da CDN; o pacote de imagens do site traz as duas, com o nome do cômodo. Conferido: `LightDen` tem
@@ -153,19 +173,30 @@ def main():
 
     # ---- as paredes ----
     paredes = cena.get('walls', [])
-    passam = [w for w in paredes if w.get('move') == BLOQUEIA]
-    soVisao = [w for w in paredes if w.get('move') != BLOQUEIA]
-    portas = [w for w in paredes if w.get('door')]
-    segs = []
-    for w in passam:
+    # cada TIPO encadeia à parte: uma janela no meio de uma parede é um traço dela, não um pedaço da parede
+    porTipo = defaultdict(list)
+    nada = 0
+    for w in paredes:
+        tipo = tipoDaParede(w)
+        if tipo is None:
+            nada += 1
+            continue
         x0, y0, x1, y1 = w['c']
         a0 = tuple(round(v, 3) for v in casa(x0, y0))
         a1 = tuple(round(v, 3) for v in casa(x1, y1))
         if a0 != a1:
-            segs.append((a0, a1))
-    linhas = correntes(segs)
-    print(f'  paredes: {len(paredes)} na cena, {len(passam)} barram passo e viraram '
-          f'{len(linhas)} traço(s); {len(soVisao)} só de visão FICARAM DE FORA; {len(portas)} porta(s)', file=rel)
+            porTipo[tipo].append((a0, a1))
+    linhas = []
+    tipos = []
+    for tipo in ['#', '+', 'E', 'W', 'I', 'T']:
+        for linha in correntes(porTipo.get(tipo, [])):
+            linhas.append(linha)
+            tipos.append(tipo)
+    nomes = {'#': 'parede', '+': 'porta', 'E': 'etérea', 'W': 'janela', 'I': 'invisível', 'T': 'moita'}
+    contas = ', '.join(f'{sum(1 for t in tipos if t == k)} {nomes[k]}' for k in nomes if k in tipos)
+    print(f'  paredes: {len(paredes)} na cena, {len(paredes) - nada} viraram {len(linhas)} traço(s) ({contas}); '
+          f'{nada} não barram nada e ficaram de fora', file=rel)
+    tracosTipo = [t if t != '#' else None for t in tipos] if any(t != '#' for t in tipos) else None
 
     # ---- as luzes ----
     luzes = []
@@ -258,6 +289,7 @@ def main():
             'terreno': terreno, 'paredes': {'n': list(vazia), 'o': list(vazia)},
             'objetos': [], 'salas': {}, 'folhas': [], 'vaoUnido': [], 'grades': [],
             'tracos': [[list(p) for p in linha] for linha in linhas],
+            **({'tracosTipo': tracosTipo} if tracosTipo else {}),
             'luzes': [{'pos': {'x': l['x'], 'y': l['y']}, 'claro': l['claro'],
                        'penumbra': l['penumbra'], 'tipo': l['tipo']} for l in luzes],
             'luz': 'escuro',
@@ -290,6 +322,8 @@ def main():
     for pts in linhas:
         print('  [' + ', '.join(f'[{x}, {y}]' for x, y in pts) + '],')
     print('],\n')
+    if tracosTipo:
+        print('tracosTipo: [' + ', '.join("null" if t is None else f"'{t}'" for t in tracosTipo) + '],\n')
     if sobre:
         print('sobreposicoes: [')
         for o in sobre:

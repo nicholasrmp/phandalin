@@ -272,6 +272,12 @@ const BARRA_PASSO_SEM_VAO = new Set([...BARRA_PASSO].filter((n) => n !== ARESTA.
 const BARRA_VISAO_ALEM_DO_TRACO = new Set([ARESTA.porta, ARESTA.eterea]);
 /** A aresta barra a visão num mapa de traço livre (a porta fechada, a parede etérea)? O desenho dos raios pergunta. */
 export const barraVisaoAlemDoTraco = (codigo) => BARRA_VISAO_ALEM_DO_TRACO.has(codigo);
+/**
+ * O segmento de traço barra `tipo` ('visao' ou 'luz') pela GEOMETRIA? Só o que o tipo dele barra de vez: a janela, a
+ * invisível e a seteira deixam ver; a moita é contada nas arestas derivadas (`limitadasNoPasso`), não na reta.
+ * A porta barra aqui e a aresta dela decide no cruzamento (aberta, passa).
+ */
+export const segmentoBarra = (seg, tipo = 'visao') => restricao(seg.codigo ?? ARESTA.parede, tipo) === BARRA;
 
 export class Battlefield {
   /**
@@ -644,9 +650,12 @@ export class Battlefield {
   indiceDosTracos() {
     if (this._indiceTracos) return this._indiceTracos;
     const idx = new Map();
-    for (const pts of this.tracos ?? []) {
+    for (const [t, pts] of (this.tracos ?? []).entries()) {
+      // o TIPO do traço (`tracosTipo`, glifo da aresta): cada segmento leva o código, para a geometria perguntar
+      const codigo = ARESTA_DO_CHAR[this.tracosTipo?.[t] ?? '#'] ?? ARESTA.parede;
       for (let i = 0; i + 1 < pts.length; i++) {
         const seg = [pts[i], pts[i + 1]];
+        seg.codigo = codigo;
         const x0 = Math.floor(Math.min(seg[0][0], seg[1][0])) - 1;
         const x1 = Math.ceil(Math.max(seg[0][0], seg[1][0]));
         const y0 = Math.floor(Math.min(seg[0][1], seg[1][1])) - 1;
@@ -684,7 +693,7 @@ export class Battlefield {
    * olha-se a aresta de casa que ele atravessa: se ela deixa a visão passar (arco, porta aberta, grade, seteira), o
    * cruzamento não conta.
    */
-  cortadoPorTraco(A, B) {
+  cortadoPorTraco(A, B, tipo = 'visao') {
     if (!this.tracos?.length) return false;
     const idx = this.indiceDosTracos();
     const dx = B[0] - A[0];
@@ -703,6 +712,8 @@ export class Battlefield {
       for (const seg of lista) {
         if (vistos.has(seg)) continue;
         vistos.add(seg);
+        // o traço que não barra este sentido (a janela para a visão, a invisível) não corta nada
+        if (!segmentoBarra(seg, tipo)) continue;
         const [c, d] = seg;
         if (!(lado(A, B, c) * lado(A, B, d) <= 0 && lado(c, d, A) * lado(c, d, B) <= 0)) continue;
         const den = dx * (d[1] - c[1]) - dy * (d[0] - c[0]);
@@ -713,15 +724,15 @@ export class Battlefield {
         const depois = { x: Math.floor(A[0] + (u + e) * dx), y: Math.floor(A[1] + (u + e) * dy) };
         // cruzamento no meio de uma casa (parede atravessando o quadrado): não há aresta para consultar, barra
         if (antes.x === depois.x && antes.y === depois.y) return true;
-        if (!this.passa(antes.x, antes.y, depois.x, depois.y, 'visao')) return true;
+        if (!this.passa(antes.x, antes.y, depois.x, depois.y, tipo)) return true;
       }
     }
     return false;
   }
 
   /** O traço corta a reta que vai do centro de `a` ao centro de `b`? É a visão medida na geometria, não na grade. */
-  tracoCortaVisao(a, b) {
-    return this.cortadoPorTraco([a.x + 0.5, a.y + 0.5], [b.x + 0.5, b.y + 0.5]);
+  tracoCortaVisao(a, b, tipo = 'visao') {
+    return this.cortadoPorTraco([a.x + 0.5, a.y + 0.5], [b.x + 0.5, b.y + 0.5], tipo);
   }
 
   /**
@@ -770,7 +781,7 @@ export class Battlefield {
     if (a.y > b.y || (a.y === b.y && a.x > b.x)) [a, b] = [b, a];
     let limitadas = 0;
     // parede livre: o traço corta a reta dos olhos, com a precisão da geometria e não a do degrau da grade
-    if (this.tracos?.length && this.tracoCortaVisao(a, b)) return false;
+    if (this.tracos?.length && this.tracoCortaVisao(a, b, tipo)) return false;
     const eye = Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     const pts = this.line(a, b);
     // COM TRAÇO, A GEOMETRIA MANDA. A aresta de casa aqui é a derivada em degrau do traço, e conferi-la de novo pela

@@ -122,7 +122,7 @@ npm run build                      # roda verificar-taverna.mjs no prebuild
 
 Há um `testes-*.mjs` por frente (barbaro, goblin, habilidades, mansao, ondaeco,
 porta, save, sala, sala-ws, dialogo-perfil, itens-fora, movimento-aliados,
-musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa, rota). O de editor, o da Casa da Morte, o das regiões, o do
+musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa, rota, tracos). O de editor, o da Casa da Morte, o das regiões, o do
 criador, o do herói criado na sala e o das arestas rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
@@ -160,6 +160,13 @@ TRANCADA** é dado do mapa (`mapa.trancas`: `{ aresta: 'x,y,N|O', cd, chave?, fo
 — abrir, fechar, abrir a fechadura (Destreza com ferramentas de ladrão), arrombar (Força, CD + 5), a chave — nas cenas que não cuidam
 das próprias portas (as que cuidam declaram `portasProprias: true`). No editor é a ferramenta 2, com a CD no painel; o editor mostra
 por cima o que o jogo não desenha. `src/dev/testes-arestas.mjs` prova cada tipo.
+O **TRAÇO TAMBÉM TEM TIPO** (`mapa.tracosTipo`, lado a lado com `mapa.tracos`; `null` é parede): parede, porta, etérea, janela, seteira,
+invisível e moita. A mão única fica de fora, porque o traço não tem lado. `mapa-editor.js arestasDosTracos` devolve Map chave → glifo, e
+a aresta derivada leva o glifo do tipo, então o passo segue sozinho. Quando dois traços caem na mesma aresta, vale o que barra mais. A
+visão e a luz pela geometria (`grid.cortadoPorTraco`, `raios.js`) perguntam `segmentoBarra(seg, tipo)`: a janela, a invisível e a seteira
+não cortam a reta, e a porta corta e deixa a aresta dela decidir (aberta, passa). A porta traçada abre pelo menu de porta, aresta a
+aresta, e `field.portaDoTracoAberta(i)` diz ao desenho que ela está aberta. No editor é a ferramenta 3: o tipo vale para o próximo traço,
+e "Trocar o tipo" muda o de um traço já feito. `src/dev/testes-tracos.mjs` prova cada tipo.
 A **LUZ** (`rules/luz.js`) segue o Foundry. `APARENCIA_DA_LUZ` dá cor e animação por tipo (fogo, vela, pulso, fixa), e a luz do mapa
 pode trazer `cor` e `animacao` próprias. É só desenho, `tabuleiro-topo.js pocaDeLuz`. O CONE (`angulo`, `direcao` em graus, 0 = leste,
 90 = sul) entra na regra (`dentroDoCone`, dentro de `nivelDeLuz`). `soNoEscuro` deixa a luz apagada até a escuridão da cena chegar a ele.
@@ -223,7 +230,9 @@ camada de chão**: lá quem decide onde se pisa é só a parede, então o mapa s
 tira a aresta de casa do traço (é ela que barra movimento), semeia nas LUZES, que estão dentro, e vira rocha tudo que a parede não deixa
 alcançar. Semear no maior pedaço não serve aqui: com tudo de chão, o maior pedaço é o lado de FORA. Com `--chao-pela-cor` o recorte vem do
 preto da imagem — dá 56 casas a menos, porque come a casa de borda que é meio caverna meio vazio.
-O relatório diz o que NÃO atravessa: parede só de visão (o "Ethereal", que a nossa aresta não sabe ser), ladrilho de overlay, som e região.
+Cada parede do Foundry vira traço COM TIPO (`tracosTipo`), pelo que ela barra (`move`, `sight`, `sound`, `door`): porta `+`, etérea `E`,
+janela `W`, invisível `I`, moita `T`. Só a que não barra nada fica de fora. O relatório conta cada tipo e diz o que NÃO atravessa:
+ladrilho de overlay, som e região.
 Medido no Cragmaw Hideout: 371 de 382 paredes, 23 traços, 3 luzes, 330 casas de chão, e **0 achados** em `conferir-paredes.mjs`.
 Para ver: carregue o JSON em `localStorage['phandalin.editor.mapa']` e abra `/editor.html` ou `?encontro=editor`.
 

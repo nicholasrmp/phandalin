@@ -556,7 +556,7 @@ export class TabuleiroTopo {
     // SOBRE MAPA PINTADO A PAREDE NÃO SE DESENHA: o desenho já a tem, e a linha por cima é coisa de editor (o jogador
     // via a planta inteira em ciano, até onde não enxergava). Fica só a PORTA, que abre e fecha e o desenho não sabe.
     if (comPintura) V.pintarArestas(ctx, this.field, C, false, true);
-    else if (this.field.tracos?.length) V.pintarTracos(ctx, this.field.tracos, C, false);
+    else if (this.field.tracos?.length) V.pintarTracos(ctx, this.field.tracos, C, false, this.field.tracosTipo, this.field.portaDoTracoAberta);
     else V.pintarArestas(ctx, this.field, C, false);
     ctx.restore();
 

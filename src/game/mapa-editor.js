@@ -14,7 +14,7 @@ export const CHAVE = 'phandalin.editor.mapa';
 const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
-  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
+  'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'tracosTipo', 'secretas', 'interativos',
   'frente', 'sobreposicoes', 'regioes', 'trancas', 'escuridao', 'nevoaExplorada',
 ];
 
@@ -261,18 +261,38 @@ export function pintarAresta(m, x, y, lado, estilo, { cd = 15 } = {}) {
 // as linhas verticais da grade e viraria uma fileira de barras soltas, com buraco entre elas.
 //
 // Como as duas nascem da mesma linha, o que se vê e o que o motor faz não divergem.
+//
+// O TIPO DO TRAÇO (`m.tracosTipo`, lado a lado com `m.tracos`): o traço também é janela, porta, parede etérea,
+// barreira invisível ou moita, como a aresta de casa (`core/grid.js RESTRICOES`). A aresta derivada leva o glifo do
+// tipo, e por isso o passo segue sozinho; a visão e a luz pela geometria perguntam o tipo do segmento
+// (`grid.cortadoPorTraco`). Sem `tracosTipo`, ou com `null` na posição, o traço é parede, como sempre foi.
+// A mão única fica de fora: o lado dela depende de para onde a aresta aponta, e o traço não tem esse sentido.
+
+/** Os tipos que um traço pode ter, com o glifo que a aresta derivada leva. */
+export const TIPOS_DE_TRACO = [
+  ['#', 'Parede'], ['+', 'Porta'], ['E', 'Etérea (tapa a vista, atravessa-se)'], ['W', 'Janela (vê-se, não se passa)'],
+  ['J', 'Seteira'], ['I', 'Invisível (só barra o passo)'], ['T', 'Moita (limita a visão)'],
+];
+// quando dois traços cruzam a mesma aresta, vale o que barra mais
+const PRIORIDADE_DO_TRACO = ['#', '+', 'E', 'W', 'J', 'I', 'T'];
+const tipoDoTracoEm = (m, i) => m.tracosTipo?.[i] ?? '#';
 
 const ladoDoPonto = (p1, p2, q) => Math.sign((p2[0] - p1[0]) * (q[1] - p1[1]) - (p2[1] - p1[1]) * (q[0] - p1[0]));
 const cruzam = (a, b, c, d) => ladoDoPonto(a, b, c) * ladoDoPonto(a, b, d) <= 0
   && ladoDoPonto(c, d, a) * ladoDoPonto(c, d, b) <= 0;
 
-/** As arestas que os traços de `tracos` derivam, como chaves 'n|o,x,y'. */
-export function arestasDosTracos(m, tracos = m.tracos) {
-  const fora = new Set();
+/** As arestas que os traços de `tracos` derivam: Map da chave 'n|o,x,y' para o glifo (o tipo do traço). */
+export function arestasDosTracos(m, tracos = m.tracos, tipos = m.tracosTipo) {
+  const fora = new Map();
   if (!tracos?.length) return fora;
   const h = m.terreno.length;
   const w = m.terreno[0].length;
-  for (const pts of tracos) {
+  const marcar = (k, car) => {
+    const ja = fora.get(k);
+    if (!ja || PRIORIDADE_DO_TRACO.indexOf(car) < PRIORIDADE_DO_TRACO.indexOf(ja)) fora.set(k, car);
+  };
+  for (const [t, pts] of tracos.entries()) {
+    const car = tipos?.[t] ?? '#';
     for (let i = 0; i + 1 < (pts?.length ?? 0); i++) {
       const a = pts[i];
       const b = pts[i + 1];
@@ -282,8 +302,8 @@ export function arestasDosTracos(m, tracos = m.tracos) {
       const y1 = Math.min(h - 1, Math.ceil(Math.max(a[1], b[1])) + 1);
       for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
-          if (y > 0 && cruzam(a, b, [x + 0.5, y - 0.5], [x + 0.5, y + 0.5])) fora.add(`n,${x},${y}`);
-          if (x > 0 && cruzam(a, b, [x - 0.5, y + 0.5], [x + 0.5, y + 0.5])) fora.add(`o,${x},${y}`);
+          if (y > 0 && cruzam(a, b, [x + 0.5, y - 0.5], [x + 0.5, y + 0.5])) marcar(`n,${x},${y}`, car);
+          if (x > 0 && cruzam(a, b, [x - 0.5, y + 0.5], [x + 0.5, y + 0.5])) marcar(`o,${x},${y}`, car);
         }
       }
     }
@@ -292,33 +312,77 @@ export function arestasDosTracos(m, tracos = m.tracos) {
 }
 
 /**
- * Passa as arestas de `antes` para as de `depois`. Só mexe no que é parede simples: porta, arco e grade ficam (quem
- * as pôs foi a mão), e parede pintada à mão também, porque ela nunca esteve em `antes`.
+ * Passa as arestas de `antes` para as de `depois` (os dois, Map chave → glifo). Só mexe no que o traço pôs: a aresta
+ * que ainda tem o glifo que o traço derivou. Porta, arco e grade postos à mão ficam, e a parede pintada à mão também,
+ * porque ela nunca esteve em `antes`.
  */
 function trocarDerivadas(m, antes, depois) {
   garantirParedes(m);
   let mudou = false;
-  for (const chave of antes) {
+  for (const [chave, car] of antes) {
     if (depois.has(chave)) continue;
     const [lado, x, y] = chave.split(',');
     const grade = m.paredes[lado];
-    if (grade[Number(y)]?.[Number(x)] === '#') mudou = trocar(grade, Number(x), Number(y), '.') || mudou;
+    if (grade[Number(y)]?.[Number(x)] === car) mudou = trocar(grade, Number(x), Number(y), '.') || mudou;
   }
-  for (const chave of depois) {
+  for (const [chave, car] of depois) {
     const [lado, x, y] = chave.split(',');
     const grade = m.paredes[lado];
-    if (grade[Number(y)]?.[Number(x)] === '.') mudou = trocar(grade, Number(x), Number(y), '#') || mudou;
+    const agora = grade[Number(y)]?.[Number(x)];
+    // a aresta livre, ou a que o traço tinha derivado com outro tipo (o traço trocou de tipo)
+    if (agora === '.' || (antes.has(chave) && agora === antes.get(chave))) mudou = trocar(grade, Number(x), Number(y), car) || mudou;
   }
   return mudou;
 }
 
-/** Traça uma parede livre. `pontos` são casas com fração: [[x, y], ...]. */
-export function tracarParede(m, pontos) {
+/** Guarda `tracosTipo` só quando algum traço não é parede; senão o mapa fica como sempre foi. */
+function arrumarTipos(m) {
+  if (!m.tracos?.length || !m.tracosTipo?.some((c) => c && c !== '#')) { delete m.tracosTipo; return; }
+  m.tracosTipo = m.tracos.map((_, i) => (m.tracosTipo[i] && m.tracosTipo[i] !== '#' ? m.tracosTipo[i] : null));
+}
+
+/** Traça uma parede livre. `pontos` são casas com fração: [[x, y], ...]. `tipo`: o glifo (`TIPOS_DE_TRACO`). */
+export function tracarParede(m, pontos, tipo = '#') {
   if (!pontos || pontos.length < 2) return false;
+  if (!TIPOS_DE_TRACO.some(([c]) => c === tipo)) tipo = '#';
   const antes = arestasDosTracos(m);
+  const n = m.tracos?.length ?? 0;
   m.tracos = [...(m.tracos ?? []), pontos.map(([x, y]) => [+Number(x).toFixed(3), +Number(y).toFixed(3)])];
+  if (tipo !== '#' || m.tracosTipo) {
+    m.tracosTipo = Array.from({ length: n + 1 }, (_, i) => (i < n ? m.tracosTipo?.[i] ?? null : tipo));
+  }
+  arrumarTipos(m);
   trocarDerivadas(m, antes, arestasDosTracos(m));
   return true;
+}
+
+/** O índice do traço mais perto do ponto (em casas), dentro de `raio`, ou -1. */
+function tracoPerto(m, x, y, raio) {
+  let alvo = -1;
+  let menor = raio;
+  (m.tracos ?? []).forEach((pts, i) => {
+    const d = distanciaAoTraco(pts, [x, y]);
+    if (d <= menor) { menor = d; alvo = i; }
+  });
+  return alvo;
+}
+
+/** Troca o tipo do traço mais perto do ponto. Devolve `false` se não há traço ali ou se ele já era desse tipo. */
+export function definirTipoDoTraco(m, x, y, tipo, raio = 0.5) {
+  if (!TIPOS_DE_TRACO.some(([c]) => c === tipo)) return false;
+  const i = tracoPerto(m, x, y, raio);
+  if (i < 0 || tipoDoTracoEm(m, i) === tipo) return false;
+  const antes = arestasDosTracos(m);
+  m.tracosTipo = m.tracos.map((_, j) => (j === i ? tipo : m.tracosTipo?.[j] ?? null));
+  arrumarTipos(m);
+  trocarDerivadas(m, antes, arestasDosTracos(m));
+  return true;
+}
+
+/** O tipo do traço mais perto do ponto (o glifo), ou `null` se não há traço ali. */
+export function tipoDoTracoPerto(m, x, y, raio = 0.5) {
+  const i = tracoPerto(m, x, y, raio);
+  return i < 0 ? null : tipoDoTracoEm(m, i);
 }
 
 /** A distância de um ponto a um traço, em casas. */
@@ -338,16 +402,13 @@ function distanciaAoTraco(pts, q) {
 /** Apaga o traço mais perto do ponto (em casas), dentro de `raio`. */
 export function apagarTraco(m, x, y, raio = 0.5) {
   if (!m.tracos?.length) return false;
-  let alvo = -1;
-  let menor = raio;
-  m.tracos.forEach((pts, i) => {
-    const d = distanciaAoTraco(pts, [x, y]);
-    if (d <= menor) { menor = d; alvo = i; }
-  });
+  const alvo = tracoPerto(m, x, y, raio);
   if (alvo < 0) return false;
   const antes = arestasDosTracos(m);
   m.tracos = m.tracos.filter((_, i) => i !== alvo);
+  if (m.tracosTipo) m.tracosTipo = m.tracosTipo.filter((_, i) => i !== alvo);
   if (!m.tracos.length) delete m.tracos;
+  arrumarTipos(m);
   trocarDerivadas(m, antes, arestasDosTracos(m));
   return true;
 }

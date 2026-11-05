@@ -7,7 +7,7 @@
 //
 // Nada aqui sabe de mouse nem de painel: recebe o campo (`Battlefield`), o mapa e o contexto, e pinta.
 
-import { ARESTA } from '../core/grid.js';
+import { ARESTA, CHAR_DA_ARESTA } from '../core/grid.js';
 import { SUPERFICIE } from './superficies.js';
 import { sorteio } from '../art/chao.js';
 
@@ -231,6 +231,8 @@ export function traco(ctx, x0, y0, x1, y1, codigo, C, aMostra) {
 }
 
 const OCULTAS_NO_JOGO = new Set([ARESTA.invisivel, ARESTA.limitada, ARESTA.unicaMais, ARESTA.unicaMenos]);
+/** O glifo da aresta ('W', '+', 'E'...) → o código (`ARESTA`): o tipo do traço é guardado como glifo. */
+const CODIGO_DO_GLIFO = Object.fromEntries(Object.entries(CHAR_DA_ARESTA).map(([n, c]) => [c, Number(n)]));
 
 /**
  * No EDITOR, as arestas que o jogo não desenha (a barreira invisível, a moita, a mão única) — senão quem edita não as
@@ -288,13 +290,25 @@ export function pintarArestas(ctx, field, C, aMostra = false, soPortas = false) 
  * irregulares, e forçá-los na aresta de casa destrói justamente o que os faz parecer o que são. A aresta de casa
  * continua existindo (`paredes`), mas como DERIVADA, para a regra de movimento; quem manda no desenho é o traço.
  */
-export function pintarTracos(ctx, tracos, C, aMostra = false) {
+export function pintarTracos(ctx, tracos, C, aMostra = false, tipos = null, aberta = null, tiposFinos = aMostra) {
   if (!tracos?.length) return;
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  for (const pts of tracos) {
+  for (const [t, pts] of tracos.entries()) {
     if (!pts || pts.length < 2) continue;
+    // O TRAÇO COM TIPO (`tracosTipo`: janela, porta, etérea...) vai segmento a segmento no desenho da aresta do mesmo
+    // tipo — o jogo esconde a invisível e a moita, o editor mostra tudo no estilo fino e colorido. A porta desenha
+    // aberta quando alguma aresta que ela derivou está aberta no campo.
+    const car = tipos?.[t];
+    if (car && car !== '#') {
+      let codigo = CODIGO_DO_GLIFO[car] ?? ARESTA.parede;
+      if (codigo === ARESTA.porta && aberta?.(t)) codigo = ARESTA.aberta;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        traco(ctx, pts[i][0] * C, pts[i][1] * C, pts[i + 1][0] * C, pts[i + 1][1] * C, codigo, C, tiposFinos);
+      }
+      continue;
+    }
     ctx.beginPath();
     ctx.moveTo(pts[0][0] * C, pts[0][1] * C);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0] * C, pts[i][1] * C);

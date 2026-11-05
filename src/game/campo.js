@@ -2,9 +2,10 @@
 // luz). Antes morava dentro de `App.newEncounter`; agora o navegador de quem NÃO roda a partida (F4) monta o
 // mesmo campo a partir do mesmo mapa, e os dois nunca divergem.
 
-import { Battlefield } from '../core/grid.js';
+import { Battlefield, ARESTA } from '../core/grid.js';
 import { prepararRegioes } from '../rules/regioes.js';
 import { definirEscuridao } from '../rules/luz.js';
+import { arestasDosTracos } from './mapa-editor.js';
 
 /** Monta o `Battlefield` de um mapa de `mapaDo()`. */
 export function montarCampo(mapa) {
@@ -44,6 +45,22 @@ export function montarCampo(mapa) {
   // A PAREDE LIVRE, como foi traçada: polilinhas em casas (com fração). A aresta de casa (`paredes`) é a derivada
   // delas para a regra; o desenho usa o traço, porque caverna, pedra e destroço não são retos.
   if (mapa.tracos?.length) field.tracos = mapa.tracos;
+  // o tipo de cada traço (janela, porta, etérea...): a geometria da visão pergunta (`grid.cortadoPorTraco`)
+  if (mapa.tracos?.length && mapa.tracosTipo) {
+    field.tracosTipo = mapa.tracosTipo;
+    // A PORTA TRAÇADA: as arestas que cada traço de porta derivou, para o desenho saber se ela está aberta (alguma
+    // delas virou porta aberta no campo). Quem abre e fecha é o menu de porta, aresta a aresta, como qualquer porta.
+    const portas = new Map();
+    mapa.tracosTipo.forEach((car, i) => {
+      if (car !== '+') return;
+      const casas = [...arestasDosTracos(mapa, [mapa.tracos[i]], ['+']).keys()].map((k) => {
+        const [lado, x, y] = k.split(',');
+        return lado === 'n' ? [Number(x), Number(y) - 1, Number(x), Number(y)] : [Number(x) - 1, Number(y), Number(x), Number(y)];
+      });
+      portas.set(i, casas);
+    });
+    field.portaDoTracoAberta = (i) => (portas.get(i) ?? []).some(([ax, ay, bx, by]) => field.aresta(ax, ay, bx, by) === ARESTA.aberta);
+  }
   // As salas do mapa, por casa: o tabuleiro usa para apagar a parede da
   // sala em que o grupo está (ver `board.desenharParedes`).
   // A decoração pendurada nas paredes, por aresta ('x,y,N' ou 'x,y,O').

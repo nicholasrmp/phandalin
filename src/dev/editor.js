@@ -93,6 +93,7 @@ const sel = {
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
   tracoModo: 'desenhar',
+  tracoTipo: '#',   // o tipo do próximo traço, ou o que "Trocar o tipo" põe (`mapa-editor.js TIPOS_DE_TRACO`)
 };
 let hoverEdge = null;
 let hoverTile = null;
@@ -200,7 +201,8 @@ function desenharTopo() {
   ctx.restore();
   // o que o jogo não desenha (barreira invisível, moita, mão única), o editor mostra: senão não se acha para mexer
   if (!(sel.arestasFinas || comFundo)) T.pintarArestasOcultas(ctx, campo, C);
-  if (comTracos) T.pintarTracos(ctx, mapa.tracos, C, sel.arestasFinas || comFundo);
+  // o traço com tipo (janela, porta, etérea...) sempre no estilo fino e colorido: no editor tem de dar para ver o tipo
+  if (comTracos) T.pintarTracos(ctx, mapa.tracos, C, sel.arestasFinas || comFundo, mapa.tracosTipo, null, true);
   marcarTopo(ctx, C);
 }
 
@@ -454,6 +456,9 @@ function aoApertar(e) {
     if (sel.tracoModo === 'apagar') {
       ponto();
       if (!aplicar(M.apagarTraco(mapa, c.x, c.y, 0.6))) { desfazer.pop(); botoes(); }
+    } else if (sel.tracoModo === 'tipo') {
+      ponto();
+      if (!aplicar(M.definirTipoDoTraco(mapa, c.x, c.y, sel.tracoTipo, 0.6))) { desfazer.pop(); botoes(); }
     } else {
       tracando = [prender(c, e)];
     }
@@ -814,7 +819,7 @@ addEventListener('mouseup', () => {
     tracando = null;
     if (pontos.length >= 2) {
       ponto();
-      if (!aplicar(M.tracarParede(mapa, pontos.map((p) => [p.x, p.y])))) { desfazer.pop(); botoes(); }
+      if (!aplicar(M.tracarParede(mapa, pontos.map((p) => [p.x, p.y]), sel.tracoTipo))) { desfazer.pop(); botoes(); }
     }
   }
   if (arrasto) {
@@ -886,7 +891,12 @@ function frenteNoPainel() {
 
 function estado() {
   const conta = $('contaTracos');
-  if (conta) conta.textContent = `${mapa.tracos?.length ?? 0} traço(s) no mapa.`;
+  if (conta) {
+    const porTipo = new Map();
+    (mapa.tracos ?? []).forEach((_, i) => { const c = mapa.tracosTipo?.[i] ?? '#'; porTipo.set(c, (porTipo.get(c) ?? 0) + 1); });
+    const nome = (c) => (M.TIPOS_DE_TRACO.find(([g]) => g === c)?.[1] ?? c).split(' (')[0].toLowerCase();
+    conta.textContent = `${mapa.tracos?.length ?? 0} traço(s) no mapa${porTipo.size > 1 ? `: ${[...porTipo].map(([c, n]) => `${n} ${nome(c)}`).join(', ')}` : ''}.`;
+  }
   const luzes = $('contaLuzes');
   if (luzes) luzes.textContent = `${mapa.luzes?.length ?? 0} luz(es) no mapa.`;
   const inter = $('contaInterativos');
@@ -1139,8 +1149,13 @@ function montarPainel() {
       <p class="dica">Caverna, pedra e destroço não são retos. Clique e arraste para traçar a parede como ela é; a aresta de casa que a regra usa sai sozinha do traço.</p>
       <div class="lista">
         <button data-tracomodo="desenhar">Desenhar</button>
+        <button data-tracomodo="tipo">Trocar o tipo</button>
         <button data-tracomodo="apagar">Apagar traço</button>
       </div>
+      <label class="linha">tipo <select id="tracoTipo" style="flex:1">${M.TIPOS_DE_TRACO.map(([c, nome]) => `<option value="${c}">${nome}</option>`).join('')}</select></label>
+      <p class="dica">O tipo vale para o próximo traço, ou para o que "Trocar o tipo" clicar. É o mesmo da aresta da ferramenta 2:
+      a janela deixa ver e não passar, a etérea parece parede e se atravessa, a invisível só barra o passo, a moita limita a
+      visão, a porta abre e fecha pelo menu. A aresta derivada do traço leva o tipo.</p>
       <p class="dica">Segure <b>Shift</b> para grudar nos cantos de casa (parede reta sai reta). Apagar tira o traço inteiro e devolve as arestas que ele tinha criado — a parede pintada à mão (ferramenta 2) e as portas ficam.</p>
       <p class="dica" id="contaTracos">—</p>
     </div>
@@ -1233,6 +1248,8 @@ function montarPainel() {
     L.querySelectorAll('[data-tracomodo]').forEach((x) => x.classList.toggle('on', x === b));
   }));
   L.querySelector(`[data-tracomodo="${sel.tracoModo}"]`).classList.add('on');
+  $('tracoTipo').value = sel.tracoTipo;
+  $('tracoTipo').addEventListener('change', (e) => { sel.tracoTipo = e.target.value; });
   $('escolherFundo').addEventListener('click', () => $('arquivoFundo').click());
   $('fColunas').addEventListener('input', (e) => { sel.colunas = Math.max(1, Number(e.target.value) || 1); });
   $('fLinhas').addEventListener('input', (e) => { sel.linhas = Math.max(1, Number(e.target.value) || 1); });
