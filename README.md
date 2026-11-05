@@ -238,6 +238,14 @@ som (`src/core/grid.js`, `RESTRICOES`): a **etérea** parece parede e se atraves
 deixa passar num sentido. A **porta trancada** tem CD no mapa, e qualquer cena sem roteiro de porta ganha o menu de abrir
 a fechadura, arrombar ou usar a chave (`src/game/portas.js`). Tudo na ferramenta 2 do editor.
 
+**A luz também é a do Foundry** (`src/rules/luz.js`). Cada fonte tem cor e animação (a fogueira e a tocha tremem, a vela
+oscila, a magia respira, a lanterna fica parada), pelo tipo ou escolhidas no mapa. A **lanterna coberta** acende só num
+cone (`angulo`, `direcao` em graus, 0 = leste, 90 = sul), e só enxerga quem está dentro dele. A luz **só no escuro**
+(`soNoEscuro`) é o lampião da rua, que espera a cena escurecer. A **escuridão da cena** (`mapa.escuridao`, de 0 a 1) põe
+o mapa de dia, no entardecer (penumbra em toda parte) ou à noite (só se vê o que alguém ilumina). Numa caverna, ela só
+escurece mais. A rua da vila anoitece sozinha pelo relógio, e o convidado da sala vê a mesma noite. Tudo na ferramenta 4
+do editor; `src/dev/testes-luz.mjs` prova cada parte.
+
 **Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
 destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**
 (`mapa.tracos`): polilinhas em casas, com fração, como foram desenhadas. Quando há traço, é ele que o tabuleiro

@@ -54,6 +54,8 @@ const LUZES = [
   ['braseiro', 'Braseiro', 15, 15],
   ['vela', 'Vela', 5, 5],
   ['lanterna', 'Lanterna', 30, 30],
+  ['magica', 'Luz mágica', 20, 20],
+  ['fungo', 'Fungo que brilha', 0, 10],
 ];
 
 // AS FERRAMENTAS, na ordem do trabalho com mapa pintado: primeiro se põe o desenho e se enquadra a grade,
@@ -85,6 +87,8 @@ const sel = {
   interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false, pistaVerbo: '', pistaCd: 10, pistaAchado: '' },
   modoPiso: 'pincel', modoAresta: 'aresta', modoFrente: 'pincel', frenteMarca: true,
   modoRegiao: 'retangulo', regiaoMarca: true, cdTranca: 15,
+  // a aparência e o cone da próxima luz (`rules/luz.js`): vazio é o padrão do tipo
+  luzCor: '', luzAnimacao: '', luzAngulo: 360, luzDirecao: 0, luzSoNoEscuro: false,
   sobrepor: { id: '', url: '/mapas/fa/ChestOpen.webp', frente: false, ligada: true },
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
@@ -424,7 +428,13 @@ function agir(e, primeira) {
   pressionado = { chave };
   if (f === 'piso') aplicar(M.pintarPiso(mapa, t.x, t.y, sel.piso));
   else if (f === 'frente') aplicar(M.pintarFrente(mapa, t.x, t.y, sel.frenteMarca));
-  else if (f === 'luz') { const l = LUZES.find(([id]) => id === sel.luz); aplicar(M.porLuz(mapa, t.x, t.y, { tipo: l[0], claro: l[2], penumbra: l[3] })); }
+  else if (f === 'luz') {
+    const l = LUZES.find(([id]) => id === sel.luz);
+    aplicar(M.porLuz(mapa, t.x, t.y, {
+      tipo: l[0], claro: l[2], penumbra: l[3], cor: sel.luzCor || null, animacao: sel.luzAnimacao || null,
+      angulo: Number(sel.luzAngulo) || 360, direcao: Number(sel.luzDirecao) || 0, soNoEscuro: sel.luzSoNoEscuro ? 0.5 : null,
+    }));
+  }
   else if (f === 'interativo') aplicar(M.porInterativo(mapa, t.x, t.y, sel.interativo.id.trim() ? objetoDoPainel() : null));
   else if (f === 'regiao') { const id = regiaoParaPintar(); if (id && aplicar(M.regiaoNaCasa(mapa, id, t.x, t.y, sel.regiaoMarca))) regiaoNoPainel(); }
   else if (f === 'altura') aplicar(M.pintarAltura(mapa, t.x, t.y, sel.altura));
@@ -911,6 +921,8 @@ function objetoDoPainel() {
 function sincronizarModo() {
   const c = $('explorar');
   if (c) c.checked = mapa.cena === 'editor';
+  const e = $('escuridao');
+  if (e) e.value = String(mapa.escuridao ?? 0);
   // a peça escolhida pode ter sumido no desfazer, ou o mapa aberto ser outro
   if (sobreSel && !(mapa.sobreposicoes ?? []).some((o) => o.id === sobreSel)) sobreSel = '';
   sobreNoPainel();
@@ -1066,6 +1078,22 @@ function montarPainel() {
       <p class="dica">Clique na casa para acender; clique de novo na mesma luz para apagar. O primeiro número é a
       luz CLARA e o segundo a penumbra, em pés, como o SRD conta. Num mapa escuro (<code>luz: 'escuro'</code>) é
       isto que o grupo enxerga.</p>
+      <h2>Aparência e cone</h2>
+      <label class="linha"><input type="checkbox" id="luzCorPropria" /> cor própria <input type="color" id="luzCor" value="#ffb15a" /></label>
+      <label class="linha">animação <select id="luzAnimacao">
+        <option value="">a do tipo</option><option value="fogo">fogo (treme)</option><option value="vela">vela (oscila)</option>
+        <option value="pulso">pulso (magia)</option><option value="fixa">fixa</option></select></label>
+      <label class="linha">abertura <input type="number" id="luzAngulo" min="10" max="360" step="5" value="360" style="width:5em" /> graus
+        para <select id="luzDirecao">
+        <option value="0">leste</option><option value="45">sudeste</option><option value="90">sul</option><option value="135">sudoeste</option>
+        <option value="180">oeste</option><option value="225">noroeste</option><option value="270">norte</option><option value="315">nordeste</option></select></label>
+      <label class="linha"><input type="checkbox" id="luzSoNoEscuro" /> só acende no escuro (a janela, o lampião da rua)</label>
+      <p class="dica">360 graus é luz em volta; menos que isso é a lanterna coberta, que só ilumina para um lado — e só
+      enxerga quem está dentro do cone. A cor e a animação são só desenho: a regra conta a luz, não a cor.</p>
+      <h2>Escuridão da cena</h2>
+      <label class="linha">dia <input type="range" id="escuridao" min="0" max="1" step="0.05" value="${mapa.escuridao ?? 0}" style="flex:1" /> noite</label>
+      <p class="dica">Ao ar livre: abaixo de 0,35 é dia, até 0,7 é entardecer (penumbra em toda parte), acima disso é
+      noite — só se vê o que alguém ilumina, e as luzes "só no escuro" acendem. Numa caverna, só escurece mais.</p>
       <p class="dica" id="contaLuzes">—</p>
     </div>
 
@@ -1236,6 +1264,13 @@ function montarPainel() {
     if (!aplicar(M.redimensionar(mapa, borda, Number(n)))) { desfazer.pop(); botoes(); }
   }));
   $('salaId').addEventListener('input', (e) => { sel.sala = e.target.value; });
+  $('luzCorPropria').addEventListener('change', (e) => { sel.luzCor = e.target.checked ? $('luzCor').value : ''; });
+  $('luzCor').addEventListener('input', (e) => { if ($('luzCorPropria').checked) sel.luzCor = e.target.value; });
+  $('luzAnimacao').addEventListener('change', (e) => { sel.luzAnimacao = e.target.value; });
+  $('luzAngulo').addEventListener('input', (e) => { sel.luzAngulo = Math.max(10, Math.min(360, Number(e.target.value) || 360)); });
+  $('luzDirecao').addEventListener('change', (e) => { sel.luzDirecao = Number(e.target.value) || 0; });
+  $('luzSoNoEscuro').addEventListener('change', (e) => { sel.luzSoNoEscuro = e.target.checked; });
+  $('escuridao').addEventListener('change', (e) => { ponto(); if (!aplicar(M.definirEscuridaoDoMapa(mapa, e.target.value))) { desfazer.pop(); botoes(); } });
   L.querySelectorAll('[data-luz]').forEach((b) => b.addEventListener('click', () => {
     sel.luz = b.dataset.luz;
     L.querySelectorAll('[data-luz]').forEach((x) => x.classList.toggle('on', x === b));

@@ -11,6 +11,8 @@
 import { narrar } from '../view/narrativa.js';
 import { distanceFt, Battlefield } from '../core/grid.js';
 import { garantirInventario } from '../rules/equipment.js';
+import { deNoite } from './relogio.js';
+import { definirEscuridao } from '../rules/luz.js';
 
 const SAIDA = { x: 21, y: 5 };      // para o leste, rumo à Mansão Tresendar
 
@@ -130,6 +132,9 @@ export function criarRuaMarcarrubra(app, config) {
     fimDoCombate,
     evento,
     async iniciar() {
+      // A RUA À NOITE: se o grupo foi provocar os Marcarrubra depois do último momento do dia (`game/relogio.js`), a
+      // briga é no escuro — só enxerga quem tem visão no escuro ou anda com tocha (`rules/luz.js definirEscuridao`).
+      if (deNoite(app.campanha?.vila?.tempo ?? 0)) definirEscuridao(enc.field, 0.8);
       for (const f of bandidos) enc.addCombatant(f);
       enc.emboscada = null;          // ninguém surpreso: a briga estava na cara
       app.selected = null;

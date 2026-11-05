@@ -5,6 +5,8 @@
 // O anfitrião compara o campo dele com um campo recém-montado do mesmo mapa (a BASE) e manda só as casas que diferem
 // (`extras.campo`); o convidado desfaz o que a diferença anterior mexeu e põe a nova. Puro: roda em Node.
 
+import { definirEscuridao } from '../rules/luz.js';
+
 /** As casas e arestas do campo que diferem da base, ou `null` se nenhuma. `a`: [0 N | 1 O, índice, código]; `c`: [índice, tile, superfície, altura]. */
 export function diferencasDoCampo(campo, base) {
   if (!campo || !base || campo.w !== base.w || campo.h !== base.h) return null;
@@ -32,8 +34,10 @@ export function diferencasDoCampo(campo, base) {
     const b = base.sobreposicoes?.find((p) => p.id === o.id);
     if (b && Boolean(b.ligada) !== Boolean(o.ligada)) s.push([o.id, o.ligada ? 1 : 0]);
   }
-  if (!(a.length || c.length || l.length || s.length)) return null;
-  return { a, c, ...(l.length ? { l } : {}), ...(s.length ? { s } : {}) };
+  // A ESCURIDÃO DA CENA (`rules/luz.js definirEscuridao`): a rua que anoitece. Em centésimos, de 0 a 100.
+  const e = (campo.escuridao ?? null) !== (base.escuridao ?? null) && campo.escuridao != null ? Math.round(campo.escuridao * 100) : null;
+  if (!(a.length || c.length || l.length || s.length || e != null)) return null;
+  return { a, c, ...(l.length ? { l } : {}), ...(s.length ? { s } : {}), ...(e != null ? { e } : {}) };
 }
 
 /** Quantas casas e arestas diferentes cabem numa vista (cada uma pesa uns 15 caracteres; o teto é 120.000). */
@@ -51,7 +55,8 @@ export function diferencaValida(d, n) {
     && d.a.every((e) => Array.isArray(e) && (e[0] === 0 || e[0] === 1) && indice(e[1]) && inteiro(e[2]))
     && d.c.every((e) => Array.isArray(e) && indice(e[0]) && inteiro(e[1]) && inteiro(e[2]) && inteiro(e[3]))
     && (d.l === undefined || (Array.isArray(d.l) && d.l.length <= 256 && d.l.every((e) => Array.isArray(e) && inteiro(e[0]) && liga(e[1]))))
-    && (d.s === undefined || (Array.isArray(d.s) && d.s.length <= 256 && d.s.every((e) => Array.isArray(e) && nome(e[0]) && liga(e[1]))));
+    && (d.s === undefined || (Array.isArray(d.s) && d.s.length <= 256 && d.s.every((e) => Array.isArray(e) && nome(e[0]) && liga(e[1]))))
+    && (d.e === undefined || (Number.isInteger(d.e) && d.e >= 0 && d.e <= 100));
 }
 
 /**
@@ -102,6 +107,9 @@ export function aplicarDiferencas(campo, base, d) {
   for (const [id] of antes.s ?? []) if (!novoS.has(id)) poeS(id, base.sobreposicoes?.find((p) => p.id === id)?.ligada);
   for (const [i, v] of d?.l ?? []) poeL(i, v === 1);
   for (const [id, v] of d?.s ?? []) poeS(id, v === 1);
+  // a escuridão: a nova, ou de volta à do mapa se a diferença deixou de trazê-la
+  const escuridao = d?.e != null ? d.e / 100 : antes.e != null ? (base.escuridao ?? 0) : null;
+  if (escuridao != null && definirEscuridao(campo, escuridao)) mudou = true;
   campo.difAplicada = d ?? { a: [], c: [] };
   if (mudou) campo.versao = (campo.versao ?? 0) + 1;
   return mudou;

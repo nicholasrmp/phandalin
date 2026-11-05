@@ -35,9 +35,78 @@ export const CLARO = 2;
 export const PENUMBRA = 1;
 export const ESCURO = 0;
 
-const TOCHA = { claro: 20, penumbra: 20 };
+const TOCHA = { claro: 20, penumbra: 20, tipo: 'tocha' };
 // Luzes Dançantes: cada luzinha emite só penumbra num raio de 3 m (10 pés), sem luz clara.
-const LUZINHAS = { claro: -1, penumbra: 11 };
+const LUZINHAS = { claro: -1, penumbra: 11, tipo: 'magica' };
+// O truque Luz (e o Brilho do Caos): a mesma medida da tocha, mas luz de magia — branca, sem chama.
+const LUZ_MAGICA = { claro: 20, penumbra: 20, tipo: 'magica' };
+
+/**
+ * A APARÊNCIA DE CADA FONTE, como o Foundry dá a cada luz: a COR e a ANIMAÇÃO. Só o desenho lê
+ * (`tabuleiro-topo.js pocaDeLuz`); a regra não liga para a cor. Cada luz do mapa pode trazer as suas (`cor`,
+ * `animacao`); sem elas, vale a do tipo.
+ *   fogo    a chama que treme sem repetir o compasso (fogueira, tocha, braseiro)
+ *   vela    a chama pequena, que oscila devagar
+ *   pulso   a luz de magia, que respira
+ *   fixa    a lanterna fechada, o cristal: não se mexe
+ */
+export const APARENCIA_DA_LUZ = {
+  fogueira: { cor: '#ff9a3c', animacao: 'fogo' },
+  tocha: { cor: '#ffb15a', animacao: 'fogo' },
+  braseiro: { cor: '#ff7a2a', animacao: 'fogo' },
+  vela: { cor: '#ffd27a', animacao: 'vela' },
+  lanterna: { cor: '#ffe2a0', animacao: 'fixa' },
+  magica: { cor: '#6fa8ff', animacao: 'pulso' },
+  fungo: { cor: '#8bff9a', animacao: 'pulso' },
+  luar: { cor: '#9fb6ff', animacao: 'fixa' },
+};
+export const ANIMACOES_DA_LUZ = ['fogo', 'vela', 'pulso', 'fixa'];
+export const aparenciaDaLuz = (f) => ({ ...(APARENCIA_DA_LUZ[f.tipo] ?? APARENCIA_DA_LUZ.tocha), ...(f.cor ? { cor: f.cor } : {}), ...(f.animacao ? { animacao: f.animacao } : {}) });
+
+/**
+ * A casa `p` está dentro do CONE da fonte? A luz sem `angulo` (ou com 360) acende em volta; a lanterna coberta acende
+ * só para onde aponta: `direcao` em graus (0 = leste, 90 = sul, como a tela), `angulo` a abertura inteira. A casa da
+ * própria fonte está sempre acesa.
+ */
+export function dentroDoCone(f, p) {
+  const ang = Number(f.angulo);
+  if (!ang || ang >= 360) return true;
+  const dx = p.x - f.pos.x;
+  const dy = p.y - f.pos.y;
+  if (!dx && !dy) return true;
+  const rumo = (Math.atan2(dy, dx) * 180) / Math.PI;
+  let diff = Math.abs(((rumo - (Number(f.direcao) || 0)) % 360 + 540) % 360 - 180);
+  // a casa é um quadrado, não um ponto: meia casa de folga na borda do cone, para ele não sair serrilhado
+  diff -= (Math.atan2(0.5, Math.hypot(dx, dy)) * 180) / Math.PI;
+  return diff <= ang / 2;
+}
+
+/**
+ * A ESCURIDÃO DA CENA, de 0 (dia) a 1 (noite fechada) — o "darkness level" do Foundry. Refaz a luz de base do mapa:
+ * ao ar livre, abaixo de 0,35 é dia (sem grade de luz), até 0,7 é entardecer (penumbra em toda parte) e daí para
+ * cima é noite (breu, e só a luz que alguém acende). Num mapa que já tem a sua luz (a caverna, a clareira), a noite
+ * só pode escurecer: cada casa fica com o MENOR entre a luz dela e a da hora. As luzes `soNoEscuro` acendem sozinhas
+ * quando a escuridão passa do limiar delas (`fontesDeLuz`). Devolve se mudou.
+ */
+export function definirEscuridao(field, nivel) {
+  const n = Math.max(0, Math.min(1, Number(nivel) || 0));
+  if (field.escuridao === n && field.luzDoMapa !== undefined) return false;
+  if (field.luzDoMapa === undefined) field.luzDoMapa = field.luz ? Uint8Array.from(field.luz) : null;
+  field.escuridao = n;
+  const base = n >= 0.7 ? ESCURO : n >= 0.35 ? PENUMBRA : CLARO;
+  const original = field.luzDoMapa;
+  if (!original && base === CLARO) field.luz = null;
+  else {
+    const g = new Uint8Array(field.w * field.h);
+    for (let i = 0; i < g.length; i++) g[i] = original ? Math.min(original[i], base) : base;
+    field.luz = g;
+  }
+  field.versao = (field.versao ?? 0) + 1;
+  return true;
+}
+
+/** A luz do mapa que só acende no escuro (o lampião da rua, a janela acesa) está apagada com a cena clara. */
+export const acesaNaEscuridao = (f, field) => f.soNoEscuro == null || (field?.escuridao ?? 0) >= f.soNoEscuro;
 
 // Quem tem visão no escuro (60 pés), pela ancestralidade do herói ou pela
 // família do monstro, quando a ficha não diz.
@@ -102,12 +171,13 @@ export const emiteLuz = (c) => !c.dead && Boolean(c.tochaAcesa || hasCondition(c
 export function fontesDeLuz(enc) {
   const fontes = [];
   for (const c of enc.combatants) {
-    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa || hasCondition(c, 'luzMagica') || hasCondition(c, 'brilhoCaos') ? TOCHA : LUZINHAS) });
+    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa ? TOCHA : hasCondition(c, 'luzMagica') || hasCondition(c, 'brilhoCaos') ? LUZ_MAGICA : LUZINHAS) });
   }
   // A luz do mapa que alguém apagou (`game/fogo.js`) continua no mapa — para poder ser acesa de novo —, mas não acende nada.
-  for (const f of enc.field.luzes ?? []) if (!f.apagada) fontes.push(f);
+  // E a que só acende no escuro (`soNoEscuro`) espera a cena escurecer.
+  for (const f of enc.field.luzes ?? []) if (!f.apagada && acesaNaEscuridao(f, enc.field)) fontes.push(f);
   // Luz do Dia: uma esfera de luz plena e mais uma de penumbra, num ponto.
-  for (const z of enc.zonas ?? []) if (z.luz && z.centro) fontes.push({ pos: z.centro, claro: z.luz.claro, penumbra: z.luz.penumbra });
+  for (const z of enc.zonas ?? []) if (z.luz && z.centro) fontes.push({ pos: z.centro, claro: z.luz.claro, penumbra: z.luz.penumbra, tipo: 'magica', cor: '#fff6dc' });
   return fontes;
 }
 
@@ -125,6 +195,7 @@ export function nivelDeLuz(field, x, y, fontes) {
     if (nivel === CLARO) break;
     const d = distanceFt(f.pos, { x, y });
     if (d > f.claro + f.penumbra) continue;
+    if (!dentroDoCone(f, { x, y })) continue;
     // `field` nem sempre é um `Battlefield` cheio (há chamada com campo de
     // teste): sem a função, vale a conta antiga, só de distância.
     // a reta da LUZ, que pergunta a cada aresta a restrição de luz (a janela deixa, a parede etérea não)

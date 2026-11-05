@@ -160,6 +160,13 @@ TRANCADA** é dado do mapa (`mapa.trancas`: `{ aresta: 'x,y,N|O', cd, chave?, fo
 — abrir, fechar, abrir a fechadura (Destreza com ferramentas de ladrão), arrombar (Força, CD + 5), a chave — nas cenas que não cuidam
 das próprias portas (as que cuidam declaram `portasProprias: true`). No editor é a ferramenta 2, com a CD no painel; o editor mostra
 por cima o que o jogo não desenha. `src/dev/testes-arestas.mjs` prova cada tipo.
+A **LUZ** (`rules/luz.js`) segue o Foundry. `APARENCIA_DA_LUZ` dá cor e animação por tipo (fogo, vela, pulso, fixa), e a luz do mapa
+pode trazer `cor` e `animacao` próprias. É só desenho, `tabuleiro-topo.js pocaDeLuz`. O CONE (`angulo`, `direcao` em graus, 0 = leste,
+90 = sul) entra na regra (`dentroDoCone`, dentro de `nivelDeLuz`). `soNoEscuro` deixa a luz apagada até a escuridão da cena chegar a ele.
+`definirEscuridao(field, 0..1)` dá dia abaixo de 0,35, penumbra até 0,7 e breu acima. Num mapa que já tem grade de luz, fica o mais
+escuro dos dois. O tabuleiro põe um véu azul que chega aos poucos. O mapa leva `escuridao`, a rua da vila anoitece pelo relógio
+(`capitulo3-rua.js`), e o multijogador manda a escuridão na diferença do campo (`e`). No editor é a ferramenta 4.
+`src/dev/testes-luz.mjs` prova tudo.
 A **REGIÃO** (`mapa.regioes`, motor em `rules/regioes.js`) é a área que FAZ algo quando alguém entra, sai, ou começa e termina o turno
 nela — a Region do Foundry. Efeitos, na ordem: texto, dano (com teste e metade), condição (com teste), parar o passo, terreno difícil
 (enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte; o dano pode deixar com uma condição quem

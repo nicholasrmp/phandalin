@@ -15,7 +15,7 @@ const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
   'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
-  'frente', 'sobreposicoes', 'regioes', 'trancas',
+  'frente', 'sobreposicoes', 'regioes', 'trancas', 'escuridao',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -818,13 +818,32 @@ export function definirInicio(m, i, x, y) {
 export function porLuz(m, x, y, luz) {
   if (!dentro(m, x, y)) return false;
   m.luzes ??= [];
+  // A APARÊNCIA e o CONE (`rules/luz.js`): cor e animação só quando fogem do padrão do tipo, cone só quando não é 360,
+  // e `soNoEscuro` (o lampião que acende à noite) só quando pedido. O mapa sem nada disso fica como sempre foi.
+  const nova = {
+    pos: { x, y }, claro: luz.claro, penumbra: luz.penumbra, tipo: luz.tipo,
+    ...(luz.cor ? { cor: luz.cor } : {}),
+    ...(luz.animacao ? { animacao: luz.animacao } : {}),
+    ...(luz.angulo && luz.angulo < 360 ? { angulo: Number(luz.angulo), direcao: Number(luz.direcao) || 0 } : {}),
+    ...(luz.soNoEscuro != null ? { soNoEscuro: Number(luz.soNoEscuro) } : {}),
+  };
   const i = m.luzes.findIndex((l) => l.pos?.x === x && l.pos?.y === y);
   if (i >= 0) {
-    const igual = m.luzes[i].claro === luz.claro && m.luzes[i].penumbra === luz.penumbra && m.luzes[i].tipo === luz.tipo;
+    const { nome: _n, sobreposicao: _s, apagada: _a, ...velha } = m.luzes[i];
+    const igual = JSON.stringify(velha) === JSON.stringify(nova);
     m.luzes.splice(i, 1);
     if (igual) return true;                      // mesma luz: o clique apaga
   }
-  m.luzes.push({ pos: { x, y }, claro: luz.claro, penumbra: luz.penumbra, tipo: luz.tipo });
+  m.luzes.push(nova);
+  return true;
+}
+
+/** A escuridão da cena, de 0 (dia) a 1 (noite): `rules/luz.js definirEscuridao`. 0 tira o campo do mapa. */
+export function definirEscuridaoDoMapa(m, nivel) {
+  const n = Math.round(Math.max(0, Math.min(1, Number(nivel) || 0)) * 100) / 100;
+  if ((m.escuridao ?? 0) === n) return false;
+  if (n) m.escuridao = n;
+  else delete m.escuridao;
   return true;
 }
 

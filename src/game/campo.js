@@ -4,6 +4,7 @@
 
 import { Battlefield } from '../core/grid.js';
 import { prepararRegioes } from '../rules/regioes.js';
+import { definirEscuridao } from '../rules/luz.js';
 
 /** Monta o `Battlefield` de um mapa de `mapaDo()`. */
 export function montarCampo(mapa) {
@@ -92,7 +93,11 @@ export function montarCampo(mapa) {
     if (Array.isArray(mapa.luz)) {
       mapa.luz.forEach((linha, y) => { for (let x = 0; x < field.w; x++) field.luz[y * field.w + x] = Number(linha[x] ?? 0); });
     }
-    field.luzes = (mapa.luzes ?? []).map((f) => ({ ...f }));
   }
+  // As fontes de luz do mapa, em TODO mapa — também ao ar livre, onde a janela e o lampião (`soNoEscuro`) esperam a
+  // noite. Antes só iam junto com a grade de escuridão.
+  if (mapa.luzes?.length) field.luzes = mapa.luzes.map((f) => ({ ...f, pos: { ...f.pos } }));
+  // A escuridão da cena (0 dia, 1 noite: `rules/luz.js definirEscuridao`), quando o mapa a declara.
+  if (mapa.escuridao != null) definirEscuridao(field, mapa.escuridao);
   return field;
 }

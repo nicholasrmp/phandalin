@@ -15,7 +15,7 @@
 // toda isométrica: o móvel aqui é o sprite deitado na casa, provisório.
 
 import { distanceFt, ARESTA } from '../core/grid.js';
-import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, visaoNoEscuro, CLARO } from '../rules/luz.js';
+import { temEscuridaoEm, visaoDoGrupo, fontesDeLuz, visaoNoEscuro, CLARO, aparenciaDaLuz } from '../rules/luz.js';
 import { emissoresDoAmbiente, desenharAmbiente } from './ambiente.js';
 import { criarCacheDePoligonos } from './raios.js';
 import { SUPERFICIE } from './superficies.js';
@@ -61,6 +61,11 @@ const PRIORIDADE = ['inconsciente', 'paralisado', 'atordoado', 'contido', 'preso
 const ICONE_DA_CONDICAO = { contido: 'agarrado', presoPorVinhas: 'agarrado', paralisado: 'atordoado' };
 const iconeDe = (id) => (temIcone(id) ? id : ICONE_DA_CONDICAO[id] ?? null);
 const COR_DA_CONCENTRACAO = '#8fd3ff';
+/** '#rrggbb' → [r, g, b] (a cor da luz). */
+const rgbDe = (hex) => {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex ?? ''));
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [255, 177, 90];
+};
 
 const peso = (id) => { const i = PRIORIDADE.indexOf(id); return i < 0 ? PRIORIDADE.length : i; };
 
@@ -563,6 +568,7 @@ export class TabuleiroTopo {
     }
 
     this.desenharFrente(ctx, aVista);
+    this.tomDaNoite(ctx, dt);
 
     // O VÉU, na mesma ordem do isométrico: por cima do chão e das fichas, por baixo dos efeitos e dos números.
     // `desenharEscuridao` é herdada inteira; o que muda de vista são as três peças de geometria logo abaixo.
@@ -876,7 +882,7 @@ export class TabuleiroTopo {
     const domoDe = new Map(this.fx.domosAtivos(this).filter((o) => o.it.id != null).map((o) => [o.it.id, o.it]));
     const chave = [w, h, this.ox, this.oy, C, field.versao ?? 0,
       grupo.map((c) => `${c.pos.x},${c.pos.y},${visaoNoEscuro(c)}`).join(';'),
-      fontes.map((f) => `${f.pos.x},${f.pos.y},${f.claro},${f.penumbra}`).join(';'),
+      fontes.map((f) => `${f.pos.x},${f.pos.y},${f.claro},${f.penumbra},${f.angulo ?? ''},${f.direcao ?? ''}`).join(';'),
       figuras.map((c) => `${c.pos.x},${c.pos.y}${domoDe.has(c.id) ? 'd' : ''}`).join(';')].join('|');
     if (this._mascara?.visao !== this._visao || this._mascara.chave !== chave) {
       this._mascara = this.montarVeuDeCima(w, h, fontes, grupo, figuras, domoDe, chave);
@@ -955,15 +961,18 @@ export class TabuleiroTopo {
       gl.fillRect(0, 0, w, h);
     }
     gl.globalCompositeOperation = 'lighter';
-    const circulo = (ox, oy, raioCasas, paradas) => {
+    const circulo = (ox, oy, raioCasas, paradas, fonte = null) => {
       const pts = poligono(ox, oy, raioCasas, 720);
       const sx = this.ox + ox * C;
       const sy = this.oy + oy * C;
       const g = gl.createRadialGradient(sx, sy, 0, sx, sy, raioCasas * C);
       for (const [p, a] of paradas) g.addColorStop(p, `rgba(255,255,255,${a})`);
       gl.fillStyle = g;
+      gl.save();
+      if (fonte) this.recortarCone(gl, fonte, sx, sy, raioCasas * C);
       caminho(gl, pts);
       gl.fill();
+      gl.restore();
     };
     for (const f of fontes) {
       const claro = Math.max(0, f.claro) / 5;
@@ -974,7 +983,7 @@ export class TabuleiroTopo {
       // plena até o fim da luz plena, com o degrau para a penumbra macio, e a penumbra morrendo até a borda
       circulo(ox, oy, total, claro > 0
         ? [[0, 1], [Math.max(0, k - 0.08), 1], [Math.min(1, k + 0.06), 0.55], [0.85, 0.4], [1, 0]]
-        : [[0, 0.55], [0.85, 0.4], [1, 0]]);
+        : [[0, 0.55], [0.85, 0.4], [1, 0]], f);
     }
     for (const c of grupo) {
       const dv = visaoNoEscuro(c) / 5;
@@ -1087,21 +1096,76 @@ export class TabuleiroTopo {
    * `claro` pés viram `claro / 1,5 m` casas. No isométrico o número era 0,55 largura de losango por casa,
    * que ali funciona porque o losango tem o dobro da largura da altura.
    */
+  /**
+   * O BRILHO de uma fonte, na cor dela e com a animação dela (`rules/luz.js APARENCIA_DA_LUZ`):
+   *   fogo   duas ondas que não casam: a chama treme sem repetir o compasso
+   *   vela   uma onda só, lenta e pequena
+   *   pulso  a luz de magia respira devagar
+   *   fixa   não se mexe
+   * A CHAMA tem o miolo mais claro que a cor (perto do branco) e a borda na cor cheia. A luz FRIA (magia, fungo,
+   * luar) fica na cor do miolo à borda: o brilho é SOMADO ao chão, e um miolo quase branco somado à estrada marrom
+   * dava bege, não azul. A lanterna coberta só brilha dentro do cone.
+   */
   pocaDeLuz(bg, f) {
     const { sx, sy } = this.center(f.pos.x, f.pos.y);
     const r = (Math.max(f.claro, 5) / 5) * this.casa;
-    // Duas ondas que não casam: o fogo treme sem repetir o compasso.
-    const pulso = Math.sin(this.time * 9 + f.pos.x * 1.7) * 0.02 + Math.sin(this.time * 14.3 + f.pos.y * 2.9) * 0.012;
-    for (const [esc, forca, cor] of [[0.55, 0.26, '255, 186, 96'], [1, 0.10, '255, 136, 52']]) {
+    const { cor, animacao } = aparenciaDaLuz(f);
+    const t = this.time;
+    const pulso = animacao === 'fogo' ? Math.sin(t * 9 + f.pos.x * 1.7) * 0.02 + Math.sin(t * 14.3 + f.pos.y * 2.9) * 0.012
+      : animacao === 'vela' ? Math.sin(t * 3.1 + f.pos.x) * 0.012
+        : animacao === 'pulso' ? Math.sin(t * 1.9 + f.pos.y) * 0.05
+          : 0;
+    const [rr, gg, bb] = rgbDe(cor);
+    const chama = animacao === 'fogo' || animacao === 'vela';
+    const branco = chama ? 0.35 : 0.08;
+    // a cor fria soma menos ao chão marrom que a quente (o vermelho dele é o canal mais cheio): mais força, para a
+    // luz de magia brilhar tanto quanto a tocha, que acende a mesma distância
+    const ganho = chama ? 1 : 1.5;
+    const miolo = `${Math.round(rr + (255 - rr) * branco)}, ${Math.round(gg + (255 - gg) * branco)}, ${Math.round(bb + (255 - bb) * branco)}`;
+    const borda = `${rr}, ${gg}, ${bb}`;
+    bg.save();
+    this.recortarCone(bg, f, sx, sy, r);
+    for (const [esc, forca, c] of [[0.55, 0.26 * ganho, miolo], [1, 0.10 * ganho, borda]]) {
       const g = bg.createRadialGradient(sx, sy, 3, sx, sy, r * esc);
-      g.addColorStop(0, `rgba(${cor}, ${forca + pulso})`);
-      g.addColorStop(0.55, `rgba(${cor}, ${(forca + pulso) * 0.35})`);
-      g.addColorStop(1, 'rgba(255, 120, 40, 0)');
+      g.addColorStop(0, `rgba(${c}, ${forca + pulso})`);
+      g.addColorStop(0.55, `rgba(${c}, ${(forca + pulso) * 0.35})`);
+      g.addColorStop(1, `rgba(${borda}, 0)`);
       bg.fillStyle = g;
       bg.beginPath();
       bg.arc(sx, sy, r * esc, 0, Math.PI * 2);
       bg.fill();
     }
+    bg.restore();
+  }
+
+  /** Recorta o contexto no cone da fonte (a lanterna coberta), se ela tiver um. Quem chama faz o save/restore. */
+  recortarCone(g, f, sx, sy, raio) {
+    const ang = Number(f.angulo);
+    if (!ang || ang >= 360) return;
+    const meio = ((Number(f.direcao) || 0) * Math.PI) / 180;
+    const meia = (ang * Math.PI) / 360;
+    g.beginPath();
+    g.moveTo(sx, sy);
+    g.arc(sx, sy, raio + 2, meio - meia, meio + meia);
+    g.closePath();
+    g.clip();
+  }
+
+  /**
+   * A NOITE DA CENA (`field.escuridao`, de 0 a 1): um véu azul-escuro por cima do mapa e das fichas, que chega aos
+   * poucos quando a escuridão muda (a transição do Foundry), e por baixo do brilho das luzes, que o fura. A regra
+   * de quem vê é a grade de luz (`rules/luz.js definirEscuridao`); isto é só o tom.
+   */
+  tomDaNoite(ctx, dt) {
+    const alvo = this.field.escuridao ?? 0;
+    const atual = this.escuridaoVista ?? alvo;
+    const passo = Math.min(1, (Number.isFinite(dt) ? dt : 0) * 0.9);
+    this.escuridaoVista = Math.abs(alvo - atual) < 0.005 ? alvo : atual + (alvo - atual) * passo;
+    if (this.escuridaoVista < 0.01) return;
+    ctx.save();
+    ctx.fillStyle = `rgba(8, 12, 34, ${0.45 * this.escuridaoVista})`;
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.restore();
   }
 
   retrato(look) {
