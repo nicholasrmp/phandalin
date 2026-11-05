@@ -964,7 +964,13 @@ teste('o Poço: a torre cabe os zumbis, e o grupo alcança boca, tenda, poço e 
   const f = montarCampo(mapa);
   const anda = (p) => !f.blocksMove(p.x, p.y);
   assert.ok(anda(POCO.porta), 'a boca da torre é casa de chão');
-  assert.ok(anda({ x: POCO.porta.x - 1, y: POCO.porta.y }), 'e a casa de onde o zumbi sai, também');
+  // os três primeiros zumbis saem em (porta.x - 1, porta.y - 1 + i): as três casas têm de ser chão
+  for (let i = 0; i < 3; i++) {
+    assert.ok(anda({ x: POCO.porta.x - 1, y: POCO.porta.y - 1 + i }), `a casa de onde o zumbi ${i + 1} sai`);
+  }
+  // o poço BARRA passo, e é a superfície que acende "Encher os cantis"
+  assert.equal(f.surfaceAt(POCO.poco.x, POCO.poco.y), 'pocoVelho', 'o poço tem a superfície que a cena escuta');
+  assert.ok(!anda(POCO.poco), 'e barra passo: fica-se ao lado dele');
   for (const s of POCO.saida) assert.ok(anda(s), `a saída ${s.x},${s.y}`);
   for (const t of POCO.tenda) assert.ok(anda(t), `a tenda ${t.x},${t.y}`);
   // os zumbis esperam dentro da torre, e TÊM de alcançar o pátio — senão a cena trava com eles presos
@@ -976,13 +982,20 @@ teste('o Poço: a torre cabe os zumbis, e o grupo alcança boca, tenda, poço e 
   const todas = (POCO.torre.x1 - POCO.torre.x0 + 1) * (POCO.torre.y1 - POCO.torre.y0 + 1);
   assert.equal(dentro.length, todas, 'toda casa da torre é chão');
   const doGrupo = f.reachable(mapa.grupo[0], 4000);
-  for (const p of [...mapa.grupo, POCO.porta, POCO.poco, ...POCO.saida, ...POCO.tenda, ...dentro]) {
+  for (const p of [...mapa.grupo, POCO.porta, ...POCO.saida, ...POCO.tenda, ...dentro]) {
     assert.ok(doGrupo.has(`${p.x},${p.y}`), `o grupo alcança ${p.x},${p.y}`);
   }
+  // o poço não se pisa; o que se precisa é chegar ao lado dele
+  assert.ok([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => doGrupo.has(`${POCO.poco.x + dx},${POCO.poco.y + dy}`)),
+    'o grupo chega ao lado do poço');
   // o caminho mais curto até o fundo da torre entra pela boca — é de lá que a cena faz os mortos saírem.
   // (O anel está QUEBRADO, como manda a ruína: há outra brecha no sudeste. A cena não depende de haver uma só.)
   const fundo = Battlefield.pathFrom(doGrupo, { x: 13, y: 4 }).map((p) => `${p.x},${p.y}`);
   assert.ok(fundo.includes(`${POCO.porta.x},${POCO.porta.y}`), `entra pela boca: ${fundo.join(' ')}`);
+  // Hamun Kost espera encostado na aba da tenda: a casa existe, anda-se nela e ela toca a barraca
+  const kost = { x: 6, y: 11 };
+  assert.ok(anda(kost) && doGrupo.has(`${kost.x},${kost.y}`), 'a casa de Kost é chão e se alcança');
+  assert.ok(POCO.tenda.some((q) => Math.abs(q.x - kost.x) <= 1 && Math.abs(q.y - kost.y) <= 1), 'e encosta na tenda');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

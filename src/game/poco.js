@@ -26,7 +26,7 @@ export const MAPA_POCO = {
     ",,LLLLLLLLLLLL,,,,",
     ",,LLLLLLLLLLLL,,,,",
     ",,LLL,LLLLLLLL,,,,",
-    ",,LL,L,LLLLLLLLL,,",
+    ",,LL,q,LLLLLLLLL,,",
     ",,LL,,,LLLLLLLLL,,",
     ",,LLLLLLLLLLLLLL,,",
     ",,LLLLLLLLLLLLLL,,",
@@ -103,7 +103,7 @@ export const MAPA_POCO = {
 
 export const POCO = {
   porta: {"x": 10, "y": 8},
-  poco: {"x": 4, "y": 14},
+  poco: {"x": 5, "y": 14},
   tenda: [{"x": 5, "y": 8}, {"x": 6, "y": 8}, {"x": 7, "y": 8}, {"x": 5, "y": 9}, {"x": 6, "y": 9}, {"x": 7, "y": 9}, {"x": 5, "y": 10}, {"x": 6, "y": 10}, {"x": 7, "y": 10}],
   torre: {"x0": 10, "y0": 3, "x1": 14, "y1": 8},
   patio: {"x0": 2, "y0": 6, "x1": 15, "y1": 17},

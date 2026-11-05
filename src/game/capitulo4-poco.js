@@ -28,6 +28,9 @@ import { skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rule
 import { distanceFt } from '../core/grid.js';
 import { hasCondition } from '../rules/conditions.js';
 import { makeMonster } from '../rules/monsters.js';
+// Onde Hamun Kost espera: encostado na aba da tenda, do lado de fora, olhando para quem sobe a trilha. Era
+// (9,11) na planta antiga, que a planta nova (18x22, do battlemap da FA) encolheu para fora do lugar.
+const DIANTE_DA_TENDA = { x: 6, y: 11 };
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { POCO } from './poco.js';
@@ -72,7 +75,7 @@ export function criarPoco(app, config) {
       zumbis.push(z);
     }
   }
-  const kost = ['morto', 'preso'].includes(salvo.kost) ? null : makeMonster('hamunKost', { x: 9, y: 11 });
+  const kost = ['morto', 'preso'].includes(salvo.kost) ? null : makeMonster('hamunKost', { ...DIANTE_DA_TENDA });
   if (kost) {
     kost.facingVec = { dx: 0, dy: 1 };
     // Com `falas`, o menu do botão direito oferece "Conversar" até no meio da
@@ -117,7 +120,7 @@ export function criarPoco(app, config) {
       enc.addCombatant(z);
     });
     if (kost && !kost.dead && !enc.combatants.includes(kost)) {
-      kost.pos = { ...kost.pos, ...casaPerto({ x: 9, y: 11 }) };
+      kost.pos = { ...kost.pos, ...casaPerto(DIANTE_DA_TENDA) };
       enc.addCombatant(kost);
     }
   }
@@ -361,11 +364,16 @@ export function criarPoco(app, config) {
   }
 
   // ------------------------------------------------------ botão direito ----
+  /** A casa é da tenda de Kost, ou está encostada nela? (`POCO.tenda`, as casas de dentro da barraca.) */
+  const naTenda = (t) => POCO.tenda.some((q) => Math.abs(q.x - t.x) <= 1 && Math.abs(q.y - t.y) <= 1);
+
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const ops = [];
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
-    if (sup === 'tenda' && !salvo.tenda) {
+    // A TENDA é a barraca desenhada no mapa (`POCO.tenda`), e não mais um glifo: a planta da FA a dá como três
+    // paredes e uma aba etérea ao sul, então ela é um cômodo, não um bloco. Revista-se de dentro ou de encostado.
+    if (naTenda(tile) && !salvo.tenda) {
       ops.push({
         rotulo: 'Revistar a tenda', icone: 'acao-procurar', motivo: longe(5)
           ?? (salvo.kost === 'morto' || salvo.kost === 'preso' ? null : 'o dono está aí dentro'),

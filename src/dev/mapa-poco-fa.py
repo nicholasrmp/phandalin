@@ -22,7 +22,10 @@ OS PONTOS, e como cada um foi MEDIDO (nada de olhômetro):
              `porta.x - 1`, que é (9,8). Há outra brecha no sudeste, em (15,8-9); a ficção usa esta.
     tenda    as quatro paredes da barraca de Kost estão na cena, de (5,8) a (8,11), com a aba (`move: 0`) ao
              sul: o interior é x 5..7, y 8..10.
-    poco     o buraco preto do desenho; centróide dos pixels escuros em (4,73 , 14,77) -> casa (4,14).
+    poco     o poço em si, com roldana e balde, na casa (5,14) — conferido OLHANDO o desenho ampliado, depois de
+             o centróide dos pixels escuros dar (4,73 , 14,77) e me levar à casa errada: a sombra e o balde
+             puxam o centro para fora da boca. A casa leva o glifo `q`, que barra passo: fica-se ao lado dele,
+             como se fica de um poço, e é isso que acende "Encher os cantis" no capítulo.
     patio    o retângulo da laje, pela classificação de cor.
     saida    a trilha de terra que desce ao sul e sai do mapa em y 21.
 
@@ -48,7 +51,7 @@ SAIDA = os.path.join(RAIZ, 'src', 'game', 'poco.js')
 
 # Os pontos, medidos (ver o cabeçalho). Mexeu no mapa, meça de novo com `provas()` abaixo.
 PORTA = (10, 8)
-POCO_ = (4, 14)
+POCO_ = (5, 14)
 TORRE = {'x0': 10, 'y0': 3, 'x1': 14, 'y1': 8}
 TENDA = [(x, y) for y in range(8, 11) for x in range(5, 8)]
 PATIO = {'x0': 2, 'y0': 6, 'x1': 15, 'y1': 17}
@@ -81,8 +84,13 @@ const f = montarCampo(m);
 const erros = [];
 const anda = (x, y) => !f.blocksMove(x, y);
 for (const [nome, x, y] of [['porta', {PORTA[0]}, {PORTA[1]}], ['saida da porta', {PORTA[0] - 1}, {PORTA[1]}],
-                            ['poco', {POCO_[0]}, {POCO_[1]}], ['saida', {SAIDA_CASAS[0][0]}, {SAIDA_CASAS[0][1]}]]) {{
+                            ['saida', {SAIDA_CASAS[0][0]}, {SAIDA_CASAS[0][1]}]]) {{
   if (!anda(x, y)) erros.push(`${{nome}} (${{x}},${{y}}) caiu em casa bloqueada`);
+}}
+// o poço BARRA passo (é um obstáculo): o que se confere é a superfície, que o capítulo escuta, e um lado livre
+if (f.surfaceAt({POCO_[0]}, {POCO_[1]}) !== 'pocoVelho') erros.push(`o poco (${POCO_[0]},${POCO_[1]}) nao tem a superficie pocoVelho`);
+if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => anda({POCO_[0]} + dx, {POCO_[1]} + dy))) {{
+  erros.push('nao da para chegar ao lado do poco');
 }}
 const alc = f.reachable({{ x: {POCO_[0]}, y: {POCO_[1]} }}, 4000);
 for (const [nome, x, y] of [['dentro da torre', 13, 4], ['a saida ao sul', {SAIDA_CASAS[0][0]}, {SAIDA_CASAS[0][1]}]]) {{
@@ -114,6 +122,10 @@ def main():
     h = len(base['terreno'])
     w = len(base['terreno'][0])
     t = terreno(w, h)
+    # o poço é obstáculo, não chão: `q` barra passo e dá a superfície que o capítulo escuta
+    linha = list(t[POCO_[1]])
+    linha[POCO_[0]] = 'q'
+    t[POCO_[1]] = ''.join(linha)
     provas(base, t)
 
     mapa = {
