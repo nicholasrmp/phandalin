@@ -283,15 +283,38 @@ for (x, y) in [(2, 15), (5, 15), (2, 17), (5, 17)]:
     glifo(x, y, 'z')
 
 # ------------------------------------------------------------ luz ----
+# AS LUZES SAEM DA CENA DO FOUNDRY, não do nosso chute. O battlemap da FA desenha cada tocha na parede, e a
+# cena traz as doze com posição, alcance e animação (`mapas/_cenas/redbrand-hideout-30x20.json`). As sete de
+# antes foram postas a olho sobre o mapa do Roll20; com o desenho trocado, quatro delas caíam onde a arte não
+# mostra fogo nenhum, e as tochas pintadas ficavam apagadas. Conferido na figura: cada uma destas cai em cima
+# de um suporte aceso do desenho.
+#
+# A COR não vem da cena. O Foundry dá `#7f4a14` com `luminosity` e `coloration` próprios, que o nosso
+# desenhador não tem; cru, sairia um marrom sujo. Então vem o TIPO, e a cor é a nossa (`rules/luz.js
+# APARENCIA_DA_LUZ`). O que importamos é onde a chama está e quanto ela alcança, que é o que a regra usa.
+#
+# E A CASA TEM DE SER DE CHÃO. No Foundry a luz é um ponto solto e pode ficar dentro da parede, no suporte da
+# tocha; aqui ela mora numa CASA, e luz dentro de pedra acende dos dois lados dela — `testes-cenas.mjs` pegou
+# isso. Quatro destas foram um passo para dentro do cômodo que elas iluminam.
+#
+# A DÉCIMA SEGUNDA FICOU DE FORA: a cena acende um fogo grande (bright 20) em (13,2), no corredor norte, e de
+# lá há linha de visão RETA pela coluna x=13 até o fundo da fenda, seis metros abaixo. A nossa planta dá à
+# fenda a mesma altura do corredor (quem desce usa o roteiro, não o degrau), então a chama iluminava o fundo
+# dela inteiro: 22 casas que o mapa quer escuras. Só sobreviveria com 5 pés de alcance, que não é fogo nenhum.
+# Enquanto a fenda não tiver altura própria, esta luz não entra.
 LUZES = []
 for (x, y, claro, penumbra, tipo) in [
-    (5, 2, 20, 20, 'fogueira'),      # 11 oficina: o alambique aceso
-    (6, 11, 20, 20, 'fogueira'),     # 10 sala de estar: o braseiro do jogo
-    (19, 8, 15, 15, 'fogueira'),     # 4 cripta: a tocha da parede leste
-    (7, 2, 15, 15, 'tocha'),         # 12 quarto: a vela da escrivaninha
-    (22, 4, 15, 15, 'tocha'),        # 5 jaulas: a lanterna
-    (4, 16, 15, 15, 'tocha'),        # 9 alojamento dos bugbears: a lamparina do teto
-    (24, 13, 15, 15, 'tocha'),       # 1 porão: a lamparina de parede
+    (18, 8, 15, 15, 'fogueira'),     # 4 cripta: a cena põe a chama no braseiro de (19,8), que é casa maciça
+    (8, 2, 5, 5, 'vela'),            # 12 quarto do mago: a chama pequena da escrivaninha (bright 5)
+    (17, 2, 15, 15, 'tocha'),        # 3 depósito de armas
+    (21, 5, 15, 15, 'tocha'),        # 5 jaulas
+    (17, 14, 15, 15, 'tocha'),       # 8 alojamento
+    (24, 13, 15, 15, 'tocha'),       # 1 porão
+    (24, 16, 15, 15, 'tocha'),       # 1 porão, a segunda
+    (6, 4, 15, 15, 'tocha'),         # 11 oficina
+    (3, 5, 15, 15, 'tocha'),         # 11 oficina, a do fundo
+    (4, 11, 15, 15, 'tocha'),        # 10 sala de estar
+    (4, 15, 15, 15, 'tocha'),        # 9 alojamento dos bugbears
 ]:
     LUZES.append({'pos': {'x': x, 'y': y}, 'claro': claro, 'penumbra': penumbra, 'tipo': tipo})
 

@@ -18,25 +18,7 @@ export const MAPA_MANSAO = {
   "luzes": [
     {
       "pos": {
-        "x": 5,
-        "y": 2
-      },
-      "claro": 20,
-      "penumbra": 20,
-      "tipo": "fogueira"
-    },
-    {
-      "pos": {
-        "x": 6,
-        "y": 11
-      },
-      "claro": 20,
-      "penumbra": 20,
-      "tipo": "fogueira"
-    },
-    {
-      "pos": {
-        "x": 19,
+        "x": 18,
         "y": 8
       },
       "claro": 15,
@@ -45,7 +27,16 @@ export const MAPA_MANSAO = {
     },
     {
       "pos": {
-        "x": 7,
+        "x": 8,
+        "y": 2
+      },
+      "claro": 5,
+      "penumbra": 5,
+      "tipo": "vela"
+    },
+    {
+      "pos": {
+        "x": 17,
         "y": 2
       },
       "claro": 15,
@@ -54,8 +45,8 @@ export const MAPA_MANSAO = {
     },
     {
       "pos": {
-        "x": 22,
-        "y": 4
+        "x": 21,
+        "y": 5
       },
       "claro": 15,
       "penumbra": 15,
@@ -63,8 +54,8 @@ export const MAPA_MANSAO = {
     },
     {
       "pos": {
-        "x": 4,
-        "y": 16
+        "x": 17,
+        "y": 14
       },
       "claro": 15,
       "penumbra": 15,
@@ -74,6 +65,51 @@ export const MAPA_MANSAO = {
       "pos": {
         "x": 24,
         "y": 13
+      },
+      "claro": 15,
+      "penumbra": 15,
+      "tipo": "tocha"
+    },
+    {
+      "pos": {
+        "x": 24,
+        "y": 16
+      },
+      "claro": 15,
+      "penumbra": 15,
+      "tipo": "tocha"
+    },
+    {
+      "pos": {
+        "x": 6,
+        "y": 4
+      },
+      "claro": 15,
+      "penumbra": 15,
+      "tipo": "tocha"
+    },
+    {
+      "pos": {
+        "x": 3,
+        "y": 5
+      },
+      "claro": 15,
+      "penumbra": 15,
+      "tipo": "tocha"
+    },
+    {
+      "pos": {
+        "x": 4,
+        "y": 11
+      },
+      "claro": 15,
+      "penumbra": 15,
+      "tipo": "tocha"
+    },
+    {
+      "pos": {
+        "x": 4,
+        "y": 15
       },
       "claro": 15,
       "penumbra": 15,
