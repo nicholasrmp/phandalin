@@ -122,12 +122,52 @@ def correntes(segmentos):
     return saida
 
 
+# A ANIMAÇÃO DO FOUNDRY -> o nosso tipo de luz (`rules/luz.js APARENCIA_DA_LUZ`), que já traz cor e animação.
+# O que não está aqui não se traduz, e o relatório diz quais foram — melhor avisar que chutar.
+TIPO_DA_ANIMACAO = {
+    'torch': None, 'flame': None, 'fire': None,          # pelo brilho, logo abaixo
+    'pulse': 'magica', 'starlight': 'magica', 'ghost': 'magica', 'energy': 'magica',
+    'witchwave': 'magica', 'radialrainbow': 'magica', 'rainbowswirl': 'magica',
+}
+
+
 def tipoDaLuz(cfg):
     anim = (cfg.get('animation') or {}).get('type')
     claro = cfg.get('bright', 0)
+    if anim in TIPO_DA_ANIMACAO and TIPO_DA_ANIMACAO[anim]:
+        return TIPO_DA_ANIMACAO[anim]
     if anim in ('torch', 'flame', 'fire'):
         return 'fogueira' if claro >= 15 else 'tocha'
     return 'tocha' if claro >= 10 else 'vela'
+
+
+# OS MARCADORES que a FA deixa no mapa: um `.svg` pequeno em cima da coisa. É a anotação dela de onde está o
+# quê, e vale ouro para quem for montar a cena — poupa procurar baú e armadilha no olho, casa a casa.
+# Viram OBJETO INTERAGÍVEL (`mapa.interativos`), que é o nosso jeito de dizer "tem algo aqui para mexer".
+# A ARMADILHA vira interagível também, e NÃO região: região precisa de CD, dano e teste, que o desenho não
+# sabe — isso vem do livro, e inventar número seria pôr ficção no dado. O relatório grita onde elas estão.
+MARCADORES = {
+    'trap': ('Armadilha', 'A Forgotten Adventures marcou armadilha aqui. A CD, o dano e o teste vêm do livro: '
+                          'vire isto numa região escondida (`rules/regioes.js`).'),
+    'chest': ('Um baú', 'A FA marcou um baú aqui.'),
+    'skull': ('Restos mortais', 'A FA marcou restos aqui.'),
+    'down': ('Descida', 'A FA marcou uma descida aqui.'),
+    'fire': ('Fogo', 'A FA marcou fogo aqui.'),
+    'explosion': ('Desabamento', 'A FA marcou um desabamento aqui.'),
+}
+# Estes são enfeite de editor (seta de direção, o "x" de passagem fechada): entram só no relatório.
+SO_RELATORIO = {'cancel', 'direction'}
+
+
+def interativosDosMarcadores(marcadores):
+    """Os marcadores como objeto interagível, numerados POR TIPO (`fachest1`, `fachest2`, `fatrap1`)."""
+    conta = {}
+    out = []
+    for m in sorted(marcadores, key=lambda m: (m['tipo'], m['y'], m['x'])):
+        conta[m['tipo']] = conta.get(m['tipo'], 0) + 1
+        out.append({'x': m['x'], 'y': m['y'], 'id': f"fa{m['tipo']}{conta[m['tipo']]}",
+                    'rotulo': m['rotulo'], 'texto': m['texto']})
+    return out
 
 
 def main():
@@ -201,6 +241,7 @@ def main():
     # ---- as luzes ----
     luzes = []
     fora = 0
+    semTraducao = set()
     for l in cena.get('lights', []):
         if l.get('hidden'):
             continue
@@ -211,9 +252,33 @@ def main():
         if not (0 <= cx < W and 0 <= cy < H):
             fora += 1
             continue
-        luzes.append({'x': int(cx), 'y': int(cy), 'claro': round(cfg.get('bright', 0)),
-                      'penumbra': round(cfg.get('dim', 0) - cfg.get('bright', 0)), 'tipo': tipoDaLuz(cfg)})
-    print(f'  luzes: {len(luzes)}' + (f'; {fora} fora da imagem, na moldura — ficaram de fora' if fora else ''), file=rel)
+        # O QUE A CENA JÁ SABE DA LUZ, e o nosso motor agora guarda (`rules/luz.js`): a COR, o CONE (`angle` do
+        # Foundry mais a rotação da luz) e o "só acende no escuro" (`darkness.min`, o lampião que espera anoitecer).
+        anim = (cfg.get('animation') or {}).get('type')
+        angulo = cfg.get('angle', 360)
+        escuro = ((cfg.get('darkness') or {}).get('min') or 0)
+        luz = {'x': int(cx), 'y': int(cy), 'claro': round(cfg.get('bright', 0)),
+               'penumbra': round(cfg.get('dim', 0) - cfg.get('bright', 0)), 'tipo': tipoDaLuz(cfg)}
+        if cfg.get('color'):
+            luz['cor'] = cfg['color']
+        if angulo and angulo < 360:
+            luz['angulo'] = round(angulo)
+            luz['direcao'] = round((l.get('rotation') or 0) + 90) % 360      # 0 do Foundry aponta para cima
+        if escuro > 0:
+            luz['soNoEscuro'] = round(escuro, 2)
+        if anim and anim not in TIPO_DA_ANIMACAO:
+            semTraducao.add(anim)
+        luzes.append(luz)
+    comCone = sum(1 for l in luzes if 'angulo' in l)
+    comCor = sum(1 for l in luzes if 'cor' in l)
+    soNoEscuro = sum(1 for l in luzes if 'soNoEscuro' in l)
+    detalhe = ', '.join(p for p in [f'{comCor} com cor própria' if comCor else '',
+                                    f'{comCone} em cone' if comCone else '',
+                                    f'{soNoEscuro} só no escuro' if soNoEscuro else ''] if p)
+    print(f'  luzes: {len(luzes)}' + (f' ({detalhe})' if detalhe else '')
+          + (f'; {fora} fora da imagem, na moldura — ficaram de fora' if fora else ''), file=rel)
+    if semTraducao:
+        print(f'    animação do Foundry SEM equivalente nosso, ficou no tipo pelo brilho: {", ".join(sorted(semTraducao))}', file=rel)
 
     # ---- os ladrilhos comutáveis viram SOBREPOSIÇÕES ----
     #
@@ -222,13 +287,27 @@ def main():
     # interagível, que é ação do jogador e não controle de mestre. Também ficam de fora o `.webm` (prop em
     # vídeo) e o que está na moldura, fora do mapa — a UI do "Control Scroll" da FA mora ali.
     sobre = []
-    pulados = {'interruptor': 0, 'vídeo': 0, 'na moldura': 0}
+    pulados = {'interruptor': 0, 'marcador': 0, 'enfeite': 0, 'vídeo': 0, 'na moldura': 0}
     interruptores = []
+    marcadores = []
+    enfeites = []
     for t in cena.get('tiles', []):
         src = (t.get('texture') or {}).get('src') or ''
         arq = src.split('/')[-1]
         base, _, ext = arq.rpartition('.')
         cx, cy = casa(t['x'], t['y'])
+        if ext.lower() == 'svg' and base.lower() in MARCADORES:
+            # o marcador da FA: vira objeto interagível, na casa em que ele está
+            pulados['marcador'] += 1
+            if 0 <= cx < W and 0 <= cy < H:
+                rotulo, texto = MARCADORES[base.lower()]
+                marcadores.append({'x': int(cx), 'y': int(cy), 'tipo': base.lower(), 'rotulo': rotulo, 'texto': texto})
+            continue
+        if ext.lower() == 'svg' and base.lower() in SO_RELATORIO:
+            pulados['enfeite'] += 1
+            if 0 <= cx < W and 0 <= cy < H:
+                enfeites.append((int(cx), int(cy), base.lower()))
+            continue
         if ext.lower() in ('svg',) or base.lower() == 'transparent':
             pulados['interruptor'] += 1
             if 0 <= cx < W and 0 <= cy < H:
@@ -267,6 +346,26 @@ def main():
     for o in sobre:
         del o['arquivo']
 
+    # O QUE A FA MARCOU NO MAPA: é a resposta pronta de "onde fica cada coisa", e é o que mais poupa trabalho
+    # de quem for montar a cena. A armadilha sai em destaque porque ela ainda precisa do livro para virar regra.
+    if marcadores:
+        porTipoM = {}
+        for m in marcadores:
+            porTipoM.setdefault(m['tipo'], []).append(f"{m['x']},{m['y']}")
+        print('  MARCADORES da FA (viram objeto interagível no mapa): '
+              + '; '.join(f'{t} em {", ".join(cs)}' for t, cs in sorted(porTipoM.items())), file=rel)
+        if 'trap' in porTipoM:
+            print(f'    ARMADILHA marcada em {", ".join(porTipoM["trap"])} — vire em região escondida com a CD e o '
+                  'dano do livro (`rules/regioes.js`); o importador não inventa número.', file=rel)
+    if enfeites:
+        print('  marcas de editor (seta, "x" de passagem fechada), só para saber: '
+              + ', '.join(f'{n} em {x},{y}' for x, y, n in sorted(enfeites, key=lambda e: (e[1], e[0]))), file=rel)
+    # OS LADRILHOS COM NOME dizem que sala é cada canto do desenho: `Room19_...`, `TempleLight`, `SpellForge...`.
+    # O nome é da FA, não do livro, mas é o bastante para achar cada área sem procurar no olho.
+    if sobre:
+        print('  o que cada peça de arte nomeia (serve de índice das salas):', file=rel)
+        for o in sorted(sobre, key=lambda o: (o['y'], o['x'])):
+            print(f"    {o['id'][:40]:42s} casa ({o['x']},{o['y']}) {o['w']}x{o['h']}", file=rel)
     if interruptores:
         # Onde o Foundry põe o duplo clique do mestre é onde a nossa cena deve pôr um objeto interagível
         # (`interativos`, ferramenta 9), que é a mesma ideia virada para o jogador: ele chega perto e mexe.
@@ -290,8 +389,10 @@ def main():
             'objetos': [], 'salas': {}, 'folhas': [], 'vaoUnido': [], 'grades': [],
             'tracos': [[list(p) for p in linha] for linha in linhas],
             **({'tracosTipo': tracosTipo} if tracosTipo else {}),
-            'luzes': [{'pos': {'x': l['x'], 'y': l['y']}, 'claro': l['claro'],
-                       'penumbra': l['penumbra'], 'tipo': l['tipo']} for l in luzes],
+            'luzes': [{'pos': {'x': l['x'], 'y': l['y']},
+                       **{c: l[c] for c in ('claro', 'penumbra', 'tipo', 'cor', 'animacao', 'angulo', 'direcao', 'soNoEscuro')
+                          if c in l}} for l in luzes],
+            **({'interativos': interativosDosMarcadores(marcadores)} if marcadores else {}),
             'luz': 'escuro',
             **({'sobreposicoes': sobre} if sobre else {}),
             'fundo': {'nome': nome, 'url': f'/mapas/{nome}', 'escala': g, 'x0': 0, 'y0': 0,
@@ -333,9 +434,18 @@ def main():
         print('],\n')
     print('luzes: [')
     for l in luzes:
+        extra = ''.join(f", {c}: {json.dumps(l[c], ensure_ascii=False)}"
+                        for c in ('cor', 'animacao', 'angulo', 'direcao', 'soNoEscuro') if c in l)
         print(f"  {{ pos: {{ x: {l['x']}, y: {l['y']} }}, claro: {l['claro']}, "
-              f"penumbra: {l['penumbra']}, tipo: '{l['tipo']}' }},")
+              f"penumbra: {l['penumbra']}, tipo: '{l['tipo']}'{extra} }},")
     print('],')
+    if marcadores:
+        print()
+        print('interativos: [')
+        for o in interativosDosMarcadores(marcadores):
+            print(f"  {{ x: {o['x']}, y: {o['y']}, id: '{o['id']}', "
+                  f"rotulo: {json.dumps(o['rotulo'], ensure_ascii=False)}, texto: {json.dumps(o['texto'], ensure_ascii=False)} }},")
+        print('],')
 
 
 if __name__ == '__main__':

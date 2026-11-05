@@ -249,9 +249,20 @@ tira a aresta de casa do traço (é ela que barra movimento), semeia nas LUZES, 
 alcançar. Semear no maior pedaço não serve aqui: com tudo de chão, o maior pedaço é o lado de FORA. Com `--chao-pela-cor` o recorte vem do
 preto da imagem — dá 56 casas a menos, porque come a casa de borda que é meio caverna meio vazio.
 Cada parede do Foundry vira traço COM TIPO (`tracosTipo`), pelo que ela barra (`move`, `sight`, `sound`, `door`): porta `+`, etérea `E`,
-janela `W`, invisível `I`, moita `T`. Só a que não barra nada fica de fora. O relatório conta cada tipo e diz o que NÃO atravessa:
-ladrilho de overlay, som e região.
-Medido no Cragmaw Hideout: 371 de 382 paredes, 23 traços, 3 luzes, 330 casas de chão, e **0 achados** em `conferir-paredes.mjs`.
+janela `W`, invisível `I`, moita `T`. Só a que não barra nada fica de fora.
+A **LUZ vem inteira**: cor (`config.color`), cone (`config.angle` mais a rotação da luz; o 0 do Foundry aponta para cima, o nosso para
+leste), "só acende no escuro" (`darkness.min` → `soNoEscuro`) e o tipo pela animação (`torch`/`flame`/`fire` pelo brilho; `pulse`,
+`starlight`, `ghost`, `energy` viram magia). A animação sem equivalente nosso (`fog`, `wave`) **o relatório nomeia** em vez de fingir que
+traduziu.
+**E A CENA JÁ DIZ ONDE FICA CADA COISA.** A FA deixa marcadores `.svg` em cima das coisas, e eles viram OBJETO INTERAGÍVEL
+(`mapa.interativos`, ids `fachest1`, `fatrap1`...): `trap`, `chest`, `skull`, `down`, `fire`, `explosion`. A **armadilha não vira região**:
+região precisa de CD, dano e teste, que o desenho não sabe — isso vem do livro, e o importador não inventa número; ele grita no relatório
+onde ela está. `cancel` e `direction` são enfeite de editor e entram só no relatório. Os ladrilhos com nome (`PitTrap`, `Crypt1`, `Cells`,
+`Room19_...`, `SpellForgeWorkshop`) saem numa tabela com casa e tamanho: é o índice das salas, de graça.
+Medido: Cragmaw Hideout 377 de 382 paredes, 26 traços, 330 casas de chão (as mesmas de antes) e **0 achados** em `conferir-paredes.mjs`;
+Redbrand 196 de 202, com 17 portas, 12 luzes coloridas e marcador de armadilha em 22,11 (o nosso fosso está em 23,9); Castelo 427 de 428,
+21 portas e 31 luzes EM CONE (as seteiras); Onda Eco 1274 de 1293, 13 portas e 7 marcadores.
+As cenas da FA são JSON público e **não entram no repositório**: ficam em `mapas/_cenas/` (ignorado), como a arte.
 Para ver: carregue o JSON em `localStorage['phandalin.editor.mapa']` e abra `/editor.html` ou `?encontro=editor`.
 
 **O Esconderijo (capítulo 2) roda sobre o battlemap da FA.** O mapa sai de
