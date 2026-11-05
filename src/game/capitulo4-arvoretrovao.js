@@ -1382,6 +1382,8 @@ export function criarArvoreTrovao(app, config) {
 
   return {
     lugar: 'Ruínas de Árvore Trovão',
+    // as portas desta cena têm roteiro próprio (teste, dono, barulho): a porta genérica (`game/portas.js`) fica de fora
+    portasProprias: true,
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,

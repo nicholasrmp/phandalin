@@ -15,7 +15,7 @@ const DADOS = [
   'terreno', 'altura', 'objetos', 'paredes', 'salas', 'folhas', 'vaoUnido', 'grades', 'decor', 'decorCasa', 'degraus', 'pisos', 'luz', 'luzes',
   'materialDaParede', 'vaoPorCasa', 'fachadaUnica', 'fachadaFechada', 'cliqueNoObjeto', 'rochaEmCorte', 'paredeDeCaverna', 'poeira',
   'paredeAlta', 'veuDaEscuridao', 'avisosDeVista', 'grupo', 'olhar', 'cena', 'fundo', 'tracos', 'secretas', 'interativos',
-  'frente', 'sobreposicoes', 'regioes',
+  'frente', 'sobreposicoes', 'regioes', 'trancas',
 ];
 
 /** Copia só os dados do mapa (Set vira lista, função some) e devolve um objeto novo, seguro de mexer. */
@@ -145,7 +145,21 @@ export const ESTILOS_DE_ARESTA = {
   // roteiro da cena, a aresta que ele abre quando alguém a acha. Era dado solto de cada capítulo (a Mansão tinha
   // `MANSAO.secretas` dentro dela); agora mora no mapa, que é onde se desenha e onde a conferência a lê.
   secreta: { rotulo: 'Passagem secreta', car: '#', secreta: true },
+  // A PORTA TRANCADA: fechada no mapa (`+`) e com uma entrada em `m.trancas` — `{ aresta, cd }`. O jogo oferece
+  // abrir a fechadura (Destreza com ferramentas de ladrão), arrombar (Força) e, se alguém tiver, a chave
+  // (`game/portas.js`). Sem roteiro.
+  comTranca: { rotulo: 'Porta trancada (com CD)', car: '+', tranca: true },
+  // As restrições separadas da parede do Foundry (`core/grid.js RESTRICOES`): cada uma barra uma parte só.
+  eterea: { rotulo: 'Etérea (parece parede, se atravessa)', car: 'E' },
+  invisivel: { rotulo: 'Barreira invisível (só barra o passo)', car: 'I' },
+  limitada: { rotulo: 'Limitada (moita: a 2ª barra a visão)', car: 'T' },
+  janela: { rotulo: 'Janela (vê, não passa)', car: 'W' },
+  unicaMais: { rotulo: 'Mão única: só para leste ou sul', car: '>' },
+  unicaMenos: { rotulo: 'Mão única: só para oeste ou norte', car: '<' },
 };
+
+/** A tranca desta aresta (`{ aresta, cd }`), ou `null`. */
+export const trancaDaAresta = (m, x, y, lado) => (m.trancas ?? []).find((t) => t.aresta === `${x},${y},${lado}`) ?? null;
 
 /**
  * PAREDE EM VOLTA DE UMA CAIXA, de uma arrastada só — o que no Foundry vem de módulo (Indy Walls, Wayfinder) e
@@ -184,6 +198,8 @@ function garantirParedes(m) {
   m.folhas ??= []; m.vaoUnido ??= []; m.grades ??= []; m.secretas ??= [];
 }
 
+const TIPO_DO_CAR = { '+': 'trancada', E: 'eterea', I: 'invisivel', T: 'limitada', W: 'janela', '>': 'unicaMais', '<': 'unicaMenos' };
+
 export function estiloDaAresta(m, x, y, lado) {
   if (!dentro(m, x, y)) return 'nada';
   const car = m.paredes?.[lado === 'N' ? 'n' : 'o']?.[y]?.[x] ?? '.';
@@ -191,7 +207,8 @@ export function estiloDaAresta(m, x, y, lado) {
   if (car === 'J') return m.grades?.includes(`${x},${y},${lado}`) ? 'grade' : 'seteira';
   // parede e passagem secreta são o MESMO caractere: quem as separa é a lista, não o desenho da grade
   if (car === '#') return naLista(m.secretas, x, y, lado) ? 'secreta' : 'parede';
-  return { '+': 'trancada' }[car] ?? 'nada';
+  if (car === '+' && trancaDaAresta(m, x, y, lado)) return 'comTranca';
+  return TIPO_DO_CAR[car] ?? 'nada';
 }
 
 /** A aresta está numa lista de pares de casas (`folhas`, `secretas`)? */
@@ -204,12 +221,18 @@ function naLista(lista, x, y, lado) {
 const temFolha = (m, x, y, lado) => naLista(m.folhas, x, y, lado);
 
 /** Põe um estilo numa aresta. Devolve false se nada mudou (ou se a aresta é do contorno de fora do mapa). */
-export function pintarAresta(m, x, y, lado, estilo) {
+export function pintarAresta(m, x, y, lado, estilo, { cd = 15 } = {}) {
   const e = ESTILOS_DE_ARESTA[estilo];
   if (!e || !dentro(m, x, y)) return false;
   if ((lado === 'N' && y === 0) || (lado === 'O' && x === 0)) return false;
   garantirParedes(m);
-  if (estiloDaAresta(m, x, y, lado) === estilo) return false;
+  if (estiloDaAresta(m, x, y, lado) === estilo) {
+    // a mesma porta trancada com outra CD: troca só a CD
+    const t = e.tranca ? trancaDaAresta(m, x, y, lado) : null;
+    if (!t || t.cd === cd) return false;
+    t.cd = cd;
+    return true;
+  }
   trocar(m.paredes[lado === 'N' ? 'n' : 'o'], x, y, e.car);
   const [a, b] = casasDaAresta(x, y, lado);
   const k = `${x},${y},${lado}`;
@@ -220,6 +243,9 @@ export function pintarAresta(m, x, y, lado, estilo) {
   if (e.folha) m.folhas.push([a, b]);
   if (e.grade) m.grades.push(k);
   if (e.secreta) m.secretas.push([a, b]);
+  m.trancas = (m.trancas ?? []).filter((t) => t.aresta !== k);
+  if (e.tranca) m.trancas.push({ aresta: k, cd });
+  if (!m.trancas.length) delete m.trancas;
   return true;
 }
 
@@ -880,6 +906,7 @@ export function redimensionar(m, borda, n) {
   m.folhas = m.folhas.map(([a, b]) => [move(a), move(b)]).filter(([a, b]) => ok(a) && ok(b));
   m.vaoUnido = m.vaoUnido.map(chaveMove);
   m.grades = m.grades.map(chaveMove);
+  if (m.trancas) m.trancas = m.trancas.map((t) => ({ ...t, aresta: chaveMove(t.aresta) })).filter((t) => { const [x, y] = t.aresta.split(',').map(Number); return ok({ x, y }); });
   m.grupo = (m.grupo ?? []).map(move).map((p) => (ok(p) ? p : { x: 1, y: 1 }));
   // o traço de parede livre anda junto com as casas
   if (m.tracos) m.tracos = m.tracos.map((pts) => pts.map(([x, y]) => [+(x + dx).toFixed(3), +(y + dy).toFixed(3)]));

@@ -13,7 +13,7 @@
 // - sem traço, a aresta de casa (parede, porta fechada) e a casa que tapa a vista (`blocksSight`). Essa casa entra
 //   no polígono inteira: a parede se vê, o que está atrás dela não.
 
-import { ARESTA } from '../core/grid.js';
+import { barraVisaoAlemDoTraco } from '../core/grid.js';
 
 const EPS = 1e-7;
 
@@ -55,6 +55,7 @@ function lancar(field, idx, ox, oy, ang, raio) {
   let maxX = Math.abs(dx) > EPS ? (dx > 0 ? cx + 1 - ox : ox - cx) * deltaX : Infinity;
   let maxY = Math.abs(dy) > EPS ? (dy > 0 ? cy + 1 - oy : oy - cy) * deltaY : Infinity;
   let melhor = raio;
+  let limitadas = 0;   // a moita: a primeira aresta limitada deixa ver, a segunda para o raio (como na regra)
   const vistos = idx ? new Set() : null;
   for (let guarda = 0; guarda < 4096; guarda++) {
     if (idx) {
@@ -76,8 +77,10 @@ function lancar(field, idx, ox, oy, ang, raio) {
     let ny = cy;
     if (maxX < maxY) { nx += passoX; maxX += deltaX; } else { ny += passoY; maxY += deltaY; }
     if (!field.inside(nx, ny)) { melhor = Math.min(melhor, sai); break; }
+    limitadas += field.limitadasNoPasso?.(cx, cy, nx, ny, 'visao') ?? 0;
+    if (limitadas >= 2) { melhor = Math.min(melhor, sai); break; }
     if (idx) {
-      if (field.aresta(cx, cy, nx, ny) === ARESTA.porta) { melhor = Math.min(melhor, sai); break; }
+      if (barraVisaoAlemDoTraco(field.aresta(cx, cy, nx, ny))) { melhor = Math.min(melhor, sai); break; }
     } else {
       if (!field.passa(cx, cy, nx, ny, 'visao')) { melhor = Math.min(melhor, sai); break; }
       // a casa que tapa a vista entra inteira: vê-se a parede, não o que há atrás

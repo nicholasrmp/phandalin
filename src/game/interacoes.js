@@ -26,6 +26,7 @@ import { chaveDoTesouro, porqueNaoSaquear } from './saque.js';
 import { opcoesDeClasse } from './interacoes-classe.js';
 import { opcoesDeAtencao, opcaoDeExaminarCorpo, opcaoDeLembrarCriatura, opcaoDoDiario } from './investigar.js';
 import { opcaoDeFogo } from './fogo.js';
+import { opcoesDePorta } from './portas.js';
 
 /** Linhas "Dar item" por aliado no menu (o servidor da sala aceita escolha de menu até 60). */
 const MAX_DAR = 24;
@@ -604,6 +605,10 @@ export function opcoesDaCasa(app, tile) {
     });
   }
   for (const o of app.capitulo?.interacoes?.(tile, sup, c) ?? []) opcoes.push(o);
+  // AS PORTAS do mapa (`game/portas.js`), quando a cena não as oferece ela mesma: abrir, fechar, e a trancada.
+  if (c && (fora || vez) && !app.capitulo?.portasProprias && !opcoes.some((o) => /porta|fechadura|tranca/i.test(o.rotulo ?? ''))) {
+    opcoes.push(...opcoesDePorta(app, c, tile, { fora }));
+  }
   if (explorando) opcoes.push(...opcoesDeMagia(app, c, { tile }));
   const dist = c ? distanceFt(c.pos, tile) : null;
   if (corpos.length) {

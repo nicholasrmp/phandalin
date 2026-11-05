@@ -127,7 +127,8 @@ export function nivelDeLuz(field, x, y, fontes) {
     if (d > f.claro + f.penumbra) continue;
     // `field` nem sempre é um `Battlefield` cheio (há chamada com campo de
     // teste): sem a função, vale a conta antiga, só de distância.
-    if (d > 0 && field.hasLineOfSight && !field.hasLineOfSight(f.pos, { x, y })) continue;
+    // a reta da LUZ, que pergunta a cada aresta a restrição de luz (a janela deixa, a parede etérea não)
+    if (d > 0 && field.hasLineOfSight && !field.hasLineOfSight(f.pos, { x, y }, 'luz')) continue;
     if (d <= f.claro) nivel = CLARO;
     else nivel = Math.max(nivel, PENUMBRA);
   }

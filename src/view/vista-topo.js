@@ -167,7 +167,11 @@ export function pintarGrade(ctx, field, C, cor = 'rgba(0,0,0,.28)') {
 
 const COR_DA_ARESTA = {
   [ARESTA.parede]: '#9ad7ff', [ARESTA.porta]: '#ffb347', [ARESTA.aberta]: '#7bd88f', [ARESTA.seteira]: '#c49cff',
+  [ARESTA.eterea]: '#d6b8ff', [ARESTA.invisivel]: '#ff7ad1', [ARESTA.limitada]: '#a5d86a', [ARESTA.janela]: '#7fe3ff',
+  [ARESTA.unicaMais]: '#ffe066', [ARESTA.unicaMenos]: '#ffe066',
 };
+// No editor, o traço de cada tipo também diz o que ele é: tracejado o que não se vê no jogo, pontilhado a limitada.
+const TRACEJADO = { [ARESTA.invisivel]: [7, 5], [ARESTA.limitada]: [2, 5], [ARESTA.eterea]: [10, 4] };
 
 /** Uma aresta. `aMostra` desenha como o editor do Foundry: linha fina e colorida, para ver o mapa pintado por baixo. */
 export function traco(ctx, x0, y0, x1, y1, codigo, C, aMostra) {
@@ -175,12 +179,30 @@ export function traco(ctx, x0, y0, x1, y1, codigo, C, aMostra) {
   if (aMostra) {
     const cor = COR_DA_ARESTA[codigo] ?? '#fff';
     ctx.strokeStyle = cor; ctx.lineWidth = 3;
+    ctx.setLineDash(TRACEJADO[codigo] ?? []);
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.setLineDash([]);
     ctx.fillStyle = cor;
     for (const [px, py] of [[x0, y0], [x1, y1]]) { ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill(); }
+    if (codigo === ARESTA.unicaMais || codigo === ARESTA.unicaMenos) setaDaMaoUnica(ctx, x0, y0, x1, y1, codigo, C, cor);
     return;
   }
-  if (codigo === ARESTA.parede || codigo === ARESTA.seteira) {
+  // no jogo, o que não se vê não se desenha: a barreira invisível, a moita (a pintura mostra a moita) e a mão única
+  if (codigo === ARESTA.invisivel || codigo === ARESTA.limitada || codigo === ARESTA.unicaMais || codigo === ARESTA.unicaMenos) return;
+  if (codigo === ARESTA.janela) {
+    ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    // o vidro: um fio claro no meio do vão
+    const mx = (x0 + x1) / 2; const my = (y0 + y1) / 2;
+    ctx.strokeStyle = 'rgba(170,215,240,.85)'; ctx.lineWidth = Math.max(2, C * 0.045);
+    ctx.beginPath();
+    ctx.moveTo(mx - (x1 - x0) * 0.32, my - (y1 - y0) * 0.32);
+    ctx.lineTo(mx + (x1 - x0) * 0.32, my + (y1 - y0) * 0.32);
+    ctx.stroke();
+    return;
+  }
+  // a etérea PARECE parede: é esse o ponto dela
+  if (codigo === ARESTA.parede || codigo === ARESTA.seteira || codigo === ARESTA.eterea) {
     ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
     ctx.strokeStyle = 'rgba(190,180,165,.35)'; ctx.lineWidth = 1.5;
@@ -206,6 +228,42 @@ export function traco(ctx, x0, y0, x1, y1, codigo, C, aMostra) {
   ctx.moveTo(mx - (x1 - x0) * t / 2, my - (y1 - y0) * t / 2);
   ctx.lineTo(mx + (x1 - x0) * t / 2, my + (y1 - y0) * t / 2);
   ctx.stroke();
+}
+
+const OCULTAS_NO_JOGO = new Set([ARESTA.invisivel, ARESTA.limitada, ARESTA.unicaMais, ARESTA.unicaMenos]);
+
+/**
+ * No EDITOR, as arestas que o jogo não desenha (a barreira invisível, a moita, a mão única) — senão quem edita não as
+ * acha para mexer. Vão no estilo fino e colorido, por cima do desenho do jogo.
+ */
+export function pintarArestasOcultas(ctx, field, C) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  const vale = (codigo) => (OCULTAS_NO_JOGO.has(codigo) ? codigo : 0);
+  for (let y = 0; y < field.h; y++) {
+    for (let x = 0; x < field.w; x++) {
+      const i = y * field.w + x;
+      traco(ctx, x * C, y * C, (x + 1) * C, y * C, vale(field.paredeN[i]), C, true);
+      traco(ctx, x * C, y * C, x * C, (y + 1) * C, vale(field.paredeO[i]), C, true);
+    }
+  }
+  ctx.restore();
+}
+
+/** A seta da mão única, no meio da aresta, apontando para onde se pode ir. */
+function setaDaMaoUnica(ctx, x0, y0, x1, y1, codigo, C, cor) {
+  const mx = (x0 + x1) / 2; const my = (y0 + y1) / 2;
+  const horizontal = y0 === y1;               // a aresta de cima de uma casa: atravessa-se no eixo y
+  const s = codigo === ARESTA.unicaMais ? 1 : -1;
+  const [dx, dy] = horizontal ? [0, s] : [s, 0];
+  const k = Math.max(5, C * 0.16);
+  ctx.fillStyle = cor;
+  ctx.beginPath();
+  ctx.moveTo(mx + dx * k, my + dy * k);
+  ctx.lineTo(mx - dx * k * 0.2 + dy * k * 0.6, my - dy * k * 0.2 + dx * k * 0.6);
+  ctx.lineTo(mx - dx * k * 0.2 - dy * k * 0.6, my - dy * k * 0.2 - dx * k * 0.6);
+  ctx.closePath();
+  ctx.fill();
 }
 
 export function pintarArestas(ctx, field, C, aMostra = false, soPortas = false) {

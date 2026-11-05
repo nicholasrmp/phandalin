@@ -84,7 +84,7 @@ const sel = {
   ferramenta: 'fundo', piso: ':', estilo: 'parede', luz: 'fogueira', altura: 1, sala: 'sala1', inicio: 0,
   interativo: { id: 'bau', rotulo: 'Abrir o baú', texto: 'Um baú de carvalho com ferragens.', oculto: false, pistaVerbo: '', pistaCd: 10, pistaAchado: '' },
   modoPiso: 'pincel', modoAresta: 'aresta', modoFrente: 'pincel', frenteMarca: true,
-  modoRegiao: 'retangulo', regiaoMarca: true,
+  modoRegiao: 'retangulo', regiaoMarca: true, cdTranca: 15,
   sobrepor: { id: '', url: '/mapas/fa/ChestOpen.webp', frente: false, ligada: true },
   celula: 64, verChao: true, verGrade: true, verMoveis: true, arestasFinas: false,
   fundoModo: 'calibrar', colunas: 5, linhas: 5,
@@ -194,6 +194,8 @@ function desenharTopo() {
   if (comTracos) ctx.globalAlpha = 0.3;
   T.pintarArestas(ctx, campo, C, sel.arestasFinas || comFundo);
   ctx.restore();
+  // o que o jogo não desenha (barreira invisível, moita, mão única), o editor mostra: senão não se acha para mexer
+  if (!(sel.arestasFinas || comFundo)) T.pintarArestasOcultas(ctx, campo, C);
   if (comTracos) T.pintarTracos(ctx, mapa.tracos, C, sel.arestasFinas || comFundo);
   marcarTopo(ctx, C);
 }
@@ -411,7 +413,7 @@ function agir(e, primeira) {
     }
     const estilo = pressionado?.estilo ?? sel.estilo;
     pressionado = { chave, estilo };
-    aplicar(M.pintarAresta(mapa, a.x, a.y, a.lado, estilo));
+    aplicar(M.pintarAresta(mapa, a.x, a.y, a.lado, estilo, { cd: Number(sel.cdTranca) || 15 }));
     return;
   }
   const t = casaDe(e);
@@ -1040,6 +1042,12 @@ function montarPainel() {
       <p class="dica">Passe o mouse perto da borda de uma casa: a aresta acende. Clique (ou arraste ao longo da parede) para pôr o estilo. Clicar de novo no mesmo estilo apaga.</p>
       <p class="dica"><b>Passagem secreta</b> é parede para quem joga: fica igual a uma parede no tabuleiro e entra
       em <code>secretas</code>, que é o que o roteiro da cena abre quando alguém a acha.</p>
+      <label class="linha">CD da porta trancada <input type="number" id="cdTranca" min="5" max="30" value="${sel.cdTranca}" style="width:5em" /></label>
+      <p class="dica"><b>Porta trancada</b>: no jogo, quem encosta pode abrir a fechadura (Destreza com ferramentas de
+      ladrão, contra a CD), arrombar (Força, CD + 5) ou usar a chave. Sem roteiro. Clicar de novo com outra CD troca a CD.</p>
+      <p class="dica">As <b>restrições separadas</b>, como no Foundry: a <b>etérea</b> parece parede e se atravessa; a
+      <b>invisível</b> só barra o passo (e não aparece no jogo); a <b>limitada</b> é a moita — a primeira não barra a
+      visão, a segunda sim; a <b>janela</b> deixa ver e não passar; a <b>mão única</b> só deixa passar num sentido.</p>
       <h2>Como desenhar</h2>
       <div class="lista">
         <button data-modoaresta="aresta">Aresta a aresta</button>
@@ -1166,6 +1174,7 @@ function montarPainel() {
     sel.piso = b.dataset.piso;
     L.querySelectorAll('[data-piso]').forEach((x) => x.classList.toggle('on', x === b));
   }));
+  $('cdTranca').addEventListener('input', (e) => { sel.cdTranca = Math.max(5, Math.min(30, Number(e.target.value) || 15)); });
   L.querySelectorAll('[data-estilo]').forEach((b) => b.addEventListener('click', () => {
     sel.estilo = b.dataset.estilo;
     L.querySelectorAll('[data-estilo]').forEach((x) => x.classList.toggle('on', x === b));

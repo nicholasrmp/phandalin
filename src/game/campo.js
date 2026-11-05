@@ -34,6 +34,9 @@ export function montarCampo(mapa) {
   // AS REGIÕES (`rules/regioes.js`): a área que faz algo quando alguém entra, sai, ou começa e termina o turno nela.
   // Copiadas pelo mesmo motivo das sobreposições: `vezes`, `desligada` e `descoberta` mudam durante a partida.
   if (mapa.regioes?.length) prepararRegioes(field, mapa.regioes);
+  // AS PORTAS TRANCADAS (`game/portas.js`): aresta 'x,y,N|O' → { cd, chave? }. Copiadas: destrancar numa partida
+  // não destranca na próxima.
+  if (mapa.trancas?.length) field.trancas = new Map(mapa.trancas.map((t) => [t.aresta, { ...t }]));
   // A CAMADA DE FRENTE: a parte da pintura que o tabuleiro redesenha POR CIMA das fichas, para copa e beiral
   // cobrirem quem passa debaixo (ver `mapa-editor.js`). É só aparência — quem barra passo é o terreno.
   if (mapa.frente) field.frente = mapa.frente;

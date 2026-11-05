@@ -122,8 +122,8 @@ npm run build                      # roda verificar-taverna.mjs no prebuild
 
 Há um `testes-*.mjs` por frente (barbaro, goblin, habilidades, mansao, ondaeco,
 porta, save, sala, sala-ws, dialogo-perfil, itens-fora, movimento-aliados,
-musica, editor, casadamorte, regioes, criador, sala-criados). O de editor, o da Casa da Morte, o das regiões, o do criador e o
-do herói criado na sala rodam com
+musica, editor, casadamorte, regioes, criador, sala-criados, arestas). O de editor, o da Casa da Morte, o das regiões, o do
+criador, o do herói criado na sala e o das arestas rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
 `src/dev/passeio-casadamorte.mjs [sacrificar|negar] [semente]` percorre a casa inteira, do jardim à saída, como um jogador automático.
@@ -151,6 +151,15 @@ recebe uma CÓPIA, para acender numa partida não deixar aceso na próxima. Não
 atravessável até alguém mudar o terreno. No editor é a ferramenta **Q**: arrasta-se o retângulo para pôr a peça, um clique dentro de uma já
 posta escolhe ela, e a lista do painel acende e apaga. Peça cuja arte não está no disco aparece como retângulo tracejado com o nome — no
 jogo ela simplesmente não desenha.
+A **PAREDE COM RESTRIÇÕES SEPARADAS** (`core/grid.js RESTRICOES`), como no Foundry: cada tipo de aresta diz o que faz com o passo, a
+visão, a luz e o som. Além de parede, porta, arco e seteira: **etérea** (`E`, parece parede e se atravessa), **invisível** (`I`, só barra
+o passo, não se desenha no jogo), **limitada** (`T`, a moita: a primeira não barra a visão, a segunda sim), **janela** (`W`, vê e não
+passa, barra o som) e **mão única** (`>` para leste/sul, `<` para oeste/norte; só o passo). Quem pergunta diz o quê:
+`passa(..., 'passo'|'visao'|'luz'|'som')`, e `hasLineOfSight(a, b, 'luz')` para a luz. O som ainda não tem quem o pergunte. A **PORTA
+TRANCADA** é dado do mapa (`mapa.trancas`: `{ aresta: 'x,y,N|O', cd, chave?, forca? }`), e `game/portas.js` dá o menu de qualquer porta
+— abrir, fechar, abrir a fechadura (Destreza com ferramentas de ladrão), arrombar (Força, CD + 5), a chave — nas cenas que não cuidam
+das próprias portas (as que cuidam declaram `portasProprias: true`). No editor é a ferramenta 2, com a CD no painel; o editor mostra
+por cima o que o jogo não desenha. `src/dev/testes-arestas.mjs` prova cada tipo.
 A **REGIÃO** (`mapa.regioes`, motor em `rules/regioes.js`) é a área que FAZ algo quando alguém entra, sai, ou começa e termina o turno
 nela — a Region do Foundry. Efeitos, na ordem: texto, dano (com teste e metade), condição (com teste), parar o passo, terreno difícil
 (enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte. Filtros: quem (todos, o grupo, os inimigos),

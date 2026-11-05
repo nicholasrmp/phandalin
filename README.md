@@ -225,6 +225,12 @@ quando o isométrico saiu, o que a vista de cima usava dele — câmera, ponteir
 números flutuantes, efeitos — foi trazido para dentro da classe, e o resto foi apagado. A tabela das superfícies do
 chão (`SUPERFICIE`), que o editor também usa, mora em `view/superficies.js`.
 
+**A parede tem restrições separadas, como no Foundry.** Cada tipo de aresta diz o que faz com o passo, a visão, a luz e o
+som (`src/core/grid.js`, `RESTRICOES`): a **etérea** parece parede e se atravessa, a **invisível** só barra o passo, a
+**limitada** é a moita (a primeira deixa ver, a segunda não), a **janela** deixa ver e não passar, a **mão única** só
+deixa passar num sentido. A **porta trancada** tem CD no mapa, e qualquer cena sem roteiro de porta ganha o menu de abrir
+a fechadura, arrombar ou usar a chave (`src/game/portas.js`). Tudo na ferramenta 2 do editor.
+
 **Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
 destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**
 (`mapa.tracos`): polilinhas em casas, com fração, como foram desenhadas. Quando há traço, é ele que o tabuleiro

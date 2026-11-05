@@ -228,12 +228,50 @@ export const VAOS = new Set(['grade', 'seteira']);
 //   +  porta fechada: idem, até abrir
 //   /  porta aberta (ou arco): passa tudo; o desenho mostra o batente
 //   J  seteira: barra o passo, não a visão; quem está atrás tem cobertura
-export const ARESTA = { nada: 0, parede: 1, porta: 2, aberta: 3, seteira: 4 };
-const ARESTA_DO_CHAR = { '.': 0, '#': 1, '+': 2, '/': 3, J: 4 };
-const BARRA_PASSO = new Set([1, 2, 4]);
+//   E  etérea: PARECE parede — barra a visão e a luz — e se atravessa (a ilusão, a cortina de cipó)
+//   I  invisível: barra o passo e mais nada (a parede de força, a barreira mágica); não se desenha no jogo
+//   T  limitada: a PRIMEIRA não barra a visão nem a luz, a segunda sim (a moita, o pedregulho, a fumaça rala):
+//      vê-se o obstáculo, não o que há atrás dele. Não barra o passo
+//   W  janela: barra o passo e o som, deixa a visão e a luz passarem
+//   >  mão única: só se passa indo para leste ou para o sul (o barranco que se desce e não se sobe)
+//   <  mão única: só se passa indo para oeste ou para o norte
+//
+// São as quatro restrições da parede do Foundry VTT (movimento, visão, luz, som), cada uma livre, limitada ou
+// barrada, e a direção. Aqui cada tipo de aresta já traz as quatro (`RESTRICOES`), e quem pergunta diz o que quer
+// saber (`passa(..., 'passo' | 'visao' | 'luz' | 'som')`). O som ainda não tem quem o pergunte: a audição é
+// roteiro de cena.
+export const ARESTA = {
+  nada: 0, parede: 1, porta: 2, aberta: 3, seteira: 4,
+  eterea: 5, invisivel: 6, limitada: 7, janela: 8, unicaMais: 9, unicaMenos: 10,
+};
+const ARESTA_DO_CHAR = { '.': 0, '#': 1, '+': 2, '/': 3, J: 4, E: 5, I: 6, T: 7, W: 8, '>': 9, '<': 10 };
+export const CHAR_DA_ARESTA = Object.fromEntries(Object.entries(ARESTA_DO_CHAR).map(([c, n]) => [n, c]));
+
+const LIVRE = 0;
+const LIMITADA = 1;
+const BARRA = 2;
+/** O que cada tipo de aresta faz com o passo, a visão, a luz e o som. A mão única vale só para o passo. */
+export const RESTRICOES = {
+  0: { passo: LIVRE, visao: LIVRE, luz: LIVRE, som: LIVRE },
+  1: { passo: BARRA, visao: BARRA, luz: BARRA, som: BARRA },
+  2: { passo: BARRA, visao: BARRA, luz: BARRA, som: BARRA },
+  3: { passo: LIVRE, visao: LIVRE, luz: LIVRE, som: LIVRE },
+  4: { passo: BARRA, visao: LIVRE, luz: LIVRE, som: LIVRE },
+  5: { passo: LIVRE, visao: BARRA, luz: BARRA, som: LIVRE },
+  6: { passo: BARRA, visao: LIVRE, luz: LIVRE, som: LIVRE },
+  7: { passo: LIVRE, visao: LIMITADA, luz: LIMITADA, som: LIVRE },
+  8: { passo: BARRA, visao: LIVRE, luz: LIVRE, som: BARRA },
+  9: { passo: LIVRE, visao: LIVRE, luz: LIVRE, som: LIVRE },
+  10: { passo: LIVRE, visao: LIVRE, luz: LIVRE, som: LIVRE },
+};
+const restricao = (codigo, tipo) => RESTRICOES[codigo]?.[tipo] ?? LIVRE;
+const BARRA_PASSO = new Set(Object.keys(RESTRICOES).map(Number).filter((n) => RESTRICOES[n].passo === BARRA));
 /** O mesmo, sem a seteira: por onde a névoa da Forma Gasosa passa. */
-const BARRA_PASSO_SEM_VAO = new Set([1, 2]);
-const BARRA_VISAO = new Set([1, 2]);
+const BARRA_PASSO_SEM_VAO = new Set([...BARRA_PASSO].filter((n) => n !== ARESTA.seteira));
+/** As arestas que barram a visão mesmo num mapa de traço livre: lá a parede `#` é a DERIVADA do traço e não conta. */
+const BARRA_VISAO_ALEM_DO_TRACO = new Set([ARESTA.porta, ARESTA.eterea]);
+/** A aresta barra a visão num mapa de traço livre (a porta fechada, a parede etérea)? O desenho dos raios pergunta. */
+export const barraVisaoAlemDoTraco = (codigo) => BARRA_VISAO_ALEM_DO_TRACO.has(codigo);
 
 export class Battlefield {
   /**
@@ -379,14 +417,35 @@ export class Battlefield {
    * parede, nem com o corpo nem com o olho.
    */
   passa(ax, ay, bx, by, tipo = 'passo') {
-    // Forma Gasosa: a seteira de BORDA (a do castelo, onde `J` é aresta e não
-    // casa) é fresta do mesmo jeito que a grade. Porta fechada segue barrando:
-    // ali não há fenda, há madeira.
-    const barra = tipo === 'visao' ? BARRA_VISAO
-      : (this.atravessaVao ? BARRA_PASSO_SEM_VAO : BARRA_PASSO);
-    if (ax === bx || ay === by) return !barra.has(this.aresta(ax, ay, bx, by));
-    return !barra.has(this.aresta(ax, ay, bx, ay)) && !barra.has(this.aresta(bx, ay, bx, by))
-      && !barra.has(this.aresta(ax, ay, ax, by)) && !barra.has(this.aresta(ax, by, bx, by));
+    if (ax === bx || ay === by) return !this.barraAresta(ax, ay, bx, by, tipo);
+    return !this.barraAresta(ax, ay, bx, ay, tipo) && !this.barraAresta(bx, ay, bx, by, tipo)
+      && !this.barraAresta(ax, ay, ax, by, tipo) && !this.barraAresta(ax, by, bx, by, tipo);
+  }
+
+  /**
+   * A aresta entre duas casas vizinhas no eixo barra `tipo` para quem vai de (ax, ay) para (bx, by)? A limitada não
+   * barra aqui (uma só não barra): quem conta quantas a reta cruzou é a linha de visão.
+   */
+  barraAresta(ax, ay, bx, by, tipo) {
+    const codigo = this.aresta(ax, ay, bx, by);
+    if (!codigo) return false;
+    if (tipo === 'passo') {
+      // A MÃO ÚNICA: o sentido do passo decide. `>` deixa ir para leste ou sul; `<`, para oeste ou norte.
+      if (codigo === ARESTA.unicaMais) return bx < ax || by < ay;
+      if (codigo === ARESTA.unicaMenos) return bx > ax || by > ay;
+      // Forma Gasosa: a seteira de BORDA (a do castelo, onde `J` é aresta e não
+      // casa) é fresta do mesmo jeito que a grade. Porta fechada segue barrando:
+      // ali não há fenda, há madeira.
+      return (this.atravessaVao ? BARRA_PASSO_SEM_VAO : BARRA_PASSO).has(codigo);
+    }
+    return restricao(codigo, tipo) === BARRA;
+  }
+
+  /** Quantas arestas LIMITADAS (moita, pedregulho) o passo de uma casa à vizinha cruza para `tipo`: 0 ou 1. */
+  limitadasNoPasso(ax, ay, bx, by, tipo) {
+    const lim = (x0, y0, x1, y1) => restricao(this.aresta(x0, y0, x1, y1), tipo) === LIMITADA;
+    if (ax === bx || ay === by) return lim(ax, ay, bx, by) ? 1 : 0;
+    return lim(ax, ay, bx, ay) || lim(bx, ay, bx, by) || lim(ax, ay, ax, by) || lim(ax, by, bx, by) ? 1 : 0;
   }
 
   /**
@@ -417,6 +476,7 @@ export class Battlefield {
   paredeNaPegada(x, y, f) {
     for (let dy = 0; dy < f; dy++) {
       for (let dx = 0; dx < f; dx++) {
+        // (a mão única não conta aqui: é a aresta de DENTRO da pegada, que o corpo inteiro já ocupa)
         if (dx + 1 < f && BARRA_PASSO.has(this.aresta(x + dx, y + dy, x + dx + 1, y + dy))) return true;
         if (dy + 1 < f && BARRA_PASSO.has(this.aresta(x + dx, y + dy, x + dx, y + dy + 1))) return true;
       }
@@ -700,10 +760,15 @@ export class Battlefield {
    * Linha de visão. Além das paredes, um platô mais alto que os DOIS pontos
    * corta a visão — é isso que faz o terreno alto importar de verdade.
    */
-  hasLineOfSight(a, b) {
+  /**
+   * `tipo` é 'visao' (o padrão) ou 'luz': a mesma reta, perguntando a cada aresta a restrição de cada uma. A aresta
+   * LIMITADA (moita, pedregulho) não barra sozinha: a reta que cruza DUAS para (vê-se a moita, não o que há atrás).
+   */
+  hasLineOfSight(a, b, tipo = 'visao') {
     // SIMÉTRICA: o Bresenham de `line` não é (a reta de A a B pode cruzar casas que a de B a A não cruza), e em cerca de 1% dos
     // pares um via o outro sem ser visto. A reta é sempre traçada do extremo "menor" (y, depois x) para o outro.
     if (a.y > b.y || (a.y === b.y && a.x > b.x)) [a, b] = [b, a];
+    let limitadas = 0;
     // parede livre: o traço corta a reta dos olhos, com a precisão da geometria e não a do degrau da grade
     if (this.tracos?.length && this.tracoCortaVisao(a, b)) return false;
     const eye = Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
@@ -714,18 +779,24 @@ export class Battlefield {
     // (`view/raios.js`); a regra tem de enxergar o mesmo, senão o jogador vê o chão aceso e não vê o lobo em cima dele.
     // Continuam valendo a porta fechada na aresta (que o traço não desenha) e o platô mais alto que os dois olhos.
     if (this.tracos?.length) {
+      // a porta fechada e a parede etérea barram; a `#` aqui é a derivada do traço, que o traço já conferiu
+      const barra = (x0, y0, x1, y1) => BARRA_VISAO_ALEM_DO_TRACO.has(this.aresta(x0, y0, x1, y1));
       for (let i = 1; i < pts.length; i++) {
         const p = pts[i - 1];
         const q = pts[i];
         if (p.x !== q.x && p.y !== q.y) {
-          if (this.aresta(p.x, p.y, q.x, p.y) === ARESTA.porta && this.aresta(p.x, p.y, p.x, q.y) === ARESTA.porta) return false;
-        } else if (this.aresta(p.x, p.y, q.x, q.y) === ARESTA.porta) return false;
+          if (barra(p.x, p.y, q.x, p.y) && barra(p.x, p.y, p.x, q.y)) return false;
+        } else if (barra(p.x, p.y, q.x, q.y)) return false;
+        limitadas += this.limitadasNoPasso(p.x, p.y, q.x, q.y, tipo);
+        if (limitadas >= 2) return false;
         if (i < pts.length - 1 && this.heightAt(q.x, q.y) > eye) return false;
       }
       return true;
     }
     for (let i = 1; i < pts.length; i++) {
-      if (!this.passa(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, 'visao')) return false;
+      if (!this.passa(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, tipo)) return false;
+      limitadas += this.limitadasNoPasso(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, tipo);
+      if (limitadas >= 2) return false;
       if (i === pts.length - 1) break;
       if (this.blocksSight(pts[i].x, pts[i].y)) return false;
       if (this.heightAt(pts[i].x, pts[i].y) > eye) return false;

@@ -957,6 +957,8 @@ export function criarOndaEco(app) {
 
   return {
     lugar: 'Caverna Onda Eco',
+    // as portas desta cena têm roteiro próprio (teste, dono, barulho): a porta genérica (`game/portas.js`) fica de fora
+    portasProprias: true,
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
