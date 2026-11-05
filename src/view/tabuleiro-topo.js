@@ -25,6 +25,7 @@ import urlAtlas from '../art/folhas/cenario.png';
 
 export const CASA = 64;          // o lado da casa, em pixels
 const MARGEM = 24;
+const ZOOM_INICIAL = 0.8;        // a abertura do mapa grande, em fração do tamanho nativo (64 px por casa)
 
 const ANEL_ALIADO = '#d9b45a';
 const ANEL_NEUTRO = '#6fa8dc';
@@ -47,6 +48,85 @@ export class TabuleiroTopo extends Board {
     this.rebuildOrder();
     this.carregarFundo();
     this.carregarSobreposicoes();
+    this.arrastarParaMover();
+  }
+
+  // ---- a câmera -------------------------------------------------------------
+  //
+  // De cima o mapa pintado tem 64 px por casa, e encaixado inteiro no quadro ele encolhe a um terço: medido no
+  // esconderijo (30 x 20), a casa ficava com ~20 px na tela e a ficha do herói do tamanho de um selo — a luz, a
+  // faísca da pista e a arte da FA simplesmente não se viam. Então a vista de cima trata todo mapa que não cabe como
+  // GRANDE: abre aproximada no grupo, segue o herói, e o botão direito arrastado move o mapa (como no Foundry).
+
+  /** Não cabe a uma escala que se leia: a partir de 18 casas de largura ou 14 de altura. */
+  get mapaGrande() {
+    return this.field.w >= 18 || this.field.h >= 14;
+  }
+
+  /** Abre a 80% do tamanho nativo (casa de ~51 px), centrada em `pos`. */
+  enquadrarGrande(pos) {
+    if (!this.mapaGrande) return;
+    this.setZoom(1);
+    this.fitWidth = null;
+    this.setZoom(this.fatorDeMapa * ZOOM_INICIAL);
+    this.focarEm(pos);
+  }
+
+  /** O ⌖ volta ao enquadramento de abertura, no herói escolhido (ou no grupo, se ninguém estiver escolhido). */
+  resetCamera() {
+    const alvo = this.overlay.selected?.pos ?? this.focoInicial;
+    if (this.mapaGrande && alvo) this.enquadrarGrande(alvo);
+    else this.setZoom(1);
+  }
+
+  /** Rola o quadro até o CENTRO da casa `pos` ficar no meio do que se vê (o herdado mirava o canto de cima). */
+  focarEm(pos) {
+    const el = this.canvas;
+    const quadro = el.parentElement;
+    if (!quadro || !pos) return;
+    const f = pos.f ?? 1;
+    const { sx, sy } = this.centerF(pos.x + (f - 1) / 2, pos.y + (f - 1) / 2);
+    const r = el.getBoundingClientRect();
+    const q = quadro.getBoundingClientRect();
+    const k = r.width / el.width;
+    quadro.scrollLeft += (r.left + sx * k) - (q.left + q.width / 2);
+    quadro.scrollTop += (r.top + sy * k) - (q.top + q.height / 2);
+    this.atualizarHover();
+  }
+
+  /** Se `pos` saiu do miolo do quadro (os 60% do meio), recentra; dentro dele não mexe, senão a tela balança. */
+  seguir(pos) {
+    if (!this.mapaGrande || !pos) return;
+    const el = this.canvas;
+    const quadro = el.parentElement;
+    if (!quadro) return;
+    const { sx, sy } = this.center(pos.x, pos.y);
+    const r = el.getBoundingClientRect();
+    const q = quadro.getBoundingClientRect();
+    const k = r.width / el.width;
+    const px = r.left + sx * k;
+    const py = r.top + sy * k;
+    const mx = q.width * 0.2;
+    const my = q.height * 0.2;
+    if (px < q.left + mx || px > q.right - mx || py < q.top + my || py > q.bottom - my) this.focarEm(pos);
+  }
+
+  /**
+   * ARRASTAR COM O BOTÃO DIREITO MOVE O MAPA. O herdado usa o arrasto para girar a câmera, e de cima ela não gira:
+   * o arrasto não fazia nada. Soltar sem arrastar continua abrindo o menu da casa — o herdado só conta como arrasto
+   * depois de 8 px, e aqui o movimento vertical também conta (lá só o horizontal contava).
+   */
+  arrastarParaMover() {
+    const signal = this._abort?.signal;
+    addEventListener('mousemove', (e) => {
+      if (!this.drag) return;
+      const quadro = this.canvas.parentElement;
+      if (!quadro) return;
+      quadro.scrollLeft -= e.movementX;
+      quadro.scrollTop -= e.movementY;
+      this.drag.total += Math.abs(e.movementY);
+      if (this.drag.total > 8) this.dragMoved = true;
+    }, { signal });
   }
 
   /**
@@ -143,6 +223,9 @@ export class TabuleiroTopo extends Board {
   // ---- desenho --------------------------------------------------------------
 
   render(dt) {
+    // trocou o herói escolhido (clique na ficha, fim do turno de outro): a câmera vai até ele, se estiver fora do miolo
+    const sel = this.overlay.selected;
+    if (sel !== this._seguido) { this._seguido = sel; if (sel?.pos) this.seguir(sel.pos); }
     if (this.congela > 0 && Number.isFinite(dt)) { this.congela = Math.max(0, this.congela - dt); dt *= 0.05; }
     this.time += Number.isFinite(dt) ? dt : 0;
     this.fx.update(dt);
