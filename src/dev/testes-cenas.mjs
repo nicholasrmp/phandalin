@@ -32,6 +32,8 @@ import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO as PE } from '../game/esconderijo.js';
 import { montarCampo } from '../game/campo.js';
+import { existsSync } from 'node:fs';
+import { CRIATURAS_COM_FICHA, fichaDe } from '../art/fichas-de-criatura.js';
 import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from '../game/arvoretrovao.js';
 import { mudarExaustao, nivelDeExaustao } from '../rules/conditions.js';
 import { podeMarchar } from '../rules/marcha.js';
@@ -185,6 +187,18 @@ teste('não se vê o bando de Klarg do lado dos tanques', () => {
   const chefe = bando().filter((c) => c.grupo === 'chefe');
   const veem = casasDaSala(f, 'pocos').filter(([x, y]) => chefe.some((k) => f.hasLineOfSight({ x, y }, k.pos)));
   assert.equal(veem.length, 0, `${veem.length} casas dos tanques enxergam o bando de Klarg: ${veem.map((p) => p.join(',')).join(' ')}`);
+});
+
+teste('toda criatura tem a ficha da galeria no disco, menos as que a galeria não tem', () => {
+  // `art/fichas-de-criatura.js` diz quem tem ficha; `src/dev/baixar-fichas.py` as põe em `public/fichas`.
+  const SEM_FICHA = new Set(['vassouraAnimada']);   // a galeria não tem vassoura
+  for (const id of CRIATURAS_COM_FICHA) assert.ok(existsSync(`public/fichas/${id}.webp`), `falta public/fichas/${id}.webp`);
+  const faltam = Object.keys(MONSTERS).filter((id) => !SEM_FICHA.has(id) && !CRIATURAS_COM_FICHA.includes(id));
+  assert.deepEqual(faltam, [], `criatura sem ficha: ${faltam.join(', ')}`);
+  // o herói e o morador com retrato próprio ficam com o retrato
+  assert.equal(fichaDe({ side: 'party', defId: 'goblin' }), null);
+  assert.equal(fichaDe({ side: 'neutro', defId: 'cavaleiro', npcId: 'sildar' }), null);
+  assert.equal(fichaDe({ side: 'foes', defId: 'bugbear', npcId: 'klarg' }), '/fichas/klarg.webp');
 });
 
 teste('pela chaminé não se vê a caverna de Klarg: a fenda sobe nove metros', () => {

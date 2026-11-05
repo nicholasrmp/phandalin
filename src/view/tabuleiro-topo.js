@@ -20,6 +20,7 @@ import { emissoresDoAmbiente, desenharAmbiente } from './ambiente.js';
 import { criarCacheDePoligonos } from './raios.js';
 import * as V from './vista-topo.js';
 import { makePortrait } from '../art/sheet.js';
+import { fichaDe } from '../art/fichas-de-criatura.js';
 import atlas from '../art/folhas/cenario.json';
 import urlAtlas from '../art/folhas/cenario.png';
 
@@ -711,7 +712,21 @@ export class TabuleiroTopo extends Board {
     return this.retratos.get(look);
   }
 
-  /** A ficha: retrato recortado em círculo, anel da disposição, barra de vida e nome. */
+  /** A imagem da ficha da criatura, já carregada; `null` enquanto carrega ou se ela fica com o retrato em pixel. */
+  imagemDaFicha(c) {
+    const url = fichaDe(c);
+    if (!url) return null;
+    this.fichas ??= new Map();
+    let img = this.fichas.get(url);
+    if (!img) {
+      img = new Image();
+      img.src = url;
+      this.fichas.set(url, img);
+    }
+    return img.complete && img.naturalWidth ? img : null;
+  }
+
+  /** A ficha: retrato recortado em círculo (ou a ficha da criatura), anel da disposição, barra de vida e nome. */
   ficha(ctx, c) {
     const C = this.casa;
     const andando = this.fx.positionFor(c.id);
@@ -724,24 +739,40 @@ export class TabuleiroTopo extends Board {
 
     ctx.save();
     ctx.globalAlpha = c.dead ? 0.45 : 1;
-    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.closePath();
-    ctx.fillStyle = 'rgba(10,8,14,.85)';
-    ctx.fill();
-    ctx.save();
-    ctx.clip();
-    const p = this.retrato(c.look);
-    if (p) {
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(p, sx - r, sy - r, r * 2, r * 2);
+    const ficha = this.imagemDaFicha(c);
+    if (ficha) {
+      // A FICHA DA CRIATURA (`art/fichas-de-criatura.js`): a imagem já traz o anel dourado dela, e enche o disco
+      // inteiro. Por fora, um fio na cor do lado — o dourado da ficha é igual para todos, e sem o fio o goblin e o
+      // aliado teriam a mesma moldura.
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(ficha, sx - r * 1.04, sy - r * 1.04, r * 2.08, r * 2.08);
+      ctx.strokeStyle = 'rgba(0,0,0,.6)';
+      ctx.lineWidth = Math.max(3, C * 0.05);
+      ctx.beginPath(); ctx.arc(sx, sy, r * 1.08, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = anel;
+      ctx.lineWidth = Math.max(1.5, C * 0.028);
+      ctx.beginPath(); ctx.arc(sx, sy, r * 1.08, 0, Math.PI * 2); ctx.stroke();
     } else {
-      ctx.fillStyle = anel;
-      ctx.globalAlpha = 0.5;
-      ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.closePath();
+      ctx.fillStyle = 'rgba(10,8,14,.85)';
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      const p = this.retrato(c.look);
+      if (p) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(p, sx - r, sy - r, r * 2, r * 2);
+      } else {
+        ctx.fillStyle = anel;
+        ctx.globalAlpha = 0.5;
+        ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+      }
+      ctx.restore();
+      ctx.strokeStyle = anel;
+      ctx.lineWidth = Math.max(2, C * 0.045);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
     }
-    ctx.restore();
-    ctx.strokeStyle = anel;
-    ctx.lineWidth = Math.max(2, C * 0.045);
-    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
 
     // a barra de vida, colada embaixo do anel
     const bw = r * 1.8;

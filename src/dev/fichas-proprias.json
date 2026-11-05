@@ -1,0 +1,73 @@
+{
+  "_nota": "Fichas dos personagens com nome (ver fichas-proprias.py). centro e lado em pixels da imagem de origem. As capturas da wiki estão em _referencias/fichas-personagens/, já recortadas no rosto.",
+  "nezznar": {
+    "fonte": "_referencias/livro/ilustracoes/p50-171.png",
+    "centro": [
+      328,
+      490
+    ],
+    "lado": 300,
+    "fundo": "original",
+    "credito": "A Mina Perdida de Phandelver, p. 50 (Nezznar, a Aranha Negra)"
+  },
+  "vigiaCiclopico": {
+    "fonte": "_referencias/livro/ilustracoes/p23-1660.png",
+    "centro": [
+      250,
+      340
+    ],
+    "lado": 400,
+    "fundo": "vermelho",
+    "credito": "A Mina Perdida de Phandelver, p. 23 (o nothic do esconderijo dos Marcarrubras)"
+  },
+  "klarg": {
+    "fonte": "_referencias/fichas-personagens/klarg.png",
+    "centro": [
+      225,
+      150
+    ],
+    "lado": 300,
+    "fundo": "original",
+    "credito": "Phandelver and Below: The Shattered Obelisk, via Forgotten Realms Wiki (File:Klarg-et-al.webp)"
+  },
+  "cajavidro": {
+    "fonte": "_referencias/fichas-personagens/iarno.png",
+    "centro": [
+      160,
+      150
+    ],
+    "lado": 300,
+    "fundo": "original",
+    "credito": "Phandelver and Below: The Shattered Obelisk, via Forgotten Realms Wiki (File:Iarno-glasstaff-albrek.webp)"
+  },
+  "iarno": {
+    "fonte": "_referencias/fichas-personagens/iarno.png",
+    "centro": [
+      160,
+      150
+    ],
+    "lado": 300,
+    "fundo": "original",
+    "credito": "Phandelver and Below: The Shattered Obelisk, via Forgotten Realms Wiki (File:Iarno-glasstaff-albrek.webp)"
+  },
+  "agatha": {
+    "fonte": "_referencias/fichas-personagens/agatha.png",
+    "centro": [
+      215,
+      190
+    ],
+    "lado": 330,
+    "fundo": "original",
+    "credito": "Nikki Dawes, Phandelver and Below: The Shattered Obelisk, via Forgotten Realms Wiki (File:Agatha - Nikki Dawes.webp)"
+  },
+  "marcarrubra": {
+    "fonte": "_referencias/fichas-personagens/marcarrubra.png",
+    "centro": [
+      200,
+      230
+    ],
+    "lado": 380,
+    "fundo": "original",
+    "credito": "Phandelver and Below: The Shattered Obelisk, via Forgotten Realms Wiki (File:Redbrand-ruffians.webp)"
+  }
+}

@@ -39,7 +39,7 @@ Todas em `.claude/skills/`. O projeto não tem `settings.json`.
 
 ---
 
-## Agentes (24)
+## Agentes (23)
 
 Todos em `.claude/agents/`.
 
@@ -67,9 +67,9 @@ Rode os seis subs, depois o chefe.
 | [revisor-magia-recorte](.claude/agents/revisor-magia-recorte.md) | Técnico dos quadros (`src/art/efeitos.js`): corte na borda, desalinho que faz a animação "pular", franja do fundo magenta, cor fora da paleta, âncora em `fx.js`/`visuals.js` |
 | [revisor-magia-beleza](.claude/agents/revisor-magia-beleza.md) | Direção de arte: é bonito, lê sobre o tabuleiro, **tem a cara da magia** (dá para reconhecer a Chama Sagrada?), o impacto tem peso |
 
-### Ícones — 1 chefe + 4 sub-revisores
+### Ícones — 1 chefe + 3 sub-revisores
 
-Lote de ícones já convertidos (32×32, paleta do jogo). Rode os quatro, depois o chefe.
+Lote de ícones já convertidos (32×32, paleta do jogo). Rode os três, depois o chefe.
 
 | Agente | Recorte |
 |---|---|
@@ -77,7 +77,6 @@ Lote de ícones já convertidos (32×32, paleta do jogo). Rode os quatro, depois
 | [revisor-icone-legibilidade](.claude/agents/revisor-icone-legibilidade.md) | Lê no tamanho real, sobre o escuro do HUD e sobre o pergaminho da ficha. Teste da silhueta, medida de salpicado |
 | [revisor-icone-fidelidade](.claude/agents/revisor-icone-fidelidade.md) | Mostra o que a magia/ação/traço **é**, e não parece outra coisa do jogo |
 | [revisor-icone-conjunto](.claude/agents/revisor-icone-conjunto.md) | Pertence ao conjunto dos aprovados (traço, contorno, escala, sombreamento, 14 cores) e dois do lote não se confundem |
-| [revisor-icone-licenca](.claude/agents/revisor-icone-licenca.md) | SRD 5.1 (CC-BY-4.0), **nada de identidade visual da Wizards**, nada de texto dentro do ícone |
 
 ### Mapa e arte isométrica — 5 agentes, cada um numa camada
 
@@ -104,7 +103,7 @@ navegador (`mcp__Claude_Browser__preview_start`, `javascript_tool`,
 
 ## Agentes embutidos
 
-Fora dos 24, valem os de sempre: **Explore** (busca em leque, read-only),
+Fora dos 23, valem os de sempre: **Explore** (busca em leque, read-only),
 **Plan** (plano de implementação), **general-purpose**. Não são deste projeto e
 não sabem nada dele.
 
