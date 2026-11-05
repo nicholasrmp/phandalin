@@ -24,6 +24,13 @@ MEDIDO ASSIM (2026-11-05), com os battlemaps da Forgotten Adventures:
     Castelo     NÃO bate. A nossa parede corre pelo mato e a nossa rocha cai dentro do salão pintado: a
                 planta do livro e a redesenhada por eles são outra coisa. Não há origem que conserte.
     Poço        NÃO bate. A pedra solta da nossa planta cai em cima de laje limpa.
+    Cume        NÃO bate, e o desenho ainda é mais alto que a planta (24 casas contra 21).
+    Árvore      MEIO. As duas plantas saem do mesmo mapa do livro e as RUÍNAS encaixam: no deslocamento
+    Trovão      (x0 -1550, y0 -1500, escala 100) quase todo contorno de prédio nosso cai em cima da ruína
+                pintada. O que não bate é o resto — a nossa árvore e o nosso entulho caem em estrada e capim
+                limpos —, e o desenho cobre só o miolo da nossa planta (58x38 de 91x68). Para ligar, alguém
+                tem de escolher: ou encolher a nossa planta até o recorte deles, ou repintar o nosso terreno
+                por cima do desenho. Enquanto isso não acontecer, fica sem `fundo`.
 
 A arte de terceiro NÃO ENTRA no repositório nem na publicação: ver a nota no topo do `encaixar-fa.py`.
 """
