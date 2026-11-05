@@ -274,6 +274,16 @@ escrever** se algum ponto cair em parede ou ficar inalcançável, e `testes-cena
 A planta encolheu de 26x22 para 18x22 (a da FA) e `poco.js` de 109 para 111 linhas, agora sem altura: a torre é
 ruína sem teto, e quem barra passo é a parede, não o glifo.
 
+**A Mansão é o caso em que NÃO se refaz a planta, e isso é um achado, não preguiça.** A nossa é decalque do mapa
+oficial do Roll20, e a da FA saiu do mesmo mapa do livro: batem 1 para 1, 100 px por casa, origem (0,0), sem
+enquadrar. Medido com `prova-fundo.py` e pelo brilho — a casa que a nossa regra bloqueia tem brilho médio 16 no
+desenho e a de chão, 39. Refazer daria a mesma planta e derrubaria portas, secretas, grades e as 1.700 linhas de
+roteiro que vivem em cima dela. O que mudou foi só a IMAGEM: era um HOTLINK para o CDN do Roll20 (68,267 px por
+casa, servido da banda deles a quem jogasse) e passou a ser a da FA, no disco, em 100 px por casa.
+**E uma correção que a Mansão obrigou:** os MARCADORES `.svg` da FA caem em cima de PAREDE, não na casa da coisa
+— são etiqueta pregada na parede ao lado, apontando para o cômodo. Os quatro do Redbrand caem todos em rocha
+nossa. O importador agora diz isso em vez de prometer coordenada.
+
 **O Cume da Wyvern também**, e aqui a planta nova MUDOU A CENA, não só as coordenadas: `python
 src/dev/mapa-cume-fa.py`. A antiga (30x21) era um desfiladeiro com o acampamento orc do lado de fora, num platô de
 220 casas elevadas; a da FA é a caverna, com fogueira, palha e caixote desenhados no chão dela. É o que o livro

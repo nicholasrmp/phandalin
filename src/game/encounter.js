@@ -404,12 +404,17 @@ export function mapaDo(variante) {
         ? [{ x: 10, y: 19 }, { x: 10, y: 18 }, { x: 10, y: 17 }, { x: 10, y: 16 }]
         : [{ x: 29, y: 14 }, { x: 28, y: 14 }, { x: 27, y: 14 }, { x: 27, y: 15 }],
       olhar: tunel ? { dx: 0, dy: -1 } : { dx: -1, dy: 0 },
-      // O MAPA OFICIAL por baixo. A nossa planta é um decalque dele: medido em `src/dev/encaixar-roll20.py`,
-      // escala 1 para 1 e uma casa de desvio para baixo, com 83% das paredes dele caindo em cima das nossas.
-      // A imagem é do CDN do Roll20, de onde a página da campanha a serve — nada é copiado para o repositório
-      // (ver NOTICE.md). `escala` não é 70: a página trava a casa em 70 px, mas o CDN entrega a imagem com 2048
-      // px no lado maior e a página a estica de volta, o que dá 68,267 px por casa na imagem de verdade.
-      fundo: { nome: '4-redbrand-hideout.jpg', url: 'https://files.d20.io/images/34717495/tqvoxEujIj6h0ekkD7h1Wg/max.jpg?1497810681', escala: 68.267, x0: 0, y0: 68.267, giro: 0, opacidade: 1 },
+      // O BATTLEMAP DA FORGOTTEN ADVENTURES por baixo (Redbrand Hideout 30x20, versão apagada e sem grade: o
+      // jogo acende a luz e desenha a grade). A NOSSA PLANTA NÃO FOI REFEITA, e de propósito: ela é decalque do
+      // mapa oficial do Roll20, e a da FA saiu do mesmo mapa, então as duas batem 1 para 1 — 100 px por casa,
+      // origem (0,0), sem enquadrar nada. Medido: a casa que a nossa regra bloqueia tem brilho médio 16 no
+      // desenho, e a de chão, 39; parede cai em parede. Refazer a planta daria a mesma planta e derrubaria as
+      // portas, as secretas, as grades e os 1.700 de roteiro que vivem em cima dela.
+      // O que mudou foi a IMAGEM: a de antes era um HOTLINK para o CDN do Roll20 (68,267 px por casa, servido
+      // da banda deles a quem jogasse). Esta fica no disco de quem a baixou, em 100 px por casa.
+      // O arquivo fica FORA do versionamento (`.gitignore`): a licença da FA proíbe embutir a arte deles em
+      // video game. Sem ele, o tabuleiro desenha o chão de sempre.
+      fundo: { nome: 'mansao.jpg', url: '/mapas/fa/mansao.jpg', escala: 100, x0: 0, y0: 0, giro: 0, opacidade: 1 },
       cena: 'mansao',
       entrada: tunel ? 'tunel' : 'cozinha',
     };

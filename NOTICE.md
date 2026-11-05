@@ -73,12 +73,18 @@ goblins, `emboscada.webp`, saiu do Nano Banana Pro pelo OpenArt) e depois cortad
 batalha comprado ou baixado de terceiro não entra no repositório nem é distribuído: quando serve de referência de
 trabalho, fica em `_referencias/`, que o git ignora.
 
-**O Esconderijo dos Marcarrubra** usa, por baixo da planta, o mapa oficial da campanha de A Mina Perdida de
-Phandelver no Roll20 — a mesma que o dono deste repositório comprou e tem na conta dele. A imagem **não** é
-copiada, convertida nem redistribuída: o `fundo.url` aponta para o CDN do Roll20, de onde a própria campanha a
-serve, e o repositório não guarda um byte dela. Quem não tiver a campanha vê a planta do jogo do mesmo jeito —
-o desenho é enfeite, e a regra inteira está no terreno, que é nosso. A pasta `_referencias/roll20/`, onde a
-imagem fica durante o trabalho de medição, é ignorada pelo git.
+**O Esconderijo dos Marcarrubra** (a Mansão) teve, por baixo da planta, o mapa oficial da campanha de A Mina
+Perdida de Phandelver no Roll20 — a mesma que o dono deste repositório comprou e tem na conta dele —, servido
+por um HOTLINK para o CDN do Roll20. Em 2026-11-05 o hotlink saiu: a imagem passou a ser a do battlemap da
+Forgotten Adventures, no disco de quem a baixou, porque apontar para o CDN de terceiro fazia a banda deles
+servir a arte a quem jogasse. As duas plantas batem 1 para 1 (ambas decalque do mesmo mapa do livro), então a
+regra não mudou. A pasta `_referencias/roll20/`, onde a imagem fica durante o trabalho de medição, continua
+ignorada pelo git.
+
+**A arte da Forgotten Adventures** (Esconderijo Cragmaw, Mansão, Poço, Cume, Onda Eco) **nunca entra no
+repositório nem na publicação**: a licença deles proíbe embutir em video game, e vale para o release grátis.
+Ela fica em `mapas/` e `public/mapas/fa/`, ignorados pelo git, e o `src/dev/verificar-publicavel.mjs` falha o
+`npm run build` se sobrar arte ignorada dentro de `public/`. Sem o arquivo, a cena abre com o chão do jogo.
 
 **Atenção:** esta política **não** é irrevogável, diferente da CC-BY. É por isso
 que o motor e a campanha são separados no código — se um dia ela mudar, troca-se

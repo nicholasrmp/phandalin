@@ -141,19 +141,24 @@ def tipoDaLuz(cfg):
     return 'tocha' if claro >= 10 else 'vela'
 
 
-# OS MARCADORES que a FA deixa no mapa: um `.svg` pequeno em cima da coisa. É a anotação dela de onde está o
-# quê, e vale ouro para quem for montar a cena — poupa procurar baú e armadilha no olho, casa a casa.
-# Viram OBJETO INTERAGÍVEL (`mapa.interativos`), que é o nosso jeito de dizer "tem algo aqui para mexer".
+# OS MARCADORES que a FA deixa no mapa: um `.svg` pequeno, que é a anotação dela de "tem isto por aqui".
+#
+# CUIDADO COM A CASA. Medido no Redbrand (2026-11-05): os quatro marcadores dele caem EM CIMA DE PAREDE, não
+# na casa da coisa — são etiqueta pregada na parede ao lado, apontando para o cômodo. Então a casa serve de
+# PISTA de onde procurar, e não de coordenada do objeto. Quem for montar a cena olha o desenho em volta.
+# Viram OBJETO INTERAGÍVEL (`mapa.interativos`) assim mesmo: é o nosso jeito de deixar a anotação no mapa, e
+# o botão direito numa parede abre o menu igual.
 # A ARMADILHA vira interagível também, e NÃO região: região precisa de CD, dano e teste, que o desenho não
 # sabe — isso vem do livro, e inventar número seria pôr ficção no dado. O relatório grita onde elas estão.
 MARCADORES = {
-    'trap': ('Armadilha', 'A Forgotten Adventures marcou armadilha aqui. A CD, o dano e o teste vêm do livro: '
-                          'vire isto numa região escondida (`rules/regioes.js`).'),
-    'chest': ('Um baú', 'A FA marcou um baú aqui.'),
-    'skull': ('Restos mortais', 'A FA marcou restos aqui.'),
-    'down': ('Descida', 'A FA marcou uma descida aqui.'),
-    'fire': ('Fogo', 'A FA marcou fogo aqui.'),
-    'explosion': ('Desabamento', 'A FA marcou um desabamento aqui.'),
+    'trap': ('Armadilha por perto', 'A Forgotten Adventures marcou armadilha por aqui — a marca costuma ficar na '
+                                    'parede ao lado, não na casa dela. A CD, o dano e o teste vêm do livro: vire '
+                                    'isto numa região escondida (`rules/regioes.js`).'),
+    'chest': ('Um baú por perto', 'A FA marcou um baú por aqui (a marca fica na parede ao lado).'),
+    'skull': ('Restos mortais por perto', 'A FA marcou restos por aqui (a marca fica na parede ao lado).'),
+    'down': ('Descida por perto', 'A FA marcou uma descida por aqui.'),
+    'fire': ('Fogo por perto', 'A FA marcou fogo por aqui.'),
+    'explosion': ('Desabamento por perto', 'A FA marcou um desabamento por aqui.'),
 }
 # Estes são enfeite de editor (seta de direção, o "x" de passagem fechada): entram só no relatório.
 SO_RELATORIO = {'cancel', 'direction'}
@@ -352,11 +357,12 @@ def main():
         porTipoM = {}
         for m in marcadores:
             porTipoM.setdefault(m['tipo'], []).append(f"{m['x']},{m['y']}")
-        print('  MARCADORES da FA (viram objeto interagível no mapa): '
-              + '; '.join(f'{t} em {", ".join(cs)}' for t, cs in sorted(porTipoM.items())), file=rel)
+        print('  MARCADORES da FA (viram objeto interagível; a casa é PISTA, não coordenada — a marca costuma '
+              'ficar na parede ao lado): '
+              + '; '.join(f'{t} perto de {", ".join(cs)}' for t, cs in sorted(porTipoM.items())), file=rel)
         if 'trap' in porTipoM:
-            print(f'    ARMADILHA marcada em {", ".join(porTipoM["trap"])} — vire em região escondida com a CD e o '
-                  'dano do livro (`rules/regioes.js`); o importador não inventa número.', file=rel)
+            print(f'    ARMADILHA marcada perto de {", ".join(porTipoM["trap"])} — procure no desenho em volta e '
+                  'vire em região escondida com a CD e o dano do livro; o importador não inventa número.', file=rel)
     if enfeites:
         print('  marcas de editor (seta, "x" de passagem fechada), só para saber: '
               + ', '.join(f'{n} em {x},{y}' for x, y, n in sorted(enfeites, key=lambda e: (e[1], e[0]))), file=rel)
