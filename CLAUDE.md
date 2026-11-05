@@ -166,7 +166,10 @@ nosso chão cai sobre chão pintado.
 terceiro com a nossa planta e imprime o `fundo` pronto para colar, com a nota do encaixe em IoU. 1,0 é a mesma planta; abaixo de 0,7 são
 plantas DIFERENTES do mesmo lugar, e aí não adianta enquadrar melhor — ou se redesenha a planta por cima, ou não se usa o desenho.
 **Battlemap de terceiro não entra no repositório** (licença): `mapas/` e `public/mapas/esconderijo-fa*.webp` estão no `.gitignore`. Atenção:
-o `.gitignore` protege o REPOSITÓRIO, não o `dist/` — o `npm run build` copia tudo que está em `public/`.
+o `.gitignore` protege o REPOSITÓRIO, não o `dist/` — o `npm run build` copia tudo que está em `public/`. Quem fecha essa porta é
+`src/dev/verificar-publicavel.mjs`, que roda no `prebuild` e **falha a publicação** se houver qualquer arquivo ignorado pelo git dentro de
+`public/`. A regra não tem lista de nomes: o `.gitignore` já é a declaração de "isto não pertence ao projeto", e o que não pertence não se
+publica. O `npm run dev` não é afetado — joga-se com o mapa de terceiro aqui, só não se publica.
 
 **Importar uma cena do Foundry VTT** — paredes, luzes e grade, sem instalar o Foundry. Os módulos de battlemap publicam as cenas em JSON
 puro; as da Forgotten Adventures estão em `github.com/Forgotten-Adventures/FA_Battlemaps/tree/main/packs/_source/maps` (303 cenas).

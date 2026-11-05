@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node src/dev/verificar-taverna.mjs",
+    "prebuild": "node src/dev/verificar-taverna.mjs && node src/dev/verificar-publicavel.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
