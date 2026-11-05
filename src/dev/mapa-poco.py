@@ -1,3 +1,9 @@
+# APOSENTADO (2026-11-05). O Poço agora sai de `mapa-poco-fa.py`, sobre o
+# battlemap da Forgotten Adventures: planta 18x22 em vez desta 26x22, parede da
+# cena do Foundry e terreno pela cor do desenho. RODAR ESTE SOBRESCREVE AQUELE.
+# Fica no repositório porque é a planta desenhada à mão, caso um dia se queira
+# voltar a uma que não dependa de arte de terceiro.
+#
 # Gera `src/game/poco.js`: o terreno, a altura e as marcas do Poço da Coruja
 # Velha (Parte 3 da aventura).
 #

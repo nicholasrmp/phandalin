@@ -954,5 +954,36 @@ teste('toda construção admite uma criatura Grande no pátio da porta', () => {
   assert.deepEqual(semPatio, [], `sem pátio para Grande na porta: ${semPatio.join(', ')}`);
 });
 
+// ------------------------------------------------------------------- o Poço da Coruja Velha -----
+// A planta vem da cena do Foundry (`src/dev/mapa-poco-fa.py`), e os pontos que o capítulo 4 usa foram medidos
+// nela. O gerador se recusa a escrever se algum sair do lugar; isto aqui guarda o arquivo depois de gerado,
+// que é quando a mão humana pode mexer.
+teste('o Poço: a torre cabe os zumbis, e o grupo alcança boca, tenda, poço e saída', async () => {
+  const { POCO } = await import('../game/poco.js');
+  const mapa = mapaDo('poco');
+  const f = montarCampo(mapa);
+  const anda = (p) => !f.blocksMove(p.x, p.y);
+  assert.ok(anda(POCO.porta), 'a boca da torre é casa de chão');
+  assert.ok(anda({ x: POCO.porta.x - 1, y: POCO.porta.y }), 'e a casa de onde o zumbi sai, também');
+  for (const s of POCO.saida) assert.ok(anda(s), `a saída ${s.x},${s.y}`);
+  for (const t of POCO.tenda) assert.ok(anda(t), `a tenda ${t.x},${t.y}`);
+  // os zumbis esperam dentro da torre, e TÊM de alcançar o pátio — senão a cena trava com eles presos
+  const dentro = [];
+  for (let y = POCO.torre.y0; y <= POCO.torre.y1; y++) {
+    for (let x = POCO.torre.x0; x <= POCO.torre.x1; x++) if (anda({ x, y })) dentro.push({ x, y });
+  }
+  // a cena põe um zumbi em CADA casa do retângulo: nenhuma pode ser parede
+  const todas = (POCO.torre.x1 - POCO.torre.x0 + 1) * (POCO.torre.y1 - POCO.torre.y0 + 1);
+  assert.equal(dentro.length, todas, 'toda casa da torre é chão');
+  const doGrupo = f.reachable(mapa.grupo[0], 4000);
+  for (const p of [...mapa.grupo, POCO.porta, POCO.poco, ...POCO.saida, ...POCO.tenda, ...dentro]) {
+    assert.ok(doGrupo.has(`${p.x},${p.y}`), `o grupo alcança ${p.x},${p.y}`);
+  }
+  // o caminho mais curto até o fundo da torre entra pela boca — é de lá que a cena faz os mortos saírem.
+  // (O anel está QUEBRADO, como manda a ruína: há outra brecha no sudeste. A cena não depende de haver uma só.)
+  const fundo = Battlefield.pathFrom(doGrupo, { x: 13, y: 4 }).map((p) => `${p.x},${p.y}`);
+  assert.ok(fundo.includes(`${POCO.porta.x},${POCO.porta.y}`), `entra pela boca: ${fundo.join(' ')}`);
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 if (falhas) process.exit(1);

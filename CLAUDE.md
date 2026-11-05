@@ -265,6 +265,15 @@ Redbrand 196 de 202, com 17 portas, 12 luzes coloridas e marcador de armadilha e
 As cenas da FA são JSON público e **não entram no repositório**: ficam em `mapas/_cenas/` (ignorado), como a arte.
 Para ver: carregue o JSON em `localStorage['phandalin.editor.mapa']` e abra `/editor.html` ou `?encontro=editor`.
 
+**O Poço da Coruja Velha roda sobre o battlemap da FA**, e é o modelo de como refazer uma planta antiga com os mapas
+novos. `python src/dev/mapa-poco-fa.py` lê o import do Foundry, pinta o TERRENO pela COR do desenho (capim onde é
+verde, laje onde é cinza — o Foundry não tem camada de chão) e acha os pontos que o capítulo 4 usa, MEDINDO: a boca
+da torre pelo caminho do poço até dentro (`reachable` + `pathFrom`), o interior da torre pelo círculo do anel, a
+tenda pelas quatro paredes da barraca de Kost, o poço pelo centróide dos pixels escuros. O gerador **se recusa a
+escrever** se algum ponto cair em parede ou ficar inalcançável, e `testes-cenas.mjs` guarda o arquivo depois disso.
+A planta encolheu de 26x22 para 18x22 (a da FA) e `poco.js` de 109 para 111 linhas, agora sem altura: a torre é
+ruína sem teto, e quem barra passo é a parede, não o glifo.
+
 **O Esconderijo (capítulo 2) roda sobre o battlemap da FA.** O mapa sai de
 `node --import ./src/dev/cena-node/register.mjs src/dev/mapa-esconderijo-fa.mjs`, que lê o import do Foundry acima e pinta por cima o
 que o Foundry não tem: terreno por glifo, ALTURA (degrau de mais de um nível é parede) e SALAS por distância de caminhada. Ele escreve

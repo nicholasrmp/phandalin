@@ -302,11 +302,13 @@ export function mapaDo(variante) {
     };
   }
   if (variante === 'poco') {
-    // O Poço da Coruja Velha: o grupo sobe a encosta pelo caminho antigo, do sul.
+    // O Poço da Coruja Velha, sobre o battlemap da FA (`game/poco.js`, gerado por `src/dev/mapa-poco-fa.py`):
+    // o grupo sobe pela trilha de terra do sul, que é por onde a planta abre. A tenda de Kost está DESENHADA no
+    // mapa (x 5..7, y 8..10, com a aba etérea ao sul), então não há sprite de tenda por cima dela.
     return {
       ...MAPA_POCO,
-      objetos: [{ tipo: 'tenda', x: 8, y: 9, olha: { dx: 0, dy: 1 } }],
-      grupo: [{ x: 12, y: 20 }, { x: 13, y: 20 }, { x: 12, y: 21 }, { x: 13, y: 21 }],
+      objetos: [],
+      grupo: [{ x: 5, y: 20 }, { x: 6, y: 20 }, { x: 6, y: 19 }, { x: 7, y: 19 }],
       olhar: { dx: 0, dy: -1 },
       cena: 'poco',
     };
