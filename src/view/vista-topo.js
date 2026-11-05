@@ -217,17 +217,48 @@ export function traco(ctx, x0, y0, x1, y1, codigo, C, aMostra) {
     }
     return;
   }
-  // porta: a madeira no vão, clara quando aberta
+  // A PORTA, e a FOLHA tem de se ver.
+  //
+  // Antes era um fio de madeira no vão, e sobre mapa PINTADO isso não lia: o battlemap desenha o vão VAZIO (lá
+  // a porta é um objeto do VTT, com indicador próprio), então o único "está fechada" na tela era um risco fino
+  // de 4 px. Dava para olhar uma porta trancada e achar que era passagem aberta.
+  //
+  // Agora a fechada é uma TÁBUA: um retângulo de madeira atravessando o vão, com contorno escuro e a linha das
+  // juntas no meio. E a aberta é a folha ENCOSTADA: a tábua gira para o lado do batente, perpendicular ao vão,
+  // que é como se desenha porta aberta em planta. As duas se distinguem de relance, com ou sem mapa por baixo.
   const aberta = codigo === ARESTA.aberta;
+  const mx = (x0 + x1) / 2;
+  const my = (y0 + y1) / 2;
+  const ex = (x1 - x0);           // ao longo do vão
+  const ey = (y1 - y0);
+  const px = -ey;                 // perpendicular ao vão
+  const py = ex;
+  const espessura = Math.max(3, C * 0.13);
+  const folha = (ax, ay, bx, by) => {
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = '#17141a'; ctx.lineWidth = espessura + Math.max(3, C * 0.05);
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.strokeStyle = aberta ? '#7d6340' : '#9a6b35'; ctx.lineWidth = espessura;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    // as juntas da madeira, para a tábua não virar um borrão
+    ctx.strokeStyle = 'rgba(23,20,26,.55)'; ctx.lineWidth = Math.max(1, C * 0.015);
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.lineCap = 'round';
+  };
+  // o vão em si: o preto do batente, dos dois lados
   ctx.strokeStyle = '#17141a'; ctx.lineWidth = Math.max(5, C * 0.1);
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-  ctx.strokeStyle = aberta ? '#6f5a3a' : '#9a6b35'; ctx.lineWidth = Math.max(3, C * 0.07);
-  const t = aberta ? 0.3 : 0.86;   // aberta: só os batentes
-  const mx = (x0 + x1) / 2; const my = (y0 + y1) / 2;
+  const vao = aberta ? 0.34 : 0.14;     // fechada, o batente é só a ponta; aberta, sobra vão dos dois lados
   ctx.beginPath();
-  ctx.moveTo(mx - (x1 - x0) * t / 2, my - (y1 - y0) * t / 2);
-  ctx.lineTo(mx + (x1 - x0) * t / 2, my + (y1 - y0) * t / 2);
+  ctx.moveTo(x0, y0); ctx.lineTo(x0 + ex * vao, y0 + ey * vao);
+  ctx.moveTo(x1, y1); ctx.lineTo(x1 - ex * vao, y1 - ey * vao);
   ctx.stroke();
+  if (aberta) {
+    // a folha encostada no batente de cá, virada para dentro do vão
+    const k = 0.62;
+    folha(x0 + ex * vao, y0 + ey * vao, x0 + ex * vao + px * k * 0.5, y0 + ey * vao + py * k * 0.5);
+  } else {
+    folha(mx - ex * 0.43, my - ey * 0.43, mx + ex * 0.43, my + ey * 0.43);
+  }
 }
 
 const OCULTAS_NO_JOGO = new Set([ARESTA.invisivel, ARESTA.limitada, ARESTA.unicaMais, ARESTA.unicaMenos]);

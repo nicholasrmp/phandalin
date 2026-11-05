@@ -204,6 +204,11 @@ carregue a imagem, **arraste um retângulo por cima de N x M quadrados desenhado
 grade. Depois é só desenhar por cima o que é parede, porta e arco (ferramenta 2), e o resto do editor (salas, altura, partida) funciona igual.
 Há ainda giro de 90°, opacidade, arrastar a imagem e "crescer o mapa até cobrir a imagem".
 
+**A porta mostra que está fechada.** Sobre mapa pintado o battlemap desenha o vão VAZIO — lá a porta é objeto do
+VTT, com indicador próprio —, e a nossa folha era um fio de madeira de 4 px: dava para olhar uma porta trancada e
+achar que era passagem. Agora a fechada é uma TÁBUA atravessando o vão, com contorno e junta, e a aberta é a folha
+encostada no batente, perpendicular, como se desenha porta aberta em planta (`src/view/vista-topo.js`).
+
 **Mapa pintado de terceiro: joga aqui, não publica.** O Esconderijo e a Caverna Onda Eco rodam sobre o battlemap da
 Forgotten Adventures quando o arquivo está no disco de quem baixou — a licença deles proíbe embutir a arte em video
 game, então ela fica fora do repositório (`.gitignore`) e o `src/dev/verificar-publicavel.mjs` **falha o `npm run
