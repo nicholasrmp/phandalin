@@ -640,6 +640,7 @@ const ROTULO_DO_QUANDO = { entrar: 'entra', sair: 'sai', comecaTurno: 'começa o
 const ROTULO_DO_EFEITO = {
   texto: 'Texto', dano: 'Dano', condicao: 'Condição', parar: 'Parar o passo', terrenoDificil: 'Terreno difícil',
   sobreposicao: 'Acender/apagar arte', alternar: 'Ligar/desligar região', teleporte: 'Teleporte',
+  voltar: 'Voltar para a casa de onde veio',
 };
 const ATRIBUTOS = [['', 'sem teste'], ['str', 'FOR'], ['dex', 'DES'], ['con', 'CON'], ['int', 'INT'], ['wis', 'SAB'], ['cha', 'CAR']];
 const TIPOS_DE_DANO = ['', 'contundente', 'cortante', 'perfurante', 'fogo', 'frio', 'elétrico', 'ácido', 'veneno', 'necrótico', 'radiante', 'trovejante', 'psíquico', 'energético'];
@@ -653,6 +654,8 @@ const ligaDe = (e) => (e.ligada === undefined ? '' : e.ligada ? '1' : '0');
 /** Os campos de um efeito, por tipo. `data-ef` é o índice; `data-campo` o caminho ('teste.cd'). */
 function camposDoEfeito(e, i) {
   const at = (c) => `data-ef="${i}" data-campo="${c}"`;
+  // `alvo: 'todos'`: o teto que desaba, a ponte que cede — pega todo mundo dentro da região, e não só quem pisou
+  const todos = `<label class="linha"><input type="checkbox" ${e.alvo === 'todos' ? 'checked' : ''} ${at('alvo')} /> pega todos dentro da região, não só quem pisou</label>`;
   const teste = (comMetade) => `
     <label class="linha">teste <select ${at('teste.atributo')}>${opcoes(ATRIBUTOS, e.teste?.atributo)}</select>
     CD <input type="number" min="1" max="30" style="width:4em" value="${e.teste?.cd ?? 12}" ${at('teste.cd')} /></label>
@@ -661,9 +664,9 @@ function camposDoEfeito(e, i) {
     case 'texto': return `<textarea rows="2" style="width:100%" ${at('texto')}>${escapar(e.texto)}</textarea>`;
     case 'dano': return `<label class="linha">dados <input type="text" style="width:6em" value="${escapar(e.dados ?? '1d6')}" ${at('dados')} />
       tipo <select ${at('dano')}>${opcoes(TIPOS_DE_DANO.map((t) => [t, t || '—']), e.dano)}</select></label>${teste(true)}
-      <label class="linha">falhou, fica <select ${at('seFalhar')}>${opcoes([['', '—'], ...CONDICOES.map((c) => [c, CONDITIONS[c]?.name ?? c])], e.seFalhar)}</select></label>`;
+      <label class="linha">falhou, fica <select ${at('seFalhar')}>${opcoes([['', '—'], ...CONDICOES.map((c) => [c, CONDITIONS[c]?.name ?? c])], e.seFalhar)}</select></label>${todos}`;
     case 'condicao': return `<label class="linha"><select ${at('condicao')}>${opcoes(CONDICOES.map((c) => [c, CONDITIONS[c]?.name ?? c]), e.condicao)}</select>
-      rodadas <input type="number" min="0" style="width:4em" value="${e.rodadas ?? ''}" placeholder="—" ${at('rodadas')} /></label>${teste(false)}`;
+      rodadas <input type="number" min="0" style="width:4em" value="${e.rodadas ?? ''}" placeholder="—" ${at('rodadas')} /></label>${teste(false)}${todos}`;
     case 'sobreposicao': return `<label class="linha">peça <select ${at('id')}>${opcoes([['', '—'], ...(mapa.sobreposicoes ?? []).map((o) => [o.id, o.id])], e.id)}</select>
       <select ${at('ligada')}>${opcoes(LIGA, ligaDe(e))}</select></label>`;
     case 'alternar': return `<label class="linha">região <select ${at('regiao')}>${opcoes([['', '—'], ...(mapa.regioes ?? []).map((r) => [r.id, r.nome || r.id])], e.regiao)}</select>
@@ -671,6 +674,7 @@ function camposDoEfeito(e, i) {
     case 'teleporte': return `<label class="linha">para x <input type="number" style="width:4em" value="${e.x ?? 0}" ${at('x')} />
       y <input type="number" style="width:4em" value="${e.y ?? 0}" ${at('y')} /></label>`;
     case 'terrenoDificil': return '<p class="dica" style="margin:2px 0">Enquanto ligada, as casas custam o dobro. Não dispara: vale o tempo todo.</p>';
+    case 'voltar': return '<p class="dica" style="margin:2px 0">Quem pisou volta para a casa de onde veio (ou a livre mais perto dela, nunca dentro da região): caiu e subiu de volta.</p>';
     default: return '';
   }
 }
@@ -737,7 +741,11 @@ function regiaoNoPainel() {
     <label class="linha"><input type="checkbox" id="rDesligada" ${r.desligada ? 'checked' : ''} /> começa desligada (outra região ou o roteiro liga)</label>
     <label class="linha"><input type="checkbox" id="rVoa" ${r.pegaQuemVoa ? 'checked' : ''} /> pega quem voa</label>
     <label class="linha"><input type="checkbox" id="rEscondida" ${r.escondida ? 'checked' : ''} /> escondida (armadilha: a Percepção passiva nota antes)</label>
-    ${r.escondida ? `<label class="linha">CD para notar <input id="rCd" type="number" min="1" max="30" style="width:4em" value="${r.escondida.cd ?? 12}" /></label>
+    <label class="linha"><input type="checkbox" id="rDiscreta" ${r.discreta ? 'checked' : ''} /> discreta (a régua não avisa: a ponte que se vê, mas não se sabe que cede)</label>
+    ${r.escondida ? `<label class="linha">CD do Procurar <input id="rCd" type="number" min="1" max="30" style="width:4em" value="${r.escondida.cd ?? 12}" /></label>
+      <label class="linha">CD da passiva <input id="rCdPassiva" type="number" min="1" max="30" style="width:4em" value="${r.escondida.cdPassiva ?? ''}" placeholder="a mesma" ${r.escondida.passiva === false ? 'disabled' : ''} />
+        a até <input id="rAlcance" type="number" min="5" step="5" style="width:4em" value="${r.escondida.alcance ?? 5}" /> pés</label>
+      <label class="linha"><input type="checkbox" id="rSoProcurando" ${r.escondida.passiva === false ? 'checked' : ''} /> só se acha procurando (a passiva não nota)</label>
       <p class="dica" style="margin:4px 0 2px">o que vê quem nota (ou acha procurando)</p>
       <textarea id="rAchado" rows="2" style="width:100%">${escapar(r.escondida.achado)}</textarea>` : ''}
     <h3 style="margin:10px 0 4px">Efeitos, na ordem</h3>
@@ -762,6 +770,16 @@ function regiaoNoPainel() {
   $('rEscondida').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.escondida = ev.target.checked ? { cd: 12 } : undefined; }));
   $('rCd')?.addEventListener('change', (ev) => mexerNaRegiao((q) => { q.escondida.cd = Number(ev.target.value) || 10; }));
   $('rAchado')?.addEventListener('change', (ev) => mexerNaRegiao((q) => { q.escondida.achado = ev.target.value.trim(); }));
+  $('rDiscreta').addEventListener('change', (ev) => mexerNaRegiao((q) => { if (ev.target.checked) q.discreta = true; else delete q.discreta; }));
+  $('rCdPassiva')?.addEventListener('change', (ev) => mexerNaRegiao((q) => {
+    const v = Number(ev.target.value);
+    if (v) q.escondida.cdPassiva = v; else delete q.escondida.cdPassiva;
+  }));
+  $('rAlcance')?.addEventListener('change', (ev) => mexerNaRegiao((q) => {
+    const v = Math.max(5, Math.round((Number(ev.target.value) || 5) / 5) * 5);
+    if (v === 5) delete q.escondida.alcance; else q.escondida.alcance = v;
+  }));
+  $('rSoProcurando')?.addEventListener('change', (ev) => mexerNaRegiao((q) => { if (ev.target.checked) q.escondida.passiva = false; else delete q.escondida.passiva; }));
   const NUMEROS = new Set(['teste.cd', 'rodadas', 'x', 'y']);
   form.querySelectorAll('[data-ef]').forEach((c) => c.addEventListener('change', () => mexerNaRegiao((q) => {
     const e = q.efeitos[Number(c.dataset.ef)];
@@ -770,6 +788,7 @@ function regiaoNoPainel() {
     if (NUMEROS.has(caminho)) v = v === '' ? '' : Number(v);
     if (caminho === 'ligada') v = v === '' ? undefined : v === '1';
     if (caminho === 'teste.metade' && !v) v = '';
+    if (caminho === 'alvo') v = v ? 'todos' : '';
     porNoCaminho(e, caminho, v);
     // a CD que o campo mostra (12) vale desde que se escolhe o atributo, e não só depois de mexer nela
     if (caminho === 'teste.atributo' && e.teste && e.teste.cd == null) e.teste.cd = 12;

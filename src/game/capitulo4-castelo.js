@@ -55,6 +55,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { prepararLevas } from './levas.js';
 import { CASTELO } from './castelo.js';
+import { descobrirRegiao, alternarRegiao } from '../rules/regioes.js';
 import { guardar } from './comercio.js';
 import { criarBuscas } from './buscas.js';
 import { garantirInventario } from '../rules/equipment.js';
@@ -425,7 +426,7 @@ export function criarCastelo(app, config) {
           `${quem.name} fala alto, sem pressa, como quem foi convidado: vêm a mando do mago dos Marcarrubra, e o Aranha Negra quer saber do anão.${mantos ? ' Os mantos vermelhos ajudam.' : ''}`,
           'Atrás das seteiras, risadinhas, uma discussão em goblin, e por fim um grito: — Entra! O rei está no fundo. Não pisa no meio do salão, que tem fio!',
         ], { teste: { quem: quem.name, pericia: 'Enganação', total: Math.max(...rol), cd: intuicao + 1, passou: true } });
-        salvo.armadilha = 'vista';
+        fioVisto();
         return;
       }
       await asArmas([`${quem.name} começa o discurso — e uma flecha passa zunindo pela orelha. Lá dentro, alguém grita em goblin que é mentira.`]);
@@ -446,25 +447,21 @@ export function criarCastelo(app, config) {
   }
 
   // --------------------------------------------------- o fio do salão ----
-  const naArmadilha = (p) => !salvo.armadilha && CASTELO.armadilha.some((q) => q.x === p.x && q.y === p.y);
-  enc.paraNaCasa = (c, p) => c.side === 'party' && naArmadilha(p);
-
-  /** O teto cai sobre as cinco casas: toda criatura nelas testa Destreza. */
-  function desabamento() {
-    salvo.armadilha = 'disparada';
-    const atingidos = [];
-    for (const q of CASTELO.armadilha) {
-      const v = enc.combatants.find((x) => !x.dead && x.pos.x === q.x && x.pos.y === q.y);
-      if (!v) continue;
-      const r = enc.resistencia(v, 'dex', 10);
-      let dano = 0;
-      for (let i = 0; i < 3; i++) dano += enc.rng.die(6);
-      if (r.success) dano = Math.floor(dano / 2);
-      enc.applyDamage(v, dano, 'concussão');
-      atingidos.push(`${v.name} ${dano}${r.success ? ' (metade)' : ''}`);
-    }
-    return atingidos;
+  // O FIO É UMA REGIÃO do mapa (`encounter.js`, `rules/regioes.js`): a passiva 20 que o nota a 3 m, o Procurar (CD 10),
+  // o Encontrar Armadilhas, o desabamento sobre as cinco casas (Destreza CD 10, 3d6, metade) — para herói e goblin, na
+  // luta e explorando — são do motor. A cena lembra (`salvo.armadilha`), conta, dá o XP e acorda o castelo.
+  const fio = () => enc.field.regioes?.find((r) => r.id === 'fio') ?? null;
+  /** O grupo sabe do fio (o disfarce, o Procurar da porta, a passiva): a região fica descoberta. */
+  function fioVisto() {
+    if (!salvo.armadilha) salvo.armadilha = 'vista';
+    descobrirRegiao(enc.field, 'fio');
   }
+  if (salvo.armadilha === 'vista') descobrirRegiao(enc.field, 'fio');
+  if (salvo.armadilha === 'disparada') alternarRegiao(enc.field, 'fio', false);
+  /** O desabamento que a região contou e a cena ainda vai narrar, explorando (o painel vem depois do passo). */
+  let desabou = null;
+  const quemLevou = (resultado, c) => (resultado?.atingidos ?? [{ quem: c, dano: resultado?.dano ?? 0, passou: resultado?.passou }])
+    .map((a) => `${a.quem.name} ${a.dano}${a.passou ? ' (metade)' : ''}`);
 
   /** O XP do fio do salão vale uma vez, ao passar por ele (ou ao pisar e sobreviver), não ao descobrir. */
   async function xpDoFio() {
@@ -473,9 +470,10 @@ export function criarCastelo(app, config) {
     await darXpDoLivro(100, 'O fio do salão');
   }
 
-  async function armadilha(c) {
-    if (!naArmadilha(c.pos)) return false;
-    const atingidos = desabamento();
+  async function armadilha() {
+    if (!desabou) return false;
+    const { c, atingidos } = desabou;
+    desabou = null;
     await painel(`O pé de ${c.name} engancha um fio de cobre perdido no entulho. Um estalo lá em cima, e meia parede de vigas e pedra vem abaixo (${atingidos.join(', ')}). O castelo inteiro ouve.`);
     await xpDoFio();
     // O barulho põe de pé os arqueiros, o banquete e o santuário.
@@ -486,8 +484,7 @@ export function criarCastelo(app, config) {
   }
 
   /** Na luta, o fio dispara para quem pisar — herói ou goblin. */
-  async function armadilhaEmCombate(c) {
-    const atingidos = desabamento();
+  async function armadilhaEmCombate(c, atingidos) {
     enc.say('acao', `${c.name} pisa no fio: o teto desaba diante da porta leste (${atingidos.join(', ')}).`);
     if (!salvo.alarme) for (const l of ondasDoBarulho(J(11, 12))) if (l) { l.rodada += enc.round - 1; levas?.adicionar(l); }
     app.refresh();
@@ -497,15 +494,11 @@ export function criarCastelo(app, config) {
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
-    if (await armadilha(c)) return;
+    if (await armadilha()) return;
     // Fio sabido e atravessado por cima, sem tocar: passou, vale o XP.
     if (salvo.armadilha === 'vista' && herois().some((h) => CASTELO.armadilha.some((q) => q.x === h.pos.x && q.y === h.pos.y))) await xpDoFio();
     if (!estado.terraco && herois().some((h) => naSala(h.pos, 'terraco'))) { await chegarAoTerraco(); if (!estado.explorando) return; }
-    // Passiva 20 vê o fio sem procurar.
-    if (!salvo.armadilha && herois().some((h) => passivePerception(h) >= 20 && CASTELO.armadilha.some((q) => distanceFt(h.pos, q) <= 10))) {
-      salvo.armadilha = 'vista';
-      await painel('Alguém para de repente: no entulho diante da porta leste, um fio de cobre fino, esticado na altura do tornozelo, sobe até o teto.');
-    }
+    // A passiva 20 que vê o fio sem procurar é da região (`game/armadilhas.js`): para antes de pisar, e o painel diz.
     // Quem vê quem. Só os vigias (os postos, depois do terraço, e a guarda)
     // reagem ao que veem, até 60 pés; os outros só a quem entra na sala ou ao
     // barulho — senão a porta aberta de uma sala puxava luta do outro lado do
@@ -722,9 +715,17 @@ export function criarCastelo(app, config) {
   function evento(ev) {
     if (ev.type === 'died' && ev.target === grol) feitos.grolMorto = true;
     if (ev.type === 'died' && ev.target === gundren) salvo.gundren = 'morto';
-    // Na luta, o fio dispara para qualquer um (fora dela, quem cuida é o
-    // `depoisDeMover`, com o painel).
-    if (ev.type === 'moved' && !estado.explorando && naArmadilha(ev.actor.pos)) void armadilhaEmCombate(ev.actor);
+    // O FIO (a região do mapa): achado por qualquer caminho, a cena lembra; disparado, conta — explorando, no painel
+    // depois do passo (`depoisDeMover`); na luta, no registro, e o barulho chama as levas.
+    if (ev.regiao?.id === 'fio') {
+      if (ev.type === 'regiaoDescoberta') fioVisto();
+      if (ev.type === 'regiao' && ev.quando === 'entrar') {
+        salvo.armadilha = 'disparada';
+        const atingidos = quemLevou(ev.resultado, ev.actor);
+        if (estado.explorando) desabou = { c: ev.actor, atingidos };
+        else void armadilhaEmCombate(ev.actor, atingidos);
+      }
+    }
   }
 
   // ------------------------------------------------------ fim da luta ----
@@ -860,7 +861,7 @@ export function criarCastelo(app, config) {
           // dizer isso é melhor que inventar perigo.
           const perto = !salvo.armadilha && em('salaoArmadilha');
           if (t.passou && perto) {
-            salvo.armadilha = 'vista';
+            fioVisto();
             await painel('Na porta, nada — mas o olho treinado desce para o chão: um fio de cobre no entulho, na altura do tornozelo, amarrado a pinos no teto.', { teste: t });
             return;
           }
@@ -877,7 +878,7 @@ export function criarCastelo(app, config) {
         fazer: async () => {
           buscas.marcar(c, 'armadilhaChao');
           const t = teste(c, 'percepcao', 10);
-          if (t.passou) salvo.armadilha = 'vista';
+          if (t.passou) fioVisto();
           await painel(t.passou ? 'No entulho diante da porta leste, um fio de cobre na altura do tornozelo, amarrado a pinos no teto. Dá para passar por cima, com cuidado.' : 'Entulho, poeira, argamassa caída. Nada de mais.', { teste: t });
         } });
     }
@@ -1142,20 +1143,9 @@ export function criarCastelo(app, config) {
     app.irParaRegiao(grupo, 'castelo');
   }
 
-  /** O que a cena aceita das magias de utilidade que usam ganchos: o fio do salão (Encontrar Armadilhas). */
+  /** Os ganchos das magias de utilidade: o fio do salão é região escondida, e o gancho dele vem do mapa (`game/armadilhas.js`). */
   function ganchosMagicos() {
-    if (!estado.explorando || salvo.armadilha === 'disparada') return [];
-    const q = CASTELO.armadilha[0];
-    return [{
-      id: 'fio', tipo: 'armadilha', x: q.x, y: q.y, nome: 'O fio de cobre do salão',
-      vista: salvo.armadilha === 'vista',
-      texto: 'um fio fino de cobre esticado na altura do tornozelo no entulho da porta leste, que sobe até um teto prestes a cair. Dá para passar por cima sem tocar nele.',
-      revelar: () => {
-        if (salvo.armadilha) return false;
-        salvo.armadilha = 'vista';
-        return true;
-      },
-    }];
+    return [];
   }
 
   return {

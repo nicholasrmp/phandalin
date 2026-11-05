@@ -12,6 +12,8 @@ const { makeRng } = await import(P + 'core/rng.js');
 const { mapaDo, buildFoes } = await import(P + 'game/encounter.js');
 const { criarCasaDaMorte } = await import(P + 'game/capitulo-casadamorte.js');
 const { garantirInventario } = await import(P + 'rules/equipment.js');
+const { descobrirRegiao } = await import(P + 'rules/regioes.js');
+const { ganchosMagicosDaCena } = await import(P + 'game/armadilhas.js');
 
 let total = 0;
 let falhas = 0;
@@ -196,16 +198,45 @@ await teste('masmorra 1: as cinco sombras vêm com a esfera de cristal (e com o 
   assert.equal(T.field.surfaceAt(11, 22), 'portaAberta');
 });
 
-await teste('masmorra 1: o poço de espinhos: o passo PARA no fosso e o primeiro a pisar cai (3 + 2d10 no máximo, e o fosso fica sabido)', async () => {
+await teste('masmorra 1: o poço de espinhos é REGIÃO do mapa: o passo para na tampa, o primeiro a pisar cai (1d6 + 2d10), e a cena lembra', async () => {
   const S = await nova('casaDaMortePorao1');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 12, y: 11 }), true, 'o passo para na tampa');
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 13, y: 11 }), false);
-  poe(S.party[0], 12, 11);
-  const antes = S.party[0].hp;
-  await S.cena.depoisDeMover(S.party[0]);
-  assert.equal(S.casa().espinhos, 'caiu');
-  assert.ok(S.party[0].hp < antes && antes - S.party[0].hp <= 26, `dano ${antes - S.party[0].hp}`);
-  assert.equal(S.enc.paraNaCasa(S.party[0], { x: 12, y: 11 }), false, 'depois, o passo não para mais');
+  const poco = S.field.regioes.find((r) => r.id === 'espinhos');
+  assert.ok(poco?.escondida, 'escondida no mapa');
+  // atravessa o túnel de (14,11) a (10,11): para em cima da tampa
+  const h = S.party[0];
+  poe(h, 14, 11);
+  h.movementLeftFt = 30;
+  const antes = h.hp;
+  S.enc.moveAlong(h, [{ x: 14, y: 11 }, { x: 13, y: 11 }, { x: 12, y: 11 }, { x: 11, y: 11 }, { x: 10, y: 11 }]);
+  assert.deepEqual({ x: h.pos.x, y: h.pos.y }, { x: 12, y: 11 }, 'o passo para na tampa');
+  assert.ok(h.hp < antes && antes - h.hp <= 26, `dano ${antes - h.hp}`);
+  assert.equal(S.casa().espinhos, 'caiu', 'a cena lembra');
+  await S.cena.depoisDeMover(h);   // o painel da queda
+  assert.equal(poco.desligada, true, 'uma vez só');
+  poe(S.party[1], 13, 11);
+  S.party[1].movementLeftFt = 30;
+  const hp1 = S.party[1].hp;
+  S.enc.moveAlong(S.party[1], [{ x: 13, y: 11 }, { x: 12, y: 11 }, { x: 11, y: 11 }]);
+  assert.equal(S.party[1].hp, hp1, 'o segundo não cai');
+  // de volta à masmorra: a região já disparada continua desligada
+  const D = await nova('casaDaMortePorao1', { campanha: S.app.campanha });
+  assert.equal(D.field.regioes.find((r) => r.id === 'espinhos').desligada, true);
+});
+
+await teste('masmorra 1: o poço achado (o chão sem pegadas) fica descoberto, e o grupo passa sem cair', async () => {
+  const S = await nova('casaDaMortePorao1');
+  poe(S.party[0], 12, 12);
+  const achar = op(S, S.party[0], 12, 11, 'Procurar armadilhas no chão');
+  if (achar) await achar.fazer();
+  else descobrirRegiao(S.field, 'espinhos');
+  assert.equal(S.field.regioes.find((r) => r.id === 'espinhos').descoberta, true);
+  const h = S.party[1];
+  poe(h, 13, 11);
+  h.movementLeftFt = 30;
+  const hp = h.hp;
+  S.enc.moveAlong(h, [{ x: 13, y: 11 }, { x: 12, y: 11 }, { x: 11, y: 11 }]);
+  assert.equal(h.hp, hp);
+  assert.equal(h.pos.x, 11, 'atravessou');
 });
 
 await teste('masmorra 1: as lajes das criptas de Gustav a Thorn abrem com Atletismo CD 15 e cada herói tenta uma vez; a de Elisabeth solta o enxame', async () => {
@@ -566,10 +597,12 @@ await teste('investigação: a Percepção passiva alta repara sozinha ao entrar
 
 await teste('magias de utilidade: a cena oferece auras, trancas, fosso e a chave aos ganchos', async () => {
   const A = await nova('casaDaMortePorao1');
-  const g = A.cena.ganchosMagicos(A.party[0]);
+  // os da cena e os das regiões escondidas do mapa (o poço de espinhos), como o jogo os junta
+  const g = ganchosMagicosDaCena({ capitulo: A.cena, enc: A.enc }, A.party[0]);
   assert.ok(g.some((x) => x.tipo === 'magico' && x.aura), 'auras do Detectar Magia');
   assert.equal(g.filter((x) => x.tipo === 'trancada').length, 5, 'os cinco baús do poço');
   const fosso = g.find((x) => x.tipo === 'armadilha');
+  assert.deepEqual({ x: fosso.x, y: fosso.y }, { x: 12, y: 11 }, 'na casa do poço (antes apontava 15,16)');
   assert.ok(fosso.revelar(), 'o Encontrar Armadilhas acha o fosso');
   assert.equal(A.casa().espinhos, 'achado');
   const B = await nova('casaDaMorte2');

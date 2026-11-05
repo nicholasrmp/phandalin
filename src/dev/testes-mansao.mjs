@@ -13,6 +13,7 @@ const { hasCondition } = await import(P + 'rules/conditions.js');
 const { mapaDo, buildFoes } = await import(P + 'game/encounter.js');
 const { criarMansao } = await import(P + 'game/capitulo3-mansao.js');
 const { MANSAO } = await import(P + 'game/mansao.js');
+const { prepararRegioes } = await import(P + 'rules/regioes.js');
 
 let total = 0;
 let falhas = 0;
@@ -25,9 +26,10 @@ async function teste(nome, fn) {
 }
 
 /** A cena montada como o `main.js` monta: campo com luz, grupo de nível 3 na entrada da cozinha, inimigos escondidos. */
-async function nova(seed = 7) {
+async function nova(seed = 7, { campanha = {} } = {}) {
   const mapa = mapaDo('mansao');
   const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length, mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
+  prepararRegioes(field, mapa.regioes);     // como o `montarCampo` faz: o fosso e a ponte do sul são regiões do mapa
   field.luz = new Uint8Array(field.w * field.h);
   mapa.luz.forEach((linha, y) => { for (let x = 0; x < field.w; x++) field.luz[y * field.w + x] = Number(linha[x] ?? 0); });
   field.luzes = (mapa.luzes ?? []).map((f) => ({ ...f }));
@@ -37,7 +39,7 @@ async function nova(seed = 7) {
   const resposta = { fim: 'paz' };
   const chamadas = [];
   const app = {
-    root: { classList: { add() {}, remove() {} } }, campanha: {}, selected: null, inimigosEscondidos: foes,
+    root: { classList: { add() {}, remove() {} } }, campanha, selected: null, inimigosEscondidos: foes,
     select(c) { this.selected = c; }, firstActive() { return enc.allOf('party').find((c) => !c.acted && !c.dead && c.hp > 0) ?? null; },
     refresh() {}, encerrarPartida() {}, irParaVila() {},
     conversarCom: async (npc, arvore) => { chamadas.push({ npc, arvore }); return resposta.fim; },
@@ -236,16 +238,58 @@ await teste('as paredes são arestas e não se clicam: junto de uma secreta o me
   assert.ok(!S.cena.interacoesDoHeroi(h).some((o) => o.rotulo === 'Procurar porta secreta'), 'longe de qualquer secreta o menu não oferece procurar');
 });
 
-await teste('o herói que cai no fosso volta para fora do buraco, mesmo com a casa de volta ocupada', async () => {
+const FOSSO = new Set(['23,9', '24,9', '23,10', '24,10']);
+const corredor = [{ x: 26, y: 10 }, { x: 25, y: 10 }, { x: 24, y: 10 }, { x: 23, y: 10 }, { x: 22, y: 10 }];
+
+await teste('o fosso é REGIÃO do mapa: quem atravessa o corredor para nele, volta para o lado de onde veio, e o buraco abre', async () => {
   for (const seed of [1, 2, 3, 4, 5, 6]) {
     const S = await nova(seed);
     const [a, b] = S.party;
-    poe(a, 25, 10);                                        // um aliado ocupa a casa de volta
-    poe(b, 24, 10);                                        // quem pisa no fosso
-    await S.cena.depoisDeMover(b);
-    const fosso = new Set(['23,9', '24,9', '23,10', '24,10']);
-    assert.ok(!fosso.has(`${b.pos.x},${b.pos.y}`), `seed ${seed}: ${b.name} em ${b.pos.x},${b.pos.y}`);
+    espalhar(S, [{ x: 25, y: 9 }, { x: 26, y: 10 }, { x: 28, y: 14 }, { x: 27, y: 14 }]);   // um aliado colado na beirada
+    b.movementLeftFt = 30;
+    const hp = b.hp;
+    S.enc.moveAlong(b, corredor);
+    assert.ok(!FOSSO.has(`${b.pos.x},${b.pos.y}`), `seed ${seed}: ${b.name} em ${b.pos.x},${b.pos.y}, dentro do buraco`);
+    assert.ok(b.pos.x >= 25, `seed ${seed}: voltou para o lado leste, de onde veio (x ${b.pos.x})`);
+    assert.ok(hp - b.hp <= 12, 'no máximo 2d6');
+    if (hp > b.hp) assert.ok(hasCondition(b, 'caido'), 'quem caiu fica no chão');
+    assert.equal(S.field.surfaceAt(23, 10), 'fosso', 'o buraco abriu');
+    assert.equal(S.field.regioes.find((r) => r.id === 'fosso').desligada, true, 'e a tampa não pega mais ninguém');
+    await S.cena.depoisDeMover(b);   // o painel e o XP
+    assert.ok(a.pos.x === 25 && a.pos.y === 9, 'o aliado não mexeu');
   }
+});
+
+await teste('o fosso achado pelo Encontrar Armadilhas (o gancho da região) abre o buraco; e a volta à mansão lembra', async () => {
+  const { ganchosMagicosDaCena } = await import(P + 'game/armadilhas.js');
+  const S = await nova();
+  poe(S.party[0], 21, 10);
+  const g = ganchosMagicosDaCena({ capitulo: S.cena, enc: S.enc }, S.party[0]).find((x) => x.id === 'regiao:fosso');
+  assert.ok(g, 'o gancho vem da região');
+  g.revelar();
+  assert.equal(S.field.surfaceAt(23, 10), 'fosso');
+  const D = await nova(7, { campanha: S.app.campanha });
+  assert.equal(D.field.surfaceAt(23, 10), 'fosso', 'de volta, o buraco continua aberto');
+  assert.equal(D.field.regioes.find((r) => r.id === 'fosso').desligada, true);
+});
+
+await teste('a ponte do sul é REGIÃO do mapa: cede com quem pisa, e todo mundo em cima cai (2d6, no chão); a régua não avisa', async () => {
+  const { tracarRota } = await import(P + 'rules/rota.js');
+  const S = await nova();
+  const [a, b] = S.party;
+  espalhar(S, [{ x: 10, y: 14 }, { x: 13, y: 14 }, { x: 28, y: 14 }, { x: 27, y: 14 }]);
+  b.movementLeftFt = 30;
+  assert.equal(tracarRota(S.enc, b, [], { x: 11, y: 14 }).avisos.length, 0, 'a ponte é discreta: a régua não entrega o podre');
+  const hpA = a.hp;
+  const hpB = b.hp;
+  assert.notEqual(S.enc.moveAlong(b, [{ x: 13, y: 14 }, { x: 12, y: 14 }, { x: 11, y: 14 }]), false, 'andou');
+  assert.deepEqual({ x: b.pos.x, y: b.pos.y }, { x: 11, y: 14 }, 'o passo para na ponte');
+  assert.ok(b.hp < hpB && a.hp < hpA, 'os dois em cima levam o dano');
+  assert.ok(hasCondition(a, 'caido') && hasCondition(b, 'caido'), 'e caem');
+  assert.equal(S.field.surfaceAt(10, 14), 'entulho', 'a ponte virou entulho');
+  await S.cena.depoisDeMover(b);
+  const D = await nova(7, { campanha: S.app.campanha });
+  assert.equal(D.field.surfaceAt(10, 14), 'entulho', 'de volta, a ponte continua caída');
 });
 
 await teste('a cripta tem três sarcófagos (de duas casas) e um anel de platina por sarcófago', async () => {

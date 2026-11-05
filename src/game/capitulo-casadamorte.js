@@ -245,12 +245,7 @@ export function criarCasaDaMorte(app, config) {
         if (salvo.achados[`bau${b.id}`]) continue;
         out.push({ id: `bau${b.id}`, tipo: 'trancada', x: b.x, y: b.y, nome: `O baú trancado (25${b.id})`, fazer: () => abrirBauDoPoco(ctx, b) });
       }
-      if (!salvo.espinhos) {
-        out.push({
-          id: 'fosso', tipo: 'armadilha', x: 15, y: 16, nome: 'O poço de espinhos', texto: 'Um poço de três metros, de espinhos de madeira, sob tábuas podres.',
-          revelar: () => { if (salvo.espinhos) return false; salvo.espinhos = 'achado'; return true; },
-        });
-      }
+      // o poço de espinhos é uma região escondida do mapa: o gancho do Encontrar Armadilhas vem dela (`game/armadilhas.js`)
     }
     return out;
   }
@@ -471,7 +466,8 @@ export function criarCasaDaMorte(app, config) {
         .map((p) => ({ x: p.x, y: p.y, nome: p.nome }));
     },
     fimDoCombate,
-    evento() {},
+    // os eventos do motor que a cena guarda (a região do poço de espinhos achada ou disparada, `casadamorte-porao-cena.js`)
+    evento: (ev) => ctx.aoEvento?.(ev),
     dialogoDe: () => null,
     depoisDaConversa: () => {},
     motivoSemDescanso: () => (estado.lutando ? 'Há uma luta em andamento.' : null),

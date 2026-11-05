@@ -296,6 +296,18 @@ export const MAPA_CASA_DA_MORTE_PORAO_1 = {
   grupo: grupoPadrao([[22, 15], [22, 16], [22, 17], [21, 17]]),
   olhar: { dx: 0, dy: 1 },
   cena: 'casaDaMorte',
+  // O POÇO DE ESPINHOS (26): tábuas podres sob uma camada de terra, no túnel sem pegadas. O primeiro a pisar cai três
+  // metros (1d6) em espinhos de madeira (2d10), e depois o buraco fica à mostra. Não se nota de passagem: acha quem
+  // procura (o chão sem pegadas, na cena; o Procurar; o Encontrar Armadilhas). `rules/regioes.js`.
+  regioes: [{
+    id: 'espinhos', nome: 'O poço de espinhos', casas: ['12,11'], quando: ['entrar'], vezes: 1,
+    escondida: { cd: 15, passiva: false, achado: 'Tábuas podres sob a terra do túnel cobrem um poço de espinhos de madeira. Dá para pular por cima.' },
+    efeitos: [
+      { tipo: 'dano', dados: '1d6', dano: 'concussão' },
+      { tipo: 'dano', dados: '2d10', dano: 'perfurante' },
+      { tipo: 'parar' },
+    ],
+  }],
 };
 
 export const MAPA_CASA_DA_MORTE_PORAO_2 = {

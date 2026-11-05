@@ -12,6 +12,7 @@
 // Aqui tudo é escuro; a luz ainda não pesa na cena (o motor de luz da mansão não foi ligado: está no STRAHD.md).
 
 import { addCondition } from '../rules/conditions.js';
+import { descobrirRegiao, alternarRegiao } from '../rules/regioes.js';
 import { narrar } from '../view/narrativa.js';
 
 const perto = (c, p, casas = 1) => Math.max(Math.abs(c.pos.x - p.x), Math.abs(c.pos.y - p.y)) <= casas;
@@ -43,7 +44,6 @@ export const CRIPTAS = {
   criptaE: { lado: 'oeste', selada: true, laje: [[20, 16]], de: { x: 20, y: 17 } },
   criptaF: { lado: 'oeste', selada: true, laje: [[17, 16]], de: { x: 17, y: 17 } },
 };
-const POCO_ESPINHOS = [[12, 11]];
 export const SEGREDO_SANTUARIO = [[11, 22]];
 export const SEGREDO_PRISAO = [[9, 4]];
 export const PONTE = [[13, 6], [12, 6]];
@@ -105,9 +105,29 @@ export function reaplicarPorao(ctx) {
   }
   if (!variante.startsWith('casaDaMortePorao')) return;
 
-  // O que para o passo: o fosso (26) até ser achado ou pisado, e o estrado da câmara (38) até o ritual acontecer.
+  // O POÇO DE ESPINHOS (26) é uma REGIÃO do mapa (`casadamorte.js`, `rules/regioes.js`): a queda, os espinhos, o
+  // Procurar e o Encontrar Armadilhas são do motor, para herói e monstro, na luta e explorando. A cena lembra o que
+  // aconteceu (`salvo.espinhos`) e conta a queda.
+  if (variante === 'casaDaMortePorao1') {
+    if (salvo.espinhos === 'achado') descobrirRegiao(ctx.enc.field, 'espinhos');
+    if (salvo.espinhos === 'caiu') alternarRegiao(ctx.enc.field, 'espinhos', false);
+    const antesDoEvento = ctx.aoEvento;
+    ctx.aoEvento = (ev) => {
+      antesDoEvento?.(ev);
+      if (ev.regiao?.id !== 'espinhos') return;
+      if (ev.type === 'regiaoDescoberta' && !salvo.espinhos) salvo.espinhos = 'achado';
+      if (ev.type === 'regiao' && ev.quando === 'entrar') {
+        salvo.espinhos = 'caiu';
+        const texto = `As tábuas podres cedem sob ${ev.actor.name} e o chão some. A queda é de três metros, e no fundo esperam espinhos de madeira, afiados (${ev.resultado?.dano ?? 0} de dano). Os outros baixam uma corda, e ${ev.actor.name} sai de lá se agarrando a ela. O buraco agora está à mostra, e dá para pular por cima.`;
+        // explorando, o painel vem depois do passo (`aoMover`); na luta, o registro basta
+        if (ctx.estado.explorando) ctx.quedaNoPoco = texto;
+        else ctx.enc.say('acao', texto);
+      }
+    };
+  }
+
+  // O que para o passo: o estrado da câmara (38) até o ritual acontecer.
   (ctx.paradas ??= []).push((c, p) => {
-    if (variante === 'casaDaMortePorao1') return !salvo.espinhos && POCO_ESPINHOS.some(([x, y]) => x === p.x && y === p.y);
     if (variante === 'casaDaMortePorao2') return !salvo.ritual && noEstrado(p) && !(p.x === ALTAR.x && p.y === ALTAR.y);
     return false;
   });
@@ -115,23 +135,17 @@ export function reaplicarPorao(ctx) {
   const antes = ctx.aoMover;
   ctx.aoMover = async (c, a) => {
     if (antes) await antes(c, a);
+    if (ctx.quedaNoPoco) {
+      const texto = ctx.quedaNoPoco;
+      ctx.quedaNoPoco = null;
+      await ctx.painel(texto);
+      ctx.app.refresh();
+    }
     if (!ctx.estado.explorando) return;
     // O livro: o alçapão só se mostra a quem sobe a escada até a área 32.
     if (variante === 'casaDaMortePorao1' && a?.id === 'alcapao') salvo.alcapaoCanil = true;
-    if (variante === 'casaDaMortePorao1' && !salvo.espinhos && POCO_ESPINHOS.some(([x, y]) => x === c.pos.x && y === c.pos.y)) await cair(ctx, c);
-    else if (variante === 'casaDaMortePorao2' && !salvo.ritual && noEstrado(c.pos)) await ritual(ctx, c);
+    if (variante === 'casaDaMortePorao2' && !salvo.ritual && noEstrado(c.pos)) await ritual(ctx, c);
   };
-}
-
-/** O poço de espinhos (26): o primeiro a pisar na tampa cai. */
-async function cair(ctx, c) {
-  ctx.salvo.espinhos = 'caiu';
-  const queda = ctx.enc.rng.die(6);
-  const espinhos = ctx.enc.rng.die(10) + ctx.enc.rng.die(10);
-  ctx.enc.applyDamage(c, queda, 'concussão');
-  if (!c.dead) ctx.enc.applyDamage(c, espinhos, 'perfurante');
-  await ctx.painel(`As tábuas podres cedem sob ${c.name} e o chão some. A queda é de três metros, e no fundo esperam espinhos de madeira, afiados: ${queda} de dano da queda e ${espinhos} dos espinhos. Os outros baixam uma corda, e ${c.name} sai de lá se agarrando a ela. O buraco agora está à mostra, e dá para pular por cima.`);
-  ctx.app.refresh();
 }
 
 /** O ritual da câmara (38): "Um deve morrer!". */
@@ -261,6 +275,7 @@ export function poraoInteracoes(ctx, { area, tile, sup, c, ops }) {
         rotulo: 'Procurar armadilhas no chão', icone: 'acao-procurar', detalhe: 'olhar o chão, sem pegadas', motivo: null,
         fazer: async () => {
           salvo.espinhos = 'achado';
+          descobrirRegiao(ctx.enc.field, 'espinhos');
           await ctx.painel('Quem se abaixa e olha o chão do túnel repara no que falta: pegadas. Em todos os outros corredores da masmorra há marcas de pés de séculos; aqui, nenhuma. Por baixo de uma fina camada de terra, tábuas podres cobrem um poço de um metro e meio de comprimento. No fundo, espinhos de madeira. Dá para pular por cima.');
           ctx.app.refresh();
         },

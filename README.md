@@ -204,13 +204,26 @@ carregue a imagem, **arraste um retângulo por cima de N x M quadrados desenhado
 grade. Depois é só desenhar por cima o que é parede, porta e arco (ferramenta 2), e o resto do editor (salas, altura, partida) funciona igual.
 Há ainda giro de 90°, opacidade, arrastar a imagem e "crescer o mapa até cobrir a imagem".
 
+**Mapa pintado de terceiro: joga aqui, não publica.** O Esconderijo e a Caverna Onda Eco rodam sobre o battlemap da
+Forgotten Adventures quando o arquivo está no disco de quem baixou — a licença deles proíbe embutir a arte em video
+game, então ela fica fora do repositório (`.gitignore`) e o `src/dev/verificar-publicavel.mjs` **falha o `npm run
+build`** se sobrar arte ignorada em `public/`. Sem o arquivo, a cena abre com o ladrilho de sempre, e nada quebra.
+Antes de ligar um desses, a prova: `python src/dev/prova-fundo.py <cena> <imagem> <escala> <x0> <y0>` desenha a nossa
+parede por cima do desenho, e é ela que diz se as duas plantas são a mesma — o Castelo e o Poço da FA foram recusados
+assim, por serem plantas redesenhadas.
+
 **Regiões (ferramenta R).** Uma área do mapa que faz algo quando alguém entra, sai, ou começa e termina o turno nela, como a Region do
 Foundry: o fosso escondido, a placa de pressão que abre outra área, o mato que atrasa, o chão que range. Desenha-se por área (pincel,
 retângulo, polígono, balde) e os efeitos se escolhem no painel: texto, dano com teste, condição, parar o passo, terreno difícil, acender
 uma sobreposição, ligar outra região, teleporte. Marcada como **escondida**, ela é uma armadilha completa sem roteiro nenhum: a Percepção
 passiva nota antes, o Procurar e o Encontrar Armadilhas acham. O motor (`src/rules/regioes.js`) a executa no passo de qualquer criatura,
-e o formato de cada efeito está no cabeçalho dele. A laje rachada do esconderijo (capítulo 2) é a primeira armadilha de
-capítulo que virou região: o roteiro dela saiu de `capitulo2.js`, e ficou só o painel que conta a queda.
+e o formato de cada efeito está no cabeçalho dele. **Toda armadilha de capítulo é região hoje:** a laje rachada do
+esconderijo, o poço de espinhos do porão da Casa da Morte, o fio do salão do Castelo Dentefino, e o fosso coberto e a ponte
+podre da Mansão Tresendar. O roteiro de cada uma saiu do capítulo, e lá ficou só o que é história: o painel que conta, o XP do
+livro, o barulho que acorda o castelo, o buraco que abre. O efeito pode pegar **todos dentro da região** (o teto que desaba, a
+ponte que cede) e **devolver quem pisou à casa de onde veio**. A escondida pode ter a CD da passiva separada da do Procurar, e
+o alcance dela, ou só se achar procurando. A **discreta** não aparece na régua: a ponte se vê, o podre não.
+(`src/dev/testes-armadilhas.mjs`, e as armadilhas de cada cena nos testes da Mansão e da Casa da Morte.)
 
 A figura **não entra no mapa nem no repositório**: fica no IndexedDB do navegador, porque quase sempre é arte comercial de terceiros. O que o
 mapa guarda é só o enquadramento, em `mapa.fundo` — `{ nome, escala, x0, y0, giro, opacidade }`, com `escala` em pixels da imagem por casa e

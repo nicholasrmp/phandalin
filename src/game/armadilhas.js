@@ -14,7 +14,9 @@
 // não pega (`afeta`, o goblin pequeno no ressalto) também não.
 //
 // A cena declara as dela em `capitulo.armadilhas()`:
-//   { id, nome, casas: [{x,y}], cd, descoberta, achado, afeta?(c), notar?(c, {mostrar}), disparar?(c) }
+//   { id, nome, casas: [{x,y}], cd, cdPassiva?, alcance?, descoberta, achado, afeta?(c), notar?(c, {mostrar}), disparar?(c) }
+// `cd` é a do Procurar; `cdPassiva` (se houver) a da Percepção passiva — `null` quando a passiva não acha (o poço que só
+// se vê procurando). `alcance`, em casas, até onde a passiva nota (1 = as casas em volta, que é o padrão).
 import { passivePerception } from '../rules/abilities.js';
 import { visaoDoGrupo, temEscuridaoEm } from '../rules/luz.js';
 import { armadilhasDasRegioes } from '../rules/regioes.js';
@@ -39,7 +41,12 @@ export function ganchosMagicosDaCena(app, c) {
 }
 
 const naCasa = (a, p) => a.casas.some((q) => q.x === p.x && q.y === p.y);
-const aoLado = (a, p) => a.casas.some((q) => Math.abs(q.x - p.x) <= 1 && Math.abs(q.y - p.y) <= 1);
+const aoLado = (a, p) => {
+  const n = a.alcance ?? 1;
+  return a.casas.some((q) => Math.abs(q.x - p.x) <= n && Math.abs(q.y - p.y) <= n);
+};
+/** A CD que a passiva tem de alcançar, ou `Infinity` quando esta armadilha não se nota de passagem. */
+const cdDaPassiva = (a) => (a.cdPassiva === null ? Infinity : a.cdPassiva ?? a.cd ?? 10);
 
 /**
  * Onde o caminho `path` (de `Battlefield.pathFrom`, a primeira casa é onde o herói está) tem de parar.
@@ -55,7 +62,7 @@ export function cortarNoPerigo(enc, c, path, armadilhas) {
     const p = path[i];
     for (const a of vivas) {
       if (!aoLado(a, p)) continue;
-      if (passiva >= (a.cd ?? 10) && ve(a)) {
+      if (passiva >= cdDaPassiva(a) && ve(a)) {
         // notou: só para se o caminho ia PISAR nela adiante; passando ao lado, segue — e fica sabendo
         const pisaria = path.slice(i).some((q) => naCasa(a, q));
         return { caminho: pisaria ? path.slice(0, i) : path, evento: { tipo: 'notou', armadilha: a } };

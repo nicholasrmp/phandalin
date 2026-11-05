@@ -643,7 +643,16 @@ export function porRegiao(m, r) {
     ...(r.vezes > 0 ? { vezes: Number(r.vezes) } : {}),
     ...(r.desligada ? { desligada: true } : {}),
     ...(r.pegaQuemVoa ? { pegaQuemVoa: true } : {}),
-    ...(r.escondida ? { escondida: { cd: Number(r.escondida.cd) || 10, ...(r.escondida.achado ? { achado: r.escondida.achado } : {}) } } : {}),
+    ...(r.discreta ? { discreta: true } : {}),
+    ...(r.escondida ? {
+      escondida: {
+        cd: Number(r.escondida.cd) || 10,
+        // a passiva: outra CD, nenhuma (só procurando), e até onde ela nota (`rules/regioes.js`)
+        ...(r.escondida.passiva === false ? { passiva: false } : r.escondida.cdPassiva ? { cdPassiva: Number(r.escondida.cdPassiva) } : {}),
+        ...(r.escondida.alcance && Number(r.escondida.alcance) !== 5 ? { alcance: Number(r.escondida.alcance) } : {}),
+        ...(r.escondida.achado ? { achado: r.escondida.achado } : {}),
+      },
+    } : {}),
     efeitos: (r.efeitos ?? []).map((e) => ({ ...e })),
   };
   if (i >= 0) {

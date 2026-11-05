@@ -61,6 +61,7 @@ import { darXp } from './nivel.js';
 import { audio } from '../core/audio.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MANSAO } from './mansao.js';
+import { alternarRegiao } from '../rules/regioes.js';
 import { criarBuscas } from './buscas.js';
 import { ctxDe } from './magias-fora.js';
 import { rolarTeste, disfarcado, disfarceDe, ativaDe } from '../rules/utilidade.js';
@@ -260,6 +261,8 @@ export function criarMansao(app, config) {
       f.heights[i] = 0;                   // seis metros abaixo do corredor (o texto da cena diz isso)
     }
     f.versao = (f.versao ?? 0) + 1;
+    // aberto, ninguém mais cai pela tampa: a região (`encounter.js`) se desliga
+    alternarRegiao(f, 'fosso', false);
   }
   const FLAG_PONTE = { sul: 'ponteSulCaiu', norte: 'ponteNorteCaiu' };
   function quebrarPonteSul() { quebrarPonte('sul'); }
@@ -276,6 +279,7 @@ export function criarMansao(app, config) {
     f.objetos = (f.objetos ?? []).filter((o) => !(o.tipo === 'ponte' && o.y === y));
     f.versao = (f.versao ?? 0) + 1;
     salvo[FLAG_PONTE[lado]] = true;
+    if (lado === 'sul') alternarRegiao(f, 'ponteSul', false);
   }
   // O que já estava aberto de outra visita.
   for (const nome of salvo.secretas) abrirSecreta(nome, { som: false });
@@ -287,18 +291,13 @@ export function criarMansao(app, config) {
   if (salvo.celas) abrirCelas({ som: false });
 
   // ------------------------------------------------- armadilhas no caminho ----
-  const noFosso = (p) => !salvo.fossoVisto && MANSAO.fosso.some((q) => q.x === p.x && q.y === p.y);
-  const naPonteSul = (p) => {
-    if (salvo.ponteSulCaiu) return false;
-    const y = MANSAO.pontes.sul;
-    const [x0, x1] = MANSAO.fenda[y];
-    return p.y === y && p.x >= x0 && p.x <= x1;
-  };
-  // O passo para na casa da armadilha. Explorando, também na primeira casa
-  // da oficina (o rato vê) e na do raio da cripta: a cena resolve ali, e não
-  // depois de o herói ter atravessado a sala inteira num clique.
+  // O FOSSO E A PONTE DO SUL são REGIÕES do mapa (`encounter.js`, `rules/regioes.js`): o passo para nelas, o teste,
+  // o dano, a volta para a beirada e o Procurar são do motor, para herói e monstro, na luta e explorando. A cena abre
+  // o buraco, quebra a ponte, conta e dá o XP (`evento`). Explorando, o passo também para na primeira casa da oficina
+  // (o rato vê) e na do raio da cripta: a cena resolve ali, e não depois de o herói ter atravessado a sala inteira.
+  /** O que uma armadilha contou e a cena ainda vai narrar, explorando (o painel vem depois do passo). */
+  let armadilhaContada = null;
   enc.paraNaCasa = (c, p) => {
-    if (noFosso(p) || naPonteSul(p)) return true;
     if (!estado.explorando || c.side !== 'party') return false;
     if (!estado.iarnoAvisado && iarno && !iarno.dead && !grupos.cajavidro?.ativo && NA_OFICINA(p)) return true;
     return Boolean(grupos.cripta && pendentes().includes(grupos.cripta) && !grupos.cripta.senha && !vestido(c) && gatilhoDaCripta(p));
@@ -452,31 +451,28 @@ export function criarMansao(app, config) {
   }
 
   // ------------------------------------------------------------ fosso ----
-  async function fosso(c) {
-    if (!noFosso(c.pos)) return false;
+  /** A região do fosso disparou: o buraco abre, e a cena conta (na luta, no registro; explorando, no painel). */
+  function caiuNoFosso(c, resultado) {
     salvo.fossoVisto = true;
-    const r = enc.resistencia(c, 'dex', 15);
-    let texto;
-    if (r.success) {
-      texto = `As lajes cedem sob ${c.name} e somem num buraco escuro — ${c.name} se agarra na beirada e sobe de volta.`;
-    } else {
-      const dano = enc.rng.die(6) + enc.rng.die(6);
-      enc.applyDamage(c, dano, 'concussão');
-      if (!c.dead) addCondition(c, 'caido');
-      texto = `As lajes cedem e ${c.name} despenca seis metros num fosso de terra (${dano} de dano). Sair dali leva um tempo, mas as paredes têm onde segurar.`;
-    }
-    // Volta para o lado de onde veio: cair não é atravessar.
-    // O buraco já está marcado: a casa de volta nunca cai dentro dele.
     marcarFosso();
-    const de = estado.de.get(c) ?? { x: 27 };
-    const volta = casaPerto({ x: de.x > 24 ? 25 : 22, y: c.pos.y });
-    c.pos = { ...c.pos, x: volta.x, y: volta.y };
+    const texto = resultado?.passou
+      ? `As lajes cedem sob ${c.name} e somem num buraco escuro — ${c.name} se agarra na beirada e sobe de volta.`
+      : `As lajes cedem e ${c.name} despenca seis metros num fosso de terra (${resultado?.dano ?? 0} de dano). Sair dali leva um tempo, mas as paredes têm onde segurar.`;
     if (estado.explorando) {
-      await painel([texto, 'O buraco fica aberto no meio do corredor, de parede a parede: só se passa colado na beirada (Acrobacia) ou saltando por cima.']);
-      if (c.side === 'party') await xpDoFosso();
+      armadilhaContada = async () => {
+        await painel([texto, 'O buraco fica aberto no meio do corredor, de parede a parede: só se passa colado na beirada (Acrobacia) ou saltando por cima.']);
+        if (c.side === 'party') await xpDoFosso();
+      };
     } else {
       enc.say('acao', texto);
     }
+  }
+  /** Explorando: o painel da armadilha que disparou no passo. Devolve se havia o que contar. */
+  async function contarArmadilha() {
+    if (!armadilhaContada) return false;
+    const contar = armadilhaContada;
+    armadilhaContada = null;
+    await contar();
     app.refresh();
     return true;
   }
@@ -589,10 +585,13 @@ export function criarMansao(app, config) {
     };
   }
 
-  /** A ponte do sul: quebra com qualquer um em cima. */
-  async function ponteSul(c) {
-    if (!naPonteSul(c.pos)) return false;
-    return derrubarPonte('sul', 'As tábuas estalam, racham e caem, seis metros abaixo, num monte de pedras soltas — e levam junto');
+  /** A região da ponte do sul disparou (o dano e o tombo de todos em cima já são do motor): a ponte vira entulho. */
+  function ponteSulCedeu(c, resultado) {
+    quebrarPonte('sul');
+    const quem = (resultado?.atingidos ?? [{ quem: c, dano: resultado?.dano ?? 0 }]).map((a) => `${a.quem.name} (${a.dano} de dano)`);
+    const texto = `As tábuas estalam, racham e caem, seis metros abaixo, num monte de pedras soltas — e levam junto ${quem.join(', ')}.`;
+    if (estado.explorando) armadilhaContada = () => painel(texto);
+    else enc.say('acao', texto);
   }
 
   /** A ponte cai (rota podre ou amarras soltas): todo mundo em cima vai junto, 2d6 de dano e caído. */
@@ -726,8 +725,7 @@ export function criarMansao(app, config) {
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
-    if (await fosso(c)) return;
-    if (await ponteSul(c)) return;
+    if (await contarArmadilha()) return;
     if (await secretasPassivas(c)) return;
     if (await iarnoFoge()) return;
     if (await ratoAvisa(c)) return;
@@ -861,13 +859,16 @@ export function criarMansao(app, config) {
       && ((ev.from.x <= 22 && ev.to.x >= 25) || (ev.from.x >= 25 && ev.to.x <= 22)) && ev.to.y >= 9 && ev.to.y <= 10) {
       void xpDoFosso();
     }
-    if (ev.type === 'moved' && ev.path?.length > 1) {
-      estado.de.set(ev.actor, ev.path[ev.path.length - 2]);
-      // Na luta, a armadilha dispara para qualquer um (fora dela, quem cuida
-      // é o `depoisDeMover`, com o painel).
-      if (!estado.explorando && (noFosso(ev.actor.pos) || naPonteSul(ev.actor.pos))) {
-        void fosso(ev.actor).then((caiu) => caiu || ponteSul(ev.actor));
-      }
+    if (ev.type === 'moved' && ev.path?.length > 1) estado.de.set(ev.actor, ev.path[ev.path.length - 2]);
+    // As regiões do mapa: o fosso achado (por qualquer caminho) abre; o que disparou, a cena conta.
+    if (ev.type === 'regiaoDescoberta' && ev.regiao?.id === 'fosso' && !salvo.fossoVisto) {
+      salvo.fossoVisto = true;
+      marcarFosso();
+      app.refresh();
+    }
+    if (ev.type === 'regiao' && ev.quando === 'entrar') {
+      if (ev.regiao?.id === 'fosso') caiuNoFosso(ev.actor, ev.resultado);
+      if (ev.regiao?.id === 'ponteSul') ponteSulCedeu(ev.actor, ev.resultado);
     }
     // Golpe acorda quem dorme; o Cajavidro pesa a situação a cada golpe.
     if (ev.target && ev.type !== 'died') {
@@ -1186,18 +1187,8 @@ export function criarMansao(app, config) {
         aura: { escola: 'ilusão e evocação', texto: 'No fundo, algo pequeno e quieto brilha em duas cores: uma de ilusão, outra de evocação. Coisa de frasquinho, não de armadilha.' },
       });
     }
-    // Lote 14: a armadilha do corredor (Encontrar Armadilhas) e o que Localizar Objeto acha.
-    out.push({
-      id: 'fosso', tipo: 'armadilha', x: MANSAO.fosso[0].x, y: MANSAO.fosso[0].y, nome: 'O fosso coberto do corredor',
-      semMarca: true, vista: salvo.fossoVisto,
-      texto: 'as lajes do meio do corredor não assentam: por baixo, um fosso fundo, de duas casas de comprimento por duas de largura, de parede a parede. Dá para se espremer pela beirada com Acrobacia, ou saltar por cima com a magia Salto.',
-      revelar: () => {
-        if (salvo.fossoVisto) return false;
-        salvo.fossoVisto = true;
-        marcarFosso();
-        return true;
-      },
-    });
+    // Lote 14: o que Localizar Objeto acha. (A armadilha do corredor é região escondida do mapa: o gancho do Encontrar
+    // Armadilhas vem dela, `game/armadilhas.js`, e achá-la abre o buraco — `evento`.)
     if (!salvo.temChave && mosk) out.push({ id: 'chave-mosk', tipo: 'procurado', x: mosk.pos.x, y: mosk.pos.y, nome: 'Uma chave de ferro (a mais próxima)' });
     if (cisterna.length) {
       const [bx, by] = cisterna[Math.floor(cisterna.length / 2)];

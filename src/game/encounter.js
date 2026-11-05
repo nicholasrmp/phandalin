@@ -219,7 +219,26 @@ export function mapaDo(variante) {
       folhas: CASTELO.folhas,
       grupo: [[0, 9], [0, 10], [1, 9], [0, 11]].map(([x, y]) => ({ x: x + CASTELO.desloc.x, y: y + CASTELO.desloc.y })),
       olhar: { dx: 1, dy: 0 },
+      // SEM mapa pintado, e isto foi MEDIDO. O battlemap da FA (Cragmaw Castle 31x22) é OUTRA planta do mesmo
+      // lugar: posto na nossa grade, a nossa parede corre pelo mato e a nossa rocha cai em cima do salão pintado
+      // (prova em `prova_fundo.py`). A nossa planta vem do mapa do livro; a deles foi redesenhada. Não há
+      // enquadramento que conserte isso — ou se redesenha a planta por cima do desenho, ou não se usa.
       cena: 'castelo',
+      // O FIO DO SALÃO, como REGIÃO (`rules/regioes.js`) — era roteiro do capítulo. Um fio de cobre no entulho diante
+      // da porta leste, amarrado a pinos no teto: quem pisa em qualquer das cinco casas derruba meia parede sobre
+      // todas elas (Destreza CD 10, 3d6 de concussão, metade em quem passa). O Procurar acha com CD 10; de passagem,
+      // só a Percepção passiva 20, a até 3 m. O capítulo conta, dá o XP e acorda o castelo (`capitulo4-castelo.js`).
+      regioes: [{
+        id: 'fio', nome: 'O fio de cobre do salão', casas: CASTELO.armadilha.map((q) => `${q.x},${q.y}`), quando: ['entrar'], vezes: 1,
+        escondida: {
+          cd: 10, cdPassiva: 20, alcance: 10,
+          achado: 'Um fio fino de cobre, esticado na altura do tornozelo no entulho diante da porta leste, sobe até um teto prestes a cair. Dá para passar por cima sem tocar nele.',
+        },
+        efeitos: [
+          { tipo: 'dano', dados: '3d6', dano: 'concussão', alvo: 'todos', teste: { atributo: 'dex', cd: 10, metade: true } },
+          { tipo: 'parar' },
+        ],
+      }],
     };
   }
   if (variante === 'cume') {
@@ -270,13 +289,15 @@ export function mapaDo(variante) {
       objetos: ONDA_ECO.props.map((p) => ({ ...p })),
       grupo: ONDA_ECO.grupo.map((p) => ({ ...p })),
       olhar: { dx: 1, dy: -1 },
-      // SEM mapa pintado, e isto foi MEDIDO, não esquecido. A nossa planta é um decalque exato do mapa oficial
-      // do Roll20, em DOBRO: duas casas nossas por quadrado pintado (`src/dev/encaixar-roll20.py` acha escala
-      // 0,50 cravada, uma casa de desvio, 60% de chão em comum, e a prova visual encaixa parede por parede).
-      // O que reprova é a resolução: a maior imagem que o CDN entrega tem 1515 px para 37 quadrados, e como
-      // uma casa nossa vale meio quadrado, o tabuleiro teria de ampliar 3x — a rocha vira borrão marrom, pior
-      // que o ladrilho que já temos. Se um dia aparecer uma imagem maior, é só ligar:
-      //   fundo: { nome: '6-wave-echo-cave.jpg', url: '<a imagem>', escala: 20.473, x0: 0.6, y0: 40.4, giro: 0, opacidade: 1 },
+      // O MAPA PINTADO, de fora do repositório. A nossa planta é um decalque do mapa oficial do Roll20 em DOBRO
+      // (duas casas nossas por quadrado pintado), e por isso 73x90 casas; o battlemap da Forgotten Adventures é
+      // 73x90 da grade DELE, que cai 1 para 1 na nossa — 100 px por casa, origem cravada, sem enquadrar nada.
+      // O encaixe medido é IoU 0,695 (`encaixar-fa.py`): a mesma caverna, plantas desenhadas à parte, então a
+      // parede dele não cai exatamente na nossa. Quem manda continua sendo a NOSSA camada de regra.
+      // A arte NÃO É NOSSA e não se publica: a licença da FA proíbe embutir em video game, o arquivo fica só no
+      // disco de quem o baixou (`/mapas/`, no `.gitignore`) e o `verificar-publicavel.mjs` falha o build se ele
+      // estiver em `public/`. Sem o arquivo, a cena abre com o ladrilho de sempre.
+      fundo: { nome: 'ondaeco.webp', url: '/mapas/fa/ondaeco.webp', escala: 100, x0: 0, y0: 0, giro: 0, opacidade: 1 },
       cena: 'ondaEco',
     };
   }
@@ -349,6 +370,34 @@ export function mapaDo(variante) {
         ...MANSAO.props,           // a mobília de arte própria (estantes, bancada, cabides...), por casa
       ],
       degraus: MANSAO.degraus,     // as casas de escada
+      // AS DUAS ARMADILHAS, como REGIÕES (`rules/regioes.js`) — eram roteiro do capítulo, que hoje só conta e lembra.
+      // O fosso coberto do corredor (área 3): lajes falsas sobre um buraco de seis metros, de parede a parede. Quem pisa
+      // testa Destreza CD 15: passando, agarra a beirada; falhando, cai (2d6) e fica no chão. Nos dois casos volta para o
+      // lado de onde veio, e o buraco abre (`capitulo3-mansao.js marcarFosso`). Só se acha procurando (CD 15).
+      // A ponte do sul (área 8): podre por baixo, cede com qualquer um em cima, e todos nela caem seis metros no entulho
+      // (2d6, no chão). Vê-se a ponte, não o podre: a régua não avisa (`discreta`); o "Examinar a ponte" avisa.
+      regioes: [
+        {
+          id: 'fosso', nome: 'O fosso coberto do corredor', casas: MANSAO.fosso.map((q) => `${q.x},${q.y}`), quando: ['entrar'], vezes: 1,
+          escondida: {
+            cd: 15, passiva: false,
+            achado: 'As lajes do meio do corredor não assentam: por baixo, um fosso fundo, de parede a parede. Dá para se espremer pela beirada, ou saltar por cima.',
+          },
+          efeitos: [
+            { tipo: 'dano', dados: '2d6', dano: 'concussão', teste: { atributo: 'dex', cd: 15 }, seFalhar: 'caido' },
+            { tipo: 'voltar' },
+          ],
+        },
+        {
+          id: 'ponteSul', nome: 'A ponte do sul', discreta: true, quando: ['entrar'], vezes: 1,
+          casas: (() => { const y = MANSAO.pontes.sul; const [x0, x1] = MANSAO.fenda[y]; return Array.from({ length: x1 - x0 + 1 }, (_, i) => `${x0 + i},${y}`); })(),
+          efeitos: [
+            { tipo: 'dano', dados: '2d6', dano: 'concussão', alvo: 'todos' },
+            { tipo: 'condicao', condicao: 'caido', alvo: 'todos' },
+            { tipo: 'parar' },
+          ],
+        },
+      ],
       grupo: tunel
         ? [{ x: 10, y: 19 }, { x: 10, y: 18 }, { x: 10, y: 17 }, { x: 10, y: 16 }]
         : [{ x: 29, y: 14 }, { x: 28, y: 14 }, { x: 27, y: 14 }, { x: 27, y: 15 }],

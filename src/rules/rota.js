@@ -89,7 +89,8 @@ export function avisosDoCaminho(enc, actor, caminho, visivel = () => true) {
       for (const r of regioesEm(enc.field, { ...origem, x: para.x, y: para.y })) {
         if (antes.includes(r) || !r.quando.includes('entrar')) continue;
         // a escondida não se avisa: se o grupo a descobriu ela já não o pega, e se não descobriu ele não sabe dela
-        if (r.escondida || !r.efeitos.some((ef) => EFEITOS_QUE_AVISAM.has(ef.tipo))) continue;
+        // e a discreta (a ponte podre que se vê mas não se sabe que cede) também não
+        if (r.escondida || r.discreta || !r.efeitos.some((ef) => EFEITOS_QUE_AVISAM.has(ef.tipo))) continue;
         if (!regiaoPega(enc, r, actor)) continue;
         avisos.push({ x: para.x, y: para.y, tipo: 'regiao', quem: r.id, texto: `entra em: ${r.nome ?? r.id}` });
       }

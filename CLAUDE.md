@@ -122,7 +122,7 @@ npm run build                      # roda verificar-taverna.mjs no prebuild
 
 Há um `testes-*.mjs` por frente (barbaro, goblin, habilidades, mansao, ondaeco,
 porta, save, sala, sala-ws, dialogo-perfil, itens-fora, movimento-aliados,
-musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa, rota, tracos). O de editor, o da Casa da Morte, o das regiões, o do
+musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa, rota, tracos, armadilhas). O de editor, o da Casa da Morte, o das regiões, o do
 criador, o do herói criado na sala e o das arestas rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
@@ -189,14 +189,22 @@ herói anda. A forma das escalas que vêm da sala (`escalasValidas`, até 8) mor
 `src/dev/testes-rota.mjs` prova tudo.
 A **REGIÃO** (`mapa.regioes`, motor em `rules/regioes.js`) é a área que FAZ algo quando alguém entra, sai, ou começa e termina o turno
 nela — a Region do Foundry. Efeitos, na ordem: texto, dano (com teste e metade), condição (com teste), parar o passo, terreno difícil
-(enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte; o dano pode deixar com uma condição quem
-falha no teste dele (`seFalhar`). Filtros: quem (todos, o grupo, os inimigos), tamanho mínimo (`tamanhoMinimo`, a laje que o goblin
-atravessa), quantas vezes, começa desligada, pega quem voa. Exemplo de cena: a **laje rachada do esconderijo** (`encounter.js`,
-`regioes` do esconderijo) era roteiro de `capitulo2.js` e hoje é só uma região; o capítulo guarda só o painel da queda (`naRegiao`). **Escondida** vira armadilha sem roteiro: a Percepção passiva nota antes
+(enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região, teleporte e `voltar` (à casa de onde veio, nunca para
+dentro da região); o dano pode deixar com uma condição quem falha no teste dele (`seFalhar`), e dano e condição com `alvo: 'todos'`
+pegam todo mundo dentro (o `resultado` traz `atingidos`). Filtros: quem (todos, o grupo, os inimigos), tamanho mínimo
+(`tamanhoMinimo`, a laje que o goblin atravessa), quantas vezes, começa desligada, pega quem voa, `discreta` (a régua não avisa).
+**Toda armadilha de capítulo é região**: a laje do esconderijo (`encounter.js`), o poço de espinhos do porão (`casadamorte.js`), o fio
+do Castelo e o fosso e a ponte sul da Mansão (`encounter.js`). O capítulo guarda só a história e a memória: ouve `naRegiao`, ou os
+eventos `regiao` e `regiaoDescoberta` no `capitulo.evento` (achada por qualquer caminho: passiva, Procurar, magia), conta no painel
+depois do passo, dá o XP, abre o buraco (`marcarFosso`), quebra a ponte e lembra na próxima visita (`descobrirRegiao`, `alternarRegiao`).
+O trecho da trilha do capítulo 2 (o laço e o fosso) não é região: é narração da viagem, fora do mapa. **Escondida** vira armadilha sem
+roteiro (`escondida: { cd, cdPassiva?, passiva?: false, alcance?, achado }`: a CD do Procurar, a da passiva se for outra, só
+procurando, e até onde a passiva nota, em pés): a Percepção passiva nota antes
 (`game/armadilhas.js`), o Procurar e o Encontrar Armadilhas acham, e descoberta ela não pega mais o grupo (o monstro não sabe dela). Roda
 dentro do `moveAlong`, então vale para herói e monstro, na luta e explorando. A cena que quer mais (ir para outra cena) ouve
 `capitulo.naRegiao(regiao, criatura, quando)`. No editor é a ferramenta **R**: pincel, retângulo, polígono e balde, e o formulário dos
-efeitos no painel. O campo recebe uma CÓPIA (como a sobreposição). `src/dev/testes-regioes.mjs` prova cada efeito.
+efeitos no painel. O campo recebe uma CÓPIA (como a sobreposição). `src/dev/testes-regioes.mjs` prova cada efeito, e
+`src/dev/testes-armadilhas.mjs` o fio do Castelo e as extensões (passiva, alcance, `alvo: 'todos'`, `voltar`).
 
 `/editor.html` abre a cena (a lista do alto) e carrega o desenho dela sozinho; o checkbox "Pintar o chão do jogo"
 desliga a camada do jogo e deixa o desenho limpo. "Exportar JSON" baixa o
@@ -211,7 +219,17 @@ nosso chão cai sobre chão pintado.
 `python src/dev/encaixar-fa.py <cena> <imagem>` faz o contrário: procura o enquadramento (escala, x0, y0) que melhor casa um battlemap de
 terceiro com a nossa planta e imprime o `fundo` pronto para colar, com a nota do encaixe em IoU. 1,0 é a mesma planta; abaixo de 0,7 são
 plantas DIFERENTES do mesmo lugar, e aí não adianta enquadrar melhor — ou se redesenha a planta por cima, ou não se usa o desenho.
-**Battlemap de terceiro não entra no repositório** (licença): `mapas/` e `public/mapas/esconderijo-fa*.webp` estão no `.gitignore`. Atenção:
+`python src/dev/prova-fundo.py <cena> <imagem> <escala> <x0> <y0>` desenha a PROVA: a nossa parede de aresta em amarelo e a nossa casa
+bloqueada em vermelho, por cima do desenho. **É a figura que decide, não a nota** — 0,7 tanto é "falta meia casa" quanto "outra planta com
+a mesma área de chão", e só a figura separa os dois. Medido assim nos mapas da FA: a **Onda Eco bate** (73x90 deles cai 1 para 1 na nossa,
+escala 100, origem 0,0 — a nota diz 0,695 e a figura mostra o vermelho contornando a caverna pintada inteira); o **Castelo e o Poço não
+batem**, por serem plantas redesenhadas, e não há origem que conserte. A Onda Eco é a única cena que ganhou `fundo` dessa leva.
+**Battlemap de terceiro não entra no repositório NEM NA PUBLICAÇÃO** (licença). A da Forgotten Adventures lista, entre os usos proibidos,
+"embed assets, tokens, or derivative works into mapmaking software, virtual table top programs, **video games**, or any other software
+programs", e a Licença Comercial deles **não cobre** integrar em software — para isso eles mandam procurá-los. Vale para o release grátis e
+para obra derivada. Então: joga-se com o mapa aqui (`npm run dev`), não se publica. `mapas/`, `public/mapas/esconderijo-fa*.webp` e
+`public/mapas/fa/` estão no `.gitignore`, e o `fundo` da cena fica commitado apontando para um arquivo que só existe no disco de quem o
+baixou — sem ele, a cena abre com o ladrilho de sempre. Atenção:
 o `.gitignore` protege o REPOSITÓRIO, não o `dist/` — o `npm run build` copia tudo que está em `public/`. Quem fecha essa porta é
 `src/dev/verificar-publicavel.mjs`, que roda no `prebuild` e **falha a publicação** se houver qualquer arquivo ignorado pelo git dentro de
 `public/`. A regra não tem lista de nomes: o `.gitignore` já é a declaração de "isto não pertence ao projeto", e o que não pertence não se

@@ -9,6 +9,7 @@
 import { skillBonus, SKILL_NAME } from '../rules/abilities.js';
 import { PISTAS } from './casadamorte-pistas.js';
 import { narrar } from '../view/narrativa.js';
+import { descobrirRegiao } from '../rules/regioes.js';
 
 const dist = (c, p) => Math.max(Math.abs(c.pos.x - p.x), Math.abs(c.pos.y - p.y));
 const nomeDaPericia = (p) => SKILL_NAME[p] ?? p;
@@ -24,7 +25,11 @@ const estado = (ctx) => {
 function aplicarMarca(ctx, marca) {
   const s = estado(ctx);
   s.marcas[marca] = true;
-  if (marca === 'sabeDoFosso' && !s.espinhos) s.espinhos = 'achado';
+  if (marca === 'sabeDoFosso' && !s.espinhos) {
+    s.espinhos = 'achado';
+    // a região do poço (`casadamorte.js`) fica descoberta: o grupo passa por fora, e a régua e o Procurar sabem dela
+    if (ctx.enc?.field) descobrirRegiao(ctx.enc.field, 'espinhos');
+  }
 }
 
 /** Os pontos de uma variante que cobrem esta casa, do mais perto ao mais longe. */

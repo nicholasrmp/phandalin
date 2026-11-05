@@ -6,11 +6,16 @@
 //
 //   { id, nome?, casas: ['x,y', ...], quando: ['entrar' | 'sair' | 'comecaTurno' | 'terminaTurno'],
 //     quem?: 'todos' | 'grupo' | 'inimigos', tamanhoMinimo?: 'pequeno' | 'medio' | 'grande'..., vezes?: n, desligada?, pegaQuemVoa?,
-//     escondida?: { cd, achado }, efeitos: [...] }
+//     escondida?: { cd, achado }, discreta?, efeitos: [...] }
+//
+// `discreta`: a régua (`rules/rota.js`) não avisa dela — a ponte podre que se vê mas não se sabe que cede.
 //
 // `vezes` conta os disparos da região inteira (1 = uma vez só; sem ele, sempre). `escondida` faz dela uma ARMADILHA:
 // a Percepção passiva de quem vai pisar nota antes (`game/armadilhas.js`), o Procurar acha, e a descoberta não pega
 // mais o grupo — que sabe dela e passa por fora. O monstro não sabe de nada.
+//   escondida: { cd, cdPassiva?, passiva?: false, alcance?, achado }
+// `cd` é a do Procurar; `cdPassiva`, se a passiva pede outra (o fio do castelo: Procurar 10, de passagem só 20);
+// `passiva: false` para a que só se acha procurando; `alcance` em pés, até onde a passiva nota (5, o padrão).
 //
 // Os EFEITOS, na ordem em que estão:
 //   texto          { texto }                              o registro diz, e a tela mostra em cima de quem pisou
@@ -22,6 +27,10 @@
 //   sobreposicao   { id, ligada? }                        acende, apaga ou inverte uma peça de arte do mapa
 //   alternar       { regiao, ligada? }                    liga, desliga ou inverte outra região (ou a própria)
 //   teleporte      { x, y }                               leva quem pisou para a casa (x, y)
+//   voltar         {}                                     devolve quem pisou à casa de onde veio (caiu, subiu de volta)
+//
+// `dano` e `condicao` aceitam `alvo: 'todos'`: pegam TODA criatura dentro da região, e não só quem pisou — o teto
+// que desaba sobre o salão, a ponte que cede com quem estiver em cima.
 //
 // `tamanhoMinimo` deixa de fora quem é menor (a laje rachada não cede sob o goblin, que é Pequeno).
 //
@@ -39,7 +48,7 @@ import { categoriaDeTamanho, categoriaDoNome } from './tamanho.js';
 
 export const QUANDO = ['entrar', 'sair', 'comecaTurno', 'terminaTurno'];
 export const QUEM = ['todos', 'grupo', 'inimigos'];
-export const EFEITOS = ['texto', 'dano', 'condicao', 'parar', 'terrenoDificil', 'sobreposicao', 'alternar', 'teleporte'];
+export const EFEITOS = ['texto', 'dano', 'condicao', 'parar', 'terrenoDificil', 'sobreposicao', 'alternar', 'teleporte', 'voltar'];
 
 /** A cópia de trabalho das regiões de um mapa, pendurada no campo. Também refaz as casas de terreno difícil. */
 export function prepararRegioes(field, regioes) {
@@ -108,8 +117,8 @@ export function regioesNoPasso(enc, c, de) {
   const antes = regioesEm(field, de);
   const agora = regioesEm(field, c.pos);
   let para = false;
-  for (const r of antes) if (!agora.includes(r) && r.quando.includes('sair')) para = disparar(enc, r, c, 'sair') || para;
-  for (const r of agora) if (!antes.includes(r) && r.quando.includes('entrar')) para = disparar(enc, r, c, 'entrar') || para;
+  for (const r of antes) if (!agora.includes(r) && r.quando.includes('sair')) para = disparar(enc, r, c, 'sair', de) || para;
+  for (const r of agora) if (!antes.includes(r) && r.quando.includes('entrar')) para = disparar(enc, r, c, 'entrar', de) || para;
   return para || c.dead || hasCondition(c, 'inconsciente');
 }
 
@@ -122,30 +131,52 @@ export function regioesNoTurno(enc, side, quando) {
   }
 }
 
-/** Roda os efeitos de `r` em `c`. Devolve `true` se o passo tem de acabar. */
-export function disparar(enc, r, c, quando) {
+/** Quem está dentro de `r` agora (a pegada de alguma casa dentro), vivo. Começa por `c`, quem pisou. */
+function quemEstaDentro(enc, r, c) {
+  const dentro = enc.combatants.filter((o) => o !== c && !o.dead && o.pos && pegada(o.pos).some((k) => r.casas.has(k)));
+  return [c, ...dentro];
+}
+
+/**
+ * Roda os efeitos de `r` em `c`. Devolve `true` se o passo tem de acabar. `de` é a casa de onde `c` veio (o `voltar`).
+ * O `resultado` que a cena ouve é o de quem pisou; com `alvo: 'todos'` ele também traz `atingidos`, um por criatura.
+ */
+export function disparar(enc, r, c, quando, de = null) {
   if (!pega(enc, r, c)) return false;
   r.disparos += 1;
   const nome = r.nome || r.id;
   let para = false;
   const resultado = { dano: 0, passou: null };
+  const atingidos = new Map();
+  /** O dano do efeito `e` em `o` (com a condição de quem falhou), somado no resultado de `o`. */
+  const danoEm = (o, e) => {
+    const d = danoDaRegiao(enc, r, o, e, nome);
+    const conta = atingidos.get(o) ?? { quem: o, dano: 0, passou: null };
+    conta.dano += d.total;
+    if (d.passou != null) conta.passou = d.passou;
+    atingidos.set(o, conta);
+    // a condição de quem falhou no teste do dano, sem outro teste (a laje que cede deixa no chão)
+    if (d.passou === false && e.seFalhar && !o.dead && !hasCondition(o, e.seFalhar) && !enc.imuneACondicao?.(o, e.seFalhar)) {
+      if (enc.aplicarCondicao(o, e.seFalhar, { source: `regiao:${r.id}` })) {
+        enc.say('condicao', `${nome}: ${o.name} fica ${CONDITIONS[e.seFalhar]?.name.toLowerCase() ?? e.seFalhar}.`);
+      }
+    }
+  };
   for (const e of r.efeitos) {
-    if (c.dead) break;
+    if (c.dead && e.alvo !== 'todos') break;
     if (e.tipo === 'texto' && e.texto) {
       enc.say('acao', e.texto);
       enc.onEvent({ type: 'regiaoTexto', regiao: r, actor: c, texto: e.texto });
     } else if (e.tipo === 'dano' && e.dados) {
-      const d = danoDaRegiao(enc, r, c, e, nome);
-      resultado.dano += d.total;
-      if (d.passou != null) resultado.passou = d.passou;
-      // a condição de quem falhou no teste do dano, sem outro teste (a laje que cede deixa no chão)
-      if (d.passou === false && e.seFalhar && !c.dead && !hasCondition(c, e.seFalhar) && !enc.imuneACondicao?.(c, e.seFalhar)) {
-        if (enc.aplicarCondicao(c, e.seFalhar, { source: `regiao:${r.id}` })) {
-          enc.say('condicao', `${nome}: ${c.name} fica ${CONDITIONS[e.seFalhar]?.name.toLowerCase() ?? e.seFalhar}.`);
-        }
-      }
+      for (const o of e.alvo === 'todos' ? quemEstaDentro(enc, r, c) : [c]) if (!o.dead) danoEm(o, e);
     } else if (e.tipo === 'condicao' && e.condicao) {
-      if (condicaoDaRegiao(enc, r, c, e, nome)) para = true;
+      for (const o of e.alvo === 'todos' ? quemEstaDentro(enc, r, c) : [c]) {
+        if (o.dead) continue;
+        if (condicaoDaRegiao(enc, r, o, e, nome) && o === c) para = true;
+      }
+    } else if (e.tipo === 'voltar') {
+      // a volta nunca cai dentro da própria região (o fosso de onde ele acabou de sair)
+      if (de && !c.dead && teleportar(enc, c, de, r.casas)) para = true;
     } else if (e.tipo === 'parar') {
       para = true;
     } else if (e.tipo === 'sobreposicao' && e.id) {
@@ -156,9 +187,12 @@ export function disparar(enc, r, c, quando) {
       if (teleportar(enc, c, e)) para = true;
     }
   }
+  const meu = atingidos.get(c);
+  if (meu) { resultado.dano = meu.dano; resultado.passou = meu.passou; }
+  if (atingidos.size > 1 || (atingidos.size === 1 && !meu)) resultado.atingidos = [...atingidos.values()];
   if (r.vezes && r.disparos >= r.vezes && r.efeitos.every((e) => e.tipo !== 'terrenoDificil')) r.desligada = true;
   // A cena pode ouvir (ir para outra cena, uma conversa): é o "rodar macro" da Region do Foundry.
-  enc.onEvent({ type: 'regiao', regiao: r, actor: c, quando, resultado });
+  enc.onEvent({ type: 'regiao', regiao: r, actor: c, quando, resultado, de });
   return para;
 }
 
@@ -199,10 +233,11 @@ function condicaoDaRegiao(enc, r, c, e, nome) {
   return true;
 }
 
-/** Leva `c` para (x, y), ou para a casa livre mais perto dela. Devolve se levou. */
-function teleportar(enc, c, e) {
+/** Leva `c` para (x, y), ou para a casa livre mais perto dela (fora de `evitar`, chaves 'x,y'). Devolve se levou. */
+function teleportar(enc, c, e, evitar = null) {
   const f = enc.field;
-  const livre = (x, y) => f.inside(x, y) && !f.blocksMove(x, y) && !enc.combatants.some((o) => o !== c && !o.dead && o.pos?.x === x && o.pos?.y === y);
+  const livre = (x, y) => f.inside(x, y) && !f.blocksMove(x, y) && !evitar?.has(`${x},${y}`)
+    && !enc.combatants.some((o) => o !== c && !o.dead && o.pos?.x === x && o.pos?.y === y);
   let alvo = null;
   for (let raio = 0; raio <= 3 && !alvo; raio++) {
     for (let dy = -raio; dy <= raio && !alvo; dy++) {
@@ -250,18 +285,27 @@ export function armadilhasDasRegioes(enc) {
       nome: r.nome || r.id,
       casas: [...r.casas].map((k) => { const [x, y] = k.split(',').map(Number); return { x, y }; }),
       cd: r.escondida.cd ?? 10,
+      // a passiva: outra CD (`cdPassiva`), nenhuma (`passiva: false`), ou a mesma do Procurar
+      cdPassiva: r.escondida.passiva === false ? null : r.escondida.cdPassiva ?? r.escondida.cd ?? 10,
+      alcance: Math.max(1, Math.round((r.escondida.alcance ?? 5) / 5)),
       descoberta: r.descoberta,
       afeta: (c) => (r.quem !== 'inimigos' || c.side !== 'party') && (r.quem !== 'grupo' || c.side === 'party'),
       achado: r.escondida.achado || `${r.nome || 'Uma armadilha'}: dá para ver onde pisar.`,
       notar: (c, { mostrar = true } = {}) => {
         if (r.descoberta) return;
         r.descoberta = true;
+        enc.onEvent({ type: 'regiaoDescoberta', regiao: r, actor: c });
         const texto = r.escondida.achado || `${r.nome || 'Uma armadilha'} no chão.`;
         enc.say('acao', `${c.name} nota: ${texto}`);
         // a tela mostra o que ele notou (o painel da cena, `main.js`); o Procurar já mostra o achado dele
         if (mostrar) enc.onEvent({ type: 'regiaoNotada', regiao: r, actor: c, texto });
       },
-      descobrir: () => { r.descoberta = true; },
+      // achada por outro caminho (o Procurar, o Encontrar Armadilhas): a cena ouve, para lembrar na próxima visita
+      descobrir: () => {
+        if (r.descoberta) return;
+        r.descoberta = true;
+        enc.onEvent({ type: 'regiaoDescoberta', regiao: r, actor: null });
+      },
       disparar: () => {},
     }));
 }
