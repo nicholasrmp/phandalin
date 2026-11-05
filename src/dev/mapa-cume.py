@@ -1,3 +1,9 @@
+# APOSENTADO (2026-11-05). O Cume agora sai de `mapa-cume-fa.py`, sobre o
+# battlemap da Forgotten Adventures: o acampamento orc passou para DENTRO da
+# caverna, que é o que o livro descreve, e o desfiladeiro com platô — elaboração
+# nossa — saiu. RODAR ESTE SOBRESCREVE AQUELE. Fica no repositório como a planta
+# desenhada à mão, caso um dia se queira uma que não dependa de arte de terceiro.
+#
 # Gera `src/game/cume.js`: o terreno, a altura e a luz do Cume da Wyvern
 # (Parte 3 da aventura).
 #

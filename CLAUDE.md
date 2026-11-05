@@ -274,6 +274,16 @@ escrever** se algum ponto cair em parede ou ficar inalcançável, e `testes-cena
 A planta encolheu de 26x22 para 18x22 (a da FA) e `poco.js` de 109 para 111 linhas, agora sem altura: a torre é
 ruína sem teto, e quem barra passo é a parede, não o glifo.
 
+**O Cume da Wyvern também**, e aqui a planta nova MUDOU A CENA, não só as coordenadas: `python
+src/dev/mapa-cume-fa.py`. A antiga (30x21) era um desfiladeiro com o acampamento orc do lado de fora, num platô de
+220 casas elevadas; a da FA é a caverna, com fogueira, palha e caixote desenhados no chão dela. É o que o livro
+descreve — o platô era elaboração nossa —, então o platô, as carroças e a pedra do vigia saíram, e o vigia foi para
+a boca. O gerador mede a caverna inundando de dentro com a boca fechada (78 casas; a boca são DUAS casas, 9,4 e
+10,4, porque fechar só uma deixa passar pela outra), e prova no motor cada posto do bando antes de escrever. A
+caverna fica no breu e o lado de fora à luz do dia, que é do que vive a furtividade da cena. O capítulo deixou de
+contar ±1 a partir da boca — ela era vertical e agora é de lado — e usa `CUME.foraDaBoca` e `CUME.dentroDaBoca`.
+As frases que falavam de desfiladeiro e platô foram trocadas: o mapa manda no texto.
+
 **O Esconderijo (capítulo 2) roda sobre o battlemap da FA.** O mapa sai de
 `node --import ./src/dev/cena-node/register.mjs src/dev/mapa-esconderijo-fa.mjs`, que lê o import do Foundry acima e pinta por cima o
 que o Foundry não tem: terreno por glifo, ALTURA (degrau de mais de um nível é parede) e SALAS por distância de caminhada. Ele escreve

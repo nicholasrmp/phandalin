@@ -40,6 +40,10 @@ import { gastarHoras } from './relogio.js';
 
 const MOVIMENTO = 60;
 const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
+// A CAVERNA é um recorte irregular, e não um retângulo: a planta nova (`mapa-cume-fa.py`) dá as casas uma a uma,
+// porque a caixa delas pegaria chão de fora. Quem pergunta "está dentro?" pergunta ao conjunto.
+const CASAS_DA_CAVERNA = new Set(CUME.casasDaCaverna.map((p) => `${p.x},${p.y}`));
+const naCaverna = (p) => CASAS_DA_CAVERNA.has(`${p.x},${p.y}`);
 
 export function criarCume(app, config) {
   void config;
@@ -60,17 +64,17 @@ export function criarCume(app, config) {
   if (vigia) vigia.facingVec = { dx: 0, dy: -1 };        // de costas para o campo
   const caverna = [];
   if (!salvo.vencido) {
-    const chefe = makeMonster('brughor', { x: 23, y: 7 });
+    const chefe = makeMonster('brughor', { ...CUME.brughor });
     chefe.chefe = true;
     caverna.push(chefe);
-    // A e B acordados perto da boca; C acordado, de costas, jogando ossos;
-    // D, E e F nas camas.
-    [[21, 7, false], [22, 8, false], [24, 8, false], [20, 9, true], [21, 9, true], [22, 9, true]].forEach(([x, y, dorme], i) => {
+    // Onde cada um espera vem do mapa (`CUME.orcs`, medido na planta da FA): A e B acordados perto da boca;
+    // C acordado junto do fogo, de costas; D, E e F dormindo na palha.
+    CUME.orcs.forEach(({ x, y, dorme }, i) => {
       const o = makeMonster('orc', { x, y }, { nameSuffix: 'ABCDEF'[i] });
       o.dormindo = dorme;
       caverna.push(o);
     });
-    const gog = makeMonster('ogro', { x: 25, y: 8 });
+    const gog = makeMonster('ogro', { ...CUME.gog });
     gog.name = 'Gog';
     gog.dormindo = true;
     caverna.push(gog);
@@ -135,7 +139,7 @@ export function criarCume(app, config) {
   function ondasDaCaverna() {
     const boca = CUME.entrada;
     const vivos = (l) => l.filter((f) => f && !f.dead);
-    const na = (f) => { f.dormindo = false; f.pos = { ...f.pos, x: boca.x, y: boca.y + 1 }; return f; };
+    const na = (f) => { f.dormindo = false; f.pos = { ...f.pos, ...CUME.dentroDaBoca }; return f; };
     return {
       agora: vivos(orcs.slice(0, 2)),
       ondas: [
@@ -149,7 +153,7 @@ export function criarCume(app, config) {
   async function alarme(motivo) {
     salvo.alarme = true;
     const { agora, ondas } = ondasDaCaverna();
-    for (const f of agora) { f.dormindo = false; f.pos = { ...f.pos, ...casaPerto({ x: CUME.entrada.x, y: CUME.entrada.y - 1 }) }; }
+    for (const f of agora) { f.dormindo = false; f.pos = { ...f.pos, ...casaPerto(CUME.foraDaBoca) }; }
     await narrar(root, { formato: 'painel', paginas: [{ texto: [motivo,
       'Da caverna vem a resposta: um berro, outro, e barulho de ferro sendo arrancado do chão.'] }],
     escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
@@ -185,7 +189,7 @@ export function criarCume(app, config) {
       if (perto && !estado.perguntou) {
         estado.perguntou = true;
         const r = await narrar(root, { formato: 'painel', paginas: [{ texto: [
-          `Na saída da passagem, um orc encostado numa pedra limpa as unhas com a ponta de uma faca, virado para o acampamento. Não ouviu nada. ${perto.name} tem ele na mira.`,
+          `Na boca da caverna, um orc encostado na pedra limpa as unhas com a ponta de uma faca, virado para dentro. Não ouviu nada. ${perto.name} tem ele na mira.`,
           'Se cair antes de abrir a boca, ninguém lá dentro vai saber. Se não cair, vai gritar.'] }],
           escolhas: [
             { rotulo: 'Esperar', valor: 'espera' },
@@ -196,7 +200,7 @@ export function criarCume(app, config) {
       if (!perto) estado.perguntou = false;
     }
     // Entrou na caverna sem ter dado o alarme (com o vigia vivo ou não).
-    if (herois().some((h) => dentro(h.pos, CUME.caverna))) await entrarNaCaverna();
+    if (herois().some((h) => naCaverna(h.pos))) await entrarNaCaverna();
   }
 
   // --------------------------------------------------- calar o vigia ----
@@ -224,7 +228,7 @@ export function criarCume(app, config) {
       for (const f of agora) {
         f.side = 'foes';
         f.dormindo = false;
-        f.pos = { ...f.pos, ...casaPerto({ x: CUME.entrada.x, y: CUME.entrada.y - 1 }) };
+        f.pos = { ...f.pos, ...casaPerto(CUME.foraDaBoca) };
         enc.addCombatant(f);
       }
       levas = prepararLevas(enc, ondas.map((o) => ({ ...o, rodada: enc.round + o.rodada - 1 })));
@@ -242,7 +246,7 @@ export function criarCume(app, config) {
         m.fugiu = true;
         if (m === vigia) salvo.vigia = 'fugiu';
         enc.combatants.splice(enc.combatants.indexOf(m), 1);
-        enc.say('acao', `${m.name} vê o chefe no chão e foge desfiladeiro abaixo.`);
+        enc.say('acao', `${m.name} vê o chefe no chão e foge encosta abaixo.`);
         enc.checkEnd();
         app.refresh();
         return true;
@@ -286,7 +290,7 @@ export function criarCume(app, config) {
     salvo.vencido = true;
     feitos.cumeLimpo = true;
     await painel([
-      caverna.some((f) => f.fugiu) ? 'Com o chefe no chão, os orcs que sobraram correm desfiladeiro abaixo e não olham para trás.' : 'O último deles cai. O desfiladeiro fica em silêncio, a não ser pelo vento.',
+      caverna.some((f) => f.fugiu) ? 'Com o chefe no chão, os orcs que sobraram correm encosta abaixo e não olham para trás.' : 'O último deles cai. A caverna fica em silêncio, a não ser pelo vento na boca dela.',
       'O acampamento é de vocês. E, no fundo da caverna, um baú que ninguém se deu ao trabalho de fechar.',
       camp.poco?.kost === 'acordo' ? '(O Hamun Kost, no Poço da Coruja Velha, vai querer saber disto.)' : null,
     ].filter(Boolean));
@@ -340,7 +344,7 @@ export function criarCume(app, config) {
     await painel([
       'O cume não acaba: pedra rachada, ravina atrás de ravina, mato duro que arranha a canela. Daqui de cima se vê a Trilha de Triboar inteira — e daqui de baixo não se vê nada.',
       `${lider.name} toma a frente (${SKILL_NAME[pericia]}). ${horas === 1 ? 'Não leva uma hora' : `Leva ${horas} horas, para cima e para baixo`} até achar o que procurava: uma pegada larga demais para ser de gente, e mais adiante, presa num espinho, uma tira de couro com um dente amarrado.`,
-      'O rastro some num desfiladeiro cortado no meio do planalto, depois de um bosque, por uma passagem estreita entre dois paredões.',
+      'O rastro sobe a encosta de pedra do tor, depois de um bosque, e some na boca escura de uma caverna aberta na rocha.',
     ], { teste: { quem: lider.name, pericia: SKILL_NAME[pericia], total: r.total, cd: 15, passou: r.total >= 15 } });
   }
 
@@ -359,7 +363,7 @@ export function criarCume(app, config) {
       if (tipo === 'longo' && !salvo.vencido) return 'com um bando de orcs logo ali? Não';
       return null;
     },
-    textoDoDescanso: () => ['Um descanso atrás das pedras, de olho no desfiladeiro.'],
+    textoDoDescanso: () => ['Um descanso atrás das pedras, de olho na boca da caverna.'],
     async iniciar() {
       prepararExploracao();
       furtividade = testeDeGrupo();

@@ -509,7 +509,8 @@ teste('o Cume não desenha chão que ninguém alcança', () => {
   const m = mapaDo('cume');
   const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
   const vistas = new Set();
-  const fila = [[25, 18]];
+  // de onde o grupo chega, e não de uma casa fixa: a planta mudou de 30x21 para 18x24 com o battlemap da FA
+  const fila = [[m.grupo[0].x, m.grupo[0].y]];
   while (fila.length) {
     const [x, y] = fila.pop();
     const k = `${x},${y}`;
@@ -996,6 +997,42 @@ teste('o Poço: a torre cabe os zumbis, e o grupo alcança boca, tenda, poço e 
   const kost = { x: 6, y: 11 };
   assert.ok(anda(kost) && doGrupo.has(`${kost.x},${kost.y}`), 'a casa de Kost é chão e se alcança');
   assert.ok(POCO.tenda.some((q) => Math.abs(q.x - kost.x) <= 1 && Math.abs(q.y - kost.y) <= 1), 'e encosta na tenda');
+});
+
+// ------------------------------------------------------------------ o Cume da Wyvern -----
+// O acampamento orc mudou de lugar: era um desfiladeiro com platô, e agora é a caverna do battlemap da FA
+// (`src/dev/mapa-cume-fa.py`). O elenco inteiro e a boca são dados do mapa; isto guarda o arquivo gerado.
+teste('o Cume: o bando cabe dentro da caverna, a boca liga os dois lados e o grupo chega a tudo', async () => {
+  const { CUME } = await import('../game/cume.js');
+  const mapa = mapaDo('cume');
+  const f = montarCampo(mapa);
+  const anda = (p) => !f.blocksMove(p.x, p.y);
+  const naCaverna = new Set(CUME.casasDaCaverna.map((p) => `${p.x},${p.y}`));
+  // todo mundo do bando tem de caber, e DENTRO da caverna: é lá que a cena os esconde
+  const bando = [CUME.brughor, CUME.gog, ...CUME.orcs];
+  for (const p of bando) {
+    assert.ok(anda(p), `o posto ${p.x},${p.y} é chão`);
+    assert.ok(naCaverna.has(`${p.x},${p.y}`), `o posto ${p.x},${p.y} está dentro da caverna`);
+  }
+  assert.equal(new Set(bando.map((p) => `${p.x},${p.y}`)).size, bando.length, 'ninguém nasce em cima de outro');
+  // a boca: uma casa dentro, uma fora, e a de fora NÃO é da caverna (é lá que o vigia fica)
+  assert.ok(naCaverna.has(`${CUME.dentroDaBoca.x},${CUME.dentroDaBoca.y}`), 'dentroDaBoca está dentro');
+  assert.ok(!naCaverna.has(`${CUME.foraDaBoca.x},${CUME.foraDaBoca.y}`), 'foraDaBoca está fora');
+  assert.ok(anda(CUME.foraDaBoca) && anda(CUME.dentroDaBoca) && anda(CUME.entrada), 'as três são chão');
+  // o grupo chega a tudo: senão a cena trava com alguém preso do outro lado
+  const doGrupo = f.reachable(mapa.grupo[0], 6000);
+  for (const p of [...bando, CUME.entrada, CUME.foraDaBoca, CUME.dentroDaBoca, CUME.vigia, CUME.fogueira, ...CUME.saida]) {
+    assert.ok(doGrupo.has(`${p.x},${p.y}`), `o grupo alcança ${p.x},${p.y}`);
+  }
+  // o caixote barra passo (fica-se ao lado), e tem a superfície que a cena escuta
+  assert.equal(f.surfaceAt(CUME.bau.x, CUME.bau.y), 'bau', 'o caixote tem a superfície bau');
+  assert.ok(!anda(CUME.bau), 'e barra passo');
+  // a caverna está no breu e o lado de fora à luz do dia: é disso que vive a furtividade da cena
+  for (const k of naCaverna) {
+    const [x, y] = k.split(',').map(Number);
+    if (!f.blocksMove(x, y)) assert.equal(f.luz[y * f.w + x], 0, `a caverna está no breu em ${k}`);
+  }
+  assert.equal(f.luz[CUME.saida[0].y * f.w + CUME.saida[0].x], 2, 'e o lado de fora, claro');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

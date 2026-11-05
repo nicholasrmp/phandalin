@@ -15,7 +15,7 @@ import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2, MAPA_CASA_DA_MORTE_3, MAPA_
 import { foesDaCasa } from './casadamorte-criaturas.js';
 import { ler as lerMapaDoEditor, novoMapa as mapaVazioDoEditor } from './mapa-editor.js';
 import { MAPA_POCO } from './poco.js';
-import { MAPA_CUME } from './cume.js';
+import { MAPA_CUME, CUME } from './cume.js';
 import { MAPA_CASTELO, CASTELO } from './castelo.js';
 import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from './arvoretrovao.js';
 import { MAPA_ONDA_ECO, ONDA_ECO } from './ondaeco.js';
@@ -242,13 +242,13 @@ export function mapaDo(variante) {
     };
   }
   if (variante === 'cume') {
-    // O Cume da Wyvern: o grupo chega pelo campo do sudeste, já de olho na
-    // passagem que sobe para o acampamento.
+    // O Cume da Wyvern, sobre o battlemap da FA (`game/cume.js`, gerado por `src/dev/mapa-cume-fa.py`): o
+    // acampamento orc está DENTRO da caverna, e o grupo chega pelo campo de pedra do sul, de frente para a boca.
     return {
       ...MAPA_CUME,
       objetos: [],
-      grupo: [{ x: 25, y: 18 }, { x: 26, y: 18 }, { x: 25, y: 19 }, { x: 27, y: 18 }],       // (26,19) é uma moita
-      olhar: { dx: -1, dy: -1 },
+      grupo: CUME.grupo.map((p) => ({ ...p })),
+      olhar: { dx: 0, dy: -1 },
       cena: 'cume',
     };
   }
