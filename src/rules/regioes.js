@@ -95,6 +95,9 @@ function pega(enc, r, c) {
   return r.efeitos.some((e) => e.tipo !== 'terrenoDificil');
 }
 
+/** A região vale para `c` agora? (A régua, `rules/rota.js`, pergunta antes de andar, para avisar.) */
+export const regiaoPega = (enc, r, c) => pega(enc, r, c);
+
 /**
  * O passo de `de` até onde `c` está agora: dispara o `sair` das regiões que ficaram para trás e o `entrar` das
  * novas. Devolve `true` se o passo tem de acabar ali (parar, teleporte, condição que prende, ou caiu).

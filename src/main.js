@@ -103,6 +103,7 @@ import {
 } from "./rules/habilidades-alvo.js";
 import { conversar as conversarComArvore } from "./game/dialogo.js";
 import { temEscuridaoEm, visaoDoGrupo } from "./rules/luz.js";
+import { tracarRota, MAX_ESCALAS, escalasValidas } from "./rules/rota.js";
 import { descansoCurto, descansoLongoDoGrupo } from "./view/descanso-tela.js";
 import {
   UTIL_FORA,
@@ -324,6 +325,8 @@ class App {
     addEventListener("keydown", (e) => {
       if (!this.enc || this.menu?.estaAberto()) return;
       if (e.key === "Escape") {
+        // Sem ação escolhida, o Esc desfaz a última escala da régua (`rules/rota.js`).
+        if (!this.mode && this.selected && this.escalasDe(this.selected).length) this.tirarEscala(this.selected);
         this.mode = null;
         this.refresh();
       }
@@ -1002,6 +1005,7 @@ class App {
     id,
     spellId,
     valor,
+    escalas,
   }) {
     if (acao === "alfinete") {
       this.alfinete(de, x, y, marca);
@@ -1167,7 +1171,17 @@ class App {
       avisar(corda);
       return;
     }
-    const perigo = this.andarComCuidado(c, Battlefield.pathFrom(reached, { x, y }));
+    // As escalas da régua do jogador (`rules/rota.js`), já conferidas na forma pela sala: o caminho passa por elas.
+    let caminho = Battlefield.pathFrom(reached, { x, y });
+    if (escalasValidas(escalas) && escalas?.length) {
+      const rota = tracarRota(this.enc, c, escalas.map(([ex, ey]) => ({ x: ex, y: ey })), { x, y });
+      if (!rota.ok) {
+        avisar("pelas escalas não dá: a rota passa do movimento que sobra");
+        return;
+      }
+      caminho = rota.caminho;
+    }
+    const perigo = this.andarComCuidado(c, caminho);
     if (perigo || !emCombate)
       this.afterWalk(async () => {
         await resolverPerigo(c, perigo);
@@ -3285,6 +3299,11 @@ class App {
 
     // Movimento
     if (!c) return;
+    // Ctrl+clique marca (ou desmarca) uma ESCALA da régua (`rules/rota.js`): o próximo clique anda passando por ela.
+    if (ev?.ctrlKey || ev?.metaKey) {
+      this.marcarEscala(c, tile);
+      return;
+    }
     const reached = this.enc.reachableFor(c);
     const node = reached.get(key(tile.x, tile.y));
     if (node?.cost === 0) return;
@@ -3303,7 +3322,18 @@ class App {
       this.refuse(c, corda);
       return;
     }
-    const perigo = this.andarComCuidado(c, Battlefield.pathFrom(reached, tile));
+    // Com escalas, o caminho é o da régua (passa por elas); sem, o mais curto.
+    let caminho = Battlefield.pathFrom(reached, tile);
+    if (this.escalasDe(c).length) {
+      const rota = this.rotaAte(c, tile);
+      if (!rota.ok) {
+        this.refuse(c, `pelas escalas não dá: a rota passa dos ${c.movementLeftFt ?? 0} pés que restam (Esc desfaz a última)`);
+        return;
+      }
+      caminho = rota.caminho;
+    }
+    this.limparEscalas();
+    const perigo = this.andarComCuidado(c, caminho);
     this.board?.seguir(c.pos);
     // Explorando: Shift+clique leva o GRUPO todo (cada um ao lugar livre mais perto de quem foi), em vez de um clique por herói.
     const seguem = this.capitulo?.explorando && ev?.shiftKey ? this.grupoSegue(c) : [];
@@ -3394,10 +3424,63 @@ class App {
     this.hud.update(this.enc, c, this.mode, this.alvo);
   }
 
+  // ---- a régua com escalas (`rules/rota.js`) ------------------------------------------------------------------
+
+  /** As escalas marcadas para `c`, se ele ainda está onde estava quando as marcou (andou, elas caem). */
+  escalasDe(c) {
+    const r = this._rota;
+    return r && c && r.id === c.id && r.origem === key(c.pos.x, c.pos.y) ? r.pontos : [];
+  }
+
+  limparEscalas() {
+    this._rota = null;
+    this.board?.setOverlay({ escalas: [], rota: null });
+  }
+
+  /** A rota de `c` pelas escalas até `tile`, com os avisos só do que o grupo enxerga. */
+  rotaAte(c, tile, escalas = this.escalasDe(c)) {
+    const visao = this.board?._visao;
+    return tracarRota(this.enc, c, escalas, tile, {
+      visivel: (e) => !visao || visao.has(key(e.pos.x, e.pos.y)),
+    });
+  }
+
+  /** Ctrl+clique: põe a escala na casa, ou tira, se ela já era uma. */
+  marcarEscala(c, tile) {
+    const pontos = [...this.escalasDe(c)];
+    const i = pontos.findIndex((p) => p.x === tile.x && p.y === tile.y);
+    if (i >= 0) pontos.splice(i, 1);
+    else {
+      if (pontos.length >= MAX_ESCALAS) {
+        this.refuse(c, `no máximo ${MAX_ESCALAS} escalas`);
+        return;
+      }
+      // a escala pode ser casa de passagem (um aliado em cima): só não pode ser longe nem parede
+      const rota = this.rotaAte(c, tile, pontos);
+      if (!rota.ok && rota.motivo !== "ocupada") {
+        this.refuse(c, rota.motivo === "bloqueada" ? "não dá para andar até lá" : `a escala passa dos ${c.movementLeftFt ?? 0} pés que restam`);
+        return;
+      }
+      pontos.push({ x: tile.x, y: tile.y });
+    }
+    this._rota = pontos.length ? { id: c.id, origem: key(c.pos.x, c.pos.y), pontos } : null;
+    audio.play?.("click");
+    this.onTileHover(tile);
+  }
+
+  /** Esc: tira a última escala. */
+  tirarEscala(c) {
+    const pontos = this.escalasDe(c).slice(0, -1);
+    this._rota = pontos.length ? { ...this._rota, pontos } : null;
+    this.onTileHover(this.board?.hover ?? null);
+  }
+
   onTileHover(tile) {
     const c = this.selected;
     if (!tile && this.mode?.kind !== "featureAlvo") this.hud.setHint(""); // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
     this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
+    // as escalas da régua ficam no tabuleiro enquanto valem, com ou sem o cursor em cima de uma casa
+    this.board?.setOverlay({ escalas: c ? this.escalasDe(c) : [], rota: null });
 
     if (!c || this.enc.side !== "party" || this.mode) {
       this.board?.setOverlay({ path: null });
@@ -3415,9 +3498,19 @@ class App {
       this.hud.setHint("");
       return;
     }
-    this.board?.setOverlay({ path: Battlefield.pathFrom(reached, tile) });
+    // A RÉGUA (`rules/rota.js`): o caminho pelas escalas, o custo de verdade e o que acontece nele.
+    const escalas = this.escalasDe(c);
+    const rota = this.rotaAte(c, tile, escalas);
+    this.board?.setOverlay({ path: rota.caminho.length > 1 ? rota.caminho : Battlefield.pathFrom(reached, tile), rota });
+    const avisos = rota.avisos.map((a) => a.texto);
     this.hud.setHint(
-      `Mover ${node.cost} pés (restam ${c.movementLeftFt - node.cost})`,
+      (rota.ok
+        ? `Mover ${rota.custo} pés (restam ${rota.restante})`
+        : "Pelas escalas não chega até aqui") +
+        (escalas.length
+          ? ` · ${escalas.length} escala${escalas.length > 1 ? "s" : ""} (Esc desfaz a última)`
+          : " · Ctrl+clique marca uma escala") +
+        (avisos.length ? ` · ${avisos.join("; ")}` : ""),
     );
   }
 

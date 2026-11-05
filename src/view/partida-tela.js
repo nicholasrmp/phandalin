@@ -13,7 +13,7 @@ import { audio } from '../core/audio.js';
 import { narrarLocal, definirVoto } from './narrativa.js';
 import { getSpell, opcoesDaMagia } from '../rules/spells.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
-import { mandaNaHora, escolheVarios } from '../game/acoes.js';
+import { mandaNaHora, escolheVarios, MAX_ESCALAS } from '../game/acoes.js';
 import { alvosDaHabilidade } from '../rules/habilidades-alvo.js';
 import { possoEscolher } from '../game/decisao.js';
 import { abrirTelaVila } from './vila.js';
@@ -91,6 +91,10 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
   let prontosDaCena = [];        // quem está pronto (ids públicos), vindo da vista
   const desenharPronto = () => { prontoBtn.classList.toggle('primario', prontoDaCena); prontoBtn.textContent = prontoDaCena ? 'Pronto ✓' : 'Pronto'; };
   let selecionado = null;
+  // A régua do convidado (`rules/rota.js`): as escalas que ele marca com Ctrl+clique vão junto do pedido de andar, e o
+  // anfitrião monta o caminho por elas. Valem para um herói, parado onde estava.
+  let escalas = null;   // { id, origem: 'x,y', pontos: [{x, y}] }
+  const escalasDe = (c) => (escalas && c && escalas.id === c.id && escalas.origem === `${c.pos.x},${c.pos.y}` ? escalas.pontos : []);
   let baseCampo = null;
   let emModo = null;            // a ação da barra que espera um clique no tabuleiro (ataque, magia com alvo…)
   let faixaTocando = null;        // a faixa de música que esta tela mandou tocar (para só trocar quando muda)
@@ -123,6 +127,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     // (sem ele o tabuleiro dele nunca desenha nada). Aqui os `alvos` são casas {x,y}; o tabuleiro lê `.pos`.
     board?.setOverlay?.({
       selected: selecionado,
+      escalas: escalasDe(selecionado),
       mode: emModo ? { ...emModo, alvos: (emModo.alvos ?? []).map((t) => ({ pos: t })) } : null,
       // Cura pelas Mãos, Inspiração Bárdica: os aliados que a mira serve acendem em verde, como no anfitrião.
       targets: emModo?.kind === 'featureAlvo' && selecionado ? alvosDaHabilidade(enc, selecionado, emModo.featureId) : null,
@@ -217,7 +222,21 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       return;
     }
     if (noLugar) return;
-    enviar({ tipo: 'agir', acao: 'mover', heroi: selecionado.id, x: t.x, y: t.y });
+    // Ctrl+clique: põe (ou tira) uma escala; o próximo clique anda passando por elas.
+    if (e?.ctrlKey || e?.metaKey) {
+      const pontos = [...escalasDe(selecionado)];
+      const i = pontos.findIndex((p) => p.x === t.x && p.y === t.y);
+      if (i >= 0) pontos.splice(i, 1);
+      else if (pontos.length < MAX_ESCALAS) pontos.push({ x: t.x, y: t.y });
+      escalas = pontos.length ? { id: selecionado.id, origem: `${selecionado.pos.x},${selecionado.pos.y}`, pontos } : null;
+      audio.play('click');
+      destacar();
+      return;
+    }
+    const pontos = escalasDe(selecionado);
+    escalas = null;
+    enviar({ tipo: 'agir', acao: 'mover', heroi: selecionado.id, x: t.x, y: t.y, ...(pontos.length ? { escalas: pontos.map((p) => [p.x, p.y]) } : {}) });
+    destacar();
   }
 
   // ---- o Diário e o Registro: o que o anfitrião lê, o convidado lê igual (J-09) -----------------------------------------------

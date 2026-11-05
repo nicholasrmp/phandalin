@@ -252,6 +252,14 @@ alguém olha agora. A fogueira de uma sala só lembrada também não brilha. O s
 campanha, então voltar à caverna acha o mapa já andado. No multijogador cada navegador tem a sua, como no Foundry.
 Um mapa desliga com `nevoaExplorada: false` (a caixa na ferramenta 4 do editor). `src/dev/testes-nevoa.mjs` prova tudo.
 
+**A régua tem escalas** (`src/rules/rota.js`), como a do Foundry. Ctrl+clique numa casa marca uma escala (no máximo
+oito, numeradas no tabuleiro), e o clique normal anda passando por elas em vez de ir pelo caminho mais curto. Serve para
+contornar a armadilha achada ou passar longe do inimigo. Esc ou Ctrl+clique de novo na escala desfaz. O cartão sob o
+cursor dá o custo de verdade da rota (terreno difícil e tudo) e o que acontece nela, antes do passo: um selo vermelho
+onde um inimigo à vista leva o ataque de oportunidade, e um âmbar onde se entra numa região que fere ou prende. A linha
+fica vermelha quando não alcança. O convidado da sala marca do mesmo jeito, e as escalas vão junto do pedido de andar.
+`src/dev/testes-rota.mjs` prova tudo.
+
 **Parede não precisa ser geométrica.** Caverna, pedra e destroço são irregulares, e forçá-los na aresta de casa
 destrói justamente o que os faz parecer o que são. O mapa guarda, além das arestas, os **traços livres**
 (`mapa.tracos`): polilinhas em casas, com fração, como foram desenhadas. Quando há traço, é ele que o tabuleiro

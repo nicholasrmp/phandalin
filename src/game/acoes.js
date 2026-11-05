@@ -39,6 +39,14 @@ export function tilesValidos(tiles) {
   return tiles === undefined || (Array.isArray(tiles) && tiles.length <= 6
     && tiles.every((t) => t && Number.isInteger(t.x) && Number.isInteger(t.y) && t.x >= 0 && t.y >= 0 && t.x <= 400 && t.y <= 400));
 }
+/** Quantas escalas a régua aceita (`rules/rota.js`). */
+export const MAX_ESCALAS = 8;
+/** As escalas da régua que vêm da rede: até `MAX_ESCALAS` casas `[x, y]` inteiras. Sem elas, vale. */
+export function escalasValidas(escalas, limite = 400) {
+  if (escalas === undefined) return true;
+  return Array.isArray(escalas) && escalas.length <= MAX_ESCALAS
+    && escalas.every((e) => Array.isArray(e) && e.length === 2 && e.every((v) => Number.isInteger(v) && v >= 0 && v <= limite));
+}
 /** O círculo 0 é o truque (a barra o manda assim): vale. */
 export const circuloValido = (c) => c === undefined || c === null || (Number.isInteger(c) && c >= 0 && c <= 9);
 

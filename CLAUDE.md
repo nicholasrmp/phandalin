@@ -122,7 +122,7 @@ npm run build                      # roda verificar-taverna.mjs no prebuild
 
 Há um `testes-*.mjs` por frente (barbaro, goblin, habilidades, mansao, ondaeco,
 porta, save, sala, sala-ws, dialogo-perfil, itens-fora, movimento-aliados,
-musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa). O de editor, o da Casa da Morte, o das regiões, o do
+musica, editor, casadamorte, regioes, criador, sala-criados, arestas, luz, nevoa, rota). O de editor, o da Casa da Morte, o das regiões, o do
 criador, o do herói criado na sala e o das arestas rodam com
 `node --import ./src/dev/cena-node/register.mjs src/dev/testes-<nome>.mjs`;
 `src/dev/simular-casadamorte.mjs` joga as lutas da Casa da Morte e
@@ -173,6 +173,13 @@ A **NÉVOA EXPLORADA** (`rules/nevoa.js`) guarda em `field.explorado` cada casa 
 (`codificarExplorado`, corridas em base 36, com `LxA:` na frente; `restaurarExplorado` recusa outro tamanho). `main.js guardarNevoa` grava
 ao salvar e ao sair da cena, e só na campanha de onde o campo saiu (`field.nevoaDe`). Não vai na diferença do campo: cada jogador tem a
 sua. O mapa desliga com `nevoaExplorada: false`. `src/dev/testes-nevoa.mjs` prova tudo.
+A **RÉGUA COM ESCALAS** (`rules/rota.js`): `tracarRota(enc, ator, escalas, destino, { visivel })` monta o caminho trecho a trecho com
+`reachableFor` a partir de cada escala (com o deslocamento que sobra), então o custo é o que `moveAlong` cobra. Devolve `ok`, `caminho`,
+`custo`, `restante` e `avisos`. Os avisos são o ataque de oportunidade, que vem de `Encounter.ameacasNoPasso`, o mesmo teste que o
+`moveAlong` faz (cada inimigo avisa uma vez), e a região à vista que fere ou prende (`regiaoPega`). A escala pode ser casa de passagem,
+o destino não. No `main.js`, Ctrl+clique marca (`marcarEscala`), Esc tira a última e o clique anda pela rota. As escalas caem quando o
+herói anda. A forma das escalas que vêm da sala (`escalasValidas`, até 8) mora em `game/acoes.js`, que o servidor carrega sem o motor.
+`src/dev/testes-rota.mjs` prova tudo.
 A **REGIÃO** (`mapa.regioes`, motor em `rules/regioes.js`) é a área que FAZ algo quando alguém entra, sai, ou começa e termina o turno
 nela — a Region do Foundry. Efeitos, na ordem: texto, dano (com teste e metade), condição (com teste), parar o passo, terreno difícil
 (enquanto ligada), acender/apagar uma sobreposição, ligar/desligar outra região e teleporte; o dano pode deixar com uma condição quem

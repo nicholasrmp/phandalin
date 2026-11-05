@@ -603,8 +603,9 @@ export class TabuleiroTopo {
    * - o caminho sob o cursor é uma LINHA pelos centros das casas, com um anel no destino (os pés, no cartão).
    */
   realce(ctx) {
-    const { path, targets, selected } = this.overlay;
-    if (path?.length > 1) this.linhaDoCaminho(ctx, path);
+    const { path, targets, selected, rota, escalas } = this.overlay;
+    if (path?.length > 1) this.linhaDoCaminho(ctx, path, Boolean(rota && !rota.ok));
+    this.marcasDaRegua(ctx, escalas, rota);
     // alvo possível: vermelho quando a ação mira inimigo, verde quando mira aliado (cura, Bênção, Armadura Arcana)
     const miraAliados = (this.modo?.kind === 'spell' && this.enc.miraAliados(this.modo.spell)) || this.modo?.kind === 'featureAlvo';
     for (const t of targets ?? []) {
@@ -764,8 +765,49 @@ export class TabuleiroTopo {
     ctx.restore();
   }
 
-  /** O caminho: linha pelos centros e anel no destino (o custo em pés já vai no cartão que segue o cursor). */
-  linhaDoCaminho(ctx, path) {
+  /**
+   * A RÉGUA (`rules/rota.js`): cada escala é um disco numerado na casa, na ordem em que se passa; o que acontece no
+   * caminho é um selo na casa — vermelho com "!" onde um inimigo leva a reação (a casa de onde se sai do alcance
+   * dele), âmbar onde se entra numa região que fere ou prende.
+   */
+  marcasDaRegua(ctx, escalas, rota) {
+    const C = this.casa;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    (escalas ?? []).forEach((p, i) => {
+      const { sx, sy } = this.center(p.x, p.y);
+      ctx.beginPath();
+      ctx.arc(sx, sy, C * 0.17, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(20, 28, 40, .85)';
+      ctx.fill();
+      ctx.lineWidth = Math.max(1.5, C * 0.03);
+      ctx.strokeStyle = 'rgba(200, 230, 255, .95)';
+      ctx.stroke();
+      ctx.fillStyle = '#e8f3ff';
+      ctx.font = `bold ${Math.round(C * 0.2)}px system-ui, sans-serif`;
+      ctx.fillText(String(i + 1), sx, sy + 0.5);
+    });
+    for (const a of rota?.avisos ?? []) {
+      const { sx, sy } = this.center(a.x, a.y);
+      const x = sx + C * 0.3;
+      const y = sy - C * 0.3;
+      ctx.beginPath();
+      ctx.arc(x, y, C * 0.13, 0, Math.PI * 2);
+      ctx.fillStyle = a.tipo === 'oportunidade' ? '#c4402f' : '#c98a1c';
+      ctx.fill();
+      ctx.lineWidth = Math.max(1, C * 0.02);
+      ctx.strokeStyle = 'rgba(0, 0, 0, .6)';
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.round(C * 0.17)}px system-ui, sans-serif`;
+      ctx.fillText('!', x, y + 0.5);
+    }
+    ctx.restore();
+  }
+
+  /** O caminho: linha pelos centros e anel no destino (o custo em pés já vai no cartão que segue o cursor). Vermelha: não chega. */
+  linhaDoCaminho(ctx, path, ruim = false) {
     const C = this.casa;
     const pts = path.map((p) => this.center(p.x, p.y));
     ctx.save();
@@ -777,7 +819,7 @@ export class TabuleiroTopo {
     ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
     ctx.lineWidth = Math.max(4, C * 0.08);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(200, 230, 255, .9)';
+    ctx.strokeStyle = ruim ? 'rgba(255, 130, 110, .9)' : 'rgba(200, 230, 255, .9)';
     ctx.lineWidth = Math.max(2, C * 0.035);
     ctx.setLineDash([C * 0.12, C * 0.08]);
     ctx.lineDashOffset = -this.time * C * 0.6;
@@ -789,7 +831,7 @@ export class TabuleiroTopo {
     ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
     ctx.lineWidth = Math.max(4, C * 0.07);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(200, 230, 255, .95)';
+    ctx.strokeStyle = ruim ? 'rgba(255, 130, 110, .95)' : 'rgba(200, 230, 255, .95)';
     ctx.lineWidth = Math.max(2, C * 0.035);
     ctx.stroke();
     ctx.restore();
@@ -2145,7 +2187,24 @@ export class TabuleiroTopo {
       };
     }
     if (node.cost <= 0) return null;
-    const avisos = this.porQueCustaMais(reach, node, actor).map((texto) => ({ texto, cor: CARTAO.amber }));
+    // A RÉGUA (`rules/rota.js`): com escalas, o custo é o da rota por elas; e o que acontece no caminho vai embaixo.
+    const rota = this.overlay.rota;
+    const fim = rota?.caminho?.at(-1);
+    const daRota = rota && (rota.ate ? rota.ate.x === t.x && rota.ate.y === t.y : fim?.x === t.x && fim?.y === t.y);
+    const perigos = daRota ? rota.avisos.map((a) => ({ texto: a.texto, cor: a.tipo === 'oportunidade' ? CARTAO.red : CARTAO.amber })) : [];
+    if (daRota && rota.escalas.length) {
+      const n = rota.escalas.length;
+      return {
+        titulo: rota.ok ? 'mover pelas escalas' : 'longe demais pelas escalas',
+        subtitulo: `${n} escala${n > 1 ? 's' : ''} · Esc desfaz a última`,
+        destaque: rota.ok
+          ? { rotulo: 'custo', valor: `${rota.custo} pés`, cor: CARTAO.blue }
+          : { rotulo: 'movimento', valor: `${sobra} pés`, cor: CARTAO.red },
+        linhas: rota.ok ? [{ rotulo: 'restam', valor: `${rota.restante} pés` }] : [],
+        avisos: perigos,
+      };
+    }
+    const avisos = [...this.porQueCustaMais(reach, node, actor).map((texto) => ({ texto, cor: CARTAO.amber })), ...perigos];
     if (!node.parar) avisos.push({ texto: 'só de passagem: não dá para parar aqui', cor: CARTAO.red });
     return {
       titulo: 'mover',

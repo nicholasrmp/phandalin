@@ -1609,6 +1609,26 @@ export class Encounter {
     };
   }
 
+  /**
+   * Quem leva a reação se `actor` der o passo de `from` a `to`: quem o tinha no alcance e deixa de ter. Quem está
+   * incapacitado não reage, e quem não tem arma de perto não tem com que aproveitar a brecha. `actor.pos` tem de
+   * estar em `from` (a altura de quem se compara é a da casa de onde ele sai). A régua (`rules/rota.js`) pergunta o
+   * mesmo antes de andar, para avisar.
+   */
+  ameacasNoPasso(actor, from, to) {
+    if (actor.disengaging) return [];
+    return this.enemiesOf(actor).filter(
+      (e) => !e.reactionUsed
+        && getCondition(actor, 'manobrado')?.data?.de !== e.id
+        && !conditionEffects(e).incapacitated
+        && this.armaDeOportunidade(e) !== undefined
+        && !this.separadosPelaAltura(e, actor)
+        && distanceFt(e.pos, from) <= this.reachOf(e)
+        && this.field.contato(e.pos, from)
+        && distanceFt(e.pos, to) > this.reachOf(e),
+    );
+  }
+
   /** Move seguindo o caminho, resolvendo ataques de oportunidade a cada passo. */
   moveAlong(actor, path) {
     if (path.length < 2) return false;
@@ -1680,19 +1700,7 @@ export class Encounter {
     for (let i = 1; i < path.length; i++) {
       const from = { ...actor.pos };
       const to = path[i];
-      // Quem tinha o ator no alcance e deixa de ter leva a reação.
-      // Quem está incapacitado não reage, e quem não tem arma de perto não
-      // tem com que aproveitar a brecha.
-      const threats = actor.disengaging ? [] : this.enemiesOf(actor).filter(
-        (e) => !e.reactionUsed
-          && getCondition(actor, 'manobrado')?.data?.de !== e.id
-          && !conditionEffects(e).incapacitated
-          && this.armaDeOportunidade(e) !== undefined
-          && !this.separadosPelaAltura(e, actor)
-          && distanceFt(e.pos, from) <= this.reachOf(e)
-          && this.field.contato(e.pos, from)
-          && distanceFt(e.pos, to) > this.reachOf(e),
-      );
+      const threats = this.ameacasNoPasso(actor, from, to);
       // O ataque de oportunidade acontece LOGO ANTES de o alvo sair do
       // alcance: resolvido com ele ainda na casa de partida. Resolvido depois,
       // o atacante media a distância da casa nova e o ataque nunca alcançava.

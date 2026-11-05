@@ -18,7 +18,7 @@
 // nunca sai daqui. Os clientes veem só o rótulo público `pub` ('p1', 'p2'…).
 
 import { PADRAO_DA_CORDA, MODOS_DA_CORDA } from './corda.js';
-import { acaoRemotaValida, tilesValidos, circuloValido } from './acoes.js';
+import { acaoRemotaValida, tilesValidos, circuloValido, escalasValidas } from './acoes.js';
 import { key } from '../core/grid.js';
 import { definicaoValida } from './criador.js';
 import {
@@ -521,6 +521,11 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       }
       const { x, y } = mensagem;
       if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x > 400 || y > 400) return recusa('casa inexistente');
+      // As escalas da régua (`rules/rota.js`): só no mover, até oito casas [x, y]. O caminho por elas é do anfitrião.
+      if (mensagem.acao === 'mover' && mensagem.escalas !== undefined) {
+        if (!escalasValidas(mensagem.escalas)) return recusa('escalas inválidas');
+        return ok({ igual: true, repassar: { ...base, x, y, escalas: mensagem.escalas } });
+      }
       return ok({ igual: true, repassar: { ...base, x, y } });
     }
     case 'resposta': {

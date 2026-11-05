@@ -951,6 +951,15 @@ teste('F4: o servidor só repassa a vista do anfitrião, com a partida iniciada,
   assert.match(tratarVista({ sala: lobby, jogadorId: ANF, bruto, agora: 99_000 }).erro, /não está em andamento/);
 });
 
+teste('a régua: o mover leva as escalas, conferidas na forma (rules/rota.js)', () => {
+  const s = salaIniciada();
+  assert.deepEqual(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 7, y: 9, escalas: [[3, 4], [5, 6]] }).repassar,
+    { tipo: 'agir', de: 'p2', heroi: 'pc-mago', acao: 'mover', x: 7, y: 9, escalas: [[3, 4], [5, 6]] });
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 7, y: 9, escalas: [[3]] }), /escalas inválidas/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 7, y: 9, escalas: Array(9).fill([1, 1]) }), /escalas inválidas/);
+  deve(faz(s, BETO, { tipo: 'agir', acao: 'mover', heroi: 'pc-mago', x: 7, y: 9, escalas: 'lixo' }), /escalas inválidas/);
+});
+
 teste('F4.3: agir: o servidor só repassa o passo de quem é DONO do herói, com a partida iniciada, e não muda a sala', () => {
   const s = salaIniciada();
   const antes = JSON.stringify(visaoDaSala(s, ANF));
