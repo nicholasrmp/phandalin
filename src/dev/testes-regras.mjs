@@ -45,7 +45,8 @@ import {
   podeConversar, vantagemDeDistancia, atencaoDoBando, perigoDoBando, escalarBando,
   XP_POR_PERIGO, auguriumDaSaida,
 } from '../rules/encontros-estrada.js';
-import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo } from '../rules/descanso.js';
+import { oracaoDeCura, bomFrutoNoDescanso, descansoLongo, recuperarNoCurto } from '../rules/descanso.js';
+import { guardar as guardarNaMochila } from '../game/comercio.js';
 import { nivelDeExaustao, mudarExaustao, maxHpEfetivo, exaustaoFatal } from '../rules/conditions.js';
 import {
   diaDeViagem, forragear, melhorForrageador, despensaDoGrupo, limiteSemComida,
@@ -9214,6 +9215,45 @@ teste('Brisa das Cinzas: o primeiro dano ao zumbi das cinzas faz os vivos colado
   removeCondition(colado, 'brisaDasCinzas');
   enc.applyDamage(zumbi, 3, 'cortante', colado);
   assert.ok(!hasCondition(colado, 'brisaDasCinzas'), 'o segundo golpe não solta a brisa de novo');
+});
+
+teste('o conhaque anão: um copo devolve 1 PV, o segundo em menos de uma hora envenena', () => {
+  // A regra é do livro, área 5 do Castelo Dentefino: "o barril contém o equivalente a vinte copos. Um
+  // personagem que beber um copo de conhaque recupera 1 ponto de vida, mas um personagem que beber dois
+  // copos em menos de 1 hora fica envenenado por 1 hora." O item existia só como tesouro de 50 po, com uma
+  // descrição que dizia outra conta ("o terceiro já basta"), e não dava para beber.
+  //
+  // A HORA É O DESCANSO CURTO, que no SRD dura exatamente uma hora. É o mesmo desenho do mal da água
+  // parada, que passa dormindo.
+  const { enc, party } = montar({ foes: [] });
+  const heroi = party[DARA];
+  garantirInventario(heroi);
+  guardarNaMochila(heroi, 'conhaqueAnao', 1);
+  const solto = () => { heroi.actionUsed = false; heroi.acaoUsada = false; };
+
+  heroi.hp = heroi.maxHp - 5;
+  solto();
+  assert.ok(enc.useItem(heroi, 'conhaqueAnao', { target: heroi }).ok, 'dá para beber um copo');
+  assert.equal(heroi.hp, heroi.maxHp - 4, 'o primeiro copo devolve 1 PV, e só 1');
+  assert.ok(!hasCondition(heroi, 'envenenado'), 'e não envenena');
+
+  solto();
+  assert.ok(enc.useItem(heroi, 'conhaqueAnao', { target: heroi }).ok, 'dá para beber o segundo');
+  assert.ok(hasCondition(heroi, 'envenenado'), 'o SEGUNDO copo na mesma hora envenena');
+  assert.equal(heroi.hp, heroi.maxHp - 4, 'e não cura de novo');
+
+  recuperarNoCurto(heroi);
+  assert.ok(!hasCondition(heroi, 'envenenado'), 'passada a hora (descanso curto), o veneno vai embora');
+  heroi.hp = heroi.maxHp - 5;
+  solto();
+  assert.ok(enc.useItem(heroi, 'conhaqueAnao', { target: heroi }).ok, 'e pode-se beber de novo');
+  assert.equal(heroi.hp, heroi.maxHp - 4, 'curando 1 outra vez');
+  assert.ok(!hasCondition(heroi, 'envenenado'), 'sem envenenar: a hora zerou a conta');
+
+  // VINTE COPOS, como o livro diz — o barril não some no primeiro gole
+  const barril = heroi.bag.find((i) => i.id === 'conhaqueAnao');
+  assert.ok(barril, 'o barril continua na mochila');
+  assert.equal(barril.usosRestantes, 17, 'e marca os copos: 20 menos os 3 bebidos');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

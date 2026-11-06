@@ -28,21 +28,16 @@ export const { ARVORE_TROVAO, MAPA_ARVORE_TROVAO } = await import(P + 'game/arvo
 // ALVO=ondaEco: o mesmo harness mede a Caverna Onda Eco (`game/ondaeco.js`).
 export const ONDA = process.env.ALVO === 'ondaEco';
 export const { ONDA_ECO } = await import(P + 'game/ondaeco.js');
+const { montarCampo: montarCampoDoJogo } = await import(P + 'game/campo.js');
 export const { passivePerception } = await import(P + 'rules/abilities.js');
 
 export function montarCampo() {
+  // O MESMO `montarCampo` DO JOGO. Isto aqui montava o `Battlefield` na mão, com terreno, altura, objetos e
+  // `paredes`, e remendava `field.folha` por fora. Funcionava enquanto a planta era desenhada à mão; desde
+  // que a cena passou a rodar sobre o battlemap da Forgotten Adventures, a parede vem em TRAÇO
+  // (`tracos`/`tracosTipo`) e a barricada do culto é REGIÃO — e nada disso chegava ao campo deste harness,
+  // que media então um mapa sem parede e sem região. Delegar é a correção, e de quebra traz luz, névoa,
+  // sobreposições e folhas sem remendo.
   const mapa = mapaDo(ONDA ? 'ondaEco' : 'arvoreTrovao');
-  const field = new Battlefield(mapa.terreno[0].length, mapa.terreno.length,
-    mapa.terreno, mapa.altura, mapa.objetos, mapa.paredes);
-  if (mapa.luz) {
-    field.luz = new Uint8Array(field.w * field.h);
-    if (Array.isArray(mapa.luz)) {
-      mapa.luz.forEach((linha, y) => { for (let x = 0; x < field.w; x++) field.luz[y * field.w + x] = Number(linha[x] ?? 0); });
-    }
-    field.luzes = (mapa.luzes ?? []).map((f) => ({ ...f }));
-  }
-  // a cena faz isto:
-  const CH = (a, b) => `${a.x},${a.y},${b.x},${b.y}`;
-  field.folha = new Set(((ONDA ? ONDA_ECO : ARVORE_TROVAO).folhas ?? []).flatMap(([a, b]) => [CH(a, b), CH(b, a)]));
-  return { mapa, field };
+  return { mapa, field: montarCampoDoJogo(mapa) };
 }

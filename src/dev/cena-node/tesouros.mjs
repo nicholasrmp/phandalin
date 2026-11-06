@@ -4,6 +4,7 @@
 //   node --import ./src/dev/cena-node/register.mjs src/dev/cena-node/tesouros.mjs
 import assert from 'node:assert/strict';
 import { novaCena, A, B } from './lib.mjs';
+const { VISTA_DO_ALTO: VISTA } = await import(new URL('../../game/arvoretrovao-exames.js', import.meta.url).href);
 import { garantirInventario } from '../../rules/equipment.js';
 
 const qtd = (c, id) => (c.bag ?? []).filter((i) => i.id === id).reduce((s, i) => s + i.qtd, 0);
@@ -73,7 +74,13 @@ const ok = (nome) => console.log('ok   ', nome);
     return null;
   })();
   assert.ok(arca, 'a arca do dragão está desenhada');
-  h.pos = { x: arca.x - 1, y: arca.y };
+  // A CASA DE ONDE SE ABRE É MEDIDA. Era `arca.x - 1` escrito à mão, da planta antiga; na planta da FA essa
+  // casa tem parede no meio, e o teste reprovava a arca por causa do lugar em que ele punha o herói.
+  const encosto = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]
+    .map(([dx, dy]) => ({ x: arca.x + dx, y: arca.y + dy }))
+    .find((q) => S.field.inside(q.x, q.y) && !S.field.blocksMove(q.x, q.y) && S.field.contato(q, arca));
+  assert.ok(encosto, 'não há casa livre encostada na arca de onde abri-la');
+  h.pos = { ...encosto };
   const antes = S.cena.interacoes(arca, 'arca', h).find((o) => o.rotulo === 'Abrir a arca');
   assert.ok(antes?.motivo, 'com o dragão vivo a arca não abre');
   S.app.campanha.arvoreTrovao.dragao = 'expulso';
@@ -145,8 +152,14 @@ const ok = (nome) => console.log('ok   ', nome);
   for (let seed = 1; seed < 200 && !caiu; seed += 1) {
     const S = await novaCena(seed * 31, { nivel: 5 });
     S.party.forEach((x) => garantirInventario(x));
+    // A CASA DE ONDE SE EMPURRA É MEDIDA, como a da arca: `est.x - 1` era da planta antiga, e a estátua agora
+    // está no largo que o gerador mede, onde a casa a oeste pode não encostar nela.
+    const perto = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]
+      .map(([dx, dy]) => ({ x: est.x + dx, y: est.y + dy }))
+      .find((q) => S.field.inside(q.x, q.y) && !S.field.blocksMove(q.x, q.y) && S.field.contato(q, est));
+    assert.ok(perto, 'há casa livre encostada na estátua de onde empurrá-la');
     for (const her of S.party) {
-      her.pos = { x: est.x - 1, y: est.y };
+      her.pos = { ...perto };
       const op = S.cena.interacoes(est, S.field.surfaceAt(est.x, est.y), her).find((o) => o.rotulo === 'Empurrar a estátua');
       assert.ok(op, 'a estatua oferece empurrar');
       if (op.motivo) continue;
@@ -163,42 +176,41 @@ const ok = (nome) => console.log('ok   ', nome);
   ok('a estatua de Palien: Atletismo CD 20, cai num monte de pedra que barra o passo');
 }
 
-// --- as brechas de visao das ruinas: seteira de borda (barra o passo, nao a visao) ----------------
+// --- as ruinas sao ABERTAS: entra-se por cima do alicerce quebrado -------------------------------
+//
+// Aqui havia duas conferencias da planta ANTIGA, desenhada a mao: 20 "brechas de visao" (aresta de seteira,
+// que barra o passo e deixa ver) e 8 "brechas-entrada" (aresta aberta com entulho dos dois lados). Eram
+// elaboracao nossa para dar graca a ruina fechada. A planta da Forgotten Adventures nao tem nenhuma das
+// duas, e nao por esquecimento: medido, ela tem 0 seteiras, e das 22 construcoes so CINCO tem porta — o
+// resto sao cascas de alicerce quebrado, que e o que Arvore Trovao e no livro. Nao se entra por brecha
+// porque nao ha o que furar: passa-se por cima do muro caido.
 {
   const S = await novaCena(9, { nivel: 3 });
   const f = S.field;
-  let n = 0, passam = 0, naoVeem = 0;
+  // A SETEIRA EXISTE, E FUNCIONA. Isto aqui exigia ZERO seteiras, porque era o que a planta tinha — e era
+  // defeito do importador, não da planta: ele traduzia as paredes de `sight: LIMITED` da Forgotten
+  // Adventures como parede cheia, e depois descartava o tipo `J` por ele não estar na lista. Corrigido, a
+  // Árvore Trovão ganhou 2 e o Castelo 43. O que o teste guarda agora é o que a seteira TEM de fazer:
+  // barrar o passo e deixar ver.
+  let seteiras = 0;
   for (let y = 1; y < f.h; y++) for (let x = 1; x < f.w; x++) {
     for (const [cod, ox, oy] of [[f.paredeN[y * f.w + x], x, y - 1], [f.paredeO[y * f.w + x], x - 1, y]]) {
-      if (cod !== 4) continue;               // ARESTA.seteira
-      n++;
-      if (f.passa(x, y, ox, oy)) passam++;
-      if (!f.hasLineOfSight({ x, y }, { x: ox, y: oy })) naoVeem++;
+      if (cod !== 4) continue;
+      seteiras++;
+      assert.ok(!f.passa(x, y, ox, oy), `a seteira em (${x},${y}) deixa passar`);
+      assert.ok(f.hasLineOfSight({ x, y }, { x: ox, y: oy }), `pela seteira em (${x},${y}) nao se ve`);
     }
   }
-  assert.ok(n >= 20, `ha brechas nas ruinas (${n})`);
-  assert.equal(passam, 0, 'nenhuma brecha deixa passar');
-  assert.equal(naoVeem, 0, 'toda brecha deixa ver');
-  ok(`${n} brechas de visão: não se passa por nenhuma, e se vê por todas`);
-}
-
-// --- as brechas que sao ENTRADA: aresta aberta, entulho (terreno dificil) dos dois lados --------------
-{
-  const S = await novaCena(11, { nivel: 3 });
-  const f = S.field;
-  const lista = f.brechas ? [...f.brechas] : [];
-  assert.ok(lista.length >= 8, `ha entradas por brecha (${lista.length})`);
-  let ruins = [];
-  for (const k of lista) {
-    const [x, y, lado] = k.split(',');
-    const X = Number(x), Y = Number(y);
-    const [ox, oy] = lado === 'N' ? [X, Y - 1] : [X - 1, Y];
-    if (!f.passa(X, Y, ox, oy)) ruins.push(`${k}: nao passa`);
-    if (!f.hasLineOfSight({ x: X, y: Y }, { x: ox, y: oy })) ruins.push(`${k}: nao ve`);
-    if (f.tileAt(X, Y) !== 2 || f.tileAt(ox, oy) !== 2) ruins.push(`${k}: sem terreno dificil`);
-  }
-  assert.deepEqual(ruins, [], ruins.join('; '));
-  ok(`${lista.length} brechas-entrada: passam, deixam ver e são entulho (terreno difícil) dos dois lados`);
+  // e as ruinas abrem mesmo: a maioria das construcoes tem borda por onde se entra sem porta
+  const abertas = Object.entries(A.celulas).filter(([, cs]) => {
+    const dentro = new Set(cs.map((c) => `${c.x},${c.y}`));
+    return cs.some((c) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+      const v = { x: c.x + dx, y: c.y + dy };
+      return !dentro.has(`${v.x},${v.y}`) && f.inside(v.x, v.y) && !f.blocksMove(v.x, v.y) && f.passa(c.x, c.y, v.x, v.y);
+    }));
+  });
+  assert.ok(abertas.length >= 15, `so ${abertas.length} construcoes se entram sem porta`);
+  ok(`${abertas.length} de ${Object.keys(A.celulas).length} construcoes sao casca aberta, e as ${seteiras} seteiras barram o passo e deixam ver`);
 }
 
 // --- o culto: seis, Favric na frente, a porta trancada por dentro e o cofre -----------------------
@@ -209,18 +221,28 @@ const ok = (nome) => console.log('ok   ', nome);
   const favric = S.enc.combatants.find((c) => c.name === 'Favric');
   assert.ok(favric, 'Favric está em cena');
   assert.equal(S.enc.combatants.filter((c) => c.side === 'neutro' && c !== favric && /cultista|acólito|acolito|Acólito/i.test(`${c.id} ${c.name}`)).length + 1, 6, 'o culto tem seis');
-  // a porta de fora: DUAS folhas (o vão é largo), as duas fechadas e trancadas
-  const pares = A.folhas.filter(([a, b]) => A.celulas.casa9.some((c) => c.x === a.x && c.y === a.y) !== A.celulas.casa9.some((c) => c.x === b.x && c.y === b.y));
-  assert.ok(pares.length >= 2, 'a porta do culto tem duas folhas: ' + pares.length);
-  for (const [a, b] of pares) assert.equal(S.field.aresta(a.x, a.y, b.x, b.y), 2, 'cada folha da porta do culto começa fechada');
-  const par = pares[0];
-  const fora = A.celulas.casa9.some((c) => c.x === par[0].x && c.y === par[0].y) ? par[1] : par[0];
+  // A BARRICADA, no lugar da porta trancada do livro: a construção do culto, na planta da FA, é ruína de
+  // alicerce quebrado, sem porta nenhuma (medido: 16 arestas abertas, 0 portas). O que trava a entrada é a
+  // região `barricadaCulto`, que empurra de volta quem tenta entrar, e sai com Atletismo CD 20.
+  const barricada = S.field.regioes?.find((r) => r.id === 'barricadaCulto');
+  assert.ok(barricada, 'a barricada do culto está no mapa');
+  assert.equal(barricada.desligada ?? false, false, 'ela começa de pé');
+  assert.equal(barricada.casas.size, A.celulas.casa9.length, 'ela cobre a ruína inteira');
+  const dentro = A.celulas.casa9[0];
+  const fora = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    .map(([dx, dy]) => ({ x: dentro.x + dx, y: dentro.y + dy }))
+    .find((q) => S.field.inside(q.x, q.y) && !S.field.blocksMove(q.x, q.y)
+      && !A.celulas.casa9.some((c) => c.x === q.x && c.y === q.y));
+  assert.ok(fora, 'há casa livre do lado de fora da ruína do culto');
   const h = S.party[0];
   h.pos = { ...fora };
-  const ops = S.cena.interacoes(fora, S.field.surfaceAt(fora.x, fora.y), h).map((o) => o.rotulo);
-  assert.ok(ops.includes('Forçar a porta') && !ops.includes('Bater e falar') && !ops.includes('Escutar à porta'), 'só a saída do livro na porta: ' + ops.join(', '));
-  assert.ok(!ops.includes('Abrir a porta'), 'trancada: não se abre de graça');
-  ok('o culto: Favric e mais cinco, a porta de duas folhas trancada por dentro (forçar: Atletismo CD 20)');
+  const ops = S.cena.interacoes(dentro, S.field.surfaceAt(dentro.x, dentro.y), h).map((o) => o.rotulo);
+  assert.ok(ops.includes('Arrastar a barricada'), 'a barricada se arrasta: ' + ops.join(', '));
+  // e quem tenta entrar andando volta para a casa de onde veio
+  h.movementLeftFt = 30;
+  S.enc.moveAlong(h, [{ ...fora }, { ...dentro }]);
+  assert.deepEqual({ x: h.pos.x, y: h.pos.y }, { x: fora.x, y: fora.y }, 'a barricada devolve quem tenta entrar');
+  ok('o culto: Favric e mais cinco, a ruína entulhada (arrastar: Atletismo CD 20) e quem força o passo volta');
 
   // o cofre: três diamantes e a poção de voo, só sem os cultistas olhando
   const bau = A.objetos.bauCulto;
@@ -278,14 +300,23 @@ const ok = (nome) => console.log('ok   ', nome);
   }
   assert.ok(achou, 'alguém abre o alçapão');
   const { S, her } = achou;
-  const sobe = S.cena.interacoes(alc, S.field.surfaceAt(alc.x, alc.y), her).find((o) => o.rotulo === 'Subir ao telhado');
-  assert.ok(sobe && !sobe.motivo, 'com o alçapão aberto dá para subir');
-  const longe = { x: A.praca.x0 + 2, y: A.praca.y0 + 2 };      // um ponto da praça, longe do herói
-  const vistoAntes = visaoDoGrupo(S.enc).has(`${longe.x},${longe.y}`);
+  // A VISTA DO ALTO É TEXTO, e isto aqui mudou com ela. Era mecânica — `field.vistaExtra` acendia a aldeia
+  // inteira enquanto o herói ficasse lá em cima —, e caiu por duas razões: a guarnição é casca SEM TELHADO
+  // na planta da FA (subir no telhado dela era subir no que não existe), e revelar o mapa de graça tirava da
+  // fase o que ela é. O que o teste guarda agora é que a opção existe, é de graça, não revela casa nenhuma,
+  // e devolve um painel com os rumos.
+  const sobe = S.cena.interacoes(alc, S.field.surfaceAt(alc.x, alc.y), her).find((o) => o.rotulo === 'Subir e olhar de cima');
+  assert.ok(sobe && !sobe.motivo, 'com o alçapão aberto dá para subir e olhar');
+  const antesDeSubir = visaoDoGrupo(S.enc).size;
+  const paineis = [];
+  const guardaPainel = paineis.push.bind(paineis);
+  globalThis.__painel = guardaPainel;
   await sobe.fazer();
-  assert.ok(visaoDoGrupo(S.enc).has(`${longe.x},${longe.y}`), 'do telhado se vê a praça');
-  her.pos = { x: alc.x + 1, y: alc.y };
-  await S.cena.depoisDeMover(her);
-  assert.equal(S.field.vistaExtra ?? null, null, 'saiu do lugar: a vista do alto acaba');
-  ok(`o telhado da guarnição: vê a praça de cima (antes: ${vistoAntes ? 'já via' : 'não via'}), e acaba quando o herói sai`);
+  assert.equal(S.field.vistaExtra ?? null, null, 'a vista do alto não revela casa nenhuma do mapa');
+  assert.equal(visaoDoGrupo(S.enc).size, antesDeSubir, 'o que o grupo enxerga não muda: a vista é texto');
+  assert.ok(VISTA.length >= 3, `o texto do alto tem ${VISTA.length} parágrafo(s)`);
+  for (const alvo of ['torre', 'estátua', 'esquina', 'celeiro']) {
+    assert.ok(VISTA.join(' ').toLowerCase().includes(alvo.toLowerCase()), `o texto do alto não cita: ${alvo}`);
+  }
+  ok(`o alto da guarnição: ${VISTA.length} parágrafos de vista, sem revelar casa nenhuma do mapa`);
 }

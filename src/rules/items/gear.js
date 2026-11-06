@@ -191,7 +191,16 @@ export const GEAR = {
   caliceDeOuro: item('caliceDeOuro', 'Cálice dourado', 150, 0.5, 'Cálice de ritual feito por mãos humanas, roubado de um altar que não era de goblin.', { tipo: 'tesouro', fonte: 'propria' }),
   facaDeRitual: item('facaDeRitual', 'Faca de ritual', 60, 0.5, 'Lâmina curta de cabo dourado, mais enfeite que arma.', { tipo: 'tesouro', fonte: 'propria' }),
   incensario: item('incensario', 'Incensário dourado', 120, 1, 'Ainda cheira a resina antiga.', { tipo: 'tesouro', fonte: 'propria' }),
-  conhaqueAnao: item('conhaqueAnao', 'Conhaque anão', 50, 2, 'Barrilzinho de conhaque anão de primeira, do tipo que o dono guarda e não vende. Vinte copos — e, dizem, o terceiro já basta para derrubar quem não for anão.', { tipo: 'tesouro', fonte: 'propria' }),
+  // O LIVRO DÁ A REGRA, e ela não era executada: "o barril contém o equivalente a VINTE COPOS. Um
+  // personagem que beber um copo de conhaque recupera 1 ponto de vida, mas um personagem que beber DOIS
+  // copos em menos de 1 hora fica envenenado por 1 hora." A descrição antiga dizia "o terceiro já basta",
+  // que é outra conta, e o item era `tesouro` puro — não dava para beber.
+  //
+  // A hora é marcada pelo DESCANSO CURTO, que no SRD dura exatamente uma hora: enquanto ninguém descansar,
+  // o segundo copo derruba. É o mesmo desenho do mal da água parada (`rules/mantimentos.js`).
+  conhaqueAnao: item('conhaqueAnao', 'Conhaque anão', 50, 2, 'Barrilzinho de conhaque anão de primeira, do tipo que o dono guarda e não vende. Vinte copos. Um copo devolve 1 ponto de vida; dois copos em menos de uma hora deixam envenenado por uma hora.', {
+    tipo: 'tesouro', fonte: 'propria', art: 'cura', consumivel: 'gole', usos: 20, acao: 'acao',
+  }),
   estatuetaDoElfo: item('estatuetaDoElfo', 'Estatueta de elfo solar', 100, 1, 'Um elfo de ouro do tamanho de um palmo, de olhos fechados. Dizem que, nas mãos de alguém de bom coração, ela responde a uma única pergunta — e depois se cala para sempre.', { tipo: 'tesouro', fonte: 'propria' }),
   espadaDeSildar: item('espadaDeSildar', 'Espada de Sildar', 0, 1.5, 'Espada longa com o brasão de Neverwinter no cabo. É do Sildar Hallwinter, e ele vai querer de volta.', { fonte: 'propria', vendavel: false, missao: true }),
   mapaDeGundren: item('mapaDeGundren', 'Mapa de Gundren', 0, 0, 'O mapa da Caverna Onda Eco, desenhado pelos irmãos Buscapedra. Não se vende.', { fonte: 'propria', vendavel: false, missao: true }),

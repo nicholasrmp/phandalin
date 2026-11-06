@@ -55,6 +55,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { prepararLevas } from './levas.js';
 import { CASTELO } from './castelo.js';
+import { EXAMES_DO_CASTELO } from './castelo-exames.js';
 import { descobrirRegiao, alternarRegiao } from '../rules/regioes.js';
 import { guardar } from './comercio.js';
 import { criarBuscas } from './buscas.js';
@@ -88,6 +89,14 @@ const GRUPOS = {
   guarda: { sala: 'guarda', xp: 200, nome: 'a guarda' },
   urso: { sala: 'torreUrso', xp: 700, nome: 'a torre do urso-coruja' },
   rei: { sala: 'rei', xp: 950, nome: 'os aposentos do rei' },
+  // O BANDO DE GUERRA QUE VOLTA (opcional no livro, "Bando Retornando da Guerra"). Não mora no castelo: ele
+  // chega de fora, pela trilha, "logo quando os personagens estiverem se preparando para sair". Por isso a
+  // sala dele é o terraço, e os postos saem da saída do mapa, não de `CASTELO.postos`.
+  //
+  // A CONTA DOS 500 XP decide quantos são, que o texto deixa ambíguo ("três hobgoblins liderados por
+  // Targor"): hobgoblin é ND 1/2, 100 XP, e lobo é ND 1/4, 50. Targor mais três hobgoblins dá 400, e os
+  // dois lobos dele fecham em 500 — exatamente o que o livro manda dividir. Três ao todo daria 400.
+  targor: { sala: 'terraco', xp: 500, nome: 'o bando do Targor' },
 };
 
 export function criarCastelo(app, config) {
@@ -101,7 +110,9 @@ export function criarCastelo(app, config) {
     vencidos: [], alarme: false, disfarce: false, armadilha: null, portaoAberto: false, lonaAchada: false,
     ursoSolto: false, ursoCalmo: false, bauUrso: false, despensa: false, armas: false, braseiro: false,
     altar: false, cama: false, gundren: null, mapa: null, reiAvisado: false, escorada: false,
+    targor: null,
   });
+  salvo.targor ??= null;    // null = ainda não apareceu; 'lutou' | 'acordo' = já resolvido
   salvo.buscas ??= {};
   // Uma tentativa por herói em cada ponto (`game/buscas.js`). O castelo era o
   // único capítulo sem esse limite: escutar à porta, espiar pela fresta e
@@ -133,41 +144,78 @@ export function criarCastelo(app, config) {
   // Colados na seteira: a cobertura de três quartos só vale com a fenda
   // entre o arqueiro e o alvo (`coverBetween`).
   const atirador = { tatica: 'atirador', arma: 'Arco curto' };
-  m('goblin', 5, 7, 'postoNorte', 'do posto norte', { dx: 0, dy: 1 }, atirador);
-  m('goblin', 7, 7, 'postoNorte', 'do posto norte B', { dx: 0, dy: 1 }, atirador);
-  m('goblin', 5, 13, 'postoSul', 'do posto sul', { dx: 0, dy: -1 }, atirador);
-  m('goblin', 7, 13, 'postoSul', 'do posto sul B', { dx: 0, dy: -1 }, atirador);
-  ['A', 'B', 'C'].forEach((s, i) => m('goblin', [5, 6, 6][i], [16, 17, 18][i], 'torreSul', `da torre ${s}`));
-  // O C ficava em (7,2), que no mapa é (9,5) — a casa do armeiro, que bloqueia
-  // passo. `occupied` não consulta `blocksMove`, então ele nascia em cima dela.
-  [[4, 2], [5, 3], [6, 2], [7, 3]].forEach(([x, y], i) => m('hobgoblin', x, y, i < 2 ? 'hobgoblins' : 'hobgoblins2', 'ABCD'[i], { dx: 1, dy: 0 }));
+  // ONDE CADA UM ESPERA VEM DO MAPA (`CASTELO.postos`, medido pelo gerador dentro da sala do bando), e não de
+  // casa cravada aqui. Isto mudou quando a planta passou a ser a da Forgotten Adventures: das 30 posições que
+  // estavam escritas neste arquivo, 13 caíam na sala ERRADA na planta nova e 8 em pedra maciça — os arqueiros
+  // do posto norte nasciam dentro do alojamento dos hobgoblins, os do sul no mato, e o grick numa parede. O
+  // gerador espalha as casas dentro da sala e prova cada uma no motor antes de escrever.
+  const posto = (g, i) => (CASTELO.postos?.[g]?.[i] ?? { x: 0, y: 0 });
+  m('goblin', posto('postoNorte', 0).x, posto('postoNorte', 0).y, 'postoNorte', 'do posto norte', { dx: 0, dy: 1 }, atirador);
+  m('goblin', posto('postoNorte', 1).x, posto('postoNorte', 1).y, 'postoNorte', 'do posto norte B', { dx: 0, dy: 1 }, atirador);
+  m('goblin', posto('postoSul', 0).x, posto('postoSul', 0).y, 'postoSul', 'do posto sul', { dx: 0, dy: -1 }, atirador);
+  m('goblin', posto('postoSul', 1).x, posto('postoSul', 1).y, 'postoSul', 'do posto sul B', { dx: 0, dy: -1 }, atirador);
+  ['A', 'B', 'C'].forEach((s, i) => m('goblin', posto('torreSul', i).x, posto('torreSul', i).y, 'torreSul', `da torre ${s}`));
+  ['hobgoblins', 'hobgoblins', 'hobgoblins2', 'hobgoblins2'].forEach((g, i) => {
+    const q = posto(g, i % 2);
+    m('hobgoblin', q.x, q.y, g, 'ABCD'[i], { dx: 1, dy: 0 });
+  });
   // O banquete fica longe da porta do salão 2: pela porta aberta eles viam
   // o salão inteiro.
-  const yegg = m('goblin', 16, 14, 'cozinha', '', { dx: -1, dy: 0 });
+  const yegg = m('goblin', posto('cozinha', 0).x, posto('cozinha', 0).y, 'cozinha', '', { dx: -1, dy: 0 });
   Object.assign(yegg, { name: 'Yegg', maxHp: 12, hp: 12, chefe: true });
-  [[13, 14], [14, 14], [15, 14], [14, 16], [16, 16], [15, 17], [16, 17]].forEach(([x, y], i) =>
-    m('goblin', x, y, i < 4 ? 'banquete' : 'cozinha', `cozinheiro ${'ABCDEFG'[i]}`));
-  const grick = m('grick', 16, 12, 'grick', '', { dx: 0, dy: -1 });
+  for (let i = 0; i < 7; i += 1) {
+    const g = i < 4 ? 'banquete' : 'cozinha';
+    const q = posto(g, i < 4 ? i : i - 3);
+    m('goblin', q.x, q.y, g, `cozinheiro ${'ABCDEFG'[i]}`);
+  }
+  const grick = m('grick', posto('grick', 0).x, posto('grick', 0).y, 'grick', '', { dx: 0, dy: -1 });
   // Lhupo: o goblin que diz escutar Maglubiyet. Poder divino ele não tem —
   // o livro é claro nisso —, mas o bando acredita, e é com isso que ele manda.
-  const lhupo = m('goblin', 16, 3, 'santuario', '', { dx: 0, dy: -1 });
+  const lhupo = m('goblin', posto('santuario', 0).x, posto('santuario', 0).y, 'santuario', '', { dx: 0, dy: -1 });
   Object.assign(lhupo, { name: 'Lhupo', maxHp: 12, hp: 12 });
-  m('goblin', 15, 3, 'santuario', 'acólito A', { dx: 0, dy: -1 });
-  m('goblin', 18, 3, 'santuario', 'acólito B', { dx: 0, dy: -1 });
-  const mensageiro = m('hobgoblin', 22, 11, 'guarda', 'da guarda A');
-  m('hobgoblin', 23, 10, 'guarda', 'da guarda B');
-  const urso = m('corujaUrso', 24, 17, 'urso', '', { dx: -1, dy: 0 });
-  const grol = m('reiGrol', 28, 5, 'rei', '', { dx: -1, dy: 1 });
-  const rosnado = m('lobo', 29, 6, 'rei', '', { dx: -1, dy: 0 });
+  m('goblin', posto('santuario', 1).x, posto('santuario', 1).y, 'santuario', 'acólito A', { dx: 0, dy: -1 });
+  m('goblin', posto('santuario', 2).x, posto('santuario', 2).y, 'santuario', 'acólito B', { dx: 0, dy: -1 });
+  const mensageiro = m('hobgoblin', posto('guarda', 0).x, posto('guarda', 0).y, 'guarda', 'da guarda A');
+  m('hobgoblin', posto('guarda', 1).x, posto('guarda', 1).y, 'guarda', 'da guarda B');
+  const urso = m('corujaUrso', posto('urso', 0).x, posto('urso', 0).y, 'urso', '', { dx: -1, dy: 0 });
+  // QUEM FICA ONDE NO QUARTO DO REI, pela porta — e não pela ordem em que os postos saíram do gerador.
+  //
+  // O livro é explícito nos dois: "Vyerith se esconde ATRÁS DA PORTA a nordeste, deixando ela entreaberta e
+  // esperando atacar um intruso pelas costas", e "próximo ao canto SUDESTE da sala está Gundren Buscapedra",
+  // ao lado da mesa redonda. Pelos índices crus, a Vyerith caía no canto oposto — medido, a 20 pés da única
+  // porta da sala, de modo que a emboscada dela era atrás de uma porta que não existia ali — e o Gundren
+  // ficava colado na porta, longe da mesa. Agora a conta é a do livro: a doppelganger na casa mais PERTO da
+  // porta, o anão na mais LONGE dela, que é o fundo da sala.
+  const naSalaDoRei = (p) => (CASTELO.celulas.rei ?? []).some((q) => q.x === p.x && q.y === p.y);
+  const portaDoRei = (CASTELO.folhas ?? [])
+    .map(([a, b]) => (naSalaDoRei(a) ? a : (naSalaDoRei(b) ? b : null))).find(Boolean)
+    ?? CASTELO.postos.rei[0];
+  const daPorta = (p) => Math.max(Math.abs(p.x - portaDoRei.x), Math.abs(p.y - portaDoRei.y));
+  const porPerto = [...CASTELO.postos.rei].sort((a, b) => daPorta(a) - daPorta(b));
+  const casaDaVyerith = porPerto[0];
+  const casaDoGundren = porPerto[porPerto.length - 1];
+  const sobrouNoRei = porPerto.slice(1, -1);
+  const grol = m('reiGrol', sobrouNoRei[0].x, sobrouNoRei[0].y, 'rei', '', { dx: -1, dy: 1 });
+  const rosnado = m('lobo', sobrouNoRei[1].x, sobrouNoRei[1].y, 'rei', '', { dx: -1, dy: 0 });
   Object.assign(rosnado, { name: 'Rosnado', maxHp: 18, hp: 18 });
-  const vyerith = m('doppelganger', 27, 5, 'rei', '', { dx: 1, dy: 0 });
+  const vyerith = m('doppelganger', casaDaVyerith.x, casaDaVyerith.y, 'rei', '', { dx: 1, dy: 0 });
   vyerith.name = 'Vyerith';
+  // O BANDO DO TARGOR: Targor Espada Sangrenta (hobgoblin de 20 PV), três hobgoblins e dois lobos. Eles
+  // nascem na beira OESTE do terraço, de onde a trilha chega, olhando para dentro — é por ali que o grupo
+  // sai, e é a saída que o bando tapa. As casas saem do terraço medido, as mais a oeste e mais ao meio.
+  const beiraDoTerraco = [...(CASTELO.celulas.terraco ?? [])]
+    .sort((a, b) => (a.x - b.x) || (Math.abs(a.y - 11) - Math.abs(b.y - 11)));
+  const naBeira = (i) => beiraDoTerraco[Math.min(i, beiraDoTerraco.length - 1)] ?? { x: 0, y: 11 };
+  const targor = m('hobgoblin', naBeira(0).x, naBeira(0).y, 'targor', '', { dx: 1, dy: 0 });
+  Object.assign(targor, { name: 'Targor Espada Sangrenta', maxHp: 20, hp: 20 });
+  for (let i = 1; i <= 3; i += 1) m('hobgoblin', naBeira(i).x, naBeira(i).y, 'targor', `do bando ${i}`, { dx: 1, dy: 0 });
+  for (let i = 4; i <= 5; i += 1) m('lobo', naBeira(i).x, naBeira(i).y, 'targor', `do Targor ${i - 3}`, { dx: 1, dy: 0 });
   // DISFARÇADO DE DROW, como no livro (a emissária do Aranha Negra). O primeiro
   // ataque dela, ou a queda, revela o doppelganger (`revelarDisfarce`).
   vyerith.disfarce = { look: vyerith.look, de: 'a drow' };
   vyerith.look = 'drow';
   // Gundren: desacordado, estável, a 0 PV, perto da mesa.
-  const gundren = salvo.gundren === 'morto' || salvo.gundren === 'livre' ? null : makeNpc('gundren', J(30, 8), {});
+  const gundren = salvo.gundren === 'morto' || salvo.gundren === 'livre' ? null : makeNpc('gundren', { ...casaDoGundren }, {});
   if (gundren) {
     // `refem`: a 0 PV cai desacordado em vez de morrer (ver `applyDamage`). O
     // anão é o motivo do capítulo e está deitado ao lado do Grol: sem isto, a
@@ -266,18 +314,25 @@ export function criarCastelo(app, config) {
   const OLHO_DA_SALA = {
     guarda: 'Palha no chão, armas encostadas na parede, cheiro de gente que dorme vestida.',
     alojamentoHob: 'Camas em ordem e armas penduradas em fila: quem mora aqui tem disciplina.',
-    postoNorte: 'Uma fresta na pedra dando para o vale, e marcas de pé em volta dela.',
-    postoSul: 'Uma fresta na pedra dando para o vale, e marcas de pé em volta dela.',
+    // Os postos de arqueiro são os dois bolsos de entulho que flanqueiam a entrada (área 3 do livro, "esta
+    // pequena sala está cheia com detritos"). Medido: estes dois bolsos não têm seteira nenhuma, e das 43
+    // seteiras do castelo nenhuma dá no terraço — todas abrem para a espessura da parede. Então o texto não
+    // promete fresta nem campo de tiro; promete o que o livro faz acontecer, que é um par de goblins de arco
+    // esperando atrás do entulho para largar o arco e puxar a arma de mão quando alguém entra.
+    postoNorte: 'Entulho até a canela e um cheiro de quem passa o dia parado. Flechas encostadas na parede, ao alcance da mão.',
+    postoSul: 'Entulho empilhado até a altura do peito, e atrás dele espaço para dois. Dois arcos curtos no chão.',
     banquete: 'Uma mesa comprida coberta de restos, e um braseiro aceso no fundo.',
     cozinha: 'Panelas, ossos e um fogo baixo.',
     despensa: 'Sacos rasgados, barris e um cheiro azedo.',
     santuario: 'Um altar de pedra e panos escuros pendurados; alguma coisa de ouro brilha ali.',
     salaoEscuro: 'Um salão alto sem luz nenhuma, com figuras de asas talhadas na pedra.',
+    passagem: 'Uma passagem de pedra que vai dar em quatro lados, sem nada dentro além de cascalho.',
     salaoArmadilha: 'Argamassa caída e entulho. Alguma coisa de cobre reluz rente ao chão.',
     torreUrso: 'Escuro, e um bafo quente de bicho grande. Ossos roídos espalhados.',
     torreSul: 'Entulho e caixotes encostados, o teto meio caído.',
     ruina: 'Céu aberto, mato nascendo entre as pedras.',
-    rei: 'Peles numa cama grande, banheiras de azulejo e um braseiro aceso.',
+    rei: 'Peles numa cama grande, uma mesa redonda com cadeiras e um braseiro aceso.',
+    banheiro: 'Meia parede caída e, no meio do escombro, uma banheira de azulejo grande demais para o lugar.',
     corredor: 'Um corredor vazio.',
     terraco: 'O terraço e a encosta lá fora.',
   };
@@ -285,6 +340,11 @@ export function criarCastelo(app, config) {
   /** A casa clicada encosta na porta `nome` (de um lado ou do outro)? */
   const junto = (tile, nome) => (CASTELO.arestas[nome] ?? []).some(([a, b]) =>
     (tile.x === a.x && tile.y === a.y) || (tile.x === b.x && tile.y === b.y));
+
+  // AS CASAS DE FORA DA LONA: de cada aresta dela, o lado que NÃO está dentro da ruína. É por elas que se
+  // procura a entrada escondida, como o livro pede ("procurando por fora do castelo").
+  const naRuina = (p) => (CASTELO.celulas.ruina ?? []).some((c) => c.x === p.x && c.y === p.y);
+  const foraDaLona = (CASTELO.arestas.lona ?? []).flat().filter((p) => !naRuina(p));
   if (salvo.portaoAberto) abrir('portaoTraseiro');
   if (salvo.lonaAchada) abrir('lona');
   if (salvo.ursoSolto) abrir('portaUrso');
@@ -376,8 +436,8 @@ export function criarCastelo(app, config) {
     salvo.alarme = true;
     salvo.reiAvisado = true;
     return [
-      leva(grupos.torreSul, 2, J(9, 12), 'Pela porta sul do salão saem goblins aos berros!'),
-      leva(grupos.hobgoblins, 4, J(9, 8), 'E pela porta norte, em fila e em silêncio, vêm dois hobgoblins de escudo.'),
+      leva(grupos.torreSul, 2, CASTELO.pontos.entradaSul, 'Pela porta sul do salão saem goblins aos berros!'),
+      leva(grupos.hobgoblins, 4, CASTELO.pontos.entradaNorte, 'E pela porta norte, em fila e em silêncio, vêm dois hobgoblins de escudo.'),
     ];
   }
 
@@ -394,7 +454,7 @@ export function criarCastelo(app, config) {
     return [
       leva(grupos.banquete, a, onde, 'Do salão de banquete vêm goblins, de colher e faca na mão.'),
       leva(grupos.cozinha, b, onde, 'Atrás deles, aos gritos, o Yegg e o resto da cozinha.'),
-      leva(grupos.santuario, c, J(15, 5), 'Das cortinas do norte saem goblins de manto imundo.'),
+      leva(grupos.santuario, c, CASTELO.postos.santuario[0], 'Das cortinas do norte saem goblins de manto imundo.'),
     ];
   }
 
@@ -448,7 +508,7 @@ export function criarCastelo(app, config) {
 
   // --------------------------------------------------- o fio do salão ----
   // O FIO É UMA REGIÃO do mapa (`encounter.js`, `rules/regioes.js`): a passiva 20 que o nota a 3 m, o Procurar (CD 10),
-  // o Encontrar Armadilhas, o desabamento sobre as cinco casas (Destreza CD 10, 3d6, metade) — para herói e goblin, na
+  // o Encontrar Armadilhas, o desabamento sobre as casas do corredor (Destreza CD 10, 3d6, metade) — para herói e goblin, na
   // luta e explorando — são do motor. A cena lembra (`salvo.armadilha`), conta, dá o XP e acorda o castelo.
   const fio = () => enc.field.regioes?.find((r) => r.id === 'fio') ?? null;
   /** O grupo sabe do fio (o disfarce, o Procurar da porta, a passiva): a região fica descoberta. */
@@ -477,7 +537,7 @@ export function criarCastelo(app, config) {
     await painel(`O pé de ${c.name} engancha um fio de cobre perdido no entulho. Um estalo lá em cima, e meia parede de vigas e pedra vem abaixo (${atingidos.join(', ')}). O castelo inteiro ouve.`);
     await xpDoFio();
     // O barulho põe de pé os arqueiros, o banquete e o santuário.
-    const ondas = ondasDoBarulho(J(11, 12));
+    const ondas = ondasDoBarulho(CASTELO.pontos.centro);
     const contra = [grupos.postoNorte, grupos.postoSul].filter((g) => g && !g.vencido);
     if (contra.length || ondas.some(Boolean)) combate(contra, null, ondas);
     return true;
@@ -486,7 +546,7 @@ export function criarCastelo(app, config) {
   /** Na luta, o fio dispara para quem pisar — herói ou goblin. */
   async function armadilhaEmCombate(c, atingidos) {
     enc.say('acao', `${c.name} pisa no fio: o teto desaba diante da porta leste (${atingidos.join(', ')}).`);
-    if (!salvo.alarme) for (const l of ondasDoBarulho(J(11, 12))) if (l) { l.rodada += enc.round - 1; levas?.adicionar(l); }
+    if (!salvo.alarme) for (const l of ondasDoBarulho(CASTELO.pontos.centro)) if (l) { l.rodada += enc.round - 1; levas?.adicionar(l); }
     app.refresh();
   }
 
@@ -506,7 +566,9 @@ export function criarCastelo(app, config) {
     const vigias = ['postoNorte', 'postoSul', 'guarda'];
     const enganados = ['postoNorte', 'postoSul', 'torreSul', 'banquete', 'cozinha', 'santuario', 'hobgoblins', 'hobgoblins2'];
     for (const g of pendentes()) {
-      if (g.id === 'urso' || g.id === 'rei') continue;
+      // o urso está trancado, o rei tem cena própria, e o bando do Targor ainda está na estrada: ele só
+      // chega na saída (`oTargor`), e até lá não reage a ninguém pisar no terraço
+      if (g.id === 'urso' || g.id === 'rei' || g.id === 'targor') continue;
       if ((g.id === 'postoNorte' || g.id === 'postoSul') && !estado.terraco) continue;
       if (salvo.disfarce && enganados.includes(g.id)) continue;
       const dentroDaSala = herois().find((h) => naSala(h.pos, g.sala));
@@ -539,7 +601,7 @@ export function criarCastelo(app, config) {
       // está na cozinha larga a panela e chega depois.
       const atrasado = g.sala === 'banquete' && juntos.length > 1 ? juntos.find((x) => x !== g) : null;
       combate(juntos.filter((x) => x !== atrasado), surpresa,
-        atrasado ? [leva(atrasado, 2, J(16, 16), 'Da porta da cozinha chegam os outros, de colher e faca na mão.')] : []);
+        atrasado ? [leva(atrasado, 2, CASTELO.pontos.portaCozinha, 'Da porta da cozinha chegam os outros, de colher e faca na mão.')] : []);
       return;
     }
     // Os aposentos do rei.
@@ -573,7 +635,7 @@ export function criarCastelo(app, config) {
     salvo.reiAvisado = true;
     enc.combatants.splice(enc.combatants.indexOf(mensageiro), 1);
     enc.say('acao', `${mensageiro.name} vira as costas e corre pela porta do norte, gritando pelo rei.`);
-    mensageiro.pos = { ...mensageiro.pos, ...J(25, 9) };
+    mensageiro.pos = { ...mensageiro.pos, ...CASTELO.postos.rei[1] };
     levas?.adicionar({ rodada: enc.round + 2, fixa: true, units: [mensageiro], aviso: `${mensageiro.name} volta correndo, de machado na mão.` });
     enc.checkEnd();
     app.refresh();
@@ -586,10 +648,10 @@ export function criarCastelo(app, config) {
     const refem = salvo.reiAvisado && gundren && !gundren.dead;
     if (refem) {
       // Vyerith espera atrás da porta; Grol, de machado no pescoço do anão.
-      vyerith.pos = { ...vyerith.pos, ...casaPerto(J(26, 5)) };
-      grol.pos = { ...grol.pos, ...casaPerto(J(29, 8)) };
+      vyerith.pos = { ...vyerith.pos, ...casaPerto(CASTELO.postos.rei[2]) };
+      grol.pos = { ...grol.pos, ...casaPerto(CASTELO.postos.rei[0]) };
       const r = await narrar(root, { formato: 'painel', paginas: [{ texto: [
-        'Brasas num caldeirão de ferro, um colchão do tamanho de uma carroça, cabeças secas de bicho pregadas na pedra. O cheiro é de couro mal curtido. Junto da mesa, o rei Grol — um bugbear de pelo grisalho e costas tortas — apoia a lâmina do machado na nuca de um anão caído, de cara inchada.',
+        'O calor vem de um caldeirão de ferro cheio de brasa, e o cheiro vem de tudo o resto. Junto da mesa, o rei Grol não precisa levantar o machado: ele só o deixou descansar na nuca do anão caído, e espera que alguém entenda o que isso quer dizer.',
         '— Mais um passo — diz o rei Grol, sem pressa nenhuma — e eu termino o serviço. Vocês saem do meu castelo, e o anão continua respirando. Por enquanto.',
         'Grol vai cumprir a ameaça no segundo turno dele, a menos que alguém esteja colado no anão — ou que ele já esteja ferido demais para pensar em outra coisa.',
       ] }],
@@ -598,7 +660,7 @@ export function criarCastelo(app, config) {
         { rotulo: 'Atacar assim mesmo', valor: 'ataca', primaria: true },
       ] });
       if (r === 'recua') {
-        for (const h of herois()) if (naSala(h.pos, 'rei')) h.pos = { ...h.pos, ...casaPerto(J(21, 4)) };
+        for (const h of herois()) if (naSala(h.pos, 'rei')) h.pos = { ...h.pos, ...casaPerto(CASTELO.pontos.foraDoRei) };
         await painel('Vocês recuam devagar, de olho no machado. Grol ri, um riso que vira tosse.');
         app.refresh();
         return;
@@ -607,15 +669,15 @@ export function criarCastelo(app, config) {
       estado.refemTurnos = 0;
     } else {
       await asArmas([
-        'Antes mesmo da porta já se ouve a negociação. Um dos dois perde a paciência a cada frase; o outro não levanta a voz uma vez sequer, e é esse que assusta.',
-        'Lá dentro, couro de bicho forrando o chão e cabeças secas na parede. O rei Grol é um bugbear grisalho, de costas tortas; o lobo dele se levanta num canto. Do outro lado da mesa, uma elfa de pele escura e cabelo branco olha para vocês como quem já esperava visita. Encostado na parede, um anão desacordado.',
+        'A negociação já está na parte em que ninguém cede. Uma das vozes vai subindo de frase em frase, como quem bate na mesa para ter razão; a outra responde sempre no mesmo volume, e é por isso que a primeira está perdendo.',
+        'Quem mandou arrumar este quarto quis que parecesse o salão de um senhor, e não soube como: o que forra o chão foi arrancado de bichos e não curtido, o que enfeita a parede foi caçado e não comprado. O dono está de pé junto da mesa — velho, do tamanho de dois homens, com os ombros vencidos para a frente —, e o lobo dele se levanta sem pressa num canto. Do outro lado da mesa, uma elfa de pele escura e cabelo branco não se levanta: olha para vocês como quem contava com a interrupção. No chão, um anão que apanhou muito.',
       ]);
     }
     // O lobo estava no canto: chega na TERCEIRA rodada. Chegando na segunda,
     // o quarto media 82% de vitória no 3º nível — e o grupo chega aqui no 3º,
     // não no 4º, porque a campanha inteira paga 1.125 XP até esta porta.
     rosnado.correndo = true;
-    combate([g], null, [{ rodada: 3, units: rosnado.dead ? [] : [Object.assign(rosnado, { side: 'foes', pos: { ...rosnado.pos, ...J(29, 6) } })], aviso: 'Rosnado pula de trás da cama, de dentes à mostra.' }]);
+    combate([g], null, [{ rodada: 3, units: rosnado.dead ? [] : [Object.assign(rosnado, { side: 'foes', pos: { ...rosnado.pos, ...CASTELO.postos.rei[1] } })], aviso: 'Rosnado pula de trás da cama, de dentes à mostra.' }]);
   }
 
   // --------------------------------------------------- turnos da cena ----
@@ -783,6 +845,24 @@ export function criarCastelo(app, config) {
     // que o grupo some de um corredor ou tranca um bando numa sala. As
     // portas com dono (o portão de ferro, a do urso, a escorada) não entram
     // aqui: elas têm o teste delas.
+    // EXAMINAR A MOBÍLIA. Toda peça de móvel do castelo — e o chão que conta história: a palha, os ossos, a
+    // mancha — ganha uma frase (`castelo-exames.js`). A mobília só existe onde a Forgotten Adventures a
+    // desenha (o gerador a põe na diferença entre a versão mobiliada e a sem mobília), então examinar aqui é
+    // sempre examinar uma coisa que está na tela. As seis superfícies que já tinham teste próprio — os
+    // caixotes da despensa, o armeiro, o braseiro frio, o altar, a arca do urso e a cama do rei — ganham o
+    // Examinar AO LADO do que já faziam, e não no lugar.
+    // O texto é da SUPERFÍCIE, mas duas salas podem ter a mesma peça e não a mesma coisa: a `arca` do
+    // quarto do rei é uma arca no chão, e a da torre do urso é o toco do andar que caiu, com o baú lá em
+    // cima — "tudo que restou do segundo andar da torre é uma borda quebrada, sobre a qual fica um velho
+    // baú de madeira. O baú é difícil de ser visto do chão". Por isso o Examinar aceita um texto por sala.
+    const exame = EXAMES_DO_CASTELO[`${sup}@${salaDe(tile)}`] ?? EXAMES_DO_CASTELO[sup];
+    if (exame) {
+      ops.push({
+        rotulo: 'Examinar', icone: 'acao-procurar', motivo: longe(5),
+        fazer: () => painel(exame),
+      });
+    }
+
     for (const { a: ca, b: cb, cod } of portasDaCasa(tile)) {
       const fechada = cod === ARESTA.porta;
       ops.push({
@@ -813,6 +893,33 @@ export function criarCastelo(app, config) {
     for (const { b: outro } of fechadasDaCasa(tile)) {
       const sala = salaDe(outro);
       const vizinhos = () => moradoresEm(sala);
+      // DUAS PORTAS EM QUE O LIVRO DIZ O QUE SE OUVE, e a conta genérica de quantos estão do outro lado
+      // devolvia outra coisa:
+      //
+      //  - O PORTÃO TRASEIRO (área 10). Do lado de fora dele a sala é o corredor, que não tem morador
+      //    nenhum, então escutar ali respondia "Silêncio" — e o livro diz o contrário: "qualquer personagem
+      //    que parar e escutar próximo às aberturas para arqueiro escuta, da ÁREA 7, um ocasional barulho de
+      //    louça e goblins irritados discutindo sobre se os pratos precisam ser limpos". O som que chega ali
+      //    é o do banquete, que fica logo adiante, e não o do corredor vazio.
+      //  - A PORTA DO QUARTO DO REI (área 14). A conta dava "vozes baixas, duas ou três"; o livro dá a cena:
+      //    "uma alta e grossa voz exigindo pagamento por algo e uma resposta calma e suave". É a negociação
+      //    do Grol com a Vyerith pelo mapa do Gundren, e é ela que o grupo precisa ouvir antes de entrar.
+      const doLivro = () => {
+        if (junto(tile, 'portaoTraseiro')) {
+          const naCozinha = moradoresEm('banquete').length;
+          return naCozinha
+            ? 'Louça batendo, longe, e vozes de goblin irritadas: discutem, sem pressa nenhuma, de quem é a vez de lavar os pratos.'
+            : 'Um cheiro de gordura fria vindo de dentro, e mais nada. Nenhuma louça, nenhuma voz.';
+        }
+        if (sala === 'rei' && !grupos.rei.vencido && !grupos.rei.ativo) {
+          // `makeMonster` numera o id ("reiGrol-1"), então a comparação é por prefixo
+          const temGrol = moradoresEm('rei').some((f) => f.id?.startsWith('reiGrol'));
+          if (temGrol) {
+            return 'Duas vozes, e nenhuma delas se entende com a outra. Uma é grossa e alta, e exige pagamento por alguma coisa; a outra responde baixo, sem pressa, sem levantar nunca — e é a que está ganhando.';
+          }
+        }
+        return null;
+      };
       ops.push({
         rotulo: 'Escutar à porta', icone: 'acao-procurar', detalhe: 'Percepção, CD 10',
         motivo: longe(5) ?? buscas.ja(c, 'escuta', tile),
@@ -824,6 +931,8 @@ export function criarCastelo(app, config) {
             await painel('Madeira grossa e o próprio sangue batendo no ouvido. Não dá para dizer o que há do outro lado.', { teste: t });
             return;
           }
+          const livro = doLivro();
+          if (livro) { await painel(livro, { teste: t }); return; }
           await painel(quem.length === 0
             ? 'Silêncio. Nada se mexe do outro lado — nem passo, nem respiração.'
             : quem.length === 1
@@ -889,9 +998,15 @@ export function criarCastelo(app, config) {
           salvo.despensa = true;
           feitos.espadaDoSildar = true;
           guardar(c, 'espadaDeSildar', 1);
+          // O LIVRO LISTA TRÊS COISAS, e duas faltavam: "entre os suprimentos, vocês veem uma COTA DE MALHA
+          // ensanguentada, uma BESTA PESADA e uma espada longa sem bainha com o emblema de Neverwinter". A
+          // cota e a espada são do Sildar ("Sildar ficará agradecido se ao menos sua espada longa for
+          // devolvida a ele"); a besta é despojo de outra caravana, e fica para quem achou.
+          guardar(c, 'cotaDeMalha', 1);
+          guardar(c, 'bestaPesada', 1);
           guardar(c, 'conhaqueAnao', 1);
           await painel([
-            'Sacos rasgados e um cheiro azedo de comida que passou do ponto. No canto mais fundo, jogado como quem se livra de peso, está o que tomaram de um soldado — e quem tomou não soube o que tinha nas mãos: o aço ainda está bom.',
+            'Sacos rasgados e um cheiro azedo de comida que passou do ponto. No canto mais fundo, jogado como quem se livra de peso, está o que tomaram de um soldado — e quem tomou não soube o que tinha nas mãos: o aço ainda está bom. Uma cota de malha com sangue seco nos elos, uma besta pesada sem virote nenhum, e uma espada longa fora da bainha.',
             `${c.name} reconhece o brasão de Neverwinter no punho da espada. É do Sildar, e ele vai querer de volta. Junto do equipamento, um barrilzinho que não combina com despensa de goblin: conhaque anão, do bom.`,
           ]);
         } });
@@ -930,7 +1045,7 @@ export function criarCastelo(app, config) {
         fazer: async () => {
           salvo.altar = true;
           guardar(c, 'caliceDeOuro', 1); guardar(c, 'facaDeRitual', 1); guardar(c, 'incensario', 1);
-          await painel(`A pedra do altar é antiga e boa, e ninguém aqui a entalhou: por baixo do pano imundo repetem-se as mesmas figuras do salão. Em cima, o ouro que os goblins não fundiram nem venderam — eles acham que serve para alguma coisa. ${c.name} guarda.`);
+          await painel(`Levantado o pano, a pedra embaixo dele não é trabalho de goblin: é lavrada com cuidado, e as figuras que correm pela lateral são as mesmas que olham lá de cima na sala ao lado — quem quer que tenha erguido este lugar o fez inteiro, e os moradores de hoje só puseram um trapo por cima. O ouro continua onde estava, porque para eles não é dinheiro, é ferramenta de rezar. ${c.name} guarda.`);
         } });
     }
     // O portão traseiro.
@@ -955,14 +1070,21 @@ export function criarCastelo(app, config) {
           // 3º nível, 1% no 4º. Agora são as mesmas onze do fio, que medem 88%.
           if (!salvo.alarme && !salvo.disfarce) {
             await asArmas('Do outro lado do portão, pratos param de bater e bancos arrastam no chão.');
-            const [primeira, ...resto] = ondasDoBarulho(J(18, 16));
+            const [primeira, ...resto] = ondasDoBarulho(CASTELO.pontos.barulhoSul);
             void primeira;
             combate([grupos.banquete].filter((g) => !g.vencido), null, resto);
           }
         } });
     }
-    // A lona da torre em ruínas, vista de fora.
-    if (!salvo.lonaAchada && junto(tile, 'lona') && dentro(tile, { x0: 0, y0: 0, x1: 99, y1: CASTELO.lona.y - 1 })) {
+    // A LONA DA TORRE EM RUÍNAS, VISTA DE FORA — e "de fora" é a casa de fora da aresta, não uma faixa de y.
+    //
+    // A guarda era `dentro(tile, { y1: CASTELO.lona.y - 1 })`, escrita para uma planta em que a lona ficava ao
+    // sul do ponto. Depois da troca de planta, as casas da aresta tinham y 8 e 9 e o ponto era (19,6): a conta
+    // pedia y <= 5 e a opção NUNCA aparecia, em casa nenhuma, para herói nenhum. Agora a pergunta é a certa —
+    // a casa clicada é um dos lados de fora da lona? —, e vale para as duas portas norte da ruína.
+    // ... e quem procura tem de estar DO LADO DE FORA também: quem já está dentro da ruína entrou pela porta
+    // intacta de leste e não tem entrada escondida para achar.
+    if (!salvo.lonaAchada && foraDaLona.some((p) => p.x === tile.x && p.y === tile.y) && !naRuina(c.pos)) {
       ops.push({ rotulo: 'Procurar uma entrada', icone: 'acao-procurar', detalhe: 'Percepção, CD 10',
         motivo: longe(10) ?? buscas.ja(c, 'entradaLona'),
         fazer: async () => {
@@ -973,7 +1095,17 @@ export function criarCastelo(app, config) {
           app.refresh();
         } });
     }
-    // A torre do urso-coruja.
+    // A PORTA DA TORRE DO URSO-CORUJA: UMA PORTA, DUAS MANEIRAS DE PASSAR.
+    //
+    // A tranca e "a porta escorada" eram duas portas diferentes no mapa, e isso estava errado nas duas pontas.
+    // O livro, área 12: "o muro ao sul está desmoronado, mas uma porta de madeira BLOQUEADA naquela direção
+    // ainda está firme"; área 13, do outro lado da MESMA porta: "a porta para esta sala foi mantida fechada
+    // com uma BARRA GROSSA de madeira". Uma porta, uma barra. O teste de Força CD 15 estava na porta oeste do
+    // alojamento, que o livro não bloqueia, e a porta que ele bloqueia não tinha teste nenhum.
+    //
+    // Então levantar a tranca e arrombar a porta são as duas saídas da mesma aresta, com a mesma consequência:
+    // "quando a barra é levantada, a criatura na sala acorda e solta um terrível rugido", e arrombar com um
+    // estrondo não acorda menos. Quem alimentou o bicho antes é que ganha a saída pacífica.
     if (!salvo.ursoSolto && junto(tile, 'portaUrso') && grupos.urso && !grupos.urso.vencido) {
       const temCarne = herois().some((h) => garantirInventario(h).bag.some((i) => i.id === 'racoes' && i.qtd > 0));
       if (!salvo.ursoCalmo) {
@@ -985,31 +1117,36 @@ export function criarCastelo(app, config) {
             await painel('Do outro lado da porta, um rugido que vira um ronco satisfeito, e barulho de osso quebrando.');
           } });
       }
+      /** A porta abriu — de um jeito ou de outro. O bicho saciado vai embora; o bicho acordado ataca. */
+      const porta_abriu = async (comoAbriu) => {
+        salvo.ursoSolto = true;
+        salvo.escorada = true;
+        abrir('portaUrso');
+        abrir('portaEscorada');
+        if (salvo.ursoCalmo) {
+          // Saciado, com o caminho livre, ele foge do castelo.
+          grupos.urso.vencido = true;
+          salvo.vencidos.push('urso');
+          await painel(`${comoAbriu} O urso-coruja, de bico sujo, olha para vocês, depois para a liberdade — e passa por todos sem se virar, arrastando-se para fora do castelo.`);
+          await darXpDoLivro(700, 'O urso-coruja libertado');
+        } else {
+          await asArmas(`${comoAbriu} Lá dentro, no escuro, algo enorme acorda — e o rugido sai antes dele.`);
+          combate([grupos.urso], null);
+        }
+        app.refresh();
+      };
       ops.push({ rotulo: 'Levantar a tranca', icone: 'acao-empurrar', motivo: longe(5),
-        fazer: async () => {
-          salvo.ursoSolto = true;
-          abrir('portaUrso');
-          if (salvo.ursoCalmo) {
-            // Saciado, com o caminho livre, ele foge do castelo.
-            grupos.urso.vencido = true;
-            salvo.vencidos.push('urso');
-            await painel('A porta abre. O urso-coruja, de bico sujo, olha para vocês, depois para a liberdade — e passa por todos sem se virar, arrastando-se para fora do castelo.');
-            await darXpDoLivro(700, 'O urso-coruja libertado');
-          } else {
-            await asArmas('A tranca cai. Lá dentro, no escuro, algo enorme acorda — e o rugido sai antes dele.');
-            combate([grupos.urso], null);
-          }
-          app.refresh();
-        } });
-    }
-    // A porta escorada entre a guarda e a torre do urso.
-    if (!salvo.escorada && junto(tile, 'portaEscorada')) {
-      ops.push({ rotulo: 'Derrubar a porta escorada', icone: 'acao-empurrar', detalhe: 'Força, CD 15', motivo: longe(5),
+        fazer: () => porta_abriu('A tranca cai.') });
+      ops.push({ rotulo: 'Arrombar a porta', icone: 'acao-empurrar', detalhe: 'Força, CD 15', motivo: longe(5),
         fazer: async () => {
           const t = teste(c, 'atletismo', 15);
-          if (t.passou) { salvo.escorada = true; abrir('portaEscorada'); }
-          await painel(t.passou ? 'O que escorava a porta do outro lado cede, e ela cai para dentro com um estrondo.' : 'A porta mal se mexe: tem coisa pesada do outro lado.', { teste: t });
-          app.refresh();
+          if (!t.passou) {
+            await painel('A porta mal se mexe: a barra do outro lado é mais grossa que o braço.', { teste: t });
+            app.refresh();
+            return;
+          }
+          await painel('A barra do outro lado racha e a porta cai para dentro com um estrondo.', { teste: t });
+          await porta_abriu('');
         } });
     }
     if (sup === 'arca' && em('torreUrso') && !salvo.bauUrso && (grupos.urso.vencido)) {
@@ -1034,7 +1171,7 @@ export function criarCastelo(app, config) {
         fazer: async () => {
           salvo.cama = true;
           guardar(c, 'moedaDePrata', 220); guardar(c, 'moedaDeOuro', 80); guardar(c, 'pocaoDeCura', 3);
-          const texto = ['O colchão do rei tem um rasgo costurado de qualquer jeito. Lá dentro, uma bolsa de couro pesada: prata (220 peças), electro (o bastante para valer 80 de ouro) e três frascos de poção de cura.'];
+          const texto = ['O rasgo no colchão foi fechado às pressas, com linha grossa e sem jeito nenhum — é o esconderijo de quem não confia em ninguém da própria casa. Dentro, o peso de uma bolsa de couro: prata contada (220 peças), electro misturado (uns 80 de ouro, se alguém se der ao trabalho) e três frascos que não são de goblin, ainda lacrados.'];
           if (salvo.mapa !== 'levado') {
             salvo.mapa = 'achado';
             guardar(c, 'mapaDeGundren', 1);
@@ -1124,7 +1261,80 @@ export function criarCastelo(app, config) {
     };
   }
 
+  /**
+   * O BANDO DE GUERRA QUE VOLTA (opcional no livro). Targor Espada Sangrenta quer a tribo, não vingança:
+   * "personagens espertos podem tentar usar a razão com Targor se fazendo pensar como um SUCESSOR de Grol
+   * ao invés de seu VINGADOR... Targor já faz um tempo que deseja liderar a tribo Dentefino". Persuasão
+   * CD 15, e os 500 XP saem iguais tendo-se lutado ou negociado.
+   *
+   * Os sacos: "1d4 deles carregam sacos sangrentos, cada um contendo uma cabeça decepada de um elfo" —
+   * troféu da vitória recente sobre um grupo de caça élfico. É o que diz ao grupo com quem está falando.
+   */
+  function arvoreTargor() {
+    return {
+      inicio: 'parado',
+      nos: {
+        parado: {
+          narra: 'O hobgoblin da frente levanta a mão, e os outros param atrás dele sem precisar de ordem. Ele olha o castelo, olha vocês, olha o sangue em vocês — e faz a conta que lhe interessa.',
+          fala: [
+            '— O velho morreu.',
+            'Não é pergunta. Ele espera, e o machado continua no ombro.',
+          ],
+          opcoes: [
+            { texto: 'Morreu. E a tribo ficou sem ninguém no alto.', teste: { pericia: 'persuasao', cd: 15 },
+              sucesso: 'trono', falha: 'nao' },
+            { texto: 'E você é o próximo, se não sair da frente.', fim: 'luta' },
+            { texto: 'Não dizer nada.', fim: 'luta' },
+          ],
+        },
+        trono: {
+          fala: [
+            '— Sem ninguém no alto — repete ele, devagar, como quem experimenta a frase. Atrás, um dos sacos pinga no chão do terraço.',
+            '— Então vocês não mataram o meu rei. Mataram o rei de outro.',
+            'Ele dá um passo para o lado, e o bando abre junto. Não é cortesia; é alguém tirando vocês do caminho entre ele e o castelo.',
+            '— Andem. Antes que eu precise de outra história para contar lá dentro.',
+          ],
+          opcoes: [{ texto: 'Passar.', fim: 'acordo' }],
+        },
+        nao: {
+          fala: [
+            '— O velho morreu — repete Targor —, e vocês estão de pé na porta dele com o machado dele na mão.',
+            'Ele desencosta o machado do ombro. Os lobos já estão abertos pelos dois lados.',
+          ],
+          opcoes: [{ texto: '…', fim: 'luta' }],
+        },
+      },
+    };
+  }
+
+  /** O bando chega quando o grupo vai embora, e só se o rei já caiu. Devolve true se a cena continua. */
+  async function oTargor() {
+    if (salvo.targor || !grupos.rei?.vencido || grupos.targor?.vencido) return false;
+    const vivos = (grupos.targor?.membros ?? []).filter((f) => !f.dead);
+    if (!vivos.length) return false;
+    // O BANDO SÓ PISA NO TABULEIRO SE HOUVER LUTA. A conversa acontece na porta, e quem a põe no tabuleiro é
+    // `combate()`, que já chama `trazer`. Assim o acordo não precisa desfazer nada: ninguém chegou a entrar.
+    await painel('Na trilha, subindo o patamar, vêm seis vultos em fila: quatro hobgoblins de cota e escudo, dois lobos soltos na frente. O da frente carrega um saco escuro na mão esquerda, e o saco pinga. Eles vêm de uma guerra, não para uma — e param quando veem vocês na porta do castelo.');
+    const fim = await app.conversarCom(vivos[0], arvoreTargor());
+    if (fim === 'acordo') {
+      salvo.targor = 'acordo';
+      grupos.targor.vencido = true;
+      if (!salvo.vencidos.includes('targor')) salvo.vencidos.push('targor');
+      // o livro dá os mesmos 500 XP por derrotar OU por negociar
+      await darXpDoLivro(500, 'O acordo com Targor Espada Sangrenta');
+      app.refresh();
+      return false;                 // o grupo sai: a conversa já resolveu
+    }
+    salvo.targor = 'lutou';
+    await asArmas('Targor larga o saco. A cabeça que rola dele para fora era de um elfo, e faz dois dias que não é mais ninguém.');
+    combate([grupos.targor], null);
+    return true;                    // a cena continua: há luta no terraço
+  }
+
   async function sair() {
+    // O BANDO QUE VOLTA chega "logo quando os personagens estiverem se preparando para sair" — e só se o
+    // rei já caiu, que é o que dá sentido à conversa sobre quem sucede Grol.
+    if (await oTargor()) return;
     // Acordado, o Gundren não sai sem o mapa enquanto ele ainda estiver aqui.
     if (gundren && !gundren.dead && salvo.gundren === 'acordado' && !salvo.mapa) {
       // O livro é explícito: ele NÃO sabe onde o rei escondeu o mapa.

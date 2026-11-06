@@ -215,17 +215,18 @@ export function mapaDo(variante) {
       // As casas de cada sala: o tabuleiro apaga a parede da sala em que o
       // grupo entrou (`board.desenharParedes`).
       salas: CASTELO.celulas,
-      decor: CASTELO.decor,
       folhas: CASTELO.folhas,
-      grupo: [[0, 9], [0, 10], [1, 9], [0, 11]].map(([x, y]) => ({ x: x + CASTELO.desloc.x, y: y + CASTELO.desloc.y })),
-      olhar: { dx: 1, dy: 0 },
-      // SEM mapa pintado, e isto foi MEDIDO. O battlemap da FA (Cragmaw Castle 31x22) é OUTRA planta do mesmo
-      // lugar: posto na nossa grade, a nossa parede corre pelo mato e a nossa rocha cai em cima do salão pintado
-      // (prova em `prova_fundo.py`). A nossa planta vem do mapa do livro; a deles foi redesenhada. Não há
-      // enquadramento que conserte isso — ou se redesenha a planta por cima do desenho, ou não se usa.
+      // SOBRE O BATTLEMAP DA FA (Cragmaw Castle 31x22), com a planta REDESENHADA por cima dele
+      // (`src/dev/mapa-castelo-fa.py`). A planta antiga, de 39x28, era decalque do mapa do livro, e a prova
+      // visual mostrou a nossa parede correndo por fora da parede pintada: mesmo castelo, planta diferente.
+      // Então foi o caminho do Cume — adotar a planta deles e medir os pontos nela —, e não o da Mansão, que
+      // era a mesma planta e só trocou a imagem. O grupo, as salas e o fio saem todos do gerador.
+      //
+      // A arte NÃO entra no repositório nem na publicação (licença da FA): sem o arquivo em `public/mapas/fa/`,
+      // a cena abre com o ladrilho de laje.
       cena: 'castelo',
       // O FIO DO SALÃO, como REGIÃO (`rules/regioes.js`) — era roteiro do capítulo. Um fio de cobre no entulho diante
-      // da porta leste, amarrado a pinos no teto: quem pisa em qualquer das cinco casas derruba meia parede sobre
+      // da porta leste, amarrado a pinos no teto: quem pisa em qualquer casa do corredor derruba meia parede sobre
       // todas elas (Destreza CD 10, 3d6 de concussão, metade em quem passa). O Procurar acha com CD 10; de passagem,
       // só a Percepção passiva 20, a até 3 m. O capítulo conta, dá o XP e acorda o castelo (`capitulo4-castelo.js`).
       regioes: [{
@@ -260,9 +261,24 @@ export function mapaDo(variante) {
       // Como no castelo: as casas de cada cômodo (o tabuleiro dissolve a parede
       // do cômodo em que o grupo entrou) e a decoração pendurada nas paredes.
       salas: ARVORE_TROVAO.celulas,
-      decor: ARVORE_TROVAO.decor,
       pisos: ARVORE_TROVAO.pisos,
       folhas: ARVORE_TROVAO.folhas,
+      // A BARRICADA DO CULTO (área 13), como REGIÃO. No livro a casa dos cultistas tem porta, trancada por
+      // dentro, e o grupo a força com um teste de Força. O battlemap da Forgotten Adventures não dá porta
+      // nenhuma a esta construção: ela é uma ruína de alicerce quebrado, 16 arestas abertas e nem uma folha.
+      // Medido pelo desenho, aresta a aresta, procurando a pedra do alicerce: não dá para separar o que é
+      // muro do que é mato por cima dele (as paredes que existem vão de 4% a 35% de pedra), então não se
+      // inventa muro. O que o livro quer — "eles se fecharam, e entrar custa" — vira o que a ruína comporta:
+      // Favric entulhou os vãos com o móvel que sobrou, e quem tenta entrar é empurrado de volta até alguém
+      // arrastar aquilo (Atletismo CD 20, no lugar do teste de Força do livro).
+      regioes: [{
+        id: 'barricadaCulto', nome: 'A barricada dos cultistas', quem: 'grupo', quando: ['entrar'],
+        casas: ARVORE_TROVAO.celulas.casa9.map((c) => `${c.x},${c.y}`),
+        efeitos: [
+          { tipo: 'texto', texto: 'Móveis, vigas e um carroção de mão entulham o vão: não se passa por cima disso andando.' },
+          { tipo: 'voltar' },
+        ],
+      }],
       fachadaFechada: true,
       veuDaEscuridao: 1,
       avisosDeVista: true,

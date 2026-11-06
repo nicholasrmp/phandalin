@@ -71,6 +71,13 @@ def tipoDaParede(w):
     if passo:
         if visao == 0:
             return 'W' if som else 'I'
+        # A SETEIRA, A FRESTA, A AMEIA QUEBRADA. O Foundry marca `sight: LIMITED` na parede por onde se VÊ e
+        # não se passa, e isto virava parede cheia — medido no Castelo Dentefino: 51 das 428 paredes da cena
+        # da Forgotten Adventures são assim, e com elas o castelo inteiro ficava cego. O nosso tipo para isso
+        # é a SETEIRA (`J`): barra o passo, deixa ver e deixa a luz passar. É o que o capítulo já narrava
+        # ("atrás das seteiras, risadinhas") e o mapa não cumpria.
+        if visao == LIMITADA:
+            return 'J'
         return '#'
     if visao == 0:
         return None
@@ -131,14 +138,28 @@ TIPO_DA_ANIMACAO = {
 }
 
 
+FOGO_DE_VERDADE = ('torch', 'flame', 'fire')
+
+
 def tipoDaLuz(cfg):
     anim = (cfg.get('animation') or {}).get('type')
     claro = cfg.get('bright', 0)
     if anim in TIPO_DA_ANIMACAO and TIPO_DA_ANIMACAO[anim]:
         return TIPO_DA_ANIMACAO[anim]
-    if anim in ('torch', 'flame', 'fire'):
+    if anim in FOGO_DE_VERDADE:
         return 'fogueira' if claro >= 15 else 'tocha'
     return 'tocha' if claro >= 10 else 'vela'
+
+
+def ehChama(cfg):
+    """A luz e FOGO, que se apaga e se acende (`game/fogo.js`)?
+
+    So quando o Foundry disse que e: as animacoes de chama. O tipo que `tipoDaLuz` devolve por brilho quando a
+    animacao e desconhecida e um chute util para o DESENHO (uma tocha e uma vela parecem a coisa certa), mas
+    nao para a REGRA: a fumaca venenosa do dragao de Arvore Trovao caia em 'vela' e ganhava um botao de
+    "Apagar a vela". Quem nao e chama sai marcado `semChama` e nao tem botao.
+    """
+    return ((cfg.get('animation') or {}).get('type')) in FOGO_DE_VERDADE
 
 
 # OS MARCADORES que a FA deixa no mapa: um `.svg` pequeno, que é a anotação dela de "tem isto por aqui".
@@ -233,11 +254,14 @@ def main():
             porTipo[tipo].append((a0, a1))
     linhas = []
     tipos = []
-    for tipo in ['#', '+', 'E', 'W', 'I', 'T']:
+    # A LISTA TEM DE TER TODO TIPO QUE `tipoDaParede` SABE DEVOLVER. Faltava a seteira (`J`), e por isso as
+    # 51 paredes de visão limitada do Castelo não viravam traço nenhum: sumiam do mapa em vez de virar fresta.
+    for tipo in ['#', '+', 'E', 'W', 'I', 'T', 'J']:
         for linha in correntes(porTipo.get(tipo, [])):
             linhas.append(linha)
             tipos.append(tipo)
-    nomes = {'#': 'parede', '+': 'porta', 'E': 'etérea', 'W': 'janela', 'I': 'invisível', 'T': 'moita'}
+    nomes = {'#': 'parede', '+': 'porta', 'E': 'etérea', 'W': 'janela', 'I': 'invisível', 'T': 'moita',
+             'J': 'seteira'}
     contas = ', '.join(f'{sum(1 for t in tipos if t == k)} {nomes[k]}' for k in nomes if k in tipos)
     print(f'  paredes: {len(paredes)} na cena, {len(paredes) - nada} viraram {len(linhas)} traço(s) ({contas}); '
           f'{nada} não barram nada e ficaram de fora', file=rel)
@@ -264,6 +288,8 @@ def main():
         escuro = ((cfg.get('darkness') or {}).get('min') or 0)
         luz = {'x': int(cx), 'y': int(cy), 'claro': round(cfg.get('bright', 0)),
                'penumbra': round(cfg.get('dim', 0) - cfg.get('bright', 0)), 'tipo': tipoDaLuz(cfg)}
+        if not ehChama(cfg):
+            luz['semChama'] = True           # ilumina e nao se apaga: ver `ehChama`
         if cfg.get('color'):
             luz['cor'] = cfg['color']
         if angulo and angulo < 360:

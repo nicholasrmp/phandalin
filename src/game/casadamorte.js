@@ -166,6 +166,30 @@ const grupoPadrao = (pontos) => pontos.map(([x, y]) => ({ x, y }));
 /** Casas em quadrados do livro passam a casas do mapa. */
 const grupoDoLivro = (pontos) => pontos.map(([x, y]) => casa(x, y));
 
+// A PLANTA PINTADA POR BAIXO AINDA NÃO ENTROU, e o que se mediu em 2026-11-05 fica aqui para quem tentar de novo.
+//
+// A arte existe (a planta da Morvold Press/Jeff Todd, um arquivo por andar, convertida para
+// `public/mapas/casa-da-morte/`, fora do repositório como a da Forgotten Adventures). O que falta é o
+// ENQUADRAMENTO, e as duas ferramentas automáticas NÃO servem aqui:
+//
+//   - `encaixar-fa.py` deu 0,864 a 0,926 ("a mesma planta") nos quatro andares, mas a nota dele vem de um teste
+//     de CLARIDADE que separa chão de parede — e nestas plantas o chão é madeira escura e a parede é da mesma
+//     faixa. `alinhar-mapa-pintado.py` já avisa disso no próprio cabeçalho;
+//   - `prova-fundo.py` e `conferir-encaixe.py` também não julgam: com `fachadaFechada`, a casa inteira conta
+//     como bloqueada do lado de fora, então a figura sai vermelha por toda parte e a conta dá `nan`.
+//
+// O que decidiu foi um MARCO: pondo um herói na casa da escadaria (`ESCADARIA`, mapa 5,5..6,7) com a moldura que
+// o `encaixar-fa.py` propôs, ele aparece no meio do salão, e a escadaria pintada está a uns 2,7 casas a leste.
+// Está errado, e por isso a moldura não entrou — mapa torto no jogo é pior que mapa sem pintura.
+//
+// O caminho é o editor: `/editor.html`, ferramenta 8, que põe a imagem por baixo e deixa arrastar até a parede
+// desenhada cair na nossa. Vale para os quatro andares e para as duas masmorras (que, além do resto, estão
+// giradas 90° — ver a decisão da bússola).
+//
+// QUANDO ENTRAR, o tabuleiro PARA sozinho de desenhar o sprite isométrico dos móveis (`vista-topo.js
+// pintarMoveis`, modo `soMarcados`): a mobília passa a ser a que o desenho já tem. As anotações `prop` ficam no
+// mapa de qualquer jeito, porque são elas que barram o passo, dão cobertura e levam o nome que o menu usa.
+
 export const MAPA_CASA_DA_MORTE_1 = {
   terreno: MOB_1.terreno,
   altura: null,

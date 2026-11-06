@@ -98,6 +98,11 @@ export function restaurarForca(c) {
 
 export function recuperarNoCurto(c) {
   restaurarForca(c);
+  // O CONHAQUE ANÃO do Castelo (área 5): o livro envenena quem toma dois copos "em menos de 1 hora", e o
+  // descanso curto é exatamente uma hora. Então ele é o relógio: passou a hora, some a marca e passa a
+  // ressaca.
+  if (c.ressacaDeConhaque) { removeCondition(c, 'envenenado'); delete c.ressacaDeConhaque; }
+  delete c.bebeuConhaque;
   for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
   delete c.furiaDestrutivaPronta;
   delete c.surtoMaximoAte;
@@ -258,6 +263,9 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // O mal da água parada (`rules/mantimentos.js`) passa dormindo. Regra da
   // casa: o livro não dá duração para água ruim.
   if (c.maldaAgua) { removeCondition(c, 'envenenado'); c.maldaAgua = false; }
+  // o conhaque anão também passa: oito horas são mais que a hora do livro
+  if (c.ressacaDeConhaque) { removeCondition(c, 'envenenado'); delete c.ressacaDeConhaque; }
+  delete c.bebeuConhaque;
   // O que os mortos-vivos drenaram volta: o PV máximo e a Força (a Força já voltou no descanso curto).
   if (c.maxHpPerdido) { c.maxHp += c.maxHpPerdido; delete c.maxHpPerdido; }
   restaurarForca(c);

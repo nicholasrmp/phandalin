@@ -1,3 +1,10 @@
+# APOSENTADO em 2026-11-05. Quem gera `src/game/castelo.js` agora e
+# `src/dev/mapa-castelo-fa.py`, sobre o battlemap da Forgotten Adventures
+# (31x22). Esta planta aqui tem 39x28 e e decalque do mapa do livro; a prova
+# visual (`prova-fundo.py`) mostrou a nossa parede correndo POR FORA da parede
+# pintada, entao e o mesmo castelo em planta diferente. Rodar este arquivo
+# SOBRESCREVE o mapa novo -- so rode se for para voltar atras de proposito.
+#
 # Gera `src/game/castelo.js`: o terreno, a altura e a luz do Castelo
 # Dentefino (Parte 3 da aventura, areas 1-14).
 #

@@ -49,30 +49,58 @@ async function castelo({ campanha = {}, seed = 11 } = {}) {
   return { app, enc, cena, field, party, salvo: () => app.campanha.castelo, fio: () => field.regioes.find((r) => r.id === 'fio') };
 }
 const poe = (h, x, y) => { h.pos = { x, y }; };
-/** Tira o grupo do caminho: só quem o teste põe fica perto do fio. */
-const longe = (S) => S.party.forEach((h, i) => poe(h, 2 + i, 18));
-const PELO_FIO = [{ x: 12, y: 12 }, { x: 13, y: 12 }, { x: 14, y: 12 }, { x: 15, y: 12 }, { x: 16, y: 12 }];
 
-await teste('o fio é REGIÃO do mapa: as cinco casas, escondido (Procurar 10, passiva 20 a 3 m)', async () => {
+// O FIO SAI DO MAPA, NÃO DA MÃO. Estas casas eram cinco, escritas à mão, da planta antiga do Castelo. Desde
+// que o Castelo passou a rodar sobre o battlemap da Forgotten Adventures, o fio mora onde a cena DELES marca
+// a armadilha (o ladrilho `trap`, em 9,10) — e é também onde o livro o põe: o corredor em ruína diante da
+// porta leste, com o teto rachado. São seis casas, num bloco de 3 x 2. Então o teste mede, e assim ele
+// continua valendo se a planta mudar de novo.
+const { CASTELO } = await import(P + 'game/castelo.js');
+const FIO = CASTELO.armadilha.map((c) => ({ ...c }));
+const NO_FIO = new Set(FIO.map((c) => `${c.x},${c.y}`));
+
+/** A entrada do fio e a travessia reta a partir dela, medidas no campo. */
+function travessia() {
+  const f = montarCampo(mapaDo('castelo'));
+  for (const c of FIO) {
+    for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+      const de = { x: c.x - dx, y: c.y - dy };
+      if (NO_FIO.has(`${de.x},${de.y}`) || f.blocksMove(de.x, de.y) || !f.passa(de.x, de.y, c.x, c.y)) continue;
+      const caminho = [de];
+      for (let q = { ...c }; NO_FIO.has(`${q.x},${q.y}`); q = { x: q.x + dx, y: q.y + dy }) caminho.push({ ...q });
+      if (caminho.length >= 4) return caminho;        // a de fora mais três de fio: dá para parar no meio
+    }
+  }
+  throw new Error('não há entrada reta no fio: o teste não sabe por onde atravessá-lo');
+}
+const PELO_FIO = travessia();
+const PRIMEIRA = PELO_FIO[1];                          // a primeira casa de fio do caminho
+const OUTRA = FIO.find((c) => !PELO_FIO.some((q) => q.x === c.x && q.y === c.y));
+/** Tira o grupo do caminho: só quem o teste põe fica perto do fio — as casas em que a cena faz o grupo nascer. */
+const INICIO = mapaDo('castelo').grupo;
+const longe = (S) => S.party.forEach((h, i) => poe(h, INICIO[i % INICIO.length].x, INICIO[i % INICIO.length].y));
+
+await teste('o fio é REGIÃO do mapa: as casas que o battlemap marca, escondido (Procurar 10, passiva 20 a 3 m)', async () => {
   const S = await castelo();
   const r = S.fio();
   assert.ok(r, 'a região está no mapa');
-  assert.equal(r.casas.size, 5);
+  assert.equal(r.casas.size, FIO.length, 'a região tem de cobrir o fio inteiro');
+  for (const c of FIO) assert.ok(r.casas.has(`${c.x},${c.y}`), `a casa (${c.x},${c.y}) do fio ficou fora da região`);
   assert.deepEqual({ cd: r.escondida.cd, cdPassiva: r.escondida.cdPassiva, alcance: r.escondida.alcance }, { cd: 10, cdPassiva: 20, alcance: 10 });
   const [a] = armadilhasDasRegioes(S.enc);
   assert.deepEqual({ cd: a.cd, cdPassiva: a.cdPassiva, alcance: a.alcance }, { cd: 10, cdPassiva: 20, alcance: 2 });
 });
 
-await teste('quem pisa no fio derruba o teto em TODOS nas cinco casas (Destreza 10, 3d6), para ali, e a cena lembra e conta', async () => {
+await teste('quem pisa no fio derruba o teto em TODOS que estão nele (Destreza 10, 3d6), para ali, e a cena lembra e conta', async () => {
   const S = await castelo();
   longe(S);
   const [h, aliado] = S.party;
-  poe(h, 12, 12);
-  poe(aliado, 15, 13);                // em outra casa do fio
+  poe(h, PELO_FIO[0].x, PELO_FIO[0].y);
+  poe(aliado, OUTRA.x, OUTRA.y);      // em outra casa do fio
   h.movementLeftFt = 60;              // o entulho do salão é terreno difícil
   const antes = [h.hp, aliado.hp];
   S.enc.moveAlong(h, PELO_FIO);
-  assert.deepEqual({ x: h.pos.x, y: h.pos.y }, { x: 14, y: 12 }, 'o passo para na primeira casa do fio');
+  assert.deepEqual({ x: h.pos.x, y: h.pos.y }, { x: PRIMEIRA.x, y: PRIMEIRA.y }, 'o passo para na primeira casa do fio');
   assert.ok(h.hp < antes[0] && antes[0] - h.hp <= 18, `quem pisou: ${antes[0] - h.hp}`);
   assert.ok(aliado.hp < antes[1] && antes[1] - aliado.hp <= 18, `quem estava em cima também: ${antes[1] - aliado.hp}`);
   assert.equal(S.salvo().armadilha, 'disparada');
@@ -85,7 +113,7 @@ await teste('a passiva 20 nota o fio a 3 m e para antes; a passiva comum pisa', 
   const S = await castelo();
   longe(S);
   const h = S.party[0];
-  poe(h, 12, 12);
+  poe(h, PELO_FIO[0].x, PELO_FIO[0].y);
   const armadilhas = armadilhasDaCena({ capitulo: S.cena, enc: S.enc });
   assert.ok(passivePerception(h) < 20);
   assert.equal(cortarNoPerigo(S.enc, h, PELO_FIO, armadilhas).evento?.tipo, 'pisou');
@@ -93,7 +121,7 @@ await teste('a passiva 20 nota o fio a 3 m e para antes; a passiva comum pisa', 
   assert.ok(passivePerception(h) >= 20);
   const r = cortarNoPerigo(S.enc, h, PELO_FIO, armadilhas);
   assert.equal(r.evento?.tipo, 'notou');
-  assert.ok(r.caminho.at(-1).x < 14, 'parou antes de pisar');
+  assert.ok(!NO_FIO.has(`${r.caminho.at(-1).x},${r.caminho.at(-1).y}`), 'parou antes de pisar');
   r.evento.armadilha.notar(h, { mostrar: false });
   assert.equal(S.salvo().armadilha, 'vista', 'a cena lembra que viu');
 });
@@ -106,17 +134,17 @@ await teste('o fio sabido (o disfarce, o Procurar, a volta ao castelo) não pega
   assert.equal(D.fio().descoberta, true, 'de volta ao castelo, o fio continua sabido');
   longe(D);
   const h = D.party[0];
-  poe(h, 12, 12);
+  poe(h, PELO_FIO[0].x, PELO_FIO[0].y);
   h.movementLeftFt = 60;
   const hp = h.hp;
   D.enc.moveAlong(h, PELO_FIO);
   assert.equal(h.hp, hp, 'o herói passa por cima');
-  assert.equal(h.pos.x, 16);
-  const g = makeMonster('goblin', { x: 16, y: 13 });
+  assert.deepEqual({ x: h.pos.x, y: h.pos.y }, { ...PELO_FIO.at(-1) }, 'atravessou o fio inteiro');
+  const g = makeMonster('goblin', { x: PELO_FIO[0].x, y: PELO_FIO[0].y });
   D.enc.addCombatant(g);
   g.movementLeftFt = 30;
   const hpG = g.hp;
-  D.enc.moveAlong(g, [{ x: 16, y: 13 }, { x: 15, y: 13 }]);
+  D.enc.moveAlong(g, [{ ...PELO_FIO[0] }, { ...PRIMEIRA }]);
   assert.ok(g.hp < hpG || g.dead, 'o goblin não sabe, e pisa');
 });
 

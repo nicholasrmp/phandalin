@@ -40,3 +40,4 @@ src/dev/_tmp/
 # A mesma arte da FA servida ao navegador: fica no disco para o jogo abrir aqui, e NÃO entra no repositório.
 public/mapas/esconderijo-fa*.webp
 public/mapas/fa/
+public/mapas/casa-da-morte/

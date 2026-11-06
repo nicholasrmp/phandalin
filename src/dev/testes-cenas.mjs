@@ -20,7 +20,7 @@ import { makeMonster, MONSTERS } from '../rules/monsters.js';
 import { averageOf } from '../core/dice.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { guardar, totalEmCobre, cobrar, LOJAS } from '../game/comercio.js';
-import { Battlefield, distanceFt } from '../core/grid.js';
+import { Battlefield, distanceFt, ARESTA } from '../core/grid.js';
 import { visaoNoEscuro, nivelDeLuz } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
 import { skillBonus, passivePerception } from '../rules/abilities.js';
@@ -454,6 +454,47 @@ teste('a mansão nasce no breu, e cada tocha acende a sala dela', async () => {
   assert.equal(aoBreu.length, 7, `só ${aoBreu.length} das 11 jogam casa no breu ao apagar (${aoBreu.join(' | ')})`);
 });
 
+teste('o que o mapa declara se pode usar: inimigo, luz, objeto e tranca', () => {
+  // A varredura das dezoito cenas, do dia em que se perguntou "não passou nada sobre objeto interativo, luz,
+  // inimigo e porta?". Quatro coisas baratas de conferir e caras de achar jogando:
+  //   - inimigo nascendo em casa que o passo não admite (ele trava ali, e a luta não acaba);
+  //   - dois inimigos na mesma casa (o segundo some debaixo do primeiro);
+  //   - luz ou objeto interativo sem nenhuma casa vizinha de onde mexer nele — o menu pede 1,5 m;
+  //   - tranca apontando para aresta que não é porta, ou sem CD (o menu de `game/portas.js` não teria o que rolar).
+  // A CONECTIVIDADE do chão não entra aqui: quem a mede é `conferir-paredes.mjs`, que sabe o que o roteiro abre.
+  const achados = [];
+  for (const cena of ['emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
+    'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
+    'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2']) {
+    const m = mapaDo(cena);
+    const f = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+    const aoLado = (p) => [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]
+      .some(([dx, dy]) => f.inside(p.x + dx, p.y + dy) && !f.blocksMove(p.x + dx, p.y + dy)
+        && f.passa(p.x + dx, p.y + dy, p.x, p.y, 'visao'));
+    const ocupadas = new Map();
+    for (const foe of buildFoes(cena) ?? []) {
+      const p = foe.pos;
+      if (!p || !f.inside(p.x, p.y)) { achados.push(`${cena}: ${foe.name} sem casa válida`); continue; }
+      if (f.blocksMove(p.x, p.y)) achados.push(`${cena}: ${foe.name} nasce em casa bloqueada (${p.x},${p.y}, ${f.surfaceAt(p.x, p.y)})`);
+      const k = `${p.x},${p.y}`;
+      if (ocupadas.has(k)) achados.push(`${cena}: ${foe.name} e ${ocupadas.get(k)} nascem na mesma casa (${k})`);
+      else ocupadas.set(k, foe.name);
+    }
+    for (const l of m.luzes ?? []) if (!aoLado(l.pos)) achados.push(`${cena}: ${l.tipo} em (${l.pos.x},${l.pos.y}) sem casa de onde apagar ou acender`);
+    for (const o of m.interativos ?? []) {
+      if (!f.inside(o.x, o.y)) achados.push(`${cena}: interativo ${o.id ?? ''} em (${o.x},${o.y}) fora do mapa`);
+      else if (!aoLado(o)) achados.push(`${cena}: interativo ${o.id ?? '(sem id)'} em (${o.x},${o.y}) sem casa de onde mexer nele`);
+    }
+    for (const t of m.trancas ?? []) {
+      const [tx, ty, lado] = String(t.aresta).split(',');
+      const cod = (lado === 'N' ? f.paredeN : f.paredeO)[Number(ty) * f.w + Number(tx)];
+      if (cod !== 2) achados.push(`${cena}: tranca em ${t.aresta} não está numa porta (aresta=${cod})`);
+      if (t.cd == null) achados.push(`${cena}: tranca em ${t.aresta} sem CD`);
+    }
+  }
+  assert.deepEqual(achados, [], achados.join(' | '));
+});
+
 teste('nenhuma luz de mapa é inerte: apagar qualquer uma muda alguma casa', () => {
   // O DEFEITO DA LUZ INERTE, achado na Mansão e depois medido em todas as cenas: uma chama dentro de um cômodo
   // que a GRADE já põe claro não acende nada. O desenho mostra fogo, a regra não vê diferença, e o "Apagar" do
@@ -465,6 +506,13 @@ teste('nenhuma luz de mapa é inerte: apagar qualquer uma muda alguma casa', () 
     // Cômodo pequeno com DUAS luzes: a de menor alcance não acrescenta nada à outra, e isso é física, não defeito.
     'mansao 8,2': 'a vela da escrivaninha, dentro do alcance da tocha do quarto do mago',
     'mansaoTunel 8,2': 'a vela da escrivaninha, dentro do alcance da tocha do quarto do mago',
+    // As velas de 9 pés em cone do Castelo, que vieram da cena da FA. Medido uma a uma: acendem 4, 2 e 3 casas
+    // sozinhas, e TODAS elas já estão cobertas por outra luz do mesmo cômodo. É vela em cima de mesa, ao lado do
+    // fogo grande — some no brilho dele, como some no desenho.
+    'castelo 27,4': 'vela de 9 pés dentro do alcance da luz grande do mesmo cômodo',
+    'castelo 23,10': 'vela de 9 pés dentro do alcance da luz grande do mesmo cômodo',
+    'castelo 21,11': 'vela de 9 pés dentro do alcance da luz grande do mesmo cômodo',
+    'castelo 23,13': 'vela de 9 pés dentro do alcance da luz grande do mesmo cômodo',
   };
   const inertes = [];
   for (const cena of ['emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
@@ -484,6 +532,10 @@ teste('nenhuma luz de mapa é inerte: apagar qualquer uma muda alguma casa', () 
     };
     const base = grade(luzes);
     for (const l of luzes) {
+      // A luz que SÓ ACENDE NO ESCURO (`soNoEscuro`) não acende nada enquanto a cena está clara, e isso é o
+      // trabalho dela: é o lampião do pátio, que espera a noite. Inerte de dia não é defeito; seria defeito a
+      // luz de dentro, no breu, não mudar nada.
+      if (l.soNoEscuro && f.luz[l.pos.y * f.w + l.pos.x] === 2) continue;
       const sem = grade(luzes.filter((o) => o !== l));
       if (base.some((v, i) => sem[i] < v)) continue;
       const chave = `${cena} ${l.pos.x},${l.pos.y}`;
@@ -826,6 +878,14 @@ const campoDeArvoreTrovao = () => {
 };
 
 const alcancaveisDe = (f, inicio) => {
+  // COM AS PORTAS ABERTAS. A Árvore Trovão não tinha porta nenhuma enquanto a planta era a nossa; com a da
+  // Forgotten Adventures ela ganhou 17, e aí "casa atrás de porta fechada" passou a contar como inalcançável —
+  // 168 delas, que são os interiores das casas. Porta fechada não é parede: é o que o grupo abre.
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) {
+    const i = y * f.w + x;
+    if (f.paredeN[i] === ARESTA.porta) f.porAresta(x, y - 1, x, y, ARESTA.aberta);
+    if (f.paredeO[i] === ARESTA.porta) f.porAresta(x - 1, y, x, y, ARESTA.aberta);
+  }
   const vistas = new Set();
   const fila = [inicio];
   while (fila.length) {
@@ -970,7 +1030,10 @@ teste('a torre só se vê pela porta, e a porta cabe o dragão', () => {
   const f = campoDeArvoreTrovao();
   const { torre, portaDaTorre: porta } = ARVORE_TROVAO;
   const salao = ARVORE_TROVAO.celulas.torre;
-  assert.ok(salao.length >= 20, `a torre tem ${salao.length} casa(s) de salão`);
+  // 16 é o tamanho do anel de pedra que a Forgotten Adventures desenha, e é o que a torre tem desde que a
+  // planta passou a ser a deles. O número era 20 quando a torre era nossa, desenhada à mão. O que o teste
+  // guarda de verdade está abaixo: a torre fecha a vista por todos os lados menos o vão.
+  assert.ok(salao.length >= 16, `a torre tem ${salao.length} casa(s) de salão`);
   const dentro = new Set(salao.map((c) => `${c.x},${c.y}`));
   // A PAREDE É DE BORDA (castelo): a torre fecha a vista pelas arestas, e o vão
   // é uma aresta aberta. O teste pergunta ao MOTOR (`passa`, `hasLineOfSight`)
@@ -990,29 +1053,31 @@ teste('a torre só se vê pela porta, e a porta cabe o dragão', () => {
     assert.ok(!f.hasLineOfSight(p, fundo),
       `de (${p.x},${p.y}) dá para ver o fundo da torre sem passar pela porta`);
   }
-  // O vão: as arestas da borda da torre que o motor deixa passar. Duas, lado a
-  // lado, porque o bicho é Grande e sai por ele se quiser.
-  const vaos = [];
+  // A TORRE DA FA É UM PRÉDIO, NÃO UM ANEL COM UM VÃO. Isto aqui exigia duas arestas abertas lado a lado
+  // (por onde um Grande passasse sem espremer) mais uma porta interna para o Salão do Prefeito, na parede
+  // que os dois dividiam. Era a planta ANTIGA, desenhada à mão. Medido na da FA: a torre tem TRÊS portas de
+  // uma folha, todas fechadas, e o Salão do Prefeito fica do outro lado da aldeia — não encosta nela. O mapa
+  // manda, então o teste mudou: conta-se PORTA, e o Grande passa espremendo, que é o que o livro dá.
+  const nome = Object.fromEntries(Object.entries(ARESTA).map(([k, v]) => [v, k]));
+  const portas = [];
   for (const c of salao) {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const v = { x: c.x + dx, y: c.y + dy };
-      if (dentro.has(`${v.x},${v.y}`)) continue;
-      if (f.passa(c.x, c.y, v.x, v.y)) vaos.push({ de: c, para: v });
+      if (dentro.has(`${v.x},${v.y}`) || !f.inside(v.x, v.y)) continue;
+      const a = f.aresta(c.x, c.y, v.x, v.y);
+      if (a === ARESTA.porta || a === ARESTA.aberta) portas.push({ de: c, para: v });
+      else assert.equal(nome[a], 'parede', `a borda da torre em (${c.x},${c.y}) é ${nome[a] ?? a}, nem parede nem porta`);
     }
   }
-  // A torre tem DUAS saídas: a porta de fora (duas casas, onde o dragão passa) e
-  // a porta interna para o Salão do Prefeito, na parede que os dois dividem —
-  // como na referência. A de fora é a que o teste mede.
-  const noSalao = new Set(ARVORE_TROVAO.celulas.prefeito.map((c) => `${c.x},${c.y}`));
-  const deFora = vaos.filter((v) => !noSalao.has(`${v.para.x},${v.para.y}`));
-  const paraOSalao = vaos.filter((v) => noSalao.has(`${v.para.x},${v.para.y}`));
-  assert.equal(paraOSalao.length, 1, `a porta interna da torre para o Salão tem ${paraOSalao.length} aresta(s)`);
-  assert.equal(deFora.length, 2, `a torre tem ${deFora.length} vão(s) para fora, e o dragão precisa de 2`);
-  assert.ok(deFora.some((v) => v.para.x === porta.x && v.para.y === porta.y),
-    'a porta publicada não é um dos vãos da torre');
-  const [a, b] = deFora;
-  assert.ok(Math.abs(a.para.x - b.para.x) + Math.abs(a.para.y - b.para.y) === 1,
-    'os dois vãos da torre não são vizinhos');
+  assert.ok(portas.length >= 1, 'a torre não tem porta nenhuma: o dragão não sai e o grupo não entra');
+  assert.ok(portas.some((v) => v.de.x === porta.x && v.de.y === porta.y),
+    `a porta publicada (${porta.x},${porta.y}) não é uma das ${portas.length} portas da torre`);
+  // E a porta serve ao dragão: aberta, a casa de fora está livre e o Grande passa por ela espremendo.
+  const minha = portas.find((v) => v.de.x === porta.x && v.de.y === porta.y);
+  f.porAresta(minha.de.x, minha.de.y, minha.para.x, minha.para.y, ARESTA.aberta);
+  assert.ok(f.passa(minha.de.x, minha.de.y, minha.para.x, minha.para.y), 'a porta da torre não abre');
+  assert.ok(!f.blocksMove(minha.para.x, minha.para.y),
+    `a casa logo fora da porta da torre (${minha.para.x},${minha.para.y}) está bloqueada`);
 });
 
 teste('o dragão (Grande, 2 x 2) sai da torre pela porta e alcança a rua', () => {
@@ -1024,7 +1089,11 @@ teste('o dragão (Grande, 2 x 2) sai da torre pela porta e alcança a rua', () =
   // casas deixava passar, mas a mata a uma casa dela fechava o pátio: o
   // dragão alcançava 13 âncoras, todas dentro, e a luta do cume virava uma
   // torre de tiro fixa. O teste anterior só olhava as arestas da porta.
-  const alcance = f.reachable({ x: ini.x, y: ini.y }, 5000, () => false, cabe, 2);
+  // ESPREMENDO onde precisar (SRD): a porta da FA tem uma casa de largura, e pelo livro o Grande passa por ela
+  // pagando o dobro. Antes desta regra existir no motor, este teste exigia porta de duas casas — e era por isso
+  // que ele reprovava a planta da Forgotten Adventures, que não tem porta larga em lugar nenhum.
+  const apertado = (x, y) => f.inside(x, y) && !f.blocksMove(x, y);
+  const alcance = f.reachable({ x: ini.x, y: ini.y }, 5000, () => false, cabe, 2, () => false, apertado);
   let fora = 0;
   for (const n of alcance.values()) if (![0, 1].some((j) => [0, 1].some((i) => salao.has(`${n.x + i},${n.y + j}`)))) fora += 1;
   // Antes da correção eram 0, e depois do pátio da porta eram 22, numa bolsa
@@ -1034,7 +1103,12 @@ teste('o dragão (Grande, 2 x 2) sai da torre pela porta e alcança a rua', () =
   assert.ok(fora >= 1000, `o dragão alcança só ${fora} âncora(s) fora da torre (o mínimo é 1000)`);
   // E a rede de Grande que PARTE DA CHEGADA toca a porta da torre: é o que
   // garante que quem foge dele pela vila é perseguido.
-  const rede = f.reachable({ x: ARVORE_TROVAO.chegada.x, y: ARVORE_TROVAO.chegada.y }, 5000, () => false, cabe, 2);
+  //
+  // ESPREMENDO, como a de cima. A porta da torre fica DENTRO do galpão que lhe serve de antessala (medido:
+  // o anel de pedra tem 25 arestas de parede e uma porta só, entre 30,5 e 31,5), e o galpão abre para a rua
+  // por uma porta de uma casa. Nenhuma das duas é larga, e pelo livro o Grande passa pagando o dobro. Sem
+  // esta ressalva o teste exigia porta dupla, que esta planta não tem em lugar nenhum.
+  const rede = f.reachable({ x: ARVORE_TROVAO.chegada.x, y: ARVORE_TROVAO.chegada.y }, 5000, () => false, cabe, 2, () => false, apertado);
   const p = ARVORE_TROVAO.portaDaTorre;
   assert.ok([...rede.keys()].some((k) => { const [x, y] = k.split(',').map(Number); return Math.abs(x - p.x) <= 1 && Math.abs(y - p.y) <= 1; }),
     'um 2 x 2 que sai da chegada não alcança a porta da torre');
@@ -1045,6 +1119,11 @@ teste('toda construção admite uma criatura Grande no pátio da porta', () => {
   const cabe = (x, y) => [0, 1].every((j) => [0, 1].every((i) => f.inside(x + i, y + j) && !f.blocksMove(x + i, y + j)));
   // O avental da porta (3 de fundo, 4 de largura) existe para isto: 9 das 22
   // construções tinham o pátio da porta vedado a Grande.
+  //
+  // A PORTA FECHADA TAMBÉM É SAÍDA. Na planta antiga a construção abria por um vão, e `passa` bastava. A da
+  // FA tem PORTA, e porta fechada não passa — então quatro construções (torre, estalagem, casa7, ervas), que
+  // só têm porta, saíam como se não tivessem saída nenhuma. A pergunta deste teste é sobre o PÁTIO, não
+  // sobre a porta estar aberta, então a aresta de porta conta como saída.
   const semPatio = [];
   for (const [id, cs] of Object.entries(ARVORE_TROVAO.celulas)) {
     const dentro = new Set(cs.map((c) => `${c.x},${c.y}`));
@@ -1052,7 +1131,9 @@ teste('toda construção admite uma criatura Grande no pátio da porta', () => {
     for (const c of cs) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const v = { x: c.x + dx, y: c.y + dy };
-        if (dentro.has(`${v.x},${v.y}`) || !f.passa(c.x, c.y, v.x, v.y)) continue;
+        if (dentro.has(`${v.x},${v.y}`)) continue;
+        const saida = f.passa(c.x, c.y, v.x, v.y) || f.aresta(c.x, c.y, v.x, v.y) === ARESTA.porta;
+        if (!saida) continue;
         for (let ax = v.x - 1; ax <= v.x + 1; ax += 1) {
           for (let ay = v.y - 1; ay <= v.y + 1; ay += 1) {
             if (cabe(ax, ay) && ![0, 1].some((j) => [0, 1].some((i) => dentro.has(`${ax + i},${ay + j}`)))) achou = true;
@@ -1143,6 +1224,246 @@ teste('o Cume: o bando cabe dentro da caverna, a boca liga os dois lados e o gru
     if (!f.blocksMove(x, y)) assert.equal(f.luz[y * f.w + x], 0, `a caverna está no breu em ${k}`);
   }
   assert.equal(f.luz[CUME.saida[0].y * f.w + CUME.saida[0].x], 2, 'e o lado de fora, claro');
+});
+
+// ------------------------------------------------------------------ o Castelo Dentefino -----
+// O PARECER DE FIDELIDADE DE 2026-11-06 achou quatro defeitos graves, e estes testes são o que impede que
+// voltem. Todos nasceram de uma medida, e a medida está em `revisoes/castelo-fidelidade-2026-11-06.md`.
+teste('o Castelo: a lona é a entrada NORTE da ruína, e se procura por fora', async () => {
+  const { CASTELO } = await import('../game/castelo.js');
+  const f = montarCampo(mapaDo('castelo'));
+  // A lona era a aresta (18,8)|(18,9), a CORTINA do sul da ruína — uma porta interna, de modo que ninguém
+  // podia "procurar por fora do castelo" como o livro manda. E a guarda do menu pedia y <= 5 para casas de
+  // y 8 e 9, então a opção nunca aparecia. São DUAS portas, as do norte, e o `Canvas.webp` da FA fica nelas.
+  assert.equal((CASTELO.arestas.lona ?? []).length, 2, 'a lona são as duas portas norte da ruína');
+  const naRuina = (p) => CASTELO.celulas.ruina.some((c) => c.x === p.x && c.y === p.y);
+  const doTerraco = f.reachable(CASTELO.celulas.terraco[0], 5000);
+  for (const [a, b] of CASTELO.arestas.lona) {
+    const dentro = naRuina(a) ? a : b;
+    const fora = naRuina(a) ? b : a;
+    assert.ok(naRuina(dentro) && !naRuina(fora), `a lona tem um lado dentro da ruína e um fora (${a.x},${a.y})`);
+    assert.ok(fora.y < dentro.y, 'e a de fora fica ao NORTE, como no livro');
+    // é isto que torna a procura possível: a casa de fora se alcança do terraço com a porta FECHADA
+    assert.ok(doTerraco.has(`${fora.x},${fora.y}`), `o grupo alcança a casa de fora ${fora.x},${fora.y}`);
+    assert.ok(!doTerraco.has(`${dentro.x},${dentro.y}`), 'e não a de dentro, senão não havia o que procurar');
+  }
+  // o PONTO da lona é a casa de DENTRO: quem o usa é a fuga da Vyerith, que corre até ela e passa
+  assert.ok(naRuina(CASTELO.lona), 'o ponto `lona` é a casa de dentro da ruína');
+  assert.ok(!f.blocksMove(CASTELO.lona.x, CASTELO.lona.y), 'e é chão livre');
+});
+
+teste('o Castelo: o Salão Escuro (8) é a capela dos dois arcos, com o braseiro entre eles', async () => {
+  const { CASTELO } = await import('../game/castelo.js');
+  const f = montarCampo(mapaDo('castelo'));
+  // `salaoEscuro` era a passagem central do castelo, com QUATRO portas, e a área 8 do livro ficava sem nome.
+  // Agora é o ladrilho `Shrine.webp` da FA: "um salão alto e estreito... parte de uma capela ou templo", com
+  // os dois arcos de cortina ao norte e o santuário (9) do outro lado deles.
+  const cs = CASTELO.celulas.salaoEscuro;
+  assert.ok(cs.length >= 16, `a capela tem ${cs.length} casas (eram 11 na passagem)`);
+  const norte = Math.min(...cs.map((q) => q.y));
+  const arcos = cs.filter((c) => c.y === norte);
+  assert.equal(arcos.length, 2, 'a fileira do norte são os DOIS arcos, e não uma parede corrida');
+  assert.ok(Math.abs(arcos[0].x - arcos[1].x) >= 2, 'com pedra entre eles: é lá que o braseiro fica');
+  // cada arco dá no santuário, e a passagem é uma CORTINA e não uma porta: o livro diz "grossas cortinas
+  // tapam a passagem por um par de arcos", e cortina se atravessa sem abrir nada e não se vê através. A
+  // aresta etérea é essa tradução — passo livre, visão barrada —, e era porta no import da FA, que não tem
+  // aresta de cortina. Com porta, os goblins do santuário "saíam das cortinas do norte" por uma porta
+  // fechada, e dava para ver a capela inteira do outro lado assim que alguém a abrisse.
+  for (const a of arcos) {
+    assert.ok(CASTELO.celulas.santuario.some((q) => q.x === a.x && q.y === a.y - 1),
+      `o arco (${a.x},${a.y}) dá no santuário`);
+    assert.equal(f.paredeN[a.y * f.w + a.x], ARESTA.eterea, 'e a passagem é uma cortina, não uma porta');
+    assert.ok(f.passa(a.x, a.y, a.x, a.y - 1, 'passo'), 'atravessa-se sem abrir nada');
+    assert.ok(!f.hasLineOfSight(a, { x: a.x, y: a.y - 1 }), 'e não se vê o santuário através dela');
+  }
+  // o braseiro de pedra com a estatueta: ENTRE os arcos, onde o livro o põe e a FA o pinta
+  const braseiro = cs.find((c) => f.surfaceAt(c.x, c.y) === 'braseiroFrio');
+  assert.ok(braseiro, 'a capela tem o braseiro frio (é o gatilho da estatueta no capítulo)');
+  assert.ok(braseiro.x > Math.min(arcos[0].x, arcos[1].x) && braseiro.x < Math.max(arcos[0].x, arcos[1].x),
+    `o braseiro (${braseiro.x},${braseiro.y}) fica entre os dois arcos`);
+  // e o grick mora nela: era na passagem, e na capela nasciam dois arqueiros que o livro não põe lá
+  const grick = CASTELO.postos.grick[0];
+  assert.ok(cs.some((c) => c.x === grick.x && c.y === grick.y), 'o grick nasce dentro da capela');
+  assert.ok(!CASTELO.celulas.passagem.some((c) => c.x === grick.x && c.y === grick.y), 'e não na passagem');
+});
+
+teste('o Castelo: os postos de arqueiro flanqueiam a entrada, e não são a capela nem o capim', async () => {
+  const { CASTELO } = await import('../game/castelo.js');
+  const f = montarCampo(mapaDo('castelo'));
+  const naSalaDo = (sala, p) => CASTELO.celulas[sala].some((c) => c.x === p.x && c.y === p.y);
+  for (const posto of ['postoNorte', 'postoSul']) {
+    const cs = CASTELO.celulas[posto];
+    // "esta pequena sala está cheia com detritos": pequena mesmo, e colada no salão da armadilha (área 2)
+    assert.ok(cs.length <= 6, `${posto} tem ${cs.length} casas: é a sala pequena do livro`);
+    assert.ok(cs.some((c) => CASTELO.celulas.salaoArmadilha.some((q) =>
+      Math.abs(q.x - c.x) <= 1 && Math.abs(q.y - c.y) <= 1)), `${posto} encosta no salão da armadilha`);
+    for (const p of CASTELO.postos[posto]) {
+      assert.ok(naSalaDo(posto, p), `o arqueiro (${p.x},${p.y}) nasce dentro do ${posto}`);
+      assert.ok(!naSalaDo('salaoEscuro', p), 'e não dentro da capela, onde o livro não põe ninguém');
+      assert.ok(!naSalaDo('terraco', p), 'e não no terraço');
+      assert.ok(!f.blocksMove(p.x, p.y), 'e em casa livre');
+    }
+  }
+  // E O CAMPO DE TIRO PARA O TERRAÇO NÃO EXISTE NESTA PLANTA. Isto não é defeito escondido: é a medida que
+  // decidiu onde os postos ficam, e fica travada aqui para ninguém voltar a prometer o que o mapa não dá.
+  // Das seteiras do mapa da FA, nenhuma tem um lado no terraço — cada uma dá na espessura da parede.
+  let paraOTerraco = 0;
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) {
+    const i = y * f.w + x;
+    for (const [c, a, b] of [[f.paredeN[i], { x, y: y - 1 }, { x, y }], [f.paredeO[i], { x: x - 1, y }, { x, y }]]) {
+      if (c === ARESTA.seteira && (naSalaDo('terraco', a) || naSalaDo('terraco', b))) paraOTerraco += 1;
+    }
+  }
+  assert.equal(paraOTerraco, 0, 'nenhuma seteira desta planta dá no terraço (medido; ver o parecer)');
+});
+
+teste('o Castelo: a porta escorada É a do urso, e o quarto do rei põe a Vyerith na porta', async () => {
+  const { CASTELO } = await import('../game/castelo.js');
+  const f = montarCampo(mapaDo('castelo'));
+  // UMA PORTA, UMA BARRA: a área 12 do livro tem "uma porta de madeira bloqueada" ao sul, e a 13, do outro
+  // lado dela, "uma barra grossa de madeira". O teste de Força estava na porta OESTE do alojamento.
+  assert.deepEqual(CASTELO.arestas.portaEscorada, CASTELO.arestas.portaUrso,
+    'a porta escorada e a do urso são a mesma aresta');
+  const [a, b] = CASTELO.arestas.portaUrso[0];
+  const em = (sala) => CASTELO.celulas[sala].some((c) => (c.x === a.x && c.y === a.y) || (c.x === b.x && c.y === b.y));
+  assert.ok(em('guarda') && em('torreUrso'), 'e liga o alojamento dos guardas à torre do urso');
+  // A BANHEIRA SAIU DO QUARTO DO REI. O livro a põe na Sala Noroeste, "uma câmara parcialmente derrubada que
+  // foi um confortável banheiro"; ela estava solta no meio do quarto, em duas casas.
+  const banheiras = (sala) => CASTELO.celulas[sala].filter((c) => f.surfaceAt(c.x, c.y) === 'banheira').length;
+  assert.equal(banheiras('rei'), 0, 'o quarto do rei não tem banheira');
+  assert.ok(banheiras('banheiro') >= 1, 'a Sala Noroeste tem');
+  // A VYERITH EMBOSCA ATRÁS DA PORTA, e o Gundren fica no fundo da sala: o livro diz os dois.
+  const naSalaDoRei = (p) => CASTELO.celulas.rei.some((q) => q.x === p.x && q.y === p.y);
+  const porta = CASTELO.folhas.map(([p, q]) => (naSalaDoRei(p) ? p : (naSalaDoRei(q) ? q : null))).find(Boolean);
+  assert.ok(porta, 'o quarto do rei tem porta com folha');
+  const dist = (p) => Math.max(Math.abs(p.x - porta.x), Math.abs(p.y - porta.y));
+  const ordem = [...CASTELO.postos.rei].sort((p, q) => dist(p) - dist(q));
+  assert.ok(dist(ordem[0]) <= 1, `a casa da Vyerith (${ordem[0].x},${ordem[0].y}) encosta na porta`);
+  assert.ok(dist(ordem[ordem.length - 1]) >= 3, 'e a do Gundren fica no fundo, longe dela');
+});
+
+teste('o Castelo: móvel de várias casas sai INTEIRO, e cada sala tem o que o livro lhe dá', async () => {
+  const { CASTELO } = await import('../game/castelo.js');
+  const f = montarCampo(mapaDo('castelo'));
+  const encosta = (a, b) => Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1;
+  /** Em quantos pedaços SOLTOS esta superfície aparece nesta sala? */
+  const pedacos = (sala, sup) => {
+    const ps = CASTELO.celulas[sala].filter((c) => f.surfaceAt(c.x, c.y) === sup);
+    const vistos = new Set();
+    let n = 0;
+    for (const p of ps) {
+      if (vistos.has(`${p.x},${p.y}`)) continue;
+      n += 1;
+      const fila = [p];
+      vistos.add(`${p.x},${p.y}`);
+      while (fila.length) {
+        const q = fila.pop();
+        for (const r of ps) {
+          if (!vistos.has(`${r.x},${r.y}`) && encosta(q, r)) { vistos.add(`${r.x},${r.y}`); fila.push(r); }
+        }
+      }
+    }
+    return { n, casas: ps.length };
+  };
+  // A CAMA DO REI era QUATRO camas de uma casa nos quatro cantos do quarto, e as duas mesas ficavam em
+  // metades opostas: a receita punha cada cópia do glifo por conta própria. O livro tem "uma grande cama" e
+  // "uma mesa redonda". Agora cada PALAVRA da receita é uma peça, e as casas de uma peça se colam.
+  const cama = pedacos('rei', 'camaRei');
+  assert.ok(cama.casas >= 3, `a cama do rei tem ${cama.casas} casas`);
+  assert.equal(cama.n, 1, 'e sai num pedaço só, não espalhada pelo quarto');
+  assert.equal(pedacos('rei', 'mesa').n, 1, 'a mesa redonda do rei também é uma só');
+  assert.equal(pedacos('banquete', 'mesaBanquete').n, 1, 'as mesas do banquete saem encostadas, como a FA as pinta');
+  // E O QUE CADA SALA TEM vem do livro, não da planta antiga:
+  const temSup = (sala, sup) => CASTELO.celulas[sala].filter((c) => f.surfaceAt(c.x, c.y) === sup).length;
+  // área 6: "suportes na parede mantêm várias armas... o CHÃO É LIMPO DE ENTULHO"
+  assert.ok(temSup('alojamentoHob', 'armeiro') >= 1, 'o alojamento hobgoblin tem o armeiro');
+  assert.equal(temSup('alojamentoHob', 'entulho'), 0, 'e o chão dele é limpo de entulho, como o livro diz');
+  assert.ok(temSup('alojamentoHob', 'palha') >= 1, 'e tem as pilhas de palha');
+  // área 4: "vários SACOS DE DORMIR esfarrapados espalhados pelo que sobrou de espaço no chão" — faltavam
+  assert.ok(temSup('torreSul', 'palha') >= 1, 'a torre sul tem os sacos de dormir dos três goblins');
+  // área 12: "um braseiro de pedra cheio de carvão brilha no meio... quatro pilhas de palha ao leste"
+  assert.ok(temSup('guarda', 'braseiro') >= 1, 'o alojamento dos guardas tem o braseiro aceso');
+  assert.ok(temSup('guarda', 'palha') >= 3, 'e as pilhas de palha');
+  // área 13: "uma velha MESA DE TRABALHO e estantes de livros ficam ao sul", mais a arca do tesouro
+  assert.ok(temSup('torreUrso', 'mesa') >= 1, 'a torre do urso tem a mesa de trabalho');
+  assert.ok(temSup('torreUrso', 'arca') >= 1, 'e a arca do tesouro, que o capítulo usa');
+});
+
+teste('o Castelo: cortina não é porta, a folha caída está nos portões, e a seteira dá penumbra', async () => {
+  const { CASTELO } = await import('../game/castelo.js');
+  const mapa = mapaDo('castelo');
+  const f = montarCampo(mapa);
+  const cels = CASTELO.celulas;
+  const salaDe = (x, y) => Object.keys(cels).find((k) => cels[k].some((c) => c.x === x && c.y === y));
+
+  // AS QUATRO CORTINAS DO LIVRO (áreas 8, 11 e 12) eram porta no import da FA, que não tem aresta de
+  // cortina. Etérea é a tradução: atravessa-se sem abrir, não se vê através.
+  let cortinas = 0;
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) {
+    if (f.paredeN[y * f.w + x] === ARESTA.eterea) cortinas += 1;
+    if (f.paredeO[y * f.w + x] === ARESTA.eterea) cortinas += 1;
+  }
+  assert.equal(cortinas, 4, 'as quatro cortinas do livro são aresta etérea');
+  // e nenhuma delas ganhou folha: folha é coisa de porta, e cortina não abre nem fecha
+  const emFolha = new Set(CASTELO.folhas.flat().map((p2) => `${p2.x},${p2.y}`));
+  for (const c of CASTELO.cortinas) {
+    assert.ok(f.passa(c.x, c.y, c.x, c.y - 1, 'passo'), `a cortina (${c.x},${c.y}) deixa passar`);
+    assert.ok(!emFolha.has(`${c.x},${c.y - 1}`) || salaDe(c.x, c.y - 1) !== 'santuario'
+      || !emFolha.has(`${c.x},${c.y}`), 'a cortina não tem folha de porta');
+  }
+
+  // A FOLHA DE PORTÃO CAÍDA: a chegada ao terraço diz "duas folhas podres... uma delas caída", e não havia
+  // um `portaoCaido` no mapa inteiro. Ela fica DIANTE DOS PORTÕES, e não na beira oeste do terraço.
+  const folha = [];
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) {
+    if (f.surfaceAt(x, y) === 'portaoCaido') folha.push({ x, y });
+  }
+  assert.equal(folha.length, 1, 'há uma folha de portão caída, e uma só');
+  assert.equal(salaDe(folha[0].x, folha[0].y), 'terraco', 'e ela está no terraço');
+  assert.ok(cels.salaoArmadilha.some((c) => Math.abs(c.x - folha[0].x) <= 2 && Math.abs(c.y - folha[0].y) <= 2),
+    `a folha (${folha[0].x},${folha[0].y}) está junto dos portões, não na beira do terraço`);
+
+  // A SALA COM SETEIRA E SEM CHAMA NASCE EM PENUMBRA. O livro dá a regra pelo avesso na área 13 ("as
+  // aberturas para arqueiro AQUI ESTÃO FECHADAS, deixando a sala escura") e a exceção na 8 ("mesmo de dia
+  // esta área não tem luz exterior"). A sala COM chama segue no breu, senão a tocha dela não muda nada —
+  // é a lição já medida na Mansão, e a prova "nenhuma luz de mapa é inerte" continua valendo.
+  const luzDa = (sala) => cels[sala].map((c) => f.luz[c.y * f.w + c.x]);
+  for (const sala of ['passagem', 'corredor', 'banheiro']) {
+    assert.ok(luzDa(sala).every((l) => l >= 1), `${sala} tem seteira e nenhuma chama: nasce em penumbra`);
+  }
+  for (const sala of ['salaoEscuro', 'torreUrso']) {
+    assert.ok(luzDa(sala).every((l) => l === 0), `${sala} fica no breu, que é o que o livro diz dela`);
+  }
+  for (const sala of ['banquete', 'guarda', 'santuario', 'rei']) {
+    assert.ok(luzDa(sala).every((l) => l === 0),
+      `${sala} tem chama dentro e nasce no breu, senão apagá-la não mudaria casa nenhuma`);
+    assert.ok((mapa.luzes ?? []).some((l) => cels[sala].some((c) => c.x === l.pos.x && c.y === l.pos.y)),
+      `${sala} de fato tem chama dentro`);
+  }
+});
+
+teste('o Castelo: o bando do Targor fecha a conta de 500 XP, e o baú do urso fica no alto', async () => {
+  const { MONSTERS } = await import('../rules/monsters.js');
+  const { EXAMES_DO_CASTELO } = await import('../game/castelo-exames.js');
+  // O LIVRO DEIXA O BANDO AMBÍGUO ("três hobgoblins liderados por Targor") e a conta de XP resolve: ele
+  // manda dividir 500, e hobgoblin é ND 1/2 (100 XP) e lobo ND 1/4 (50). Targor mais três hobgoblins dá
+  // 400, e os dois lobos fecham em 500. Três ao todo daria 400, e aí o número do livro não bateria.
+  const hob = MONSTERS.hobgoblin;
+  const lobo = MONSTERS.lobo;
+  assert.equal(hob.xp, 100, 'hobgoblin vale 100 XP');
+  assert.equal(lobo.xp, 50, 'lobo vale 50 XP');
+  assert.equal(hob.xp * 4 + lobo.xp * 2, 500, 'Targor + 3 hobgoblins + 2 lobos dão os 500 XP do livro');
+  assert.notEqual(hob.xp * 3 + lobo.xp * 2, 500, 'e três hobgoblins ao todo NÃO dariam');
+
+  // O BAÚ DO URSO ESTÁ NUMA BORDA ALTA, e o texto do chão não pode entregá-lo: é isso que a Percepção
+  // CD 15 do livro cobra ("o baú é difícil de ser visto do chão"). A `arca` da torre do urso ganhou texto
+  // próprio, que descreve a laje pendurada e não um baú ao alcance da mão.
+  const noChao = EXAMES_DO_CASTELO['arca@torreUrso'];
+  assert.ok(noChao, 'a torre do urso tem o Examinar próprio da borda alta');
+  assert.notEqual(noChao, EXAMES_DO_CASTELO.arca, 'e ele não é o texto da arca comum');
+  assert.ok(!/ba[úu]|arca|tesouro|moeda|ouro/i.test(noChao),
+    'e não entrega o baú de graça: quem o acha é o teste de Percepção');
+  assert.ok(/arca/i.test(EXAMES_DO_CASTELO.arca), 'a arca do quarto do rei continua sendo uma arca');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

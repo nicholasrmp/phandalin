@@ -20,6 +20,17 @@ export const CONDITIONS = {
     attackDisadvantage: true,
     desvantagemTeste: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
   },
+  // ESPREMIDO (SRD 5.1): a criatura entrou num espaço de uma categoria abaixo da dela. Cada 1,5 m custa 1,5 m a
+  // mais (isso é com a busca de movimento, `core/grid.js reachable`), e aqui ficam os três efeitos de combate.
+  // Não é condição que alguém imponha: o motor a põe e a tira sozinho, conforme a casa em que a criatura para
+  // (`combat.js moveAlong`).
+  espremido: {
+    name: 'Espremido',
+    desc: 'Num espaço apertado demais: cada 1,5 m custa 1,5 m a mais, desvantagem em ataques e em testes de Destreza, e quem a ataca tem vantagem.',
+    attackDisadvantage: true,
+    attackedAdvantage: true,
+    desvantagemTeste: ['dex'],
+  },
   agarrado: {
     name: 'Agarrado',
     desc: 'Deslocamento 0.',

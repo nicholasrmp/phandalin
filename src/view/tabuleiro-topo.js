@@ -859,21 +859,119 @@ export class TabuleiroTopo {
     if (lona.width !== w) lona.width = w;
     if (lona.height !== h) lona.height = h;
     const m = lona.getContext('2d');
-    m.globalCompositeOperation = 'source-over';
-    m.clearRect(0, 0, w, h);
-    m.save();
-    m.translate(this.ox, this.oy);
-    V.pintarFrente(m, this.imgFundo, this.imgFrente, this.field, this.casa);
-    V.pintarSobreposicoes(m, this.imgSobre, this.field, this.casa, true);
-    m.restore();
-    m.globalCompositeOperation = 'destination-out';
-    for (const c of aVista.values()) this.recortarFiguraDaFrente(m, c);
-    m.globalCompositeOperation = 'source-over';
-    ctx.drawImage(lona, 0, 0);
+    // UMA PASSADA POR FORÇA DE OCLUSÃO. O telhado e a copa não podem sair na mesma tela: cada um desaparece de
+    // um jeito. Então se desenha por grupo — primeiro a máscara de cor e as peças de oclusão 0 (somem), depois
+    // as de 0,1 (desbotam) —, e cada grupo leva o seu furo antes de ir para o tabuleiro.
+    // A PEÇA QUE SOME INTEIRA (`modo: 'peca'`): é o telhado, uma peça por casa. Enquanto houver ficha à vista
+    // dentro da caixa dela, ela simplesmente não se desenha — e aí aparece a casa toda, com parede, porta e a
+    // luz de dentro, em vez de um buraco redondo no meio da telha. É o modo "Roof" do Foundry, e o que faz o
+    // mapa ter dinamismo: a casa se abre quando se entra nela, e fecha quando se sai.
+    //
+    // Quem é `modo: 'ficha'` (a copa) continua com o furo redondo, porque a copa é UMA mancha sobre o mapa
+    // inteiro: sumir com ela toda tiraria a mata da aldeia. O que mudou é a força — some, não desbota.
+    // QUEM LEVANTA O TELHADO É O GRUPO, não quem estiver lá dentro. Medido: um zumbi à vista debaixo de uma
+    // árvore apagava a copa dela para todo mundo — e aí a árvore deixava de ser cobertura e o mapa entregava
+    // o chão que ninguém devia ver. É a mesma regra do Foundry, onde a oclusão responde às fichas que VOCÊ
+    // controla. O inimigo continua aparecendo: o furo redondo de `recortarFiguraDaFrente` é feito para toda
+    // ficha à vista, então ele se vê debaixo da folha em vez de sumir sob ela.
+    this._tapadas = new Set();
+    for (const o of this.field.sobreposicoes ?? []) {
+      if (!o.ligada || !o.frente || o.modo !== 'peca') continue;
+      for (const c of aVista.values()) {
+        if (c.side !== 'party' || c.dead) continue;
+        const p = this.fx.positionFor(c.id) ?? c.pos;
+        const px = Math.round(p.x);
+        const py = Math.round(p.y);
+        if (px >= o.x && px < o.x + o.w && py >= o.y && py < o.y + o.h && this.cobertaPelaPeca(o, px, py)) {
+          this._tapadas.add(o.id);
+          break;
+        }
+      }
+    }
+    const forcas = new Set([0]);
+    for (const o of this.field.sobreposicoes ?? []) if (o.ligada && o.frente && !this._tapadas.has(o.id)) forcas.add(o.oclusao ?? 0);
+    let primeira = true;
+    for (const oclusao of [...forcas].sort((a, b) => a - b)) {
+      m.globalCompositeOperation = 'source-over';
+      m.clearRect(0, 0, w, h);
+      m.save();
+      m.translate(this.ox, this.oy);
+      // a máscara derivada da cor (a folha do mapa pintado) vai junto do primeiro grupo
+      if (primeira) V.pintarFrente(m, this.imgFundo, this.imgFrente, this.field, this.casa);
+      V.pintarSobreposicoes(m, this.imgSobre, this.field, this.casa, true, oclusao, this._tapadas);
+      m.restore();
+      m.globalCompositeOperation = 'destination-out';
+      for (const c of aVista.values()) this.recortarFiguraDaFrente(m, c, 1 - oclusao);
+      m.globalCompositeOperation = 'source-over';
+      ctx.drawImage(lona, 0, 0);
+      primeira = false;
+    }
   }
 
-  /** O furo da ficha na camada de frente: o disco da figura em degrau suave, mais a faixa da barra e do nome. */
-  recortarFiguraDaFrente(m, c) {
+  /**
+   * A CASA É A TELHA, NÃO A CAIXA. A peça de frente é um retângulo, e num battlemap a rua, o quintal e o
+   * telhado do vizinho caem dentro desse retângulo. Medido na Árvore Trovão: com o grupo parado na rua, a duas
+   * casas da parede, `_tapadas` acusava `arvoretrovao-telhado3` — a casa se abria sozinha com ninguém dentro.
+   *
+   * Então a peça só se apaga quando a ficha está DEBAIXO DE TELHA: alfa opaco na casa dela. A máscara sai da
+   * própria arte, uma amostra por casa (a imagem desenhada numa tela de `o.w` x `o.h`), e vale para a vida
+   * toda da peça. Imagem de outro domínio suja o canvas e `getImageData` lança: aí vale a caixa inteira, que é
+   * o que havia antes.
+   */
+  cobertaPelaPeca(o, x, y) {
+    const img = this.imgSobre.get(o.url);
+    if (!img?.naturalWidth || !img.naturalHeight) return false;
+    this._mascaraDaPeca ??= new Map();
+    let m = this._mascaraDaPeca.get(o.id);
+    if (!m) {
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, o.w);
+      cv.height = Math.max(1, o.h);
+      const g = cv.getContext('2d');
+      g.drawImage(img, 0, 0, cv.width, cv.height);
+      try { m = g.getImageData(0, 0, cv.width, cv.height).data; }
+      catch { m = new Uint8ClampedArray(cv.width * cv.height * 4).fill(255); }
+      this._mascaraDaPeca.set(o.id, m);
+    }
+    return m[((y - o.y) * Math.max(1, o.w) + (x - o.x)) * 4 + 3] > 96;
+  }
+
+  /**
+   * O furo da SALA: apaga a camada de frente em todas as casas do cômodo em que a ficha está, mais uma orla de
+   * meia casa para o beiral do telhado não ficar como moldura. Devolve `false` quando a ficha não está em sala
+   * nenhuma (na rua), e aí vale o furo redondo.
+   */
+  recortarSalaDaFrente(m, c) {
+    const nome = this.field.sala?.get(`${c.pos.x},${c.pos.y}`);
+    if (!nome) return false;
+    this._casasDaSala ??= (() => {
+      const mapa = new Map();
+      for (const [k, n] of this.field.sala) {
+        if (!mapa.has(n)) mapa.set(n, []);
+        const [x, y] = k.split(',').map(Number);
+        mapa.get(n).push({ x, y });
+      }
+      return mapa;
+    })();
+    const casas = this._casasDaSala.get(nome);
+    if (!casas?.length) return false;
+    const C = this.casa;
+    const orla = C * 0.5;
+    m.fillStyle = 'rgba(0,0,0,1)';
+    for (const q of casas) {
+      const { sx, sy } = this.centerF(q.x, q.y);
+      m.fillRect(sx - C / 2 - orla, sy - C / 2 - orla, C + orla * 2, C + orla * 2);
+    }
+    return true;
+  }
+
+  /**
+   * O furo da ficha na camada de frente: o disco da figura em degrau suave, mais a faixa da barra e do nome.
+   * `forca` é quanto se tira: 1 abre buraco (o telhado some), 0,9 deixa 10% (a copa desbota e ainda se vê a
+   * folha sobre o ombro). É o `occlusion.alpha` do Foundry, só que escrito do outro lado — lá se diz quanto
+   * FICA, aqui quanto SAI.
+   */
+  recortarFiguraDaFrente(m, c, forca = 0.9) {
     const C = this.casa;
     const andando = this.fx.positionFor(c.id);
     const pegada = c.pos.f ?? 1;
@@ -881,8 +979,8 @@ export class TabuleiroTopo {
     const { sx, sy } = this.centerF((andando ? andando.x : c.pos.x) + meio, (andando ? andando.y : c.pos.y) + meio);
     const r = C * pegada * 0.42;
     const g = m.createRadialGradient(sx, sy, r * 0.2, sx, sy, r * 1.55);
-    g.addColorStop(0, 'rgba(0,0,0,.9)');
-    g.addColorStop(0.62, 'rgba(0,0,0,.82)');
+    g.addColorStop(0, `rgba(0,0,0,${forca})`);
+    g.addColorStop(0.62, `rgba(0,0,0,${(forca * 0.91).toFixed(3)})`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
     m.fillStyle = g;
     m.beginPath();

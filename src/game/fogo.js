@@ -42,7 +42,11 @@ export function mudarFogo(field, luz, acesa) {
  */
 export function opcaoDeFogo(enc, c, tile, { fora, nome = null, depois = () => {} } = {}) {
   const luz = luzNaCasa(enc.field, tile);
-  if (!luz || !c) return null;
+  // NEM TODA LUZ É CHAMA. A fumaça venenosa do dragão de Árvore Trovão é uma luz do mapa (verde, 12 m de
+  // penumbra, só no escuro) que a cena da Forgotten Adventures põe no covil — e o menu oferecia "Apagar a
+  // vela" em cima dela. Não se abafa veneno com terra e cinza. `semChama` marca a luz que ilumina sem
+  // queimar: ela acende, entra na visão, e não tem botão.
+  if (!luz || !c || luz.semChama) return null;
   const qual = nome ?? luz.nome ?? NOMES[luz.tipo] ?? 'a luz';
   const acesa = !luz.apagada;
   const longe = distanceFt(c.pos, tile) > 5 ? `longe demais — encoste (está a ${distanceFt(c.pos, tile)} pés)` : null;

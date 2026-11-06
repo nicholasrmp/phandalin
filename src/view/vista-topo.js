@@ -56,9 +56,17 @@ export function pintarFundo(ctx, img, fundo, C) {
  * (chão aceso, destroço, baú aberto); com ele, a peça vai junto da camada de frente e cobre quem está debaixo
  * (a ponte quebrada, que no Foundry vem marcada como ladrilho de teto).
  */
-export function pintarSobreposicoes(ctx, imagens, field, C, frente = false) {
+/**
+ * `soOclusao`: desenha só as peças de frente com essa oclusão. É o que separa TELHADO de COPA, como o Foundry
+ * faz: lá cada ladrilho de cima tem o seu `occlusion.alpha` — o telhado usa 0 (some por completo quando alguém
+ * entra) e a copa 0,1 (desbota para 10%, e a folha ainda se vê sobre o ombro). Medido na cena da Árvore
+ * Trovão: 6 telhados e 2 copas em 0, outras 11 copas em 0,1.
+ */
+export function pintarSobreposicoes(ctx, imagens, field, C, frente = false, soOclusao = null, pular = null) {
   for (const o of field.sobreposicoes ?? []) {
     if (!o.ligada || Boolean(o.frente) !== frente) continue;
+    if (soOclusao != null && (o.oclusao ?? 0) !== soOclusao) continue;
+    if (pular?.has(o.id)) continue;             // o telhado da casa em que alguém entrou: não se desenha
     const img = imagens?.get(o.url);
     if (!largura(img)) continue;
     ctx.save();

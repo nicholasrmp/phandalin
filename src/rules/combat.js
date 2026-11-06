@@ -1530,6 +1530,8 @@ export class Encounter {
       // POR QUEM SE PASSA (SRD): o não hostil (aliado e neutro), sim; o hostil só com duas categorias de tamanho de diferença.
       // Passar custa o dobro (o espaço dele é terreno difícil, `costOf`) e parar em cima dele nunca vale.
       (x, y) => tomadas.atravessa(x, y, f),
+      // ... e, se não couber inteiro, pode ESPREMER (paga o dobro e fica com desvantagem)
+      this.cabeApertado(actor, f, tomadas),
       );
     } finally {
       this.field.dificeisExtra = null;
@@ -1593,6 +1595,36 @@ export class Encounter {
   }
 
   /** Quem ocupa 2x2 só pisa onde as quatro casas existem e estão livres. */
+  /**
+   * ESPREMER (SRD 5.1): cabe num espaço do tamanho de uma criatura UMA CATEGORIA menor. Para o Grande (2x2),
+   * isso é um quadrado só. Devolve o teste da pegada menor — o `reachable` usa quando a pegada cheia não cabe,
+   * cobra 1,5 m a mais no passo e marca a casa, e `moveAlong` põe a condição em quem para ali.
+   */
+  /** Põe ou tira `espremido` conforme a criatura caiba inteira na casa em que está. */
+  conferirEspremido(actor) {
+    const f = actor.pos?.f ?? 1;
+    const apertado = f > 1 && !this.cabeNaCasa(actor, f)?.(actor.pos.x, actor.pos.y)
+      && this.cabeApertado(actor, f)(actor.pos.x, actor.pos.y);
+    if (apertado && !hasCondition(actor, 'espremido')) addCondition(actor, 'espremido');
+    else if (!apertado && hasCondition(actor, 'espremido')) removeCondition(actor, 'espremido');
+    return apertado;
+  }
+
+  cabeApertado(actor, f, tomadas = this.casasTomadas(actor)) {
+    if (f <= 1) return () => false;
+    const menor = f - 1;
+    return (x, y) => {
+      for (let dy = 0; dy < menor; dy++) {
+        for (let dx = 0; dx < menor; dx++) {
+          if (!this.field.inside(x + dx, y + dy)) return false;
+          if (this.field.blocksMove(x + dx, y + dy)) return false;
+        }
+      }
+      if (menor > 1 && this.field.paredeNaPegada(x, y, menor)) return false;
+      return tomadas.atravessa(x, y, menor);
+    };
+  }
+
   cabeNaCasa(actor, f, tomadas = this.casasTomadas(actor)) {
     if (f === 1) return undefined;
     return (x, y) => {
@@ -1666,7 +1698,19 @@ export class Encounter {
       let pes = 0;
       // O espaço de outra criatura é terreno difícil: atravessar o aliado custa o dobro (a mesma conta de `reachable`).
       const f = actor.pos.f ?? 1;
-      for (let i = 1; i <= fim; i++) pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y, tomadas.tomada(path[i].x, path[i].y, f));
+      // ESPREMER: o quadrado onde a pegada cheia não cabe custa 1,5 m a mais, a mesma conta que `reachable` faz.
+      const aperta = this.cabeApertado(actor, f, tomadas);
+      const cabeInteiro = this.cabeNaCasa(actor, f, tomadas);
+      for (let i = 1; i <= fim; i++) {
+        pes += this.field.costOf(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y, tomadas.tomada(path[i].x, path[i].y, f));
+        // A MESMA conta de `reachable`: o passo é espremido quando a pegada cheia não FAZ o passo (vão estreito)
+        // ou não cabe no destino. Checar só o destino dava 20 pés onde a busca cobrava 25, e aí o cartão do
+        // tabuleiro mentia sobre o custo do caminho.
+        const inteiro = cabeInteiro && cabeInteiro(path[i].x, path[i].y)
+          && this.field.passaPegada(path[i - 1].x, path[i - 1].y, path[i].x, path[i].y, f)
+          && !this.field.paredeNaPegada(path[i].x, path[i].y, f);
+        if (f > 1 && !inteiro && aperta(path[i].x, path[i].y)) pes += FEET_PER_SQUARE;
+      }
       this.field.dificeisExtra = null;
       this.field.voando = false;
       this.field.escalando = false;
@@ -1711,6 +1755,9 @@ export class Encounter {
       if (actor.dead || hasCondition(actor, 'inconsciente')) { ate = i - 1; break; }
       // `f` viaja junto: perder a pegada aqui faria o ogro virar Médio ao andar.
       actor.pos = { x: to.x, y: to.y, f: actor.pos.f ?? 1 };
+      // ESPREMIDO entra e sai sozinho, conforme a casa em que ele está: a condição não é imposta por ninguém,
+      // é o lugar que a dá. Atualiza a cada passo, porque ele pode entrar apertado e sair folgado no mesmo turno.
+      this.conferirEspremido(actor);
       // Graxa: quem ENTRA na área testa; quem cai para ali mesmo.
       const deAntes = this.zonasEm(from);
       let parou = false;
@@ -7938,6 +7985,23 @@ export class Encounter {
         target.stable = true;
         this.say('cura', `${actor.name} estabiliza ${target.name} com o kit de cura.`, 'sem teste: o kit dispensa Medicina');
         this.onEvent({ type: 'stabilized', target, by: actor });
+        break;
+      }
+      // O COPO DE CONHAQUE ANÃO (área 5 do Castelo). O livro: "um personagem que beber um copo de conhaque
+      // recupera 1 ponto de vida, mas um personagem que beber DOIS copos em menos de 1 hora fica envenenado
+      // por 1 hora". A hora é o descanso curto, que no SRD dura exatamente isso e limpa a marca.
+      case 'gole': {
+        const bebe = target === actor ? 'bebe' : `serve a ${target.name}`;
+        if (target.bebeuConhaque) {
+          addCondition(target, 'envenenado', { rounds: Infinity });
+          target.ressacaDeConhaque = true;
+          this.say('cura', `${actor.name} ${bebe} um segundo copo de conhaque anão — e o chão some por baixo: envenenado.`,
+            'o livro: dois copos em menos de uma hora envenenam por uma hora');
+          break;
+        }
+        target.bebeuConhaque = true;
+        const curado = this.heal(target, 1, dados.name);
+        this.say('cura', `${actor.name} ${bebe} um copo de conhaque anão: ${curado} PV, e um calor que desce até os pés.`);
         break;
       }
       case 'restaurar': {

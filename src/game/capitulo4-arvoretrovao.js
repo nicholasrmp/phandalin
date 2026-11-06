@@ -91,12 +91,13 @@ import { d20 } from '../core/dice.js';
 import { skillBonus, passivePerception, SKILL_NAME, rolarPericia } from '../rules/abilities.js';
 import { addCondition } from '../rules/conditions.js';
 import { criarBuscas } from './buscas.js';
-import { EXAMES, ACOES, ACHADO_DO_CASULO, EMPURRAR_ESTATUA, CONTEINERS, achadoDoRecipiente } from './arvoretrovao-exames.js';
+import { EXAMES, ACOES, ACHADO_DO_CASULO, EMPURRAR_ESTATUA, CONTEINERS, achadoDoRecipiente, VISTA_DO_ALTO } from './arvoretrovao-exames.js';
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { ARVORE_TROVAO } from './arvoretrovao.js';
+import { alternarRegiao } from '../rules/regioes.js';
 import { guardar, cobrar, totalEmCobre } from './comercio.js';
 
 const MOVIMENTO = 60;
@@ -107,6 +108,9 @@ const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y
 // com o dragão sem poder ser visto por ele.
 const CELULAS_DE = (id) => new Set((ARVORE_TROVAO.celulas?.[id] ?? []).map((c) => `${c.x},${c.y}`));
 const naCasa = (p, id) => CELULAS_DE(id).has(`${p.x},${p.y}`);
+/** A casa pertence a alguma construção que NÃO seja `menos`? É o que tira a zona de um bando de cima do vizinho. */
+const emOutroLugar = (p, menos) => Object.entries(ARVORE_TROVAO.celulas ?? {})
+  .some(([id, cs]) => id !== menos && cs.some((c) => c.x === p.x && c.y === p.y));
 
 export function criarArvoreTrovao(app, config) {
   void config;
@@ -407,7 +411,7 @@ export function criarArvoreTrovao(app, config) {
     luta(bando, { furt });
   }
 
-  // AS DUAS ARANHAS GIGANTES do armazém destruído (área 6 do livro, a loja): a teia no chão da
+  // AS DUAS ARANHAS GIGANTES do armazém destruído (área 6 do livro): a teia no chão da
   // porta é o aviso, e entrar as acorda. São DUAS, como no livro — a cena já teve três no pomar,
   // e a medição mostrou o porquê: três a 60 pés da chegada deixam alguém no chão em 51% das lutas.
   // Elas esperam penduradas na teia, e o teste de Furtividade delas decide quem é surpreendido.
@@ -798,7 +802,7 @@ export function criarArvoreTrovao(app, config) {
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         avisos: {
-          fala: 'Quase tudo. O dragão na torre. Seis de máscara na casa de esquina, que o adoram. Mortos de cinza na velha guarnição, na taverna e na ferraria, deitados e de mau humor. Galhos secos que andam, nas cabanas. E duas aranhas do tamanho de cão no armazém do sul: a teia na rua é o aviso delas, e é bom aviso.',
+          fala: 'Quase tudo. O dragão na torre. Seis de máscara na casa de esquina, que o adoram. Mortos de cinza na velha guarnição, na taverna e na ferraria, deitados e de mau humor. Galhos secos que andam, nas cabanas. E duas aranhas do tamanho de cão no armazém: teia de ponta a ponta lá dentro, e elas esperam penduradas nela. Olhem para cima antes de entrar.',
           narra: 'Ele conta nos dedos, e acaba com as duas mãos abertas.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
@@ -829,8 +833,6 @@ export function criarArvoreTrovao(app, config) {
 
   // ------------------------------------------------------ aproximação ----
   async function depoisDeMover(c) {
-    // Quem estava no telhado e saiu do lugar desceu: a vista do alto acaba.
-    if (estado.vigia && c.id === estado.vigia.id && (c.pos.x !== estado.vigia.x || c.pos.y !== estado.vigia.y)) descerDoTelhado();
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
     // Nenhum gatilho desta cena usa raio sozinho: os de bando vão por
@@ -880,20 +882,35 @@ export function criarArvoreTrovao(app, config) {
       await aoEntrarNaCabanaOcidental();
       if (estado.lutando) return;
     }
-    if (ramos5.length && !salvo.ramos5 && herois().some((h) => naCasa(h.pos, 'casa20'))) {
+    // OS RAMOS DO MATO LESTE ACORDAM NO MATO LESTE. O gatilho era `naCasa('casa20')`, um quadrado de rua do
+    // nordeste que ficou da planta antiga: medido, ele está a 10 casas do ramo mais próximo. Pisar nele
+    // acordava oito galhos que o grupo não via, e entrar no mato onde eles moram não acordava ninguém.
+    if (ramos5.length && !salvo.ramos5 && herois().some((h) => dentro(h.pos, ARVORE_TROVAO.zonas.matoLeste))) {
       await acordarRamosDaFazenda();
       return;
     }
+    // A ZONA DO TECELÃO NÃO PEGA CASA ALHEIA. `tecelagemSul` é um retângulo, e medido ele cobria 3 das 12
+    // casas do armazém das aranhas e 6 das 9 do acampamento do Reidoth. Como esta checagem vem ANTES da das
+    // aranhas, entrar no armazém acordava os galhos em vez delas; e parar no acampamento do druida fazia o
+    // mesmo. A exceção era só a `embaixada`, escrita à mão; agora vale para qualquer construção.
     if (ramos12.length && !salvo.ramos12
-      && herois().some((h) => naCasa(h.pos, 'tecelagem') || (dentro(h.pos, ARVORE_TROVAO.zonas.tecelagemSul) && !naCasa(h.pos, 'embaixada')))) {
+      && herois().some((h) => naCasa(h.pos, 'tecelagem')
+        || (dentro(h.pos, ARVORE_TROVAO.zonas.tecelagemSul) && !emOutroLugar(h.pos, 'tecelagem')))) {
       await acordarRamosDoTecelao();
       return;
     }
     // O ARMAZÉM DAS ARANHAS (área 6). A teia da rua é o ALARME: pisá-la acorda as duas; entrar no
     // armazém também. POR CASA (a construção), e não por raio, que vazaria por cima de parede.
     if (aranhas.length && !salvo.aranhas) {
-      const naTeia = herois().filter((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'loja'));
-      if (naTeia.length || herois().some((h) => naCasa(h.pos, 'loja'))) { await acordarAranhas(naTeia); return; }
+      // O ARMAZÉM É A CONSTRUÇÃO QUE A FA COBRIU DE TEIA (o ladrilho `Webs`, casa 23,19), e não a que o
+      // nome antigo dizia: era `'loja'`, 17 casas ao lado, e com isso nem a teia da rua nem entrar no
+      // armazém acordavam aranha nenhuma — elas ninham aqui.
+      // A TEIA DA RUA NÃO EXISTE NESTA PLANTA: a FA publica a teia como ladrilho à parte, que não vem nas
+      // três versões do mapa, e pintar terreno difícil invisível seria pior que não ter. O ramo da teia fica,
+      // porque o mapa pode voltar a tê-la (o editor pinta `$`); hoje `naTeia` sai sempre vazio e quem acorda
+      // as duas é entrar no armazém.
+      const naTeia = herois().filter((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'escola'));
+      if (naTeia.length || herois().some((h) => naCasa(h.pos, 'escola'))) { await acordarAranhas(naTeia); return; }
     }
   }
 
@@ -975,8 +992,8 @@ export function criarArvoreTrovao(app, config) {
       // O barulho chegou aos cultistas (o livro): eles vêm ver, com cuidado. A trave da porta sai.
       if (salvo.cultoAlertado && cultistas.length && !salvo.culto && salvo.portaCulto === 'trancada') {
         salvo.portaCulto = 'aberta';
-        fecharPortaDoCulto();
-        await painel('Pela rua, uma tábua raspa: a porta da casa de esquina se entreabre, e um vulto de manto espia o largo o tempo de contar o estrago. Depois a porta fica como está, sem a trave.');
+        porBarricada();
+        await painel('Pela rua, uma tábua raspa: na casa de esquina alguém puxa o carroção de mão que tapava o vão, e um vulto de manto espia o largo o tempo de contar o estrago. Depois larga o carroção de lado, sem recolocá-lo.');
       }
     } else if (dos(zumbisCavalo)) {
       salvo.zumbisCavalo = 'limpo';
@@ -1014,20 +1031,20 @@ export function criarArvoreTrovao(app, config) {
   const COM_FOLHA = new Set((ARVORE_TROVAO.folhas ?? []).flatMap(([a, b]) => [CHAVE_DE(a, b), CHAVE_DE(b, a)]));
   enc.field.folha = COM_FOLHA;
 
-  // A PORTA DO CULTO (o livro: trancada por dentro, e larga: são DUAS casas de vão). De fora só se
-  // entra forçando a porta (Atletismo CD 20, no lugar do teste de Força do livro). Aberta, vira uma
-  // porta como as outras.
-  const FOLHAS_DO_CULTO = (ARVORE_TROVAO.folhas ?? []).filter(([a, b]) => naCasa(a, 'casa9') !== naCasa(b, 'casa9'));
-  const ehPortaDoCulto = (a, b) => FOLHAS_DO_CULTO.some(([u, v]) => (u.x === a.x && u.y === a.y && v.x === b.x && v.y === b.y)
-    || (u.x === b.x && u.y === b.y && v.x === a.x && v.y === a.y));
-  const fecharPortaDoCulto = () => {
-    for (const [a, b] of FOLHAS_DO_CULTO) {
-      enc.field.porAresta(a.x, a.y, b.x, b.y, salvo.portaCulto === 'trancada' ? ARESTA.porta : ARESTA.aberta);
-    }
+  // A BARRICADA DO CULTO (área 13). No livro é uma porta trancada por dentro, que se força com um teste de
+  // Força; a planta da Forgotten Adventures não dá porta a esta construção — ela é uma ruína de alicerce
+  // quebrado, com 16 arestas abertas. Medido pelo desenho, aresta a aresta, a pedra do alicerce não se separa
+  // do mato por cima dela, então não se inventa muro: o que o livro quer vira o que a ruína comporta. Favric
+  // entulhou os vãos, e a região `barricadaCulto` (`encounter.js`) empurra de volta quem tenta entrar.
+  // `salvo.portaCulto` guarda o estado com o nome de sempre, para o save antigo continuar valendo.
+  const casasDoCulto = new Set(ARVORE_TROVAO.celulas.casa9.map((c) => `${c.x},${c.y}`));
+  const ehCasaDoCulto = (t) => casasDoCulto.has(`${t.x},${t.y}`);
+  const porBarricada = () => {
+    alternarRegiao(enc.field, 'barricadaCulto', salvo.portaCulto === 'trancada');
     enc.field.versao = (enc.field.versao ?? 0) + 1;
   };
   if (!salvo.portaCulto) salvo.portaCulto = salvo.culto ? 'aberta' : 'trancada';
-  if (salvo.portaCulto === 'trancada') fecharPortaDoCulto();
+  porBarricada();
 
   function portasDaCasa(tile) {
     const f = enc.field;
@@ -1061,28 +1078,19 @@ export function criarArvoreTrovao(app, config) {
     if (est) { PROP_EM.delete(`${est.x},${est.y}`); derrubarEstatua(est); }
   }
 
-  // A VISTA DO ALTO: todas as casas de FORA das construções num raio de 40 casas (200 pés) do alçapão: dali a praça e a torre (de cima
-  // se vê por cima das árvores). O motor soma `field.vistaExtra` à visão do grupo (`rules/luz.js`).
-  function subirAoTelhado(c, tile) {
-    const f = enc.field;
-    const vista = new Set();
-    for (let y = Math.max(0, tile.y - 40); y <= Math.min(f.h - 1, tile.y + 40); y++) {
-      for (let x = Math.max(0, tile.x - 40); x <= Math.min(f.w - 1, tile.x + 40); x++) {
-        if (!f.sala?.has(`${x},${y}`)) vista.add(`${x},${y}`);
-      }
-    }
-    f.vistaExtra = vista;
-    f.versao = (f.versao ?? 0) + 1;
-    estado.vigia = { id: c.id, x: tile.x, y: tile.y };
-    app.refresh();
-  }
-  function descerDoTelhado() {
-    if (!estado.vigia) return;
-    enc.field.vistaExtra = null;
-    enc.field.versao = (enc.field.versao ?? 0) + 1;
-    estado.vigia = null;
-    app.refresh();
-  }
+  // A VISTA DO ALTO É TEXTO, e não um descobrimento do mapa.
+  //
+  // Era mecânica: quem subisse acendia `field.vistaExtra` com TODAS as casas fora das construções num raio de
+  // 40 — a aldeia inteira — e o grupo enxergava tudo enquanto ele ficasse lá. Duas coisas estavam erradas
+  // nisso. A primeira é que a guarnição, na planta da Forgotten Adventures, é casca SEM TELHADO: subir no
+  // telhado dela era subir no que não existe (medido: das 22 construções, sete têm teto, e esta não). A
+  // segunda é que revelar o mapa inteiro de graça tira da fase o que ela é — escolher o que encarar sem
+  // saber tudo.
+  //
+  // Agora quem abre o alçapão sobe pelo que sobrou da escada e OLHA, e o que ele vê vem em prosa, com os
+  // rumos e as distâncias medidos no mapa a partir de (43,24): a torre a 29 m a noroeste, a estátua a 18 m
+  // na mesma direção, a casa de esquina a 11 m a sudeste, o celeiro a 12 m a sudoeste, o armazém a 24 m a
+  // sudoeste. O grupo fica sabendo ONDE estão as coisas; continua sem ver quem está nelas.
 
   // OS DOIS OBJETOS ESCONDIDOS DO LIVRO. Nenhum está desenhado até uma busca passar: a cena troca
   // a casa por um baú.
@@ -1112,28 +1120,28 @@ export function criarArvoreTrovao(app, config) {
     const alcance = () => (distanceFt(c.pos, tile) > 5 ? 'longe demais — chegue a 5 pés'
       : (enc.field.contato(c.pos, tile) ? null : 'tem uma parede no meio'));
 
+    // A BARRICADA: arrastar o entulho do vão da casa de esquina, de fora dela.
+    if (salvo.portaCulto === 'trancada' && ehCasaDoCulto(tile) && !ehCasaDoCulto(c.pos)) {
+      ops.push({
+        rotulo: 'Arrastar a barricada', icone: 'acao-empurrar', detalhe: 'Atletismo CD 20',
+        motivo: longe(5) ?? buscas.ja(c, 'arrombarCulto', tile),
+        fazer: async () => {
+          buscas.marcar(c, 'arrombarCulto', tile);
+          const t = teste(c, 'atletismo', 20);
+          if (!t.passou) {
+            salvo.cultoAlertado = true;
+            await painel('A pilha é mais pesada do que parece — armário deitado, vigas, um carroção de mão virado. Ela range, cede um palmo e trava; lá dentro alguém para de falar.', { teste: t });
+            return;
+          }
+          salvo.portaCulto = 'arrombada';
+          porBarricada();
+          await painel('O armário tomba para fora e as vigas rolam. Dentro da ruína, seis mantos com máscara de chifre se viram ao mesmo tempo. Ninguém ataca ainda: quem os comanda ergue a mão.', { teste: t });
+          app.refresh();
+        },
+      });
+    }
+
     for (const { a: ca, b: cb, cod } of portasDaCasa(tile)) {
-      if (salvo.portaCulto === 'trancada' && ehPortaDoCulto(ca, cb)) {
-        // Forçar a porta: a trave cede, e do outro lado seis cultistas se viram (e Favric fala).
-        ops.push({
-          rotulo: 'Forçar a porta', icone: 'acao-empurrar', detalhe: 'Atletismo CD 20',
-          motivo: longe(5) ?? buscas.ja(c, 'arrombarCulto', ca),
-          fazer: async () => {
-            buscas.marcar(c, 'arrombarCulto', ca);
-            const t = teste(c, 'atletismo', 20);
-            if (!t.passou) {
-              salvo.cultoAlertado = true;
-              await painel('Do outro lado, uma trave de verdade. A porta treme nos dois batentes e não cede; lá dentro alguém para de falar.', { teste: t });
-              return;
-            }
-            salvo.portaCulto = 'arrombada';
-            fecharPortaDoCulto();
-            await painel('A trave parte com um estalo seco e as duas folhas batem na parede. Dentro, seis mantos com máscara de chifre se viram ao mesmo tempo. Ninguém ataca ainda: quem os comanda ergue a mão.', { teste: t });
-            app.refresh();
-          },
-        });
-        continue;
-      }
       const fechada = cod === ARESTA.porta;
       ops.push({
         rotulo: fechada ? 'Abrir a porta' : 'Fechar a porta',
@@ -1312,20 +1320,14 @@ export function criarArvoreTrovao(app, config) {
             },
           });
         }
-        // O TELHADO DA GUARNIÇÃO: com o alçapão aberto, um herói sobe e o grupo ENXERGA a rua de cima
-        // (a praça, a torre, o largo) enquanto ele estiver lá. Basta ele sair do lugar para descer.
+        // O ALTO DA GUARNIÇÃO: com o alçapão aberto, qualquer um sobe de novo e repassa a vista. É texto,
+        // não revelação de mapa — ver o comentário em `A VISTA DO ALTO É TEXTO`.
         if (variante === 'alcapaoFechado' && salvo.alcapaoAberto) {
-          const em = estado.vigia;
-          ops.push(em && em.id === c.id
-            ? { rotulo: 'Descer do telhado', icone: 'acao-levantarSe', motivo: null, fazer: () => descerDoTelhado() }
-            : {
-              rotulo: 'Subir ao telhado', icone: 'acao-saltar', detalhe: 'vê a rua inteira, de cima',
-              motivo: alcance() ?? (em ? 'já há alguém lá em cima' : null),
-              fazer: async () => {
-                subirAoTelhado(c, tile);
-                await painel('A escada range, mas aguenta. No alto, um parapeito de pedra baixa e a cinza em volta: de lá se vê a rua inteira, a praça, o largo do poço e, no fim dela, a torre. Ninguém olha para cima.');
-              },
-            });
+          ops.push({
+            rotulo: 'Subir e olhar de cima', icone: 'acao-saltar', detalhe: 'de graça',
+            motivo: alcance(),
+            fazer: () => painel(VISTA_DO_ALTO),
+          });
         }
         if (variante === 'casuloElfo' && !salvo.casuloElfo) {
           ops.push({
@@ -1481,9 +1483,13 @@ export function criarArvoreTrovao(app, config) {
     textoDoDescanso: () => ['Um descanso encostado numa parede de pedra, de costas para a torre.'],
     async iniciar() {
       prepararExploracao();
+      // A ABERTURA SEGUE O DESENHO. Ela dizia "a única construção inteira" e "ao redor dela não cresce nada":
+      // medido na planta da FA, SETE construções têm telhado (torre, ervas, casa15, casa7, escola, celeiro e
+      // estalagem) e CINCO copas de árvore encostam na torre. Também falava de trinta centímetros de cinza, e
+      // o terreno não tem uma casa de cinza — o chão é capim, laje e raiz. O mapa manda no texto.
       await painel([
-        'A trilha acaba numa rua, e a rua está debaixo de trinta centímetros de cinza cinzenta que range na bota. Dos dois lados, casca de casa sem telhado, com mato crescendo de dentro para fora.',
-        'Ao norte, no fim da rua, a única construção inteira: uma torre de pedra escura. Ao redor dela não cresce nada.',
+        'A trilha acaba numa rua, e a rua está debaixo de raiz e capim que range na bota. Dos dois lados, casca de casa sem telhado, com mato crescendo de dentro para fora; uma ou outra ainda tem teto, e são essas que dão medo, porque alguma coisa escolheu ficar nelas.',
+        'Ao norte, no fim da rua, uma torre de pedra escura, de pé entre as copas que já subiram até ela. Do alto dela sai um fio de fumaça esverdeada que não sobe: escorre.',
         'Esta é Árvore Trovão. O Monte Hotenow a matou numa tarde, há trinta anos, e desde então a mata vem tomando o que sobrou.',
       ]);
       // O Reidoth fica no tabuleiro desde já, mas é neutro: só uma figura

@@ -187,7 +187,18 @@ teste('(d) o Grande não atravessa um herói (hostil de tamanho vizinho) e o ali
   enc.beginSide('foes');
   ogro.movementLeftFt = 40;
   const a = enc.reachableFor(ogro);
-  assert.ok(![...a.keys()].some((k) => Number(k.split(',')[0]) >= 6 && a.get(k).parar), 'não passa pela Dara em (6,4)');
+  // O QUE ELE NÃO PODE É ENTRAR NA CASA DELA. Antes de ESPREMER existir no motor, isto se media exigindo que
+  // nenhuma âncora passasse de x=6 — e isso parou de valer no dia em que o espremer entrou (SRD 5.1: cabe-se
+  // num espaço de uma categoria menor, pagando 1,5 m a mais por casa, com desvantagem). Medido neste
+  // corredor de duas casas de altura, com a Dara em (6,4): o ogro não encosta na casa dela, mas escorre por
+  // (6,5) — um vão de 1,5 m — e sai do outro lado por 25 pés, ESPREMIDO. É o que o livro dá, e é mais
+  // interessante: ela leva o ataque de oportunidade e ataca com vantagem enquanto ele se espreme.
+  const alem = [...a.values()].filter((n) => n.x >= 6);
+  assert.ok(!alem.some((n) => [0, 1].some((j) => [0, 1].some((i) => n.x + i === 6 && n.y + j === 4))),
+    'o Grande entrou na casa da Dara em (6,4), e um tamanho de diferença não deixa');
+  const vao = alem.find((n) => n.x === 6);
+  assert.ok(vao?.apertado, 'passar pelo vão de uma casa ao lado dela tinha de sair marcado como aperto');
+  assert.equal(vao.cost, 25, 'três casas até o vão, duas delas espremendo');
 });
 
 // ---- (e) a IA dos monstros atravessa o aliado ------------------------------

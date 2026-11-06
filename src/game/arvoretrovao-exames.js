@@ -24,6 +24,22 @@ export function achadoDoRecipiente(x, y) {
   return h < 0.07 ? { item: 'moedaDePrata', qtd: 2 + Math.floor(h * 40) } : { item: 'moedaDeCobre', qtd: 4 + Math.floor(h * 60) };
 }
 
+// O QUE SE VÊ DO ALTO DA VELHA GUARNIÇÃO (área 11), depois de abrir o alçapão. É TEXTO, e de propósito: a
+// guarnição é casca sem telhado na planta da Forgotten Adventures, e revelar o mapa inteiro de graça tiraria
+// da fase o que ela é — escolher o que encarar sem saber tudo. O grupo fica sabendo ONDE estão as coisas, e
+// continua sem ver quem está dentro delas.
+//
+// Os rumos e as distâncias foram MEDIDOS no mapa a partir da casa do alçapão (43,24), e não escritos de
+// cabeça: a torre a 29 m a noroeste, a estátua a 18 m a noroeste, a casa de esquina a 11 m a sudeste, a
+// estalagem a 17 m a sudeste, o celeiro a 12 m a sudoeste, o armazém a 24 m a sudoeste, a cabana ocidental a
+// 41 m a oeste.
+export const VISTA_DO_ALTO = [
+  'Lá de cima a aldeia deixa de ser rua e vira planta. A cinza que parecia um tapete é um rio: desce a rua principal e contorna as casas, e onde ela some é onde o mato ganhou.',
+  'A noroeste, a uns trinta metros, a torre de pedra escura, de pé entre as copas; um fio de fumaça esverdeada escorre dela em vez de subir. No meio do caminho até lá, a estátua no largo, de lança erguida e sem cabeça de quem a olhe.',
+  'Perto, a sudeste, a casa de esquina — a única por aqui com a porta entulhada por dentro — e, logo depois dela, o casarão comprido da estalagem. A sudoeste, o celeiro de telhado inteiro, e mais longe um galpão em que a teia sai pelas frestas e brilha quando o vento mexe.',
+  'A oeste, no fim de tudo, uma cabana com fumaça fina saindo da chaminé. Alguém mora lá, ou morava hoje de manhã.',
+];
+
 export const EXAMES = {
   // ------------------------------------------------------------------ casas comuns
   banco: 'Um banco de tábua grossa, rachado no meio, com o assento escuro de tanto uso e de trinta anos de cinza.',
@@ -37,6 +53,11 @@ export const EXAMES = {
   berco: 'Um berço pequeno de balanço. Ainda se mexe quando se encosta nele, e ninguém gosta de ver isso.',
   guardaRoupa: 'Um guarda-roupa alto, as portas entreabertas. Dentro, cabides sem nada e uma única bota de criança.',
   roca: 'Uma roca de fiar com a roda empenada. Uma meada de lã ficou enrolada no fuso, dura como pedra.',
+  // AS DUAS QUE A CENA DA FORGOTTEN ADVENTURES DECLARA e que não tinham objeto nosso: o ladrilho
+  // `CottageFireplace` (casa 13,26) e o `FallenDoor` (29,4). A lareira ainda tem fogo — a FA põe uma luz de
+  // fogueira e um som de lenha queimando em cima dela —, e é por isso que ela é a única coisa viva da aldeia.
+  lareira: 'Uma lareira de pedra do chão ao teto, e nela um fogo pequeno que alguém alimentou há pouco: brasa viva debaixo de três gravetos cruzados. Na cinza ao lado, um prato lascado, limpo.',
+  portaCaida: 'A porta do galpão, arrancada das dobradiças e caída de barriga para cima no piso de tábua. A madeira está estalada para FORA, e as dobradiças vieram junto com o batente — não arrombaram a porta para entrar; alguém grande saiu por ela.',
   cocho: 'Um cocho de madeira comprido, ainda com restos de feno que a cinza endureceu.',
   prateleira: 'Uma prateleira inclinada, com potes rachados enfileirados. Nenhum tem mais que pó e uma casca seca no fundo.',
   escrivaninha: 'Uma escrivaninha com o tinteiro seco e uma pena roída. As gavetas emperraram, mas dá para forçá-las.',
@@ -89,11 +110,20 @@ export const ACOES = {
     falha: 'Um guerreiro de pedra, como mil outros. Sem inscrição, não dá para dizer quem foi.',
     pista: 'A estátua da praça é de Palien, o herói de Neverwinter que enfrentou os monstros da Floresta de Neverwinter.',
   },
+  // AS DUAS ARANHAS MORTAS do capim, que a Forgotten Adventures desenha nas margens da trilha que desce da
+  // torre. O texto de Examinar já diz "o que a matou não deixou sobra"; o teste dá o nome disso. Natureza,
+  // porque a pergunta é sobre o bicho e sobre o que um bicho daquele tamanho come e é comido.
+  aranhaMorta: {
+    chave: 'aranhaMorta', rotulo: 'Ler o que matou a aranha', pericia: 'natureza', cd: 13,
+    sucesso: 'Não foi mordida nem rasgada: a carapaça está inteira e as juntas, abertas de dentro para fora. O que sobrou do corpo é casca seca, e a grama em volta morreu num halo. Isto é veneno, muito veneno de uma vez, e não de aranha — aranha nenhuma mata outra assim. Veio de cima, e veio do lado da torre.',
+    falha: 'Uma aranha gigante morta, e já faz tempo. Dá para contar as patas e mais nada.',
+    pista: 'As aranhas mortas na trilha da torre não foram mordidas: morreram de veneno em nuvem, vindo da torre. Seja o que for que mora lá, cospe.',
+  },
   alcapaoFechado: {
     chave: 'alcapao', rotulo: 'Abrir o alçapão', pericia: 'atletismo', cd: 10,
-    sucesso: 'A argola cede e o alçapão sobe. Uma escada de mão leva ao parapeito: de lá se vê a rua inteira, a praça e, no fim dela, a torre. É de onde os guardas viam quem vinha.',
+    sucesso: 'A argola cede e o alçapão sobe num rangido. Por baixo dele, o resto de uma escada de pedra encostada na parede que ainda está de pé — é por onde os guardas subiam para ver quem vinha pela estrada. Dá para subir.',
     falha: 'A madeira inchou e o alçapão não sai do lugar. Mais um empurrão e ele abre.',
-    pista: 'O telhado da guarnição dá vista para a rua inteira, da praça até a torre do dragão.',
+    pista: 'A escada da velha guarnição ainda sobe: do alto dela se vê a aldeia quase toda.',
   },
 };
 

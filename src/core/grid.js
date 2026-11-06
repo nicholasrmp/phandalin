@@ -556,9 +556,18 @@ export class Battlefield {
    *   parede — e, diferente de `occupied`, vale também para passar, porque
    *   quem não cabe não passa.
    */
-  reachable(from, budgetFt, occupied = () => false, cabe = () => true, f = 1, atravessa = () => false) {
+  /**
+   * ESPREMER (SRD 5.1): a criatura entra num espaço grande o bastante para uma criatura UMA CATEGORIA menor,
+   * e enquanto está espremida cada 1,5 m custa 1,5 m a mais. `apertado(x, y)` diz se a âncora serve só
+   * espremendo — quem passa a pagar o extra, e a casa fica marcada `apertado` no nó, para `moveAlong` pôr a
+   * condição em quem PARA ali. Sem isto, o dragão Grande não saía da torre pela porta de uma casa, e a
+   * criatura Grande ficava presa em qualquer vão estreito do mapa — que é o caso de todo battlemap de verdade.
+   */
+  reachable(from, budgetFt, occupied = () => false, cabe = () => true, f = 1, atravessa = () => false,
+            apertado = () => false) {
     const seen = new Map();
-    seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null, parar: true, passar: true, ord: 0 });
+    seen.set(key(from.x, from.y), { x: from.x, y: from.y, cost: 0, from: null, parar: true, passar: true, ord: 0,
+                                    apertado: f > 1 && apertado(from.x, from.y) });
     // Fila simples ordenada por custo: a grade é pequena, não precisa de heap.
     // `ord` desempata o custo igual: o caminho que atravessa MENOS criaturas vence (o livre é o preferido).
     const queue = [{ x: from.x, y: from.y, cost: 0, ord: 0 }];
@@ -573,9 +582,10 @@ export class Battlefield {
         const nx = cur.x + dx;
         const ny = cur.y + dy;
         if (!this.inside(nx, ny) || this.blocksMove(nx, ny)) continue;
-        if (!cabe(nx, ny)) continue;
-        if (!this.passaPegada(cur.x, cur.y, nx, ny, f)) continue;
-        if (f > 1 && this.paredeNaPegada(nx, ny, f)) continue;
+        // Cabe inteiro, ou cabe ESPREMIDO? A segunda pergunta só se faz para quem ocupa mais de um quadrado.
+        const cabeInteiro = cabe(nx, ny) && this.passaPegada(cur.x, cur.y, nx, ny, f) && !(f > 1 && this.paredeNaPegada(nx, ny, f));
+        const espremendo = !cabeInteiro && f > 1 && apertado(nx, ny);
+        if (!cabeInteiro && !espremendo) continue;
         // Não corta quina entre duas paredes.
         if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
         if (!this.voando && !this.escalando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
@@ -584,7 +594,8 @@ export class Battlefield {
         // Só cobra quando se PASSA por ele; o inimigo que barra a passagem não entra na conta.
         const tomada = occupied(nx, ny);
         const passa = !tomada || atravessa(nx, ny);
-        const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y, tomada && passa);
+        // espremido paga 1,5 m a mais por quadrado, somado ao terreno difícil (como o rastejar)
+        const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y, tomada && passa) + (espremendo ? FEET_PER_SQUARE : 0);
         if (cost > budgetFt) continue;
         const nKey = key(nx, ny);
         const prev = seen.get(nKey);
@@ -602,7 +613,7 @@ export class Battlefield {
         // grade e a seteira, e não PARA dentro delas — se a magia acabasse ali,
         // o herói ficaria entalado na grade.
         const soDePassagem = this.atravessaVao && this.vaos.has(nKey);
-        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem, passar: passa, ord });
+        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem, passar: passa, ord, apertado: espremendo });
         if (passa) queue.push({ x: nx, y: ny, cost, ord });
       }
     }
