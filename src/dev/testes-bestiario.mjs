@@ -896,5 +896,33 @@ await teste('Ações especiais novas: aumentar, grito de guerra, invocar com dem
   assert.ok(hasCondition(f.party[1], 'amaldicoadoLamia'), 'o Toque Inebriante amaldiçoa');
 });
 
+
+// ------------------------------------------------- o multiataque de golpes diferentes (o importador do MM) ----
+await teste('o multiataque do grick alfa: cauda, tentáculos e o bico SÓ quando os tentáculos acertam', async () => {
+  let comBico = 0;
+  let semTentaculo = 0;
+  for (let seed = 1; seed <= 120; seed++) {
+    const { enc, party, foes } = montar({ seed, foes: [['grickAlfa', { x: 6, y: 5 }]], lado: 'foes' });
+    const golpes = [];
+    const resolve = enc.resolveAttack.bind(enc);
+    enc.resolveAttack = (a, t, o) => { const r = resolve(a, t, o); golpes.push([o.weaponId, !!r?.hit]); return r; };
+    enc.attackAction(foes[0], party[0], 'Cauda');
+    const nomes = golpes.map((g) => g[0]);
+    assert.deepEqual(nomes.slice(0, 2), ['Cauda', 'Tentáculos'], `semente ${seed}: ${nomes}`);
+    const tentaculos = golpes.find((g) => g[0] === 'Tentáculos');
+    if (nomes.includes('Bico')) { comBico += 1; assert.ok(tentaculos[1], 'o bico mordeu sem os tentáculos acertarem'); }
+    if (!tentaculos[1]) { semTentaculo += 1; assert.ok(!nomes.includes('Bico')); }
+  }
+  assert.ok(comBico > 0 && semTentaculo > 0, `amostra fraca: ${comBico} com bico, ${semTentaculo} sem tentáculo`);
+});
+
+await teste('as sequências alternativas: a mantícora morde e arranha de perto, ou atira três espinhos', async () => {
+  const { enc, foes } = montar({ foes: [['manticora', { x: 6, y: 5 }]] });
+  assert.deepEqual(enc.golpesDoAtaque(foes[0], 'Mordida'), ['Mordida', 'Garra', 'Garra']);
+  assert.deepEqual(enc.golpesDoAtaque(foes[0], 'Espinho da Cauda'), ['Espinho da Cauda', 'Espinho da Cauda', 'Espinho da Cauda']);
+  const xorn = montar({ foes: [['xorn', { x: 6, y: 5 }]] });
+  assert.deepEqual(xorn.enc.golpesDoAtaque(xorn.foes[0], 'Mordida'), ['Garra', 'Garra', 'Garra', 'Mordida']);
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram.`);
 if (falhas) process.exit(1);

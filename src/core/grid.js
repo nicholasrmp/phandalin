@@ -222,6 +222,9 @@ export const GLIFOS = {
   // O REPOUSO DE ZORZULA (o capítulo 5 do Obelisco): o mar de lava que os janelões da forja olham e os canais do
   // Santuário Índigo. Como o fosso, não se anda nela (só se voa por cima), e visão, luz e flecha passam.
   '(': { kind: 2, sup: 'lava' },
+  // A ÁGUA RASA (a Encruzilhada da Forca: os 60 cm das salas drow alagadas). Terreno difícil para quem anda, e não se
+  // nada nela: por isso fica fora de AGUAS_FUNDAS. O riacho (`w`) é mais raso e não custa passo.
+  ']': { kind: 2, sup: 'aguaRasa' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];

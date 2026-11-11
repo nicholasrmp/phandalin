@@ -4895,9 +4895,9 @@ export const LIVRO_MM = {
   "multiattack": {
    "count": 3,
    "sequence": [
+    "Cauda",
     "Garra",
-    "Garra",
-    "Cauda"
+    "Garra"
    ]
   },
   "espinhos": {
@@ -5228,7 +5228,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Mordida",
+    "Constrição"
+   ]
   },
   "breath": {
    "name": "Sopro Elétrico",
@@ -7106,7 +7110,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Pique",
+     "Cascos"
+    ],
+    [
+     "Arco Longo",
+     "Arco Longo"
+    ]
+   ]
   },
   "traits": [],
   "blurb": "Investe em linha reta com o pique para causar dano extra e completa o ataque com coices; à distância, dispara dois tiros de arco longo por turno. Rápido e com alcance de 3 m, é difícil de evitar.",
@@ -7181,7 +7195,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Corrente",
+    "Corrente"
+   ]
   },
   "acoesEspeciais": [
    {
@@ -8334,7 +8352,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Punho",
+     "Punho"
+    ],
+    [
+     "Marreta",
+     "Marreta"
+    ]
+   ]
   },
   "spellcasting": {
    "ability": "cha",
@@ -8712,10 +8740,17 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 3,
-   "sequence": [
-    "Mordida (só forma de slaad)",
-    "Garras (só forma de slaad)",
-    "Garras (só forma de slaad)"
+   "sequencias": [
+    [
+     "Mordida (só forma de slaad)",
+     "Garras (só forma de slaad)",
+     "Garras (só forma de slaad)"
+    ],
+    [
+     "Mordida (só forma de slaad)",
+     "Espada Grande",
+     "Espada Grande"
+    ]
    ]
   },
   "spellcasting": {
@@ -9285,7 +9320,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Tentáculo",
+    "Tentáculo"
+   ]
   },
   "traits": [
    "evasaoTotal",
@@ -9531,7 +9570,18 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 3,
+   "sequencias": [
+    [
+     "Mordida",
+     "Garra",
+     "Garra"
+    ],
+    [
+     "Mordida",
+     "Cauda"
+    ]
+   ]
   },
   "breath": {
    "name": "Bafo de Vapor",
@@ -9713,7 +9763,19 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 3,
+   "sequencias": [
+    [
+     "Espada Longa",
+     "Espada Longa",
+     "Mordida"
+    ],
+    [
+     "Arco Longo",
+     "Arco Longo",
+     "Arco Longo"
+    ]
+   ]
   },
   "spellcasting": {
    "ability": "wis",
@@ -10273,7 +10335,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Punho",
+     "Punho"
+    ],
+    [
+     "Azagaia",
+     "Azagaia"
+    ]
+   ]
   },
   "traits": [
    "t_menteAxiomatica",
@@ -14257,11 +14329,17 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 4,
-   "sequence": [
-    "Pinça",
-    "Pinça",
-    "Punho",
-    "Punho"
+   "sequencias": [
+    [
+     "Pinça",
+     "Pinça",
+     "Punho",
+     "Punho"
+    ],
+    [
+     "Pinça",
+     "Pinça"
+    ]
    ]
   },
   "spellcasting": {
@@ -14582,7 +14660,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Glaive",
+     "Glaive"
+    ],
+    [
+     "Arco Longo",
+     "Arco Longo"
+    ]
+   ]
   },
   "traits": [
    "incitarRampage",
@@ -15042,10 +15130,17 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 3,
-   "sequence": [
-    "Mordida (só forma de slaad)",
-    "Garras (só forma de slaad)",
-    "Garras (só forma de slaad)"
+   "sequencias": [
+    [
+     "Mordida (só forma de slaad)",
+     "Garras (só forma de slaad)",
+     "Garras (só forma de slaad)"
+    ],
+    [
+     "Mordida (só forma de slaad)",
+     "Espadão",
+     "Espadão"
+    ]
    ]
   },
   "spellcasting": {
@@ -15343,10 +15438,17 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 3,
-   "sequence": [
-    "Mordida",
-    "Garra",
-    "Garra"
+   "sequencias": [
+    [
+     "Mordida",
+     "Garra",
+     "Garra"
+    ],
+    [
+     "Mordida",
+     "Cajado",
+     "Cajado"
+    ]
    ]
   },
   "spellcasting": {
@@ -15458,7 +15560,15 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 3,
+   "sequence": [
+    "Cauda",
+    "Tentáculos",
+    "Bico"
+   ],
+   "condicional": {
+    "Bico": "Tentáculos"
+   }
   },
   "traits": [
    "camuflagemDePedra"
@@ -16570,7 +16680,10 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 3,
+   "porArma": {
+    "Azagaia": 2
+   }
   },
   "traits": [
    "lideranca",
@@ -17355,7 +17468,10 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 1
+   "count": 1,
+   "sequence": [
+    "Garras"
+   ]
   },
   "acoesEspeciais": [
    {
@@ -18251,7 +18367,12 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 1
+   "count": 3,
+   "sequence": [
+    "Mordida",
+    "Golpe Desarmado",
+    "Golpe Desarmado"
+   ]
   },
   "traits": [
    "t_percepcaoSobrenatural",
@@ -18430,9 +18551,15 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 2,
-   "sequence": [
-    "Garras",
-    "Adaga"
+   "sequencias": [
+    [
+     "Garras",
+     "Adaga"
+    ],
+    [
+     "Garras",
+     "Toque Inebriante"
+    ]
    ]
   },
   "spellcasting": {
@@ -18924,9 +19051,19 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 2,
-   "sequence": [
-    "Mordida",
-    "Garras"
+   "sequencias": [
+    [
+     "Mordida",
+     "Garras"
+    ],
+    [
+     "Mordida",
+     "Tridente"
+    ],
+    [
+     "Tridente",
+     "Tridente"
+    ]
    ]
   },
   "espetar": {
@@ -19016,9 +19153,19 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 2,
-   "sequence": [
-    "Mordida",
-    "Garras"
+   "sequencias": [
+    [
+     "Mordida",
+     "Garras"
+    ],
+    [
+     "Mordida",
+     "Tridente"
+    ],
+    [
+     "Tridente",
+     "Tridente"
+    ]
    ]
   },
   "espetar": {
@@ -19103,7 +19250,21 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Mordida",
+     "Clava Pesada"
+    ],
+    [
+     "Mordida",
+     "Azagaia"
+    ],
+    [
+     "Mordida",
+     "Escudo Cravejado"
+    ]
+   ]
   },
   "traits": [],
   "blurb": "Ataca duas vezes por turno combinando mordida com clava, escudo cravejado ou azagaia, e pode emboscar a partir da água, onde nada tão rápido quanto anda.",
@@ -19573,7 +19734,19 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 3,
+   "sequencias": [
+    [
+     "Mordida",
+     "Garra",
+     "Garra"
+    ],
+    [
+     "Espinho da Cauda",
+     "Espinho da Cauda",
+     "Espinho da Cauda"
+    ]
+   ]
   },
   "traits": [
    "t_espinhosRegenerativos"
@@ -19794,7 +19967,16 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 7,
+   "sequence": [
+    "Espada Longa",
+    "Espada Longa",
+    "Espada Longa",
+    "Espada Longa",
+    "Espada Longa",
+    "Espada Longa",
+    "Cauda"
+   ]
   },
   "acoesEspeciais": [
    {
@@ -19979,9 +20161,15 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 2,
-   "sequence": [
-    "Mordida",
-    "Garras"
+   "sequencias": [
+    [
+     "Mordida",
+     "Garras"
+    ],
+    [
+     "Mordida",
+     "Arpão"
+    ]
    ]
   },
   "traits": [],
@@ -20730,7 +20918,10 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 1
+   "count": 1,
+   "sequence": [
+    "Punho Apodrecido"
+   ]
   },
   "spellcasting": {
    "ability": "wis",
@@ -21564,7 +21755,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Garra (só na forma de oni)",
+     "Garra (só na forma de oni)"
+    ],
+    [
+     "Glaive",
+     "Glaive"
+    ]
+   ]
   },
   "spellcasting": {
    "ability": "cha",
@@ -21761,7 +21962,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Machado Grande",
+     "Machado Grande"
+    ],
+    [
+     "Lança",
+     "Lança"
+    ]
+   ]
   },
   "acoesEspeciais": [
    {
@@ -22062,7 +22273,14 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 5
+   "count": 5,
+   "sequence": [
+    "Braço",
+    "Braço",
+    "Braço",
+    "Braço",
+    "Braço"
+   ]
   },
   "acoesEspeciais": [
    {
@@ -23132,7 +23350,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Mordida",
+    "Ferrão da Cauda"
+   ]
   },
   "traits": [
    "escavador"
@@ -23197,7 +23419,19 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 4,
+   "sequencias": [
+    [
+     "Punho",
+     "Punho"
+    ],
+    [
+     "Arco Curto",
+     "Arco Curto",
+     "Arco Curto",
+     "Arco Curto"
+    ]
+   ]
   },
   "traits": [
    "t_menteAxiomatica",
@@ -24178,7 +24412,14 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 4
+   "count": 5,
+   "sequence": [
+    "Tentáculo",
+    "Tentáculo",
+    "Tentáculo",
+    "Tentáculo",
+    "Mordida"
+   ]
   },
   "acoesEspeciais": [
    {
@@ -24384,9 +24625,15 @@ export const LIVRO_MM = {
   ],
   "multiattack": {
    "count": 2,
-   "sequence": [
-    "Mordida",
-    "Garras"
+   "sequencias": [
+    [
+     "Mordida",
+     "Garras"
+    ],
+    [
+     "Mordida",
+     "Lança"
+    ]
    ]
   },
   "traits": [
@@ -24470,7 +24717,19 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 3,
+   "sequencias": [
+    [
+     "Mordida",
+     "Garras",
+     "Garras"
+    ],
+    [
+     "Mordida",
+     "Tridente",
+     "Tridente"
+    ]
+   ]
   },
   "traits": [
    "frenesiDeSangue",
@@ -24536,7 +24795,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Mordida",
+    "Garras"
+   ]
   },
   "spellcasting": {
    "ability": "wis",
@@ -25699,7 +25962,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Mordida",
+     "Forcado"
+    ],
+    [
+     "Espinho da Cauda",
+     "Espinho da Cauda"
+    ]
+   ]
   },
   "features": [
    "devilsSight"
@@ -27384,7 +27657,19 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 3,
+   "sequencias": [
+    [
+     "Punho",
+     "Punho",
+     "Punho"
+    ],
+    [
+     "Azagaia",
+     "Azagaia",
+     "Azagaia"
+    ]
+   ]
   },
   "traits": [
    "t_menteAxiomatica",
@@ -28042,7 +28327,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Golpe Desarmado",
+    "Mordida"
+   ]
   },
   "recursos": {
    "resistenciaLendaria": 3
@@ -28182,7 +28471,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Garras",
+    "Mordida"
+   ]
   },
   "regeneracao": {
    "pv": 10,
@@ -28264,7 +28557,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Golpe Desarmado",
+    "Mordida"
+   ]
   },
   "spellcasting": {
    "ability": "int",
@@ -28461,7 +28758,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Golpe Desarmado (Só Forma Vampírica)",
+     "Mordida (Só Forma de Morcego ou Vampírica)"
+    ],
+    [
+     "Espada Grande",
+     "Mordida (Só Forma de Morcego ou Vampírica)"
+    ]
+   ]
   },
   "recursos": {
    "resistenciaLendaria": 3
@@ -29009,7 +29316,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Garra",
+     "Garra"
+    ],
+    [
+     "Machado Grande",
+     "Machado Grande"
+    ]
+   ]
   },
   "traits": [
    "metamorfo",
@@ -29080,7 +29397,11 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequence": [
+    "Marreta",
+    "Presas"
+   ]
   },
   "traits": [
    "metamorfo",
@@ -29155,7 +29476,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Besta de Mão",
+     "Besta de Mão"
+    ],
+    [
+     "Espada Curta",
+     "Mordida"
+    ]
+   ]
   },
   "traits": [
    "metamorfo",
@@ -29245,7 +29576,21 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Cimitarra",
+     "Cimitarra"
+    ],
+    [
+     "Arco Longo",
+     "Arco Longo"
+    ],
+    [
+     "Garra",
+     "Garra"
+    ]
+   ]
   },
   "traits": [
    "metamorfo",
@@ -29325,7 +29670,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Lança",
+     "Lança"
+    ],
+    [
+     "Mordida",
+     "Garras"
+    ]
+   ]
   },
   "traits": [
    "metamorfo",
@@ -29830,7 +30185,13 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 3
+   "count": 4,
+   "sequence": [
+    "Garra",
+    "Garra",
+    "Garra",
+    "Mordida"
+   ]
   },
   "traits": [
    "deslizarNaTerra",
@@ -31273,7 +31634,18 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 3,
+   "sequencias": [
+    [
+     "Cimitarra",
+     "Mordida",
+     "Constrição"
+    ],
+    [
+     "Arco Longo",
+     "Arco Longo"
+    ]
+   ]
   },
   "spellcasting": {
    "ability": "cha",
@@ -31379,7 +31751,17 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Cimitarra",
+     "Mordida"
+    ],
+    [
+     "Arco Longo",
+     "Arco Longo"
+    ]
+   ]
   },
   "spellcasting": {
    "ability": "cha",
@@ -31580,7 +31962,21 @@ export const LIVRO_MM = {
    }
   ],
   "multiattack": {
-   "count": 2
+   "count": 2,
+   "sequencias": [
+    [
+     "Cimitarra (somente forma yuan-ti)",
+     "Constrição"
+    ],
+    [
+     "Arco Longo (somente forma yuan-ti)",
+     "Arco Longo (somente forma yuan-ti)"
+    ],
+    [
+     "Mordida (somente forma de serpente)",
+     "Constrição"
+    ]
+   ]
   },
   "spellcasting": {
    "ability": "cha",

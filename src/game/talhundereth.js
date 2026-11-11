@@ -49,6 +49,7 @@ import { mudarFogo, luzNaCasa } from './fogo.js';
 import { PONTOS_TALHUNDERETH as P } from './talhundereth-mapa.js';
 import { damageRoll } from '../core/dice.js';
 import { SPELLS } from '../rules/spells.js';
+import { guardiaoVencido } from './obelisco6-marcos.js';
 
 const MOVIMENTO = 60;
 const TITULO = 'Talhundereth';
@@ -524,6 +525,8 @@ export function criarTalhundereth(app, config = {}) {
     }
     if (sala === 'T21') {
       await painel('A massa de cérebros desaba e escorre pelo chão do salão. O fragmento continua brilhando no altar, sem ninguém em volta.');
+      // o guardião do fragmento: o marco do 8º (e o do 9º, se os outros dois já caíram)
+      await guardiaoVencido(app, o6, 'talhundereth', herois());
     }
     // depois da luta, os escondidos que sobraram voltam a esperar
     prepararExploracao();
@@ -546,10 +549,10 @@ export function criarTalhundereth(app, config = {}) {
       }) });
     }
     if (aqui(P.tunelOeste)) {
-      ops.push({ rotulo: 'Seguir o túnel baixo', icone: 'acao-disparada', detalhe: 'para oeste, curvado', motivo: longe(c, tile), fazer: async () => {
-        await painel('O túnel tem um metro e meio de altura e desce, desce, com degraus cavados de vez em quando. Depois de uma hora curvados, vocês sentem um vento frio vindo de baixo, e voltam: esse caminho leva à Encruzilhada da Forca, e não é para hoje.');
+      ops.push({ rotulo: 'Seguir o túnel baixo', icone: 'acao-disparada', detalhe: 'para oeste, curvado · até a Encruzilhada da Forca', motivo: longe(c, tile), fazer: () => sair((v) => {
         pista('O túnel baixo a oeste da entrada de Talhundereth desce até a Encruzilhada da Forca.');
-      } });
+        app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'encruzilhada', chegada: 'talhundereth', continuarCom: v });
+      }) });
     }
 
     // T4 e o vão do cofre
@@ -876,6 +879,10 @@ export function criarTalhundereth(app, config = {}) {
         if (m.dead) continue;
         if (m.escondido) continue;
         neutro(m);
+      }
+      // quem sobe a fenda da Encruzilhada chega pelo túnel baixo da entrada
+      if (config.chegada === 'encruzilhada') {
+        herois().forEach((h, i) => { h.pos = { ...h.pos, ...(enc.casaLivreMaisProxima({ x: P.tunelOeste.x + (i % 2), y: P.tunelOeste.y + Math.floor(i / 2) }) ?? h.pos) }; });
       }
       // quem sobe da cripta chega pela escada de T20
       if (config.chegada === 'cripta') {

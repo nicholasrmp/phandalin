@@ -60,6 +60,7 @@ const CORES_SUP = {
   conchas: '#6f6a5c',
   canal: '#4a4640',
   aguaEscura: '#1a2a3a',
+  aguaRasa: '#22343f',
   lava: '#4a35a0',
 };
 

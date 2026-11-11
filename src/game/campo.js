@@ -23,6 +23,10 @@ export function montarCampo(mapa) {
   if (mapa.espinheiroCobre) {
     mapa.terreno.forEach((linha, y) => { for (let x = 0; x < linha.length; x++) if (linha[x] === '%' || linha[x] === 'P') field.matas.add(`${x},${y}`); });
   }
+  // A SALA EMBAÇADA (a Encruzilhada da Forca, G12: a Nublar dos gnomos impregnou a pedra): todo ataque contra quem está
+  // numa destas casas tem desvantagem, salvo de quem não depende da vista (percepção às cegas) ou vê através da ilusão
+  // (visão verdadeira). `combat.js` pergunta.
+  if (mapa.embacado?.length) field.embacado = new Set(mapa.embacado.map((c) => `${c.x},${c.y}`));
   // O mapa PINTADO por baixo e como ele se encaixa na grade (ver `mapa-editor.js`): quem desenha é a vista de cima.
   if (mapa.fundo) field.fundo = mapa.fundo;
   // AS SOBREPOSIÇÕES: pedaços de arte com nome que o roteiro acende e apaga (a fogueira, a ponte que cede, o

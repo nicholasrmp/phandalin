@@ -46,6 +46,7 @@ import { ctxDe } from './magias-fora.js';
 import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { PONTOS_CRIPTA as P } from './cripta-mapa.js';
+import { guardiaoVencido } from './obelisco6-marcos.js';
 
 const MOVIMENTO = 60;
 const TITULO = 'A Cripta dos Talhund';
@@ -453,6 +454,8 @@ export function criarCriptaTalhund(app, config = {}) {
     }
     if (sala === 'P18') {
       for (const m of daSala('P18')) { m.dead = true; m.xp = 0; }
+      // o guardião do fragmento da cripta: o marco do 9º, se os outros dois já caíram (`obelisco6-marcos.js`)
+      await guardiaoVencido(app, o6, 'cripta', herois());
     }
     prepararExploracao();
   }

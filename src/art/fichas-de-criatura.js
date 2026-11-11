@@ -28,6 +28,8 @@ const COM_FICHA = new Set([...FICHAS_DOS_LIVROS,
   'serpenteConstritoraGigante', 'zumbiOgro',
   // Talhundereth (o Obelisco, capítulo 6).
   'galebDuhr', 'pedregulhoAnimado', 'medusa', 'horrorDeElmo', 'mefitDePoeira', 'wight', 'mutanteHumanoide', 'armadilhaDeIntelecto', 'drowGuerreiroDeElite', 'elementalDaTerra', 'aglomeradoEncefalico', 'revenant', 'hidra', 'aguaViva', 'golemDeArgila', 'fantasma', 'mumia', 'esqueletoAnao', 'gnomoDasProfundezas',
+  // a Encruzilhada da Forca (o Obelisco, capítulo 6)
+  'qunbraxel',
 ]);
 
 // O MESMO BLOCO, PESSOAS DIFERENTES: a Casa da Morte faz Rose e Thorn do bloco de fantasma de criança e dá o nome

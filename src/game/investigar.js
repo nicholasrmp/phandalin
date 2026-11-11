@@ -43,6 +43,7 @@ export const CD_PADRAO = 10;
 export const ACHADOS_DA_SUPERFICIE = {
   riacho: { achado: 'Meio metro de água fria, correndo devagar: anda-se nela sem perder passo. Na lama da margem, pegadas pequenas de pé descalço, com marca de unha.' },
   poco: { achado: 'Água parada e funda; não se vê o fundo. Atravessar aqui é nadar, e nadar custa o dobro.' },
+  aguaRasa: { achado: 'Água até o joelho, escura demais para ver o chão. Os pés acham pedra lisa, e de vez em quando alguma coisa mole que não é pedra.' },
   aguaEscura: { achado: 'Água escura demais para ver o fundo. O que estiver lá embaixo vê quem está em cima antes.' },
   rocha: { achado: 'Pedra úmida e fria, sem fenda que se possa usar. Com o ouvido encostado, dá para tentar escutar o outro lado.' },
   parede: { achado: 'Parede firme, sem junta solta nem marca de passagem.' },

@@ -60,6 +60,7 @@ export const SUPERFICIE = {
   conchas: { topo: ['#2a2724', '#26231f'], lado: ROCHA_LADO, chao: 'conchas', face: 'penhasco' },
   canal: { topo: ['#4a4640', '#46423c'], lado: ROCHA_LADO, chao: 'canal', face: 'penhasco' },
   aguaEscura: { topo: ['#0f1a26', '#0d1722'], lado: ROCHA_LADO, chao: 'aguaEscura' },
+  aguaRasa: { topo: ['#22343f', '#1e2f39'], lado: ROCHA_LADO, chao: 'riacho' },
   prop: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   propBaixo: { topo: CAVERNA, lado: ROCHA_LADO, chao: 'laje', face: 'alvenaria', objeto: 'prop' },
   poco: { topo: ['#22465e', '#204259'], lado: ROCHA_LADO, chao: 'poco' },

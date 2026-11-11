@@ -16,6 +16,7 @@ import { ABERRACOES, TRAITS as T_ABE } from './monsters/aberracoes.js';
 import { CASA_DA_MORTE, TRAITS as T_CDM } from './monsters/strahd.js';
 import { TALHUNDERETH, TRAITS as T_TAL } from './monsters/talhundereth.js';
 import { CRIPTA, TRAITS as T_CRI } from './monsters/cripta.js';
+import { ENCRUZILHADA, TRAITS as T_ENC } from './monsters/encruzilhada.js';
 import { INVOCACOES_DE_MAGIA } from './monsters/magias.js';
 // Os bestiários IMPORTADOS dos livros (`src/dev/importar-bestiario.mjs`): vêm antes, para o bloco feito à mão vencer.
 import { LIVRO_MM, TRACOS_MM } from './monsters/livro-mm.js';
@@ -31,6 +32,7 @@ export const MONSTERS = {
   ...CASA_DA_MORTE,
   ...TALHUNDERETH,
   ...CRIPTA,
+  ...ENCRUZILHADA,
   // as criaturas que as magias conjuram (o Animar Objetos, a Mão de Bigby, a Espada de Mordenkainen)
   ...INVOCACOES_DE_MAGIA,
 };
@@ -120,7 +122,7 @@ const TRACOS_BASE = {
   escudoDoGuardiao: { name: 'Escudo', desc: 'Reação: +2 de CA no mestre, se está colado nele.' },
 };
 
-export const TRAIT_INFO = { ...TRACOS_MM, ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE, ...T_CDM, ...T_TAL, ...T_CRI };
+export const TRAIT_INFO = { ...TRACOS_MM, ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE, ...T_CDM, ...T_TAL, ...T_CRI, ...T_ENC };
 
 let serial = 0;
 

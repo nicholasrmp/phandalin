@@ -29,12 +29,52 @@ teste('o golpe: acerto, alcance, dados e tipo saem do texto do livro', () => {
   assert.ok(arco.ranged && arco.rangeFt === 60 && arco.longRangeFt === 240);
 });
 
+// os golpes lidos do bloco, com o nome do livro como nome no jogo (para a prova, basta casar)
+const golpesDe = (m) => m.action.filter((a) => !/^Multiattack/.test(a.name)).map((a) => {
+  const nome = a.name.replace(/\{@[^}]*\}/g, '').replace(/\s*\(.*\)\s*$/, '').trim();
+  const g = golpe(a, nome);
+  if (g) g.nomeEn = nome;
+  return g;
+}).filter(Boolean);
+const multiDe = (nome) => { const m = de(nome); return multiataque(acao(m, 'Multiattack'), {}, golpesDe(m)); };
+
 teste('o multiataque conta os golpes e, quando o livro diz quais, a sequência', () => {
-  const m = de('Owlbear') ?? de('Brown Bear');
-  const mult = multiataque(acao(de('Hill Giant'), 'Multiattack'), { Greatclub: 'Clava Grande' });
+  const mult = multiDe('Hill Giant');
   assert.equal(mult.count, 2);
-  assert.deepEqual(mult.sequence, ['Clava Grande', 'Clava Grande']);
-  assert.ok(m);
+  assert.deepEqual(mult.sequence, ['Greatclub', 'Greatclub']);
+});
+
+// O MULTIATAQUE DE GOLPES DIFERENTES: antes, 39 criaturas do MM saíam com `{ count }` só, e o motor repetia o primeiro
+// golpe (o grick alfa dava duas caudas; o xorn, três mordidas). Cada uma destas falha no leitor antigo.
+teste('"três garras e uma mordida": a sequência inteira, com o total somado (o xorn)', () => {
+  assert.deepEqual(multiDe('Xorn'), { count: 4, sequence: ['Claw', 'Claw', 'Claw', 'Bite'] });
+});
+
+teste('o golpe condicional: o bico do grick alfa só depois dos tentáculos', () => {
+  assert.deepEqual(multiDe('Grick Alpha'), { count: 3, sequence: ['Tail', 'Tentacles', 'Beak'], condicional: { Beak: 'Tentacles' } });
+});
+
+teste('"... ou três com os espinhos da cauda": as sequências alternativas (a mantícora, o centauro)', () => {
+  assert.deepEqual(multiDe('Manticore').sequencias, [['Bite', 'Claw', 'Claw'], ['Tail Spike', 'Tail Spike', 'Tail Spike']]);
+  assert.deepEqual(multiDe('Centaur').sequencias, [['Pike', 'Hooves'], ['Longbow', 'Longbow']]);
+});
+
+teste('"três ataques corpo a corpo; ou duas azagaias": qualquer arma três vezes, as azagaias duas', () => {
+  assert.deepEqual(multiDe('Hobgoblin Warlord'), { count: 3, porArma: { Javelin: 2 } });
+});
+
+teste('"só uma vez cada": a abominação yuan-ti morde e constringe uma vez nos três golpes de perto', () => {
+  assert.deepEqual(multiDe('Yuan-ti Abomination').sequencias, [['Scimitar', 'Bite', 'Constrict'], ['Longbow', 'Longbow']]);
+});
+
+teste('"só um pode ser a mordida": a cria vampírica não morde duas vezes', () => {
+  assert.deepEqual(multiDe('Vampire Spawn'), { count: 2, sequence: ['Claws', 'Bite'] });
+});
+
+teste('os números além de quatro e o plural do golpe (a marilith: seis espadas e a cauda)', () => {
+  const m = multiDe('Marilith');
+  assert.equal(m.count, 7);
+  assert.deepEqual(m.sequence, [...Array(6).fill('Longsword'), 'Tail']);
 });
 
 teste('o sopro do dragão: cone, CD, dados, tipo, metade e a recarga 5–6', () => {

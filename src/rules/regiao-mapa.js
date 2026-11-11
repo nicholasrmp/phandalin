@@ -31,6 +31,8 @@ export const POSICOES_OFICIAIS = {
   zorzula: { x: 1274, y: 1716 },
   hardyhammer: { x: 900, y: 1910 },
   talhundereth: { x: 1548, y: 898 },
+  // o segundo X das colinas de Starmetal, a sudeste do de Talhundereth (medido na arte do mapa de jogador)
+  encruzilhada: { x: 1608, y: 962 },
   neverwinter: { x: 370, y: 1046 },
   leilon: { x: 708, y: 1966 },
 };

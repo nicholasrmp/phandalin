@@ -282,6 +282,39 @@ export const PHANDELVER_ITEMS = {
     + 'escondida no peito do arquiteto.', { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 500 }),
   lascaDaEsmeralda: nomeado('lascaDaEsmeralda', 'Lasca da grande gema', 'comum', 'Uma lasca verde e morna da gema do santuário '
     + 'giratório. Não vale nada no mercado, e vale tudo para um fiel de Dumathoin.', { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 0, missao: true }),
+  // a Encruzilhada da Forca
+  gaiolaDeEspinhos: nomeado('gaiolaDeEspinhos', 'Gaiola de espinhos', 'comum',
+    'Uma gaiola duergar de ferro com os espinhos para dentro e dobradiças de mitral. Dobrada, é um cubo do tamanho de um baú; '
+    + 'armá-la ou desarmá-la leva um minuto. Não tem fechadura.', { tipo: 'tesouro', peso: 50, valor: 200 }),
+  livroDosEnroladores: nomeado('livroDosEnroladores', 'Livro ilustrado sobre enroladores', 'comum',
+    'Um livro de couro com desenhos à pena de enroladores: como dormem, como comem, onde ficam as pedras que não digerem.',
+    { tipo: 'tesouro', peso: 2, valor: 25 }),
+  esmeralda: nomeado('esmeralda', 'Esmeralda', 'comum', 'Uma esmeralda funda, do tamanho de uma unha, lapidada em degraus.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 250 }),
+  ametistaDoEnrolador: nomeado('ametistaDoEnrolador', 'Ametista pequena', 'comum',
+    'Uma ametista do tamanho de uma ervilha, polida por dentro de uma barriga de enrolador.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 30, pilha: true }),
+  jacinto: nomeado('jacinto', 'Jacinto', 'comum', 'Uma pedra laranja-avermelhada, transparente, do tamanho de uma lentilha.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 90, pilha: true }),
+  adagaCravejada: nomeado('adagaCravejada', 'Adaga cravejada', 'comum',
+    'Uma adaga drow de lâmina fina, com o cabo cravejado de pedras pequenas. Mais joia que arma.',
+    { tipo: 'tesouro', peso: 1, valor: 200 }),
+  varinhaDeDeteccaoDeMagia: nomeado('varinhaDeDeteccaoDeMagia', 'Varinha de detectar magia', 'incomum',
+    'Uma varinha de madeira clara com três cargas. Com uma delas, quem a segura sente a magia em volta como se tivesse '
+    + 'conjurado Detectar Magia.', { tipo: 'varinha', art: 'arcano', peso: 1, valor: 150 }),
+  mochilaPraticaDeHeward: nomeado('mochilaPraticaDeHeward', 'Mochila prática de Heward', 'raro',
+    'Uma mochila de couro com dois bolsos e um compartimento que cabem muito mais do que deviam. O que se quer sai sempre por '
+    + 'cima.', { tipo: 'maravilhoso', peso: 5, valor: 2000 }),
+  pergaminhoDeLiberdadeDeMovimento: nomeado('pergaminhoDeLiberdadeDeMovimento', 'Pergaminho de Liberdade de Movimento', 'raro',
+    'Liberdade de Movimento, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 500, magia: 'liberdadeDeMovimento' }),
+  torreLamacenta: nomeado('torreLamacenta', 'Torre Lamacenta', 'muito raro',
+    'Uma esfera de granito do tamanho de uma noz. Com a palavra de comando, cresce numa torre de pedra de dois andares, com '
+    + 'ameias, seteiras e uma porta que só abre ao dono. A palavra é "petrificação", em terrano.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 5000 }),
+  cascalhoPetrificado: nomeado('cascalhoPetrificado', 'Cascalho de estátua', 'comum',
+    'Um punhado de cascalho dos rostos quebrados das estátuas do salão dos Triestoroth. Era gente, antes do basilisco.',
+    { tipo: 'tesouro', peso: 1, valor: 0, missao: true }),
   livroDeGranito: nomeado('livroDeGranito', 'O Livro de Granito', 'comum',
     'Páginas de metal entre capas de granito fino. Os segredos do templo, a lista dos que dormem na cripta e, em anão, '
     + 'como abrir a porta dela: girar o disco do entalhe menos lapidado ao mais lapidado e pôr uma gema no centro.',

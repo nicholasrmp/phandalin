@@ -108,6 +108,9 @@ export const LOCAIS = [
   // Talhundereth (o Obelisco, capítulo 6): o templo anão nas colinas a nordeste, que o mapa dos goblins marca e a Gwyn
   // traduz. Aparece com a missão dos fragmentos.
   { id: 'talhundereth', nome: 'Talhundereth', x: 76.0, y: 50.0, missao: 'fragmentos', jogavel: true },
+  // A Encruzilhada da Forca (o Obelisco, capítulo 6): o entreposto do Subterrâneo, sob as mesmas colinas. Aparece com a
+  // missão dos fragmentos; também se chega a ela pelo túnel baixo de Talhundereth.
+  { id: 'encruzilhada', nome: 'Encruzilhada da Forca', x: 79.5, y: 54.0, missao: 'fragmentos', jogavel: true },
   { id: 'neverwinter', nome: 'Neverwinter', x: 14.5, y: 30.8, sempre: true, cidade: true },
   { id: 'leilon', nome: 'Leilon', x: 39.0, y: 89.0, sempre: true, cidade: true },
 ];
@@ -321,6 +324,11 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (l.id === 'talhundereth') {
       feitos.visitou_talhundereth = true;
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'talhundereth', continuarCom: vivos() });
+      return;
+    }
+    if (l.id === 'encruzilhada') {
+      feitos.visitou_encruzilhada = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'encruzilhada', continuarCom: vivos() });
       return;
     }
     if (l.id === 'hardyhammer') {

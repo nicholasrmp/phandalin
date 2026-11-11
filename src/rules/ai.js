@@ -360,8 +360,9 @@ export function takeMonsterTurn(enc, monster) {
       if (!casas?.length) continue;
       const dentro = new Set(casas.map((t) => key(t.x, t.y)));
       const pegos = enc.combatants.filter((c) => !c.dead && enc.pegadaEmAlgumaCasa(c, dentro));
-      const inimigos = pegos.filter((c) => c.side !== monster.side).length;
-      const aliados = pegos.filter((c) => c.side === monster.side && c !== monster).length;
+      // o NEUTRO não é alvo: é o aliado que espera a vez (a guarda do Qunbraxel) ou o morador que não briga
+      const inimigos = pegos.filter((c) => c.side !== monster.side && c.side !== 'neutro').length;
+      const aliados = pegos.filter((c) => (c.side === monster.side || c.side === 'neutro') && c !== monster).length;
       const nota = inimigos - 2 * aliados;
       if (!melhor || nota > melhor.nota) melhor = { alvo: e.pos, nota, inimigos };
     }
@@ -1242,8 +1243,9 @@ function acaoEspecialNoTurno(enc, m, enemies) {
     const candidatos = a.shape === 'raio' ? [m] : vivos;
     for (const e of candidatos) {
       const pegos = enc.pegosDaAcaoEspecial(m, a, e);
-      const inimigos = pegos.filter((c) => c.side !== m.side).length;
-      const aliados = pegos.filter((c) => c.side === m.side).length;
+      // o NEUTRO conta como aliado: a Rajada Mental do Qunbraxel matava a guarda dele que esperava a vez de entrar
+      const inimigos = pegos.filter((c) => c.side !== m.side && c.side !== 'neutro').length;
+      const aliados = pegos.filter((c) => c.side === m.side || c.side === 'neutro').length;
       const nota = inimigos - 2 * aliados;
       if (!melhor || nota > melhor.nota) melhor = { alvo: e, nota, inimigos };
     }

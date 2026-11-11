@@ -1827,7 +1827,12 @@ export function getCondition(actor, id) {
 
 export function removeCondition(actor, id) {
   if (!actor.conditions) return;
+  const saiu = actor.conditions.find((c) => c.id === id);
   actor.conditions = actor.conditions.filter((c) => c.id !== id);
+  // O QUE DURA ENQUANTO O AGARRÃO DURA (o tentáculo do Qunbraxel: atordoado "até o agarrão acabar"). A condição presa ao
+  // agarrão leva `data.comOAgarrao` = quem agarra, e cai junto com ele por qualquer caminho: escapar, quem agarra cair,
+  // morrer ou soltar.
+  if (saiu?.id === 'agarrado') actor.conditions = actor.conditions.filter((c) => !(c.data?.comOAgarrao && c.data.comOAgarrao === saiu.source));
 }
 
 /** Agrega os efeitos de todas as condições ativas. */

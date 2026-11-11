@@ -4161,6 +4161,13 @@ export class Encounter {
       fonte(mods, 'vantagem', porQue.length && porQue.every((x) => x.id === 'descuidado') ? 'alvo descuidado' : 'alvo indefeso');
     }
     if (tgtFx.attackedDisadvantage) fonte(mods, 'desvantagem', 'alvo esquivando');
+    // A SALA EMBAÇADA (Encruzilhada, G12): desvantagem contra quem está dentro, salvo percepção às cegas ou visão verdadeira
+    // que alcancem o alvo
+    // (Ver o Invisível não vale: a Nublar não esconde ninguém, ela desfoca.)
+    if (this.field.embacado?.has(`${target.pos.x},${target.pos.y}`)
+      && Math.max(alcanceDaVisaoVerdadeira(attacker), attacker.senses?.blindsightFt ?? 0) < distanceFt(attacker.pos, target.pos)) {
+      fonte(mods, 'desvantagem', 'alvo na sala embaçada');
+    }
 
     const close = distanceFt(attacker.pos, target.pos) <= 5;
     // Caído: quem ataca a até 1,5 m tem vantagem; de mais longe, desvantagem.
@@ -4261,6 +4268,8 @@ export class Encounter {
         ...(atk.danoMetade && actor.traits?.includes('enxameDoLivro') && actor.hp <= actor.maxHp / 2 ? { damage: atk.danoMetade } : {}),
         // ARMAS MÁGICAS (o golem de argila): o golpe do bloco conta como mágico contra resistência a arma comum.
         magico: !!atk.magico,
+        // o golpe que só vale contra quem está num estado (o Extrair Cérebro: humanoide atordoado e agarrado por quem extrai)
+        exige: atk.exige ?? null,
       };
     }
     // o CUTELO ELEMENTAL arremessado (Caminho do Gigante): a arma da mão, à distância
@@ -4396,6 +4405,13 @@ export class Encounter {
     // Acao por teste (o Olhar Apodrecedor) mira 'uma criatura que ele possa ver'.
     if (p.teste && hasCondition(actor, 'cego')) return { ok: false, why: 'cego, não vê o alvo' };
     if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
+    // EXTRAIR CÉREBRO (o livro): só contra um humanoide atordoado E agarrado por quem extrai
+    if (p.exige === 'agarradoAtordoado') {
+      const humanoide = target.kind === 'pc' || /humanoide/.test(target.tipo ?? '');
+      if (!humanoide || getCondition(target, 'agarrado')?.source !== actor.id || !hasCondition(target, 'atordoado')) {
+        return { ok: false, why: `${p.name} só vale contra um humanoide atordoado e agarrado por ${actor.name}` };
+      }
+    }
     const dist = distanceFt(actor.pos, target.pos);
     // Parede de borda: a 1,5 m, mas do outro lado do muro.
     if (!p.ranged && !this.field.contato(actor.pos, target.pos)
@@ -5484,6 +5500,8 @@ export class Encounter {
     );
     if (imune && !target.dead) {
       this.say('condicao', `${target.name} não é afetado: ${p.onHit.imunes?.motivo ?? `imune a ${CONDITIONS[p.onHit.condition]?.name.toLowerCase() ?? p.onHit.condition}`}.`);
+    } else if (p.onHit?.exigeAgarrado && getCondition(target, 'agarrado')?.source !== attacker.id) {
+      // o efeito que só vale em quem o golpe AGARROU (o tentáculo do Qunbraxel só atordoa quem ele segura): sem agarrão, nada
     } else if (p.onHit && !target.dead && !hasCondition(target, 'inconsciente')) {
       // Alguns efeitos não têm resistência: o acerto já basta (a teia prende).
       this.forcandoTeste = attacker;
@@ -5525,6 +5543,7 @@ export class Encounter {
               dc: p.onHit.dc,
               repete: !!p.onHit.repete,
               escape: p.onHit.escape ?? null,
+              ...(p.onHit.comOAgarrao ? { comOAgarrao: attacker.id } : {}),
             },
           });
           this.say('condicao', `${target.name} ${p.onHit.note} — fica ${nomeCondicao}.`, r.conta, { rolagem: r });
@@ -5842,6 +5861,7 @@ export class Encounter {
     const k = this.turnoKey();
     attacker.acaoDeAtaque = { turno: k, armas: [...(attacker.acaoDeAtaque?.turno === k ? attacker.acaoDeAtaque.armas : []), ...golpes] };
     let anterior = null;
+    const acertaram = new Set();
     attacker.naAcaoDeAtaque = true;
     try {
     for (const [i, golpe] of golpes.entries()) {
@@ -5860,10 +5880,15 @@ export class Encounter {
       // `seAcertar` (o grick): o golpe seguinte só sai se o anterior acertou —
       // o bico só morde quem os tentáculos agarraram.
       if (i > 0 && attacker.multiattack?.seAcertar && !anterior?.hit) break;
+      // O GOLPE CONDICIONAL (o grick alfa: o Bico só se os Tentáculos acertaram NESTA ação): `condicional` diz, por golpe,
+      // qual tem de ter acertado antes. Não acertou, ele não sai — e os outros seguem.
+      const exigeAcerto = attacker.multiattack?.condicional?.[golpe];
+      if (exigeAcerto && !acertaram.has(exigeAcerto)) continue;
       anterior = this.resolveAttack(attacker, target, {
         weaponId: golpe,
         disadvantage: attacker.multiattack?.secondAtDisadvantage && i === 1,
       });
+      if (anterior?.hit) acertaram.add(golpe);
       // GOLPE RÁPIDO: o ataque a mais que a vantagem comprou, no mesmo alvo.
       if (attacker.golpeRapidoGanho) { attacker.golpeRapidoGanho = false; golpes.push(golpe); }
       // AS GARRAS DA FERA: um golpe de garra a mais, uma vez por turno.
@@ -5920,6 +5945,9 @@ export class Encounter {
     // AS CABEÇAS DA HIDRA: uma mordida por cabeça.
     if (attacker.cabecas) return Array(attacker.cabecas).fill(arma);
     if (!ma || ma.count <= 1) return [arma];
+    // AS SEQUÊNCIAS ALTERNATIVAS (o livro: "uma mordida e duas garras, OU três espinhos da cauda"; "só um dos golpes pode
+    // ser a mordida"): vale a primeira que tem a arma escolhida, inteira. Arma fora de todas: um golpe só.
+    if (ma.sequencias) return [...(ma.sequencias.find((s) => s.includes(arma)) ?? [arma])];
     const seq = ma.sequence ?? ma.pattern;
     if (seq) return seq.includes(arma) ? seq.slice(0, ma.count) : [arma];
     return Array(ma.count).fill(arma);

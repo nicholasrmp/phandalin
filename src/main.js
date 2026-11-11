@@ -87,6 +87,7 @@ import { criarZorzulaSantuario } from "./game/zorzula-santuario.js";
 import { criarZorzulaMinas } from "./game/zorzula-minas.js";
 import { criarLugarDoCap6 } from "./game/obelisco6-lugares.js";
 import { criarTalhundereth } from "./game/talhundereth.js";
+import { criarEncruzilhada } from "./game/encruzilhada.js";
 import { criarCriptaTalhund } from "./game/cripta-talhund.js";
 import { criarCume } from "./game/capitulo4-cume.js";
 import { criarCastelo } from "./game/capitulo4-castelo.js";
@@ -678,6 +679,8 @@ class App {
                       ? criarLugarDoCap6
                     : mapa.cena === "talhundereth"
                       ? criarTalhundereth
+                    : mapa.cena === "encruzilhada"
+                      ? criarEncruzilhada
                     : mapa.cena === "cripta"
                       ? criarCriptaTalhund
                 : mapa.cena === "cume"

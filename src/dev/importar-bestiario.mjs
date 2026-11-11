@@ -281,17 +281,155 @@ export function sopro(acao, nomePt) {
   };
 }
 
-/** O MULTIATAQUE ("makes three attacks: one with its bite and two with its claws"). */
-export function multiataque(acao, nomesPt) {
-  const t = semTags(texto(acao.entries)).toLowerCase();
+/**
+ * O MULTIATAQUE, lido do texto do livro. O bloco do jogo leva:
+ *   { count }                         N golpes com a arma que a IA escolheu ("makes two melee attacks")
+ *   { count, sequence }               uma sequência fixa ("one with its bite and two with its claws")
+ *   { count, sequencias }             sequências ALTERNATIVAS: vale a que tem a arma escolhida ("... or three with its
+ *                                     tail spikes"; "two fist attacks or two maul attacks"; "only one of which can be a
+ *                                     bite"; as formas do licantropo)
+ *   { ..., condicional: { B: A } }    o golpe B só sai se A acertou nesta ação (o bico do grick alfa)
+ * `ataques` são os golpes já lidos do bloco (o nome em português e o `nomeEn`), para casar o texto com eles.
+ */
+export function multiataque(acao, nomesPt, ataques = []) {
+  let t = semTags(texto(acao.entries)).toLowerCase().replace(/\s+/g, ' ');
   const total = NUMERO[t.match(/makes (\w+) (?:\w+ )?attacks/)?.[1]] ?? NUMERO[t.match(/makes (\w+)/)?.[1]] ?? 2;
-  const sequencia = [];
-  for (const [en, pt] of Object.entries(nomesPt)) {
-    const k = en.toLowerCase().replace(/\s*\(.*\)/, '');
-    const m = t.match(new RegExp(`(one|two|three|four) (?:with its |with |)${k}`)) ?? t.match(new RegExp(`(one|two|three|four) ${k}`));
-    if (m) for (let i = 0; i < NUMERO[m[1]]; i++) sequencia.push(pt);
+  // os golpes que o texto pode nomear, do nome mais comprido ao mais curto ("tail spike" antes de "tail")
+  const golpes = ataques.map((g) => ({ pt: g.name, en: String(g.nomeEn ?? '').toLowerCase().replace(/\s*\(.*\)/, '').trim(), ranged: !!g.ranged }))
+    .filter((g) => g.en).sort((a, b) => b.en.length - a.en.length);
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  /** O golpe nomeado no começo de `s` (com plural, ou só pela última palavra: "stinger" de "tail stinger"). */
+  const golpeEm = (s) => {
+    for (const passo of ['inteiro', 'ultima']) {
+      for (const g of golpes) {
+        const forma = passo === 'inteiro' ? g.en : g.en.split(' ').pop();
+        const m = s.match(new RegExp(`^${esc(forma)}(?:e?s)?\\b`));
+        if (m) return { g, len: m[0].length };
+      }
+    }
+    return null;
+  };
+  const NUM = 'one|two|three|four|five|six|seven|eight|nine|ten';
+  const LIGA = '(?: (?:melee|ranged))?(?: attacks?)?(?: (?:with (?:its|his|her|their) |with |to )| )';
+
+  // AS ORAÇÕES ESPECIAIS, lidas e tiradas do texto antes da contagem
+  // o golpe condicional: "if it hits with its tentacles, the grick can make one beak attack against the same target"
+  const condicional = {};
+  t = t.replace(/if it hits with (?:its |his |her )?([a-z ]+?), [^.]*?one ([a-z ]+?) attack[^.]*\./, (tudo, a, b) => {
+    const ga = golpeEm(a); const gb = golpeEm(b);
+    if (ga && gb) condicional[gb.g.pt] = ga.g.pt;
+    return '';
+  });
+  // a troca: "it can make one tail attack in place of its two claw attacks"
+  let troca = null;
+  t = t.replace(/it can make one ([a-z ]+?) attack in place of its (\w+) ([a-z ]+?) attacks\./, (tudo, novo, n, velho) => {
+    const gn = golpeEm(novo); const gv = golpeEm(velho);
+    if (gn && gv) troca = { novo: gn.g.pt, velho: gv.g.pt, n: NUMERO[n] ?? 2 };
+    return '';
+  });
+  // a substituição: "it can replace one of those attacks with a bite attack"
+  let substitui = null;
+  t = t.replace(/it can replace one of those attacks with an? ([a-z ]+?) attack\./, (tudo, novo) => { substitui = golpeEm(novo)?.g.pt ?? null; return ''; });
+  // só um pode ser: "only one of which can be a bite attack"; "can use its bite only once"; "can constrict only once"
+  const soUm = [];
+  t = t.replace(/only one of which can be (?:a |an |with (?:its |his |her ))?([a-z ]+?)(?: attack)?\./, (tudo, x) => { const g = golpeEm(x); if (g) soUm.push(g.g.pt); return '.'; });
+  t = t.replace(/(?:but )?can (?:use (?:its|his|her) )?([a-z ]+?)(?: and ([a-z ]+?))?(?: attacks)? only once(?: each)?/, (tudo, a, b) => {
+    for (const x of [a, b].filter(Boolean)) { const g = golpeEm(x); if (g) soUm.push(g.g.pt); }
+    return '';
+  });
+  // cada golpe com uma arma diferente ("each one with a different weapon")
+  const diferentes = /each one with a different weapon/.test(t);
+  // "either with its X or its Y" é o mesmo que "with its X or its Y"
+  t = t.replace(/, either with/g, ' with');
+
+  // AS ALTERNATIVAS: cada frase, e cada "or" seguido de número ("... or two with its longbow")
+  const partes = t.split(new RegExp(`\\.\\s*|,? or (?=(?:make |makes )?(?:${NUM})\\b)`)).map((s) => s.trim()).filter(Boolean);
+  const sequencias = [];
+  // as partes SEM nome de golpe ("three melee attacks", "or two ranged attacks"): valem para qualquer arma daquele tipo
+  const generico = {};
+  for (const parte of partes) {
+    // os grupos "N [com] golpe [ou golpe2]", em ordem
+    const grupos = [];
+    const re = new RegExp(`\\b(${NUM})\\b${LIGA}`, 'g');
+    let m;
+    while ((m = re.exec(parte))) {
+      const resto = parte.slice(m.index + m[0].length);
+      const g1 = golpeEm(resto);
+      if (!g1) continue;
+      const opcoes = [g1.g.pt];
+      // "two with his claws or trident", "two attacks with its greataxe or its spear"
+      const depois = resto.slice(g1.len).match(/^(?: attacks?)? or (?:its |his |her )?/);
+      if (depois) { const g2 = golpeEm(resto.slice(g1.len + depois[0].length)); if (g2) opcoes.push(g2.g.pt); }
+      grupos.push({ n: NUMERO[m[1]], opcoes });
+    }
+    if (!grupos.length) {
+      const g = parte.match(new RegExp(`\\b(${NUM})\\b (?:(melee|ranged) )?attacks?\\b`));
+      if (g) generico[g[2] ?? 'qualquer'] ??= NUMERO[g[1]];
+      continue;
+    }
+    // a primeira opção de cada grupo, e uma sequência a mais para cada opção alternativa
+    sequencias.push(grupos.flatMap((gr) => Array(gr.n).fill(gr.opcoes[0])));
+    grupos.forEach((gr, i) => gr.opcoes.slice(1).forEach((alt) => {
+      sequencias.push(grupos.flatMap((x, j) => Array(x.n).fill(j === i ? alt : x.opcoes[0])));
+    }));
   }
-  return sequencia.length === total ? { count: total, sequence: sequencia } : { count: total };
+  // a TROCA (a tartaruga-dragão): a mesma sequência com o golpe novo no lugar dos velhos
+  if (troca) for (const s of [...sequencias]) if (s.filter((x) => x === troca.velho).length >= troca.n) {
+    const nova = [];
+    let tirou = 0;
+    for (const x of s) { if (x === troca.velho && tirou < troca.n) { if (!tirou) nova.push(troca.novo); tirou++; } else nova.push(x); }
+    sequencias.push(nova);
+  }
+  // a SUBSTITUIÇÃO (a drider): nas sequências de perto, o último golpe vira a mordida
+  if (substitui) for (const s of sequencias) {
+    const g = golpes.find((x) => x.pt === s[0]);
+    if (g && !g.ranged) s[s.length - 1] = substitui;
+  }
+  // SÓ UM PODE SER (o vampiro, o licantropo, o yuan-ti): no máximo um de cada golpe restrito
+  const nPerto = generico.melee ?? generico.qualquer ?? total;
+  const nLonge = generico.ranged ?? generico.qualquer ?? total;
+  if (soUm.length && !sequencias.length && (generico.melee || generico.ranged)) {
+    // "two ranged attacks or three melee attacks, but can use its bite and constrict only once each"
+    for (const a of golpes.filter((g) => !soUm.includes(g.pt))) {
+      sequencias.push(a.ranged ? Array(nLonge).fill(a.pt) : [...Array(Math.max(1, nPerto - soUm.length)).fill(a.pt), ...soUm].slice(0, nPerto));
+    }
+  } else if (soUm.length) {
+    if (sequencias.length) {
+      // as que o texto já deu (o yuan-ti: "duas à distância ou três de perto"): nas de perto, um de cada dos restritos no fim
+      for (const s of sequencias) {
+        const g = golpes.find((x) => x.pt === s[0]);
+        if (!g || g.ranged || soUm.includes(s[0])) continue;
+        soUm.slice(0, s.length - 1).forEach((u, i) => { s[s.length - 1 - i] = u; });
+      }
+    } else {
+      for (const a of golpes.filter((g) => !soUm.includes(g.pt))) {
+        sequencias.push(a.ranged ? Array(total).fill(a.pt) : [...Array(Math.max(1, total - soUm.length)).fill(a.pt), ...soUm].slice(0, total));
+      }
+    }
+  }
+  // CADA UM COM UMA ARMA DIFERENTE (o homem-lagarto): o primeiro golpe de perto com cada um dos outros
+  if (diferentes && !sequencias.length) {
+    const perto = ataques.filter((g) => !g.ranged).map((g) => g.name);
+    for (const b of perto.slice(1)) sequencias.push([perto[0], b].slice(0, total));
+  }
+  // sem nome de golpe nenhum ("makes two melee attacks"): N golpes da arma escolhida
+  const unicas = sequencias.filter((s, i) => sequencias.findIndex((x) => x.join('|') === s.join('|')) === i);
+  if (!unicas.length) {
+    // "three melee attacks or two ranged attacks": N da arma escolhida, e as de longe com o número delas
+    const longe = generico.ranged ? Object.fromEntries(golpes.filter((g) => g.ranged).map((g) => [g.pt, generico.ranged])) : {};
+    return { count: generico.melee ?? generico.qualquer ?? total, ...(Object.keys(longe).length ? { porArma: longe } : {}) };
+  }
+  // A PARTE GENÉRICA MAIS UMA NOMEADA (o senhor da guerra hobgoblin: "três de perto; ou duas azagaias"): N da arma
+  // escolhida, e as nomeadas de uma arma só viram `porArma` com o número delas
+  if ((generico.melee || generico.qualquer) && unicas.every((s) => new Set(s).size === 1)) {
+    return { count: generico.melee ?? generico.qualquer, porArma: Object.fromEntries(unicas.map((s) => [s[0], s.length])) };
+  }
+  // o golpe condicional entra na sequência logo depois do golpe de que depende
+  for (const [b, a] of Object.entries(condicional)) for (const s of unicas) { const i = s.indexOf(a); if (i >= 0 && !s.includes(b)) s.splice(i + 1, 0, b); }
+  const extra = Object.keys(condicional).length ? { condicional } : {};
+  const count = Math.max(total, ...unicas.map((s) => s.length));
+  if (unicas.length === 1) return { count, sequence: unicas[0], ...extra };
+  return { count, sequencias: unicas, ...extra };
 }
 
 // ---------------------------------------------------------------------------------------------- conjuração ----
@@ -730,7 +868,7 @@ export function bloco(m, pt, magiasEn, pend) {
   const vul = tiposDeDano(m.vulnerable, 'vulnerable');
   const nomesDasAcoes = Object.fromEntries((pt.acoes ?? []).map((a) => [a.en, a.nome]));
   const ataques = [];
-  let breath = null; let multi = null; let presenca = null; let sopros = null; let especiais = null; const extra = {};
+  let breath = null; let multi = null; let acaoDoMultiataque = null; let presenca = null; let sopros = null; let especiais = null; const extra = {};
   const tracos = []; const textoDosTracos = {};
   const textoSo = (en, ptA) => {
     const tid = `t_${idDe(ptA?.nome ?? en)}`;
@@ -746,7 +884,8 @@ export function bloco(m, pt, magiasEn, pend) {
   for (const a of m.action ?? []) {
     const en = limpaNome(a.name);
     const ptA = (pt.acoes ?? []).find((x) => x.en === en || x.en === a.name);
-    if (/^Multiattack/.test(en)) { multi = multiataque(a, nomesDasAcoes); continue; }
+    // o multiataque se lê DEPOIS dos golpes: o texto nomeia golpes que vêm depois dele na lista
+    if (/^Multiattack/.test(en)) { acaoDoMultiataque = a; continue; }
     if (en === 'Frightful Presence') { const pa = presencaAterradora(a); if (pa) { presenca = pa; tracos.push('presencaAterradora'); continue; } }
     const g = golpe(a, ptA?.nome ?? en);
     if (g) { g.nomeEn = en; ataques.push(g); continue; }
@@ -797,6 +936,7 @@ export function bloco(m, pt, magiasEn, pend) {
   if (lend?.opcoes.length) tracos.push('acoesLendarias');
   const pendMagias = new Set();
   const sc = conjuracao(m, magiasEn, pendMagias);
+  if (acaoDoMultiataque) multi = multiataque(acaoDoMultiataque, nomesDasAcoes, ataques);
   if (pendMagias.size) pend.push({ criatura: id, magias: [...pendMagias] });
   if (!ataques.length && !breath && !sc && !especiais?.length && (m.action ?? []).length) pend.push({ criatura: id, semGolpe: true });
   const lendaria = (m.trait ?? []).find((t) => /^Legendary Resistance/.test(semTags(t.name)));

@@ -46,6 +46,7 @@ export const OLHAR = {
   rocha: ['Rocha', 'Pedra úmida do morro, fria ao toque. Lá em cima, pontas de estalactite somem no escuro.'],
   caverna: ['Chão de caverna', 'Terra batida e pedra lisa, úmidas. O barulho da água vem de todo lado.'],
   riacho: ['O riacho', 'Meio metro de água fria e lenta. Dá para andar nele sem dificuldade.'],
+  aguaRasa: ['Água parada', 'Água escura até o joelho, fria e quieta. Anda-se nela, devagar.'],
   poco: ['Poço', 'Água parada e escura, funda. Um muro baixo de pedras soltas a segura.'],
   ponte: ['A ponte', 'Tábuas e corda, bem acima do que passa por baixo. Range a cada passo.'],
   entulho: ['Entulho', 'Pedra solta e lixo. Atrapalha o passo.'],

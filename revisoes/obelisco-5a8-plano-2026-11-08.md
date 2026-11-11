@@ -1098,3 +1098,57 @@ idioma, doença, a pergunta ao espírito, e a meia cobertura e o arremesso de al
 `makeMonster` não o copia, então o **Destruir Mortos-Vivos** do clérigo (`m.cr ?? 9`) nunca destruiu nada desde que
 existe. Agora lê o bloco (`crEmNumero`), e há prova. **E arma que não é item aparecia como "Sacar"** — já corrigido no
 lote anterior. Provas em `testes-subclasses-livros.mjs` (13).
+
+### A Encruzilhada da Forca (2026-11-11) — o capítulo 6 está inteiro
+
+O terceiro fragmento. As 25 salas do livro (G1 a G25) sobre a cena da FA "Gibbet Crossing" (68 x 91). A arte vem em duas
+metades de 200 px por casa, juntadas em `public/mapas/fa/encruzilhada.jpg`, com as peças do armário, da sala sem torre e
+do cofre sem fragmento. O mapa sai de `src/dev/mapa-encruzilhada.py`, e as provas no motor fecham 162 casas de bolsão e
+conferem que todo ponto de criatura se alcança. A planta foi casada com o livro pelos ladrilhos com nome da cena da FA:
+o fragmento cai em G25, a torre em G14, o armário em G19, a névoa em G12 e as gaiolas em G6.
+
+**As criaturas.** Quase todo o elenco já estava no jogo, pelo bestiário do MM e pelo capítulo 5. Faltava só o Qunbraxel
+(`rules/monsters/encruzilhada.js`), o devorador de mentes bruxo. Ele trouxe ao motor duas coisas:
+- a condição presa ao agarrão (`onHit.comOAgarrao`): o tentáculo atordoa até o agarrão acabar, por qualquer caminho
+  (`conditions.js removeCondition`);
+- o golpe que exige um estado (`exige: 'agarradoAtordoado'`, `combat.js canAttack`): o Extrair Cérebro só vale contra um
+  humanoide atordoado e agarrado por quem extrai.
+
+**As regras de sala**:
+- a SALA EMBAÇADA (`mapa.embacado`, `campo.js`, `combat.js`): desvantagem contra quem está em G12, salvo percepção às
+  cegas ou visão verdadeira que alcancem o alvo;
+- a ÁGUA RASA, glifo novo `]` (`aguaRasa`): terreno difícil, e não se nada nela. A passagem de G7 é funda. Em G18, a
+  água vale onde a arte é cinza, contra o marrom da pedra seca;
+- o MOFO MARROM, como região: Constituição CD 12 contra 4d10 de frio; morre com frio e cresce com fogo, pelo evento
+  `spell`;
+- a TORRE LAMACENTA, casa bloqueada até encolher, pela palavra (do Zoklork, em troca das ametistas ou da morte dos
+  enroladores, ou das lousas de G20) ou pelo cascalho das estátuas de G21. Com o Qunbraxel vivo, ele e a guarda se
+  mudam para o cofre;
+- a BARRA de G11 (`trancas`, com a CD 15 do livro e a Força 21), que de dentro se tira com a mão;
+- o ARMÁRIO de G19, a SECRETA de G16, o grick alfa que chama os gricks quando é ferido, o enrolador que recua para a
+  névoa, a Vakketar presa à prisão, as seteiras de G24 e o fragmento que o Qunbraxel leva se o grupo sair sem ele.
+
+**Os MARCOS do capítulo 6**, que não existiam (`game/obelisco6-marcos.js`): o 8º nível ao enfrentar o primeiro guardião
+de fragmento (Talhundereth ou a Encruzilhada); o 9º ao vencer os três (o aglomerado de T21, os espectros de P18 e o
+Qunbraxel). A passagem de T1 para G11 também passou a valer, nos dois sentidos, e a Encruzilhada entrou no mapa da
+região, no segundo X das colinas de Starmetal (1608, 962 no mapa oficial).
+
+**Medido** (`src/dev/medir-encruzilhada.mjs`, 100 lutas por sala, campo aberto; vitória / morte de alguém):
+
+| Sala | 7º nível | 8º nível |
+|---|---|---|
+| G23+G24, o Qunbraxel e seis grimlocks | 88% / 28% | 96% / 27% |
+| G14, o Zoklork e os elementais (só se o grupo atacar) | 58% / 24% | 90% / 17% |
+| G6, a Vakketar | 94% / 8% | 99% / 6% |
+| as outras seis salas | 95% a 100% / 0% a 6% | 98% a 100% / 0% a 2% |
+
+Os 27% de morte da luta do Qunbraxel são o Extrair Cérebro, que mata quem ele zera. É o bloco do livro, e a cena dá ao
+grupo as seteiras e a ordem dos grimlocks antes dele.
+
+`testes-encruzilhada.mjs`: 21 provas. As suítes de regras, cenas, Talhundereth, cripta, regiões, bestiário, capítulo 6 e
+investigar passam, e o `conferir-paredes` e o `conferir-cena` dão 0 achados. No navegador, a cena abre sobre a arte, o
+grupo anda e o console fica limpo. A colagem com o livro é 0.
+
+**Fora, dito**: a Telecinésia do Qunbraxel (o jogo não tem a magia). As gaiolas de G6 (500 lb cada) ficam onde estão;
+só a gaiola montada de G3 se leva. A Vakketar só sai por um minuto: aqui, a cerca dela é a prisão, o mostruário e o
+corredor. A conversa com ela é só flavor: ela sempre acaba atacando, como no livro.

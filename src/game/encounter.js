@@ -14,6 +14,7 @@ import { MAPA_CAVERNA_DO_POCO, MAPA_ACAMPAMENTO_SAWPLEE, MAPA_TELHADO_GIGANTE, M
 import { MAPA_ZORZULA_POSTO, MAPA_ZORZULA_MINAS, MAPA_ZORZULA_SANTUARIO, PONTOS_ZORZULA } from './zorzula-mapas.js';
 import { MAPA_CASA_MARTHUNGRIM, MAPA_MINA_HARDYHAMMER, MAPA_LARGO_DA_VACA, PONTOS_CAP6_VILA } from './obelisco6-mapas.js';
 import { MAPA_TALHUNDERETH, PONTOS_TALHUNDERETH } from './talhundereth-mapa.js';
+import { MAPA_ENCRUZILHADA, PONTOS_ENCRUZILHADA } from './encruzilhada-mapa.js';
 import { MAPA_CRIPTA, PONTOS_CRIPTA } from './cripta-mapa.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
 import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, MAPA_CASA_DA_MORTE_PORAO_1, MAPA_CASA_DA_MORTE_PORAO_2 } from './casadamorte.js';
@@ -417,6 +418,12 @@ export function mapaDo(variante) {
   if (variante === 'talhundereth') {
     return { ...MAPA_TALHUNDERETH, altura: null, objetos: [], grupo: PONTOS_TALHUNDERETH.grupo, olhar: PONTOS_TALHUNDERETH.olhar, cena: 'talhundereth' };
   }
+  // A ENCRUZILHADA DA FORCA (o Obelisco, capítulo 6): o entreposto do Subterrâneo e o terceiro fragmento (`encruzilhada.js`).
+  // A porta reforçada de G11 está barrada do lado de lá: vinda de G10, ferramentas de ladrão CD 15 ou Atletismo CD 21.
+  if (variante === 'encruzilhada') {
+    return { ...MAPA_ENCRUZILHADA, altura: null, objetos: [], grupo: PONTOS_ENCRUZILHADA.grupo, olhar: PONTOS_ENCRUZILHADA.olhar,
+      trancas: [{ aresta: PONTOS_ENCRUZILHADA.portaBarrada.aresta, cd: 15, forca: 21 }], cena: 'encruzilhada' };
+  }
   const ZORZULA = {
     zorzulaPosto: [MAPA_ZORZULA_POSTO, 'ZORZULA_POSTO', 'zorzula'],
     zorzulaMinas: [MAPA_ZORZULA_MINAS, 'ZORZULA_MINAS', 'minas'],
@@ -609,7 +616,7 @@ export function mapaDo(variante) {
  */
 export function buildFoes(variante = 'arena') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund', 'encruzilhada'].includes(variante)) return [];
   if (variante.startsWith('casaDaMorte')) return foesDaCasa(variante);
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
@@ -964,7 +971,7 @@ const REFORCOS_EMBOSCADA = [];
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'arena') {
-  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
+  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund', 'encruzilhada', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;
